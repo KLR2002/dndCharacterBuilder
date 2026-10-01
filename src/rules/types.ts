@@ -24,4 +24,6 @@ export interface FeatureInstance {
   max?: number;
   resetOn?: "short" | "long";
   attacks?: number;
+  /** The Rule Choice option this feature's trait resolves to, when one is chosen. */
+  chosenOption?: string;
 }

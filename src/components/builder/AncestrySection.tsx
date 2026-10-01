@@ -3,7 +3,8 @@ import { Text, TouchableOpacity, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { AbilityKey, Character } from "../../types/character";
 import { BackgroundData, RaceData } from "../../types/dnd5e";
-import { clearRuleChoices, setChoiceRacialBonus } from "../../rules/builderTransitions";
+import { availableRuleChoices, type AvailableRuleChoice } from "../../rules/ruleChoices";
+import { clearRuleChoices, setChoiceRacialBonus, setRuleChoicePick } from "../../rules/builderTransitions";
 import { ALL_LANGUAGE_NAMES, resolveCharacterLanguages, ToolGrant } from "../../rules/proficienciesAndLanguages";
 import { Badge } from "../ui/Badge";
 import { Button } from "../ui/Button";
@@ -51,6 +52,7 @@ export interface AncestrySectionProps {
   toggleRaceLanguage: (lang: string) => void;
   raceToolGrant: ToolGrant;
   toggleRaceTool: (tool: string) => void;
+  ruleChoices: AvailableRuleChoice[];
   onViewDetail: (item: { title: string; subtitle?: string; source?: string; description?: string }) => void;
   theme: any;
 }
@@ -67,6 +69,7 @@ export const AncestrySection: React.FC<AncestrySectionProps> = ({
   toggleRaceLanguage,
   raceToolGrant,
   toggleRaceTool,
+  ruleChoices,
   onViewDetail,
   theme,
 }) => {
@@ -323,6 +326,30 @@ export const AncestrySection: React.FC<AncestrySectionProps> = ({
               ))}
           </Card>
         )}
+
+      {/* Ancestry Rule Choices: one pick from a fixed set, gated by level */}
+      {character.race && ruleChoices.length > 0 && (
+        <Card style={{ gap: 10 }}>
+          {ruleChoices.map((choice) => {
+            const entry = (character.ruleChoices ?? []).find((rc) => rc.id === choice.id);
+            return (
+              <RuleChoicePicker
+                key={choice.id}
+                label={choice.traitName}
+                choose={choice.choose}
+                from={choice.options.map((o) => o.name)}
+                chosen={entry?.picked ?? []}
+                onToggle={(option) =>
+                  onUpdate((cur) =>
+                    setRuleChoicePick(cur, choice.id, option, choice.options.map((o) => o.name), choice.choose)
+                  )
+                }
+                theme={theme}
+              />
+            );
+          })}
+        </Card>
+      )}
 
       {/* Race language choices and granted languages */}
       {character.race && (raceLanguageGrant.fixed.length > 0 || raceLanguageGrant.choiceCount > 0) && (

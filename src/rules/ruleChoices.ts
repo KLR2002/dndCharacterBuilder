@@ -101,6 +101,39 @@ export function availableRuleChoices(
   });
 }
 
+/**
+ * Resolves a granted feature against the character's recorded choice.
+ *
+ * A trait that grants a Rule Choice keeps its own prose and gains the chosen
+ * option's text beneath it, but only once the character's level reaches the
+ * choice's effect level. The trait is suppressed entirely when the catalog marks
+ * the choice as replacing it.
+ */
+export function applyRuleChoice<T extends { name: string; description: string }>(
+  character: Character,
+  feature: T,
+  data: TraitChoiceData | undefined,
+  choiceId: string
+): T & { chosenOption?: string } {
+  if (!data) return feature;
+  if (data.replaces === feature.name) return feature;
+
+  const entry = (character.ruleChoices ?? []).find((rc) => rc.id === choiceId);
+  const picked = entry?.picked?.[0];
+  const inEffect = picked != null && totalLevel(character) >= (data.effectLevel ?? data.level);
+  if (!inEffect) return { ...feature, chosenOption: undefined };
+
+  const option = data.options.find((o) => o.name === picked);
+  if (!option) return { ...feature, chosenOption: undefined };
+  return {
+    ...feature,
+    chosenOption: option.name,
+    description: feature.description
+      ? `${feature.description}\n\n**${option.name}** ${option.description}`
+      : `**${option.name}** ${option.description}`,
+  };
+}
+
 /** The chosen option for a given choice id, if the character has made it. */
 export function selectedRuleChoice(
   character: Character,

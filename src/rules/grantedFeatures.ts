@@ -2,6 +2,7 @@ import type { Character } from "../types/character.ts";
 import type { ClassFeatureData } from "../types/dnd5e.ts";
 import type { FeatureCatalog, FeatureInstance } from "./types.ts";
 import { getReplacedBaseFeatures } from "./optionalFeatures.ts";
+import { applyRuleChoice, ruleChoiceId } from "./ruleChoices.ts";
 
 export function grantedFeatures(character: Character, catalog: FeatureCatalog): FeatureInstance[] {
   const out: FeatureInstance[] = [];
@@ -11,11 +12,37 @@ export function grantedFeatures(character: Character, catalog: FeatureCatalog): 
     const id = JSON.stringify([feature.origin, feature.source, owner, feature.name, level]);
     if (!out.some(x => x.id === id)) out.push({ ...feature, id });
   }
-  const choice = character.race;
-  const race = catalog.races.find(r => r.name === choice?.name && r.source === choice.source);
-  const subrace = race?.subraces.find(s => s.name === choice?.subraceName && (!choice.subraceSource || s.source === choice.subraceSource));
-  for (const trait of race?.traits || []) add({ ...trait, source: race!.source, origin: "Race" }, race!.name);
-  for (const trait of subrace?.traits || []) add({ ...trait, source: subrace!.source, origin: "Subrace" }, subrace!.name);
+  if (character.lineageReplacement) {
+    const lineage = catalog.races.find(r => r.name === character.lineageReplacement);
+    if (lineage) {
+      for (const trait of lineage.traits || []) {
+        add({ ...trait, source: lineage.source, origin: "Race" }, lineage.name);
+      }
+    }
+  } else {
+    const choice = character.race;
+    const race = catalog.races.find(r => r.name === choice?.name && r.source === choice.source);
+    const subrace = race?.subraces?.find(s => s.name === choice?.subraceName && (!choice.subraceSource || s.source === choice.subraceSource));
+    const idFor = (source: string, trait: string) =>
+      ruleChoiceId({
+        source,
+        race: choice!.name,
+        subrace: choice!.subraceName ? { name: choice!.subraceName } : null,
+        trait,
+      });
+    for (const trait of race?.traits || []) {
+      add(
+        applyRuleChoice(character, { ...trait, source: race!.source, origin: "Race" }, trait.choice, idFor(race!.source, trait.name)),
+        race!.name
+      );
+    }
+    for (const trait of subrace?.traits || []) {
+      add(
+        applyRuleChoice(character, { ...trait, source: subrace!.source, origin: "Subrace" }, trait.choice, idFor(subrace!.source, trait.name)),
+        subrace!.name
+      );
+    }
+  }
   const background = character.background;
   const bg = catalog.backgrounds.find(b => b.name === background?.name && b.source === background.source);
   if (background?.isCustom && background.customFeatureName) {

@@ -11,6 +11,7 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { useCharacters } from "../../context/CharacterContext";
 import { useAppTheme } from "../../context/ThemeContext";
+import { useResponsiveLayout } from "../../hooks/useResponsiveLayout";
 import {
   findClass,
   findRace,
@@ -28,6 +29,7 @@ import { Badge } from "../ui/Badge";
 import { Button } from "../ui/Button";
 import { Card } from "../ui/Card";
 import { DetailModal } from "../DetailModal";
+import { applyRuleChoice, ruleChoiceId } from "../../rules/ruleChoices";
 
 interface FeatureDisplay {
   id: string;
@@ -35,6 +37,8 @@ interface FeatureDisplay {
   origin: "Race" | "Background" | "Class" | "Subclass" | "Feat";
   source?: string;
   description: string;
+  /** The Rule Choice option this trait resolves to, when one is chosen. */
+  chosenOption?: string;
 }
 
 function makeCounterId(): string {
@@ -44,6 +48,7 @@ function makeCounterId(): string {
 export const FeaturesTab: React.FC = () => {
   const { currentCharacter, updateCharacter, activeBooks } = useCharacters();
   const { theme } = useAppTheme();
+  useResponsiveLayout();
 
   const [customCounterModal, setCustomCounterModal] = useState(false);
   const [newCounterName, setNewCounterName] = useState("");
@@ -125,18 +130,67 @@ export const FeaturesTab: React.FC = () => {
     if (!currentCharacter) return [];
     const list: FeatureDisplay[] = [];
 
-    // 1. Race Features
-    if (currentCharacter.race) {
+    // 1. Race / Lineage Features
+    if (currentCharacter.lineageReplacement) {
+      const lineageData = findRace(currentCharacter.lineageReplacement);
+      if (lineageData?.traits) {
+        for (const trait of lineageData.traits) {
+          list.push({
+            id: `lineage_${trait.name}`,
+            name: `${trait.name} (${lineageData.name})`,
+            origin: "Race",
+            source: lineageData.name,
+            description: trait.description || "Lineage trait.",
+          });
+        }
+      }
+    } else if (currentCharacter.race) {
       const raceData = findRace(currentCharacter.race.name, currentCharacter.race.source);
+      const raceChoiceId = (trait: string) =>
+        ruleChoiceId({ source: raceData?.source ?? currentCharacter.race!.source, race: currentCharacter.race!.name, subrace: null, trait });
       if (raceData?.traits) {
         for (const trait of raceData.traits) {
+          const resolved = applyRuleChoice(currentCharacter, { ...trait, description: trait.description || "Racial trait." }, trait.choice, raceChoiceId(trait.name));
           list.push({
             id: `race_${trait.name}`,
             name: trait.name,
             origin: "Race",
-            source: currentCharacter.race.source,
-            description: trait.description || "Racial trait.",
+            source: raceData.name,
+            description: resolved.description,
+            chosenOption: resolved.chosenOption,
           });
+        }
+      }
+      if (currentCharacter.race.subraceName && raceData?.subraces) {
+        const subraceData = raceData.subraces.find(
+          (s) =>
+            s.name === currentCharacter.race?.subraceName &&
+            (!currentCharacter.race?.subraceSource || s.source === currentCharacter.race.subraceSource)
+        );
+        if (subraceData?.traits) {
+          const subraceChoiceId = (trait: string) =>
+            ruleChoiceId({
+              source: subraceData.source,
+              race: currentCharacter.race!.name,
+              subrace: { name: subraceData.name },
+              trait,
+            });
+          for (const trait of subraceData.traits) {
+            const resolved = applyRuleChoice(
+              currentCharacter,
+              { ...trait, description: trait.description || "Subrace trait." },
+              trait.choice,
+              subraceChoiceId(trait.name)
+            );
+            list.push({
+              id: `subrace_${trait.name}`,
+              name: `${trait.name} (${subraceData.name})`,
+              origin: "Race",
+              source: `${subraceData.name} ${raceData.name}`,
+              description: resolved.description,
+              chosenOption: resolved.chosenOption,
+            });
+          }
         }
       }
     }
@@ -341,6 +395,7 @@ export const FeaturesTab: React.FC = () => {
                     <TouchableOpacity
                       onPress={() => updateCounterValue(c.id, -1)}
                       disabled={isBarb20Rage || c.current <= 0}
+                      hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
                       style={[styles.stepperBtn, { backgroundColor: theme.surfaceRaised }]}>
                       <Ionicons
                         name="remove"
@@ -362,6 +417,7 @@ export const FeaturesTab: React.FC = () => {
                     <TouchableOpacity
                       onPress={() => updateCounterValue(c.id, 1)}
                       disabled={isBarb20Rage || c.current >= c.max}
+                      hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
                       style={[styles.stepperBtn, { backgroundColor: theme.surfaceRaised }]}>
                       <Ionicons
                         name="add"
@@ -473,7 +529,12 @@ export const FeaturesTab: React.FC = () => {
                     },
                   ]}>
                   <View style={{ flex: 1 }}>
-                    <Text style={[styles.featureTitle, { color: theme.text }]}>{feat.name}</Text>
+                    <View style={{ flexDirection: "row", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+                      <Text style={[styles.featureTitle, { color: theme.text }]}>{feat.name}</Text>
+                      {feat.chosenOption ? (
+                        <Badge label={feat.chosenOption} variant="success" size="sm" />
+                      ) : null}
+                    </View>
                     <Text style={{ color: theme.textMuted, fontSize: 12 }} numberOfLines={2}>
                       {feat.description.replace(/\n/g, " ")}
                     </Text>
