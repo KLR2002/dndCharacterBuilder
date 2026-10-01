@@ -177,7 +177,7 @@ export default function OptionsScreen() {
                       },
                     ]}>
                     <View style={{ flex: 1 }}>
-                      <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+                      <View style={{ flexDirection: "row", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
                         <Text style={{ color: theme.text, fontSize: 14, fontWeight: "600" }}>
                           {book.name}
                         </Text>
@@ -206,7 +206,7 @@ export default function OptionsScreen() {
           <Text style={{ color: theme.textSecondary, fontSize: 13, lineHeight: 18 }}>
             D&D 5e Character Vault is an offline-ready character creation and gameplay tracker based on the official 2014 ruleset.
           </Text>
-          <View style={{ flexDirection: "row", gap: 8, marginTop: 6 }}>
+          <View style={{ flexDirection: "row", gap: 8, marginTop: 6, flexWrap: "wrap" }}>
             <Badge label="5e Tools 2014 Data" variant="secondary" />
             <Badge label="Expo SDK 57" variant="secondary" />
             <Badge label="Offline Storage" variant="secondary" />
