@@ -146,8 +146,14 @@ export function applyRuleChoice<T extends { name: string; description: string }>
 function withoutOptionList(description: string, data: TraitChoiceData): string {
   const first = data.options[0]?.name;
   if (!description || !first) return description;
-  const marker = description.indexOf(`**${first}**`);
-  if (marker < 0) return description;
+  // The option list renders as a heading ("### Name"), a bullet ("- **Name**") or
+  // a bare bold run ("**Name**"), depending on the source entry's shape.
+  const markers = [`### ${first}`, `- **${first}**`, `**${first}**`];
+  const marker = markers
+    .map((candidate) => description.indexOf(candidate))
+    .filter((index) => index >= 0)
+    .sort((a, b) => a - b)[0];
+  if (marker === undefined) return description;
   return description.slice(0, marker).trim();
 }
 

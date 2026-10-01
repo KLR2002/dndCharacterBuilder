@@ -7,7 +7,9 @@ import {
   removeAsiSelection,
   subclassLevel,
   asiLevels,
+  getFeatAbilityBonusOptions,
 } from "../src/rules/leveling.ts";
+import { effectiveScores } from "../src/rules/abilities.ts";
 import type { CharacterClass, AsiSelection } from "../src/types/character.ts";
 
 const cl = (className: string, level: number, subclassName?: string): CharacterClass => ({
@@ -245,4 +247,60 @@ test("removeAsiSelection removes the specified ASI selection", () => {
 
   // Original character is not mutated
   assert.equal(initial.asiSelections.length, 3);
+});
+
+test("half-feats: getFeatAbilityBonusOptions detects fixed and choice ability score increases", () => {
+  const actor = getFeatAbilityBonusOptions("Actor");
+  assert.equal(actor.type, "fixed");
+  assert.deepEqual(actor.abilities, ["cha"]);
+  assert.equal(actor.amount, 1);
+
+  const resilient = getFeatAbilityBonusOptions("Resilient");
+  assert.equal(resilient.type, "choice");
+  assert.deepEqual(resilient.abilities, ["str", "dex", "con", "int", "wis", "cha"]);
+  assert.equal(resilient.amount, 1);
+
+  const alert = getFeatAbilityBonusOptions("Alert");
+  assert.equal(alert.type, "none");
+  assert.deepEqual(alert.abilities, []);
+  assert.equal(alert.amount, 0);
+});
+
+test("half-feats: effectiveScores includes ability increase from half-feat selections", () => {
+  const baseChar = makeChar({
+    baseAbilityScores: { str: 10, dex: 10, con: 10, int: 10, wis: 10, cha: 14 },
+    classes: [cl("Bard", 4)],
+  });
+  assert.equal(effectiveScores(baseChar).scores.cha, 14);
+
+  // Apply Actor (+1 CHA)
+  const withActor = applyAsiSelection(baseChar, {
+    className: "Bard",
+    classLevel: 4,
+    level: 4,
+    type: "feat",
+    featName: "Actor",
+    featSource: "PHB",
+    featAbility: "cha",
+    asi: { cha: 1 },
+  });
+  assert.equal(effectiveScores(withActor).scores.cha, 15);
+  assert.equal(effectiveScores(withActor).modifiers.cha, 2);
+
+  // Apply Resilient with CON (+1 CON)
+  const withResilientCon = applyAsiSelection(baseChar, {
+    className: "Bard",
+    classLevel: 4,
+    level: 4,
+    type: "feat",
+    featName: "Resilient",
+    featSource: "PHB",
+    featAbility: "con",
+    asi: { con: 1 },
+  });
+  assert.equal(effectiveScores(withResilientCon).scores.con, 11);
+
+  // Removing selection removes the ability increase
+  const removed = removeAsiSelection(withActor, "Bard", 4);
+  assert.equal(effectiveScores(removed).scores.cha, 14);
 });

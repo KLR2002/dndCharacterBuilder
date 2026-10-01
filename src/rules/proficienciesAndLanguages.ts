@@ -101,10 +101,21 @@ export interface ToolGrant {
 export function getRaceLanguageGrant(
   raceName?: string,
   subraceName?: string,
-  raceCatalog: any[] = []
+  raceCatalog: any[] = [],
+  raceSource?: string,
+  subraceSource?: string
 ): LanguageGrant {
   if (!raceName) return { fixed: ["Common"], choiceCount: 0, label: "" };
-  const rd = raceCatalog.find((r) => r.name.toLowerCase() === raceName.toLowerCase());
+  const rd =
+    raceCatalog.find(
+      (r) =>
+        r.name &&
+        r.name.toLowerCase() === raceName.toLowerCase() &&
+        (!raceSource || r.source === raceSource)
+    ) ||
+    raceCatalog.find(
+      (r) => r.name && r.name.toLowerCase() === raceName.toLowerCase()
+    );
   const fixed: string[] = [];
   let choiceCount = 0;
 
@@ -119,18 +130,36 @@ export function getRaceLanguageGrant(
     }
   }
 
+  const isMpmm = rd?.source === "MPMM";
+
   // Trait check on base race
   for (const t of rd?.traits || []) {
-    if (/extra\s+language/i.test(t.name) || /one\s+extra\s+language/i.test(t.description || "")) {
+    const desc = t.description || "";
+    if (
+      /extra\s+language/i.test(t.name) ||
+      /one\s+extra\s+language/i.test(desc) ||
+      /one\s+other\s+language/i.test(desc) ||
+      /another\s+language\s+of\s+your\s+choice/i.test(desc) ||
+      /one\s+language\s+of\s+your\s+choice/i.test(desc)
+    ) {
       if (choiceCount === 0) choiceCount += 1;
     }
   }
 
   // Subrace
   if (subraceName && rd?.subraces) {
-    const sd = rd.subraces.find(
-      (s: any) => s.name.toLowerCase() === subraceName.toLowerCase()
-    );
+    const sd =
+      rd.subraces.find(
+        (s: any) =>
+          s.name &&
+          s.name.toLowerCase() === subraceName.toLowerCase() &&
+          (!subraceSource || s.source === subraceSource)
+      ) ||
+      rd.subraces.find(
+        (s: any) =>
+          s.name &&
+          s.name.toLowerCase() === subraceName.toLowerCase()
+      );
     if (sd) {
       for (const l of sd.languages || []) {
         const match = l.match(/(\d+)\s+of\s+your\s+choice/i);
@@ -143,14 +172,25 @@ export function getRaceLanguageGrant(
         }
       }
       for (const t of sd.traits || []) {
-        if (/extra\s+language/i.test(t.name) || /one\s+extra\s+language/i.test(t.description || "")) {
+        const desc = t.description || "";
+        if (
+          /extra\s+language/i.test(t.name) ||
+          /one\s+extra\s+language/i.test(desc) ||
+          /one\s+other\s+language/i.test(desc) ||
+          /another\s+language\s+of\s+your\s+choice/i.test(desc) ||
+          /one\s+language\s+of\s+your\s+choice/i.test(desc)
+        ) {
           choiceCount += 1;
         }
       }
     }
   }
 
-  if (fixed.length === 0 && choiceCount === 0) {
+  if (isMpmm && choiceCount === 0) {
+    choiceCount = 1;
+  }
+
+  if (fixed.length === 0) {
     fixed.push("Common");
   }
 
@@ -166,7 +206,7 @@ export function getBackgroundLanguageGrant(
   bgCatalog: any[] = []
 ): LanguageGrant {
   if (!bgName) return { fixed: [], choiceCount: 0, label: "" };
-  const bg = bgCatalog.find((b) => b.name.toLowerCase() === bgName.toLowerCase());
+  const bg = bgCatalog.find((b) => b.name && b.name.toLowerCase() === bgName.toLowerCase());
   const fixed: string[] = [];
   let choiceCount = 0;
 
@@ -255,7 +295,7 @@ export function getBackgroundToolGrant(
   const choices: ToolChoice[] = [];
   if (!bgName) return { fixed, choices };
 
-  const bg = bgCatalog.find((b) => b.name.toLowerCase() === bgName.toLowerCase());
+  const bg = bgCatalog.find((b) => b.name && b.name.toLowerCase() === bgName.toLowerCase());
 
   for (const raw of bg?.toolProficiencies || []) {
     const t = raw.trim();
@@ -349,7 +389,9 @@ export function resolveCharacterLanguages(
   const raceGrant = getRaceLanguageGrant(
     character.race?.name,
     character.race?.subraceName,
-    catalogs?.races || []
+    catalogs?.races || [],
+    character.race?.source,
+    character.race?.subraceSource
   );
   for (const l of raceGrant.fixed) langSet.add(l);
 

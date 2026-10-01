@@ -18,6 +18,7 @@ import {
   getBackgrounds,
   getClasses,
   getFeats,
+  getRaces,
 } from "../../services/dataService";
 import { calculateEffectiveAbilityScores } from "../../services/dndRules";
 import {
@@ -29,7 +30,7 @@ import { Badge } from "../ui/Badge";
 import { Button } from "../ui/Button";
 import { Card } from "../ui/Card";
 import { DetailModal } from "../DetailModal";
-import { applyRuleChoice, ruleChoiceId } from "../../rules/ruleChoices";
+import { applyRuleChoice, replacedTraitNames, ruleChoiceId } from "../../rules/ruleChoices";
 
 interface FeatureDisplay {
   id: string;
@@ -146,10 +147,15 @@ export const FeaturesTab: React.FC = () => {
       }
     } else if (currentCharacter.race) {
       const raceData = findRace(currentCharacter.race.name, currentCharacter.race.source);
+      // A trait a recorded choice replaced must not appear at all, and the
+      // Features tab builds its own list rather than going through
+      // grantedFeatures, so suppression is applied here too.
+      const suppressed = replacedTraitNames(currentCharacter, getRaces(activeBooks));
       const raceChoiceId = (trait: string) =>
         ruleChoiceId({ source: raceData?.source ?? currentCharacter.race!.source, race: currentCharacter.race!.name, subrace: null, trait });
       if (raceData?.traits) {
         for (const trait of raceData.traits) {
+          if (suppressed.has(trait.name)) continue;
           const resolved = applyRuleChoice(currentCharacter, { ...trait, description: trait.description || "Racial trait." }, trait.choice, raceChoiceId(trait.name));
           list.push({
             id: `race_${trait.name}`,
@@ -176,6 +182,7 @@ export const FeaturesTab: React.FC = () => {
               trait,
             });
           for (const trait of subraceData.traits) {
+            if (suppressed.has(trait.name)) continue;
             const resolved = applyRuleChoice(
               currentCharacter,
               { ...trait, description: trait.description || "Subrace trait." },

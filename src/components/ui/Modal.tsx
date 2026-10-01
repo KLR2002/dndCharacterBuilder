@@ -1,5 +1,6 @@
 import React from "react";
 import {
+  KeyboardAvoidingView,
   Modal as RNModal,
   Platform,
   Pressable,
@@ -9,6 +10,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAppTheme } from "../../context/ThemeContext";
 
 interface CustomModalProps {
@@ -31,6 +33,7 @@ export const Modal: React.FC<CustomModalProps> = ({
   maxHeightPercent = 85,
 }) => {
   const { theme } = useAppTheme();
+  const insets = useSafeAreaInsets();
 
   return (
     <RNModal
@@ -38,9 +41,10 @@ export const Modal: React.FC<CustomModalProps> = ({
       transparent
       animationType="fade"
       onRequestClose={onClose}>
-      <View style={styles.overlay}>
+      <View style={[styles.overlay, { paddingBottom: Math.max(16, insets.bottom + 16) }]}>
         <Pressable style={styles.backdrop} onPress={onClose} />
-        <View
+        <KeyboardAvoidingView
+          behavior={Platform.OS === "ios" ? "padding" : undefined}
           style={[
             styles.container,
             {
@@ -82,7 +86,7 @@ export const Modal: React.FC<CustomModalProps> = ({
               {footer}
             </View>
           ) : null}
-        </View>
+        </KeyboardAvoidingView>
       </View>
     </RNModal>
   );
@@ -141,6 +145,7 @@ const styles = StyleSheet.create({
   },
   body: {
     flexGrow: 0,
+    flexShrink: 1,
   },
   bodyContent: {
     padding: 20,
@@ -149,8 +154,5 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 14,
     borderTopWidth: 1,
-    flexDirection: "row",
-    justifyContent: "flex-end",
-    gap: 12,
   },
 });

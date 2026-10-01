@@ -31,7 +31,7 @@ import {
   setStandardArrayPick,
   STARTING_GOLD_BY_CLASS,
 } from "../../rules/builderTransitions";
-import { availableRuleChoices } from "../../rules/ruleChoices";
+import { ancestryRuleChoices, availableRuleChoices } from "../../rules/ruleChoices";
 import { getPendingLevelChoices } from "../../rules/leveling";
 import {
   getRacialSkillChoices,
@@ -206,6 +206,14 @@ export const BuilderTab: React.FC<BuilderTabProps> = ({
     }
   }
 
+  const chosenAncestryOption = (c: typeof character, catalog: typeof allRaces): string | undefined => {
+    const entry = (c.ruleChoices ?? [])[0];
+    if (!entry) return undefined;
+    const match = ancestryRuleChoices(c, catalog).find((choice) => choice.id === entry.id);
+    return match?.options.some((o) => o.name === entry.picked[0]) ? entry.picked[0] : undefined;
+  };
+
+
   type SkillChoice = { source: string; choose: number; from: string[] };
   const skillChoices: SkillChoice[] = [];
 
@@ -214,7 +222,8 @@ export const BuilderTab: React.FC<BuilderTabProps> = ({
       character.race.name,
       character.race.subraceName,
       allRaces,
-      character.race.source
+      character.race.source,
+      chosenAncestryOption(character, allRaces)
     );
     for (const rc of racialChoices) {
       skillChoices.push({
@@ -241,6 +250,7 @@ export const BuilderTab: React.FC<BuilderTabProps> = ({
     }
   }
 
+  /** The Rule Choice option this character's ancestry currently resolves to. */
   const toggleSkill = (s: string) => {
     const norm = normalizeSkillName(s);
     const current = (character.chosenSkills || []).map(normalizeSkillName);

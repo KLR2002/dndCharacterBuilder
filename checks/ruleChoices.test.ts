@@ -66,8 +66,13 @@ test("a character without recorded choices migrates without error and defaults t
 });
 
 test("a variant half-elf with no recorded choice is flagged for review", () => {
+  // A real 1st-level character: the descent choice unlocks at first level, so it
+  // is legitimately flaggable.
   const legacy = JSON.parse(
-    JSON.stringify(raceChar("Half-Elf", "PHB", { name: "Drow Descent", source: "SCAG" }))
+    JSON.stringify({
+      ...raceChar("Half-Elf", "PHB", { name: "Drow Descent", source: "SCAG" }),
+      classes: [{ className: "Wizard", source: "PHB", level: 1 }],
+    })
   );
   delete legacy.ruleChoices;
   const migrated = migrateCharacter(legacy, races);
@@ -75,6 +80,36 @@ test("a variant half-elf with no recorded choice is flagged for review", () => {
     (migrated.needsReview ?? []).some((m) => m.includes("ruleChoices")),
     `expected a ruleChoices review flag, got ${JSON.stringify(migrated.needsReview)}`
   );
+});
+
+test("a character whose only choice is not yet unlocked is not flagged", () => {
+  // A first-level MPMM aasimar cannot make its Revelation yet, so flagging it
+  // would leave a permanent review notice with nothing to do about it.
+  const legacy = JSON.parse(
+    JSON.stringify({
+      ...raceChar("Aasimar", "MPMM"),
+      classes: [{ className: "Cleric", source: "PHB", level: 1 }],
+    })
+  );
+  delete legacy.ruleChoices;
+  const migrated = migrateCharacter(legacy, races);
+  assert.equal(
+    (migrated.needsReview ?? []).some((m) => m.includes("ruleChoices")),
+    false,
+    "a locked choice is not a missing one"
+  );
+});
+
+test("an unlocked aasimar revelation with no pick is flagged", () => {
+  const legacy = JSON.parse(
+    JSON.stringify({
+      ...raceChar("Aasimar", "MPMM"),
+      classes: [{ className: "Cleric", source: "PHB", level: 3 }],
+    })
+  );
+  delete legacy.ruleChoices;
+  const migrated = migrateCharacter(legacy, races);
+  assert.ok((migrated.needsReview ?? []).some((m) => m.includes("ruleChoices")));
 });
 
 test("a character with no ancestry rule choice is not flagged", () => {

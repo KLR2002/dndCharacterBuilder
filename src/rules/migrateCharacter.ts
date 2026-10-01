@@ -1,7 +1,8 @@
 import type { Character, KnownSpell, SkillChoiceEntry } from "../types/character.ts";
 import type { RaceData } from "../types/dnd5e.ts";
 import { CLASS_DATA } from "./classData.ts";
-import { ancestryRuleChoices } from "./ruleChoices.ts";
+import { totalLevel } from "./proficiencies.ts";
+import { availableRuleChoices } from "./ruleChoices.ts";
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return value !== null && typeof value === "object" && !Array.isArray(value);
@@ -74,8 +75,17 @@ export function migrateCharacter(raw: unknown, raceCatalog?: RaceData[]): Charac
   // A character saved before Rule Choices existed has no recorded pick for an
   // ancestry choice it should have made - a variant half-elf never had the
   // option available. Flag it rather than leaving the sheet looking complete.
-  if (c.race && raceCatalog && ruleChoices.length === 0 && ancestryRuleChoices(c, raceCatalog).length > 0) {
-    needsReview.add("ruleChoices: this ancestry offers a choice that was never recorded");
+  // Only flag a choice the character could actually make: a first-level aasimar
+  // has not reached the third level its Revelation needs, so flagging it would
+  // leave a permanent, meaningless review notice.
+  if (c.race && raceCatalog && ruleChoices.length === 0) {
+    const recorded = new Set(ruleChoices.map((entry) => entry.id));
+    const missing = availableRuleChoices(c, raceCatalog, totalLevel(c)).filter(
+      (choice) => !recorded.has(choice.id)
+    );
+    if (missing.length > 0) {
+      needsReview.add("ruleChoices: this ancestry offers a choice that was never recorded");
+    }
   }
 
   return {

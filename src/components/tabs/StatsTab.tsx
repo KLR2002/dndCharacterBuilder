@@ -34,6 +34,7 @@ import { Button } from "../ui/Button";
 import { Card } from "../ui/Card";
 import { DetailModal } from "../DetailModal";
 import { RestModal } from "../RestModal";
+import { useResponsiveLayout } from "../../hooks/useResponsiveLayout";
 
 const ABILITY_ORDER: AbilityKey[] = ["str", "dex", "con", "int", "wis", "cha"];
 const ABILITY_LABELS: Record<AbilityKey, string> = {
@@ -45,9 +46,18 @@ const ABILITY_LABELS: Record<AbilityKey, string> = {
   cha: "Charisma",
 };
 
+const SKILL_ABILITY_GROUPS: { key: AbilityKey; label: string }[] = [
+  { key: "str", label: "STRENGTH" },
+  { key: "dex", label: "DEXTERITY" },
+  { key: "int", label: "INTELLIGENCE" },
+  { key: "wis", label: "WISDOM" },
+  { key: "cha", label: "CHARISMA" },
+];
+
 export const StatsTab: React.FC = () => {
   const { currentCharacter, updateCharacter, activeBooks } = useCharacters();
   const { theme } = useAppTheme();
+  const { isCompact } = useResponsiveLayout();
 
   const [conditionModalVisible, setConditionModalVisible] = useState(false);
   const [restModalVisible, setRestModalVisible] = useState(false);
@@ -288,7 +298,7 @@ export const StatsTab: React.FC = () => {
                   }}
                   style={[styles.conditionBadge, { backgroundColor: theme.danger + "25", borderColor: theme.danger }]}>
                   <Text style={{ color: theme.danger, fontSize: 12, fontWeight: "600" }}>{cond}</Text>
-                  <TouchableOpacity onPress={() => toggleCondition(cond)} style={{ paddingLeft: 4 }}>
+                  <TouchableOpacity onPress={() => toggleCondition(cond)} style={{ paddingLeft: 4 }} hitSlop={{ top: 11, bottom: 11, left: 11, right: 11 }}>
                     <Ionicons name="close-circle" size={14} color={theme.danger} />
                   </TouchableOpacity>
                 </TouchableOpacity>
@@ -405,6 +415,7 @@ export const StatsTab: React.FC = () => {
                   <TouchableOpacity
                     key={`ds_suc_${idx}`}
                     onPress={() => toggleDeathSaveSuccess(idx)}
+                    hitSlop={{ top: 11, bottom: 11, left: 11, right: 11 }}
                     style={[
                       styles.deathSaveCircle,
                       {
@@ -424,6 +435,7 @@ export const StatsTab: React.FC = () => {
                   <TouchableOpacity
                     key={`ds_fail_${idx}`}
                     onPress={() => toggleDeathSaveFailure(idx)}
+                    hitSlop={{ top: 11, bottom: 11, left: 11, right: 11 }}
                     style={[
                       styles.deathSaveCircle,
                       {
@@ -498,7 +510,7 @@ export const StatsTab: React.FC = () => {
           const score = scores[key];
           const mod = modifiers[key];
           return (
-            <View key={key} style={[styles.abilityTile, { backgroundColor: theme.surface, borderColor: theme.border }]}>
+            <View key={key} style={[styles.abilityTile, { backgroundColor: theme.surface, borderColor: theme.border }, isCompact && { width: "48%" }]}>
               <Text style={[styles.abilityTileName, { color: theme.textMuted }]}>{key.toUpperCase()}</Text>
               <Text style={[styles.abilityTileMod, { color: theme.accent }]}>{formatModifier(mod)}</Text>
               <View style={[styles.abilityTileScoreBadge, { backgroundColor: theme.surfaceRaised }]}>
@@ -560,73 +572,136 @@ export const StatsTab: React.FC = () => {
         </View>
       </View>
 
-      {/* Skills with Passives in Parentheses */}
+      {/* Skills Grouped by Ability */}
       <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: 20, marginBottom: 8 }}>
         <Text style={[styles.blockTitle, { color: theme.textSecondary, marginTop: 0, marginBottom: 0 }]}>
-          SKILLS (PASSIVES IN BRACKETS)
+          SKILLS BY ABILITY (PASSIVES IN BRACKETS)
         </Text>
       </View>
-      <Card style={{ padding: 4 }}>
-        {skills.map((skill, index) => (
-          <View
-            key={skill.name}
-            style={[
-              styles.skillRow,
-              {
-                borderBottomColor: theme.border,
-                borderBottomWidth: index === skills.length - 1 ? 0 : 1,
-                backgroundColor: index % 2 === 0 ? "transparent" : theme.surfaceHighlight + "40",
-              },
-            ]}>
-            {/* Prof / Expertise Indicator */}
-            <View style={styles.skillProfCol}>
+      <Card style={{ padding: 6, gap: 12 }}>
+        {SKILL_ABILITY_GROUPS.map((group) => {
+          const groupSkills = skills.filter((s) => s.ability === group.key);
+          if (groupSkills.length === 0) return null;
+          return (
+            <View key={group.key} style={{ gap: 2 }}>
               <View
-                style={[
-                  styles.profIndicator,
-                  {
-                    borderColor: skill.isProficient ? theme.accent : theme.border,
-                    backgroundColor: skill.isProficient ? theme.accent : "transparent",
-                  },
-                ]}>
-                {skill.isExpertise && (
-                  <View style={[styles.expertiseInnerDot, { backgroundColor: "#fff" }]} />
-                )}
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  paddingHorizontal: 8,
+                  paddingVertical: 4,
+                  backgroundColor: theme.surfaceHighlight,
+                  borderRadius: 4,
+                }}
+              >
+                <Text style={{ color: theme.accent, fontSize: 11, fontWeight: "700", letterSpacing: 0.5 }}>
+                  {group.label} ({group.key.toUpperCase()})
+                </Text>
               </View>
-            </View>
+              {groupSkills.map((skill, index) => {
+                const isPassiveSkill = ["investigation", "insight", "perception"].includes(skill.name.toLowerCase());
+                return (
+                  <View
+                    key={skill.name}
+                    style={[
+                      styles.skillRow,
+                      {
+                        borderBottomColor: theme.border,
+                        borderBottomWidth: index === groupSkills.length - 1 ? 0 : 1,
+                        backgroundColor: index % 2 === 0 ? "transparent" : theme.surfaceHighlight + "30",
+                      },
+                    ]}
+                  >
+                    {/* Prof / Expertise / Jack Indicator */}
+                    <View style={styles.skillProfCol}>
+                      {skill.isExpertise ? (
+                        <View
+                          style={[
+                            styles.profIndicator,
+                            {
+                              borderColor: theme.warning,
+                              backgroundColor: theme.warning,
+                            },
+                          ]}
+                        >
+                          <View style={[styles.expertiseInnerDot, { backgroundColor: "#fff" }]} />
+                        </View>
+                      ) : skill.isProficient ? (
+                        <View
+                          style={[
+                            styles.profIndicator,
+                            {
+                              borderColor: theme.accent,
+                              backgroundColor: theme.accent,
+                            },
+                          ]}
+                        />
+                      ) : skill.isJackOfAllTrades ? (
+                        <View
+                          style={[
+                            styles.profIndicator,
+                            {
+                              borderColor: theme.accent,
+                              backgroundColor: "transparent",
+                            },
+                          ]}
+                        >
+                          <Text style={{ color: theme.accent, fontSize: 8, fontWeight: "800", lineHeight: 10 }}>½</Text>
+                        </View>
+                      ) : (
+                        <View
+                          style={[
+                            styles.profIndicator,
+                            {
+                              borderColor: theme.border,
+                              backgroundColor: "transparent",
+                            },
+                          ]}
+                        />
+                      )}
+                    </View>
 
-            {/* Skill Name & Ability */}
-            <View style={{ flex: 1 }}>
-              <Text style={[styles.skillName, { color: theme.text }]}>
-                {skill.name}{" "}
-                <Text style={{ color: theme.textMuted, fontSize: 11 }}>({skill.ability.toUpperCase()})</Text>
-              </Text>
-            </View>
+                    {/* Skill Name */}
+                    <View style={{ flex: 1 }}>
+                      <Text style={[styles.skillName, { color: theme.text }]}>
+                        {skill.name}
+                      </Text>
+                    </View>
 
-            {/* Passive Score in ( ) */}
-            <View style={{ width: 85, alignItems: "center" }}>
-              <Text style={[styles.passiveText, { color: theme.textSecondary }]}>
-                ({skill.passiveBonus})
-              </Text>
-            </View>
+                    {/* Passive Score in ( ) - strictly Investigation, Insight, Perception */}
+                    <View style={{ width: 85, alignItems: "center" }}>
+                      {isPassiveSkill && (
+                        <Text style={[styles.passiveText, { color: theme.textSecondary }]}>
+                          ({skill.passiveBonus})
+                        </Text>
+                      )}
+                    </View>
 
-            {/* Total Roll Modifier */}
-            <View style={{ width: 45, alignItems: "flex-end" }}>
-              <Text
-                style={[
-                  styles.skillBonus,
-                  {
-                    color: skill.isExpertise
-                      ? theme.warning
-                      : skill.isProficient
-                      ? theme.accent
-                      : theme.textSecondary,
-                  },
-                ]}>
-                {formatModifier(skill.bonus)}
-              </Text>
+                    {/* Total Roll Modifier */}
+                    <View style={{ width: 45, alignItems: "flex-end" }}>
+                      <Text
+                        style={[
+                          styles.skillBonus,
+                          {
+                            color: skill.isExpertise
+                              ? theme.warning
+                              : skill.isProficient
+                              ? theme.accent
+                              : skill.isJackOfAllTrades
+                              ? theme.text
+                              : theme.textSecondary,
+                          },
+                        ]}
+                      >
+                        {formatModifier(skill.bonus)}
+                      </Text>
+                    </View>
+                  </View>
+                );
+              })}
             </View>
-          </View>
-        ))}
+          );
+        })}
       </Card>
 
       {/* Proficiencies & Training Summary */}
@@ -891,9 +966,11 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     gap: 8,
     marginBottom: 16,
+    flexWrap: "wrap",
   },
   statBox: {
     flex: 1,
+    minWidth: 80,
     alignItems: "center",
     justifyContent: "center",
     paddingVertical: 10,

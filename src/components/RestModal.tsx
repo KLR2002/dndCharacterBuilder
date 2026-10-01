@@ -37,16 +37,24 @@ export const RestModal: React.FC<RestModalProps> = ({
   onTakeRest,
 }) => {
   const { theme } = useAppTheme();
-  const { currentCharacter, updateCharacter } = useCharacters();
+  const { currentCharacter, updateCharacter, activeBooks } = useCharacters();
   const [mode, setMode] = useState<"short" | "long">("short");
   const [spentLog, setSpentLog] = useState<string[]>([]);
 
   const character = propChar || currentCharacter;
+  // Picks made in the changeable panel are applied to the parent immediately, but
+  // a long rest must be computed against them - otherwise resting wipes the season
+  // the player just chose.
+  const [pendingChoices, setPendingChoices] = useState<Partial<Character>>({});
   const onUpdateCharacter = propUpdate || ((updates: Partial<Character>) => {
     if (character) {
       updateCharacter(character.id, updates);
     }
   });
+
+  const characterWithPending: Character | undefined = character
+    ? ({ ...character, ...pendingChoices } as Character)
+    : undefined;
 
   if (!character) return null;
 
@@ -96,15 +104,16 @@ export const RestModal: React.FC<RestModalProps> = ({
   // Choices the player may change because they finish a long rest: the eladrin's
   // season, per MToF. Long rest clears them, so they are offered here.
   const changeableChoices = availableRuleChoices(
-    character,
-    getRaces(),
+    characterWithPending ?? character,
+    getRaces(activeBooks),
     undefined,
-    undefined
+    activeBooks
   ).filter((choice) => CHANGEABLE_AT_LONG_REST.has(choice.traitName));
 
   const executeLongRest = () => {
-    const updated = applyLongRest(character);
+    const updated = applyLongRest(characterWithPending ?? character);
     onUpdateCharacter(updated);
+    setPendingChoices({});
     if (onTakeRest) onTakeRest();
     onClose();
   };
@@ -233,7 +242,7 @@ export const RestModal: React.FC<RestModalProps> = ({
                   Changeable at a Long Rest
                 </Text>
                 {changeableChoices.map((choice) => {
-                  const entry = (character.ruleChoices ?? []).find((rc) => rc.id === choice.id);
+                  const entry = (characterWithPending ?? character)?.ruleChoices?.find((rc) => rc.id === choice.id);
                   return (
                     <View key={choice.id} style={{ gap: 6 }}>
                       <Text style={{ color: theme.textSecondary, fontSize: 12 }}>{choice.traitName}</Text>
@@ -244,16 +253,17 @@ export const RestModal: React.FC<RestModalProps> = ({
                             <TouchableOpacity
                               key={option.name}
                               onPress={() =>
-                                onUpdateCharacter(
-                                  setRuleChoicePick(
-                                    character,
+                                setPendingChoices((prev) => ({
+                                  ...prev,
+                                  ...setRuleChoicePick(
+                                    characterWithPending ?? character,
                                     choice.id,
                                     choice.traitName,
                                     option.name,
                                     choice.options.map((o) => o.name),
                                     choice.choose
-                                  )
-                                )
+                                  ),
+                                }))
                               }
                               style={{
                                 paddingVertical: 6,

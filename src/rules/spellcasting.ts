@@ -23,7 +23,8 @@ export function isCastingClass(c: CharacterClass): boolean {
   if (isThirdCaster(c)) return true;
   if (c.className === "Artificer") return true;
   const kind = CLASS_DATA[c.className]?.caster;
-  return kind === "full" || kind === "half" || kind === "pact";
+  if (kind === "half") return c.level >= 2;
+  return kind === "full" || kind === "pact";
 }
 
 export function getSpellcastingAbility(c: CharacterClass): AbilityKey | undefined {

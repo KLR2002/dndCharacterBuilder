@@ -10,6 +10,7 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { useCharacters } from "../../context/CharacterContext";
 import { useAppTheme } from "../../context/ThemeContext";
+import { useResponsiveLayout } from "../../hooks/useResponsiveLayout";
 import { findSpell, getSpells } from "../../services/dataService";
 import {
   calculateMulticlassSpellSlots,
@@ -105,6 +106,7 @@ function checkIsSpellPrepared(
 export const SpellsTab: React.FC = () => {
   const { currentCharacter, updateCharacter, activeBooks } = useCharacters();
   const { theme } = useAppTheme();
+  const { isCompact } = useResponsiveLayout();
 
   // State hooks
   const [selectedProfileIndex, setSelectedProfileIndex] = useState(0);
@@ -372,10 +374,10 @@ export const SpellsTab: React.FC = () => {
       {/* Multiclass Profile Selector Tabs/Pills */}
       {spellProfiles.length > 1 && (
         <ScrollView
-          horizontal
+          horizontal={!isCompact}
           showsHorizontalScrollIndicator={false}
           style={styles.profileSelectorScroll}
-          contentContainerStyle={styles.profileSelectorContent}>
+          contentContainerStyle={[styles.profileSelectorContent, isCompact && { flexDirection: "row", flexWrap: "wrap" }]}>
           {spellProfiles.map((profile, idx) => {
             const isSelected = idx === activeProfileIndex;
             const sign = profile.spellAttackBonus >= 0 ? "+" : "";
@@ -531,6 +533,7 @@ export const SpellsTab: React.FC = () => {
                 <TouchableOpacity
                   key={`pact_slot_${slotIdx}`}
                   onPress={() => togglePactSlot(slotIdx, pactSlotsUsed)}
+                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                   style={[
                     styles.slotCheckbox,
                     {
@@ -578,6 +581,7 @@ export const SpellsTab: React.FC = () => {
                         <TouchableOpacity
                           key={`lvl_${lvl}_slot_${slotIdx}`}
                           onPress={() => toggleSlot(lvl, slotIdx, used)}
+                          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                           style={[
                             styles.slotCheckbox,
                             {

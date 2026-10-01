@@ -2,6 +2,7 @@ import React from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { useAppTheme } from "../context/ThemeContext";
 import { Badge } from "./ui/Badge";
+import { FormattedDescription } from "./ui/FormattedDescription";
 import { Modal } from "./ui/Modal";
 
 interface DetailItem {
@@ -74,10 +75,8 @@ export const DetailModal: React.FC<DetailModalProps> = ({
           </View>
         ) : null}
 
-        {/* Description */}
-        <Text style={[styles.description, { color: theme.text }]}>
-          {displayDescription}
-        </Text>
+        {/* Description with styled markdown tables and headings */}
+        <FormattedDescription content={displayDescription} />
       </View>
     </Modal>
   );

@@ -1,7 +1,99 @@
-import type { Character, AsiSelection } from "../types/character.ts";
+import type { Character, AsiSelection, AbilityKey } from "../types/character.ts";
 import { asiLevels } from "./classData.ts";
 
 export { asiLevels } from "./classData.ts";
+
+export interface FeatAbilityBonusOptions {
+  type: "fixed" | "choice" | "none";
+  abilities: AbilityKey[];
+  amount: number;
+}
+
+export const HALF_FEATS: Record<string, AbilityKey[]> = {
+  "aberrant dragonmark": ["con"],
+  "actor": ["cha"],
+  "agent of order": ["str", "dex", "con", "int", "wis", "cha"],
+  "athlete": ["str", "dex"],
+  "baleful scion": ["str", "dex", "con", "int", "wis", "cha"],
+  "chef": ["con", "wis"],
+  "cohort of chaos": ["str", "dex", "con", "int", "wis", "cha"],
+  "crusher": ["str", "con"],
+  "dragon fear": ["str", "con", "cha"],
+  "dragon hide": ["str", "con", "cha"],
+  "durable": ["con"],
+  "dwarven fortitude": ["con"],
+  "elven accuracy": ["dex", "int", "wis", "cha"],
+  "ember of the fire giant": ["str", "con", "wis"],
+  "fade away": ["dex", "int"],
+  "fey teleportation": ["int", "cha"],
+  "fey touched": ["int", "wis", "cha"],
+  "flames of phlegethos": ["int", "cha"],
+  "fury of the frost giant": ["str", "con", "wis"],
+  "gift of the gem dragon": ["int", "wis", "cha"],
+  "guile of the cloud giant": ["str", "con", "cha"],
+  "gunner": ["dex"],
+  "heavily armored": ["str"],
+  "heavy armor master": ["str"],
+  "infernal constitution": ["con"],
+  "keen mind": ["int"],
+  "keenness of the stone giant": ["str", "con", "wis"],
+  "knight of the crown": ["str", "dex", "con"],
+  "knight of the rose": ["con", "wis", "cha"],
+  "knight of the sword": ["int", "wis", "cha"],
+  "lightly armored": ["str", "dex"],
+  "linguist": ["int"],
+  "moderately armored": ["str", "dex"],
+  "observant": ["int", "wis"],
+  "orcish fury": ["str", "con"],
+  "outlands envoy": ["str", "dex", "con", "int", "wis", "cha"],
+  "piercer": ["str", "dex"],
+  "resilient": ["str", "dex", "con", "int", "wis", "cha"],
+  "revenant blade": ["str", "dex"],
+  "righteous heritor": ["str", "dex", "con", "int", "wis", "cha"],
+  "second chance": ["dex", "con", "cha"],
+  "shadow touched": ["int", "wis", "cha"],
+  "skill expert": ["str", "dex", "con", "int", "wis", "cha"],
+  "slasher": ["str", "dex"],
+  "soul of the storm giant": ["str", "wis", "cha"],
+  "squat nimbleness": ["str", "dex"],
+  "tavern brawler": ["str", "con"],
+  "telekinetic": ["int", "wis", "cha"],
+  "telepathic": ["int", "wis", "cha"],
+  "vigor of the hill giant": ["str", "con", "wis"],
+  "weapon master": ["str", "dex"],
+};
+
+export function getFeatAbilityBonusOptions(
+  featName: string,
+  featData?: { abilityScoreIncrease?: Record<string, number>[] | null }
+): FeatAbilityBonusOptions {
+  const normalized = featName.trim().toLowerCase();
+  if (featData?.abilityScoreIncrease && featData.abilityScoreIncrease.length > 0) {
+    const abilities: AbilityKey[] = [];
+    for (const inc of featData.abilityScoreIncrease) {
+      for (const k of Object.keys(inc)) {
+        const mapped = k.toLowerCase().slice(0, 3) as AbilityKey;
+        if (["str", "dex", "con", "int", "wis", "cha"].includes(mapped) && !abilities.includes(mapped)) {
+          abilities.push(mapped);
+        }
+      }
+    }
+    if (abilities.length === 1) {
+      return { type: "fixed", abilities, amount: 1 };
+    } else if (abilities.length > 1) {
+      return { type: "choice", abilities, amount: 1 };
+    }
+  }
+  const mapped = HALF_FEATS[normalized];
+  if (mapped && mapped.length > 0) {
+    return {
+      type: mapped.length === 1 ? "fixed" : "choice",
+      abilities: mapped,
+      amount: 1,
+    };
+  }
+  return { type: "none", abilities: [], amount: 0 };
+}
 
 /**
  * Returns the class level at which a subclass is selected (2014 rules).

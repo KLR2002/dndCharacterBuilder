@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { StyleSheet, Text, TouchableOpacity, View, useWindowDimensions } from "react-native";
 import { ALL_RESOURCE_BOOKS, DEFAULT_ACTIVE_BOOK_CODES } from "../constants/books";
 import { useAppTheme } from "../context/ThemeContext";
 import { Badge } from "./ui/Badge";
@@ -13,6 +13,8 @@ interface FirstRunModalProps {
 
 export const FirstRunModal: React.FC<FirstRunModalProps> = ({ visible, onComplete }) => {
   const { theme } = useAppTheme();
+  const { width } = useWindowDimensions();
+  const isCompact = width < 520;
   const [selectedBooks, setSelectedBooks] = useState<string[]>(DEFAULT_ACTIVE_BOOK_CODES);
 
   const toggleBook = (code: string) => {
@@ -41,14 +43,20 @@ export const FirstRunModal: React.FC<FirstRunModalProps> = ({ visible, onComplet
       subtitle="Choose which official source books you'd like to use. You can change this anytime in Options."
       maxHeightPercent={90}
       footer={
-        <View style={styles.footer}>
-          <Text style={[styles.countText, { color: theme.textSecondary }]}>
+        <View style={[styles.footer, isCompact ? styles.footerCompact : styles.footerWide]}>
+          <Text
+            style={[
+              styles.countText,
+              isCompact && styles.countTextCompact,
+              { color: theme.textSecondary },
+            ]}>
             {selectedBooks.length} of {ALL_RESOURCE_BOOKS.length} books selected
           </Text>
           <Button
             title="Start Building Characters"
             onPress={() => onComplete(selectedBooks)}
             size="md"
+            style={isCompact ? styles.actionBtnCompact : undefined}
           />
         </View>
       }>
@@ -159,12 +167,26 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   footer: {
-    flex: 1,
+    width: "100%",
+  },
+  footerCompact: {
+    flexDirection: "column",
+    alignItems: "stretch",
+    gap: 10,
+  },
+  footerWide: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
+    gap: 12,
   },
   countText: {
     fontSize: 13,
+  },
+  countTextCompact: {
+    textAlign: "center",
+  },
+  actionBtnCompact: {
+    width: "100%",
   },
 });

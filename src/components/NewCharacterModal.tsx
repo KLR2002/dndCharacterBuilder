@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
+import { StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 import { useCharacters } from "../context/CharacterContext";
 import { useAppTheme } from "../context/ThemeContext";
 import { Button } from "./ui/Button";
@@ -288,9 +288,10 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   footer: {
-    flex: 1,
+    width: "100%",
     flexDirection: "row",
     justifyContent: "flex-end",
+    alignItems: "center",
     gap: 12,
   },
 });

@@ -20,7 +20,11 @@ export function effectiveScores(character: Character, opts: ResolvedAncestry = {
     ...(opts.race?.abilityScoreIncrease || []), ...(opts.subrace?.abilityScoreIncrease || []),
   ];
   for (const selection of character.asiSelections || []) {
-    if (selection.type === "asi" && selection.asi) increases.push(selection.asi);
+    if (selection.asi) {
+      increases.push(selection.asi);
+    } else if (selection.type === "feat" && selection.featAbility) {
+      increases.push({ [selection.featAbility]: 1 });
+    }
   }
   for (const increase of increases) {
     for (const [name, value] of Object.entries(increase)) {

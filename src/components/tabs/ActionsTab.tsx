@@ -24,6 +24,7 @@ import {
 import { Badge } from "../ui/Badge";
 import { Card } from "../ui/Card";
 import { DetailModal } from "../DetailModal";
+import { useResponsiveLayout } from "../../hooks/useResponsiveLayout";
 
 const STANDARD_ACTIONS = [
   {
@@ -81,6 +82,7 @@ const STANDARD_ACTIONS = [
 export const ActionsTab: React.FC = () => {
   const { currentCharacter, activeBooks } = useCharacters();
   const { theme } = useAppTheme();
+  const { isCompact } = useResponsiveLayout();
 
   const [detailModal, setDetailModal] = useState<{
     visible: boolean;
@@ -294,13 +296,19 @@ export const ActionsTab: React.FC = () => {
         {weaponAttacks.length === 0 ? (
           <Card style={{ padding: 14 }}>
             {/* Unarmed Strike Default */}
-            <View style={styles.attackRow}>
-              <View style={{ flex: 1 }}>
+            <View style={[styles.attackRow, {
+              flexDirection: isCompact ? "column" : "row",
+              alignItems: isCompact ? "flex-start" : "center",
+              minHeight: 44,
+            }]}>
+              <View style={{ flex: isCompact ? undefined : 1, width: isCompact ? "100%" : undefined }}>
                 <Text style={[styles.attackTitle, { color: theme.text }]}>Unarmed Strike</Text>
                 <Text style={{ color: theme.textMuted, fontSize: 12 }}>Melee • Bludgeoning</Text>
               </View>
-              <Badge label={`+${profBonus + modifiers.str} to hit`} variant="accent" />
-              <Badge label={`${1 + modifiers.str} dmg`} variant="secondary" />
+              <View style={{ flexDirection: "row", gap: 8, marginTop: isCompact ? 6 : 0 }}>
+                <Badge label={`+${profBonus + modifiers.str} to hit`} variant="accent" />
+                <Badge label={`${1 + modifiers.str} dmg`} variant="secondary" />
+              </View>
             </View>
             <Text style={{ color: theme.textMuted, fontSize: 11, marginTop: 8 }}>
               Equip weapons in the Inventory tab to see custom attack bonuses and damage formulas.
@@ -330,9 +338,12 @@ export const ActionsTab: React.FC = () => {
                     {
                       borderBottomColor: theme.border,
                       borderBottomWidth: idx === weaponAttacks.length - 1 ? 0 : 1,
+                      flexDirection: isCompact ? "column" : "row",
+                      alignItems: isCompact ? "flex-start" : "center",
+                      minHeight: 44,
                     },
                   ]}>
-                  <View style={{ flex: 1 }}>
+                  <View style={{ flex: isCompact ? undefined : 1, width: isCompact ? "100%" : undefined }}>
                     <Text style={[styles.attackTitle, { color: theme.text }]}>{attack.name}</Text>
                     <Text style={{ color: theme.textMuted, fontSize: 11 }}>
                       {statUpper} • {rangeStr}{attack.damageType ? ` • ${attack.damageType}` : ""}
@@ -344,8 +355,10 @@ export const ActionsTab: React.FC = () => {
                     )}
                   </View>
 
-                  <Badge label={`${formatModifier(attack.attackBonus)} to hit`} variant="accent" />
-                  <Badge label={`${attack.damage}${attack.damageType ? ` ${attack.damageType}` : ""}`} variant="secondary" />
+                  <View style={{ flexDirection: "row", gap: 8, marginTop: isCompact ? 6 : 0 }}>
+                    <Badge label={`${formatModifier(attack.attackBonus)} to hit`} variant="accent" />
+                    <Badge label={`${attack.damage}${attack.damageType ? ` ${attack.damageType}` : ""}`} variant="secondary" />
+                  </View>
                 </TouchableOpacity>
               );
             })}
@@ -362,8 +375,14 @@ export const ActionsTab: React.FC = () => {
               Off-Hand Attack (Bonus Action / Two-Weapon Fighting)
             </Text>
           </View>
-          <View style={[styles.attackRow, { paddingHorizontal: 0, paddingVertical: 4 }]}>
-            <View style={{ flex: 1 }}>
+          <View style={[styles.attackRow, { 
+            paddingHorizontal: 0, 
+            paddingVertical: 4,
+            flexDirection: isCompact ? "column" : "row",
+            alignItems: isCompact ? "flex-start" : "center",
+            minHeight: 44,
+          }]}>
+            <View style={{ flex: isCompact ? undefined : 1, width: isCompact ? "100%" : undefined }}>
               <Text style={[styles.attackTitle, { color: theme.text }]}>
                 {dualWield.offHand.name} (Off-Hand)
               </Text>
@@ -371,8 +390,10 @@ export const ActionsTab: React.FC = () => {
                 Bonus Action • No ability mod to damage • {dualWield.offHand.range || (dualWield.offHand.isRanged ? "Ranged" : "Melee")}{dualWield.offHand.damageType ? ` • ${dualWield.offHand.damageType}` : ""}
               </Text>
             </View>
-            <Badge label={`${formatModifier(dualWield.offHand.attackBonus)} to hit`} variant="warning" />
-            <Badge label={`${dualWield.offHand.damage}${dualWield.offHand.damageType ? ` ${dualWield.offHand.damageType}` : ""}`} variant="secondary" />
+            <View style={{ flexDirection: "row", gap: 8, marginTop: isCompact ? 6 : 0 }}>
+              <Badge label={`${formatModifier(dualWield.offHand.attackBonus)} to hit`} variant="warning" />
+              <Badge label={`${dualWield.offHand.damage}${dualWield.offHand.damageType ? ` ${dualWield.offHand.damageType}` : ""}`} variant="secondary" />
+            </View>
           </View>
         </Card>
       )}
@@ -400,16 +421,21 @@ export const ActionsTab: React.FC = () => {
                   {
                     borderBottomColor: theme.border,
                     borderBottomWidth: idx === spellAttacks.length - 1 ? 0 : 1,
+                    flexDirection: isCompact ? "column" : "row",
+                    alignItems: isCompact ? "flex-start" : "center",
+                    minHeight: 44,
                   },
                 ]}>
-                <View style={{ flex: 1 }}>
+                <View style={{ flex: isCompact ? undefined : 1, width: isCompact ? "100%" : undefined }}>
                   <Text style={[styles.attackTitle, { color: theme.text }]}>{sp.name}</Text>
                   <Text style={{ color: theme.textMuted, fontSize: 11 }}>
                     {sp.time} • Range: {sp.range}
                   </Text>
                 </View>
-                <Badge label={sp.damage} variant="outline" />
-                <Ionicons name="chevron-forward" size={16} color={theme.textMuted} />
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginTop: isCompact ? 6 : 0, width: isCompact ? "100%" : undefined, justifyContent: isCompact ? "space-between" : "flex-end" }}>
+                  <Badge label={sp.damage} variant="outline" />
+                  <Ionicons name="chevron-forward" size={16} color={theme.textMuted} />
+                </View>
               </TouchableOpacity>
             ))}
           </Card>

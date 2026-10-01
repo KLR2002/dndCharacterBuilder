@@ -12,6 +12,7 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { useCharacters } from "../../context/CharacterContext";
 import { useAppTheme } from "../../context/ThemeContext";
+import { useResponsiveLayout } from "../../hooks/useResponsiveLayout";
 import { getItems } from "../../services/dataService";
 import { calculateCarryingWeight } from "../../services/dndRules";
 import { InventoryItem } from "../../types/character";
@@ -29,6 +30,7 @@ function makeItemId(prefix: string): string {
 export const InventoryTab: React.FC = () => {
   const { currentCharacter, updateCharacter, activeBooks } = useCharacters();
   const { theme } = useAppTheme();
+  const { isCompact } = useResponsiveLayout();
 
   const [itemPickerVisible, setItemPickerVisible] = useState(false);
   const [customItemVisible, setCustomItemVisible] = useState(false);
@@ -257,11 +259,11 @@ export const InventoryTab: React.FC = () => {
 
         {currentCharacter.useWeightLimit && (
           <View style={{ marginTop: 12 }}>
-            <View style={{ flexDirection: "row", justifyContent: "space-between", marginBottom: 4 }}>
+            <View style={{ flexDirection: isCompact ? "column" : "row", justifyContent: "space-between", marginBottom: 4 }}>
               <Text style={{ color: currentWeight > maxCapacity ? theme.danger : theme.text, fontWeight: "600", fontSize: 13 }}>
                 {currentWeight} lbs carried
               </Text>
-              <Text style={{ color: theme.textSecondary, fontSize: 13 }}>
+              <Text style={{ color: theme.textSecondary, fontSize: 13, marginTop: isCompact ? 2 : 0 }}>
                 Max {maxCapacity} lbs
               </Text>
             </View>
@@ -337,14 +339,14 @@ export const InventoryTab: React.FC = () => {
 
                 {/* Item Info (click to view details) */}
                 <TouchableOpacity onPress={() => showItemDetail(item)} style={{ flex: 1, paddingVertical: 4 }}>
-                  <Text style={[styles.itemTitle, { color: theme.text }]}>{item.name}</Text>
-                  <Text style={{ color: theme.textMuted, fontSize: 11 }}>
+                  <Text style={[styles.itemTitle, { color: theme.text }]} numberOfLines={isCompact ? 2 : 1}>{item.name}</Text>
+                  <Text style={{ color: theme.textMuted, fontSize: 11 }} numberOfLines={isCompact ? 2 : 1}>
                     {item.damage ? `${item.damage} • ` : ""}{item.ac ? `AC ${item.ac} • ` : ""}{item.weight != null ? `${item.weight} lb • ` : ""}{item.source}
                   </Text>
                 </TouchableOpacity>
 
                 {/* Quantity */}
-                <View style={styles.qtyControl}>
+                <View style={[styles.qtyControl, isCompact && { alignSelf: "flex-end" }]}>
                   <TouchableOpacity onPress={() => updateItemQuantity(item.id, -1)} style={styles.qtyBtn}>
                     <Ionicons name="remove" size={14} color={theme.textMuted} />
                   </TouchableOpacity>
@@ -396,14 +398,14 @@ export const InventoryTab: React.FC = () => {
 
                 {/* Item Info */}
                 <TouchableOpacity onPress={() => showItemDetail(item)} style={{ flex: 1, paddingVertical: 4 }}>
-                  <Text style={[styles.itemTitle, { color: theme.text }]}>{item.name}</Text>
-                  <Text style={{ color: theme.textMuted, fontSize: 11 }}>
+                  <Text style={[styles.itemTitle, { color: theme.text }]} numberOfLines={isCompact ? 2 : 1}>{item.name}</Text>
+                  <Text style={{ color: theme.textMuted, fontSize: 11 }} numberOfLines={isCompact ? 2 : 1}>
                     {item.weight != null ? `${item.weight} lb • ` : ""}{item.cost ? `${item.cost} • ` : ""}{item.source}
                   </Text>
                 </TouchableOpacity>
 
                 {/* Quantity */}
-                <View style={styles.qtyControl}>
+                <View style={[styles.qtyControl, isCompact && { alignSelf: "flex-end" }]}>
                   <TouchableOpacity onPress={() => updateItemQuantity(item.id, -1)} style={styles.qtyBtn}>
                     <Ionicons name="remove" size={14} color={theme.textMuted} />
                   </TouchableOpacity>
@@ -690,6 +692,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 8,
     gap: 8,
+    flexWrap: "wrap",
   },
   equipBtn: {
     padding: 4,

@@ -42,6 +42,12 @@ test("getClassSpellProfiles detects casting classes and ignores non-casters", ()
   });
   assert.deepEqual(getClassSpellProfiles(noSubFighter), []);
 
+  // 2014 rules: Paladin and Ranger do NOT gain spellcasting at level 1
+  const lvl1HalfCasters = makeChar({
+    classes: [cl("Paladin", 1), cl("Ranger", 1)],
+  });
+  assert.deepEqual(getClassSpellProfiles(lvl1HalfCasters), []);
+
   // All 8 standard casting classes + 2 third casters (level >= 3)
   const fullCasters = makeChar({
     classes: [
@@ -163,9 +169,13 @@ test("maxSpellLevel is computed based on individual class progression", () => {
   const pal5 = makeChar({ classes: [cl("Paladin", 5)] });
   assert.equal(getClassSpellProfiles(pal5)[0].maxSpellLevel, 2);
 
-  // Paladin 1 -> 0 (no spell slots at level 1)
+  // Paladin 1 -> no spell profile under 2014 rules
   const pal1 = makeChar({ classes: [cl("Paladin", 1)] });
-  assert.equal(getClassSpellProfiles(pal1)[0].maxSpellLevel, 0);
+  assert.equal(getClassSpellProfiles(pal1).length, 0);
+
+  // Paladin 2 -> 1
+  const pal2 = makeChar({ classes: [cl("Paladin", 2)] });
+  assert.equal(getClassSpellProfiles(pal2)[0].maxSpellLevel, 1);
 
   // Warlock 5 -> 3
   const war5 = makeChar({ classes: [cl("Warlock", 5)] });
@@ -209,12 +219,12 @@ test("preparedLimit formula is accurate for Cleric, Druid, Wizard, Paladin and r
   });
   assert.equal(getClassSpellProfiles(paladin)[0].preparedLimit, 5);
 
-  // Paladin 1 with CHA 8 (-1) -> Math.max(1, Math.floor(1 / 2) + (-1)) = Math.max(1, -1) = 1
-  const lowChaPaladin1 = makeChar({
+  // Paladin 2 with CHA 8 (-1) -> Math.max(1, Math.floor(2 / 2) + (-1)) = Math.max(1, 0) = 1
+  const lowChaPaladin2 = makeChar({
     baseAbilityScores: { str: 10, dex: 10, con: 10, int: 10, wis: 10, cha: 8 },
-    classes: [cl("Paladin", 1)],
+    classes: [cl("Paladin", 2)],
   });
-  assert.equal(getClassSpellProfiles(lowChaPaladin1)[0].preparedLimit, 1);
+  assert.equal(getClassSpellProfiles(lowChaPaladin2)[0].preparedLimit, 1);
 
   // Known casters (Bard, Sorcerer, Warlock) do not have preparedLimit
   const knownCasters = makeChar({

@@ -211,6 +211,44 @@ test("applyStartingGrants grants gold or equipment and is idempotent", () => {
   assert.equal(withGearAgain.items.length, 1);
 });
 
+test("applyStartingGrants reconciles cleanly when switching between gold and equipment", () => {
+  const initial = makeChar({
+    classes: [{ className: "Fighter", source: "PHB", level: 1 }],
+    pouch: { cp: 0, sp: 0, ep: 0, gp: 10, pp: 0 },
+    items: [
+      { id: "custom_torch", name: "Torch", source: "PHB", quantity: 2, isEquipped: false, section: "carried" },
+    ],
+  });
+
+  const startingSword: InventoryItem = {
+    id: "start_fighter_0_longsword",
+    name: "Longsword",
+    source: "PHB",
+    quantity: 1,
+    isEquipped: true,
+    section: "equipped",
+  };
+
+  // 1. Claim equipment
+  const withGear = applyStartingGrants(initial, "equipment", { equipmentItems: [startingSword] });
+  assert.equal(withGear.startingOption, "equipment");
+  assert.equal(withGear.items.length, 2);
+  assert.equal(withGear.pouch.gp, 10);
+
+  // 2. Switch to gold mode
+  const switchedToGold = applyStartingGrants(withGear, "gold", { goldAmount: 125 });
+  assert.equal(switchedToGold.startingOption, "gold");
+  assert.equal(switchedToGold.pouch.gp, 135); // 10 initial + 125
+  assert.equal(switchedToGold.items.length, 1); // starting sword removed, custom torch preserved
+  assert.equal(switchedToGold.items[0].id, "custom_torch");
+
+  // 3. Switch back to equipment mode
+  const switchedBackToGear = applyStartingGrants(switchedToGold, "equipment", { equipmentItems: [startingSword] });
+  assert.equal(switchedBackToGear.startingOption, "equipment");
+  assert.equal(switchedBackToGear.pouch.gp, 10); // 125 gold grant cleanly revoked
+  assert.equal(switchedBackToGear.items.length, 2); // starting sword restored, custom torch preserved
+});
+
 test("setCustomBackground sets background to Custom and configures chosen skills", () => {
   const initial = makeChar({
     chosenSkills: ["Athletics"],

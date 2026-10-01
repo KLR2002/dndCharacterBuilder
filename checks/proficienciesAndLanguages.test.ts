@@ -99,6 +99,45 @@ test("High Elf language grant gives Common, Elvish, and 1 extra choice", () => {
   assert.equal(grant.choiceCount, 1);
 });
 
+test("MPMM race language grant gives Common and 1 choice of language", () => {
+  const mpmmRace = races.find((r) => r.name === "Lizardfolk" && r.source === "MPMM");
+  assert.ok(mpmmRace, "MPMM Lizardfolk should exist in catalog");
+  const grant = getRaceLanguageGrant("Lizardfolk", undefined, [mpmmRace]);
+  assert.ok(grant.fixed.includes("Common"));
+  assert.equal(grant.choiceCount, 1);
+});
+
+test("Half-Elf variant does not crash and grants Common, Elvish, and 1 choice", () => {
+  const grant = getRaceLanguageGrant("Half-Elf", "Variant; Aquatic Elf Descent", races);
+  assert.ok(grant.fixed.includes("Common"));
+  assert.ok(grant.fixed.includes("Elvish"));
+  assert.equal(grant.choiceCount, 1);
+});
+
+test("resolveCharacterLanguages handles Half-Elf variant cleanly", () => {
+  const char = createTestChar({
+    race: { name: "Half-Elf", source: "PHB", subraceName: "Variant; Aquatic Elf Descent" },
+  });
+  const langs = resolveCharacterLanguages(char, { races, backgrounds });
+  assert.ok(langs.includes("Common"));
+  assert.ok(langs.includes("Elvish"));
+});
+
+test("Races with subraces lacking a name property do not throw when querying grants", () => {
+  const testCases = [
+    { race: "Dragonborn", subrace: "Draconic Ancestry" },
+    { race: "Half-Elf", subrace: "Variant; Drow Descent" },
+    { race: "Half-Orc", subrace: "Variant" },
+    { race: "Human", subrace: "Variant" },
+    { race: "Tiefling", subrace: "Variant; Feral" },
+  ];
+  for (const tc of testCases) {
+    assert.doesNotThrow(() => {
+      getRaceLanguageGrant(tc.race, tc.subrace, races);
+    }, `Failed for ${tc.race} - ${tc.subrace}`);
+  }
+});
+
 test("Acolyte background language grant gives 2 choices", () => {
   const grant = getBackgroundLanguageGrant("Acolyte", backgrounds);
   assert.equal(grant.choiceCount, 2);
