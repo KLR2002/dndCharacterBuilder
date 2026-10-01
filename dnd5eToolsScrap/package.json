@@ -13,7 +13,8 @@
     "scrape:options": "tsx src/index.ts --only options",
     "scrape:backgrounds": "tsx src/index.ts --only backgrounds",
     "scrape:items": "tsx src/index.ts --only items",
-    "scrape:spells": "tsx src/index.ts --only spells"
+    "scrape:spells": "tsx src/index.ts --only spells",
+    "test": "tsx --test 'checks/**/*.test.ts'"
   },
   "keywords": [],
   "type": "module",

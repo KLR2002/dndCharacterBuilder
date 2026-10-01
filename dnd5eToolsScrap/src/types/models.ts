@@ -1,3 +1,22 @@
+export interface RuleChoiceModel {
+  /** How many options the player must pick. */
+  pick: number;
+  /** Character level at which the choice becomes available. */
+  level: number;
+  /** Set when the chosen option's effect only applies from a later level. */
+  effectLevel?: number;
+  /** The feature this choice replaces, when the source data marks one. */
+  replaces?: string;
+  options: Array<{ name: string; description: string }>;
+}
+
+export interface TraitModel {
+  name: string;
+  description: string;
+  /** Present when this trait grants a pick from a fixed set of options. */
+  choice?: RuleChoiceModel;
+}
+
 export interface RaceModel {
   name: string;
   source: string;
@@ -11,7 +30,7 @@ export interface RaceModel {
   };
   abilityScoreIncrease: Array<Record<string, number>>;
   darkvision: number | null;
-  traits: Array<{ name: string; description: string }>;
+  traits: TraitModel[];
   languages: string[];
   subraces: SubraceModel[];
   description: string;
@@ -25,7 +44,7 @@ export interface SubraceModel {
   raceSource: string;
   abilityScoreIncrease: Array<Record<string, number>>;
   darkvision: number | null;
-  traits: Array<{ name: string; description: string }>;
+  traits: TraitModel[];
   description: string;
   rawEntries?: any[];
 }

@@ -2,7 +2,47 @@ import { ToolsClient } from "../client.js";
 import { resolveAllCopies } from "../parser/copy-resolver.js";
 import { renderEntries } from "../parser/entry-renderer.js";
 import { cleanTags } from "../parser/tag-cleaner.js";
-import { RaceModel, SubraceModel } from "../types/models.js";
+import { extractRuleChoices, RULE_CHOICE_LEVELS, ruleChoiceKey, ExtractedRuleChoice } from "./rule-choices.js";
+import { RaceModel, SubraceModel, TraitModel } from "../types/models.js";
+
+/**
+ * Attaches curated Rule Choices to the trait that grants them. A scraped choice
+ * with no curated level is skipped rather than guessed at; the scraper's test
+ * fails if that ever happens, so this stays a backstop rather than a path.
+ */
+function attachChoices(
+  traits: TraitModel[],
+  extracted: ExtractedRuleChoice[],
+  parts: { source: string; race: string; subrace?: string | null }
+): TraitModel[] {
+  if (extracted.length === 0) return traits;
+  const byName = new Map<string, ExtractedRuleChoice[]>();
+  for (const choice of extracted) {
+    const group = byName.get(choice.traitName) ?? [];
+    group.push(choice);
+    byName.set(choice.traitName, group);
+  }
+  const remaining = new Map(byName);
+  return traits.map((trait) => {
+    const group = remaining.get(trait.name);
+    if (!group || group.length === 0) return trait;
+    // One trait can grant several choices (Simic Hybrid picks a second
+    // enhancement at 5th level), so consume them in document order.
+    const choice = group.shift()!;
+    const curated = RULE_CHOICE_LEVELS[ruleChoiceKey({ ...parts, trait: trait.name, index: choice.index })];
+    if (!curated || curated.momentary || curated.deferred) return trait;
+    return {
+      ...trait,
+      choice: {
+        pick: choice.pick,
+        level: curated.level,
+        ...(curated.effectLevel != null ? { effectLevel: curated.effectLevel } : {}),
+        ...(choice.replaces ? { replaces: choice.replaces } : {}),
+        options: choice.options,
+      },
+    };
+  });
+}
 
 const SIZE_MAP: Record<string, string> = {
   T: "Tiny",
@@ -30,7 +70,7 @@ export async function scrapeRaces(client: ToolsClient): Promise<RaceModel[]> {
     if (!parentName) continue;
     const parentKey = `${parentName.toLowerCase()}__${(parentSource || "").toLowerCase()}`;
 
-    const traits: Array<{ name: string; description: string }> = [];
+    const traits: TraitModel[] = [];
     if (Array.isArray(rawSub.entries)) {
       for (const ent of rawSub.entries) {
         if (ent && typeof ent === "object" && ent.name) {
@@ -49,7 +89,11 @@ export async function scrapeRaces(client: ToolsClient): Promise<RaceModel[]> {
       raceSource: parentSource || "",
       abilityScoreIncrease: parseAbilityScores(rawSub.ability),
       darkvision: parseDarkvision(rawSub),
-      traits,
+      traits: attachChoices(traits, extractRuleChoices(rawSub.entries, [renderEntries(rawSub.entries, "plain")]), {
+        source: rawSub.source,
+        race: parentName,
+        subrace: rawSub.name,
+      }),
       description: renderEntries(rawSub.entries, "markdown"),
       rawEntries: rawSub.entries,
     };
@@ -80,7 +124,7 @@ export async function scrapeRaces(client: ToolsClient): Promise<RaceModel[]> {
     }
 
     // Process traits
-    const traits: Array<{ name: string; description: string }> = [];
+    const traits: TraitModel[] = [];
     if (Array.isArray(raw.entries)) {
       for (const ent of raw.entries) {
         if (ent && typeof ent === "object" && ent.name) {
@@ -91,6 +135,11 @@ export async function scrapeRaces(client: ToolsClient): Promise<RaceModel[]> {
         }
       }
     }
+    const traitsWithChoices = attachChoices(traits, extractRuleChoices(raw.entries, [renderEntries(raw.entries, "plain")]), {
+      source: raw.source,
+      race: raw.name,
+      subrace: null,
+    });
 
     // Process languages
     const languages: string[] = [];
@@ -117,7 +166,7 @@ export async function scrapeRaces(client: ToolsClient): Promise<RaceModel[]> {
       speed,
       abilityScoreIncrease: parseAbilityScores(raw.ability),
       darkvision: parseDarkvision(raw),
-      traits,
+      traits: traitsWithChoices,
       languages,
       subraces: attachedSubraces,
       description: renderEntries(raw.entries, "markdown"),
