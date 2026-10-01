@@ -1,0 +1,41 @@
+{
+  "scrapedAt": "2026-09-07T16:03:09.542Z",
+  "source": "https://2014.5e.tools",
+  "categories": {
+    "Races": {
+      "count": 134,
+      "size": "892.97 KB",
+      "file": "data/races.json"
+    },
+    "Classes": {
+      "count": 17,
+      "size": "776.62 KB",
+      "file": "data/classes.json"
+    },
+    "Feats": {
+      "count": 108,
+      "size": "175.52 KB",
+      "file": "data/feats.json"
+    },
+    "Options & Features": {
+      "count": 195,
+      "size": "256.77 KB",
+      "file": "data/options_and_features.json"
+    },
+    "Backgrounds": {
+      "count": 101,
+      "size": "1.45 MB",
+      "file": "data/backgrounds.json"
+    },
+    "Items": {
+      "count": 1773,
+      "size": "3.34 MB",
+      "file": "data/items.json"
+    },
+    "Spells": {
+      "count": 525,
+      "size": "1.16 MB",
+      "file": "data/spells.json"
+    }
+  }
+}

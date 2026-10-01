@@ -1,0 +1,68 @@
+import type { Character } from "../types/character.ts";
+import type { ClassFeatureData } from "../types/dnd5e.ts";
+import type { FeatureCatalog, FeatureInstance } from "./types.ts";
+import { getReplacedBaseFeatures } from "./optionalFeatures.ts";
+
+export function grantedFeatures(character: Character, catalog: FeatureCatalog): FeatureInstance[] {
+  const out: FeatureInstance[] = [];
+  const replacedBaseFeatures = getReplacedBaseFeatures(character.optionalFeatureReplacements);
+
+  function add(feature: Omit<FeatureInstance, "id">, owner: string, level = 0) {
+    const id = JSON.stringify([feature.origin, feature.source, owner, feature.name, level]);
+    if (!out.some(x => x.id === id)) out.push({ ...feature, id });
+  }
+  const choice = character.race;
+  const race = catalog.races.find(r => r.name === choice?.name && r.source === choice.source);
+  const subrace = race?.subraces.find(s => s.name === choice?.subraceName && (!choice.subraceSource || s.source === choice.subraceSource));
+  for (const trait of race?.traits || []) add({ ...trait, source: race!.source, origin: "Race" }, race!.name);
+  for (const trait of subrace?.traits || []) add({ ...trait, source: subrace!.source, origin: "Subrace" }, subrace!.name);
+  const background = character.background;
+  const bg = catalog.backgrounds.find(b => b.name === background?.name && b.source === background.source);
+  if (background?.isCustom && background.customFeatureName) {
+    add({ name: background.customFeatureName, description: background.customFeatureDesc || "", source: background.source, origin: "Background" }, background.name);
+  } else if (bg?.feature) add({ ...bg.feature, source: bg.source, origin: "Background" }, bg.name);
+
+  for (const c of character.classes) {
+    const cls = catalog.classes.find(x => x.name === c.className && x.source === c.source);
+    function addClassFeature(f: ClassFeatureData, origin: "Class" | "Subclass", source: string, owner: string) {
+      if (f.level > c.level) return;
+      const isOptEnabled = Boolean(character.optionalFeatureReplacements?.[f.name]);
+      if (f.isOptional) {
+        if (!isOptEnabled) return;
+      } else {
+        if (replacedBaseFeatures.has(f.name)) return;
+      }
+      const feature: Omit<FeatureInstance, "id"> = { name: f.name, description: f.description, source, origin, className: c.className };
+      // The catalog repeats these at threshold levels. Retain one grant, not additive uses/attacks.
+      if (/^Extra Attack(?: \(\d+\))?$/.test(f.name)) {
+        feature.name = "Extra Attack";
+        feature.attacks = c.className === "Fighter" ? (c.level >= 20 ? 4 : c.level >= 11 ? 3 : 2) : 2;
+        const previous = out.find(x => x.name === "Extra Attack");
+        if (previous) {
+          if (feature.attacks >= (previous.attacks || 2)) Object.assign(previous, feature);
+          return;
+        }
+      }
+      if (f.name === "Unarmored Defense" && out.some(x => x.name === f.name)) return;
+      if (f.name === "Channel Divinity" && ["Cleric", "Paladin"].includes(c.className)) {
+        feature.max = c.className === "Cleric" ? (c.level >= 18 ? 3 : c.level >= 6 ? 2 : 1) : 1;
+        feature.resetOn = "short";
+        const previous = out.find(x => x.name === f.name);
+        if (previous) {
+          previous.max = Math.max(previous.max || 0, feature.max);
+          return;
+        }
+      }
+      add(feature, owner, f.level);
+    }
+    for (const f of cls?.features || []) addClassFeature(f, "Class", c.source, c.className);
+    const subclass = cls?.subclasses.find(s => s.name === c.subclassName && (!c.subclassSource || s.source === c.subclassSource));
+    for (const f of subclass?.features || []) addClassFeature(f, "Subclass", subclass!.source, `${c.className}/${subclass!.name}`);
+  }
+  for (const selection of character.asiSelections) {
+    if (selection.type !== "feat") continue;
+    const feat = catalog.feats.find(x => x.name === selection.featName && (!selection.featSource || x.source === selection.featSource));
+    if (feat) add({ name: feat.name, description: feat.description, source: feat.source, origin: "Feat" }, feat.name);
+  }
+  return out;
+}

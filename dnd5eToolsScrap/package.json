@@ -1,0 +1,25 @@
+{
+  "name": "dnd5etoolsscrap",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "scrape": "tsx src/index.ts",
+    "scrape:races": "tsx src/index.ts --only races",
+    "scrape:classes": "tsx src/index.ts --only classes",
+    "scrape:feats": "tsx src/index.ts --only feats",
+    "scrape:options": "tsx src/index.ts --only options",
+    "scrape:backgrounds": "tsx src/index.ts --only backgrounds",
+    "scrape:items": "tsx src/index.ts --only items",
+    "scrape:spells": "tsx src/index.ts --only spells"
+  },
+  "keywords": [],
+  "type": "module",
+  "devDependencies": {
+    "@types/node": "^26.5.0",
+    "tsx": "^4.23.13",
+    "typescript": "^7.0.2"
+  }
+}
