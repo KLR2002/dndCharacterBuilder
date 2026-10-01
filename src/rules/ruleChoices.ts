@@ -120,18 +120,35 @@ export function applyRuleChoice<T extends { name: string; description: string }>
   const entry = (character.ruleChoices ?? []).find((rc) => rc.id === choiceId);
   const picked = entry?.picked?.[0];
 
-  const inEffect = picked != null && totalLevel(character) >= (data.effectLevel ?? data.level);
-  if (!inEffect) return { ...feature, chosenOption: undefined };
+  const option = picked && data.options.find((o) => o.name === picked);
+  const inEffect = option != null && totalLevel(character) >= (data.effectLevel ?? data.level);
 
-  const option = data.options.find((o) => o.name === picked);
-  if (!option) return { ...feature, chosenOption: undefined };
+  // A trait that grants a choice has the options rendered into its description
+  // upstream, so the sheet would list every option regardless of the pick. Show
+  // the trait's own prose plus only the chosen option's effect.
+  const base = withoutOptionList(feature.description, data);
+  if (!inEffect || !option) return { ...feature, description: base, chosenOption: undefined };
+
   return {
     ...feature,
     chosenOption: option.name,
-    description: feature.description
-      ? `${feature.description}\n\n**${option.name}** ${option.description}`
+    description: base
+      ? `${base}\n\n**${option.name}** ${option.description}`
       : `**${option.name}** ${option.description}`,
   };
+}
+
+/**
+ * Drops the trailing bullet list of options a choice-granting trait carries, so
+ * the sheet shows the chosen option rather than every option. Falls back to the
+ * original text when no such list is found.
+ */
+function withoutOptionList(description: string, data: TraitChoiceData): string {
+  const first = data.options[0]?.name;
+  if (!description || !first) return description;
+  const marker = description.indexOf(`**${first}**`);
+  if (marker < 0) return description;
+  return description.slice(0, marker).trim();
 }
 
 /** The chosen option for a given choice id, if the character has made it. */
