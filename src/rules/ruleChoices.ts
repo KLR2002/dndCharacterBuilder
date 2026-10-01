@@ -114,12 +114,12 @@ export function applyRuleChoice<T extends { name: string; description: string }>
   feature: T,
   data: TraitChoiceData | undefined,
   choiceId: string
-): T & { chosenOption?: string } {
+): T & { chosenOption?: string; suppressed?: boolean } {
   if (!data) return feature;
-  if (data.replaces === feature.name) return feature;
 
   const entry = (character.ruleChoices ?? []).find((rc) => rc.id === choiceId);
   const picked = entry?.picked?.[0];
+
   const inEffect = picked != null && totalLevel(character) >= (data.effectLevel ?? data.level);
   if (!inEffect) return { ...feature, chosenOption: undefined };
 
@@ -140,4 +140,22 @@ export function selectedRuleChoice(
   id: string
 ): RuleChoiceEntry | undefined {
   return (character.ruleChoices ?? []).find((entry) => entry.id === id);
+}
+
+/**
+ * Names of traits a recorded choice has replaced, which must not appear on the
+ * sheet at all. A replaced trait usually carries no choice of its own, so it
+ * cannot discover its own replacement by looking inward.
+ */
+export function replacedTraitNames(character: Character, raceCatalog: RaceData[]): Set<string> {
+  const suppressed = new Set<string>();
+  for (const choice of ancestryRuleChoices(character, raceCatalog)) {
+    if (!choice.replaces) continue;
+    const entry = (character.ruleChoices ?? []).find((rc) => rc.id === choice.id);
+    const picked = entry?.picked?.[0];
+    // Skill Versatility survives only when it is what the player chose; picking
+    // anything else means the variant replaced it.
+    if (picked && picked !== choice.replaces) suppressed.add(choice.replaces);
+  }
+  return suppressed;
 }

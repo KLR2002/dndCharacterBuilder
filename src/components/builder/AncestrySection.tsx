@@ -341,7 +341,7 @@ export const AncestrySection: React.FC<AncestrySectionProps> = ({
                 chosen={entry?.picked ?? []}
                 onToggle={(option) =>
                   onUpdate((cur) =>
-                    setRuleChoicePick(cur, choice.id, option, choice.options.map((o) => o.name), choice.choose)
+                    setRuleChoicePick(cur, choice.id, choice.traitName, option, choice.options.map((o) => o.name), choice.choose)
                   )
                 }
                 theme={theme}

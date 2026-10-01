@@ -218,6 +218,7 @@ export function addMulticlassLevel(
 export function setRuleChoicePick(
   character: Character,
   id: string,
+  trait: string,
   option: string,
   from: string[],
   choose: number
@@ -229,7 +230,7 @@ export function setRuleChoicePick(
     : entry.picked.length >= choose
     ? [...entry.picked.slice(1), option]
     : [...entry.picked, option]) : [option];
-  const next = { id, origin: "race" as const, choose, from, picked };
+  const next = { id, trait, origin: "race" as const, choose, from, picked };
   const others = current.filter((rc) => rc.id !== id);
   return {
     ...character,

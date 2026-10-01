@@ -2,7 +2,7 @@ import type { Character } from "../types/character.ts";
 import type { ClassFeatureData } from "../types/dnd5e.ts";
 import type { FeatureCatalog, FeatureInstance } from "./types.ts";
 import { getReplacedBaseFeatures } from "./optionalFeatures.ts";
-import { applyRuleChoice, ruleChoiceId } from "./ruleChoices.ts";
+import { applyRuleChoice, replacedTraitNames, ruleChoiceId } from "./ruleChoices.ts";
 
 export function grantedFeatures(character: Character, catalog: FeatureCatalog): FeatureInstance[] {
   const out: FeatureInstance[] = [];
@@ -30,13 +30,16 @@ export function grantedFeatures(character: Character, catalog: FeatureCatalog): 
         subrace: choice!.subraceName ? { name: choice!.subraceName } : null,
         trait,
       });
+    const suppressed = replacedTraitNames(character, catalog.races);
     for (const trait of race?.traits || []) {
+      if (suppressed.has(trait.name)) continue;
       add(
         applyRuleChoice(character, { ...trait, source: race!.source, origin: "Race" }, trait.choice, idFor(race!.source, trait.name)),
         race!.name
       );
     }
     for (const trait of subrace?.traits || []) {
+      if (suppressed.has(trait.name)) continue;
       add(
         applyRuleChoice(character, { ...trait, source: subrace!.source, origin: "Subrace" }, trait.choice, idFor(subrace!.source, trait.name)),
         subrace!.name

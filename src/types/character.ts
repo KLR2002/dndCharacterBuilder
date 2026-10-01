@@ -28,6 +28,8 @@ export interface SkillChoiceEntry {
 export interface RuleChoiceEntry {
   /** Stable identity of the choice: source__race__subrace__trait. */
   id: string;
+  /** The trait that grants the choice, so consumers need not parse the id. */
+  trait: string;
   origin: "race";
   choose: number;
   from: string[];
