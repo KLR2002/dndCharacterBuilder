@@ -175,10 +175,10 @@ export const RULE_CHOICE_LEVELS: Record<string, RuleChoiceLevel> = {
   "MPMM__Aasimar____Celestial Revelation": { level: 3, effectLevel: 3 },
   "MPMM__Eladrin____Fey Step": { level: 1, effectLevel: 3 },
   "MTF__Elf__Eladrin__Fey Step": { level: 1, effectLevel: 3 },
-  "SCAG__Half-Elf__Variant; Drow Descent__Variant Feature (Choose 1)": { level: 1 },
-  "SCAG__Half-Elf__Variant; Aquatic Elf Descent__Variant Feature (Choose 1)": { level: 1 },
-  "SCAG__Half-Elf__Variant; Moon Elf or Sun Elf Descent__Variant Feature (Choose 1)": { level: 1 },
-  "SCAG__Half-Elf__Variant; Wood Elf Descent__Variant Feature (Choose 1)": { level: 1 },
+  "SCAG__Half-Elf__Drow Descent__Variant Feature (Choose 1)": { level: 1 },
+  "SCAG__Half-Elf__Aquatic Elf Descent__Variant Feature (Choose 1)": { level: 1 },
+  "SCAG__Half-Elf__Moon Elf or Sun Elf Descent__Variant Feature (Choose 1)": { level: 1 },
+  "SCAG__Half-Elf__Wood Elf Descent__Variant Feature (Choose 1)": { level: 1 },
 
   // Real build-time choices the catalog also offers. Curated so the catalog
   // guard passes; not surfaced until a later ticket claims them.

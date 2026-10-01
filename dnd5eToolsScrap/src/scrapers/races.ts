@@ -5,6 +5,24 @@ import { cleanTags } from "../parser/tag-cleaner.js";
 import { extractRuleChoices, RULE_CHOICE_LEVELS, ruleChoiceKey, ExtractedRuleChoice } from "./rule-choices.js";
 import { RaceModel, SubraceModel, TraitModel } from "../types/models.js";
 
+/** 5e.tools prefixes variant subraces with this; it is a source convention, not a rules term. */
+const VARIANT_PREFIX = /^Variant;?\s*/;
+
+/**
+ * Normalises a subrace name and reports whether it is a variant.
+ *
+ * All thirteen variant subraces in the catalog use this convention - one is
+ * named `Variant` and twelve are named `Variant; <descent>` - so anything
+ * matching an exact name was only ever finding the first kind.
+ */
+function normalizeSubraceName(rawName: string | null | undefined): { name: string; isVariant: boolean } {
+  const name = (rawName ?? "").trim();
+  const isVariant = VARIANT_PREFIX.test(name);
+  if (!isVariant) return { name, isVariant };
+  // "Variant" on its own is Variant Human, which the prefix would empty out.
+  return { name: name.replace(VARIANT_PREFIX, "") || "Variant", isVariant };
+}
+
 /**
  * Attaches curated Rule Choices to the trait that grants them. A scraped choice
  * with no curated level is skipped rather than guessed at; the scraper's test
@@ -82,8 +100,11 @@ export async function scrapeRaces(client: ToolsClient): Promise<RaceModel[]> {
       }
     }
 
+    const normalized = normalizeSubraceName(rawSub.name);
+
     const subraceModel: SubraceModel = {
-      name: rawSub.name,
+      name: normalized.name,
+      isVariant: normalized.isVariant,
       source: rawSub.source,
       raceName: parentName,
       raceSource: parentSource || "",
@@ -92,7 +113,7 @@ export async function scrapeRaces(client: ToolsClient): Promise<RaceModel[]> {
       traits: attachChoices(traits, extractRuleChoices(rawSub.entries, [renderEntries(rawSub.entries, "plain")]), {
         source: rawSub.source,
         race: parentName,
-        subrace: rawSub.name,
+        subrace: normalized.name,
       }),
       description: renderEntries(rawSub.entries, "markdown"),
       rawEntries: rawSub.entries,

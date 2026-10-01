@@ -39,6 +39,8 @@ export interface RaceModel {
 
 export interface SubraceModel {
   name: string;
+  /** True when this subrace is a rules variant of its ancestry. */
+  isVariant: boolean;
   source: string;
   raceName: string;
   raceSource: string;

@@ -479,6 +479,7 @@
     "subraces": [
       {
         "name": "Fallen",
+        "isVariant": false,
         "source": "VGM",
         "raceName": "Aasimar",
         "raceSource": "VGM",
@@ -509,6 +510,7 @@
       },
       {
         "name": "Protector",
+        "isVariant": false,
         "source": "VGM",
         "raceName": "Aasimar",
         "raceSource": "VGM",
@@ -539,6 +541,7 @@
       },
       {
         "name": "Scourge",
+        "isVariant": false,
         "source": "VGM",
         "raceName": "Aasimar",
         "raceSource": "VGM",
@@ -978,6 +981,7 @@
     "subraces": [
       {
         "name": "Hawk-Headed",
+        "isVariant": false,
         "source": "PSA",
         "raceName": "Aven",
         "raceSource": "PSA",
@@ -1006,6 +1010,7 @@
       },
       {
         "name": "Ibis-Headed",
+        "isVariant": false,
         "source": "PSA",
         "raceName": "Aven",
         "raceSource": "PSA",
@@ -2372,6 +2377,8 @@
     ],
     "subraces": [
       {
+        "name": "",
+        "isVariant": false,
         "source": "PHB",
         "raceName": "Dragonborn",
         "raceSource": "PHB",
@@ -2382,6 +2389,7 @@
       },
       {
         "name": "Draconblood",
+        "isVariant": false,
         "source": "EGW",
         "raceName": "Dragonborn",
         "raceSource": "PHB",
@@ -2505,6 +2513,7 @@
       },
       {
         "name": "Ravenite",
+        "isVariant": false,
         "source": "EGW",
         "raceName": "Dragonborn",
         "raceSource": "PHB",
@@ -3202,6 +3211,7 @@
     "subraces": [
       {
         "name": "Duergar",
+        "isVariant": false,
         "source": "MTF",
         "raceName": "Dwarf",
         "raceSource": "PHB",
@@ -3283,6 +3293,7 @@
       },
       {
         "name": "Hill",
+        "isVariant": false,
         "source": "PHB",
         "raceName": "Dwarf",
         "raceSource": "PHB",
@@ -3311,6 +3322,7 @@
       },
       {
         "name": "Mark of Warding",
+        "isVariant": false,
         "source": "ERLW",
         "raceName": "Dwarf",
         "raceSource": "PHB",
@@ -3395,6 +3407,7 @@
       },
       {
         "name": "Mountain",
+        "isVariant": false,
         "source": "PHB",
         "raceName": "Dwarf",
         "raceSource": "PHB",
@@ -3804,6 +3817,7 @@
     "subraces": [
       {
         "name": "Drow",
+        "isVariant": false,
         "source": "PHB",
         "raceName": "Elf",
         "raceSource": "PHB",
@@ -3868,6 +3882,7 @@
       },
       {
         "name": "Eladrin",
+        "isVariant": false,
         "source": "DMG",
         "raceName": "Elf",
         "raceSource": "PHB",
@@ -3907,6 +3922,7 @@
       },
       {
         "name": "Eladrin",
+        "isVariant": false,
         "source": "MTF",
         "raceName": "Elf",
         "raceSource": "PHB",
@@ -3986,6 +4002,7 @@
       },
       {
         "name": "High",
+        "isVariant": false,
         "source": "PHB",
         "raceName": "Elf",
         "raceSource": "PHB",
@@ -4036,6 +4053,7 @@
       },
       {
         "name": "Mark of Shadow",
+        "isVariant": false,
         "source": "ERLW",
         "raceName": "Elf",
         "raceSource": "PHB",
@@ -4120,6 +4138,7 @@
       },
       {
         "name": "Pallid",
+        "isVariant": false,
         "source": "EGW",
         "raceName": "Elf",
         "raceSource": "PHB",
@@ -4159,6 +4178,7 @@
       },
       {
         "name": "Sea",
+        "isVariant": false,
         "source": "MTF",
         "raceName": "Elf",
         "raceSource": "PHB",
@@ -4220,6 +4240,7 @@
       },
       {
         "name": "Shadar-kai",
+        "isVariant": false,
         "source": "MTF",
         "raceName": "Elf",
         "raceSource": "PHB",
@@ -4260,6 +4281,7 @@
       },
       {
         "name": "Wood",
+        "isVariant": false,
         "source": "PHB",
         "raceName": "Elf",
         "raceSource": "PHB",
@@ -4428,6 +4450,7 @@
     "subraces": [
       {
         "name": "Bishatar and Tirahar",
+        "isVariant": false,
         "source": "PSK",
         "raceName": "Elf (Kaladesh)",
         "raceSource": "PSK",
@@ -4466,6 +4489,7 @@
       },
       {
         "name": "Vahadar",
+        "isVariant": false,
         "source": "PSK",
         "raceName": "Elf (Kaladesh)",
         "raceSource": "PSK",
@@ -4630,6 +4654,7 @@
     "subraces": [
       {
         "name": "Joraga Nation",
+        "isVariant": false,
         "source": "PSZ",
         "raceName": "Elf (Zendikar)",
         "raceSource": "PSZ",
@@ -4680,6 +4705,7 @@
       },
       {
         "name": "Mul Daya Nation",
+        "isVariant": false,
         "source": "PSZ",
         "raceName": "Elf (Zendikar)",
         "raceSource": "PSZ",
@@ -4744,6 +4770,7 @@
       },
       {
         "name": "Tajuru Nation",
+        "isVariant": false,
         "source": "PSZ",
         "raceName": "Elf (Zendikar)",
         "raceSource": "PSZ",
@@ -5142,6 +5169,7 @@
     "subraces": [
       {
         "name": "Air",
+        "isVariant": false,
         "source": "EEPC",
         "raceName": "Genasi",
         "raceSource": "EEPC",
@@ -5181,6 +5209,7 @@
       },
       {
         "name": "Earth",
+        "isVariant": false,
         "source": "EEPC",
         "raceName": "Genasi",
         "raceSource": "EEPC",
@@ -5220,6 +5249,7 @@
       },
       {
         "name": "Fire",
+        "isVariant": false,
         "source": "EEPC",
         "raceName": "Genasi",
         "raceSource": "EEPC",
@@ -5270,6 +5300,7 @@
       },
       {
         "name": "Water",
+        "isVariant": false,
         "source": "EEPC",
         "raceName": "Genasi",
         "raceSource": "EEPC",
@@ -5388,6 +5419,7 @@
     "subraces": [
       {
         "name": "Air",
+        "isVariant": false,
         "source": "MPMM",
         "raceName": "Genasi",
         "raceSource": "MPMM",
@@ -5435,6 +5467,7 @@
       },
       {
         "name": "Earth",
+        "isVariant": false,
         "source": "MPMM",
         "raceName": "Genasi",
         "raceSource": "MPMM",
@@ -5472,6 +5505,7 @@
       },
       {
         "name": "Fire",
+        "isVariant": false,
         "source": "MPMM",
         "raceName": "Genasi",
         "raceSource": "MPMM",
@@ -5508,6 +5542,7 @@
       },
       {
         "name": "Water",
+        "isVariant": false,
         "source": "MPMM",
         "raceName": "Genasi",
         "raceSource": "MPMM",
@@ -5673,6 +5708,7 @@
     "subraces": [
       {
         "name": "Githyanki",
+        "isVariant": false,
         "source": "MTF",
         "raceName": "Gith",
         "raceSource": "MTF",
@@ -5736,6 +5772,7 @@
       },
       {
         "name": "Githzerai",
+        "isVariant": false,
         "source": "MTF",
         "raceName": "Gith",
         "raceSource": "MTF",
@@ -6021,6 +6058,7 @@
     "subraces": [
       {
         "name": "Deep",
+        "isVariant": false,
         "source": "MTF",
         "raceName": "Gnome",
         "raceSource": "PHB",
@@ -6119,6 +6157,7 @@
       },
       {
         "name": "Deep/Svirfneblin",
+        "isVariant": false,
         "source": "SCAG",
         "raceName": "Gnome",
         "raceSource": "PHB",
@@ -6217,6 +6256,7 @@
       },
       {
         "name": "Forest",
+        "isVariant": false,
         "source": "PHB",
         "raceName": "Gnome",
         "raceSource": "PHB",
@@ -6256,6 +6296,7 @@
       },
       {
         "name": "Mark of Scribing",
+        "isVariant": false,
         "source": "ERLW",
         "raceName": "Gnome",
         "raceSource": "PHB",
@@ -6340,6 +6381,7 @@
       },
       {
         "name": "Rock",
+        "isVariant": false,
         "source": "PHB",
         "raceName": "Gnome",
         "raceSource": "PHB",
@@ -6929,6 +6971,7 @@
     "subraces": [
       {
         "name": "Ixalan",
+        "isVariant": false,
         "source": "PSX",
         "raceName": "Goblin",
         "raceSource": "PSZ",
@@ -6985,6 +7028,7 @@
       },
       {
         "name": "Zendikar; Grotag Tribe",
+        "isVariant": false,
         "source": "PSZ",
         "raceName": "Goblin",
         "raceSource": "PSZ",
@@ -7013,6 +7057,7 @@
       },
       {
         "name": "Zendikar; Lavastep Tribe",
+        "isVariant": false,
         "source": "PSZ",
         "raceName": "Goblin",
         "raceSource": "PSZ",
@@ -7041,6 +7086,7 @@
       },
       {
         "name": "Zendikar; Tuktuk Tribe",
+        "isVariant": false,
         "source": "PSZ",
         "raceName": "Goblin",
         "raceSource": "PSZ",
@@ -7790,6 +7836,8 @@
     ],
     "subraces": [
       {
+        "name": "",
+        "isVariant": false,
         "source": "PHB",
         "raceName": "Half-Elf",
         "raceSource": "PHB",
@@ -7799,7 +7847,8 @@
         "description": ""
       },
       {
-        "name": "Variant; Aquatic Elf Descent",
+        "name": "Aquatic Elf Descent",
+        "isVariant": true,
         "source": "SCAG",
         "raceName": "Half-Elf",
         "raceSource": "PHB",
@@ -7854,7 +7903,8 @@
         ]
       },
       {
-        "name": "Variant; Drow Descent",
+        "name": "Drow Descent",
+        "isVariant": true,
         "source": "SCAG",
         "raceName": "Half-Elf",
         "raceSource": "PHB",
@@ -7909,7 +7959,8 @@
         ]
       },
       {
-        "name": "Variant; Mark of Detection",
+        "name": "Mark of Detection",
+        "isVariant": true,
         "source": "ERLW",
         "raceName": "Half-Elf",
         "raceSource": "PHB",
@@ -7996,7 +8047,8 @@
         ]
       },
       {
-        "name": "Variant; Mark of Storm",
+        "name": "Mark of Storm",
+        "isVariant": true,
         "source": "ERLW",
         "raceName": "Half-Elf",
         "raceSource": "PHB",
@@ -8095,7 +8147,8 @@
         ]
       },
       {
-        "name": "Variant; Moon Elf or Sun Elf Descent",
+        "name": "Moon Elf or Sun Elf Descent",
+        "isVariant": true,
         "source": "SCAG",
         "raceName": "Half-Elf",
         "raceSource": "PHB",
@@ -8161,7 +8214,8 @@
         ]
       },
       {
-        "name": "Variant; Wood Elf Descent",
+        "name": "Wood Elf Descent",
+        "isVariant": true,
         "source": "SCAG",
         "raceName": "Half-Elf",
         "raceSource": "PHB",
@@ -8336,6 +8390,8 @@
     ],
     "subraces": [
       {
+        "name": "",
+        "isVariant": false,
         "source": "PHB",
         "raceName": "Half-Orc",
         "raceSource": "PHB",
@@ -8345,7 +8401,8 @@
         "description": ""
       },
       {
-        "name": "Variant; Mark of Finding",
+        "name": "Mark of Finding",
+        "isVariant": true,
         "source": "ERLW",
         "raceName": "Half-Orc",
         "raceSource": "PHB",
@@ -8563,6 +8620,7 @@
     "subraces": [
       {
         "name": "Ghostwise",
+        "isVariant": false,
         "source": "SCAG",
         "raceName": "Halfling",
         "raceSource": "PHB",
@@ -8591,6 +8649,7 @@
       },
       {
         "name": "Lightfoot",
+        "isVariant": false,
         "source": "PHB",
         "raceName": "Halfling",
         "raceSource": "PHB",
@@ -8619,6 +8678,7 @@
       },
       {
         "name": "Lotusden",
+        "isVariant": false,
         "source": "EGW",
         "raceName": "Halfling",
         "raceSource": "PHB",
@@ -8658,6 +8718,7 @@
       },
       {
         "name": "Mark of Healing",
+        "isVariant": false,
         "source": "ERLW",
         "raceName": "Halfling",
         "raceSource": "PHB",
@@ -8742,6 +8803,7 @@
       },
       {
         "name": "Mark of Hospitality",
+        "isVariant": false,
         "source": "ERLW",
         "raceName": "Halfling",
         "raceSource": "PHB",
@@ -8826,6 +8888,7 @@
       },
       {
         "name": "Stout",
+        "isVariant": false,
         "source": "PHB",
         "raceName": "Halfling",
         "raceSource": "PHB",
@@ -9541,6 +9604,7 @@
     "subraces": [
       {
         "name": "Amonkhet",
+        "isVariant": false,
         "source": "PSA",
         "raceName": "Human",
         "raceSource": "PHB",
@@ -9614,6 +9678,8 @@
         ]
       },
       {
+        "name": "",
+        "isVariant": false,
         "source": "PHB",
         "raceName": "Human",
         "raceSource": "PHB",
@@ -9633,6 +9699,7 @@
       },
       {
         "name": "Keldon",
+        "isVariant": false,
         "source": "PSD",
         "raceName": "Human",
         "raceSource": "PHB",
@@ -9740,6 +9807,7 @@
       },
       {
         "name": "Mark of Handling",
+        "isVariant": false,
         "source": "ERLW",
         "raceName": "Human",
         "raceSource": "PHB",
@@ -9835,6 +9903,7 @@
       },
       {
         "name": "Mark of Making",
+        "isVariant": false,
         "source": "ERLW",
         "raceName": "Human",
         "raceSource": "PHB",
@@ -9930,6 +9999,7 @@
       },
       {
         "name": "Mark of Passage",
+        "isVariant": false,
         "source": "ERLW",
         "raceName": "Human",
         "raceSource": "PHB",
@@ -10025,6 +10095,7 @@
       },
       {
         "name": "Mark of Sentinel",
+        "isVariant": false,
         "source": "ERLW",
         "raceName": "Human",
         "raceSource": "PHB",
@@ -10121,6 +10192,7 @@
       },
       {
         "name": "Variant",
+        "isVariant": true,
         "source": "PHB",
         "raceName": "Human",
         "raceSource": "PHB",
@@ -10155,7 +10227,8 @@
         ]
       },
       {
-        "name": "Variant; Mark of Finding",
+        "name": "Mark of Finding",
+        "isVariant": true,
         "source": "ERLW",
         "raceName": "Human",
         "raceSource": "PHB",
@@ -10326,6 +10399,7 @@
     "subraces": [
       {
         "name": "Gavony",
+        "isVariant": false,
         "source": "PSI",
         "raceName": "Human (Innistrad)",
         "raceSource": "PSI",
@@ -10345,6 +10419,7 @@
       },
       {
         "name": "Kessig",
+        "isVariant": false,
         "source": "PSI",
         "raceName": "Human (Innistrad)",
         "raceSource": "PSI",
@@ -10407,6 +10482,7 @@
       },
       {
         "name": "Nephalia",
+        "isVariant": false,
         "source": "PSI",
         "raceName": "Human (Innistrad)",
         "raceSource": "PSI",
@@ -10436,6 +10512,7 @@
       },
       {
         "name": "Stensia",
+        "isVariant": false,
         "source": "PSI",
         "raceName": "Human (Innistrad)",
         "raceSource": "PSI",
@@ -12439,6 +12516,7 @@
     "subraces": [
       {
         "name": "Ixalan; Blue",
+        "isVariant": false,
         "source": "PSX",
         "raceName": "Merfolk",
         "raceSource": "PSZ",
@@ -12492,6 +12570,7 @@
       },
       {
         "name": "Ixalan; Green",
+        "isVariant": false,
         "source": "PSX",
         "raceName": "Merfolk",
         "raceSource": "PSZ",
@@ -12545,6 +12624,7 @@
       },
       {
         "name": "Zendikar; Cosi Creed",
+        "isVariant": false,
         "source": "PSZ",
         "raceName": "Merfolk",
         "raceSource": "PSZ",
@@ -12585,6 +12665,7 @@
       },
       {
         "name": "Zendikar; Emeria Creed",
+        "isVariant": false,
         "source": "PSZ",
         "raceName": "Merfolk",
         "raceSource": "PSZ",
@@ -12624,6 +12705,7 @@
       },
       {
         "name": "Zendikar; Ula Creed",
+        "isVariant": false,
         "source": "PSZ",
         "raceName": "Merfolk",
         "raceSource": "PSZ",
@@ -14509,6 +14591,7 @@
     "subraces": [
       {
         "name": "Beasthide",
+        "isVariant": false,
         "source": "ERLW",
         "raceName": "Shifter",
         "raceSource": "ERLW",
@@ -14549,6 +14632,7 @@
       },
       {
         "name": "Longtooth",
+        "isVariant": false,
         "source": "ERLW",
         "raceName": "Shifter",
         "raceSource": "ERLW",
@@ -14589,6 +14673,7 @@
       },
       {
         "name": "Swiftstride",
+        "isVariant": false,
         "source": "ERLW",
         "raceName": "Shifter",
         "raceSource": "ERLW",
@@ -14629,6 +14714,7 @@
       },
       {
         "name": "Wildhunt",
+        "isVariant": false,
         "source": "ERLW",
         "raceName": "Shifter",
         "raceSource": "ERLW",
@@ -15477,6 +15563,8 @@
     ],
     "subraces": [
       {
+        "name": "",
+        "isVariant": false,
         "source": "PHB",
         "raceName": "Tiefling",
         "raceSource": "PHB",
@@ -15487,6 +15575,7 @@
       },
       {
         "name": "Asmodeus",
+        "isVariant": false,
         "source": "MTF",
         "raceName": "Tiefling",
         "raceSource": "PHB",
@@ -15497,6 +15586,7 @@
       },
       {
         "name": "Baalzebul",
+        "isVariant": false,
         "source": "MTF",
         "raceName": "Tiefling",
         "raceSource": "PHB",
@@ -15524,6 +15614,7 @@
       },
       {
         "name": "Dispater",
+        "isVariant": false,
         "source": "MTF",
         "raceName": "Tiefling",
         "raceSource": "PHB",
@@ -15556,6 +15647,7 @@
       },
       {
         "name": "Fierna",
+        "isVariant": false,
         "source": "MTF",
         "raceName": "Tiefling",
         "raceSource": "PHB",
@@ -15588,6 +15680,7 @@
       },
       {
         "name": "Glasya",
+        "isVariant": false,
         "source": "MTF",
         "raceName": "Tiefling",
         "raceSource": "PHB",
@@ -15620,6 +15713,7 @@
       },
       {
         "name": "Levistus",
+        "isVariant": false,
         "source": "MTF",
         "raceName": "Tiefling",
         "raceSource": "PHB",
@@ -15652,6 +15746,7 @@
       },
       {
         "name": "Mammon",
+        "isVariant": false,
         "source": "MTF",
         "raceName": "Tiefling",
         "raceSource": "PHB",
@@ -15679,6 +15774,7 @@
       },
       {
         "name": "Mephistopheles",
+        "isVariant": false,
         "source": "MTF",
         "raceName": "Tiefling",
         "raceSource": "PHB",
@@ -15705,7 +15801,8 @@
         ]
       },
       {
-        "name": "Variant; Devil's Tongue",
+        "name": "Devil's Tongue",
+        "isVariant": true,
         "source": "SCAG",
         "raceName": "Tiefling",
         "raceSource": "PHB",
@@ -15747,7 +15844,8 @@
         ]
       },
       {
-        "name": "Variant; Hellfire",
+        "name": "Hellfire",
+        "isVariant": true,
         "source": "SCAG",
         "raceName": "Tiefling",
         "raceSource": "PHB",
@@ -15789,7 +15887,8 @@
         ]
       },
       {
-        "name": "Variant; Infernal Legacy",
+        "name": "Infernal Legacy",
+        "isVariant": true,
         "source": "SCAG",
         "raceName": "Tiefling",
         "raceSource": "PHB",
@@ -15817,7 +15916,8 @@
         ]
       },
       {
-        "name": "Variant; Winged",
+        "name": "Winged",
+        "isVariant": true,
         "source": "SCAG",
         "raceName": "Tiefling",
         "raceSource": "PHB",
@@ -15860,6 +15960,7 @@
       },
       {
         "name": "Zariel",
+        "isVariant": false,
         "source": "MTF",
         "raceName": "Tiefling",
         "raceSource": "PHB",
@@ -16655,6 +16756,7 @@
     "subraces": [
       {
         "name": "Ixalan",
+        "isVariant": false,
         "source": "PSX",
         "raceName": "Vampire",
         "raceSource": "PSZ",
@@ -16739,6 +16841,7 @@
       },
       {
         "name": "Zendikar",
+        "isVariant": false,
         "source": "PSZ",
         "raceName": "Vampire",
         "raceSource": "PSZ",

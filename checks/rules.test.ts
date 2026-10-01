@@ -8,7 +8,7 @@ import { maxHp, hitDiceByType } from "../src/rules/hp.ts";
 import { armorClass } from "../src/rules/ac.ts";
 import { speed, carryingWeight } from "../src/rules/speed.ts";
 import { savingThrows } from "../src/rules/saves.ts";
-import { skills } from "../src/rules/skills.ts";
+import { skills, getRacialSkillChoices } from "../src/rules/skills.ts";
 import { multiclassSlots, pactSlots } from "../src/rules/slots.ts";
 import { proficiencyBonus, totalLevel, proficiencies } from "../src/rules/proficiencies.ts";
 import { grantedFeatures } from "../src/rules/grantedFeatures.ts";
@@ -252,4 +252,78 @@ test("grantedFeatures respects optional feature replacements (e.g., TCoE Ranger)
   assert.ok(tashaFeatures.some(f => f.name === "Deft Explorer"));
 });
 
+test("getRacialSkillChoices extracts dynamic skill choices from any race or book", () => {
+  // 1. Lizardfolk choice: 2 from Hunter's Lore / Nature's Intuition
+  const lizChoices = getRacialSkillChoices("Lizardfolk", undefined, catalog.races);
+  assert.equal(lizChoices.length, 1);
+  assert.equal(lizChoices[0].choose, 2);
+  assert.ok(lizChoices[0].from.includes("Animal Handling"));
+  assert.ok(lizChoices[0].from.includes("Stealth"));
+  assert.ok(lizChoices[0].from.includes("Survival"));
 
+  // 2. Base Half-Elf has Skill Versatility: 2 from all 18 skills
+  const heChoices = getRacialSkillChoices("Half-Elf", undefined, catalog.races);
+  assert.equal(heChoices.length, 1);
+  assert.equal(heChoices[0].choose, 2);
+  assert.equal(heChoices[0].from.length, 18);
+
+  // 3. Mark of Detection Half-Elf variant trades away Skill Versatility
+  const markChoices = getRacialSkillChoices("Half-Elf", "Mark of Detection", catalog.races);
+  assert.equal(markChoices.length, 0);
+
+  // 4. Custom/arbitrary race from another resource loaded dynamically
+  const customRace = {
+    name: "Custom Beastfolk",
+    source: "Homebrew",
+    traits: [
+      {
+        name: "Wild Senses",
+        description: "You gain proficiency with two of the following skills of your choice: Perception, Stealth, or Survival.",
+      },
+    ],
+  };
+  const customChoices = getRacialSkillChoices("Custom Beastfolk", undefined, [customRace]);
+  assert.equal(customChoices.length, 1);
+  assert.equal(customChoices[0].choose, 2);
+  assert.ok(customChoices[0].from.includes("Perception"));
+  assert.ok(customChoices[0].from.includes("Stealth"));
+  assert.ok(customChoices[0].from.includes("Survival"));
+});
+
+test("grantedFeatures includes both base race traits and subrace traits", () => {
+  const hillDwarf = makeChar({
+    race: { name: "Dwarf", source: "PHB", subraceName: "Hill", subraceSource: "PHB" },
+    classes: [cl("Fighter", 1)],
+  });
+  const dwarfFeatures = grantedFeatures(hillDwarf, catalog);
+  assert.ok(dwarfFeatures.some(f => f.name === "Dwarven Resilience" && f.origin === "Race"));
+  assert.ok(dwarfFeatures.some(f => f.name === "Stonecunning" && f.origin === "Race"));
+  assert.ok(dwarfFeatures.some(f => f.name === "Dwarven Toughness" && f.origin === "Subrace"));
+
+  const highElf = makeChar({
+    race: { name: "Elf", source: "PHB", subraceName: "High", subraceSource: "PHB" },
+    classes: [cl("Wizard", 1)],
+  });
+  const elfFeatures = grantedFeatures(highElf, catalog);
+  assert.ok(elfFeatures.some(f => f.name === "Keen Senses" && f.origin === "Race"));
+  assert.ok(elfFeatures.some(f => f.name === "Elf Weapon Training" && f.origin === "Subrace"));
+});
+
+test("grantedFeatures with lineageReplacement suppresses base/subrace traits and grants lineage traits", () => {
+  const dhampirDwarf = makeChar({
+    race: { name: "Dwarf", source: "PHB", subraceName: "Hill", subraceSource: "PHB" },
+    lineageReplacement: "Dhampir",
+    classes: [cl("Fighter", 1)],
+  });
+  const features = grantedFeatures(dhampirDwarf, catalog);
+
+  // Suppressed base race & subrace traits
+  assert.ok(!features.some(f => f.name === "Dwarven Resilience"), "Base trait should be suppressed");
+  assert.ok(!features.some(f => f.name === "Stonecunning"), "Base trait should be suppressed");
+  assert.ok(!features.some(f => f.name === "Dwarven Toughness"), "Subrace trait should be suppressed");
+
+  // Granted lineage traits
+  assert.ok(features.some(f => f.name === "Vampiric Bite" && f.origin === "Race"), "Lineage trait Vampiric Bite should be present");
+  assert.ok(features.some(f => f.name === "Spider Climb" && f.origin === "Race"), "Lineage trait Spider Climb should be present");
+  assert.ok(features.some(f => f.name === "Deathless Nature" && f.origin === "Race"), "Lineage trait Deathless Nature should be present");
+});
