@@ -1,3 +1,22 @@
+export interface TraitChoiceData {
+  /** How many options the player must pick. */
+  pick: number;
+  /** Character level at which the choice becomes available. */
+  level: number;
+  /** Set when the chosen option's effect only applies from a later level. */
+  effectLevel?: number;
+  /** The feature this choice replaces, when the catalog marks one. */
+  replaces?: string;
+  options: Array<{ name: string; description: string }>;
+}
+
+export interface TraitData {
+  name: string;
+  description: string;
+  /** Present when this trait grants a pick from a fixed set of options. */
+  choice?: TraitChoiceData;
+}
+
 export interface RaceData {
   name: string;
   source: string;
@@ -11,7 +30,7 @@ export interface RaceData {
   };
   abilityScoreIncrease: Array<Record<string, number>>;
   darkvision: number | null;
-  traits: Array<{ name: string; description: string }>;
+  traits: TraitData[];
   languages: string[];
   subraces: SubraceData[];
   description: string;
@@ -20,12 +39,14 @@ export interface RaceData {
 
 export interface SubraceData {
   name: string;
+  /** True when this subrace is a rules variant of its ancestry. */
+  isVariant?: boolean;
   source: string;
   raceName: string;
   raceSource: string;
   abilityScoreIncrease: Array<Record<string, number>>;
   darkvision: number | null;
-  traits: Array<{ name: string; description: string }>;
+  traits: TraitData[];
   description: string;
   rawEntries?: any[];
 }

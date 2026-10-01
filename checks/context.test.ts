@@ -17,6 +17,7 @@ async function providerHarness(initial: unknown = [makeChar()], options: {
   settings?: object;
   loadAll?: typeof storage.loadAll;
   waitForInit?: boolean;
+  races?: any[];
 } = {}) {
   const kv = new Map([["@dnd5e_characters", typeof initial === "string" ? initial : JSON.stringify(initial)]]);
   if (options.settings) kv.set("@dnd5e_app_settings", JSON.stringify(options.settings));
@@ -59,6 +60,7 @@ async function providerHarness(initial: unknown = [makeChar()], options: {
     if (name.includes("storage")) return { ...storage, loadAll: options.loadAll ?? storage.loadAll };
     if (name.includes("characterUpdates")) return { applyCharacterUpdate };
     if (name.includes("migrateCharacter")) return { migrateCharacter };
+    if (name.includes("dataService")) return { getRaces: () => options.races ?? [] };
     if (name.includes("constants/books")) return { DEFAULT_ACTIVE_BOOK_CODES: [] };
     throw new Error(`Unexpected provider import: ${name}`);
   } });

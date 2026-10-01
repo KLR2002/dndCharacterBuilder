@@ -1,0 +1,110 @@
+import type { Character, RuleChoiceEntry } from "../types/character.ts";
+import type { RaceData, TraitChoiceData, TraitData } from "../types/dnd5e.ts";
+import { totalLevel } from "./proficiencies.ts";
+
+/**
+ * A Rule Choice is a selection from a fixed set of options granted by a single
+ * trait, of which exactly one takes effect. The catalog declares them
+ * declaratively; this module resolves them for a character.
+ *
+ * Choice identity leads with source because two ancestries share a subrace
+ * name - DMG and MToF both ship an Eladrin, with different Fey Step text.
+ */
+export interface RuleChoiceIdParts {
+  source: string;
+  race: string;
+  subrace?: { name?: string; source?: string } | null;
+  trait: string;
+  index?: number;
+}
+
+export function ruleChoiceId({ source, race, subrace, trait, index }: RuleChoiceIdParts): string {
+  const base = [source, race, subrace?.name ?? "", trait].join("__");
+  return index ? `${base}#${index}` : base;
+}
+
+/** A Rule Choice the character is currently offered. */
+export interface AvailableRuleChoice {
+  id: string;
+  traitName: string;
+  choose: number;
+  /** Level at which the choice becomes offerable. */
+  level: number;
+  /** Level from which the chosen option's effect applies; defaults to `level`. */
+  effectLevel: number;
+  /** The feature this choice replaces, when the catalog marks one. */
+  replaces?: string;
+  options: Array<{ name: string; description: string }>;
+}
+
+function findTrait(traits: TraitData[] | undefined, name: string): TraitData | undefined {
+  return (traits ?? []).find((trait) => trait.name === name);
+}
+
+/**
+ * Every Rule Choice the character's ancestry grants, ignoring level gating.
+ * Level gating is applied by `availableRuleChoices`, which needs the level.
+ */
+export function ancestryRuleChoices(character: Character, raceCatalog: RaceData[]): AvailableRuleChoice[] {
+  const choice = character.race;
+  if (!choice) return [];
+
+  const race = raceCatalog.find(
+    (r) => r.name === choice.name && (!choice.source || r.source === choice.source)
+  );
+  const subrace = race?.subraces?.find(
+    (s) =>
+      (!choice.subraceName || s.name === choice.subraceName) &&
+      (!choice.subraceSource || s.source === choice.subraceSource)
+  );
+
+  const source = subrace?.source ?? choice.source;
+  const traitSource = subrace ? source : race?.source ?? choice.source;
+
+  const toChoice = (trait: TraitData, data: TraitChoiceData): AvailableRuleChoice => ({
+    id: ruleChoiceId({ source: traitSource, race: choice.name, subrace: subrace ? { name: subrace.name } : null, trait: trait.name }),
+    traitName: trait.name,
+    choose: data.pick,
+    level: data.level,
+    effectLevel: data.effectLevel ?? data.level,
+    ...(data.replaces ? { replaces: data.replaces } : {}),
+    options: data.options,
+  });
+
+  const out: AvailableRuleChoice[] = [];
+  for (const trait of [...(race?.traits ?? []), ...(subrace?.traits ?? [])]) {
+    if (trait.choice) out.push(toChoice(trait, trait.choice));
+  }
+  return out;
+}
+
+/**
+ * The Rule Choices a character may make right now: gated by level, and by the
+ * active resource books. Below its level a choice is absent rather than locked.
+ */
+export function availableRuleChoices(
+  character: Character,
+  raceCatalog: RaceData[],
+  level?: number,
+  activeBooks?: string[]
+): AvailableRuleChoice[] {
+  const currentLevel = level ?? totalLevel(character);
+  const books = activeBooks ? new Set(activeBooks.map((b) => b.toUpperCase())) : null;
+
+  return ancestryRuleChoices(character, raceCatalog).filter((choice) => {
+    if (choice.level > currentLevel) return false;
+    if (books) {
+      const source = choice.id.split("__")[0]?.toUpperCase();
+      if (source && !books.has(source)) return false;
+    }
+    return true;
+  });
+}
+
+/** The chosen option for a given choice id, if the character has made it. */
+export function selectedRuleChoice(
+  character: Character,
+  id: string
+): RuleChoiceEntry | undefined {
+  return (character.ruleChoices ?? []).find((entry) => entry.id === id);
+}

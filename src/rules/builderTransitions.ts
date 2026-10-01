@@ -210,6 +210,38 @@ export function addMulticlassLevel(
   };
 }
 
+/**
+ * Records a player's pick for a Rule Choice, or clears it when the option is
+ * deselected. Choices are keyed by id, so switching ancestries cannot leave a
+ * stale pick behind under an id the new ancestry never offered.
+ */
+export function setRuleChoicePick(
+  character: Character,
+  id: string,
+  option: string,
+  from: string[],
+  choose: number
+): Character {
+  const current = character.ruleChoices ?? [];
+  const entry = current.find((rc) => rc.id === id);
+  const picked = entry ? (entry.picked.includes(option)
+    ? entry.picked.filter((p) => p !== option)
+    : entry.picked.length >= choose
+    ? [...entry.picked.slice(1), option]
+    : [...entry.picked, option]) : [option];
+  const next = { id, origin: "race" as const, choose, from, picked };
+  const others = current.filter((rc) => rc.id !== id);
+  return {
+    ...character,
+    ruleChoices: picked.length === 0 ? others : [...others, next],
+  };
+}
+
+/** Drops every recorded Rule Choice, used when the ancestry itself changes. */
+export function clearRuleChoices(character: Character): Character {
+  return character.ruleChoices?.length ? { ...character, ruleChoices: [] } : character;
+}
+
 export const STARTING_GOLD_BY_CLASS: Record<string, number> = {
   Barbarian: 50,
   Bard: 125,
@@ -333,27 +365,37 @@ export function applyStartingGrants(
     equipmentItems?: InventoryItem[];
   }
 ): Character {
-  if (character.startingGrantsApplied) {
+  if (character.startingGrantsApplied && character.startingOption === mode) {
     return character;
   }
 
-  if (mode === "gold") {
-    let gold = options?.goldAmount;
-    if (gold === undefined) {
-      const primary = character.classes[0]?.className;
-      const match = primary
-        ? Object.keys(STARTING_GOLD_BY_CLASS).find((k) => k.toLowerCase() === primary.toLowerCase())
-        : undefined;
-      gold = match ? STARTING_GOLD_BY_CLASS[match] : 100;
-    }
+  const primary = character.classes[0]?.className;
+  const match = primary
+    ? Object.keys(STARTING_GOLD_BY_CLASS).find((k) => k.toLowerCase() === primary.toLowerCase())
+    : undefined;
+  const defaultGold = match ? STARTING_GOLD_BY_CLASS[match] : 100;
+  const gold = options?.goldAmount ?? defaultGold;
 
+  // Clean up any previously granted starting items (items with id starting with "start_")
+  const cleanedItems = (character.items ?? []).filter((item) => !item.id.startsWith("start_"));
+
+  // Clean up any previously granted starting gold if we were in gold mode
+  const currentPouch = { ...(character.pouch ?? { cp: 0, sp: 0, ep: 0, gp: 0, pp: 0 }) };
+  if (character.startingGrantsApplied && character.startingOption === "gold") {
+    const goldToRemove = character.startingGrantedGold ?? defaultGold;
+    currentPouch.gp = Math.max(0, (currentPouch.gp ?? 0) - goldToRemove);
+  }
+
+  if (mode === "gold") {
     return {
       ...character,
       startingOption: "gold",
       startingGrantsApplied: true,
+      startingGrantedGold: gold,
+      items: cleanedItems,
       pouch: {
-        ...character.pouch,
-        gp: (character.pouch?.gp ?? 0) + gold,
+        ...currentPouch,
+        gp: (currentPouch.gp ?? 0) + gold,
       },
     };
   }
@@ -361,10 +403,6 @@ export function applyStartingGrants(
   // mode === "equipment"
   let newItems = options?.equipmentItems;
   if (!newItems) {
-    const primary = character.classes[0]?.className;
-    const match = primary
-      ? Object.keys(CLASS_STARTING_EQUIPMENT).find((k) => k.toLowerCase() === primary.toLowerCase())
-      : undefined;
     const defs = match ? CLASS_STARTING_EQUIPMENT[match] : [];
     newItems = defs.map((d, idx) => ({
       id: `start_${(primary || "item").toLowerCase()}_${idx}`,
@@ -380,7 +418,9 @@ export function applyStartingGrants(
     ...character,
     startingOption: "equipment",
     startingGrantsApplied: true,
-    items: [...(character.items ?? []), ...newItems],
+    startingGrantedGold: undefined,
+    items: [...cleanedItems, ...newItems],
+    pouch: currentPouch,
   };
 }
 

@@ -25,6 +25,15 @@ export interface SkillChoiceEntry {
   picked: string[];
 }
 
+export interface RuleChoiceEntry {
+  /** Stable identity of the choice: source__race__subrace__trait. */
+  id: string;
+  origin: "race";
+  choose: number;
+  from: string[];
+  picked: string[];
+}
+
 export interface ClassChoice {
   id: string;
   classId: string;
@@ -58,6 +67,7 @@ export interface AsiSelection {
   asi?: Record<string, number>;
   featName?: string;
   featSource?: string;
+  featAbility?: AbilityKey;
 }
 
 export interface InventoryItem {
@@ -106,6 +116,7 @@ export interface Character {
   baseAbilityScores: AbilityScores;
   standardArrayPicks?: Partial<Record<AbilityKey, number>>;
   skillChoices?: SkillChoiceEntry[];
+  ruleChoices?: RuleChoiceEntry[];
   racialChoiceBonus?: { key: AbilityKey; amount: number }[];
   classChoices?: ClassChoice[];
   needsReview?: string[];
@@ -128,6 +139,7 @@ export interface Character {
   } | null;
   startingOption: "equipment" | "gold";
   startingGrantsApplied?: boolean;
+  startingGrantedGold?: number;
   backgroundGrantsApplied?: boolean;
   languages?: string[];
   chosenLanguages?: {

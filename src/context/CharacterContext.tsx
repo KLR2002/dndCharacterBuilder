@@ -9,6 +9,7 @@ import {
 import type { Character, Folder } from "../types/character";
 import { applyCharacterUpdate } from "./characterUpdates";
 import { migrateCharacter } from "../rules/migrateCharacter";
+import { getRaces } from "../services/dataService";
 
 interface CharacterContextValue {
   characters: Character[];
@@ -108,7 +109,8 @@ export function CharacterProvider({ children }: { children: React.ReactNode }) {
         const result = await loadAll();
         if (!result.ok) throw new Error(result.error);
         const { characters: loadedChars, folders: loadedFolds, settings: loadedSettings } = result.data;
-        const migratedCharacters = loadedChars.map(migrateCharacter);
+        const raceCatalog = getRaces();
+        const migratedCharacters = loadedChars.map((c) => migrateCharacter(c, raceCatalog));
         setActiveBooksState(loadedSettings.activeResourceBooks || DEFAULT_ACTIVE_BOOK_CODES);
         setHasCompletedFirstRun(Boolean(loadedSettings.hasCompletedFirstRun));
         setCharacters(migratedCharacters);

@@ -1,20 +1,36 @@
 import type { Character, KnownSpell, SkillChoiceEntry } from "../types/character.ts";
+import type { RaceData } from "../types/dnd5e.ts";
 import { CLASS_DATA } from "./classData.ts";
+import { ancestryRuleChoices } from "./ruleChoices.ts";
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return value !== null && typeof value === "object" && !Array.isArray(value);
 }
 
-/** Character-level migration only. Never mutate or discard the original record. */
-export function migrateCharacter(raw: unknown): Character {
+/**
+ * Character-level migration only. Never mutate or discard the original record.
+ *
+ * `raceCatalog` is optional so this stays a pure function of the record; when
+ * supplied it lets the migration notice an ancestry choice that was never
+ * recorded, which only the catalog can say is missing.
+ */
+export function migrateCharacter(raw: unknown, raceCatalog?: RaceData[]): Character {
   if (!isRecord(raw) || typeof raw.id !== "string" || typeof raw.name !== "string" ||
       typeof raw.createdAt !== "number" || !Number.isFinite(raw.createdAt)) {
     throw new Error("Invalid character: expected an identified character record");
   }
+  const c = raw as unknown as Character;
   for (const key of ["classes", "knownSpells", "preparedSpells", "chosenSkills", "skillChoices", "racialChoiceBonus", "classChoices", "needsReview"]) {
     if (raw[key] !== undefined && !Array.isArray(raw[key])) throw new Error(`Invalid character: ${key} must be an array`);
   }
-  const c = raw as unknown as Character;
+  if (c.ruleChoices !== undefined) {
+    if (!Array.isArray(c.ruleChoices)) throw new Error("Invalid character: ruleChoices must be an array");
+    if (!c.ruleChoices.every((entry) =>
+      isRecord(entry) && typeof entry.id === "string" && typeof entry.choose === "number" &&
+      Array.isArray(entry.from) && entry.from.every((v) => typeof v === "string") &&
+      Array.isArray(entry.picked) && entry.picked.every((v) => typeof v === "string")
+    )) throw new Error("Invalid character: malformed ruleChoices");
+  }
   const classes = c.classes ?? [];
   if (!classes.every(entry => isRecord(entry) && typeof entry.className === "string" && typeof entry.source === "string")) {
     throw new Error("Invalid character: malformed classes");
@@ -54,9 +70,18 @@ export function migrateCharacter(raw: unknown): Character {
       skillChoices = [entry];
     } else needsReview.add("skillChoices: legacy chosenSkills ownership is ambiguous");
   }
+  const ruleChoices = c.ruleChoices ?? [];
+  // A character saved before Rule Choices existed has no recorded pick for an
+  // ancestry choice it should have made - a variant half-elf never had the
+  // option available. Flag it rather than leaving the sheet looking complete.
+  if (c.race && raceCatalog && ruleChoices.length === 0 && ancestryRuleChoices(c, raceCatalog).length > 0) {
+    needsReview.add("ruleChoices: this ancestry offers a choice that was never recorded");
+  }
+
   return {
     ...c,
     ...(needsReview.size ? { needsReview: [...needsReview] } : {}),
+    ruleChoices,
     classes,
     chosenSkills: c.chosenSkills ?? [],
     standardArrayPicks: c.standardArrayPicks ?? {},
