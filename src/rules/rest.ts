@@ -1,6 +1,7 @@
 import type { Character, ResourceCounter } from "../types/character.ts";
 import { maxHp } from "./hp.ts";
 import { totalLevel } from "./proficiencies.ts";
+import { clearChangeableChoices } from "./ruleChoices.ts";
 
 export interface ShortRestOptions {
   healedHp?: number;
@@ -153,7 +154,7 @@ export function applyLongRest(
   }
 
   return {
-    ...character,
+    ...clearChangeableChoices(character),
     currentHp: max,
     tempHp: 0,
     deathSaves: { successes: 0, failures: 0 },

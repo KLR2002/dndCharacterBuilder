@@ -7,6 +7,9 @@ import {
   calculateTotalLevel,
 } from "../services/dndRules";
 import { applyLongRest, applyShortRest } from "../rules/rest";
+import { CHANGEABLE_AT_LONG_REST, availableRuleChoices } from "../rules/ruleChoices";
+import { getRaces } from "../services/dataService";
+import { setRuleChoicePick } from "../rules/builderTransitions";
 import { Character } from "../types/character";
 import { Button } from "./ui/Button";
 import { Card } from "./ui/Card";
@@ -89,6 +92,15 @@ export const RestModal: React.FC<RestModalProps> = ({
     if (onTakeRest) onTakeRest();
     onClose();
   };
+
+  // Choices the player may change because they finish a long rest: the eladrin's
+  // season, per MToF. Long rest clears them, so they are offered here.
+  const changeableChoices = availableRuleChoices(
+    character,
+    getRaces(),
+    undefined,
+    undefined
+  ).filter((choice) => CHANGEABLE_AT_LONG_REST.has(choice.traitName));
 
   const executeLongRest = () => {
     const updated = applyLongRest(character);
@@ -214,6 +226,60 @@ export const RestModal: React.FC<RestModalProps> = ({
                 ⚡ Recharges all <Text style={{ color: theme.warning, fontWeight: "700" }}>Feature Resources</Text> (Rages, Ki, Channel Divinity, etc.)
               </Text>
             </Card>
+
+            {changeableChoices.length > 0 && (
+              <Card style={{ gap: 8 }}>
+                <Text style={[styles.sectionTitle, { color: theme.text }]}>
+                  Changeable at a Long Rest
+                </Text>
+                {changeableChoices.map((choice) => {
+                  const entry = (character.ruleChoices ?? []).find((rc) => rc.id === choice.id);
+                  return (
+                    <View key={choice.id} style={{ gap: 6 }}>
+                      <Text style={{ color: theme.textSecondary, fontSize: 12 }}>{choice.traitName}</Text>
+                      <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6 }}>
+                        {choice.options.map((option) => {
+                          const chosen = entry?.picked?.includes(option.name);
+                          return (
+                            <TouchableOpacity
+                              key={option.name}
+                              onPress={() =>
+                                onUpdateCharacter(
+                                  setRuleChoicePick(
+                                    character,
+                                    choice.id,
+                                    choice.traitName,
+                                    option.name,
+                                    choice.options.map((o) => o.name),
+                                    choice.choose
+                                  )
+                                )
+                              }
+                              style={{
+                                paddingVertical: 6,
+                                paddingHorizontal: 10,
+                                borderRadius: 6,
+                                borderWidth: 1,
+                                borderColor: chosen ? theme.accent : theme.border,
+                                backgroundColor: chosen ? theme.accentGlow : "transparent",
+                              }}>
+                              <Text
+                                style={{
+                                  color: chosen ? theme.accent : theme.textSecondary,
+                                  fontSize: 12,
+                                  fontWeight: "600",
+                                }}>
+                                {option.name}
+                              </Text>
+                            </TouchableOpacity>
+                          );
+                        })}
+                      </View>
+                    </View>
+                  );
+                })}
+              </Card>
+            )}
 
             <Button
               title="Take Long Rest"

@@ -176,3 +176,22 @@ export function replacedTraitNames(character: Character, raceCatalog: RaceData[]
   }
   return suppressed;
 }
+
+/**
+ * Rule Choices a long rest lets the player change: the eladrin's Season is the
+ * only one, per MToF ("when finishing a long rest, you can change your season").
+ * Modelled as a curated trait name rather than inferred from prose.
+ */
+export const CHANGEABLE_AT_LONG_REST = new Set(["Fey Step"]);
+
+/**
+ * Clears the picks of choices that a long rest lets the player change, so they
+ * are offered again. Other choices are untouched.
+ */
+export function clearChangeableChoices(character: Character): Character {
+  const entries = character.ruleChoices;
+  if (!entries?.length) return character;
+  const kept = entries.filter((entry) => !CHANGEABLE_AT_LONG_REST.has(entry.trait));
+  if (kept.length === entries.length) return character;
+  return { ...character, ruleChoices: kept };
+}
