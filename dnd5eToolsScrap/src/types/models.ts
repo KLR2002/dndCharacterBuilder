@@ -168,6 +168,8 @@ export interface ItemModel {
   stealthDisadvantage: boolean;
   description: string;
   rawEntries?: any[];
+  bonusWeapon?: number;
+  bonusAc?: number;
 }
 
 export interface SpellClassVariantModel {

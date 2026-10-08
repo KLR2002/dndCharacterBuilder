@@ -36,6 +36,7 @@ export interface WeaponAttackOption {
   archeryBonus?: number;
   duelingBonus?: number;
   infusionBonus?: number;
+  itemBonus?: number;
 }
 
 export interface DualWieldResult {
@@ -477,16 +478,23 @@ export function getWeaponAttacks(
       weaponInfusionBonus = 1;
     }
 
+    const rawItemBonus = item.bonusWeapon ?? (() => {
+      const m = item.name.match(/\+(\d+)/);
+      return m ? parseInt(m[1], 10) : 0;
+    })();
+    const isAttuned = !item.attunement || item.isAttuned === true;
+    const itemWeaponBonus = isAttuned ? rawItemBonus : 0;
+
     const calculationBadges: string[] = [];
     let archeryBonus = 0;
-    let attackBonus = abilityMod + (isProficient ? pb : 0) + weaponInfusionBonus;
+    let attackBonus = abilityMod + (isProficient ? pb : 0) + weaponInfusionBonus + itemWeaponBonus;
     if (hasArchery && isRanged) {
       attackBonus += 2;
       archeryBonus = 2;
       calculationBadges.push("Archery +2");
     }
 
-    let extraDamage = weaponInfusionBonus;
+    let extraDamage = weaponInfusionBonus + itemWeaponBonus;
     let duelingBonus = 0;
     if (hasDueling && duelingWeaponId === item.id) {
       extraDamage += 2;
@@ -497,6 +505,12 @@ export function getWeaponAttacks(
       extraDamage += 2;
     }
 
+    if (itemWeaponBonus > 0) {
+      calculationBadges.push(`Item +${itemWeaponBonus}`);
+    }
+    if (item.attunement && !item.isAttuned) {
+      calculationBadges.push("Unattuned");
+    }
     if (weaponInfusionBonus > 0) {
       calculationBadges.push(`Infused +${weaponInfusionBonus}`);
     }
@@ -536,6 +550,7 @@ export function getWeaponAttacks(
       archeryBonus: archeryBonus || undefined,
       duelingBonus: duelingBonus || undefined,
       infusionBonus: weaponInfusionBonus || undefined,
+      itemBonus: itemWeaponBonus || undefined,
     };
   });
 }
@@ -569,6 +584,13 @@ export function checkDualWielding(
   const ewBonus = artificerLevel >= 10 ? 2 : 1;
 
   const offHandWeapon = second.item;
+  const rawOffHandBonus = second.itemBonus ?? offHandWeapon.bonusWeapon ?? (() => {
+    const m = offHandWeapon.name.match(/\+(\d+)/);
+    return m ? parseInt(m[1], 10) : 0;
+  })();
+  const isOffHandAttuned = !offHandWeapon.attunement || offHandWeapon.isAttuned === true;
+  const offHandItemBonus = isOffHandAttuned ? rawOffHandBonus : 0;
+
   let offHandInfusionBonus = 0;
   if (isItemInfusedWith(character, offHandWeapon, "Enhanced Weapon", "weapon")) {
     offHandInfusionBonus = ewBonus;
@@ -580,10 +602,19 @@ export function checkDualWielding(
     offHandInfusionBonus = 1;
   }
 
-  const extraDamage = (hasThrown && isThrownWeapon(second.item) ? 2 : 0) + offHandInfusionBonus;
+  const extraDamage =
+    (hasThrown && isThrownWeapon(second.item) ? 2 : 0) +
+    offHandInfusionBonus +
+    offHandItemBonus;
   const offHandDamage = formatDamageString(second.damageDice, secondAbilityMod, isOffHandPenalty, extraDamage);
 
   const offHandBadges: string[] = [];
+  if (offHandItemBonus > 0) {
+    offHandBadges.push(`Item +${offHandItemBonus}`);
+  }
+  if (offHandWeapon.attunement && !offHandWeapon.isAttuned) {
+    offHandBadges.push("Unattuned");
+  }
   if (offHandInfusionBonus > 0) {
     offHandBadges.push(`Infused +${offHandInfusionBonus}`);
   }
@@ -595,6 +626,7 @@ export function checkDualWielding(
     isOffHand: true,
     calculationBadges: offHandBadges.length > 0 ? offHandBadges : undefined,
     infusionBonus: offHandInfusionBonus || undefined,
+    itemBonus: offHandItemBonus || undefined,
   };
 
   return {

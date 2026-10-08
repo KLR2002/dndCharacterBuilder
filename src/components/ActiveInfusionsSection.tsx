@@ -15,6 +15,7 @@ import {
   ALL_ARTIFICER_INFUSIONS,
   getKnownInfusions,
   getMaxActiveInfusions,
+  isMundaneItem,
 } from "../rules/ruleChoices";
 import { InventoryItem } from "../types/character";
 import { Badge } from "./ui/Badge";
@@ -130,7 +131,7 @@ export const ActiveInfusionsSection: React.FC = () => {
 
   const handleBindToItem = (item: InventoryItem) => {
     const infusionName = targetSelectModal.infusionName;
-    if (!infusionName || isAtLimit) return;
+    if (!infusionName || isAtLimit || !isMundaneItem(item)) return;
 
     const nextItems = (currentCharacter.items || []).map((i) => {
       if (i.id === item.id || (item.id == null && i.name === item.name)) {
@@ -300,32 +301,42 @@ export const ActiveInfusionsSection: React.FC = () => {
                   No items in inventory. Add an item in the Inventory tab first.
                 </Text>
               ) : (
-                inventoryItems.map((item, idx) => (
-                  <TouchableOpacity
-                    key={item.id ?? `${item.name}_${idx}`}
-                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                    style={[
-                      styles.itemOption,
-                      {
-                        backgroundColor: theme.surfaceHighlight,
-                        borderColor: item.isInfused ? theme.accent : theme.border,
-                        minHeight: 44,
-                      },
-                    ]}
-                    onPress={() => handleBindToItem(item)}
-                  >
-                    <View style={{ flex: 1 }}>
-                      <Text style={[styles.itemOptionName, { color: theme.text }]}>
-                        {item.name}
-                      </Text>
-                      <Text style={[styles.itemOptionMeta, { color: theme.textMuted }]}>
-                        {item.isEquipped ? "Equipped" : "Carried"}
-                        {item.infusedWith ? ` • Currently: ${item.infusedWith}` : ""}
-                      </Text>
-                    </View>
-                    <Ionicons name="chevron-forward" size={16} color={theme.textMuted} />
-                  </TouchableOpacity>
-                ))
+                inventoryItems.map((item, idx) => {
+                  const isMundane = isMundaneItem(item);
+                  return (
+                    <TouchableOpacity
+                      key={item.id ?? `${item.name}_${idx}`}
+                      disabled={!isMundane}
+                      hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                      style={[
+                        styles.itemOption,
+                        {
+                          backgroundColor: theme.surfaceHighlight,
+                          borderColor: item.isInfused ? theme.accent : theme.border,
+                          minHeight: 44,
+                          opacity: isMundane ? 1 : 0.6,
+                        },
+                      ]}
+                      onPress={() => isMundane && handleBindToItem(item)}
+                    >
+                      <View style={{ flex: 1 }}>
+                        <Text style={[styles.itemOptionName, { color: isMundane ? theme.text : theme.textMuted }]}>
+                          {item.name}
+                        </Text>
+                        <Text style={[styles.itemOptionMeta, { color: theme.textMuted }]}>
+                          {item.isEquipped ? "Equipped" : "Carried"}
+                          {item.infusedWith ? ` • Currently: ${item.infusedWith}` : ""}
+                          {!isMundane ? " • Requires nonmagical object" : ""}
+                        </Text>
+                      </View>
+                      {!isMundane ? (
+                        <Badge label="Requires nonmagical object" variant="warning" size="sm" />
+                      ) : (
+                        <Ionicons name="chevron-forward" size={16} color={theme.textMuted} />
+                      )}
+                    </TouchableOpacity>
+                  );
+                })
               )}
             </ScrollView>
 

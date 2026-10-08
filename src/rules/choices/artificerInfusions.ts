@@ -422,6 +422,28 @@ export function getMaxActiveInfusions(character: Character): number {
   return maxActive;
 }
 
+/**
+ * Checks whether an item is a nonmagical mundane item eligible for Artificer item-enhancement infusions.
+ * Under 2014 RAW, infusions must target nonmagical mundane objects.
+ * Returns true if the item has no rarity (or rarity "None") and no intrinsic bonusWeapon or bonusAc.
+ */
+export function isMundaneItem(item: {
+  rarity?: string;
+  bonusWeapon?: number;
+  bonusAc?: number;
+}): boolean {
+  const isMundaneRarity = !item.rarity || item.rarity === "None" || item.rarity.toLowerCase() === "none";
+  return Boolean(isMundaneRarity && !item.bonusWeapon && !item.bonusAc);
+}
+
+export function isMundaneInfusionTarget(item: {
+  rarity?: string;
+  bonusWeapon?: number;
+  bonusAc?: number;
+}): boolean {
+  return isMundaneItem(item);
+}
+
 export const ARTIFICER_INFUSIONS_KNOWN_ID = "TCE__Artificer__Infusions Known";
 
 export function getArtificerInfusionCapacity(level: number): number {
@@ -605,11 +627,18 @@ export function pruneInvalidInfusions(character: Character): Character {
 
   for (const act of rawActive) {
     const actNorm = act.infusionName.toLowerCase().trim();
-    if (knownSet.has(actNorm)) {
-      validActive.push(act);
-    } else {
+    if (!knownSet.has(actNorm)) {
       removedInfusions.push(act.infusionName);
+      continue;
     }
+    if (!actNorm.startsWith("replicate magic item:") && act.targetItemId) {
+      const targetItem = (character.items || []).find((i) => i.id === act.targetItemId);
+      if (targetItem && !isMundaneItem(targetItem)) {
+        removedInfusions.push(`${act.infusionName} (target item is magical; requires nonmagical object)`);
+        continue;
+      }
+    }
+    validActive.push(act);
   }
 
   const cappedActive = validActive.slice(0, maxActive);
@@ -639,7 +668,11 @@ export function pruneInvalidInfusions(character: Character): Character {
       .map((item) => {
         if (item.infusedWith && !item.infusedWith.toLowerCase().trim().startsWith("replicate magic item:")) {
           const norm = item.infusedWith.toLowerCase().trim();
-          if (!activeInfusionNames.has(norm) || (item.id && !activeTargetItemIds.has(item.id))) {
+          if (
+            !activeInfusionNames.has(norm) ||
+            (item.id && !activeTargetItemIds.has(item.id)) ||
+            !isMundaneItem(item)
+          ) {
             const { infusedWith, isInfused, ...rest } = item;
             return rest;
           }

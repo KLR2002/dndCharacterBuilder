@@ -126,7 +126,7 @@ export function proficiencies(character: Character, classes: ClassData[]) {
   const armor = new Set<string>(), weapons = new Set<string>(), tools = new Set<string>();
   for (const [index, c] of character.classes.entries()) {
     if (c.level < 1) continue;
-    const data = classes.find(x => x.name === c.className && x.source === c.source);
+    const data = classes.find(x => x.name === c.className && (!c.source || x.source === c.source));
     const grants = index === 0 ? { armor: data?.armorProficiencies, weapons: data?.weaponProficiencies, tools: data?.toolProficiencies } : MULTICLASS_PROFICIENCIES[c.className];
     for (const x of grants?.armor || []) {
       if (x && x.trim()) armor.add(normalizeArmorProficiency(x));

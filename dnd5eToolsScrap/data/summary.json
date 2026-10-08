@@ -1,11 +1,11 @@
 {
-  "scrapedAt": "2026-10-07T18:45:27.514Z",
+  "scrapedAt": "2026-10-08T08:41:17.079Z",
   "source": "https://2014.5e.tools",
   "categories": {
-    "Books": {
-      "count": 55,
-      "size": "9.89 KB",
-      "file": "data/books.json"
+    "Items": {
+      "count": 2023,
+      "size": "3.49 MB",
+      "file": "data/items.json"
     }
   }
 }

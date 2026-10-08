@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import { useAppTheme } from "../context/ThemeContext";
 import { evaluateCharacter } from "../services/dndRules";
 import { applyLongRest, applyShortRest } from "../rules/rest";
@@ -108,6 +109,7 @@ export const RestModal: React.FC<RestModalProps> = ({
         <View style={[styles.tabRow, { borderColor: theme.border }]}>
           <TouchableOpacity
             onPress={() => setMode("short")}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
             style={[
               styles.tabBtn,
               mode === "short" && { backgroundColor: theme.accentGlow, borderColor: theme.accent },
@@ -122,6 +124,7 @@ export const RestModal: React.FC<RestModalProps> = ({
           </TouchableOpacity>
           <TouchableOpacity
             onPress={() => setMode("long")}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
             style={[
               styles.tabBtn,
               mode === "long" && { backgroundColor: theme.accentGlow, borderColor: theme.accent },
@@ -153,6 +156,7 @@ export const RestModal: React.FC<RestModalProps> = ({
                   <TouchableOpacity
                     key={die}
                     disabled={!canSpend}
+                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                     onPress={() => handleSpendHitDie(die)}
                     style={[
                       styles.dieCard,
@@ -187,6 +191,19 @@ export const RestModal: React.FC<RestModalProps> = ({
                 ))}
               </Card>
             ) : null}
+
+            {/* Attunement Reminder */}
+            <Card style={{ marginTop: 12, backgroundColor: theme.surfaceRaised, borderColor: theme.border, padding: 12, gap: 4 }}>
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+                <Ionicons name="sparkles" size={16} color={theme.accent} />
+                <Text style={{ fontSize: 13, fontWeight: "600", color: theme.accent }}>
+                  Magic Item Attunement
+                </Text>
+              </View>
+              <Text style={{ fontSize: 12, color: theme.textSecondary, lineHeight: 17 }}>
+                Short Rest completed: You can attune or unattune magic items in your Inventory.
+              </Text>
+            </Card>
 
             <Button
               title="Finish Short Rest"
@@ -231,6 +248,7 @@ export const RestModal: React.FC<RestModalProps> = ({
                           return (
                             <TouchableOpacity
                               key={option.name}
+                              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                               onPress={() =>
                                 setPendingChoices((prev) => ({
                                   ...prev,
@@ -245,8 +263,10 @@ export const RestModal: React.FC<RestModalProps> = ({
                                 }))
                               }
                               style={{
-                                paddingVertical: 6,
-                                paddingHorizontal: 10,
+                                paddingVertical: 8,
+                                paddingHorizontal: 12,
+                                minHeight: 44,
+                                justifyContent: "center",
                                 borderRadius: 6,
                                 borderWidth: 1,
                                 borderColor: chosen ? theme.accent : theme.border,
@@ -295,6 +315,8 @@ const styles = StyleSheet.create({
   tabBtn: {
     flex: 1,
     paddingVertical: 10,
+    minHeight: 44,
+    justifyContent: "center",
     alignItems: "center",
     borderWidth: 1,
     borderColor: "transparent",
@@ -323,10 +345,12 @@ const styles = StyleSheet.create({
   dieCard: {
     flex: 1,
     minWidth: 120,
+    minHeight: 60,
     padding: 12,
     borderRadius: 8,
     borderWidth: 1,
     alignItems: "center",
+    justifyContent: "center",
   },
   dieName: {
     fontSize: 18,

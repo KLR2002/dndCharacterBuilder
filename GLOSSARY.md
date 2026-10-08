@@ -203,3 +203,23 @@ _Avoid_: Spell manager, casting controller, slot tracker
 **Tactical Action Ledger**:
 The evaluated collection of standard actions, class bonus actions, reactions, and attack riders available to a character in combat.
 _Avoid_: Action list, combat menu, ability roster
+
+**Magic Item Variant**:
+A template in the compendium (such as *Weapon, +1*, *Armor, +1*, or *Weapon of Warning*) that modifies a base mundane item with magical properties, rarity, and numerical bonuses.
+_Avoid_: Item clone, custom preset, enchant template
+
+**Attunement**:
+The magical bond between a character and up to three magic items, tracked via dedicated attunement slots, required to activate and benefit from an attuned item's magical properties.
+_Avoid_: Equipment binding, soul link, item sync
+
+**Item Category**:
+The canonical classification of equipment in the compendium and inventory (*Weapon*, *Armor*, *Shield*, *Potion*, *Ring*, *Rod*, *Wand*, *Scroll*, *Wondrous Item*, *Adventuring Gear*, *Tool*).
+_Avoid_: Gear type, item group, classification tag
+
+**Weapon Enhancement Bonus**:
+The flat numerical bonus (+1, +2, +3) added to weapon attack rolls and damage formulas by magic weapons.
+_Avoid_: Weapon plus, enchant stat, attack booster
+
+**Armor Enhancement Bonus**:
+The flat numerical bonus (+1, +2, +3) added to Armor Class by magic armor or shields.
+_Avoid_: AC plus, defense upgrade, armor bonus

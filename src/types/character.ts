@@ -99,6 +99,12 @@ export interface InventoryItem {
   isCustom?: boolean;
   infusedWith?: string;
   isInfused?: boolean;
+  rarity?: string;
+  attunement?: boolean | string;
+  isAttuned?: boolean;
+  bonusWeapon?: number;
+  bonusAc?: number;
+  itemCategory?: string;
 }
 
 export interface ResourceCounter {

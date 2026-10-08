@@ -35,3 +35,11 @@ Judgement calls and rules conventions enforced during code review.
     - Subclass spell replacements (e.g., TCoE Clockwork Soul / Aberrant Mind) must reject cantrips (`level === 0`).
     - Gated spell levels, invalid schools, and foreign class lists must be verified for rejection.
     - Level-gated milestones (e.g., Monk Elemental Disciplines, class archetype unlocks): must verify higher-tier choices are absent/rejected at lower levels, and pre-unlock levels offer zero choices.
+
+## 5. Equipment Economy, Attunement & Mundane Invariants
+- **Attunement Gating**:
+  - Any equipment bearing an `attunement` requirement must withhold all numerical and mechanical bonuses (`bonusWeapon`, `bonusAc`, special tactical riders) unless `item.isAttuned === true`.
+  - Unattuned magic items must explicitly surface an `[Unattuned]` calculation badge on weapon and armor cards.
+- **Mundane Invariant for Enhancements**:
+  - Features requiring mundane targets (e.g., Artificer Infusions like *Enhanced Weapon* or *Enhanced Defense*) must verify `isMundaneItem` (`rarity: "None"` or undefined, and no inherent `bonusWeapon` or `bonusAc`) before binding.
+  - Sheet reconcilers and teardown routines must purge any active enhancements bound to magical items and append a descriptive notice to `character.needsReview`.

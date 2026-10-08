@@ -45,6 +45,8 @@ export const InventoryTab: React.FC = () => {
   const [customCost, setCustomCost] = useState("");
   const [customDamage, setCustomDamage] = useState("");
   const [customAc, setCustomAc] = useState("");
+  const [customBonusWeapon, setCustomBonusWeapon] = useState("");
+  const [customBonusAc, setCustomBonusAc] = useState("");
   const [customDesc, setCustomDesc] = useState("");
   const [customSection, setCustomSection] = useState<"equipped" | "carried">("carried");
 
@@ -55,13 +57,28 @@ export const InventoryTab: React.FC = () => {
     content: string;
   }>({ visible: false, title: "", content: "" });
 
+  const [attunementSwapModal, setAttunementSwapModal] = useState<{
+    visible: boolean;
+    targetItem?: InventoryItem;
+  }>({ visible: false });
+
   // Library Items
   const allLibraryItems = useMemo(() => getItems(activeBooks), [activeBooks]);
   const filteredLibraryItems = useMemo(() => {
+    const q = searchQuery.toLowerCase().trim();
     return allLibraryItems.filter((i) => {
-      const matchesSearch = i.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (i.type || "").toLowerCase().includes(searchQuery.toLowerCase());
-      const matchesType = !itemTypeFilter || (i.type || "").toLowerCase().includes(itemTypeFilter.toLowerCase());
+      const matchesSearch =
+        !q ||
+        i.name.toLowerCase().includes(q) ||
+        (i.type || "").toLowerCase().includes(q) ||
+        (i.itemCategory || "").toLowerCase().includes(q);
+
+      const matchesType =
+        !itemTypeFilter ||
+        (i.itemCategory && i.itemCategory.toLowerCase() === itemTypeFilter.toLowerCase()) ||
+        (i.type && i.type.toLowerCase() === itemTypeFilter.toLowerCase()) ||
+        (i.type && i.type.toLowerCase().includes(itemTypeFilter.toLowerCase()));
+
       return matchesSearch && matchesType;
     });
   }, [allLibraryItems, searchQuery, itemTypeFilter]);
@@ -137,6 +154,37 @@ export const InventoryTab: React.FC = () => {
     updateCharacter(currentCharacter.id, { items: updated });
   };
 
+  const attunedItems = items.filter(
+    (i) => Boolean(i.attunement) && i.isAttuned === true
+  );
+  const attunedCount = attunedItems.length;
+
+  const toggleAttune = (item: InventoryItem) => {
+    if (item.isAttuned) {
+      const updated = items.map((i) => (i.id === item.id ? { ...i, isAttuned: false } : i));
+      updateCharacter(currentCharacter.id, { items: updated });
+    } else {
+      if (attunedCount >= 3) {
+        setAttunementSwapModal({ visible: true, targetItem: item });
+      } else {
+        const updated = items.map((i) => (i.id === item.id ? { ...i, isAttuned: true } : i));
+        updateCharacter(currentCharacter.id, { items: updated });
+      }
+    }
+  };
+
+  const swapAttunement = (itemToUnattune: InventoryItem) => {
+    const target = attunementSwapModal.targetItem;
+    if (!target) return;
+    const updated = items.map((i) => {
+      if (i.id === itemToUnattune.id) return { ...i, isAttuned: false };
+      if (i.id === target.id) return { ...i, isAttuned: true };
+      return i;
+    });
+    updateCharacter(currentCharacter.id, { items: updated });
+    setAttunementSwapModal({ visible: false, targetItem: undefined });
+  };
+
   const addItemFromLibrary = (itemData: any) => {
     const newItem: InventoryItem = {
       id: makeItemId("item"),
@@ -151,6 +199,12 @@ export const InventoryTab: React.FC = () => {
       damageType: itemData.damageType || itemData.dmgType || null,
       range: itemData.range || null,
       ac: itemData.ac ?? null,
+      rarity: itemData.rarity || "None",
+      attunement: itemData.attunement || false,
+      isAttuned: false,
+      bonusWeapon: itemData.bonusWeapon != null ? itemData.bonusWeapon : undefined,
+      bonusAc: itemData.bonusAc != null ? itemData.bonusAc : undefined,
+      itemCategory: itemData.itemCategory || undefined,
       description: itemData.description || (Array.isArray(itemData.rawEntries) ? itemData.rawEntries.join("\n") : "") || "",
     };
     updateCharacter(currentCharacter.id, { items: [...items, newItem] });
@@ -158,6 +212,17 @@ export const InventoryTab: React.FC = () => {
 
   const addCustomItem = () => {
     if (!customName.trim()) return;
+    const parsedBonusFromName = (() => {
+      const m = customName.trim().match(/\+(\d+)/);
+      return m ? parseInt(m[1], 10) : undefined;
+    })();
+    const bonusWeaponVal = customBonusWeapon.trim()
+      ? parseInt(customBonusWeapon, 10)
+      : (customDamage.trim() ? parsedBonusFromName : undefined);
+    const bonusAcVal = customBonusAc.trim()
+      ? parseInt(customBonusAc, 10)
+      : (customAc.trim() ? parsedBonusFromName : undefined);
+
     const newItem: InventoryItem = {
       id: makeItemId("custom"),
       name: customName.trim(),
@@ -171,6 +236,8 @@ export const InventoryTab: React.FC = () => {
       ac: customAc ? parseInt(customAc, 10) : null,
       description: customDesc.trim() || "",
       isCustom: true,
+      bonusWeapon: bonusWeaponVal,
+      bonusAc: bonusAcVal,
     };
     updateCharacter(currentCharacter.id, { items: [...items, newItem] });
     setCustomName("");
@@ -178,6 +245,8 @@ export const InventoryTab: React.FC = () => {
     setCustomCost("");
     setCustomDamage("");
     setCustomAc("");
+    setCustomBonusWeapon("");
+    setCustomBonusAc("");
     setCustomDesc("");
     setCustomItemVisible(false);
   };
@@ -189,6 +258,13 @@ export const InventoryTab: React.FC = () => {
     if (item.weight != null) text += `• Weight: ${item.weight} lb\n`;
     if (item.cost) text += `• Value: ${item.cost}\n`;
     if (item.range) text += `• Range: ${item.range}\n`;
+    if (item.rarity && item.rarity !== "None") text += `• Rarity: ${item.rarity}\n`;
+    if (item.bonusWeapon) text += `• Enhancement Bonus: +${item.bonusWeapon} (Attack & Damage)\n`;
+    if (item.bonusAc) text += `• Armor Class Bonus: +${item.bonusAc}\n`;
+    if (item.attunement) {
+      const attuneStr = typeof item.attunement === "string" ? item.attunement : "requires attunement";
+      text += `• Attunement: ${attuneStr} (${item.isAttuned ? "Currently Attuned" : "Not Attuned"})\n`;
+    }
     if (text) text += "\n";
     text += item.description || "No further details available.";
 
@@ -294,6 +370,32 @@ export const InventoryTab: React.FC = () => {
         )}
       </Card>
 
+      {/* Attunement Ledger */}
+      <Card style={[styles.attunementCard, { backgroundColor: theme.surface, borderColor: theme.border, marginBottom: 16 }]}>
+        <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+            <Ionicons name="sparkles" size={18} color={theme.accent} />
+            <Text style={[styles.sectionTitle, { color: theme.text }]}>ATTUNEMENT</Text>
+          </View>
+          <Badge
+            label={`Attuned: ${attunedCount} / 3`}
+            variant={attunedCount >= 3 ? "accent" : "outline"}
+            size="md"
+          />
+        </View>
+        {attunedCount > 0 ? (
+          <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6, marginTop: 8 }}>
+            {attunedItems.map((item) => (
+              <Badge key={item.id} label={item.name} variant="accent" size="sm" />
+            ))}
+          </View>
+        ) : (
+          <Text style={{ color: theme.textMuted, fontSize: 12, marginTop: 4 }}>
+            No items actively attuned (3 slots available).
+          </Text>
+        )}
+      </Card>
+
       {/* Inventory Action Buttons */}
       <View style={{ flexDirection: "row", gap: 10, marginBottom: 16 }}>
         <Button
@@ -354,11 +456,44 @@ export const InventoryTab: React.FC = () => {
                     {item.infusedWith && (
                       <Badge label={item.infusedWith} variant="accent" size="sm" />
                     )}
+                    {item.attunement ? (
+                      item.isAttuned ? (
+                        <Badge label="Attuned" variant="accent" size="sm" />
+                      ) : (
+                        <Badge label="Unattuned" variant="warning" size="sm" />
+                      )
+                    ) : null}
+                    {item.rarity && item.rarity !== "None" && (
+                      <Badge label={item.rarity} variant="outline" size="sm" />
+                    )}
                   </View>
                   <Text style={{ color: theme.textMuted, fontSize: 11 }} numberOfLines={isCompact ? 2 : 1}>
                     {item.damage ? `${item.damage} • ` : ""}{item.ac ? `AC ${item.ac} • ` : ""}{item.weight != null ? `${item.weight} lb • ` : ""}{item.source}
                   </Text>
                 </TouchableOpacity>
+
+                {/* Attune Button */}
+                {item.attunement ? (
+                  <TouchableOpacity
+                    onPress={() => toggleAttune(item)}
+                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                    style={[
+                      styles.attuneToggleBtn,
+                      {
+                        backgroundColor: item.isAttuned ? theme.surfaceHighlight : theme.accent,
+                        borderColor: item.isAttuned ? theme.border : theme.accent,
+                      },
+                    ]}>
+                    <Text
+                      style={{
+                        color: item.isAttuned ? theme.accent : "#ffffff",
+                        fontSize: 11,
+                        fontWeight: "600",
+                      }}>
+                      {item.isAttuned ? "Unattune" : "Attune"}
+                    </Text>
+                  </TouchableOpacity>
+                ) : null}
 
                 {/* Quantity */}
                 <View style={[styles.qtyControl, isCompact && { alignSelf: "flex-end" }]}>
@@ -418,11 +553,44 @@ export const InventoryTab: React.FC = () => {
                     {item.infusedWith && (
                       <Badge label={item.infusedWith} variant="accent" size="sm" />
                     )}
+                    {item.attunement ? (
+                      item.isAttuned ? (
+                        <Badge label="Attuned" variant="accent" size="sm" />
+                      ) : (
+                        <Badge label="Unattuned" variant="warning" size="sm" />
+                      )
+                    ) : null}
+                    {item.rarity && item.rarity !== "None" && (
+                      <Badge label={item.rarity} variant="outline" size="sm" />
+                    )}
                   </View>
                   <Text style={{ color: theme.textMuted, fontSize: 11 }} numberOfLines={isCompact ? 2 : 1}>
                     {item.weight != null ? `${item.weight} lb • ` : ""}{item.cost ? `${item.cost} • ` : ""}{item.source}
                   </Text>
                 </TouchableOpacity>
+
+                {/* Attune Button */}
+                {item.attunement ? (
+                  <TouchableOpacity
+                    onPress={() => toggleAttune(item)}
+                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                    style={[
+                      styles.attuneToggleBtn,
+                      {
+                        backgroundColor: item.isAttuned ? theme.surfaceHighlight : theme.accent,
+                        borderColor: item.isAttuned ? theme.border : theme.accent,
+                      },
+                    ]}>
+                    <Text
+                      style={{
+                        color: item.isAttuned ? theme.accent : "#ffffff",
+                        fontSize: 11,
+                        fontWeight: "600",
+                      }}>
+                      {item.isAttuned ? "Unattune" : "Attune"}
+                    </Text>
+                  </TouchableOpacity>
+                ) : null}
 
                 {/* Quantity */}
                 <View style={[styles.qtyControl, isCompact && { alignSelf: "flex-end" }]}>
@@ -469,16 +637,32 @@ export const InventoryTab: React.FC = () => {
               style={{ flexGrow: 0, height: 38, marginVertical: 8 }}
               contentContainerStyle={{ alignItems: "center" }}
             >
-              {["All", "Weapon", "Armor", "Shield", "Potion", "Ring", "Rod", "Wand", "Scroll"].map((t) => (
+              {[
+                "All",
+                "Weapon",
+                "Armor",
+                "Shield",
+                "Potion",
+                "Ring",
+                "Rod",
+                "Wand",
+                "Scroll",
+                "Staff",
+                "Wondrous Item",
+                "Adventuring Gear",
+                "Tool",
+              ].map((t) => (
                 <TouchableOpacity
                   key={t}
+                  hitSlop={{ top: 8, bottom: 8, left: 4, right: 4 }}
                   onPress={() => setItemTypeFilter(t === "All" ? null : t)}
                   style={[
                     styles.filterPill,
                     {
-                      backgroundColor: (t === "All" && itemTypeFilter === null) || itemTypeFilter === t
-                        ? theme.accent
-                        : theme.surfaceHighlight,
+                      backgroundColor:
+                        (t === "All" && itemTypeFilter === null) || itemTypeFilter === t
+                          ? theme.accent
+                          : theme.surfaceHighlight,
                     },
                   ]}>
                   <Text style={{ color: "#fff", fontSize: 12, fontWeight: "600" }}>{t}</Text>
@@ -502,9 +686,23 @@ export const InventoryTab: React.FC = () => {
                     }
                     style={{ flex: 1 }}>
                     <Text style={{ color: theme.text, fontSize: 14, fontWeight: "600" }}>{it.name}</Text>
-                    <Text style={{ color: theme.textMuted, fontSize: 12 }}>
-                      {it.type || "Item"} • {it.weight != null ? `${it.weight} lb` : ""} • {it.source}
-                    </Text>
+                    <View style={{ flexDirection: "row", alignItems: "center", gap: 6, flexWrap: "wrap", marginTop: 2 }}>
+                      <Text style={{ color: theme.textMuted, fontSize: 12 }}>
+                        {it.type || "Item"} • {it.weight != null ? `${it.weight} lb` : ""} • {it.source}
+                      </Text>
+                      {it.rarity && it.rarity !== "None" && (
+                        <Badge label={it.rarity} variant="surface" size="sm" />
+                      )}
+                      {Boolean(it.attunement) && (
+                        <Badge label="Attunement" variant="secondary" size="sm" />
+                      )}
+                      {it.bonusWeapon != null && (
+                        <Badge label={`+${it.bonusWeapon} Hit/Dmg`} variant="accent" size="sm" />
+                      )}
+                      {it.bonusAc != null && (
+                        <Badge label={`+${it.bonusAc} AC`} variant="accent" size="sm" />
+                      )}
+                    </View>
                   </TouchableOpacity>
 
                   <Button
@@ -589,6 +787,31 @@ export const InventoryTab: React.FC = () => {
                 </View>
               </View>
 
+              <View style={{ flexDirection: "row", gap: 8, marginTop: 8 }}>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.fieldLabel}>Weapon Bonus (+1, +2, +3)</Text>
+                  <TextInput
+                    style={[styles.input, { color: theme.text, backgroundColor: theme.surfaceHighlight, borderColor: theme.border }]}
+                    value={customBonusWeapon}
+                    onChangeText={setCustomBonusWeapon}
+                    keyboardType="number-pad"
+                    placeholder="e.g. 1"
+                    placeholderTextColor={theme.textMuted}
+                  />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.fieldLabel}>AC Bonus (+1, +2, +3)</Text>
+                  <TextInput
+                    style={[styles.input, { color: theme.text, backgroundColor: theme.surfaceHighlight, borderColor: theme.border }]}
+                    value={customBonusAc}
+                    onChangeText={setCustomBonusAc}
+                    keyboardType="number-pad"
+                    placeholder="e.g. 1"
+                    placeholderTextColor={theme.textMuted}
+                  />
+                </View>
+              </View>
+
               <Text style={[styles.fieldLabel, { marginTop: 8 }]}>Initial Placement</Text>
               <View style={{ flexDirection: "row", gap: 10, marginTop: 4 }}>
                 <TouchableOpacity
@@ -643,6 +866,61 @@ export const InventoryTab: React.FC = () => {
         content={detailModal.content}
         onClose={() => setDetailModal({ visible: false, title: "", content: "" })}
       />
+
+      {/* Attunement Swap Modal */}
+      <RNModal
+        visible={attunementSwapModal.visible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setAttunementSwapModal({ visible: false, targetItem: undefined })}>
+        <View style={styles.modalOverlay}>
+          <Card style={[styles.customItemCard, { backgroundColor: theme.surface, borderColor: theme.border }]}>
+            <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+              <Text style={[styles.sectionTitle, { color: theme.text }]}>Attunement Limit Reached (3/3)</Text>
+              <TouchableOpacity
+                onPress={() => setAttunementSwapModal({ visible: false, targetItem: undefined })}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                <Ionicons name="close" size={24} color={theme.text} />
+              </TouchableOpacity>
+            </View>
+            <Text style={{ color: theme.textSecondary, fontSize: 13, marginBottom: 12 }}>
+              You can only attune to a maximum of 3 magic items at a time. To attune to{" "}
+              <Text style={{ color: theme.text, fontWeight: "700" }}>{attunementSwapModal.targetItem?.name}</Text>, select an item to unattune:
+            </Text>
+            {attunedItems.map((item) => (
+              <TouchableOpacity
+                key={item.id}
+                onPress={() => swapAttunement(item)}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                style={{
+                  flexDirection: "row",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  padding: 12,
+                  backgroundColor: theme.surfaceHighlight,
+                  borderRadius: 8,
+                  marginBottom: 8,
+                  borderWidth: 1,
+                  borderColor: theme.border,
+                }}>
+                <View>
+                  <Text style={{ color: theme.text, fontWeight: "600" }}>{item.name}</Text>
+                  <Text style={{ color: theme.textMuted, fontSize: 11 }}>{item.source}</Text>
+                </View>
+                <Badge label="Swap" variant="outline" size="sm" />
+              </TouchableOpacity>
+            ))}
+            <View style={{ flexDirection: "row", justifyContent: "flex-end", marginTop: 12 }}>
+              <Button
+                title="Cancel"
+                variant="secondary"
+                size="sm"
+                onPress={() => setAttunementSwapModal({ visible: false, targetItem: undefined })}
+              />
+            </View>
+          </Card>
+        </View>
+      </RNModal>
     </ScrollView>
   );
 };
@@ -797,5 +1075,17 @@ const styles = StyleSheet.create({
     borderRadius: 6,
     borderWidth: 1,
     alignItems: "center",
+  },
+  attunementCard: {
+    padding: 12,
+  },
+  attuneToggleBtn: {
+    paddingHorizontal: 8,
+    paddingVertical: 5,
+    borderRadius: 6,
+    borderWidth: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: 6,
   },
 });

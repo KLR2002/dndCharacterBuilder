@@ -237,10 +237,12 @@ export function getTacticalActionLedger(
   const bonusActions: TacticalCardItem[] = [];
 
   if (dualWield.isDualWielding && dualWield.offHand) {
+    const badges = dualWield.offHand.calculationBadges?.join(", ");
     bonusActions.push({
       name: `Off-Hand Attack (${dualWield.offHand.name})`,
       source: "Two-Weapon Fighting",
       desc: `When you take the Attack action and attack with a light melee weapon in one hand, you can use a bonus action to attack with a different light melee weapon in the other hand. Attack bonus: ${formatMod(dualWield.offHand.attackBonus)} to hit, Damage: ${dualWield.offHand.damage}${dualWield.offHand.damageType ? ` ${dualWield.offHand.damageType}` : ""}. You don't add your ability modifier to the damage of the bonus attack, unless that modifier is negative.`,
+      badge: badges || undefined,
     });
   }
 

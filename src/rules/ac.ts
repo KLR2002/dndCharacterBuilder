@@ -4,10 +4,12 @@ import { effectiveScores } from "./abilities.ts";
 import { hasFightingStyle } from "./ruleChoices.ts";
 
 export function armorCategory(item: ArmorItem): string | undefined {
-  if (item.armorCategory) return item.armorCategory.toLowerCase();
+  const raw = item as unknown as { armorCategory?: string; itemCategory?: string; type?: string };
+  if (raw.armorCategory) return raw.armorCategory.toLowerCase();
+  if (raw.itemCategory?.toLowerCase() === "shield" || raw.type?.toLowerCase() === "shield") return "shield";
   // ponytail: legacy inventory lacks categories; remove name fallback after data migration.
   const name = `${item.name} ${item.description || ""}`.toLowerCase();
-  if (name.includes("shield")) return "shield";
+  if (name.includes("shield") || name.includes("buckler")) return "shield";
   if (item.ac == null) return undefined;
   if (/medium armor|breastplate|scale mail|half plate|hide|chain shirt/.test(name)) return "medium";
   if (/heavy armor|plate|chain mail|splint|ring mail/.test(name)) return "heavy";
@@ -79,6 +81,23 @@ export function armorClass(character: Character, opts: RulesOptions = {}): { ac:
     infusionBreakdown += ` + 1 (Repulsion Shield)`;
   }
 
+  let magicAcBonus = 0;
+  for (const item of equipped) {
+    const isAttuned = !item.attunement || item.isAttuned === true;
+    if (!isAttuned) continue;
+
+    let bonus = item.bonusAc;
+    if (bonus == null && (armorCategory(item) || item.name.toLowerCase().includes("shield") || item.name.toLowerCase().includes("armor"))) {
+      const m = item.name.match(/\+(\d+)/);
+      if (m) bonus = parseInt(m[1], 10);
+    }
+    if (bonus && bonus > 0) {
+      magicAcBonus += bonus;
+    }
+  }
+
+  const magicAcText = magicAcBonus > 0 ? ` + ${magicAcBonus} (Magic Item)` : "";
+
   if (armor) {
     const category = armorCategory(armor);
     const appliedDex = category === "heavy" ? 0 : category === "medium" ? Math.min(dex, 2) : dex;
@@ -86,21 +105,21 @@ export function armorClass(character: Character, opts: RulesOptions = {}): { ac:
     const defenseBonus = hasDefense ? 1 : 0;
     const defenseText = hasDefense ? " + 1 (Defense)" : "";
     return {
-      ac: armor.ac! + appliedDex + shieldBonus + defenseBonus + infusionAcBonus,
-      breakdown: `${armor.ac} (Armor)${category === "heavy" ? "" : ` + ${appliedDex} (Dex${category === "medium" ? " max 2" : ""})`}${shieldText}${defenseText}${infusionBreakdown}`
+      ac: armor.ac! + appliedDex + shieldBonus + defenseBonus + infusionAcBonus + magicAcBonus,
+      breakdown: `${armor.ac} (Armor)${category === "heavy" ? "" : ` + ${appliedDex} (Dex${category === "medium" ? " max 2" : ""})`}${shieldText}${defenseText}${infusionBreakdown}${magicAcText}`
     };
   }
   const defense = unarmoredDefenseClass(character);
   if (defense === "Barbarian") return {
-    ac: 10 + dex + con + shieldBonus + infusionAcBonus,
-    breakdown: `10 + ${dex} (Dex) + ${con} (Con)${shieldText}${infusionBreakdown}`
+    ac: 10 + dex + con + shieldBonus + infusionAcBonus + magicAcBonus,
+    breakdown: `10 + ${dex} (Dex) + ${con} (Con)${shieldText}${infusionBreakdown}${magicAcText}`
   };
   if (defense === "Monk" && !shield) return {
-    ac: 10 + dex + wis,
-    breakdown: `10 + ${dex} (Dex) + ${wis} (Wis)`
+    ac: 10 + dex + wis + magicAcBonus,
+    breakdown: `10 + ${dex} (Dex) + ${wis} (Wis)${magicAcText}`
   };
   return {
-    ac: 10 + dex + shieldBonus + infusionAcBonus,
-    breakdown: `10 + ${dex} (Dex)${shieldText}${infusionBreakdown}`
+    ac: 10 + dex + shieldBonus + infusionAcBonus + magicAcBonus,
+    breakdown: `10 + ${dex} (Dex)${shieldText}${infusionBreakdown}${magicAcText}`
   };
 }

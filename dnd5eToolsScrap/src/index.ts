@@ -193,6 +193,18 @@ async function main(): Promise<void> {
         file: path.relative(process.cwd(), file),
       };
       console.log(`  ✓ Saved ${count} items -> ${file} (${formatBytes(bytes)})`);
+
+      const candidatePaths = [
+        path.resolve(process.cwd(), "../src/data/items.json"),
+        path.resolve(process.cwd(), "src/data/items.json"),
+      ];
+      for (const p of candidatePaths) {
+        if (fs.existsSync(path.dirname(p))) {
+          saveJson(p, items);
+          console.log(`  ✓ Synced items to ${p}`);
+          break;
+        }
+      }
     }
 
     // 7. Spells
