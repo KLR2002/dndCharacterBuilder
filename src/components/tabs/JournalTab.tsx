@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import {
   Image,
   Modal as RNModal,
@@ -30,6 +30,31 @@ const ALIGNMENT_OPTIONS = [
   "Unaligned",
 ];
 
+interface LoreSection {
+  title: string;
+  content: string;
+}
+
+function parseLoreSections(text: string): LoreSection[] {
+  const parts = text.split(/(?=###?\s+)/);
+  const sections: LoreSection[] = [];
+  for (const part of parts) {
+    const trimmed = part.trim();
+    if (!trimmed) continue;
+    const match = trimmed.match(/^###?\s+([^\n]+)\n*([\s\S]*)$/);
+    if (match) {
+      const title = match[1].trim();
+      const content = match[2].trim();
+      if (content) {
+        sections.push({ title, content });
+      }
+    } else {
+      sections.push({ title: "Overview", content: trimmed });
+    }
+  }
+  return sections;
+}
+
 export const JournalTab: React.FC = () => {
   const { currentCharacter, updateCharacter } = useCharacters();
   const { theme } = useAppTheme();
@@ -37,6 +62,19 @@ export const JournalTab: React.FC = () => {
   const [urlModalVisible, setUrlModalVisible] = useState(false);
   const [avatarUrlInput, setAvatarUrlInput] = useState("");
   const [fullscreenImageVisible, setFullscreenImageVisible] = useState(false);
+  const [loreExpanded, setLoreExpanded] = useState(false);
+
+  // Find auto-populated race info
+  const raceData = currentCharacter?.race
+    ? findRace(currentCharacter.race.name, currentCharacter.race.source)
+    : null;
+
+  const raceLore = useMemo(() => {
+    if (!raceData) return null;
+    return `${raceData.description || ""}\n\n${(raceData.traits || []).map((t) => `### ${t.name}\n\n${t.description}`).join("\n\n")}`.trim();
+  }, [raceData]);
+
+  const loreSections: LoreSection[] = useMemo(() => (raceLore ? parseLoreSections(raceLore) : []), [raceLore]);
 
   if (!currentCharacter) return null;
 
@@ -69,15 +107,6 @@ export const JournalTab: React.FC = () => {
   const removeAvatar = () => {
     updateCharacter(currentCharacter.id, { avatarUri: null });
   };
-
-  // Find auto-populated race info
-  const raceData = currentCharacter.race
-    ? findRace(currentCharacter.race.name, currentCharacter.race.source)
-    : null;
-
-  const raceLore = raceData
-    ? `${raceData.description || ""}\n\n${(raceData.traits || []).map((t) => `**${t.name}**: ${t.description}`).join("\n\n")}`.trim()
-    : null;
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
@@ -264,18 +293,70 @@ export const JournalTab: React.FC = () => {
         </View>
       </Card>
 
-      {/* Auto-Populated Race Lore */}
+      {/* Auto-Populated Race Lore & Biology */}
       {raceLore && (
-        <Card style={{ marginBottom: 16, borderColor: theme.borderLight }}>
-          <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 6 }}>
-            <Ionicons name="book-outline" size={18} color={theme.accent} />
-            <Text style={[styles.sectionTitle, { color: theme.text }]}>
-              {currentCharacter.race?.name} Lore & Biology
-            </Text>
+        <Card style={{ marginBottom: 16, borderColor: theme.borderLight, gap: 10 }}>
+          <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+              <Ionicons name="book-outline" size={18} color={theme.accent} />
+              <Text style={[styles.sectionTitle, { color: theme.text }]}>
+                {currentCharacter.race?.name} Lore & Biology
+              </Text>
+            </View>
+            {loreSections.length > 3 && (
+              <TouchableOpacity onPress={() => setLoreExpanded((prev) => !prev)}>
+                <Text style={{ color: theme.accent, fontSize: 12, fontWeight: "600" }}>
+                  {loreExpanded ? "Collapse" : "Expand All"}
+                </Text>
+              </TouchableOpacity>
+            )}
           </View>
-          <Text style={{ color: theme.textSecondary, fontSize: 12, lineHeight: 18 }}>
-            {raceLore.slice(0, 800)}...
-          </Text>
+
+          {loreSections.slice(0, loreExpanded ? undefined : 3).map((sec, idx) => (
+            <View
+              key={`${sec.title}_${idx}`}
+              style={{
+                backgroundColor: theme.surfaceHighlight,
+                borderRadius: 8,
+                padding: 10,
+                borderWidth: 1,
+                borderColor: theme.border,
+                gap: 4,
+              }}>
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+                <Ionicons
+                  name={
+                    sec.title.toLowerCase().includes("age")
+                      ? "hourglass-outline"
+                      : sec.title.toLowerCase().includes("size")
+                        ? "body-outline"
+                        : sec.title.toLowerCase().includes("align")
+                          ? "compass-outline"
+                          : sec.title.toLowerCase().includes("lang")
+                            ? "chatbubble-ellipses-outline"
+                            : "information-circle-outline"
+                  }
+                  size={14}
+                  color={theme.accent}
+                />
+                <Text style={{ color: theme.text, fontSize: 13, fontWeight: "700" }}>
+                  {sec.title}
+                </Text>
+              </View>
+              <Text style={{ color: theme.textSecondary, fontSize: 12, lineHeight: 18 }}>
+                {sec.content.replace(/\*\*/g, "").replace(/###?\s+/g, "")}
+              </Text>
+            </View>
+          ))}
+          {!loreExpanded && loreSections.length > 3 && (
+            <TouchableOpacity
+              onPress={() => setLoreExpanded(true)}
+              style={{ alignSelf: "center", paddingVertical: 4 }}>
+              <Text style={{ color: theme.accent, fontSize: 12, fontWeight: "600" }}>
+                + {loreSections.length - 3} more sections...
+              </Text>
+            </TouchableOpacity>
+          )}
         </Card>
       )}
 

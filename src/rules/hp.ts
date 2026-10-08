@@ -25,8 +25,9 @@ export function hitDiceByType(character: Character, classes: Record<string, Clas
     pools[key] ??= { total: 0, used: 0, remaining: 0 };
     pools[key].total += c.level;
   }
+  const usedMap = character.usedHitDice ?? {};
   for (const [key, pool] of Object.entries(pools)) {
-    pool.used = Math.min(pool.total, Math.max(0, character.usedHitDice[key] || 0));
+    pool.used = Math.min(pool.total, Math.max(0, usedMap[key] || 0));
     pool.remaining = pool.total - pool.used;
   }
   return pools;

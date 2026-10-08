@@ -15,6 +15,15 @@ export interface SkillRow {
   passiveBonus: number;
 }
 
+export function isKnowledgeCleric(character: Character): boolean {
+  return (character.classes || []).some(
+    (c) =>
+      c.className === "Cleric" &&
+      Boolean((c.subclassName || c.subclass)?.toLowerCase().includes("knowledge")) &&
+      c.level >= 1
+  );
+}
+
 export const RACE_SKILL_PROFICIENCIES: Record<string, string[]> = {
   Bugbear: ["Stealth"],
   Elf: ["Perception"],
@@ -84,6 +93,21 @@ export function skills(
     if (norm) proficientSkillNames.add(norm);
   }
 
+  // 1b. Rule Choices skill picks (e.g. Ancestral Legacy, Primal Knowledge)
+  for (const rc of character.ruleChoices || []) {
+    if (
+      rc.trait?.toLowerCase().includes("ancestral legacy") ||
+      rc.id.toLowerCase().includes("ancestral legacy") ||
+      rc.trait?.toLowerCase().includes("primal knowledge") ||
+      rc.id.toLowerCase().includes("primal knowledge")
+    ) {
+      for (const p of rc.picked || []) {
+        const norm = normalizeSkillName(p);
+        if (norm) proficientSkillNames.add(norm);
+      }
+    }
+  }
+
   // 2. Background skills
   if (character.background?.name) {
     const fromCatalog = opts.backgrounds?.find(
@@ -141,6 +165,17 @@ export function skills(
   for (const s of character.chosenExpertise || []) {
     const norm = normalizeSkillName(s);
     if (norm) expertiseSkillNames.add(norm);
+  }
+
+  // 5. Knowledge Domain Cleric (Blessings of Knowledge)
+  if (isKnowledgeCleric(character)) {
+    const KNOWLEDGE_SKILLS = ["Arcana", "History", "Nature", "Religion"];
+    for (const exp of character.chosenExpertise || []) {
+      const norm = normalizeSkillName(exp);
+      if (KNOWLEDGE_SKILLS.includes(norm)) {
+        proficientSkillNames.add(norm);
+      }
+    }
   }
 
   return DND_SKILLS.map((skill) => {

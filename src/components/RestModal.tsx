@@ -1,12 +1,9 @@
 import React, { useState } from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { useAppTheme } from "../context/ThemeContext";
-import {
-  calculateEffectiveAbilityScores,
-  calculateMaxHp,
-  calculateTotalLevel,
-} from "../services/dndRules";
+import { evaluateCharacter } from "../services/dndRules";
 import { applyLongRest, applyShortRest } from "../rules/rest";
+import { spendHitDie } from "../rules/hitDice";
 import { CHANGEABLE_AT_LONG_REST, availableRuleChoices } from "../rules/ruleChoices";
 import { getRaces } from "../services/dataService";
 import { setRuleChoicePick } from "../rules/builderTransitions";
@@ -16,10 +13,6 @@ import { Card } from "./ui/Card";
 import { Modal } from "./ui/Modal";
 
 import { useCharacters } from "../context/CharacterContext";
-
-function rollDie(faces: number): number {
-  return Math.floor(Math.random() * faces) + 1;
-}
 
 interface RestModalProps {
   visible: boolean;
@@ -58,39 +51,25 @@ export const RestModal: React.FC<RestModalProps> = ({
 
   if (!character) return null;
 
-  const maxHp = calculateMaxHp(character);
-  const { modifiers } = calculateEffectiveAbilityScores(character);
-  const conMod = modifiers.con;
-  const totalLevel = calculateTotalLevel(character);
+  const evaluated = evaluateCharacter(character);
+  const maxHp = evaluated.hp.max;
+  const totalLevel = evaluated.totalLevel;
 
   // Available Hit Dice
-  const hitDicePool: Record<string, { total: number; used: number }> = {};
-  for (const c of character.classes || []) {
-    const die = c.className === "Barbarian" ? "d12" : ["Fighter", "Paladin", "Ranger"].includes(c.className) ? "d10" : ["Sorcerer", "Wizard"].includes(c.className) ? "d6" : "d8";
-    if (!hitDicePool[die]) hitDicePool[die] = { total: 0, used: 0 };
-    hitDicePool[die].total += c.level;
-    hitDicePool[die].used += character.usedHitDice?.[die] || 0;
-  }
+  const hitDicePool = evaluated.hitDice;
 
-  const spendHitDie = (die: string) => {
-    const currentUsed = character.usedHitDice?.[die] || 0;
-    const pool = hitDicePool[die];
-    if (!pool || currentUsed >= pool.total) return;
+  const handleSpendHitDie = (die: string) => {
+    const res = spendHitDie(character, die);
+    if (res.healed <= 0) return;
 
-    const faces = parseInt(die.replace("d", ""), 10) || 8;
-    const roll = rollDie(faces);
-    const healAmount = Math.max(1, roll + conMod);
-    const newHp = Math.min(maxHp, character.currentHp + healAmount);
-
-    const newUsed = { ...(character.usedHitDice || {}), [die]: currentUsed + 1 };
     setSpentLog((prev) => [
-      `Rolled ${die} (${roll}) + Con (${conMod >= 0 ? `+${conMod}` : conMod}) = healed ${healAmount} HP`,
+      `Rolled ${die} (${res.roll}) + Con (${res.conMod >= 0 ? `+${res.conMod}` : res.conMod}) = healed ${res.healed} HP`,
       ...prev,
     ]);
 
     onUpdateCharacter({
-      currentHp: newHp,
-      usedHitDice: newUsed,
+      currentHp: res.character.currentHp,
+      usedHitDice: res.character.usedHitDice,
     });
   };
 
@@ -174,7 +153,7 @@ export const RestModal: React.FC<RestModalProps> = ({
                   <TouchableOpacity
                     key={die}
                     disabled={!canSpend}
-                    onPress={() => spendHitDie(die)}
+                    onPress={() => handleSpendHitDie(die)}
                     style={[
                       styles.dieCard,
                       {

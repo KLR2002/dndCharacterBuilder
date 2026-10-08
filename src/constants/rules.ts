@@ -40,7 +40,7 @@ export const POINT_BUY_COST: Record<number, number> = {
 export const STANDARD_ARRAY = [15, 14, 13, 12, 10, 8];
 
 // Multiclassing Prerequisite Scores
-export const MULTICLASS_PREREQUISITES: Record<string, Array<{ ability: AbilityKey; minScore: number }> | { or: Array<{ ability: AbilityKey; minScore: number }> }> = {
+export const MULTICLASS_PREREQUISITES: Record<string, { ability: AbilityKey; minScore: number }[] | { or: { ability: AbilityKey; minScore: number }[] }> = {
   Barbarian: [{ ability: "str", minScore: 13 }],
   Bard: [{ ability: "cha", minScore: 13 }],
   Cleric: [{ ability: "wis", minScore: 13 }],

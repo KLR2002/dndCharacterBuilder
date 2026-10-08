@@ -73,9 +73,43 @@ export async function scrapeSpells(client: ToolsClient): Promise<SpellModel[]> {
     const spellInfo = sourceBucket[raw.name] || {};
 
     const classes: string[] = [];
+    const classVariants: { name: string; source: string; definedInSource: string }[] = [];
+
+    const addClass = (name: string) => {
+      if (!classes.includes(name)) classes.push(name);
+    };
+
+    const addVariant = (name: string, source: string, definedInSource: string) => {
+      if (
+        !classVariants.some(
+          (v) => v.name === name && v.definedInSource === definedInSource
+        )
+      ) {
+        classVariants.push({ name, source, definedInSource });
+      }
+    };
+
     if (Array.isArray(spellInfo.class)) {
       for (const c of spellInfo.class) {
-        if (c.name) classes.push(c.name);
+        if (!c.name) continue;
+        const definedIn = c.source || raw.source;
+        if (definedIn === raw.source) {
+          addClass(c.name);
+        } else {
+          addVariant(c.name, raw.source, definedIn);
+        }
+      }
+    }
+
+    if (Array.isArray(spellInfo.classVariant)) {
+      for (const cv of spellInfo.classVariant) {
+        if (!cv.name) continue;
+        const definedIn = cv.definedInSource || raw.source;
+        if (definedIn === raw.source) {
+          addClass(cv.name);
+        } else {
+          addVariant(cv.name, cv.source || raw.source, definedIn);
+        }
       }
     }
 
@@ -106,6 +140,7 @@ export async function scrapeSpells(client: ToolsClient): Promise<SpellModel[]> {
       concentration: durationInfo.concentration,
       ritual,
       classes: [...new Set(classes)].sort(),
+      ...(classVariants.length > 0 ? { classVariants } : {}),
       subclasses: [...new Set(subclasses)].sort(),
       damageTypes: Array.isArray(raw.damageInflict) ? raw.damageInflict : [],
       savingThrows: Array.isArray(raw.savingThrow) ? raw.savingThrow : [],

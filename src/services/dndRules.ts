@@ -1,47 +1,57 @@
 // Compatibility adapter: only catalog resolution belongs here; calculations stay pure.
 import type { Character } from "../types/character.ts";
-import { findRace, findBackground } from "./dataService";
-import { effectiveScores } from "../rules/abilities.ts";
-import { maxHp } from "../rules/hp.ts";
-import { armorClass } from "../rules/ac.ts";
-import { speed, carryingWeight } from "../rules/speed.ts";
-import { savingThrows } from "../rules/saves.ts";
-import { skills } from "../rules/skills.ts";
+import { getRaces, getBackgrounds, getClasses } from "./dataService";
+import {
+  evaluateCharacter as evaluateCharacterRules,
+  type CharacterCatalogs,
+  type EvaluatedCharacter,
+} from "../rules/characterEvaluation.ts";
 
 export { getAbilityModifier, formatModifier } from "../rules/abilities.ts";
 export { totalLevel as calculateTotalLevel, proficiencyBonus as calculateProficiencyBonus } from "../rules/proficiencies.ts";
 export { multiclassSlots as calculateMulticlassSpellSlots, pactSlots } from "../rules/slots.ts";
 export { hitDiceByType } from "../rules/hp.ts";
 export { grantedFeatures } from "../rules/grantedFeatures.ts";
+export { getHitDicePools, spendHitDie, recoverHitDie } from "../rules/hitDice.ts";
+export { type EvaluatedCharacter, type CharacterCatalogs } from "../rules/characterEvaluation.ts";
 
-function ancestry(character: Character) {
-  const choice = character.race;
-  const race = choice ? findRace(choice.name, choice.source) : undefined;
-  const subrace = race?.subraces.find(s => s.name === choice?.subraceName && (!choice.subraceSource || s.source === choice.subraceSource));
-  return { race, subrace };
+export function evaluateCharacter(
+  character: Character,
+  catalogs?: CharacterCatalogs
+): EvaluatedCharacter {
+  const resolved: CharacterCatalogs = {
+    races: catalogs?.races ?? getRaces(catalogs?.activeBooks),
+    backgrounds: catalogs?.backgrounds ?? getBackgrounds(catalogs?.activeBooks),
+    classes: catalogs?.classes ?? getClasses(catalogs?.activeBooks),
+    classRules: catalogs?.classRules,
+    activeBooks: catalogs?.activeBooks,
+  };
+  return evaluateCharacterRules(character, resolved);
 }
+
+// Backward-compatible delegates powered by evaluateCharacter
 export function calculateEffectiveAbilityScores(character: Character) {
-  return effectiveScores(character, ancestry(character));
+  return evaluateCharacter(character).effectiveScores;
 }
 export function calculateMaxHp(character: Character) {
-  return maxHp(character, ancestry(character));
+  return evaluateCharacter(character).hp.max;
 }
 export function calculateArmorClass(character: Character) {
-  return armorClass(character, ancestry(character));
+  return evaluateCharacter(character).armorClass;
 }
 export function calculateSpeed(character: Character) {
-  return speed(character, ancestry(character));
+  return evaluateCharacter(character).speed;
+}
+export function calculateSpeeds(character: Character) {
+  return evaluateCharacter(character).speeds;
 }
 export function calculateSavingThrows(character: Character) {
-  return savingThrows(character, undefined, ancestry(character));
+  return evaluateCharacter(character).saves;
 }
 export function calculateSkills(character: Character) {
-  const bg = character.background ? findBackground(character.background.name, character.background.source) : undefined;
-  return skills(character, {
-    ...ancestry(character),
-    backgrounds: bg ? [bg] : undefined,
-  });
+  return evaluateCharacter(character).skills;
 }
 export function calculateCarryingWeight(character: Character) {
-  return carryingWeight(character, ancestry(character));
+  return evaluateCharacter(character).carryingWeight;
 }
+

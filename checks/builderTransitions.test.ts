@@ -10,6 +10,8 @@ import {
   setCustomBackground,
   applyBackgroundGrants,
   setLanguages,
+  teardownSubclass,
+  reconcileCharacter,
 } from "../src/rules/builderTransitions.ts";
 import type { InventoryItem } from "../src/types/character.ts";
 
@@ -319,4 +321,142 @@ test("setLanguages updates character.languages", () => {
   const updated = setLanguages(char, ["Common", "Elvish", "Draconic"]);
   assert.deepEqual(updated.languages, ["Common", "Elvish", "Draconic"]);
 });
+
+test("teardownSubclass cleans up ruleChoices, swaps, and counters", () => {
+  const initial = makeChar({
+    classes: [{ className: "Druid", source: "PHB", level: 3, subclassName: "Circle of the Land" }],
+    ruleChoices: [
+      {
+        id: "PHB__Druid__Circle of the Land__Biome",
+        trait: "Circle of the Land: Biome",
+        origin: "subclass",
+        choose: 1,
+        from: ["Coast"],
+        picked: ["Coast"],
+      },
+      {
+        id: "MPMM__Aasimar__null__Celestial Revelation",
+        trait: "Celestial Revelation",
+        origin: "race",
+        choose: 1,
+        from: ["Radiant Soul"],
+        picked: ["Radiant Soul"],
+      },
+    ],
+    subclassSpellSwaps: { Alarm: "Shield" },
+    resourceCounters: {
+      bladesong: { id: "bladesong", name: "Bladesong", current: 2, max: 2, resetOn: "short" },
+      wild_shape: { id: "wild_shape", name: "Wild Shape", current: 2, max: 2, resetOn: "short" },
+    },
+  });
+
+  // Teardown Circle of the Land
+  const tornDown = teardownSubclass(initial, "Druid", "Circle of the Land", "Circle of the Moon");
+  assert.equal(tornDown.ruleChoices?.length, 1);
+  assert.equal(tornDown.ruleChoices[0].id, "MPMM__Aasimar__null__Celestial Revelation");
+  // Druid does not wipe sorcerer swaps
+  assert.deepEqual(tornDown.subclassSpellSwaps, { Alarm: "Shield" });
+  assert.ok(tornDown.resourceCounters.wild_shape);
+
+  // Teardown Sorcerer
+  const sorcInitial = makeChar({
+    classes: [{ className: "Sorcerer", source: "TCE", level: 3, subclassName: "Clockwork Soul" }],
+    subclassSpellSwaps: { Alarm: "Shield" },
+  });
+  const tornDownSorc = teardownSubclass(sorcInitial, "Sorcerer", "Clockwork Soul", "Draconic Bloodline");
+  assert.equal(tornDownSorc.subclassSpellSwaps, undefined);
+
+  // Teardown Wizard with Bladesong counter
+  const wizInitial = makeChar({
+    classes: [{ className: "Wizard", source: "TCE", level: 3, subclassName: "Bladesinging" }],
+    resourceCounters: {
+      bladesong: { id: "bladesong", name: "Bladesong", current: 2, max: 2, resetOn: "short" },
+      arcane_recovery: { id: "arcane_recovery", name: "Arcane Recovery", current: 1, max: 1, resetOn: "long" },
+    },
+  });
+  const tornDownWiz = teardownSubclass(wizInitial, "Wizard", "Bladesinging", "Evocation");
+  assert.equal(tornDownWiz.resourceCounters.bladesong, undefined);
+  // Teardown without new subclass (e.g. on deleveling below requirement)
+  const delevelDruid = teardownSubclass(initial, "Druid", "Circle of the Land");
+  assert.equal(delevelDruid.ruleChoices?.length, 1);
+  assert.equal(delevelDruid.ruleChoices[0].id, "MPMM__Aasimar__null__Celestial Revelation");
+});
+
+test("teardownSubclass unconditionally cleans up even when previousSubclassName is empty string", () => {
+  const initial = makeChar({
+    classes: [{ className: "Fighter", level: 1 }],
+    ruleChoices: [
+      {
+        id: "PHB__Fighter__Fighting Style",
+        trait: "Fighting Style",
+        picked: ["Archery"],
+        choose: 1,
+        options: [],
+        origin: "subclass",
+      },
+    ],
+  });
+
+  const tornDown = teardownSubclass(initial, "Fighter", "");
+  assert.equal(tornDown.ruleChoices?.length, 0);
+});
+
+test("reconcileCharacter cleanses orphaned fighting styles, maneuvers, invocations, infusions, and arcanum in a single pass", () => {
+  // Multiclass character with features from Fighter, Battle Master, Warlock, Artificer
+  const initial = makeChar({
+    classes: [
+      { className: "Fighter", source: "PHB", level: 3, subclassName: "Battle Master" },
+      { className: "Warlock", source: "PHB", level: 11 },
+      { className: "Artificer", source: "TCE", level: 2 },
+    ],
+    ruleChoices: [
+      { id: "PHB__Fighter__Fighting Style", trait: "Fighting Style", picked: ["Archery"], choose: 1, options: [], origin: "class" },
+      { id: "PHB__Fighter__Battle Master__Maneuvers 3", trait: "Combat Superiority", picked: ["Parry", "Riposte", "Trip Attack"], choose: 3, options: [], origin: "class" },
+      { id: "PHB__Warlock__Pact Boon", trait: "Pact Boon", picked: ["Pact of the Tome"], choose: 1, options: [], origin: "class" },
+      { id: "Warlock__Pact of the Tome__Cantrips", trait: "Pact of the Tome Cantrips", picked: ["Guidance", "Shillelagh", "Vicious Mockery"], choose: 3, options: [], origin: "class" },
+      { id: "PHB__Warlock__Invocations 2", trait: "Eldritch Invocations (2nd Level)", picked: ["Agonizing Blast", "Armor of Shadows"], choose: 2, options: [], origin: "class" },
+      { id: "Warlock__Mystic Arcanum 11", trait: "Mystic Arcanum (6th Level)", picked: ["Circle of Death"], choose: 1, options: [], origin: "class" },
+      { id: "TCE__Artificer__Infusions 2", trait: "Infusions Known (2nd Level)", picked: ["Enhanced Defense", "Replicate Magic Item: Bag of Holding"], choose: 4, options: [], origin: "class" },
+    ],
+    knownSpells: [
+      { name: "Guidance", ownerKey: "Warlock__Tome", ability: "cha", className: "Warlock", source: "PHB" },
+      { name: "Shillelagh", ownerKey: "Warlock__Tome", ability: "cha", className: "Warlock", source: "PHB" },
+      { name: "Vicious Mockery", ownerKey: "Warlock__Tome", ability: "cha", className: "Warlock", source: "PHB" },
+    ],
+  });
+
+  // 1. Idempotency check: running reconcileCharacter on valid character changes nothing
+  const unchanged = reconcileCharacter(initial);
+  assert.equal(unchanged.ruleChoices?.length, 7);
+  assert.equal(unchanged.knownSpells?.length, 3);
+
+  // 2. De-leveling Fighter to level 0 (removed), Warlock to 2, and Artificer to 1
+  const delevelled: typeof initial = {
+    ...initial,
+    classes: [
+      { className: "Warlock", source: "PHB", level: 2 },
+    ],
+  };
+
+  const reconciled = reconcileCharacter(delevelled);
+
+  // Fighter styles and Battle Master maneuvers must be removed
+  assert.ok(!reconciled.ruleChoices?.some((rc) => rc.id.includes("Fighter")));
+  assert.ok(!reconciled.ruleChoices?.some((rc) => rc.id.includes("Battle Master")));
+
+  // Mystic Arcanum (level 11 requirement) and Artificer infusions must be removed
+  assert.ok(!reconciled.ruleChoices?.some((rc) => rc.id.includes("Mystic Arcanum")));
+  assert.ok(!reconciled.ruleChoices?.some((rc) => rc.id.includes("Artificer")));
+
+  // Warlock 2 has no Pact Boon (requires lvl 3), so Pact of the Tome cantrips and Boon are removed
+  assert.ok(!reconciled.ruleChoices?.some((rc) => rc.id.includes("Pact Boon")));
+  assert.ok(!reconciled.ruleChoices?.some((rc) => rc.id.includes("Pact of the Tome")));
+  assert.ok(!reconciled.knownSpells?.some((k) => k.ownerKey === "Warlock__Tome"));
+
+  // Level 2 Warlock invocations should be preserved
+  assert.ok(reconciled.ruleChoices?.some((rc) => rc.id === "PHB__Warlock__Invocations 2"));
+});
+
+
+
 

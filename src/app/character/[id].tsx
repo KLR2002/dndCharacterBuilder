@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   ScrollView,
   StyleSheet,
@@ -21,7 +21,8 @@ import { Badge } from "../../components/ui/Badge";
 import { Button } from "../../components/ui/Button";
 import { useCharacters } from "../../context/CharacterContext";
 import { useAppTheme } from "../../context/ThemeContext";
-import { calculateMaxHp, calculateTotalLevel } from "../../services/dndRules";
+import { useResponsiveLayout } from "../../hooks/useResponsiveLayout";
+import { evaluateCharacter } from "../../services/dndRules";
 
 type TabKey = "builder" | "stats" | "spells" | "inventory" | "features" | "journal" | "actions";
 
@@ -46,9 +47,13 @@ export default function CharacterSheetScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { characters, currentCharacter, selectCharacter } = useCharacters();
   const { theme } = useAppTheme();
+  const { isCompact } = useResponsiveLayout();
 
   const [activeTab, setActiveTab] = useState<TabKey>("builder");
   const [restModalVisible, setRestModalVisible] = useState(false);
+  const [scrollX, setScrollX] = useState(0);
+  const [scrollWidth, setScrollWidth] = useState(0);
+  const [layoutWidth, setLayoutWidth] = useState(0);
 
   useEffect(() => {
     if (id) {
@@ -56,7 +61,12 @@ export default function CharacterSheetScreen() {
     }
   }, [id, characters, selectCharacter]);
 
-  if (!currentCharacter) {
+  const evaluated = useMemo(
+    () => (currentCharacter ? evaluateCharacter(currentCharacter) : null),
+    [currentCharacter]
+  );
+
+  if (!currentCharacter || !evaluated) {
     return (
       <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
         <View style={styles.notFoundContainer}>
@@ -69,8 +79,8 @@ export default function CharacterSheetScreen() {
     );
   }
 
-  const totalLevel = calculateTotalLevel(currentCharacter);
-  const maxHp = calculateMaxHp(currentCharacter);
+  const totalLevel = evaluated.totalLevel;
+  const maxHp = evaluated.hp.max;
   const classSummary = (currentCharacter.classes || [])
     .map((c) => `${c.className} ${c.level}`)
     .join(" / ") || "Lvl 1";
@@ -80,17 +90,22 @@ export default function CharacterSheetScreen() {
     <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
       {/* Top Header Bar */}
       <View style={[styles.topHeader, { borderBottomColor: theme.border, backgroundColor: theme.surface }]}>
-        <View style={styles.headerInner}>
+        <View style={[styles.headerInner, isCompact && { paddingHorizontal: 8 }]}>
           <TouchableOpacity
             onPress={() => router.back()}
-            style={[styles.backBtn, { backgroundColor: theme.surfaceHighlight, borderColor: theme.border }]}>
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            style={[
+              styles.backBtn,
+              { backgroundColor: theme.surfaceHighlight, borderColor: theme.border },
+              isCompact && { width: 32, height: 32 }
+            ]}>
             <Ionicons name="arrow-back" size={20} color={theme.text} />
           </TouchableOpacity>
 
           {/* Character Title & Summary */}
           <View style={{ flex: 1, marginHorizontal: 8 }}>
             <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-              <Text style={[styles.charName, { color: theme.text }]} numberOfLines={1}>
+              <Text style={[styles.charName, { color: theme.text }, isCompact && { fontSize: 14 }]} numberOfLines={1}>
                 {currentCharacter.name}
               </Text>
               <Badge label={`Lvl ${totalLevel}`} variant="accent" size="sm" />
@@ -103,15 +118,29 @@ export default function CharacterSheetScreen() {
           {/* Quick HP & Rest Buttons */}
           <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
             <View style={[styles.quickHpBadge, { borderColor: theme.border, backgroundColor: theme.surfaceHighlight }]}>
-              <Ionicons name="heart" size={14} color={currentCharacter.currentHp > 0 ? theme.hpGreen : theme.danger} />
+              {!isCompact && (
+                <Ionicons name="heart" size={14} color={currentCharacter.currentHp > 0 ? theme.hpGreen : theme.danger} />
+              )}
               <Text style={[styles.quickHpText, { color: theme.text }]}>
                 {currentCharacter.currentHp}/{maxHp}
               </Text>
             </View>
 
+            <View style={[styles.quickHpBadge, { borderColor: theme.border, backgroundColor: theme.surfaceHighlight }]}>
+              <Ionicons name="shield-outline" size={13} color={theme.accent} />
+              <Text style={[styles.quickHpText, { color: theme.text }]}>
+                {evaluated.armorClass.ac}
+              </Text>
+            </View>
+
             <TouchableOpacity
               onPress={() => setRestModalVisible(true)}
-              style={[styles.restBtn, { backgroundColor: theme.surfaceHighlight, borderColor: theme.border }]}>
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              style={[
+                styles.restBtn,
+                { backgroundColor: theme.surfaceHighlight, borderColor: theme.border },
+                isCompact && { width: 32, height: 32 }
+              ]}>
               <Ionicons name="bed-outline" size={18} color={theme.accent} />
             </TouchableOpacity>
           </View>
@@ -124,6 +153,10 @@ export default function CharacterSheetScreen() {
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
+            scrollEventThrottle={16}
+            onScroll={(e) => setScrollX(e.nativeEvent.contentOffset.x)}
+            onContentSizeChange={(w) => setScrollWidth(w)}
+            onLayout={(e) => setLayoutWidth(e.nativeEvent.layout.width)}
             contentContainerStyle={styles.tabsScrollContent}>
             {TABS.map((tab) => {
               const isActive = activeTab === tab.key;
@@ -133,6 +166,7 @@ export default function CharacterSheetScreen() {
                   onPress={() => setActiveTab(tab.key)}
                   style={[
                     styles.tabItem,
+                    isCompact && { paddingHorizontal: 10 },
                     isActive && [styles.activeTabItem, { borderBottomColor: theme.accent }],
                   ]}>
                   <Ionicons
@@ -144,6 +178,7 @@ export default function CharacterSheetScreen() {
                     style={[
                       styles.tabLabel,
                       { color: isActive ? theme.accent : theme.textSecondary, fontWeight: isActive ? "700" : "500" },
+                      isCompact && { fontSize: 12 }
                     ]}>
                     {tab.label}
                   </Text>
@@ -151,6 +186,26 @@ export default function CharacterSheetScreen() {
               );
             })}
           </ScrollView>
+
+          {/* Left Fade Indicator */}
+          {scrollX > 0 && (
+            <View style={[styles.fadeIndicator, styles.fadeLeft]} pointerEvents="none">
+              <View style={[styles.fadeStrip, { backgroundColor: theme.surface, opacity: 0.9 }]} />
+              <View style={[styles.fadeStrip, { backgroundColor: theme.surface, opacity: 0.6 }]} />
+              <View style={[styles.fadeStrip, { backgroundColor: theme.surface, opacity: 0.3 }]} />
+              <View style={[styles.fadeStrip, { backgroundColor: theme.surface, opacity: 0.1 }]} />
+            </View>
+          )}
+
+          {/* Right Fade Indicator */}
+          {scrollWidth > layoutWidth && scrollX < scrollWidth - layoutWidth - 5 && (
+            <View style={[styles.fadeIndicator, styles.fadeRight]} pointerEvents="none">
+              <View style={[styles.fadeStrip, { backgroundColor: theme.surface, opacity: 0.1 }]} />
+              <View style={[styles.fadeStrip, { backgroundColor: theme.surface, opacity: 0.3 }]} />
+              <View style={[styles.fadeStrip, { backgroundColor: theme.surface, opacity: 0.6 }]} />
+              <View style={[styles.fadeStrip, { backgroundColor: theme.surface, opacity: 0.9 }]} />
+            </View>
+          )}
         </View>
       </View>
 
@@ -257,11 +312,29 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     borderBottomWidth: 2,
     borderBottomColor: "transparent",
+    minHeight: 44,
   },
   activeTabItem: {
     borderBottomWidth: 2,
   },
   tabLabel: {
     fontSize: 13,
+  },
+  fadeIndicator: {
+    position: "absolute",
+    top: 0,
+    bottom: 0,
+    width: 24,
+    flexDirection: "row",
+  },
+  fadeLeft: {
+    left: 0,
+  },
+  fadeRight: {
+    right: 0,
+  },
+  fadeStrip: {
+    width: 6,
+    height: "100%",
   },
 });

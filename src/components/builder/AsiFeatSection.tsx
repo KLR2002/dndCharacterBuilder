@@ -4,6 +4,14 @@ import { Ionicons } from "@expo/vector-icons";
 import { AbilityKey, Character } from "../../types/character";
 import { FeatData } from "../../types/dnd5e";
 import { applyAsiSelection, getFeatAbilityBonusOptions, removeAsiSelection } from "../../rules/leveling";
+import { validateFeatPrerequisites } from "../../rules/feats";
+import {
+  battleMasterManeuverChoices,
+  fightingStyleRuleChoices,
+  pickFightingStyleChoice,
+  pickSubclassRuleChoice,
+  warlockInvocationChoices,
+} from "../../rules/ruleChoices";
 import { Badge } from "../ui/Badge";
 import { Button } from "../ui/Button";
 import { Card } from "../ui/Card";
@@ -23,6 +31,7 @@ export interface AsiFeatSectionProps {
   primaryClass?: string;
   onViewDetail: (item: { title: string; subtitle?: string; source?: string; description?: string; tags?: string[] }) => void;
   theme: any;
+  activeBooks?: string[];
 }
 
 export const AsiFeatSection: React.FC<AsiFeatSectionProps> = ({
@@ -33,6 +42,7 @@ export const AsiFeatSection: React.FC<AsiFeatSectionProps> = ({
   primaryClass,
   onViewDetail,
   theme,
+  activeBooks,
 }) => {
   const [activeAsiSlot, setActiveAsiSlot] = useState<string | null>(null);
   const [asiTab, setAsiTab] = useState<"asi" | "feat">("asi");
@@ -41,6 +51,9 @@ export const AsiFeatSection: React.FC<AsiFeatSectionProps> = ({
   const [asiPlus1Picks, setAsiPlus1Picks] = useState<AbilityKey[]>([]);
   const [asiSelectedFeat, setAsiSelectedFeat] = useState<FeatData | null>(null);
   const [asiSelectedFeatAbility, setAsiSelectedFeatAbility] = useState<AbilityKey | null>(null);
+  const [asiSelectedFightingStyle, setAsiSelectedFightingStyle] = useState<string | null>(null);
+  const [asiSelectedManeuvers, setAsiSelectedManeuvers] = useState<string[]>([]);
+  const [asiSelectedInvocation, setAsiSelectedInvocation] = useState<string | null>(null);
   const [asiFeatSearch, setAsiFeatSearch] = useState("");
 
   const existingAsis = character.asiSelections || [];
@@ -77,8 +90,8 @@ export const AsiFeatSection: React.FC<AsiFeatSectionProps> = ({
       const opts = getFeatAbilityBonusOptions(asiSelectedFeat.name, asiSelectedFeat);
       if (opts.type === "choice" && !asiSelectedFeatAbility) return;
       const featAbility = opts.type === "fixed" ? opts.abilities[0] : asiSelectedFeatAbility || undefined;
-      onUpdate((current) =>
-        applyAsiSelection(current, {
+      onUpdate((current) => {
+        let updated = applyAsiSelection(current, {
           className,
           classLevel,
           level: classLevel,
@@ -87,10 +100,37 @@ export const AsiFeatSection: React.FC<AsiFeatSectionProps> = ({
           featSource: asiSelectedFeat.source,
           featAbility,
           asi: featAbility ? { [featAbility]: 1 } : undefined,
-        })
-      );
+        });
+        if (asiSelectedFeat.name.toLowerCase() === "fighting initiate" && asiSelectedFightingStyle) {
+          const fsChoices = fightingStyleRuleChoices(updated);
+          const fiChoice = fsChoices.find((c) => c.id.includes("Fighting Initiate"));
+          if (fiChoice) {
+            updated = pickFightingStyleChoice(updated, fiChoice, asiSelectedFightingStyle);
+          }
+        }
+        if (asiSelectedFeat.name.toLowerCase() === "martial adept" && asiSelectedManeuvers.length > 0) {
+          const mChoices = battleMasterManeuverChoices(updated);
+          const maChoice = mChoices.find((c) => c.id.includes("Martial Adept"));
+          if (maChoice) {
+            for (const m of asiSelectedManeuvers) {
+              updated = pickSubclassRuleChoice(updated, maChoice, m);
+            }
+          }
+        }
+        if (asiSelectedFeat.name.toLowerCase() === "eldritch adept" && asiSelectedInvocation) {
+          const invChoices = warlockInvocationChoices(updated, activeBooks);
+          const eaChoice = invChoices.find((c) => c.id.includes("Eldritch Adept"));
+          if (eaChoice) {
+            updated = pickSubclassRuleChoice(updated, eaChoice, asiSelectedInvocation);
+          }
+        }
+        return updated;
+      });
       setAsiSelectedFeat(null);
       setAsiSelectedFeatAbility(null);
+      setAsiSelectedFightingStyle(null);
+      setAsiSelectedManeuvers([]);
+      setAsiSelectedInvocation(null);
       setAsiFeatSearch("");
     }
     setActiveAsiSlot(null);
@@ -321,6 +361,7 @@ export const AsiFeatSection: React.FC<AsiFeatSectionProps> = ({
                         .filter((f) => f.name.toLowerCase().includes(asiFeatSearch.toLowerCase()))
                         .map((f) => {
                           const isSelected = asiSelectedFeat?.name === f.name;
+                          const prereqCheck = validateFeatPrerequisites(character, f);
                           return (
                             <TouchableOpacity
                               key={`${f.name}_${f.source}`}
@@ -328,6 +369,9 @@ export const AsiFeatSection: React.FC<AsiFeatSectionProps> = ({
                                 setAsiSelectedFeat(f);
                                 const opts = getFeatAbilityBonusOptions(f.name, f);
                                 setAsiSelectedFeatAbility(opts.type === "fixed" ? opts.abilities[0] : null);
+                                setAsiSelectedFightingStyle(null);
+                                setAsiSelectedManeuvers([]);
+                                setAsiSelectedInvocation(null);
                               }}
                               style={[
                                 styles.featureRow,
@@ -340,15 +384,20 @@ export const AsiFeatSection: React.FC<AsiFeatSectionProps> = ({
                               ]}
                             >
                               <View style={{ flex: 1 }}>
-                                <Text
-                                  style={{
-                                    color: isSelected ? theme.accent : theme.text,
-                                    fontWeight: "700",
-                                    fontSize: 13,
-                                  }}
-                                >
-                                  {f.name}
-                                </Text>
+                                <View style={{ flexDirection: "row", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+                                  <Text
+                                    style={{
+                                      color: isSelected ? theme.accent : theme.text,
+                                      fontWeight: "700",
+                                      fontSize: 13,
+                                    }}
+                                  >
+                                    {f.name}
+                                  </Text>
+                                  {!prereqCheck.met && (
+                                    <Badge label={`⚠️ ${prereqCheck.reason}`} variant="danger" size="sm" />
+                                  )}
+                                </View>
                                 <Text style={{ color: theme.textMuted, fontSize: 11 }}>
                                   {f.source}
                                   {f.prerequisite ? ` • Prereq: ${f.prerequisite}` : ""}
@@ -417,17 +466,18 @@ export const AsiFeatSection: React.FC<AsiFeatSectionProps> = ({
                                     <TouchableOpacity
                                       key={ab}
                                       onPress={() => setAsiSelectedFeatAbility(ab)}
+                                      hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                                       style={[
-                                        styles.optionChip,
+                                        styles.choiceChip,
                                         {
-                                          backgroundColor: isPicked ? theme.accent : theme.surface,
+                                          backgroundColor: isPicked ? theme.accentGlow : theme.surfaceHighlight,
                                           borderColor: isPicked ? theme.accent : theme.border,
                                         },
                                       ]}
                                     >
                                       <Text
                                         style={{
-                                          color: isPicked ? "#fff" : theme.text,
+                                          color: isPicked ? theme.accent : theme.textSecondary,
                                           fontWeight: isPicked ? "700" : "500",
                                           fontSize: 12,
                                         }}
@@ -443,6 +493,213 @@ export const AsiFeatSection: React.FC<AsiFeatSectionProps> = ({
                         );
                       })()}
 
+                    {asiSelectedFeat && asiSelectedFeat.name.toLowerCase() === "fighting initiate" && (() => {
+                      const tempChar: Character = {
+                        ...character,
+                        asiSelections: [
+                          ...(character.asiSelections || []),
+                          { type: "feat", featName: "Fighting Initiate", level: 1 },
+                        ],
+                      };
+                      const fsChoice = fightingStyleRuleChoices(tempChar).find((c) => c.id.includes("Fighting Initiate"));
+                      const options = fsChoice?.options ?? [];
+                      return (
+                        <View
+                          style={{
+                            gap: 6,
+                            padding: 8,
+                            backgroundColor: theme.surfaceHighlight,
+                            borderRadius: 6,
+                          }}
+                        >
+                          <Text style={{ color: theme.text, fontSize: 12, fontWeight: "600" }}>
+                            Choose Fighting Style (Fighter):
+                          </Text>
+                          <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6 }}>
+                            {options.map((opt) => {
+                              const isPicked = asiSelectedFightingStyle === opt.name;
+                              return (
+                                <TouchableOpacity
+                                  key={opt.name}
+                                  onPress={() => setAsiSelectedFightingStyle(isPicked ? null : opt.name)}
+                                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                                  style={[
+                                    styles.choiceChip,
+                                    {
+                                      backgroundColor: isPicked ? theme.accentGlow : theme.surfaceHighlight,
+                                      borderColor: isPicked ? theme.accent : theme.border,
+                                    },
+                                  ]}
+                                >
+                                  <Text
+                                    style={{
+                                      color: isPicked ? theme.accent : theme.textSecondary,
+                                      fontWeight: isPicked ? "700" : "500",
+                                      fontSize: 12,
+                                    }}
+                                  >
+                                    {opt.name}
+                                  </Text>
+                                </TouchableOpacity>
+                              );
+                            })}
+                          </View>
+                          {asiSelectedFightingStyle && (() => {
+                            const selectedOpt = options.find((o) => o.name === asiSelectedFightingStyle);
+                            if (!selectedOpt?.description) return null;
+                            return (
+                              <Text style={{ color: theme.textMuted, fontSize: 11, marginTop: 4 }}>
+                                <Text style={{ color: theme.accent, fontWeight: "600" }}>{selectedOpt.name}: </Text>
+                                {selectedOpt.description}
+                              </Text>
+                            );
+                          })()}
+                        </View>
+                      );
+                    })()}
+
+                    {asiSelectedFeat && asiSelectedFeat.name.toLowerCase() === "martial adept" && (() => {
+                      const tempChar: Character = {
+                        ...character,
+                        asiSelections: [
+                          ...(character.asiSelections || []),
+                          { type: "feat", featName: "Martial Adept", level: 1 },
+                        ],
+                      };
+                      const maChoice = battleMasterManeuverChoices(tempChar).find((c) => c.id.includes("Martial Adept"));
+                      const options = maChoice?.options ?? [];
+                      return (
+                        <View
+                          style={{
+                            gap: 6,
+                            padding: 8,
+                            backgroundColor: theme.surfaceHighlight,
+                            borderRadius: 6,
+                          }}
+                        >
+                          <Text style={{ color: theme.text, fontSize: 12, fontWeight: "600" }}>
+                            Choose 2 Maneuvers (Martial Adept): ({asiSelectedManeuvers.length}/2)
+                          </Text>
+                          <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6 }}>
+                            {options.map((opt) => {
+                              const isPicked = asiSelectedManeuvers.includes(opt.name);
+                              return (
+                                <TouchableOpacity
+                                  key={opt.name}
+                                  onPress={() => {
+                                    if (isPicked) {
+                                      setAsiSelectedManeuvers((prev) => prev.filter((m) => m !== opt.name));
+                                    } else {
+                                      setAsiSelectedManeuvers((prev) =>
+                                        prev.length >= 2 ? [...prev.slice(1), opt.name] : [...prev, opt.name]
+                                      );
+                                    }
+                                  }}
+                                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                                  style={[
+                                    styles.choiceChip,
+                                    {
+                                      backgroundColor: isPicked ? theme.accentGlow : theme.surfaceHighlight,
+                                      borderColor: isPicked ? theme.accent : theme.border,
+                                    },
+                                  ]}
+                                >
+                                  <Text
+                                    style={{
+                                      color: isPicked ? theme.accent : theme.textSecondary,
+                                      fontWeight: isPicked ? "700" : "500",
+                                      fontSize: 12,
+                                    }}
+                                  >
+                                    {opt.name}
+                                  </Text>
+                                </TouchableOpacity>
+                              );
+                            })}
+                          </View>
+                          {asiSelectedManeuvers.length > 0 && (
+                            <View style={{ gap: 2, marginTop: 4 }}>
+                              {asiSelectedManeuvers.map((mName) => {
+                                const opt = options.find((o) => o.name === mName);
+                                if (!opt?.description) return null;
+                                return (
+                                  <Text key={mName} style={{ color: theme.textMuted, fontSize: 11 }}>
+                                    <Text style={{ color: theme.accent, fontWeight: "600" }}>{opt.name}: </Text>
+                                    {opt.description}
+                                  </Text>
+                                );
+                              })}
+                            </View>
+                          )}
+                        </View>
+                      );
+                    })()}
+
+                    {asiSelectedFeat && asiSelectedFeat.name.toLowerCase() === "eldritch adept" && (() => {
+                      const tempChar: Character = {
+                        ...character,
+                        asiSelections: [
+                          ...(character.asiSelections || []),
+                          { type: "feat", featName: "Eldritch Adept", level: 1 },
+                        ],
+                      };
+                      const eaChoice = warlockInvocationChoices(tempChar, activeBooks).find((c) => c.id.includes("Eldritch Adept"));
+                      const options = eaChoice?.options ?? [];
+                      return (
+                        <View
+                          style={{
+                            gap: 6,
+                            padding: 8,
+                            backgroundColor: theme.surfaceHighlight,
+                            borderRadius: 6,
+                          }}
+                        >
+                          <Text style={{ color: theme.text, fontSize: 12, fontWeight: "600" }}>
+                            Choose Eldritch Invocation (Eldritch Adept):
+                          </Text>
+                          <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6 }}>
+                            {options.map((opt) => {
+                              const isPicked = asiSelectedInvocation === opt.name;
+                              return (
+                                <TouchableOpacity
+                                  key={opt.name}
+                                  onPress={() => setAsiSelectedInvocation(isPicked ? null : opt.name)}
+                                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                                  style={[
+                                    styles.choiceChip,
+                                    {
+                                      backgroundColor: isPicked ? theme.accentGlow : theme.surfaceHighlight,
+                                      borderColor: isPicked ? theme.accent : theme.border,
+                                    },
+                                  ]}
+                                >
+                                  <Text
+                                    style={{
+                                      color: isPicked ? theme.accent : theme.textSecondary,
+                                      fontWeight: isPicked ? "700" : "500",
+                                      fontSize: 12,
+                                    }}
+                                  >
+                                    {opt.name}
+                                  </Text>
+                                </TouchableOpacity>
+                              );
+                            })}
+                          </View>
+                          {asiSelectedInvocation && (() => {
+                            const selectedOpt = options.find((o) => o.name === asiSelectedInvocation);
+                            if (!selectedOpt?.description) return null;
+                            return (
+                              <Text style={{ color: theme.textMuted, fontSize: 11, marginTop: 4 }}>
+                                <Text style={{ color: theme.accent, fontWeight: "600" }}>{selectedOpt.name}: </Text>
+                                {selectedOpt.description}
+                              </Text>
+                            );
+                          })()}
+                        </View>
+                      );
+                    })()}
+
                     <Button
                       title={asiSelectedFeat ? `Save Feat: ${asiSelectedFeat.name}` : "Select a Feat"}
                       variant="primary"
@@ -450,7 +707,10 @@ export const AsiFeatSection: React.FC<AsiFeatSectionProps> = ({
                       disabled={
                         !asiSelectedFeat ||
                         (getFeatAbilityBonusOptions(asiSelectedFeat.name, asiSelectedFeat).type === "choice" &&
-                          !asiSelectedFeatAbility)
+                          !asiSelectedFeatAbility) ||
+                        (asiSelectedFeat.name.toLowerCase() === "fighting initiate" && !asiSelectedFightingStyle) ||
+                        (asiSelectedFeat.name.toLowerCase() === "martial adept" && asiSelectedManeuvers.length < 2) ||
+                        (asiSelectedFeat.name.toLowerCase() === "eldritch adept" && !asiSelectedInvocation)
                       }
                       onPress={() => handleSaveAsi(slot.className, slot.classLevel)}
                     />
@@ -485,49 +745,215 @@ export const AsiFeatSection: React.FC<AsiFeatSectionProps> = ({
             return (
               <View
                 key={`${slotKey}_${idx}`}
-                style={[styles.featureRow, { borderColor: theme.border, justifyContent: "space-between" }]}
+                style={[styles.featureRow, { borderColor: theme.border, flexDirection: "column", alignItems: "stretch", gap: 8 }]}
               >
-                <View style={{ flex: 1 }}>
-                  <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-                    <Badge label={`${clsName} Lvl ${lvl}`} variant="accent" size="sm" />
-                    <Text style={{ color: theme.text, fontWeight: "600", fontSize: 13 }}>
-                      {isAsi ? "Ability Score Improvement" : sel.featName}
-                    </Text>
+                <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
+                  <View style={{ flex: 1 }}>
+                    <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+                      <Badge label={`${clsName} Lvl ${lvl}`} variant="accent" size="sm" />
+                      <Text style={{ color: theme.text, fontWeight: "600", fontSize: 13 }}>
+                        {isAsi ? "Ability Score Improvement" : sel.featName}
+                      </Text>
+                    </View>
+                    <Text style={{ color: theme.textSecondary, fontSize: 12, marginTop: 2 }}>{summary}</Text>
                   </View>
-                  <Text style={{ color: theme.textSecondary, fontSize: 12, marginTop: 2 }}>{summary}</Text>
-                </View>
-                <View style={{ flexDirection: "row", gap: 6, alignItems: "center" }}>
-                  {!isAsi && (
+                  <View style={{ flexDirection: "row", gap: 6, alignItems: "center" }}>
+                    {!isAsi && (
+                      <Button
+                        title="Info"
+                        variant="ghost"
+                        size="sm"
+                        onPress={() => {
+                          const f = allFeats.find((feat) => feat.name.toLowerCase() === sel.featName?.toLowerCase());
+                          if (f) {
+                            onViewDetail({ title: f.name, source: f.source, description: f.description });
+                          }
+                        }}
+                      />
+                    )}
                     <Button
-                      title="Info"
+                      title="Change"
+                      variant="outline"
+                      size="sm"
+                      onPress={() => {
+                        onUpdate((current) => removeAsiSelection(current, clsName, lvl));
+                        setActiveAsiSlot(slotKey);
+                      }}
+                    />
+                    <Button
+                      title="Remove"
                       variant="ghost"
                       size="sm"
                       onPress={() => {
-                        const f = allFeats.find((feat) => feat.name.toLowerCase() === sel.featName?.toLowerCase());
-                        if (f) {
-                          onViewDetail({ title: f.name, source: f.source, description: f.description });
-                        }
+                        onUpdate((current) => removeAsiSelection(current, clsName, lvl));
                       }}
                     />
-                  )}
-                  <Button
-                    title="Change"
-                    variant="outline"
-                    size="sm"
-                    onPress={() => {
-                      onUpdate((current) => removeAsiSelection(current, clsName, lvl));
-                      setActiveAsiSlot(slotKey);
-                    }}
-                  />
-                  <Button
-                    title="Remove"
-                    variant="ghost"
-                    size="sm"
-                    onPress={() => {
-                      onUpdate((current) => removeAsiSelection(current, clsName, lvl));
-                    }}
-                  />
+                  </View>
                 </View>
+
+                {sel.featName?.toLowerCase() === "fighting initiate" && (() => {
+                  const fsChoice = fightingStyleRuleChoices(character).find((c) => c.id.includes("Fighting Initiate"));
+                  const currentPick = character.ruleChoices?.find((rc) => rc.id.includes("Fighting Initiate"))?.picked?.[0];
+                  if (!fsChoice) return null;
+                  return (
+                    <View style={{ marginTop: 4, gap: 6, paddingTop: 6, borderTopWidth: 1, borderTopColor: theme.border }}>
+                      <Text style={{ color: theme.textSecondary, fontSize: 12, fontWeight: "600" }}>
+                        Fighting Style: {currentPick ? <Text style={{ color: theme.accent, fontWeight: "700" }}>{currentPick}</Text> : <Text style={{ color: theme.warning }}>(None selected)</Text>}
+                      </Text>
+                      <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 5 }}>
+                        {fsChoice.options.map((opt) => {
+                          const isSelected = currentPick === opt.name;
+                          return (
+                            <TouchableOpacity
+                              key={opt.name}
+                              onPress={() => onUpdate((cur) => pickFightingStyleChoice(cur, fsChoice, opt.name))}
+                              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                              style={[
+                                styles.choiceChip,
+                                {
+                                  backgroundColor: isSelected ? theme.accentGlow : theme.surfaceHighlight,
+                                  borderColor: isSelected ? theme.accent : theme.border,
+                                },
+                              ]}
+                            >
+                              <Text
+                                style={{
+                                  color: isSelected ? theme.accent : theme.textSecondary,
+                                  fontSize: 11,
+                                  fontWeight: isSelected ? "700" : "500",
+                                }}
+                              >
+                                {opt.name}
+                              </Text>
+                            </TouchableOpacity>
+                          );
+                        })}
+                      </View>
+                      {currentPick && (() => {
+                        const opt = fsChoice.options.find((o) => o.name === currentPick);
+                        if (!opt?.description) return null;
+                        return (
+                          <Text style={{ color: theme.textMuted, fontSize: 11, marginTop: 2 }}>
+                            <Text style={{ color: theme.accent, fontWeight: "600" }}>{opt.name}: </Text>
+                            {opt.description}
+                          </Text>
+                        );
+                      })()}
+                    </View>
+                  );
+                })()}
+
+                {sel.featName?.toLowerCase() === "martial adept" && (() => {
+                  const maChoice = battleMasterManeuverChoices(character).find((c) => c.id.includes("Martial Adept"));
+                  const currentPicks = character.ruleChoices?.find((rc) => rc.id.includes("Martial Adept"))?.picked || [];
+                  if (!maChoice) return null;
+                  return (
+                    <View style={{ marginTop: 4, gap: 6, paddingTop: 6, borderTopWidth: 1, borderTopColor: theme.border }}>
+                      <Text style={{ color: theme.textSecondary, fontSize: 12, fontWeight: "600" }}>
+                        Maneuvers: {currentPicks.length > 0 ? (
+                          <Text style={{ color: theme.accent, fontWeight: "700" }}>{currentPicks.join(", ")}</Text>
+                        ) : (
+                          <Text style={{ color: theme.warning }}>(None selected - choose 2)</Text>
+                        )}
+                      </Text>
+                      <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 5 }}>
+                        {maChoice.options.map((opt) => {
+                          const isSelected = currentPicks.includes(opt.name);
+                          return (
+                            <TouchableOpacity
+                              key={opt.name}
+                              onPress={() => onUpdate((cur) => pickSubclassRuleChoice(cur, maChoice, opt.name))}
+                              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                              style={[
+                                styles.choiceChip,
+                                {
+                                  backgroundColor: isSelected ? theme.accentGlow : theme.surfaceHighlight,
+                                  borderColor: isSelected ? theme.accent : theme.border,
+                                },
+                              ]}
+                            >
+                              <Text
+                                style={{
+                                  color: isSelected ? theme.accent : theme.textSecondary,
+                                  fontSize: 11,
+                                  fontWeight: isSelected ? "700" : "500",
+                                }}
+                              >
+                                {opt.name}
+                              </Text>
+                            </TouchableOpacity>
+                          );
+                        })}
+                      </View>
+                      {currentPicks.length > 0 && (
+                        <View style={{ gap: 2, marginTop: 2 }}>
+                          {currentPicks.map((mName) => {
+                            const opt = maChoice.options.find((o) => o.name === mName);
+                            if (!opt?.description) return null;
+                            return (
+                              <Text key={mName} style={{ color: theme.textMuted, fontSize: 11 }}>
+                                <Text style={{ color: theme.accent, fontWeight: "600" }}>{opt.name}: </Text>
+                                {opt.description}
+                              </Text>
+                            );
+                          })}
+                        </View>
+                      )}
+                    </View>
+                  );
+                })()}
+
+                {sel.featName?.toLowerCase() === "eldritch adept" && (() => {
+                  const eaChoice = warlockInvocationChoices(character, activeBooks).find((c) => c.id.includes("Eldritch Adept"));
+                  const currentPick = character.ruleChoices?.find((rc) => rc.id.includes("Eldritch Adept"))?.picked?.[0];
+                  if (!eaChoice) return null;
+                  return (
+                    <View style={{ marginTop: 4, gap: 6, paddingTop: 6, borderTopWidth: 1, borderTopColor: theme.border }}>
+                      <Text style={{ color: theme.textSecondary, fontSize: 12, fontWeight: "600" }}>
+                        Invocation: {currentPick ? <Text style={{ color: theme.accent, fontWeight: "700" }}>{currentPick}</Text> : <Text style={{ color: theme.warning }}>(None selected)</Text>}
+                      </Text>
+                      <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 5 }}>
+                        {eaChoice.options.map((opt) => {
+                          const isSelected = currentPick === opt.name;
+                          return (
+                            <TouchableOpacity
+                              key={opt.name}
+                              onPress={() => onUpdate((cur) => pickSubclassRuleChoice(cur, eaChoice, opt.name))}
+                              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                              style={[
+                                styles.choiceChip,
+                                {
+                                  backgroundColor: isSelected ? theme.accentGlow : theme.surfaceHighlight,
+                                  borderColor: isSelected ? theme.accent : theme.border,
+                                },
+                              ]}
+                            >
+                              <Text
+                                style={{
+                                  color: isSelected ? theme.accent : theme.textSecondary,
+                                  fontSize: 11,
+                                  fontWeight: isSelected ? "700" : "500",
+                                }}
+                              >
+                                {opt.name}
+                              </Text>
+                            </TouchableOpacity>
+                          );
+                        })}
+                      </View>
+                      {currentPick && (() => {
+                        const opt = eaChoice.options.find((o) => o.name === currentPick);
+                        if (!opt?.description) return null;
+                        return (
+                          <Text style={{ color: theme.textMuted, fontSize: 11, marginTop: 2 }}>
+                            <Text style={{ color: theme.accent, fontWeight: "600" }}>{opt.name}: </Text>
+                            {opt.description}
+                          </Text>
+                        );
+                      })()}
+                    </View>
+                  );
+                })()}
               </View>
             );
           })}

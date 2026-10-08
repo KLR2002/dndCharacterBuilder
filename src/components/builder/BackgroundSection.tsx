@@ -12,6 +12,8 @@ import { Card } from "../ui/Card";
 import { SearchBar } from "../ui/SearchBar";
 import { builderStyles as styles, pkStyles, RuleChoicePicker } from "./builderStyles";
 import { useResponsiveLayout } from "../../hooks/useResponsiveLayout";
+import { applyOriginFeat, getBackgroundFeatGrant, removeOriginFeat } from "../../rules/feats";
+import { getFeatAbilityBonusOptions } from "../../rules/leveling";
 
 export interface BackgroundSectionProps {
   character: Character;
@@ -191,6 +193,115 @@ export const BackgroundSection: React.FC<BackgroundSectionProps> = ({
                       <Ionicons name="chevron-forward" size={14} color={theme.textMuted} />
                     </TouchableOpacity>
                   )}
+
+                  {/* Feat Grant from Background (e.g. Giant Foundling, Rune Carver) */}
+                  {(() => {
+                    const bgFeatGrant = getBackgroundFeatGrant(character.background!.name, bgData.feature?.description);
+                    if (!bgFeatGrant) return null;
+                    const bgOriginFeat = (character.originFeats || []).find(
+                      (f) => f.featName?.toLowerCase() === bgFeatGrant.featName.toLowerCase()
+                    );
+
+                    return (
+                      <View style={{ gap: 8, marginTop: 6, paddingTop: 8, borderTopWidth: 1, borderTopColor: theme.border }}>
+                        <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
+                          <View style={{ flex: 1 }}>
+                            <Text style={{ color: theme.accent, fontSize: 13, fontWeight: "700" }}>
+                              Background Feat: {bgFeatGrant.featName}
+                            </Text>
+                            <Text style={{ color: theme.textSecondary, fontSize: 11 }}>
+                              Granted by your background
+                            </Text>
+                          </View>
+                        </View>
+
+                        {bgOriginFeat ? (
+                          <View style={{ gap: 6 }}>
+                            <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
+                              <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+                                <Ionicons name="checkmark-circle" size={16} color={theme.success} />
+                                <Text style={{ color: theme.success, fontSize: 12, fontWeight: "600" }}>
+                                  Feat Added to Character
+                                </Text>
+                              </View>
+                              <Button
+                                title="Remove"
+                                variant="ghost"
+                                size="sm"
+                                onPress={() => {
+                                  onUpdate((cur) => removeOriginFeat(cur, bgOriginFeat.featName || ""));
+                                }}
+                              />
+                            </View>
+
+                            {/* Half-feat picker if applicable */}
+                            {(() => {
+                              const bonusOptions = getFeatAbilityBonusOptions(bgOriginFeat.featName || "");
+                              if (bonusOptions.abilities.length === 0) return null;
+                              return (
+                                <View style={{ gap: 4 }}>
+                                  <Text style={{ color: theme.textSecondary, fontSize: 11, fontWeight: "600" }}>
+                                    Choose +{bonusOptions.amount} Ability Score Increase:
+                                  </Text>
+                                  <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6 }}>
+                                    {bonusOptions.abilities.map((ab) => {
+                                      const isSelected = bgOriginFeat.featAbility === ab;
+                                      return (
+                                        <TouchableOpacity
+                                          key={ab}
+                                          onPress={() => {
+                                            onUpdate((cur) =>
+                                              applyOriginFeat(cur, { ...bgOriginFeat, featAbility: ab })
+                                            );
+                                          }}
+                                          style={[
+                                            styles.choiceChip,
+                                            {
+                                              backgroundColor: isSelected ? theme.accent : theme.surfaceHighlight,
+                                              borderColor: isSelected ? theme.accent : theme.border,
+                                            },
+                                          ]}>
+                                          <Text
+                                            style={{
+                                              color: isSelected ? "#fff" : theme.text,
+                                              fontSize: 12,
+                                              fontWeight: isSelected ? "700" : "500",
+                                            }}>
+                                            +{bonusOptions.amount} {ab.toUpperCase()}
+                                          </Text>
+                                        </TouchableOpacity>
+                                      );
+                                    })}
+                                  </View>
+                                </View>
+                              );
+                            })()}
+                          </View>
+                        ) : (
+                          <Button
+                            title={`Claim Feat (${bgFeatGrant.featName})`}
+                            variant="secondary"
+                            size="sm"
+                            icon="ribbon-outline"
+                            onPress={() => {
+                              const bonusOptions = getFeatAbilityBonusOptions(bgFeatGrant.featName);
+                              const initialAbility =
+                                bonusOptions.abilities.length === 1 ? bonusOptions.abilities[0] : undefined;
+                              onUpdate((cur) =>
+                                applyOriginFeat(cur, {
+                                  level: 1,
+                                  type: "feat",
+                                  featName: bgFeatGrant.featName,
+                                  featSource: "Background",
+                                  featAbility: initialAbility,
+                                })
+                              );
+                            }}
+                          />
+                        )}
+                      </View>
+                    );
+                  })()}
                 </Card>
               );
             })()}

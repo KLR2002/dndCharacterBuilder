@@ -31,6 +31,7 @@ import {
   setStandardArrayPick,
   STARTING_GOLD_BY_CLASS,
 } from "../../rules/builderTransitions";
+import { pruneInvalidExpertise } from "../../rules/expertise";
 import { ancestryRuleChoices, availableRuleChoices } from "../../rules/ruleChoices";
 import { getPendingLevelChoices } from "../../rules/leveling";
 import {
@@ -254,9 +255,13 @@ export const BuilderTab: React.FC<BuilderTabProps> = ({
   const toggleSkill = (s: string) => {
     const norm = normalizeSkillName(s);
     const current = (character.chosenSkills || []).map(normalizeSkillName);
-    onUpdate({
-      chosenSkills: current.includes(norm) ? current.filter((x) => x !== norm) : [...current, norm],
-    });
+    const nextSkills = current.includes(norm) ? current.filter((x) => x !== norm) : [...current, norm];
+    onUpdate((cur) =>
+      pruneInvalidExpertise(
+        { ...cur, chosenSkills: nextSkills },
+        { races: allRaces, backgrounds: allBackgrounds, classes: allClasses }
+      )
+    );
   };
 
   const raceLanguageGrant = getRaceLanguageGrant(
@@ -429,6 +434,7 @@ export const BuilderTab: React.FC<BuilderTabProps> = ({
           onClaimEquipment={handleClaimEquipment}
           onViewDetail={onViewDetail}
           theme={theme}
+          activeBooks={activeBooks}
         />
       )}
 

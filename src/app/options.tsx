@@ -13,7 +13,14 @@ import { Badge } from "../components/ui/Badge";
 import { Button } from "../components/ui/Button";
 import { Card } from "../components/ui/Card";
 import { SearchBar } from "../components/ui/SearchBar";
-import { ALL_RESOURCE_BOOKS, DEFAULT_ACTIVE_BOOK_CODES, ResourceBook } from "../constants/books";
+import {
+  ALL_RESOURCE_BOOKS,
+  BOOK_CATEGORIES,
+  BOOK_CATEGORY_LABELS,
+  BookCategory,
+  DEFAULT_ACTIVE_BOOK_CODES,
+  ResourceBook,
+} from "../constants/books";
 import { ACCENT_PALETTES } from "../constants/theme";
 import { useCharacters } from "../context/CharacterContext";
 import { useAppTheme } from "../context/ThemeContext";
@@ -24,6 +31,7 @@ export default function OptionsScreen() {
   const { activeBooks, setActiveBooks } = useCharacters();
 
   const [bookSearch, setBookSearch] = useState("");
+  const [collapsedCategories, setCollapsedCategories] = useState<Record<string, boolean>>({});
 
   const filteredBooks = useMemo(() => {
     if (!bookSearch.trim()) return ALL_RESOURCE_BOOKS;
@@ -33,6 +41,22 @@ export default function OptionsScreen() {
     );
   }, [bookSearch]);
 
+  const booksByCategory = useMemo(() => {
+    const map: Record<BookCategory, ResourceBook[]> = {
+      core: [],
+      supplement: [],
+      setting: [],
+      adventure: [],
+      other: [],
+    };
+    for (const book of filteredBooks) {
+      if (map[book.category]) {
+        map[book.category].push(book);
+      }
+    }
+    return map;
+  }, [filteredBooks]);
+
   const activeSet = useMemo(() => new Set(activeBooks), [activeBooks]);
 
   const toggleBook = (code: string) => {
@@ -41,6 +65,31 @@ export default function OptionsScreen() {
       nextSet.delete(code);
     } else {
       nextSet.add(code);
+    }
+    setActiveBooks(Array.from(nextSet));
+  };
+
+  const toggleCategoryCollapse = (cat: BookCategory) => {
+    setCollapsedCategories((prev) => ({
+      ...prev,
+      [cat]: !prev[cat],
+    }));
+  };
+
+  const enableCategory = (cat: BookCategory) => {
+    const categoryBooks = ALL_RESOURCE_BOOKS.filter((b) => b.category === cat);
+    const nextSet = new Set(activeSet);
+    for (const b of categoryBooks) {
+      nextSet.add(b.code);
+    }
+    setActiveBooks(Array.from(nextSet));
+  };
+
+  const disableCategory = (cat: BookCategory) => {
+    const categoryBooks = ALL_RESOURCE_BOOKS.filter((b) => b.category === cat);
+    const nextSet = new Set(activeSet);
+    for (const b of categoryBooks) {
+      nextSet.delete(b.code);
     }
     setActiveBooks(Array.from(nextSet));
   };
@@ -162,38 +211,102 @@ export default function OptionsScreen() {
               placeholder="Filter source books..."
             />
 
-            <View style={{ marginTop: 12, gap: 6 }}>
-              {filteredBooks.map((book: ResourceBook) => {
-                const isChecked = activeSet.has(book.code);
+            <View style={{ marginTop: 14, gap: 12 }}>
+              {BOOK_CATEGORIES.map((category) => {
+                const booksInCat = booksByCategory[category] || [];
+                if (booksInCat.length === 0 && bookSearch.trim()) return null;
+
+                const allInCat = ALL_RESOURCE_BOOKS.filter((b) => b.category === category);
+                const activeInCat = allInCat.filter((b) => activeSet.has(b.code)).length;
+                const isCollapsed = !bookSearch.trim() && Boolean(collapsedCategories[category]);
+
                 return (
-                  <TouchableOpacity
-                    key={book.code}
-                    onPress={() => toggleBook(book.code)}
+                  <View
+                    key={category}
                     style={[
-                      styles.bookRow,
+                      styles.categoryCard,
                       {
-                        backgroundColor: isChecked ? theme.surfaceHighlight : "transparent",
-                        borderColor: isChecked ? theme.accent : theme.border,
+                        backgroundColor: theme.surfaceHighlight,
+                        borderColor: theme.border,
                       },
                     ]}>
-                    <View style={{ flex: 1 }}>
-                      <View style={{ flexDirection: "row", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-                        <Text style={{ color: theme.text, fontSize: 14, fontWeight: "600" }}>
-                          {book.name}
-                        </Text>
-                        <Badge label={book.code} size="sm" variant={isChecked ? "accent" : "secondary"} />
+                      {/* Category Header */}
+                    <View style={styles.categoryHeader}>
+                      <TouchableOpacity
+                        activeOpacity={0.7}
+                        onPress={() => toggleCategoryCollapse(category)}
+                        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                        style={styles.categoryTitleRow}>
+                        <Ionicons
+                          name={isCollapsed ? "chevron-forward" : "chevron-down"}
+                          size={18}
+                          color={theme.accent}
+                        />
+                        <View style={{ flex: 1 }}>
+                          <Text style={[styles.categoryTitle, { color: theme.text }]}>
+                            {BOOK_CATEGORY_LABELS[category]}
+                          </Text>
+                          <Text style={{ color: theme.textMuted, fontSize: 11, marginTop: 1 }}>
+                            {activeInCat} of {allInCat.length} active
+                          </Text>
+                        </View>
+                      </TouchableOpacity>
+
+                      <View style={styles.categoryActions}>
+                        <Button
+                          title="Enable All"
+                          size="sm"
+                          variant="outline"
+                          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                          onPress={() => enableCategory(category)}
+                        />
+                        <Button
+                          title="Disable All"
+                          size="sm"
+                          variant="secondary"
+                          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                          onPress={() => disableCategory(category)}
+                        />
                       </View>
-                      <Text style={{ color: theme.textMuted, fontSize: 12, marginTop: 2 }}>
-                        {book.category}
-                      </Text>
                     </View>
 
-                    <Ionicons
-                      name={isChecked ? "checkbox" : "square-outline"}
-                      size={22}
-                      color={isChecked ? theme.accent : theme.textMuted}
-                    />
-                  </TouchableOpacity>
+                    {/* Category Books List */}
+                    {!isCollapsed && (
+                      <View style={{ marginTop: 10, gap: 6 }}>
+                        {booksInCat.map((book: ResourceBook) => {
+                          const isChecked = activeSet.has(book.code);
+                          return (
+                            <TouchableOpacity
+                              key={book.code}
+                              onPress={() => toggleBook(book.code)}
+                              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                              style={[
+                                styles.bookRow,
+                                {
+                                  backgroundColor: isChecked ? theme.surface : "transparent",
+                                  borderColor: isChecked ? theme.accent : theme.border,
+                                },
+                              ]}>
+                              <View style={{ flex: 1 }}>
+                                <View style={{ flexDirection: "row", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                                  <Text style={{ color: theme.text, fontSize: 14, fontWeight: "600" }}>
+                                    {book.name}
+                                  </Text>
+                                  <Badge label={book.code} size="sm" variant={isChecked ? "accent" : "secondary"} />
+                                </View>
+                              </View>
+
+                              <Ionicons
+                                name={isChecked ? "checkbox" : "square-outline"}
+                                size={22}
+                                color={isChecked ? theme.accent : theme.textMuted}
+                              />
+                            </TouchableOpacity>
+                          );
+                        })}
+                      </View>
+                    )}
+                  </View>
                 );
               })}
             </View>
@@ -284,5 +397,33 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     borderWidth: 1,
     gap: 8,
+  },
+  categoryCard: {
+    borderRadius: 8,
+    borderWidth: 1,
+    padding: 10,
+  },
+  categoryHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    flexWrap: "wrap",
+    gap: 8,
+  },
+  categoryTitleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    flex: 1,
+    minWidth: 160,
+  },
+  categoryTitle: {
+    fontSize: 14,
+    fontWeight: "700",
+  },
+  categoryActions: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
   },
 });

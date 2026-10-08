@@ -1,7 +1,7 @@
 import { ToolsClient } from "../client.js";
 import { renderEntries } from "../parser/entry-renderer.js";
 import { cleanTags } from "../parser/tag-cleaner.js";
-import { ClassFeatureModel, ClassModel, SubclassModel } from "../types/models.js";
+import { ClassFeatureModel, ClassModel, SubclassAdditionalSpells, SubclassModel } from "../types/models.js";
 
 const STAT_NAMES: Record<string, string> = {
   str: "Strength",
@@ -11,6 +11,46 @@ const STAT_NAMES: Record<string, string> = {
   wis: "Wisdom",
   cha: "Charisma",
 };
+
+function cleanSpellNameString(str: string): string {
+  if (typeof str !== "string") return str;
+  if (str.includes("=")) return str.trim();
+  let s = cleanTags(str, "plain").trim();
+  if (s.includes("#")) s = s.split("#")[0].trim();
+  if (s.includes("|")) s = s.split("|")[0].trim();
+  return s;
+}
+
+function cleanSpellVal(val: any): any {
+  if (Array.isArray(val)) {
+    return val.map((item) => cleanSpellVal(item));
+  }
+  if (val && typeof val === "object") {
+    const res: Record<string, any> = {};
+    for (const [k, v] of Object.entries(val)) {
+      res[k] = cleanSpellVal(v);
+    }
+    return res;
+  }
+  if (typeof val === "string") {
+    return cleanSpellNameString(val);
+  }
+  return val;
+}
+
+function parseAdditionalSpells(rawAdditionalSpells: any): SubclassAdditionalSpells[] | undefined {
+  if (!Array.isArray(rawAdditionalSpells) || rawAdditionalSpells.length === 0) return undefined;
+  return rawAdditionalSpells.map((entry) => {
+    const res: SubclassAdditionalSpells = {};
+    if (entry.name) res.name = cleanTags(entry.name, "plain");
+    for (const cat of ["prepared", "known", "expanded", "innate"] as const) {
+      if (entry[cat]) {
+        res[cat] = cleanSpellVal(entry[cat]);
+      }
+    }
+    return res;
+  });
+}
 
 export async function scrapeClasses(client: ToolsClient): Promise<ClassModel[]> {
   console.log("  → Fetching class index from data/class/index.json...");
@@ -145,6 +185,8 @@ export async function scrapeClasses(client: ToolsClient): Promise<ClassModel[]> 
 
         scFeatures.sort((a, b) => a.level - b.level);
 
+        const additionalSpells = parseAdditionalSpells(sc.additionalSpells);
+
         subclasses.push({
           name: cleanTags(sc.name, "plain"),
           shortName: sc.shortName || sc.name,
@@ -155,6 +197,7 @@ export async function scrapeClasses(client: ToolsClient): Promise<ClassModel[]> 
             ? STAT_NAMES[sc.spellcastingAbility] || sc.spellcastingAbility
             : undefined,
           features: scFeatures,
+          ...(additionalSpells ? { additionalSpells } : {}),
           description: renderEntries(sc.entries, "markdown"),
         });
       }

@@ -1,5 +1,6 @@
 import type { Character, AsiSelection, AbilityKey } from "../types/character.ts";
 import { asiLevels } from "./classData.ts";
+import { reconcileCharacter } from "./builderTransitions.ts";
 
 export { asiLevels } from "./classData.ts";
 
@@ -254,8 +255,10 @@ export function removeAsiSelection(
     return !(matchesClass && matchesLevel);
   });
 
-  return {
+  const updatedChar: Character = {
     ...character,
     asiSelections: filtered,
   };
+
+  return reconcileCharacter(updatedChar);
 }

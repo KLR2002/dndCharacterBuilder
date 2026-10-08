@@ -62,6 +62,7 @@ async function providerHarness(initial: unknown = [makeChar()], options: {
     if (name.includes("migrateCharacter")) return { migrateCharacter };
     if (name.includes("dataService")) return { getRaces: () => options.races ?? [] };
     if (name.includes("constants/books")) return { DEFAULT_ACTIVE_BOOK_CODES: [] };
+    if (name.includes("builderTransitions")) return { checkActiveBooksIntegrity: () => [] };
     throw new Error(`Unexpected provider import: ${name}`);
   } });
   function commit() {

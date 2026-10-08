@@ -53,56 +53,72 @@ export class ToolsClient {
       }
     }
 
+    const urlsToTry: string[] = [fullUrl];
+    if (this.config.fallbackBaseUrl && !endpoint.startsWith("http")) {
+      urlsToTry.push(`${this.config.fallbackBaseUrl}/${endpoint.replace(/^\//, "")}`);
+    }
+
     let lastError: Error | null = null;
 
-    for (let attempt = 1; attempt <= this.config.maxRetries; attempt++) {
-      try {
-        await this.rateLimit();
+    for (const targetUrl of urlsToTry) {
+      for (let attempt = 1; attempt <= this.config.maxRetries; attempt++) {
+        try {
+          await this.rateLimit();
 
-        const { stdout, stderr } = await execFileAsync(
-          "curl",
-          [
-            "-s",
-            "--fail",
-            "-L",
-            "--connect-timeout",
-            String(Math.floor(this.config.timeoutMs / 1000)),
-            "-A",
-            this.config.userAgent,
-            "-H",
-            "Accept: application/json, text/plain, */*",
-            "-H",
-            "Accept-Language: en-US,en;q=0.9",
-            fullUrl,
-          ],
-          { maxBuffer: 100 * 1024 * 1024 }
-        );
-
-        if (!stdout || stdout.trim().length === 0) {
-          throw new Error(`Empty response from ${fullUrl}. Stderr: ${stderr}`);
-        }
-
-        const data = JSON.parse(stdout) as T;
-
-        if (this.config.useCache) {
-          fs.writeFileSync(cacheFile, JSON.stringify(data), "utf8");
-        }
-
-        return data;
-      } catch (err: any) {
-        lastError = err;
-        const delay = attempt * 1000;
-        if (attempt < this.config.maxRetries) {
-          console.warn(
-            `[WARN] Attempt ${attempt} failed for ${fullUrl} (${err.message}). Retrying in ${delay}ms...`
+          const { stdout, stderr } = await execFileAsync(
+            "curl",
+            [
+              "-s",
+              "--fail",
+              "-L",
+              "--connect-timeout",
+              String(Math.floor(this.config.timeoutMs / 1000)),
+              "-A",
+              this.config.userAgent,
+              "-H",
+              "Accept: application/json, text/plain, */*",
+              "-H",
+              "Accept-Language: en-US,en;q=0.9",
+              targetUrl,
+            ],
+            { maxBuffer: 100 * 1024 * 1024 }
           );
-          await this.sleep(delay);
+
+          if (!stdout || stdout.trim().length === 0) {
+            throw new Error(`Empty response from ${targetUrl}. Stderr: ${stderr}`);
+          }
+
+          if (stdout.trim().startsWith("<") || stdout.includes("<!DOCTYPE")) {
+            throw new Error(`Received HTML response (possible challenge page) from ${targetUrl}`);
+          }
+
+          const data = JSON.parse(stdout) as T;
+
+          if (this.config.useCache) {
+            fs.writeFileSync(cacheFile, JSON.stringify(data), "utf8");
+          }
+
+          return data;
+        } catch (err: any) {
+          lastError = err;
+          // If HTML challenge or 403 on primary URL, break immediately to try fallback URL
+          if (targetUrl === fullUrl && (err.message.includes("HTML response") || err.message.includes("challenge"))) {
+            console.warn(`[WARN] Cloudflare challenge detected at ${targetUrl}. Trying fallback mirror...`);
+            break;
+          }
+          const delay = attempt * 1000;
+          if (attempt < this.config.maxRetries) {
+            console.warn(
+              `[WARN] Attempt ${attempt} failed for ${targetUrl} (${err.message}). Retrying in ${delay}ms...`
+            );
+            await this.sleep(delay);
+          }
         }
       }
     }
 
     throw new Error(
-      `Failed to fetch ${fullUrl} after ${this.config.maxRetries} attempts: ${lastError?.message}`
+      `Failed to fetch ${endpoint} after all attempts: ${lastError?.message}`
     );
   }
 }

@@ -3,12 +3,14 @@ import * as path from "node:path";
 import { ToolsClient } from "./client.js";
 import { DEFAULT_CONFIG } from "./config.js";
 import { scrapeBackgrounds } from "./scrapers/backgrounds.js";
+import { scrapeBeasts } from "./scrapers/beasts.js";
 import { scrapeClasses } from "./scrapers/classes.js";
 import { scrapeFeats } from "./scrapers/feats.js";
 import { scrapeItems } from "./scrapers/items.js";
 import { scrapeOptions } from "./scrapers/options.js";
 import { scrapeRaces } from "./scrapers/races.js";
 import { scrapeSpells } from "./scrapers/spells.js";
+import { scrapeBooks } from "./scrapers/books.js";
 
 interface CliOptions {
   only: string[];
@@ -53,7 +55,7 @@ Usage:
 
 Options:
   --only <list>       Comma-separated list of categories to scrape:
-                      races, classes, feats, options, backgrounds, items, spells
+                      races, classes, feats, options, backgrounds, items, spells, beasts, books
                       Default: all
   --no-cache          Bypass local .cache directory and re-fetch from network
   --output <path>     Directory where formatted JSON files will be written
@@ -195,7 +197,7 @@ async function main(): Promise<void> {
 
     // 7. Spells
     if (shouldRun("spells")) {
-      console.log("\n[7/7] Scraping Spells...");
+      console.log("\n[7/8] Scraping Spells...");
       const spells = await scrapeSpells(client);
       const file = path.join(opts.outputDir, "spells.json");
       const { count, bytes } = saveJson(file, spells);
@@ -205,6 +207,47 @@ async function main(): Promise<void> {
         file: path.relative(process.cwd(), file),
       };
       console.log(`  ✓ Saved ${count} spells -> ${file} (${formatBytes(bytes)})`);
+    }
+
+    // 8. Beasts & Elementals
+    if (shouldRun("beasts") || shouldRun("wildshape")) {
+      console.log("\n[8/9] Scraping Beasts & Wild Shape Elementals...");
+      const beasts = await scrapeBeasts(client);
+      const file = path.join(opts.outputDir, "beasts.json");
+      const { count, bytes } = saveJson(file, beasts);
+      summary["Beasts"] = {
+        count,
+        size: formatBytes(bytes),
+        file: path.relative(process.cwd(), file),
+      };
+      console.log(`  ✓ Saved ${count} beasts -> ${file} (${formatBytes(bytes)})`);
+    }
+
+    // 9. Books & Sourcebooks
+    if (shouldRun("books")) {
+      console.log("\n[9/9] Scraping Books & Sourcebooks...");
+      const books = await scrapeBooks(client);
+      const file = path.join(opts.outputDir, "books.json");
+      const { count, bytes } = saveJson(file, books);
+      summary["Books"] = {
+        count,
+        size: formatBytes(bytes),
+        file: path.relative(process.cwd(), file),
+      };
+      console.log(`  ✓ Saved ${count} books -> ${file} (${formatBytes(bytes)})`);
+
+      // Sync to src/data/books.json if possible
+      const candidatePaths = [
+        path.resolve(process.cwd(), "../src/data/books.json"),
+        path.resolve(process.cwd(), "src/data/books.json"),
+      ];
+      for (const p of candidatePaths) {
+        if (fs.existsSync(path.dirname(p))) {
+          saveJson(p, books);
+          console.log(`  ✓ Synced books to ${p}`);
+          break;
+        }
+      }
     }
 
     // Write summary index

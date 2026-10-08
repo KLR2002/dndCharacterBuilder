@@ -9,6 +9,7 @@ import {
 import type { Character, Folder } from "../types/character";
 import { applyCharacterUpdate } from "./characterUpdates";
 import { migrateCharacter } from "../rules/migrateCharacter";
+import { checkActiveBooksIntegrity } from "../rules/builderTransitions";
 import { getRaces } from "../services/dataService";
 
 interface CharacterContextValue {
@@ -242,6 +243,32 @@ export function CharacterProvider({ children }: { children: React.ReactNode }) {
   const setActiveBooks = async (books: string[]) => {
     setActiveBooksState(books);
     await updateSettings({ activeResourceBooks: books });
+    const activeSet = new Set(books.map((b) => b.toUpperCase()));
+    await changeCharacters((previous) =>
+      previous.map((c) => {
+        const warnings = checkActiveBooksIntegrity(c, books);
+        const existing = (c.needsReview || []).filter((w) => {
+          const match = w.match(/from disabled sourcebook "([^"]+)"/);
+          if (match && match[1]) {
+            return !activeSet.has(match[1].toUpperCase());
+          }
+          return true;
+        });
+        const combined = new Set([...existing, ...warnings]);
+        const nextReview = combined.size > 0 ? Array.from(combined) : undefined;
+        const currentReview = c.needsReview;
+        if (
+          (!currentReview && !nextReview) ||
+          (currentReview &&
+            nextReview &&
+            currentReview.length === nextReview.length &&
+            currentReview.every((v, i) => v === nextReview[i]))
+        ) {
+          return c;
+        }
+        return { ...c, needsReview: nextReview };
+      })
+    );
   };
 
   const setFirstRunCompleted = async (books: string[]) => {

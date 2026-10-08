@@ -243,3 +243,23 @@ test("applyLongRest decrements Exhaustion conditions and preserves other conditi
   const r5 = applyLongRest(c5);
   assert.deepEqual(r5.conditions, ["Stunned", "Prone"]);
 });
+
+test("applyLongRest resets activeWildShape to null", () => {
+  const char = makeChar({
+    classes: [cl("Druid", 4)],
+    activeWildShape: {
+      name: "Brown Bear",
+      source: "MM",
+      currentHp: 20,
+      maxHp: 34,
+      ac: 11,
+    },
+    resourceCounters: {
+      wild_shape: counter("wild_shape", "Wild Shape", 0, 2, "short"),
+    },
+  });
+
+  const rested = applyLongRest(char);
+  assert.equal(rested.activeWildShape, null);
+  assert.equal(rested.resourceCounters.wild_shape.current, 2);
+});

@@ -9,75 +9,21 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { useCharacters } from "../../context/CharacterContext";
 import { useAppTheme } from "../../context/ThemeContext";
-import { findSpell, getClasses } from "../../services/dataService";
+import { getClasses, getRaces, getBackgrounds } from "../../services/dataService";
 import {
-  checkDualWielding,
-  findStandardWeapon,
-  getWeaponAttacks,
-} from "../../rules/attacks";
-import {
-  calculateEffectiveAbilityScores,
-  calculateProficiencyBonus,
-  calculateTotalLevel,
+  evaluateCharacter,
   formatModifier,
 } from "../../services/dndRules";
+import {
+  getTacticalActionLedger,
+  SAVING_THROW_MANEUVERS,
+  STANDARD_ACTIONS,
+} from "../../rules/tacticalActions";
+import { findStandardWeapon } from "../../rules/attacks";
 import { Badge } from "../ui/Badge";
 import { Card } from "../ui/Card";
 import { DetailModal } from "../DetailModal";
 import { useResponsiveLayout } from "../../hooks/useResponsiveLayout";
-
-const STANDARD_ACTIONS = [
-  {
-    name: "Attack",
-    type: "Action",
-    desc: "Make one melee or ranged attack. Certain features, such as the Extra Attack feature of the fighter, allow you to make more than one attack with this action.",
-  },
-  {
-    name: "Cast a Spell",
-    type: "Action / Bonus / Reaction",
-    desc: "Cast a spell with a casting time of 1 action. If you cast a bonus action spell, you can only cast a cantrip with casting time of 1 action on the same turn.",
-  },
-  {
-    name: "Dash",
-    type: "Action",
-    desc: "Gain extra movement for the current turn. The increase equals your speed, after applying any modifiers.",
-  },
-  {
-    name: "Disengage",
-    type: "Action",
-    desc: "Your movement doesn't provoke opportunity attacks for the rest of the turn.",
-  },
-  {
-    name: "Dodge",
-    type: "Action",
-    desc: "Until the start of your next turn, any attack roll made against you has disadvantage if you can see the attacker, and you make Dexterity saving throws with advantage.",
-  },
-  {
-    name: "Help",
-    type: "Action",
-    desc: "Lend aid to an ally. The target gains advantage on the next ability check it makes to perform the task, or advantage on its next attack roll against a target within 5 feet of you.",
-  },
-  {
-    name: "Hide",
-    type: "Action",
-    desc: "Make a Dexterity (Stealth) check in an attempt to hide, concealed from enemies that cannot clearly see you.",
-  },
-  {
-    name: "Ready",
-    type: "Action",
-    desc: "Wait for a particular circumstance before you act. Choose the perceptible trigger and the action you will take in response, which uses your Reaction when triggered.",
-  },
-  {
-    name: "Search",
-    type: "Action",
-    desc: "Devote your attention to finding something. The DM might call for a Wisdom (Perception) check or an Intelligence (Investigation) check.",
-  },
-  {
-    name: "Use an Object",
-    type: "Action",
-    desc: "Interact with a second object on your turn, drink or administer a potion, or use a complex item or mechanical device.",
-  },
-];
 
 export const ActionsTab: React.FC = () => {
   const { currentCharacter, activeBooks } = useCharacters();
@@ -91,184 +37,52 @@ export const ActionsTab: React.FC = () => {
     content: string;
   }>({ visible: false, title: "", content: "" });
 
-  // Dynamic Weapon Attacks from Equipped Items via rules/attacks
-  const weaponAttacks = useMemo(() => {
-    if (!currentCharacter) return [];
-    const allClasses = getClasses(activeBooks || []);
-    return getWeaponAttacks(currentCharacter, { classes: allClasses });
+  // Unified Character Evaluation pass
+  const evaluated = useMemo(() => {
+    if (!currentCharacter) return null;
+    return evaluateCharacter(currentCharacter, {
+      races: getRaces(activeBooks || []),
+      classes: getClasses(activeBooks || []),
+      backgrounds: getBackgrounds(activeBooks || []),
+      activeBooks,
+    });
   }, [currentCharacter, activeBooks]);
 
-  // Two-Weapon Fighting Check via rules/attacks
-  const dualWield = useMemo(() => {
-    if (!currentCharacter) return { isDualWielding: false };
-    return checkDualWielding(currentCharacter, weaponAttacks);
-  }, [currentCharacter, weaponAttacks]);
+  // Tactical Action Ledger from pure domain engine
+  const ledger = useMemo(() => {
+    if (!currentCharacter || !evaluated) return null;
+    return getTacticalActionLedger(currentCharacter, evaluated, { activeBooks });
+  }, [currentCharacter, evaluated, activeBooks]);
 
-  // Extra Attack check
-  const extraAttackCount = useMemo(() => {
-    if (!currentCharacter) return 1;
-    let count = 1;
-    for (const c of currentCharacter.classes || []) {
-      if (c.className === "Fighter") {
-        if (c.level >= 20) count = Math.max(count, 4);
-        else if (c.level >= 11) count = Math.max(count, 3);
-        else if (c.level >= 5) count = Math.max(count, 2);
-      } else if (["Barbarian", "Paladin", "Ranger"].includes(c.className) && c.level >= 5) {
-        count = Math.max(count, 2);
-      } else if (c.className === "Monk" && c.level >= 5) {
-        count = Math.max(count, 2);
-      }
-    }
-    return count;
-  }, [currentCharacter]);
+  const weaponAttacks = ledger?.weaponAttacks ?? [];
+  const dualWield = ledger?.dualWield ?? { isDualWielding: false };
+  const extraAttackCount = ledger?.extraAttackCount ?? 1;
+  const spellAttacks = ledger?.spellAttacks ?? [];
+  const sneakAttackDice = ledger?.sneakAttackDice ?? null;
+  const maneuverDetails = ledger?.maneuvers ?? [];
+  const classBonusActions = ledger?.bonusActions ?? [];
+  const classReactions = ledger?.reactions ?? [];
+  const maneuverDc = evaluated?.combatDcs?.maneuverSaveDc ?? 8;
+  const superiorityDice = evaluated?.combatDice?.superiorityDice ?? null;
 
-  // Damaging Cantrips & Spell Attacks
-  const spellAttacks = useMemo(() => {
-    if (!currentCharacter) return [];
-    const known = currentCharacter.knownSpells || [];
-    const list: { name: string; level: number; damage: string; time: string; range: string; desc: string }[] = [];
+  // Ki Spellcasting Profile (Monk)
+  const kiProfile = useMemo(() => {
+    return (evaluated?.spellProfiles || []).find((p) => p.className === "Monk");
+  }, [evaluated]);
 
-    for (const k of known) {
-      const sp = findSpell(k.name, k.source);
-      if (sp && (sp.level === 0 || (sp.description || "").toLowerCase().includes("make a ranged spell attack") || (sp.description || "").toLowerCase().includes("make a melee spell attack"))) {
-        list.push({
-          name: sp.name,
-          level: sp.level,
-          damage: sp.level === 0 ? "Cantrip scaling" : "Spell attack",
-          time: sp.castingTime || "1 action",
-          range: sp.range || "60 ft",
-          desc: sp.description || "",
-        });
-      }
-    }
-    return list;
-  }, [currentCharacter]);
+  // Giant Spellcasting Profile (Barbarian)
+  const giantProfile = useMemo(() => {
+    return (evaluated?.spellProfiles || []).find(
+      (p) => p.className === "Barbarian" && Boolean(p.subclass?.toLowerCase().includes("giant"))
+    );
+  }, [evaluated]);
 
-  // Class Bonus Actions
-  const classBonusActions = useMemo(() => {
-    if (!currentCharacter) return [];
-    const list: { name: string; source: string; desc: string }[] = [];
 
-    for (const c of currentCharacter.classes || []) {
-      if (c.className === "Rogue" && c.level >= 2) {
-        list.push({
-          name: "Cunning Action",
-          source: "Rogue 2",
-          desc: "You can take a bonus action on each of your turns in combat to take the Dash, Disengage, or Hide action.",
-        });
-      }
-      if (c.className === "Barbarian") {
-        list.push({
-          name: "Enter Rage",
-          source: "Barbarian 1",
-          desc: "In battle, you fight with primal ferocity. On your turn, you can enter a rage as a bonus action.",
-        });
-      }
-      if (c.className === "Fighter") {
-        list.push({
-          name: "Second Wind",
-          source: "Fighter 1",
-          desc: `You have a limited well of stamina. On your turn, you can use a bonus action to regain hit points equal to 1d10 + ${c.level}.`,
-        });
-      }
-      if (c.className === "Monk") {
-        list.push({
-          name: "Martial Arts Strike",
-          source: "Monk 1",
-          desc: "When you use the Attack action with an unarmed strike or a monk weapon on your turn, you can make one unarmed strike as a bonus action.",
-        });
-        if (c.level >= 2) {
-          list.push({
-            name: "Flurry of Blows (1 Ki)",
-            source: "Monk 2",
-            desc: "Immediately after you take the Attack action on your turn, you can spend 1 ki point to make two unarmed strikes as a bonus action.",
-          });
-          list.push({
-            name: "Patient Defense (1 Ki)",
-            source: "Monk 2",
-            desc: "You can spend 1 ki point to take the Dodge action as a bonus action on your turn.",
-          });
-          list.push({
-            name: "Step of the Wind (1 Ki)",
-            source: "Monk 2",
-            desc: "You can spend 1 ki point to take the Disengage or Dash action as a bonus action on your turn, and your jump distance is doubled for the turn.",
-          });
-        }
-      }
-      if (c.className === "Bard") {
-        list.push({
-          name: "Bardic Inspiration",
-          source: "Bard 1",
-          desc: `You can inspire others through stirring words or music. Use a bonus action to give a creature within 60 ft a Bardic Inspiration die (1d${c.level >= 15 ? 12 : c.level >= 10 ? 10 : c.level >= 5 ? 8 : 6}).`,
-        });
-      }
-    }
 
-    if (dualWield.isDualWielding && dualWield.offHand) {
-      list.unshift({
-        name: `Off-Hand Attack (${dualWield.offHand.name})`,
-        source: "Two-Weapon Fighting",
-        desc: `When you take the Attack action and attack with a light melee weapon in one hand, you can use a bonus action to attack with a different light melee weapon in the other hand. Attack bonus: ${formatModifier(dualWield.offHand.attackBonus)} to hit, Damage: ${dualWield.offHand.damage}${dualWield.offHand.damageType ? ` ${dualWield.offHand.damageType}` : ""}. You don't add your ability modifier to the damage of the bonus attack, unless that modifier is negative.`,
-      });
-    }
+  if (!currentCharacter || !evaluated) return null;
 
-    return list;
-  }, [currentCharacter, dualWield]);
-
-  // Class Reactions
-  const classReactions = useMemo(() => {
-    if (!currentCharacter) return [];
-    const list: { name: string; source: string; desc: string }[] = [
-      {
-        name: "Opportunity Attack",
-        source: "Standard Combat Rule",
-        desc: "You can make an opportunity attack when a hostile creature that you can see moves out of your reach. To make the opportunity attack, you use your reaction to make one melee attack against the provoking creature.",
-      },
-      {
-        name: "Readied Action Trigger",
-        source: "Standard Combat Rule",
-        desc: "When the trigger condition set by your Ready action occurs, you can take your reaction right after the trigger finishes, or ignore it.",
-      },
-    ];
-
-    for (const c of currentCharacter.classes || []) {
-      if (c.className === "Rogue" && c.level >= 5) {
-        list.push({
-          name: "Uncanny Dodge",
-          source: "Rogue 5",
-          desc: "When an attacker that you can see hits you with an attack, you can use your reaction to halve the attack's damage against you.",
-        });
-      }
-      if (c.className === "Monk" && c.level >= 3) {
-        list.push({
-          name: "Deflect Missiles",
-          source: "Monk 3",
-          desc: "You can use your reaction to deflect or catch the missile when you are hit by a ranged weapon attack. Damage is reduced by 1d10 + Dex mod + Monk level.",
-        });
-      }
-    }
-
-    // Check for Reaction spells
-    const known = currentCharacter.knownSpells || [];
-    for (const k of known) {
-      const sp = findSpell(k.name, k.source);
-      if (sp && (sp.castingTime || "").toLowerCase().includes("reaction")) {
-        list.push({
-          name: sp.name,
-          source: `Spell (${sp.castingTime})`,
-          desc: sp.description || "",
-        });
-      }
-    }
-
-    return list;
-  }, [currentCharacter]);
-
-  if (!currentCharacter) return null;
-
-  const totalLevel = calculateTotalLevel(currentCharacter);
-  const profBonus = calculateProficiencyBonus(totalLevel);
-  const { modifiers } = calculateEffectiveAbilityScores(currentCharacter);
+  const profBonus = evaluated.proficiencyBonus;
+  const { modifiers } = evaluated.effectiveScores;
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
@@ -325,14 +139,31 @@ export const ActionsTab: React.FC = () => {
               return (
                 <TouchableOpacity
                   key={`${attack.item.id}_${idx}`}
-                  onPress={() =>
+                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                  onPress={() => {
+                    const bonusBreakdown = [
+                      `Proficiency ${attack.isProficient ? `+${profBonus}` : "+0"}`,
+                      `${statUpper} ${formatModifier(modifiers[attack.statUsed])}`,
+                      attack.archeryBonus ? `Archery +${attack.archeryBonus}` : null,
+                      attack.infusionBonus ? `Infusion +${attack.infusionBonus}` : null,
+                    ]
+                      .filter(Boolean)
+                      .join(" + ");
+
+                    const dmgNotes = [
+                      attack.duelingBonus ? `includes Dueling +${attack.duelingBonus}` : null,
+                      attack.infusionBonus ? `includes Infusion +${attack.infusionBonus}` : null,
+                    ]
+                      .filter(Boolean)
+                      .join(", ");
+
                     setDetailModal({
                       visible: true,
                       title: attack.name,
                       subtitle: `${statUpper}-based Attack`,
-                      content: `• Attack Bonus: ${formatModifier(attack.attackBonus)} (Proficiency ${attack.isProficient ? `+${profBonus}` : "+0"} + ${statUpper} ${formatModifier(modifiers[attack.statUsed])})\n• Damage: ${attack.damage}${attack.damageType ? ` ${attack.damageType}` : ""}\n• Range: ${rangeStr}\n• Properties: ${properties.length > 0 ? properties.join(", ") : "None"}\n\n${attack.item.description || ""}`,
-                    })
-                  }
+                      content: `• Attack Bonus: ${formatModifier(attack.attackBonus)} (${bonusBreakdown})\n• Damage: ${attack.damage}${attack.damageType ? ` ${attack.damageType}` : ""}${dmgNotes ? ` (${dmgNotes})` : ""}${attack.isSneakAttackEligible && attack.sneakAttackDice ? `\n• Sneak Attack: Eligible for +${attack.sneakAttackDice} once per turn` : ""}\n• Range: ${rangeStr}\n• Properties: ${properties.length > 0 ? properties.join(", ") : "None"}\n\n${attack.item.description || ""}`,
+                    });
+                  }}
                   style={[
                     styles.attackRow,
                     {
@@ -353,6 +184,22 @@ export const ActionsTab: React.FC = () => {
                         {properties.join(", ")}
                       </Text>
                     )}
+                    {attack.calculationBadges && attack.calculationBadges.length > 0 && (
+                      <View style={{ marginTop: 4, flexDirection: "row", flexWrap: "wrap", gap: 4 }}>
+                        {attack.calculationBadges.map((badge) => (
+                          <Badge key={badge} label={badge} variant="outline" size="sm" />
+                        ))}
+                      </View>
+                    )}
+                    {attack.isSneakAttackEligible && attack.sneakAttackDice && (
+                      <View style={{ marginTop: 4, flexDirection: "row" }}>
+                        <Badge
+                          label={`Sneak Attack Eligible: +${attack.sneakAttackDice}`}
+                          variant="warning"
+                          size="sm"
+                        />
+                      </View>
+                    )}
                   </View>
 
                   <View style={{ flexDirection: "row", gap: 8, marginTop: isCompact ? 6 : 0 }}>
@@ -365,6 +212,37 @@ export const ActionsTab: React.FC = () => {
           </Card>
         )}
       </View>
+
+      {/* Sneak Attack Action Card */}
+      {sneakAttackDice && (
+        <Card style={[styles.sneakAttackCard, { borderColor: theme.accent, borderWidth: 1, backgroundColor: theme.surface }]}>
+          <TouchableOpacity
+            onPress={() =>
+              setDetailModal({
+                visible: true,
+                title: `Sneak Attack (${sneakAttackDice})`,
+                subtitle: "Rogue Feature",
+                content: `Beginning at 1st level, you know how to strike subtly and exploit a foe's distraction.\n\nOnce per turn, you can deal an extra ${sneakAttackDice} damage to one creature you hit with an attack if you have advantage on the attack roll. The attack must use a finesse or a ranged weapon.\n\nYou don't need advantage on the attack roll if another enemy of the target is within 5 feet of it, that enemy isn't incapacitated, and you don't have disadvantage on the attack roll.`,
+              })
+            }
+            style={{ padding: 12 }}>
+            <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 10, flex: 1 }}>
+                <Ionicons name="skull-outline" size={22} color={theme.accent} />
+                <View style={{ flex: 1 }}>
+                  <Text style={{ color: theme.text, fontWeight: "700", fontSize: 14 }}>
+                    Sneak Attack ({sneakAttackDice})
+                  </Text>
+                  <Text style={{ color: theme.textMuted, fontSize: 11, marginTop: 2 }}>
+                    Once per turn • Finesse or Ranged weapon • Advantage or adjacent ally
+                  </Text>
+                </View>
+              </View>
+              <Badge label={`+${sneakAttackDice}`} variant="accent" />
+            </View>
+          </TouchableOpacity>
+        </Card>
+      )}
 
       {/* Off-Hand Attack (Bonus Action / Two-Weapon Fighting) */}
       {dualWield.isDualWielding && dualWield.offHand && (
@@ -389,6 +267,13 @@ export const ActionsTab: React.FC = () => {
               <Text style={{ color: theme.textMuted, fontSize: 11 }}>
                 Bonus Action • No ability mod to damage • {dualWield.offHand.range || (dualWield.offHand.isRanged ? "Ranged" : "Melee")}{dualWield.offHand.damageType ? ` • ${dualWield.offHand.damageType}` : ""}
               </Text>
+              {dualWield.offHand.calculationBadges && dualWield.offHand.calculationBadges.length > 0 && (
+                <View style={{ marginTop: 4, flexDirection: "row", flexWrap: "wrap", gap: 4 }}>
+                  {dualWield.offHand.calculationBadges.map((badge) => (
+                    <Badge key={badge} label={badge} variant="outline" size="sm" />
+                  ))}
+                </View>
+              )}
             </View>
             <View style={{ flexDirection: "row", gap: 8, marginTop: isCompact ? 6 : 0 }}>
               <Badge label={`${formatModifier(dualWield.offHand.attackBonus)} to hit`} variant="warning" />
@@ -396,6 +281,52 @@ export const ActionsTab: React.FC = () => {
             </View>
           </View>
         </Card>
+      )}
+
+      {/* Ki Spellcasting Profile Summary */}
+      {kiProfile && (
+        <View style={{ marginBottom: 16 }}>
+          <Text style={[styles.sectionHeading, { color: theme.textSecondary }]}>
+            KI SPELLCASTING PROFILE
+          </Text>
+          <Card style={{ padding: 12, borderColor: theme.accent, backgroundColor: theme.surfaceHighlight, gap: 4 }}>
+            <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+                <Ionicons name="sparkles" size={16} color={theme.accent} />
+                <Text style={{ color: theme.accent, fontWeight: "700", fontSize: 13 }}>
+                  Monk Ki Spellcasting ({kiProfile.subclass || "Monastic Tradition"})
+                </Text>
+              </View>
+              <Badge label="Ki-Powered" variant="accent" />
+            </View>
+            <Text style={{ color: theme.textSecondary, fontSize: 12, lineHeight: 17 }}>
+              Ki Save DC: {kiProfile.spellSaveDc} • Spell Attack: +{kiProfile.spellAttackBonus} (Wisdom)
+            </Text>
+          </Card>
+        </View>
+      )}
+
+      {/* Giant Spellcasting Profile Summary */}
+      {giantProfile && (
+        <View style={{ marginBottom: 16 }}>
+          <Text style={[styles.sectionHeading, { color: theme.textSecondary }]}>
+            GIANT SPELLCASTING PROFILE
+          </Text>
+          <Card style={{ padding: 12, borderColor: theme.accent, backgroundColor: theme.surfaceHighlight, gap: 4 }}>
+            <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+                <Ionicons name="sparkles" size={16} color={theme.accent} />
+                <Text style={{ color: theme.accent, fontWeight: "700", fontSize: 13 }}>
+                  Giant Power ({giantProfile.subclass || "Path of the Giant"})
+                </Text>
+              </View>
+              <Badge label="Wisdom" variant="accent" />
+            </View>
+            <Text style={{ color: theme.textSecondary, fontSize: 12, lineHeight: 17 }}>
+              Spell Save DC: {giantProfile.spellSaveDc} • Spell Attack: +{giantProfile.spellAttackBonus} (Wisdom)
+            </Text>
+          </Card>
+        </View>
       )}
 
       {/* Spell Attacks / Cantrips */}
@@ -436,6 +367,86 @@ export const ActionsTab: React.FC = () => {
                   <Badge label={sp.damage} variant="outline" />
                   <Ionicons name="chevron-forward" size={16} color={theme.textMuted} />
                 </View>
+              </TouchableOpacity>
+            ))}
+          </Card>
+        </View>
+      )}
+
+      {/* Battle Master Maneuvers */}
+      {maneuverDetails.length > 0 && (
+        <View style={{ marginBottom: 16 }}>
+          <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+            <Text style={[styles.sectionHeading, { color: theme.textSecondary, marginBottom: 0 }]}>
+              BATTLE MASTER MANEUVERS ({maneuverDetails.length})
+            </Text>
+            <View style={{ flexDirection: "row", gap: 6 }}>
+              <Badge label={`Save DC ${maneuverDc}`} variant="accent" size="sm" />
+              {superiorityDice && (
+                <Badge label={`Die: ${superiorityDice.die}`} variant="secondary" size="sm" />
+              )}
+            </View>
+          </View>
+          <Card style={{ padding: 4 }}>
+            {maneuverDetails.map((m, idx) => (
+              <TouchableOpacity
+                key={m.name}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                onPress={() =>
+                  setDetailModal({
+                    visible: true,
+                    title: m.name,
+                    subtitle: `${m.categoryLabel} • Superiority Die [${superiorityDice ? superiorityDice.die : "d8"}]${
+                      SAVING_THROW_MANEUVERS.has(m.name.toLowerCase()) ? ` • Save DC ${maneuverDc}` : ""
+                    }`,
+                    content: `${m.description}\n\n• Action Type: ${m.categoryLabel}\n• Superiority Die: ${
+                      superiorityDice ? superiorityDice.die : "d8"
+                    }${
+                      SAVING_THROW_MANEUVERS.has(m.name.toLowerCase())
+                        ? `\n• Maneuver Save DC: ${maneuverDc} (8 + PB ${profBonus} + max(Str, Dex))`
+                        : ""
+                    }`,
+                  })
+                }
+                style={[
+                  styles.actionItemRow,
+                  {
+                    borderBottomColor: theme.border,
+                    borderBottomWidth: idx === maneuverDetails.length - 1 ? 0 : 1,
+                  },
+                ]}>
+                <View style={{ flex: 1 }}>
+                  <View style={{ flexDirection: "row", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+                    <Text style={[styles.actionItemTitle, { color: theme.text }]}>{m.name}</Text>
+                    <Badge
+                      label={m.categoryLabel}
+                      size="sm"
+                      variant={
+                        m.category === "Reaction"
+                          ? "warning"
+                          : m.category === "Bonus Action"
+                          ? "secondary"
+                          : "outline"
+                      }
+                    />
+                    {SAVING_THROW_MANEUVERS.has(m.name.toLowerCase()) && (
+                      <Badge
+                        label={`DC ${maneuverDc}`}
+                        size="sm"
+                        variant="accent"
+                      />
+                    )}
+                    <Badge
+                      label={`+${superiorityDice ? superiorityDice.die : "d8"}`}
+                      size="sm"
+                      variant="secondary"
+                    />
+                  </View>
+                  <Text style={{ color: theme.textMuted, fontSize: 12, marginTop: 4 }} numberOfLines={2}>
+                    {m.description}
+                  </Text>
+                </View>
+                <Ionicons name="chevron-forward" size={16} color={theme.textMuted} />
               </TouchableOpacity>
             ))}
           </Card>
@@ -612,6 +623,10 @@ const styles = StyleSheet.create({
   },
   dualWieldCard: {
     padding: 12,
+    marginBottom: 16,
+  },
+  sneakAttackCard: {
+    padding: 0,
     marginBottom: 16,
   },
   actionItemRow: {

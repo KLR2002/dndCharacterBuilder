@@ -15,22 +15,28 @@ import { useResponsiveLayout } from "../../hooks/useResponsiveLayout";
 import {
   findClass,
   findRace,
+  findBeast,
   getBackgrounds,
   getClasses,
   getFeats,
   getRaces,
+  getOptionsAndFeatures,
 } from "../../services/dataService";
-import { calculateEffectiveAbilityScores } from "../../services/dndRules";
+import { evaluateCharacter } from "../../services/dndRules";
 import {
   getAvailableOptionalFeatures,
   getReplacedBaseFeatures,
 } from "../../rules/optionalFeatures";
+import { getWildShapeLimits, getWildShapeCharges, getRequiredWildShapeCharges } from "../../rules/wildShape";
 import { ResourceCounter } from "../../types/character";
+import type { BeastData } from "../../types/dnd5e";
 import { Badge } from "../ui/Badge";
 import { Button } from "../ui/Button";
 import { Card } from "../ui/Card";
 import { DetailModal } from "../DetailModal";
-import { applyRuleChoice, replacedTraitNames, ruleChoiceId } from "../../rules/ruleChoices";
+import { WildShapeModal } from "../WildShapeModal";
+import { applyRuleChoice, getChosenInvocations, getKnownInfusions, ALL_ARTIFICER_INFUSIONS, replacedTraitNames, ruleChoiceId } from "../../rules/ruleChoices";
+import { ActiveInfusionsSection } from "../ActiveInfusionsSection";
 
 interface FeatureDisplay {
   id: string;
@@ -40,6 +46,7 @@ interface FeatureDisplay {
   description: string;
   /** The Rule Choice option this trait resolves to, when one is chosen. */
   chosenOption?: string;
+  badge?: string;
 }
 
 function makeCounterId(): string {
@@ -47,7 +54,7 @@ function makeCounterId(): string {
 }
 
 export const FeaturesTab: React.FC = () => {
-  const { currentCharacter, updateCharacter, activeBooks } = useCharacters();
+  const { currentCharacter, updateCharacter, activeBooks, setActiveBooks } = useCharacters();
   const { theme } = useAppTheme();
   useResponsiveLayout();
 
@@ -56,6 +63,19 @@ export const FeaturesTab: React.FC = () => {
   const [newCounterMax, setNewCounterMax] = useState("3");
   const [newCounterReset, setNewCounterReset] = useState<"short" | "long">("long");
 
+  const [wildShapeModalVisible, setWildShapeModalVisible] = useState(false);
+
+  const isMmActive = useMemo(
+    () => (activeBooks || []).some((b) => b.toUpperCase() === "MM"),
+    [activeBooks]
+  );
+
+  const handleEnableMonsterManual = () => {
+    if (isMmActive) return;
+    const current = activeBooks || [];
+    setActiveBooks([...current, "MM"]);
+  };
+
   const [detailModal, setDetailModal] = useState<{
     visible: boolean;
     title: string;
@@ -63,68 +83,24 @@ export const FeaturesTab: React.FC = () => {
     content: string;
   }>({ visible: false, title: "", content: "" });
 
-  // Build Default Auto Resource Counters if not already initialized
-  const autoCounters: Record<string, ResourceCounter> = useMemo(() => {
-    if (!currentCharacter) return {};
-    const res: Record<string, ResourceCounter> = {};
-    const { modifiers } = calculateEffectiveAbilityScores(currentCharacter);
-
-    for (const c of currentCharacter.classes || []) {
-      const lvl = c.level;
-      if (c.className === "Barbarian") {
-        const maxRage = lvl >= 20 ? 999 : lvl >= 17 ? 6 : lvl >= 12 ? 5 : lvl >= 6 ? 4 : lvl >= 3 ? 3 : 2;
-        res["rage"] = { id: "rage", name: "Rage", current: maxRage, max: maxRage, resetOn: "long" };
-      }
-      if (c.className === "Druid" && lvl >= 2) {
-        res["wild_shape"] = { id: "wild_shape", name: "Wild Shape", current: 2, max: 2, resetOn: "short" };
-      }
-      if (c.className === "Monk" && lvl >= 2) {
-        res["ki"] = { id: "ki", name: "Ki Points", current: lvl, max: lvl, resetOn: "short" };
-      }
-      if (c.className === "Bard") {
-        const maxInsp = Math.max(1, modifiers.cha);
-        const resetOn = lvl >= 5 ? "short" : "long";
-        res["bardic_inspiration"] = { id: "bardic_inspiration", name: "Bardic Inspiration", current: maxInsp, max: maxInsp, resetOn };
-      }
-      if (c.className === "Fighter") {
-        res["second_wind"] = { id: "second_wind", name: "Second Wind", current: 1, max: 1, resetOn: "short" };
-        if (lvl >= 2) {
-          const maxSurge = lvl >= 17 ? 2 : 1;
-          res["action_surge"] = { id: "action_surge", name: "Action Surge", current: maxSurge, max: maxSurge, resetOn: "short" };
-        }
-      }
-      if (c.className === "Paladin") {
-        res["lay_on_hands"] = { id: "lay_on_hands", name: "Lay on Hands (HP Pool)", current: lvl * 5, max: lvl * 5, resetOn: "long" };
-      }
-    }
-
-    // Unified Channel Divinity: Cleric 2: 1, Cleric 6: 2, Cleric 18: 3; Paladin 3: 1. Max uses = max(clericUses, paladinUses).
-    const cleric = (currentCharacter.classes || []).find((c) => c.className === "Cleric");
-    const paladin = (currentCharacter.classes || []).find((c) => c.className === "Paladin");
-    const clericUses = cleric ? (cleric.level >= 18 ? 3 : cleric.level >= 6 ? 2 : cleric.level >= 2 ? 1 : 0) : 0;
-    const paladinUses = paladin && paladin.level >= 3 ? 1 : 0;
-    const maxCd = Math.max(clericUses, paladinUses);
-    if (maxCd > 0) {
-      res["channel_divinity"] = {
-        id: "channel_divinity",
-        name: "Channel Divinity",
-        current: maxCd,
-        max: maxCd,
-        resetOn: "short",
-      };
-    }
-
-    return res;
+  const wildShapeLimits = useMemo(() => {
+    if (!currentCharacter) return null;
+    return getWildShapeLimits(currentCharacter);
   }, [currentCharacter]);
 
-  // Merge auto counters into character state if missing
+  const evaluated = useMemo(() => {
+    if (!currentCharacter) return null;
+    return evaluateCharacter(currentCharacter, {
+      races: getRaces(activeBooks || []),
+      backgrounds: getBackgrounds(activeBooks || []),
+      classes: getClasses(activeBooks || []),
+    });
+  }, [currentCharacter, activeBooks]);
+
+  // Unified Resource Counters from evaluated model
   const allCounters = useMemo(() => {
-    if (!currentCharacter) return {};
-    const existing = { ...(currentCharacter.resourceCounters || {}) };
-    delete existing["channel_divinity_pal"];
-    delete existing["channel_divinity_cle"];
-    return { ...autoCounters, ...existing };
-  }, [autoCounters, currentCharacter]);
+    return evaluated?.featureCounters ?? {};
+  }, [evaluated]);
 
   // Compile Features by Origin
   const originFeatures = useMemo(() => {
@@ -240,14 +216,85 @@ export const FeaturesTab: React.FC = () => {
             } else {
               if (replacedBaseFeatures.has(cf.name)) continue;
             }
+            let description = cf.description || `A ${c.className} feature gained at level ${cf.level}.`;
+            if (c.className === "Barbarian" && cf.name === "Rage") {
+              const hasBearTotem3 = Boolean(
+                currentCharacter.ruleChoices?.some(
+                  (rc) =>
+                    (rc.id === "PHB__Barbarian__Path of the Totem Warrior__Totem Spirit 3" ||
+                      rc.trait === "Totem Spirit (3rd Level)" ||
+                      (rc.trait.toLowerCase().includes("totem spirit") &&
+                        !rc.trait.toLowerCase().includes("aspect") &&
+                        !rc.trait.toLowerCase().includes("attunement"))) &&
+                    rc.picked?.some((p) => p.toLowerCase() === "bear")
+                )
+              );
+              if (hasBearTotem3) {
+                description += "\n\nWhile raging, Bear Totem grants resistance to all damage except psychic.";
+              }
+            }
             list.push({
               id: `class_${c.className}_${cf.name}_${cf.level}`,
               name: `${cf.name} (Lvl ${cf.level})`,
               origin: "Class",
               source: c.className,
-              description: cf.description || `A ${c.className} feature gained at level ${cf.level}.`,
+              description,
             });
           }
+        }
+      }
+
+      // 3b. Eldritch Invocations
+      if (c.className === "Warlock") {
+        const chosenInvocations = getChosenInvocations(currentCharacter);
+        if (chosenInvocations.length > 0) {
+          const allOptions = getOptionsAndFeatures(activeBooks);
+          for (const invName of chosenInvocations) {
+            const invData = allOptions.find(
+              (o) =>
+                o.name.toLowerCase().trim() === invName.toLowerCase().trim() &&
+                ((o.category && o.category.includes("Invocation")) || (o.featureType && o.featureType.includes("EI")))
+            );
+            const prereqLabel = invData?.prerequisite ? `Prereq: ${invData.prerequisite}` : undefined;
+            list.push({
+              id: `invocation_${invName}`,
+              name: `Invocation: ${invName}`,
+              origin: "Class",
+              source: "Warlock",
+              description: invData?.description || "Eldritch Invocation.",
+              badge: prereqLabel,
+              chosenOption: prereqLabel,
+            });
+          }
+        }
+      }
+
+      // 3c. Artificer Infusions
+      if (c.className === "Artificer" && c.level >= 2) {
+        const knownInfusions = getKnownInfusions(currentCharacter);
+        const activeInfusions = currentCharacter.activeInfusions || [];
+        for (const infName of knownInfusions) {
+          const activeEntry = activeInfusions.find(
+            (a) => a.infusionName.toLowerCase() === infName.toLowerCase()
+          );
+          const def = ALL_ARTIFICER_INFUSIONS.find(
+            (d) => d.name.toLowerCase() === infName.toLowerCase()
+          );
+          const badge = activeEntry
+            ? activeEntry.targetItemName
+              ? `Active (Infused: ${activeEntry.targetItemName})`
+              : "Active"
+            : undefined;
+
+          list.push({
+            id: `infusion_${infName}`,
+            name: `Infusion: ${infName}`,
+            origin: "Class",
+            source: "Artificer",
+            description: def?.description || "Artificer Infusion.",
+            badge,
+            chosenOption: badge,
+          });
         }
       }
 
@@ -352,6 +399,73 @@ export const FeaturesTab: React.FC = () => {
     setCustomCounterModal(false);
   };
 
+  const handleAdoptShape = (beast: BeastData) => {
+    if (!currentCharacter) return;
+    const requiredCharges = getRequiredWildShapeCharges(beast);
+    const currentCharges = getWildShapeCharges(currentCharacter);
+    const isLevel20 = Boolean(wildShapeLimits?.druidLevel && wildShapeLimits.druidLevel >= 20);
+    const existingCounter = (currentCharacter.resourceCounters || {})["wild_shape"];
+    const maxCharges = isLevel20 ? 999 : (existingCounter ? existingCounter.max : 2);
+    const nextCharges = isLevel20 ? 999 : Math.max(0, currentCharges - requiredCharges);
+
+    updateCharacter(currentCharacter.id, {
+      resourceCounters: {
+        ...(currentCharacter.resourceCounters || {}),
+        wild_shape: {
+          id: "wild_shape",
+          name: "Wild Shape",
+          current: nextCharges,
+          max: maxCharges,
+          resetOn: "short",
+        },
+      },
+      activeWildShape: {
+        name: beast.name,
+        source: beast.source,
+        currentHp: beast.hp.average,
+        maxHp: beast.hp.average,
+        ac: beast.ac,
+      },
+    });
+  };
+
+  const handleRevertShape = () => {
+    if (!currentCharacter) return;
+    updateCharacter(currentCharacter.id, {
+      activeWildShape: null,
+    });
+  };
+
+  const updateWildShapeHp = (delta: number) => {
+    if (!currentCharacter?.activeWildShape) return;
+    const current = currentCharacter.activeWildShape.currentHp;
+    const max = currentCharacter.activeWildShape.maxHp;
+    const nextHp = current + delta;
+    if (nextHp <= 0) {
+      handleRevertShape();
+    } else {
+      updateCharacter(currentCharacter.id, {
+        activeWildShape: {
+          ...currentCharacter.activeWildShape,
+          currentHp: Math.min(max, nextHp),
+        },
+      });
+    }
+  };
+
+  const handleToggleFavoriteBeast = (beastKey: string) => {
+    if (!currentCharacter) return;
+    const existing = new Set(currentCharacter.favoriteWildShapes || []);
+    if (existing.has(beastKey)) {
+      existing.delete(beastKey);
+    } else {
+      existing.add(beastKey);
+    }
+    updateCharacter(currentCharacter.id, {
+      favoriteWildShapes: Array.from(existing),
+    });
+  };
+
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       {/* Interactive Resource Counters Card */}
@@ -379,12 +493,17 @@ export const FeaturesTab: React.FC = () => {
             </Text>
           ) : (
             Object.values(allCounters).map((c) => {
-              const isBarb20Rage =
-                c.id === "rage" &&
-                (c.max >= 999 ||
-                  (currentCharacter.classes || []).some(
-                    (cl) => cl.className === "Barbarian" && cl.level >= 20
-                  ));
+              const isUnlimited =
+                (c.id === "rage" &&
+                  (c.max >= 999 ||
+                    (currentCharacter.classes || []).some(
+                      (cl) => cl.className === "Barbarian" && cl.level >= 20
+                    ))) ||
+                (c.id === "wild_shape" &&
+                  (c.max >= 999 ||
+                    (currentCharacter.classes || []).some(
+                      (cl) => cl.className === "Druid" && cl.level >= 20
+                    )));
 
               return (
                 <View
@@ -401,35 +520,35 @@ export const FeaturesTab: React.FC = () => {
                   <View style={styles.counterStepper}>
                     <TouchableOpacity
                       onPress={() => updateCounterValue(c.id, -1)}
-                      disabled={isBarb20Rage || c.current <= 0}
+                      disabled={isUnlimited || c.current <= 0}
                       hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
                       style={[styles.stepperBtn, { backgroundColor: theme.surfaceRaised }]}>
                       <Ionicons
                         name="remove"
                         size={16}
-                        color={isBarb20Rage || c.current <= 0 ? theme.textMuted : theme.text}
+                        color={isUnlimited || c.current <= 0 ? theme.textMuted : theme.text}
                       />
                     </TouchableOpacity>
 
                     <View style={styles.counterCountBox}>
                       <Text style={[styles.counterCurrent, { color: c.current > 0 ? theme.accent : theme.danger }]}>
-                        {isBarb20Rage ? "∞" : c.current}
+                        {isUnlimited ? "∞" : c.current}
                       </Text>
                       <Text style={{ color: theme.textSecondary, fontSize: 13 }}>
                         {" "}
-                        / {isBarb20Rage ? "∞" : c.max}
+                        / {isUnlimited ? "∞" : c.max}
                       </Text>
                     </View>
 
                     <TouchableOpacity
                       onPress={() => updateCounterValue(c.id, 1)}
-                      disabled={isBarb20Rage || c.current >= c.max}
+                      disabled={isUnlimited || c.current >= c.max}
                       hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
                       style={[styles.stepperBtn, { backgroundColor: theme.surfaceRaised }]}>
                       <Ionicons
                         name="add"
                         size={16}
-                        color={isBarb20Rage || c.current >= c.max ? theme.textMuted : theme.text}
+                        color={isUnlimited || c.current >= c.max ? theme.textMuted : theme.text}
                       />
                     </TouchableOpacity>
                   </View>
@@ -439,6 +558,180 @@ export const FeaturesTab: React.FC = () => {
           )}
         </View>
       </Card>
+
+      {/* Wild Shape Section (Druid Level >= 2) */}
+      {wildShapeLimits?.hasWildShape && (
+        <Card style={{ padding: 14, marginBottom: 16 }}>
+          <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 8, flexWrap: "wrap", gap: 6 }}>
+            <View>
+              <Text style={[styles.sectionTitle, { color: theme.text, marginBottom: 2 }]}>
+                WILD SHAPE
+              </Text>
+              <Text style={{ color: theme.textSecondary, fontSize: 12 }}>
+                {wildShapeLimits.isMoonDruid ? "Circle of the Moon (Circle Forms)" : "Beast Shapes"}
+              </Text>
+            </View>
+            <Button
+              title="Browse Beast Shapes"
+              variant="primary"
+              size="sm"
+              onPress={() => setWildShapeModalVisible(true)}
+            />
+          </View>
+
+          {/* Limits Badges */}
+          <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6, marginBottom: currentCharacter.activeWildShape ? 12 : 0 }}>
+            <Badge label={`Max CR: ${wildShapeLimits.maxCrDisplay}`} variant="accent" size="sm" />
+            <Badge
+              label={
+                wildShapeLimits.canFly
+                  ? "Swim & Fly Allowed"
+                  : wildShapeLimits.canSwim
+                  ? "Swim Allowed • No Fly"
+                  : "No Swim • No Fly"
+              }
+              variant="secondary"
+              size="sm"
+            />
+            <Badge label={`${wildShapeLimits.maxDurationHours}h duration`} variant="secondary" size="sm" />
+            {wildShapeLimits.canElemental && (
+              <Badge label="Elemental Wild Shape (2 Uses)" variant="warning" size="sm" />
+            )}
+          </View>
+
+          {/* Monster Manual Inactive Warning */}
+          {!isMmActive && (
+            <Card
+              style={{
+                padding: 10,
+                marginTop: 8,
+                backgroundColor: theme.warning + "15",
+                borderColor: theme.warning + "60",
+                borderWidth: 1,
+              }}>
+              <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 8 }}>
+                <View style={{ flex: 1, flexDirection: "row", alignItems: "center", gap: 8 }}>
+                  <Ionicons name="warning-outline" size={18} color={theme.warning} />
+                  <Text style={{ color: theme.text, fontSize: 12, flex: 1 }}>
+                    Monster Manual is not active in Active Books. Most beast shapes will not appear.
+                  </Text>
+                </View>
+                <Button
+                  title="Enable MM"
+                  size="sm"
+                  variant="outline"
+                  onPress={handleEnableMonsterManual}
+                />
+              </View>
+            </Card>
+          )}
+
+          {/* Active Wild Shape Transformation Banner */}
+          {currentCharacter.activeWildShape && (
+            <Card
+              style={{
+                padding: 12,
+                marginTop: 10,
+                backgroundColor: theme.surfaceHighlight,
+                borderColor: theme.accentBorder,
+                borderWidth: 1.5,
+              }}>
+              <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", gap: 8 }}>
+                <View style={{ flex: 1 }}>
+                  <View style={{ flexDirection: "row", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+                    <Badge label="ACTIVE FORM" variant="accent" size="sm" />
+                    <Text style={{ fontSize: 16, fontWeight: "700", color: theme.text }}>
+                      {currentCharacter.activeWildShape.name}
+                    </Text>
+                    <Badge label={`AC ${currentCharacter.activeWildShape.ac}`} variant="secondary" size="sm" />
+                  </View>
+                  <Text style={{ color: theme.textSecondary, fontSize: 12, marginTop: 4 }}>
+                    Damage reduces beast HP first. Drops when HP reaches 0.
+                  </Text>
+                </View>
+
+                {/* HP Stepper Controls */}
+                <View style={styles.counterStepper}>
+                  <TouchableOpacity
+                    onPress={() => updateWildShapeHp(-1)}
+                    hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+                    style={[styles.stepperBtn, { backgroundColor: theme.surfaceRaised }]}>
+                    <Ionicons name="remove" size={16} color={theme.text} />
+                  </TouchableOpacity>
+
+                  <View style={styles.counterCountBox}>
+                    <Text
+                      style={[
+                        styles.counterCurrent,
+                        {
+                          color:
+                            currentCharacter.activeWildShape.currentHp > 0
+                              ? theme.accent
+                              : theme.danger,
+                        },
+                      ]}>
+                      {currentCharacter.activeWildShape.currentHp}
+                    </Text>
+                    <Text style={{ color: theme.textSecondary, fontSize: 13 }}>
+                      {" "}
+                      / {currentCharacter.activeWildShape.maxHp}
+                    </Text>
+                  </View>
+
+                  <TouchableOpacity
+                    onPress={() => updateWildShapeHp(1)}
+                    disabled={currentCharacter.activeWildShape.currentHp >= currentCharacter.activeWildShape.maxHp}
+                    hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+                    style={[styles.stepperBtn, { backgroundColor: theme.surfaceRaised }]}>
+                    <Ionicons
+                      name="add"
+                      size={16}
+                      color={
+                        currentCharacter.activeWildShape.currentHp >= currentCharacter.activeWildShape.maxHp
+                          ? theme.textMuted
+                          : theme.text
+                      }
+                    />
+                  </TouchableOpacity>
+                </View>
+              </View>
+
+              {/* Action Buttons: Inspect & Revert */}
+              <View style={{ flexDirection: "row", gap: 8, marginTop: 10 }}>
+                <Button
+                  title="Inspect Beast Statblock"
+                  variant="secondary"
+                  size="sm"
+                  style={{ flex: 1 }}
+                  onPress={() => {
+                    const b = findBeast(
+                      currentCharacter.activeWildShape!.name,
+                      currentCharacter.activeWildShape!.source
+                    );
+                    if (b) {
+                      setDetailModal({
+                        visible: true,
+                        title: b.name,
+                        subtitle: `CR ${b.cr} • ${b.size} ${b.type}`,
+                        content: `**AC**: ${b.ac}\n**HP**: ${b.hp.average} (${b.hp.formula})\n**Speed**: Walk ${b.speed.walk || 0}ft${b.speed.swim ? `, Swim ${b.speed.swim}ft` : ""}${b.speed.fly ? `, Fly ${b.speed.fly}ft` : ""}\n\n**STR** ${b.abilities.str} | **DEX** ${b.abilities.dex} | **CON** ${b.abilities.con} | **INT** ${b.abilities.int} | **WIS** ${b.abilities.wis} | **CHA** ${b.abilities.cha}\n\n${(b.traits || []).map((t) => `**${t.name}**: ${t.description}`).join("\n\n")}\n\n${(b.actions || []).map((a) => `**${a.name}**: ${a.description}`).join("\n\n")}`,
+                      });
+                    }
+                  }}
+                />
+                <Button
+                  title="Revert to Normal"
+                  variant="secondary"
+                  size="sm"
+                  onPress={handleRevertShape}
+                />
+              </View>
+            </Card>
+          )}
+        </Card>
+      )}
+
+      {/* Active Infusions Section (Artificer) */}
+      <ActiveInfusionsSection />
 
       {/* Optional & Replacement Features Section */}
       {availableOptional.length > 0 && (
@@ -524,7 +817,7 @@ export const FeaturesTab: React.FC = () => {
                     setDetailModal({
                       visible: true,
                       title: feat.name,
-                      subtitle: `${feat.origin} • ${feat.source || ""}`,
+                      subtitle: `${feat.origin} • ${feat.source || ""}${feat.badge ? ` • ${feat.badge}` : ""}`,
                       content: feat.description,
                     })
                   }
@@ -538,7 +831,9 @@ export const FeaturesTab: React.FC = () => {
                   <View style={{ flex: 1 }}>
                     <View style={{ flexDirection: "row", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
                       <Text style={[styles.featureTitle, { color: theme.text }]}>{feat.name}</Text>
-                      {feat.chosenOption ? (
+                      {feat.badge ? (
+                        <Badge label={feat.badge} variant="outline" size="sm" />
+                      ) : feat.chosenOption ? (
                         <Badge label={feat.chosenOption} variant="success" size="sm" />
                       ) : null}
                     </View>
@@ -622,6 +917,17 @@ export const FeaturesTab: React.FC = () => {
         subtitle={detailModal.subtitle}
         content={detailModal.content}
         onClose={() => setDetailModal({ visible: false, title: "", content: "" })}
+      />
+
+      {/* Wild Shape Browser Modal */}
+      <WildShapeModal
+        visible={wildShapeModalVisible}
+        onClose={() => setWildShapeModalVisible(false)}
+        character={currentCharacter}
+        onAdoptShape={handleAdoptShape}
+        onToggleFavorite={handleToggleFavoriteBeast}
+        activeBooks={activeBooks}
+        onEnableMonsterManual={handleEnableMonsterManual}
       />
     </ScrollView>
   );

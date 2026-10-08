@@ -11,25 +11,17 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { useCharacters } from "../../context/CharacterContext";
 import { useAppTheme } from "../../context/ThemeContext";
-import { getBackgrounds, getClasses, getConditions, getRaces } from "../../services/dataService";
-import { proficiencies } from "../../rules/proficiencies";
-import { RACE_WEAPON_PROFICIENCIES } from "../../rules/attacks";
+import { getBackgrounds, getClasses, getConditions, getRaces, findBeast } from "../../services/dataService";
 import {
-  resolveCharacterTools,
-  resolveCharacterLanguages,
-} from "../../rules/proficienciesAndLanguages";
+  spendHitDie,
+  recoverHitDie,
+} from "../../rules/hitDice";
 import {
-  calculateArmorClass,
-  calculateEffectiveAbilityScores,
-  calculateMaxHp,
-  calculateProficiencyBonus,
-  calculateSavingThrows,
-  calculateSkills,
-  calculateSpeed,
-  calculateTotalLevel,
+  evaluateCharacter,
   formatModifier,
 } from "../../services/dndRules";
 import { AbilityKey } from "../../types/character";
+import { Badge } from "../ui/Badge";
 import { Button } from "../ui/Button";
 import { Card } from "../ui/Card";
 import { DetailModal } from "../DetailModal";
@@ -73,78 +65,62 @@ export const StatsTab: React.FC = () => {
   const [tempHpAmount, setTempHpAmount] = useState("");
   const [maxHpOverrideInput, setMaxHpOverrideInput] = useState("");
 
-  const derivedProficiencies = useMemo(() => {
-    if (!currentCharacter) {
-      return { armor: [], weapons: [], tools: [] };
-    }
-    const allRaces = getRaces(activeBooks || []);
-    const allBackgrounds = getBackgrounds(activeBooks || []);
-    const allClasses = getClasses(activeBooks || []);
-    const base = proficiencies(currentCharacter, allClasses);
-    const armorSet = new Set<string>(base.armor);
-    const weaponSet = new Set<string>(base.weapons);
-
-    if (Array.isArray(currentCharacter.multiclassProficiencies)) {
-      for (const mp of currentCharacter.multiclassProficiencies) {
-        for (const a of mp.armor || []) armorSet.add(a);
-        for (const w of mp.weapons || []) weaponSet.add(w);
-      }
-    }
-
-    const raceName = currentCharacter.race?.name;
-    const subraceName = currentCharacter.race?.subraceName;
-    if (raceName) {
-      const raceWeapons =
-        RACE_WEAPON_PROFICIENCIES[raceName] ||
-        (subraceName ? RACE_WEAPON_PROFICIENCIES[subraceName] : undefined);
-      for (const w of raceWeapons || []) {
-        weaponSet.add(w);
-      }
-
-      if (subraceName === "Mountain Dwarf" || raceName === "Mountain Dwarf") {
-        armorSet.add("Light armor");
-        armorSet.add("Medium armor");
-      }
-      if (raceName === "Githyanki") {
-        armorSet.add("Light armor");
-        armorSet.add("Medium armor");
-      }
-    }
-
-    const tools = resolveCharacterTools(currentCharacter, {
-      races: allRaces,
-      backgrounds: allBackgrounds,
-      classes: allClasses,
+  const evaluated = useMemo(() => {
+    if (!currentCharacter) return null;
+    return evaluateCharacter(currentCharacter, {
+      races: getRaces(activeBooks || []),
+      backgrounds: getBackgrounds(activeBooks || []),
+      classes: getClasses(activeBooks || []),
     });
-
-    return {
-      armor: Array.from(armorSet),
-      weapons: Array.from(weaponSet),
-      tools,
-    };
   }, [currentCharacter, activeBooks]);
+
+  const derivedProficiencies = useMemo(() => {
+    return evaluated?.proficiencies ?? { armor: [], weapons: [], tools: [], languages: [] };
+  }, [evaluated]);
 
   const derivedLanguages = useMemo(() => {
-    if (!currentCharacter) return ["Common"];
-    const allRaces = getRaces(activeBooks || []);
-    const allBackgrounds = getBackgrounds(activeBooks || []);
-    return resolveCharacterLanguages(currentCharacter, {
-      races: allRaces,
-      backgrounds: allBackgrounds,
+    return evaluated?.proficiencies.languages ?? ["Common"];
+  }, [evaluated]);
+
+  const classDice = useMemo(() => {
+    return evaluated?.combatDice ?? { bardicInspiration: null, sneakAttack: null, martialArts: null, superiorityDice: null };
+  }, [evaluated]);
+
+  // Hit Dice
+  const hdPools = useMemo(() => evaluated?.hitDice ?? {}, [evaluated]);
+  const hdEntries = useMemo(() => {
+    return Object.entries(hdPools).sort((a, b) => {
+      const faceA = parseInt(a[0].replace(/\D/g, ""), 10) || 0;
+      const faceB = parseInt(b[0].replace(/\D/g, ""), 10) || 0;
+      return faceB - faceA;
     });
-  }, [currentCharacter, activeBooks]);
+  }, [hdPools]);
 
-  if (!currentCharacter) return null;
+  const totalHitDice = useMemo(() => hdEntries.reduce((sum, [, p]) => sum + p.total, 0), [hdEntries]);
+  const availableHd = useMemo(() => hdEntries.reduce((sum, [, p]) => sum + p.remaining, 0), [hdEntries]);
+  const usedHdCount = useMemo(() => hdEntries.reduce((sum, [, p]) => sum + p.used, 0), [hdEntries]);
 
-  const totalLevel = calculateTotalLevel(currentCharacter);
-  const profBonus = calculateProficiencyBonus(totalLevel);
-  const { scores, modifiers } = calculateEffectiveAbilityScores(currentCharacter);
-  const calculatedMaxHp = calculateMaxHp(currentCharacter);
-  const { ac, breakdown: acBreakdown } = calculateArmorClass(currentCharacter);
-  const speed = calculateSpeed(currentCharacter);
-  const initiative = modifiers.dex;
-  const saves = calculateSavingThrows(currentCharacter);
-  const skills = calculateSkills(currentCharacter);
+  const hitDiceLabel = useMemo(() => {
+    if (hdEntries.length === 0) return "1d8";
+    return hdEntries.map(([die, p]) => `${p.total}${die}`).join(" + ");
+  }, [hdEntries]);
+
+  if (!currentCharacter || !evaluated) return null;
+
+  const profBonus = evaluated.proficiencyBonus;
+  const { scores, modifiers } = evaluated.effectiveScores;
+  const calculatedMaxHp = evaluated.hp.max;
+  const { ac, breakdown: acBreakdown } = evaluated.armorClass;
+  const hasDefenseAc = acBreakdown.includes("(Defense)");
+  const edMatch = acBreakdown.match(/\+\s*(\d+)\s*\(Enhanced Defense\)/);
+  const repMatch = acBreakdown.match(/\+\s*(\d+)\s*\(Repulsion Shield\)/);
+  const infusionBonusAc =
+    (edMatch ? parseInt(edMatch[1], 10) : 0) +
+    (repMatch ? parseInt(repMatch[1], 10) : 0);
+  const speeds = evaluated.speeds;
+  const initiative = evaluated.initiative;
+  const saves = evaluated.saves;
+  const skills = evaluated.skills;
   const passivePerception = skills.find((s) => s.name === "Perception")?.passiveBonus ?? 10;
   const passiveInvestigation = skills.find((s) => s.name === "Investigation")?.passiveBonus ?? 10;
   const passiveInsight = skills.find((s) => s.name === "Insight")?.passiveBonus ?? 10;
@@ -200,32 +176,22 @@ export const StatsTab: React.FC = () => {
     updateCharacter(currentCharacter.id, { conditions: updated });
   };
 
-  // Hit Dice
-  const primaryClass = currentCharacter.classes[0]?.className || "Class";
-  const usedHitDice = currentCharacter.usedHitDice || {};
-  const totalHitDice = totalLevel;
-  const usedHdCount = (Object.values(usedHitDice) as number[]).reduce((a: number, b: number) => a + b, 0);
-  const availableHd = Math.max(0, totalHitDice - usedHdCount);
-
-  const useHitDie = () => {
-    if (availableHd <= 0) return;
-    const currentClassUsed = usedHitDice[primaryClass] || 0;
-    updateCharacter(currentCharacter.id, {
-      usedHitDice: {
-        ...usedHitDice,
-        [primaryClass]: currentClassUsed + 1,
-      },
-    });
+  const handleUseHitDie = (die?: string) => {
+    const targetDie = die ?? hdEntries.find(([, p]) => p.remaining > 0)?.[0];
+    if (!targetDie) return;
+    const res = spendHitDie(currentCharacter, targetDie);
+    if (res.healed > 0) {
+      updateCharacter(currentCharacter.id, {
+        currentHp: res.character.currentHp,
+        usedHitDice: res.character.usedHitDice,
+      });
+    }
   };
 
-  const recoverHitDie = () => {
-    const currentClassUsed = usedHitDice[primaryClass] || 0;
-    if (currentClassUsed <= 0) return;
+  const handleRecoverHitDie = (die?: string) => {
+    const updated = recoverHitDie(currentCharacter, die);
     updateCharacter(currentCharacter.id, {
-      usedHitDice: {
-        ...usedHitDice,
-        [primaryClass]: Math.max(0, currentClassUsed - 1),
-      },
+      usedHitDice: updated.usedHitDice,
     });
   };
 
@@ -252,6 +218,30 @@ export const StatsTab: React.FC = () => {
     });
   };
 
+  const handleRevertWildShape = () => {
+    if (!currentCharacter) return;
+    updateCharacter(currentCharacter.id, {
+      activeWildShape: null,
+    });
+  };
+
+  const updateWildShapeHp = (delta: number) => {
+    if (!currentCharacter?.activeWildShape) return;
+    const current = currentCharacter.activeWildShape.currentHp;
+    const max = currentCharacter.activeWildShape.maxHp;
+    const nextHp = current + delta;
+    if (nextHp <= 0) {
+      handleRevertWildShape();
+    } else {
+      updateCharacter(currentCharacter.id, {
+        activeWildShape: {
+          ...currentCharacter.activeWildShape,
+          currentHp: Math.min(max, nextHp),
+        },
+      });
+    }
+  };
+
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       {/* Rest Buttons Bar */}
@@ -273,6 +263,118 @@ export const StatsTab: React.FC = () => {
           style={{ flex: 1 }}
         />
       </View>
+
+      {/* Active Wild Shape Combat Banner */}
+      {currentCharacter.activeWildShape && (
+        <Card
+          style={{
+            padding: 14,
+            marginBottom: 16,
+            backgroundColor: theme.surfaceHighlight,
+            borderColor: theme.accentBorder,
+            borderWidth: 1.5,
+          }}>
+          <View
+            style={{
+              flexDirection: isCompact ? "column" : "row",
+              justifyContent: "space-between",
+              alignItems: isCompact ? "flex-start" : "center",
+              gap: 12,
+            }}>
+            <View style={{ flex: 1 }}>
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+                <Badge label="ACTIVE WILD SHAPE" variant="accent" size="sm" />
+                <Text style={{ fontSize: 17, fontWeight: "700", color: theme.text }}>
+                  {currentCharacter.activeWildShape.name}
+                </Text>
+                <Badge label={`AC ${currentCharacter.activeWildShape.ac}`} variant="secondary" size="sm" />
+              </View>
+              <Text style={{ color: theme.textSecondary, fontSize: 12, marginTop: 4 }}>
+                Damage reduces beast HP first. Form drops when HP reaches 0.
+              </Text>
+            </View>
+
+            {/* HP Stepper Controls */}
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+              <TouchableOpacity
+                onPress={() => updateWildShapeHp(-1)}
+                hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+                style={[styles.beastStepperBtn, { backgroundColor: theme.surfaceRaised, borderColor: theme.border }]}>
+                <Ionicons name="remove" size={16} color={theme.text} />
+              </TouchableOpacity>
+
+              <View style={{ alignItems: "center", minWidth: 70 }}>
+                <Text
+                  style={{
+                    fontSize: 16,
+                    fontWeight: "700",
+                    color: currentCharacter.activeWildShape.currentHp > 0 ? theme.accent : theme.danger,
+                  }}>
+                  {currentCharacter.activeWildShape.currentHp}{" "}
+                  <Text style={{ color: theme.textSecondary, fontSize: 13, fontWeight: "400" }}>
+                    / {currentCharacter.activeWildShape.maxHp} HP
+                  </Text>
+                </Text>
+              </View>
+
+              <TouchableOpacity
+                onPress={() => updateWildShapeHp(1)}
+                disabled={currentCharacter.activeWildShape.currentHp >= currentCharacter.activeWildShape.maxHp}
+                hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+                style={[
+                  styles.beastStepperBtn,
+                  {
+                    backgroundColor: theme.surfaceRaised,
+                    borderColor: theme.border,
+                    opacity: currentCharacter.activeWildShape.currentHp >= currentCharacter.activeWildShape.maxHp ? 0.5 : 1,
+                  },
+                ]}>
+                <Ionicons
+                  name="add"
+                  size={16}
+                  color={
+                    currentCharacter.activeWildShape.currentHp >= currentCharacter.activeWildShape.maxHp
+                      ? theme.textMuted
+                      : theme.text
+                  }
+                />
+              </TouchableOpacity>
+            </View>
+          </View>
+
+          {/* Action Buttons: Inspect Beast & Revert */}
+          <View style={{ flexDirection: "row", gap: 8, marginTop: 12, flexWrap: "wrap" }}>
+            <Button
+              title="View Beast Attacks & Actions"
+              icon="flash-outline"
+              variant="outline"
+              size="sm"
+              style={{ flex: 1, minWidth: 160 }}
+              onPress={() => {
+                const b = findBeast(
+                  currentCharacter.activeWildShape!.name,
+                  currentCharacter.activeWildShape!.source
+                );
+                if (b) {
+                  setDetailModal({
+                    visible: true,
+                    title: b.name,
+                    subtitle: `CR ${b.cr} • ${b.size} ${b.type}`,
+                    content: `**AC**: ${b.ac}\n**HP**: ${b.hp.average} (${b.hp.formula})\n**Speed**: Walk ${b.speed.walk || 0}ft${b.speed.swim ? `, Swim ${b.speed.swim}ft` : ""}${b.speed.fly ? `, Fly ${b.speed.fly}ft` : ""}\n\n**STR** ${b.abilities.str} | **DEX** ${b.abilities.dex} | **CON** ${b.abilities.con} | **INT** ${b.abilities.int} | **WIS** ${b.abilities.wis} | **CHA** ${b.abilities.cha}\n\n${(b.traits || []).map((t) => `**${t.name}**: ${t.description}`).join("\n\n")}\n\n${(b.actions || []).map((a) => `**${a.name}**: ${a.description}`).join("\n\n")}`,
+                  });
+                }
+              }}
+            />
+            <Button
+              title="Revert"
+              icon="arrow-undo-outline"
+              variant="secondary"
+              size="sm"
+              onPress={handleRevertWildShape}
+            />
+          </View>
+        </Card>
+      )}
 
       {/* Active Conditions Display */}
       {currentCharacter.conditions && currentCharacter.conditions.length > 0 && (
@@ -454,6 +556,7 @@ export const StatsTab: React.FC = () => {
       {/* Combat Quick Badges (AC, Initiative, Speed, Prof Bonus) */}
       <View style={styles.combatRow}>
         <TouchableOpacity
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
           onPress={() =>
             setDetailModal({
               visible: true,
@@ -466,6 +569,12 @@ export const StatsTab: React.FC = () => {
           <Ionicons name="shield" size={18} color={theme.accent} />
           <Text style={[styles.statBoxValue, { color: theme.text }]}>{ac}</Text>
           <Text style={[styles.statBoxLabel, { color: theme.textMuted }]}>ARMOR CLASS</Text>
+          {(hasDefenseAc || infusionBonusAc > 0) && (
+            <View style={{ flexDirection: "row", flexWrap: "wrap", justifyContent: "center", gap: 3, marginTop: 4 }}>
+              {hasDefenseAc && <Badge label="Defense +1" variant="outline" size="sm" />}
+              {infusionBonusAc > 0 && <Badge label={`Infused +${infusionBonusAc}`} variant="outline" size="sm" />}
+            </View>
+          )}
         </TouchableOpacity>
 
         <View style={[styles.statBox, { backgroundColor: theme.surface, borderColor: theme.border }]}>
@@ -474,11 +583,57 @@ export const StatsTab: React.FC = () => {
           <Text style={[styles.statBoxLabel, { color: theme.textMuted }]}>INITIATIVE</Text>
         </View>
 
-        <View style={[styles.statBox, { backgroundColor: theme.surface, borderColor: theme.border }]}>
+        <TouchableOpacity
+          onPress={() => {
+            const speedContent = [
+              `Walking Speed: ${speeds.walk} ft`,
+              ...speeds.details.filter(d => d.mode === "walk").map(d => `• ${d.source}`),
+              "",
+              ...(speeds.swim != null && speeds.swim > 0
+                ? [`Swimming Speed: ${speeds.swim} ft`, ...speeds.details.filter(d => d.mode === "swim").map(d => `• ${d.source}`), ""]
+                : []),
+              ...(speeds.climb != null && speeds.climb > 0
+                ? [`Climbing Speed: ${speeds.climb} ft`, ...speeds.details.filter(d => d.mode === "climb").map(d => `• ${d.source}`), ""]
+                : []),
+              ...(speeds.fly != null || speeds.flyRestricted
+                ? [
+                    `Flying Speed: ${speeds.fly ?? 0} ft${speeds.flyRestricted ? " (Restricted)" : ""}`,
+                    ...speeds.details.filter(d => d.mode === "fly").map(d => `• ${d.source}`),
+                    speeds.flyRestricted ? "\n⚠️ Flight is restricted while wearing medium or heavy armor." : "",
+                  ]
+                : []),
+            ]
+              .join("\n")
+              .trim();
+
+            setDetailModal({
+              visible: true,
+              title: "Movement Speeds",
+              subtitle: `Walking: ${speeds.walk} ft`,
+              content: speedContent,
+            });
+          }}
+          style={[styles.statBox, { backgroundColor: theme.surface, borderColor: theme.border }]}>
           <Ionicons name="walk" size={18} color={theme.accent} />
-          <Text style={[styles.statBoxValue, { color: theme.text }]}>{speed} ft</Text>
+          <Text style={[styles.statBoxValue, { color: theme.text }]}>{speeds.walk} ft</Text>
           <Text style={[styles.statBoxLabel, { color: theme.textMuted }]}>SPEED</Text>
-        </View>
+          {((speeds.swim != null && speeds.swim > 0) || (speeds.climb != null && speeds.climb > 0) || speeds.fly != null || speeds.flyRestricted) && (
+            <View style={{ flexDirection: "row", flexWrap: "wrap", justifyContent: "center", gap: 4, marginTop: 4 }}>
+              {speeds.swim != null && speeds.swim > 0 && (
+                <Badge label={`🏊 ${speeds.swim} ft`} variant="secondary" size="sm" />
+              )}
+              {speeds.climb != null && speeds.climb > 0 && (
+                <Badge label={`🧗 ${speeds.climb} ft`} variant="secondary" size="sm" />
+              )}
+              {speeds.fly != null && speeds.fly > 0 && !speeds.flyRestricted && (
+                <Badge label={`🪽 ${speeds.fly} ft`} variant="accent" size="sm" />
+              )}
+              {speeds.flyRestricted && (
+                <Badge label="🪽 0 ft (Armor)" variant="warning" size="sm" />
+              )}
+            </View>
+          )}
+        </TouchableOpacity>
 
         <View style={[styles.statBox, { backgroundColor: theme.surface, borderColor: theme.border }]}>
           <Ionicons name="ribbon" size={18} color={theme.accent} />
@@ -487,20 +642,111 @@ export const StatsTab: React.FC = () => {
         </View>
       </View>
 
+      {/* Active Class Dice Summary Strip */}
+      {(classDice.bardicInspiration || classDice.sneakAttack || classDice.martialArts || classDice.superiorityDice) && (
+        <View style={[styles.classDiceStrip, { backgroundColor: theme.surface, borderColor: theme.border }]}>
+          <Text style={[styles.classDiceStripLabel, { color: theme.textMuted }]}>CLASS COMBAT DICE</Text>
+          <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 6 }}>
+            {classDice.bardicInspiration && (
+              <TouchableOpacity
+                onPress={() =>
+                  setDetailModal({
+                    visible: true,
+                    title: "Bardic Inspiration Die",
+                    subtitle: classDice.bardicInspiration ?? undefined,
+                    content: `Your Bardic Inspiration die is currently a ${classDice.bardicInspiration}.\n\nYou can use a bonus action to grant one creature within 60 feet this die to add to one ability check, attack roll, or saving throw within 10 minutes.`,
+                  })
+                }>
+                <Badge label={`Bardic Inspiration: ${classDice.bardicInspiration}`} variant="accent" size="sm" />
+              </TouchableOpacity>
+            )}
+            {classDice.sneakAttack && (
+              <TouchableOpacity
+                onPress={() =>
+                  setDetailModal({
+                    visible: true,
+                    title: "Sneak Attack Dice",
+                    subtitle: classDice.sneakAttack ?? undefined,
+                    content: `Once per turn, you can deal an extra ${classDice.sneakAttack} damage to one creature you hit with an attack if you have advantage on the attack roll, or if another enemy of the target is within 5 feet of it (and you don't have disadvantage). Attack must use a finesse or ranged weapon.`,
+                  })
+                }>
+                <Badge label={`Sneak Attack: ${classDice.sneakAttack}`} variant="accent" size="sm" />
+              </TouchableOpacity>
+            )}
+            {classDice.martialArts && (
+              <TouchableOpacity
+                onPress={() =>
+                  setDetailModal({
+                    visible: true,
+                    title: "Martial Arts Die",
+                    subtitle: classDice.martialArts ?? undefined,
+                    content: `Your unarmed strikes and monk weapons can use this die (${classDice.martialArts}) in place of normal damage. You can also use Dexterity instead of Strength for attack and damage rolls with monk weapons and unarmed strikes.`,
+                  })
+                }>
+                <Badge label={`Martial Arts: ${classDice.martialArts}`} variant="accent" size="sm" />
+              </TouchableOpacity>
+            )}
+            {classDice.superiorityDice && (
+              <TouchableOpacity
+                onPress={() =>
+                  setDetailModal({
+                    visible: true,
+                    title: "Superiority Dice",
+                    subtitle: `${classDice.superiorityDice?.count}${classDice.superiorityDice?.die}`,
+                    content: `You have ${classDice.superiorityDice?.count} superiority dice, which are ${classDice.superiorityDice?.die}s.\n\nYou expend superiority dice to fuel your Battle Master maneuvers. You regain all of your expended superiority dice when you finish a short or long rest.`,
+                  })
+                }>
+                <Badge label={`Superiority Dice: ${classDice.superiorityDice.count}${classDice.superiorityDice.die}`} variant="accent" size="sm" />
+              </TouchableOpacity>
+            )}
+          </View>
+        </View>
+      )}
+
       {/* Hit Dice Card */}
       <Card style={styles.hitDiceCard}>
         <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
-          <View>
+          <View style={{ flex: 1 }}>
             <Text style={[styles.sectionTitle, { color: theme.text }]}>HIT DICE</Text>
             <Text style={{ color: theme.textSecondary, fontSize: 13 }}>
-              {availableHd} / {totalHitDice} Remaining (1d{currentCharacter.classes[0]?.className === "Barbarian" ? "12" : currentCharacter.classes[0]?.className === "Fighter" || currentCharacter.classes[0]?.className === "Paladin" || currentCharacter.classes[0]?.className === "Ranger" ? "10" : currentCharacter.classes[0]?.className === "Sorcerer" || currentCharacter.classes[0]?.className === "Wizard" ? "6" : "8"})
+              {availableHd} / {totalHitDice} Remaining ({hitDiceLabel})
             </Text>
           </View>
-          <View style={{ flexDirection: "row", gap: 8 }}>
-            <Button title="Use" size="sm" variant="danger" onPress={useHitDie} disabled={availableHd <= 0} />
-            <Button title="Recover" size="sm" variant="secondary" onPress={recoverHitDie} disabled={usedHdCount <= 0} />
-          </View>
+          {hdEntries.length <= 1 && (
+            <View style={{ flexDirection: "row", gap: 8 }}>
+              <Button title="Use" size="sm" variant="danger" onPress={() => handleUseHitDie()} disabled={availableHd <= 0} />
+              <Button title="Recover" size="sm" variant="secondary" onPress={() => handleRecoverHitDie()} disabled={usedHdCount <= 0} />
+            </View>
+          )}
         </View>
+
+        {hdEntries.length > 1 && (
+          <View style={{ marginTop: 8, gap: 6, borderTopWidth: 1, borderTopColor: theme.border, paddingTop: 8 }}>
+            {hdEntries.map(([die, pool]) => (
+              <View key={die} style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
+                <Text style={{ color: theme.text, fontSize: 13, fontWeight: "600" }}>
+                  {pool.remaining} / {pool.total} {die.toUpperCase()}
+                </Text>
+                <View style={{ flexDirection: "row", gap: 6 }}>
+                  <Button
+                    title="Use"
+                    size="sm"
+                    variant="danger"
+                    onPress={() => handleUseHitDie(die)}
+                    disabled={pool.remaining <= 0}
+                  />
+                  <Button
+                    title="Recover"
+                    size="sm"
+                    variant="secondary"
+                    onPress={() => handleRecoverHitDie(die)}
+                    disabled={pool.used <= 0}
+                  />
+                </View>
+              </View>
+            ))}
+          </View>
+        )}
       </Card>
 
       {/* 6 Ability Scores Grid */}
@@ -728,12 +974,66 @@ export const StatsTab: React.FC = () => {
         </View>
 
         <View>
-          <Text style={[styles.profCatTitle, { color: theme.accent }]}>Tool Proficiencies</Text>
-          <Text style={{ color: theme.text, fontSize: 13 }}>
-            {derivedProficiencies.tools.length > 0
-              ? derivedProficiencies.tools.join(", ")
-              : "None"}
-          </Text>
+          <Text style={[styles.profCatTitle, { color: theme.accent, marginBottom: 4 }]}>Tool Proficiencies</Text>
+          {evaluated.tools && evaluated.tools.length > 0 ? (
+            <View style={{ gap: 6 }}>
+              {evaluated.tools.map((t, idx) => (
+                <View
+                  key={`${t.name}_${idx}`}
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    paddingVertical: 2,
+                  }}
+                >
+                  <View style={{ flexDirection: "row", alignItems: "center", gap: 8, flex: 1 }}>
+                    <View style={styles.skillProfCol}>
+                      {t.isExpertise ? (
+                        <View
+                          style={[
+                            styles.profIndicator,
+                            {
+                              borderColor: theme.warning,
+                              backgroundColor: theme.warning,
+                            },
+                          ]}
+                        >
+                          <View style={[styles.expertiseInnerDot, { backgroundColor: "#fff" }]} />
+                        </View>
+                      ) : (
+                        <View
+                          style={[
+                            styles.profIndicator,
+                            {
+                              borderColor: theme.accent,
+                              backgroundColor: theme.accent,
+                            },
+                          ]}
+                        />
+                      )}
+                    </View>
+                    <Text style={{ color: theme.text, fontSize: 13, flex: 1 }}>
+                      {t.name}
+                    </Text>
+                  </View>
+                  <Text
+                    style={{
+                      fontSize: 13,
+                      fontWeight: "bold",
+                      color: t.isExpertise ? theme.warning : theme.accent,
+                    }}
+                  >
+                    {t.ability
+                      ? `(${t.displayModifier}, ${t.ability.charAt(0).toUpperCase() + t.ability.slice(1)})`
+                      : `(${t.displayModifier})`}
+                  </Text>
+                </View>
+              ))}
+            </View>
+          ) : (
+            <Text style={{ color: theme.text, fontSize: 13 }}>None</Text>
+          )}
         </View>
       </Card>
 
@@ -755,7 +1055,7 @@ export const StatsTab: React.FC = () => {
               HP Configuration
             </Text>
             <Text style={{ color: theme.textSecondary, fontSize: 13, marginBottom: 8 }}>
-              Standard calculated Max HP: <Text style={{ color: theme.accent, fontWeight: "bold" }}>{calculateMaxHp({ ...currentCharacter, maxHpOverride: null })}</Text>
+              Standard calculated Max HP: <Text style={{ color: theme.accent, fontWeight: "bold" }}>{evaluateCharacter({ ...currentCharacter, maxHpOverride: null }).hp.max}</Text>
             </Text>
             <Text style={{ color: theme.textSecondary, fontSize: 12, marginBottom: 8 }}>
               Leave blank to use automatic calculation. Enter a number to manually override maximum hit points.
@@ -968,6 +1268,17 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     flexWrap: "wrap",
   },
+  classDiceStrip: {
+    padding: 10,
+    borderRadius: 8,
+    borderWidth: 1,
+    marginBottom: 16,
+  },
+  classDiceStripLabel: {
+    fontSize: 9,
+    fontWeight: "700",
+    letterSpacing: 0.5,
+  },
   statBox: {
     flex: 1,
     minWidth: 80,
@@ -1122,5 +1433,13 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     marginBottom: 6,
     gap: 8,
+  },
+  beastStepperBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 8,
+    borderWidth: 1,
+    alignItems: "center",
+    justifyContent: "center",
   },
 });

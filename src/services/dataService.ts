@@ -1,13 +1,14 @@
-import racesRaw from "../data/races.json";
-import classesRaw from "../data/classes.json";
-import featsRaw from "../data/feats.json";
-import backgroundsRaw from "../data/backgrounds.json";
-import itemsRaw from "../data/items.json";
-import spellsRaw from "../data/spells.json";
-import conditionsRaw from "../data/conditions.json";
-import optionsRaw from "../data/options_and_features.json";
+import racesRaw from "../data/races.json" with { type: "json" };
+import classesRaw from "../data/classes.json" with { type: "json" };
+import featsRaw from "../data/feats.json" with { type: "json" };
+import backgroundsRaw from "../data/backgrounds.json" with { type: "json" };
+import itemsRaw from "../data/items.json" with { type: "json" };
+import spellsRaw from "../data/spells.json" with { type: "json" };
+import conditionsRaw from "../data/conditions.json" with { type: "json" };
+import optionsRaw from "../data/options_and_features.json" with { type: "json" };
+import beastsRaw from "../data/beasts.json" with { type: "json" };
 
-import {
+import type {
   RaceData,
   ClassData,
   FeatData,
@@ -16,7 +17,8 @@ import {
   SpellData,
   ConditionData,
   OptionFeatureData,
-} from "../types/dnd5e";
+  BeastData,
+} from "../types/dnd5e.ts";
 
 const racesData = racesRaw as unknown as RaceData[];
 const classesData = classesRaw as unknown as ClassData[];
@@ -26,6 +28,13 @@ const itemsData = itemsRaw as unknown as ItemData[];
 const spellsData = spellsRaw as unknown as SpellData[];
 const conditionsData = conditionsRaw as unknown as ConditionData[];
 const optionsData = optionsRaw as unknown as OptionFeatureData[];
+const beastsData = beastsRaw as unknown as BeastData[];
+
+export function getBeasts(activeBooks?: string[]): BeastData[] {
+  if (!activeBooks) return beastsData;
+  const set = new Set(activeBooks);
+  return beastsData.filter((b) => set.has(b.source));
+}
 
 export function getRaces(activeBooks?: string[]): RaceData[] {
   if (!activeBooks) return racesData;
@@ -116,5 +125,12 @@ export function findBackground(name: string, source?: string): BackgroundData | 
     return backgroundsData.find((b) => b.name === name && b.source === source);
   }
   return backgroundsData.find((b) => b.name === name);
+}
+
+export function findBeast(name: string, source?: string): BeastData | undefined {
+  if (source) {
+    return beastsData.find((b) => b.name === name && b.source === source);
+  }
+  return beastsData.find((b) => b.name === name);
 }
 

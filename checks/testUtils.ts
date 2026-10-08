@@ -19,9 +19,40 @@ export function makeChar(overrides: Partial<Character> = {}): Character {
   };
 }
 
+import type {
+  ClassData,
+  RaceData,
+  BackgroundData,
+  FeatData,
+  SpellData,
+  ItemData,
+  BeastData,
+} from "../src/types/dnd5e.ts";
+import { readFileSync } from "node:fs";
+
 export function defaultSettings() {
   return {
-    schemaVersion: 2, hasCompletedFirstRun: false,
-    activeResourceBooks: [...DEFAULT_ACTIVE_BOOK_CODES], themeAccentId: "crimson",
+    schemaVersion: 2,
+    hasCompletedFirstRun: false,
+    activeResourceBooks: [...DEFAULT_ACTIVE_BOOK_CODES],
+    themeAccentId: "crimson",
   };
 }
+
+export function loadTestCatalog<T = any>(name: string): T {
+  return JSON.parse(readFileSync(new URL(`../src/data/${name}.json`, import.meta.url), "utf8"));
+}
+
+export function loadTestCatalogs() {
+  return {
+    classes: loadTestCatalog<ClassData[]>("classes"),
+    races: loadTestCatalog<RaceData[]>("races"),
+    backgrounds: loadTestCatalog<BackgroundData[]>("backgrounds"),
+    feats: loadTestCatalog<FeatData[]>("feats"),
+    spells: loadTestCatalog<SpellData[]>("spells"),
+    items: loadTestCatalog<ItemData[]>("items"),
+    beasts: loadTestCatalog<BeastData[]>("beasts"),
+  };
+}
+
+

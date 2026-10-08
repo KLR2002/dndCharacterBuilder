@@ -91,6 +91,13 @@ test("shared d8 hit dice are pooled once; paladin keeps its d10 and spent dice c
   assert.deepEqual(hitDiceByType(c), { d8: { total: 5, used: 2, remaining: 3 }, d10: { total: 2, used: 1, remaining: 1 } });
   assert.equal(CLASS_DATA.Paladin.hitDie, 10);
 });
+test("multiclass Barbarian 1 / Bard 1 has separate 1d12 and 1d8 hit dice pools", () => {
+  const c = makeChar({ classes: [cl("Barbarian", 1), cl("Bard", 1)] });
+  assert.deepEqual(hitDiceByType(c), {
+    d12: { total: 1, used: 0, remaining: 1 },
+    d8: { total: 1, used: 0, remaining: 1 },
+  });
+});
 test("armorCategory overrides misleading names, caps medium Dex, and recognizes unnamed shields", () => {
   const c = makeChar({ baseAbilityScores: scores({ dex: 16 }) });
   assert.equal(armorClass({ ...c, items: [item("light", 11)] }).ac, 14);

@@ -1,7 +1,7 @@
 import type { Character, ResourceCounter } from "../types/character.ts";
 import { maxHp } from "./hp.ts";
-import { totalLevel } from "./proficiencies.ts";
 import { clearChangeableChoices } from "./ruleChoices.ts";
+import { isValidHitDie, recoverHitDiceLongRest } from "./hitDice.ts";
 
 export interface ShortRestOptions {
   healedHp?: number;
@@ -60,7 +60,7 @@ export function applyShortRest(
   const nextUsedHitDice: Record<string, number> = { ...(character.usedHitDice ?? {}) };
   if (spentDice) {
     for (const [die, count] of Object.entries(spentDice)) {
-      if (typeof count === "number" && count > 0) {
+      if (typeof count === "number" && count > 0 && isValidHitDie(die)) {
         nextUsedHitDice[die] = (nextUsedHitDice[die] ?? 0) + count;
       }
     }
@@ -99,34 +99,7 @@ export function applyLongRest(
   diceToRecover?: Record<string, number>
 ): Character {
   const max = maxHp(character);
-  const maxDiceToRecover = Math.max(1, Math.floor(totalLevel(character) / 2));
-  let remainingRecoveryBudget = maxDiceToRecover;
-  const nextUsedHitDice: Record<string, number> = { ...(character.usedHitDice ?? {}) };
-
-  if (diceToRecover && Object.keys(diceToRecover).length > 0) {
-    for (const [die, requested] of Object.entries(diceToRecover)) {
-      if (remainingRecoveryBudget <= 0) break;
-      const currentlyUsed = Math.max(0, nextUsedHitDice[die] ?? 0);
-      const toRecover = Math.min(currentlyUsed, Math.max(0, requested), remainingRecoveryBudget);
-      nextUsedHitDice[die] = Math.max(0, currentlyUsed - toRecover);
-      remainingRecoveryBudget -= toRecover;
-    }
-  } else {
-    // Automatic recovery: recover largest dice first
-    const dieKeys = Object.keys(nextUsedHitDice).sort((a, b) => {
-      const faceA = parseInt(a.replace(/\D/g, ""), 10) || 0;
-      const faceB = parseInt(b.replace(/\D/g, ""), 10) || 0;
-      return faceB - faceA;
-    });
-
-    for (const die of dieKeys) {
-      if (remainingRecoveryBudget <= 0) break;
-      const currentlyUsed = Math.max(0, nextUsedHitDice[die] ?? 0);
-      const toRecover = Math.min(currentlyUsed, remainingRecoveryBudget);
-      nextUsedHitDice[die] = Math.max(0, currentlyUsed - toRecover);
-      remainingRecoveryBudget -= toRecover;
-    }
-  }
+  const nextUsedHitDice = recoverHitDiceLongRest(character, diceToRecover).usedHitDice;
 
   // Reset resource counters (both short and long)
   const nextResourceCounters: Record<string, ResourceCounter> = {};
@@ -165,5 +138,7 @@ export function applyLongRest(
     sorceryPointsUsed: 0,
     resourceCounters: nextResourceCounters,
     conditions: nextConditions,
+    activeWildShape: null,
+    mysticArcanumSpent: {},
   };
 }

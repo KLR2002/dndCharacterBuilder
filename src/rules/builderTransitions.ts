@@ -12,6 +12,17 @@ import {
   MULTICLASS_PROFICIENCIES,
   DND_SKILLS,
 } from "../constants/rules.ts";
+import { pruneInvalidExpertise } from "./expertise.ts";
+import {
+  pruneInvalidFightingStyles,
+  pruneInvalidManeuvers,
+  pruneInvalidInvocations,
+  pruneInvalidMysticArcanum,
+  pruneInvalidInfusions,
+  syncWarlockTomeCantrips,
+  syncAncientSecretsRituals,
+} from "./ruleChoices.ts";
+import type { CharacterCatalogs } from "./characterEvaluation.ts";
 
 export function setStandardArrayPick(
   character: Character,
@@ -221,16 +232,22 @@ export function setRuleChoicePick(
   trait: string,
   option: string,
   from: string[],
-  choose: number
+  choose: number,
+  origin: "race" | "class" | "subclass" = "race"
 ): Character {
   const current = character.ruleChoices ?? [];
   const entry = current.find((rc) => rc.id === id);
-  const picked = entry ? (entry.picked.includes(option)
-    ? entry.picked.filter((p) => p !== option)
-    : entry.picked.length >= choose
-    ? [...entry.picked.slice(1), option]
-    : [...entry.picked, option]) : [option];
-  const next = { id, trait, origin: "race" as const, choose, from, picked };
+  const picked = entry
+    ? entry.picked.includes(option)
+      ? entry.picked.filter((p) => p !== option)
+      : choose === 1
+      ? [option]
+      : entry.picked.length >= choose
+      ? [...entry.picked.slice(1), option]
+      : [...entry.picked, option]
+    : [option];
+  const originToUse = entry?.origin ?? origin;
+  const next = { id, trait, origin: originToUse, choose, from, picked };
   const others = current.filter((rc) => rc.id !== id);
   return {
     ...character,
@@ -459,10 +476,10 @@ export function setCustomBackground(
 
 export function parseBackgroundEquipment(startingEquipment: string[] = []): {
   coins: { cp?: number; sp?: number; ep?: number; gp?: number; pp?: number };
-  items: Array<{ name: string; quantity: number; section: "carried" | "equipped" }>;
+  items: { name: string; quantity: number; section: "carried" | "equipped" }[];
 } {
   const coins: { cp?: number; sp?: number; ep?: number; gp?: number; pp?: number } = {};
-  const items: Array<{ name: string; quantity: number; section: "carried" | "equipped" }> = [];
+  const items: { name: string; quantity: number; section: "carried" | "equipped" }[] = [];
 
   for (const raw of startingEquipment) {
     const text = raw.trim();
@@ -551,4 +568,207 @@ export function setLanguages(character: Character, languages: string[]): Charact
     languages: [...languages],
   };
 }
+
+/**
+ * Cleanly removes subclass-specific data from a character when changing or removing a subclass:
+ * 1. Clears obsolete subclass RuleChoices (e.g. Circle of the Land Biome, Divine Soul Affinity, Domain Cantrips)
+ * 2. Clears subclassSpellSwaps (for Sorcerer or general)
+ * 3. Removes old subclass-specific resource counters
+ */
+export function teardownSubclass(
+  character: Character,
+  className: string,
+  previousSubclassName?: string,
+  _newSubclassName?: string
+): Character {
+  const clsLower = className.toLowerCase();
+
+  // 1. Clear obsolete subclass rule choices for this class
+  const keptRuleChoices = (character.ruleChoices || []).filter((rc) => {
+    if (rc.origin === "subclass") {
+      const idLower = rc.id.toLowerCase();
+      const traitLower = rc.trait.toLowerCase();
+      if (idLower.includes(clsLower) || traitLower.includes(clsLower)) return false;
+      if (clsLower === "druid" && (idLower.includes("land") || traitLower.includes("biome"))) return false;
+      if (clsLower === "sorcerer" && (idLower.includes("divine soul") || traitLower.includes("affinity"))) return false;
+      if (clsLower === "cleric" && (idLower.includes("nature") || idLower.includes("death") || idLower.includes("arcana"))) return false;
+      if (clsLower === "bard" && (idLower.includes("swords") || traitLower.includes("swords"))) return false;
+    }
+    if (clsLower === "fighter" && previousSubclassName?.toLowerCase().includes("champion") && rc.id.includes("Additional Fighting Style")) {
+      return false;
+    }
+    if (clsLower === "fighter" && previousSubclassName?.toLowerCase().includes("battle master") && rc.id.includes("Battle Master__Maneuvers")) {
+      return false;
+    }
+    return true;
+  });
+
+  // 2. Clear subclassSpellSwaps if this class is Sorcerer (or if previous subclass was a swapper)
+  let nextSwaps = character.subclassSpellSwaps;
+  if (
+    clsLower === "sorcerer" ||
+    previousSubclassName?.toLowerCase().includes("clockwork") ||
+    previousSubclassName?.toLowerCase().includes("aberrant")
+  ) {
+    nextSwaps = undefined;
+  }
+
+  // 3. Remove old subclass resource counters
+  const nextCounters = { ...(character.resourceCounters || {}) };
+  if (previousSubclassName) {
+    const prevNorm = previousSubclassName.toLowerCase();
+    const isBladesinger = prevNorm.includes("bladesing");
+    for (const [key, counter] of Object.entries(nextCounters)) {
+      const kLower = key.toLowerCase();
+      const nLower = counter.name.toLowerCase();
+      if (
+        kLower.includes(prevNorm) ||
+        nLower.includes(prevNorm) ||
+        (isBladesinger && (kLower.includes("bladesong") || nLower.includes("bladesong")))
+      ) {
+        delete nextCounters[key];
+      }
+    }
+  }
+
+  // 4. Remove granted subclass spells from knownSpells (e.g. Barbarian__BGG Giant Power cantrips)
+  let nextKnownSpells = character.knownSpells;
+  if (
+    clsLower === "barbarian" ||
+    previousSubclassName?.toLowerCase().includes("giant")
+  ) {
+    nextKnownSpells = (character.knownSpells || []).filter(
+      (k) => !(k.ownerKey === "Barbarian__BGG" && ["druidcraft", "thaumaturgy"].includes(k.name.toLowerCase()))
+    );
+  }
+
+  const cleaned: Character = {
+    ...character,
+    ruleChoices: keptRuleChoices,
+    subclassSpellSwaps: nextSwaps,
+    resourceCounters: nextCounters,
+    knownSpells: nextKnownSpells,
+  };
+
+  return reconcileCharacter(cleaned);
+}
+
+/**
+ * Idempotent domain reconciler enforcing all progression prerequisites, modular rule choices,
+ * and teardown invariants in a single cohesive pass.
+ * Validates:
+ * 1. Fighting Styles (levels, milestones, feats)
+ * 2. Battle Master Maneuvers (levels, Superior Technique, Martial Adept)
+ * 3. Eldritch Invocations & Pact Boons (Warlock levels, boon prerequisites, cantrips)
+ * 4. Mystic Arcanum tiers (Warlock levels 11, 13, 15, 17)
+ * 5. Artificer Infusions (Artificer level capacity, active items)
+ * 6. Tome cantrips & Ancient Secrets rituals
+ * 7. Expertise proficiencies
+ */
+export function reconcileCharacter(
+  character: Character,
+  catalogs?: CharacterCatalogs
+): Character {
+  let updated = character;
+
+  // 1. Reconcile Fighting Styles
+  updated = pruneInvalidFightingStyles(updated);
+
+  // 2. Reconcile Maneuvers
+  updated = pruneInvalidManeuvers(updated);
+
+  // 3. Reconcile Invocations & Pact Boons
+  updated = pruneInvalidInvocations(updated);
+
+  // 4. Reconcile Mystic Arcanum
+  updated = pruneInvalidMysticArcanum(updated);
+
+  // 5. Reconcile Artificer Infusions
+  updated = pruneInvalidInfusions(updated);
+
+  // 6. Reconcile Tome Cantrips & Ancient Secrets Rituals
+  updated = syncWarlockTomeCantrips(updated);
+  updated = syncAncientSecretsRituals(updated);
+
+  // 7. Reconcile Expertise proficiencies
+  updated = pruneInvalidExpertise(updated, { classes: catalogs?.classes });
+
+  return updated;
+}
+
+/**
+ * Checks character features (race, subrace, classes, subclasses, background, feats, spells, items)
+ * against active books and returns human-readable warnings for any features from disabled books.
+ */
+export function checkActiveBooksIntegrity(
+  character: Character,
+  activeBooks: string[]
+): string[] {
+  const activeSet = new Set((activeBooks || []).map((b) => b.toUpperCase()));
+  const warnings: string[] = [];
+
+  // 1. Race & Subrace
+  if (character.race?.source && !activeSet.has(character.race.source.toUpperCase())) {
+    warnings.push(`Race "${character.race.name}" is from disabled sourcebook "${character.race.source}".`);
+  }
+  if (character.race?.subraceSource && !activeSet.has(character.race.subraceSource.toUpperCase())) {
+    warnings.push(`Subrace "${character.race.subraceName}" is from disabled sourcebook "${character.race.subraceSource}".`);
+  }
+
+  // 2. Classes & Subclasses
+  for (const cls of character.classes || []) {
+    if (cls.source && !activeSet.has(cls.source.toUpperCase())) {
+      warnings.push(`Class "${cls.className}" is from disabled sourcebook "${cls.source}".`);
+    }
+    const subName = cls.subclassName || cls.subclass;
+    if (cls.subclassSource && !activeSet.has(cls.subclassSource.toUpperCase())) {
+      warnings.push(`Subclass "${subName || "Unknown"}" is from disabled sourcebook "${cls.subclassSource}".`);
+    }
+  }
+
+  // 3. Background
+  if (
+    character.background?.source &&
+    !character.background.isCustom &&
+    !activeSet.has(character.background.source.toUpperCase())
+  ) {
+    warnings.push(`Background "${character.background.name}" is from disabled sourcebook "${character.background.source}".`);
+  }
+
+  // 4. Feats (ASIs & Origin Feats)
+  for (const asi of character.asiSelections || []) {
+    if (asi.type === "feat" && asi.featSource && !activeSet.has(asi.featSource.toUpperCase())) {
+      warnings.push(`Feat "${asi.featName}" is from disabled sourcebook "${asi.featSource}".`);
+    }
+  }
+  for (const feat of character.originFeats || []) {
+    if (feat.featSource && !activeSet.has(feat.featSource.toUpperCase())) {
+      warnings.push(`Feat "${feat.featName}" is from disabled sourcebook "${feat.featSource}".`);
+    }
+  }
+
+  // 5. Spells
+  for (const spell of character.knownSpells || []) {
+    if (spell.source && !activeSet.has(spell.source.toUpperCase())) {
+      warnings.push(`Spell "${spell.name}" is from disabled sourcebook "${spell.source}".`);
+    }
+  }
+
+  // 6. Items
+  for (const item of character.items || []) {
+    if (item.source && !item.isCustom && !activeSet.has(item.source.toUpperCase())) {
+      warnings.push(`Item "${item.name}" is from disabled sourcebook "${item.source}".`);
+    }
+  }
+
+  // 7. Ritual Book
+  for (const ritual of character.ritualBook || []) {
+    if (ritual.source && !activeSet.has(ritual.source.toUpperCase())) {
+      warnings.push(`Ritual "${ritual.name}" in Ritual Book is from disabled sourcebook "${ritual.source}".`);
+    }
+  }
+
+  return Array.from(new Set(warnings));
+}
+
 

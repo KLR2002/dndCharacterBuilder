@@ -14,12 +14,14 @@ import { useCharacters } from "../../context/CharacterContext";
 import { useAppTheme } from "../../context/ThemeContext";
 import { useResponsiveLayout } from "../../hooks/useResponsiveLayout";
 import { getItems } from "../../services/dataService";
-import { calculateCarryingWeight } from "../../services/dndRules";
+import { evaluateCharacter } from "../../services/dndRules";
 import { InventoryItem } from "../../types/character";
+import { Badge } from "../ui/Badge";
 import { Button } from "../ui/Button";
 import { Card } from "../ui/Card";
 import { DetailModal } from "../DetailModal";
 import { SearchBar } from "../ui/SearchBar";
+import { ActiveInfusionsSection } from "../ActiveInfusionsSection";
 
 const COIN_TYPES: ("cp" | "sp" | "ep" | "gp" | "pp")[] = ["cp", "sp", "ep", "gp", "pp"];
 
@@ -64,11 +66,16 @@ export const InventoryTab: React.FC = () => {
     });
   }, [allLibraryItems, searchQuery, itemTypeFilter]);
 
-  if (!currentCharacter) return null;
+  const evaluated = useMemo(() => {
+    if (!currentCharacter) return null;
+    return evaluateCharacter(currentCharacter);
+  }, [currentCharacter]);
+
+  if (!currentCharacter || !evaluated) return null;
 
   const items = currentCharacter.items || [];
   const pouch = currentCharacter.pouch || { cp: 0, sp: 0, ep: 0, gp: 0, pp: 0 };
-  const { currentWeight, maxCapacity, encumbered, heavilyEncumbered } = calculateCarryingWeight(currentCharacter);
+  const { currentWeight, maxCapacity, encumbered, heavilyEncumbered } = evaluated.carryingWeight;
 
   // Separate equipped vs carried
   const equippedItems = items.filter((i) => i.isEquipped || i.section === "equipped");
@@ -307,6 +314,9 @@ export const InventoryTab: React.FC = () => {
         />
       </View>
 
+      {/* ACTIVE INFUSIONS (ARTIFICER) */}
+      <ActiveInfusionsSection />
+
       {/* EQUIPPED SECTION */}
       <View style={{ marginBottom: 16 }}>
         <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 6 }}>
@@ -339,7 +349,12 @@ export const InventoryTab: React.FC = () => {
 
                 {/* Item Info (click to view details) */}
                 <TouchableOpacity onPress={() => showItemDetail(item)} style={{ flex: 1, paddingVertical: 4 }}>
-                  <Text style={[styles.itemTitle, { color: theme.text }]} numberOfLines={isCompact ? 2 : 1}>{item.name}</Text>
+                  <View style={{ flexDirection: "row", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+                    <Text style={[styles.itemTitle, { color: theme.text }]} numberOfLines={isCompact ? 2 : 1}>{item.name}</Text>
+                    {item.infusedWith && (
+                      <Badge label={item.infusedWith} variant="accent" size="sm" />
+                    )}
+                  </View>
                   <Text style={{ color: theme.textMuted, fontSize: 11 }} numberOfLines={isCompact ? 2 : 1}>
                     {item.damage ? `${item.damage} • ` : ""}{item.ac ? `AC ${item.ac} • ` : ""}{item.weight != null ? `${item.weight} lb • ` : ""}{item.source}
                   </Text>
@@ -398,7 +413,12 @@ export const InventoryTab: React.FC = () => {
 
                 {/* Item Info */}
                 <TouchableOpacity onPress={() => showItemDetail(item)} style={{ flex: 1, paddingVertical: 4 }}>
-                  <Text style={[styles.itemTitle, { color: theme.text }]} numberOfLines={isCompact ? 2 : 1}>{item.name}</Text>
+                  <View style={{ flexDirection: "row", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+                    <Text style={[styles.itemTitle, { color: theme.text }]} numberOfLines={isCompact ? 2 : 1}>{item.name}</Text>
+                    {item.infusedWith && (
+                      <Badge label={item.infusedWith} variant="accent" size="sm" />
+                    )}
+                  </View>
                   <Text style={{ color: theme.textMuted, fontSize: 11 }} numberOfLines={isCompact ? 2 : 1}>
                     {item.weight != null ? `${item.weight} lb • ` : ""}{item.cost ? `${item.cost} • ` : ""}{item.source}
                   </Text>

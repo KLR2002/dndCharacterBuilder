@@ -8,6 +8,10 @@ import {
   proficiencies,
   MULTICLASS_PROFICIENCIES,
 } from "./proficiencies.ts";
+import { getMartialArtsDie, getSneakAttackDice, getManeuverSaveDc } from "./combatDice.ts";
+import { hasFightingStyle, hasInvocation } from "./ruleChoices.ts";
+
+export { getManeuverSaveDc };
 
 export interface WeaponAttackOption {
   item: InventoryItem;
@@ -25,6 +29,13 @@ export interface WeaponAttackOption {
   isFinesse: boolean;
   isLight: boolean;
   isOffHand?: boolean;
+  isMonkWeapon?: boolean;
+  isSneakAttackEligible?: boolean;
+  sneakAttackDice?: string;
+  calculationBadges?: string[];
+  archeryBonus?: number;
+  duelingBonus?: number;
+  infusionBonus?: number;
 }
 
 export interface DualWieldResult {
@@ -139,6 +150,30 @@ export function findStandardWeapon(name: string): StandardWeaponData | undefined
   return undefined;
 }
 
+export function isMonkWeapon(item: InventoryItem): boolean {
+  const cleanName = item.name.toLowerCase().trim();
+  if (cleanName === "shortsword" || cleanName === "shortswords") return true;
+  if (cleanName === "unarmed strike" || cleanName === "unarmed strikes") return true;
+
+  const std = findStandardWeapon(item.name);
+  if (!std) return false;
+  if (std.category !== "simple" || std.type !== "melee") return false;
+  if (std.properties.includes("Two-Handed") || std.properties.includes("Heavy")) return false;
+  return true;
+}
+
+export function parseMaxDieRoll(die: string): number {
+  const clean = die.trim().toLowerCase();
+  if (clean === "1") return 1;
+  const match = clean.match(/^(\d+)d(\d+)$/);
+  if (match) {
+    const count = parseInt(match[1], 10);
+    const faces = parseInt(match[2], 10);
+    return count * faces;
+  }
+  return 0;
+}
+
 export type LooseInventoryItem = InventoryItem & {
   itemCategory?: string;
   type?: string;
@@ -207,6 +242,60 @@ export function isLightWeapon(item: InventoryItem): boolean {
 
   const std = findStandardWeapon(item.name);
   return Boolean(std?.properties.some((p) => /\blight\b/i.test(p)));
+}
+
+export function isThrownWeapon(item: InventoryItem): boolean {
+  const raw = item as unknown as LooseInventoryItem;
+  if (Array.isArray(raw.properties) && raw.properties.some((p: unknown) => typeof p === "string" && /thrown/i.test(p))) {
+    return true;
+  }
+  if (/thrown/i.test(item.description || "")) return true;
+
+  const std = findStandardWeapon(item.name);
+  return Boolean(std?.properties.some((p) => /thrown/i.test(p)));
+}
+
+export function isTwoHandedWeapon(item: InventoryItem): boolean {
+  const raw = item as unknown as LooseInventoryItem;
+  if (Array.isArray(raw.properties) && raw.properties.some((p: unknown) => typeof p === "string" && /two-handed/i.test(p))) {
+    return true;
+  }
+  if (/two-handed/i.test(item.description || "")) return true;
+
+  const std = findStandardWeapon(item.name);
+  return Boolean(std?.properties.some((p) => /two-handed/i.test(p)));
+}
+
+export function isItemInfusedWith(
+  character: Character,
+  item: InventoryItem,
+  infusionName: string,
+  fallbackTarget?: "weapon"
+): boolean {
+  const norm = infusionName.toLowerCase().trim();
+  if (item.infusedWith?.toLowerCase().trim() === norm) return true;
+
+  const activeList = character.activeInfusions || [];
+  const activeMatch = activeList.find(
+    (inf) => inf.infusionName.toLowerCase().trim() === norm
+  );
+  if (!activeMatch) return false;
+
+  if (activeMatch.targetItemId && item.id) {
+    return activeMatch.targetItemId === item.id;
+  }
+  if (activeMatch.targetItemName) {
+    return activeMatch.targetItemName.toLowerCase().trim() === item.name.toLowerCase().trim();
+  }
+
+  if (fallbackTarget === "weapon" && isWeaponItem(item)) {
+    const firstEquipped = (character.items || []).find((i) => i.isEquipped && isWeaponItem(i));
+    if (firstEquipped && (firstEquipped.id ? firstEquipped.id === item.id : firstEquipped.name === item.name)) {
+      return true;
+    }
+  }
+
+  return false;
 }
 
 export function isProficientWithWeapon(
@@ -279,16 +368,20 @@ export function isProficientWithWeapon(
   return false;
 }
 
-export function formatDamageString(damageDice: string, abilityMod: number, isOffHand = false): string {
+export function formatDamageString(
+  damageDice: string,
+  abilityMod: number,
+  isOffHand = false,
+  extraBonus = 0
+): string {
   const dice = damageDice || "1d4";
-  if (isOffHand && abilityMod > 0) {
-    return dice;
+  const modPart = isOffHand && abilityMod > 0 ? 0 : abilityMod;
+  const totalMod = modPart + extraBonus;
+  if (totalMod > 0) {
+    return `${dice} + ${totalMod}`;
   }
-  if (abilityMod > 0) {
-    return `${dice} + ${abilityMod}`;
-  }
-  if (abilityMod < 0) {
-    return `${dice} - ${Math.abs(abilityMod)}`;
+  if (totalMod < 0) {
+    return `${dice} - ${Math.abs(totalMod)}`;
   }
   return dice;
 }
@@ -300,17 +393,57 @@ export function getWeaponAttacks(
   const { modifiers } = effectiveScores(character, opts.ancestry);
   const pb = proficiencyBonus(totalLevel(character));
 
+  const monk = (character.classes || []).find((c) => c.className === "Monk");
+  const rogue = (character.classes || []).find((c) => c.className === "Rogue");
+  const martialArtsDie = monk ? getMartialArtsDie(monk.level) : null;
+  const sneakDice = rogue ? getSneakAttackDice(rogue.level) : null;
+
+  const hasArchery = hasFightingStyle(character, "Archery");
+  const hasDueling = hasFightingStyle(character, "Dueling");
+  const hasThrown = hasFightingStyle(character, "Thrown Weapon Fighting");
+
   const equipped = (character.items || []).filter(
     (item) => item.isEquipped && isWeaponItem(item)
   );
 
-  return equipped.map((item) => {
+  // Dueling check:
+  // Character has single equipped melee weapon in main hand and no other weapon equipped (shield is fine)
+  const equippedWeapons = (character.items || []).filter(
+    (item) => item.isEquipped && isWeaponItem(item) && item.name.toLowerCase().trim() !== "unarmed strike"
+  );
+  const isSingleMeleeWeapon =
+    equippedWeapons.length === 1 &&
+    !isRangedWeapon(equippedWeapons[0]) &&
+    !isTwoHandedWeapon(equippedWeapons[0]);
+  const duelingWeaponId = isSingleMeleeWeapon ? equippedWeapons[0].id : null;
+
+  const hasEquippedUnarmed = equipped.some(
+    (i) => i.name.toLowerCase().trim() === "unarmed strike"
+  );
+  const itemsToEvaluate = [...equipped];
+  if (monk && !hasEquippedUnarmed) {
+    itemsToEvaluate.push({
+      id: "unarmed_strike_virtual",
+      name: "Unarmed Strike",
+      source: "PHB",
+      section: "equipped",
+      quantity: 1,
+      weight: 0,
+      isEquipped: true,
+      damage: "1",
+      damageType: "bludgeoning",
+    });
+  }
+
+  return itemsToEvaluate.map((item) => {
     const std = findStandardWeapon(item.name);
     const isFinesse = isFinesseWeapon(item);
     const isRanged = isRangedWeapon(item);
     const isLight = isLightWeapon(item);
+    const isMonk = isMonkWeapon(item);
+    const isThrown = isThrownWeapon(item);
 
-    const statUsed: AbilityKey = isFinesse
+    let statUsed: AbilityKey = isFinesse
       ? modifiers.dex > modifiers.str
         ? "dex"
         : "str"
@@ -318,12 +451,65 @@ export function getWeaponAttacks(
       ? "dex"
       : "str";
 
-    const isProficient = isProficientWithWeapon(character, item, opts);
-    const abilityMod = modifiers[statUsed];
-    const attackBonus = abilityMod + (isProficient ? pb : 0);
+    if (monk && isMonk && modifiers.dex > modifiers.str) {
+      statUsed = "dex";
+    }
 
-    const damageDice = item.damage?.trim() || std?.damage || "1d4";
-    const damageString = formatDamageString(damageDice, abilityMod, false);
+    const isProficient =
+      item.name.toLowerCase().trim() === "unarmed strike" ||
+      isProficientWithWeapon(character, item, opts);
+    const abilityMod = modifiers[statUsed];
+
+    const artificer = (character.classes || []).find(
+      (c) => c.className.toLowerCase() === "artificer"
+    );
+    const artificerLevel = artificer ? artificer.level : 0;
+    const ewBonus = artificerLevel >= 10 ? 2 : 1;
+
+    let weaponInfusionBonus = 0;
+    if (isItemInfusedWith(character, item, "Enhanced Weapon", "weapon")) {
+      weaponInfusionBonus = ewBonus;
+    } else if (
+      isItemInfusedWith(character, item, "Repeating Shot", "weapon") ||
+      isItemInfusedWith(character, item, "Radiant Weapon", "weapon") ||
+      isItemInfusedWith(character, item, "Returning Weapon", "weapon")
+    ) {
+      weaponInfusionBonus = 1;
+    }
+
+    const calculationBadges: string[] = [];
+    let archeryBonus = 0;
+    let attackBonus = abilityMod + (isProficient ? pb : 0) + weaponInfusionBonus;
+    if (hasArchery && isRanged) {
+      attackBonus += 2;
+      archeryBonus = 2;
+      calculationBadges.push("Archery +2");
+    }
+
+    let extraDamage = weaponInfusionBonus;
+    let duelingBonus = 0;
+    if (hasDueling && duelingWeaponId === item.id) {
+      extraDamage += 2;
+      duelingBonus = 2;
+      calculationBadges.push("Dueling +2");
+    }
+    if (hasThrown && isThrown) {
+      extraDamage += 2;
+    }
+
+    if (weaponInfusionBonus > 0) {
+      calculationBadges.push(`Infused +${weaponInfusionBonus}`);
+    }
+
+    let damageDice = item.damage?.trim() || std?.damage || "1d4";
+    if (monk && isMonk && martialArtsDie) {
+      if (parseMaxDieRoll(martialArtsDie) > parseMaxDieRoll(damageDice)) {
+        damageDice = martialArtsDie;
+      }
+    }
+    const damageString = formatDamageString(damageDice, abilityMod, false, extraDamage);
+
+    const isSneakAttackEligible = Boolean(rogue && (isFinesse || isRanged));
 
     return {
       item,
@@ -334,12 +520,22 @@ export function getWeaponAttacks(
       damage: damageString,
       damageString,
       damageDice,
-      damageType: item.damageType ?? std?.damageType ?? null,
+      damageType:
+        item.damageType ??
+        std?.damageType ??
+        (item.name.toLowerCase().trim() === "unarmed strike" ? "bludgeoning" : null),
       range: item.range ?? std?.range ?? null,
       isProficient,
       isRanged,
       isFinesse,
       isLight,
+      isMonkWeapon: isMonk,
+      isSneakAttackEligible,
+      sneakAttackDice: isSneakAttackEligible && sneakDice ? sneakDice : undefined,
+      calculationBadges: calculationBadges.length > 0 ? calculationBadges : undefined,
+      archeryBonus: archeryBonus || undefined,
+      duelingBonus: duelingBonus || undefined,
+      infusionBonus: weaponInfusionBonus || undefined,
     };
   });
 }
@@ -362,13 +558,43 @@ export function checkDualWielding(
 
   const { modifiers } = effectiveScores(character);
   const secondAbilityMod = modifiers[second.statUsed];
-  const offHandDamage = formatDamageString(second.damageDice, secondAbilityMod, true);
+  const hasTwf = hasFightingStyle(character, "Two-Weapon Fighting");
+  const hasThrown = hasFightingStyle(character, "Thrown Weapon Fighting");
+  const isOffHandPenalty = !hasTwf;
+
+  const artificer = (character.classes || []).find(
+    (c) => c.className.toLowerCase() === "artificer"
+  );
+  const artificerLevel = artificer ? artificer.level : 0;
+  const ewBonus = artificerLevel >= 10 ? 2 : 1;
+
+  const offHandWeapon = second.item;
+  let offHandInfusionBonus = 0;
+  if (isItemInfusedWith(character, offHandWeapon, "Enhanced Weapon", "weapon")) {
+    offHandInfusionBonus = ewBonus;
+  } else if (
+    isItemInfusedWith(character, offHandWeapon, "Repeating Shot", "weapon") ||
+    isItemInfusedWith(character, offHandWeapon, "Radiant Weapon", "weapon") ||
+    isItemInfusedWith(character, offHandWeapon, "Returning Weapon", "weapon")
+  ) {
+    offHandInfusionBonus = 1;
+  }
+
+  const extraDamage = (hasThrown && isThrownWeapon(second.item) ? 2 : 0) + offHandInfusionBonus;
+  const offHandDamage = formatDamageString(second.damageDice, secondAbilityMod, isOffHandPenalty, extraDamage);
+
+  const offHandBadges: string[] = [];
+  if (offHandInfusionBonus > 0) {
+    offHandBadges.push(`Infused +${offHandInfusionBonus}`);
+  }
 
   const offHand: WeaponAttackOption = {
     ...second,
     damage: offHandDamage,
     damageString: offHandDamage,
     isOffHand: true,
+    calculationBadges: offHandBadges.length > 0 ? offHandBadges : undefined,
+    infusionBonus: offHandInfusionBonus || undefined,
   };
 
   return {
@@ -377,3 +603,20 @@ export function checkDualWielding(
     offHand,
   };
 }
+
+/**
+ * Calculates damage for Eldritch Blast, including Charisma modifier if Agonizing Blast is chosen.
+ */
+export function getEldritchBlastDamage(character: Character): string {
+  const hasAgonizing = hasInvocation(character, "Agonizing Blast");
+  if (!hasAgonizing) {
+    return "1d10 force";
+  }
+  const { modifiers } = effectiveScores(character);
+  const chaMod = modifiers.cha;
+  if (chaMod >= 0) {
+    return `1d10 + ${chaMod} force`;
+  }
+  return `1d10 - ${Math.abs(chaMod)} force`;
+}
+

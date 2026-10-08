@@ -19,7 +19,7 @@ export function effectiveScores(character: Character, opts: ResolvedAncestry = {
   const increases = Object.keys(racial).length ? [racial] : [
     ...(opts.race?.abilityScoreIncrease || []), ...(opts.subrace?.abilityScoreIncrease || []),
   ];
-  for (const selection of character.asiSelections || []) {
+  for (const selection of [...(character.asiSelections || []), ...(character.originFeats || [])]) {
     if (selection.asi) {
       increases.push(selection.asi);
     } else if (selection.type === "feat" && selection.featAbility) {
@@ -37,5 +37,8 @@ export function effectiveScores(character: Character, opts: ResolvedAncestry = {
   return { scores, modifiers };
 }
 export function hasFeat(character: Character, name: string): boolean {
-  return (character.asiSelections || []).some(s => s.type === "feat" && s.featName?.toLowerCase() === name.toLowerCase());
+  const norm = name.toLowerCase();
+  const fromAsi = (character.asiSelections || []).some(s => s.type === "feat" && s.featName?.toLowerCase() === norm);
+  const fromOrigin = (character.originFeats || []).some(s => s.type === "feat" && s.featName?.toLowerCase() === norm);
+  return fromAsi || fromOrigin;
 }

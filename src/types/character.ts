@@ -14,6 +14,7 @@ export interface CharacterClass {
   source: string;
   level: number;
   subclassName?: string;
+  subclass?: string;
   subclassSource?: string;
 }
 
@@ -30,7 +31,7 @@ export interface RuleChoiceEntry {
   id: string;
   /** The trait that grants the choice, so consumers need not parse the id. */
   trait: string;
-  origin: "race";
+  origin: "race" | "class" | "subclass";
   choose: number;
   from: string[];
   picked: string[];
@@ -47,11 +48,19 @@ export interface ClassChoice {
   asi?: Record<string, number>;
 }
 
+export interface RitualBookEntry {
+  name: string;
+  source: string;
+  level: number;
+  isStarting?: boolean;
+}
+
 export interface KnownSpell {
   name: string;
   source: string;
   ownerKey: string; // `${className}__${source}`
   className?: string; // Legacy display/ownership hint, retained during migration.
+  ability?: AbilityKey;
 }
 
 export interface LegacyKnownSpell {
@@ -59,6 +68,7 @@ export interface LegacyKnownSpell {
   source: string;
   className?: string;
   ownerKey?: string;
+  ability?: AbilityKey;
 }
 
 export interface AsiSelection {
@@ -87,6 +97,8 @@ export interface InventoryItem {
   ac?: number | null;
   description?: string;
   isCustom?: boolean;
+  infusedWith?: string;
+  isInfused?: boolean;
 }
 
 export interface ResourceCounter {
@@ -95,6 +107,14 @@ export interface ResourceCounter {
   current: number;
   max: number;
   resetOn: "short" | "long";
+}
+
+export interface ActiveWildShape {
+  name: string;
+  source: string;
+  currentHp: number;
+  maxHp: number;
+  ac: number;
 }
 
 export interface Character {
@@ -165,6 +185,7 @@ export interface Character {
   chosenSkills: string[];
   chosenExpertise: string[];
   asiSelections: AsiSelection[];
+  originFeats?: AsiSelection[];
 
   // Combat & Stats
   currentHp: number;
@@ -180,6 +201,9 @@ export interface Character {
   // Spells
   knownSpells?: (KnownSpell | LegacyKnownSpell)[];
   preparedSpells?: string[]; // `${name}__${source}__${ownerKey}` (legacy keys migrated on load)
+  subclassSpellSwaps?: Record<string, string>;
+  ritualBook?: RitualBookEntry[];
+  mysticArcanumSpent?: Record<number, boolean>;
   usedSpellSlots: Record<number, number>;
   pactSlotsUsed?: number;
   usedPactSlots?: number; // Legacy alias, preserved for old tabs until their migration.
@@ -200,6 +224,9 @@ export interface Character {
 
   // Feature resources
   resourceCounters: Record<string, ResourceCounter>;
+  favoriteWildShapes?: string[];
+  activeWildShape?: ActiveWildShape | null;
+  activeInfusions?: { infusionName: string; targetItemId?: string; targetItemName?: string }[];
 
   // Journal
   description: string;

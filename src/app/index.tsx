@@ -2,7 +2,6 @@ import React, { useMemo, useState } from "react";
 import {
   Alert,
   Image,
-  Modal as RNModal,
   Platform,
   ScrollView,
   StyleSheet,
@@ -18,11 +17,11 @@ import { FirstRunModal } from "../components/FirstRunModal";
 import { NewCharacterModal } from "../components/NewCharacterModal";
 import { Badge } from "../components/ui/Badge";
 import { Button } from "../components/ui/Button";
-import { Card } from "../components/ui/Card";
+import { Modal } from "../components/ui/Modal";
 import { SearchBar } from "../components/ui/SearchBar";
 import { useCharacters } from "../context/CharacterContext";
 import { useAppTheme } from "../context/ThemeContext";
-import { calculateMaxHp, calculateTotalLevel } from "../services/dndRules";
+import { evaluateCharacter } from "../services/dndRules";
 import { Character, Folder } from "../types/character";
 
 export default function HomeScreen() {
@@ -143,8 +142,9 @@ export default function HomeScreen() {
   }, [folders, filteredCharacters]);
 
   const renderCharacterCard = (char: Character) => {
-    const totalLevel = calculateTotalLevel(char);
-    const maxHp = calculateMaxHp(char);
+    const evaluated = evaluateCharacter(char);
+    const totalLevel = evaluated.totalLevel;
+    const maxHp = evaluated.hp.max;
     const primaryClass = char.classes[0]?.className || "Class Unset";
     const raceName = char.race?.name || "Race Unset";
 
@@ -376,73 +376,68 @@ export default function HomeScreen() {
       />
 
       {/* New Folder Creation Modal */}
-      <RNModal visible={newFolderModalVisible} transparent animationType="fade">
-        <View style={styles.modalOverlay}>
-          <Card style={[styles.folderModalCard, { backgroundColor: theme.surface, borderColor: theme.border }]}>
-            <Text style={[styles.folderModalTitle, { color: theme.text }]}>Create New Folder</Text>
-            <TextInput
-              style={[styles.input, { color: theme.text, backgroundColor: theme.surfaceHighlight, borderColor: theme.border }]}
-              value={newFolderName}
-              onChangeText={setNewFolderName}
-              placeholder="e.g. Curse of Strahd, One-Shots"
-              placeholderTextColor={theme.textMuted}
-              autoFocus
-            />
-            <View style={{ flexDirection: "row", justifyContent: "flex-end", gap: 10, marginTop: 16 }}>
-              <Button title="Cancel" variant="secondary" size="sm" onPress={() => setNewFolderModalVisible(false)} />
-              <Button title="Create Folder" variant="primary" size="sm" onPress={handleCreateFolder} />
-            </View>
-          </Card>
-        </View>
-      </RNModal>
+      <Modal
+        visible={newFolderModalVisible}
+        onClose={() => setNewFolderModalVisible(false)}
+        title="Create New Folder"
+        footer={
+          <View style={{ flexDirection: "row", justifyContent: "flex-end", gap: 10 }}>
+            <Button title="Cancel" variant="secondary" size="sm" onPress={() => setNewFolderModalVisible(false)} />
+            <Button title="Create Folder" variant="primary" size="sm" onPress={handleCreateFolder} />
+          </View>
+        }
+      >
+        <TextInput
+          style={[styles.input, { color: theme.text, backgroundColor: theme.surfaceHighlight, borderColor: theme.border }]}
+          value={newFolderName}
+          onChangeText={setNewFolderName}
+          placeholder="e.g. Curse of Strahd, One-Shots"
+          placeholderTextColor={theme.textMuted}
+          autoFocus
+        />
+      </Modal>
 
       {/* Move Character to Folder Modal */}
-      <RNModal visible={moveCharModal.visible} transparent animationType="fade">
-        <View style={styles.modalOverlay}>
-          <Card style={[styles.folderModalCard, { backgroundColor: theme.surface, borderColor: theme.border }]}>
-            <Text style={[styles.folderModalTitle, { color: theme.text }]}>
-              Move {moveCharModal.char?.name} to Folder
-            </Text>
+      <Modal
+        visible={moveCharModal.visible}
+        onClose={() => setMoveCharModal({ visible: false, char: null })}
+        title={moveCharModal.char ? `Move ${moveCharModal.char.name} to Folder` : "Move Character to Folder"}
+        footer={
+          <Button
+            title="Cancel"
+            variant="secondary"
+            size="sm"
+            onPress={() => setMoveCharModal({ visible: false, char: null })}
+          />
+        }
+      >
+        <TouchableOpacity
+          onPress={() => {
+            if (moveCharModal.char) {
+              updateCharacter(moveCharModal.char.id, { folderId: null });
+            }
+            setMoveCharModal({ visible: false, char: null });
+          }}
+          style={[styles.folderOptionRow, { borderBottomColor: theme.border }]}>
+          <Ionicons name="albums-outline" size={18} color={theme.textSecondary} />
+          <Text style={{ color: theme.text, fontSize: 14 }}>Uncategorized (No Folder)</Text>
+        </TouchableOpacity>
 
-            <TouchableOpacity
-              onPress={() => {
-                if (moveCharModal.char) {
-                  updateCharacter(moveCharModal.char.id, { folderId: null });
-                }
-                setMoveCharModal({ visible: false, char: null });
-              }}
-              style={[styles.folderOptionRow, { borderBottomColor: theme.border }]}>
-              <Ionicons name="albums-outline" size={18} color={theme.textSecondary} />
-              <Text style={{ color: theme.text, fontSize: 14 }}>Uncategorized (No Folder)</Text>
-            </TouchableOpacity>
-
-            <ScrollView style={{ maxHeight: 250 }}>
-              {folders.map((f) => (
-                <TouchableOpacity
-                  key={f.id}
-                  onPress={() => {
-                    if (moveCharModal.char) {
-                      updateCharacter(moveCharModal.char.id, { folderId: f.id });
-                    }
-                    setMoveCharModal({ visible: false, char: null });
-                  }}
-                  style={[styles.folderOptionRow, { borderBottomColor: theme.border }]}>
-                  <Ionicons name="folder-outline" size={18} color={theme.accent} />
-                  <Text style={{ color: theme.text, fontSize: 14 }}>{f.name}</Text>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
-
-            <Button
-              title="Cancel"
-              variant="secondary"
-              size="sm"
-              onPress={() => setMoveCharModal({ visible: false, char: null })}
-              style={{ marginTop: 12 }}
-            />
-          </Card>
-        </View>
-      </RNModal>
+        {folders.map((f) => (
+          <TouchableOpacity
+            key={f.id}
+            onPress={() => {
+              if (moveCharModal.char) {
+                updateCharacter(moveCharModal.char.id, { folderId: f.id });
+              }
+              setMoveCharModal({ visible: false, char: null });
+            }}
+            style={[styles.folderOptionRow, { borderBottomColor: theme.border }]}>
+            <Ionicons name="folder-outline" size={18} color={theme.accent} />
+            <Text style={{ color: theme.text, fontSize: 14 }}>{f.name}</Text>
+          </TouchableOpacity>
+        ))}
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -581,23 +576,6 @@ const styles = StyleSheet.create({
   },
   iconBtn: {
     padding: 6,
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: "rgba(0,0,0,0.75)",
-    justifyContent: "center",
-    alignItems: "center",
-    padding: 16,
-  },
-  folderModalCard: {
-    width: "100%",
-    maxWidth: 440,
-    padding: 18,
-  },
-  folderModalTitle: {
-    fontSize: 16,
-    fontWeight: "bold",
-    marginBottom: 12,
   },
   input: {
     height: 42,

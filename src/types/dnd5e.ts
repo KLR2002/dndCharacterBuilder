@@ -7,7 +7,7 @@ export interface TraitChoiceData {
   effectLevel?: number;
   /** The feature this choice replaces, when the catalog marks one. */
   replaces?: string;
-  options: Array<{ name: string; description: string }>;
+  options: { name: string; description: string }[];
 }
 
 export interface TraitData {
@@ -28,7 +28,7 @@ export interface RaceData {
     climb?: number;
     burrow?: number;
   };
-  abilityScoreIncrease: Array<Record<string, number>>;
+  abilityScoreIncrease: Record<string, number>[];
   darkvision: number | null;
   traits: TraitData[];
   languages: string[];
@@ -44,8 +44,9 @@ export interface SubraceData {
   source: string;
   raceName: string;
   raceSource: string;
-  abilityScoreIncrease: Array<Record<string, number>>;
+  abilityScoreIncrease: Record<string, number>[];
   darkvision: number | null;
+  speed?: { walk?: number; swim?: number; climb?: number; fly?: number };
   traits: TraitData[];
   description: string;
   rawEntries?: any[];
@@ -58,6 +59,14 @@ export interface ClassFeatureData {
   isOptional?: boolean;
 }
 
+export interface SubclassAdditionalSpells {
+  prepared?: Record<string, string[]>;
+  known?: Record<string, any[]>;
+  expanded?: Record<string, any>;
+  innate?: Record<string, any>;
+  name?: string;
+}
+
 export interface SubclassData {
   name: string;
   shortName: string;
@@ -66,8 +75,11 @@ export interface SubclassData {
   classSource: string;
   spellcastingAbility?: string;
   features: ClassFeatureData[];
+  additionalSpells?: SubclassAdditionalSpells[];
   description: string;
 }
+
+export type Subclass = SubclassData;
 
 export interface ClassData {
   name: string;
@@ -105,7 +117,7 @@ export interface FeatData {
   name: string;
   source: string;
   prerequisite: string | null;
-  abilityScoreIncrease: Array<Record<string, number>> | null;
+  abilityScoreIncrease: Record<string, number>[] | null;
   description: string;
   rawEntries?: any[];
 }
@@ -122,10 +134,10 @@ export interface BackgroundData {
     description: string;
   } | null;
   characteristics: {
-    personalityTraits?: Array<{ roll: string; text: string }>;
-    ideals?: Array<{ roll: string; text: string }>;
-    bonds?: Array<{ roll: string; text: string }>;
-    flaws?: Array<{ roll: string; text: string }>;
+    personalityTraits?: { roll: string; text: string }[];
+    ideals?: { roll: string; text: string }[];
+    bonds?: { roll: string; text: string }[];
+    flaws?: { roll: string; text: string }[];
   };
   description: string;
   rawEntries?: any[];
@@ -151,6 +163,12 @@ export interface ItemData {
   rawEntries?: any[];
 }
 
+export interface SpellClassVariant {
+  name: string;
+  source: string;
+  definedInSource: string;
+}
+
 export interface SpellData {
   name: string;
   source: string;
@@ -168,12 +186,16 @@ export interface SpellData {
   concentration: boolean;
   ritual: boolean;
   classes: string[];
+  classVariants?: SpellClassVariant[];
   subclasses: string[];
   damageTypes: string[];
   savingThrows: string[];
   description: string;
   higherLevels: string | null;
   rawEntries?: any[];
+  isReplaced?: boolean;
+  originalName?: string;
+  kiCost?: number;
 }
 
 export interface ConditionData {
@@ -191,4 +213,52 @@ export interface OptionFeatureData {
   prerequisite: string | null;
   description: string;
   rawEntries?: any[];
+}
+
+export interface BeastAction {
+  name: string;
+  description: string;
+  attackBonus?: number;
+  damageDice?: string;
+  damageType?: string;
+}
+
+export interface BeastTrait {
+  name: string;
+  description: string;
+}
+
+export interface BeastData {
+  name: string;
+  source: string;
+  size: string; // "Tiny" | "Small" | "Medium" | "Large" | "Huge" | "Gargantuan"
+  type: "beast" | "elemental";
+  cr: string;
+  crNumeric: number;
+  ac: number;
+  hp: {
+    average: number;
+    formula: string;
+  };
+  speed: {
+    walk?: number;
+    swim?: number;
+    fly?: number;
+    climb?: number;
+    burrow?: number;
+  };
+  abilities: {
+    str: number;
+    dex: number;
+    con: number;
+    int: number;
+    wis: number;
+    cha: number;
+  };
+  senses?: string[];
+  passivePerception?: number;
+  skills?: Record<string, number>;
+  traits?: BeastTrait[];
+  actions?: BeastAction[];
+  isElementalWildShape?: boolean;
 }

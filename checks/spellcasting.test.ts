@@ -1,12 +1,16 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { makeChar } from "./testUtils.ts";
+import { makeChar, loadTestCatalog } from "./testUtils.ts";
+import { findSpell } from "../src/services/dataService.ts";
 import {
   getClassSpellProfiles,
   calculateWarlockPactSlots,
+  isSpellAvailableForClass,
+  getAvailableSpellsForClass,
   type ClassSpellProfile,
 } from "../src/rules/spellcasting.ts";
 import type { CharacterClass } from "../src/types/character.ts";
+import type { SpellData } from "../src/types/dnd5e.ts";
 
 const cl = (className: string, level: number, subclassName?: string, source = "PHB"): CharacterClass => ({
   className,
@@ -395,4 +399,452 @@ test("Character metamagicOptions and chosenMetamagic field compatibility", () =>
   assert.deepEqual(char.metamagicOptions, ["Quickened Spell", "Twinned Spell"]);
   assert.deepEqual(char.chosenMetamagic, ["Quickened Spell", "Twinned Spell"]);
 });
+
+// Spell mock data matching 5e rules & scraped format
+const controlFlamesMock: SpellData = {
+  name: "Control Flames",
+  source: "XGE",
+  level: 0,
+  school: "Transmutation",
+  castingTime: "1 action",
+  range: "60 feet",
+  components: { verbal: false, somatic: true, material: false },
+  componentsString: "S",
+  duration: "Instantaneous",
+  concentration: false,
+  ritual: false,
+  classes: ["Druid", "Sorcerer", "Wizard"],
+  subclasses: [],
+  damageTypes: [],
+  savingThrows: [],
+  description: "You choose nonmagical flame...",
+  higherLevels: null,
+};
+
+const aidMock: SpellData = {
+  name: "Aid",
+  source: "PHB",
+  level: 2,
+  school: "Abjuration",
+  castingTime: "1 action",
+  range: "30 feet",
+  components: { verbal: true, somatic: true, material: "a tiny strip of white cloth" },
+  componentsString: "V, S, M",
+  duration: "8 hours",
+  concentration: false,
+  ritual: false,
+  classes: ["Cleric", "Paladin"],
+  classVariants: [
+    { name: "Artificer", source: "PHB", definedInSource: "TCE" },
+    { name: "Bard", source: "PHB", definedInSource: "TCE" },
+    { name: "Ranger", source: "PHB", definedInSource: "TCE" },
+  ],
+  subclasses: [],
+  damageTypes: [],
+  savingThrows: [],
+  description: "Your spell bolsters your allies...",
+  higherLevels: null,
+};
+
+const draconicTransformationMock: SpellData = {
+  name: "Draconic Transformation",
+  source: "FTD",
+  level: 7,
+  school: "Transmutation",
+  castingTime: "1 bonus",
+  range: "Self",
+  components: { verbal: true, somatic: true, material: "a statuette" },
+  componentsString: "V, S, M",
+  duration: "Concentration, up to 1 minute",
+  concentration: true,
+  ritual: false,
+  classes: ["Druid", "Sorcerer", "Wizard"],
+  subclasses: [],
+  damageTypes: ["force"],
+  savingThrows: ["dexterity"],
+  description: "With a roar, you draw on the magic...",
+  higherLevels: null,
+};
+
+const silveryBarbsMock: SpellData = {
+  name: "Silvery Barbs",
+  source: "SCC",
+  level: 1,
+  school: "Enchantment",
+  castingTime: "1 reaction",
+  range: "60 feet",
+  components: { verbal: true, somatic: false, material: false },
+  componentsString: "V",
+  duration: "Instantaneous",
+  concentration: false,
+  ritual: false,
+  classes: ["Bard", "Sorcerer", "Wizard"],
+  subclasses: [],
+  damageTypes: [],
+  savingThrows: [],
+  description: "You magically distract...",
+  higherLevels: null,
+};
+
+test("isSpellAvailableForClass: native supplement spells (XGE) are gated by activeBooks", () => {
+  // Available when XGE is active
+  assert.equal(isSpellAvailableForClass(controlFlamesMock, "Druid", ["PHB", "XGE"]), true);
+  assert.equal(isSpellAvailableForClass(controlFlamesMock, "Sorcerer", ["PHB", "XGE"]), true);
+  assert.equal(isSpellAvailableForClass(controlFlamesMock, "Wizard", ["PHB", "XGE"]), true);
+
+  // Unavailable when XGE is not active
+  assert.equal(isSpellAvailableForClass(controlFlamesMock, "Druid", ["PHB"]), false);
+  assert.equal(isSpellAvailableForClass(controlFlamesMock, "Wizard", ["PHB"]), false);
+
+  // Class not in spell list is never available, even if book is active
+  assert.equal(isSpellAvailableForClass(controlFlamesMock, "Cleric", ["PHB", "XGE"]), false);
+  assert.equal(isSpellAvailableForClass(controlFlamesMock, "Bard", ["PHB", "XGE"]), false);
+});
+
+test("isSpellAvailableForClass: alternative class spell lists (TCE) are gated strictly by granting book", () => {
+  // Native classes (Cleric, Paladin) have Aid when PHB is active
+  assert.equal(isSpellAvailableForClass(aidMock, "Cleric", ["PHB"]), true);
+  assert.equal(isSpellAvailableForClass(aidMock, "Paladin", ["PHB"]), true);
+
+  // Expanded classes (Bard, Ranger) do NOT have Aid when only PHB is active
+  assert.equal(isSpellAvailableForClass(aidMock, "Bard", ["PHB"]), false);
+  assert.equal(isSpellAvailableForClass(aidMock, "Ranger", ["PHB"]), false);
+  assert.equal(isSpellAvailableForClass(aidMock, "Artificer", ["PHB"]), false);
+
+  // Alternative spell list classes DO have Aid when TCE is also active
+  assert.equal(isSpellAvailableForClass(aidMock, "Bard", ["PHB", "TCE"]), true);
+  assert.equal(isSpellAvailableForClass(aidMock, "Ranger", ["PHB", "TCE"]), true);
+  assert.equal(isSpellAvailableForClass(aidMock, "Artificer", ["PHB", "TCE"]), true);
+
+  // If spell's own sourcebook is inactive, spell is unavailable regardless of variant
+  assert.equal(isSpellAvailableForClass(aidMock, "Bard", ["TCE"]), false);
+  assert.equal(isSpellAvailableForClass(aidMock, "Cleric", ["TCE"]), false);
+  assert.equal(isSpellAvailableForClass(aidMock, "Artificer", ["TCE"]), false);
+});
+
+test("isSpellAvailableForClass: maps third-caster archetypes to Wizard spell list", () => {
+  // Eldritch Knight and Arcane Trickster use Wizard spell list
+  assert.equal(isSpellAvailableForClass(controlFlamesMock, "Eldritch Knight", ["PHB", "XGE"]), true);
+  assert.equal(isSpellAvailableForClass(controlFlamesMock, "Arcane Trickster", ["PHB", "XGE"]), true);
+
+  assert.equal(isSpellAvailableForClass(controlFlamesMock, "Eldritch Knight", ["PHB"]), false);
+  assert.equal(isSpellAvailableForClass(controlFlamesMock, "Arcane Trickster", ["PHB"]), false);
+
+  // Aid is not on Wizard list, so third-casters cannot access it
+  assert.equal(isSpellAvailableForClass(aidMock, "Eldritch Knight", ["PHB", "TCE"]), false);
+  assert.equal(isSpellAvailableForClass(aidMock, "Arcane Trickster", ["PHB", "TCE"]), false);
+});
+
+test("isSpellAvailableForClass: flexible across diverse books (FTD, SCC) using definedInSource without hardcoding", () => {
+  // Silvery Barbs from Strixhaven (SCC)
+  assert.equal(isSpellAvailableForClass(silveryBarbsMock, "Bard", ["PHB", "SCC"]), true);
+  assert.equal(isSpellAvailableForClass(silveryBarbsMock, "Wizard", ["PHB", "SCC"]), true);
+  assert.equal(isSpellAvailableForClass(silveryBarbsMock, "Cleric", ["PHB", "SCC"]), false);
+  assert.equal(isSpellAvailableForClass(silveryBarbsMock, "Bard", ["PHB"]), false);
+
+  // Draconic Transformation from Fizban (FTD)
+  assert.equal(isSpellAvailableForClass(draconicTransformationMock, "Druid", ["PHB", "FTD"]), true);
+  assert.equal(isSpellAvailableForClass(draconicTransformationMock, "Sorcerer", ["PHB", "FTD"]), true);
+  assert.equal(isSpellAvailableForClass(draconicTransformationMock, "Druid", ["PHB"]), false);
+});
+
+test("isSpellAvailableForClass: defaults to all books when activeBooks is undefined, handles case-insensitivity", () => {
+  // Undefined activeBooks allows any book & variant
+  assert.equal(isSpellAvailableForClass(controlFlamesMock, "druid"), true);
+  assert.equal(isSpellAvailableForClass(aidMock, "BARD"), true);
+  assert.equal(isSpellAvailableForClass(silveryBarbsMock, "wizard"), true);
+
+  // Case-insensitive activeBooks matching
+  assert.equal(isSpellAvailableForClass(controlFlamesMock, "Druid", ["phb", "xge"]), true);
+  assert.equal(isSpellAvailableForClass(aidMock, "Bard", ["phb", "tce"]), true);
+});
+
+test("getAvailableSpellsForClass filters spell collections by class and activeBooks", () => {
+  const catalog = [controlFlamesMock, aidMock, draconicTransformationMock, silveryBarbsMock];
+
+  // Wizard with PHB + XGE: only Control Flames
+  const wizPhbXge = getAvailableSpellsForClass(catalog, "Wizard", ["PHB", "XGE"]);
+  assert.deepEqual(wizPhbXge.map((s) => s.name), ["Control Flames"]);
+
+  // Wizard with PHB + XGE + FTD + SCC: Control Flames, Draconic Transformation, Silvery Barbs
+  const wizAll = getAvailableSpellsForClass(catalog, "Wizard", ["PHB", "XGE", "FTD", "SCC"]);
+  assert.deepEqual(wizAll.map((s) => s.name), ["Control Flames", "Draconic Transformation", "Silvery Barbs"]);
+
+  // Bard with PHB only: none of these 4
+  const bardPhb = getAvailableSpellsForClass(catalog, "Bard", ["PHB"]);
+  assert.deepEqual(bardPhb.map((s) => s.name), []);
+
+  // Bard with PHB + TCE: Aid
+  const bardTce = getAvailableSpellsForClass(catalog, "Bard", ["PHB", "TCE"]);
+  assert.deepEqual(bardTce.map((s) => s.name), ["Aid"]);
+
+  // Bard with PHB + TCE + SCC: Aid, Silvery Barbs
+  const bardTceScc = getAvailableSpellsForClass(catalog, "Bard", ["PHB", "TCE", "SCC"]);
+  assert.deepEqual(bardTceScc.map((s) => s.name), ["Aid", "Silvery Barbs"]);
+});
+
+test("dataset integration: real spells from dataService reflect active book toggles", () => {
+  const allSpells = loadTestCatalog<SpellData[]>("spells");
+
+  // 1. With PHB only:
+  const phbSpells = allSpells.filter((s) => s.source === "PHB");
+  const phbBardSpells = getAvailableSpellsForClass(phbSpells, "Bard", ["PHB"]);
+  const phbArtificerSpells = getAvailableSpellsForClass(phbSpells, "Artificer", ["PHB"]);
+  const phbWizardSpells = getAvailableSpellsForClass(phbSpells, "Wizard", ["PHB"]);
+  const phbClericSpells = getAvailableSpellsForClass(phbSpells, "Cleric", ["PHB"]);
+
+  // Aid is in PHB: available to Cleric, but NOT to Bard or Artificer (Artificer granted via TCE)
+  assert.equal(phbClericSpells.some((s) => s.name === "Aid"), true);
+  assert.equal(phbBardSpells.some((s) => s.name === "Aid"), false);
+  assert.equal(phbArtificerSpells.some((s) => s.name === "Aid"), false);
+
+  // Control Flames is in XGE: NOT available under PHB
+  assert.equal(phbWizardSpells.some((s) => s.name === "Control Flames"), false);
+
+  // 2. With PHB + TCE:
+  const phbTceSpells = allSpells.filter((s) => s.source === "PHB" || s.source === "TCE");
+  const phbTceBardSpells = getAvailableSpellsForClass(phbTceSpells, "Bard", ["PHB", "TCE"]);
+  const phbTceArtificerSpells = getAvailableSpellsForClass(phbTceSpells, "Artificer", ["PHB", "TCE"]);
+
+  // Aid is granted to Bard and Artificer via TCE
+  assert.equal(phbTceBardSpells.some((s) => s.name === "Aid"), true);
+  assert.equal(phbTceArtificerSpells.some((s) => s.name === "Aid"), true);
+
+  // 3. With PHB + XGE:
+  const phbXgeSpells = allSpells.filter((s) => s.source === "PHB" || s.source === "XGE");
+  const phbXgeWizardSpells = getAvailableSpellsForClass(phbXgeSpells, "Wizard", ["PHB", "XGE"]);
+
+  // Control Flames and Toll the Dead are in XGE: available to Wizard
+  assert.equal(phbXgeWizardSpells.some((s) => s.name === "Control Flames"), true);
+  assert.equal(phbXgeWizardSpells.some((s) => s.name === "Toll the Dead"), true);
+});
+
+test("getClassSpellProfiles populates alwaysPreparedSpells and leaves preparedLimit separate", () => {
+  // Level 1 Cleric with Life Domain (+3 WIS modifier)
+  const lifeCleric = makeChar({
+    baseAbilityScores: { str: 10, dex: 10, con: 10, int: 10, wis: 16, cha: 10 },
+    classes: [cl("Cleric", 1, "Life Domain")],
+    preparedSpells: ["Command__PHB__Cleric__PHB"],
+  });
+
+  const profiles = getClassSpellProfiles(lifeCleric);
+  assert.equal(profiles.length, 1);
+  const profile = profiles[0];
+
+  // Base preparedLimit = Wis mod (+3) + cleric level (1) = 4
+  assert.equal(profile.preparedLimit, 4);
+
+  // alwaysPreparedSpells contains Bless and Cure Wounds
+  assert.ok(profile.alwaysPreparedSpells);
+  const alwaysPrepNames = profile.alwaysPreparedSpells.map((s) => s.name).sort();
+  assert.deepEqual(alwaysPrepNames, ["Bless", "Cure Wounds"]);
+
+  // The player's manually prepared list remains strictly separate
+  assert.deepEqual(profile.preparedSpells, ["Command__PHB__Cleric__PHB"]);
+});
+
+test("isSpellAvailableForClass: Warlock Otherworldly Patron expanded spell lists", () => {
+  const fireball = findSpell("Fireball")!;
+  const burningHands = findSpell("Burning Hands")!;
+  const command = findSpell("Command")!;
+
+  assert.ok(fireball, "Fireball must exist in catalog");
+  assert.ok(burningHands, "Burning Hands must exist in catalog");
+  assert.ok(command, "Command must exist in catalog");
+
+  // Fiend Warlock has access to Fireball, Burning Hands, Command under activeBooks
+  assert.equal(isSpellAvailableForClass(fireball, "Warlock", ["PHB"], "The Fiend"), true);
+  assert.equal(isSpellAvailableForClass(burningHands, "Warlock", ["PHB"], "The Fiend"), true);
+  assert.equal(isSpellAvailableForClass(command, "Warlock", ["PHB"], "The Fiend"), true);
+
+  // Non-Fiend Warlock (or Archfey) does NOT have access to Fireball
+  assert.equal(isSpellAvailableForClass(fireball, "Warlock", ["PHB"], "The Archfey"), false);
+  assert.equal(isSpellAvailableForClass(fireball, "Warlock", ["PHB"]), false);
+  assert.equal(isSpellAvailableForClass(fireball, "Warlock", ["PHB"], "The Great Old One"), false);
+
+  // Level gating via SpellAvailabilityContext
+  assert.equal(
+    isSpellAvailableForClass(fireball, "Warlock", ["PHB"], { subclassName: "The Fiend", classLevel: 3 }),
+    false
+  );
+  assert.equal(
+    isSpellAvailableForClass(fireball, "Warlock", ["PHB"], { subclassName: "The Fiend", classLevel: 5 }),
+    true
+  );
+  assert.equal(
+    isSpellAvailableForClass(burningHands, "Warlock", ["PHB"], { subclassName: "The Fiend", classLevel: 1 }),
+    true
+  );
+});
+
+test("isSpellAvailableForClass: Genie Warlock kind-specific and shared spells", () => {
+  const detectEvilAndGood = findSpell("Detect Evil and Good")!;
+  const sanctuary = findSpell("Sanctuary")!;
+  const fireball = findSpell("Fireball")!;
+
+  assert.ok(detectEvilAndGood);
+  assert.ok(sanctuary);
+  assert.ok(fireball);
+
+  // Dao Genie Warlock: Detect Evil and Good (shared) and Sanctuary (Dao) are available
+  assert.equal(
+    isSpellAvailableForClass(detectEvilAndGood, "Warlock", ["PHB", "TCE"], {
+      subclassName: "The Genie",
+      kind: "Dao",
+      classLevel: 1,
+    }),
+    true
+  );
+  assert.equal(
+    isSpellAvailableForClass(sanctuary, "Warlock", ["PHB", "TCE"], {
+      subclassName: "The Genie",
+      kind: "Dao",
+      classLevel: 1,
+    }),
+    true
+  );
+  // Dao does NOT get Fireball
+  assert.equal(
+    isSpellAvailableForClass(fireball, "Warlock", ["PHB", "TCE"], {
+      subclassName: "The Genie",
+      kind: "Dao",
+      classLevel: 9,
+    }),
+    false
+  );
+
+  // Efreeti Genie Warlock: Fireball IS available at level 5+
+  assert.equal(
+    isSpellAvailableForClass(fireball, "Warlock", ["PHB", "TCE"], {
+      subclassName: "The Genie",
+      kind: "Efreeti",
+      classLevel: 5,
+    }),
+    true
+  );
+  // Efreeti does NOT get Sanctuary
+  assert.equal(
+    isSpellAvailableForClass(sanctuary, "Warlock", ["PHB", "TCE"], {
+      subclassName: "The Genie",
+      kind: "Efreeti",
+      classLevel: 5,
+    }),
+    false
+  );
+});
+
+test("isSpellAvailableForClass: Divine Soul Sorcerer Cleric spell access", () => {
+  const cureWounds = findSpell("Cure Wounds")!;
+  const spiritualWeapon = findSpell("Spiritual Weapon")!;
+  const revivify = findSpell("Revivify")!;
+  const fireball = findSpell("Fireball")!;
+
+  assert.ok(cureWounds, "Cure Wounds must exist in catalog");
+  assert.ok(spiritualWeapon, "Spiritual Weapon must exist in catalog");
+  assert.ok(revivify, "Revivify must exist in catalog");
+
+  // Divine Soul Sorcerer has access to Cleric spells
+  assert.equal(isSpellAvailableForClass(cureWounds, "Sorcerer", ["PHB"], "Divine Soul"), true);
+  assert.equal(isSpellAvailableForClass(spiritualWeapon, "Sorcerer", ["PHB"], "Divine Soul"), true);
+  assert.equal(isSpellAvailableForClass(revivify, "Sorcerer", ["PHB"], "Divine Soul"), true);
+
+  // Non-Divine Soul Sorcerer does NOT have access to Cure Wounds or Spiritual Weapon
+  assert.equal(isSpellAvailableForClass(cureWounds, "Sorcerer", ["PHB"], "Draconic Bloodline"), false);
+  assert.equal(isSpellAvailableForClass(cureWounds, "Sorcerer", ["PHB"], "Wild Magic"), false);
+  assert.equal(isSpellAvailableForClass(cureWounds, "Sorcerer", ["PHB"]), false);
+  assert.equal(isSpellAvailableForClass(spiritualWeapon, "Sorcerer", ["PHB"], "Draconic Bloodline"), false);
+
+  // Native Sorcerer spells remain available to Divine Soul Sorcerer
+  assert.equal(isSpellAvailableForClass(fireball, "Sorcerer", ["PHB"], "Divine Soul"), true);
+});
+
+test("Warlock Expanded Spell List integration: do not auto-prepare, added to knownSpells, uses Charisma DC/attack", () => {
+  const char = makeChar({
+    baseAbilityScores: { str: 10, dex: 10, con: 10, int: 10, wis: 10, cha: 16 },
+    classes: [cl("Warlock", 5, "The Fiend")],
+    knownSpells: [{ name: "Fireball", source: "PHB", ownerKey: "Warlock__PHB" }],
+  });
+
+  const profiles = getClassSpellProfiles(char, { activeBooks: ["PHB"] });
+  assert.equal(profiles.length, 1);
+  const profile = profiles[0];
+
+  assert.equal(profile.className, "Warlock");
+  assert.equal(profile.subclass, "The Fiend");
+  assert.equal(profile.ability, "cha");
+  // Total level 5 -> PB = 3. CHA mod = 3 (+3 from 16).
+  // DC = 8 + 3 + 3 = 14, attack bonus = 3 + 3 = 6
+  assert.equal(profile.spellSaveDc, 14);
+  assert.equal(profile.spellAttackBonus, 6);
+
+  // Warlock has no daily prepared limit
+  assert.equal(profile.preparedLimit, undefined);
+
+  // Expanded Spell List spells do NOT auto-prepare (alwaysPreparedSpells is empty)
+  assert.deepEqual(profile.alwaysPreparedSpells, []);
+
+  // Learned Expanded Spell List spell is stored in knownSpells
+  assert.equal(profile.knownSpells.length, 1);
+  assert.equal(profile.knownSpells[0].name, "Fireball");
+  assert.equal(profile.knownSpells[0].ownerKey, "Warlock__PHB");
+});
+
+test("Divine Soul Sorcerer spell profile integration: learned Cleric spells use Charisma DC/attack", () => {
+  const char = makeChar({
+    baseAbilityScores: { str: 10, dex: 10, con: 10, int: 10, wis: 10, cha: 16 },
+    classes: [cl("Sorcerer", 5, "Divine Soul")],
+    knownSpells: [{ name: "Cure Wounds", source: "PHB", ownerKey: "Sorcerer__PHB" }],
+  });
+
+  const profiles = getClassSpellProfiles(char, { activeBooks: ["PHB"] });
+  assert.equal(profiles.length, 1);
+  const profile = profiles[0];
+
+  assert.equal(profile.className, "Sorcerer");
+  assert.equal(profile.subclass, "Divine Soul");
+  assert.equal(profile.ability, "cha");
+  assert.equal(profile.spellSaveDc, 14);
+  assert.equal(profile.spellAttackBonus, 6);
+  assert.equal(profile.knownSpells.length, 1);
+  assert.equal(profile.knownSpells[0].name, "Cure Wounds");
+  assert.equal(profile.knownSpells[0].ownerKey, "Sorcerer__PHB");
+});
+
+test("getClassSpellProfiles: Ranger and Sorcerer profiles include subclassKnownSpells and do not increment prepared count", () => {
+  // Clockwork Soul Sorcerer at level 1
+  const sorcerer = makeChar({
+    baseAbilityScores: { str: 10, dex: 10, con: 10, int: 10, wis: 10, cha: 16 },
+    classes: [cl("Sorcerer", 1, "Clockwork Soul")],
+    knownSpells: [{ name: "Magic Missile", source: "PHB", ownerKey: "Sorcerer__PHB" }],
+  });
+
+  const sorcProfiles = getClassSpellProfiles(sorcerer);
+  assert.equal(sorcProfiles.length, 1);
+  const sorcProfile = sorcProfiles[0];
+  assert.equal(sorcProfile.className, "Sorcerer");
+  assert.ok(sorcProfile.subclassKnownSpells);
+  const sorcSubNames = sorcProfile.subclassKnownSpells.map((s) => s.name).sort();
+  assert.deepEqual(sorcSubNames, ["Alarm", "Protection from Evil and Good"]);
+  // Known casters have undefined preparedLimit and empty preparedSpells
+  assert.equal(sorcProfile.preparedLimit, undefined);
+  assert.deepEqual(sorcProfile.preparedSpells, []);
+
+  // Gloom Stalker Ranger at level 3
+  const ranger = makeChar({
+    baseAbilityScores: { str: 10, dex: 14, con: 10, int: 10, wis: 14, cha: 10 },
+    classes: [cl("Ranger", 3, "Gloom Stalker")],
+    knownSpells: [{ name: "Hunter's Mark", source: "PHB", ownerKey: "Ranger__PHB" }],
+  });
+
+  const rangerProfiles = getClassSpellProfiles(ranger);
+  assert.equal(rangerProfiles.length, 1);
+  const rangerProfile = rangerProfiles[0];
+  assert.equal(rangerProfile.className, "Ranger");
+  assert.ok(rangerProfile.subclassKnownSpells);
+  const rangerSubNames = rangerProfile.subclassKnownSpells.map((s) => s.name);
+  assert.deepEqual(rangerSubNames, ["Disguise Self"]);
+  assert.equal(rangerProfile.preparedLimit, undefined);
+  assert.deepEqual(rangerProfile.preparedSpells, []);
+});
+
 

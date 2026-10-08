@@ -16,9 +16,15 @@
     "concentration": false,
     "ritual": false,
     "classes": [
-      "Artificer",
       "Sorcerer",
       "Wizard"
+    ],
+    "classVariants": [
+      {
+        "name": "Artificer",
+        "source": "PHB",
+        "definedInSource": "TCE"
+      }
     ],
     "subclasses": [],
     "damageTypes": [
@@ -87,6 +93,23 @@
       "Warlock",
       "Wizard"
     ],
+    "classVariants": [
+      {
+        "name": "Sorcerer",
+        "source": "TCE",
+        "definedInSource": "PHB"
+      },
+      {
+        "name": "Warlock",
+        "source": "TCE",
+        "definedInSource": "PHB"
+      },
+      {
+        "name": "Wizard",
+        "source": "TCE",
+        "definedInSource": "PHB"
+      }
+    ],
     "subclasses": [],
     "damageTypes": [
       "thunder"
@@ -149,7 +172,11 @@
     "duration": "Instantaneous",
     "concentration": false,
     "ritual": false,
-    "classes": [],
+    "classes": [
+      "Druid",
+      "Sorcerer",
+      "Wizard"
+    ],
     "subclasses": [],
     "damageTypes": [],
     "savingThrows": [],
@@ -185,7 +212,13 @@
     "duration": "Concentration, up to 1 minute",
     "concentration": true,
     "ritual": false,
-    "classes": [],
+    "classes": [
+      "Artificer",
+      "Druid",
+      "Sorcerer",
+      "Warlock",
+      "Wizard"
+    ],
     "subclasses": [],
     "damageTypes": [
       "fire"
@@ -218,10 +251,16 @@
     "concentration": true,
     "ritual": false,
     "classes": [
-      "Artificer",
       "Bard",
       "Sorcerer",
       "Wizard"
+    ],
+    "classVariants": [
+      {
+        "name": "Artificer",
+        "source": "PHB",
+        "definedInSource": "TCE"
+      }
     ],
     "subclasses": [],
     "damageTypes": [],
@@ -346,9 +385,15 @@
     "concentration": false,
     "ritual": false,
     "classes": [
-      "Artificer",
       "Sorcerer",
       "Wizard"
+    ],
+    "classVariants": [
+      {
+        "name": "Artificer",
+        "source": "PHB",
+        "definedInSource": "TCE"
+      }
     ],
     "subclasses": [],
     "damageTypes": [
@@ -409,7 +454,13 @@
     "duration": "Instantaneous",
     "concentration": false,
     "ritual": false,
-    "classes": [],
+    "classes": [
+      "Artificer",
+      "Druid",
+      "Sorcerer",
+      "Warlock",
+      "Wizard"
+    ],
     "subclasses": [],
     "damageTypes": [
       "cold"
@@ -446,6 +497,23 @@
       "Warlock",
       "Wizard"
     ],
+    "classVariants": [
+      {
+        "name": "Sorcerer",
+        "source": "TCE",
+        "definedInSource": "PHB"
+      },
+      {
+        "name": "Warlock",
+        "source": "TCE",
+        "definedInSource": "PHB"
+      },
+      {
+        "name": "Wizard",
+        "source": "TCE",
+        "definedInSource": "PHB"
+      }
+    ],
     "subclasses": [],
     "damageTypes": [
       "fire"
@@ -475,9 +543,15 @@
     "concentration": true,
     "ritual": false,
     "classes": [
-      "Artificer",
       "Cleric",
       "Druid"
+    ],
+    "classVariants": [
+      {
+        "name": "Artificer",
+        "source": "PHB",
+        "definedInSource": "TCE"
+      }
     ],
     "subclasses": [],
     "damageTypes": [],
@@ -504,7 +578,11 @@
     "duration": "Instantaneous",
     "concentration": false,
     "ritual": false,
-    "classes": [],
+    "classes": [
+      "Druid",
+      "Sorcerer",
+      "Wizard"
+    ],
     "subclasses": [],
     "damageTypes": [],
     "savingThrows": [
@@ -540,7 +618,12 @@
     "duration": "Instantaneous",
     "concentration": false,
     "ritual": false,
-    "classes": [],
+    "classes": [
+      "Druid",
+      "Sorcerer",
+      "Warlock",
+      "Wizard"
+    ],
     "subclasses": [],
     "damageTypes": [
       "poison"
@@ -572,11 +655,17 @@
     "concentration": false,
     "ritual": false,
     "classes": [
-      "Artificer",
       "Bard",
       "Cleric",
       "Sorcerer",
       "Wizard"
+    ],
+    "classVariants": [
+      {
+        "name": "Artificer",
+        "source": "PHB",
+        "definedInSource": "TCE"
+      }
     ],
     "subclasses": [],
     "damageTypes": [],
@@ -612,6 +701,23 @@
       "Warlock",
       "Wizard"
     ],
+    "classVariants": [
+      {
+        "name": "Sorcerer",
+        "source": "TCE",
+        "definedInSource": "PHB"
+      },
+      {
+        "name": "Warlock",
+        "source": "TCE",
+        "definedInSource": "PHB"
+      },
+      {
+        "name": "Wizard",
+        "source": "TCE",
+        "definedInSource": "PHB"
+      }
+    ],
     "subclasses": [],
     "damageTypes": [
       "lightning"
@@ -643,11 +749,17 @@
     "concentration": false,
     "ritual": false,
     "classes": [
-      "Artificer",
       "Bard",
       "Sorcerer",
       "Warlock",
       "Wizard"
+    ],
+    "classVariants": [
+      {
+        "name": "Artificer",
+        "source": "PHB",
+        "definedInSource": "TCE"
+      }
     ],
     "subclasses": [],
     "damageTypes": [],
@@ -676,7 +788,11 @@
     "duration": "1 minute",
     "concentration": false,
     "ritual": false,
-    "classes": [],
+    "classes": [
+      "Artificer",
+      "Druid",
+      "Warlock"
+    ],
     "subclasses": [],
     "damageTypes": [
       "bludgeoning"
@@ -706,12 +822,18 @@
     "concentration": false,
     "ritual": false,
     "classes": [
-      "Artificer",
       "Bard",
       "Cleric",
       "Druid",
       "Sorcerer",
       "Wizard"
+    ],
+    "classVariants": [
+      {
+        "name": "Artificer",
+        "source": "PHB",
+        "definedInSource": "TCE"
+      }
     ],
     "subclasses": [],
     "damageTypes": [],
@@ -740,10 +862,16 @@
     "concentration": false,
     "ritual": false,
     "classes": [
-      "Artificer",
       "Bard",
       "Sorcerer",
       "Wizard"
+    ],
+    "classVariants": [
+      {
+        "name": "Artificer",
+        "source": "PHB",
+        "definedInSource": "TCE"
+      }
     ],
     "subclasses": [],
     "damageTypes": [],
@@ -771,7 +899,11 @@
     "duration": "1 round",
     "concentration": false,
     "ritual": false,
-    "classes": [],
+    "classes": [
+      "Sorcerer",
+      "Warlock",
+      "Wizard"
+    ],
     "subclasses": [],
     "damageTypes": [
       "psychic"
@@ -836,7 +968,11 @@
     "duration": "Instantaneous",
     "concentration": false,
     "ritual": false,
-    "classes": [],
+    "classes": [
+      "Druid",
+      "Sorcerer",
+      "Wizard"
+    ],
     "subclasses": [],
     "damageTypes": [],
     "savingThrows": [],
@@ -872,11 +1008,17 @@
     "concentration": false,
     "ritual": false,
     "classes": [
-      "Artificer",
       "Druid",
       "Sorcerer",
       "Warlock",
       "Wizard"
+    ],
+    "classVariants": [
+      {
+        "name": "Artificer",
+        "source": "PHB",
+        "definedInSource": "TCE"
+      }
     ],
     "subclasses": [],
     "damageTypes": [
@@ -909,11 +1051,17 @@
     "concentration": false,
     "ritual": false,
     "classes": [
-      "Artificer",
       "Bard",
       "Sorcerer",
       "Warlock",
       "Wizard"
+    ],
+    "classVariants": [
+      {
+        "name": "Artificer",
+        "source": "PHB",
+        "definedInSource": "TCE"
+      }
     ],
     "subclasses": [],
     "damageTypes": [],
@@ -952,7 +1100,9 @@
     "duration": "Instantaneous",
     "concentration": false,
     "ritual": false,
-    "classes": [],
+    "classes": [
+      "Druid"
+    ],
     "subclasses": [],
     "damageTypes": [
       "acid"
@@ -1014,9 +1164,15 @@
     "concentration": false,
     "ritual": false,
     "classes": [
-      "Artificer",
       "Sorcerer",
       "Wizard"
+    ],
+    "classVariants": [
+      {
+        "name": "Artificer",
+        "source": "PHB",
+        "definedInSource": "TCE"
+      }
     ],
     "subclasses": [],
     "damageTypes": [
@@ -1047,9 +1203,15 @@
     "concentration": true,
     "ritual": false,
     "classes": [
-      "Artificer",
       "Cleric",
       "Druid"
+    ],
+    "classVariants": [
+      {
+        "name": "Artificer",
+        "source": "PHB",
+        "definedInSource": "TCE"
+      }
     ],
     "subclasses": [],
     "damageTypes": [],
@@ -1140,7 +1302,11 @@
     "duration": "Instantaneous",
     "concentration": false,
     "ritual": false,
-    "classes": [],
+    "classes": [
+      "Druid",
+      "Sorcerer",
+      "Wizard"
+    ],
     "subclasses": [],
     "damageTypes": [],
     "savingThrows": [],
@@ -1205,9 +1371,15 @@
     "concentration": false,
     "ritual": false,
     "classes": [
-      "Artificer",
       "Sorcerer",
       "Wizard"
+    ],
+    "classVariants": [
+      {
+        "name": "Artificer",
+        "source": "PHB",
+        "definedInSource": "TCE"
+      }
     ],
     "subclasses": [],
     "damageTypes": [
@@ -1238,8 +1410,14 @@
     "concentration": false,
     "ritual": false,
     "classes": [
-      "Artificer",
       "Cleric"
+    ],
+    "classVariants": [
+      {
+        "name": "Artificer",
+        "source": "PHB",
+        "definedInSource": "TCE"
+      }
     ],
     "subclasses": [],
     "damageTypes": [],
@@ -1271,6 +1449,23 @@
       "Sorcerer",
       "Warlock",
       "Wizard"
+    ],
+    "classVariants": [
+      {
+        "name": "Sorcerer",
+        "source": "TCE",
+        "definedInSource": "PHB"
+      },
+      {
+        "name": "Warlock",
+        "source": "TCE",
+        "definedInSource": "PHB"
+      },
+      {
+        "name": "Wizard",
+        "source": "TCE",
+        "definedInSource": "PHB"
+      }
     ],
     "subclasses": [],
     "damageTypes": [
@@ -1343,8 +1538,14 @@
     "concentration": false,
     "ritual": false,
     "classes": [
-      "Artificer",
       "Druid"
+    ],
+    "classVariants": [
+      {
+        "name": "Artificer",
+        "source": "PHB",
+        "definedInSource": "TCE"
+      }
     ],
     "subclasses": [],
     "damageTypes": [
@@ -1374,7 +1575,14 @@
     "duration": "Instantaneous",
     "concentration": false,
     "ritual": false,
-    "classes": [],
+    "classes": [
+      "Artificer",
+      "Bard",
+      "Druid",
+      "Sorcerer",
+      "Warlock",
+      "Wizard"
+    ],
     "subclasses": [],
     "damageTypes": [
       "thunder"
@@ -1405,7 +1613,11 @@
     "duration": "Instantaneous",
     "concentration": false,
     "ritual": false,
-    "classes": [],
+    "classes": [
+      "Cleric",
+      "Warlock",
+      "Wizard"
+    ],
     "subclasses": [],
     "damageTypes": [
       "necrotic"
@@ -1500,7 +1712,9 @@
     "duration": "Instantaneous",
     "concentration": false,
     "ritual": false,
-    "classes": [],
+    "classes": [
+      "Cleric"
+    ],
     "subclasses": [],
     "damageTypes": [
       "radiant"
@@ -1531,7 +1745,13 @@
     "duration": "1 round",
     "concentration": false,
     "ritual": false,
-    "classes": [],
+    "classes": [
+      "Artificer",
+      "Druid",
+      "Ranger",
+      "Sorcerer",
+      "Wizard"
+    ],
     "subclasses": [],
     "damageTypes": [],
     "savingThrows": [],
@@ -1558,9 +1778,15 @@
     "concentration": false,
     "ritual": true,
     "classes": [
-      "Artificer",
       "Ranger",
       "Wizard"
+    ],
+    "classVariants": [
+      {
+        "name": "Artificer",
+        "source": "PHB",
+        "definedInSource": "TCE"
+      }
     ],
     "subclasses": [],
     "damageTypes": [],
@@ -1714,7 +1940,10 @@
     "duration": "Concentration, up to 10 minutes",
     "concentration": true,
     "ritual": false,
-    "classes": [],
+    "classes": [
+      "Druid",
+      "Ranger"
+    ],
     "subclasses": [],
     "damageTypes": [],
     "savingThrows": [],
@@ -1803,7 +2032,11 @@
     "duration": "Instantaneous",
     "concentration": false,
     "ritual": false,
-    "classes": [],
+    "classes": [
+      "Artificer",
+      "Sorcerer",
+      "Wizard"
+    ],
     "subclasses": [],
     "damageTypes": [
       "bludgeoning"
@@ -1833,7 +2066,10 @@
     "duration": "Concentration, up to 1 minute",
     "concentration": true,
     "ritual": false,
-    "classes": [],
+    "classes": [
+      "Warlock",
+      "Wizard"
+    ],
     "subclasses": [],
     "damageTypes": [],
     "savingThrows": [
@@ -1861,7 +2097,10 @@
     "duration": "Instantaneous",
     "concentration": false,
     "ritual": true,
-    "classes": [],
+    "classes": [
+      "Cleric",
+      "Paladin"
+    ],
     "subclasses": [],
     "damageTypes": [],
     "savingThrows": [],
@@ -1929,7 +2168,9 @@
     "duration": "Instantaneous",
     "concentration": false,
     "ritual": false,
-    "classes": [],
+    "classes": [
+      "Sorcerer"
+    ],
     "subclasses": [],
     "damageTypes": [
       "acid",
@@ -2126,6 +2367,13 @@
       "Sorcerer",
       "Wizard"
     ],
+    "classVariants": [
+      {
+        "name": "Bard",
+        "source": "PHB",
+        "definedInSource": "TCE"
+      }
+    ],
     "subclasses": [],
     "damageTypes": [],
     "savingThrows": [],
@@ -2155,6 +2403,13 @@
     "classes": [
       "Cleric",
       "Paladin"
+    ],
+    "classVariants": [
+      {
+        "name": "Bard",
+        "source": "PHB",
+        "definedInSource": "TCE"
+      }
     ],
     "subclasses": [],
     "damageTypes": [],
@@ -2326,12 +2581,18 @@
     "concentration": false,
     "ritual": false,
     "classes": [
-      "Artificer",
       "Bard",
       "Cleric",
       "Druid",
       "Paladin",
       "Ranger"
+    ],
+    "classVariants": [
+      {
+        "name": "Artificer",
+        "source": "PHB",
+        "definedInSource": "TCE"
+      }
     ],
     "subclasses": [],
     "damageTypes": [],
@@ -2389,7 +2650,6 @@
     "concentration": true,
     "ritual": true,
     "classes": [
-      "Artificer",
       "Bard",
       "Cleric",
       "Druid",
@@ -2397,6 +2657,13 @@
       "Ranger",
       "Sorcerer",
       "Wizard"
+    ],
+    "classVariants": [
+      {
+        "name": "Artificer",
+        "source": "PHB",
+        "definedInSource": "TCE"
+      }
     ],
     "subclasses": [],
     "damageTypes": [],
@@ -2457,10 +2724,16 @@
     "concentration": false,
     "ritual": false,
     "classes": [
-      "Artificer",
       "Bard",
       "Sorcerer",
       "Wizard"
+    ],
+    "classVariants": [
+      {
+        "name": "Artificer",
+        "source": "PHB",
+        "definedInSource": "TCE"
+      }
     ],
     "subclasses": [],
     "damageTypes": [],
@@ -2521,11 +2794,28 @@
     "duration": "8 hours",
     "concentration": false,
     "ritual": false,
-    "classes": [
-      "Bard",
-      "Sorcerer",
-      "Warlock",
-      "Wizard"
+    "classes": [],
+    "classVariants": [
+      {
+        "name": "Bard",
+        "source": "AI",
+        "definedInSource": "PHB"
+      },
+      {
+        "name": "Sorcerer",
+        "source": "AI",
+        "definedInSource": "PHB"
+      },
+      {
+        "name": "Wizard",
+        "source": "AI",
+        "definedInSource": "PHB"
+      },
+      {
+        "name": "Warlock",
+        "source": "AI",
+        "definedInSource": "PHB"
+      }
     ],
     "subclasses": [],
     "damageTypes": [],
@@ -2583,7 +2873,12 @@
     "duration": "Instantaneous",
     "concentration": false,
     "ritual": false,
-    "classes": [],
+    "classes": [
+      "Bard",
+      "Druid",
+      "Sorcerer",
+      "Wizard"
+    ],
     "subclasses": [],
     "damageTypes": [
       "bludgeoning"
@@ -2649,6 +2944,13 @@
     "classes": [
       "Druid"
     ],
+    "classVariants": [
+      {
+        "name": "Ranger",
+        "source": "PHB",
+        "definedInSource": "TCE"
+      }
+    ],
     "subclasses": [],
     "damageTypes": [],
     "savingThrows": [
@@ -2679,10 +2981,16 @@
     "concentration": true,
     "ritual": false,
     "classes": [
-      "Artificer",
       "Sorcerer",
       "Warlock",
       "Wizard"
+    ],
+    "classVariants": [
+      {
+        "name": "Artificer",
+        "source": "PHB",
+        "definedInSource": "TCE"
+      }
     ],
     "subclasses": [],
     "damageTypes": [],
@@ -2710,9 +3018,15 @@
     "concentration": true,
     "ritual": false,
     "classes": [
-      "Artificer",
       "Bard",
       "Druid"
+    ],
+    "classVariants": [
+      {
+        "name": "Artificer",
+        "source": "PHB",
+        "definedInSource": "TCE"
+      }
     ],
     "subclasses": [],
     "damageTypes": [],
@@ -2743,9 +3057,15 @@
     "concentration": false,
     "ritual": false,
     "classes": [
-      "Artificer",
       "Sorcerer",
       "Wizard"
+    ],
+    "classVariants": [
+      {
+        "name": "Artificer",
+        "source": "PHB",
+        "definedInSource": "TCE"
+      }
     ],
     "subclasses": [],
     "damageTypes": [],
@@ -2773,10 +3093,16 @@
     "concentration": false,
     "ritual": false,
     "classes": [
-      "Artificer",
       "Bard",
       "Sorcerer",
       "Wizard"
+    ],
+    "classVariants": [
+      {
+        "name": "Artificer",
+        "source": "PHB",
+        "definedInSource": "TCE"
+      }
     ],
     "subclasses": [],
     "damageTypes": [],
@@ -2868,8 +3194,13 @@
     "duration": "Instantaneous",
     "concentration": false,
     "ritual": false,
-    "classes": [
-      "Wizard"
+    "classes": [],
+    "classVariants": [
+      {
+        "name": "Wizard",
+        "source": "IDRotF",
+        "definedInSource": "PHB"
+      }
     ],
     "subclasses": [],
     "damageTypes": [
@@ -2958,8 +3289,19 @@
     "concentration": false,
     "ritual": false,
     "classes": [
-      "Artificer",
       "Wizard"
+    ],
+    "classVariants": [
+      {
+        "name": "Artificer",
+        "source": "PHB",
+        "definedInSource": "TCE"
+      },
+      {
+        "name": "Sorcerer",
+        "source": "PHB",
+        "definedInSource": "TCE"
+      }
     ],
     "subclasses": [],
     "damageTypes": [],
@@ -3202,7 +3544,11 @@
     "duration": "Instantaneous",
     "concentration": false,
     "ritual": false,
-    "classes": [],
+    "classes": [
+      "Druid",
+      "Sorcerer",
+      "Wizard"
+    ],
     "subclasses": [],
     "damageTypes": [
       "cold",
@@ -3234,9 +3580,15 @@
     "concentration": false,
     "ritual": true,
     "classes": [
-      "Artificer",
       "Bard",
       "Wizard"
+    ],
+    "classVariants": [
+      {
+        "name": "Artificer",
+        "source": "PHB",
+        "definedInSource": "TCE"
+      }
     ],
     "subclasses": [],
     "damageTypes": [],
@@ -3327,8 +3679,13 @@
     "duration": "Instantaneous",
     "concentration": false,
     "ritual": false,
-    "classes": [
-      "Wizard"
+    "classes": [],
+    "classVariants": [
+      {
+        "name": "Wizard",
+        "source": "AI",
+        "definedInSource": "PHB"
+      }
     ],
     "subclasses": [],
     "damageTypes": [
@@ -3367,11 +3724,17 @@
     "concentration": false,
     "ritual": false,
     "classes": [
-      "Artificer",
       "Druid",
       "Ranger",
       "Sorcerer",
       "Wizard"
+    ],
+    "classVariants": [
+      {
+        "name": "Artificer",
+        "source": "PHB",
+        "definedInSource": "TCE"
+      }
     ],
     "subclasses": [],
     "damageTypes": [],
@@ -3399,11 +3762,17 @@
     "concentration": false,
     "ritual": false,
     "classes": [
-      "Artificer",
       "Bard",
       "Druid",
       "Ranger",
       "Wizard"
+    ],
+    "classVariants": [
+      {
+        "name": "Artificer",
+        "source": "PHB",
+        "definedInSource": "TCE"
+      }
     ],
     "subclasses": [],
     "damageTypes": [],
@@ -3527,6 +3896,13 @@
       "Warlock",
       "Wizard"
     ],
+    "classVariants": [
+      {
+        "name": "Druid",
+        "source": "PHB",
+        "definedInSource": "TCE"
+      }
+    ],
     "subclasses": [],
     "damageTypes": [],
     "savingThrows": [],
@@ -3554,10 +3930,16 @@
     "concentration": false,
     "ritual": true,
     "classes": [
-      "Artificer",
       "Cleric",
       "Druid",
       "Paladin"
+    ],
+    "classVariants": [
+      {
+        "name": "Artificer",
+        "source": "PHB",
+        "definedInSource": "TCE"
+      }
     ],
     "subclasses": [],
     "damageTypes": [],
@@ -3618,8 +4000,14 @@
     "concentration": false,
     "ritual": false,
     "classes": [
-      "Artificer",
       "Cleric"
+    ],
+    "classVariants": [
+      {
+        "name": "Artificer",
+        "source": "PHB",
+        "definedInSource": "TCE"
+      }
     ],
     "subclasses": [],
     "damageTypes": [],
@@ -3651,6 +4039,13 @@
     "ritual": false,
     "classes": [
       "Paladin"
+    ],
+    "classVariants": [
+      {
+        "name": "Ranger",
+        "source": "PHB",
+        "definedInSource": "TCE"
+      }
     ],
     "subclasses": [],
     "damageTypes": [
@@ -3771,10 +4166,23 @@
     "duration": "Instantaneous",
     "concentration": false,
     "ritual": false,
-    "classes": [
-      "Bard",
-      "Sorcerer",
-      "Wizard"
+    "classes": [],
+    "classVariants": [
+      {
+        "name": "Bard",
+        "source": "SCC",
+        "definedInSource": "PHB"
+      },
+      {
+        "name": "Sorcerer",
+        "source": "SCC",
+        "definedInSource": "PHB"
+      },
+      {
+        "name": "Wizard",
+        "source": "SCC",
+        "definedInSource": "PHB"
+      }
     ],
     "subclasses": [],
     "damageTypes": [],
@@ -3834,7 +4242,12 @@
     "duration": "8 hours",
     "concentration": false,
     "ritual": false,
-    "classes": [],
+    "classes": [
+      "Artificer",
+      "Druid",
+      "Ranger",
+      "Wizard"
+    ],
     "subclasses": [],
     "damageTypes": [],
     "savingThrows": [
@@ -3897,7 +4310,9 @@
     "concentration": true,
     "ritual": false,
     "classes": [
-      "Artificer"
+      "Artificer",
+      "Sorcerer",
+      "Wizard"
     ],
     "subclasses": [],
     "damageTypes": [
@@ -4154,7 +4569,9 @@
     "duration": "Concentration, up to 1 minute",
     "concentration": true,
     "ritual": false,
-    "classes": [],
+    "classes": [
+      "Ranger"
+    ],
     "subclasses": [],
     "damageTypes": [
       "force"
@@ -4183,7 +4600,10 @@
     "duration": "Instantaneous",
     "concentration": false,
     "ritual": false,
-    "classes": [],
+    "classes": [
+      "Sorcerer",
+      "Wizard"
+    ],
     "subclasses": [],
     "damageTypes": [
       "fire"
@@ -4214,9 +4634,25 @@
     "concentration": false,
     "ritual": false,
     "classes": [
-      "Artificer",
       "Cleric",
       "Paladin"
+    ],
+    "classVariants": [
+      {
+        "name": "Artificer",
+        "source": "PHB",
+        "definedInSource": "TCE"
+      },
+      {
+        "name": "Bard",
+        "source": "PHB",
+        "definedInSource": "TCE"
+      },
+      {
+        "name": "Ranger",
+        "source": "PHB",
+        "definedInSource": "TCE"
+      }
     ],
     "subclasses": [],
     "damageTypes": [],
@@ -4243,12 +4679,33 @@
     "duration": "24 hours",
     "concentration": false,
     "ritual": false,
-    "classes": [
-      "Artificer",
-      "Druid",
-      "Ranger",
-      "Sorcerer",
-      "Wizard"
+    "classes": [],
+    "classVariants": [
+      {
+        "name": "Druid",
+        "source": "AAG",
+        "definedInSource": "PHB"
+      },
+      {
+        "name": "Ranger",
+        "source": "AAG",
+        "definedInSource": "PHB"
+      },
+      {
+        "name": "Sorcerer",
+        "source": "AAG",
+        "definedInSource": "PHB"
+      },
+      {
+        "name": "Wizard",
+        "source": "AAG",
+        "definedInSource": "PHB"
+      },
+      {
+        "name": "Artificer",
+        "source": "AAG",
+        "definedInSource": "TCE"
+      }
     ],
     "subclasses": [],
     "damageTypes": [],
@@ -4276,9 +4733,15 @@
     "concentration": true,
     "ritual": false,
     "classes": [
-      "Artificer",
       "Sorcerer",
       "Wizard"
+    ],
+    "classVariants": [
+      {
+        "name": "Artificer",
+        "source": "PHB",
+        "definedInSource": "TCE"
+      }
     ],
     "subclasses": [],
     "damageTypes": [
@@ -4362,8 +4825,14 @@
     "concentration": false,
     "ritual": false,
     "classes": [
-      "Artificer",
       "Wizard"
+    ],
+    "classVariants": [
+      {
+        "name": "Artificer",
+        "source": "PHB",
+        "definedInSource": "TCE"
+      }
     ],
     "subclasses": [],
     "damageTypes": [],
@@ -4393,6 +4862,18 @@
     "ritual": true,
     "classes": [
       "Cleric"
+    ],
+    "classVariants": [
+      {
+        "name": "Druid",
+        "source": "PHB",
+        "definedInSource": "TCE"
+      },
+      {
+        "name": "Wizard",
+        "source": "PHB",
+        "definedInSource": "TCE"
+      }
     ],
     "subclasses": [],
     "damageTypes": [],
@@ -4522,9 +5003,15 @@
     "concentration": true,
     "ritual": false,
     "classes": [
-      "Artificer",
       "Sorcerer",
       "Wizard"
+    ],
+    "classVariants": [
+      {
+        "name": "Artificer",
+        "source": "PHB",
+        "definedInSource": "TCE"
+      }
     ],
     "subclasses": [],
     "damageTypes": [],
@@ -4551,11 +5038,28 @@
     "duration": "1 hour",
     "concentration": false,
     "ritual": false,
-    "classes": [
-      "Bard",
-      "Cleric",
-      "Warlock",
-      "Wizard"
+    "classes": [],
+    "classVariants": [
+      {
+        "name": "Bard",
+        "source": "SCC",
+        "definedInSource": "PHB"
+      },
+      {
+        "name": "Cleric",
+        "source": "SCC",
+        "definedInSource": "PHB"
+      },
+      {
+        "name": "Warlock",
+        "source": "SCC",
+        "definedInSource": "PHB"
+      },
+      {
+        "name": "Wizard",
+        "source": "SCC",
+        "definedInSource": "PHB"
+      }
     ],
     "subclasses": [],
     "damageTypes": [],
@@ -4679,9 +5183,20 @@
     "concentration": false,
     "ritual": false,
     "classes": [
-      "Artificer",
       "Cleric",
       "Wizard"
+    ],
+    "classVariants": [
+      {
+        "name": "Artificer",
+        "source": "PHB",
+        "definedInSource": "TCE"
+      },
+      {
+        "name": "Druid",
+        "source": "PHB",
+        "definedInSource": "TCE"
+      }
     ],
     "subclasses": [],
     "damageTypes": [],
@@ -4809,11 +5324,17 @@
     "concentration": false,
     "ritual": false,
     "classes": [
-      "Artificer",
       "Druid",
       "Ranger",
       "Sorcerer",
       "Wizard"
+    ],
+    "classVariants": [
+      {
+        "name": "Artificer",
+        "source": "PHB",
+        "definedInSource": "TCE"
+      }
     ],
     "subclasses": [],
     "damageTypes": [],
@@ -4876,7 +5397,10 @@
     "duration": "Concentration, up to 1 minute",
     "concentration": true,
     "ritual": false,
-    "classes": [],
+    "classes": [
+      "Sorcerer",
+      "Wizard"
+    ],
     "subclasses": [],
     "damageTypes": [
       "acid",
@@ -4910,7 +5434,11 @@
     "duration": "Concentration, up to 1 minute",
     "concentration": true,
     "ritual": false,
-    "classes": [],
+    "classes": [
+      "Druid",
+      "Sorcerer",
+      "Wizard"
+    ],
     "subclasses": [],
     "damageTypes": [
       "bludgeoning"
@@ -4942,7 +5470,12 @@
     "duration": "Concentration, up to 1 minute",
     "concentration": true,
     "ritual": false,
-    "classes": [],
+    "classes": [
+      "Druid",
+      "Sorcerer",
+      "Warlock",
+      "Wizard"
+    ],
     "subclasses": [],
     "damageTypes": [],
     "savingThrows": [
@@ -4971,11 +5504,27 @@
     "concentration": true,
     "ritual": false,
     "classes": [
-      "Artificer",
       "Bard",
       "Cleric",
       "Druid",
       "Sorcerer"
+    ],
+    "classVariants": [
+      {
+        "name": "Artificer",
+        "source": "PHB",
+        "definedInSource": "TCE"
+      },
+      {
+        "name": "Ranger",
+        "source": "PHB",
+        "definedInSource": "TCE"
+      },
+      {
+        "name": "Wizard",
+        "source": "PHB",
+        "definedInSource": "TCE"
+      }
     ],
     "subclasses": [],
     "damageTypes": [],
@@ -5045,9 +5594,25 @@
     "concentration": true,
     "ritual": false,
     "classes": [
-      "Artificer",
       "Sorcerer",
       "Wizard"
+    ],
+    "classVariants": [
+      {
+        "name": "Artificer",
+        "source": "PHB",
+        "definedInSource": "TCE"
+      },
+      {
+        "name": "Bard",
+        "source": "PHB",
+        "definedInSource": "TCE"
+      },
+      {
+        "name": "Druid",
+        "source": "PHB",
+        "definedInSource": "TCE"
+      }
     ],
     "subclasses": [],
     "damageTypes": [],
@@ -5188,6 +5753,13 @@
     "classes": [
       "Druid"
     ],
+    "classVariants": [
+      {
+        "name": "Sorcerer",
+        "source": "PHB",
+        "definedInSource": "TCE"
+      }
+    ],
     "subclasses": [],
     "damageTypes": [
       "fire"
@@ -5221,6 +5793,13 @@
       "Druid",
       "Wizard"
     ],
+    "classVariants": [
+      {
+        "name": "Sorcerer",
+        "source": "PHB",
+        "definedInSource": "TCE"
+      }
+    ],
     "subclasses": [],
     "damageTypes": [
       "fire"
@@ -5252,9 +5831,18 @@
     "duration": "Concentration, up to 1 hour",
     "concentration": true,
     "ritual": false,
-    "classes": [
-      "Warlock",
-      "Wizard"
+    "classes": [],
+    "classVariants": [
+      {
+        "name": "Warlock",
+        "source": "LLK",
+        "definedInSource": "PHB"
+      },
+      {
+        "name": "Wizard",
+        "source": "LLK",
+        "definedInSource": "PHB"
+      }
     ],
     "subclasses": [],
     "damageTypes": [],
@@ -5314,6 +5902,13 @@
       "Cleric",
       "Wizard"
     ],
+    "classVariants": [
+      {
+        "name": "Paladin",
+        "source": "PHB",
+        "definedInSource": "TCE"
+      }
+    ],
     "subclasses": [],
     "damageTypes": [],
     "savingThrows": [],
@@ -5340,9 +5935,18 @@
     "duration": "Instantaneous",
     "concentration": false,
     "ritual": false,
-    "classes": [
-      "Bard",
-      "Wizard"
+    "classes": [],
+    "classVariants": [
+      {
+        "name": "Bard",
+        "source": "AI",
+        "definedInSource": "PHB"
+      },
+      {
+        "name": "Wizard",
+        "source": "AI",
+        "definedInSource": "PHB"
+      }
     ],
     "subclasses": [],
     "damageTypes": [],
@@ -5382,6 +5986,13 @@
       "Sorcerer",
       "Wizard"
     ],
+    "classVariants": [
+      {
+        "name": "Ranger",
+        "source": "PHB",
+        "definedInSource": "TCE"
+      }
+    ],
     "subclasses": [],
     "damageTypes": [],
     "savingThrows": [
@@ -5412,7 +6023,10 @@
     "duration": "Concentration, up to 1 minute",
     "concentration": true,
     "ritual": false,
-    "classes": [],
+    "classes": [
+      "Druid",
+      "Ranger"
+    ],
     "subclasses": [],
     "damageTypes": [],
     "savingThrows": [],
@@ -5441,9 +6055,15 @@
     "concentration": true,
     "ritual": false,
     "classes": [
-      "Artificer",
       "Bard",
       "Druid"
+    ],
+    "classVariants": [
+      {
+        "name": "Artificer",
+        "source": "PHB",
+        "definedInSource": "TCE"
+      }
     ],
     "subclasses": [],
     "damageTypes": [
@@ -5538,11 +6158,17 @@
     "concentration": true,
     "ritual": false,
     "classes": [
-      "Artificer",
       "Bard",
       "Sorcerer",
       "Warlock",
       "Wizard"
+    ],
+    "classVariants": [
+      {
+        "name": "Artificer",
+        "source": "PHB",
+        "definedInSource": "TCE"
+      }
     ],
     "subclasses": [],
     "damageTypes": [],
@@ -5569,8 +6195,13 @@
     "duration": "1 minute",
     "concentration": false,
     "ritual": false,
-    "classes": [
-      "Wizard"
+    "classes": [],
+    "classVariants": [
+      {
+        "name": "Wizard",
+        "source": "AI",
+        "definedInSource": "PHB"
+      }
     ],
     "subclasses": [],
     "damageTypes": [],
@@ -5599,11 +6230,28 @@
     "duration": "Concentration, up to 1 minute",
     "concentration": true,
     "ritual": false,
-    "classes": [
-      "Artificer",
-      "Bard",
-      "Sorcerer",
-      "Wizard"
+    "classes": [],
+    "classVariants": [
+      {
+        "name": "Bard",
+        "source": "SCC",
+        "definedInSource": "PHB"
+      },
+      {
+        "name": "Sorcerer",
+        "source": "SCC",
+        "definedInSource": "PHB"
+      },
+      {
+        "name": "Wizard",
+        "source": "SCC",
+        "definedInSource": "PHB"
+      },
+      {
+        "name": "Artificer",
+        "source": "SCC",
+        "definedInSource": "TCE"
+      }
     ],
     "subclasses": [],
     "damageTypes": [
@@ -5674,12 +6322,18 @@
     "concentration": false,
     "ritual": false,
     "classes": [
-      "Artificer",
       "Bard",
       "Cleric",
       "Druid",
       "Paladin",
       "Ranger"
+    ],
+    "classVariants": [
+      {
+        "name": "Artificer",
+        "source": "PHB",
+        "definedInSource": "TCE"
+      }
     ],
     "subclasses": [],
     "damageTypes": [],
@@ -5707,9 +6361,15 @@
     "concentration": true,
     "ritual": false,
     "classes": [
-      "Artificer",
       "Sorcerer",
       "Wizard"
+    ],
+    "classVariants": [
+      {
+        "name": "Artificer",
+        "source": "PHB",
+        "definedInSource": "TCE"
+      }
     ],
     "subclasses": [],
     "damageTypes": [],
@@ -5806,9 +6466,15 @@
     "concentration": false,
     "ritual": true,
     "classes": [
-      "Artificer",
       "Bard",
       "Wizard"
+    ],
+    "classVariants": [
+      {
+        "name": "Artificer",
+        "source": "PHB",
+        "definedInSource": "TCE"
+      }
     ],
     "subclasses": [],
     "damageTypes": [],
@@ -5838,9 +6504,25 @@
     "concentration": true,
     "ritual": false,
     "classes": [
-      "Artificer",
       "Paladin",
       "Wizard"
+    ],
+    "classVariants": [
+      {
+        "name": "Artificer",
+        "source": "PHB",
+        "definedInSource": "TCE"
+      },
+      {
+        "name": "Ranger",
+        "source": "PHB",
+        "definedInSource": "TCE"
+      },
+      {
+        "name": "Sorcerer",
+        "source": "PHB",
+        "definedInSource": "TCE"
+      }
     ],
     "subclasses": [],
     "damageTypes": [],
@@ -5867,7 +6549,10 @@
     "duration": "Concentration, up to 1 minute",
     "concentration": true,
     "ritual": false,
-    "classes": [],
+    "classes": [
+      "Sorcerer",
+      "Wizard"
+    ],
     "subclasses": [],
     "damageTypes": [
       "bludgeoning"
@@ -5930,7 +6615,11 @@
     "duration": "Concentration, up to 1 hour",
     "concentration": true,
     "ritual": false,
-    "classes": [],
+    "classes": [
+      "Sorcerer",
+      "Warlock",
+      "Wizard"
+    ],
     "subclasses": [],
     "damageTypes": [
       "psychic"
@@ -5964,6 +6653,13 @@
       "Sorcerer",
       "Warlock",
       "Wizard"
+    ],
+    "classVariants": [
+      {
+        "name": "Bard",
+        "source": "PHB",
+        "definedInSource": "TCE"
+      }
     ],
     "subclasses": [],
     "damageTypes": [],
@@ -6059,7 +6755,11 @@
     "duration": "Concentration, up to 1 minute",
     "concentration": true,
     "ritual": false,
-    "classes": [],
+    "classes": [
+      "Bard",
+      "Sorcerer",
+      "Wizard"
+    ],
     "subclasses": [],
     "damageTypes": [],
     "savingThrows": [
@@ -6231,6 +6931,13 @@
     "classes": [
       "Cleric"
     ],
+    "classVariants": [
+      {
+        "name": "Paladin",
+        "source": "PHB",
+        "definedInSource": "TCE"
+      }
+    ],
     "subclasses": [],
     "damageTypes": [],
     "savingThrows": [],
@@ -6257,11 +6964,17 @@
     "concentration": false,
     "ritual": false,
     "classes": [
-      "Artificer",
       "Cleric",
       "Druid",
       "Paladin",
       "Ranger"
+    ],
+    "classVariants": [
+      {
+        "name": "Artificer",
+        "source": "PHB",
+        "definedInSource": "TCE"
+      }
     ],
     "subclasses": [],
     "damageTypes": [],
@@ -6289,7 +7002,12 @@
     "duration": "Instantaneous",
     "concentration": false,
     "ritual": false,
-    "classes": [],
+    "classes": [
+      "Artificer",
+      "Bard",
+      "Sorcerer",
+      "Wizard"
+    ],
     "subclasses": [],
     "damageTypes": [],
     "savingThrows": [
@@ -6363,7 +7081,10 @@
     "duration": "Instantaneous",
     "concentration": false,
     "ritual": false,
-    "classes": [],
+    "classes": [
+      "Sorcerer",
+      "Wizard"
+    ],
     "subclasses": [],
     "damageTypes": [
       "cold"
@@ -6394,8 +7115,14 @@
     "concentration": false,
     "ritual": false,
     "classes": [
-      "Artificer",
       "Wizard"
+    ],
+    "classVariants": [
+      {
+        "name": "Artificer",
+        "source": "PHB",
+        "definedInSource": "TCE"
+      }
     ],
     "subclasses": [],
     "damageTypes": [],
@@ -6458,10 +7185,16 @@
     "concentration": false,
     "ritual": false,
     "classes": [
-      "Artificer",
       "Bard",
       "Sorcerer",
       "Wizard"
+    ],
+    "classVariants": [
+      {
+        "name": "Artificer",
+        "source": "PHB",
+        "definedInSource": "TCE"
+      }
     ],
     "subclasses": [],
     "damageTypes": [],
@@ -6488,7 +7221,11 @@
     "duration": "Concentration, up to 1 minute",
     "concentration": true,
     "ritual": false,
-    "classes": [],
+    "classes": [
+      "Sorcerer",
+      "Warlock",
+      "Wizard"
+    ],
     "subclasses": [],
     "damageTypes": [
       "psychic"
@@ -6583,7 +7320,12 @@
     "duration": "Concentration, up to 1 hour",
     "concentration": true,
     "ritual": true,
-    "classes": [],
+    "classes": [
+      "Artificer",
+      "Bard",
+      "Druid",
+      "Wizard"
+    ],
     "subclasses": [],
     "damageTypes": [],
     "savingThrows": [],
@@ -6609,7 +7351,10 @@
     "duration": "Instantaneous",
     "concentration": false,
     "ritual": false,
-    "classes": [],
+    "classes": [
+      "Sorcerer",
+      "Wizard"
+    ],
     "subclasses": [],
     "damageTypes": [
       "cold"
@@ -6640,10 +7385,16 @@
     "concentration": true,
     "ritual": false,
     "classes": [
-      "Artificer",
       "Sorcerer",
       "Warlock",
       "Wizard"
+    ],
+    "classVariants": [
+      {
+        "name": "Artificer",
+        "source": "PHB",
+        "definedInSource": "TCE"
+      }
     ],
     "subclasses": [],
     "damageTypes": [],
@@ -6734,7 +7485,12 @@
     "duration": "Instantaneous",
     "concentration": false,
     "ritual": false,
-    "classes": [],
+    "classes": [
+      "Bard",
+      "Sorcerer",
+      "Warlock",
+      "Wizard"
+    ],
     "subclasses": [],
     "damageTypes": [
       "force"
@@ -6800,7 +7556,10 @@
     "duration": "Concentration, up to 1 hour",
     "concentration": true,
     "ritual": false,
-    "classes": [],
+    "classes": [
+      "Druid",
+      "Ranger"
+    ],
     "subclasses": [],
     "damageTypes": [],
     "savingThrows": [],
@@ -6827,7 +7586,10 @@
     "duration": "1 round",
     "concentration": false,
     "ritual": false,
-    "classes": [],
+    "classes": [
+      "Sorcerer",
+      "Wizard"
+    ],
     "subclasses": [],
     "damageTypes": [
       "psychic"
@@ -6857,10 +7619,23 @@
     "duration": "Instantaneous",
     "concentration": false,
     "ritual": false,
-    "classes": [
-      "Artificer",
-      "Sorcerer",
-      "Wizard"
+    "classes": [],
+    "classVariants": [
+      {
+        "name": "Sorcerer",
+        "source": "SCC",
+        "definedInSource": "PHB"
+      },
+      {
+        "name": "Wizard",
+        "source": "SCC",
+        "definedInSource": "PHB"
+      },
+      {
+        "name": "Artificer",
+        "source": "SCC",
+        "definedInSource": "TCE"
+      }
     ],
     "subclasses": [],
     "damageTypes": [],
@@ -6892,6 +7667,13 @@
     "classes": [
       "Cleric"
     ],
+    "classVariants": [
+      {
+        "name": "Paladin",
+        "source": "PHB",
+        "definedInSource": "TCE"
+      }
+    ],
     "subclasses": [],
     "damageTypes": [],
     "savingThrows": [],
@@ -6918,7 +7700,12 @@
     "duration": "Concentration, up to 10 minutes",
     "concentration": true,
     "ritual": false,
-    "classes": [],
+    "classes": [
+      "Bard",
+      "Druid",
+      "Sorcerer",
+      "Wizard"
+    ],
     "subclasses": [],
     "damageTypes": [],
     "savingThrows": [],
@@ -6955,10 +7742,23 @@
     "duration": "Concentration, up to 1 minute",
     "concentration": true,
     "ritual": false,
-    "classes": [
-      "Sorcerer",
-      "Warlock",
-      "Wizard"
+    "classes": [],
+    "classVariants": [
+      {
+        "name": "Sorcerer",
+        "source": "SatO",
+        "definedInSource": "PHB"
+      },
+      {
+        "name": "Warlock",
+        "source": "SatO",
+        "definedInSource": "PHB"
+      },
+      {
+        "name": "Wizard",
+        "source": "SatO",
+        "definedInSource": "PHB"
+      }
     ],
     "subclasses": [],
     "damageTypes": [],
@@ -6988,9 +7788,15 @@
     "concentration": true,
     "ritual": false,
     "classes": [
-      "Artificer",
       "Sorcerer",
       "Wizard"
+    ],
+    "classVariants": [
+      {
+        "name": "Artificer",
+        "source": "PHB",
+        "definedInSource": "TCE"
+      }
     ],
     "subclasses": [],
     "damageTypes": [
@@ -7025,10 +7831,23 @@
     "duration": "Instantaneous",
     "concentration": false,
     "ritual": false,
-    "classes": [
-      "Druid",
-      "Sorcerer",
-      "Wizard"
+    "classes": [],
+    "classVariants": [
+      {
+        "name": "Druid",
+        "source": "SCC",
+        "definedInSource": "PHB"
+      },
+      {
+        "name": "Sorcerer",
+        "source": "SCC",
+        "definedInSource": "PHB"
+      },
+      {
+        "name": "Wizard",
+        "source": "SCC",
+        "definedInSource": "PHB"
+      }
     ],
     "subclasses": [],
     "damageTypes": [
@@ -7151,7 +7970,12 @@
     "duration": "Instantaneous",
     "concentration": false,
     "ritual": false,
-    "classes": [],
+    "classes": [
+      "Bard",
+      "Sorcerer",
+      "Warlock",
+      "Wizard"
+    ],
     "subclasses": [],
     "damageTypes": [
       "psychic"
@@ -7181,7 +8005,12 @@
     "duration": "Concentration, up to 1 minute",
     "concentration": true,
     "ritual": false,
-    "classes": [],
+    "classes": [
+      "Artificer",
+      "Ranger",
+      "Sorcerer",
+      "Wizard"
+    ],
     "subclasses": [],
     "damageTypes": [
       "fire"
@@ -7212,6 +8041,18 @@
     "ritual": false,
     "classes": [
       "Paladin"
+    ],
+    "classVariants": [
+      {
+        "name": "Cleric",
+        "source": "PHB",
+        "definedInSource": "TCE"
+      },
+      {
+        "name": "Druid",
+        "source": "PHB",
+        "definedInSource": "TCE"
+      }
     ],
     "subclasses": [],
     "damageTypes": [],
@@ -7344,9 +8185,15 @@
     "concentration": false,
     "ritual": false,
     "classes": [
-      "Artificer",
       "Sorcerer",
       "Wizard"
+    ],
+    "classVariants": [
+      {
+        "name": "Artificer",
+        "source": "PHB",
+        "definedInSource": "TCE"
+      }
     ],
     "subclasses": [],
     "damageTypes": [],
@@ -7408,7 +8255,12 @@
     "duration": "10 minutes",
     "concentration": false,
     "ritual": false,
-    "classes": [],
+    "classes": [
+      "Artificer",
+      "Bard",
+      "Sorcerer",
+      "Wizard"
+    ],
     "subclasses": [],
     "damageTypes": [],
     "savingThrows": [],
@@ -7569,9 +8421,15 @@
     "concentration": false,
     "ritual": false,
     "classes": [
-      "Artificer",
       "Cleric",
       "Paladin"
+    ],
+    "classVariants": [
+      {
+        "name": "Artificer",
+        "source": "PHB",
+        "definedInSource": "TCE"
+      }
     ],
     "subclasses": [],
     "damageTypes": [],
@@ -7663,7 +8521,6 @@
     "concentration": false,
     "ritual": false,
     "classes": [
-      "Artificer",
       "Bard",
       "Cleric",
       "Druid",
@@ -7671,6 +8528,13 @@
       "Sorcerer",
       "Warlock",
       "Wizard"
+    ],
+    "classVariants": [
+      {
+        "name": "Artificer",
+        "source": "PHB",
+        "definedInSource": "TCE"
+      }
     ],
     "subclasses": [],
     "damageTypes": [],
@@ -7698,8 +8562,24 @@
     "concentration": true,
     "ritual": false,
     "classes": [
-      "Artificer",
       "Paladin"
+    ],
+    "classVariants": [
+      {
+        "name": "Artificer",
+        "source": "PHB",
+        "definedInSource": "TCE"
+      },
+      {
+        "name": "Druid",
+        "source": "PHB",
+        "definedInSource": "TCE"
+      },
+      {
+        "name": "Ranger",
+        "source": "PHB",
+        "definedInSource": "TCE"
+      }
     ],
     "subclasses": [],
     "damageTypes": [
@@ -7732,7 +8612,12 @@
     "duration": "Concentration, up to 1 minute",
     "concentration": true,
     "ritual": false,
-    "classes": [],
+    "classes": [
+      "Bard",
+      "Sorcerer",
+      "Warlock",
+      "Wizard"
+    ],
     "subclasses": [],
     "damageTypes": [],
     "savingThrows": [
@@ -7761,7 +8646,11 @@
     "duration": "Instantaneous",
     "concentration": false,
     "ritual": false,
-    "classes": [],
+    "classes": [
+      "Druid",
+      "Sorcerer",
+      "Wizard"
+    ],
     "subclasses": [],
     "damageTypes": [
       "bludgeoning"
@@ -7791,10 +8680,23 @@
     "duration": "Concentration, up to 1 hour",
     "concentration": true,
     "ritual": false,
-    "classes": [
-      "Bard",
-      "Cleric",
-      "Wizard"
+    "classes": [],
+    "classVariants": [
+      {
+        "name": "Bard",
+        "source": "AI",
+        "definedInSource": "PHB"
+      },
+      {
+        "name": "Cleric",
+        "source": "AI",
+        "definedInSource": "PHB"
+      },
+      {
+        "name": "Wizard",
+        "source": "AI",
+        "definedInSource": "PHB"
+      }
     ],
     "subclasses": [],
     "damageTypes": [],
@@ -7925,7 +8827,13 @@
     "duration": "Concentration, up to 1 hour",
     "concentration": true,
     "ritual": false,
-    "classes": [],
+    "classes": [
+      "Artificer",
+      "Druid",
+      "Ranger",
+      "Sorcerer",
+      "Wizard"
+    ],
     "subclasses": [],
     "damageTypes": [
       "fire"
@@ -7954,10 +8862,16 @@
     "concentration": true,
     "ritual": false,
     "classes": [
-      "Artificer",
       "Sorcerer",
       "Warlock",
       "Wizard"
+    ],
+    "classVariants": [
+      {
+        "name": "Artificer",
+        "source": "PHB",
+        "definedInSource": "TCE"
+      }
     ],
     "subclasses": [],
     "damageTypes": [],
@@ -7984,8 +8898,13 @@
     "duration": "24 hours",
     "concentration": false,
     "ritual": false,
-    "classes": [
-      "Wizard"
+    "classes": [],
+    "classVariants": [
+      {
+        "name": "Wizard",
+        "source": "LLK",
+        "definedInSource": "PHB"
+      }
     ],
     "subclasses": [],
     "damageTypes": [],
@@ -8059,10 +8978,16 @@
     "concentration": false,
     "ritual": false,
     "classes": [
-      "Artificer",
       "Bard",
       "Cleric",
       "Wizard"
+    ],
+    "classVariants": [
+      {
+        "name": "Artificer",
+        "source": "PHB",
+        "definedInSource": "TCE"
+      }
     ],
     "subclasses": [],
     "damageTypes": [
@@ -8116,9 +9041,15 @@
     "concentration": true,
     "ritual": false,
     "classes": [
-      "Artificer",
       "Sorcerer",
       "Wizard"
+    ],
+    "classVariants": [
+      {
+        "name": "Artificer",
+        "source": "PHB",
+        "definedInSource": "TCE"
+      }
     ],
     "subclasses": [],
     "damageTypes": [],
@@ -8214,11 +9145,28 @@
     "duration": "Concentration, up to 1 minute",
     "concentration": true,
     "ritual": false,
-    "classes": [
-      "Cleric",
-      "Sorcerer",
-      "Warlock",
-      "Wizard"
+    "classes": [],
+    "classVariants": [
+      {
+        "name": "Cleric",
+        "source": "AI",
+        "definedInSource": "PHB"
+      },
+      {
+        "name": "Sorcerer",
+        "source": "AI",
+        "definedInSource": "PHB"
+      },
+      {
+        "name": "Wizard",
+        "source": "AI",
+        "definedInSource": "PHB"
+      },
+      {
+        "name": "Warlock",
+        "source": "AI",
+        "definedInSource": "PHB"
+      }
     ],
     "subclasses": [],
     "damageTypes": [],
@@ -8249,7 +9197,11 @@
     "concentration": true,
     "ritual": false,
     "classes": [
-      "Artificer"
+      "Artificer",
+      "Bard",
+      "Sorcerer",
+      "Warlock",
+      "Wizard"
     ],
     "subclasses": [],
     "damageTypes": [],
@@ -8307,7 +9259,10 @@
     "duration": "Instantaneous",
     "concentration": false,
     "ritual": false,
-    "classes": [],
+    "classes": [
+      "Cleric",
+      "Wizard"
+    ],
     "subclasses": [],
     "damageTypes": [
       "necrotic"
@@ -8403,11 +9358,28 @@
     "duration": "Until dispel or trigger",
     "concentration": false,
     "ritual": false,
-    "classes": [
-      "Artificer",
-      "Bard",
-      "Cleric",
-      "Wizard"
+    "classes": [],
+    "classVariants": [
+      {
+        "name": "Bard",
+        "source": "AitFR-AVT",
+        "definedInSource": "PHB"
+      },
+      {
+        "name": "Cleric",
+        "source": "AitFR-AVT",
+        "definedInSource": "PHB"
+      },
+      {
+        "name": "Wizard",
+        "source": "AitFR-AVT",
+        "definedInSource": "PHB"
+      },
+      {
+        "name": "Artificer",
+        "source": "AitFR-AVT",
+        "definedInSource": "TCE"
+      }
     ],
     "subclasses": [],
     "damageTypes": [],
@@ -8531,6 +9503,13 @@
     "classes": [
       "Cleric"
     ],
+    "classVariants": [
+      {
+        "name": "Bard",
+        "source": "PHB",
+        "definedInSource": "TCE"
+      }
+    ],
     "subclasses": [],
     "damageTypes": [],
     "savingThrows": [],
@@ -8559,6 +9538,13 @@
     "classes": [
       "Cleric",
       "Druid"
+    ],
+    "classVariants": [
+      {
+        "name": "Ranger",
+        "source": "PHB",
+        "definedInSource": "TCE"
+      }
     ],
     "subclasses": [],
     "damageTypes": [
@@ -8589,7 +9575,10 @@
     "duration": "Concentration, up to 10 minutes",
     "concentration": true,
     "ritual": false,
-    "classes": [],
+    "classes": [
+      "Sorcerer",
+      "Wizard"
+    ],
     "subclasses": [],
     "damageTypes": [
       "fire"
@@ -8619,9 +9608,18 @@
     "duration": "1 hour",
     "concentration": false,
     "ritual": false,
-    "classes": [
-      "Bard",
-      "Cleric"
+    "classes": [],
+    "classVariants": [
+      {
+        "name": "Bard",
+        "source": "AI",
+        "definedInSource": "PHB"
+      },
+      {
+        "name": "Cleric",
+        "source": "AI",
+        "definedInSource": "PHB"
+      }
     ],
     "subclasses": [],
     "damageTypes": [],
@@ -8748,12 +9746,18 @@
     "concentration": true,
     "ritual": false,
     "classes": [
-      "Artificer",
       "Cleric",
       "Druid",
       "Ranger",
       "Sorcerer",
       "Wizard"
+    ],
+    "classVariants": [
+      {
+        "name": "Artificer",
+        "source": "PHB",
+        "definedInSource": "TCE"
+      }
     ],
     "subclasses": [],
     "damageTypes": [],
@@ -8843,9 +9847,25 @@
     "concentration": false,
     "ritual": false,
     "classes": [
-      "Artificer",
       "Cleric",
       "Paladin"
+    ],
+    "classVariants": [
+      {
+        "name": "Artificer",
+        "source": "PHB",
+        "definedInSource": "TCE"
+      },
+      {
+        "name": "Druid",
+        "source": "PHB",
+        "definedInSource": "TCE"
+      },
+      {
+        "name": "Ranger",
+        "source": "PHB",
+        "definedInSource": "TCE"
+      }
     ],
     "subclasses": [],
     "damageTypes": [],
@@ -8942,6 +9962,13 @@
       "Sorcerer",
       "Wizard"
     ],
+    "classVariants": [
+      {
+        "name": "Bard",
+        "source": "PHB",
+        "definedInSource": "TCE"
+      }
+    ],
     "subclasses": [],
     "damageTypes": [],
     "savingThrows": [
@@ -8975,6 +10002,13 @@
     "classes": [
       "Bard",
       "Cleric"
+    ],
+    "classVariants": [
+      {
+        "name": "Wizard",
+        "source": "PHB",
+        "definedInSource": "TCE"
+      }
     ],
     "subclasses": [],
     "damageTypes": [],
@@ -9070,7 +10104,12 @@
     "duration": "Concentration, up to 1 minute",
     "concentration": true,
     "ritual": false,
-    "classes": [],
+    "classes": [
+      "Cleric",
+      "Paladin",
+      "Warlock",
+      "Wizard"
+    ],
     "subclasses": [],
     "damageTypes": [
       "radiant",
@@ -9136,7 +10175,12 @@
     "duration": "Concentration, up to 1 hour",
     "concentration": true,
     "ritual": false,
-    "classes": [],
+    "classes": [
+      "Druid",
+      "Ranger",
+      "Warlock",
+      "Wizard"
+    ],
     "subclasses": [],
     "damageTypes": [],
     "savingThrows": [],
@@ -9163,7 +10207,10 @@
     "duration": "Concentration, up to 1 hour",
     "concentration": true,
     "ritual": false,
-    "classes": [],
+    "classes": [
+      "Warlock",
+      "Wizard"
+    ],
     "subclasses": [],
     "damageTypes": [],
     "savingThrows": [],
@@ -9235,7 +10282,10 @@
     "duration": "Concentration, up to 1 hour",
     "concentration": true,
     "ritual": false,
-    "classes": [],
+    "classes": [
+      "Warlock",
+      "Wizard"
+    ],
     "subclasses": [],
     "damageTypes": [],
     "savingThrows": [],
@@ -9262,7 +10312,10 @@
     "duration": "Concentration, up to 1 hour",
     "concentration": true,
     "ritual": false,
-    "classes": [],
+    "classes": [
+      "Warlock",
+      "Wizard"
+    ],
     "subclasses": [],
     "damageTypes": [],
     "savingThrows": [],
@@ -9289,7 +10342,11 @@
     "duration": "Instantaneous",
     "concentration": false,
     "ritual": false,
-    "classes": [],
+    "classes": [
+      "Sorcerer",
+      "Warlock",
+      "Wizard"
+    ],
     "subclasses": [],
     "damageTypes": [
       "thunder"
@@ -9320,7 +10377,11 @@
     "duration": "Instantaneous",
     "concentration": false,
     "ritual": false,
-    "classes": [],
+    "classes": [
+      "Druid",
+      "Sorcerer",
+      "Wizard"
+    ],
     "subclasses": [],
     "damageTypes": [
       "bludgeoning"
@@ -9350,7 +10411,10 @@
     "duration": "8 hours",
     "concentration": false,
     "ritual": false,
-    "classes": [],
+    "classes": [
+      "Artificer",
+      "Wizard"
+    ],
     "subclasses": [],
     "damageTypes": [],
     "savingThrows": [],
@@ -9414,6 +10478,13 @@
       "Warlock",
       "Wizard"
     ],
+    "classVariants": [
+      {
+        "name": "Sorcerer",
+        "source": "PHB",
+        "definedInSource": "TCE"
+      }
+    ],
     "subclasses": [],
     "damageTypes": [
       "necrotic"
@@ -9441,7 +10512,9 @@
     "duration": "Concentration, up to 10 minutes",
     "concentration": true,
     "ritual": false,
-    "classes": [],
+    "classes": [
+      "Wizard"
+    ],
     "subclasses": [],
     "damageTypes": [],
     "savingThrows": [],
@@ -9467,7 +10540,11 @@
     "duration": "Concentration, up to 10 minutes",
     "concentration": true,
     "ritual": false,
-    "classes": [],
+    "classes": [
+      "Druid",
+      "Sorcerer",
+      "Wizard"
+    ],
     "subclasses": [],
     "damageTypes": [],
     "savingThrows": [],
@@ -9495,11 +10572,17 @@
     "concentration": false,
     "ritual": true,
     "classes": [
-      "Artificer",
       "Druid",
       "Ranger",
       "Sorcerer",
       "Wizard"
+    ],
+    "classVariants": [
+      {
+        "name": "Artificer",
+        "source": "PHB",
+        "definedInSource": "TCE"
+      }
     ],
     "subclasses": [],
     "damageTypes": [],
@@ -9527,11 +10610,17 @@
     "concentration": false,
     "ritual": true,
     "classes": [
-      "Artificer",
       "Cleric",
       "Druid",
       "Ranger",
       "Sorcerer"
+    ],
+    "classVariants": [
+      {
+        "name": "Artificer",
+        "source": "PHB",
+        "definedInSource": "TCE"
+      }
     ],
     "subclasses": [],
     "damageTypes": [],
@@ -9595,8 +10684,14 @@
     "concentration": true,
     "ritual": false,
     "classes": [
-      "Artificer",
       "Wizard"
+    ],
+    "classVariants": [
+      {
+        "name": "Artificer",
+        "source": "PHB",
+        "definedInSource": "TCE"
+      }
     ],
     "subclasses": [],
     "damageTypes": [],
@@ -9628,6 +10723,13 @@
     "classes": [
       "Paladin"
     ],
+    "classVariants": [
+      {
+        "name": "Cleric",
+        "source": "PHB",
+        "definedInSource": "TCE"
+      }
+    ],
     "subclasses": [],
     "damageTypes": [],
     "savingThrows": [],
@@ -9655,6 +10757,13 @@
     "ritual": false,
     "classes": [
       "Paladin"
+    ],
+    "classVariants": [
+      {
+        "name": "Cleric",
+        "source": "PHB",
+        "definedInSource": "TCE"
+      }
     ],
     "subclasses": [],
     "damageTypes": [],
@@ -9754,7 +10863,13 @@
     "duration": "1 hour",
     "concentration": false,
     "ritual": false,
-    "classes": [],
+    "classes": [
+      "Bard",
+      "Druid",
+      "Sorcerer",
+      "Warlock",
+      "Wizard"
+    ],
     "subclasses": [],
     "damageTypes": [],
     "savingThrows": [
@@ -10118,6 +11233,18 @@
     "classes": [
       "Cleric"
     ],
+    "classVariants": [
+      {
+        "name": "Druid",
+        "source": "PHB",
+        "definedInSource": "TCE"
+      },
+      {
+        "name": "Wizard",
+        "source": "PHB",
+        "definedInSource": "TCE"
+      }
+    ],
     "subclasses": [],
     "damageTypes": [],
     "savingThrows": [],
@@ -10149,6 +11276,13 @@
       "Druid",
       "Sorcerer"
     ],
+    "classVariants": [
+      {
+        "name": "Ranger",
+        "source": "PHB",
+        "definedInSource": "TCE"
+      }
+    ],
     "subclasses": [],
     "damageTypes": [],
     "savingThrows": [
@@ -10179,7 +11313,12 @@
     "duration": "Concentration, up to 1 minute",
     "concentration": true,
     "ritual": false,
-    "classes": [],
+    "classes": [
+      "Artificer",
+      "Druid",
+      "Warlock",
+      "Wizard"
+    ],
     "subclasses": [],
     "damageTypes": [
       "acid",
@@ -10248,8 +11387,14 @@
     "concentration": false,
     "ritual": false,
     "classes": [
-      "Artificer",
       "Wizard"
+    ],
+    "classVariants": [
+      {
+        "name": "Artificer",
+        "source": "PHB",
+        "definedInSource": "TCE"
+      }
     ],
     "subclasses": [],
     "damageTypes": [],
@@ -10278,7 +11423,9 @@
     "duration": "Instantaneous",
     "concentration": false,
     "ritual": false,
-    "classes": [],
+    "classes": [
+      "Paladin"
+    ],
     "subclasses": [],
     "damageTypes": [],
     "savingThrows": [],
@@ -10320,6 +11467,18 @@
     "classes": [
       "Wizard"
     ],
+    "classVariants": [
+      {
+        "name": "Druid",
+        "source": "PHB",
+        "definedInSource": "TCE"
+      },
+      {
+        "name": "Sorcerer",
+        "source": "PHB",
+        "definedInSource": "TCE"
+      }
+    ],
     "subclasses": [],
     "damageTypes": [
       "cold",
@@ -10351,11 +11510,17 @@
     "concentration": false,
     "ritual": false,
     "classes": [
-      "Artificer",
       "Bard",
       "Cleric",
       "Druid",
       "Ranger"
+    ],
+    "classVariants": [
+      {
+        "name": "Artificer",
+        "source": "PHB",
+        "definedInSource": "TCE"
+      }
     ],
     "subclasses": [],
     "damageTypes": [],
@@ -10383,9 +11548,18 @@
     "duration": "10 minutes",
     "concentration": false,
     "ritual": false,
-    "classes": [
-      "Warlock",
-      "Wizard"
+    "classes": [],
+    "classVariants": [
+      {
+        "name": "Warlock",
+        "source": "LLK",
+        "definedInSource": "PHB"
+      },
+      {
+        "name": "Wizard",
+        "source": "LLK",
+        "definedInSource": "PHB"
+      }
     ],
     "subclasses": [],
     "damageTypes": [],
@@ -10414,10 +11588,23 @@
     "duration": "24 hours",
     "concentration": false,
     "ritual": false,
-    "classes": [
-      "Sorcerer",
-      "Warlock",
-      "Wizard"
+    "classes": [],
+    "classVariants": [
+      {
+        "name": "Sorcerer",
+        "source": "SatO",
+        "definedInSource": "PHB"
+      },
+      {
+        "name": "Warlock",
+        "source": "SatO",
+        "definedInSource": "PHB"
+      },
+      {
+        "name": "Wizard",
+        "source": "SatO",
+        "definedInSource": "PHB"
+      }
     ],
     "subclasses": [],
     "damageTypes": [],
@@ -10600,7 +11787,10 @@
     "duration": "Concentration, up to 1 minute",
     "concentration": true,
     "ritual": false,
-    "classes": [],
+    "classes": [
+      "Druid",
+      "Ranger"
+    ],
     "subclasses": [],
     "damageTypes": [
       "force"
@@ -10729,8 +11919,14 @@
     "concentration": false,
     "ritual": false,
     "classes": [
-      "Artificer",
       "Wizard"
+    ],
+    "classVariants": [
+      {
+        "name": "Artificer",
+        "source": "PHB",
+        "definedInSource": "TCE"
+      }
     ],
     "subclasses": [],
     "damageTypes": [],
@@ -10795,8 +11991,14 @@
     "concentration": false,
     "ritual": false,
     "classes": [
-      "Artificer",
       "Wizard"
+    ],
+    "classVariants": [
+      {
+        "name": "Artificer",
+        "source": "PHB",
+        "definedInSource": "TCE"
+      }
     ],
     "subclasses": [],
     "damageTypes": [
@@ -10828,8 +12030,14 @@
     "concentration": false,
     "ritual": false,
     "classes": [
-      "Artificer",
       "Wizard"
+    ],
+    "classVariants": [
+      {
+        "name": "Artificer",
+        "source": "PHB",
+        "definedInSource": "TCE"
+      }
     ],
     "subclasses": [],
     "damageTypes": [],
@@ -10870,8 +12078,14 @@
     "concentration": true,
     "ritual": false,
     "classes": [
-      "Artificer",
       "Wizard"
+    ],
+    "classVariants": [
+      {
+        "name": "Artificer",
+        "source": "PHB",
+        "definedInSource": "TCE"
+      }
     ],
     "subclasses": [],
     "damageTypes": [],
@@ -10905,6 +12119,13 @@
     "ritual": false,
     "classes": [
       "Wizard"
+    ],
+    "classVariants": [
+      {
+        "name": "Bard",
+        "source": "PHB",
+        "definedInSource": "TCE"
+      }
     ],
     "subclasses": [],
     "damageTypes": [
@@ -10972,7 +12193,12 @@
     "duration": "Instantaneous",
     "concentration": false,
     "ritual": false,
-    "classes": [],
+    "classes": [
+      "Bard",
+      "Sorcerer",
+      "Warlock",
+      "Wizard"
+    ],
     "subclasses": [],
     "damageTypes": [
       "psychic"
@@ -11003,7 +12229,9 @@
     "duration": "Concentration, up to 1 minute",
     "concentration": true,
     "ritual": false,
-    "classes": [],
+    "classes": [
+      "Warlock"
+    ],
     "subclasses": [],
     "damageTypes": [
       "necrotic"
@@ -11032,7 +12260,11 @@
     "duration": "Concentration, up to 10 minutes",
     "concentration": true,
     "ritual": false,
-    "classes": [],
+    "classes": [
+      "Sorcerer",
+      "Warlock",
+      "Wizard"
+    ],
     "subclasses": [],
     "damageTypes": [
       "radiant"
@@ -11063,7 +12295,11 @@
     "duration": "Concentration, up to 1 hour",
     "concentration": true,
     "ritual": false,
-    "classes": [],
+    "classes": [
+      "Sorcerer",
+      "Warlock",
+      "Wizard"
+    ],
     "subclasses": [],
     "damageTypes": [],
     "savingThrows": [],
@@ -11123,10 +12359,16 @@
     "concentration": false,
     "ritual": false,
     "classes": [
-      "Artificer",
       "Cleric",
       "Druid",
       "Wizard"
+    ],
+    "classVariants": [
+      {
+        "name": "Artificer",
+        "source": "PHB",
+        "definedInSource": "TCE"
+      }
     ],
     "subclasses": [],
     "damageTypes": [],
@@ -11154,11 +12396,17 @@
     "concentration": true,
     "ritual": false,
     "classes": [
-      "Artificer",
       "Druid",
       "Ranger",
       "Sorcerer",
       "Wizard"
+    ],
+    "classVariants": [
+      {
+        "name": "Artificer",
+        "source": "PHB",
+        "definedInSource": "TCE"
+      }
     ],
     "subclasses": [],
     "damageTypes": [],
@@ -11185,7 +12433,10 @@
     "duration": "Concentration, up to 1 minute",
     "concentration": true,
     "ritual": false,
-    "classes": [],
+    "classes": [
+      "Sorcerer",
+      "Wizard"
+    ],
     "subclasses": [],
     "damageTypes": [
       "bludgeoning",
@@ -11218,7 +12469,10 @@
     "duration": "Concentration, up to 1 hour",
     "concentration": true,
     "ritual": false,
-    "classes": [],
+    "classes": [
+      "Warlock",
+      "Wizard"
+    ],
     "subclasses": [],
     "damageTypes": [],
     "savingThrows": [],
@@ -11246,7 +12500,8 @@
     "concentration": true,
     "ritual": false,
     "classes": [
-      "Artificer"
+      "Artificer",
+      "Wizard"
     ],
     "subclasses": [],
     "damageTypes": [],
@@ -11274,7 +12529,11 @@
     "duration": "Concentration, up to 1 hour",
     "concentration": true,
     "ritual": false,
-    "classes": [],
+    "classes": [
+      "Druid",
+      "Ranger",
+      "Wizard"
+    ],
     "subclasses": [],
     "damageTypes": [],
     "savingThrows": [],
@@ -11301,7 +12560,10 @@
     "duration": "Concentration, up to 1 hour",
     "concentration": true,
     "ritual": false,
-    "classes": [],
+    "classes": [
+      "Warlock",
+      "Wizard"
+    ],
     "subclasses": [],
     "damageTypes": [],
     "savingThrows": [
@@ -11332,7 +12594,10 @@
     "duration": "Instantaneous",
     "concentration": false,
     "ritual": false,
-    "classes": [],
+    "classes": [
+      "Sorcerer",
+      "Wizard"
+    ],
     "subclasses": [],
     "damageTypes": [
       "acid"
@@ -11398,7 +12663,11 @@
     "duration": "Concentration, up to 1 minute",
     "concentration": true,
     "ritual": false,
-    "classes": [],
+    "classes": [
+      "Druid",
+      "Sorcerer",
+      "Wizard"
+    ],
     "subclasses": [],
     "damageTypes": [],
     "savingThrows": [
@@ -11431,10 +12700,16 @@
     "concentration": true,
     "ritual": false,
     "classes": [
-      "Artificer",
       "Bard",
       "Sorcerer",
       "Wizard"
+    ],
+    "classVariants": [
+      {
+        "name": "Artificer",
+        "source": "PHB",
+        "definedInSource": "TCE"
+      }
     ],
     "subclasses": [],
     "damageTypes": [
@@ -11621,8 +12896,19 @@
     "concentration": true,
     "ritual": false,
     "classes": [
-      "Artificer",
       "Wizard"
+    ],
+    "classVariants": [
+      {
+        "name": "Artificer",
+        "source": "PHB",
+        "definedInSource": "TCE"
+      },
+      {
+        "name": "Sorcerer",
+        "source": "PHB",
+        "definedInSource": "TCE"
+      }
     ],
     "subclasses": [],
     "damageTypes": [
@@ -11819,6 +13105,13 @@
     "classes": [
       "Sorcerer",
       "Wizard"
+    ],
+    "classVariants": [
+      {
+        "name": "Druid",
+        "source": "PHB",
+        "definedInSource": "TCE"
+      }
     ],
     "subclasses": [],
     "damageTypes": [
@@ -12021,7 +13314,11 @@
     "duration": "Concentration, up to 1 hour",
     "concentration": true,
     "ritual": false,
-    "classes": [],
+    "classes": [
+      "Druid",
+      "Sorcerer",
+      "Wizard"
+    ],
     "subclasses": [],
     "damageTypes": [],
     "savingThrows": [
@@ -12070,9 +13367,18 @@
     "duration": "Instantaneous",
     "concentration": false,
     "ritual": false,
-    "classes": [
-      "Artificer",
-      "Wizard"
+    "classes": [],
+    "classVariants": [
+      {
+        "name": "Wizard",
+        "source": "AAG",
+        "definedInSource": "PHB"
+      },
+      {
+        "name": "Artificer",
+        "source": "AAG",
+        "definedInSource": "TCE"
+      }
     ],
     "subclasses": [],
     "damageTypes": [],
@@ -12100,9 +13406,15 @@
     "concentration": false,
     "ritual": false,
     "classes": [
-      "Artificer",
       "Sorcerer",
       "Wizard"
+    ],
+    "classVariants": [
+      {
+        "name": "Artificer",
+        "source": "PHB",
+        "definedInSource": "TCE"
+      }
     ],
     "subclasses": [],
     "damageTypes": [],
@@ -12165,7 +13477,10 @@
     "duration": "Concentration, up to 1 hour",
     "concentration": true,
     "ritual": false,
-    "classes": [],
+    "classes": [
+      "Warlock",
+      "Wizard"
+    ],
     "subclasses": [],
     "damageTypes": [],
     "savingThrows": [],
@@ -12193,7 +13508,10 @@
     "duration": "Concentration, up to 1 minute",
     "concentration": true,
     "ritual": false,
-    "classes": [],
+    "classes": [
+      "Cleric",
+      "Wizard"
+    ],
     "subclasses": [],
     "damageTypes": [
       "radiant"
@@ -12377,7 +13695,11 @@
     "duration": "Concentration, up to 1 minute",
     "concentration": true,
     "ritual": false,
-    "classes": [],
+    "classes": [
+      "Sorcerer",
+      "Warlock",
+      "Wizard"
+    ],
     "subclasses": [],
     "damageTypes": [
       "necrotic"
@@ -12408,7 +13730,11 @@
     "duration": "Concentration, up to 1 minute",
     "concentration": true,
     "ritual": false,
-    "classes": [],
+    "classes": [
+      "Sorcerer",
+      "Warlock",
+      "Wizard"
+    ],
     "subclasses": [],
     "damageTypes": [],
     "savingThrows": [],
@@ -12506,10 +13832,21 @@
     "concentration": false,
     "ritual": false,
     "classes": [
-      "Artificer",
       "Bard",
       "Cleric",
       "Druid"
+    ],
+    "classVariants": [
+      {
+        "name": "Artificer",
+        "source": "PHB",
+        "definedInSource": "TCE"
+      },
+      {
+        "name": "Ranger",
+        "source": "PHB",
+        "definedInSource": "TCE"
+      }
     ],
     "subclasses": [],
     "damageTypes": [],
@@ -12680,7 +14017,10 @@
     "duration": "Concentration, up to 1 hour",
     "concentration": true,
     "ritual": false,
-    "classes": [],
+    "classes": [
+      "Cleric",
+      "Paladin"
+    ],
     "subclasses": [],
     "damageTypes": [
       "radiant"
@@ -12711,7 +14051,10 @@
     "duration": "Concentration, up to 1 minute",
     "concentration": true,
     "ritual": false,
-    "classes": [],
+    "classes": [
+      "Sorcerer",
+      "Wizard"
+    ],
     "subclasses": [],
     "damageTypes": [
       "fire"
@@ -12742,7 +14085,10 @@
     "duration": "Concentration, up to 1 hour",
     "concentration": true,
     "ritual": false,
-    "classes": [],
+    "classes": [
+      "Warlock",
+      "Wizard"
+    ],
     "subclasses": [],
     "damageTypes": [],
     "savingThrows": [],
@@ -12838,7 +14184,9 @@
     "duration": "Concentration, up to 1 minute",
     "concentration": true,
     "ritual": false,
-    "classes": [],
+    "classes": [
+      "Druid"
+    ],
     "subclasses": [],
     "damageTypes": [
       "bludgeoning"
@@ -12902,6 +14250,13 @@
       "Bard",
       "Wizard"
     ],
+    "classVariants": [
+      {
+        "name": "Warlock",
+        "source": "PHB",
+        "definedInSource": "TCE"
+      }
+    ],
     "subclasses": [],
     "damageTypes": [],
     "savingThrows": [],
@@ -12964,7 +14319,10 @@
     "duration": "Instantaneous",
     "concentration": false,
     "ritual": false,
-    "classes": [],
+    "classes": [
+      "Warlock",
+      "Wizard"
+    ],
     "subclasses": [],
     "damageTypes": [
       "necrotic"
@@ -13030,6 +14388,13 @@
       "Druid",
       "Wizard"
     ],
+    "classVariants": [
+      {
+        "name": "Warlock",
+        "source": "PHB",
+        "definedInSource": "TCE"
+      }
+    ],
     "subclasses": [],
     "damageTypes": [],
     "savingThrows": [
@@ -13093,6 +14458,13 @@
     "ritual": true,
     "classes": [
       "Wizard"
+    ],
+    "classVariants": [
+      {
+        "name": "Bard",
+        "source": "PHB",
+        "definedInSource": "TCE"
+      }
     ],
     "subclasses": [],
     "damageTypes": [],
@@ -13431,7 +14803,12 @@
     "duration": "Concentration, up to 1 hour",
     "concentration": true,
     "ritual": false,
-    "classes": [],
+    "classes": [
+      "Artificer",
+      "Bard",
+      "Sorcerer",
+      "Wizard"
+    ],
     "subclasses": [],
     "damageTypes": [],
     "savingThrows": [],
@@ -13458,7 +14835,10 @@
     "duration": "Instantaneous",
     "concentration": false,
     "ritual": false,
-    "classes": [],
+    "classes": [
+      "Ranger",
+      "Wizard"
+    ],
     "subclasses": [],
     "damageTypes": [
       "force"
@@ -13487,7 +14867,10 @@
     "duration": "Concentration, up to 1 hour",
     "concentration": true,
     "ritual": false,
-    "classes": [],
+    "classes": [
+      "Cleric",
+      "Paladin"
+    ],
     "subclasses": [],
     "damageTypes": [],
     "savingThrows": [],
@@ -13514,7 +14897,11 @@
     "duration": "Concentration, up to 1 hour",
     "concentration": true,
     "ritual": false,
-    "classes": [],
+    "classes": [
+      "Druid",
+      "Sorcerer",
+      "Wizard"
+    ],
     "subclasses": [],
     "damageTypes": [],
     "savingThrows": [
@@ -13572,7 +14959,12 @@
     "duration": "Instantaneous",
     "concentration": false,
     "ritual": false,
-    "classes": [],
+    "classes": [
+      "Bard",
+      "Sorcerer",
+      "Warlock",
+      "Wizard"
+    ],
     "subclasses": [],
     "damageTypes": [
       "psychic"
@@ -13655,6 +15047,13 @@
       "Sorcerer",
       "Wizard"
     ],
+    "classVariants": [
+      {
+        "name": "Warlock",
+        "source": "PHB",
+        "definedInSource": "TCE"
+      }
+    ],
     "subclasses": [],
     "damageTypes": [],
     "savingThrows": [],
@@ -13710,7 +15109,11 @@
     "duration": "Until dispel",
     "concentration": false,
     "ritual": false,
-    "classes": [],
+    "classes": [
+      "Artificer",
+      "Druid",
+      "Wizard"
+    ],
     "subclasses": [],
     "damageTypes": [
       "bludgeoning"
@@ -13816,7 +15219,11 @@
     "duration": "Concentration, up to 10 minutes",
     "concentration": true,
     "ritual": false,
-    "classes": [],
+    "classes": [
+      "Sorcerer",
+      "Warlock",
+      "Wizard"
+    ],
     "subclasses": [],
     "damageTypes": [
       "radiant"
@@ -13850,10 +15257,16 @@
     "concentration": true,
     "ritual": false,
     "classes": [
-      "Artificer",
       "Druid",
       "Sorcerer",
       "Wizard"
+    ],
+    "classVariants": [
+      {
+        "name": "Artificer",
+        "source": "PHB",
+        "definedInSource": "TCE"
+      }
     ],
     "subclasses": [],
     "damageTypes": [],
@@ -13887,7 +15300,10 @@
     "duration": "Concentration, up to 1 minute",
     "concentration": true,
     "ritual": false,
-    "classes": [],
+    "classes": [
+      "Druid",
+      "Ranger"
+    ],
     "subclasses": [],
     "damageTypes": [
       "bludgeoning",
@@ -14012,7 +15428,9 @@
     "duration": "Instantaneous",
     "concentration": false,
     "ritual": false,
-    "classes": [],
+    "classes": [
+      "Druid"
+    ],
     "subclasses": [],
     "damageTypes": [
       "bludgeoning"
@@ -14174,7 +15592,9 @@
     "duration": "Instantaneous",
     "concentration": false,
     "ritual": false,
-    "classes": [],
+    "classes": [
+      "Wizard"
+    ],
     "subclasses": [],
     "damageTypes": [],
     "savingThrows": [],
@@ -14301,7 +15721,9 @@
     "duration": "24 hours",
     "concentration": false,
     "ritual": false,
-    "classes": [],
+    "classes": [
+      "Druid"
+    ],
     "subclasses": [],
     "damageTypes": [],
     "savingThrows": [],
@@ -14451,7 +15873,10 @@
     "duration": "Concentration, up to 1 minute",
     "concentration": true,
     "ritual": false,
-    "classes": [],
+    "classes": [
+      "Sorcerer",
+      "Wizard"
+    ],
     "subclasses": [],
     "damageTypes": [],
     "savingThrows": [],
@@ -14508,6 +15933,18 @@
     "classes": [
       "Warlock",
       "Wizard"
+    ],
+    "classVariants": [
+      {
+        "name": "Druid",
+        "source": "PHB",
+        "definedInSource": "TCE"
+      },
+      {
+        "name": "Sorcerer",
+        "source": "PHB",
+        "definedInSource": "TCE"
+      }
     ],
     "subclasses": [],
     "damageTypes": [],
@@ -14770,6 +16207,13 @@
       "Cleric",
       "Druid"
     ],
+    "classVariants": [
+      {
+        "name": "Bard",
+        "source": "PHB",
+        "definedInSource": "TCE"
+      }
+    ],
     "subclasses": [],
     "damageTypes": [],
     "savingThrows": [],
@@ -14796,7 +16240,12 @@
     "duration": "Concentration, up to 10 minutes",
     "concentration": true,
     "ritual": false,
-    "classes": [],
+    "classes": [
+      "Druid",
+      "Sorcerer",
+      "Warlock",
+      "Wizard"
+    ],
     "subclasses": [],
     "damageTypes": [
       "fire"
@@ -14834,7 +16283,12 @@
     "duration": "Concentration, up to 10 minutes",
     "concentration": true,
     "ritual": false,
-    "classes": [],
+    "classes": [
+      "Druid",
+      "Sorcerer",
+      "Warlock",
+      "Wizard"
+    ],
     "subclasses": [],
     "damageTypes": [
       "cold"
@@ -14873,7 +16327,12 @@
     "duration": "Concentration, up to 10 minutes",
     "concentration": true,
     "ritual": false,
-    "classes": [],
+    "classes": [
+      "Druid",
+      "Sorcerer",
+      "Warlock",
+      "Wizard"
+    ],
     "subclasses": [],
     "damageTypes": [],
     "savingThrows": [
@@ -14909,7 +16368,12 @@
     "duration": "Concentration, up to 10 minutes",
     "concentration": true,
     "ritual": false,
-    "classes": [],
+    "classes": [
+      "Druid",
+      "Sorcerer",
+      "Warlock",
+      "Wizard"
+    ],
     "subclasses": [],
     "damageTypes": [
       "bludgeoning"
@@ -15019,7 +16483,11 @@
     "duration": "Concentration, up to 1 minute",
     "concentration": true,
     "ritual": false,
-    "classes": [],
+    "classes": [
+      "Sorcerer",
+      "Warlock",
+      "Wizard"
+    ],
     "subclasses": [],
     "damageTypes": [
       "psychic"
@@ -15085,6 +16553,13 @@
     "ritual": false,
     "classes": [
       "Wizard"
+    ],
+    "classVariants": [
+      {
+        "name": "Sorcerer",
+        "source": "PHB",
+        "definedInSource": "TCE"
+      }
     ],
     "subclasses": [],
     "damageTypes": [
@@ -15182,7 +16657,9 @@
     "duration": "Concentration, up to 1 minute",
     "concentration": true,
     "ritual": false,
-    "classes": [],
+    "classes": [
+      "Druid"
+    ],
     "subclasses": [],
     "damageTypes": [],
     "savingThrows": [],
@@ -15241,7 +16718,11 @@
     "duration": "Instantaneous",
     "concentration": false,
     "ritual": false,
-    "classes": [],
+    "classes": [
+      "Sorcerer",
+      "Warlock",
+      "Wizard"
+    ],
     "subclasses": [],
     "damageTypes": [],
     "savingThrows": [
@@ -15269,7 +16750,10 @@
     "duration": "8 hours",
     "concentration": false,
     "ritual": false,
-    "classes": [],
+    "classes": [
+      "Warlock",
+      "Wizard"
+    ],
     "subclasses": [],
     "damageTypes": [],
     "savingThrows": [],
@@ -15324,7 +16808,10 @@
     "duration": "Concentration, up to 1 hour",
     "concentration": true,
     "ritual": false,
-    "classes": [],
+    "classes": [
+      "Warlock",
+      "Wizard"
+    ],
     "subclasses": [],
     "damageTypes": [],
     "savingThrows": [],
@@ -15355,6 +16842,13 @@
       "Druid",
       "Sorcerer",
       "Wizard"
+    ],
+    "classVariants": [
+      {
+        "name": "Cleric",
+        "source": "PHB",
+        "definedInSource": "TCE"
+      }
     ],
     "subclasses": [],
     "damageTypes": [
@@ -15387,7 +16881,11 @@
     "duration": "Concentration, up to 1 minute",
     "concentration": true,
     "ritual": false,
-    "classes": [],
+    "classes": [
+      "Sorcerer",
+      "Warlock",
+      "Wizard"
+    ],
     "subclasses": [],
     "damageTypes": [],
     "savingThrows": [],
@@ -15424,7 +16922,9 @@
     "duration": "Concentration, up to 10 minutes",
     "concentration": true,
     "ritual": false,
-    "classes": [],
+    "classes": [
+      "Wizard"
+    ],
     "subclasses": [],
     "damageTypes": [
       "force"
@@ -15684,8 +17184,13 @@
     "duration": "Instantaneous",
     "concentration": false,
     "ritual": false,
-    "classes": [
-      "Wizard"
+    "classes": [],
+    "classVariants": [
+      {
+        "name": "Wizard",
+        "source": "IDRotF",
+        "definedInSource": "PHB"
+      }
     ],
     "subclasses": [],
     "damageTypes": [],
@@ -15714,7 +17219,11 @@
     "duration": "1 hour",
     "concentration": false,
     "ritual": false,
-    "classes": [],
+    "classes": [
+      "Sorcerer",
+      "Warlock",
+      "Wizard"
+    ],
     "subclasses": [],
     "damageTypes": [
       "radiant"
@@ -15819,7 +17328,11 @@
     "duration": "Concentration, up to 1 minute",
     "concentration": true,
     "ritual": false,
-    "classes": [],
+    "classes": [
+      "Druid",
+      "Sorcerer",
+      "Wizard"
+    ],
     "subclasses": [],
     "damageTypes": [
       "force"
@@ -15876,7 +17389,12 @@
     "duration": "6 hours",
     "concentration": false,
     "ritual": false,
-    "classes": [],
+    "classes": [
+      "Bard",
+      "Sorcerer",
+      "Warlock",
+      "Wizard"
+    ],
     "subclasses": [],
     "damageTypes": [],
     "savingThrows": [],
@@ -16181,7 +17699,11 @@
     "duration": "Instantaneous",
     "concentration": false,
     "ritual": false,
-    "classes": [],
+    "classes": [
+      "Sorcerer",
+      "Warlock",
+      "Wizard"
+    ],
     "subclasses": [],
     "damageTypes": [],
     "savingThrows": [
@@ -16214,6 +17736,13 @@
     "classes": [
       "Sorcerer",
       "Wizard"
+    ],
+    "classVariants": [
+      {
+        "name": "Bard",
+        "source": "PHB",
+        "definedInSource": "TCE"
+      }
     ],
     "subclasses": [],
     "damageTypes": [
@@ -16502,6 +18031,13 @@
       "Cleric",
       "Wizard"
     ],
+    "classVariants": [
+      {
+        "name": "Druid",
+        "source": "PHB",
+        "definedInSource": "TCE"
+      }
+    ],
     "subclasses": [],
     "damageTypes": [
       "necrotic"
@@ -16733,7 +18269,9 @@
     "duration": "24 hours",
     "concentration": false,
     "ritual": false,
-    "classes": [],
+    "classes": [
+      "Cleric"
+    ],
     "subclasses": [],
     "damageTypes": [],
     "savingThrows": [
@@ -16796,7 +18334,11 @@
     "duration": "Concentration, up to 1 minute",
     "concentration": true,
     "ritual": false,
-    "classes": [],
+    "classes": [
+      "Druid",
+      "Sorcerer",
+      "Wizard"
+    ],
     "subclasses": [],
     "damageTypes": [
       "bludgeoning"
@@ -16829,7 +18371,10 @@
     "duration": "Instantaneous",
     "concentration": false,
     "ritual": false,
-    "classes": [],
+    "classes": [
+      "Sorcerer",
+      "Wizard"
+    ],
     "subclasses": [],
     "damageTypes": [
       "necrotic"
@@ -16973,6 +18518,13 @@
     "classes": [
       "Druid",
       "Wizard"
+    ],
+    "classVariants": [
+      {
+        "name": "Bard",
+        "source": "PHB",
+        "definedInSource": "TCE"
+      }
     ],
     "subclasses": [],
     "damageTypes": [],
@@ -17227,6 +18779,13 @@
       "Warlock",
       "Wizard"
     ],
+    "classVariants": [
+      {
+        "name": "Sorcerer",
+        "source": "PHB",
+        "definedInSource": "TCE"
+      }
+    ],
     "subclasses": [],
     "damageTypes": [],
     "savingThrows": [],
@@ -17439,7 +18998,9 @@
     "duration": "Concentration, up to 1 minute",
     "concentration": true,
     "ritual": false,
-    "classes": [],
+    "classes": [
+      "Wizard"
+    ],
     "subclasses": [],
     "damageTypes": [
       "acid",
@@ -17482,6 +19043,13 @@
       "Sorcerer",
       "Wizard"
     ],
+    "classVariants": [
+      {
+        "name": "Druid",
+        "source": "PHB",
+        "definedInSource": "TCE"
+      }
+    ],
     "subclasses": [],
     "damageTypes": [
       "fire"
@@ -17513,7 +19081,10 @@
     "duration": "Concentration, up to 10 minutes",
     "concentration": true,
     "ritual": false,
-    "classes": [],
+    "classes": [
+      "Warlock",
+      "Wizard"
+    ],
     "subclasses": [],
     "damageTypes": [
       "psychic"
@@ -17574,7 +19145,9 @@
     "duration": "Instantaneous",
     "concentration": false,
     "ritual": false,
-    "classes": [],
+    "classes": [
+      "Wizard"
+    ],
     "subclasses": [],
     "damageTypes": [],
     "savingThrows": [],
@@ -17738,6 +19311,13 @@
       "Sorcerer",
       "Wizard"
     ],
+    "classVariants": [
+      {
+        "name": "Cleric",
+        "source": "PHB",
+        "definedInSource": "TCE"
+      }
+    ],
     "subclasses": [],
     "damageTypes": [
       "radiant"
@@ -17869,7 +19449,11 @@
     "duration": "Concentration, up to 1 minute",
     "concentration": true,
     "ritual": false,
-    "classes": [],
+    "classes": [
+      "Sorcerer",
+      "Warlock",
+      "Wizard"
+    ],
     "subclasses": [],
     "damageTypes": [
       "force"
@@ -17935,6 +19519,13 @@
       "Cleric",
       "Sorcerer",
       "Wizard"
+    ],
+    "classVariants": [
+      {
+        "name": "Warlock",
+        "source": "PHB",
+        "definedInSource": "TCE"
+      }
     ],
     "subclasses": [],
     "damageTypes": [],
@@ -18045,7 +19636,9 @@
     "duration": "Concentration, up to 10 minutes",
     "concentration": true,
     "ritual": false,
-    "classes": [],
+    "classes": [
+      "Wizard"
+    ],
     "subclasses": [],
     "damageTypes": [],
     "savingThrows": [],
@@ -18099,7 +19692,11 @@
     "duration": "Concentration, up to 1 hour",
     "concentration": true,
     "ritual": false,
-    "classes": [],
+    "classes": [
+      "Bard",
+      "Sorcerer",
+      "Wizard"
+    ],
     "subclasses": [],
     "damageTypes": [],
     "savingThrows": [
@@ -18169,6 +19766,13 @@
     "classes": [
       "Bard"
     ],
+    "classVariants": [
+      {
+        "name": "Cleric",
+        "source": "PHB",
+        "definedInSource": "TCE"
+      }
+    ],
     "subclasses": [],
     "damageTypes": [],
     "savingThrows": [],
@@ -18227,6 +19831,13 @@
     "ritual": false,
     "classes": [
       "Wizard"
+    ],
+    "classVariants": [
+      {
+        "name": "Bard",
+        "source": "PHB",
+        "definedInSource": "TCE"
+      }
     ],
     "subclasses": [],
     "damageTypes": [
@@ -18317,7 +19928,12 @@
     "duration": "Instantaneous",
     "concentration": false,
     "ritual": false,
-    "classes": [],
+    "classes": [
+      "Bard",
+      "Sorcerer",
+      "Warlock",
+      "Wizard"
+    ],
     "subclasses": [],
     "damageTypes": [
       "psychic"
@@ -18632,6 +20248,13 @@
     "ritual": false,
     "classes": [
       "Wizard"
+    ],
+    "classVariants": [
+      {
+        "name": "Warlock",
+        "source": "PHB",
+        "definedInSource": "TCE"
+      }
     ],
     "subclasses": [],
     "damageTypes": [

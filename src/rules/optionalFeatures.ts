@@ -55,7 +55,7 @@ export function getAvailableOptionalFeatures(
     );
     if (!cls) continue;
 
-    const allFeatures: Array<ClassFeatureData & { origin: "Class" | "Subclass" }> = [
+    const allFeatures: (ClassFeatureData & { origin: "Class" | "Subclass" })[] = [
       ...(cls.features || []).map((f) => ({ ...f, origin: "Class" as const })),
     ];
 

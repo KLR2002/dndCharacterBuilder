@@ -58,6 +58,14 @@ export interface ClassFeatureModel {
   isOptional?: boolean;
 }
 
+export interface SubclassAdditionalSpells {
+  prepared?: Record<string, string[]>;
+  known?: Record<string, any[]>;
+  expanded?: Record<string, any>;
+  innate?: Record<string, any>;
+  name?: string;
+}
+
 export interface SubclassModel {
   name: string;
   shortName: string;
@@ -66,6 +74,7 @@ export interface SubclassModel {
   classSource: string;
   spellcastingAbility?: string;
   features: ClassFeatureModel[];
+  additionalSpells?: SubclassAdditionalSpells[];
   description: string;
 }
 
@@ -161,6 +170,12 @@ export interface ItemModel {
   rawEntries?: any[];
 }
 
+export interface SpellClassVariantModel {
+  name: string;
+  source: string;
+  definedInSource: string;
+}
+
 export interface SpellModel {
   name: string;
   source: string;
@@ -178,10 +193,68 @@ export interface SpellModel {
   concentration: boolean;
   ritual: boolean;
   classes: string[];
+  classVariants?: SpellClassVariantModel[];
   subclasses: string[];
   damageTypes: string[];
   savingThrows: string[];
   description: string;
   higherLevels: string | null;
   rawEntries?: any[];
+}
+
+export interface BeastActionModel {
+  name: string;
+  description: string;
+  attackBonus?: number;
+  damageDice?: string;
+  damageType?: string;
+}
+
+export interface BeastTraitModel {
+  name: string;
+  description: string;
+}
+
+export interface BeastModel {
+  name: string;
+  source: string;
+  size: string; // "Tiny" | "Small" | "Medium" | "Large" | "Huge" | "Gargantuan"
+  type: "beast" | "elemental";
+  cr: string;
+  crNumeric: number;
+  ac: number;
+  hp: {
+    average: number;
+    formula: string;
+  };
+  speed: {
+    walk?: number;
+    swim?: number;
+    fly?: number;
+    climb?: number;
+    burrow?: number;
+  };
+  abilities: {
+    str: number;
+    dex: number;
+    con: number;
+    int: number;
+    wis: number;
+    cha: number;
+  };
+  senses?: string[];
+  passivePerception?: number;
+  skills?: Record<string, number>;
+  traits?: BeastTraitModel[];
+  actions?: BeastActionModel[];
+  isElementalWildShape?: boolean;
+}
+
+export interface BookModel {
+  name: string;
+  id: string;
+  source?: string;
+  group?: string;
+  published?: string;
+  author?: string;
 }

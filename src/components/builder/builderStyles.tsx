@@ -41,10 +41,10 @@ export const SkillPicker: React.FC<SkillPickerProps> = ({
 
   return (
     <View style={{ gap: 6 }}>
-      <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
+      <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
         <Text style={{ color: theme.text, fontWeight: "700", fontSize: 13 }}>{label}</Text>
         <Text style={{ color: remaining === 0 ? theme.accent : theme.warning, fontSize: 12, fontWeight: "600" }}>
-          {pickerChosen.length}/{choose}
+          Picked {pickerChosen.length} / {choose}
         </Text>
       </View>
       <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 5 }}>
@@ -56,6 +56,7 @@ export const SkillPicker: React.FC<SkillPickerProps> = ({
             <TouchableOpacity
               key={s}
               onPress={() => (!granted && (isChosen || canPick) ? onToggle(s) : undefined)}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
               style={[
                 pkStyles.chip,
                 {
@@ -66,7 +67,7 @@ export const SkillPicker: React.FC<SkillPickerProps> = ({
               ]}
             >
               {granted && <Ionicons name="lock-closed" size={10} color={theme.textMuted} style={{ marginRight: 3 }} />}
-              <Text style={{ color: granted ? theme.textMuted : isChosen ? theme.accent : theme.textSecondary, fontSize: 12, fontWeight: "600" }}>
+              <Text style={{ color: granted ? theme.textMuted : isChosen ? theme.accent : theme.textSecondary, fontSize: 12, fontWeight: isChosen ? "700" : "500" }}>
                 {s}
               </Text>
             </TouchableOpacity>
@@ -84,6 +85,7 @@ export interface RuleChoicePickerProps {
   chosen: string[];
   autoGranted?: string[];
   onToggle: (item: string) => void;
+  onClear?: () => void;
   theme: any;
 }
 
@@ -94,6 +96,7 @@ export const RuleChoicePicker: React.FC<RuleChoicePickerProps> = ({
   chosen,
   autoGranted = [],
   onToggle,
+  onClear,
   theme,
 }) => {
   const normFrom = from;
@@ -104,19 +107,29 @@ export const RuleChoicePicker: React.FC<RuleChoicePickerProps> = ({
     <View style={{ gap: 6 }}>
       <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
         <Text style={{ color: theme.text, fontWeight: "700", fontSize: 13 }}>{label}</Text>
-        <Text style={{ color: remaining === 0 ? theme.accent : theme.warning, fontSize: 12, fontWeight: "600" }}>
-          {pickerChosen.length}/{choose}
-        </Text>
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+          {onClear && pickerChosen.length > 0 && (
+            <TouchableOpacity onPress={onClear} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+              <Text style={{ color: theme.textMuted, fontSize: 11, textDecorationLine: "underline" }}>
+                Clear
+              </Text>
+            </TouchableOpacity>
+          )}
+          <Text style={{ color: remaining === 0 ? theme.accent : theme.warning, fontSize: 12, fontWeight: "600" }}>
+            Picked {pickerChosen.length} / {choose}
+          </Text>
+        </View>
       </View>
       <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 5 }}>
         {normFrom.map((item) => {
           const granted = autoGranted.includes(item);
           const isChosen = chosen.includes(item);
-          const canPick = !granted && !isChosen && remaining > 0;
+          const canPick = !granted && !isChosen && (remaining > 0 || choose === 1);
           return (
             <TouchableOpacity
               key={item}
               onPress={() => (!granted && (isChosen || canPick) ? onToggle(item) : undefined)}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
               style={[
                 pkStyles.chip,
                 {
@@ -131,7 +144,7 @@ export const RuleChoicePicker: React.FC<RuleChoicePickerProps> = ({
                 style={{
                   color: granted ? theme.textMuted : isChosen ? theme.accent : theme.textSecondary,
                   fontSize: 12,
-                  fontWeight: "600",
+                  fontWeight: isChosen ? "700" : "500",
                 }}
               >
                 {item}
@@ -152,6 +165,7 @@ export const pkStyles = StyleSheet.create({
     paddingHorizontal: 10,
     borderRadius: 6,
     borderWidth: 1,
+    minHeight: 36,
   },
 });
 
@@ -245,7 +259,7 @@ export const builderStyles = StyleSheet.create({
 
   lineageChip: { paddingVertical: 8, paddingHorizontal: 12, borderRadius: 6, borderWidth: 1, minHeight: 40, justifyContent: "center" },
   choiceChip: { paddingVertical: 8, paddingHorizontal: 12, borderRadius: 8, borderWidth: 1, minHeight: 40, justifyContent: "center" },
-  optionChip: { flex: 1, paddingVertical: 12, borderRadius: 8, borderWidth: 1, alignItems: "center" },
+  optionChip: { paddingVertical: 8, paddingHorizontal: 12, borderRadius: 8, borderWidth: 1, minHeight: 40, justifyContent: "center", alignItems: "center" },
 
   classRow: { flexDirection: "row", alignItems: "center", padding: 12, borderRadius: 8, borderWidth: 1 },
   className: { fontSize: 16, fontWeight: "700" },

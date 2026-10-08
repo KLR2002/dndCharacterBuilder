@@ -1,19 +1,29 @@
-import React, { useState } from "react";
-import { Text, TouchableOpacity, View } from "react-native";
+import React, { useMemo, useState } from "react";
+import { ScrollView, Text, TouchableOpacity, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { AbilityKey, Character } from "../../types/character";
-import { BackgroundData, RaceData } from "../../types/dnd5e";
-import { availableRuleChoices, type AvailableRuleChoice } from "../../rules/ruleChoices";
-import { clearRuleChoices, setChoiceRacialBonus, setRuleChoicePick } from "../../rules/builderTransitions";
-import { ALL_LANGUAGE_NAMES, resolveCharacterLanguages, ToolGrant } from "../../rules/proficienciesAndLanguages";
+import type { BackgroundData, RaceData } from "../../types/dnd5e";
+import { type AvailableRuleChoice } from "../../rules/ruleChoices";
+import { reconcileCharacter, setChoiceRacialBonus } from "../../rules/builderTransitions";
+import {
+  resolveAncestryState,
+  applyAncestrySelection,
+  applyAncestryChoice,
+  setRacialCantrip,
+  collectFixedBonuses,
+} from "../../rules/ancestryEngine";
+import { ALL_LANGUAGE_NAMES, ToolGrant } from "../../rules/proficienciesAndLanguages";
 import { Badge } from "../ui/Badge";
 import { Button } from "../ui/Button";
 import { Card } from "../ui/Card";
+import { Modal } from "../ui/Modal";
 import { SearchBar } from "../ui/SearchBar";
 import { ABILITY_KEYS, ABILITY_LABELS, builderStyles as styles, RuleChoicePicker, SkillPicker } from "./builderStyles";
-
-const CHOICE_ASI_RACES = new Set(["Half-Elf", "Custom Lineage"]);
-const LINEAGE_RACES = new Set(["Dhampir", "Hexblood", "Reborn"]);
+import { useCharacters } from "../../context/CharacterContext";
+import { getFeats, getSpells } from "../../services/dataService";
+import { validateFeatPrerequisites, applyOriginFeat, removeOriginFeat } from "../../rules/feats";
+import { getFeatAbilityBonusOptions } from "../../rules/leveling";
+import { isSpellAvailableForClass } from "../../rules/spellcasting";
 
 function formatRaceASI(abilityScoreIncrease: Record<string, number>[]): string {
   const totals: Record<string, number> = {};
@@ -25,19 +35,6 @@ function formatRaceASI(abilityScoreIncrease: Record<string, number>[]): string {
   return Object.entries(totals)
     .map(([k, v]) => `${k.toUpperCase()} +${v}`)
     .join(", ");
-}
-
-function collectFixedBonuses(
-  raceASI?: Record<string, number>[],
-  subraceASI?: Record<string, number>[]
-): Record<string, number> {
-  const bonuses: Record<string, number> = {};
-  for (const item of [...(raceASI || []), ...(subraceASI || [])]) {
-    for (const [k, v] of Object.entries(item)) {
-      if (typeof v === "number") bonuses[k] = (bonuses[k] || 0) + v;
-    }
-  }
-  return bonuses;
 }
 
 export interface AncestrySectionProps {
@@ -52,7 +49,7 @@ export interface AncestrySectionProps {
   toggleRaceLanguage: (lang: string) => void;
   raceToolGrant: ToolGrant;
   toggleRaceTool: (tool: string) => void;
-  ruleChoices: AvailableRuleChoice[];
+  ruleChoices?: AvailableRuleChoice[];
   onViewDetail: (item: { title: string; subtitle?: string; source?: string; description?: string }) => void;
   theme: any;
 }
@@ -69,42 +66,44 @@ export const AncestrySection: React.FC<AncestrySectionProps> = ({
   toggleRaceLanguage,
   raceToolGrant,
   toggleRaceTool,
-  ruleChoices,
   onViewDetail,
   theme,
 }) => {
   const [raceSearch, setRaceSearch] = useState("");
   const [choiceASI, setChoiceASI] = useState<Partial<Record<AbilityKey, number>>>({});
   const [flexibleMode, setFlexibleMode] = useState<"2_1" | "1_1_1">("2_1");
+  const [featModalVisible, setFeatModalVisible] = useState(false);
+  const [featSearch, setFeatSearch] = useState("");
+  const [cantripModalVisible, setCantripModalVisible] = useState(false);
+  const [cantripSearch, setCantripSearch] = useState("");
 
-  const selectedRaceData = character.race ? allRaces.find((r) => r.name === character.race?.name) : undefined;
-  const selectedSubraceData = selectedRaceData?.subraces?.find(
-    (sr) => sr.name === character.race?.subraceName
-  );
-  const fixedBonuses = character.race
-    ? collectFixedBonuses(selectedRaceData?.abilityScoreIncrease, selectedSubraceData?.abilityScoreIncrease)
-    : {};
-  const hasFixedASI = Object.keys(fixedBonuses).length > 0;
+  const { activeBooks } = useCharacters();
+  const allFeats = useMemo(() => getFeats(activeBooks), [activeBooks]);
+  const wizardCantrips = useMemo(() => {
+    return getSpells(activeBooks).filter(
+      (s) => s.level === 0 && isSpellAvailableForClass(s, "Wizard", activeBooks)
+    );
+  }, [activeBooks]);
 
-  const isChoiceASIRace =
-    character.race != null &&
-    (!hasFixedASI ||
-      CHOICE_ASI_RACES.has(character.race.name) ||
-      character.race.subraceName === "Variant" ||
-      character.race.subraceName === "Custom Lineage");
+  const ancestryState = useMemo(() => {
+    return resolveAncestryState(character, {
+      races: allRaces,
+      backgrounds: allBackgrounds,
+      activeBooks,
+    });
+  }, [character, allRaces, allBackgrounds, activeBooks]);
 
-  const isFlexibleMPMM =
-    character.race != null &&
-    !hasFixedASI &&
-    character.race.name !== "Custom Lineage" &&
-    character.race.subraceName !== "Variant";
-
-  const choiceASIConfig: { count: number; amount: number } = (() => {
-    if (!character.race) return { count: 2, amount: 1 };
-    const name = character.race.subraceName || character.race.name;
-    if (name === "Custom Lineage") return { count: 1, amount: 2 };
-    return { count: 2, amount: 1 };
-  })();
+  const {
+    isChoiceASIRace,
+    isFlexibleMPMM,
+    choiceASIConfig,
+    hasOriginFeat,
+    originFeatTitle,
+    currentOriginFeat,
+    hasRacialCantrip,
+    racialCantripTitle,
+    currentRacialCantrip,
+  } = ancestryState;
 
   const handleChoiceASITap = (key: AbilityKey) => {
     const current = { ...choiceASI };
@@ -143,38 +142,10 @@ export const AncestrySection: React.FC<AncestrySectionProps> = ({
 
   const selectRace = (r: RaceData, subraceIdx?: number) => {
     const sr = subraceIdx !== undefined ? r.subraces?.[subraceIdx] : undefined;
-    const fixed = collectFixedBonuses(r.abilityScoreIncrease, sr?.abilityScoreIncrease);
-    const hasFixed = Object.keys(fixed).length > 0;
-    const isChoice = !hasFixed || CHOICE_ASI_RACES.has(r.name) || sr?.name === "Variant" || sr?.name === "Custom Lineage";
-    const bonuses = isChoice ? {} : fixed;
     setChoiceASI({});
-    const updatedRace = {
-      name: r.name,
-      source: r.source,
-      subraceName: sr?.name,
-      subraceSource: sr?.source,
-    };
-    const nextChosenLanguages = { ...character.chosenLanguages, race: [] };
-    const nextChosenTools = { ...character.chosenTools, race: [] };
-    const temp = {
-      ...character,
-      race: updatedRace,
-      chosenLanguages: nextChosenLanguages,
-      chosenTools: nextChosenTools,
-      racialAbilityBonuses: bonuses,
-      racialChoiceBonus: [],
-    };
-    const resolvedLangs = resolveCharacterLanguages(temp, { races: allRaces, backgrounds: allBackgrounds });
-    onUpdate({
-      race: updatedRace,
-      racialAbilityBonuses: bonuses,
-      racialChoiceBonus: [],
-      chosenLanguages: nextChosenLanguages,
-      chosenTools: nextChosenTools,
-      languages: resolvedLangs,
-      // Rule choices belong to an ancestry; a new one invalidates the old picks.
-      ruleChoices: clearRuleChoices(character).ruleChoices,
-    });
+    onUpdate((cur) =>
+      applyAncestrySelection(cur, r, sr, { races: allRaces, backgrounds: allBackgrounds })
+    );
   };
 
   return (
@@ -187,14 +158,26 @@ export const AncestrySection: React.FC<AncestrySectionProps> = ({
               {character.race.name}
               {character.race.subraceName ? ` — ${character.race.subraceName}` : ""}
             </Text>
-            <Text style={{ color: theme.textMuted, fontSize: 12 }}>{character.race.source}</Text>
+            <Text style={{ color: theme.textMuted, fontSize: 12 }}>
+              Speed {ancestryState.speed} ft • Size {ancestryState.size}
+              {ancestryState.darkvision > 0 ? ` • Darkvision ${ancestryState.darkvision} ft` : ""}
+              {" • "}{character.race.source}
+            </Text>
           </View>
           <Button
             title="Change"
             variant="outline"
             size="sm"
             onPress={() => {
-              onUpdate({ race: null, racialAbilityBonuses: {}, ruleChoices: [] });
+              onUpdate((cur) =>
+                reconcileCharacter({
+                  ...cur,
+                  race: null,
+                  racialAbilityBonuses: {},
+                  racialChoiceBonus: [],
+                  ruleChoices: (cur.ruleChoices || []).filter((rc) => rc.origin !== "race"),
+                })
+              );
               setChoiceASI({});
             }}
           />
@@ -328,9 +311,9 @@ export const AncestrySection: React.FC<AncestrySectionProps> = ({
         )}
 
       {/* Ancestry Rule Choices: one pick from a fixed set, gated by level */}
-      {character.race && ruleChoices.length > 0 && (
+      {(character.race || character.lineageReplacement) && ancestryState.availableRuleChoices.length > 0 && (
         <Card style={{ gap: 10 }}>
-          {ruleChoices.map((choice) => {
+          {ancestryState.availableRuleChoices.map((choice) => {
             const entry = (character.ruleChoices ?? []).find((rc) => rc.id === choice.id);
             return (
               <RuleChoicePicker
@@ -341,7 +324,11 @@ export const AncestrySection: React.FC<AncestrySectionProps> = ({
                 chosen={entry?.picked ?? []}
                 onToggle={(option) =>
                   onUpdate((cur) =>
-                    setRuleChoicePick(cur, choice.id, choice.traitName, option, choice.options.map((o) => o.name), choice.choose)
+                    applyAncestryChoice(cur, choice.id, option, {
+                      races: allRaces,
+                      backgrounds: allBackgrounds,
+                      activeBooks,
+                    })
                   )
                 }
                 theme={theme}
@@ -408,64 +395,179 @@ export const AncestrySection: React.FC<AncestrySectionProps> = ({
         </Card>
       )}
 
-      {/* Race traits (when selected) */}
-      {character.race &&
-        !character.lineageReplacement &&
-        (() => {
-          const rd = allRaces.find((r) => r.name === character.race!.name);
-          if (!rd || rd.traits.length === 0) return null;
-          return (
-            <Card style={{ gap: 8 }}>
-              <Text style={[styles.heading, { color: theme.text }]}>{character.race.name} Traits:</Text>
-              {rd.traits.map((t) => (
-                <TouchableOpacity
-                  key={t.name}
-                  onPress={() => onViewDetail({ title: t.name, description: t.description, source: rd.source })}
-                  style={[styles.featureRow, { borderColor: theme.border }]}
-                >
-                  <View style={{ flex: 1 }}>
-                    <Text style={{ color: theme.text, fontWeight: "600", fontSize: 13 }}>{t.name}</Text>
-                    {t.description ? (
-                      <Text style={{ color: theme.textSecondary, fontSize: 11 }} numberOfLines={2}>
-                        {t.description}
-                      </Text>
-                    ) : null}
-                  </View>
-                  <Ionicons name="chevron-forward" size={14} color={theme.textMuted} />
-                </TouchableOpacity>
-              ))}
-            </Card>
-          );
-        })()}
+      {/* Origin Feat for Variant Human and Custom Lineage */}
+      {character.race && hasOriginFeat && (
+        <Card style={{ gap: 10, borderColor: theme.accent }}>
+          <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.heading, { color: theme.accent }]}>
+                {originFeatTitle}
+              </Text>
+              <Text style={{ color: theme.textSecondary, fontSize: 12 }}>
+                1st-level bonus origin feat from your ancestry
+              </Text>
+            </View>
+            {currentOriginFeat && (
+              <Button
+                title="Change"
+                variant="outline"
+                size="sm"
+                onPress={() => setFeatModalVisible(true)}
+              />
+            )}
+          </View>
 
-      {/* Lineage features */}
-      {character.lineageReplacement &&
-        (() => {
-          const lr = allRaces.find((r) => r.name === character.lineageReplacement);
-          if (!lr) return null;
-          return (
-            <Card style={{ gap: 8 }}>
-              <Text style={[styles.heading, { color: theme.accent }]}>{lr.name} Features (Lineage):</Text>
-              {lr.traits.map((t) => (
-                <TouchableOpacity
-                  key={t.name}
-                  onPress={() => onViewDetail({ title: t.name, description: t.description, source: lr.source })}
-                  style={[styles.featureRow, { borderColor: theme.border }]}
-                >
-                  <View style={{ flex: 1 }}>
-                    <Text style={{ color: theme.text, fontWeight: "600", fontSize: 13 }}>{t.name}</Text>
-                    {t.description ? (
-                      <Text style={{ color: theme.textSecondary, fontSize: 11 }} numberOfLines={2}>
-                        {t.description}
-                      </Text>
-                    ) : null}
+          {currentOriginFeat ? (
+            <View style={{ gap: 8 }}>
+              <View style={[styles.featureRow, { borderColor: theme.border }]}>
+                <View style={{ flex: 1 }}>
+                  <Text style={{ color: theme.text, fontWeight: "700", fontSize: 14 }}>
+                    {currentOriginFeat.featName}
+                  </Text>
+                  <Text style={{ color: theme.textMuted, fontSize: 12 }}>
+                    Source: {currentOriginFeat.featSource || "PHB"}
+                  </Text>
+                </View>
+                <Button
+                  title="Remove"
+                  variant="ghost"
+                  size="sm"
+                  onPress={() => {
+                    if (currentOriginFeat.featName) {
+                      onUpdate((cur) => removeOriginFeat(cur, currentOriginFeat.featName!));
+                    }
+                  }}
+                />
+              </View>
+
+              {(() => {
+                const bonusOptions = getFeatAbilityBonusOptions(currentOriginFeat.featName || "");
+                if (bonusOptions.abilities.length <= 1) return null;
+                return (
+                  <View style={{ gap: 6, marginTop: 4 }}>
+                    <Text style={{ color: theme.accent, fontSize: 12, fontWeight: "600" }}>
+                      Choose +{bonusOptions.amount} Ability Score Increase:
+                    </Text>
+                    <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6 }}>
+                      {bonusOptions.abilities.map((ab) => {
+                        const isSelected = currentOriginFeat.featAbility === ab;
+                        return (
+                          <TouchableOpacity
+                            key={ab}
+                            onPress={() => {
+                              onUpdate((cur) =>
+                                applyOriginFeat(
+                                  cur,
+                                  { ...currentOriginFeat, featAbility: ab },
+                                  currentOriginFeat.featName
+                                )
+                              );
+                            }}
+                            style={[
+                              styles.choiceChip,
+                              {
+                                backgroundColor: isSelected ? theme.accent : theme.surfaceHighlight,
+                                borderColor: isSelected ? theme.accent : theme.border,
+                              },
+                            ]}>
+                            <Text
+                              style={{
+                                color: isSelected ? "#fff" : theme.text,
+                                fontSize: 12,
+                                fontWeight: isSelected ? "700" : "500",
+                              }}>
+                              +{bonusOptions.amount} {ab.toUpperCase()}
+                            </Text>
+                          </TouchableOpacity>
+                        );
+                      })}
+                    </View>
                   </View>
-                  <Ionicons name="chevron-forward" size={14} color={theme.textMuted} />
-                </TouchableOpacity>
-              ))}
-            </Card>
-          );
-        })()}
+                );
+              })()}
+            </View>
+          ) : (
+            <Button
+              title="Select Origin Feat"
+              icon="add-circle-outline"
+              variant="primary"
+              size="sm"
+              onPress={() => setFeatModalVisible(true)}
+            />
+          )}
+        </Card>
+      )}
+
+      {/* High Elf / Half-Elf Descent Wizard Cantrip Choice */}
+      {character.race && hasRacialCantrip && (
+        <Card style={{ gap: 10, borderColor: theme.accent }}>
+          <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.heading, { color: theme.accent }]}>
+                {racialCantripTitle}
+              </Text>
+              <Text style={{ color: theme.textSecondary, fontSize: 12 }}>
+                You know one cantrip of your choice from the wizard spell list (INT)
+              </Text>
+            </View>
+            {currentRacialCantrip && (
+              <Button
+                title="Change"
+                variant="outline"
+                size="sm"
+                onPress={() => setCantripModalVisible(true)}
+              />
+            )}
+          </View>
+
+          {currentRacialCantrip ? (
+            <View style={[styles.featureRow, { borderColor: theme.border }]}>
+              <View style={{ flex: 1 }}>
+                <Text style={{ color: theme.text, fontWeight: "700", fontSize: 14 }}>
+                  {currentRacialCantrip}
+                </Text>
+                <Text style={{ color: theme.textMuted, fontSize: 12 }}>
+                  Wizard Cantrip • Uses Intelligence
+                </Text>
+              </View>
+            </View>
+          ) : (
+            <Button
+              title="Choose Wizard Cantrip"
+              icon="sparkles-outline"
+              variant="primary"
+              size="sm"
+              onPress={() => setCantripModalVisible(true)}
+            />
+          )}
+        </Card>
+      )}
+
+      {/* Race / Lineage Traits */}
+      {character.race && ancestryState.traits.length > 0 && (
+        <Card style={{ gap: 8 }}>
+          <Text style={[styles.heading, { color: character.lineageReplacement ? theme.accent : theme.text }]}>
+            {character.lineageReplacement ? `${character.lineageReplacement} Features (Lineage):` : `${character.race.name} Traits:`}
+          </Text>
+          {ancestryState.traits.map((t) => (
+            <TouchableOpacity
+              key={t.name}
+              onPress={() => onViewDetail({ title: t.name, description: t.description, source: t.source })}
+              style={[styles.featureRow, { borderColor: theme.border }]}
+            >
+              <View style={{ flex: 1 }}>
+                <Text style={{ color: theme.text, fontWeight: "600", fontSize: 13 }}>{t.name}</Text>
+                {t.description ? (
+                  <Text style={{ color: theme.textSecondary, fontSize: 11 }} numberOfLines={2}>
+                    {t.description}
+                  </Text>
+                ) : null}
+              </View>
+              <Ionicons name="chevron-forward" size={14} color={theme.textMuted} />
+            </TouchableOpacity>
+          ))}
+        </Card>
+      )}
 
       {/* Lineage replacement toggle */}
       <Card style={{ gap: 10 }}>
@@ -520,8 +622,8 @@ export const AncestrySection: React.FC<AncestrySectionProps> = ({
               .filter((r) => r.name.toLowerCase().includes(raceSearch.toLowerCase()))
               .map((r) => {
                 const asiStr = formatRaceASI(r.abilityScoreIncrease);
-                const isChoice = CHOICE_ASI_RACES.has(r.name);
-                const isLineage = LINEAGE_RACES.has(r.name);
+                const isLineage = r.name === "Dhampir" || r.name === "Hexblood" || r.name === "Reborn";
+                const isChoice = r.name === "Half-Elf" || r.name === "Custom Lineage";
                 return (
                   <Card key={`${r.name}__${r.source}`}>
                     {/* Header */}
@@ -569,7 +671,7 @@ export const AncestrySection: React.FC<AncestrySectionProps> = ({
                         {r.subraces.map((sr, idx) => {
                           const combined = collectFixedBonuses(r.abilityScoreIncrease, sr.abilityScoreIncrease);
                           const combinedStr = formatRaceASI(Object.entries(combined).map(([k, v]) => ({ [k]: v })));
-                          const srIsChoice = !sr.name || CHOICE_ASI_RACES.has(sr.name) || sr.name === "Variant";
+                          const srIsChoice = !sr.name || sr.name === "Variant" || sr.name === "Custom Lineage" || r.name === "Half-Elf";
                           return (
                             <TouchableOpacity
                               key={`${sr.name || "base"}_${idx}`}
@@ -615,6 +717,168 @@ export const AncestrySection: React.FC<AncestrySectionProps> = ({
           </View>
         </>
       )}
+
+      {/* Origin Feat Picker Modal */}
+      <Modal
+        visible={featModalVisible}
+        onClose={() => setFeatModalVisible(false)}
+        title="Choose Origin Feat"
+        subtitle="Select a 1st-level origin feat from your sourcebooks"
+        maxHeightPercent={90}>
+        <SearchBar
+          value={featSearch}
+          onChangeText={setFeatSearch}
+          placeholder="Search feats..."
+        />
+        <ScrollView style={{ marginTop: 10, maxHeight: 450 }}>
+          <View style={{ gap: 8 }}>
+            {allFeats
+              .filter((f) => f.name.toLowerCase().includes(featSearch.toLowerCase()))
+              .map((f) => {
+                const prereqCheck = validateFeatPrerequisites(character, f);
+                const bonusOptions = getFeatAbilityBonusOptions(f.name);
+                const isSelected = currentOriginFeat?.featName?.toLowerCase() === f.name.toLowerCase();
+
+                return (
+                  <TouchableOpacity
+                    key={`${f.name}__${f.source}`}
+                    activeOpacity={0.7}
+                    onPress={() => {
+                      const initialAbility =
+                        bonusOptions.abilities.length === 1 ? bonusOptions.abilities[0] : undefined;
+                      onUpdate((cur) =>
+                        applyOriginFeat(
+                          cur,
+                          {
+                            level: 1,
+                            type: "feat",
+                            featName: f.name,
+                            featSource: f.source,
+                            featAbility: initialAbility,
+                          },
+                          currentOriginFeat?.featName
+                        )
+                      );
+                      setFeatModalVisible(false);
+                    }}
+                    style={[
+                      styles.featureRow,
+                      {
+                        borderColor: isSelected ? theme.accent : theme.border,
+                        backgroundColor: isSelected ? theme.surfaceHighlight : theme.surface,
+                        padding: 10,
+                        borderRadius: 8,
+                      },
+                    ]}>
+                    <View style={{ flex: 1, gap: 4 }}>
+                      <View style={{ flexDirection: "row", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+                        <Text style={{ color: theme.text, fontSize: 14, fontWeight: "700" }}>{f.name}</Text>
+                        <Badge label={f.source} variant="surface" size="sm" />
+                        {!prereqCheck.met && (
+                          <Badge label={`⚠️ ${prereqCheck.reason}`} variant="danger" size="sm" />
+                        )}
+                      </View>
+                      {bonusOptions.abilities.length > 0 && (
+                        <Text style={{ color: theme.accent, fontSize: 11, fontWeight: "600" }}>
+                          Half-Feat (+1 to {bonusOptions.abilities.map((a) => a.toUpperCase()).join("/")})
+                        </Text>
+                      )}
+                      <Text style={{ color: theme.textSecondary, fontSize: 12 }} numberOfLines={2}>
+                        {f.description.replace(/\*\*/g, "").slice(0, 140)}...
+                      </Text>
+                    </View>
+                    <Button
+                      title={isSelected ? "Selected" : "Select"}
+                      variant={isSelected ? "secondary" : "primary"}
+                      size="sm"
+                      disabled={isSelected}
+                      onPress={() => {
+                        const initialAbility =
+                          bonusOptions.abilities.length === 1 ? bonusOptions.abilities[0] : undefined;
+                        onUpdate((cur) =>
+                          applyOriginFeat(
+                            cur,
+                            {
+                              level: 1,
+                              type: "feat",
+                              featName: f.name,
+                              featSource: f.source,
+                              featAbility: initialAbility,
+                            },
+                            currentOriginFeat?.featName
+                          )
+                        );
+                        setFeatModalVisible(false);
+                      }}
+                    />
+                  </TouchableOpacity>
+                );
+              })}
+          </View>
+        </ScrollView>
+      </Modal>
+
+      {/* Racial Wizard Cantrip Modal */}
+      <Modal
+        visible={cantripModalVisible}
+        onClose={() => setCantripModalVisible(false)}
+        title="Choose Wizard Cantrip"
+        subtitle={racialCantripTitle || "Racial Trait (Uses Intelligence)"}
+        maxHeightPercent={90}>
+        <SearchBar
+          value={cantripSearch}
+          onChangeText={setCantripSearch}
+          placeholder="Search wizard cantrips..."
+        />
+        <ScrollView style={{ marginTop: 10, maxHeight: 450 }}>
+          <View style={{ gap: 8 }}>
+            {wizardCantrips
+              .filter((s) => s.name.toLowerCase().includes(cantripSearch.toLowerCase()))
+              .map((s) => {
+                const isSelected = currentRacialCantrip?.toLowerCase() === s.name.toLowerCase();
+
+                return (
+                  <TouchableOpacity
+                    key={`${s.name}__${s.source}`}
+                    activeOpacity={0.7}
+                    onPress={() => {
+                      onUpdate((cur) => setRacialCantrip(cur, s.name));
+                      setCantripModalVisible(false);
+                    }}
+                    style={[
+                      styles.featureRow,
+                      {
+                        borderColor: isSelected ? theme.accent : theme.border,
+                        backgroundColor: isSelected ? theme.surfaceHighlight : theme.surface,
+                        padding: 10,
+                        borderRadius: 8,
+                      },
+                    ]}>
+                    <View style={{ flex: 1, gap: 2 }}>
+                      <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+                        <Text style={{ color: theme.text, fontSize: 14, fontWeight: "700" }}>{s.name}</Text>
+                        <Badge label={s.school || "Evocation"} variant="surface" size="sm" />
+                      </View>
+                      <Text style={{ color: theme.textSecondary, fontSize: 12 }} numberOfLines={2}>
+                        {s.description?.slice(0, 120)}...
+                      </Text>
+                    </View>
+                    <Button
+                      title={isSelected ? "Selected" : "Select"}
+                      variant={isSelected ? "secondary" : "primary"}
+                      size="sm"
+                      disabled={isSelected}
+                      onPress={() => {
+                        onUpdate((cur) => setRacialCantrip(cur, s.name));
+                        setCantripModalVisible(false);
+                      }}
+                    />
+                  </TouchableOpacity>
+                );
+              })}
+          </View>
+        </ScrollView>
+      </Modal>
     </View>
   );
 };

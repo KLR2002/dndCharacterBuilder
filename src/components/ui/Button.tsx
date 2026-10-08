@@ -60,6 +60,7 @@ export const Button: React.FC<ButtonProps> = ({
     <TouchableOpacity
       activeOpacity={0.7}
       disabled={disabled}
+      hitSlop={props.hitSlop ?? { top: 8, bottom: 8, left: 8, right: 8 }}
       style={[
         styles.btn,
         {
@@ -67,6 +68,7 @@ export const Button: React.FC<ButtonProps> = ({
           borderColor: border,
           paddingVertical: paddingV,
           paddingHorizontal: paddingH,
+          minHeight: size === "sm" ? 36 : 44,
           opacity: disabled ? 0.4 : 1,
         },
         style as ViewStyle,

@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+echo "==> Running pre-commit verification..."
+npm run check:all
+echo "==> All pre-commit checks passed!"
