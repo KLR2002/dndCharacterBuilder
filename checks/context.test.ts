@@ -57,10 +57,23 @@ async function providerHarness(initial: unknown = [makeChar()], options: {
   const js = transpileModule(source, { compilerOptions: { module: ModuleKind.CommonJS, jsx: JsxEmit.React, esModuleInterop: true } }).outputText;
   runInNewContext(js, { exports, console, require: (name: string) => {
     if (name === "react") return react;
+    if (name.includes("compendiumStorage")) return {
+      hasIntegratedCatalog: async () => false,
+      loadCompendiumData: async () => null,
+      clearCompendiumData: async () => {},
+    };
+    if (name.includes("runner")) return {
+      runInAppIntegration: async () => ({ hasIntegratedCatalog: true, integratedAt: new Date().toISOString() }),
+    };
     if (name.includes("storage")) return { ...storage, loadAll: options.loadAll ?? storage.loadAll };
     if (name.includes("characterUpdates")) return { applyCharacterUpdate };
     if (name.includes("migrateCharacter")) return { migrateCharacter };
-    if (name.includes("dataService")) return { getRaces: () => options.races ?? [] };
+    if (name.includes("dataService")) return {
+      getRaces: () => options.races ?? [],
+      initCompendiumStore: async () => {},
+      clearCompendiumStore: () => {},
+      setCompendiumStore: () => {},
+    };
     if (name.includes("constants/books")) return { DEFAULT_ACTIVE_BOOK_CODES: [] };
     if (name.includes("builderTransitions")) return { checkActiveBooksIntegrity: () => [] };
     throw new Error(`Unexpected provider import: ${name}`);

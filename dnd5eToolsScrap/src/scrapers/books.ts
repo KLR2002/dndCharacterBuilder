@@ -1,5 +1,4 @@
-import { ToolsClient } from "../client.js";
-import { BookModel } from "../types/models.js";
+import type { ToolsClient, BookModel } from "../types/models.ts";
 
 export const OFFLINE_2014_BOOKS: BookModel[] = [
   // Core Rules
@@ -80,16 +79,25 @@ export async function scrapeBooks(client: ToolsClient): Promise<BookModel[]> {
     console.warn(`  [WARN] Could not fetch data/books.json (${err.message}). Using offline catalog fallback.`);
   }
 
-  if (rawBooks.length > 0) {
-    return rawBooks.map((b) => ({
-      name: b.name,
-      id: b.id || b.source || b.name,
-      source: b.source || b.id,
-      group: b.group,
-      published: b.published,
-      author: b.author,
-    }));
+  const booksMap = new Map<string, BookModel>();
+  for (const b of OFFLINE_2014_BOOKS) {
+    booksMap.set((b.id || b.source)!, b);
+  }
+  for (const b of rawBooks) {
+    const id = b.id || b.source || b.name;
+    const source = b.source || b.id;
+    if (booksMap.has(id)) {
+      const existing = booksMap.get(id)!;
+      booksMap.set(id, {
+        name: existing.name || b.name,
+        id,
+        source,
+        group: existing.group || b.group || "other",
+        published: existing.published || b.published,
+        author: existing.author || b.author,
+      });
+    }
   }
 
-  return OFFLINE_2014_BOOKS;
+  return Array.from(booksMap.values());
 }

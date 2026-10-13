@@ -1,8 +1,8 @@
-import { ToolsClient } from "../client.js";
-import { resolveAllCopies } from "../parser/copy-resolver.js";
-import { renderEntries } from "../parser/entry-renderer.js";
-import { cleanTags } from "../parser/tag-cleaner.js";
-import { OptionFeatureModel } from "../types/models.js";
+import type { ToolsClient } from "../types/models.ts";
+import { resolveAllCopies } from "../parser/copy-resolver.ts";
+import { renderEntries } from "../parser/entry-renderer.ts";
+import { cleanTags } from "../parser/tag-cleaner.ts";
+import type { OptionFeatureModel } from "../types/models.ts";
 
 const FEATURE_TYPE_MAP: Record<string, string> = {
   AI: "Artificer Infusion",
@@ -70,24 +70,27 @@ export async function scrapeOptions(client: ToolsClient): Promise<OptionFeatureM
   return results;
 }
 
-function formatOptionPrerequisites(prereqs: any[] | null | undefined): string | null {
-  if (!prereqs || !Array.isArray(prereqs) || prereqs.length === 0) return null;
+function formatOptionPrerequisites(prereqs: any[] | any | null | undefined): string | null {
+  if (!prereqs) return null;
+  const list = Array.isArray(prereqs) ? prereqs : [prereqs];
+  if (list.length === 0) return null;
 
   const parts: string[] = [];
 
-  for (const p of prereqs) {
+  for (const p of list) {
     if (!p || typeof p !== "object") continue;
 
     if (p.other) {
-      parts.push(cleanTags(p.other, "plain"));
+      parts.push(cleanTags(String(p.other), "plain"));
     }
 
     if (p.level) {
       if (typeof p.level === "number") {
         parts.push(`Level ${p.level}`);
       } else if (typeof p.level === "object") {
-        const cls = p.level.class?.name || "character";
-        parts.push(`${p.level.level}${getOrdinal(p.level.level)}-level ${cls}`);
+        const lvl = typeof p.level.level === "number" ? p.level.level : (parseInt(String(p.level.level), 10) || 1);
+        const cls = p.level.class?.name || (typeof p.level.class === "string" ? p.level.class : "character");
+        parts.push(`${lvl}${getOrdinal(lvl)}-level ${cls}`);
       }
     }
 
@@ -100,18 +103,51 @@ function formatOptionPrerequisites(prereqs: any[] | null | undefined): string | 
     }
 
     if (Array.isArray(p.spell)) {
-      const spells = p.spell.map((s: string) => cleanTags(s.replace(/#.*$/, ""), "plain"));
-      parts.push(`${spells.join(", ")} cantrip/spell`);
+      const spells = p.spell
+        .map((s: any) => {
+          if (typeof s === "string") return cleanTags(s.replace(/#.*$/, ""), "plain");
+          if (s && typeof s === "object") {
+            if (s.choose) return `a ${s.choose} spell`;
+            if (s.name) return cleanTags(String(s.name).replace(/#.*$/, ""), "plain");
+          }
+          return "";
+        })
+        .filter(Boolean);
+      if (spells.length > 0) {
+        parts.push(`${spells.join(", ")} cantrip/spell`);
+      }
+    } else if (typeof p.spell === "string") {
+      parts.push(`${cleanTags(p.spell.replace(/#.*$/, ""), "plain")} cantrip/spell`);
+    } else if (p.spell === true) {
+      parts.push("Spellcasting or Pact Magic feature");
+    } else if (p.spell && typeof p.spell === "object") {
+      if (p.spell.choose) parts.push(`a ${p.spell.choose} spell`);
     }
 
     if (Array.isArray(p.item)) {
-      const items = p.item.map((i: string) => cleanTags(i, "plain"));
-      parts.push(items.join(", "));
+      const items = p.item
+        .map((i: any) => {
+          if (typeof i === "string") return cleanTags(i, "plain");
+          if (i && typeof i === "object" && i.name) return cleanTags(String(i.name), "plain");
+          return "";
+        })
+        .filter(Boolean);
+      if (items.length > 0) parts.push(items.join(", "));
+    } else if (typeof p.item === "string") {
+      parts.push(cleanTags(p.item, "plain"));
     }
 
     if (Array.isArray(p.feature)) {
-      const features = p.feature.map((f: string) => cleanTags(f, "plain"));
-      parts.push(features.join(", "));
+      const features = p.feature
+        .map((f: any) => {
+          if (typeof f === "string") return cleanTags(f, "plain");
+          if (f && typeof f === "object" && f.name) return cleanTags(String(f.name), "plain");
+          return "";
+        })
+        .filter(Boolean);
+      if (features.length > 0) parts.push(features.join(", "));
+    } else if (typeof p.feature === "string") {
+      parts.push(cleanTags(p.feature, "plain"));
     }
   }
 

@@ -1,11 +1,10 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
 import { availableRuleChoices } from "../src/rules/ruleChoices.ts";
 import { DEFAULT_ACTIVE_BOOK_CODES } from "../src/constants/books.ts";
-import { makeChar } from "./testUtils.ts";
+import { makeChar, loadTestCatalog } from "./testUtils.ts";
 
-const races = JSON.parse(readFileSync(new URL("../src/data/races.json", import.meta.url), "utf8"));
+const races = loadTestCatalog("races");
 
 const aasimar = makeChar({
   race: { name: "Aasimar", source: "MPMM" },

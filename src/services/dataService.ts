@@ -19,118 +19,214 @@ import type {
   OptionFeatureData,
   BeastData,
 } from "../types/dnd5e.ts";
+import type { CompendiumCollections } from "./compendiumStorage.ts";
+import { loadCompendiumData } from "./compendiumStorage.ts";
 
-const racesData = racesRaw as unknown as RaceData[];
-const classesData = classesRaw as unknown as ClassData[];
-const featsData = featsRaw as unknown as FeatData[];
-const backgroundsData = backgroundsRaw as unknown as BackgroundData[];
-const itemsData = itemsRaw as unknown as ItemData[];
-const spellsData = spellsRaw as unknown as SpellData[];
-const conditionsData = conditionsRaw as unknown as ConditionData[];
-const optionsData = optionsRaw as unknown as OptionFeatureData[];
-const beastsData = beastsRaw as unknown as BeastData[];
+let activeCompendiumStore: CompendiumCollections | null = null;
+
+export function isCompendiumIntegrated(): boolean {
+  return Boolean(activeCompendiumStore && activeCompendiumStore.hasIntegratedCatalog);
+}
+
+export function setCompendiumStore(store: CompendiumCollections | null): void {
+  activeCompendiumStore = store;
+}
+
+export async function initCompendiumStore(): Promise<void> {
+  try {
+    const data = await loadCompendiumData();
+    if (data && data.hasIntegratedCatalog) {
+      activeCompendiumStore = data;
+    } else {
+      activeCompendiumStore = null;
+    }
+  } catch {
+    activeCompendiumStore = null;
+  }
+}
+
+export function clearCompendiumStore(): void {
+  activeCompendiumStore = null;
+}
+
+// Helpers to get current active dataset (swapping SRD baseline out when integrated)
+function getRawRaces(): RaceData[] {
+  if (isCompendiumIntegrated() && activeCompendiumStore?.races?.length) {
+    return activeCompendiumStore.races.filter((r) => r.source !== "SRD");
+  }
+  return racesRaw as unknown as RaceData[];
+}
+
+function getRawClasses(): ClassData[] {
+  if (isCompendiumIntegrated() && activeCompendiumStore?.classes?.length) {
+    return activeCompendiumStore.classes.filter((c) => c.source !== "SRD");
+  }
+  return classesRaw as unknown as ClassData[];
+}
+
+function getRawFeats(): FeatData[] {
+  if (isCompendiumIntegrated() && activeCompendiumStore?.feats?.length) {
+    return activeCompendiumStore.feats.filter((f) => f.source !== "SRD");
+  }
+  return featsRaw as unknown as FeatData[];
+}
+
+function getRawBackgrounds(): BackgroundData[] {
+  if (isCompendiumIntegrated() && activeCompendiumStore?.backgrounds?.length) {
+    return activeCompendiumStore.backgrounds.filter((b) => b.source !== "SRD");
+  }
+  return backgroundsRaw as unknown as BackgroundData[];
+}
+
+function getRawItems(): ItemData[] {
+  if (isCompendiumIntegrated() && activeCompendiumStore?.items?.length) {
+    return activeCompendiumStore.items.filter((i) => i.source !== "SRD");
+  }
+  return itemsRaw as unknown as ItemData[];
+}
+
+function getRawSpells(): SpellData[] {
+  if (isCompendiumIntegrated() && activeCompendiumStore?.spells?.length) {
+    return activeCompendiumStore.spells.filter((s) => s.source !== "SRD");
+  }
+  return spellsRaw as unknown as SpellData[];
+}
+
+function getRawConditions(): ConditionData[] {
+  if (isCompendiumIntegrated() && activeCompendiumStore?.conditions?.length) {
+    return activeCompendiumStore.conditions.filter((c) => c.source !== "SRD");
+  }
+  return conditionsRaw as unknown as ConditionData[];
+}
+
+function getRawOptions(): OptionFeatureData[] {
+  if (isCompendiumIntegrated() && activeCompendiumStore?.optionsAndFeatures?.length) {
+    return activeCompendiumStore.optionsAndFeatures.filter((o) => o.source !== "SRD");
+  }
+  return optionsRaw as unknown as OptionFeatureData[];
+}
+
+function getRawBeasts(): BeastData[] {
+  if (isCompendiumIntegrated() && activeCompendiumStore?.beasts?.length) {
+    return activeCompendiumStore.beasts.filter((b) => b.source !== "SRD");
+  }
+  return beastsRaw as unknown as BeastData[];
+}
 
 export function getBeasts(activeBooks?: string[]): BeastData[] {
-  if (!activeBooks) return beastsData;
+  const beasts = getRawBeasts();
+  if (!activeBooks || !isCompendiumIntegrated()) return beasts;
   const set = new Set(activeBooks);
-  return beastsData.filter((b) => set.has(b.source));
+  return beasts.filter((b) => set.has(b.source) || b.source === "SRD");
 }
 
 export function getRaces(activeBooks?: string[]): RaceData[] {
-  if (!activeBooks) return racesData;
+  const races = getRawRaces();
+  if (!activeBooks || !isCompendiumIntegrated()) return races;
   const set = new Set(activeBooks);
-  return racesData
-    .filter((r) => set.has(r.source))
+  return races
+    .filter((r) => set.has(r.source) || r.source === "SRD")
     .map((r) => ({
       ...r,
-      subraces: (r.subraces || []).filter((sr) => set.has(sr.source)),
+      subraces: (r.subraces || []).filter((sr) => set.has(sr.source) || sr.source === "SRD"),
     }));
 }
 
 export function getClasses(activeBooks?: string[]): ClassData[] {
-  if (!activeBooks) return classesData;
+  const classes = getRawClasses();
+  if (!activeBooks || !isCompendiumIntegrated()) return classes;
   const set = new Set(activeBooks);
-  return classesData
-    .filter((c) => set.has(c.source))
+  return classes
+    .filter((c) => set.has(c.source) || c.source === "SRD")
     .map((c) => ({
       ...c,
-      subclasses: (c.subclasses || []).filter((sc) => set.has(sc.source)),
+      subclasses: (c.subclasses || []).filter((sc) => set.has(sc.source) || sc.source === "SRD"),
     }));
 }
 
 export function getFeats(activeBooks?: string[]): FeatData[] {
-  if (!activeBooks) return featsData;
+  const feats = getRawFeats();
+  if (!activeBooks || !isCompendiumIntegrated()) return feats;
   const set = new Set(activeBooks);
-  return featsData.filter((f) => set.has(f.source));
+  return feats.filter((f) => set.has(f.source) || f.source === "SRD");
 }
 
 export function getBackgrounds(activeBooks?: string[]): BackgroundData[] {
-  if (!activeBooks) return backgroundsData;
+  const backgrounds = getRawBackgrounds();
+  if (!activeBooks || !isCompendiumIntegrated()) return backgrounds;
   const set = new Set(activeBooks);
-  return backgroundsData.filter((b) => set.has(b.source));
+  return backgrounds.filter((b) => set.has(b.source) || b.source === "SRD");
 }
 
 export function getItems(activeBooks?: string[]): ItemData[] {
-  if (!activeBooks) return itemsData;
+  const items = getRawItems();
+  if (!activeBooks || !isCompendiumIntegrated()) return items;
   const set = new Set(activeBooks);
-  return itemsData.filter((i) => !i.source || set.has(i.source));
+  return items.filter((i) => !i.source || i.source === "SRD" || set.has(i.source));
 }
 
 export function getSpells(activeBooks?: string[]): SpellData[] {
-  if (!activeBooks) return spellsData;
+  const spells = getRawSpells();
+  if (!activeBooks || !isCompendiumIntegrated()) return spells;
   const set = new Set(activeBooks);
-  return spellsData.filter((s) => set.has(s.source));
+  return spells.filter((s) => set.has(s.source) || s.source === "SRD");
 }
 
 export function getConditions(): ConditionData[] {
-  return conditionsData;
+  return getRawConditions();
 }
 
 export function getOptionsAndFeatures(activeBooks?: string[]): OptionFeatureData[] {
-  if (!activeBooks) return optionsData;
+  const options = getRawOptions();
+  if (!activeBooks || !isCompendiumIntegrated()) return options;
   const set = new Set(activeBooks);
-  return optionsData.filter((o) => set.has(o.source));
+  return options.filter((o) => set.has(o.source) || o.source === "SRD");
 }
 
 export function findRace(name: string, source?: string): RaceData | undefined {
+  const races = getRawRaces();
   if (source) {
-    return racesData.find((r) => r.name === name && r.source === source);
+    return races.find((r) => r.name === name && r.source === source);
   }
-  return racesData.find((r) => r.name === name);
+  return races.find((r) => r.name === name);
 }
 
 export function findClass(name: string, source?: string): ClassData | undefined {
+  const classes = getRawClasses();
   if (source) {
-    return classesData.find((c) => c.name === name && c.source === source);
+    return classes.find((c) => c.name === name && c.source === source);
   }
-  return classesData.find((c) => c.name === name);
+  return classes.find((c) => c.name === name);
 }
 
 export function findSpell(name: string, source?: string): SpellData | undefined {
+  const spells = getRawSpells();
   if (source) {
-    return spellsData.find((s) => s.name === name && s.source === source);
+    return spells.find((s) => s.name === name && s.source === source);
   }
-  return spellsData.find((s) => s.name === name);
+  return spells.find((s) => s.name === name);
 }
 
 export function findItem(name: string, source?: string): ItemData | undefined {
+  const items = getRawItems();
   if (source) {
-    return itemsData.find((i) => i.name === name && i.source === source);
+    return items.find((i) => i.name === name && i.source === source);
   }
-  return itemsData.find((i) => i.name === name);
+  return items.find((i) => i.name === name);
 }
 
 export function findBackground(name: string, source?: string): BackgroundData | undefined {
+  const backgrounds = getRawBackgrounds();
   if (source) {
-    return backgroundsData.find((b) => b.name === name && b.source === source);
+    return backgrounds.find((b) => b.name === name && b.source === source);
   }
-  return backgroundsData.find((b) => b.name === name);
+  return backgrounds.find((b) => b.name === name);
 }
 
 export function findBeast(name: string, source?: string): BeastData | undefined {
+  const beasts = getRawBeasts();
   if (source) {
-    return beastsData.find((b) => b.name === name && b.source === source);
+    return beasts.find((b) => b.name === name && b.source === source);
   }
-  return beastsData.find((b) => b.name === name);
+  return beasts.find((b) => b.name === name);
 }
-

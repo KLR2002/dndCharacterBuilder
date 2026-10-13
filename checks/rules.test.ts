@@ -1,7 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
-import { makeChar } from "./testUtils.ts";
+import { makeChar, loadTestCatalog } from "./testUtils.ts";
 import type { CharacterClass } from "../src/types/character.ts";
 import { effectiveScores, getAbilityModifier, formatModifier } from "../src/rules/abilities.ts";
 import { maxHp, hitDiceByType } from "../src/rules/hp.ts";
@@ -14,8 +13,8 @@ import { proficiencyBonus, totalLevel, proficiencies } from "../src/rules/profic
 import { grantedFeatures } from "../src/rules/grantedFeatures.ts";
 import { CLASS_DATA, PHB_HALF_CASTER_SLOTS, PHB_THIRD_CASTER_SLOTS, spellcastingAbility, asiLevels } from "../src/rules/classData.ts";
 
-// Use the actual shipped catalog; production rules receive only resolved plain data.
-const readCatalog = (name: string) => JSON.parse(readFileSync(new URL(`../src/data/${name}.json`, import.meta.url), "utf8"));
+// Use the test catalog fixture; production rules receive only resolved plain data.
+const readCatalog = (name: string) => loadTestCatalog(name);
 const catalog = { classes: readCatalog("classes"), races: readCatalog("races"), backgrounds: readCatalog("backgrounds"), feats: readCatalog("feats") };
 const cl = (className: string, level: number, subclassName?: string): CharacterClass => ({ className, source: "PHB", level, subclassName });
 const scores = (values = {}) => ({ str: 10, dex: 10, con: 10, int: 10, wis: 10, cha: 10, ...values });

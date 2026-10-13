@@ -1,13 +1,11 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
 import { grantedFeatures } from "../src/rules/grantedFeatures.ts";
 import { ancestryRuleChoices } from "../src/rules/ruleChoices.ts";
-import { makeChar } from "./testUtils.ts";
+import { makeChar, loadTestCatalog } from "./testUtils.ts";
 import type { Character } from "../src/types/character.ts";
 
-const readCatalog = (name: string) =>
-  JSON.parse(readFileSync(new URL(`../src/data/${name}.json`, import.meta.url), "utf8"));
+const readCatalog = (name: string) => loadTestCatalog(name);
 const catalog = {
   races: readCatalog("races"),
   classes: readCatalog("classes"),

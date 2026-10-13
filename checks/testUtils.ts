@@ -1,5 +1,7 @@
 import type { Character } from "../src/types/character.ts";
 import { DEFAULT_ACTIVE_BOOK_CODES } from "../src/constants/books.ts";
+import { readFileSync, existsSync } from "node:fs";
+import { setCompendiumStore } from "../src/services/dataService.ts";
 
 export function makeChar(overrides: Partial<Character> = {}): Character {
   return {
@@ -27,8 +29,9 @@ import type {
   SpellData,
   ItemData,
   BeastData,
+  ConditionData,
+  OptionFeatureData,
 } from "../src/types/dnd5e.ts";
-import { readFileSync } from "node:fs";
 
 export function defaultSettings() {
   return {
@@ -40,6 +43,14 @@ export function defaultSettings() {
 }
 
 export function loadTestCatalog<T = any>(name: string): T {
+  const scrapPath = new URL(`../dnd5eToolsScrap/data/${name}.json`, import.meta.url);
+  if (existsSync(scrapPath)) {
+    return JSON.parse(readFileSync(scrapPath, "utf8"));
+  }
+  return JSON.parse(readFileSync(new URL(`../src/data/${name}.json`, import.meta.url), "utf8"));
+}
+
+export function loadSrdCatalog<T = any>(name: string): T {
   return JSON.parse(readFileSync(new URL(`../src/data/${name}.json`, import.meta.url), "utf8"));
 }
 
@@ -55,4 +66,25 @@ export function loadTestCatalogs() {
   };
 }
 
+// Seed compendiumStore with full integrated compendium for rule and progression test suites
+export function resetTestCompendium() {
+  try {
+    setCompendiumStore({
+      hasIntegratedCatalog: true,
+      races: loadTestCatalog<RaceData[]>("races"),
+      classes: loadTestCatalog<ClassData[]>("classes"),
+      feats: loadTestCatalog<FeatData[]>("feats"),
+      backgrounds: loadTestCatalog<BackgroundData[]>("backgrounds"),
+      items: loadTestCatalog<ItemData[]>("items"),
+      spells: loadTestCatalog<SpellData[]>("spells"),
+      beasts: loadTestCatalog<BeastData[]>("beasts"),
+      conditions: loadTestCatalog<ConditionData[]>("conditions"),
+      optionsAndFeatures: loadTestCatalog<OptionFeatureData[]>("options_and_features"),
+      books: loadTestCatalog<any[]>("books"),
+    });
+  } catch {
+    // Ignore in case scrap data not accessible
+  }
+}
 
+resetTestCompendium();

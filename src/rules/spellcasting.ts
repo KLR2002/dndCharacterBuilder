@@ -273,9 +273,9 @@ export function isSpellAvailableForClass(
 
   // Active book gating: spell's own sourcebook must be active if activeBooks is provided
   if (activeBooks !== undefined) {
-    const isSpellSourceActive = activeBooks.some(
-      (b) => b.toUpperCase() === (spell.source || "").toUpperCase()
-    );
+    const isSpellSourceActive =
+      (spell.source || "").toUpperCase() === "SRD" ||
+      activeBooks.some((b) => b.toUpperCase() === (spell.source || "").toUpperCase());
     if (!isSpellSourceActive) return false;
   }
 

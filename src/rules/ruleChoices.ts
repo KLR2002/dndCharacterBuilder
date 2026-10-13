@@ -101,11 +101,13 @@ export function lineageInheritsElements(character: Character, raceCatalog: RaceD
   const priorRace = raceCatalog.find(
     (r) => r.name === character.race?.name && (!character.race?.source || r.source === character.race.source)
   );
-  const priorSubrace = priorRace?.subraces?.find(
-    (s) =>
-      (!character.race?.subraceName || s.name === character.race.subraceName) &&
-      (!character.race?.subraceSource || s.source === character.race.subraceSource)
-  );
+  const priorSubrace = character.race?.subraceName
+    ? priorRace?.subraces?.find(
+        (s) =>
+          s.name === character.race?.subraceName &&
+          (!character.race?.subraceSource || s.source === character.race.subraceSource)
+      )
+    : undefined;
 
   const hasSpecialSpeed = Boolean(
     ((priorRace?.speed?.swim ?? 0) > 0) ||
@@ -175,11 +177,13 @@ export function ancestryRuleChoices(character: Character, raceCatalog: RaceData[
   const race = raceCatalog.find(
     (r) => r.name === choice.name && (!choice.source || r.source === choice.source)
   );
-  const subrace = race?.subraces?.find(
-    (s) =>
-      (!choice.subraceName || s.name === choice.subraceName) &&
-      (!choice.subraceSource || s.source === choice.subraceSource)
-  );
+  const subrace = choice.subraceName
+    ? race?.subraces?.find(
+        (s) =>
+          s.name === choice.subraceName &&
+          (!choice.subraceSource || s.source === choice.subraceSource)
+      )
+    : undefined;
 
   const source = subrace?.source ?? choice.source;
   const traitSource = subrace ? source : race?.source ?? choice.source;

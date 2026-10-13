@@ -1,16 +1,17 @@
 import * as fs from "node:fs";
 import * as path from "node:path";
-import { ToolsClient } from "./client.js";
-import { DEFAULT_CONFIG } from "./config.js";
-import { scrapeBackgrounds } from "./scrapers/backgrounds.js";
-import { scrapeBeasts } from "./scrapers/beasts.js";
-import { scrapeClasses } from "./scrapers/classes.js";
-import { scrapeFeats } from "./scrapers/feats.js";
-import { scrapeItems } from "./scrapers/items.js";
-import { scrapeOptions } from "./scrapers/options.js";
-import { scrapeRaces } from "./scrapers/races.js";
-import { scrapeSpells } from "./scrapers/spells.js";
-import { scrapeBooks } from "./scrapers/books.js";
+import { ToolsClient } from "./client.ts";
+import { DEFAULT_CONFIG } from "./config.ts";
+import { scrapeBackgrounds } from "./scrapers/backgrounds.ts";
+import { scrapeBeasts } from "./scrapers/beasts.ts";
+import { scrapeClasses } from "./scrapers/classes.ts";
+import { scrapeFeats } from "./scrapers/feats.ts";
+import { scrapeItems } from "./scrapers/items.ts";
+import { scrapeOptions } from "./scrapers/options.ts";
+import { scrapeRaces } from "./scrapers/races.ts";
+import { scrapeSpells } from "./scrapers/spells.ts";
+import { scrapeBooks } from "./scrapers/books.ts";
+import { scrapeConditions } from "./scrapers/conditions.ts";
 
 interface CliOptions {
   only: string[];
@@ -55,7 +56,7 @@ Usage:
 
 Options:
   --only <list>       Comma-separated list of categories to scrape:
-                      races, classes, feats, options, backgrounds, items, spells, beasts, books
+                      races, classes, feats, options, backgrounds, items, spells, beasts, books, conditions
                       Default: all
   --no-cache          Bypass local .cache directory and re-fetch from network
   --output <path>     Directory where formatted JSON files will be written
@@ -91,7 +92,7 @@ async function main(): Promise<void> {
   console.log(`Output:     ${opts.outputDir}`);
   console.log(`Cache:      ${opts.noCache ? "Disabled" : "Enabled (.cache/)"}`);
   console.log(
-    `Categories: ${opts.only.length > 0 ? opts.only.join(", ") : "All (Races, Classes, Feats, Options, Backgrounds, Items, Spells)"}`
+    `Categories: ${opts.only.length > 0 ? opts.only.join(", ") : "All (Races, Classes, Feats, Options, Backgrounds, Items, Spells, Beasts, Books, Conditions)"}`
   );
   console.log("--------------------------------------------------");
 
@@ -257,6 +258,33 @@ async function main(): Promise<void> {
         if (fs.existsSync(path.dirname(p))) {
           saveJson(p, books);
           console.log(`  ✓ Synced books to ${p}`);
+          break;
+        }
+      }
+    }
+
+    // 10. Conditions & Diseases
+    if (shouldRun("conditions") || shouldRun("diseases") || shouldRun("status")) {
+      console.log("\n[10/10] Scraping Conditions & Statuses...");
+      const conditions = await scrapeConditions(client);
+      const file = path.join(opts.outputDir, "conditions.json");
+      const { count, bytes } = saveJson(file, conditions);
+      summary["Conditions"] = {
+        count,
+        size: formatBytes(bytes),
+        file: path.relative(process.cwd(), file),
+      };
+      console.log(`  ✓ Saved ${count} conditions -> ${file} (${formatBytes(bytes)})`);
+
+      // Sync to src/data/conditions.json if possible
+      const candidatePaths = [
+        path.resolve(process.cwd(), "../src/data/conditions.json"),
+        path.resolve(process.cwd(), "src/data/conditions.json"),
+      ];
+      for (const p of candidatePaths) {
+        if (fs.existsSync(path.dirname(p))) {
+          saveJson(p, conditions);
+          console.log(`  ✓ Synced conditions to ${p}`);
           break;
         }
       }

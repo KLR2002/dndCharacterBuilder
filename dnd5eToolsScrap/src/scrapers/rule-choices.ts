@@ -1,4 +1,4 @@
-import { renderEntries } from "../parser/entry-renderer.js";
+import { renderEntries } from "../parser/entry-renderer.ts";
 
 /**
  * A Rule Choice is a selection the player makes from a fixed set of options

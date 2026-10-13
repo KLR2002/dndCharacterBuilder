@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "build": "tsc",
+    "build": "tsc --noEmit",
     "start": "node dist/index.js",
     "scrape": "tsx src/index.ts",
     "scrape:races": "tsx src/index.ts --only races",
@@ -16,6 +16,7 @@
     "scrape:spells": "tsx src/index.ts --only spells",
     "scrape:beasts": "tsx src/index.ts --only beasts",
     "scrape:books": "tsx src/index.ts --only books",
+    "scrape:conditions": "tsx src/index.ts --only conditions",
     "test": "tsx --test 'checks/**/*.test.ts'"
   },
   "keywords": [],

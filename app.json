@@ -1,10 +1,10 @@
 {
   "expo": {
-    "name": "dnd5e2014CharacterBuilder",
+    "name": "Character Builder",
     "slug": "dnd5e2014CharacterBuilder",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/icon.png",
+    "icon": "./assets/images/dice-twenty-faces-twenty-red.png",
     "scheme": "dnd5e2014characterbuilder",
     "userInterfaceStyle": "automatic",
     "ios": {
@@ -12,25 +12,25 @@
     },
     "android": {
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
-        "foregroundImage": "./assets/images/android-icon-foreground.png",
-        "backgroundImage": "./assets/images/android-icon-background.png",
-        "monochromeImage": "./assets/images/android-icon-monochrome.png"
+        "backgroundColor": "#dc2626",
+        "foregroundImage": "./assets/images/dice-twenty-faces-twenty.png",
+        //"backgroundImage": "./assets/images/android-icon-background.png",
+        "monochromeImage": "./assets/images/dice-twenty-faces-twenty.png"
       },
       "predictiveBackGestureEnabled": false,
       "package": "com.anonymous.dnd5e2014CharacterBuilder"
     },
     "web": {
       "output": "static",
-      "favicon": "./assets/images/favicon.png"
+      "favicon": "./assets/images/dice-twenty-faces-twenty.png"
     },
     "plugins": [
       "expo-router",
       [
         "expo-splash-screen",
         {
-          "backgroundColor": "#208AEF",
-          "image": "./assets/images/splash-icon.png",
+          "backgroundColor": "#dc2626",
+          "image": "./assets/images/dice-twenty-faces-twenty.png",
           "imageWidth": 76
         }
       ],

@@ -1,11 +1,36 @@
 {
-  "scrapedAt": "2026-10-04T17:15:10.987Z",
-  "source": "https://2014.5e.tools",
+  "scrapedAt": "2026-10-10T20:22:00.198Z",
+  "source": "System Reference Document 5.1 (OGL / Creative Commons)",
   "categories": {
+    "Classes": {
+      "count": 12
+    },
+    "Races": {
+      "count": 9
+    },
+    "Backgrounds": {
+      "count": 1
+    },
+    "Feats": {
+      "count": 1
+    },
     "Spells": {
-      "count": 525,
-      "size": "1.19 MB",
-      "file": "data/spells.json"
+      "count": 319
+    },
+    "Items": {
+      "count": 586
+    },
+    "Beasts": {
+      "count": 92
+    },
+    "Conditions": {
+      "count": 17
+    },
+    "Options": {
+      "count": 82
+    },
+    "Books": {
+      "count": 1
     }
   }
 }

@@ -1,8 +1,9 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { loadTestCatalog, makeChar } from "./testUtils.ts";
+import { resolveAncestryState, applyAncestrySelection } from "../src/rules/ancestryEngine.ts";
 
-const races = JSON.parse(readFileSync(new URL("../src/data/races.json", import.meta.url), "utf8"));
+const races = loadTestCatalog("races");
 
 const halfElfVariants = races
   .find((r: any) => r.name === "Half-Elf")
@@ -49,4 +50,32 @@ test("a variant half-elf's subrace resolves by its normalised descent name", () 
     .subraces.find((s: any) => s.name === "Drow Descent");
   assert.ok(found, "the catalog should be addressable by descent name");
   assert.equal(found.isVariant, true);
+});
+
+test("non-srd catalog distinguishes base human (+1 all) from variant human", () => {
+  const human = races.find((r: any) => r.name === "Human");
+  assert.ok(human, "Human should exist in catalog");
+  assert.ok(human.subraces.length > 1, "Human should have multiple subraces including base and variant");
+
+  const baseSub = human.subraces.find((s: any) => !s.name || s.name === "Human");
+  assert.ok(baseSub, "Base Human subrace should exist");
+  assert.deepEqual(baseSub.abilityScoreIncrease, [{ str: 1, dex: 1, con: 1, int: 1, wis: 1, cha: 1 }]);
+
+  const variantSub = human.subraces.find((s: any) => s.name === "Variant");
+  assert.ok(variantSub, "Variant Human subrace should exist");
+  assert.equal(variantSub.isVariant, true);
+
+  // Applying Base Human grants +1 to all six stats and no origin feat
+  const baseChar = applyAncestrySelection(makeChar(), human, baseSub, { races });
+  assert.deepEqual(baseChar.racialAbilityBonuses, { str: 1, dex: 1, con: 1, int: 1, wis: 1, cha: 1 });
+  const baseState = resolveAncestryState(baseChar, { races });
+  assert.equal(baseState.hasOriginFeat, false);
+  assert.equal(baseState.isChoiceASIRace, false);
+
+  // Applying Variant Human grants Choice ASI and origin feat
+  const variantChar = applyAncestrySelection(makeChar(), human, variantSub, { races });
+  const variantState = resolveAncestryState(variantChar, { races });
+  assert.equal(variantState.hasOriginFeat, true);
+  assert.equal(variantState.isChoiceASIRace, true);
+  assert.deepEqual(variantState.choiceASIConfig, { count: 2, amount: 1 });
 });

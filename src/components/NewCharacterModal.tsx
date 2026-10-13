@@ -1,5 +1,11 @@
 import React, { useState } from "react";
-import { StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
+import {
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from "react-native";
 import { useCharacters } from "../context/CharacterContext";
 import { useAppTheme } from "../context/ThemeContext";
 import { Button } from "./ui/Button";
@@ -39,7 +45,9 @@ export const NewCharacterModal: React.FC<NewCharacterModalProps> = ({
   const [alignment, setAlignment] = useState("");
   const [factionName, setFactionName] = useState("");
   const [factionRank, setFactionRank] = useState("");
-  const [folderId, setFolderId] = useState<string | null>(initialFolderId || null);
+  const [folderId, setFolderId] = useState<string | null>(
+    initialFolderId || null,
+  );
   const [error, setError] = useState<string | null>(null);
 
   const handleCreate = async () => {
@@ -82,7 +90,8 @@ export const NewCharacterModal: React.FC<NewCharacterModalProps> = ({
           <Button title="Cancel" variant="ghost" onPress={onClose} />
           <Button title="Proceed to Builder" onPress={handleCreate} />
         </View>
-      }>
+      }
+    >
       <View style={styles.container}>
         {/* Name Field (Required) */}
         <View style={styles.formGroup}>
@@ -98,7 +107,7 @@ export const NewCharacterModal: React.FC<NewCharacterModalProps> = ({
                 color: theme.text,
               },
             ]}
-            placeholder="e.g. Roland of Gilead, Seraphina Starling"
+            placeholder="e.g. Rendar Engelhart, Dianain Drakecroft"
             placeholderTextColor={theme.textMuted}
             value={name}
             onChangeText={(t) => {
@@ -107,12 +116,18 @@ export const NewCharacterModal: React.FC<NewCharacterModalProps> = ({
             }}
             autoFocus
           />
-          {error ? <Text style={[styles.errorText, { color: theme.danger }]}>{error}</Text> : null}
+          {error ? (
+            <Text style={[styles.errorText, { color: theme.danger }]}>
+              {error}
+            </Text>
+          ) : null}
         </View>
 
         {/* Gender Field */}
         <View style={styles.formGroup}>
-          <Text style={[styles.label, { color: theme.textSecondary }]}>Gender (Optional)</Text>
+          <Text style={[styles.label, { color: theme.textSecondary }]}>
+            Gender (Optional)
+          </Text>
           <TextInput
             style={[
               styles.input,
@@ -131,7 +146,9 @@ export const NewCharacterModal: React.FC<NewCharacterModalProps> = ({
 
         {/* Alignment Selector */}
         <View style={styles.formGroup}>
-          <Text style={[styles.label, { color: theme.textSecondary }]}>Alignment (Optional)</Text>
+          <Text style={[styles.label, { color: theme.textSecondary }]}>
+            Alignment (Optional)
+          </Text>
           <View style={styles.alignmentGrid}>
             {ALIGNMENTS.map((al) => {
               const isSelected = alignment === al;
@@ -143,15 +160,21 @@ export const NewCharacterModal: React.FC<NewCharacterModalProps> = ({
                   style={[
                     styles.alignmentChip,
                     {
-                      backgroundColor: isSelected ? theme.accentGlow : theme.surfaceRaised,
+                      backgroundColor: isSelected
+                        ? theme.accentGlow
+                        : theme.surfaceRaised,
                       borderColor: isSelected ? theme.accent : theme.border,
                     },
-                  ]}>
+                  ]}
+                >
                   <Text
                     style={[
                       styles.alignmentText,
-                      { color: isSelected ? theme.accent : theme.textSecondary },
-                    ]}>
+                      {
+                        color: isSelected ? theme.accent : theme.textSecondary,
+                      },
+                    ]}
+                  >
                     {al}
                   </Text>
                 </TouchableOpacity>
@@ -162,7 +185,9 @@ export const NewCharacterModal: React.FC<NewCharacterModalProps> = ({
 
         {/* Faction Fields */}
         <View style={styles.formGroup}>
-          <Text style={[styles.label, { color: theme.textSecondary }]}>Faction (Optional)</Text>
+          <Text style={[styles.label, { color: theme.textSecondary }]}>
+            Faction (Optional)
+          </Text>
           <View style={{ flexDirection: "row", gap: 10 }}>
             <TextInput
               style={[
@@ -174,7 +199,7 @@ export const NewCharacterModal: React.FC<NewCharacterModalProps> = ({
                   color: theme.text,
                 },
               ]}
-              placeholder="Faction name (e.g. Harpers)"
+              placeholder="(e.g. Harpers)"
               placeholderTextColor={theme.textMuted}
               value={factionName}
               onChangeText={setFactionName}
@@ -200,18 +225,31 @@ export const NewCharacterModal: React.FC<NewCharacterModalProps> = ({
         {/* Folder Selection */}
         {folders.length > 0 ? (
           <View style={styles.formGroup}>
-            <Text style={[styles.label, { color: theme.textSecondary }]}>Folder (Optional)</Text>
+            <Text style={[styles.label, { color: theme.textSecondary }]}>
+              Folder (Optional)
+            </Text>
             <View style={styles.folderRow}>
               <TouchableOpacity
                 onPress={() => setFolderId(null)}
                 style={[
                   styles.folderChip,
                   {
-                    backgroundColor: folderId === null ? theme.accentGlow : theme.surfaceRaised,
-                    borderColor: folderId === null ? theme.accent : theme.border,
+                    backgroundColor:
+                      folderId === null
+                        ? theme.accentGlow
+                        : theme.surfaceRaised,
+                    borderColor:
+                      folderId === null ? theme.accent : theme.border,
                   },
-                ]}>
-                <Text style={{ color: folderId === null ? theme.accent : theme.textSecondary, fontSize: 13 }}>
+                ]}
+              >
+                <Text
+                  style={{
+                    color:
+                      folderId === null ? theme.accent : theme.textSecondary,
+                    fontSize: 13,
+                  }}
+                >
                   No Folder
                 </Text>
               </TouchableOpacity>
@@ -222,11 +260,22 @@ export const NewCharacterModal: React.FC<NewCharacterModalProps> = ({
                   style={[
                     styles.folderChip,
                     {
-                      backgroundColor: folderId === f.id ? theme.accentGlow : theme.surfaceRaised,
-                      borderColor: folderId === f.id ? theme.accent : theme.border,
+                      backgroundColor:
+                        folderId === f.id
+                          ? theme.accentGlow
+                          : theme.surfaceRaised,
+                      borderColor:
+                        folderId === f.id ? theme.accent : theme.border,
                     },
-                  ]}>
-                  <Text style={{ color: folderId === f.id ? theme.accent : theme.textSecondary, fontSize: 13 }}>
+                  ]}
+                >
+                  <Text
+                    style={{
+                      color:
+                        folderId === f.id ? theme.accent : theme.textSecondary,
+                      fontSize: 13,
+                    }}
+                  >
                     📁 {f.name}
                   </Text>
                 </TouchableOpacity>

@@ -1,6 +1,5 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
 import { migrateCharacter } from "../src/rules/migrateCharacter.ts";
 import {
   availableRuleChoices,
@@ -11,9 +10,9 @@ import {
   toggleSubclassRuleChoice,
   type Character,
 } from "../src/rules/ruleChoices.ts";
-import { makeChar } from "./testUtils.ts";
+import { makeChar, loadTestCatalog } from "./testUtils.ts";
 
-const races = JSON.parse(readFileSync(new URL("../src/data/races.json", import.meta.url), "utf8"));
+const races = loadTestCatalog("races");
 const catalog = { races };
 
 const raceChar = (name: string, source: string, subrace?: { name: string; source: string }): Character =>

@@ -1,8 +1,8 @@
-import { ToolsClient } from "../client.js";
-import { resolveAllCopies } from "../parser/copy-resolver.js";
-import { renderEntries } from "../parser/entry-renderer.js";
-import { cleanTags } from "../parser/tag-cleaner.js";
-import { FeatModel } from "../types/models.js";
+import type { ToolsClient } from "../types/models.ts";
+import { resolveAllCopies } from "../parser/copy-resolver.ts";
+import { renderEntries } from "../parser/entry-renderer.ts";
+import { cleanTags } from "../parser/tag-cleaner.ts";
+import type { FeatModel } from "../types/models.ts";
 
 const STAT_NAMES: Record<string, string> = {
   str: "Strength",

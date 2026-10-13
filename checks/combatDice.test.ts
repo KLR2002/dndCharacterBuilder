@@ -1,6 +1,5 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
 import {
   getBardicInspirationDie,
   getSneakAttackDice,
@@ -10,13 +9,9 @@ import {
 import { evaluateCharacter } from "../src/rules/characterEvaluation.ts";
 import { isMonkWeapon, getWeaponAttacks } from "../src/rules/attacks.ts";
 import type { Character } from "../src/types/character.ts";
+import { loadTestCatalog } from "./testUtils.ts";
 
-const readCatalog = (name: string) =>
-  JSON.parse(
-    readFileSync(new URL(`../src/data/${name}.json`, import.meta.url), "utf8")
-  );
-
-const classes = readCatalog("classes");
+const classes = loadTestCatalog("classes");
 
 function makeTestChar(overrides: Partial<Character> = {}): Character {
   return {

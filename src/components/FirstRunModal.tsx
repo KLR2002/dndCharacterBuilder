@@ -1,169 +1,226 @@
-import React, { useState } from "react";
-import { StyleSheet, Text, TouchableOpacity, View, useWindowDimensions } from "react-native";
-import { ALL_RESOURCE_BOOKS, DEFAULT_ACTIVE_BOOK_CODES } from "../constants/books";
+import { Ionicons } from "@expo/vector-icons";
+import React from "react";
+import { StyleSheet, Text, View, useWindowDimensions } from "react-native";
 import { useAppTheme } from "../context/ThemeContext";
 import { Badge } from "./ui/Badge";
 import { Button } from "./ui/Button";
+import { Card } from "./ui/Card";
 import { Modal } from "./ui/Modal";
 
 interface FirstRunModalProps {
   visible: boolean;
-  onComplete: (activeBooks: string[]) => void;
+  onComplete: (activeBooks?: string[]) => void;
 }
 
-export const FirstRunModal: React.FC<FirstRunModalProps> = ({ visible, onComplete }) => {
+export const FirstRunModal: React.FC<FirstRunModalProps> = ({
+  visible,
+  onComplete,
+}) => {
   const { theme } = useAppTheme();
   const { width } = useWindowDimensions();
   const isCompact = width < 520;
-  const [selectedBooks, setSelectedBooks] = useState<string[]>(DEFAULT_ACTIVE_BOOK_CODES);
-
-  const toggleBook = (code: string) => {
-    setSelectedBooks((prev) =>
-      prev.includes(code) ? prev.filter((c) => c !== code) : [...prev, code]
-    );
-  };
-
-  const selectAll = () => {
-    setSelectedBooks(ALL_RESOURCE_BOOKS.map((b) => b.code));
-  };
-
-  const deselectAll = () => {
-    setSelectedBooks([]);
-  };
-
-  const resetDefault = () => {
-    setSelectedBooks(DEFAULT_ACTIVE_BOOK_CODES);
-  };
 
   return (
     <Modal
       visible={visible}
-      onClose={() => onComplete(selectedBooks)}
-      title="Welcome, Adventurer!"
-      subtitle="Choose which official source books you'd like to use. You can change this anytime in Options."
+      onClose={() => onComplete()}
+      title="Welcome to D&D Character Builder"
+      subtitle="Your offline-first companion for D&D 5e (2014 ruleset)"
       maxHeightPercent={90}
       footer={
-        <View style={[styles.footer, isCompact ? styles.footerCompact : styles.footerWide]}>
+        <View
+          style={[
+            styles.footer,
+            isCompact ? styles.footerCompact : styles.footerWide,
+          ]}
+        >
           <Text
             style={[
-              styles.countText,
-              isCompact && styles.countTextCompact,
+              styles.footerText,
+              isCompact && styles.footerTextCompact,
               { color: theme.textSecondary },
-            ]}>
-            {selectedBooks.length} of {ALL_RESOURCE_BOOKS.length} books selected
+            ]}
+          >
+            You can customize sourcebooks anytime in Settings.
           </Text>
           <Button
             title="Start Building Characters"
-            onPress={() => onComplete(selectedBooks)}
+            onPress={() => onComplete()}
             size="md"
             style={isCompact ? styles.actionBtnCompact : undefined}
           />
         </View>
-      }>
-      {/* Quick Actions */}
-      <View style={styles.buttonRow}>
-        <Button title="Select All" variant="secondary" size="sm" onPress={selectAll} />
-        <Button title="Deselect All" variant="secondary" size="sm" onPress={deselectAll} />
-        <Button title="Reset to Default" variant="secondary" size="sm" onPress={resetDefault} />
-      </View>
-
-      {/* Book Checklist */}
-      <View style={styles.bookList}>
-        {ALL_RESOURCE_BOOKS.map((book) => {
-          const isSelected = selectedBooks.includes(book.code);
-          return (
-            <TouchableOpacity
-              key={book.code}
-              activeOpacity={0.7}
-              onPress={() => toggleBook(book.code)}
+      }
+    >
+      <View style={styles.content}>
+        {/* SRD Baseline Info Card */}
+        <Card style={styles.sectionCard}>
+          <View style={styles.cardHeader}>
+            <View
               style={[
-                styles.bookItem,
-                {
-                  backgroundColor: isSelected ? theme.surfaceRaised : theme.surface,
-                  borderColor: isSelected ? theme.accent : theme.border,
-                },
-              ]}>
-              <View
-                style={[
-                  styles.checkbox,
-                  {
-                    backgroundColor: isSelected ? theme.accent : "transparent",
-                    borderColor: isSelected ? theme.accent : theme.borderLight,
-                  },
-                ]}>
-                {isSelected ? (
-                  <Text style={[styles.checkmark, { color: theme.accentText }]}>✓</Text>
-                ) : null}
-              </View>
-
-              <View style={styles.bookInfo}>
-                <View style={styles.titleRow}>
-                  <Text style={[styles.bookCode, { color: theme.accent }]}>{book.code}</Text>
-                  <Text style={[styles.bookName, { color: theme.text }]} numberOfLines={1}>
-                    {book.name}
-                  </Text>
-                </View>
-              </View>
-
+                styles.iconWrapper,
+                { backgroundColor: theme.surfaceHighlight },
+              ]}
+            >
+              <Ionicons name="book-outline" size={22} color={theme.accent} />
+            </View>
+            <View style={styles.headerText}>
+              <Text style={[styles.cardTitle, { color: theme.text }]}>
+                SRD 5.1 Baseline Included
+              </Text>
               <Badge
-                label={book.category.toUpperCase()}
+                label="OGL / SRD 5.1"
                 size="sm"
-                variant={book.isDefaultActive ? "accent" : "surface"}
+                variant="accent"
+                style={styles.badge}
               />
-            </TouchableOpacity>
-          );
-        })}
+            </View>
+          </View>
+          <Text
+            style={[styles.cardDescription, { color: theme.textSecondary }]}
+          >
+            Out of the box, the app includes the complete 2014 System Reference
+            Document (SRD 5.1). This gives you instant access to:
+          </Text>
+          <View style={styles.featureList}>
+            <Text style={[styles.featureItem, { color: theme.text }]}>
+              • 12 Classes with their SRD archetypes (Champion, Life, Evocation,
+              etc.)
+            </Text>
+            <Text style={[styles.featureItem, { color: theme.text }]}>
+              • 9 Core Races and subraces (Elf, Dwarf, Human, Tiefling, etc.)
+            </Text>
+            <Text style={[styles.featureItem, { color: theme.text }]}>
+              • Hundreds of SRD Spells, Magic Items, and Wild Shape Beasts
+            </Text>
+            <Text style={[styles.featureItem, { color: theme.text }]}>
+              • Standard Backgrounds, Conditions, and Progression Rules
+            </Text>
+          </View>
+        </Card>
+
+        {/* 5eTools Integration Notice Card */}
+        <Card style={styles.sectionCard}>
+          <View style={styles.cardHeader}>
+            <View
+              style={[
+                styles.iconWrapper,
+                { backgroundColor: theme.surfaceHighlight },
+              ]}
+            >
+              <Ionicons
+                name="cloud-download-outline"
+                size={22}
+                color={theme.accent}
+              />
+            </View>
+            <View style={styles.headerText}>
+              <Text style={[styles.cardTitle, { color: theme.text }]}>
+                5eTools Integration
+              </Text>
+              <Badge
+                label="In Settings"
+                size="sm"
+                variant="surface"
+                style={styles.badge}
+              />
+            </View>
+          </View>
+          <Text
+            style={[styles.cardDescription, { color: theme.textSecondary }]}
+          >
+            To protect copyright, no commercial expansion sourcebooks are
+            bundled with this application.
+          </Text>
+          <View
+            style={[
+              styles.noticeBox,
+              {
+                backgroundColor: theme.surfaceHighlight,
+                borderColor: theme.border,
+              },
+            ]}
+          >
+            <Ionicons
+              name="information-circle-outline"
+              size={18}
+              color={theme.accent}
+              style={{ marginTop: 2 }}
+            />
+            <Text style={[styles.noticeText, { color: theme.text }]}>
+              If you legally own official 5e supplements, you can enable the{" "}
+              <Text style={{ fontWeight: "bold" }}>5eTools Integration</Text> in
+              Settings to sync and reference your owned material directly in
+              your local device storage.
+            </Text>
+          </View>
+        </Card>
       </View>
     </Modal>
   );
 };
 
 const styles = StyleSheet.create({
-  buttonRow: {
-    flexDirection: "row",
-    gap: 8,
-    marginBottom: 16,
-    flexWrap: "wrap",
+  content: {
+    gap: 16,
   },
-  bookList: {
-    gap: 8,
+  sectionCard: {
+    padding: 16,
+    gap: 12,
   },
-  bookItem: {
+  cardHeader: {
     flexDirection: "row",
     alignItems: "center",
+    gap: 12,
+  },
+  iconWrapper: {
+    width: 36,
+    height: 36,
+    borderRadius: 8,
+    alignItems: "center",
+    justifyContent: "center",
+    flexShrink: 0,
+  },
+  headerText: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    flexWrap: "wrap",
+    gap: 8,
+  },
+  cardTitle: {
+    fontSize: 15,
+    fontWeight: "700",
+    flex: 1,
+    flexShrink: 1,
+  },
+  badge: {
+    flexShrink: 0,
+  },
+  cardDescription: {
+    fontSize: 14,
+    lineHeight: 20,
+  },
+  featureList: {
+    gap: 6,
+    paddingLeft: 4,
+  },
+  featureItem: {
+    fontSize: 13,
+    lineHeight: 18,
+  },
+  noticeBox: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 10,
     padding: 12,
     borderRadius: 8,
     borderWidth: 1,
-    gap: 12,
   },
-  checkbox: {
-    width: 22,
-    height: 22,
-    borderRadius: 4,
-    borderWidth: 2,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  checkmark: {
-    fontSize: 14,
-    fontWeight: "bold",
-    marginTop: -2,
-  },
-  bookInfo: {
-    flex: 1,
-  },
-  titleRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-  },
-  bookCode: {
-    fontWeight: "700",
+  noticeText: {
     fontSize: 13,
-  },
-  bookName: {
-    fontSize: 14,
-    fontWeight: "500",
+    lineHeight: 18,
     flex: 1,
   },
   footer: {
@@ -180,10 +237,10 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     gap: 12,
   },
-  countText: {
+  footerText: {
     fontSize: 13,
   },
-  countTextCompact: {
+  footerTextCompact: {
     textAlign: "center",
   },
   actionBtnCompact: {

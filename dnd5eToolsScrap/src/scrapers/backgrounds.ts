@@ -1,8 +1,8 @@
-import { ToolsClient } from "../client.js";
-import { resolveAllCopies } from "../parser/copy-resolver.js";
-import { renderEntries } from "../parser/entry-renderer.js";
-import { cleanTags } from "../parser/tag-cleaner.js";
-import { BackgroundModel } from "../types/models.js";
+import type { ToolsClient } from "../types/models.ts";
+import { resolveAllCopies } from "../parser/copy-resolver.ts";
+import { renderEntries } from "../parser/entry-renderer.ts";
+import { cleanTags } from "../parser/tag-cleaner.ts";
+import type { BackgroundModel } from "../types/models.ts";
 
 export async function scrapeBackgrounds(client: ToolsClient): Promise<BackgroundModel[]> {
   console.log("  → Fetching backgrounds from data/backgrounds.json...");
@@ -81,7 +81,10 @@ export async function scrapeBackgrounds(client: ToolsClient): Promise<Background
 
         if (entry.data?.isFeature || (typeof entry.name === "string" && entry.name.startsWith("Feature:"))) {
           feature = {
-            name: cleanTags(entry.name.replace(/^Feature:\s*/, ""), "plain"),
+            name: cleanTags(
+              typeof entry.name === "string" ? entry.name.replace(/^Feature:\s*/, "") : (entry.name || ""),
+              "plain"
+            ),
             description: renderEntries(entry.entries || entry.entry, "markdown"),
           };
         }
