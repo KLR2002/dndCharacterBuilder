@@ -35,6 +35,8 @@ import {
 import {
   SUBCLASS_CHOICE_ROWS,
   hasOptionalFeature,
+  isPointerRow,
+  readPointerRow,
   resolveRowOptions,
   rowOwnedBy,
 } from "./subclassChoiceTable.ts";
@@ -305,7 +307,8 @@ const FEAT_GRANTED_CHOICE_IDS = new Set<string>([
 /**
  * Returns all subclass rule choices defined by the character's active classes and subclasses.
  * Class and subclass choices come from the table in `subclassChoiceTable.ts`, in table order
- * within each class. The specialised choice modules follow as dynamic sources.
+ * within each class. Pointer rows read their options from the Compendium and are not offered
+ * when it has none. The specialised choice modules follow as dynamic sources.
  */
 export function subclassRuleChoices(
   character: Character,
@@ -321,15 +324,22 @@ export function subclassRuleChoices(
       if (!(c.level >= row.level)) continue;
       if (!rowOwnedBy(row, c.className, subName)) continue;
       if (row.requiresOptionalFeature && !hasOptionalFeature(character, row.requiresOptionalFeature)) continue;
+      const offer = isPointerRow(row)
+        ? readPointerRow(row, compendium, activeBooks)
+        : {
+            choose: row.choose,
+            options: resolveRowOptions(row, { character, choiceId: row.id, activeBooks, compendium }),
+          };
+      if (!offer) continue;
       out.push({
         id: row.id,
         traitName: row.traitName,
         origin: "subclass",
         source: row.source,
-        choose: row.choose,
+        choose: offer.choose,
         level: row.level,
         effectLevel: row.effectLevel,
-        options: resolveRowOptions(row, { character, choiceId: row.id, activeBooks, compendium }),
+        options: offer.options,
       });
     }
   }
