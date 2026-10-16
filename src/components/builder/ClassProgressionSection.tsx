@@ -109,7 +109,7 @@ export const ClassProgressionSection: React.FC<ClassProgressionSectionProps> = (
   useEffect(() => {
     const next = applySoleSubclasses(character, currentCompendium());
     if (next !== character) {
-      onUpdate(() => next);
+      onUpdate((current) => applySoleSubclasses(current, currentCompendium()));
     }
   }, [character, isSrd, onUpdate]);
 
