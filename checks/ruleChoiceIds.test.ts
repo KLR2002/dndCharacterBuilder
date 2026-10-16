@@ -186,8 +186,8 @@ function issuedRuleChoiceIds(): Set<string> {
     add(warlockAncientSecretsStartingRituals(character, ALL_BOOKS, compendium));
     add(warlockMysticArcanumChoices(character, ALL_BOOKS, compendium));
     add(warlockInvocationChoices(character, ALL_BOOKS, compendium));
-    add(artificerInfusionChoices(character, ALL_BOOKS));
-    add(artificerInfusionChoices(character, ALL_BOOKS, true));
+    add(artificerInfusionChoices(character, ALL_BOOKS, compendium));
+    add(artificerInfusionChoices(character, ALL_BOOKS, compendium, true));
   }
   for (const character of ancestryCharacters()) {
     add(ancestryRuleChoices(character, races));

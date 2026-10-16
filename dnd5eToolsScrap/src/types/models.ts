@@ -127,6 +127,8 @@ export interface OptionFeatureModel {
   prerequisite: string | null;
   description: string;
   rawEntries?: any[];
+  /** Set on a record that carries replicable-item tables; the app does not offer it as a selectable option. */
+  isUmbrella?: boolean;
 }
 
 export interface BackgroundModel {

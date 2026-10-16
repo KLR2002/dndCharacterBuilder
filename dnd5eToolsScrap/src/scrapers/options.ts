@@ -40,15 +40,31 @@ export async function scrapeOptions(client: ToolsClient): Promise<OptionFeatureM
     const category =
       featureTypes.map((ft) => FEATURE_TYPE_MAP[ft] || ft).join(", ") || "Other Option";
 
+    const replicableRows = featureTypes.includes("AI") ? replicableItemRows(raw.entries) : [];
+    const umbrellaName = cleanTags(raw.name, "plain");
+
     results.push({
-      name: cleanTags(raw.name, "plain"),
+      name: umbrellaName,
       source: raw.source,
       category,
       featureType: featureTypes,
       prerequisite: formatOptionPrerequisites(raw.prerequisite),
       description: renderEntries(raw.entries, "markdown"),
       rawEntries: raw.entries,
+      ...(replicableRows.length > 0 ? { isUmbrella: true } : {}),
     });
+
+    // Each table row of a Replicable Items infusion is an infusion of its own, at the level its caption names.
+    for (const row of replicableRows) {
+      results.push({
+        name: `${umbrellaName}: ${row.item}`,
+        source: raw.source,
+        category,
+        featureType: featureTypes,
+        prerequisite: `${row.level}${getOrdinal(row.level)}-level Artificer`,
+        description: `Replicates the ${row.item}. ${row.attunement}`,
+      });
+    }
   }
 
   for (const raw of resolvedChar) {
@@ -68,6 +84,30 @@ export async function scrapeOptions(client: ToolsClient): Promise<OptionFeatureM
   }
 
   return results;
+}
+
+const REPLICABLE_CAPTION = /\((\d+)(?:st|nd|rd|th)-Level Artificer\)/i;
+
+/** The rows of every "Replicable Items (Nth-Level Artificer)" table in an infusion's entries, in print order. */
+function replicableItemRows(entries: any[] | undefined): { level: number; item: string; attunement: string }[] {
+  const rows: { level: number; item: string; attunement: string }[] = [];
+  for (const entry of entries ?? []) {
+    if (!entry || typeof entry !== "object" || entry.type !== "table") continue;
+    const match = REPLICABLE_CAPTION.exec(String(entry.caption ?? ""));
+    if (!match) continue;
+    const level = parseInt(match[1], 10);
+    for (const row of entry.rows ?? []) {
+      if (!Array.isArray(row) || typeof row[0] !== "string") continue;
+      // The item is the {@item X} tag; any text printed after it in the cell is not part of the name.
+      const tag = /\{@item\s+([^}|]+)[^}]*\}/.exec(row[0]);
+      const item = (tag ? tag[1] : cleanTags(row[0], "plain")).trim();
+      const attunement = /^yes/i.test(cleanTags(String(row[1] ?? ""), "plain").trim())
+        ? "Requires attunement."
+        : "Does not require attunement.";
+      rows.push({ level, item, attunement });
+    }
+  }
+  return rows;
 }
 
 function formatOptionPrerequisites(prereqs: any[] | any | null | undefined): string | null {

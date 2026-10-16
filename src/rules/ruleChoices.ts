@@ -341,7 +341,7 @@ export function subclassRuleChoices(
   out.push(...warlockAncientSecretsStartingRituals(character, activeBooks, compendium));
   out.push(...warlockMysticArcanumChoices(character, activeBooks, compendium));
   out.push(...warlockInvocationChoices(character, activeBooks, compendium).filter((c) => !FEAT_GRANTED_CHOICE_IDS.has(c.id)));
-  out.push(...artificerInfusionChoices(character, activeBooks));
+  out.push(...artificerInfusionChoices(character, activeBooks, compendium));
 
   return out;
 }

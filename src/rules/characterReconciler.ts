@@ -41,7 +41,7 @@ export function reconcile(character: Character, compendium: Compendium): Charact
   updated = syncAncientSecretsRituals(updated, compendium);
   updated = syncGiantPowerCantrip(updated);
   updated = pruneInvalidMysticArcanum(updated);
-  updated = pruneInvalidInfusions(updated);
+  updated = pruneInvalidInfusions(updated, compendium);
   updated = pruneInvalidExpertise(updated, { compendium });
 
   return updated;

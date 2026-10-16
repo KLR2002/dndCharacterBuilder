@@ -1,8 +1,8 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { reconcile } from "../src/rules/characterReconciler.ts";
-import { currentCompendium } from "../src/services/compendium.ts";
 import { makeChar } from "./testUtils.ts";
+import { infusionCatalog } from "./infusionFixture.ts";
 import {
   artificerInfusionChoices,
   getKnownInfusions,
@@ -12,25 +12,27 @@ import {
   pickRuleChoice,
   subclassRuleChoices,
   availableSubclassRuleChoices,
-  ALL_ARTIFICER_INFUSIONS,
 } from "../src/rules/ruleChoices.ts";
 import { armorClass } from "../src/rules/ac.ts";
 import { getWeaponAttacks, checkDualWielding } from "../src/rules/attacks.ts";
 import { teardownSubclass } from "../src/rules/characterReconciler.ts";
 import type { InventoryItem } from "../src/types/character.ts";
 
+// The catalog-backed tests read their infusions from an invented fixture catalog.
+const catalog = infusionCatalog();
+
 test("Known infusions capacity scales across levels (4 at 2, 6 at 6, 8 at 10, 10 at 14, 12 at 18)", () => {
   // Level 1: 0 choices
   const art1 = makeChar({
     classes: [{ className: "Artificer", level: 1, hitDiceType: "d8" }],
   });
-  assert.equal(artificerInfusionChoices(art1).length, 0);
+  assert.equal(artificerInfusionChoices(art1, undefined, catalog).length, 0);
 
   // Level 2: 1 slot (choose 4) -> total 4
   const art2 = makeChar({
     classes: [{ className: "Artificer", level: 2, hitDiceType: "d8" }],
   });
-  const c2 = artificerInfusionChoices(art2);
+  const c2 = artificerInfusionChoices(art2, undefined, catalog);
   assert.equal(c2.length, 1);
   assert.equal(c2[0].id, "TCE__Artificer__Infusions 2");
   assert.equal(c2[0].choose, 4);
@@ -40,7 +42,7 @@ test("Known infusions capacity scales across levels (4 at 2, 6 at 6, 8 at 10, 10
   const art6 = makeChar({
     classes: [{ className: "Artificer", level: 6, hitDiceType: "d8" }],
   });
-  const c6 = artificerInfusionChoices(art6);
+  const c6 = artificerInfusionChoices(art6, undefined, catalog);
   assert.equal(c6.length, 2);
   assert.equal(c6.reduce((acc, cur) => acc + cur.choose, 0), 6);
   assert.equal(c6[1].id, "TCE__Artificer__Infusions 6");
@@ -50,7 +52,7 @@ test("Known infusions capacity scales across levels (4 at 2, 6 at 6, 8 at 10, 10
   const art10 = makeChar({
     classes: [{ className: "Artificer", level: 10, hitDiceType: "d8" }],
   });
-  const c10 = artificerInfusionChoices(art10);
+  const c10 = artificerInfusionChoices(art10, undefined, catalog);
   assert.equal(c10.length, 3);
   assert.equal(c10.reduce((acc, cur) => acc + cur.choose, 0), 8);
   assert.equal(c10[2].id, "TCE__Artificer__Infusions 10");
@@ -60,7 +62,7 @@ test("Known infusions capacity scales across levels (4 at 2, 6 at 6, 8 at 10, 10
   const art14 = makeChar({
     classes: [{ className: "Artificer", level: 14, hitDiceType: "d8" }],
   });
-  const c14 = artificerInfusionChoices(art14);
+  const c14 = artificerInfusionChoices(art14, undefined, catalog);
   assert.equal(c14.length, 4);
   assert.equal(c14.reduce((acc, cur) => acc + cur.choose, 0), 10);
   assert.equal(c14[3].id, "TCE__Artificer__Infusions 14");
@@ -70,7 +72,7 @@ test("Known infusions capacity scales across levels (4 at 2, 6 at 6, 8 at 10, 10
   const art18 = makeChar({
     classes: [{ className: "Artificer", level: 18, hitDiceType: "d8" }],
   });
-  const c18 = artificerInfusionChoices(art18);
+  const c18 = artificerInfusionChoices(art18, undefined, catalog);
   assert.equal(c18.length, 5);
   assert.equal(c18.reduce((acc, cur) => acc + cur.choose, 0), 12);
   assert.equal(c18[4].id, "TCE__Artificer__Infusions 18");
@@ -78,72 +80,69 @@ test("Known infusions capacity scales across levels (4 at 2, 6 at 6, 8 at 10, 10
 });
 
 test("Higher-tier infusions are locked at lower levels and unlock at corresponding milestone levels", () => {
-  // Level 2: Radiant Weapon (lvl 6), Helm of Awareness (lvl 10), Arcane Propulsion Armor (lvl 14) locked
+  // Level 2: the 6th, 10th and 14th level infusions are locked
   const art2 = makeChar({
     classes: [{ className: "Artificer", level: 2, hitDiceType: "d8" }],
   });
-  const choices2 = artificerInfusionChoices(art2);
+  const choices2 = artificerInfusionChoices(art2, undefined, catalog);
   const options2 = choices2[0].options.map((o) => o.name);
 
-  assert.ok(options2.includes("Enhanced Defense"));
-  assert.ok(options2.includes("Enhanced Weapon"));
-  assert.ok(options2.includes("Repeating Shot"));
-  assert.ok(options2.includes("Replicate Magic Item: Bag of Holding"));
-  assert.ok(!options2.includes("Radiant Weapon"), "Radiant Weapon should be locked at level 2");
-  assert.ok(!options2.includes("Repulsion Shield"), "Repulsion Shield should be locked at level 2");
-  assert.ok(!options2.includes("Helm of Awareness"), "Helm of Awareness should be locked at level 2");
-  assert.ok(!options2.includes("Arcane Propulsion Armor"), "Arcane Propulsion Armor should be locked at level 2");
-  assert.ok(!options2.includes("Replicate Magic Item: Boots of Elvenkind"), "6th level replicate item locked at level 2");
+  assert.ok(options2.includes("Placeholder Alpha"));
+  assert.ok(options2.includes("Placeholder Bravo"));
+  assert.ok(options2.includes("Replicate Magic Item: placeholder bag"));
+  assert.ok(!options2.includes("Placeholder Charlie"), "Placeholder Charlie should be locked at level 2");
+  assert.ok(!options2.includes("Placeholder Delta"), "Placeholder Delta should be locked at level 2");
+  assert.ok(!options2.includes("Placeholder Echo"), "Placeholder Echo should be locked at level 2");
+  assert.ok(!options2.includes("Replicate Magic Item: placeholder boots"), "6th level replicate item locked at level 2");
 
-  // Level 6: Radiant Weapon and Repulsion Shield unlocked; Helm of Awareness and Arcane Propulsion Armor locked
+  // Level 6: the 6th level infusion and replicate row unlock; the 10th and 14th level ones stay locked
   const art6 = makeChar({
     classes: [{ className: "Artificer", level: 6, hitDiceType: "d8" }],
   });
-  const choices6 = artificerInfusionChoices(art6);
+  const choices6 = artificerInfusionChoices(art6, undefined, catalog);
   const allOptions6 = choices6.flatMap((c) => c.options.map((o) => o.name));
-  assert.ok(allOptions6.includes("Radiant Weapon"), "Radiant Weapon unlocked at level 6");
-  assert.ok(allOptions6.includes("Repulsion Shield"), "Repulsion Shield unlocked at level 6");
-  assert.ok(allOptions6.includes("Replicate Magic Item: Boots of Elvenkind"), "6th level replicate item unlocked");
-  assert.ok(!allOptions6.includes("Helm of Awareness"), "Helm of Awareness locked at level 6");
-  assert.ok(!allOptions6.includes("Arcane Propulsion Armor"), "Arcane Propulsion Armor locked at level 6");
+  assert.ok(allOptions6.includes("Placeholder Charlie"), "Placeholder Charlie unlocked at level 6");
+  assert.ok(allOptions6.includes("Replicate Magic Item: placeholder boots"), "6th level replicate item unlocked");
+  assert.ok(!allOptions6.includes("Placeholder Delta"), "Placeholder Delta locked at level 6");
+  assert.ok(!allOptions6.includes("Placeholder Echo"), "Placeholder Echo locked at level 6");
 
-  // Level 10: Helm of Awareness unlocked; Arcane Propulsion Armor locked
+  // Level 10: the 10th level infusion and replicate row unlock; the 14th level one stays locked
   const art10 = makeChar({
     classes: [{ className: "Artificer", level: 10, hitDiceType: "d8" }],
   });
-  const choices10 = artificerInfusionChoices(art10);
+  const choices10 = artificerInfusionChoices(art10, undefined, catalog);
   const allOptions10 = choices10.flatMap((c) => c.options.map((o) => o.name));
-  assert.ok(allOptions10.includes("Helm of Awareness"), "Helm of Awareness unlocked at level 10");
-  assert.ok(allOptions10.includes("Replicate Magic Item: Boots of Striding and Springing"), "10th level replicate unlocked");
-  assert.ok(!allOptions10.includes("Arcane Propulsion Armor"), "Arcane Propulsion Armor locked at level 10");
+  assert.ok(allOptions10.includes("Placeholder Delta"), "Placeholder Delta unlocked at level 10");
+  assert.ok(allOptions10.includes("Replicate Magic Item: placeholder ring"), "10th level replicate unlocked");
+  assert.ok(!allOptions10.includes("Placeholder Echo"), "Placeholder Echo locked at level 10");
 
-  // Level 14: Arcane Propulsion Armor unlocked
+  // Level 14: the 14th level infusion and replicate row unlock
   const art14 = makeChar({
     classes: [{ className: "Artificer", level: 14, hitDiceType: "d8" }],
   });
-  const choices14 = artificerInfusionChoices(art14);
+  const choices14 = artificerInfusionChoices(art14, undefined, catalog);
   const allOptions14 = choices14.flatMap((c) => c.options.map((o) => o.name));
-  assert.ok(allOptions14.includes("Arcane Propulsion Armor"), "Arcane Propulsion Armor unlocked at level 14");
-  assert.ok(allOptions14.includes("Replicate Magic Item: Amulet of Health"), "14th level replicate unlocked");
+  assert.ok(allOptions14.includes("Placeholder Echo"), "Placeholder Echo unlocked at level 14");
+  assert.ok(allOptions14.includes("Replicate Magic Item: placeholder amulet"), "14th level replicate unlocked");
 });
 
-test("Replicate Magic Item multi-instance selection (can pick Bag of Holding AND Goggles of Night)", () => {
+test("Replicate Magic Item multi-instance selection (can pick two replicate items and a plain infusion)", () => {
   let char = makeChar({
     classes: [{ className: "Artificer", level: 2, hitDiceType: "d8" }],
   });
 
-  const choice = artificerInfusionChoices(char)[0];
-  // Pick Bag of Holding
-  char = pickRuleChoice(char, choice, "Replicate Magic Item: Bag of Holding");
-  // Pick Goggles of Night
-  char = pickRuleChoice(char, choice, "Replicate Magic Item: Goggles of Night");
-  // Pick Enhanced Defense
-  char = pickRuleChoice(char, choice, "Enhanced Defense");
+  const choice = artificerInfusionChoices(char, undefined, catalog)[0];
+  // Pick the replicate row for the bag
+  char = pickRuleChoice(char, choice, "Replicate Magic Item: placeholder bag", catalog);
+  // Pick the replicate row for the jug
+  char = pickRuleChoice(char, choice, "Replicate Magic Item: placeholder jug", catalog);
+  // Pick Placeholder Alpha
+  char = pickRuleChoice(char, choice, "Placeholder Alpha", catalog);
 
   const known = getKnownInfusions(char);
-  assert.ok(known.includes("Replicate Magic Item: Bag of Holding"));
-  assert.ok(known.includes("Replicate Magic Item: Goggles of Night"));
-  assert.ok(known.includes("Enhanced Defense"));
+  assert.ok(known.includes("Replicate Magic Item: placeholder bag"));
+  assert.ok(known.includes("Replicate Magic Item: placeholder jug"));
+  assert.ok(known.includes("Placeholder Alpha"));
   assert.equal(known.length, 3);
 
   // Dynamic cross-slot deduplication:
@@ -152,14 +151,14 @@ test("Replicate Magic Item multi-instance selection (can pick Bag of Holding AND
     ...char,
     classes: [{ className: "Artificer", level: 6, hitDiceType: "d8" }],
   };
-  const choices6 = artificerInfusionChoices(char);
+  const choices6 = artificerInfusionChoices(char, undefined, catalog);
   const slot6 = choices6.find((c) => c.id === "TCE__Artificer__Infusions 6")!;
   const slot6OptionNames = slot6.options.map((o) => o.name);
 
-  assert.ok(!slot6OptionNames.includes("Replicate Magic Item: Bag of Holding"), "Already picked Bag of Holding excluded from slot 6");
-  assert.ok(!slot6OptionNames.includes("Replicate Magic Item: Goggles of Night"), "Already picked Goggles of Night excluded from slot 6");
-  assert.ok(!slot6OptionNames.includes("Enhanced Defense"), "Already picked Enhanced Defense excluded from slot 6");
-  assert.ok(slot6OptionNames.includes("Replicate Magic Item: Alchemy Jug"), "Unpicked Alchemy Jug available in slot 6");
+  assert.ok(!slot6OptionNames.includes("Replicate Magic Item: placeholder bag"), "Already picked bag excluded from slot 6");
+  assert.ok(!slot6OptionNames.includes("Replicate Magic Item: placeholder jug"), "Already picked jug excluded from slot 6");
+  assert.ok(!slot6OptionNames.includes("Placeholder Alpha"), "Already picked Placeholder Alpha excluded from slot 6");
+  assert.ok(slot6OptionNames.includes("Placeholder Bravo"), "Unpicked Placeholder Bravo available in slot 6");
 });
 
 test("Max active infusions limit (2 at 2, 3 at 6, 4 at 10, 5 at 14, 6 at 18; +2 for Armorer 9)", () => {
@@ -473,10 +472,9 @@ test("Pruning on de-leveling cleans up invalid known and active infusions", () =
         choose: 4,
         from: [],
         picked: [
-          "Enhanced Defense",
-          "Enhanced Weapon",
-          "Replicate Magic Item: Bag of Holding",
-          "Mind Sharpener",
+          "Placeholder Alpha",
+          "Placeholder Bravo",
+          "Replicate Magic Item: placeholder bag",
         ],
       },
       {
@@ -484,36 +482,36 @@ test("Pruning on de-leveling cleans up invalid known and active infusions", () =
         trait: "Infusions Known (6th Level)",
         choose: 2,
         from: [],
-        picked: ["Radiant Weapon", "Repulsion Shield"],
+        picked: ["Placeholder Charlie"],
       },
       {
         id: "TCE__Artificer__Infusions 10",
         trait: "Infusions Known (10th Level)",
         choose: 2,
         from: [],
-        picked: ["Helm of Awareness", "Replicate Magic Item: Winged Boots"],
+        picked: ["Placeholder Delta", "Replicate Magic Item: placeholder ring"],
       },
       {
         id: "TCE__Artificer__Infusions 14",
         trait: "Infusions Known (14th Level)",
         choose: 2,
         from: [],
-        picked: ["Arcane Propulsion Armor", "Replicate Magic Item: Amulet of Health"],
+        picked: ["Placeholder Echo", "Replicate Magic Item: placeholder amulet"],
       },
     ],
     activeInfusions: [
-      { infusionName: "Enhanced Defense", targetItemId: "armor_1" },
-      { infusionName: "Enhanced Weapon", targetItemId: "sword_1" },
-      { infusionName: "Radiant Weapon", targetItemId: "sword_2" },
-      { infusionName: "Helm of Awareness", targetItemId: "helm_1" },
-      { infusionName: "Arcane Propulsion Armor", targetItemId: "armor_2" },
+      { infusionName: "Placeholder Alpha", targetItemId: "armor_1" },
+      { infusionName: "Placeholder Bravo", targetItemId: "sword_1" },
+      { infusionName: "Placeholder Charlie", targetItemId: "sword_2" },
+      { infusionName: "Placeholder Delta", targetItemId: "helm_1" },
+      { infusionName: "Placeholder Echo", targetItemId: "armor_2" },
     ],
     items: [
-      { id: "armor_1", name: "Plate Armor", source: "PHB", quantity: 1, isEquipped: true, section: "equipped", infusedWith: "Enhanced Defense", isInfused: true },
-      { id: "sword_1", name: "Longsword", source: "PHB", quantity: 1, isEquipped: true, section: "equipped", infusedWith: "Enhanced Weapon", isInfused: true },
-      { id: "sword_2", name: "Dagger", source: "PHB", quantity: 1, isEquipped: true, section: "equipped", infusedWith: "Radiant Weapon", isInfused: true },
-      { id: "helm_1", name: "Helmet", source: "PHB", quantity: 1, isEquipped: true, section: "equipped", infusedWith: "Helm of Awareness", isInfused: true },
-      { id: "rep_bag", name: "Bag of Holding", source: "TCE", quantity: 1, isEquipped: false, section: "carried", infusedWith: "Replicate Magic Item: Bag of Holding", isInfused: true },
+      { id: "armor_1", name: "Plate Armor", source: "PHB", quantity: 1, isEquipped: true, section: "equipped", infusedWith: "Placeholder Alpha", isInfused: true },
+      { id: "sword_1", name: "Longsword", source: "PHB", quantity: 1, isEquipped: true, section: "equipped", infusedWith: "Placeholder Bravo", isInfused: true },
+      { id: "sword_2", name: "Dagger", source: "PHB", quantity: 1, isEquipped: true, section: "equipped", infusedWith: "Placeholder Charlie", isInfused: true },
+      { id: "helm_1", name: "Helmet", source: "PHB", quantity: 1, isEquipped: true, section: "equipped", infusedWith: "Placeholder Delta", isInfused: true },
+      { id: "rep_bag", name: "Bag of Holding", source: "TCE", quantity: 1, isEquipped: false, section: "carried", infusedWith: "Replicate Magic Item: placeholder bag", isInfused: true },
     ],
   });
 
@@ -523,7 +521,7 @@ test("Pruning on de-leveling cleans up invalid known and active infusions", () =
     classes: [{ className: "Artificer", level: 5 }],
   };
 
-  const pruned = reconcile(char, currentCompendium());
+  const pruned = reconcile(char, catalog);
 
   // Slots 6, 10, 14 are removed; only slot 2 remains
   const remainingIds = (pruned.ruleChoices || []).map((rc) => rc.id);
@@ -549,7 +547,7 @@ test("Pruning on de-leveling cleans up invalid known and active infusions", () =
   const zeroArt = reconcile({
     ...pruned,
     classes: [{ className: "Artificer", level: 1 }],
-  }, currentCompendium());
+  }, catalog);
   assert.equal((zeroArt.ruleChoices || []).filter((rc) => isInfusionChoiceId(rc.id)).length, 0);
   assert.equal(zeroArt.activeInfusions, undefined);
 });
@@ -560,11 +558,11 @@ test("Active books gating for Artificer infusions", () => {
   });
 
   // When TCE is active (or default undefined)
-  assert.ok(artificerInfusionChoices(art).length > 0);
-  assert.ok(artificerInfusionChoices(art, ["PHB", "TCE"]).length > 0);
+  assert.ok(artificerInfusionChoices(art, undefined, catalog).length > 0);
+  assert.ok(artificerInfusionChoices(art, ["PHB", "TCE"], catalog).length > 0);
 
   // When only PHB is active (TCE missing)
-  assert.equal(artificerInfusionChoices(art, ["PHB"]).length, 0);
+  assert.equal(artificerInfusionChoices(art, ["PHB"], catalog).length, 0);
 });
 
 test("Integration with subclassRuleChoices and availableSubclassRuleChoices", () => {
@@ -572,13 +570,13 @@ test("Integration with subclassRuleChoices and availableSubclassRuleChoices", ()
     classes: [{ className: "Artificer", level: 2 }],
   });
 
-  const subChoices = subclassRuleChoices(art2);
+  const subChoices = subclassRuleChoices(art2, undefined, catalog);
   assert.ok(subChoices.some((c) => c.id === "TCE__Artificer__Infusions 2"));
 
-  const avail = availableSubclassRuleChoices(art2, ["PHB", "TCE"]);
+  const avail = availableSubclassRuleChoices(art2, ["PHB", "TCE"], catalog);
   assert.ok(avail.some((c) => c.id === "TCE__Artificer__Infusions 2"));
 
-  const availNoTce = availableSubclassRuleChoices(art2, ["PHB"]);
+  const availNoTce = availableSubclassRuleChoices(art2, ["PHB"], catalog);
   assert.ok(!availNoTce.some((c) => c.id === "TCE__Artificer__Infusions 2"));
 });
 
@@ -591,13 +589,13 @@ test("teardownSubclass cleans up infusions when losing Artificer levels", () => 
         trait: "Infusions Known (2nd Level)",
         choose: 4,
         from: [],
-        picked: ["Enhanced Defense"],
+        picked: ["Placeholder Alpha"],
       },
     ],
-    activeInfusions: [{ infusionName: "Enhanced Defense" }],
+    activeInfusions: [{ infusionName: "Placeholder Alpha" }],
   });
 
-  const tornDown = teardownSubclass(char, "Artificer", "Armorer");
+  const tornDown = teardownSubclass(char, "Artificer", "Armorer", catalog);
   assert.equal((tornDown.ruleChoices || []).filter((rc) => isInfusionChoiceId(rc.id)).length, 0);
   assert.equal(tornDown.activeInfusions, undefined);
 });
@@ -613,7 +611,7 @@ test("Canonical unified ID TCE__Artificer__Infusions Known capacity scaling and 
       classes: [{ className: "Artificer", level: lvl, hitDiceType: "d8" }],
     });
 
-    const unified = artificerInfusionChoices(char, undefined, true);
+    const unified = artificerInfusionChoices(char, undefined, catalog, true);
     assert.equal(unified.length, 1);
     assert.equal(unified[0].id, "TCE__Artificer__Infusions Known");
     assert.equal(unified[0].choose, expected);
@@ -624,7 +622,7 @@ test("Canonical unified ID TCE__Artificer__Infusions Known capacity scaling and 
   const char1 = makeChar({
     classes: [{ className: "Artificer", level: 1, hitDiceType: "d8" }],
   });
-  assert.equal(artificerInfusionChoices(char1, undefined, true).length, 0);
+  assert.equal(artificerInfusionChoices(char1, undefined, catalog, true).length, 0);
 
   // Character already having TCE__Artificer__Infusions Known automatically returns it
   const charWithUnified = makeChar({
@@ -635,27 +633,27 @@ test("Canonical unified ID TCE__Artificer__Infusions Known capacity scaling and 
         trait: "Infusions Known",
         choose: 6,
         options: [],
-        picked: ["Enhanced Defense", "Enhanced Weapon", "Radiant Weapon"],
+        picked: ["Placeholder Alpha", "Placeholder Bravo", "Placeholder Charlie"],
         origin: "class",
       },
     ],
   });
 
-  const choices = artificerInfusionChoices(charWithUnified);
+  const choices = artificerInfusionChoices(charWithUnified, undefined, catalog);
   assert.equal(choices.length, 1);
   assert.equal(choices[0].id, "TCE__Artificer__Infusions Known");
   assert.equal(choices[0].choose, 6);
 
-  // Deleveling from 6 to 2 prunes Radiant Weapon (requires level 6) and caps at 4
+  // Deleveling from 6 to 2 prunes Placeholder Charlie (requires level 6) and caps at 4
   const deleveled = makeChar({
     ...charWithUnified,
     classes: [{ className: "Artificer", level: 2, hitDiceType: "d8" }],
   });
-  const pruned = reconcile(deleveled, currentCompendium());
+  const pruned = reconcile(deleveled, catalog);
   const entry = pruned.ruleChoices?.find((rc) => rc.id === "TCE__Artificer__Infusions Known");
   assert.ok(entry);
   assert.equal(entry.choose, 4);
-  assert.deepEqual(entry.picked, ["Enhanced Defense", "Enhanced Weapon"]);
-  assert.ok(!entry.picked.includes("Radiant Weapon"));
+  assert.deepEqual(entry.picked, ["Placeholder Alpha", "Placeholder Bravo"]);
+  assert.ok(!entry.picked.includes("Placeholder Charlie"));
 });
 
