@@ -1,13 +1,13 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { reconcile } from "../src/rules/characterReconciler.ts";
+import { currentCompendium } from "../src/services/compendium.ts";
 import type { Character } from "../src/types/character.ts";
 import type { SpellData } from "../src/types/dnd5e.ts";
 import {
   warlockAncientSecretsStartingRituals,
   availableSubclassRuleChoices,
-  syncAncientSecretsRituals,
   pickSubclassRuleChoice,
-  pruneInvalidInvocations,
   getMaxRitualBookLevel,
   isSpellEligibleForRitualBook,
 } from "../src/rules/ruleChoices.ts";
@@ -232,7 +232,7 @@ test("Book of Ancient Secrets: switching Pact Boon or losing invocation complete
   };
 
   // Pruning invocations will prune Book of Ancient Secrets (since it requires Tome)
-  const pruned = pruneInvalidInvocations(bladeChar);
+  const pruned = reconcile(bladeChar, currentCompendium());
   assert.ok(
     !pruned.ruleChoices?.some((rc) => rc.id.includes("Book of Ancient Secrets")),
     "Starting rituals ruleChoice should be pruned"
@@ -252,7 +252,7 @@ test("Book of Ancient Secrets: switching Pact Boon or losing invocation complete
       rc.id.includes("Invocations 2") ? { ...rc, picked: ["Agonizing Blast", "Armor of Shadows"] } : rc
     ),
   };
-  const syncedAfterLost = syncAncientSecretsRituals(lostInvocationChar);
+  const syncedAfterLost = reconcile(lostInvocationChar, currentCompendium());
   assert.equal(syncedAfterLost.ritualBook, undefined, "ritualBook must be completely cleansed when invocation is lost");
   assert.ok(
     syncedAfterLost.needsReview?.includes(

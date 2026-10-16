@@ -24,7 +24,7 @@ import {
   setStandardArrayPick,
   STARTING_GOLD_BY_CLASS,
 } from "../../rules/builderTransitions";
-import { pruneInvalidExpertise } from "../../rules/expertise";
+import { reconcile } from "../../rules/characterReconciler";
 import { ancestryRuleChoices, availableRuleChoices } from "../../rules/ruleChoices";
 import { getPendingLevelChoices } from "../../rules/leveling";
 import {
@@ -344,13 +344,13 @@ export const BuilderTab: React.FC<BuilderTabProps> = ({
     const allPicked = Array.from(new Set(updatedSkillChoices.flatMap((sc) => sc.picked.map(normalizeSkillName))));
 
     onUpdate((cur) =>
-      pruneInvalidExpertise(
+      reconcile(
         {
           ...cur,
           chosenSkills: allPicked,
           skillChoices: updatedSkillChoices,
         },
-        catalogs
+        currentCompendium()
       )
     );
   };

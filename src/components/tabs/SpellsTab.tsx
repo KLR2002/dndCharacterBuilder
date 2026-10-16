@@ -47,8 +47,8 @@ import {
   getMysticArcanumTiers,
   hasInvocation,
   isSpellEligibleForRitualBook,
-  pruneInvalidInvocations,
 } from "../../rules/ruleChoices";
+import { reconcile } from "../../rules/characterReconciler";
 import { effectiveScores } from "../../rules/abilities";
 import { proficiencyBonus, totalLevel } from "../../rules/proficiencies";
 import type { Character, KnownSpell } from "../../types/character";
@@ -919,7 +919,7 @@ export const SpellsTab: React.FC = () => {
       knownSpells: filtered,
       preparedSpells: nextPrep,
     };
-    updateCharacter(currentCharacter.id, pruneInvalidInvocations(updatedChar));
+    updateCharacter(currentCharacter.id, reconcile(updatedChar, currentCompendium()));
   };
 
   const openSwapModal = (item: {

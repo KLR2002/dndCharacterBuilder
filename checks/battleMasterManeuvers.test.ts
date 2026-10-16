@@ -1,5 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
+import { reconcile } from "../src/rules/characterReconciler.ts";
+import { currentCompendium } from "../src/services/compendium.ts";
 import { makeChar } from "./testUtils.ts";
 import {
   getSuperiorityDice,
@@ -10,12 +12,11 @@ import {
   battleMasterManeuverChoices,
   getChosenManeuvers,
   pickSubclassRuleChoice,
-  pruneInvalidManeuvers,
   isManeuverChoiceId,
   subclassRuleChoices,
 } from "../src/rules/ruleChoices.ts";
 import { removeAsiSelection } from "../src/rules/leveling.ts";
-import { teardownSubclass } from "../src/rules/builderTransitions.ts";
+import { teardownSubclass } from "../src/rules/characterReconciler.ts";
 
 test("Battle Master level 3 offers 3 maneuvers and 4d8 superiority dice", () => {
   const bm3 = makeChar({
@@ -410,7 +411,7 @@ test("Negative boundaries: Level gating and non-Battle Master classes", () => {
   assert.equal(battleMasterManeuverChoices(wiz).length, 0);
 });
 
-test("pruneInvalidManeuvers: trims choices and picks upon de-leveling or subclass change", () => {
+test("reconcile: trims choices and picks upon de-leveling or subclass change", () => {
   // Character at Battle Master 7 with picks in Maneuvers 3 and Maneuvers 7
   const bm7 = makeChar({
     classes: [{ className: "Fighter", level: 7, hitDiceType: "d10", subclassName: "Battle Master" }],
@@ -435,20 +436,20 @@ test("pruneInvalidManeuvers: trims choices and picks upon de-leveling or subclas
   });
 
   // De-level to 6
-  const deLeveled = pruneInvalidManeuvers({
+  const deLeveled = reconcile({
     ...bm7,
     classes: [{ className: "Fighter", level: 6, hitDiceType: "d10", subclassName: "Battle Master" }],
-  });
+  }, currentCompendium());
 
   assert.equal(deLeveled.ruleChoices?.length, 1);
   assert.equal(deLeveled.ruleChoices?.[0].id, "PHB__Fighter__Battle Master__Maneuvers 3");
   assert.deepEqual(deLeveled.ruleChoices?.[0].picked, ["Trip Attack", "Riposte", "Disarming Attack"]);
 
   // De-level to 2 (loses Battle Master entirely)
-  const lvl2 = pruneInvalidManeuvers({
+  const lvl2 = reconcile({
     ...bm7,
     classes: [{ className: "Fighter", level: 2, hitDiceType: "d10" }],
-  });
+  }, currentCompendium());
   assert.equal(lvl2.ruleChoices?.length, 0);
 
   // Subclass teardown: changing Battle Master to Champion

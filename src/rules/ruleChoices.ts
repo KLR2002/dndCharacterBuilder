@@ -2,7 +2,7 @@ import type { Character, RuleChoiceEntry } from "../types/character.ts";
 import type { RaceData, TraitChoiceData, TraitData } from "../types/dnd5e.ts";
 import { ALL_RESOURCE_BOOKS } from "../constants/books.ts";
 import { currentCompendium, type Compendium } from "../services/compendium.ts";
-import { setRuleChoicePick } from "./builderTransitions.ts";
+import { reconcile } from "./characterReconciler.ts";
 import { totalLevel } from "./proficiencies.ts";
 import { DND_SKILLS } from "../constants/rules.ts";
 import { RACE_SKILL_PROFICIENCIES, skills } from "./skills.ts";
@@ -12,6 +12,7 @@ import {
   formatCantripOptions,
   getSubclassName,
   ruleChoiceId,
+  setRuleChoicePick,
 } from "./choices/types.ts";
 import {
   fightingStyleRuleChoices,
@@ -29,10 +30,6 @@ import {
   warlockInvocationChoices,
   isMysticArcanumChoiceId,
   isInvocationChoiceId,
-  syncWarlockTomeCantrips,
-  syncAncientSecretsRituals,
-  pruneInvalidInvocations,
-  pruneInvalidMysticArcanum,
 } from "./choices/warlockChoices.ts";
 import {
   artificerInfusionChoices,
@@ -743,31 +740,20 @@ export function pickSubclassRuleChoice(
       "class"
     );
 
-  if (choice.id.includes("Pact Boon")) {
-    return pruneInvalidInvocations(pickClassChoice(), compendium);
-  }
-
-  if (choice.id === "Warlock__Pact of the Tome__Cantrips" || choice.id.includes("Pact of the Tome")) {
-    return syncWarlockTomeCantrips(pickClassChoice(), compendium);
-  }
-
+  // Warlock picks change state that the Reconciler derives (invocations, Tome cantrips,
+  // Ancient Secrets rituals, Mystic Arcanum), so they record the pick and then reconcile.
   if (
-    choice.id === "Warlock__Book of Ancient Secrets__Starting Rituals" ||
-    (choice.id.includes("Book of Ancient Secrets") && choice.id.includes("Rituals"))
+    choice.id.includes("Pact Boon") ||
+    choice.id.includes("Pact of the Tome") ||
+    (choice.id.includes("Book of Ancient Secrets") && choice.id.includes("Rituals")) ||
+    isMysticArcanumChoiceId(choice.id) ||
+    isInvocationChoiceId(choice.id)
   ) {
-    return syncAncientSecretsRituals(pickClassChoice(), compendium);
-  }
-
-  if (isMysticArcanumChoiceId(choice.id)) {
-    return pruneInvalidMysticArcanum(pickClassChoice());
-  }
-
-  if (isInvocationChoiceId(choice.id)) {
-    return pruneInvalidInvocations(pickClassChoice());
+    return reconcile(pickClassChoice(), compendium);
   }
 
   if (isInfusionChoiceId(choice.id)) {
-    return pickInfusionChoice(character, choice, option);
+    return reconcile(pickInfusionChoice(character, choice, option), compendium);
   }
 
   const isManeuver = isManeuverChoiceId(choice.id);

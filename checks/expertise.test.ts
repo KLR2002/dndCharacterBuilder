@@ -1,5 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { reconcile } from "../src/rules/characterReconciler.ts";
 import { evaluateCharacter } from "../src/rules/characterEvaluation.ts";
 import { skills } from "../src/rules/skills.ts";
 import {
@@ -11,7 +12,6 @@ import {
 import {
   getAvailableExpertiseMilestones,
   getMilestonePicks,
-  pruneInvalidExpertise,
   toggleExpertiseChoice,
 } from "../src/rules/expertise.ts";
 import type { Character } from "../src/types/character.ts";
@@ -277,13 +277,13 @@ test("toggleExpertiseChoice: toggles selection within capacity", () => {
   assert.deepEqual(char.chosenExpertise, ["Acrobatics"]);
 });
 
-test("pruneInvalidExpertise: removes unproficient choices or excess when deleveling", () => {
+test("reconcile: removes unproficient choices or excess when deleveling", () => {
   const char = makeTestChar({
     classes: [{ className: "Rogue", level: 1, source: "PHB" }], // capacity 2
     chosenSkills: ["Stealth"], // Only Stealth is proficient!
     chosenExpertise: ["Stealth", "Acrobatics", "Arcana"], // Arcana and Acrobatics are not proficient
   });
 
-  const pruned = pruneInvalidExpertise(char, { compendium: inMemoryCompendium({ classes }) });
+  const pruned = reconcile(char, inMemoryCompendium({ classes }));
   assert.deepEqual(pruned.chosenExpertise, ["Stealth"]);
 });

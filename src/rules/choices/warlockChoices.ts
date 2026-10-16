@@ -893,13 +893,9 @@ export function pruneInvalidInvocations(
     needsReviewSet.add(`${removed} removed: prerequisite no longer satisfied`);
   }
 
-  const synced = syncWarlockTomeCantrips(
-    {
-      ...character,
-      ruleChoices: nextRuleChoices,
-      needsReview: needsReviewSet.size > 0 ? Array.from(needsReviewSet) : undefined,
-    },
-    compendium
-  );
-  return pruneInvalidMysticArcanum(syncAncientSecretsRituals(synced, compendium));
+  return {
+    ...character,
+    ruleChoices: nextRuleChoices,
+    needsReview: needsReviewSet.size > 0 ? Array.from(needsReviewSet) : undefined,
+  };
 }

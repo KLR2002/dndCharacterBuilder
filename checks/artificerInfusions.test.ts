@@ -1,5 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
+import { reconcile } from "../src/rules/characterReconciler.ts";
+import { currentCompendium } from "../src/services/compendium.ts";
 import { makeChar } from "./testUtils.ts";
 import {
   artificerInfusionChoices,
@@ -7,16 +9,14 @@ import {
   getMaxActiveInfusions,
   hasInfusion,
   isInfusionChoiceId,
-  pickInfusionChoice,
   pickSubclassRuleChoice,
-  pruneInvalidInfusions,
   subclassRuleChoices,
   availableSubclassRuleChoices,
   ALL_ARTIFICER_INFUSIONS,
 } from "../src/rules/ruleChoices.ts";
 import { armorClass } from "../src/rules/ac.ts";
 import { getWeaponAttacks, checkDualWielding } from "../src/rules/attacks.ts";
-import { teardownSubclass } from "../src/rules/builderTransitions.ts";
+import { teardownSubclass } from "../src/rules/characterReconciler.ts";
 import type { InventoryItem } from "../src/types/character.ts";
 
 test("Known infusions capacity scales across levels (4 at 2, 6 at 6, 8 at 10, 10 at 14, 12 at 18)", () => {
@@ -134,11 +134,11 @@ test("Replicate Magic Item multi-instance selection (can pick Bag of Holding AND
 
   const choice = artificerInfusionChoices(char)[0];
   // Pick Bag of Holding
-  char = pickInfusionChoice(char, choice, "Replicate Magic Item: Bag of Holding");
+  char = pickSubclassRuleChoice(char, choice, "Replicate Magic Item: Bag of Holding");
   // Pick Goggles of Night
-  char = pickInfusionChoice(char, choice, "Replicate Magic Item: Goggles of Night");
+  char = pickSubclassRuleChoice(char, choice, "Replicate Magic Item: Goggles of Night");
   // Pick Enhanced Defense
-  char = pickInfusionChoice(char, choice, "Enhanced Defense");
+  char = pickSubclassRuleChoice(char, choice, "Enhanced Defense");
 
   const known = getKnownInfusions(char);
   assert.ok(known.includes("Replicate Magic Item: Bag of Holding"));
@@ -523,7 +523,7 @@ test("Pruning on de-leveling cleans up invalid known and active infusions", () =
     classes: [{ className: "Artificer", level: 5 }],
   };
 
-  const pruned = pruneInvalidInfusions(char);
+  const pruned = reconcile(char, currentCompendium());
 
   // Slots 6, 10, 14 are removed; only slot 2 remains
   const remainingIds = (pruned.ruleChoices || []).map((rc) => rc.id);
@@ -546,10 +546,10 @@ test("Pruning on de-leveling cleans up invalid known and active infusions", () =
   assert.ok(pruned.needsReview && pruned.needsReview.length > 0);
 
   // Deleveling completely to level 1 drops all infusions
-  const zeroArt = pruneInvalidInfusions({
+  const zeroArt = reconcile({
     ...pruned,
     classes: [{ className: "Artificer", level: 1 }],
-  });
+  }, currentCompendium());
   assert.equal((zeroArt.ruleChoices || []).filter((rc) => isInfusionChoiceId(rc.id)).length, 0);
   assert.equal(zeroArt.activeInfusions, undefined);
 });
@@ -651,7 +651,7 @@ test("Canonical unified ID TCE__Artificer__Infusions Known capacity scaling and 
     ...charWithUnified,
     classes: [{ className: "Artificer", level: 2, hitDiceType: "d8" }],
   });
-  const pruned = pruneInvalidInfusions(deleveled);
+  const pruned = reconcile(deleveled, currentCompendium());
   const entry = pruned.ruleChoices?.find((rc) => rc.id === "TCE__Artificer__Infusions Known");
   assert.ok(entry);
   assert.equal(entry.choose, 4);

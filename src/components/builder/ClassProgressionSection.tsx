@@ -3,7 +3,9 @@ import { Text, TouchableOpacity, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { AbilityKey, Character, CharacterClass } from "../../types/character";
 import { ClassData, FeatData } from "../../types/dnd5e";
-import { addMulticlassLevel, reconcileCharacter, teardownSubclass, validateMulticlass } from "../../rules/builderTransitions";
+import { addMulticlassLevel, validateMulticlass } from "../../rules/builderTransitions";
+import { reconcile, teardownSubclass } from "../../rules/characterReconciler";
+import { currentCompendium } from "../../services/compendium";
 import { ToolGrant } from "../../rules/proficienciesAndLanguages";
 import { findClass } from "../../services/dataService";
 import { Badge } from "../ui/Badge";
@@ -28,7 +30,6 @@ import { getOrphanedSubclassSpells } from "../../rules/subclassSpells";
 import {
   getAvailableExpertiseMilestones,
   getMilestonePicks,
-  pruneInvalidExpertise,
   toggleExpertiseChoice,
 } from "../../rules/expertise";
 
@@ -151,10 +152,10 @@ export const ClassProgressionSection: React.FC<ClassProgressionSectionProps> = (
     }
 
     onUpdate(
-      reconcileCharacter({
+      reconcile({
         ...updatedChar,
         classes: updatedClasses,
-      })
+      }, currentCompendium())
     );
   };
 
@@ -216,10 +217,10 @@ export const ClassProgressionSection: React.FC<ClassProgressionSectionProps> = (
     );
 
     onUpdate(
-      reconcileCharacter({
+      reconcile({
         ...updated,
         classes: updatedClasses,
-      })
+      }, currentCompendium())
     );
     setChangingSubclassFor(null);
     setOrphanWarning(null);
@@ -450,7 +451,7 @@ export const ClassProgressionSection: React.FC<ClassProgressionSectionProps> = (
               ...cur,
               ruleChoices: (cur.ruleChoices || []).filter((rc) => rc.id !== choice.id),
             };
-            return reconcileCharacter(next);
+            return reconcile(next, currentCompendium());
           });
         };
 
@@ -586,7 +587,7 @@ export const ClassProgressionSection: React.FC<ClassProgressionSectionProps> = (
                   The following choices are no longer proficient: {invalidPicks.join(", ")}.
                 </Text>
                 <TouchableOpacity
-                  onPress={() => onUpdate((cur) => pruneInvalidExpertise(cur))}
+                  onPress={() => onUpdate((cur) => reconcile(cur, currentCompendium()))}
                   hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                   style={{ alignSelf: "flex-start", marginTop: 2 }}
                 >

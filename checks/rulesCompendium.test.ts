@@ -1,5 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
+import { reconcile } from "../src/rules/characterReconciler.ts";
 import { makeChar, inMemoryCompendium } from "./testUtils.ts";
 import type { OptionFeatureData, SpellData, ClassData, RaceData } from "../src/types/dnd5e.ts";
 import { characterSpeeds } from "../src/rules/speed.ts";
@@ -11,7 +12,6 @@ import {
   fightingStyleRuleChoices,
   pickFightingStyleChoice,
   subclassRuleChoices,
-  syncWarlockTomeCantrips,
   warlockTomeCantripChoices,
 } from "../src/rules/ruleChoices.ts";
 
@@ -58,7 +58,7 @@ test("warlockTomeCantripChoices offers only cantrips from the given Compendium",
   assert.deepEqual(choices[0].options.map((o) => o.name), ["Eldritch Blast"]);
 });
 
-test("syncWarlockTomeCantrips takes a granted cantrip's source from the given Compendium", () => {
+test("reconcile takes a granted Tome cantrip's source from the given Compendium", () => {
   const warlock3 = makeChar({
     classes: [{ className: "Warlock", level: 3, hitDiceType: "d8" }],
     ruleChoices: [
@@ -66,7 +66,7 @@ test("syncWarlockTomeCantrips takes a granted cantrip's source from the given Co
       { id: "Warlock__Pact of the Tome__Cantrips", trait: "Pact of the Tome Cantrips", origin: "class", choose: 3, from: [], picked: ["Eldritch Blast"] },
     ],
   });
-  const synced = syncWarlockTomeCantrips(warlock3, inMemoryCompendium({
+  const synced = reconcile(warlock3, inMemoryCompendium({
     spells: [spell("Eldritch Blast", 0, ["Warlock"], "XGE")],
   }));
   const tome = synced.knownSpells?.find((k) => k.name === "Eldritch Blast");

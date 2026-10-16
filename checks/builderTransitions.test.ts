@@ -1,5 +1,8 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
+import { teardownSubclass } from "../src/rules/characterReconciler.ts";
+import { reconcile } from "../src/rules/characterReconciler.ts";
+import { currentCompendium } from "../src/services/compendium.ts";
 import { makeChar } from "./testUtils.ts";
 import {
   setStandardArrayPick,
@@ -10,8 +13,6 @@ import {
   setCustomBackground,
   applyBackgroundGrants,
   setLanguages,
-  teardownSubclass,
-  reconcileCharacter,
 } from "../src/rules/builderTransitions.ts";
 import type { InventoryItem } from "../src/types/character.ts";
 
@@ -401,7 +402,7 @@ test("teardownSubclass unconditionally cleans up even when previousSubclassName 
   assert.equal(tornDown.ruleChoices?.length, 0);
 });
 
-test("reconcileCharacter cleanses orphaned fighting styles, maneuvers, invocations, infusions, and arcanum in a single pass", () => {
+test("reconcile cleanses orphaned fighting styles, maneuvers, invocations, infusions, and arcanum in a single pass", () => {
   // Multiclass character with features from Fighter, Battle Master, Warlock, Artificer
   const initial = makeChar({
     classes: [
@@ -425,8 +426,8 @@ test("reconcileCharacter cleanses orphaned fighting styles, maneuvers, invocatio
     ],
   });
 
-  // 1. Idempotency check: running reconcileCharacter on valid character changes nothing
-  const unchanged = reconcileCharacter(initial);
+  // 1. Idempotency check: running reconcile on valid character changes nothing
+  const unchanged = reconcile(initial, currentCompendium());
   assert.equal(unchanged.ruleChoices?.length, 7);
   assert.equal(unchanged.knownSpells?.length, 3);
 
@@ -438,7 +439,7 @@ test("reconcileCharacter cleanses orphaned fighting styles, maneuvers, invocatio
     ],
   };
 
-  const reconciled = reconcileCharacter(delevelled);
+  const reconciled = reconcile(delevelled, currentCompendium());
 
   // Fighter styles and Battle Master maneuvers must be removed
   assert.ok(!reconciled.ruleChoices?.some((rc) => rc.id.includes("Fighter")));

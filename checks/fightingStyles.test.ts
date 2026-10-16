@@ -1,11 +1,12 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
+import { reconcile } from "../src/rules/characterReconciler.ts";
+import { currentCompendium } from "../src/services/compendium.ts";
 import { makeChar } from "./testUtils.ts";
 import {
   hasFightingStyle,
   fightingStyleRuleChoices,
   pickFightingStyleChoice,
-  pruneInvalidFightingStyles,
 } from "../src/rules/ruleChoices.ts";
 import { getWeaponAttacks, checkDualWielding } from "../src/rules/attacks.ts";
 import { armorClass } from "../src/rules/ac.ts";
@@ -510,7 +511,7 @@ test("Fighting Initiate feat offers Fighter styles", () => {
   assert.equal(fightingStyleRuleChoices(plainChar).length, 0);
 });
 
-test("pruneInvalidFightingStyles cleans up invalid styles and cantrips on de-leveling", () => {
+test("reconcile cleans up invalid styles and cantrips on de-leveling", () => {
   const char = makeChar({
     classes: [{ className: "Paladin", level: 1, hitDiceType: "d10" }], // Level 1 Paladin (lost level 2)
     ruleChoices: [
@@ -537,7 +538,7 @@ test("pruneInvalidFightingStyles cleans up invalid styles and cantrips on de-lev
     ],
   });
 
-  const pruned = pruneInvalidFightingStyles(char);
+  const pruned = reconcile(char, currentCompendium());
   assert.equal(pruned.ruleChoices?.length, 0);
   assert.equal(pruned.knownSpells?.length, 0);
 });

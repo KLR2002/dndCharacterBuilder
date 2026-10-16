@@ -5,7 +5,10 @@ import {
   type AvailableRuleChoice,
 } from "./ruleChoices.ts";
 import { catalogListings, type CharacterCatalogs } from "./characterEvaluation.ts";
-import { reconcileCharacter, setChoiceRacialBonus, setRuleChoicePick } from "./builderTransitions.ts";
+import { setChoiceRacialBonus } from "./builderTransitions.ts";
+import { reconcile } from "./characterReconciler.ts";
+import { setRuleChoicePick } from "./choices/types.ts";
+import { currentCompendium } from "../services/compendium.ts";
 import { resolveCharacterLanguages } from "./proficienciesAndLanguages.ts";
 import { getBackgroundFeatGrant } from "./feats.ts";
 import { normalizeSkillName } from "./skills.ts";
@@ -279,7 +282,7 @@ export function applyAncestrySelection(
     chosenSkills: nextChosenSkills,
   };
 
-  return reconcileCharacter(cleaned);
+  return reconcile(cleaned, catalogs?.compendium ?? currentCompendium());
 }
 
 export function applyAncestryChoice(

@@ -1,7 +1,6 @@
 import type { Character } from "../../types/character.ts";
 import { currentCompendium, type Compendium } from "../../services/compendium.ts";
-import { setRuleChoicePick } from "../builderTransitions.ts";
-import { type AvailableRuleChoice, getSubclassName } from "./types.ts";
+import { type AvailableRuleChoice, getSubclassName, setRuleChoicePick } from "./types.ts";
 import { hasFightingStyle } from "./fightingStyles.ts";
 
 /**

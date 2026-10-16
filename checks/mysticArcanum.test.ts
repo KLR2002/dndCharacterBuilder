@@ -1,13 +1,13 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { reconcile } from "../src/rules/characterReconciler.ts";
+import { currentCompendium } from "../src/services/compendium.ts";
 import type { Character } from "../src/types/character.ts";
 import {
   warlockMysticArcanumChoices,
   availableSubclassRuleChoices,
   getMysticArcanumTiers,
   pickSubclassRuleChoice,
-  pruneInvalidMysticArcanum,
-  pruneInvalidInvocations,
 } from "../src/rules/ruleChoices.ts";
 import { applyLongRest, applyShortRest } from "../src/rules/rest.ts";
 
@@ -205,7 +205,7 @@ test("Mystic Arcanum: deleveling prunes invalid tiers and cleans up spent tracki
     classes: [{ className: "Warlock", level: 14, hitDiceSpent: 0 }],
   };
 
-  const pruned = pruneInvalidMysticArcanum(deleveled);
+  const pruned = reconcile(deleveled, currentCompendium());
 
   // Verify only 11 and 13 choices remain
   assert.equal(pruned.ruleChoices?.length, 2);

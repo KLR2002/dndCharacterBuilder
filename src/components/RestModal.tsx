@@ -7,7 +7,7 @@ import { applyLongRest, applyShortRest } from "../rules/rest";
 import { spendHitDie } from "../rules/hitDice";
 import { CHANGEABLE_AT_LONG_REST, availableRuleChoices } from "../rules/ruleChoices";
 import { getRaces } from "../services/dataService";
-import { setRuleChoicePick } from "../rules/builderTransitions";
+import { setRuleChoicePick } from "../rules/choices/types";
 import { Character } from "../types/character";
 import { Button } from "./ui/Button";
 import { Card } from "./ui/Card";

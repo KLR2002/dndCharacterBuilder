@@ -1,7 +1,8 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { availableRuleChoices, ruleChoiceId } from "../src/rules/ruleChoices.ts";
-import { setRuleChoicePick, clearRuleChoices } from "../src/rules/builderTransitions.ts";
+import { clearRuleChoices } from "../src/rules/builderTransitions.ts";
+import { setRuleChoicePick } from "../src/rules/choices/types.ts";
 import { makeChar, loadTestCatalog } from "./testUtils.ts";
 
 const races = loadTestCatalog("races");

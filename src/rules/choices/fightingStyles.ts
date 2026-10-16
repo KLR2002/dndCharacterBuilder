@@ -1,10 +1,10 @@
 import type { Character, KnownSpell } from "../../types/character.ts";
 import { currentCompendium, type Compendium } from "../../services/compendium.ts";
-import { setRuleChoicePick } from "../builderTransitions.ts";
 import {
   type AvailableRuleChoice,
   formatCantripOptions,
   getSubclassName,
+  setRuleChoicePick,
 } from "./types.ts";
 
 /**

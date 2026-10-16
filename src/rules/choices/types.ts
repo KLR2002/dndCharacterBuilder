@@ -1,3 +1,4 @@
+import type { Character } from "../../types/character.ts";
 import type { SpellData } from "../../types/dnd5e.ts";
 
 export interface RuleChoiceIdParts {
@@ -46,4 +47,38 @@ export function formatCantripOptions(cantrips: SpellData[]): { name: string; des
     }
   }
   return options.sort((a, b) => a.name.localeCompare(b.name));
+}
+
+/**
+ * Records a player's pick for a Rule Choice, or clears it when the option is
+ * deselected. Choices are keyed by id, so switching ancestries cannot leave a
+ * stale pick behind under an id the new ancestry never offered.
+ */
+export function setRuleChoicePick(
+  character: Character,
+  id: string,
+  trait: string,
+  option: string,
+  from: string[],
+  choose: number,
+  origin: "race" | "class" | "subclass" = "race"
+): Character {
+  const current = character.ruleChoices ?? [];
+  const entry = current.find((rc) => rc.id === id);
+  const picked = entry
+    ? entry.picked.includes(option)
+      ? entry.picked.filter((p) => p !== option)
+      : choose === 1
+      ? [option]
+      : entry.picked.length >= choose
+      ? [...entry.picked.slice(1), option]
+      : [...entry.picked, option]
+    : [option];
+  const originToUse = entry?.origin ?? origin;
+  const next = { id, trait, origin: originToUse, choose, from, picked };
+  const others = current.filter((rc) => rc.id !== id);
+  return {
+    ...character,
+    ruleChoices: picked.length === 0 ? others : [...others, next],
+  };
 }

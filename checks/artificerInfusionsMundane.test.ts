@@ -1,10 +1,11 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
+import { reconcile } from "../src/rules/characterReconciler.ts";
+import { currentCompendium } from "../src/services/compendium.ts";
 import { makeChar } from "./testUtils.ts";
 import {
   isMundaneItem,
   isMundaneInfusionTarget,
-  pruneInvalidInfusions,
 } from "../src/rules/ruleChoices.ts";
 import type { InventoryItem } from "../src/types/character.ts";
 
@@ -127,7 +128,7 @@ test("isMundaneItem rejects magic weapons, armors, and wondrous items", () => {
   assert.equal(isMundaneItem(ringOfProtection), false);
 });
 
-test("pruneInvalidInfusions removes active infusions bound to magical items", () => {
+test("reconcile removes active infusions bound to magical items", () => {
   const mundaneSword: InventoryItem = {
     id: "mundane_sword",
     name: "Longsword",
@@ -153,15 +154,17 @@ test("pruneInvalidInfusions removes active infusions bound to magical items", ()
     ruleChoices: [
       {
         id: "TCE__Artificer__Infusions 2",
-        traitName: "Infusions Known (2nd Level)",
+        trait: "Infusions Known (2nd Level)",
         choose: 4,
+        from: [],
         origin: "class",
         picked: ["Enhanced Defense", "Enhanced Weapon", "Mind Sharpener", "Repeating Shot"],
       },
       {
         id: "TCE__Artificer__Infusions 6",
-        traitName: "Infusions Known (6th Level)",
+        trait: "Infusions Known (6th Level)",
         choose: 2,
+        from: [],
         origin: "class",
         picked: ["Radiant Weapon", "Repulsion Shield"],
       },
@@ -181,7 +184,7 @@ test("pruneInvalidInfusions removes active infusions bound to magical items", ()
     ],
   });
 
-  const pruned = pruneInvalidInfusions(artChar);
+  const pruned = reconcile(artChar, currentCompendium());
 
   // Mundane sword infusion should remain active
   assert.equal(

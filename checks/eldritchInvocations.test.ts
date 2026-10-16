@@ -1,5 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
+import { reconcile } from "../src/rules/characterReconciler.ts";
+import { currentCompendium } from "../src/services/compendium.ts";
 import { makeChar } from "./testUtils.ts";
 import {
   warlockInvocationChoices,
@@ -10,13 +12,12 @@ import {
   getAtWillInvocationSpells,
   INVOCATION_AT_WILL_SPELLS,
   isInvocationEligible,
-  pruneInvalidInvocations,
   subclassRuleChoices,
   pickSubclassRuleChoice,
 } from "../src/rules/ruleChoices.ts";
 import { getEldritchBlastDamage } from "../src/rules/attacks.ts";
 import { removeAsiSelection } from "../src/rules/leveling.ts";
-import { teardownSubclass } from "../src/rules/builderTransitions.ts";
+import { teardownSubclass } from "../src/rules/characterReconciler.ts";
 
 test("Warlock level milestones offer correct number of invocations (2 at lvl 2, up to 8 at lvl 18)", () => {
   // Level 1: 0 invocations
@@ -444,7 +445,7 @@ test("Teardown and prerequisite pruning: de-leveling, changing Pact Boon, or rem
     ...hero,
     knownSpells: [],
   };
-  hero = pruneInvalidInvocations(hero);
+  hero = reconcile(hero, currentCompendium());
 
   assert.equal(hasInvocation(hero, "Agonizing Blast"), false);
   assert.equal(hasInvocation(hero, "Armor of Shadows"), true);
@@ -457,7 +458,7 @@ test("Teardown and prerequisite pruning: de-leveling, changing Pact Boon, or rem
     ...hero,
     classes: [{ className: "Warlock", level: 1, hitDiceType: "d8" }],
   };
-  hero = pruneInvalidInvocations(hero);
+  hero = reconcile(hero, currentCompendium());
   assert.equal(getChosenInvocations(hero).length, 0);
   assert.ok(
     hero.needsReview?.some((n) => n.includes("Armor of Shadows removed: prerequisite no longer satisfied"))
@@ -561,7 +562,7 @@ test("Eldritch Adept feat removal via removeAsiSelection removes choice and prun
   assert.ok(!updated.ruleChoices?.some((rc) => rc.id.includes("Eldritch Adept")));
 });
 
-test("Teardown subclass invokes pruneInvalidInvocations", () => {
+test("Teardown subclass keeps still-valid Warlock invocations", () => {
   const char = makeChar({
     classes: [{ className: "Warlock", level: 2, subclassName: "The Fiend", hitDiceType: "d8" }],
     ruleChoices: [

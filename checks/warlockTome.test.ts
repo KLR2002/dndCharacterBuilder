@@ -1,14 +1,14 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
+import { reconcile } from "../src/rules/characterReconciler.ts";
+import { currentCompendium } from "../src/services/compendium.ts";
 import { makeChar } from "./testUtils.ts";
 import {
   warlockTomeCantripChoices,
-  syncWarlockTomeCantrips,
   warlockPactBoonChoices,
   subclassRuleChoices,
   availableSubclassRuleChoices,
   pickSubclassRuleChoice,
-  pruneInvalidInvocations,
 } from "../src/rules/ruleChoices.ts";
 import { getClassSpellProfiles } from "../src/rules/spellcasting.ts";
 
@@ -353,7 +353,7 @@ test("De-leveling Warlock to level 2 purges Tome cantrips and rule choices", () 
     classes: [{ className: "Warlock", level: 2, source: "PHB" }],
   };
 
-  const pruned = pruneInvalidInvocations(charLvl2);
+  const pruned = reconcile(charLvl2, currentCompendium());
 
   // Pact Boon should be purged
   assert.equal(pruned.ruleChoices?.some((rc) => rc.id.includes("Pact Boon")), false);

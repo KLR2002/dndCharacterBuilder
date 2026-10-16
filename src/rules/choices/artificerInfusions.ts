@@ -1,6 +1,5 @@
 import type { Character, RuleChoiceEntry } from "../../types/character.ts";
-import { setRuleChoicePick } from "../builderTransitions.ts";
-import { type AvailableRuleChoice } from "./types.ts";
+import { type AvailableRuleChoice, setRuleChoicePick } from "./types.ts";
 
 export interface ArtificerInfusionDef {
   name: string;
@@ -703,7 +702,7 @@ export function pickInfusionChoice(
   choice: AvailableRuleChoice,
   option: string
 ): Character {
-  const updated = setRuleChoicePick(
+  return setRuleChoicePick(
     character,
     choice.id,
     choice.traitName,
@@ -712,6 +711,5 @@ export function pickInfusionChoice(
     choice.choose,
     "class"
   );
-  return pruneInvalidInfusions(updated);
 }
 

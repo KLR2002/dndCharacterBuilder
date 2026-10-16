@@ -4,7 +4,9 @@ import { Ionicons } from "@expo/vector-icons";
 import { AbilityKey, Character } from "../../types/character";
 import type { RaceData } from "../../types/dnd5e";
 import { type AvailableRuleChoice } from "../../rules/ruleChoices";
-import { reconcileCharacter, setChoiceRacialBonus } from "../../rules/builderTransitions";
+import { setChoiceRacialBonus } from "../../rules/builderTransitions";
+import { reconcile } from "../../rules/characterReconciler";
+import { currentCompendium } from "../../services/compendium";
 import {
   resolveAncestryState,
   applyAncestrySelection,
@@ -204,7 +206,7 @@ export const AncestrySection: React.FC<AncestrySectionProps> = ({
               onUpdate((cur) => {
                 const oldRaceChoices = (cur.skillChoices || []).filter((sc) => sc.origin === "race");
                 const oldRacePicks = new Set(oldRaceChoices.flatMap((sc) => sc.picked.map(normalizeSkillName)));
-                return reconcileCharacter({
+                return reconcile({
                   ...cur,
                   race: null,
                   racialAbilityBonuses: {},
@@ -212,7 +214,7 @@ export const AncestrySection: React.FC<AncestrySectionProps> = ({
                   ruleChoices: (cur.ruleChoices || []).filter((rc) => rc.origin !== "race"),
                   skillChoices: (cur.skillChoices || []).filter((sc) => sc.origin !== "race"),
                   chosenSkills: (cur.chosenSkills || []).filter((s) => !oldRacePicks.has(normalizeSkillName(s))),
-                });
+                }, currentCompendium());
               });
             }}
           />
