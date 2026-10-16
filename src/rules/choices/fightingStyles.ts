@@ -343,9 +343,21 @@ export function pruneInvalidFightingStyles(character: Character): Character {
     nextChoices = nextChoices.filter((rc) => rc.id !== "TCE__Fighter__Superior Technique__Maneuver");
   }
 
+  const removed = (character.ruleChoices || []).filter((rc) => !nextChoices.includes(rc));
+
   return {
     ...character,
     ruleChoices: nextChoices,
     knownSpells: nextKnownSpells,
+    ...(removed.length > 0
+      ? {
+          needsReview: Array.from(
+            new Set([
+              ...(character.needsReview || []),
+              ...removed.map((rc) => `${rc.trait} removed: prerequisite no longer satisfied`),
+            ])
+          ),
+        }
+      : {}),
   };
 }

@@ -4,11 +4,11 @@
 
 **Blocked by:** 04
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] Profile owner key matches the owner key used when storing spells, including Giant Barbarian
-- [ ] Preparing a spell not on the class list (or from an inactive book) is rejected and leaves the character unchanged
-- [ ] Always-prepared spells cannot be toggled and do not count against the preparation limit
-- [ ] Legacy two-part keys still count as prepared
-- [ ] Prepared-limit overrun is still a warning, not a rejection
-- [ ] Existing suite passes (`npm run check:all`)
+- [x] Profile owner key matches the owner key used when storing spells, including Giant Barbarian
+- [x] Preparing a spell not on the class list (or from an inactive book) is rejected and leaves the character unchanged
+- [x] Always-prepared spells cannot be toggled and do not count against the preparation limit
+- [x] Legacy two-part keys still count as prepared
+- [x] Prepared-limit overrun is still a warning, not a rejection
+- [x] Existing suite passes (`npm run check:all`)

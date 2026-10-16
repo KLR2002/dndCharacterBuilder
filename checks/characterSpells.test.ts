@@ -1,6 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { makeChar } from "./testUtils.ts";
+import { makeChar, inMemoryCompendium } from "./testUtils.ts";
+import { getClassSpellProfiles } from "../src/rules/spellcasting.ts";
 import {
   getSpellSlotLedger,
   toggleSpellSlot,
@@ -12,9 +13,13 @@ import {
   removeInscribedRitual,
   swapSubclassSpell,
   resetSubclassSpellSwap,
-  togglePreparedSpell,
+  isKnown,
+  isPrepared,
+  togglePrepared,
+  countPrepared,
 } from "../src/rules/characterSpells.ts";
 import type { SpellData } from "../src/types/dnd5e.ts";
+import type { Character, CharacterClass } from "../src/types/character.ts";
 
 test("getSpellSlotLedger computes standard slots, pact slots, and sorcery points accurately", () => {
   // Multiclass Wizard 3 / Warlock 3 / Sorcerer 2
@@ -196,17 +201,196 @@ test("swapSubclassSpell and resetSubclassSpellSwap manage spell replacements", (
   assert.equal(reset.subclassSpellSwaps, undefined);
 });
 
-test("togglePreparedSpell adds and removes spells from preparedSpells", () => {
-  const initial = makeChar({
-    preparedSpells: ["Cure Wounds__PHB__Cleric__PHB"],
+
+function spell(name: string, source: string, level: number, classes: string[]): SpellData {
+  return {
+    name, source, level, school: "Evocation", castingTime: "1 action", range: "Self",
+    components: { verbal: true, somatic: true, material: false }, componentsString: "V, S",
+    duration: "Instantaneous", concentration: false, ritual: false, classes, subclasses: [],
+    damageTypes: [], savingThrows: [], description: "", higherLevels: null, entries: [],
+  } as unknown as SpellData;
+}
+
+const BLESS = spell("Bless", "PHB", 1, ["Cleric", "Paladin"]);
+const CURE_WOUNDS = spell("Cure Wounds", "PHB", 1, ["Bard", "Cleric", "Druid", "Paladin", "Ranger"]);
+const SANCTUARY = spell("Sanctuary", "PHB", 1, ["Cleric"]);
+const MAGIC_MISSILE = spell("Magic Missile", "PHB", 1, ["Sorcerer", "Wizard"]);
+const SHIELD = spell("Shield", "PHB", 1, ["Sorcerer", "Wizard"]);
+const SCORCHING_RAY = spell("Scorching Ray", "PHB", 2, ["Sorcerer", "Wizard"]);
+const SANCTUARY_WARD = spell("Sanctuary Ward", "XGE", 1, ["Cleric"]);
+const SPELLS = [BLESS, CURE_WOUNDS, SANCTUARY, MAGIC_MISSILE, SHIELD, SCORCHING_RAY, SANCTUARY_WARD];
+
+// Every Ledger test runs against an SRD-style and an integrated in-memory Compendium (CODING_STANDARDS §4).
+const MODES = [
+  ["SRD", inMemoryCompendium({ spells: SPELLS })],
+  ["integrated", inMemoryCompendium({ spells: SPELLS }, { integrated: true })],
+] as const;
+
+const PHB = ["PHB"];
+
+function cls(className: string, level: number, subclassName?: string, source = "PHB"): CharacterClass {
+  return { className, source, level, subclassName };
+}
+
+function profileFor(char: Character, className: string) {
+  const profile = getClassSpellProfiles(char).find((p) => p.className === className);
+  assert.ok(profile, `expected a ${className} profile`);
+  return profile;
+}
+
+for (const [mode, compendium] of MODES) {
+  test(`togglePrepared adds and removes spells from preparedSpells (${mode})`, () => {
+    const cleric = makeChar({
+      classes: [cls("Cleric", 1)],
+      knownSpells: [
+        { name: "Cure Wounds", source: "PHB", ownerKey: "Cleric__PHB" },
+        { name: "Bless", source: "PHB", ownerKey: "Cleric__PHB" },
+      ],
+      preparedSpells: ["Cure Wounds__PHB__Cleric__PHB"],
+    });
+    const profile = profileFor(cleric, "Cleric");
+
+    // Unprepare Cure Wounds
+    const unprepared = togglePrepared(cleric, profile, { name: "Cure Wounds", source: "PHB" }, compendium, PHB);
+    assert.equal(unprepared.preparedSpells?.length, 0);
+
+    // Prepare Bless
+    const prepared = togglePrepared(unprepared, profile, { name: "Bless", source: "PHB" }, compendium, PHB);
+    assert.equal(prepared.preparedSpells?.length, 1);
+    assert.equal(prepared.preparedSpells?.[0], "Bless__PHB__Cleric__PHB");
   });
 
-  // Unprepare Cure Wounds
-  const unprepared = togglePreparedSpell(initial, { name: "Cure Wounds", source: "PHB", ownerKey: "Cleric__PHB" });
-  assert.equal(unprepared.preparedSpells?.length, 0);
+  test(`togglePrepared rejects a spell outside the owner's class list and returns the character unchanged (${mode})`, () => {
+    const cleric = makeChar({ classes: [cls("Cleric", 3)] });
+    const profile = profileFor(cleric, "Cleric");
 
-  // Prepare Bless
-  const prepared = togglePreparedSpell(unprepared, { name: "Bless", source: "PHB", ownerKey: "Cleric__PHB" });
-  assert.equal(prepared.preparedSpells?.length, 1);
-  assert.equal(prepared.preparedSpells?.[0], "Bless__PHB__Cleric__PHB");
-});
+    const next = togglePrepared(cleric, profile, { name: "Magic Missile", source: "PHB" }, compendium, PHB);
+    assert.strictEqual(next, cleric);
+  });
+
+  test(`togglePrepared rejects a spell from an inactive book (${mode})`, () => {
+    const cleric = makeChar({ classes: [cls("Cleric", 3)] });
+    const profile = profileFor(cleric, "Cleric");
+    const target = { name: "Sanctuary Ward", source: "XGE" };
+
+    assert.strictEqual(togglePrepared(cleric, profile, target, compendium, PHB), cleric);
+
+    const withXge = togglePrepared(cleric, profile, target, compendium, ["PHB", "XGE"]);
+    assert.deepEqual(withXge.preparedSpells, ["Sanctuary Ward__XGE__Cleric__PHB"]);
+  });
+
+  test(`togglePrepared rejects a spell above the owner's maximum spell level (${mode})`, () => {
+    const wizard = makeChar({ classes: [cls("Wizard", 1)] });
+    const profile = profileFor(wizard, "Wizard");
+
+    assert.strictEqual(togglePrepared(wizard, profile, { name: "Scorching Ray", source: "PHB" }, compendium, PHB), wizard);
+  });
+
+  test(`Fighter Eldritch Knight and Rogue Arcane Trickster prepare from the Wizard list (${mode})`, () => {
+    const ek = makeChar({ classes: [cls("Fighter", 3, "Eldritch Knight")] });
+    const ekProfile = profileFor(ek, "Fighter");
+
+    const withMissile = togglePrepared(ek, ekProfile, { name: "Magic Missile", source: "PHB" }, compendium, PHB);
+    assert.deepEqual(withMissile.preparedSpells, ["Magic Missile__PHB__Fighter__PHB"]);
+    assert.strictEqual(togglePrepared(ek, ekProfile, { name: "Cure Wounds", source: "PHB" }, compendium, PHB), ek);
+
+    const at = makeChar({ classes: [cls("Rogue", 3, "Arcane Trickster")] });
+    const atProfile = profileFor(at, "Rogue");
+    assert.deepEqual(
+      togglePrepared(at, atProfile, { name: "Shield", source: "PHB" }, compendium, PHB).preparedSpells,
+      ["Shield__PHB__Rogue__PHB"],
+    );
+    assert.strictEqual(togglePrepared(at, atProfile, { name: "Cure Wounds", source: "PHB" }, compendium, PHB), at);
+  });
+
+  test(`always-prepared spells cannot be toggled and do not count against the preparation limit (${mode})`, () => {
+    // Life Domain Cleric 1: Bless and Cure Wounds are always prepared.
+    const lifeCleric = makeChar({
+      baseAbilityScores: { str: 10, dex: 10, con: 10, int: 10, wis: 16, cha: 10 },
+      classes: [cls("Cleric", 1, "Life Domain")],
+      knownSpells: [
+        { name: "Bless", source: "PHB", ownerKey: "Cleric__PHB" },
+        { name: "Sanctuary", source: "PHB", ownerKey: "Cleric__PHB" },
+      ],
+      preparedSpells: ["Bless__PHB__Cleric__PHB", "Sanctuary__PHB__Cleric__PHB"],
+    });
+    const profile = profileFor(lifeCleric, "Cleric");
+
+    assert.strictEqual(togglePrepared(lifeCleric, profile, { name: "Bless", source: "PHB" }, compendium, PHB), lifeCleric);
+    assert.equal(countPrepared(lifeCleric, profile, compendium), 1);
+  });
+
+  test(`the same spell prepared under two owners stays independent (${mode})`, () => {
+    const char = makeChar({
+      classes: [cls("Cleric", 2), cls("Druid", 2)],
+      knownSpells: [
+        { name: "Cure Wounds", source: "PHB", ownerKey: "Cleric__PHB" },
+        { name: "Cure Wounds", source: "PHB", ownerKey: "Druid__PHB" },
+      ],
+    });
+    const cleric = profileFor(char, "Cleric");
+    const druid = profileFor(char, "Druid");
+    const target = { name: "Cure Wounds", source: "PHB" };
+
+    const clericPrepared = togglePrepared(char, cleric, target, compendium, PHB);
+    assert.deepEqual(clericPrepared.preparedSpells, ["Cure Wounds__PHB__Cleric__PHB"]);
+    assert.equal(isPrepared(clericPrepared, cleric, target), true);
+    assert.equal(isPrepared(clericPrepared, druid, target), false);
+
+    const bothPrepared = togglePrepared(clericPrepared, druid, target, compendium, PHB);
+    assert.equal(isPrepared(bothPrepared, druid, target), true);
+
+    // Unpreparing under Cleric leaves the Druid's preparation alone.
+    const druidOnly = togglePrepared(bothPrepared, cleric, target, compendium, PHB);
+    assert.deepEqual(druidOnly.preparedSpells, ["Cure Wounds__PHB__Druid__PHB"]);
+    assert.equal(isPrepared(druidOnly, druid, target), true);
+    assert.equal(isPrepared(druidOnly, cleric, target), false);
+  });
+
+  test(`legacy two-part keys still count as prepared (${mode})`, () => {
+    const char = makeChar({
+      classes: [cls("Cleric", 3)],
+      knownSpells: [{ name: "Cure Wounds", source: "PHB", ownerKey: "Cleric__PHB" }],
+      preparedSpells: ["Cure Wounds__PHB"],
+    });
+    const profile = profileFor(char, "Cleric");
+    const target = { name: "Cure Wounds", source: "PHB" };
+
+    assert.equal(isPrepared(char, profile, target), true);
+    assert.equal(countPrepared(char, profile, compendium), 1);
+
+    const unprepared = togglePrepared(char, profile, target, compendium, PHB);
+    assert.deepEqual(unprepared.preparedSpells, []);
+  });
+
+  test(`prepared-limit overrun is a warning, not a rejection (${mode})`, () => {
+    const wizard = makeChar({
+      baseAbilityScores: { str: 10, dex: 10, con: 10, int: 8, wis: 10, cha: 10 },
+      classes: [cls("Wizard", 1)],
+      knownSpells: [
+        { name: "Magic Missile", source: "PHB", ownerKey: "Wizard__PHB" },
+        { name: "Shield", source: "PHB", ownerKey: "Wizard__PHB" },
+      ],
+    });
+    const profile = profileFor(wizard, "Wizard");
+    assert.equal(profile.preparedLimit, 1);
+
+    const one = togglePrepared(wizard, profile, { name: "Magic Missile", source: "PHB" }, compendium, PHB);
+    const two = togglePrepared(one, profile, { name: "Shield", source: "PHB" }, compendium, PHB);
+    assert.deepEqual(two.preparedSpells, ["Magic Missile__PHB__Wizard__PHB", "Shield__PHB__Wizard__PHB"]);
+    assert.equal(countPrepared(two, profile, compendium), 2);
+  });
+
+  test(`isKnown matches the Giant Barbarian owner (${mode})`, () => {
+    const giant = makeChar({
+      baseAbilityScores: { str: 16, dex: 14, con: 16, int: 10, wis: 14, cha: 8 },
+      classes: [cls("Barbarian", 3, "Path of the Giant")],
+      knownSpells: [{ name: "Druidcraft", source: "PHB", ownerKey: "Barbarian__BGG", className: "Barbarian" }],
+    });
+    const profile = profileFor(giant, "Barbarian");
+
+    assert.equal(profile.ownerKey, "Barbarian__BGG");
+    assert.equal(isKnown(giant, profile, { name: "Druidcraft", source: "PHB" }), true);
+    assert.equal(isKnown(giant, profile, { name: "Thaumaturgy", source: "PHB" }), false);
+  });
+}

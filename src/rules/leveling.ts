@@ -189,11 +189,13 @@ export function getPendingLevelChoices(
 
 /**
  * Adds or replaces an AsiSelection for { className, classLevel } in character.asiSelections.
- * Pure transition: does not mutate the original character.
+ * Replacing a feat prunes the choices that feat granted. Pure transition: does not mutate the
+ * original character.
  */
 export function applyAsiSelection(
   character: Character,
-  selection: AsiSelection
+  selection: AsiSelection,
+  compendium: Compendium = currentCompendium()
 ): Character {
   const targetClass =
     selection.className ??
@@ -228,10 +230,13 @@ export function applyAsiSelection(
     selections.push(normalizedSelection);
   }
 
-  return {
-    ...character,
-    asiSelections: selections,
-  };
+  return reconcile(
+    {
+      ...character,
+      asiSelections: selections,
+    },
+    compendium
+  );
 }
 
 /**
