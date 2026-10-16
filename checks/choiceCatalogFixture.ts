@@ -1,5 +1,5 @@
 import type { CompendiumCollections } from "../src/services/compendiumStorage.ts";
-import type { ClassData, ClassFeatureData, FeatureChoice, SubclassData } from "../src/types/dnd5e.ts";
+import type { ClassData, ClassFeatureData, FeatureChoice, OptionFeatureData, SubclassData } from "../src/types/dnd5e.ts";
 
 /**
  * An Integrated Catalog bundle for tests, built with invented placeholder text. The structure is
@@ -54,6 +54,37 @@ const barbarian: ClassData = {
   description: "Placeholder description for the Barbarian class.",
 };
 
+// The Elemental Discipline option records, as the scraper emits them: the real names and unlock
+// prerequisites, invented text. Elemental Attunement is a record too; the Monk rows exclude it.
+const disciplineRecord = (name: string, prerequisite: string | null): OptionFeatureData => ({
+  name,
+  source: "PHB",
+  category: "Elemental Discipline",
+  featureType: ["ED"],
+  prerequisite,
+  description: `Placeholder text for ${name}.`,
+});
+
+export const DISCIPLINE_FIXTURE_RECORDS: OptionFeatureData[] = [
+  disciplineRecord("Elemental Attunement", null),
+  disciplineRecord("Fangs of the Fire Snake", null),
+  disciplineRecord("Fist of Four Thunders", null),
+  disciplineRecord("Rush of the Gale Spirits", null),
+  disciplineRecord("Shape the Flowing River", null),
+  disciplineRecord("Sweeping Cinder Strike", null),
+  disciplineRecord("Unbroken Air", null),
+  disciplineRecord("Water Whip", null),
+  disciplineRecord("Clench of the North Wind", "6th-level Monk"),
+  disciplineRecord("Gong of the Summit", "6th-level Monk"),
+  disciplineRecord("Flames of the Phoenix", "11th-level Monk"),
+  disciplineRecord("Mist Stance", "11th-level Monk"),
+  disciplineRecord("Ride the Wind", "11th-level Monk"),
+  disciplineRecord("Breath of Winter", "17th-level Monk"),
+  disciplineRecord("Eternal Mountain Defense", "17th-level Monk"),
+  disciplineRecord("River of Hungry Flame", "17th-level Monk"),
+  disciplineRecord("Wave of Rolling Earth", "17th-level Monk"),
+];
+
 /** A Compendium bundle over the fixture catalog. Overrides replace whole collections. */
 export function choiceCatalogBundle(overrides: Partial<CompendiumCollections> = {}): CompendiumCollections {
   return {
@@ -66,7 +97,7 @@ export function choiceCatalogBundle(overrides: Partial<CompendiumCollections> = 
     spells: [],
     beasts: [],
     conditions: [],
-    optionsAndFeatures: [],
+    optionsAndFeatures: [...DISCIPLINE_FIXTURE_RECORDS],
     books: [],
     ...overrides,
   };

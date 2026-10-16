@@ -10,6 +10,7 @@ import {
 } from "../src/rules/ruleChoices.ts";
 import { createCompendium, type Compendium } from "../src/services/compendium.ts";
 import { integratedTestCompendium, makeChar, srdBaselineBundle, withTotemFixture } from "./testUtils.ts";
+import { OPTION_NAME_ALIASES } from "../src/rules/choices/types.ts";
 
 /**
  * Regression net for the class and subclass Rule Choices. Every representative character,
@@ -21,14 +22,33 @@ import { integratedTestCompendium, makeChar, srdBaselineBundle, withTotemFixture
  * there, so the Totem entries record names and ids only (no option digest) and the baseline's
  * recorded Totem digests are dropped before comparing. Every other entry is compared exactly.
  *
+ * The Elemental Discipline rows read the catalog's ED records. Their option text is catalog text,
+ * so they record names only, as the Totem rows do. The catalog lists the disciplines in its own
+ * order and prints "Unbroken Air" where the baseline has the old "Fist of Unbroken Air", so for
+ * those rows both sides compare as sorted sets, with each old name translated through the alias table.
+ *
  * To re-record deliberately: UPDATE_SUBCLASS_CHOICE_BASELINE=1 node --test checks/subclassChoiceCharacterization.test.ts
  */
+
+const DISCIPLINE_IDS = new Set([
+  "PHB__Monk__Way of the Four Elements__Discipline 3",
+  "PHB__Monk__Way of the Four Elements__Discipline 6",
+  "PHB__Monk__Way of the Four Elements__Discipline 11",
+  "PHB__Monk__Way of the Four Elements__Discipline 17",
+]);
 
 const CATALOG_TEXT_IDS = new Set([
   "PHB__Barbarian__Path of the Totem Warrior__Totem Spirit 3",
   "PHB__Barbarian__Path of the Totem Warrior__Aspect of the Beast 6",
   "PHB__Barbarian__Path of the Totem Warrior__Totemic Attunement 14",
+  ...DISCIPLINE_IDS,
 ]);
+
+/** The option names a row is compared on. Discipline rows compare as sorted sets of current names; every other row in order. */
+function comparableOptions(id: string, names: string[]): string[] {
+  if (!DISCIPLINE_IDS.has(id)) return names;
+  return names.map((name) => OPTION_NAME_ALIASES.get(name.trim().toLowerCase()) ?? name).sort();
+}
 
 const BASELINE_PATH = new URL("./fixtures/subclassChoiceBaseline.json", import.meta.url);
 const LEVELS = [1, 2, 3, 6, 10, 11, 14, 17];
@@ -124,7 +144,7 @@ const record = (choice: AvailableRuleChoice): Recorded => ({
   level: choice.level,
   effectLevel: choice.effectLevel,
   ...(choice.replaces ? { replaces: choice.replaces } : {}),
-  options: choice.options.map((o) => o.name),
+  options: comparableOptions(choice.id, choice.options.map((o) => o.name)),
   ...(CATALOG_TEXT_IDS.has(choice.id) ? {} : { optionsHash: digest(choice.options).slice(0, 16) }),
 });
 
@@ -137,7 +157,8 @@ function withoutCatalogTextDigests(baseline: Baseline): Baseline {
       choices[key] = entry;
       continue;
     }
-    const { optionsHash: _dropped, ...names } = entry;
+    const { optionsHash: _dropped, ...rest } = entry;
+    const names = { ...rest, options: comparableOptions(entry.id, entry.options) };
     const newKey = `${entry.id}|${digest(names).slice(0, 12)}`;
     rekeyed.set(key, newKey);
     choices[newKey] = names;
