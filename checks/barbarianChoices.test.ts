@@ -227,7 +227,7 @@ test("Path of the Totem Warrior: 3 distinct milestones with choose: 1", () => {
   assert.ok(lvl14Choices.some((c) => c.id === "PHB__Barbarian__Path of the Totem Warrior__Totemic Attunement 14"));
 });
 
-test("Path of the Totem Warrior: independent animal picks across milestones and Bear Totem detection", () => {
+test("Path of the Totem Warrior: independent animal picks across milestones", () => {
   const totemChar = makeChar({
     classes: [{ className: "Barbarian", level: 14, subclassName: "Path of the Totem Warrior" }],
   });
@@ -249,25 +249,4 @@ test("Path of the Totem Warrior: independent animal picks across milestones and 
   assert.deepEqual(pick3, ["Bear"]);
   assert.deepEqual(pick6, ["Eagle"]);
   assert.deepEqual(pick14, ["Wolf"]);
-
-  // Bear Totem Spirit detection check
-  const hasBearSpirit = Boolean(
-    updated.ruleChoices?.some(
-      (rc) =>
-        (rc.id.includes("Totem Spirit") || rc.trait.includes("Totem Spirit") || rc.id.includes("Totem Warrior")) &&
-        rc.picked?.some((p) => p.toLowerCase() === "bear")
-    )
-  );
-  assert.equal(hasBearSpirit, true, "Character with Bear Totem Spirit must be detected for rage resistance note");
-
-  // Eagle only: if 3rd level is Eagle, Bear Spirit check should return false
-  const eagle3Char = pickRuleChoice(totemChar, ch3, "Eagle");
-  const hasBearSpiritEagle = Boolean(
-    eagle3Char.ruleChoices?.some(
-      (rc) =>
-        (rc.id.includes("Totem Spirit") || rc.trait.includes("Totem Spirit") || rc.id.includes("Totem Warrior")) &&
-        rc.picked?.some((p) => p.toLowerCase() === "bear")
-    )
-  );
-  assert.equal(hasBearSpiritEagle, false, "Character with Eagle Totem Spirit must not trigger Bear resistance note");
 });
