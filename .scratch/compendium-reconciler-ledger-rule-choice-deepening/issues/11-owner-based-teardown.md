@@ -4,10 +4,16 @@
 
 **Blocked by:** 10, 06
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] Teardown cases pass for Druid, Sorcerer, Cleric, Fighter, Warlock and Artificer
-- [ ] An unknown id is never removed
-- [ ] The deprecated toggle alias is gone
-- [ ] No import cycle among the Reconciler, transitions and choice modules
-- [ ] Existing suite passes (`npm run check:all`)
+- [x] Teardown cases pass for Druid, Sorcerer, Cleric, Fighter, Warlock and Artificer
+- [x] An unknown id is never removed
+- [x] The deprecated toggle alias is gone
+- [x] No import cycle among the Reconciler, transitions and choice modules
+- [x] Existing suite passes (`npm run check:all`)
+
+## Notes
+
+- The remaining `includes` calls in teardown (subclass spell swaps, resource counters, Giant spells) have no owner table and were left as the spec describes.
+- Barbarian Primal Knowledge now survives a subclass change, where the old substring rule removed it.
+- The owner maps repeat the generator's literal ids, and no test yet checks that every generated id is mapped.
