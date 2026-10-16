@@ -29,6 +29,7 @@ import {
   getReplacedBaseFeatures,
 } from "../../rules/optionalFeatures";
 import { getWildShapeLimits, getWildShapeCharges, getRequiredWildShapeCharges } from "../../rules/wildShape";
+import { describeClassFeature } from "../../rules/featureOptions";
 import { ResourceCounter } from "../../types/character";
 import type { BeastData } from "../../types/dnd5e";
 import { Badge } from "../ui/Badge";
@@ -213,7 +214,12 @@ export const FeaturesTab: React.FC = () => {
             } else {
               if (replacedBaseFeatures.has(cf.name)) continue;
             }
-            const description = cf.description || `A ${c.className} feature gained at level ${cf.level}.`;
+            const description = describeClassFeature(
+              cf,
+              classData.source,
+              activeBooks,
+              `A ${c.className} feature gained at level ${cf.level}.`
+            );
             list.push({
               id: `class_${c.className}_${cf.name}_${cf.level}`,
               name: `${cf.name} (Lvl ${cf.level})`,
@@ -294,7 +300,12 @@ export const FeaturesTab: React.FC = () => {
                 name: `${sf.name} (Lvl ${sf.level})`,
                 origin: "Subclass",
                 source: c.subclassName,
-                description: sf.description || `A ${c.subclassName} archetype feature gained at level ${sf.level}.`,
+                description: describeClassFeature(
+                  sf,
+                  sc.source,
+                  activeBooks,
+                  `A ${c.subclassName} archetype feature gained at level ${sf.level}.`
+                ),
               });
             }
           }
