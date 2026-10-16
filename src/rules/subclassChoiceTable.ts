@@ -8,7 +8,8 @@ import { skills } from "./skills.ts";
  *
  * Ids are persisted in saved characters and must never change. Adding a choice means adding a
  * row; the row's `source` gates it by active book, and its `owner` decides which characters are
- * offered it. Options are either a static list or a named resolver that derives them from the
+ * offered it. A pointer row reads its options and pick count from the Integrated Catalog, through
+ * its `locator`. A static row lists its options, or names a resolver that derives them from the
  * character or the Compendium.
  */
 
@@ -103,11 +104,10 @@ export const ELEMENTAL_DISCIPLINES_LVL17 = [
   { name: "Wave of Rolling Earth", description: "Spend 6 Ki points to cast Wall of Stone." },
 ];
 
-/** A printed option. `book` limits it to when that book is active; absent means always offered. */
+/** A printed option of a hand-written row. */
 export interface SubclassChoiceOption {
   name: string;
   description: string;
-  book?: string;
 }
 
 /** Compendium- or state-derived options, named so the table stays data. */
@@ -150,7 +150,10 @@ const RESOLVERS: Record<OptionResolverName, (ctx: OptionResolverContext) => Subc
     })),
 };
 
-export interface SubclassChoiceRow {
+/** Where a pointer row's options live in the Integrated Catalog. */
+export type OptionLocator = { feature: { name: string; level: number } };
+
+interface SubclassChoiceRowBase {
   /** Persisted identity. Never change it once shipped. */
   id: string;
   /** The book the choice is printed in. Gates the row against the active books. */
@@ -166,10 +169,30 @@ export interface SubclassChoiceRow {
   level: number;
   /** Level from which the chosen option takes effect. */
   effectLevel: number;
-  choose: number;
-  options: readonly SubclassChoiceOption[] | { resolver: OptionResolverName };
   /** Offered only while the character has this optional feature. */
   requiresOptionalFeature?: string;
+  /** Option names this row never offers, whatever the catalog holds. */
+  excludeOptions?: string[];
+}
+
+/**
+ * A row whose options and pick count come from the Integrated Catalog: the feature at `locator`
+ * carries `choices`. Without that feature (or its `choices`) the row is not offered.
+ */
+export interface PointerChoiceRow extends SubclassChoiceRowBase {
+  locator: OptionLocator;
+}
+
+/** A row whose options are written in the table. Ticket 08 removes this form. */
+export interface StaticChoiceRow extends SubclassChoiceRowBase {
+  choose: number;
+  options: readonly SubclassChoiceOption[] | { resolver: OptionResolverName };
+}
+
+export type SubclassChoiceRow = PointerChoiceRow | StaticChoiceRow;
+
+export function isPointerRow(row: SubclassChoiceRow): row is PointerChoiceRow {
+  return "locator" in row;
 }
 
 const LAND = { className: "Druid", subclass: "Land" };
@@ -328,14 +351,7 @@ export const SUBCLASS_CHOICE_ROWS: readonly SubclassChoiceRow[] = [
     traitName: "Totem Spirit (3rd Level)",
     level: 3,
     effectLevel: 3,
-    choose: 1,
-    options: [
-      { name: "Bear", description: "While raging, you have resistance to all damage except psychic damage." },
-      { name: "Eagle", description: "While raging and not wearing heavy armor, opportunity attacks against you have disadvantage and you can Dash as a bonus action." },
-      { name: "Wolf", description: "While raging, your friends have advantage on melee attack rolls against any hostile creature within 5 ft of you." },
-      { name: "Elk", description: "While raging and not wearing heavy armor, your walking speed increases by 15 feet.", book: "SCAG" },
-      { name: "Tiger", description: "While raging, you can add 10 feet to your long jump distance and 3 feet to your high jump distance.", book: "SCAG" },
-    ],
+    locator: { feature: { name: "Totem Spirit", level: 3 } },
   },
   {
     id: "PHB__Barbarian__Path of the Totem Warrior__Aspect of the Beast 6",
@@ -344,14 +360,7 @@ export const SUBCLASS_CHOICE_ROWS: readonly SubclassChoiceRow[] = [
     traitName: "Aspect of the Beast (6th Level)",
     level: 6,
     effectLevel: 6,
-    choose: 1,
-    options: [
-      { name: "Bear", description: "Your carrying capacity (including maximum load and lift) is doubled, and you have advantage on Strength checks to push, pull, lift, or break objects." },
-      { name: "Eagle", description: "You can see up to 1 mile away with no difficulty, and dim light doesn't impose disadvantage on your Wisdom (Perception) checks." },
-      { name: "Wolf", description: "You can track other creatures while traveling at a fast pace, and you can move stealthily while traveling at a normal pace." },
-      { name: "Elk", description: "Whether mounted or on foot, your travel pace is doubled, as is the travel pace of up to ten companions within 60 ft.", book: "SCAG" },
-      { name: "Tiger", description: "You gain proficiency in two skills from: Athletics, Acrobatics, Stealth, and Survival.", book: "SCAG" },
-    ],
+    locator: { feature: { name: "Aspect of the Beast", level: 6 } },
   },
   {
     id: "PHB__Barbarian__Path of the Totem Warrior__Totemic Attunement 14",
@@ -360,14 +369,7 @@ export const SUBCLASS_CHOICE_ROWS: readonly SubclassChoiceRow[] = [
     traitName: "Totemic Attunement (14th Level)",
     level: 14,
     effectLevel: 14,
-    choose: 1,
-    options: [
-      { name: "Bear", description: "While raging, hostile creatures within 5 feet have disadvantage on attack rolls against targets other than you." },
-      { name: "Eagle", description: "While raging, you have a flying speed equal to your current walking speed in short bursts." },
-      { name: "Wolf", description: "While raging, you can use a bonus action to knock a Large or smaller creature prone when you hit it with a melee weapon attack." },
-      { name: "Elk", description: "While raging, bonus action during move to pass through a Large or smaller creature, dealing 1d12 + Str bludgeoning and knocking prone (Str save).", book: "SCAG" },
-      { name: "Tiger", description: "While raging, move 20 ft straight toward Large or smaller target before melee attack to use bonus action for extra melee weapon attack.", book: "SCAG" },
-    ],
+    locator: { feature: { name: "Totemic Attunement", level: 14 } },
   },
 ];
 
@@ -378,13 +380,17 @@ export function tableOwnerOf(id: string): ChoiceOwner | undefined {
   return ROW_OWNERS.get(id);
 }
 
+/** Whether a subclass name carries the row's subclass fragment. Case- and whitespace-insensitive. */
+function subclassFragmentMatches(subclassName: string, fragment: string): boolean {
+  const compact = (s: string) => s.replace(/\s+/g, "").toLowerCase();
+  return compact(subclassName).includes(compact(fragment));
+}
+
 /** Whether a row is owned by this recorded class (and subclass fragment, when the row names one). */
 export function rowOwnedBy(row: SubclassChoiceRow, className: string, subclassName: string): boolean {
   if (row.owner.className.toLowerCase() !== className.toLowerCase()) return false;
   if (!row.owner.subclass) return true;
-  // Case- and whitespace-insensitive, so "Divine Soul" and "divinesoul" name the same subclass.
-  const compact = (s: string) => s.replace(/\s+/g, "");
-  return compact(subclassName).includes(compact(row.owner.subclass.toLowerCase()));
+  return subclassFragmentMatches(subclassName, row.owner.subclass);
 }
 
 /** Whether the optional feature is enabled on the character (replacement or legacy flag). */
@@ -395,16 +401,58 @@ export function hasOptionalFeature(character: Character, name: string): boolean 
   );
 }
 
-/** The options a row offers for this character, with book-gated options dropped when their book is inactive. */
+/** The options a hand-written row offers for this character. */
 export function resolveRowOptions(
-  row: SubclassChoiceRow,
+  row: StaticChoiceRow,
   ctx: OptionResolverContext
 ): { name: string; description: string }[] {
   if ("resolver" in row.options) {
     return RESOLVERS[row.options.resolver](ctx).map(({ name, description }) => ({ name, description }));
   }
-  const active = ctx.activeBooks;
-  return row.options
-    .filter((o) => !o.book || !active || active.some((b) => b.toUpperCase() === o.book))
-    .map(({ name, description }) => ({ name, description }));
+  return row.options.map(({ name, description }) => ({ name, description }));
+}
+
+/** The pick count and offered options a pointer row reads from the Compendium. */
+export interface PointerRowOffer {
+  choose: number;
+  options: { name: string; description: string }[];
+}
+
+/**
+ * Reads a pointer row's offer from the Compendium. The feature at the row's locator supplies the
+ * pick count and the options. Returns undefined when no feature of the owner's class and subclass,
+ * with that name and level, carries `choices`: the row is then not offered and saved picks stay.
+ *
+ * The catalog is read unscoped: the row's own `source` and each option's `source` gate the offer
+ * by active book. An option printed in the row's own book is always offered; one printed in another
+ * book is offered only while that book is active.
+ */
+export function readPointerRow(
+  row: PointerChoiceRow,
+  compendium: Compendium,
+  activeBooks?: readonly string[]
+): PointerRowOffer | undefined {
+  const { name, level } = row.locator.feature;
+  const active = activeBooks?.map((b) => b.toUpperCase());
+  const rowBook = row.source.toUpperCase();
+
+  for (const cls of compendium.for().classes()) {
+    if (cls.name.toLowerCase() !== row.owner.className.toLowerCase()) continue;
+    for (const sub of cls.subclasses) {
+      if (row.owner.subclass && !subclassFragmentMatches(sub.name, row.owner.subclass)) continue;
+      const options = sub.features.find((f) => f.name === name && f.level === level)?.choices;
+      if (!options?.options) continue;
+      return {
+        choose: options.pick,
+        options: options.options
+          .filter((o) => !row.excludeOptions?.includes(o.name))
+          .filter((o) => {
+            const book = o.source?.toUpperCase();
+            return !book || book === rowBook || !active || active.includes(book);
+          })
+          .map(({ name, description }) => ({ name, description })),
+      };
+    }
+  }
+  return undefined;
 }

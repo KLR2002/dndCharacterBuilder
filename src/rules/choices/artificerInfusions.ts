@@ -1,359 +1,47 @@
 import type { Character, RuleChoiceEntry } from "../../types/character.ts";
-import { type AvailableRuleChoice, type ChoiceOwner, setRuleChoicePick } from "./types.ts";
+import { currentCompendium, type Compendium } from "../../services/compendium.ts";
+import {
+  type AvailableRuleChoice,
+  type ChoiceOwner,
+  resolveOptionName,
+  setRuleChoicePick,
+} from "./types.ts";
 
-export interface ArtificerInfusionDef {
+/** An Artificer Infusion as the catalog offers it. Its level comes from the record's prerequisite. */
+export interface ArtificerInfusion {
   name: string;
   level: number;
   description: string;
 }
 
-export const ALL_ARTIFICER_INFUSIONS: ArtificerInfusionDef[] = [
-  // 2nd level standard
-  {
-    name: "Armor of Magical Strength",
-    level: 2,
-    description: "A suit of armor gives bonus to Strength checks equal to Intelligence modifier, and can prevent being knocked prone.",
-  },
-  {
-    name: "Enhanced Arcane Focus",
-    level: 2,
-    description: "A rod, staff, or wand grants a +1 bonus to spell attack rolls (+2 at 10th level) and ignores half cover.",
-  },
-  {
-    name: "Enhanced Defense",
-    level: 2,
-    description: "A suit of armor or a shield gains a +1 bonus to AC (+2 at 10th level).",
-  },
-  {
-    name: "Enhanced Weapon",
-    level: 2,
-    description: "A simple or martial weapon gains a +1 bonus to attack and damage rolls (+2 at 10th level).",
-  },
-  {
-    name: "Homunculus Servant",
-    level: 2,
-    description: "A special mechanical servant that acts on your turn and can deliver touch spells.",
-  },
-  {
-    name: "Mind Sharpener",
-    level: 2,
-    description: "A suit of armor or robes lets the wearer succeed on a failed Constitution saving throw to maintain concentration.",
-  },
-  {
-    name: "Repeating Shot",
-    level: 2,
-    description: "A simple or martial weapon with ammunition property gains a +1 bonus to attack and damage rolls, produces its own ammo, and ignores loading property.",
-  },
-  {
-    name: "Returning Weapon",
-    level: 2,
-    description: "A simple or martial weapon with the thrown property gains a +1 bonus to attack and damage rolls, and returns immediately after thrown.",
-  },
+/** The Artificer level a prerequisite names, as "6th-level Artificer". An infusion that names none is a 2nd-level infusion. */
+function infusionLevel(prerequisite: string | null): number {
+  const match = /(\d+)(?:st|nd|rd|th)-level Artificer/i.exec(prerequisite ?? "");
+  return match ? parseInt(match[1], 10) : 2;
+}
 
-  // 6th level standard
-  {
-    name: "Boots of the Winding Path",
-    level: 6,
-    description: "The wearer can teleport up to 15 feet as a bonus action to an unoccupied space previously occupied this turn.",
-  },
-  {
-    name: "Radiant Weapon",
-    level: 6,
-    description: "A weapon gains a +1 bonus to attack and damage rolls, sheds light, and can blind an attacker as a reaction.",
-  },
-  {
-    name: "Repulsion Shield",
-    level: 6,
-    description: "A shield gains a +1 bonus to AC and can push an attacker up to 15 ft away as a reaction.",
-  },
-  {
-    name: "Resistant Armor",
-    level: 6,
-    description: "A suit of armor grants resistance to one damage type (chosen when infused).",
-  },
-  {
-    name: "Spell-Refueling Ring",
-    level: 6,
-    description: "The wearer can recover one expended spell slot of 3rd level or lower as an action once per long rest.",
-  },
+/**
+ * The infusions the catalog offers, read from its AI option records. The umbrella record that carries
+ * the replicable-item tables is not an infusion of its own. An empty list means the catalog offers no
+ * infusions: the SRD Baseline, or a catalog synced before they were scraped.
+ */
+export function catalogArtificerInfusions(compendium: Compendium = currentCompendium()): ArtificerInfusion[] {
+  return compendium
+    .for()
+    .optionsAndFeatures()
+    .filter((o) => o.featureType?.includes("AI") && !o.isUmbrella)
+    .map((o) => ({ name: o.name, level: infusionLevel(o.prerequisite), description: o.description || "" }));
+}
 
-  // 10th level standard
-  {
-    name: "Helm of Awareness",
-    level: 10,
-    description: "A helmet grants advantage on initiative rolls, and the wearer can't be surprised while conscious.",
-  },
-
-  // 14th level standard
-  {
-    name: "Arcane Propulsion Armor",
-    level: 14,
-    description: "Armor gives +5 ft walking speed, gauntlet strikes dealing 1d8 force damage (can be thrown 20/60 ft), and wearer cannot have armor removed against will.",
-  },
-
-  // 2nd level replicate magic item
-  {
-    name: "Replicate Magic Item: Alchemy Jug",
-    level: 2,
-    description: "Replicates an Alchemy Jug magic item.",
-  },
-  {
-    name: "Replicate Magic Item: Bag of Holding",
-    level: 2,
-    description: "Replicates a Bag of Holding magic item.",
-  },
-  {
-    name: "Replicate Magic Item: Cap of Water Breathing",
-    level: 2,
-    description: "Replicates a Cap of Water Breathing magic item.",
-  },
-  {
-    name: "Replicate Magic Item: Goggles of Night",
-    level: 2,
-    description: "Replicates a Goggles of Night magic item.",
-  },
-  {
-    name: "Replicate Magic Item: Rope of Climbing",
-    level: 2,
-    description: "Replicates a Rope of Climbing magic item.",
-  },
-  {
-    name: "Replicate Magic Item: Sending Stones",
-    level: 2,
-    description: "Replicates a pair of Sending Stones magic item.",
-  },
-  {
-    name: "Replicate Magic Item: Wand of Magic Detection",
-    level: 2,
-    description: "Replicates a Wand of Magic Detection magic item.",
-  },
-  {
-    name: "Replicate Magic Item: Wand of Secrets",
-    level: 2,
-    description: "Replicates a Wand of Secrets magic item.",
-  },
-
-  // 6th level replicate magic item
-  {
-    name: "Replicate Magic Item: Boots of Elvenkind",
-    level: 6,
-    description: "Replicates Boots of Elvenkind magic item.",
-  },
-  {
-    name: "Replicate Magic Item: Cloak of Elvenkind",
-    level: 6,
-    description: "Replicates a Cloak of Elvenkind magic item.",
-  },
-  {
-    name: "Replicate Magic Item: Cloak of the Manta Ray",
-    level: 6,
-    description: "Replicates a Cloak of the Manta Ray magic item.",
-  },
-  {
-    name: "Replicate Magic Item: Eyes of Charming",
-    level: 6,
-    description: "Replicates Eyes of Charming magic item.",
-  },
-  {
-    name: "Replicate Magic Item: Gloves of Thievery",
-    level: 6,
-    description: "Replicates Gloves of Thievery magic item.",
-  },
-  {
-    name: "Replicate Magic Item: Lantern of Revealing",
-    level: 6,
-    description: "Replicates a Lantern of Revealing magic item.",
-  },
-  {
-    name: "Replicate Magic Item: Pipes of Haunting",
-    level: 6,
-    description: "Replicates Pipes of Haunting magic item.",
-  },
-  {
-    name: "Replicate Magic Item: Ring of Water Walking",
-    level: 6,
-    description: "Replicates a Ring of Water Walking magic item.",
-  },
-
-  // 10th level replicate magic item
-  {
-    name: "Replicate Magic Item: Boots of Striding and Springing",
-    level: 10,
-    description: "Replicates Boots of Striding and Springing magic item.",
-  },
-  {
-    name: "Replicate Magic Item: Boots of the Winterlands",
-    level: 10,
-    description: "Replicates Boots of the Winterlands magic item.",
-  },
-  {
-    name: "Replicate Magic Item: Bracers of Archery",
-    level: 10,
-    description: "Replicates Bracers of Archery magic item.",
-  },
-  {
-    name: "Replicate Magic Item: Brooch of Shielding",
-    level: 10,
-    description: "Replicates a Brooch of Shielding magic item.",
-  },
-  {
-    name: "Replicate Magic Item: Cloak of Protection",
-    level: 10,
-    description: "Replicates a Cloak of Protection magic item.",
-  },
-  {
-    name: "Replicate Magic Item: Eyes of the Eagle",
-    level: 10,
-    description: "Replicates Eyes of the Eagle magic item.",
-  },
-  {
-    name: "Replicate Magic Item: Gauntlets of Ogre Power",
-    level: 10,
-    description: "Replicates Gauntlets of Ogre Power magic item.",
-  },
-  {
-    name: "Replicate Magic Item: Gloves of Missile Snaring",
-    level: 10,
-    description: "Replicates Gloves of Missile Snaring magic item.",
-  },
-  {
-    name: "Replicate Magic Item: Gloves of Swimming and Climbing",
-    level: 10,
-    description: "Replicates Gloves of Swimming and Climbing magic item.",
-  },
-  {
-    name: "Replicate Magic Item: Hat of Disguise",
-    level: 10,
-    description: "Replicates a Hat of Disguise magic item.",
-  },
-  {
-    name: "Replicate Magic Item: Headband of Intellect",
-    level: 10,
-    description: "Replicates a Headband of Intellect magic item.",
-  },
-  {
-    name: "Replicate Magic Item: Helm of Telepathy",
-    level: 10,
-    description: "Replicates a Helm of Telepathy magic item.",
-  },
-  {
-    name: "Replicate Magic Item: Medallion of Thoughts",
-    level: 10,
-    description: "Replicates a Medallion of Thoughts magic item.",
-  },
-  {
-    name: "Replicate Magic Item: Necklace of Adaptation",
-    level: 10,
-    description: "Replicates a Necklace of Adaptation magic item.",
-  },
-  {
-    name: "Replicate Magic Item: Periapt of Wound Closure",
-    level: 10,
-    description: "Replicates a Periapt of Wound Closure magic item.",
-  },
-  {
-    name: "Replicate Magic Item: Pipes of the Sewers",
-    level: 10,
-    description: "Replicates Pipes of the Sewers magic item.",
-  },
-  {
-    name: "Replicate Magic Item: Quiver of Ehlonna",
-    level: 10,
-    description: "Replicates a Quiver of Ehlonna magic item.",
-  },
-  {
-    name: "Replicate Magic Item: Ring of Jumping",
-    level: 10,
-    description: "Replicates a Ring of Jumping magic item.",
-  },
-  {
-    name: "Replicate Magic Item: Ring of Mind Shielding",
-    level: 10,
-    description: "Replicates a Ring of Mind Shielding magic item.",
-  },
-  {
-    name: "Replicate Magic Item: Slippers of Spider Climbing",
-    level: 10,
-    description: "Replicates Slippers of Spider Climbing magic item.",
-  },
-  {
-    name: "Replicate Magic Item: Ventilating Lungs",
-    level: 10,
-    description: "Replicates Ventilating Lungs magic item.",
-  },
-  {
-    name: "Replicate Magic Item: Winged Boots",
-    level: 10,
-    description: "Replicates Winged Boots magic item.",
-  },
-
-  // 14th level replicate magic item
-  {
-    name: "Replicate Magic Item: Amulet of Health",
-    level: 14,
-    description: "Replicates an Amulet of Health magic item.",
-  },
-  {
-    name: "Replicate Magic Item: Arcane Propulsion Arm",
-    level: 14,
-    description: "Replicates an Arcane Propulsion Arm magic item.",
-  },
-  {
-    name: "Replicate Magic Item: Belt of Hill Giant Strength",
-    level: 14,
-    description: "Replicates a Belt of Hill Giant Strength magic item.",
-  },
-  {
-    name: "Replicate Magic Item: Boots of Levitation",
-    level: 14,
-    description: "Replicates Boots of Levitation magic item.",
-  },
-  {
-    name: "Replicate Magic Item: Boots of Speed",
-    level: 14,
-    description: "Replicates Boots of Speed magic item.",
-  },
-  {
-    name: "Replicate Magic Item: Bracers of Defense",
-    level: 14,
-    description: "Replicates Bracers of Defense magic item.",
-  },
-  {
-    name: "Replicate Magic Item: Cloak of the Bat",
-    level: 14,
-    description: "Replicates a Cloak of the Bat magic item.",
-  },
-  {
-    name: "Replicate Magic Item: Dimensional Shackles",
-    level: 14,
-    description: "Replicates Dimensional Shackles magic item.",
-  },
-  {
-    name: "Replicate Magic Item: Gem of Seeing",
-    level: 14,
-    description: "Replicates a Gem of Seeing magic item.",
-  },
-  {
-    name: "Replicate Magic Item: Horn of Blasting",
-    level: 14,
-    description: "Replicates a Horn of Blasting magic item.",
-  },
-  {
-    name: "Replicate Magic Item: Ring of Free Action",
-    level: 14,
-    description: "Replicates a Ring of Free Action magic item.",
-  },
-  {
-    name: "Replicate Magic Item: Ring of Protection",
-    level: 14,
-    description: "Replicates a Ring of Protection magic item.",
-  },
-  {
-    name: "Replicate Magic Item: Ring of the Ram",
-    level: 14,
-    description: "Replicates a Ring of the Ram magic item.",
-  },
-];
+/** The catalog's infusion a saved name refers to, matched as saved picks are. Undefined when the catalog does not offer it. */
+export function findArtificerInfusion(
+  savedName: string,
+  compendium: Compendium = currentCompendium()
+): ArtificerInfusion | undefined {
+  const infusions = catalogArtificerInfusions(compendium);
+  const name = resolveOptionName(savedName, infusions.map((i) => i.name));
+  return infusions.find((i) => i.name === name);
+}
 
 /**
  * Checks if a rule choice ID corresponds to an Artificer Infusions choice.
@@ -460,13 +148,15 @@ export function getArtificerInfusionCapacity(level: number): number {
 }
 
 /**
- * Returns available Artificer Infusions Known rule choices for the character.
+ * Returns available Artificer Infusions Known rule choices for the character. Options come from the
+ * catalog's infusions. A catalog without them offers no choice.
  * Supports both milestone-based IDs (e.g. TCE__Artificer__Infusions 2) and canonical unified ID (TCE__Artificer__Infusions Known).
  */
 export function artificerInfusionChoices(
   character: Character,
   activeBooks?: string[],
-  preferUnified?: boolean
+  compendium: Compendium = currentCompendium(),
+  preferUnified = false
 ): AvailableRuleChoice[] {
   const classes = character.classes || [];
   const artificer = classes.find((c) => c.className.toLowerCase() === "artificer");
@@ -480,13 +170,16 @@ export function artificerInfusionChoices(
     }
   }
 
+  const infusions = catalogArtificerInfusions(compendium);
+  if (infusions.length === 0) return [];
+
   const isUnified = Boolean(
     preferUnified ||
     character.ruleChoices?.some((rc) => rc.id === ARTIFICER_INFUSIONS_KNOWN_ID)
   );
 
   if (isUnified) {
-    const eligible = ALL_ARTIFICER_INFUSIONS
+    const eligible = infusions
       .filter((opt) => opt.level <= artificerLevel)
       .map((opt) => ({
         name: opt.name,
@@ -533,7 +226,7 @@ export function artificerInfusionChoices(
     if (artificerLevel >= m.level) {
       const id = `TCE__Artificer__Infusions ${m.level}`;
       const otherPicked = getPickedInOtherInfusionChoices(id);
-      const eligible = ALL_ARTIFICER_INFUSIONS
+      const eligible = infusions
         .filter((opt) => opt.level <= artificerLevel)
         .filter((opt) => !otherPicked.has(opt.name.toLowerCase().trim()))
         .map((opt) => ({
@@ -559,21 +252,25 @@ export function artificerInfusionChoices(
 }
 
 /**
- * Prunes invalid Artificer infusions when levels change or character delevels.
+ * Prunes invalid Artificer infusions when levels change or character delevels. A catalog without
+ * infusions cannot say which picks are still valid, so nothing is pruned.
  */
-export function pruneInvalidInfusions(character: Character): Character {
+export function pruneInvalidInfusions(character: Character, compendium: Compendium = currentCompendium()): Character {
+  const infusions = catalogArtificerInfusions(compendium);
+  if (infusions.length === 0) return character;
+
   const classes = character.classes || [];
   const artificer = classes.find((c) => c.className.toLowerCase() === "artificer");
   const artificerLevel = artificer ? artificer.level : 0;
 
-  const validChoices = artificerInfusionChoices(character);
+  const validChoices = artificerInfusionChoices(character, undefined, compendium);
   const validChoiceMap = new Map<string, AvailableRuleChoice>();
   for (const c of validChoices) {
     validChoiceMap.set(c.id, c);
   }
 
   if (artificerLevel >= 2 && !validChoiceMap.has(ARTIFICER_INFUSIONS_KNOWN_ID)) {
-    const unifiedChoices = artificerInfusionChoices(character, undefined, true);
+    const unifiedChoices = artificerInfusionChoices(character, undefined, compendium, true);
     for (const c of unifiedChoices) {
       validChoiceMap.set(c.id, c);
     }
@@ -582,6 +279,7 @@ export function pruneInvalidInfusions(character: Character): Character {
   const seenPicks = new Set<string>();
   const nextRuleChoices: RuleChoiceEntry[] = [];
   const removedInfusions: string[] = [];
+  const eligibleNames = infusions.filter((i) => i.level <= artificerLevel).map((i) => i.name);
 
   for (const rc of character.ruleChoices || []) {
     if (isInfusionChoiceId(rc.id)) {
@@ -593,19 +291,18 @@ export function pruneInvalidInfusions(character: Character): Character {
         continue;
       }
 
+      // A saved pick is kept under the catalog's name, so it is stored as the catalog spells it from now on.
       const keptPicks: string[] = [];
       for (const p of rc.picked || []) {
-        const norm = p.toLowerCase().trim();
-        const def = ALL_ARTIFICER_INFUSIONS.find(
-          (d) => d.name.toLowerCase().trim() === norm
-        );
-        const isEligible = def ? def.level <= artificerLevel : false;
-
-        if (!isEligible) {
+        const name = resolveOptionName(p, eligibleNames);
+        if (name === undefined) {
           removedInfusions.push(p);
-        } else if (!seenPicks.has(norm)) {
+          continue;
+        }
+        const norm = name.toLowerCase();
+        if (!seenPicks.has(norm)) {
           seenPicks.add(norm);
-          keptPicks.push(p);
+          keptPicks.push(name);
         }
       }
 
@@ -704,21 +401,29 @@ export function pruneInvalidInfusions(character: Character): Character {
 }
 
 /**
- * Records or updates an Artificer infusion choice pick for a character.
+ * Records or updates an Artificer infusion choice pick for a character. Saved picks on the choice are
+ * first rewritten to the catalog's names, so the pick toggles and compares as the catalog spells it.
  */
 export function pickInfusionChoice(
   character: Character,
   choice: AvailableRuleChoice,
   option: string
 ): Character {
+  const names = choice.options.map((o) => o.name);
+  const canonical = (name: string) => resolveOptionName(name, names) ?? name;
+  const withCatalogNames: Character = {
+    ...character,
+    ruleChoices: (character.ruleChoices ?? []).map((rc) =>
+      rc.id === choice.id ? { ...rc, picked: (rc.picked ?? []).map(canonical) } : rc
+    ),
+  };
   return setRuleChoicePick(
-    character,
+    withCatalogNames,
     choice.id,
     choice.traitName,
-    option,
-    choice.options.map((o) => o.name),
+    canonical(option),
+    names,
     choice.choose,
     "class"
   );
 }
-

@@ -1,7 +1,13 @@
 import type { ToolsClient } from "../types/models.ts";
 import { renderEntries } from "../parser/entry-renderer.ts";
 import { cleanTags } from "../parser/tag-cleaner.ts";
-import type { ClassFeatureModel, ClassModel, SubclassAdditionalSpells, SubclassModel } from "../types/models.ts";
+import type {
+  ClassFeatureModel,
+  ClassModel,
+  FeatureChoice,
+  SubclassAdditionalSpells,
+  SubclassModel,
+} from "../types/models.ts";
 
 const STAT_NAMES: Record<string, string> = {
   str: "Strength",
@@ -50,6 +56,96 @@ function parseAdditionalSpells(rawAdditionalSpells: any): SubclassAdditionalSpel
     }
     return res;
   });
+}
+
+/** Finds the first `options` entry in a feature's entry tree. */
+function findOptionsEntry(entries: any): any | undefined {
+  if (!Array.isArray(entries)) return undefined;
+  for (const entry of entries) {
+    if (!entry || typeof entry !== "object") continue;
+    if (entry.type === "options") return entry;
+    const nested = findOptionsEntry(entry.entries);
+    if (nested) return nested;
+  }
+  return undefined;
+}
+
+/** The name and level a `refSubclassFeature` or `refClassFeature` entry points at. */
+function parseFeatureRef(
+  entry: any,
+  refType: "refClassFeature" | "refSubclassFeature"
+): { name: string; level: number } | undefined {
+  if (entry?.type !== refType) return undefined;
+  // Subclass refs: name|className|classSource|subclassShortName|subclassSource|level|featureSource.
+  // Class refs: name|className|classSource|level|featureSource.
+  const raw = refType === "refSubclassFeature" ? entry.subclassFeature : entry.classFeature;
+  if (typeof raw !== "string") return undefined;
+  const parts = raw.split("|");
+  const level = Number(refType === "refSubclassFeature" ? parts[5] : parts[3]);
+  if (!parts[0]?.trim() || !Number.isFinite(level)) return undefined;
+  return { name: parts[0].trim(), level };
+}
+
+/**
+ * Resolves a feature's `options` entry to the sibling features it names. Every ref must resolve
+ * to a sibling of the same name and level, or the feature gets no choices at all.
+ */
+function resolveChoice(
+  parent: any,
+  siblings: any[],
+  refType: "refClassFeature" | "refSubclassFeature"
+): { choices: FeatureChoice; folded: any[] } | undefined {
+  const options = findOptionsEntry(parent.entries);
+  if (!options || !Array.isArray(options.entries) || options.entries.length === 0) return undefined;
+
+  const folded: any[] = [];
+  for (const ref of options.entries) {
+    const target = parseFeatureRef(ref, refType);
+    if (!target) return undefined;
+    const sibling = siblings.find(
+      (s) => s !== parent && s.name === target.name && s.level === target.level
+    );
+    if (!sibling) return undefined;
+    folded.push(sibling);
+  }
+
+  return {
+    choices: {
+      pick: options.count ?? 1,
+      options: folded.map((sibling) => ({
+        name: cleanTags(sibling.name, "plain"),
+        description: renderEntries(sibling.entries, "markdown"),
+        source: sibling.source ?? parent.source,
+      })),
+    },
+    folded,
+  };
+}
+
+/**
+ * The raw features to emit, each with the choices its options entry resolves to. Option siblings
+ * that a parent resolves are folded into it and dropped from the list. Ref-only stubs are skipped.
+ */
+function featuresWithChoices(
+  raws: any[],
+  refType: "refClassFeature" | "refSubclassFeature"
+): { raw: any; choices?: FeatureChoice }[] {
+  const isOnlyRef = (f: any) =>
+    Array.isArray(f.entries) && f.entries.length === 1 && f.entries[0]?.type === refType;
+  const candidates = raws.filter((f) => !isOnlyRef(f));
+
+  const choicesByParent = new Map<any, FeatureChoice>();
+  const folded = new Set<any>();
+  for (const raw of candidates) {
+    const resolved = resolveChoice(raw, candidates, refType);
+    if (!resolved) continue;
+    choicesByParent.set(raw, resolved.choices);
+    for (const sibling of resolved.folded) folded.add(sibling);
+  }
+
+  return candidates
+    .filter((f) => !folded.has(f))
+    .map((raw) => ({ raw, choices: choicesByParent.get(raw) }));
 }
 
 export async function scrapeClasses(client: ToolsClient): Promise<ClassModel[]> {
@@ -132,20 +228,14 @@ export async function scrapeClasses(client: ToolsClient): Promise<ClassModel[]> 
           (cf.classSource === raw.source || !cf.classSource)
       );
 
-      for (const cf of classFeaturesForThis) {
-        // Skip entry ref stubs that only contain { type: "refClassFeature" }
-        const isOnlyRef =
-          Array.isArray(cf.entries) &&
-          cf.entries.length === 1 &&
-          cf.entries[0]?.type === "refClassFeature";
-
-        if (isOnlyRef) continue;
-
+      // Skips entry ref stubs that only contain { type: "refClassFeature" }
+      for (const { raw: cf, choices } of featuresWithChoices(classFeaturesForThis, "refClassFeature")) {
         features.push({
           name: cleanTags(cf.name, "plain"),
           level: cf.level,
           description: renderEntries(cf.entries, "markdown"),
           isOptional: cf.isClassFeatureVariant || false,
+          ...(choices ? { choices } : {}),
         });
       }
 
@@ -168,18 +258,13 @@ export async function scrapeClasses(client: ToolsClient): Promise<ClassModel[]> 
             (scf.subclassSource === sc.source || !scf.subclassSource)
         );
 
-        for (const scf of scFeaturesForThis) {
-          const isOnlyRef =
-            Array.isArray(scf.entries) &&
-            scf.entries.length === 1 &&
-            scf.entries[0]?.type === "refSubclassFeature";
-
-          if (isOnlyRef) continue;
-
+        // Skips entry ref stubs that only contain { type: "refSubclassFeature" }
+        for (const { raw: scf, choices } of featuresWithChoices(scFeaturesForThis, "refSubclassFeature")) {
           scFeatures.push({
             name: cleanTags(scf.name, "plain"),
             level: scf.level,
             description: renderEntries(scf.entries, "markdown"),
+            ...(choices ? { choices } : {}),
           });
         }
 

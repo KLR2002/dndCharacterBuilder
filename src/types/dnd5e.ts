@@ -52,11 +52,27 @@ export interface SubraceData {
   rawEntries?: any[];
 }
 
+/** One option a feature lets the player pick. `source` is the book it is printed in. */
+export interface ChoiceOption {
+  name: string;
+  description: string;
+  source?: string;
+}
+
+/** A pick from a fixed set of options a feature grants. `from` is the raw filter for cantrip-style lists. */
+export interface FeatureChoice {
+  pick: number;
+  options?: ChoiceOption[];
+  from?: { filter: string; count?: number };
+}
+
 export interface ClassFeatureData {
   name: string;
   level: number;
   description: string;
   isOptional?: boolean;
+  /** Present when the scraped feature grants a pick from its option features. */
+  choices?: FeatureChoice;
 }
 
 export interface SubclassAdditionalSpells {
@@ -215,6 +231,8 @@ export interface OptionFeatureData {
   prerequisite: string | null;
   description: string;
   rawEntries?: any[];
+  /** Set on a record that carries replicable-item tables; it is not a selectable option. */
+  isUmbrella?: boolean;
 }
 
 export interface BeastAction {

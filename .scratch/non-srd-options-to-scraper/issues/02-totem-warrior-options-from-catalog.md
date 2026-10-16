@@ -4,14 +4,16 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] Scraper test: raw-shaped placeholder records produce `choices` on the Totem Spirit, Aspect of the Beast and Totemic Attunement features, with option text and source, and the loose siblings no longer appear as features
-- [ ] Scraper keeps the existing prose description on the parent feature
-- [ ] Offered options for the three Totem rows come from the catalog; Elk and Tiger appear only while their book is active
-- [ ] Totem Spirit 3, Aspect of the Beast 6 and Totemic Attunement 14 keep their frozen ids and the same option names
-- [ ] A catalog without `choices` hides the Totem choices and keeps saved picks; SRD mode offers none
-- [ ] The Totem option text and the Bear Totem rage sentence no longer exist in the application code
-- [ ] Dual-Mode (SRD and integrated) and negative tests exist at the Rule Choice interface seam
-- [ ] The existing characterization scenarios still pass, run against the fixture catalog
-- [ ] Existing suite passes (`npm run check:all`)
+**Landed:** merge `0938cb8`. Notes: option gating treats an option printed in the row's own book as always offered; the reader reads the catalog unscoped; the scraper fold is generic (every subclass `options` entry), so ticket 09 renders folded options in the Features tab.
+
+- [x] Scraper test: raw-shaped placeholder records produce `choices` on the Totem Spirit, Aspect of the Beast and Totemic Attunement features, with option text and source, and the loose siblings no longer appear as features
+- [x] Scraper keeps the existing prose description on the parent feature
+- [x] Offered options for the three Totem rows come from the catalog; Elk and Tiger appear only while their book is active
+- [x] Totem Spirit 3, Aspect of the Beast 6 and Totemic Attunement 14 keep their frozen ids and the same option names
+- [x] A catalog without `choices` hides the Totem choices and keeps saved picks; SRD mode offers none
+- [x] The Totem option text and the Bear Totem rage sentence no longer exist in the application code
+- [x] Dual-Mode (SRD and integrated) and negative tests exist at the Rule Choice interface seam
+- [x] The existing characterization scenarios still pass, run against the fixture catalog
+- [x] Existing suite passes (`npm run check:all`)

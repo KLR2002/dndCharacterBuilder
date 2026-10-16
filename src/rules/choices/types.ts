@@ -54,6 +54,16 @@ export interface AvailableRuleChoice {
   options: { name: string; description: string }[];
 }
 
+/**
+ * The name an offered option is saved under, for a pick saved as `saved`. Matching ignores case and
+ * surrounding space: saved picks were written title-cased, while the catalog's text is not. Undefined
+ * when no offered name matches. Artificer infusion picks match through this function.
+ */
+export function resolveOptionName(saved: string, optionNames: readonly string[]): string | undefined {
+  const wanted = saved.trim().toLowerCase();
+  return optionNames.find((name) => name.trim().toLowerCase() === wanted);
+}
+
 export function getSubclassName(c: { subclassName?: string; subclass?: string }): string {
   return (c.subclassName || c.subclass || "").trim().toLowerCase();
 }

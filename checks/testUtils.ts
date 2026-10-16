@@ -3,6 +3,7 @@ import { DEFAULT_ACTIVE_BOOK_CODES } from "../src/constants/books.ts";
 import { readFileSync, existsSync } from "node:fs";
 import { createCompendium, integrate, revertToSrd, type Compendium } from "../src/services/compendium.ts";
 import { loadCompendiumData, type CompendiumCollections } from "../src/services/compendiumStorage.ts";
+import { choiceCatalogBundle } from "./choiceCatalogFixture.ts";
 
 /**
  * In-memory Compendium over the given collections. Collections not given are empty. Unless
@@ -91,9 +92,25 @@ export function loadTestCatalogs() {
   };
 }
 
+/**
+ * The Barbarian's Totem Warrior taken from the fixture catalog, which carries the choices the
+ * scraper now emits for it. Swapped into a bundle in place of the scraped Totem Warrior.
+ */
+export function withTotemFixture(bundle: CompendiumCollections): CompendiumCollections {
+  const [totem] = choiceCatalogBundle().classes[0].subclasses;
+  return {
+    ...bundle,
+    classes: bundle.classes.map((c) =>
+      c.name === "Barbarian"
+        ? { ...c, subclasses: [...c.subclasses.filter((sc) => sc.shortName !== totem.shortName), totem] }
+        : c,
+    ),
+  };
+}
+
 /** The full integrated catalog (scrap data, falling back to bundled data) as a collections bundle. */
 function integratedTestBundle(): CompendiumCollections {
-  return {
+  return withTotemFixture({
     hasIntegratedCatalog: true,
     races: loadTestCatalog<RaceData[]>("races"),
     classes: loadTestCatalog<ClassData[]>("classes"),
@@ -105,7 +122,7 @@ function integratedTestBundle(): CompendiumCollections {
     conditions: loadTestCatalog<ConditionData[]>("conditions"),
     optionsAndFeatures: loadTestCatalog<OptionFeatureData[]>("options_and_features"),
     books: loadTestCatalog<any[]>("books"),
-  };
+  });
 }
 
 /** An explicit integrated Compendium, without touching the process-wide default. */
@@ -113,9 +130,9 @@ export function integratedTestCompendium(): Compendium {
   return createCompendium(integratedTestBundle());
 }
 
-/** An explicit SRD Baseline Compendium built from the bundled SRD data, without touching the process-wide default. */
-export function srdBaselineCompendium(): Compendium {
-  return createCompendium({
+/** The SRD Baseline as a collections bundle, built from the bundled SRD data. */
+export function srdBaselineBundle(): CompendiumCollections {
+  return {
     hasIntegratedCatalog: false,
     races: loadSrdCatalog<RaceData[]>("races"),
     classes: loadSrdCatalog<ClassData[]>("classes"),
@@ -127,7 +144,12 @@ export function srdBaselineCompendium(): Compendium {
     conditions: loadSrdCatalog<ConditionData[]>("conditions"),
     optionsAndFeatures: loadSrdCatalog<OptionFeatureData[]>("options_and_features"),
     books: [],
-  });
+  };
+}
+
+/** An explicit SRD Baseline Compendium built from the bundled SRD data, without touching the process-wide default. */
+export function srdBaselineCompendium(): Compendium {
+  return createCompendium(srdBaselineBundle());
 }
 
 // Seed the process-wide default with the full integrated compendium for rule and progression test suites
