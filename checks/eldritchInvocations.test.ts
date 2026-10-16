@@ -13,7 +13,7 @@ import {
   INVOCATION_AT_WILL_SPELLS,
   isInvocationEligible,
   subclassRuleChoices,
-  pickSubclassRuleChoice,
+  pickRuleChoice,
 } from "../src/rules/ruleChoices.ts";
 import { getEldritchBlastDamage } from "../src/rules/attacks.ts";
 import { removeAsiSelection } from "../src/rules/leveling.ts";
@@ -123,7 +123,7 @@ test("Pact Boon offered at Warlock level >= 3 and integrates into subclassRuleCh
   assert.ok(subChoices.some((c) => c.id === "PHB__Warlock__Invocations 2"));
 
   // Selecting a Pact Boon
-  const chosen = pickSubclassRuleChoice(w3, boonChoices[0], "Pact of the Blade");
+  const chosen = pickRuleChoice(w3, boonChoices[0], "Pact of the Blade");
   assert.equal(getChosenPactBoon(chosen), "Pact of the Blade");
 });
 
@@ -431,7 +431,7 @@ test("Teardown and prerequisite pruning: de-leveling, changing Pact Boon, or rem
 
   // 1. Changing Pact Boon to Pact of the Tome prunes Thirsting Blade
   const pactChoice = warlockPactBoonChoices(hero)[0];
-  hero = pickSubclassRuleChoice(hero, pactChoice, "Pact of the Tome");
+  hero = pickRuleChoice(hero, pactChoice, "Pact of the Tome");
 
   assert.equal(hasInvocation(hero, "Thirsting Blade"), false);
   assert.equal(hasInvocation(hero, "Agonizing Blast"), true);

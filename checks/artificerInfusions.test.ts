@@ -9,7 +9,7 @@ import {
   getMaxActiveInfusions,
   hasInfusion,
   isInfusionChoiceId,
-  pickSubclassRuleChoice,
+  pickRuleChoice,
   subclassRuleChoices,
   availableSubclassRuleChoices,
   ALL_ARTIFICER_INFUSIONS,
@@ -134,11 +134,11 @@ test("Replicate Magic Item multi-instance selection (can pick Bag of Holding AND
 
   const choice = artificerInfusionChoices(char)[0];
   // Pick Bag of Holding
-  char = pickSubclassRuleChoice(char, choice, "Replicate Magic Item: Bag of Holding");
+  char = pickRuleChoice(char, choice, "Replicate Magic Item: Bag of Holding");
   // Pick Goggles of Night
-  char = pickSubclassRuleChoice(char, choice, "Replicate Magic Item: Goggles of Night");
+  char = pickRuleChoice(char, choice, "Replicate Magic Item: Goggles of Night");
   // Pick Enhanced Defense
-  char = pickSubclassRuleChoice(char, choice, "Enhanced Defense");
+  char = pickRuleChoice(char, choice, "Enhanced Defense");
 
   const known = getKnownInfusions(char);
   assert.ok(known.includes("Replicate Magic Item: Bag of Holding"));

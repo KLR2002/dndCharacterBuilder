@@ -19,8 +19,8 @@ import { normalizeSkillName } from "../../rules/skills";
 import { StartingGrantsSection } from "./StartingGrantsSection";
 import { useResponsiveLayout } from "../../hooks/useResponsiveLayout";
 import {
-  availableSubclassRuleChoices,
-  pickSubclassRuleChoice,
+  offeredRuleChoices,
+  pickRuleChoice,
   isManeuverChoiceId,
   isInvocationChoiceId,
   isInfusionChoiceId,
@@ -410,7 +410,7 @@ export const ClassProgressionSection: React.FC<ClassProgressionSectionProps> = (
 
       {/* Modular Progression & Class/Subclass Rule Choices */}
       {(() => {
-        const allSubclassChoices = availableSubclassRuleChoices(character, activeBooks);
+        const allSubclassChoices = offeredRuleChoices(character, { activeBooks, origins: ["class", "subclass"] });
         if (allSubclassChoices.length === 0) return null;
 
         const isFightingStyle = (id: string) =>
@@ -485,7 +485,7 @@ export const ClassProgressionSection: React.FC<ClassProgressionSectionProps> = (
                       from={choice.options.map((o) => o.name)}
                       chosen={chosen}
                       onToggle={(option) =>
-                        onUpdate((cur) => pickSubclassRuleChoice(cur, choice, option))
+                        onUpdate((cur) => pickRuleChoice(cur, choice, option))
                       }
                       onClear={() => handleClearChoice(choice)}
                       theme={theme}

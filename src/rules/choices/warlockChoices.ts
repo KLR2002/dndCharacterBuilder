@@ -95,6 +95,7 @@ export function warlockPactBoonChoices(
     {
       id: "PHB__Warlock__Pact Boon",
       traitName: "Pact Boon",
+      origin: "class",
       choose: 1,
       level: 3,
       effectLevel: 3,
@@ -767,6 +768,7 @@ export function warlockInvocationChoices(
         out.push({
           id,
           traitName: m.traitName,
+          origin: "class",
           choose: m.choose,
           level: m.level,
           effectLevel: m.level,
@@ -795,6 +797,7 @@ export function warlockInvocationChoices(
     out.push({
       id,
       traitName: "Eldritch Adept Invocation",
+      origin: "class",
       choose: 1,
       level: 1,
       effectLevel: 1,

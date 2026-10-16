@@ -493,6 +493,8 @@ export function artificerInfusionChoices(
       {
         id: ARTIFICER_INFUSIONS_KNOWN_ID,
         traitName: "Infusions Known",
+        origin: "class",
+        pick: "artificerInfusion",
         choose: getArtificerInfusionCapacity(artificerLevel),
         level: 2,
         effectLevel: 2,
@@ -538,6 +540,8 @@ export function artificerInfusionChoices(
       out.push({
         id,
         traitName: m.traitName,
+        origin: "class",
+        pick: "artificerInfusion",
         choose: m.choose,
         level: m.level,
         effectLevel: m.level,
