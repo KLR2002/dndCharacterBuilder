@@ -154,3 +154,65 @@ test("the scraper sets spellChoice on a subclass whose additionalSpells lift to 
   assert.deepEqual(soul.spellChoice, liftSpellChoice(AFFINITY_STYLE));
   assert.ok(soul.additionalSpells, "the raw additionalSpells are still emitted");
 });
+
+// Cantrip-list style: one unnamed entry whose `known` grants a `choose` filter at the first level.
+// The count rides on the filter object when the choice is more than one cantrip.
+const CANTRIP_LIST_STYLE: SubclassAdditionalSpells[] = [
+  {
+    known: { "1": { _: [{ choose: "level=0|class=Druid" }] } } as any,
+    prepared: { "1": ["placeholder spell thirteen"] },
+  },
+];
+
+const TWO_CANTRIP_STYLE: SubclassAdditionalSpells[] = [
+  {
+    known: { "1": { _: [{ choose: "level=0|class=Wizard", count: 2 }] } } as any,
+    prepared: {
+      "1": ["placeholder spell fourteen"],
+      "17": [{ choose: "level=6|class=Wizard" }, { choose: "level=7|class=Wizard" }],
+    } as any,
+  },
+];
+
+test("a cantrip-list entry lifts its known filter as the pick, with no options", () => {
+  assert.deepEqual(liftSpellChoice(CANTRIP_LIST_STYLE), {
+    pick: 1,
+    from: { filter: "level=0|class=Druid" },
+  });
+});
+
+test("a known filter's count becomes the pick count and the from count", () => {
+  assert.deepEqual(liftSpellChoice(TWO_CANTRIP_STYLE), {
+    pick: 2,
+    from: { filter: "level=0|class=Wizard", count: 2 },
+  });
+});
+
+test("prepared filters are not a cantrip choice, so an entry holding only them lifts to nothing", () => {
+  assert.equal(
+    liftSpellChoice([
+      { prepared: { "17": [{ choose: "level=6|class=Wizard" }] } as any },
+    ]),
+    undefined,
+    "a prepared filter is ignored",
+  );
+});
+
+test("two different known filters do not name one list, so they lift to nothing", () => {
+  assert.equal(
+    liftSpellChoice([
+      { known: { "1": { _: [{ choose: "level=0|class=Druid" }] } } as any },
+      { known: { "1": { _: [{ choose: "level=0|school=N" }] } } as any },
+    ]),
+    undefined,
+  );
+});
+
+test("named alternatives still win over a known filter on the same subclass", () => {
+  const named: SubclassAdditionalSpells[] = [
+    ...LAND_STYLE,
+    { known: { "1": { _: [{ choose: "level=0|school=N" }] } } as any },
+  ];
+  assert.deepEqual(liftSpellChoice(named)?.options?.map((o) => o.name), ["Arctic", "Coast"]);
+  assert.equal(liftSpellChoice(named)?.from, undefined);
+});
