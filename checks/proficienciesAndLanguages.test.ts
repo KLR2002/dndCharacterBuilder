@@ -14,7 +14,7 @@ import {
 } from "../src/rules/proficienciesAndLanguages.ts";
 import { POINT_BUY_COST } from "../src/constants/rules.ts";
 import type { Character } from "../src/types/character.ts";
-import { loadTestCatalog } from "./testUtils.ts";
+import { inMemoryCompendium, loadTestCatalog } from "./testUtils.ts";
 
 const races = loadTestCatalog("races");
 const backgrounds = loadTestCatalog("backgrounds");
@@ -113,7 +113,7 @@ test("resolveCharacterLanguages handles Half-Elf variant cleanly", () => {
   const char = createTestChar({
     race: { name: "Half-Elf", source: "PHB", subraceName: "Variant; Aquatic Elf Descent" },
   });
-  const langs = resolveCharacterLanguages(char, { races, backgrounds });
+  const langs = resolveCharacterLanguages(char, { compendium: inMemoryCompendium({ races, backgrounds }) });
   assert.ok(langs.includes("Common"));
   assert.ok(langs.includes("Elvish"));
 });
@@ -203,7 +203,7 @@ test("resolveCharacterLanguages combines fixed and chosen languages cleanly", ()
       background: ["Celestial", "Infernal"],
     },
   });
-  const langs = resolveCharacterLanguages(char, { races, backgrounds });
+  const langs = resolveCharacterLanguages(char, { compendium: inMemoryCompendium({ races, backgrounds }) });
   assert.ok(langs.includes("Common"));
   assert.ok(langs.includes("Draconic"));
   assert.ok(langs.includes("Celestial"));
@@ -222,7 +222,7 @@ test("resolveCharacterTools combines fixed and chosen tools cleanly without plac
       class: ["Lute", "Flute", "Drum"],
     },
   });
-  const tools = resolveCharacterTools(char, { races, backgrounds, classes });
+  const tools = resolveCharacterTools(char, { compendium: inMemoryCompendium({ races, backgrounds, classes }) });
   assert.ok(tools.includes("Smith's Tools"));
   assert.ok(tools.includes("Cook's Utensils"));
   assert.ok(tools.includes("Vehicles (Land)"));

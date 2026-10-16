@@ -1,4 +1,5 @@
 import type { Character } from "../types/character.ts";
+import { catalogListings, type CharacterCatalogs } from "./catalogs.ts";
 import { STANDARD_LANGUAGES, EXOTIC_LANGUAGES } from "../constants/languages.ts";
 
 export const ARTISAN_TOOLS: string[] = [
@@ -379,17 +380,19 @@ export function getClassToolGrant(
   return { fixed, choices };
 }
 
+/** With no catalogs given, the lists are empty; a bundle resolves names through its Compendium. */
 export function resolveCharacterLanguages(
   character: Character,
-  catalogs?: { races?: any[]; backgrounds?: any[] }
+  catalogs?: CharacterCatalogs
 ): string[] {
   const langSet = new Set<string>();
+  const listings = catalogs ? catalogListings(catalogs) : undefined;
 
   // Fixed from Race
   const raceGrant = getRaceLanguageGrant(
     character.race?.name,
     character.race?.subraceName,
-    catalogs?.races || [],
+    listings?.races() ?? [],
     character.race?.source,
     character.race?.subraceSource
   );
@@ -403,7 +406,7 @@ export function resolveCharacterLanguages(
   // Fixed from Background
   const bgGrant = getBackgroundLanguageGrant(
     character.background?.name,
-    catalogs?.backgrounds || []
+    listings?.backgrounds() ?? []
   );
   for (const l of bgGrant.fixed) langSet.add(l);
 
@@ -432,17 +435,19 @@ export function resolveCharacterLanguages(
   return Array.from(langSet);
 }
 
+/** With no catalogs given, the lists are empty; a bundle resolves names through its Compendium. */
 export function resolveCharacterTools(
   character: Character,
-  catalogs?: { races?: any[]; backgrounds?: any[]; classes?: any[] }
+  catalogs?: CharacterCatalogs
 ): string[] {
   const toolSet = new Set<string>();
+  const listings = catalogs ? catalogListings(catalogs) : undefined;
 
   // Race
   const raceGrant = getRaceToolGrant(
     character.race?.name,
     character.race?.subraceName,
-    catalogs?.races || []
+    listings?.races() ?? []
   );
   for (const t of raceGrant.fixed) toolSet.add(normalizeToolName(t));
   for (const t of character.chosenTools?.race || []) toolSet.add(normalizeToolName(t));
@@ -450,7 +455,7 @@ export function resolveCharacterTools(
   // Background
   const bgGrant = getBackgroundToolGrant(
     character.background?.name,
-    catalogs?.backgrounds || []
+    listings?.backgrounds() ?? []
   );
   for (const t of bgGrant.fixed) toolSet.add(normalizeToolName(t));
   for (const t of character.chosenTools?.background || []) toolSet.add(normalizeToolName(t));
@@ -460,7 +465,7 @@ export function resolveCharacterTools(
   if (primaryClass) {
     const classGrant = getClassToolGrant(
       primaryClass,
-      catalogs?.classes || []
+      listings?.classes() ?? []
     );
     for (const t of classGrant.fixed) toolSet.add(normalizeToolName(t));
     for (const t of character.chosenTools?.class || []) toolSet.add(normalizeToolName(t));

@@ -259,10 +259,7 @@ export function applyAncestrySelection(
     racialChoiceBonus: [],
   };
 
-  const listings = catalogListings(catalogs);
-  const allRaces = listings.races();
-  const allBackgrounds = listings.backgrounds();
-  const resolvedLangs = resolveCharacterLanguages(temp, { races: allRaces, backgrounds: allBackgrounds });
+  const resolvedLangs = resolveCharacterLanguages(temp, catalogs ?? {});
 
   const oldRaceChoices = (character.skillChoices || []).filter((sc) => sc.origin === "race");
   const oldRacePicks = new Set(oldRaceChoices.flatMap((sc) => sc.picked.map(normalizeSkillName)));

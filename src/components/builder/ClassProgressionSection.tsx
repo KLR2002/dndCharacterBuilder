@@ -151,13 +151,10 @@ export const ClassProgressionSection: React.FC<ClassProgressionSectionProps> = (
     }
 
     onUpdate(
-      reconcileCharacter(
-        {
-          ...updatedChar,
-          classes: updatedClasses,
-        },
-        { classes: allClasses }
-      )
+      reconcileCharacter({
+        ...updatedChar,
+        classes: updatedClasses,
+      })
     );
   };
 
@@ -219,13 +216,10 @@ export const ClassProgressionSection: React.FC<ClassProgressionSectionProps> = (
     );
 
     onUpdate(
-      reconcileCharacter(
-        {
-          ...updated,
-          classes: updatedClasses,
-        },
-        { classes: allClasses }
-      )
+      reconcileCharacter({
+        ...updated,
+        classes: updatedClasses,
+      })
     );
     setChangingSubclassFor(null);
     setOrphanWarning(null);
@@ -456,7 +450,7 @@ export const ClassProgressionSection: React.FC<ClassProgressionSectionProps> = (
               ...cur,
               ruleChoices: (cur.ruleChoices || []).filter((rc) => rc.id !== choice.id),
             };
-            return reconcileCharacter(next, { classes: allClasses });
+            return reconcileCharacter(next);
           });
         };
 
@@ -558,7 +552,7 @@ export const ClassProgressionSection: React.FC<ClassProgressionSectionProps> = (
 
       {/* Expertise Choices (Rogue, Bard, Knowledge Cleric, Ranger Deft Explorer, Feats) */}
       {(() => {
-        const milestones = getAvailableExpertiseMilestones(character, { classes: allClasses });
+        const milestones = getAvailableExpertiseMilestones(character);
         if (milestones.length === 0) return null;
         const picks = getMilestonePicks(milestones, character.chosenExpertise);
         const allAllowed = new Set(milestones.flatMap((m) => m.options.map((o) => o.toLowerCase())));
@@ -592,7 +586,7 @@ export const ClassProgressionSection: React.FC<ClassProgressionSectionProps> = (
                   The following choices are no longer proficient: {invalidPicks.join(", ")}.
                 </Text>
                 <TouchableOpacity
-                  onPress={() => onUpdate((cur) => pruneInvalidExpertise(cur, { classes: allClasses }))}
+                  onPress={() => onUpdate((cur) => pruneInvalidExpertise(cur))}
                   hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                   style={{ alignSelf: "flex-start", marginTop: 2 }}
                 >
@@ -610,7 +604,7 @@ export const ClassProgressionSection: React.FC<ClassProgressionSectionProps> = (
                   from={from}
                   chosen={chosen}
                   onToggle={(item) =>
-                    onUpdate((cur) => toggleExpertiseChoice(cur, item, { classes: allClasses }))
+                    onUpdate((cur) => toggleExpertiseChoice(cur, item))
                   }
                   theme={theme}
                 />
