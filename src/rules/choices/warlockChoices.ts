@@ -1,6 +1,6 @@
 import type { Character, KnownSpell, RitualBookEntry, RuleChoiceEntry } from "../../types/character.ts";
 import type { OptionFeatureData, SpellData } from "../../types/dnd5e.ts";
-import { findSpell, getOptionsAndFeatures, getSpells } from "../../services/dataService.ts";
+import { currentCompendium, type Compendium } from "../../services/compendium.ts";
 import { isSpellAvailableForClass } from "../spellcasting.ts";
 import { type AvailableRuleChoice, formatCantripOptions } from "./types.ts";
 
@@ -59,14 +59,15 @@ export function getChosenPactBoon(character: Character): string | null {
  */
 export function warlockPactBoonChoices(
   character: Character,
-  activeBooks?: string[]
+  activeBooks?: string[],
+  compendium: Compendium = currentCompendium()
 ): AvailableRuleChoice[] {
   const classes = character.classes || [];
   const warlock = classes.find((c) => c.className.toLowerCase() === "warlock");
   if (!warlock || warlock.level < 3) return [];
 
   const upperBooks = activeBooks ? activeBooks.map((b) => b.toUpperCase()) : undefined;
-  const allOptions = getOptionsAndFeatures(upperBooks);
+  const allOptions = compendium.for(upperBooks).optionsAndFeatures();
   const boonOptions = allOptions
     .filter(
       (o) =>
@@ -108,7 +109,8 @@ export function warlockPactBoonChoices(
  */
 export function warlockTomeCantripChoices(
   character: Character,
-  activeBooks?: string[]
+  activeBooks?: string[],
+  compendium: Compendium = currentCompendium()
 ): AvailableRuleChoice[] {
   const classes = character.classes || [];
   const warlock = classes.find((c) => c.className.toLowerCase() === "warlock");
@@ -120,7 +122,7 @@ export function warlockTomeCantripChoices(
   if (!hasPactOfTheTome) return [];
 
   const upperBooks = activeBooks ? activeBooks.map((b) => b.toUpperCase()) : undefined;
-  const allCantrips = getSpells(upperBooks).filter((s) => s.level === 0);
+  const allCantrips = compendium.for(upperBooks).spells().filter((s) => s.level === 0);
 
   return [
     {
@@ -138,9 +140,12 @@ export function warlockTomeCantripChoices(
 /**
  * Returns a Map of lowercase spell names to SpellData objects, optionally filtered by active sourcebooks.
  */
-export function getSpellLookupMap(activeBooks?: string[]): Map<string, SpellData> {
+export function getSpellLookupMap(
+  activeBooks?: string[],
+  compendium: Compendium = currentCompendium()
+): Map<string, SpellData> {
   const upperBooks = activeBooks ? activeBooks.map((b) => b.toUpperCase()) : undefined;
-  const allSpells = getSpells(upperBooks);
+  const allSpells = compendium.for(upperBooks).spells();
   const spellMap = new Map<string, SpellData>();
   for (const s of allSpells) {
     const key = s.name.toLowerCase().trim();
@@ -186,7 +191,10 @@ export function isSpellEligibleForRitualBook(
  * purges Warlock__Pact of the Tome__Cantrips from ruleChoices and all Tome cantrips from knownSpells,
  * and adds a notice to character.needsReview.
  */
-export function syncWarlockTomeCantrips(character: Character): Character {
+export function syncWarlockTomeCantrips(
+  character: Character,
+  compendium: Compendium = currentCompendium()
+): Character {
   const classes = character.classes || [];
   const warlock = classes.find((c) => c.className.toLowerCase() === "warlock");
   const isEligible = Boolean(
@@ -241,7 +249,7 @@ export function syncWarlockTomeCantrips(character: Character): Character {
     (k) => k.ownerKey !== "Warlock__Tome"
   );
 
-  const spellMap = getSpellLookupMap();
+  const spellMap = getSpellLookupMap(undefined, compendium);
 
   const syncedTomeSpells: KnownSpell[] = pickedCantrips.map((name) => {
     const s = spellMap.get(name.toLowerCase().trim());
@@ -266,7 +274,8 @@ export function syncWarlockTomeCantrips(character: Character): Character {
  */
 export function warlockAncientSecretsStartingRituals(
   character: Character,
-  activeBooks?: string[]
+  activeBooks?: string[],
+  compendium: Compendium = currentCompendium()
 ): AvailableRuleChoice[] {
   const classes = character.classes || [];
   const warlock = classes.find((c) => c.className.toLowerCase() === "warlock");
@@ -275,7 +284,7 @@ export function warlockAncientSecretsStartingRituals(
   if (!hasInvocation(character, "Book of Ancient Secrets")) return [];
 
   const upperBooks = activeBooks ? activeBooks.map((b) => b.toUpperCase()) : undefined;
-  const all1stRituals = getSpells(upperBooks).filter(
+  const all1stRituals = compendium.for(upperBooks).spells().filter(
     (s) => s.level === 1 && s.ritual === true
   );
 
@@ -303,7 +312,10 @@ export function warlockAncientSecretsStartingRituals(
  * purges Warlock__Book of Ancient Secrets__Starting Rituals from ruleChoices, cleanses all ritualBook entries,
  * and adds a notice to character.needsReview.
  */
-export function syncAncientSecretsRituals(character: Character): Character {
+export function syncAncientSecretsRituals(
+  character: Character,
+  compendium: Compendium = currentCompendium()
+): Character {
   const classes = character.classes || [];
   const warlock = classes.find((c) => c.className.toLowerCase() === "warlock");
   const hasPactOfTheTome = (character.ruleChoices || []).some(
@@ -352,7 +364,7 @@ export function syncAncientSecretsRituals(character: Character): Character {
   );
   const pickedRituals = ritualChoice?.picked || [];
 
-  const spellMap = getSpellLookupMap();
+  const spellMap = getSpellLookupMap(undefined, compendium);
 
   const syncedStartingRituals: RitualBookEntry[] = pickedRituals.map((name) => {
     const s = spellMap.get(name.toLowerCase().trim());
@@ -394,14 +406,15 @@ export function isMysticArcanumChoiceId(id: string): boolean {
  */
 export function warlockMysticArcanumChoices(
   character: Character,
-  activeBooks?: string[]
+  activeBooks?: string[],
+  compendium: Compendium = currentCompendium()
 ): AvailableRuleChoice[] {
   const classes = character.classes || [];
   const warlock = classes.find((c) => c.className.toLowerCase() === "warlock");
   if (!warlock || warlock.level < 11) return [];
 
   const upperBooks = activeBooks ? activeBooks.map((b) => b.toUpperCase()) : undefined;
-  const allSpells = getSpells(upperBooks);
+  const allSpells = compendium.for(upperBooks).spells();
   const subclassName = warlock.subclassName || warlock.subclass;
 
   const out: AvailableRuleChoice[] = [];
@@ -451,7 +464,10 @@ export interface MysticArcanumTierInfo {
 /**
  * Returns information about all unlocked Mystic Arcanum tiers on the character.
  */
-export function getMysticArcanumTiers(character: Character): MysticArcanumTierInfo[] {
+export function getMysticArcanumTiers(
+  character: Character,
+  compendium: Compendium = currentCompendium()
+): MysticArcanumTierInfo[] {
   const classes = character.classes || [];
   const warlock = classes.find((c) => c.className.toLowerCase() === "warlock");
   const warlockLevel = warlock ? warlock.level : 0;
@@ -466,7 +482,7 @@ export function getMysticArcanumTiers(character: Character): MysticArcanumTierIn
       const choiceId = `Warlock__Mystic Arcanum ${m.level}`;
       const rc = ruleChoices.find((r) => r.id === choiceId);
       const chosenSpellName = rc?.picked?.[0];
-      const spellData = chosenSpellName ? findSpell(chosenSpellName) : undefined;
+      const spellData = chosenSpellName ? compendium.findSpell(chosenSpellName) : undefined;
       const isSpent = Boolean(spentMap[m.spellLevel]);
 
       return {
@@ -687,11 +703,12 @@ function formatInvocationDescription(opt: OptionFeatureData): string {
  */
 export function warlockInvocationChoices(
   character: Character,
-  activeBooks?: string[]
+  activeBooks?: string[],
+  compendium: Compendium = currentCompendium()
 ): AvailableRuleChoice[] {
   const out: AvailableRuleChoice[] = [];
   const upperBooks = activeBooks ? activeBooks.map((b) => b.toUpperCase()) : undefined;
-  const allOptions = getOptionsAndFeatures(upperBooks);
+  const allOptions = compendium.for(upperBooks).optionsAndFeatures();
 
   const invocationOptions: OptionFeatureData[] = [];
   const seenInvocationNames = new Set<string>();
@@ -792,18 +809,21 @@ export function warlockInvocationChoices(
  * Prunes invalid invocations when levels, pact boons, spells, or feats change.
  * Adds notices to character.needsReview when invocations are pruned.
  */
-export function pruneInvalidInvocations(character: Character): Character {
+export function pruneInvalidInvocations(
+  character: Character,
+  compendium: Compendium = currentCompendium()
+): Character {
   const classes = character.classes || [];
   const warlock = classes.find((c) => c.className.toLowerCase() === "warlock");
   const warlockLevel = warlock ? warlock.level : 0;
 
-  const validChoices = warlockInvocationChoices(character);
+  const validChoices = warlockInvocationChoices(character, undefined, compendium);
   const validChoiceMap = new Map<string, AvailableRuleChoice>();
   for (const c of validChoices) {
     validChoiceMap.set(c.id, c);
   }
 
-  const allOptions = getOptionsAndFeatures();
+  const allOptions = compendium.for().optionsAndFeatures();
   const optionMap = new Map<string, OptionFeatureData>();
   for (const o of allOptions) {
     if (
@@ -873,13 +893,13 @@ export function pruneInvalidInvocations(character: Character): Character {
     needsReviewSet.add(`${removed} removed: prerequisite no longer satisfied`);
   }
 
-  return pruneInvalidMysticArcanum(
-    syncAncientSecretsRituals(
-      syncWarlockTomeCantrips({
-        ...character,
-        ruleChoices: nextRuleChoices,
-        needsReview: needsReviewSet.size > 0 ? Array.from(needsReviewSet) : undefined,
-      })
-    )
+  const synced = syncWarlockTomeCantrips(
+    {
+      ...character,
+      ruleChoices: nextRuleChoices,
+      needsReview: needsReviewSet.size > 0 ? Array.from(needsReviewSet) : undefined,
+    },
+    compendium
   );
+  return pruneInvalidMysticArcanum(syncAncientSecretsRituals(synced, compendium));
 }

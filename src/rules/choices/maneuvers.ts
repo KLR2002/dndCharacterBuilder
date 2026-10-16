@@ -1,5 +1,5 @@
 import type { Character } from "../../types/character.ts";
-import { getOptionsAndFeatures } from "../../services/dataService.ts";
+import { currentCompendium, type Compendium } from "../../services/compendium.ts";
 import { setRuleChoicePick } from "../builderTransitions.ts";
 import { type AvailableRuleChoice, getSubclassName } from "./types.ts";
 import { hasFightingStyle } from "./fightingStyles.ts";
@@ -42,11 +42,12 @@ export function getChosenManeuvers(character: Character): string[] {
  */
 export function battleMasterManeuverChoices(
   character: Character,
-  activeBooks?: string[]
+  activeBooks?: string[],
+  compendium: Compendium = currentCompendium()
 ): AvailableRuleChoice[] {
   const out: AvailableRuleChoice[] = [];
   const upperBooks = activeBooks ? activeBooks.map((b) => b.toUpperCase()) : undefined;
-  const allOptions = getOptionsAndFeatures(upperBooks);
+  const allOptions = compendium.for(upperBooks).optionsAndFeatures();
 
   const seenManeuverNames = new Set<string>();
   const maneuverOptions: { name: string; description: string }[] = [];

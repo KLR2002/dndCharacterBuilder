@@ -1,7 +1,7 @@
 import type { Character, RuleChoiceEntry } from "../types/character.ts";
 import type { RaceData, TraitChoiceData, TraitData } from "../types/dnd5e.ts";
 import { ALL_RESOURCE_BOOKS } from "../constants/books.ts";
-import { getSpells } from "../services/dataService.ts";
+import { currentCompendium, type Compendium } from "../services/compendium.ts";
 import { setRuleChoicePick } from "./builderTransitions.ts";
 import { totalLevel } from "./proficiencies.ts";
 import { DND_SKILLS } from "../constants/rules.ts";
@@ -389,7 +389,8 @@ export const ELEMENTAL_DISCIPLINES_LVL17 = [
  */
 export function subclassRuleChoices(
   character: Character,
-  activeBooks?: string[]
+  activeBooks?: string[],
+  compendium: Compendium = currentCompendium()
 ): AvailableRuleChoice[] {
   const out: AvailableRuleChoice[] = [];
   const classes = character.classes ?? [];
@@ -442,7 +443,7 @@ export function subclassRuleChoices(
     if (clsLower === "cleric" && c.level >= 1) {
       // Nature Domain
       if (subName.includes("nature")) {
-        const druidCantrips = getSpells(activeBooks).filter(
+        const druidCantrips = compendium.for(activeBooks).spells().filter(
           (s) => s.level === 0 && s.classes?.some((cls) => cls.toLowerCase() === "druid")
         );
         out.push({
@@ -457,7 +458,7 @@ export function subclassRuleChoices(
 
       // Death Domain
       if (subName.includes("death")) {
-        const necroCantrips = getSpells(activeBooks).filter(
+        const necroCantrips = compendium.for(activeBooks).spells().filter(
           (s) => s.level === 0 && s.school?.toLowerCase() === "necromancy"
         );
         out.push({
@@ -472,7 +473,7 @@ export function subclassRuleChoices(
 
       // Arcana Domain
       if (subName.includes("arcana")) {
-        const wizCantrips = getSpells(activeBooks).filter(
+        const wizCantrips = compendium.for(activeBooks).spells().filter(
           (s) => s.level === 0 && s.classes?.some((cls) => cls.toLowerCase() === "wizard")
         );
         out.push({
@@ -677,13 +678,13 @@ export function subclassRuleChoices(
     }
   }
 
-  out.push(...fightingStyleRuleChoices(character, activeBooks).filter((c) => !c.id.includes("Feat")));
-  out.push(...battleMasterManeuverChoices(character, activeBooks).filter((c) => !c.id.includes("Feat")));
-  out.push(...warlockPactBoonChoices(character, activeBooks));
-  out.push(...warlockTomeCantripChoices(character, activeBooks));
-  out.push(...warlockAncientSecretsStartingRituals(character, activeBooks));
-  out.push(...warlockMysticArcanumChoices(character, activeBooks));
-  out.push(...warlockInvocationChoices(character, activeBooks).filter((c) => !c.id.includes("Feat")));
+  out.push(...fightingStyleRuleChoices(character, activeBooks, compendium).filter((c) => !c.id.includes("Feat")));
+  out.push(...battleMasterManeuverChoices(character, activeBooks, compendium).filter((c) => !c.id.includes("Feat")));
+  out.push(...warlockPactBoonChoices(character, activeBooks, compendium));
+  out.push(...warlockTomeCantripChoices(character, activeBooks, compendium));
+  out.push(...warlockAncientSecretsStartingRituals(character, activeBooks, compendium));
+  out.push(...warlockMysticArcanumChoices(character, activeBooks, compendium));
+  out.push(...warlockInvocationChoices(character, activeBooks, compendium).filter((c) => !c.id.includes("Feat")));
   out.push(...artificerInfusionChoices(character, activeBooks));
 
   return out;
@@ -696,9 +697,10 @@ export function subclassRuleChoices(
  */
 export function availableSubclassRuleChoices(
   character: Character,
-  activeBooks?: string[]
+  activeBooks?: string[],
+  compendium: Compendium = currentCompendium()
 ): AvailableRuleChoice[] {
-  const choices = subclassRuleChoices(character, activeBooks);
+  const choices = subclassRuleChoices(character, activeBooks, compendium);
   if (!activeBooks || activeBooks.length === 0) return choices;
 
   const books = new Set(activeBooks.map((b) => b.toUpperCase()));
@@ -718,7 +720,8 @@ export function availableSubclassRuleChoices(
 export function pickSubclassRuleChoice(
   character: Character,
   choice: AvailableRuleChoice,
-  option: string
+  option: string,
+  compendium: Compendium = currentCompendium()
 ): Character {
   if (
     choice.id.includes("Fighting Style") ||
@@ -726,7 +729,7 @@ export function pickSubclassRuleChoice(
     choice.id.includes("Blessed Warrior") ||
     choice.id.includes("Druidic Warrior")
   ) {
-    return pickFightingStyleChoice(character, choice, option);
+    return pickFightingStyleChoice(character, choice, option, compendium);
   }
 
   const pickClassChoice = () =>
@@ -741,18 +744,18 @@ export function pickSubclassRuleChoice(
     );
 
   if (choice.id.includes("Pact Boon")) {
-    return pruneInvalidInvocations(pickClassChoice());
+    return pruneInvalidInvocations(pickClassChoice(), compendium);
   }
 
   if (choice.id === "Warlock__Pact of the Tome__Cantrips" || choice.id.includes("Pact of the Tome")) {
-    return syncWarlockTomeCantrips(pickClassChoice());
+    return syncWarlockTomeCantrips(pickClassChoice(), compendium);
   }
 
   if (
     choice.id === "Warlock__Book of Ancient Secrets__Starting Rituals" ||
     (choice.id.includes("Book of Ancient Secrets") && choice.id.includes("Rituals"))
   ) {
-    return syncAncientSecretsRituals(pickClassChoice());
+    return syncAncientSecretsRituals(pickClassChoice(), compendium);
   }
 
   if (isMysticArcanumChoiceId(choice.id)) {

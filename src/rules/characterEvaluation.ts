@@ -132,7 +132,7 @@ export function evaluateCharacter(
   const maxHitPoints = maxHp(character, ancestry, classRules);
   const hitDice = getHitDicePools(character, classRules);
   const acResult = armorClass(character, ancestry);
-  const speedsResult = characterSpeeds(character, ancestry);
+  const speedsResult = characterSpeeds(character, { ...ancestry, compendium: catalogs?.compendium });
   const speedResult = speedsResult.walk;
   const savesResult = savingThrows(character, classRules, ancestry);
   const weightResult = carryingWeight(character, ancestry);

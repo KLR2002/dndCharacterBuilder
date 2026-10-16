@@ -1,4 +1,4 @@
-import { findClass, getSpells } from "../services/dataService.ts";
+import { currentCompendium, type Compendium } from "../services/compendium.ts";
 import type { Character, RuleChoiceEntry } from "../types/character.ts";
 import type { SpellData, SubclassData, SubclassAdditionalSpells } from "../types/dnd5e.ts";
 
@@ -17,27 +17,31 @@ export interface SubclassSpellOptions {
   activeBooks?: string[];
   chosenCantrips?: string[];
   ruleChoices?: RuleChoiceEntry[];
+  /** Defaults to the process-wide current Compendium. */
+  compendium?: Compendium;
 }
 
 export function normalizeKey(str: string): string {
   return str.toLowerCase().replace(/[^a-z0-9]/g, "");
 }
 
-let spellCatalogMap: Map<string, SpellData> | null = null;
+let spellCatalogs = new WeakMap<Compendium, Map<string, SpellData>>();
 
-function getSpellCatalog(): Map<string, SpellData> {
-  if (!spellCatalogMap) {
-    const map = new Map<string, SpellData>();
-    for (const spell of getSpells()) {
+// One name-keyed spell index per Compendium, so a dataset swap never reads a stale catalog.
+function getSpellCatalog(compendium: Compendium): Map<string, SpellData> {
+  let map = spellCatalogs.get(compendium);
+  if (!map) {
+    map = new Map<string, SpellData>();
+    for (const spell of compendium.for().spells()) {
       map.set(normalizeKey(spell.name), spell);
     }
-    spellCatalogMap = map;
+    spellCatalogs.set(compendium, map);
   }
-  return spellCatalogMap;
+  return map;
 }
 
 export function resetSpellCatalogCache(): void {
-  spellCatalogMap = null;
+  spellCatalogs = new WeakMap<Compendium, Map<string, SpellData>>();
 }
 
 export const ELEMENTAL_DISCIPLINE_SPELL_MAP: Record<
@@ -193,6 +197,7 @@ export function getSubclassSpells(
   classLevel: number,
   options?: SubclassSpellOptions
 ): SubclassSpellsResult {
+  const compendium = options?.compendium ?? currentCompendium();
   const emptyResult: SubclassSpellsResult = {
     prepared: [],
     known: [],
@@ -204,7 +209,7 @@ export function getSubclassSpells(
     return emptyResult;
   }
 
-  const cls = findClass(className);
+  const cls = compendium.findClass(className);
   if (!cls || !cls.subclasses || cls.subclasses.length === 0) {
     return emptyResult;
   }
@@ -233,7 +238,7 @@ export function getSubclassSpells(
     }
   }
 
-  const catalog = getSpellCatalog();
+  const catalog = getSpellCatalog(compendium);
   const entriesToProcess = isFourElementsMonk
     ? []
     : selectAdditionalSpellsEntries(
@@ -531,9 +536,10 @@ export function getSubclassAllowedSwapSchools(subclassName: string): string[] {
 
 export function getBaselineSubclassSpellNames(
   className: string,
-  subclassName: string
+  subclassName: string,
+  compendium: Compendium = currentCompendium()
 ): string[] {
-  const cls = findClass(className);
+  const cls = compendium.findClass(className);
   if (!cls || !cls.subclasses) return [];
   const subclass = cls.subclasses.find((sc) => matchesSubclass(sc, subclassName));
   if (!subclass || !subclass.additionalSpells) return [];
@@ -571,7 +577,8 @@ export function validateSubclassSpellSwap(
   subclassName: string,
   originalSpellName: string,
   replacementSpellName: string,
-  activeBooks?: string[]
+  activeBooks?: string[],
+  compendium: Compendium = currentCompendium()
 ): { valid: boolean; reason?: string } {
   if (!className || !subclassName) {
     return { valid: false, reason: "Class and subclass must be specified." };
@@ -581,7 +588,7 @@ export function validateSubclassSpellSwap(
     return { valid: false, reason: `Subclass ${subclassName} does not permit spell swaps.` };
   }
 
-  const baselineNames = getBaselineSubclassSpellNames(className, subclassName);
+  const baselineNames = getBaselineSubclassSpellNames(className, subclassName, compendium);
   const normOriginal = normalizeKey(originalSpellName);
   const isBaseline = baselineNames.some((n) => normalizeKey(n) === normOriginal);
   if (!isBaseline) {
@@ -591,7 +598,7 @@ export function validateSubclassSpellSwap(
     };
   }
 
-  const catalog = getSpellCatalog();
+  const catalog = getSpellCatalog(compendium);
   const origSpell = catalog.get(normOriginal);
   if (!origSpell) {
     return { valid: false, reason: `Original spell "${originalSpellName}" not found in catalog.` };
@@ -657,13 +664,14 @@ export function validateSubclassSpellSwap(
 export function getEligibleSubclassSpellSwaps(
   subclassName: string,
   originalSpell: SpellData,
-  activeBooks?: string[]
+  activeBooks?: string[],
+  compendium: Compendium = currentCompendium()
 ): SpellData[] {
   if (!subclassName || !originalSpell || originalSpell.level === 0) return [];
   const allowedSchools = getSubclassAllowedSwapSchools(subclassName).map((s) => s.toLowerCase());
   if (allowedSchools.length === 0) return [];
 
-  const catalog = getSpellCatalog();
+  const catalog = getSpellCatalog(compendium);
   const allowedClasses = ["sorcerer", "warlock", "wizard"];
   const activeBooksSet = activeBooks ? new Set(activeBooks.map((b) => b.toUpperCase())) : null;
 
@@ -690,7 +698,8 @@ export function getOrphanedSubclassSpells(
   className: string,
   oldSubclassName: string,
   newSubclassName?: string,
-  activeBooks?: string[]
+  activeBooks?: string[],
+  compendium: Compendium = currentCompendium()
 ): string[] {
   if (!oldSubclassName) return [];
   const classLower = className.toLowerCase();
@@ -708,18 +717,18 @@ export function getOrphanedSubclassSpells(
   if (known.length === 0) return [];
 
   // Expanded spells for former subclass
-  const oldSpells = getSubclassSpells(className, oldSubclassName, 20, { activeBooks });
+  const oldSpells = getSubclassSpells(className, oldSubclassName, 20, { activeBooks, compendium });
   const oldExpandedSet = new Set(oldSpells.expanded.map(normalizeKey));
   if (oldExpandedSet.size === 0) return [];
 
   // Expanded spells for new subclass (if any)
   const newExpandedSet = new Set(
     newSubclassName
-      ? getSubclassSpells(className, newSubclassName, 20, { activeBooks }).expanded.map(normalizeKey)
+      ? getSubclassSpells(className, newSubclassName, 20, { activeBooks, compendium }).expanded.map(normalizeKey)
       : []
   );
 
-  const catalog = getSpellCatalog();
+  const catalog = getSpellCatalog(compendium);
   const orphaned: string[] = [];
 
   for (const k of known) {

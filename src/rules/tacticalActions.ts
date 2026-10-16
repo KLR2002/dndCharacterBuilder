@@ -11,7 +11,7 @@ import {
   getSneakAttackDice,
 } from "./combatDice.ts";
 import { getChosenManeuvers } from "./ruleChoices.ts";
-import { findSpell, getOptionsAndFeatures } from "../services/dataService.ts";
+import { currentCompendium, type Compendium } from "../services/compendium.ts";
 
 export interface TacticalCardItem {
   name: string;
@@ -135,8 +135,11 @@ export function getTacticalActionLedger(
   evaluated: EvaluatedCharacter,
   catalogs?: {
     activeBooks?: string[];
+    /** Defaults to the process-wide current Compendium. */
+    compendium?: Compendium;
   }
 ): TacticalActionLedger {
+  const compendium = catalogs?.compendium ?? currentCompendium();
   const weaponAttacks = evaluated.weaponAttacks ?? [];
   const dualWield = checkDualWielding(character, weaponAttacks);
   const extraAttackCount = evaluated.attacks?.extraAttackCount ?? 1;
@@ -167,7 +170,7 @@ export function getTacticalActionLedger(
     if (seenSpellNames.has(norm)) continue;
     seenSpellNames.add(norm);
 
-    const sp = k.spellObj || findSpell(k.name, k.source);
+    const sp = k.spellObj || compendium.findSpell(k.name, k.source);
     const isDamagingOrCombat =
       sp &&
       (sp.level === 0 ||
@@ -197,7 +200,7 @@ export function getTacticalActionLedger(
   const chosenManeuvers = getChosenManeuvers(character);
   const maneuverDc = evaluated.combatDcs?.maneuverSaveDc ?? 8;
   const superiorityDice = evaluated.combatDice?.superiorityDice ?? null;
-  const allOptions = getOptionsAndFeatures(catalogs?.activeBooks);
+  const allOptions = compendium.for(catalogs?.activeBooks).optionsAndFeatures();
   const maneuverMap = new Map<string, string>();
 
   for (const o of allOptions) {
@@ -374,7 +377,7 @@ export function getTacticalActionLedger(
 
   // Check for Reaction spells
   for (const k of character.knownSpells || []) {
-    const sp = findSpell(k.name, k.source);
+    const sp = compendium.findSpell(k.name, k.source);
     if (sp && (sp.castingTime || "").toLowerCase().includes("reaction")) {
       reactions.push({
         name: sp.name,
