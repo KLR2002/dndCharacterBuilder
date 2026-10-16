@@ -19,6 +19,8 @@ export interface ClassSpellProfile {
   preparedLimit?: number;
   alwaysPreparedSpells?: SpellData[];
   subclassKnownSpells?: SpellData[];
+  /** The Spell Owner key this class's known and prepared spells are stored under. */
+  ownerKey: string;
   knownSpells: KnownSpell[];
   preparedSpells: string[];
 }
@@ -39,6 +41,14 @@ export function isGiantBarbarian(c: CharacterClass): boolean {
   if (c.className !== "Barbarian" || c.level < 3) return false;
   const sub = (c.subclassName || c.subclass || (c as { archetype?: string }).archetype || "").toLowerCase();
   return sub.includes("giant");
+}
+
+/**
+ * The Spell Owner key for a class's spellcasting. Giant Barbarians own their granted cantrips
+ * under the Path of the Giant key, so the key is never derived from the class name alone.
+ */
+function spellOwnerKey(c: CharacterClass): string {
+  return isGiantBarbarian(c) ? "Barbarian__BGG" : `${c.className}__${c.source || "PHB"}`;
 }
 
 export function isCastingClass(c: CharacterClass): boolean {
@@ -136,9 +146,7 @@ export function getClassSpellProfiles(
     const spellAttackBonus = pb + abilityMod;
     const maxSpellLevel = getMaxSpellLevel(c);
     const preparedLimit = getPreparedLimit(c, modifiers);
-    const classOwnerKey = isGiantBarbarian(c)
-      ? "Barbarian__BGG"
-      : `${c.className}__${c.source || "PHB"}`;
+    const classOwnerKey = spellOwnerKey(c);
 
     const subName = c.subclassName || c.subclass || (c as { archetype?: string }).archetype;
 
@@ -205,6 +213,7 @@ export function getClassSpellProfiles(
       subclassKnownSpells: [...subSpells.known, ...subSpells.cantrips],
       knownSpells,
       preparedSpells,
+      ownerKey: classOwnerKey,
     };
 
     return profile;
