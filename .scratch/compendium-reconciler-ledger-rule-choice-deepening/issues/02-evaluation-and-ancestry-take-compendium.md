@@ -4,10 +4,10 @@
 
 **Blocked by:** 01
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] Only one catalog-bundle type exists in the codebase
-- [ ] evaluateCharacter and ancestry resolution produce the same results given a Compendium as before
-- [ ] The eight evaluation delegates in the services adapter are gone (one inlined)
+- [x] Only one catalog-bundle type exists in the codebase
+- [x] evaluateCharacter and ancestry resolution produce the same results given a Compendium as before
+- [x] The eight evaluation delegates in the services adapter are gone (one inlined)
 - [ ] Tabs no longer build races/classes/backgrounds lists by hand
-- [ ] Existing suite passes (`npm run check:all`)
+- [x] Existing suite passes (`npm run check:all`)
