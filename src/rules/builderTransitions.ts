@@ -6,16 +6,17 @@ import type {
   SkillChoiceEntry,
 } from "../types/character.ts";
 import type { BackgroundData } from "../types/dnd5e.ts";
+import { reconcile, teardownSubclass } from "./characterReconciler.ts";
+import { currentCompendium, type Compendium } from "../services/compendium.ts";
+import { normalizeSkillName } from "./skills.ts";
 import {
   STANDARD_ARRAY,
   MULTICLASS_PREREQUISITES,
   MULTICLASS_PROFICIENCIES,
   DND_SKILLS,
 } from "../constants/rules.ts";
-import { reconcile } from "./characterReconciler.ts";
 import { resolveCharacterLanguages } from "./proficienciesAndLanguages.ts";
 import type { CharacterCatalogs } from "./catalogs.ts";
-import { currentCompendium } from "../services/compendium.ts";
 
 export function setStandardArrayPick(
   character: Character,
@@ -217,6 +218,126 @@ export function addMulticlassLevel(
 /** Drops every recorded Rule Choice, used when the ancestry itself changes. */
 export function clearRuleChoices(character: Character): Character {
   return character.ruleChoices?.length ? { ...character, ruleChoices: [] } : character;
+}
+
+/**
+ * Changes the character's race: drops the race, its ability bonuses, and its race-origin Rule
+ * Choices and skill picks, then reconciles. Class-origin choices are kept.
+ */
+export function changeRace(character: Character, compendium: Compendium = currentCompendium()): Character {
+  const oldRaceChoices = (character.skillChoices || []).filter((sc) => sc.origin === "race");
+  const oldRacePicks = new Set(oldRaceChoices.flatMap((sc) => sc.picked.map(normalizeSkillName)));
+  return reconcile(
+    {
+      ...character,
+      race: null,
+      racialAbilityBonuses: {},
+      racialChoiceBonus: [],
+      ruleChoices: (character.ruleChoices || []).filter((rc) => rc.origin !== "race"),
+      skillChoices: (character.skillChoices || []).filter((sc) => sc.origin !== "race"),
+      chosenSkills: (character.chosenSkills || []).filter((s) => !oldRacePicks.has(normalizeSkillName(s))),
+    },
+    compendium
+  );
+}
+
+/**
+ * Sets a class's subclass. Tears down the previous subclass's dependents, unlearns the spells the
+ * caller has confirmed as orphaned (matched by name), then reconciles.
+ */
+export function changeSubclass(
+  character: Character,
+  className: string,
+  newSubclassName: string,
+  subclassSource: string,
+  unlearnOrphaned: string[] = [],
+  compendium: Compendium = currentCompendium()
+): Character {
+  const existing = character.classes.find((c) => c.className === className);
+  const oldSubclass = existing?.subclassName || existing?.subclass;
+
+  let updated = character;
+  if (oldSubclass && oldSubclass !== newSubclassName) {
+    updated = teardownSubclass(updated, className, oldSubclass, newSubclassName, compendium);
+  }
+
+  if (unlearnOrphaned.length > 0) {
+    const unlearnSet = new Set(unlearnOrphaned.map((s) => s.toLowerCase()));
+    updated = {
+      ...updated,
+      knownSpells: (updated.knownSpells || []).filter((k) => !unlearnSet.has(k.name.toLowerCase())),
+    };
+  }
+
+  const updatedClasses = updated.classes.map((c) =>
+    c.className === className
+      ? { ...c, subclassName: newSubclassName, subclassSource, subclass: newSubclassName }
+      : c
+  );
+
+  return reconcile({ ...updated, classes: updatedClasses }, compendium);
+}
+
+/** Subclass level at which each class gains its subclass; below it the subclass is lost. */
+function subclassRequiredLevel(className: string): number {
+  if (["Cleric", "Sorcerer", "Warlock"].includes(className)) return 1;
+  if (["Druid", "Wizard"].includes(className)) return 2;
+  return 3;
+}
+
+/**
+ * Removes one level of a class. Removing a class's last level drops the class and every skill
+ * pick it granted. Removing a higher level keeps the class and drops the subclass when the new
+ * level falls below its requirement. Either way the old subclass's dependents are torn down,
+ * then the character is reconciled.
+ */
+export function removeClassLevel(
+  character: Character,
+  className: string,
+  compendium: Compendium = currentCompendium()
+): Character {
+  const existing = character.classes.find((c) => c.className === className);
+  if (!existing) return character;
+
+  const oldSubclass = existing.subclassName || existing.subclass;
+  let updated = character;
+  let updatedClasses: CharacterClass[];
+
+  if (existing.level <= 1) {
+    updated = teardownSubclass(updated, className, oldSubclass || "", undefined, compendium);
+    updatedClasses = updated.classes.filter((c) => c.className !== className);
+
+    const classSourceKey = `Class: ${className}`;
+    const isClassChoice = (sc: SkillChoiceEntry) =>
+      sc.id === classSourceKey || sc.id.startsWith(`multiclass_skill_${className.toLowerCase()}`);
+    const removedPicks = new Set(
+      (updated.skillChoices || []).filter(isClassChoice).flatMap((sc) => sc.picked.map(normalizeSkillName))
+    );
+    updated = {
+      ...updated,
+      skillChoices: (updated.skillChoices || []).filter((sc) => !isClassChoice(sc)),
+      chosenSkills: (updated.chosenSkills || []).filter((s) => !removedPicks.has(normalizeSkillName(s))),
+    };
+  } else {
+    const newLevel = existing.level - 1;
+    const losesSubclass = newLevel < subclassRequiredLevel(className) && Boolean(oldSubclass);
+    if (losesSubclass && oldSubclass) {
+      updated = teardownSubclass(updated, className, oldSubclass, undefined, compendium);
+    }
+    updatedClasses = updated.classes.map((c) =>
+      c.className === className
+        ? {
+            ...c,
+            level: newLevel,
+            ...(losesSubclass
+              ? { subclassName: undefined, subclass: undefined, subclassSource: undefined }
+              : {}),
+          }
+        : c
+    );
+  }
+
+  return reconcile({ ...updated, classes: updatedClasses }, compendium);
 }
 
 export const STARTING_GOLD_BY_CLASS: Record<string, number> = {

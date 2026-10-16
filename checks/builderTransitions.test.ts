@@ -14,6 +14,9 @@ import {
   applyBackgroundGrants,
   setLanguages,
   clearBackground,
+  changeRace,
+  changeSubclass,
+  removeClassLevel,
 } from "../src/rules/builderTransitions.ts";
 import type {
   InventoryItem,
@@ -589,4 +592,107 @@ test("clearing a background with no recorded grants keeps unrelated choices and 
   assert.deepEqual(updated.chosenSkills, ["Athletics"]);
   assert.deepEqual(updated.ruleChoices, [fighterStyle]);
   assert.deepEqual(updated.needsReview ?? [], []);
+});
+
+test("changeRace clears race-origin rule choices and skill picks but keeps class-origin choices", () => {
+  const initial = makeChar({
+    race: { name: "Human", source: "PHB" },
+    classes: [{ className: "Fighter", source: "PHB", level: 1 }],
+    racialAbilityBonuses: { str: 1 },
+    racialChoiceBonus: [{ key: "dex", amount: 1 }],
+    chosenSkills: ["Athletics", "Perception", "Insight"],
+    skillChoices: [
+      { id: "Race: Human", origin: "race", choose: 1, from: ["Athletics", "Perception"], picked: ["Athletics"] },
+      { id: "Class: Fighter", origin: "class", choose: 2, from: ["Perception", "Insight"], picked: ["Perception", "Insight"] },
+    ],
+    ruleChoices: [
+      { id: "PHB__Human__Feat", trait: "Human Feat", origin: "race", choose: 1, from: ["Alert"], picked: ["Alert"] },
+      { id: "PHB__Fighter__Fighting Style", trait: "Fighting Style", origin: "class", choose: 1, from: ["Archery"], picked: ["Archery"] },
+    ],
+  });
+
+  const changed = changeRace(initial, inMemoryCompendium());
+
+  assert.equal(changed.race, null);
+  assert.deepEqual(changed.racialAbilityBonuses, {});
+  assert.deepEqual(changed.racialChoiceBonus, []);
+  assert.deepEqual(changed.ruleChoices?.map((rc) => rc.id), ["PHB__Fighter__Fighting Style"]);
+  assert.deepEqual(changed.skillChoices?.map((sc) => sc.id), ["Class: Fighter"]);
+  // Race-origin pick (Athletics) is removed; class-origin picks and unrelated skills stay.
+  assert.deepEqual(changed.chosenSkills, ["Perception", "Insight"]);
+});
+
+test("changeSubclass tears down the old subclass, sets the new one, and unlearns only the orphaned spells", () => {
+  const initial = makeChar({
+    classes: [{ className: "Druid", source: "PHB", level: 3, subclassName: "Circle of the Land", subclassSource: "PHB" }],
+    ruleChoices: [
+      {
+        id: "PHB__Druid__Circle of the Land__Biome",
+        trait: "Circle of the Land: Biome",
+        origin: "subclass",
+        choose: 1,
+        from: ["Coast"],
+        picked: ["Coast"],
+      },
+    ],
+    knownSpells: [
+      { name: "Moonbeam", ownerKey: "Druid__Land", ability: "wis", className: "Druid", source: "PHB" },
+      { name: "Cure Wounds", ownerKey: "Druid", ability: "wis", className: "Druid", source: "PHB" },
+    ],
+  });
+
+  const changed = changeSubclass(initial, "Druid", "Circle of the Moon", "PHB", ["Moonbeam"], inMemoryCompendium());
+
+  assert.equal(changed.classes[0].subclassName, "Circle of the Moon");
+  assert.equal(changed.classes[0].subclass, "Circle of the Moon");
+  assert.equal(changed.classes[0].subclassSource, "PHB");
+  assert.equal(changed.ruleChoices?.length, 0, "old subclass Rule Choice is cleared");
+  assert.deepEqual(changed.knownSpells?.map((k) => k.name), ["Cure Wounds"]);
+});
+
+test("removeClassLevel on a class's last level removes the class and prunes its skill picks", () => {
+  const initial = makeChar({
+    classes: [
+      { className: "Rogue", source: "PHB", level: 1 },
+      { className: "Fighter", source: "PHB", level: 1 },
+    ],
+    chosenSkills: ["Athletics", "Stealth", "Perception"],
+    skillChoices: [
+      { id: "Class: Rogue", origin: "class", choose: 1, from: ["Stealth", "Perception"], picked: ["Perception"] },
+      { id: "Class: Fighter", origin: "class", choose: 2, from: ["Athletics", "Acrobatics"], picked: ["Athletics"] },
+      { id: "multiclass_skill_fighter", origin: "class", choose: 1, from: ["Stealth", "Insight"], picked: ["Stealth"] },
+    ],
+  });
+
+  const removed = removeClassLevel(initial, "Fighter", inMemoryCompendium());
+
+  assert.deepEqual(removed.classes.map((c) => c.className), ["Rogue"]);
+  assert.deepEqual(removed.skillChoices?.map((sc) => sc.id), ["Class: Rogue"]);
+  // Only the removed class's picks go; Rogue's Perception and the unrelated skill stay.
+  assert.deepEqual(removed.chosenSkills, ["Perception"]);
+});
+
+test("removeClassLevel above level 1 keeps the class and drops the subclass only when it falls below the requirement", () => {
+  const fighter3 = makeChar({
+    classes: [
+      { className: "Fighter", source: "PHB", level: 3, subclassName: "Battle Master", subclass: "Battle Master", subclassSource: "PHB" },
+    ],
+  });
+
+  // Level 3 -> 2: below the subclass requirement, so the class stays but loses its subclass
+  const droppedToTwo = removeClassLevel(fighter3, "Fighter", inMemoryCompendium());
+  assert.equal(droppedToTwo.classes.length, 1);
+  assert.equal(droppedToTwo.classes[0].className, "Fighter");
+  assert.equal(droppedToTwo.classes[0].level, 2);
+  assert.equal(droppedToTwo.classes[0].subclassName, undefined);
+
+  // Level 4 -> 3: still meets the requirement, so the subclass is kept
+  const fighter4 = makeChar({
+    classes: [
+      { className: "Fighter", source: "PHB", level: 4, subclassName: "Battle Master", subclass: "Battle Master", subclassSource: "PHB" },
+    ],
+  });
+  const droppedToThree = removeClassLevel(fighter4, "Fighter", inMemoryCompendium());
+  assert.equal(droppedToThree.classes[0].level, 3);
+  assert.equal(droppedToThree.classes[0].subclassName, "Battle Master");
 });
