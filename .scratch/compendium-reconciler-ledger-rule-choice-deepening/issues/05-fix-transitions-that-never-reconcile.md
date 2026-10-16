@@ -4,10 +4,10 @@
 
 **Blocked by:** 04
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] Removing an origin feat that granted a choice (e.g. Fighting Initiate) removes the dependent pick and records a review notice
-- [ ] Replacing an ASI or feat selection prunes choices that depended on the old one
-- [ ] Clearing a background removes choices and grants that depended on it
-- [ ] Negative cases: unrelated choices are kept
-- [ ] Existing suite passes (`npm run check:all`)
+- [x] Removing an origin feat that granted a choice (e.g. Fighting Initiate) removes the dependent pick and records a review notice
+- [x] Replacing an ASI or feat selection prunes choices that depended on the old one
+- [x] Clearing a background removes choices and grants that depended on it
+- [x] Negative cases: unrelated choices are kept
+- [x] Existing suite passes (`npm run check:all`)
