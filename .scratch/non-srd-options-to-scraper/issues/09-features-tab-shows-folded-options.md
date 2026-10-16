@@ -4,7 +4,9 @@
 
 **Blocked by:** 02
 
-**Status:** ready-for-agent
+**Status:** done
+
+**Landed:** merge `c39af2f`. Notes: options list no source label (the owner's book is used for gating); a feature whose options are all hidden renders unchanged.
 
 - [x] A feature with `choices.options` lists each option's name and description under the feature in the Features tab, class and subclass features alike
 - [x] A feature without `choices` renders exactly as before
