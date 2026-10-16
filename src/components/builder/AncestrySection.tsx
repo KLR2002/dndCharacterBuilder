@@ -4,8 +4,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { AbilityKey, Character } from "../../types/character";
 import type { RaceData } from "../../types/dnd5e";
 import { type AvailableRuleChoice } from "../../rules/ruleChoices";
-import { setChoiceRacialBonus } from "../../rules/builderTransitions";
-import { reconcile } from "../../rules/characterReconciler";
+import { changeRace, setChoiceRacialBonus } from "../../rules/builderTransitions";
 import { currentCompendium } from "../../services/compendium";
 import {
   resolveAncestryState,
@@ -203,19 +202,7 @@ export const AncestrySection: React.FC<AncestrySectionProps> = ({
             size="sm"
             onPress={() => {
               setUserSelectedMode(null);
-              onUpdate((cur) => {
-                const oldRaceChoices = (cur.skillChoices || []).filter((sc) => sc.origin === "race");
-                const oldRacePicks = new Set(oldRaceChoices.flatMap((sc) => sc.picked.map(normalizeSkillName)));
-                return reconcile({
-                  ...cur,
-                  race: null,
-                  racialAbilityBonuses: {},
-                  racialChoiceBonus: [],
-                  ruleChoices: (cur.ruleChoices || []).filter((rc) => rc.origin !== "race"),
-                  skillChoices: (cur.skillChoices || []).filter((sc) => sc.origin !== "race"),
-                  chosenSkills: (cur.chosenSkills || []).filter((s) => !oldRacePicks.has(normalizeSkillName(s))),
-                }, currentCompendium());
-              });
+              onUpdate((cur) => changeRace(cur, currentCompendium()));
             }}
           />
         </Card>

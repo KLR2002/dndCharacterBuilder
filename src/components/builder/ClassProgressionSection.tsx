@@ -1,10 +1,15 @@
 import React, { useState } from "react";
 import { Text, TouchableOpacity, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { AbilityKey, Character, CharacterClass } from "../../types/character";
+import { AbilityKey, Character } from "../../types/character";
 import { ClassData, FeatData } from "../../types/dnd5e";
-import { addMulticlassLevel, validateMulticlass } from "../../rules/builderTransitions";
-import { reconcile, teardownSubclass } from "../../rules/characterReconciler";
+import {
+  addMulticlassLevel,
+  changeSubclass,
+  removeClassLevel as removeClassLevelTransition,
+  validateMulticlass,
+} from "../../rules/builderTransitions";
+import { reconcile } from "../../rules/characterReconciler";
 import { currentCompendium } from "../../services/compendium";
 import { ToolGrant } from "../../rules/proficienciesAndLanguages";
 import { findClass } from "../../services/dataService";
@@ -99,64 +104,7 @@ export const ClassProgressionSection: React.FC<ClassProgressionSectionProps> = (
   };
 
   const removeClassLevel = (className: string) => {
-    const existing = character.classes.find((c) => c.className === className);
-    if (!existing) return;
-
-    const oldSubclass = existing.subclassName || existing.subclass;
-    const req = ["Cleric", "Sorcerer", "Warlock"].includes(className)
-      ? 1
-      : ["Druid", "Wizard"].includes(className)
-      ? 2
-      : 3;
-
-    let updatedChar = character;
-    let updatedClasses: CharacterClass[];
-
-    if (existing.level <= 1) {
-      updatedChar = teardownSubclass(updatedChar, className, oldSubclass || "");
-      updatedClasses = updatedChar.classes.filter((c) => c.className !== className);
-      const classSourceKey = `Class: ${className}`;
-      const prunedChoices = (updatedChar.skillChoices || []).filter(
-        (sc) => sc.id !== classSourceKey && !sc.id.startsWith(`multiclass_skill_${className.toLowerCase()}`)
-      );
-      const removedPicks = new Set(
-        (updatedChar.skillChoices || [])
-          .filter((sc) => sc.id === classSourceKey || sc.id.startsWith(`multiclass_skill_${className.toLowerCase()}`))
-          .flatMap((sc) => sc.picked.map(normalizeSkillName))
-      );
-      const prunedChosenSkills = (updatedChar.chosenSkills || []).filter(
-        (s) => !removedPicks.has(normalizeSkillName(s))
-      );
-      updatedChar = {
-        ...updatedChar,
-        skillChoices: prunedChoices,
-        chosenSkills: prunedChosenSkills,
-      };
-    } else {
-      const newLevel = existing.level - 1;
-      const losesSubclass = newLevel < req && Boolean(oldSubclass);
-      if (losesSubclass && oldSubclass) {
-        updatedChar = teardownSubclass(updatedChar, className, oldSubclass);
-      }
-      updatedClasses = updatedChar.classes.map((c) =>
-        c.className === className
-          ? {
-              ...c,
-              level: newLevel,
-              ...(losesSubclass
-                ? { subclassName: undefined, subclass: undefined, subclassSource: undefined }
-                : {}),
-            }
-          : c
-      );
-    }
-
-    onUpdate(
-      reconcile({
-        ...updatedChar,
-        classes: updatedClasses,
-      }, currentCompendium())
-    );
+    onUpdate(removeClassLevelTransition(character, className, currentCompendium()));
   };
 
   const selectSubclass = (className: string, subclassName: string, subclassSource: string) => {
@@ -192,35 +140,8 @@ export const ClassProgressionSection: React.FC<ClassProgressionSectionProps> = (
     subclassSource: string,
     unlearnOrphaned?: string[]
   ) => {
-    const existing = character.classes.find((c) => c.className === className);
-    const oldSubclass = existing?.subclassName || existing?.subclass;
-
-    let updated = character;
-    if (oldSubclass && oldSubclass !== newSubclassName) {
-      updated = teardownSubclass(updated, className, oldSubclass, newSubclassName);
-    }
-
-    if (unlearnOrphaned && unlearnOrphaned.length > 0) {
-      const unlearnSet = new Set(unlearnOrphaned.map((s) => s.toLowerCase()));
-      updated = {
-        ...updated,
-        knownSpells: (updated.knownSpells || []).filter(
-          (k) => !unlearnSet.has(k.name.toLowerCase())
-        ),
-      };
-    }
-
-    const updatedClasses = updated.classes.map((c) =>
-      c.className === className
-        ? { ...c, subclassName: newSubclassName, subclassSource, subclass: newSubclassName }
-        : c
-    );
-
     onUpdate(
-      reconcile({
-        ...updated,
-        classes: updatedClasses,
-      }, currentCompendium())
+      changeSubclass(character, className, newSubclassName, subclassSource, unlearnOrphaned, currentCompendium())
     );
     setChangingSubclassFor(null);
     setOrphanWarning(null);
