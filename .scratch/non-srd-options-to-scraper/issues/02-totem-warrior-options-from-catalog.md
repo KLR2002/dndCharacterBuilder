@@ -4,7 +4,9 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** done
+
+**Landed:** merge `0938cb8`. Notes: option gating treats an option printed in the row's own book as always offered; the reader reads the catalog unscoped; the scraper fold is generic (every subclass `options` entry), so ticket 09 renders folded options in the Features tab.
 
 - [x] Scraper test: raw-shaped placeholder records produce `choices` on the Totem Spirit, Aspect of the Beast and Totemic Attunement features, with option text and source, and the loose siblings no longer appear as features
 - [x] Scraper keeps the existing prose description on the parent feature

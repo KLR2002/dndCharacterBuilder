@@ -2,7 +2,7 @@
 
 **What to build:** Acolyte of Nature, Reaper and Arcane Initiate are offered from the filter the scraper keeps on the subclass's `known` entry (`choose` filter and count). The scraper emits it as the subclass's `spellChoice.from`; one generic resolver in the app applies the filter against the Compendium and the active books. The three named cantrip resolvers are removed.
 
-**Blocked by:** 02
+**Blocked by:** 02, 03 (sequenced after 03 only because both change the same scraper function that reads `additionalSpells`)
 
 **Status:** ready-for-agent
 

@@ -4,7 +4,9 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** done
+
+**Landed:** merge `fffcffb`. Open gap: a catalog synced before this change still has `AI` records (umbrella without the flag), so it is not detected as missing; ticket 10 wires the stale flag from ticket 01.
 
 - [x] Scraper test: a placeholder infusion with caption tables yields one `AI` option per row with the right level, and the umbrella record is flagged as non-selectable
 - [x] Infusions Known offers the same infusions per level as before, from the catalog
