@@ -119,8 +119,21 @@ export const SAVING_THROW_MANEUVERS = new Set([
   "trip attack",
 ]);
 
-const REACTION_MANEUVERS = new Set(["brace", "parry", "riposte"]);
-const BONUS_ACTION_MANEUVERS = new Set(["commander's strike", "feinting attack", "quick toss", "rally"]);
+export const REACTION_MANEUVERS = new Set(["brace", "parry", "riposte"]);
+export const BONUS_ACTION_MANEUVERS = new Set(["commander's strike", "feinting attack", "quick toss", "rally"]);
+/** Maneuvers that are none of the three sets above. They keep the default Attack Rider category. */
+export const OTHER_MANEUVERS = new Set([
+  "ambush",
+  "bait and switch",
+  "commanding presence",
+  "distracting strike",
+  "evasive footwork",
+  "grappling strike",
+  "lunging attack",
+  "maneuvering attack",
+  "precision attack",
+  "tactical assessment",
+]);
 
 function formatMod(val: number): string {
   return val >= 0 ? `+${val}` : `${val}`;
