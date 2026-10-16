@@ -16,3 +16,7 @@
 
 - Learning has no spell-level gate. Preparing does (from ticket 07), so a learned spell above the owner's maximum level is accepted and only blocked when prepared.
 - A Giant Barbarian learn is a no-op unless the Giant Power pick is recorded first, because the Reconciler prunes Giant cantrips that are not the recorded pick.
+
+## Review fix-up
+
+- `learnSpell` now applies the same maximum-spell-level gate as preparing (shared `withinOwnerGate`). Test: "learnSpell rejects a spell above the owner's maximum spell level".

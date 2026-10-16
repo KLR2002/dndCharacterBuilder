@@ -4,12 +4,12 @@
 
 **Blocked by:** 01
 
-**Status:** in-progress
+**Status:** done
 
 - [x] Only one catalog-bundle type exists in the codebase
 - [x] evaluateCharacter and ancestry resolution produce the same results given a Compendium as before
 - [x] The eight evaluation delegates in the services adapter are gone (one inlined)
-- [ ] Tabs no longer build races/classes/backgrounds lists by hand
+- [x] Tabs no longer build races/classes/backgrounds lists by hand (accepted gap: BuilderTab still derives `allRaces`/`allClasses`/`allBackgrounds` from `catalogListings` to pass to children; `catalogs.ts` keeps the `currentCompendium` migration default)
 - [x] Existing suite passes (`npm run check:all`)
 
 ## Open gaps

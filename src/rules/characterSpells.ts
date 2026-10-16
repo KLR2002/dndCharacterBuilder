@@ -360,10 +360,10 @@ function isOnOwnerList(profile: ClassSpellProfile, spell: SpellData, activeBooks
 }
 
 /**
- * Whether the owner's class may prepare the spell: on its class list under the active books, and
+ * Whether the owner may learn or prepare the spell: on its class list under the active books, and
  * within the owner's maximum spell level.
  */
-function mayPrepare(profile: ClassSpellProfile, spell: SpellData, activeBooks?: string[]): boolean {
+function withinOwnerGate(profile: ClassSpellProfile, spell: SpellData, activeBooks?: string[]): boolean {
   return spell.level <= profile.maxSpellLevel && isOnOwnerList(profile, spell, activeBooks);
 }
 
@@ -394,15 +394,16 @@ export function togglePrepared(
   }
 
   const data = compendium.findSpell(spell.name, spell.source);
-  if (data && !mayPrepare(profile, data, activeBooks)) return character;
+  if (data && !withinOwnerGate(profile, data, activeBooks)) return character;
 
   return reconcile({ ...character, preparedSpells: [...current, canonical] }, compendium);
 }
 
 /**
  * Learns a spell under the profile's Spell Owner. Rejected, returning the character unchanged, when
- * the spell fails the owner's class-list or active-book gate, or when the owner already knows it. A
- * spell the Compendium does not know is not gated, matching the existing synthetic-spell behaviour.
+ * the spell fails the owner's class-list, active-book or maximum-spell-level gate, or when the owner
+ * already knows it. A spell the Compendium does not know is not gated, matching the existing
+ * synthetic-spell behaviour.
  */
 export function learnSpell(
   character: Character,
@@ -412,7 +413,7 @@ export function learnSpell(
   activeBooks?: string[]
 ): Character {
   const data = compendium.findSpell(spell.name, spell.source);
-  if (data && !isOnOwnerList(profile, data, activeBooks)) return character;
+  if (data && !withinOwnerGate(profile, data, activeBooks)) return character;
   if (isKnown(character, profile, spell)) return character;
 
   const learned: KnownSpell = {

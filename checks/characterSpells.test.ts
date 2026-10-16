@@ -290,6 +290,20 @@ for (const [mode, compendium] of MODES) {
     assert.strictEqual(togglePrepared(wizard, profile, { name: "Scorching Ray", source: "PHB" }, compendium, PHB), wizard);
   });
 
+  test(`learnSpell rejects a spell above the owner's maximum spell level (${mode})`, () => {
+    const wizard = makeChar({ classes: [cls("Wizard", 1)] });
+    const profile = profileFor(wizard, "Wizard");
+
+    assert.strictEqual(learnSpell(wizard, profile, { name: "Scorching Ray", source: "PHB" }, compendium, PHB), wizard);
+    assert.equal(
+      isKnown(learnSpell(wizard, profile, { name: "Magic Missile", source: "PHB" }, compendium, PHB), profile, {
+        name: "Magic Missile",
+        source: "PHB",
+      }),
+      true
+    );
+  });
+
   test(`Fighter Eldritch Knight and Rogue Arcane Trickster prepare from the Wizard list (${mode})`, () => {
     const ek = makeChar({ classes: [cls("Fighter", 3, "Eldritch Knight")] });
     const ekProfile = profileFor(ek, "Fighter");
