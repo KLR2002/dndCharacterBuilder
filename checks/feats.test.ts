@@ -1,6 +1,7 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import type { Character } from "../src/types/character.ts";
+import type { Character, RuleChoiceEntry } from "../src/types/character.ts";
+import { inMemoryCompendium } from "./testUtils.ts";
 import {
   validateFeatPrerequisites,
   applyOriginFeat,
@@ -264,5 +265,56 @@ describe("Background Feat Grants", () => {
   it("returns null for standard PHB backgrounds like Acolyte", () => {
     const grant = getBackgroundFeatGrant("Acolyte");
     assert.equal(grant, null);
+  });
+});
+
+describe("Removing an origin feat reconciles the choices that depended on it", () => {
+  const fighterStyle: RuleChoiceEntry = {
+    id: "PHB__Fighter__Fighting Style",
+    trait: "Fighting Style",
+    origin: "class",
+    choose: 1,
+    from: [],
+    picked: ["Dueling"],
+  };
+  const initiateStyle: RuleChoiceEntry = {
+    id: "TCE__Feat__Fighting Initiate__Style",
+    trait: "Fighting Initiate Style",
+    origin: "class",
+    choose: 1,
+    from: [],
+    picked: ["Archery"],
+  };
+  const fighter4 = [{ className: "Fighter", source: "PHB", level: 4 }];
+
+  it("removes the Fighting Initiate style it granted and records a review notice", () => {
+    const char = makeChar({
+      classes: fighter4,
+      originFeats: [{ level: 1, type: "feat", featName: "Fighting Initiate", featSource: "PHB" }],
+      ruleChoices: [fighterStyle, initiateStyle],
+    });
+
+    const updated = removeOriginFeat(char, "Fighting Initiate", inMemoryCompendium({}));
+
+    assert.deepEqual(updated.ruleChoices, [fighterStyle]);
+    assert.deepEqual(updated.needsReview, [
+      "Fighting Initiate Style removed: prerequisite no longer satisfied",
+    ]);
+  });
+
+  it("keeps the style when a different held feat still grants Fighting Initiate", () => {
+    const char = makeChar({
+      classes: fighter4,
+      asiSelections: [
+        { level: 4, className: "Fighter", classLevel: 4, type: "feat", featName: "Fighting Initiate", featSource: "PHB" },
+      ],
+      originFeats: [{ level: 1, type: "feat", featName: "Alert", featSource: "PHB" }],
+      ruleChoices: [fighterStyle, initiateStyle],
+    });
+
+    const updated = removeOriginFeat(char, "Alert", inMemoryCompendium({}));
+
+    assert.deepEqual(updated.ruleChoices, [fighterStyle, initiateStyle]);
+    assert.deepEqual(updated.needsReview ?? [], []);
   });
 });

@@ -63,6 +63,28 @@ test("reconcile records a review notice when de-levelling removes Pact of the To
   assert.ok(!delevelled.ruleChoices?.some((rc) => rc.id === "Warlock__Pact of the Tome__Cantrips"));
   assert.ok(!delevelled.knownSpells?.some((k) => k.ownerKey === "Warlock__Tome"));
   assert.deepEqual(delevelled.needsReview, [
+    "Pact Boon removed: prerequisite no longer satisfied",
     "Pact of the Tome Cantrips removed: character no longer possesses Pact of the Tome",
   ]);
+});
+
+test("reconcile records a review notice when de-levelling drops Pact Boon below level 3", () => {
+  const compendium = currentCompendium();
+  const delevelled = makeChar({
+    classes: [
+      { className: "Warlock", source: "PHB", level: 2 },
+      { className: "Fighter", source: "PHB", level: 3 },
+    ],
+    ruleChoices: [
+      { id: "PHB__Warlock__Pact Boon", trait: "Pact Boon", origin: "class", choose: 1, from: [], picked: ["Pact of the Blade"] },
+      { id: "PHB__Fighter__Fighting Style", trait: "Fighting Style", origin: "class", choose: 1, from: [], picked: ["Dueling"] },
+    ],
+  });
+
+  const updated = reconcile(delevelled, compendium);
+
+  assert.deepEqual(updated.ruleChoices, [
+    { id: "PHB__Fighter__Fighting Style", trait: "Fighting Style", origin: "class", choose: 1, from: [], picked: ["Dueling"] },
+  ]);
+  assert.deepEqual(updated.needsReview, ["Pact Boon removed: prerequisite no longer satisfied"]);
 });

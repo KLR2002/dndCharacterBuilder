@@ -12,6 +12,10 @@ import {
   MULTICLASS_PROFICIENCIES,
   DND_SKILLS,
 } from "../constants/rules.ts";
+import { reconcile } from "./characterReconciler.ts";
+import { resolveCharacterLanguages } from "./proficienciesAndLanguages.ts";
+import type { CharacterCatalogs } from "./catalogs.ts";
+import { currentCompendium } from "../services/compendium.ts";
 
 export function setStandardArrayPick(
   character: Character,
@@ -427,6 +431,67 @@ export function setCustomBackground(
     chosenSkills: newChosenSkills,
     skillChoices: [...otherChoices, newBgChoice],
   };
+}
+
+/**
+ * Clears the character's background and the grants that came from it: the background's skill
+ * proficiencies (kept when another source also grants the skill), its language and tool picks,
+ * and any origin feat it granted. Ends in the Character Reconciler, which prunes the choices that
+ * depended on a removed feat. Records a review notice for each background grant removed.
+ */
+export function clearBackground(character: Character, catalogs: CharacterCatalogs = {}): Character {
+  const compendium = catalogs.compendium ?? currentCompendium();
+  const bg = character.background;
+  const bgName = bg?.name ?? "previous";
+  const bgData = bg ? compendium.findBackground(bg.name, bg.source) : undefined;
+
+  const normalize = (s: string) => s.trim().toLowerCase();
+  const bgSkillChoice = character.skillChoices?.find((sc) => sc.origin === "background");
+  const bgSkills = new Set(
+    [...(bgData?.skillProficiencies ?? []), ...(bgSkillChoice?.picked ?? [])].map(normalize)
+  );
+  const otherSkillSources = new Set(
+    (character.skillChoices ?? [])
+      .filter((sc) => sc.origin !== "background")
+      .flatMap((sc) => sc.picked)
+      .map(normalize)
+  );
+  const removedSkills = character.chosenSkills.filter(
+    (s) => bgSkills.has(normalize(s)) && !otherSkillSources.has(normalize(s))
+  );
+  const chosenSkills = character.chosenSkills.filter((s) => !removedSkills.includes(s));
+
+  const grantedFeats = (character.originFeats ?? []).filter((f) => f.featSource === "Background");
+  const keptFeats = (character.originFeats ?? []).filter((f) => f.featSource !== "Background");
+
+  const hadLanguagesOrTools =
+    (character.chosenLanguages?.background ?? []).length > 0 ||
+    (character.chosenTools?.background ?? []).length > 0;
+
+  const notices = [
+    ...grantedFeats.map((f) => `${f.featName} removed: granted by the ${bgName} background`),
+    ...(removedSkills.length > 0 || hadLanguagesOrTools
+      ? [`${bgName} background removed: granted skills, languages and tools cleared`]
+      : []),
+  ];
+
+  const cleared: Character = {
+    ...character,
+    background: null,
+    chosenSkills,
+    skillChoices: (character.skillChoices ?? []).filter((sc) => sc.origin !== "background"),
+    chosenLanguages: { ...character.chosenLanguages, background: [] },
+    chosenTools: { ...character.chosenTools, background: [] },
+    originFeats: keptFeats,
+    ...(notices.length > 0
+      ? { needsReview: Array.from(new Set([...(character.needsReview ?? []), ...notices])) }
+      : {}),
+  };
+
+  return reconcile(
+    { ...cleared, languages: resolveCharacterLanguages(cleared, catalogs) },
+    compendium
+  );
 }
 
 export function parseBackgroundEquipment(startingEquipment: string[] = []): {

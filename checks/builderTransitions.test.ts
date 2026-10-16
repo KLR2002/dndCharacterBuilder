@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { teardownSubclass } from "../src/rules/characterReconciler.ts";
 import { reconcile } from "../src/rules/characterReconciler.ts";
 import { currentCompendium } from "../src/services/compendium.ts";
-import { makeChar } from "./testUtils.ts";
+import { makeChar, inMemoryCompendium } from "./testUtils.ts";
 import {
   setStandardArrayPick,
   setChoiceRacialBonus,
@@ -13,8 +13,14 @@ import {
   setCustomBackground,
   applyBackgroundGrants,
   setLanguages,
+  clearBackground,
 } from "../src/rules/builderTransitions.ts";
-import type { InventoryItem } from "../src/types/character.ts";
+import type {
+  InventoryItem,
+  RuleChoiceEntry,
+  SkillChoiceEntry,
+} from "../src/types/character.ts";
+import type { BackgroundData } from "../src/types/dnd5e.ts";
 
 test("setChoiceRacialBonus updates racialChoiceBonus and racialAbilityBonuses while preserving fixed racial bonuses", () => {
   // Half-Elf style: +2 Charisma fixed, plus 2 choice bonuses of +1
@@ -461,3 +467,126 @@ test("reconcile cleanses orphaned fighting styles, maneuvers, invocations, infus
 
 
 
+
+const SOLDIER: BackgroundData = {
+  name: "Soldier",
+  source: "PHB",
+  skillProficiencies: ["Athletics", "Intimidation"],
+  toolProficiencies: ["Gaming set"],
+  languages: [],
+  startingEquipment: [],
+  feature: null,
+  characteristics: {},
+  description: "",
+};
+const soldierCompendium = inMemoryCompendium({ backgrounds: [SOLDIER] });
+
+const fighterStyle: RuleChoiceEntry = {
+  id: "PHB__Fighter__Fighting Style",
+  trait: "Fighting Style",
+  origin: "class",
+  choose: 1,
+  from: [],
+  picked: ["Dueling"],
+};
+const initiateStyle: RuleChoiceEntry = {
+  id: "TCE__Feat__Fighting Initiate__Style",
+  trait: "Fighting Initiate Style",
+  origin: "class",
+  choose: 1,
+  from: [],
+  picked: ["Archery"],
+};
+
+test("clearing a background removes the feat it granted and the choices that depended on that feat", () => {
+  const char = makeChar({
+    background: { name: "Soldier", source: "PHB" },
+    classes: [{ className: "Fighter", source: "PHB", level: 4 }],
+    originFeats: [
+      { level: 1, type: "feat", featName: "Fighting Initiate", featSource: "Background" },
+      { level: 1, type: "feat", featName: "Alert", featSource: "PHB" },
+    ],
+    ruleChoices: [fighterStyle, initiateStyle],
+  });
+
+  const updated = clearBackground(char, { compendium: soldierCompendium });
+
+  assert.equal(updated.background, null);
+  assert.deepEqual(updated.originFeats, [
+    { level: 1, type: "feat", featName: "Alert", featSource: "PHB" },
+  ]);
+  assert.deepEqual(updated.ruleChoices, [fighterStyle]);
+  assert.deepEqual(updated.needsReview, [
+    "Fighting Initiate removed: granted by the Soldier background",
+    "Fighting Initiate Style removed: prerequisite no longer satisfied",
+  ]);
+});
+
+test("clearing a background removes its skill, language and tool grants and keeps a skill another source grants", () => {
+  const raceSkills: SkillChoiceEntry = {
+    id: "race_skills",
+    origin: "race",
+    choose: 1,
+    from: [],
+    picked: ["Athletics"],
+  };
+  const char = makeChar({
+    background: { name: "Soldier", source: "PHB" },
+    chosenSkills: ["Athletics", "Intimidation"],
+    skillChoices: [raceSkills],
+    chosenLanguages: { race: ["Elvish"], background: ["Dwarvish"] },
+    chosenTools: { background: ["Gaming set"] },
+  });
+
+  const updated = clearBackground(char, { compendium: soldierCompendium });
+
+  assert.equal(updated.background, null);
+  assert.deepEqual(updated.chosenSkills, ["Athletics"]);
+  assert.deepEqual(updated.skillChoices, [raceSkills]);
+  assert.deepEqual(updated.chosenLanguages?.race, ["Elvish"]);
+  assert.deepEqual(updated.chosenLanguages?.background, []);
+  assert.deepEqual(updated.chosenTools?.background, []);
+  assert.deepEqual(updated.needsReview, [
+    "Soldier background removed: granted skills, languages and tools cleared",
+  ]);
+});
+
+test("clearing a custom background removes the skills it chose and keeps class skills", () => {
+  const classSkills: SkillChoiceEntry = {
+    id: "class_skills",
+    origin: "class",
+    choose: 1,
+    from: [],
+    picked: ["Athletics"],
+  };
+  const custom = setCustomBackground(
+    makeChar({ chosenSkills: ["Athletics"], skillChoices: [classSkills] }),
+    "Sage",
+    ["Arcana", "History"]
+  );
+
+  const updated = clearBackground(custom, { compendium: inMemoryCompendium({}) });
+
+  assert.equal(updated.background, null);
+  assert.deepEqual(updated.chosenSkills, ["Athletics"]);
+  assert.deepEqual(updated.skillChoices, [classSkills]);
+  assert.deepEqual(updated.needsReview, [
+    "Sage background removed: granted skills, languages and tools cleared",
+  ]);
+});
+
+test("clearing a background with no recorded grants keeps unrelated choices and records nothing", () => {
+  const char = makeChar({
+    background: { name: "Hermit", source: "PHB" },
+    classes: [{ className: "Fighter", source: "PHB", level: 4 }],
+    chosenSkills: ["Athletics"],
+    ruleChoices: [fighterStyle],
+  });
+
+  const updated = clearBackground(char, { compendium: inMemoryCompendium({}) });
+
+  assert.equal(updated.background, null);
+  assert.deepEqual(updated.chosenSkills, ["Athletics"]);
+  assert.deepEqual(updated.ruleChoices, [fighterStyle]);
+  assert.deepEqual(updated.needsReview ?? [], []);
+});
