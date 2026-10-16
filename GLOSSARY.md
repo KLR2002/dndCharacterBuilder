@@ -29,7 +29,7 @@ Gaining levels in multiple classes subject to ability score prerequisites and th
 _Avoid_: Cross-classing, hybrid class
 
 **Rule Choice**:
-A selection the player makes from a fixed set of options granted by a single rule, where exactly one option takes effect. Distinct from a *Proficiency Choice*, which grants proficiency rather than a feature, and from a *Replacement*, which substitutes one fixed feature for another with no player choice.
+A selection the player makes from a fixed set of options granted by a single rule, where exactly one option takes effect. It originates from ancestry, class, or subclass, and its id is its persisted identity, so ids never change once shipped. Distinct from a *Proficiency Choice*, which grants proficiency rather than a feature, and from a *Replacement*, which substitutes one fixed feature for another with no player choice.
 _Avoid_: variant, option, mode, toggle
 
 **Ancestral Variant**:
@@ -197,8 +197,12 @@ The idempotent domain module enforcing progression prerequisites, modular rule c
 _Avoid_: Choice cleaner, state sanitizer, pruning cascade
 
 **Spellbook Ledger**:
-The pure domain module governing spell slot expenditure, pact magic, sorcery points, ritual inscriptions, and Mystic Arcanum.
+The pure domain module governing spell slot expenditure, pact magic, sorcery points, ritual inscriptions, Mystic Arcanum, and the identity of known and prepared spells (learning, forgetting, preparing).
 _Avoid_: Spell manager, casting controller, slot tracker
+
+**Spell Owner**:
+The class spellcasting feature, or granting feature such as Pact of the Tome or Path of the Giant, that a known or prepared spell belongs to. The same spell can be known or prepared separately per Spell Owner on a multiclass character.
+_Avoid_: spell class, owner tag
 
 **Tactical Action Ledger**:
 The evaluated collection of standard actions, class bonus actions, reactions, and attack riders available to a character in combat.
@@ -235,6 +239,10 @@ _Avoid_: Scraped dump, external database, download cache
 **Sourcebook Gating**:
 The UI restriction that hides all sourcebook selection and filtering controls until the Integrated Catalog has been successfully populated.
 _Avoid_: Book lock, catalog curtain, toggle hiding
+
+**Compendium**:
+The synchronous, read-only view over the active player catalog (the SRD Baseline or the Integrated Catalog). Listings are scoped to the active sourcebooks; lookups by name are not, so a character's existing choices always resolve.
+_Avoid_: data service, catalog store, content provider
 
 **Dataset Swapping**:
 The runtime cutover mechanism that unloads the SRD Baseline from memory and exclusively queries the Integrated Catalog once integration is active, preventing duplicate entities or overlapping source confusion.
