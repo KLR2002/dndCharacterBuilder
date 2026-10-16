@@ -18,6 +18,16 @@ export function ruleChoiceId({ source, race, subrace, trait, index }: RuleChoice
 export type RuleChoiceOrigin = "race" | "class" | "subclass";
 
 /**
+ * Who a class or subclass Rule Choice belongs to: its class, and the subclass when the choice is
+ * subclass-granted. Absent subclass means the class owns it, whatever subclass it has. Feat-granted
+ * choices have no class owner at all, so no owner is returned for them.
+ */
+export interface ChoiceOwner {
+  className: string;
+  subclass?: string;
+}
+
+/**
  * Sources whose picks have state of their own to record. Absent on a choice means the default
  * pick: record the option, then reconcile.
  */

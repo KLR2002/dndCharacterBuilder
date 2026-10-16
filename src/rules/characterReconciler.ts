@@ -2,16 +2,18 @@ import type { Character, KnownSpell } from "../types/character.ts";
 import { currentCompendium, type Compendium } from "../services/compendium.ts";
 import { GIANT_BARBARIAN_OWNER_KEY } from "../constants/rules.ts";
 import { pruneInvalidExpertise } from "./expertise.ts";
-import { pruneInvalidFightingStyles } from "./choices/fightingStyles.ts";
-import { pruneInvalidManeuvers } from "./choices/maneuvers.ts";
-import { pruneInvalidInfusions } from "./choices/artificerInfusions.ts";
-import { GIANT_POWER_CHOICE_ID } from "./choices/types.ts";
+import { fightingStyleOwnerOf, pruneInvalidFightingStyles } from "./choices/fightingStyles.ts";
+import { maneuverOwnerOf, pruneInvalidManeuvers } from "./choices/maneuvers.ts";
+import { infusionOwnerOf, pruneInvalidInfusions } from "./choices/artificerInfusions.ts";
+import { type ChoiceOwner, GIANT_POWER_CHOICE_ID } from "./choices/types.ts";
 import {
   pruneInvalidInvocations,
   pruneInvalidMysticArcanum,
   syncWarlockTomeCantrips,
   syncAncientSecretsRituals,
+  warlockOwnerOf,
 } from "./choices/warlockChoices.ts";
+import { tableOwnerOf } from "./subclassChoiceTable.ts";
 
 /**
  * The single seam every state-changing builder transition ends in. Idempotent: reconciling a
@@ -71,8 +73,22 @@ function syncGiantPowerCantrip(character: Character): Character {
 }
 
 /**
+ * The owner of a Rule Choice id, looked up in the subclass choice table and then in each
+ * specialised choice module. Undefined for an id none of them recognises.
+ */
+function ruleChoiceOwnerOf(id: string): ChoiceOwner | undefined {
+  return (
+    tableOwnerOf(id) ??
+    fightingStyleOwnerOf(id) ??
+    maneuverOwnerOf(id) ??
+    warlockOwnerOf(id) ??
+    infusionOwnerOf(id)
+  );
+}
+
+/**
  * Cleanly removes subclass-specific data from a character when changing or removing a subclass:
- * 1. Clears obsolete subclass RuleChoices (e.g. Circle of the Land Biome, Divine Soul Affinity, Domain Cantrips)
+ * 1. Clears the Rule Choices the class's subclass owns (e.g. Circle of the Land Biome, Divine Soul Affinity, Domain Cantrips)
  * 2. Clears subclassSpellSwaps (for Sorcerer or general)
  * 3. Removes old subclass-specific resource counters
  */
@@ -85,25 +101,18 @@ export function teardownSubclass(
 ): Character {
   const clsLower = className.toLowerCase();
 
-  // 1. Clear obsolete subclass rule choices for this class
+  // 1. Remove the Rule Choices this class's subclass owns. Owner is looked up by id, so a choice
+  // whose id no table or module recognises is never removed, and a choice owned by another class,
+  // or by the class itself with no subclass, is kept.
+  const removedRuleChoiceTraits: string[] = [];
   const keptRuleChoices = (character.ruleChoices || []).filter((rc) => {
-    if (rc.origin === "subclass") {
-      const idLower = rc.id.toLowerCase();
-      const traitLower = rc.trait.toLowerCase();
-      if (idLower.includes(clsLower) || traitLower.includes(clsLower)) return false;
-      if (clsLower === "druid" && (idLower.includes("land") || traitLower.includes("biome"))) return false;
-      if (clsLower === "sorcerer" && (idLower.includes("divine soul") || traitLower.includes("affinity"))) return false;
-      if (clsLower === "cleric" && (idLower.includes("nature") || idLower.includes("death") || idLower.includes("arcana"))) return false;
-      if (clsLower === "bard" && (idLower.includes("swords") || traitLower.includes("swords"))) return false;
-    }
-    if (clsLower === "fighter" && previousSubclassName?.toLowerCase().includes("champion") && rc.id.includes("Additional Fighting Style")) {
-      return false;
-    }
-    if (clsLower === "fighter" && previousSubclassName?.toLowerCase().includes("battle master") && rc.id.includes("Battle Master__Maneuvers")) {
-      return false;
-    }
-    return true;
+    const owner = ruleChoiceOwnerOf(rc.id);
+    const ownedBySubclass = owner?.subclass !== undefined && owner.className.toLowerCase() === clsLower;
+    if (!ownedBySubclass) return true;
+    removedRuleChoiceTraits.push(rc.trait);
+    return false;
   });
+  const ruleChoiceNotices = removedRuleChoiceTraits.map((trait) => `${trait} removed: subclass no longer held`);
 
   // 2. Clear subclassSpellSwaps if this class is Sorcerer (or if previous subclass was a swapper)
   let nextSwaps = character.subclassSpellSwaps;
@@ -150,6 +159,11 @@ export function teardownSubclass(
     subclassSpellSwaps: nextSwaps,
     resourceCounters: nextCounters,
     knownSpells: nextKnownSpells,
+    ...(ruleChoiceNotices.length > 0
+      ? {
+          needsReview: Array.from(new Set([...(character.needsReview || []), ...ruleChoiceNotices])),
+        }
+      : {}),
   };
 
   return reconcile(cleaned, compendium);

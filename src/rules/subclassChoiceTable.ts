@@ -1,6 +1,6 @@
 import type { Character } from "../types/character.ts";
 import type { Compendium } from "../services/compendium.ts";
-import { formatCantripOptions, GIANT_POWER_CHOICE_ID } from "./choices/types.ts";
+import { formatCantripOptions, GIANT_POWER_CHOICE_ID, type ChoiceOwner } from "./choices/types.ts";
 import { skills } from "./skills.ts";
 
 /**
@@ -370,6 +370,13 @@ export const SUBCLASS_CHOICE_ROWS: readonly SubclassChoiceRow[] = [
     ],
   },
 ];
+
+const ROW_OWNERS = new Map(SUBCLASS_CHOICE_ROWS.map((row) => [row.id, row.owner] as const));
+
+/** The owner of a table row, looked up by its frozen id. Undefined for ids the table does not hold. */
+export function tableOwnerOf(id: string): ChoiceOwner | undefined {
+  return ROW_OWNERS.get(id);
+}
 
 /** Whether a row is owned by this recorded class (and subclass fragment, when the row names one). */
 export function rowOwnedBy(row: SubclassChoiceRow, className: string, subclassName: string): boolean {

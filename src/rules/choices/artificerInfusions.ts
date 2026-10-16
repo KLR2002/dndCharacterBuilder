@@ -1,5 +1,5 @@
 import type { Character, RuleChoiceEntry } from "../../types/character.ts";
-import { type AvailableRuleChoice, setRuleChoicePick } from "./types.ts";
+import { type AvailableRuleChoice, type ChoiceOwner, setRuleChoicePick } from "./types.ts";
 
 export interface ArtificerInfusionDef {
   name: string;
@@ -360,6 +360,11 @@ export const ALL_ARTIFICER_INFUSIONS: ArtificerInfusionDef[] = [
  */
 export function isInfusionChoiceId(id: string): boolean {
   return id.startsWith("TCE__Artificer__Infusions");
+}
+
+/** Infusion choices are owned by the Artificer class: they are not subclass-granted. */
+export function infusionOwnerOf(id: string): ChoiceOwner | undefined {
+  return isInfusionChoiceId(id) ? { className: "Artificer" } : undefined;
 }
 
 /**

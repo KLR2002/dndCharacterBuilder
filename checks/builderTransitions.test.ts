@@ -392,7 +392,7 @@ test("teardownSubclass cleans up ruleChoices, swaps, and counters", () => {
   assert.equal(delevelDruid.ruleChoices[0].id, "MPMM__Aasimar__null__Celestial Revelation");
 });
 
-test("teardownSubclass unconditionally cleans up even when previousSubclassName is empty string", () => {
+test("teardownSubclass keeps a class-owned Fighting Style even when previousSubclassName is empty string", () => {
   const initial = makeChar({
     classes: [{ className: "Fighter", level: 1 }],
     ruleChoices: [
@@ -407,8 +407,9 @@ test("teardownSubclass unconditionally cleans up even when previousSubclassName 
     ],
   });
 
+  // The Fighting Style is owned by the Fighter class, not by a subclass, so subclass teardown keeps it.
   const tornDown = teardownSubclass(initial, "Fighter", "");
-  assert.equal(tornDown.ruleChoices?.length, 0);
+  assert.deepEqual(tornDown.ruleChoices?.map((rc) => rc.id), ["PHB__Fighter__Fighting Style"]);
 });
 
 test("reconcile cleanses orphaned fighting styles, maneuvers, invocations, infusions, and arcanum in a single pass", () => {

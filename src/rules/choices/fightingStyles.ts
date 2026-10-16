@@ -2,10 +2,27 @@ import type { Character, KnownSpell } from "../../types/character.ts";
 import { currentCompendium, type Compendium } from "../../services/compendium.ts";
 import {
   type AvailableRuleChoice,
+  type ChoiceOwner,
   formatCantripOptions,
   getSubclassName,
   setRuleChoicePick,
 } from "./types.ts";
+
+/** Who owns each fighting style choice id this module issues. Feat-granted ids have no class owner. */
+const FIGHTING_STYLE_OWNERS = new Map<string, ChoiceOwner>([
+  ["PHB__Fighter__Fighting Style", { className: "Fighter" }],
+  ["PHB__Fighter__Additional Fighting Style 10", { className: "Fighter", subclass: "Champion" }],
+  ["PHB__Paladin__Fighting Style", { className: "Paladin" }],
+  ["PHB__Ranger__Fighting Style", { className: "Ranger" }],
+  ["XGE__Bard__College of Swords__Fighting Style", { className: "Bard", subclass: "College of Swords" }],
+  ["TCE__Paladin__Blessed Warrior Cantrips", { className: "Paladin" }],
+  ["TCE__Ranger__Druidic Warrior Cantrips", { className: "Ranger" }],
+]);
+
+/** The owner of a fighting style choice id, or undefined when this module does not issue the id. */
+export function fightingStyleOwnerOf(id: string): ChoiceOwner | undefined {
+  return FIGHTING_STYLE_OWNERS.get(id);
+}
 
 /**
  * Checks if character has chosen this fighting style in any rule choice.

@@ -419,6 +419,3 @@ export function pickRuleChoice(
         );
   return reconcile(recorded, compendium);
 }
-
-/** @deprecated Use pickRuleChoice */
-export const toggleSubclassRuleChoice = pickRuleChoice;

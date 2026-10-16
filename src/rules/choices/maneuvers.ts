@@ -1,7 +1,20 @@
 import type { Character } from "../../types/character.ts";
 import { currentCompendium, type Compendium } from "../../services/compendium.ts";
-import { type AvailableRuleChoice, getSubclassName, setRuleChoicePick } from "./types.ts";
+import { type AvailableRuleChoice, type ChoiceOwner, getSubclassName, setRuleChoicePick } from "./types.ts";
 import { hasFightingStyle } from "./fightingStyles.ts";
+
+const BATTLE_MASTER_MANEUVERS = /^PHB__Fighter__Battle Master__Maneuvers \d+$/;
+
+/**
+ * The owner of a maneuver choice id. Battle Master levels belong to the Fighter's Battle Master
+ * subclass; Superior Technique belongs to the Fighter class. Martial Adept is feat-granted, so it
+ * has no class owner.
+ */
+export function maneuverOwnerOf(id: string): ChoiceOwner | undefined {
+  if (BATTLE_MASTER_MANEUVERS.test(id)) return { className: "Fighter", subclass: "Battle Master" };
+  if (id === "TCE__Fighter__Superior Technique__Maneuver") return { className: "Fighter" };
+  return undefined;
+}
 
 /**
  * Checks if a rule choice ID belongs to a maneuver choice.

@@ -2,7 +2,27 @@ import type { Character, KnownSpell, RitualBookEntry, RuleChoiceEntry } from "..
 import type { OptionFeatureData, SpellData } from "../../types/dnd5e.ts";
 import { currentCompendium, type Compendium } from "../../services/compendium.ts";
 import { isSpellAvailableForClass } from "../spellcasting.ts";
-import { type AvailableRuleChoice, formatCantripOptions } from "./types.ts";
+import { type AvailableRuleChoice, type ChoiceOwner, formatCantripOptions } from "./types.ts";
+
+const WARLOCK_CLASS_CHOICE_IDS = new Set([
+  "PHB__Warlock__Pact Boon",
+  "Warlock__Pact of the Tome__Cantrips",
+  "Warlock__Book of Ancient Secrets__Starting Rituals",
+]);
+const WARLOCK_MYSTIC_ARCANUM = /^Warlock__Mystic Arcanum \d+$/;
+const WARLOCK_INVOCATIONS = /^PHB__Warlock__Invocations \d+$/;
+
+/**
+ * The owner of a Warlock choice id. Every Warlock choice here belongs to the Warlock class, not to
+ * a subclass: the Pact Boon and what it grants, the Mystic Arcanum and the invocations. The Eldritch
+ * Adept invocation is feat-granted, so it has no class owner.
+ */
+export function warlockOwnerOf(id: string): ChoiceOwner | undefined {
+  if (WARLOCK_CLASS_CHOICE_IDS.has(id) || WARLOCK_MYSTIC_ARCANUM.test(id) || WARLOCK_INVOCATIONS.test(id)) {
+    return { className: "Warlock" };
+  }
+  return undefined;
+}
 
 /**
  * Invocations that grant at-will spells without expending spell slots.
