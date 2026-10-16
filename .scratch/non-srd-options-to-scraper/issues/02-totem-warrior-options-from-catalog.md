@@ -1,0 +1,17 @@
+# 02: Totem Warrior options come from the catalog (tracer bullet)
+
+**What to build:** The class scraper emits `choices` on class and subclass features, built from the raw `options` entry and its feature references, and folds the loose option siblings (Bear, Eagle, Wolf, Elk, Tiger at levels 3, 6 and 14) into their parent feature, with a per-option `source`. The pointer table (frozen id to owner, feature locator, label, level, effect level) is introduced and holds the three Totem rows; the Rule Choice reader takes their options and per-option book gate from the catalog. A fixture catalog with invented placeholder text is created. The hand-written Totem option text and the hand-written Bear Totem sentence appended to Rage are deleted. A choice whose options cannot be found in the active Compendium is hidden and the character's saved picks are left untouched. Unmigrated rows keep their current form until their ticket.
+
+**Blocked by:** None (can start immediately)
+
+**Status:** ready-for-agent
+
+- [ ] Scraper test: raw-shaped placeholder records produce `choices` on the Totem Spirit, Aspect of the Beast and Totemic Attunement features, with option text and source, and the loose siblings no longer appear as features
+- [ ] Scraper keeps the existing prose description on the parent feature
+- [ ] Offered options for the three Totem rows come from the catalog; Elk and Tiger appear only while their book is active
+- [ ] Totem Spirit 3, Aspect of the Beast 6 and Totemic Attunement 14 keep their frozen ids and the same option names
+- [ ] A catalog without `choices` hides the Totem choices and keeps saved picks; SRD mode offers none
+- [ ] The Totem option text and the Bear Totem rage sentence no longer exist in the application code
+- [ ] Dual-Mode (SRD and integrated) and negative tests exist at the Rule Choice interface seam
+- [ ] The existing characterization scenarios still pass, run against the fixture catalog
+- [ ] Existing suite passes (`npm run check:all`)
