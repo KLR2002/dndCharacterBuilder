@@ -1,5 +1,6 @@
 import type { Character, KnownSpell } from "../types/character.ts";
 import { currentCompendium, type Compendium } from "../services/compendium.ts";
+import { GIANT_BARBARIAN_OWNER_KEY } from "../constants/rules.ts";
 import { pruneInvalidExpertise } from "./expertise.ts";
 import { pruneInvalidFightingStyles } from "./choices/fightingStyles.ts";
 import { pruneInvalidManeuvers } from "./choices/maneuvers.ts";
@@ -55,7 +56,7 @@ function syncGiantPowerCantrip(character: Character): Character {
   const picked = character.ruleChoices?.find((rc) => rc.id === GIANT_POWER_CHOICE_ID)?.picked?.[0];
   const known = character.knownSpells ?? [];
   const isGiantCantrip = (k: { name: string; ownerKey?: string }) =>
-    k.ownerKey === "Barbarian__BGG" && GIANT_POWER_CANTRIPS.has(k.name.toLowerCase());
+    k.ownerKey === GIANT_BARBARIAN_OWNER_KEY && GIANT_POWER_CANTRIPS.has(k.name.toLowerCase());
 
   const granted = known.filter(isGiantCantrip);
   if (!picked && granted.length === 0) return character;
@@ -63,7 +64,7 @@ function syncGiantPowerCantrip(character: Character): Character {
 
   const others = known.filter((k) => !isGiantCantrip(k));
   const pickedSpell: KnownSpell | undefined = picked
-    ? { name: picked, source: "PHB", ownerKey: "Barbarian__BGG", ability: "wis", className: "Barbarian" }
+    ? { name: picked, source: "PHB", ownerKey: GIANT_BARBARIAN_OWNER_KEY, ability: "wis", className: "Barbarian" }
     : undefined;
   const knownSpells = pickedSpell ? [...others, pickedSpell] : others;
   return { ...character, knownSpells };
@@ -139,7 +140,7 @@ export function teardownSubclass(
     previousSubclassName?.toLowerCase().includes("giant")
   ) {
     nextKnownSpells = (character.knownSpells || []).filter(
-      (k) => !(k.ownerKey === "Barbarian__BGG" && ["druidcraft", "thaumaturgy"].includes(k.name.toLowerCase()))
+      (k) => !(k.ownerKey === GIANT_BARBARIAN_OWNER_KEY && ["druidcraft", "thaumaturgy"].includes(k.name.toLowerCase()))
     );
   }
 

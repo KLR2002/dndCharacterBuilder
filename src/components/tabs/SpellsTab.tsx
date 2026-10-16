@@ -37,6 +37,8 @@ import {
   resetSubclassSpellSwap,
   isPrepared as isSpellPrepared,
   togglePrepared as togglePreparedRule,
+  learnSpell as learnSpellRule,
+  forgetSpell as forgetSpellRule,
   countPrepared,
 } from "../../rules/characterSpells";
 import {
@@ -51,10 +53,8 @@ import {
   hasInvocation,
   isSpellEligibleForRitualBook,
 } from "../../rules/ruleChoices";
-import { reconcile } from "../../rules/characterReconciler";
 import { effectiveScores } from "../../rules/abilities";
 import { proficiencyBonus, totalLevel } from "../../rules/proficiencies";
-import type { Character, KnownSpell } from "../../types/character";
 import type { SpellData } from "../../types/dnd5e";
 import { Badge } from "../ui/Badge";
 import { Button } from "../ui/Button";
@@ -823,52 +823,13 @@ export const SpellsTab: React.FC = () => {
   };
 
   const addSpellToCharacter = (name: string, source: string) => {
-    const spell = findSpell(name, source);
-    const targetClass =
-      currentProfile.className === "Fighter" || currentProfile.className === "Rogue"
-        ? "Wizard"
-        : currentProfile.className;
-    if (
-      spell &&
-      !isSpellAvailableForClass(spell, targetClass, activeBooks, currentProfile.subclass)
-    ) {
-      return;
-    }
-    const ownerKey = `${currentProfile.className}__${currentProfile.source}`;
-    const exists = (currentCharacter.knownSpells || []).some(
-      (s) =>
-        s.name === name &&
-        s.source === source &&
-        (s.ownerKey === ownerKey || (!s.ownerKey && s.className === currentProfile.className))
-    );
-    if (!exists) {
-      const newKnownSpell: KnownSpell = {
-        name,
-        source,
-        ownerKey,
-        className: currentProfile.className,
-      };
-      updateCharacter(currentCharacter.id, {
-        knownSpells: [...(currentCharacter.knownSpells || []), newKnownSpell],
-      });
-    }
+    const next = learnSpellRule(currentCharacter, currentProfile, { name, source }, currentCompendium(), activeBooks);
+    if (next !== currentCharacter) updateCharacter(currentCharacter.id, next);
   };
 
-  const removeSpellFromCharacter = (name: string, source: string, ownerKey: string) => {
-    const filtered = (currentCharacter.knownSpells || []).filter(
-      (s) => !(s.name === name && s.source === source && (s.ownerKey === ownerKey || s.ownerKey === undefined))
-    );
-    const canonicalKey = `${name}__${source}__${ownerKey}`;
-    const legacyKey = `${name}__${source}`;
-    const nextPrep = (currentCharacter.preparedSpells || []).filter(
-      (k) => k !== canonicalKey && k !== legacyKey && !k.startsWith(`${name}__${source}__`)
-    );
-    const updatedChar: Character = {
-      ...currentCharacter,
-      knownSpells: filtered,
-      preparedSpells: nextPrep,
-    };
-    updateCharacter(currentCharacter.id, reconcile(updatedChar, currentCompendium()));
+  const removeSpellFromCharacter = (name: string, source: string, ownerKey?: string) => {
+    const next = forgetSpellRule(currentCharacter, currentProfile, { name, source, ownerKey }, currentCompendium());
+    updateCharacter(currentCharacter.id, next);
   };
 
   const openSwapModal = (item: {
@@ -1760,12 +1721,8 @@ export const SpellsTab: React.FC = () => {
 
             <ScrollView style={{ flex: 1 }}>
               {filteredPickerSpells.slice(0, 100).map((s) => {
-                const ownerKey = `${currentProfile.className}__${currentProfile.source}`;
                 const alreadyHas = activeKnownSpells.some(
-                  (k) =>
-                    k.name === s.name &&
-                    k.source === s.source &&
-                    (k.ownerKey === ownerKey || (!k.ownerKey && k.className === currentProfile.className))
+                  (k) => k.name === s.name && k.source === s.source && k.ownerKey === currentProfile.ownerKey
                 );
 
                 return (

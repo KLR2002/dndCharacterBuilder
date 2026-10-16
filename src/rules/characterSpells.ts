@@ -1,4 +1,4 @@
-import type { Character } from "../types/character.ts";
+import type { Character, KnownSpell } from "../types/character.ts";
 import type { SpellData } from "../types/dnd5e.ts";
 import type { EvaluatedCharacter } from "./characterEvaluation.ts";
 import { multiclassSlots as calculateMulticlassSpellSlots } from "./slots.ts";
@@ -350,15 +350,21 @@ function isAlwaysPrepared(profile: ClassSpellProfile, name: string): boolean {
 }
 
 /**
- * Whether the owner's class may prepare the spell: it must be on the (Fighter and Rogue map to the
- * Wizard list) class list under the active books, and within the owner's maximum spell level.
- * A spell the Compendium does not know is not gated, matching the existing synthetic-spell behaviour.
+ * Whether the spell is on the owner's class list under the active books. Fighter and Rogue gate
+ * against the Wizard list.
  */
-function mayPrepare(profile: ClassSpellProfile, spell: SpellData, activeBooks?: string[]): boolean {
-  if (spell.level > profile.maxSpellLevel) return false;
+function isOnOwnerList(profile: ClassSpellProfile, spell: SpellData, activeBooks?: string[]): boolean {
   const gatingClass =
     profile.className === "Fighter" || profile.className === "Rogue" ? "Wizard" : profile.className;
   return isSpellAvailableForClass(spell, gatingClass, activeBooks, profile.subclass);
+}
+
+/**
+ * Whether the owner's class may prepare the spell: on its class list under the active books, and
+ * within the owner's maximum spell level.
+ */
+function mayPrepare(profile: ClassSpellProfile, spell: SpellData, activeBooks?: string[]): boolean {
+  return spell.level <= profile.maxSpellLevel && isOnOwnerList(profile, spell, activeBooks);
 }
 
 /**
@@ -391,4 +397,59 @@ export function togglePrepared(
   if (data && !mayPrepare(profile, data, activeBooks)) return character;
 
   return reconcile({ ...character, preparedSpells: [...current, canonical] }, compendium);
+}
+
+/**
+ * Learns a spell under the profile's Spell Owner. Rejected, returning the character unchanged, when
+ * the spell fails the owner's class-list or active-book gate, or when the owner already knows it. A
+ * spell the Compendium does not know is not gated, matching the existing synthetic-spell behaviour.
+ */
+export function learnSpell(
+  character: Character,
+  profile: ClassSpellProfile,
+  spell: { name: string; source: string },
+  compendium: Compendium,
+  activeBooks?: string[]
+): Character {
+  const data = compendium.findSpell(spell.name, spell.source);
+  if (data && !isOnOwnerList(profile, data, activeBooks)) return character;
+  if (isKnown(character, profile, spell)) return character;
+
+  const learned: KnownSpell = {
+    name: spell.name,
+    source: spell.source,
+    ownerKey: profile.ownerKey,
+    className: profile.className,
+  };
+  return reconcile({ ...character, knownSpells: [...(character.knownSpells || []), learned] }, compendium);
+}
+
+/**
+ * Forgets a spell under its Spell Owner. Removes that owner's known entry and that owner's prepared
+ * entry; other owners' copies are untouched. The legacy prepared key names no owner, so it is dropped
+ * only once no owner still knows the spell.
+ */
+export function forgetSpell(
+  character: Character,
+  profile: ClassSpellProfile,
+  spell: SpellIdentity,
+  compendium: Compendium
+): Character {
+  const owner = ownerOf(spell, profile);
+  const knownSpells = (character.knownSpells || []).filter(
+    (k) =>
+      !(
+        k.name === spell.name &&
+        k.source === spell.source &&
+        (k.ownerKey === owner || (!k.ownerKey && (!k.className || k.className === profile.className)))
+      )
+  );
+  const stillKnown = knownSpells.some((k) => k.name === spell.name && k.source === spell.source);
+  const canonical = canonicalPreparedKey(spell, profile);
+  const legacy = legacyPreparedKey(spell);
+  const preparedSpells = (character.preparedSpells || []).filter(
+    (k) => k !== canonical && !(k === legacy && !stillKnown)
+  );
+
+  return reconcile({ ...character, knownSpells, preparedSpells }, compendium);
 }
