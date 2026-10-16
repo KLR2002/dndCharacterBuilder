@@ -223,3 +223,19 @@ _Avoid_: Weapon plus, enchant stat, attack booster
 **Armor Enhancement Bonus**:
 The flat numerical bonus (+1, +2, +3) added to Armor Class by magic armor or shields.
 _Avoid_: AC plus, defense upgrade, armor bonus
+
+**SRD Baseline**:
+The minimal, unencumbered player compendium strictly derived from the 5.1 System Reference Document (OGL/CC-BY) bundled directly with the application.
+_Avoid_: Default books, base sourcebook, vanilla data
+
+**Integrated Catalog**:
+The complete player compendium fetched from 5e.tools and persisted in client storage (IndexedDB).
+_Avoid_: Scraped dump, external database, download cache
+
+**Sourcebook Gating**:
+The UI restriction that hides all sourcebook selection and filtering controls until the Integrated Catalog has been successfully populated.
+_Avoid_: Book lock, catalog curtain, toggle hiding
+
+**Dataset Swapping**:
+The runtime cutover mechanism that unloads the SRD Baseline from memory and exclusively queries the Integrated Catalog once integration is active, preventing duplicate entities or overlapping source confusion.
+_Avoid_: Source merging, database overriding, data overwrite

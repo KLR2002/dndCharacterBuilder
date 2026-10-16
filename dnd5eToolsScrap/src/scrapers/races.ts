@@ -1,9 +1,9 @@
-import { ToolsClient } from "../client.js";
-import { resolveAllCopies } from "../parser/copy-resolver.js";
-import { renderEntries } from "../parser/entry-renderer.js";
-import { cleanTags } from "../parser/tag-cleaner.js";
-import { extractRuleChoices, RULE_CHOICE_LEVELS, ruleChoiceKey, ExtractedRuleChoice } from "./rule-choices.js";
-import { RaceModel, SubraceModel, TraitModel } from "../types/models.js";
+import type { ToolsClient } from "../types/models.ts";
+import { resolveAllCopies } from "../parser/copy-resolver.ts";
+import { renderEntries } from "../parser/entry-renderer.ts";
+import { cleanTags } from "../parser/tag-cleaner.ts";
+import { extractRuleChoices, RULE_CHOICE_LEVELS, ruleChoiceKey, type ExtractedRuleChoice } from "./rule-choices.ts";
+import type { RaceModel, SubraceModel, TraitModel } from "../types/models.ts";
 
 /** 5e.tools prefixes variant subraces with this; it is a source convention, not a rules term. */
 const VARIANT_PREFIX = /^Variant;?\s*/;
@@ -86,6 +86,17 @@ export async function scrapeRaces(client: ToolsClient): Promise<RaceModel[]> {
     const parentSource = rawSub.raceSource || rawSub._copy?.raceSource;
 
     if (!parentName) continue;
+
+    const hasName = Boolean(rawSub.name && rawSub.name.trim());
+    const hasAbility = Boolean(
+      rawSub.ability &&
+        (Array.isArray(rawSub.ability)
+          ? rawSub.ability.length > 0
+          : Object.keys(rawSub.ability).length > 0)
+    );
+    const hasEntries = Boolean(rawSub.entries && rawSub.entries.length > 0);
+    if (!hasName && !hasAbility && !hasEntries) continue;
+
     const parentKey = `${parentName.toLowerCase()}__${(parentSource || "").toLowerCase()}`;
 
     const traits: TraitModel[] = [];

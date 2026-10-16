@@ -1,6 +1,6 @@
 import type { AbilityKey, Character } from "../types/character.ts";
 import type { ResolvedAncestry } from "./types.ts";
-import type { BackgroundData } from "../types/dnd5e.ts";
+import type { BackgroundData, RaceData } from "../types/dnd5e.ts";
 import { DND_SKILLS } from "../constants/rules.ts";
 import { effectiveScores, hasFeat } from "./abilities.ts";
 import { proficiencyBonus, totalLevel } from "./proficiencies.ts";
@@ -75,10 +75,113 @@ export function normalizeSkillName(raw: string): string {
   return found ? found.name : trimmed;
 }
 
+export function getAutoGrantedSkills(
+  character: Character,
+  opts: {
+    race?: { name?: string; traits?: { name: string; description?: string }[] };
+    subrace?: { name?: string; traits?: { name: string; description?: string }[] };
+    races?: RaceData[];
+    backgrounds?: BackgroundData[];
+  } = {}
+): string[] {
+  const granted = new Set<string>();
+
+  // 1. Background skills
+  if (character.background?.name) {
+    if (character.background.source === "Custom") {
+      const customEntry = character.skillChoices?.find((sc) => sc.origin === "background");
+      if (customEntry?.picked) {
+        for (const s of customEntry.picked) {
+          const norm = normalizeSkillName(s);
+          if (norm) granted.add(norm);
+        }
+      }
+    } else {
+      const fromCatalog = opts.backgrounds?.find(
+        (b) => b.name.toLowerCase() === character.background!.name.toLowerCase()
+      );
+      if (fromCatalog?.skillProficiencies) {
+        for (const s of fromCatalog.skillProficiencies) {
+          const norm = normalizeSkillName(s);
+          if (norm) granted.add(norm);
+        }
+      } else {
+        const standard = BACKGROUND_SKILL_PROFICIENCIES[character.background.name];
+        if (standard) {
+          for (const s of standard) {
+            const norm = normalizeSkillName(s);
+            if (norm) granted.add(norm);
+          }
+        }
+      }
+    }
+  }
+
+  // 2. Race skill proficiencies from static map
+  if (character.race?.name) {
+    const raceSkills = RACE_SKILL_PROFICIENCIES[character.race.name];
+    if (raceSkills) {
+      for (const s of raceSkills) {
+        const norm = normalizeSkillName(s);
+        if (norm) granted.add(norm);
+      }
+    }
+    if (character.race.subraceName) {
+      const subraceSkills = RACE_SKILL_PROFICIENCIES[character.race.subraceName];
+      if (subraceSkills) {
+        for (const s of subraceSkills) {
+          const norm = normalizeSkillName(s);
+          if (norm) granted.add(norm);
+        }
+      }
+    }
+  }
+
+  // 3. Race traits description scanning if traits present
+  const traits = [
+    ...(opts.race?.traits || []),
+    ...(opts.subrace?.traits || []),
+    ...(opts.races?.find((r) => r.name.toLowerCase() === character.race?.name?.toLowerCase())?.traits || []),
+    ...(opts.races
+      ?.find((r) => r.name.toLowerCase() === character.race?.name?.toLowerCase())
+      ?.subraces?.find((sr) => sr.name.toLowerCase() === character.race?.subraceName?.toLowerCase())?.traits || []),
+  ];
+  for (const t of traits) {
+    const desc = t.description || "";
+    for (const skill of DND_SKILLS) {
+      const reg = new RegExp(
+        `(?:proficient in|proficiency in)(?: the)?\\s+${skill.name}\\s+skill|\\{@skill\\s+${skill.name}\\}`,
+        "i"
+      );
+      if (reg.test(desc)) {
+        granted.add(skill.name);
+      }
+    }
+  }
+
+  // 4. Rule Choices skill picks (e.g. Ancestral Legacy, Primal Knowledge)
+  for (const rc of character.ruleChoices || []) {
+    if (
+      rc.trait?.toLowerCase().includes("ancestral legacy") ||
+      rc.id.toLowerCase().includes("ancestral legacy") ||
+      rc.trait?.toLowerCase().includes("primal knowledge") ||
+      rc.id.toLowerCase().includes("primal knowledge")
+    ) {
+      for (const p of rc.picked || []) {
+        const norm = normalizeSkillName(p);
+        if (norm) granted.add(norm);
+      }
+    }
+  }
+
+  return Array.from(granted);
+}
+
 export function skills(
   character: Character,
   opts: ResolvedAncestry & {
     backgrounds?: BackgroundData[];
+    races?: RaceData[];
   } = {}
 ): SkillRow[] {
   const { modifiers } = effectiveScores(character, opts);
@@ -93,71 +196,10 @@ export function skills(
     if (norm) proficientSkillNames.add(norm);
   }
 
-  // 1b. Rule Choices skill picks (e.g. Ancestral Legacy, Primal Knowledge)
-  for (const rc of character.ruleChoices || []) {
-    if (
-      rc.trait?.toLowerCase().includes("ancestral legacy") ||
-      rc.id.toLowerCase().includes("ancestral legacy") ||
-      rc.trait?.toLowerCase().includes("primal knowledge") ||
-      rc.id.toLowerCase().includes("primal knowledge")
-    ) {
-      for (const p of rc.picked || []) {
-        const norm = normalizeSkillName(p);
-        if (norm) proficientSkillNames.add(norm);
-      }
-    }
-  }
-
-  // 2. Background skills
-  if (character.background?.name) {
-    const fromCatalog = opts.backgrounds?.find(
-      (b) => b.name.toLowerCase() === character.background!.name.toLowerCase()
-    );
-    if (fromCatalog?.skillProficiencies) {
-      for (const s of fromCatalog.skillProficiencies) {
-        const norm = normalizeSkillName(s);
-        if (norm) proficientSkillNames.add(norm);
-      }
-    } else {
-      const standard = BACKGROUND_SKILL_PROFICIENCIES[character.background.name];
-      if (standard) {
-        for (const s of standard) {
-          proficientSkillNames.add(s);
-        }
-      }
-    }
-  }
-
-  // 3. Race skill proficiencies from static map
-  if (character.race?.name) {
-    const raceSkills = RACE_SKILL_PROFICIENCIES[character.race.name];
-    if (raceSkills) {
-      for (const s of raceSkills) proficientSkillNames.add(s);
-    }
-    if (character.race.subraceName) {
-      const subraceSkills = RACE_SKILL_PROFICIENCIES[character.race.subraceName];
-      if (subraceSkills) {
-        for (const s of subraceSkills) proficientSkillNames.add(s);
-      }
-    }
-  }
-
-  // 4. Race traits description scanning if traits present
-  const traits = [
-    ...(opts.race?.traits || []),
-    ...(opts.subrace?.traits || []),
-  ];
-  for (const t of traits) {
-    const desc = t.description || "";
-    for (const skill of DND_SKILLS) {
-      const reg = new RegExp(
-        `(?:proficient in|proficiency in)(?: the)?\\s+${skill.name}\\s+skill|\\{@skill\\s+${skill.name}\\}`,
-        "i"
-      );
-      if (reg.test(desc)) {
-        proficientSkillNames.add(skill.name);
-      }
-    }
+  // 2. Auto-granted skills (background, race fixed, traits, rule choices)
+  const autoGranted = getAutoGrantedSkills(character, opts);
+  for (const s of autoGranted) {
+    proficientSkillNames.add(s);
   }
 
   // Normalize chosen expertise

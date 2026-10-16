@@ -1,27 +1,27 @@
 [
   {
-    "id": "PHB",
     "name": "Player's Handbook",
+    "id": "PHB",
     "source": "PHB",
     "group": "core",
     "published": "2014-08-19",
-    "author": "Wizards of the Coast"
+    "author": "Wizards RPG Team"
   },
   {
-    "id": "MM",
     "name": "Monster Manual",
+    "id": "MM",
     "source": "MM",
     "group": "core",
     "published": "2014-09-30",
-    "author": "Wizards of the Coast"
+    "author": "Wizards RPG Team"
   },
   {
-    "id": "DMG",
     "name": "Dungeon Master's Guide",
+    "id": "DMG",
     "source": "DMG",
     "group": "core",
     "published": "2014-12-09",
-    "author": "Wizards of the Coast"
+    "author": "Wizards RPG Team"
   },
   {
     "id": "EEPC",
@@ -32,148 +32,148 @@
     "author": "Wizards of the Coast"
   },
   {
-    "id": "VGM",
     "name": "Volo's Guide to Monsters",
+    "id": "VGM",
     "source": "VGM",
     "group": "supplement",
     "published": "2016-11-15",
-    "author": "Wizards of the Coast"
+    "author": "Wizards RPG Team"
   },
   {
-    "id": "XGE",
     "name": "Xanathar's Guide to Everything",
+    "id": "XGE",
     "source": "XGE",
     "group": "supplement",
     "published": "2017-11-21",
-    "author": "Wizards of the Coast"
+    "author": "Wizards RPG Team"
   },
   {
-    "id": "MTF",
     "name": "Mordenkainen's Tome of Foes",
+    "id": "MTF",
     "source": "MTF",
     "group": "supplement",
     "published": "2018-05-29",
-    "author": "Wizards of the Coast"
+    "author": "Wizards RPG Team"
   },
   {
-    "id": "TCE",
     "name": "Tasha's Cauldron of Everything",
+    "id": "TCE",
     "source": "TCE",
     "group": "supplement",
     "published": "2020-11-17",
-    "author": "Wizards of the Coast"
+    "author": "Wizards RPG Team"
   },
   {
-    "id": "FTD",
     "name": "Fizban's Treasury of Dragons",
+    "id": "FTD",
     "source": "FTD",
     "group": "supplement",
     "published": "2021-10-26",
-    "author": "Wizards of the Coast"
+    "author": "Wizards RPG Team"
   },
   {
-    "id": "MPMM",
     "name": "Mordenkainen Presents: Monsters of the Multiverse",
+    "id": "MPMM",
     "source": "MPMM",
     "group": "supplement",
-    "published": "2022-05-17",
-    "author": "Wizards of the Coast"
+    "published": "2022-01-25",
+    "author": "Wizards RPG Team"
   },
   {
-    "id": "BGG",
     "name": "Bigby Presents: Glory of the Giants",
+    "id": "BGG",
     "source": "BGG",
     "group": "supplement",
     "published": "2023-08-15",
-    "author": "Wizards of the Coast"
+    "author": "Wizards RPG Team"
   },
   {
-    "id": "BMT",
     "name": "The Book of Many Things",
+    "id": "BMT",
     "source": "BMT",
     "group": "supplement",
     "published": "2023-11-14",
-    "author": "Wizards of the Coast"
+    "author": "Wizards RPG Team"
   },
   {
-    "id": "SCAG",
     "name": "Sword Coast Adventurer's Guide",
+    "id": "SCAG",
     "source": "SCAG",
     "group": "setting",
     "published": "2015-11-03",
-    "author": "Wizards of the Coast"
+    "author": "Wizards RPG Team"
   },
   {
-    "id": "GGR",
     "name": "Guildmasters' Guide to Ravnica",
+    "id": "GGR",
     "source": "GGR",
     "group": "setting",
     "published": "2018-11-20",
-    "author": "Wizards of the Coast"
+    "author": "Wizards RPG Team"
   },
   {
-    "id": "AI",
     "name": "Acquisitions Incorporated",
+    "id": "AI",
     "source": "AI",
-    "group": "setting",
+    "group": "supplement",
     "published": "2019-06-18",
-    "author": "Penny Arcade, Inc."
+    "author": "Wizards RPG Team"
   },
   {
-    "id": "ERLW",
     "name": "Eberron: Rising from the Last War",
+    "id": "ERLW",
     "source": "ERLW",
     "group": "setting",
     "published": "2019-11-19",
-    "author": "Wizards of the Coast"
+    "author": "Wizards RPG Team"
   },
   {
-    "id": "EGW",
     "name": "Explorer's Guide to Wildemount",
+    "id": "EGW",
     "source": "EGW",
     "group": "setting",
     "published": "2020-03-17",
-    "author": "Critical Role & Wizards of the Coast"
+    "author": "Darrington Press"
   },
   {
-    "id": "MOT",
     "name": "Mythic Odysseys of Theros",
+    "id": "MOT",
     "source": "MOT",
     "group": "setting",
     "published": "2020-06-02",
-    "author": "Wizards of the Coast"
+    "author": "Wizards RPG Team"
   },
   {
-    "id": "VRGR",
     "name": "Van Richten's Guide to Ravenloft",
+    "id": "VRGR",
     "source": "VRGR",
     "group": "setting",
     "published": "2021-05-18",
-    "author": "Wizards of the Coast"
+    "author": "Wizards RPG Team"
   },
   {
-    "id": "SCC",
     "name": "Strixhaven: A Curriculum of Chaos",
+    "id": "SCC",
     "source": "SCC",
     "group": "setting",
     "published": "2021-12-07",
-    "author": "Wizards of the Coast"
+    "author": "Wizards RPG Team"
   },
   {
+    "name": "Astral Adventurer's Guide",
     "id": "AAG",
-    "name": "Astral Adventurer's Guide (Spelljammer)",
     "source": "AAG",
     "group": "setting",
     "published": "2022-08-16",
-    "author": "Wizards of the Coast"
+    "author": "Wizards RPG Team"
   },
   {
+    "name": "Sigil and the Outlands",
     "id": "SatO",
-    "name": "Sigil and the Outlands (Planescape)",
     "source": "SatO",
     "group": "setting",
-    "published": "2023-10-31",
-    "author": "Wizards of the Coast"
+    "published": "2023-10-07",
+    "author": "Wizards RPG Team"
   },
   {
     "id": "LMoP",
@@ -368,52 +368,52 @@
     "author": "Wizards of the Coast"
   },
   {
-    "id": "PSA",
     "name": "Plane Shift: Amonkhet",
+    "id": "PS-A",
     "source": "PSA",
-    "group": "other",
-    "published": "2017-07-05",
-    "author": "Wizards of the Coast"
+    "group": "setting-alt",
+    "published": "2017-07-06",
+    "author": "Wizards RPG Team"
   },
   {
-    "id": "PSI",
     "name": "Plane Shift: Innistrad",
+    "id": "PS-I",
     "source": "PSI",
-    "group": "other",
-    "published": "2016-07-13",
-    "author": "Wizards of the Coast"
+    "group": "setting-alt",
+    "published": "2016-07-12",
+    "author": "Wizards RPG Team"
   },
   {
-    "id": "PSK",
     "name": "Plane Shift: Kaladesh",
+    "id": "PS-K",
     "source": "PSK",
-    "group": "other",
+    "group": "setting-alt",
     "published": "2017-02-16",
-    "author": "Wizards of the Coast"
+    "author": "Wizards RPG Team"
   },
   {
-    "id": "PSZ",
     "name": "Plane Shift: Zendikar",
+    "id": "PS-Z",
     "source": "PSZ",
-    "group": "other",
+    "group": "setting-alt",
     "published": "2016-04-27",
-    "author": "Wizards of the Coast"
+    "author": "Wizards RPG Team"
   },
   {
-    "id": "PSD",
     "name": "Plane Shift: Dominaria",
+    "id": "PS-D",
     "source": "PSD",
-    "group": "other",
+    "group": "setting-alt",
     "published": "2018-07-31",
-    "author": "Wizards of the Coast"
+    "author": "Wizards RPG Team"
   },
   {
-    "id": "PSX",
     "name": "Plane Shift: Ixalan",
+    "id": "PS-X",
     "source": "PSX",
-    "group": "other",
+    "group": "setting-alt",
     "published": "2018-01-09",
-    "author": "Wizards of the Coast"
+    "author": "Wizards RPG Team"
   },
   {
     "id": "TP",
@@ -432,11 +432,11 @@
     "author": "Wizards of the Coast"
   },
   {
-    "id": "OGA",
     "name": "One Grung Above",
+    "id": "OGA",
     "source": "OGA",
-    "group": "other",
-    "published": "2017-10-13",
-    "author": "Wizards of the Coast"
+    "group": "supplement-alt",
+    "published": "2017-10-11",
+    "author": "Christopher Lindsay"
   }
 ]

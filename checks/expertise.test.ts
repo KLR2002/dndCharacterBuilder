@@ -1,6 +1,5 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
 import { evaluateCharacter } from "../src/rules/characterEvaluation.ts";
 import { skills } from "../src/rules/skills.ts";
 import {
@@ -16,15 +15,11 @@ import {
   toggleExpertiseChoice,
 } from "../src/rules/expertise.ts";
 import type { Character } from "../src/types/character.ts";
+import { loadTestCatalog } from "./testUtils.ts";
 
-const readCatalog = (name: string) =>
-  JSON.parse(
-    readFileSync(new URL(`../src/data/${name}.json`, import.meta.url), "utf8")
-  );
-
-const races = readCatalog("races");
-const classes = readCatalog("classes");
-const backgrounds = readCatalog("backgrounds");
+const races = loadTestCatalog("races");
+const classes = loadTestCatalog("classes");
+const backgrounds = loadTestCatalog("backgrounds");
 
 function makeTestChar(overrides: Partial<Character> = {}): Character {
   return {

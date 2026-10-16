@@ -5,7 +5,9 @@ import path from "node:path";
 import type { ItemData } from "../src/types/dnd5e.ts";
 
 describe("Items Scraper & Catalog Integrity (Ticket 01)", () => {
-  const itemsPath = path.resolve(process.cwd(), "src/data/items.json");
+  const scrapPath = path.resolve(process.cwd(), "dnd5eToolsScrap/data/items.json");
+  const srcPath = path.resolve(process.cwd(), "src/data/items.json");
+  const itemsPath = fs.existsSync(scrapPath) ? scrapPath : srcPath;
   const items: ItemData[] = JSON.parse(fs.readFileSync(itemsPath, "utf8"));
 
   it("pre-expands concrete weapon variants with accurate statistics and bonusWeapon", () => {

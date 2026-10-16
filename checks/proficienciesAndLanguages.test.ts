@@ -1,6 +1,5 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
 import {
   getRaceLanguageGrant,
   getBackgroundLanguageGrant,
@@ -15,15 +14,11 @@ import {
 } from "../src/rules/proficienciesAndLanguages.ts";
 import { POINT_BUY_COST } from "../src/constants/rules.ts";
 import type { Character } from "../src/types/character.ts";
+import { loadTestCatalog } from "./testUtils.ts";
 
-const readCatalog = (name: string) =>
-  JSON.parse(
-    readFileSync(new URL(`../src/data/${name}.json`, import.meta.url), "utf8")
-  );
-
-const races = readCatalog("races");
-const backgrounds = readCatalog("backgrounds");
-const classes = readCatalog("classes");
+const races = loadTestCatalog("races");
+const backgrounds = loadTestCatalog("backgrounds");
+const classes = loadTestCatalog("classes");
 
 function createTestChar(overrides: Partial<Character> = {}): Character {
   return {

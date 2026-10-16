@@ -35,6 +35,8 @@ Judgement calls and rules conventions enforced during code review.
     - Subclass spell replacements (e.g., TCoE Clockwork Soul / Aberrant Mind) must reject cantrips (`level === 0`).
     - Gated spell levels, invalid schools, and foreign class lists must be verified for rejection.
     - Level-gated milestones (e.g., Monk Elemental Disciplines, class archetype unlocks): must verify higher-tier choices are absent/rejected at lower levels, and pre-unlock levels offer zero choices.
+- **Dual-Mode SRD vs. Compendium Invariant**:
+  - Mechanics or UI altering ancestry traits, race variants, or class progression must verify behavior across both SRD-only mode and integrated compendium mode to ensure changes for one mode do not regress choices in the other.
 
 ## 5. Equipment Economy, Attunement & Mundane Invariants
 - **Attunement Gating**:
@@ -43,3 +45,7 @@ Judgement calls and rules conventions enforced during code review.
 - **Mundane Invariant for Enhancements**:
   - Features requiring mundane targets (e.g., Artificer Infusions like *Enhanced Weapon* or *Enhanced Defense*) must verify `isMundaneItem` (`rarity: "None"` or undefined, and no inherent `bonusWeapon` or `bonusAc`) before binding.
   - Sheet reconcilers and teardown routines must purge any active enhancements bound to magical items and append a descriptive notice to `character.needsReview`.
+
+## 6. Cross-Platform Runtime & Storage
+- **Mobile-Native Compatibility**:
+  - Shared services and storage layers must never access browser DOM globals (`window`, `document`, `indexedDB`, `localStorage`) without platform checking (`Platform.OS === "web"`). Mobile targets (Android/iOS) must use `AsyncStorage` or native file-system adapters.

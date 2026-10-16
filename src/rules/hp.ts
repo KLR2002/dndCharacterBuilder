@@ -7,7 +7,11 @@ import { totalLevel } from "./proficiencies.ts";
 export function maxHp(character: Character, opts: ResolvedAncestry = {}, classes: Record<string, ClassRules> = CLASS_DATA): number {
   if (character.maxHpOverride != null && character.maxHpOverride > 0) return character.maxHpOverride;
   const con = effectiveScores(character, opts).modifiers.con;
-  if (!character.classes.length) return Math.max(1, 10 + con);
+  const isHillDwarf =
+    character.race?.name === "Dwarf" &&
+    (character.race.subraceName === "Hill" || character.race.subraceName === "Hill Dwarf");
+  const dwarvenToughness = isHillDwarf ? totalLevel(character) : 0;
+  if (!character.classes.length) return Math.max(1, 10 + con + (isHillDwarf ? 1 : 0));
   let hp = 0, first = true;
   for (const c of character.classes) {
     const die = classes[c.className]?.hitDie ?? 8;
@@ -16,7 +20,7 @@ export function maxHp(character: Character, opts: ResolvedAncestry = {}, classes
       first = false;
     }
   }
-  return Math.max(1, hp + (hasFeat(character, "Tough") ? 2 * totalLevel(character) : 0));
+  return Math.max(1, hp + (hasFeat(character, "Tough") ? 2 * totalLevel(character) : 0) + dwarvenToughness);
 }
 export function hitDiceByType(character: Character, classes: Record<string, ClassRules> = CLASS_DATA) {
   const pools: Record<string, { total: number; used: number; remaining: number }> = {};

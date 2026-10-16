@@ -1,13 +1,12 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
 import { applyLongRest, applyShortRest } from "../src/rules/rest.ts";
 import { ancestryRuleChoices, availableRuleChoices } from "../src/rules/ruleChoices.ts";
 import { grantedFeatures } from "../src/rules/grantedFeatures.ts";
-import { makeChar } from "./testUtils.ts";
+import { makeChar, loadTestCatalog } from "./testUtils.ts";
 import type { Character } from "../src/types/character.ts";
 
-const races = JSON.parse(readFileSync(new URL("../src/data/races.json", import.meta.url), "utf8"));
+const races = loadTestCatalog("races");
 
 const eladrin = (season: string): Character => {
   const base = makeChar({

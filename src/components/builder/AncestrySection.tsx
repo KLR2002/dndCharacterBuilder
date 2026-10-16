@@ -19,6 +19,7 @@ import { Card } from "../ui/Card";
 import { Modal } from "../ui/Modal";
 import { SearchBar } from "../ui/SearchBar";
 import { ABILITY_KEYS, ABILITY_LABELS, builderStyles as styles, RuleChoicePicker, SkillPicker } from "./builderStyles";
+import { normalizeSkillName } from "../../rules/skills";
 import { useCharacters } from "../../context/CharacterContext";
 import { getFeats, getSpells } from "../../services/dataService";
 import { validateFeatPrerequisites, applyOriginFeat, removeOriginFeat } from "../../rules/feats";
@@ -44,7 +45,7 @@ export interface AncestrySectionProps {
   allBackgrounds: BackgroundData[];
   skillChoices: { source: string; choose: number; from: string[] }[];
   autoGranted: string[];
-  toggleSkill: (skill: string) => void;
+  toggleSkill: (skill: string, source?: string) => void;
   raceLanguageGrant: { label: string; fixed: string[]; choiceCount: number };
   toggleRaceLanguage: (lang: string) => void;
   raceToolGrant: ToolGrant;
@@ -70,14 +71,51 @@ export const AncestrySection: React.FC<AncestrySectionProps> = ({
   theme,
 }) => {
   const [raceSearch, setRaceSearch] = useState("");
-  const [choiceASI, setChoiceASI] = useState<Partial<Record<AbilityKey, number>>>({});
-  const [flexibleMode, setFlexibleMode] = useState<"2_1" | "1_1_1">("2_1");
+  const choiceASI: Partial<Record<AbilityKey, number>> = useMemo(() => {
+    const map: Partial<Record<AbilityKey, number>> = {};
+    for (const b of character.racialChoiceBonus || []) {
+      map[b.key] = b.amount;
+    }
+    return map;
+  }, [character.racialChoiceBonus]);
+
+  const detectedMode = useMemo<"2_1" | "1_1_1" | null>(() => {
+    const bonuses = character.racialChoiceBonus || [];
+    if (bonuses.some((b) => b.amount === 2)) return "2_1";
+    if (bonuses.length >= 2 && bonuses.every((b) => b.amount === 1)) return "1_1_1";
+    if (bonuses.length === 3) return "1_1_1";
+    return null;
+  }, [character.racialChoiceBonus]);
+
+  const [userSelectedMode, setUserSelectedMode] = useState<"2_1" | "1_1_1" | null>(null);
+  const flexibleMode = userSelectedMode ?? detectedMode ?? "2_1";
+
   const [featModalVisible, setFeatModalVisible] = useState(false);
   const [featSearch, setFeatSearch] = useState("");
   const [cantripModalVisible, setCantripModalVisible] = useState(false);
   const [cantripSearch, setCantripSearch] = useState("");
 
-  const { activeBooks } = useCharacters();
+  const { activeBooks, isIntegrated } = useCharacters();
+
+  const availableLineages = useMemo(() => {
+    if (!isIntegrated) return [];
+    const list: ("None" | "Dhampir" | "Hexblood" | "Reborn" | "Custom Lineage")[] = ["None"];
+    if (activeBooks.includes("VRGR")) {
+      list.push("Dhampir", "Hexblood", "Reborn");
+    }
+    if (activeBooks.includes("TCE")) {
+      list.push("Custom Lineage");
+    }
+    return list.length > 1 ? list : [];
+  }, [isIntegrated, activeBooks]);
+
+  const lineageHeading = useMemo(() => {
+    const hasVRGR = activeBooks.includes("VRGR");
+    const hasTCE = activeBooks.includes("TCE");
+    if (hasVRGR && hasTCE) return "Lineage Replacement (VRGtR) & Custom Lineage (TCoE)";
+    if (hasVRGR) return "Lineage Replacement (VRGtR)";
+    return "Custom Lineage (TCoE)";
+  }, [activeBooks]);
   const allFeats = useMemo(() => getFeats(activeBooks), [activeBooks]);
   const wizardCantrips = useMemo(() => {
     return getSpells(activeBooks).filter(
@@ -132,7 +170,6 @@ export const AncestrySection: React.FC<AncestrySectionProps> = ({
       }
     }
 
-    setChoiceASI(current);
     const picks = Object.entries(current).map(([k, amount]) => ({
       key: k as AbilityKey,
       amount: amount as number,
@@ -142,7 +179,7 @@ export const AncestrySection: React.FC<AncestrySectionProps> = ({
 
   const selectRace = (r: RaceData, subraceIdx?: number) => {
     const sr = subraceIdx !== undefined ? r.subraces?.[subraceIdx] : undefined;
-    setChoiceASI({});
+    setUserSelectedMode(null);
     onUpdate((cur) =>
       applyAncestrySelection(cur, r, sr, { races: allRaces, backgrounds: allBackgrounds })
     );
@@ -169,16 +206,20 @@ export const AncestrySection: React.FC<AncestrySectionProps> = ({
             variant="outline"
             size="sm"
             onPress={() => {
-              onUpdate((cur) =>
-                reconcileCharacter({
+              setUserSelectedMode(null);
+              onUpdate((cur) => {
+                const oldRaceChoices = (cur.skillChoices || []).filter((sc) => sc.origin === "race");
+                const oldRacePicks = new Set(oldRaceChoices.flatMap((sc) => sc.picked.map(normalizeSkillName)));
+                return reconcileCharacter({
                   ...cur,
                   race: null,
                   racialAbilityBonuses: {},
                   racialChoiceBonus: [],
                   ruleChoices: (cur.ruleChoices || []).filter((rc) => rc.origin !== "race"),
-                })
-              );
-              setChoiceASI({});
+                  skillChoices: (cur.skillChoices || []).filter((sc) => sc.origin !== "race"),
+                  chosenSkills: (cur.chosenSkills || []).filter((s) => !oldRacePicks.has(normalizeSkillName(s))),
+                });
+              });
             }}
           />
         </Card>
@@ -199,8 +240,7 @@ export const AncestrySection: React.FC<AncestrySectionProps> = ({
               <View style={{ flexDirection: "row", gap: 8, marginVertical: 2 }}>
                 <TouchableOpacity
                   onPress={() => {
-                    setFlexibleMode("2_1");
-                    setChoiceASI({});
+                    setUserSelectedMode("2_1");
                     onUpdate((cur) => setChoiceRacialBonus(cur, []));
                   }}
                   style={[
@@ -223,8 +263,7 @@ export const AncestrySection: React.FC<AncestrySectionProps> = ({
                 </TouchableOpacity>
                 <TouchableOpacity
                   onPress={() => {
-                    setFlexibleMode("1_1_1");
-                    setChoiceASI({});
+                    setUserSelectedMode("1_1_1");
                     onUpdate((cur) => setChoiceRacialBonus(cur, []));
                   }}
                   style={[
@@ -295,18 +334,28 @@ export const AncestrySection: React.FC<AncestrySectionProps> = ({
           <Card style={{ gap: 10 }}>
             {skillChoices
               .filter((sc) => sc.source.startsWith("Race:") || sc.source.startsWith("Variant"))
-              .map((sc) => (
-                <SkillPicker
-                  key={sc.source}
-                  label={sc.source}
-                  choose={sc.choose}
-                  from={sc.from}
-                  chosen={character.chosenSkills}
-                  autoGranted={autoGranted}
-                  onToggle={toggleSkill}
-                  theme={theme}
-                />
-              ))}
+              .map((sc) => {
+                const choiceEntry = character.skillChoices?.find((c) => c.id === sc.source);
+                const normFrom = sc.from.map(normalizeSkillName);
+                const normAuto = autoGranted.map(normalizeSkillName);
+                const chosen = choiceEntry
+                  ? choiceEntry.picked
+                  : (character.chosenSkills || []).filter(
+                      (s) => normFrom.includes(normalizeSkillName(s)) && !normAuto.includes(normalizeSkillName(s))
+                    );
+                return (
+                  <SkillPicker
+                    key={sc.source}
+                    label={sc.source}
+                    choose={sc.choose}
+                    from={sc.from}
+                    chosen={chosen}
+                    autoGranted={autoGranted}
+                    onToggle={(skill) => toggleSkill(skill, sc.source)}
+                    theme={theme}
+                  />
+                );
+              })}
           </Card>
         )}
 
@@ -570,48 +619,50 @@ export const AncestrySection: React.FC<AncestrySectionProps> = ({
       )}
 
       {/* Lineage replacement toggle */}
-      <Card style={{ gap: 10 }}>
-        <Text style={[styles.heading, { color: theme.text }]}>Lineage Replacement (VRGtR) & Custom Lineage (TCoE)</Text>
-        <View style={{ flexDirection: "row", gap: 8, flexWrap: "wrap" }}>
-          {(["None", "Dhampir", "Hexblood", "Reborn", "Custom Lineage"] as const).map((opt) => {
-            const active =
-              opt === "None"
-                ? !character.lineageReplacement && !character.customLineage
-                : opt === "Custom Lineage"
-                ? character.customLineage
-                : character.lineageReplacement === opt;
-            return (
-              <TouchableOpacity
-                key={opt}
-                onPress={() => {
-                  if (opt === "None") {
-                    onUpdate({ lineageReplacement: null, customLineage: false });
-                  } else if (opt === "Custom Lineage") {
-                    onUpdate({
-                      customLineage: true,
-                      lineageReplacement: null,
-                      race: { name: "Custom Lineage", source: "TCE" },
-                    });
-                  } else {
-                    onUpdate({ lineageReplacement: opt, customLineage: false });
-                  }
-                }}
-                style={[
-                  styles.lineageChip,
-                  {
-                    backgroundColor: active ? theme.accentGlow : theme.surfaceHighlight,
-                    borderColor: active ? theme.accent : theme.border,
-                  },
-                ]}
-              >
-                <Text style={{ color: active ? theme.accent : theme.textSecondary, fontSize: 13, fontWeight: "600" }}>
-                  {opt}
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
-        </View>
-      </Card>
+      {availableLineages.length > 0 && (
+        <Card style={{ gap: 10 }}>
+          <Text style={[styles.heading, { color: theme.text }]}>{lineageHeading}</Text>
+          <View style={{ flexDirection: "row", gap: 8, flexWrap: "wrap" }}>
+            {availableLineages.map((opt) => {
+              const active =
+                opt === "None"
+                  ? !character.lineageReplacement && !character.customLineage
+                  : opt === "Custom Lineage"
+                  ? character.customLineage
+                  : character.lineageReplacement === opt;
+              return (
+                <TouchableOpacity
+                  key={opt}
+                  onPress={() => {
+                    if (opt === "None") {
+                      onUpdate({ lineageReplacement: null, customLineage: false });
+                    } else if (opt === "Custom Lineage") {
+                      onUpdate({
+                        customLineage: true,
+                        lineageReplacement: null,
+                        race: { name: "Custom Lineage", source: "TCE" },
+                      });
+                    } else {
+                      onUpdate({ lineageReplacement: opt, customLineage: false });
+                    }
+                  }}
+                  style={[
+                    styles.lineageChip,
+                    {
+                      backgroundColor: active ? theme.accentGlow : theme.surfaceHighlight,
+                      borderColor: active ? theme.accent : theme.border,
+                    },
+                  ]}
+                >
+                  <Text style={{ color: active ? theme.accent : theme.textSecondary, fontSize: 13, fontWeight: "600" }}>
+                    {opt}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        </Card>
+      )}
 
       {/* Race search + list (when no race selected) */}
       {!character.race && (
@@ -621,9 +672,19 @@ export const AncestrySection: React.FC<AncestrySectionProps> = ({
             {allRaces
               .filter((r) => r.name.toLowerCase().includes(raceSearch.toLowerCase()))
               .map((r) => {
-                const asiStr = formatRaceASI(r.abilityScoreIncrease);
+                const combinedFixed = r.subraces.length === 1
+                  ? collectFixedBonuses(r.abilityScoreIncrease, r.subraces[0].abilityScoreIncrease)
+                  : collectFixedBonuses(r.abilityScoreIncrease);
+                const asiStr = formatRaceASI(Object.entries(combinedFixed).map(([k, v]) => ({ [k]: v })));
                 const isLineage = r.name === "Dhampir" || r.name === "Hexblood" || r.name === "Reborn";
                 const isChoice = r.name === "Half-Elf" || r.name === "Custom Lineage";
+                const singleSubrace =
+                  r.subraces.length === 1 && r.subraces[0]?.name?.trim()
+                    ? r.subraces[0]
+                    : undefined;
+                const displayTraits = singleSubrace
+                  ? [...r.traits, ...(singleSubrace.traits || [])]
+                  : r.traits;
                 return (
                   <Card key={`${r.name}__${r.source}`}>
                     {/* Header */}
@@ -631,8 +692,11 @@ export const AncestrySection: React.FC<AncestrySectionProps> = ({
                       <View style={{ flex: 1 }}>
                         <View style={{ flexDirection: "row", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
                           <Text style={[styles.itemTitle, { color: theme.text }]}>{r.name}</Text>
-                          {isLineage && <Badge label="Lineage" variant="warning" size="sm" />}
-                          {isChoice && <Badge label="Choice ASI" variant="secondary" size="sm" />}
+                          {singleSubrace?.name ? (
+                            <Badge label={singleSubrace.name} variant="accent" size="sm" />
+                          ) : null}
+                          {isLineage ? <Badge label="Lineage" variant="warning" size="sm" /> : null}
+                          {isChoice ? <Badge label="Choice ASI" variant="secondary" size="sm" /> : null}
                         </View>
                         {asiStr ? (
                           <Text style={{ color: theme.accent, fontSize: 12, marginTop: 1, fontWeight: "600" }}>
@@ -653,25 +717,34 @@ export const AncestrySection: React.FC<AncestrySectionProps> = ({
                         title="Info"
                         variant="ghost"
                         size="sm"
-                        onPress={() => onViewDetail({ title: r.name, source: r.source, description: r.description })}
+                        onPress={() => {
+                          const detailDesc = singleSubrace?.description
+                            ? `${r.description}\n\n### Subrace: ${singleSubrace.name}\n\n${singleSubrace.description}`
+                            : r.description;
+                          onViewDetail({ title: r.name, source: r.source, description: detailDesc });
+                        }}
                       />
-                      {r.subraces.length <= 1 && (
+                      {r.subraces.length <= 1 ? (
                         <Button
                           title="Select"
                           size="sm"
-                          onPress={() => selectRace(r, r.subraces.length === 1 ? 0 : undefined)}
+                          onPress={() => selectRace(r, singleSubrace ? 0 : undefined)}
                         />
-                      )}
+                      ) : null}
                     </View>
 
                     {/* Subraces */}
-                    {r.subraces.length > 1 && (
+                    {r.subraces.length > 1 ? (
                       <View style={styles.subracesBox}>
                         <Text style={[styles.subLabel, { color: theme.textSecondary }]}>Subraces / Variants:</Text>
                         {r.subraces.map((sr, idx) => {
                           const combined = collectFixedBonuses(r.abilityScoreIncrease, sr.abilityScoreIncrease);
                           const combinedStr = formatRaceASI(Object.entries(combined).map(([k, v]) => ({ [k]: v })));
-                          const srIsChoice = !sr.name || sr.name === "Variant" || sr.name === "Custom Lineage" || r.name === "Half-Elf";
+                          const srIsChoice =
+                            (!sr.name && !combinedStr) ||
+                            sr.name === "Variant" ||
+                            sr.name === "Custom Lineage" ||
+                            r.name === "Half-Elf";
                           return (
                             <TouchableOpacity
                               key={`${sr.name || "base"}_${idx}`}
@@ -683,9 +756,9 @@ export const AncestrySection: React.FC<AncestrySectionProps> = ({
                             >
                               <View style={{ flex: 1 }}>
                                 <Text style={{ color: theme.text, fontWeight: "600", fontSize: 13 }}>
-                                  {sr.name || r.name}
+                                  {sr.name || (r.name === "Human" ? "Standard Human" : r.name)}
                                 </Text>
-                                {combinedStr && !srIsChoice ? (
+                                {Boolean(combinedStr) && !srIsChoice ? (
                                   <Text style={{ color: theme.accent, fontSize: 11, fontWeight: "600" }}>
                                     {combinedStr}
                                   </Text>
@@ -698,19 +771,19 @@ export const AncestrySection: React.FC<AncestrySectionProps> = ({
                           );
                         })}
                       </View>
-                    )}
+                    ) : null}
 
                     {/* Trait chips */}
-                    {r.traits.length > 0 && (
+                    {displayTraits.length > 0 ? (
                       <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 4, marginTop: 8 }}>
-                        {r.traits.slice(0, 5).map((t) => (
+                        {displayTraits.slice(0, 5).map((t) => (
                           <Badge key={t.name} label={t.name} variant="muted" size="sm" />
                         ))}
-                        {r.traits.length > 5 && (
-                          <Badge label={`+${r.traits.length - 5} more`} variant="muted" size="sm" />
-                        )}
+                        {displayTraits.length > 5 ? (
+                          <Badge label={`+${displayTraits.length - 5} more`} variant="muted" size="sm" />
+                        ) : null}
                       </View>
-                    )}
+                    ) : null}
                   </Card>
                 );
               })}

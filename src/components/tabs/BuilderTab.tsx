@@ -35,12 +35,12 @@ import { pruneInvalidExpertise } from "../../rules/expertise";
 import { ancestryRuleChoices, availableRuleChoices } from "../../rules/ruleChoices";
 import { getPendingLevelChoices } from "../../rules/leveling";
 import {
+  getAutoGrantedSkills,
   getRacialSkillChoices,
   normalizeSkillName,
-  RACE_SKILL_PROFICIENCIES,
 } from "../../rules/skills";
 import { getAvailableOptionalFeatures } from "../../rules/optionalFeatures";
-import { AbilityKey, Character, InventoryItem } from "../../types/character";
+import { AbilityKey, Character, InventoryItem, SkillChoiceEntry } from "../../types/character";
 import { DetailModal } from "../DetailModal";
 import { AbilityScoresSection } from "../builder/AbilityScoresSection";
 import { AncestrySection } from "../builder/AncestrySection";
@@ -197,15 +197,10 @@ export const BuilderTab: React.FC<BuilderTabProps> = ({
   // ─────────────────────────────────────────────────────────────────────────
   // SKILLS, LANGUAGES & TOOLS
   // ─────────────────────────────────────────────────────────────────────────
-  const autoGranted: string[] = [];
-  if (character.race) {
-    const fixedRace = RACE_SKILL_PROFICIENCIES[character.race.name] || [];
-    autoGranted.push(...fixedRace);
-    if (character.race.subraceName) {
-      const fixedSub = RACE_SKILL_PROFICIENCIES[character.race.subraceName] || [];
-      autoGranted.push(...fixedSub);
-    }
-  }
+  const autoGrantedBase = getAutoGrantedSkills(character, {
+    races: allRaces,
+    backgrounds: allBackgrounds,
+  });
 
   const chosenAncestryOption = (c: typeof character, catalog: typeof allRaces): string | undefined => {
     const entry = (c.ruleChoices ?? [])[0];
@@ -213,7 +208,6 @@ export const BuilderTab: React.FC<BuilderTabProps> = ({
     const match = ancestryRuleChoices(c, catalog).find((choice) => choice.id === entry.id);
     return match?.options.some((o) => o.name === entry.picked[0]) ? entry.picked[0] : undefined;
   };
-
 
   type SkillChoice = { source: string; choose: number; from: string[] };
   const skillChoices: SkillChoice[] = [];
@@ -251,14 +245,116 @@ export const BuilderTab: React.FC<BuilderTabProps> = ({
     }
   }
 
-  /** The Rule Choice option this character's ancestry currently resolves to. */
-  const toggleSkill = (s: string) => {
+  const raceChoices = skillChoices.filter(
+    (sc) => sc.source.startsWith("Race:") || sc.source.startsWith("Variant")
+  );
+  const classChoices = skillChoices.filter((sc) => sc.source.startsWith("Class:"));
+
+  const getPickedSkillsForSource = (source: string): string[] => {
+    const entry = (character.skillChoices || []).find((sc) => sc.id === source);
+    if (entry) return entry.picked;
+    const sc = skillChoices.find((c) => c.source === source);
+    if (!sc) return [];
+    const normFrom = sc.from.map(normalizeSkillName);
+    const available = (character.chosenSkills || [])
+      .map(normalizeSkillName)
+      .filter((s) => !autoGrantedBase.includes(s));
+    if (source.startsWith("Race:") || source.startsWith("Variant")) {
+      return available.filter((s) => normFrom.includes(s)).slice(0, sc.choose);
+    }
+    const racePicks = new Set(
+      raceChoices.flatMap((rc) =>
+        available.filter((s) => rc.from.map(normalizeSkillName).includes(s)).slice(0, rc.choose)
+      )
+    );
+    return available.filter((s) => !racePicks.has(s) && normFrom.includes(s)).slice(0, sc.choose);
+  };
+
+  const racePickedSkills = raceChoices.flatMap((rc) => getPickedSkillsForSource(rc.source));
+  const classPickedSkills = classChoices.flatMap((cc) => getPickedSkillsForSource(cc.source));
+
+  const raceAutoGranted = Array.from(new Set([...autoGrantedBase, ...classPickedSkills]));
+  const classAutoGranted = Array.from(new Set([...autoGrantedBase, ...racePickedSkills]));
+
+  const toggleSkill = (s: string, source?: string) => {
     const norm = normalizeSkillName(s);
-    const current = (character.chosenSkills || []).map(normalizeSkillName);
-    const nextSkills = current.includes(norm) ? current.filter((x) => x !== norm) : [...current, norm];
+    const targetSource =
+      source ||
+      skillChoices.find((sc) => sc.from.map(normalizeSkillName).includes(norm))?.source ||
+      "custom";
+    const targetSc = skillChoices.find((sc) => sc.source === targetSource);
+    const maxChoose = targetSc?.choose ?? 1;
+
+    const currentPicks = getPickedSkillsForSource(targetSource);
+    const normPicks = currentPicks.map(normalizeSkillName);
+    let nextPicks: string[];
+    if (normPicks.includes(norm)) {
+      nextPicks = currentPicks.filter((x) => normalizeSkillName(x) !== norm);
+    } else {
+      if (currentPicks.length < maxChoose) {
+        nextPicks = [...currentPicks, norm];
+      } else {
+        return;
+      }
+    }
+
+    const origin: "race" | "class" | "background" =
+      targetSource.startsWith("Race:") || targetSource.startsWith("Variant")
+        ? "race"
+        : targetSource.startsWith("Class:")
+        ? "class"
+        : "background";
+
+    const updatedSkillChoices: SkillChoiceEntry[] = [];
+    let updatedTarget = false;
+
+    for (const sc of skillChoices) {
+      if (sc.source === targetSource) {
+        updatedSkillChoices.push({
+          id: sc.source,
+          origin,
+          choose: sc.choose,
+          from: sc.from,
+          picked: nextPicks,
+        });
+        updatedTarget = true;
+      } else {
+        const scOrigin: "race" | "class" = sc.source.startsWith("Class:") ? "class" : "race";
+        updatedSkillChoices.push({
+          id: sc.source,
+          origin: scOrigin,
+          choose: sc.choose,
+          from: sc.from,
+          picked: getPickedSkillsForSource(sc.source),
+        });
+      }
+    }
+
+    if (!updatedTarget) {
+      updatedSkillChoices.push({
+        id: targetSource,
+        origin,
+        choose: maxChoose,
+        from: targetSc ? targetSc.from : [norm],
+        picked: nextPicks,
+      });
+    }
+
+    for (const existing of character.skillChoices || []) {
+      if (existing.origin === "background" && !updatedSkillChoices.some((u) => u.id === existing.id)) {
+        updatedSkillChoices.push(existing);
+      }
+    }
+
+    const allPicked = Array.from(new Set(updatedSkillChoices.flatMap((sc) => sc.picked.map(normalizeSkillName))));
+
     onUpdate((cur) =>
       pruneInvalidExpertise(
-        { ...cur, chosenSkills: nextSkills },
+        {
+          ...cur,
+          chosenSkills: allPicked,
+          skillChoices: updatedSkillChoices,
+        },
         { races: allRaces, backgrounds: allBackgrounds, classes: allClasses }
       )
     );
@@ -384,7 +480,7 @@ export const BuilderTab: React.FC<BuilderTabProps> = ({
           allRaces={allRaces}
           allBackgrounds={allBackgrounds}
           skillChoices={skillChoices}
-          autoGranted={autoGranted}
+          autoGranted={raceAutoGranted}
           toggleSkill={toggleSkill}
           raceLanguageGrant={raceLanguageGrant}
           toggleRaceLanguage={toggleRaceLanguage}
@@ -423,7 +519,7 @@ export const BuilderTab: React.FC<BuilderTabProps> = ({
           totalLevel={totalLevel}
           effectiveScores={effectiveScores}
           skillChoices={skillChoices}
-          autoGranted={autoGranted}
+          autoGranted={classAutoGranted}
           toggleSkill={toggleSkill}
           classToolGrant={classToolGrant}
           toggleClassTool={toggleClassTool}

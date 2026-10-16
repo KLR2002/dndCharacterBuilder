@@ -2,7 +2,7 @@ import { execFile } from "node:child_process";
 import * as fs from "node:fs";
 import * as path from "node:path";
 import { promisify } from "node:util";
-import { DEFAULT_CONFIG, ScraperConfig } from "./config.js";
+import { DEFAULT_CONFIG, type ScraperConfig } from "./config.ts";
 
 const execFileAsync = promisify(execFile);
 

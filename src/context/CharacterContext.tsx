@@ -10,7 +10,12 @@ import type { Character, Folder } from "../types/character";
 import { applyCharacterUpdate } from "./characterUpdates";
 import { migrateCharacter } from "../rules/migrateCharacter";
 import { checkActiveBooksIntegrity } from "../rules/builderTransitions";
-import { getRaces } from "../services/dataService";
+import { clearCompendiumStore, getRaces, setCompendiumStore } from "../services/dataService";
+import {
+  clearCompendiumData,
+  loadCompendiumData,
+} from "../services/compendiumStorage";
+import { runInAppIntegration } from "../services/scraper/runner";
 
 interface CharacterContextValue {
   characters: Character[];
@@ -43,6 +48,12 @@ interface CharacterContextValue {
   setActiveBooks: (books: string[]) => Promise<void>;
   setFirstRunCompleted: (books: string[]) => Promise<void>;
   getCharacter: (id: string) => Character | undefined;
+
+  // Compendium Integration
+  isIntegrated: boolean;
+  integratedAt: string | null;
+  triggerIntegration: (onProgress?: (category: string, step: number, total: number) => void) => Promise<void>;
+  revertToSrd: () => Promise<void>;
 }
 
 const CharacterContext = createContext<CharacterContextValue | null>(null);
@@ -94,6 +105,8 @@ export function CharacterProvider({ children }: { children: React.ReactNode }) {
   };
   const [activeBooks, setActiveBooksState] = useState<string[]>(DEFAULT_ACTIVE_BOOK_CODES);
   const [hasCompletedFirstRun, setHasCompletedFirstRun] = useState<boolean>(true); // default true to avoid flash
+  const [isIntegrated, setIsIntegrated] = useState<boolean>(false);
+  const [integratedAt, setIntegratedAt] = useState<string | null>(null);
   const [selectedCharacterId, setSelectedCharacterId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [initError, setInitError] = useState<string | null>(null);
@@ -110,6 +123,21 @@ export function CharacterProvider({ children }: { children: React.ReactNode }) {
         const result = await loadAll();
         if (!result.ok) throw new Error(result.error);
         const { characters: loadedChars, folders: loadedFolds, settings: loadedSettings } = result.data;
+        let compData = null;
+        try {
+          compData = await loadCompendiumData();
+        } catch (storageErr) {
+          console.warn("Compendium storage load failed, defaulting to SRD baseline:", storageErr);
+        }
+        if (compData && compData.hasIntegratedCatalog) {
+          setCompendiumStore(compData);
+          setIsIntegrated(true);
+          setIntegratedAt(compData.integratedAt || null);
+        } else {
+          clearCompendiumStore();
+          setIsIntegrated(false);
+          setIntegratedAt(null);
+        }
         const raceCatalog = getRaces();
         const migratedCharacters = loadedChars.map((c) => migrateCharacter(c, raceCatalog));
         setActiveBooksState(loadedSettings.activeResourceBooks || DEFAULT_ACTIVE_BOOK_CODES);
@@ -281,6 +309,24 @@ export function CharacterProvider({ children }: { children: React.ReactNode }) {
     await setFirstRunCompleted(books || activeBooks);
   };
 
+  const triggerIntegration = async (
+    onProgress?: (category: string, step: number, total: number) => void
+  ) => {
+    const compendium = await runInAppIntegration(onProgress);
+    setCompendiumStore(compendium);
+    setIsIntegrated(true);
+    setIntegratedAt(compendium.integratedAt || new Date().toISOString());
+    await setActiveBooks(DEFAULT_ACTIVE_BOOK_CODES);
+  };
+
+  const revertToSrd = async () => {
+    await clearCompendiumData();
+    clearCompendiumStore();
+    setIsIntegrated(false);
+    setIntegratedAt(null);
+    await setActiveBooks(["SRD"]);
+  };
+
   const getCharacter = (id: string) => {
     return characters.find((c) => c.id === id);
   };
@@ -314,6 +360,10 @@ export function CharacterProvider({ children }: { children: React.ReactNode }) {
         setActiveBooks,
         setFirstRunCompleted,
         getCharacter,
+        isIntegrated,
+        integratedAt,
+        triggerIntegration,
+        revertToSrd,
       }}>
       {children}
     </CharacterContext.Provider>

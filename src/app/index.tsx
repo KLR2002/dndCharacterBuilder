@@ -1,4 +1,6 @@
-import React, { useMemo, useState } from "react";
+import { Ionicons } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
+import { useMemo, useState } from "react";
 import {
   Alert,
   Image,
@@ -11,8 +13,6 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useRouter } from "expo-router";
-import { Ionicons } from "@expo/vector-icons";
 import { FirstRunModal } from "../components/FirstRunModal";
 import { NewCharacterModal } from "../components/NewCharacterModal";
 import { Badge } from "../components/ui/Badge";
@@ -43,16 +43,23 @@ export default function HomeScreen() {
   const [newCharModalVisible, setNewCharModalVisible] = useState(false);
   const [newFolderModalVisible, setNewFolderModalVisible] = useState(false);
   const [newFolderName, setNewFolderName] = useState("");
-  const [collapsedFolders, setCollapsedFolders] = useState<Record<string, boolean>>({});
+  const [collapsedFolders, setCollapsedFolders] = useState<
+    Record<string, boolean>
+  >({});
 
   // Move character to folder modal
-  const [moveCharModal, setMoveCharModal] = useState<{ visible: boolean; char: Character | null }>({
+  const [moveCharModal, setMoveCharModal] = useState<{
+    visible: boolean;
+    char: Character | null;
+  }>({
     visible: false,
     char: null,
   });
 
-  const handleFirstRunComplete = (books: string[]) => {
-    setActiveBooks(books);
+  const handleFirstRunComplete = (books?: string[]) => {
+    if (books && books.length > 0) {
+      setActiveBooks(books);
+    }
     completeFirstRun();
   };
 
@@ -86,15 +93,23 @@ export default function HomeScreen() {
         `Are you sure you want to delete ${char.name}?`,
         [
           { text: "Cancel", style: "cancel" },
-          { text: "Delete", style: "destructive", onPress: () => deleteCharacter(char.id) },
-        ]
+          {
+            text: "Delete",
+            style: "destructive",
+            onPress: () => deleteCharacter(char.id),
+          },
+        ],
       );
     }
   };
 
   const confirmDeleteFolder = (folder: Folder) => {
     if (Platform.OS === "web") {
-      if (window.confirm(`Delete folder "${folder.name}"? Characters inside will be moved to Uncategorized.`)) {
+      if (
+        window.confirm(
+          `Delete folder "${folder.name}"? Characters inside will be moved to Uncategorized.`,
+        )
+      ) {
         deleteFolder(folder.id);
       }
     } else {
@@ -103,8 +118,12 @@ export default function HomeScreen() {
         `Delete folder "${folder.name}"? Characters inside will be moved to Uncategorized.`,
         [
           { text: "Cancel", style: "cancel" },
-          { text: "Delete", style: "destructive", onPress: () => deleteFolder(folder.id) },
-        ]
+          {
+            text: "Delete",
+            style: "destructive",
+            onPress: () => deleteFolder(folder.id),
+          },
+        ],
       );
     }
   };
@@ -116,7 +135,9 @@ export default function HomeScreen() {
     return characters.filter((c) => {
       const matchName = c.name.toLowerCase().includes(q);
       const matchRace = (c.race?.name || "").toLowerCase().includes(q);
-      const matchClass = (c.classes || []).some((cls) => cls.className.toLowerCase().includes(q));
+      const matchClass = (c.classes || []).some((cls) =>
+        cls.className.toLowerCase().includes(q),
+      );
       return matchName || matchRace || matchClass;
     });
   }, [characters, searchQuery]);
@@ -158,7 +179,8 @@ export default function HomeScreen() {
             backgroundColor: theme.surface,
             borderColor: theme.border,
           },
-        ]}>
+        ]}
+      >
         {/* Character Avatar / Placeholder */}
         <View
           style={[
@@ -167,9 +189,14 @@ export default function HomeScreen() {
               backgroundColor: theme.surfaceHighlight,
               borderColor: theme.accent,
             },
-          ]}>
+          ]}
+        >
           {char.avatarUri ? (
-            <Image source={{ uri: char.avatarUri }} style={styles.cardAvatarImage} resizeMode="cover" />
+            <Image
+              source={{ uri: char.avatarUri }}
+              style={styles.cardAvatarImage}
+              resizeMode="cover"
+            />
           ) : (
             <Ionicons name="person" size={24} color={theme.accent} />
           )}
@@ -178,19 +205,38 @@ export default function HomeScreen() {
         {/* Info */}
         <View style={{ flex: 1, minWidth: 0 }}>
           <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-            <Text style={[styles.charCardName, { color: theme.text }]} numberOfLines={1}>
+            <Text
+              style={[styles.charCardName, { color: theme.text }]}
+              numberOfLines={1}
+            >
               {char.name || "Unnamed"}
             </Text>
             <Badge label={`Lvl ${totalLevel}`} variant="accent" size="sm" />
           </View>
 
-          <Text style={{ color: theme.textSecondary, fontSize: 12, marginTop: 2 }} numberOfLines={1}>
+          <Text
+            style={{ color: theme.textSecondary, fontSize: 12, marginTop: 2 }}
+            numberOfLines={1}
+          >
             {raceName} • {primaryClass}
           </Text>
 
-          <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginTop: 4 }}>
-            <Badge label={`HP: ${char.currentHp}/${maxHp}`} variant={char.currentHp > 0 ? "success" : "danger"} size="sm" />
-            {char.alignment ? <Badge label={char.alignment} variant="secondary" size="sm" /> : null}
+          <View
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              gap: 6,
+              marginTop: 4,
+            }}
+          >
+            <Badge
+              label={`HP: ${char.currentHp}/${maxHp}`}
+              variant={char.currentHp > 0 ? "success" : "danger"}
+              size="sm"
+            />
+            {char.alignment ? (
+              <Badge label={char.alignment} variant="secondary" size="sm" />
+            ) : null}
           </View>
         </View>
 
@@ -201,8 +247,13 @@ export default function HomeScreen() {
               e.stopPropagation();
               setMoveCharModal({ visible: true, char });
             }}
-            style={styles.iconBtn}>
-            <Ionicons name="folder-outline" size={18} color={theme.textSecondary} />
+            style={styles.iconBtn}
+          >
+            <Ionicons
+              name="folder-outline"
+              size={18}
+              color={theme.textSecondary}
+            />
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -210,7 +261,8 @@ export default function HomeScreen() {
               e.stopPropagation();
               confirmDeleteCharacter(char);
             }}
-            style={styles.iconBtn}>
+            style={styles.iconBtn}
+          >
             <Ionicons name="trash-outline" size={18} color={theme.danger} />
           </TouchableOpacity>
         </View>
@@ -219,36 +271,75 @@ export default function HomeScreen() {
   };
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
+    <SafeAreaView
+      style={[styles.container, { backgroundColor: theme.background }]}
+    >
       {/* Header Bar */}
       <View style={[styles.headerBar, { borderBottomColor: theme.border }]}>
         <View style={styles.headerBarInner}>
           <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
-            <View style={[styles.logoIconBox, { backgroundColor: theme.accent }]}>
-              <Ionicons name="shield-half" size={20} color="#fff" />
+            <View
+              style={[
+                styles.logoIconBox,
+                {
+                  backgroundColor: theme.accent,
+                },
+              ]}
+            >
+              <Image
+                source={require("../../assets/images/dice-twenty-faces-twenty.png")}
+                style={styles.logoIconImage}
+                resizeMode="contain"
+              />
             </View>
             <View>
-              <Text style={[styles.appTitle, { color: theme.text }]}>5e Character Vault</Text>
-              <Text style={{ color: theme.textMuted, fontSize: 11 }}>2014 Ruleset Compendium</Text>
+              <Text style={[styles.appTitle, { color: theme.text }]}>
+                5e Character Builder
+              </Text>
+              <Text style={{ color: theme.textMuted, fontSize: 11 }}>
+                2014 Ruleset Compendium
+              </Text>
             </View>
           </View>
 
           <View style={{ flexDirection: "row", gap: 8 }}>
             <TouchableOpacity
               onPress={() => setNewFolderModalVisible(true)}
-              style={[styles.headerActionBtn, { backgroundColor: theme.surfaceHighlight, borderColor: theme.border }]}>
-              <Ionicons name="folder-open-outline" size={18} color={theme.text} />
+              style={[
+                styles.headerActionBtn,
+                {
+                  backgroundColor: theme.surfaceHighlight,
+                  borderColor: theme.border,
+                },
+              ]}
+            >
+              <Ionicons
+                name="folder-open-outline"
+                size={18}
+                color={theme.text}
+              />
             </TouchableOpacity>
 
             <TouchableOpacity
               onPress={() => router.push("/options" as any)}
-              style={[styles.headerActionBtn, { backgroundColor: theme.surfaceHighlight, borderColor: theme.border }]}>
+              style={[
+                styles.headerActionBtn,
+                {
+                  backgroundColor: theme.surfaceHighlight,
+                  borderColor: theme.border,
+                },
+              ]}
+            >
               <Ionicons name="settings-outline" size={18} color={theme.text} />
             </TouchableOpacity>
 
             <TouchableOpacity
               onPress={() => setNewCharModalVisible(true)}
-              style={[styles.headerActionBtn, { backgroundColor: theme.accent, borderColor: theme.accent }]}>
+              style={[
+                styles.headerActionBtn,
+                { backgroundColor: theme.accent, borderColor: theme.accent },
+              ]}
+            >
               <Ionicons name="add" size={22} color="#fff" />
             </TouchableOpacity>
           </View>
@@ -270,12 +361,25 @@ export default function HomeScreen() {
         {/* Empty State */}
         {characters.length === 0 && (
           <View style={styles.emptyContainer}>
-            <View style={[styles.emptyIconCircle, { borderColor: theme.border, backgroundColor: theme.surface }]}>
-              <Ionicons name="person-add-outline" size={48} color={theme.accent} />
+            <View
+              style={[
+                styles.emptyIconCircle,
+                { borderColor: theme.border, backgroundColor: theme.surface },
+              ]}
+            >
+              <Ionicons
+                name="person-add-outline"
+                size={48}
+                color={theme.accent}
+              />
             </View>
-            <Text style={[styles.emptyTitle, { color: theme.text }]}>No Characters Yet</Text>
-            <Text style={[styles.emptySubtitle, { color: theme.textSecondary }]}>
-              Begin your journey by creating your first hero. Full multiclassing, races, spells, and point-buy included!
+            <Text style={[styles.emptyTitle, { color: theme.text }]}>
+              No Characters Yet
+            </Text>
+            <Text
+              style={[styles.emptySubtitle, { color: theme.textSecondary }]}
+            >
+              Begin your journey by creating your first hero!
             </Text>
             <Button
               title="Create New Character"
@@ -298,7 +402,11 @@ export default function HomeScreen() {
               {/* Folder Accordion Header */}
               <TouchableOpacity
                 onPress={() => toggleFolderCollapse(folder.id)}
-                style={[styles.folderHeader, { backgroundColor: theme.surface, borderColor: theme.border }]}>
+                style={[
+                  styles.folderHeader,
+                  { backgroundColor: theme.surface, borderColor: theme.border },
+                ]}
+              >
                 <Ionicons
                   name={isCollapsed ? "folder-outline" : "folder-open"}
                   size={20}
@@ -307,7 +415,11 @@ export default function HomeScreen() {
                 <Text style={[styles.folderTitle, { color: theme.text }]}>
                   {folder.name}
                 </Text>
-                <Badge label={`${charsInFolder.length}`} variant="secondary" size="sm" />
+                <Badge
+                  label={`${charsInFolder.length}`}
+                  variant="secondary"
+                  size="sm"
+                />
 
                 <View style={{ flex: 1 }} />
 
@@ -316,8 +428,13 @@ export default function HomeScreen() {
                     e.stopPropagation();
                     confirmDeleteFolder(folder);
                   }}
-                  style={{ padding: 4 }}>
-                  <Ionicons name="trash-outline" size={16} color={theme.textMuted} />
+                  style={{ padding: 4 }}
+                >
+                  <Ionicons
+                    name="trash-outline"
+                    size={16}
+                    color={theme.textMuted}
+                  />
                 </TouchableOpacity>
 
                 <Ionicons
@@ -331,7 +448,12 @@ export default function HomeScreen() {
               {!isCollapsed && (
                 <View style={styles.folderContent}>
                   {charsInFolder.length === 0 ? (
-                    <Text style={[styles.folderEmptyText, { color: theme.textMuted }]}>
+                    <Text
+                      style={[
+                        styles.folderEmptyText,
+                        { color: theme.textMuted },
+                      ]}
+                    >
                       Folder is empty.
                     </Text>
                   ) : (
@@ -347,9 +469,22 @@ export default function HomeScreen() {
         {uncategorized.length > 0 && (
           <View style={styles.folderSection}>
             {folders.length > 0 && (
-              <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 8 }}>
-                <Ionicons name="albums-outline" size={16} color={theme.textMuted} />
-                <Text style={[styles.sectionTitle, { color: theme.textSecondary }]}>
+              <View
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  gap: 6,
+                  marginBottom: 8,
+                }}
+              >
+                <Ionicons
+                  name="albums-outline"
+                  size={16}
+                  color={theme.textMuted}
+                />
+                <Text
+                  style={[styles.sectionTitle, { color: theme.textSecondary }]}
+                >
                   UNCATEGORIZED ({uncategorized.length})
                 </Text>
               </View>
@@ -363,10 +498,7 @@ export default function HomeScreen() {
       </ScrollView>
 
       {/* First Run Resource Selection Wizard */}
-      <FirstRunModal
-        visible={isFirstRun}
-        onComplete={handleFirstRunComplete}
-      />
+      <FirstRunModal visible={isFirstRun} onComplete={handleFirstRunComplete} />
 
       {/* New Character Creation Modal */}
       <NewCharacterModal
@@ -381,14 +513,37 @@ export default function HomeScreen() {
         onClose={() => setNewFolderModalVisible(false)}
         title="Create New Folder"
         footer={
-          <View style={{ flexDirection: "row", justifyContent: "flex-end", gap: 10 }}>
-            <Button title="Cancel" variant="secondary" size="sm" onPress={() => setNewFolderModalVisible(false)} />
-            <Button title="Create Folder" variant="primary" size="sm" onPress={handleCreateFolder} />
+          <View
+            style={{
+              flexDirection: "row",
+              justifyContent: "flex-end",
+              gap: 10,
+            }}
+          >
+            <Button
+              title="Cancel"
+              variant="secondary"
+              size="sm"
+              onPress={() => setNewFolderModalVisible(false)}
+            />
+            <Button
+              title="Create Folder"
+              variant="primary"
+              size="sm"
+              onPress={handleCreateFolder}
+            />
           </View>
         }
       >
         <TextInput
-          style={[styles.input, { color: theme.text, backgroundColor: theme.surfaceHighlight, borderColor: theme.border }]}
+          style={[
+            styles.input,
+            {
+              color: theme.text,
+              backgroundColor: theme.surfaceHighlight,
+              borderColor: theme.border,
+            },
+          ]}
           value={newFolderName}
           onChangeText={setNewFolderName}
           placeholder="e.g. Curse of Strahd, One-Shots"
@@ -401,7 +556,11 @@ export default function HomeScreen() {
       <Modal
         visible={moveCharModal.visible}
         onClose={() => setMoveCharModal({ visible: false, char: null })}
-        title={moveCharModal.char ? `Move ${moveCharModal.char.name} to Folder` : "Move Character to Folder"}
+        title={
+          moveCharModal.char
+            ? `Move ${moveCharModal.char.name} to Folder`
+            : "Move Character to Folder"
+        }
         footer={
           <Button
             title="Cancel"
@@ -418,9 +577,16 @@ export default function HomeScreen() {
             }
             setMoveCharModal({ visible: false, char: null });
           }}
-          style={[styles.folderOptionRow, { borderBottomColor: theme.border }]}>
-          <Ionicons name="albums-outline" size={18} color={theme.textSecondary} />
-          <Text style={{ color: theme.text, fontSize: 14 }}>Uncategorized (No Folder)</Text>
+          style={[styles.folderOptionRow, { borderBottomColor: theme.border }]}
+        >
+          <Ionicons
+            name="albums-outline"
+            size={18}
+            color={theme.textSecondary}
+          />
+          <Text style={{ color: theme.text, fontSize: 14 }}>
+            Uncategorized (No Folder)
+          </Text>
         </TouchableOpacity>
 
         {folders.map((f) => (
@@ -432,7 +598,11 @@ export default function HomeScreen() {
               }
               setMoveCharModal({ visible: false, char: null });
             }}
-            style={[styles.folderOptionRow, { borderBottomColor: theme.border }]}>
+            style={[
+              styles.folderOptionRow,
+              { borderBottomColor: theme.border },
+            ]}
+          >
             <Ionicons name="folder-outline" size={18} color={theme.accent} />
             <Text style={{ color: theme.text, fontSize: 14 }}>{f.name}</Text>
           </TouchableOpacity>
@@ -466,6 +636,11 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     alignItems: "center",
     justifyContent: "center",
+    overflow: "hidden",
+  },
+  logoIconImage: {
+    width: 22,
+    height: 22,
   },
   appTitle: {
     fontSize: 16,

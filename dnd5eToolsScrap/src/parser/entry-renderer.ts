@@ -1,4 +1,4 @@
-import { cleanTags, CleanMode } from "./tag-cleaner.js";
+import { cleanTags, type CleanMode } from "./tag-cleaner.ts";
 
 /**
  * Renders nested 5e.tools entry trees into structured Markdown or Plain Text.
@@ -32,7 +32,30 @@ export function renderEntries(
     }
   }
 
-  return blocks.filter(Boolean).join("\n\n");
+  const cleanedBlocks = blocks.filter(Boolean);
+  const combined: string[] = [];
+  for (const block of cleanedBlocks) {
+    if (
+      combined.length > 0 &&
+      block.startsWith("- ") &&
+      combined[combined.length - 1].startsWith("- ")
+    ) {
+      combined[combined.length - 1] += "\n" + block;
+    } else {
+      combined.push(block);
+    }
+  }
+
+  return combined.join("\n\n");
+}
+
+function extractRefName(entry: any): string {
+  if (entry.name) return String(entry.name).trim();
+  const raw = entry.subclassFeature || entry.classFeature || entry.optionalfeature || "";
+  if (typeof raw === "string") {
+    return raw.split("|")[0].trim();
+  }
+  return "";
 }
 
 function renderEntryObject(entry: any, mode: CleanMode, depth: number): string {
@@ -67,10 +90,11 @@ function renderEntryObject(entry: any, mode: CleanMode, depth: number): string {
     }
 
     case "list": {
+      const listLines: string[] = [];
       if (Array.isArray(entry.items)) {
         for (const item of entry.items) {
           if (typeof item === "string") {
-            lines.push(`- ${cleanTags(item, mode)}`);
+            listLines.push(`- ${cleanTags(item, mode)}`);
           } else if (item && typeof item === "object") {
             if (item.type === "item") {
               const name = cleanTags(item.name, mode);
@@ -79,18 +103,30 @@ function renderEntryObject(entry: any, mode: CleanMode, depth: number): string {
                 : item.entries
                 ? renderEntries(item.entries, mode, depth + 1)
                 : "";
-              lines.push(name ? `- **${name}** ${content}` : `- ${content}`);
+              listLines.push(name ? `- **${name}** ${content}` : `- ${content}`);
             } else if (item.name) {
               const name = cleanTags(item.name, mode);
               const content = item.entries
                 ? renderEntries(item.entries, mode, depth + 1)
                 : "";
-              lines.push(`- **${name}** ${content}`);
+              listLines.push(`- **${name}** ${content}`);
+            } else if (
+              item.type === "refSubclassFeature" ||
+              item.type === "refClassFeature" ||
+              item.type === "refOptionalfeature"
+            ) {
+              const refName = cleanTags(extractRefName(item), mode);
+              if (refName) {
+                listLines.push(mode === "markdown" ? `- **${refName}**` : `- ${refName}`);
+              }
             } else {
-              lines.push(`- ${renderEntries(item, mode, depth + 1)}`);
+              listLines.push(`- ${renderEntries(item, mode, depth + 1)}`);
             }
           }
         }
+      }
+      if (listLines.length > 0) {
+        lines.push(listLines.join("\n"));
       }
       break;
     }
@@ -183,6 +219,16 @@ function renderEntryObject(entry: any, mode: CleanMode, depth: number): string {
         ? renderEntries(entry.entries, mode, depth + 1)
         : "";
       lines.push(mode === "markdown" && name ? `**${name}** ${content}` : `${name}: ${content}`);
+      break;
+    }
+
+    case "refClassFeature":
+    case "refSubclassFeature":
+    case "refOptionalfeature": {
+      const refName = cleanTags(extractRefName(entry), mode);
+      if (refName) {
+        lines.push(mode === "markdown" ? `- **${refName}**` : `- ${refName}`);
+      }
       break;
     }
 

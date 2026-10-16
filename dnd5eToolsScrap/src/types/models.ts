@@ -260,3 +260,8 @@ export interface BookModel {
   published?: string;
   author?: string;
 }
+
+export interface ToolsClient {
+  fetchJson<T>(endpoint: string, forceNetwork?: boolean): Promise<T>;
+}
+

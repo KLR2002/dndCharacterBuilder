@@ -1,7 +1,7 @@
-import { ToolsClient } from "../client.js";
-import { renderEntries } from "../parser/entry-renderer.js";
-import { cleanTags } from "../parser/tag-cleaner.js";
-import { ClassFeatureModel, ClassModel, SubclassAdditionalSpells, SubclassModel } from "../types/models.js";
+import type { ToolsClient } from "../types/models.ts";
+import { renderEntries } from "../parser/entry-renderer.ts";
+import { cleanTags } from "../parser/tag-cleaner.ts";
+import type { ClassFeatureModel, ClassModel, SubclassAdditionalSpells, SubclassModel } from "../types/models.ts";
 
 const STAT_NAMES: Record<string, string> = {
   str: "Strength",
