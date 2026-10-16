@@ -4,7 +4,7 @@
 
 **Blocked by:** 04
 
-**Status:** done
+**Status:** in-progress
 
 - [ ] Every caller (class progression, ASI/feat section, rest dialog, ancestry engine, builder tab) uses the one interface
 - [ ] Picking any choice records it and reconciles; no id-substring dispatch remains except inside specialised modules
@@ -17,3 +17,4 @@
 - `setRuleChoicePick` stayed in `src/rules/choices/types.ts`. The specialised modules record picks with it. Moving it into `ruleChoices.ts` would make them import the Rule Choice module, which imports the Reconciler, which imports those modules: a cycle.
 - Default picks now reconcile. `pickRuleChoice` records the option, then calls `reconcile`.
 - Left open. Box 1: `AsiFeatSection.tsx` finds its fighting style, maneuver and invocation choices by calling the specialised availability functions directly, and `BuilderTab.tsx` still resolves ancestry choices with `ancestryRuleChoices`. Box 2: id-substring checks remain in `ClassProgressionSection.tsx` (section classification), `AsiFeatSection.tsx` (choice lookups), `ruleChoices.ts` (the `"Feat"` filters around lines 692 to 698), `characterReconciler.ts` (prune checks around lines 98 to 101) and `ancestryEngine.ts` (High Elf checks).
+- Residual checks after the fix-up, left as display-only or out of scope: `ClassProgressionSection.tsx` isFightingStyle-style card choice; `startsWith("Class:")` skill-choice source checks in `BuilderTab.tsx` and `ClassProgressionSection.tsx`; `characterReconciler.ts` subclass-name and counter-key checks; `ancestryEngine.ts` High Elf checks; and `BuilderTab.tsx` direct specialised calls through `ancestryRuleChoices`. Boxes 1 and 2 stay open until these are routed through the one interface.

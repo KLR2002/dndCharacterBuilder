@@ -14,5 +14,6 @@
 
 ## Open gaps
 
-- BuilderTab still passes a `{ races, backgrounds }` literal into the auto-granted skills call; converting it needs the skills module to take a catalog bundle.
-- `src/rules/catalogs.ts` imports `currentCompendium`, which is the default owner that ticket 03 is removing from the rules layer.
+- Closed: BuilderTab no longer passes a `{ races, backgrounds }` literal into the auto-granted skills call (the skills module takes a catalog bundle).
+- Open: `src/rules/catalogs.ts` imports `currentCompendium`, which is the default owner that ticket 03 is removing from the rules layer. This is the allowed migration default.
+- Open: `src/components/tabs/BuilderTab.tsx` still derives `allRaces` (line 84), `allClasses` (line 85) and `allBackgrounds` (line 86) from `listings`, and passes them to the race, background and class children plus the race, background and class tool and language grants. This keeps the "Tabs no longer build races/classes/backgrounds lists by hand" box unticked.
