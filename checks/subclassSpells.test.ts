@@ -10,6 +10,9 @@ import {
 } from "../src/rules/subclassSpells.ts";
 import { isSpellAvailableForClass } from "../src/rules/spellcasting.ts";
 import { findSpell } from "../src/services/dataService.ts";
+import { createCompendium, type Compendium } from "../src/services/compendium.ts";
+import type { CompendiumCollections } from "../src/services/compendiumStorage.ts";
+import type { ClassData, SpellData } from "../src/types/dnd5e.ts";
 import { makeChar } from "./testUtils.ts";
 
 test("Cleric Life Domain progression across levels 1, 3, 5, 7, 9", () => {
@@ -504,6 +507,79 @@ test("Genie Warlock expanded spells include shared spells and kind-specific spel
   const efreeti17 = getSubclassSpells("Warlock", "The Genie", 17, { kind: "Efreeti", activeBooks: ["PHB", "TCE"] });
   assert.ok(efreeti17.expanded.includes("Wish"));
 });
+
+function compendiumBundle(overrides: Partial<CompendiumCollections>): CompendiumCollections {
+  return {
+    hasIntegratedCatalog: true,
+    races: [],
+    classes: [],
+    feats: [],
+    backgrounds: [],
+    items: [],
+    spells: [],
+    beasts: [],
+    conditions: [],
+    optionsAndFeatures: [],
+    books: [],
+    ...overrides,
+  };
+}
+
+// Alarm and Mage Armor exist under both PHB and XPHB; only PHB and TCE are active.
+function clockworkCompendium(xphbFirst: boolean): Compendium {
+  const spell = (name: string, source: string, classes: string[]) =>
+    ({ name, source, level: 1, school: "Abjuration", classes }) as unknown as SpellData;
+  const phbSpells = [spell("Alarm", "PHB", ["Sorcerer", "Wizard"]), spell("Mage Armor", "PHB", ["Wizard"])];
+  const xphbSpells = [spell("Alarm", "XPHB", ["Sorcerer", "Wizard"]), spell("Mage Armor", "XPHB", ["Wizard"])];
+  const sorcerer = {
+    name: "Sorcerer",
+    source: "PHB",
+    subclasses: [
+      {
+        name: "Clockwork Soul",
+        shortName: "Clockwork Soul",
+        source: "TCE",
+        additionalSpells: [{ known: { "1": ["Alarm"] } }],
+      },
+    ],
+  } as unknown as ClassData;
+
+  return createCompendium(
+    compendiumBundle({
+      spells: xphbFirst ? [...xphbSpells, ...phbSpells] : [...phbSpells, ...xphbSpells],
+      classes: [sorcerer],
+    }),
+    compendiumBundle({ hasIntegratedCatalog: false }),
+  );
+}
+
+for (const xphbFirst of [false, true]) {
+  const order = xphbFirst ? "XPHB listed first" : "XPHB listed after PHB";
+
+  test(`Clockwork Soul spells resolve to the active PHB copy, not XPHB (${order})`, () => {
+    const compendium = clockworkCompendium(xphbFirst);
+    const activeBooks = ["PHB", "TCE"];
+
+    const granted = getSubclassSpells("Sorcerer", "Clockwork Soul", 1, { activeBooks, compendium });
+    const alarm = granted.known.find((s) => s.name === "Alarm");
+    assert.ok(alarm, "Alarm should be granted at level 1");
+    assert.equal(alarm.source, "PHB", "granted Alarm must come from an active book");
+
+    const phbAlarm = compendium.findSpell("Alarm", "PHB")!;
+    const swaps = getEligibleSubclassSpellSwaps("Clockwork Soul", phbAlarm, activeBooks, compendium);
+    const mageArmor = swaps.find((s) => s.name === "Mage Armor");
+    assert.ok(mageArmor, "Mage Armor should be offered as a swap for Alarm");
+    assert.equal(mageArmor.source, "PHB", "swap candidate must come from an active book");
+    for (const swap of swaps) {
+      assert.ok(activeBooks.includes(swap.source), `${swap.name} (${swap.source}) is not from an active book`);
+    }
+    const swapNames = swaps.map((s) => s.name);
+    assert.equal(new Set(swapNames).size, swapNames.length, "each spell name is offered once");
+
+    const validation = validateSubclassSpellSwap("Sorcerer", "Clockwork Soul", "Alarm", "Mage Armor", activeBooks, compendium);
+    assert.equal(validation.valid, true, validation.reason);
+  });
+}
 
 
 
