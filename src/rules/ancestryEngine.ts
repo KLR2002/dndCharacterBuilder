@@ -1,19 +1,14 @@
 import type { AbilityKey, AsiSelection, Character, RuleChoiceEntry } from "../types/character.ts";
-import type { BackgroundData, RaceData, SubraceData } from "../types/dnd5e.ts";
+import type { RaceData, SubraceData } from "../types/dnd5e.ts";
 import {
   availableRuleChoices,
   type AvailableRuleChoice,
 } from "./ruleChoices.ts";
+import { catalogListings, type CharacterCatalogs } from "./characterEvaluation.ts";
 import { reconcileCharacter, setChoiceRacialBonus, setRuleChoicePick } from "./builderTransitions.ts";
 import { resolveCharacterLanguages } from "./proficienciesAndLanguages.ts";
 import { getBackgroundFeatGrant } from "./feats.ts";
 import { normalizeSkillName } from "./skills.ts";
-
-export interface CharacterCatalogs {
-  races?: RaceData[];
-  backgrounds?: BackgroundData[];
-  activeBooks?: string[];
-}
 
 export interface AncestryTraitView {
   name: string;
@@ -65,7 +60,7 @@ export function resolveAncestryState(
   character: Character,
   catalogs?: CharacterCatalogs
 ): AncestryState {
-  const allRaces = catalogs?.races ?? [];
+  const allRaces = catalogListings(catalogs).races();
   const selectedRace = character.race
     ? allRaces.find(
         (r) =>
@@ -264,8 +259,9 @@ export function applyAncestrySelection(
     racialChoiceBonus: [],
   };
 
-  const allRaces = catalogs?.races ?? [];
-  const allBackgrounds = catalogs?.backgrounds ?? [];
+  const listings = catalogListings(catalogs);
+  const allRaces = listings.races();
+  const allBackgrounds = listings.backgrounds();
   const resolvedLangs = resolveCharacterLanguages(temp, { races: allRaces, backgrounds: allBackgrounds });
 
   const oldRaceChoices = (character.skillChoices || []).filter((sc) => sc.origin === "race");
@@ -295,7 +291,7 @@ export function applyAncestryChoice(
   option: string,
   catalogs?: CharacterCatalogs
 ): Character {
-  const allRaces = catalogs?.races ?? [];
+  const allRaces = catalogListings(catalogs).races();
   const choices = availableRuleChoices(character, allRaces, undefined, catalogs?.activeBooks);
   const choice = choices.find((c) => c.id === choiceId);
   if (!choice) return character;

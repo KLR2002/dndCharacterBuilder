@@ -1,6 +1,6 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { makeChar, loadTestCatalogs } from "./testUtils.ts";
+import { makeChar, loadTestCatalogs, inMemoryCompendium } from "./testUtils.ts";
 import { getWeaponAttacks, checkDualWielding } from "../src/rules/attacks.ts";
 import { armorClass } from "../src/rules/ac.ts";
 import { evaluateCharacter } from "../src/rules/characterEvaluation.ts";
@@ -396,7 +396,7 @@ describe("Combat Economy Engine: Passive Weapon & Armor Enhancement Bonuses (Tic
       ],
     });
 
-    const evaluated = evaluateCharacter(hero, catalogs);
+    const evaluated = evaluateCharacter(hero, { compendium: inMemoryCompendium(catalogs) });
 
     // AC verification
     assert.equal(evaluated.armorClass.ac, 15, "10 + 2 (Dex) + 2 (Shield) + 1 (Magic Item) = 15 AC");

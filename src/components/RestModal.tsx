@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useAppTheme } from "../context/ThemeContext";
-import { evaluateCharacter } from "../services/dndRules";
+import { evaluateCharacter } from "../rules/characterEvaluation";
 import { applyLongRest, applyShortRest } from "../rules/rest";
 import { spendHitDie } from "../rules/hitDice";
 import { CHANGEABLE_AT_LONG_REST, availableRuleChoices } from "../rules/ruleChoices";

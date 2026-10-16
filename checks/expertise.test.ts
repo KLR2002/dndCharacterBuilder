@@ -15,7 +15,7 @@ import {
   toggleExpertiseChoice,
 } from "../src/rules/expertise.ts";
 import type { Character } from "../src/types/character.ts";
-import { loadTestCatalog } from "./testUtils.ts";
+import { loadTestCatalog, inMemoryCompendium } from "./testUtils.ts";
 
 const races = loadTestCatalog("races");
 const classes = loadTestCatalog("classes");
@@ -165,7 +165,7 @@ test("evaluateCharacter integration: populates evaluated.tools with full experti
     chosenExpertise: ["Stealth", "Thieves' Tools"],
   });
 
-  const evaluated = evaluateCharacter(char, { races, classes, backgrounds });
+  const evaluated = evaluateCharacter(char, { compendium: inMemoryCompendium({ races, classes, backgrounds }) });
   assert.ok(evaluated.tools);
   assert.equal(evaluated.tools.length, 1);
   assert.equal(evaluated.tools[0].name, "Thieves' Tools");

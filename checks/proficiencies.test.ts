@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { deduplicateWeaponProficiencies } from "../src/rules/proficiencies.ts";
 import { evaluateCharacter } from "../src/rules/characterEvaluation.ts";
 import type { Character } from "../src/types/character.ts";
-import { loadTestCatalog } from "./testUtils.ts";
+import { loadTestCatalog, inMemoryCompendium } from "./testUtils.ts";
 
 const races = loadTestCatalog("races");
 const classes = loadTestCatalog("classes");
@@ -87,7 +87,7 @@ test("evaluateCharacter: Elf Fighter collapses elf weapons into Simple and Marti
     race: { name: "Elf", source: "PHB", subraceName: "High Elf", subraceSource: "PHB" },
     classes: [{ className: "Fighter", level: 1, source: "PHB" }],
   });
-  const evaluated = evaluateCharacter(char, { races, classes });
+  const evaluated = evaluateCharacter(char, { compendium: inMemoryCompendium({ races, classes }) });
   const weaponProfs = evaluated.proficiencies.weapons;
 
   assert.ok(weaponProfs.includes("Simple weapons"));
@@ -103,7 +103,7 @@ test("evaluateCharacter: Elf Wizard preserves elf weapons because Wizard lacks m
     race: { name: "Elf", source: "PHB", subraceName: "High Elf", subraceSource: "PHB" },
     classes: [{ className: "Wizard", level: 1, source: "PHB" }],
   });
-  const evaluated = evaluateCharacter(char, { races, classes });
+  const evaluated = evaluateCharacter(char, { compendium: inMemoryCompendium({ races, classes }) });
   const weaponProfs = evaluated.proficiencies.weapons;
 
   // Wizard does NOT grant "Simple weapons" or "Martial weapons" as a group

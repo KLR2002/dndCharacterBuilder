@@ -16,7 +16,7 @@ import {
 import { isSpellAvailableForClass } from "../src/rules/spellcasting.ts";
 import { resolveAncestryState, applyAncestrySelection } from "../src/rules/ancestryEngine.ts";
 import { maxHp } from "../src/rules/hp.ts";
-import { resetTestCompendium, makeChar } from "./testUtils.ts";
+import { resetTestCompendium, inMemoryCompendium, makeChar } from "./testUtils.ts";
 
 test("srdBaseline: default SRD catalogs are accessible even when activeBooks does not include SRD", async () => {
   clearCompendiumStore();
@@ -79,13 +79,13 @@ test("srdBaseline: Human has +1 to all ability scores and no flexible ASI choice
   const humanChar = makeChar({
     race: { name: "Human", source: "SRD" },
   });
-  const state = resolveAncestryState(humanChar, { races });
+  const state = resolveAncestryState(humanChar, { compendium: inMemoryCompendium({ races }) });
   assert.equal(state.hasFixedASI, true);
   assert.deepEqual(state.fixedBonuses, { str: 1, dex: 1, con: 1, int: 1, wis: 1, cha: 1 });
   assert.equal(state.isChoiceASIRace, false, "Standard Human must not be a choice ASI race");
   assert.equal(state.isFlexibleMPMM, false, "Standard Human must not have flexible MPMM ASI");
 
-  const applied = applyAncestrySelection(makeChar(), human, undefined, { races });
+  const applied = applyAncestrySelection(makeChar(), human, undefined, { compendium: inMemoryCompendium({ races }) });
   assert.deepEqual(
     applied.racialAbilityBonuses,
     { str: 1, dex: 1, con: 1, int: 1, wis: 1, cha: 1 },
@@ -118,7 +118,7 @@ test("srdBaseline: Dwarf, Elf, Gnome, and Halfling have their single SRD subrace
   assert.deepEqual(dwarf.subraces?.[0].abilityScoreIncrease, [{ wis: 1 }]);
   assert.ok(dwarf.subraces?.[0].traits?.some((t) => t.name === "Dwarven Toughness"));
 
-  const appliedDwarf = applyAncestrySelection(makeChar(), dwarf, dwarf.subraces?.[0], { races });
+  const appliedDwarf = applyAncestrySelection(makeChar(), dwarf, dwarf.subraces?.[0], { compendium: inMemoryCompendium({ races }) });
   assert.deepEqual(
     appliedDwarf.racialAbilityBonuses,
     { con: 2, wis: 1 },
@@ -142,14 +142,14 @@ test("srdBaseline: Dwarf, Elf, Gnome, and Halfling have their single SRD subrace
   assert.ok(elf.subraces?.[0].traits?.some((t) => t.name === "Elf Weapon Training"));
   assert.ok(elf.subraces?.[0].traits?.some((t) => t.name === "Cantrip"));
 
-  const appliedElf = applyAncestrySelection(makeChar(), elf, elf.subraces?.[0], { races });
+  const appliedElf = applyAncestrySelection(makeChar(), elf, elf.subraces?.[0], { compendium: inMemoryCompendium({ races }) });
   assert.deepEqual(
     appliedElf.racialAbilityBonuses,
     { dex: 2, int: 1 },
     "High Elf in SRD must have +2 DEX and +1 INT"
   );
   assert.equal(appliedElf.race?.subraceName, "High");
-  const elfState = resolveAncestryState(appliedElf, { races });
+  const elfState = resolveAncestryState(appliedElf, { compendium: inMemoryCompendium({ races }) });
   assert.equal(elfState.hasRacialCantrip, true, "High Elf must have racial wizard cantrip choice");
   assert.equal(elfState.racialCantripTitle, "High Elf Cantrip");
 
@@ -162,7 +162,7 @@ test("srdBaseline: Dwarf, Elf, Gnome, and Halfling have their single SRD subrace
   assert.ok(gnome.subraces?.[0].traits?.some((t) => t.name === "Artificer's Lore"));
   assert.ok(gnome.subraces?.[0].traits?.some((t) => t.name === "Tinker"));
 
-  const appliedGnome = applyAncestrySelection(makeChar(), gnome, gnome.subraces?.[0], { races });
+  const appliedGnome = applyAncestrySelection(makeChar(), gnome, gnome.subraces?.[0], { compendium: inMemoryCompendium({ races }) });
   assert.deepEqual(
     appliedGnome.racialAbilityBonuses,
     { int: 2, con: 1 },
@@ -178,7 +178,7 @@ test("srdBaseline: Dwarf, Elf, Gnome, and Halfling have their single SRD subrace
   assert.deepEqual(halfling.subraces?.[0].abilityScoreIncrease, [{ cha: 1 }]);
   assert.ok(halfling.subraces?.[0].traits?.some((t) => t.name === "Naturally Stealthy"));
 
-  const appliedHalfling = applyAncestrySelection(makeChar(), halfling, halfling.subraces?.[0], { races });
+  const appliedHalfling = applyAncestrySelection(makeChar(), halfling, halfling.subraces?.[0], { compendium: inMemoryCompendium({ races }) });
   assert.deepEqual(
     appliedHalfling.racialAbilityBonuses,
     { dex: 2, cha: 1 },

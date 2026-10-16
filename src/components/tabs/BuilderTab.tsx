@@ -21,10 +21,8 @@ import {
   getFeats,
   getRaces,
 } from "../../services/dataService";
-import {
-  calculateEffectiveAbilityScores,
-  calculateTotalLevel,
-} from "../../services/dndRules";
+import { calculateTotalLevel } from "../../services/dndRules";
+import { evaluateCharacter } from "../../rules/characterEvaluation";
 import {
   applyStartingGrants,
   CLASS_STARTING_EQUIPMENT,
@@ -91,7 +89,7 @@ export const BuilderTab: React.FC<BuilderTabProps> = ({
   const allBackgrounds = getBackgrounds(activeBooks);
   const allFeats = getFeats(activeBooks);
 
-  const { scores: effectiveScores, modifiers } = calculateEffectiveAbilityScores(character);
+  const { scores: effectiveScores, modifiers } = evaluateCharacter(character).effectiveScores;
   const totalLevel = calculateTotalLevel(character);
   const primaryClass = character.classes[0]?.className;
 
@@ -478,7 +476,6 @@ export const BuilderTab: React.FC<BuilderTabProps> = ({
           character={character}
           onUpdate={onUpdate}
           allRaces={allRaces}
-          allBackgrounds={allBackgrounds}
           skillChoices={skillChoices}
           autoGranted={raceAutoGranted}
           toggleSkill={toggleSkill}

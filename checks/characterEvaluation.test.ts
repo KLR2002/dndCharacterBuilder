@@ -1,9 +1,9 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { makeChar, loadTestCatalogs } from "./testUtils.ts";
+import { makeChar, loadTestCatalogs, inMemoryCompendium } from "./testUtils.ts";
 import { evaluateCharacter } from "../src/rules/characterEvaluation.ts";
 
-const catalogs = loadTestCatalogs();
+const catalogs = { compendium: inMemoryCompendium(loadTestCatalogs()) };
 const cl = (className: string, level: number) => ({ className, source: "PHB", level });
 const scores = (overrides: Record<string, number>) => ({ str: 10, dex: 10, con: 10, int: 10, wis: 10, cha: 10, ...overrides });
 
@@ -145,3 +145,29 @@ test("evaluateCharacter derives combat dice and clamps feature counters", () => 
   assert.equal(evaluated.featureCounters.custom_luck.current, 2);
 });
 
+
+const human = loadTestCatalogs().races.find((r: { name: string; source: string }) => r.name === "Human" && r.source === "PHB");
+const testfolk = { ...human, name: "Testfolk", source: "TEST", subraces: [] };
+const xgefolk = { ...human, name: "Xgefolk", source: "XGE", subraces: [] };
+
+test("evaluateCharacter resolves the race from the Compendium it is given", () => {
+  const char = makeChar({ classes: [cl("Fighter", 1)], race: { name: "Testfolk", source: "TEST" } });
+  const compendium = inMemoryCompendium({ races: [testfolk] });
+
+  assert.equal(evaluateCharacter(char, { compendium }).resolvedAncestry.race?.name, "Testfolk");
+});
+
+test("evaluateCharacter finds no race the Compendium does not contain", () => {
+  const char = makeChar({ classes: [cl("Fighter", 1)], race: { name: "Testfolk", source: "TEST" } });
+
+  assert.equal(evaluateCharacter(char, { compendium: inMemoryCompendium({ races: [] }) }).resolvedAncestry.race, undefined);
+  assert.equal(evaluateCharacter(char).resolvedAncestry.race, undefined, "the SRD default does not contain Testfolk");
+});
+
+test("evaluateCharacter scopes an integrated Compendium's races to activeBooks", () => {
+  const char = makeChar({ classes: [cl("Fighter", 1)], race: { name: "Xgefolk", source: "XGE" } });
+  const compendium = inMemoryCompendium({ races: [xgefolk] }, { integrated: true });
+
+  assert.equal(evaluateCharacter(char, { compendium, activeBooks: ["PHB"] }).resolvedAncestry.race, undefined);
+  assert.equal(evaluateCharacter(char, { compendium, activeBooks: ["XGE"] }).resolvedAncestry.race?.name, "Xgefolk");
+});

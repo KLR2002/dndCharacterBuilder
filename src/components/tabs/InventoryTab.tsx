@@ -14,7 +14,7 @@ import { useCharacters } from "../../context/CharacterContext";
 import { useAppTheme } from "../../context/ThemeContext";
 import { useResponsiveLayout } from "../../hooks/useResponsiveLayout";
 import { getItems } from "../../services/dataService";
-import { evaluateCharacter } from "../../services/dndRules";
+import { evaluateCharacter } from "../../rules/characterEvaluation";
 import { InventoryItem } from "../../types/character";
 import { Badge } from "../ui/Badge";
 import { Button } from "../ui/Button";

@@ -11,15 +11,14 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { useCharacters } from "../../context/CharacterContext";
 import { useAppTheme } from "../../context/ThemeContext";
-import { getBackgrounds, getClasses, getConditions, getRaces, findBeast } from "../../services/dataService";
+import { getConditions, findBeast } from "../../services/dataService";
+import { currentCompendium } from "../../services/compendium";
 import {
   spendHitDie,
   recoverHitDie,
 } from "../../rules/hitDice";
-import {
-  evaluateCharacter,
-  formatModifier,
-} from "../../services/dndRules";
+import { formatModifier } from "../../services/dndRules";
+import { evaluateCharacter } from "../../rules/characterEvaluation";
 import { AbilityKey } from "../../types/character";
 import { Badge } from "../ui/Badge";
 import { Button } from "../ui/Button";
@@ -67,11 +66,7 @@ export const StatsTab: React.FC = () => {
 
   const evaluated = useMemo(() => {
     if (!currentCharacter) return null;
-    return evaluateCharacter(currentCharacter, {
-      races: getRaces(activeBooks || []),
-      backgrounds: getBackgrounds(activeBooks || []),
-      classes: getClasses(activeBooks || []),
-    });
+    return evaluateCharacter(currentCharacter, { compendium: currentCompendium(), activeBooks });
   }, [currentCharacter, activeBooks]);
 
   const derivedProficiencies = useMemo(() => {

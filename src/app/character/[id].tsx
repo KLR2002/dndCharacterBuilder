@@ -22,7 +22,7 @@ import { Button } from "../../components/ui/Button";
 import { useCharacters } from "../../context/CharacterContext";
 import { useAppTheme } from "../../context/ThemeContext";
 import { useResponsiveLayout } from "../../hooks/useResponsiveLayout";
-import { evaluateCharacter } from "../../services/dndRules";
+import { evaluateCharacter } from "../../rules/characterEvaluation";
 
 type TabKey = "builder" | "stats" | "spells" | "inventory" | "features" | "journal" | "actions";
 

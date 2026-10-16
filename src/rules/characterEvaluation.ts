@@ -1,7 +1,8 @@
 import type { Character, ResourceCounter } from "../types/character.ts";
-import type { BackgroundData, ClassData, RaceData, SubraceData } from "../types/dnd5e.ts";
+import type { BackgroundData, RaceData, SubraceData } from "../types/dnd5e.ts";
 import type { ResolvedAncestry } from "./types.ts";
 import { CLASS_DATA, type ClassRules } from "./classData.ts";
+import { currentCompendium, type Compendium, type CompendiumListings } from "../services/compendium.ts";
 import { effectiveScores } from "./abilities.ts";
 import { maxHp } from "./hp.ts";
 import { getHitDicePools, type HitDiePool } from "./hitDice.ts";
@@ -45,12 +46,18 @@ import {
   getMergedResourceCounters,
 } from "./resourceCounters.ts";
 
+/** The one catalog bundle the rules take: names resolve against a Compendium, scoped to the active books. */
 export interface CharacterCatalogs {
-  races?: RaceData[];
-  backgrounds?: BackgroundData[];
-  classes?: ClassData[];
-  classRules?: Record<string, ClassRules>;
+  /** Defaults to the process-wide current Compendium. */
+  compendium?: Compendium;
+  /** Scopes listings to these books. Omitted means unscoped. */
   activeBooks?: string[];
+  classRules?: Record<string, ClassRules>;
+}
+
+/** The listings a rules function reads from the bundle's Compendium, scoped to its active books. */
+export function catalogListings(catalogs?: CharacterCatalogs): CompendiumListings {
+  return (catalogs?.compendium ?? currentCompendium()).for(catalogs?.activeBooks);
 }
 
 export interface EvaluatedCharacter {
@@ -126,8 +133,9 @@ export function evaluateCharacter(
   character: Character,
   catalogs?: CharacterCatalogs
 ): EvaluatedCharacter {
-  const ancestry = resolveCharacterAncestry(character, catalogs?.races);
-  const background = resolveCharacterBackground(character, catalogs?.backgrounds);
+  const listings = catalogListings(catalogs);
+  const ancestry = resolveCharacterAncestry(character, listings.races());
+  const background = resolveCharacterBackground(character, listings.backgrounds());
   const classRules = catalogs?.classRules ?? CLASS_DATA;
 
   const lvl = totalLevel(character);
@@ -147,7 +155,7 @@ export function evaluateCharacter(
   });
 
   // Derived proficiencies
-  const allClasses = catalogs?.classes ?? [];
+  const allClasses = listings.classes();
   const baseProf = proficiencies(character, allClasses);
   const armorSet = new Set<string>(baseProf.armor.map(normalizeArmorProficiency));
   const weaponSet = new Set<string>(baseProf.weapons.map(normalizeWeaponProficiency));
@@ -182,14 +190,14 @@ export function evaluateCharacter(
   }
 
   const toolList = resolveCharacterTools(character, {
-    races: catalogs?.races ?? [],
-    backgrounds: catalogs?.backgrounds ?? [],
+    races: listings.races(),
+    backgrounds: listings.backgrounds(),
     classes: allClasses,
   });
 
   const langList = resolveCharacterLanguages(character, {
-    races: catalogs?.races ?? [],
-    backgrounds: catalogs?.backgrounds ?? [],
+    races: listings.races(),
+    backgrounds: listings.backgrounds(),
   });
 
   let extraAttackCount = 1;
@@ -251,8 +259,8 @@ export function evaluateCharacter(
       languages: langList,
     },
     tools: evaluateCharacterTools(character, {
-      races: catalogs?.races ?? [],
-      backgrounds: catalogs?.backgrounds ?? [],
+      races: listings.races(),
+      backgrounds: listings.backgrounds(),
       classes: allClasses,
     }),
     resolvedAncestry: ancestry,

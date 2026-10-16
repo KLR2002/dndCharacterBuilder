@@ -5,7 +5,7 @@ import type {
   InventoryItem,
   SkillChoiceEntry,
 } from "../types/character.ts";
-import type { BackgroundData } from "../types/dnd5e.ts";
+import type { BackgroundData, ClassData } from "../types/dnd5e.ts";
 import {
   STANDARD_ARRAY,
   MULTICLASS_PREREQUISITES,
@@ -22,7 +22,6 @@ import {
   syncWarlockTomeCantrips,
   syncAncientSecretsRituals,
 } from "./ruleChoices.ts";
-import type { CharacterCatalogs } from "./characterEvaluation.ts";
 
 export function setStandardArrayPick(
   character: Character,
@@ -667,7 +666,7 @@ export function teardownSubclass(
  */
 export function reconcileCharacter(
   character: Character,
-  catalogs?: CharacterCatalogs
+  catalogs?: { classes?: ClassData[] }
 ): Character {
   let updated = character;
 

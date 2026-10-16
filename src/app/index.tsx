@@ -21,7 +21,7 @@ import { Modal } from "../components/ui/Modal";
 import { SearchBar } from "../components/ui/SearchBar";
 import { useCharacters } from "../context/CharacterContext";
 import { useAppTheme } from "../context/ThemeContext";
-import { evaluateCharacter } from "../services/dndRules";
+import { evaluateCharacter } from "../rules/characterEvaluation";
 import { Character, Folder } from "../types/character";
 
 export default function HomeScreen() {

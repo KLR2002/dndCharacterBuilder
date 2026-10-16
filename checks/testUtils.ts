@@ -2,6 +2,32 @@ import type { Character } from "../src/types/character.ts";
 import { DEFAULT_ACTIVE_BOOK_CODES } from "../src/constants/books.ts";
 import { readFileSync, existsSync } from "node:fs";
 import { setCompendiumStore } from "../src/services/dataService.ts";
+import { createCompendium, type Compendium } from "../src/services/compendium.ts";
+import type { CompendiumCollections } from "../src/services/compendiumStorage.ts";
+
+/**
+ * In-memory Compendium over the given collections. Collections not given are empty. Unless
+ * `integrated` is set it is a plain (SRD-style) bundle, so nothing falls back to the SRD Baseline.
+ */
+export function inMemoryCompendium(
+  collections: Partial<Omit<CompendiumCollections, "hasIntegratedCatalog">> = {},
+  options: { integrated?: boolean } = {},
+): Compendium {
+  return createCompendium({
+    hasIntegratedCatalog: options.integrated ?? false,
+    races: [],
+    classes: [],
+    feats: [],
+    backgrounds: [],
+    items: [],
+    spells: [],
+    beasts: [],
+    conditions: [],
+    optionsAndFeatures: [],
+    books: [],
+    ...collections,
+  });
+}
 
 export function makeChar(overrides: Partial<Character> = {}): Character {
   return {

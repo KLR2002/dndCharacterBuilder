@@ -12,11 +12,9 @@ import { useCharacters } from "../../context/CharacterContext";
 import { useAppTheme } from "../../context/ThemeContext";
 import { useResponsiveLayout } from "../../hooks/useResponsiveLayout";
 import { findSpell, getSpells } from "../../services/dataService";
-import {
-  calculateMulticlassSpellSlots,
-  evaluateCharacter,
-  formatModifier,
-} from "../../services/dndRules";
+import { calculateMulticlassSpellSlots, formatModifier } from "../../services/dndRules";
+import { evaluateCharacter } from "../../rules/characterEvaluation";
+import { currentCompendium } from "../../services/compendium";
 import {
   isSpellAvailableForClass,
   type ClassSpellProfile,
@@ -201,7 +199,7 @@ export const SpellsTab: React.FC = () => {
   // Unified Character Evaluation pass
   const evaluated = useMemo(() => {
     if (!currentCharacter) return null;
-    return evaluateCharacter(currentCharacter, { activeBooks });
+    return evaluateCharacter(currentCharacter, { compendium: currentCompendium(), activeBooks });
   }, [currentCharacter, activeBooks]);
 
   // Spell slot ledger from pure domain engine

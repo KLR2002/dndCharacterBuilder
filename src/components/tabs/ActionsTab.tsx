@@ -9,11 +9,9 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { useCharacters } from "../../context/CharacterContext";
 import { useAppTheme } from "../../context/ThemeContext";
-import { getClasses, getRaces, getBackgrounds } from "../../services/dataService";
-import {
-  evaluateCharacter,
-  formatModifier,
-} from "../../services/dndRules";
+import { currentCompendium } from "../../services/compendium";
+import { formatModifier } from "../../services/dndRules";
+import { evaluateCharacter } from "../../rules/characterEvaluation";
 import {
   getTacticalActionLedger,
   SAVING_THROW_MANEUVERS,
@@ -40,12 +38,7 @@ export const ActionsTab: React.FC = () => {
   // Unified Character Evaluation pass
   const evaluated = useMemo(() => {
     if (!currentCharacter) return null;
-    return evaluateCharacter(currentCharacter, {
-      races: getRaces(activeBooks || []),
-      classes: getClasses(activeBooks || []),
-      backgrounds: getBackgrounds(activeBooks || []),
-      activeBooks,
-    });
+    return evaluateCharacter(currentCharacter, { compendium: currentCompendium(), activeBooks });
   }, [currentCharacter, activeBooks]);
 
   // Tactical Action Ledger from pure domain engine

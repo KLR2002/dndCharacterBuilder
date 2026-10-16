@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { makeChar, loadTestCatalogs } from "./testUtils.ts";
+import { makeChar, loadTestCatalogs, inMemoryCompendium } from "./testUtils.ts";
 import {
   resolveAncestryState,
   applyAncestrySelection,
@@ -11,8 +11,9 @@ import {
 import { setChoiceRacialBonus } from "../src/rules/builderTransitions.ts";
 import type { RaceData } from "../src/types/dnd5e.ts";
 
-const catalogs = loadTestCatalogs();
-const races = catalogs.races as RaceData[];
+const testCollections = loadTestCatalogs();
+const catalogs = { compendium: inMemoryCompendium(testCollections) };
+const races = testCollections.races as RaceData[];
 
 test("resolveAncestryState detects High Elf and unlocks racial cantrip", () => {
   const char = makeChar({
@@ -189,3 +190,12 @@ test("resolveAncestryState distinguishes MPMM Genasi (flexible choice ASI) from 
 });
 
 
+
+test("resolveAncestryState reads the selected race from the Compendium it is given", () => {
+  const human = races.find((r) => r.name === "Human" && r.source === "PHB")!;
+  const testfolk = { ...human, name: "Testfolk", source: "TEST", subraces: [] };
+  const char = makeChar({ race: { name: "Testfolk", source: "TEST" } });
+
+  assert.equal(resolveAncestryState(char, { compendium: inMemoryCompendium({ races: [testfolk] }) }).selectedRace?.name, "Testfolk");
+  assert.equal(resolveAncestryState(char, { compendium: inMemoryCompendium({ races: [] }) }).selectedRace, undefined);
+});

@@ -22,7 +22,8 @@ import {
   getRaces,
   getOptionsAndFeatures,
 } from "../../services/dataService";
-import { evaluateCharacter } from "../../services/dndRules";
+import { evaluateCharacter } from "../../rules/characterEvaluation";
+import { currentCompendium } from "../../services/compendium";
 import {
   getAvailableOptionalFeatures,
   getReplacedBaseFeatures,
@@ -90,11 +91,7 @@ export const FeaturesTab: React.FC = () => {
 
   const evaluated = useMemo(() => {
     if (!currentCharacter) return null;
-    return evaluateCharacter(currentCharacter, {
-      races: getRaces(activeBooks || []),
-      backgrounds: getBackgrounds(activeBooks || []),
-      classes: getClasses(activeBooks || []),
-    });
+    return evaluateCharacter(currentCharacter, { compendium: currentCompendium(), activeBooks });
   }, [currentCharacter, activeBooks]);
 
   // Unified Resource Counters from evaluated model

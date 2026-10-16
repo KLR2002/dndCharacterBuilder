@@ -2,7 +2,7 @@ import React, { useMemo, useState } from "react";
 import { ScrollView, Text, TouchableOpacity, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { AbilityKey, Character } from "../../types/character";
-import type { BackgroundData, RaceData } from "../../types/dnd5e";
+import type { RaceData } from "../../types/dnd5e";
 import { type AvailableRuleChoice } from "../../rules/ruleChoices";
 import { reconcileCharacter, setChoiceRacialBonus } from "../../rules/builderTransitions";
 import {
@@ -42,7 +42,6 @@ export interface AncestrySectionProps {
   character: Character;
   onUpdate: (patchOrUpdater: Partial<Character> | ((prev: Character) => Character)) => void;
   allRaces: RaceData[];
-  allBackgrounds: BackgroundData[];
   skillChoices: { source: string; choose: number; from: string[] }[];
   autoGranted: string[];
   toggleSkill: (skill: string, source?: string) => void;
@@ -59,7 +58,6 @@ export const AncestrySection: React.FC<AncestrySectionProps> = ({
   character,
   onUpdate,
   allRaces,
-  allBackgrounds,
   skillChoices,
   autoGranted,
   toggleSkill,
@@ -124,12 +122,8 @@ export const AncestrySection: React.FC<AncestrySectionProps> = ({
   }, [activeBooks]);
 
   const ancestryState = useMemo(() => {
-    return resolveAncestryState(character, {
-      races: allRaces,
-      backgrounds: allBackgrounds,
-      activeBooks,
-    });
-  }, [character, allRaces, allBackgrounds, activeBooks]);
+    return resolveAncestryState(character, { activeBooks });
+  }, [character, activeBooks]);
 
   const {
     isChoiceASIRace,
@@ -181,7 +175,7 @@ export const AncestrySection: React.FC<AncestrySectionProps> = ({
     const sr = subraceIdx !== undefined ? r.subraces?.[subraceIdx] : undefined;
     setUserSelectedMode(null);
     onUpdate((cur) =>
-      applyAncestrySelection(cur, r, sr, { races: allRaces, backgrounds: allBackgrounds })
+      applyAncestrySelection(cur, r, sr, { activeBooks })
     );
   };
 
@@ -373,11 +367,7 @@ export const AncestrySection: React.FC<AncestrySectionProps> = ({
                 chosen={entry?.picked ?? []}
                 onToggle={(option) =>
                   onUpdate((cur) =>
-                    applyAncestryChoice(cur, choice.id, option, {
-                      races: allRaces,
-                      backgrounds: allBackgrounds,
-                      activeBooks,
-                    })
+                    applyAncestryChoice(cur, choice.id, option, { activeBooks })
                   )
                 }
                 theme={theme}
