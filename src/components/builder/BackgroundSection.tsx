@@ -4,7 +4,12 @@ import { Ionicons } from "@expo/vector-icons";
 import { Character } from "../../types/character";
 import { BackgroundData } from "../../types/dnd5e";
 import { DND_SKILLS } from "../../constants/rules";
-import { applyBackgroundGrants, parseBackgroundEquipment, setCustomBackground } from "../../rules/builderTransitions";
+import {
+  applyBackgroundGrants,
+  clearBackground,
+  parseBackgroundEquipment,
+  setCustomBackground,
+} from "../../rules/builderTransitions";
 import { ALL_LANGUAGE_NAMES, resolveCharacterLanguages, ToolGrant } from "../../rules/proficienciesAndLanguages";
 import type { CharacterCatalogs } from "../../rules/catalogs";
 import { Badge } from "../ui/Badge";
@@ -74,7 +79,7 @@ export const BackgroundSection: React.FC<BackgroundSectionProps> = ({
                 {character.background.source === "Custom" ? "Custom Background" : character.background.source}
               </Text>
             </View>
-            <Button title="Change" variant="outline" size="sm" onPress={() => onUpdate({ background: null })} />
+            <Button title="Change" variant="outline" size="sm" onPress={() => onUpdate((cur) => clearBackground(cur, catalogs))} />
           </Card>
 
           {/* Custom background skills */}

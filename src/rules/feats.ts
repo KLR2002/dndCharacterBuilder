@@ -4,6 +4,8 @@ import { totalLevel } from "./proficiencies.ts";
 import { isCastingClass } from "./spellcasting.ts";
 import { getInnateSpellProfile } from "./innateMagic.ts";
 import { MULTICLASS_PROFICIENCIES } from "../constants/rules.ts";
+import { reconcile } from "./characterReconciler.ts";
+import { currentCompendium, type Compendium } from "../services/compendium.ts";
 
 export interface FeatPrerequisiteResult {
   met: boolean;
@@ -186,14 +188,21 @@ export function applyOriginFeat(character: Character, selection: AsiSelection, o
   };
 }
 
-/** Removes an origin feat by name. */
-export function removeOriginFeat(character: Character, featName: string): Character {
+/** Removes an origin feat by name, then reconciles the choices that feat granted. */
+export function removeOriginFeat(
+  character: Character,
+  featName: string,
+  compendium: Compendium = currentCompendium()
+): Character {
   const current = character.originFeats || [];
   const updated = current.filter(s => s.featName?.toLowerCase() !== featName.toLowerCase());
-  return {
-    ...character,
-    originFeats: updated,
-  };
+  return reconcile(
+    {
+      ...character,
+      originFeats: updated,
+    },
+    compendium
+  );
 }
 
 /** Known background feat grants mapping. */
