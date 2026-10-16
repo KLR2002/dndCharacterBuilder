@@ -34,6 +34,7 @@ export default function OptionsScreen() {
     setActiveBooks,
     isIntegrated,
     integratedAt,
+    catalogStale,
     triggerIntegration,
     revertToSrd,
   } = useCharacters();
@@ -352,6 +353,18 @@ export default function OptionsScreen() {
                     ? ` (Last synced: ${new Date(integratedAt).toLocaleDateString()})`
                     : ""}
                 </Text>
+                {catalogStale ? (
+                  <Text
+                    style={{
+                      color: theme.textSecondary,
+                      fontSize: 13,
+                      lineHeight: 18,
+                      marginTop: 6,
+                    }}
+                  >
+                    Re-sync to get the latest class options
+                  </Text>
+                ) : null}
 
                 <View
                   style={{

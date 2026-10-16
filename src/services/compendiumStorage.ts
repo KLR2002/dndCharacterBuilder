@@ -10,9 +10,22 @@ import type {
   BeastData,
 } from "../types/dnd5e.ts";
 
+/**
+ * Minimum Integrated Catalog format the application requires. A catalog saved with a lower
+ * number, or with none (saved by an older app), is stale: it still loads, but Settings asks for a re-sync.
+ */
+export const REQUIRED_CATALOG_FORMAT = 2;
+
+/** True for an Integrated Catalog saved below the required format (or with none). The SRD Baseline is never stale. */
+export function isCatalogStale(collections: Pick<CompendiumCollections, "hasIntegratedCatalog" | "catalogFormat">): boolean {
+  return collections.hasIntegratedCatalog && (collections.catalogFormat ?? 0) < REQUIRED_CATALOG_FORMAT;
+}
+
 export interface CompendiumCollections {
   hasIntegratedCatalog: boolean;
   integratedAt?: string;
+  /** Format of the catalog when it was saved. Absent on catalogs saved before formats existed. */
+  catalogFormat?: number;
   races: RaceData[];
   classes: ClassData[];
   feats: FeatData[];
@@ -96,7 +109,8 @@ function openIndexedDB(): Promise<IDBDatabase> {
   });
 }
 
-export async function saveCompendiumData(data: CompendiumCollections): Promise<void> {
+export async function saveCompendiumData(input: CompendiumCollections): Promise<void> {
+  const data: CompendiumCollections = { ...input, catalogFormat: REQUIRED_CATALOG_FORMAT };
   if (testKv) {
     testKv.set(STORAGE_KEY, JSON.stringify(data));
     return;

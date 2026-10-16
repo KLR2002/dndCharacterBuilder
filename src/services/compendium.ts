@@ -19,7 +19,7 @@ import type {
   OptionFeatureData,
   BeastData,
 } from "../types/dnd5e.ts";
-import type { CompendiumCollections } from "./compendiumStorage.ts";
+import { isCatalogStale, type CompendiumCollections } from "./compendiumStorage.ts";
 
 /** Read-only, synchronous view over one catalog bundle (SRD Baseline or Integrated Catalog). */
 export interface CompendiumListings {
@@ -37,6 +37,8 @@ export interface CompendiumListings {
 
 export interface Compendium {
   readonly integrated: boolean;
+  /** True when the integrated catalog is below the format the application requires. Its records still load. */
+  readonly stale: boolean;
   /** Listings scoped to active books. Unscoped when no books are given or the bundle is not integrated. */
   for(activeBooks?: readonly string[]): CompendiumListings;
   /** Name lookups are never scoped, so existing character picks always resolve. */
@@ -136,6 +138,7 @@ export function createCompendium(
 
   return {
     integrated,
+    stale: isCatalogStale(bundle),
     for: (activeBooks) => (!activeBooks || !integrated ? unscoped : scoped(activeBooks)),
     findRace: (name, source) => findIn(races.records, name, source),
     findClass: (name, source) => findIn(classes.records, name, source),
