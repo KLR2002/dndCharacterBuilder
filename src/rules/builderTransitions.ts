@@ -5,7 +5,7 @@ import type {
   InventoryItem,
   SkillChoiceEntry,
 } from "../types/character.ts";
-import type { BackgroundData, ClassData } from "../types/dnd5e.ts";
+import type { BackgroundData } from "../types/dnd5e.ts";
 import {
   STANDARD_ARRAY,
   MULTICLASS_PREREQUISITES,
@@ -664,10 +664,7 @@ export function teardownSubclass(
  * 6. Tome cantrips & Ancient Secrets rituals
  * 7. Expertise proficiencies
  */
-export function reconcileCharacter(
-  character: Character,
-  catalogs?: { classes?: ClassData[] }
-): Character {
+export function reconcileCharacter(character: Character): Character {
   let updated = character;
 
   // 1. Reconcile Fighting Styles
@@ -690,7 +687,7 @@ export function reconcileCharacter(
   updated = syncAncientSecretsRituals(updated);
 
   // 7. Reconcile Expertise proficiencies
-  updated = pruneInvalidExpertise(updated, { classes: catalogs?.classes });
+  updated = pruneInvalidExpertise(updated);
 
   return updated;
 }

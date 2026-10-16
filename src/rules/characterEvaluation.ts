@@ -1,8 +1,8 @@
 import type { Character, ResourceCounter } from "../types/character.ts";
 import type { BackgroundData, RaceData, SubraceData } from "../types/dnd5e.ts";
 import type { ResolvedAncestry } from "./types.ts";
-import { CLASS_DATA, type ClassRules } from "./classData.ts";
-import { currentCompendium, type Compendium, type CompendiumListings } from "../services/compendium.ts";
+import { CLASS_DATA } from "./classData.ts";
+import { catalogListings, type CharacterCatalogs } from "./catalogs.ts";
 import { effectiveScores } from "./abilities.ts";
 import { maxHp } from "./hp.ts";
 import { getHitDicePools, type HitDiePool } from "./hitDice.ts";
@@ -46,19 +46,7 @@ import {
   getMergedResourceCounters,
 } from "./resourceCounters.ts";
 
-/** The one catalog bundle the rules take: names resolve against a Compendium, scoped to the active books. */
-export interface CharacterCatalogs {
-  /** Defaults to the process-wide current Compendium. */
-  compendium?: Compendium;
-  /** Scopes listings to these books. Omitted means unscoped. */
-  activeBooks?: string[];
-  classRules?: Record<string, ClassRules>;
-}
-
-/** The listings a rules function reads from the bundle's Compendium, scoped to its active books. */
-export function catalogListings(catalogs?: CharacterCatalogs): CompendiumListings {
-  return (catalogs?.compendium ?? currentCompendium()).for(catalogs?.activeBooks);
-}
+export { catalogListings, type CharacterCatalogs } from "./catalogs.ts";
 
 export interface EvaluatedCharacter {
   totalLevel: number;
@@ -189,16 +177,9 @@ export function evaluateCharacter(
     armorSet.add(normalizeArmorProficiency("Medium armor"));
   }
 
-  const toolList = resolveCharacterTools(character, {
-    races: listings.races(),
-    backgrounds: listings.backgrounds(),
-    classes: allClasses,
-  });
+  const toolList = resolveCharacterTools(character, catalogs ?? {});
 
-  const langList = resolveCharacterLanguages(character, {
-    races: listings.races(),
-    backgrounds: listings.backgrounds(),
-  });
+  const langList = resolveCharacterLanguages(character, catalogs ?? {});
 
   let extraAttackCount = 1;
   for (const c of character.classes || []) {
@@ -258,11 +239,7 @@ export function evaluateCharacter(
       tools: toolList,
       languages: langList,
     },
-    tools: evaluateCharacterTools(character, {
-      races: listings.races(),
-      backgrounds: listings.backgrounds(),
-      classes: allClasses,
-    }),
+    tools: evaluateCharacterTools(character, catalogs ?? {}),
     resolvedAncestry: ancestry,
     resolvedBackground: background,
     spellProfiles,

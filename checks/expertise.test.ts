@@ -89,7 +89,7 @@ test("tools: Thieves' Tools calculates Dex modifier (+3) and double PB (+4) with
     chosenExpertise: ["Thieves' Tools"],
   });
 
-  const tools = evaluateCharacterTools(char, { classes });
+  const tools = evaluateCharacterTools(char, { compendium: inMemoryCompendium({ classes }) });
   const thievesTools = tools.find((t) => t.name.toLowerCase() === "thieves' tools");
   assert.ok(thievesTools);
   assert.equal(thievesTools.isExpertise, true);
@@ -106,7 +106,7 @@ test("tools: Musical instrument calculates Cha modifier with expertise", () => {
     chosenExpertise: ["Lute"],
   });
 
-  const tools = evaluateCharacterTools(char, { classes });
+  const tools = evaluateCharacterTools(char, { compendium: inMemoryCompendium({ classes }) });
   const lute = tools.find((t) => t.name.toLowerCase() === "lute");
   assert.ok(lute);
   assert.equal(lute.isExpertise, true);
@@ -121,7 +121,7 @@ test("tools: Artisan's tools without canonical ability display flat PB modifier"
     chosenTools: { background: ["Alchemist's Supplies"] },
   });
 
-  const tools = evaluateCharacterTools(char, { classes });
+  const tools = evaluateCharacterTools(char, { compendium: inMemoryCompendium({ classes }) });
   const alchemist = tools.find((t) => t.name.toLowerCase() === "alchemist's supplies");
   assert.ok(alchemist);
   assert.equal(alchemist.isExpertise, false);
@@ -144,7 +144,7 @@ test("tools: Artificer level 6 automatically grants Tool Expertise to all tools"
   assert.equal(isToolExpertise("Thieves' Tools", char), true);
   assert.equal(isToolExpertise("Alchemist's Supplies", char), true);
 
-  const tools = evaluateCharacterTools(char, { classes });
+  const tools = evaluateCharacterTools(char, { compendium: inMemoryCompendium({ classes }) });
   const thieves = tools.find((t) => t.name.toLowerCase() === "thieves' tools");
   assert.ok(thieves);
   assert.equal(thieves.isExpertise, true);
@@ -180,7 +180,7 @@ test("milestones: Rogue 1 and Rogue 6 generate milestone cards with proficient o
     chosenTools: { class: ["Thieves' Tools"] },
   });
 
-  const milestones = getAvailableExpertiseMilestones(char, { classes });
+  const milestones = getAvailableExpertiseMilestones(char, { compendium: inMemoryCompendium({ classes }) });
   assert.equal(milestones.length, 2);
   assert.equal(milestones[0].id, "rogue_1");
   assert.equal(milestones[0].count, 2);
@@ -198,7 +198,7 @@ test("milestones: Bard 3 and Bard 10 generate milestone cards", () => {
     chosenSkills: ["Performance", "Persuasion", "Deception", "Insight"],
   });
 
-  const milestones = getAvailableExpertiseMilestones(char, { classes });
+  const milestones = getAvailableExpertiseMilestones(char, { compendium: inMemoryCompendium({ classes }) });
   assert.equal(milestones.length, 2);
   assert.equal(milestones[0].id, "bard_3");
   assert.equal(milestones[0].count, 2);
@@ -212,7 +212,7 @@ test("milestones: Knowledge Domain Cleric grants Arcana/History/Nature/Religion"
     chosenExpertise: ["Arcana", "History"],
   });
 
-  const milestones = getAvailableExpertiseMilestones(char, { classes });
+  const milestones = getAvailableExpertiseMilestones(char, { compendium: inMemoryCompendium({ classes }) });
   assert.equal(milestones.length, 1);
   assert.equal(milestones[0].id, "cleric_knowledge_1");
   assert.deepEqual(milestones[0].options, ["Arcana", "History", "Nature", "Religion"]);
@@ -232,7 +232,7 @@ test("milestones: Deft Explorer Ranger Canny grants 1 pick from proficient skill
     chosenSkills: ["Survival", "Stealth"],
   });
 
-  const milestones = getAvailableExpertiseMilestones(char, { classes });
+  const milestones = getAvailableExpertiseMilestones(char, { compendium: inMemoryCompendium({ classes }) });
   assert.equal(milestones.length, 1);
   assert.equal(milestones[0].id, "ranger_deft_explorer_1");
   assert.equal(milestones[0].count, 1);
@@ -247,7 +247,7 @@ test("getMilestonePicks partitions chosenExpertise cleanly across milestones", (
     chosenExpertise: ["Stealth", "Thieves' Tools", "Acrobatics"],
   });
 
-  const milestones = getAvailableExpertiseMilestones(char, { classes });
+  const milestones = getAvailableExpertiseMilestones(char, { compendium: inMemoryCompendium({ classes }) });
   const picks = getMilestonePicks(milestones, char.chosenExpertise);
 
   assert.equal(picks.length, 2);
@@ -262,18 +262,18 @@ test("toggleExpertiseChoice: toggles selection within capacity", () => {
     chosenSkills: ["Stealth", "Acrobatics", "Insight"],
   });
 
-  char = toggleExpertiseChoice(char, "Stealth", { classes });
+  char = toggleExpertiseChoice(char, "Stealth", { compendium: inMemoryCompendium({ classes }) });
   assert.deepEqual(char.chosenExpertise, ["Stealth"]);
 
-  char = toggleExpertiseChoice(char, "Acrobatics", { classes });
+  char = toggleExpertiseChoice(char, "Acrobatics", { compendium: inMemoryCompendium({ classes }) });
   assert.deepEqual(char.chosenExpertise, ["Stealth", "Acrobatics"]);
 
   // Attempting 3rd pick exceeds capacity of 2
-  char = toggleExpertiseChoice(char, "Insight", { classes });
+  char = toggleExpertiseChoice(char, "Insight", { compendium: inMemoryCompendium({ classes }) });
   assert.deepEqual(char.chosenExpertise, ["Stealth", "Acrobatics"]);
 
   // Toggling selected removes it
-  char = toggleExpertiseChoice(char, "Stealth", { classes });
+  char = toggleExpertiseChoice(char, "Stealth", { compendium: inMemoryCompendium({ classes }) });
   assert.deepEqual(char.chosenExpertise, ["Acrobatics"]);
 });
 
@@ -284,6 +284,6 @@ test("pruneInvalidExpertise: removes unproficient choices or excess when delevel
     chosenExpertise: ["Stealth", "Acrobatics", "Arcana"], // Arcana and Acrobatics are not proficient
   });
 
-  const pruned = pruneInvalidExpertise(char, { classes });
+  const pruned = pruneInvalidExpertise(char, { compendium: inMemoryCompendium({ classes }) });
   assert.deepEqual(pruned.chosenExpertise, ["Stealth"]);
 });

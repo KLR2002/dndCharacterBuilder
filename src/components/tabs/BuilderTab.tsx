@@ -13,16 +13,11 @@ import {
 } from "../../rules/proficienciesAndLanguages";
 import { useCharacters } from "../../context/CharacterContext";
 import { useAppTheme } from "../../context/ThemeContext";
-import {
-  findClass,
-  findItem,
-  getBackgrounds,
-  getClasses,
-  getFeats,
-  getRaces,
-} from "../../services/dataService";
+import { findClass, findItem, getFeats } from "../../services/dataService";
+import { currentCompendium } from "../../services/compendium";
 import { calculateTotalLevel } from "../../services/dndRules";
 import { evaluateCharacter } from "../../rules/characterEvaluation";
+import { catalogListings, type CharacterCatalogs } from "../../rules/catalogs";
 import {
   applyStartingGrants,
   CLASS_STARTING_EQUIPMENT,
@@ -84,9 +79,11 @@ export const BuilderTab: React.FC<BuilderTabProps> = ({
   if (!character) return null;
 
   // ── Data ──────────────────────────────────────────────────────────────────
-  const allRaces = getRaces(activeBooks);
-  const allClasses = getClasses(activeBooks).filter((cl) => !SIDEKICK_CLASSES.has(cl.name));
-  const allBackgrounds = getBackgrounds(activeBooks);
+  const catalogs: CharacterCatalogs = { compendium: currentCompendium(), activeBooks };
+  const listings = catalogListings(catalogs);
+  const allRaces = listings.races();
+  const allClasses = listings.classes().filter((cl) => !SIDEKICK_CLASSES.has(cl.name));
+  const allBackgrounds = listings.backgrounds();
   const allFeats = getFeats(activeBooks);
 
   const { scores: effectiveScores, modifiers } = evaluateCharacter(character).effectiveScores;
@@ -353,7 +350,7 @@ export const BuilderTab: React.FC<BuilderTabProps> = ({
           chosenSkills: allPicked,
           skillChoices: updatedSkillChoices,
         },
-        { races: allRaces, backgrounds: allBackgrounds, classes: allClasses }
+        catalogs
       )
     );
   };
@@ -371,19 +368,15 @@ export const BuilderTab: React.FC<BuilderTabProps> = ({
   const bgToolGrant = getBackgroundToolGrant(character.background?.name, allBackgrounds);
   const classToolGrant = getClassToolGrant(primaryClass, allClasses);
 
-  const resolvedLanguages = resolveCharacterLanguages(character, { races: allRaces, backgrounds: allBackgrounds });
-  const resolvedTools = resolveCharacterTools(character, {
-    races: allRaces,
-    backgrounds: allBackgrounds,
-    classes: allClasses,
-  });
+  const resolvedLanguages = resolveCharacterLanguages(character, catalogs);
+  const resolvedTools = resolveCharacterTools(character, catalogs);
 
   const toggleRaceLanguage = (lang: string) => {
     const cur = character.chosenLanguages?.race || [];
     const next = cur.includes(lang) ? cur.filter((x) => x !== lang) : [...cur, lang];
     const nextChosen = { ...character.chosenLanguages, race: next };
     const temp = { ...character, chosenLanguages: nextChosen };
-    const resolved = resolveCharacterLanguages(temp, { races: allRaces, backgrounds: allBackgrounds });
+    const resolved = resolveCharacterLanguages(temp, catalogs);
     onUpdate({ chosenLanguages: nextChosen, languages: resolved });
   };
 
@@ -398,7 +391,7 @@ export const BuilderTab: React.FC<BuilderTabProps> = ({
     const next = cur.includes(lang) ? cur.filter((x) => x !== lang) : [...cur, lang];
     const nextChosen = { ...character.chosenLanguages, background: next };
     const temp = { ...character, chosenLanguages: nextChosen };
-    const resolved = resolveCharacterLanguages(temp, { races: allRaces, backgrounds: allBackgrounds });
+    const resolved = resolveCharacterLanguages(temp, catalogs);
     onUpdate({ chosenLanguages: nextChosen, languages: resolved });
   };
 
@@ -494,7 +487,7 @@ export const BuilderTab: React.FC<BuilderTabProps> = ({
           character={character}
           onUpdate={onUpdate}
           allBackgrounds={allBackgrounds}
-          allRaces={allRaces}
+          catalogs={catalogs}
           bgLanguageGrant={bgLanguageGrant}
           toggleBgLanguage={toggleBgLanguage}
           bgToolGrant={bgToolGrant}

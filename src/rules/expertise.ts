@@ -1,7 +1,7 @@
 import type { Character } from "../types/character.ts";
-import type { BackgroundData, ClassData, RaceData } from "../types/dnd5e.ts";
 import { isKnowledgeCleric, skills } from "./skills.ts";
 import { resolveCharacterTools } from "./proficienciesAndLanguages.ts";
+import { catalogListings, type CharacterCatalogs } from "./catalogs.ts";
 
 export interface ExpertiseMilestone {
   id: string;
@@ -41,15 +41,11 @@ export function getMilestonePicks(
 
 export function getAvailableExpertiseMilestones(
   character: Character,
-  catalogs?: {
-    races?: RaceData[];
-    backgrounds?: BackgroundData[];
-    classes?: ClassData[];
-  }
+  catalogs?: CharacterCatalogs
 ): ExpertiseMilestone[] {
   const milestones: ExpertiseMilestone[] = [];
   const skillList = skills(character, {
-    backgrounds: catalogs?.backgrounds,
+    backgrounds: catalogs ? catalogListings(catalogs).backgrounds() : undefined,
   });
   const proficientSkills = skillList.filter((s) => s.isProficient).map((s) => s.name);
   const toolList = resolveCharacterTools(character, catalogs);
@@ -155,11 +151,7 @@ export function getAvailableExpertiseMilestones(
 
 export function pruneInvalidExpertise(
   character: Character,
-  catalogs?: {
-    races?: RaceData[];
-    backgrounds?: BackgroundData[];
-    classes?: ClassData[];
-  }
+  catalogs?: CharacterCatalogs
 ): Character {
   const milestones = getAvailableExpertiseMilestones(character, catalogs);
   const totalCapacity = milestones.reduce((sum, m) => sum + m.count, 0);
@@ -198,11 +190,7 @@ export function pruneInvalidExpertise(
 export function toggleExpertiseChoice(
   character: Character,
   item: string,
-  catalogs?: {
-    races?: RaceData[];
-    backgrounds?: BackgroundData[];
-    classes?: ClassData[];
-  }
+  catalogs?: CharacterCatalogs
 ): Character {
   const current = [...(character.chosenExpertise || [])];
   const cleanItem = item.trim().toLowerCase();

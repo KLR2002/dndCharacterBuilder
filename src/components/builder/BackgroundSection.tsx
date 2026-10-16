@@ -2,10 +2,11 @@ import React, { useState } from "react";
 import { Text, TextInput, TouchableOpacity, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { Character } from "../../types/character";
-import { BackgroundData, RaceData } from "../../types/dnd5e";
+import { BackgroundData } from "../../types/dnd5e";
 import { DND_SKILLS } from "../../constants/rules";
 import { applyBackgroundGrants, parseBackgroundEquipment, setCustomBackground } from "../../rules/builderTransitions";
 import { ALL_LANGUAGE_NAMES, resolveCharacterLanguages, ToolGrant } from "../../rules/proficienciesAndLanguages";
+import type { CharacterCatalogs } from "../../rules/catalogs";
 import { Badge } from "../ui/Badge";
 import { Button } from "../ui/Button";
 import { Card } from "../ui/Card";
@@ -19,7 +20,7 @@ export interface BackgroundSectionProps {
   character: Character;
   onUpdate: (patchOrUpdater: Partial<Character> | ((prev: Character) => Character)) => void;
   allBackgrounds: BackgroundData[];
-  allRaces: RaceData[];
+  catalogs: CharacterCatalogs;
   bgLanguageGrant: { label: string; fixed: string[]; choiceCount: number };
   toggleBgLanguage: (lang: string) => void;
   bgToolGrant: ToolGrant;
@@ -35,7 +36,7 @@ export const BackgroundSection: React.FC<BackgroundSectionProps> = ({
   character,
   onUpdate,
   allBackgrounds,
-  allRaces,
+  catalogs,
   bgLanguageGrant,
   toggleBgLanguage,
   bgToolGrant,
@@ -478,7 +479,7 @@ export const BackgroundSection: React.FC<BackgroundSectionProps> = ({
                           chosenLanguages: nextChosenLanguages,
                           chosenTools: nextChosenTools,
                         };
-                        const resolved = resolveCharacterLanguages(temp, { races: allRaces, backgrounds: allBackgrounds });
+                        const resolved = resolveCharacterLanguages(temp, catalogs);
                         onUpdate({
                           background: { name: b.name, source: b.source },
                           chosenLanguages: nextChosenLanguages,

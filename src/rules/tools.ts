@@ -1,5 +1,5 @@
 import type { AbilityKey, Character } from "../types/character.ts";
-import type { BackgroundData, ClassData, RaceData } from "../types/dnd5e.ts";
+import type { CharacterCatalogs } from "./catalogs.ts";
 import { effectiveScores } from "./abilities.ts";
 import { proficiencyBonus, totalLevel } from "./proficiencies.ts";
 import {
@@ -52,11 +52,7 @@ export function getToolAbility(toolName: string): AbilityKey | undefined {
 
 export function evaluateCharacterTools(
   character: Character,
-  catalogs?: {
-    races?: RaceData[];
-    backgrounds?: BackgroundData[];
-    classes?: ClassData[];
-  }
+  catalogs?: CharacterCatalogs
 ): EvaluatedTool[] {
   const toolNames = resolveCharacterTools(character, catalogs);
   const pb = proficiencyBonus(totalLevel(character));
