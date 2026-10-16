@@ -15,11 +15,13 @@ import {
   setRuleChoicePick,
 } from "./choices/types.ts";
 import {
+  FIGHTING_INITIATE_CHOICE_ID,
   fightingStyleRuleChoices,
   pickFightingStyleChoice,
 } from "./choices/fightingStyles.ts";
-import { battleMasterManeuverChoices } from "./choices/maneuvers.ts";
+import { MARTIAL_ADEPT_CHOICE_ID, battleMasterManeuverChoices } from "./choices/maneuvers.ts";
 import {
+  ELDRITCH_ADEPT_CHOICE_ID,
   warlockPactBoonChoices,
   warlockTomeCantripChoices,
   warlockAncientSecretsStartingRituals,
@@ -293,6 +295,13 @@ export function clearChangeableChoices(character: Character): Character {
   return { ...character, ruleChoices: kept };
 }
 
+/** The feat-granted choices. They are offered through the feat path, not the class and subclass list. */
+const FEAT_GRANTED_CHOICE_IDS = new Set<string>([
+  FIGHTING_INITIATE_CHOICE_ID,
+  MARTIAL_ADEPT_CHOICE_ID,
+  ELDRITCH_ADEPT_CHOICE_ID,
+]);
+
 /**
  * Returns all subclass rule choices defined by the character's active classes and subclasses.
  * Class and subclass choices come from the table in `subclassChoiceTable.ts`, in table order
@@ -325,13 +334,13 @@ export function subclassRuleChoices(
     }
   }
 
-  out.push(...fightingStyleRuleChoices(character, activeBooks, compendium).filter((c) => !c.id.includes("Feat")));
-  out.push(...battleMasterManeuverChoices(character, activeBooks, compendium).filter((c) => !c.id.includes("Feat")));
+  out.push(...fightingStyleRuleChoices(character, activeBooks, compendium).filter((c) => !FEAT_GRANTED_CHOICE_IDS.has(c.id)));
+  out.push(...battleMasterManeuverChoices(character, activeBooks, compendium).filter((c) => !FEAT_GRANTED_CHOICE_IDS.has(c.id)));
   out.push(...warlockPactBoonChoices(character, activeBooks, compendium));
   out.push(...warlockTomeCantripChoices(character, activeBooks, compendium));
   out.push(...warlockAncientSecretsStartingRituals(character, activeBooks, compendium));
   out.push(...warlockMysticArcanumChoices(character, activeBooks, compendium));
-  out.push(...warlockInvocationChoices(character, activeBooks, compendium).filter((c) => !c.id.includes("Feat")));
+  out.push(...warlockInvocationChoices(character, activeBooks, compendium).filter((c) => !FEAT_GRANTED_CHOICE_IDS.has(c.id)));
   out.push(...artificerInfusionChoices(character, activeBooks));
 
   return out;

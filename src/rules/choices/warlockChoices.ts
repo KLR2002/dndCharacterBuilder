@@ -4,6 +4,9 @@ import { currentCompendium, type Compendium } from "../../services/compendium.ts
 import { isSpellAvailableForClass } from "../spellcasting.ts";
 import { type AvailableRuleChoice, type ChoiceOwner, formatCantripOptions } from "./types.ts";
 
+/** The Eldritch Adept feat invocation choice. Its id is frozen. Callers look it up by this exact id. */
+export const ELDRITCH_ADEPT_CHOICE_ID = "TCE__Feat__Eldritch Adept__Invocation";
+
 const WARLOCK_CLASS_CHOICE_IDS = new Set([
   "PHB__Warlock__Pact Boon",
   "Warlock__Pact of the Tome__Cantrips",
@@ -804,7 +807,7 @@ export function warlockInvocationChoices(
   ].some((s) => s.type === "feat" && s.featName?.toLowerCase().trim() === "eldritch adept");
 
   if (hasEldritchAdept) {
-    const id = "TCE__Feat__Eldritch Adept__Invocation";
+    const id = ELDRITCH_ADEPT_CHOICE_ID;
     const otherPicked = getPickedInOtherInvocationChoices(id);
     const eligible = invocationOptions
       .filter((opt) => !otherPicked.has(opt.name.toLowerCase().trim()))

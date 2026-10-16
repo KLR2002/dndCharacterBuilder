@@ -192,10 +192,7 @@ export const BuilderTab: React.FC<BuilderTabProps> = ({
   // ─────────────────────────────────────────────────────────────────────────
   // SKILLS, LANGUAGES & TOOLS
   // ─────────────────────────────────────────────────────────────────────────
-  const autoGrantedBase = getAutoGrantedSkills(character, {
-    races: allRaces,
-    backgrounds: allBackgrounds,
-  });
+  const autoGrantedBase = getAutoGrantedSkills(character, { catalogs });
 
   const chosenAncestryOption = (c: typeof character, catalog: typeof allRaces): string | undefined => {
     const entry = (c.ruleChoices ?? [])[0];

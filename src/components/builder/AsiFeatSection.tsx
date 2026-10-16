@@ -7,6 +7,9 @@ import { applyAsiSelection, getFeatAbilityBonusOptions, removeAsiSelection } fro
 import { validateFeatPrerequisites } from "../../rules/feats";
 import {
   battleMasterManeuverChoices,
+  ELDRITCH_ADEPT_CHOICE_ID,
+  FIGHTING_INITIATE_CHOICE_ID,
+  MARTIAL_ADEPT_CHOICE_ID,
   fightingStyleRuleChoices,
   pickRuleChoice,
   warlockInvocationChoices,
@@ -102,14 +105,14 @@ export const AsiFeatSection: React.FC<AsiFeatSectionProps> = ({
         });
         if (asiSelectedFeat.name.toLowerCase() === "fighting initiate" && asiSelectedFightingStyle) {
           const fsChoices = fightingStyleRuleChoices(updated);
-          const fiChoice = fsChoices.find((c) => c.id.includes("Fighting Initiate"));
+          const fiChoice = fsChoices.find((c) => c.id === FIGHTING_INITIATE_CHOICE_ID);
           if (fiChoice) {
             updated = pickRuleChoice(updated, fiChoice, asiSelectedFightingStyle);
           }
         }
         if (asiSelectedFeat.name.toLowerCase() === "martial adept" && asiSelectedManeuvers.length > 0) {
           const mChoices = battleMasterManeuverChoices(updated);
-          const maChoice = mChoices.find((c) => c.id.includes("Martial Adept"));
+          const maChoice = mChoices.find((c) => c.id === MARTIAL_ADEPT_CHOICE_ID);
           if (maChoice) {
             for (const m of asiSelectedManeuvers) {
               updated = pickRuleChoice(updated, maChoice, m);
@@ -118,7 +121,7 @@ export const AsiFeatSection: React.FC<AsiFeatSectionProps> = ({
         }
         if (asiSelectedFeat.name.toLowerCase() === "eldritch adept" && asiSelectedInvocation) {
           const invChoices = warlockInvocationChoices(updated, activeBooks);
-          const eaChoice = invChoices.find((c) => c.id.includes("Eldritch Adept"));
+          const eaChoice = invChoices.find((c) => c.id === ELDRITCH_ADEPT_CHOICE_ID);
           if (eaChoice) {
             updated = pickRuleChoice(updated, eaChoice, asiSelectedInvocation);
           }
@@ -500,7 +503,7 @@ export const AsiFeatSection: React.FC<AsiFeatSectionProps> = ({
                           { type: "feat", featName: "Fighting Initiate", level: 1 },
                         ],
                       };
-                      const fsChoice = fightingStyleRuleChoices(tempChar).find((c) => c.id.includes("Fighting Initiate"));
+                      const fsChoice = fightingStyleRuleChoices(tempChar).find((c) => c.id === FIGHTING_INITIATE_CHOICE_ID);
                       const options = fsChoice?.options ?? [];
                       return (
                         <View
@@ -565,7 +568,7 @@ export const AsiFeatSection: React.FC<AsiFeatSectionProps> = ({
                           { type: "feat", featName: "Martial Adept", level: 1 },
                         ],
                       };
-                      const maChoice = battleMasterManeuverChoices(tempChar).find((c) => c.id.includes("Martial Adept"));
+                      const maChoice = battleMasterManeuverChoices(tempChar).find((c) => c.id === MARTIAL_ADEPT_CHOICE_ID);
                       const options = maChoice?.options ?? [];
                       return (
                         <View
@@ -642,7 +645,7 @@ export const AsiFeatSection: React.FC<AsiFeatSectionProps> = ({
                           { type: "feat", featName: "Eldritch Adept", level: 1 },
                         ],
                       };
-                      const eaChoice = warlockInvocationChoices(tempChar, activeBooks).find((c) => c.id.includes("Eldritch Adept"));
+                      const eaChoice = warlockInvocationChoices(tempChar, activeBooks).find((c) => c.id === ELDRITCH_ADEPT_CHOICE_ID);
                       const options = eaChoice?.options ?? [];
                       return (
                         <View
@@ -791,8 +794,8 @@ export const AsiFeatSection: React.FC<AsiFeatSectionProps> = ({
                 </View>
 
                 {sel.featName?.toLowerCase() === "fighting initiate" && (() => {
-                  const fsChoice = fightingStyleRuleChoices(character).find((c) => c.id.includes("Fighting Initiate"));
-                  const currentPick = character.ruleChoices?.find((rc) => rc.id.includes("Fighting Initiate"))?.picked?.[0];
+                  const fsChoice = fightingStyleRuleChoices(character).find((c) => c.id === FIGHTING_INITIATE_CHOICE_ID);
+                  const currentPick = character.ruleChoices?.find((rc) => rc.id === FIGHTING_INITIATE_CHOICE_ID)?.picked?.[0];
                   if (!fsChoice) return null;
                   return (
                     <View style={{ marginTop: 4, gap: 6, paddingTop: 6, borderTopWidth: 1, borderTopColor: theme.border }}>
@@ -843,8 +846,8 @@ export const AsiFeatSection: React.FC<AsiFeatSectionProps> = ({
                 })()}
 
                 {sel.featName?.toLowerCase() === "martial adept" && (() => {
-                  const maChoice = battleMasterManeuverChoices(character).find((c) => c.id.includes("Martial Adept"));
-                  const currentPicks = character.ruleChoices?.find((rc) => rc.id.includes("Martial Adept"))?.picked || [];
+                  const maChoice = battleMasterManeuverChoices(character).find((c) => c.id === MARTIAL_ADEPT_CHOICE_ID);
+                  const currentPicks = character.ruleChoices?.find((rc) => rc.id === MARTIAL_ADEPT_CHOICE_ID)?.picked || [];
                   if (!maChoice) return null;
                   return (
                     <View style={{ marginTop: 4, gap: 6, paddingTop: 6, borderTopWidth: 1, borderTopColor: theme.border }}>
@@ -903,8 +906,8 @@ export const AsiFeatSection: React.FC<AsiFeatSectionProps> = ({
                 })()}
 
                 {sel.featName?.toLowerCase() === "eldritch adept" && (() => {
-                  const eaChoice = warlockInvocationChoices(character, activeBooks).find((c) => c.id.includes("Eldritch Adept"));
-                  const currentPick = character.ruleChoices?.find((rc) => rc.id.includes("Eldritch Adept"))?.picked?.[0];
+                  const eaChoice = warlockInvocationChoices(character, activeBooks).find((c) => c.id === ELDRITCH_ADEPT_CHOICE_ID);
+                  const currentPick = character.ruleChoices?.find((rc) => rc.id === ELDRITCH_ADEPT_CHOICE_ID)?.picked?.[0];
                   if (!eaChoice) return null;
                   return (
                     <View style={{ marginTop: 4, gap: 6, paddingTop: 6, borderTopWidth: 1, borderTopColor: theme.border }}>

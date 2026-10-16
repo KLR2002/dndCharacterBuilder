@@ -8,6 +8,9 @@ import {
   setRuleChoicePick,
 } from "./types.ts";
 
+/** The Fighting Initiate feat choice. Its id is frozen. Callers look it up by this exact id. */
+export const FIGHTING_INITIATE_CHOICE_ID = "TCE__Feat__Fighting Initiate__Style";
+
 /** Who owns each fighting style choice id this module issues. Feat-granted ids have no class owner. */
 const FIGHTING_STYLE_OWNERS = new Map<string, ChoiceOwner>([
   ["PHB__Fighter__Fighting Style", { className: "Fighter" }],
@@ -155,7 +158,7 @@ export function fightingStyleRuleChoices(
   ].some((s) => s.type === "feat" && s.featName?.toLowerCase() === "fighting initiate");
 
   if (hasFightingInitiate) {
-    const id = "TCE__Feat__Fighting Initiate__Style";
+    const id = FIGHTING_INITIATE_CHOICE_ID;
     const otherPicked = getPickedInOtherChoices(id);
     out.push({
       id,
@@ -323,7 +326,7 @@ export function pruneInvalidFightingStyles(character: Character): Character {
   if (bard && bard.level >= 3 && (subBard.includes("swords") || subBard.includes("college of swords"))) {
     validIds.add("XGE__Bard__College of Swords__Fighting Style");
   }
-  if (hasFightingInitiate) validIds.add("TCE__Feat__Fighting Initiate__Style");
+  if (hasFightingInitiate) validIds.add(FIGHTING_INITIATE_CHOICE_ID);
 
   let nextChoices = (character.ruleChoices || []).filter((rc) => {
     if (rc.id.includes("Fighting Style") || rc.id.includes("Fighting Initiate")) {

@@ -3,6 +3,9 @@ import { currentCompendium, type Compendium } from "../../services/compendium.ts
 import { type AvailableRuleChoice, type ChoiceOwner, getSubclassName, setRuleChoicePick } from "./types.ts";
 import { hasFightingStyle } from "./fightingStyles.ts";
 
+/** The Martial Adept feat choice. Its id is frozen. Callers look it up by this exact id. */
+export const MARTIAL_ADEPT_CHOICE_ID = "PHB__Feat__Martial Adept__Maneuvers";
+
 const BATTLE_MASTER_MANEUVERS = /^PHB__Fighter__Battle Master__Maneuvers \d+$/;
 
 /**
@@ -139,7 +142,7 @@ export function battleMasterManeuverChoices(
   ].some((s) => s.type === "feat" && s.featName?.toLowerCase() === "martial adept");
 
   if (hasMartialAdept) {
-    const id = "PHB__Feat__Martial Adept__Maneuvers";
+    const id = MARTIAL_ADEPT_CHOICE_ID;
     const otherPicked = getPickedInOtherChoices(id);
     out.push({
       id,
@@ -180,7 +183,7 @@ export function pruneInvalidManeuvers(character: Character): Character {
   ].some((s) => s.type === "feat" && s.featName?.toLowerCase() === "martial adept");
 
   if (hasMartialAdept) {
-    validIds.add("PHB__Feat__Martial Adept__Maneuvers");
+    validIds.add(MARTIAL_ADEPT_CHOICE_ID);
   }
 
   const nextRuleChoices = (character.ruleChoices || []).filter((rc) => {

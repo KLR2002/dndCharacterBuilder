@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { makeChar } from "./testUtils.ts";
+import { makeChar, inMemoryCompendium } from "./testUtils.ts";
 import {
   getAutoGrantedSkills,
   normalizeSkillName,
@@ -63,6 +63,40 @@ test("getAutoGrantedSkills collects background skills, fixed race skills, and ru
   assert.ok(granted.includes("Intimidation"), "Must include background skill Intimidation");
   assert.ok(granted.includes("Perception"), "Must include fixed race skill Perception");
   assert.ok(granted.includes("Survival"), "Must include ancestral legacy pick Survival");
+});
+
+test("getAutoGrantedSkills resolves race and background from a catalog bundle", () => {
+  // Names absent from the static fallback maps, so only the catalog can supply their skills.
+  const scholar: BackgroundData = {
+    name: "Test Scholar",
+    source: "TEST",
+    skillProficiencies: ["Arcana", "Nature"],
+    toolProficiencies: [],
+    languages: [],
+    startingEquipment: [],
+    feature: null,
+    characteristics: {},
+    description: "",
+  };
+  const testfolk: RaceData = {
+    name: "Testfolk",
+    source: "TEST",
+    speed: { walk: 30 },
+    size: ["Medium"],
+    abilityScoreIncrease: [{ dex: 2 }],
+    traits: [{ name: "Test Sense", description: "You have proficiency in the Survival skill." }],
+    subraces: [],
+    description: "",
+  };
+  const char = makeChar({
+    background: { name: "Test Scholar", source: "TEST" },
+    race: { name: "Testfolk", source: "TEST" },
+  });
+
+  const granted = getAutoGrantedSkills(char, {
+    catalogs: { compendium: inMemoryCompendium({ races: [testfolk], backgrounds: [scholar] }) },
+  });
+  assert.deepEqual(granted.sort(), ["Arcana", "Nature", "Survival"]);
 });
 
 test("Race skill choices do not consume class skill choices and lock already granted proficiencies", () => {

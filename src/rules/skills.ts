@@ -4,6 +4,7 @@ import type { BackgroundData, RaceData } from "../types/dnd5e.ts";
 import { DND_SKILLS } from "../constants/rules.ts";
 import { effectiveScores, hasFeat } from "./abilities.ts";
 import { proficiencyBonus, totalLevel } from "./proficiencies.ts";
+import { catalogListings, type CharacterCatalogs } from "./catalogs.ts";
 
 export interface SkillRow {
   name: string;
@@ -80,11 +81,17 @@ export function getAutoGrantedSkills(
   opts: {
     race?: { name?: string; traits?: { name: string; description?: string }[] };
     subrace?: { name?: string; traits?: { name: string; description?: string }[] };
+    /** Resolves race and background names. Without it, no catalog lookup happens. */
+    catalogs?: CharacterCatalogs;
+    /** Explicit lists take precedence over the catalog bundle. */
     races?: RaceData[];
     backgrounds?: BackgroundData[];
   } = {}
 ): string[] {
   const granted = new Set<string>();
+  const listings = opts.catalogs ? catalogListings(opts.catalogs) : undefined;
+  const races = opts.races ?? listings?.races();
+  const backgrounds = opts.backgrounds ?? listings?.backgrounds();
 
   // 1. Background skills
   if (character.background?.name) {
@@ -97,7 +104,7 @@ export function getAutoGrantedSkills(
         }
       }
     } else {
-      const fromCatalog = opts.backgrounds?.find(
+      const fromCatalog = backgrounds?.find(
         (b) => b.name.toLowerCase() === character.background!.name.toLowerCase()
       );
       if (fromCatalog?.skillProficiencies) {
@@ -141,8 +148,8 @@ export function getAutoGrantedSkills(
   const traits = [
     ...(opts.race?.traits || []),
     ...(opts.subrace?.traits || []),
-    ...(opts.races?.find((r) => r.name.toLowerCase() === character.race?.name?.toLowerCase())?.traits || []),
-    ...(opts.races
+    ...(races?.find((r) => r.name.toLowerCase() === character.race?.name?.toLowerCase())?.traits || []),
+    ...(races
       ?.find((r) => r.name.toLowerCase() === character.race?.name?.toLowerCase())
       ?.subraces?.find((sr) => sr.name.toLowerCase() === character.race?.subraceName?.toLowerCase())?.traits || []),
   ];
