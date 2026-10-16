@@ -380,6 +380,49 @@ test("reclaimStartingGrants from gold to equipment is a plain add that keeps the
   assert.equal(reclaimed.startingOption, "equipment");
 });
 
+test("starting gold reclaimed as equipment and then claimed as gold again replaces the earlier gold", () => {
+  const initial = makeChar({
+    classes: [{ className: "Fighter", source: "PHB", level: 1 }],
+    pouch: { cp: 0, sp: 0, ep: 0, gp: 0, pp: 0 },
+    items: [],
+  });
+
+  const goldClaim = applyStartingGrants(initial, "gold", { goldAmount: 100 });
+  const asEquipment = reclaimStartingGrants(goldClaim, "equipment", { equipmentItems: [] });
+  assert.equal(asEquipment.pouch.gp, 100, "reclaiming as equipment keeps the gold in the pouch");
+  assert.equal(asEquipment.startingGrantedGold, 100);
+  assert.equal(asEquipment.startingOption, "equipment");
+
+  const goldAgain = applyStartingGrants(asEquipment, "gold", { goldAmount: 100 });
+  assert.equal(goldAgain.pouch.gp, 100, "the earlier 100 is removed before the new 100 is added");
+  assert.equal(goldAgain.startingGrantedGold, 100);
+  assert.equal(goldAgain.startingOption, "gold");
+
+  const backToEquipment = applyStartingGrants(goldAgain, "equipment", { equipmentItems: [] });
+  assert.equal(backToEquipment.pouch.gp, 0, "all of the starting gold is removed");
+  assert.equal(backToEquipment.startingGrantedGold, undefined);
+});
+
+test("equipment, then gold, then equipment leaves the pouch as it was and swaps the starting items", () => {
+  const initial = makeChar({
+    classes: [{ className: "Fighter", source: "PHB", level: 1 }],
+    pouch: { cp: 0, sp: 0, ep: 0, gp: 10, pp: 0 },
+    items: [],
+  });
+  const longsword: InventoryItem = { id: "start_fighter_0", name: "Longsword", source: "PHB", quantity: 1, isEquipped: true, section: "equipped" };
+
+  const equipmentFirst = applyStartingGrants(initial, "equipment", { equipmentItems: [longsword] });
+  const goldSecond = applyStartingGrants(equipmentFirst, "gold", { goldAmount: 125 });
+  assert.equal(goldSecond.pouch.gp, 135);
+  assert.equal(goldSecond.startingGrantedGold, 125);
+  assert.deepEqual(goldSecond.items, []);
+
+  const equipmentThird = applyStartingGrants(goldSecond, "equipment", { equipmentItems: [longsword] });
+  assert.equal(equipmentThird.pouch.gp, 10, "the 125 gold grant is removed");
+  assert.equal(equipmentThird.startingGrantedGold, undefined);
+  assert.deepEqual(equipmentThird.items, [longsword]);
+});
+
 test("reclaimBackgroundGrants adds the coins and items again with unique ids and no duplicate skills", () => {
   const bgData = {
     name: "Acolyte",
@@ -811,6 +854,26 @@ test("removeClassLevel above level 1 keeps the class and drops the subclass only
   const droppedToThree = removeClassLevel(fighter4, "Fighter", inMemoryCompendium());
   assert.equal(droppedToThree.classes[0].level, 3);
   assert.equal(droppedToThree.classes[0].subclassName, "Battle Master");
+});
+
+test("removeClassLevel from level 4 to 2 keeps the subclass at 3 and clears it once the level drops below 3", () => {
+  // Lowercase entry: the class lookup matches the class name exactly, so the call uses the same case.
+  const fighter4 = makeChar({
+    classes: [
+      { className: "fighter", source: "PHB", level: 4, subclassName: "Battle Master", subclass: "Battle Master", subclassSource: "PHB" },
+    ],
+  });
+
+  const atThree = removeClassLevel(fighter4, "fighter", inMemoryCompendium());
+  assert.equal(atThree.classes[0].level, 3);
+  assert.equal(atThree.classes[0].subclassName, "Battle Master");
+
+  const atTwo = removeClassLevel(atThree, "fighter", inMemoryCompendium());
+  assert.equal(atTwo.classes[0].className, "fighter");
+  assert.equal(atTwo.classes[0].level, 2);
+  assert.equal(atTwo.classes[0].subclassName, undefined);
+  assert.equal(atTwo.classes[0].subclass, undefined);
+  assert.equal(atTwo.classes[0].subclassSource, undefined);
 });
 
 const classWithSubclasses = (name: string, source: string, subclassNames: string[]) =>

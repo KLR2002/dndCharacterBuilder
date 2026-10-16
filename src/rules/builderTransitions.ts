@@ -518,11 +518,14 @@ export function applyStartingGrants(
   // Clean up any previously granted starting items (items with id starting with "start_")
   const cleanedItems = (character.items ?? []).filter((item) => !item.id.startsWith("start_"));
 
-  // Clean up any previously granted starting gold if we were in gold mode
+  // Remove any starting gold recorded by an earlier claim, whichever mode made it. A gold claim with
+  // no recorded amount (older saves) had the default amount granted, so that is removed instead.
   const currentPouch = { ...(character.pouch ?? { cp: 0, sp: 0, ep: 0, gp: 0, pp: 0 }) };
-  if (character.startingGrantsApplied && character.startingOption === "gold") {
-    const goldToRemove = character.startingGrantedGold ?? defaultGold;
-    currentPouch.gp = Math.max(0, (currentPouch.gp ?? 0) - goldToRemove);
+  const grantedGold =
+    character.startingGrantedGold ??
+    (character.startingGrantsApplied && character.startingOption === "gold" ? defaultGold : 0);
+  if (grantedGold) {
+    currentPouch.gp = Math.max(0, (currentPouch.gp ?? 0) - grantedGold);
   }
 
   if (mode === "gold") {
@@ -556,6 +559,7 @@ export function applyStartingGrants(
  * Claims starting gold or equipment again on top of what the character already has. Earlier grants
  * are kept: nothing is removed. Gold accumulates in `startingGrantedGold`, so a later switch to
  * equipment through `applyStartingGrants` removes all of it. Equipment ids are made unique.
+ * Touches only items, the pouch and the starting-grant markers, so it does not call `reconcile`.
  */
 export function reclaimStartingGrants(
   character: Character,
@@ -723,7 +727,7 @@ export function parseBackgroundEquipment(startingEquipment: string[] = []): {
   return { coins, items };
 }
 
-/** Adds a background's coins, equipment and skill proficiencies to the character, without touching the marker. */
+/** Adds a background's coins, equipment and skill proficiencies to the character, without touching the marker or calling `reconcile`. */
 function grantBackground(character: Character, bgData?: BackgroundData): Character {
   const startingEquipment = bgData?.startingEquipment || [];
   const { coins, items } = parseBackgroundEquipment(startingEquipment);
@@ -775,7 +779,7 @@ export function applyBackgroundGrants(
   return { ...grantBackground(character, backgroundData), backgroundGrantsApplied: true };
 }
 
-/** Claims the background's coins and equipment again, on top of what was already granted. */
+/** Claims the background's coins and equipment again, on top of what was already granted. Does not call `reconcile`. */
 export function reclaimBackgroundGrants(character: Character, backgroundData?: BackgroundData): Character {
   return { ...grantBackground(character, backgroundData), backgroundGrantsApplied: true };
 }

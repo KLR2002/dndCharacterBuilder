@@ -105,11 +105,13 @@ export const ClassProgressionSection: React.FC<ClassProgressionSectionProps> = (
   // SRD mode has exactly one subclass per class, so there is no choice to offer: it is applied instead.
   const isSrd = !currentCompendium().integrated;
 
+  // Re-runs on a compendium mode switch too (isSrd), since the sole subclass depends on the compendium.
   useEffect(() => {
-    if (applySoleSubclasses(character) !== character) {
-      onUpdate((current) => applySoleSubclasses(current));
+    const next = applySoleSubclasses(character, currentCompendium());
+    if (next !== character) {
+      onUpdate(() => next);
     }
-  }, [character, onUpdate]);
+  }, [character, isSrd, onUpdate]);
 
   const handleAddClassLevel = (className: string, source: string) => {
     onUpdate((current) => addMulticlassLevel(current, className, source));
