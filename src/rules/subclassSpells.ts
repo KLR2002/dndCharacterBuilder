@@ -25,23 +25,38 @@ export function normalizeKey(str: string): string {
   return str.toLowerCase().replace(/[^a-z0-9]/g, "");
 }
 
-let spellCatalogs = new WeakMap<Compendium, Map<string, SpellData>>();
+let spellCatalogs = new WeakMap<Compendium, Map<string, SpellData[]>>();
 
 // One name-keyed spell index per Compendium, so a dataset swap never reads a stale catalog.
-function getSpellCatalog(compendium: Compendium): Map<string, SpellData> {
+// A name can exist under several Sources, so every copy is kept in compendium order.
+function getSpellCatalog(compendium: Compendium): Map<string, SpellData[]> {
   let map = spellCatalogs.get(compendium);
   if (!map) {
-    map = new Map<string, SpellData>();
+    map = new Map<string, SpellData[]>();
     for (const spell of compendium.for().spells()) {
-      map.set(normalizeKey(spell.name), spell);
+      const key = normalizeKey(spell.name);
+      const copies = map.get(key);
+      if (copies) copies.push(spell);
+      else map.set(key, [spell]);
     }
     spellCatalogs.set(compendium, map);
   }
   return map;
 }
 
+// Prefers the copy from an active book; otherwise falls back to the first copy.
+function pickSpell(copies: SpellData[] | undefined, activeBooks?: string[]): SpellData | undefined {
+  if (!copies || copies.length === 0) return undefined;
+  if (activeBooks && activeBooks.length > 0) {
+    const books = new Set(activeBooks.map((b) => b.toUpperCase()));
+    const active = copies.find((s) => books.has((s.source || "").toUpperCase()));
+    if (active) return active;
+  }
+  return copies[0];
+}
+
 export function resetSpellCatalogCache(): void {
-  spellCatalogs = new WeakMap<Compendium, Map<string, SpellData>>();
+  spellCatalogs = new WeakMap<Compendium, Map<string, SpellData[]>>();
 }
 
 export const ELEMENTAL_DISCIPLINE_SPELL_MAP: Record<
@@ -253,7 +268,7 @@ export function getSubclassSpells(
   const expandedSet = new Set<string>();
 
   const resolveSpell = (rawName: string): SpellData | undefined => {
-    const baseSpell = catalog.get(normalizeKey(rawName));
+    const baseSpell = pickSpell(catalog.get(normalizeKey(rawName)), options?.activeBooks);
     const canonicalBaseName = baseSpell ? baseSpell.name : rawName;
     let target = rawName;
     let isReplaced = false;
@@ -269,7 +284,7 @@ export function getSubclassSpells(
       }
     }
 
-    const resolved = catalog.get(normalizeKey(target));
+    const resolved = pickSpell(catalog.get(normalizeKey(target)), options?.activeBooks);
     if (!resolved) {
       if (baseSpell) {
         return { ...baseSpell, isReplaced: false, originalName: canonicalBaseName };
@@ -500,7 +515,7 @@ export function getSubclassSpells(
   }
 
   for (const name of cantripNamesToResolve) {
-    const spell = catalog.get(normalizeKey(name));
+    const spell = pickSpell(catalog.get(normalizeKey(name)), options?.activeBooks);
     if (spell) {
       cantripsMap.set(spell.name, spell);
     }
@@ -599,7 +614,7 @@ export function validateSubclassSpellSwap(
   }
 
   const catalog = getSpellCatalog(compendium);
-  const origSpell = catalog.get(normOriginal);
+  const origSpell = pickSpell(catalog.get(normOriginal), activeBooks);
   if (!origSpell) {
     return { valid: false, reason: `Original spell "${originalSpellName}" not found in catalog.` };
   }
@@ -612,7 +627,7 @@ export function validateSubclassSpellSwap(
   }
 
   const normRepl = normalizeKey(replacementSpellName);
-  const replSpell = catalog.get(normRepl);
+  const replSpell = pickSpell(catalog.get(normRepl), activeBooks);
   if (!replSpell) {
     return { valid: false, reason: `Replacement spell "${replacementSpellName}" does not exist.` };
   }
@@ -676,7 +691,9 @@ export function getEligibleSubclassSpellSwaps(
   const activeBooksSet = activeBooks ? new Set(activeBooks.map((b) => b.toUpperCase())) : null;
 
   const eligible: SpellData[] = [];
-  for (const spell of catalog.values()) {
+  for (const copies of catalog.values()) {
+    const spell = pickSpell(copies, activeBooks);
+    if (!spell) continue;
     if (spell.level !== originalSpell.level) continue;
     if (!allowedSchools.includes((spell.school || "").toLowerCase())) continue;
     if (!spell.classes?.some((c) => allowedClasses.includes(c.toLowerCase()))) continue;
@@ -740,7 +757,7 @@ export function getOrphanedSubclassSpells(
     if (newExpandedSet.has(norm)) continue;
 
     // Is it a native class spell on the base spell list?
-    const spellData = catalog.get(norm);
+    const spellData = pickSpell(catalog.get(norm), activeBooks);
     const isNativeBaseSpell = spellData?.classes?.some((c) => c.toLowerCase() === classLower);
     if (isNativeBaseSpell) continue;
 

@@ -76,6 +76,13 @@ export function cleanTag(tag: string, content: string, mode: CleanMode = "markdo
     case "card":
     case "deck":
     case "psionic":
+    case "variantrule":
+    case "itemmastery":
+    case "itemproperty":
+    case "cult":
+    case "boon":
+    case "trap":
+    case "charoption":
       // Standard format: name|source|displayText
       if (parts.length >= 3 && parts[2]?.trim()) {
         return parts[2].trim();
