@@ -29,7 +29,7 @@ Gaining levels in multiple classes subject to ability score prerequisites and th
 _Avoid_: Cross-classing, hybrid class
 
 **Rule Choice**:
-A selection the player makes from a fixed set of options granted by a single rule, where exactly one option takes effect. It originates from ancestry, class, or subclass, and its id is its persisted identity, so ids never change once shipped. Distinct from a *Proficiency Choice*, which grants proficiency rather than a feature, and from a *Replacement*, which substitutes one fixed feature for another with no player choice.
+A selection the player makes from a fixed set of options granted by a single rule, where exactly one option takes effect. It originates from ancestry, class, or subclass, and its id is its persisted identity, so ids never change once shipped. The options of a non-SRD Rule Choice come from the Integrated Catalog and are never bundled with the application; without that catalog the choice is not offered, and a character's saved picks are kept. Distinct from a *Proficiency Choice*, which grants proficiency rather than a feature, and from a *Replacement*, which substitutes one fixed feature for another with no player choice.
 _Avoid_: variant, option, mode, toggle
 
 **Ancestral Variant**:
@@ -233,7 +233,7 @@ The minimal, unencumbered player compendium strictly derived from the 5.1 System
 _Avoid_: Default books, base sourcebook, vanilla data
 
 **Integrated Catalog**:
-The complete player compendium fetched from 5e.tools and persisted in client storage (IndexedDB).
+The complete player compendium fetched from 5e.tools and persisted in client storage (IndexedDB). It carries a format number; a catalog older than the format the application requires is *stale*, and Settings asks for a re-sync.
 _Avoid_: Scraped dump, external database, download cache
 
 **Sourcebook Gating**:
