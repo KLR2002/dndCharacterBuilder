@@ -8,16 +8,27 @@ import {
   subclassRuleChoices,
   type AvailableRuleChoice,
 } from "../src/rules/ruleChoices.ts";
-import type { Compendium } from "../src/services/compendium.ts";
-import { integratedTestCompendium, makeChar, srdBaselineCompendium } from "./testUtils.ts";
+import { createCompendium, type Compendium } from "../src/services/compendium.ts";
+import { integratedTestCompendium, makeChar, srdBaselineBundle, withTotemFixture } from "./testUtils.ts";
 
 /**
  * Regression net for the class and subclass Rule Choices. Every representative character,
  * level, active book set and Compendium mode is recorded against a baseline file, so any
  * change to the offered ids, levels, gating or option text fails here.
  *
+ * The Totem Warrior rows read their options from the Integrated Catalog, so both modes run
+ * their Totem scenarios against the fixture catalog. Their option text is placeholder text
+ * there, so the Totem entries record names and ids only (no option digest) and the baseline's
+ * recorded Totem digests are dropped before comparing. Every other entry is compared exactly.
+ *
  * To re-record deliberately: UPDATE_SUBCLASS_CHOICE_BASELINE=1 node --test checks/subclassChoiceCharacterization.test.ts
  */
+
+const CATALOG_TEXT_IDS = new Set([
+  "PHB__Barbarian__Path of the Totem Warrior__Totem Spirit 3",
+  "PHB__Barbarian__Path of the Totem Warrior__Aspect of the Beast 6",
+  "PHB__Barbarian__Path of the Totem Warrior__Totemic Attunement 14",
+]);
 
 const BASELINE_PATH = new URL("./fixtures/subclassChoiceBaseline.json", import.meta.url);
 const LEVELS = [1, 2, 3, 6, 10, 11, 14, 17];
@@ -99,8 +110,11 @@ interface Recorded {
   effectLevel: number;
   replaces?: string;
   options: string[];
-  optionsHash: string;
+  /** Digest of the option text. Absent for catalog-text ids. */
+  optionsHash?: string;
 }
+
+const digest = (value: unknown) => createHash("sha256").update(JSON.stringify(value)).digest("hex");
 
 const record = (choice: AvailableRuleChoice): Recorded => ({
   id: choice.id,
@@ -111,8 +125,31 @@ const record = (choice: AvailableRuleChoice): Recorded => ({
   effectLevel: choice.effectLevel,
   ...(choice.replaces ? { replaces: choice.replaces } : {}),
   options: choice.options.map((o) => o.name),
-  optionsHash: createHash("sha256").update(JSON.stringify(choice.options)).digest("hex").slice(0, 16),
+  ...(CATALOG_TEXT_IDS.has(choice.id) ? {} : { optionsHash: digest(choice.options).slice(0, 16) }),
 });
+
+/** The baseline with the Totem entries' option digests dropped and their keys recomputed to match. */
+function withoutCatalogTextDigests(baseline: Baseline): Baseline {
+  const rekeyed = new Map<string, string>();
+  const choices: Record<string, Recorded> = {};
+  for (const [key, entry] of Object.entries(baseline.choices)) {
+    if (!CATALOG_TEXT_IDS.has(entry.id)) {
+      choices[key] = entry;
+      continue;
+    }
+    const { optionsHash: _dropped, ...names } = entry;
+    const newKey = `${entry.id}|${digest(names).slice(0, 12)}`;
+    rekeyed.set(key, newKey);
+    choices[newKey] = names;
+  }
+  const scenarios = Object.fromEntries(
+    Object.entries(baseline.scenarios).map(([key, scenario]) => [
+      key,
+      { ...scenario, subclassRuleChoices: scenario.subclassRuleChoices.map((k) => rekeyed.get(k) ?? k) },
+    ]),
+  );
+  return { choices, scenarios };
+}
 
 interface Baseline {
   /** Every distinct recorded choice, keyed by its id and a digest of its full content. */
@@ -123,7 +160,7 @@ interface Baseline {
 
 function captureAll(): Baseline {
   const modes: [string, () => Compendium][] = [
-    ["srd", srdBaselineCompendium],
+    ["srd", () => createCompendium(withTotemFixture(srdBaselineBundle()))],
     ["integrated", integratedTestCompendium],
   ];
   const choices: Record<string, Recorded> = {};
@@ -137,8 +174,7 @@ function captureAll(): Baseline {
           const key = `${mode} | ${label} | L${level} | books=${books ? books.join("+") || "none" : "all"}`;
           const keys = subclassRuleChoices(character, books, comp).map((choice) => {
             const entry = record(choice);
-            const digest = createHash("sha256").update(JSON.stringify(entry)).digest("hex").slice(0, 12);
-            const choiceKey = `${entry.id}|${digest}`;
+            const choiceKey = `${entry.id}|${digest(entry).slice(0, 12)}`;
             choices[choiceKey] = entry;
             return choiceKey;
           });
@@ -158,7 +194,7 @@ test("class and subclass Rule Choices match the recorded baseline in SRD and int
   if (process.env.UPDATE_SUBCLASS_CHOICE_BASELINE) {
     writeFileSync(BASELINE_PATH, `${JSON.stringify(actual)}\n`);
   }
-  const expected = JSON.parse(readFileSync(BASELINE_PATH, "utf8"));
+  const expected = withoutCatalogTextDigests(JSON.parse(readFileSync(BASELINE_PATH, "utf8")));
   assert.deepEqual(actual, expected);
 });
 

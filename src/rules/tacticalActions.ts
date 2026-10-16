@@ -259,24 +259,10 @@ export function getTacticalActionLedger(
       });
     }
     if (clsLower === "barbarian") {
-      const hasBearTotem3 = Boolean(
-        character.ruleChoices?.some(
-          (rc) =>
-            (rc.id === "PHB__Barbarian__Path of the Totem Warrior__Totem Spirit 3" ||
-              rc.trait === "Totem Spirit (3rd Level)" ||
-              (rc.trait.toLowerCase().includes("totem spirit") &&
-                !rc.trait.toLowerCase().includes("aspect") &&
-                !rc.trait.toLowerCase().includes("attunement"))) &&
-            rc.picked?.some((p) => p.toLowerCase() === "bear")
-        )
-      );
-      const bearNote = hasBearTotem3
-        ? " While raging, Bear Totem grants resistance to all damage except psychic."
-        : "";
       bonusActions.push({
         name: "Enter Rage",
         source: "Barbarian 1",
-        desc: `In battle, you fight with primal ferocity. On your turn, you can enter a rage as a bonus action.${bearNote}`,
+        desc: "In battle, you fight with primal ferocity. On your turn, you can enter a rage as a bonus action.",
       });
     }
     if (clsLower === "fighter") {
