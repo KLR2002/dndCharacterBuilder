@@ -4,11 +4,13 @@
 
 **Blocked by:** 02
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] Scraper test: placeholder `additionalSpells` shapes for a land-style, affinity-style, genie-style and giant-style subclass each yield a `spellChoice` with the right options
-- [ ] Biome, Divine Affinity, Genie Kind and Giant Power Cantrip are offered from the catalog with their frozen ids and unchanged option names
-- [ ] The Giant Power pick still keeps its known spell in sync through the Reconciler
-- [ ] The four hand-written option lists no longer exist
-- [ ] Dual-Mode, stale-catalog and negative tests exist at the Rule Choice interface seam
-- [ ] Existing suite and characterization scenarios pass (`npm run check:all`)
+**Landed:** merge `940e886`. Notes: the app reader derives the choice from `additionalSpells` when `spellChoice` is absent (SRD Baseline and old catalogs); generated descriptions title-case spell names word by word ("Freedom Of Movement"); Giant cantrip options have an empty description.
+
+- [x] Scraper test: placeholder `additionalSpells` shapes for a land-style, affinity-style, genie-style and giant-style subclass each yield a `spellChoice` with the right options
+- [x] Biome, Divine Affinity, Genie Kind and Giant Power Cantrip are offered from the catalog with their frozen ids and unchanged option names
+- [x] The Giant Power pick still keeps its known spell in sync through the Reconciler
+- [x] The four hand-written option lists no longer exist
+- [x] Dual-Mode, stale-catalog and negative tests exist at the Rule Choice interface seam
+- [x] Existing suite and characterization scenarios pass (`npm run check:all`)

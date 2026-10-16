@@ -218,3 +218,54 @@ test("compendiumStorage: saves, loads, and clears large payloads via native File
 });
 
 
+
+test("compendiumStorage: saving stamps the required catalog format and loading returns it", async () => {
+  const kv = new Map<string, string>();
+  __setCompendiumKvForTests(kv);
+  try {
+    await saveCompendiumData({
+      hasIntegratedCatalog: true,
+      races: [],
+      classes: [],
+      feats: [],
+      backgrounds: [],
+      items: [],
+      spells: [],
+      beasts: [],
+      conditions: [],
+      optionsAndFeatures: [],
+      books: [],
+    });
+    const loaded = await loadCompendiumData();
+    assert.equal(loaded?.catalogFormat, 2);
+  } finally {
+    __setCompendiumKvForTests(undefined);
+  }
+});
+
+test("compendiumStorage: a catalog saved without a format or below the required one loads intact and is stale", async () => {
+  const { isCatalogStale } = await import("../src/services/compendiumStorage.ts");
+  const kv = new Map<string, string>();
+  __setCompendiumKvForTests(kv);
+  try {
+    const races = [{ name: "Elf", source: "PHB", speed: { walk: 30 }, traits: [] }];
+    // Saved by the old app: no catalogFormat key at all.
+    kv.set("@dnd5e_integrated_compendium", JSON.stringify({ hasIntegratedCatalog: true, races, classes: [] }));
+    const oldApp = await loadCompendiumData();
+    assert.equal(oldApp?.catalogFormat, undefined);
+    assert.deepEqual(oldApp?.races, races, "a stale catalog keeps every record");
+    assert.equal(isCatalogStale(oldApp!), true);
+
+    kv.set("@dnd5e_integrated_compendium", JSON.stringify({ hasIntegratedCatalog: true, catalogFormat: 1, races, classes: [] }));
+    const older = await loadCompendiumData();
+    assert.deepEqual(older?.races, races);
+    assert.equal(isCatalogStale(older!), true);
+
+    await saveCompendiumData({ hasIntegratedCatalog: true, races, classes: [] } as any);
+    const current = await loadCompendiumData();
+    assert.equal(isCatalogStale(current!), false);
+    assert.equal(isCatalogStale({ hasIntegratedCatalog: false } as any), false, "the SRD Baseline is never stale");
+  } finally {
+    __setCompendiumKvForTests(undefined);
+  }
+});

@@ -3,13 +3,16 @@ import assert from "node:assert/strict";
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join, relative, resolve, dirname } from "node:path";
 import { makeChar, loadTestCatalog, integratedTestCompendium, srdBaselineCompendium } from "./testUtils.ts";
+import { choiceCatalogBundle, choiceCatalogClasses } from "./choiceCatalogFixture.ts";
+import type { SubclassAdditionalSpells } from "../src/types/dnd5e.ts";
+import { liftSpellChoice } from "../dnd5eToolsScrap/src/parser/spell-choice.ts";
 import { infusionCatalog } from "./infusionFixture.ts";
 import {
   offeredRuleChoices,
   pickRuleChoice,
   subclassRuleChoices,
 } from "../src/rules/ruleChoices.ts";
-import type { Compendium } from "../src/services/compendium.ts";
+import { createCompendium, type Compendium } from "../src/services/compendium.ts";
 import { reconcile } from "../src/rules/characterReconciler.ts";
 import { GIANT_POWER_CHOICE_ID } from "../src/rules/choices/types.ts";
 import {
@@ -279,4 +282,113 @@ test("a book-gated option is offered only while its book is active, and an exist
   // Disabling the book later gates new offers only; a pick already on the sheet still displays.
   const afterDisable = reconcile(picked, currentCompendium());
   assert.deepEqual(afterDisable.ruleChoices?.find((rc) => rc.id === TOTEM_SPIRIT_3_ID)?.picked, ["Elk"]);
+});
+
+// Spell-driven choices: the Land biome, the Divine Soul affinity, the Genie kind and the Giant
+// cantrip are read from the catalog's spell choice, lifted from its additional spells when the
+// catalog holds no spell choice of its own.
+
+const BIOME_ID = "PHB__Druid__Circle of the Land__Biome";
+const AFFINITY_ID = "XGE__Sorcerer__Divine Soul__Affinity";
+const KIND_ID = "TCE__Warlock__The Genie__Kind";
+const BIOMES = ["Arctic", "Coast", "Desert", "Forest", "Grassland", "Mountain", "Swamp", "Underdark"];
+
+const druidOnLand = () =>
+  makeChar({ classes: [{ className: "Druid", source: "PHB", level: 2, subclassName: "Circle of the Land" }] });
+
+/**
+ * The fixture bundle with the spell data of one class's subclasses replaced. Each subclass keeps the
+ * given additional spells and loses its spell choice, as a catalog synced before lifting holds it.
+ */
+function bundleWithSpellData(className: string, additionalSpells: SubclassAdditionalSpells[] | undefined) {
+  const bundle = choiceCatalogBundle();
+  return {
+    ...bundle,
+    classes: bundle.classes.map((c) =>
+      c.name === className
+        ? { ...c, subclasses: c.subclasses.map((sc) => ({ ...sc, additionalSpells, spellChoice: undefined })) }
+        : c,
+    ),
+  };
+}
+
+test("the scraper's lift of each fixture subclass's additional spells is its fixture spell choice", () => {
+  const subclasses = choiceCatalogClasses().flatMap((c) => c.subclasses);
+  const spellDriven = subclasses.filter((sc) => sc.additionalSpells);
+  assert.equal(spellDriven.length, 4, "the Land, Divine Soul, Genie and Giant fixtures are spell driven");
+  for (const sc of spellDriven) {
+    assert.deepEqual(liftSpellChoice(sc.additionalSpells), sc.spellChoice, sc.name);
+  }
+});
+
+test("the Land biome is offered its catalog's spell-choice options, not a written list", () => {
+  const catalogBiomes = choiceCatalogClasses().find((c) => c.name === "Druid")?.subclasses[0]?.spellChoice?.options;
+  assert.ok(catalogBiomes, "the fixture Land carries a spell choice");
+  const offered = subclassRuleChoices(druidOnLand(), undefined, createCompendium(choiceCatalogBundle())).find(
+    (c) => c.id === BIOME_ID,
+  );
+  assert.deepEqual(offered?.options, catalogBiomes);
+});
+
+test("the Land biome is offered in SRD mode from its own additional spells, and the four spell-driven rows in integrated mode", () => {
+  const srdBiome = subclassRuleChoices(druidOnLand(), undefined, srdBaselineCompendium()).find((c) => c.id === BIOME_ID);
+  assert.ok(srdBiome, "the SRD Land has no spell choice, so its biomes are lifted from its additional spells");
+  assert.deepEqual(srdBiome.options.map((o) => o.name), BIOMES);
+  assert.equal(
+    srdBiome.options[0].description,
+    "Hold Person, Spike Growth, Sleet Storm, Slow, Freedom Of Movement, Ice Storm, Commune With Nature, Cone Of Cold",
+  );
+
+  const everyone = makeChar({
+    classes: [
+      { className: "Druid", source: "PHB", level: 2, subclassName: "Circle of the Land" },
+      { className: "Sorcerer", source: "XGE", level: 1, subclassName: "Divine Soul" },
+      { className: "Warlock", source: "TCE", level: 1, subclassName: "The Genie" },
+      { className: "Barbarian", source: "BGG", level: 3, subclassName: "Path of the Giant" },
+    ],
+  });
+  const integrated = subclassRuleChoices(everyone, undefined, integratedTestCompendium()).map((c) => c.id);
+  for (const id of [BIOME_ID, AFFINITY_ID, KIND_ID, GIANT_POWER_CHOICE_ID]) {
+    assert.ok(integrated.includes(id), `the integrated catalog offers ${id}`);
+  }
+});
+
+test("a catalog with no additional spells for the owner hides the row and keeps the saved pick", () => {
+  const stale = createCompendium(bundleWithSpellData("Druid", undefined));
+  const picked = {
+    ...druidOnLand(),
+    ruleChoices: [
+      { id: BIOME_ID, trait: "Circle of the Land: Biome", origin: "subclass" as const, choose: 1, from: BIOMES, picked: ["Coast"] },
+    ],
+  };
+
+  assert.equal(
+    subclassRuleChoices(picked, undefined, stale).some((c) => c.id === BIOME_ID),
+    false,
+    "the biome is not offered without spell-choice data",
+  );
+  assert.deepEqual(reconcile(picked, stale).ruleChoices, picked.ruleChoices, "the saved biome pick is untouched");
+});
+
+test("a single named entry is not a biome choice, so the row is not offered", () => {
+  const oneEntry = createCompendium(
+    bundleWithSpellData("Druid", [{ name: "Arctic", prepared: { "3": ["placeholder spell"] } }]),
+  );
+  assert.equal(subclassRuleChoices(druidOnLand(), undefined, oneEntry).some((c) => c.id === BIOME_ID), false);
+});
+
+test("a catalog with no spell data for the Giant hides the Giant Power row and keeps its pick and cantrip", () => {
+  const stale = createCompendium(bundleWithSpellData("Barbarian", undefined));
+  const giant = makeChar({
+    classes: [{ className: "Barbarian", source: "BGG", level: 3, subclassName: "Path of the Giant" }],
+    ruleChoices: [
+      { id: GIANT_POWER_CHOICE_ID, trait: "Giant Power Cantrip", origin: "subclass" as const, choose: 1, from: ["Druidcraft", "Thaumaturgy"], picked: ["Thaumaturgy"] },
+    ],
+    knownSpells: [{ name: "Thaumaturgy", source: "PHB", ownerKey: "Barbarian__BGG", ability: "wis", className: "Barbarian" }],
+  });
+
+  assert.equal(subclassRuleChoices(giant, undefined, stale).some((c) => c.id === GIANT_POWER_CHOICE_ID), false);
+  const kept = reconcile(giant, stale);
+  assert.deepEqual(kept.ruleChoices, giant.ruleChoices, "the saved pick is untouched");
+  assert.deepEqual(kept.knownSpells?.map((k) => k.name), ["Thaumaturgy"], "the granted cantrip stays");
 });

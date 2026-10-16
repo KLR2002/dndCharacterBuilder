@@ -4,11 +4,13 @@
 
 **Blocked by:** 02
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] A feature with `choices.options` lists each option's name and description under the feature in the Features tab, class and subclass features alike
-- [ ] A feature without `choices` renders exactly as before
-- [ ] Options from a book that is not active are not listed
-- [ ] The option count line reflects the pick count ("Choose 1")
-- [ ] Tests cover a class feature, a subclass feature, an inactive-book option and a feature with no choices (Dual-Mode: SRD features render unchanged)
-- [ ] Existing suite passes (`npm run check:all`)
+**Landed:** merge `c39af2f`. Notes: options list no source label (the owner's book is used for gating); a feature whose options are all hidden renders unchanged.
+
+- [x] A feature with `choices.options` lists each option's name and description under the feature in the Features tab, class and subclass features alike
+- [x] A feature without `choices` renders exactly as before
+- [x] Options from a book that is not active are not listed
+- [x] The option count line reflects the pick count ("Choose 1")
+- [x] Tests cover a class feature, a subclass feature, an inactive-book option and a feature with no choices (Dual-Mode: SRD features render unchanged)
+- [x] Existing suite passes (`npm run check:all`)

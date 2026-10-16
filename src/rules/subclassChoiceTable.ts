@@ -2,6 +2,8 @@ import type { Character } from "../types/character.ts";
 import type { Compendium } from "../services/compendium.ts";
 import { formatCantripOptions, GIANT_POWER_CHOICE_ID, type ChoiceOwner } from "./choices/types.ts";
 import { skills } from "./skills.ts";
+import { liftSpellChoice } from "../../dnd5eToolsScrap/src/parser/spell-choice.ts";
+import type { FeatureChoice, SubclassData } from "../types/dnd5e.ts";
 
 /**
  * Class and subclass Rule Choices as data. Each row is one choice a class or subclass grants.
@@ -50,32 +52,6 @@ export function getUnchosenBarbarianSkills(
   );
 }
 
-export const CIRCLE_OF_THE_LAND_BIOMES = [
-  { name: "Arctic", description: "Hold Person, Spike Growth, Sleet Storm, Slow, Freedom of Movement, Ice Storm, Commune with Nature, Cone of Cold" },
-  { name: "Coast", description: "Mirror Image, Misty Step, Water Breathing, Water Walk, Control Water, Freedom of Movement, Conjure Elemental, Scrying" },
-  { name: "Desert", description: "Blur, Silence, Create Food and Water, Protection from Energy, Blight, Hallucinatory Terrain, Insect Plague, Wall of Stone" },
-  { name: "Forest", description: "Barkskin, Spider Climb, Call Lightning, Plant Growth, Divination, Freedom of Movement, Commune with Nature, Tree Stride" },
-  { name: "Grassland", description: "Invisibility, Pass without Trace, Daylight, Haste, Divination, Freedom of Movement, Dream, Insect Plague" },
-  { name: "Mountain", description: "Spider Climb, Spike Growth, Lightning Bolt, Meld into Stone, Stone Shape, Stoneskin, Passwall, Wall of Stone" },
-  { name: "Swamp", description: "Darkness, Melf's Acid Arrow, Water Walk, Stinking Cloud, Freedom of Movement, Locate Creature, Insect Plague, Scrying" },
-  { name: "Underdark", description: "Spider Climb, Web, Gaseous Form, Stinking Cloud, Greater Invisibility, Stone Shape, Cloudkill, Insect Plague" },
-];
-
-export const DIVINE_SOUL_AFFINITIES = [
-  { name: "Good", description: "Cure Wounds (Affinity spell)" },
-  { name: "Evil", description: "Inflict Wounds (Affinity spell)" },
-  { name: "Law", description: "Bless (Affinity spell)" },
-  { name: "Chaos", description: "Bane (Affinity spell)" },
-  { name: "Neutrality", description: "Protection from Evil and Good (Affinity spell)" },
-];
-
-export const GENIE_KINDS = [
-  { name: "Dao", description: "Earth - Sanctuary, Spike Growth, Meld into Stone, Stone Shape, Wall of Stone" },
-  { name: "Djinni", description: "Air - Thunderwave, Gust of Wind, Wind Wall, Greater Invisibility, Seeming" },
-  { name: "Efreeti", description: "Fire - Burning Hands, Scorching Ray, Fireball, Fire Shield, Flame Strike" },
-  { name: "Marid", description: "Water - Fog Cloud, Blur, Sleet Storm, Control Water, Cone of Cold" },
-];
-
 /** A printed option of a hand-written row. */
 export interface SubclassChoiceOption {
   name: string;
@@ -123,12 +99,14 @@ const RESOLVERS: Record<OptionResolverName, (ctx: OptionResolverContext) => Subc
 };
 
 /**
- * Where a pointer row's options live in the Integrated Catalog. `feature` names a subclass feature
- * that carries `choices`, which supply the pick count. `optionRecords` names a featureType whose
- * option records are the options; records carry no pick count, so such a row says its own `choose`.
+ * Where a pointer row's options live in the Integrated Catalog: a feature's `choices`, or the
+ * subclass's spell choice (lifted from its additional spells when the catalog holds none). An
+ * option-records locator names a featureType whose option records are the options; records carry
+ * no pick count, so such a row says its own `choose`.
  */
 export type OptionLocator =
   | { feature: { name: string; level: number } }
+  | { spellChoice: true }
   | { optionRecords: { featureType: string } };
 
 interface SubclassChoiceRowBase {
@@ -192,8 +170,7 @@ export const SUBCLASS_CHOICE_ROWS: readonly SubclassChoiceRow[] = [
     traitName: "Circle of the Land: Biome",
     level: 2,
     effectLevel: 3,
-    choose: 1,
-    options: CIRCLE_OF_THE_LAND_BIOMES,
+    locator: { spellChoice: true },
   },
   {
     id: "XGE__Sorcerer__Divine Soul__Affinity",
@@ -202,8 +179,7 @@ export const SUBCLASS_CHOICE_ROWS: readonly SubclassChoiceRow[] = [
     traitName: "Divine Soul: Divine Affinity",
     level: 1,
     effectLevel: 1,
-    choose: 1,
-    options: DIVINE_SOUL_AFFINITIES,
+    locator: { spellChoice: true },
   },
   {
     id: "TCE__Warlock__The Genie__Kind",
@@ -212,8 +188,7 @@ export const SUBCLASS_CHOICE_ROWS: readonly SubclassChoiceRow[] = [
     traitName: "The Genie: Genie Kind",
     level: 1,
     effectLevel: 1,
-    choose: 1,
-    options: GENIE_KINDS,
+    locator: { spellChoice: true },
   },
   {
     id: "PHB__Cleric__Nature Domain__Acolyte of Nature",
@@ -318,17 +293,7 @@ export const SUBCLASS_CHOICE_ROWS: readonly SubclassChoiceRow[] = [
     traitName: "Giant Power Cantrip",
     level: 3,
     effectLevel: 3,
-    choose: 1,
-    options: [
-      {
-        name: "Druidcraft",
-        description: "Whisper with spirits of nature to create minor botanical effects, sensory phenomena, or predict weather.",
-      },
-      {
-        name: "Thaumaturgy",
-        description: "Manifest minor wonders and supernatural phenomena, booming voice, flickering flames, or trembling ground.",
-      },
-    ],
+    locator: { spellChoice: true },
   },
   {
     id: "PHB__Barbarian__Path of the Totem Warrior__Totem Spirit 3",
@@ -465,7 +430,6 @@ export function readPointerRow(
   if ("optionRecords" in row.locator) {
     return readOptionRecordsRow(row, row.locator.optionRecords.featureType, compendium);
   }
-  const { name, level } = row.locator.feature;
   const active = activeBooks?.map((b) => b.toUpperCase());
   const rowBook = row.source.toUpperCase();
 
@@ -473,7 +437,7 @@ export function readPointerRow(
     if (cls.name.toLowerCase() !== row.owner.className.toLowerCase()) continue;
     for (const sub of cls.subclasses) {
       if (row.owner.subclass && !subclassFragmentMatches(sub.name, row.owner.subclass)) continue;
-      const options = sub.features.find((f) => f.name === name && f.level === level)?.choices;
+      const options = choicesAt(row.locator, sub);
       if (!options?.options) continue;
       return {
         choose: options.pick,
@@ -487,5 +451,19 @@ export function readPointerRow(
       };
     }
   }
+  return undefined;
+}
+
+/**
+ * The choice a locator names on a subclass. A spell choice is the one the catalog carries, or is
+ * lifted from the subclass's additional spells when the catalog has not lifted it (a catalog synced
+ * before the scraper lifted spell choices).
+ */
+function choicesAt(locator: OptionLocator, sub: SubclassData): FeatureChoice | undefined {
+  if ("feature" in locator) {
+    return sub.features.find((f) => f.name === locator.feature.name && f.level === locator.feature.level)?.choices;
+  }
+  if ("spellChoice" in locator) return sub.spellChoice ?? liftSpellChoice(sub.additionalSpells);
+  // An option-records locator reads the catalog's records, not a subclass choice.
   return undefined;
 }

@@ -4,11 +4,13 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] Saving a catalog stores the current format number; loading a catalog returns it
-- [ ] A catalog stored without a number, or with a lower one, loads as stale and is still usable
-- [ ] The context exposes whether the loaded catalog is stale; the SRD Baseline is never stale
+**Landed:** merge `afbed84`. Open: the Settings re-sync line is verified by typecheck and reading only (no render test); criterion "Settings shows the re-sync prompt" stays unticked until the app is run.
+
+- [x] Saving a catalog stores the current format number; loading a catalog returns it
+- [x] A catalog stored without a number, or with a lower one, loads as stale and is still usable
+- [x] The context exposes whether the loaded catalog is stale; the SRD Baseline is never stale
 - [ ] Settings shows the re-sync prompt only for a stale catalog, and a successful sync clears it
-- [ ] Catalog storage tests (save, load, stale, current) pass, using the existing storage test hooks
-- [ ] Existing suite passes (`npm run check:all`)
+- [x] Catalog storage tests (save, load, stale, current) pass, using the existing storage test hooks
+- [x] Existing suite passes (`npm run check:all`)

@@ -104,3 +104,10 @@ test("integrate and revertToSrd move the process default that dataService reads"
   assert.ok(getSpells().every((s) => s.source === "SRD"), "only SRD records after revertToSrd");
   assert.equal(findSpell("Toll the Dead"), undefined);
 });
+
+test("the Compendium reports stale only for an integrated catalog below the required format", () => {
+  assert.equal(createCompendium(bundle({ catalogFormat: 1 })).stale, true, "older format is stale");
+  assert.equal(createCompendium(bundle()).stale, true, "a catalog with no format is stale");
+  assert.equal(createCompendium(bundle({ catalogFormat: 2 })).stale, false, "required format is current");
+  assert.equal(createCompendium(bundle({ hasIntegratedCatalog: false })).stale, false, "the SRD Baseline is never stale");
+});

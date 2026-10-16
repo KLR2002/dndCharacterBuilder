@@ -241,11 +241,13 @@ test("runInAppIntegration: orchestrates 10 scrapers, reports progress, and hydra
     assert.equal(progressReports[9].category, "Books");
     assert.equal(result.hasIntegratedCatalog, true);
     assert.ok(result.integratedAt);
+    assert.equal(result.catalogFormat, 2, "the synced catalog is current, so the context clears the stale flag");
 
     // Verify storage has been written
     const stored = await loadCompendiumData();
     assert.ok(stored);
     assert.equal(stored?.hasIntegratedCatalog, true);
+    assert.equal(stored?.catalogFormat, 2, "a sync stamps the required catalog format");
     assert.equal(stored?.races.length, 1);
     assert.equal(stored?.races[0].name, "Elf");
     assert.equal(stored?.classes.length, 1);

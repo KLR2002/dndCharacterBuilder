@@ -9,7 +9,13 @@ import {
   type AvailableRuleChoice,
 } from "../src/rules/ruleChoices.ts";
 import { createCompendium, type Compendium } from "../src/services/compendium.ts";
-import { integratedTestCompendium, makeChar, srdBaselineBundle, withTotemFixture } from "./testUtils.ts";
+import {
+  integratedTestCompendium,
+  makeChar,
+  srdBaselineBundle,
+  withSpellChoiceFixtures,
+  withTotemFixture,
+} from "./testUtils.ts";
 import { OPTION_NAME_ALIASES } from "../src/rules/choices/types.ts";
 
 /**
@@ -18,9 +24,12 @@ import { OPTION_NAME_ALIASES } from "../src/rules/choices/types.ts";
  * change to the offered ids, levels, gating or option text fails here.
  *
  * The Totem Warrior rows read their options from the Integrated Catalog, so both modes run
- * their Totem scenarios against the fixture catalog. Their option text is placeholder text
- * there, so the Totem entries record names and ids only (no option digest) and the baseline's
- * recorded Totem digests are dropped before comparing. Every other entry is compared exactly.
+ * their Totem scenarios against the fixture catalog. The spell-driven rows (Land biome, Divine
+ * Affinity, Genie Kind, Giant Power) read theirs from the catalog's spell choice, and the SRD
+ * mode fills the subclasses the SRD lacks from the fixture. Option text in the fixture is
+ * placeholder text, so the entries of every catalog-read id record names and ids only (no option
+ * digest) and the baseline's recorded digests for them are dropped before comparing. Every other
+ * entry is compared exactly.
  *
  * The Elemental Discipline rows read the catalog's ED records. Their option text is catalog text,
  * so they record names only, as the Totem rows do. The catalog lists the disciplines in its own
@@ -41,6 +50,10 @@ const CATALOG_TEXT_IDS = new Set([
   "PHB__Barbarian__Path of the Totem Warrior__Totem Spirit 3",
   "PHB__Barbarian__Path of the Totem Warrior__Aspect of the Beast 6",
   "PHB__Barbarian__Path of the Totem Warrior__Totemic Attunement 14",
+  "PHB__Druid__Circle of the Land__Biome",
+  "XGE__Sorcerer__Divine Soul__Affinity",
+  "TCE__Warlock__The Genie__Kind",
+  "BGG__Barbarian__Path of the Giant__Giant Power",
   ...DISCIPLINE_IDS,
 ]);
 
@@ -181,7 +194,7 @@ interface Baseline {
 
 function captureAll(): Baseline {
   const modes: [string, () => Compendium][] = [
-    ["srd", () => createCompendium(withTotemFixture(srdBaselineBundle()))],
+    ["srd", () => createCompendium(withSpellChoiceFixtures(withTotemFixture(srdBaselineBundle())))],
     ["integrated", integratedTestCompendium],
   ];
   const choices: Record<string, Recorded> = {};

@@ -1,6 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { SUBCLASS_CHOICE_ROWS } from "../src/rules/subclassChoiceTable.ts";
+import * as subclassChoiceTable from "../src/rules/subclassChoiceTable.ts";
+import { SUBCLASS_CHOICE_ROWS, isPointerRow } from "../src/rules/subclassChoiceTable.ts";
 
 /**
  * Row ids are persisted in saved characters. Renaming one orphans its picks, so this list is
@@ -28,4 +29,28 @@ test("every shipped subclass and class Rule Choice row keeps its persisted id", 
       "PHB__Barbarian__Path of the Totem Warrior__Totemic Attunement 14",
     ]
   );
+});
+
+test("the Land biome, Divine Affinity, Genie Kind and Giant Power rows read their options from the catalog", () => {
+  const spellDriven = SUBCLASS_CHOICE_ROWS.filter((row) => isPointerRow(row) && "spellChoice" in row.locator).map((row) => row.id);
+  assert.deepEqual(spellDriven, [
+    "PHB__Druid__Circle of the Land__Biome",
+    "XGE__Sorcerer__Divine Soul__Affinity",
+    "TCE__Warlock__The Genie__Kind",
+    "BGG__Barbarian__Path of the Giant__Giant Power",
+  ]);
+});
+
+test("the hand-written option lists for the spell-driven and discipline rows are gone from the table", () => {
+  for (const name of [
+    "CIRCLE_OF_THE_LAND_BIOMES",
+    "DIVINE_SOUL_AFFINITIES",
+    "GENIE_KINDS",
+    "ELEMENTAL_DISCIPLINES_LVL3",
+    "ELEMENTAL_DISCIPLINES_LVL6",
+    "ELEMENTAL_DISCIPLINES_LVL11",
+    "ELEMENTAL_DISCIPLINES_LVL17",
+  ]) {
+    assert.equal(name in subclassChoiceTable, false, `${name} is no longer written in the table`);
+  }
 });
