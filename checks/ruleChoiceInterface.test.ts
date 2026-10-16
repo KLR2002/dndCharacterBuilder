@@ -2,12 +2,13 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join, relative, resolve, dirname } from "node:path";
-import { makeChar, loadTestCatalog } from "./testUtils.ts";
+import { makeChar, loadTestCatalog, integratedTestCompendium, srdBaselineCompendium } from "./testUtils.ts";
 import {
   offeredRuleChoices,
   pickRuleChoice,
   subclassRuleChoices,
 } from "../src/rules/ruleChoices.ts";
+import type { Compendium } from "../src/services/compendium.ts";
 import { reconcile } from "../src/rules/characterReconciler.ts";
 import { GIANT_POWER_CHOICE_ID } from "../src/rules/choices/types.ts";
 import {
@@ -211,4 +212,69 @@ test("a rule choice id that no table recognises is left alone by a pick", () => 
   const [biome] = subclassRuleChoices(char, ACTIVE);
   const updated = pickRuleChoice(char, biome, "Coast");
   assert.ok(updated.ruleChoices?.some((rc) => rc.id === "FUTURE__Unknown__Choice" && rc.picked[0] === "A"));
+});
+
+const ACOLYTE_OF_NATURE_ID = "PHB__Cleric__Nature Domain__Acolyte of Nature";
+const TOTEM_SPIRIT_3_ID = "PHB__Barbarian__Path of the Totem Warrior__Totem Spirit 3";
+
+test("a catalog-derived pick is offered and recorded in both SRD and integrated modes", () => {
+  const cleric = makeChar({
+    classes: [{ className: "Cleric", source: "PHB", level: 1, subclassName: "Nature Domain" }],
+  });
+  const choiceIn = (compendium: Compendium) => {
+    const choice = subclassRuleChoices(cleric, undefined, compendium).find((c) => c.id === ACOLYTE_OF_NATURE_ID);
+    assert.ok(choice, "the domain cantrip choice is offered at first level");
+    return choice;
+  };
+  const srd = srdBaselineCompendium();
+  const integrated = integratedTestCompendium();
+  const srdChoice = choiceIn(srd);
+  const integratedChoice = choiceIn(integrated);
+
+  const srdNames = srdChoice.options.map((o) => o.name);
+  const integratedNames = integratedChoice.options.map((o) => o.name);
+  assert.ok(srdNames.includes("Druidcraft"), "the SRD baseline offers its druid cantrips");
+  assert.ok(integratedNames.length > srdNames.length, "the integrated catalog offers more druid cantrips");
+  assert.ok(integratedNames.includes("Control Flames"), "an expansion cantrip is offered in integrated mode");
+  assert.equal(srdNames.includes("Control Flames"), false, "an expansion cantrip is not offered in SRD mode");
+
+  const srdPicked = pickRuleChoice(cleric, srdChoice, "Guidance", srd);
+  assert.deepEqual(srdPicked.ruleChoices?.find((rc) => rc.id === ACOLYTE_OF_NATURE_ID)?.picked, ["Guidance"]);
+  assert.deepEqual(reconcile(srdPicked, srd), srdPicked, "the SRD pick is already reconciled");
+
+  const integratedPicked = pickRuleChoice(cleric, integratedChoice, "Control Flames", integrated);
+  assert.deepEqual(
+    integratedPicked.ruleChoices?.find((rc) => rc.id === ACOLYTE_OF_NATURE_ID)?.picked,
+    ["Control Flames"],
+  );
+  assert.deepEqual(reconcile(integratedPicked, integrated), integratedPicked, "the integrated pick is already reconciled");
+});
+
+test("a book-gated option is offered only while its book is active, and an existing pick survives a disabled book", () => {
+  const totem = makeChar({
+    classes: [{ className: "Barbarian", source: "PHB", level: 3, subclassName: "Path of the Totem Warrior" }],
+  });
+  const spiritChoice = (books: string[]) => {
+    const choice = subclassRuleChoices(totem, books).find((c) => c.id === TOTEM_SPIRIT_3_ID);
+    assert.ok(choice, "the totem spirit choice is offered at third level");
+    return choice;
+  };
+
+  const phbOnly = spiritChoice(["PHB"]);
+  assert.deepEqual(
+    phbOnly.options.map((o) => o.name),
+    ["Bear", "Eagle", "Wolf"],
+    "Elk and Tiger are hidden while SCAG is inactive",
+  );
+
+  const withScag = spiritChoice(["PHB", "SCAG"]);
+  assert.ok(withScag.options.some((o) => o.name === "Elk"), "Elk is offered while SCAG is active");
+  assert.ok(withScag.options.some((o) => o.name === "Tiger"), "Tiger is offered while SCAG is active");
+
+  const picked = pickRuleChoice(totem, withScag, "Elk");
+  assert.deepEqual(picked.ruleChoices?.find((rc) => rc.id === TOTEM_SPIRIT_3_ID)?.picked, ["Elk"]);
+
+  // Disabling the book later gates new offers only; a pick already on the sheet still displays.
+  const afterDisable = reconcile(picked, currentCompendium());
+  assert.deepEqual(afterDisable.ruleChoices?.find((rc) => rc.id === TOTEM_SPIRIT_3_ID)?.picked, ["Elk"]);
 });

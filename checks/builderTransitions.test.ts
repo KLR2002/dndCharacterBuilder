@@ -361,7 +361,7 @@ test("teardownSubclass cleans up ruleChoices, swaps, and counters", () => {
   });
 
   // Teardown Circle of the Land
-  const tornDown = teardownSubclass(initial, "Druid", "Circle of the Land", "Circle of the Moon");
+  const tornDown = teardownSubclass(initial, "Druid", "Circle of the Land");
   assert.equal(tornDown.ruleChoices?.length, 1);
   assert.equal(tornDown.ruleChoices[0].id, "MPMM__Aasimar__null__Celestial Revelation");
   // Druid does not wipe sorcerer swaps
@@ -373,7 +373,7 @@ test("teardownSubclass cleans up ruleChoices, swaps, and counters", () => {
     classes: [{ className: "Sorcerer", source: "TCE", level: 3, subclassName: "Clockwork Soul" }],
     subclassSpellSwaps: { Alarm: "Shield" },
   });
-  const tornDownSorc = teardownSubclass(sorcInitial, "Sorcerer", "Clockwork Soul", "Draconic Bloodline");
+  const tornDownSorc = teardownSubclass(sorcInitial, "Sorcerer", "Clockwork Soul");
   assert.equal(tornDownSorc.subclassSpellSwaps, undefined);
 
   // Teardown Wizard with Bladesong counter
@@ -384,7 +384,7 @@ test("teardownSubclass cleans up ruleChoices, swaps, and counters", () => {
       arcane_recovery: { id: "arcane_recovery", name: "Arcane Recovery", current: 1, max: 1, resetOn: "long" },
     },
   });
-  const tornDownWiz = teardownSubclass(wizInitial, "Wizard", "Bladesinging", "Evocation");
+  const tornDownWiz = teardownSubclass(wizInitial, "Wizard", "Bladesinging");
   assert.equal(tornDownWiz.resourceCounters.bladesong, undefined);
   // Teardown without new subclass (e.g. on deleveling below requirement)
   const delevelDruid = teardownSubclass(initial, "Druid", "Circle of the Land");

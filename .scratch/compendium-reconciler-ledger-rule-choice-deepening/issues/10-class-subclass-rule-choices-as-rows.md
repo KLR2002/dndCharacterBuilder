@@ -19,3 +19,8 @@
 - An optional `source` field was added to `AvailableRuleChoice`. Table rows set it and gate on it; other choices still gate on the id prefix.
 - `requiresOptionalFeature` was added to the rows for Primal Knowledge.
 - The refactor commit (80f6b68) added 448 new baseline scenarios (`druid short land name`). The 1280 pre-existing scenarios are unchanged, but the new ones were recorded after the refactor, not from the unchanged code.
+
+## Review fix-up
+
+- Added `checks/ruleChoiceIds.test.ts`, which freezes the 63 shipped Rule Choice ids (table rows, fighting style, feat, maneuver, Warlock, Artificer, Giant Power, ancestry) and checks that every frozen id is still issued by its module. It also pins the named id constants, including `HIGH_ELF_CANTRIP_CHOICE_ID`.
+- Added the Dual-Mode pick test ("a catalog-derived pick is offered and recorded in both SRD and integrated modes") and the book-gated pick test (Elk and Tiger, "a book-gated option is offered only while its book is active ...") to `checks/ruleChoiceInterface.test.ts`.

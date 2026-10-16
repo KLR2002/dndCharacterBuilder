@@ -17,3 +17,8 @@
 - The remaining `includes` calls in teardown (subclass spell swaps, resource counters, Giant spells) have no owner table and were left as the spec describes.
 - Barbarian Primal Knowledge now survives a subclass change, where the old substring rule removed it.
 - The owner maps repeat the generator's literal ids, and no test yet checks that every generated id is mapped.
+
+## Review fix-up
+
+- Teardown records a review notice for each state it prunes: swaps, resource counters, Giant cantrips removed from `knownSpells`, and the Giant cantrip sync in `reconcile`. Tests in `checks/ownerTeardown.test.ts` ("subclass teardown records a review notice ...", "the Giant Power cantrip sync records a review notice ...").
+- The Sorcerer swap rule and the Barbarian Giant rule now require both class and subclass to match. The `_newSubclassName` parameter is removed from `teardownSubclass`, and callers are updated. The Giant cantrip list lives in `GIANT_POWER_CANTRIPS` (`src/constants/rules.ts`), shared with `spellcasting.ts`. Negative test: "a subclass name alone does not clear swaps, and a class name alone does not clear another class's Giant cantrip".

@@ -171,8 +171,16 @@ export function validateFeatPrerequisites(
   return { met: true };
 }
 
-/** Adds or updates an origin feat on character. */
-export function applyOriginFeat(character: Character, selection: AsiSelection, oldFeatName?: string): Character {
+/**
+ * Adds an origin feat, or replaces the one named by `oldFeatName`, then reconciles so that the
+ * choices the replaced feat granted (e.g. Fighting Initiate's style) are pruned with a review notice.
+ */
+export function applyOriginFeat(
+  character: Character,
+  selection: AsiSelection,
+  oldFeatName?: string,
+  compendium: Compendium = currentCompendium()
+): Character {
   const current = character.originFeats || [];
   const targetName = (oldFeatName || selection.featName)?.toLowerCase();
   const existingIdx = current.findIndex(s => s.featName?.toLowerCase() === targetName);
@@ -182,10 +190,13 @@ export function applyOriginFeat(character: Character, selection: AsiSelection, o
   } else {
     updated.push(selection);
   }
-  return {
-    ...character,
-    originFeats: updated,
-  };
+  return reconcile(
+    {
+      ...character,
+      originFeats: updated,
+    },
+    compendium
+  );
 }
 
 /** Removes an origin feat by name, then reconciles the choices that feat granted. */

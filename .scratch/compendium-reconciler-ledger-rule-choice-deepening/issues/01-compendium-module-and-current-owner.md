@@ -11,3 +11,7 @@
 - [x] Per-collection SRD fallback when an integrated collection is missing
 - [x] integrate / revertToSrd switch the default and are observable through existing data-service getters
 - [x] Existing test suite passes unchanged (`npm run check:all`)
+
+## Review fix-up
+
+- Removed the `setCompendiumStore`, `clearCompendiumStore` and `initCompendiumStore` facade from `src/services/dataService.ts`. `CharacterContext.tsx` and `src/services/scraper/runner.ts` now call `integrate` and `revertToSrd` from `src/services/compendium.ts`. Tests use `integrate`, `revertToSrd` and a new `hydrateCompendiumFromStorage()` helper in `checks/testUtils.ts`, which does what `initCompendiumStore` did. Behaviour is unchanged.

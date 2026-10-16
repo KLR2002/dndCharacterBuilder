@@ -9,40 +9,13 @@ import type {
   OptionFeatureData,
   BeastData,
 } from "../types/dnd5e.ts";
-import type { CompendiumCollections } from "./compendiumStorage.ts";
-import { loadCompendiumData } from "./compendiumStorage.ts";
-import { currentCompendium, integrate, revertToSrd } from "./compendium.ts";
+import { currentCompendium } from "./compendium.ts";
 
-// Compatibility facade over the Compendium owner in ./compendium.ts. New code should take a Compendium
-// (currentCompendium()) rather than call these helpers.
+// Read facade over the Compendium owner in ./compendium.ts. Use `integrate` and `revertToSrd` from
+// that module to change the active catalog, and take a Compendium (currentCompendium()) in new code.
 
 export function isCompendiumIntegrated(): boolean {
   return currentCompendium().integrated;
-}
-
-export function setCompendiumStore(store: CompendiumCollections | null): void {
-  if (store) {
-    integrate(store);
-  } else {
-    revertToSrd();
-  }
-}
-
-export async function initCompendiumStore(): Promise<void> {
-  try {
-    const data = await loadCompendiumData();
-    if (data && data.hasIntegratedCatalog) {
-      integrate(data);
-    } else {
-      revertToSrd();
-    }
-  } catch {
-    revertToSrd();
-  }
-}
-
-export function clearCompendiumStore(): void {
-  revertToSrd();
 }
 
 export function getBeasts(activeBooks?: string[]): BeastData[] {

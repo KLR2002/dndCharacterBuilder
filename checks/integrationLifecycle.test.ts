@@ -7,7 +7,6 @@ import {
   hasIntegratedCatalog,
 } from "../src/services/compendiumStorage.ts";
 import {
-  initCompendiumStore,
   isCompendiumIntegrated,
   getRaces,
   getClasses,
@@ -16,7 +15,7 @@ import {
   getSpells,
 } from "../src/services/dataService.ts";
 import { getAvailableSpellsForClass } from "../src/rules/spellcasting.ts";
-import { loadTestCatalog, resetTestCompendium } from "./testUtils.ts";
+import { hydrateCompendiumFromStorage, loadTestCatalog, resetTestCompendium } from "./testUtils.ts";
 
 test("End-to-End Integration Lifecycle: SRD baseline -> Integration -> Book gating -> Revert", async () => {
   const testKv = new Map<string, string>();
@@ -27,7 +26,7 @@ test("End-to-End Integration Lifecycle: SRD baseline -> Integration -> Book gati
     // Phase 1: Baseline SRD Mode (Pre-integration)
     // -------------------------------------------------------------
     await clearCompendiumData();
-    await initCompendiumStore();
+    await hydrateCompendiumFromStorage();
 
     assert.equal(await hasIntegratedCatalog(), false, "Should not be marked as integrated");
     assert.equal(isCompendiumIntegrated(), false, "dataService should report unintegrated");
@@ -68,7 +67,7 @@ test("End-to-End Integration Lifecycle: SRD baseline -> Integration -> Book gati
     };
 
     await saveCompendiumData(fullCompendium);
-    await initCompendiumStore();
+    await hydrateCompendiumFromStorage();
 
     assert.equal(await hasIntegratedCatalog(), true, "Should report hasIntegratedCatalog = true");
     assert.equal(isCompendiumIntegrated(), true, "dataService should report integrated");
@@ -124,7 +123,7 @@ test("End-to-End Integration Lifecycle: SRD baseline -> Integration -> Book gati
     // Phase 4: Revert to SRD Baseline
     // -------------------------------------------------------------
     await clearCompendiumData();
-    await initCompendiumStore();
+    await hydrateCompendiumFromStorage();
 
     assert.equal(await hasIntegratedCatalog(), false, "After revert, hasIntegratedCatalog must be false");
     assert.equal(isCompendiumIntegrated(), false, "After revert, isCompendiumIntegrated must be false");

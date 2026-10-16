@@ -10,7 +10,8 @@ import type { Character, Folder } from "../types/character";
 import { applyCharacterUpdate } from "./characterUpdates";
 import { migrateCharacter } from "../rules/migrateCharacter";
 import { checkActiveBooksIntegrity } from "../rules/builderTransitions";
-import { clearCompendiumStore, getRaces, setCompendiumStore } from "../services/dataService";
+import { getRaces } from "../services/dataService";
+import { integrate as integrateCompendium, revertToSrd as revertCompendiumToSrd } from "../services/compendium";
 import {
   clearCompendiumData,
   loadCompendiumData,
@@ -130,11 +131,11 @@ export function CharacterProvider({ children }: { children: React.ReactNode }) {
           console.warn("Compendium storage load failed, defaulting to SRD baseline:", storageErr);
         }
         if (compData && compData.hasIntegratedCatalog) {
-          setCompendiumStore(compData);
+          integrateCompendium(compData);
           setIsIntegrated(true);
           setIntegratedAt(compData.integratedAt || null);
         } else {
-          clearCompendiumStore();
+          revertCompendiumToSrd();
           setIsIntegrated(false);
           setIntegratedAt(null);
         }
@@ -313,7 +314,7 @@ export function CharacterProvider({ children }: { children: React.ReactNode }) {
     onProgress?: (category: string, step: number, total: number) => void
   ) => {
     const compendium = await runInAppIntegration(onProgress);
-    setCompendiumStore(compendium);
+    integrateCompendium(compendium);
     setIsIntegrated(true);
     setIntegratedAt(compendium.integratedAt || new Date().toISOString());
     await setActiveBooks(DEFAULT_ACTIVE_BOOK_CODES);
@@ -321,7 +322,7 @@ export function CharacterProvider({ children }: { children: React.ReactNode }) {
 
   const revertToSrd = async () => {
     await clearCompendiumData();
-    clearCompendiumStore();
+    revertCompendiumToSrd();
     setIsIntegrated(false);
     setIntegratedAt(null);
     await setActiveBooks(["SRD"]);

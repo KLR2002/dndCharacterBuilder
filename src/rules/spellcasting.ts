@@ -2,7 +2,12 @@ import type { AbilityKey, AbilityScores, Character, CharacterClass, KnownSpell, 
 import type { SpellData } from "../types/dnd5e.ts";
 import type { ResolvedAncestry } from "./types.ts";
 import { CLASS_DATA, isThirdCaster, PHB_HALF_CASTER_SLOTS, PHB_THIRD_CASTER_SLOTS } from "./classData.ts";
-import { GIANT_BARBARIAN_OWNER_KEY, MULTICLASS_SPELL_SLOTS, WARLOCK_PACT_SLOTS } from "../constants/rules.ts";
+import {
+  GIANT_BARBARIAN_OWNER_KEY,
+  GIANT_POWER_CANTRIPS,
+  MULTICLASS_SPELL_SLOTS,
+  WARLOCK_PACT_SLOTS,
+} from "../constants/rules.ts";
 import { effectiveScores } from "./abilities.ts";
 import { proficiencyBonus, totalLevel } from "./proficiencies.ts";
 import { getSubclassSpells, normalizeKey } from "./subclassSpells.ts";
@@ -275,7 +280,7 @@ export function isSpellAvailableForClass(
 
   // Path of the Giant Barbarian cantrip access (Druidcraft / Thaumaturgy)
   if (targetLower === "barbarian" && subLower.includes("giant")) {
-    if (["druidcraft", "thaumaturgy"].includes(spell.name.toLowerCase())) {
+    if (GIANT_POWER_CANTRIPS.has(spell.name.toLowerCase())) {
       return true;
     }
   }

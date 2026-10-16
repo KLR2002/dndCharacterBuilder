@@ -11,3 +11,7 @@
 - [x] Clearing a background removes choices and grants that depended on it
 - [x] Negative cases: unrelated choices are kept
 - [x] Existing suite passes (`npm run check:all`)
+
+## Review fix-up
+
+- `applyOriginFeat` now ends in the Reconciler (optional `compendium` parameter, defaulting to the current one). Replacing Fighting Initiate with Alert prunes the `TCE__Feat__Fighting Initiate__Style` pick and records a review notice. Test: `checks/feats.test.ts`, "replacing Fighting Initiate with Alert prunes its style pick and records a review notice".

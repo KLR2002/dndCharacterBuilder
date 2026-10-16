@@ -1,9 +1,8 @@
 import type { Character } from "../src/types/character.ts";
 import { DEFAULT_ACTIVE_BOOK_CODES } from "../src/constants/books.ts";
 import { readFileSync, existsSync } from "node:fs";
-import { setCompendiumStore } from "../src/services/dataService.ts";
-import { createCompendium, type Compendium } from "../src/services/compendium.ts";
-import type { CompendiumCollections } from "../src/services/compendiumStorage.ts";
+import { createCompendium, integrate, revertToSrd, type Compendium } from "../src/services/compendium.ts";
+import { loadCompendiumData, type CompendiumCollections } from "../src/services/compendiumStorage.ts";
 
 /**
  * In-memory Compendium over the given collections. Collections not given are empty. Unless
@@ -134,9 +133,23 @@ export function srdBaselineCompendium(): Compendium {
 // Seed the process-wide default with the full integrated compendium for rule and progression test suites
 export function resetTestCompendium() {
   try {
-    setCompendiumStore(integratedTestBundle());
+    integrate(integratedTestBundle());
   } catch {
     // Ignore in case scrap data not accessible
+  }
+}
+
+/**
+ * Hydrates the process-wide default from the stored catalog, as the app does on launch: the
+ * integrated catalog when one is stored, otherwise the SRD Baseline.
+ */
+export async function hydrateCompendiumFromStorage(): Promise<void> {
+  try {
+    const data = await loadCompendiumData();
+    if (data && data.hasIntegratedCatalog) integrate(data);
+    else revertToSrd();
+  } catch {
+    revertToSrd();
   }
 }
 

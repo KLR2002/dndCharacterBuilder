@@ -258,7 +258,7 @@ export function changeSubclass(
 
   let updated = character;
   if (oldSubclass && oldSubclass !== newSubclassName) {
-    updated = teardownSubclass(updated, className, oldSubclass, newSubclassName, compendium);
+    updated = teardownSubclass(updated, className, oldSubclass, compendium);
   }
 
   if (unlearnOrphaned.length > 0) {
@@ -304,7 +304,7 @@ export function removeClassLevel(
   let updatedClasses: CharacterClass[];
 
   if (existing.level <= 1) {
-    updated = teardownSubclass(updated, className, oldSubclass || "", undefined, compendium);
+    updated = teardownSubclass(updated, className, oldSubclass || "", compendium);
     updatedClasses = updated.classes.filter((c) => c.className !== className);
 
     const classSourceKey = `Class: ${className}`;
@@ -322,7 +322,7 @@ export function removeClassLevel(
     const newLevel = existing.level - 1;
     const losesSubclass = newLevel < subclassRequiredLevel(className) && Boolean(oldSubclass);
     if (losesSubclass && oldSubclass) {
-      updated = teardownSubclass(updated, className, oldSubclass, undefined, compendium);
+      updated = teardownSubclass(updated, className, oldSubclass, compendium);
     }
     updatedClasses = updated.classes.map((c) =>
       c.className === className

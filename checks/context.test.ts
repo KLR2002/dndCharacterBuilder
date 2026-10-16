@@ -70,9 +70,10 @@ async function providerHarness(initial: unknown = [makeChar()], options: {
     if (name.includes("migrateCharacter")) return { migrateCharacter };
     if (name.includes("dataService")) return {
       getRaces: () => options.races ?? [],
-      initCompendiumStore: async () => {},
-      clearCompendiumStore: () => {},
-      setCompendiumStore: () => {},
+    };
+    if (name.endsWith("services/compendium")) return {
+      integrate: () => {},
+      revertToSrd: () => {},
     };
     if (name.includes("constants/books")) return { DEFAULT_ACTIVE_BOOK_CODES: [] };
     if (name.includes("builderTransitions")) return { checkActiveBooksIntegrity: () => [] };

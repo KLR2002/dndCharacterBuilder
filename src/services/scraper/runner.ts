@@ -10,7 +10,7 @@ import { scrapeBeasts } from "../../../dnd5eToolsScrap/src/scrapers/beasts.ts";
 import { scrapeBooks } from "../../../dnd5eToolsScrap/src/scrapers/books.ts";
 import { scrapeConditions } from "../../../dnd5eToolsScrap/src/scrapers/conditions.ts";
 import { saveCompendiumData, type CompendiumCollections } from "../compendiumStorage.ts";
-import { setCompendiumStore } from "../dataService.ts";
+import { integrate } from "../compendium.ts";
 
 export async function runInAppIntegration(onProgress?: ScraperProgressCallback): Promise<CompendiumCollections> {
   const client = new BrowserToolsClient();
@@ -61,7 +61,7 @@ export async function runInAppIntegration(onProgress?: ScraperProgressCallback):
     books: books as any,
   };
 
-  setCompendiumStore(compendium);
+  integrate(compendium);
   await saveCompendiumData(compendium);
   return compendium;
 }

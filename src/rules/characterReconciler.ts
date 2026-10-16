@@ -1,6 +1,6 @@
 import type { Character, KnownSpell } from "../types/character.ts";
 import { currentCompendium, type Compendium } from "../services/compendium.ts";
-import { GIANT_BARBARIAN_OWNER_KEY } from "../constants/rules.ts";
+import { GIANT_BARBARIAN_OWNER_KEY, GIANT_POWER_CANTRIPS } from "../constants/rules.ts";
 import { pruneInvalidExpertise } from "./expertise.ts";
 import { fightingStyleOwnerOf, pruneInvalidFightingStyles } from "./choices/fightingStyles.ts";
 import { maneuverOwnerOf, pruneInvalidManeuvers } from "./choices/maneuvers.ts";
@@ -47,12 +47,20 @@ export function reconcile(character: Character, compendium: Compendium): Charact
   return updated;
 }
 
-const GIANT_POWER_CANTRIPS = new Set(["druidcraft", "thaumaturgy"]);
+/** Appends review notices to `needsReview`, skipping any already present. Unchanged when there are none. */
+function withNotices(character: Character, notices: string[]): Character {
+  if (notices.length === 0) return character;
+  return {
+    ...character,
+    needsReview: Array.from(new Set([...(character.needsReview || []), ...notices])),
+  };
+}
 
 /**
  * Keeps the Path of the Giant cantrip in knownSpells in step with the recorded Giant Power
  * pick: the picked cantrip is known under the Giant owner, and no other Giant cantrip is.
- * Returns the character unchanged when knownSpells already agrees.
+ * Returns the character unchanged when knownSpells already agrees. A Giant cantrip dropped
+ * here gets a review notice.
  */
 function syncGiantPowerCantrip(character: Character): Character {
   const picked = character.ruleChoices?.find((rc) => rc.id === GIANT_POWER_CHOICE_ID)?.picked?.[0];
@@ -69,7 +77,12 @@ function syncGiantPowerCantrip(character: Character): Character {
     ? { name: picked, source: "PHB", ownerKey: GIANT_BARBARIAN_OWNER_KEY, ability: "wis", className: "Barbarian" }
     : undefined;
   const knownSpells = pickedSpell ? [...others, pickedSpell] : others;
-  return { ...character, knownSpells };
+
+  const reason = picked ? `Giant Power pick is now ${picked}` : "Giant Power pick no longer held";
+  const notices = granted
+    .filter((k) => k.name !== picked)
+    .map((k) => `Giant Power cantrip ${k.name} removed: ${reason}`);
+  return withNotices({ ...character, knownSpells }, notices);
 }
 
 /**
@@ -86,41 +99,46 @@ function ruleChoiceOwnerOf(id: string): ChoiceOwner | undefined {
   );
 }
 
+const SUBCLASS_NO_LONGER_HELD = "subclass no longer held";
+
 /**
  * Cleanly removes subclass-specific data from a character when changing or removing a subclass:
  * 1. Clears the Rule Choices the class's subclass owns (e.g. Circle of the Land Biome, Divine Soul Affinity, Domain Cantrips)
- * 2. Clears subclassSpellSwaps (for Sorcerer or general)
+ * 2. Clears subclassSpellSwaps when a Sorcerer's Clockwork Soul or Aberrant Mind is torn down
  * 3. Removes old subclass-specific resource counters
+ * 4. Removes the Path of the Giant cantrips when a Giant Barbarian's subclass is torn down
+ * Every removal appends a review notice.
  */
 export function teardownSubclass(
   character: Character,
   className: string,
   previousSubclassName?: string,
-  _newSubclassName?: string,
   compendium: Compendium = currentCompendium()
 ): Character {
   const clsLower = className.toLowerCase();
+  const prevLower = previousSubclassName?.toLowerCase() ?? "";
+  const notices: string[] = [];
 
   // 1. Remove the Rule Choices this class's subclass owns. Owner is looked up by id, so a choice
   // whose id no table or module recognises is never removed, and a choice owned by another class,
   // or by the class itself with no subclass, is kept.
-  const removedRuleChoiceTraits: string[] = [];
   const keptRuleChoices = (character.ruleChoices || []).filter((rc) => {
     const owner = ruleChoiceOwnerOf(rc.id);
     const ownedBySubclass = owner?.subclass !== undefined && owner.className.toLowerCase() === clsLower;
     if (!ownedBySubclass) return true;
-    removedRuleChoiceTraits.push(rc.trait);
+    notices.push(`${rc.trait} removed: ${SUBCLASS_NO_LONGER_HELD}`);
     return false;
   });
-  const ruleChoiceNotices = removedRuleChoiceTraits.map((trait) => `${trait} removed: subclass no longer held`);
 
-  // 2. Clear subclassSpellSwaps if this class is Sorcerer (or if previous subclass was a swapper)
+  // 2. Clear subclassSpellSwaps only when the swapping subclass itself is torn down: both the
+  // class and the subclass must match.
+  const swapsOwnedBySubclass =
+    clsLower === "sorcerer" && (prevLower.includes("clockwork") || prevLower.includes("aberrant"));
   let nextSwaps = character.subclassSpellSwaps;
-  if (
-    clsLower === "sorcerer" ||
-    previousSubclassName?.toLowerCase().includes("clockwork") ||
-    previousSubclassName?.toLowerCase().includes("aberrant")
-  ) {
+  if (swapsOwnedBySubclass) {
+    if (character.subclassSpellSwaps) {
+      notices.push(`Subclass spell swaps removed: ${SUBCLASS_NO_LONGER_HELD}`);
+    }
     nextSwaps = undefined;
   }
 
@@ -138,19 +156,22 @@ export function teardownSubclass(
         (isBladesinger && (kLower.includes("bladesong") || nLower.includes("bladesong")))
       ) {
         delete nextCounters[key];
+        notices.push(`${counter.name} removed: ${SUBCLASS_NO_LONGER_HELD}`);
       }
     }
   }
 
-  // 4. Remove granted subclass spells from knownSpells (e.g. Barbarian__BGG Giant Power cantrips)
+  // 4. Remove granted subclass spells from knownSpells (e.g. Barbarian__BGG Giant Power cantrips).
+  // Both the class and the subclass must match, so another class's cantrips are never touched.
+  const knownSpells = character.knownSpells || [];
   let nextKnownSpells = character.knownSpells;
-  if (
-    clsLower === "barbarian" ||
-    previousSubclassName?.toLowerCase().includes("giant")
-  ) {
-    nextKnownSpells = (character.knownSpells || []).filter(
-      (k) => !(k.ownerKey === GIANT_BARBARIAN_OWNER_KEY && ["druidcraft", "thaumaturgy"].includes(k.name.toLowerCase()))
-    );
+  if (clsLower === "barbarian" && prevLower.includes("giant")) {
+    const isGiantCantrip = (k: { name: string; ownerKey?: string }) =>
+      k.ownerKey === GIANT_BARBARIAN_OWNER_KEY && GIANT_POWER_CANTRIPS.has(k.name.toLowerCase());
+    for (const k of knownSpells.filter(isGiantCantrip)) {
+      notices.push(`Giant Power cantrip ${k.name} removed: ${SUBCLASS_NO_LONGER_HELD}`);
+    }
+    nextKnownSpells = knownSpells.filter((k) => !isGiantCantrip(k));
   }
 
   const cleaned: Character = {
@@ -159,12 +180,7 @@ export function teardownSubclass(
     subclassSpellSwaps: nextSwaps,
     resourceCounters: nextCounters,
     knownSpells: nextKnownSpells,
-    ...(ruleChoiceNotices.length > 0
-      ? {
-          needsReview: Array.from(new Set([...(character.needsReview || []), ...ruleChoiceNotices])),
-        }
-      : {}),
   };
 
-  return reconcile(cleaned, compendium);
+  return reconcile(withNotices(cleaned, notices), compendium);
 }

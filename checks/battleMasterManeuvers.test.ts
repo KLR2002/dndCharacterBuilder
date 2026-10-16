@@ -453,7 +453,7 @@ test("reconcile: trims choices and picks upon de-leveling or subclass change", (
   assert.equal(lvl2.ruleChoices?.length, 0);
 
   // Subclass teardown: changing Battle Master to Champion
-  const toreDown = teardownSubclass(bm7, "Fighter", "Battle Master", "Champion");
+  const toreDown = teardownSubclass(bm7, "Fighter", "Battle Master");
   assert.equal(
     toreDown.ruleChoices?.filter((rc) => isManeuverChoiceId(rc.id)).length,
     0,

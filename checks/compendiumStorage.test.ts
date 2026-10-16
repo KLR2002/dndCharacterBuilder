@@ -9,20 +9,19 @@ import {
   type CompendiumCollections,
 } from "../src/services/compendiumStorage.ts";
 import {
-  initCompendiumStore,
-  clearCompendiumStore,
-  setCompendiumStore,
   isCompendiumIntegrated,
   getRaces,
   getClasses,
   getSpells,
   findClass,
 } from "../src/services/dataService.ts";
+import { revertToSrd } from "../src/services/compendium.ts";
+import { hydrateCompendiumFromStorage } from "./testUtils.ts";
 
 test("compendiumStorage: default state has no integrated catalog and falls back to SRD", async () => {
   const kv = new Map<string, string>();
   __setCompendiumKvForTests(kv);
-  clearCompendiumStore();
+  revertToSrd();
 
   assert.equal(await hasIntegratedCatalog(), false);
   const loaded = await loadCompendiumData();
@@ -88,7 +87,7 @@ test("compendiumStorage: saving data persists and hydrates compendiumStore with 
   assert.equal(await hasIntegratedCatalog(), true);
 
   // Hydrate dataService
-  await initCompendiumStore();
+  await hydrateCompendiumFromStorage();
   assert.equal(isCompendiumIntegrated(), true);
 
   // Verification of Dataset Swapping:
@@ -114,7 +113,7 @@ test("compendiumStorage: saving data persists and hydrates compendiumStore with 
   // Clear compendium reverts back to SRD cleanly
   await clearCompendiumData();
   assert.equal(await hasIntegratedCatalog(), false);
-  await initCompendiumStore();
+  await hydrateCompendiumFromStorage();
   assert.equal(isCompendiumIntegrated(), false);
 
   const revertedClasses = getClasses();
