@@ -1,5 +1,8 @@
 import type { AbilityKey } from "../types/character.ts";
 
+/** The Spell Owner key for a Path of the Giant Barbarian's granted cantrips (Druidcraft, Thaumaturgy). */
+export const GIANT_BARBARIAN_OWNER_KEY = "Barbarian__BGG";
+
 export interface SkillDefinition {
   name: string;
   ability: AbilityKey;

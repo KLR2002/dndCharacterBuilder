@@ -2,7 +2,7 @@ import type { AbilityKey, AbilityScores, Character, CharacterClass, KnownSpell, 
 import type { SpellData } from "../types/dnd5e.ts";
 import type { ResolvedAncestry } from "./types.ts";
 import { CLASS_DATA, isThirdCaster, PHB_HALF_CASTER_SLOTS, PHB_THIRD_CASTER_SLOTS } from "./classData.ts";
-import { MULTICLASS_SPELL_SLOTS, WARLOCK_PACT_SLOTS } from "../constants/rules.ts";
+import { GIANT_BARBARIAN_OWNER_KEY, MULTICLASS_SPELL_SLOTS, WARLOCK_PACT_SLOTS } from "../constants/rules.ts";
 import { effectiveScores } from "./abilities.ts";
 import { proficiencyBonus, totalLevel } from "./proficiencies.ts";
 import { getSubclassSpells, normalizeKey } from "./subclassSpells.ts";
@@ -48,7 +48,7 @@ export function isGiantBarbarian(c: CharacterClass): boolean {
  * under the Path of the Giant key, so the key is never derived from the class name alone.
  */
 function spellOwnerKey(c: CharacterClass): string {
-  return isGiantBarbarian(c) ? "Barbarian__BGG" : `${c.className}__${c.source || "PHB"}`;
+  return isGiantBarbarian(c) ? GIANT_BARBARIAN_OWNER_KEY : `${c.className}__${c.source || "PHB"}`;
 }
 
 export function isCastingClass(c: CharacterClass): boolean {
@@ -183,7 +183,7 @@ export function getClassSpellProfiles(
           knownSpells.push({
             name: sp.name,
             source: sp.source || "PHB",
-            ownerKey: "Barbarian__BGG",
+            ownerKey: classOwnerKey,
             ability: "wis",
             className: "Barbarian",
           });

@@ -4,7 +4,7 @@ import { ALL_RESOURCE_BOOKS } from "../constants/books.ts";
 import { currentCompendium, type Compendium } from "../services/compendium.ts";
 import { reconcile } from "./characterReconciler.ts";
 import { totalLevel } from "./proficiencies.ts";
-import { DND_SKILLS } from "../constants/rules.ts";
+import { DND_SKILLS, GIANT_BARBARIAN_OWNER_KEY } from "../constants/rules.ts";
 import { RACE_SKILL_PROFICIENCIES, skills } from "./skills.ts";
 
 import {
@@ -778,7 +778,7 @@ export function pickSubclassRuleChoice(
     );
     const pickedCantrip = giantRc?.picked?.[0];
     const prevKnown = (updated.knownSpells || []).filter(
-      (k) => !(k.ownerKey === "Barbarian__BGG" && ["druidcraft", "thaumaturgy"].includes(k.name.toLowerCase()))
+      (k) => !(k.ownerKey === GIANT_BARBARIAN_OWNER_KEY && ["druidcraft", "thaumaturgy"].includes(k.name.toLowerCase()))
     );
     if (pickedCantrip) {
       updated = {
@@ -788,7 +788,7 @@ export function pickSubclassRuleChoice(
           {
             name: pickedCantrip,
             source: "PHB",
-            ownerKey: "Barbarian__BGG",
+            ownerKey: GIANT_BARBARIAN_OWNER_KEY,
             ability: "wis",
             className: "Barbarian",
           },

@@ -1,5 +1,6 @@
 import type { Character } from "../types/character.ts";
 import { currentCompendium, type Compendium } from "../services/compendium.ts";
+import { GIANT_BARBARIAN_OWNER_KEY } from "../constants/rules.ts";
 import { pruneInvalidExpertise } from "./expertise.ts";
 import { pruneInvalidFightingStyles } from "./choices/fightingStyles.ts";
 import { pruneInvalidManeuvers } from "./choices/maneuvers.ts";
@@ -110,7 +111,7 @@ export function teardownSubclass(
     previousSubclassName?.toLowerCase().includes("giant")
   ) {
     nextKnownSpells = (character.knownSpells || []).filter(
-      (k) => !(k.ownerKey === "Barbarian__BGG" && ["druidcraft", "thaumaturgy"].includes(k.name.toLowerCase()))
+      (k) => !(k.ownerKey === GIANT_BARBARIAN_OWNER_KEY && ["druidcraft", "thaumaturgy"].includes(k.name.toLowerCase()))
     );
   }
 
