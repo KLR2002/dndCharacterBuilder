@@ -4,11 +4,11 @@
 
 **Blocked by:** 03
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] reconcile(character, compendium) is the only public entry to the passes
-- [ ] Running reconcile twice on a valid character changes nothing (idempotency)
-- [ ] Ad hoc pass calls in pick paths, infusions and the spells tab are replaced by reconcile
-- [ ] Tests that called individual passes now go through reconcile
-- [ ] No import cycle between the Reconciler and the rule-choice code
-- [ ] Existing suite passes (`npm run check:all`)
+- [x] reconcile(character, compendium) is the only public entry to the passes
+- [x] Running reconcile twice on a valid character changes nothing (idempotency)
+- [x] Ad hoc pass calls in pick paths, infusions and the spells tab are replaced by reconcile
+- [x] Tests that called individual passes now go through reconcile
+- [x] No import cycle between the Reconciler and the rule-choice code
+- [x] Existing suite passes (`npm run check:all`)
