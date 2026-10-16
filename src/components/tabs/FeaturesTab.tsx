@@ -36,7 +36,7 @@ import { Button } from "../ui/Button";
 import { Card } from "../ui/Card";
 import { DetailModal } from "../DetailModal";
 import { WildShapeModal } from "../WildShapeModal";
-import { applyRuleChoice, getChosenInvocations, getKnownInfusions, ALL_ARTIFICER_INFUSIONS, replacedTraitNames, ruleChoiceId } from "../../rules/ruleChoices";
+import { applyRuleChoice, findArtificerInfusion, getChosenInvocations, getKnownInfusions, replacedTraitNames, ruleChoiceId } from "../../rules/ruleChoices";
 import { ActiveInfusionsSection } from "../ActiveInfusionsSection";
 
 interface FeatureDisplay {
@@ -274,9 +274,7 @@ export const FeaturesTab: React.FC = () => {
           const activeEntry = activeInfusions.find(
             (a) => a.infusionName.toLowerCase() === infName.toLowerCase()
           );
-          const def = ALL_ARTIFICER_INFUSIONS.find(
-            (d) => d.name.toLowerCase() === infName.toLowerCase()
-          );
+          const def = findArtificerInfusion(infName);
           const badge = activeEntry
             ? activeEntry.targetItemName
               ? `Active (Infused: ${activeEntry.targetItemName})`

@@ -215,6 +215,8 @@ export interface OptionFeatureData {
   prerequisite: string | null;
   description: string;
   rawEntries?: any[];
+  /** Set on a record that carries replicable-item tables; it is not a selectable option. */
+  isUmbrella?: boolean;
 }
 
 export interface BeastAction {

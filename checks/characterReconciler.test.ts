@@ -18,7 +18,7 @@ const validMulticlassCharacter = () =>
       { id: "Warlock__Pact of the Tome__Cantrips", trait: "Pact of the Tome Cantrips", picked: ["Guidance", "Shillelagh", "Vicious Mockery"], choose: 3, options: [], origin: "class" },
       { id: "PHB__Warlock__Invocations 2", trait: "Eldritch Invocations (2nd Level)", picked: ["Agonizing Blast", "Armor of Shadows"], choose: 2, options: [], origin: "class" },
       { id: "Warlock__Mystic Arcanum 11", trait: "Mystic Arcanum (6th Level)", picked: ["Circle of Death"], choose: 1, options: [], origin: "class" },
-      { id: "TCE__Artificer__Infusions 2", trait: "Infusions Known (2nd Level)", picked: ["Enhanced Defense", "Replicate Magic Item: Bag of Holding"], choose: 4, options: [], origin: "class" },
+      { id: "TCE__Artificer__Infusions 2", trait: "Infusions Known (2nd Level)", picked: ["Enhanced Defense", "Mind Sharpener"], choose: 4, options: [], origin: "class" },
     ],
     knownSpells: [
       { name: "Eldritch Blast", ability: "cha", className: "Warlock", source: "PHB" },

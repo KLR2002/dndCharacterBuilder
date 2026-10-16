@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join, relative, resolve, dirname } from "node:path";
 import { makeChar, loadTestCatalog, integratedTestCompendium, srdBaselineCompendium } from "./testUtils.ts";
+import { infusionCatalog } from "./infusionFixture.ts";
 import {
   offeredRuleChoices,
   pickRuleChoice,
@@ -193,12 +194,13 @@ test("fighting style picks keep their specialised recording", () => {
 
 test("artificer infusion picks keep their specialised recording", () => {
   const artificer = makeChar({ classes: [{ className: "Artificer", level: 2 }] });
-  const [infusion] = artificerInfusionChoices(artificer, ["PHB", "TCE"]);
+  const catalog = infusionCatalog();
+  const [infusion] = artificerInfusionChoices(artificer, ["PHB", "TCE"], catalog);
   assert.ok(infusion);
   assert.equal(infusion.pick, "artificerInfusion");
 
-  const viaInterface = pickRuleChoice(artificer, infusion, "Enhanced Defense");
-  const viaModule = reconcile(pickInfusionChoice(artificer, infusion, "Enhanced Defense"), currentCompendium());
+  const viaInterface = pickRuleChoice(artificer, infusion, "Placeholder Alpha", catalog);
+  const viaModule = reconcile(pickInfusionChoice(artificer, infusion, "Placeholder Alpha"), catalog);
   assert.deepEqual(viaInterface, viaModule);
 });
 

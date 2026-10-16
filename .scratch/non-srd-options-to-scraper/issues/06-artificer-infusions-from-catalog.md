@@ -6,10 +6,10 @@
 
 **Status:** ready-for-agent
 
-- [ ] Scraper test: a placeholder infusion with caption tables yields one `AI` option per row with the right level, and the umbrella record is flagged as non-selectable
-- [ ] Infusions Known offers the same infusions per level as before, from the catalog
-- [ ] Saved picks such as "Replicate Magic Item: Alchemy Jug" still resolve
-- [ ] The hand-written infusion definition table no longer exists
-- [ ] Active infusion rules (capacity, mundane targets, pruning) behave as before
-- [ ] Dual-Mode, stale-catalog and negative tests exist
-- [ ] Existing suite passes (`npm run check:all`)
+- [x] Scraper test: a placeholder infusion with caption tables yields one `AI` option per row with the right level, and the umbrella record is flagged as non-selectable
+- [x] Infusions Known offers the same infusions per level as before, from the catalog
+- [x] Saved picks such as "Replicate Magic Item: Alchemy Jug" still resolve
+- [x] The hand-written infusion definition table no longer exists
+- [x] Active infusion rules (capacity, mundane targets, pruning) behave as before
+- [x] Dual-Mode, stale-catalog and negative tests exist
+- [x] Existing suite passes (`npm run check:all`)

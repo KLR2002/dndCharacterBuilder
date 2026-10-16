@@ -12,7 +12,7 @@ import { useCharacters } from "../context/CharacterContext";
 import { useAppTheme } from "../context/ThemeContext";
 import { getItems } from "../services/dataService";
 import {
-  ALL_ARTIFICER_INFUSIONS,
+  findArtificerInfusion,
   getKnownInfusions,
   getMaxActiveInfusions,
   isMundaneItem,
@@ -194,9 +194,7 @@ export const ActiveInfusionsSection: React.FC = () => {
               (a) => a.infusionName.toLowerCase() === infName.toLowerCase()
             );
             const isActive = Boolean(activeEntry);
-            const def = ALL_ARTIFICER_INFUSIONS.find(
-              (d) => d.name.toLowerCase() === infName.toLowerCase()
-            );
+            const def = findArtificerInfusion(infName);
 
             return (
               <View
