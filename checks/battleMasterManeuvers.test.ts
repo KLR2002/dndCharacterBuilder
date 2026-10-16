@@ -11,7 +11,7 @@ import {
 import {
   battleMasterManeuverChoices,
   getChosenManeuvers,
-  pickSubclassRuleChoice,
+  pickRuleChoice,
   isManeuverChoiceId,
   subclassRuleChoices,
 } from "../src/rules/ruleChoices.ts";
@@ -153,9 +153,9 @@ test("Deduplication: maneuver chosen at 3 is not offered at 7", () => {
   const choice3 = choices.find((c) => c.id === "PHB__Fighter__Battle Master__Maneuvers 3")!;
 
   // Pick 3 maneuvers at level 3
-  char = pickSubclassRuleChoice(char, choice3, "Trip Attack");
-  char = pickSubclassRuleChoice(char, choice3, "Riposte");
-  char = pickSubclassRuleChoice(char, choice3, "Disarming Attack");
+  char = pickRuleChoice(char, choice3, "Trip Attack");
+  char = pickRuleChoice(char, choice3, "Riposte");
+  char = pickRuleChoice(char, choice3, "Disarming Attack");
 
   const chosen = getChosenManeuvers(char);
   assert.deepEqual(chosen.sort(), ["Disarming Attack", "Riposte", "Trip Attack"].sort());

@@ -27,7 +27,7 @@ export function fightingStyleRuleChoices(
   activeBooks?: string[],
   compendium: Compendium = currentCompendium()
 ): AvailableRuleChoice[] {
-  const out: AvailableRuleChoice[] = [];
+  const out: Omit<AvailableRuleChoice, "origin" | "pick">[] = [];
   const upperBooks = activeBooks ? activeBooks.map((b) => b.toUpperCase()) : undefined;
   const allOptions = compendium.for(upperBooks).optionsAndFeatures();
 
@@ -179,7 +179,15 @@ export function fightingStyleRuleChoices(
     });
   }
 
-  return out;
+  // Every row here records through the specialised fighting style pick. The origin matches
+  // what that pick stores: College of Swords styles are subclass-granted, the rest are class.
+  return out.map(
+    (choice): AvailableRuleChoice => ({
+      ...choice,
+      origin: choice.id.includes("College of Swords") ? "subclass" : "class",
+      pick: "fightingStyle",
+    })
+  );
 }
 
 /**

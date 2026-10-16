@@ -25,7 +25,7 @@ import {
   STARTING_GOLD_BY_CLASS,
 } from "../../rules/builderTransitions";
 import { reconcile } from "../../rules/characterReconciler";
-import { ancestryRuleChoices, availableRuleChoices } from "../../rules/ruleChoices";
+import { ancestryRuleChoices, offeredRuleChoices } from "../../rules/ruleChoices";
 import { getPendingLevelChoices } from "../../rules/leveling";
 import {
   getAutoGrantedSkills,
@@ -363,7 +363,7 @@ export const BuilderTab: React.FC<BuilderTabProps> = ({
     character.race?.subraceSource
   );
   const raceToolGrant = getRaceToolGrant(character.race?.name, character.race?.subraceName, allRaces);
-  const ruleChoices = availableRuleChoices(character, allRaces, totalLevel, activeBooks);
+  const ruleChoices = offeredRuleChoices(character, { raceCatalog: allRaces, level: totalLevel, activeBooks, origins: ["race"] });
   const bgLanguageGrant = getBackgroundLanguageGrant(character.background?.name, allBackgrounds);
   const bgToolGrant = getBackgroundToolGrant(character.background?.name, allBackgrounds);
   const classToolGrant = getClassToolGrant(primaryClass, allClasses);

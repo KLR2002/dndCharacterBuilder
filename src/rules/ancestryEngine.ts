@@ -1,13 +1,13 @@
 import type { AbilityKey, AsiSelection, Character, RuleChoiceEntry } from "../types/character.ts";
 import type { RaceData, SubraceData } from "../types/dnd5e.ts";
 import {
-  availableRuleChoices,
+  offeredRuleChoices,
+  pickRuleChoice,
   type AvailableRuleChoice,
 } from "./ruleChoices.ts";
 import { catalogListings, type CharacterCatalogs } from "./characterEvaluation.ts";
 import { setChoiceRacialBonus } from "./builderTransitions.ts";
 import { reconcile } from "./characterReconciler.ts";
-import { setRuleChoicePick } from "./choices/types.ts";
 import { currentCompendium } from "../services/compendium.ts";
 import { resolveCharacterLanguages } from "./proficienciesAndLanguages.ts";
 import { getBackgroundFeatGrant } from "./feats.ts";
@@ -103,7 +103,7 @@ export function resolveAncestryState(
   })();
 
   const availChoices = (character.race || character.lineageReplacement)
-    ? availableRuleChoices(character, allRaces, undefined, catalogs?.activeBooks)
+    ? offeredRuleChoices(character, { raceCatalog: allRaces, activeBooks: catalogs?.activeBooks, origins: ["race"] })
     : [];
 
   const ruleChoicesWithPicks = availChoices.map((choice) => {
@@ -292,18 +292,15 @@ export function applyAncestryChoice(
   catalogs?: CharacterCatalogs
 ): Character {
   const allRaces = catalogListings(catalogs).races();
-  const choices = availableRuleChoices(character, allRaces, undefined, catalogs?.activeBooks);
+  const choices = offeredRuleChoices(character, {
+    raceCatalog: allRaces,
+    activeBooks: catalogs?.activeBooks,
+    origins: ["race"],
+  });
   const choice = choices.find((c) => c.id === choiceId);
   if (!choice) return character;
 
-  const updated = setRuleChoicePick(
-    character,
-    choice.id,
-    choice.traitName,
-    option,
-    choice.options.map((o) => o.name),
-    choice.choose
-  );
+  const updated = pickRuleChoice(character, choice, option, catalogs?.compendium);
 
   // Cascading invalidation: if this choice has a "Cantrip" option, and "Cantrip" is NOT picked in updated state
   // (either because user picked another option OR toggled Cantrip off), purge any cantrip choice!

@@ -1,9 +1,10 @@
-import type { Character } from "../types/character.ts";
+import type { Character, KnownSpell } from "../types/character.ts";
 import { currentCompendium, type Compendium } from "../services/compendium.ts";
 import { pruneInvalidExpertise } from "./expertise.ts";
 import { pruneInvalidFightingStyles } from "./choices/fightingStyles.ts";
 import { pruneInvalidManeuvers } from "./choices/maneuvers.ts";
 import { pruneInvalidInfusions } from "./choices/artificerInfusions.ts";
+import { GIANT_POWER_CHOICE_ID } from "./choices/types.ts";
 import {
   pruneInvalidInvocations,
   pruneInvalidMysticArcanum,
@@ -24,6 +25,8 @@ import {
  *     choices, so it is independent of them, but it keeps the order the former invocation-prune
  *     chain used.
  * Fighting styles run before maneuvers because Superior Technique is gated on a fighting style.
+ * The Giant Power cantrip sync reads only its own choice and the Barbarian's known spells, so
+ * its position is free; it sits with the other known-spell syncs.
  */
 export function reconcile(character: Character, compendium: Compendium): Character {
   let updated = character;
@@ -33,11 +36,37 @@ export function reconcile(character: Character, compendium: Compendium): Charact
   updated = pruneInvalidInvocations(updated, compendium);
   updated = syncWarlockTomeCantrips(updated, compendium);
   updated = syncAncientSecretsRituals(updated, compendium);
+  updated = syncGiantPowerCantrip(updated);
   updated = pruneInvalidMysticArcanum(updated);
   updated = pruneInvalidInfusions(updated);
   updated = pruneInvalidExpertise(updated, { compendium });
 
   return updated;
+}
+
+const GIANT_POWER_CANTRIPS = new Set(["druidcraft", "thaumaturgy"]);
+
+/**
+ * Keeps the Path of the Giant cantrip in knownSpells in step with the recorded Giant Power
+ * pick: the picked cantrip is known under the Giant owner, and no other Giant cantrip is.
+ * Returns the character unchanged when knownSpells already agrees.
+ */
+function syncGiantPowerCantrip(character: Character): Character {
+  const picked = character.ruleChoices?.find((rc) => rc.id === GIANT_POWER_CHOICE_ID)?.picked?.[0];
+  const known = character.knownSpells ?? [];
+  const isGiantCantrip = (k: { name: string; ownerKey?: string }) =>
+    k.ownerKey === "Barbarian__BGG" && GIANT_POWER_CANTRIPS.has(k.name.toLowerCase());
+
+  const granted = known.filter(isGiantCantrip);
+  if (!picked && granted.length === 0) return character;
+  if (picked && granted.length === 1 && granted[0].name === picked) return character;
+
+  const others = known.filter((k) => !isGiantCantrip(k));
+  const pickedSpell: KnownSpell | undefined = picked
+    ? { name: picked, source: "PHB", ownerKey: "Barbarian__BGG", ability: "wis", className: "Barbarian" }
+    : undefined;
+  const knownSpells = pickedSpell ? [...others, pickedSpell] : others;
+  return { ...character, knownSpells };
 }
 
 /**
