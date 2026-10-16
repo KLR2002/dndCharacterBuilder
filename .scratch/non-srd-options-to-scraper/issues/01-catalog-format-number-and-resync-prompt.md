@@ -4,7 +4,9 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** done
+
+**Landed:** merge `afbed84`. Open: the Settings re-sync line is verified by typecheck and reading only (no render test); criterion "Settings shows the re-sync prompt" stays unticked until the app is run.
 
 - [x] Saving a catalog stores the current format number; loading a catalog returns it
 - [x] A catalog stored without a number, or with a lower one, loads as stale and is still usable
