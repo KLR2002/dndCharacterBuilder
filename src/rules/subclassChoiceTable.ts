@@ -388,6 +388,7 @@ export interface PointerRowOffer {
  * Reads a pointer row's offer from the Compendium. The feature at the row's locator supplies the
  * pick count and the options. Returns undefined when no feature of the owner's class and subclass,
  * with that name and level, carries `choices`: the row is then not offered and saved picks stay.
+ * A feature row is also not offered from a stale catalog.
  *
  * The catalog is read unscoped: the row's own `source` and each option's `source` gate the offer
  * by active book. An option printed in the row's own book is always offered; one printed in another
@@ -398,6 +399,8 @@ export function readPointerRow(
   compendium: Compendium,
   activeBooks?: readonly string[]
 ): PointerRowOffer | undefined {
+  // A stale catalog's feature choices are hidden until re-sync; spell-choice and option-record rows stay, as an older catalog still holds what they derive from.
+  if ("feature" in row.locator && compendium.stale) return undefined;
   const active = activeBooks?.map((b) => b.toUpperCase());
   const rowBook = row.source.toUpperCase();
 

@@ -2,7 +2,7 @@ import type { Character } from "../src/types/character.ts";
 import { DEFAULT_ACTIVE_BOOK_CODES } from "../src/constants/books.ts";
 import { readFileSync, existsSync } from "node:fs";
 import { createCompendium, integrate, revertToSrd, type Compendium } from "../src/services/compendium.ts";
-import { loadCompendiumData, type CompendiumCollections } from "../src/services/compendiumStorage.ts";
+import { loadCompendiumData, REQUIRED_CATALOG_FORMAT, type CompendiumCollections } from "../src/services/compendiumStorage.ts";
 import { choiceCatalogBundle } from "./choiceCatalogFixture.ts";
 
 /**
@@ -132,6 +132,7 @@ export function withSpellChoiceFixtures(bundle: CompendiumCollections): Compendi
 function integratedTestBundle(): CompendiumCollections {
   return withTotemFixture({
     hasIntegratedCatalog: true,
+    catalogFormat: REQUIRED_CATALOG_FORMAT,
     races: loadTestCatalog<RaceData[]>("races"),
     classes: loadTestCatalog<ClassData[]>("classes"),
     feats: loadTestCatalog<FeatData[]>("feats"),

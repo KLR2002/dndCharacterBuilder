@@ -1,4 +1,4 @@
-import type { CompendiumCollections } from "../src/services/compendiumStorage.ts";
+import { REQUIRED_CATALOG_FORMAT, type CompendiumCollections } from "../src/services/compendiumStorage.ts";
 import type { ClassData, ClassFeatureData, FeatureChoice, SubclassData } from "../src/types/dnd5e.ts";
 
 /**
@@ -164,10 +164,11 @@ export const choiceCatalogClasses = (): ClassData[] => [
   classWith("Warlock", [genieSubclass]),
 ];
 
-/** A Compendium bundle over the fixture catalog. Overrides replace whole collections. */
+/** A current-format Compendium bundle over the fixture catalog. Overrides replace whole collections. */
 export function choiceCatalogBundle(overrides: Partial<CompendiumCollections> = {}): CompendiumCollections {
   return {
     hasIntegratedCatalog: true,
+    catalogFormat: REQUIRED_CATALOG_FORMAT,
     races: [],
     classes: choiceCatalogClasses(),
     feats: [],
