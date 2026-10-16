@@ -21,6 +21,7 @@ import { catalogListings, type CharacterCatalogs } from "../../rules/catalogs";
 import {
   applyStartingGrants,
   CLASS_STARTING_EQUIPMENT,
+  reclaimStartingGrants,
   setStandardArrayPick,
   STARTING_GOLD_BY_CLASS,
 } from "../../rules/builderTransitions";
@@ -156,22 +157,17 @@ export const BuilderTab: React.FC<BuilderTabProps> = ({
   // ─────────────────────────────────────────────────────────────────────────
   // STARTING GRANTS HELPERS
   // ─────────────────────────────────────────────────────────────────────────
-  const handleClaimGold = () => {
-    if (!primaryClass) return;
-    const goldAmount = STARTING_GOLD_BY_CLASS[primaryClass] ?? 100;
-    onUpdate((current) => applyStartingGrants(current, "gold", { goldAmount }));
-  };
+  const startingGoldFor = (className: string) => STARTING_GOLD_BY_CLASS[className] ?? 100;
 
-  const handleClaimEquipment = () => {
-    if (!primaryClass) return;
-    const defs = CLASS_STARTING_EQUIPMENT[primaryClass] || [
+  const startingEquipmentFor = (className: string): InventoryItem[] => {
+    const defs = CLASS_STARTING_EQUIPMENT[className] || [
       { name: "Dagger", quantity: 1, isEquipped: true, section: "equipped" as const },
       { name: "Explorer's Pack", quantity: 1, isEquipped: false, section: "carried" as const },
     ];
-    const equipmentItems: InventoryItem[] = defs.map((def, idx) => {
+    return defs.map((def, idx) => {
       const itemData = findItem(def.name);
       return {
-        id: `start_${primaryClass.toLowerCase()}_${idx}_${def.name.toLowerCase().replace(/[^a-z0-9]/g, "_")}`,
+        id: `start_${className.toLowerCase()}_${idx}_${def.name.toLowerCase().replace(/[^a-z0-9]/g, "_")}`,
         name: def.name,
         source: itemData?.source || "PHB",
         quantity: def.quantity,
@@ -186,7 +182,28 @@ export const BuilderTab: React.FC<BuilderTabProps> = ({
         description: itemData?.description || "",
       };
     });
+  };
+
+  const handleClaimGold = () => {
+    if (!primaryClass) return;
+    const goldAmount = startingGoldFor(primaryClass);
+    onUpdate((current) => applyStartingGrants(current, "gold", { goldAmount }));
+  };
+
+  const handleClaimEquipment = () => {
+    if (!primaryClass) return;
+    const equipmentItems = startingEquipmentFor(primaryClass);
     onUpdate((current) => applyStartingGrants(current, "equipment", { equipmentItems }));
+  };
+
+  const handleClaimAgain = () => {
+    if (!primaryClass) return;
+    const mode = character.startingOption;
+    const options =
+      mode === "gold"
+        ? { goldAmount: startingGoldFor(primaryClass) }
+        : { equipmentItems: startingEquipmentFor(primaryClass) };
+    onUpdate((current) => reclaimStartingGrants(current, mode, options));
   };
 
   // ─────────────────────────────────────────────────────────────────────────
@@ -515,6 +532,7 @@ export const BuilderTab: React.FC<BuilderTabProps> = ({
           primaryClass={primaryClass}
           onClaimGold={handleClaimGold}
           onClaimEquipment={handleClaimEquipment}
+          onClaimAgain={handleClaimAgain}
           onViewDetail={onViewDetail}
           theme={theme}
           activeBooks={activeBooks}

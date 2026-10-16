@@ -468,6 +468,37 @@ export const CLASS_STARTING_EQUIPMENT: Record<
   ],
 };
 
+/** The gold and equipment a character's first class grants when the player does not supply their own. */
+function startingDefaults(character: Character): { gold: number; equipment: InventoryItem[] } {
+  const primary = character.classes[0]?.className;
+  const match = primary
+    ? Object.keys(STARTING_GOLD_BY_CLASS).find((k) => k.toLowerCase() === primary.toLowerCase())
+    : undefined;
+  const defs = match ? CLASS_STARTING_EQUIPMENT[match] : [];
+  return {
+    gold: match ? STARTING_GOLD_BY_CLASS[match] : 100,
+    equipment: defs.map((d, idx) => ({
+      id: `start_${(primary || "item").toLowerCase()}_${idx}`,
+      name: d.name,
+      source: "PHB",
+      quantity: d.quantity,
+      isEquipped: d.isEquipped,
+      section: d.section,
+    })),
+  };
+}
+
+/** Gives each item an id not used by `existing` or an earlier item here, appending _2, _3, ... on a clash. */
+function withUniqueIds(items: InventoryItem[], existing: InventoryItem[]): InventoryItem[] {
+  const taken = new Set(existing.map((item) => item.id));
+  return items.map((item) => {
+    let id = item.id;
+    for (let n = 2; taken.has(id); n++) id = `${item.id}_${n}`;
+    taken.add(id);
+    return { ...item, id };
+  });
+}
+
 export function applyStartingGrants(
   character: Character,
   mode: "gold" | "equipment",
@@ -480,11 +511,8 @@ export function applyStartingGrants(
     return character;
   }
 
-  const primary = character.classes[0]?.className;
-  const match = primary
-    ? Object.keys(STARTING_GOLD_BY_CLASS).find((k) => k.toLowerCase() === primary.toLowerCase())
-    : undefined;
-  const defaultGold = match ? STARTING_GOLD_BY_CLASS[match] : 100;
+  const defaults = startingDefaults(character);
+  const defaultGold = defaults.gold;
   const gold = options?.goldAmount ?? defaultGold;
 
   // Clean up any previously granted starting items (items with id starting with "start_")
@@ -512,18 +540,7 @@ export function applyStartingGrants(
   }
 
   // mode === "equipment"
-  let newItems = options?.equipmentItems;
-  if (!newItems) {
-    const defs = match ? CLASS_STARTING_EQUIPMENT[match] : [];
-    newItems = defs.map((d, idx) => ({
-      id: `start_${(primary || "item").toLowerCase()}_${idx}`,
-      name: d.name,
-      source: "PHB",
-      quantity: d.quantity,
-      isEquipped: d.isEquipped,
-      section: d.section,
-    }));
-  }
+  const newItems = options?.equipmentItems ?? defaults.equipment;
 
   return {
     ...character,
@@ -532,6 +549,43 @@ export function applyStartingGrants(
     startingGrantedGold: undefined,
     items: [...cleanedItems, ...newItems],
     pouch: currentPouch,
+  };
+}
+
+/**
+ * Claims starting gold or equipment again on top of what the character already has. Earlier grants
+ * are kept: nothing is removed. Gold accumulates in `startingGrantedGold`, so a later switch to
+ * equipment through `applyStartingGrants` removes all of it. Equipment ids are made unique.
+ */
+export function reclaimStartingGrants(
+  character: Character,
+  mode: "gold" | "equipment",
+  options?: {
+    goldAmount?: number;
+    equipmentItems?: InventoryItem[];
+  }
+): Character {
+  if (mode === "gold") {
+    const gold = options?.goldAmount ?? startingDefaults(character).gold;
+    const pouch = character.pouch ?? { cp: 0, sp: 0, ep: 0, gp: 0, pp: 0 };
+    return {
+      ...character,
+      startingOption: "gold",
+      startingGrantsApplied: true,
+      startingGrantedGold: (character.startingGrantedGold ?? 0) + gold,
+      pouch: { ...pouch, gp: (pouch.gp ?? 0) + gold },
+    };
+  }
+
+  const newItems = withUniqueIds(
+    options?.equipmentItems ?? startingDefaults(character).equipment,
+    character.items ?? []
+  );
+  return {
+    ...character,
+    startingOption: "equipment",
+    startingGrantsApplied: true,
+    items: [...(character.items ?? []), ...newItems],
   };
 }
 
@@ -669,15 +723,8 @@ export function parseBackgroundEquipment(startingEquipment: string[] = []): {
   return { coins, items };
 }
 
-export function applyBackgroundGrants(
-  character: Character,
-  backgroundData?: BackgroundData
-): Character {
-  if (character.backgroundGrantsApplied) {
-    return character;
-  }
-
-  const bgData = backgroundData;
+/** Adds a background's coins, equipment and skill proficiencies to the character, without touching the marker. */
+function grantBackground(character: Character, bgData?: BackgroundData): Character {
   const startingEquipment = bgData?.startingEquipment || [];
   const { coins, items } = parseBackgroundEquipment(startingEquipment);
 
@@ -689,14 +736,17 @@ export function applyBackgroundGrants(
     pp: (character.pouch?.pp ?? 0) + (coins.pp || 0),
   };
 
-  const bgItems: InventoryItem[] = items.map((it, idx) => ({
-    id: `bg_item_${idx}`,
-    name: it.name,
-    source: bgData?.source || "PHB",
-    quantity: it.quantity,
-    isEquipped: false,
-    section: it.section,
-  }));
+  const bgItems: InventoryItem[] = withUniqueIds(
+    items.map((it, idx) => ({
+      id: `bg_item_${idx}`,
+      name: it.name,
+      source: bgData?.source || "PHB",
+      quantity: it.quantity,
+      isEquipped: false,
+      section: it.section,
+    })),
+    character.items ?? []
+  );
 
   const existingSkills = new Set((character.chosenSkills || []).map((s) => s.toLowerCase()));
   const newSkills = [...(character.chosenSkills || [])];
@@ -709,11 +759,25 @@ export function applyBackgroundGrants(
 
   return {
     ...character,
-    backgroundGrantsApplied: true,
     pouch: updatedPouch,
     items: [...(character.items || []), ...bgItems],
     chosenSkills: newSkills,
   };
+}
+
+export function applyBackgroundGrants(
+  character: Character,
+  backgroundData?: BackgroundData
+): Character {
+  if (character.backgroundGrantsApplied) {
+    return character;
+  }
+  return { ...grantBackground(character, backgroundData), backgroundGrantsApplied: true };
+}
+
+/** Claims the background's coins and equipment again, on top of what was already granted. */
+export function reclaimBackgroundGrants(character: Character, backgroundData?: BackgroundData): Character {
+  return { ...grantBackground(character, backgroundData), backgroundGrantsApplied: true };
 }
 
 export function setLanguages(character: Character, languages: string[]): Character {

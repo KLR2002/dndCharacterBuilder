@@ -63,6 +63,7 @@ export interface ClassProgressionSectionProps {
   primaryClass?: string;
   onClaimGold: () => void;
   onClaimEquipment: () => void;
+  onClaimAgain: () => void;
   onViewDetail: (item: { title: string; subtitle?: string; source?: string; description?: string; tags?: string[] }) => void;
   theme: any;
   activeBooks?: string[];
@@ -85,6 +86,7 @@ export const ClassProgressionSection: React.FC<ClassProgressionSectionProps> = (
   primaryClass,
   onClaimGold,
   onClaimEquipment,
+  onClaimAgain,
   onViewDetail,
   theme,
   activeBooks,
@@ -562,6 +564,7 @@ export const ClassProgressionSection: React.FC<ClassProgressionSectionProps> = (
         primaryClass={primaryClass}
         onClaimGold={onClaimGold}
         onClaimEquipment={onClaimEquipment}
+        onClaimAgain={onClaimAgain}
         onUpdateOption={(opt) => onUpdate({ startingOption: opt })}
         theme={theme}
       />

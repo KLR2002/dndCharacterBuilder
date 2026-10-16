@@ -8,6 +8,7 @@ import {
   applyBackgroundGrants,
   clearBackground,
   parseBackgroundEquipment,
+  reclaimBackgroundGrants,
   setCustomBackground,
 } from "../../rules/builderTransitions";
 import { ALL_LANGUAGE_NAMES, resolveCharacterLanguages, ToolGrant } from "../../rules/proficienciesAndLanguages";
@@ -166,6 +167,12 @@ export const BackgroundSection: React.FC<BackgroundSectionProps> = ({
                             <Text style={{ color: theme.success, fontSize: 12, fontWeight: "600" }}>
                               Background Equipment & Funds Claimed
                             </Text>
+                            <Button
+                              title="Claim again"
+                              variant="outline"
+                              size="sm"
+                              onPress={() => onUpdate((cur) => reclaimBackgroundGrants(cur, bgData))}
+                            />
                           </View>
                         ) : (
                           <View style={{ flexDirection: isCompact ? "column" : "row" }}>

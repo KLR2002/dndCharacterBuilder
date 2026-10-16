@@ -14,6 +14,7 @@ export interface StartingGrantsSectionProps {
   primaryClass?: string;
   onClaimGold: () => void;
   onClaimEquipment: () => void;
+  onClaimAgain: () => void;
   onUpdateOption: (opt: "equipment" | "gold") => void;
   theme: any;
 }
@@ -23,6 +24,7 @@ export const StartingGrantsSection: React.FC<StartingGrantsSectionProps> = ({
   primaryClass,
   onClaimGold,
   onClaimEquipment,
+  onClaimAgain,
   onUpdateOption,
   theme,
 }) => {
@@ -100,16 +102,25 @@ export const StartingGrantsSection: React.FC<StartingGrantsSectionProps> = ({
               </Text>
             </View>
           </View>
-          <Button
-            title={character.startingOption === "gold" ? "Switch to Equipment" : "Switch to Gold"}
-            variant="outline"
-            size="sm"
-            onPress={() => {
-              if (character.startingOption === "gold") onClaimEquipment();
-              else onClaimGold();
-            }}
-            style={isCompact ? { width: "100%" } : undefined}
-          />
+          <View style={{ flexDirection: isCompact ? "column" : "row", gap: 8 }}>
+            <Button
+              title={character.startingOption === "gold" ? "Switch to Equipment" : "Switch to Gold"}
+              variant="outline"
+              size="sm"
+              onPress={() => {
+                if (character.startingOption === "gold") onClaimEquipment();
+                else onClaimGold();
+              }}
+              style={isCompact ? { width: "100%" } : undefined}
+            />
+            <Button
+              title={`Claim ${character.startingOption === "gold" ? "Gold" : "Equipment"} again`}
+              variant="outline"
+              size="sm"
+              onPress={onClaimAgain}
+              style={isCompact ? { width: "100%" } : undefined}
+            />
+          </View>
         </View>
       ) : (
         <>

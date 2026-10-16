@@ -18,6 +18,8 @@ import {
   changeSubclass,
   removeClassLevel,
   applySoleSubclasses,
+  reclaimStartingGrants,
+  reclaimBackgroundGrants,
 } from "../src/rules/builderTransitions.ts";
 import type {
   InventoryItem,
@@ -325,6 +327,118 @@ test("applyBackgroundGrants grants coins, equipment items, and skills from backg
   const again = applyBackgroundGrants(granted, bgData as any);
   assert.equal(again.pouch?.gp, 15);
   assert.equal(again.items.length, granted.items.length);
+});
+
+test("reclaimStartingGrants adds equipment on top of an earlier claim and keeps unique item ids", () => {
+  const longsword: InventoryItem = { id: "start_fighter_0", name: "Longsword", source: "PHB", quantity: 1, isEquipped: true, section: "equipped" };
+  const shield: InventoryItem = { id: "start_fighter_1", name: "Shield", source: "PHB", quantity: 1, isEquipped: true, section: "equipped" };
+  const claimed = makeChar({
+    classes: [{ className: "Fighter", source: "PHB", level: 1 }],
+    startingOption: "equipment",
+    startingGrantsApplied: true,
+    items: [longsword],
+  });
+
+  const reclaimed = reclaimStartingGrants(claimed, "equipment", { equipmentItems: [longsword, shield] });
+  assert.equal(reclaimed.startingGrantsApplied, true);
+  assert.equal(reclaimed.startingOption, "equipment");
+  assert.deepEqual(reclaimed.items.map((it) => it.id), ["start_fighter_0", "start_fighter_0_2", "start_fighter_1"]);
+  assert.deepEqual(reclaimed.items[0], longsword, "the earlier claim is kept as it was");
+});
+
+test("reclaimStartingGrants adds gold each time and the granted sum is removed when switching to equipment", () => {
+  const initial = makeChar({
+    classes: [{ className: "Fighter", source: "PHB", level: 1 }],
+    pouch: { cp: 0, sp: 0, ep: 0, gp: 10, pp: 0 },
+  });
+
+  const firstClaim = applyStartingGrants(initial, "gold", { goldAmount: 125 });
+  const secondClaim = reclaimStartingGrants(firstClaim, "gold", { goldAmount: 125 });
+  assert.equal(secondClaim.pouch.gp, 260, "gold is added on top of the earlier claim");
+  assert.equal(secondClaim.startingGrantedGold, 250, "granted gold accumulates");
+  assert.equal(secondClaim.startingOption, "gold");
+
+  const twiceFromScratch = reclaimStartingGrants(reclaimStartingGrants(initial, "gold", { goldAmount: 125 }), "gold", { goldAmount: 125 });
+  assert.equal(twiceFromScratch.pouch.gp, 260);
+  assert.equal(twiceFromScratch.startingGrantedGold, 250);
+
+  const switched = applyStartingGrants(secondClaim, "equipment", { equipmentItems: [] });
+  assert.equal(switched.pouch.gp, 10, "the whole granted sum is removed from the pouch");
+});
+
+test("reclaimStartingGrants from gold to equipment is a plain add that keeps the gold", () => {
+  const goldClaim = applyStartingGrants(
+    makeChar({ classes: [{ className: "Fighter", source: "PHB", level: 1 }], pouch: { cp: 0, sp: 0, ep: 0, gp: 0, pp: 0 } }),
+    "gold",
+    { goldAmount: 125 },
+  );
+  const gear: InventoryItem = { id: "start_fighter_0", name: "Longsword", source: "PHB", quantity: 1, isEquipped: true, section: "equipped" };
+
+  const reclaimed = reclaimStartingGrants(goldClaim, "equipment", { equipmentItems: [gear] });
+  assert.equal(reclaimed.pouch.gp, 125);
+  assert.equal(reclaimed.items.length, 1);
+  assert.equal(reclaimed.startingOption, "equipment");
+});
+
+test("reclaimBackgroundGrants adds the coins and items again with unique ids and no duplicate skills", () => {
+  const bgData = {
+    name: "Acolyte",
+    source: "PHB",
+    skillProficiencies: ["Insight", "Religion"],
+    toolProficiencies: [],
+    languages: [],
+    startingEquipment: ["holy symbol", "pouch containing 15 gp"],
+    feature: null,
+    characteristics: {},
+    description: "",
+  } as unknown as BackgroundData;
+  const claimed = applyBackgroundGrants(
+    makeChar({ background: { name: "Acolyte", source: "PHB" }, pouch: { gp: 0 }, items: [], chosenSkills: ["Athletics"] }),
+    bgData,
+  );
+
+  const again = reclaimBackgroundGrants(claimed, bgData);
+  assert.equal(again.backgroundGrantsApplied, true);
+  assert.equal(again.pouch?.gp, 30, "coins are added again");
+  assert.deepEqual(again.items.map((it) => it.id), ["bg_item_0", "bg_item_1", "bg_item_0_2", "bg_item_1_2"]);
+  assert.equal(new Set(again.items.map((it) => it.id)).size, again.items.length, "item ids are unique");
+  assert.equal(again.chosenSkills.filter((s) => s === "Insight").length, 1, "skills are not duplicated");
+  assert.deepEqual(again.chosenSkills, ["Athletics", "Insight", "Religion"]);
+});
+
+test("reclaimBackgroundGrants after a background change gives the new background's equipment", () => {
+  const acolyte = {
+    name: "Acolyte",
+    source: "PHB",
+    skillProficiencies: ["Insight"],
+    startingEquipment: ["holy symbol"],
+  } as unknown as BackgroundData;
+  const soldier = {
+    name: "Soldier",
+    source: "PHB",
+    skillProficiencies: ["Athletics"],
+    startingEquipment: ["insignia of rank"],
+  } as unknown as BackgroundData;
+  const claimed = applyBackgroundGrants(makeChar({ background: { name: "Acolyte", source: "PHB" } }), acolyte);
+  const switched = { ...claimed, background: { name: "Soldier", source: "PHB" } };
+
+  const reclaimed = reclaimBackgroundGrants(switched, soldier);
+  assert.equal(reclaimed.backgroundGrantsApplied, true, "the marker stays true");
+  assert.ok(reclaimed.items.some((it) => it.name === "Insignia of rank"), "the new background's item is granted");
+  assert.ok(reclaimed.items.some((it) => it.name === "Holy symbol"), "the earlier item is kept");
+  assert.ok(reclaimed.chosenSkills.includes("Athletics"));
+});
+
+test("applyStartingGrants and applyBackgroundGrants return the same reference once already applied", () => {
+  const claimedGear = makeChar({
+    classes: [{ className: "Fighter", source: "PHB", level: 1 }],
+    startingOption: "equipment",
+    startingGrantsApplied: true,
+  });
+  assert.equal(applyStartingGrants(claimedGear, "equipment", { equipmentItems: [] }), claimedGear);
+
+  const claimedBackground = makeChar({ backgroundGrantsApplied: true });
+  assert.equal(applyBackgroundGrants(claimedBackground, undefined), claimedBackground);
 });
 
 test("setLanguages updates character.languages", () => {
