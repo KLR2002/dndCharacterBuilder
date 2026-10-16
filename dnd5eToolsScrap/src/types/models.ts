@@ -91,6 +91,8 @@ export interface SubclassModel {
   spellcastingAbility?: string;
   features: ClassFeatureModel[];
   additionalSpells?: SubclassAdditionalSpells[];
+  /** Present when the additional spells grant a pick between named options, lifted from them. */
+  spellChoice?: FeatureChoice;
   description: string;
 }
 

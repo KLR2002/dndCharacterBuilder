@@ -1,6 +1,7 @@
 import type { ToolsClient } from "../types/models.ts";
 import { renderEntries } from "../parser/entry-renderer.ts";
 import { cleanTags } from "../parser/tag-cleaner.ts";
+import { liftSpellChoice } from "../parser/spell-choice.ts";
 import type {
   ClassFeatureModel,
   ClassModel,
@@ -271,6 +272,7 @@ export async function scrapeClasses(client: ToolsClient): Promise<ClassModel[]> 
         scFeatures.sort((a, b) => a.level - b.level);
 
         const additionalSpells = parseAdditionalSpells(sc.additionalSpells);
+        const spellChoice = liftSpellChoice(additionalSpells);
 
         subclasses.push({
           name: cleanTags(sc.name, "plain"),
@@ -283,6 +285,7 @@ export async function scrapeClasses(client: ToolsClient): Promise<ClassModel[]> 
             : undefined,
           features: scFeatures,
           ...(additionalSpells ? { additionalSpells } : {}),
+          ...(spellChoice ? { spellChoice } : {}),
           description: renderEntries(sc.entries, "markdown"),
         });
       }
