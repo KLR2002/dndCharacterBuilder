@@ -103,16 +103,8 @@ export function warlockPactBoonChoices(
     }))
     .sort((a, b) => a.name.localeCompare(b.name));
 
-  const defaultOptions = [
-    { name: "Pact of the Blade", description: "You can create a pact weapon in your empty hand." },
-    { name: "Pact of the Chain", description: "You learn the find familiar spell and can cast it as a ritual." },
-    { name: "Pact of the Tome", description: "Your patron gives you a grimoire called a Book of Shadows." },
-    ...((!activeBooks || activeBooks.some((b) => b.toUpperCase() === "TCE"))
-      ? [{ name: "Pact of the Talisman", description: "Your patron gives you an amulet that can aid the wearer." }]
-      : []),
-  ];
-
-  const finalOptions = boonOptions.length > 0 ? boonOptions : defaultOptions;
+  // No catalog boons: the choice is not offered. Saved picks are left alone.
+  if (boonOptions.length === 0) return [];
 
   return [
     {
@@ -122,7 +114,7 @@ export function warlockPactBoonChoices(
       choose: 1,
       level: 3,
       effectLevel: 3,
-      options: finalOptions,
+      options: boonOptions,
     },
   ];
 }
