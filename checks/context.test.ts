@@ -10,6 +10,7 @@ import type { Character } from "../src/types/character.ts";
 import { migrateCharacter } from "../src/rules/migrateCharacter.ts";
 import { applyCharacterUpdate } from "../src/context/characterUpdates.ts";
 import { __setKvForTests, loadCharacters, saveCharacters } from "../src/services/storage.ts";
+import * as compendiumStorage from "../src/services/compendiumStorage.ts";
 
 // Execute the real provider without RN/a renderer dependency. State updates are
 // deferred until render, as in React batching; effects run only after commit.
@@ -18,6 +19,7 @@ async function providerHarness(initial: unknown = [makeChar()], options: {
   loadAll?: typeof storage.loadAll;
   waitForInit?: boolean;
   races?: any[];
+  compendium?: any;
 } = {}) {
   const kv = new Map([["@dnd5e_characters", typeof initial === "string" ? initial : JSON.stringify(initial)]]);
   if (options.settings) kv.set("@dnd5e_app_settings", JSON.stringify(options.settings));
@@ -28,6 +30,8 @@ async function providerHarness(initial: unknown = [makeChar()], options: {
   let pending: (() => void)[] = [];
   let effects: (() => void)[] = [];
   let value: any;
+  // The compendium is stubbed per harness: the real process-wide default would leak into other suites.
+  let integrated: any = null;
   const react = {
     createContext: () => ({ Provider: "provider" }),
     createElement: (_: unknown, props: any) => { value = props.value; },
@@ -58,12 +62,17 @@ async function providerHarness(initial: unknown = [makeChar()], options: {
   runInNewContext(js, { exports, console, require: (name: string) => {
     if (name === "react") return react;
     if (name.includes("compendiumStorage")) return {
+      ...compendiumStorage,
       hasIntegratedCatalog: async () => false,
-      loadCompendiumData: async () => null,
+      loadCompendiumData: async () => options.compendium ?? null,
       clearCompendiumData: async () => {},
     };
     if (name.includes("runner")) return {
-      runInAppIntegration: async () => ({ hasIntegratedCatalog: true, integratedAt: new Date().toISOString() }),
+      runInAppIntegration: async () => ({
+        hasIntegratedCatalog: true,
+        catalogFormat: compendiumStorage.REQUIRED_CATALOG_FORMAT,
+        integratedAt: new Date().toISOString(),
+      }),
     };
     if (name.includes("storage")) return { ...storage, loadAll: options.loadAll ?? storage.loadAll };
     if (name.includes("characterUpdates")) return { applyCharacterUpdate };
@@ -72,8 +81,9 @@ async function providerHarness(initial: unknown = [makeChar()], options: {
       getRaces: () => options.races ?? [],
     };
     if (name.endsWith("services/compendium")) return {
-      integrate: () => {},
-      revertToSrd: () => {},
+      integrate: (bundle: any) => { integrated = bundle; },
+      revertToSrd: () => { integrated = null; },
+      currentCompendium: () => ({ stale: integrated ? compendiumStorage.isCatalogStale(integrated) : false }),
     };
     if (name.includes("constants/books")) return { DEFAULT_ACTIVE_BOOK_CODES: [] };
     if (name.includes("builderTransitions")) return { checkActiveBooksIntegrity: () => [] };
@@ -97,6 +107,31 @@ async function providerHarness(initial: unknown = [makeChar()], options: {
   return { get value() { return value; }, render, commit, flushEffects, kv,
     replayMountEffects: () => mountEffects.forEach(effect => effect()) };
 }
+
+test("provider exposes catalogStale for a stale loaded catalog, and a successful re-sync clears it", async () => {
+  try {
+    const stale = await providerHarness([], { compendium: { hasIntegratedCatalog: true, races: [], classes: [] } });
+    assert.equal(stale.value.isIntegrated, true, "a stale catalog is still loaded");
+    assert.equal(stale.value.catalogStale, true);
+
+    const current = await providerHarness([], { compendium: { hasIntegratedCatalog: true, catalogFormat: 2, races: [], classes: [] } });
+    assert.equal(current.value.catalogStale, false);
+
+    const srd = await providerHarness([], { compendium: null });
+    assert.equal(srd.value.isIntegrated, false);
+    assert.equal(srd.value.catalogStale, false, "the SRD Baseline is never stale");
+
+    const resync = await providerHarness([], { compendium: { hasIntegratedCatalog: true, races: [], classes: [] } });
+    assert.equal(resync.value.catalogStale, true);
+    // The sync's state updates are queued until a render; its settings write is not awaited here.
+    resync.value.triggerIntegration();
+    await new Promise(resolve => setImmediate(resolve));
+    resync.render();
+    assert.equal(resync.value.catalogStale, false);
+  } finally {
+    // Nothing to restore: the compendium is stubbed per harness.
+  }
+});
 
 test("provider uses latest state, migrates loaded records and persists rapid updates", async () => {
   const h = await providerHarness([makeChar({ knownSpells: [{ name: "Light", source: "PHB", className: "" }] })]);

@@ -11,7 +11,7 @@ import { applyCharacterUpdate } from "./characterUpdates";
 import { migrateCharacter } from "../rules/migrateCharacter";
 import { checkActiveBooksIntegrity } from "../rules/builderTransitions";
 import { getRaces } from "../services/dataService";
-import { integrate as integrateCompendium, revertToSrd as revertCompendiumToSrd } from "../services/compendium";
+import { currentCompendium, integrate as integrateCompendium, revertToSrd as revertCompendiumToSrd } from "../services/compendium";
 import {
   clearCompendiumData,
   loadCompendiumData,
@@ -53,6 +53,8 @@ interface CharacterContextValue {
   // Compendium Integration
   isIntegrated: boolean;
   integratedAt: string | null;
+  /** The loaded Integrated Catalog is below the format the application requires. Always false for the SRD Baseline. */
+  catalogStale: boolean;
   triggerIntegration: (onProgress?: (category: string, step: number, total: number) => void) => Promise<void>;
   revertToSrd: () => Promise<void>;
 }
@@ -108,6 +110,7 @@ export function CharacterProvider({ children }: { children: React.ReactNode }) {
   const [hasCompletedFirstRun, setHasCompletedFirstRun] = useState<boolean>(true); // default true to avoid flash
   const [isIntegrated, setIsIntegrated] = useState<boolean>(false);
   const [integratedAt, setIntegratedAt] = useState<string | null>(null);
+  const [catalogStale, setCatalogStale] = useState<boolean>(false);
   const [selectedCharacterId, setSelectedCharacterId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [initError, setInitError] = useState<string | null>(null);
@@ -139,6 +142,7 @@ export function CharacterProvider({ children }: { children: React.ReactNode }) {
           setIsIntegrated(false);
           setIntegratedAt(null);
         }
+        setCatalogStale(currentCompendium().stale);
         const raceCatalog = getRaces();
         const migratedCharacters = loadedChars.map((c) => migrateCharacter(c, raceCatalog));
         setActiveBooksState(loadedSettings.activeResourceBooks || DEFAULT_ACTIVE_BOOK_CODES);
@@ -317,6 +321,7 @@ export function CharacterProvider({ children }: { children: React.ReactNode }) {
     integrateCompendium(compendium);
     setIsIntegrated(true);
     setIntegratedAt(compendium.integratedAt || new Date().toISOString());
+    setCatalogStale(currentCompendium().stale);
     await setActiveBooks(DEFAULT_ACTIVE_BOOK_CODES);
   };
 
@@ -325,6 +330,7 @@ export function CharacterProvider({ children }: { children: React.ReactNode }) {
     revertCompendiumToSrd();
     setIsIntegrated(false);
     setIntegratedAt(null);
+    setCatalogStale(false);
     await setActiveBooks(["SRD"]);
   };
 
@@ -363,6 +369,7 @@ export function CharacterProvider({ children }: { children: React.ReactNode }) {
         getCharacter,
         isIntegrated,
         integratedAt,
+        catalogStale,
         triggerIntegration,
         revertToSrd,
       }}>
