@@ -6,7 +6,7 @@
 
 **Status:** done
 
-- [ ] No file under the rules layer imports the old singleton helpers (guard test)
+- [x] No file under the rules layer imports the old singleton helpers (guard test: checks/rulesSingletonGuard.test.ts)
 - [x] Dual-Mode tests construct SRD and integrated Compendiums side by side
 - [x] Dead SRD-source clauses are removed
 - [x] Existing suite passes (`npm run check:all`)
