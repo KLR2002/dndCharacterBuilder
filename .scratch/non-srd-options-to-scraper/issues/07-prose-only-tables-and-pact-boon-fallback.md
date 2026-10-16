@@ -6,7 +6,7 @@
 
 **Status:** ready-for-agent
 
-- [ ] Each curated table has a completeness test against the fixture catalog
-- [ ] The Pact Boon module offers only catalog options; SRD mode still offers the three SRD boons
-- [ ] No prose is parsed
-- [ ] Existing suite passes (`npm run check:all`)
+- [x] Each curated table has a completeness test against the fixture catalog
+- [x] The Pact Boon module offers only catalog options; SRD mode still offers the three SRD boons
+- [x] No prose is parsed
+- [x] Existing suite passes (`npm run check:all`)
