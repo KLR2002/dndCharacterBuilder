@@ -177,9 +177,21 @@ export function pruneInvalidManeuvers(character: Character): Character {
     return true;
   });
 
+  const removed = (character.ruleChoices || []).filter((rc) => !nextRuleChoices.includes(rc));
+
   return {
     ...character,
     ruleChoices: nextRuleChoices,
+    ...(removed.length > 0
+      ? {
+          needsReview: Array.from(
+            new Set([
+              ...(character.needsReview || []),
+              ...removed.map((rc) => `${rc.trait} removed: prerequisite no longer satisfied`),
+            ])
+          ),
+        }
+      : {}),
   };
 }
 

@@ -95,6 +95,7 @@ export function warlockPactBoonChoices(
     {
       id: "PHB__Warlock__Pact Boon",
       traitName: "Pact Boon",
+      origin: "class",
       choose: 1,
       level: 3,
       effectLevel: 3,
@@ -767,6 +768,7 @@ export function warlockInvocationChoices(
         out.push({
           id,
           traitName: m.traitName,
+          origin: "class",
           choose: m.choose,
           level: m.level,
           effectLevel: m.level,
@@ -795,6 +797,7 @@ export function warlockInvocationChoices(
     out.push({
       id,
       traitName: "Eldritch Adept Invocation",
+      origin: "class",
       choose: 1,
       level: 1,
       effectLevel: 1,
@@ -806,8 +809,8 @@ export function warlockInvocationChoices(
 }
 
 /**
- * Prunes invalid invocations when levels, pact boons, spells, or feats change.
- * Adds notices to character.needsReview when invocations are pruned.
+ * Prunes invalid invocations and Pact Boon when levels, pact boons, spells, or feats change.
+ * Adds notices to character.needsReview for every choice pruned.
  */
 export function pruneInvalidInvocations(
   character: Character,
@@ -836,13 +839,15 @@ export function pruneInvalidInvocations(
 
   const seenPicks = new Set<string>();
   const nextRuleChoices: RuleChoiceEntry[] = [];
-  const removedInvocations: string[] = [];
+  const removedChoices: string[] = [];
 
   for (const rc of character.ruleChoices || []) {
     // If Pact Boon choice but Warlock level < 3, remove it
     if (rc.id.includes("Pact Boon") || rc.trait.toLowerCase().includes("pact boon")) {
       if (warlockLevel >= 3) {
         nextRuleChoices.push(rc);
+      } else {
+        removedChoices.push("Pact Boon");
       }
       continue;
     }
@@ -852,7 +857,7 @@ export function pruneInvalidInvocations(
       if (!validChoice) {
         // Milestone or feat choice is no longer valid
         for (const p of rc.picked || []) {
-          removedInvocations.push(p);
+          removedChoices.push(p);
         }
         continue;
       }
@@ -868,7 +873,7 @@ export function pruneInvalidInvocations(
           : false;
 
         if (!isEligible) {
-          removedInvocations.push(p);
+          removedChoices.push(p);
         } else if (!seenPicks.has(norm)) {
           seenPicks.add(norm);
           keptPicks.push(p);
@@ -889,7 +894,7 @@ export function pruneInvalidInvocations(
   }
 
   const needsReviewSet = new Set(character.needsReview || []);
-  for (const removed of removedInvocations) {
+  for (const removed of removedChoices) {
     needsReviewSet.add(`${removed} removed: prerequisite no longer satisfied`);
   }
 

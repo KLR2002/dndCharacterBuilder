@@ -14,6 +14,18 @@ export function ruleChoiceId({ source, race, subrace, trait, index }: RuleChoice
   return index ? `${base}#${index}` : base;
 }
 
+/** The source a Rule Choice comes from. Persisted on each recorded entry. */
+export type RuleChoiceOrigin = "race" | "class" | "subclass";
+
+/**
+ * Sources whose picks have state of their own to record. Absent on a choice means the default
+ * pick: record the option, then reconcile.
+ */
+export type SpecialisedPick = "fightingStyle" | "artificerInfusion";
+
+/** The Path of the Giant cantrip choice. Its id is frozen. The Reconciler reads it too. */
+export const GIANT_POWER_CHOICE_ID = "BGG__Barbarian__Path of the Giant__Giant Power";
+
 /** A Rule Choice the character is currently offered. */
 export interface AvailableRuleChoice {
   id: string;
@@ -25,7 +37,8 @@ export interface AvailableRuleChoice {
   effectLevel: number;
   /** The feature this choice replaces, when the catalog marks one. */
   replaces?: string;
-  origin?: "race" | "class" | "subclass";
+  origin: RuleChoiceOrigin;
+  pick?: SpecialisedPick;
   options: { name: string; description: string }[];
 }
 
@@ -53,6 +66,10 @@ export function formatCantripOptions(cantrips: SpellData[]): { name: string; des
  * Records a player's pick for a Rule Choice, or clears it when the option is
  * deselected. Choices are keyed by id, so switching ancestries cannot leave a
  * stale pick behind under an id the new ancestry never offered.
+ *
+ * This is the recording step only. It lives in this leaf module because the
+ * specialised choice modules record their picks with it; callers reach it through
+ * `pickRuleChoice` in the Rule Choice module, which then reconciles.
  */
 export function setRuleChoicePick(
   character: Character,
@@ -61,7 +78,7 @@ export function setRuleChoicePick(
   option: string,
   from: string[],
   choose: number,
-  origin: "race" | "class" | "subclass" = "race"
+  origin: RuleChoiceOrigin = "race"
 ): Character {
   const current = character.ruleChoices ?? [];
   const entry = current.find((rc) => rc.id === id);

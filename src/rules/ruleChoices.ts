@@ -4,12 +4,14 @@ import { ALL_RESOURCE_BOOKS } from "../constants/books.ts";
 import { currentCompendium, type Compendium } from "../services/compendium.ts";
 import { reconcile } from "./characterReconciler.ts";
 import { totalLevel } from "./proficiencies.ts";
-import { DND_SKILLS, GIANT_BARBARIAN_OWNER_KEY } from "../constants/rules.ts";
+import { DND_SKILLS } from "../constants/rules.ts";
 import { RACE_SKILL_PROFICIENCIES, skills } from "./skills.ts";
 
 import {
   type AvailableRuleChoice,
+  type RuleChoiceOrigin,
   formatCantripOptions,
+  GIANT_POWER_CHOICE_ID,
   getSubclassName,
   ruleChoiceId,
   setRuleChoicePick,
@@ -18,22 +20,16 @@ import {
   fightingStyleRuleChoices,
   pickFightingStyleChoice,
 } from "./choices/fightingStyles.ts";
-import {
-  battleMasterManeuverChoices,
-  isManeuverChoiceId,
-} from "./choices/maneuvers.ts";
+import { battleMasterManeuverChoices } from "./choices/maneuvers.ts";
 import {
   warlockPactBoonChoices,
   warlockTomeCantripChoices,
   warlockAncientSecretsStartingRituals,
   warlockMysticArcanumChoices,
   warlockInvocationChoices,
-  isMysticArcanumChoiceId,
-  isInvocationChoiceId,
 } from "./choices/warlockChoices.ts";
 import {
   artificerInfusionChoices,
-  isInfusionChoiceId,
   pickInfusionChoice,
 } from "./choices/artificerInfusions.ts";
 
@@ -156,6 +152,7 @@ export function ancestryRuleChoices(character: Character, raceCatalog: RaceData[
         {
           id: ruleChoiceId({ source: "VRGR", race: lineageName, trait: "Ancestral Legacy" }),
           traitName: "Ancestral Legacy: Skill Proficiencies",
+          origin: "race",
           choose: 2,
           level: 1,
           effectLevel: 1,
@@ -188,6 +185,7 @@ export function ancestryRuleChoices(character: Character, raceCatalog: RaceData[
   const toChoice = (trait: TraitData, data: TraitChoiceData): AvailableRuleChoice => ({
     id: ruleChoiceId({ source: traitSource, race: choice.name, subrace: subrace ? { name: subrace.name } : null, trait: trait.name }),
     traitName: trait.name,
+    origin: "race",
     choose: data.pick,
     level: data.level,
     effectLevel: data.effectLevel ?? data.level,
@@ -401,6 +399,7 @@ export function subclassRuleChoices(
       out.push({
         id: "PHB__Druid__Circle of the Land__Biome",
         traitName: "Circle of the Land: Biome",
+        origin: "subclass",
         choose: 1,
         level: 2,
         effectLevel: 3,
@@ -417,6 +416,7 @@ export function subclassRuleChoices(
       out.push({
         id: "XGE__Sorcerer__Divine Soul__Affinity",
         traitName: "Divine Soul: Divine Affinity",
+        origin: "subclass",
         choose: 1,
         level: 1,
         effectLevel: 1,
@@ -429,6 +429,7 @@ export function subclassRuleChoices(
       out.push({
         id: "TCE__Warlock__The Genie__Kind",
         traitName: "The Genie: Genie Kind",
+        origin: "subclass",
         choose: 1,
         level: 1,
         effectLevel: 1,
@@ -446,6 +447,7 @@ export function subclassRuleChoices(
         out.push({
           id: "PHB__Cleric__Nature Domain__Acolyte of Nature",
           traitName: "Acolyte of Nature Cantrip",
+          origin: "subclass",
           choose: 1,
           level: 1,
           effectLevel: 1,
@@ -461,6 +463,7 @@ export function subclassRuleChoices(
         out.push({
           id: "DMG__Cleric__Death Domain__Reaper",
           traitName: "Reaper Cantrip",
+          origin: "subclass",
           choose: 1,
           level: 1,
           effectLevel: 1,
@@ -476,6 +479,7 @@ export function subclassRuleChoices(
         out.push({
           id: "SCAG__Cleric__Arcana Domain__Arcane Initiate",
           traitName: "Arcane Initiate Cantrips",
+          origin: "subclass",
           choose: 2,
           level: 1,
           effectLevel: 1,
@@ -493,6 +497,7 @@ export function subclassRuleChoices(
         out.push({
           id: "PHB__Monk__Way of the Four Elements__Discipline 3",
           traitName: "Elemental Discipline (3rd Level)",
+          origin: "subclass",
           choose: 1,
           level: 3,
           effectLevel: 3,
@@ -503,6 +508,7 @@ export function subclassRuleChoices(
         out.push({
           id: "PHB__Monk__Way of the Four Elements__Discipline 6",
           traitName: "Elemental Discipline (6th Level)",
+          origin: "subclass",
           choose: 1,
           level: 6,
           effectLevel: 6,
@@ -513,6 +519,7 @@ export function subclassRuleChoices(
         out.push({
           id: "PHB__Monk__Way of the Four Elements__Discipline 11",
           traitName: "Elemental Discipline (11th Level)",
+          origin: "subclass",
           choose: 1,
           level: 11,
           effectLevel: 11,
@@ -527,6 +534,7 @@ export function subclassRuleChoices(
         out.push({
           id: "PHB__Monk__Way of the Four Elements__Discipline 17",
           traitName: "Elemental Discipline (17th Level)",
+          origin: "subclass",
           choose: 1,
           level: 17,
           effectLevel: 17,
@@ -554,6 +562,7 @@ export function subclassRuleChoices(
           out.push({
             id,
             traitName: "Primal Knowledge (3rd Level)",
+            origin: "subclass",
             choose: 1,
             level: 3,
             effectLevel: 3,
@@ -569,6 +578,7 @@ export function subclassRuleChoices(
           out.push({
             id,
             traitName: "Primal Knowledge (10th Level)",
+            origin: "subclass",
             choose: 1,
             level: 10,
             effectLevel: 10,
@@ -583,8 +593,9 @@ export function subclassRuleChoices(
       // 5b. Path of the Giant (level >= 3)
       if (subName.includes("giant") && c.level >= 3) {
         out.push({
-          id: "BGG__Barbarian__Path of the Giant__Giant Power",
+          id: GIANT_POWER_CHOICE_ID,
           traitName: "Giant Power Cantrip",
+          origin: "subclass",
           choose: 1,
           level: 3,
           effectLevel: 3,
@@ -645,6 +656,7 @@ export function subclassRuleChoices(
           out.push({
             id: "PHB__Barbarian__Path of the Totem Warrior__Totem Spirit 3",
             traitName: "Totem Spirit (3rd Level)",
+            origin: "subclass",
             choose: 1,
             level: 3,
             effectLevel: 3,
@@ -655,6 +667,7 @@ export function subclassRuleChoices(
           out.push({
             id: "PHB__Barbarian__Path of the Totem Warrior__Aspect of the Beast 6",
             traitName: "Aspect of the Beast (6th Level)",
+            origin: "subclass",
             choose: 1,
             level: 6,
             effectLevel: 6,
@@ -665,6 +678,7 @@ export function subclassRuleChoices(
           out.push({
             id: "PHB__Barbarian__Path of the Totem Warrior__Totemic Attunement 14",
             traitName: "Totemic Attunement (14th Level)",
+            origin: "subclass",
             choose: 1,
             level: 14,
             effectLevel: 14,
@@ -712,99 +726,63 @@ export function availableSubclassRuleChoices(
 
 
 /**
- * Records or updates a subclass rule choice pick for a character.
+ * Every Rule Choice the character is offered, across ancestry, class and subclass.
+ * Ancestry choices come from the catalog and are level-gated; class and subclass
+ * choices are gated by their own class levels. Each choice carries its `origin`.
  */
-export function pickSubclassRuleChoice(
+export interface RuleChoiceQuery {
+  /** The ancestry catalog. Without it, no ancestry choices are offered. */
+  raceCatalog?: RaceData[];
+  /** Level for ancestry gating. Defaults to total level. */
+  level?: number;
+  activeBooks?: string[];
+  compendium?: Compendium;
+  /** Keep only choices from these sources. Every source when omitted. */
+  origins?: RuleChoiceOrigin[];
+}
+
+export function offeredRuleChoices(
+  character: Character,
+  query: RuleChoiceQuery = {}
+): AvailableRuleChoice[] {
+  const race = query.raceCatalog
+    ? availableRuleChoices(character, query.raceCatalog, query.level, query.activeBooks)
+    : [];
+  const classAndSubclass = availableSubclassRuleChoices(character, query.activeBooks, query.compendium);
+  return [...race, ...classAndSubclass].filter(
+    (choice) => !query.origins || query.origins.includes(choice.origin)
+  );
+}
+
+/**
+ * Records a player's pick for an offered Rule Choice, then reconciles the character.
+ * Fighting style and Artificer infusion picks record through their own modules; every
+ * other choice records under its origin. Derived state (invocations, Tome cantrips,
+ * Mystic Arcanum, the Giant Power cantrip and the rest) is brought up to date by the
+ * Reconciler, not by the pick.
+ */
+export function pickRuleChoice(
   character: Character,
   choice: AvailableRuleChoice,
   option: string,
   compendium: Compendium = currentCompendium()
 ): Character {
-  if (
-    choice.id.includes("Fighting Style") ||
-    choice.id.includes("Fighting Initiate") ||
-    choice.id.includes("Blessed Warrior") ||
-    choice.id.includes("Druidic Warrior")
-  ) {
-    return pickFightingStyleChoice(character, choice, option, compendium);
-  }
-
-  const pickClassChoice = () =>
-    setRuleChoicePick(
-      character,
-      choice.id,
-      choice.traitName,
-      option,
-      choice.options.map((o) => o.name),
-      choice.choose,
-      "class"
-    );
-
-  // Warlock picks change state that the Reconciler derives (invocations, Tome cantrips,
-  // Ancient Secrets rituals, Mystic Arcanum), so they record the pick and then reconcile.
-  if (
-    choice.id.includes("Pact Boon") ||
-    choice.id.includes("Pact of the Tome") ||
-    (choice.id.includes("Book of Ancient Secrets") && choice.id.includes("Rituals")) ||
-    isMysticArcanumChoiceId(choice.id) ||
-    isInvocationChoiceId(choice.id)
-  ) {
-    return reconcile(pickClassChoice(), compendium);
-  }
-
-  if (isInfusionChoiceId(choice.id)) {
-    return reconcile(pickInfusionChoice(character, choice, option), compendium);
-  }
-
-  const isManeuver = isManeuverChoiceId(choice.id);
-  const origin = isManeuver && (choice.id.includes("Feat") || choice.id.includes("Superior Technique"))
-    ? "class"
-    : "subclass";
-
-  let updated = setRuleChoicePick(
-    character,
-    choice.id,
-    choice.traitName,
-    option,
-    choice.options.map((o) => o.name),
-    choice.choose,
-    origin
-  );
-
-  // If this is Path of the Giant cantrip choice, synchronize knownSpells
-  if (choice.id.includes("Giant Power") || choice.traitName.includes("Giant Power")) {
-    const giantRc = updated.ruleChoices?.find(
-      (rc) => rc.id === choice.id || rc.trait === choice.traitName
-    );
-    const pickedCantrip = giantRc?.picked?.[0];
-    const prevKnown = (updated.knownSpells || []).filter(
-      (k) => !(k.ownerKey === GIANT_BARBARIAN_OWNER_KEY && ["druidcraft", "thaumaturgy"].includes(k.name.toLowerCase()))
-    );
-    if (pickedCantrip) {
-      updated = {
-        ...updated,
-        knownSpells: [
-          ...prevKnown,
-          {
-            name: pickedCantrip,
-            source: "PHB",
-            ownerKey: GIANT_BARBARIAN_OWNER_KEY,
-            ability: "wis",
-            className: "Barbarian",
-          },
-        ],
-      };
-    } else {
-      updated = {
-        ...updated,
-        knownSpells: prevKnown,
-      };
-    }
-  }
-
-  return updated;
+  const recorded =
+    choice.pick === "fightingStyle"
+      ? pickFightingStyleChoice(character, choice, option, compendium)
+      : choice.pick === "artificerInfusion"
+      ? pickInfusionChoice(character, choice, option)
+      : setRuleChoicePick(
+          character,
+          choice.id,
+          choice.traitName,
+          option,
+          choice.options.map((o) => o.name),
+          choice.choose,
+          choice.origin
+        );
+  return reconcile(recorded, compendium);
 }
 
-/** @deprecated Use pickSubclassRuleChoice */
-export const toggleSubclassRuleChoice = pickSubclassRuleChoice;
-
+/** @deprecated Use pickRuleChoice */
+export const toggleSubclassRuleChoice = pickRuleChoice;

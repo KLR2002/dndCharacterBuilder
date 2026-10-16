@@ -22,6 +22,7 @@ import {
 } from "../src/rules/characterSpells.ts";
 import type { SpellData } from "../src/types/dnd5e.ts";
 import type { Character, CharacterClass } from "../src/types/character.ts";
+import { GIANT_POWER_CHOICE_ID } from "../src/rules/choices/types.ts";
 
 test("getSpellSlotLedger computes standard slots, pact slots, and sorcery points accurately", () => {
   // Multiclass Wizard 3 / Warlock 3 / Sorcerer 2
@@ -440,9 +441,13 @@ for (const [mode, compendium] of MODES) {
   });
 
   test(`a Giant Barbarian learn is stored under the Path of the Giant owner and found by isKnown (${mode})`, () => {
+    // The Giant Power pick is the source of the Giant cantrip; the Reconciler keeps the pick under the Giant owner.
     const giant = makeChar({
       baseAbilityScores: { str: 16, dex: 14, con: 16, int: 10, wis: 14, cha: 8 },
       classes: [cls("Barbarian", 3, "Path of the Giant")],
+      ruleChoices: [
+        { id: GIANT_POWER_CHOICE_ID, trait: "Giant Power Cantrip", origin: "subclass", choose: 1, from: ["Druidcraft", "Thaumaturgy"], picked: ["Druidcraft"] },
+      ],
     });
     const profile = profileFor(giant, "Barbarian");
     const druidcraft = { name: "Druidcraft", source: "PHB" };
@@ -456,6 +461,22 @@ for (const [mode, compendium] of MODES) {
     // The learned entry is what the spells tab lists for the Giant Barbarian.
     const listed = profileFor(learned, "Barbarian").knownSpells.filter((k) => k.name === "Druidcraft");
     assert.deepEqual(listed.map((k) => k.ownerKey), ["Barbarian__BGG"]);
+  });
+
+  test(`a Giant cantrip that is not the recorded Giant Power pick is pruned by the Reconciler (${mode})`, () => {
+    const giant = makeChar({
+      baseAbilityScores: { str: 16, dex: 14, con: 16, int: 10, wis: 14, cha: 8 },
+      classes: [cls("Barbarian", 3, "Path of the Giant")],
+      ruleChoices: [
+        { id: GIANT_POWER_CHOICE_ID, trait: "Giant Power Cantrip", origin: "subclass", choose: 1, from: ["Druidcraft", "Thaumaturgy"], picked: ["Druidcraft"] },
+      ],
+    });
+    const profile = profileFor(giant, "Barbarian");
+
+    const thaumaturgy = { name: "Thaumaturgy", source: "PHB" };
+    const learned = learnSpell(giant, profile, thaumaturgy, compendium, PHB);
+    assert.deepEqual(learned.knownSpells?.map((k) => k.name), ["Druidcraft"]);
+    assert.equal(isKnown(learned, profileFor(learned, "Barbarian"), thaumaturgy), false);
   });
 
   test(`forgetSpell under one Spell Owner leaves the same spell known and prepared under another (${mode})`, () => {

@@ -4,7 +4,7 @@ import { makeChar } from "./testUtils.ts";
 import {
   subclassRuleChoices,
   availableSubclassRuleChoices,
-  pickSubclassRuleChoice,
+  pickRuleChoice,
   getUnchosenBarbarianSkills,
   BARBARIAN_CLASS_SKILLS,
 } from "../src/rules/ruleChoices.ts";
@@ -90,8 +90,8 @@ test("Primal Knowledge: excludes already proficient Barbarian skills and grants 
   assert.equal(offeredNames.includes("Perception"), false);
   assert.deepEqual(offeredNames.sort(), ["Animal Handling", "Intimidation", "Nature", "Survival"].sort());
 
-  // Pick "Survival" using pickSubclassRuleChoice
-  const updatedChar = pickSubclassRuleChoice(char, pk3, "Survival");
+  // Pick "Survival" using pickRuleChoice
+  const updatedChar = pickRuleChoice(char, pk3, "Survival");
   assert.ok(
     updatedChar.ruleChoices?.some(
       (rc) => rc.id === "TCE__Barbarian__Primal Knowledge 3" && rc.picked.includes("Survival")
@@ -142,7 +142,7 @@ test("Path of the Giant: level gating, cantrip choice, and Wisdom spellcasting p
   );
 
   // Pick "Druidcraft"
-  const charWithCantrip = pickSubclassRuleChoice(giantLvl3, giantChoice, "Druidcraft");
+  const charWithCantrip = pickRuleChoice(giantLvl3, giantChoice, "Druidcraft");
   const known = charWithCantrip.knownSpells?.find((k) => k.name === "Druidcraft");
   assert.ok(known, "Druidcraft must be added to character knownSpells");
   assert.equal(known.ownerKey, "Barbarian__BGG");
@@ -237,9 +237,9 @@ test("Path of the Totem Warrior: independent animal picks across milestones and 
   const ch14 = choices.find((c) => c.id === "PHB__Barbarian__Path of the Totem Warrior__Totemic Attunement 14")!;
 
   // Pick Bear at 3, Eagle at 6, Wolf at 14
-  let updated = pickSubclassRuleChoice(totemChar, ch3, "Bear");
-  updated = pickSubclassRuleChoice(updated, ch6, "Eagle");
-  updated = pickSubclassRuleChoice(updated, ch14, "Wolf");
+  let updated = pickRuleChoice(totemChar, ch3, "Bear");
+  updated = pickRuleChoice(updated, ch6, "Eagle");
+  updated = pickRuleChoice(updated, ch14, "Wolf");
 
   assert.equal(updated.ruleChoices?.length, 3);
   const pick3 = updated.ruleChoices?.find((rc) => rc.id === ch3.id)?.picked;
@@ -261,7 +261,7 @@ test("Path of the Totem Warrior: independent animal picks across milestones and 
   assert.equal(hasBearSpirit, true, "Character with Bear Totem Spirit must be detected for rage resistance note");
 
   // Eagle only: if 3rd level is Eagle, Bear Spirit check should return false
-  const eagle3Char = pickSubclassRuleChoice(totemChar, ch3, "Eagle");
+  const eagle3Char = pickRuleChoice(totemChar, ch3, "Eagle");
   const hasBearSpiritEagle = Boolean(
     eagle3Char.ruleChoices?.some(
       (rc) =>

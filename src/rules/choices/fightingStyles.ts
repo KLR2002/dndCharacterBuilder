@@ -27,7 +27,7 @@ export function fightingStyleRuleChoices(
   activeBooks?: string[],
   compendium: Compendium = currentCompendium()
 ): AvailableRuleChoice[] {
-  const out: AvailableRuleChoice[] = [];
+  const out: Omit<AvailableRuleChoice, "origin" | "pick">[] = [];
   const upperBooks = activeBooks ? activeBooks.map((b) => b.toUpperCase()) : undefined;
   const allOptions = compendium.for(upperBooks).optionsAndFeatures();
 
@@ -179,7 +179,15 @@ export function fightingStyleRuleChoices(
     });
   }
 
-  return out;
+  // Every row here records through the specialised fighting style pick. The origin matches
+  // what that pick stores: College of Swords styles are subclass-granted, the rest are class.
+  return out.map(
+    (choice): AvailableRuleChoice => ({
+      ...choice,
+      origin: choice.id.includes("College of Swords") ? "subclass" : "class",
+      pick: "fightingStyle",
+    })
+  );
 }
 
 /**
@@ -335,9 +343,21 @@ export function pruneInvalidFightingStyles(character: Character): Character {
     nextChoices = nextChoices.filter((rc) => rc.id !== "TCE__Fighter__Superior Technique__Maneuver");
   }
 
+  const removed = (character.ruleChoices || []).filter((rc) => !nextChoices.includes(rc));
+
   return {
     ...character,
     ruleChoices: nextChoices,
     knownSpells: nextKnownSpells,
+    ...(removed.length > 0
+      ? {
+          needsReview: Array.from(
+            new Set([
+              ...(character.needsReview || []),
+              ...removed.map((rc) => `${rc.trait} removed: prerequisite no longer satisfied`),
+            ])
+          ),
+        }
+      : {}),
   };
 }

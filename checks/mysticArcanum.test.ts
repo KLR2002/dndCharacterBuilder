@@ -7,7 +7,7 @@ import {
   warlockMysticArcanumChoices,
   availableSubclassRuleChoices,
   getMysticArcanumTiers,
-  pickSubclassRuleChoice,
+  pickRuleChoice,
 } from "../src/rules/ruleChoices.ts";
 import { applyLongRest, applyShortRest } from "../src/rules/rest.ts";
 
@@ -132,10 +132,10 @@ test("Mystic Arcanum: selection, getMysticArcanumTiers, and daily tracking", () 
   let char = createHighLevelWarlock(17);
   const choices = warlockMysticArcanumChoices(char);
 
-  char = pickSubclassRuleChoice(char, choices[0], "Mass Suggestion"); // 6th
-  char = pickSubclassRuleChoice(char, choices[1], "Finger of Death"); // 7th
-  char = pickSubclassRuleChoice(char, choices[2], "Demiplane"); // 8th
-  char = pickSubclassRuleChoice(char, choices[3], "True Polymorph"); // 9th
+  char = pickRuleChoice(char, choices[0], "Mass Suggestion"); // 6th
+  char = pickRuleChoice(char, choices[1], "Finger of Death"); // 7th
+  char = pickRuleChoice(char, choices[2], "Demiplane"); // 8th
+  char = pickRuleChoice(char, choices[3], "True Polymorph"); // 9th
 
   const tiers = getMysticArcanumTiers(char);
   assert.equal(tiers.length, 4);
@@ -189,10 +189,10 @@ test("Mystic Arcanum: deleveling prunes invalid tiers and cleans up spent tracki
   let char = createHighLevelWarlock(17);
   const choices = warlockMysticArcanumChoices(char);
 
-  char = pickSubclassRuleChoice(char, choices[0], "Mass Suggestion"); // 6th (lvl 11)
-  char = pickSubclassRuleChoice(char, choices[1], "Finger of Death"); // 7th (lvl 13)
-  char = pickSubclassRuleChoice(char, choices[2], "Demiplane"); // 8th (lvl 15)
-  char = pickSubclassRuleChoice(char, choices[3], "True Polymorph"); // 9th (lvl 17)
+  char = pickRuleChoice(char, choices[0], "Mass Suggestion"); // 6th (lvl 11)
+  char = pickRuleChoice(char, choices[1], "Finger of Death"); // 7th (lvl 13)
+  char = pickRuleChoice(char, choices[2], "Demiplane"); // 8th (lvl 15)
+  char = pickRuleChoice(char, choices[3], "True Polymorph"); // 9th (lvl 17)
 
   char = {
     ...char,
