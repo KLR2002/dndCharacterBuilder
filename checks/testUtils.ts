@@ -92,22 +92,49 @@ export function loadTestCatalogs() {
   };
 }
 
-// Seed compendiumStore with full integrated compendium for rule and progression test suites
+/** The full integrated catalog (scrap data, falling back to bundled data) as a collections bundle. */
+function integratedTestBundle(): CompendiumCollections {
+  return {
+    hasIntegratedCatalog: true,
+    races: loadTestCatalog<RaceData[]>("races"),
+    classes: loadTestCatalog<ClassData[]>("classes"),
+    feats: loadTestCatalog<FeatData[]>("feats"),
+    backgrounds: loadTestCatalog<BackgroundData[]>("backgrounds"),
+    items: loadTestCatalog<ItemData[]>("items"),
+    spells: loadTestCatalog<SpellData[]>("spells"),
+    beasts: loadTestCatalog<BeastData[]>("beasts"),
+    conditions: loadTestCatalog<ConditionData[]>("conditions"),
+    optionsAndFeatures: loadTestCatalog<OptionFeatureData[]>("options_and_features"),
+    books: loadTestCatalog<any[]>("books"),
+  };
+}
+
+/** An explicit integrated Compendium, without touching the process-wide default. */
+export function integratedTestCompendium(): Compendium {
+  return createCompendium(integratedTestBundle());
+}
+
+/** An explicit SRD Baseline Compendium built from the bundled SRD data, without touching the process-wide default. */
+export function srdBaselineCompendium(): Compendium {
+  return createCompendium({
+    hasIntegratedCatalog: false,
+    races: loadSrdCatalog<RaceData[]>("races"),
+    classes: loadSrdCatalog<ClassData[]>("classes"),
+    feats: loadSrdCatalog<FeatData[]>("feats"),
+    backgrounds: loadSrdCatalog<BackgroundData[]>("backgrounds"),
+    items: loadSrdCatalog<ItemData[]>("items"),
+    spells: loadSrdCatalog<SpellData[]>("spells"),
+    beasts: loadSrdCatalog<BeastData[]>("beasts"),
+    conditions: loadSrdCatalog<ConditionData[]>("conditions"),
+    optionsAndFeatures: loadSrdCatalog<OptionFeatureData[]>("options_and_features"),
+    books: [],
+  });
+}
+
+// Seed the process-wide default with the full integrated compendium for rule and progression test suites
 export function resetTestCompendium() {
   try {
-    setCompendiumStore({
-      hasIntegratedCatalog: true,
-      races: loadTestCatalog<RaceData[]>("races"),
-      classes: loadTestCatalog<ClassData[]>("classes"),
-      feats: loadTestCatalog<FeatData[]>("feats"),
-      backgrounds: loadTestCatalog<BackgroundData[]>("backgrounds"),
-      items: loadTestCatalog<ItemData[]>("items"),
-      spells: loadTestCatalog<SpellData[]>("spells"),
-      beasts: loadTestCatalog<BeastData[]>("beasts"),
-      conditions: loadTestCatalog<ConditionData[]>("conditions"),
-      optionsAndFeatures: loadTestCatalog<OptionFeatureData[]>("options_and_features"),
-      books: loadTestCatalog<any[]>("books"),
-    });
+    setCompendiumStore(integratedTestBundle());
   } catch {
     // Ignore in case scrap data not accessible
   }

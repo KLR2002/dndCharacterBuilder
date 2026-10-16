@@ -1,5 +1,5 @@
 import type { Character, KnownSpell } from "../../types/character.ts";
-import { getOptionsAndFeatures, getSpells } from "../../services/dataService.ts";
+import { currentCompendium, type Compendium } from "../../services/compendium.ts";
 import { setRuleChoicePick } from "../builderTransitions.ts";
 import {
   type AvailableRuleChoice,
@@ -24,11 +24,12 @@ export function hasFightingStyle(character: Character, styleName: string): boole
  */
 export function fightingStyleRuleChoices(
   character: Character,
-  activeBooks?: string[]
+  activeBooks?: string[],
+  compendium: Compendium = currentCompendium()
 ): AvailableRuleChoice[] {
   const out: AvailableRuleChoice[] = [];
   const upperBooks = activeBooks ? activeBooks.map((b) => b.toUpperCase()) : undefined;
-  const allOptions = getOptionsAndFeatures(upperBooks);
+  const allOptions = compendium.for(upperBooks).optionsAndFeatures();
 
   const getStyleOptions = (featureTag: string): { name: string; description: string }[] => {
     return allOptions
@@ -151,7 +152,7 @@ export function fightingStyleRuleChoices(
 
   // Cantrip Sub-Choices
   if (hasFightingStyle(character, "Blessed Warrior")) {
-    const clericCantrips = getSpells(upperBooks).filter(
+    const clericCantrips = compendium.for(upperBooks).spells().filter(
       (s) => s.level === 0 && s.classes?.some((cls) => cls.toLowerCase() === "cleric")
     );
     out.push({
@@ -165,7 +166,7 @@ export function fightingStyleRuleChoices(
   }
 
   if (hasFightingStyle(character, "Druidic Warrior")) {
-    const druidCantrips = getSpells(upperBooks).filter(
+    const druidCantrips = compendium.for(upperBooks).spells().filter(
       (s) => s.level === 0 && s.classes?.some((cls) => cls.toLowerCase() === "druid")
     );
     out.push({
@@ -187,7 +188,8 @@ export function fightingStyleRuleChoices(
 export function pickFightingStyleChoice(
   character: Character,
   choice: AvailableRuleChoice,
-  option: string
+  option: string,
+  compendium: Compendium = currentCompendium()
 ): Character {
   const isSubclass = choice.id.includes("College of Swords");
   let updated = setRuleChoicePick(
@@ -205,7 +207,7 @@ export function pickFightingStyleChoice(
     const picked = updated.ruleChoices?.find((rc) => rc.id === choice.id)?.picked || [];
     const prevKnown = (updated.knownSpells || []).filter((k) => k.ownerKey !== "Paladin__TCE");
     const newSpells: KnownSpell[] = picked.map((cName) => {
-      const sp = getSpells().find((s) => s.name.toLowerCase() === cName.toLowerCase());
+      const sp = compendium.for().spells().find((s) => s.name.toLowerCase() === cName.toLowerCase());
       return {
         name: cName,
         source: sp?.source || "PHB",
@@ -225,7 +227,7 @@ export function pickFightingStyleChoice(
     const picked = updated.ruleChoices?.find((rc) => rc.id === choice.id)?.picked || [];
     const prevKnown = (updated.knownSpells || []).filter((k) => k.ownerKey !== "Ranger__TCE");
     const newSpells: KnownSpell[] = picked.map((cName) => {
-      const sp = getSpells().find((s) => s.name.toLowerCase() === cName.toLowerCase());
+      const sp = compendium.for().spells().find((s) => s.name.toLowerCase() === cName.toLowerCase());
       return {
         name: cName,
         source: sp?.source || "PHB",
