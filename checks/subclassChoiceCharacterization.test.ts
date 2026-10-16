@@ -72,6 +72,14 @@ const SCENARIOS: { label: string; build: Build }[] = [
       }),
   },
   { label: "fighter battle master", build: (l) => withClasses([cls("Fighter", l, "Battle Master")]) },
+  // Short subclass spellings the chain has always matched by substring.
+  { label: "druid short land name", build: (l) => withClasses([cls("Druid", l, "Land")]) },
+  { label: "cleric short nature name", build: (l) => withClasses([cls("Cleric", l, "Nature")]) },
+  { label: "sorcerer divinesoul spelling", build: (l) => withClasses([cls("Sorcerer", l, "divinesoul")]) },
+  { label: "warlock short genie name", build: (l) => withClasses([cls("Warlock", l, "Genie")]) },
+  { label: "monk short elements name", build: (l) => withClasses([cls("Monk", l, "Elements")]) },
+  { label: "barbarian short totem name", build: (l) => withClasses([cls("Barbarian", l, "Totem")]) },
+  { label: "barbarian short giant name", build: (l) => withClasses([cls("Barbarian", l, "Giant")]) },
   {
     label: "multiclass druid and barbarian totem",
     build: (l) => withClasses([cls("Druid", 2, "Circle of the Land"), cls("Barbarian", l, "Path of the Totem Warrior")]),
