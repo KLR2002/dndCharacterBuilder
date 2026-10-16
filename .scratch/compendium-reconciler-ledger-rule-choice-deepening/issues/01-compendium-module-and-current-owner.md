@@ -4,10 +4,10 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] Compendium built from in-memory collections returns scoped lists and unscoped lookups
-- [ ] Dataset swap: integrated mode returns no SRD records
-- [ ] Per-collection SRD fallback when an integrated collection is missing
-- [ ] integrate / revertToSrd switch the default and are observable through existing data-service getters
-- [ ] Existing test suite passes unchanged (`npm run check:all`)
+- [x] Compendium built from in-memory collections returns scoped lists and unscoped lookups
+- [x] Dataset swap: integrated mode returns no SRD records
+- [x] Per-collection SRD fallback when an integrated collection is missing
+- [x] integrate / revertToSrd switch the default and are observable through existing data-service getters
+- [x] Existing test suite passes unchanged (`npm run check:all`)
