@@ -13,6 +13,7 @@ import { Modal } from "../ui/Modal";
 import { SearchBar } from "../ui/SearchBar";
 import { AsiFeatSection, PendingAsiSlot } from "./AsiFeatSection";
 import { builderStyles as styles, RuleChoicePicker, SkillPicker } from "./builderStyles";
+import { normalizeSkillName } from "../../rules/skills";
 import { StartingGrantsSection } from "./StartingGrantsSection";
 import { useResponsiveLayout } from "../../hooks/useResponsiveLayout";
 import {
@@ -40,7 +41,7 @@ export interface ClassProgressionSectionProps {
   effectiveScores: Record<AbilityKey, number>;
   skillChoices: { source: string; choose: number; from: string[] }[];
   autoGranted: string[];
-  toggleSkill: (skill: string) => void;
+  toggleSkill: (skill: string, source?: string) => void;
   classToolGrant: ToolGrant;
   toggleClassTool: (tool: string) => void;
   availableOptionalFeatures: {
@@ -113,6 +114,23 @@ export const ClassProgressionSection: React.FC<ClassProgressionSectionProps> = (
     if (existing.level <= 1) {
       updatedChar = teardownSubclass(updatedChar, className, oldSubclass || "");
       updatedClasses = updatedChar.classes.filter((c) => c.className !== className);
+      const classSourceKey = `Class: ${className}`;
+      const prunedChoices = (updatedChar.skillChoices || []).filter(
+        (sc) => sc.id !== classSourceKey && !sc.id.startsWith(`multiclass_skill_${className.toLowerCase()}`)
+      );
+      const removedPicks = new Set(
+        (updatedChar.skillChoices || [])
+          .filter((sc) => sc.id === classSourceKey || sc.id.startsWith(`multiclass_skill_${className.toLowerCase()}`))
+          .flatMap((sc) => sc.picked.map(normalizeSkillName))
+      );
+      const prunedChosenSkills = (updatedChar.chosenSkills || []).filter(
+        (s) => !removedPicks.has(normalizeSkillName(s))
+      );
+      updatedChar = {
+        ...updatedChar,
+        skillChoices: prunedChoices,
+        chosenSkills: prunedChosenSkills,
+      };
     } else {
       const newLevel = existing.level - 1;
       const losesSubclass = newLevel < req && Boolean(oldSubclass);
@@ -629,18 +647,28 @@ export const ClassProgressionSection: React.FC<ClassProgressionSectionProps> = (
         <Card style={{ gap: 10 }}>
           {skillChoices
             .filter((sc) => sc.source.startsWith("Class:"))
-            .map((sc) => (
-              <SkillPicker
-                key={sc.source}
-                label={sc.source}
-                choose={sc.choose}
-                from={sc.from}
-                chosen={character.chosenSkills}
-                autoGranted={autoGranted}
-                onToggle={toggleSkill}
-                theme={theme}
-              />
-            ))}
+            .map((sc) => {
+              const choiceEntry = character.skillChoices?.find((c) => c.id === sc.source);
+              const normFrom = sc.from.map(normalizeSkillName);
+              const normAuto = autoGranted.map(normalizeSkillName);
+              const chosen = choiceEntry
+                ? choiceEntry.picked
+                : (character.chosenSkills || []).filter(
+                    (s) => normFrom.includes(normalizeSkillName(s)) && !normAuto.includes(normalizeSkillName(s))
+                  );
+              return (
+                <SkillPicker
+                  key={sc.source}
+                  label={sc.source}
+                  choose={sc.choose}
+                  from={sc.from}
+                  chosen={chosen}
+                  autoGranted={autoGranted}
+                  onToggle={(skill) => toggleSkill(skill, sc.source)}
+                  theme={theme}
+                />
+              );
+            })}
         </Card>
       )}
 

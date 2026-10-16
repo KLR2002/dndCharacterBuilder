@@ -19,6 +19,7 @@ import { Card } from "../ui/Card";
 import { Modal } from "../ui/Modal";
 import { SearchBar } from "../ui/SearchBar";
 import { ABILITY_KEYS, ABILITY_LABELS, builderStyles as styles, RuleChoicePicker, SkillPicker } from "./builderStyles";
+import { normalizeSkillName } from "../../rules/skills";
 import { useCharacters } from "../../context/CharacterContext";
 import { getFeats, getSpells } from "../../services/dataService";
 import { validateFeatPrerequisites, applyOriginFeat, removeOriginFeat } from "../../rules/feats";
@@ -44,7 +45,7 @@ export interface AncestrySectionProps {
   allBackgrounds: BackgroundData[];
   skillChoices: { source: string; choose: number; from: string[] }[];
   autoGranted: string[];
-  toggleSkill: (skill: string) => void;
+  toggleSkill: (skill: string, source?: string) => void;
   raceLanguageGrant: { label: string; fixed: string[]; choiceCount: number };
   toggleRaceLanguage: (lang: string) => void;
   raceToolGrant: ToolGrant;
@@ -70,8 +71,25 @@ export const AncestrySection: React.FC<AncestrySectionProps> = ({
   theme,
 }) => {
   const [raceSearch, setRaceSearch] = useState("");
-  const [choiceASI, setChoiceASI] = useState<Partial<Record<AbilityKey, number>>>({});
-  const [flexibleMode, setFlexibleMode] = useState<"2_1" | "1_1_1">("2_1");
+  const choiceASI: Partial<Record<AbilityKey, number>> = useMemo(() => {
+    const map: Partial<Record<AbilityKey, number>> = {};
+    for (const b of character.racialChoiceBonus || []) {
+      map[b.key] = b.amount;
+    }
+    return map;
+  }, [character.racialChoiceBonus]);
+
+  const detectedMode = useMemo<"2_1" | "1_1_1" | null>(() => {
+    const bonuses = character.racialChoiceBonus || [];
+    if (bonuses.some((b) => b.amount === 2)) return "2_1";
+    if (bonuses.length >= 2 && bonuses.every((b) => b.amount === 1)) return "1_1_1";
+    if (bonuses.length === 3) return "1_1_1";
+    return null;
+  }, [character.racialChoiceBonus]);
+
+  const [userSelectedMode, setUserSelectedMode] = useState<"2_1" | "1_1_1" | null>(null);
+  const flexibleMode = userSelectedMode ?? detectedMode ?? "2_1";
+
   const [featModalVisible, setFeatModalVisible] = useState(false);
   const [featSearch, setFeatSearch] = useState("");
   const [cantripModalVisible, setCantripModalVisible] = useState(false);
@@ -152,7 +170,6 @@ export const AncestrySection: React.FC<AncestrySectionProps> = ({
       }
     }
 
-    setChoiceASI(current);
     const picks = Object.entries(current).map(([k, amount]) => ({
       key: k as AbilityKey,
       amount: amount as number,
@@ -162,7 +179,7 @@ export const AncestrySection: React.FC<AncestrySectionProps> = ({
 
   const selectRace = (r: RaceData, subraceIdx?: number) => {
     const sr = subraceIdx !== undefined ? r.subraces?.[subraceIdx] : undefined;
-    setChoiceASI({});
+    setUserSelectedMode(null);
     onUpdate((cur) =>
       applyAncestrySelection(cur, r, sr, { races: allRaces, backgrounds: allBackgrounds })
     );
@@ -189,16 +206,20 @@ export const AncestrySection: React.FC<AncestrySectionProps> = ({
             variant="outline"
             size="sm"
             onPress={() => {
-              onUpdate((cur) =>
-                reconcileCharacter({
+              setUserSelectedMode(null);
+              onUpdate((cur) => {
+                const oldRaceChoices = (cur.skillChoices || []).filter((sc) => sc.origin === "race");
+                const oldRacePicks = new Set(oldRaceChoices.flatMap((sc) => sc.picked.map(normalizeSkillName)));
+                return reconcileCharacter({
                   ...cur,
                   race: null,
                   racialAbilityBonuses: {},
                   racialChoiceBonus: [],
                   ruleChoices: (cur.ruleChoices || []).filter((rc) => rc.origin !== "race"),
-                })
-              );
-              setChoiceASI({});
+                  skillChoices: (cur.skillChoices || []).filter((sc) => sc.origin !== "race"),
+                  chosenSkills: (cur.chosenSkills || []).filter((s) => !oldRacePicks.has(normalizeSkillName(s))),
+                });
+              });
             }}
           />
         </Card>
@@ -219,8 +240,7 @@ export const AncestrySection: React.FC<AncestrySectionProps> = ({
               <View style={{ flexDirection: "row", gap: 8, marginVertical: 2 }}>
                 <TouchableOpacity
                   onPress={() => {
-                    setFlexibleMode("2_1");
-                    setChoiceASI({});
+                    setUserSelectedMode("2_1");
                     onUpdate((cur) => setChoiceRacialBonus(cur, []));
                   }}
                   style={[
@@ -243,8 +263,7 @@ export const AncestrySection: React.FC<AncestrySectionProps> = ({
                 </TouchableOpacity>
                 <TouchableOpacity
                   onPress={() => {
-                    setFlexibleMode("1_1_1");
-                    setChoiceASI({});
+                    setUserSelectedMode("1_1_1");
                     onUpdate((cur) => setChoiceRacialBonus(cur, []));
                   }}
                   style={[
@@ -315,18 +334,28 @@ export const AncestrySection: React.FC<AncestrySectionProps> = ({
           <Card style={{ gap: 10 }}>
             {skillChoices
               .filter((sc) => sc.source.startsWith("Race:") || sc.source.startsWith("Variant"))
-              .map((sc) => (
-                <SkillPicker
-                  key={sc.source}
-                  label={sc.source}
-                  choose={sc.choose}
-                  from={sc.from}
-                  chosen={character.chosenSkills}
-                  autoGranted={autoGranted}
-                  onToggle={toggleSkill}
-                  theme={theme}
-                />
-              ))}
+              .map((sc) => {
+                const choiceEntry = character.skillChoices?.find((c) => c.id === sc.source);
+                const normFrom = sc.from.map(normalizeSkillName);
+                const normAuto = autoGranted.map(normalizeSkillName);
+                const chosen = choiceEntry
+                  ? choiceEntry.picked
+                  : (character.chosenSkills || []).filter(
+                      (s) => normFrom.includes(normalizeSkillName(s)) && !normAuto.includes(normalizeSkillName(s))
+                    );
+                return (
+                  <SkillPicker
+                    key={sc.source}
+                    label={sc.source}
+                    choose={sc.choose}
+                    from={sc.from}
+                    chosen={chosen}
+                    autoGranted={autoGranted}
+                    onToggle={(skill) => toggleSkill(skill, sc.source)}
+                    theme={theme}
+                  />
+                );
+              })}
           </Card>
         )}
 

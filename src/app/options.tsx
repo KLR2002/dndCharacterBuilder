@@ -697,6 +697,35 @@ export default function OptionsScreen() {
               proprietary data is hosted or redistributed by this application.
             </Text>
           </View>
+          <View
+            style={[
+              styles.disclaimerBox,
+              {
+                backgroundColor: theme.surfaceHighlight,
+                borderColor: theme.border,
+              },
+            ]}
+          >
+            <Ionicons
+              name="warning-outline"
+              size={20}
+              color={theme.accent}
+              style={{ marginTop: 2 }}
+            />
+            <Text
+              style={{
+                color: theme.text,
+                fontSize: 13,
+                lineHeight: 18,
+                flex: 1,
+              }}
+            >
+              <Text style={{ fontWeight: "bold" }}>Warning:</Text> 5eTools is
+              NOT official source of 5E rules and therefore can do mistakes.
+              Remember to double-check rules seen in this app with official
+              sourcebook and/or your DM and fellow players.
+            </Text>
+          </View>
         </View>
       </Modal>
 
