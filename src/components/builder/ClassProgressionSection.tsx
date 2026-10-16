@@ -1,15 +1,17 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Text, TouchableOpacity, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { AbilityKey, Character } from "../../types/character";
 import { ClassData, FeatData } from "../../types/dnd5e";
 import {
   addMulticlassLevel,
+  applySoleSubclasses,
   changeSubclass,
   removeClassLevel as removeClassLevelTransition,
   validateMulticlass,
 } from "../../rules/builderTransitions";
 import { reconcile } from "../../rules/characterReconciler";
+import { subclassLevel } from "../../rules/leveling";
 import { currentCompendium } from "../../services/compendium";
 import { ToolGrant } from "../../rules/proficienciesAndLanguages";
 import { findClass } from "../../services/dataService";
@@ -98,6 +100,14 @@ export const ClassProgressionSection: React.FC<ClassProgressionSectionProps> = (
     orphaned: string[];
   } | null>(null);
   const hasAnyClass = (character.classes || []).length > 0;
+  // SRD mode has exactly one subclass per class, so there is no choice to offer: it is applied instead.
+  const isSrd = !currentCompendium().integrated;
+
+  useEffect(() => {
+    if (applySoleSubclasses(character) !== character) {
+      onUpdate((current) => applySoleSubclasses(current));
+    }
+  }, [character, onUpdate]);
 
   const handleAddClassLevel = (className: string, source: string) => {
     onUpdate((current) => addMulticlassLevel(current, className, source));
@@ -169,11 +179,7 @@ export const ClassProgressionSection: React.FC<ClassProgressionSectionProps> = (
         </View>
         {character.classes.map((c) => {
           const cd = findClass(c.className, c.source);
-          const subReq = ["Cleric", "Sorcerer", "Warlock"].includes(c.className)
-            ? 1
-            : ["Druid", "Wizard"].includes(c.className)
-            ? 2
-            : 3;
+          const subReq = subclassLevel(c.className);
           return (
             <View
               key={c.className}
@@ -216,20 +222,26 @@ export const ClassProgressionSection: React.FC<ClassProgressionSectionProps> = (
 
               <View style={{ flex: isPhone ? undefined : 1 }}>
                 {c.subclassName ? (
-                  <TouchableOpacity
-                    onPress={() =>
-                      setChangingSubclassFor(
-                        changingSubclassFor === c.className ? null : c.className
-                      )
-                    }
-                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                    style={{ flexDirection: "row", alignItems: "center", gap: 4, marginTop: isPhone ? 0 : 2 }}
-                  >
-                    <Text style={{ color: theme.accent, fontSize: 12, flexWrap: "wrap", fontWeight: "600" }}>
+                  isSrd ? (
+                    <Text style={{ color: theme.accent, fontSize: 12, flexWrap: "wrap", fontWeight: "600", marginTop: isPhone ? 0 : 2 }}>
                       Archetype: {c.subclassName}
                     </Text>
-                    <Ionicons name="pencil-outline" size={13} color={theme.accent} />
-                  </TouchableOpacity>
+                  ) : (
+                    <TouchableOpacity
+                      onPress={() =>
+                        setChangingSubclassFor(
+                          changingSubclassFor === c.className ? null : c.className
+                        )
+                      }
+                      hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                      style={{ flexDirection: "row", alignItems: "center", gap: 4, marginTop: isPhone ? 0 : 2 }}
+                    >
+                      <Text style={{ color: theme.accent, fontSize: 12, flexWrap: "wrap", fontWeight: "600" }}>
+                        Archetype: {c.subclassName}
+                      </Text>
+                      <Ionicons name="pencil-outline" size={13} color={theme.accent} />
+                    </TouchableOpacity>
+                  )
                 ) : (
                   <Text style={{ color: theme.accent, fontSize: 12, marginTop: isPhone ? 0 : 2, flexWrap: "wrap" }}>
                     Subclass at Lvl {subReq}
@@ -264,14 +276,10 @@ export const ClassProgressionSection: React.FC<ClassProgressionSectionProps> = (
       {/* Subclass prompts & Change pickers */}
       {character.classes.map((c) => {
         const cd = findClass(c.className, c.source);
-        const req = ["Cleric", "Sorcerer", "Warlock"].includes(c.className)
-          ? 1
-          : ["Druid", "Wizard"].includes(c.className)
-          ? 2
-          : 3;
+        const req = subclassLevel(c.className);
         const isChanging = changingSubclassFor === c.className;
         const needsChoice = !c.subclassName;
-        if (c.level >= req && (needsChoice || isChanging) && cd?.subclasses?.length) {
+        if (!isSrd && c.level >= req && (needsChoice || isChanging) && cd?.subclasses?.length) {
           return (
             <Card key={`sub_${c.className}`} style={{ gap: 8, borderColor: isChanging ? theme.accent : theme.warning }}>
               <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>

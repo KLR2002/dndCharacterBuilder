@@ -17,13 +17,14 @@ import {
   changeRace,
   changeSubclass,
   removeClassLevel,
+  applySoleSubclasses,
 } from "../src/rules/builderTransitions.ts";
 import type {
   InventoryItem,
   RuleChoiceEntry,
   SkillChoiceEntry,
 } from "../src/types/character.ts";
-import type { BackgroundData } from "../src/types/dnd5e.ts";
+import type { BackgroundData, ClassData } from "../src/types/dnd5e.ts";
 
 test("setChoiceRacialBonus updates racialChoiceBonus and racialAbilityBonuses while preserving fixed racial bonuses", () => {
   // Half-Elf style: +2 Charisma fixed, plus 2 choice bonuses of +1
@@ -696,4 +697,58 @@ test("removeClassLevel above level 1 keeps the class and drops the subclass only
   const droppedToThree = removeClassLevel(fighter4, "Fighter", inMemoryCompendium());
   assert.equal(droppedToThree.classes[0].level, 3);
   assert.equal(droppedToThree.classes[0].subclassName, "Battle Master");
+});
+
+const classWithSubclasses = (name: string, source: string, subclassNames: string[]) =>
+  ({
+    name,
+    source,
+    subclasses: subclassNames.map((sub) => ({ name: sub, source })),
+  }) as unknown as ClassData;
+
+test("applySoleSubclasses applies the lone SRD subclass once the class reaches its subclass level", () => {
+  const srd = inMemoryCompendium({
+    classes: [classWithSubclasses("Fighter", "SRD", ["Champion"]), classWithSubclasses("Cleric", "SRD", ["Life Domain"])],
+  });
+
+  const fighter3 = makeChar({ classes: [{ className: "Fighter", source: "SRD", level: 3 }] });
+  const appliedFighter = applySoleSubclasses(fighter3, srd);
+  assert.equal(appliedFighter.classes[0].subclassName, "Champion");
+  assert.equal(appliedFighter.classes[0].subclassSource, "SRD");
+
+  const cleric1 = makeChar({ classes: [{ className: "Cleric", source: "SRD", level: 1 }] });
+  assert.equal(applySoleSubclasses(cleric1, srd).classes[0].subclassName, "Life Domain");
+});
+
+test("applySoleSubclasses leaves a class below its subclass level unchanged", () => {
+  const srd = inMemoryCompendium({ classes: [classWithSubclasses("Fighter", "SRD", ["Champion"])] });
+  const fighter2 = makeChar({ classes: [{ className: "Fighter", source: "SRD", level: 2 }] });
+
+  assert.equal(applySoleSubclasses(fighter2, srd), fighter2);
+});
+
+test("applySoleSubclasses keeps a subclass the character already has and never picks between several", () => {
+  const srd = inMemoryCompendium({
+    classes: [
+      classWithSubclasses("Fighter", "SRD", ["Champion"]),
+      classWithSubclasses("Rogue", "SRD", ["Thief", "Assassin"]),
+    ],
+  });
+  const fighterWithSub = makeChar({
+    classes: [{ className: "Fighter", source: "SRD", level: 3, subclassName: "Battle Master", subclassSource: "PHB" }],
+  });
+  const rogueChoice = makeChar({ classes: [{ className: "Rogue", source: "SRD", level: 3 }] });
+
+  assert.equal(applySoleSubclasses(fighterWithSub, srd), fighterWithSub);
+  assert.equal(applySoleSubclasses(rogueChoice, srd), rogueChoice);
+});
+
+test("applySoleSubclasses never changes a character in an integrated compendium", () => {
+  const integrated = inMemoryCompendium(
+    { classes: [classWithSubclasses("Fighter", "PHB", ["Champion"])] },
+    { integrated: true },
+  );
+  const fighter3 = makeChar({ classes: [{ className: "Fighter", source: "PHB", level: 3 }] });
+
+  assert.equal(applySoleSubclasses(fighter3, integrated), fighter3);
 });

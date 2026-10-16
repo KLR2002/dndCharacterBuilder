@@ -7,6 +7,7 @@ import type {
 } from "../types/character.ts";
 import type { BackgroundData } from "../types/dnd5e.ts";
 import { reconcile, teardownSubclass } from "./characterReconciler.ts";
+import { subclassLevel } from "./leveling.ts";
 import { currentCompendium, type Compendium } from "../services/compendium.ts";
 import { normalizeSkillName } from "./skills.ts";
 import {
@@ -278,11 +279,23 @@ export function changeSubclass(
   return reconcile({ ...updated, classes: updatedClasses }, compendium);
 }
 
-/** Subclass level at which each class gains its subclass; below it the subclass is lost. */
-function subclassRequiredLevel(className: string): number {
-  if (["Cleric", "Sorcerer", "Warlock"].includes(className)) return 1;
-  if (["Druid", "Wizard"].includes(className)) return 2;
-  return 3;
+/**
+ * In SRD mode each class has exactly one subclass, so there is nothing to choose: once a class
+ * reaches its subclass level without one, that subclass is applied through `changeSubclass`. Classes
+ * with several subclasses are left alone, and an integrated compendium is never changed.
+ */
+export function applySoleSubclasses(character: Character, compendium: Compendium = currentCompendium()): Character {
+  if (compendium.integrated) return character;
+
+  let updated = character;
+  for (const entry of character.classes) {
+    if (entry.subclassName || entry.subclass || entry.level < subclassLevel(entry.className)) continue;
+    const subclasses = compendium.findClass(entry.className)?.subclasses ?? [];
+    if (subclasses.length !== 1) continue;
+    const [sole] = subclasses;
+    updated = changeSubclass(updated, entry.className, sole.name, sole.source, [], compendium);
+  }
+  return updated;
 }
 
 /**
@@ -320,7 +333,7 @@ export function removeClassLevel(
     };
   } else {
     const newLevel = existing.level - 1;
-    const losesSubclass = newLevel < subclassRequiredLevel(className) && Boolean(oldSubclass);
+    const losesSubclass = newLevel < subclassLevel(className) && Boolean(oldSubclass);
     if (losesSubclass && oldSubclass) {
       updated = teardownSubclass(updated, className, oldSubclass, compendium);
     }
