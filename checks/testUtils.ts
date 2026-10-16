@@ -108,6 +108,26 @@ export function withTotemFixture(bundle: CompendiumCollections): CompendiumColle
   };
 }
 
+/**
+ * Adds each fixture subclass the bundle lacks (the Land, Divine Soul, Genie, Giant and Totem
+ * Warrior fixtures). A subclass the bundle already holds is kept as it is, so the SRD Land still
+ * lifts its biomes from its own additional spells and a scraped Totem stays scraped.
+ */
+export function withSpellChoiceFixtures(bundle: CompendiumCollections): CompendiumCollections {
+  const classes = [...bundle.classes];
+  for (const fixtureClass of choiceCatalogBundle().classes) {
+    const index = classes.findIndex((c) => c.name === fixtureClass.name);
+    if (index === -1) {
+      classes.push(fixtureClass);
+      continue;
+    }
+    const held = new Set(classes[index].subclasses.map((sc) => sc.name));
+    const missing = fixtureClass.subclasses.filter((sc) => !held.has(sc.name));
+    classes[index] = { ...classes[index], subclasses: [...classes[index].subclasses, ...missing] };
+  }
+  return { ...bundle, classes };
+}
+
 /** The full integrated catalog (scrap data, falling back to bundled data) as a collections bundle. */
 function integratedTestBundle(): CompendiumCollections {
   return withTotemFixture({
