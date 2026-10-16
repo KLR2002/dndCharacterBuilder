@@ -1,6 +1,11 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { makeChar, integratedTestCompendium, srdBaselineCompendium } from "./testUtils.ts";
+import { makeChar, integratedTestCompendium, loadTestCatalog, srdBaselineCompendium } from "./testUtils.ts";
+import {
+  ELEMENTAL_DISCIPLINE_SPELL_MAP,
+  NON_SPELL_DISCIPLINES,
+  getSubclassSpells,
+} from "../src/rules/subclassSpells.ts";
 import { DISCIPLINE_FIXTURE_RECORDS, choiceCatalogBundle } from "./choiceCatalogFixture.ts";
 import { createCompendium, type Compendium } from "../src/services/compendium.ts";
 import type { CompendiumCollections } from "../src/services/compendiumStorage.ts";
@@ -207,4 +212,88 @@ test("a saved 'Fist of Unbroken Air' is shown as the picked 'Unbroken Air' and s
   // Choosing another discipline replaces it, and the saved old name is no longer recorded.
   const replaced = pickRuleChoice(saved, offer, "Water Whip", compendium);
   assert.deepEqual(replaced.ruleChoices?.find((rc) => rc.id === ROW_3)?.picked, ["Water Whip"]);
+});
+
+const edRecordNames = (records: OptionFeatureData[]) =>
+  records.filter((r) => r.featureType.includes("ED")).map((r) => r.name);
+
+test("every Elemental Discipline record of the default test catalog is in exactly one ki-cost table", () => {
+  const names = edRecordNames(loadTestCatalog<OptionFeatureData[]>("options_and_features"));
+  assert.ok(names.length > 0, "the default test catalog carries the discipline records");
+  const spelled = Object.keys(ELEMENTAL_DISCIPLINE_SPELL_MAP);
+  for (const name of names) {
+    const inSpellMap = resolveOptionName(name, spelled) !== undefined;
+    const inNonSpell = NON_SPELL_DISCIPLINES.some((n) => n.toLowerCase() === name.toLowerCase());
+    assert.equal(Number(inSpellMap) + Number(inNonSpell), 1, `${name} must be in exactly one ki-cost table`);
+  }
+});
+
+test("every ki-cost entry names an Elemental Discipline record, directly or by alias", () => {
+  const names = edRecordNames(loadTestCatalog<OptionFeatureData[]>("options_and_features"));
+  for (const key of Object.keys(ELEMENTAL_DISCIPLINE_SPELL_MAP)) {
+    assert.ok(resolveOptionName(key, names), `${key} names no discipline record`);
+  }
+});
+
+test("a saved discipline pick gives its ki-cost spell whether saved under the old name or the current one", () => {
+  for (const saved of ["Fist of Unbroken Air", "Unbroken Air"]) {
+    const spells = getSubclassSpells("Monk", "Way of the Four Elements", 3, {
+      ruleChoices: [
+        { id: ROW_3, trait: "Elemental Discipline (3rd Level)", origin: "subclass", choose: 1, from: [], picked: [saved] },
+      ],
+    });
+    const spell = spells.known.find((s) => s.name === "Fist of Unbroken Air");
+    assert.equal(spell?.kiCost, 2, `a pick saved as "${saved}" gives Fist of Unbroken Air at 2 ki`);
+  }
+});
+
+// The disciplines the hand-written table offered, by the level that first unlocked them. Literal
+// names: the Four Elements rows must offer these, under their current catalog names.
+const OLD_TABLE_NAMES: Record<number, string[]> = {
+  3: [
+    "Fangs of the Fire Snake",
+    "Fist of Four Thunders",
+    "Fist of Unbroken Air",
+    "Rush of the Gale Spirits",
+    "Shape the Flowing River",
+    "Sweeping Cinder Strike",
+    "Water Whip",
+  ],
+  6: ["Clench of the North Wind", "Gong of the Summit"],
+  11: ["Flames of the Phoenix", "Mist Stance", "Ride the Wind"],
+  17: ["Breath of Winter", "Eternal Mountain Defense", "River of Hungry Flame", "Wave of Rolling Earth"],
+};
+
+const ROW_LEVELS: [number, string][] = [
+  [3, ROW_3],
+  [6, ROW_6],
+  [11, ROW_11],
+  [17, ROW_17],
+];
+
+/** What the hand-written table offered a row at `level`: its own list and every list below it. */
+const oldOfferNames = (level: number): string[] =>
+  Object.entries(OLD_TABLE_NAMES)
+    .filter(([unlock]) => Number(unlock) <= level)
+    .flatMap(([, names]) => names);
+
+test("every option name the old hand-written table offered resolves to a discipline record, directly or by alias", () => {
+  for (const records of [loadTestCatalog<OptionFeatureData[]>("options_and_features"), DISCIPLINE_FIXTURE_RECORDS]) {
+    const names = edRecordNames(records);
+    for (const old of Object.values(OLD_TABLE_NAMES).flat()) {
+      assert.ok(resolveOptionName(old, names), `${old} resolves to no discipline record`);
+    }
+  }
+});
+
+test("SRD Baseline and integrated catalog offer each Four Elements row the old table's disciplines, under current names", () => {
+  for (const compendium of [srdBaselineCompendium(), integratedTestCompendium()]) {
+    for (const [level, id] of ROW_LEVELS) {
+      const offer = disciplineOffers(monkChar(level), compendium, ["PHB"]).find((c) => c.id === id);
+      assert.ok(offer, `${id} is offered at level ${level}`);
+      const offered = namesOf(offer);
+      const expected = oldOfferNames(level).map((old) => resolveOptionName(old, offered) ?? old);
+      assert.deepEqual([...offered].sort(), [...expected].sort(), `${id} at level ${level}`);
+    }
+  }
 });
