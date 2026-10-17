@@ -34,6 +34,8 @@ export async function scrapeOptions(client: ToolsClient): Promise<OptionFeatureM
   const resolvedChar = resolveAllCopies(rawChar.charoption || []);
 
   const results: OptionFeatureModel[] = [];
+  // items.json is fetched on first need only, and at most once.
+  let itemsByName: Promise<Map<string, any[]>> | undefined;
 
   for (const raw of resolvedOpt) {
     const featureTypes: string[] = Array.isArray(raw.featureType) ? raw.featureType : [];
@@ -56,13 +58,17 @@ export async function scrapeOptions(client: ToolsClient): Promise<OptionFeatureM
 
     // Each table row of a Replicable Items infusion is an infusion of its own, at the level its caption names.
     for (const row of replicableRows) {
+      itemsByName ??= loadItemsByName(client);
+      const item = pickReplicatedItem(await itemsByName, row.item, raw.source);
+      const generic = `Replicates the ${row.item}. ${row.attunement}`;
+      const text = item ? renderEntries(item.entries, "markdown").trim() : "";
       results.push({
         name: `${umbrellaName}: ${row.item}`,
         source: raw.source,
         category,
         featureType: featureTypes,
         prerequisite: `${row.level}${getOrdinal(row.level)}-level Artificer`,
-        description: `Replicates the ${row.item}. ${row.attunement}`,
+        description: text ? `${generic}\n\n${text}` : generic,
       });
     }
   }
@@ -84,6 +90,31 @@ export async function scrapeOptions(client: ToolsClient): Promise<OptionFeatureM
   }
 
   return results;
+}
+
+/** items.json indexed by plain, lower-cased name. A failed fetch is logged and leaves the index empty. */
+async function loadItemsByName(client: ToolsClient): Promise<Map<string, any[]>> {
+  const index = new Map<string, any[]>();
+  try {
+    const rawItems = await client.fetchJson<{ item?: any[] }>("data/items.json");
+    for (const item of resolveAllCopies(rawItems?.item ?? [])) {
+      const key = cleanTags(item.name, "plain").toLowerCase();
+      index.set(key, [...(index.get(key) ?? []), item]);
+    }
+  } catch (err) {
+    const reason = err instanceof Error ? err.message : String(err);
+    console.warn(`  ! Could not load data/items.json; Replicate Magic Item rows keep their generic text (${reason})`);
+  }
+  return index;
+}
+
+/** The item a replicable row names: the copy from the infusion's own source, else the first copy by name. */
+function pickReplicatedItem(index: Map<string, any[]>, itemName: string, infusionSource: string): any | undefined {
+  const candidates = index.get(itemName.trim().toLowerCase()) ?? [];
+  const sameSource = candidates.find(
+    (c) => String(c.source ?? "").toLowerCase() === String(infusionSource ?? "").toLowerCase(),
+  );
+  return sameSource ?? candidates[0];
 }
 
 const REPLICABLE_CAPTION = /\((\d+)(?:st|nd|rd|th)-Level Artificer\)/i;
