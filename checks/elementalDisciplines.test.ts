@@ -8,6 +8,7 @@ import {
 } from "../src/rules/subclassSpells.ts";
 import { DISCIPLINE_FIXTURE_RECORDS, choiceCatalogBundle } from "./choiceCatalogFixture.ts";
 import { createCompendium, type Compendium } from "../src/services/compendium.ts";
+import { REQUIRED_CATALOG_FORMAT } from "../src/services/compendiumStorage.ts";
 import type { CompendiumCollections } from "../src/services/compendiumStorage.ts";
 import type { OptionFeatureData } from "../src/types/dnd5e.ts";
 import type { Character } from "../src/types/character.ts";
@@ -296,4 +297,18 @@ test("SRD Baseline and integrated catalog offer each Four Elements row the old t
       assert.deepEqual([...offered].sort(), [...expected].sort(), `${id} at level ${level}`);
     }
   }
+});
+
+test("a stale catalog keeps the Four Elements disciplines offered as a current one does, and keeps saved picks", () => {
+  // Stale hides feature rows only. The discipline rows read ED records, which an older catalog still holds.
+  const stale = createCompendium(choiceCatalogBundle({ catalogFormat: REQUIRED_CATALOG_FORMAT - 1 }));
+  assert.equal(stale.stale, true, "the fixture is stale");
+  assert.deepEqual(disciplineOffers(monkChar(17), stale, ["PHB"]), disciplineOffers(monkChar(17), catalog(), ["PHB"]));
+
+  const saved = monkChar(6, {
+    ruleChoices: [
+      { id: ROW_3, trait: "Elemental Discipline (3rd Level)", origin: "subclass", choose: 1, from: [], picked: ["Fist of Unbroken Air"] },
+    ],
+  });
+  assert.deepEqual(reconcile(saved, stale).ruleChoices, saved.ruleChoices, "the saved discipline pick is untouched");
 });
