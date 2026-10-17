@@ -15,6 +15,8 @@ import { getSubclassSpells, normalizeKey } from "./subclassSpells.ts";
 export interface ClassSpellProfile {
   className: string;
   subclass?: string;
+  /** The character's Rule Choices, kept so subclass variants (e.g. a Genie kind) resolve as chosen. */
+  ruleChoices?: RuleChoiceEntry[];
   source: string;
   level: number;
   ability: AbilityKey;
@@ -207,6 +209,7 @@ export function getClassSpellProfiles(
     const profile: ClassSpellProfile = {
       className: c.className,
       subclass: subName,
+      ...(character.ruleChoices ? { ruleChoices: character.ruleChoices } : {}),
       source: c.source || "PHB",
       level: c.level,
       ability,
@@ -230,6 +233,14 @@ export interface SpellAvailabilityContext {
   classLevel?: number;
   kind?: string;
   ruleChoices?: RuleChoiceEntry[];
+}
+
+/**
+ * The availability context for a class profile's Spell Owner: its subclass and the character's rule
+ * choices, so a subclass variant (e.g. the Genie kind) resolves as the character chose it.
+ */
+export function profileSpellContext(profile: ClassSpellProfile): SpellAvailabilityContext {
+  return { subclassName: profile.subclass, ruleChoices: profile.ruleChoices };
 }
 
 /**

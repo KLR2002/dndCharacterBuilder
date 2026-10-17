@@ -17,6 +17,7 @@ import { evaluateCharacter } from "../../rules/characterEvaluation";
 import { currentCompendium } from "../../services/compendium";
 import {
   isSpellAvailableForClass,
+  profileSpellContext,
   type ClassSpellProfile,
 } from "../../rules/spellcasting";
 import {
@@ -435,7 +436,7 @@ export const SpellsTab: React.FC = () => {
         s,
         targetCastingClass,
         activeBooks,
-        activeProfile.subclass
+        profileSpellContext(activeProfile)
       );
       const matchesMaxLevel = s.level <= activeProfile.maxSpellLevel;
       const matchesLevel =
