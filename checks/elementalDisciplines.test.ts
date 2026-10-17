@@ -23,7 +23,7 @@ import { reconcile } from "../src/rules/characterReconciler.ts";
 import {
   SUBCLASS_CHOICE_ROWS,
   readPointerRow,
-  type PointerChoiceRow,
+  type SubclassChoiceRow,
 } from "../src/rules/subclassChoiceTable.ts";
 
 // The Way of the Four Elements rows read their disciplines from the Integrated Catalog's ED option
@@ -119,8 +119,8 @@ test("every discipline row excludes Elemental Attunement, which is granted rathe
 });
 
 test("excludeOptions keeps a feature-located row from offering the named option", () => {
-  const aspect = SUBCLASS_CHOICE_ROWS.find((row) => row.id === ASPECT_6) as PointerChoiceRow;
-  const excluding: PointerChoiceRow = { ...aspect, excludeOptions: ["Bear"] };
+  const aspect = SUBCLASS_CHOICE_ROWS.find((row) => row.id === ASPECT_6) as SubclassChoiceRow;
+  const excluding: SubclassChoiceRow = { ...aspect, excludeOptions: ["Bear"] };
   const offer = readPointerRow(excluding, catalog(), ["PHB"]);
   assert.ok(offer, "the feature still carries choices");
   assert.ok(!offer.options.some((o) => o.name === "Bear"), "Bear is excluded");

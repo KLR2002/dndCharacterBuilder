@@ -6,8 +6,8 @@
 
 **Status:** ready-for-agent
 
-- [ ] No row carries description text; the row type has no option-text field
-- [ ] Frozen-id, old-name and pick-count guard tests pass
+- [x] No row carries description text; the row type has no option-text field
+- [x] Frozen-id, old-name and pick-count guard tests pass
 - [ ] Characterization scenarios pass unchanged against the fixture catalog
-- [ ] No leftover references to the removed resolvers, lists or fallback
-- [ ] Existing suite passes (`npm run check:all`)
+- [x] No leftover references to the removed resolvers, lists or fallback
+- [x] Existing suite passes (`npm run check:all`)

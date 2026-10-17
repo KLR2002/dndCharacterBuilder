@@ -5,9 +5,9 @@ import {
   subclassRuleChoices,
   availableSubclassRuleChoices,
   pickRuleChoice,
-  getUnchosenBarbarianSkills,
-  BARBARIAN_CLASS_SKILLS,
 } from "../src/rules/ruleChoices.ts";
+import { createCompendium } from "../src/services/compendium.ts";
+import { choiceCatalogBundle, choiceCatalogClasses } from "./choiceCatalogFixture.ts";
 import { skills } from "../src/rules/skills.ts";
 import {
   getClassSpellProfiles,
@@ -113,6 +113,21 @@ test("Primal Knowledge: excludes already proficient Barbarian skills and grants 
   const offeredNames10 = pk10.options.map((o) => o.name);
   assert.equal(offeredNames10.includes("Survival"), false, "Survival picked at level 3 must not be offered at level 10");
   assert.deepEqual(offeredNames10.sort(), ["Animal Handling", "Intimidation", "Nature"].sort());
+});
+
+test("Primal Knowledge: the pool is the Barbarian's skill list from the catalog, so no Barbarian class means no offer", () => {
+  const withoutBarbarian = createCompendium(
+    choiceCatalogBundle({ classes: choiceCatalogClasses().filter((c) => c.name !== "Barbarian") }),
+  );
+  const char = makeChar({
+    classes: [{ className: "Barbarian", level: 3 }],
+    optionalFeatureReplacements: { "Primal Knowledge": true },
+  });
+  assert.equal(
+    subclassRuleChoices(char, undefined, withoutBarbarian).some((c) => c.traitName.includes("Primal Knowledge")),
+    false,
+    "a catalog with no Barbarian class offers no Primal Knowledge choice",
+  );
 });
 
 test("Path of the Giant: level gating, cantrip choice, and Wisdom spellcasting profile", () => {
