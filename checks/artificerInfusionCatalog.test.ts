@@ -91,13 +91,86 @@ test("reverting to the SRD Baseline leaves saved infusion picks and active infus
   assert.deepEqual(reconciled.activeInfusions, saved.activeInfusions);
 });
 
-test("a saved title-cased pick resolves to the catalog's name and is kept", () => {
+test("a saved title-cased pick is read through the catalog and kept exactly as saved", () => {
   const saved = artificer(2, [savedInfusions(["Replicate Magic Item: Placeholder Jug", "Placeholder Alpha"])]);
   const reconciled = reconcile(saved, infusionCatalog());
 
   const entry = reconciled.ruleChoices?.find((rc) => rc.id === INFUSIONS_KNOWN_2);
-  assert.deepEqual(entry?.picked, ["Replicate Magic Item: placeholder jug", "Placeholder Alpha"]);
+  assert.deepEqual(entry?.picked, ["Replicate Magic Item: Placeholder Jug", "Placeholder Alpha"]);
+  assert.deepEqual(getKnownInfusions(reconciled), ["Replicate Magic Item: Placeholder Jug", "Placeholder Alpha"]);
   assert.equal(reconciled.needsReview, undefined, "a resolved pick raises no review notice");
+});
+
+test("a pick saved in another casing is never rewritten, and it still counts toward the choice", () => {
+  const saved = artificer(2, [savedInfusions(["replicate magic item: PLACEHOLDER JUG", "Placeholder Alpha"])]);
+  const reconciled = reconcile(saved, infusionCatalog());
+
+  const entry = reconciled.ruleChoices?.find((rc) => rc.id === INFUSIONS_KNOWN_2);
+  assert.deepEqual(entry?.picked, ["replicate magic item: PLACEHOLDER JUG", "Placeholder Alpha"]);
+  assert.equal(entry?.choose, 4);
+  assert.equal(reconciled.needsReview, undefined);
+});
+
+test("two saved picks that differ only in casing collapse to one, kept as the first was saved", () => {
+  const saved = artificer(2, [savedInfusions(["placeholder alpha", "Placeholder Alpha"])]);
+  const reconciled = reconcile(saved, infusionCatalog());
+
+  const entry = reconciled.ruleChoices?.find((rc) => rc.id === INFUSIONS_KNOWN_2);
+  assert.deepEqual(entry?.picked, ["placeholder alpha"]);
+});
+
+test("picking a new infusion leaves a saved pick in another casing exactly as stored", () => {
+  const saved = artificer(2, [savedInfusions(["Placeholder Alpha", "replicate magic item: PLACEHOLDER JUG"])]);
+  const [choice] = artificerInfusionChoices(saved, undefined, infusionCatalog());
+
+  const picked = pickRuleChoice(saved, choice, "Placeholder Bravo", infusionCatalog());
+  const entry = picked.ruleChoices?.find((rc) => rc.id === INFUSIONS_KNOWN_2);
+  assert.deepEqual(entry?.picked, ["Placeholder Alpha", "replicate magic item: PLACEHOLDER JUG", "Placeholder Bravo"]);
+});
+
+test("clicking the catalog-cased option removes the pick saved in another casing, and the rest stay as saved", () => {
+  const saved = artificer(2, [savedInfusions(["Placeholder Alpha", "replicate magic item: PLACEHOLDER JUG"])]);
+  const [choice] = artificerInfusionChoices(saved, undefined, infusionCatalog());
+
+  const toggled = pickRuleChoice(saved, choice, "Replicate Magic Item: placeholder jug", infusionCatalog());
+  const entry = toggled.ruleChoices?.find((rc) => rc.id === INFUSIONS_KNOWN_2);
+  assert.deepEqual(entry?.picked, ["Placeholder Alpha"]);
+});
+
+test("a pick saved in another casing still excludes its infusion from the other milestones", () => {
+  const saved = artificer(6, [
+    savedInfusions(["replicate magic item: PLACEHOLDER JUG"]),
+  ]);
+  const offered = artificerInfusionChoices(saved, undefined, infusionCatalog())
+    .filter((c) => c.id !== INFUSIONS_KNOWN_2)
+    .flatMap((c) => c.options.map((o) => o.name));
+
+  assert.ok(!offered.includes("Replicate Magic Item: placeholder jug"));
+});
+
+test("active infusions and infused items match their picks whatever the casing", () => {
+  const boots = {
+    id: "boots_1", name: "Leather Boots", source: "PHB", quantity: 1, isEquipped: true, section: "equipped" as const,
+    infusedWith: "placeholder alpha", isInfused: true,
+  };
+  const jug = {
+    id: "jug_1", name: "Jug", source: "TCE", quantity: 1, isEquipped: false, section: "carried" as const,
+    infusedWith: "replicate magic item: PLACEHOLDER JUG", isInfused: true,
+  };
+  const saved: Character = {
+    ...artificer(2, [savedInfusions(["PLACEHOLDER ALPHA", "Replicate Magic Item: placeholder jug"])]),
+    activeInfusions: [
+      { infusionName: "placeholder alpha", targetItemId: "boots_1" },
+      { infusionName: "REPLICATE MAGIC ITEM: placeholder jug" },
+    ],
+    items: [boots, jug],
+  };
+  const reconciled = reconcile(saved, infusionCatalog());
+
+  assert.deepEqual(reconciled.activeInfusions, saved.activeInfusions, "neither active infusion is pruned");
+  assert.equal(reconciled.items?.find((i) => i.id === "boots_1")?.infusedWith, "placeholder alpha");
+  assert.equal(reconciled.items?.find((i) => i.id === "jug_1")?.infusedWith, "replicate magic item: PLACEHOLDER JUG");
+  assert.equal(reconciled.needsReview, undefined);
 });
 
 test("a saved title-cased pick toggles off when the player picks the catalog's name", () => {
