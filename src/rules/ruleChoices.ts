@@ -35,9 +35,7 @@ import {
 import {
   SUBCLASS_CHOICE_ROWS,
   hasOptionalFeature,
-  isPointerRow,
   readPointerRow,
-  resolveRowOptions,
   rowOwnedBy,
 } from "./subclassChoiceTable.ts";
 
@@ -46,8 +44,6 @@ export * from "./choices/fightingStyles.ts";
 export * from "./choices/maneuvers.ts";
 export * from "./choices/warlockChoices.ts";
 export * from "./choices/artificerInfusions.ts";
-
-export { BARBARIAN_CLASS_SKILLS, getUnchosenBarbarianSkills } from "./subclassChoiceTable.ts";
 
 /**
  * A Rule Choice is a selection from a fixed set of options granted by a single
@@ -324,12 +320,7 @@ export function subclassRuleChoices(
       if (!(c.level >= row.level)) continue;
       if (!rowOwnedBy(row, c.className, subName)) continue;
       if (row.requiresOptionalFeature && !hasOptionalFeature(character, row.requiresOptionalFeature)) continue;
-      const offer = isPointerRow(row)
-        ? readPointerRow(row, compendium, activeBooks)
-        : {
-            choose: row.choose,
-            options: resolveRowOptions(row, { character, choiceId: row.id, activeBooks, compendium }),
-          };
+      const offer = readPointerRow(row, compendium, activeBooks, { character, choiceId: row.id });
       if (!offer) continue;
       out.push({
         id: row.id,

@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import * as subclassChoiceTable from "../src/rules/subclassChoiceTable.ts";
-import { SUBCLASS_CHOICE_ROWS, isPointerRow } from "../src/rules/subclassChoiceTable.ts";
+import { SUBCLASS_CHOICE_ROWS } from "../src/rules/subclassChoiceTable.ts";
 
 /**
  * Row ids are persisted in saved characters. Renaming one orphans its picks, so this list is
@@ -32,7 +32,7 @@ test("every shipped subclass and class Rule Choice row keeps its persisted id", 
 });
 
 test("the Land biome, Divine Affinity, Genie Kind, Giant Power and the three cantrip rows read their options from the catalog", () => {
-  const spellDriven = SUBCLASS_CHOICE_ROWS.filter((row) => isPointerRow(row) && "spellChoice" in row.locator).map((row) => row.id);
+  const spellDriven = SUBCLASS_CHOICE_ROWS.filter((row) => "spellChoice" in row.locator).map((row) => row.id);
   assert.deepEqual(spellDriven, [
     "PHB__Druid__Circle of the Land__Biome",
     "XGE__Sorcerer__Divine Soul__Affinity",
@@ -44,7 +44,7 @@ test("the Land biome, Divine Affinity, Genie Kind, Giant Power and the three can
   ]);
 });
 
-test("the hand-written option lists for the spell-driven and discipline rows are gone from the table", () => {
+test("the hand-written option lists, the static row form and its resolvers are gone from the table", () => {
   for (const name of [
     "CIRCLE_OF_THE_LAND_BIOMES",
     "DIVINE_SOUL_AFFINITIES",
@@ -53,6 +53,10 @@ test("the hand-written option lists for the spell-driven and discipline rows are
     "ELEMENTAL_DISCIPLINES_LVL6",
     "ELEMENTAL_DISCIPLINES_LVL11",
     "ELEMENTAL_DISCIPLINES_LVL17",
+    "BARBARIAN_CLASS_SKILLS",
+    "getUnchosenBarbarianSkills",
+    "resolveRowOptions",
+    "isPointerRow",
   ]) {
     assert.equal(name in subclassChoiceTable, false, `${name} is no longer written in the table`);
   }

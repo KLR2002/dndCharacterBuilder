@@ -201,39 +201,94 @@ const arcanaDomain: SubclassData = {
   description: "Placeholder description for the Arcana Domain subclass.",
 };
 
+const placeholderSpell = (
+  name: string,
+  fields: Pick<SpellData, "level" | "school" | "classes" | "source">,
+): SpellData => ({
+  name,
+  description: `Placeholder text for ${name}.`,
+  castingTime: "1 action",
+  range: "Self",
+  components: { verbal: true, somatic: false, material: false },
+  componentsString: "V",
+  duration: "Instantaneous",
+  concentration: false,
+  ritual: false,
+  subclasses: [],
+  damageTypes: [],
+  savingThrows: [],
+  higherLevels: null,
+  ...fields,
+});
+
+/**
+ * The cantrips the three cantrip-list rows offer in the characterization baseline. The names are the
+ * real cantrip names; level, school, class list and book are the structure the filters read. The
+ * text is placeholder.
+ */
+const BASELINE_CANTRIPS: [name: string, school: string, classes: string[], source: string][] = [
+  ["Druidcraft", "Transmutation", ["Druid"], "PHB"],
+  ["Guidance", "Divination", ["Cleric", "Druid"], "PHB"],
+  ["Mending", "Transmutation", ["Bard", "Cleric", "Druid", "Sorcerer", "Wizard"], "PHB"],
+  ["Poison Spray", "Conjuration", ["Druid", "Sorcerer", "Warlock", "Wizard"], "PHB"],
+  ["Produce Flame", "Conjuration", ["Druid"], "PHB"],
+  ["Resistance", "Abjuration", ["Cleric", "Druid"], "PHB"],
+  ["Shillelagh", "Transmutation", ["Druid"], "PHB"],
+  ["Thorn Whip", "Transmutation", ["Druid"], "PHB"],
+  ["Chill Touch", "Necromancy", ["Sorcerer", "Warlock", "Wizard"], "PHB"],
+  ["Spare the Dying", "Necromancy", ["Cleric"], "PHB"],
+  ["Acid Splash", "Conjuration", ["Sorcerer", "Wizard"], "PHB"],
+  ["Blade Ward", "Abjuration", ["Bard", "Sorcerer", "Warlock", "Wizard"], "PHB"],
+  ["Dancing Lights", "Evocation", ["Bard", "Sorcerer", "Wizard"], "PHB"],
+  ["Fire Bolt", "Evocation", ["Sorcerer", "Wizard"], "PHB"],
+  ["Friends", "Enchantment", ["Bard", "Sorcerer", "Warlock", "Wizard"], "PHB"],
+  ["Light", "Evocation", ["Bard", "Cleric", "Sorcerer", "Wizard"], "PHB"],
+  ["Mage Hand", "Conjuration", ["Bard", "Sorcerer", "Warlock", "Wizard"], "PHB"],
+  ["Message", "Transmutation", ["Bard", "Sorcerer", "Wizard"], "PHB"],
+  ["Minor Illusion", "Illusion", ["Bard", "Sorcerer", "Warlock", "Wizard"], "PHB"],
+  ["Prestidigitation", "Transmutation", ["Bard", "Sorcerer", "Warlock", "Wizard"], "PHB"],
+  ["Ray of Frost", "Evocation", ["Sorcerer", "Wizard"], "PHB"],
+  ["Shocking Grasp", "Evocation", ["Sorcerer", "Wizard"], "PHB"],
+  ["True Strike", "Divination", ["Bard", "Sorcerer", "Warlock", "Wizard"], "PHB"],
+  ["Booming Blade", "Evocation", ["Artificer", "Sorcerer", "Warlock", "Wizard"], "TCE"],
+  ["Green-Flame Blade", "Evocation", ["Artificer", "Sorcerer", "Warlock", "Wizard"], "TCE"],
+  ["Lightning Lure", "Evocation", ["Artificer", "Sorcerer", "Warlock", "Wizard"], "TCE"],
+  ["Mind Sliver", "Enchantment", ["Sorcerer", "Warlock", "Wizard"], "TCE"],
+  ["Sword Burst", "Conjuration", ["Artificer", "Sorcerer", "Warlock", "Wizard"], "TCE"],
+  ["Control Flames", "Transmutation", ["Druid", "Sorcerer", "Wizard"], "XGE"],
+  ["Create Bonfire", "Conjuration", ["Artificer", "Druid", "Sorcerer", "Warlock", "Wizard"], "XGE"],
+  ["Frostbite", "Evocation", ["Artificer", "Druid", "Sorcerer", "Warlock", "Wizard"], "XGE"],
+  ["Gust", "Transmutation", ["Druid", "Sorcerer", "Wizard"], "XGE"],
+  ["Infestation", "Conjuration", ["Druid", "Sorcerer", "Warlock", "Wizard"], "XGE"],
+  ["Magic Stone", "Transmutation", ["Artificer", "Druid", "Warlock"], "XGE"],
+  ["Mold Earth", "Transmutation", ["Druid", "Sorcerer", "Wizard"], "XGE"],
+  ["Primal Savagery", "Transmutation", ["Druid"], "XGE"],
+  ["Shape Water", "Transmutation", ["Druid", "Sorcerer", "Wizard"], "XGE"],
+  ["Thunderclap", "Evocation", ["Artificer", "Bard", "Druid", "Sorcerer", "Warlock", "Wizard"], "XGE"],
+  ["Toll the Dead", "Necromancy", ["Cleric", "Warlock", "Wizard"], "XGE"],
+  ["Sapping Sting", "Necromancy", [], "EGW"],
+];
+
+/** The baseline's cantrip-list options as catalog spell records. */
+export const baselineCantripSpells = (): SpellData[] =>
+  BASELINE_CANTRIPS.map(([name, school, classes, source]) =>
+    placeholderSpell(name, { level: 0, school, classes, source }),
+  );
+
 /**
  * Placeholder spells the cantrip-list rows filter. Level, classes, school and book are the
  * structure the filters read; the names and text are invented.
  */
 export const cantripCatalogSpells = (): SpellData[] => {
-  const spell = (
-    name: string,
-    fields: Pick<SpellData, "level" | "school" | "classes" | "source">,
-  ): SpellData => ({
-    name,
-    description: `Placeholder text for ${name}.`,
-    castingTime: "1 action",
-    range: "Self",
-    components: { verbal: true, somatic: false, material: false },
-    componentsString: "V",
-    duration: "Instantaneous",
-    concentration: false,
-    ritual: false,
-    subclasses: [],
-    damageTypes: [],
-    savingThrows: [],
-    higherLevels: null,
-    ...fields,
-  });
   return [
-    spell("Placeholder Druid Cantrip", { level: 0, school: "Conjuration", classes: ["Druid"], source: "PHB" }),
-    spell("Placeholder Druid Cantrip Expanded", { level: 0, school: "Conjuration", classes: ["Druid"], source: "XGE" }),
-    spell("Placeholder Druid Spell", { level: 1, school: "Conjuration", classes: ["Druid"], source: "PHB" }),
-    spell("Placeholder Wizard Cantrip", { level: 0, school: "Evocation", classes: ["Wizard"], source: "PHB" }),
-    spell("Placeholder Wizard Cantrip Expanded", { level: 0, school: "Evocation", classes: ["Wizard"], source: "XGE" }),
-    spell("Placeholder Necromancy Cantrip", { level: 0, school: "Necromancy", classes: ["Wizard"], source: "PHB" }),
-    spell("Placeholder Necromancy Cantrip Cleric", { level: 0, school: "Necromancy", classes: ["Cleric"], source: "PHB" }),
-    spell("Placeholder Necromancy Spell", { level: 1, school: "Necromancy", classes: ["Wizard"], source: "PHB" }),
+    placeholderSpell("Placeholder Druid Cantrip", { level: 0, school: "Conjuration", classes: ["Druid"], source: "PHB" }),
+    placeholderSpell("Placeholder Druid Cantrip Expanded", { level: 0, school: "Conjuration", classes: ["Druid"], source: "XGE" }),
+    placeholderSpell("Placeholder Druid Spell", { level: 1, school: "Conjuration", classes: ["Druid"], source: "PHB" }),
+    placeholderSpell("Placeholder Wizard Cantrip", { level: 0, school: "Evocation", classes: ["Wizard"], source: "PHB" }),
+    placeholderSpell("Placeholder Wizard Cantrip Expanded", { level: 0, school: "Evocation", classes: ["Wizard"], source: "XGE" }),
+    placeholderSpell("Placeholder Necromancy Cantrip", { level: 0, school: "Necromancy", classes: ["Wizard"], source: "PHB" }),
+    placeholderSpell("Placeholder Necromancy Cantrip Cleric", { level: 0, school: "Necromancy", classes: ["Cleric"], source: "PHB" }),
+    placeholderSpell("Placeholder Necromancy Spell", { level: 1, school: "Necromancy", classes: ["Wizard"], source: "PHB" }),
   ];
 };
 
@@ -258,7 +313,15 @@ export const choiceCatalogClasses = (): ClassData[] => [
   classWith(
     "Barbarian",
     [totemWarrior, giantSubclass],
-    { hitDie: "1d12", primaryAbility: ["Strength"], savingThrows: ["Strength", "Constitution"] },
+    {
+      hitDie: "1d12",
+      primaryAbility: ["Strength"],
+      savingThrows: ["Strength", "Constitution"],
+      skillProficiencies: {
+        choose: 2,
+        from: ["animal handling", "athletics", "intimidation", "nature", "perception", "survival"],
+      },
+    },
   ),
   classWith("Druid", [landSubclass]),
   classWith("Sorcerer", [divineSoulSubclass]),
@@ -307,7 +370,7 @@ export function choiceCatalogBundle(overrides: Partial<CompendiumCollections> = 
     feats: [],
     backgrounds: [],
     items: [],
-    spells: [],
+    spells: baselineCantripSpells(),
     beasts: [],
     conditions: [],
     optionsAndFeatures: [...DISCIPLINE_FIXTURE_RECORDS],
