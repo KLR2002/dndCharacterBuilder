@@ -4,7 +4,9 @@
 
 **Blocked by:** 02, 03 (sequenced after 03 only because both change the same scraper function that reads `additionalSpells`)
 
-**Status:** ready-for-agent
+**Status:** done
+
+**Landed:** merge `530a5f5`. `npm run check:all` passed after the merge (714 app tests, 31 scraper tests).
 
 - [x] Scraper test: placeholder `known.choose` shapes yield a `spellChoice` with the filter and count
 - [x] One generic resolver offers druid cantrips, necromancy cantrips and two wizard cantrips for the three rows, scoped to active books
