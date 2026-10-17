@@ -44,6 +44,15 @@ export function findArtificerInfusion(
 }
 
 /**
+ * The key a saved infusion name is compared by: the catalog's name for it, lower-cased. A name the
+ * catalog does not offer compares as saved. Saved picks are never rewritten, so every comparison of a
+ * saved name goes through here.
+ */
+function infusionKey(saved: string, catalogNames: readonly string[]): string {
+  return (resolveOptionName(saved, catalogNames) ?? saved).trim().toLowerCase();
+}
+
+/**
  * Checks if a rule choice ID corresponds to an Artificer Infusions choice.
  */
 export function isInfusionChoiceId(id: string): boolean {
@@ -59,9 +68,8 @@ export function infusionOwnerOf(id: string): ChoiceOwner | undefined {
  * Checks if character has chosen this infusion in any rule choice.
  */
 export function hasInfusion(character: Character, infusionName: string): boolean {
-  const norm = infusionName.toLowerCase().trim();
   return (character.ruleChoices || []).some(
-    (rc) => isInfusionChoiceId(rc.id) && rc.picked?.some((p) => p.toLowerCase().trim() === norm)
+    (rc) => isInfusionChoiceId(rc.id) && rc.picked?.some((p) => resolveOptionName(p, [infusionName]) !== undefined)
   );
 }
 
@@ -211,12 +219,13 @@ export function artificerInfusionChoices(
     { level: 18, choose: 2, traitName: "Infusions Known (18th Level)" },
   ];
 
+  const catalogNames = infusions.map((i) => i.name);
   const getPickedInOtherInfusionChoices = (currentChoiceId: string): Set<string> => {
     const picked = new Set<string>();
     for (const rc of character.ruleChoices || []) {
       if (rc.id !== currentChoiceId && isInfusionChoiceId(rc.id)) {
         for (const p of rc.picked || []) {
-          picked.add(p.toLowerCase().trim());
+          picked.add(infusionKey(p, catalogNames));
         }
       }
     }
@@ -255,7 +264,8 @@ export function artificerInfusionChoices(
 
 /**
  * Prunes invalid Artificer infusions when levels change or character delevels. A catalog without
- * infusions, or a stale one, cannot say which picks are still valid, so nothing is pruned.
+ * infusions, or a stale one, cannot say which picks are still valid, so nothing is pruned. Kept picks
+ * are stored exactly as they were saved; only removals, duplicates and the cap change the list.
  */
 export function pruneInvalidInfusions(character: Character, compendium: Compendium = currentCompendium()): Character {
   if (compendium.stale) return character;
@@ -294,7 +304,8 @@ export function pruneInvalidInfusions(character: Character, compendium: Compendi
         continue;
       }
 
-      // A saved pick is kept under the catalog's name, so it is stored as the catalog spells it from now on.
+      // A saved pick is validated and deduplicated through the catalog's name, but it is kept exactly as
+      // it was saved. The catalog's casing is never written back over it.
       const keptPicks: string[] = [];
       for (const p of rc.picked || []) {
         const name = resolveOptionName(p, eligibleNames);
@@ -305,7 +316,7 @@ export function pruneInvalidInfusions(character: Character, compendium: Compendi
         const norm = name.toLowerCase();
         if (!seenPicks.has(norm)) {
           seenPicks.add(norm);
-          keptPicks.push(name);
+          keptPicks.push(p);
         }
       }
 
@@ -322,11 +333,12 @@ export function pruneInvalidInfusions(character: Character, compendium: Compendi
     }
   }
 
+  const catalogNames = infusions.map((i) => i.name);
   const knownSet = new Set(
     nextRuleChoices
       .filter((rc) => isInfusionChoiceId(rc.id))
       .flatMap((rc) => rc.picked || [])
-      .map((p) => p.toLowerCase().trim())
+      .map((p) => infusionKey(p, catalogNames))
   );
 
   const maxActive = getMaxActiveInfusions({ ...character, classes, ruleChoices: nextRuleChoices });
@@ -334,7 +346,7 @@ export function pruneInvalidInfusions(character: Character, compendium: Compendi
   const validActive: { infusionName: string; targetItemId?: string; targetItemName?: string }[] = [];
 
   for (const act of rawActive) {
-    const actNorm = act.infusionName.toLowerCase().trim();
+    const actNorm = infusionKey(act.infusionName, catalogNames);
     if (!knownSet.has(actNorm)) {
       removedInfusions.push(act.infusionName);
       continue;
@@ -358,7 +370,7 @@ export function pruneInvalidInfusions(character: Character, compendium: Compendi
     }
   }
 
-  const activeInfusionNames = new Set(cappedActive.map((a) => a.infusionName.toLowerCase().trim()));
+  const activeInfusionNames = new Set(cappedActive.map((a) => infusionKey(a.infusionName, catalogNames)));
   const activeTargetItemIds = new Set(cappedActive.map((a) => a.targetItemId).filter(Boolean));
 
   let nextItems = character.items || [];
@@ -366,7 +378,7 @@ export function pruneInvalidInfusions(character: Character, compendium: Compendi
     nextItems = nextItems
       .filter((item) => {
         if (item.isInfused && item.infusedWith) {
-          const norm = item.infusedWith.toLowerCase().trim();
+          const norm = infusionKey(item.infusedWith, catalogNames);
           if (norm.startsWith("replicate magic item:")) {
             return activeInfusionNames.has(norm);
           }
@@ -374,8 +386,8 @@ export function pruneInvalidInfusions(character: Character, compendium: Compendi
         return true;
       })
       .map((item) => {
-        if (item.infusedWith && !item.infusedWith.toLowerCase().trim().startsWith("replicate magic item:")) {
-          const norm = item.infusedWith.toLowerCase().trim();
+        if (item.infusedWith && !infusionKey(item.infusedWith, catalogNames).startsWith("replicate magic item:")) {
+          const norm = infusionKey(item.infusedWith, catalogNames);
           if (
             !activeInfusionNames.has(norm) ||
             (item.id && !activeTargetItemIds.has(item.id)) ||
@@ -404,8 +416,10 @@ export function pruneInvalidInfusions(character: Character, compendium: Compendi
 }
 
 /**
- * Records or updates an Artificer infusion choice pick for a character. Saved picks on the choice are
- * first rewritten to the catalog's names, so the pick toggles and compares as the catalog spells it.
+ * Records or updates an Artificer infusion choice pick for a character. The option is recorded under the
+ * name the choice offers it as. Saved picks are never rewritten: a saved pick matches the option through
+ * `resolveOptionName`, so picking the catalog-cased option toggles off a pick saved in another casing,
+ * and every other saved pick stays exactly as stored.
  */
 export function pickInfusionChoice(
   character: Character,
@@ -413,20 +427,6 @@ export function pickInfusionChoice(
   option: string
 ): Character {
   const names = choice.options.map((o) => o.name);
-  const canonical = (name: string) => resolveOptionName(name, names) ?? name;
-  const withCatalogNames: Character = {
-    ...character,
-    ruleChoices: (character.ruleChoices ?? []).map((rc) =>
-      rc.id === choice.id ? { ...rc, picked: (rc.picked ?? []).map(canonical) } : rc
-    ),
-  };
-  return setRuleChoicePick(
-    withCatalogNames,
-    choice.id,
-    choice.traitName,
-    canonical(option),
-    names,
-    choice.choose,
-    "class"
-  );
+  const offered = resolveOptionName(option, names) ?? option;
+  return setRuleChoicePick(character, choice.id, choice.traitName, offered, names, choice.choose, "class");
 }

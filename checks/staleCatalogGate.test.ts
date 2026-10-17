@@ -110,7 +110,7 @@ test("a current catalog offers the Totem rows and the Infusions Known choice, an
 
   const reconciled = reconcile(artificerChar([savedInfusionPicks()]), current);
   const picked = reconciled.ruleChoices?.find((rc) => rc.id === INFUSIONS_2)?.picked;
-  assert.deepEqual(picked, ["Placeholder Alpha", "Replicate Magic Item: placeholder jug"], "a current catalog prunes and renames as before");
+  assert.deepEqual(picked, ["Placeholder Alpha", "Replicate Magic Item: Placeholder Jug"], "a current catalog prunes what it no longer offers and keeps the rest exactly as saved");
 });
 
 test("a stale catalog still offers the spell-choice rows exactly as a current catalog does", () => {
