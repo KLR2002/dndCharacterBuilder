@@ -6,9 +6,9 @@
 
 **Status:** ready-for-agent
 
-- [ ] A stale catalog offers no Totem choices and no Infusions Known choice, even when old records exist
-- [ ] A catalog at the current format offers them as before
-- [ ] The SRD Baseline is never stale and its behaviour is unchanged
-- [ ] Saved picks are untouched in both cases
-- [ ] Tests at the Rule Choice interface seam cover stale, current and SRD
-- [ ] Existing suite passes (`npm run check:all`)
+- [x] A stale catalog offers no Totem choices and no Infusions Known choice, even when old records exist
+- [x] A catalog at the current format offers them as before
+- [x] The SRD Baseline is never stale and its behaviour is unchanged
+- [x] Saved picks are untouched in both cases
+- [x] Tests at the Rule Choice interface seam cover stale, current and SRD
+- [x] Existing suite passes (`npm run check:all`)

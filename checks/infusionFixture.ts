@@ -1,6 +1,7 @@
 import type { OptionFeatureData } from "../src/types/dnd5e.ts";
 import type { Compendium } from "../src/services/compendium.ts";
 import { inMemoryCompendium } from "./testUtils.ts";
+import { REQUIRED_CATALOG_FORMAT } from "../src/services/compendiumStorage.ts";
 
 // An invented catalog of Artificer Infusion records, in the shape the scraper emits them. Names and
 // text are placeholders. Levels come from the prerequisite strings the scraper writes: a plain
@@ -35,9 +36,12 @@ export const INFUSION_FIXTURE_RECORDS: OptionFeatureData[] = [
   infusion("Replicate Magic Item: placeholder amulet", "14th-level Artificer"),
 ];
 
-/** A catalog that carries the infusions. */
+/** A current-format catalog that carries the infusions. */
 export function infusionCatalog(): Compendium {
-  return inMemoryCompendium({ optionsAndFeatures: INFUSION_FIXTURE_RECORDS }, { integrated: true });
+  return inMemoryCompendium(
+    { optionsAndFeatures: INFUSION_FIXTURE_RECORDS, catalogFormat: REQUIRED_CATALOG_FORMAT },
+    { integrated: true },
+  );
 }
 
 /** A catalog synced before infusions were scraped: it has no AI records at all. */

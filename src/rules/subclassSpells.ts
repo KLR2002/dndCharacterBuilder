@@ -1,6 +1,7 @@
 import { currentCompendium, type Compendium } from "../services/compendium.ts";
 import type { Character, RuleChoiceEntry } from "../types/character.ts";
 import type { SpellData, SubclassData, SubclassAdditionalSpells } from "../types/dnd5e.ts";
+import { resolveOptionName } from "./choices/types.ts";
 
 export interface SubclassSpellsResult {
   prepared: SpellData[];
@@ -59,6 +60,11 @@ export function resetSpellCatalogCache(): void {
   spellCatalogs = new WeakMap<Compendium, Map<string, SpellData[]>>();
 }
 
+/**
+ * Curated ki cost of each Elemental Discipline that casts a spell, keyed by the discipline's catalog
+ * name in lower case. A saved pick is matched to a key through `resolveOptionName`, so an old saved
+ * name still finds its entry. Disciplines that cast no spell are listed in NON_SPELL_DISCIPLINES.
+ */
 export const ELEMENTAL_DISCIPLINE_SPELL_MAP: Record<
   string,
   { spellName: string; kiCost: number; customSpell?: Partial<SpellData> }
@@ -89,7 +95,7 @@ export const ELEMENTAL_DISCIPLINE_SPELL_MAP: Record<
       savingThrows: ["dex"],
     },
   },
-  "fist of unbroken air": {
+  "unbroken air": {
     spellName: "Fist of Unbroken Air",
     kiCost: 2,
     customSpell: {
@@ -132,6 +138,12 @@ export const ELEMENTAL_DISCIPLINE_SPELL_MAP: Record<
     },
   },
 };
+
+/**
+ * Elemental Disciplines that cast no spell, so have no entry in the ki-cost table. Together with the
+ * table they partition the catalog's discipline records; a completeness test holds that.
+ */
+export const NON_SPELL_DISCIPLINES: readonly string[] = ["Elemental Attunement"];
 
 function matchesSubclass(sc: SubclassData, subName: string): boolean {
   const normTarget = normalizeKey(subName);
@@ -445,8 +457,8 @@ export function getSubclassSpells(
         ) {
           if (Array.isArray(rc.picked)) {
             for (const pickedName of rc.picked) {
-              const key = pickedName.toLowerCase().trim();
-              const mapping = ELEMENTAL_DISCIPLINE_SPELL_MAP[key];
+              const key = resolveOptionName(pickedName, Object.keys(ELEMENTAL_DISCIPLINE_SPELL_MAP));
+              const mapping = key ? ELEMENTAL_DISCIPLINE_SPELL_MAP[key] : undefined;
               if (mapping) {
                 if (mapping.customSpell) {
                   const custom = mapping.customSpell;

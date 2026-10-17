@@ -44,8 +44,16 @@ test("the Land biome, Divine Affinity, Genie Kind, Giant Power and the three can
   ]);
 });
 
-test("the hand-written option lists for the spell-driven rows are gone from the table", () => {
-  for (const name of ["CIRCLE_OF_THE_LAND_BIOMES", "DIVINE_SOUL_AFFINITIES", "GENIE_KINDS"]) {
+test("the hand-written option lists for the spell-driven and discipline rows are gone from the table", () => {
+  for (const name of [
+    "CIRCLE_OF_THE_LAND_BIOMES",
+    "DIVINE_SOUL_AFFINITIES",
+    "GENIE_KINDS",
+    "ELEMENTAL_DISCIPLINES_LVL3",
+    "ELEMENTAL_DISCIPLINES_LVL6",
+    "ELEMENTAL_DISCIPLINES_LVL11",
+    "ELEMENTAL_DISCIPLINES_LVL17",
+  ]) {
     assert.equal(name in subclassChoiceTable, false, `${name} is no longer written in the table`);
   }
 });
