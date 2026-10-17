@@ -52,34 +52,6 @@ export function getUnchosenBarbarianSkills(
   );
 }
 
-export const ELEMENTAL_DISCIPLINES_LVL3 = [
-  { name: "Fangs of the Fire Snake", description: "Spend 1 Ki point to extend unarmed reach by 10 ft with fire damage; +1d10 fire per extra Ki spent." },
-  { name: "Fist of Four Thunders", description: "Spend 2 Ki points to cast Thunderwave." },
-  { name: "Fist of Unbroken Air", description: "Spend 2 Ki points to blast air: target makes Str save or takes 3d10 bludgeoning damage and pushed 20 ft." },
-  { name: "Rush of the Gale Spirits", description: "Spend 2 Ki points to cast Gust of Wind." },
-  { name: "Shape the Flowing River", description: "Spend 1 Ki point to shape ice and water within 120 ft." },
-  { name: "Sweeping Cinder Strike", description: "Spend 2 Ki points to cast Burning Hands." },
-  { name: "Water Whip", description: "Spend 2 Ki points to create a water whip: Dex save or 3d10 bludgeoning and knocked prone or pulled 25 ft." },
-];
-
-export const ELEMENTAL_DISCIPLINES_LVL6 = [
-  { name: "Clench of the North Wind", description: "Spend 3 Ki points to cast Hold Person." },
-  { name: "Gong of the Summit", description: "Spend 3 Ki points to cast Shatter." },
-];
-
-export const ELEMENTAL_DISCIPLINES_LVL11 = [
-  { name: "Flames of the Phoenix", description: "Spend 4 Ki points to cast Fireball." },
-  { name: "Mist Stance", description: "Spend 4 Ki points to cast Gaseous Form on yourself." },
-  { name: "Ride the Wind", description: "Spend 4 Ki points to cast Fly on yourself." },
-];
-
-export const ELEMENTAL_DISCIPLINES_LVL17 = [
-  { name: "Breath of Winter", description: "Spend 6 Ki points to cast Cone of Cold." },
-  { name: "Eternal Mountain Defense", description: "Spend 5 Ki points to cast Stoneskin on yourself." },
-  { name: "River of Hungry Flame", description: "Spend 5 Ki points to cast Wall of Fire." },
-  { name: "Wave of Rolling Earth", description: "Spend 6 Ki points to cast Wall of Stone." },
-];
-
 /** A printed option of a hand-written row. */
 export interface SubclassChoiceOption {
   name: string;
@@ -128,9 +100,14 @@ const RESOLVERS: Record<OptionResolverName, (ctx: OptionResolverContext) => Subc
 
 /**
  * Where a pointer row's options live in the Integrated Catalog: a feature's `choices`, or the
- * subclass's spell choice (lifted from its additional spells when the catalog holds none).
+ * subclass's spell choice (lifted from its additional spells when the catalog holds none). An
+ * option-records locator names a featureType whose option records are the options; records carry
+ * no pick count, so such a row says its own `choose`.
  */
-export type OptionLocator = { feature: { name: string; level: number } } | { spellChoice: true };
+export type OptionLocator =
+  | { feature: { name: string; level: number } }
+  | { spellChoice: true }
+  | { optionRecords: { featureType: string } };
 
 interface SubclassChoiceRowBase {
   /** Persisted identity. Never change it once shipped. */
@@ -155,11 +132,14 @@ interface SubclassChoiceRowBase {
 }
 
 /**
- * A row whose options and pick count come from the Integrated Catalog: the feature at `locator`
- * carries `choices`. Without that feature (or its `choices`) the row is not offered.
+ * A row whose options come from the Integrated Catalog, through its `locator`. A feature locator
+ * reads the feature's `choices`, and without that feature (or its `choices`) the row is not offered.
+ * An option-records locator reads the records and needs `choose` on the row.
  */
 export interface PointerChoiceRow extends SubclassChoiceRowBase {
   locator: OptionLocator;
+  /** The pick count, for a row whose locator reads option records. */
+  choose?: number;
 }
 
 /** A row whose options are written in the table. Ticket 08 removes this form. */
@@ -175,6 +155,12 @@ export function isPointerRow(row: SubclassChoiceRow): row is PointerChoiceRow {
 }
 
 const LAND = { className: "Druid", subclass: "Land" };
+
+/** The Way of the Four Elements disciplines: the catalog's ED option records, unlocked by prerequisite. */
+const ELEMENTAL_DISCIPLINE_RECORDS: OptionLocator = { optionRecords: { featureType: "ED" } };
+
+/** The discipline a Four Elements Monk is granted rather than chooses. */
+const GRANTED_DISCIPLINE = "Elemental Attunement";
 
 export const SUBCLASS_CHOICE_ROWS: readonly SubclassChoiceRow[] = [
   {
@@ -241,8 +227,9 @@ export const SUBCLASS_CHOICE_ROWS: readonly SubclassChoiceRow[] = [
     traitName: "Elemental Discipline (3rd Level)",
     level: 3,
     effectLevel: 3,
+    locator: ELEMENTAL_DISCIPLINE_RECORDS,
     choose: 1,
-    options: ELEMENTAL_DISCIPLINES_LVL3,
+    excludeOptions: [GRANTED_DISCIPLINE],
   },
   {
     id: "PHB__Monk__Way of the Four Elements__Discipline 6",
@@ -251,8 +238,9 @@ export const SUBCLASS_CHOICE_ROWS: readonly SubclassChoiceRow[] = [
     traitName: "Elemental Discipline (6th Level)",
     level: 6,
     effectLevel: 6,
+    locator: ELEMENTAL_DISCIPLINE_RECORDS,
     choose: 1,
-    options: [...ELEMENTAL_DISCIPLINES_LVL3, ...ELEMENTAL_DISCIPLINES_LVL6],
+    excludeOptions: [GRANTED_DISCIPLINE],
   },
   {
     id: "PHB__Monk__Way of the Four Elements__Discipline 11",
@@ -261,8 +249,9 @@ export const SUBCLASS_CHOICE_ROWS: readonly SubclassChoiceRow[] = [
     traitName: "Elemental Discipline (11th Level)",
     level: 11,
     effectLevel: 11,
+    locator: ELEMENTAL_DISCIPLINE_RECORDS,
     choose: 1,
-    options: [...ELEMENTAL_DISCIPLINES_LVL3, ...ELEMENTAL_DISCIPLINES_LVL6, ...ELEMENTAL_DISCIPLINES_LVL11],
+    excludeOptions: [GRANTED_DISCIPLINE],
   },
   {
     id: "PHB__Monk__Way of the Four Elements__Discipline 17",
@@ -271,13 +260,9 @@ export const SUBCLASS_CHOICE_ROWS: readonly SubclassChoiceRow[] = [
     traitName: "Elemental Discipline (17th Level)",
     level: 17,
     effectLevel: 17,
+    locator: ELEMENTAL_DISCIPLINE_RECORDS,
     choose: 1,
-    options: [
-      ...ELEMENTAL_DISCIPLINES_LVL3,
-      ...ELEMENTAL_DISCIPLINES_LVL6,
-      ...ELEMENTAL_DISCIPLINES_LVL11,
-      ...ELEMENTAL_DISCIPLINES_LVL17,
-    ],
+    excludeOptions: [GRANTED_DISCIPLINE],
   },
   {
     id: "TCE__Barbarian__Primal Knowledge 3",
@@ -388,17 +373,63 @@ export interface PointerRowOffer {
  * Reads a pointer row's offer from the Compendium. The feature at the row's locator supplies the
  * pick count and the options. Returns undefined when no feature of the owner's class and subclass,
  * with that name and level, carries `choices`: the row is then not offered and saved picks stay.
- * A feature row is also not offered from a stale catalog.
+ * A feature row is also not offered from a stale catalog. An option-records row reads the records
+ * instead (see `readOptionRecordsRow`).
  *
  * The catalog is read unscoped: the row's own `source` and each option's `source` gate the offer
  * by active book. An option printed in the row's own book is always offered; one printed in another
  * book is offered only while that book is active.
  */
+/** The level a discipline-style option record unlocks at when it names no prerequisite. */
+const UNPREREQUISITED_RECORD_LEVEL = 3;
+
+/**
+ * The level an option record unlocks at, read from its structured prerequisite ("17th-level Monk"
+ * gives 17). A record with no prerequisite unlocks at 3rd level. Undefined when the prerequisite
+ * names no level, so the record is never offered.
+ */
+export function recordUnlockLevel(record: { prerequisite: string | null }): number | undefined {
+  if (!record.prerequisite) return UNPREREQUISITED_RECORD_LEVEL;
+  const match = /^(\d+)(?:st|nd|rd|th)-level\b/i.exec(record.prerequisite.trim());
+  return match ? Number(match[1]) : undefined;
+}
+
+/**
+ * Reads an option-records row: every catalog record of the featureType that the row's level has
+ * unlocked, cumulatively. The row's options are not gated by book: the records are the Monk's own
+ * text whatever books are active. Undefined when the catalog holds no such record.
+ */
+function readOptionRecordsRow(
+  row: PointerChoiceRow,
+  featureType: string,
+  compendium: Compendium
+): PointerRowOffer | undefined {
+  if (row.choose === undefined) return undefined;
+  const records = compendium
+    .for()
+    .optionsAndFeatures()
+    .filter((r) => r.featureType?.includes(featureType));
+  if (records.length === 0) return undefined;
+  return {
+    choose: row.choose,
+    options: records
+      .filter((r) => !row.excludeOptions?.includes(r.name))
+      .filter((r) => {
+        const unlock = recordUnlockLevel(r);
+        return unlock !== undefined && unlock <= row.level;
+      })
+      .map(({ name, description }) => ({ name, description })),
+  };
+}
+
 export function readPointerRow(
   row: PointerChoiceRow,
   compendium: Compendium,
   activeBooks?: readonly string[]
 ): PointerRowOffer | undefined {
+  if ("optionRecords" in row.locator) {
+    return readOptionRecordsRow(row, row.locator.optionRecords.featureType, compendium);
+  }
   // A stale catalog's feature choices are hidden until re-sync; spell-choice and option-record rows stay, as an older catalog still holds what they derive from.
   if ("feature" in row.locator && compendium.stale) return undefined;
   const active = activeBooks?.map((b) => b.toUpperCase());
@@ -434,5 +465,7 @@ function choicesAt(locator: OptionLocator, sub: SubclassData): FeatureChoice | u
   if ("feature" in locator) {
     return sub.features.find((f) => f.name === locator.feature.name && f.level === locator.feature.level)?.choices;
   }
-  return sub.spellChoice ?? liftSpellChoice(sub.additionalSpells);
+  if ("spellChoice" in locator) return sub.spellChoice ?? liftSpellChoice(sub.additionalSpells);
+  // An option-records locator reads the catalog's records, not a subclass choice.
+  return undefined;
 }

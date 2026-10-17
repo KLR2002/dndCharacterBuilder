@@ -55,13 +55,37 @@ export interface AvailableRuleChoice {
 }
 
 /**
+ * Old saved option names, lower-case, mapped to the name the catalog prints now. Names only: a pick
+ * stored under an old name is never rewritten, it is read through this table.
+ */
+export const OPTION_NAME_ALIASES: ReadonlyMap<string, string> = new Map([
+  ["fist of unbroken air", "Unbroken Air"],
+]);
+
+function findNamed(name: string, optionNames: readonly string[]): string | undefined {
+  const wanted = name.trim().toLowerCase();
+  return optionNames.find((candidate) => candidate.trim().toLowerCase() === wanted);
+}
+
+/**
  * The name an offered option is saved under, for a pick saved as `saved`. Matching ignores case and
- * surrounding space: saved picks were written title-cased, while the catalog's text is not. Undefined
- * when no offered name matches. Artificer infusion picks match through this function.
+ * surrounding space: saved picks were written title-cased, while the catalog's text is not. A saved
+ * name no offered name matches is retried through the alias table. Undefined when neither matches.
+ * Every saved-pick match against an option name goes through this function.
  */
 export function resolveOptionName(saved: string, optionNames: readonly string[]): string | undefined {
-  const wanted = saved.trim().toLowerCase();
-  return optionNames.find((name) => name.trim().toLowerCase() === wanted);
+  const direct = findNamed(saved, optionNames);
+  if (direct !== undefined) return direct;
+  const aliased = OPTION_NAME_ALIASES.get(saved.trim().toLowerCase());
+  return aliased === undefined ? undefined : findNamed(aliased, optionNames);
+}
+
+/**
+ * The saved picks of a choice, each shown as the offered name it resolves to. A pick no offered name
+ * matches is kept as saved. The stored picks themselves are not changed.
+ */
+export function pickedOptionNames(picked: readonly string[], optionNames: readonly string[]): string[] {
+  return picked.map((saved) => resolveOptionName(saved, optionNames) ?? saved);
 }
 
 export function getSubclassName(c: { subclassName?: string; subclass?: string }): string {
@@ -104,9 +128,13 @@ export function setRuleChoicePick(
 ): Character {
   const current = character.ruleChoices ?? [];
   const entry = current.find((rc) => rc.id === id);
+  // A saved pick and the option match when they resolve to the same offered name, so a pick saved
+  // under an old name toggles off when its current name is chosen.
+  const offeredName = (name: string) => resolveOptionName(name, from) ?? name;
+  const isOption = (saved: string) => offeredName(saved) === offeredName(option);
   const picked = entry
-    ? entry.picked.includes(option)
-      ? entry.picked.filter((p) => p !== option)
+    ? entry.picked.some(isOption)
+      ? entry.picked.filter((p) => !isOption(p))
       : choose === 1
       ? [option]
       : entry.picked.length >= choose

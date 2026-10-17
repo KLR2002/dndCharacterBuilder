@@ -6,9 +6,9 @@
 
 **Status:** ready-for-agent
 
-- [ ] Offered disciplines for each of the four rows come from the `ED` records and respect the level prerequisite; Elemental Attunement is never offered
-- [ ] A saved pick named "Fist of Unbroken Air" still resolves, and a test checks every option name the old table offered resolves directly or by alias
-- [ ] Frozen ids and the cumulative option sets per level are unchanged
-- [ ] The hand-written discipline lists no longer exist; the ki-cost table has a test that fails when a catalog discipline has no entry
-- [ ] Dual-Mode and negative tests exist at the Rule Choice interface seam
-- [ ] Existing suite and characterization scenarios pass (`npm run check:all`)
+- [x] Offered disciplines for each of the four rows come from the `ED` records and respect the level prerequisite; Elemental Attunement is never offered
+- [x] A saved pick named "Fist of Unbroken Air" still resolves, and a test checks every option name the old table offered resolves directly or by alias
+- [x] Frozen ids and the cumulative option sets per level are unchanged
+- [x] The hand-written discipline lists no longer exist; the ki-cost table has a test that fails when a catalog discipline has no entry
+- [x] Dual-Mode and negative tests exist at the Rule Choice interface seam
+- [x] Existing suite and characterization scenarios pass (`npm run check:all`)

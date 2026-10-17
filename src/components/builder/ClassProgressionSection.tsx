@@ -31,6 +31,7 @@ import {
   isManeuverChoiceId,
   isInvocationChoiceId,
   isInfusionChoiceId,
+  pickedOptionNames,
   AvailableRuleChoice,
 } from "../../rules/ruleChoices";
 import { getOrphanedSubclassSpells } from "../../rules/subclassSpells";
@@ -409,7 +410,7 @@ export const ClassProgressionSection: React.FC<ClassProgressionSectionProps> = (
               </View>
               {choices.map((choice) => {
                 const entry = character.ruleChoices?.find((rc) => rc.id === choice.id);
-                const chosen = entry?.picked ?? [];
+                const chosen = pickedOptionNames(entry?.picked ?? [], choice.options.map((o) => o.name));
                 return (
                   <View key={choice.id} style={{ gap: 4 }}>
                     <RuleChoicePicker
