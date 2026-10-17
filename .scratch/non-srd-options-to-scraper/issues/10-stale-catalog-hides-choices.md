@@ -4,7 +4,9 @@
 
 **Blocked by:** 01, 02, 06
 
-**Status:** ready-for-agent
+**Status:** done
+
+**Landed:** merge `3267d1d`.
 
 - [x] A stale catalog offers no Totem choices and no Infusions Known choice, even when old records exist
 - [x] A catalog at the current format offers them as before

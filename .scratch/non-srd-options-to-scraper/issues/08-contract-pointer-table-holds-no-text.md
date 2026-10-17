@@ -4,10 +4,12 @@
 
 **Blocked by:** 03, 04, 05
 
-**Status:** ready-for-agent
+**Status:** done
+
+**Landed:** merge `4894f2c`. `npm run check:all` passed after the merge (720 app tests, 31 scraper tests). The unchanged characterization test passes in SRD and integrated modes.
 
 - [x] No row carries description text; the row type has no option-text field
 - [x] Frozen-id, old-name and pick-count guard tests pass
-- [ ] Characterization scenarios pass unchanged against the fixture catalog
+- [x] Characterization scenarios pass unchanged against the fixture catalog
 - [x] No leftover references to the removed resolvers, lists or fallback
 - [x] Existing suite passes (`npm run check:all`)
