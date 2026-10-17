@@ -170,6 +170,8 @@ export function artificerInfusionChoices(
     }
   }
 
+  // A stale catalog may hold infusion records from before the umbrella flag and the Replicate rows: no choice until re-sync.
+  if (compendium.stale) return [];
   const infusions = catalogArtificerInfusions(compendium);
   if (infusions.length === 0) return [];
 
@@ -253,9 +255,10 @@ export function artificerInfusionChoices(
 
 /**
  * Prunes invalid Artificer infusions when levels change or character delevels. A catalog without
- * infusions cannot say which picks are still valid, so nothing is pruned.
+ * infusions, or a stale one, cannot say which picks are still valid, so nothing is pruned.
  */
 export function pruneInvalidInfusions(character: Character, compendium: Compendium = currentCompendium()): Character {
+  if (compendium.stale) return character;
   const infusions = catalogArtificerInfusions(compendium);
   if (infusions.length === 0) return character;
 
