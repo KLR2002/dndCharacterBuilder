@@ -3,6 +3,7 @@ import {
   ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
@@ -23,6 +24,7 @@ import { useCharacters } from "../../context/CharacterContext";
 import { useAppTheme } from "../../context/ThemeContext";
 import { useResponsiveLayout } from "../../hooks/useResponsiveLayout";
 import { evaluateCharacter } from "../../rules/characterEvaluation";
+import { commitCharacterName } from "../../rules/characterName";
 
 type TabKey = "builder" | "stats" | "spells" | "inventory" | "features" | "journal" | "actions";
 
@@ -45,12 +47,14 @@ const TABS: TabDefinition[] = [
 export default function CharacterSheetScreen() {
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { characters, currentCharacter, selectCharacter } = useCharacters();
+  const { characters, currentCharacter, selectCharacter, updateCharacter } = useCharacters();
   const { theme } = useAppTheme();
   const { isCompact } = useResponsiveLayout();
 
   const [activeTab, setActiveTab] = useState<TabKey>("builder");
   const [restModalVisible, setRestModalVisible] = useState(false);
+  const [isEditingName, setIsEditingName] = useState(false);
+  const [nameDraft, setNameDraft] = useState("");
   const [scrollX, setScrollX] = useState(0);
   const [scrollWidth, setScrollWidth] = useState(0);
   const [layoutWidth, setLayoutWidth] = useState(0);
@@ -86,6 +90,19 @@ export default function CharacterSheetScreen() {
     .join(" / ") || "Lvl 1";
   const raceSummary = currentCharacter.race?.name || "Race Unset";
 
+  const startNameEdit = () => {
+    setNameDraft(currentCharacter.name);
+    setIsEditingName(true);
+  };
+
+  const finishNameEdit = () => {
+    setIsEditingName(false);
+    const name = commitCharacterName(nameDraft, currentCharacter.name);
+    if (name !== currentCharacter.name) {
+      updateCharacter(currentCharacter.id, { name });
+    }
+  };
+
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
       {/* Top Header Bar */}
@@ -105,9 +122,31 @@ export default function CharacterSheetScreen() {
           {/* Character Title & Summary */}
           <View style={{ flex: 1, marginHorizontal: 8 }}>
             <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-              <Text style={[styles.charName, { color: theme.text }, isCompact && { fontSize: 14 }]} numberOfLines={1}>
-                {currentCharacter.name}
-              </Text>
+              {isEditingName ? (
+                <TextInput
+                  value={nameDraft}
+                  onChangeText={setNameDraft}
+                  onSubmitEditing={finishNameEdit}
+                  onBlur={finishNameEdit}
+                  autoFocus
+                  selectTextOnFocus
+                  returnKeyType="done"
+                  maxLength={60}
+                  accessibilityLabel="Character name"
+                  style={[styles.charName, styles.charNameInput, { color: theme.text, borderBottomColor: theme.accent }, isCompact && { fontSize: 14 }]}
+                />
+              ) : (
+                <TouchableOpacity
+                  onPress={startNameEdit}
+                  hitSlop={{ top: 8, bottom: 8, left: 4, right: 4 }}
+                  accessibilityRole="button"
+                  accessibilityLabel="Edit character name"
+                  style={styles.charNameButton}>
+                  <Text style={[styles.charName, { color: theme.text }, isCompact && { fontSize: 14 }]} numberOfLines={1}>
+                    {currentCharacter.name}
+                  </Text>
+                </TouchableOpacity>
+              )}
               <Badge label={`Lvl ${totalLevel}`} variant="accent" size="sm" />
             </View>
             <Text style={{ color: theme.textSecondary, fontSize: 11 }} numberOfLines={1}>
@@ -264,6 +303,14 @@ const styles = StyleSheet.create({
   charName: {
     fontSize: 16,
     fontWeight: "bold",
+  },
+  charNameButton: {
+    flexShrink: 1,
+  },
+  charNameInput: {
+    flex: 1,
+    paddingVertical: 0,
+    borderBottomWidth: 1,
   },
   quickHpBadge: {
     flexDirection: "row",
