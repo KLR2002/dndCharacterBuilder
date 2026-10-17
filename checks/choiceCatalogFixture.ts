@@ -1,5 +1,12 @@
 import { REQUIRED_CATALOG_FORMAT, type CompendiumCollections } from "../src/services/compendiumStorage.ts";
-import type { ClassData, ClassFeatureData, FeatureChoice, OptionFeatureData, SubclassData } from "../src/types/dnd5e.ts";
+import type {
+  ClassData,
+  ClassFeatureData,
+  FeatureChoice,
+  OptionFeatureData,
+  SpellData,
+  SubclassData,
+} from "../src/types/dnd5e.ts";
 
 /**
  * An Integrated Catalog bundle for tests, built with invented placeholder text. The structure is
@@ -136,7 +143,101 @@ const giantSubclass: SubclassData = {
   description: "Placeholder description for the Giant subclass.",
 };
 
-const classWith = (name: string, subclasses: SubclassData[], overrides: Partial<ClassData> = {}): ClassData => ({
+// Cantrip-list subclasses. Each `known` entry is the raw `choose` filter 5e.tools gives, and the
+// spell choice is what the scraper lifts from it. The domain spells in `prepared` are invented;
+// the Arcana's prepared filters prove that only `known` filters are a cantrip choice.
+
+const natureDomain: SubclassData = {
+  name: "Nature Domain",
+  shortName: "Nature",
+  source: "PHB",
+  className: "Cleric",
+  classSource: "PHB",
+  features: [],
+  additionalSpells: [
+    {
+      known: { "1": { _: [{ choose: "level=0|class=Druid" }] } },
+      prepared: { "1": ["placeholder domain spell one"], "3": ["placeholder domain spell two"] },
+    },
+  ],
+  spellChoice: { pick: 1, from: { filter: "level=0|class=Druid" } },
+  description: "Placeholder description for the Nature Domain subclass.",
+};
+
+const deathDomain: SubclassData = {
+  name: "Death Domain",
+  shortName: "Death",
+  source: "DMG",
+  className: "Cleric",
+  classSource: "PHB",
+  features: [],
+  additionalSpells: [
+    {
+      known: { "1": { _: [{ choose: "level=0|school=N", count: 1 }] } },
+      prepared: { "1": ["placeholder domain spell three"] },
+    },
+  ],
+  spellChoice: { pick: 1, from: { filter: "level=0|school=N", count: 1 } },
+  description: "Placeholder description for the Death Domain subclass.",
+};
+
+const arcanaDomain: SubclassData = {
+  name: "Arcana Domain",
+  shortName: "Arcana",
+  source: "SCAG",
+  className: "Cleric",
+  classSource: "PHB",
+  features: [],
+  additionalSpells: [
+    {
+      known: { "1": { _: [{ choose: "level=0|class=Wizard", count: 2 }] } },
+      prepared: {
+        "1": ["placeholder domain spell four"],
+        "17": [{ choose: "level=6|class=Wizard" }, { choose: "level=7|class=Wizard" }],
+      },
+    },
+  ],
+  spellChoice: { pick: 2, from: { filter: "level=0|class=Wizard", count: 2 } },
+  description: "Placeholder description for the Arcana Domain subclass.",
+};
+
+/**
+ * Placeholder spells the cantrip-list rows filter. Level, classes, school and book are the
+ * structure the filters read; the names and text are invented.
+ */
+export const cantripCatalogSpells = (): SpellData[] => {
+  const spell = (
+    name: string,
+    fields: Pick<SpellData, "level" | "school" | "classes" | "source">,
+  ): SpellData => ({
+    name,
+    description: `Placeholder text for ${name}.`,
+    castingTime: "1 action",
+    range: "Self",
+    components: { verbal: true, somatic: false, material: false },
+    componentsString: "V",
+    duration: "Instantaneous",
+    concentration: false,
+    ritual: false,
+    subclasses: [],
+    damageTypes: [],
+    savingThrows: [],
+    higherLevels: null,
+    ...fields,
+  });
+  return [
+    spell("Placeholder Druid Cantrip", { level: 0, school: "Conjuration", classes: ["Druid"], source: "PHB" }),
+    spell("Placeholder Druid Cantrip Expanded", { level: 0, school: "Conjuration", classes: ["Druid"], source: "XGE" }),
+    spell("Placeholder Druid Spell", { level: 1, school: "Conjuration", classes: ["Druid"], source: "PHB" }),
+    spell("Placeholder Wizard Cantrip", { level: 0, school: "Evocation", classes: ["Wizard"], source: "PHB" }),
+    spell("Placeholder Wizard Cantrip Expanded", { level: 0, school: "Evocation", classes: ["Wizard"], source: "XGE" }),
+    spell("Placeholder Necromancy Cantrip", { level: 0, school: "Necromancy", classes: ["Wizard"], source: "PHB" }),
+    spell("Placeholder Necromancy Cantrip Cleric", { level: 0, school: "Necromancy", classes: ["Cleric"], source: "PHB" }),
+    spell("Placeholder Necromancy Spell", { level: 1, school: "Necromancy", classes: ["Wizard"], source: "PHB" }),
+  ];
+};
+
+const classWith =(name: string, subclasses: SubclassData[], overrides: Partial<ClassData> = {}): ClassData => ({
   name,
   source: "PHB",
   hitDie: "1d8",
@@ -162,6 +263,7 @@ export const choiceCatalogClasses = (): ClassData[] => [
   classWith("Druid", [landSubclass]),
   classWith("Sorcerer", [divineSoulSubclass]),
   classWith("Warlock", [genieSubclass]),
+  classWith("Cleric", [natureDomain, deathDomain, arcanaDomain]),
 ];
 
 // The Elemental Discipline option records, as the scraper emits them: the real names and unlock

@@ -31,12 +31,15 @@ test("every shipped subclass and class Rule Choice row keeps its persisted id", 
   );
 });
 
-test("the Land biome, Divine Affinity, Genie Kind and Giant Power rows read their options from the catalog", () => {
+test("the Land biome, Divine Affinity, Genie Kind, Giant Power and the three cantrip rows read their options from the catalog", () => {
   const spellDriven = SUBCLASS_CHOICE_ROWS.filter((row) => isPointerRow(row) && "spellChoice" in row.locator).map((row) => row.id);
   assert.deepEqual(spellDriven, [
     "PHB__Druid__Circle of the Land__Biome",
     "XGE__Sorcerer__Divine Soul__Affinity",
     "TCE__Warlock__The Genie__Kind",
+    "PHB__Cleric__Nature Domain__Acolyte of Nature",
+    "DMG__Cleric__Death Domain__Reaper",
+    "SCAG__Cleric__Arcana Domain__Arcane Initiate",
     "BGG__Barbarian__Path of the Giant__Giant Power",
   ]);
 });

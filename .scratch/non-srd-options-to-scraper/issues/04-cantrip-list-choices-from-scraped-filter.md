@@ -6,9 +6,9 @@
 
 **Status:** ready-for-agent
 
-- [ ] Scraper test: placeholder `known.choose` shapes yield a `spellChoice` with the filter and count
-- [ ] One generic resolver offers druid cantrips, necromancy cantrips and two wizard cantrips for the three rows, scoped to active books
-- [ ] Frozen ids, counts and the books each row is gated by are unchanged
-- [ ] The three named resolvers (`druidCantrips`, `necromancerCantrips`, `wizardCantrips`) no longer exist
-- [ ] Dual-Mode and negative tests exist at the Rule Choice interface seam
-- [ ] Existing suite and characterization scenarios pass (`npm run check:all`)
+- [x] Scraper test: placeholder `known.choose` shapes yield a `spellChoice` with the filter and count
+- [x] One generic resolver offers druid cantrips, necromancy cantrips and two wizard cantrips for the three rows, scoped to active books
+- [x] Frozen ids, counts and the books each row is gated by are unchanged
+- [x] The three named resolvers (`druidCantrips`, `necromancerCantrips`, `wizardCantrips`) no longer exist
+- [x] Dual-Mode and negative tests exist at the Rule Choice interface seam
+- [x] Existing suite and characterization scenarios pass (`npm run check:all`)

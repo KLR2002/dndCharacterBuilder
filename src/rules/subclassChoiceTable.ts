@@ -3,6 +3,7 @@ import type { Compendium } from "../services/compendium.ts";
 import { formatCantripOptions, GIANT_POWER_CHOICE_ID, type ChoiceOwner } from "./choices/types.ts";
 import { skills } from "./skills.ts";
 import { liftSpellChoice } from "../../dnd5eToolsScrap/src/parser/spell-choice.ts";
+import { SCHOOL_MAP } from "../../dnd5eToolsScrap/src/parser/spell-schools.ts";
 import type { FeatureChoice, SubclassData } from "../types/dnd5e.ts";
 
 /**
@@ -59,11 +60,7 @@ export interface SubclassChoiceOption {
 }
 
 /** Compendium- or state-derived options, named so the table stays data. */
-export type OptionResolverName =
-  | "druidCantrips"
-  | "necromancerCantrips"
-  | "wizardCantrips"
-  | "unchosenBarbarianSkills";
+export type OptionResolverName = "unchosenBarbarianSkills";
 
 export interface OptionResolverContext {
   character: Character;
@@ -73,30 +70,68 @@ export interface OptionResolverContext {
 }
 
 const RESOLVERS: Record<OptionResolverName, (ctx: OptionResolverContext) => SubclassChoiceOption[]> = {
-  druidCantrips: ({ compendium, activeBooks }) =>
-    formatCantripOptions(
-      compendium.for(activeBooks).spells().filter(
-        (s) => s.level === 0 && s.classes?.some((cls) => cls.toLowerCase() === "druid")
-      )
-    ),
-  necromancerCantrips: ({ compendium, activeBooks }) =>
-    formatCantripOptions(
-      compendium.for(activeBooks).spells().filter(
-        (s) => s.level === 0 && s.school?.toLowerCase() === "necromancy"
-      )
-    ),
-  wizardCantrips: ({ compendium, activeBooks }) =>
-    formatCantripOptions(
-      compendium.for(activeBooks).spells().filter(
-        (s) => s.level === 0 && s.classes?.some((cls) => cls.toLowerCase() === "wizard")
-      )
-    ),
   unchosenBarbarianSkills: ({ character, choiceId }) =>
     getUnchosenBarbarianSkills(character, choiceId).map((s) => ({
       name: s,
       description: `Gain proficiency in ${s}`,
     })),
 };
+
+/** The fields a cantrip-list filter may name. Any other key, or a malformed value, makes the filter unsupported. */
+interface SpellFilter {
+  level?: number;
+  className?: string;
+  school?: string;
+}
+
+/** Parses a 5e.tools `choose` filter such as `level=0|class=Druid`. Undefined when it is not supported. */
+function parseSpellFilter(filter: string): SpellFilter | undefined {
+  const parsed: SpellFilter = {};
+  for (const segment of filter.split("|")) {
+    const eq = segment.indexOf("=");
+    if (eq <= 0) return undefined;
+    const key = segment.slice(0, eq).trim();
+    const value = segment.slice(eq + 1).trim();
+    if (!value) return undefined;
+    if (key === "level" && parsed.level === undefined && /^\d+$/.test(value)) {
+      parsed.level = Number(value);
+    } else if (key === "class" && parsed.className === undefined) {
+      parsed.className = value;
+    } else if (key === "school" && parsed.school === undefined && Object.hasOwn(SCHOOL_MAP, value)) {
+      parsed.school = SCHOOL_MAP[value];
+    } else {
+      return undefined;
+    }
+  }
+  return parsed;
+}
+
+/**
+ * The spells the filter matches, scoped to the active books and formatted as cantrip options.
+ * Undefined when the filter is unsupported, so the row is not offered. An empty match is an offer
+ * with no options, as the named resolvers always gave.
+ */
+function resolveSpellFilter(
+  filter: string,
+  compendium: Compendium,
+  activeBooks?: readonly string[],
+): SubclassChoiceOption[] | undefined {
+  const parsed = parseSpellFilter(filter);
+  if (!parsed) return undefined;
+  const className = parsed.className?.toLowerCase();
+  const school = parsed.school?.toLowerCase();
+  return formatCantripOptions(
+    compendium
+      .for(activeBooks)
+      .spells()
+      .filter(
+        (s) =>
+          (parsed.level === undefined || s.level === parsed.level) &&
+          (className === undefined || (s.classes ?? []).some((cls) => cls.toLowerCase() === className)) &&
+          (school === undefined || s.school?.toLowerCase() === school),
+      ),
+  );
+}
 
 /**
  * Where a pointer row's options live in the Integrated Catalog: a feature's `choices`, or the
@@ -197,8 +232,7 @@ export const SUBCLASS_CHOICE_ROWS: readonly SubclassChoiceRow[] = [
     traitName: "Acolyte of Nature Cantrip",
     level: 1,
     effectLevel: 1,
-    choose: 1,
-    options: { resolver: "druidCantrips" },
+    locator: { spellChoice: true },
   },
   {
     id: "DMG__Cleric__Death Domain__Reaper",
@@ -207,8 +241,7 @@ export const SUBCLASS_CHOICE_ROWS: readonly SubclassChoiceRow[] = [
     traitName: "Reaper Cantrip",
     level: 1,
     effectLevel: 1,
-    choose: 1,
-    options: { resolver: "necromancerCantrips" },
+    locator: { spellChoice: true },
   },
   {
     id: "SCAG__Cleric__Arcana Domain__Arcane Initiate",
@@ -217,8 +250,7 @@ export const SUBCLASS_CHOICE_ROWS: readonly SubclassChoiceRow[] = [
     traitName: "Arcane Initiate Cantrips",
     level: 1,
     effectLevel: 1,
-    choose: 2,
-    options: { resolver: "wizardCantrips" },
+    locator: { spellChoice: true },
   },
   {
     id: "PHB__Monk__Way of the Four Elements__Discipline 3",
@@ -439,11 +471,17 @@ export function readPointerRow(
     if (cls.name.toLowerCase() !== row.owner.className.toLowerCase()) continue;
     for (const sub of cls.subclasses) {
       if (row.owner.subclass && !subclassFragmentMatches(sub.name, row.owner.subclass)) continue;
-      const options = choicesAt(row.locator, sub);
-      if (!options?.options) continue;
+      const choice = choicesAt(row.locator, sub);
+      if (choice?.from) {
+        // A cantrip-list choice: the spells its filter matches are the options, already scoped to the books.
+        const options = resolveSpellFilter(choice.from.filter, compendium, activeBooks);
+        if (!options) return undefined;
+        return { choose: choice.from.count ?? choice.pick, options };
+      }
+      if (!choice?.options) continue;
       return {
-        choose: options.pick,
-        options: options.options
+        choose: choice.pick,
+        options: choice.options
           .filter((o) => !row.excludeOptions?.includes(o.name))
           .filter((o) => {
             const book = o.source?.toUpperCase();
