@@ -2,8 +2,15 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join, relative, resolve, dirname } from "node:path";
-import { makeChar, loadTestCatalog, integratedTestCompendium, srdBaselineCompendium } from "./testUtils.ts";
-import { choiceCatalogBundle, choiceCatalogClasses } from "./choiceCatalogFixture.ts";
+import {
+  makeChar,
+  loadTestCatalog,
+  integratedTestCompendium,
+  srdBaselineBundle,
+  srdBaselineCompendium,
+  withSpellChoiceFixtures,
+} from "./testUtils.ts";
+import { cantripCatalogSpells, choiceCatalogBundle, choiceCatalogClasses } from "./choiceCatalogFixture.ts";
 import type { SubclassAdditionalSpells } from "../src/types/dnd5e.ts";
 import { liftSpellChoice } from "../dnd5eToolsScrap/src/parser/spell-choice.ts";
 import { infusionCatalog } from "./infusionFixture.ts";
@@ -231,13 +238,20 @@ test("a catalog-derived pick is offered and recorded in both SRD and integrated 
     assert.ok(choice, "the domain cantrip choice is offered at first level");
     return choice;
   };
-  const srd = srdBaselineCompendium();
+  // The SRD Baseline has no Nature Domain, so the SRD side overlays the fixture domain (as the
+  // characterization does). The offer is then the druid cantrips the baseline holds.
+  const srd = createCompendium(withSpellChoiceFixtures(srdBaselineBundle()));
   const integrated = integratedTestCompendium();
   const srdChoice = choiceIn(srd);
   const integratedChoice = choiceIn(integrated);
 
   const srdNames = srdChoice.options.map((o) => o.name);
   const integratedNames = integratedChoice.options.map((o) => o.name);
+  assert.deepEqual(
+    srdNames,
+    ["Druidcraft", "Guidance", "Mending", "Poison Spray", "Produce Flame", "Resistance", "Shillelagh"],
+    "the SRD mode offers the same druid cantrips as before the change",
+  );
   assert.ok(srdNames.includes("Druidcraft"), "the SRD baseline offers its druid cantrips");
   assert.ok(integratedNames.length > srdNames.length, "the integrated catalog offers more druid cantrips");
   assert.ok(integratedNames.includes("Control Flames"), "an expansion cantrip is offered in integrated mode");
@@ -315,7 +329,11 @@ function bundleWithSpellData(className: string, additionalSpells: SubclassAdditi
 test("the scraper's lift of each fixture subclass's additional spells is its fixture spell choice", () => {
   const subclasses = choiceCatalogClasses().flatMap((c) => c.subclasses);
   const spellDriven = subclasses.filter((sc) => sc.additionalSpells);
-  assert.equal(spellDriven.length, 4, "the Land, Divine Soul, Genie and Giant fixtures are spell driven");
+  assert.equal(
+    spellDriven.length,
+    7,
+    "the Land, Divine Soul, Genie, Giant and the three cantrip-list domain fixtures are spell driven",
+  );
   for (const sc of spellDriven) {
     assert.deepEqual(liftSpellChoice(sc.additionalSpells), sc.spellChoice, sc.name);
   }
@@ -391,4 +409,133 @@ test("a catalog with no spell data for the Giant hides the Giant Power row and k
   const kept = reconcile(giant, stale);
   assert.deepEqual(kept.ruleChoices, giant.ruleChoices, "the saved pick is untouched");
   assert.deepEqual(kept.knownSpells?.map((k) => k.name), ["Thaumaturgy"], "the granted cantrip stays");
+});
+
+// Cantrip-list choices: the Nature, Death and Arcana domains read their `choose` filter from the
+// catalog's spell choice and offer the cantrips it matches, scoped to the active books.
+
+const REAPER_ID = "DMG__Cleric__Death Domain__Reaper";
+const ARCANE_INITIATE_ID = "SCAG__Cleric__Arcana Domain__Arcane Initiate";
+
+const clericIn = (subclassName: string) =>
+  makeChar({ classes: [{ className: "Cleric", source: "PHB", level: 1, subclassName }] });
+
+const cantripCatalog = () => createCompendium(choiceCatalogBundle({ spells: cantripCatalogSpells() }));
+
+/**
+ * The cantrip fixture catalog with one domain's additional spells replaced. Its spell choice is
+ * lifted from them, as the scraper lifts it, so the catalog holds what a fresh sync would.
+ */
+function catalogWithDomain(subclassName: string, additionalSpells: SubclassAdditionalSpells[] | undefined): Compendium {
+  const bundle = choiceCatalogBundle({ spells: cantripCatalogSpells() });
+  return createCompendium({
+    ...bundle,
+    classes: bundle.classes.map((c) =>
+      c.name === "Cleric"
+        ? {
+            ...c,
+            subclasses: c.subclasses.map((sc) =>
+              sc.name === subclassName
+                ? { ...sc, additionalSpells, spellChoice: liftSpellChoice(additionalSpells) }
+                : sc,
+            ),
+          }
+        : c,
+    ),
+  });
+}
+
+const cantripRow = (subclassName: string, id: string, compendium: Compendium, books?: string[]) =>
+  subclassRuleChoices(clericIn(subclassName), books, compendium).find((c) => c.id === id);
+
+const knownFilter = (choose: string, count?: number): SubclassAdditionalSpells[] => [
+  { known: { "1": { _: [count === undefined ? { choose } : { choose, count }] } } },
+];
+
+test("each cantrip-list row offers the cantrips its catalog filter matches, scoped to the active books", () => {
+  const catalog = cantripCatalog();
+  const names = (subclassName: string, id: string, books: string[]) =>
+    cantripRow(subclassName, id, catalog, books)?.options.map((o) => o.name);
+
+  assert.deepEqual(names("Nature Domain", ACOLYTE_OF_NATURE_ID, ["PHB"]), ["Placeholder Druid Cantrip"]);
+  assert.deepEqual(
+    names("Nature Domain", ACOLYTE_OF_NATURE_ID, ["PHB", "XGE"]),
+    ["Placeholder Druid Cantrip", "Placeholder Druid Cantrip Expanded"],
+  );
+  assert.deepEqual(
+    names("Death Domain", REAPER_ID, ["PHB"]),
+    ["Placeholder Necromancy Cantrip", "Placeholder Necromancy Cantrip Cleric"],
+    "the Reaper's school filter takes necromancy cantrips of any class, and no level one spell",
+  );
+  // The necromancy cantrip is a Wizard cantrip too, so the wizard filter takes it. Offers are name-sorted.
+  assert.deepEqual(
+    names("Arcana Domain", ARCANE_INITIATE_ID, ["PHB"]),
+    ["Placeholder Necromancy Cantrip", "Placeholder Wizard Cantrip"],
+  );
+  assert.deepEqual(
+    names("Arcana Domain", ARCANE_INITIATE_ID, ["PHB", "XGE"]),
+    ["Placeholder Necromancy Cantrip", "Placeholder Wizard Cantrip", "Placeholder Wizard Cantrip Expanded"],
+  );
+});
+
+test("the offered cantrips follow the catalog's filter, not a name the table carries", () => {
+  const wizardOnNature = catalogWithDomain("Nature Domain", knownFilter("level=0|class=Wizard"));
+  const offered = cantripRow("Nature Domain", ACOLYTE_OF_NATURE_ID, wizardOnNature, ["PHB"]);
+  // The level-zero wizard spells in the books: the level one Necromancy spell is left out.
+  assert.deepEqual(offered?.options.map((o) => o.name), ["Placeholder Necromancy Cantrip", "Placeholder Wizard Cantrip"]);
+});
+
+test("Arcane Initiate takes its pick count from the catalog and records two cantrips", () => {
+  const catalog = cantripCatalog();
+  const choice = cantripRow("Arcana Domain", ARCANE_INITIATE_ID, catalog, ["PHB", "XGE"]);
+  assert.ok(choice);
+  assert.equal(choice.choose, 2);
+
+  const cleric = clericIn("Arcana Domain");
+  const first = pickRuleChoice(cleric, choice, "Placeholder Wizard Cantrip", catalog);
+  const second = pickRuleChoice(first, choice, "Placeholder Wizard Cantrip Expanded", catalog);
+  assert.deepEqual(
+    second.ruleChoices?.find((rc) => rc.id === ARCANE_INITIATE_ID)?.picked,
+    ["Placeholder Wizard Cantrip", "Placeholder Wizard Cantrip Expanded"],
+  );
+});
+
+test("a catalog count other than the table's sets the pick count of that row", () => {
+  const threeWizard = catalogWithDomain("Arcana Domain", knownFilter("level=0|class=Wizard", 3));
+  assert.equal(cantripRow("Arcana Domain", ARCANE_INITIATE_ID, threeWizard, ["PHB", "XGE"])?.choose, 3);
+});
+
+test("a cantrip-list row with an unsupported or malformed filter is not offered, and its saved pick stays", () => {
+  for (const choose of ["level=0|race=Elf", "level=zero|class=Wizard", "level=0|school=Q", "level=0|level=1", "level=0|"]) {
+    const catalog = catalogWithDomain("Death Domain", knownFilter(choose));
+    assert.equal(cantripRow("Death Domain", REAPER_ID, catalog, ["PHB"]), undefined, `${choose} is not offered`);
+
+    const saved = {
+      ...clericIn("Death Domain"),
+      ruleChoices: [
+        { id: REAPER_ID, trait: "Reaper Cantrip", origin: "subclass" as const, choose: 1, from: ["Chill Touch"], picked: ["Chill Touch"] },
+      ],
+    };
+    assert.deepEqual(reconcile(saved, catalog).ruleChoices, saved.ruleChoices, `${choose} keeps the saved pick`);
+  }
+});
+
+test("a cantrip-list row whose subclass holds no additional spells is not offered, and its saved pick stays", () => {
+  const stale = catalogWithDomain("Death Domain", undefined);
+  assert.equal(cantripRow("Death Domain", REAPER_ID, stale, ["PHB"]), undefined);
+
+  const saved = {
+    ...clericIn("Death Domain"),
+    ruleChoices: [
+      { id: REAPER_ID, trait: "Reaper Cantrip", origin: "subclass" as const, choose: 1, from: ["Chill Touch"], picked: ["Chill Touch"] },
+    ],
+  };
+  assert.deepEqual(reconcile(saved, stale).ruleChoices, saved.ruleChoices);
+});
+
+test("the SRD Baseline, which holds none of these domains, offers none of the three cantrip rows", () => {
+  const srd = srdBaselineCompendium();
+  assert.equal(cantripRow("Nature Domain", ACOLYTE_OF_NATURE_ID, srd), undefined);
+  assert.equal(cantripRow("Death Domain", REAPER_ID, srd), undefined);
+  assert.equal(cantripRow("Arcana Domain", ARCANE_INITIATE_ID, srd), undefined);
 });

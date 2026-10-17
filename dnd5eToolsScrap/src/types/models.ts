@@ -76,7 +76,8 @@ export interface ClassFeatureModel {
 
 export interface SubclassAdditionalSpells {
   prepared?: Record<string, string[]>;
-  known?: Record<string, any[]>;
+  /** Per spell level: a list of spell names, or a `_` list of `choose` filters (cantrip lists). */
+  known?: Record<string, any>;
   expanded?: Record<string, any>;
   innate?: Record<string, any>;
   name?: string;

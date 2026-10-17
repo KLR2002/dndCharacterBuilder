@@ -1,12 +1,12 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { DEFAULT_ACTIVE_BOOK_CODES } from "../src/constants/books.ts";
-import { currentCompendium, type Compendium } from "../src/services/compendium.ts";
+import { createCompendium, currentCompendium, type Compendium } from "../src/services/compendium.ts";
 import { isSpellAvailableForClass } from "../src/rules/spellcasting.ts";
 import { resolveAncestryState, applyAncestrySelection } from "../src/rules/ancestryEngine.ts";
 import { subclassRuleChoices } from "../src/rules/ruleChoices.ts";
 import { maxHp } from "../src/rules/hp.ts";
-import { srdBaselineCompendium, integratedTestCompendium, makeChar } from "./testUtils.ts";
+import { srdBaselineBundle, srdBaselineCompendium, integratedTestCompendium, makeChar, withSpellChoiceFixtures } from "./testUtils.ts";
 
 // Dual-Mode suites: the SRD Baseline is an explicit Compendium, so these tests never mutate
 // the process-wide default and do not depend on test ordering.
@@ -191,7 +191,10 @@ test("dual-mode: a Nature Domain cantrip offers Druid cantrips from whichever Co
       .find((c) => c.id === "PHB__Cleric__Nature Domain__Acolyte of Nature")
       ?.options.map((o) => o.name) ?? [];
 
-  const srdOptions = acolyteOptions(srd);
+  // The SRD Baseline has no Nature Domain; the SRD side overlays the fixture domain that carries the
+  // druid filter, so SRD mode offers the SRD druid cantrips as it did before the change.
+  const srdWithDomain = createCompendium(withSpellChoiceFixtures(srdBaselineBundle()));
+  const srdOptions = acolyteOptions(srdWithDomain);
   const integratedOptions = acolyteOptions(integrated);
 
   assert.ok(srdOptions.includes("Druidcraft"), "SRD mode offers the SRD druid cantrip");

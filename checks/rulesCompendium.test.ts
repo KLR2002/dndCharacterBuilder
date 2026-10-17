@@ -2,6 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { reconcile } from "../src/rules/characterReconciler.ts";
 import { makeChar, inMemoryCompendium } from "./testUtils.ts";
+import { choiceCatalogClasses } from "./choiceCatalogFixture.ts";
 import type { OptionFeatureData, SpellData, ClassData, RaceData } from "../src/types/dnd5e.ts";
 import { characterSpeeds } from "../src/rules/speed.ts";
 import { getTacticalActionLedger } from "../src/rules/tacticalActions.ts";
@@ -108,7 +109,9 @@ test("Cleric Nature Domain cantrip offers Druid cantrips from the given Compendi
   const nature = makeChar({
     classes: [{ className: "Cleric", level: 1, subclassName: "Nature", hitDiceType: "d8" }],
   });
+  // The Nature Domain's filter comes from the catalog's class, so the compendium holds the fixture Cleric.
   const choices = subclassRuleChoices(nature, undefined, inMemoryCompendium({
+    classes: choiceCatalogClasses().filter((c) => c.name === "Cleric"),
     spells: [spell("Produce Flame", 0, ["Druid"]), spell("Sacred Flame", 0, ["Cleric"])],
   }));
   const acolyte = choices.find((c) => c.id === "PHB__Cleric__Nature Domain__Acolyte of Nature");
