@@ -2,7 +2,12 @@ import type { Character, KnownSpell } from "../types/character.ts";
 import type { SpellData } from "../types/dnd5e.ts";
 import type { EvaluatedCharacter } from "./characterEvaluation.ts";
 import { multiclassSlots as calculateMulticlassSpellSlots } from "./slots.ts";
-import { calculateWarlockPactSlots, isSpellAvailableForClass, type ClassSpellProfile } from "./spellcasting.ts";
+import {
+  calculateWarlockPactSlots,
+  isSpellAvailableForClass,
+  profileSpellContext,
+  type ClassSpellProfile,
+} from "./spellcasting.ts";
 import { reconcile } from "./characterReconciler.ts";
 import type { Compendium } from "../services/compendium.ts";
 import { getMysticArcanumTiers, type MysticArcanumTierInfo } from "./ruleChoices.ts";
@@ -356,7 +361,7 @@ function isAlwaysPrepared(profile: ClassSpellProfile, name: string): boolean {
 function isOnOwnerList(profile: ClassSpellProfile, spell: SpellData, activeBooks?: string[]): boolean {
   const gatingClass =
     profile.className === "Fighter" || profile.className === "Rogue" ? "Wizard" : profile.className;
-  return isSpellAvailableForClass(spell, gatingClass, activeBooks, profile.subclass);
+  return isSpellAvailableForClass(spell, gatingClass, activeBooks, profileSpellContext(profile));
 }
 
 /**
