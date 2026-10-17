@@ -6,6 +6,7 @@ import {
   loadCompendiumData,
   clearCompendiumData,
   hasIntegratedCatalog,
+  REQUIRED_CATALOG_FORMAT,
   type CompendiumCollections,
 } from "../src/services/compendiumStorage.ts";
 import {
@@ -237,7 +238,7 @@ test("compendiumStorage: saving stamps the required catalog format and loading r
       books: [],
     });
     const loaded = await loadCompendiumData();
-    assert.equal(loaded?.catalogFormat, 2);
+    assert.equal(loaded?.catalogFormat, REQUIRED_CATALOG_FORMAT);
   } finally {
     __setCompendiumKvForTests(undefined);
   }
@@ -256,7 +257,7 @@ test("compendiumStorage: a catalog saved without a format or below the required 
     assert.deepEqual(oldApp?.races, races, "a stale catalog keeps every record");
     assert.equal(isCatalogStale(oldApp!), true);
 
-    kv.set("@dnd5e_integrated_compendium", JSON.stringify({ hasIntegratedCatalog: true, catalogFormat: 1, races, classes: [] }));
+    kv.set("@dnd5e_integrated_compendium", JSON.stringify({ hasIntegratedCatalog: true, catalogFormat: REQUIRED_CATALOG_FORMAT - 1, races, classes: [] }));
     const older = await loadCompendiumData();
     assert.deepEqual(older?.races, races);
     assert.equal(isCatalogStale(older!), true);

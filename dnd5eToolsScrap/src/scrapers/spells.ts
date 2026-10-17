@@ -5,7 +5,6 @@ import { cleanTags } from "../parser/tag-cleaner.ts";
 import type { SpellModel } from "../types/models.ts";
 import { SCHOOL_MAP } from "../parser/spell-schools.ts";
 
-
 export async function scrapeSpells(client: ToolsClient): Promise<SpellModel[]> {
   console.log("  → Fetching spell index from data/spells/index.json...");
   const spellIndex = await client.fetchJson<Record<string, string>>("data/spells/index.json");

@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import type { CompendiumCollections } from "../src/services/compendiumStorage.ts";
+import { REQUIRED_CATALOG_FORMAT, type CompendiumCollections } from "../src/services/compendiumStorage.ts";
 import type { RaceData, SpellData, ItemData, ConditionData } from "../src/types/dnd5e.ts";
 import { createCompendium, currentCompendium, integrate, revertToSrd } from "../src/services/compendium.ts";
 import { getSpells, findSpell, isCompendiumIntegrated } from "../src/services/dataService.ts";
@@ -106,8 +106,8 @@ test("integrate and revertToSrd move the process default that dataService reads"
 });
 
 test("the Compendium reports stale only for an integrated catalog below the required format", () => {
-  assert.equal(createCompendium(bundle({ catalogFormat: 1 })).stale, true, "older format is stale");
+  assert.equal(createCompendium(bundle({ catalogFormat: REQUIRED_CATALOG_FORMAT - 1 })).stale, true, "older format is stale");
   assert.equal(createCompendium(bundle()).stale, true, "a catalog with no format is stale");
-  assert.equal(createCompendium(bundle({ catalogFormat: 2 })).stale, false, "required format is current");
+  assert.equal(createCompendium(bundle({ catalogFormat: REQUIRED_CATALOG_FORMAT })).stale, false, "required format is current");
   assert.equal(createCompendium(bundle({ hasIntegratedCatalog: false })).stale, false, "the SRD Baseline is never stale");
 });

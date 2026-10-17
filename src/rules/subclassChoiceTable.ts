@@ -4,7 +4,7 @@ import { formatCantripOptions, GIANT_POWER_CHOICE_ID, type ChoiceOwner } from ".
 import { normalizeSkillName, skills } from "./skills.ts";
 import { liftSpellChoice } from "../../dnd5eToolsScrap/src/parser/spell-choice.ts";
 import { SCHOOL_MAP } from "../../dnd5eToolsScrap/src/parser/spell-schools.ts";
-import type { FeatureChoice, SubclassData } from "../types/dnd5e.ts";
+import type { ChoiceOption, FeatureChoice, SubclassData } from "../types/dnd5e.ts";
 
 /**
  * Class and subclass Rule Choices as data. Each row is one choice a class or subclass grants.
@@ -79,7 +79,7 @@ function resolveSpellFilter(
   filter: string,
   compendium: Compendium,
   activeBooks?: readonly string[],
-): { name: string; description: string }[] | undefined {
+): Pick<ChoiceOption, "name" | "description">[] | undefined {
   const parsed = parseSpellFilter(filter);
   if (!parsed) return undefined;
   const className = parsed.className?.toLowerCase();
@@ -337,7 +337,7 @@ export function hasOptionalFeature(character: Character, name: string): boolean 
 /** The pick count and offered options a row reads from the Compendium and the character. */
 interface PointerRowOffer {
   choose: number;
-  options: { name: string; description: string }[];
+  options: Pick<ChoiceOption, "name" | "description">[];
 }
 
 /** The level a discipline-style option record unlocks at when it names no prerequisite. */
@@ -469,6 +469,5 @@ function choicesAt(locator: OptionLocator, sub: SubclassData): FeatureChoice | u
     return sub.features.find((f) => f.name === locator.feature.name && f.level === locator.feature.level)?.choices;
   }
   if ("spellChoice" in locator) return sub.spellChoice ?? liftSpellChoice(sub.additionalSpells);
-  // Option-records and class-skills locators read the catalog's records or class, not a subclass choice.
   return undefined;
 }

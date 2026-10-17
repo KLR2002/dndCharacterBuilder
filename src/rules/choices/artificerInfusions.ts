@@ -25,7 +25,7 @@ function infusionLevel(prerequisite: string | null): number {
  * the replicable-item tables is not an infusion of its own. An empty list means the catalog offers no
  * infusions: the SRD Baseline, or a catalog synced before they were scraped.
  */
-export function catalogArtificerInfusions(compendium: Compendium = currentCompendium()): ArtificerInfusion[] {
+function catalogArtificerInfusions(compendium: Compendium = currentCompendium()): ArtificerInfusion[] {
   return compendium
     .for()
     .optionsAndFeatures()

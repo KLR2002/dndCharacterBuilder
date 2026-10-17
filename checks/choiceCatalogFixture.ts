@@ -11,8 +11,7 @@ import type {
 /**
  * An Integrated Catalog bundle for tests, built with invented placeholder text. The structure is
  * the real scraped structure: a class whose subclass features carry `choices` for the option
- * features they name, and subclasses whose `additionalSpells` lift to a `spellChoice`. Later tickets
- * extend this file, so keep additions additive.
+ * features they name, and subclasses whose `additionalSpells` lift to a `spellChoice`.
  */
 
 const placeholderChoices = (level: number): FeatureChoice => ({

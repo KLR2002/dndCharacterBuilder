@@ -114,7 +114,7 @@ test("provider exposes catalogStale for a stale loaded catalog, and a successful
     assert.equal(stale.value.isIntegrated, true, "a stale catalog is still loaded");
     assert.equal(stale.value.catalogStale, true);
 
-    const current = await providerHarness([], { compendium: { hasIntegratedCatalog: true, catalogFormat: 2, races: [], classes: [] } });
+    const current = await providerHarness([], { compendium: { hasIntegratedCatalog: true, catalogFormat: compendiumStorage.REQUIRED_CATALOG_FORMAT, races: [], classes: [] } });
     assert.equal(current.value.catalogStale, false);
 
     const srd = await providerHarness([], { compendium: null });
