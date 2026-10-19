@@ -71,7 +71,12 @@ export default function CharacterSheetScreen() {
     () => (currentCharacter ? evaluateCharacter(currentCharacter) : null),
     [currentCharacter]
   );
-  const hpQuickEdit = useHpQuickEdit(currentCharacter, evaluated?.hp.max ?? 0);
+  // While a wild shape is active the header badge shows the form's HP and opens its HP box.
+  const hpQuickEdit = useHpQuickEdit(
+    currentCharacter,
+    evaluated?.hp.max ?? 0,
+    currentCharacter?.activeWildShape ? "wildShape" : "character"
+  );
 
   if (!currentCharacter || !evaluated) {
     return (
@@ -88,6 +93,7 @@ export default function CharacterSheetScreen() {
 
   const totalLevel = evaluated.totalLevel;
   const maxHp = evaluated.hp.max;
+  const activeWildShape = currentCharacter.activeWildShape;
   const classSummary = (currentCharacter.classes || [])
     .map((c) => `${c.className} ${c.level}`)
     .join(" / ") || "Lvl 1";
@@ -162,11 +168,16 @@ export default function CharacterSheetScreen() {
             <TouchableOpacity
               {...hpQuickEdit.triggerProps}
               style={[styles.quickHpBadge, { borderColor: theme.border, backgroundColor: theme.surfaceHighlight }]}>
-              {!isCompact && (
-                <Ionicons name="heart" size={14} color={currentCharacter.currentHp > 0 ? theme.hpGreen : theme.danger} />
+              {activeWildShape ? (
+                // The paw marks the number as beast HP, so it stays visible in compact layouts too.
+                <Ionicons name="paw" size={14} color={activeWildShape.currentHp > 0 ? theme.hpGreen : theme.danger} />
+              ) : (
+                !isCompact && <Ionicons name="heart" size={14} color={currentCharacter.currentHp > 0 ? theme.hpGreen : theme.danger} />
               )}
               <Text style={[styles.quickHpText, { color: theme.text }]}>
-                {currentCharacter.currentHp}/{maxHp}
+                {activeWildShape
+                  ? `${activeWildShape.currentHp}/${activeWildShape.maxHp}`
+                  : `${currentCharacter.currentHp}/${maxHp}`}
               </Text>
             </TouchableOpacity>
 

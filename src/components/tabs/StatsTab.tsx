@@ -27,6 +27,7 @@ import { Card } from "../ui/Card";
 import { DetailModal } from "../DetailModal";
 import { RestModal } from "../RestModal";
 import { HpQuickEditModal } from "../HpQuickEditModal";
+import { HitPointBlock } from "../HitPointBlock";
 import { useHpQuickEdit } from "../../hooks/useHpQuickEdit";
 import { useResponsiveLayout } from "../../hooks/useResponsiveLayout";
 
@@ -64,6 +65,7 @@ export const StatsTab: React.FC = () => {
   }>({ visible: false, title: "", content: "" });
 
   const [hpChangeAmount, setHpChangeAmount] = useState("1");
+  const [wildShapeHpAmount, setWildShapeHpAmount] = useState("1");
   const [tempHpAmount, setTempHpAmount] = useState("");
   const [maxHpOverrideInput, setMaxHpOverrideInput] = useState("");
 
@@ -104,6 +106,7 @@ export const StatsTab: React.FC = () => {
   }, [hdEntries]);
 
   const hpQuickEdit = useHpQuickEdit(currentCharacter, evaluated?.hp.max ?? 0);
+  const wildShapeHpQuickEdit = useHpQuickEdit(currentCharacter, evaluated?.hp.max ?? 0, "wildShape");
 
   if (!currentCharacter || !evaluated) return null;
 
@@ -213,23 +216,6 @@ export const StatsTab: React.FC = () => {
     });
   };
 
-  const updateWildShapeHp = (delta: number) => {
-    if (!currentCharacter?.activeWildShape) return;
-    const current = currentCharacter.activeWildShape.currentHp;
-    const max = currentCharacter.activeWildShape.maxHp;
-    const nextHp = current + delta;
-    if (nextHp <= 0) {
-      handleRevertWildShape();
-    } else {
-      updateCharacter(currentCharacter.id, {
-        activeWildShape: {
-          ...currentCharacter.activeWildShape,
-          currentHp: Math.min(max, nextHp),
-        },
-      });
-    }
-  };
-
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       {/* Rest Buttons Bar */}
@@ -262,73 +248,28 @@ export const StatsTab: React.FC = () => {
             borderColor: theme.accentBorder,
             borderWidth: 1.5,
           }}>
-          <View
-            style={{
-              flexDirection: isCompact ? "column" : "row",
-              justifyContent: "space-between",
-              alignItems: isCompact ? "flex-start" : "center",
-              gap: 12,
-            }}>
-            <View style={{ flex: 1 }}>
-              <View style={{ flexDirection: "row", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
-                <Badge label="ACTIVE WILD SHAPE" variant="accent" size="sm" />
-                <Text style={{ fontSize: 17, fontWeight: "700", color: theme.text }}>
-                  {currentCharacter.activeWildShape.name}
-                </Text>
-                <Badge label={`AC ${currentCharacter.activeWildShape.ac}`} variant="secondary" size="sm" />
-              </View>
-              <Text style={{ color: theme.textSecondary, fontSize: 12, marginTop: 4 }}>
-                Damage reduces beast HP first. Form drops when HP reaches 0.
-              </Text>
-            </View>
-
-            {/* HP Stepper Controls */}
-            <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-              <TouchableOpacity
-                onPress={() => updateWildShapeHp(-1)}
-                hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-                style={[styles.beastStepperBtn, { backgroundColor: theme.surfaceRaised, borderColor: theme.border }]}>
-                <Ionicons name="remove" size={16} color={theme.text} />
-              </TouchableOpacity>
-
-              <View style={{ alignItems: "center", minWidth: 70 }}>
-                <Text
-                  style={{
-                    fontSize: 16,
-                    fontWeight: "700",
-                    color: currentCharacter.activeWildShape.currentHp > 0 ? theme.accent : theme.danger,
-                  }}>
-                  {currentCharacter.activeWildShape.currentHp}{" "}
-                  <Text style={{ color: theme.textSecondary, fontSize: 13, fontWeight: "400" }}>
-                    / {currentCharacter.activeWildShape.maxHp} HP
-                  </Text>
-                </Text>
-              </View>
-
-              <TouchableOpacity
-                onPress={() => updateWildShapeHp(1)}
-                disabled={currentCharacter.activeWildShape.currentHp >= currentCharacter.activeWildShape.maxHp}
-                hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-                style={[
-                  styles.beastStepperBtn,
-                  {
-                    backgroundColor: theme.surfaceRaised,
-                    borderColor: theme.border,
-                    opacity: currentCharacter.activeWildShape.currentHp >= currentCharacter.activeWildShape.maxHp ? 0.5 : 1,
-                  },
-                ]}>
-                <Ionicons
-                  name="add"
-                  size={16}
-                  color={
-                    currentCharacter.activeWildShape.currentHp >= currentCharacter.activeWildShape.maxHp
-                      ? theme.textMuted
-                      : theme.text
-                  }
-                />
-              </TouchableOpacity>
-            </View>
+          <View style={{ flexDirection: "row", flexWrap: "wrap", alignItems: "center", gap: 6, marginBottom: 8 }}>
+            <Badge label="ACTIVE WILD SHAPE" variant="accent" size="sm" />
+            <Text style={{ flexShrink: 1, fontSize: 17, fontWeight: "700", color: theme.text }}>
+              {currentCharacter.activeWildShape.name}
+            </Text>
+            <Badge label={`AC ${currentCharacter.activeWildShape.ac}`} variant="secondary" size="sm" />
           </View>
+
+          <HitPointBlock
+            label="WILD SHAPE HP"
+            currentHp={currentCharacter.activeWildShape.currentHp}
+            maxHp={currentCharacter.activeWildShape.maxHp}
+            numberProps={wildShapeHpQuickEdit.triggerProps}
+            amount={wildShapeHpAmount}
+            onAmountChange={setWildShapeHpAmount}
+            onDamage={() => wildShapeHpQuickEdit.apply({ kind: "damage", amount: parseInt(wildShapeHpAmount, 10) || 1 })}
+            onHeal={() => wildShapeHpQuickEdit.apply({ kind: "heal", amount: parseInt(wildShapeHpAmount, 10) || 1 })}
+          />
+
+          <Text style={{ color: theme.textSecondary, fontSize: 12, marginTop: 8 }}>
+            Damage reduces beast HP first. When the form drops, excess damage carries over to your normal HP.
+          </Text>
 
           {/* Action Buttons: Inspect Beast & Revert */}
           <View style={{ flexDirection: "row", gap: 8, marginTop: 12, flexWrap: "wrap" }}>
@@ -400,87 +341,28 @@ export const StatsTab: React.FC = () => {
 
       {/* HP Section Card */}
       <Card style={styles.hpCard}>
-        <View style={styles.hpHeader}>
-          <View>
-            <Text style={[styles.labelMuted, { color: theme.textMuted }]}>HIT POINTS</Text>
-            <View style={{ flexDirection: "row", alignItems: "baseline", gap: 6 }}>
-              <TouchableOpacity
-                {...hpQuickEdit.triggerProps}
-                style={{ flexDirection: "row", alignItems: "baseline", gap: 6 }}>
-                <Text style={[styles.hpCurrentText, { color: currentCharacter.currentHp > 0 ? theme.hpGreen : theme.danger }]}>
-                  {currentCharacter.currentHp}
-                </Text>
-                <Text style={[styles.hpMaxText, { color: theme.textSecondary }]}>
-                  / {calculatedMaxHp}
-                </Text>
-              </TouchableOpacity>
-              {currentCharacter.tempHp > 0 && (
-                <Text style={{ color: theme.tempHpYellow, fontWeight: "700", fontSize: 16 }}>
-                  (+{currentCharacter.tempHp} Temp)
-                </Text>
-              )}
-            </View>
-          </View>
-
-          <TouchableOpacity
-            onPress={() => {
-              setMaxHpOverrideInput(currentCharacter.maxHpOverride ? String(currentCharacter.maxHpOverride) : "");
-              setMaxHpOverrideVisible(true);
-            }}
-            style={[styles.hpEditBtn, { backgroundColor: theme.surfaceHighlight, borderColor: theme.border }]}>
-            <Ionicons name="settings-outline" size={16} color={theme.textSecondary} />
-            <Text style={{ color: theme.textSecondary, fontSize: 12 }}>HP Settings</Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* Health Bar */}
-        <View style={[styles.hpBarTrack, { backgroundColor: theme.surfaceRaised }]}>
-          <View
-            style={[
-              styles.hpBarFill,
-              {
-                backgroundColor: currentCharacter.currentHp > calculatedMaxHp * 0.25 ? theme.hpGreen : theme.danger,
-                width: `${Math.min(100, Math.max(0, (currentCharacter.currentHp / calculatedMaxHp) * 100))}%`,
-              },
-            ]}
-          />
-        </View>
-
-        {/* HP Modification Quick Controls */}
-        <View style={styles.hpActionsRow}>
-          <View style={[styles.hpInputContainer, { backgroundColor: theme.surfaceHighlight, borderColor: theme.border }]}>
-            <TextInput
-              style={[styles.hpInput, { color: theme.text }]}
-              value={hpChangeAmount}
-              onChangeText={setHpChangeAmount}
-              keyboardType="number-pad"
-              placeholder="Amt"
-              placeholderTextColor={theme.textMuted}
-            />
-          </View>
-
-          <Button
-            title="Damage"
-            variant="danger"
-            size="sm"
-            onPress={() => {
-              const val = parseInt(hpChangeAmount, 10) || 1;
-              applyDamage(val);
-            }}
-            style={{ flex: 1 }}
-          />
-
-          <Button
-            title="Heal"
-            variant="success"
-            size="sm"
-            onPress={() => {
-              const val = parseInt(hpChangeAmount, 10) || 1;
-              applyHeal(val);
-            }}
-            style={{ flex: 1 }}
-          />
-        </View>
+        <HitPointBlock
+          label="HIT POINTS"
+          currentHp={currentCharacter.currentHp}
+          maxHp={calculatedMaxHp}
+          tempHp={currentCharacter.tempHp}
+          numberProps={hpQuickEdit.triggerProps}
+          headerRight={
+            <TouchableOpacity
+              onPress={() => {
+                setMaxHpOverrideInput(currentCharacter.maxHpOverride ? String(currentCharacter.maxHpOverride) : "");
+                setMaxHpOverrideVisible(true);
+              }}
+              style={[styles.hpEditBtn, { backgroundColor: theme.surfaceHighlight, borderColor: theme.border }]}>
+              <Ionicons name="settings-outline" size={16} color={theme.textSecondary} />
+              <Text style={{ color: theme.textSecondary, fontSize: 12 }}>HP Settings</Text>
+            </TouchableOpacity>
+          }
+          amount={hpChangeAmount}
+          onAmountChange={setHpChangeAmount}
+          onDamage={() => applyDamage(parseInt(hpChangeAmount, 10) || 1)}
+          onHeal={() => applyHeal(parseInt(hpChangeAmount, 10) || 1)}
+        />
 
         {/* Temp HP Row */}
         <View style={styles.tempHpRow}>
@@ -1070,6 +952,7 @@ export const StatsTab: React.FC = () => {
 
       {/* Hit Points Quick Edit Modal */}
       <HpQuickEditModal {...hpQuickEdit.modalProps} />
+      <HpQuickEditModal {...wildShapeHpQuickEdit.modalProps} />
 
       {/* Condition Picker Modal */}
       <RNModal visible={conditionModalVisible} transparent animationType="slide">
@@ -1164,25 +1047,6 @@ const styles = StyleSheet.create({
     padding: 14,
     marginBottom: 16,
   },
-  hpHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 8,
-  },
-  labelMuted: {
-    fontSize: 11,
-    fontWeight: "700",
-    letterSpacing: 0.5,
-  },
-  hpCurrentText: {
-    fontSize: 32,
-    fontWeight: "bold",
-  },
-  hpMaxText: {
-    fontSize: 20,
-    fontWeight: "600",
-  },
   hpEditBtn: {
     flexDirection: "row",
     alignItems: "center",
@@ -1191,37 +1055,6 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
     borderRadius: 6,
     borderWidth: 1,
-  },
-  hpBarTrack: {
-    height: 10,
-    borderRadius: 5,
-    overflow: "hidden",
-    marginVertical: 8,
-  },
-  hpBarFill: {
-    height: "100%",
-    borderRadius: 5,
-  },
-  hpActionsRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    marginTop: 8,
-  },
-  hpInputContainer: {
-    width: 60,
-    height: 36,
-    borderRadius: 6,
-    borderWidth: 1,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  hpInput: {
-    width: "100%",
-    textAlign: "center",
-    fontSize: 14,
-    fontWeight: "bold",
-    padding: 0,
   },
   tempHpRow: {
     flexDirection: "row",
@@ -1433,13 +1266,5 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     marginBottom: 6,
     gap: 8,
-  },
-  beastStepperBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 8,
-    borderWidth: 1,
-    alignItems: "center",
-    justifyContent: "center",
   },
 });
