@@ -76,6 +76,10 @@ _Avoid_: DLC spell, bonus spell, non-core spell
 A Druid class feature (gained at 2nd level) allowing the character to magically assume the shape of a beast they have seen before for up to half their druid level in hours, expending a use from a pool that recovers on a Short or Long Rest.
 _Avoid_: Shapeshift, polymorph, animal form, morph
 
+**Active Wild Shape**:
+The beast or elemental form a Druid is currently in. It has its own armor class and its own hit points (the Wild Shape hit points), separate from the character's normal hit points and without temporary hit points of its own. When the Wild Shape hit points reach 0 the form ends and any excess damage carries over to the character's normal hit points; healing never carries over.
+_Avoid_: Beast form, current shape, transformation
+
 **Circle Forms**:
 The Circle of the Moon subclass feature that replaces the standard Wild Shape CR limit with higher combat ratings (CR 1 at 2nd level, CR equal to Druid level divided by 3 at 6th level and higher), while continuing to adhere to standard swimming and flying speed level restrictions.
 _Avoid_: Combat wild shape, moon forms, enhanced shape
@@ -83,6 +87,8 @@ _Avoid_: Combat wild shape, moon forms, enhanced shape
 **Beast Statblock**:
 The complete game statistics (size, AC, hit points, speeds, ability scores, traits, and actions) of a beast creature available for Wild Shape reference and active transformation tracking.
 _Avoid_: Monster sheet, creature profile, beast card
+
+The SRD Baseline carries the SRD's beasts and elementals, so a Druid can browse and adopt forms without an Integrated Catalog. Which Beast Statblocks exist follows Sourcebook Gating; Wild Shape adds only its own limits (challenge rating, swimming and flying levels, elementals for Moon Druids).
 
 **Elemental Wild Shape**:
 The 10th-level Circle of the Moon feature allowing the expenditure of two Wild Shape uses simultaneously to assume the form of an Air, Earth, Fire, or Water Elemental.
