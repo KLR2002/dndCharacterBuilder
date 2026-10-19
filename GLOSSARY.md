@@ -77,7 +77,7 @@ A Druid class feature (gained at 2nd level) allowing the character to magically 
 _Avoid_: Shapeshift, polymorph, animal form, morph
 
 **Active Wild Shape**:
-The beast or elemental form a Druid is currently in. It has its own armor class and its own hit points (the Wild Shape hit points), separate from the character's normal hit points and without temporary hit points of its own. When the Wild Shape hit points reach 0 the form ends and any excess damage carries over to the character's normal hit points; healing never carries over.
+The beast or elemental form a Druid is currently in. It has its own armor class and its own hit points (the Wild Shape hit points), separate from the character's normal hit points. Temporary hit points travel with the form: assuming a shape moves the character's temporary hit points onto it, temporary hit points granted while in the form go to the form, and ending the form by choice moves them back. When the Wild Shape hit points reach 0 the form ends, its temporary hit points having absorbed damage first, and any excess damage carries over to the character's normal hit points; healing never carries over.
 _Avoid_: Beast form, current shape, transformation
 
 **Circle Forms**:
