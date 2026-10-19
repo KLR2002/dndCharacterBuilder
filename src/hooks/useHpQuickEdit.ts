@@ -60,6 +60,8 @@ export function useHpQuickEdit(character: Character | null | undefined, maxHp: n
     open,
     close,
     visible,
+    /** Applies an action directly, without opening the modal (used by the inline Damage / Heal buttons). */
+    apply: onAction,
     modalProps: {
       visible,
       onClose: close,
