@@ -20,6 +20,7 @@ import { SpellsTab } from "../../components/tabs/SpellsTab";
 import { StatsTab } from "../../components/tabs/StatsTab";
 import { Badge } from "../../components/ui/Badge";
 import { Button } from "../../components/ui/Button";
+import { HpQuickEditModal } from "../../components/HpQuickEditModal";
 import { useCharacters } from "../../context/CharacterContext";
 import { useAppTheme } from "../../context/ThemeContext";
 import { useResponsiveLayout } from "../../hooks/useResponsiveLayout";
@@ -53,6 +54,7 @@ export default function CharacterSheetScreen() {
 
   const [activeTab, setActiveTab] = useState<TabKey>("builder");
   const [restModalVisible, setRestModalVisible] = useState(false);
+  const [hpModalVisible, setHpModalVisible] = useState(false);
   const [isEditingName, setIsEditingName] = useState(false);
   const [nameDraft, setNameDraft] = useState("");
   const [scrollX, setScrollX] = useState(0);
@@ -156,14 +158,19 @@ export default function CharacterSheetScreen() {
 
           {/* Quick HP & Rest Buttons */}
           <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-            <View style={[styles.quickHpBadge, { borderColor: theme.border, backgroundColor: theme.surfaceHighlight }]}>
+            <TouchableOpacity
+              accessibilityRole="button"
+              accessibilityLabel="Change hit points"
+              onPress={() => setHpModalVisible(true)}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              style={[styles.quickHpBadge, { borderColor: theme.border, backgroundColor: theme.surfaceHighlight }]}>
               {!isCompact && (
                 <Ionicons name="heart" size={14} color={currentCharacter.currentHp > 0 ? theme.hpGreen : theme.danger} />
               )}
               <Text style={[styles.quickHpText, { color: theme.text }]}>
                 {currentCharacter.currentHp}/{maxHp}
               </Text>
-            </View>
+            </TouchableOpacity>
 
             <View style={[styles.quickHpBadge, { borderColor: theme.border, backgroundColor: theme.surfaceHighlight }]}>
               <Ionicons name="shield-outline" size={13} color={theme.accent} />
@@ -264,6 +271,16 @@ export default function CharacterSheetScreen() {
         visible={restModalVisible}
         onClose={() => setRestModalVisible(false)}
         onTakeRest={() => setRestModalVisible(false)}
+      />
+
+      {/* Hit Points Quick Edit Modal */}
+      <HpQuickEditModal
+        visible={hpModalVisible}
+        onClose={() => setHpModalVisible(false)}
+        currentHp={currentCharacter.currentHp}
+        tempHp={currentCharacter.tempHp}
+        maxHp={maxHp}
+        onChange={(patch) => updateCharacter(currentCharacter.id, patch)}
       />
     </SafeAreaView>
   );

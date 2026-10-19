@@ -1,4 +1,5 @@
-// Responsive layout check for the builder (Class and Background subtabs) at phone widths.
+// Responsive layout check for the builder (Class and Background subtabs) at phone widths,
+// plus the hit point modal, opened from the Stats tab HP number and from the header HP badge.
 //
 // Usage: `npm run layout:check` (not part of check:all). Needs the Expo web server running
 // (`npx expo start --web --port 8099`) and, once, `npx playwright install chromium`.
@@ -53,6 +54,54 @@ try {
   console.error(`Could not launch Chromium (${error.message.split("\n")[0]}).\nInstall it once with: npx playwright install chromium`);
   process.exit(2);
 }
+// Runs in the browser. Returns one message per layout violation inside `root` (an element handle,
+// or the whole document when null).
+function findLayoutViolations(root) {
+  const nodes = (root ?? document).querySelectorAll("*");
+  const out = [];
+  const scrollerX = (el) => /(auto|scroll)/.test(getComputedStyle(el).overflowX);
+  for (const el of nodes) {
+    const r = el.getBoundingClientRect();
+    if (r.height === 0) continue;
+    const text = (el.textContent || "").trim();
+    const fontSize = parseFloat(getComputedStyle(el).fontSize) || 14;
+    if (el.children.length === 0 && text.length >= 20 && r.height / (fontSize * 1.25) >= 5)
+      out.push(`squeezed text (${Math.round(r.width)}px wide, ${Math.round(r.height)}px tall, ~${Math.round(r.height / (fontSize * 1.25))} lines): "${text.slice(0, 40)}"`);
+    if (r.width === 0) continue;
+    const p = el.parentElement;
+    if (!p || scrollerX(p)) continue;
+    let inScroller = false;
+    for (let a = p; a; a = a.parentElement) if (scrollerX(a) && a !== document.documentElement && a !== document.body) { inScroller = true; break; }
+    if (inScroller) continue;
+    const pr = p.getBoundingClientRect();
+    if (pr.width > 0 && r.right > pr.right + 1) out.push(`sticks out of its parent by ${Math.round(r.right - pr.right)}px: "${text.slice(0, 40)}"`);
+  }
+  return [...new Set(out)];
+}
+
+// Runs in the browser. The open hit point modal: the smallest ancestor of its Amount field that holds the title and the buttons.
+function findHpModal() {
+  for (let a = document.querySelector('[aria-label="Amount"]'); a; a = a.parentElement) {
+    const text = a.textContent || "";
+    if (text.includes("Hit Points") && text.includes("Set to")) return a;
+  }
+  return null;
+}
+
+// Runs in the browser. Indexes of the "Change hit points" controls: `stats` is the one under the
+// HIT POINTS label on the Stats tab, `header` is the first one that is not `stats` (the header badge).
+function findHpControls() {
+  const all = [...document.querySelectorAll('[aria-label="Change hit points"]')];
+  const label = [...document.querySelectorAll("*")].find((e) => e.children.length === 0 && e.textContent.trim() === "HIT POINTS");
+  let stats = -1;
+  for (let a = label?.parentElement; a && stats < 0; a = a.parentElement) {
+    const hit = all.find((el) => a.contains(el));
+    if (hit) stats = all.indexOf(hit);
+  }
+  const header = all.findIndex((_, i) => i !== stats);
+  return { stats, header };
+}
+
 let failures = 0;
 for (const width of WIDTHS) {
   const ctx = await browser.newContext({ viewport: { width, height: 851 }, deviceScaleFactor: 2, hasTouch: true, isMobile: true });
@@ -75,27 +124,7 @@ for (const width of WIDTHS) {
     }, scrollTo);
     await page.waitForTimeout(300);
     await page.screenshot({ path: join(SHOTS, `${tab}-${width}.png`) });
-    const violations = await page.evaluate(() => {
-      const out = [];
-      const scrollerX = (el) => /(auto|scroll)/.test(getComputedStyle(el).overflowX);
-      for (const el of document.querySelectorAll("*")) {
-        const r = el.getBoundingClientRect();
-        if (r.height === 0) continue;
-        const text = (el.textContent || "").trim();
-        const fontSize = parseFloat(getComputedStyle(el).fontSize) || 14;
-        if (el.children.length === 0 && text.length >= 20 && r.height / (fontSize * 1.25) >= 5)
-          out.push(`squeezed text (${Math.round(r.width)}px wide, ${Math.round(r.height)}px tall, ~${Math.round(r.height / (fontSize * 1.25))} lines): "${text.slice(0, 40)}"`);
-        if (r.width === 0) continue;
-        const p = el.parentElement;
-        if (!p || scrollerX(p)) continue;
-        let inScroller = false;
-        for (let a = p; a; a = a.parentElement) if (scrollerX(a) && a !== document.documentElement && a !== document.body) { inScroller = true; break; }
-        if (inScroller) continue;
-        const pr = p.getBoundingClientRect();
-        if (pr.width > 0 && r.right > pr.right + 1) out.push(`sticks out of its parent by ${Math.round(r.right - pr.right)}px: "${text.slice(0, 40)}"`);
-      }
-      return [...new Set(out)];
-    });
+    const violations = await page.evaluate(findLayoutViolations, null);
     for (const v of violations) {
       failures++;
       console.log(`[${width}px ${tab}] ${v}`);
@@ -105,6 +134,37 @@ for (const width of WIDTHS) {
   await page.getByText("Stats", { exact: true }).first().click();
   await page.waitForTimeout(500);
   await page.screenshot({ path: join(SHOTS, `Stats-${width}.png`) });
+  // Open the hit point modal from the Stats HP number, then from the header badge, and check each.
+  const controls = await page.evaluate(findHpControls);
+  const entries = [
+    ["Stats number", controls.stats, `HpModal-${width}.png`],
+    ["header badge", controls.header, `HpModal-header-${width}.png`],
+  ];
+  for (const [entry, index, shot] of entries) {
+    const prefix = `[${width}px HP modal from ${entry}]`;
+    if (index < 0) {
+      failures++;
+      console.log(`${prefix} no "Change hit points" control found`);
+      continue;
+    }
+    await page.locator('[aria-label="Change hit points"]').nth(index).click();
+    await page.getByText("Set to", { exact: true }).first().waitFor({ state: "visible", timeout: 10000 });
+    await page.waitForTimeout(500);
+    await page.screenshot({ path: join(SHOTS, shot) });
+    const modal = await page.evaluateHandle(findHpModal);
+    if (!modal.asElement()) {
+      failures++;
+      console.log(`${prefix} modal not found`);
+    } else {
+      for (const v of await page.evaluate(findLayoutViolations, modal)) {
+        failures++;
+        console.log(`${prefix} ${v}`);
+      }
+    }
+    await page.getByText("✕", { exact: true }).first().click();
+    await page.getByText("Set to", { exact: true }).first().waitFor({ state: "hidden", timeout: 10000 });
+    await page.waitForTimeout(400);
+  }
   await ctx.close();
 }
 await browser.close();

@@ -17,6 +17,7 @@ import {
   spendHitDie,
   recoverHitDie,
 } from "../../rules/hitDice";
+import { damage, heal } from "../../rules/hitPoints";
 import { formatModifier } from "../../services/dndRules";
 import { evaluateCharacter } from "../../rules/characterEvaluation";
 import { AbilityKey } from "../../types/character";
@@ -25,6 +26,7 @@ import { Button } from "../ui/Button";
 import { Card } from "../ui/Card";
 import { DetailModal } from "../DetailModal";
 import { RestModal } from "../RestModal";
+import { HpQuickEditModal } from "../HpQuickEditModal";
 import { useResponsiveLayout } from "../../hooks/useResponsiveLayout";
 
 const ABILITY_ORDER: AbilityKey[] = ["str", "dex", "con", "int", "wis", "cha"];
@@ -52,7 +54,8 @@ export const StatsTab: React.FC = () => {
 
   const [conditionModalVisible, setConditionModalVisible] = useState(false);
   const [restModalVisible, setRestModalVisible] = useState(false);
-  const [hpModalVisible, setHpModalVisible] = useState(false);
+  const [maxHpOverrideVisible, setMaxHpOverrideVisible] = useState(false);
+  const [hpQuickEditVisible, setHpQuickEditVisible] = useState(false);
   const [detailModal, setDetailModal] = useState<{
     visible: boolean;
     title: string;
@@ -122,26 +125,14 @@ export const StatsTab: React.FC = () => {
   const allConditions = getConditions();
 
   // HP Handlers
-  const applyDamage = (amount: number) => {
-    let temp = currentCharacter.tempHp;
-    let hp = currentCharacter.currentHp;
+  const hpState = { currentHp: currentCharacter.currentHp, tempHp: currentCharacter.tempHp };
 
-    if (temp > 0) {
-      if (amount <= temp) {
-        temp -= amount;
-        amount = 0;
-      } else {
-        amount -= temp;
-        temp = 0;
-      }
-    }
-    hp = Math.max(0, hp - amount);
-    updateCharacter(currentCharacter.id, { currentHp: hp, tempHp: temp });
+  const applyDamage = (amount: number) => {
+    updateCharacter(currentCharacter.id, damage(hpState, amount));
   };
 
   const applyHeal = (amount: number) => {
-    const newHp = Math.min(calculatedMaxHp, currentCharacter.currentHp + amount);
-    updateCharacter(currentCharacter.id, { currentHp: newHp });
+    updateCharacter(currentCharacter.id, heal(hpState, amount, calculatedMaxHp));
   };
 
   const setTempHp = () => {
@@ -159,7 +150,7 @@ export const StatsTab: React.FC = () => {
     } else {
       updateCharacter(currentCharacter.id, { maxHpOverride: null });
     }
-    setHpModalVisible(false);
+    setMaxHpOverrideVisible(false);
   };
 
   // Conditions
@@ -411,12 +402,19 @@ export const StatsTab: React.FC = () => {
           <View>
             <Text style={[styles.labelMuted, { color: theme.textMuted }]}>HIT POINTS</Text>
             <View style={{ flexDirection: "row", alignItems: "baseline", gap: 6 }}>
-              <Text style={[styles.hpCurrentText, { color: currentCharacter.currentHp > 0 ? theme.hpGreen : theme.danger }]}>
-                {currentCharacter.currentHp}
-              </Text>
-              <Text style={[styles.hpMaxText, { color: theme.textSecondary }]}>
-                / {calculatedMaxHp}
-              </Text>
+              <TouchableOpacity
+                accessibilityRole="button"
+                accessibilityLabel="Change hit points"
+                onPress={() => setHpQuickEditVisible(true)}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                style={{ flexDirection: "row", alignItems: "baseline", gap: 6 }}>
+                <Text style={[styles.hpCurrentText, { color: currentCharacter.currentHp > 0 ? theme.hpGreen : theme.danger }]}>
+                  {currentCharacter.currentHp}
+                </Text>
+                <Text style={[styles.hpMaxText, { color: theme.textSecondary }]}>
+                  / {calculatedMaxHp}
+                </Text>
+              </TouchableOpacity>
               {currentCharacter.tempHp > 0 && (
                 <Text style={{ color: theme.tempHpYellow, fontWeight: "700", fontSize: 16 }}>
                   (+{currentCharacter.tempHp} Temp)
@@ -428,7 +426,7 @@ export const StatsTab: React.FC = () => {
           <TouchableOpacity
             onPress={() => {
               setMaxHpOverrideInput(currentCharacter.maxHpOverride ? String(currentCharacter.maxHpOverride) : "");
-              setHpModalVisible(true);
+              setMaxHpOverrideVisible(true);
             }}
             style={[styles.hpEditBtn, { backgroundColor: theme.surfaceHighlight, borderColor: theme.border }]}>
             <Ionicons name="settings-outline" size={16} color={theme.textSecondary} />
@@ -1043,7 +1041,7 @@ export const StatsTab: React.FC = () => {
       </Card>
 
       {/* HP Override Settings Modal */}
-      <RNModal visible={hpModalVisible} transparent animationType="fade">
+      <RNModal visible={maxHpOverrideVisible} transparent animationType="fade">
         <View style={styles.modalOverlay}>
           <Card style={[styles.modalCard, { backgroundColor: theme.surface, borderColor: theme.border }]}>
             <Text style={[styles.sectionTitle, { color: theme.text, marginBottom: 12 }]}>
@@ -1064,12 +1062,22 @@ export const StatsTab: React.FC = () => {
               placeholderTextColor={theme.textMuted}
             />
             <View style={{ flexDirection: "row", justifyContent: "flex-end", gap: 10, marginTop: 16 }}>
-              <Button title="Cancel" variant="secondary" size="sm" onPress={() => setHpModalVisible(false)} />
+              <Button title="Cancel" variant="secondary" size="sm" onPress={() => setMaxHpOverrideVisible(false)} />
               <Button title="Save" variant="primary" size="sm" onPress={setMaxHpOverride} />
             </View>
           </Card>
         </View>
       </RNModal>
+
+      {/* Hit Points Quick Edit Modal */}
+      <HpQuickEditModal
+        visible={hpQuickEditVisible}
+        onClose={() => setHpQuickEditVisible(false)}
+        currentHp={currentCharacter.currentHp}
+        tempHp={currentCharacter.tempHp}
+        maxHp={calculatedMaxHp}
+        onChange={(patch) => updateCharacter(currentCharacter.id, patch)}
+      />
 
       {/* Condition Picker Modal */}
       <RNModal visible={conditionModalVisible} transparent animationType="slide">
