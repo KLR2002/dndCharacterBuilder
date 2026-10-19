@@ -1,30 +1,41 @@
 import React, { useState } from "react";
 import { StyleSheet, Text, TextInput, View } from "react-native";
 import { useAppTheme } from "../context/ThemeContext";
-import { damage, heal, HitPointPatch, HitPointState, parseAmount, setCurrentHp } from "../rules/hitPoints";
+import { parseAmount } from "../rules/hitPoints";
 import { Button } from "./ui/Button";
 import { Modal } from "./ui/Modal";
+
+export type HpActionKind = "damage" | "heal" | "set";
+
+/** One change the player asked for. The owner of the HP value decides what it does to the state. */
+export interface HpAction {
+  kind: HpActionKind;
+  amount: number;
+}
 
 export interface HpQuickEditModalProps {
   visible: boolean;
   onClose: () => void;
+  title?: string;
   currentHp: number;
-  tempHp: number;
   maxHp: number;
-  onChange: (patch: HitPointPatch) => void;
+  /** Shows a Temp HP line when provided and above 0. Omit it for a target without temp HP. */
+  tempHp?: number;
+  onAction: (action: HpAction) => void;
 }
 
 /**
- * Shared hit point editor opened from the character header and the Stats tab.
- * Damage, Heal and Set to all read the amount field. The modal stays open after each change.
+ * Shared hit point editor, presentational only: it reads the amount field and reports one
+ * action. The caller turns the action into a patch (see useHpQuickEdit). The modal stays open after each change.
  */
 export const HpQuickEditModal: React.FC<HpQuickEditModalProps> = ({
   visible,
   onClose,
+  title = "Hit Points",
   currentHp,
-  tempHp,
   maxHp,
-  onChange,
+  tempHp,
+  onAction,
 }) => {
   const { theme } = useAppTheme();
   const [amountInput, setAmountInput] = useState("1");
@@ -39,20 +50,19 @@ export const HpQuickEditModal: React.FC<HpQuickEditModalProps> = ({
 
   const amount = parseAmount(amountInput);
   const valid = amount !== undefined;
-  const state: HitPointState = { currentHp, tempHp };
 
-  const applyWith = (next: (value: number) => HitPointState) => {
+  const act = (kind: HpActionKind) => {
     if (amount === undefined) return;
-    onChange(next(amount));
+    onAction({ kind, amount });
   };
 
   return (
-    <Modal visible={visible} onClose={onClose} title="Hit Points">
+    <Modal visible={visible} onClose={onClose} title={title}>
       <View style={styles.summaryRow}>
         <Text style={[styles.summaryText, { color: theme.text }]}>
           {currentHp} / {maxHp}
         </Text>
-        {tempHp > 0 && (
+        {tempHp !== undefined && tempHp > 0 && (
           <Text style={[styles.tempText, { color: theme.tempHpYellow }]}>+{tempHp} Temp</Text>
         )}
       </View>
@@ -83,21 +93,21 @@ export const HpQuickEditModal: React.FC<HpQuickEditModalProps> = ({
           title="Damage"
           variant="danger"
           disabled={!valid}
-          onPress={() => applyWith((value) => damage(state, value))}
+          onPress={() => act("damage")}
           style={styles.actionButton}
         />
         <Button
           title="Heal"
           variant="success"
           disabled={!valid}
-          onPress={() => applyWith((value) => heal(state, value, maxHp))}
+          onPress={() => act("heal")}
           style={styles.actionButton}
         />
         <Button
           title="Set to"
           variant="secondary"
           disabled={!valid}
-          onPress={() => applyWith((value) => setCurrentHp(state, value, maxHp))}
+          onPress={() => act("set")}
           style={styles.actionButton}
         />
       </View>
