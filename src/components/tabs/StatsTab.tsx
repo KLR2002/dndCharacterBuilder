@@ -26,6 +26,7 @@ import { Button } from "../ui/Button";
 import { Card } from "../ui/Card";
 import { DetailModal } from "../DetailModal";
 import { RestModal } from "../RestModal";
+import { HpQuickEditModal } from "../HpQuickEditModal";
 import { useResponsiveLayout } from "../../hooks/useResponsiveLayout";
 
 const ABILITY_ORDER: AbilityKey[] = ["str", "dex", "con", "int", "wis", "cha"];
@@ -54,6 +55,7 @@ export const StatsTab: React.FC = () => {
   const [conditionModalVisible, setConditionModalVisible] = useState(false);
   const [restModalVisible, setRestModalVisible] = useState(false);
   const [hpModalVisible, setHpModalVisible] = useState(false);
+  const [hpQuickEditVisible, setHpQuickEditVisible] = useState(false);
   const [detailModal, setDetailModal] = useState<{
     visible: boolean;
     title: string;
@@ -400,12 +402,19 @@ export const StatsTab: React.FC = () => {
           <View>
             <Text style={[styles.labelMuted, { color: theme.textMuted }]}>HIT POINTS</Text>
             <View style={{ flexDirection: "row", alignItems: "baseline", gap: 6 }}>
-              <Text style={[styles.hpCurrentText, { color: currentCharacter.currentHp > 0 ? theme.hpGreen : theme.danger }]}>
-                {currentCharacter.currentHp}
-              </Text>
-              <Text style={[styles.hpMaxText, { color: theme.textSecondary }]}>
-                / {calculatedMaxHp}
-              </Text>
+              <TouchableOpacity
+                accessibilityRole="button"
+                accessibilityLabel="Change hit points"
+                onPress={() => setHpQuickEditVisible(true)}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                style={{ flexDirection: "row", alignItems: "baseline", gap: 6 }}>
+                <Text style={[styles.hpCurrentText, { color: currentCharacter.currentHp > 0 ? theme.hpGreen : theme.danger }]}>
+                  {currentCharacter.currentHp}
+                </Text>
+                <Text style={[styles.hpMaxText, { color: theme.textSecondary }]}>
+                  / {calculatedMaxHp}
+                </Text>
+              </TouchableOpacity>
               {currentCharacter.tempHp > 0 && (
                 <Text style={{ color: theme.tempHpYellow, fontWeight: "700", fontSize: 16 }}>
                   (+{currentCharacter.tempHp} Temp)
@@ -1059,6 +1068,16 @@ export const StatsTab: React.FC = () => {
           </Card>
         </View>
       </RNModal>
+
+      {/* Hit Points Quick Edit Modal */}
+      <HpQuickEditModal
+        visible={hpQuickEditVisible}
+        onClose={() => setHpQuickEditVisible(false)}
+        currentHp={currentCharacter.currentHp}
+        tempHp={currentCharacter.tempHp}
+        maxHp={calculatedMaxHp}
+        onChange={(patch) => updateCharacter(currentCharacter.id, patch)}
+      />
 
       {/* Condition Picker Modal */}
       <RNModal visible={conditionModalVisible} transparent animationType="slide">
