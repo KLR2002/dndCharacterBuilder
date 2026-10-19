@@ -27,7 +27,7 @@ try {
 
 // The character the builder shows: Half-Orc, Acolyte background, level 1 Paladin, equipment claimed.
 const CHARACTER_ID = "char_rendar";
-// A level 4 Druid in a Black Bear (SRD: AC 11, 19 HP), with the bear at 12 of 19 HP.
+// A level 4 Druid in a Black Bear (SRD: AC 11, 19 HP), with the bear at 12 of 19 HP and 4 temp HP.
 const DRUID_ID = "char_druid";
 const seed = {
   characters: [
@@ -54,7 +54,7 @@ const seed = {
       currentHp: 14,
       startingGrantsApplied: true,
       backgroundGrantsApplied: true,
-      activeWildShape: { name: "Black Bear", source: "SRD", ac: 11, currentHp: 12, maxHp: 19 },
+      activeWildShape: { name: "Black Bear", source: "SRD", ac: 11, currentHp: 12, maxHp: 19, tempHp: 4 },
     }),
   ],
   folders: [],
@@ -130,7 +130,7 @@ function findWildShapeControls() {
   return { stats, header };
 }
 
-// Opens the wild shape HP box from one control, checks it (no violations, no Temp HP line), closes it.
+// Opens the wild shape HP box from one control, checks it (no violations, shows the form's "+4 Temp" line), closes it.
 async function checkWildShapeBox(page, index, prefix, shot) {
   if (index < 0) {
     console.log(`${prefix} no "Change wild shape hit points" control found`);
@@ -151,9 +151,9 @@ async function checkWildShapeBox(page, index, prefix, shot) {
       failures++;
       console.log(`${prefix} modal is not the wild shape box`);
     }
-    if (text.includes("Temp")) {
+    if (!text.includes("+4 Temp")) {
       failures++;
-      console.log(`${prefix} modal shows a Temp HP line`);
+      console.log(`${prefix} modal does not show the form's "+4 Temp" line`);
     }
     for (const v of await page.evaluate(findLayoutViolations, modal)) {
       failures++;
@@ -185,11 +185,20 @@ async function checkWildShapeScreen(ctx, width) {
     failures++;
     console.log(`[${width}px wild shape Stats] ${v}`);
   }
+  failures += await checkWildShapeTempLine(page, `[${width}px wild shape Stats]`);
   const controls = await page.evaluate(findWildShapeControls);
   failures += await checkWildShapeBox(page, controls.stats, `[${width}px wild shape box from Stats number]`, `WildShapeModal-${width}.png`);
   failures += await checkWildShapeBox(page, controls.header, `[${width}px wild shape box from header badge]`, `WildShapeModal-header-${width}.png`);
   await page.close();
   return failures;
+}
+
+// Checks the Active Wild Shape card shows the form's temp HP next to its HP, as "(+4 Temp)".
+async function checkWildShapeTempLine(page, prefix) {
+  const visible = await page.getByText("(+4 Temp)", { exact: true }).first().isVisible();
+  if (visible) return 0;
+  console.log(`${prefix} Active Wild Shape card does not show "(+4 Temp)"`);
+  return 1;
 }
 
 // Runs in the browser. The Active Wild Shape card: the smallest ancestor of the "WILD SHAPE HP" label that also holds the "ACTIVE WILD SHAPE" badge.
@@ -215,7 +224,7 @@ async function checkWildShapeFeatures(ctx, width) {
   });
   await page.waitForTimeout(300);
   await page.screenshot({ path: join(SHOTS, `WildShape-Features-${width}.png`) });
-  let failures = 0;
+  let failures = await checkWildShapeTempLine(page, `[${width}px wild shape Features]`);
   const card = await page.evaluateHandle(findWildShapeCard);
   if (!card.asElement()) {
     failures++;

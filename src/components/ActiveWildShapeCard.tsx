@@ -3,6 +3,7 @@ import { Text, View } from "react-native";
 import { useCharacters } from "../context/CharacterContext";
 import { useAppTheme } from "../context/ThemeContext";
 import { useHpQuickEdit } from "../hooks/useHpQuickEdit";
+import { revertWildShape } from "../rules/wildShapeHp";
 import { findBeast } from "../services/dataService";
 import type { Character } from "../types/character";
 import { Badge } from "./ui/Badge";
@@ -74,6 +75,7 @@ export const ActiveWildShapeCard: React.FC<ActiveWildShapeCardProps> = ({ charac
           label="WILD SHAPE HP"
           currentHp={shape.currentHp}
           maxHp={shape.maxHp}
+          tempHp={shape.tempHp ?? 0}
           numberProps={hpQuickEdit.triggerProps}
           amount={hpAmount}
           onAmountChange={setHpAmount}
@@ -82,7 +84,7 @@ export const ActiveWildShapeCard: React.FC<ActiveWildShapeCardProps> = ({ charac
         />
 
         <Text style={{ color: theme.textSecondary, fontSize: 12, marginTop: 8 }}>
-          Damage reduces beast HP first. When the form drops, excess damage carries over to your normal HP.
+          Damage uses up the form temp HP first, then its HP. When the form drops, excess damage carries over to your normal HP.
         </Text>
 
         {/* Action Buttons: Inspect Beast & Revert */}
@@ -100,7 +102,7 @@ export const ActiveWildShapeCard: React.FC<ActiveWildShapeCardProps> = ({ charac
             icon="arrow-undo-outline"
             variant="secondary"
             size="sm"
-            onPress={() => updateCharacter(character.id, { activeWildShape: null })}
+            onPress={() => updateCharacter(character.id, revertWildShape(character))}
           />
         </View>
       </Card>

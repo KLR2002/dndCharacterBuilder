@@ -28,6 +28,7 @@ import {
   getReplacedBaseFeatures,
 } from "../../rules/optionalFeatures";
 import { getWildShapeLimits, getWildShapeCharges, getRequiredWildShapeCharges } from "../../rules/wildShape";
+import { enterWildShape } from "../../rules/wildShapeHp";
 import { describeClassFeature } from "../../rules/featureOptions";
 import { ResourceCounter } from "../../types/character";
 import type { BeastData } from "../../types/dnd5e";
@@ -409,13 +410,13 @@ export const FeaturesTab: React.FC = () => {
           resetOn: "short",
         },
       },
-      activeWildShape: {
+      ...enterWildShape(currentCharacter, {
         name: beast.name,
         source: beast.source,
         currentHp: beast.hp.average,
         maxHp: beast.hp.average,
         ac: beast.ac,
-      },
+      }),
     });
   };
 
