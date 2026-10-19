@@ -47,6 +47,7 @@
     "web": "expo start --web",
     "lint": "EXPO_NO_TELEMETRY=1 expo lint",
     "typecheck": "tsc --noEmit",
+    "layout:check": "node --experimental-strip-types scripts/layout-check.mjs",
     "test": "node --experimental-strip-types --test checks/ && npm --prefix dnd5eToolsScrap test",
     "check:all": "npm test && npm run typecheck && npm run lint",
     "scrape:books": "npm --prefix dnd5eToolsScrap run scrape:books",
