@@ -63,3 +63,10 @@ Judgement calls and rules conventions enforced during code review.
 - **Verify at Phone Widths**:
   - Check UI changes at 320, 360, 393 and 412 px. Run `npm run layout:check` (needs `npx expo start --web --port 8099` running and `npx playwright install chromium` once). It fails on squeezed text and on elements that stick out of their parent.
   - Some issues are native-only (such as Android text clipping) and cannot be caught by the web check. Say so in the review.
+
+## 8. UI Copy
+- **Essential Description Only**:
+  - Show only the essential description of a mechanic on screen.
+  - Add help text only for a rule the player could not guess and would get wrong.
+- **Derived Rules Stay Off Screen**:
+  - Keep rules that follow from the controls or from the game's own rules in `GLOSSARY.md` and tests, not on screen.
