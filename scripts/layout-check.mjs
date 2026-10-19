@@ -1,6 +1,6 @@
 // Responsive layout check for the builder (Class and Background subtabs) at phone widths,
 // the hit point modal (opened from the Stats tab HP number and from the header HP badge), and the
-// Active Wild Shape box (Stats tab, plus the header badge while a form is active).
+// Active Wild Shape box (Stats tab, plus the header badge while a form is active, and the Features tab).
 //
 // Usage: `npm run layout:check` (not part of check:all). Needs the Expo web server running
 // (`npx expo start --web --port 8099`) and, once, `npx playwright install chromium`.
@@ -192,6 +192,44 @@ async function checkWildShapeScreen(ctx, width) {
   return failures;
 }
 
+// Runs in the browser. The Active Wild Shape card: the smallest ancestor of the "WILD SHAPE HP" label that also holds the "ACTIVE WILD SHAPE" badge.
+function findWildShapeCard() {
+  const label = [...document.querySelectorAll("*")].find((e) => e.children.length === 0 && e.textContent.trim() === "WILD SHAPE HP");
+  for (let a = label?.parentElement; a; a = a.parentElement) {
+    if ((a.textContent || "").includes("ACTIVE WILD SHAPE")) return a;
+  }
+  return null;
+}
+
+// Opens the Druid's Features tab (same shared Active Wild Shape card as Stats) and checks the card for layout violations.
+async function checkWildShapeFeatures(ctx, width) {
+  const page = await ctx.newPage();
+  await page.goto(`${BASE}/character/${DRUID_ID}`, { waitUntil: "networkidle", timeout: 120000 });
+  await page.waitForTimeout(1500);
+  await page.getByText("Features", { exact: true }).first().click();
+  await page.waitForTimeout(500);
+  await page.getByText("WILD SHAPE HP", { exact: true }).first().waitFor({ state: "visible", timeout: 10000 });
+  await page.evaluate(() => {
+    const el = [...document.querySelectorAll("*")].find((e) => e.children.length === 0 && (e.textContent || "").includes("WILD SHAPE HP"));
+    el?.scrollIntoView({ block: "center" });
+  });
+  await page.waitForTimeout(300);
+  await page.screenshot({ path: join(SHOTS, `WildShape-Features-${width}.png`) });
+  let failures = 0;
+  const card = await page.evaluateHandle(findWildShapeCard);
+  if (!card.asElement()) {
+    failures++;
+    console.log(`[${width}px wild shape Features] no Active Wild Shape card found`);
+  } else {
+    for (const v of await page.evaluate(findLayoutViolations, card)) {
+      failures++;
+      console.log(`[${width}px wild shape Features card] ${v}`);
+    }
+  }
+  await page.close();
+  return failures;
+}
+
 let failures = 0;
 for (const width of WIDTHS) {
   const ctx = await browser.newContext({ viewport: { width, height: 851 }, deviceScaleFactor: 2, hasTouch: true, isMobile: true });
@@ -257,6 +295,7 @@ for (const width of WIDTHS) {
   }
   await page.close();
   failures += await checkWildShapeScreen(ctx, width);
+  failures += await checkWildShapeFeatures(ctx, width);
   await ctx.close();
 }
 await browser.close();
