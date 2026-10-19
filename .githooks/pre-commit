@@ -1,6 +1,34 @@
 #!/usr/bin/env bash
+# Pre-commit gate. Skips the checks when every staged file is Markdown.
+# CHECK_CMD overrides the check command (default: npm run check:all).
 set -euo pipefail
 
-echo "==> Running pre-commit verification..."
-npm run check:all
-echo "==> All pre-commit checks passed!"
+staged="$(git diff --cached --name-only)"
+non_md="$(grep -v '\.md$' <<<"$staged" || true)"
+if [ -n "$staged" ] && [ -z "$non_md" ]; then
+  echo "==> pre-commit: docs-only change (all staged files are .md), checks skipped"
+  exit 0
+fi
+
+check_cmd="${CHECK_CMD:-npm run check:all}"
+log="$(mktemp)"
+echo "==> pre-commit: running $check_cmd"
+
+status=0
+bash -c "$check_cmd" >"$log" 2>&1 || status=$?
+
+if [ "$status" -eq 0 ]; then
+  mapfile -t passes < <(sed -n 's/^ℹ pass \([0-9]\{1,\}\)$/\1/p' "$log")
+  if [ "${#passes[@]}" -eq 2 ]; then
+    echo "==> pre-commit: check:all passed (${passes[0]} app tests, ${passes[1]} scraper tests)"
+  else
+    echo "==> pre-commit: check:all passed"
+  fi
+  rm -f "$log"
+  exit 0
+fi
+
+echo "==> pre-commit: check failed (exit $status), last 80 lines:"
+tail -n 80 "$log"
+echo "==> pre-commit: full log at $log"
+exit "$status"
