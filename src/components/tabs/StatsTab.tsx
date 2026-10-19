@@ -296,7 +296,9 @@ export const StatsTab: React.FC = () => {
 
         {/* Temp HP Row */}
         <View style={styles.tempHpRow}>
-          <Text style={{ color: theme.textSecondary, fontSize: 13, flex: 1 }}>Temp HP:</Text>
+          <Text style={{ color: theme.textSecondary, fontSize: 13, flex: 1, flexBasis: "auto", flexShrink: 1 }}>
+            {currentCharacter.activeWildShape ? "Wild Shape Temp HP:" : "Temp HP:"}
+          </Text>
           <TextInput
             style={[styles.tempInput, { color: theme.text, backgroundColor: theme.surfaceHighlight, borderColor: theme.border }]}
             value={tempHpAmount}
