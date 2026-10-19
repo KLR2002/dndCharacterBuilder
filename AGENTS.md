@@ -1,5 +1,5 @@
 ## Verification
-Verify all changes: `npm run check:all`.
+Verify all changes: `npm run check:all`. UI changes also need `npm run layout:check` (needs `npx expo start --web --port 8099` running and a one-time `npx playwright install chromium`); layout rules are in `CODING_STANDARDS.md` section 7.
 
 ## Compendium Architecture
 - SRD baseline: `src/data/*.json` (pruned via `node scripts/prune-to-srd.mjs`). Do not overwrite with expansion content.

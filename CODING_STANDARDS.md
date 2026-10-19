@@ -49,3 +49,17 @@ Judgement calls and rules conventions enforced during code review.
 ## 6. Cross-Platform Runtime & Storage
 - **Mobile-Native Compatibility**:
   - Shared services and storage layers must never access browser DOM globals (`window`, `document`, `indexedDB`, `localStorage`) without platform checking (`Platform.OS === "web"`). Mobile targets (Android/iOS) must use `AsyncStorage` or native file-system adapters.
+
+## 7. Responsive Layout
+- **Fluid, Not Breakpoint-Driven**:
+  - Layout must not depend only on breakpoints to avoid overflow. `isCompact` tunes density (spacing, font size, stacking); it must never be the only thing keeping a row from overflowing.
+  - The app is used at 360-430dp, which is not compact. A layout that is only correct at 393dp is a bug.
+- **Rows Wrap or Shrink**:
+  - A row that mixes text and buttons or badges must set `flexWrap: "wrap"`, or its text must set `flexShrink: 1` / `minWidth: 0`. React Native defaults to `flexShrink: 0`, so an unmarked text child will not shrink.
+  - Badges, option names and other long user or catalog text must be able to wrap inside their parent.
+- **Inputs and Text Controls**:
+  - Never give a `TextInput` or other text-bearing control a fixed `height` or `width`. Use `minHeight`, `minWidth`, `flexBasis` or `maxWidth`.
+  - On Android set `paddingVertical: 0`, `textAlignVertical: "center"` and `includeFontPadding: false` on inputs, or the text clips at the top.
+- **Verify at Phone Widths**:
+  - Check UI changes at 320, 360, 393 and 412 px. Run `npm run layout:check` (needs `npx expo start --web --port 8099` running and `npx playwright install chromium` once). It fails on squeezed text and on elements that stick out of their parent.
+  - Some issues are native-only (such as Android text clipping) and cannot be caught by the web check. Say so in the review.

@@ -162,9 +162,9 @@ export const BackgroundSection: React.FC<BackgroundSectionProps> = ({
                           ))}
                         </View>
                         {character.backgroundGrantsApplied ? (
-                          <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginTop: 4 }}>
+                          <View style={{ flexDirection: "row", flexWrap: "wrap", alignItems: "center", gap: 6, marginTop: 4 }}>
                             <Ionicons name="checkmark-circle" size={16} color={theme.success} />
-                            <Text style={{ color: theme.success, fontSize: 12, fontWeight: "600" }}>
+                            <Text style={{ color: theme.success, fontSize: 12, fontWeight: "600", flexShrink: 1 }}>
                               Background Equipment & Funds Claimed
                             </Text>
                             <Button
