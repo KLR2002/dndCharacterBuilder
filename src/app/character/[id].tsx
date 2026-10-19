@@ -23,6 +23,7 @@ import { Button } from "../../components/ui/Button";
 import { HpQuickEditModal } from "../../components/HpQuickEditModal";
 import { useCharacters } from "../../context/CharacterContext";
 import { useAppTheme } from "../../context/ThemeContext";
+import { useHpQuickEdit } from "../../hooks/useHpQuickEdit";
 import { useResponsiveLayout } from "../../hooks/useResponsiveLayout";
 import { evaluateCharacter } from "../../rules/characterEvaluation";
 import { commitCharacterName } from "../../rules/characterName";
@@ -54,7 +55,6 @@ export default function CharacterSheetScreen() {
 
   const [activeTab, setActiveTab] = useState<TabKey>("builder");
   const [restModalVisible, setRestModalVisible] = useState(false);
-  const [hpModalVisible, setHpModalVisible] = useState(false);
   const [isEditingName, setIsEditingName] = useState(false);
   const [nameDraft, setNameDraft] = useState("");
   const [scrollX, setScrollX] = useState(0);
@@ -71,6 +71,7 @@ export default function CharacterSheetScreen() {
     () => (currentCharacter ? evaluateCharacter(currentCharacter) : null),
     [currentCharacter]
   );
+  const hpQuickEdit = useHpQuickEdit(currentCharacter, evaluated?.hp.max ?? 0);
 
   if (!currentCharacter || !evaluated) {
     return (
@@ -159,10 +160,7 @@ export default function CharacterSheetScreen() {
           {/* Quick HP & Rest Buttons */}
           <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
             <TouchableOpacity
-              accessibilityRole="button"
-              accessibilityLabel="Change hit points"
-              onPress={() => setHpModalVisible(true)}
-              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              {...hpQuickEdit.triggerProps}
               style={[styles.quickHpBadge, { borderColor: theme.border, backgroundColor: theme.surfaceHighlight }]}>
               {!isCompact && (
                 <Ionicons name="heart" size={14} color={currentCharacter.currentHp > 0 ? theme.hpGreen : theme.danger} />
@@ -274,14 +272,7 @@ export default function CharacterSheetScreen() {
       />
 
       {/* Hit Points Quick Edit Modal */}
-      <HpQuickEditModal
-        visible={hpModalVisible}
-        onClose={() => setHpModalVisible(false)}
-        currentHp={currentCharacter.currentHp}
-        tempHp={currentCharacter.tempHp}
-        maxHp={maxHp}
-        onChange={(patch) => updateCharacter(currentCharacter.id, patch)}
-      />
+      <HpQuickEditModal {...hpQuickEdit.modalProps} />
     </SafeAreaView>
   );
 }

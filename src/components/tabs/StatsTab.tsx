@@ -27,6 +27,7 @@ import { Card } from "../ui/Card";
 import { DetailModal } from "../DetailModal";
 import { RestModal } from "../RestModal";
 import { HpQuickEditModal } from "../HpQuickEditModal";
+import { useHpQuickEdit } from "../../hooks/useHpQuickEdit";
 import { useResponsiveLayout } from "../../hooks/useResponsiveLayout";
 
 const ABILITY_ORDER: AbilityKey[] = ["str", "dex", "con", "int", "wis", "cha"];
@@ -55,7 +56,6 @@ export const StatsTab: React.FC = () => {
   const [conditionModalVisible, setConditionModalVisible] = useState(false);
   const [restModalVisible, setRestModalVisible] = useState(false);
   const [maxHpOverrideVisible, setMaxHpOverrideVisible] = useState(false);
-  const [hpQuickEditVisible, setHpQuickEditVisible] = useState(false);
   const [detailModal, setDetailModal] = useState<{
     visible: boolean;
     title: string;
@@ -102,6 +102,8 @@ export const StatsTab: React.FC = () => {
     if (hdEntries.length === 0) return "1d8";
     return hdEntries.map(([die, p]) => `${p.total}${die}`).join(" + ");
   }, [hdEntries]);
+
+  const hpQuickEdit = useHpQuickEdit(currentCharacter, evaluated?.hp.max ?? 0);
 
   if (!currentCharacter || !evaluated) return null;
 
@@ -403,10 +405,7 @@ export const StatsTab: React.FC = () => {
             <Text style={[styles.labelMuted, { color: theme.textMuted }]}>HIT POINTS</Text>
             <View style={{ flexDirection: "row", alignItems: "baseline", gap: 6 }}>
               <TouchableOpacity
-                accessibilityRole="button"
-                accessibilityLabel="Change hit points"
-                onPress={() => setHpQuickEditVisible(true)}
-                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                {...hpQuickEdit.triggerProps}
                 style={{ flexDirection: "row", alignItems: "baseline", gap: 6 }}>
                 <Text style={[styles.hpCurrentText, { color: currentCharacter.currentHp > 0 ? theme.hpGreen : theme.danger }]}>
                   {currentCharacter.currentHp}
@@ -1070,14 +1069,7 @@ export const StatsTab: React.FC = () => {
       </RNModal>
 
       {/* Hit Points Quick Edit Modal */}
-      <HpQuickEditModal
-        visible={hpQuickEditVisible}
-        onClose={() => setHpQuickEditVisible(false)}
-        currentHp={currentCharacter.currentHp}
-        tempHp={currentCharacter.tempHp}
-        maxHp={calculatedMaxHp}
-        onChange={(patch) => updateCharacter(currentCharacter.id, patch)}
-      />
+      <HpQuickEditModal {...hpQuickEdit.modalProps} />
 
       {/* Condition Picker Modal */}
       <RNModal visible={conditionModalVisible} transparent animationType="slide">
