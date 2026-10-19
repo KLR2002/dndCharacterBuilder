@@ -589,8 +589,8 @@ export const FeaturesTab: React.FC = () => {
             )}
           </View>
 
-          {/* Monster Manual Inactive Warning */}
-          {!isMmActive && (
+          {/* Monster Manual Inactive Warning (Integrated Catalog only; the SRD Baseline carries its own beasts) */}
+          {currentCompendium().integrated && !isMmActive && (
             <Card
               style={{
                 padding: 10,

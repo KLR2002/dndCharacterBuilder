@@ -128,7 +128,7 @@ test("wildShape: Circle of the Moon scaling across levels and Elemental Wild Sha
   assert.equal(getWildShapeLimits(moon18).maxCr, 6.0);
 });
 
-test("wildShape: isBeastEligible accurately checks level, movement speed, CR, and activeBooks", () => {
+test("wildShape: isBeastEligible accurately checks level, movement speed, and CR", () => {
   const beasts = loadTestCatalog<BeastData[]>("beasts");
   const wolf = beasts.find((b) => b.name === "Wolf" && b.source === "MM")!;
   const giantPoisonousSnake = beasts.find((b) => b.name === "Giant Poisonous Snake" && b.source === "MM")!; // swim 30, CR 1/4
@@ -183,10 +183,7 @@ test("wildShape: isBeastEligible accurately checks level, movement speed, CR, an
   });
   assert.equal(isBeastEligible(airElemental, moon10), true, "Air Elemental allowed for Moon druid 10");
   assert.equal(isBeastEligible(airElemental, druid8), false, "Non-moon druids cannot take elementals");
-
-  // activeBooks gating:
-  assert.equal(isBeastEligible(wolf, druid2, ["PHB"]), false, "Wolf from MM not in activeBooks PHB");
-  assert.equal(isBeastEligible(wolf, druid2, ["PHB", "MM"]), true, "Wolf in activeBooks PHB, MM");
+  // Book scoping is the Compendium's job; see checks/wildShapeSrdBeasts.test.ts.
 });
 
 test("wildShape: getBeastFilterReason returns human-readable lock explanations", () => {
