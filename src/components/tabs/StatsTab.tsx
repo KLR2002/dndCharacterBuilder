@@ -11,7 +11,7 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { useCharacters } from "../../context/CharacterContext";
 import { useAppTheme } from "../../context/ThemeContext";
-import { getConditions, findBeast } from "../../services/dataService";
+import { getConditions } from "../../services/dataService";
 import { currentCompendium } from "../../services/compendium";
 import {
   spendHitDie,
@@ -28,6 +28,7 @@ import { DetailModal } from "../DetailModal";
 import { RestModal } from "../RestModal";
 import { HpQuickEditModal } from "../HpQuickEditModal";
 import { HitPointBlock } from "../HitPointBlock";
+import { ActiveWildShapeCard } from "../ActiveWildShapeCard";
 import { useHpQuickEdit } from "../../hooks/useHpQuickEdit";
 import { useResponsiveLayout } from "../../hooks/useResponsiveLayout";
 
@@ -65,7 +66,6 @@ export const StatsTab: React.FC = () => {
   }>({ visible: false, title: "", content: "" });
 
   const [hpChangeAmount, setHpChangeAmount] = useState("1");
-  const [wildShapeHpAmount, setWildShapeHpAmount] = useState("1");
   const [tempHpAmount, setTempHpAmount] = useState("");
   const [maxHpOverrideInput, setMaxHpOverrideInput] = useState("");
 
@@ -106,7 +106,6 @@ export const StatsTab: React.FC = () => {
   }, [hdEntries]);
 
   const hpQuickEdit = useHpQuickEdit(currentCharacter, evaluated?.hp.max ?? 0);
-  const wildShapeHpQuickEdit = useHpQuickEdit(currentCharacter, evaluated?.hp.max ?? 0, "wildShape");
 
   if (!currentCharacter || !evaluated) return null;
 
@@ -209,13 +208,6 @@ export const StatsTab: React.FC = () => {
     });
   };
 
-  const handleRevertWildShape = () => {
-    if (!currentCharacter) return;
-    updateCharacter(currentCharacter.id, {
-      activeWildShape: null,
-    });
-  };
-
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       {/* Rest Buttons Bar */}
@@ -238,72 +230,7 @@ export const StatsTab: React.FC = () => {
         />
       </View>
 
-      {/* Active Wild Shape Combat Banner */}
-      {currentCharacter.activeWildShape && (
-        <Card
-          style={{
-            padding: 14,
-            marginBottom: 16,
-            backgroundColor: theme.surfaceHighlight,
-            borderColor: theme.accentBorder,
-            borderWidth: 1.5,
-          }}>
-          <View style={{ flexDirection: "row", flexWrap: "wrap", alignItems: "center", gap: 6, marginBottom: 8 }}>
-            <Badge label="ACTIVE WILD SHAPE" variant="accent" size="sm" />
-            <Text style={{ flexShrink: 1, fontSize: 17, fontWeight: "700", color: theme.text }}>
-              {currentCharacter.activeWildShape.name}
-            </Text>
-            <Badge label={`AC ${currentCharacter.activeWildShape.ac}`} variant="secondary" size="sm" />
-          </View>
-
-          <HitPointBlock
-            label="WILD SHAPE HP"
-            currentHp={currentCharacter.activeWildShape.currentHp}
-            maxHp={currentCharacter.activeWildShape.maxHp}
-            numberProps={wildShapeHpQuickEdit.triggerProps}
-            amount={wildShapeHpAmount}
-            onAmountChange={setWildShapeHpAmount}
-            onDamage={() => wildShapeHpQuickEdit.apply({ kind: "damage", amount: parseInt(wildShapeHpAmount, 10) || 1 })}
-            onHeal={() => wildShapeHpQuickEdit.apply({ kind: "heal", amount: parseInt(wildShapeHpAmount, 10) || 1 })}
-          />
-
-          <Text style={{ color: theme.textSecondary, fontSize: 12, marginTop: 8 }}>
-            Damage reduces beast HP first. When the form drops, excess damage carries over to your normal HP.
-          </Text>
-
-          {/* Action Buttons: Inspect Beast & Revert */}
-          <View style={{ flexDirection: "row", gap: 8, marginTop: 12, flexWrap: "wrap" }}>
-            <Button
-              title="View Beast Attacks & Actions"
-              icon="flash-outline"
-              variant="outline"
-              size="sm"
-              style={{ flex: 1, minWidth: 160 }}
-              onPress={() => {
-                const b = findBeast(
-                  currentCharacter.activeWildShape!.name,
-                  currentCharacter.activeWildShape!.source
-                );
-                if (b) {
-                  setDetailModal({
-                    visible: true,
-                    title: b.name,
-                    subtitle: `CR ${b.cr} • ${b.size} ${b.type}`,
-                    content: `**AC**: ${b.ac}\n**HP**: ${b.hp.average} (${b.hp.formula})\n**Speed**: Walk ${b.speed.walk || 0}ft${b.speed.swim ? `, Swim ${b.speed.swim}ft` : ""}${b.speed.fly ? `, Fly ${b.speed.fly}ft` : ""}\n\n**STR** ${b.abilities.str} | **DEX** ${b.abilities.dex} | **CON** ${b.abilities.con} | **INT** ${b.abilities.int} | **WIS** ${b.abilities.wis} | **CHA** ${b.abilities.cha}\n\n${(b.traits || []).map((t) => `**${t.name}**: ${t.description}`).join("\n\n")}\n\n${(b.actions || []).map((a) => `**${a.name}**: ${a.description}`).join("\n\n")}`,
-                  });
-                }
-              }}
-            />
-            <Button
-              title="Revert"
-              icon="arrow-undo-outline"
-              variant="secondary"
-              size="sm"
-              onPress={handleRevertWildShape}
-            />
-          </View>
-        </Card>
-      )}
+      <ActiveWildShapeCard character={currentCharacter} />
 
       {/* Active Conditions Display */}
       {currentCharacter.conditions && currentCharacter.conditions.length > 0 && (
@@ -952,7 +879,6 @@ export const StatsTab: React.FC = () => {
 
       {/* Hit Points Quick Edit Modal */}
       <HpQuickEditModal {...hpQuickEdit.modalProps} />
-      <HpQuickEditModal {...wildShapeHpQuickEdit.modalProps} />
 
       {/* Condition Picker Modal */}
       <RNModal visible={conditionModalVisible} transparent animationType="slide">
