@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { StyleSheet, Text, TextInput, View } from "react-native";
 import { useAppTheme } from "../context/ThemeContext";
-import { damage, heal, HitPointState, parseAmount, setCurrentHp } from "../rules/hitPoints";
+import { damage, heal, HitPointPatch, HitPointState, parseAmount, setCurrentHp } from "../rules/hitPoints";
 import { Button } from "./ui/Button";
 import { Modal } from "./ui/Modal";
 
@@ -11,7 +11,7 @@ export interface HpQuickEditModalProps {
   currentHp: number;
   tempHp: number;
   maxHp: number;
-  onChange: (patch: HitPointState) => void;
+  onChange: (patch: HitPointPatch) => void;
 }
 
 /**
