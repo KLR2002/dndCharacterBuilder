@@ -6,12 +6,12 @@ import { useHpQuickEdit } from "../hooks/useHpQuickEdit";
 import { revertWildShape } from "../rules/wildShapeHp";
 import { findBeast } from "../services/dataService";
 import type { Character } from "../types/character";
-import { Badge } from "./ui/Badge";
-import { Button } from "./ui/Button";
-import { Card } from "./ui/Card";
 import { DetailModal } from "./DetailModal";
 import { HitPointBlock } from "./HitPointBlock";
 import { HpQuickEditModal } from "./HpQuickEditModal";
+import { Badge } from "./ui/Badge";
+import { Button } from "./ui/Button";
+import { Card } from "./ui/Card";
 
 export interface ActiveWildShapeCardProps {
   character: Character;
@@ -22,7 +22,9 @@ export interface ActiveWildShapeCardProps {
  * HP (edited through the shared HP box), the carry-over note, and the beast statblock and Revert
  * actions. Renders nothing when no form is active.
  */
-export const ActiveWildShapeCard: React.FC<ActiveWildShapeCardProps> = ({ character }) => {
+export const ActiveWildShapeCard: React.FC<ActiveWildShapeCardProps> = ({
+  character,
+}) => {
   const { updateCharacter } = useCharacters();
   const { theme } = useAppTheme();
 
@@ -62,10 +64,26 @@ export const ActiveWildShapeCard: React.FC<ActiveWildShapeCardProps> = ({ charac
           backgroundColor: theme.surfaceHighlight,
           borderColor: theme.accentBorder,
           borderWidth: 1.5,
-        }}>
-        <View style={{ flexDirection: "row", flexWrap: "wrap", alignItems: "center", gap: 6, marginBottom: 8 }}>
+        }}
+      >
+        <View
+          style={{
+            flexDirection: "row",
+            flexWrap: "wrap",
+            alignItems: "center",
+            gap: 6,
+            marginBottom: 8,
+          }}
+        >
           <Badge label="ACTIVE WILD SHAPE" variant="accent" size="sm" />
-          <Text style={{ flexShrink: 1, fontSize: 17, fontWeight: "700", color: theme.text }}>
+          <Text
+            style={{
+              flexShrink: 1,
+              fontSize: 17,
+              fontWeight: "700",
+              color: theme.text,
+            }}
+          >
             {shape.name}
           </Text>
           <Badge label={`AC ${shape.ac}`} variant="secondary" size="sm" />
@@ -79,16 +97,21 @@ export const ActiveWildShapeCard: React.FC<ActiveWildShapeCardProps> = ({ charac
           numberProps={hpQuickEdit.triggerProps}
           amount={hpAmount}
           onAmountChange={setHpAmount}
-          onDamage={() => hpQuickEdit.apply({ kind: "damage", amount: amount() })}
+          onDamage={() =>
+            hpQuickEdit.apply({ kind: "damage", amount: amount() })
+          }
           onHeal={() => hpQuickEdit.apply({ kind: "heal", amount: amount() })}
         />
 
-        <Text style={{ color: theme.textSecondary, fontSize: 12, marginTop: 8 }}>
-          Damage uses up the form temp HP first, then its HP. When the form drops, excess damage carries over to your normal HP.
-        </Text>
-
         {/* Action Buttons: Inspect Beast & Revert */}
-        <View style={{ flexDirection: "row", gap: 8, marginTop: 12, flexWrap: "wrap" }}>
+        <View
+          style={{
+            flexDirection: "row",
+            gap: 8,
+            marginTop: 12,
+            flexWrap: "wrap",
+          }}
+        >
           <Button
             title="View Beast Attacks & Actions"
             icon="flash-outline"
@@ -102,7 +125,9 @@ export const ActiveWildShapeCard: React.FC<ActiveWildShapeCardProps> = ({ charac
             icon="arrow-undo-outline"
             variant="secondary"
             size="sm"
-            onPress={() => updateCharacter(character.id, revertWildShape(character))}
+            onPress={() =>
+              updateCharacter(character.id, revertWildShape(character))
+            }
           />
         </View>
       </Card>
