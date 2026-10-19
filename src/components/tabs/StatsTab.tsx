@@ -17,6 +17,7 @@ import {
   spendHitDie,
   recoverHitDie,
 } from "../../rules/hitDice";
+import { damage, heal } from "../../rules/hitPoints";
 import { formatModifier } from "../../services/dndRules";
 import { evaluateCharacter } from "../../rules/characterEvaluation";
 import { AbilityKey } from "../../types/character";
@@ -122,26 +123,14 @@ export const StatsTab: React.FC = () => {
   const allConditions = getConditions();
 
   // HP Handlers
-  const applyDamage = (amount: number) => {
-    let temp = currentCharacter.tempHp;
-    let hp = currentCharacter.currentHp;
+  const hpState = { currentHp: currentCharacter.currentHp, tempHp: currentCharacter.tempHp };
 
-    if (temp > 0) {
-      if (amount <= temp) {
-        temp -= amount;
-        amount = 0;
-      } else {
-        amount -= temp;
-        temp = 0;
-      }
-    }
-    hp = Math.max(0, hp - amount);
-    updateCharacter(currentCharacter.id, { currentHp: hp, tempHp: temp });
+  const applyDamage = (amount: number) => {
+    updateCharacter(currentCharacter.id, damage(hpState, amount));
   };
 
   const applyHeal = (amount: number) => {
-    const newHp = Math.min(calculatedMaxHp, currentCharacter.currentHp + amount);
-    updateCharacter(currentCharacter.id, { currentHp: newHp });
+    updateCharacter(currentCharacter.id, heal(hpState, amount, calculatedMaxHp));
   };
 
   const setTempHp = () => {
