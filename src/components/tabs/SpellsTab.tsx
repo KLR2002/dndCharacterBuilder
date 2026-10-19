@@ -994,7 +994,7 @@ export const SpellsTab: React.FC = () => {
       {currentProfile.preparedLimit !== undefined && (
         <Card style={[styles.preparedCard, { borderColor: theme.border, backgroundColor: theme.surface }]}>
           <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
-            <View>
+            <View style={{ flex: 1, minWidth: 0 }}>
               <Text style={[styles.sectionTitle, { color: theme.text }]}>
                 {currentProfile.className.toUpperCase()} PREPARED SPELLS
               </Text>
@@ -1369,7 +1369,7 @@ export const SpellsTab: React.FC = () => {
 
       {/* Known / Prepared Spells Header */}
       <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-        <View>
+        <View style={{ flex: 1, minWidth: 0 }}>
           <Text style={[styles.sectionTitle, { color: theme.text }]}>
             {currentProfile.className === "Monk"
               ? "MONK KI SPELLS"

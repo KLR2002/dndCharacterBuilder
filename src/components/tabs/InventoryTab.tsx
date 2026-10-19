@@ -323,7 +323,7 @@ export const InventoryTab: React.FC = () => {
       {/* Weight Limit Toggle & Capacity Bar */}
       <Card style={styles.weightCard}>
         <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
-          <View>
+          <View style={{ flex: 1, minWidth: 0 }}>
             <Text style={[styles.sectionTitle, { color: theme.text }]}>CARRYING WEIGHT</Text>
             <Text style={{ color: theme.textSecondary, fontSize: 12 }}>
               Str × 15 = {maxCapacity} lbs capacity

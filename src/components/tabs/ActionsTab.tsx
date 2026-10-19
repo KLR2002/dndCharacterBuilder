@@ -82,7 +82,7 @@ export const ActionsTab: React.FC = () => {
       {/* Attack Count Banner */}
       <Card style={[styles.bannerCard, { borderColor: theme.accent }]}>
         <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
-          <View>
+          <View style={{ flex: 1, minWidth: 0 }}>
             <Text style={[styles.bannerTitle, { color: theme.accent }]}>
               ATTACK ACTION ({extraAttackCount} {extraAttackCount === 1 ? "Attack" : "Attacks"} per Action)
             </Text>

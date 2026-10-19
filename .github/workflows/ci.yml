@@ -25,3 +25,25 @@ jobs:
 
       - name: Run verification suite
         run: npm run check:all
+
+  layout:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Run layout check (integrated catalog)
+        run: npm run layout:check -- --integrated

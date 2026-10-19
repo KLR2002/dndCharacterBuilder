@@ -194,6 +194,7 @@ export const NewCharacterModal: React.FC<NewCharacterModalProps> = ({
                 styles.input,
                 {
                   flex: 2,
+                  minWidth: 0,
                   backgroundColor: theme.surfaceHighlight,
                   borderColor: theme.border,
                   color: theme.text,
@@ -209,6 +210,7 @@ export const NewCharacterModal: React.FC<NewCharacterModalProps> = ({
                 styles.input,
                 {
                   flex: 1,
+                  minWidth: 0,
                   backgroundColor: theme.surfaceHighlight,
                   borderColor: theme.border,
                   color: theme.text,
