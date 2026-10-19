@@ -121,6 +121,8 @@ export interface ActiveWildShape {
   currentHp: number;
   maxHp: number;
   ac: number;
+  /** Temporary HP held by the form. Absent on saves from before it existed, which counts as 0. */
+  tempHp?: number;
 }
 
 export interface Character {

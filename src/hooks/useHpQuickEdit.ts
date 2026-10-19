@@ -20,7 +20,7 @@ function characterPatch(character: Character, maxHp: number, { kind, amount }: H
 function wildShapePatch(character: Character, shape: ActiveWildShape, { kind, amount }: HpAction): WildShapeHpPatch {
   if (kind === "damage") return damageWildShape(character, amount);
   if (kind === "heal") return healWildShape(shape, amount);
-  return setWildShapeHp(shape, amount);
+  return setWildShapeHp(character, amount);
 }
 
 /**
