@@ -81,9 +81,11 @@ const styles = StyleSheet.create({
     alignSelf: "flex-start",
     alignItems: "center",
     justifyContent: "center",
+    maxWidth: "100%",
   },
   text: {
     fontWeight: "600",
     textTransform: "none",
+    flexShrink: 1,
   },
 });
