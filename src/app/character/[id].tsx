@@ -94,6 +94,7 @@ export default function CharacterSheetScreen() {
   const totalLevel = evaluated.totalLevel;
   const maxHp = evaluated.hp.max;
   const activeWildShape = currentCharacter.activeWildShape;
+  const formTempHp = activeWildShape?.tempHp ?? 0;
   const classSummary = (currentCharacter.classes || [])
     .map((c) => `${c.className} ${c.level}`)
     .join(" / ") || "Lvl 1";
@@ -178,6 +179,7 @@ export default function CharacterSheetScreen() {
                 {activeWildShape
                   ? `${activeWildShape.currentHp}/${activeWildShape.maxHp}`
                   : `${currentCharacter.currentHp}/${maxHp}`}
+                {formTempHp > 0 && <Text style={{ color: theme.tempHpYellow }}> +{formTempHp}</Text>}
               </Text>
             </TouchableOpacity>
 
