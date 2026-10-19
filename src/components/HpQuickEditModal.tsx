@@ -28,6 +28,15 @@ export const HpQuickEditModal: React.FC<HpQuickEditModalProps> = ({
 }) => {
   const { theme } = useAppTheme();
   const [amountInput, setAmountInput] = useState("1");
+
+  // Each opening starts from the default amount rather than the last typed value. Adjusting state
+  // while rendering (not in an effect) keeps this to one render when `visible` turns true.
+  const [wasVisible, setWasVisible] = useState(visible);
+  if (visible !== wasVisible) {
+    setWasVisible(visible);
+    if (visible) setAmountInput("1");
+  }
+
   const amount = parseAmount(amountInput);
   const valid = amount !== undefined;
   const state: HitPointState = { currentHp, tempHp };

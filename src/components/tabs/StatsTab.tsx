@@ -54,7 +54,7 @@ export const StatsTab: React.FC = () => {
 
   const [conditionModalVisible, setConditionModalVisible] = useState(false);
   const [restModalVisible, setRestModalVisible] = useState(false);
-  const [hpModalVisible, setHpModalVisible] = useState(false);
+  const [maxHpOverrideVisible, setMaxHpOverrideVisible] = useState(false);
   const [hpQuickEditVisible, setHpQuickEditVisible] = useState(false);
   const [detailModal, setDetailModal] = useState<{
     visible: boolean;
@@ -150,7 +150,7 @@ export const StatsTab: React.FC = () => {
     } else {
       updateCharacter(currentCharacter.id, { maxHpOverride: null });
     }
-    setHpModalVisible(false);
+    setMaxHpOverrideVisible(false);
   };
 
   // Conditions
@@ -426,7 +426,7 @@ export const StatsTab: React.FC = () => {
           <TouchableOpacity
             onPress={() => {
               setMaxHpOverrideInput(currentCharacter.maxHpOverride ? String(currentCharacter.maxHpOverride) : "");
-              setHpModalVisible(true);
+              setMaxHpOverrideVisible(true);
             }}
             style={[styles.hpEditBtn, { backgroundColor: theme.surfaceHighlight, borderColor: theme.border }]}>
             <Ionicons name="settings-outline" size={16} color={theme.textSecondary} />
@@ -1041,7 +1041,7 @@ export const StatsTab: React.FC = () => {
       </Card>
 
       {/* HP Override Settings Modal */}
-      <RNModal visible={hpModalVisible} transparent animationType="fade">
+      <RNModal visible={maxHpOverrideVisible} transparent animationType="fade">
         <View style={styles.modalOverlay}>
           <Card style={[styles.modalCard, { backgroundColor: theme.surface, borderColor: theme.border }]}>
             <Text style={[styles.sectionTitle, { color: theme.text, marginBottom: 12 }]}>
@@ -1062,7 +1062,7 @@ export const StatsTab: React.FC = () => {
               placeholderTextColor={theme.textMuted}
             />
             <View style={{ flexDirection: "row", justifyContent: "flex-end", gap: 10, marginTop: 16 }}>
-              <Button title="Cancel" variant="secondary" size="sm" onPress={() => setHpModalVisible(false)} />
+              <Button title="Cancel" variant="secondary" size="sm" onPress={() => setMaxHpOverrideVisible(false)} />
               <Button title="Save" variant="primary" size="sm" onPress={setMaxHpOverride} />
             </View>
           </Card>
