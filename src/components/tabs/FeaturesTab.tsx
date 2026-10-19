@@ -438,7 +438,7 @@ export const FeaturesTab: React.FC = () => {
       {/* Interactive Resource Counters Card */}
       <Card style={styles.countersCard}>
         <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-          <View>
+          <View style={{ flex: 1, minWidth: 0 }}>
             <Text style={[styles.sectionTitle, { color: theme.text }]}>RESOURCE TRACKERS</Text>
             <Text style={{ color: theme.textSecondary, fontSize: 12 }}>
               Charges reset on Short / Long Rest
