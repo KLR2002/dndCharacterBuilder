@@ -39,7 +39,7 @@ export const StartingGrantsSection: React.FC<StartingGrantsSectionProps> = ({
         {character.startingGrantsApplied && <Badge label="Claimed" variant="success" size="sm" />}
       </View>
 
-      <View style={{ flexDirection: "row", gap: 10 }}>
+      <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 10 }}>
         {(["equipment", "gold"] as const).map((opt) => {
           const active = character.startingOption === opt;
           return (
@@ -68,6 +68,7 @@ export const StartingGrantsSection: React.FC<StartingGrantsSectionProps> = ({
                   color: active ? theme.accent : theme.textSecondary,
                   fontWeight: "600",
                   fontSize: 13,
+                  flexShrink: 1,
                 }}
               >
                 {opt === "equipment" ? "🎒 Equipment" : "💰 Gold"}
@@ -81,17 +82,18 @@ export const StartingGrantsSection: React.FC<StartingGrantsSectionProps> = ({
       {character.startingGrantsApplied ? (
         <View
           style={{
-            flexDirection: isCompact ? "column" : "row",
-            alignItems: isCompact ? "stretch" : "center",
+            flexDirection: "row",
+            flexWrap: "wrap",
+            alignItems: "center",
             gap: 10,
             padding: 10,
             backgroundColor: theme.surfaceHighlight,
             borderRadius: 8,
           }}
         >
-          <View style={{ flexDirection: "row", alignItems: "center", gap: 10, flex: isCompact ? undefined : 1 }}>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 10, flexGrow: 1, flexShrink: 1, flexBasis: 220, minWidth: 0 }}>
             <Ionicons name="checkmark-circle" size={20} color={theme.success} />
-            <View style={{ flex: 1 }}>
+            <View style={{ flex: 1, minWidth: 0 }}>
               <Text style={{ color: theme.text, fontWeight: "700", fontSize: 13 }}>
                 Starting Grants Claimed ({character.startingOption === "gold" ? "Starting Gold" : "Starting Equipment"})
               </Text>
@@ -102,7 +104,7 @@ export const StartingGrantsSection: React.FC<StartingGrantsSectionProps> = ({
               </Text>
             </View>
           </View>
-          <View style={{ flexDirection: isCompact ? "column" : "row", gap: 8 }}>
+          <View style={{ flexDirection: "row", flexWrap: "wrap", flexShrink: 1, gap: 8 }}>
             <Button
               title={character.startingOption === "gold" ? "Switch to Equipment" : "Switch to Gold"}
               variant="outline"
@@ -111,14 +113,12 @@ export const StartingGrantsSection: React.FC<StartingGrantsSectionProps> = ({
                 if (character.startingOption === "gold") onClaimEquipment();
                 else onClaimGold();
               }}
-              style={isCompact ? { width: "100%" } : undefined}
             />
             <Button
               title={`Claim ${character.startingOption === "gold" ? "Gold" : "Equipment"} again`}
               variant="outline"
               size="sm"
               onPress={onClaimAgain}
-              style={isCompact ? { width: "100%" } : undefined}
             />
           </View>
         </View>

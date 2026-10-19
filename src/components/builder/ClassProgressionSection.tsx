@@ -741,7 +741,7 @@ export const ClassProgressionSection: React.FC<ClassProgressionSectionProps> = (
               <Card key={`${cl.name}__${cl.source}`}>
                 <View style={styles.row}>
                   <View style={{ flex: 1 }}>
-                    <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+                    <View style={{ flexDirection: "row", flexWrap: "wrap", alignItems: "center", gap: 6 }}>
                       <Text style={[styles.itemTitle, { color: theme.text }]}>{cl.name}</Text>
                       <Badge label={cl.hitDie} size="sm" />
                       {existing && <Badge label="Active" variant="accent" size="sm" />}
