@@ -268,14 +268,14 @@ export default function OptionsScreen() {
             }}
           >
             <View
-              style={{ flexDirection: "row", alignItems: "center", gap: 8 }}
+              style={{ flexDirection: "row", alignItems: "center", gap: 8, flex: 1, minWidth: 0 }}
             >
               <Ionicons
                 name="cloud-download-outline"
                 size={18}
                 color={theme.accent}
               />
-              <Text style={[styles.sectionHeading, { color: theme.text }]}>
+              <Text style={[styles.sectionHeading, { color: theme.text, flexShrink: 1 }]}>
                 5ETOOLS SOURCEBOOK INTEGRATION
               </Text>
             </View>
