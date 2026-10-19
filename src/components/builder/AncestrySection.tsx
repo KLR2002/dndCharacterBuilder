@@ -782,7 +782,7 @@ export const AncestrySection: React.FC<AncestrySectionProps> = ({
           onChangeText={setFeatSearch}
           placeholder="Search feats..."
         />
-        <ScrollView style={{ marginTop: 10, maxHeight: 450 }}>
+        <ScrollView style={{ marginTop: 10, maxHeight: 450 }} nestedScrollEnabled>
           <View style={{ gap: 8 }}>
             {allFeats
               .filter((f) => f.name.toLowerCase().includes(featSearch.toLowerCase()))
@@ -882,7 +882,7 @@ export const AncestrySection: React.FC<AncestrySectionProps> = ({
           onChangeText={setCantripSearch}
           placeholder="Search wizard cantrips..."
         />
-        <ScrollView style={{ marginTop: 10, maxHeight: 450 }}>
+        <ScrollView style={{ marginTop: 10, maxHeight: 450 }} nestedScrollEnabled>
           <View style={{ gap: 8 }}>
             {wizardCantrips
               .filter((s) => s.name.toLowerCase().includes(cantripSearch.toLowerCase()))

@@ -729,7 +729,7 @@ export const InventoryTab: React.FC = () => {
               </TouchableOpacity>
             </View>
 
-            <ScrollView style={{ maxHeight: 400 }}>
+            <ScrollView style={{ maxHeight: 400 }} nestedScrollEnabled>
               <Text style={styles.fieldLabel}>Item Name *</Text>
               <TextInput
                 style={[styles.input, { color: theme.text, backgroundColor: theme.surfaceHighlight, borderColor: theme.border }]}

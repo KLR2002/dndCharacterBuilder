@@ -136,7 +136,7 @@ export const WildShapeModal: React.FC<WildShapeModalProps> = ({
       }>
       {inspectedBeast ? (
         // ─── STATBLOCK INSPECTOR VIEW ─────────────────────────────────
-        <ScrollView style={{ maxHeight: 520 }} showsVerticalScrollIndicator={false}>
+        <ScrollView style={{ maxHeight: 520 }} showsVerticalScrollIndicator={false} nestedScrollEnabled>
           <View style={{ gap: 12, paddingBottom: 16 }}>
             {/* Header Badges */}
             <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6 }}>
@@ -496,7 +496,7 @@ export const WildShapeModal: React.FC<WildShapeModalProps> = ({
           </View>
 
           {/* Beast Items Scrollable List */}
-          <ScrollView style={{ maxHeight: 380 }} showsVerticalScrollIndicator={false}>
+          <ScrollView style={{ maxHeight: 380 }} showsVerticalScrollIndicator={false} nestedScrollEnabled>
             {filteredBeasts.length === 0 ? (
               <View style={{ alignItems: "center", paddingVertical: 32 }}>
                 <Ionicons name="paw-outline" size={36} color={theme.textMuted} />
