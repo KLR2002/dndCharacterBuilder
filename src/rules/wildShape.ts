@@ -91,19 +91,9 @@ export function getWildShapeLimits(character: Character): WildShapeLimits {
 
 /**
  * Evaluates whether a creature is a legally accessible Wild Shape form for a character.
+ * Which beasts exist is decided by the Compendium (active books); this applies only Wild Shape's own limits.
  */
-export function isBeastEligible(
-  beast: BeastData,
-  character: Character,
-  activeBooks?: string[]
-): boolean {
-  if (activeBooks && activeBooks.length > 0) {
-    const bookSet = new Set(activeBooks.map((b) => b.toLowerCase()));
-    if (!bookSet.has(beast.source.toLowerCase())) {
-      return false;
-    }
-  }
-
+export function isBeastEligible(beast: BeastData, character: Character): boolean {
   const limits = getWildShapeLimits(character);
   if (!limits.hasWildShape) {
     return false;
