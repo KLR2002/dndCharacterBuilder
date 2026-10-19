@@ -15,7 +15,6 @@ import { useResponsiveLayout } from "../../hooks/useResponsiveLayout";
 import {
   findClass,
   findRace,
-  findBeast,
   getBackgrounds,
   getClasses,
   getFeats,
@@ -37,6 +36,7 @@ import { Button } from "../ui/Button";
 import { Card } from "../ui/Card";
 import { DetailModal } from "../DetailModal";
 import { WildShapeModal } from "../WildShapeModal";
+import { ActiveWildShapeCard } from "../ActiveWildShapeCard";
 import { applyRuleChoice, findArtificerInfusion, getChosenInvocations, getKnownInfusions, replacedTraitNames, ruleChoiceId } from "../../rules/ruleChoices";
 import { ActiveInfusionsSection } from "../ActiveInfusionsSection";
 
@@ -419,30 +419,6 @@ export const FeaturesTab: React.FC = () => {
     });
   };
 
-  const handleRevertShape = () => {
-    if (!currentCharacter) return;
-    updateCharacter(currentCharacter.id, {
-      activeWildShape: null,
-    });
-  };
-
-  const updateWildShapeHp = (delta: number) => {
-    if (!currentCharacter?.activeWildShape) return;
-    const current = currentCharacter.activeWildShape.currentHp;
-    const max = currentCharacter.activeWildShape.maxHp;
-    const nextHp = current + delta;
-    if (nextHp <= 0) {
-      handleRevertShape();
-    } else {
-      updateCharacter(currentCharacter.id, {
-        activeWildShape: {
-          ...currentCharacter.activeWildShape,
-          currentHp: Math.min(max, nextHp),
-        },
-      });
-    }
-  };
-
   const handleToggleFavoriteBeast = (beastKey: string) => {
     if (!currentCharacter) return;
     const existing = new Set(currentCharacter.favoriteWildShapes || []);
@@ -616,107 +592,7 @@ export const FeaturesTab: React.FC = () => {
             </Card>
           )}
 
-          {/* Active Wild Shape Transformation Banner */}
-          {currentCharacter.activeWildShape && (
-            <Card
-              style={{
-                padding: 12,
-                marginTop: 10,
-                backgroundColor: theme.surfaceHighlight,
-                borderColor: theme.accentBorder,
-                borderWidth: 1.5,
-              }}>
-              <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", gap: 8 }}>
-                <View style={{ flex: 1 }}>
-                  <View style={{ flexDirection: "row", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
-                    <Badge label="ACTIVE FORM" variant="accent" size="sm" />
-                    <Text style={{ fontSize: 16, fontWeight: "700", color: theme.text }}>
-                      {currentCharacter.activeWildShape.name}
-                    </Text>
-                    <Badge label={`AC ${currentCharacter.activeWildShape.ac}`} variant="secondary" size="sm" />
-                  </View>
-                  <Text style={{ color: theme.textSecondary, fontSize: 12, marginTop: 4 }}>
-                    Damage reduces beast HP first. Drops when HP reaches 0.
-                  </Text>
-                </View>
-
-                {/* HP Stepper Controls */}
-                <View style={styles.counterStepper}>
-                  <TouchableOpacity
-                    onPress={() => updateWildShapeHp(-1)}
-                    hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-                    style={[styles.stepperBtn, { backgroundColor: theme.surfaceRaised }]}>
-                    <Ionicons name="remove" size={16} color={theme.text} />
-                  </TouchableOpacity>
-
-                  <View style={styles.counterCountBox}>
-                    <Text
-                      style={[
-                        styles.counterCurrent,
-                        {
-                          color:
-                            currentCharacter.activeWildShape.currentHp > 0
-                              ? theme.accent
-                              : theme.danger,
-                        },
-                      ]}>
-                      {currentCharacter.activeWildShape.currentHp}
-                    </Text>
-                    <Text style={{ color: theme.textSecondary, fontSize: 13 }}>
-                      {" "}
-                      / {currentCharacter.activeWildShape.maxHp}
-                    </Text>
-                  </View>
-
-                  <TouchableOpacity
-                    onPress={() => updateWildShapeHp(1)}
-                    disabled={currentCharacter.activeWildShape.currentHp >= currentCharacter.activeWildShape.maxHp}
-                    hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-                    style={[styles.stepperBtn, { backgroundColor: theme.surfaceRaised }]}>
-                    <Ionicons
-                      name="add"
-                      size={16}
-                      color={
-                        currentCharacter.activeWildShape.currentHp >= currentCharacter.activeWildShape.maxHp
-                          ? theme.textMuted
-                          : theme.text
-                      }
-                    />
-                  </TouchableOpacity>
-                </View>
-              </View>
-
-              {/* Action Buttons: Inspect & Revert */}
-              <View style={{ flexDirection: "row", gap: 8, marginTop: 10 }}>
-                <Button
-                  title="Inspect Beast Statblock"
-                  variant="secondary"
-                  size="sm"
-                  style={{ flex: 1 }}
-                  onPress={() => {
-                    const b = findBeast(
-                      currentCharacter.activeWildShape!.name,
-                      currentCharacter.activeWildShape!.source
-                    );
-                    if (b) {
-                      setDetailModal({
-                        visible: true,
-                        title: b.name,
-                        subtitle: `CR ${b.cr} • ${b.size} ${b.type}`,
-                        content: `**AC**: ${b.ac}\n**HP**: ${b.hp.average} (${b.hp.formula})\n**Speed**: Walk ${b.speed.walk || 0}ft${b.speed.swim ? `, Swim ${b.speed.swim}ft` : ""}${b.speed.fly ? `, Fly ${b.speed.fly}ft` : ""}\n\n**STR** ${b.abilities.str} | **DEX** ${b.abilities.dex} | **CON** ${b.abilities.con} | **INT** ${b.abilities.int} | **WIS** ${b.abilities.wis} | **CHA** ${b.abilities.cha}\n\n${(b.traits || []).map((t) => `**${t.name}**: ${t.description}`).join("\n\n")}\n\n${(b.actions || []).map((a) => `**${a.name}**: ${a.description}`).join("\n\n")}`,
-                      });
-                    }
-                  }}
-                />
-                <Button
-                  title="Revert to Normal"
-                  variant="secondary"
-                  size="sm"
-                  onPress={handleRevertShape}
-                />
-              </View>
-            </Card>
-          )}
+          <ActiveWildShapeCard character={currentCharacter} />
         </Card>
       )}
 
