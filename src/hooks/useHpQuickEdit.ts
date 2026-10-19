@@ -28,7 +28,7 @@ function wildShapePatch(character: Character, shape: ActiveWildShape, { kind, am
  * Spread `modalProps` onto <HpQuickEditModal /> and `triggerProps` onto the touchable.
  *
  * `maxHp` is the character's max HP and is used only for target "character". The "wildShape"
- * target reads the form's own HP, and it has no temp HP line.
+ * target reads the form's own HP and temp HP.
  *
  * `character` may be missing while the screen is still loading. Callers must pass max HP as a
  * number in that case too, and the modal must not be rendered until the character exists.
@@ -68,7 +68,7 @@ export function useHpQuickEdit(character: Character | null | undefined, maxHp: n
       title: beast ? "Wild Shape HP" : "Hit Points",
       currentHp: beast ? (shape?.currentHp ?? 0) : (character?.currentHp ?? 0),
       maxHp: beast ? (shape?.maxHp ?? 0) : maxHp,
-      tempHp: beast ? undefined : (character?.tempHp ?? 0),
+      tempHp: beast ? (shape?.tempHp ?? 0) : (character?.tempHp ?? 0),
       onAction,
     },
     triggerProps: {

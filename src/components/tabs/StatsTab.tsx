@@ -18,6 +18,7 @@ import {
   recoverHitDie,
 } from "../../rules/hitDice";
 import { damage, heal } from "../../rules/hitPoints";
+import { setWildShapeTempHp } from "../../rules/wildShapeHp";
 import { formatModifier } from "../../services/dndRules";
 import { evaluateCharacter } from "../../rules/characterEvaluation";
 import { AbilityKey } from "../../types/character";
@@ -142,7 +143,9 @@ export const StatsTab: React.FC = () => {
   const setTempHp = () => {
     const val = parseInt(tempHpAmount, 10);
     if (!isNaN(val) && val >= 0) {
-      updateCharacter(currentCharacter.id, { tempHp: val });
+      // While a form is active, temp HP goes on the form (see wildShapeHp.ts), not the character.
+      const patch = currentCharacter.activeWildShape ? setWildShapeTempHp(currentCharacter, val) : { tempHp: val };
+      updateCharacter(currentCharacter.id, patch);
       setTempHpAmount("");
     }
   };
