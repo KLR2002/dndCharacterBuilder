@@ -4,15 +4,16 @@
 
 **Blocked by:** 01
 
-**Status:** ready-for-agent
+**Status:** done
+**Landed:** a3509cb, check:all passed (811 app, 85 scraper). Enrichment script, 47 reviewed grant entries, 56 marks, matcher tightened, gate enforced. Decisions are in review-decisions.md and review.md; a Sonnet review found one error (Warrior Sidekick shields), fixed.
 
-- [ ] A scraper test scans the scraped data and fails, naming each feature, when a match is neither covered nor marked "reviewed, grants nothing".
-- [ ] The test passes on the tracked scraped data after the review.
-- [ ] The marks and the override entries hold names only, with no rule prose.
-- [ ] The review list of every decision (grant added, or marked grants nothing) with the feature name is written to `.scratch/proficiency-sheet/review.md` for the user.
-- [ ] Features that grant saving-throw proficiency (Diamond Soul and feats) are covered as saving-throw grants.
-- [ ] The gate has a unit test with invented features: it fails on an uncovered match and passes once covered or marked.
-- [ ] `dnd5eToolsScrap` tests and `npm run check:all` pass.
+- [x] A scraper test scans the scraped data and fails, naming each feature, when a match is neither covered nor marked "reviewed, grants nothing".
+- [x] The test passes on the tracked scraped data after the review.
+- [x] The marks and the override entries hold names only, with no rule prose.
+- [x] The review list of every decision (grant added, or marked grants nothing) with the feature name is written to `.scratch/proficiency-sheet/review.md` for the user.
+- [x] Features that grant saving-throw proficiency (Diamond Soul and feats) are covered as saving-throw grants.
+- [x] The gate has a unit test with invented features: it fails on an uncovered match and passes once covered or marked.
+- [x] `dnd5eToolsScrap` tests and `npm run check:all` pass.
 
 ## Approach (decided with the user)
 

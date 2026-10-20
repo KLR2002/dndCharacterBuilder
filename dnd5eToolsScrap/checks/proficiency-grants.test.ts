@@ -204,14 +204,24 @@ test("an override supplies grants for a feature the extractor could not parse, n
   assert.deepEqual(report.unparsed, []);
 });
 
-test("an override for a feature that does not exist is an error", () => {
-  const override: GrantOverride = {
-    owner: CIRCLE,
-    feature: "No Such Feature",
-    level: 3,
-    grants: [{ kind: "fixed", category: "armor", names: ["light armor"] }],
-  };
-  assert.throws(() => run([subject("You gain proficiency with lantern-maker's kit.")], [override]), /matches no feature/);
+test("an override for a feature the scrape does not include is ignored, so a partial scrape still runs", () => {
+  const overrides: GrantOverride[] = [
+    {
+      owner: "Sample Artificer",
+      feature: "Optional Rule: Firearm Proficiency",
+      level: 1,
+      grants: [{ kind: "fixed", category: "weapons", names: ["firearms"] }],
+    },
+    {
+      owner: CIRCLE,
+      feature: "No Such Feature",
+      level: 3,
+      grants: [{ kind: "fixed", category: "armor", names: ["light armor"] }],
+    },
+  ];
+  const { results, report } = run([subject("You gain proficiency with lantern-maker's kit.")], overrides);
+  assert.deepEqual(results[0].grants.map((g) => (g.kind === "fixed" ? g.names : null)), [["lantern-maker's kit"]]);
+  assert.deepEqual(report.unparsed, []);
 });
 
 test("race and background structured fields become grants with the same shape", () => {
@@ -266,4 +276,42 @@ test("the vocabulary matches saving-throw proficiency sentences, fixed and of-yo
 
 test("the vocabulary ignores prose with no proficiency or language mention", () => {
   assert.deepEqual(matchedSentences("You make a Dexterity saving throw. Nothing else changes."), []);
+});
+
+test("a sentence that only mentions the proficiency bonus is not a match", () => {
+  assert.deepEqual(matchedSentences("Your proficiency bonus is doubled for any check you make."), []);
+  assert.deepEqual(matchedSentences("Your attack bonus equals your proficiency bonus plus your Strength modifier."), []);
+  assert.deepEqual(
+    matchedSentences("Whenever the sample makes a check that includes its whole proficiency bonus, it treats a low roll as a ten."),
+    []
+  );
+});
+
+test("a saving throw DC or attack formula is not a match, even when it names the proficiency bonus", () => {
+  assert.deepEqual(matchedSentences("Save DC = 8 + your Wisdom modifier + your proficiency bonus."), []);
+  assert.deepEqual(matchedSentences("Sample attack modifier = your proficiency bonus + your Charisma modifier."), []);
+});
+
+test("a conditional reference to a proficiency the character already has is not a match", () => {
+  assert.deepEqual(matchedSentences("If you're proficient with lantern-maker's kit, you move quietly."), []);
+  assert.deepEqual(matchedSentences("If you are proficient with smith's tools, you may add them to checks."), []);
+  assert.deepEqual(matchedSentences("You can use any tool with which you have proficiency."), []);
+  assert.deepEqual(matchedSentences("You can use a weapon you are proficient with as a focus."), []);
+  assert.deepEqual(matchedSentences("You must be proficient with the kit to use it this way."), []);
+});
+
+test("a real grant beside a conditional reference is still a match", () => {
+  assert.deepEqual(matchedSentences("You gain proficiency with a weapon you are proficient with."), [
+    "You gain proficiency with a weapon you are proficient with",
+  ]);
+});
+
+test("a language the character knows, or sharing one, is not a match", () => {
+  assert.deepEqual(matchedSentences("You can share a language with your companion."), []);
+  assert.deepEqual(matchedSentences("You can write in the language you speak."), []);
+  assert.deepEqual(matchedSentences("You can translate a language you know."), []);
+});
+
+test("a real language grant is still a match", () => {
+  assert.deepEqual(matchedSentences("You learn two languages of your choice."), ["You learn two languages of your choice"]);
 });

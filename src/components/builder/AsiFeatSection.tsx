@@ -752,17 +752,17 @@ export const AsiFeatSection: React.FC<AsiFeatSectionProps> = ({
                 key={`${slotKey}_${idx}`}
                 style={[styles.featureRow, { borderColor: theme.border, flexDirection: "column", alignItems: "stretch", gap: 8 }]}
               >
-                <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
-                  <View style={{ flex: 1 }}>
-                    <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+                <View style={{ flexDirection: "row", flexWrap: "wrap", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
+                  <View style={{ flexGrow: 1, flexShrink: 1, maxWidth: "100%" }}>
+                    <View style={{ flexDirection: "row", flexWrap: "wrap", alignItems: "center", gap: 6 }}>
                       <Badge label={`${clsName} Lvl ${lvl}`} variant="accent" size="sm" />
-                      <Text style={{ color: theme.text, fontWeight: "600", fontSize: 13 }}>
+                      <Text style={{ color: theme.text, fontWeight: "600", fontSize: 13, flexShrink: 1, maxWidth: "100%" }}>
                         {isAsi ? "Ability Score Improvement" : sel.featName}
                       </Text>
                     </View>
                     <Text style={{ color: theme.textSecondary, fontSize: 12, marginTop: 2 }}>{summary}</Text>
                   </View>
-                  <View style={{ flexDirection: "row", gap: 6, alignItems: "center" }}>
+                  <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6, alignItems: "center" }}>
                     {!isAsi && (
                       <Button
                         title="Info"

@@ -198,7 +198,33 @@ function wizardCharacter() {
   });
 }
 
-// The seed the browser starts from: the three characters, folders, settings, and (integrated mode) the catalog.
+// A level 6 Half-Elf Fighter with an ability score improvement at level 4 and a feat (Grappler, with its
+// Info button) at level 6. The Race tab shows her language choice. In integrated mode the race has a subrace,
+// so its language heading is the long one ("Half-Elf (Moon Elf or Sun Elf Descent): Languages").
+const HALF_ELF_ID = "char_halfelf";
+function halfElfCharacter() {
+  const subrace = INTEGRATED ? { subraceName: "Moon Elf or Sun Elf Descent", subraceSource: "SCAG" } : {};
+  return makeChar({
+    id: HALF_ELF_ID,
+    name: "Dianain",
+    createdAt: 4,
+    updatedAt: 4,
+    startingOption: "equipment",
+    baseAbilityScores: { str: 13, dex: 14, con: 12, int: 10, wis: 12, cha: 14 },
+    race: { name: "Half-Elf", source: catalogSource("races", "Half-Elf"), ...subrace },
+    background: { name: "Acolyte", source: catalogSource("backgrounds", "Acolyte") },
+    classes: [{ className: "Fighter", source: catalogSource("classes", "Fighter"), level: 6 }],
+    currentHp: 30,
+    startingGrantsApplied: true,
+    backgroundGrantsApplied: true,
+    asiSelections: [
+      { level: 4, className: "Fighter", classLevel: 4, type: "asi", asi: { cha: 1, con: 1 } },
+      { level: 6, className: "Fighter", classLevel: 6, type: "feat", featName: "Grappler", featSource: catalogSource("feats", "Grappler") },
+    ],
+  });
+}
+
+// The seed the browser starts from: the characters, folders, settings, and (integrated mode) the catalog.
 function buildSeed() {
   const defaults = defaultSettings();
   return {
@@ -229,6 +255,7 @@ function buildSeed() {
         activeWildShape: { name: "Black Bear", source: "SRD", ac: 11, currentHp: 12, maxHp: 19, tempHp: 4 },
       }),
       wizardCharacter(),
+      halfElfCharacter(),
     ],
     folders: [],
     settings: {
@@ -265,9 +292,12 @@ function seedBrowser(s) {
 // title. `ready` (a string or regex) is text the screen shows once it is ready. `scrollTo` scrolls a needle into view.
 const RENDAR_ROUTE = `/character/${CHARACTER_ID}`;
 const WIZARD_ROUTE = `/character/${WIZARD_ID}`;
+const HALF_ELF_ROUTE = `/character/${HALF_ELF_ID}`;
 const SCREENS = [
   { name: "Builder Abilities", route: RENDAR_ROUTE, tabs: ["Builder", "Abilities"], ready: /points remaining/i },
   { name: "Builder Race", route: RENDAR_ROUTE, tabs: ["Builder", "Race"], ready: /traits:/i },
+  { name: "Builder Race language choice", route: HALF_ELF_ROUTE, tabs: ["Builder", "Race"], ready: /: Languages/, scrollTo: ": Languages" },
+  { name: "Builder Class feats", route: HALF_ELF_ROUTE, tabs: ["Builder", "Class"], ready: /Selected Ability Improvements/i, scrollTo: "Selected Ability Improvements" },
   { name: "Builder Background", route: RENDAR_ROUTE, tabs: ["Builder", "Background"], ready: /background benefits/i, scrollTo: "Claim again" },
   { name: "Builder Class", route: RENDAR_ROUTE, tabs: ["Builder", "Class"], ready: /total level/i, scrollTo: "Starting Equipment" },
   { name: "Stats", route: RENDAR_ROUTE, tabs: ["Stats"], ready: /hit points/i },
@@ -323,6 +353,50 @@ function findLayoutViolations(root) {
     if (pr.width > 0 && r.right > pr.right + 1) out.push(`sticks out of its parent by ${Math.round(r.right - pr.right)}px: "${label.slice(0, 40)}"`);
   }
   return [...new Set(out)];
+}
+
+// Runs in the browser. Native Text defaults to flexShrink 0 and the web's does not, so a title that wraps in
+// this web check runs into its badge, counter or button on a phone. Forces flexShrink 0 on the children of every
+// row (flex, space-between, two or more children) and tags those rows. Returns how many rows it tagged.
+function forceNoShrinkRows() {
+  let tagged = 0;
+  for (const row of document.querySelectorAll("*")) {
+    if (row.hasAttribute("data-noshrink") || row.children.length < 2) continue;
+    const cs = getComputedStyle(row);
+    if (cs.display !== "flex" || cs.flexDirection !== "row" || cs.justifyContent !== "space-between") continue;
+    row.setAttribute("data-noshrink", "");
+    for (const kid of row.children) {
+      kid.dataset.prevShrink = kid.style.flexShrink;
+      kid.style.flexShrink = "0";
+    }
+    tagged++;
+  }
+  return tagged;
+}
+
+// Runs in the browser. Undoes forceNoShrinkRows.
+function restoreNoShrinkRows() {
+  for (const row of document.querySelectorAll("[data-noshrink]")) {
+    row.removeAttribute("data-noshrink");
+    for (const kid of row.children) {
+      kid.style.flexShrink = kid.dataset.prevShrink ?? "";
+      delete kid.dataset.prevShrink;
+    }
+  }
+}
+
+// Checks the rows of the open page as native Text lays them out. Only Builder screens: the rows there are
+// the ones the sibling rule (CODING_STANDARDS section 7) covers.
+async function checkNoShrinkRows(page, screen) {
+  if (!screen.name.startsWith("Builder")) return [];
+  await page.evaluate(forceNoShrinkRows);
+  const out = [];
+  try {
+    for (const row of await page.$$("[data-noshrink]")) out.push(...(await page.evaluate(findLayoutViolations, row)));
+  } finally {
+    await page.evaluate(restoreNoShrinkRows);
+  }
+  return out.map((v) => `row, native text (flexShrink 0): ${v}`);
 }
 
 // Runs in the browser. The open modal dialog whose title is `title`, or null.
@@ -517,6 +591,7 @@ async function visitScreen(page, width, screen, state) {
   } else {
     violations = await page.evaluate(findLayoutViolations, null);
   }
+  violations = [...violations, ...(await checkNoShrinkRows(page, screen))];
   for (const v of violations) console.log(`${prefix} ${v}`);
   return violations.length;
 }

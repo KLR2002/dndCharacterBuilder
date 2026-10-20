@@ -1,4 +1,4 @@
-import { newProficiencyReport, resolveFeatureGrants, type GrantOverride } from "../parser/proficiency-grants.ts";
+import { newProficiencyReport, resolveFeatureGrants, unmatchedOverrides, type GrantOverride } from "../parser/proficiency-grants.ts";
 import { allRefs, classFeatureRefs, featRefs, type GrantRef, type TrackedClass, type TrackedData, type TrackedFeat } from "./subjects.ts";
 
 /** Reviewed overrides, one list per tracked file. Matches the shape of PROFICIENCY_GRANT_OVERRIDES. */
@@ -19,8 +19,18 @@ export interface TrackedFiles {
  * scraper. Nothing else on the data is touched.
  */
 export function enrichTrackedData(data: TrackedData, overrides: GrantOverrides): void {
-  applyGrants(classFeatureRefs(data.classes), overrides.classes);
-  applyGrants(featRefs(data.feats), overrides.feats);
+  const classes = classFeatureRefs(data.classes);
+  const feats = featRefs(data.feats);
+  // The tracked files hold every class and feat, so an override that names none of them is stale.
+  requireEveryOverridePlaced(classes, overrides.classes);
+  requireEveryOverridePlaced(feats, overrides.feats);
+  applyGrants(classes, overrides.classes);
+  applyGrants(feats, overrides.feats);
+}
+
+function requireEveryOverridePlaced(refs: GrantRef[], overrides: GrantOverride[]): void {
+  const [stale] = unmatchedOverrides(refs.map((ref) => ref.subject), overrides);
+  if (stale) throw new Error(`proficiency override matches no feature: ${stale.owner}|${stale.feature}|${stale.level}`);
 }
 
 /**

@@ -4,11 +4,12 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** done
+**Landed:** 98a427b, check:all passed (811 app, 52 scraper). The extractor covered 35 features; the rest went to the review ticket.
 
-- [ ] The scraped catalog carries `grants` on class features, subclass features and feats where the extractor is confident, and nothing on features it cannot parse.
-- [ ] The extractor reports the features whose prose matches the proficiency vocabulary but that it could not turn into grants (a list, not a failure).
-- [ ] The override file is read by the scraper and its entries are merged into the output; an entry for an unknown feature is an error.
-- [ ] Grant ids are stable across repeated scrapes of the same data.
-- [ ] Extractor tests use invented sentences, never real 5e prose, and cover each category, fixed grants, choices with a name pool, choices with a rule pool, and the "could not parse" report.
-- [ ] `dnd5eToolsScrap` tests and `npm run check:all` pass; `src/data/` and the tracked `dnd5eToolsScrap/data/` files are not edited by hand.
+- [x] The scraped catalog carries `grants` on class features, subclass features and feats where the extractor is confident, and nothing on features it cannot parse.
+- [x] The extractor reports the features whose prose matches the proficiency vocabulary but that it could not turn into grants (a list, not a failure).
+- [x] The override file is read by the scraper and its entries are merged into the output; an entry for an unknown feature is an error.
+- [x] Grant ids are stable across repeated scrapes of the same data.
+- [x] Extractor tests use invented sentences, never real 5e prose, and cover each category, fixed grants, choices with a name pool, choices with a rule pool, and the "could not parse" report.
+- [x] `dnd5eToolsScrap` tests and `npm run check:all` pass; `src/data/` and the tracked `dnd5eToolsScrap/data/` files are not edited by hand.

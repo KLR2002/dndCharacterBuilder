@@ -34,8 +34,8 @@ export const StartingGrantsSection: React.FC<StartingGrantsSectionProps> = ({
 
   return (
     <Card style={{ gap: 10 }}>
-      <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
-        <Text style={[styles.heading, { color: theme.text }]}>Starting Equipment & Gold:</Text>
+      <View style={{ flexDirection: "row", flexWrap: "wrap", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
+        <Text style={[styles.heading, { color: theme.text, flexShrink: 1 }]}>Starting Equipment & Gold:</Text>
         {character.startingGrantsApplied && <Badge label="Claimed" variant="success" size="sm" />}
       </View>
 

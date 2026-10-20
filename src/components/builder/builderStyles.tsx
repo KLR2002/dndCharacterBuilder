@@ -41,8 +41,8 @@ export const SkillPicker: React.FC<SkillPickerProps> = ({
 
   return (
     <View style={{ gap: 6 }}>
-      <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
-        <Text style={{ color: theme.text, fontWeight: "700", fontSize: 13 }}>{label}</Text>
+      <View style={pkStyles.headerRow}>
+        <Text style={[pkStyles.headerLabel, { color: theme.text }]}>{label}</Text>
         <Text style={{ color: remaining === 0 ? theme.accent : theme.warning, fontSize: 12, fontWeight: "600" }}>
           Picked {pickerChosen.length} / {choose}
         </Text>
@@ -105,8 +105,8 @@ export const RuleChoicePicker: React.FC<RuleChoicePickerProps> = ({
 
   return (
     <View style={{ gap: 6 }}>
-      <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
-        <Text style={{ color: theme.text, fontWeight: "700", fontSize: 13 }}>{label}</Text>
+      <View style={pkStyles.headerRow}>
+        <Text style={[pkStyles.headerLabel, { color: theme.text }]}>{label}</Text>
         <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
           {onClear && pickerChosen.length > 0 && (
             <TouchableOpacity onPress={onClear} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
@@ -158,6 +158,20 @@ export const RuleChoicePicker: React.FC<RuleChoicePickerProps> = ({
 };
 
 export const pkStyles = StyleSheet.create({
+  // A picker header: the label wraps inside the row, and the counter moves beneath it when there is no room.
+  headerRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "space-between",
+    alignItems: "center",
+    gap: 6,
+  },
+  headerLabel: {
+    flexShrink: 1,
+    maxWidth: "100%",
+    fontWeight: "700",
+    fontSize: 13,
+  },
   chip: {
     flexDirection: "row",
     alignItems: "center",
