@@ -4,7 +4,9 @@
 
 **Blocked by:** 04
 
-**Status:** ready-for-agent
+**Status:** done
+
+**Landed:** merged from `ps/05-choices` (b99baed, 5420831)
 
 - [ ] Picks are saved in a store keyed by grant id; a guard test fails if an existing grant id is renamed or disappears.
 - [ ] Old buckets are still read and are not rewritten.
