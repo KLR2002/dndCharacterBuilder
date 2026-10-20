@@ -12,6 +12,7 @@ import {
 import {
   getAvailableExpertiseMilestones,
   getMilestonePicks,
+  pruneInvalidExpertise,
   toggleExpertiseChoice,
 } from "../src/rules/expertise.ts";
 import type { Character } from "../src/types/character.ts";
@@ -357,4 +358,100 @@ test("background expertise: removing the background releases its Expertise pick 
     "Investigation Expertise removed: Investigation is no longer a proficient skill or tool",
     "Stealth Expertise removed: Stealth is no longer a proficient skill or tool",
   ]);
+});
+
+// --- Expertise reads the Proficiency Sheet (ticket 08) ---
+
+// A Fighter primary with Rogue as a second class. The Rogue's Thieves' Tools come from the
+// class grant only when Rogue is the primary class, so here only a held or added tool offers them.
+const multiclassRogue = (overrides: Partial<Character> = {}): Character =>
+  makeTestChar({
+    classes: [
+      { className: "Fighter", level: 4, source: "PHB" },
+      { className: "Rogue", level: 1, source: "PHB" },
+    ],
+    chosenSkills: ["Stealth", "Acrobatics"],
+    ...overrides,
+  });
+
+test("sheet tools: an Added Thieves' Tools is offered by the Rogue milestone", () => {
+  const char = multiclassRogue({ addedTools: ["Thieves' Tools"] });
+
+  const milestones = getAvailableExpertiseMilestones(char, { compendium: inMemoryCompendium({ classes }) });
+  assert.equal(milestones.length, 1);
+  assert.ok(milestones[0].options.includes("Thieves' Tools"));
+});
+
+test("sheet tools: an Added Thieves' Tools can be picked for Expertise", () => {
+  const catalogs = { compendium: inMemoryCompendium({ classes }) };
+  const char = toggleExpertiseChoice(multiclassRogue({ addedTools: ["Thieves' Tools"] }), "Thieves' Tools", catalogs);
+  assert.deepEqual(char.chosenExpertise, ["Thieves' Tools"]);
+});
+
+test("sheet tools: an added tool the Rogue milestone does not accept is not offered", () => {
+  const milestones = getAvailableExpertiseMilestones(multiclassRogue({ addedTools: ["Smith's Tools"] }), {
+    compendium: inMemoryCompendium({ classes }),
+  });
+  assert.ok(!milestones[0].options.includes("Smith's Tools"));
+  assert.ok(!milestones[0].options.includes("Thieves' Tools"), "no Thieves' Tools held");
+});
+
+test("sheet pruning: removing the Added tool releases its Expertise pick, leaving the feature 1 of 2", () => {
+  const compendium = inMemoryCompendium({ classes });
+  const kept = multiclassRogue({
+    addedTools: ["Thieves' Tools"],
+    chosenExpertise: ["Stealth", "Thieves' Tools"],
+  });
+  assert.deepEqual(pruneInvalidExpertise(kept, { compendium }).chosenExpertise, ["Stealth", "Thieves' Tools"]);
+
+  const lost = { ...kept, addedTools: [] };
+  const pruned = pruneInvalidExpertise(lost, { compendium });
+  assert.deepEqual(pruned.chosenExpertise, ["Stealth"]);
+  assert.deepEqual(pruned.needsReview, [
+    "Thieves' Tools Expertise removed: Thieves' Tools is no longer a proficient skill or tool",
+  ]);
+  const [rogue] = getMilestonePicks(getAvailableExpertiseMilestones(pruned, { compendium }), pruned.chosenExpertise);
+  assert.equal(rogue.milestone.count, 2);
+  assert.deepEqual(rogue.chosen, ["Stealth"], "one pick used of two");
+});
+
+test("reconcile: removing the Added tool releases its Expertise pick with a notice, leaving 1 of 2", () => {
+  const compendium = inMemoryCompendium({ classes });
+  const char = multiclassRogue({ addedTools: [], chosenExpertise: ["Stealth", "Thieves' Tools"] });
+
+  const pruned = reconcile(char, compendium);
+  assert.deepEqual(pruned.chosenExpertise, ["Stealth"]);
+  assert.deepEqual(pruned.needsReview, [
+    "Thieves' Tools Expertise removed: Thieves' Tools is no longer a proficient skill or tool",
+  ]);
+  const [rogue] = getMilestonePicks(getAvailableExpertiseMilestones(pruned, { compendium }), pruned.chosenExpertise);
+  assert.equal(rogue.chosen.length, 1);
+  assert.equal(rogue.milestone.count, 2);
+});
+
+test("reconcile: a returned proficiency is not re-marked for Expertise; the player decides", () => {
+  const compendium = inMemoryCompendium({ classes });
+  const released = reconcile(
+    multiclassRogue({ addedTools: [], chosenExpertise: ["Stealth", "Thieves' Tools"] }),
+    compendium,
+  );
+  const returned = { ...released, addedTools: ["Thieves' Tools"] };
+
+  const again = reconcile(returned, compendium);
+  assert.deepEqual(again.chosenExpertise, ["Stealth"]);
+  assert.equal(again.needsReview?.length, 1, "no new notice on the second pass");
+});
+
+test("reconcile: a valid character keeps its Expertise picks unchanged", () => {
+  const compendium = inMemoryCompendium({ classes });
+  const valid = multiclassRogue({
+    addedTools: ["Thieves' Tools"],
+    chosenExpertise: ["Stealth", "Thieves' Tools"],
+  });
+
+  assert.strictEqual(pruneInvalidExpertise(valid, { compendium }), valid);
+
+  const once = reconcile(valid, compendium);
+  assert.strictEqual(once.chosenExpertise, valid.chosenExpertise, "the picks are not rebuilt");
+  assert.deepStrictEqual(reconcile(once, compendium), once, "a settled character reconciles to the same value");
 });

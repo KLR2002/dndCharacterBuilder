@@ -3,7 +3,8 @@ import { effectiveScores, hasFeat } from "./abilities.ts";
 import { totalLevel } from "./proficiencies.ts";
 import { isCastingClass } from "./spellcasting.ts";
 import { getInnateSpellProfile } from "./innateMagic.ts";
-import { MULTICLASS_PROFICIENCIES } from "../constants/rules.ts";
+import { proficiencySheet } from "./proficiencySheet.ts";
+import type { CharacterCatalogs } from "./catalogs.ts";
 import { reconcile } from "./characterReconciler.ts";
 import { currentCompendium, type Compendium } from "../services/compendium.ts";
 
@@ -13,46 +14,12 @@ export interface FeatPrerequisiteResult {
 }
 
 export interface FeatPrerequisiteOptions {
+  /** The Compendium the armor prerequisite reads from the Proficiency Sheet. Defaults to the current one. */
+  catalogs?: CharacterCatalogs;
   effectiveScores?: AbilityScores;
   armorProficiencies?: string[];
   weaponProficiencies?: string[];
   totalLevel?: number;
-}
-
-/** Standard armor proficiencies derived directly from character classes without external data catalogs. */
-function getDerivedArmorProficiencies(character: Character): string[] {
-  const armors = new Set<string>();
-  for (const [index, c] of (character.classes || []).entries()) {
-    if (c.level < 1) continue;
-    if (index === 0) {
-      if (["Barbarian", "Cleric", "Druid"].includes(c.className)) {
-        armors.add("Light armor");
-        armors.add("Medium armor");
-        armors.add("Shields");
-      } else if (["Fighter", "Paladin"].includes(c.className)) {
-        armors.add("Light armor");
-        armors.add("Medium armor");
-        armors.add("Heavy armor");
-        armors.add("Shields");
-      } else if (["Bard", "Ranger", "Rogue", "Warlock"].includes(c.className)) {
-        armors.add("Light armor");
-        if (c.className === "Ranger") {
-          armors.add("Medium armor");
-          armors.add("Shields");
-        }
-      }
-    } else {
-      const mc = MULTICLASS_PROFICIENCIES[c.className]?.armor || [];
-      for (const a of mc) armors.add(a);
-    }
-  }
-  const race = character.race?.name || "";
-  const subrace = character.race?.subraceName || "";
-  if (subrace === "Mountain Dwarf" || race === "Mountain Dwarf" || race === "Githyanki") {
-    armors.add("Light armor");
-    armors.add("Medium armor");
-  }
-  return Array.from(armors);
 }
 
 /**
@@ -69,7 +36,7 @@ export function validateFeatPrerequisites(
 
   const scores = options.effectiveScores || effectiveScores(character).scores;
   const lvl = options.totalLevel ?? totalLevel(character);
-  const armors = options.armorProficiencies || getDerivedArmorProficiencies(character);
+  const armors = options.armorProficiencies ?? proficiencySheet(character, options.catalogs ?? {}).armor.map((armor) => armor.name);
   const raceName = (character.race?.name || "").toLowerCase();
   const subraceName = (character.race?.subraceName || "").toLowerCase();
 

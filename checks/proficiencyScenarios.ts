@@ -1,10 +1,12 @@
-import type { CharacterClass, Character } from "../src/types/character.ts";
+import type { Character, CharacterClass } from "../src/types/character.ts";
 import type { Compendium } from "../src/services/compendium.ts";
 import { integratedTestCompendium, makeChar, srdBaselineCompendium } from "./testUtils.ts";
 
 /**
- * The characterization scenarios shared by the recorder tests (proficiency sheet, saving throws). Each
- * scenario is a character builder per level; every level, book set and mode is recorded by the tests.
+ * The representative characters the Proficiency Sheet characterization tests record: each scenario is
+ * built at every level and in every book set, in SRD and integrated modes. Shared so that the tools
+ * and the weapons and armor baselines cover the same characters. Changing a label or a scenario
+ * changes its baseline rows, so both recorders must be re-run together.
  */
 
 export const LEVELS = [1, 3, 6, 11, 14, 17];
@@ -14,8 +16,9 @@ export const BOOK_SETS: (string[] | undefined)[] = [
   ["PHB", "XGE", "TCE", "FTD", "BGG", "SCAG", "DMG"],
 ];
 
+
 /** The book a base class is printed in: the Artificer is in Tasha's, every other class here is in the PHB. */
-export const classSourceOf = (className: string) => (className === "Artificer" ? "TCE" : "PHB");
+const classSourceOf = (className: string) => (className === "Artificer" ? "TCE" : "PHB");
 
 /** A class row. The last argument is the subclass's own book, which can differ from the class's. */
 export const cls = (className: string, level: number, subclassName?: string, subclassSource = "PHB"): CharacterClass => ({
@@ -260,11 +263,6 @@ export const SCENARIOS: { label: string; build: Build }[] = [
   },
 ];
 
-interface Recorded {
-  tools: string[];
-  expertise: string[];
-  languages: string[];
-}
 
 /**
  * The SRD Baseline's records all carry the source "SRD", and the readers look classes up by source,
@@ -294,3 +292,4 @@ export const MODES: [string, () => Compendium][] = [
   ["srd", srdBaselineCompendium],
   ["integrated", integratedTestCompendium],
 ];
+

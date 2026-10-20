@@ -1,10 +1,9 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync, writeFileSync } from "node:fs";
-import type { Character } from "../src/types/character.ts";
 import { evaluateCharacter } from "../src/rules/characterEvaluation.ts";
 import type { Compendium } from "../src/services/compendium.ts";
-import { BOOK_SETS, LEVELS, MODES, SCENARIOS, inMode } from "./proficiencyScenarios.ts";
+import { MODES, SCENARIOS, LEVELS, BOOK_SETS, inMode } from "./proficiencyScenarios.ts";
 
 /**
  * Regression net for the tools and languages a character shows. Every representative character,

@@ -2,7 +2,8 @@ import type { Character } from "../types/character.ts";
 import type { ClassFeatureData } from "../types/dnd5e.ts";
 import type { FeatureCatalog, FeatureInstance } from "./types.ts";
 import { getReplacedBaseFeatures } from "./optionalFeatures.ts";
-import { applyRuleChoice, replacedTraitNames, ruleChoiceId } from "./ruleChoices.ts";
+import { ruleChoiceId } from "./choices/types.ts";
+import { applyRuleChoice, replacedTraitNames } from "./raceRuleChoices.ts";
 import { raisedAbilityGrants } from "./proficiencyPools.ts";
 
 export function grantedFeatures(character: Character, catalog: FeatureCatalog): FeatureInstance[] {

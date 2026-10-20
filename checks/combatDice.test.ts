@@ -9,9 +9,10 @@ import {
 import { evaluateCharacter } from "../src/rules/characterEvaluation.ts";
 import { isMonkWeapon, getWeaponAttacks } from "../src/rules/attacks.ts";
 import type { Character } from "../src/types/character.ts";
-import { loadTestCatalog } from "./testUtils.ts";
+import { integratedTestCompendium, loadTestCatalog } from "./testUtils.ts";
 
 const classes = loadTestCatalog("classes");
+const compendium = integratedTestCompendium();
 
 function makeTestChar(overrides: Partial<Character> = {}): Character {
   return {
@@ -121,7 +122,7 @@ test("attacks: Monk upgrades unarmed strike and monk weapon damage to martial ar
     ],
   });
 
-  const attacks = getWeaponAttacks(monkChar, { classes });
+  const attacks = getWeaponAttacks(monkChar, { catalogs: { compendium } });
   const dagger = attacks.find((a) => a.name === "Dagger");
   assert.ok(dagger);
   assert.equal(dagger.statUsed, "dex");
@@ -146,7 +147,7 @@ test("attacks: Rogue weapons flag sneak attack eligibility with dice count", () 
     ],
   });
 
-  const attacks = getWeaponAttacks(rogueChar, { classes });
+  const attacks = getWeaponAttacks(rogueChar, { catalogs: { compendium } });
   const rapier = attacks.find((a) => a.name === "Rapier");
   assert.ok(rapier);
   assert.equal(rapier.isSneakAttackEligible, true);

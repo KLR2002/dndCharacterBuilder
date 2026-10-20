@@ -51,6 +51,8 @@ const WEAPON_NORMALIZATION_MAP: Record<string, string> = {
   javelins: "Javelins",
   trident: "Tridents",
   tridents: "Tridents",
+  scimitar: "Scimitars",
+  scimitars: "Scimitars",
   net: "Nets",
   nets: "Nets",
   blowgun: "Blowguns",
