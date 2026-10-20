@@ -230,10 +230,10 @@ export const BackgroundSection: React.FC<BackgroundSectionProps> = ({
 
                         {bgOriginFeat ? (
                           <View style={{ gap: 6 }}>
-                            <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
-                              <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+                            <View style={{ flexDirection: "row", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
+                              <View style={{ flexDirection: "row", alignItems: "center", gap: 6, flexShrink: 1 }}>
                                 <Ionicons name="checkmark-circle" size={16} color={theme.success} />
-                                <Text style={{ color: theme.success, fontSize: 12, fontWeight: "600" }}>
+                                <Text style={{ color: theme.success, fontSize: 12, fontWeight: "600", flexShrink: 1 }}>
                                   Feat Added to Character
                                 </Text>
                               </View>
@@ -388,8 +388,8 @@ export const BackgroundSection: React.FC<BackgroundSectionProps> = ({
                   value={customBgName}
                   onChangeText={setCustomBgName}
                 />
-                <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
-                  <Text style={{ color: theme.textSecondary, fontSize: 12, fontWeight: "600" }}>
+                <View style={{ flexDirection: "row", flexWrap: "wrap", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
+                  <Text style={{ color: theme.textSecondary, fontSize: 12, fontWeight: "600", flexShrink: 1 }}>
                     Select 2 Skill Proficiencies:
                   </Text>
                   <Text

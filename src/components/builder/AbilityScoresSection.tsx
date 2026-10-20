@@ -99,12 +99,14 @@ export const AbilityScoresSection: React.FC<AbilityScoresSectionProps> = ({
             {
               backgroundColor: theme.surfaceHighlight,
               flexDirection: "row",
+              flexWrap: "wrap",
               justifyContent: "space-between",
               alignItems: "center",
+              gap: 8,
             },
           ]}
         >
-          <Text style={{ color: theme.textSecondary, fontSize: 13 }}>
+          <Text style={{ color: theme.textSecondary, fontSize: 13, flexShrink: 1 }}>
             Points remaining:{" "}
             <Text
               style={{
