@@ -4,7 +4,9 @@
 
 **Blocked by:** 04
 
-**Status:** ready-for-agent
+**Status:** done
+
+**Landed:** merged from `ps/09-weapons-armor` (ecafc63). Open: the Artificer optional firearm rule applies to every Artificer; fixed in ticket 10's first commit.
 
 - [ ] A recorded baseline exists first; the only differences are newly applied grants, each listed.
 - [ ] Attack and AC rules that read weapon or armor proficiency use the sheet.
