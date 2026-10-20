@@ -9,7 +9,7 @@ import {
   getRaceLanguageGrant,
   getRaceToolGrant,
 } from "../../rules/proficienciesAndLanguages";
-import { proficiencySheet } from "../../rules/proficiencySheet";
+import { proficiencySheet, ruleGrantedSkills } from "../../rules/proficiencySheet";
 import { useCharacters } from "../../context/CharacterContext";
 import { useAppTheme } from "../../context/ThemeContext";
 import { findClass, findItem, getFeats } from "../../services/dataService";
@@ -27,11 +27,7 @@ import {
 import { reconcile } from "../../rules/characterReconciler";
 import { ancestryRuleChoices, offeredRuleChoices } from "../../rules/ruleChoices";
 import { getPendingLevelChoices } from "../../rules/leveling";
-import {
-  getAutoGrantedSkills,
-  getRacialSkillChoices,
-  normalizeSkillName,
-} from "../../rules/skills";
+import { getRacialSkillChoices, normalizeSkillName } from "../../rules/skills";
 import { getAvailableOptionalFeatures } from "../../rules/optionalFeatures";
 import { AbilityKey, Character, InventoryItem, SkillChoiceEntry } from "../../types/character";
 import { DetailModal } from "../DetailModal";
@@ -208,7 +204,7 @@ export const BuilderTab: React.FC<BuilderTabProps> = ({
   // ─────────────────────────────────────────────────────────────────────────
   // SKILLS, LANGUAGES & TOOLS
   // ─────────────────────────────────────────────────────────────────────────
-  const autoGrantedBase = getAutoGrantedSkills(character, { catalogs });
+  const autoGrantedBase = ruleGrantedSkills(character, catalogs);
 
   const chosenAncestryOption = (c: typeof character, catalog: typeof allRaces): string | undefined => {
     const entry = (c.ruleChoices ?? [])[0];

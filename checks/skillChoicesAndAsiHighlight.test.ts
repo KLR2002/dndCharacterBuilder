@@ -7,6 +7,7 @@ import {
   skills,
 } from "../src/rules/skills.ts";
 import { setChoiceRacialBonus } from "../src/rules/builderTransitions.ts";
+import { proficiencySheet } from "../src/rules/proficiencySheet.ts";
 import { applyAncestrySelection } from "../src/rules/ancestryEngine.ts";
 import type { RaceData, BackgroundData } from "../src/types/dnd5e.ts";
 
@@ -172,7 +173,7 @@ test("Race skill choices do not consume class skill choices and lock already gra
     ],
   });
 
-  const allSheetSkills = skills(char);
+  const allSheetSkills = skills(char, proficiencySheet(char, { compendium: inMemoryCompendium() }).skills);
   const proficient = allSheetSkills.filter((s) => s.isProficient).map((s) => s.name);
 
   // All 6 skills must be proficient

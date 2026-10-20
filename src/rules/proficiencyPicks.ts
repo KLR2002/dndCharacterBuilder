@@ -1,6 +1,7 @@
 import type { Character } from "../types/character.ts";
 import type { ProficiencyGrant } from "../types/dnd5e.ts";
 import type { Compendium } from "../services/compendium.ts";
+import { optionGrantApplies } from "./optionFeatureGrants.ts";
 
 /**
  * The reconciler's check on saved Proficiency Choice picks (ticket 05). It reads the Compendium and the
@@ -61,7 +62,9 @@ function ownerHeld(source: GrantSource, character: Character): boolean {
   return character.classes.some((c) => {
     if (c.className.toLowerCase() !== owner.className.toLowerCase()) return false;
     if (c.level < source.level) return false;
-    return owner.kind === "class" || (c.subclassName ?? "").toLowerCase() === owner.subclassName.toLowerCase();
+    if (owner.kind === "class") return true;
+    if ((c.subclassName ?? "").toLowerCase() !== owner.subclassName.toLowerCase()) return false;
+    return optionGrantApplies(character, { className: c.className, subclassName: c.subclassName }, { name: source.feature, level: source.level });
   });
 }
 

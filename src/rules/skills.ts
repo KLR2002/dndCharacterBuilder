@@ -184,47 +184,27 @@ export function getAutoGrantedSkills(
   return Array.from(granted);
 }
 
+/**
+ * The skill rows. Proficiency comes from the Proficiency Sheet's skills (ticket 11), passed in, so the
+ * card, Expertise and every other reader agree on which skills the character holds. Expertise and
+ * Jack of All Trades are decided here.
+ */
 export function skills(
   character: Character,
-  opts: ResolvedAncestry & {
-    backgrounds?: BackgroundData[];
-    races?: RaceData[];
-  } = {}
+  sheetSkills: readonly { name: string }[],
+  opts: ResolvedAncestry = {}
 ): SkillRow[] {
   const { modifiers } = effectiveScores(character, opts);
   const prof = proficiencyBonus(totalLevel(character));
   const jack = (character.classes || []).some((c) => c.className === "Bard" && c.level >= 2);
 
-  const proficientSkillNames = new Set<string>();
-
-  // 1. Chosen skills (normalized / case-insensitive)
-  for (const s of character.chosenSkills || []) {
-    const norm = normalizeSkillName(s);
-    if (norm) proficientSkillNames.add(norm);
-  }
-
-  // 2. Auto-granted skills (background, race fixed, traits, rule choices)
-  const autoGranted = getAutoGrantedSkills(character, opts);
-  for (const s of autoGranted) {
-    proficientSkillNames.add(s);
-  }
+  const proficientSkillNames = new Set(sheetSkills.map((entry) => normalizeSkillName(entry.name)));
 
   // Normalize chosen expertise
   const expertiseSkillNames = new Set<string>();
   for (const s of character.chosenExpertise || []) {
     const norm = normalizeSkillName(s);
     if (norm) expertiseSkillNames.add(norm);
-  }
-
-  // 5. Knowledge Domain Cleric (Blessings of Knowledge)
-  if (isKnowledgeCleric(character)) {
-    const KNOWLEDGE_SKILLS = ["Arcana", "History", "Nature", "Religion"];
-    for (const exp of character.chosenExpertise || []) {
-      const norm = normalizeSkillName(exp);
-      if (KNOWLEDGE_SKILLS.includes(norm)) {
-        proficientSkillNames.add(norm);
-      }
-    }
   }
 
   return DND_SKILLS.map((skill) => {

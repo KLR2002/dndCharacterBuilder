@@ -2,13 +2,14 @@ import type { Character } from "../types/character.ts";
 import type { ProficiencyCategory } from "../types/dnd5e.ts";
 import { RACE_WEAPON_PROFICIENCIES } from "../constants/rules.ts";
 import { catalogListings, type CharacterCatalogs } from "./catalogs.ts";
+import type { CompendiumListings } from "../services/compendium.ts";
 import { grantedFeatures } from "./grantedFeatures.ts";
 import {
   deduplicateWeaponProficiencies,
   normalizeArmorProficiency,
   proficiencies as classBaseProficiencies,
 } from "./proficiencies.ts";
-import type { FeatureInstance } from "./types.ts";
+import type { FeatureInstance, ResolvedAncestry } from "./types.ts";
 import {
   ALL_LANGUAGE_NAMES,
   ALL_TOOLS,
@@ -20,6 +21,11 @@ import {
 import { normalizeLanguageName, normalizeSavingThrowName, validPicks } from "./proficiencyPools.ts";
 import { ABILITY_NAMES } from "./abilities.ts";
 import { CLASS_DATA } from "./classData.ts";
+import { getAutoGrantedSkills, isKnowledgeCleric, normalizeSkillName } from "./skills.ts";
+import { resolveCharacterAncestry } from "./characterAncestry.ts";
+
+/** The Knowledge Domain's four skills. A Knowledge Cleric's Expertise on one of them has always made it proficient. */
+const KNOWLEDGE_SKILLS = ["Arcana", "History", "Nature", "Religion"];
 
 /** One entry on the Proficiency Sheet. Added Proficiencies are `ruleGranted: false`. */
 export interface SheetEntry {
@@ -39,6 +45,8 @@ export interface ProficiencySheet {
   weapons: SheetEntry[];
   /** Ability names, for example "Wisdom". Only the first class's saves are a base; the rest come from grants. */
   savingThrows: SheetEntry[];
+  /** Skill names in the spelling the rules use. Skills are never added by hand (ticket 11). */
+  skills: SheetEntry[];
 }
 
 /** One entry per name, the first spelling kept, matched case-insensitively. */
@@ -128,18 +136,58 @@ function legacyWeaponNames(character: Character): string[] {
   return Array.isArray(saved) ? saved.filter((name): name is string => typeof name === "string") : [];
 }
 
+/** The skills a character holds from the rules and the buckets that predate the sheet, not from a saved pick. */
+function legacySkillNames(
+  character: Character,
+  ancestry: ResolvedAncestry,
+  listings: CompendiumListings,
+  features: FeatureInstance[],
+): string[] {
+  return [
+    ...getAutoGrantedSkills(character, {
+      race: ancestry.race,
+      subrace: ancestry.subrace,
+      races: listings.races(),
+      backgrounds: listings.backgrounds(),
+    }),
+    ...fixedFeatureNames(features, "skills").map(normalizeSkillName),
+  ];
+}
+
+/** Knowledge Cleric Expertise on a Knowledge skill, which makes that skill proficient. */
+function knowledgeExpertiseSkills(character: Character): string[] {
+  if (!isKnowledgeCleric(character)) return [];
+  return (character.chosenExpertise ?? []).map(normalizeSkillName).filter((name) => KNOWLEDGE_SKILLS.includes(name));
+}
+
+function featuresOf(character: Character, listings: CompendiumListings): FeatureInstance[] {
+  return grantedFeatures(character, {
+    races: listings.races(),
+    classes: listings.classes(),
+    backgrounds: listings.backgrounds(),
+    feats: listings.feats(),
+  });
+}
+
+/**
+ * The skills a character holds from the rules alone: background, race and Rule Choice grants, and the
+ * fixed skill grants of the features the character has now. The builder lists these as already held,
+ * so a skill picked elsewhere cannot duplicate them.
+ */
+export function ruleGrantedSkills(character: Character, catalogs?: CharacterCatalogs): string[] {
+  const listings = catalogListings(catalogs);
+  const ancestry = resolveCharacterAncestry(character, listings.races());
+  return legacySkillNames(character, ancestry, listings, featuresOf(character, listings));
+}
+
 /**
  * The Proficiency Sheet. The catalog bundle is required: a call site must say which Compendium it
  * reads, because a default that means "no catalog" silently empties the lists (quick fix 04).
  */
 export function proficiencySheet(character: Character, catalogs: CharacterCatalogs): ProficiencySheet {
   const listings = catalogListings(catalogs);
-  const features = grantedFeatures(character, {
-    races: listings.races(),
-    classes: listings.classes(),
-    backgrounds: listings.backgrounds(),
-    feats: listings.feats(),
-  });
+  const features = featuresOf(character, listings);
+  const ancestry = resolveCharacterAncestry(character, listings.races());
 
   // Class base proficiencies (the first class's, and the multiclass table for the others), then the
   // multiclass proficiencies recorded on the character, then race training and the features' grants.
@@ -183,6 +231,13 @@ export function proficiencySheet(character: Character, catalogs: CharacterCatalo
     ...choicePickNames(features, character, "weapons"),
   ];
 
+  const skillNames = [
+    ...legacySkillNames(character, ancestry, listings, features),
+    ...(character.chosenSkills ?? []).map(normalizeSkillName),
+    ...choicePickNames(features, character, "skills"),
+    ...knowledgeExpertiseSkills(character),
+  ];
+
   const toolRules = sheetEntries(tools);
   const languageRules = sheetEntries(languages);
   return {
@@ -191,5 +246,6 @@ export function proficiencySheet(character: Character, catalogs: CharacterCatalo
     armor: sheetEntries(armorNames),
     weapons: sheetEntries(deduplicateWeaponProficiencies(weaponNames)),
     savingThrows,
+    skills: sheetEntries(skillNames),
   };
 }

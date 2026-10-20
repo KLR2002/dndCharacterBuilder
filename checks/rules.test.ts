@@ -150,7 +150,7 @@ test("initial armor/weapon/tool proficiencies differ from multiclass grants", ()
 });
 test("skills distinguish expertise and Jack of All Trades; passive trio and Observant", () => {
   const c = makeChar({ classes: [cl("Bard", 5)], baseAbilityScores: scores({ wis: 16, int: 14 }), chosenSkills: ["Perception", "Insight"], chosenExpertise: ["Perception"] });
-  const row = (name: string, char = c) => skills(char).find(x => x.name === name)!;
+  const row = (name: string, char = c) => skills(char, proficiencySheet(char, { compendium: inMemoryCompendium() }).skills).find(x => x.name === name)!;
   assert.equal(row("Perception").bonus, 9);
   assert.equal(row("Perception").isExpertise, true);
   assert.equal(row("Perception").isJackOfAllTrades, false);
@@ -218,7 +218,7 @@ test("skills includes racial and background proficiencies and matches case-insen
     chosenSkills: ["animal handling", "sleight of hand"], // Lowercase input!
   });
 
-  const skillList = skills(bugbearAcolyte);
+  const skillList = skills(bugbearAcolyte, proficiencySheet(bugbearAcolyte, { compendium: inMemoryCompendium() }).skills);
   const byName = (n: string) => skillList.find(s => s.name === n);
 
   // Bugbear trait
