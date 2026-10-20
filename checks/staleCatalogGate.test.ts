@@ -4,6 +4,7 @@ import { makeChar, srdBaselineCompendium } from "./testUtils.ts";
 import { choiceCatalogBundle } from "./choiceCatalogFixture.ts";
 import { INFUSION_FIXTURE_RECORDS } from "./infusionFixture.ts";
 import { createCompendium, type Compendium } from "../src/services/compendium.ts";
+import { REQUIRED_CATALOG_FORMAT } from "../src/services/compendiumStorage.ts";
 import { offeredRuleChoices } from "../src/rules/ruleChoices.ts";
 import { reconcile } from "../src/rules/characterReconciler.ts";
 import type { Character, RuleChoiceEntry } from "../src/types/character.ts";
@@ -74,6 +75,16 @@ const savedInfusionPicks = (): RuleChoiceEntry => ({
 test("the stale fixture is stale, and the current fixture is not", () => {
   assert.equal(staleCatalog().stale, true);
   assert.equal(currentCatalog().stale, false);
+});
+
+// Format 2 predates Proficiency Grants (ADR 0015): a catalog saved at it has no grants on its features,
+// so the Proficiency Sheet would show the old lists. It must be stale, so Settings asks for a re-sync.
+const PRE_GRANTS_FORMAT = 2;
+
+test("a catalog saved before Proficiency Grants is stale, and one at the required format is not", () => {
+  assert.ok(REQUIRED_CATALOG_FORMAT > PRE_GRANTS_FORMAT, "the required format is past the pre-grants format");
+  assert.equal(createCompendium(choiceCatalogBundle({ catalogFormat: PRE_GRANTS_FORMAT })).stale, true);
+  assert.equal(createCompendium(choiceCatalogBundle()).stale, false);
 });
 
 test("a stale catalog hides the Totem rows even though it holds their option records, and keeps saved picks", () => {

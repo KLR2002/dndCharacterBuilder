@@ -23,10 +23,7 @@ import {
   getWeaponAttacks,
   type WeaponAttackOption,
 } from "./attacks.ts";
-import {
-  resolveCharacterTools,
-  resolveCharacterLanguages,
-} from "./proficienciesAndLanguages.ts";
+import { proficiencySheet } from "./proficiencySheet.ts";
 import {
   evaluateCharacterTools,
   type EvaluatedTool,
@@ -177,9 +174,9 @@ export function evaluateCharacter(
     armorSet.add(normalizeArmorProficiency("Medium armor"));
   }
 
-  const toolList = resolveCharacterTools(character, catalogs ?? {});
-
-  const langList = resolveCharacterLanguages(character, catalogs ?? {});
+  const sheet = proficiencySheet(character, catalogs ?? {});
+  const toolList = sheet.tools.map((t) => t.name);
+  const langList = sheet.languages.map((l) => l.name);
 
   let extraAttackCount = 1;
   for (const c of character.classes || []) {
