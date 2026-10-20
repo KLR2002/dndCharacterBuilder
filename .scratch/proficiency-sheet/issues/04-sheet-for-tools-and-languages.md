@@ -6,16 +6,17 @@
 
 **Note:** Race, background and class starting proficiencies are not in the enriched `grants`; the sheet reads their existing structured model fields and adapts them into the grant shape.
 
-**Status:** ready-for-agent
+**Status:** done
+**Landed:** (see merge "proficiency ticket 04"), check:all passed (850 app, 85 scraper), layout:check green in both modes (implementer). 32 allowlisted new entries, each citing a grant id; catalog format 3. Left for later tickets: the Expertise picker still reads the structured resolver (08), legacy `languages` writers remain (contract), choice grants ignored (05), hand-add (06).
 
-- [ ] A recorded baseline of tools and languages for existing representative characters exists first, and the only differences after the change are newly applied grants, each listed.
-- [ ] The sheet reads race, background, class, subclass-feature and feat fixed grants, and applies level gating: a grant appears at its feature's level and disappears when the level, class, subclass, background or feat no longer applies.
-- [ ] Rule-granted entries cannot be removed by hand.
-- [ ] The card's tool and language lists read the sheet.
-- [ ] Without the Integrated Catalog, SRD characters get their grants from the baseline.
-- [ ] The catalog format number is increased and the stale gate test covers it.
-- [ ] Tests run at the sheet function with `makeChar()` and the catalog fixture, using invented rule names where fixtures need new rules.
-- [ ] `npm run check:all` passes.
+- [x] A recorded baseline of tools and languages for existing representative characters exists first, and the only differences after the change are newly applied grants, each listed.
+- [x] The sheet reads race, background, class, subclass-feature and feat fixed grants, and applies level gating: a grant appears at its feature's level and disappears when the level, class, subclass, background or feat no longer applies.
+- [x] Rule-granted entries cannot be removed by hand.
+- [x] The card's tool and language lists read the sheet.
+- [x] Without the Integrated Catalog, SRD characters get their grants from the baseline.
+- [x] The catalog format number is increased and the stale gate test covers it.
+- [x] Tests run at the sheet function with `makeChar()` and the catalog fixture, using invented rule names where fixtures need new rules.
+- [x] `npm run check:all` passes.
 
 ## Design notes (main session)
 
