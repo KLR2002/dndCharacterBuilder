@@ -177,8 +177,8 @@ export const ClassProgressionSection: React.FC<ClassProgressionSectionProps> = (
     <View style={styles.section}>
       {/* Total level card */}
       <Card highlight style={{ gap: 12 }}>
-        <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
-          <Text style={[styles.bannerTitle, { color: theme.text }]}>
+        <View style={{ flexDirection: "row", flexWrap: "wrap", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
+          <Text style={[styles.bannerTitle, { color: theme.text, flexShrink: 1 }]}>
             Total Level: <Text style={{ color: theme.accent }}>{totalLevel}</Text>
           </Text>
           <Badge label={`Prof +${Math.floor((totalLevel - 1) / 4) + 2}`} variant="accent" />
@@ -288,8 +288,8 @@ export const ClassProgressionSection: React.FC<ClassProgressionSectionProps> = (
         if (!isSrd && c.level >= req && (needsChoice || isChanging) && cd?.subclasses?.length) {
           return (
             <Card key={`sub_${c.className}`} style={{ gap: 8, borderColor: isChanging ? theme.accent : theme.warning }}>
-              <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
-                <Text style={{ color: isChanging ? theme.accent : theme.warning, fontWeight: "700", fontSize: 14 }}>
+              <View style={{ flexDirection: "row", flexWrap: "wrap", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
+                <Text style={{ color: isChanging ? theme.accent : theme.warning, fontWeight: "700", fontSize: 14, flexShrink: 1 }}>
                   {needsChoice ? "⚠️ " : ""}Choose Subclass for {c.className} (Level {c.level})
                 </Text>
                 {isChanging && (
