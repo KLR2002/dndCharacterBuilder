@@ -40,12 +40,12 @@ test("a fixed tool sentence becomes a fixed grant with a stable id", () => {
 
 test("a fixed list splits into one grant per category, and a lead-in clause is ignored", () => {
   const [result] = run([
-    subject("When you choose this circle at 3rd level, you gain proficiency with medium armor, shields, and martial weapons."),
+    subject("Once the Sample Circle is chosen at 3rd level, you gain proficiency with light armor, shields, and martial weapons."),
   ]).results;
   assert.deepEqual(
     result.grants.map((g) => [g.category, g.kind === "fixed" ? g.names : null]),
     [
-      ["armor", ["medium armor", "shields"]],
+      ["armor", ["light armor", "shields"]],
       ["weapons", ["martial weapons"]],
     ]
   );
@@ -53,7 +53,7 @@ test("a fixed list splits into one grant per category, and a lead-in clause is i
 
 test("a choice from a named list gives a count and a names pool", () => {
   const [result] = run([
-    subject("At 3rd level, you gain proficiency in two skills from the following list: Arcana, Insight, and Survival."),
+    subject("Once the Sample Circle is chosen at 3rd level, you gain proficiency in two skills from the following list: Arcana, Insight, and Survival."),
   ]).results;
   assert.deepEqual(result.grants, [
     {
@@ -129,9 +129,9 @@ test("learning languages of your choice is an any-language choice; learning name
   ]);
 });
 
-test("grants you proficiency in all saving throws is a fixed saving-throw grant", () => {
+test("a sample sentence granting proficiency in all saving throws is a fixed saving-throw grant", () => {
   const [result] = run([
-    subject("Beginning at 14th level, your mastery of ki grants you proficiency in all saving throws."),
+    subject("Once the Sample Circle is chosen at 14th level, you gain proficiency in all saving throws."),
   ]).results;
   assert.deepEqual(result.grants, [
     {
