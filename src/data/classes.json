@@ -456,7 +456,18 @@
           {
             "name": "Bonus Proficiencies",
             "level": 3,
-            "description": "When you join the College of Lore at 3rd level, you gain proficiency with three skills of your choice."
+            "description": "When you join the College of Lore at 3rd level, you gain proficiency with three skills of your choice.",
+            "grants": [
+              {
+                "id": "PHB/Bard/College of Lore/Bonus Proficiencies@3#0",
+                "kind": "choice",
+                "category": "skills",
+                "count": 3,
+                "pool": {
+                  "kind": "any"
+                }
+              }
+            ]
           },
           {
             "name": "Cutting Words",
@@ -739,7 +750,17 @@
           {
             "name": "Bonus Proficiency",
             "level": 1,
-            "description": "When you choose this domain at 1st level, you gain proficiency with heavy armor."
+            "description": "When you choose this domain at 1st level, you gain proficiency with heavy armor.",
+            "grants": [
+              {
+                "id": "PHB/Cleric/Life Domain/Bonus Proficiency@1#0",
+                "kind": "fixed",
+                "category": "armor",
+                "names": [
+                  "heavy armor"
+                ]
+              }
+            ]
           },
           {
             "name": "Disciple of Life",
@@ -874,7 +895,17 @@
         "name": "Druidic",
         "level": 1,
         "description": "You know Druidic, the secret language of druids. You can speak the language and use it to leave hidden messages. You and others who know this language automatically spot such a message. Others spot the message's presence with a successful DC 15 Wisdom (Perception) check but can't decipher it without magic.",
-        "isOptional": false
+        "isOptional": false,
+        "grants": [
+          {
+            "id": "PHB/Druid/Druidic@1#0",
+            "kind": "fixed",
+            "category": "languages",
+            "names": [
+              "Druidic"
+            ]
+          }
+        ]
       },
       {
         "name": "Spellcasting",
@@ -1733,7 +1764,22 @@
         "name": "Diamond Soul",
         "level": 14,
         "description": "Beginning at 14th level, your mastery of ki grants you proficiency in all saving throws.\n\nAdditionally, whenever you make a saving throw and fail, you can spend 1 ki point to reroll it and take the second result.",
-        "isOptional": false
+        "isOptional": false,
+        "grants": [
+          {
+            "id": "PHB/Monk/Diamond Soul@14#0",
+            "kind": "fixed",
+            "category": "savingThrows",
+            "names": [
+              "Strength",
+              "Dexterity",
+              "Constitution",
+              "Intelligence",
+              "Wisdom",
+              "Charisma"
+            ]
+          }
+        ]
       },
       {
         "name": "Timeless Body",
@@ -2168,13 +2214,35 @@
         "name": "Deft Explorer",
         "level": 1,
         "description": "*1st-level ranger optional feature, which replaces the Natural Explorer feature*\n\nYou are an unsurpassed explorer and survivor, both in the wilderness and in dealing with others on your travels. You gain the Canny benefit below, and you gain an additional benefit below when you reach 6th level and 10th level in this class.\n\n### Canny\n\n\nChoose one of your skill proficiencies. Your proficiency bonus is doubled for any ability check you make that uses the chosen skill.\n\nYou can also speak, read, and write two additional languages of your choice.",
-        "isOptional": true
+        "isOptional": true,
+        "grants": [
+          {
+            "id": "PHB/Ranger/Deft Explorer@1#0",
+            "kind": "choice",
+            "category": "languages",
+            "count": 2,
+            "pool": {
+              "kind": "any"
+            }
+          }
+        ]
       },
       {
         "name": "Favored Enemy",
         "level": 1,
         "description": "Beginning at 1st level, you have significant experience studying, tracking, hunting, and even talking to a certain type of enemy.\n\nChoose a type of favored enemy: aberrations, beasts, celestials, constructs, dragons, elementals, fey, fiends, giants, monstrosities, oozes, plants, or undead. Alternatively, you can select two races of humanoid (such as gnolls and orcs) as favored enemies.\n\nYou have advantage on Wisdom (Survival) checks to track your favored enemies, as well as on Intelligence checks to recall information about them.\n\nWhen you gain this feature, you also learn one language of your choice that is spoken by your favored enemies, if they speak one at all.\n\nYou choose one additional favored enemy, as well as an associated language, at 6th and 14th level. As you gain levels, your choices should reflect the types of monsters you have encountered on your adventures.",
-        "isOptional": false
+        "isOptional": false,
+        "grants": [
+          {
+            "id": "PHB/Ranger/Favored Enemy@1#0",
+            "kind": "choice",
+            "category": "languages",
+            "count": 1,
+            "pool": {
+              "kind": "any"
+            }
+          }
+        ]
       },
       {
         "name": "Favored Foe",
@@ -2252,7 +2320,18 @@
         "name": "Favored Enemy and Natural Explorer improvements",
         "level": 6,
         "description": "At 6th level, you gain an additional favored terrain.\n\nAt 6th level, you choose one additional favored enemy, as well as an associated language. Your choice should reflect the types of monsters you have encountered on your adventures.",
-        "isOptional": false
+        "isOptional": false,
+        "grants": [
+          {
+            "id": "PHB/Ranger/Favored Enemy and Natural Explorer improvements@6#0",
+            "kind": "choice",
+            "category": "languages",
+            "count": 1,
+            "pool": {
+              "kind": "any"
+            }
+          }
+        ]
       },
       {
         "name": "Ranger Archetype feature",
@@ -2312,7 +2391,18 @@
         "name": "Favored Enemy improvement",
         "level": 14,
         "description": "At 14th level, you choose one additional favored enemy, as well as an associated language. Your choice should reflect the types of monsters you have encountered on your adventures.",
-        "isOptional": false
+        "isOptional": false,
+        "grants": [
+          {
+            "id": "PHB/Ranger/Favored Enemy improvement@14#0",
+            "kind": "choice",
+            "category": "languages",
+            "count": 1,
+            "pool": {
+              "kind": "any"
+            }
+          }
+        ]
       },
       {
         "name": "Vanish",
@@ -2632,7 +2722,17 @@
         "name": "Slippery Mind",
         "level": 15,
         "description": "By 15th level, you have acquired greater mental strength. You gain proficiency in Wisdom saving throws.",
-        "isOptional": false
+        "isOptional": false,
+        "grants": [
+          {
+            "id": "PHB/Rogue/Slippery Mind@15#0",
+            "kind": "fixed",
+            "category": "savingThrows",
+            "names": [
+              "Wisdom"
+            ]
+          }
+        ]
       },
       {
         "name": "Ability Score Improvement",
@@ -2928,7 +3028,17 @@
           {
             "name": "Dragon Ancestor",
             "level": 1,
-            "description": "At 1st level, you choose one type of dragon as your ancestor. The damage type associated with each dragon is used by features you gain later.\n\n**Draconic Ancestry**\n\n\n| Dragon | Damage Type |\n\n| --- | --- |\n\n| Black | Acid |\n\n| Blue | Lightning |\n\n| Brass | Fire |\n\n| Bronze | Lightning |\n\n| Copper | Acid |\n\n| Gold | Fire |\n\n| Green | Poison |\n\n| Red | Fire |\n\n| Silver | Cold |\n\n| White | Cold |\n\nYou can speak, read, and write Draconic. Additionally, whenever you make a Charisma check when interacting with dragons, your proficiency bonus is doubled if it applies to the check."
+            "description": "At 1st level, you choose one type of dragon as your ancestor. The damage type associated with each dragon is used by features you gain later.\n\n**Draconic Ancestry**\n\n\n| Dragon | Damage Type |\n\n| --- | --- |\n\n| Black | Acid |\n\n| Blue | Lightning |\n\n| Brass | Fire |\n\n| Bronze | Lightning |\n\n| Copper | Acid |\n\n| Gold | Fire |\n\n| Green | Poison |\n\n| Red | Fire |\n\n| Silver | Cold |\n\n| White | Cold |\n\nYou can speak, read, and write Draconic. Additionally, whenever you make a Charisma check when interacting with dragons, your proficiency bonus is doubled if it applies to the check.",
+            "grants": [
+              {
+                "id": "PHB/Sorcerer/Draconic Bloodline/Dragon Ancestor@1#0",
+                "kind": "fixed",
+                "category": "languages",
+                "names": [
+                  "Draconic"
+                ]
+              }
+            ]
           },
           {
             "name": "Elemental Affinity",
