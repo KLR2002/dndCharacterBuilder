@@ -4,7 +4,9 @@
 
 **Blocked by:** 06, quick fix 04
 
-**Status:** ready-for-agent
+**Status:** done
+
+**Landed:** merged from `ps/08-expertise` (5ac4513). Tool Expertise stays Rogue-only (Thieves' Tools) by the milestone table; the race-choice code moved to `raceRuleChoices.ts` to break an import cycle.
 
 - [ ] Expertise options for Rogue, Bard, Knowledge Cleric, Ranger and Skill Expert include sheet proficiencies and Added tools.
 - [ ] Releasing a pick leaves the feature showing one fewer pick; nothing is re-marked later.
