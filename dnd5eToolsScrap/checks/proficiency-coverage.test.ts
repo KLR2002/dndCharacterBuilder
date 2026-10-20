@@ -6,9 +6,8 @@ import { describeGrant, notesSection, renderDecisionReview } from "../src/grants
 import type { TrackedData } from "../src/grants/subjects.ts";
 import { REVIEWED_GRANTS_NOTHING, type ReviewedFeature } from "../src/overrides/proficiency-grants.ts";
 
-// The tracked-data gate is switched on once the review is done: set this to true.
-// Until then it is skipped, so check:all stays green while the review list is open (see .scratch/proficiency-sheet/review.md).
-const GATE_ENFORCED = false;
+// The tracked-data gate is on: every matching feature is covered by grants or marked as granting nothing.
+const GATE_ENFORCED = true;
 
 // Every feature, sentence and name in the invented tests below is invented.
 

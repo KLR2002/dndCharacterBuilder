@@ -339,6 +339,8 @@ export const REVIEWED_GRANTS_NOTHING: ReviewedFeature[] = [
   { owner: "Spellcaster Sidekick", feature: "Sidekick Class", level: 1 },
   { owner: "Sorcerer/Aberrant Mind", feature: "Telepathic Speech", level: 1 },
   { owner: "Warlock/The Great Old One", feature: "Awakened Mind", level: 1 },
+  { owner: "Wizard/School of Divination", feature: "The Third Eye", level: 10 },
+  { owner: "Wizard/School of Transmutation", feature: "Transmuter's Stone", level: 6 },
   // Feats.
   { owner: "Feat", feature: "Great Weapon Master", level: 0 },
   { owner: "Feat", feature: "Initiate of High Sorcery", level: 0 },
