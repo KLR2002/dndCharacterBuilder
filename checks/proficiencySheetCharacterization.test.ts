@@ -234,6 +234,33 @@ const SCENARIOS: { label: string; build: Build }[] = [
       }),
   },
   {
+    label: "human fighter with the chef feat from level 4",
+    build: (l) =>
+      withClasses([cls("Fighter", l, "Champion")], {
+        race: race("Human"),
+        background: background("Acolyte"),
+        asiSelections: l >= 4 ? [{ level: 4, type: "feat", featName: "Chef", featSource: "TCE" }] : [],
+      }),
+  },
+  {
+    label: "human rogue with the poisoner feat from level 4",
+    build: (l) =>
+      withClasses([cls("Rogue", l, "Thief")], {
+        race: race("Human"),
+        background: background("Acolyte"),
+        asiSelections: l >= 4 ? [{ level: 4, type: "feat", featName: "Poisoner", featSource: "TCE" }] : [],
+      }),
+  },
+  {
+    label: "human sage with the chef origin feat",
+    build: (l) =>
+      withClasses([cls("Wizard", l, "School of Evocation")], {
+        race: race("Human"),
+        background: background("Sage"),
+        originFeats: [{ level: 1, type: "feat", featName: "Chef", featSource: "TCE" }],
+      }),
+  },
+  {
     label: "no race, background or class",
     build: () => makeChar(),
   },

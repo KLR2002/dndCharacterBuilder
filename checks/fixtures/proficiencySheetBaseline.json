@@ -4799,6 +4799,420 @@
    "Infernal"
   ]
  },
+ "srd | human fighter with the chef feat from level 4 | L1 | books=all": {
+  "tools": [],
+  "expertise": [],
+  "languages": [
+   "Common"
+  ]
+ },
+ "srd | human fighter with the chef feat from level 4 | L1 | books=PHB": {
+  "tools": [],
+  "expertise": [],
+  "languages": [
+   "Common"
+  ]
+ },
+ "srd | human fighter with the chef feat from level 4 | L1 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
+  "tools": [],
+  "expertise": [],
+  "languages": [
+   "Common"
+  ]
+ },
+ "srd | human fighter with the chef feat from level 4 | L3 | books=all": {
+  "tools": [],
+  "expertise": [],
+  "languages": [
+   "Common"
+  ]
+ },
+ "srd | human fighter with the chef feat from level 4 | L3 | books=PHB": {
+  "tools": [],
+  "expertise": [],
+  "languages": [
+   "Common"
+  ]
+ },
+ "srd | human fighter with the chef feat from level 4 | L3 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
+  "tools": [],
+  "expertise": [],
+  "languages": [
+   "Common"
+  ]
+ },
+ "srd | human fighter with the chef feat from level 4 | L6 | books=all": {
+  "tools": [],
+  "expertise": [],
+  "languages": [
+   "Common"
+  ]
+ },
+ "srd | human fighter with the chef feat from level 4 | L6 | books=PHB": {
+  "tools": [],
+  "expertise": [],
+  "languages": [
+   "Common"
+  ]
+ },
+ "srd | human fighter with the chef feat from level 4 | L6 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
+  "tools": [],
+  "expertise": [],
+  "languages": [
+   "Common"
+  ]
+ },
+ "srd | human fighter with the chef feat from level 4 | L11 | books=all": {
+  "tools": [],
+  "expertise": [],
+  "languages": [
+   "Common"
+  ]
+ },
+ "srd | human fighter with the chef feat from level 4 | L11 | books=PHB": {
+  "tools": [],
+  "expertise": [],
+  "languages": [
+   "Common"
+  ]
+ },
+ "srd | human fighter with the chef feat from level 4 | L11 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
+  "tools": [],
+  "expertise": [],
+  "languages": [
+   "Common"
+  ]
+ },
+ "srd | human fighter with the chef feat from level 4 | L14 | books=all": {
+  "tools": [],
+  "expertise": [],
+  "languages": [
+   "Common"
+  ]
+ },
+ "srd | human fighter with the chef feat from level 4 | L14 | books=PHB": {
+  "tools": [],
+  "expertise": [],
+  "languages": [
+   "Common"
+  ]
+ },
+ "srd | human fighter with the chef feat from level 4 | L14 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
+  "tools": [],
+  "expertise": [],
+  "languages": [
+   "Common"
+  ]
+ },
+ "srd | human fighter with the chef feat from level 4 | L17 | books=all": {
+  "tools": [],
+  "expertise": [],
+  "languages": [
+   "Common"
+  ]
+ },
+ "srd | human fighter with the chef feat from level 4 | L17 | books=PHB": {
+  "tools": [],
+  "expertise": [],
+  "languages": [
+   "Common"
+  ]
+ },
+ "srd | human fighter with the chef feat from level 4 | L17 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
+  "tools": [],
+  "expertise": [],
+  "languages": [
+   "Common"
+  ]
+ },
+ "srd | human rogue with the poisoner feat from level 4 | L1 | books=all": {
+  "tools": [
+   "Thieves' Tools"
+  ],
+  "expertise": [],
+  "languages": [
+   "Common"
+  ]
+ },
+ "srd | human rogue with the poisoner feat from level 4 | L1 | books=PHB": {
+  "tools": [
+   "Thieves' Tools"
+  ],
+  "expertise": [],
+  "languages": [
+   "Common"
+  ]
+ },
+ "srd | human rogue with the poisoner feat from level 4 | L1 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
+  "tools": [
+   "Thieves' Tools"
+  ],
+  "expertise": [],
+  "languages": [
+   "Common"
+  ]
+ },
+ "srd | human rogue with the poisoner feat from level 4 | L3 | books=all": {
+  "tools": [
+   "Thieves' Tools"
+  ],
+  "expertise": [],
+  "languages": [
+   "Common"
+  ]
+ },
+ "srd | human rogue with the poisoner feat from level 4 | L3 | books=PHB": {
+  "tools": [
+   "Thieves' Tools"
+  ],
+  "expertise": [],
+  "languages": [
+   "Common"
+  ]
+ },
+ "srd | human rogue with the poisoner feat from level 4 | L3 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
+  "tools": [
+   "Thieves' Tools"
+  ],
+  "expertise": [],
+  "languages": [
+   "Common"
+  ]
+ },
+ "srd | human rogue with the poisoner feat from level 4 | L6 | books=all": {
+  "tools": [
+   "Thieves' Tools"
+  ],
+  "expertise": [],
+  "languages": [
+   "Common"
+  ]
+ },
+ "srd | human rogue with the poisoner feat from level 4 | L6 | books=PHB": {
+  "tools": [
+   "Thieves' Tools"
+  ],
+  "expertise": [],
+  "languages": [
+   "Common"
+  ]
+ },
+ "srd | human rogue with the poisoner feat from level 4 | L6 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
+  "tools": [
+   "Thieves' Tools"
+  ],
+  "expertise": [],
+  "languages": [
+   "Common"
+  ]
+ },
+ "srd | human rogue with the poisoner feat from level 4 | L11 | books=all": {
+  "tools": [
+   "Thieves' Tools"
+  ],
+  "expertise": [],
+  "languages": [
+   "Common"
+  ]
+ },
+ "srd | human rogue with the poisoner feat from level 4 | L11 | books=PHB": {
+  "tools": [
+   "Thieves' Tools"
+  ],
+  "expertise": [],
+  "languages": [
+   "Common"
+  ]
+ },
+ "srd | human rogue with the poisoner feat from level 4 | L11 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
+  "tools": [
+   "Thieves' Tools"
+  ],
+  "expertise": [],
+  "languages": [
+   "Common"
+  ]
+ },
+ "srd | human rogue with the poisoner feat from level 4 | L14 | books=all": {
+  "tools": [
+   "Thieves' Tools"
+  ],
+  "expertise": [],
+  "languages": [
+   "Common"
+  ]
+ },
+ "srd | human rogue with the poisoner feat from level 4 | L14 | books=PHB": {
+  "tools": [
+   "Thieves' Tools"
+  ],
+  "expertise": [],
+  "languages": [
+   "Common"
+  ]
+ },
+ "srd | human rogue with the poisoner feat from level 4 | L14 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
+  "tools": [
+   "Thieves' Tools"
+  ],
+  "expertise": [],
+  "languages": [
+   "Common"
+  ]
+ },
+ "srd | human rogue with the poisoner feat from level 4 | L17 | books=all": {
+  "tools": [
+   "Thieves' Tools"
+  ],
+  "expertise": [],
+  "languages": [
+   "Common"
+  ]
+ },
+ "srd | human rogue with the poisoner feat from level 4 | L17 | books=PHB": {
+  "tools": [
+   "Thieves' Tools"
+  ],
+  "expertise": [],
+  "languages": [
+   "Common"
+  ]
+ },
+ "srd | human rogue with the poisoner feat from level 4 | L17 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
+  "tools": [
+   "Thieves' Tools"
+  ],
+  "expertise": [],
+  "languages": [
+   "Common"
+  ]
+ },
+ "srd | human sage with the chef origin feat | L1 | books=all": {
+  "tools": [],
+  "expertise": [],
+  "languages": [
+   "Common"
+  ]
+ },
+ "srd | human sage with the chef origin feat | L1 | books=PHB": {
+  "tools": [],
+  "expertise": [],
+  "languages": [
+   "Common"
+  ]
+ },
+ "srd | human sage with the chef origin feat | L1 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
+  "tools": [],
+  "expertise": [],
+  "languages": [
+   "Common"
+  ]
+ },
+ "srd | human sage with the chef origin feat | L3 | books=all": {
+  "tools": [],
+  "expertise": [],
+  "languages": [
+   "Common"
+  ]
+ },
+ "srd | human sage with the chef origin feat | L3 | books=PHB": {
+  "tools": [],
+  "expertise": [],
+  "languages": [
+   "Common"
+  ]
+ },
+ "srd | human sage with the chef origin feat | L3 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
+  "tools": [],
+  "expertise": [],
+  "languages": [
+   "Common"
+  ]
+ },
+ "srd | human sage with the chef origin feat | L6 | books=all": {
+  "tools": [],
+  "expertise": [],
+  "languages": [
+   "Common"
+  ]
+ },
+ "srd | human sage with the chef origin feat | L6 | books=PHB": {
+  "tools": [],
+  "expertise": [],
+  "languages": [
+   "Common"
+  ]
+ },
+ "srd | human sage with the chef origin feat | L6 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
+  "tools": [],
+  "expertise": [],
+  "languages": [
+   "Common"
+  ]
+ },
+ "srd | human sage with the chef origin feat | L11 | books=all": {
+  "tools": [],
+  "expertise": [],
+  "languages": [
+   "Common"
+  ]
+ },
+ "srd | human sage with the chef origin feat | L11 | books=PHB": {
+  "tools": [],
+  "expertise": [],
+  "languages": [
+   "Common"
+  ]
+ },
+ "srd | human sage with the chef origin feat | L11 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
+  "tools": [],
+  "expertise": [],
+  "languages": [
+   "Common"
+  ]
+ },
+ "srd | human sage with the chef origin feat | L14 | books=all": {
+  "tools": [],
+  "expertise": [],
+  "languages": [
+   "Common"
+  ]
+ },
+ "srd | human sage with the chef origin feat | L14 | books=PHB": {
+  "tools": [],
+  "expertise": [],
+  "languages": [
+   "Common"
+  ]
+ },
+ "srd | human sage with the chef origin feat | L14 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
+  "tools": [],
+  "expertise": [],
+  "languages": [
+   "Common"
+  ]
+ },
+ "srd | human sage with the chef origin feat | L17 | books=all": {
+  "tools": [],
+  "expertise": [],
+  "languages": [
+   "Common"
+  ]
+ },
+ "srd | human sage with the chef origin feat | L17 | books=PHB": {
+  "tools": [],
+  "expertise": [],
+  "languages": [
+   "Common"
+  ]
+ },
+ "srd | human sage with the chef origin feat | L17 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
+  "tools": [],
+  "expertise": [],
+  "languages": [
+   "Common"
+  ]
+ },
  "srd | no race, background or class | L1 | books=all": {
   "tools": [],
   "expertise": [],
@@ -10221,6 +10635,420 @@
    "Common",
    "Elvish",
    "Infernal"
+  ]
+ },
+ "integrated | human fighter with the chef feat from level 4 | L1 | books=all": {
+  "tools": [],
+  "expertise": [],
+  "languages": [
+   "Common"
+  ]
+ },
+ "integrated | human fighter with the chef feat from level 4 | L1 | books=PHB": {
+  "tools": [],
+  "expertise": [],
+  "languages": [
+   "Common"
+  ]
+ },
+ "integrated | human fighter with the chef feat from level 4 | L1 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
+  "tools": [],
+  "expertise": [],
+  "languages": [
+   "Common"
+  ]
+ },
+ "integrated | human fighter with the chef feat from level 4 | L3 | books=all": {
+  "tools": [],
+  "expertise": [],
+  "languages": [
+   "Common"
+  ]
+ },
+ "integrated | human fighter with the chef feat from level 4 | L3 | books=PHB": {
+  "tools": [],
+  "expertise": [],
+  "languages": [
+   "Common"
+  ]
+ },
+ "integrated | human fighter with the chef feat from level 4 | L3 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
+  "tools": [],
+  "expertise": [],
+  "languages": [
+   "Common"
+  ]
+ },
+ "integrated | human fighter with the chef feat from level 4 | L6 | books=all": {
+  "tools": [],
+  "expertise": [],
+  "languages": [
+   "Common"
+  ]
+ },
+ "integrated | human fighter with the chef feat from level 4 | L6 | books=PHB": {
+  "tools": [],
+  "expertise": [],
+  "languages": [
+   "Common"
+  ]
+ },
+ "integrated | human fighter with the chef feat from level 4 | L6 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
+  "tools": [],
+  "expertise": [],
+  "languages": [
+   "Common"
+  ]
+ },
+ "integrated | human fighter with the chef feat from level 4 | L11 | books=all": {
+  "tools": [],
+  "expertise": [],
+  "languages": [
+   "Common"
+  ]
+ },
+ "integrated | human fighter with the chef feat from level 4 | L11 | books=PHB": {
+  "tools": [],
+  "expertise": [],
+  "languages": [
+   "Common"
+  ]
+ },
+ "integrated | human fighter with the chef feat from level 4 | L11 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
+  "tools": [],
+  "expertise": [],
+  "languages": [
+   "Common"
+  ]
+ },
+ "integrated | human fighter with the chef feat from level 4 | L14 | books=all": {
+  "tools": [],
+  "expertise": [],
+  "languages": [
+   "Common"
+  ]
+ },
+ "integrated | human fighter with the chef feat from level 4 | L14 | books=PHB": {
+  "tools": [],
+  "expertise": [],
+  "languages": [
+   "Common"
+  ]
+ },
+ "integrated | human fighter with the chef feat from level 4 | L14 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
+  "tools": [],
+  "expertise": [],
+  "languages": [
+   "Common"
+  ]
+ },
+ "integrated | human fighter with the chef feat from level 4 | L17 | books=all": {
+  "tools": [],
+  "expertise": [],
+  "languages": [
+   "Common"
+  ]
+ },
+ "integrated | human fighter with the chef feat from level 4 | L17 | books=PHB": {
+  "tools": [],
+  "expertise": [],
+  "languages": [
+   "Common"
+  ]
+ },
+ "integrated | human fighter with the chef feat from level 4 | L17 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
+  "tools": [],
+  "expertise": [],
+  "languages": [
+   "Common"
+  ]
+ },
+ "integrated | human rogue with the poisoner feat from level 4 | L1 | books=all": {
+  "tools": [
+   "Thieves' Tools"
+  ],
+  "expertise": [],
+  "languages": [
+   "Common"
+  ]
+ },
+ "integrated | human rogue with the poisoner feat from level 4 | L1 | books=PHB": {
+  "tools": [
+   "Thieves' Tools"
+  ],
+  "expertise": [],
+  "languages": [
+   "Common"
+  ]
+ },
+ "integrated | human rogue with the poisoner feat from level 4 | L1 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
+  "tools": [
+   "Thieves' Tools"
+  ],
+  "expertise": [],
+  "languages": [
+   "Common"
+  ]
+ },
+ "integrated | human rogue with the poisoner feat from level 4 | L3 | books=all": {
+  "tools": [
+   "Thieves' Tools"
+  ],
+  "expertise": [],
+  "languages": [
+   "Common"
+  ]
+ },
+ "integrated | human rogue with the poisoner feat from level 4 | L3 | books=PHB": {
+  "tools": [
+   "Thieves' Tools"
+  ],
+  "expertise": [],
+  "languages": [
+   "Common"
+  ]
+ },
+ "integrated | human rogue with the poisoner feat from level 4 | L3 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
+  "tools": [
+   "Thieves' Tools"
+  ],
+  "expertise": [],
+  "languages": [
+   "Common"
+  ]
+ },
+ "integrated | human rogue with the poisoner feat from level 4 | L6 | books=all": {
+  "tools": [
+   "Thieves' Tools"
+  ],
+  "expertise": [],
+  "languages": [
+   "Common"
+  ]
+ },
+ "integrated | human rogue with the poisoner feat from level 4 | L6 | books=PHB": {
+  "tools": [
+   "Thieves' Tools"
+  ],
+  "expertise": [],
+  "languages": [
+   "Common"
+  ]
+ },
+ "integrated | human rogue with the poisoner feat from level 4 | L6 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
+  "tools": [
+   "Thieves' Tools"
+  ],
+  "expertise": [],
+  "languages": [
+   "Common"
+  ]
+ },
+ "integrated | human rogue with the poisoner feat from level 4 | L11 | books=all": {
+  "tools": [
+   "Thieves' Tools"
+  ],
+  "expertise": [],
+  "languages": [
+   "Common"
+  ]
+ },
+ "integrated | human rogue with the poisoner feat from level 4 | L11 | books=PHB": {
+  "tools": [
+   "Thieves' Tools"
+  ],
+  "expertise": [],
+  "languages": [
+   "Common"
+  ]
+ },
+ "integrated | human rogue with the poisoner feat from level 4 | L11 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
+  "tools": [
+   "Thieves' Tools"
+  ],
+  "expertise": [],
+  "languages": [
+   "Common"
+  ]
+ },
+ "integrated | human rogue with the poisoner feat from level 4 | L14 | books=all": {
+  "tools": [
+   "Thieves' Tools"
+  ],
+  "expertise": [],
+  "languages": [
+   "Common"
+  ]
+ },
+ "integrated | human rogue with the poisoner feat from level 4 | L14 | books=PHB": {
+  "tools": [
+   "Thieves' Tools"
+  ],
+  "expertise": [],
+  "languages": [
+   "Common"
+  ]
+ },
+ "integrated | human rogue with the poisoner feat from level 4 | L14 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
+  "tools": [
+   "Thieves' Tools"
+  ],
+  "expertise": [],
+  "languages": [
+   "Common"
+  ]
+ },
+ "integrated | human rogue with the poisoner feat from level 4 | L17 | books=all": {
+  "tools": [
+   "Thieves' Tools"
+  ],
+  "expertise": [],
+  "languages": [
+   "Common"
+  ]
+ },
+ "integrated | human rogue with the poisoner feat from level 4 | L17 | books=PHB": {
+  "tools": [
+   "Thieves' Tools"
+  ],
+  "expertise": [],
+  "languages": [
+   "Common"
+  ]
+ },
+ "integrated | human rogue with the poisoner feat from level 4 | L17 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
+  "tools": [
+   "Thieves' Tools"
+  ],
+  "expertise": [],
+  "languages": [
+   "Common"
+  ]
+ },
+ "integrated | human sage with the chef origin feat | L1 | books=all": {
+  "tools": [],
+  "expertise": [],
+  "languages": [
+   "Common"
+  ]
+ },
+ "integrated | human sage with the chef origin feat | L1 | books=PHB": {
+  "tools": [],
+  "expertise": [],
+  "languages": [
+   "Common"
+  ]
+ },
+ "integrated | human sage with the chef origin feat | L1 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
+  "tools": [],
+  "expertise": [],
+  "languages": [
+   "Common"
+  ]
+ },
+ "integrated | human sage with the chef origin feat | L3 | books=all": {
+  "tools": [],
+  "expertise": [],
+  "languages": [
+   "Common"
+  ]
+ },
+ "integrated | human sage with the chef origin feat | L3 | books=PHB": {
+  "tools": [],
+  "expertise": [],
+  "languages": [
+   "Common"
+  ]
+ },
+ "integrated | human sage with the chef origin feat | L3 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
+  "tools": [],
+  "expertise": [],
+  "languages": [
+   "Common"
+  ]
+ },
+ "integrated | human sage with the chef origin feat | L6 | books=all": {
+  "tools": [],
+  "expertise": [],
+  "languages": [
+   "Common"
+  ]
+ },
+ "integrated | human sage with the chef origin feat | L6 | books=PHB": {
+  "tools": [],
+  "expertise": [],
+  "languages": [
+   "Common"
+  ]
+ },
+ "integrated | human sage with the chef origin feat | L6 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
+  "tools": [],
+  "expertise": [],
+  "languages": [
+   "Common"
+  ]
+ },
+ "integrated | human sage with the chef origin feat | L11 | books=all": {
+  "tools": [],
+  "expertise": [],
+  "languages": [
+   "Common"
+  ]
+ },
+ "integrated | human sage with the chef origin feat | L11 | books=PHB": {
+  "tools": [],
+  "expertise": [],
+  "languages": [
+   "Common"
+  ]
+ },
+ "integrated | human sage with the chef origin feat | L11 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
+  "tools": [],
+  "expertise": [],
+  "languages": [
+   "Common"
+  ]
+ },
+ "integrated | human sage with the chef origin feat | L14 | books=all": {
+  "tools": [],
+  "expertise": [],
+  "languages": [
+   "Common"
+  ]
+ },
+ "integrated | human sage with the chef origin feat | L14 | books=PHB": {
+  "tools": [],
+  "expertise": [],
+  "languages": [
+   "Common"
+  ]
+ },
+ "integrated | human sage with the chef origin feat | L14 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
+  "tools": [],
+  "expertise": [],
+  "languages": [
+   "Common"
+  ]
+ },
+ "integrated | human sage with the chef origin feat | L17 | books=all": {
+  "tools": [],
+  "expertise": [],
+  "languages": [
+   "Common"
+  ]
+ },
+ "integrated | human sage with the chef origin feat | L17 | books=PHB": {
+  "tools": [],
+  "expertise": [],
+  "languages": [
+   "Common"
+  ]
+ },
+ "integrated | human sage with the chef origin feat | L17 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
+  "tools": [],
+  "expertise": [],
+  "languages": [
+   "Common"
   ]
  },
  "integrated | no race, background or class | L1 | books=all": {
