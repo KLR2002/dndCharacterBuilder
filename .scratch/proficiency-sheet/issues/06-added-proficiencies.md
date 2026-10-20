@@ -4,7 +4,9 @@
 
 **Blocked by:** 04
 
-**Status:** ready-for-agent
+**Status:** done
+
+**Landed:** merged from `ps/06-added` (4138c45, 26ca3bf)
 
 - [ ] Added tools and languages are stored on the character as optional lists, with no migration, and appear on the sheet.
 - [ ] A custom name is accepted; a duplicate of something already held is not offered.

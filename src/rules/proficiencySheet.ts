@@ -4,6 +4,8 @@ import { catalogListings, type CharacterCatalogs } from "./catalogs.ts";
 import { grantedFeatures } from "./grantedFeatures.ts";
 import type { FeatureInstance } from "./types.ts";
 import {
+  ALL_LANGUAGE_NAMES,
+  ALL_TOOLS,
   normalizeToolName,
   resolveCharacterTools,
   structuredLanguages,
@@ -11,7 +13,7 @@ import {
 } from "./proficienciesAndLanguages.ts";
 import { normalizeLanguageName, validPicks, type PickableCategory } from "./proficiencyPools.ts";
 
-/** One entry on the Proficiency Sheet. Hand-added entries (ticket 06) will be `ruleGranted: false`. */
+/** One entry on the Proficiency Sheet. Added Proficiencies are `ruleGranted: false`. */
 export interface SheetEntry {
   name: string;
   ruleGranted: boolean;
@@ -35,6 +37,33 @@ function sheetEntries(names: string[]): SheetEntry[] {
     if (!key || seen.has(key)) continue;
     seen.add(key);
     entries.push({ name, ruleGranted: true });
+  }
+  return entries;
+}
+
+/** A known tool or language's own spelling, or the name as typed, trimmed (Added Proficiencies keep custom names). */
+export function normalizeAddedName(category: "tools" | "languages", raw: string): string {
+  const clean = raw.trim();
+  const known = (category === "tools" ? ALL_TOOLS : ALL_LANGUAGE_NAMES).find(
+    (name) => name.toLowerCase() === clean.toLowerCase(),
+  );
+  return known ?? clean;
+}
+
+/** Added Proficiencies that no rule-granted entry already names. A rule-granted spelling wins, so the entry shows once. */
+function addedSheetEntries(
+  added: string[] | undefined,
+  category: "tools" | "languages",
+  ruleEntries: SheetEntry[],
+): SheetEntry[] {
+  const seen = new Set(ruleEntries.map((entry) => entry.name.toLowerCase()));
+  const entries: SheetEntry[] = [];
+  for (const raw of added ?? []) {
+    const name = normalizeAddedName(category, raw);
+    const key = name.toLowerCase();
+    if (!key || seen.has(key)) continue;
+    seen.add(key);
+    entries.push({ name, ruleGranted: false });
   }
   return entries;
 }
@@ -83,8 +112,10 @@ export function proficiencySheet(character: Character, catalogs: CharacterCatalo
     ],
     character,
   );
+  const toolRules = sheetEntries(tools);
+  const languageRules = sheetEntries(languages);
   return {
-    tools: sheetEntries(tools),
-    languages: sheetEntries(languages),
+    tools: [...toolRules, ...addedSheetEntries(character.addedTools, "tools", toolRules)],
+    languages: [...languageRules, ...addedSheetEntries(character.addedLanguages, "languages", languageRules)],
   };
 }
