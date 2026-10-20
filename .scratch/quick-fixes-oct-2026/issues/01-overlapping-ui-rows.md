@@ -4,11 +4,12 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** done
+**Landed:** d6452d8, check:all passed (811 app, 85 scraper) and layout:check green in SRD mode on the merged tree; the implementer also ran --integrated. The language heading only reproduces through the native-style emulation the check now uses. Native clipping not yet seen on a phone.
 
-- [ ] `npm run layout:check` seeds a character with an ability score improvement, a feat (with its Info button) and a Half-Elf with a language choice, and checks the Builder rows containing them.
-- [ ] With the new seeds and without the fix, `layout:check` reports the overlap; with the fix it is green at 320, 360, 393 and 412 px in both SRD and `--integrated` modes.
-- [ ] The rows follow `CODING_STANDARDS.md` section 7: no fixed widths, wrapping, `minWidth: 0` on text.
-- [ ] Every other row in the same Builder cards that mixes a title with buttons or a counter is checked for the same flaw and fixed if it has it.
-- [ ] No new explanatory text is added (CODING_STANDARDS section 8).
-- [ ] `npm run check:all` passes.
+- [x] `npm run layout:check` seeds a character with an ability score improvement, a feat (with its Info button) and a Half-Elf with a language choice, and checks the Builder rows containing them.
+- [x] With the new seeds and without the fix, `layout:check` reports the overlap; with the fix it is green at 320, 360, 393 and 412 px in both SRD and `--integrated` modes.
+- [x] The rows follow `CODING_STANDARDS.md` section 7: no fixed widths, wrapping, `minWidth: 0` on text.
+- [x] Every other row in the same Builder cards that mixes a title with buttons or a counter is checked for the same flaw and fixed if it has it.
+- [x] No new explanatory text is added (CODING_STANDARDS section 8).
+- [x] `npm run check:all` passes.
