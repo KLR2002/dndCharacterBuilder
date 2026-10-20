@@ -57,7 +57,7 @@ export const BuilderTab: React.FC<BuilderTabProps> = ({
   onViewDetail: propViewDetail,
 }) => {
   const { theme } = useAppTheme();
-  const { currentCharacter, updateCharacter: contextUpdate, activeBooks } = useCharacters();
+  const { currentCharacter, updateCharacter: contextUpdate, activeBooks, fullHealOnLevelUp } = useCharacters();
 
   const [localDetail, setLocalDetail] = useState<any>(null);
   const [activeSection, setActiveSection] = useState<"abilities" | "race" | "background" | "class">("abilities");
@@ -518,6 +518,7 @@ export const BuilderTab: React.FC<BuilderTabProps> = ({
         <ClassProgressionSection
           character={character}
           onUpdate={onUpdate}
+          fullHealOnLevelUp={fullHealOnLevelUp}
           allClasses={allClasses}
           allFeats={allFeats}
           totalLevel={totalLevel}

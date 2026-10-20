@@ -65,6 +65,7 @@ export function defaultSettings() {
     hasCompletedFirstRun: false,
     activeResourceBooks: [...DEFAULT_ACTIVE_BOOK_CODES],
     themeAccentId: "crimson",
+    fullHealOnLevelUp: true,
   };
 }
 

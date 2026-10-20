@@ -1,5 +1,6 @@
 import type {
   AbilityKey,
+  AsiSelection,
   Character,
   CharacterClass,
   InventoryItem,
@@ -7,7 +8,9 @@ import type {
 } from "../types/character.ts";
 import type { BackgroundData } from "../types/dnd5e.ts";
 import { reconcile, teardownSubclass } from "./characterReconciler.ts";
-import { subclassLevel } from "./leveling.ts";
+import { applyAsiSelection, subclassLevel } from "./leveling.ts";
+import { maxHp } from "./hp.ts";
+import { fullHealAtLevelUp, followRaisedMaxHp } from "./hitPoints.ts";
 import { currentCompendium, type Compendium } from "../services/compendium.ts";
 import { normalizeSkillName } from "./skills.ts";
 import {
@@ -214,6 +217,47 @@ export function addMulticlassLevel(
     ...(updatedSkillChoices.length > 0 ? { skillChoices: updatedSkillChoices } : {}),
     ...(updatedMulticlassProfs.length > 0 ? { multiclassProficiencies: updatedMulticlassProfs } : {}),
   };
+}
+
+/**
+ * Confirms a level-up: adds one level to the class, then, when full heal on level-up is on,
+ * sets current HP to the levelled character's max and clears death saves. Temp HP and hit dice
+ * are not changed. The max is read after the level is added, so a new class's hit die counts.
+ */
+export function confirmLevelUp(
+  character: Character,
+  className: string,
+  source: string,
+  fullHealOnLevelUp: boolean
+): Character {
+  const levelled = addMulticlassLevel(character, className, source);
+  if (!fullHealOnLevelUp) return levelled;
+  const healed = fullHealAtLevelUp(
+    { currentHp: levelled.currentHp, tempHp: levelled.tempHp },
+    maxHp(levelled)
+  );
+  return { ...levelled, ...healed };
+}
+
+/**
+ * Applies an ability score improvement or feat pick. With full heal on level-up on, a max raised by
+ * the pick (Constitution, Tough) lifts current HP with it, but only when the character was at full HP
+ * before the pick. Death saves, temp HP and hit dice are left as they were.
+ */
+export function applyAsiWithHitPoints(
+  character: Character,
+  selection: AsiSelection,
+  fullHealOnLevelUp: boolean,
+  compendium: Compendium = currentCompendium()
+): Character {
+  const picked = applyAsiSelection(character, selection, compendium);
+  if (!fullHealOnLevelUp) return picked;
+  const followed = followRaisedMaxHp(
+    { currentHp: picked.currentHp, tempHp: picked.tempHp },
+    maxHp(character),
+    maxHp(picked)
+  );
+  return { ...picked, ...followed };
 }
 
 /** Drops every recorded Rule Choice, used when the ancestry itself changes. */

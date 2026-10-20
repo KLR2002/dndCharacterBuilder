@@ -1,6 +1,7 @@
 import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
 import { DEFAULT_ACTIVE_BOOK_CODES } from "../constants/books";
 import {
+  DEFAULT_SETTINGS,
   loadAll,
   saveCharacters,
   saveFolders,
@@ -47,6 +48,8 @@ interface CharacterContextValue {
   deleteFolder: (id: string) => Promise<void>;
   moveCharacterToFolder: (charId: string, folderId: string | null) => Promise<void>;
   setActiveBooks: (books: string[]) => Promise<void>;
+  fullHealOnLevelUp: boolean;
+  setFullHealOnLevelUp: (on: boolean) => Promise<void>;
   setFirstRunCompleted: (books: string[]) => Promise<void>;
   getCharacter: (id: string) => Character | undefined;
 
@@ -107,6 +110,7 @@ export function CharacterProvider({ children }: { children: React.ReactNode }) {
     if (!ready.current) throw new Error("Load characters successfully before editing. Retry initialization or restore your backup.");
   };
   const [activeBooks, setActiveBooksState] = useState<string[]>(DEFAULT_ACTIVE_BOOK_CODES);
+  const [fullHealOnLevelUp, setFullHealOnLevelUpState] = useState<boolean>(DEFAULT_SETTINGS.fullHealOnLevelUp);
   const [hasCompletedFirstRun, setHasCompletedFirstRun] = useState<boolean>(true); // default true to avoid flash
   const [isIntegrated, setIsIntegrated] = useState<boolean>(false);
   const [integratedAt, setIntegratedAt] = useState<string | null>(null);
@@ -146,6 +150,7 @@ export function CharacterProvider({ children }: { children: React.ReactNode }) {
         const raceCatalog = getRaces();
         const migratedCharacters = loadedChars.map((c) => migrateCharacter(c, raceCatalog));
         setActiveBooksState(loadedSettings.activeResourceBooks || DEFAULT_ACTIVE_BOOK_CODES);
+        setFullHealOnLevelUpState(loadedSettings.fullHealOnLevelUp);
         setHasCompletedFirstRun(Boolean(loadedSettings.hasCompletedFirstRun));
         setCharacters(migratedCharacters);
         setFolders(loadedFolds);
@@ -304,6 +309,11 @@ export function CharacterProvider({ children }: { children: React.ReactNode }) {
     );
   };
 
+  const setFullHealOnLevelUp = async (on: boolean) => {
+    setFullHealOnLevelUpState(on);
+    await updateSettings({ fullHealOnLevelUp: on });
+  };
+
   const setFirstRunCompleted = async (books: string[]) => {
     setHasCompletedFirstRun(true);
     setActiveBooksState(books);
@@ -365,6 +375,8 @@ export function CharacterProvider({ children }: { children: React.ReactNode }) {
         deleteFolder,
         moveCharacterToFolder,
         setActiveBooks,
+        fullHealOnLevelUp,
+        setFullHealOnLevelUp,
         setFirstRunCompleted,
         getCharacter,
         isIntegrated,
