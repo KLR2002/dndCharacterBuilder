@@ -1,6 +1,4 @@
 import type { Character } from "../types/character.ts";
-import type { ClassData } from "../types/dnd5e.ts";
-import { MULTICLASS_PROFICIENCIES } from "../constants/rules.ts";
 export { MULTICLASS_PROFICIENCIES, MULTICLASS_PREREQUISITES } from "../constants/rules.ts";
 
 export function totalLevel(character: Character): number {
@@ -124,21 +122,3 @@ export function deduplicateWeaponProficiencies(weapons: string[]): string[] {
   });
 }
 
-export function proficiencies(character: Character, classes: ClassData[]) {
-  const armor = new Set<string>(), weapons = new Set<string>(), tools = new Set<string>();
-  for (const [index, c] of character.classes.entries()) {
-    if (c.level < 1) continue;
-    const data = classes.find(x => x.name === c.className && (!c.source || x.source === c.source));
-    const grants = index === 0 ? { armor: data?.armorProficiencies, weapons: data?.weaponProficiencies, tools: data?.toolProficiencies } : MULTICLASS_PROFICIENCIES[c.className];
-    for (const x of grants?.armor || []) {
-      if (x && x.trim()) armor.add(normalizeArmorProficiency(x));
-    }
-    for (const x of grants?.weapons || []) {
-      if (x && x.trim()) weapons.add(normalizeWeaponProficiency(x));
-    }
-    for (const x of grants?.tools || []) {
-      if (x && x.trim()) tools.add(x.trim());
-    }
-  }
-  return { armor: [...armor], weapons: [...weapons], tools: [...tools] };
-}

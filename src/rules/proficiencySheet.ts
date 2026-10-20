@@ -4,11 +4,8 @@ import { RACE_WEAPON_PROFICIENCIES } from "../constants/rules.ts";
 import { catalogListings, type CharacterCatalogs } from "./catalogs.ts";
 import type { CompendiumListings } from "../services/compendium.ts";
 import { grantedFeatures } from "./grantedFeatures.ts";
-import {
-  deduplicateWeaponProficiencies,
-  normalizeArmorProficiency,
-  proficiencies as classBaseProficiencies,
-} from "./proficiencies.ts";
+import { deduplicateWeaponProficiencies, normalizeArmorProficiency } from "./proficiencies.ts";
+import { classBaseProficiencies } from "./proficiencySources/classBase.ts";
 import type { FeatureInstance, ResolvedAncestry } from "./types.ts";
 import {
   ALL_LANGUAGE_NAMES,
