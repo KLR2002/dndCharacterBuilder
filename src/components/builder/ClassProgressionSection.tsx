@@ -557,6 +557,7 @@ export const ClassProgressionSection: React.FC<ClassProgressionSectionProps> = (
       <AsiFeatSection
         character={character}
         onUpdate={onUpdate}
+        fullHealOnLevelUp={fullHealOnLevelUp}
         pendingAsiSlots={pendingAsiSlots}
         allFeats={allFeats}
         primaryClass={primaryClass}

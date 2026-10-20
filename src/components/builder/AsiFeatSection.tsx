@@ -3,7 +3,8 @@ import { ScrollView, Text, TouchableOpacity, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { AbilityKey, Character } from "../../types/character";
 import { FeatData } from "../../types/dnd5e";
-import { applyAsiSelection, getFeatAbilityBonusOptions, removeAsiSelection } from "../../rules/leveling";
+import { getFeatAbilityBonusOptions, removeAsiSelection } from "../../rules/leveling";
+import { applyAsiWithHitPoints } from "../../rules/builderTransitions";
 import { validateFeatPrerequisites } from "../../rules/feats";
 import {
   battleMasterManeuverChoices,
@@ -34,11 +35,13 @@ export interface AsiFeatSectionProps {
   onViewDetail: (item: { title: string; subtitle?: string; source?: string; description?: string; tags?: string[] }) => void;
   theme: any;
   activeBooks?: string[];
+  fullHealOnLevelUp: boolean;
 }
 
 export const AsiFeatSection: React.FC<AsiFeatSectionProps> = ({
   character,
   onUpdate,
+  fullHealOnLevelUp,
   pendingAsiSlots,
   allFeats,
   primaryClass,
@@ -65,25 +68,25 @@ export const AsiFeatSection: React.FC<AsiFeatSectionProps> = ({
       if (asiMode === "plus2") {
         if (!asiPlus2Pick) return;
         onUpdate((current) =>
-          applyAsiSelection(current, {
+          applyAsiWithHitPoints(current, {
             className,
             classLevel,
             level: classLevel,
             type: "asi",
             asi: { [asiPlus2Pick]: 2 },
-          })
+          }, fullHealOnLevelUp)
         );
         setAsiPlus2Pick(null);
       } else {
         if (asiPlus1Picks.length !== 2) return;
         onUpdate((current) =>
-          applyAsiSelection(current, {
+          applyAsiWithHitPoints(current, {
             className,
             classLevel,
             level: classLevel,
             type: "asi",
             asi: { [asiPlus1Picks[0]]: 1, [asiPlus1Picks[1]]: 1 },
-          })
+          }, fullHealOnLevelUp)
         );
         setAsiPlus1Picks([]);
       }
@@ -93,7 +96,7 @@ export const AsiFeatSection: React.FC<AsiFeatSectionProps> = ({
       if (opts.type === "choice" && !asiSelectedFeatAbility) return;
       const featAbility = opts.type === "fixed" ? opts.abilities[0] : asiSelectedFeatAbility || undefined;
       onUpdate((current) => {
-        let updated = applyAsiSelection(current, {
+        let updated = applyAsiWithHitPoints(current, {
           className,
           classLevel,
           level: classLevel,
@@ -102,7 +105,7 @@ export const AsiFeatSection: React.FC<AsiFeatSectionProps> = ({
           featSource: asiSelectedFeat.source,
           featAbility,
           asi: featAbility ? { [featAbility]: 1 } : undefined,
-        });
+        }, fullHealOnLevelUp);
         if (asiSelectedFeat.name.toLowerCase() === "fighting initiate" && asiSelectedFightingStyle) {
           const fsChoices = fightingStyleRuleChoices(updated);
           const fiChoice = fsChoices.find((c) => c.id === FIGHTING_INITIATE_CHOICE_ID);

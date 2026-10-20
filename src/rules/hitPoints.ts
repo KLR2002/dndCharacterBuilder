@@ -63,6 +63,16 @@ export function fullHealAtLevelUp(state: HitPointState, newMaxHp: number): HitPo
 }
 
 /**
+ * A raised max (Constitution, or a feat such as Tough) lifts current HP with it only when the
+ * character was at full HP before the change. Otherwise current HP stays where it is. Temp HP is
+ * kept. Death saves are not part of this patch, so they are never touched here.
+ */
+export function followRaisedMaxHp(state: HitPointState, oldMaxHp: number, newMaxHp: number): HitPointState {
+  if (newMaxHp > oldMaxHp && state.currentHp === oldMaxHp) return { currentHp: newMaxHp, tempHp: state.tempHp };
+  return { currentHp: state.currentHp, tempHp: state.tempHp };
+}
+
+/**
  * Reads a typed amount: a non-negative integer, surrounding whitespace allowed.
  * Anything else (negative, fractional, empty, non-numeric, unsafe size) gives undefined.
  */

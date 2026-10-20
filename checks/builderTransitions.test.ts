@@ -4,12 +4,14 @@ import { teardownSubclass } from "../src/rules/characterReconciler.ts";
 import { reconcile } from "../src/rules/characterReconciler.ts";
 import { currentCompendium } from "../src/services/compendium.ts";
 import { makeChar, inMemoryCompendium } from "./testUtils.ts";
+import { effectiveScores } from "../src/rules/abilities.ts";
 import {
   setStandardArrayPick,
   setChoiceRacialBonus,
   validateMulticlass,
   addMulticlassLevel,
   confirmLevelUp,
+  applyAsiWithHitPoints,
   applyStartingGrants,
   setCustomBackground,
   applyBackgroundGrants,
@@ -235,6 +237,69 @@ test("confirmLevelUp with full heal off leaves current HP, temp HP and death sav
   assert.equal(levelled.currentHp, 5);
   assert.equal(levelled.tempHp, 4);
   assert.deepEqual(levelled.deathSaves, { successes: 1, failures: 0 });
+});
+
+// Fighter 4 with Con 14 (+2): 10 + 2 = 12, then three levels of 6 + 2 = 24. Max 36.
+// Con 16 (+3) at the same level: 13, then three levels of 6 + 3 = 27. Max 40.
+const FIGHTER_4 = {
+  baseAbilityScores: CON_14,
+  classes: [{ className: "Fighter", source: "PHB", level: 4 }],
+};
+
+test("applyAsiWithHitPoints: a Constitution raise at full HP lifts current HP to the new max, keeping temp HP, death saves and hit dice", () => {
+  const fighter = makeChar({
+    ...FIGHTER_4,
+    currentHp: 36,
+    tempHp: 5,
+    deathSaves: { successes: 1, failures: 0 },
+    usedHitDice: { d10: 2 },
+  });
+  const picked = applyAsiWithHitPoints(
+    fighter,
+    { className: "Fighter", classLevel: 4, level: 4, type: "asi", asi: { con: 2 } },
+    true,
+    inMemoryCompendium()
+  );
+  assert.equal(effectiveScores(picked).modifiers.con, 3);
+  assert.equal(picked.currentHp, 40);
+  assert.equal(picked.tempHp, 5);
+  assert.deepEqual(picked.deathSaves, { successes: 1, failures: 0 });
+  assert.deepEqual(picked.usedHitDice, { d10: 2 });
+});
+
+test("applyAsiWithHitPoints: a Tough feat at full HP lifts current HP by 2 per level", () => {
+  // Tough adds 2 per total level: 4 levels give +8, so 36 becomes 44.
+  const fighter = makeChar({ ...FIGHTER_4, currentHp: 36, tempHp: 0 });
+  const picked = applyAsiWithHitPoints(
+    fighter,
+    { className: "Fighter", classLevel: 4, level: 4, type: "feat", featName: "Tough", featSource: "PHB" },
+    true,
+    inMemoryCompendium()
+  );
+  assert.equal(picked.currentHp, 44);
+});
+
+test("applyAsiWithHitPoints: below full HP, a raised max leaves current HP where it is", () => {
+  const fighter = makeChar({ ...FIGHTER_4, currentHp: 20, tempHp: 0 });
+  const picked = applyAsiWithHitPoints(
+    fighter,
+    { className: "Fighter", classLevel: 4, level: 4, type: "asi", asi: { con: 2 } },
+    true,
+    inMemoryCompendium()
+  );
+  assert.equal(picked.currentHp, 20);
+});
+
+test("applyAsiWithHitPoints: with full heal off, a raised max leaves current HP unchanged", () => {
+  const fighter = makeChar({ ...FIGHTER_4, currentHp: 36, tempHp: 0 });
+  const picked = applyAsiWithHitPoints(
+    fighter,
+    { className: "Fighter", classLevel: 4, level: 4, type: "asi", asi: { con: 2 } },
+    false,
+    inMemoryCompendium()
+  );
+  assert.equal(effectiveScores(picked).modifiers.con, 3);
+  assert.equal(picked.currentHp, 36);
 });
 
 test("applyStartingGrants grants gold or equipment and is idempotent", () => {
