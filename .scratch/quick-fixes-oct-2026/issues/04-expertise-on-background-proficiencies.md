@@ -4,13 +4,14 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** done
+**Landed:** 3e09f8c, check:all passed (811 app, 35 scraper). The Builder's Expertise card now passes the catalog bundle, which is a required argument; released picks get a review notice. Not seen on a device.
 
-- [ ] A regression test, written first, fails on the current code: a character whose background grants skill proficiencies (fixed and chosen) and tool proficiencies has them offered by every Expertise milestone for its class.
-- [ ] Picking Expertise on a background-granted skill or tool gives double proficiency on the card.
-- [ ] If the background changes or is removed, the Expertise pick on its proficiency is released by the existing reconciler, with a notice.
-- [ ] The diagnosis and what the Proficiency Sheet must preserve are written as a Comment on this ticket.
-- [ ] `npm run check:all` passes.
+- [x] A regression test, written first, fails on the current code: a character whose background grants skill proficiencies (fixed and chosen) and tool proficiencies has them offered by every Expertise milestone for its class.
+- [x] Picking Expertise on a background-granted skill or tool gives double proficiency on the card.
+- [x] If the background changes or is removed, the Expertise pick on its proficiency is released by the existing reconciler, with a notice.
+- [x] The diagnosis and what the Proficiency Sheet must preserve are written as a Comment on this ticket.
+- [x] `npm run check:all` passes.
 
 ## Comments
 
