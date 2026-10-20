@@ -18,6 +18,7 @@
     "scrape:books": "tsx src/index.ts --only books",
     "scrape:conditions": "tsx src/index.ts --only conditions",
     "enrich:grants": "tsx src/grants/cli-enrich.ts",
+    "review:grants": "tsx src/grants/cli-review.ts",
     "test": "tsx --test 'checks/**/*.test.ts'"
   },
   "keywords": [],
