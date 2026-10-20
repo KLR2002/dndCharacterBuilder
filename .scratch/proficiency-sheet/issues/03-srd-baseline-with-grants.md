@@ -4,9 +4,10 @@
 
 **Blocked by:** 02
 
-**Status:** ready-for-agent
+**Status:** done
+**Landed:** (see merge "proficiency ticket 03"), check:all passed (815 app, 85 scraper). Only `src/data/classes.json` changed (10 PHB grants added); `summary.json`'s `scrapedAt` was restored to its committed value so the proof of "only grants added" holds. Guard test in `checks/srdBaselineGrants.test.ts`.
 
-- [ ] `src/data/` is regenerated only by running `node scripts/prune-to-srd.mjs`, and the commit touches nothing else.
-- [ ] A check, run and reported, proves the only differences in `src/data/` are the added `grants` fields (compare before and after with those fields removed).
-- [ ] The baseline still contains only SRD content; no non-SRD feature grants appear in it.
-- [ ] `npm run check:all` passes.
+- [x] `src/data/` is regenerated only by running `node scripts/prune-to-srd.mjs`, and the commit touches nothing else.
+- [x] A check, run and reported, proves the only differences in `src/data/` are the added `grants` fields (compare before and after with those fields removed).
+- [x] The baseline still contains only SRD content; no non-SRD feature grants appear in it.
+- [x] `npm run check:all` passes.
