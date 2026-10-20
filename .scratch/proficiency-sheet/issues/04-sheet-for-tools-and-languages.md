@@ -4,6 +4,8 @@
 
 **Blocked by:** 02, 03
 
+**Note:** Race, background and class starting proficiencies are not in the enriched `grants`; the sheet reads their existing structured model fields and adapts them into the grant shape.
+
 **Status:** ready-for-agent
 
 - [ ] A recorded baseline of tools and languages for existing representative characters exists first, and the only differences after the change are newly applied grants, each listed.
