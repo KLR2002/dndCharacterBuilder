@@ -11,7 +11,8 @@ import {
   reclaimBackgroundGrants,
   setCustomBackground,
 } from "../../rules/builderTransitions";
-import { ALL_LANGUAGE_NAMES, resolveCharacterLanguages, ToolGrant } from "../../rules/proficienciesAndLanguages";
+import { ALL_LANGUAGE_NAMES } from "../../rules/proficienciesAndLanguages";
+import type { ToolGrant } from "../../rules/proficiencySheet";
 import type { CharacterCatalogs } from "../../rules/catalogs";
 import { Badge } from "../ui/Badge";
 import { Button } from "../ui/Button";
@@ -483,20 +484,10 @@ export const BackgroundSection: React.FC<BackgroundSectionProps> = ({
                       title="Select"
                       size="sm"
                       onPress={() => {
-                        const nextChosenLanguages = { ...character.chosenLanguages, background: [] };
-                        const nextChosenTools = { ...character.chosenTools, background: [] };
-                        const temp = {
-                          ...character,
-                          background: { name: b.name, source: b.source },
-                          chosenLanguages: nextChosenLanguages,
-                          chosenTools: nextChosenTools,
-                        };
-                        const resolved = resolveCharacterLanguages(temp, catalogs);
                         onUpdate({
                           background: { name: b.name, source: b.source },
-                          chosenLanguages: nextChosenLanguages,
-                          chosenTools: nextChosenTools,
-                          languages: resolved,
+                          chosenLanguages: { ...character.chosenLanguages, background: [] },
+                          chosenTools: { ...character.chosenTools, background: [] },
                         });
                       }}
                     />

@@ -6,19 +6,20 @@ import {
   getRaceToolGrant,
   getBackgroundToolGrant,
   getClassToolGrant,
-  resolveCharacterLanguages,
   resolveCharacterTools,
-  ARTISAN_TOOLS,
-  MUSICAL_INSTRUMENTS,
-  GAMING_SETS,
-} from "../src/rules/proficienciesAndLanguages.ts";
+} from "../src/rules/proficiencySources/toolsAndLanguages.ts";
+import { ARTISAN_TOOLS, MUSICAL_INSTRUMENTS, GAMING_SETS } from "../src/rules/proficienciesAndLanguages.ts";
 import { POINT_BUY_COST } from "../src/constants/rules.ts";
+import { proficiencySheet } from "../src/rules/proficiencySheet.ts";
 import type { Character } from "../src/types/character.ts";
 import { inMemoryCompendium, loadTestCatalog } from "./testUtils.ts";
 
 const races = loadTestCatalog("races");
 const backgrounds = loadTestCatalog("backgrounds");
 const classes = loadTestCatalog("classes");
+
+const sheetLanguages = (char: Character, catalogs: Parameters<typeof proficiencySheet>[1]) =>
+  proficiencySheet(char, catalogs).languages.map((l) => l.name);
 
 function createTestChar(overrides: Partial<Character> = {}): Character {
   return {
@@ -109,11 +110,11 @@ test("Half-Elf variant does not crash and grants Common, Elvish, and 1 choice", 
   assert.equal(grant.choiceCount, 1);
 });
 
-test("resolveCharacterLanguages handles Half-Elf variant cleanly", () => {
+test("the sheet's languages handle Half-Elf variant cleanly", () => {
   const char = createTestChar({
     race: { name: "Half-Elf", source: "PHB", subraceName: "Variant; Aquatic Elf Descent" },
   });
-  const langs = resolveCharacterLanguages(char, { compendium: inMemoryCompendium({ races, backgrounds }) });
+  const langs = sheetLanguages(char, { compendium: inMemoryCompendium({ races, backgrounds }) });
   assert.ok(langs.includes("Common"));
   assert.ok(langs.includes("Elvish"));
 });
@@ -194,7 +195,7 @@ test("Rogue class tool grant provides Thieves' Tools fixed", () => {
   assert.equal(grant.choices.length, 0);
 });
 
-test("resolveCharacterLanguages combines fixed and chosen languages cleanly", () => {
+test("the sheet's languages combine fixed and chosen languages cleanly", () => {
   const char = createTestChar({
     race: { name: "Human", source: "PHB" },
     background: { name: "Acolyte", source: "PHB" },
@@ -203,7 +204,7 @@ test("resolveCharacterLanguages combines fixed and chosen languages cleanly", ()
       background: ["Celestial", "Infernal"],
     },
   });
-  const langs = resolveCharacterLanguages(char, { compendium: inMemoryCompendium({ races, backgrounds }) });
+  const langs = sheetLanguages(char, { compendium: inMemoryCompendium({ races, backgrounds }) });
   assert.ok(langs.includes("Common"));
   assert.ok(langs.includes("Draconic"));
   assert.ok(langs.includes("Celestial"));

@@ -8,9 +8,11 @@ import { armorClass } from "../src/rules/ac.ts";
 import { speed, carryingWeight } from "../src/rules/speed.ts";
 import { savingThrows } from "../src/rules/saves.ts";
 import { proficiencySheet } from "../src/rules/proficiencySheet.ts";
-import { skills, getRacialSkillChoices } from "../src/rules/skills.ts";
+import { skills } from "../src/rules/skills.ts";
+import { getRacialSkillChoices } from "../src/rules/proficiencySources/skillGrants.ts";
 import { multiclassSlots, pactSlots } from "../src/rules/slots.ts";
-import { proficiencyBonus, totalLevel, proficiencies } from "../src/rules/proficiencies.ts";
+import { proficiencyBonus, totalLevel } from "../src/rules/proficiencies.ts";
+import { classBaseProficiencies as proficiencies } from "../src/rules/proficiencySources/classBase.ts";
 import { grantedFeatures } from "../src/rules/grantedFeatures.ts";
 import { CLASS_DATA, PHB_HALF_CASTER_SLOTS, PHB_THIRD_CASTER_SLOTS, spellcastingAbility, asiLevels } from "../src/rules/classData.ts";
 

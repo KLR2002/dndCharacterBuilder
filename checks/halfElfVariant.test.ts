@@ -2,7 +2,8 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { grantedFeatures } from "../src/rules/grantedFeatures.ts";
 import { availableRuleChoices, ruleChoiceId, ancestryRuleChoices } from "../src/rules/ruleChoices.ts";
-import { getRacialSkillChoices, skills } from "../src/rules/skills.ts";
+import { skills } from "../src/rules/skills.ts";
+import { getRacialSkillChoices } from "../src/rules/proficiencySources/skillGrants.ts";
 import { makeChar, loadTestCatalog } from "./testUtils.ts";
 import type { Character } from "../src/types/character.ts";
 

@@ -1,11 +1,8 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { makeChar, inMemoryCompendium } from "./testUtils.ts";
-import {
-  getAutoGrantedSkills,
-  normalizeSkillName,
-  skills,
-} from "../src/rules/skills.ts";
+import { normalizeSkillName, skills } from "../src/rules/skills.ts";
+import { getAutoGrantedSkills } from "../src/rules/proficiencySources/skillGrants.ts";
 import { setChoiceRacialBonus } from "../src/rules/builderTransitions.ts";
 import { proficiencySheet } from "../src/rules/proficiencySheet.ts";
 import { applyAncestrySelection } from "../src/rules/ancestryEngine.ts";

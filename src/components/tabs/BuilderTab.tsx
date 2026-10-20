@@ -1,18 +1,11 @@
 import React, { useState } from "react";
 import { ScrollView, Text, TouchableOpacity } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { DND_SKILLS, POINT_BUY_COST } from "../../constants/rules";
-import {
-  getBackgroundLanguageGrant,
-  getBackgroundToolGrant,
-  getClassToolGrant,
-  getRaceLanguageGrant,
-  getRaceToolGrant,
-} from "../../rules/proficienciesAndLanguages";
-import { proficiencySheet, ruleGrantedSkills } from "../../rules/proficiencySheet";
+import { POINT_BUY_COST } from "../../constants/rules";
+import { proficiencySheet, ruleGrantedSkills, skillChoiceOffers, sourceGrants } from "../../rules/proficiencySheet";
 import { useCharacters } from "../../context/CharacterContext";
 import { useAppTheme } from "../../context/ThemeContext";
-import { findClass, findItem, getFeats } from "../../services/dataService";
+import { findItem, getFeats } from "../../services/dataService";
 import { currentCompendium } from "../../services/compendium";
 import { calculateTotalLevel } from "../../services/dndRules";
 import { evaluateCharacter } from "../../rules/characterEvaluation";
@@ -27,7 +20,7 @@ import {
 import { reconcile } from "../../rules/characterReconciler";
 import { ancestryRuleChoices, offeredRuleChoices } from "../../rules/ruleChoices";
 import { getPendingLevelChoices } from "../../rules/leveling";
-import { getRacialSkillChoices, normalizeSkillName } from "../../rules/skills";
+import { normalizeSkillName } from "../../rules/skills";
 import { getAvailableOptionalFeatures } from "../../rules/optionalFeatures";
 import { AbilityKey, Character, InventoryItem, SkillChoiceEntry } from "../../types/character";
 import { DetailModal } from "../DetailModal";
@@ -214,40 +207,11 @@ export const BuilderTab: React.FC<BuilderTabProps> = ({
   };
 
   type SkillChoice = { source: string; choose: number; from: string[] };
-  const skillChoices: SkillChoice[] = [];
-
-  if (character.race) {
-    const racialChoices = getRacialSkillChoices(
-      character.race.name,
-      character.race.subraceName,
-      allRaces,
-      character.race.source,
-      chosenAncestryOption(character, allRaces)
-    );
-    for (const rc of racialChoices) {
-      skillChoices.push({
-        source: rc.source,
-        choose: rc.choose,
-        from: rc.from.map(normalizeSkillName),
-      });
-    }
-  }
-
-  if (character.classes.length > 0) {
-    const classData = findClass(character.classes[0].className, character.classes[0].source);
-    if (classData?.skillProficiencies) {
-      const { choose, from } = classData.skillProficiencies;
-      const fromList =
-        from && from.length > 0 ? from.map(normalizeSkillName) : DND_SKILLS.map((s) => normalizeSkillName(s.name));
-      if (choose > 0) {
-        skillChoices.push({
-          source: `Class: ${character.classes[0].className}`,
-          choose,
-          from: fromList,
-        });
-      }
-    }
-  }
+  const skillChoices: SkillChoice[] = skillChoiceOffers(
+    character,
+    catalogs,
+    character.race ? chosenAncestryOption(character, allRaces) : undefined
+  );
 
   const raceChoices = skillChoices.filter(
     (sc) => sc.source.startsWith("Race:") || sc.source.startsWith("Variant")
@@ -364,21 +328,16 @@ export const BuilderTab: React.FC<BuilderTabProps> = ({
     );
   };
 
-  const raceLanguageGrant = getRaceLanguageGrant(
-    character.race?.name,
-    character.race?.subraceName,
-    allRaces,
-    character.race?.source,
-    character.race?.subraceSource
-  );
-  const raceToolGrant = getRaceToolGrant(character.race?.name, character.race?.subraceName, allRaces);
+  const {
+    raceLanguages: raceLanguageGrant,
+    raceTools: raceToolGrant,
+    backgroundLanguages: bgLanguageGrant,
+    backgroundTools: bgToolGrant,
+    classTools: classToolGrant,
+  } = sourceGrants(character, catalogs);
   const ruleChoices = offeredRuleChoices(character, { raceCatalog: allRaces, level: totalLevel, activeBooks, origins: ["race"] });
-  const bgLanguageGrant = getBackgroundLanguageGrant(character.background?.name, allBackgrounds);
-  const bgToolGrant = getBackgroundToolGrant(character.background?.name, allBackgrounds);
-  const classToolGrant = getClassToolGrant(primaryClass, allClasses);
 
   // The Proficiency Sheet is the one source for the language and tool lists the Builder shows.
-  const languageNamesFor = (c: Character) => proficiencySheet(c, catalogs).languages.map((l) => l.name);
   const sheet = proficiencySheet(character, catalogs);
   const resolvedLanguages = sheet.languages.map((l) => l.name);
   const resolvedTools = sheet.tools.map((t) => t.name);
@@ -386,10 +345,7 @@ export const BuilderTab: React.FC<BuilderTabProps> = ({
   const toggleRaceLanguage = (lang: string) => {
     const cur = character.chosenLanguages?.race || [];
     const next = cur.includes(lang) ? cur.filter((x) => x !== lang) : [...cur, lang];
-    const nextChosen = { ...character.chosenLanguages, race: next };
-    const temp = { ...character, chosenLanguages: nextChosen };
-    const resolved = languageNamesFor(temp);
-    onUpdate({ chosenLanguages: nextChosen, languages: resolved });
+    onUpdate({ chosenLanguages: { ...character.chosenLanguages, race: next } });
   };
 
   const toggleRaceTool = (tool: string) => {
@@ -401,10 +357,7 @@ export const BuilderTab: React.FC<BuilderTabProps> = ({
   const toggleBgLanguage = (lang: string) => {
     const cur = character.chosenLanguages?.background || [];
     const next = cur.includes(lang) ? cur.filter((x) => x !== lang) : [...cur, lang];
-    const nextChosen = { ...character.chosenLanguages, background: next };
-    const temp = { ...character, chosenLanguages: nextChosen };
-    const resolved = languageNamesFor(temp);
-    onUpdate({ chosenLanguages: nextChosen, languages: resolved });
+    onUpdate({ chosenLanguages: { ...character.chosenLanguages, background: next } });
   };
 
   const toggleBgTool = (tool: string) => {

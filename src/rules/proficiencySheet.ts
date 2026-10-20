@@ -1,28 +1,37 @@
 import type { Character } from "../types/character.ts";
 import type { ItemData, ProficiencyCategory } from "../types/dnd5e.ts";
-import { RACE_WEAPON_PROFICIENCIES } from "../constants/rules.ts";
+import { DND_SKILLS, RACE_WEAPON_PROFICIENCIES } from "../constants/rules.ts";
 import { catalogListings, type CharacterCatalogs } from "./catalogs.ts";
-import type { CompendiumListings } from "../services/compendium.ts";
+import { currentCompendium, type CompendiumListings } from "../services/compendium.ts";
 import { grantedFeatures } from "./grantedFeatures.ts";
-import {
-  deduplicateWeaponProficiencies,
-  normalizeArmorProficiency,
-  proficiencies as classBaseProficiencies,
-} from "./proficiencies.ts";
+import { deduplicateWeaponProficiencies, normalizeArmorProficiency } from "./proficiencies.ts";
+import { classBaseProficiencies } from "./proficiencySources/classBase.ts";
 import type { FeatureInstance, ResolvedAncestry } from "./types.ts";
+import { ALL_LANGUAGE_NAMES, ALL_TOOLS, normalizeToolName } from "./proficienciesAndLanguages.ts";
 import {
-  ALL_LANGUAGE_NAMES,
-  ALL_TOOLS,
-  normalizeToolName,
+  getBackgroundLanguageGrant,
+  getBackgroundToolGrant,
+  getClassToolGrant,
+  getRaceLanguageGrant,
+  getRaceToolGrant,
   resolveCharacterTools,
   structuredLanguages,
-  withLanguageFallbacks,
-} from "./proficienciesAndLanguages.ts";
+  type LanguageGrant,
+  type ToolGrant,
+} from "./proficiencySources/toolsAndLanguages.ts";
 import { normalizeLanguageName, normalizeSavingThrowName, validPicks } from "./proficiencyPools.ts";
 import { ABILITY_NAMES } from "./abilities.ts";
 import { CLASS_DATA } from "./classData.ts";
-import { getAutoGrantedSkills, isKnowledgeCleric, normalizeSkillName } from "./skills.ts";
+import { isKnowledgeCleric, normalizeSkillName } from "./skills.ts";
+import {
+  classSkillChoice,
+  getAutoGrantedSkills,
+  getRacialSkillChoices,
+} from "./proficiencySources/skillGrants.ts";
 import { resolveCharacterAncestry } from "./characterAncestry.ts";
+
+export type { LanguageGrant, ToolChoice, ToolGrant } from "./proficiencySources/toolsAndLanguages.ts";
+export { classSkillChoice } from "./proficiencySources/skillGrants.ts";
 
 /** The Knowledge Domain's four skills. A Knowledge Cleric's Expertise on one of them has always made it proficient. */
 const KNOWLEDGE_SKILLS = ["Arcana", "History", "Nature", "Religion"];
@@ -186,6 +195,89 @@ export function ruleGrantedSkills(character: Character, catalogs?: CharacterCata
 }
 
 /**
+ * What the Builder's race, background and class cards offer: the fixed grants and the pick counts of
+ * each source. The Builder reads these through the sheet, as it reads every proficiency.
+ */
+export interface SourceGrants {
+  raceLanguages: LanguageGrant;
+  raceTools: ToolGrant;
+  backgroundLanguages: LanguageGrant;
+  backgroundTools: ToolGrant;
+  classTools: ToolGrant;
+}
+
+export function sourceGrants(character: Character, catalogs: CharacterCatalogs): SourceGrants {
+  const listings = catalogListings(catalogs);
+  const races = listings.races();
+  const backgrounds = listings.backgrounds();
+  return {
+    raceLanguages: getRaceLanguageGrant(
+      character.race?.name,
+      character.race?.subraceName,
+      races,
+      character.race?.source,
+      character.race?.subraceSource
+    ),
+    raceTools: getRaceToolGrant(character.race?.name, character.race?.subraceName, races),
+    backgroundLanguages: getBackgroundLanguageGrant(character.background?.name, backgrounds),
+    backgroundTools: getBackgroundToolGrant(character.background?.name, backgrounds),
+    classTools: getClassToolGrant(character.classes[0]?.className, listings.classes()),
+  };
+}
+
+/** A skill choice a race or class offers the Builder: its source label, pick count and the skills to pick from. */
+export interface SkillChoiceOffer {
+  source: string;
+  choose: number;
+  from: string[];
+}
+
+/**
+ * The skill choices a race and the first class offer. The race's choices take the subrace and the
+ * ancestry option the character picked; the class's take its starting list, or every skill when the
+ * list is empty. The Builder reads its offers here, so no builder file reads a race or class skill field.
+ */
+export function skillChoiceOffers(
+  character: Character,
+  catalogs: CharacterCatalogs,
+  raceChosenOption?: string
+): SkillChoiceOffer[] {
+  const listings = catalogListings(catalogs);
+  const offers: SkillChoiceOffer[] = [];
+
+  if (character.race) {
+    const racial = getRacialSkillChoices(
+      character.race.name,
+      character.race.subraceName,
+      listings.races(),
+      character.race.source,
+      raceChosenOption
+    );
+    for (const choice of racial) {
+      offers.push({ source: choice.source, choose: choice.choose, from: choice.from.map(normalizeSkillName) });
+    }
+  }
+
+  const first = character.classes[0];
+  if (first) {
+    const classData = (catalogs.compendium ?? currentCompendium()).findClass(first.className, first.source);
+    const starting = classSkillChoice(classData);
+    if (starting && starting.choose > 0) {
+      offers.push({
+        source: `Class: ${first.className}`,
+        choose: starting.choose,
+        from:
+          starting.from && starting.from.length > 0
+            ? starting.from.map(normalizeSkillName)
+            : DND_SKILLS.map((s) => normalizeSkillName(s.name)),
+      });
+    }
+  }
+
+  return offers;
+}
+
+/**
  * The Proficiency Sheet. The catalog bundle is required: a call site must say which Compendium it
  * reads, because a default that means "no catalog" silently empties the lists (quick fix 04).
  */
@@ -206,14 +298,11 @@ export function proficiencySheet(character: Character, catalogs: CharacterCatalo
     ...fixedFeatureNames(features, "tools").map(normalizeToolName),
     ...choicePickNames(features, character, "tools", items),
   ];
-  const languages = withLanguageFallbacks(
-    [
-      ...structuredLanguages(character, catalogs),
-      ...fixedFeatureNames(features, "languages").map(normalizeLanguageName),
-      ...choicePickNames(features, character, "languages", items),
-    ],
-    character,
-  );
+  const languages = [
+    ...structuredLanguages(character, catalogs),
+    ...fixedFeatureNames(features, "languages").map(normalizeLanguageName),
+    ...choicePickNames(features, character, "languages", items),
+  ];
   // The first class's saves are the base, as they have always been. A later class adds none of its own.
   const firstClass = character.classes[0];
   const baseSaves = firstClass ? (catalogs.classRules ?? CLASS_DATA)[firstClass.className]?.savingThrows ?? [] : [];

@@ -2,7 +2,7 @@ import type { Character } from "../types/character.ts";
 import type { Compendium } from "../services/compendium.ts";
 import { formatCantripOptions, GIANT_POWER_CHOICE_ID, type ChoiceOwner } from "./choices/types.ts";
 import { normalizeSkillName } from "./skills.ts";
-import { proficiencySheet } from "./proficiencySheet.ts";
+import { classSkillChoice, proficiencySheet } from "./proficiencySheet.ts";
 import { liftSpellChoice } from "../../dnd5eToolsScrap/src/parser/spell-choice.ts";
 import { SCHOOL_MAP } from "../../dnd5eToolsScrap/src/parser/spell-schools.ts";
 import type { ChoiceOption, FeatureChoice, SubclassData } from "../types/dnd5e.ts";
@@ -400,7 +400,7 @@ function readClassSkillsRow(
   if (row.choose === undefined || !context) return undefined;
   const cls = compendium.for().classes().find((c) => c.name.toLowerCase() === row.owner.className.toLowerCase());
   if (!cls) return undefined;
-  const pool = cls.skillProficiencies.from.map(normalizeSkillName);
+  const pool = (classSkillChoice(cls)?.from ?? []).map(normalizeSkillName);
   return {
     choose: row.choose,
     options: unchosenClassSkills(context.character, context.choiceId, pool, compendium).map((name) => ({
