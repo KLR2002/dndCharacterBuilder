@@ -7,12 +7,12 @@ import { normalizeSkillName } from "./skills.ts";
 import { DND_SKILLS } from "../constants/rules.ts";
 
 /**
- * Proficiency Choices (tickets 05, 07 and 10). A leaf module: the Proficiency Sheet, the choice offers, the
+ * Proficiency Choices. A leaf module: the Proficiency Sheet, the choice offers, the
  * rule-choice pick, the Monk Weapon rule and the reconciler all read it, so it imports nothing that
  * imports them back.
  */
 
-/** The categories a Proficiency Choice can be picked in so far. Armor waits for its slice. */
+/** The categories a Proficiency Choice can be picked in. Armor is not one of them. */
 export type PickableCategory = "skills" | "tools" | "languages" | "savingThrows" | "weapons";
 
 /** A Proficiency Choice grant, as the Catalog carries it. */
@@ -41,7 +41,7 @@ export function normalizeSavingThrowName(raw: string): string {
   return ABILITY_LABELS.find((name) => name.toLowerCase() === clean.toLowerCase()) ?? clean;
 }
 
-export function normalizeProficiencyName(category: PickableCategory, raw: string): string {
+function normalizeProficiencyName(category: PickableCategory, raw: string): string {
   if (category === "skills") return normalizeSkillName(raw);
   if (category === "savingThrows") return normalizeSavingThrowName(raw);
   if (category === "tools") return normalizeToolName(raw);
@@ -57,7 +57,7 @@ const MARTIAL_WEAPONS = lowerCased(STANDARD_MARTIAL_WEAPONS);
  * The simple or martial category of a base weapon, by its exact name. Undefined for any other name, so
  * magic variants such as "Longsword, +1" are never taken for their base weapon.
  */
-export function standardWeaponCategory(name: string): "simple" | "martial" | undefined {
+function standardWeaponCategory(name: string): "simple" | "martial" | undefined {
   const key = name.trim().toLowerCase();
   if (SIMPLE_WEAPONS.has(key)) return "simple";
   if (MARTIAL_WEAPONS.has(key)) return "martial";
@@ -78,7 +78,7 @@ function attackTypesOf(type: string): ("melee" | "ranged")[] {
  * pool's categories that lacks every excluded property, plus each named weapon, then filtered by attack
  * type. The names are the items' own spellings, sorted and without duplicates.
  */
-export function weaponPoolNames(pool: Extract<ProficiencyPool, { kind: "weapons" }>, items: readonly ItemData[]): string[] {
+function weaponPoolNames(pool: Extract<ProficiencyPool, { kind: "weapons" }>, items: readonly ItemData[]): string[] {
   const excluded = new Set(pool.withoutProperties.map((name) => name.toLowerCase()));
   const named = new Set(pool.plus.map((name) => name.toLowerCase()));
   const names = new Set<string>();
@@ -95,7 +95,7 @@ export function weaponPoolNames(pool: Extract<ProficiencyPool, { kind: "weapons"
   return [...names].sort((a, b) => a.localeCompare(b));
 }
 
-/** The names a pickable grant offers, normalized. Empty for a pool this slice does not read. */
+/** The names a pickable grant offers, normalized. Empty when the pool does not apply to the grant's category. */
 export function poolNames(grant: ChoiceProficiencyGrant, items: readonly ItemData[] = []): string[] {
   if (!isPickableCategory(grant.category)) return [];
   if (grant.pool.kind === "names") {
@@ -127,7 +127,7 @@ export function weaponHeld(name: string, heldEntries: readonly string[]): boolea
 }
 
 /**
- * A feat's saving-throw choice is the ability the feat raised (ticket 07): the feat's selection carries
+ * A feat's saving-throw choice is the ability the feat raised: the feat's selection carries
  * that ability, so the grant becomes the fixed save and there is no pick to make. Without a raised
  * ability, or when the raised ability is not in the pool, the grant stays a Proficiency Choice.
  */

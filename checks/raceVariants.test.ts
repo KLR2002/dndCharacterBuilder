@@ -39,8 +39,7 @@ test("no subrace name carries the source-data naming prefix", () => {
 });
 
 test("a variant half-elf's subrace resolves by its normalised descent name", () => {
-  // The half-elf skill-choice regression is ticket 05's seam; here we only
-  // assert that the descent name the app stores is the one the catalog uses.
+  // Here we only assert that the descent name the app stores is the one the catalog uses.
   const drow = halfElfVariants.find((s: any) => s.name === "Drow Descent");
   assert.ok(drow, "Drow descent should be selectable by its normalised name");
   assert.equal(drow.name.includes("Variant"), false, "the source convention should not leak into the name");

@@ -4,7 +4,7 @@ import type { Compendium } from "../services/compendium.ts";
 import { optionGrantApplies } from "./optionFeatureGrants.ts";
 
 /**
- * The reconciler's check on saved Proficiency Choice picks (ticket 05). It reads the Compendium and the
+ * The reconciler's check on saved Proficiency Choice picks. It reads the Compendium and the
  * character directly rather than the granted-features pass, which reads the rule-choice module and so
  * cannot be imported from the reconciler. The check errs on the side of keeping a pick: it releases one
  * only when the Compendium names the grant and the character clearly no longer holds its owner.
@@ -24,7 +24,7 @@ interface GrantSource {
 }
 
 /** Every Proficiency Grant id in the Compendium, with the feature that carries it. Unscoped by books. */
-export function grantSourcesIn(compendium: Compendium): Map<string, GrantSource> {
+function grantSourcesIn(compendium: Compendium): Map<string, GrantSource> {
   const listings = compendium.for();
   const sources = new Map<string, GrantSource>();
   const add = (grants: ProficiencyGrant[] | undefined, source: GrantSource) => {

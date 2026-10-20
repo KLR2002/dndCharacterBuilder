@@ -32,7 +32,7 @@ export const RACE_SKILL_PROFICIENCIES: Record<string, string[]> = {
   Tortle: ["Survival"],
 };
 
-export const BACKGROUND_SKILL_PROFICIENCIES: Record<string, string[]> = {
+const BACKGROUND_SKILL_PROFICIENCIES: Record<string, string[]> = {
   Acolyte: ["Insight", "Religion"],
   Charlatan: ["Deception", "Sleight of Hand"],
   Criminal: ["Deception", "Stealth"],

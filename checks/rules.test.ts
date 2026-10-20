@@ -143,7 +143,7 @@ test("saves use first class only and total-level proficiency", () => {
   assert.equal(totalLevel(c), 5);
   assert.deepEqual([1, 5, 9, 13, 17, 20].map(proficiencyBonus), [2, 3, 4, 5, 6, 6]);
 });
-test("initial armor/weapon/tool proficiencies differ from multiclass grants", () => {
+test("initial armor proficiencies differ from multiclass grants", () => {
   const c = makeChar({ classes: [cl("Wizard", 1), cl("Fighter", 1)] });
   const p = proficiencies(c, catalog.classes);
   assert.ok(p.armor.includes("Medium armor"));

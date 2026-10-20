@@ -31,7 +31,7 @@ export function normalizeSkillName(raw: string): string {
 }
 
 /**
- * The skill rows. Proficiency comes from the Proficiency Sheet's skills (ticket 11), passed in, so the
+ * The skill rows. Proficiency comes from the Proficiency Sheet's skills, passed in, so the
  * card, Expertise and every other reader agree on which skills the character holds. Expertise and
  * Jack of All Trades are decided here.
  */

@@ -1,5 +1,5 @@
 import type { Character } from "../types/character.ts";
-export { MULTICLASS_PROFICIENCIES, MULTICLASS_PREREQUISITES } from "../constants/rules.ts";
+export { MULTICLASS_PREREQUISITES } from "../constants/rules.ts";
 
 export function totalLevel(character: Character): number {
   return (character.classes || []).reduce((sum, c) => sum + c.level, 0) || 1;

@@ -10,5 +10,14 @@ Skills, tools, languages, weapons, armor and saving throws were granted by per-s
 - The Catalog format number increases, so the stale-catalog gate forces a re-sync; the SRD baseline is regenerated through `scripts/prune-to-srd.mjs` as its own commit.
 - The Proficiency Sheet (`src/rules/proficiencySheet.ts`, with private sources in `src/rules/proficiencySources/`) is the only reader of race, background and class proficiency fields. `checks/proficiencyReadersGuard.test.ts` fails any other read, except the Builder's own picks and the card displays its allowlist names.
 
+## Known exceptions
+A few hand tables of rule content remain in the app. Each is an exception to the Decision above, and each is to be replaced by Catalog grants when the scraper carries them:
+- `RACE_SKILL_PROFICIENCIES` and `BACKGROUND_SKILL_PROFICIENCIES` in `src/rules/proficiencySources/skillGrants.ts`: the race and background skill tables.
+- `RACE_WEAPON_PROFICIENCIES` in `src/constants/rules.ts`: the race weapon table.
+- `raceTraining` in `src/rules/proficiencySheet.ts`: the race armor case (Mountain Dwarf and Githyanki).
+- `OPTION_FEATURE_CHOICES` in `src/rules/optionFeatureGrants.ts`: the Totem Warrior option table.
+- `KENSEI_SUBCLASS` in `src/rules/kenseiWeapons.ts`: the Kensei subclass name.
+- `getClassToolGrant` in `src/rules/proficiencySources/toolsAndLanguages.ts`: the class-name tool if-chain.
+
 ## Considered Options
 A hand-written grants table inside `src/` was rejected: it would bundle non-SRD rule content in the app, and nothing would reveal gaps. Parsing prose at runtime was rejected as unreviewable and slow.

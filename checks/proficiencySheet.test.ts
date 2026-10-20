@@ -206,7 +206,7 @@ test("the SRD Baseline's own grants apply without the Integrated Catalog", () =>
   assert.ok(names(sorcerer.languages).includes("Draconic"));
 });
 
-// Saving throws (ticket 07). The first class's saves are the base; a second class's are never added.
+// Saving throws. The first class's saves are the base; a second class's are never added.
 
 test("the first class's saving throws are on the sheet, and a second class's are not", () => {
   const sheet = proficiencySheet(
@@ -282,7 +282,7 @@ test("a feat's saving-throw choice without a raised ability stays a pick the pla
   assert.deepEqual(names(proficiencySheet(picked, { compendium }).savingThrows), ["Charisma"]);
 });
 
-// Weapons and armor (ticket 09). Names read as the card shows them.
+// Weapons and armor. Names read as the card shows them.
 
 const srdFighter = (level = 1, extra: Partial<Character> = {}) =>
   makeChar({ classes: [{ className: "Fighter", source: "SRD", level }], ...extra });

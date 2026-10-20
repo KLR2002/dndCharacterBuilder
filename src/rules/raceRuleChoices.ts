@@ -9,7 +9,7 @@ import { type AvailableRuleChoice, ruleChoiceId } from "./choices/types.ts";
  * Race Rule Choices: what an ancestry or lineage grants as choices, and how a granted race trait
  * resolves against the character's recorded pick. Kept apart from ruleChoices.ts so that the
  * Proficiency Sheet can resolve race traits (via grantedFeatures) without importing the Rule Choice
- * module, which imports the Character Reconciler (ticket 08, import graph).
+ * module, which imports the Character Reconciler.
  */
 export const LINEAGE_NAMES = new Set(["Dhampir", "Hexblood", "Reborn"]);
 

@@ -31,7 +31,7 @@ export interface RuleChoiceEntry {
   id: string;
   /** The trait that grants the choice, so consumers need not parse the id. */
   trait: string;
-  /** "feat" is only ever offered for Proficiency Choices, which are stored outside ruleChoices (ticket 05). */
+  /** "feat" is only ever offered for Proficiency Choices, which are stored outside ruleChoices. */
   origin: "race" | "class" | "subclass" | "feat";
   choose: number;
   from: string[];

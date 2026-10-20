@@ -1,7 +1,7 @@
 import type { Character } from "../types/character.ts";
 
 /**
- * A subclass feature that is one option of a Rule Choice (ticket 11). The Catalog prints every option
+ * A subclass feature that is one option of a Rule Choice. The Catalog prints every option
  * as a feature of its own, so the Totem Warrior's Tiger carries its skill grant at 6th level whatever
  * the character chose. Its grants apply only while the character has picked that option.
  *

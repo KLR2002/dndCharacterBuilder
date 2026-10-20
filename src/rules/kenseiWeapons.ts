@@ -2,7 +2,7 @@ import type { Character } from "../types/character.ts";
 import { catalogListings, type CharacterCatalogs } from "./catalogs.ts";
 import { validPicks } from "./proficiencyPools.ts";
 
-/** The Monk subclass whose weapon picks are kensei weapons (ticket 10). */
+/** The Monk subclass whose weapon picks are kensei weapons. */
 const KENSEI_SUBCLASS = "Way of the Kensei";
 
 /**

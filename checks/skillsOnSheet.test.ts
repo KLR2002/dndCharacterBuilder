@@ -11,7 +11,7 @@ import { inMemoryCompendium, integratedTestCompendium, loadTestCatalog, makeChar
 import { fixedGrant, placeholderFeat, wardenClass } from "./proficiencySheetFixture.ts";
 
 /**
- * Skill proficiencies on the Proficiency Sheet (ticket 11). Invented fixtures (Lampwright, Lantern
+ * Skill proficiencies on the Proficiency Sheet. Invented fixtures (Lampwright, Lantern
  * Scholar) carry the grants; the Drunken Master, Scout and Prodigy tests run against the integrated
  * test Compendium. Skills are read from the sheet, and a skill pick is keyed by its grant id.
  */

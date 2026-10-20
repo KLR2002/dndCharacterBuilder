@@ -266,7 +266,7 @@ export function isItemInfusedWith(
 
 /**
  * Whether the item is a weapon the character is proficient with, given the weapon names on the
- * Proficiency Sheet (ticket 09). A category name ("Simple weapons", "Martial weapons") covers every
+ * Proficiency Sheet. A category name ("Simple weapons", "Martial weapons") covers every
  * weapon of that category.
  */
 export function isProficientWithWeapon(item: InventoryItem, sheetWeapons: string[]): boolean {

@@ -64,7 +64,7 @@ export const fixedGrant = (
   names: string[],
 ): ProficiencyGrant => ({ id, kind: "fixed", category, names });
 
-/** A Proficiency Choice, which the sheet ignores until the choice slice. */
+/** A Proficiency Choice. The sheet counts it only through the player's picks. */
 export const anyLanguageChoice = (id: string, count: number): ProficiencyGrant => ({
   id,
   kind: "choice",

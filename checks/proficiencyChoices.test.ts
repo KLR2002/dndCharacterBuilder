@@ -3,7 +3,8 @@ import assert from "node:assert/strict";
 import type { Character } from "../src/types/character.ts";
 import type { SubclassData } from "../src/types/dnd5e.ts";
 import { proficiencySheet, type SheetEntry } from "../src/rules/proficiencySheet.ts";
-import { proficiencyChoiceOffers } from "../src/rules/proficiencyChoiceOffers.ts";
+import { pickerTitles, proficiencyChoiceOffers } from "../src/rules/proficiencyChoiceOffers.ts";
+import type { ChoiceProficiencyGrant } from "../src/rules/proficiencyPools.ts";
 import { pickRuleChoice } from "../src/rules/ruleChoices.ts";
 import { reconcile } from "../src/rules/characterReconciler.ts";
 import {
@@ -15,7 +16,7 @@ import {
 import { anyLanguageChoice, placeholderFeat, wardenClass } from "./proficiencySheetFixture.ts";
 
 /**
- * Proficiency Choices (ticket 05). Invented rules (the Lampwright, the Lantern Scholar feat) carry
+ * Proficiency Choices. Invented rules (the Lampwright, the Lantern Scholar feat) carry
  * the fixtures; the Kensei brush is tested end to end against the integrated test compendium.
  */
 
@@ -173,8 +174,41 @@ test("a Way of the Kensei monk is offered calligrapher's or painter's supplies a
   const offer = proficiencyChoiceOffers(monk3(), { compendium }).find((o) => o.id === KENSEI_ID);
   assert.ok(offer, "the Path of the Kensei choice is offered");
   assert.equal(offer.choose, 1);
-  assert.equal(offer.traitName, "Path of the Kensei");
+  assert.equal(offer.traitName, "Path of the Kensei: Tool");
   assert.deepEqual(offer.options.map((option) => option.name), ["Calligrapher's Supplies", "Painter's Supplies"]);
+});
+
+test("the three Kensei choices at 3rd level get three distinct picker titles", () => {
+  const compendium = integratedTestCompendium();
+  const titles = proficiencyChoiceOffers(monk3(), { compendium })
+    .filter((o) => o.id.startsWith("XGE/Monk/Way of the Kensei/Path of the Kensei@3"))
+    .map((o) => o.traitName);
+  assert.deepEqual(titles, ["Path of the Kensei: Tool", "Path of the Kensei: Melee weapon", "Path of the Kensei: Ranged weapon"]);
+});
+
+test("a feature with a single choice keeps its plain name", () => {
+  assert.equal(offerFor(lampWarden(3), LAMP_ID)?.traitName, "Lamp Craft");
+  assert.equal(offerFor(lampWarden(3), LAMP_TONGUE_ID)?.traitName, "Lamp Tongue");
+});
+
+test("picker titles name each grant's category, and number grants that still share one", () => {
+  const tool: ChoiceProficiencyGrant = { id: "t", kind: "choice", category: "tools", count: 1, pool: { kind: "any" } };
+  const language: ChoiceProficiencyGrant = { id: "l", kind: "choice", category: "languages", count: 1, pool: { kind: "any" } };
+  const skill: ChoiceProficiencyGrant = { id: "s", kind: "choice", category: "skills", count: 2, pool: { kind: "any" } };
+  const save: ChoiceProficiencyGrant = { id: "v", kind: "choice", category: "savingThrows", count: 1, pool: { kind: "any" } };
+  const weapon: ChoiceProficiencyGrant = {
+    id: "w",
+    kind: "choice",
+    category: "weapons",
+    count: 1,
+    pool: { kind: "weapons", base: ["simple"], withoutProperties: [], plus: [] },
+  };
+  assert.deepEqual(pickerTitles("Blessings of Knowledge", [language, skill]), [
+    "Blessings of Knowledge: Language",
+    "Blessings of Knowledge: Skill",
+  ]);
+  assert.deepEqual(pickerTitles("Kit", [tool, language, tool]), ["Kit: Tool 1", "Kit: Language", "Kit: Tool 2"]);
+  assert.deepEqual(pickerTitles("Oath", [save, weapon]), ["Oath: Saving throw", "Oath: Weapon"]);
 });
 
 test("the Kensei brush pick shows on the sheet, and a monk below 3rd level is offered nothing", () => {

@@ -361,7 +361,7 @@ test("background expertise: removing the background releases its Expertise pick 
   ]);
 });
 
-// --- Expertise reads the Proficiency Sheet (ticket 08) ---
+// --- Expertise reads the Proficiency Sheet ---
 
 // A Fighter primary with Rogue as a second class. The Rogue's Thieves' Tools come from the
 // class grant only when Rogue is the primary class, so here only a held or added tool offers them.

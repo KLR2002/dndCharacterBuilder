@@ -10,7 +10,7 @@ import { getWeaponAttacks } from "../src/rules/attacks.ts";
 import { integratedTestCompendium, makeChar } from "./testUtils.ts";
 
 /**
- * Kensei weapons (ticket 10). The Way of the Kensei monk chooses a melee and a ranged kensei weapon at 3rd
+ * Kensei weapons. The Way of the Kensei monk chooses a melee and a ranged kensei weapon at 3rd
  * level, and one more weapon of either kind at 6th, 11th and 17th level. The pool is read from the
  * Compendium's item properties; a chosen weapon is proficient and counts as a Monk Weapon. Everything
  * runs against the integrated test compendium, since the Kensei is not in the SRD Baseline.
