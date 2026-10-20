@@ -442,7 +442,17 @@
           {
             "name": "Battle Ready",
             "level": 3,
-            "description": "When you reach 3rd level, your combat training and your experiments with magic have paid off in two ways:\n\n- You gain proficiency with martial weapons.\n- When you attack with a magic weapon, you can use your Intelligence modifier, instead of Strength or Dexterity modifier, for the attack and damage rolls."
+            "description": "When you reach 3rd level, your combat training and your experiments with magic have paid off in two ways:\n\n- You gain proficiency with martial weapons.\n- When you attack with a magic weapon, you can use your Intelligence modifier, instead of Strength or Dexterity modifier, for the attack and damage rolls.",
+            "grants": [
+              {
+                "id": "TCE/Artificer/Battle Smith/Battle Ready@3#0",
+                "kind": "fixed",
+                "category": "weapons",
+                "names": [
+                  "martial weapons"
+                ]
+              }
+            ]
           },
           {
             "name": "Battle Smith Spells",
@@ -819,7 +829,24 @@
           {
             "name": "Tiger",
             "level": 6,
-            "description": "You gain proficiency in two skills from the following list: Athletics, Acrobatics, Stealth, and Survival. The cat spirit hones your survival instincts."
+            "description": "You gain proficiency in two skills from the following list: Athletics, Acrobatics, Stealth, and Survival. The cat spirit hones your survival instincts.",
+            "grants": [
+              {
+                "id": "PHB/Barbarian/Path of the Totem Warrior/Tiger@6#0",
+                "kind": "choice",
+                "category": "skills",
+                "count": 2,
+                "pool": {
+                  "kind": "names",
+                  "names": [
+                    "Athletics",
+                    "Acrobatics",
+                    "Stealth",
+                    "Survival"
+                  ]
+                }
+              }
+            ]
           },
           {
             "name": "Wolf",
@@ -1462,7 +1489,18 @@
           {
             "name": "Bonus Proficiencies",
             "level": 3,
-            "description": "When you join the College of Lore at 3rd level, you gain proficiency with three skills of your choice."
+            "description": "When you join the College of Lore at 3rd level, you gain proficiency with three skills of your choice.",
+            "grants": [
+              {
+                "id": "PHB/Bard/College of Lore/Bonus Proficiencies@3#0",
+                "kind": "choice",
+                "category": "skills",
+                "count": 3,
+                "pool": {
+                  "kind": "any"
+                }
+              }
+            ]
           },
           {
             "name": "Cutting Words",
@@ -1512,7 +1550,26 @@
           {
             "name": "Bonus Proficiencies",
             "level": 3,
-            "description": "When you join the College of Valor at 3rd level, you gain proficiency with medium armor, shields, and martial weapons."
+            "description": "When you join the College of Valor at 3rd level, you gain proficiency with medium armor, shields, and martial weapons.",
+            "grants": [
+              {
+                "id": "PHB/Bard/College of Valor/Bonus Proficiencies@3#0",
+                "kind": "fixed",
+                "category": "armor",
+                "names": [
+                  "medium armor",
+                  "shields"
+                ]
+              },
+              {
+                "id": "PHB/Bard/College of Valor/Bonus Proficiencies@3#1",
+                "kind": "fixed",
+                "category": "weapons",
+                "names": [
+                  "martial weapons"
+                ]
+              }
+            ]
           },
           {
             "name": "Combat Inspiration",
@@ -2109,7 +2166,17 @@
           {
             "name": "Bonus Proficiency",
             "level": 1,
-            "description": "When you choose this domain at 1st level, you gain proficiency with heavy armor."
+            "description": "When you choose this domain at 1st level, you gain proficiency with heavy armor.",
+            "grants": [
+              {
+                "id": "PHB/Cleric/Life Domain/Bonus Proficiency@1#0",
+                "kind": "fixed",
+                "category": "armor",
+                "names": [
+                  "heavy armor"
+                ]
+              }
+            ]
           },
           {
             "name": "Disciple of Life",
@@ -2266,12 +2333,38 @@
           {
             "name": "Acolyte of Nature",
             "level": 1,
-            "description": "At 1st level, you learn one druid cantrip of your choice. This cantrip doesn't count against the number of cleric cantrips you know. You also gain proficiency in one of the following skills of your choice: Animal Handling, Nature, or Survival."
+            "description": "At 1st level, you learn one druid cantrip of your choice. This cantrip doesn't count against the number of cleric cantrips you know. You also gain proficiency in one of the following skills of your choice: Animal Handling, Nature, or Survival.",
+            "grants": [
+              {
+                "id": "PHB/Cleric/Nature Domain/Acolyte of Nature@1#0",
+                "kind": "choice",
+                "category": "skills",
+                "count": 1,
+                "pool": {
+                  "kind": "names",
+                  "names": [
+                    "Animal Handling",
+                    "Nature",
+                    "Survival"
+                  ]
+                }
+              }
+            ]
           },
           {
             "name": "Bonus Proficiency",
             "level": 1,
-            "description": "Also at 1st level, you gain proficiency with heavy armor."
+            "description": "Also at 1st level, you gain proficiency with heavy armor.",
+            "grants": [
+              {
+                "id": "PHB/Cleric/Nature Domain/Bonus Proficiency@1#0",
+                "kind": "fixed",
+                "category": "armor",
+                "names": [
+                  "heavy armor"
+                ]
+              }
+            ]
           },
           {
             "name": "Channel Divinity: Charm Animals and Plants",
@@ -2351,7 +2444,25 @@
           {
             "name": "Bonus Proficiencies",
             "level": 1,
-            "description": "At 1st level, you gain proficiency with martial weapons and heavy armor."
+            "description": "At 1st level, you gain proficiency with martial weapons and heavy armor.",
+            "grants": [
+              {
+                "id": "PHB/Cleric/Tempest Domain/Bonus Proficiencies@1#0",
+                "kind": "fixed",
+                "category": "weapons",
+                "names": [
+                  "martial weapons"
+                ]
+              },
+              {
+                "id": "PHB/Cleric/Tempest Domain/Bonus Proficiencies@1#1",
+                "kind": "fixed",
+                "category": "armor",
+                "names": [
+                  "heavy armor"
+                ]
+              }
+            ]
           },
           {
             "name": "Wrath of the Storm",
@@ -2498,7 +2609,25 @@
           {
             "name": "Bonus Proficiencies",
             "level": 1,
-            "description": "At 1st level, you gain proficiency with martial weapons and heavy armor."
+            "description": "At 1st level, you gain proficiency with martial weapons and heavy armor.",
+            "grants": [
+              {
+                "id": "PHB/Cleric/War Domain/Bonus Proficiencies@1#0",
+                "kind": "fixed",
+                "category": "weapons",
+                "names": [
+                  "martial weapons"
+                ]
+              },
+              {
+                "id": "PHB/Cleric/War Domain/Bonus Proficiencies@1#1",
+                "kind": "fixed",
+                "category": "armor",
+                "names": [
+                  "heavy armor"
+                ]
+              }
+            ]
           },
           {
             "name": "War Priest",
@@ -2867,7 +2996,17 @@
           {
             "name": "Bonus Proficiency",
             "level": 1,
-            "description": "When you choose this domain at 1st level, you gain proficiency with heavy armor."
+            "description": "When you choose this domain at 1st level, you gain proficiency with heavy armor.",
+            "grants": [
+              {
+                "id": "PSA/Cleric/Solidarity Domain (PSA)/Bonus Proficiency@1#0",
+                "kind": "fixed",
+                "category": "armor",
+                "names": [
+                  "heavy armor"
+                ]
+              }
+            ]
           },
           {
             "name": "Solidarity's Action",
@@ -2943,12 +3082,39 @@
           {
             "name": "Acolyte of Strength",
             "level": 1,
-            "description": "At 1st level, you learn one druid cantrip of your choice. You also gain proficiency in one of the following skills of your choice: Animal Handling, Athletics, Nature, or Survival."
+            "description": "At 1st level, you learn one druid cantrip of your choice. You also gain proficiency in one of the following skills of your choice: Animal Handling, Athletics, Nature, or Survival.",
+            "grants": [
+              {
+                "id": "PSA/Cleric/Strength Domain (PSA)/Acolyte of Strength@1#0",
+                "kind": "choice",
+                "category": "skills",
+                "count": 1,
+                "pool": {
+                  "kind": "names",
+                  "names": [
+                    "Animal Handling",
+                    "Athletics",
+                    "Nature",
+                    "Survival"
+                  ]
+                }
+              }
+            ]
           },
           {
             "name": "Bonus Proficiency",
             "level": 1,
-            "description": "Also at 1st level, you gain proficiency with heavy armor."
+            "description": "Also at 1st level, you gain proficiency with heavy armor.",
+            "grants": [
+              {
+                "id": "PSA/Cleric/Strength Domain (PSA)/Bonus Proficiency@1#0",
+                "kind": "fixed",
+                "category": "armor",
+                "names": [
+                  "heavy armor"
+                ]
+              }
+            ]
           },
           {
             "name": "Channel Divinity: Feat of Strength",
@@ -3028,7 +3194,25 @@
           {
             "name": "Bonus Proficiencies",
             "level": 1,
-            "description": "At 1st level, you gain proficiency with martial weapons and heavy armor."
+            "description": "At 1st level, you gain proficiency with martial weapons and heavy armor.",
+            "grants": [
+              {
+                "id": "PSA/Cleric/Zeal Domain (PSA)/Bonus Proficiencies@1#0",
+                "kind": "fixed",
+                "category": "weapons",
+                "names": [
+                  "martial weapons"
+                ]
+              },
+              {
+                "id": "PSA/Cleric/Zeal Domain (PSA)/Bonus Proficiencies@1#1",
+                "kind": "fixed",
+                "category": "armor",
+                "names": [
+                  "heavy armor"
+                ]
+              }
+            ]
           },
           {
             "name": "Priest of Zeal",
@@ -3109,7 +3293,25 @@
           {
             "name": "Bonus Proficiency",
             "level": 1,
-            "description": "When you choose this domain at 1st level, you gain proficiency with heavy armor and smith's tools."
+            "description": "When you choose this domain at 1st level, you gain proficiency with heavy armor and smith's tools.",
+            "grants": [
+              {
+                "id": "XGE/Cleric/Forge Domain/Bonus Proficiency@1#0",
+                "kind": "fixed",
+                "category": "armor",
+                "names": [
+                  "heavy armor"
+                ]
+              },
+              {
+                "id": "XGE/Cleric/Forge Domain/Bonus Proficiency@1#1",
+                "kind": "fixed",
+                "category": "tools",
+                "names": [
+                  "smith's tools"
+                ]
+              }
+            ]
           },
           {
             "name": "Channel Divinity: Artisan's Blessing",
@@ -3261,7 +3463,30 @@
           {
             "name": "Bonus Proficiencies",
             "level": 1,
-            "description": "When you choose this domain at 1st level, you gain proficiency with heavy armor. You also gain proficiency in the Intimidation or Persuasion skill (your choice)."
+            "description": "When you choose this domain at 1st level, you gain proficiency with heavy armor. You also gain proficiency in the Intimidation or Persuasion skill (your choice).",
+            "grants": [
+              {
+                "id": "TCE/Cleric/Order Domain/Bonus Proficiencies@1#0",
+                "kind": "fixed",
+                "category": "armor",
+                "names": [
+                  "heavy armor"
+                ]
+              },
+              {
+                "id": "TCE/Cleric/Order Domain/Bonus Proficiencies@1#1",
+                "kind": "choice",
+                "category": "skills",
+                "count": 1,
+                "pool": {
+                  "kind": "names",
+                  "names": [
+                    "Intimidation",
+                    "Persuasion"
+                  ]
+                }
+              }
+            ]
           },
           {
             "name": "Voice of Authority",
@@ -3342,7 +3567,23 @@
           {
             "name": "Implement of Peace",
             "level": 1,
-            "description": "*1st-level Peace Domain feature*\n\nYou gain proficiency in the Insight, Performance, or Persuasion skill (your choice)."
+            "description": "*1st-level Peace Domain feature*\n\nYou gain proficiency in the Insight, Performance, or Persuasion skill (your choice).",
+            "grants": [
+              {
+                "id": "TCE/Cleric/Peace Domain/Implement of Peace@1#0",
+                "kind": "choice",
+                "category": "skills",
+                "count": 1,
+                "pool": {
+                  "kind": "names",
+                  "names": [
+                    "Insight",
+                    "Performance",
+                    "Persuasion"
+                  ]
+                }
+              }
+            ]
           },
           {
             "name": "Channel Divinity: Balm of Peace",
@@ -3413,7 +3654,25 @@
           {
             "name": "Bonus Proficiencies",
             "level": 1,
-            "description": "*1st-level Twilight Domain feature*\n\nYou gain proficiency with martial weapons and heavy armor."
+            "description": "*1st-level Twilight Domain feature*\n\nYou gain proficiency with martial weapons and heavy armor.",
+            "grants": [
+              {
+                "id": "TCE/Cleric/Twilight Domain/Bonus Proficiencies@1#0",
+                "kind": "fixed",
+                "category": "weapons",
+                "names": [
+                  "martial weapons"
+                ]
+              },
+              {
+                "id": "TCE/Cleric/Twilight Domain/Bonus Proficiencies@1#1",
+                "kind": "fixed",
+                "category": "armor",
+                "names": [
+                  "heavy armor"
+                ]
+              }
+            ]
           },
           {
             "name": "Eyes of Night",
@@ -4051,7 +4310,17 @@
           {
             "name": "Speech of the Woods",
             "level": 2,
-            "description": "At 2nd level, you gain the ability to converse with beasts and many fey.\n\nYou learn to speak, read, and write Sylvan. In addition, beasts can understand your speech, and you gain the ability to decipher their noises and motions. Most beasts lack the intelligence to convey or understand sophisticated concepts, but a friendly beast could relay what it has seen or heard in the recent past. This ability doesn't grant you friendship with beasts, though you can combine this ability with gifts to curry favor with them as you would with any nonplayer character."
+            "description": "At 2nd level, you gain the ability to converse with beasts and many fey.\n\nYou learn to speak, read, and write Sylvan. In addition, beasts can understand your speech, and you gain the ability to decipher their noises and motions. Most beasts lack the intelligence to convey or understand sophisticated concepts, but a friendly beast could relay what it has seen or heard in the recent past. This ability doesn't grant you friendship with beasts, though you can combine this ability with gifts to curry favor with them as you would with any nonplayer character.",
+            "grants": [
+              {
+                "id": "XGE/Druid/Circle of the Shepherd/Speech of the Woods@2#0",
+                "kind": "fixed",
+                "category": "languages",
+                "names": [
+                  "Sylvan"
+                ]
+              }
+            ]
           },
           {
             "name": "Spirit Totem",
@@ -4513,7 +4782,37 @@
           {
             "name": "Student of War",
             "level": 3,
-            "description": "At 3rd level, you gain proficiency with one type of artisan's tools of your choice."
+            "description": "At 3rd level, you gain proficiency with one type of artisan's tools of your choice.",
+            "grants": [
+              {
+                "id": "PHB/Fighter/Battle Master/Student of War@3#0",
+                "kind": "choice",
+                "category": "tools",
+                "count": 1,
+                "pool": {
+                  "kind": "names",
+                  "names": [
+                    "alchemist's supplies",
+                    "brewer's supplies",
+                    "calligrapher's supplies",
+                    "carpenter's tools",
+                    "cartographer's tools",
+                    "cobbler's tools",
+                    "cook's utensils",
+                    "glassblower's tools",
+                    "jeweler's tools",
+                    "leatherworker's tools",
+                    "mason's tools",
+                    "painter's supplies",
+                    "potter's tools",
+                    "smith's tools",
+                    "tinker's tools",
+                    "weaver's tools",
+                    "woodcarver's tools"
+                  ]
+                }
+              }
+            ]
           },
           {
             "name": "Additional Maneuvers",
@@ -5307,7 +5606,22 @@
         "name": "Diamond Soul",
         "level": 14,
         "description": "Beginning at 14th level, your mastery of ki grants you proficiency in all saving throws.\n\nAdditionally, whenever you make a saving throw and fail, you can spend 1 ki point to reroll it and take the second result.",
-        "isOptional": false
+        "isOptional": false,
+        "grants": [
+          {
+            "id": "PHB/Monk/Diamond Soul@14#0",
+            "kind": "fixed",
+            "category": "savingThrows",
+            "names": [
+              "Strength",
+              "Dexterity",
+              "Constitution",
+              "Intelligence",
+              "Wisdom",
+              "Charisma"
+            ]
+          }
+        ]
       },
       {
         "name": "Timeless Body",
@@ -5542,7 +5856,25 @@
           {
             "name": "Bonus Proficiencies",
             "level": 3,
-            "description": "When you choose this tradition at 3rd level, you gain proficiency in the Performance skill if you don't already have it. Your martial arts technique mixes combat training with the precision of a dancer and the antics of a jester. You also gain proficiency with brewer's supplies if you don't already have it."
+            "description": "When you choose this tradition at 3rd level, you gain proficiency in the Performance skill if you don't already have it. Your martial arts technique mixes combat training with the precision of a dancer and the antics of a jester. You also gain proficiency with brewer's supplies if you don't already have it.",
+            "grants": [
+              {
+                "id": "XGE/Monk/Way of the Drunken Master/Bonus Proficiencies@3#0",
+                "kind": "fixed",
+                "category": "skills",
+                "names": [
+                  "Performance"
+                ]
+              },
+              {
+                "id": "XGE/Monk/Way of the Drunken Master/Bonus Proficiencies@3#1",
+                "kind": "fixed",
+                "category": "tools",
+                "names": [
+                  "brewer's supplies"
+                ]
+              }
+            ]
           },
           {
             "name": "Drunken Technique",
@@ -5995,7 +6327,18 @@
           {
             "name": "Armor Training",
             "level": 1,
-            "description": "At 1st level, you gain proficiency with medium armor and shields."
+            "description": "At 1st level, you gain proficiency with medium armor and shields.",
+            "grants": [
+              {
+                "id": "UATheMysticClass/Mystic/Order of the Avatar/Armor Training@1#0",
+                "kind": "fixed",
+                "category": "armor",
+                "names": [
+                  "medium armor",
+                  "shields"
+                ]
+              }
+            ]
           },
           {
             "name": "Bonus Disciplines",
@@ -6035,7 +6378,27 @@
           {
             "name": "Awakened Talent",
             "level": 1,
-            "description": "At 1st level, you gain proficiency with two of the following skills of your choice: Animal Handling, Deception, Insight, Intimidation, Investigation, Perception, and Persuasion."
+            "description": "At 1st level, you gain proficiency with two of the following skills of your choice: Animal Handling, Deception, Insight, Intimidation, Investigation, Perception, and Persuasion.",
+            "grants": [
+              {
+                "id": "UATheMysticClass/Mystic/Order of the Awakened/Awakened Talent@1#0",
+                "kind": "choice",
+                "category": "skills",
+                "count": 2,
+                "pool": {
+                  "kind": "names",
+                  "names": [
+                    "Animal Handling",
+                    "Deception",
+                    "Insight",
+                    "Intimidation",
+                    "Investigation",
+                    "Perception",
+                    "Persuasion"
+                  ]
+                }
+              }
+            ]
           },
           {
             "name": "Bonus Disciplines",
@@ -6155,7 +6518,25 @@
           {
             "name": "Martial Training",
             "level": 1,
-            "description": "At 1st level, you gain proficiency with medium armor and martial weapons."
+            "description": "At 1st level, you gain proficiency with medium armor and martial weapons.",
+            "grants": [
+              {
+                "id": "UATheMysticClass/Mystic/Order of the Soul Knife/Martial Training@1#0",
+                "kind": "fixed",
+                "category": "armor",
+                "names": [
+                  "medium armor"
+                ]
+              },
+              {
+                "id": "UATheMysticClass/Mystic/Order of the Soul Knife/Martial Training@1#1",
+                "kind": "fixed",
+                "category": "weapons",
+                "names": [
+                  "martial weapons"
+                ]
+              }
+            ]
           },
           {
             "name": "Soul Knife",
@@ -6200,7 +6581,29 @@
           {
             "name": "Hermit's Study",
             "level": 1,
-            "description": "At 1st level, you gain proficiency with two of the following skills of your choice: Animal Handling, Arcana, History, Insight, Medicine, Nature, Perception, Religion, or Survival."
+            "description": "At 1st level, you gain proficiency with two of the following skills of your choice: Animal Handling, Arcana, History, Insight, Medicine, Nature, Perception, Religion, or Survival.",
+            "grants": [
+              {
+                "id": "UATheMysticClass/Mystic/Order of the Wu Jen/Hermit's Study@1#0",
+                "kind": "choice",
+                "category": "skills",
+                "count": 2,
+                "pool": {
+                  "kind": "names",
+                  "names": [
+                    "Animal Handling",
+                    "Arcana",
+                    "History",
+                    "Insight",
+                    "Medicine",
+                    "Nature",
+                    "Perception",
+                    "Religion",
+                    "Survival"
+                  ]
+                }
+              }
+            ]
           },
           {
             "name": "Elemental Attunement",
@@ -7735,7 +8138,23 @@
           {
             "name": "Otherworldly Glamour",
             "level": 3,
-            "description": "*3rd-level Fey Wanderer feature*\n\nYour fey qualities give you a supernatural charm. As a result, whenever you make a Charisma check, you gain a bonus to the check equal to your Wisdom modifier (minimum of +1).\n\nIn addition, you gain proficiency in one of the following skills of your choice: Deception, Performance, or Persuasion."
+            "description": "*3rd-level Fey Wanderer feature*\n\nYour fey qualities give you a supernatural charm. As a result, whenever you make a Charisma check, you gain a bonus to the check equal to your Wisdom modifier (minimum of +1).\n\nIn addition, you gain proficiency in one of the following skills of your choice: Deception, Performance, or Persuasion.",
+            "grants": [
+              {
+                "id": "TCE/Ranger/Fey Wanderer/Otherworldly Glamour@3#0",
+                "kind": "choice",
+                "category": "skills",
+                "count": 1,
+                "pool": {
+                  "kind": "names",
+                  "names": [
+                    "Deception",
+                    "Performance",
+                    "Persuasion"
+                  ]
+                }
+              }
+            ]
           },
           {
             "name": "Beguiling Twist",
@@ -8077,7 +8496,17 @@
         "name": "Slippery Mind",
         "level": 15,
         "description": "By 15th level, you have acquired greater mental strength. You gain proficiency in Wisdom saving throws.",
-        "isOptional": false
+        "isOptional": false,
+        "grants": [
+          {
+            "id": "PHB/Rogue/Slippery Mind@15#0",
+            "kind": "fixed",
+            "category": "savingThrows",
+            "names": [
+              "Wisdom"
+            ]
+          }
+        ]
       },
       {
         "name": "Ability Score Improvement",
@@ -8206,7 +8635,18 @@
           {
             "name": "Bonus Proficiencies",
             "level": 3,
-            "description": "When you choose this archetype at 3rd level, you gain proficiency with the disguise kit and the poisoner's kit."
+            "description": "When you choose this archetype at 3rd level, you gain proficiency with the disguise kit and the poisoner's kit.",
+            "grants": [
+              {
+                "id": "PHB/Rogue/Assassin/Bonus Proficiencies@3#0",
+                "kind": "fixed",
+                "category": "tools",
+                "names": [
+                  "disguise kit",
+                  "poisoner's kit"
+                ]
+              }
+            ]
           },
           {
             "name": "Infiltration Expertise",
@@ -8686,7 +9126,23 @@
         "name": "Sharp Mind",
         "level": 18,
         "description": "*18th-level Expert feature*\n\nThe sidekick gains proficiency in one of the following saving throws of your choice: Intelligence, Wisdom, or Charisma.",
-        "isOptional": false
+        "isOptional": false,
+        "grants": [
+          {
+            "id": "TCE/Expert Sidekick/Sharp Mind@18#0",
+            "kind": "choice",
+            "category": "savingThrows",
+            "count": 1,
+            "pool": {
+              "kind": "names",
+              "names": [
+                "Intelligence",
+                "Wisdom",
+                "Charisma"
+              ]
+            }
+          }
+        ]
       },
       {
         "name": "Ability Score Improvement",
