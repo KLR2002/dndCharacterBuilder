@@ -1,5 +1,5 @@
 import type { Character } from "../types/character.ts";
-import type { ProficiencyCategory } from "../types/dnd5e.ts";
+import type { ItemData, ProficiencyCategory } from "../types/dnd5e.ts";
 import { RACE_WEAPON_PROFICIENCIES } from "../constants/rules.ts";
 import { catalogListings, type CharacterCatalogs } from "./catalogs.ts";
 import { grantedFeatures } from "./grantedFeatures.ts";
@@ -85,11 +85,16 @@ function fixedFeatureNames(features: FeatureInstance[], category: ProficiencyCat
 }
 
 /** The saved picks of one choice category, for the choice grants on the features the character has now. */
-function choicePickNames(features: FeatureInstance[], character: Character, category: ProficiencyCategory): string[] {
+function choicePickNames(
+  features: FeatureInstance[],
+  character: Character,
+  category: ProficiencyCategory,
+  items: readonly ItemData[],
+): string[] {
   return features.flatMap((feature) =>
     (feature.grants ?? []).flatMap((grant) =>
       grant.kind === "choice" && grant.category === category
-        ? validPicks(grant, character.proficiencyPicks?.[grant.id] ?? [])
+        ? validPicks(grant, character.proficiencyPicks?.[grant.id] ?? [], items)
         : [],
     ),
   );
@@ -143,16 +148,17 @@ export function proficiencySheet(character: Character, catalogs: CharacterCatalo
   const recordedMulticlass = character.multiclassProficiencies ?? [];
   const race = raceTraining(character);
 
+  const items = listings.items();
   const tools = [
     ...resolveCharacterTools(character, catalogs),
     ...fixedFeatureNames(features, "tools").map(normalizeToolName),
-    ...choicePickNames(features, character, "tools"),
+    ...choicePickNames(features, character, "tools", items),
   ];
   const languages = withLanguageFallbacks(
     [
       ...structuredLanguages(character, catalogs),
       ...fixedFeatureNames(features, "languages").map(normalizeLanguageName),
-      ...choicePickNames(features, character, "languages"),
+      ...choicePickNames(features, character, "languages", items),
     ],
     character,
   );
@@ -168,7 +174,7 @@ export function proficiencySheet(character: Character, catalogs: CharacterCatalo
     ...legacyWeaponNames(character),
     ...race.weapons,
     ...fixedFeatureNames(features, "weapons"),
-    ...choicePickNames(features, character, "weapons"),
+    ...choicePickNames(features, character, "weapons", items),
   ];
 
   const toolRules = sheetEntries(tools);

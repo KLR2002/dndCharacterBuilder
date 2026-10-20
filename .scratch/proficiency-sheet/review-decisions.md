@@ -24,7 +24,8 @@ Rules applied: a fixed grant stays fixed even when the book says "if you already
 | Fighter/Samurai | Bonus Proficiency (3) | skills choose 1 from [History, Insight, Performance, Persuasion] |
 | Fighter/Samurai | Elegant Courtier (7) | savingThrows fixed: Wisdom |
 | Fighter/Rune Knight | Bonus Proficiencies (3) | tools fixed: Smith's Tools; languages fixed: Giant |
-| Monk/Way of the Kensei | Path of the Kensei (3) | tools choose 1 from [Calligrapher's Supplies, Painter's Supplies] (the kensei weapons choices come with the Kensei weapons ticket) |
+| Monk/Way of the Kensei | Path of the Kensei (3) | tools choose 1 from [Calligrapher's Supplies, Painter's Supplies]; weapons choose 1 melee and weapons choose 1 ranged (kensei weapons, ticket 10) |
+| Monk/Way of the Kensei | One with the Blade (6), Sharpen the Blade (11), Unerring Accuracy (17) | weapons choose 1 (either kind; kensei weapons, ticket 10) |
 | Monk/Way of Mercy | Implements of Mercy (3) | skills fixed: Insight, Medicine; tools fixed: Herbalism Kit |
 | Monk/Way of the Ascendant Dragon | Draconic Disciple (3) | languages fixed: Draconic |
 | Ranger | Deft Explorer (1) | languages choose 2 any |
@@ -72,4 +73,4 @@ The vocabulary matcher also flags sentences that only mention the proficiency bo
 - Skilled ("three skills or tools") is modelled as three skills; tools can be added by hand.
 - Resilient's choice is a free pick of one ability until the saving-throw ticket ties it to the feat's raised ability.
 - Sidekick classes keep only the unconditional parts of their bonus proficiencies.
-- The Kensei weapons choices are not in this batch; they come with the Kensei weapons ticket.
+- The Kensei weapons are in the Catalog now (ticket 10): one melee and one ranged choice at 3rd level, then one choice of either kind at 6th, 11th and 17th level, as the feature text says ("another type of weapon, either melee or ranged"). The weapon pools read the Compendium's properties and attack type; the simple or martial category comes from the app's standard weapon lists, because the scraped items carry no category.

@@ -6168,23 +6168,131 @@
                     "painter's supplies"
                   ]
                 }
+              },
+              {
+                "id": "XGE/Monk/Way of the Kensei/Path of the Kensei@3#1",
+                "kind": "choice",
+                "category": "weapons",
+                "count": 1,
+                "pool": {
+                  "kind": "weapons",
+                  "base": [
+                    "simple",
+                    "martial"
+                  ],
+                  "withoutProperties": [
+                    "heavy",
+                    "special"
+                  ],
+                  "plus": [
+                    "longbow"
+                  ],
+                  "attackType": "melee"
+                }
+              },
+              {
+                "id": "XGE/Monk/Way of the Kensei/Path of the Kensei@3#2",
+                "kind": "choice",
+                "category": "weapons",
+                "count": 1,
+                "pool": {
+                  "kind": "weapons",
+                  "base": [
+                    "simple",
+                    "martial"
+                  ],
+                  "withoutProperties": [
+                    "heavy",
+                    "special"
+                  ],
+                  "plus": [
+                    "longbow"
+                  ],
+                  "attackType": "ranged"
+                }
               }
             ]
           },
           {
             "name": "One with the Blade",
             "level": 6,
-            "description": "At 6th level, you extend your ki into your kensei weapons, granting you the following benefits.\n\n### Magic Kensei Weapons\n\n\nYour attacks with your kensei weapons count as magical for the purpose of overcoming resistance and immunity to nonmagical attacks and damage.\n\n### Deft Strike\n\n\nWhen you hit a target with a kensei weapon, you can spend 1 ki point to cause the weapon to deal extra damage to the target equal to your Martial Arts die. You can use this feature only once on each of your turns."
+            "description": "At 6th level, you extend your ki into your kensei weapons, granting you the following benefits.\n\n### Magic Kensei Weapons\n\n\nYour attacks with your kensei weapons count as magical for the purpose of overcoming resistance and immunity to nonmagical attacks and damage.\n\n### Deft Strike\n\n\nWhen you hit a target with a kensei weapon, you can spend 1 ki point to cause the weapon to deal extra damage to the target equal to your Martial Arts die. You can use this feature only once on each of your turns.",
+            "grants": [
+              {
+                "id": "XGE/Monk/Way of the Kensei/One with the Blade@6#0",
+                "kind": "choice",
+                "category": "weapons",
+                "count": 1,
+                "pool": {
+                  "kind": "weapons",
+                  "base": [
+                    "simple",
+                    "martial"
+                  ],
+                  "withoutProperties": [
+                    "heavy",
+                    "special"
+                  ],
+                  "plus": [
+                    "longbow"
+                  ]
+                }
+              }
+            ]
           },
           {
             "name": "Sharpen the Blade",
             "level": 11,
-            "description": "At 11th level, you gain the ability to augment your weapons further with your ki. As a bonus action, you can expend up to 3 ki points to grant one kensei weapon you touch a bonus to attack and damage rolls when you attack with it. The bonus equals the number of ki points you spent. This bonus lasts for 1 minute or until you use this feature again. This feature has no effect on a magic weapon that already has a bonus to attack and damage rolls."
+            "description": "At 11th level, you gain the ability to augment your weapons further with your ki. As a bonus action, you can expend up to 3 ki points to grant one kensei weapon you touch a bonus to attack and damage rolls when you attack with it. The bonus equals the number of ki points you spent. This bonus lasts for 1 minute or until you use this feature again. This feature has no effect on a magic weapon that already has a bonus to attack and damage rolls.",
+            "grants": [
+              {
+                "id": "XGE/Monk/Way of the Kensei/Sharpen the Blade@11#0",
+                "kind": "choice",
+                "category": "weapons",
+                "count": 1,
+                "pool": {
+                  "kind": "weapons",
+                  "base": [
+                    "simple",
+                    "martial"
+                  ],
+                  "withoutProperties": [
+                    "heavy",
+                    "special"
+                  ],
+                  "plus": [
+                    "longbow"
+                  ]
+                }
+              }
+            ]
           },
           {
             "name": "Unerring Accuracy",
             "level": 17,
-            "description": "At 17th level, your mastery of weapons grants you extraordinary accuracy. If you miss with an attack roll using a monk weapon on your turn, you can reroll it. You can use this feature only once on each of your turns."
+            "description": "At 17th level, your mastery of weapons grants you extraordinary accuracy. If you miss with an attack roll using a monk weapon on your turn, you can reroll it. You can use this feature only once on each of your turns.",
+            "grants": [
+              {
+                "id": "XGE/Monk/Way of the Kensei/Unerring Accuracy@17#0",
+                "kind": "choice",
+                "category": "weapons",
+                "count": 1,
+                "pool": {
+                  "kind": "weapons",
+                  "base": [
+                    "simple",
+                    "martial"
+                  ],
+                  "withoutProperties": [
+                    "heavy",
+                    "special"
+                  ],
+                  "plus": [
+                    "longbow"
+                  ]
+                }
+              }
+            ]
           }
         ],
         "description": ""
