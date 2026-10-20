@@ -4,7 +4,9 @@
 
 **Blocked by:** 07, 08, 09
 
-**Status:** ready-for-agent
+**Status:** done
+
+**Landed:** merged from `ps/11-skills` (58f9307). Totem Warrior Tiger grant is gated on the Aspect of the Beast pick. Mastermind has no skill grant in the data. Knowledge Cleric Expertise still implies proficiency, overlapping the Blessings of Knowledge pick. Old skills.ts stays for ticket 12.
 
 - [ ] A recorded baseline exists first; the only differences are newly applied grants, each listed.
 - [ ] Skill picks (class skills, race and background choices, Rule Choice skill picks such as Primal Knowledge) are preserved.
