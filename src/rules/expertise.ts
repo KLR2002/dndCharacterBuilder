@@ -41,11 +41,11 @@ export function getMilestonePicks(
 
 export function getAvailableExpertiseMilestones(
   character: Character,
-  catalogs?: CharacterCatalogs
+  catalogs: CharacterCatalogs
 ): ExpertiseMilestone[] {
   const milestones: ExpertiseMilestone[] = [];
   const skillList = skills(character, {
-    backgrounds: catalogs ? catalogListings(catalogs).backgrounds() : undefined,
+    backgrounds: catalogListings(catalogs).backgrounds(),
   });
   const proficientSkills = skillList.filter((s) => s.isProficient).map((s) => s.name);
   const toolList = resolveCharacterTools(character, catalogs);
@@ -151,7 +151,7 @@ export function getAvailableExpertiseMilestones(
 
 export function pruneInvalidExpertise(
   character: Character,
-  catalogs?: CharacterCatalogs
+  catalogs: CharacterCatalogs
 ): Character {
   const milestones = getAvailableExpertiseMilestones(character, catalogs);
   const totalCapacity = milestones.reduce((sum, m) => sum + m.count, 0);
@@ -181,16 +181,32 @@ export function pruneInvalidExpertise(
     return character;
   }
 
+  // Each dropped pick gets a review notice: no longer offered, or no slot left for it.
+  const keptKeys = new Set(pruned.map((x) => x.trim().toLowerCase()));
+  const notices: string[] = [];
+  const seenKeys = new Set<string>();
+  for (const exp of character.chosenExpertise || []) {
+    const key = exp.trim().toLowerCase();
+    if (keptKeys.has(key) || seenKeys.has(key)) continue;
+    seenKeys.add(key);
+    notices.push(
+      allAllowedOptions.has(key)
+        ? `${exp} Expertise removed: no Expertise slot left`
+        : `${exp} Expertise removed: ${exp} is no longer a proficient skill or tool`
+    );
+  }
+
   return {
     ...character,
     chosenExpertise: pruned,
+    needsReview: Array.from(new Set([...(character.needsReview || []), ...notices])),
   };
 }
 
 export function toggleExpertiseChoice(
   character: Character,
   item: string,
-  catalogs?: CharacterCatalogs
+  catalogs: CharacterCatalogs
 ): Character {
   const current = [...(character.chosenExpertise || [])];
   const cleanItem = item.trim().toLowerCase();
