@@ -7,10 +7,8 @@ import {
   getBackgroundToolGrant,
   getClassToolGrant,
   resolveCharacterTools,
-  ARTISAN_TOOLS,
-  MUSICAL_INSTRUMENTS,
-  GAMING_SETS,
-} from "../src/rules/proficienciesAndLanguages.ts";
+} from "../src/rules/proficiencySources/toolsAndLanguages.ts";
+import { ARTISAN_TOOLS, MUSICAL_INSTRUMENTS, GAMING_SETS } from "../src/rules/proficienciesAndLanguages.ts";
 import { POINT_BUY_COST } from "../src/constants/rules.ts";
 import { proficiencySheet } from "../src/rules/proficiencySheet.ts";
 import type { Character } from "../src/types/character.ts";

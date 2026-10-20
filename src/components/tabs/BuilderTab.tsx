@@ -2,14 +2,7 @@ import React, { useState } from "react";
 import { ScrollView, Text, TouchableOpacity } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { DND_SKILLS, POINT_BUY_COST } from "../../constants/rules";
-import {
-  getBackgroundLanguageGrant,
-  getBackgroundToolGrant,
-  getClassToolGrant,
-  getRaceLanguageGrant,
-  getRaceToolGrant,
-} from "../../rules/proficienciesAndLanguages";
-import { proficiencySheet, ruleGrantedSkills } from "../../rules/proficiencySheet";
+import { proficiencySheet, ruleGrantedSkills, sourceGrants } from "../../rules/proficiencySheet";
 import { useCharacters } from "../../context/CharacterContext";
 import { useAppTheme } from "../../context/ThemeContext";
 import { findClass, findItem, getFeats } from "../../services/dataService";
@@ -364,18 +357,14 @@ export const BuilderTab: React.FC<BuilderTabProps> = ({
     );
   };
 
-  const raceLanguageGrant = getRaceLanguageGrant(
-    character.race?.name,
-    character.race?.subraceName,
-    allRaces,
-    character.race?.source,
-    character.race?.subraceSource
-  );
-  const raceToolGrant = getRaceToolGrant(character.race?.name, character.race?.subraceName, allRaces);
+  const {
+    raceLanguages: raceLanguageGrant,
+    raceTools: raceToolGrant,
+    backgroundLanguages: bgLanguageGrant,
+    backgroundTools: bgToolGrant,
+    classTools: classToolGrant,
+  } = sourceGrants(character, catalogs);
   const ruleChoices = offeredRuleChoices(character, { raceCatalog: allRaces, level: totalLevel, activeBooks, origins: ["race"] });
-  const bgLanguageGrant = getBackgroundLanguageGrant(character.background?.name, allBackgrounds);
-  const bgToolGrant = getBackgroundToolGrant(character.background?.name, allBackgrounds);
-  const classToolGrant = getClassToolGrant(primaryClass, allClasses);
 
   // The Proficiency Sheet is the one source for the language and tool lists the Builder shows.
   const sheet = proficiencySheet(character, catalogs);

@@ -13,7 +13,7 @@ import {
 import { reconcile } from "../../rules/characterReconciler";
 import { subclassLevel } from "../../rules/leveling";
 import { currentCompendium } from "../../services/compendium";
-import { ToolGrant } from "../../rules/proficienciesAndLanguages";
+import type { ToolGrant } from "../../rules/proficiencySheet";
 import { findClass } from "../../services/dataService";
 import { Badge } from "../ui/Badge";
 import { Button } from "../ui/Button";

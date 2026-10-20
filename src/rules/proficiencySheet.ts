@@ -7,18 +7,25 @@ import { grantedFeatures } from "./grantedFeatures.ts";
 import { deduplicateWeaponProficiencies, normalizeArmorProficiency } from "./proficiencies.ts";
 import { classBaseProficiencies } from "./proficiencySources/classBase.ts";
 import type { FeatureInstance, ResolvedAncestry } from "./types.ts";
+import { ALL_LANGUAGE_NAMES, ALL_TOOLS, normalizeToolName } from "./proficienciesAndLanguages.ts";
 import {
-  ALL_LANGUAGE_NAMES,
-  ALL_TOOLS,
-  normalizeToolName,
+  getBackgroundLanguageGrant,
+  getBackgroundToolGrant,
+  getClassToolGrant,
+  getRaceLanguageGrant,
+  getRaceToolGrant,
   resolveCharacterTools,
   structuredLanguages,
-} from "./proficienciesAndLanguages.ts";
+  type LanguageGrant,
+  type ToolGrant,
+} from "./proficiencySources/toolsAndLanguages.ts";
 import { normalizeLanguageName, normalizeSavingThrowName, validPicks } from "./proficiencyPools.ts";
 import { ABILITY_NAMES } from "./abilities.ts";
 import { CLASS_DATA } from "./classData.ts";
 import { getAutoGrantedSkills, isKnowledgeCleric, normalizeSkillName } from "./skills.ts";
 import { resolveCharacterAncestry } from "./characterAncestry.ts";
+
+export type { LanguageGrant, ToolChoice, ToolGrant } from "./proficiencySources/toolsAndLanguages.ts";
 
 /** The Knowledge Domain's four skills. A Knowledge Cleric's Expertise on one of them has always made it proficient. */
 const KNOWLEDGE_SKILLS = ["Arcana", "History", "Nature", "Religion"];
@@ -179,6 +186,37 @@ export function ruleGrantedSkills(character: Character, catalogs?: CharacterCata
   const listings = catalogListings(catalogs);
   const ancestry = resolveCharacterAncestry(character, listings.races());
   return legacySkillNames(character, ancestry, listings, featuresOf(character, listings));
+}
+
+/**
+ * What the Builder's race, background and class cards offer: the fixed grants and the pick counts of
+ * each source. The Builder reads these through the sheet, as it reads every proficiency.
+ */
+export interface SourceGrants {
+  raceLanguages: LanguageGrant;
+  raceTools: ToolGrant;
+  backgroundLanguages: LanguageGrant;
+  backgroundTools: ToolGrant;
+  classTools: ToolGrant;
+}
+
+export function sourceGrants(character: Character, catalogs: CharacterCatalogs): SourceGrants {
+  const listings = catalogListings(catalogs);
+  const races = listings.races();
+  const backgrounds = listings.backgrounds();
+  return {
+    raceLanguages: getRaceLanguageGrant(
+      character.race?.name,
+      character.race?.subraceName,
+      races,
+      character.race?.source,
+      character.race?.subraceSource
+    ),
+    raceTools: getRaceToolGrant(character.race?.name, character.race?.subraceName, races),
+    backgroundLanguages: getBackgroundLanguageGrant(character.background?.name, backgrounds),
+    backgroundTools: getBackgroundToolGrant(character.background?.name, backgrounds),
+    classTools: getClassToolGrant(character.classes[0]?.className, listings.classes()),
+  };
 }
 
 /**

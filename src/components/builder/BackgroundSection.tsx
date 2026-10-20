@@ -11,7 +11,8 @@ import {
   reclaimBackgroundGrants,
   setCustomBackground,
 } from "../../rules/builderTransitions";
-import { ALL_LANGUAGE_NAMES, ToolGrant } from "../../rules/proficienciesAndLanguages";
+import { ALL_LANGUAGE_NAMES } from "../../rules/proficienciesAndLanguages";
+import type { ToolGrant } from "../../rules/proficiencySheet";
 import type { CharacterCatalogs } from "../../rules/catalogs";
 import { Badge } from "../ui/Badge";
 import { Button } from "../ui/Button";

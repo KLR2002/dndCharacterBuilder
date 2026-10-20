@@ -13,7 +13,8 @@ import {
   setRacialCantrip,
   collectFixedBonuses,
 } from "../../rules/ancestryEngine";
-import { ALL_LANGUAGE_NAMES, ToolGrant } from "../../rules/proficienciesAndLanguages";
+import { ALL_LANGUAGE_NAMES } from "../../rules/proficienciesAndLanguages";
+import type { ToolGrant } from "../../rules/proficiencySheet";
 import { Badge } from "../ui/Badge";
 import { Button } from "../ui/Button";
 import { Card } from "../ui/Card";
