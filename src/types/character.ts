@@ -172,6 +172,9 @@ export interface Character {
   startingGrantedGold?: number;
   backgroundGrantsApplied?: boolean;
   languages?: string[];
+  // Added Proficiencies: tools and languages the player records by hand (GLOSSARY).
+  addedTools?: string[];
+  addedLanguages?: string[];
   chosenLanguages?: {
     race?: string[];
     background?: string[];
