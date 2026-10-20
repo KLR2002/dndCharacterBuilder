@@ -24,11 +24,15 @@ const BOOK_SETS: (string[] | undefined)[] = [
   ["PHB", "XGE", "TCE", "FTD", "BGG", "SCAG", "DMG"],
 ];
 
-const cls = (className: string, level: number, subclassName?: string, source = "PHB"): CharacterClass => ({
+/** The book a base class is printed in: the Artificer is in Tasha's, every other class here is in the PHB. */
+const classSourceOf = (className: string) => (className === "Artificer" ? "TCE" : "PHB");
+
+/** A class row. The last argument is the subclass's own book, which can differ from the class's. */
+const cls = (className: string, level: number, subclassName?: string, subclassSource = "PHB"): CharacterClass => ({
   className,
-  source,
+  source: classSourceOf(className),
   level,
-  ...(subclassName ? { subclassName, subclassSource: source } : {}),
+  ...(subclassName ? { subclassName, subclassSource } : {}),
 });
 
 const race = (name: string, subraceName?: string, source = "PHB") => ({
