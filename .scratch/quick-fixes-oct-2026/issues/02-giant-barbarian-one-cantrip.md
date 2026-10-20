@@ -11,3 +11,9 @@
 - [ ] Changing the choice swaps the cantrip.
 - [ ] Characters saved with both cantrips already listed are corrected by the reconciler, with a `needsReview` notice, and no other known spell is touched.
 - [ ] `npm run check:all` passes.
+
+## Comments
+
+**Diagnosis (main session):** The Path of the Giant's `additionalSpells` in the catalog is two separate, unnamed entries, one granting Druidcraft and one granting Thaumaturgy, which together mean "choose one". `selectAdditionalSpellsEntries` only narrows entries that carry a name, so with unnamed entries it returns both and `getSubclassSpells` reports both as the subclass's cantrips. The class spell profile then adds every one of `subSpells.cantrips` to the Giant barbarian's known spells (the `isGiantBarbarian` loop in the profile builder), so the spell list shows both whatever was chosen. The reconciler's Giant Power sync keeps only the picked cantrip in the stored known spells, but the profile builder puts the other one back.
+
+**Fix direction:** For a Giant barbarian, the cantrips the profile adds come only from the saved Giant Power pick (none when there is no pick). Do not change `selectAdditionalSpellsEntries` generally, since other subclasses legitimately have several unnamed entries. Write the regression test at the class spell profile seam with the real Path of the Giant data from the integrated test compendium (see `checks/genieExpandedSpells.test.ts` for the pattern, and `checks/testUtils.ts`): with each pick the profile's known cantrips contain only that cantrip; with no pick none; the reconciler test for stored duplicates already exists in the repo, extend it only if it does not cover both stored cantrips.
