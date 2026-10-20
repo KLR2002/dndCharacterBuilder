@@ -166,7 +166,7 @@ test("an optional feature grants only while it is enabled", () => {
   assert.ok(names(proficiencySheet(enabled, { compendium }).languages).includes("Oath Cant"));
 });
 
-test("a duplicate grant appears once, and choice, armor and saving throw grants add nothing to the sheet", () => {
+test("a duplicate grant appears once, and choice and armor grants add nothing to the sheet", () => {
   const sheet = proficiencySheet(
     makeChar({ race: { name: "Vellari", source: "PHB" }, classes: [{ className: "Warden", source: "PHB", level: 1 }] }),
     { compendium: wardenCompendium() },
@@ -197,4 +197,80 @@ test("the SRD Baseline's own grants apply without the Integrated Catalog", () =>
     { compendium },
   );
   assert.ok(names(sorcerer.languages).includes("Draconic"));
+});
+
+// Saving throws (ticket 07). The first class's saves are the base; a second class's are never added.
+
+test("the first class's saving throws are on the sheet, and a second class's are not", () => {
+  const sheet = proficiencySheet(
+    makeChar({
+      classes: [
+        { className: "Fighter", source: "PHB", level: 1 },
+        { className: "Wizard", source: "PHB", level: 1 },
+      ],
+    }),
+    { compendium: inMemoryCompendium() },
+  );
+  assert.deepEqual(names(sheet.savingThrows), ["Strength", "Constitution"]);
+});
+
+test("a fixed saving-throw grant on a class feature applies from its level", () => {
+  assert.deepEqual(names(proficiencySheet(wardenAt(1), { compendium: wardenCompendium() }).savingThrows), ["Wisdom"]);
+});
+
+test("Diamond Soul gives every saving throw from monk level 14, and not before", () => {
+  const compendium = srdBaselineCompendium();
+  const monkAt = (level: number) => makeChar({ classes: [{ className: "Monk", source: "SRD", level }] });
+  assert.deepEqual(names(proficiencySheet(monkAt(13), { compendium }).savingThrows), ["Strength", "Dexterity"]);
+  assert.deepEqual(names(proficiencySheet(monkAt(14), { compendium }).savingThrows), [
+    "Strength",
+    "Dexterity",
+    "Constitution",
+    "Intelligence",
+    "Wisdom",
+    "Charisma",
+  ]);
+});
+
+const steadfastFeat = placeholderFeat({
+  name: "Steadfast Training",
+  grants: [
+    {
+      id: "FIX/Feat/Steadfast Training@0#0",
+      kind: "choice",
+      category: "savingThrows",
+      count: 1,
+      pool: { kind: "names", names: ["Strength", "Dexterity", "Constitution", "Intelligence", "Wisdom", "Charisma"] },
+    },
+  ],
+});
+
+test("a feat's saving-throw choice is the ability the feat raised, so there is no pick to make", () => {
+  const compendium = inMemoryCompendium({ feats: [steadfastFeat] });
+  const raisedWisdom = makeChar({
+    asiSelections: [{ level: 4, type: "feat", featName: "Steadfast Training", featSource: "PHB", featAbility: "wis" }],
+  });
+  assert.deepEqual(names(proficiencySheet(raisedWisdom, { compendium }).savingThrows), ["Wisdom"]);
+  assert.deepEqual(proficiencySheet(makeChar(), { compendium }).savingThrows, [], "no feat, no saving throw");
+});
+
+test("a saving throw the class already gives is kept once", () => {
+  const compendium = inMemoryCompendium({ feats: [steadfastFeat] });
+  const sheet = proficiencySheet(
+    makeChar({
+      classes: [{ className: "Fighter", source: "PHB", level: 4 }],
+      asiSelections: [{ level: 4, type: "feat", featName: "Steadfast Training", featSource: "PHB", featAbility: "str" }],
+    }),
+    { compendium },
+  );
+  assert.deepEqual(names(sheet.savingThrows), ["Strength", "Constitution"]);
+});
+
+test("a feat's saving-throw choice without a raised ability stays a pick the player makes", () => {
+  const compendium = inMemoryCompendium({ feats: [steadfastFeat] });
+  const picked = makeChar({
+    asiSelections: [{ level: 4, type: "feat", featName: "Steadfast Training", featSource: "PHB" }],
+    proficiencyPicks: { "FIX/Feat/Steadfast Training@0#0": ["Charisma"] },
+  });
+  assert.deepEqual(names(proficiencySheet(picked, { compendium }).savingThrows), ["Charisma"]);
 });

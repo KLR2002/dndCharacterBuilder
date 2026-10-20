@@ -131,7 +131,8 @@ export function evaluateCharacter(
   const acResult = armorClass(character, ancestry);
   const speedsResult = characterSpeeds(character, { ...ancestry, compendium: catalogs?.compendium });
   const speedResult = speedsResult.walk;
-  const savesResult = savingThrows(character, classRules, ancestry);
+  const sheet = proficiencySheet(character, catalogs ?? {});
+  const savesResult = savingThrows(character, sheet.savingThrows, ancestry);
   const weightResult = carryingWeight(character, ancestry);
 
   const skillsResult = skills(character, {
@@ -174,7 +175,6 @@ export function evaluateCharacter(
     armorSet.add(normalizeArmorProficiency("Medium armor"));
   }
 
-  const sheet = proficiencySheet(character, catalogs ?? {});
   const toolList = sheet.tools.map((t) => t.name);
   const langList = sheet.languages.map((l) => l.name);
 

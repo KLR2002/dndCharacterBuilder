@@ -59,7 +59,8 @@ export function proficiencyChoiceOffers(character: Character, query: Proficiency
 
       // What the character holds from every other source, with this choice's own pick set aside.
       const sheet = proficiencySheet(clearProficiencyPick(character, grant.id), { compendium, activeBooks });
-      const held = new Set((grant.category === "tools" ? sheet.tools : sheet.languages).map((entry) => entry.name.toLowerCase()));
+      const heldEntries = grant.category === "tools" ? sheet.tools : grant.category === "languages" ? sheet.languages : sheet.savingThrows;
+      const held = new Set(heldEntries.map((entry) => entry.name.toLowerCase()));
       const own = new Set(validPicks(grant, character.proficiencyPicks?.[grant.id] ?? []).map((name) => name.toLowerCase()));
 
       offers.push({

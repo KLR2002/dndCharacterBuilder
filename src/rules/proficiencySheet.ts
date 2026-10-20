@@ -11,7 +11,9 @@ import {
   structuredLanguages,
   withLanguageFallbacks,
 } from "./proficienciesAndLanguages.ts";
-import { normalizeLanguageName, validPicks, type PickableCategory } from "./proficiencyPools.ts";
+import { normalizeLanguageName, normalizeSavingThrowName, validPicks, type PickableCategory } from "./proficiencyPools.ts";
+import { ABILITY_NAMES } from "./abilities.ts";
+import { CLASS_DATA } from "./classData.ts";
 
 /** One entry on the Proficiency Sheet. Added Proficiencies are `ruleGranted: false`. */
 export interface SheetEntry {
@@ -26,6 +28,8 @@ export interface SheetEntry {
 export interface ProficiencySheet {
   tools: SheetEntry[];
   languages: SheetEntry[];
+  /** Ability names, for example "Wisdom". Only the first class's saves are a base; the rest come from grants. */
+  savingThrows: SheetEntry[];
 }
 
 /** One entry per name, the first spelling kept, matched case-insensitively. */
@@ -112,10 +116,19 @@ export function proficiencySheet(character: Character, catalogs: CharacterCatalo
     ],
     character,
   );
+  // The first class's saves are the base, as they have always been. A later class adds none of its own.
+  const firstClass = character.classes[0];
+  const baseSaves = firstClass ? (catalogs.classRules ?? CLASS_DATA)[firstClass.className]?.savingThrows ?? [] : [];
+  const savingThrows = sheetEntries([
+    ...baseSaves.map((key) => ABILITY_NAMES[key]),
+    ...fixedFeatureNames(features, "savingThrows").map(normalizeSavingThrowName),
+    ...choicePickNames(features, character, "savingThrows"),
+  ]);
   const toolRules = sheetEntries(tools);
   const languageRules = sheetEntries(languages);
   return {
     tools: [...toolRules, ...addedSheetEntries(character.addedTools, "tools", toolRules)],
     languages: [...languageRules, ...addedSheetEntries(character.addedLanguages, "languages", languageRules)],
+    savingThrows,
   };
 }

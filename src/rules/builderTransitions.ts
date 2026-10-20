@@ -13,6 +13,7 @@ import { maxHp } from "./hp.ts";
 import { fullHealAtLevelUp, followRaisedMaxHp } from "./hitPoints.ts";
 import { currentCompendium, type Compendium } from "../services/compendium.ts";
 import { normalizeSkillName } from "./skills.ts";
+import { ABILITY_NAMES } from "./abilities.ts";
 import {
   STANDARD_ARRAY,
   MULTICLASS_PREREQUISITES,
@@ -71,15 +72,6 @@ export function setChoiceRacialBonus(
     racialAbilityBonuses: updatedBonuses,
   };
 }
-
-const ABILITY_NAMES: Record<AbilityKey, string> = {
-  str: "Strength",
-  dex: "Dexterity",
-  con: "Constitution",
-  int: "Intelligence",
-  wis: "Wisdom",
-  cha: "Charisma",
-};
 
 function getPrereqForClass(className: string) {
   const match = Object.keys(MULTICLASS_PREREQUISITES).find(

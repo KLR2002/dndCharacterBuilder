@@ -3,6 +3,15 @@ import type { ResolvedAncestry } from "./types.ts";
 export { POINT_BUY_COST, STANDARD_ARRAY } from "../constants/rules.ts";
 
 export const ABILITIES: AbilityKey[] = ["str", "dex", "con", "int", "wis", "cha"];
+/** Each ability's full name, as the Catalog writes it in proficiency grants and requirements. */
+export const ABILITY_NAMES: Record<AbilityKey, string> = {
+  str: "Strength",
+  dex: "Dexterity",
+  con: "Constitution",
+  int: "Intelligence",
+  wis: "Wisdom",
+  cha: "Charisma",
+};
 export function getAbilityModifier(score: number): number { return Math.floor((score - 10) / 2); }
 export function formatModifier(mod: number): string { return mod >= 0 ? `+${mod}` : `${mod}`; }
 export function effectiveScores(character: Character, opts: ResolvedAncestry = {}): { scores: AbilityScores; modifiers: AbilityScores } {
