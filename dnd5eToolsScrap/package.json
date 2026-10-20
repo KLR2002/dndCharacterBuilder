@@ -17,6 +17,7 @@
     "scrape:beasts": "tsx src/index.ts --only beasts",
     "scrape:books": "tsx src/index.ts --only books",
     "scrape:conditions": "tsx src/index.ts --only conditions",
+    "enrich:grants": "tsx src/grants/cli-enrich.ts",
     "test": "tsx --test 'checks/**/*.test.ts'"
   },
   "keywords": [],
