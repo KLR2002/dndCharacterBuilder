@@ -13,8 +13,9 @@ import type {
 /**
  * Minimum Integrated Catalog format the application requires. A catalog saved with a lower
  * number, or with none (saved by an older app), is stale: it still loads, but Settings asks for a re-sync.
+ * Format 3 adds Proficiency Grants to class, subclass and feat features (ADR 0015).
  */
-export const REQUIRED_CATALOG_FORMAT = 2;
+export const REQUIRED_CATALOG_FORMAT = 3;
 
 /** True for an Integrated Catalog saved below the required format (or with none). The SRD Baseline is never stale. */
 export function isCatalogStale(collections: Pick<CompendiumCollections, "hasIntegratedCatalog" | "catalogFormat">): boolean {
