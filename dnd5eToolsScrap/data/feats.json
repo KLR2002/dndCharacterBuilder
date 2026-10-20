@@ -725,6 +725,16 @@
           "You learn the {@spell misty step} spell and can cast it once without expending a spell slot. You regain the ability to cast it in this way when you finish a short or long rest. Intelligence is your spellcasting ability for this spell."
         ]
       }
+    ],
+    "grants": [
+      {
+        "id": "XGE/Feat/Fey Teleportation@0#0",
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Sylvan"
+        ]
+      }
     ]
   },
   {
@@ -998,6 +1008,16 @@
           "You gain proficiency with heavy armor."
         ]
       }
+    ],
+    "grants": [
+      {
+        "id": "PHB/Feat/Heavily Armored@0#0",
+        "kind": "fixed",
+        "category": "armor",
+        "names": [
+          "heavy armor"
+        ]
+      }
     ]
   },
   {
@@ -1246,6 +1266,16 @@
           "You gain proficiency with light armor."
         ]
       }
+    ],
+    "grants": [
+      {
+        "id": "PHB/Feat/Lightly Armored@0#0",
+        "kind": "fixed",
+        "category": "armor",
+        "names": [
+          "light armor"
+        ]
+      }
     ]
   },
   {
@@ -1393,6 +1423,17 @@
         "type": "list",
         "items": [
           "You gain proficiency with medium armor and shields."
+        ]
+      }
+    ],
+    "grants": [
+      {
+        "id": "PHB/Feat/Moderately Armored@0#0",
+        "kind": "fixed",
+        "category": "armor",
+        "names": [
+          "medium armor",
+          "shields"
         ]
       }
     ]
@@ -2054,6 +2095,21 @@
           "You gain proficiency in the {@skill Acrobatics} or {@skill Athletics} skill (your choice).",
           "You have advantage on any Strength ({@skill Athletics}) or Dexterity ({@skill Acrobatics}) check you make to escape from being {@condition grappled}."
         ]
+      }
+    ],
+    "grants": [
+      {
+        "id": "XGE/Feat/Squat Nimbleness@0#0",
+        "kind": "choice",
+        "category": "skills",
+        "count": 1,
+        "pool": {
+          "kind": "names",
+          "names": [
+            "Acrobatics",
+            "Athletics"
+          ]
+        }
       }
     ]
   },

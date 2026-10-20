@@ -23,6 +23,7 @@ import { SearchBar } from "../ui/SearchBar";
 import { AsiFeatSection, PendingAsiSlot } from "./AsiFeatSection";
 import { builderStyles as styles, RuleChoicePicker, SkillPicker } from "./builderStyles";
 import { normalizeSkillName } from "../../rules/skills";
+import type { CharacterCatalogs } from "../../rules/catalogs";
 import { StartingGrantsSection } from "./StartingGrantsSection";
 import { useResponsiveLayout } from "../../hooks/useResponsiveLayout";
 import {
@@ -489,7 +490,8 @@ export const ClassProgressionSection: React.FC<ClassProgressionSectionProps> = (
 
       {/* Expertise Choices (Rogue, Bard, Knowledge Cleric, Ranger Deft Explorer, Feats) */}
       {(() => {
-        const milestones = getAvailableExpertiseMilestones(character);
+        const catalogs: CharacterCatalogs = { compendium: currentCompendium(), activeBooks };
+        const milestones = getAvailableExpertiseMilestones(character, catalogs);
         if (milestones.length === 0) return null;
         const picks = getMilestonePicks(milestones, character.chosenExpertise);
         const allAllowed = new Set(milestones.flatMap((m) => m.options.map((o) => o.toLowerCase())));
@@ -541,7 +543,7 @@ export const ClassProgressionSection: React.FC<ClassProgressionSectionProps> = (
                   from={from}
                   chosen={chosen}
                   onToggle={(item) =>
-                    onUpdate((cur) => toggleExpertiseChoice(cur, item))
+                    onUpdate((cur) => toggleExpertiseChoice(cur, item, catalogs))
                   }
                   theme={theme}
                 />

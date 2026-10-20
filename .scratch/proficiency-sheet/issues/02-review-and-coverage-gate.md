@@ -13,3 +13,10 @@
 - [ ] Features that grant saving-throw proficiency (Diamond Soul and feats) are covered as saving-throw grants.
 - [ ] The gate has a unit test with invented features: it fails on an uncovered match and passes once covered or marked.
 - [ ] `dnd5eToolsScrap` tests and `npm run check:all` pass.
+
+## Approach (decided with the user)
+
+- The tracked scraped data is enriched, not re-scraped: a small script reads the tracked class and feat files as they are and adds only the `grants` field to features that have grants. No other byte of those files changes (a test proves that stripping `grants` gives back the original file). The script is idempotent and is the way grants reach `dnd5eToolsScrap/data/` for class features, subclass features and feats. Editing those files by hand stays forbidden.
+- Race, background and class starting proficiencies keep being read from their existing structured model fields; the Proficiency Sheet (ticket 04) adapts them into the grant shape at read time. They are not part of the enrichment.
+- The coverage gate reads the enriched tracked files, so it needs no network.
+- The unparsed list from ticket 01 (about 285 entries, much of it noise such as proficiency bonus or spell DC) is reviewed in two stages: the implementer builds the tooling and dumps a compact list (feature, matched sentences only) to `.scratch/proficiency-sheet/review.md`; the main session classifies each entry (grant, or grants nothing) with a Sonnet reviewer as a second check and asks the user only about the ambiguous ones; an implementer then applies the decisions to the override file and the "reviewed, grants nothing" marks.
