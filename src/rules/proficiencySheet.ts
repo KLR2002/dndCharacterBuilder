@@ -177,7 +177,8 @@ function knowledgeExpertiseSkills(character: Character): string[] {
   return (character.chosenExpertise ?? []).map(normalizeSkillName).filter((name) => KNOWLEDGE_SKILLS.includes(name));
 }
 
-function featuresOf(character: Character, listings: CompendiumListings): FeatureInstance[] {
+/** The features the character holds, each with the grants its rule gives, read from the listings. */
+export function featuresOf(character: Character, listings: CompendiumListings): FeatureInstance[] {
   return grantedFeatures(character, {
     races: listings.races(),
     classes: listings.classes(),

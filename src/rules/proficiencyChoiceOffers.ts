@@ -2,11 +2,10 @@ import type { Character } from "../types/character.ts";
 import { ALL_RESOURCE_BOOKS } from "../constants/books.ts";
 import { currentCompendium, type Compendium } from "../services/compendium.ts";
 import { catalogListings } from "./catalogs.ts";
-import { grantedFeatures } from "./grantedFeatures.ts";
 import type { AvailableRuleChoice, RuleChoiceOrigin } from "./choices/types.ts";
 import type { ProficiencyCategory } from "../types/dnd5e.ts";
 import type { FeatureInstance } from "./types.ts";
-import { proficiencySheet } from "./proficiencySheet.ts";
+import { featuresOf, proficiencySheet } from "./proficiencySheet.ts";
 import {
   clearProficiencyPick,
   isPickableCategory,
@@ -79,12 +78,7 @@ export function proficiencyChoiceOffers(character: Character, query: Proficiency
   const active = activeBooks ? new Set(activeBooks.map((book) => book.toUpperCase())) : undefined;
   const listings = catalogListings({ compendium, activeBooks });
   const items = listings.items();
-  const features = grantedFeatures(character, {
-    races: listings.races(),
-    classes: listings.classes(),
-    backgrounds: listings.backgrounds(),
-    feats: listings.feats(),
-  });
+  const features = featuresOf(character, listings);
 
   const offers: AvailableRuleChoice[] = [];
   for (const feature of features) {
