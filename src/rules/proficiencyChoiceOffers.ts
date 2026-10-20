@@ -4,6 +4,7 @@ import { currentCompendium, type Compendium } from "../services/compendium.ts";
 import { catalogListings } from "./catalogs.ts";
 import { grantedFeatures } from "./grantedFeatures.ts";
 import type { AvailableRuleChoice, RuleChoiceOrigin } from "./choices/types.ts";
+import type { ProficiencyCategory } from "../types/dnd5e.ts";
 import type { FeatureInstance } from "./types.ts";
 import { proficiencySheet } from "./proficiencySheet.ts";
 import {
@@ -12,6 +13,7 @@ import {
   poolNames,
   validPicks,
   weaponHeld,
+  type ChoiceProficiencyGrant,
 } from "./proficiencyPools.ts";
 
 /**
@@ -36,6 +38,41 @@ const ORIGIN_OF: Partial<Record<FeatureInstance["origin"], RuleChoiceOrigin>> = 
 
 const KNOWN_BOOKS = new Set(ALL_RESOURCE_BOOKS.map((book) => book.code.toUpperCase()));
 
+const DESCRIPTOR_OF_CATEGORY: Record<ProficiencyCategory, string> = {
+  skills: "Skill",
+  tools: "Tool",
+  languages: "Language",
+  weapons: "Weapon",
+  armor: "Armor",
+  savingThrows: "Saving throw",
+};
+
+function descriptorOf(grant: ChoiceProficiencyGrant): string {
+  if (grant.pool.kind === "weapons" && grant.pool.attackType) {
+    return grant.pool.attackType === "melee" ? "Melee weapon" : "Ranged weapon";
+  }
+  return DESCRIPTOR_OF_CATEGORY[grant.category];
+}
+
+/**
+ * The picker titles of one feature's Proficiency Choices, in grant order. A feature with a single choice
+ * keeps its name. With several, each title adds what its grant picks ("Path of the Kensei: Melee weapon"),
+ * and grants that still share a descriptor are numbered in grant order ("Tool 1", "Tool 2").
+ */
+export function pickerTitles(featureName: string, grants: readonly ChoiceProficiencyGrant[]): string[] {
+  if (grants.length <= 1) return grants.map(() => featureName);
+  const descriptors = grants.map(descriptorOf);
+  const counts = new Map<string, number>();
+  for (const descriptor of descriptors) counts.set(descriptor, (counts.get(descriptor) ?? 0) + 1);
+  const seen = new Map<string, number>();
+  return descriptors.map((descriptor) => {
+    if ((counts.get(descriptor) ?? 0) < 2) return `${featureName}: ${descriptor}`;
+    const ordinal = (seen.get(descriptor) ?? 0) + 1;
+    seen.set(descriptor, ordinal);
+    return `${featureName}: ${descriptor} ${ordinal}`;
+  });
+}
+
 export function proficiencyChoiceOffers(character: Character, query: ProficiencyChoiceQuery = {}): AvailableRuleChoice[] {
   const compendium = query.compendium ?? currentCompendium();
   const activeBooks = query.activeBooks?.length ? query.activeBooks : undefined;
@@ -56,9 +93,11 @@ export function proficiencyChoiceOffers(character: Character, query: Proficiency
     const source = feature.source.toUpperCase();
     if (active && KNOWN_BOOKS.has(source) && !active.has(source)) continue;
 
-    for (const grant of feature.grants ?? []) {
-      if (grant.kind !== "choice" || !isPickableCategory(grant.category)) continue;
-
+    const choices = (feature.grants ?? []).filter(
+      (grant): grant is ChoiceProficiencyGrant => grant.kind === "choice" && isPickableCategory(grant.category),
+    );
+    const titles = pickerTitles(feature.name, choices);
+    for (const [index, grant] of choices.entries()) {
       // What the character holds from every other source, with this choice's own pick set aside.
       const sheet = proficiencySheet(clearProficiencyPick(character, grant.id), { compendium, activeBooks });
       const own = new Set(validPicks(grant, character.proficiencyPicks?.[grant.id] ?? [], items).map((name) => name.toLowerCase()));
@@ -70,7 +109,7 @@ export function proficiencyChoiceOffers(character: Character, query: Proficiency
 
       offers.push({
         id: grant.id,
-        traitName: feature.name,
+        traitName: titles[index],
         choose: grant.count,
         level: feature.level ?? 0,
         effectLevel: feature.level ?? 0,
