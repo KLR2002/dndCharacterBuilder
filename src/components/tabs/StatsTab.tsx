@@ -21,7 +21,15 @@ import { damage, heal } from "../../rules/hitPoints";
 import { setWildShapeTempHp } from "../../rules/wildShapeHp";
 import { formatModifier } from "../../services/dndRules";
 import { evaluateCharacter } from "../../rules/characterEvaluation";
+import { proficiencySheet } from "../../rules/proficiencySheet";
+import {
+  addAddedProficiency,
+  addedProficiencyOptions,
+  removeAddedProficiency,
+  type AddedCategory,
+} from "../../rules/addedProficiencies";
 import { AbilityKey } from "../../types/character";
+import { AddedProficiencyModal } from "../AddedProficiencyModal";
 import { Badge } from "../ui/Badge";
 import { Button } from "../ui/Button";
 import { Card } from "../ui/Card";
@@ -69,19 +77,34 @@ export const StatsTab: React.FC = () => {
   const [hpChangeAmount, setHpChangeAmount] = useState("1");
   const [tempHpAmount, setTempHpAmount] = useState("");
   const [maxHpOverrideInput, setMaxHpOverrideInput] = useState("");
+  const [addModal, setAddModal] = useState<AddedCategory | null>(null);
 
   const evaluated = useMemo(() => {
     if (!currentCharacter) return null;
     return evaluateCharacter(currentCharacter, { compendium: currentCompendium(), activeBooks });
   }, [currentCharacter, activeBooks]);
 
+  const sheet = useMemo(() => {
+    if (!currentCharacter) return null;
+    return proficiencySheet(currentCharacter, { compendium: currentCompendium(), activeBooks });
+  }, [currentCharacter, activeBooks]);
+
   const derivedProficiencies = useMemo(() => {
     return evaluated?.proficiencies ?? { armor: [], weapons: [], tools: [], languages: [] };
   }, [evaluated]);
 
+  // Rule-granted languages make the summary line; added ones get their own rows.
   const derivedLanguages = useMemo(() => {
-    return evaluated?.proficiencies.languages ?? ["Common"];
-  }, [evaluated]);
+    return sheet?.languages.filter((l) => l.ruleGranted).map((l) => l.name) ?? ["Common"];
+  }, [sheet]);
+
+  const addedLanguages = useMemo(() => {
+    return sheet?.languages.filter((l) => !l.ruleGranted) ?? [];
+  }, [sheet]);
+
+  const addedToolNames = useMemo(() => {
+    return new Set((sheet?.tools ?? []).filter((t) => !t.ruleGranted).map((t) => t.name));
+  }, [sheet]);
 
   const classDice = useMemo(() => {
     return evaluated?.combatDice ?? { bardicInspiration: null, sneakAttack: null, martialArts: null, superiorityDice: null };
@@ -109,6 +132,17 @@ export const StatsTab: React.FC = () => {
   const hpQuickEdit = useHpQuickEdit(currentCharacter, evaluated?.hp.max ?? 0);
 
   if (!currentCharacter || !evaluated) return null;
+
+  const addCatalogs = () => ({ compendium: currentCompendium(), activeBooks });
+  const handleAdd = (category: AddedCategory, raw: string) => {
+    const result = addAddedProficiency(currentCharacter, addCatalogs(), category, raw);
+    if (!result.ok) return;
+    updateCharacter(currentCharacter.id, result.character);
+    setAddModal(null);
+  };
+  const handleRemove = (category: AddedCategory, name: string) => {
+    updateCharacter(currentCharacter.id, (c) => removeAddedProficiency(c, category, name));
+  };
 
   const profBonus = evaluated.proficiencyBonus;
   const { scores, modifiers } = evaluated.effectiveScores;
@@ -780,7 +814,18 @@ export const StatsTab: React.FC = () => {
         </View>
 
         <View>
-          <Text style={[styles.profCatTitle, { color: theme.accent, marginBottom: 4 }]}>Tool Proficiencies</Text>
+          <View style={[styles.headingRow, { marginBottom: 4 }]}>
+            <Text style={[styles.profCatTitle, { color: theme.accent }]}>Tool Proficiencies</Text>
+            <TouchableOpacity
+              accessibilityRole="button"
+              accessibilityLabel="Add tool proficiency"
+              onPress={() => setAddModal("tools")}
+              hitSlop={8}
+              style={styles.addBtn}
+            >
+              <Ionicons name="add" size={20} color={theme.accent} />
+            </TouchableOpacity>
+          </View>
           {evaluated.tools && evaluated.tools.length > 0 ? (
             <View style={{ gap: 6 }}>
               {evaluated.tools.map((t, idx) => (
@@ -822,18 +867,36 @@ export const StatsTab: React.FC = () => {
                     <Text style={{ color: theme.text, fontSize: 13, flex: 1 }}>
                       {t.name}
                     </Text>
+                    {addedToolNames.has(t.name) ? (
+                      <Text style={[styles.addedMark, { color: theme.textSecondary, borderColor: theme.border }]}>
+                        added
+                      </Text>
+                    ) : null}
                   </View>
-                  <Text
-                    style={{
-                      fontSize: 13,
-                      fontWeight: "bold",
-                      color: t.isExpertise ? theme.warning : theme.accent,
-                    }}
-                  >
-                    {t.ability
-                      ? `(${t.displayModifier}, ${t.ability.charAt(0).toUpperCase() + t.ability.slice(1)})`
-                      : `(${t.displayModifier})`}
-                  </Text>
+                  <View style={styles.trailing}>
+                    <Text
+                      style={{
+                        fontSize: 13,
+                        fontWeight: "bold",
+                        color: t.isExpertise ? theme.warning : theme.accent,
+                      }}
+                    >
+                      {t.ability
+                        ? `(${t.displayModifier}, ${t.ability.charAt(0).toUpperCase() + t.ability.slice(1)})`
+                        : `(${t.displayModifier})`}
+                    </Text>
+                    {addedToolNames.has(t.name) ? (
+                      <TouchableOpacity
+                        accessibilityRole="button"
+                        accessibilityLabel={`Remove ${t.name}`}
+                        onPress={() => handleRemove("tools", t.name)}
+                        hitSlop={8}
+                        style={styles.removeBtn}
+                      >
+                        <Text style={{ color: theme.textSecondary, fontSize: 16, fontWeight: "bold" }}>×</Text>
+                      </TouchableOpacity>
+                    ) : null}
+                  </View>
                 </View>
               ))}
             </View>
@@ -844,14 +907,57 @@ export const StatsTab: React.FC = () => {
       </Card>
 
       {/* Languages Summary */}
-      <Text style={[styles.blockTitle, { color: theme.textSecondary, marginTop: 20 }]}>
-        LANGUAGES
-      </Text>
-      <Card style={{ gap: 6 }}>
-        <Text style={{ color: theme.text, fontSize: 13, lineHeight: 20 }}>
-          {derivedLanguages.length > 0 ? derivedLanguages.join(", ") : "Common"}
+      <View style={[styles.headingRow, { marginTop: 20, marginBottom: 8 }]}>
+        <Text style={[styles.blockTitle, { color: theme.textSecondary, marginBottom: 0 }]}>
+          LANGUAGES
         </Text>
+        <TouchableOpacity
+          accessibilityRole="button"
+          accessibilityLabel="Add language"
+          onPress={() => setAddModal("languages")}
+          hitSlop={8}
+          style={styles.addBtn}
+        >
+          <Ionicons name="add" size={20} color={theme.accent} />
+        </TouchableOpacity>
+      </View>
+      <Card style={{ gap: 6 }}>
+        {derivedLanguages.length > 0 || addedLanguages.length === 0 ? (
+          <Text style={{ color: theme.text, fontSize: 13, lineHeight: 20 }}>
+            {derivedLanguages.length > 0 ? derivedLanguages.join(", ") : "Common"}
+          </Text>
+        ) : null}
+        {addedLanguages.map((l) => (
+          <View key={l.name} style={styles.addedRow}>
+            <Text style={{ color: theme.text, fontSize: 13, flexShrink: 1 }}>{l.name}</Text>
+            <View style={styles.trailing}>
+              <Text style={[styles.addedMark, { color: theme.textSecondary, borderColor: theme.border }]}>
+                added
+              </Text>
+              <TouchableOpacity
+                accessibilityRole="button"
+                accessibilityLabel={`Remove ${l.name}`}
+                onPress={() => handleRemove("languages", l.name)}
+                hitSlop={8}
+                style={styles.removeBtn}
+              >
+                <Text style={{ color: theme.textSecondary, fontSize: 16, fontWeight: "bold" }}>×</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        ))}
       </Card>
+
+      <AddedProficiencyModal
+        visible={addModal !== null}
+        category={addModal ?? "tools"}
+        options={addModal ? addedProficiencyOptions(currentCharacter, addCatalogs(), addModal) : []}
+        isAddable={(raw) => addModal !== null && addAddedProficiency(currentCharacter, addCatalogs(), addModal, raw).ok}
+        onAdd={(raw) => {
+          if (addModal) handleAdd(addModal, raw);
+        }}
+        onClose={() => setAddModal(null)}
+      />
 
       {/* HP Override Settings Modal */}
       <RNModal visible={maxHpOverrideVisible} transparent animationType="fade">
@@ -1163,6 +1269,49 @@ const styles = StyleSheet.create({
   skillBonus: {
     fontSize: 13,
     fontWeight: "700",
+  },
+  headingRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    flexWrap: "wrap",
+    gap: 8,
+  },
+  addBtn: {
+    minWidth: 32,
+    minHeight: 32,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  addedRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 8,
+    paddingVertical: 2,
+  },
+  trailing: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    alignItems: "center",
+    justifyContent: "flex-end",
+    gap: 8,
+    flexShrink: 1,
+  },
+  addedMark: {
+    fontSize: 10,
+    fontWeight: "600",
+    paddingHorizontal: 5,
+    paddingVertical: 1,
+    borderWidth: 1,
+    borderRadius: 4,
+  },
+  removeBtn: {
+    minWidth: 24,
+    minHeight: 24,
+    alignItems: "center",
+    justifyContent: "center",
   },
   profCatTitle: {
     fontSize: 12,
