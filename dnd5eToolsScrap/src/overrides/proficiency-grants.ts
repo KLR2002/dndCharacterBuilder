@@ -201,7 +201,7 @@ export const PROFICIENCY_GRANT_OVERRIDES: { classes: GrantOverride[]; feats: Gra
             names: ["Acrobatics", "Animal Handling", "Athletics", "Intimidation", "Nature", "Perception", "Survival"],
           },
         },
-        { kind: "fixed", category: "armor", names: ["light armor", "medium armor", "heavy armor", "shields"] },
+        { kind: "fixed", category: "armor", names: ["light armor", "medium armor", "heavy armor"] },
       ],
     },
   ],
