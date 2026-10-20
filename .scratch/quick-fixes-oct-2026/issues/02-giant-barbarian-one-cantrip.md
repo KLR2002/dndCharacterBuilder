@@ -4,13 +4,14 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** done
+**Landed:** 42ac1ec, check:all passed (808 app, 35 scraper); the cause was both Giant cantrips arriving through the subclass's known spells, so the profile now filters them to the pick. Not seen on a device.
 
-- [ ] A regression test, written first, fails on the current code: a Path of the Giant barbarian with one Giant Power cantrip chosen has only that cantrip among the spells shown as known or granted.
-- [ ] With no choice made, no Giant Power cantrip is listed; with the choice cleared, the cantrip is removed.
-- [ ] Changing the choice swaps the cantrip.
-- [ ] Characters saved with both cantrips already listed are corrected by the reconciler, with a `needsReview` notice, and no other known spell is touched.
-- [ ] `npm run check:all` passes.
+- [x] A regression test, written first, fails on the current code: a Path of the Giant barbarian with one Giant Power cantrip chosen has only that cantrip among the spells shown as known or granted.
+- [x] With no choice made, no Giant Power cantrip is listed; with the choice cleared, the cantrip is removed.
+- [x] Changing the choice swaps the cantrip.
+- [x] Characters saved with both cantrips already listed are corrected by the reconciler, with a `needsReview` notice, and no other known spell is touched.
+- [x] `npm run check:all` passes.
 
 ## Comments
 
