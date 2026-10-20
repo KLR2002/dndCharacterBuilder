@@ -2,7 +2,7 @@ import type { Character } from "../types/character.ts";
 import type { RaceData, TraitChoiceData, TraitData } from "../types/dnd5e.ts";
 import { DND_SKILLS } from "../constants/rules.ts";
 import { totalLevel } from "./proficiencies.ts";
-import { RACE_SKILL_PROFICIENCIES } from "./skills.ts";
+import { RACE_SKILL_PROFICIENCIES } from "./proficiencySources/skillGrants.ts";
 import { type AvailableRuleChoice, ruleChoiceId } from "./choices/types.ts";
 
 /**

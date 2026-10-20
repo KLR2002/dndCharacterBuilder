@@ -1,8 +1,8 @@
 import type { Character } from "../types/character.ts";
 import type { ItemData, ProficiencyCategory } from "../types/dnd5e.ts";
-import { RACE_WEAPON_PROFICIENCIES } from "../constants/rules.ts";
+import { DND_SKILLS, RACE_WEAPON_PROFICIENCIES } from "../constants/rules.ts";
 import { catalogListings, type CharacterCatalogs } from "./catalogs.ts";
-import type { CompendiumListings } from "../services/compendium.ts";
+import { currentCompendium, type CompendiumListings } from "../services/compendium.ts";
 import { grantedFeatures } from "./grantedFeatures.ts";
 import { deduplicateWeaponProficiencies, normalizeArmorProficiency } from "./proficiencies.ts";
 import { classBaseProficiencies } from "./proficiencySources/classBase.ts";
@@ -22,10 +22,16 @@ import {
 import { normalizeLanguageName, normalizeSavingThrowName, validPicks } from "./proficiencyPools.ts";
 import { ABILITY_NAMES } from "./abilities.ts";
 import { CLASS_DATA } from "./classData.ts";
-import { getAutoGrantedSkills, isKnowledgeCleric, normalizeSkillName } from "./skills.ts";
+import { isKnowledgeCleric, normalizeSkillName } from "./skills.ts";
+import {
+  classSkillChoice,
+  getAutoGrantedSkills,
+  getRacialSkillChoices,
+} from "./proficiencySources/skillGrants.ts";
 import { resolveCharacterAncestry } from "./characterAncestry.ts";
 
 export type { LanguageGrant, ToolChoice, ToolGrant } from "./proficiencySources/toolsAndLanguages.ts";
+export { classSkillChoice } from "./proficiencySources/skillGrants.ts";
 
 /** The Knowledge Domain's four skills. A Knowledge Cleric's Expertise on one of them has always made it proficient. */
 const KNOWLEDGE_SKILLS = ["Arcana", "History", "Nature", "Religion"];
@@ -217,6 +223,58 @@ export function sourceGrants(character: Character, catalogs: CharacterCatalogs):
     backgroundTools: getBackgroundToolGrant(character.background?.name, backgrounds),
     classTools: getClassToolGrant(character.classes[0]?.className, listings.classes()),
   };
+}
+
+/** A skill choice a race or class offers the Builder: its source label, pick count and the skills to pick from. */
+export interface SkillChoiceOffer {
+  source: string;
+  choose: number;
+  from: string[];
+}
+
+/**
+ * The skill choices a race and the first class offer. The race's choices take the subrace and the
+ * ancestry option the character picked; the class's take its starting list, or every skill when the
+ * list is empty. The Builder reads its offers here, so no builder file reads a race or class skill field.
+ */
+export function skillChoiceOffers(
+  character: Character,
+  catalogs: CharacterCatalogs,
+  raceChosenOption?: string
+): SkillChoiceOffer[] {
+  const listings = catalogListings(catalogs);
+  const offers: SkillChoiceOffer[] = [];
+
+  if (character.race) {
+    const racial = getRacialSkillChoices(
+      character.race.name,
+      character.race.subraceName,
+      listings.races(),
+      character.race.source,
+      raceChosenOption
+    );
+    for (const choice of racial) {
+      offers.push({ source: choice.source, choose: choice.choose, from: choice.from.map(normalizeSkillName) });
+    }
+  }
+
+  const first = character.classes[0];
+  if (first) {
+    const classData = (catalogs.compendium ?? currentCompendium()).findClass(first.className, first.source);
+    const starting = classSkillChoice(classData);
+    if (starting && starting.choose > 0) {
+      offers.push({
+        source: `Class: ${first.className}`,
+        choose: starting.choose,
+        from:
+          starting.from && starting.from.length > 0
+            ? starting.from.map(normalizeSkillName)
+            : DND_SKILLS.map((s) => normalizeSkillName(s.name)),
+      });
+    }
+  }
+
+  return offers;
 }
 
 /**

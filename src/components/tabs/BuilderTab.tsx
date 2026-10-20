@@ -1,11 +1,11 @@
 import React, { useState } from "react";
 import { ScrollView, Text, TouchableOpacity } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { DND_SKILLS, POINT_BUY_COST } from "../../constants/rules";
-import { proficiencySheet, ruleGrantedSkills, sourceGrants } from "../../rules/proficiencySheet";
+import { POINT_BUY_COST } from "../../constants/rules";
+import { proficiencySheet, ruleGrantedSkills, skillChoiceOffers, sourceGrants } from "../../rules/proficiencySheet";
 import { useCharacters } from "../../context/CharacterContext";
 import { useAppTheme } from "../../context/ThemeContext";
-import { findClass, findItem, getFeats } from "../../services/dataService";
+import { findItem, getFeats } from "../../services/dataService";
 import { currentCompendium } from "../../services/compendium";
 import { calculateTotalLevel } from "../../services/dndRules";
 import { evaluateCharacter } from "../../rules/characterEvaluation";
@@ -20,7 +20,7 @@ import {
 import { reconcile } from "../../rules/characterReconciler";
 import { ancestryRuleChoices, offeredRuleChoices } from "../../rules/ruleChoices";
 import { getPendingLevelChoices } from "../../rules/leveling";
-import { getRacialSkillChoices, normalizeSkillName } from "../../rules/skills";
+import { normalizeSkillName } from "../../rules/skills";
 import { getAvailableOptionalFeatures } from "../../rules/optionalFeatures";
 import { AbilityKey, Character, InventoryItem, SkillChoiceEntry } from "../../types/character";
 import { DetailModal } from "../DetailModal";
@@ -207,40 +207,11 @@ export const BuilderTab: React.FC<BuilderTabProps> = ({
   };
 
   type SkillChoice = { source: string; choose: number; from: string[] };
-  const skillChoices: SkillChoice[] = [];
-
-  if (character.race) {
-    const racialChoices = getRacialSkillChoices(
-      character.race.name,
-      character.race.subraceName,
-      allRaces,
-      character.race.source,
-      chosenAncestryOption(character, allRaces)
-    );
-    for (const rc of racialChoices) {
-      skillChoices.push({
-        source: rc.source,
-        choose: rc.choose,
-        from: rc.from.map(normalizeSkillName),
-      });
-    }
-  }
-
-  if (character.classes.length > 0) {
-    const classData = findClass(character.classes[0].className, character.classes[0].source);
-    if (classData?.skillProficiencies) {
-      const { choose, from } = classData.skillProficiencies;
-      const fromList =
-        from && from.length > 0 ? from.map(normalizeSkillName) : DND_SKILLS.map((s) => normalizeSkillName(s.name));
-      if (choose > 0) {
-        skillChoices.push({
-          source: `Class: ${character.classes[0].className}`,
-          choose,
-          from: fromList,
-        });
-      }
-    }
-  }
+  const skillChoices: SkillChoice[] = skillChoiceOffers(
+    character,
+    catalogs,
+    character.race ? chosenAncestryOption(character, allRaces) : undefined
+  );
 
   const raceChoices = skillChoices.filter(
     (sc) => sc.source.startsWith("Race:") || sc.source.startsWith("Variant")
