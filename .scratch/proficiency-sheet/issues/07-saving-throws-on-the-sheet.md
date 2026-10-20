@@ -4,7 +4,9 @@
 
 **Blocked by:** 04
 
-**Status:** ready-for-agent
+**Status:** done
+
+**Landed:** merged from `ps/07-saves` (3928f5c). Resilient is tied to the raised ability; the layout check now starts Expo with `--clear`.
 
 - [ ] A recorded baseline of saves exists first; after the change the only differences are newly applied grants, each listed.
 - [ ] A monk at the level of Diamond Soul has proficiency in every saving throw.

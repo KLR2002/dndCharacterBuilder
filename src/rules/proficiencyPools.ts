@@ -1,22 +1,23 @@
-import type { Character } from "../types/character.ts";
+import type { AbilityKey, Character } from "../types/character.ts";
 import type { ItemData, ProficiencyGrant, ProficiencyPool } from "../types/dnd5e.ts";
+import { ABILITY_NAMES } from "./abilities.ts";
 import { ALL_LANGUAGE_NAMES, ALL_TOOLS, normalizeToolName } from "./proficienciesAndLanguages.ts";
 import { normalizeWeaponProficiency, STANDARD_MARTIAL_WEAPONS, STANDARD_SIMPLE_WEAPONS } from "./proficiencies.ts";
 
 /**
- * Proficiency Choices (tickets 05 and 10). A leaf module: the Proficiency Sheet, the choice offers, the
+ * Proficiency Choices (tickets 05, 07 and 10). A leaf module: the Proficiency Sheet, the choice offers, the
  * rule-choice pick, the Monk Weapon rule and the reconciler all read it, so it imports nothing that
  * imports them back.
  */
 
 /** The categories a Proficiency Choice can be picked in so far. Skills and armor wait for their slices. */
-export type PickableCategory = "tools" | "languages" | "weapons";
+export type PickableCategory = "tools" | "languages" | "savingThrows" | "weapons";
 
 /** A Proficiency Choice grant, as the Catalog carries it. */
 export type ChoiceProficiencyGrant = Extract<ProficiencyGrant, { kind: "choice" }>;
 
 export function isPickableCategory(category: string): category is PickableCategory {
-  return category === "tools" || category === "languages" || category === "weapons";
+  return category === "tools" || category === "languages" || category === "savingThrows" || category === "weapons";
 }
 
 /** A known language's own spelling, or the name as written with each word capitalized. */
@@ -30,7 +31,16 @@ export function normalizeLanguageName(raw: string): string {
     .join(" ");
 }
 
+const ABILITY_LABELS = Object.values(ABILITY_NAMES);
+
+/** An ability's full name in its own spelling, or the name as written when it is not an ability. */
+export function normalizeSavingThrowName(raw: string): string {
+  const clean = raw.trim();
+  return ABILITY_LABELS.find((name) => name.toLowerCase() === clean.toLowerCase()) ?? clean;
+}
+
 export function normalizeProficiencyName(category: PickableCategory, raw: string): string {
+  if (category === "savingThrows") return normalizeSavingThrowName(raw);
   if (category === "tools") return normalizeToolName(raw);
   if (category === "languages") return normalizeLanguageName(raw);
   return normalizeWeaponProficiency(raw);
@@ -89,6 +99,7 @@ export function poolNames(grant: ChoiceProficiencyGrant, items: readonly ItemDat
     return grant.pool.names.map((name) => normalizeProficiencyName(grant.category as PickableCategory, name));
   }
   if (grant.pool.kind === "any") {
+    if (grant.category === "savingThrows") return [...ABILITY_LABELS];
     if (grant.category === "tools") return [...ALL_TOOLS];
     if (grant.category === "languages") return [...ALL_LANGUAGE_NAMES];
     return [];
@@ -108,6 +119,23 @@ export function weaponHeld(name: string, heldEntries: readonly string[]): boolea
     const held = entry.trim().toLowerCase();
     if (category && held === `${category} weapons`) return true;
     return singular(held) === own;
+  });
+}
+
+/**
+ * A feat's saving-throw choice is the ability the feat raised (ticket 07): the feat's selection carries
+ * that ability, so the grant becomes the fixed save and there is no pick to make. Without a raised
+ * ability, or when the raised ability is not in the pool, the grant stays a Proficiency Choice.
+ */
+export function raisedAbilityGrants(grants: ProficiencyGrant[], raised: AbilityKey | undefined): ProficiencyGrant[] {
+  if (!raised) return grants;
+  const name = ABILITY_NAMES[raised];
+  return grants.map((grant) => {
+    if (grant.kind !== "choice" || grant.category !== "savingThrows") return grant;
+    if (grant.pool.kind !== "names" || !grant.pool.names.some((poolName) => normalizeSavingThrowName(poolName) === name)) {
+      return grant;
+    }
+    return { id: grant.id, kind: "fixed", category: "savingThrows", names: [name] };
   });
 }
 

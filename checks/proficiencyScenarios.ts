@@ -21,25 +21,25 @@ export const BOOK_SETS: (string[] | undefined)[] = [
 const classSourceOf = (className: string) => (className === "Artificer" ? "TCE" : "PHB");
 
 /** A class row. The last argument is the subclass's own book, which can differ from the class's. */
-const cls = (className: string, level: number, subclassName?: string, subclassSource = "PHB"): CharacterClass => ({
+export const cls = (className: string, level: number, subclassName?: string, subclassSource = "PHB"): CharacterClass => ({
   className,
   source: classSourceOf(className),
   level,
   ...(subclassName ? { subclassName, subclassSource } : {}),
 });
 
-const race = (name: string, subraceName?: string, source = "PHB") => ({
+export const race = (name: string, subraceName?: string, source = "PHB") => ({
   name,
   source,
   ...(subraceName ? { subraceName, subraceSource: source } : {}),
 });
 
-const background = (name: string, source = "PHB") => ({ name, source });
+export const background = (name: string, source = "PHB") => ({ name, source });
 
-const withClasses = (classes: CharacterClass[], overrides: Partial<Character> = {}): Character =>
+export const withClasses = (classes: CharacterClass[], overrides: Partial<Character> = {}): Character =>
   makeChar({ classes, ...overrides });
 
-type Build = (level: number) => Character;
+export type Build = (level: number) => Character;
 
 export const SCENARIOS: { label: string; build: Build }[] = [
   {

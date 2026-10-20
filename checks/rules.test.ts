@@ -1,12 +1,13 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { makeChar, loadTestCatalog } from "./testUtils.ts";
+import { makeChar, loadTestCatalog, inMemoryCompendium } from "./testUtils.ts";
 import type { CharacterClass } from "../src/types/character.ts";
 import { effectiveScores, getAbilityModifier, formatModifier } from "../src/rules/abilities.ts";
 import { maxHp, hitDiceByType } from "../src/rules/hp.ts";
 import { armorClass } from "../src/rules/ac.ts";
 import { speed, carryingWeight } from "../src/rules/speed.ts";
 import { savingThrows } from "../src/rules/saves.ts";
+import { proficiencySheet } from "../src/rules/proficiencySheet.ts";
 import { skills, getRacialSkillChoices } from "../src/rules/skills.ts";
 import { multiclassSlots, pactSlots } from "../src/rules/slots.ts";
 import { proficiencyBonus, totalLevel, proficiencies } from "../src/rules/proficiencies.ts";
@@ -132,7 +133,7 @@ test("carrying weight includes quantity and coins, with STR capacity", () => {
 });
 test("saves use first class only and total-level proficiency", () => {
   const c = makeChar({ classes: [cl("Fighter", 1), cl("Wizard", 4)] });
-  const saves = savingThrows(c, CLASS_DATA);
+  const saves = savingThrows(c, proficiencySheet(c, { compendium: inMemoryCompendium() }).savingThrows);
   assert.equal(saves.str.proficient, true);
   assert.equal(saves.con.isProficient, true);
   assert.equal(saves.int.proficient, false);
