@@ -68,6 +68,7 @@ export function grantedFeatures(character: Character, catalog: FeatureCatalog): 
         source,
         origin,
         className: c.className,
+        level: f.level,
         ...(f.grants?.length ? { grants: f.grants } : {}),
       };
       // The catalog repeats these at threshold levels. Retain one grant, not additive uses/attacks.

@@ -14,6 +14,7 @@ import {
   warlockOwnerOf,
 } from "./choices/warlockChoices.ts";
 import { tableOwnerOf } from "./subclassChoiceTable.ts";
+import { pruneInvalidProficiencyPicks } from "./proficiencyPicks.ts";
 
 /**
  * The single seam every state-changing builder transition ends in. Idempotent: reconciling a
@@ -30,6 +31,7 @@ import { tableOwnerOf } from "./subclassChoiceTable.ts";
  * Fighting styles run before maneuvers because Superior Technique is gated on a fighting style.
  * The Giant Power cantrip sync reads only its own choice and the Barbarian's known spells, so
  * its position is free; it sits with the other known-spell syncs.
+ * Proficiency picks are released before Expertise, so Expertise is pruned against the released state.
  */
 export function reconcile(character: Character, compendium: Compendium): Character {
   let updated = character;
@@ -42,6 +44,7 @@ export function reconcile(character: Character, compendium: Compendium): Charact
   updated = syncGiantPowerCantrip(updated);
   updated = pruneInvalidMysticArcanum(updated);
   updated = pruneInvalidInfusions(updated, compendium);
+  updated = pruneInvalidProficiencyPicks(updated, compendium);
   updated = pruneInvalidExpertise(updated, { compendium });
 
   return updated;

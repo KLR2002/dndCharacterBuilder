@@ -31,7 +31,8 @@ export interface RuleChoiceEntry {
   id: string;
   /** The trait that grants the choice, so consumers need not parse the id. */
   trait: string;
-  origin: "race" | "class" | "subclass";
+  /** "feat" is only ever offered for Proficiency Choices, which are stored outside ruleChoices (ticket 05). */
+  origin: "race" | "class" | "subclass" | "feat";
   choose: number;
   from: string[];
   picked: string[];
@@ -182,6 +183,12 @@ export interface Character {
     class?: string[];
   };
   optionalFeatureReplacements?: Record<string, boolean>;
+  /**
+   * Picks made for Proficiency Choices (ADR 0015), keyed by the choice's Proficiency Grant id. Never
+   * rewritten into or out of the race, background and class buckets above; released by the reconciler
+   * when the grant no longer applies.
+   */
+  proficiencyPicks?: Record<string, string[]>;
   multiclassProficiencies?: {
     className: string;
     armor?: string[];
