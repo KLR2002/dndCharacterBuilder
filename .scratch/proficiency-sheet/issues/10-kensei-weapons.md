@@ -4,7 +4,9 @@
 
 **Blocked by:** 05, 09
 
-**Status:** ready-for-agent
+**Status:** done
+
+**Landed:** merged from `ps/10-kensei-weapons` (830913b). Artificer firearm fix included. Limits: simple/martial comes from the app's weapon lists, not the Compendium (other-book weapons are not offered); existing integrated catalogs need a re-sync.
 
 - [ ] The pool excludes heavy and special weapons and includes the longbow, derived from item properties.
 - [ ] A chosen weapon is proficient and a Monk Weapon (Dexterity and the Martial Arts die apply as for other Monk Weapons).
