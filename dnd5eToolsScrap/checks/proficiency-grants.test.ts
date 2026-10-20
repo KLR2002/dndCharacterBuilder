@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { resolveFeatureGrants, structuredGrants, type GrantSubject } from "../src/parser/proficiency-grants.ts";
+import { matchedSentences, resolveFeatureGrants, structuredGrants, type GrantSubject } from "../src/parser/proficiency-grants.ts";
 import type { GrantOverride } from "../src/parser/proficiency-grants.ts";
 import type { ProficiencyReport } from "../src/types/proficiency.ts";
 
@@ -247,4 +247,23 @@ test("a structured entry the mapping cannot state precisely makes the whole bloc
   );
   assert.deepEqual(result.grants, []);
   assert.deepEqual(result.unparsed, ["tools: gaming set", "tools: anyGamingSet"]);
+});
+
+test("the vocabulary matches 'proficient' wording, not only 'proficiency'", () => {
+  assert.deepEqual(matchedSentences("You are proficient with improvised weapons."), [
+    "You are proficient with improvised weapons",
+  ]);
+});
+
+test("the vocabulary matches saving-throw proficiency sentences, fixed and of-your-choice", () => {
+  assert.deepEqual(matchedSentences("You gain proficiency in all saving throws. Your mind grows sharp."), [
+    "You gain proficiency in all saving throws",
+  ]);
+  assert.deepEqual(matchedSentences("You gain proficiency in a saving throw of your choice."), [
+    "You gain proficiency in a saving throw of your choice",
+  ]);
+});
+
+test("the vocabulary ignores prose with no proficiency or language mention", () => {
+  assert.deepEqual(matchedSentences("You make a Dexterity saving throw. Nothing else changes."), []);
 });

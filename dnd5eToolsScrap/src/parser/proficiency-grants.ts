@@ -89,8 +89,8 @@ const SKILL_BY_LOWER = new Map(SKILLS.map((s) => [s.toLowerCase(), s]));
 const ABILITY_BY_LOWER = new Map(ABILITIES.map((s) => [s.toLowerCase(), s]));
 const WEAPON_SET = new Set(WEAPON_NAMES);
 
-/** Sentences that mention proficiency or language learning. Only these are considered at all. */
-const CANDIDATE = /proficienc|languages?\b|\bspeak,?\s+read\b/i;
+/** Sentences that mention proficiency ("proficiency", "proficient") or language learning. Only these are considered at all. */
+const CANDIDATE = /proficien|languages?\b|\bspeak,?\s+read\b/i;
 
 /** A lead-in clause such as "At 1st level," or "When you choose this circle at 3rd level,". "If" is not a lead-in: it makes a grant conditional. */
 const LEAD_IN = /^(?:(?:also|in addition|at|when|starting at|beginning at|upon|once|after)\b[^,]*,\s*)+/i;
@@ -301,15 +301,23 @@ function stripTerminal(sentence: string): string {
   return sentence.replace(/[.!?]+$/, "").trim();
 }
 
+/**
+ * The sentences of a feature's prose that match the proficiency vocabulary,
+ * without their final punctuation. The extractor and the coverage gate both
+ * read matches through this one function.
+ */
+export function matchedSentences(description: string): string[] {
+  return proseSentences(description).filter((s) => CANDIDATE.test(s)).map(stripTerminal);
+}
+
 /** Extracts grant specs from prose. Sentences that match the vocabulary but do not parse are returned as `unparsed`. */
 export function extractProseGrants(description: string): { specs: ProficiencyGrantSpec[]; unparsed: string[] } {
   const specs: ProficiencyGrantSpec[] = [];
   const unparsed: string[] = [];
-  for (const sentence of proseSentences(description)) {
-    if (!CANDIDATE.test(sentence)) continue;
-    const parsed = parseSentence(stripTerminal(sentence));
+  for (const sentence of matchedSentences(description)) {
+    const parsed = parseSentence(sentence);
     if (parsed) specs.push(...parsed);
-    else unparsed.push(stripTerminal(sentence));
+    else unparsed.push(sentence);
   }
   return { specs, unparsed };
 }

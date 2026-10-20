@@ -15,3 +15,17 @@ export const PROFICIENCY_GRANT_OVERRIDES: { classes: GrantOverride[]; feats: Gra
   classes: [],
   feats: [],
 };
+
+/** A feature, named by owner, feature name and level, with no rule prose. */
+export interface ReviewedFeature {
+  owner: string;
+  feature: string;
+  level: number;
+}
+
+/**
+ * Features reviewed and found to grant no proficiency, though their prose
+ * matches the proficiency vocabulary. Names only. The coverage gate fails on a
+ * mark that names an unknown feature, or a feature that has grants.
+ */
+export const REVIEWED_GRANTS_NOTHING: ReviewedFeature[] = [];
