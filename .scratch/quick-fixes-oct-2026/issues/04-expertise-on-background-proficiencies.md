@@ -19,3 +19,13 @@
 **Fix direction:** make the bundle a required parameter of `getAvailableExpertiseMilestones` so a call site cannot omit it, and pass `{ compendium: currentCompendium() }` (with the active books where the screen has them) from the Builder. The regression test builds a character with a catalog background and asserts the options include its skills and tools.
 
 **For the Proficiency Sheet (ticket 08):** the sheet must take the Compendium explicitly. A default that quietly means "no catalog, empty lists" is exactly this bug.
+
+**Implementer notes (qf/04-background-expertise):**
+- Diagnosis confirmed. The lost paths are: `resolveCharacterTools` returns no background tool grants without a bundle, and `skills()` falls back to the static `BACKGROUND_SKILL_PROFICIENCIES` table for catalog-only background skills. `toggleExpertiseChoice` then refuses the pick, and the Invalid Expertise warning lists it. The reconciler and the card path were not the cause.
+- Fix: the bundle is required in `getAvailableExpertiseMilestones`, `toggleExpertiseChoice` and `pruneInvalidExpertise`. `ClassProgressionSection` passes the bundle `BuilderTab` builds, scoped to `activeBooks`. `pruneInvalidExpertise` now appends `needsReview` notices for released picks.
+- What the Proficiency Sheet must preserve:
+  - The Expertise milestone lists, the picker and the Invalid Expertise warning read the sheet's full list of skills and tools, including catalog background grants (fixed and chosen).
+  - The grant lookup stays scoped to the active books, as on the card.
+  - No caller falls back to a partial table when it has no bundle.
+  - A released Expertise pick gets a `needsReview` notice in the form `<name> Expertise removed: ...`.
+  - Regression tests: the three `background expertise:` tests in `checks/expertise.test.ts`.
