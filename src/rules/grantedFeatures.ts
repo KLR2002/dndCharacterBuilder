@@ -4,6 +4,7 @@ import type { FeatureCatalog, FeatureInstance } from "./types.ts";
 import { getReplacedBaseFeatures } from "./optionalFeatures.ts";
 import { ruleChoiceId } from "./choices/types.ts";
 import { applyRuleChoice, replacedTraitNames } from "./raceRuleChoices.ts";
+import { raisedAbilityGrants } from "./proficiencyPools.ts";
 
 export function grantedFeatures(character: Character, catalog: FeatureCatalog): FeatureInstance[] {
   const out: FeatureInstance[] = [];
@@ -103,7 +104,8 @@ export function grantedFeatures(character: Character, catalog: FeatureCatalog): 
     if (selection.type !== "feat") continue;
     const feat = catalog.feats.find(x => x.name === selection.featName && (!selection.featSource || x.source === selection.featSource));
     if (feat) {
-      add({ name: feat.name, description: feat.description, source: feat.source, origin: "Feat", ...(feat.grants?.length ? { grants: feat.grants } : {}) }, feat.name);
+      const grants = raisedAbilityGrants(feat.grants ?? [], selection.featAbility);
+      add({ name: feat.name, description: feat.description, source: feat.source, origin: "Feat", ...(grants.length ? { grants } : {}) }, feat.name);
     }
   }
   return out;

@@ -73,12 +73,13 @@ async function stopServer() {
   server = null;
 }
 
-// Starts `npx expo start --web` with CI set (no reload prompts, no telemetry), logging to `logPath`.
+// Starts `npx expo start --web --clear` with CI set (no reload prompts, no telemetry), logging to `logPath`.
+// `--clear` drops Metro's cache, so a stale bundle cannot pass the check.
 // Resolves "up" once BASE answers 200, "exited" if the process ends first, "timeout" if the wait runs out.
 async function startServer(logPath) {
   const fd = fs.openSync(logPath, "w");
   let exited = false;
-  const child = spawn("npx", ["expo", "start", "--web", "--port", PORT], {
+  const child = spawn("npx", ["expo", "start", "--web", "--port", PORT, "--clear"], {
     cwd: ROOT,
     env: { ...process.env, CI: "1", EXPO_NO_TELEMETRY: "1" },
     detached: true,
