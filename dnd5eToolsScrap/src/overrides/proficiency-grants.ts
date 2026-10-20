@@ -13,7 +13,6 @@ import type { GrantOverride } from "../parser/proficiency-grants.ts";
  */
 export const PROFICIENCY_GRANT_OVERRIDES: { classes: GrantOverride[]; feats: GrantOverride[] } = {
   classes: [
-    { owner: "Artificer", feature: "Optional Rule: Firearm Proficiency", level: 1, grants: [{ kind: "fixed", category: "weapons", names: ["firearms"] }] },
     { owner: "Artificer/Alchemist", feature: "Tool Proficiency", level: 3, grants: [{ kind: "fixed", category: "tools", names: ["alchemist's supplies"] }] },
     {
       owner: "Artificer/Armorer",
@@ -89,11 +88,35 @@ export const PROFICIENCY_GRANT_OVERRIDES: { classes: GrantOverride[]; feats: Gra
         { kind: "fixed", category: "languages", names: ["Giant"] },
       ],
     },
+    // The brush choice is #0 and stays first, so its shipped grant id does not change.
     {
       owner: "Monk/Way of the Kensei",
       feature: "Path of the Kensei",
       level: 3,
-      grants: [{ kind: "choice", category: "tools", count: 1, pool: { kind: "names", names: ["calligrapher's supplies", "painter's supplies"] } }],
+      grants: [
+        { kind: "choice", category: "tools", count: 1, pool: { kind: "names", names: ["calligrapher's supplies", "painter's supplies"] } },
+        { kind: "choice", category: "weapons", count: 1, pool: { kind: "weapons", base: ["simple", "martial"], withoutProperties: ["heavy", "special"], plus: ["longbow"], attackType: "melee" } },
+        { kind: "choice", category: "weapons", count: 1, pool: { kind: "weapons", base: ["simple", "martial"], withoutProperties: ["heavy", "special"], plus: ["longbow"], attackType: "ranged" } },
+      ],
+    },
+    // Later kensei weapons are either kind: "another type of weapon, either melee or ranged".
+    {
+      owner: "Monk/Way of the Kensei",
+      feature: "One with the Blade",
+      level: 6,
+      grants: [{ kind: "choice", category: "weapons", count: 1, pool: { kind: "weapons", base: ["simple", "martial"], withoutProperties: ["heavy", "special"], plus: ["longbow"] } }],
+    },
+    {
+      owner: "Monk/Way of the Kensei",
+      feature: "Sharpen the Blade",
+      level: 11,
+      grants: [{ kind: "choice", category: "weapons", count: 1, pool: { kind: "weapons", base: ["simple", "martial"], withoutProperties: ["heavy", "special"], plus: ["longbow"] } }],
+    },
+    {
+      owner: "Monk/Way of the Kensei",
+      feature: "Unerring Accuracy",
+      level: 17,
+      grants: [{ kind: "choice", category: "weapons", count: 1, pool: { kind: "weapons", base: ["simple", "martial"], withoutProperties: ["heavy", "special"], plus: ["longbow"] } }],
     },
     {
       owner: "Monk/Way of Mercy",
@@ -287,6 +310,8 @@ export interface ReviewedFeature {
  * mark that names an unknown feature, or a feature that has grants.
  */
 export const REVIEWED_GRANTS_NOTHING: ReviewedFeature[] = [
+  // A table option (optional rule), not a grant every Artificer has.
+  { owner: "Artificer", feature: "Optional Rule: Firearm Proficiency", level: 1 },
   // Header stubs that only list their sub-features.
   { owner: "Artificer/Alchemist", feature: "Alchemist", level: 3 },
   { owner: "Artificer/Artillerist", feature: "Artillerist", level: 3 },

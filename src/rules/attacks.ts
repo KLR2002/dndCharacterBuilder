@@ -6,6 +6,7 @@ import { proficiencyBonus, totalLevel } from "./proficiencies.ts";
 import { proficiencySheet } from "./proficiencySheet.ts";
 import { getMartialArtsDie, getSneakAttackDice, getManeuverSaveDc } from "./combatDice.ts";
 import { hasFightingStyle, hasInvocation } from "./ruleChoices.ts";
+import { kenseiWeaponNames } from "./kenseiWeapons.ts";
 
 export { getManeuverSaveDc };
 
@@ -318,6 +319,7 @@ export function getWeaponAttacks(
   const { modifiers } = effectiveScores(character, opts.ancestry);
   const pb = proficiencyBonus(totalLevel(character));
   const sheetWeapons = proficiencySheet(character, opts.catalogs ?? {}).weapons.map((weapon) => weapon.name);
+  const kenseiWeapons = new Set(kenseiWeaponNames(character, opts.catalogs).map((name) => name.toLowerCase()));
 
   const monk = (character.classes || []).find((c) => c.className === "Monk");
   const rogue = (character.classes || []).find((c) => c.className === "Rogue");
@@ -366,7 +368,7 @@ export function getWeaponAttacks(
     const isFinesse = isFinesseWeapon(item);
     const isRanged = isRangedWeapon(item);
     const isLight = isLightWeapon(item);
-    const isMonk = isMonkWeapon(item);
+    const isMonk = isMonkWeapon(item) || kenseiWeapons.has(item.name.trim().toLowerCase());
     const isThrown = isThrownWeapon(item);
 
     let statUsed: AbilityKey = isFinesse

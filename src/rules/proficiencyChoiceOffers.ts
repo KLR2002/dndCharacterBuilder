@@ -11,6 +11,7 @@ import {
   isPickableCategory,
   poolNames,
   validPicks,
+  weaponHeld,
 } from "./proficiencyPools.ts";
 
 /**
@@ -40,6 +41,7 @@ export function proficiencyChoiceOffers(character: Character, query: Proficiency
   const activeBooks = query.activeBooks?.length ? query.activeBooks : undefined;
   const active = activeBooks ? new Set(activeBooks.map((book) => book.toUpperCase())) : undefined;
   const listings = catalogListings({ compendium, activeBooks });
+  const items = listings.items();
   const features = grantedFeatures(character, {
     races: listings.races(),
     classes: listings.classes(),
@@ -59,9 +61,12 @@ export function proficiencyChoiceOffers(character: Character, query: Proficiency
 
       // What the character holds from every other source, with this choice's own pick set aside.
       const sheet = proficiencySheet(clearProficiencyPick(character, grant.id), { compendium, activeBooks });
+      const own = new Set(validPicks(grant, character.proficiencyPicks?.[grant.id] ?? [], items).map((name) => name.toLowerCase()));
       const heldEntries = grant.category === "tools" ? sheet.tools : grant.category === "languages" ? sheet.languages : sheet.savingThrows;
       const held = new Set(heldEntries.map((entry) => entry.name.toLowerCase()));
-      const own = new Set(validPicks(grant, character.proficiencyPicks?.[grant.id] ?? []).map((name) => name.toLowerCase()));
+      // Weapons are held by name or by category, as the sheet's weapon entries record them.
+      const heldWeapons = sheet.weapons.map((entry) => entry.name);
+      const isHeld = (name: string) => (grant.category === "weapons" ? weaponHeld(name, heldWeapons) : held.has(name.toLowerCase()));
 
       offers.push({
         id: grant.id,
@@ -72,8 +77,8 @@ export function proficiencyChoiceOffers(character: Character, query: Proficiency
         source: feature.source,
         origin,
         pick: "proficiency",
-        options: poolNames(grant)
-          .filter((name) => own.has(name.toLowerCase()) || !held.has(name.toLowerCase()))
+        options: poolNames(grant, items)
+          .filter((name) => own.has(name.toLowerCase()) || !isHeld(name))
           .map((name) => ({ name, description: "" })),
       });
     }

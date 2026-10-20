@@ -245,6 +245,37 @@ function rangerCharacter() {
   });
 }
 
+// A level 3 Way of the Kensei monk, integrated mode only (the Kensei is not in the SRD). Its Path of the Kensei
+// choices are Proficiency Choices: the brush and the ranged kensei weapon are unmade ("Picked 0 / 1"), and the
+// melee kensei weapon is picked (Rapier), which the Stats tab shows under Weapon Proficiencies.
+const KENSEI_ID = "char_kensei";
+const KENSEI_PATH = "XGE/Monk/Way of the Kensei/Path of the Kensei@3";
+function kenseiCharacter() {
+  return makeChar({
+    id: KENSEI_ID,
+    name: "Hikaru",
+    createdAt: 6,
+    updatedAt: 6,
+    startingOption: "equipment",
+    baseAbilityScores: { str: 10, dex: 16, con: 12, int: 10, wis: 14, cha: 8 },
+    race: { name: "Human", source: catalogSource("races", "Human") },
+    background: { name: "Acolyte", source: catalogSource("backgrounds", "Acolyte") },
+    classes: [
+      {
+        className: "Monk",
+        source: catalogSource("classes", "Monk"),
+        level: 3,
+        subclassName: "Way of the Kensei",
+        subclassSource: "XGE",
+      },
+    ],
+    currentHp: 22,
+    startingGrantsApplied: true,
+    backgroundGrantsApplied: true,
+    proficiencyPicks: { [`${KENSEI_PATH}#1`]: ["Rapier"] },
+  });
+}
+
 // The seed the browser starts from: the characters, folders, settings, and (integrated mode) the catalog.
 function buildSeed() {
   const defaults = defaultSettings();
@@ -281,6 +312,7 @@ function buildSeed() {
       wizardCharacter(),
       halfElfCharacter(),
       rangerCharacter(),
+      ...(INTEGRATED ? [kenseiCharacter()] : []),
     ],
     folders: [],
     settings: {
@@ -319,6 +351,7 @@ const RENDAR_ROUTE = `/character/${CHARACTER_ID}`;
 const WIZARD_ROUTE = `/character/${WIZARD_ID}`;
 const HALF_ELF_ROUTE = `/character/${HALF_ELF_ID}`;
 const RANGER_ROUTE = `/character/${RANGER_ID}`;
+const KENSEI_ROUTE = `/character/${KENSEI_ID}`;
 const SCREENS = [
   { name: "Builder Abilities", route: RENDAR_ROUTE, tabs: ["Builder", "Abilities"], ready: /points remaining/i },
   { name: "Builder Race", route: RENDAR_ROUTE, tabs: ["Builder", "Race"], ready: /traits:/i },
@@ -327,6 +360,13 @@ const SCREENS = [
   { name: "Builder Background", route: RENDAR_ROUTE, tabs: ["Builder", "Background"], ready: /background benefits/i, scrollTo: "Claim again" },
   { name: "Builder Class", route: RENDAR_ROUTE, tabs: ["Builder", "Class"], ready: /total level/i, scrollTo: "Starting Equipment" },
   { name: "Builder Class proficiency choices", route: RANGER_ROUTE, tabs: ["Builder", "Class"], ready: /total level/i, scrollTo: "Class & Subclass Choices" },
+  // Kensei weapons (integrated mode only): the Path of the Kensei choices, and the weapon rows they add to the sheet.
+  ...(INTEGRATED
+    ? [
+        { name: "Builder Class kensei weapon choices", route: KENSEI_ROUTE, tabs: ["Builder", "Class"], ready: /total level/i, scrollTo: "Path of the Kensei" },
+        { name: "Stats kensei weapon proficiencies", route: KENSEI_ROUTE, tabs: ["Stats"], ready: /hit points/i, scrollTo: "Weapon Proficiencies" },
+      ]
+    : []),
   { name: "Stats", route: RENDAR_ROUTE, tabs: ["Stats"], ready: /hit points/i },
   { name: "Stats add tool modal", route: RENDAR_ROUTE, tabs: ["Stats"], open: (page) => page.getByLabel("Add tool proficiency").first().click(), modal: "Add Tool Proficiency" },
   { name: "Stats add language modal", route: RENDAR_ROUTE, tabs: ["Stats"], open: (page) => page.getByLabel("Add language").first().click(), modal: "Add Language" },

@@ -8,7 +8,6 @@ Rules applied: a fixed grant stays fixed even when the book says "if you already
 
 | Owner | Feature (level) | Grants |
 |---|---|---|
-| Artificer | Optional Rule: Firearm Proficiency (1) | weapons fixed: Firearms |
 | Artificer/Alchemist | Tool Proficiency (3) | tools fixed: Alchemist's Supplies |
 | Artificer/Armorer | Tools of the Trade (3) | armor fixed: Heavy armor; tools fixed: Smith's Tools |
 | Artificer/Artillerist | Tool Proficiency (3) | tools fixed: Woodcarver's Tools |
@@ -25,7 +24,8 @@ Rules applied: a fixed grant stays fixed even when the book says "if you already
 | Fighter/Samurai | Bonus Proficiency (3) | skills choose 1 from [History, Insight, Performance, Persuasion] |
 | Fighter/Samurai | Elegant Courtier (7) | savingThrows fixed: Wisdom |
 | Fighter/Rune Knight | Bonus Proficiencies (3) | tools fixed: Smith's Tools; languages fixed: Giant |
-| Monk/Way of the Kensei | Path of the Kensei (3) | tools choose 1 from [Calligrapher's Supplies, Painter's Supplies] (the kensei weapons choices come with the Kensei weapons ticket) |
+| Monk/Way of the Kensei | Path of the Kensei (3) | tools choose 1 from [Calligrapher's Supplies, Painter's Supplies]; weapons choose 1 melee and weapons choose 1 ranged (kensei weapons, ticket 10) |
+| Monk/Way of the Kensei | One with the Blade (6), Sharpen the Blade (11), Unerring Accuracy (17) | weapons choose 1 (either kind; kensei weapons, ticket 10) |
 | Monk/Way of Mercy | Implements of Mercy (3) | skills fixed: Insight, Medicine; tools fixed: Herbalism Kit |
 | Monk/Way of the Ascendant Dragon | Draconic Disciple (3) | languages fixed: Draconic |
 | Ranger | Deft Explorer (1) | languages choose 2 any |
@@ -60,7 +60,7 @@ The weapons pool type needs one optional new field, `attackType?: "melee" | "ran
 
 ## Reviewed, grants nothing (marks)
 
-Everything else the matcher flags after the noise reduction below, including at least: Artificer / Spellcasting, Tool Expertise; every Expertise feature of Bard and Rogue and the sidekick Expertise features; Bardic Versatility; Barbarian / Primal Knowledge (a Rule Choice handles it); Cleric / Channel Divinity: Knowledge of the Ages; Druid / Wild Shape; Monk / Dedicated Weapon, Deflect Missiles, Tongue of the Sun and Moon; Way of the Sun Soul / Radiant Sun Bolt; Mystic / Telepathy, Strength of Mind; Mystic/Order of the Nomad / Breadth of Knowledge; Ranger / Natural Explorer; Ranger/Beast Master / Ranger's Companion; Rogue/Thief / Thief; Rogue/Swashbuckler / Panache; Rogue/Phantom / Whispers of the Dead, Tokens of the Departed; Rogue/Soulknife / Psi-Bolstered Knack, Psychic Whispers; the three sidekick "Sidekick Class" features; Sorcerer/Aberrant Mind / Telepathic Speech; Warlock/The Great Old One / Awakened Mind; Bard/College of Whispers / Shadow Lore; Bard/College of Eloquence / Universal Speech; the feats Crossbow Expert, Defensive Duelist, Great Weapon Master, Initiate of High Sorcery, Observant, Rune Shaper, Sharpshooter, Telepathic; the "header" stub features that only list their sub-features (for example Alchemist, Artillerist, Battle Smith, the college and domain headings); the feats and features whose only match is a saving throw DC formula or the proficiency bonus.
+Everything else the matcher flags after the noise reduction below, including at least: Artificer / Optional Rule: Firearm Proficiency (a table option, not a grant every Artificer has), Artificer / Spellcasting, Tool Expertise; every Expertise feature of Bard and Rogue and the sidekick Expertise features; Bardic Versatility; Barbarian / Primal Knowledge (a Rule Choice handles it); Cleric / Channel Divinity: Knowledge of the Ages; Druid / Wild Shape; Monk / Dedicated Weapon, Deflect Missiles, Tongue of the Sun and Moon; Way of the Sun Soul / Radiant Sun Bolt; Mystic / Telepathy, Strength of Mind; Mystic/Order of the Nomad / Breadth of Knowledge; Ranger / Natural Explorer; Ranger/Beast Master / Ranger's Companion; Rogue/Thief / Thief; Rogue/Swashbuckler / Panache; Rogue/Phantom / Whispers of the Dead, Tokens of the Departed; Rogue/Soulknife / Psi-Bolstered Knack, Psychic Whispers; the three sidekick "Sidekick Class" features; Sorcerer/Aberrant Mind / Telepathic Speech; Warlock/The Great Old One / Awakened Mind; Bard/College of Whispers / Shadow Lore; Bard/College of Eloquence / Universal Speech; the feats Crossbow Expert, Defensive Duelist, Great Weapon Master, Initiate of High Sorcery, Observant, Rune Shaper, Sharpshooter, Telepathic; the "header" stub features that only list their sub-features (for example Alchemist, Artillerist, Battle Smith, the college and domain headings); the feats and features whose only match is a saving throw DC formula or the proficiency bonus.
 
 ## Noise reduction for the matcher
 
@@ -73,4 +73,4 @@ The vocabulary matcher also flags sentences that only mention the proficiency bo
 - Skilled ("three skills or tools") is modelled as three skills; tools can be added by hand.
 - Resilient's choice is a free pick of one ability until the saving-throw ticket ties it to the feat's raised ability.
 - Sidekick classes keep only the unconditional parts of their bonus proficiencies.
-- The Kensei weapons choices are not in this batch; they come with the Kensei weapons ticket.
+- The Kensei weapons are in the Catalog now (ticket 10): one melee and one ranged choice at 3rd level, then one choice of either kind at 6th, 11th and 17th level, as the feature text says ("another type of weapon, either melee or ranged"). The weapon pools read the Compendium's properties and attack type; the simple or martial category comes from the app's standard weapon lists, because the scraped items carry no category.
