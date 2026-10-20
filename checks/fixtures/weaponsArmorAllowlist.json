@@ -10,24 +10,9 @@
     "grant": "PHB/Cleric/Life Domain/Bonus Proficiency@1#0"
   },
   {
-    "scenario": "integrated | rock gnome guild artisan alchemist artificer",
-    "entry": "weapons: Firearms",
-    "grant": "TCE/Artificer/Optional Rule: Firearm Proficiency@1#0"
-  },
-  {
-    "scenario": "integrated | human soldier armorer artificer",
-    "entry": "weapons: Firearms",
-    "grant": "TCE/Artificer/Optional Rule: Firearm Proficiency@1#0"
-  },
-  {
     "scenario": "integrated | human soldier armorer artificer",
     "entry": "armor: Heavy armor",
     "grant": "TCE/Artificer/Armorer/Tools of the Trade@3#0"
-  },
-  {
-    "scenario": "integrated | battle smith artificer with a picked artisan tool and expertise",
-    "entry": "weapons: Firearms",
-    "grant": "TCE/Artificer/Optional Rule: Firearm Proficiency@1#0"
   },
   {
     "scenario": "integrated | battle smith artificer with a picked artisan tool and expertise",
@@ -163,11 +148,6 @@
     "scenario": "integrated | cleric forge domain soldier",
     "entry": "armor: Heavy armor",
     "grant": "XGE/Cleric/Forge Domain/Bonus Proficiency@1#0"
-  },
-  {
-    "scenario": "integrated | multiclass artificer alchemist and draconic sorcerer",
-    "entry": "weapons: Firearms",
-    "grant": "TCE/Artificer/Optional Rule: Firearm Proficiency@1#0"
   },
   {
     "scenario": "integrated | human fighter with the tavern brawler feat from level 4",

@@ -3,12 +3,16 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import { matchedSentences } from "../src/parser/proficiency-grants.ts";
 import type { TrackedData } from "../src/grants/subjects.ts";
+import { REVIEWED_GRANTS_NOTHING } from "../src/overrides/proficiency-grants.ts";
+
+// The optional firearm rule is a table option, not a grant every Artificer has. It was in
+// "Grants to add" and is now reviewed as granting nothing, so it is matched but marked.
+const MARKED_GRANTS_NOTHING: Array<[owner: string, feature: string]> = [["Artificer", "Optional Rule: Firearm Proficiency"]];
 
 // The features in review-decisions.md under "Grants to add", by owner and feature name.
 // Each must still be matched by the vocabulary over the tracked data, so that the
 // matcher's noise reduction can never drop a feature out of review before its override exists.
 const GRANTS_TO_ADD: Array<[owner: string, feature: string]> = [
-  ["Artificer", "Optional Rule: Firearm Proficiency"],
   ["Artificer/Alchemist", "Tool Proficiency"],
   ["Artificer/Armorer", "Tools of the Trade"],
   ["Artificer/Artillerist", "Tool Proficiency"],
@@ -92,4 +96,20 @@ test("every feature in the grants-to-add table is still matched by the vocabular
     if (hits.every((f) => matchedSentences(f.description).length === 0)) unmatched.push(`${owner} / ${feature}`);
   }
   assert.deepEqual(unmatched, []);
+});
+
+test("every feature moved from the grants-to-add table to the marks is matched, marked, and carries no grant", () => {
+  const features = trackedFeatures();
+  for (const [owner, feature] of MARKED_GRANTS_NOTHING) {
+    const hits = features.filter((f) => f.owner === owner && f.feature === feature);
+    assert.ok(hits.length > 0, `no tracked feature named ${owner} / ${feature}`);
+    assert.ok(
+      hits.every((f) => matchedSentences(f.description).length > 0),
+      `${owner} / ${feature} is no longer matched by the vocabulary`
+    );
+    assert.ok(
+      REVIEWED_GRANTS_NOTHING.some((m) => m.owner === owner && m.feature === feature && m.level === 1),
+      `${owner} / ${feature} is not marked as granting nothing`
+    );
+  }
 });

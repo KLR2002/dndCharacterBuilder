@@ -13,7 +13,6 @@ import type { GrantOverride } from "../parser/proficiency-grants.ts";
  */
 export const PROFICIENCY_GRANT_OVERRIDES: { classes: GrantOverride[]; feats: GrantOverride[] } = {
   classes: [
-    { owner: "Artificer", feature: "Optional Rule: Firearm Proficiency", level: 1, grants: [{ kind: "fixed", category: "weapons", names: ["firearms"] }] },
     { owner: "Artificer/Alchemist", feature: "Tool Proficiency", level: 3, grants: [{ kind: "fixed", category: "tools", names: ["alchemist's supplies"] }] },
     {
       owner: "Artificer/Armorer",
@@ -287,6 +286,8 @@ export interface ReviewedFeature {
  * mark that names an unknown feature, or a feature that has grants.
  */
 export const REVIEWED_GRANTS_NOTHING: ReviewedFeature[] = [
+  // A table option (optional rule), not a grant every Artificer has.
+  { owner: "Artificer", feature: "Optional Rule: Firearm Proficiency", level: 1 },
   // Header stubs that only list their sub-features.
   { owner: "Artificer/Alchemist", feature: "Alchemist", level: 3 },
   { owner: "Artificer/Artillerist", feature: "Artillerist", level: 3 },
