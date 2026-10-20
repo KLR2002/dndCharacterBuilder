@@ -5,13 +5,17 @@ import { dirname, join, relative, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 
 // The Proficiency Sheet is the only reader of race, background and class proficiency fields (ADR 0015).
-// This guard scans src/ for those field names and for imports of the sheet's private folder, and fails
-// on any use outside the sheet unless the allowlist below names it with a reason. Allowlist entries must
-// still match a use, so a removed use takes its entry out with it.
+// This guard scans src/ for those field names, for imports of the sheet's private folder, and for imports
+// or re-exports of the proficiency tables the sheet reads. It fails on any use outside the sheet unless the
+// allowlist below names it with a reason. Allowlist entries must still match a use, so a removed use takes
+// its entry out with it.
 
 const SRC = fileURLToPath(new URL("../src/", import.meta.url));
 const SHEET_FILE = "rules/proficiencySheet.ts";
 const PRIVATE_FOLDER = "rules/proficiencySources/";
+
+/** Proficiency tables only the sheet reads. A named import or re-export of one is a read. */
+const GUARDED_CONSTANTS = ["RACE_WEAPON_PROFICIENCIES", "MULTICLASS_PROFICIENCIES", "BACKGROUND_SKILL_PROFICIENCIES"];
 
 /** The field names only the sheet reads. A leading dot matches a property access. */
 const GUARDED_FIELDS: { field: string; pattern: RegExp }[] = [
@@ -37,6 +41,7 @@ interface Allowance {
   files: string[];
   fields?: string[];
   imports?: string[];
+  constants?: string[];
   reason: string;
 }
 
@@ -92,11 +97,16 @@ const ALLOWANCES: Allowance[] = [
     imports: ["rules/proficiencySources/skillGrants.ts"],
     reason: "Ancestral Legacy asks whether the prior race grants any skill (a lineage rule, not held proficiency)",
   },
+  {
+    files: ["rules/builderTransitions.ts"],
+    constants: ["MULTICLASS_PROFICIENCIES"],
+    reason: "looks up the multiclass table to write the multiclass record the sheet reads when a class is added",
+  },
 ];
 
 interface Finding {
   file: string;
-  kind: "field" | "import";
+  kind: "field" | "import" | "constant";
   name: string;
 }
 
@@ -128,6 +138,12 @@ function findingsIn(file: string, source: string): Finding[] {
     const target = relative(SRC, resolve(SRC, dirname(file), spec)).split(sep).join("/");
     if (target.startsWith(PRIVATE_FOLDER)) findings.push({ file, kind: "import", name: target });
   }
+  const named = [...code.matchAll(/\b(?:import|export)\s+(?:type\s+)?(?:[\w$]+\s*,\s*)?\{([^}]*)\}\s*from\s*["']/g)].flatMap((m) =>
+    m[1].split(",").map((part) => part.trim().replace(/^type\s+/, "").split(/\s+as\s+/)[0]),
+  );
+  for (const name of GUARDED_CONSTANTS) {
+    if (named.includes(name)) findings.push({ file, kind: "constant", name });
+  }
   return findings;
 }
 
@@ -140,17 +156,18 @@ function isExempt(file: string): boolean {
 }
 
 function allowedBy(finding: Finding, allowances: Allowance[]): boolean {
-  return allowances.some(
-    (a) =>
-      a.files.includes(finding.file) &&
-      (finding.kind === "field" ? a.fields?.includes(finding.name) : a.imports?.includes(finding.name)),
-  );
+  return allowances.some((a) => {
+    if (!a.files.includes(finding.file)) return false;
+    if (finding.kind === "field") return a.fields?.includes(finding.name) ?? false;
+    if (finding.kind === "constant") return a.constants?.includes(finding.name) ?? false;
+    return a.imports?.includes(finding.name) ?? false;
+  });
 }
 
 function format(finding: Finding): string {
-  return finding.kind === "field"
-    ? `${finding.file} reads ${finding.name}; only ${SHEET_FILE} reads proficiency fields`
-    : `${finding.file} imports ${finding.name}; that module is private to ${SHEET_FILE}`;
+  if (finding.kind === "field") return `${finding.file} reads ${finding.name}; only ${SHEET_FILE} reads proficiency fields`;
+  if (finding.kind === "constant") return `${finding.file} imports ${finding.name}; only ${SHEET_FILE} and its private folder read that table`;
+  return `${finding.file} imports ${finding.name}; that module is private to ${SHEET_FILE}`;
 }
 
 /** The findings in one file that no allowance covers. */
@@ -185,6 +202,29 @@ test("guard, synthetic: a component importing a sheet-private module fails, name
   );
 });
 
+test("guard, synthetic: importing or re-exporting a guarded proficiency table fails, named by file and table", () => {
+  const imported = 'import {\n  STANDARD_ARRAY,\n  MULTICLASS_PROFICIENCIES as table,\n} from "../constants/rules.ts";\n';
+  const reexported = 'export { RACE_WEAPON_PROFICIENCIES } from "../constants/rules.ts";\n';
+  const harmless = 'import { MULTICLASS_PREREQUISITES } from "../constants/rules.ts";\n';
+  assert.deepEqual(
+    violationsFor("components/Synthetic.tsx", imported, []).map((v) => [v.file, v.name]),
+    [["components/Synthetic.tsx", "MULTICLASS_PROFICIENCIES"]],
+  );
+  assert.deepEqual(
+    violationsFor("components/Synthetic.tsx", reexported, []).map((v) => [v.file, v.name]),
+    [["components/Synthetic.tsx", "RACE_WEAPON_PROFICIENCIES"]],
+  );
+  assert.deepEqual(violationsFor("components/Synthetic.tsx", harmless, []), []);
+});
+
+test("guard, synthetic: an allowlisted table import passes, and the sheet and its private folder are exempt", () => {
+  const imported = 'import { MULTICLASS_PROFICIENCIES } from "../constants/rules.ts";\n';
+  const allowed: Allowance[] = [{ files: ["components/Synthetic.tsx"], constants: ["MULTICLASS_PROFICIENCIES"], reason: "test" }];
+  assert.deepEqual(violationsFor("components/Synthetic.tsx", imported, allowed), []);
+  assert.deepEqual(violationsFor(SHEET_FILE, imported, []), []);
+  assert.deepEqual(violationsFor("rules/proficiencySources/skillGrants.ts", 'import { BACKGROUND_SKILL_PROFICIENCIES } from "../../constants/rules.ts";\n', []), []);
+});
+
 test("guard, synthetic: comments are not reads, and the sheet itself is exempt", () => {
   assert.deepEqual(violationsFor("components/Synthetic.tsx", "// reads chosenTools in a comment\n", []), []);
   assert.deepEqual(violationsFor(SHEET_FILE, "const x = c.armorProficiencies;", []), []);
@@ -205,6 +245,7 @@ test("every allowlist entry still matches a use, so the list cannot go stale", (
     a.files.flatMap((file) => [
       ...(a.fields ?? []).filter((f) => !found.some((x) => x.file === file && x.kind === "field" && x.name === f)).map((f) => `${file}: ${f}`),
       ...(a.imports ?? []).filter((m) => !found.some((x) => x.file === file && x.kind === "import" && x.name === m)).map((m) => `${file}: ${m}`),
+      ...(a.constants ?? []).filter((c) => !found.some((x) => x.file === file && x.kind === "constant" && x.name === c)).map((c) => `${file}: ${c}`),
     ]),
   );
   assert.deepEqual(stale, [], "these allowlist entries no longer match a use; remove them");

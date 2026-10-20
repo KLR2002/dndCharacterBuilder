@@ -1,5 +1,5 @@
 import type { AbilityKey, CharacterClass } from "../types/character.ts";
-export { MULTICLASS_PROFICIENCIES, MULTICLASS_PREREQUISITES } from "../constants/rules.ts";
+export { MULTICLASS_PREREQUISITES } from "../constants/rules.ts";
 
 export interface ClassRules {
   hitDie: number;
