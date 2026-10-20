@@ -1,13 +1,9 @@
 import type { AbilityKey, Character, InventoryItem } from "../types/character.ts";
-import type { ClassData } from "../types/dnd5e.ts";
 import type { ResolvedAncestry } from "./types.ts";
+import type { CharacterCatalogs } from "./catalogs.ts";
 import { effectiveScores } from "./abilities.ts";
-import {
-  proficiencyBonus,
-  totalLevel,
-  proficiencies,
-  MULTICLASS_PROFICIENCIES,
-} from "./proficiencies.ts";
+import { proficiencyBonus, totalLevel } from "./proficiencies.ts";
+import { proficiencySheet } from "./proficiencySheet.ts";
 import { getMartialArtsDie, getSneakAttackDice, getManeuverSaveDc } from "./combatDice.ts";
 import { hasFightingStyle, hasInvocation } from "./ruleChoices.ts";
 
@@ -105,34 +101,6 @@ export const STANDARD_WEAPONS: Record<string, StandardWeaponData> = {
   net: { category: "martial", type: "ranged", damage: "", damageType: "", range: "5/15", properties: ["Special", "Thrown"] },
 };
 
-export const CLASS_WEAPON_PROFICIENCIES: Record<string, string[]> = {
-  Barbarian: ["Simple weapons", "Martial weapons"],
-  Bard: ["Simple weapons", "Hand crossbows", "Longswords", "Rapiers", "Shortswords"],
-  Cleric: ["Simple weapons"],
-  Druid: ["Clubs", "Daggers", "Darts", "Javelins", "Maces", "Quarterstaffs", "Scimitars", "Sickles", "Slings", "Spears"],
-  Fighter: ["Simple weapons", "Martial weapons"],
-  Monk: ["Simple weapons", "Shortswords"],
-  Paladin: ["Simple weapons", "Martial weapons"],
-  Ranger: ["Simple weapons", "Martial weapons"],
-  Rogue: ["Simple weapons", "Hand crossbows", "Longswords", "Rapiers", "Shortswords"],
-  Sorcerer: ["Daggers", "Darts", "Slings", "Quarterstaffs", "Light crossbows"],
-  Warlock: ["Simple weapons"],
-  Wizard: ["Daggers", "Darts", "Slings", "Quarterstaffs", "Light crossbows"],
-  Artificer: ["Simple weapons"],
-};
-
-export const RACE_WEAPON_PROFICIENCIES: Record<string, string[]> = {
-  Elf: ["Longswords", "Shortswords", "Shortbows", "Longbows"],
-  "High Elf": ["Longswords", "Shortswords", "Shortbows", "Longbows"],
-  "Wood Elf": ["Longswords", "Shortswords", "Shortbows", "Longbows"],
-  Drow: ["Rapiers", "Shortswords", "Hand crossbows"],
-  "Dark Elf (Drow)": ["Rapiers", "Shortswords", "Hand crossbows"],
-  Dwarf: ["Battleaxes", "Handaxes", "Light hammers", "Warhammers"],
-  "Hill Dwarf": ["Battleaxes", "Handaxes", "Light hammers", "Warhammers"],
-  "Mountain Dwarf": ["Battleaxes", "Handaxes", "Light hammers", "Warhammers"],
-  Githyanki: ["Shortswords", "Longswords", "Greatswords"],
-};
-
 function normalizeName(name: string): string {
   let s = name.toLowerCase().trim();
   s = s.replace(/^crossbow,\s*(light|hand|heavy)$/i, "$1 crossbow");
@@ -180,10 +148,6 @@ export type LooseInventoryItem = InventoryItem & {
   type?: string;
   properties?: string[];
   finesse?: boolean;
-};
-
-export type LooseCharacter = Character & {
-  weaponProficiencies?: string[];
 };
 
 export function isWeaponItem(item: InventoryItem): boolean {
@@ -299,52 +263,12 @@ export function isItemInfusedWith(
   return false;
 }
 
-export function isProficientWithWeapon(
-  character: Character,
-  item: InventoryItem,
-  opts: { classes?: ClassData[]; ancestry?: ResolvedAncestry } = {}
-): boolean {
-  const profs = new Set<string>();
-
-  const rawChar = character as unknown as LooseCharacter;
-  if (Array.isArray(rawChar.weaponProficiencies)) {
-    for (const p of rawChar.weaponProficiencies) {
-      if (typeof p === "string") profs.add(p);
-    }
-  }
-
-  if (Array.isArray(character.multiclassProficiencies)) {
-    for (const mp of character.multiclassProficiencies) {
-      for (const w of mp.weapons || []) profs.add(w);
-    }
-  }
-
-  if (character.classes && character.classes.length > 0) {
-    if (opts.classes) {
-      const derived = proficiencies(character, opts.classes);
-      for (const w of derived.weapons) profs.add(w);
-    } else {
-      const firstClass = character.classes[0];
-      if (firstClass && firstClass.level >= 1) {
-        const initial = CLASS_WEAPON_PROFICIENCIES[firstClass.className];
-        for (const w of initial || []) profs.add(w);
-      }
-      for (const c of character.classes.slice(1)) {
-        if (c.level >= 1) {
-          const mc = MULTICLASS_PROFICIENCIES[c.className]?.weapons;
-          for (const w of mc || []) profs.add(w);
-        }
-      }
-    }
-  }
-
-  if (character.race?.name) {
-    const raceProfs =
-      RACE_WEAPON_PROFICIENCIES[character.race.name] ||
-      (character.race.subraceName ? RACE_WEAPON_PROFICIENCIES[character.race.subraceName] : undefined);
-    for (const w of raceProfs || []) profs.add(w);
-  }
-
+/**
+ * Whether the item is a weapon the character is proficient with, given the weapon names on the
+ * Proficiency Sheet (ticket 09). A category name ("Simple weapons", "Martial weapons") covers every
+ * weapon of that category.
+ */
+export function isProficientWithWeapon(item: InventoryItem, sheetWeapons: string[]): boolean {
   const std = findStandardWeapon(item.name);
   const category = (std?.category || (/martial/i.test(item.description || "") ? "martial" : "simple")).toLowerCase();
   const isSimple = category === "simple";
@@ -353,7 +277,7 @@ export function isProficientWithWeapon(
   const cleanItemName = normalizeName(item.name);
   const singularItem = cleanItemName.replace(/s$/, "");
 
-  for (const prof of profs) {
+  for (const prof of sheetWeapons) {
     const pClean = normalizeName(prof);
     if (isSimple && (pClean === "simple" || pClean.includes("simple"))) return true;
     if (isMartial && (pClean === "martial" || pClean.includes("martial"))) return true;
@@ -389,10 +313,11 @@ export function formatDamageString(
 
 export function getWeaponAttacks(
   character: Character,
-  opts: { classes?: ClassData[]; ancestry?: ResolvedAncestry } = {}
+  opts: { catalogs?: CharacterCatalogs; ancestry?: ResolvedAncestry } = {}
 ): WeaponAttackOption[] {
   const { modifiers } = effectiveScores(character, opts.ancestry);
   const pb = proficiencyBonus(totalLevel(character));
+  const sheetWeapons = proficiencySheet(character, opts.catalogs ?? {}).weapons.map((weapon) => weapon.name);
 
   const monk = (character.classes || []).find((c) => c.className === "Monk");
   const rogue = (character.classes || []).find((c) => c.className === "Rogue");
@@ -458,7 +383,7 @@ export function getWeaponAttacks(
 
     const isProficient =
       item.name.toLowerCase().trim() === "unarmed strike" ||
-      isProficientWithWeapon(character, item, opts);
+      isProficientWithWeapon(item, sheetWeapons);
     const abilityMod = modifiers[statUsed];
 
     const artificer = (character.classes || []).find(

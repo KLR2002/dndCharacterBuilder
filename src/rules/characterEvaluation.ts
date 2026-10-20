@@ -10,19 +10,8 @@ import { armorClass } from "./ac.ts";
 import { speed, characterSpeeds, carryingWeight, type MovementSpeeds } from "./speed.ts";
 import { savingThrows } from "./saves.ts";
 import { skills } from "./skills.ts";
-import {
-  totalLevel,
-  proficiencyBonus,
-  proficiencies,
-  normalizeArmorProficiency,
-  normalizeWeaponProficiency,
-  deduplicateWeaponProficiencies,
-} from "./proficiencies.ts";
-import {
-  RACE_WEAPON_PROFICIENCIES,
-  getWeaponAttacks,
-  type WeaponAttackOption,
-} from "./attacks.ts";
+import { totalLevel, proficiencyBonus } from "./proficiencies.ts";
+import { getWeaponAttacks, type WeaponAttackOption } from "./attacks.ts";
 import { proficiencySheet } from "./proficiencySheet.ts";
 import {
   evaluateCharacterTools,
@@ -139,41 +128,6 @@ export function evaluateCharacter(
     backgrounds: background ? [background] : undefined,
   });
 
-  // Derived proficiencies
-  const allClasses = listings.classes();
-  const baseProf = proficiencies(character, allClasses);
-  const armorSet = new Set<string>(baseProf.armor.map(normalizeArmorProficiency));
-  const weaponSet = new Set<string>(baseProf.weapons.map(normalizeWeaponProficiency));
-
-  if (Array.isArray(character.multiclassProficiencies)) {
-    for (const mp of character.multiclassProficiencies) {
-      for (const a of mp.armor || []) armorSet.add(normalizeArmorProficiency(a));
-      for (const w of mp.weapons || []) weaponSet.add(normalizeWeaponProficiency(w));
-    }
-  }
-
-  // Race and subrace weapon and armor training
-  const raceName = character.race?.name;
-  const subraceName = character.race?.subraceName;
-  const candidateKeys = [
-    raceName,
-    subraceName,
-    subraceName && raceName ? `${subraceName} ${raceName}` : undefined,
-  ].filter((k): k is string => Boolean(k));
-
-  for (const key of candidateKeys) {
-    if (RACE_WEAPON_PROFICIENCIES[key]) {
-      for (const w of RACE_WEAPON_PROFICIENCIES[key]) {
-        weaponSet.add(normalizeWeaponProficiency(w));
-      }
-    }
-  }
-
-  if (subraceName === "Mountain Dwarf" || raceName === "Mountain Dwarf" || raceName === "Githyanki") {
-    armorSet.add(normalizeArmorProficiency("Light armor"));
-    armorSet.add(normalizeArmorProficiency("Medium armor"));
-  }
-
   const sheet = proficiencySheet(character, catalogs ?? {});
   const toolList = sheet.tools.map((t) => t.name);
   const langList = sheet.languages.map((l) => l.name);
@@ -191,7 +145,7 @@ export function evaluateCharacter(
     }
   }
 
-  const attacksList = getWeaponAttacks(character, { classes: allClasses });
+  const attacksList = getWeaponAttacks(character, { catalogs });
 
   const spellProfiles = getClassSpellProfiles(character, {
     ...ancestry,
@@ -231,8 +185,8 @@ export function evaluateCharacter(
       extraAttackCount,
     },
     proficiencies: {
-      armor: Array.from(armorSet),
-      weapons: deduplicateWeaponProficiencies(Array.from(weaponSet)),
+      armor: sheet.armor.map((a) => a.name),
+      weapons: sheet.weapons.map((w) => w.name),
       tools: toolList,
       languages: langList,
     },

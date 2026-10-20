@@ -163,3 +163,16 @@ export const WARLOCK_PACT_SLOTS: Record<number, { slotCount: number; slotLevel: 
   19: { slotCount: 4, slotLevel: 5 },
   20: { slotCount: 4, slotLevel: 5 },
 };
+
+/** Weapon training a race grants by race or subrace name, as the rules table lists it. */
+export const RACE_WEAPON_PROFICIENCIES: Record<string, string[]> = {
+  Elf: ["Longswords", "Shortswords", "Shortbows", "Longbows"],
+  "High Elf": ["Longswords", "Shortswords", "Shortbows", "Longbows"],
+  "Wood Elf": ["Longswords", "Shortswords", "Shortbows", "Longbows"],
+  Drow: ["Rapiers", "Shortswords", "Hand crossbows"],
+  "Dark Elf (Drow)": ["Rapiers", "Shortswords", "Hand crossbows"],
+  Dwarf: ["Battleaxes", "Handaxes", "Light hammers", "Warhammers"],
+  "Hill Dwarf": ["Battleaxes", "Handaxes", "Light hammers", "Warhammers"],
+  "Mountain Dwarf": ["Battleaxes", "Handaxes", "Light hammers", "Warhammers"],
+  Githyanki: ["Shortswords", "Longswords", "Greatswords"],
+};
