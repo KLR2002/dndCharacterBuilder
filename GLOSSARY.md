@@ -114,6 +114,18 @@ _Avoid_: Spell reroll, school swap, spell retrain
 A class feature (such as Rogue 1st/6th level, Bard 3rd/10th level, Knowledge Cleric 1st level, Ranger Deft Explorer, or the Skill Expert feat) that doubles the character's proficiency bonus (2 × PB) on ability checks using a chosen proficient skill or tool.
 _Avoid_: Double proficiency, mastery, skill mastery, spec
 
+**Proficiency Grant**:
+What a single rule (ancestry, background, class, subclass feature, or feat) gives a character in proficiencies: skills, tools, languages, weapons, armor, or saving throws. It is either fixed or a *Proficiency Choice* in which the player picks from a stated pool. It is part of the Catalog's data for that rule, not something the app encodes.
+_Avoid_: Bonus proficiency (that is a feature name), training
+
+**Proficiency Sheet**:
+The single complete answer to "what is this character proficient in", gathering every Proficiency Grant together with any *Added Proficiency*. It is derived, never stored: a rule-granted entry exists only while the ancestry, background, class level, subclass or feat that grants it applies, and cannot be removed by hand. Expertise and the character card read from it.
+_Avoid_: Proficiency ledger, proficiency list
+
+**Added Proficiency**:
+A tool or language the player adds to a character by hand, for example one learned during downtime. It sits beside rule-granted proficiencies, is marked as added, and can be removed.
+_Avoid_: Custom proficiency, manual grant
+
 **Scaling Combat Die**:
 A class-specific die (such as Bardic Inspiration, Rogue Sneak Attack, or Monk Martial Arts) whose die face or dice pool size scales automatically at specific class level milestones.
 _Avoid_: Growth die, level die, damage counter
