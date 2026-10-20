@@ -10,6 +10,8 @@ export interface RuleChoiceModel {
   options: Array<{ name: string; description: string }>;
 }
 
+import type { ProficiencyGrant } from "./proficiency.ts";
+
 export interface TraitModel {
   name: string;
   description: string;
@@ -35,6 +37,8 @@ export interface RaceModel {
   subraces: SubraceModel[];
   description: string;
   rawEntries?: any[];
+  /** Proficiency Grants from the race's structured proficiency fields. */
+  grants?: ProficiencyGrant[];
 }
 
 export interface SubraceModel {
@@ -72,6 +76,8 @@ export interface ClassFeatureModel {
   isOptional?: boolean;
   /** Present when the feature's raw `options` entry resolves to its option features. */
   choices?: FeatureChoice;
+  /** Proficiency Grants extracted from the feature's prose, or from its override. */
+  grants?: ProficiencyGrant[];
 }
 
 export interface SubclassAdditionalSpells {
@@ -117,6 +123,8 @@ export interface ClassModel {
   } | null;
   features: ClassFeatureModel[];
   subclasses: SubclassModel[];
+  /** Proficiency Grants from the class's starting proficiencies (the "Starting Proficiencies" grant owner). */
+  grants?: ProficiencyGrant[];
   multiclassing?: {
     requirements?: Record<string, number>;
     proficienciesGained?: {
@@ -136,6 +144,8 @@ export interface FeatModel {
   abilityScoreIncrease: Array<Record<string, number>> | null;
   description: string;
   rawEntries?: any[];
+  /** Proficiency Grants extracted from the feat's prose, or from its override. */
+  grants?: ProficiencyGrant[];
 }
 
 export interface OptionFeatureModel {
@@ -156,6 +166,8 @@ export interface BackgroundModel {
   skillProficiencies: string[];
   toolProficiencies: string[];
   languages: string[];
+  /** Proficiency Grants from the background's structured proficiency fields. */
+  grants?: ProficiencyGrant[];
   startingEquipment: string[];
   feature: {
     name: string;
