@@ -172,6 +172,7 @@ export interface Character {
   startingGrantsApplied?: boolean;
   startingGrantedGold?: number;
   backgroundGrantsApplied?: boolean;
+  /** Legacy: saved by older builds and no longer written or read. The Proficiency Sheet derives languages. */
   languages?: string[];
   // Added Proficiencies: tools and languages the player records by hand (GLOSSARY).
   addedTools?: string[];

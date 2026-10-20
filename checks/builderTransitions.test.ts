@@ -15,7 +15,6 @@ import {
   applyStartingGrants,
   setCustomBackground,
   applyBackgroundGrants,
-  setLanguages,
   clearBackground,
   changeRace,
   changeSubclass,
@@ -596,12 +595,6 @@ test("applyStartingGrants and applyBackgroundGrants return the same reference on
 
   const claimedBackground = makeChar({ backgroundGrantsApplied: true });
   assert.equal(applyBackgroundGrants(claimedBackground, undefined), claimedBackground);
-});
-
-test("setLanguages updates character.languages", () => {
-  const char = makeChar({});
-  const updated = setLanguages(char, ["Common", "Elvish", "Draconic"]);
-  assert.deepEqual(updated.languages, ["Common", "Elvish", "Draconic"]);
 });
 
 test("teardownSubclass cleans up ruleChoices, swaps, and counters", () => {

@@ -418,29 +418,6 @@ export function structuredLanguages(
   return Array.from(langSet);
 }
 
-/**
- * The fallbacks for a complete language list: when it is empty, the legacy character.languages
- * field if it has any names, then Common. Applied after every grant, so a grant suppresses both.
- */
-export function withLanguageFallbacks(languages: string[], character: Character): string[] {
-  if (languages.length > 0) return languages;
-  const legacy = new Set<string>();
-  for (const l of character.languages ?? []) {
-    if (!/(\d+)\s+of\s+your\s+choice/i.test(l) && !/^choose$|^other$/i.test(l)) {
-      legacy.add(l);
-    }
-  }
-  return legacy.size > 0 ? Array.from(legacy) : ["Common"];
-}
-
-/** With no catalogs given, the lists are empty; a bundle resolves names through its Compendium. */
-export function resolveCharacterLanguages(
-  character: Character,
-  catalogs?: CharacterCatalogs
-): string[] {
-  return withLanguageFallbacks(structuredLanguages(character, catalogs), character);
-}
-
 /** With no catalogs given, the lists are empty; a bundle resolves names through its Compendium. */
 export function resolveCharacterTools(
   character: Character,

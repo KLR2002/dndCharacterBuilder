@@ -20,7 +20,6 @@ import {
   MULTICLASS_PROFICIENCIES,
   DND_SKILLS,
 } from "../constants/rules.ts";
-import { resolveCharacterLanguages } from "./proficienciesAndLanguages.ts";
 import type { CharacterCatalogs } from "./catalogs.ts";
 
 export function setStandardArrayPick(
@@ -716,10 +715,7 @@ export function clearBackground(character: Character, catalogs: CharacterCatalog
       : {}),
   };
 
-  return reconcile(
-    { ...cleared, languages: resolveCharacterLanguages(cleared, catalogs) },
-    compendium
-  );
+  return reconcile(cleared, compendium);
 }
 
 export function parseBackgroundEquipment(startingEquipment: string[] = []): {
@@ -818,13 +814,6 @@ export function applyBackgroundGrants(
 /** Claims the background's coins and equipment again, on top of what was already granted. Does not call `reconcile`. */
 export function reclaimBackgroundGrants(character: Character, backgroundData?: BackgroundData): Character {
   return { ...grantBackground(character, backgroundData), backgroundGrantsApplied: true };
-}
-
-export function setLanguages(character: Character, languages: string[]): Character {
-  return {
-    ...character,
-    languages: [...languages],
-  };
 }
 
 /**

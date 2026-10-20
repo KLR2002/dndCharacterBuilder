@@ -16,7 +16,6 @@ import {
   normalizeToolName,
   resolveCharacterTools,
   structuredLanguages,
-  withLanguageFallbacks,
 } from "./proficienciesAndLanguages.ts";
 import { normalizeLanguageName, normalizeSavingThrowName, validPicks } from "./proficiencyPools.ts";
 import { ABILITY_NAMES } from "./abilities.ts";
@@ -206,14 +205,11 @@ export function proficiencySheet(character: Character, catalogs: CharacterCatalo
     ...fixedFeatureNames(features, "tools").map(normalizeToolName),
     ...choicePickNames(features, character, "tools", items),
   ];
-  const languages = withLanguageFallbacks(
-    [
-      ...structuredLanguages(character, catalogs),
-      ...fixedFeatureNames(features, "languages").map(normalizeLanguageName),
-      ...choicePickNames(features, character, "languages", items),
-    ],
-    character,
-  );
+  const languages = [
+    ...structuredLanguages(character, catalogs),
+    ...fixedFeatureNames(features, "languages").map(normalizeLanguageName),
+    ...choicePickNames(features, character, "languages", items),
+  ];
   // The first class's saves are the base, as they have always been. A later class adds none of its own.
   const firstClass = character.classes[0];
   const baseSaves = firstClass ? (catalogs.classRules ?? CLASS_DATA)[firstClass.className]?.savingThrows ?? [] : [];

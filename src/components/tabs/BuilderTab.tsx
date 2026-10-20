@@ -378,7 +378,6 @@ export const BuilderTab: React.FC<BuilderTabProps> = ({
   const classToolGrant = getClassToolGrant(primaryClass, allClasses);
 
   // The Proficiency Sheet is the one source for the language and tool lists the Builder shows.
-  const languageNamesFor = (c: Character) => proficiencySheet(c, catalogs).languages.map((l) => l.name);
   const sheet = proficiencySheet(character, catalogs);
   const resolvedLanguages = sheet.languages.map((l) => l.name);
   const resolvedTools = sheet.tools.map((t) => t.name);
@@ -386,10 +385,7 @@ export const BuilderTab: React.FC<BuilderTabProps> = ({
   const toggleRaceLanguage = (lang: string) => {
     const cur = character.chosenLanguages?.race || [];
     const next = cur.includes(lang) ? cur.filter((x) => x !== lang) : [...cur, lang];
-    const nextChosen = { ...character.chosenLanguages, race: next };
-    const temp = { ...character, chosenLanguages: nextChosen };
-    const resolved = languageNamesFor(temp);
-    onUpdate({ chosenLanguages: nextChosen, languages: resolved });
+    onUpdate({ chosenLanguages: { ...character.chosenLanguages, race: next } });
   };
 
   const toggleRaceTool = (tool: string) => {
@@ -401,10 +397,7 @@ export const BuilderTab: React.FC<BuilderTabProps> = ({
   const toggleBgLanguage = (lang: string) => {
     const cur = character.chosenLanguages?.background || [];
     const next = cur.includes(lang) ? cur.filter((x) => x !== lang) : [...cur, lang];
-    const nextChosen = { ...character.chosenLanguages, background: next };
-    const temp = { ...character, chosenLanguages: nextChosen };
-    const resolved = languageNamesFor(temp);
-    onUpdate({ chosenLanguages: nextChosen, languages: resolved });
+    onUpdate({ chosenLanguages: { ...character.chosenLanguages, background: next } });
   };
 
   const toggleBgTool = (tool: string) => {

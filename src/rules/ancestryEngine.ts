@@ -9,7 +9,6 @@ import { catalogListings, type CharacterCatalogs } from "./characterEvaluation.t
 import { setChoiceRacialBonus } from "./builderTransitions.ts";
 import { reconcile } from "./characterReconciler.ts";
 import { currentCompendium } from "../services/compendium.ts";
-import { resolveCharacterLanguages } from "./proficienciesAndLanguages.ts";
 import { getBackgroundFeatGrant } from "./feats.ts";
 import { normalizeSkillName } from "./skills.ts";
 
@@ -253,17 +252,6 @@ export function applyAncestrySelection(
   const nextChosenLanguages = { ...character.chosenLanguages, race: [] };
   const nextChosenTools = { ...character.chosenTools, race: [] };
 
-  const temp: Character = {
-    ...character,
-    race: updatedRace,
-    chosenLanguages: nextChosenLanguages,
-    chosenTools: nextChosenTools,
-    racialAbilityBonuses: bonuses,
-    racialChoiceBonus: [],
-  };
-
-  const resolvedLangs = resolveCharacterLanguages(temp, catalogs ?? {});
-
   const oldRaceChoices = (character.skillChoices || []).filter((sc) => sc.origin === "race");
   const oldRacePicks = new Set(oldRaceChoices.flatMap((sc) => sc.picked.map(normalizeSkillName)));
   const nextSkillChoices = (character.skillChoices || []).filter((sc) => sc.origin !== "race");
@@ -276,7 +264,6 @@ export function applyAncestrySelection(
     racialChoiceBonus: [],
     chosenLanguages: nextChosenLanguages,
     chosenTools: nextChosenTools,
-    languages: resolvedLangs,
     ruleChoices: (character.ruleChoices || []).filter((rc) => rc.origin !== "race"),
     skillChoices: nextSkillChoices,
     chosenSkills: nextChosenSkills,
