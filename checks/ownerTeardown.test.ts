@@ -371,6 +371,36 @@ test("the Giant Power cantrip sync records a review notice when the pick is clea
   ]);
 });
 
+test("a saved Giant Barbarian holding both cantrips keeps only the picked one, and leaves other spells alone", () => {
+  const saved = makeChar({
+    classes: [{ className: "Barbarian", source: "BGG", level: 3, subclassName: "Path of the Giant" }],
+    ruleChoices: [
+      {
+        id: GIANT_POWER_CHOICE_ID,
+        trait: "Giant Power Cantrip",
+        origin: "subclass",
+        choose: 1,
+        from: ["Druidcraft", "Thaumaturgy"],
+        picked: ["Druidcraft"],
+      },
+    ],
+    knownSpells: [
+      giantCantrip("Druidcraft"),
+      giantCantrip("Thaumaturgy"),
+      { name: "Shield", source: "PHB", ownerKey: "Wizard__PHB", ability: "int" as const, className: "Wizard" },
+    ],
+  });
+
+  const synced = reconcile(saved, currentCompendium());
+
+  assert.deepEqual(synced.knownSpells?.map((k) => k.name), ["Shield", "Druidcraft"]);
+  assert.deepEqual(synced.knownSpells?.find((k) => k.name === "Shield"), saved.knownSpells?.[2]);
+  assert.deepEqual(synced.needsReview, [
+    "Giant Power cantrip Thaumaturgy removed: Giant Power pick is now Druidcraft",
+  ]);
+  assert.deepEqual(reconcile(synced, currentCompendium()), synced, "reconciling again records nothing new");
+});
+
 // Conjunctive predicates: a class name or a subclass name alone never tears down another class's state.
 
 test("a subclass name alone does not clear swaps, and a class name alone does not clear another class's Giant cantrip", () => {
