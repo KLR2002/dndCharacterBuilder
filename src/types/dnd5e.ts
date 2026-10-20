@@ -1,3 +1,12 @@
+import type { ProficiencyGrant } from "../../dnd5eToolsScrap/src/types/proficiency.ts";
+
+export type {
+  ProficiencyCategory,
+  ProficiencyGrant,
+  ProficiencyGrantSpec,
+  ProficiencyPool,
+} from "../../dnd5eToolsScrap/src/types/proficiency.ts";
+
 export interface TraitChoiceData {
   /** How many options the player must pick. */
   pick: number;
@@ -32,6 +41,8 @@ export interface RaceData {
   darkvision: number | null;
   traits: TraitData[];
   languages: string[];
+  /** Proficiency Grants from the race's structured proficiency fields. */
+  grants?: ProficiencyGrant[];
   subraces: SubraceData[];
   description: string;
   rawEntries?: any[];
@@ -73,6 +84,8 @@ export interface ClassFeatureData {
   isOptional?: boolean;
   /** Present when the scraped feature grants a pick from its option features. */
   choices?: FeatureChoice;
+  /** Proficiency Grants extracted from the feature's prose, or from its override. */
+  grants?: ProficiencyGrant[];
 }
 
 export interface SubclassAdditionalSpells {
@@ -120,6 +133,8 @@ export interface ClassData {
   } | null;
   features: ClassFeatureData[];
   subclasses: SubclassData[];
+  /** Proficiency Grants from the class's starting proficiencies. */
+  grants?: ProficiencyGrant[];
   multiclassing?: {
     requirements?: Record<string, number>;
     proficienciesGained?: {
@@ -139,6 +154,8 @@ export interface FeatData {
   abilityScoreIncrease: Record<string, number>[] | null;
   description: string;
   rawEntries?: any[];
+  /** Proficiency Grants extracted from the feat's prose, or from its override. */
+  grants?: ProficiencyGrant[];
 }
 
 export interface BackgroundData {
@@ -147,6 +164,8 @@ export interface BackgroundData {
   skillProficiencies: string[];
   toolProficiencies: string[];
   languages: string[];
+  /** Proficiency Grants from the background's structured proficiency fields. */
+  grants?: ProficiencyGrant[];
   startingEquipment: string[];
   feature: {
     name: string;
