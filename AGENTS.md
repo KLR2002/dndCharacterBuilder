@@ -9,5 +9,6 @@ Verify all changes: `npm run check:all`. UI changes also need `npm run layout:ch
 - Progression & spells: `src/rules/` (`spellcasting.ts`, `ruleChoices.ts`, `characterEvaluation.ts`).
 - Combat economy & actions: `src/rules/` (`attacks.ts`, `ac.ts`, `tacticalActions.ts`).
 - In-app scraper & cache: `src/services/scraper/runner.ts`, `src/services/compendiumStorage.ts`.
+- Proficiencies: `src/rules/proficiencySheet.ts` is the one reader; its private sources live in `src/rules/proficiencySources/`. `checks/proficiencyReadersGuard.test.ts` enforces it.
 - Character test fixtures: `makeChar()` in `checks/testUtils.ts`.
 - Architecture decisions: `docs/adr/`.
