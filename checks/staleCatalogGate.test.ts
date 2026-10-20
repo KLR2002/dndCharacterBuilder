@@ -24,7 +24,7 @@ const INFUSIONS_6 = "TCE__Artificer__Infusions 6";
 const BIOME_ID = "PHB__Druid__Circle of the Land__Biome";
 const AFFINITY_ID = "XGE__Sorcerer__Divine Soul__Affinity";
 
-// Records a catalog synced before ticket 06 holds: plain infusions, with no umbrella and no Replicate rows.
+// Records a catalog synced before the infusion umbrella and its Replicate rows existed: plain infusions only.
 const OLD_INFUSION_RECORDS = INFUSION_FIXTURE_RECORDS.filter((r) => !r.name.startsWith("Replicate Magic Item"));
 
 const currentCatalog = (): Compendium =>

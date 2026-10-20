@@ -5,7 +5,7 @@ import { proficiencyBonus, totalLevel } from "./proficiencies.ts";
 import type { SheetEntry } from "./proficiencySheet.ts";
 
 /**
- * Saving-throw bonuses. Proficiency comes from the Proficiency Sheet's saving throws (ticket 07), so
+ * Saving-throw bonuses. Proficiency comes from the Proficiency Sheet's saving throws, so
  * the card, evaluation and any other reader agree on which saves the character has.
  */
 export function savingThrows(character: Character, sheetSaves: readonly SheetEntry[], opts: ResolvedAncestry = {}) {

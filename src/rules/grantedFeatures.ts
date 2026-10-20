@@ -72,7 +72,7 @@ export function grantedFeatures(character: Character, catalog: FeatureCatalog): 
         origin,
         className: c.className,
         level: f.level,
-        // An unpicked option's grants do not apply (ticket 11), so its feature is listed without them.
+        // An unpicked option's grants do not apply, so its feature is listed without them.
         ...(f.grants?.length && (origin !== "Subclass" || optionGrantApplies(character, { className: c.className, subclassName: c.subclassName }, f))
           ? { grants: f.grants }
           : {}),

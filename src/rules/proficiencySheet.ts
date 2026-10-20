@@ -36,15 +36,18 @@ export { classSkillChoice } from "./proficiencySources/skillGrants.ts";
 /** The Knowledge Domain's four skills. A Knowledge Cleric's Expertise on one of them has always made it proficient. */
 const KNOWLEDGE_SKILLS = ["Arcana", "History", "Nature", "Religion"];
 
-/** One entry on the Proficiency Sheet. Added Proficiencies are `ruleGranted: false`. */
+/**
+ * One entry on the Proficiency Sheet, in any of its categories. Only tools and languages can be added
+ * by hand; those entries are `ruleGranted: false`. Every other entry comes from a rule.
+ */
 export interface SheetEntry {
   name: string;
   ruleGranted: boolean;
 }
 
 /**
- * What a character is proficient in, for the categories the sheet covers so far. Derived on every
- * read and never stored (ADR 0015). Skills join this type in the last slice.
+ * What a character is proficient in, across every category the sheet covers. Derived on every read
+ * and never stored (ADR 0015).
  */
 export interface ProficiencySheet {
   tools: SheetEntry[];
@@ -54,7 +57,7 @@ export interface ProficiencySheet {
   weapons: SheetEntry[];
   /** Ability names, for example "Wisdom". Only the first class's saves are a base; the rest come from grants. */
   savingThrows: SheetEntry[];
-  /** Skill names in the spelling the rules use. Skills are never added by hand (ticket 11). */
+  /** Skill names in the spelling the rules use. Skills are never added by hand. */
   skills: SheetEntry[];
 }
 
@@ -279,7 +282,7 @@ export function skillChoiceOffers(
 
 /**
  * The Proficiency Sheet. The catalog bundle is required: a call site must say which Compendium it
- * reads, because a default that means "no catalog" silently empties the lists (quick fix 04).
+ * reads, because a default that means "no catalog" silently empties the lists.
  */
 export function proficiencySheet(character: Character, catalogs: CharacterCatalogs): ProficiencySheet {
   const listings = catalogListings(catalogs);

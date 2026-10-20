@@ -17,7 +17,7 @@ import {
 } from "./proficiencyPools.ts";
 
 /**
- * The Proficiency Choices a character is offered (ticket 05): the tool and language choice grants on
+ * The Proficiency Choices a character is offered: the tool and language choice grants on
  * the class, subclass and feat features the character holds. Each is offered as a Rule Choice with
  * `pick: "proficiency"`, keyed by its grant id. The options are the pool less what the character holds
  * from any other source; the character's own picks always stay selectable.

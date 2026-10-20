@@ -16,7 +16,7 @@ import {
 import { anyLanguageChoice, placeholderFeat, wardenClass } from "./proficiencySheetFixture.ts";
 
 /**
- * Proficiency Choices (ticket 05). Invented rules (the Lampwright, the Lantern Scholar feat) carry
+ * Proficiency Choices. Invented rules (the Lampwright, the Lantern Scholar feat) carry
  * the fixtures; the Kensei brush is tested end to end against the integrated test compendium.
  */
 
