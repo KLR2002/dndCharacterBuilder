@@ -42,7 +42,7 @@ Rules applied: a fixed grant stays fixed even when the book says "if you already
 | Wizard/Bladesinging | Training in War and Song (Bladesinging) (2) | armor fixed: Light armor; skills fixed: Performance; weapons choose 1 from a weapons pool: simple and martial, without two-handed, melee only |
 | Expert Sidekick | Bonus Proficiencies (1) | savingThrows choose 1 from [Dexterity, Intelligence, Charisma]; skills choose 5 any; armor fixed: Light armor |
 | Spellcaster Sidekick | Bonus Proficiencies (1) | savingThrows choose 1 from [Wisdom, Intelligence, Charisma]; skills choose 2 from [Arcana, History, Insight, Investigation, Medicine, Performance, Persuasion, Religion]; armor fixed: Light armor |
-| Warrior Sidekick | Bonus Proficiencies (1) | savingThrows choose 1 from [Strength, Dexterity, Constitution]; skills choose 2 from [Acrobatics, Animal Handling, Athletics, Intimidation, Nature, Perception, Survival]; armor fixed: Light armor, Medium armor, Heavy armor, Shields |
+| Warrior Sidekick | Bonus Proficiencies (1) | savingThrows choose 1 from [Strength, Dexterity, Constitution]; skills choose 2 from [Acrobatics, Animal Handling, Athletics, Intimidation, Nature, Perception, Survival]; armor fixed: Light armor, Medium armor, Heavy armor |
 | Feat | Artificer Initiate | tools choose 1 from the seventeen artisan's tools |
 | Feat | Chef | tools fixed: Cook's Utensils |
 | Feat | Gunner | weapons fixed: Firearms |

@@ -15,9 +15,16 @@ export type ProficiencyPool =
   | { kind: "any" }
   /**
    * A property rule over weapons: any of the listed base types that lack every
-   * listed property, plus any weapons named explicitly.
+   * listed property, plus any weapons named explicitly. `attackType`, when set,
+   * keeps only melee or only ranged weapons.
    */
-  | { kind: "weapons"; base: Array<"simple" | "martial">; withoutProperties: string[]; plus: string[] };
+  | {
+      kind: "weapons";
+      base: Array<"simple" | "martial">;
+      withoutProperties: string[];
+      plus: string[];
+      attackType?: "melee" | "ranged";
+    };
 
 export interface FixedProficiencyGrant {
   /** Built from source, owner, feature, level and position; never changes once shipped. */

@@ -92,6 +92,37 @@ const WEAPON_SET = new Set(WEAPON_NAMES);
 /** Sentences that mention proficiency ("proficiency", "proficient") or language learning. Only these are considered at all. */
 const CANDIDATE = /proficien|languages?\b|\bspeak,?\s+read\b/i;
 
+/**
+ * Mentions that name a proficiency or language without granting one. Each is
+ * removed from a sentence before the vocabulary test, so only what remains can
+ * make the sentence a candidate. A sentence whose only mention is one of these
+ * is not a match.
+ */
+const NON_GRANT_MENTIONS: RegExp[] = [
+  // The proficiency bonus, as in "your proficiency bonus is doubled" or "its whole proficiency bonus".
+  /\bproficiency bonus\b/gi,
+  // A reference to a proficiency the character already has, as a condition.
+  /\b(?:if|when|while|whenever)\s+you(?:'re|\s+are|\s+were|\s+have|\s+already\s+have)\s+(?:already\s+)?(?:proficient|proficiency)\b(?:\s+(?:with|in))?/gi,
+  /\bwith\s+(?:which|whom)\s+you\s+(?:are|have)\s+(?:proficient|proficiency)\b(?:\s+(?:with|in))?/gi,
+  /\byou\s+must\s+be\s+proficient\b(?:\s+(?:with|in))?/gi,
+  // A relative clause over an item the character already has: "a weapon you are proficient with".
+  /\b(?:a|an|any|each|every|one|the)\s+[\w'’-]+(?:\s+[\w'’-]+)?\s+you\s+(?:are|'re|have)\s+(?:already\s+)?proficient(?:\s+(?:with|in))?/gi,
+  // Language words that are not grants: sharing a language, or a language the character already knows.
+  /\bshare\s+(?:a|an|one|the|any)\s+languages?\b/gi,
+  /\b(?:a|an|any|one|the)\s+languages?\s+you\s+(?:already\s+)?(?:know|speak|understand)\b/gi,
+];
+
+/** A saving throw DC or attack formula, such as "Spell save DC = 8 + your Wisdom modifier". A grant is never a formula. */
+const FORMULA = /\bDC\b|\battack modifier\b/i;
+
+/** Whether a sentence mentions a proficiency or language in a way that can grant one. */
+function mentionsGrantable(sentence: string): boolean {
+  if (FORMULA.test(sentence) && /[=+]/.test(sentence)) return false;
+  let rest = sentence;
+  for (const mention of NON_GRANT_MENTIONS) rest = rest.replace(mention, " ");
+  return CANDIDATE.test(rest);
+}
+
 /** A lead-in clause such as "At 1st level," or "When you choose this circle at 3rd level,". "If" is not a lead-in: it makes a grant conditional. */
 const LEAD_IN = /^(?:(?:also|in addition|at|when|starting at|beginning at|upon|once|after)\b[^,]*,\s*)+/i;
 
@@ -307,7 +338,7 @@ function stripTerminal(sentence: string): string {
  * read matches through this one function.
  */
 export function matchedSentences(description: string): string[] {
-  return proseSentences(description).filter((s) => CANDIDATE.test(s)).map(stripTerminal);
+  return proseSentences(description).filter(mentionsGrantable).map(stripTerminal);
 }
 
 /** Extracts grant specs from prose. Sentences that match the vocabulary but do not parse are returned as `unparsed`. */
@@ -343,10 +374,21 @@ function featureKey(s: { owner: string; feature: string; level: number }): strin
 }
 
 /**
+ * The overrides that name no feature in `subjects`. Whether that is an error is
+ * the caller's call: the tracked files hold every class, so there it is.
+ */
+export function unmatchedOverrides(subjects: GrantSubject[], overrides: GrantOverride[]): GrantOverride[] {
+  const keys = new Set(subjects.map(featureKey));
+  return overrides.filter((override) => !keys.has(featureKey(override)));
+}
+
+/**
  * Resolves the grants of every feature in a scrape: prose extraction, then
- * overrides. Throws when an override names a feature that is not in `subjects`,
- * or when two features share an owner, name and level. Updates `report` with
- * covered features and the unparsed list.
+ * overrides. An override for a feature the scrape does not include has nothing
+ * to apply to, and is ignored, because a partial scrape is normal; the tracked
+ * data is checked for stale overrides by the enrichment (see unmatchedOverrides).
+ * Throws when two features share an owner, name and level. Updates `report`
+ * with covered features and the unparsed list.
  */
 export function resolveFeatureGrants(
   subjects: GrantSubject[],
@@ -362,8 +404,7 @@ export function resolveFeatureGrants(
   const overrideByKey = new Map<string, GrantOverride>();
   for (const override of overrides) {
     const key = featureKey(override);
-    if (!keys.has(key)) throw new Error(`proficiency override matches no feature: ${key}`);
-    overrideByKey.set(key, override);
+    if (keys.has(key)) overrideByKey.set(key, override);
   }
 
   return subjects.map((subject) => {

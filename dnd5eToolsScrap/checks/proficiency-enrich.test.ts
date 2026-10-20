@@ -1,7 +1,9 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
+import fs from "node:fs";
 import { enrichGrantFiles, stripGrantFiles } from "../src/grants/enrich.ts";
 import type { GrantOverride } from "../src/parser/proficiency-grants.ts";
+import { PROFICIENCY_GRANT_OVERRIDES } from "../src/overrides/proficiency-grants.ts";
 
 // Every sentence and name in this file is invented. The files use the tracked files' format:
 // JSON.stringify with two-space indent and no trailing newline.
@@ -107,6 +109,24 @@ test("an override that names a feature the files do not contain is an error", ()
   const override: GrantOverride = {
     owner: "Sample Class",
     feature: "No Such Feature",
+    level: 1,
+    grants: [{ kind: "fixed", category: "armor", names: ["light armor"] }],
+  };
+  assert.throws(() => enrichGrantFiles(original, { classes: [override], feats: [] }), /matches no feature/);
+});
+
+test("the tracked files already carry the current overrides: enriching them again changes nothing", () => {
+  const tracked = {
+    classes: fs.readFileSync(new URL("../data/classes.json", import.meta.url), "utf8"),
+    feats: fs.readFileSync(new URL("../data/feats.json", import.meta.url), "utf8"),
+  };
+  assert.deepEqual(enrichGrantFiles(tracked, PROFICIENCY_GRANT_OVERRIDES), tracked);
+});
+
+test("an override for a class the tracked files do not contain is an error, since they hold every class", () => {
+  const override: GrantOverride = {
+    owner: "Missing Class",
+    feature: "Lantern Training",
     level: 1,
     grants: [{ kind: "fixed", category: "armor", names: ["light armor"] }],
   };
