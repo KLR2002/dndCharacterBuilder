@@ -62,7 +62,14 @@ export function grantedFeatures(character: Character, catalog: FeatureCatalog): 
       } else {
         if (replacedBaseFeatures.has(f.name)) return;
       }
-      const feature: Omit<FeatureInstance, "id"> = { name: f.name, description: f.description, source, origin, className: c.className };
+      const feature: Omit<FeatureInstance, "id"> = {
+        name: f.name,
+        description: f.description,
+        source,
+        origin,
+        className: c.className,
+        ...(f.grants?.length ? { grants: f.grants } : {}),
+      };
       // The catalog repeats these at threshold levels. Retain one grant, not additive uses/attacks.
       if (/^Extra Attack(?: \(\d+\))?$/.test(f.name)) {
         feature.name = "Extra Attack";
@@ -89,10 +96,13 @@ export function grantedFeatures(character: Character, catalog: FeatureCatalog): 
     const subclass = cls?.subclasses.find(s => s.name === c.subclassName && (!c.subclassSource || s.source === c.subclassSource));
     for (const f of subclass?.features || []) addClassFeature(f, "Subclass", subclass!.source, `${c.className}/${subclass!.name}`);
   }
-  for (const selection of character.asiSelections) {
+  // Feats from the ability score list and from the origin-feat list (a background's feat) both count.
+  for (const selection of [...character.asiSelections, ...(character.originFeats ?? [])]) {
     if (selection.type !== "feat") continue;
     const feat = catalog.feats.find(x => x.name === selection.featName && (!selection.featSource || x.source === selection.featSource));
-    if (feat) add({ name: feat.name, description: feat.description, source: feat.source, origin: "Feat" }, feat.name);
+    if (feat) {
+      add({ name: feat.name, description: feat.description, source: feat.source, origin: "Feat", ...(feat.grants?.length ? { grants: feat.grants } : {}) }, feat.name);
+    }
   }
   return out;
 }

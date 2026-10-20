@@ -1,5 +1,5 @@
 import type { InventoryItem } from "../types/character.ts";
-import type { RaceData, ClassData, BackgroundData, FeatData } from "../types/dnd5e.ts";
+import type { RaceData, ClassData, BackgroundData, FeatData, ProficiencyGrant } from "../types/dnd5e.ts";
 import type { Compendium } from "../services/compendium.ts";
 
 export interface ResolvedAncestry {
@@ -32,4 +32,6 @@ export interface FeatureInstance {
   attacks?: number;
   /** The Rule Choice option this feature's trait resolves to, when one is chosen. */
   chosenOption?: string;
+  /** Proficiency Grants the feature carries from the Catalog (ADR 0015). Absent when it grants none. */
+  grants?: ProficiencyGrant[];
 }

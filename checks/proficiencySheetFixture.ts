@@ -1,4 +1,4 @@
-import type { BackgroundData, ClassData, FeatData, RaceData } from "../src/types/dnd5e.ts";
+import type { BackgroundData, ClassData, FeatData, ProficiencyGrant, RaceData } from "../src/types/dnd5e.ts";
 
 /**
  * Invented catalog records for the Proficiency Sheet tests. Names, languages, tools and text are
@@ -55,4 +55,20 @@ export const placeholderFeat = (overrides: Partial<FeatData> = {}): FeatData => 
   abilityScoreIncrease: null,
   description: "Placeholder description for the feat.",
   ...overrides,
+});
+
+/** A fixed Proficiency Grant as the scraper writes it, with an id in the scraper's shape. */
+export const fixedGrant = (
+  id: string,
+  category: "tools" | "languages" | "skills" | "armor" | "weapons" | "savingThrows",
+  names: string[],
+): ProficiencyGrant => ({ id, kind: "fixed", category, names });
+
+/** A Proficiency Choice, which the sheet ignores until the choice slice. */
+export const anyLanguageChoice = (id: string, count: number): ProficiencyGrant => ({
+  id,
+  kind: "choice",
+  category: "languages",
+  count,
+  pool: { kind: "any" },
 });
