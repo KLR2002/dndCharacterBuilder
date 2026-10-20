@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { damage, heal, setCurrentHp, parseAmount } from "../src/rules/hitPoints.ts";
+import { damage, heal, setCurrentHp, fullHealAtLevelUp, parseAmount } from "../src/rules/hitPoints.ts";
 
 test("damage: temp HP absorbs part of the hit and current HP is untouched", () => {
   assert.deepEqual(damage({ currentHp: 10, tempHp: 5 }, 3), { currentHp: 10, tempHp: 2, deathSaves: { successes: 0, failures: 0 } });
@@ -83,6 +83,18 @@ test("setCurrentHp: non-finite input leaves HP unchanged", () => {
 test("parseAmount: accepts a non-negative integer string", () => {
   assert.equal(parseAmount("12"), 12);
   assert.equal(parseAmount("0"), 0);
+});
+
+test("fullHealAtLevelUp: sets current HP to the new max and keeps temp HP", () => {
+  assert.deepEqual(fullHealAtLevelUp({ currentHp: 5, tempHp: 3 }, 12), { currentHp: 12, tempHp: 3, deathSaves: { successes: 0, failures: 0 } });
+});
+
+test("fullHealAtLevelUp: from 0 HP fills to the new max and clears death saves", () => {
+  assert.deepEqual(fullHealAtLevelUp({ currentHp: 0, tempHp: 0 }, 20), { currentHp: 20, tempHp: 0, deathSaves: { successes: 0, failures: 0 } });
+});
+
+test("fullHealAtLevelUp: takes the max as given, so a max raised by Constitution or a feat fills to that higher total", () => {
+  assert.deepEqual(fullHealAtLevelUp({ currentHp: 10, tempHp: 0 }, 22), { currentHp: 22, tempHp: 0, deathSaves: { successes: 0, failures: 0 } });
 });
 
 test("parseAmount: trims surrounding whitespace", () => {

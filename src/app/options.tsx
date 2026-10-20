@@ -32,6 +32,8 @@ export default function OptionsScreen() {
   const {
     activeBooks,
     setActiveBooks,
+    fullHealOnLevelUp,
+    setFullHealOnLevelUp,
     isIntegrated,
     integratedAt,
     catalogStale,
@@ -254,6 +256,41 @@ export default function OptionsScreen() {
                 );
               })}
             </View>
+          </Card>
+        </View>
+
+        {/* LEVEL-UP HIT POINTS */}
+        <View style={{ marginBottom: 20 }}>
+          <Card style={{ padding: 14 }}>
+            <TouchableOpacity
+              onPress={() => setFullHealOnLevelUp(!fullHealOnLevelUp)}
+              accessibilityRole="checkbox"
+              accessibilityState={{ checked: fullHealOnLevelUp }}
+              style={[
+                styles.bookRow,
+                {
+                  backgroundColor: fullHealOnLevelUp ? theme.surface : "transparent",
+                  borderColor: fullHealOnLevelUp ? theme.accent : theme.border,
+                },
+              ]}
+            >
+              <Text
+                style={{
+                  flex: 1,
+                  minWidth: 0,
+                  color: theme.text,
+                  fontSize: 14,
+                  fontWeight: "600",
+                }}
+              >
+                Full heal at level up
+              </Text>
+              <Ionicons
+                name={fullHealOnLevelUp ? "checkbox" : "square-outline"}
+                size={22}
+                color={fullHealOnLevelUp ? theme.accent : theme.textMuted}
+              />
+            </TouchableOpacity>
           </Card>
         </View>
 

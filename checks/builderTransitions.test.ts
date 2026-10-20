@@ -9,6 +9,7 @@ import {
   setChoiceRacialBonus,
   validateMulticlass,
   addMulticlassLevel,
+  confirmLevelUp,
   applyStartingGrants,
   setCustomBackground,
   applyBackgroundGrants,
@@ -186,6 +187,54 @@ test("addMulticlassLevel increments existing class or adds new class with multic
   assert.ok(fighterProf?.armor?.includes("Medium armor"));
   assert.ok(fighterProf?.armor?.includes("Shields"));
   assert.ok(fighterProf?.weapons?.includes("Martial weapons"));
+});
+
+// Con 14 gives +2. Fighter hit die d10, Wizard d6. The first level takes the full die; every other level takes (die / 2 rounded down) + 1, plus Con.
+const CON_14 = { str: 10, dex: 10, con: 14, int: 10, wis: 10, cha: 10 };
+
+test("confirmLevelUp with full heal on fills current HP to the levelled max, clears death saves, keeps temp HP and hit dice", () => {
+  // Fighter 1 -> 2: 10 + 2 = 12, then 6 + 2 = 8. Max 20.
+  const fighter = makeChar({
+    baseAbilityScores: CON_14,
+    classes: [{ className: "Fighter", source: "PHB", level: 1 }],
+    currentHp: 0,
+    tempHp: 4,
+    usedHitDice: { d10: 1 },
+    deathSaves: { successes: 1, failures: 2 },
+  });
+  const levelled = confirmLevelUp(fighter, "Fighter", "PHB", true);
+  assert.equal(levelled.classes[0].level, 2);
+  assert.equal(levelled.currentHp, 20);
+  assert.deepEqual(levelled.deathSaves, { successes: 0, failures: 0 });
+  assert.equal(levelled.tempHp, 4);
+  assert.deepEqual(levelled.usedHitDice, { d10: 1 });
+});
+
+test("confirmLevelUp with full heal on fills current HP to the max after a multiclass level", () => {
+  // Fighter 1 gives 12. The new Wizard 1 is not a first level, so it takes 4 (d6 average plus one) + 2 = 6. Max 18.
+  const fighter = makeChar({
+    baseAbilityScores: CON_14,
+    classes: [{ className: "Fighter", source: "PHB", level: 1 }],
+    currentHp: 7,
+  });
+  const multiclassed = confirmLevelUp(fighter, "Wizard", "PHB", true);
+  assert.equal(multiclassed.classes.length, 2);
+  assert.equal(multiclassed.currentHp, 18);
+});
+
+test("confirmLevelUp with full heal off leaves current HP, temp HP and death saves as they were", () => {
+  const fighter = makeChar({
+    baseAbilityScores: CON_14,
+    classes: [{ className: "Fighter", source: "PHB", level: 1 }],
+    currentHp: 5,
+    tempHp: 4,
+    deathSaves: { successes: 1, failures: 0 },
+  });
+  const levelled = confirmLevelUp(fighter, "Fighter", "PHB", false);
+  assert.equal(levelled.classes[0].level, 2);
+  assert.equal(levelled.currentHp, 5);
+  assert.equal(levelled.tempHp, 4);
+  assert.deepEqual(levelled.deathSaves, { successes: 1, failures: 0 });
 });
 
 test("applyStartingGrants grants gold or equipment and is idempotent", () => {

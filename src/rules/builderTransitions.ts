@@ -8,6 +8,8 @@ import type {
 import type { BackgroundData } from "../types/dnd5e.ts";
 import { reconcile, teardownSubclass } from "./characterReconciler.ts";
 import { subclassLevel } from "./leveling.ts";
+import { maxHp } from "./hp.ts";
+import { fullHealAtLevelUp } from "./hitPoints.ts";
 import { currentCompendium, type Compendium } from "../services/compendium.ts";
 import { normalizeSkillName } from "./skills.ts";
 import {
@@ -214,6 +216,26 @@ export function addMulticlassLevel(
     ...(updatedSkillChoices.length > 0 ? { skillChoices: updatedSkillChoices } : {}),
     ...(updatedMulticlassProfs.length > 0 ? { multiclassProficiencies: updatedMulticlassProfs } : {}),
   };
+}
+
+/**
+ * Confirms a level-up: adds one level to the class, then, when full heal on level-up is on,
+ * sets current HP to the levelled character's max and clears death saves. Temp HP and hit dice
+ * are not changed. The max is read after the level is added, so a new class's hit die counts.
+ */
+export function confirmLevelUp(
+  character: Character,
+  className: string,
+  source: string,
+  fullHealOnLevelUp: boolean
+): Character {
+  const levelled = addMulticlassLevel(character, className, source);
+  if (!fullHealOnLevelUp) return levelled;
+  const healed = fullHealAtLevelUp(
+    { currentHp: levelled.currentHp, tempHp: levelled.tempHp },
+    maxHp(levelled)
+  );
+  return { ...levelled, ...healed };
 }
 
 /** Drops every recorded Rule Choice, used when the ancestry itself changes. */

@@ -55,6 +55,14 @@ export function setCurrentHp(state: HitPointState, total: number, maxHp: number)
 }
 
 /**
+ * Full heal on level-up: current HP goes to the new max, which the caller computes from the
+ * levelled character. Death saves clear because the result is above 0. Temp HP is kept.
+ */
+export function fullHealAtLevelUp(state: HitPointState, newMaxHp: number): HitPointPatch {
+  return setCurrentHp(state, newMaxHp, newMaxHp);
+}
+
+/**
  * Reads a typed amount: a non-negative integer, surrounding whitespace allowed.
  * Anything else (negative, fractional, empty, non-numeric, unsafe size) gives undefined.
  */
