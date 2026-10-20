@@ -3,6 +3,8 @@ import type { ItemData, ProficiencyGrant, ProficiencyPool } from "../types/dnd5e
 import { ABILITY_NAMES } from "./abilities.ts";
 import { ALL_LANGUAGE_NAMES, ALL_TOOLS, normalizeToolName } from "./proficienciesAndLanguages.ts";
 import { normalizeWeaponProficiency, STANDARD_MARTIAL_WEAPONS, STANDARD_SIMPLE_WEAPONS } from "./proficiencies.ts";
+import { normalizeSkillName } from "./skills.ts";
+import { DND_SKILLS } from "../constants/rules.ts";
 
 /**
  * Proficiency Choices (tickets 05, 07 and 10). A leaf module: the Proficiency Sheet, the choice offers, the
@@ -10,14 +12,14 @@ import { normalizeWeaponProficiency, STANDARD_MARTIAL_WEAPONS, STANDARD_SIMPLE_W
  * imports them back.
  */
 
-/** The categories a Proficiency Choice can be picked in so far. Skills and armor wait for their slices. */
-export type PickableCategory = "tools" | "languages" | "savingThrows" | "weapons";
+/** The categories a Proficiency Choice can be picked in so far. Armor waits for its slice. */
+export type PickableCategory = "skills" | "tools" | "languages" | "savingThrows" | "weapons";
 
 /** A Proficiency Choice grant, as the Catalog carries it. */
 export type ChoiceProficiencyGrant = Extract<ProficiencyGrant, { kind: "choice" }>;
 
 export function isPickableCategory(category: string): category is PickableCategory {
-  return category === "tools" || category === "languages" || category === "savingThrows" || category === "weapons";
+  return category === "skills" || category === "tools" || category === "languages" || category === "savingThrows" || category === "weapons";
 }
 
 /** A known language's own spelling, or the name as written with each word capitalized. */
@@ -40,6 +42,7 @@ export function normalizeSavingThrowName(raw: string): string {
 }
 
 export function normalizeProficiencyName(category: PickableCategory, raw: string): string {
+  if (category === "skills") return normalizeSkillName(raw);
   if (category === "savingThrows") return normalizeSavingThrowName(raw);
   if (category === "tools") return normalizeToolName(raw);
   if (category === "languages") return normalizeLanguageName(raw);
@@ -99,6 +102,7 @@ export function poolNames(grant: ChoiceProficiencyGrant, items: readonly ItemDat
     return grant.pool.names.map((name) => normalizeProficiencyName(grant.category as PickableCategory, name));
   }
   if (grant.pool.kind === "any") {
+    if (grant.category === "skills") return DND_SKILLS.map((skill) => skill.name);
     if (grant.category === "savingThrows") return [...ABILITY_LABELS];
     if (grant.category === "tools") return [...ALL_TOOLS];
     if (grant.category === "languages") return [...ALL_LANGUAGE_NAMES];

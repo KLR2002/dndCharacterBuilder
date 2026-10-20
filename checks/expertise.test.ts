@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { reconcile } from "../src/rules/characterReconciler.ts";
 import { evaluateCharacter } from "../src/rules/characterEvaluation.ts";
 import { skills } from "../src/rules/skills.ts";
+import { proficiencySheet } from "../src/rules/proficiencySheet.ts";
 import {
   evaluateCharacterTools,
   isToolExpertise,
@@ -69,7 +70,7 @@ test("skills: calculates Expertise (2x PB) bonus for skills in chosenExpertise",
     chosenSkills: ["Stealth", "Acrobatics"],
     chosenExpertise: ["Stealth"],
   });
-  const skillList = skills(char);
+  const skillList = skills(char, proficiencySheet(char, { compendium: inMemoryCompendium() }).skills);
 
   const stealth = skillList.find((s) => s.name === "Stealth");
   assert.ok(stealth);
@@ -220,7 +221,7 @@ test("milestones: Knowledge Domain Cleric grants Arcana/History/Nature/Religion"
   assert.deepEqual(milestones[0].options, ["Arcana", "History", "Nature", "Religion"]);
 
   // Knowledge Cleric chosen skills become proficient automatically
-  const skillList = skills(char);
+  const skillList = skills(char, proficiencySheet(char, { compendium: inMemoryCompendium() }).skills);
   const arcana = skillList.find((s) => s.name === "Arcana");
   assert.ok(arcana);
   assert.equal(arcana.isProficient, true);

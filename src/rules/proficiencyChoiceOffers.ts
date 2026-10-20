@@ -62,7 +62,7 @@ export function proficiencyChoiceOffers(character: Character, query: Proficiency
       // What the character holds from every other source, with this choice's own pick set aside.
       const sheet = proficiencySheet(clearProficiencyPick(character, grant.id), { compendium, activeBooks });
       const own = new Set(validPicks(grant, character.proficiencyPicks?.[grant.id] ?? [], items).map((name) => name.toLowerCase()));
-      const heldEntries = grant.category === "tools" ? sheet.tools : grant.category === "languages" ? sheet.languages : sheet.savingThrows;
+      const heldEntries = sheet[grant.category];
       const held = new Set(heldEntries.map((entry) => entry.name.toLowerCase()));
       // Weapons are held by name or by category, as the sheet's weapon entries record them.
       const heldWeapons = sheet.weapons.map((entry) => entry.name);

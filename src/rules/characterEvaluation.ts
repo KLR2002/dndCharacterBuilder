@@ -1,5 +1,5 @@
 import type { Character, ResourceCounter } from "../types/character.ts";
-import type { BackgroundData, RaceData, SubraceData } from "../types/dnd5e.ts";
+import type { BackgroundData } from "../types/dnd5e.ts";
 import type { ResolvedAncestry } from "./types.ts";
 import { CLASS_DATA } from "./classData.ts";
 import { catalogListings, type CharacterCatalogs } from "./catalogs.ts";
@@ -13,6 +13,7 @@ import { skills } from "./skills.ts";
 import { totalLevel, proficiencyBonus } from "./proficiencies.ts";
 import { getWeaponAttacks, type WeaponAttackOption } from "./attacks.ts";
 import { proficiencySheet } from "./proficiencySheet.ts";
+import { resolveCharacterAncestry } from "./characterAncestry.ts";
 import {
   evaluateCharacterTools,
   type EvaluatedTool,
@@ -75,23 +76,6 @@ export interface EvaluatedCharacter {
   featureCounters: Record<string, ResourceCounter>;
 }
 
-export function resolveCharacterAncestry(character: Character, raceCatalog?: RaceData[]): ResolvedAncestry {
-  if (character.lineageReplacement && raceCatalog) {
-    const lineage = raceCatalog.find((r) => r.name === character.lineageReplacement);
-    if (lineage) return { race: lineage, subrace: undefined };
-  }
-  const choice = character.race;
-  if (!choice || !raceCatalog) return {};
-
-  const race = raceCatalog.find((r) => r.name === choice.name && (!choice.source || r.source === choice.source));
-  const subrace = race?.subraces?.find(
-    (s: SubraceData) =>
-      s.name === choice.subraceName && (!choice.subraceSource || s.source === choice.subraceSource)
-  );
-
-  return { race, subrace };
-}
-
 export function resolveCharacterBackground(character: Character, backgroundCatalog?: BackgroundData[]): BackgroundData | undefined {
   if (!character.background || !backgroundCatalog) return undefined;
   return backgroundCatalog.find(
@@ -124,10 +108,7 @@ export function evaluateCharacter(
   const savesResult = savingThrows(character, sheet.savingThrows, ancestry);
   const weightResult = carryingWeight(character, ancestry);
 
-  const skillsResult = skills(character, {
-    ...ancestry,
-    backgrounds: background ? [background] : undefined,
-  });
+  const skillsResult = skills(character, sheet.skills, ancestry);
 
   const toolList = sheet.tools.map((t) => t.name);
   const langList = sheet.languages.map((l) => l.name);

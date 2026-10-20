@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { makeChar } from "./testUtils.ts";
+import { inMemoryCompendium, makeChar } from "./testUtils.ts";
+import { proficiencySheet } from "../src/rules/proficiencySheet.ts";
 import {
   subclassRuleChoices,
   availableSubclassRuleChoices,
@@ -99,7 +100,7 @@ test("Primal Knowledge: excludes already proficient Barbarian skills and grants 
   );
 
   // Survival should now evaluate as proficient
-  const evalSkills = skills(updatedChar);
+  const evalSkills = skills(updatedChar, proficiencySheet(updatedChar, { compendium: inMemoryCompendium() }).skills);
   const survivalSkill = evalSkills.find((s) => s.name === "Survival");
   assert.equal(survivalSkill?.isProficient, true, "Survival should be proficient after picking Primal Knowledge");
 

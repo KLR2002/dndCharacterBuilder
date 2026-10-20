@@ -1,7 +1,8 @@
 import type { Character } from "../types/character.ts";
 import type { Compendium } from "../services/compendium.ts";
 import { formatCantripOptions, GIANT_POWER_CHOICE_ID, type ChoiceOwner } from "./choices/types.ts";
-import { normalizeSkillName, skills } from "./skills.ts";
+import { normalizeSkillName } from "./skills.ts";
+import { proficiencySheet } from "./proficiencySheet.ts";
 import { liftSpellChoice } from "../../dnd5eToolsScrap/src/parser/spell-choice.ts";
 import { SCHOOL_MAP } from "../../dnd5eToolsScrap/src/parser/spell-schools.ts";
 import type { ChoiceOption, FeatureChoice, SubclassData } from "../types/dnd5e.ts";
@@ -16,16 +17,20 @@ import type { ChoiceOption, FeatureChoice, SubclassData } from "../types/dnd5e.t
  */
 
 /** The skills a class-skills row offers: the owner's skill list less skills held from other sources. */
-function unchosenClassSkills(character: Character, choiceId: string, pool: readonly string[]): string[] {
+function unchosenClassSkills(
+  character: Character,
+  choiceId: string,
+  pool: readonly string[],
+  compendium: Compendium
+): string[] {
   // Build a temporary character without this specific choice's picks so current pick isn't filtered out
   const tempChar: Character = {
     ...character,
     ruleChoices: (character.ruleChoices || []).filter((rc) => rc.id !== choiceId),
   };
 
-  const evalSkills = skills(tempChar);
   const proficientFromOtherSources = new Set(
-    evalSkills.filter((s) => s.isProficient).map((s) => s.name.toLowerCase())
+    proficiencySheet(tempChar, { compendium }).skills.map((s) => s.name.toLowerCase())
   );
 
   const currentPicked = new Set(
@@ -398,7 +403,7 @@ function readClassSkillsRow(
   const pool = cls.skillProficiencies.from.map(normalizeSkillName);
   return {
     choose: row.choose,
-    options: unchosenClassSkills(context.character, context.choiceId, pool).map((name) => ({
+    options: unchosenClassSkills(context.character, context.choiceId, pool, compendium).map((name) => ({
       name,
       description: `Gain proficiency in ${name}`,
     })),

@@ -276,6 +276,26 @@ function kenseiCharacter() {
   });
 }
 
+// A level 3 College of Lore Bard with no picks yet. Its Bonus Proficiencies are a skill Proficiency Choice
+// in the Class & Subclass Choices card ("Picked 0 / 3"), offering the skills the Bard does not hold yet.
+const BARD_ID = "char_bard";
+function bardCharacter() {
+  return makeChar({
+    id: BARD_ID,
+    name: "Lirael",
+    createdAt: 6,
+    updatedAt: 6,
+    startingOption: "equipment",
+    baseAbilityScores: { str: 8, dex: 14, con: 12, int: 12, wis: 13, cha: 16 },
+    race: { name: "Human", source: catalogSource("races", "Human") },
+    background: { name: "Acolyte", source: catalogSource("backgrounds", "Acolyte") },
+    classes: [{ className: "Bard", source: catalogSource("classes", "Bard"), level: 3, subclassName: "College of Lore", subclassSource: "PHB" }],
+    currentHp: 20,
+    startingGrantsApplied: true,
+    backgroundGrantsApplied: true,
+  });
+}
+
 // The seed the browser starts from: the characters, folders, settings, and (integrated mode) the catalog.
 function buildSeed() {
   const defaults = defaultSettings();
@@ -313,6 +333,7 @@ function buildSeed() {
       halfElfCharacter(),
       rangerCharacter(),
       ...(INTEGRATED ? [kenseiCharacter()] : []),
+      bardCharacter(),
     ],
     folders: [],
     settings: {
@@ -352,6 +373,7 @@ const WIZARD_ROUTE = `/character/${WIZARD_ID}`;
 const HALF_ELF_ROUTE = `/character/${HALF_ELF_ID}`;
 const RANGER_ROUTE = `/character/${RANGER_ID}`;
 const KENSEI_ROUTE = `/character/${KENSEI_ID}`;
+const BARD_ROUTE = `/character/${BARD_ID}`;
 const SCREENS = [
   { name: "Builder Abilities", route: RENDAR_ROUTE, tabs: ["Builder", "Abilities"], ready: /points remaining/i },
   { name: "Builder Race", route: RENDAR_ROUTE, tabs: ["Builder", "Race"], ready: /traits:/i },
@@ -367,6 +389,7 @@ const SCREENS = [
         { name: "Stats kensei weapon proficiencies", route: KENSEI_ROUTE, tabs: ["Stats"], ready: /hit points/i, scrollTo: "Weapon Proficiencies" },
       ]
     : []),
+  { name: "Builder Class skill proficiency choices", route: BARD_ROUTE, tabs: ["Builder", "Class"], ready: /total level/i, scrollTo: "Class & Subclass Choices" },
   { name: "Stats", route: RENDAR_ROUTE, tabs: ["Stats"], ready: /hit points/i },
   { name: "Stats add tool modal", route: RENDAR_ROUTE, tabs: ["Stats"], open: (page) => page.getByLabel("Add tool proficiency").first().click(), modal: "Add Tool Proficiency" },
   { name: "Stats add language modal", route: RENDAR_ROUTE, tabs: ["Stats"], open: (page) => page.getByLabel("Add language").first().click(), modal: "Add Language" },

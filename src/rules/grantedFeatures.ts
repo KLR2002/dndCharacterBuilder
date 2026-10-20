@@ -5,6 +5,7 @@ import { getReplacedBaseFeatures } from "./optionalFeatures.ts";
 import { ruleChoiceId } from "./choices/types.ts";
 import { applyRuleChoice, replacedTraitNames } from "./raceRuleChoices.ts";
 import { raisedAbilityGrants } from "./proficiencyPools.ts";
+import { optionGrantApplies } from "./optionFeatureGrants.ts";
 
 export function grantedFeatures(character: Character, catalog: FeatureCatalog): FeatureInstance[] {
   const out: FeatureInstance[] = [];
@@ -71,7 +72,10 @@ export function grantedFeatures(character: Character, catalog: FeatureCatalog): 
         origin,
         className: c.className,
         level: f.level,
-        ...(f.grants?.length ? { grants: f.grants } : {}),
+        // An unpicked option's grants do not apply (ticket 11), so its feature is listed without them.
+        ...(f.grants?.length && (origin !== "Subclass" || optionGrantApplies(character, { className: c.className, subclassName: c.subclassName }, f))
+          ? { grants: f.grants }
+          : {}),
       };
       // The catalog repeats these at threshold levels. Retain one grant, not additive uses/attacks.
       if (/^Extra Attack(?: \(\d+\))?$/.test(f.name)) {

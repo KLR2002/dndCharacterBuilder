@@ -263,6 +263,93 @@ export const SCENARIOS: { label: string; build: Build }[] = [
   },
 ];
 
+/**
+ * Scenarios that exist for the skills characterization only: each one holds a subclass or feat skill
+ * grant (fixed or picked), or a skill Expertise pick, that no scenario above exercises. Kept apart from
+ * SCENARIOS so the tools, saves and weapons baselines keep their rows.
+ */
+export const SKILLS_ONLY: { label: string; build: Build }[] = [
+  {
+    label: "human acolyte cleric arcana domain",
+    build: (l) =>
+      withClasses([cls("Cleric", l, "Arcana Domain", "SCAG")], { race: race("Human"), background: background("Acolyte") }),
+  },
+  {
+    label: "human soldier purple dragon knight",
+    build: (l) =>
+      withClasses([cls("Fighter", l, "Purple Dragon Knight (Banneret)", "SCAG")], {
+        race: race("Human"),
+        background: background("Soldier"),
+      }),
+  },
+  {
+    label: "human sage bladesinger wizard",
+    build: (l) =>
+      withClasses([cls("Wizard", l, "Bladesinging", "TCE")], { race: race("Human"), background: background("Sage") }),
+  },
+  {
+    label: "human criminal scout rogue",
+    build: (l) =>
+      withClasses([cls("Rogue", l, "Scout", "XGE")], { race: race("Human"), background: background("Criminal") }),
+  },
+  {
+    label: "human acolyte knowledge cleric with skill expertise",
+    build: (l) =>
+      withClasses([cls("Cleric", l, "Knowledge Domain")], {
+        race: race("Human"),
+        background: background("Acolyte"),
+        chosenExpertise: ["Arcana", "History"],
+      }),
+  },
+  {
+    label: "human criminal thief rogue with skill expertise",
+    build: (l) =>
+      withClasses([cls("Rogue", l, "Thief")], {
+        race: race("Human"),
+        background: background("Criminal"),
+        chosenExpertise: ["Stealth", "Deception"],
+      }),
+  },
+  {
+    label: "human acolyte college of lore bard with picked skills",
+    build: (l) =>
+      withClasses([cls("Bard", l, "College of Lore")], {
+        race: race("Human"),
+        background: background("Acolyte"),
+        proficiencyPicks: { "PHB/Bard/College of Lore/Bonus Proficiencies@3#0": ["Stealth", "Survival", "Athletics"] },
+      }),
+  },
+  {
+    label: "human acolyte fighter with the skilled feat and picked skills",
+    build: (l) =>
+      withClasses([cls("Fighter", l, "Champion")], {
+        race: race("Human"),
+        background: background("Acolyte"),
+        asiSelections: l >= 4 ? [{ level: 4, type: "feat", featName: "Skilled", featSource: "PHB" }] : [],
+        proficiencyPicks: { "PHB/Feat/Skilled@0#0": ["Athletics", "Arcana", "Stealth"] },
+      }),
+  },
+  {
+    label: "human soldier totem barbarian with the tiger aspect and picked skills",
+    build: (l) =>
+      withClasses([cls("Barbarian", l, "Path of the Totem Warrior")], {
+        race: race("Human"),
+        background: background("Soldier"),
+        ruleChoices: [
+          {
+            id: "PHB__Barbarian__Path of the Totem Warrior__Aspect of the Beast 6",
+            trait: "Aspect of the Beast (6th Level)",
+            origin: "subclass",
+            choose: 1,
+            from: ["Bear", "Eagle", "Elk", "Tiger", "Wolf"],
+            picked: ["Tiger"],
+          },
+        ],
+        proficiencyPicks: { "PHB/Barbarian/Path of the Totem Warrior/Tiger@6#0": ["Stealth", "Survival"] },
+      }),
+  },
+];
+
 
 /**
  * The SRD Baseline's records all carry the source "SRD", and the readers look classes up by source,
