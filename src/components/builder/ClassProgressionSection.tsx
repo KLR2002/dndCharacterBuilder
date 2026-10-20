@@ -4,9 +4,9 @@ import { Ionicons } from "@expo/vector-icons";
 import { AbilityKey, Character } from "../../types/character";
 import { ClassData, FeatData } from "../../types/dnd5e";
 import {
-  addMulticlassLevel,
   applySoleSubclasses,
   changeSubclass,
+  confirmLevelUp,
   removeClassLevel as removeClassLevelTransition,
   validateMulticlass,
 } from "../../rules/builderTransitions";
@@ -45,6 +45,7 @@ import {
 export interface ClassProgressionSectionProps {
   character: Character;
   onUpdate: (patchOrUpdater: Partial<Character> | ((prev: Character) => Character)) => void;
+  fullHealOnLevelUp: boolean;
   allClasses: ClassData[];
   allFeats: FeatData[];
   totalLevel: number;
@@ -74,6 +75,7 @@ export interface ClassProgressionSectionProps {
 export const ClassProgressionSection: React.FC<ClassProgressionSectionProps> = ({
   character,
   onUpdate,
+  fullHealOnLevelUp,
   allClasses,
   allFeats,
   totalLevel,
@@ -116,7 +118,7 @@ export const ClassProgressionSection: React.FC<ClassProgressionSectionProps> = (
   }, [character, isSrd, onUpdate]);
 
   const handleAddClassLevel = (className: string, source: string) => {
-    onUpdate((current) => addMulticlassLevel(current, className, source));
+    onUpdate((current) => confirmLevelUp(current, className, source, fullHealOnLevelUp));
   };
 
   const removeClassLevel = (className: string) => {
@@ -555,6 +557,7 @@ export const ClassProgressionSection: React.FC<ClassProgressionSectionProps> = (
       <AsiFeatSection
         character={character}
         onUpdate={onUpdate}
+        fullHealOnLevelUp={fullHealOnLevelUp}
         pendingAsiSlots={pendingAsiSlots}
         allFeats={allFeats}
         primaryClass={primaryClass}

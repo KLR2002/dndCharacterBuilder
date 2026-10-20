@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import {
   __setKvForTests, loadAll, saveAll, updateSettings, loadCharacters,
   loadFolders, loadSettings, saveCharacters, saveFolders, saveSettings,
+  DEFAULT_SETTINGS, migrateIfNeeded,
 } from "../src/services/storage.ts";
 import { makeChar, defaultSettings } from "./testUtils.ts";
 
@@ -179,4 +180,18 @@ test("requireLoaded blocks unresolved initialization", async () => {
   assert.equal(kv.size, 0);
   await loadAll();
   await saveAll(state(), { requireLoaded: true });
+});
+
+test("fullHealOnLevelUp defaults to on, and settings saved before it existed load with it on", () => {
+  assert.equal(DEFAULT_SETTINGS.fullHealOnLevelUp, true);
+  for (const schemaVersion of [1, 2]) {
+    const migrated = migrateIfNeeded({ characters: [], folders: [], settings: { schemaVersion, hasCompletedFirstRun: true } });
+    assert.equal(migrated.settings.fullHealOnLevelUp, true);
+  }
+});
+
+test("fullHealOnLevelUp keeps an explicit off and rejects a non-boolean value", () => {
+  const off = migrateIfNeeded({ characters: [], folders: [], settings: { fullHealOnLevelUp: false } });
+  assert.equal(off.settings.fullHealOnLevelUp, false);
+  assert.throws(() => migrateIfNeeded({ characters: [], folders: [], settings: { fullHealOnLevelUp: "yes" } }), /fullHealOnLevelUp/);
 });
