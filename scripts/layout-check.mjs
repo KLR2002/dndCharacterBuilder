@@ -241,6 +241,9 @@ function buildSeed() {
         currentHp: 10,
         startingGrantsApplied: true,
         backgroundGrantsApplied: true,
+        // Added Proficiencies: a known tool and a known and a long custom language, so the Stats tab shows the "added" rows.
+        addedTools: ["Smith's Tools"],
+        addedLanguages: ["Elvish", "Dusty Hollow Cant of Vennmoor"],
       }),
       makeChar({
         id: DRUID_ID,
@@ -301,6 +304,8 @@ const SCREENS = [
   { name: "Builder Background", route: RENDAR_ROUTE, tabs: ["Builder", "Background"], ready: /background benefits/i, scrollTo: "Claim again" },
   { name: "Builder Class", route: RENDAR_ROUTE, tabs: ["Builder", "Class"], ready: /total level/i, scrollTo: "Starting Equipment" },
   { name: "Stats", route: RENDAR_ROUTE, tabs: ["Stats"], ready: /hit points/i },
+  { name: "Stats add tool modal", route: RENDAR_ROUTE, tabs: ["Stats"], open: (page) => page.getByLabel("Add tool proficiency").first().click(), modal: "Add Tool Proficiency" },
+  { name: "Stats add language modal", route: RENDAR_ROUTE, tabs: ["Stats"], open: (page) => page.getByLabel("Add language").first().click(), modal: "Add Language" },
   { name: "Spells", route: WIZARD_ROUTE, tabs: ["Spells"], ready: /add spells/i },
   { name: "Inventory", route: WIZARD_ROUTE, tabs: ["Inventory"], ready: /total wealth/i },
   { name: "Features", route: RENDAR_ROUTE, tabs: ["Features"], ready: /resource trackers/i },
