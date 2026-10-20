@@ -11,6 +11,7 @@ import {
   structuredLanguages,
   withLanguageFallbacks,
 } from "./proficienciesAndLanguages.ts";
+import { normalizeLanguageName, validPicks, type PickableCategory } from "./proficiencyPools.ts";
 
 /** One entry on the Proficiency Sheet. Added Proficiencies are `ruleGranted: false`. */
 export interface SheetEntry {
@@ -40,17 +41,6 @@ function sheetEntries(names: string[]): SheetEntry[] {
   return entries;
 }
 
-/** A known language's own spelling, or the name as written with each word capitalized. */
-export function normalizeLanguageName(raw: string): string {
-  const clean = raw.trim();
-  const known = ALL_LANGUAGE_NAMES.find((name) => name.toLowerCase() === clean.toLowerCase());
-  if (known) return known;
-  return clean
-    .split(/\s+/)
-    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-    .join(" ");
-}
-
 /** A known tool or language's own spelling, or the name as typed, trimmed (Added Proficiencies keep custom names). */
 export function normalizeAddedName(category: "tools" | "languages", raw: string): string {
   const clean = raw.trim();
@@ -78,10 +68,21 @@ function addedSheetEntries(
   return entries;
 }
 
-/** The fixed names of one category across the features the character has now. Choice grants wait for their slice. */
+/** The fixed names of one category across the features the character has now. */
 function fixedFeatureNames(features: FeatureInstance[], category: ProficiencyCategory): string[] {
   return features.flatMap((feature) =>
     (feature.grants ?? []).flatMap((grant) => (grant.kind === "fixed" && grant.category === category ? grant.names : [])),
+  );
+}
+
+/** The saved picks of one pickable category, for the choice grants on the features the character has now. */
+function choicePickNames(features: FeatureInstance[], character: Character, category: PickableCategory): string[] {
+  return features.flatMap((feature) =>
+    (feature.grants ?? []).flatMap((grant) =>
+      grant.kind === "choice" && grant.category === category
+        ? validPicks(grant, character.proficiencyPicks?.[grant.id] ?? [])
+        : [],
+    ),
   );
 }
 
@@ -101,9 +102,14 @@ export function proficiencySheet(character: Character, catalogs: CharacterCatalo
   const tools = [
     ...resolveCharacterTools(character, catalogs),
     ...fixedFeatureNames(features, "tools").map(normalizeToolName),
+    ...choicePickNames(features, character, "tools"),
   ];
   const languages = withLanguageFallbacks(
-    [...structuredLanguages(character, catalogs), ...fixedFeatureNames(features, "languages").map(normalizeLanguageName)],
+    [
+      ...structuredLanguages(character, catalogs),
+      ...fixedFeatureNames(features, "languages").map(normalizeLanguageName),
+      ...choicePickNames(features, character, "languages"),
+    ],
     character,
   );
   const toolRules = sheetEntries(tools);

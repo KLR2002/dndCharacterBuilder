@@ -38,6 +38,7 @@ import {
   readPointerRow,
   rowOwnedBy,
 } from "./subclassChoiceTable.ts";
+import { recordProficiencyPick } from "./proficiencyPools.ts";
 
 export * from "./choices/types.ts";
 export * from "./choices/fightingStyles.ts";
@@ -418,6 +419,8 @@ export function pickRuleChoice(
       ? pickFightingStyleChoice(character, choice, option, compendium)
       : choice.pick === "artificerInfusion"
       ? pickInfusionChoice(character, choice, option)
+      : choice.pick === "proficiency"
+      ? recordProficiencyPick(character, choice, option)
       : setRuleChoicePick(
           character,
           choice.id,

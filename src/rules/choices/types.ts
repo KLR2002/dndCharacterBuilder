@@ -15,7 +15,7 @@ export function ruleChoiceId({ source, race, subrace, trait, index }: RuleChoice
 }
 
 /** The source a Rule Choice comes from. Persisted on each recorded entry. */
-export type RuleChoiceOrigin = "race" | "class" | "subclass";
+export type RuleChoiceOrigin = "race" | "class" | "subclass" | "feat";
 
 /**
  * Who a class or subclass Rule Choice belongs to: its class, and the subclass when the choice is
@@ -31,7 +31,7 @@ export interface ChoiceOwner {
  * Sources whose picks have state of their own to record. Absent on a choice means the default
  * pick: record the option, then reconcile.
  */
-export type SpecialisedPick = "fightingStyle" | "artificerInfusion";
+export type SpecialisedPick = "fightingStyle" | "artificerInfusion" | "proficiency";
 
 /** The Path of the Giant cantrip choice. Its id is frozen. The Reconciler reads it too. */
 export const GIANT_POWER_CHOICE_ID = "BGG__Barbarian__Path of the Giant__Giant Power";
