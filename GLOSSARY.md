@@ -118,6 +118,10 @@ _Avoid_: Double proficiency, mastery, skill mastery, spec
 What a single rule (ancestry, background, class, subclass feature, or feat) gives a character in proficiencies: skills, tools, languages, weapons, armor, or saving throws. It is either fixed or a *Proficiency Choice* in which the player picks from a stated pool. It is part of the Catalog's data for that rule, not something the app encodes.
 _Avoid_: Bonus proficiency (that is a feature name), training
 
+**Proficiency Choice**:
+A Proficiency Grant that lets the player pick from a pool of entries in one category. The pick is stored against the grant. Distinct from a *Rule Choice*, which grants a feature rather than proficiency.
+_Avoid_: Proficiency option, proficiency selection
+
 **Proficiency Sheet**:
 The single complete answer to "what is this character proficient in", gathering every Proficiency Grant together with any *Added Proficiency*. It is derived, never stored: a rule-granted entry exists only while the ancestry, background, class level, subclass or feat that grants it applies, and cannot be removed by hand. Expertise and the character card read from it.
 _Avoid_: Proficiency ledger, proficiency list
@@ -135,7 +139,7 @@ Broad weapon proficiency groups ("Simple weapons", "Martial weapons") that super
 _Avoid_: Weapon bundles, mass proficiencies, weapon sets
 
 **Monk Weapon**:
-Shortswords and any simple melee weapons that do not have the two-handed or heavy property, allowing a Monk to use Dexterity for attack and damage rolls and substitute their scaling Martial Arts die if it is higher than the weapon's base damage die.
+Shortswords and any simple melee weapons that do not have the two-handed or heavy property, allowing a Monk to use Dexterity for attack and damage rolls and substitute their scaling Martial Arts die if it is higher than the weapon's base damage die. A weapon chosen through a Way of the Kensei choice is also a Monk Weapon.
 _Avoid_: Martial arts weapon, ki weapon
 
 **Ki Spellcasting Profile**:
