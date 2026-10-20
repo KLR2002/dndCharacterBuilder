@@ -15,6 +15,7 @@ import {
   toggleExpertiseChoice,
 } from "../src/rules/expertise.ts";
 import type { Character } from "../src/types/character.ts";
+import type { BackgroundData } from "../src/types/dnd5e.ts";
 import { loadTestCatalog, inMemoryCompendium } from "./testUtils.ts";
 
 const races = loadTestCatalog("races");
@@ -286,4 +287,74 @@ test("reconcile: removes unproficient choices or excess when deleveling", () => 
 
   const pruned = reconcile(char, inMemoryCompendium({ classes }));
   assert.deepEqual(pruned.chosenExpertise, ["Stealth"]);
+});
+
+// Invented background. Its skill is not in the static background table, so it is only known
+// through the catalog bundle.
+const SMUGGLER: BackgroundData = {
+  name: "Test Smuggler",
+  source: "TST",
+  skillProficiencies: ["Investigation"],
+  toolProficiencies: ["Thieves' Tools"],
+  languages: [],
+  startingEquipment: [],
+  feature: null,
+  characteristics: {},
+  description: "",
+};
+
+test("background expertise: a background's skills and tools are offered by every milestone of its class", () => {
+  const char = makeTestChar({
+    background: { name: SMUGGLER.name, source: SMUGGLER.source },
+    classes: [{ className: "Rogue", level: 6, source: "PHB" }],
+    chosenSkills: ["Stealth"],
+  });
+
+  const catalogs = { compendium: inMemoryCompendium({ classes, backgrounds: [SMUGGLER] }) };
+  const milestones = getAvailableExpertiseMilestones(char, catalogs);
+  assert.equal(milestones.length, 2);
+  for (const m of milestones) {
+    assert.ok(m.options.includes("Investigation"), `${m.id} offers the background skill`);
+    assert.ok(m.options.includes("Stealth"), `${m.id} offers the chosen skill`);
+    assert.ok(m.options.includes("Thieves' Tools"), `${m.id} offers the background tool`);
+  }
+});
+
+test("background expertise: picking a background skill or tool doubles its proficiency on the card", () => {
+  const catalogs = { compendium: inMemoryCompendium({ classes, backgrounds: [SMUGGLER] }) };
+  let char = makeTestChar({
+    background: { name: SMUGGLER.name, source: SMUGGLER.source },
+    classes: [{ className: "Rogue", level: 1, source: "PHB" }], // PB = 2, Int = 14 (+2), Dex = 16 (+3)
+  });
+
+  char = toggleExpertiseChoice(char, "Investigation", catalogs);
+  char = toggleExpertiseChoice(char, "Thieves' Tools", catalogs);
+  assert.deepEqual(char.chosenExpertise, ["Investigation", "Thieves' Tools"]);
+
+  const evaluated = evaluateCharacter(char, catalogs);
+  const investigation = evaluated.skills.find((s) => s.name === "Investigation");
+  assert.ok(investigation);
+  assert.equal(investigation.isProficient, true);
+  assert.equal(investigation.isExpertise, true);
+  assert.equal(investigation.bonus, 2 + 2 * 2, "Int (+2) + 2*PB (+4) = +6");
+
+  const thieves = evaluated.tools.find((t) => t.name === "Thieves' Tools");
+  assert.ok(thieves);
+  assert.equal(thieves.isExpertise, true);
+  assert.equal(thieves.displayModifier, "+7", "Dex (+3) + 2*PB (+4) = +7");
+});
+
+test("background expertise: removing the background releases its Expertise pick with a notice", () => {
+  const char = makeTestChar({
+    background: null,
+    classes: [{ className: "Rogue", level: 1, source: "PHB" }],
+    chosenExpertise: ["Investigation", "Stealth"],
+  });
+
+  const pruned = reconcile(char, inMemoryCompendium({ classes, backgrounds: [SMUGGLER] }));
+  assert.deepEqual(pruned.chosenExpertise, []);
+  assert.deepEqual(pruned.needsReview, [
+    "Investigation Expertise removed: Investigation is no longer a proficient skill or tool",
+    "Stealth Expertise removed: Stealth is no longer a proficient skill or tool",
+  ]);
 });
