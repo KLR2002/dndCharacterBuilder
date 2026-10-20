@@ -4,6 +4,8 @@ import { renderEntries } from "../parser/entry-renderer.ts";
 import { cleanTags } from "../parser/tag-cleaner.ts";
 import { extractRuleChoices, RULE_CHOICE_LEVELS, ruleChoiceKey, type ExtractedRuleChoice } from "./rule-choices.ts";
 import type { RaceModel, SubraceModel, TraitModel } from "../types/models.ts";
+import type { ProficiencyReport } from "../types/proficiency.ts";
+import { newProficiencyReport, structuredGrants } from "../parser/proficiency-grants.ts";
 
 /** 5e.tools prefixes variant subraces with this; it is a source convention, not a rules term. */
 const VARIANT_PREFIX = /^Variant;?\s*/;
@@ -71,7 +73,10 @@ const SIZE_MAP: Record<string, string> = {
   G: "Gargantuan",
 };
 
-export async function scrapeRaces(client: ToolsClient): Promise<RaceModel[]> {
+export async function scrapeRaces(
+  client: ToolsClient,
+  report: ProficiencyReport = newProficiencyReport()
+): Promise<RaceModel[]> {
   console.log("  → Fetching races from data/races.json...");
   const rawData = await client.fetchJson<{ race: any[]; subrace?: any[] }>("data/races.json");
 
@@ -191,7 +196,23 @@ export async function scrapeRaces(client: ToolsClient): Promise<RaceModel[]> {
     const raceKeyNoSource = `${raw.name.toLowerCase()}__`;
     const attachedSubraces = subraceMap.get(raceKey) || subraceMap.get(raceKeyNoSource) || [];
 
+    // Structured proficiency fields on the race itself; a block the mapping cannot state is reported, not granted.
+    const proficiencies = structuredGrants(
+      { source: raw.source, owner: "Race", feature: raw.name, level: 0 },
+      {
+        skills: raw.skillProficiencies,
+        tools: raw.toolProficiencies,
+        languages: raw.languageProficiencies,
+        weapons: raw.weaponProficiencies,
+        armor: raw.armorProficiencies,
+      }
+    );
+    if (proficiencies.unparsed.length > 0) {
+      report.unparsed.push({ owner: "Race", feature: raw.name, level: 0, unparsed: proficiencies.unparsed });
+    }
+
     races.push({
+      ...(proficiencies.grants.length > 0 ? { grants: proficiencies.grants } : {}),
       name: raw.name,
       source: raw.source,
       size: sizes,

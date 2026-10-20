@@ -8,6 +8,7 @@ import {
   MULTICLASS_SPELL_SLOTS,
   WARLOCK_PACT_SLOTS,
 } from "../constants/rules.ts";
+import { GIANT_POWER_CHOICE_ID } from "./choices/types.ts";
 import { effectiveScores } from "./abilities.ts";
 import { proficiencyBonus, totalLevel } from "./proficiencies.ts";
 import { getSubclassSpells, normalizeKey } from "./subclassSpells.ts";
@@ -167,8 +168,20 @@ export function getClassSpellProfiles(
 
     const alwaysPrepNames = new Set((subSpells.prepared || []).map(s => s.name.toLowerCase()));
 
+    // A Giant Barbarian's Giant Power cantrip is the one picked. The catalog lists both cantrips as
+    // known, so they are dropped from the subclass grants; getSubclassSpells resolves the pick into
+    // `cantrips`, and that is the only Giant cantrip the profile shows. The stored filter reads the
+    // saved pick itself, as the Reconciler does, so it holds even when the catalog lacks the subclass.
+    const isGiant = isGiantBarbarian(c);
+    const giantPick = isGiant
+      ? character.ruleChoices?.find(rc => rc.id === GIANT_POWER_CHOICE_ID)?.picked?.[0]?.toLowerCase()
+      : undefined;
+    const isUnpickedGiantCantrip = (name: string) =>
+      isGiant && GIANT_POWER_CANTRIPS.has(name.toLowerCase()) && name.toLowerCase() !== giantPick;
+
     const knownSpells: KnownSpell[] = (character.knownSpells || [])
       .filter(k => {
+        if (k.ownerKey === classOwnerKey && isUnpickedGiantCantrip(k.name)) return false;
         if (k.ownerKey === classOwnerKey) return true;
         if (c.className === "Warlock" && (k.ownerKey === "Warlock__Tome" || k.ownerKey === "Warlock__PHB")) return true;
         if (k.ownerKey && k.ownerKey.startsWith("Warlock__") && c.className !== "Warlock") return false;
@@ -181,10 +194,10 @@ export function getClassSpellProfiles(
         source: k.source,
         ownerKey: k.ownerKey && k.ownerKey !== "unknown__unknown" ? k.ownerKey : classOwnerKey,
         ...(k.className ? { className: k.className } : {}),
-        ...(k.ability ? { ability: k.ability } : isGiantBarbarian(c) ? { ability: "wis" as AbilityKey } : {}),
+        ...(k.ability ? { ability: k.ability } : isGiant ? { ability: "wis" as AbilityKey } : {}),
       }));
 
-    if (isGiantBarbarian(c)) {
+    if (isGiant) {
       for (const sp of subSpells.cantrips) {
         if (!knownSpells.some((k) => k.name.toLowerCase() === sp.name.toLowerCase())) {
           knownSpells.push({
@@ -218,7 +231,10 @@ export function getClassSpellProfiles(
       maxSpellLevel,
       ...(preparedLimit !== undefined ? { preparedLimit } : {}),
       alwaysPreparedSpells: subSpells.prepared,
-      subclassKnownSpells: [...subSpells.known, ...subSpells.cantrips],
+      subclassKnownSpells: [
+        ...(isGiant ? subSpells.known.filter(s => !GIANT_POWER_CANTRIPS.has(s.name.toLowerCase())) : subSpells.known),
+        ...subSpells.cantrips,
+      ],
       knownSpells,
       preparedSpells,
       ownerKey: classOwnerKey,

@@ -2,6 +2,14 @@ import type { ToolsClient } from "../types/models.ts";
 import { renderEntries } from "../parser/entry-renderer.ts";
 import { cleanTags } from "../parser/tag-cleaner.ts";
 import { liftSpellChoice } from "../parser/spell-choice.ts";
+import {
+  newProficiencyReport,
+  resolveFeatureGrants,
+  structuredGrants,
+  type GrantSubject,
+  type StructuredProficiencies,
+} from "../parser/proficiency-grants.ts";
+import { PROFICIENCY_GRANT_OVERRIDES } from "../overrides/proficiency-grants.ts";
 import type {
   ClassFeatureModel,
   ClassModel,
@@ -9,6 +17,37 @@ import type {
   SubclassAdditionalSpells,
   SubclassModel,
 } from "../types/models.ts";
+import type { ProficiencyReport } from "../types/proficiency.ts";
+
+/**
+ * A raw starting-proficiency entry in the shape the structured reader takes:
+ * strings are cleaned of tags, `optional` entries are dropped (they are rule
+ * options, not starting grants), and `proficiency` entries become their name.
+ */
+function startingEntries(list: unknown): unknown[] | undefined {
+  if (!Array.isArray(list)) return undefined;
+  const out: unknown[] = [];
+  for (const entry of list) {
+    if (typeof entry === "string") out.push(cleanTags(entry, "plain"));
+    else if (entry && typeof entry === "object") {
+      const o = entry as Record<string, unknown>;
+      if (o.optional === true) continue;
+      if (typeof o.proficiency === "string") out.push(cleanTags(o.proficiency, "plain"));
+      else out.push(entry);
+    }
+  }
+  return out;
+}
+
+function startingFields(raw: any): StructuredProficiencies {
+  const sp = raw.startingProficiencies ?? {};
+  return {
+    skills: startingEntries(sp.skills),
+    tools: startingEntries(sp.tools),
+    weapons: startingEntries(sp.weapons),
+    armor: startingEntries(sp.armor),
+  };
+}
 
 const STAT_NAMES: Record<string, string> = {
   str: "Strength",
@@ -149,11 +188,16 @@ function featuresWithChoices(
     .map((raw) => ({ raw, choices: choicesByParent.get(raw) }));
 }
 
-export async function scrapeClasses(client: ToolsClient): Promise<ClassModel[]> {
+export async function scrapeClasses(
+  client: ToolsClient,
+  report: ProficiencyReport = newProficiencyReport()
+): Promise<ClassModel[]> {
   console.log("  → Fetching class index from data/class/index.json...");
   const classIndex = await client.fetchJson<Record<string, string>>("data/class/index.json");
 
   const classes: ClassModel[] = [];
+  /** Features whose prose grants are resolved once every class is read (overrides may name any of them). */
+  const pending: Array<{ feature: ClassFeatureModel; subject: GrantSubject }> = [];
 
   for (const [classKey, fileName] of Object.entries(classIndex)) {
     console.log(`  → Fetching ${classKey} (${fileName})...`);
@@ -231,13 +275,27 @@ export async function scrapeClasses(client: ToolsClient): Promise<ClassModel[]> 
 
       // Skips entry ref stubs that only contain { type: "refClassFeature" }
       for (const { raw: cf, choices } of featuresWithChoices(classFeaturesForThis, "refClassFeature")) {
-        features.push({
+        const feature: ClassFeatureModel = {
           name: cleanTags(cf.name, "plain"),
           level: cf.level,
           description: renderEntries(cf.entries, "markdown"),
           isOptional: cf.isClassFeatureVariant || false,
           ...(choices ? { choices } : {}),
+        };
+        features.push(feature);
+        pending.push({
+          feature,
+          subject: { source: raw.source, owner: raw.name, feature: feature.name, level: feature.level, description: feature.description },
         });
+      }
+
+      // Starting proficiencies are a grant owner of their own: the class's level-1 grants.
+      const starting = structuredGrants(
+        { source: raw.source, owner: raw.name, feature: "Starting Proficiencies", level: 1 },
+        { ...startingFields(raw), savingThrows }
+      );
+      if (starting.unparsed.length > 0) {
+        report.unparsed.push({ owner: raw.name, feature: "Starting Proficiencies", level: 1, unparsed: starting.unparsed });
       }
 
       features.sort((a, b) => a.level - b.level);
@@ -260,12 +318,24 @@ export async function scrapeClasses(client: ToolsClient): Promise<ClassModel[]> 
         );
 
         // Skips entry ref stubs that only contain { type: "refSubclassFeature" }
+        const subclassName = cleanTags(sc.name, "plain");
         for (const { raw: scf, choices } of featuresWithChoices(scFeaturesForThis, "refSubclassFeature")) {
-          scFeatures.push({
+          const feature: ClassFeatureModel = {
             name: cleanTags(scf.name, "plain"),
             level: scf.level,
             description: renderEntries(scf.entries, "markdown"),
             ...(choices ? { choices } : {}),
+          };
+          scFeatures.push(feature);
+          pending.push({
+            feature,
+            subject: {
+              source: sc.source,
+              owner: `${raw.name}/${subclassName}`,
+              feature: feature.name,
+              level: feature.level,
+              description: feature.description,
+            },
           });
         }
 
@@ -320,11 +390,21 @@ export async function scrapeClasses(client: ToolsClient): Promise<ClassModel[]> 
         spellcasting,
         features,
         subclasses,
+        ...(starting.grants.length > 0 ? { grants: starting.grants } : {}),
         multiclassing,
         description: renderEntries(raw.entries, "markdown"),
       });
     }
   }
+
+  const resolved = resolveFeatureGrants(
+    pending.map((p) => p.subject),
+    PROFICIENCY_GRANT_OVERRIDES.classes,
+    report
+  );
+  resolved.forEach((result, i) => {
+    if (result.grants.length > 0) pending[i].feature.grants = result.grants;
+  });
 
   return classes;
 }

@@ -3,8 +3,13 @@ import { resolveAllCopies } from "../parser/copy-resolver.ts";
 import { renderEntries } from "../parser/entry-renderer.ts";
 import { cleanTags } from "../parser/tag-cleaner.ts";
 import type { BackgroundModel } from "../types/models.ts";
+import type { ProficiencyReport } from "../types/proficiency.ts";
+import { newProficiencyReport, structuredGrants } from "../parser/proficiency-grants.ts";
 
-export async function scrapeBackgrounds(client: ToolsClient): Promise<BackgroundModel[]> {
+export async function scrapeBackgrounds(
+  client: ToolsClient,
+  report: ProficiencyReport = newProficiencyReport()
+): Promise<BackgroundModel[]> {
   console.log("  → Fetching backgrounds from data/backgrounds.json...");
   const rawData = await client.fetchJson<{ background: any[] }>("data/backgrounds.json");
 
@@ -117,9 +122,27 @@ export async function scrapeBackgrounds(client: ToolsClient): Promise<Background
       }
     }
 
+    const proficiencies = structuredGrants(
+      { source: raw.source, owner: "Background", feature: cleanTags(raw.name, "plain"), level: 0 },
+      {
+        skills: raw.skillProficiencies,
+        tools: raw.toolProficiencies,
+        languages: raw.languageProficiencies,
+      }
+    );
+    if (proficiencies.unparsed.length > 0) {
+      report.unparsed.push({
+        owner: "Background",
+        feature: cleanTags(raw.name, "plain"),
+        level: 0,
+        unparsed: proficiencies.unparsed,
+      });
+    }
+
     backgrounds.push({
       name: cleanTags(raw.name, "plain"),
       source: raw.source,
+      ...(proficiencies.grants.length > 0 ? { grants: proficiencies.grants } : {}),
       skillProficiencies: skills,
       toolProficiencies: tools,
       languages,
