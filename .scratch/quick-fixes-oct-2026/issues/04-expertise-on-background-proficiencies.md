@@ -14,18 +14,18 @@
 
 ## Comments
 
-**Diagnosis.** The lost path is the catalog bundle, not the reconciler. `ClassProgressionSection` called `getAvailableExpertiseMilestones(character)` and `toggleExpertiseChoice(cur, item)` with no bundle. Without a bundle:
-- `resolveCharacterTools` returns no background tool grants at all, so a background's fixed tool (Thieves' Tools for a Rogue) is never offered.
-- `skills()` falls back to the static `BACKGROUND_SKILL_PROFICIENCIES` table, so a catalog background's fixed skill that is not in that table is missing. A skill the player chose is still offered, because it sits in `chosenSkills`.
-- `toggleExpertiseChoice` then refuses the item, and the "Invalid Expertise Warning" lists it as no longer proficient.
+**Diagnosis (main session):** The Builder's Expertise card calls `getAvailableExpertiseMilestones(character)` with no catalog bundle. That function only reads background skills and tools from the Compendium when a bundle is passed (`catalogs ? ... : undefined`, and `resolveCharacterTools` likewise returns empty lists without one), so a background that is not in the small static fallback map loses its skills and tools. `reconcile()` passes `{ compendium }` and sees them, so the picker and the pruner disagree. The other readers pass `catalogs ?? {}`, which does use the current Compendium.
 
-The reconciler already passed the compendium and was not the cause. The card path (`evaluateCharacter`) already passes the resolved background, so its double proficiency was correct.
+**Fix direction:** make the bundle a required parameter of `getAvailableExpertiseMilestones` so a call site cannot omit it, and pass `{ compendium: currentCompendium() }` (with the active books where the screen has them) from the Builder. The regression test builds a character with a catalog background and asserts the options include its skills and tools.
 
-**Fix.** The catalog bundle is now a required parameter of `getAvailableExpertiseMilestones`, `toggleExpertiseChoice` and `pruneInvalidExpertise`. `ClassProgressionSection` passes the same bundle `BuilderTab` builds (scoped to `activeBooks`). `pruneInvalidExpertise` now appends a `needsReview` notice for each Expertise pick it releases.
+**For the Proficiency Sheet (ticket 08):** the sheet must take the Compendium explicitly. A default that quietly means "no catalog, empty lists" is exactly this bug.
 
-**What the Proficiency Sheet must preserve.**
-- The Expertise options (the milestone lists, the picker and the Invalid Expertise warning) read the sheet's full list of skills and tools. That list includes catalog background grants, both fixed and chosen.
-- The grant lookup stays scoped to the active books, the same as the card.
-- No caller falls back to a partial table when it has no bundle. The bundle is required, so the compiler finds any caller that omits it.
-- A released Expertise pick gets a `needsReview` notice in the form `<name> Expertise removed: ...`.
-- Regression tests: the three `background expertise:` tests in `checks/expertise.test.ts`.
+**Implementer notes (qf/04-background-expertise):**
+- Diagnosis confirmed. The lost paths are: `resolveCharacterTools` returns no background tool grants without a bundle, and `skills()` falls back to the static `BACKGROUND_SKILL_PROFICIENCIES` table for catalog-only background skills. `toggleExpertiseChoice` then refuses the pick, and the Invalid Expertise warning lists it. The reconciler and the card path were not the cause.
+- Fix: the bundle is required in `getAvailableExpertiseMilestones`, `toggleExpertiseChoice` and `pruneInvalidExpertise`. `ClassProgressionSection` passes the bundle `BuilderTab` builds, scoped to `activeBooks`. `pruneInvalidExpertise` now appends `needsReview` notices for released picks.
+- What the Proficiency Sheet must preserve:
+  - The Expertise milestone lists, the picker and the Invalid Expertise warning read the sheet's full list of skills and tools, including catalog background grants (fixed and chosen).
+  - The grant lookup stays scoped to the active books, as on the card.
+  - No caller falls back to a partial table when it has no bundle.
+  - A released Expertise pick gets a `needsReview` notice in the form `<name> Expertise removed: ...`.
+  - Regression tests: the three `background expertise:` tests in `checks/expertise.test.ts`.
