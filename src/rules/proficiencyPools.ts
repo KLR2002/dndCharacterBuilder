@@ -41,7 +41,7 @@ export function normalizeSavingThrowName(raw: string): string {
   return ABILITY_LABELS.find((name) => name.toLowerCase() === clean.toLowerCase()) ?? clean;
 }
 
-export function normalizeProficiencyName(category: PickableCategory, raw: string): string {
+function normalizeProficiencyName(category: PickableCategory, raw: string): string {
   if (category === "skills") return normalizeSkillName(raw);
   if (category === "savingThrows") return normalizeSavingThrowName(raw);
   if (category === "tools") return normalizeToolName(raw);
@@ -57,7 +57,7 @@ const MARTIAL_WEAPONS = lowerCased(STANDARD_MARTIAL_WEAPONS);
  * The simple or martial category of a base weapon, by its exact name. Undefined for any other name, so
  * magic variants such as "Longsword, +1" are never taken for their base weapon.
  */
-export function standardWeaponCategory(name: string): "simple" | "martial" | undefined {
+function standardWeaponCategory(name: string): "simple" | "martial" | undefined {
   const key = name.trim().toLowerCase();
   if (SIMPLE_WEAPONS.has(key)) return "simple";
   if (MARTIAL_WEAPONS.has(key)) return "martial";
@@ -78,7 +78,7 @@ function attackTypesOf(type: string): ("melee" | "ranged")[] {
  * pool's categories that lacks every excluded property, plus each named weapon, then filtered by attack
  * type. The names are the items' own spellings, sorted and without duplicates.
  */
-export function weaponPoolNames(pool: Extract<ProficiencyPool, { kind: "weapons" }>, items: readonly ItemData[]): string[] {
+function weaponPoolNames(pool: Extract<ProficiencyPool, { kind: "weapons" }>, items: readonly ItemData[]): string[] {
   const excluded = new Set(pool.withoutProperties.map((name) => name.toLowerCase()));
   const named = new Set(pool.plus.map((name) => name.toLowerCase()));
   const names = new Set<string>();

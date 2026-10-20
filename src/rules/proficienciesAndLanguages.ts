@@ -40,7 +40,7 @@ export const GAMING_SETS: string[] = [
   "Three-Dragon Ante Set",
 ];
 
-export const OTHER_KITS_AND_TOOLS: string[] = [
+const OTHER_KITS_AND_TOOLS: string[] = [
   "Disguise Kit",
   "Forgery Kit",
   "Herbalism Kit",
@@ -58,8 +58,8 @@ export const ALL_TOOLS: string[] = [
   ...OTHER_KITS_AND_TOOLS,
 ];
 
-export const STANDARD_LANGUAGE_NAMES: string[] = STANDARD_LANGUAGES.map((l) => l.name);
-export const EXOTIC_LANGUAGE_NAMES: string[] = EXOTIC_LANGUAGES.map((l) => l.name);
+const STANDARD_LANGUAGE_NAMES: string[] = STANDARD_LANGUAGES.map((l) => l.name);
+const EXOTIC_LANGUAGE_NAMES: string[] = EXOTIC_LANGUAGES.map((l) => l.name);
 export const ALL_LANGUAGE_NAMES: string[] = [
   ...STANDARD_LANGUAGE_NAMES,
   ...EXOTIC_LANGUAGE_NAMES,

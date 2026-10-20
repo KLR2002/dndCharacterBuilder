@@ -24,7 +24,7 @@ interface GrantSource {
 }
 
 /** Every Proficiency Grant id in the Compendium, with the feature that carries it. Unscoped by books. */
-export function grantSourcesIn(compendium: Compendium): Map<string, GrantSource> {
+function grantSourcesIn(compendium: Compendium): Map<string, GrantSource> {
   const listings = compendium.for();
   const sources = new Map<string, GrantSource>();
   const add = (grants: ProficiencyGrant[] | undefined, source: GrantSource) => {

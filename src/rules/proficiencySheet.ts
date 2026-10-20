@@ -30,7 +30,7 @@ import {
 } from "./proficiencySources/skillGrants.ts";
 import { resolveCharacterAncestry } from "./characterAncestry.ts";
 
-export type { LanguageGrant, ToolChoice, ToolGrant } from "./proficiencySources/toolsAndLanguages.ts";
+export type { ToolGrant } from "./proficiencySources/toolsAndLanguages.ts";
 export { classSkillChoice } from "./proficiencySources/skillGrants.ts";
 
 /** The Knowledge Domain's four skills. A Knowledge Cleric's Expertise on one of them has always made it proficient. */
