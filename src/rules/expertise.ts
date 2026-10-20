@@ -1,7 +1,7 @@
 import type { Character } from "../types/character.ts";
 import { isKnowledgeCleric, skills } from "./skills.ts";
-import { resolveCharacterTools } from "./proficienciesAndLanguages.ts";
 import { catalogListings, type CharacterCatalogs } from "./catalogs.ts";
+import { proficiencySheet } from "./proficiencySheet.ts";
 
 export interface ExpertiseMilestone {
   id: string;
@@ -48,8 +48,9 @@ export function getAvailableExpertiseMilestones(
     backgrounds: catalogListings(catalogs).backgrounds(),
   });
   const proficientSkills = skillList.filter((s) => s.isProficient).map((s) => s.name);
-  const toolList = resolveCharacterTools(character, catalogs);
-  const hasThievesTools = toolList.some((t) => t.toLowerCase() === "thieves' tools");
+  // Tools come from the Proficiency Sheet, so Added tools and background grants are eligible (ADR 0015).
+  const sheetTools = proficiencySheet(character, catalogs).tools.map((t) => t.name);
+  const hasThievesTools = sheetTools.some((t) => t.toLowerCase() === "thieves' tools");
 
   // Rogue
   const rogue = (character.classes || []).find((c) => c.className === "Rogue");
