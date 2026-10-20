@@ -224,6 +224,26 @@ function halfElfCharacter() {
   });
 }
 
+// A level 3 Ranger with no picks yet. Its Deft Explorer and Favored Enemy language choices are Proficiency
+// Choices in the Class & Subclass Choices card, shown as "Picked 0 / N" in both SRD and integrated modes.
+const RANGER_ID = "char_ranger";
+function rangerCharacter() {
+  return makeChar({
+    id: RANGER_ID,
+    name: "Tamsin",
+    createdAt: 5,
+    updatedAt: 5,
+    startingOption: "equipment",
+    baseAbilityScores: { str: 12, dex: 16, con: 13, int: 10, wis: 14, cha: 8 },
+    race: { name: "Human", source: catalogSource("races", "Human") },
+    background: { name: "Acolyte", source: catalogSource("backgrounds", "Acolyte") },
+    classes: [{ className: "Ranger", source: catalogSource("classes", "Ranger"), level: 3 }],
+    currentHp: 26,
+    startingGrantsApplied: true,
+    backgroundGrantsApplied: true,
+  });
+}
+
 // The seed the browser starts from: the characters, folders, settings, and (integrated mode) the catalog.
 function buildSeed() {
   const defaults = defaultSettings();
@@ -256,6 +276,7 @@ function buildSeed() {
       }),
       wizardCharacter(),
       halfElfCharacter(),
+      rangerCharacter(),
     ],
     folders: [],
     settings: {
@@ -293,6 +314,7 @@ function seedBrowser(s) {
 const RENDAR_ROUTE = `/character/${CHARACTER_ID}`;
 const WIZARD_ROUTE = `/character/${WIZARD_ID}`;
 const HALF_ELF_ROUTE = `/character/${HALF_ELF_ID}`;
+const RANGER_ROUTE = `/character/${RANGER_ID}`;
 const SCREENS = [
   { name: "Builder Abilities", route: RENDAR_ROUTE, tabs: ["Builder", "Abilities"], ready: /points remaining/i },
   { name: "Builder Race", route: RENDAR_ROUTE, tabs: ["Builder", "Race"], ready: /traits:/i },
@@ -300,6 +322,7 @@ const SCREENS = [
   { name: "Builder Class feats", route: HALF_ELF_ROUTE, tabs: ["Builder", "Class"], ready: /Selected Ability Improvements/i, scrollTo: "Selected Ability Improvements" },
   { name: "Builder Background", route: RENDAR_ROUTE, tabs: ["Builder", "Background"], ready: /background benefits/i, scrollTo: "Claim again" },
   { name: "Builder Class", route: RENDAR_ROUTE, tabs: ["Builder", "Class"], ready: /total level/i, scrollTo: "Starting Equipment" },
+  { name: "Builder Class proficiency choices", route: RANGER_ROUTE, tabs: ["Builder", "Class"], ready: /total level/i, scrollTo: "Class & Subclass Choices" },
   { name: "Stats", route: RENDAR_ROUTE, tabs: ["Stats"], ready: /hit points/i },
   { name: "Spells", route: WIZARD_ROUTE, tabs: ["Spells"], ready: /add spells/i },
   { name: "Inventory", route: WIZARD_ROUTE, tabs: ["Inventory"], ready: /total wealth/i },

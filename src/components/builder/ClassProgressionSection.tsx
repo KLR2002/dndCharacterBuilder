@@ -36,6 +36,8 @@ import {
   AvailableRuleChoice,
 } from "../../rules/ruleChoices";
 import { getOrphanedSubclassSpells } from "../../rules/subclassSpells";
+import { proficiencyChoiceOffers } from "../../rules/proficiencyChoiceOffers";
+import { clearProficiencyPick } from "../../rules/proficiencyPools";
 import {
   getAvailableExpertiseMilestones,
   getMilestonePicks,
@@ -347,7 +349,10 @@ export const ClassProgressionSection: React.FC<ClassProgressionSectionProps> = (
 
       {/* Modular Progression & Class/Subclass Rule Choices */}
       {(() => {
-        const allSubclassChoices = offeredRuleChoices(character, { activeBooks, origins: ["class", "subclass"] });
+        const allSubclassChoices = [
+          ...offeredRuleChoices(character, { activeBooks, origins: ["class", "subclass"] }),
+          ...proficiencyChoiceOffers(character, { activeBooks }),
+        ];
         if (allSubclassChoices.length === 0) return null;
 
         const isFightingStyle = (id: string) =>
@@ -384,10 +389,10 @@ export const ClassProgressionSection: React.FC<ClassProgressionSectionProps> = (
 
         const handleClearChoice = (choice: AvailableRuleChoice) => {
           onUpdate((cur) => {
-            const next: Character = {
-              ...cur,
-              ruleChoices: (cur.ruleChoices || []).filter((rc) => rc.id !== choice.id),
-            };
+            const next: Character =
+              choice.pick === "proficiency"
+                ? clearProficiencyPick(cur, choice.id)
+                : { ...cur, ruleChoices: (cur.ruleChoices || []).filter((rc) => rc.id !== choice.id) };
             return reconcile(next, currentCompendium());
           });
         };
@@ -412,8 +417,11 @@ export const ClassProgressionSection: React.FC<ClassProgressionSectionProps> = (
                 {badge && <Badge label={badge} variant="accent" size="sm" />}
               </View>
               {choices.map((choice) => {
-                const entry = character.ruleChoices?.find((rc) => rc.id === choice.id);
-                const chosen = pickedOptionNames(entry?.picked ?? [], choice.options.map((o) => o.name));
+                const saved =
+                  choice.pick === "proficiency"
+                    ? (character.proficiencyPicks?.[choice.id] ?? [])
+                    : (character.ruleChoices?.find((rc) => rc.id === choice.id)?.picked ?? []);
+                const chosen = pickedOptionNames(saved, choice.options.map((o) => o.name));
                 return (
                   <View key={choice.id} style={{ gap: 4 }}>
                     <RuleChoicePicker
