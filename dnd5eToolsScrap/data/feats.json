@@ -253,6 +253,36 @@
           "You gain proficiency with one type of {@filter artisan's tools|items|type=artisan's tools} of your choice, and you can use that type of tool as a spellcasting focus for any spell you cast that uses Intelligence as its spellcasting ability."
         ]
       }
+    ],
+    "grants": [
+      {
+        "id": "TCE/Feat/Artificer Initiate@0#0",
+        "kind": "choice",
+        "category": "tools",
+        "count": 1,
+        "pool": {
+          "kind": "names",
+          "names": [
+            "alchemist's supplies",
+            "brewer's supplies",
+            "calligrapher's supplies",
+            "carpenter's tools",
+            "cartographer's tools",
+            "cobbler's tools",
+            "cook's utensils",
+            "glassblower's tools",
+            "jeweler's tools",
+            "leatherworker's tools",
+            "mason's tools",
+            "painter's supplies",
+            "potter's tools",
+            "smith's tools",
+            "tinker's tools",
+            "weaver's tools",
+            "woodcarver's tools"
+          ]
+        }
+      }
     ]
   },
   {
@@ -363,6 +393,16 @@
           "You gain proficiency with {@item cook's utensils|phb} if you don't already have it.",
           "As part of a short rest, you can cook special food, provided you have ingredients and {@item cook's utensils|phb} on hand. You can prepare enough of this food for a number of creatures equal to 4 + your proficiency bonus. At the end of the short rest, any creature who eats the food and spends one or more Hit Dice to regain hit points regains an extra {@dice 1d8} hit points.",
           "With one hour of work or when you finish a long rest, you can cook a number of treats equal to your proficiency bonus. These special treats last 8 hours after being made. A creature can use a bonus action to eat one of those treats to gain temporary hit points equal to your proficiency bonus."
+        ]
+      }
+    ],
+    "grants": [
+      {
+        "id": "TCE/Feat/Chef@0#0",
+        "kind": "fixed",
+        "category": "tools",
+        "names": [
+          "cook's utensils"
         ]
       }
     ]
@@ -971,6 +1011,16 @@
           "Being within 5 feet of a hostile creature doesn't impose disadvantage on your ranged attack rolls."
         ]
       }
+    ],
+    "grants": [
+      {
+        "id": "TCE/Feat/Gunner@0#0",
+        "kind": "fixed",
+        "category": "weapons",
+        "names": [
+          "firearms"
+        ]
+      }
     ]
   },
   {
@@ -1297,6 +1347,17 @@
           "You can ably create written ciphers. Others can't decipher a code you create unless you teach them, they succeed on an Intelligence check (DC equal to your Intelligence score + your proficiency bonus), or they use magic to decipher it."
         ]
       }
+    ],
+    "grants": [
+      {
+        "id": "PHB/Feat/Linguist@0#0",
+        "kind": "choice",
+        "category": "languages",
+        "count": 3,
+        "pool": {
+          "kind": "any"
+        }
+      }
     ]
   },
   {
@@ -1583,6 +1644,16 @@
           "You gain proficiency with the {@item poisoner's kit|phb} if you don't already have it. With one hour of work using a {@item poisoner's kit|phb} and expending 50 gp worth of materials, you can create a number of doses of potent poison equal to your proficiency bonus. Once applied to a weapon or piece of ammunition, the poison retains its potency for 1 minute or until you hit with the weapon or ammunition. When a creature takes damage from the coated weapon or ammunition, that creature must succeed on a {@dc 14} Constitution saving throw or take {@damage 2d8} poison damage and become {@condition poisoned} until the end of your next turn."
         ]
       }
+    ],
+    "grants": [
+      {
+        "id": "TCE/Feat/Poisoner@0#0",
+        "kind": "fixed",
+        "category": "tools",
+        "names": [
+          "poisoner's kit"
+        ]
+      }
     ]
   },
   {
@@ -1616,6 +1687,35 @@
           "You gain one {@table skills|phb|skill proficiency} of your choice, one {@filter tool proficiency|items|type=tool;artisan's tools} of your choice, and fluency in one language of your choice.",
           "Choose one skill in which you have proficiency. You gain expertise with that skill, which means your proficiency bonus is doubled for any ability check you make with it. The skill you choose must be one that isn't already benefiting from a feature, such as Expertise, that doubles your proficiency bonus."
         ]
+      }
+    ],
+    "grants": [
+      {
+        "id": "XGE/Feat/Prodigy@0#0",
+        "kind": "choice",
+        "category": "skills",
+        "count": 1,
+        "pool": {
+          "kind": "any"
+        }
+      },
+      {
+        "id": "XGE/Feat/Prodigy@0#1",
+        "kind": "choice",
+        "category": "tools",
+        "count": 1,
+        "pool": {
+          "kind": "any"
+        }
+      },
+      {
+        "id": "XGE/Feat/Prodigy@0#2",
+        "kind": "choice",
+        "category": "languages",
+        "count": 1,
+        "pool": {
+          "kind": "any"
+        }
       }
     ]
   },
@@ -1652,6 +1752,16 @@
           "When opened, this music box plays a single song at a moderate volume. The box stops playing when it reaches the song's end or when it is closed."
         ]
       }
+    ],
+    "grants": [
+      {
+        "id": "PSK/Feat/Quicksmithing@0#0",
+        "kind": "fixed",
+        "category": "tools",
+        "names": [
+          "quicksmith's tools"
+        ]
+      }
     ]
   },
   {
@@ -1667,6 +1777,25 @@
         "items": [
           "You gain proficiency in saving throws using the chosen ability."
         ]
+      }
+    ],
+    "grants": [
+      {
+        "id": "PHB/Feat/Resilient@0#0",
+        "kind": "choice",
+        "category": "savingThrows",
+        "count": 1,
+        "pool": {
+          "kind": "names",
+          "names": [
+            "Strength",
+            "Dexterity",
+            "Constitution",
+            "Intelligence",
+            "Wisdom",
+            "Charisma"
+          ]
+        }
       }
     ]
   },
@@ -1992,6 +2121,17 @@
           "Choose one skill in which you have proficiency. You gain expertise with that skill, which means your proficiency bonus is doubled for any ability check you make with it. The skill you choose must be one that isn't already benefiting from a feature, such as Expertise, that doubles your proficiency bonus."
         ]
       }
+    ],
+    "grants": [
+      {
+        "id": "TCE/Feat/Skill Expert@0#0",
+        "kind": "choice",
+        "category": "skills",
+        "count": 1,
+        "pool": {
+          "kind": "any"
+        }
+      }
     ]
   },
   {
@@ -2002,6 +2142,17 @@
     "description": "You gain proficiency in any combination of three skills or tools of your choice.",
     "rawEntries": [
       "You gain proficiency in any combination of three {@table skills|phb} or {@filter tools|items|type=tool;artisan's tools;instrument;gaming set;vehicle (land);vehicle (water)} of your choice."
+    ],
+    "grants": [
+      {
+        "id": "PHB/Feat/Skilled@0#0",
+        "kind": "choice",
+        "category": "skills",
+        "count": 3,
+        "pool": {
+          "kind": "any"
+        }
+      }
     ]
   },
   {
@@ -2303,6 +2454,16 @@
           "When you hit a creature with an unarmed strike or an improvised weapon on your turn, you can use a bonus action to attempt to grapple the target."
         ]
       }
+    ],
+    "grants": [
+      {
+        "id": "PHB/Feat/Tavern Brawler@0#0",
+        "kind": "fixed",
+        "category": "weapons",
+        "names": [
+          "improvised weapons"
+        ]
+      }
     ]
   },
   {
@@ -2420,6 +2581,23 @@
         "items": [
           "You gain proficiency with four weapons of your choice. Each one must be a simple or a martial weapon."
         ]
+      }
+    ],
+    "grants": [
+      {
+        "id": "PHB/Feat/Weapon Master@0#0",
+        "kind": "choice",
+        "category": "weapons",
+        "count": 4,
+        "pool": {
+          "kind": "weapons",
+          "base": [
+            "simple",
+            "martial"
+          ],
+          "withoutProperties": [],
+          "plus": []
+        }
       }
     ]
   },

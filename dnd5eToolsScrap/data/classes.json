@@ -50,7 +50,17 @@
         "name": "Optional Rule: Firearm Proficiency",
         "level": 1,
         "description": "The secrets of creating and operating gunpowder weapons have been discovered in various corners of the D&D multiverse. If your Dungeon Master uses the rules on firearms in chapter 9 of the Dungeon Master's Guide and your artificer has been exposed to the operation of such weapons, your artificer is proficient with them.",
-        "isOptional": false
+        "isOptional": false,
+        "grants": [
+          {
+            "id": "TCE/Artificer/Optional Rule: Firearm Proficiency@1#0",
+            "kind": "fixed",
+            "category": "weapons",
+            "names": [
+              "firearms"
+            ]
+          }
+        ]
       },
       {
         "name": "Spellcasting",
@@ -199,7 +209,17 @@
           {
             "name": "Tool Proficiency",
             "level": 3,
-            "description": "When you adopt this specialization at 3rd level, you gain proficiency with alchemist's supplies. If you already have this proficiency, you gain proficiency with one other type of artisan's tools of your choice."
+            "description": "When you adopt this specialization at 3rd level, you gain proficiency with alchemist's supplies. If you already have this proficiency, you gain proficiency with one other type of artisan's tools of your choice.",
+            "grants": [
+              {
+                "id": "TCE/Artificer/Alchemist/Tool Proficiency@3#0",
+                "kind": "fixed",
+                "category": "tools",
+                "names": [
+                  "alchemist's supplies"
+                ]
+              }
+            ]
           },
           {
             "name": "Alchemical Savant",
@@ -300,7 +320,25 @@
           {
             "name": "Tools of the Trade",
             "level": 3,
-            "description": "*3rd-level Armorer feature*\n\nYou gain proficiency with heavy armor. You also gain proficiency with smith's tools. If you already have this tool proficiency, you gain proficiency with one other type of artisan's tools of your choice."
+            "description": "*3rd-level Armorer feature*\n\nYou gain proficiency with heavy armor. You also gain proficiency with smith's tools. If you already have this tool proficiency, you gain proficiency with one other type of artisan's tools of your choice.",
+            "grants": [
+              {
+                "id": "TCE/Artificer/Armorer/Tools of the Trade@3#0",
+                "kind": "fixed",
+                "category": "armor",
+                "names": [
+                  "heavy armor"
+                ]
+              },
+              {
+                "id": "TCE/Artificer/Armorer/Tools of the Trade@3#1",
+                "kind": "fixed",
+                "category": "tools",
+                "names": [
+                  "smith's tools"
+                ]
+              }
+            ]
           },
           {
             "name": "Extra Attack",
@@ -381,7 +419,17 @@
           {
             "name": "Tool Proficiency",
             "level": 3,
-            "description": "When you adopt this specialization at 3rd level, you gain proficiency with woodcarver's tools. If you already have this proficiency, you gain proficiency with one other type of artisan's tools of your choice."
+            "description": "When you adopt this specialization at 3rd level, you gain proficiency with woodcarver's tools. If you already have this proficiency, you gain proficiency with one other type of artisan's tools of your choice.",
+            "grants": [
+              {
+                "id": "TCE/Artificer/Artillerist/Tool Proficiency@3#0",
+                "kind": "fixed",
+                "category": "tools",
+                "names": [
+                  "woodcarver's tools"
+                ]
+              }
+            ]
           },
           {
             "name": "Arcane Firearm",
@@ -467,7 +515,17 @@
           {
             "name": "Tool Proficiency",
             "level": 3,
-            "description": "When you adopt this specialization at 3rd level, you gain proficiency with smith's tools. If you already have this proficiency, you gain proficiency with one other type of artisan's tools of your choice."
+            "description": "When you adopt this specialization at 3rd level, you gain proficiency with smith's tools. If you already have this proficiency, you gain proficiency with one other type of artisan's tools of your choice.",
+            "grants": [
+              {
+                "id": "TCE/Artificer/Battle Smith/Tool Proficiency@3#0",
+                "kind": "fixed",
+                "category": "tools",
+                "names": [
+                  "smith's tools"
+                ]
+              }
+            ]
           },
           {
             "name": "Extra Attack",
@@ -1205,7 +1263,17 @@
           {
             "name": "Giant Power",
             "level": 3,
-            "description": "*3rd-Level Path of the Giant Feature*\n\nWhen you choose this path, you learn to speak, read, and write Giant or one other language of your choice if you already know Giant. Additionally, you learn a cantrip of your choice: either druidcraft or thaumaturgy. Wisdom is your spellcasting ability for this spell."
+            "description": "*3rd-Level Path of the Giant Feature*\n\nWhen you choose this path, you learn to speak, read, and write Giant or one other language of your choice if you already know Giant. Additionally, you learn a cantrip of your choice: either druidcraft or thaumaturgy. Wisdom is your spellcasting ability for this spell.",
+            "grants": [
+              {
+                "id": "BGG/Barbarian/Path of the Giant/Giant Power@3#0",
+                "kind": "fixed",
+                "category": "languages",
+                "names": [
+                  "Giant"
+                ]
+              }
+            ]
           },
           {
             "name": "Giant's Havoc",
@@ -1668,7 +1736,25 @@
           {
             "name": "Bonus Proficiencies",
             "level": 3,
-            "description": "When you join the College of Swords at 3rd level, you gain proficiency with medium armor and the scimitar.\n\nIf you're proficient with a simple or martial melee weapon, you can use it as a spellcasting focus for your bard spells."
+            "description": "When you join the College of Swords at 3rd level, you gain proficiency with medium armor and the scimitar.\n\nIf you're proficient with a simple or martial melee weapon, you can use it as a spellcasting focus for your bard spells.",
+            "grants": [
+              {
+                "id": "XGE/Bard/College of Swords/Bonus Proficiencies@3#0",
+                "kind": "fixed",
+                "category": "armor",
+                "names": [
+                  "medium armor"
+                ]
+              },
+              {
+                "id": "XGE/Bard/College of Swords/Bonus Proficiencies@3#1",
+                "kind": "fixed",
+                "category": "weapons",
+                "names": [
+                  "scimitar"
+                ]
+              }
+            ]
           },
           {
             "name": "Fighting Style",
@@ -2095,7 +2181,33 @@
           {
             "name": "Blessings of Knowledge",
             "level": 1,
-            "description": "At 1st level, you learn two languages of your choice. You also become proficient in your choice of two of the following skills: Arcana, History, Nature, or Religion.\n\nYour proficiency bonus is doubled for any ability check you make that uses either of those skills."
+            "description": "At 1st level, you learn two languages of your choice. You also become proficient in your choice of two of the following skills: Arcana, History, Nature, or Religion.\n\nYour proficiency bonus is doubled for any ability check you make that uses either of those skills.",
+            "grants": [
+              {
+                "id": "PHB/Cleric/Knowledge Domain/Blessings of Knowledge@1#0",
+                "kind": "choice",
+                "category": "languages",
+                "count": 2,
+                "pool": {
+                  "kind": "any"
+                }
+              },
+              {
+                "id": "PHB/Cleric/Knowledge Domain/Blessings of Knowledge@1#1",
+                "kind": "choice",
+                "category": "skills",
+                "count": 2,
+                "pool": {
+                  "kind": "names",
+                  "names": [
+                    "Arcana",
+                    "History",
+                    "Nature",
+                    "Religion"
+                  ]
+                }
+              }
+            ]
           },
           {
             "name": "Channel Divinity: Knowledge of the Ages",
@@ -2703,7 +2815,17 @@
           {
             "name": "Bonus Proficiency",
             "level": 1,
-            "description": "When the cleric chooses this domain at 1st level, he or she gains proficiency with martial weapons."
+            "description": "When the cleric chooses this domain at 1st level, he or she gains proficiency with martial weapons.",
+            "grants": [
+              {
+                "id": "DMG/Cleric/Death Domain/Bonus Proficiency@1#0",
+                "kind": "fixed",
+                "category": "weapons",
+                "names": [
+                  "martial weapons"
+                ]
+              }
+            ]
           },
           {
             "name": "Reaper",
@@ -2789,7 +2911,17 @@
           {
             "name": "Arcane Initiate",
             "level": 1,
-            "description": "When you choose this domain at 1st level, you gain proficiency in the Arcana skill, and you gain two cantrips of your choice from the wizard spell list. For you, these cantrips count as cleric cantrips."
+            "description": "When you choose this domain at 1st level, you gain proficiency in the Arcana skill, and you gain two cantrips of your choice from the wizard spell list. For you, these cantrips count as cleric cantrips.",
+            "grants": [
+              {
+                "id": "SCAG/Cleric/Arcana Domain/Arcane Initiate@1#0",
+                "kind": "fixed",
+                "category": "skills",
+                "names": [
+                  "Arcana"
+                ]
+              }
+            ]
           },
           {
             "name": "Channel Divinity: Arcane Abjuration",
@@ -3812,7 +3944,17 @@
         "name": "Druidic",
         "level": 1,
         "description": "You know Druidic, the secret language of druids. You can speak the language and use it to leave hidden messages. You and others who know this language automatically spot such a message. Others spot the message's presence with a successful DC 15 Wisdom (Perception) check but can't decipher it without magic.",
-        "isOptional": false
+        "isOptional": false,
+        "grants": [
+          {
+            "id": "PHB/Druid/Druidic@1#0",
+            "kind": "fixed",
+            "category": "languages",
+            "names": [
+              "Druidic"
+            ]
+          }
+        ]
       },
       {
         "name": "Spellcasting",
@@ -5002,7 +5144,17 @@
           {
             "name": "Royal Envoy",
             "level": 7,
-            "description": "A Purple Dragon Knight serves as an envoy of the Cormyrean crown. Knights of high standing are expected to conduct themselves with grace.\n\nAt 7th level, you gain proficiency in the Persuasion skill. If you are already proficient in it, you gain proficiency in one of the following skills of your choice: Animal Handling, Insight, Intimidation, or Performance.\n\nYour proficiency bonus is doubled for any ability check you make that uses Persuasion. You receive this benefit regardless of the skill proficiency you gain from this feature."
+            "description": "A Purple Dragon Knight serves as an envoy of the Cormyrean crown. Knights of high standing are expected to conduct themselves with grace.\n\nAt 7th level, you gain proficiency in the Persuasion skill. If you are already proficient in it, you gain proficiency in one of the following skills of your choice: Animal Handling, Insight, Intimidation, or Performance.\n\nYour proficiency bonus is doubled for any ability check you make that uses Persuasion. You receive this benefit regardless of the skill proficiency you gain from this feature.",
+            "grants": [
+              {
+                "id": "SCAG/Fighter/Purple Dragon Knight (Banneret)/Royal Envoy@7#0",
+                "kind": "fixed",
+                "category": "skills",
+                "names": [
+                  "Persuasion"
+                ]
+              }
+            ]
           },
           {
             "name": "Inspiring Surge",
@@ -5037,7 +5189,22 @@
           {
             "name": "Arcane Archer Lore",
             "level": 3,
-            "description": "At 3rd level, you learn magical theory or some of the secrets of nature—typical for practitioners of this elven martial tradition. You choose to gain proficiency in either the Arcana or the Nature skill, and you choose to learn either the prestidigitation or the druidcraft cantrip."
+            "description": "At 3rd level, you learn magical theory or some of the secrets of nature—typical for practitioners of this elven martial tradition. You choose to gain proficiency in either the Arcana or the Nature skill, and you choose to learn either the prestidigitation or the druidcraft cantrip.",
+            "grants": [
+              {
+                "id": "XGE/Fighter/Arcane Archer/Arcane Archer Lore@3#0",
+                "kind": "choice",
+                "category": "skills",
+                "count": 1,
+                "pool": {
+                  "kind": "names",
+                  "names": [
+                    "Arcana",
+                    "Nature"
+                  ]
+                }
+              }
+            ]
           },
           {
             "name": "Arcane Shot",
@@ -5118,7 +5285,25 @@
           {
             "name": "Bonus Proficiency",
             "level": 3,
-            "description": "When you choose this archetype at 3rd level, you gain proficiency in one of the following skills of your choice: Animal Handling, History, Insight, Performance, or Persuasion. Alternatively, you learn one language of your choice."
+            "description": "When you choose this archetype at 3rd level, you gain proficiency in one of the following skills of your choice: Animal Handling, History, Insight, Performance, or Persuasion. Alternatively, you learn one language of your choice.",
+            "grants": [
+              {
+                "id": "XGE/Fighter/Cavalier/Bonus Proficiency@3#0",
+                "kind": "choice",
+                "category": "skills",
+                "count": 1,
+                "pool": {
+                  "kind": "names",
+                  "names": [
+                    "Animal Handling",
+                    "History",
+                    "Insight",
+                    "Performance",
+                    "Persuasion"
+                  ]
+                }
+              }
+            ]
           },
           {
             "name": "Born to the Saddle",
@@ -5168,7 +5353,24 @@
           {
             "name": "Bonus Proficiency",
             "level": 3,
-            "description": "When you choose this archetype at 3rd level, you gain proficiency in one of the following skills of your choice: History, Insight, Performance, or Persuasion. Alternatively, you learn one language of your choice."
+            "description": "When you choose this archetype at 3rd level, you gain proficiency in one of the following skills of your choice: History, Insight, Performance, or Persuasion. Alternatively, you learn one language of your choice.",
+            "grants": [
+              {
+                "id": "XGE/Fighter/Samurai/Bonus Proficiency@3#0",
+                "kind": "choice",
+                "category": "skills",
+                "count": 1,
+                "pool": {
+                  "kind": "names",
+                  "names": [
+                    "History",
+                    "Insight",
+                    "Performance",
+                    "Persuasion"
+                  ]
+                }
+              }
+            ]
           },
           {
             "name": "Fighting Spirit",
@@ -5178,7 +5380,17 @@
           {
             "name": "Elegant Courtier",
             "level": 7,
-            "description": "Starting at 7th level, your discipline and attention to detail allow you to excel in social situations. Whenever you make a Charisma (Persuasion) check, you gain a bonus to the check equal to your Wisdom modifier.\n\nYour self-control also causes you to gain proficiency in Wisdom saving throws. If you already have this proficiency, you instead gain proficiency in Intelligence or Charisma saving throws (your choice)."
+            "description": "Starting at 7th level, your discipline and attention to detail allow you to excel in social situations. Whenever you make a Charisma (Persuasion) check, you gain a bonus to the check equal to your Wisdom modifier.\n\nYour self-control also causes you to gain proficiency in Wisdom saving throws. If you already have this proficiency, you instead gain proficiency in Intelligence or Charisma saving throws (your choice).",
+            "grants": [
+              {
+                "id": "XGE/Fighter/Samurai/Elegant Courtier@7#0",
+                "kind": "fixed",
+                "category": "savingThrows",
+                "names": [
+                  "Wisdom"
+                ]
+              }
+            ]
           },
           {
             "name": "Tireless Spirit",
@@ -5336,7 +5548,25 @@
           {
             "name": "Bonus Proficiencies",
             "level": 3,
-            "description": "*3rd-level Rune Knight feature*\n\nYou gain proficiency with smith's tools, and you learn to speak, read, and write Giant."
+            "description": "*3rd-level Rune Knight feature*\n\nYou gain proficiency with smith's tools, and you learn to speak, read, and write Giant.",
+            "grants": [
+              {
+                "id": "TCE/Fighter/Rune Knight/Bonus Proficiencies@3#0",
+                "kind": "fixed",
+                "category": "tools",
+                "names": [
+                  "smith's tools"
+                ]
+              },
+              {
+                "id": "TCE/Fighter/Rune Knight/Bonus Proficiencies@3#1",
+                "kind": "fixed",
+                "category": "languages",
+                "names": [
+                  "Giant"
+                ]
+              }
+            ]
           },
           {
             "name": "Giant's Might",
@@ -5934,7 +6164,22 @@
           {
             "name": "Path of the Kensei",
             "level": 3,
-            "description": "When you choose this tradition at 3rd level, your special martial arts training leads you to master the use of certain weapons. This path also includes instruction in the deft strokes of calligraphy or painting. You gain the following benefits.\n\n### Kensei Weapons\n\n\nChoose two types of weapons to be your kensei weapons: one melee weapon and one ranged weapon. Each of these weapons can be any simple or martial weapon that lacks the heavy and special properties. The longbow is also a valid choice. You gain proficiency with these weapons if you don't already have it. Weapons of the chosen types are monk weapons for you. Many of this tradition's features work only with your kensei weapons. When you reach 6th, 11th, and 17th level in this class, you can choose another type of weapon—either melee or ranged—to be a kensei weapon for you, following the criteria above.\n\n- **Agile Parry**\n- **Kensei's Shot**\n\n### Way of the Brush\n\n\nYou gain proficiency with your choice of calligrapher's supplies or painter's supplies."
+            "description": "When you choose this tradition at 3rd level, your special martial arts training leads you to master the use of certain weapons. This path also includes instruction in the deft strokes of calligraphy or painting. You gain the following benefits.\n\n### Kensei Weapons\n\n\nChoose two types of weapons to be your kensei weapons: one melee weapon and one ranged weapon. Each of these weapons can be any simple or martial weapon that lacks the heavy and special properties. The longbow is also a valid choice. You gain proficiency with these weapons if you don't already have it. Weapons of the chosen types are monk weapons for you. Many of this tradition's features work only with your kensei weapons. When you reach 6th, 11th, and 17th level in this class, you can choose another type of weapon—either melee or ranged—to be a kensei weapon for you, following the criteria above.\n\n- **Agile Parry**\n- **Kensei's Shot**\n\n### Way of the Brush\n\n\nYou gain proficiency with your choice of calligrapher's supplies or painter's supplies.",
+            "grants": [
+              {
+                "id": "XGE/Monk/Way of the Kensei/Path of the Kensei@3#0",
+                "kind": "choice",
+                "category": "tools",
+                "count": 1,
+                "pool": {
+                  "kind": "names",
+                  "names": [
+                    "calligrapher's supplies",
+                    "painter's supplies"
+                  ]
+                }
+              }
+            ]
           },
           {
             "name": "One with the Blade",
@@ -6027,7 +6272,26 @@
           {
             "name": "Implements of Mercy",
             "level": 3,
-            "description": "*3rd-level Way of Mercy feature*\n\nYou gain proficiency in the Insight and Medicine skills, and you gain proficiency with the herbalism kit.\n\nYou also gain a special mask, which you often wear when using the features of this subclass. You determine its appearance, or generate it randomly by rolling on the Merciful Mask table.\n\n**Merciful Mask**\n\n\n| d6 | Mask Appearance |\n\n| --- | --- |\n\n| 1 | Raven |\n\n| 2 | Blank and white |\n\n| 3 | Crying visage |\n\n| 4 | Laughing visage |\n\n| 5 | Skull |\n\n| 6 | Butterfly |"
+            "description": "*3rd-level Way of Mercy feature*\n\nYou gain proficiency in the Insight and Medicine skills, and you gain proficiency with the herbalism kit.\n\nYou also gain a special mask, which you often wear when using the features of this subclass. You determine its appearance, or generate it randomly by rolling on the Merciful Mask table.\n\n**Merciful Mask**\n\n\n| d6 | Mask Appearance |\n\n| --- | --- |\n\n| 1 | Raven |\n\n| 2 | Blank and white |\n\n| 3 | Crying visage |\n\n| 4 | Laughing visage |\n\n| 5 | Skull |\n\n| 6 | Butterfly |",
+            "grants": [
+              {
+                "id": "TCE/Monk/Way of Mercy/Implements of Mercy@3#0",
+                "kind": "fixed",
+                "category": "skills",
+                "names": [
+                  "Insight",
+                  "Medicine"
+                ]
+              },
+              {
+                "id": "TCE/Monk/Way of Mercy/Implements of Mercy@3#1",
+                "kind": "fixed",
+                "category": "tools",
+                "names": [
+                  "herbalism kit"
+                ]
+              }
+            ]
           },
           {
             "name": "Physician's Touch",
@@ -6107,7 +6371,17 @@
           {
             "name": "Draconic Disciple",
             "level": 3,
-            "description": "*3rd-level Way of the Ascendant Dragon feature*\n\nYou can channel draconic power to magnify your presence and imbue your unarmed strikes with the essence of a dragon's breath. You gain the following benefits:\n\n- **Draconic Presence** If you fail a Charisma (Intimidation) or Charisma (Persuasion) check, you can use your reaction to reroll the check, as you tap into the mighty presence of dragons. Once this feature turns a failure into a success, you can't use it again until you finish a long rest.\n- **Draconic Strike** When you damage a target with an unarmed strike, you can change the damage type to acid, cold, fire, lightning, or poison.\n- **Tongue of Dragons** You learn to speak, read, and write Draconic or one other language of your choice."
+            "description": "*3rd-level Way of the Ascendant Dragon feature*\n\nYou can channel draconic power to magnify your presence and imbue your unarmed strikes with the essence of a dragon's breath. You gain the following benefits:\n\n- **Draconic Presence** If you fail a Charisma (Intimidation) or Charisma (Persuasion) check, you can use your reaction to reroll the check, as you tap into the mighty presence of dragons. Once this feature turns a failure into a success, you can't use it again until you finish a long rest.\n- **Draconic Strike** When you damage a target with an unarmed strike, you can change the damage type to acid, cold, fire, lightning, or poison.\n- **Tongue of Dragons** You learn to speak, read, and write Draconic or one other language of your choice.",
+            "grants": [
+              {
+                "id": "FTD/Monk/Way of the Ascendant Dragon/Draconic Disciple@3#0",
+                "kind": "fixed",
+                "category": "languages",
+                "names": [
+                  "Draconic"
+                ]
+              }
+            ]
           },
           {
             "name": "Wings Unfurled",
@@ -7601,13 +7875,35 @@
         "name": "Deft Explorer",
         "level": 1,
         "description": "*1st-level ranger optional feature, which replaces the Natural Explorer feature*\n\nYou are an unsurpassed explorer and survivor, both in the wilderness and in dealing with others on your travels. You gain the Canny benefit below, and you gain an additional benefit below when you reach 6th level and 10th level in this class.\n\n### Canny\n\n\nChoose one of your skill proficiencies. Your proficiency bonus is doubled for any ability check you make that uses the chosen skill.\n\nYou can also speak, read, and write two additional languages of your choice.",
-        "isOptional": true
+        "isOptional": true,
+        "grants": [
+          {
+            "id": "PHB/Ranger/Deft Explorer@1#0",
+            "kind": "choice",
+            "category": "languages",
+            "count": 2,
+            "pool": {
+              "kind": "any"
+            }
+          }
+        ]
       },
       {
         "name": "Favored Enemy",
         "level": 1,
         "description": "Beginning at 1st level, you have significant experience studying, tracking, hunting, and even talking to a certain type of enemy.\n\nChoose a type of favored enemy: aberrations, beasts, celestials, constructs, dragons, elementals, fey, fiends, giants, monstrosities, oozes, plants, or undead. Alternatively, you can select two races of humanoid (such as gnolls and orcs) as favored enemies.\n\nYou have advantage on Wisdom (Survival) checks to track your favored enemies, as well as on Intelligence checks to recall information about them.\n\nWhen you gain this feature, you also learn one language of your choice that is spoken by your favored enemies, if they speak one at all.\n\nYou choose one additional favored enemy, as well as an associated language, at 6th and 14th level. As you gain levels, your choices should reflect the types of monsters you have encountered on your adventures.",
-        "isOptional": false
+        "isOptional": false,
+        "grants": [
+          {
+            "id": "PHB/Ranger/Favored Enemy@1#0",
+            "kind": "choice",
+            "category": "languages",
+            "count": 1,
+            "pool": {
+              "kind": "any"
+            }
+          }
+        ]
       },
       {
         "name": "Favored Foe",
@@ -7685,7 +7981,18 @@
         "name": "Favored Enemy and Natural Explorer improvements",
         "level": 6,
         "description": "At 6th level, you gain an additional favored terrain.\n\nAt 6th level, you choose one additional favored enemy, as well as an associated language. Your choice should reflect the types of monsters you have encountered on your adventures.",
-        "isOptional": false
+        "isOptional": false,
+        "grants": [
+          {
+            "id": "PHB/Ranger/Favored Enemy and Natural Explorer improvements@6#0",
+            "kind": "choice",
+            "category": "languages",
+            "count": 1,
+            "pool": {
+              "kind": "any"
+            }
+          }
+        ]
       },
       {
         "name": "Ranger Archetype feature",
@@ -7745,7 +8052,18 @@
         "name": "Favored Enemy improvement",
         "level": 14,
         "description": "At 14th level, you choose one additional favored enemy, as well as an associated language. Your choice should reflect the types of monsters you have encountered on your adventures.",
-        "isOptional": false
+        "isOptional": false,
+        "grants": [
+          {
+            "id": "PHB/Ranger/Favored Enemy improvement@14#0",
+            "kind": "choice",
+            "category": "languages",
+            "count": 1,
+            "pool": {
+              "kind": "any"
+            }
+          }
+        ]
       },
       {
         "name": "Vanish",
@@ -7945,7 +8263,17 @@
           {
             "name": "Iron Mind",
             "level": 7,
-            "description": "By 7th level, you have honed your ability to resist the mind-altering powers of your prey. You gain proficiency in Wisdom saving throws. If you already have this proficiency, you instead gain proficiency in Intelligence or Charisma saving throws (your choice)."
+            "description": "By 7th level, you have honed your ability to resist the mind-altering powers of your prey. You gain proficiency in Wisdom saving throws. If you already have this proficiency, you instead gain proficiency in Intelligence or Charisma saving throws (your choice).",
+            "grants": [
+              {
+                "id": "XGE/Ranger/Gloom Stalker/Iron Mind@7#0",
+                "kind": "fixed",
+                "category": "savingThrows",
+                "names": [
+                  "Wisdom"
+                ]
+              }
+            ]
           },
           {
             "name": "Stalker's Flurry",
@@ -8272,7 +8600,17 @@
           {
             "name": "Draconic Gift",
             "level": 3,
-            "description": "*3rd-level Drakewarden feature*\n\nThe bond you share with your drake creates a connection to dragonkind, granting you understanding and empowering your presence. You gain the following benefits:\n\n- **Thaumaturgy** You learn the thaumaturgy cantrip, which is a ranger spell for you.\n- **Tongue of Dragons** You learn to speak, read, and write Draconic or one other language of your choice."
+            "description": "*3rd-level Drakewarden feature*\n\nThe bond you share with your drake creates a connection to dragonkind, granting you understanding and empowering your presence. You gain the following benefits:\n\n- **Thaumaturgy** You learn the thaumaturgy cantrip, which is a ranger spell for you.\n- **Tongue of Dragons** You learn to speak, read, and write Draconic or one other language of your choice.",
+            "grants": [
+              {
+                "id": "FTD/Ranger/Drakewarden/Draconic Gift@3#0",
+                "kind": "fixed",
+                "category": "languages",
+                "names": [
+                  "Draconic"
+                ]
+              }
+            ]
           },
           {
             "name": "Drake Companion",
@@ -8766,7 +9104,42 @@
           {
             "name": "Master of Intrigue",
             "level": 3,
-            "description": "When you choose this archetype at 3rd level, you gain proficiency with the disguise kit, the forgery kit, and one gaming set of your choice. You also learn two languages of your choice.\n\nAdditionally, you can unerringly mimic the speech patterns and accent of a creature that you hear speak for at least 1 minute, enabling you to pass yourself off as a native speaker of a particular land, provided that you know the language."
+            "description": "When you choose this archetype at 3rd level, you gain proficiency with the disguise kit, the forgery kit, and one gaming set of your choice. You also learn two languages of your choice.\n\nAdditionally, you can unerringly mimic the speech patterns and accent of a creature that you hear speak for at least 1 minute, enabling you to pass yourself off as a native speaker of a particular land, provided that you know the language.",
+            "grants": [
+              {
+                "id": "XGE/Rogue/Mastermind/Master of Intrigue@3#0",
+                "kind": "fixed",
+                "category": "tools",
+                "names": [
+                  "disguise kit",
+                  "forgery kit"
+                ]
+              },
+              {
+                "id": "XGE/Rogue/Mastermind/Master of Intrigue@3#1",
+                "kind": "choice",
+                "category": "tools",
+                "count": 1,
+                "pool": {
+                  "kind": "names",
+                  "names": [
+                    "dice set",
+                    "dragonchess set",
+                    "playing card set",
+                    "three-dragon ante set"
+                  ]
+                }
+              },
+              {
+                "id": "XGE/Rogue/Mastermind/Master of Intrigue@3#2",
+                "kind": "choice",
+                "category": "languages",
+                "count": 2,
+                "pool": {
+                  "kind": "any"
+                }
+              }
+            ]
           },
           {
             "name": "Master of Tactics",
@@ -8811,7 +9184,18 @@
           {
             "name": "Survivalist",
             "level": 3,
-            "description": "When you choose this archetype at 3rd level, you gain proficiency in the Nature and Survival skills if you don't already have it. Your proficiency bonus is doubled for any ability check you make that uses either of those proficiencies."
+            "description": "When you choose this archetype at 3rd level, you gain proficiency in the Nature and Survival skills if you don't already have it. Your proficiency bonus is doubled for any ability check you make that uses either of those proficiencies.",
+            "grants": [
+              {
+                "id": "XGE/Rogue/Scout/Survivalist@3#0",
+                "kind": "fixed",
+                "category": "skills",
+                "names": [
+                  "Nature",
+                  "Survival"
+                ]
+              }
+            ]
           },
           {
             "name": "Superior Mobility",
@@ -9036,7 +9420,40 @@
         "name": "Bonus Proficiencies",
         "level": 1,
         "description": "*1st-level Expert feature*\n\nThe sidekick gains proficiency in one saving throw of your choice: Dexterity, Intelligence, or Charisma.\n\nIn addition, the sidekick gains proficiency in five skills of your choice, and it gains proficiency with light armor. If it is a humanoid or has a simple or martial weapon in its stat block, it also gains proficiency with all simple weapons and with two tools of your choice.",
-        "isOptional": false
+        "isOptional": false,
+        "grants": [
+          {
+            "id": "TCE/Expert Sidekick/Bonus Proficiencies@1#0",
+            "kind": "choice",
+            "category": "savingThrows",
+            "count": 1,
+            "pool": {
+              "kind": "names",
+              "names": [
+                "Dexterity",
+                "Intelligence",
+                "Charisma"
+              ]
+            }
+          },
+          {
+            "id": "TCE/Expert Sidekick/Bonus Proficiencies@1#1",
+            "kind": "choice",
+            "category": "skills",
+            "count": 5,
+            "pool": {
+              "kind": "any"
+            }
+          },
+          {
+            "id": "TCE/Expert Sidekick/Bonus Proficiencies@1#2",
+            "kind": "fixed",
+            "category": "armor",
+            "names": [
+              "light armor"
+            ]
+          }
+        ]
       },
       {
         "name": "Helpful",
@@ -9179,7 +9596,50 @@
         "name": "Bonus Proficiencies",
         "level": 1,
         "description": "*1st-level Spellcaster feature*\n\nThe sidekick gains proficiency in one saving throw of your choice: Wisdom, Intelligence, or Charisma.\n\nIn addition, the sidekick gains proficiency in two skills of your choice from the following list: Arcana, History, Insight, Investigation, Medicine, Performance, Persuasion, and Religion.\n\nThe sidekick gains proficiency with light armor, and if it is a humanoid or has a simple or martial weapon in its stat block, it also gains proficiency with all simple weapons.",
-        "isOptional": false
+        "isOptional": false,
+        "grants": [
+          {
+            "id": "TCE/Spellcaster Sidekick/Bonus Proficiencies@1#0",
+            "kind": "choice",
+            "category": "savingThrows",
+            "count": 1,
+            "pool": {
+              "kind": "names",
+              "names": [
+                "Wisdom",
+                "Intelligence",
+                "Charisma"
+              ]
+            }
+          },
+          {
+            "id": "TCE/Spellcaster Sidekick/Bonus Proficiencies@1#1",
+            "kind": "choice",
+            "category": "skills",
+            "count": 2,
+            "pool": {
+              "kind": "names",
+              "names": [
+                "Arcana",
+                "History",
+                "Insight",
+                "Investigation",
+                "Medicine",
+                "Performance",
+                "Persuasion",
+                "Religion"
+              ]
+            }
+          },
+          {
+            "id": "TCE/Spellcaster Sidekick/Bonus Proficiencies@1#2",
+            "kind": "fixed",
+            "category": "armor",
+            "names": [
+              "light armor"
+            ]
+          }
+        ]
       },
       {
         "name": "Sidekick Class",
@@ -9264,7 +9724,52 @@
         "name": "Bonus Proficiencies",
         "level": 1,
         "description": "*1st-level Warrior feature*\n\nThe sidekick gains proficiency in one saving throw of your choice: Strength, Dexterity, or Constitution.\n\nIn addition, the sidekick gains proficiency in two skills of your choice from the following list: Acrobatics, Animal Handling, Athletics, Intimidation, Nature, Perception, and Survival.\n\nThe sidekick gains proficiency with all armor, and if it is a humanoid or has a simple or martial weapon in its stat block, it gains proficiency with shields and all simple and martial weapons.",
-        "isOptional": false
+        "isOptional": false,
+        "grants": [
+          {
+            "id": "TCE/Warrior Sidekick/Bonus Proficiencies@1#0",
+            "kind": "choice",
+            "category": "savingThrows",
+            "count": 1,
+            "pool": {
+              "kind": "names",
+              "names": [
+                "Strength",
+                "Dexterity",
+                "Constitution"
+              ]
+            }
+          },
+          {
+            "id": "TCE/Warrior Sidekick/Bonus Proficiencies@1#1",
+            "kind": "choice",
+            "category": "skills",
+            "count": 2,
+            "pool": {
+              "kind": "names",
+              "names": [
+                "Acrobatics",
+                "Animal Handling",
+                "Athletics",
+                "Intimidation",
+                "Nature",
+                "Perception",
+                "Survival"
+              ]
+            }
+          },
+          {
+            "id": "TCE/Warrior Sidekick/Bonus Proficiencies@1#2",
+            "kind": "fixed",
+            "category": "armor",
+            "names": [
+              "light armor",
+              "medium armor",
+              "heavy armor",
+              "shields"
+            ]
+          }
+        ]
       },
       {
         "name": "Martial Role",
@@ -9548,7 +10053,17 @@
           {
             "name": "Dragon Ancestor",
             "level": 1,
-            "description": "At 1st level, you choose one type of dragon as your ancestor. The damage type associated with each dragon is used by features you gain later.\n\n**Draconic Ancestry**\n\n\n| Dragon | Damage Type |\n\n| --- | --- |\n\n| Black | Acid |\n\n| Blue | Lightning |\n\n| Brass | Fire |\n\n| Bronze | Lightning |\n\n| Copper | Acid |\n\n| Gold | Fire |\n\n| Green | Poison |\n\n| Red | Fire |\n\n| Silver | Cold |\n\n| White | Cold |\n\nYou can speak, read, and write Draconic. Additionally, whenever you make a Charisma check when interacting with dragons, your proficiency bonus is doubled if it applies to the check."
+            "description": "At 1st level, you choose one type of dragon as your ancestor. The damage type associated with each dragon is used by features you gain later.\n\n**Draconic Ancestry**\n\n\n| Dragon | Damage Type |\n\n| --- | --- |\n\n| Black | Acid |\n\n| Blue | Lightning |\n\n| Brass | Fire |\n\n| Bronze | Lightning |\n\n| Copper | Acid |\n\n| Gold | Fire |\n\n| Green | Poison |\n\n| Red | Fire |\n\n| Silver | Cold |\n\n| White | Cold |\n\nYou can speak, read, and write Draconic. Additionally, whenever you make a Charisma check when interacting with dragons, your proficiency bonus is doubled if it applies to the check.",
+            "grants": [
+              {
+                "id": "PHB/Sorcerer/Draconic Bloodline/Dragon Ancestor@1#0",
+                "kind": "fixed",
+                "category": "languages",
+                "names": [
+                  "Draconic"
+                ]
+              }
+            ]
           },
           {
             "name": "Elemental Affinity",
@@ -10044,7 +10559,17 @@
           {
             "name": "Wind Speaker",
             "level": 1,
-            "description": "The arcane magic you command is infused with elemental air. You can speak, read, and write Primordial. Knowing this language allows you to understand and be understood by those who speak its dialects: Aquan, Auran, Ignan, and Terran."
+            "description": "The arcane magic you command is infused with elemental air. You can speak, read, and write Primordial. Knowing this language allows you to understand and be understood by those who speak its dialects: Aquan, Auran, Ignan, and Terran.",
+            "grants": [
+              {
+                "id": "XGE/Sorcerer/Storm Sorcery/Wind Speaker@1#0",
+                "kind": "fixed",
+                "category": "languages",
+                "names": [
+                  "Primordial"
+                ]
+              }
+            ]
           },
           {
             "name": "Heart of the Storm",
@@ -10771,7 +11296,26 @@
           {
             "name": "Hex Warrior",
             "level": 1,
-            "description": "At 1st level, you acquire the training necessary to effectively arm yourself for battle. You gain proficiency with medium armor, shields, and martial weapons.\n\nThe influence of your patron also allows you to mystically channel your will through a particular weapon. Whenever you finish a long rest, you can touch one weapon that you are proficient with and that lacks the two-handed property. When you attack with that weapon, you can use your Charisma modifier, instead of Strength or Dexterity, for the attack and damage rolls. This benefit lasts until you finish a long rest. If you later gain the Pact of the Blade feature, this benefit extends to every pact weapon you conjure with that feature, no matter the weapon's type."
+            "description": "At 1st level, you acquire the training necessary to effectively arm yourself for battle. You gain proficiency with medium armor, shields, and martial weapons.\n\nThe influence of your patron also allows you to mystically channel your will through a particular weapon. Whenever you finish a long rest, you can touch one weapon that you are proficient with and that lacks the two-handed property. When you attack with that weapon, you can use your Charisma modifier, instead of Strength or Dexterity, for the attack and damage rolls. This benefit lasts until you finish a long rest. If you later gain the Pact of the Blade feature, this benefit extends to every pact weapon you conjure with that feature, no matter the weapon's type.",
+            "grants": [
+              {
+                "id": "XGE/Warlock/The Hexblade/Hex Warrior@1#0",
+                "kind": "fixed",
+                "category": "armor",
+                "names": [
+                  "medium armor",
+                  "shields"
+                ]
+              },
+              {
+                "id": "XGE/Warlock/The Hexblade/Hex Warrior@1#1",
+                "kind": "fixed",
+                "category": "weapons",
+                "names": [
+                  "martial weapons"
+                ]
+              }
+            ]
           },
           {
             "name": "Hexblade's Curse",
@@ -11755,7 +12299,43 @@
           {
             "name": "Training in War and Song (Bladesinging)",
             "level": 2,
-            "description": "When you adopt this tradition at 2nd level, you gain proficiency with light armor, and you gain proficiency with one type of one-handed melee weapon of your choice.\n\nYou also gain proficiency in the Performance skill if you don't already have it."
+            "description": "When you adopt this tradition at 2nd level, you gain proficiency with light armor, and you gain proficiency with one type of one-handed melee weapon of your choice.\n\nYou also gain proficiency in the Performance skill if you don't already have it.",
+            "grants": [
+              {
+                "id": "TCE/Wizard/Bladesinging/Training in War and Song (Bladesinging)@2#0",
+                "kind": "fixed",
+                "category": "armor",
+                "names": [
+                  "light armor"
+                ]
+              },
+              {
+                "id": "TCE/Wizard/Bladesinging/Training in War and Song (Bladesinging)@2#1",
+                "kind": "fixed",
+                "category": "skills",
+                "names": [
+                  "Performance"
+                ]
+              },
+              {
+                "id": "TCE/Wizard/Bladesinging/Training in War and Song (Bladesinging)@2#2",
+                "kind": "choice",
+                "category": "weapons",
+                "count": 1,
+                "pool": {
+                  "kind": "weapons",
+                  "base": [
+                    "simple",
+                    "martial"
+                  ],
+                  "withoutProperties": [
+                    "two-handed"
+                  ],
+                  "plus": [],
+                  "attackType": "melee"
+                }
+              }
+            ]
           },
           {
             "name": "Extra Attack",
