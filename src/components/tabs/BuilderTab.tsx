@@ -8,9 +8,8 @@ import {
   getClassToolGrant,
   getRaceLanguageGrant,
   getRaceToolGrant,
-  resolveCharacterLanguages,
-  resolveCharacterTools,
 } from "../../rules/proficienciesAndLanguages";
+import { proficiencySheet } from "../../rules/proficiencySheet";
 import { useCharacters } from "../../context/CharacterContext";
 import { useAppTheme } from "../../context/ThemeContext";
 import { findClass, findItem, getFeats } from "../../services/dataService";
@@ -382,15 +381,18 @@ export const BuilderTab: React.FC<BuilderTabProps> = ({
   const bgToolGrant = getBackgroundToolGrant(character.background?.name, allBackgrounds);
   const classToolGrant = getClassToolGrant(primaryClass, allClasses);
 
-  const resolvedLanguages = resolveCharacterLanguages(character, catalogs);
-  const resolvedTools = resolveCharacterTools(character, catalogs);
+  // The Proficiency Sheet is the one source for the language and tool lists the Builder shows.
+  const languageNamesFor = (c: Character) => proficiencySheet(c, catalogs).languages.map((l) => l.name);
+  const sheet = proficiencySheet(character, catalogs);
+  const resolvedLanguages = sheet.languages.map((l) => l.name);
+  const resolvedTools = sheet.tools.map((t) => t.name);
 
   const toggleRaceLanguage = (lang: string) => {
     const cur = character.chosenLanguages?.race || [];
     const next = cur.includes(lang) ? cur.filter((x) => x !== lang) : [...cur, lang];
     const nextChosen = { ...character.chosenLanguages, race: next };
     const temp = { ...character, chosenLanguages: nextChosen };
-    const resolved = resolveCharacterLanguages(temp, catalogs);
+    const resolved = languageNamesFor(temp);
     onUpdate({ chosenLanguages: nextChosen, languages: resolved });
   };
 
@@ -405,7 +407,7 @@ export const BuilderTab: React.FC<BuilderTabProps> = ({
     const next = cur.includes(lang) ? cur.filter((x) => x !== lang) : [...cur, lang];
     const nextChosen = { ...character.chosenLanguages, background: next };
     const temp = { ...character, chosenLanguages: nextChosen };
-    const resolved = resolveCharacterLanguages(temp, catalogs);
+    const resolved = languageNamesFor(temp);
     onUpdate({ chosenLanguages: nextChosen, languages: resolved });
   };
 

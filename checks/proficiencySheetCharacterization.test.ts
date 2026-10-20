@@ -12,7 +12,12 @@ import { integratedTestCompendium, makeChar, srdBaselineCompendium } from "./tes
  * card lists fails here. Lists are compared sorted, because the question is what the character
  * has, not the order the readers happen to produce it in.
  *
- * The baseline is never edited by hand. To re-record it deliberately:
+ * The baseline records the lists before the Proficiency Sheet. Nothing in it is removed, and every
+ * entry the sheet adds must be on the allowlist (checks/fixtures/proficiencySheetAllowlist.json) as a
+ * (scenario, entry) pair that names the Catalog grant behind it.
+ *
+ * The baseline is never edited by hand. To re-record it deliberately (which replaces the pre-sheet
+ * record, so the allowlist must then be reviewed again):
  *   UPDATE_PROFICIENCY_SHEET_BASELINE=1 node --test checks/proficiencySheetCharacterization.test.ts
  */
 
@@ -300,13 +305,14 @@ function inMode(character: Character, mode: string): Character {
   };
 }
 
+const MODES: [string, () => Compendium][] = [
+  ["srd", srdBaselineCompendium],
+  ["integrated", integratedTestCompendium],
+];
+
 function captureAll(): Record<string, Recorded> {
-  const modes: [string, () => Compendium][] = [
-    ["srd", srdBaselineCompendium],
-    ["integrated", integratedTestCompendium],
-  ];
   const out: Record<string, Recorded> = {};
-  for (const [mode, compendium] of modes) {
+  for (const [mode, compendium] of MODES) {
     const comp = compendium();
     for (const { label, build } of SCENARIOS) {
       for (const level of LEVELS) {
@@ -326,13 +332,96 @@ function captureAll(): Record<string, Recorded> {
   return out;
 }
 
-test("tools and languages match the recorded baseline in SRD and integrated modes", () => {
+/**
+ * The Proficiency Sheet's allowlist: each (scenario, entry) pair the sheet adds to the recorded
+ * baseline, with the Catalog grant that adds it. A scenario is a mode and a label; the pair covers
+ * every level and book set of that scenario.
+ */
+const ALLOWLIST_PATH = new URL("./fixtures/proficiencySheetAllowlist.json", import.meta.url);
+interface AllowedEntry {
+  scenario: string;
+  entry: string;
+  grant: string;
+}
+const ALLOWLIST = JSON.parse(readFileSync(ALLOWLIST_PATH, "utf8")) as AllowedEntry[];
+
+const CATEGORIES = ["tools", "expertise", "languages"] as const;
+const scenarioOf = (key: string) => key.split(" | ").slice(0, 2).join(" | ");
+const pairKey = (scenario: string, entry: string) => JSON.stringify([scenario, entry]);
+
+function loadBaseline(): Record<string, Recorded> {
+  return JSON.parse(readFileSync(BASELINE_PATH, "utf8")) as Record<string, Recorded>;
+}
+
+/** Entries the baseline records that the current readers no longer show. */
+function removedEntries(expected: Record<string, Recorded>, actual: Record<string, Recorded>): string[] {
+  const out: string[] = [];
+  for (const key of Object.keys(expected)) {
+    for (const category of CATEGORIES) {
+      const have = new Set(actual[key][category]);
+      for (const name of expected[key][category]) {
+        if (!have.has(name)) out.push(`${key}: ${category}: ${name}`);
+      }
+    }
+  }
+  return out;
+}
+
+/** The (scenario, entry) pairs the current readers show that the baseline does not. */
+function addedPairs(expected: Record<string, Recorded>, actual: Record<string, Recorded>): string[] {
+  const pairs = new Set<string>();
+  for (const key of Object.keys(expected)) {
+    for (const category of CATEGORIES) {
+      const had = new Set(expected[key][category]);
+      for (const name of actual[key][category]) {
+        if (!had.has(name)) pairs.add(pairKey(scenarioOf(key), `${category}: ${name}`));
+      }
+    }
+  }
+  return [...pairs];
+}
+
+/** Every grant id the Compendium carries on a class feature, subclass feature or feat. */
+function grantIdsOf(compendium: Compendium): Set<string> {
+  const listings = compendium.for();
+  const carriers: { grants?: { id: string }[] }[] = [
+    ...listings.classes().flatMap((c) => [...c.features, ...c.subclasses.flatMap((s) => s.features)]),
+    ...listings.feats(),
+  ];
+  return new Set(carriers.flatMap((carrier) => (carrier.grants ?? []).map((grant) => grant.id)));
+}
+
+test("every tool, Expertise tool and language in the baseline is still shown", () => {
   const actual = captureAll();
   if (process.env.UPDATE_PROFICIENCY_SHEET_BASELINE) {
     writeFileSync(BASELINE_PATH, `${JSON.stringify(actual, null, 1)}\n`);
   }
-  const expected = JSON.parse(readFileSync(BASELINE_PATH, "utf8")) as Record<string, Recorded>;
-  assert.deepEqual(actual, expected);
+  const expected = loadBaseline();
+  assert.deepEqual(Object.keys(actual).sort(), Object.keys(expected).sort(), "the same rows are recorded");
+  assert.deepEqual(removedEntries(expected, actual), []);
+});
+
+test("every new tool, Expertise tool or language is allowlisted, and every allowlisted entry is shown", () => {
+  const added = new Set(addedPairs(loadBaseline(), captureAll()));
+  const allowed = new Set(ALLOWLIST.map((p) => pairKey(p.scenario, p.entry)));
+  assert.deepEqual(
+    [...added].filter((pair) => !allowed.has(pair)).map((pair) => JSON.parse(pair)),
+    [],
+    "new entries that are not on the allowlist",
+  );
+  assert.deepEqual(
+    [...allowed].filter((pair) => !added.has(pair)).map((pair) => JSON.parse(pair)),
+    [],
+    "allowlisted entries the sheet no longer adds",
+  );
+});
+
+test("every allowlisted grant id exists in the Compendium of its scenario's mode", () => {
+  const idsByMode = new Map(MODES.map(([mode, compendium]) => [mode, grantIdsOf(compendium())]));
+  for (const { scenario, grant } of ALLOWLIST) {
+    const mode = scenario.split(" | ")[0];
+    assert.ok(idsByMode.get(mode)?.has(grant), `${scenario}: grant "${grant}" is not in the ${mode} Compendium`);
+  }
 });
 
 test("the baseline records every scenario in both modes", () => {

@@ -1,0 +1,37 @@
+[
+  { "scenario": "srd | druid circle of the land hermit", "entry": "languages: Druidic", "grant": "PHB/Druid/Druidic@1#0" },
+  { "scenario": "srd | druid circle of the shepherd hermit", "entry": "languages: Druidic", "grant": "PHB/Druid/Druidic@1#0" },
+  { "scenario": "srd | multiclass druid shepherd and ranger drakewarden", "entry": "languages: Druidic", "grant": "PHB/Druid/Druidic@1#0" },
+  { "scenario": "srd | multiclass artificer alchemist and draconic sorcerer", "entry": "languages: Draconic", "grant": "PHB/Sorcerer/Draconic Bloodline/Dragon Ancestor@1#0" },
+
+  { "scenario": "integrated | rock gnome guild artisan alchemist artificer", "entry": "tools: Alchemist's Supplies", "grant": "TCE/Artificer/Alchemist/Tool Proficiency@3#0" },
+  { "scenario": "integrated | rock gnome guild artisan alchemist artificer", "entry": "expertise: Alchemist's Supplies", "grant": "TCE/Artificer/Alchemist/Tool Proficiency@3#0" },
+  { "scenario": "integrated | human soldier armorer artificer", "entry": "tools: Smith's Tools", "grant": "TCE/Artificer/Armorer/Tools of the Trade@3#1" },
+  { "scenario": "integrated | human soldier armorer artificer", "entry": "expertise: Smith's Tools", "grant": "TCE/Artificer/Armorer/Tools of the Trade@3#1" },
+  { "scenario": "integrated | battle smith artificer with a picked artisan tool and expertise", "entry": "tools: Smith's Tools", "grant": "TCE/Artificer/Battle Smith/Tool Proficiency@3#0" },
+  { "scenario": "integrated | battle smith artificer with a picked artisan tool and expertise", "entry": "expertise: Smith's Tools", "grant": "TCE/Artificer/Battle Smith/Tool Proficiency@3#0" },
+
+  { "scenario": "integrated | barbarian path of the giant folk hero", "entry": "languages: Giant", "grant": "BGG/Barbarian/Path of the Giant/Giant Power@3#0" },
+  { "scenario": "integrated | druid circle of the land hermit", "entry": "languages: Druidic", "grant": "PHB/Druid/Druidic@1#0" },
+  { "scenario": "integrated | druid circle of the shepherd hermit", "entry": "languages: Druidic", "grant": "PHB/Druid/Druidic@1#0" },
+  { "scenario": "integrated | druid circle of the shepherd hermit", "entry": "languages: Sylvan", "grant": "XGE/Druid/Circle of the Shepherd/Speech of the Woods@2#0" },
+  { "scenario": "integrated | monk way of the drunken master acolyte", "entry": "tools: Brewer's Supplies", "grant": "XGE/Monk/Way of the Drunken Master/Bonus Proficiencies@3#1" },
+  { "scenario": "integrated | monk way of mercy acolyte", "entry": "tools: Herbalism Kit", "grant": "TCE/Monk/Way of Mercy/Implements of Mercy@3#1" },
+  { "scenario": "integrated | monk way of the ascendant dragon", "entry": "languages: Draconic", "grant": "FTD/Monk/Way of the Ascendant Dragon/Draconic Disciple@3#0" },
+  { "scenario": "integrated | ranger drakewarden outlander", "entry": "languages: Draconic", "grant": "FTD/Ranger/Drakewarden/Draconic Gift@3#0" },
+  { "scenario": "integrated | rogue mastermind criminal", "entry": "tools: Disguise Kit", "grant": "XGE/Rogue/Mastermind/Master of Intrigue@3#0" },
+  { "scenario": "integrated | rogue mastermind criminal", "entry": "tools: Forgery Kit", "grant": "XGE/Rogue/Mastermind/Master of Intrigue@3#0" },
+  { "scenario": "integrated | rogue assassin charlatan", "entry": "tools: Poisoner's Kit", "grant": "PHB/Rogue/Assassin/Bonus Proficiencies@3#0" },
+  { "scenario": "integrated | sorcerer storm sorcery sailor", "entry": "languages: Primordial", "grant": "XGE/Sorcerer/Storm Sorcery/Wind Speaker@1#0" },
+  { "scenario": "integrated | cleric forge domain soldier", "entry": "tools: Smith's Tools", "grant": "XGE/Cleric/Forge Domain/Bonus Proficiency@1#1" },
+  { "scenario": "integrated | fighter rune knight noble", "entry": "tools: Smith's Tools", "grant": "TCE/Fighter/Rune Knight/Bonus Proficiencies@3#0" },
+  { "scenario": "integrated | fighter rune knight noble", "entry": "languages: Giant", "grant": "TCE/Fighter/Rune Knight/Bonus Proficiencies@3#1" },
+  { "scenario": "integrated | multiclass druid shepherd and ranger drakewarden", "entry": "languages: Druidic", "grant": "PHB/Druid/Druidic@1#0" },
+  { "scenario": "integrated | multiclass druid shepherd and ranger drakewarden", "entry": "languages: Sylvan", "grant": "XGE/Druid/Circle of the Shepherd/Speech of the Woods@2#0" },
+  { "scenario": "integrated | multiclass druid shepherd and ranger drakewarden", "entry": "languages: Draconic", "grant": "FTD/Ranger/Drakewarden/Draconic Gift@3#0" },
+  { "scenario": "integrated | multiclass artificer alchemist and draconic sorcerer", "entry": "languages: Draconic", "grant": "PHB/Sorcerer/Draconic Bloodline/Dragon Ancestor@1#0" },
+
+  { "scenario": "integrated | human fighter with the chef feat from level 4", "entry": "tools: Cook's Utensils", "grant": "TCE/Feat/Chef@0#0" },
+  { "scenario": "integrated | human rogue with the poisoner feat from level 4", "entry": "tools: Poisoner's Kit", "grant": "TCE/Feat/Poisoner@0#0" },
+  { "scenario": "integrated | human sage with the chef origin feat", "entry": "tools: Cook's Utensils", "grant": "TCE/Feat/Chef@0#0" }
+]
