@@ -1,6 +1,6 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { makeChar, loadTestCatalogs, inMemoryCompendium } from "./testUtils.ts";
+import { makeChar, loadTestCatalogs, inMemoryCompendium, integratedTestCompendium } from "./testUtils.ts";
 import { getWeaponAttacks, checkDualWielding } from "../src/rules/attacks.ts";
 import { armorClass } from "../src/rules/ac.ts";
 import { evaluateCharacter } from "../src/rules/characterEvaluation.ts";
@@ -9,6 +9,7 @@ import type { InventoryItem } from "../src/types/character.ts";
 
 describe("Combat Economy Engine: Passive Weapon & Armor Enhancement Bonuses (Ticket 03)", () => {
   const catalogs = loadTestCatalogs();
+  const compendium = integratedTestCompendium();
 
   it("calculates +1, +2, +3 weapon attack bonus, damage formula, and Item +X badges", () => {
     // Fighter level 1 with Str 16 (+3), PB +2
@@ -29,7 +30,7 @@ describe("Combat Economy Engine: Passive Weapon & Armor Enhancement Bonuses (Tic
       damageType: "slashing",
     };
     const charMundane = { ...baseFighter, items: [mundaneItem] };
-    const attacksMundane = getWeaponAttacks(charMundane, { classes: catalogs.classes });
+    const attacksMundane = getWeaponAttacks(charMundane, { catalogs: { compendium } });
     assert.equal(attacksMundane.length, 1);
     assert.equal(attacksMundane[0].toHit, 5, "Str +3 and PB +2 = +5 to hit");
     assert.equal(attacksMundane[0].damage, "1d8 + 3");
@@ -49,7 +50,7 @@ describe("Combat Economy Engine: Passive Weapon & Armor Enhancement Bonuses (Tic
       bonusWeapon: 1,
     };
     const charPlusOne = { ...baseFighter, items: [plusOneItem] };
-    const attacksPlusOne = getWeaponAttacks(charPlusOne, { classes: catalogs.classes });
+    const attacksPlusOne = getWeaponAttacks(charPlusOne, { catalogs: { compendium } });
     assert.equal(attacksPlusOne.length, 1);
     assert.equal(attacksPlusOne[0].toHit, 6, "Str +3, PB +2, Item +1 = +6 to hit");
     assert.equal(attacksPlusOne[0].damage, "1d8 + 4", "Damage gets +1 magic bonus: 3 + 1 = 4");
@@ -69,7 +70,7 @@ describe("Combat Economy Engine: Passive Weapon & Armor Enhancement Bonuses (Tic
       bonusWeapon: 2,
     };
     const charPlusTwo = { ...baseFighter, items: [plusTwoItem] };
-    const attacksPlusTwo = getWeaponAttacks(charPlusTwo, { classes: catalogs.classes });
+    const attacksPlusTwo = getWeaponAttacks(charPlusTwo, { catalogs: { compendium } });
     assert.equal(attacksPlusTwo[0].toHit, 7, "Str +3, PB +2, Item +2 = +7 to hit");
     assert.equal(attacksPlusTwo[0].damage, "2d6 + 5", "Damage gets +2 magic bonus: 3 + 2 = 5");
     assert.equal(attacksPlusTwo[0].itemBonus, 2);
@@ -88,7 +89,7 @@ describe("Combat Economy Engine: Passive Weapon & Armor Enhancement Bonuses (Tic
       bonusWeapon: 3,
     };
     const charPlusThree = { ...baseFighter, items: [plusThreeItem] };
-    const attacksPlusThree = getWeaponAttacks(charPlusThree, { classes: catalogs.classes });
+    const attacksPlusThree = getWeaponAttacks(charPlusThree, { catalogs: { compendium } });
     assert.equal(attacksPlusThree[0].toHit, 8, "Str +3, PB +2, Item +3 = +8 to hit");
     assert.equal(attacksPlusThree[0].damage, "1d4 + 6", "Damage gets +3 magic bonus: 3 + 3 = 6");
     assert.equal(attacksPlusThree[0].itemBonus, 3);
@@ -124,7 +125,7 @@ describe("Combat Economy Engine: Passive Weapon & Armor Enhancement Bonuses (Tic
       ],
     });
 
-    const rangerAttacks = getWeaponAttacks(ranger, { classes: catalogs.classes });
+    const rangerAttacks = getWeaponAttacks(ranger, { catalogs: { compendium } });
     assert.equal(rangerAttacks[0].toHit, 8, "Dex +3, PB +2, Archery +2, Item +1 = +8 to hit");
     assert.equal(rangerAttacks[0].damage, "1d8 + 4", "Damage: 3 (Dex) + 1 (Item) = 4");
     assert.ok(rangerAttacks[0].calculationBadges?.includes("Archery +2"));
@@ -158,7 +159,7 @@ describe("Combat Economy Engine: Passive Weapon & Armor Enhancement Bonuses (Tic
       ],
     });
 
-    const duelistAttacks = getWeaponAttacks(duelist, { classes: catalogs.classes });
+    const duelistAttacks = getWeaponAttacks(duelist, { catalogs: { compendium } });
     assert.equal(duelistAttacks[0].toHit, 7, "Str +3, PB +2, Item +2 = +7 to hit");
     assert.equal(duelistAttacks[0].damage, "1d8 + 7", "Damage: 3 (Str) + 2 (Dueling) + 2 (Item) = +7");
     assert.ok(duelistAttacks[0].calculationBadges?.includes("Dueling +2"));
@@ -188,7 +189,7 @@ describe("Combat Economy Engine: Passive Weapon & Armor Enhancement Bonuses (Tic
 
     // 1. Unattuned state
     const charUnattuned = { ...fighter, items: [attunableSword] };
-    const attacksUnattuned = getWeaponAttacks(charUnattuned, { classes: catalogs.classes });
+    const attacksUnattuned = getWeaponAttacks(charUnattuned, { catalogs: { compendium } });
     assert.equal(attacksUnattuned[0].toHit, 5, "Unattuned weapon grants no enhancement bonus: 3 + 2 = 5");
     assert.equal(attacksUnattuned[0].damage, "1d8 + 3", "Unattuned weapon grants no damage bonus: 3");
     assert.equal(attacksUnattuned[0].itemBonus, undefined);
@@ -197,7 +198,7 @@ describe("Combat Economy Engine: Passive Weapon & Armor Enhancement Bonuses (Tic
     // 2. Attuned state
     const attunedSword: InventoryItem = { ...attunableSword, isAttuned: true };
     const charAttuned = { ...fighter, items: [attunedSword] };
-    const attacksAttuned = getWeaponAttacks(charAttuned, { classes: catalogs.classes });
+    const attacksAttuned = getWeaponAttacks(charAttuned, { catalogs: { compendium } });
     assert.equal(attacksAttuned[0].toHit, 7, "Attuned weapon grants +2 enhancement: 3 + 2 + 2 = 7");
     assert.equal(attacksAttuned[0].damage, "1d8 + 5", "Attuned weapon grants +2 damage: 3 + 2 = 5");
     assert.equal(attacksAttuned[0].itemBonus, 2);

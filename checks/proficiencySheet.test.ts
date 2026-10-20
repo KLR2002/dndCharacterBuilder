@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { proficiencySheet, type SheetEntry } from "../src/rules/proficiencySheet.ts";
+import { validateFeatPrerequisites } from "../src/rules/feats.ts";
 import { inMemoryCompendium, makeChar, srdBaselineCompendium } from "./testUtils.ts";
 import type { ProficiencyGrant, SubclassData } from "../src/types/dnd5e.ts";
 import type { Character } from "../src/types/character.ts";
@@ -123,7 +124,13 @@ const ironwatch: SubclassData = {
   className: "Warden",
   classSource: "PHB",
   description: "Placeholder description for the Ironwatch.",
-  features: [feature("Ironwatch Signs", 3, [fixedGrant("FIX/Warden/Ironwatch/Ironwatch Signs@3#0", "languages", ["giant"])])],
+  features: [
+    feature("Ironwatch Signs", 3, [fixedGrant("FIX/Warden/Ironwatch/Ironwatch Signs@3#0", "languages", ["giant"])]),
+    feature("Ironwatch Arms", 3, [
+      fixedGrant("FIX/Warden/Ironwatch/Ironwatch Arms@3#0", "weapons", ["martial weapons"]),
+      fixedGrant("FIX/Warden/Ironwatch/Ironwatch Arms@3#1", "armor", ["medium armor"]),
+    ]),
+  ],
 };
 
 const warden = wardenClass({ features: wardenFeatures, subclasses: [ironwatch] });
@@ -197,4 +204,124 @@ test("the SRD Baseline's own grants apply without the Integrated Catalog", () =>
     { compendium },
   );
   assert.ok(names(sorcerer.languages).includes("Draconic"));
+});
+
+// Weapons and armor (ticket 09). Names read as the card shows them.
+
+const srdFighter = (level = 1, extra: Partial<Character> = {}) =>
+  makeChar({ classes: [{ className: "Fighter", source: "SRD", level }], ...extra });
+
+test("class base armor and weapons come from the class data, with the categories kept whole", () => {
+  const sheet = proficiencySheet(srdFighter(), { compendium: srdBaselineCompendium() });
+  assert.deepEqual(names(sheet.armor), ["Light armor", "Medium armor", "Heavy armor", "Shields"]);
+  assert.deepEqual(names(sheet.weapons), ["Simple weapons", "Martial weapons"]);
+});
+
+test("a category supersedes the individual weapons it covers, race training included", () => {
+  const sheet = proficiencySheet(
+    srdFighter(1, { race: { name: "Elf", source: "SRD", subraceName: "High Elf", subraceSource: "SRD" } }),
+    { compendium: srdBaselineCompendium() },
+  );
+  assert.deepEqual(names(sheet.weapons), ["Simple weapons", "Martial weapons"]);
+});
+
+test("without a category, race weapon training is listed by weapon", () => {
+  const sheet = proficiencySheet(makeChar({ race: { name: "Elf", source: "SRD" } }), { compendium: srdBaselineCompendium() });
+  assert.deepEqual(names(sheet.weapons), ["Longswords", "Shortswords", "Shortbows", "Longbows"]);
+});
+
+test("the SRD Life Domain's heavy armor applies from level 1 without the Integrated Catalog", () => {
+  const cleric = (level: number) =>
+    makeChar({ classes: [{ className: "Cleric", source: "SRD", level, subclassName: "Life Domain", subclassSource: "SRD" }] });
+  assert.ok(names(proficiencySheet(cleric(1), { compendium: srdBaselineCompendium() }).armor).includes("Heavy armor"));
+});
+
+test("a class feature's armor grant applies at its level", () => {
+  const sheet = proficiencySheet(wardenAt(1), { compendium: wardenCompendium() });
+  assert.deepEqual(names(sheet.armor), ["Light armor"]);
+});
+
+test("a subclass feature's weapon and armor grants apply from the feature's level", () => {
+  const compendium = wardenCompendium();
+  const ironwatchAt = (level: number) =>
+    wardenAt(level, { classes: [{ className: "Warden", source: "PHB", level, subclassName: "Ironwatch", subclassSource: "PHB" }] });
+  assert.deepEqual(names(proficiencySheet(ironwatchAt(2), { compendium }).weapons), []);
+  const atThree = proficiencySheet(ironwatchAt(3), { compendium });
+  assert.deepEqual(names(atThree.weapons), ["Martial weapons"]);
+  assert.ok(names(atThree.armor).includes("Medium armor"));
+});
+
+test("a feat's armor and weapon grants apply while the feat is held", () => {
+  const compendium = inMemoryCompendium({
+    feats: [
+      placeholderFeat({
+        name: "Plate Training",
+        grants: [
+          fixedGrant("FIX/Plate Training@0#0", "armor", ["heavy armor"]),
+          fixedGrant("FIX/Plate Training@0#1", "weapons", ["improvised weapons"]),
+        ],
+      }),
+    ],
+  });
+  const picked = makeChar({ asiSelections: [{ level: 4, type: "feat", featName: "Plate Training", featSource: "PHB" }] });
+  const sheet = proficiencySheet(picked, { compendium });
+  assert.deepEqual(names(sheet.armor), ["Heavy armor"]);
+  assert.deepEqual(names(sheet.weapons), ["Improvised weapons"]);
+  assert.deepEqual(proficiencySheet(makeChar(), { compendium }).armor, [], "no feat, no armor");
+});
+
+test("an armor grant that a class already gives is kept once", () => {
+  const compendium = inMemoryCompendium({
+    classes: [wardenClass({ armorProficiencies: ["light"] })],
+    feats: [placeholderFeat({ name: "Light Training", grants: [fixedGrant("FIX/Light Training@0#0", "armor", ["light armor"])] })],
+  });
+  const sheet = proficiencySheet(
+    makeChar({
+      classes: [{ className: "Warden", source: "PHB", level: 1 }],
+      asiSelections: [{ level: 4, type: "feat", featName: "Light Training", featSource: "PHB" }],
+    }),
+    { compendium },
+  );
+  assert.deepEqual(names(sheet.armor), ["Light armor"]);
+});
+
+test("multiclass weapon proficiencies recorded on the character appear with the class's own", () => {
+  const sheet = proficiencySheet(
+    makeChar({
+      classes: [{ className: "Fighter", source: "SRD", level: 1 }],
+      multiclassProficiencies: [{ className: "Druid", weapons: ["Improvised weapons"] }],
+    }),
+    { compendium: srdBaselineCompendium() },
+  );
+  assert.deepEqual(names(sheet.weapons), ["Simple weapons", "Martial weapons", "Improvised weapons"]);
+});
+
+test("singular and plural spellings of one weapon appear once, in the category list's plural", () => {
+  const compendium = inMemoryCompendium({
+    feats: [
+      placeholderFeat({ name: "Blade Dance", grants: [fixedGrant("FIX/Blade Dance@0#0", "weapons", ["scimitar"])] }),
+      placeholderFeat({ name: "Blade Lore", grants: [fixedGrant("FIX/Blade Lore@0#0", "weapons", ["scimitars"])] }),
+    ],
+  });
+  const sheet = proficiencySheet(
+    makeChar({
+      asiSelections: [
+        { level: 4, type: "feat", featName: "Blade Dance", featSource: "PHB" },
+        { level: 8, type: "feat", featName: "Blade Lore", featSource: "PHB" },
+      ],
+    }),
+    { compendium },
+  );
+  assert.deepEqual(names(sheet.weapons), ["Scimitars"]);
+});
+
+test("the Heavily Armored prerequisite reads the armor the sheet grants", () => {
+  const prereq = { name: "Heavily Armored", prerequisite: "Proficiency with heavy armor" };
+  const lifeCleric = makeChar({
+    classes: [{ className: "Cleric", source: "SRD", level: 1, subclassName: "Life Domain", subclassSource: "SRD" }],
+  });
+  const catalogs = { compendium: srdBaselineCompendium() };
+  assert.equal(validateFeatPrerequisites(lifeCleric, prereq, { catalogs }).met, true);
+  const wizard = makeChar({ classes: [{ className: "Wizard", source: "SRD", level: 1 }] });
+  assert.equal(validateFeatPrerequisites(wizard, prereq, { catalogs }).met, false);
 });

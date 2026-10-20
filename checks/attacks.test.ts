@@ -1,6 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { makeChar } from "./testUtils.ts";
+import { inMemoryCompendium, makeChar } from "./testUtils.ts";
+import { fixedGrant, wardenClass } from "./proficiencySheetFixture.ts";
 import {
   getWeaponAttacks,
   checkDualWielding,
@@ -310,6 +311,23 @@ test("checkDualWielding offHand attack does NOT add ability modifier to damage u
   assert.equal(weakResult.offHand?.damageString, "1d4 - 1"); // Negative modifier is retained!
 });
 
+test("a weapon proficiency granted by a class feature makes the attack proficient, and only while the feature applies", () => {
+  const drill = {
+    name: "Martial Drill",
+    level: 1,
+    description: "Placeholder description for the drill.",
+    grants: [fixedGrant("FIX/Warden/Martial Drill@1#0", "weapons", ["martial weapons"])],
+  };
+  const char = makeChar({
+    classes: [{ className: "Warden", source: "PHB", level: 1 }],
+    items: [weaponItem("w1", "Greatsword", { damage: "2d6", damageType: "slashing" })],
+  });
+  const withDrill = getWeaponAttacks(char, { catalogs: { compendium: inMemoryCompendium({ classes: [wardenClass({ features: [drill] })] }) } });
+  assert.equal(withDrill[0].isProficient, true);
+  const withoutDrill = getWeaponAttacks(char, { catalogs: { compendium: inMemoryCompendium({ classes: [wardenClass()] }) } });
+  assert.equal(withoutDrill[0].isProficient, false);
+});
+
 test("isProficientWithWeapon recognizes 'simple' and 'martial' from class weaponProficiencies", () => {
   const char = makeChar({
     classes: [cl("Fighter", 1)],
@@ -330,10 +348,11 @@ test("isProficientWithWeapon recognizes 'simple' and 'martial' from class weapon
       weaponProficiencies: ["simple", "martial"],
       toolProficiencies: [],
       features: [],
+      subclasses: [],
     },
   ];
 
-  const attacks = getWeaponAttacks(char, { classes: classDataCatalog as any });
+  const attacks = getWeaponAttacks(char, { catalogs: { compendium: inMemoryCompendium({ classes: classDataCatalog as any }) } });
   assert.equal(attacks.length, 2);
 
   const greatsword = attacks.find((a) => a.name === "Greatsword");
