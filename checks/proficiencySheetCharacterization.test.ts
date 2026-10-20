@@ -245,6 +245,30 @@ interface Recorded {
   languages: string[];
 }
 
+/**
+ * The SRD Baseline's records all carry the source "SRD", and the readers look classes up by source,
+ * so an SRD-mode character names that source. Integrated-mode characters keep their book's source.
+ */
+function inMode(character: Character, mode: string): Character {
+  if (mode !== "srd") return character;
+  return {
+    ...character,
+    race: character.race
+      ? {
+          ...character.race,
+          source: "SRD",
+          ...(character.race.subraceName ? { subraceSource: "SRD" } : {}),
+        }
+      : null,
+    background: character.background ? { ...character.background, source: "SRD" } : null,
+    classes: character.classes.map((c) => ({
+      ...c,
+      source: "SRD",
+      ...(c.subclassName ? { subclassSource: "SRD" } : {}),
+    })),
+  };
+}
+
 function captureAll(): Record<string, Recorded> {
   const modes: [string, () => Compendium][] = [
     ["srd", srdBaselineCompendium],
@@ -256,7 +280,7 @@ function captureAll(): Record<string, Recorded> {
     for (const { label, build } of SCENARIOS) {
       for (const level of LEVELS) {
         for (const books of BOOK_SETS) {
-          const character = build(level);
+          const character = inMode(build(level), mode);
           const key = `${mode} | ${label} | L${level} | books=${books ? books.join("+") : "all"}`;
           const evaluated = evaluateCharacter(character, { compendium: comp, activeBooks: books });
           out[key] = {
