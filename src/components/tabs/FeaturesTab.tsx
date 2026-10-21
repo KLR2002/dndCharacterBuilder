@@ -27,8 +27,7 @@ import {
   getAvailableOptionalFeatures,
   getReplacedBaseFeatures,
 } from "../../rules/optionalFeatures";
-import { getWildShapeLimits, getWildShapeCharges, getRequiredWildShapeCharges } from "../../rules/wildShape";
-import { enterWildShape } from "../../rules/wildShapeHp";
+import { adoptWildShape, getWildShapeLimits } from "../../rules/wildShape";
 import { describeClassFeature } from "../../rules/featureOptions";
 import { ResourceCounter } from "../../types/character";
 import type { BeastData } from "../../types/dnd5e";
@@ -392,32 +391,9 @@ export const FeaturesTab: React.FC = () => {
 
   const handleAdoptShape = (beast: BeastData) => {
     if (!currentCharacter) return;
-    const requiredCharges = getRequiredWildShapeCharges(beast);
-    const currentCharges = getWildShapeCharges(currentCharacter);
-    const isLevel20 = Boolean(wildShapeLimits?.druidLevel && wildShapeLimits.druidLevel >= 20);
-    const existingCounter = (currentCharacter.resourceCounters || {})["wild_shape"];
-    const maxCharges = isLevel20 ? 999 : (existingCounter ? existingCounter.max : 2);
-    const nextCharges = isLevel20 ? 999 : Math.max(0, currentCharges - requiredCharges);
-
-    updateCharacter(currentCharacter.id, {
-      resourceCounters: {
-        ...(currentCharacter.resourceCounters || {}),
-        wild_shape: {
-          id: "wild_shape",
-          name: "Wild Shape",
-          current: nextCharges,
-          max: maxCharges,
-          resetOn: "short",
-        },
-      },
-      ...enterWildShape(currentCharacter, {
-        name: beast.name,
-        source: beast.source,
-        currentHp: beast.hp.average,
-        maxHp: beast.hp.average,
-        ac: beast.ac,
-      }),
-    });
+    const patch = adoptWildShape(currentCharacter, beast);
+    if (!patch) return;
+    updateCharacter(currentCharacter.id, patch);
   };
 
   const handleToggleFavoriteBeast = (beastKey: string) => {
