@@ -237,14 +237,94 @@ test("race and background structured fields become grants with the same shape", 
     { id: "TST/Race/Sample Folk@0#0", kind: "fixed", category: "skills", names: ["Sleight of Hand"] },
     { id: "TST/Race/Sample Folk@0#1", kind: "choice", category: "skills", count: 1, pool: { kind: "any" } },
     { id: "TST/Race/Sample Folk@0#2", kind: "fixed", category: "languages", names: ["Common"] },
+    { id: "TST/Race/Sample Folk@0#3", kind: "choice", category: "languages", count: 1, pool: { kind: "any" } },
+  ]);
+});
+
+test("a standard-language count is an any-language choice, as the rules text and the app have always read it", () => {
+  const result = structuredGrants(
+    { source: "TST", owner: "Race", feature: "Sample Folk", level: 0 },
+    { languages: [{ common: true, anyStandard: 2 }] }
+  );
+  assert.deepEqual(result.grants.map((g) => (g.kind === "choice" ? g.pool : null)), [null, { kind: "any" }]);
+  assert.deepEqual(result.grants[1], { id: "TST/Race/Sample Folk@0#1", kind: "choice", category: "languages", count: 2, pool: { kind: "any" } });
+});
+
+test("an 'other' language entry is one language of your choice, and a choose list naming 'other' is any language", () => {
+  const other = structuredGrants(
+    { source: "TST", owner: "Race", feature: "Sample Folk", level: 0 },
+    { languages: [{ common: true, other: true }] }
+  );
+  assert.deepEqual(other.unparsed, []);
+  assert.deepEqual(other.grants, [
+    { id: "TST/Race/Sample Folk@0#0", kind: "fixed", category: "languages", names: ["Common"] },
+    { id: "TST/Race/Sample Folk@0#1", kind: "choice", category: "languages", count: 1, pool: { kind: "any" } },
+  ]);
+
+  const listedOther = structuredGrants(
+    { source: "TST", owner: "Race", feature: "Sample Folk", level: 0 },
+    { languages: [{ common: true, choose: { from: ["elvish", "other"], count: 1 } }] }
+  );
+  assert.deepEqual(listedOther.unparsed, []);
+  assert.deepEqual(listedOther.grants[1], { id: "TST/Race/Sample Folk@0#1", kind: "choice", category: "languages", count: 1, pool: { kind: "any" } });
+});
+
+test("a language choose list of concrete languages is a names pool of those languages", () => {
+  const result = structuredGrants(
+    { source: "TST", owner: "Background", feature: "Sample Trade", level: 0 },
+    { languages: [{ choose: { from: ["elvish", "gnomish", "sylvan"] } }] }
+  );
+  assert.deepEqual(result.unparsed, []);
+  assert.deepEqual(result.grants, [
     {
-      id: "TST/Race/Sample Folk@0#3",
+      id: "TST/Background/Sample Trade@0#0",
       kind: "choice",
       category: "languages",
       count: 1,
-      pool: { kind: "names", names: ["Common", "Dwarvish", "Elvish", "Giant", "Gnomish", "Goblin", "Halfling", "Orc"] },
+      pool: { kind: "names", names: ["Elvish", "Gnomish", "Sylvan"] },
     },
   ]);
+});
+
+test("counted tool pools: a count of artisan's tools, musical instruments or gaming sets picks from that list", () => {
+  const artisans = structuredGrants(
+    { source: "TST", owner: "Race", feature: "Sample Folk", level: 0 },
+    { tools: [{ anyArtisansTool: 2 }] }
+  );
+  const [artisanGrant] = artisans.grants;
+  assert.ok(artisanGrant.kind === "choice" && artisanGrant.count === 2 && artisanGrant.pool.kind === "names");
+  assert.ok(artisanGrant.kind === "choice" && artisanGrant.pool.kind === "names" && artisanGrant.pool.names.includes("smith's tools"));
+
+  const gaming = structuredGrants(
+    { source: "TST", owner: "Background", feature: "Sample Trade", level: 0 },
+    { tools: [{ anyGamingSet: 1, "vehicles (land)": true }] }
+  );
+  assert.deepEqual(gaming.unparsed, []);
+  assert.deepEqual(gaming.grants.map((g) => g.kind), ["choice", "fixed"]);
+  const [pick, fixed] = gaming.grants;
+  assert.deepEqual(fixed, { id: "TST/Background/Sample Trade@0#1", kind: "fixed", category: "tools", names: ["vehicles (land)"] });
+  assert.ok(pick.kind === "choice" && pick.pool.kind === "names" && pick.pool.names.includes("dice set") && pick.pool.names.includes("playing card set"));
+});
+
+test("a tool choose list may mix category words and named tools; the pool is their union", () => {
+  const result = structuredGrants(
+    { source: "TST", owner: "Background", feature: "Sample Trade", level: 0 },
+    { tools: [{ choose: { from: ["anyArtisansTool", "musical instrument", "navigator's tools"], count: 2 } }] }
+  );
+  assert.deepEqual(result.unparsed, []);
+  const [grant] = result.grants;
+  assert.ok(grant.kind === "choice" && grant.count === 2 && grant.pool.kind === "names");
+  assert.ok(grant.kind === "choice" && grant.pool.kind === "names" && grant.pool.names.includes("cook's utensils") && grant.pool.names.includes("lute"));
+  assert.ok(grant.kind === "choice" && grant.pool.kind === "names" && grant.pool.names.includes("navigator's tools"));
+});
+
+test("a vehicle proficiency is a fixed tool grant", () => {
+  const result = structuredGrants(
+    { source: "TST", owner: "Background", feature: "Sample Trade", level: 0 },
+    { tools: [{ "vehicles (water)": true }] }
+  );
+  assert.deepEqual(result.unparsed, []);
+  assert.deepEqual(result.grants, [{ id: "TST/Background/Sample Trade@0#0", kind: "fixed", category: "tools", names: ["vehicles (water)"] }]);
 });
 
 test("a structured entry the mapping cannot state precisely makes the whole block unparsed, not partly granted", () => {
@@ -252,11 +332,20 @@ test("a structured entry the mapping cannot state precisely makes the whole bloc
     { source: "TST", owner: "Background", feature: "Sample Trade", level: 0 },
     {
       skills: [{ insight: true }],
-      tools: [{ "gaming set": true }, { "anyGamingSet": 1 }],
+      tools: [{ "gaming set": true }, { anyGamingSet: 1 }],
     }
   );
   assert.deepEqual(result.grants, []);
-  assert.deepEqual(result.unparsed, ["tools: gaming set", "tools: anyGamingSet"]);
+  assert.deepEqual(result.unparsed, ["tools: gaming set"]);
+});
+
+test("a tool choose list with an entry that names no tool is unparsed as a whole", () => {
+  const result = structuredGrants(
+    { source: "TST", owner: "Background", feature: "Sample Trade", level: 0 },
+    { tools: [{ choose: { from: ["sample set of things", "navigator's tools"] } }] }
+  );
+  assert.deepEqual(result.grants, []);
+  assert.deepEqual(result.unparsed, ["tools: choose"]);
 });
 
 test("the vocabulary matches 'proficient' wording, not only 'proficiency'", () => {
