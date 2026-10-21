@@ -70,3 +70,66 @@ test("reconciling a migrated character again changes nothing", () => {
   const once = reconcile(before, compendium);
   assert.deepEqual(reconcile(once, compendium), once);
 });
+
+test("changing race releases the pick stored on the old race's choice, with a review notice", () => {
+  const before = makeChar({
+    race: { name: "Vellari", source: "PHB" },
+    proficiencyPicks: { [RACE_CHOICE]: ["Elvish"] },
+  });
+  const after = reconcile({ ...before, race: { name: "Lamp Folk", source: "PHB" } }, compendium);
+  assert.equal(after.proficiencyPicks?.[RACE_CHOICE], undefined);
+  assert.ok(after.needsReview?.some((notice) => notice.includes("Elvish") && notice.includes("Vellari")));
+  assert.ok(!sheetOf(after).languages.includes("Elvish"));
+});
+
+test("changing background releases the pick stored on the old background's choice", () => {
+  const before = makeChar({
+    background: { name: "Lamplighter", source: "PHB" },
+    proficiencyPicks: { [TOOL_CHOICE]: ["Cook's Utensils"] },
+  });
+  const after = reconcile({ ...before, background: { name: "Acolyte", source: "PHB" } }, compendium);
+  assert.equal(after.proficiencyPicks?.[TOOL_CHOICE], undefined);
+  assert.ok(after.needsReview?.some((notice) => notice.includes("Cook's Utensils")));
+});
+
+test("a race and background still held keep their picks through reconciling", () => {
+  const before = makeChar({
+    race: { name: "Vellari", source: "PHB" },
+    background: { name: "Lamplighter", source: "PHB" },
+    proficiencyPicks: { [RACE_CHOICE]: ["Elvish"], [TOOL_CHOICE]: ["Cook's Utensils"] },
+  });
+  assert.deepEqual(reconcile(before, compendium).proficiencyPicks, before.proficiencyPicks);
+});
+
+const SUBRACE_CHOICE = "TST/Subrace/Vellari (Tidewalker)@0#0";
+const withSubrace = inMemoryCompendium({
+  races: [
+    vellariRace({
+      grants: [fixedGrant("TST/Race/Vellari@0#0", "languages", ["Common"])],
+      subraces: [
+        {
+          name: "Tidewalker",
+          source: "PHB",
+          raceName: "Vellari",
+          raceSource: "PHB",
+          abilityScoreIncrease: [],
+          darkvision: null,
+          traits: [],
+          description: "Placeholder description for the Tidewalker.",
+          grants: [anyLanguageChoice(SUBRACE_CHOICE, 1)],
+        },
+      ],
+    }),
+  ],
+});
+
+test("a subrace's pick is kept while the subrace is held, and released when the subrace is dropped", () => {
+  const held = makeChar({
+    race: { name: "Vellari", source: "PHB", subraceName: "Tidewalker", subraceSource: "PHB" },
+    proficiencyPicks: { [SUBRACE_CHOICE]: ["Elvish"] },
+  });
+  assert.deepEqual(reconcile(held, withSubrace).proficiencyPicks, held.proficiencyPicks);
+  const dropped = reconcile({ ...held, race: { name: "Vellari", source: "PHB" } }, withSubrace);
+  assert.equal(dropped.proficiencyPicks?.[SUBRACE_CHOICE], undefined);
+  assert.ok(dropped.needsReview?.some((notice) => notice.includes("Elvish")));
+});

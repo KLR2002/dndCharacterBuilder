@@ -3,7 +3,7 @@ import type { ClassData, ProficiencyGrant } from "../types/dnd5e.ts";
 import type { Compendium } from "../services/compendium.ts";
 import { optionGrantApplies } from "./optionFeatureGrants.ts";
 import { findClassData } from "./catalogs.ts";
-import { poolNames, STARTING_PROFICIENCIES, validPicks, type ChoiceProficiencyGrant } from "./proficiencyPools.ts";
+import { poolNames, sourceToolAndLanguageGrants, STARTING_PROFICIENCIES, validPicks, type ChoiceProficiencyGrant } from "./proficiencyPools.ts";
 import { recordGrantSources } from "./recordProficiencyGrants.ts";
 
 /**
@@ -114,7 +114,8 @@ export function moveLegacySourcePicks(character: Character, compendium: Compendi
 type GrantOwner =
   | { kind: "class"; className: string; source: string }
   | { kind: "subclass"; className: string; source: string; subclassName: string }
-  | { kind: "feat"; featName: string };
+  | { kind: "feat"; featName: string }
+  | { kind: "record"; origin: "Race" | "Subrace" | "Background"; name: string; source: string; raceName?: string; raceSource?: string };
 
 interface GrantSource {
   /** The feature the grant is printed on, named in the review notice. */
@@ -162,6 +163,26 @@ function grantSourcesIn(compendium: Compendium): Map<string, GrantSource> {
   for (const feat of listings.feats()) {
     add(feat.grants, { feature: feat.name, level: 0, optional: false, owner: { kind: "feat", featName: feat.name } });
   }
+  for (const race of listings.races()) {
+    const raceOwner = { kind: "record" as const, origin: "Race" as const, name: race.name, source: race.source };
+    add(sourceToolAndLanguageGrants(race.grants), { feature: race.name, level: 0, optional: false, owner: raceOwner });
+    for (const sub of race.subraces ?? []) {
+      add(sourceToolAndLanguageGrants(sub.grants), {
+        feature: sub.name,
+        level: 0,
+        optional: false,
+        owner: { kind: "record", origin: "Subrace", name: sub.name, source: sub.source, raceName: race.name, raceSource: race.source },
+      });
+    }
+  }
+  for (const background of listings.backgrounds()) {
+    add(sourceToolAndLanguageGrants(background.grants), {
+      feature: background.name,
+      level: 0,
+      optional: false,
+      owner: { kind: "record", origin: "Background", name: background.name, source: background.source },
+    });
+  }
   return sources;
 }
 
@@ -171,6 +192,7 @@ function grantSourcesIn(compendium: Compendium): Map<string, GrantSource> {
  */
 function ownerHeld(source: GrantSource, character: Character, classes: readonly ClassData[]): boolean {
   const owner = source.owner;
+  if (owner.kind === "record") return recordHeld(owner, character);
   if (owner.kind === "feat") {
     const wanted = owner.featName.toLowerCase();
     return [...(character.asiSelections ?? []), ...(character.originFeats ?? [])].some(
@@ -185,6 +207,24 @@ function ownerHeld(source: GrantSource, character: Character, classes: readonly 
     if ((c.subclassName ?? "").toLowerCase() !== owner.subclassName.toLowerCase()) return false;
     return optionGrantApplies(character, { className: c.className, subclassName: c.subclassName }, { name: source.feature, level: source.level });
   });
+}
+
+/** Whether a name and an optional source match a held entry: the source is compared only when the character names one. */
+function sameRecord(name: string, source: string | undefined, record: { name: string; source: string }): boolean {
+  return record.name.toLowerCase() === name.toLowerCase() && (!source || record.source === source);
+}
+
+/** Whether the character still holds a race, subrace or background record that grants this pick. */
+function recordHeld(owner: Extract<GrantOwner, { kind: "record" }>, character: Character): boolean {
+  if (owner.origin === "Background") {
+    return Boolean(character.background && !character.background.isCustom && sameRecord(character.background.name, character.background.source, owner));
+  }
+  const race = character.race;
+  if (!race) return false;
+  if (owner.origin === "Race") return sameRecord(race.name, race.source, owner);
+  // A subrace is held under its race: the race must be the owner's race, and the subrace the owner's.
+  const ownRace = { name: owner.raceName ?? "", source: owner.raceSource ?? "" };
+  return sameRecord(race.name, race.source, ownRace) && Boolean(race.subraceName) && sameRecord(race.subraceName ?? "", race.subraceSource, owner);
 }
 
 /**
