@@ -1,5 +1,15 @@
 [
   {
+    "grants": [
+      {
+        "id": "DMG/Race/Aarakocra@0#0",
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Auran"
+        ]
+      }
+    ],
     "name": "Aarakocra",
     "source": "DMG",
     "size": [
@@ -60,6 +70,26 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "EEPC/Race/Aarakocra@0#0",
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common",
+          "Auran"
+        ]
+      },
+      {
+        "id": "EEPC/Race/Aarakocra@0#1",
+        "kind": "choice",
+        "category": "languages",
+        "count": 1,
+        "pool": {
+          "kind": "any"
+        }
+      }
+    ],
     "name": "Aarakocra",
     "source": "EEPC",
     "size": [
@@ -155,6 +185,16 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "MPMM/Race/Aarakocra@0#0",
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common"
+        ]
+      }
+    ],
     "name": "Aarakocra",
     "source": "MPMM",
     "size": [
@@ -209,6 +249,17 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "DMG/Race/Aasimar@0#0",
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common",
+          "Celestial"
+        ]
+      }
+    ],
     "name": "Aasimar",
     "source": "DMG",
     "size": [
@@ -302,6 +353,16 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "MPMM/Race/Aasimar@0#0",
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common"
+        ]
+      }
+    ],
     "name": "Aasimar",
     "source": "MPMM",
     "size": [
@@ -428,6 +489,17 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "VGM/Race/Aasimar@0#0",
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common",
+          "Celestial"
+        ]
+      }
+    ],
     "name": "Aasimar",
     "source": "VGM",
     "size": [
@@ -625,6 +697,25 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "PSK/Race/Aetherborn@0#0",
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common"
+        ]
+      },
+      {
+        "id": "PSK/Race/Aetherborn@0#1",
+        "kind": "choice",
+        "category": "languages",
+        "count": 2,
+        "pool": {
+          "kind": "any"
+        }
+      }
+    ],
     "name": "Aetherborn",
     "source": "PSK",
     "size": [
@@ -743,6 +834,16 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "AAG/Race/Astral Elf@0#0",
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common"
+        ]
+      }
+    ],
     "name": "Astral Elf",
     "source": "AAG",
     "size": [
@@ -840,6 +941,25 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "AAG/Race/Autognome@0#0",
+        "kind": "choice",
+        "category": "tools",
+        "count": 2,
+        "pool": {
+          "kind": "any"
+        }
+      },
+      {
+        "id": "AAG/Race/Autognome@0#1",
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common"
+        ]
+      }
+    ],
     "name": "Autognome",
     "source": "AAG",
     "size": [
@@ -937,6 +1057,25 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "PSA/Race/Aven@0#0",
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common"
+        ]
+      },
+      {
+        "id": "PSA/Race/Aven@0#1",
+        "kind": "choice",
+        "category": "languages",
+        "count": 1,
+        "pool": {
+          "kind": "any"
+        }
+      }
+    ],
     "name": "Aven",
     "source": "PSA",
     "size": [
@@ -1078,6 +1217,25 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "PSD/Race/Aven@0#0",
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common"
+        ]
+      },
+      {
+        "id": "PSD/Race/Aven@0#1",
+        "kind": "choice",
+        "category": "languages",
+        "count": 1,
+        "pool": {
+          "kind": "any"
+        }
+      }
+    ],
     "name": "Aven",
     "source": "PSD",
     "size": [
@@ -1109,7 +1267,7 @@
       },
       {
         "name": "Flight",
-        "description": "You have a flying speed of 30 feet. You can't use your flying speed while you wear medium or heavy armor. (If your campaign uses the variant rule for PHB, you can't use your flying speed if you are encumbered.)"
+        "description": "You have a flying speed of 30 feet. You can't use your flying speed while you wear medium or heavy armor. (If your campaign uses the variant rule for encumbrance, you can't use your flying speed if you are encumbered.)"
       },
       {
         "name": "Languages",
@@ -1125,7 +1283,7 @@
       "Other"
     ],
     "subraces": [],
-    "description": "### Age\n\n\nLike humans, aven reach adulthood in their late teens and can live into their 80s.\n\n### Alignment\n\n\nAven are inclined toward the lawful good alignment of the Church of Serra\n\n### Size\n\n\nAven stand from 5 to 6 feet tall, but their bodies are slender and their bones are partially hollow to facilitate their flight. Your size is Medium.\n\n### Flight\n\n\nYou have a flying speed of 30 feet. You can't use your flying speed while you wear medium or heavy armor. (If your campaign uses the variant rule for PHB, you can't use your flying speed if you are encumbered.)\n\n### Languages\n\n\nYou can speak, read, and write Common and Aven.\n\n### Hawkeyed\n\n\nYou have proficiency in the Perception skill. In addition, attacking at long range doesn't impose disadvantage on your ranged weapon attack rolls.",
+    "description": "### Age\n\n\nLike humans, aven reach adulthood in their late teens and can live into their 80s.\n\n### Alignment\n\n\nAven are inclined toward the lawful good alignment of the Church of Serra\n\n### Size\n\n\nAven stand from 5 to 6 feet tall, but their bodies are slender and their bones are partially hollow to facilitate their flight. Your size is Medium.\n\n### Flight\n\n\nYou have a flying speed of 30 feet. You can't use your flying speed while you wear medium or heavy armor. (If your campaign uses the variant rule for encumbrance, you can't use your flying speed if you are encumbered.)\n\n### Languages\n\n\nYou can speak, read, and write Common and Aven.\n\n### Hawkeyed\n\n\nYou have proficiency in the Perception skill. In addition, attacking at long range doesn't impose disadvantage on your ranged weapon attack rolls.",
     "rawEntries": [
       {
         "type": "entries",
@@ -1172,6 +1330,17 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "ERLW/Race/Bugbear@0#0",
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common",
+          "Goblin"
+        ]
+      }
+    ],
     "name": "Bugbear",
     "source": "ERLW",
     "size": [
@@ -1298,6 +1467,16 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "MPMM/Race/Bugbear@0#0",
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common"
+        ]
+      }
+    ],
     "name": "Bugbear",
     "source": "MPMM",
     "size": [
@@ -1394,6 +1573,17 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "VGM/Race/Bugbear@0#0",
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common",
+          "Goblin"
+        ]
+      }
+    ],
     "name": "Bugbear",
     "source": "VGM",
     "size": [
@@ -1509,6 +1699,17 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "DMG/Race/Bullywug@0#0",
+        "kind": "choice",
+        "category": "languages",
+        "count": 1,
+        "pool": {
+          "kind": "any"
+        }
+      }
+    ],
     "name": "Bullywug",
     "source": "DMG",
     "size": [
@@ -1591,6 +1792,17 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "GGR/Race/Centaur@0#0",
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common",
+          "Sylvan"
+        ]
+      }
+    ],
     "name": "Centaur",
     "source": "GGR",
     "size": [
@@ -1718,6 +1930,17 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "MOT/Race/Centaur@0#0",
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common",
+          "Sylvan"
+        ]
+      }
+    ],
     "name": "Centaur",
     "source": "MOT",
     "size": [
@@ -1845,6 +2068,16 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "MPMM/Race/Centaur@0#0",
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common"
+        ]
+      }
+    ],
     "name": "Centaur",
     "source": "MPMM",
     "size": [
@@ -1920,6 +2153,25 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "ERLW/Race/Changeling@0#0",
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common"
+        ]
+      },
+      {
+        "id": "ERLW/Race/Changeling@0#1",
+        "kind": "choice",
+        "category": "languages",
+        "count": 2,
+        "pool": {
+          "kind": "any"
+        }
+      }
+    ],
     "name": "Changeling",
     "source": "ERLW",
     "size": [
@@ -2013,6 +2265,16 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "MPMM/Race/Changeling@0#0",
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common"
+        ]
+      }
+    ],
     "name": "Changeling",
     "source": "MPMM",
     "size": [
@@ -2078,6 +2340,25 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "TCE/Race/Custom Lineage@0#0",
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common"
+        ]
+      },
+      {
+        "id": "TCE/Race/Custom Lineage@0#1",
+        "kind": "choice",
+        "category": "languages",
+        "count": 1,
+        "pool": {
+          "kind": "any"
+        }
+      }
+    ],
     "name": "Custom Lineage",
     "source": "TCE",
     "size": [
@@ -2158,6 +2439,16 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "MPMM/Race/Deep Gnome@0#0",
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common"
+        ]
+      }
+    ],
     "name": "Deep Gnome",
     "source": "MPMM",
     "size": [
@@ -2233,6 +2524,16 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "VRGR/Race/Dhampir@0#0",
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common"
+        ]
+      }
+    ],
     "name": "Dhampir",
     "source": "VRGR",
     "size": [
@@ -2330,6 +2631,17 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "PHB/Race/Dragonborn@0#0",
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common",
+          "Draconic"
+        ]
+      }
+    ],
     "name": "Dragonborn",
     "source": "PHB",
     "size": [
@@ -2740,6 +3052,16 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "FTD/Race/Dragonborn (Chromatic)@0#0",
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common"
+        ]
+      }
+    ],
     "name": "Dragonborn (Chromatic)",
     "source": "FTD",
     "size": [
@@ -2838,6 +3160,16 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "FTD/Race/Dragonborn (Gem)@0#0",
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common"
+        ]
+      }
+    ],
     "name": "Dragonborn (Gem)",
     "source": "FTD",
     "size": [
@@ -2947,6 +3279,16 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "FTD/Race/Dragonborn (Metallic)@0#0",
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common"
+        ]
+      }
+    ],
     "name": "Dragonborn (Metallic)",
     "source": "FTD",
     "size": [
@@ -3066,6 +3408,16 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "MPMM/Race/Duergar@0#0",
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common"
+        ]
+      }
+    ],
     "name": "Duergar",
     "source": "MPMM",
     "size": [
@@ -3141,6 +3493,31 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "PHB/Race/Dwarf@0#0",
+        "kind": "choice",
+        "category": "tools",
+        "count": 1,
+        "pool": {
+          "kind": "names",
+          "names": [
+            "smith's tools",
+            "brewer's supplies",
+            "mason's tools"
+          ]
+        }
+      },
+      {
+        "id": "PHB/Race/Dwarf@0#1",
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common",
+          "Dwarvish"
+        ]
+      }
+    ],
     "name": "Dwarf",
     "source": "PHB",
     "size": [
@@ -3199,6 +3576,18 @@
     ],
     "subraces": [
       {
+        "grants": [
+          {
+            "id": "MTF/Subrace/Dwarf (Duergar)@0#0",
+            "kind": "fixed",
+            "category": "languages",
+            "names": [
+              "Common",
+              "Dwarvish",
+              "Undercommon"
+            ]
+          }
+        ],
         "name": "Duergar",
         "isVariant": false,
         "source": "MTF",
@@ -3492,6 +3881,45 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "PSK/Race/Dwarf (Kaladesh)@0#0",
+        "kind": "choice",
+        "category": "tools",
+        "count": 2,
+        "pool": {
+          "kind": "names",
+          "names": [
+            "alchemist's supplies",
+            "brewer's supplies",
+            "calligrapher's supplies",
+            "carpenter's tools",
+            "cartographer's tools",
+            "cobbler's tools",
+            "cook's utensils",
+            "glassblower's tools",
+            "jeweler's tools",
+            "leatherworker's tools",
+            "mason's tools",
+            "painter's supplies",
+            "potter's tools",
+            "smith's tools",
+            "tinker's tools",
+            "weaver's tools",
+            "woodcarver's tools"
+          ]
+        }
+      },
+      {
+        "id": "PSK/Race/Dwarf (Kaladesh)@0#1",
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common",
+          "Dwarvish"
+        ]
+      }
+    ],
     "name": "Dwarf (Kaladesh)",
     "source": "PSK",
     "size": [
@@ -3618,6 +4046,16 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "MPMM/Race/Eladrin@0#0",
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common"
+        ]
+      }
+    ],
     "name": "Eladrin",
     "source": "MPMM",
     "size": [
@@ -3755,6 +4193,17 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "PHB/Race/Elf@0#0",
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common",
+          "Elvish"
+        ]
+      }
+    ],
     "name": "Elf",
     "source": "PHB",
     "size": [
@@ -3990,6 +4439,26 @@
         ]
       },
       {
+        "grants": [
+          {
+            "id": "PHB/Subrace/Elf (High)@0#0",
+            "kind": "fixed",
+            "category": "languages",
+            "names": [
+              "Common",
+              "Elvish"
+            ]
+          },
+          {
+            "id": "PHB/Subrace/Elf (High)@0#1",
+            "kind": "choice",
+            "category": "languages",
+            "count": 1,
+            "pool": {
+              "kind": "any"
+            }
+          }
+        ],
         "name": "High",
         "isVariant": false,
         "source": "PHB",
@@ -4166,6 +4635,18 @@
         ]
       },
       {
+        "grants": [
+          {
+            "id": "MTF/Subrace/Elf (Sea)@0#0",
+            "kind": "fixed",
+            "category": "languages",
+            "names": [
+              "Common",
+              "Elvish",
+              "Aquan"
+            ]
+          }
+        ],
         "name": "Sea",
         "isVariant": false,
         "source": "MTF",
@@ -4375,6 +4856,17 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "PSK/Race/Elf (Kaladesh)@0#0",
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common",
+          "Elvish"
+        ]
+      }
+    ],
     "name": "Elf (Kaladesh)",
     "source": "PSK",
     "size": [
@@ -4592,6 +5084,17 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "PSZ/Race/Elf (Zendikar)@0#0",
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common",
+          "Elvish"
+        ]
+      }
+    ],
     "name": "Elf (Zendikar)",
     "source": "PSZ",
     "size": [
@@ -4841,6 +5344,16 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "MPMM/Race/Fairy@0#0",
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common"
+        ]
+      }
+    ],
     "name": "Fairy",
     "source": "MPMM",
     "size": [
@@ -4895,6 +5408,16 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "WBtW/Race/Fairy@0#0",
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common"
+        ]
+      }
+    ],
     "name": "Fairy",
     "source": "WBtW",
     "size": [
@@ -4950,6 +5473,16 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "MPMM/Race/Firbolg@0#0",
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common"
+        ]
+      }
+    ],
     "name": "Firbolg",
     "source": "MPMM",
     "size": [
@@ -5014,6 +5547,18 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "VGM/Race/Firbolg@0#0",
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common",
+          "Elvish",
+          "Giant"
+        ]
+      }
+    ],
     "name": "Firbolg",
     "source": "VGM",
     "size": [
@@ -5119,6 +5664,17 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "EEPC/Race/Genasi@0#0",
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common",
+          "Primordial"
+        ]
+      }
+    ],
     "name": "Genasi",
     "source": "EEPC",
     "size": [
@@ -5383,6 +5939,16 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "MPMM/Race/Genasi@0#0",
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common"
+        ]
+      }
+    ],
     "name": "Genasi",
     "source": "MPMM",
     "size": [
@@ -5608,6 +6174,16 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "AAG/Race/Giff@0#0",
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common"
+        ]
+      }
+    ],
     "name": "Giff",
     "source": "AAG",
     "size": [
@@ -5662,6 +6238,25 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "MTF/Race/Gith@0#0",
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common"
+        ]
+      },
+      {
+        "id": "MTF/Race/Gith@0#1",
+        "kind": "choice",
+        "category": "languages",
+        "count": 1,
+        "pool": {
+          "kind": "any"
+        }
+      }
+    ],
     "name": "Gith",
     "source": "MTF",
     "size": [
@@ -5839,6 +6434,16 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "MPMM/Race/Githyanki@0#0",
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common"
+        ]
+      }
+    ],
     "name": "Githyanki",
     "source": "MPMM",
     "size": [
@@ -5893,6 +6498,16 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "MPMM/Race/Githzerai@0#0",
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common"
+        ]
+      }
+    ],
     "name": "Githzerai",
     "source": "MPMM",
     "size": [
@@ -5947,6 +6562,16 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "DMG/Race/Gnoll@0#0",
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common"
+        ]
+      }
+    ],
     "name": "Gnoll",
     "source": "DMG",
     "size": [
@@ -6004,6 +6629,17 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "PHB/Race/Gnome@0#0",
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common",
+          "Gnomish"
+        ]
+      }
+    ],
     "name": "Gnome",
     "source": "PHB",
     "size": [
@@ -6046,6 +6682,18 @@
     ],
     "subraces": [
       {
+        "grants": [
+          {
+            "id": "MTF/Subrace/Gnome (Deep)@0#0",
+            "kind": "fixed",
+            "category": "languages",
+            "names": [
+              "Common",
+              "Gnomish",
+              "Undercommon"
+            ]
+          }
+        ],
         "name": "Deep",
         "isVariant": false,
         "source": "MTF",
@@ -6145,6 +6793,18 @@
         ]
       },
       {
+        "grants": [
+          {
+            "id": "SCAG/Subrace/Gnome (Deep/Svirfneblin)@0#0",
+            "kind": "fixed",
+            "category": "languages",
+            "names": [
+              "Common",
+              "Gnomish",
+              "Undercommon"
+            ]
+          }
+        ],
         "name": "Deep/Svirfneblin",
         "isVariant": false,
         "source": "SCAG",
@@ -6369,6 +7029,16 @@
         ]
       },
       {
+        "grants": [
+          {
+            "id": "PHB/Subrace/Gnome (Rock)@0#0",
+            "kind": "fixed",
+            "category": "tools",
+            "names": [
+              "tinker's tools"
+            ]
+          }
+        ],
         "name": "Rock",
         "isVariant": false,
         "source": "PHB",
@@ -6471,6 +7141,18 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "DMG/Race/Gnome (Deep)@0#0",
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Gnomish",
+          "Terran",
+          "Undercommon"
+        ]
+      }
+    ],
     "name": "Gnome (Deep)",
     "source": "DMG",
     "size": [
@@ -6574,6 +7256,17 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "DMG/Race/Goblin@0#0",
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common",
+          "Goblin"
+        ]
+      }
+    ],
     "name": "Goblin",
     "source": "DMG",
     "size": [
@@ -6634,6 +7327,17 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "ERLW/Race/Goblin@0#0",
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common",
+          "Goblin"
+        ]
+      }
+    ],
     "name": "Goblin",
     "source": "ERLW",
     "size": [
@@ -6738,6 +7442,17 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "GGR/Race/Goblin@0#0",
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common",
+          "Goblin"
+        ]
+      }
+    ],
     "name": "Goblin",
     "source": "GGR",
     "size": [
@@ -6842,6 +7557,16 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "MPMM/Race/Goblin@0#0",
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common"
+        ]
+      }
+    ],
     "name": "Goblin",
     "source": "MPMM",
     "size": [
@@ -6917,6 +7642,17 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "PSZ/Race/Goblin@0#0",
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common",
+          "Goblin"
+        ]
+      }
+    ],
     "name": "Goblin",
     "source": "PSZ",
     "size": [
@@ -6977,14 +7713,14 @@
           },
           {
             "name": "Agile Climber",
-            "description": "You have a climbing speed of 25 feet. You can't use your climbing speed while you wear medium or heavy armor. (If your campaign uses the variant rule for PHB, you can't use your climbing speed if you are encumbered.)"
+            "description": "You have a climbing speed of 25 feet. You can't use your climbing speed while you wear medium or heavy armor. (If your campaign uses the variant rule for encumbrance, you can't use your climbing speed if you are encumbered.)"
           },
           {
             "name": "Languages",
             "description": "You can speak, read, and write Common (if it exists in your campaign) and Goblin."
           }
         ],
-        "description": "### Alignment\n\n\nMost goblins are wildly chaotic, with no particular inclination toward good or evil but a strong tendency toward mischief.\n\n### Agile Climber\n\n\nYou have a climbing speed of 25 feet. You can't use your climbing speed while you wear medium or heavy armor. (If your campaign uses the variant rule for PHB, you can't use your climbing speed if you are encumbered.)\n\n### Languages\n\n\nYou can speak, read, and write Common (if it exists in your campaign) and Goblin.",
+        "description": "### Alignment\n\n\nMost goblins are wildly chaotic, with no particular inclination toward good or evil but a strong tendency toward mischief.\n\n### Agile Climber\n\n\nYou have a climbing speed of 25 feet. You can't use your climbing speed while you wear medium or heavy armor. (If your campaign uses the variant rule for encumbrance, you can't use your climbing speed if you are encumbered.)\n\n### Languages\n\n\nYou can speak, read, and write Common (if it exists in your campaign) and Goblin.",
         "rawEntries": [
           {
             "type": "entries",
@@ -7074,6 +7810,16 @@
         ]
       },
       {
+        "grants": [
+          {
+            "id": "PSZ/Subrace/Goblin (Zendikar; Tuktuk Tribe)@0#0",
+            "kind": "fixed",
+            "category": "tools",
+            "names": [
+              "thieves' tools"
+            ]
+          }
+        ],
         "name": "Zendikar; Tuktuk Tribe",
         "isVariant": false,
         "source": "PSZ",
@@ -7150,6 +7896,17 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "VGM/Race/Goblin@0#0",
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common",
+          "Goblin"
+        ]
+      }
+    ],
     "name": "Goblin",
     "source": "VGM",
     "size": [
@@ -7243,6 +8000,17 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "AWM/Race/Goblin (Dankwood)@0#0",
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common",
+          "Goblin"
+        ]
+      }
+    ],
     "name": "Goblin (Dankwood)",
     "source": "AWM",
     "size": [
@@ -7347,6 +8115,16 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "MPMM/Race/Goliath@0#0",
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common"
+        ]
+      }
+    ],
     "name": "Goliath",
     "source": "MPMM",
     "size": [
@@ -7400,6 +8178,17 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "VGM/Race/Goliath@0#0",
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common",
+          "Giant"
+        ]
+      }
+    ],
     "name": "Goliath",
     "source": "VGM",
     "size": [
@@ -7504,6 +8293,16 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "DMG/Race/Grimlock@0#0",
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Undercommon"
+        ]
+      }
+    ],
     "name": "Grimlock",
     "source": "DMG",
     "size": [
@@ -7574,6 +8373,17 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "OGA/Race/Grung@0#0",
+        "kind": "choice",
+        "category": "languages",
+        "count": 1,
+        "pool": {
+          "kind": "any"
+        }
+      }
+    ],
     "name": "Grung",
     "source": "OGA",
     "size": [
@@ -7712,6 +8522,16 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "AAG/Race/Hadozee@0#0",
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common"
+        ]
+      }
+    ],
     "name": "Hadozee",
     "source": "AAG",
     "size": [
@@ -7778,6 +8598,26 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "PHB/Race/Half-Elf@0#0",
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common",
+          "Elvish"
+        ]
+      },
+      {
+        "id": "PHB/Race/Half-Elf@0#1",
+        "kind": "choice",
+        "category": "languages",
+        "count": 1,
+        "pool": {
+          "kind": "any"
+        }
+      }
+    ],
     "name": "Half-Elf",
     "source": "PHB",
     "size": [
@@ -8317,6 +9157,17 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "PHB/Race/Half-Orc@0#0",
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common",
+          "Orc"
+        ]
+      }
+    ],
     "name": "Half-Orc",
     "source": "PHB",
     "size": [
@@ -8368,6 +9219,17 @@
     ],
     "subraces": [
       {
+        "grants": [
+          {
+            "id": "ERLW/Subrace/Half-Orc (Mark of Finding)@0#0",
+            "kind": "fixed",
+            "category": "languages",
+            "names": [
+              "Common",
+              "Goblin"
+            ]
+          }
+        ],
         "name": "Mark of Finding",
         "isVariant": true,
         "source": "ERLW",
@@ -8540,6 +9402,17 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "PHB/Race/Halfling@0#0",
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common",
+          "Halfling"
+        ]
+      }
+    ],
     "name": "Halfling",
     "source": "PHB",
     "size": [
@@ -8930,6 +9803,16 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "MPMM/Race/Harengon@0#0",
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common"
+        ]
+      }
+    ],
     "name": "Harengon",
     "source": "MPMM",
     "size": [
@@ -9005,6 +9888,16 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "WBtW/Race/Harengon@0#0",
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common"
+        ]
+      }
+    ],
     "name": "Harengon",
     "source": "WBtW",
     "size": [
@@ -9080,6 +9973,16 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "VRGR/Race/Hexblood@0#0",
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common"
+        ]
+      }
+    ],
     "name": "Hexblood",
     "source": "VRGR",
     "size": [
@@ -9192,6 +10095,17 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "DMG/Race/Hobgoblin@0#0",
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common",
+          "Goblin"
+        ]
+      }
+    ],
     "name": "Hobgoblin",
     "source": "DMG",
     "size": [
@@ -9247,6 +10161,17 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "ERLW/Race/Hobgoblin@0#0",
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common",
+          "Goblin"
+        ]
+      }
+    ],
     "name": "Hobgoblin",
     "source": "ERLW",
     "size": [
@@ -9351,6 +10276,16 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "MPMM/Race/Hobgoblin@0#0",
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common"
+        ]
+      }
+    ],
     "name": "Hobgoblin",
     "source": "MPMM",
     "size": [
@@ -9447,6 +10382,17 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "VGM/Race/Hobgoblin@0#0",
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common",
+          "Goblin"
+        ]
+      }
+    ],
     "name": "Hobgoblin",
     "source": "VGM",
     "size": [
@@ -9540,6 +10486,25 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "PHB/Race/Human@0#0",
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common"
+        ]
+      },
+      {
+        "id": "PHB/Race/Human@0#1",
+        "kind": "choice",
+        "category": "languages",
+        "count": 1,
+        "pool": {
+          "kind": "any"
+        }
+      }
+    ],
     "name": "Human",
     "source": "PHB",
     "size": [
@@ -9665,6 +10630,25 @@
         "description": ""
       },
       {
+        "grants": [
+          {
+            "id": "PSD/Subrace/Human (Keldon)@0#0",
+            "kind": "fixed",
+            "category": "languages",
+            "names": [
+              "Common"
+            ]
+          },
+          {
+            "id": "PSD/Subrace/Human (Keldon)@0#1",
+            "kind": "choice",
+            "category": "languages",
+            "count": 1,
+            "pool": {
+              "kind": "any"
+            }
+          }
+        ],
         "name": "Keldon",
         "isVariant": false,
         "source": "PSD",
@@ -9869,6 +10853,36 @@
         ]
       },
       {
+        "grants": [
+          {
+            "id": "ERLW/Subrace/Human (Mark of Making)@0#0",
+            "kind": "choice",
+            "category": "tools",
+            "count": 1,
+            "pool": {
+              "kind": "names",
+              "names": [
+                "alchemist's supplies",
+                "brewer's supplies",
+                "calligrapher's supplies",
+                "carpenter's tools",
+                "cartographer's tools",
+                "cobbler's tools",
+                "cook's utensils",
+                "glassblower's tools",
+                "jeweler's tools",
+                "leatherworker's tools",
+                "mason's tools",
+                "painter's supplies",
+                "potter's tools",
+                "smith's tools",
+                "tinker's tools",
+                "weaver's tools",
+                "woodcarver's tools"
+              ]
+            }
+          }
+        ],
         "name": "Mark of Making",
         "isVariant": false,
         "source": "ERLW",
@@ -10194,6 +11208,17 @@
         ]
       },
       {
+        "grants": [
+          {
+            "id": "ERLW/Subrace/Human (Mark of Finding)@0#0",
+            "kind": "fixed",
+            "category": "languages",
+            "names": [
+              "Common",
+              "Goblin"
+            ]
+          }
+        ],
         "name": "Mark of Finding",
         "isVariant": true,
         "source": "ERLW",
@@ -10331,6 +11356,25 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "PSI/Race/Human (Innistrad)@0#0",
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common"
+        ]
+      },
+      {
+        "id": "PSI/Race/Human (Innistrad)@0#1",
+        "kind": "choice",
+        "category": "languages",
+        "count": 1,
+        "pool": {
+          "kind": "any"
+        }
+      }
+    ],
     "name": "Human (Innistrad)",
     "source": "PSI",
     "size": [
@@ -10552,6 +11596,43 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "PSX/Race/Human (Ixalan)@0#0",
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common"
+        ]
+      },
+      {
+        "id": "PSX/Race/Human (Ixalan)@0#1",
+        "kind": "choice",
+        "category": "languages",
+        "count": 1,
+        "pool": {
+          "kind": "any"
+        }
+      },
+      {
+        "id": "PSX/Race/Human (Ixalan)@0#2",
+        "kind": "choice",
+        "category": "languages",
+        "count": 1,
+        "pool": {
+          "kind": "any"
+        }
+      },
+      {
+        "id": "PSX/Race/Human (Ixalan)@0#3",
+        "kind": "choice",
+        "category": "languages",
+        "count": 1,
+        "pool": {
+          "kind": "any"
+        }
+      }
+    ],
     "name": "Human (Ixalan)",
     "source": "PSX",
     "size": [
@@ -10641,6 +11722,25 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "PSK/Race/Human (Kaladesh)@0#0",
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common"
+        ]
+      },
+      {
+        "id": "PSK/Race/Human (Kaladesh)@0#1",
+        "kind": "choice",
+        "category": "languages",
+        "count": 1,
+        "pool": {
+          "kind": "any"
+        }
+      }
+    ],
     "name": "Human (Kaladesh)",
     "source": "PSK",
     "size": [
@@ -10727,6 +11827,25 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "PSZ/Race/Human (Zendikar)@0#0",
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common"
+        ]
+      },
+      {
+        "id": "PSZ/Race/Human (Zendikar)@0#1",
+        "kind": "choice",
+        "category": "languages",
+        "count": 1,
+        "pool": {
+          "kind": "any"
+        }
+      }
+    ],
     "name": "Human (Zendikar)",
     "source": "PSZ",
     "size": [
@@ -10791,6 +11910,34 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "ERLW/Race/Kalashtar@0#0",
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common"
+        ]
+      },
+      {
+        "id": "ERLW/Race/Kalashtar@0#1",
+        "kind": "choice",
+        "category": "languages",
+        "count": 1,
+        "pool": {
+          "kind": "any"
+        }
+      },
+      {
+        "id": "ERLW/Race/Kalashtar@0#2",
+        "kind": "choice",
+        "category": "languages",
+        "count": 1,
+        "pool": {
+          "kind": "any"
+        }
+      }
+    ],
     "name": "Kalashtar",
     "source": "ERLW",
     "size": [
@@ -10908,6 +12055,16 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "DSotDQ/Race/Kender@0#0",
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common"
+        ]
+      }
+    ],
     "name": "Kender",
     "source": "DSotDQ",
     "size": [
@@ -10961,6 +12118,17 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "DMG/Race/Kenku@0#0",
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common",
+          "Auran"
+        ]
+      }
+    ],
     "name": "Kenku",
     "source": "DMG",
     "size": [
@@ -11020,6 +12188,16 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "MPMM/Race/Kenku@0#0",
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common"
+        ]
+      }
+    ],
     "name": "Kenku",
     "source": "MPMM",
     "size": [
@@ -11085,6 +12263,17 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "VGM/Race/Kenku@0#0",
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common",
+          "Auran"
+        ]
+      }
+    ],
     "name": "Kenku",
     "source": "VGM",
     "size": [
@@ -11178,6 +12367,25 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "PSA/Race/Khenra@0#0",
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common"
+        ]
+      },
+      {
+        "id": "PSA/Race/Khenra@0#1",
+        "kind": "choice",
+        "category": "languages",
+        "count": 1,
+        "pool": {
+          "kind": "any"
+        }
+      }
+    ],
     "name": "Khenra",
     "source": "PSA",
     "size": [
@@ -11271,6 +12479,17 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "DMG/Race/Kobold@0#0",
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common",
+          "Draconic"
+        ]
+      }
+    ],
     "name": "Kobold",
     "source": "DMG",
     "size": [
@@ -11342,6 +12561,16 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "MPMM/Race/Kobold@0#0",
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common"
+        ]
+      }
+    ],
     "name": "Kobold",
     "source": "MPMM",
     "size": [
@@ -11433,6 +12662,17 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "VGM/Race/Kobold@0#0",
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common",
+          "Draconic"
+        ]
+      }
+    ],
     "name": "Kobold",
     "source": "VGM",
     "size": [
@@ -11536,6 +12776,25 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "PSZ/Race/Kor@0#0",
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common"
+        ]
+      },
+      {
+        "id": "PSZ/Race/Kor@0#1",
+        "kind": "choice",
+        "category": "languages",
+        "count": 1,
+        "pool": {
+          "kind": "any"
+        }
+      }
+    ],
     "name": "Kor",
     "source": "PSZ",
     "size": [
@@ -11652,6 +12911,16 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "DMG/Race/Kuo-Toa@0#0",
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Undercommon"
+        ]
+      }
+    ],
     "name": "Kuo-Toa",
     "source": "DMG",
     "size": [
@@ -11740,6 +13009,25 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "MOT/Race/Leonin@0#0",
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common"
+        ]
+      },
+      {
+        "id": "MOT/Race/Leonin@0#1",
+        "kind": "choice",
+        "category": "languages",
+        "count": 1,
+        "pool": {
+          "kind": "any"
+        }
+      }
+    ],
     "name": "Leonin",
     "source": "MOT",
     "size": [
@@ -11855,6 +13143,16 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "DMG/Race/Lizardfolk@0#0",
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Draconic"
+        ]
+      }
+    ],
     "name": "Lizardfolk",
     "source": "DMG",
     "size": [
@@ -11915,6 +13213,16 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "MPMM/Race/Lizardfolk@0#0",
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common"
+        ]
+      }
+    ],
     "name": "Lizardfolk",
     "source": "MPMM",
     "size": [
@@ -12001,6 +13309,17 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "VGM/Race/Lizardfolk@0#0",
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common",
+          "Draconic"
+        ]
+      }
+    ],
     "name": "Lizardfolk",
     "source": "VGM",
     "size": [
@@ -12139,6 +13458,17 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "LR/Race/Locathah@0#0",
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Aquan",
+          "Common"
+        ]
+      }
+    ],
     "name": "Locathah",
     "source": "LR",
     "size": [
@@ -12255,6 +13585,25 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "GGR/Race/Loxodon@0#0",
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common"
+        ]
+      },
+      {
+        "id": "GGR/Race/Loxodon@0#1",
+        "kind": "choice",
+        "category": "languages",
+        "count": 1,
+        "pool": {
+          "kind": "any"
+        }
+      }
+    ],
     "name": "Loxodon",
     "source": "GGR",
     "size": [
@@ -12389,6 +13738,17 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "DMG/Race/Merfolk@0#0",
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common",
+          "Aquan"
+        ]
+      }
+    ],
     "name": "Merfolk",
     "source": "DMG",
     "size": [
@@ -12434,6 +13794,34 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "PSZ/Race/Merfolk@0#0",
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common"
+        ]
+      },
+      {
+        "id": "PSZ/Race/Merfolk@0#1",
+        "kind": "choice",
+        "category": "languages",
+        "count": 1,
+        "pool": {
+          "kind": "any"
+        }
+      },
+      {
+        "id": "PSZ/Race/Merfolk@0#2",
+        "kind": "choice",
+        "category": "languages",
+        "count": 1,
+        "pool": {
+          "kind": "any"
+        }
+      }
+    ],
     "name": "Merfolk",
     "source": "PSZ",
     "size": [
@@ -12482,6 +13870,34 @@
     ],
     "subraces": [
       {
+        "grants": [
+          {
+            "id": "PSX/Subrace/Merfolk (Ixalan; Blue)@0#0",
+            "kind": "fixed",
+            "category": "languages",
+            "names": [
+              "Common"
+            ]
+          },
+          {
+            "id": "PSX/Subrace/Merfolk (Ixalan; Blue)@0#1",
+            "kind": "choice",
+            "category": "languages",
+            "count": 1,
+            "pool": {
+              "kind": "any"
+            }
+          },
+          {
+            "id": "PSX/Subrace/Merfolk (Ixalan; Blue)@0#2",
+            "kind": "choice",
+            "category": "languages",
+            "count": 1,
+            "pool": {
+              "kind": "any"
+            }
+          }
+        ],
         "name": "Ixalan; Blue",
         "isVariant": false,
         "source": "PSX",
@@ -12536,6 +13952,34 @@
         ]
       },
       {
+        "grants": [
+          {
+            "id": "PSX/Subrace/Merfolk (Ixalan; Green)@0#0",
+            "kind": "fixed",
+            "category": "languages",
+            "names": [
+              "Common"
+            ]
+          },
+          {
+            "id": "PSX/Subrace/Merfolk (Ixalan; Green)@0#1",
+            "kind": "choice",
+            "category": "languages",
+            "count": 1,
+            "pool": {
+              "kind": "any"
+            }
+          },
+          {
+            "id": "PSX/Subrace/Merfolk (Ixalan; Green)@0#2",
+            "kind": "choice",
+            "category": "languages",
+            "count": 1,
+            "pool": {
+              "kind": "any"
+            }
+          }
+        ],
         "name": "Ixalan; Green",
         "isVariant": false,
         "source": "PSX",
@@ -12671,6 +14115,16 @@
         ]
       },
       {
+        "grants": [
+          {
+            "id": "PSZ/Subrace/Merfolk (Zendikar; Ula Creed)@0#0",
+            "kind": "fixed",
+            "category": "tools",
+            "names": [
+              "navigator's tools"
+            ]
+          }
+        ],
         "name": "Zendikar; Ula Creed",
         "isVariant": false,
         "source": "PSZ",
@@ -12758,6 +14212,25 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "GGR/Race/Minotaur@0#0",
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common"
+        ]
+      },
+      {
+        "id": "GGR/Race/Minotaur@0#1",
+        "kind": "choice",
+        "category": "languages",
+        "count": 1,
+        "pool": {
+          "kind": "any"
+        }
+      }
+    ],
     "name": "Minotaur",
     "source": "GGR",
     "size": [
@@ -12879,6 +14352,25 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "MOT/Race/Minotaur@0#0",
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common"
+        ]
+      },
+      {
+        "id": "MOT/Race/Minotaur@0#1",
+        "kind": "choice",
+        "category": "languages",
+        "count": 1,
+        "pool": {
+          "kind": "any"
+        }
+      }
+    ],
     "name": "Minotaur",
     "source": "MOT",
     "size": [
@@ -13000,6 +14492,16 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "MPMM/Race/Minotaur@0#0",
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common"
+        ]
+      }
+    ],
     "name": "Minotaur",
     "source": "MPMM",
     "size": [
@@ -13063,6 +14565,25 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "PSA/Race/Minotaur (Amonkhet)@0#0",
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common"
+        ]
+      },
+      {
+        "id": "PSA/Race/Minotaur (Amonkhet)@0#1",
+        "kind": "choice",
+        "category": "languages",
+        "count": 1,
+        "pool": {
+          "kind": "any"
+        }
+      }
+    ],
     "name": "Minotaur (Amonkhet)",
     "source": "PSA",
     "size": [
@@ -13178,6 +14699,33 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "PSA/Race/Naga@0#0",
+        "kind": "fixed",
+        "category": "tools",
+        "names": [
+          "poisoner's kit"
+        ]
+      },
+      {
+        "id": "PSA/Race/Naga@0#1",
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common"
+        ]
+      },
+      {
+        "id": "PSA/Race/Naga@0#2",
+        "kind": "choice",
+        "category": "languages",
+        "count": 1,
+        "pool": {
+          "kind": "any"
+        }
+      }
+    ],
     "name": "Naga",
     "source": "PSA",
     "size": [
@@ -13295,6 +14843,17 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "DMG/Race/Orc@0#0",
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common",
+          "Orc"
+        ]
+      }
+    ],
     "name": "Orc",
     "source": "DMG",
     "size": [
@@ -13355,6 +14914,17 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "EGW/Race/Orc@0#0",
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common",
+          "Orc"
+        ]
+      }
+    ],
     "name": "Orc",
     "source": "EGW",
     "size": [
@@ -13470,6 +15040,17 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "ERLW/Race/Orc@0#0",
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common",
+          "Orc"
+        ]
+      }
+    ],
     "name": "Orc",
     "source": "ERLW",
     "size": [
@@ -13585,6 +15166,16 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "MPMM/Race/Orc@0#0",
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common"
+        ]
+      }
+    ],
     "name": "Orc",
     "source": "MPMM",
     "size": [
@@ -13649,6 +15240,17 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "VGM/Race/Orc@0#0",
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common",
+          "Orc"
+        ]
+      }
+    ],
     "name": "Orc",
     "source": "VGM",
     "size": [
@@ -13753,6 +15355,17 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "PSX/Race/Orc (Ixalan)@0#0",
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common",
+          "Orc"
+        ]
+      }
+    ],
     "name": "Orc (Ixalan)",
     "source": "PSX",
     "size": [
@@ -13868,6 +15481,16 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "SCC/Race/Owlin@0#0",
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common"
+        ]
+      }
+    ],
     "name": "Owlin",
     "source": "SCC",
     "size": [
@@ -13933,6 +15556,16 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "AAG/Race/Plasmoid@0#0",
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common"
+        ]
+      }
+    ],
     "name": "Plasmoid",
     "source": "AAG",
     "size": [
@@ -14031,6 +15664,16 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "VRGR/Race/Reborn@0#0",
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common"
+        ]
+      }
+    ],
     "name": "Reborn",
     "source": "VRGR",
     "size": [
@@ -14105,6 +15748,38 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "MOT/Race/Satyr@0#0",
+        "kind": "choice",
+        "category": "tools",
+        "count": 1,
+        "pool": {
+          "kind": "names",
+          "names": [
+            "bagpipes",
+            "drum",
+            "dulcimer",
+            "flute",
+            "horn",
+            "lute",
+            "lyre",
+            "pan flute",
+            "shawm",
+            "viol"
+          ]
+        }
+      },
+      {
+        "id": "MOT/Race/Satyr@0#1",
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common",
+          "Sylvan"
+        ]
+      }
+    ],
     "name": "Satyr",
     "source": "MOT",
     "size": [
@@ -14231,6 +15906,37 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "MPMM/Race/Satyr@0#0",
+        "kind": "choice",
+        "category": "tools",
+        "count": 1,
+        "pool": {
+          "kind": "names",
+          "names": [
+            "bagpipes",
+            "drum",
+            "dulcimer",
+            "flute",
+            "horn",
+            "lute",
+            "lyre",
+            "pan flute",
+            "shawm",
+            "viol"
+          ]
+        }
+      },
+      {
+        "id": "MPMM/Race/Satyr@0#1",
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common"
+        ]
+      }
+    ],
     "name": "Satyr",
     "source": "MPMM",
     "size": [
@@ -14305,6 +16011,16 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "MPMM/Race/Sea Elf@0#0",
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common"
+        ]
+      }
+    ],
     "name": "Sea Elf",
     "source": "MPMM",
     "size": [
@@ -14414,6 +16130,16 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "MPMM/Race/Shadar-Kai@0#0",
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common"
+        ]
+      }
+    ],
     "name": "Shadar-Kai",
     "source": "MPMM",
     "size": [
@@ -14512,6 +16238,16 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "ERLW/Race/Shifter@0#0",
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common"
+        ]
+      }
+    ],
     "name": "Shifter",
     "source": "ERLW",
     "size": [
@@ -14776,6 +16512,16 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "MPMM/Race/Shifter@0#0",
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common"
+        ]
+      }
+    ],
     "name": "Shifter",
     "source": "MPMM",
     "size": [
@@ -14877,6 +16623,25 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "GGR/Race/Simic Hybrid@0#0",
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common"
+        ]
+      },
+      {
+        "id": "GGR/Race/Simic Hybrid@0#1",
+        "kind": "choice",
+        "category": "languages",
+        "count": 1,
+        "pool": {
+          "kind": "any"
+        }
+      }
+    ],
     "name": "Simic Hybrid",
     "source": "GGR",
     "size": [
@@ -15031,6 +16796,25 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "PSX/Race/Siren@0#0",
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common"
+        ]
+      },
+      {
+        "id": "PSX/Race/Siren@0#1",
+        "kind": "choice",
+        "category": "languages",
+        "count": 1,
+        "pool": {
+          "kind": "any"
+        }
+      }
+    ],
     "name": "Siren",
     "source": "PSX",
     "size": [
@@ -15061,7 +16845,7 @@
       },
       {
         "name": "Flight",
-        "description": "You have a flying speed of 30 feet. You can't use your flying speed while you wear medium or heavy armor. (If your campaign uses the variant rule for PHB, you can't use your flying speed if you are encumbered.)"
+        "description": "You have a flying speed of 30 feet. You can't use your flying speed while you wear medium or heavy armor. (If your campaign uses the variant rule for encumbrance, you can't use your flying speed if you are encumbered.)"
       },
       {
         "name": "Languages",
@@ -15073,7 +16857,7 @@
       "Other"
     ],
     "subraces": [],
-    "description": "### Alignment\n\n\nMost sirens lean toward chaotic alignment, cherishing the freedom and independence that comes from joining a pirate crew.\n\n### Size\n\n\nSirens stand about 5 to 6 feet tall, but their bodies are slender and their bones partially hollow to facilitate their flight. Your size is Medium.\n\n### Siren's Song\n\n\nYou know the friends cantrip and can cast it without material components.\n\n### Flight\n\n\nYou have a flying speed of 30 feet. You can't use your flying speed while you wear medium or heavy armor. (If your campaign uses the variant rule for PHB, you can't use your flying speed if you are encumbered.)\n\n### Languages\n\n\nYou can speak, read, and write Common (if it exists in your campaign) and Siren.",
+    "description": "### Alignment\n\n\nMost sirens lean toward chaotic alignment, cherishing the freedom and independence that comes from joining a pirate crew.\n\n### Size\n\n\nSirens stand about 5 to 6 feet tall, but their bodies are slender and their bones partially hollow to facilitate their flight. Your size is Medium.\n\n### Siren's Song\n\n\nYou know the friends cantrip and can cast it without material components.\n\n### Flight\n\n\nYou have a flying speed of 30 feet. You can't use your flying speed while you wear medium or heavy armor. (If your campaign uses the variant rule for encumbrance, you can't use your flying speed if you are encumbered.)\n\n### Languages\n\n\nYou can speak, read, and write Common (if it exists in your campaign) and Siren.",
     "rawEntries": [
       {
         "type": "entries",
@@ -15113,6 +16897,16 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "DMG/Race/Skeleton@0#0",
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common"
+        ]
+      }
+    ],
     "name": "Skeleton",
     "source": "DMG",
     "size": [
@@ -15193,6 +16987,16 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "MPMM/Race/Tabaxi@0#0",
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common"
+        ]
+      }
+    ],
     "name": "Tabaxi",
     "source": "MPMM",
     "size": [
@@ -15280,6 +17084,25 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "VGM/Race/Tabaxi@0#0",
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common"
+        ]
+      },
+      {
+        "id": "VGM/Race/Tabaxi@0#1",
+        "kind": "choice",
+        "category": "languages",
+        "count": 1,
+        "pool": {
+          "kind": "any"
+        }
+      }
+    ],
     "name": "Tabaxi",
     "source": "VGM",
     "size": [
@@ -15385,6 +17208,16 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "AAG/Race/Thri-kreen@0#0",
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common"
+        ]
+      }
+    ],
     "name": "Thri-kreen",
     "source": "AAG",
     "size": [
@@ -15483,6 +17316,17 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "PHB/Race/Tiefling@0#0",
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common",
+          "Infernal"
+        ]
+      }
+    ],
     "name": "Tiefling",
     "source": "PHB",
     "size": [
@@ -15995,6 +17839,16 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "MPMM/Race/Tortle@0#0",
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common"
+        ]
+      }
+    ],
     "name": "Tortle",
     "source": "MPMM",
     "size": [
@@ -16081,6 +17935,17 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "TTP/Race/Tortle@0#0",
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Aquan",
+          "Common"
+        ]
+      }
+    ],
     "name": "Tortle",
     "source": "TTP",
     "size": [
@@ -16213,6 +18078,17 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "MOT/Race/Triton@0#0",
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common",
+          "Primordial"
+        ]
+      }
+    ],
     "name": "Triton",
     "source": "MOT",
     "size": [
@@ -16352,6 +18228,16 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "MPMM/Race/Triton@0#0",
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common"
+        ]
+      }
+    ],
     "name": "Triton",
     "source": "MPMM",
     "size": [
@@ -16439,6 +18325,17 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "VGM/Race/Triton@0#0",
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common",
+          "Primordial"
+        ]
+      }
+    ],
     "name": "Triton",
     "source": "VGM",
     "size": [
@@ -16567,6 +18464,17 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "DMG/Race/Troglodyte@0#0",
+        "kind": "choice",
+        "category": "languages",
+        "count": 1,
+        "pool": {
+          "kind": "any"
+        }
+      }
+    ],
     "name": "Troglodyte",
     "source": "DMG",
     "size": [
@@ -16661,6 +18569,25 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "PSZ/Race/Vampire@0#0",
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common"
+        ]
+      },
+      {
+        "id": "PSZ/Race/Vampire@0#1",
+        "kind": "choice",
+        "category": "languages",
+        "count": 1,
+        "pool": {
+          "kind": "any"
+        }
+      }
+    ],
     "name": "Vampire",
     "source": "PSZ",
     "size": [
@@ -16879,6 +18806,43 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "GGR/Race/Vedalken@0#0",
+        "kind": "choice",
+        "category": "tools",
+        "count": 1,
+        "pool": {
+          "kind": "any"
+        }
+      },
+      {
+        "id": "GGR/Race/Vedalken@0#1",
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common"
+        ]
+      },
+      {
+        "id": "GGR/Race/Vedalken@0#2",
+        "kind": "choice",
+        "category": "languages",
+        "count": 1,
+        "pool": {
+          "kind": "any"
+        }
+      },
+      {
+        "id": "GGR/Race/Vedalken@0#3",
+        "kind": "choice",
+        "category": "languages",
+        "count": 1,
+        "pool": {
+          "kind": "any"
+        }
+      }
+    ],
     "name": "Vedalken",
     "source": "GGR",
     "size": [
@@ -16985,6 +18949,25 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "PSK/Race/Vedalken@0#0",
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common"
+        ]
+      },
+      {
+        "id": "PSK/Race/Vedalken@0#1",
+        "kind": "choice",
+        "category": "languages",
+        "count": 1,
+        "pool": {
+          "kind": "any"
+        }
+      }
+    ],
     "name": "Vedalken",
     "source": "PSK",
     "size": [
@@ -17078,6 +19061,26 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "AI/Race/Verdan@0#0",
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common",
+          "Goblin"
+        ]
+      },
+      {
+        "id": "AI/Race/Verdan@0#1",
+        "kind": "choice",
+        "category": "languages",
+        "count": 1,
+        "pool": {
+          "kind": "any"
+        }
+      }
+    ],
     "name": "Verdan",
     "source": "AI",
     "size": [
@@ -17194,6 +19197,34 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "ERLW/Race/Warforged@0#0",
+        "kind": "choice",
+        "category": "tools",
+        "count": 1,
+        "pool": {
+          "kind": "any"
+        }
+      },
+      {
+        "id": "ERLW/Race/Warforged@0#1",
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common"
+        ]
+      },
+      {
+        "id": "ERLW/Race/Warforged@0#2",
+        "kind": "choice",
+        "category": "languages",
+        "count": 1,
+        "pool": {
+          "kind": "any"
+        }
+      }
+    ],
     "name": "Warforged",
     "source": "ERLW",
     "size": [
@@ -17325,6 +19356,16 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "MPMM/Race/Yuan-Ti@0#0",
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common"
+        ]
+      }
+    ],
     "name": "Yuan-Ti",
     "source": "MPMM",
     "size": [
@@ -17401,6 +19442,18 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "VGM/Race/Yuan-ti Pureblood@0#0",
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common",
+          "Abyssal",
+          "Draconic"
+        ]
+      }
+    ],
     "name": "Yuan-ti Pureblood",
     "source": "VGM",
     "size": [
@@ -17506,6 +19559,16 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "DMG/Race/Zombie@0#0",
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common"
+        ]
+      }
+    ],
     "name": "Zombie",
     "source": "DMG",
     "size": [
