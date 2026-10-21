@@ -18,7 +18,8 @@ import {
   STARTING_GOLD_BY_CLASS,
 } from "../../rules/builderTransitions";
 import { reconcile } from "../../rules/characterReconciler";
-import { ancestryRuleChoices, offeredRuleChoices } from "../../rules/ruleChoices";
+import { ancestryRuleChoices } from "../../rules/ruleChoices";
+import { proficiencyChoiceOffers } from "../../rules/proficiencyChoiceOffers";
 import { getPendingLevelChoices } from "../../rules/leveling";
 import { normalizeSkillName } from "../../rules/skills";
 import { getAvailableOptionalFeatures } from "../../rules/optionalFeatures";
@@ -329,43 +330,15 @@ export const BuilderTab: React.FC<BuilderTabProps> = ({
     );
   };
 
-  const {
-    raceLanguages: raceLanguageGrant,
-    raceTools: raceToolGrant,
-    backgroundLanguages: bgLanguageGrant,
-    backgroundTools: bgToolGrant,
-    classTools,
-  } = sourceGrants(character, catalogs);
-  const ruleChoices = offeredRuleChoices(character, { raceCatalog: allRaces, level: totalLevel, activeBooks, origins: ["race"] });
+  const { race: raceGranted, background: backgroundGranted, classTools } = sourceGrants(character, catalogs);
+  const proficiencyOffers = proficiencyChoiceOffers(character, { activeBooks });
+  const raceProficiencyChoices = proficiencyOffers.filter((choice) => choice.origin === "race");
+  const backgroundProficiencyChoices = proficiencyOffers.filter((choice) => choice.origin === "background");
 
   // The Proficiency Sheet is the one source for the language and tool lists the Builder shows.
   const sheet = proficiencySheet(character, catalogs);
   const resolvedLanguages = sheet.languages.map((l) => l.name);
   const resolvedTools = sheet.tools.map((t) => t.name);
-
-  const toggleRaceLanguage = (lang: string) => {
-    const cur = character.chosenLanguages?.race || [];
-    const next = cur.includes(lang) ? cur.filter((x) => x !== lang) : [...cur, lang];
-    onUpdate({ chosenLanguages: { ...character.chosenLanguages, race: next } });
-  };
-
-  const toggleRaceTool = (tool: string) => {
-    const cur = character.chosenTools?.race || [];
-    const next = cur.includes(tool) ? cur.filter((x) => x !== tool) : [...cur, tool];
-    onUpdate({ chosenTools: { ...character.chosenTools, race: next } });
-  };
-
-  const toggleBgLanguage = (lang: string) => {
-    const cur = character.chosenLanguages?.background || [];
-    const next = cur.includes(lang) ? cur.filter((x) => x !== lang) : [...cur, lang];
-    onUpdate({ chosenLanguages: { ...character.chosenLanguages, background: next } });
-  };
-
-  const toggleBgTool = (tool: string) => {
-    const cur = character.chosenTools?.background || [];
-    const next = cur.includes(tool) ? cur.filter((x) => x !== tool) : [...cur, tool];
-    onUpdate({ chosenTools: { ...character.chosenTools, background: next } });
-  };
 
   const sectionTabs = [
     { key: "abilities" as const, label: "Abilities", icon: "body-outline" as const },
@@ -432,11 +405,8 @@ export const BuilderTab: React.FC<BuilderTabProps> = ({
           skillChoices={skillChoices}
           autoGranted={raceAutoGranted}
           toggleSkill={toggleSkill}
-          raceLanguageGrant={raceLanguageGrant}
-          toggleRaceLanguage={toggleRaceLanguage}
-          raceToolGrant={raceToolGrant}
-          toggleRaceTool={toggleRaceTool}
-          ruleChoices={ruleChoices}
+          raceGranted={raceGranted}
+          proficiencyChoices={raceProficiencyChoices}
           onViewDetail={onViewDetail}
           theme={theme}
         />
@@ -448,11 +418,8 @@ export const BuilderTab: React.FC<BuilderTabProps> = ({
           onUpdate={onUpdate}
           allBackgrounds={allBackgrounds}
           catalogs={catalogs}
-          bgLanguageGrant={bgLanguageGrant}
-          toggleBgLanguage={toggleBgLanguage}
-          bgToolGrant={bgToolGrant}
-          toggleBgTool={toggleBgTool}
-          raceLanguageGrant={raceLanguageGrant}
+          bgGranted={backgroundGranted}
+          proficiencyChoices={backgroundProficiencyChoices}
           resolvedLanguages={resolvedLanguages}
           resolvedTools={resolvedTools}
           onViewDetail={onViewDetail}

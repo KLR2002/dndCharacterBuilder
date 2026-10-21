@@ -15,7 +15,7 @@ export function ruleChoiceId({ source, race, subrace, trait, index }: RuleChoice
 }
 
 /** The source a Rule Choice comes from. Persisted on each recorded entry. */
-export type RuleChoiceOrigin = "race" | "class" | "subclass" | "feat";
+export type RuleChoiceOrigin = "race" | "background" | "class" | "subclass" | "feat";
 
 /**
  * Who a class or subclass Rule Choice belongs to: its class, and the subclass when the choice is

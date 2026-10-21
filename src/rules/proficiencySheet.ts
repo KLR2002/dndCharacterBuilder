@@ -9,16 +9,6 @@ import { classBaseProficiencies, classBaseSavingThrows } from "./proficiencySour
 import type { FeatureInstance, ResolvedAncestry } from "./types.ts";
 import { ALL_LANGUAGE_NAMES, ALL_TOOLS, normalizeToolName } from "./proficienciesAndLanguages.ts";
 import {
-  getBackgroundLanguageGrant,
-  getBackgroundToolGrant,
-  getRaceLanguageGrant,
-  getRaceToolGrant,
-  resolveCharacterTools,
-  structuredLanguages,
-  type LanguageGrant,
-  type ToolGrant,
-} from "./proficiencySources/toolsAndLanguages.ts";
-import {
   normalizeLanguageName,
   normalizeSavingThrowName,
   STARTING_PROFICIENCIES,
@@ -33,7 +23,6 @@ import {
 } from "./proficiencySources/skillGrants.ts";
 import { resolveCharacterAncestry } from "./characterAncestry.ts";
 
-export type { ToolGrant } from "./proficiencySources/toolsAndLanguages.ts";
 export { classSkillChoice } from "./proficiencySources/skillGrants.ts";
 
 /** The Knowledge Domain's four skills. A Knowledge Cleric's Expertise on one of them has always made it proficient. */
@@ -102,6 +91,15 @@ function addedSheetEntries(
     entries.push({ name, ruleGranted: false });
   }
   return entries;
+}
+
+/** Every character speaks Common. A character with no race, or whose race and subrace name no fixed language, holds it alone. */
+const BASE_LANGUAGE = "Common";
+
+/** The tool and language picks saved in the race and background buckets, before they were Proficiency Choices. */
+function legacySourcePicks(character: Character, category: "tools" | "languages"): string[] {
+  const buckets = category === "tools" ? character.chosenTools : character.chosenLanguages;
+  return [...(buckets?.race ?? []), ...(buckets?.background ?? [])];
 }
 
 /** The fixed names of one category across the features the character has now. */
@@ -235,35 +233,37 @@ export function ruleGrantedSkills(character: Character, catalogs?: CharacterCata
   return legacySkillNames(character, ancestry, listings, featuresOf(character, listings));
 }
 
+/** The fixed languages and tools a race, its subrace or a background grants, as the Builder lists them. */
+export interface SourceFixedGrants {
+  languages: string[];
+  tools: string[];
+}
+
 /**
- * What the Builder's race, background and class cards offer: the fixed grants and the pick counts of
- * each source. The Builder reads these through the sheet, as it reads every proficiency.
+ * What the Builder's race, background and class cards show as granted: the fixed names of each source. Their
+ * Proficiency Choices are offered through `proficiencyChoiceOffers`.
  */
 export interface SourceGrants {
-  raceLanguages: LanguageGrant;
-  raceTools: ToolGrant;
-  backgroundLanguages: LanguageGrant;
-  backgroundTools: ToolGrant;
+  race: SourceFixedGrants;
+  background: SourceFixedGrants;
   /** The fixed tools the first class starts with. Its tool choice is a Proficiency Choice, offered on its own. */
   classTools: string[];
 }
 
 export function sourceGrants(character: Character, catalogs: CharacterCatalogs): SourceGrants {
   const listings = catalogListings(catalogs);
-  const races = listings.races();
-  const backgrounds = listings.backgrounds();
+  const features = featuresOf(character, listings);
+  const fixedOf = (origins: FeatureInstance["origin"][]): SourceFixedGrants => {
+    const sourced = features.filter((feature) => origins.includes(feature.origin));
+    return {
+      languages: fixedFeatureNames(sourced, "languages").map(normalizeLanguageName),
+      tools: fixedFeatureNames(sourced, "tools").map(normalizeToolName),
+    };
+  };
   const starting = startingFeatureOf(character, listings.classes());
   return {
-    raceLanguages: getRaceLanguageGrant(
-      character.race?.name,
-      character.race?.subraceName,
-      races,
-      character.race?.source,
-      character.race?.subraceSource
-    ),
-    raceTools: getRaceToolGrant(character.race?.name, character.race?.subraceName, races),
-    backgroundLanguages: getBackgroundLanguageGrant(character.background?.name, backgrounds),
-    backgroundTools: getBackgroundToolGrant(character.background?.name, backgrounds),
+    race: fixedOf(["Race", "Subrace"]),
+    background: fixedOf(["Background"]),
     classTools: starting ? fixedFeatureNames([starting], "tools").map(normalizeToolName) : [],
   };
 }
@@ -337,13 +337,17 @@ export function proficiencySheet(character: Character, catalogs: CharacterCatalo
 
   const items = listings.items();
   const tools = [
-    ...resolveCharacterTools(character, catalogs),
     ...fixedFeatureNames(features, "tools").map(normalizeToolName),
+    ...legacySourcePicks(character, "tools").map(normalizeToolName),
+    ...recordedMulticlass.flatMap((mp) => mp.tools ?? []).map(normalizeToolName),
     ...choicePickNames(features, character, "tools", items),
   ];
   const languages = [
-    ...structuredLanguages(character, catalogs),
+    ...(character.race && fixedFeatureNames(features.filter((f) => f.origin === "Race" || f.origin === "Subrace"), "languages").length > 0
+      ? []
+      : [BASE_LANGUAGE]),
     ...fixedFeatureNames(features, "languages").map(normalizeLanguageName),
+    ...legacySourcePicks(character, "languages"),
     ...choicePickNames(features, character, "languages", items),
   ];
   // The first class's saves are the base, from the Catalog class it holds. A later class adds none of its own.

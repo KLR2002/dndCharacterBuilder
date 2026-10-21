@@ -14,7 +14,7 @@ import {
   warlockOwnerOf,
 } from "./choices/warlockChoices.ts";
 import { tableOwnerOf } from "./subclassChoiceTable.ts";
-import { moveLegacyClassToolPicks, pruneInvalidProficiencyPicks } from "./proficiencyPicks.ts";
+import { moveLegacyClassToolPicks, moveLegacySourcePicks, pruneInvalidProficiencyPicks } from "./proficiencyPicks.ts";
 
 /**
  * The single seam every state-changing builder transition ends in. Idempotent: reconciling a
@@ -31,7 +31,8 @@ import { moveLegacyClassToolPicks, pruneInvalidProficiencyPicks } from "./profic
  * Fighting styles run before maneuvers because Superior Technique is gated on a fighting style.
  * The Giant Power cantrip sync reads only its own choice and the Barbarian's known spells, so
  * its position is free; it sits with the other known-spell syncs.
- * The class tool bucket is moved into its Proficiency Choice's pick first, so the pick check sees it.
+ * The class tool bucket is moved into its Proficiency Choice's pick first, so the pick check sees it, and the
+ * race and background tool and language buckets follow it.
  * Proficiency picks are released before Expertise, so Expertise is pruned against the released state.
  *
  * `options.activeBooks` scopes only the Expertise pass: an Expertise mark on a skill that no active book
@@ -53,6 +54,7 @@ export function reconcile(
   updated = pruneInvalidMysticArcanum(updated);
   updated = pruneInvalidInfusions(updated, compendium);
   updated = moveLegacyClassToolPicks(updated, compendium);
+  updated = moveLegacySourcePicks(updated, compendium);
   updated = pruneInvalidProficiencyPicks(updated, compendium);
   updated = pruneInvalidExpertise(updated, { compendium, activeBooks: options.activeBooks });
 

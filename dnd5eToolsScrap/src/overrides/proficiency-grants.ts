@@ -11,7 +11,45 @@ import type { GrantOverride } from "../parser/proficiency-grants.ts";
  * A TypeScript module rather than a JSON file, because the in-app scraper
  * bundles these modules and cannot read files at runtime.
  */
-export const PROFICIENCY_GRANT_OVERRIDES: { classes: GrantOverride[]; feats: GrantOverride[] } = {
+export const PROFICIENCY_GRANT_OVERRIDES: {
+  classes: GrantOverride[];
+  feats: GrantOverride[];
+  races: GrantOverride[];
+  subraces: GrantOverride[];
+} = {
+  subraces: [
+    // Each of these gives one language of choice by its trait text, which the subrace's own entries do not
+    // carry as a structured entry.
+    { owner: "Subrace", feature: "Gith (Githyanki)", level: 0, grants: [{ kind: "choice", category: "languages", count: 1, pool: { kind: "any" } }] },
+    {
+      owner: "Subrace",
+      feature: "Elf (Sea)",
+      level: 0,
+      grants: [
+        { kind: "fixed", category: "languages", names: ["Common", "Elvish", "Aquan"] },
+        { kind: "choice", category: "languages", count: 1, pool: { kind: "any" } },
+      ],
+    },
+    { owner: "Subrace", feature: "Elf (Kaladesh) (Vahadar)", level: 0, grants: [{ kind: "choice", category: "languages", count: 1, pool: { kind: "any" } }] },
+    { owner: "Subrace", feature: "Human (Amonkhet)", level: 0, grants: [{ kind: "choice", category: "languages", count: 1, pool: { kind: "any" } }] },
+    // These subraces' language entries restate their race's choice, so the subrace grants nothing beyond the race.
+    { owner: "Subrace", feature: "Merfolk (Ixalan; Blue)", level: 0, grants: [] },
+    { owner: "Subrace", feature: "Merfolk (Ixalan; Green)", level: 0, grants: [] },
+    { owner: "Subrace", feature: "Human (Keldon)", level: 0, grants: [] },
+  ],
+  races: [
+    // Its tool and skill come after each long rest, not as standing proficiencies, so the race holds
+    // no tool grant. The language every character speaks, and the one language of choice, are kept.
+    {
+      owner: "Race",
+      feature: "Githyanki",
+      level: 0,
+      grants: [
+        { kind: "fixed", category: "languages", names: ["Common"] },
+        { kind: "choice", category: "languages", count: 1, pool: { kind: "any" } },
+      ],
+    },
+  ],
   classes: [
     { owner: "Artificer/Alchemist", feature: "Tool Proficiency", level: 3, grants: [{ kind: "fixed", category: "tools", names: ["alchemist's supplies"] }] },
     {

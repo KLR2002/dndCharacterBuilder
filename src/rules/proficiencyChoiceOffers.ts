@@ -18,7 +18,7 @@ import {
 
 /**
  * The Proficiency Choices a character is offered: the tool and language choice grants on
- * the class, subclass and feat features the character holds. Each is offered as a Rule Choice with
+ * the race, subrace, background, class, subclass and feat features the character holds. Each is offered as a Rule Choice with
  * `pick: "proficiency"`, keyed by its grant id. The options are the pool less what the character holds
  * from any other source; the character's own picks always stay selectable.
  */
@@ -31,6 +31,9 @@ export interface ProficiencyChoiceQuery {
 }
 
 const ORIGIN_OF: Partial<Record<FeatureInstance["origin"], RuleChoiceOrigin>> = {
+  Race: "race",
+  Subrace: "race",
+  Background: "background",
   Class: "class",
   Subclass: "subclass",
   Feat: "feat",

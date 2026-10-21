@@ -5,6 +5,7 @@ import { getReplacedBaseFeatures } from "./optionalFeatures.ts";
 import { ruleChoiceId } from "./choices/types.ts";
 import { applyRuleChoice, replacedTraitNames } from "./raceRuleChoices.ts";
 import { raisedAbilityGrants } from "./proficiencyPools.ts";
+import { recordGrantSources } from "./recordProficiencyGrants.ts";
 import { optionGrantApplies } from "./optionFeatureGrants.ts";
 import { findClassData } from "./catalogs.ts";
 
@@ -15,6 +16,10 @@ export function grantedFeatures(character: Character, catalog: FeatureCatalog): 
   function add(feature: Omit<FeatureInstance, "id">, owner: string, level = 0) {
     const id = JSON.stringify([feature.origin, feature.source, owner, feature.name, level]);
     if (!out.some(x => x.id === id)) out.push({ ...feature, id });
+  }
+  // The tool and language grants of the race, subrace and background the character holds: each is a feature of its own.
+  for (const record of recordGrantSources(character, catalog)) {
+    add({ name: record.name, description: "", source: record.source, origin: record.origin, grants: record.grants }, record.owner);
   }
   if (character.lineageReplacement) {
     const lineage = catalog.races.find(r => r.name === character.lineageReplacement);

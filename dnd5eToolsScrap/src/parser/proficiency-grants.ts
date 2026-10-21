@@ -62,7 +62,23 @@ const ARTISAN_TOOLS = [
 const MUSICAL_INSTRUMENTS = [
   "bagpipes", "drum", "dulcimer", "flute", "horn", "lute", "lyre", "pan flute", "shawm", "viol",
 ];
-const STANDARD_LANGUAGES = ["Common", "Dwarvish", "Elvish", "Giant", "Gnomish", "Goblin", "Halfling", "Orc"];
+const GAMING_SETS = ["dice set", "dragonchess set", "playing card set", "three-dragon ante set"];
+/** The tool pools a counted or listed category key names: "anyArtisansTool: 1" is one artisan's tool. */
+const COUNTED_TOOL_POOLS: Record<string, string[]> = {
+  anyArtisansTool: ARTISAN_TOOLS,
+  anyMusicalInstrument: MUSICAL_INSTRUMENTS,
+  anyGamingSet: GAMING_SETS,
+};
+/** A list entry that names one of the pools above by its category word, as the choice lists write it. */
+const LISTED_TOOL_POOLS: Record<string, string[]> = {
+  anyartisanstool: ARTISAN_TOOLS,
+  "musical instrument": MUSICAL_INSTRUMENTS,
+  anymusicalinstrument: MUSICAL_INSTRUMENTS,
+  "gaming set": GAMING_SETS,
+  anygamingset: GAMING_SETS,
+};
+/** A vehicle proficiency, such as "vehicles (water)". The app names it "Vehicles (Water)". */
+const VEHICLE = /^vehicles \((?:land|water|air|space)\)$/;
 const WEAPON_NAMES = [
   "club", "dagger", "greatclub", "handaxe", "javelin", "light hammer", "mace", "quarterstaff", "sickle",
   "spear", "light crossbow", "dart", "shortbow", "sling", "battleaxe", "flail", "glaive", "greataxe",
@@ -171,7 +187,7 @@ function classify(text: string, hint?: ProficiencyCategory): Classified | null {
     if (weapon) return { category: "weapons", name: weapon };
   }
   if (!hint || hint === "tools") {
-    if (/(?:tools|kit|supplies|utensils|set)$/.test(t) && t !== "gaming set") {
+    if ((/(?:tools|kit|supplies|utensils|set)$/.test(t) && t !== "gaming set") || VEHICLE.test(t)) {
       return { category: "tools", name: t };
     }
   }
@@ -205,6 +221,37 @@ const NOUN_CATEGORY: Record<string, ProficiencyCategory> = {
   "saving throw": "savingThrows",
   tool: "tools",
 };
+
+/**
+ * A choice from a structured `choose` list. A language list naming "other" is any language, and a
+ * language list of concrete names is that set of names. A tool list may name a whole pool by its
+ * category word ("musical instrument"); each named tool and each pool joins one names pool.
+ */
+function listedChoice(items: string[], category: ProficiencyCategory, count: number): ProficiencyGrantSpec[] | null {
+  if (category === "languages") {
+    if (items.some((item) => item.trim().toLowerCase() === "other")) {
+      return [{ kind: "choice", category, count, pool: { kind: "any" } }];
+    }
+    const names: string[] = [];
+    for (const item of items) {
+      const name = languageName(item.trim().toLowerCase());
+      if (!name) return null;
+      if (!names.includes(name)) names.push(name);
+    }
+    return names.length > 0 ? [{ kind: "choice", category, count, pool: { kind: "names", names } }] : null;
+  }
+  if (category === "tools") {
+    const names: string[] = [];
+    for (const item of items) {
+      const pool = LISTED_TOOL_POOLS[item.trim().toLowerCase()];
+      const picked = pool ?? [classify(item, "tools")?.name].filter((name): name is string => Boolean(name));
+      if (picked.length === 0) return null;
+      for (const name of picked) if (!names.includes(name)) names.push(name);
+    }
+    return names.length > 0 ? [{ kind: "choice", category, count, pool: { kind: "names", names } }] : null;
+  }
+  return namedChoice(items, category, count);
+}
 
 /** The body of a "gain proficiency with/in ..." sentence, after the word "proficiency" and its preposition. */
 function parseProficiencyBody(input: string): ProficiencyGrantSpec[] | null {
@@ -464,11 +511,16 @@ export function resolveFeatureGrants(
  * Grants from a structured proficiency block (race, background, or class
  * starting proficiencies). A block with any entry the mapping cannot state
  * precisely gets no grants at all; the unparsed entries are returned instead.
+ * A reviewed override for the feature replaces the block entirely.
  */
 export function structuredGrants(
   subject: Pick<GrantSubject, "source" | "owner" | "feature" | "level">,
-  raw: StructuredProficiencies
+  raw: StructuredProficiencies,
+  overrides: GrantOverride[] = []
 ): { grants: ProficiencyGrant[]; unparsed: string[] } {
+  const override = overrides.find((candidate) => featureKey(candidate) === featureKey(subject));
+  if (override) return { grants: build(subject, override.grants), unparsed: [] };
+
   const specs: ProficiencyGrantSpec[] = [];
   const unparsed: string[] = [];
   const fixedByCategory = new Map<ProficiencyCategory, Extract<ProficiencyGrantSpec, { kind: "fixed" }>>();
@@ -509,9 +561,13 @@ export function structuredGrants(
           const choose = value as { from?: unknown; count?: unknown };
           const from = Array.isArray(choose.from) ? choose.from.map(String) : [];
           const count = typeof choose.count === "number" ? choose.count : 1;
-          const chosen = from.length > 0 ? namedChoice(from, category, count) : null;
+          const chosen = from.length > 0 ? listedChoice(from, category, count) : null;
           if (chosen) specs.push(...chosen);
           else unparsed.push(`${field}: choose`);
+          continue;
+        }
+        if (key === "other" && category === "languages" && value === true) {
+          specs.push({ kind: "choice", category, count: 1, pool: { kind: "any" } });
           continue;
         }
         if (value === true) {
@@ -521,12 +577,12 @@ export function structuredGrants(
           continue;
         }
         if (typeof value === "number") {
-          if (key === "any" && (category === "skills" || category === "languages")) {
+          if (key === "any" && (category === "skills" || category === "languages" || category === "tools")) {
             specs.push({ kind: "choice", category, count: value, pool: { kind: "any" } });
           } else if (key === "anyStandard" && category === "languages") {
-            specs.push({ kind: "choice", category, count: value, pool: { kind: "names", names: [...STANDARD_LANGUAGES] } });
-          } else if (key === "anyArtisansTool" && category === "tools") {
-            specs.push({ kind: "choice", category, count: value, pool: { kind: "names", names: [...ARTISAN_TOOLS] } });
+            specs.push({ kind: "choice", category, count: value, pool: { kind: "any" } });
+          } else if (category === "tools" && COUNTED_TOOL_POOLS[key]) {
+            specs.push({ kind: "choice", category, count: value, pool: { kind: "names", names: [...COUNTED_TOOL_POOLS[key]] } });
           } else {
             unparsed.push(token);
           }

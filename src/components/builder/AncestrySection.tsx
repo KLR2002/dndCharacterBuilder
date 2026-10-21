@@ -13,8 +13,8 @@ import {
   setRacialCantrip,
   collectFixedBonuses,
 } from "../../rules/ancestryEngine";
-import { ALL_LANGUAGE_NAMES } from "../../rules/proficienciesAndLanguages";
-import type { ToolGrant } from "../../rules/proficiencySheet";
+import type { SourceFixedGrants } from "../../rules/proficiencySheet";
+import { ProficiencyChoicePicker } from "./ProficiencyChoicePicker";
 import { Badge } from "../ui/Badge";
 import { Button } from "../ui/Button";
 import { Card } from "../ui/Card";
@@ -47,11 +47,10 @@ export interface AncestrySectionProps {
   skillChoices: { source: string; choose: number; from: string[] }[];
   autoGranted: string[];
   toggleSkill: (skill: string, source?: string) => void;
-  raceLanguageGrant: { label: string; fixed: string[]; choiceCount: number };
-  toggleRaceLanguage: (lang: string) => void;
-  raceToolGrant: ToolGrant;
-  toggleRaceTool: (tool: string) => void;
-  ruleChoices?: AvailableRuleChoice[];
+  /** The fixed languages and tools the race and subrace grant. */
+  raceGranted: SourceFixedGrants;
+  /** The race's Proficiency Choices: its tool and language picks. */
+  proficiencyChoices: AvailableRuleChoice[];
   onViewDetail: (item: { title: string; subtitle?: string; source?: string; description?: string }) => void;
   theme: any;
 }
@@ -63,10 +62,8 @@ export const AncestrySection: React.FC<AncestrySectionProps> = ({
   skillChoices,
   autoGranted,
   toggleSkill,
-  raceLanguageGrant,
-  toggleRaceLanguage,
-  raceToolGrant,
-  toggleRaceTool,
+  raceGranted,
+  proficiencyChoices,
   onViewDetail,
   theme,
 }) => {
@@ -367,59 +364,33 @@ export const AncestrySection: React.FC<AncestrySectionProps> = ({
         </Card>
       )}
 
-      {/* Race language choices and granted languages */}
-      {character.race && (raceLanguageGrant.fixed.length > 0 || raceLanguageGrant.choiceCount > 0) && (
+      {/* Race languages and tools: the fixed grants, then the Proficiency Choices the race offers */}
+      {character.race && (raceGranted.languages.length > 0 || raceGranted.tools.length > 0 || proficiencyChoices.length > 0) && (
         <Card style={{ gap: 10 }}>
-          {raceLanguageGrant.fixed.length > 0 && (
+          {raceGranted.languages.length > 0 && (
             <View style={{ gap: 4 }}>
               <Text style={{ color: theme.textSecondary, fontSize: 12, fontWeight: "600" }}>Granted Languages:</Text>
               <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6 }}>
-                {raceLanguageGrant.fixed.map((lang) => (
+                {raceGranted.languages.map((lang) => (
                   <Badge key={lang} label={lang} variant="accent" size="sm" />
                 ))}
               </View>
             </View>
           )}
-          {raceLanguageGrant.choiceCount > 0 && (
-            <RuleChoicePicker
-              label={raceLanguageGrant.label}
-              choose={raceLanguageGrant.choiceCount}
-              from={ALL_LANGUAGE_NAMES}
-              chosen={character.chosenLanguages?.race || []}
-              autoGranted={raceLanguageGrant.fixed}
-              onToggle={toggleRaceLanguage}
-              theme={theme}
-            />
-          )}
-        </Card>
-      )}
-
-      {/* Race tool choices and granted tools */}
-      {character.race && (raceToolGrant.fixed.length > 0 || raceToolGrant.choices.length > 0) && (
-        <Card style={{ gap: 10 }}>
-          {raceToolGrant.fixed.length > 0 && (
+          {raceGranted.tools.length > 0 && (
             <View style={{ gap: 4 }}>
               <Text style={{ color: theme.textSecondary, fontSize: 12, fontWeight: "600" }}>
                 Granted Tool Proficiencies:
               </Text>
               <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6 }}>
-                {raceToolGrant.fixed.map((tool) => (
+                {raceGranted.tools.map((tool) => (
                   <Badge key={tool} label={tool} variant="surface" size="sm" />
                 ))}
               </View>
             </View>
           )}
-          {raceToolGrant.choices.map((ch) => (
-            <RuleChoicePicker
-              key={ch.key}
-              label={ch.label}
-              choose={ch.count}
-              from={ch.options}
-              chosen={character.chosenTools?.race || []}
-              autoGranted={raceToolGrant.fixed}
-              onToggle={toggleRaceTool}
-              theme={theme}
-            />
+          {proficiencyChoices.map((choice) => (
+            <ProficiencyChoicePicker key={choice.id} choice={choice} character={character} onUpdate={onUpdate} theme={theme} />
           ))}
         </Card>
       )}

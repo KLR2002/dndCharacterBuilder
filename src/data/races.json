@@ -1,5 +1,16 @@
 [
   {
+    "grants": [
+      {
+        "id": "PHB/Race/Dragonborn@0#0",
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common",
+          "Draconic"
+        ]
+      }
+    ],
     "name": "Dragonborn",
     "source": "SRD",
     "size": [
@@ -161,6 +172,31 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "PHB/Race/Dwarf@0#0",
+        "kind": "choice",
+        "category": "tools",
+        "count": 1,
+        "pool": {
+          "kind": "names",
+          "names": [
+            "smith's tools",
+            "brewer's supplies",
+            "mason's tools"
+          ]
+        }
+      },
+      {
+        "id": "PHB/Race/Dwarf@0#1",
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common",
+          "Dwarvish"
+        ]
+      }
+    ],
     "name": "Dwarf",
     "source": "SRD",
     "size": [
@@ -316,6 +352,17 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "PHB/Race/Elf@0#0",
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common",
+          "Elvish"
+        ]
+      }
+    ],
     "name": "Elf",
     "source": "SRD",
     "size": [
@@ -366,6 +413,26 @@
     ],
     "subraces": [
       {
+        "grants": [
+          {
+            "id": "PHB/Subrace/Elf (High)@0#0",
+            "kind": "fixed",
+            "category": "languages",
+            "names": [
+              "Common",
+              "Elvish"
+            ]
+          },
+          {
+            "id": "PHB/Subrace/Elf (High)@0#1",
+            "kind": "choice",
+            "category": "languages",
+            "count": 1,
+            "pool": {
+              "kind": "any"
+            }
+          }
+        ],
         "name": "High",
         "isVariant": false,
         "source": "SRD",
@@ -472,6 +539,17 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "PHB/Race/Gnome@0#0",
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common",
+          "Gnomish"
+        ]
+      }
+    ],
     "name": "Gnome",
     "source": "SRD",
     "size": [
@@ -514,6 +592,16 @@
     ],
     "subraces": [
       {
+        "grants": [
+          {
+            "id": "PHB/Subrace/Gnome (Rock)@0#0",
+            "kind": "fixed",
+            "category": "tools",
+            "names": [
+              "tinker's tools"
+            ]
+          }
+        ],
         "name": "Rock",
         "isVariant": false,
         "source": "SRD",
@@ -616,6 +704,26 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "PHB/Race/Half-Elf@0#0",
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common",
+          "Elvish"
+        ]
+      },
+      {
+        "id": "PHB/Race/Half-Elf@0#1",
+        "kind": "choice",
+        "category": "languages",
+        "count": 1,
+        "pool": {
+          "kind": "any"
+        }
+      }
+    ],
     "name": "Half-Elf",
     "source": "SRD",
     "size": [
@@ -709,6 +817,17 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "PHB/Race/Half-Orc@0#0",
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common",
+          "Orc"
+        ]
+      }
+    ],
     "name": "Half-Orc",
     "source": "SRD",
     "size": [
@@ -813,6 +932,17 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "PHB/Race/Halfling@0#0",
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common",
+          "Halfling"
+        ]
+      }
+    ],
     "name": "Halfling",
     "source": "SRD",
     "size": [
@@ -935,6 +1065,25 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "PHB/Race/Human@0#0",
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common"
+        ]
+      },
+      {
+        "id": "PHB/Race/Human@0#1",
+        "kind": "choice",
+        "category": "languages",
+        "count": 1,
+        "pool": {
+          "kind": "any"
+        }
+      }
+    ],
     "name": "Human",
     "source": "SRD",
     "size": [
@@ -999,6 +1148,17 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "PHB/Race/Tiefling@0#0",
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common",
+          "Infernal"
+        ]
+      }
+    ],
     "name": "Tiefling",
     "source": "SRD",
     "size": [

@@ -349,7 +349,9 @@ export const ClassProgressionSection: React.FC<ClassProgressionSectionProps> = (
       {(() => {
         const allSubclassChoices = [
           ...offeredRuleChoices(character, { activeBooks, origins: ["class", "subclass"] }),
-          ...proficiencyChoiceOffers(character, { activeBooks }),
+          ...proficiencyChoiceOffers(character, { activeBooks }).filter(
+            (choice) => choice.origin === "class" || choice.origin === "subclass" || choice.origin === "feat",
+          ),
         ];
         if (allSubclassChoices.length === 0) return null;
 

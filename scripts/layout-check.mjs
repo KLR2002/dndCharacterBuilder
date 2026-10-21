@@ -200,8 +200,8 @@ function wizardCharacter() {
 }
 
 // A level 6 Half-Elf Fighter with an ability score improvement at level 4 and a feat (Grappler, with its
-// Info button) at level 6. The Race tab shows her language choice. In integrated mode the race has a subrace,
-// so its language heading is the long one ("Half-Elf (Moon Elf or Sun Elf Descent): Languages").
+// Info button) at level 6. The Race tab shows her granted languages and her language choice. In integrated mode
+// the race has a subrace, which the same card lists.
 const HALF_ELF_ID = "char_halfelf";
 function halfElfCharacter() {
   const subrace = INTEGRATED ? { subraceName: "Moon Elf or Sun Elf Descent", subraceSource: "SCAG" } : {};
@@ -399,7 +399,7 @@ const BARD_ROUTE = `/character/${BARD_ID}`;
 const SCREENS = [
   { name: "Builder Abilities", route: RENDAR_ROUTE, tabs: ["Builder", "Abilities"], ready: /points remaining/i },
   { name: "Builder Race", route: RENDAR_ROUTE, tabs: ["Builder", "Race"], ready: /traits:/i },
-  { name: "Builder Race language choice", route: HALF_ELF_ROUTE, tabs: ["Builder", "Race"], ready: /: Languages/, scrollTo: ": Languages" },
+  { name: "Builder Race language choice", route: HALF_ELF_ROUTE, tabs: ["Builder", "Race"], ready: /Granted Languages:/, scrollTo: "Granted Languages:" },
   { name: "Builder Class feats", route: HALF_ELF_ROUTE, tabs: ["Builder", "Class"], ready: /Selected Ability Improvements/i, scrollTo: "Selected Ability Improvements" },
   { name: "Builder Background", route: RENDAR_ROUTE, tabs: ["Builder", "Background"], ready: /background benefits/i, scrollTo: "Claim again" },
   { name: "Builder Class", route: RENDAR_ROUTE, tabs: ["Builder", "Class"], ready: /total level/i, scrollTo: "Starting Equipment" },
