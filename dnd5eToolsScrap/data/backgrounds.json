@@ -4,7 +4,10 @@
     "source": "PHB",
     "grants": [
       {
-        "id": "PHB/Background/Acolyte@0#0",
+        "id": "PHB/Background/Acolyte@0#languages:choice:any",
+        "aliases": [
+          "PHB/Background/Acolyte@0#0"
+        ],
         "kind": "choice",
         "category": "languages",
         "count": 2,
@@ -13,7 +16,10 @@
         }
       },
       {
-        "id": "PHB/Background/Acolyte@0#1",
+        "id": "PHB/Background/Acolyte@0#skills:fixed:Insight,Religion",
+        "aliases": [
+          "PHB/Background/Acolyte@0#1"
+        ],
         "kind": "fixed",
         "category": "skills",
         "names": [
@@ -362,7 +368,10 @@
     "source": "ToA",
     "grants": [
       {
-        "id": "ToA/Background/Anthropologist@0#0",
+        "id": "ToA/Background/Anthropologist@0#languages:choice:any",
+        "aliases": [
+          "ToA/Background/Anthropologist@0#0"
+        ],
         "kind": "choice",
         "category": "languages",
         "count": 2,
@@ -371,7 +380,10 @@
         }
       },
       {
-        "id": "ToA/Background/Anthropologist@0#1",
+        "id": "ToA/Background/Anthropologist@0#skills:fixed:Insight,Religion",
+        "aliases": [
+          "ToA/Background/Anthropologist@0#1"
+        ],
         "kind": "fixed",
         "category": "skills",
         "names": [
@@ -754,7 +766,10 @@
     "source": "ToA",
     "grants": [
       {
-        "id": "ToA/Background/Archaeologist@0#0",
+        "id": "ToA/Background/Archaeologist@0#tools:choice:from=cartographer's tools,navigator's tools",
+        "aliases": [
+          "ToA/Background/Archaeologist@0#0"
+        ],
         "kind": "choice",
         "category": "tools",
         "count": 1,
@@ -767,7 +782,10 @@
         }
       },
       {
-        "id": "ToA/Background/Archaeologist@0#1",
+        "id": "ToA/Background/Archaeologist@0#languages:choice:any",
+        "aliases": [
+          "ToA/Background/Archaeologist@0#1"
+        ],
         "kind": "choice",
         "category": "languages",
         "count": 1,
@@ -776,7 +794,10 @@
         }
       },
       {
-        "id": "ToA/Background/Archaeologist@0#2",
+        "id": "ToA/Background/Archaeologist@0#skills:fixed:History,Survival",
+        "aliases": [
+          "ToA/Background/Archaeologist@0#2"
+        ],
         "kind": "fixed",
         "category": "skills",
         "names": [
@@ -1185,7 +1206,10 @@
     "source": "AAG",
     "grants": [
       {
-        "id": "AAG/Background/Astral Drifter@0#0",
+        "id": "AAG/Background/Astral Drifter@0#languages:choice:any",
+        "aliases": [
+          "AAG/Background/Astral Drifter@0#0"
+        ],
         "kind": "choice",
         "category": "languages",
         "count": 2,
@@ -1194,7 +1218,10 @@
         }
       },
       {
-        "id": "AAG/Background/Astral Drifter@0#1",
+        "id": "AAG/Background/Astral Drifter@0#skills:fixed:Insight,Religion",
+        "aliases": [
+          "AAG/Background/Astral Drifter@0#1"
+        ],
         "kind": "fixed",
         "category": "skills",
         "names": [
@@ -1327,7 +1354,10 @@
     "source": "MOT",
     "grants": [
       {
-        "id": "MOT/Background/Athlete@0#0",
+        "id": "MOT/Background/Athlete@0#tools:fixed:vehicles (land)",
+        "aliases": [
+          "MOT/Background/Athlete@0#0"
+        ],
         "kind": "fixed",
         "category": "tools",
         "names": [
@@ -1335,7 +1365,10 @@
         ]
       },
       {
-        "id": "MOT/Background/Athlete@0#1",
+        "id": "MOT/Background/Athlete@0#languages:choice:any",
+        "aliases": [
+          "MOT/Background/Athlete@0#1"
+        ],
         "kind": "choice",
         "category": "languages",
         "count": 1,
@@ -1344,7 +1377,10 @@
         }
       },
       {
-        "id": "MOT/Background/Athlete@0#2",
+        "id": "MOT/Background/Athlete@0#skills:fixed:Acrobatics,Athletics",
+        "aliases": [
+          "MOT/Background/Athlete@0#2"
+        ],
         "kind": "fixed",
         "category": "skills",
         "names": [
@@ -1756,7 +1792,10 @@
     "source": "EGW",
     "grants": [
       {
-        "id": "EGW/Background/Augen Trust (Spy)@0#0",
+        "id": "EGW/Background/Augen Trust (Spy)@0#tools:choice:from=dice set,dragonchess set,playing card set,three-dragon ante set",
+        "aliases": [
+          "EGW/Background/Augen Trust (Spy)@0#0"
+        ],
         "kind": "choice",
         "category": "tools",
         "count": 1,
@@ -1771,7 +1810,10 @@
         }
       },
       {
-        "id": "EGW/Background/Augen Trust (Spy)@0#1",
+        "id": "EGW/Background/Augen Trust (Spy)@0#tools:fixed:thieves' tools",
+        "aliases": [
+          "EGW/Background/Augen Trust (Spy)@0#1"
+        ],
         "kind": "fixed",
         "category": "tools",
         "names": [
@@ -1779,7 +1821,10 @@
         ]
       },
       {
-        "id": "EGW/Background/Augen Trust (Spy)@0#2",
+        "id": "EGW/Background/Augen Trust (Spy)@0#skills:fixed:Deception,Stealth",
+        "aliases": [
+          "EGW/Background/Augen Trust (Spy)@0#2"
+        ],
         "kind": "fixed",
         "category": "skills",
         "names": [
@@ -2176,7 +2221,10 @@
     "source": "GGR",
     "grants": [
       {
-        "id": "GGR/Background/Azorius Functionary@0#0",
+        "id": "GGR/Background/Azorius Functionary@0#languages:choice:any",
+        "aliases": [
+          "GGR/Background/Azorius Functionary@0#0"
+        ],
         "kind": "choice",
         "category": "languages",
         "count": 2,
@@ -2185,7 +2233,10 @@
         }
       },
       {
-        "id": "GGR/Background/Azorius Functionary@0#1",
+        "id": "GGR/Background/Azorius Functionary@0#skills:fixed:Insight,Intimidation",
+        "aliases": [
+          "GGR/Background/Azorius Functionary@0#1"
+        ],
         "kind": "fixed",
         "category": "skills",
         "names": [
@@ -2699,7 +2750,10 @@
     "source": "BGDIA",
     "grants": [
       {
-        "id": "BGDIA/Background/Baldur's Gate Acolyte@0#0",
+        "id": "BGDIA/Background/Baldur's Gate Acolyte@0#languages:choice:any",
+        "aliases": [
+          "BGDIA/Background/Baldur's Gate Acolyte@0#0"
+        ],
         "kind": "choice",
         "category": "languages",
         "count": 2,
@@ -2708,7 +2762,10 @@
         }
       },
       {
-        "id": "BGDIA/Background/Baldur's Gate Acolyte@0#1",
+        "id": "BGDIA/Background/Baldur's Gate Acolyte@0#skills:fixed:Insight,Religion",
+        "aliases": [
+          "BGDIA/Background/Baldur's Gate Acolyte@0#1"
+        ],
         "kind": "fixed",
         "category": "skills",
         "names": [
@@ -3057,7 +3114,10 @@
     "source": "BGDIA",
     "grants": [
       {
-        "id": "BGDIA/Background/Baldur's Gate Charlatan@0#0",
+        "id": "BGDIA/Background/Baldur's Gate Charlatan@0#tools:fixed:disguise kit,forgery kit",
+        "aliases": [
+          "BGDIA/Background/Baldur's Gate Charlatan@0#0"
+        ],
         "kind": "fixed",
         "category": "tools",
         "names": [
@@ -3066,7 +3126,10 @@
         ]
       },
       {
-        "id": "BGDIA/Background/Baldur's Gate Charlatan@0#1",
+        "id": "BGDIA/Background/Baldur's Gate Charlatan@0#skills:fixed:Deception,Sleight of Hand",
+        "aliases": [
+          "BGDIA/Background/Baldur's Gate Charlatan@0#1"
+        ],
         "kind": "fixed",
         "category": "skills",
         "names": [
@@ -3459,7 +3522,10 @@
     "source": "BGDIA",
     "grants": [
       {
-        "id": "BGDIA/Background/Baldur's Gate Criminal@0#0",
+        "id": "BGDIA/Background/Baldur's Gate Criminal@0#tools:choice:from=dice set,dragonchess set,playing card set,three-dragon ante set",
+        "aliases": [
+          "BGDIA/Background/Baldur's Gate Criminal@0#0"
+        ],
         "kind": "choice",
         "category": "tools",
         "count": 1,
@@ -3474,7 +3540,10 @@
         }
       },
       {
-        "id": "BGDIA/Background/Baldur's Gate Criminal@0#1",
+        "id": "BGDIA/Background/Baldur's Gate Criminal@0#tools:fixed:thieves' tools",
+        "aliases": [
+          "BGDIA/Background/Baldur's Gate Criminal@0#1"
+        ],
         "kind": "fixed",
         "category": "tools",
         "names": [
@@ -3482,7 +3551,10 @@
         ]
       },
       {
-        "id": "BGDIA/Background/Baldur's Gate Criminal@0#2",
+        "id": "BGDIA/Background/Baldur's Gate Criminal@0#skills:fixed:Deception,Stealth",
+        "aliases": [
+          "BGDIA/Background/Baldur's Gate Criminal@0#2"
+        ],
         "kind": "fixed",
         "category": "skills",
         "names": [
@@ -3879,7 +3951,10 @@
     "source": "BGDIA",
     "grants": [
       {
-        "id": "BGDIA/Background/Baldur's Gate Entertainer@0#0",
+        "id": "BGDIA/Background/Baldur's Gate Entertainer@0#tools:fixed:disguise kit",
+        "aliases": [
+          "BGDIA/Background/Baldur's Gate Entertainer@0#0"
+        ],
         "kind": "fixed",
         "category": "tools",
         "names": [
@@ -3887,7 +3962,10 @@
         ]
       },
       {
-        "id": "BGDIA/Background/Baldur's Gate Entertainer@0#1",
+        "id": "BGDIA/Background/Baldur's Gate Entertainer@0#tools:choice:from=bagpipes,drum,dulcimer,flute,horn,lute,lyre,pan flute,shawm,viol",
+        "aliases": [
+          "BGDIA/Background/Baldur's Gate Entertainer@0#1"
+        ],
         "kind": "choice",
         "category": "tools",
         "count": 1,
@@ -3908,7 +3986,10 @@
         }
       },
       {
-        "id": "BGDIA/Background/Baldur's Gate Entertainer@0#2",
+        "id": "BGDIA/Background/Baldur's Gate Entertainer@0#skills:fixed:Acrobatics,Performance",
+        "aliases": [
+          "BGDIA/Background/Baldur's Gate Entertainer@0#2"
+        ],
         "kind": "fixed",
         "category": "skills",
         "names": [
@@ -4313,7 +4394,10 @@
     "source": "BGDIA",
     "grants": [
       {
-        "id": "BGDIA/Background/Baldur's Gate Folk Hero@0#0",
+        "id": "BGDIA/Background/Baldur's Gate Folk Hero@0#tools:choice:from=alchemist's supplies,brewer's supplies,calligrapher's supplies,carpenter's tools,cartographer's tools,cobbler's tools,cook's utensils,glassblower's tools,jeweler's tools,leatherworker's tools,mason's tools,painter's supplies,potter's tools,smith's tools,tinker's tools,weaver's tools,woodcarver's tools",
+        "aliases": [
+          "BGDIA/Background/Baldur's Gate Folk Hero@0#0"
+        ],
         "kind": "choice",
         "category": "tools",
         "count": 1,
@@ -4341,7 +4425,10 @@
         }
       },
       {
-        "id": "BGDIA/Background/Baldur's Gate Folk Hero@0#1",
+        "id": "BGDIA/Background/Baldur's Gate Folk Hero@0#tools:fixed:vehicles (land)",
+        "aliases": [
+          "BGDIA/Background/Baldur's Gate Folk Hero@0#1"
+        ],
         "kind": "fixed",
         "category": "tools",
         "names": [
@@ -4349,7 +4436,10 @@
         ]
       },
       {
-        "id": "BGDIA/Background/Baldur's Gate Folk Hero@0#2",
+        "id": "BGDIA/Background/Baldur's Gate Folk Hero@0#skills:fixed:Animal Handling,Survival",
+        "aliases": [
+          "BGDIA/Background/Baldur's Gate Folk Hero@0#2"
+        ],
         "kind": "fixed",
         "category": "skills",
         "names": [
@@ -4755,7 +4845,10 @@
     "source": "BGDIA",
     "grants": [
       {
-        "id": "BGDIA/Background/Baldur's Gate Guild Artisan@0#0",
+        "id": "BGDIA/Background/Baldur's Gate Guild Artisan@0#tools:choice:from=alchemist's supplies,brewer's supplies,calligrapher's supplies,carpenter's tools,cartographer's tools,cobbler's tools,cook's utensils,glassblower's tools,jeweler's tools,leatherworker's tools,mason's tools,painter's supplies,potter's tools,smith's tools,tinker's tools,weaver's tools,woodcarver's tools",
+        "aliases": [
+          "BGDIA/Background/Baldur's Gate Guild Artisan@0#0"
+        ],
         "kind": "choice",
         "category": "tools",
         "count": 1,
@@ -4783,7 +4876,10 @@
         }
       },
       {
-        "id": "BGDIA/Background/Baldur's Gate Guild Artisan@0#1",
+        "id": "BGDIA/Background/Baldur's Gate Guild Artisan@0#languages:choice:any",
+        "aliases": [
+          "BGDIA/Background/Baldur's Gate Guild Artisan@0#1"
+        ],
         "kind": "choice",
         "category": "languages",
         "count": 1,
@@ -4792,7 +4888,10 @@
         }
       },
       {
-        "id": "BGDIA/Background/Baldur's Gate Guild Artisan@0#2",
+        "id": "BGDIA/Background/Baldur's Gate Guild Artisan@0#skills:fixed:Insight,Persuasion",
+        "aliases": [
+          "BGDIA/Background/Baldur's Gate Guild Artisan@0#2"
+        ],
         "kind": "fixed",
         "category": "skills",
         "names": [
@@ -5245,7 +5344,10 @@
     "source": "BGDIA",
     "grants": [
       {
-        "id": "BGDIA/Background/Baldur's Gate Hermit@0#0",
+        "id": "BGDIA/Background/Baldur's Gate Hermit@0#tools:fixed:herbalism kit",
+        "aliases": [
+          "BGDIA/Background/Baldur's Gate Hermit@0#0"
+        ],
         "kind": "fixed",
         "category": "tools",
         "names": [
@@ -5253,7 +5355,10 @@
         ]
       },
       {
-        "id": "BGDIA/Background/Baldur's Gate Hermit@0#1",
+        "id": "BGDIA/Background/Baldur's Gate Hermit@0#languages:choice:any",
+        "aliases": [
+          "BGDIA/Background/Baldur's Gate Hermit@0#1"
+        ],
         "kind": "choice",
         "category": "languages",
         "count": 1,
@@ -5262,7 +5367,10 @@
         }
       },
       {
-        "id": "BGDIA/Background/Baldur's Gate Hermit@0#2",
+        "id": "BGDIA/Background/Baldur's Gate Hermit@0#skills:fixed:Medicine,Religion",
+        "aliases": [
+          "BGDIA/Background/Baldur's Gate Hermit@0#2"
+        ],
         "kind": "fixed",
         "category": "skills",
         "names": [
@@ -5666,7 +5774,10 @@
     "source": "BGDIA",
     "grants": [
       {
-        "id": "BGDIA/Background/Baldur's Gate Noble@0#0",
+        "id": "BGDIA/Background/Baldur's Gate Noble@0#tools:choice:from=dice set,dragonchess set,playing card set,three-dragon ante set",
+        "aliases": [
+          "BGDIA/Background/Baldur's Gate Noble@0#0"
+        ],
         "kind": "choice",
         "category": "tools",
         "count": 1,
@@ -5681,7 +5792,10 @@
         }
       },
       {
-        "id": "BGDIA/Background/Baldur's Gate Noble@0#1",
+        "id": "BGDIA/Background/Baldur's Gate Noble@0#languages:choice:any",
+        "aliases": [
+          "BGDIA/Background/Baldur's Gate Noble@0#1"
+        ],
         "kind": "choice",
         "category": "languages",
         "count": 1,
@@ -5690,7 +5804,10 @@
         }
       },
       {
-        "id": "BGDIA/Background/Baldur's Gate Noble@0#2",
+        "id": "BGDIA/Background/Baldur's Gate Noble@0#skills:fixed:History,Persuasion",
+        "aliases": [
+          "BGDIA/Background/Baldur's Gate Noble@0#2"
+        ],
         "kind": "fixed",
         "category": "skills",
         "names": [
@@ -6043,7 +6160,10 @@
     "source": "BGDIA",
     "grants": [
       {
-        "id": "BGDIA/Background/Baldur's Gate Outlander@0#0",
+        "id": "BGDIA/Background/Baldur's Gate Outlander@0#tools:choice:from=bagpipes,drum,dulcimer,flute,horn,lute,lyre,pan flute,shawm,viol",
+        "aliases": [
+          "BGDIA/Background/Baldur's Gate Outlander@0#0"
+        ],
         "kind": "choice",
         "category": "tools",
         "count": 1,
@@ -6064,7 +6184,10 @@
         }
       },
       {
-        "id": "BGDIA/Background/Baldur's Gate Outlander@0#1",
+        "id": "BGDIA/Background/Baldur's Gate Outlander@0#languages:choice:any",
+        "aliases": [
+          "BGDIA/Background/Baldur's Gate Outlander@0#1"
+        ],
         "kind": "choice",
         "category": "languages",
         "count": 1,
@@ -6073,7 +6196,10 @@
         }
       },
       {
-        "id": "BGDIA/Background/Baldur's Gate Outlander@0#2",
+        "id": "BGDIA/Background/Baldur's Gate Outlander@0#skills:fixed:Athletics,Survival",
+        "aliases": [
+          "BGDIA/Background/Baldur's Gate Outlander@0#2"
+        ],
         "kind": "fixed",
         "category": "skills",
         "names": [
@@ -6486,7 +6612,10 @@
     "source": "BGDIA",
     "grants": [
       {
-        "id": "BGDIA/Background/Baldur's Gate Sage@0#0",
+        "id": "BGDIA/Background/Baldur's Gate Sage@0#languages:choice:any",
+        "aliases": [
+          "BGDIA/Background/Baldur's Gate Sage@0#0"
+        ],
         "kind": "choice",
         "category": "languages",
         "count": 2,
@@ -6495,7 +6624,10 @@
         }
       },
       {
-        "id": "BGDIA/Background/Baldur's Gate Sage@0#1",
+        "id": "BGDIA/Background/Baldur's Gate Sage@0#skills:fixed:Arcana,History",
+        "aliases": [
+          "BGDIA/Background/Baldur's Gate Sage@0#1"
+        ],
         "kind": "fixed",
         "category": "skills",
         "names": [
@@ -6894,7 +7026,10 @@
     "source": "BGDIA",
     "grants": [
       {
-        "id": "BGDIA/Background/Baldur's Gate Sailor@0#0",
+        "id": "BGDIA/Background/Baldur's Gate Sailor@0#tools:fixed:navigator's tools,vehicles (water)",
+        "aliases": [
+          "BGDIA/Background/Baldur's Gate Sailor@0#0"
+        ],
         "kind": "fixed",
         "category": "tools",
         "names": [
@@ -6903,7 +7038,10 @@
         ]
       },
       {
-        "id": "BGDIA/Background/Baldur's Gate Sailor@0#1",
+        "id": "BGDIA/Background/Baldur's Gate Sailor@0#skills:fixed:Athletics,Perception",
+        "aliases": [
+          "BGDIA/Background/Baldur's Gate Sailor@0#1"
+        ],
         "kind": "fixed",
         "category": "skills",
         "names": [
@@ -7250,7 +7388,10 @@
     "source": "BGDIA",
     "grants": [
       {
-        "id": "BGDIA/Background/Baldur's Gate Soldier@0#0",
+        "id": "BGDIA/Background/Baldur's Gate Soldier@0#tools:choice:from=dice set,dragonchess set,playing card set,three-dragon ante set",
+        "aliases": [
+          "BGDIA/Background/Baldur's Gate Soldier@0#0"
+        ],
         "kind": "choice",
         "category": "tools",
         "count": 1,
@@ -7265,7 +7406,10 @@
         }
       },
       {
-        "id": "BGDIA/Background/Baldur's Gate Soldier@0#1",
+        "id": "BGDIA/Background/Baldur's Gate Soldier@0#tools:fixed:vehicles (land)",
+        "aliases": [
+          "BGDIA/Background/Baldur's Gate Soldier@0#1"
+        ],
         "kind": "fixed",
         "category": "tools",
         "names": [
@@ -7273,7 +7417,10 @@
         ]
       },
       {
-        "id": "BGDIA/Background/Baldur's Gate Soldier@0#2",
+        "id": "BGDIA/Background/Baldur's Gate Soldier@0#skills:fixed:Athletics,Intimidation",
+        "aliases": [
+          "BGDIA/Background/Baldur's Gate Soldier@0#2"
+        ],
         "kind": "fixed",
         "category": "skills",
         "names": [
@@ -7673,7 +7820,10 @@
     "source": "BGDIA",
     "grants": [
       {
-        "id": "BGDIA/Background/Baldur's Gate Urchin@0#0",
+        "id": "BGDIA/Background/Baldur's Gate Urchin@0#tools:fixed:disguise kit,thieves' tools",
+        "aliases": [
+          "BGDIA/Background/Baldur's Gate Urchin@0#0"
+        ],
         "kind": "fixed",
         "category": "tools",
         "names": [
@@ -7682,7 +7832,10 @@
         ]
       },
       {
-        "id": "BGDIA/Background/Baldur's Gate Urchin@0#1",
+        "id": "BGDIA/Background/Baldur's Gate Urchin@0#skills:fixed:Sleight of Hand,Stealth",
+        "aliases": [
+          "BGDIA/Background/Baldur's Gate Urchin@0#1"
+        ],
         "kind": "fixed",
         "category": "skills",
         "names": [
@@ -8030,7 +8183,10 @@
     "source": "GGR",
     "grants": [
       {
-        "id": "GGR/Background/Boros Legionnaire@0#0",
+        "id": "GGR/Background/Boros Legionnaire@0#tools:choice:from=dice set,dragonchess set,playing card set,three-dragon ante set",
+        "aliases": [
+          "GGR/Background/Boros Legionnaire@0#0"
+        ],
         "kind": "choice",
         "category": "tools",
         "count": 1,
@@ -8045,7 +8201,10 @@
         }
       },
       {
-        "id": "GGR/Background/Boros Legionnaire@0#1",
+        "id": "GGR/Background/Boros Legionnaire@0#languages:choice:any",
+        "aliases": [
+          "GGR/Background/Boros Legionnaire@0#1"
+        ],
         "kind": "choice",
         "category": "languages",
         "count": 1,
@@ -8054,7 +8213,10 @@
         }
       },
       {
-        "id": "GGR/Background/Boros Legionnaire@0#2",
+        "id": "GGR/Background/Boros Legionnaire@0#skills:fixed:Athletics,Intimidation",
+        "aliases": [
+          "GGR/Background/Boros Legionnaire@0#2"
+        ],
         "kind": "fixed",
         "category": "skills",
         "names": [
@@ -8581,7 +8743,10 @@
     "source": "AI",
     "grants": [
       {
-        "id": "AI/Background/Celebrity Adventurer's Scion@0#0",
+        "id": "AI/Background/Celebrity Adventurer's Scion@0#tools:fixed:disguise kit",
+        "aliases": [
+          "AI/Background/Celebrity Adventurer's Scion@0#0"
+        ],
         "kind": "fixed",
         "category": "tools",
         "names": [
@@ -8589,7 +8754,10 @@
         ]
       },
       {
-        "id": "AI/Background/Celebrity Adventurer's Scion@0#1",
+        "id": "AI/Background/Celebrity Adventurer's Scion@0#languages:choice:any",
+        "aliases": [
+          "AI/Background/Celebrity Adventurer's Scion@0#1"
+        ],
         "kind": "choice",
         "category": "languages",
         "count": 2,
@@ -8598,7 +8766,10 @@
         }
       },
       {
-        "id": "AI/Background/Celebrity Adventurer's Scion@0#2",
+        "id": "AI/Background/Celebrity Adventurer's Scion@0#skills:fixed:Perception,Performance",
+        "aliases": [
+          "AI/Background/Celebrity Adventurer's Scion@0#2"
+        ],
         "kind": "fixed",
         "category": "skills",
         "names": [
@@ -8949,7 +9120,10 @@
     "source": "PHB",
     "grants": [
       {
-        "id": "PHB/Background/Charlatan@0#0",
+        "id": "PHB/Background/Charlatan@0#tools:fixed:disguise kit,forgery kit",
+        "aliases": [
+          "PHB/Background/Charlatan@0#0"
+        ],
         "kind": "fixed",
         "category": "tools",
         "names": [
@@ -8958,7 +9132,10 @@
         ]
       },
       {
-        "id": "PHB/Background/Charlatan@0#1",
+        "id": "PHB/Background/Charlatan@0#skills:fixed:Deception,Sleight of Hand",
+        "aliases": [
+          "PHB/Background/Charlatan@0#1"
+        ],
         "kind": "fixed",
         "category": "skills",
         "names": [
@@ -9351,7 +9528,10 @@
     "source": "SCAG",
     "grants": [
       {
-        "id": "SCAG/Background/City Watch@0#0",
+        "id": "SCAG/Background/City Watch@0#languages:choice:any",
+        "aliases": [
+          "SCAG/Background/City Watch@0#0"
+        ],
         "kind": "choice",
         "category": "languages",
         "count": 2,
@@ -9360,7 +9540,10 @@
         }
       },
       {
-        "id": "SCAG/Background/City Watch@0#1",
+        "id": "SCAG/Background/City Watch@0#skills:fixed:Athletics,Insight",
+        "aliases": [
+          "SCAG/Background/City Watch@0#1"
+        ],
         "kind": "fixed",
         "category": "skills",
         "names": [
@@ -9437,7 +9620,10 @@
     "source": "SCAG",
     "grants": [
       {
-        "id": "SCAG/Background/Clan Crafter@0#0",
+        "id": "SCAG/Background/Clan Crafter@0#tools:choice:from=alchemist's supplies,brewer's supplies,calligrapher's supplies,carpenter's tools,cartographer's tools,cobbler's tools,cook's utensils,glassblower's tools,jeweler's tools,leatherworker's tools,mason's tools,painter's supplies,potter's tools,smith's tools,tinker's tools,weaver's tools,woodcarver's tools",
+        "aliases": [
+          "SCAG/Background/Clan Crafter@0#0"
+        ],
         "kind": "choice",
         "category": "tools",
         "count": 1,
@@ -9465,7 +9651,10 @@
         }
       },
       {
-        "id": "SCAG/Background/Clan Crafter@0#1",
+        "id": "SCAG/Background/Clan Crafter@0#languages:fixed:Dwarvish",
+        "aliases": [
+          "SCAG/Background/Clan Crafter@0#1"
+        ],
         "kind": "fixed",
         "category": "languages",
         "names": [
@@ -9473,7 +9662,10 @@
         ]
       },
       {
-        "id": "SCAG/Background/Clan Crafter@0#2",
+        "id": "SCAG/Background/Clan Crafter@0#languages:choice:any",
+        "aliases": [
+          "SCAG/Background/Clan Crafter@0#2"
+        ],
         "kind": "choice",
         "category": "languages",
         "count": 1,
@@ -9482,7 +9674,10 @@
         }
       },
       {
-        "id": "SCAG/Background/Clan Crafter@0#3",
+        "id": "SCAG/Background/Clan Crafter@0#skills:fixed:History,Insight",
+        "aliases": [
+          "SCAG/Background/Clan Crafter@0#3"
+        ],
         "kind": "fixed",
         "category": "skills",
         "names": [
@@ -9566,7 +9761,10 @@
     "source": "SCAG",
     "grants": [
       {
-        "id": "SCAG/Background/Cloistered Scholar@0#0",
+        "id": "SCAG/Background/Cloistered Scholar@0#languages:choice:any",
+        "aliases": [
+          "SCAG/Background/Cloistered Scholar@0#0"
+        ],
         "kind": "choice",
         "category": "languages",
         "count": 2,
@@ -9575,7 +9773,10 @@
         }
       },
       {
-        "id": "SCAG/Background/Cloistered Scholar@0#1",
+        "id": "SCAG/Background/Cloistered Scholar@0#skills:fixed:History",
+        "aliases": [
+          "SCAG/Background/Cloistered Scholar@0#1"
+        ],
         "kind": "fixed",
         "category": "skills",
         "names": [
@@ -9656,7 +9857,10 @@
     "source": "EGW",
     "grants": [
       {
-        "id": "EGW/Background/Cobalt Scholar (Sage)@0#0",
+        "id": "EGW/Background/Cobalt Scholar (Sage)@0#languages:choice:any",
+        "aliases": [
+          "EGW/Background/Cobalt Scholar (Sage)@0#0"
+        ],
         "kind": "choice",
         "category": "languages",
         "count": 2,
@@ -9665,7 +9869,10 @@
         }
       },
       {
-        "id": "EGW/Background/Cobalt Scholar (Sage)@0#1",
+        "id": "EGW/Background/Cobalt Scholar (Sage)@0#skills:fixed:Arcana,History",
+        "aliases": [
+          "EGW/Background/Cobalt Scholar (Sage)@0#1"
+        ],
         "kind": "fixed",
         "category": "skills",
         "names": [
@@ -10064,7 +10271,10 @@
     "source": "SCAG",
     "grants": [
       {
-        "id": "SCAG/Background/Courtier@0#0",
+        "id": "SCAG/Background/Courtier@0#languages:choice:any",
+        "aliases": [
+          "SCAG/Background/Courtier@0#0"
+        ],
         "kind": "choice",
         "category": "languages",
         "count": 2,
@@ -10073,7 +10283,10 @@
         }
       },
       {
-        "id": "SCAG/Background/Courtier@0#1",
+        "id": "SCAG/Background/Courtier@0#skills:fixed:Insight,Persuasion",
+        "aliases": [
+          "SCAG/Background/Courtier@0#1"
+        ],
         "kind": "fixed",
         "category": "skills",
         "names": [
@@ -10148,7 +10361,10 @@
     "source": "PHB",
     "grants": [
       {
-        "id": "PHB/Background/Criminal@0#0",
+        "id": "PHB/Background/Criminal@0#tools:choice:from=dice set,dragonchess set,playing card set,three-dragon ante set",
+        "aliases": [
+          "PHB/Background/Criminal@0#0"
+        ],
         "kind": "choice",
         "category": "tools",
         "count": 1,
@@ -10163,7 +10379,10 @@
         }
       },
       {
-        "id": "PHB/Background/Criminal@0#1",
+        "id": "PHB/Background/Criminal@0#tools:fixed:thieves' tools",
+        "aliases": [
+          "PHB/Background/Criminal@0#1"
+        ],
         "kind": "fixed",
         "category": "tools",
         "names": [
@@ -10171,7 +10390,10 @@
         ]
       },
       {
-        "id": "PHB/Background/Criminal@0#2",
+        "id": "PHB/Background/Criminal@0#skills:fixed:Deception,Stealth",
+        "aliases": [
+          "PHB/Background/Criminal@0#2"
+        ],
         "kind": "fixed",
         "category": "skills",
         "names": [
@@ -10568,7 +10790,10 @@
     "source": "PHB",
     "grants": [
       {
-        "id": "PHB/Background/Custom Background@0#0",
+        "id": "PHB/Background/Custom Background@0#languages:choice:any",
+        "aliases": [
+          "PHB/Background/Custom Background@0#0"
+        ],
         "kind": "choice",
         "category": "languages",
         "count": 2,
@@ -10636,7 +10861,10 @@
     "source": "GGR",
     "grants": [
       {
-        "id": "GGR/Background/Dimir Operative@0#0",
+        "id": "GGR/Background/Dimir Operative@0#tools:fixed:disguise kit",
+        "aliases": [
+          "GGR/Background/Dimir Operative@0#0"
+        ],
         "kind": "fixed",
         "category": "tools",
         "names": [
@@ -10644,7 +10872,10 @@
         ]
       },
       {
-        "id": "GGR/Background/Dimir Operative@0#1",
+        "id": "GGR/Background/Dimir Operative@0#languages:choice:any",
+        "aliases": [
+          "GGR/Background/Dimir Operative@0#1"
+        ],
         "kind": "choice",
         "category": "languages",
         "count": 1,
@@ -10653,7 +10884,10 @@
         }
       },
       {
-        "id": "GGR/Background/Dimir Operative@0#2",
+        "id": "GGR/Background/Dimir Operative@0#skills:fixed:Deception,Stealth",
+        "aliases": [
+          "GGR/Background/Dimir Operative@0#2"
+        ],
         "kind": "fixed",
         "category": "skills",
         "names": [
@@ -11164,7 +11398,10 @@
     "source": "PHB",
     "grants": [
       {
-        "id": "PHB/Background/Entertainer@0#0",
+        "id": "PHB/Background/Entertainer@0#tools:fixed:disguise kit",
+        "aliases": [
+          "PHB/Background/Entertainer@0#0"
+        ],
         "kind": "fixed",
         "category": "tools",
         "names": [
@@ -11172,7 +11409,10 @@
         ]
       },
       {
-        "id": "PHB/Background/Entertainer@0#1",
+        "id": "PHB/Background/Entertainer@0#tools:choice:from=bagpipes,drum,dulcimer,flute,horn,lute,lyre,pan flute,shawm,viol",
+        "aliases": [
+          "PHB/Background/Entertainer@0#1"
+        ],
         "kind": "choice",
         "category": "tools",
         "count": 1,
@@ -11193,7 +11433,10 @@
         }
       },
       {
-        "id": "PHB/Background/Entertainer@0#2",
+        "id": "PHB/Background/Entertainer@0#skills:fixed:Acrobatics,Performance",
+        "aliases": [
+          "PHB/Background/Entertainer@0#2"
+        ],
         "kind": "fixed",
         "category": "skills",
         "names": [
@@ -11598,7 +11841,10 @@
     "source": "BGDIA",
     "grants": [
       {
-        "id": "BGDIA/Background/Faceless@0#0",
+        "id": "BGDIA/Background/Faceless@0#tools:fixed:disguise kit",
+        "aliases": [
+          "BGDIA/Background/Faceless@0#0"
+        ],
         "kind": "fixed",
         "category": "tools",
         "names": [
@@ -11606,7 +11852,10 @@
         ]
       },
       {
-        "id": "BGDIA/Background/Faceless@0#1",
+        "id": "BGDIA/Background/Faceless@0#languages:choice:any",
+        "aliases": [
+          "BGDIA/Background/Faceless@0#1"
+        ],
         "kind": "choice",
         "category": "languages",
         "count": 1,
@@ -11615,7 +11864,10 @@
         }
       },
       {
-        "id": "BGDIA/Background/Faceless@0#2",
+        "id": "BGDIA/Background/Faceless@0#skills:fixed:Deception,Intimidation",
+        "aliases": [
+          "BGDIA/Background/Faceless@0#2"
+        ],
         "kind": "fixed",
         "category": "skills",
         "names": [
@@ -12027,7 +12279,10 @@
     "source": "SCAG",
     "grants": [
       {
-        "id": "SCAG/Background/Faction Agent@0#0",
+        "id": "SCAG/Background/Faction Agent@0#languages:choice:any",
+        "aliases": [
+          "SCAG/Background/Faction Agent@0#0"
+        ],
         "kind": "choice",
         "category": "languages",
         "count": 2,
@@ -12036,7 +12291,10 @@
         }
       },
       {
-        "id": "SCAG/Background/Faction Agent@0#1",
+        "id": "SCAG/Background/Faction Agent@0#skills:fixed:Insight",
+        "aliases": [
+          "SCAG/Background/Faction Agent@0#1"
+        ],
         "kind": "fixed",
         "category": "skills",
         "names": [
@@ -12111,7 +12369,10 @@
     "source": "AI",
     "grants": [
       {
-        "id": "AI/Background/Failed Merchant@0#0",
+        "id": "AI/Background/Failed Merchant@0#tools:choice:from=alchemist's supplies,brewer's supplies,calligrapher's supplies,carpenter's tools,cartographer's tools,cobbler's tools,cook's utensils,glassblower's tools,jeweler's tools,leatherworker's tools,mason's tools,painter's supplies,potter's tools,smith's tools,tinker's tools,weaver's tools,woodcarver's tools",
+        "aliases": [
+          "AI/Background/Failed Merchant@0#0"
+        ],
         "kind": "choice",
         "category": "tools",
         "count": 1,
@@ -12139,7 +12400,10 @@
         }
       },
       {
-        "id": "AI/Background/Failed Merchant@0#1",
+        "id": "AI/Background/Failed Merchant@0#languages:choice:any",
+        "aliases": [
+          "AI/Background/Failed Merchant@0#1"
+        ],
         "kind": "choice",
         "category": "languages",
         "count": 1,
@@ -12148,7 +12412,10 @@
         }
       },
       {
-        "id": "AI/Background/Failed Merchant@0#2",
+        "id": "AI/Background/Failed Merchant@0#skills:fixed:Investigation,Persuasion",
+        "aliases": [
+          "AI/Background/Failed Merchant@0#2"
+        ],
         "kind": "fixed",
         "category": "skills",
         "names": [
@@ -12499,7 +12766,10 @@
     "source": "SCAG",
     "grants": [
       {
-        "id": "SCAG/Background/Far Traveler@0#0",
+        "id": "SCAG/Background/Far Traveler@0#tools:choice:from=bagpipes,dice set,dragonchess set,drum,dulcimer,flute,horn,lute,lyre,pan flute,playing card set,shawm,three-dragon ante set,viol",
+        "aliases": [
+          "SCAG/Background/Far Traveler@0#0"
+        ],
         "kind": "choice",
         "category": "tools",
         "count": 1,
@@ -12524,7 +12794,10 @@
         }
       },
       {
-        "id": "SCAG/Background/Far Traveler@0#1",
+        "id": "SCAG/Background/Far Traveler@0#languages:choice:any",
+        "aliases": [
+          "SCAG/Background/Far Traveler@0#1"
+        ],
         "kind": "choice",
         "category": "languages",
         "count": 1,
@@ -12533,7 +12806,10 @@
         }
       },
       {
-        "id": "SCAG/Background/Far Traveler@0#2",
+        "id": "SCAG/Background/Far Traveler@0#skills:fixed:Insight,Perception",
+        "aliases": [
+          "SCAG/Background/Far Traveler@0#2"
+        ],
         "kind": "fixed",
         "category": "skills",
         "names": [
@@ -12913,7 +13189,10 @@
     "source": "WBtW",
     "grants": [
       {
-        "id": "WBtW/Background/Feylost@0#0",
+        "id": "WBtW/Background/Feylost@0#tools:choice:from=bagpipes,drum,dulcimer,flute,horn,lute,lyre,pan flute,shawm,viol",
+        "aliases": [
+          "WBtW/Background/Feylost@0#0"
+        ],
         "kind": "choice",
         "category": "tools",
         "count": 1,
@@ -12934,7 +13213,10 @@
         }
       },
       {
-        "id": "WBtW/Background/Feylost@0#1",
+        "id": "WBtW/Background/Feylost@0#languages:choice:any",
+        "aliases": [
+          "WBtW/Background/Feylost@0#1"
+        ],
         "kind": "choice",
         "category": "languages",
         "count": 1,
@@ -12943,7 +13225,10 @@
         }
       },
       {
-        "id": "WBtW/Background/Feylost@0#2",
+        "id": "WBtW/Background/Feylost@0#languages:choice:from=Elvish,Gnomish,Goblin,Sylvan",
+        "aliases": [
+          "WBtW/Background/Feylost@0#2"
+        ],
         "kind": "choice",
         "category": "languages",
         "count": 1,
@@ -12958,7 +13243,10 @@
         }
       },
       {
-        "id": "WBtW/Background/Feylost@0#3",
+        "id": "WBtW/Background/Feylost@0#skills:fixed:Deception,Survival",
+        "aliases": [
+          "WBtW/Background/Feylost@0#3"
+        ],
         "kind": "fixed",
         "category": "skills",
         "names": [
@@ -13332,7 +13620,10 @@
     "source": "GoS",
     "grants": [
       {
-        "id": "GoS/Background/Fisher@0#0",
+        "id": "GoS/Background/Fisher@0#languages:choice:any",
+        "aliases": [
+          "GoS/Background/Fisher@0#0"
+        ],
         "kind": "choice",
         "category": "languages",
         "count": 1,
@@ -13341,7 +13632,10 @@
         }
       },
       {
-        "id": "GoS/Background/Fisher@0#1",
+        "id": "GoS/Background/Fisher@0#skills:fixed:History,Survival",
+        "aliases": [
+          "GoS/Background/Fisher@0#1"
+        ],
         "kind": "fixed",
         "category": "skills",
         "names": [
@@ -13744,7 +14038,10 @@
     "source": "PHB",
     "grants": [
       {
-        "id": "PHB/Background/Folk Hero@0#0",
+        "id": "PHB/Background/Folk Hero@0#tools:choice:from=alchemist's supplies,brewer's supplies,calligrapher's supplies,carpenter's tools,cartographer's tools,cobbler's tools,cook's utensils,glassblower's tools,jeweler's tools,leatherworker's tools,mason's tools,painter's supplies,potter's tools,smith's tools,tinker's tools,weaver's tools,woodcarver's tools",
+        "aliases": [
+          "PHB/Background/Folk Hero@0#0"
+        ],
         "kind": "choice",
         "category": "tools",
         "count": 1,
@@ -13772,7 +14069,10 @@
         }
       },
       {
-        "id": "PHB/Background/Folk Hero@0#1",
+        "id": "PHB/Background/Folk Hero@0#tools:fixed:vehicles (land)",
+        "aliases": [
+          "PHB/Background/Folk Hero@0#1"
+        ],
         "kind": "fixed",
         "category": "tools",
         "names": [
@@ -13780,7 +14080,10 @@
         ]
       },
       {
-        "id": "PHB/Background/Folk Hero@0#2",
+        "id": "PHB/Background/Folk Hero@0#skills:fixed:Animal Handling,Survival",
+        "aliases": [
+          "PHB/Background/Folk Hero@0#2"
+        ],
         "kind": "fixed",
         "category": "skills",
         "names": [
@@ -14186,7 +14489,10 @@
     "source": "AI",
     "grants": [
       {
-        "id": "AI/Background/Gambler@0#0",
+        "id": "AI/Background/Gambler@0#tools:choice:from=dice set,dragonchess set,playing card set,three-dragon ante set",
+        "aliases": [
+          "AI/Background/Gambler@0#0"
+        ],
         "kind": "choice",
         "category": "tools",
         "count": 1,
@@ -14201,7 +14507,10 @@
         }
       },
       {
-        "id": "AI/Background/Gambler@0#1",
+        "id": "AI/Background/Gambler@0#languages:choice:any",
+        "aliases": [
+          "AI/Background/Gambler@0#1"
+        ],
         "kind": "choice",
         "category": "languages",
         "count": 1,
@@ -14210,7 +14519,10 @@
         }
       },
       {
-        "id": "AI/Background/Gambler@0#2",
+        "id": "AI/Background/Gambler@0#skills:fixed:Deception,Insight",
+        "aliases": [
+          "AI/Background/Gambler@0#2"
+        ],
         "kind": "fixed",
         "category": "skills",
         "names": [
@@ -14561,7 +14873,10 @@
     "source": "SatO",
     "grants": [
       {
-        "id": "SatO/Background/Gate Warden@0#0",
+        "id": "SatO/Background/Gate Warden@0#languages:choice:any",
+        "aliases": [
+          "SatO/Background/Gate Warden@0#0"
+        ],
         "kind": "choice",
         "category": "languages",
         "count": 2,
@@ -14570,7 +14885,10 @@
         }
       },
       {
-        "id": "SatO/Background/Gate Warden@0#1",
+        "id": "SatO/Background/Gate Warden@0#skills:fixed:Persuasion,Survival",
+        "aliases": [
+          "SatO/Background/Gate Warden@0#1"
+        ],
         "kind": "fixed",
         "category": "skills",
         "names": [
@@ -14727,7 +15045,10 @@
     "source": "BGG",
     "grants": [
       {
-        "id": "BGG/Background/Giant Foundling@0#0",
+        "id": "BGG/Background/Giant Foundling@0#languages:fixed:Giant",
+        "aliases": [
+          "BGG/Background/Giant Foundling@0#0"
+        ],
         "kind": "fixed",
         "category": "languages",
         "names": [
@@ -14735,7 +15056,10 @@
         ]
       },
       {
-        "id": "BGG/Background/Giant Foundling@0#1",
+        "id": "BGG/Background/Giant Foundling@0#languages:choice:any",
+        "aliases": [
+          "BGG/Background/Giant Foundling@0#1"
+        ],
         "kind": "choice",
         "category": "languages",
         "count": 1,
@@ -14744,7 +15068,10 @@
         }
       },
       {
-        "id": "BGG/Background/Giant Foundling@0#2",
+        "id": "BGG/Background/Giant Foundling@0#skills:fixed:Intimidation,Survival",
+        "aliases": [
+          "BGG/Background/Giant Foundling@0#2"
+        ],
         "kind": "fixed",
         "category": "skills",
         "names": [
@@ -14938,7 +15265,10 @@
     "source": "GGR",
     "grants": [
       {
-        "id": "GGR/Background/Golgari Agent@0#0",
+        "id": "GGR/Background/Golgari Agent@0#tools:fixed:poisoner's kit",
+        "aliases": [
+          "GGR/Background/Golgari Agent@0#0"
+        ],
         "kind": "fixed",
         "category": "tools",
         "names": [
@@ -14946,7 +15276,10 @@
         ]
       },
       {
-        "id": "GGR/Background/Golgari Agent@0#1",
+        "id": "GGR/Background/Golgari Agent@0#languages:choice:any",
+        "aliases": [
+          "GGR/Background/Golgari Agent@0#1"
+        ],
         "kind": "choice",
         "category": "languages",
         "count": 1,
@@ -14955,7 +15288,10 @@
         }
       },
       {
-        "id": "GGR/Background/Golgari Agent@0#2",
+        "id": "GGR/Background/Golgari Agent@0#skills:fixed:Nature,Survival",
+        "aliases": [
+          "GGR/Background/Golgari Agent@0#2"
+        ],
         "kind": "fixed",
         "category": "skills",
         "names": [
@@ -15478,7 +15814,10 @@
     "source": "EGW",
     "grants": [
       {
-        "id": "EGW/Background/Grinner@0#0",
+        "id": "EGW/Background/Grinner@0#tools:fixed:thieves' tools",
+        "aliases": [
+          "EGW/Background/Grinner@0#0"
+        ],
         "kind": "fixed",
         "category": "tools",
         "names": [
@@ -15486,7 +15825,10 @@
         ]
       },
       {
-        "id": "EGW/Background/Grinner@0#1",
+        "id": "EGW/Background/Grinner@0#tools:choice:from=bagpipes,drum,dulcimer,flute,horn,lute,lyre,pan flute,shawm,viol",
+        "aliases": [
+          "EGW/Background/Grinner@0#1"
+        ],
         "kind": "choice",
         "category": "tools",
         "count": 1,
@@ -15507,7 +15849,10 @@
         }
       },
       {
-        "id": "EGW/Background/Grinner@0#2",
+        "id": "EGW/Background/Grinner@0#skills:fixed:Deception,Performance",
+        "aliases": [
+          "EGW/Background/Grinner@0#2"
+        ],
         "kind": "fixed",
         "category": "skills",
         "names": [
@@ -15854,7 +16199,10 @@
     "source": "GGR",
     "grants": [
       {
-        "id": "GGR/Background/Gruul Anarch@0#0",
+        "id": "GGR/Background/Gruul Anarch@0#tools:fixed:herbalism kit",
+        "aliases": [
+          "GGR/Background/Gruul Anarch@0#0"
+        ],
         "kind": "fixed",
         "category": "tools",
         "names": [
@@ -15862,7 +16210,10 @@
         ]
       },
       {
-        "id": "GGR/Background/Gruul Anarch@0#1",
+        "id": "GGR/Background/Gruul Anarch@0#languages:choice:from=Draconic,Giant,Goblin,Sylvan",
+        "aliases": [
+          "GGR/Background/Gruul Anarch@0#1"
+        ],
         "kind": "choice",
         "category": "languages",
         "count": 1,
@@ -15877,7 +16228,10 @@
         }
       },
       {
-        "id": "GGR/Background/Gruul Anarch@0#2",
+        "id": "GGR/Background/Gruul Anarch@0#skills:fixed:Animal Handling,Athletics",
+        "aliases": [
+          "GGR/Background/Gruul Anarch@0#2"
+        ],
         "kind": "fixed",
         "category": "skills",
         "names": [
@@ -16400,7 +16754,10 @@
     "source": "PHB",
     "grants": [
       {
-        "id": "PHB/Background/Guild Artisan@0#0",
+        "id": "PHB/Background/Guild Artisan@0#tools:choice:from=alchemist's supplies,brewer's supplies,calligrapher's supplies,carpenter's tools,cartographer's tools,cobbler's tools,cook's utensils,glassblower's tools,jeweler's tools,leatherworker's tools,mason's tools,painter's supplies,potter's tools,smith's tools,tinker's tools,weaver's tools,woodcarver's tools",
+        "aliases": [
+          "PHB/Background/Guild Artisan@0#0"
+        ],
         "kind": "choice",
         "category": "tools",
         "count": 1,
@@ -16428,7 +16785,10 @@
         }
       },
       {
-        "id": "PHB/Background/Guild Artisan@0#1",
+        "id": "PHB/Background/Guild Artisan@0#languages:choice:any",
+        "aliases": [
+          "PHB/Background/Guild Artisan@0#1"
+        ],
         "kind": "choice",
         "category": "languages",
         "count": 1,
@@ -16437,7 +16797,10 @@
         }
       },
       {
-        "id": "PHB/Background/Guild Artisan@0#2",
+        "id": "PHB/Background/Guild Artisan@0#skills:fixed:Insight,Persuasion",
+        "aliases": [
+          "PHB/Background/Guild Artisan@0#2"
+        ],
         "kind": "fixed",
         "category": "skills",
         "names": [
@@ -16890,7 +17253,10 @@
     "source": "VRGR",
     "grants": [
       {
-        "id": "VRGR/Background/Haunted One@0#0",
+        "id": "VRGR/Background/Haunted One@0#languages:choice:any",
+        "aliases": [
+          "VRGR/Background/Haunted One@0#0"
+        ],
         "kind": "choice",
         "category": "languages",
         "count": 1,
@@ -16899,7 +17265,10 @@
         }
       },
       {
-        "id": "VRGR/Background/Haunted One@0#1",
+        "id": "VRGR/Background/Haunted One@0#languages:choice:from=Abyssal,Celestial,Deep Speech,Draconic,Infernal,Primordial,Sylvan,Undercommon",
+        "aliases": [
+          "VRGR/Background/Haunted One@0#1"
+        ],
         "kind": "choice",
         "category": "languages",
         "count": 1,
@@ -17291,7 +17660,10 @@
     "source": "PHB",
     "grants": [
       {
-        "id": "PHB/Background/Hermit@0#0",
+        "id": "PHB/Background/Hermit@0#tools:fixed:herbalism kit",
+        "aliases": [
+          "PHB/Background/Hermit@0#0"
+        ],
         "kind": "fixed",
         "category": "tools",
         "names": [
@@ -17299,7 +17671,10 @@
         ]
       },
       {
-        "id": "PHB/Background/Hermit@0#1",
+        "id": "PHB/Background/Hermit@0#languages:choice:any",
+        "aliases": [
+          "PHB/Background/Hermit@0#1"
+        ],
         "kind": "choice",
         "category": "languages",
         "count": 1,
@@ -17308,7 +17683,10 @@
         }
       },
       {
-        "id": "PHB/Background/Hermit@0#2",
+        "id": "PHB/Background/Hermit@0#skills:fixed:Medicine,Religion",
+        "aliases": [
+          "PHB/Background/Hermit@0#2"
+        ],
         "kind": "fixed",
         "category": "skills",
         "names": [
@@ -17712,7 +18090,10 @@
     "source": "ERLW",
     "grants": [
       {
-        "id": "ERLW/Background/House Agent@0#0",
+        "id": "ERLW/Background/House Agent@0#tools:fixed:alchemist's supplies,brewer's supplies,calligrapher's supplies,cook's utensils,disguise kit,forgery kit,herbalism kit,navigator's tools,poisoner's kit,thieves' tools,tinker's tools,vehicles (air),vehicles (land),vehicles (water)",
+        "aliases": [
+          "ERLW/Background/House Agent@0#0"
+        ],
         "kind": "fixed",
         "category": "tools",
         "names": [
@@ -17733,7 +18114,10 @@
         ]
       },
       {
-        "id": "ERLW/Background/House Agent@0#1",
+        "id": "ERLW/Background/House Agent@0#tools:choice:from=dice set,dragonchess set,playing card set,three-dragon ante set",
+        "aliases": [
+          "ERLW/Background/House Agent@0#1"
+        ],
         "kind": "choice",
         "category": "tools",
         "count": 1,
@@ -17748,7 +18132,10 @@
         }
       },
       {
-        "id": "ERLW/Background/House Agent@0#2",
+        "id": "ERLW/Background/House Agent@0#tools:choice:from=bagpipes,drum,dulcimer,flute,horn,lute,lyre,pan flute,shawm,viol",
+        "aliases": [
+          "ERLW/Background/House Agent@0#2"
+        ],
         "kind": "choice",
         "category": "tools",
         "count": 1,
@@ -17769,7 +18156,10 @@
         }
       },
       {
-        "id": "ERLW/Background/House Agent@0#3",
+        "id": "ERLW/Background/House Agent@0#tools:choice:from=dice set,dragonchess set,playing card set,three-dragon ante set~2",
+        "aliases": [
+          "ERLW/Background/House Agent@0#3"
+        ],
         "kind": "choice",
         "category": "tools",
         "count": 1,
@@ -17784,7 +18174,10 @@
         }
       },
       {
-        "id": "ERLW/Background/House Agent@0#4",
+        "id": "ERLW/Background/House Agent@0#tools:choice:from=bagpipes,drum,dulcimer,flute,horn,lute,lyre,pan flute,shawm,viol~2",
+        "aliases": [
+          "ERLW/Background/House Agent@0#4"
+        ],
         "kind": "choice",
         "category": "tools",
         "count": 1,
@@ -17805,7 +18198,10 @@
         }
       },
       {
-        "id": "ERLW/Background/House Agent@0#5",
+        "id": "ERLW/Background/House Agent@0#skills:fixed:Investigation,Persuasion",
+        "aliases": [
+          "ERLW/Background/House Agent@0#5"
+        ],
         "kind": "fixed",
         "category": "skills",
         "names": [
@@ -18283,7 +18679,10 @@
     "source": "SCAG",
     "grants": [
       {
-        "id": "SCAG/Background/Inheritor@0#0",
+        "id": "SCAG/Background/Inheritor@0#tools:choice:from=bagpipes,dice set,dragonchess set,drum,dulcimer,flute,horn,lute,lyre,pan flute,playing card set,shawm,three-dragon ante set,viol",
+        "aliases": [
+          "SCAG/Background/Inheritor@0#0"
+        ],
         "kind": "choice",
         "category": "tools",
         "count": 1,
@@ -18308,7 +18707,10 @@
         }
       },
       {
-        "id": "SCAG/Background/Inheritor@0#1",
+        "id": "SCAG/Background/Inheritor@0#languages:choice:any",
+        "aliases": [
+          "SCAG/Background/Inheritor@0#1"
+        ],
         "kind": "choice",
         "category": "languages",
         "count": 1,
@@ -18317,7 +18719,10 @@
         }
       },
       {
-        "id": "SCAG/Background/Inheritor@0#2",
+        "id": "SCAG/Background/Inheritor@0#skills:fixed:Survival",
+        "aliases": [
+          "SCAG/Background/Inheritor@0#2"
+        ],
         "kind": "fixed",
         "category": "skills",
         "names": [
@@ -18441,7 +18846,10 @@
     "source": "PSA",
     "grants": [
       {
-        "id": "PSA/Background/Initiate@0#0",
+        "id": "PSA/Background/Initiate@0#tools:choice:from=dice set,dragonchess set,playing card set,three-dragon ante set",
+        "aliases": [
+          "PSA/Background/Initiate@0#0"
+        ],
         "kind": "choice",
         "category": "tools",
         "count": 1,
@@ -18456,7 +18864,10 @@
         }
       },
       {
-        "id": "PSA/Background/Initiate@0#1",
+        "id": "PSA/Background/Initiate@0#tools:fixed:vehicles (land)",
+        "aliases": [
+          "PSA/Background/Initiate@0#1"
+        ],
         "kind": "fixed",
         "category": "tools",
         "names": [
@@ -18464,7 +18875,10 @@
         ]
       },
       {
-        "id": "PSA/Background/Initiate@0#2",
+        "id": "PSA/Background/Initiate@0#skills:fixed:Athletics,Intimidation",
+        "aliases": [
+          "PSA/Background/Initiate@0#2"
+        ],
         "kind": "fixed",
         "category": "skills",
         "names": [
@@ -18811,7 +19225,10 @@
     "source": "PSA",
     "grants": [
       {
-        "id": "PSA/Background/Initiate (Dissenter)@0#0",
+        "id": "PSA/Background/Initiate (Dissenter)@0#tools:choice:from=dice set,dragonchess set,playing card set,three-dragon ante set",
+        "aliases": [
+          "PSA/Background/Initiate (Dissenter)@0#0"
+        ],
         "kind": "choice",
         "category": "tools",
         "count": 1,
@@ -18826,7 +19243,10 @@
         }
       },
       {
-        "id": "PSA/Background/Initiate (Dissenter)@0#1",
+        "id": "PSA/Background/Initiate (Dissenter)@0#tools:fixed:vehicles (land)",
+        "aliases": [
+          "PSA/Background/Initiate (Dissenter)@0#1"
+        ],
         "kind": "fixed",
         "category": "tools",
         "names": [
@@ -18834,7 +19254,10 @@
         ]
       },
       {
-        "id": "PSA/Background/Initiate (Dissenter)@0#2",
+        "id": "PSA/Background/Initiate (Dissenter)@0#skills:fixed:Athletics,Intimidation",
+        "aliases": [
+          "PSA/Background/Initiate (Dissenter)@0#2"
+        ],
         "kind": "fixed",
         "category": "skills",
         "names": [
@@ -19181,7 +19604,10 @@
     "source": "PSI",
     "grants": [
       {
-        "id": "PSI/Background/Inquisitor@0#0",
+        "id": "PSI/Background/Inquisitor@0#tools:fixed:thieves' tools",
+        "aliases": [
+          "PSI/Background/Inquisitor@0#0"
+        ],
         "kind": "fixed",
         "category": "tools",
         "names": [
@@ -19189,7 +19615,10 @@
         ]
       },
       {
-        "id": "PSI/Background/Inquisitor@0#1",
+        "id": "PSI/Background/Inquisitor@0#tools:choice:from=alchemist's supplies,brewer's supplies,calligrapher's supplies,carpenter's tools,cartographer's tools,cobbler's tools,cook's utensils,glassblower's tools,jeweler's tools,leatherworker's tools,mason's tools,painter's supplies,potter's tools,smith's tools,tinker's tools,weaver's tools,woodcarver's tools",
+        "aliases": [
+          "PSI/Background/Inquisitor@0#1"
+        ],
         "kind": "choice",
         "category": "tools",
         "count": 1,
@@ -19217,7 +19646,10 @@
         }
       },
       {
-        "id": "PSI/Background/Inquisitor@0#2",
+        "id": "PSI/Background/Inquisitor@0#skills:fixed:Investigation,Religion",
+        "aliases": [
+          "PSI/Background/Inquisitor@0#2"
+        ],
         "kind": "fixed",
         "category": "skills",
         "names": [
@@ -19286,7 +19718,10 @@
     "source": "VRGR",
     "grants": [
       {
-        "id": "VRGR/Background/Investigator@0#0",
+        "id": "VRGR/Background/Investigator@0#tools:fixed:disguise kit,thieves' tools",
+        "aliases": [
+          "VRGR/Background/Investigator@0#0"
+        ],
         "kind": "fixed",
         "category": "tools",
         "names": [
@@ -19660,7 +20095,10 @@
     "source": "GGR",
     "grants": [
       {
-        "id": "GGR/Background/Izzet Engineer@0#0",
+        "id": "GGR/Background/Izzet Engineer@0#tools:choice:from=alchemist's supplies,brewer's supplies,calligrapher's supplies,carpenter's tools,cartographer's tools,cobbler's tools,cook's utensils,glassblower's tools,jeweler's tools,leatherworker's tools,mason's tools,painter's supplies,potter's tools,smith's tools,tinker's tools,weaver's tools,woodcarver's tools",
+        "aliases": [
+          "GGR/Background/Izzet Engineer@0#0"
+        ],
         "kind": "choice",
         "category": "tools",
         "count": 1,
@@ -19688,7 +20126,10 @@
         }
       },
       {
-        "id": "GGR/Background/Izzet Engineer@0#1",
+        "id": "GGR/Background/Izzet Engineer@0#languages:choice:any",
+        "aliases": [
+          "GGR/Background/Izzet Engineer@0#1"
+        ],
         "kind": "choice",
         "category": "languages",
         "count": 1,
@@ -19697,7 +20138,10 @@
         }
       },
       {
-        "id": "GGR/Background/Izzet Engineer@0#2",
+        "id": "GGR/Background/Izzet Engineer@0#skills:fixed:Arcana,Investigation",
+        "aliases": [
+          "GGR/Background/Izzet Engineer@0#2"
+        ],
         "kind": "fixed",
         "category": "skills",
         "names": [
@@ -20220,7 +20664,10 @@
     "source": "DSotDQ",
     "grants": [
       {
-        "id": "DSotDQ/Background/Knight of Solamnia@0#0",
+        "id": "DSotDQ/Background/Knight of Solamnia@0#languages:choice:any",
+        "aliases": [
+          "DSotDQ/Background/Knight of Solamnia@0#0"
+        ],
         "kind": "choice",
         "category": "languages",
         "count": 2,
@@ -20229,7 +20676,10 @@
         }
       },
       {
-        "id": "DSotDQ/Background/Knight of Solamnia@0#1",
+        "id": "DSotDQ/Background/Knight of Solamnia@0#skills:fixed:Athletics,Survival",
+        "aliases": [
+          "DSotDQ/Background/Knight of Solamnia@0#1"
+        ],
         "kind": "fixed",
         "category": "skills",
         "names": [
@@ -20352,7 +20802,10 @@
     "source": "SCAG",
     "grants": [
       {
-        "id": "SCAG/Background/Knight of the Order@0#0",
+        "id": "SCAG/Background/Knight of the Order@0#tools:choice:from=bagpipes,dice set,dragonchess set,drum,dulcimer,flute,horn,lute,lyre,pan flute,playing card set,shawm,three-dragon ante set,viol",
+        "aliases": [
+          "SCAG/Background/Knight of the Order@0#0"
+        ],
         "kind": "choice",
         "category": "tools",
         "count": 1,
@@ -20377,7 +20830,10 @@
         }
       },
       {
-        "id": "SCAG/Background/Knight of the Order@0#1",
+        "id": "SCAG/Background/Knight of the Order@0#languages:choice:any",
+        "aliases": [
+          "SCAG/Background/Knight of the Order@0#1"
+        ],
         "kind": "choice",
         "category": "languages",
         "count": 1,
@@ -20386,7 +20842,10 @@
         }
       },
       {
-        "id": "SCAG/Background/Knight of the Order@0#2",
+        "id": "SCAG/Background/Knight of the Order@0#skills:fixed:Persuasion",
+        "aliases": [
+          "SCAG/Background/Knight of the Order@0#2"
+        ],
         "kind": "fixed",
         "category": "skills",
         "names": [
@@ -20468,7 +20927,10 @@
     "source": "SCC",
     "grants": [
       {
-        "id": "SCC/Background/Lorehold Student@0#0",
+        "id": "SCC/Background/Lorehold Student@0#languages:choice:any",
+        "aliases": [
+          "SCC/Background/Lorehold Student@0#0"
+        ],
         "kind": "choice",
         "category": "languages",
         "count": 2,
@@ -20477,7 +20939,10 @@
         }
       },
       {
-        "id": "SCC/Background/Lorehold Student@0#1",
+        "id": "SCC/Background/Lorehold Student@0#skills:fixed:History,Religion",
+        "aliases": [
+          "SCC/Background/Lorehold Student@0#1"
+        ],
         "kind": "fixed",
         "category": "skills",
         "names": [
@@ -20646,7 +21111,10 @@
     "source": "EGW",
     "grants": [
       {
-        "id": "EGW/Background/Luxonborn (Acolyte)@0#0",
+        "id": "EGW/Background/Luxonborn (Acolyte)@0#languages:choice:any",
+        "aliases": [
+          "EGW/Background/Luxonborn (Acolyte)@0#0"
+        ],
         "kind": "choice",
         "category": "languages",
         "count": 2,
@@ -20655,7 +21123,10 @@
         }
       },
       {
-        "id": "EGW/Background/Luxonborn (Acolyte)@0#1",
+        "id": "EGW/Background/Luxonborn (Acolyte)@0#skills:fixed:Insight,Religion",
+        "aliases": [
+          "EGW/Background/Luxonborn (Acolyte)@0#1"
+        ],
         "kind": "fixed",
         "category": "skills",
         "names": [
@@ -21004,7 +21475,10 @@
     "source": "DSotDQ",
     "grants": [
       {
-        "id": "DSotDQ/Background/Mage of High Sorcery@0#0",
+        "id": "DSotDQ/Background/Mage of High Sorcery@0#languages:choice:any",
+        "aliases": [
+          "DSotDQ/Background/Mage of High Sorcery@0#0"
+        ],
         "kind": "choice",
         "category": "languages",
         "count": 2,
@@ -21013,7 +21487,10 @@
         }
       },
       {
-        "id": "DSotDQ/Background/Mage of High Sorcery@0#1",
+        "id": "DSotDQ/Background/Mage of High Sorcery@0#skills:fixed:Arcana,History",
+        "aliases": [
+          "DSotDQ/Background/Mage of High Sorcery@0#1"
+        ],
         "kind": "fixed",
         "category": "skills",
         "names": [
@@ -21135,7 +21612,10 @@
     "source": "GoS",
     "grants": [
       {
-        "id": "GoS/Background/Marine@0#0",
+        "id": "GoS/Background/Marine@0#tools:fixed:vehicles (land),vehicles (water)",
+        "aliases": [
+          "GoS/Background/Marine@0#0"
+        ],
         "kind": "fixed",
         "category": "tools",
         "names": [
@@ -21144,7 +21624,10 @@
         ]
       },
       {
-        "id": "GoS/Background/Marine@0#1",
+        "id": "GoS/Background/Marine@0#skills:fixed:Athletics,Survival",
+        "aliases": [
+          "GoS/Background/Marine@0#1"
+        ],
         "kind": "fixed",
         "category": "skills",
         "names": [
@@ -21538,7 +22021,10 @@
     "source": "SCAG",
     "grants": [
       {
-        "id": "SCAG/Background/Mercenary Veteran@0#0",
+        "id": "SCAG/Background/Mercenary Veteran@0#tools:choice:from=dice set,dragonchess set,playing card set,three-dragon ante set",
+        "aliases": [
+          "SCAG/Background/Mercenary Veteran@0#0"
+        ],
         "kind": "choice",
         "category": "tools",
         "count": 1,
@@ -21553,7 +22039,10 @@
         }
       },
       {
-        "id": "SCAG/Background/Mercenary Veteran@0#1",
+        "id": "SCAG/Background/Mercenary Veteran@0#tools:fixed:vehicles (land)",
+        "aliases": [
+          "SCAG/Background/Mercenary Veteran@0#1"
+        ],
         "kind": "fixed",
         "category": "tools",
         "names": [
@@ -21561,7 +22050,10 @@
         ]
       },
       {
-        "id": "SCAG/Background/Mercenary Veteran@0#2",
+        "id": "SCAG/Background/Mercenary Veteran@0#skills:fixed:Athletics,Persuasion",
+        "aliases": [
+          "SCAG/Background/Mercenary Veteran@0#2"
+        ],
         "kind": "fixed",
         "category": "skills",
         "names": [
@@ -21638,7 +22130,10 @@
     "source": "EGW",
     "grants": [
       {
-        "id": "EGW/Background/Myriad Operative (Criminal)@0#0",
+        "id": "EGW/Background/Myriad Operative (Criminal)@0#tools:choice:from=dice set,dragonchess set,playing card set,three-dragon ante set",
+        "aliases": [
+          "EGW/Background/Myriad Operative (Criminal)@0#0"
+        ],
         "kind": "choice",
         "category": "tools",
         "count": 1,
@@ -21653,7 +22148,10 @@
         }
       },
       {
-        "id": "EGW/Background/Myriad Operative (Criminal)@0#1",
+        "id": "EGW/Background/Myriad Operative (Criminal)@0#tools:fixed:thieves' tools",
+        "aliases": [
+          "EGW/Background/Myriad Operative (Criminal)@0#1"
+        ],
         "kind": "fixed",
         "category": "tools",
         "names": [
@@ -21661,7 +22159,10 @@
         ]
       },
       {
-        "id": "EGW/Background/Myriad Operative (Criminal)@0#2",
+        "id": "EGW/Background/Myriad Operative (Criminal)@0#skills:fixed:Deception,Stealth",
+        "aliases": [
+          "EGW/Background/Myriad Operative (Criminal)@0#2"
+        ],
         "kind": "fixed",
         "category": "skills",
         "names": [
@@ -22058,7 +22559,10 @@
     "source": "PHB",
     "grants": [
       {
-        "id": "PHB/Background/Noble@0#0",
+        "id": "PHB/Background/Noble@0#tools:choice:from=dice set,dragonchess set,playing card set,three-dragon ante set",
+        "aliases": [
+          "PHB/Background/Noble@0#0"
+        ],
         "kind": "choice",
         "category": "tools",
         "count": 1,
@@ -22073,7 +22577,10 @@
         }
       },
       {
-        "id": "PHB/Background/Noble@0#1",
+        "id": "PHB/Background/Noble@0#languages:choice:any",
+        "aliases": [
+          "PHB/Background/Noble@0#1"
+        ],
         "kind": "choice",
         "category": "languages",
         "count": 1,
@@ -22082,7 +22589,10 @@
         }
       },
       {
-        "id": "PHB/Background/Noble@0#2",
+        "id": "PHB/Background/Noble@0#skills:fixed:History,Persuasion",
+        "aliases": [
+          "PHB/Background/Noble@0#2"
+        ],
         "kind": "fixed",
         "category": "skills",
         "names": [
@@ -22434,7 +22944,10 @@
     "source": "GGR",
     "grants": [
       {
-        "id": "GGR/Background/Orzhov Representative@0#0",
+        "id": "GGR/Background/Orzhov Representative@0#languages:choice:any",
+        "aliases": [
+          "GGR/Background/Orzhov Representative@0#0"
+        ],
         "kind": "choice",
         "category": "languages",
         "count": 2,
@@ -22443,7 +22956,10 @@
         }
       },
       {
-        "id": "GGR/Background/Orzhov Representative@0#1",
+        "id": "GGR/Background/Orzhov Representative@0#skills:fixed:Intimidation,Religion",
+        "aliases": [
+          "GGR/Background/Orzhov Representative@0#1"
+        ],
         "kind": "fixed",
         "category": "skills",
         "names": [
@@ -22956,7 +23472,10 @@
     "source": "PHB",
     "grants": [
       {
-        "id": "PHB/Background/Outlander@0#0",
+        "id": "PHB/Background/Outlander@0#tools:choice:from=bagpipes,drum,dulcimer,flute,horn,lute,lyre,pan flute,shawm,viol",
+        "aliases": [
+          "PHB/Background/Outlander@0#0"
+        ],
         "kind": "choice",
         "category": "tools",
         "count": 1,
@@ -22977,7 +23496,10 @@
         }
       },
       {
-        "id": "PHB/Background/Outlander@0#1",
+        "id": "PHB/Background/Outlander@0#languages:choice:any",
+        "aliases": [
+          "PHB/Background/Outlander@0#1"
+        ],
         "kind": "choice",
         "category": "languages",
         "count": 1,
@@ -22986,7 +23508,10 @@
         }
       },
       {
-        "id": "PHB/Background/Outlander@0#2",
+        "id": "PHB/Background/Outlander@0#skills:fixed:Athletics,Survival",
+        "aliases": [
+          "PHB/Background/Outlander@0#2"
+        ],
         "kind": "fixed",
         "category": "skills",
         "names": [
@@ -23399,7 +23924,10 @@
     "source": "AI",
     "grants": [
       {
-        "id": "AI/Background/Plaintiff@0#0",
+        "id": "AI/Background/Plaintiff@0#tools:choice:from=alchemist's supplies,brewer's supplies,calligrapher's supplies,carpenter's tools,cartographer's tools,cobbler's tools,cook's utensils,glassblower's tools,jeweler's tools,leatherworker's tools,mason's tools,painter's supplies,potter's tools,smith's tools,tinker's tools,weaver's tools,woodcarver's tools",
+        "aliases": [
+          "AI/Background/Plaintiff@0#0"
+        ],
         "kind": "choice",
         "category": "tools",
         "count": 1,
@@ -23427,7 +23955,10 @@
         }
       },
       {
-        "id": "AI/Background/Plaintiff@0#1",
+        "id": "AI/Background/Plaintiff@0#languages:choice:any",
+        "aliases": [
+          "AI/Background/Plaintiff@0#1"
+        ],
         "kind": "choice",
         "category": "languages",
         "count": 1,
@@ -23436,7 +23967,10 @@
         }
       },
       {
-        "id": "AI/Background/Plaintiff@0#2",
+        "id": "AI/Background/Plaintiff@0#skills:fixed:Medicine,Persuasion",
+        "aliases": [
+          "AI/Background/Plaintiff@0#2"
+        ],
         "kind": "fixed",
         "category": "skills",
         "names": [
@@ -23788,7 +24322,10 @@
     "source": "SatO",
     "grants": [
       {
-        "id": "SatO/Background/Planar Philosopher@0#0",
+        "id": "SatO/Background/Planar Philosopher@0#languages:choice:any",
+        "aliases": [
+          "SatO/Background/Planar Philosopher@0#0"
+        ],
         "kind": "choice",
         "category": "languages",
         "count": 2,
@@ -23797,7 +24334,10 @@
         }
       },
       {
-        "id": "SatO/Background/Planar Philosopher@0#1",
+        "id": "SatO/Background/Planar Philosopher@0#skills:fixed:Arcana",
+        "aliases": [
+          "SatO/Background/Planar Philosopher@0#1"
+        ],
         "kind": "fixed",
         "category": "skills",
         "names": [
@@ -24109,7 +24649,10 @@
     "source": "SCC",
     "grants": [
       {
-        "id": "SCC/Background/Prismari Student@0#0",
+        "id": "SCC/Background/Prismari Student@0#tools:choice:from=alchemist's supplies,bagpipes,brewer's supplies,calligrapher's supplies,carpenter's tools,cartographer's tools,cobbler's tools,cook's utensils,drum,dulcimer,flute,glassblower's tools,horn,jeweler's tools,leatherworker's tools,lute,lyre,mason's tools,painter's supplies,pan flute,potter's tools,shawm,smith's tools,tinker's tools,viol,weaver's tools,woodcarver's tools",
+        "aliases": [
+          "SCC/Background/Prismari Student@0#0"
+        ],
         "kind": "choice",
         "category": "tools",
         "count": 1,
@@ -24147,7 +24690,10 @@
         }
       },
       {
-        "id": "SCC/Background/Prismari Student@0#1",
+        "id": "SCC/Background/Prismari Student@0#languages:choice:any",
+        "aliases": [
+          "SCC/Background/Prismari Student@0#1"
+        ],
         "kind": "choice",
         "category": "languages",
         "count": 1,
@@ -24156,7 +24702,10 @@
         }
       },
       {
-        "id": "SCC/Background/Prismari Student@0#2",
+        "id": "SCC/Background/Prismari Student@0#skills:fixed:Acrobatics,Performance",
+        "aliases": [
+          "SCC/Background/Prismari Student@0#2"
+        ],
         "kind": "fixed",
         "category": "skills",
         "names": [
@@ -24328,7 +24877,10 @@
     "source": "SCC",
     "grants": [
       {
-        "id": "SCC/Background/Quandrix Student@0#0",
+        "id": "SCC/Background/Quandrix Student@0#tools:choice:from=alchemist's supplies,brewer's supplies,calligrapher's supplies,carpenter's tools,cartographer's tools,cobbler's tools,cook's utensils,glassblower's tools,jeweler's tools,leatherworker's tools,mason's tools,painter's supplies,potter's tools,smith's tools,tinker's tools,weaver's tools,woodcarver's tools",
+        "aliases": [
+          "SCC/Background/Quandrix Student@0#0"
+        ],
         "kind": "choice",
         "category": "tools",
         "count": 1,
@@ -24356,7 +24908,10 @@
         }
       },
       {
-        "id": "SCC/Background/Quandrix Student@0#1",
+        "id": "SCC/Background/Quandrix Student@0#languages:choice:any",
+        "aliases": [
+          "SCC/Background/Quandrix Student@0#1"
+        ],
         "kind": "choice",
         "category": "languages",
         "count": 1,
@@ -24365,7 +24920,10 @@
         }
       },
       {
-        "id": "SCC/Background/Quandrix Student@0#2",
+        "id": "SCC/Background/Quandrix Student@0#skills:fixed:Arcana,Nature",
+        "aliases": [
+          "SCC/Background/Quandrix Student@0#2"
+        ],
         "kind": "fixed",
         "category": "skills",
         "names": [
@@ -24539,7 +25097,10 @@
     "source": "GGR",
     "grants": [
       {
-        "id": "GGR/Background/Rakdos Cultist@0#0",
+        "id": "GGR/Background/Rakdos Cultist@0#tools:choice:from=bagpipes,drum,dulcimer,flute,horn,lute,lyre,pan flute,shawm,viol",
+        "aliases": [
+          "GGR/Background/Rakdos Cultist@0#0"
+        ],
         "kind": "choice",
         "category": "tools",
         "count": 1,
@@ -24560,7 +25121,10 @@
         }
       },
       {
-        "id": "GGR/Background/Rakdos Cultist@0#1",
+        "id": "GGR/Background/Rakdos Cultist@0#languages:choice:from=Abyssal,Giant",
+        "aliases": [
+          "GGR/Background/Rakdos Cultist@0#1"
+        ],
         "kind": "choice",
         "category": "languages",
         "count": 1,
@@ -24573,7 +25137,10 @@
         }
       },
       {
-        "id": "GGR/Background/Rakdos Cultist@0#2",
+        "id": "GGR/Background/Rakdos Cultist@0#skills:fixed:Acrobatics,Performance",
+        "aliases": [
+          "GGR/Background/Rakdos Cultist@0#2"
+        ],
         "kind": "fixed",
         "category": "skills",
         "names": [
@@ -25150,7 +25717,10 @@
     "source": "EGW",
     "grants": [
       {
-        "id": "EGW/Background/Revelry Pirate (Sailor)@0#0",
+        "id": "EGW/Background/Revelry Pirate (Sailor)@0#tools:fixed:navigator's tools,vehicles (water)",
+        "aliases": [
+          "EGW/Background/Revelry Pirate (Sailor)@0#0"
+        ],
         "kind": "fixed",
         "category": "tools",
         "names": [
@@ -25159,7 +25729,10 @@
         ]
       },
       {
-        "id": "EGW/Background/Revelry Pirate (Sailor)@0#1",
+        "id": "EGW/Background/Revelry Pirate (Sailor)@0#skills:fixed:Athletics,Perception",
+        "aliases": [
+          "EGW/Background/Revelry Pirate (Sailor)@0#1"
+        ],
         "kind": "fixed",
         "category": "skills",
         "names": [
@@ -25506,7 +26079,10 @@
     "source": "BMT",
     "grants": [
       {
-        "id": "BMT/Background/Rewarded@0#0",
+        "id": "BMT/Background/Rewarded@0#tools:choice:from=dice set,dragonchess set,playing card set,three-dragon ante set",
+        "aliases": [
+          "BMT/Background/Rewarded@0#0"
+        ],
         "kind": "choice",
         "category": "tools",
         "count": 1,
@@ -25521,7 +26097,10 @@
         }
       },
       {
-        "id": "BMT/Background/Rewarded@0#1",
+        "id": "BMT/Background/Rewarded@0#languages:choice:any",
+        "aliases": [
+          "BMT/Background/Rewarded@0#1"
+        ],
         "kind": "choice",
         "category": "languages",
         "count": 1,
@@ -25530,7 +26109,10 @@
         }
       },
       {
-        "id": "BMT/Background/Rewarded@0#2",
+        "id": "BMT/Background/Rewarded@0#skills:fixed:Insight,Persuasion",
+        "aliases": [
+          "BMT/Background/Rewarded@0#2"
+        ],
         "kind": "fixed",
         "category": "skills",
         "names": [
@@ -25734,7 +26316,10 @@
     "source": "AI",
     "grants": [
       {
-        "id": "AI/Background/Rival Intern@0#0",
+        "id": "AI/Background/Rival Intern@0#tools:choice:from=alchemist's supplies,brewer's supplies,calligrapher's supplies,carpenter's tools,cartographer's tools,cobbler's tools,cook's utensils,glassblower's tools,jeweler's tools,leatherworker's tools,mason's tools,painter's supplies,potter's tools,smith's tools,tinker's tools,weaver's tools,woodcarver's tools",
+        "aliases": [
+          "AI/Background/Rival Intern@0#0"
+        ],
         "kind": "choice",
         "category": "tools",
         "count": 1,
@@ -25762,7 +26347,10 @@
         }
       },
       {
-        "id": "AI/Background/Rival Intern@0#1",
+        "id": "AI/Background/Rival Intern@0#languages:choice:any",
+        "aliases": [
+          "AI/Background/Rival Intern@0#1"
+        ],
         "kind": "choice",
         "category": "languages",
         "count": 1,
@@ -25771,7 +26359,10 @@
         }
       },
       {
-        "id": "AI/Background/Rival Intern@0#2",
+        "id": "AI/Background/Rival Intern@0#skills:fixed:History,Investigation",
+        "aliases": [
+          "AI/Background/Rival Intern@0#2"
+        ],
         "kind": "fixed",
         "category": "skills",
         "names": [
@@ -26122,7 +26713,10 @@
     "source": "BMT",
     "grants": [
       {
-        "id": "BMT/Background/Ruined@0#0",
+        "id": "BMT/Background/Ruined@0#tools:choice:from=dice set,dragonchess set,playing card set,three-dragon ante set",
+        "aliases": [
+          "BMT/Background/Ruined@0#0"
+        ],
         "kind": "choice",
         "category": "tools",
         "count": 1,
@@ -26137,7 +26731,10 @@
         }
       },
       {
-        "id": "BMT/Background/Ruined@0#1",
+        "id": "BMT/Background/Ruined@0#languages:choice:any",
+        "aliases": [
+          "BMT/Background/Ruined@0#1"
+        ],
         "kind": "choice",
         "category": "languages",
         "count": 1,
@@ -26146,7 +26743,10 @@
         }
       },
       {
-        "id": "BMT/Background/Ruined@0#2",
+        "id": "BMT/Background/Ruined@0#skills:fixed:Stealth,Survival",
+        "aliases": [
+          "BMT/Background/Ruined@0#2"
+        ],
         "kind": "fixed",
         "category": "skills",
         "names": [
@@ -26350,7 +26950,10 @@
     "source": "BGG",
     "grants": [
       {
-        "id": "BGG/Background/Rune Carver@0#0",
+        "id": "BGG/Background/Rune Carver@0#tools:choice:from=alchemist's supplies,brewer's supplies,calligrapher's supplies,carpenter's tools,cartographer's tools,cobbler's tools,cook's utensils,glassblower's tools,jeweler's tools,leatherworker's tools,mason's tools,painter's supplies,potter's tools,smith's tools,tinker's tools,weaver's tools,woodcarver's tools",
+        "aliases": [
+          "BGG/Background/Rune Carver@0#0"
+        ],
         "kind": "choice",
         "category": "tools",
         "count": 1,
@@ -26378,7 +26981,10 @@
         }
       },
       {
-        "id": "BGG/Background/Rune Carver@0#1",
+        "id": "BGG/Background/Rune Carver@0#languages:fixed:Giant",
+        "aliases": [
+          "BGG/Background/Rune Carver@0#1"
+        ],
         "kind": "fixed",
         "category": "languages",
         "names": [
@@ -26386,7 +26992,10 @@
         ]
       },
       {
-        "id": "BGG/Background/Rune Carver@0#2",
+        "id": "BGG/Background/Rune Carver@0#skills:fixed:History,Perception",
+        "aliases": [
+          "BGG/Background/Rune Carver@0#2"
+        ],
         "kind": "fixed",
         "category": "skills",
         "names": [
@@ -26585,7 +27194,10 @@
     "source": "PHB",
     "grants": [
       {
-        "id": "PHB/Background/Sage@0#0",
+        "id": "PHB/Background/Sage@0#languages:choice:any",
+        "aliases": [
+          "PHB/Background/Sage@0#0"
+        ],
         "kind": "choice",
         "category": "languages",
         "count": 2,
@@ -26594,7 +27206,10 @@
         }
       },
       {
-        "id": "PHB/Background/Sage@0#1",
+        "id": "PHB/Background/Sage@0#skills:fixed:Arcana,History",
+        "aliases": [
+          "PHB/Background/Sage@0#1"
+        ],
         "kind": "fixed",
         "category": "skills",
         "names": [
@@ -26993,7 +27608,10 @@
     "source": "PHB",
     "grants": [
       {
-        "id": "PHB/Background/Sailor@0#0",
+        "id": "PHB/Background/Sailor@0#tools:fixed:navigator's tools,vehicles (water)",
+        "aliases": [
+          "PHB/Background/Sailor@0#0"
+        ],
         "kind": "fixed",
         "category": "tools",
         "names": [
@@ -27002,7 +27620,10 @@
         ]
       },
       {
-        "id": "PHB/Background/Sailor@0#1",
+        "id": "PHB/Background/Sailor@0#skills:fixed:Athletics,Perception",
+        "aliases": [
+          "PHB/Background/Sailor@0#1"
+        ],
         "kind": "fixed",
         "category": "skills",
         "names": [
@@ -27349,7 +27970,10 @@
     "source": "GGR",
     "grants": [
       {
-        "id": "GGR/Background/Selesnya Initiate@0#0",
+        "id": "GGR/Background/Selesnya Initiate@0#tools:choice:from=alchemist's supplies,bagpipes,brewer's supplies,calligrapher's supplies,carpenter's tools,cartographer's tools,cobbler's tools,cook's utensils,drum,dulcimer,flute,glassblower's tools,horn,jeweler's tools,leatherworker's tools,lute,lyre,mason's tools,painter's supplies,pan flute,potter's tools,shawm,smith's tools,tinker's tools,viol,weaver's tools,woodcarver's tools",
+        "aliases": [
+          "GGR/Background/Selesnya Initiate@0#0"
+        ],
         "kind": "choice",
         "category": "tools",
         "count": 1,
@@ -27387,7 +28011,10 @@
         }
       },
       {
-        "id": "GGR/Background/Selesnya Initiate@0#1",
+        "id": "GGR/Background/Selesnya Initiate@0#languages:choice:any",
+        "aliases": [
+          "GGR/Background/Selesnya Initiate@0#1"
+        ],
         "kind": "choice",
         "category": "languages",
         "count": 1,
@@ -27396,7 +28023,10 @@
         }
       },
       {
-        "id": "GGR/Background/Selesnya Initiate@0#2",
+        "id": "GGR/Background/Selesnya Initiate@0#skills:fixed:Nature,Persuasion",
+        "aliases": [
+          "GGR/Background/Selesnya Initiate@0#2"
+        ],
         "kind": "fixed",
         "category": "skills",
         "names": [
@@ -27917,7 +28547,10 @@
     "source": "GoS",
     "grants": [
       {
-        "id": "GoS/Background/Shipwright@0#0",
+        "id": "GoS/Background/Shipwright@0#tools:fixed:carpenter's tools,vehicles (water)",
+        "aliases": [
+          "GoS/Background/Shipwright@0#0"
+        ],
         "kind": "fixed",
         "category": "tools",
         "names": [
@@ -27926,7 +28559,10 @@
         ]
       },
       {
-        "id": "GoS/Background/Shipwright@0#1",
+        "id": "GoS/Background/Shipwright@0#skills:fixed:History,Perception",
+        "aliases": [
+          "GoS/Background/Shipwright@0#1"
+        ],
         "kind": "fixed",
         "category": "skills",
         "names": [
@@ -28322,7 +28958,10 @@
     "source": "SCC",
     "grants": [
       {
-        "id": "SCC/Background/Silverquill Student@0#0",
+        "id": "SCC/Background/Silverquill Student@0#languages:choice:any",
+        "aliases": [
+          "SCC/Background/Silverquill Student@0#0"
+        ],
         "kind": "choice",
         "category": "languages",
         "count": 2,
@@ -28331,7 +28970,10 @@
         }
       },
       {
-        "id": "SCC/Background/Silverquill Student@0#1",
+        "id": "SCC/Background/Silverquill Student@0#skills:fixed:Intimidation,Persuasion",
+        "aliases": [
+          "SCC/Background/Silverquill Student@0#1"
+        ],
         "kind": "fixed",
         "category": "skills",
         "names": [
@@ -28497,7 +29139,10 @@
     "source": "GGR",
     "grants": [
       {
-        "id": "GGR/Background/Simic Scientist@0#0",
+        "id": "GGR/Background/Simic Scientist@0#languages:choice:any",
+        "aliases": [
+          "GGR/Background/Simic Scientist@0#0"
+        ],
         "kind": "choice",
         "category": "languages",
         "count": 2,
@@ -28506,7 +29151,10 @@
         }
       },
       {
-        "id": "GGR/Background/Simic Scientist@0#1",
+        "id": "GGR/Background/Simic Scientist@0#skills:fixed:Arcana,Medicine",
+        "aliases": [
+          "GGR/Background/Simic Scientist@0#1"
+        ],
         "kind": "fixed",
         "category": "skills",
         "names": [
@@ -29072,7 +29720,10 @@
     "source": "GoS",
     "grants": [
       {
-        "id": "GoS/Background/Smuggler@0#0",
+        "id": "GoS/Background/Smuggler@0#tools:fixed:vehicles (water)",
+        "aliases": [
+          "GoS/Background/Smuggler@0#0"
+        ],
         "kind": "fixed",
         "category": "tools",
         "names": [
@@ -29080,7 +29731,10 @@
         ]
       },
       {
-        "id": "GoS/Background/Smuggler@0#1",
+        "id": "GoS/Background/Smuggler@0#skills:fixed:Athletics,Deception",
+        "aliases": [
+          "GoS/Background/Smuggler@0#1"
+        ],
         "kind": "fixed",
         "category": "skills",
         "names": [
@@ -29473,7 +30127,10 @@
     "source": "PHB",
     "grants": [
       {
-        "id": "PHB/Background/Soldier@0#0",
+        "id": "PHB/Background/Soldier@0#tools:choice:from=dice set,dragonchess set,playing card set,three-dragon ante set",
+        "aliases": [
+          "PHB/Background/Soldier@0#0"
+        ],
         "kind": "choice",
         "category": "tools",
         "count": 1,
@@ -29488,7 +30145,10 @@
         }
       },
       {
-        "id": "PHB/Background/Soldier@0#1",
+        "id": "PHB/Background/Soldier@0#tools:fixed:vehicles (land)",
+        "aliases": [
+          "PHB/Background/Soldier@0#1"
+        ],
         "kind": "fixed",
         "category": "tools",
         "names": [
@@ -29496,7 +30156,10 @@
         ]
       },
       {
-        "id": "PHB/Background/Soldier@0#2",
+        "id": "PHB/Background/Soldier@0#skills:fixed:Athletics,Intimidation",
+        "aliases": [
+          "PHB/Background/Soldier@0#2"
+        ],
         "kind": "fixed",
         "category": "skills",
         "names": [
@@ -29896,7 +30559,10 @@
     "source": "SCAG",
     "grants": [
       {
-        "id": "SCAG/Background/Urban Bounty Hunter@0#0",
+        "id": "SCAG/Background/Urban Bounty Hunter@0#tools:choice:from=bagpipes,dice set,dragonchess set,drum,dulcimer,flute,horn,lute,lyre,pan flute,playing card set,shawm,thieves' tools,three-dragon ante set,viol",
+        "aliases": [
+          "SCAG/Background/Urban Bounty Hunter@0#0"
+        ],
         "kind": "choice",
         "category": "tools",
         "count": 2,
@@ -29984,7 +30650,10 @@
     "source": "PHB",
     "grants": [
       {
-        "id": "PHB/Background/Urchin@0#0",
+        "id": "PHB/Background/Urchin@0#tools:fixed:disguise kit,thieves' tools",
+        "aliases": [
+          "PHB/Background/Urchin@0#0"
+        ],
         "kind": "fixed",
         "category": "tools",
         "names": [
@@ -29993,7 +30662,10 @@
         ]
       },
       {
-        "id": "PHB/Background/Urchin@0#1",
+        "id": "PHB/Background/Urchin@0#skills:fixed:Sleight of Hand,Stealth",
+        "aliases": [
+          "PHB/Background/Urchin@0#1"
+        ],
         "kind": "fixed",
         "category": "skills",
         "names": [
@@ -30341,7 +31013,10 @@
     "source": "SCAG",
     "grants": [
       {
-        "id": "SCAG/Background/Uthgardt Tribe Member@0#0",
+        "id": "SCAG/Background/Uthgardt Tribe Member@0#tools:choice:from=alchemist's supplies,bagpipes,brewer's supplies,calligrapher's supplies,carpenter's tools,cartographer's tools,cobbler's tools,cook's utensils,drum,dulcimer,flute,glassblower's tools,horn,jeweler's tools,leatherworker's tools,lute,lyre,mason's tools,painter's supplies,pan flute,potter's tools,shawm,smith's tools,tinker's tools,viol,weaver's tools,woodcarver's tools",
+        "aliases": [
+          "SCAG/Background/Uthgardt Tribe Member@0#0"
+        ],
         "kind": "choice",
         "category": "tools",
         "count": 1,
@@ -30379,7 +31054,10 @@
         }
       },
       {
-        "id": "SCAG/Background/Uthgardt Tribe Member@0#1",
+        "id": "SCAG/Background/Uthgardt Tribe Member@0#languages:choice:any",
+        "aliases": [
+          "SCAG/Background/Uthgardt Tribe Member@0#1"
+        ],
         "kind": "choice",
         "category": "languages",
         "count": 1,
@@ -30388,7 +31066,10 @@
         }
       },
       {
-        "id": "SCAG/Background/Uthgardt Tribe Member@0#2",
+        "id": "SCAG/Background/Uthgardt Tribe Member@0#skills:fixed:Athletics,Survival",
+        "aliases": [
+          "SCAG/Background/Uthgardt Tribe Member@0#2"
+        ],
         "kind": "fixed",
         "category": "skills",
         "names": [
@@ -30475,7 +31156,10 @@
     "source": "SCAG",
     "grants": [
       {
-        "id": "SCAG/Background/Variant City Watch (Investigator)@0#0",
+        "id": "SCAG/Background/Variant City Watch (Investigator)@0#languages:choice:any",
+        "aliases": [
+          "SCAG/Background/Variant City Watch (Investigator)@0#0"
+        ],
         "kind": "choice",
         "category": "languages",
         "count": 2,
@@ -30484,7 +31168,10 @@
         }
       },
       {
-        "id": "SCAG/Background/Variant City Watch (Investigator)@0#1",
+        "id": "SCAG/Background/Variant City Watch (Investigator)@0#skills:fixed:Insight,Investigation",
+        "aliases": [
+          "SCAG/Background/Variant City Watch (Investigator)@0#1"
+        ],
         "kind": "fixed",
         "category": "skills",
         "names": [
@@ -30561,7 +31248,10 @@
     "source": "PHB",
     "grants": [
       {
-        "id": "PHB/Background/Variant Criminal (Spy)@0#0",
+        "id": "PHB/Background/Variant Criminal (Spy)@0#tools:choice:from=dice set,dragonchess set,playing card set,three-dragon ante set",
+        "aliases": [
+          "PHB/Background/Variant Criminal (Spy)@0#0"
+        ],
         "kind": "choice",
         "category": "tools",
         "count": 1,
@@ -30576,7 +31266,10 @@
         }
       },
       {
-        "id": "PHB/Background/Variant Criminal (Spy)@0#1",
+        "id": "PHB/Background/Variant Criminal (Spy)@0#tools:fixed:thieves' tools",
+        "aliases": [
+          "PHB/Background/Variant Criminal (Spy)@0#1"
+        ],
         "kind": "fixed",
         "category": "tools",
         "names": [
@@ -30584,7 +31277,10 @@
         ]
       },
       {
-        "id": "PHB/Background/Variant Criminal (Spy)@0#2",
+        "id": "PHB/Background/Variant Criminal (Spy)@0#skills:fixed:Deception,Stealth",
+        "aliases": [
+          "PHB/Background/Variant Criminal (Spy)@0#2"
+        ],
         "kind": "fixed",
         "category": "skills",
         "names": [
@@ -30981,7 +31677,10 @@
     "source": "PHB",
     "grants": [
       {
-        "id": "PHB/Background/Variant Entertainer (Gladiator)@0#0",
+        "id": "PHB/Background/Variant Entertainer (Gladiator)@0#tools:fixed:disguise kit",
+        "aliases": [
+          "PHB/Background/Variant Entertainer (Gladiator)@0#0"
+        ],
         "kind": "fixed",
         "category": "tools",
         "names": [
@@ -30989,7 +31688,10 @@
         ]
       },
       {
-        "id": "PHB/Background/Variant Entertainer (Gladiator)@0#1",
+        "id": "PHB/Background/Variant Entertainer (Gladiator)@0#tools:choice:from=bagpipes,drum,dulcimer,flute,horn,lute,lyre,pan flute,shawm,viol",
+        "aliases": [
+          "PHB/Background/Variant Entertainer (Gladiator)@0#1"
+        ],
         "kind": "choice",
         "category": "tools",
         "count": 1,
@@ -31010,7 +31712,10 @@
         }
       },
       {
-        "id": "PHB/Background/Variant Entertainer (Gladiator)@0#2",
+        "id": "PHB/Background/Variant Entertainer (Gladiator)@0#skills:fixed:Acrobatics,Performance",
+        "aliases": [
+          "PHB/Background/Variant Entertainer (Gladiator)@0#2"
+        ],
         "kind": "fixed",
         "category": "skills",
         "names": [
@@ -31446,7 +32151,10 @@
     "source": "PHB",
     "grants": [
       {
-        "id": "PHB/Background/Variant Guild Artisan (Guild Merchant)@0#0",
+        "id": "PHB/Background/Variant Guild Artisan (Guild Merchant)@0#tools:choice:from=alchemist's supplies,brewer's supplies,calligrapher's supplies,carpenter's tools,cartographer's tools,cobbler's tools,cook's utensils,glassblower's tools,jeweler's tools,leatherworker's tools,mason's tools,navigator's tools,painter's supplies,potter's tools,smith's tools,tinker's tools,weaver's tools,woodcarver's tools",
+        "aliases": [
+          "PHB/Background/Variant Guild Artisan (Guild Merchant)@0#0"
+        ],
         "kind": "choice",
         "category": "tools",
         "count": 1,
@@ -31475,7 +32183,10 @@
         }
       },
       {
-        "id": "PHB/Background/Variant Guild Artisan (Guild Merchant)@0#1",
+        "id": "PHB/Background/Variant Guild Artisan (Guild Merchant)@0#languages:choice:any",
+        "aliases": [
+          "PHB/Background/Variant Guild Artisan (Guild Merchant)@0#1"
+        ],
         "kind": "choice",
         "category": "languages",
         "count": 1,
@@ -31484,7 +32195,10 @@
         }
       },
       {
-        "id": "PHB/Background/Variant Guild Artisan (Guild Merchant)@0#2",
+        "id": "PHB/Background/Variant Guild Artisan (Guild Merchant)@0#skills:fixed:Insight,Persuasion",
+        "aliases": [
+          "PHB/Background/Variant Guild Artisan (Guild Merchant)@0#2"
+        ],
         "kind": "fixed",
         "category": "skills",
         "names": [
@@ -31963,7 +32677,10 @@
     "source": "PHB",
     "grants": [
       {
-        "id": "PHB/Background/Variant Noble (Knight)@0#0",
+        "id": "PHB/Background/Variant Noble (Knight)@0#tools:choice:from=dice set,dragonchess set,playing card set,three-dragon ante set",
+        "aliases": [
+          "PHB/Background/Variant Noble (Knight)@0#0"
+        ],
         "kind": "choice",
         "category": "tools",
         "count": 1,
@@ -31978,7 +32695,10 @@
         }
       },
       {
-        "id": "PHB/Background/Variant Noble (Knight)@0#1",
+        "id": "PHB/Background/Variant Noble (Knight)@0#languages:choice:any",
+        "aliases": [
+          "PHB/Background/Variant Noble (Knight)@0#1"
+        ],
         "kind": "choice",
         "category": "languages",
         "count": 1,
@@ -31987,7 +32707,10 @@
         }
       },
       {
-        "id": "PHB/Background/Variant Noble (Knight)@0#2",
+        "id": "PHB/Background/Variant Noble (Knight)@0#skills:fixed:History,Persuasion",
+        "aliases": [
+          "PHB/Background/Variant Noble (Knight)@0#2"
+        ],
         "kind": "fixed",
         "category": "skills",
         "names": [
@@ -32340,7 +33063,10 @@
     "source": "PHB",
     "grants": [
       {
-        "id": "PHB/Background/Variant Noble (Retainers)@0#0",
+        "id": "PHB/Background/Variant Noble (Retainers)@0#tools:choice:from=dice set,dragonchess set,playing card set,three-dragon ante set",
+        "aliases": [
+          "PHB/Background/Variant Noble (Retainers)@0#0"
+        ],
         "kind": "choice",
         "category": "tools",
         "count": 1,
@@ -32355,7 +33081,10 @@
         }
       },
       {
-        "id": "PHB/Background/Variant Noble (Retainers)@0#1",
+        "id": "PHB/Background/Variant Noble (Retainers)@0#languages:choice:any",
+        "aliases": [
+          "PHB/Background/Variant Noble (Retainers)@0#1"
+        ],
         "kind": "choice",
         "category": "languages",
         "count": 1,
@@ -32364,7 +33093,10 @@
         }
       },
       {
-        "id": "PHB/Background/Variant Noble (Retainers)@0#2",
+        "id": "PHB/Background/Variant Noble (Retainers)@0#skills:fixed:History,Persuasion",
+        "aliases": [
+          "PHB/Background/Variant Noble (Retainers)@0#2"
+        ],
         "kind": "fixed",
         "category": "skills",
         "names": [
@@ -32716,7 +33448,10 @@
     "source": "PHB",
     "grants": [
       {
-        "id": "PHB/Background/Variant Sailor (Pirate)@0#0",
+        "id": "PHB/Background/Variant Sailor (Pirate)@0#tools:fixed:navigator's tools,vehicles (water)",
+        "aliases": [
+          "PHB/Background/Variant Sailor (Pirate)@0#0"
+        ],
         "kind": "fixed",
         "category": "tools",
         "names": [
@@ -32725,7 +33460,10 @@
         ]
       },
       {
-        "id": "PHB/Background/Variant Sailor (Pirate)@0#1",
+        "id": "PHB/Background/Variant Sailor (Pirate)@0#skills:fixed:Athletics,Perception",
+        "aliases": [
+          "PHB/Background/Variant Sailor (Pirate)@0#1"
+        ],
         "kind": "fixed",
         "category": "skills",
         "names": [
@@ -33072,7 +33810,10 @@
     "source": "PSA",
     "grants": [
       {
-        "id": "PSA/Background/Vizier@0#0",
+        "id": "PSA/Background/Vizier@0#tools:choice:from=alchemist's supplies,brewer's supplies,calligrapher's supplies,carpenter's tools,cartographer's tools,cobbler's tools,cook's utensils,glassblower's tools,jeweler's tools,leatherworker's tools,mason's tools,painter's supplies,potter's tools,smith's tools,tinker's tools,weaver's tools,woodcarver's tools",
+        "aliases": [
+          "PSA/Background/Vizier@0#0"
+        ],
         "kind": "choice",
         "category": "tools",
         "count": 1,
@@ -33100,7 +33841,10 @@
         }
       },
       {
-        "id": "PSA/Background/Vizier@0#1",
+        "id": "PSA/Background/Vizier@0#tools:choice:from=bagpipes,drum,dulcimer,flute,horn,lute,lyre,pan flute,shawm,viol",
+        "aliases": [
+          "PSA/Background/Vizier@0#1"
+        ],
         "kind": "choice",
         "category": "tools",
         "count": 1,
@@ -33121,7 +33865,10 @@
         }
       },
       {
-        "id": "PSA/Background/Vizier@0#2",
+        "id": "PSA/Background/Vizier@0#skills:fixed:History,Religion",
+        "aliases": [
+          "PSA/Background/Vizier@0#2"
+        ],
         "kind": "fixed",
         "category": "skills",
         "names": [
@@ -33483,7 +34230,10 @@
     "source": "PSA",
     "grants": [
       {
-        "id": "PSA/Background/Vizier (Dissenter)@0#0",
+        "id": "PSA/Background/Vizier (Dissenter)@0#tools:choice:from=alchemist's supplies,brewer's supplies,calligrapher's supplies,carpenter's tools,cartographer's tools,cobbler's tools,cook's utensils,glassblower's tools,jeweler's tools,leatherworker's tools,mason's tools,painter's supplies,potter's tools,smith's tools,tinker's tools,weaver's tools,woodcarver's tools",
+        "aliases": [
+          "PSA/Background/Vizier (Dissenter)@0#0"
+        ],
         "kind": "choice",
         "category": "tools",
         "count": 1,
@@ -33511,7 +34261,10 @@
         }
       },
       {
-        "id": "PSA/Background/Vizier (Dissenter)@0#1",
+        "id": "PSA/Background/Vizier (Dissenter)@0#tools:choice:from=bagpipes,drum,dulcimer,flute,horn,lute,lyre,pan flute,shawm,viol",
+        "aliases": [
+          "PSA/Background/Vizier (Dissenter)@0#1"
+        ],
         "kind": "choice",
         "category": "tools",
         "count": 1,
@@ -33532,7 +34285,10 @@
         }
       },
       {
-        "id": "PSA/Background/Vizier (Dissenter)@0#2",
+        "id": "PSA/Background/Vizier (Dissenter)@0#skills:fixed:History,Religion",
+        "aliases": [
+          "PSA/Background/Vizier (Dissenter)@0#2"
+        ],
         "kind": "fixed",
         "category": "skills",
         "names": [
@@ -33894,7 +34650,10 @@
     "source": "EGW",
     "grants": [
       {
-        "id": "EGW/Background/Volstrucker Agent@0#0",
+        "id": "EGW/Background/Volstrucker Agent@0#tools:fixed:poisoner's kit",
+        "aliases": [
+          "EGW/Background/Volstrucker Agent@0#0"
+        ],
         "kind": "fixed",
         "category": "tools",
         "names": [
@@ -33902,7 +34661,10 @@
         ]
       },
       {
-        "id": "EGW/Background/Volstrucker Agent@0#1",
+        "id": "EGW/Background/Volstrucker Agent@0#languages:choice:any",
+        "aliases": [
+          "EGW/Background/Volstrucker Agent@0#1"
+        ],
         "kind": "choice",
         "category": "languages",
         "count": 1,
@@ -33911,7 +34673,10 @@
         }
       },
       {
-        "id": "EGW/Background/Volstrucker Agent@0#2",
+        "id": "EGW/Background/Volstrucker Agent@0#skills:fixed:Deception,Stealth",
+        "aliases": [
+          "EGW/Background/Volstrucker Agent@0#2"
+        ],
         "kind": "fixed",
         "category": "skills",
         "names": [
@@ -34216,7 +34981,10 @@
     "source": "SCAG",
     "grants": [
       {
-        "id": "SCAG/Background/Waterdhavian Noble@0#0",
+        "id": "SCAG/Background/Waterdhavian Noble@0#tools:choice:from=bagpipes,dice set,dragonchess set,drum,dulcimer,flute,horn,lute,lyre,pan flute,playing card set,shawm,three-dragon ante set,viol",
+        "aliases": [
+          "SCAG/Background/Waterdhavian Noble@0#0"
+        ],
         "kind": "choice",
         "category": "tools",
         "count": 1,
@@ -34241,7 +35009,10 @@
         }
       },
       {
-        "id": "SCAG/Background/Waterdhavian Noble@0#1",
+        "id": "SCAG/Background/Waterdhavian Noble@0#languages:choice:any",
+        "aliases": [
+          "SCAG/Background/Waterdhavian Noble@0#1"
+        ],
         "kind": "choice",
         "category": "languages",
         "count": 1,
@@ -34250,7 +35021,10 @@
         }
       },
       {
-        "id": "SCAG/Background/Waterdhavian Noble@0#2",
+        "id": "SCAG/Background/Waterdhavian Noble@0#skills:fixed:History,Persuasion",
+        "aliases": [
+          "SCAG/Background/Waterdhavian Noble@0#2"
+        ],
         "kind": "fixed",
         "category": "skills",
         "names": [
@@ -34337,7 +35111,10 @@
     "source": "AAG",
     "grants": [
       {
-        "id": "AAG/Background/Wildspacer@0#0",
+        "id": "AAG/Background/Wildspacer@0#tools:fixed:navigator's tools,vehicles (space)",
+        "aliases": [
+          "AAG/Background/Wildspacer@0#0"
+        ],
         "kind": "fixed",
         "category": "tools",
         "names": [
@@ -34346,7 +35123,10 @@
         ]
       },
       {
-        "id": "AAG/Background/Wildspacer@0#1",
+        "id": "AAG/Background/Wildspacer@0#skills:fixed:Athletics,Survival",
+        "aliases": [
+          "AAG/Background/Wildspacer@0#1"
+        ],
         "kind": "fixed",
         "category": "skills",
         "names": [
@@ -34478,7 +35258,10 @@
     "source": "WBtW",
     "grants": [
       {
-        "id": "WBtW/Background/Witchlight Hand@0#0",
+        "id": "WBtW/Background/Witchlight Hand@0#tools:choice:from=bagpipes,disguise kit,drum,dulcimer,flute,horn,lute,lyre,pan flute,shawm,viol",
+        "aliases": [
+          "WBtW/Background/Witchlight Hand@0#0"
+        ],
         "kind": "choice",
         "category": "tools",
         "count": 1,
@@ -34500,7 +35283,10 @@
         }
       },
       {
-        "id": "WBtW/Background/Witchlight Hand@0#1",
+        "id": "WBtW/Background/Witchlight Hand@0#languages:choice:any",
+        "aliases": [
+          "WBtW/Background/Witchlight Hand@0#1"
+        ],
         "kind": "choice",
         "category": "languages",
         "count": 1,
@@ -34509,7 +35295,10 @@
         }
       },
       {
-        "id": "WBtW/Background/Witchlight Hand@0#2",
+        "id": "WBtW/Background/Witchlight Hand@0#skills:fixed:Performance,Sleight of Hand",
+        "aliases": [
+          "WBtW/Background/Witchlight Hand@0#2"
+        ],
         "kind": "fixed",
         "category": "skills",
         "names": [
@@ -34832,7 +35621,10 @@
     "source": "SCC",
     "grants": [
       {
-        "id": "SCC/Background/Witherbloom Student@0#0",
+        "id": "SCC/Background/Witherbloom Student@0#tools:fixed:herbalism kit",
+        "aliases": [
+          "SCC/Background/Witherbloom Student@0#0"
+        ],
         "kind": "fixed",
         "category": "tools",
         "names": [
@@ -34840,7 +35632,10 @@
         ]
       },
       {
-        "id": "SCC/Background/Witherbloom Student@0#1",
+        "id": "SCC/Background/Witherbloom Student@0#languages:choice:any",
+        "aliases": [
+          "SCC/Background/Witherbloom Student@0#1"
+        ],
         "kind": "choice",
         "category": "languages",
         "count": 1,
@@ -34849,7 +35644,10 @@
         }
       },
       {
-        "id": "SCC/Background/Witherbloom Student@0#2",
+        "id": "SCC/Background/Witherbloom Student@0#skills:fixed:Nature,Survival",
+        "aliases": [
+          "SCC/Background/Witherbloom Student@0#2"
+        ],
         "kind": "fixed",
         "category": "skills",
         "names": [

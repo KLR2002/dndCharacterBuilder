@@ -151,11 +151,11 @@ function addedPairs(expected: Record<string, Recorded>, actual: Record<string, R
 /** Every grant id the Compendium carries on a class feature, subclass feature or feat. */
 function grantIdsOf(compendium: Compendium): Set<string> {
   const listings = compendium.for();
-  const carriers: { grants?: { id: string }[] }[] = [
+  const carriers: { grants?: { id: string; aliases?: string[] }[] }[] = [
     ...listings.classes().flatMap((c) => [...c.features, ...c.subclasses.flatMap((s) => s.features)]),
     ...listings.feats(),
   ];
-  return new Set(carriers.flatMap((carrier) => (carrier.grants ?? []).map((grant) => grant.id)));
+  return new Set(carriers.flatMap((carrier) => (carrier.grants ?? []).flatMap((grant) => [grant.id, ...(grant.aliases ?? [])])));
 }
 
 test("every armor, weapon and weapon attack in the baseline is still shown", () => {

@@ -103,6 +103,40 @@ export function moveLegacySourcePicks(character: Character, compendium: Compendi
 }
 
 /**
+ * Moves saved Proficiency Choice picks from a grant's former, position-based id to the grant's id. A grant
+ * carries each former id it had as `aliases`, so a character saved before ids were derived from the grant
+ * loads with its picks under the new id. A pick already under the grant's id keeps its place, and a name
+ * it already holds is not repeated. A saved id that no grant in the Compendium carries is kept as saved,
+ * so an Integrated Catalog that still has position ids resolves its own picks. Returns the character
+ * unchanged when no pick moves, so running it again changes nothing.
+ */
+export function moveAliasedProficiencyPicks(character: Character, compendium: Compendium): Character {
+  const picks = character.proficiencyPicks;
+  if (!picks || Object.keys(picks).length === 0) return character;
+
+  const sources = grantSourcesIn(compendium);
+  const idOfAlias = new Map<string, string>();
+  for (const source of sources.values()) {
+    for (const alias of source.aliases) idOfAlias.set(alias, source.id);
+  }
+  const next: Record<string, string[]> = {};
+  const aliased: Array<[string, string[]]> = [];
+  for (const [key, names] of Object.entries(picks)) {
+    if (!sources.has(key) && idOfAlias.has(key)) aliased.push([key, names]);
+    else next[key] = names;
+  }
+  if (aliased.length === 0) return character;
+
+  for (const [key, names] of aliased) {
+    const target = idOfAlias.get(key) as string;
+    const held = next[target] ?? [];
+    const added = names.filter((name) => !held.some((pick) => pick.toLowerCase() === name.toLowerCase()));
+    next[target] = [...held, ...added];
+  }
+  return { ...character, proficiencyPicks: Object.keys(next).length > 0 ? next : undefined };
+}
+
+/**
  * The reconciler's check on saved Proficiency Choice picks. It reads the Compendium and the
  * character directly rather than the granted-features pass, which reads the rule-choice module and so
  * cannot be imported from the reconciler. The check errs on the side of keeping a pick: it releases one
@@ -118,6 +152,9 @@ type GrantOwner =
   | { kind: "record"; origin: "Race" | "Subrace" | "Background"; name: string; source: string; raceName?: string; raceSource?: string };
 
 interface GrantSource {
+  /** The grant's id, and the former ids it was saved under. */
+  id: string;
+  aliases: string[];
   /** The feature the grant is printed on, named in the review notice. */
   feature: string;
   /** The level the feature is gained at. Feats are gained with no level, so 0. */
@@ -133,8 +170,10 @@ interface GrantSource {
 function grantSourcesIn(compendium: Compendium): Map<string, GrantSource> {
   const listings = compendium.for();
   const sources = new Map<string, GrantSource>();
-  const add = (grants: ProficiencyGrant[] | undefined, source: GrantSource) => {
-    for (const grant of grants ?? []) sources.set(grant.id, { ...source, requires: grant.requires ?? source.requires });
+  const add = (grants: ProficiencyGrant[] | undefined, source: Omit<GrantSource, "id" | "aliases">) => {
+    for (const grant of grants ?? []) {
+      sources.set(grant.id, { ...source, id: grant.id, aliases: grant.aliases ?? [], requires: grant.requires ?? source.requires });
+    }
   };
   for (const cls of listings.classes()) {
     add(cls.grants, {

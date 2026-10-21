@@ -55,16 +55,16 @@ test("grants are added to class, subclass and feat features with clear prose, an
   const outFeats = JSON.parse(enriched.feats);
 
   const [sample] = outClasses;
-  assert.deepEqual(sample.features[0].grants, [
-    { id: "TST/Sample Class/Lantern Training@1#0", kind: "fixed", category: "tools", names: ["lantern-maker's kit"] },
+  assert.deepEqual(shapes(sample.features[0].grants), [
+    { id: "TST/Sample Class/Lantern Training@1#tools:fixed:lantern-maker's kit", kind: "fixed", category: "tools", names: ["lantern-maker's kit"] },
   ]);
   assert.equal("grants" in sample.features[1], false, "a feature with no proficiency sentence gets no grants field");
-  assert.deepEqual(sample.subclasses[0].features[0].grants, [
-    { id: "TST/Sample Class/Sample Path/Mind Guard@3#0", kind: "fixed", category: "savingThrows", names: ["Strength", "Dexterity", "Constitution", "Intelligence", "Wisdom", "Charisma"] },
+  assert.deepEqual(shapes(sample.subclasses[0].features[0].grants), [
+    { id: "TST/Sample Class/Sample Path/Mind Guard@3#savingThrows:fixed:Charisma,Constitution,Dexterity,Intelligence,Strength,Wisdom", kind: "fixed", category: "savingThrows", names: ["Strength", "Dexterity", "Constitution", "Intelligence", "Wisdom", "Charisma"] },
   ]);
-  assert.deepEqual(outFeats[0].grants, [
+  assert.deepEqual(shapes(outFeats[0].grants), [
     {
-      id: "TST/Feat/Sample Feat@0#0",
+      id: "TST/Feat/Sample Feat@0#tools:choice:from=calligrapher's supplies,painter's supplies",
       kind: "choice",
       category: "tools",
       count: 1,
@@ -102,7 +102,7 @@ test("an override supplies grants for a feature the extractor could not parse, n
   };
   const enriched = enrichGrantFiles(original, { classes: [], feats: [override] });
   const [, featTwo] = JSON.parse(enriched.feats);
-  assert.deepEqual(featTwo.grants, [{ id: "TST/Feat/Sample Feat Two@0#0", kind: "fixed", category: "armor", names: ["light armor"] }]);
+  assert.deepEqual(shapes(featTwo.grants), [{ id: "TST/Feat/Sample Feat Two@0#armor:fixed:light armor", kind: "fixed", category: "armor", names: ["light armor"] }]);
 });
 
 test("an override that names a feature the files do not contain is an error", () => {
@@ -180,10 +180,10 @@ test("two classes with one name from different sources enrich without error, and
   const twinFiles = { classes: canonical(twins), feats: canonical([]) };
   const enriched = enrichGrantFiles(twinFiles, noOverrides);
   const [aaa, bbb] = JSON.parse(enriched.classes);
-  assert.deepEqual(aaa.features[0].grants.map((g: { id: string }) => g.id), ["AAA/Sample Twin/Lantern Training@1#0"]);
-  assert.deepEqual(bbb.features[0].grants.map((g: { id: string }) => g.id), ["BBB/Sample Twin/Lantern Training@1#0"]);
+  assert.deepEqual(aaa.features[0].grants.map((g: { id: string }) => g.id), ["AAA/Sample Twin/Lantern Training@1#tools:fixed:lantern-maker's kit"]);
+  assert.deepEqual(bbb.features[0].grants.map((g: { id: string }) => g.id), ["BBB/Sample Twin/Lantern Training@1#tools:fixed:lantern-maker's kit"]);
   for (const cls of [aaa, bbb]) {
-    assert.deepEqual(cls.subclasses[0].features[0].grants.map((g: { id: string }) => g.id), ["AAA/Sample Twin/Sample Path/Mind Guard@3#0"]);
+    assert.deepEqual(cls.subclasses[0].features[0].grants.map((g: { id: string }) => g.id), ["AAA/Sample Twin/Sample Path/Mind Guard@3#savingThrows:fixed:Charisma,Constitution,Dexterity,Intelligence,Strength,Wisdom"]);
   }
   assert.deepEqual(stripGrantFiles(enriched), twinFiles);
 });
@@ -212,11 +212,11 @@ test("a class's starting tool texts become its Starting Proficiencies grants, an
   const enriched = enrichGrantFiles(files, noOverrides);
   const [tinker, singer, fighter] = JSON.parse(enriched.classes);
   assert.deepEqual(tinker.grants.map((g: { id: string }) => g.id), [
-    "TST/Sample Tinker/Starting Proficiencies@1#0",
-    "TST/Sample Tinker/Starting Proficiencies@1#1",
+    "TST/Sample Tinker/Starting Proficiencies@1#tools:fixed:lantern-maker's kit",
+    "TST/Sample Tinker/Starting Proficiencies@1#tools:choice:from=alchemist's supplies,brewer's supplies,calligrapher's supplies,carpenter's tools,cartographer's tools,cobbler's tools,cook's utensils,glassblower's tools,jeweler's tools,leatherworker's tools,mason's tools,painter's supplies,potter's tools,smith's tools,tinker's tools,weaver's tools,woodcarver's tools",
   ]);
-  assert.deepEqual(tinker.grants[0], {
-    id: "TST/Sample Tinker/Starting Proficiencies@1#0",
+  assert.deepEqual(withoutAliases(tinker.grants[0]), {
+    id: "TST/Sample Tinker/Starting Proficiencies@1#tools:fixed:lantern-maker's kit",
     kind: "fixed",
     category: "tools",
     names: ["lantern-maker's kit"],
@@ -227,6 +227,16 @@ test("a class's starting tool texts become its Starting Proficiencies grants, an
   assert.equal("grants" in fighter, false, "a class with no starting tools gets no grants field");
   assert.deepEqual(stripGrantFiles(enriched), files);
 });
+
+/** The grants without their aliases: these tests compare what a rule grants; the alias tests check the aliases. */
+function withoutAliases<T extends { aliases?: string[] }>(grant: T): Omit<T, "aliases"> {
+  const { aliases: _aliases, ...rest } = grant;
+  return rest;
+}
+
+function shapes<T extends { aliases?: string[] }>(grants: T[] | undefined): Omit<T, "aliases">[] {
+  return (grants ?? []).map(withoutAliases);
+}
 
 function withStaleGrant(): { classes: string; feats: string } {
   const data = JSON.parse(original.classes);
@@ -275,9 +285,9 @@ test("a folded option's grants are held on the option, enriched from its own tex
   const [cls] = JSON.parse(enriched.classes);
   const [plain, skilled] = cls.subclasses[0].features[0].choices.options;
   assert.equal("grants" in plain, false, "an option whose text grants nothing gets no grants field");
-  assert.deepEqual(skilled.grants, [
+  assert.deepEqual(shapes(skilled.grants), [
     {
-      id: "TST/Sample Class/Sample Path/Skilled Option@6#0",
+      id: "TST/Sample Class/Sample Path/Skilled Option@6#skills:choice:from=Athletics,Stealth",
       kind: "choice",
       category: "skills",
       count: 2,

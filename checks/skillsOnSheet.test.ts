@@ -166,7 +166,7 @@ test("the card's skill proficiencies are the sheet's, so the evaluated skill row
 
 test("an Expertise pick on a skill a Prodigy pick gave is released with a notice when the pick goes, and is not re-marked", () => {
   const compendium = integratedTestCompendium();
-  const PRODIGY_ID = "XGE/Feat/Prodigy@0#0";
+  const PRODIGY_ID = "XGE/Feat/Prodigy@0#skills:choice:any";
   const rogue = (extra: Partial<Character>) =>
     makeChar({
       classes: [{ className: "Rogue", source: "PHB", level: 1, subclassName: "Thief", subclassSource: "PHB" }],
@@ -195,7 +195,7 @@ test("an Expertise pick on a skill a Prodigy pick gave is released with a notice
  * with no grants, so the Totem tests read the real one.
  */
 const totemCompendium = () => inMemoryCompendium({ classes: loadTestCatalog("classes") }, { integrated: true });
-const TIGER_ID = "PHB/Barbarian/Path of the Totem Warrior/Tiger@6#0";
+const TIGER_ID = "PHB/Barbarian/Path of the Totem Warrior/Tiger@6#skills:choice:from=Acrobatics,Athletics,Stealth,Survival";
 const ASPECT_6 = "PHB__Barbarian__Path of the Totem Warrior__Aspect of the Beast 6";
 
 const totemAt6 = (aspect: string[] | undefined, extra: Partial<Character> = {}) =>

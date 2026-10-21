@@ -4,7 +4,10 @@
     "source": "SRD",
     "grants": [
       {
-        "id": "PHB/Background/Acolyte@0#0",
+        "id": "PHB/Background/Acolyte@0#languages:choice:any",
+        "aliases": [
+          "PHB/Background/Acolyte@0#0"
+        ],
         "kind": "choice",
         "category": "languages",
         "count": 2,
@@ -13,7 +16,10 @@
         }
       },
       {
-        "id": "PHB/Background/Acolyte@0#1",
+        "id": "PHB/Background/Acolyte@0#skills:fixed:Insight,Religion",
+        "aliases": [
+          "PHB/Background/Acolyte@0#1"
+        ],
         "kind": "fixed",
         "category": "skills",
         "names": [

@@ -256,7 +256,10 @@
     ],
     "grants": [
       {
-        "id": "TCE/Feat/Artificer Initiate@0#0",
+        "id": "TCE/Feat/Artificer Initiate@0#tools:choice:from=alchemist's supplies,brewer's supplies,calligrapher's supplies,carpenter's tools,cartographer's tools,cobbler's tools,cook's utensils,glassblower's tools,jeweler's tools,leatherworker's tools,mason's tools,painter's supplies,potter's tools,smith's tools,tinker's tools,weaver's tools,woodcarver's tools",
+        "aliases": [
+          "TCE/Feat/Artificer Initiate@0#0"
+        ],
         "kind": "choice",
         "category": "tools",
         "count": 1,
@@ -398,7 +401,10 @@
     ],
     "grants": [
       {
-        "id": "TCE/Feat/Chef@0#0",
+        "id": "TCE/Feat/Chef@0#tools:fixed:cook's utensils",
+        "aliases": [
+          "TCE/Feat/Chef@0#0"
+        ],
         "kind": "fixed",
         "category": "tools",
         "names": [
@@ -768,7 +774,10 @@
     ],
     "grants": [
       {
-        "id": "XGE/Feat/Fey Teleportation@0#0",
+        "id": "XGE/Feat/Fey Teleportation@0#languages:fixed:Sylvan",
+        "aliases": [
+          "XGE/Feat/Fey Teleportation@0#0"
+        ],
         "kind": "fixed",
         "category": "languages",
         "names": [
@@ -1014,7 +1023,10 @@
     ],
     "grants": [
       {
-        "id": "TCE/Feat/Gunner@0#0",
+        "id": "TCE/Feat/Gunner@0#weapons:fixed:firearms",
+        "aliases": [
+          "TCE/Feat/Gunner@0#0"
+        ],
         "kind": "fixed",
         "category": "weapons",
         "names": [
@@ -1061,7 +1073,10 @@
     ],
     "grants": [
       {
-        "id": "PHB/Feat/Heavily Armored@0#0",
+        "id": "PHB/Feat/Heavily Armored@0#armor:fixed:heavy armor",
+        "aliases": [
+          "PHB/Feat/Heavily Armored@0#0"
+        ],
         "kind": "fixed",
         "category": "armor",
         "names": [
@@ -1319,7 +1334,10 @@
     ],
     "grants": [
       {
-        "id": "PHB/Feat/Lightly Armored@0#0",
+        "id": "PHB/Feat/Lightly Armored@0#armor:fixed:light armor",
+        "aliases": [
+          "PHB/Feat/Lightly Armored@0#0"
+        ],
         "kind": "fixed",
         "category": "armor",
         "names": [
@@ -1350,7 +1368,10 @@
     ],
     "grants": [
       {
-        "id": "PHB/Feat/Linguist@0#0",
+        "id": "PHB/Feat/Linguist@0#languages:choice:any",
+        "aliases": [
+          "PHB/Feat/Linguist@0#0"
+        ],
         "kind": "choice",
         "category": "languages",
         "count": 3,
@@ -1489,7 +1510,10 @@
     ],
     "grants": [
       {
-        "id": "PHB/Feat/Moderately Armored@0#0",
+        "id": "PHB/Feat/Moderately Armored@0#armor:fixed:medium armor,shields",
+        "aliases": [
+          "PHB/Feat/Moderately Armored@0#0"
+        ],
         "kind": "fixed",
         "category": "armor",
         "names": [
@@ -1647,7 +1671,10 @@
     ],
     "grants": [
       {
-        "id": "TCE/Feat/Poisoner@0#0",
+        "id": "TCE/Feat/Poisoner@0#tools:fixed:poisoner's kit",
+        "aliases": [
+          "TCE/Feat/Poisoner@0#0"
+        ],
         "kind": "fixed",
         "category": "tools",
         "names": [
@@ -1691,7 +1718,10 @@
     ],
     "grants": [
       {
-        "id": "XGE/Feat/Prodigy@0#0",
+        "id": "XGE/Feat/Prodigy@0#skills:choice:any",
+        "aliases": [
+          "XGE/Feat/Prodigy@0#0"
+        ],
         "kind": "choice",
         "category": "skills",
         "count": 1,
@@ -1700,7 +1730,10 @@
         }
       },
       {
-        "id": "XGE/Feat/Prodigy@0#1",
+        "id": "XGE/Feat/Prodigy@0#tools:choice:any",
+        "aliases": [
+          "XGE/Feat/Prodigy@0#1"
+        ],
         "kind": "choice",
         "category": "tools",
         "count": 1,
@@ -1709,7 +1742,10 @@
         }
       },
       {
-        "id": "XGE/Feat/Prodigy@0#2",
+        "id": "XGE/Feat/Prodigy@0#languages:choice:any",
+        "aliases": [
+          "XGE/Feat/Prodigy@0#2"
+        ],
         "kind": "choice",
         "category": "languages",
         "count": 1,
@@ -1755,7 +1791,10 @@
     ],
     "grants": [
       {
-        "id": "PSK/Feat/Quicksmithing@0#0",
+        "id": "PSK/Feat/Quicksmithing@0#tools:fixed:quicksmith's tools",
+        "aliases": [
+          "PSK/Feat/Quicksmithing@0#0"
+        ],
         "kind": "fixed",
         "category": "tools",
         "names": [
@@ -1781,7 +1820,10 @@
     ],
     "grants": [
       {
-        "id": "PHB/Feat/Resilient@0#0",
+        "id": "PHB/Feat/Resilient@0#savingThrows:choice:from=Charisma,Constitution,Dexterity,Intelligence,Strength,Wisdom",
+        "aliases": [
+          "PHB/Feat/Resilient@0#0"
+        ],
         "kind": "choice",
         "category": "savingThrows",
         "count": 1,
@@ -2124,7 +2166,10 @@
     ],
     "grants": [
       {
-        "id": "TCE/Feat/Skill Expert@0#0",
+        "id": "TCE/Feat/Skill Expert@0#skills:choice:any",
+        "aliases": [
+          "TCE/Feat/Skill Expert@0#0"
+        ],
         "kind": "choice",
         "category": "skills",
         "count": 1,
@@ -2145,7 +2190,10 @@
     ],
     "grants": [
       {
-        "id": "PHB/Feat/Skilled@0#0",
+        "id": "PHB/Feat/Skilled@0#skills:choice:any",
+        "aliases": [
+          "PHB/Feat/Skilled@0#0"
+        ],
         "kind": "choice",
         "category": "skills",
         "count": 3,
@@ -2250,7 +2298,10 @@
     ],
     "grants": [
       {
-        "id": "XGE/Feat/Squat Nimbleness@0#0",
+        "id": "XGE/Feat/Squat Nimbleness@0#skills:choice:from=Acrobatics,Athletics",
+        "aliases": [
+          "XGE/Feat/Squat Nimbleness@0#0"
+        ],
         "kind": "choice",
         "category": "skills",
         "count": 1,
@@ -2457,7 +2508,10 @@
     ],
     "grants": [
       {
-        "id": "PHB/Feat/Tavern Brawler@0#0",
+        "id": "PHB/Feat/Tavern Brawler@0#weapons:fixed:improvised weapons",
+        "aliases": [
+          "PHB/Feat/Tavern Brawler@0#0"
+        ],
         "kind": "fixed",
         "category": "weapons",
         "names": [
@@ -2585,7 +2639,10 @@
     ],
     "grants": [
       {
-        "id": "PHB/Feat/Weapon Master@0#0",
+        "id": "PHB/Feat/Weapon Master@0#weapons:choice:base=martial,simple;without=;plus=;attack=any",
+        "aliases": [
+          "PHB/Feat/Weapon Master@0#0"
+        ],
         "kind": "choice",
         "category": "weapons",
         "count": 4,

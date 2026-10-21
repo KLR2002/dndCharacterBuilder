@@ -38,8 +38,10 @@ export interface GrantRequirement {
 }
 
 export interface FixedProficiencyGrant {
-  /** Built from source, owner, feature, level and position; never changes once shipped. */
+  /** Built from the feature and what the grant names. Never changes once shipped. */
   id: string;
+  /** Former ids this grant was saved under (its position in the feature). A saved pick under one moves to `id`. */
+  aliases?: string[];
   kind: "fixed";
   category: ProficiencyCategory;
   names: string[];
@@ -47,7 +49,10 @@ export interface FixedProficiencyGrant {
 }
 
 export interface ChoiceProficiencyGrant {
+  /** Built from the feature and the pool the grant picks from. Never changes once shipped. */
   id: string;
+  /** Former ids this grant was saved under (its position in the feature). A saved pick under one moves to `id`. */
+  aliases?: string[];
   kind: "choice";
   category: ProficiencyCategory;
   count: number;
