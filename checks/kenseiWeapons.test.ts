@@ -27,11 +27,13 @@ import {
  */
 
 const PATH = "XGE/Monk/Way of the Kensei/Path of the Kensei";
-const MELEE_3 = `${PATH}@3#1`;
-const RANGED_3 = `${PATH}@3#2`;
-const BLADE_6 = "XGE/Monk/Way of the Kensei/One with the Blade@6#0";
-const SHARPEN_11 = "XGE/Monk/Way of the Kensei/Sharpen the Blade@11#0";
-const UNERRING_17 = "XGE/Monk/Way of the Kensei/Unerring Accuracy@17#0";
+// The weapon pool's grant ids: the base types, excluded properties, extra weapon and attack type the choice names.
+const WEAPON_POOL = "weapons:choice:base=martial,simple;without=heavy,special;plus=longbow;attack=";
+const MELEE_3 = `${PATH}@3#${WEAPON_POOL}melee`;
+const RANGED_3 = `${PATH}@3#${WEAPON_POOL}ranged`;
+const BLADE_6 = `XGE/Monk/Way of the Kensei/One with the Blade@6#${WEAPON_POOL}any`;
+const SHARPEN_11 = `XGE/Monk/Way of the Kensei/Sharpen the Blade@11#${WEAPON_POOL}any`;
+const UNERRING_17 = `XGE/Monk/Way of the Kensei/Unerring Accuracy@17#${WEAPON_POOL}any`;
 
 const names = (entries: SheetEntry[]) => entries.map((entry) => entry.name);
 

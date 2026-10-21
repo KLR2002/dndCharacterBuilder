@@ -414,16 +414,51 @@ export function newProficiencyReport(): ProficiencyReport {
   return { covered: 0, unparsed: [] };
 }
 
-/** A grant id: source, owner, feature, level and the grant's position in its feature. Never changes once shipped. */
-export function grantId(subject: Pick<GrantSubject, "source" | "owner" | "feature" | "level">, position: number): string {
-  return `${subject.source}/${subject.owner}/${subject.feature}@${subject.level}#${position}`;
+/**
+ * What a grant is, as the tail of its id: its category, its kind, and what it names or picks from. Names are
+ * sorted, so the order a rule lists them in does not move the id. A count is left out, so a change of count
+ * keeps the pick; the pool is what identifies a choice.
+ */
+function grantKey(spec: ProficiencyGrantSpec): string {
+  if (spec.kind === "fixed") return `${spec.category}:fixed:${[...spec.names].sort().join(",")}`;
+  const { pool } = spec;
+  if (pool.kind === "any") return `${spec.category}:choice:any`;
+  if (pool.kind === "names") return `${spec.category}:choice:from=${[...pool.names].sort().join(",")}`;
+  const base = [...pool.base].sort().join(",");
+  const without = [...pool.withoutProperties].sort().join(",");
+  const plus = [...pool.plus].sort().join(",");
+  return `${spec.category}:choice:base=${base};without=${without};plus=${plus};attack=${pool.attackType ?? "any"}`;
 }
 
+/**
+ * The position-based id a grant had before ids were derived from what the grant is. It is kept on the grant as
+ * an alias, so a pick saved under it still resolves.
+ */
+function formerGrantId(subject: Pick<GrantSubject, "source" | "owner" | "feature" | "level">, position: number): string {
+  return `${featurePrefix(subject)}#${position}`;
+}
+
+function featurePrefix(subject: Pick<GrantSubject, "source" | "owner" | "feature" | "level">): string {
+  return `${subject.source}/${subject.owner}/${subject.feature}@${subject.level}`;
+}
+
+/**
+ * Builds a feature's grants from its specs, in order. Each grant's id is the feature plus what the grant is
+ * (see grantKey). Two grants of one feature with the same key are told apart by order: the second is `~2`, the
+ * third `~3`, and so on. Each grant keeps its position-based id as an alias.
+ */
 function build(
   subject: Pick<GrantSubject, "source" | "owner" | "feature" | "level">,
   specs: ProficiencyGrantSpec[]
 ): ProficiencyGrant[] {
-  return specs.map((spec, position) => ({ id: grantId(subject, position), ...spec }) as ProficiencyGrant);
+  const seen = new Map<string, number>();
+  return specs.map((spec, position) => {
+    const key = grantKey(spec);
+    const occurrence = (seen.get(key) ?? 0) + 1;
+    seen.set(key, occurrence);
+    const id = `${featurePrefix(subject)}#${occurrence === 1 ? key : `${key}~${occurrence}`}`;
+    return { id, aliases: [formerGrantId(subject, position)], ...spec } as ProficiencyGrant;
+  });
 }
 
 /** The source-less key an override is matched on. An override applies to every source's copy of a feature. */

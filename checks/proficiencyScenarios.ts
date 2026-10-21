@@ -316,7 +316,7 @@ export const SKILLS_ONLY: { label: string; build: Build }[] = [
       withClasses([cls("Bard", l, "College of Lore")], {
         race: race("Human"),
         background: background("Acolyte"),
-        proficiencyPicks: { "PHB/Bard/College of Lore/Bonus Proficiencies@3#0": ["Stealth", "Survival", "Athletics"] },
+        proficiencyPicks: { "PHB/Bard/College of Lore/Bonus Proficiencies@3#skills:choice:any": ["Stealth", "Survival", "Athletics"] },
       }),
   },
   {
@@ -326,7 +326,7 @@ export const SKILLS_ONLY: { label: string; build: Build }[] = [
         race: race("Human"),
         background: background("Acolyte"),
         asiSelections: l >= 4 ? [{ level: 4, type: "feat", featName: "Skilled", featSource: "PHB" }] : [],
-        proficiencyPicks: { "PHB/Feat/Skilled@0#0": ["Athletics", "Arcana", "Stealth"] },
+        proficiencyPicks: { "PHB/Feat/Skilled@0#skills:choice:any": ["Athletics", "Arcana", "Stealth"] },
       }),
   },
   {
@@ -345,7 +345,7 @@ export const SKILLS_ONLY: { label: string; build: Build }[] = [
             picked: ["Tiger"],
           },
         ],
-        proficiencyPicks: { "PHB/Barbarian/Path of the Totem Warrior/Tiger@6#0": ["Stealth", "Survival"] },
+        proficiencyPicks: { "PHB/Barbarian/Path of the Totem Warrior/Tiger@6#skills:choice:from=Acrobatics,Athletics,Stealth,Survival": ["Stealth", "Survival"] },
       }),
   },
 ];

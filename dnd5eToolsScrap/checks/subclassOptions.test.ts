@@ -252,11 +252,11 @@ test("two classes with one name from different sources scrape, and a subclass li
   assert.deepEqual(classes.map((c) => c.source), ["AAA", "BBB"]);
   for (const cls of classes) {
     const lantern = named(cls.features, "Lantern Training");
-    assert.deepEqual(lantern.grants?.map((g) => g.id), [`${cls.source}/Sample Artificer/Lantern Training@1#0`]);
+    assert.deepEqual(lantern.grants?.map((g) => g.id), [`${cls.source}/Sample Artificer/Lantern Training@1#tools:fixed:lantern-maker's kit`]);
     assert.deepEqual(cls.subclasses.map((sc) => sc.features.map((f) => f.name)), [["Path Tools"]]);
     assert.deepEqual(
       cls.subclasses[0].features[0].grants?.map((g) => g.id),
-      ["AAA/Sample Artificer/Sample Path/Path Tools@3#0"],
+      ["AAA/Sample Artificer/Sample Path/Path Tools@3#tools:fixed:lantern-maker's kit"],
       `the shared subclass feature under ${cls.source} carries the same ids`
     );
   }
@@ -292,9 +292,9 @@ test("a folded option carries the Proficiency Grants its own prose gives, and it
   const hawk = aspect.choices?.options?.find((option) => option.name === "Hawk");
   assert.ok(hawk, "Hawk is an option of the Aspect of the Beast");
   assert.equal(hawk.level, 6);
-  assert.deepEqual(hawk.grants, [
+  assert.deepEqual(hawk.grants?.map(({ aliases: _aliases, ...grant }) => grant), [
     {
-      id: "PHB/Barbarian/Path of the Totem Warrior/Hawk@6#0",
+      id: "PHB/Barbarian/Path of the Totem Warrior/Hawk@6#skills:choice:from=Athletics,Stealth",
       kind: "choice",
       category: "skills",
       count: 2,

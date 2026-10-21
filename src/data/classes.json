@@ -459,7 +459,10 @@
             "description": "When you join the College of Lore at 3rd level, you gain proficiency with three skills of your choice.",
             "grants": [
               {
-                "id": "PHB/Bard/College of Lore/Bonus Proficiencies@3#0",
+                "id": "PHB/Bard/College of Lore/Bonus Proficiencies@3#skills:choice:any",
+                "aliases": [
+                  "PHB/Bard/College of Lore/Bonus Proficiencies@3#0"
+                ],
                 "kind": "choice",
                 "category": "skills",
                 "count": 3,
@@ -556,7 +559,10 @@
     "description": "",
     "grants": [
       {
-        "id": "PHB/Bard/Starting Proficiencies@1#0",
+        "id": "PHB/Bard/Starting Proficiencies@1#tools:choice:from=bagpipes,drum,dulcimer,flute,horn,lute,lyre,pan flute,shawm,viol",
+        "aliases": [
+          "PHB/Bard/Starting Proficiencies@1#0"
+        ],
         "kind": "choice",
         "category": "tools",
         "count": 3,
@@ -776,7 +782,10 @@
             "description": "When you choose this domain at 1st level, you gain proficiency with heavy armor.",
             "grants": [
               {
-                "id": "PHB/Cleric/Life Domain/Bonus Proficiency@1#0",
+                "id": "PHB/Cleric/Life Domain/Bonus Proficiency@1#armor:fixed:heavy armor",
+                "aliases": [
+                  "PHB/Cleric/Life Domain/Bonus Proficiency@1#0"
+                ],
                 "kind": "fixed",
                 "category": "armor",
                 "names": [
@@ -921,7 +930,10 @@
         "isOptional": false,
         "grants": [
           {
-            "id": "PHB/Druid/Druidic@1#0",
+            "id": "PHB/Druid/Druidic@1#languages:fixed:Druidic",
+            "aliases": [
+              "PHB/Druid/Druidic@1#0"
+            ],
             "kind": "fixed",
             "category": "languages",
             "names": [
@@ -1353,7 +1365,10 @@
     "description": "",
     "grants": [
       {
-        "id": "PHB/Druid/Starting Proficiencies@1#0",
+        "id": "PHB/Druid/Starting Proficiencies@1#tools:fixed:herbalism kit",
+        "aliases": [
+          "PHB/Druid/Starting Proficiencies@1#0"
+        ],
         "kind": "fixed",
         "category": "tools",
         "names": [
@@ -1800,7 +1815,10 @@
         "isOptional": false,
         "grants": [
           {
-            "id": "PHB/Monk/Diamond Soul@14#0",
+            "id": "PHB/Monk/Diamond Soul@14#savingThrows:fixed:Charisma,Constitution,Dexterity,Intelligence,Strength,Wisdom",
+            "aliases": [
+              "PHB/Monk/Diamond Soul@14#0"
+            ],
             "kind": "fixed",
             "category": "savingThrows",
             "names": [
@@ -1916,7 +1934,10 @@
     "description": "",
     "grants": [
       {
-        "id": "PHB/Monk/Starting Proficiencies@1#0",
+        "id": "PHB/Monk/Starting Proficiencies@1#tools:choice:from=alchemist's supplies,bagpipes,brewer's supplies,calligrapher's supplies,carpenter's tools,cartographer's tools,cobbler's tools,cook's utensils,drum,dulcimer,flute,glassblower's tools,horn,jeweler's tools,leatherworker's tools,lute,lyre,mason's tools,painter's supplies,pan flute,potter's tools,shawm,smith's tools,tinker's tools,viol,weaver's tools,woodcarver's tools",
+        "aliases": [
+          "PHB/Monk/Starting Proficiencies@1#0"
+        ],
         "kind": "choice",
         "category": "tools",
         "count": 1,
@@ -2290,7 +2311,10 @@
         "isOptional": true,
         "grants": [
           {
-            "id": "PHB/Ranger/Deft Explorer@1#0",
+            "id": "PHB/Ranger/Deft Explorer@1#languages:choice:any",
+            "aliases": [
+              "PHB/Ranger/Deft Explorer@1#0"
+            ],
             "kind": "choice",
             "category": "languages",
             "count": 2,
@@ -2307,7 +2331,10 @@
         "isOptional": false,
         "grants": [
           {
-            "id": "PHB/Ranger/Favored Enemy@1#0",
+            "id": "PHB/Ranger/Favored Enemy@1#languages:choice:any",
+            "aliases": [
+              "PHB/Ranger/Favored Enemy@1#0"
+            ],
             "kind": "choice",
             "category": "languages",
             "count": 1,
@@ -2396,7 +2423,10 @@
         "isOptional": false,
         "grants": [
           {
-            "id": "PHB/Ranger/Favored Enemy and Natural Explorer improvements@6#0",
+            "id": "PHB/Ranger/Favored Enemy and Natural Explorer improvements@6#languages:choice:any",
+            "aliases": [
+              "PHB/Ranger/Favored Enemy and Natural Explorer improvements@6#0"
+            ],
             "kind": "choice",
             "category": "languages",
             "count": 1,
@@ -2467,7 +2497,10 @@
         "isOptional": false,
         "grants": [
           {
-            "id": "PHB/Ranger/Favored Enemy improvement@14#0",
+            "id": "PHB/Ranger/Favored Enemy improvement@14#languages:choice:any",
+            "aliases": [
+              "PHB/Ranger/Favored Enemy improvement@14#0"
+            ],
             "kind": "choice",
             "category": "languages",
             "count": 1,
@@ -2798,7 +2831,10 @@
         "isOptional": false,
         "grants": [
           {
-            "id": "PHB/Rogue/Slippery Mind@15#0",
+            "id": "PHB/Rogue/Slippery Mind@15#savingThrows:fixed:Wisdom",
+            "aliases": [
+              "PHB/Rogue/Slippery Mind@15#0"
+            ],
             "kind": "fixed",
             "category": "savingThrows",
             "names": [
@@ -2926,7 +2962,10 @@
     "description": "",
     "grants": [
       {
-        "id": "PHB/Rogue/Starting Proficiencies@1#0",
+        "id": "PHB/Rogue/Starting Proficiencies@1#tools:fixed:thieves' tools",
+        "aliases": [
+          "PHB/Rogue/Starting Proficiencies@1#0"
+        ],
         "kind": "fixed",
         "category": "tools",
         "names": [
@@ -3114,7 +3153,10 @@
             "description": "At 1st level, you choose one type of dragon as your ancestor. The damage type associated with each dragon is used by features you gain later.\n\n**Draconic Ancestry**\n\n\n| Dragon | Damage Type |\n\n| --- | --- |\n\n| Black | Acid |\n\n| Blue | Lightning |\n\n| Brass | Fire |\n\n| Bronze | Lightning |\n\n| Copper | Acid |\n\n| Gold | Fire |\n\n| Green | Poison |\n\n| Red | Fire |\n\n| Silver | Cold |\n\n| White | Cold |\n\nYou can speak, read, and write Draconic. Additionally, whenever you make a Charisma check when interacting with dragons, your proficiency bonus is doubled if it applies to the check.",
             "grants": [
               {
-                "id": "PHB/Sorcerer/Draconic Bloodline/Dragon Ancestor@1#0",
+                "id": "PHB/Sorcerer/Draconic Bloodline/Dragon Ancestor@1#languages:fixed:Draconic",
+                "aliases": [
+                  "PHB/Sorcerer/Draconic Bloodline/Dragon Ancestor@1#0"
+                ],
                 "kind": "fixed",
                 "category": "languages",
                 "names": [

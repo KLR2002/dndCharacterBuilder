@@ -2,7 +2,10 @@
   {
     "grants": [
       {
-        "id": "PHB/Race/Dragonborn@0#0",
+        "id": "PHB/Race/Dragonborn@0#languages:fixed:Common,Draconic",
+        "aliases": [
+          "PHB/Race/Dragonborn@0#0"
+        ],
         "kind": "fixed",
         "category": "languages",
         "names": [
@@ -174,7 +177,10 @@
   {
     "grants": [
       {
-        "id": "PHB/Race/Dwarf@0#0",
+        "id": "PHB/Race/Dwarf@0#tools:choice:from=brewer's supplies,mason's tools,smith's tools",
+        "aliases": [
+          "PHB/Race/Dwarf@0#0"
+        ],
         "kind": "choice",
         "category": "tools",
         "count": 1,
@@ -188,7 +194,10 @@
         }
       },
       {
-        "id": "PHB/Race/Dwarf@0#1",
+        "id": "PHB/Race/Dwarf@0#languages:fixed:Common,Dwarvish",
+        "aliases": [
+          "PHB/Race/Dwarf@0#1"
+        ],
         "kind": "fixed",
         "category": "languages",
         "names": [
@@ -197,7 +206,10 @@
         ]
       },
       {
-        "id": "PHB/Race/Dwarf@0#2",
+        "id": "PHB/Race/Dwarf@0#weapons:fixed:battleaxe,handaxe,light hammer,warhammer",
+        "aliases": [
+          "PHB/Race/Dwarf@0#2"
+        ],
         "kind": "fixed",
         "category": "weapons",
         "names": [
@@ -365,7 +377,10 @@
   {
     "grants": [
       {
-        "id": "PHB/Race/Elf@0#0",
+        "id": "PHB/Race/Elf@0#languages:fixed:Common,Elvish",
+        "aliases": [
+          "PHB/Race/Elf@0#0"
+        ],
         "kind": "fixed",
         "category": "languages",
         "names": [
@@ -374,7 +389,10 @@
         ]
       },
       {
-        "id": "PHB/Race/Elf@0#1",
+        "id": "PHB/Race/Elf@0#skills:fixed:Perception",
+        "aliases": [
+          "PHB/Race/Elf@0#1"
+        ],
         "kind": "fixed",
         "category": "skills",
         "names": [
@@ -434,7 +452,10 @@
       {
         "grants": [
           {
-            "id": "PHB/Subrace/Elf (High)@0#0",
+            "id": "PHB/Subrace/Elf (High)@0#languages:fixed:Common,Elvish",
+            "aliases": [
+              "PHB/Subrace/Elf (High)@0#0"
+            ],
             "kind": "fixed",
             "category": "languages",
             "names": [
@@ -443,7 +464,10 @@
             ]
           },
           {
-            "id": "PHB/Subrace/Elf (High)@0#1",
+            "id": "PHB/Subrace/Elf (High)@0#languages:choice:any",
+            "aliases": [
+              "PHB/Subrace/Elf (High)@0#1"
+            ],
             "kind": "choice",
             "category": "languages",
             "count": 1,
@@ -452,7 +476,10 @@
             }
           },
           {
-            "id": "PHB/Subrace/Elf (High)@0#2",
+            "id": "PHB/Subrace/Elf (High)@0#weapons:fixed:longbow,longsword,shortbow,shortsword",
+            "aliases": [
+              "PHB/Subrace/Elf (High)@0#2"
+            ],
             "kind": "fixed",
             "category": "weapons",
             "names": [
@@ -571,7 +598,10 @@
   {
     "grants": [
       {
-        "id": "PHB/Race/Gnome@0#0",
+        "id": "PHB/Race/Gnome@0#languages:fixed:Common,Gnomish",
+        "aliases": [
+          "PHB/Race/Gnome@0#0"
+        ],
         "kind": "fixed",
         "category": "languages",
         "names": [
@@ -624,7 +654,10 @@
       {
         "grants": [
           {
-            "id": "PHB/Subrace/Gnome (Rock)@0#0",
+            "id": "PHB/Subrace/Gnome (Rock)@0#tools:fixed:tinker's tools",
+            "aliases": [
+              "PHB/Subrace/Gnome (Rock)@0#0"
+            ],
             "kind": "fixed",
             "category": "tools",
             "names": [
@@ -736,7 +769,10 @@
   {
     "grants": [
       {
-        "id": "PHB/Race/Half-Elf@0#0",
+        "id": "PHB/Race/Half-Elf@0#languages:fixed:Common,Elvish",
+        "aliases": [
+          "PHB/Race/Half-Elf@0#0"
+        ],
         "kind": "fixed",
         "category": "languages",
         "names": [
@@ -745,7 +781,10 @@
         ]
       },
       {
-        "id": "PHB/Race/Half-Elf@0#1",
+        "id": "PHB/Race/Half-Elf@0#languages:choice:any",
+        "aliases": [
+          "PHB/Race/Half-Elf@0#1"
+        ],
         "kind": "choice",
         "category": "languages",
         "count": 1,
@@ -849,7 +888,10 @@
   {
     "grants": [
       {
-        "id": "PHB/Race/Half-Orc@0#0",
+        "id": "PHB/Race/Half-Orc@0#languages:fixed:Common,Orc",
+        "aliases": [
+          "PHB/Race/Half-Orc@0#0"
+        ],
         "kind": "fixed",
         "category": "languages",
         "names": [
@@ -858,7 +900,10 @@
         ]
       },
       {
-        "id": "PHB/Race/Half-Orc@0#1",
+        "id": "PHB/Race/Half-Orc@0#skills:fixed:Intimidation",
+        "aliases": [
+          "PHB/Race/Half-Orc@0#1"
+        ],
         "kind": "fixed",
         "category": "skills",
         "names": [
@@ -972,7 +1017,10 @@
   {
     "grants": [
       {
-        "id": "PHB/Race/Halfling@0#0",
+        "id": "PHB/Race/Halfling@0#languages:fixed:Common,Halfling",
+        "aliases": [
+          "PHB/Race/Halfling@0#0"
+        ],
         "kind": "fixed",
         "category": "languages",
         "names": [
@@ -1105,7 +1153,10 @@
   {
     "grants": [
       {
-        "id": "PHB/Race/Human@0#0",
+        "id": "PHB/Race/Human@0#languages:fixed:Common",
+        "aliases": [
+          "PHB/Race/Human@0#0"
+        ],
         "kind": "fixed",
         "category": "languages",
         "names": [
@@ -1113,7 +1164,10 @@
         ]
       },
       {
-        "id": "PHB/Race/Human@0#1",
+        "id": "PHB/Race/Human@0#languages:choice:any",
+        "aliases": [
+          "PHB/Race/Human@0#1"
+        ],
         "kind": "choice",
         "category": "languages",
         "count": 1,
@@ -1188,7 +1242,10 @@
   {
     "grants": [
       {
-        "id": "PHB/Race/Tiefling@0#0",
+        "id": "PHB/Race/Tiefling@0#languages:fixed:Common,Infernal",
+        "aliases": [
+          "PHB/Race/Tiefling@0#0"
+        ],
         "kind": "fixed",
         "category": "languages",
         "names": [

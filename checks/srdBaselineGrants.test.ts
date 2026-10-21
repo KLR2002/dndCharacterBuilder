@@ -5,7 +5,7 @@ import { loadSrdCatalog } from "./testUtils.ts";
 
 // The SRD classes, subclasses and feats are PHB content: prune-to-srd.mjs keeps only PHB rows.
 // A grant's id starts with the book it was scraped from, for example
-// "PHB/Cleric/Life Domain/Bonus Proficiency@1#0".
+// "PHB/Cleric/Life Domain/Bonus Proficiency@1#armor:fixed:heavy armor".
 const SRD_GRANT_BOOK = "PHB";
 
 interface GrantOwner {
@@ -56,7 +56,8 @@ test("srdBaselineGrants: the SRD Life Domain Bonus Proficiency feature grants he
   const feature = lifeDomain?.features.find((f) => f.name === "Bonus Proficiency");
   assert.deepEqual(feature?.grants, [
     {
-      id: "PHB/Cleric/Life Domain/Bonus Proficiency@1#0",
+      id: "PHB/Cleric/Life Domain/Bonus Proficiency@1#armor:fixed:heavy armor",
+      aliases: ["PHB/Cleric/Life Domain/Bonus Proficiency@1#0"],
       kind: "fixed",
       category: "armor",
       names: ["heavy armor"],

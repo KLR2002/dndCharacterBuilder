@@ -8,6 +8,11 @@ import { newProficiencyReport } from "../src/parser/proficiency-grants.ts";
 // Every name and sentence in this file is invented. The scrapers read a 5e.tools-shaped payload through
 // the client, so a fake client that serves fixed records exercises the real extraction.
 
+/** The grants without their aliases: these tests compare what a rule grants, and the alias tests check the aliases. */
+function shapes<T extends { aliases?: string[] }>(grants: T[] | undefined): Omit<T, "aliases">[] {
+  return (grants ?? []).map(({ aliases: _aliases, ...grant }) => grant);
+}
+
 function fakeClient(payloads: Record<string, unknown>): ToolsClient {
   return {
     fetchJson: async (endpoint: string) => {
@@ -40,9 +45,9 @@ test("a race's structured tool and language entries become race grants, in field
   assert.deepEqual(
     race.grants?.map((grant) => [grant.id, grant.kind, grant.category]),
     [
-      ["TST/Race/Sample Folk@0#0", "choice", "tools"],
-      ["TST/Race/Sample Folk@0#1", "fixed", "languages"],
-      ["TST/Race/Sample Folk@0#2", "choice", "languages"],
+      ["TST/Race/Sample Folk@0#tools:choice:from=alchemist's supplies,brewer's supplies,calligrapher's supplies,carpenter's tools,cartographer's tools,cobbler's tools,cook's utensils,glassblower's tools,jeweler's tools,leatherworker's tools,mason's tools,painter's supplies,potter's tools,smith's tools,tinker's tools,weaver's tools,woodcarver's tools", "choice", "tools"],
+      ["TST/Race/Sample Folk@0#languages:fixed:Common", "fixed", "languages"],
+      ["TST/Race/Sample Folk@0#languages:choice:any", "choice", "languages"],
     ],
   );
   assert.deepEqual(report.unparsed, []);
@@ -52,8 +57,8 @@ test("a subrace's tool and language entries become subrace grants, owned by its 
   const report = newProficiencyReport();
   const [race] = await scrapeRaces(fakeClient({ "data/races.json": { race: [RACE], subrace: [SUBRACE] } }), report);
   const [subrace] = race.subraces;
-  assert.deepEqual(subrace.grants, [
-    { id: "TST/Subrace/Sample Folk (Hillward)@0#0", kind: "fixed", category: "tools", names: ["navigator's tools"] },
+  assert.deepEqual(shapes(subrace.grants), [
+    { id: "TST/Subrace/Sample Folk (Hillward)@0#tools:fixed:navigator's tools", kind: "fixed", category: "tools", names: ["navigator's tools"] },
   ]);
 });
 
@@ -86,9 +91,9 @@ test("a background's tool and language entries become background grants named af
   assert.deepEqual(
     result.grants?.map((grant) => [grant.id, grant.kind, grant.category]),
     [
-      ["TST/Background/Sample Trade@0#0", "choice", "tools"],
-      ["TST/Background/Sample Trade@0#1", "fixed", "tools"],
-      ["TST/Background/Sample Trade@0#2", "choice", "languages"],
+      ["TST/Background/Sample Trade@0#tools:choice:from=dice set,dragonchess set,playing card set,three-dragon ante set", "choice", "tools"],
+      ["TST/Background/Sample Trade@0#tools:fixed:vehicles (land)", "fixed", "tools"],
+      ["TST/Background/Sample Trade@0#languages:choice:any", "choice", "languages"],
     ],
   );
   assert.deepEqual(report.unparsed, []);
@@ -104,9 +109,9 @@ test("a background's fixed skills become a skills grant after its tool and langu
   };
   const report = newProficiencyReport();
   const [result] = await scrapeBackgrounds(fakeClient({ "data/backgrounds.json": { background: [background] } }), report);
-  assert.deepEqual(result.grants, [
-    { id: "TST/Background/Sample Trade@0#0", kind: "fixed", category: "tools", names: ["vehicles (land)"] },
-    { id: "TST/Background/Sample Trade@0#1", kind: "fixed", category: "skills", names: ["Sleight of Hand", "Stealth"] },
+  assert.deepEqual(shapes(result.grants), [
+    { id: "TST/Background/Sample Trade@0#tools:fixed:vehicles (land)", kind: "fixed", category: "tools", names: ["vehicles (land)"] },
+    { id: "TST/Background/Sample Trade@0#skills:fixed:Sleight of Hand,Stealth", kind: "fixed", category: "skills", names: ["Sleight of Hand", "Stealth"] },
   ]);
   assert.deepEqual(result.skillProficiencies, ["Sleight of hand", "Stealth"]);
   assert.deepEqual(report.unparsed, []);
@@ -133,12 +138,12 @@ test("a race's fixed skills become a skills grant after its language grants, and
   assert.deepEqual(
     result.grants?.map((grant) => [grant.id, grant.category]),
     [
-      ["TST/Race/Sample Folk@0#0", "languages"],
-      ["TST/Race/Sample Folk@0#1", "skills"],
+      ["TST/Race/Sample Folk@0#languages:fixed:Common", "languages"],
+      ["TST/Race/Sample Folk@0#skills:fixed:Perception", "skills"],
     ],
   );
-  assert.deepEqual(result.subraces[0].grants, [
-    { id: "TST/Subrace/Sample Folk (Hillward)@0#0", kind: "fixed", category: "skills", names: ["Animal Handling"] },
+  assert.deepEqual(shapes(result.subraces[0].grants), [
+    { id: "TST/Subrace/Sample Folk (Hillward)@0#skills:fixed:Animal Handling", kind: "fixed", category: "skills", names: ["Animal Handling"] },
   ]);
   assert.deepEqual(report.unparsed, []);
 });
@@ -146,24 +151,24 @@ test("a race's fixed skills become a skills grant after its language grants, and
 test("a race whose record names no language speaks Common, and nothing else", async () => {
   const plain = { name: "Plain Folk", source: "TST", entries: [] };
   const [race] = await scrapeRaces(fakeClient({ "data/races.json": { race: [plain] } }), newProficiencyReport());
-  assert.deepEqual(race.grants, [{ id: "TST/Race/Plain Folk@0#0", kind: "fixed", category: "languages", names: ["Common"] }]);
+  assert.deepEqual(shapes(race.grants), [{ id: "TST/Race/Plain Folk@0#languages:fixed:Common", kind: "fixed", category: "languages", names: ["Common"] }]);
 });
 
 test("a race from the lineage book that names no language speaks Common and one language of the player's choice", async () => {
   const lineage = { name: "Lineage Folk", source: "MPMM", entries: [], lineage: "VRGR" };
   const [race] = await scrapeRaces(fakeClient({ "data/races.json": { race: [lineage] } }), newProficiencyReport());
-  assert.deepEqual(race.grants, [
-    { id: "MPMM/Race/Lineage Folk@0#0", kind: "fixed", category: "languages", names: ["Common"] },
-    { id: "MPMM/Race/Lineage Folk@0#1", kind: "choice", category: "languages", count: 1, pool: { kind: "any" } },
+  assert.deepEqual(shapes(race.grants), [
+    { id: "MPMM/Race/Lineage Folk@0#languages:fixed:Common", kind: "fixed", category: "languages", names: ["Common"] },
+    { id: "MPMM/Race/Lineage Folk@0#languages:choice:any", kind: "choice", category: "languages", count: 1, pool: { kind: "any" } },
   ]);
 });
 
 test("a reviewed race override replaces the structured grants of that race", async () => {
   const githyanki = { name: "Githyanki", source: "MPMM", entries: [], toolProficiencies: [{ any: 1 }] };
   const [race] = await scrapeRaces(fakeClient({ "data/races.json": { race: [githyanki] } }), newProficiencyReport());
-  assert.deepEqual(race.grants, [
-    { id: "MPMM/Race/Githyanki@0#0", kind: "fixed", category: "languages", names: ["Common"] },
-    { id: "MPMM/Race/Githyanki@0#1", kind: "choice", category: "languages", count: 1, pool: { kind: "any" } },
+  assert.deepEqual(shapes(race.grants), [
+    { id: "MPMM/Race/Githyanki@0#languages:fixed:Common", kind: "fixed", category: "languages", names: ["Common"] },
+    { id: "MPMM/Race/Githyanki@0#languages:choice:any", kind: "choice", category: "languages", count: 1, pool: { kind: "any" } },
   ]);
 });
 
@@ -179,11 +184,11 @@ test("a race's weapon and armor entries become grants after its skill grants, in
   };
   const report = newProficiencyReport();
   const [result] = await scrapeRaces(fakeClient({ "data/races.json": { race: [race] } }), report);
-  assert.deepEqual(result.grants, [
-    { id: "TST/Race/Sample Folk@0#0", kind: "fixed", category: "languages", names: ["Common"] },
-    { id: "TST/Race/Sample Folk@0#1", kind: "fixed", category: "skills", names: ["Perception"] },
-    { id: "TST/Race/Sample Folk@0#2", kind: "fixed", category: "weapons", names: ["longsword", "spear"] },
-    { id: "TST/Race/Sample Folk@0#3", kind: "fixed", category: "armor", names: ["light armor", "shields"] },
+  assert.deepEqual(shapes(result.grants), [
+    { id: "TST/Race/Sample Folk@0#languages:fixed:Common", kind: "fixed", category: "languages", names: ["Common"] },
+    { id: "TST/Race/Sample Folk@0#skills:fixed:Perception", kind: "fixed", category: "skills", names: ["Perception"] },
+    { id: "TST/Race/Sample Folk@0#weapons:fixed:longsword,spear", kind: "fixed", category: "weapons", names: ["longsword", "spear"] },
+    { id: "TST/Race/Sample Folk@0#armor:fixed:light armor,shields", kind: "fixed", category: "armor", names: ["light armor", "shields"] },
   ]);
   assert.deepEqual(report.unparsed, []);
 });
@@ -200,9 +205,9 @@ test("a subrace's weapon and armor entries become subrace grants, owned by its r
     armorProficiencies: [{ medium: true }],
   };
   const [result] = await scrapeRaces(fakeClient({ "data/races.json": { race: [race], subrace: [subrace] } }), newProficiencyReport());
-  assert.deepEqual(result.subraces[0].grants, [
-    { id: "TST/Subrace/Sample Folk (Hillward)@0#0", kind: "fixed", category: "weapons", names: ["rapier"] },
-    { id: "TST/Subrace/Sample Folk (Hillward)@0#1", kind: "fixed", category: "armor", names: ["medium armor"] },
+  assert.deepEqual(shapes(result.subraces[0].grants), [
+    { id: "TST/Subrace/Sample Folk (Hillward)@0#weapons:fixed:rapier", kind: "fixed", category: "weapons", names: ["rapier"] },
+    { id: "TST/Subrace/Sample Folk (Hillward)@0#armor:fixed:medium armor", kind: "fixed", category: "armor", names: ["medium armor"] },
   ]);
 });
 
@@ -217,8 +222,8 @@ test("a race weapon choice the mapping cannot state leaves out the race's weapon
   };
   const report = newProficiencyReport();
   const [result] = await scrapeRaces(fakeClient({ "data/races.json": { race: [race] } }), report);
-  assert.deepEqual(result.grants, [
-    { id: "TST/Race/Sample Folk@0#0", kind: "fixed", category: "languages", names: ["Common", "Goblin"] },
+  assert.deepEqual(shapes(result.grants), [
+    { id: "TST/Race/Sample Folk@0#languages:fixed:Common,Goblin", kind: "fixed", category: "languages", names: ["Common", "Goblin"] },
   ]);
   assert.deepEqual(report.unparsed, [
     { owner: "Race", feature: "Sample Folk", level: 0, unparsed: ["weapons: choose"] },
@@ -229,10 +234,10 @@ test("a reviewed subrace override gives the one language of choice its trait nam
   const gith = { name: "Gith", source: "TST", entries: [], languageProficiencies: [{ common: true, other: true }] };
   const githyanki = { name: "Githyanki", source: "TST", raceName: "Gith", raceSource: "TST", entries: [] };
   const [race] = await scrapeRaces(fakeClient({ "data/races.json": { race: [gith], subrace: [githyanki] } }), newProficiencyReport());
-  assert.deepEqual(race.subraces[0].grants, [
-    { id: "TST/Subrace/Gith (Githyanki)@0#0", kind: "choice", category: "languages", count: 1, pool: { kind: "any" } },
-    { id: "TST/Subrace/Gith (Githyanki)@0#1", kind: "fixed", category: "weapons", names: ["shortsword", "longsword", "greatsword"] },
-    { id: "TST/Subrace/Gith (Githyanki)@0#2", kind: "fixed", category: "armor", names: ["light armor", "medium armor"] },
+  assert.deepEqual(shapes(race.subraces[0].grants), [
+    { id: "TST/Subrace/Gith (Githyanki)@0#languages:choice:any", kind: "choice", category: "languages", count: 1, pool: { kind: "any" } },
+    { id: "TST/Subrace/Gith (Githyanki)@0#weapons:fixed:greatsword,longsword,shortsword", kind: "fixed", category: "weapons", names: ["shortsword", "longsword", "greatsword"] },
+    { id: "TST/Subrace/Gith (Githyanki)@0#armor:fixed:light armor,medium armor", kind: "fixed", category: "armor", names: ["light armor", "medium armor"] },
   ]);
 });
 
@@ -249,8 +254,8 @@ test("a reviewed subrace override holds a race's count when the subrace's entrie
   };
   const [race] = await scrapeRaces(fakeClient({ "data/races.json": { race: [keldonRace], subrace: [keldon] } }), newProficiencyReport());
   assert.deepEqual(
-    race.subraces[0].grants,
-    [{ id: "TST/Subrace/Human (Keldon)@0#0", kind: "fixed", category: "skills", names: ["Athletics"] }],
+    shapes(race.subraces[0].grants),
+    [{ id: "TST/Subrace/Human (Keldon)@0#skills:fixed:Athletics", kind: "fixed", category: "skills", names: ["Athletics"] }],
     "the subrace grants no language beyond its race, and keeps its fixed skill",
   );
 });
