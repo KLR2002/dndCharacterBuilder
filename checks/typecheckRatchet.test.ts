@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { compareToBaseline, parseTscOutput, toBaseline } from "../scripts/typecheck-ratchet.mjs";
+import { compareToBaseline, normalizeMessage, parseTscOutput, toBaseline } from "../scripts/typecheck-ratchet.mjs";
 
 // The type-check ratchet (scripts/typecheck-ratchet.mjs) runs tsc on tsconfig.checks.json and compares the
 // errors with checks/fixtures/typecheckBaseline.json. These tests pin the comparison on invented errors.
@@ -75,4 +75,54 @@ test("a baseline is written in a stable order, one entry per file, code and mess
   assert.ok(widget);
   assert.equal(widget.count, 2);
   assert.equal(Object.hasOwn(widget, "line"), false);
+});
+
+// tsc prints the members of a union in an order that depends on internal type ids, so the same error can
+// come out with its union members in a different order from one run to the next. Messages are normalized
+// (union runs of quoted literals or identifiers sorted) before they are compared or recorded.
+
+const UNION_OUTPUT = (members: string) =>
+  `checks/invented.test.ts(5,9): error TS2322: Type '"Alpha"' is not assignable to type '${members}'.\n`;
+
+test("two messages that differ only in union member order compare equal", () => {
+  const recorded = toBaseline(parseTscOutput(UNION_OUTPUT('"beta" | "alpha" | "gamma"')));
+  const reordered = parseTscOutput(UNION_OUTPUT('"gamma" | "beta" | "alpha"'));
+  const result = compareToBaseline(reordered, recorded);
+  assert.deepEqual(result.newErrors, []);
+  assert.equal(result.resolved, 0);
+});
+
+test("a baseline read from file is normalized on load, so an unsorted recorded union still matches", () => {
+  const unsorted = {
+    version: 1,
+    note: "",
+    errors: [
+      {
+        file: "checks/invented.test.ts",
+        code: "TS2322",
+        message: "Type '\"Alpha\"' is not assignable to type '\"beta\" | \"alpha\" | \"gamma\"'.",
+        count: 1,
+      },
+    ],
+  };
+  const result = compareToBaseline(parseTscOutput(UNION_OUTPUT('"alpha" | "beta" | "gamma"')), unsorted);
+  assert.deepEqual(result.newErrors, []);
+});
+
+test("messages whose union has a different set of members do not compare equal", () => {
+  const recorded = toBaseline(parseTscOutput(UNION_OUTPUT('"beta" | "alpha"')));
+  const result = compareToBaseline(parseTscOutput(UNION_OUTPUT('"beta" | "alpha" | "gamma"')), recorded);
+  assert.equal(result.newErrors.length, 1);
+  assert.equal(result.newErrors[0].line, 5);
+  assert.equal(result.resolved, 1);
+});
+
+test("the normalizer leaves a message without unions unchanged", () => {
+  const plain = "Type 'string' is not assignable to type 'number'.";
+  assert.equal(normalizeMessage(plain), plain);
+});
+
+test("the normalizer leaves unions whose members are not literals or identifiers unchanged", () => {
+  const objectUnion = "Type '{ id: number; } | Gadget<Shape>' is not assignable to type 'Widget.Part | Gizmo'.";
+  assert.equal(normalizeMessage(objectUnion), objectUnion);
 });
