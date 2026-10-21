@@ -155,11 +155,11 @@ test("a subclass options entry becomes choices on its parent, with pick, option 
   assert.deepEqual(named(totem.features, "Totem Spirit").choices, {
     pick: 1,
     options: [
-      { name: "Bear", description: "Placeholder text for Bear at level 3.", source: "PHB" },
-      { name: "Eagle", description: "Placeholder text for Eagle at level 3.", source: "PHB" },
-      { name: "Wolf", description: "Placeholder text for Wolf at level 3.", source: "PHB" },
-      { name: "Elk", description: "Placeholder text for Elk at level 3.", source: "SCAG" },
-      { name: "Tiger", description: "Placeholder text for Tiger at level 3.", source: "SCAG" },
+      { name: "Bear", description: "Placeholder text for Bear at level 3.", source: "PHB", level: 3 },
+      { name: "Eagle", description: "Placeholder text for Eagle at level 3.", source: "PHB", level: 3 },
+      { name: "Wolf", description: "Placeholder text for Wolf at level 3.", source: "PHB", level: 3 },
+      { name: "Elk", description: "Placeholder text for Elk at level 3.", source: "SCAG", level: 3 },
+      { name: "Tiger", description: "Placeholder text for Tiger at level 3.", source: "SCAG", level: 3 },
     ],
   });
   const attunement = named(totem.features, "Totemic Attunement").choices;
@@ -202,8 +202,8 @@ test("a class feature with refClassFeature options gets choices and folds its si
   assert.deepEqual(pick.choices, {
     pick: 1,
     options: [
-      { name: "Alpha", description: "Placeholder text for Alpha.", source: "PHB" },
-      { name: "Beta", description: "Placeholder text for Beta.", source: "PHB" },
+      { name: "Alpha", description: "Placeholder text for Alpha.", source: "PHB", level: 2 },
+      { name: "Beta", description: "Placeholder text for Beta.", source: "PHB", level: 2 },
     ],
   });
   assert.deepEqual(barbarian.features.map((f) => f.name), ["Placeholder Pick"]);
@@ -262,4 +262,45 @@ test("two classes with one name from different sources scrape, and a subclass li
   }
   assert.equal(report.covered, 3, "two class features and one distinct subclass feature");
   assert.deepEqual(report.unparsed, []);
+});
+
+// A folded option keeps the Proficiency Grants its own prose gives, on the option itself, so the option's
+// grant applies only when the parent's pick names it. The option sentence is invented; the structure is the raw one.
+test("a folded option carries the Proficiency Grants its own prose gives, and its level", async () => {
+  const GRANT_PROSE = "Placeholder text. You gain proficiency in two skills from the following list: {@skill Athletics}, {@skill Stealth}.";
+  const raw = {
+    class: BARBARIAN_RAW.class,
+    classFeature: BARBARIAN_RAW.classFeature,
+    subclass: BARBARIAN_RAW.subclass,
+    subclassFeature: [
+      subclassParent("Aspect of the Beast", 6, [subclassRef("Bear", 6), subclassRef("Hawk", 6)]),
+      { ...subclassSibling("Bear", 6), entries: ["Placeholder text for Bear."] },
+      { ...subclassSibling("Hawk", 6), entries: [GRANT_PROSE] },
+    ],
+  };
+  const client = {
+    fetchJson: async (endpoint: string) => {
+      if (endpoint === "data/class/index.json") return { barbarian: "class-barbarian.json" };
+      if (endpoint === "data/class/class-barbarian.json") return raw;
+      throw new Error(`unexpected endpoint ${endpoint}`);
+    },
+  } as unknown as ToolsClient;
+
+  const [barbarian] = await scrapeClasses(client);
+  const aspect = named(barbarian.subclasses[0].features, "Aspect of the Beast");
+  // Invented option name: the reviewed overrides key on real feature names, so a real one would take its override instead.
+  const hawk = aspect.choices?.options?.find((option) => option.name === "Hawk");
+  assert.ok(hawk, "Hawk is an option of the Aspect of the Beast");
+  assert.equal(hawk.level, 6);
+  assert.deepEqual(hawk.grants, [
+    {
+      id: "PHB/Barbarian/Path of the Totem Warrior/Hawk@6#0",
+      kind: "choice",
+      category: "skills",
+      count: 2,
+      pool: { kind: "names", names: ["Athletics", "Stealth"] },
+    },
+  ]);
+  const bear = aspect.choices?.options?.find((option) => option.name === "Bear");
+  assert.equal(bear?.grants, undefined, "an option whose prose grants nothing carries no grants");
 });

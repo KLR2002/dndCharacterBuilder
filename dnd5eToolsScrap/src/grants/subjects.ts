@@ -12,10 +12,19 @@ export interface GrantRef {
   holder: GrantHolder;
 }
 
+/** A folded option of a feature's choice. Its grants are its own, applied while the parent's pick names it. */
+export interface TrackedChoiceOption extends GrantHolder {
+  name: string;
+  description: string;
+  source?: string;
+  level?: number;
+}
+
 export interface TrackedFeature extends GrantHolder {
   name: string;
   level: number;
   description: string;
+  choices?: { pick: number; options?: TrackedChoiceOption[] };
 }
 
 export interface TrackedClass extends GrantHolder {
@@ -48,14 +57,30 @@ export function classFeatureRefs(classes: TrackedClass[]): GrantRef[] {
   for (const cls of classes) {
     for (const feature of cls.features) {
       refs.push(ref({ source: cls.source, owner: cls.name, feature }));
+      refs.push(...optionRefs({ source: cls.source, owner: cls.name }, feature));
     }
     for (const sub of cls.subclasses) {
       for (const feature of sub.features) {
         refs.push(ref({ source: sub.source, owner: `${cls.name}/${sub.name}`, feature }));
+        refs.push(...optionRefs({ source: sub.source, owner: `${cls.name}/${sub.name}` }, feature));
       }
     }
   }
   return refs;
+}
+
+/** The grant refs of a feature's folded options, in option order. Each option is its own grant subject. */
+function optionRefs(owner: { source: string; owner: string }, feature: TrackedFeature): GrantRef[] {
+  return (feature.choices?.options ?? []).map((option) => ({
+    subject: {
+      source: owner.source,
+      owner: owner.owner,
+      feature: option.name,
+      level: option.level ?? feature.level,
+      description: option.description,
+    },
+    holder: option,
+  }));
 }
 
 /** Feats are their own grant owner: owner "Feat", level 0 (src/scrapers/feats.ts). */

@@ -10,13 +10,14 @@ import {
 } from "../parser/proficiency-grants.ts";
 import { PROFICIENCY_GRANT_OVERRIDES } from "../overrides/proficiency-grants.ts";
 import type {
+  ChoiceOption,
   ClassFeatureModel,
   ClassModel,
   FeatureChoice,
   SubclassAdditionalSpells,
   SubclassModel,
 } from "../types/models.ts";
-import type { ProficiencyReport } from "../types/proficiency.ts";
+import type { ProficiencyGrant, ProficiencyReport } from "../types/proficiency.ts";
 
 const STAT_NAMES: Record<string, string> = {
   str: "Strength",
@@ -125,6 +126,7 @@ function resolveChoice(
         name: cleanTags(sibling.name, "plain"),
         description: renderEntries(sibling.entries, "markdown"),
         source: sibling.source ?? parent.source,
+        level: sibling.level,
       })),
     },
     folded,
@@ -138,23 +140,41 @@ function resolveChoice(
 function featuresWithChoices(
   raws: any[],
   refType: "refClassFeature" | "refSubclassFeature"
-): { raw: any; choices?: FeatureChoice }[] {
+): { raw: any; choices?: FeatureChoice; folded: any[] }[] {
   const isOnlyRef = (f: any) =>
     Array.isArray(f.entries) && f.entries.length === 1 && f.entries[0]?.type === refType;
   const candidates = raws.filter((f) => !isOnlyRef(f));
 
-  const choicesByParent = new Map<any, FeatureChoice>();
+  const resolvedByParent = new Map<any, { choices: FeatureChoice; folded: any[] }>();
   const folded = new Set<any>();
   for (const raw of candidates) {
     const resolved = resolveChoice(raw, candidates, refType);
     if (!resolved) continue;
-    choicesByParent.set(raw, resolved.choices);
+    resolvedByParent.set(raw, resolved);
     for (const sibling of resolved.folded) folded.add(sibling);
   }
 
   return candidates
     .filter((f) => !folded.has(f))
-    .map((raw) => ({ raw, choices: choicesByParent.get(raw) }));
+    .map((raw) => {
+      const resolved = resolvedByParent.get(raw);
+      return { raw, choices: resolved?.choices, folded: resolved?.folded ?? [] };
+    });
+}
+
+/**
+ * The grant subjects of a parent's folded options, in option order. An option's own prose is its grant
+ * text, so its Proficiency Grants are extracted and held on the option, as a feature's are on the feature.
+ */
+function optionGrantSubjects(
+  choices: FeatureChoice | undefined,
+  folded: any[],
+  owner: { source: string; owner: string }
+): { holder: ChoiceOption; subject: GrantSubject }[] {
+  return (choices?.options ?? []).map((option, i) => ({
+    holder: option,
+    subject: { ...owner, feature: option.name, level: folded[i].level, description: option.description },
+  }));
 }
 
 export async function scrapeClasses(
@@ -166,7 +186,7 @@ export async function scrapeClasses(
 
   const classes: ClassModel[] = [];
   /** Features whose prose grants are resolved once every class is read (overrides may name any of them). */
-  const pending: Array<{ feature: ClassFeatureModel; subject: GrantSubject }> = [];
+  const pending: Array<{ holder: { grants?: ProficiencyGrant[] }; subject: GrantSubject }> = [];
 
   for (const [classKey, fileName] of Object.entries(classIndex)) {
     console.log(`  → Fetching ${classKey} (${fileName})...`);
@@ -247,7 +267,7 @@ export async function scrapeClasses(
       );
 
       // Skips entry ref stubs that only contain { type: "refClassFeature" }
-      for (const { raw: cf, choices } of featuresWithChoices(classFeaturesForThis, "refClassFeature")) {
+      for (const { raw: cf, choices, folded } of featuresWithChoices(classFeaturesForThis, "refClassFeature")) {
         const feature: ClassFeatureModel = {
           name: cleanTags(cf.name, "plain"),
           level: cf.level,
@@ -257,9 +277,10 @@ export async function scrapeClasses(
         };
         features.push(feature);
         pending.push({
-          feature,
+          holder: feature,
           subject: { source: raw.source, owner: raw.name, feature: feature.name, level: feature.level, description: feature.description },
         });
+        pending.push(...optionGrantSubjects(choices, folded, { source: raw.source, owner: raw.name }));
       }
 
       // Starting tools are a grant owner of their own: the class's level-1 tool grants, read from the same
@@ -293,7 +314,7 @@ export async function scrapeClasses(
 
         // Skips entry ref stubs that only contain { type: "refSubclassFeature" }
         const subclassName = cleanTags(sc.name, "plain");
-        for (const { raw: scf, choices } of featuresWithChoices(scFeaturesForThis, "refSubclassFeature")) {
+        for (const { raw: scf, choices, folded } of featuresWithChoices(scFeaturesForThis, "refSubclassFeature")) {
           const feature: ClassFeatureModel = {
             name: cleanTags(scf.name, "plain"),
             level: scf.level,
@@ -301,16 +322,12 @@ export async function scrapeClasses(
             ...(choices ? { choices } : {}),
           };
           scFeatures.push(feature);
+          const owner = { source: sc.source, owner: `${raw.name}/${subclassName}` };
           pending.push({
-            feature,
-            subject: {
-              source: sc.source,
-              owner: `${raw.name}/${subclassName}`,
-              feature: feature.name,
-              level: feature.level,
-              description: feature.description,
-            },
+            holder: feature,
+            subject: { ...owner, feature: feature.name, level: feature.level, description: feature.description },
           });
+          pending.push(...optionGrantSubjects(choices, folded, owner));
         }
 
         scFeatures.sort((a, b) => a.level - b.level);
@@ -377,7 +394,7 @@ export async function scrapeClasses(
     report
   );
   resolved.forEach((result, i) => {
-    if (result.grants.length > 0) pending[i].feature.grants = result.grants;
+    if (result.grants.length > 0) pending[i].holder.grants = result.grants;
   });
 
   return classes;
