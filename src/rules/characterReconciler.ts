@@ -32,8 +32,15 @@ import { pruneInvalidProficiencyPicks } from "./proficiencyPicks.ts";
  * The Giant Power cantrip sync reads only its own choice and the Barbarian's known spells, so
  * its position is free; it sits with the other known-spell syncs.
  * Proficiency picks are released before Expertise, so Expertise is pruned against the released state.
+ *
+ * `options.activeBooks` scopes only the Expertise pass: an Expertise mark on a skill that no active book
+ * grants is released. Omitted, the pass is unscoped, as it has always been.
  */
-export function reconcile(character: Character, compendium: Compendium): Character {
+export function reconcile(
+  character: Character,
+  compendium: Compendium,
+  options: { activeBooks?: string[] } = {},
+): Character {
   let updated = character;
 
   updated = pruneInvalidFightingStyles(updated);
@@ -45,9 +52,26 @@ export function reconcile(character: Character, compendium: Compendium): Charact
   updated = pruneInvalidMysticArcanum(updated);
   updated = pruneInvalidInfusions(updated, compendium);
   updated = pruneInvalidProficiencyPicks(updated, compendium);
-  updated = pruneInvalidExpertise(updated, { compendium });
+  updated = pruneInvalidExpertise(updated, { compendium, activeBooks: options.activeBooks });
 
   return updated;
+}
+
+/**
+ * Reconciles a character against the books now active, for the moments the active books change or a
+ * character is opened. Expertise is released where no active book grants the skill or tool, and a
+ * released mark is not restored when the book is re-enabled (the player marks it again).
+ *
+ * Returns the input itself when nothing changes, so a caller can skip the save. Some passes rebuild
+ * their lists even when nothing is pruned, so "changed" is judged on the saved form, not on identity.
+ */
+export function reconcileForActiveBooks(
+  character: Character,
+  compendium: Compendium,
+  activeBooks: string[],
+): Character {
+  const reconciled = reconcile(character, compendium, { activeBooks });
+  return JSON.stringify(reconciled) === JSON.stringify(character) ? character : reconciled;
 }
 
 /** Appends review notices to `needsReview`, skipping any already present. Unchanged when there are none. */

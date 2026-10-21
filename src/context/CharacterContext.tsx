@@ -10,6 +10,7 @@ import {
 import type { Character, Folder } from "../types/character";
 import { applyCharacterUpdate } from "./characterUpdates";
 import { migrateCharacter } from "../rules/migrateCharacter";
+import { reconcileForActiveBooks } from "../rules/characterReconciler";
 import { checkActiveBooksIntegrity } from "../rules/builderTransitions";
 import { getRaces } from "../services/dataService";
 import { currentCompendium, integrate as integrateCompendium, revertToSrd as revertCompendiumToSrd } from "../services/compendium";
@@ -351,6 +352,27 @@ export function CharacterProvider({ children }: { children: React.ReactNode }) {
   const selectCharacter = (id: string | null) => {
     setSelectedCharacterId(id);
   };
+
+  // The open character is reconciled against the active books when it is opened, when the books change,
+  // when the catalog is swapped, and once loading finishes (it may be selected before its record loads).
+  // Unopened characters are reconciled when they are opened. The committed characters are read through a
+  // ref, so the check runs at those moments only. The save goes through updateCharacter, and only when
+  // reconciling changed the character.
+  const committed = useRef({ characters, updateCharacter });
+  useEffect(() => {
+    committed.current = { characters, updateCharacter };
+  });
+  useEffect(() => {
+    if (isLoading || selectedCharacterId === null) return;
+    const { characters: loaded, updateCharacter: update } = committed.current;
+    const character = loaded.find((c) => c.id === selectedCharacterId);
+    if (!character) return;
+    const compendium = currentCompendium();
+    if (reconcileForActiveBooks(character, compendium, activeBooks) === character) return;
+    update(selectedCharacterId, (c) => reconcileForActiveBooks(c, compendium, activeBooks)).catch((error) =>
+      console.error("Could not save the character reconciled to the active books:", error)
+    );
+  }, [selectedCharacterId, activeBooks, integratedAt, isLoading]);
 
   const currentCharacter = characters.find((c) => c.id === selectedCharacterId) || null;
 

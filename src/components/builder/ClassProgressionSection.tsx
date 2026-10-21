@@ -396,7 +396,7 @@ export const ClassProgressionSection: React.FC<ClassProgressionSectionProps> = (
               choice.pick === "proficiency"
                 ? clearProficiencyPick(cur, choice.id)
                 : { ...cur, ruleChoices: (cur.ruleChoices || []).filter((rc) => rc.id !== choice.id) };
-            return reconcile(next, currentCompendium());
+            return reconcile(next, currentCompendium(), { activeBooks });
           });
         };
 
@@ -536,7 +536,7 @@ export const ClassProgressionSection: React.FC<ClassProgressionSectionProps> = (
                   The following choices are no longer proficient: {invalidPicks.join(", ")}.
                 </Text>
                 <TouchableOpacity
-                  onPress={() => onUpdate((cur) => reconcile(cur, currentCompendium()))}
+                  onPress={() => onUpdate((cur) => reconcile(cur, currentCompendium(), { activeBooks }))}
                   hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                   style={{ alignSelf: "flex-start", marginTop: 2 }}
                 >

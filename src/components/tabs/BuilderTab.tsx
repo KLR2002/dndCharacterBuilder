@@ -323,7 +323,8 @@ export const BuilderTab: React.FC<BuilderTabProps> = ({
           chosenSkills: allPicked,
           skillChoices: updatedSkillChoices,
         },
-        currentCompendium()
+        currentCompendium(),
+        { activeBooks }
       )
     );
   };
