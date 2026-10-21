@@ -167,12 +167,72 @@ test("a reviewed race override replaces the structured grants of that race", asy
   ]);
 });
 
+test("a race's weapon and armor entries become grants after its skill grants, in that order", async () => {
+  const race = {
+    name: "Sample Folk",
+    source: "TST",
+    entries: [],
+    languageProficiencies: [{ common: true }],
+    skillProficiencies: [{ perception: true }],
+    weaponProficiencies: [{ "longsword|phb": true, "spear|phb": true }],
+    armorProficiencies: [{ light: true, shield: true }],
+  };
+  const report = newProficiencyReport();
+  const [result] = await scrapeRaces(fakeClient({ "data/races.json": { race: [race] } }), report);
+  assert.deepEqual(result.grants, [
+    { id: "TST/Race/Sample Folk@0#0", kind: "fixed", category: "languages", names: ["Common"] },
+    { id: "TST/Race/Sample Folk@0#1", kind: "fixed", category: "skills", names: ["Perception"] },
+    { id: "TST/Race/Sample Folk@0#2", kind: "fixed", category: "weapons", names: ["longsword", "spear"] },
+    { id: "TST/Race/Sample Folk@0#3", kind: "fixed", category: "armor", names: ["light armor", "shields"] },
+  ]);
+  assert.deepEqual(report.unparsed, []);
+});
+
+test("a subrace's weapon and armor entries become subrace grants, owned by its race", async () => {
+  const race = { name: "Sample Folk", source: "TST", entries: [], languageProficiencies: [{ common: true }] };
+  const subrace = {
+    name: "Hillward",
+    source: "TST",
+    raceName: "Sample Folk",
+    raceSource: "TST",
+    entries: [],
+    weaponProficiencies: [{ "rapier|phb": true }],
+    armorProficiencies: [{ medium: true }],
+  };
+  const [result] = await scrapeRaces(fakeClient({ "data/races.json": { race: [race], subrace: [subrace] } }), newProficiencyReport());
+  assert.deepEqual(result.subraces[0].grants, [
+    { id: "TST/Subrace/Sample Folk (Hillward)@0#0", kind: "fixed", category: "weapons", names: ["rapier"] },
+    { id: "TST/Subrace/Sample Folk (Hillward)@0#1", kind: "fixed", category: "armor", names: ["medium armor"] },
+  ]);
+});
+
+test("a race weapon choice the mapping cannot state leaves out the race's weapon and armor grants, and keeps its languages", async () => {
+  const race = {
+    name: "Sample Folk",
+    source: "TST",
+    entries: [],
+    languageProficiencies: [{ common: true, goblin: true }],
+    weaponProficiencies: [{ choose: { fromFilter: "type=martial weapon|miscellaneous=mundane", count: 2 } }],
+    armorProficiencies: [{ light: true }],
+  };
+  const report = newProficiencyReport();
+  const [result] = await scrapeRaces(fakeClient({ "data/races.json": { race: [race] } }), report);
+  assert.deepEqual(result.grants, [
+    { id: "TST/Race/Sample Folk@0#0", kind: "fixed", category: "languages", names: ["Common", "Goblin"] },
+  ]);
+  assert.deepEqual(report.unparsed, [
+    { owner: "Race", feature: "Sample Folk", level: 0, unparsed: ["weapons: choose"] },
+  ]);
+});
+
 test("a reviewed subrace override gives the one language of choice its trait names, when its own entries name none", async () => {
   const gith = { name: "Gith", source: "TST", entries: [], languageProficiencies: [{ common: true, other: true }] };
   const githyanki = { name: "Githyanki", source: "TST", raceName: "Gith", raceSource: "TST", entries: [] };
   const [race] = await scrapeRaces(fakeClient({ "data/races.json": { race: [gith], subrace: [githyanki] } }), newProficiencyReport());
   assert.deepEqual(race.subraces[0].grants, [
     { id: "TST/Subrace/Gith (Githyanki)@0#0", kind: "choice", category: "languages", count: 1, pool: { kind: "any" } },
+    { id: "TST/Subrace/Gith (Githyanki)@0#1", kind: "fixed", category: "weapons", names: ["shortsword", "longsword", "greatsword"] },
+    { id: "TST/Subrace/Gith (Githyanki)@0#2", kind: "fixed", category: "armor", names: ["light armor", "medium armor"] },
   ]);
 });
 

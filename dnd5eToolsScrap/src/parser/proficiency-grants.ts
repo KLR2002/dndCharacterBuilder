@@ -522,10 +522,19 @@ export function fixedSkillEntries(entries: unknown): unknown[] {
 }
 
 /**
+ * The categories a block's weapon and armor entries form. They are one group: when one of their entries
+ * cannot be stated, the group's grants are left out and reported, and the rest of the block still ships.
+ * A race's weapon choice the mapping does not state is the case this exists for.
+ */
+const TRAINING_CATEGORIES: ReadonlySet<ProficiencyCategory> = new Set<ProficiencyCategory>(["weapons", "armor"]);
+
+/**
  * Grants from a structured proficiency block (race, background, or class
- * starting proficiencies). A block with any entry the mapping cannot state
- * precisely gets no grants at all; the unparsed entries are returned instead.
- * A reviewed override for the feature replaces the block entirely.
+ * starting proficiencies). A block with any tool, language, skill or saving
+ * throw entry the mapping cannot state gets no grants at all; the unparsed
+ * entries are returned instead. Weapon and armor entries are grouped apart:
+ * when one of them cannot be stated, only the weapon and armor grants are left
+ * out. A reviewed override for the feature replaces the block entirely.
  */
 export function structuredGrants(
   subject: Pick<GrantSubject, "source" | "owner" | "feature" | "level">,
@@ -537,6 +546,8 @@ export function structuredGrants(
 
   const specs: ProficiencyGrantSpec[] = [];
   const unparsed: string[] = [];
+  const training: ProficiencyGrantSpec[] = [];
+  const trainingUnparsed: string[] = [];
   const fixedByCategory = new Map<ProficiencyCategory, Extract<ProficiencyGrantSpec, { kind: "fixed" }>>();
 
   const addFixed = (category: ProficiencyCategory, name: string) => {
@@ -544,27 +555,30 @@ export function structuredGrants(
     if (!spec) {
       spec = { kind: "fixed", category, names: [] };
       fixedByCategory.set(category, spec);
-      specs.push(spec);
+      (TRAINING_CATEGORIES.has(category) ? training : specs).push(spec);
     }
     if (!spec.names.includes(name)) spec.names.push(name);
   };
 
-  // Skills come last: a grant's position is its id, so the fields that predate skill entries keep their ids.
+  // A grant's position is its id, so each field keeps its place: tools, languages and skills come first, in that
+  // order, and the training group comes after all of them. Shipped ids therefore do not move.
   const fields: Array<[keyof StructuredProficiencies, ProficiencyCategory]> = [
     ["tools", "tools"],
     ["languages", "languages"],
+    ["skills", "skills"],
     ["weapons", "weapons"],
     ["armor", "armor"],
-    ["skills", "skills"],
   ];
   for (const [field, category] of fields) {
+    const list = TRAINING_CATEGORIES.has(category) ? training : specs;
+    const problems = TRAINING_CATEGORIES.has(category) ? trainingUnparsed : unparsed;
     for (const entry of (raw[field] as unknown[] | undefined) ?? []) {
       if (typeof entry === "string") {
         const parsed = parseProficiencyBody(entry);
-        if (!parsed) unparsed.push(`${field}: ${entry}`);
+        if (!parsed) problems.push(`${field}: ${entry}`);
         else for (const spec of parsed) {
           if (spec.kind === "fixed") for (const name of spec.names) addFixed(spec.category, name);
-          else specs.push(spec);
+          else list.push(spec);
         }
         continue;
       }
@@ -577,33 +591,33 @@ export function structuredGrants(
           const from = Array.isArray(choose.from) ? choose.from.map(String) : [];
           const count = typeof choose.count === "number" ? choose.count : 1;
           const chosen = from.length > 0 ? listedChoice(from, category, count) : null;
-          if (chosen) specs.push(...chosen);
-          else unparsed.push(`${field}: choose`);
+          if (chosen) list.push(...chosen);
+          else problems.push(`${field}: choose`);
           continue;
         }
         if (key === "other" && category === "languages" && value === true) {
-          specs.push({ kind: "choice", category, count: 1, pool: { kind: "any" } });
+          list.push({ kind: "choice", category, count: 1, pool: { kind: "any" } });
           continue;
         }
         if (value === true) {
           const name = category === "languages" ? languageName(key) : classify(key.split("|")[0], category)?.name;
           if (name) addFixed(category, name);
-          else unparsed.push(token);
+          else problems.push(token);
           continue;
         }
         if (typeof value === "number") {
           if (key === "any" && (category === "skills" || category === "languages" || category === "tools")) {
-            specs.push({ kind: "choice", category, count: value, pool: { kind: "any" } });
+            list.push({ kind: "choice", category, count: value, pool: { kind: "any" } });
           } else if (key === "anyStandard" && category === "languages") {
-            specs.push({ kind: "choice", category, count: value, pool: { kind: "any" } });
+            list.push({ kind: "choice", category, count: value, pool: { kind: "any" } });
           } else if (category === "tools" && COUNTED_TOOL_POOLS[key]) {
-            specs.push({ kind: "choice", category, count: value, pool: { kind: "names", names: [...COUNTED_TOOL_POOLS[key]] } });
+            list.push({ kind: "choice", category, count: value, pool: { kind: "names", names: [...COUNTED_TOOL_POOLS[key]] } });
           } else {
-            unparsed.push(token);
+            problems.push(token);
           }
           continue;
         }
-        unparsed.push(token);
+        problems.push(token);
       }
     }
   }
@@ -613,8 +627,9 @@ export function structuredGrants(
     else unparsed.push(`savingThrows: ${name}`);
   }
 
-  if (unparsed.length > 0) return { grants: [], unparsed };
-  return { grants: build(subject, specs), unparsed };
+  if (unparsed.length > 0) return { grants: [], unparsed: [...unparsed, ...trainingUnparsed] };
+  if (trainingUnparsed.length > 0) return { grants: build(subject, specs), unparsed: trainingUnparsed };
+  return { grants: build(subject, [...specs, ...training]), unparsed: [] };
 }
 
 /**
