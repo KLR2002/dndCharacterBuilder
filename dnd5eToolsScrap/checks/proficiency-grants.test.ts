@@ -233,11 +233,12 @@ test("race and background structured fields become grants with the same shape", 
     }
   );
   assert.deepEqual(result.unparsed, []);
+  // Skills come after the languages, so a grant's id does not move when a block gains skill entries.
   assert.deepEqual(result.grants, [
-    { id: "TST/Race/Sample Folk@0#0", kind: "fixed", category: "skills", names: ["Sleight of Hand"] },
-    { id: "TST/Race/Sample Folk@0#1", kind: "choice", category: "skills", count: 1, pool: { kind: "any" } },
-    { id: "TST/Race/Sample Folk@0#2", kind: "fixed", category: "languages", names: ["Common"] },
-    { id: "TST/Race/Sample Folk@0#3", kind: "choice", category: "languages", count: 1, pool: { kind: "any" } },
+    { id: "TST/Race/Sample Folk@0#0", kind: "fixed", category: "languages", names: ["Common"] },
+    { id: "TST/Race/Sample Folk@0#1", kind: "choice", category: "languages", count: 1, pool: { kind: "any" } },
+    { id: "TST/Race/Sample Folk@0#2", kind: "fixed", category: "skills", names: ["Sleight of Hand"] },
+    { id: "TST/Race/Sample Folk@0#3", kind: "choice", category: "skills", count: 1, pool: { kind: "any" } },
   ]);
 });
 

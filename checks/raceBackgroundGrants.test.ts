@@ -23,7 +23,11 @@ const tideSubrace: SubraceData = {
 
 const coastalRace = vellariRace({
   languages: [],
-  grants: [fixedGrant("TST/Race/Vellari@0#0", "tools", ["Lantern Kit"]), fixedGrant("TST/Race/Vellari@0#1", "languages", ["Quoral"])],
+  grants: [
+    fixedGrant("TST/Race/Vellari@0#0", "tools", ["Lantern Kit"]),
+    fixedGrant("TST/Race/Vellari@0#1", "languages", ["Quoral"]),
+    fixedGrant("TST/Race/Vellari@0#2", "skills", ["Perception"]),
+  ],
   subraces: [tideSubrace],
 });
 
@@ -70,9 +74,17 @@ test("a background's choice of a language is held only once picked", () => {
   assert.deepEqual(names(picked.languages), ["Common", "Elvish"]);
 });
 
-test("a background's skill grant does not reach the sheet through the tool and language path", () => {
+test("a background's fixed skill grant appears on the sheet as a rule-granted skill", () => {
   const sheet = proficiencySheet(makeChar({ background: { name: "Lamplighter", source: "PHB" } }), catalogs);
-  assert.equal(sheet.skills.some((entry) => entry.name === "Stealth"), false);
+  assert.deepEqual(sheet.skills, [{ name: "Stealth", ruleGranted: true }]);
+});
+
+test("a race's fixed skill grant appears on the sheet, and a subrace's with its race's", () => {
+  const sheet = proficiencySheet(
+    makeChar({ race: { name: "Vellari", source: "PHB", subraceName: "Tidewalker", subraceSource: "PHB" } }),
+    catalogs,
+  );
+  assert.deepEqual(names(sheet.skills), ["Perception"]);
 });
 
 test("a record's grants are read only for the record the character holds", () => {

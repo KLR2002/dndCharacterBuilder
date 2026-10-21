@@ -508,6 +508,20 @@ export function resolveFeatureGrants(
 }
 
 /**
+ * The fixed skill entries of a 5e.tools skill block, such as `{ perception: true }`. Skill choices (a
+ * `choose` list, or a count of `any`) are left out: they are not grants yet, and the skill-choice offers
+ * still read them.
+ */
+export function fixedSkillEntries(entries: unknown): unknown[] {
+  if (!Array.isArray(entries)) return [];
+  return entries.flatMap((entry) => {
+    if (!entry || typeof entry !== "object") return [];
+    const fixed = Object.fromEntries(Object.entries(entry).filter(([key, value]) => value === true && key !== "choose"));
+    return Object.keys(fixed).length > 0 ? [fixed] : [];
+  });
+}
+
+/**
  * Grants from a structured proficiency block (race, background, or class
  * starting proficiencies). A block with any entry the mapping cannot state
  * precisely gets no grants at all; the unparsed entries are returned instead.
@@ -535,12 +549,13 @@ export function structuredGrants(
     if (!spec.names.includes(name)) spec.names.push(name);
   };
 
+  // Skills come last: a grant's position is its id, so the fields that predate skill entries keep their ids.
   const fields: Array<[keyof StructuredProficiencies, ProficiencyCategory]> = [
-    ["skills", "skills"],
     ["tools", "tools"],
     ["languages", "languages"],
     ["weapons", "weapons"],
     ["armor", "armor"],
+    ["skills", "skills"],
   ];
   for (const [field, category] of fields) {
     for (const entry of (raw[field] as unknown[] | undefined) ?? []) {

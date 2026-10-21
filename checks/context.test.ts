@@ -467,6 +467,7 @@ test("malformed character records are rejected, not silently replaced", () => {
 const classes = loadTestCatalog<ClassData[]>("classes");
 const SMUGGLER: BackgroundData = {
   name: "Test Smuggler", source: "TST", skillProficiencies: ["Investigation"], toolProficiencies: [],
+  grants: [{ id: "TST/Background/Test Smuggler@0#0", kind: "fixed", category: "skills", names: ["Investigation"] }],
   languages: [], startingEquipment: [], feature: null, characteristics: {}, description: "",
 };
 const booksCatalog = () => inMemoryCompendium({ classes, backgrounds: [SMUGGLER] }, { integrated: true });

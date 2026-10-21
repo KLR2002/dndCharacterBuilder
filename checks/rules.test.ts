@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { makeChar, loadTestCatalog, inMemoryCompendium } from "./testUtils.ts";
+import { makeChar, loadTestCatalog, inMemoryCompendium, integratedTestCompendium } from "./testUtils.ts";
 import type { CharacterClass } from "../src/types/character.ts";
 import { effectiveScores, getAbilityModifier, formatModifier } from "../src/rules/abilities.ts";
 import { maxHp, hitDiceByType } from "../src/rules/hp.ts";
@@ -220,7 +220,7 @@ test("skills includes racial and background proficiencies and matches case-insen
     chosenSkills: ["animal handling", "sleight of hand"], // Lowercase input!
   });
 
-  const skillList = skills(bugbearAcolyte, proficiencySheet(bugbearAcolyte, { compendium: inMemoryCompendium() }).skills);
+  const skillList = skills(bugbearAcolyte, proficiencySheet(bugbearAcolyte, { compendium: integratedTestCompendium() }).skills);
   const byName = (n: string) => skillList.find(s => s.name === n);
 
   // Bugbear trait

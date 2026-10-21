@@ -1,127 +1,43 @@
 import type { Character } from "../../types/character.ts";
-import type { BackgroundData, ClassData, RaceData } from "../../types/dnd5e.ts";
+import type { ClassData, RaceData } from "../../types/dnd5e.ts";
 import { DND_SKILLS } from "../../constants/rules.ts";
 import { catalogListings, type CharacterCatalogs } from "../catalogs.ts";
 import { normalizeSkillName } from "../skills.ts";
 
 /**
- * The skill grants of a race, a background and a class's starting list: the skills a character holds
- * from the rules, and the skill choices a race or class offers. Private to the Proficiency Sheet
- * (ADR 0015); the Builder reads its offers through the sheet.
+ * The skills a character holds from the rules that are not Proficiency Grants: a custom background's picks,
+ * the skills named in race trait text, and the Rule Choice picks of the lineage rules. A race's and a
+ * background's fixed skills are Proficiency Grants, read by the sheet from the features it holds. The
+ * skill choice offers of a race and a class live here too, and the sheet passes them to the Builder.
+ * Private to the Proficiency Sheet (ADR 0015).
  */
-export const RACE_SKILL_PROFICIENCIES: Record<string, string[]> = {
-  Bugbear: ["Stealth"],
-  Elf: ["Perception"],
-  "High Elf": ["Perception"],
-  "Wood Elf": ["Perception"],
-  Drow: ["Perception"],
-  "Dark Elf (Drow)": ["Perception"],
-  Eladrin: ["Perception"],
-  "Sea Elf": ["Perception"],
-  "Shadar-kai": ["Perception"],
-  "Pallid Elf": ["Perception"],
-  "Astral Elf": ["Perception"],
-  "Half-Orc": ["Intimidation"],
-  Orc: ["Intimidation"],
-  Tabaxi: ["Perception", "Stealth"],
-  Satyr: ["Performance", "Persuasion"],
-  Goliath: ["Athletics"],
-  Owlin: ["Stealth"],
-  Harengon: ["Perception"],
-  Grung: ["Perception"],
-  Tortle: ["Survival"],
-};
-
-const BACKGROUND_SKILL_PROFICIENCIES: Record<string, string[]> = {
-  Acolyte: ["Insight", "Religion"],
-  Charlatan: ["Deception", "Sleight of Hand"],
-  Criminal: ["Deception", "Stealth"],
-  Spy: ["Deception", "Stealth"],
-  Entertainer: ["Acrobatics", "Performance"],
-  Gladiator: ["Acrobatics", "Performance"],
-  "Folk Hero": ["Animal Handling", "Survival"],
-  "Guild Artisan": ["Insight", "Persuasion"],
-  "Guild Merchant": ["Insight", "Persuasion"],
-  Hermit: ["Medicine", "Religion"],
-  Noble: ["History", "Persuasion"],
-  Knight: ["History", "Persuasion"],
-  Outlander: ["Athletics", "Survival"],
-  Sage: ["Arcana", "History"],
-  Sailor: ["Athletics", "Perception"],
-  Pirate: ["Athletics", "Perception"],
-  Soldier: ["Athletics", "Intimidation"],
-  Urchin: ["Sleight of Hand", "Stealth"],
-};
-
 export function getAutoGrantedSkills(
   character: Character,
   opts: {
     race?: { name?: string; traits?: { name: string; description?: string }[] };
     subrace?: { name?: string; traits?: { name: string; description?: string }[] };
-    /** Resolves race and background names. Without it, no catalog lookup happens. */
+    /** Resolves race names. Without it, no catalog lookup happens. */
     catalogs?: CharacterCatalogs;
     /** Explicit lists take precedence over the catalog bundle. */
     races?: RaceData[];
-    backgrounds?: BackgroundData[];
   } = {}
 ): string[] {
   const granted = new Set<string>();
   const listings = opts.catalogs ? catalogListings(opts.catalogs) : undefined;
   const races = opts.races ?? listings?.races();
-  const backgrounds = opts.backgrounds ?? listings?.backgrounds();
 
-  // 1. Background skills
-  if (character.background?.name) {
-    if (character.background.source === "Custom") {
-      const customEntry = character.skillChoices?.find((sc) => sc.origin === "background");
-      if (customEntry?.picked) {
-        for (const s of customEntry.picked) {
-          const norm = normalizeSkillName(s);
-          if (norm) granted.add(norm);
-        }
-      }
-    } else {
-      const fromCatalog = backgrounds?.find(
-        (b) => b.name.toLowerCase() === character.background!.name.toLowerCase()
-      );
-      if (fromCatalog?.skillProficiencies) {
-        for (const s of fromCatalog.skillProficiencies) {
-          const norm = normalizeSkillName(s);
-          if (norm) granted.add(norm);
-        }
-      } else {
-        const standard = BACKGROUND_SKILL_PROFICIENCIES[character.background.name];
-        if (standard) {
-          for (const s of standard) {
-            const norm = normalizeSkillName(s);
-            if (norm) granted.add(norm);
-          }
-        }
-      }
-    }
-  }
-
-  // 2. Race skill proficiencies from static map
-  if (character.race?.name) {
-    const raceSkills = RACE_SKILL_PROFICIENCIES[character.race.name];
-    if (raceSkills) {
-      for (const s of raceSkills) {
+  // 1. A custom background's picked skills. A catalog background's skills are its grants.
+  if (character.background?.name && character.background.source === "Custom") {
+    const customEntry = character.skillChoices?.find((sc) => sc.origin === "background");
+    if (customEntry?.picked) {
+      for (const s of customEntry.picked) {
         const norm = normalizeSkillName(s);
         if (norm) granted.add(norm);
       }
     }
-    if (character.race.subraceName) {
-      const subraceSkills = RACE_SKILL_PROFICIENCIES[character.race.subraceName];
-      if (subraceSkills) {
-        for (const s of subraceSkills) {
-          const norm = normalizeSkillName(s);
-          if (norm) granted.add(norm);
-        }
-      }
-    }
   }
 
-  // 3. Race traits description scanning if traits present
+  // 2. Race traits description scanning if traits present
   const traits = [
     ...(opts.race?.traits || []),
     ...(opts.subrace?.traits || []),
@@ -143,7 +59,7 @@ export function getAutoGrantedSkills(
     }
   }
 
-  // 4. Rule Choices skill picks (e.g. Ancestral Legacy, Primal Knowledge)
+  // 3. Rule Choices skill picks (e.g. Ancestral Legacy, Primal Knowledge)
   for (const rc of character.ruleChoices || []) {
     if (
       rc.trait?.toLowerCase().includes("ancestral legacy") ||

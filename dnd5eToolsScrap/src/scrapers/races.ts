@@ -5,7 +5,12 @@ import { cleanTags } from "../parser/tag-cleaner.ts";
 import { extractRuleChoices, RULE_CHOICE_LEVELS, ruleChoiceKey, type ExtractedRuleChoice } from "./rule-choices.ts";
 import type { RaceModel, SubraceModel, TraitModel } from "../types/models.ts";
 import type { ProficiencyReport } from "../types/proficiency.ts";
-import { newProficiencyReport, structuredGrants, type StructuredProficiencies } from "../parser/proficiency-grants.ts";
+import {
+  fixedSkillEntries,
+  newProficiencyReport,
+  structuredGrants,
+  type StructuredProficiencies,
+} from "../parser/proficiency-grants.ts";
 import { PROFICIENCY_GRANT_OVERRIDES } from "../overrides/proficiency-grants.ts";
 
 /** Whether a 5e.tools structured proficiency field names at least one entry. */
@@ -127,7 +132,7 @@ export async function scrapeRaces(
     // Structured tool and language entries on the subrace, owned by "Subrace" and named with its race.
     const proficiencies = structuredGrants(
       { source: rawSub.source, owner: "Subrace", feature: `${parentName} (${normalized.name})`, level: 0 },
-      { tools: rawSub.toolProficiencies, languages: rawSub.languageProficiencies },
+      { tools: rawSub.toolProficiencies, languages: rawSub.languageProficiencies, skills: fixedSkillEntries(rawSub.skillProficiencies) },
       PROFICIENCY_GRANT_OVERRIDES.subraces
     );
     if (proficiencies.unparsed.length > 0) {
@@ -223,6 +228,7 @@ export async function scrapeRaces(
       {
         tools: raw.toolProficiencies,
         languages: hasEntries(raw.languageProficiencies) ? raw.languageProficiencies : noLanguageEntries,
+        skills: fixedSkillEntries(raw.skillProficiencies),
       },
       PROFICIENCY_GRANT_OVERRIDES.races
     );

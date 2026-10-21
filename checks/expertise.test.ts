@@ -291,11 +291,14 @@ test("reconcile: removes unproficient choices or excess when deleveling", () => 
   assert.deepEqual(pruned.chosenExpertise, ["Stealth"]);
 });
 
-// Invented background. Its skill is not in the static background table, so it is only known
-// through the catalog bundle.
+// Invented background. Its skill and tool are its Proficiency Grants in the catalog bundle.
 const SMUGGLER: BackgroundData = {
   name: "Test Smuggler",
   source: "TST",
+  grants: [
+    { id: "TST/Background/Test Smuggler@0#0", kind: "fixed", category: "skills", names: ["Investigation"] },
+    { id: "TST/Background/Test Smuggler@0#1", kind: "fixed", category: "tools", names: ["Thieves' Tools"] },
+  ],
   skillProficiencies: ["Investigation"],
   toolProficiencies: ["Thieves' Tools"],
   languages: [],

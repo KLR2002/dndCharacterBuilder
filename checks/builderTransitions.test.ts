@@ -401,7 +401,7 @@ test("setCustomBackground sets background to Custom and configures chosen skills
   assert.ok(!changed.chosenSkills.includes("Performance"));
 });
 
-test("applyBackgroundGrants grants coins, equipment items, and skills from background", () => {
+test("applyBackgroundGrants grants coins and equipment items, and writes no skill (its skills are its grants)", () => {
   const char = makeChar({
     background: { name: "Acolyte", source: "PHB" },
     pouch: { gp: 0 },
@@ -432,9 +432,7 @@ test("applyBackgroundGrants grants coins, equipment items, and skills from backg
   assert.equal(granted.pouch?.gp, 15);
   assert.ok(granted.items.some((it) => it.name === "Holy symbol"));
   assert.ok(granted.items.some((it) => it.name === "Sticks of incense" && it.quantity === 5));
-  assert.ok(granted.chosenSkills.includes("Insight"));
-  assert.ok(granted.chosenSkills.includes("Religion"));
-  assert.ok(granted.chosenSkills.includes("Athletics"));
+  assert.deepEqual(granted.chosenSkills, ["Athletics"], "the background's skills are not copied into the skill bucket");
 
   // Idempotent
   const again = applyBackgroundGrants(granted, bgData as any);
@@ -536,7 +534,7 @@ test("equipment, then gold, then equipment leaves the pouch as it was and swaps 
   assert.deepEqual(equipmentThird.items, [longsword]);
 });
 
-test("reclaimBackgroundGrants adds the coins and items again with unique ids and no duplicate skills", () => {
+test("reclaimBackgroundGrants adds the coins and items again with unique ids and writes no skills", () => {
   const bgData = {
     name: "Acolyte",
     source: "PHB",
@@ -558,8 +556,7 @@ test("reclaimBackgroundGrants adds the coins and items again with unique ids and
   assert.equal(again.pouch?.gp, 30, "coins are added again");
   assert.deepEqual(again.items.map((it) => it.id), ["bg_item_0", "bg_item_1", "bg_item_0_2", "bg_item_1_2"]);
   assert.equal(new Set(again.items.map((it) => it.id)).size, again.items.length, "item ids are unique");
-  assert.equal(again.chosenSkills.filter((s) => s === "Insight").length, 1, "skills are not duplicated");
-  assert.deepEqual(again.chosenSkills, ["Athletics", "Insight", "Religion"]);
+  assert.deepEqual(again.chosenSkills, ["Athletics"], "skills are not written to the bucket");
 });
 
 test("reclaimBackgroundGrants after a background change gives the new background's equipment", () => {
@@ -582,7 +579,7 @@ test("reclaimBackgroundGrants after a background change gives the new background
   assert.equal(reclaimed.backgroundGrantsApplied, true, "the marker stays true");
   assert.ok(reclaimed.items.some((it) => it.name === "Insignia of rank"), "the new background's item is granted");
   assert.ok(reclaimed.items.some((it) => it.name === "Holy symbol"), "the earlier item is kept");
-  assert.ok(reclaimed.chosenSkills.includes("Athletics"));
+  assert.equal(reclaimed.chosenSkills.includes("Athletics"), false, "the new background's skill is its grant, not a bucket entry");
 });
 
 test("applyStartingGrants and applyBackgroundGrants return the same reference once already applied", () => {

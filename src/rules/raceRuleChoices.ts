@@ -2,7 +2,6 @@ import type { Character } from "../types/character.ts";
 import type { RaceData, TraitChoiceData, TraitData } from "../types/dnd5e.ts";
 import { DND_SKILLS } from "../constants/rules.ts";
 import { totalLevel } from "./proficiencies.ts";
-import { RACE_SKILL_PROFICIENCIES } from "./proficiencySources/skillGrants.ts";
 import { type AvailableRuleChoice, ruleChoiceId } from "./choices/types.ts";
 
 /**
@@ -37,10 +36,9 @@ export function lineageInheritsElements(character: Character, raceCatalog: RaceD
     ((priorSubrace?.speed?.fly ?? 0) > 0)
   );
 
-  let hasSkills = Boolean(
-    (priorRace?.name && (RACE_SKILL_PROFICIENCIES[priorRace.name]?.length ?? 0) > 0) ||
-    (priorSubrace?.name && (RACE_SKILL_PROFICIENCIES[priorSubrace.name]?.length ?? 0) > 0)
-  );
+  const grantsSkill = (record: { grants?: { category: string }[] } | undefined) =>
+    (record?.grants ?? []).some((grant) => grant.category === "skills");
+  let hasSkills = grantsSkill(priorRace) || grantsSkill(priorSubrace);
 
   if (!hasSkills) {
     const priorTraits = [...(priorRace?.traits || []), ...(priorSubrace?.traits || [])];
