@@ -16,8 +16,10 @@ import type {
  * Format 3 adds Proficiency Grants to class, subclass and feat features (ADR 0015).
  * Format 4 adds the Kensei weapon choices and the Artificer firearm fix, and keeps same-named
  * classes from different sources apart.
+ * Format 5 changes the class, race, background, skill, weapon and armor Proficiency Grants, the Tiger
+ * grants and the grant ids (now stable, with aliases for the former position-based ids).
  */
-export const REQUIRED_CATALOG_FORMAT = 4;
+export const REQUIRED_CATALOG_FORMAT = 5;
 
 /** True for an Integrated Catalog saved below the required format (or with none). The SRD Baseline is never stale. */
 export function isCatalogStale(collections: Pick<CompendiumCollections, "hasIntegratedCatalog" | "catalogFormat">): boolean {
