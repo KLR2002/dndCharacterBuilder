@@ -1,5 +1,5 @@
 import type { Character } from "../types/character.ts";
-import { catalogListings, type CharacterCatalogs } from "./catalogs.ts";
+import { catalogListings, findClassData, type CharacterCatalogs } from "./catalogs.ts";
 import { validPicks } from "./proficiencyPools.ts";
 
 /** The Monk subclass whose weapon picks are kensei weapons. */
@@ -14,7 +14,7 @@ export function kenseiWeaponNames(character: Character, catalogs: CharacterCatal
   const monk = character.classes.find((c) => c.className === "Monk" && c.subclassName === KENSEI_SUBCLASS);
   if (!monk) return [];
   const listings = catalogListings(catalogs);
-  const subclass = listings.classes().find((c) => c.name === "Monk")?.subclasses.find((s) => s.name === KENSEI_SUBCLASS);
+  const subclass = findClassData(listings.classes(), monk)?.subclasses.find((s) => s.name === KENSEI_SUBCLASS);
   const items = listings.items();
   return (subclass?.features ?? [])
     .filter((feature) => feature.level <= monk.level)

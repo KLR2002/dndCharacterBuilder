@@ -1,7 +1,8 @@
 import type { Character } from "../types/character.ts";
-import type { ProficiencyGrant } from "../types/dnd5e.ts";
+import type { ClassData, ProficiencyGrant } from "../types/dnd5e.ts";
 import type { Compendium } from "../services/compendium.ts";
 import { optionGrantApplies } from "./optionFeatureGrants.ts";
+import { findClassData } from "./catalogs.ts";
 
 /**
  * The reconciler's check on saved Proficiency Choice picks. It reads the Compendium and the
@@ -10,9 +11,10 @@ import { optionGrantApplies } from "./optionFeatureGrants.ts";
  * only when the Compendium names the grant and the character clearly no longer holds its owner.
  */
 
+/** A class owner is the catalog class itself, so two classes of one name from different sources are told apart. */
 type GrantOwner =
-  | { kind: "class"; className: string }
-  | { kind: "subclass"; className: string; subclassName: string }
+  | { kind: "class"; className: string; source: string }
+  | { kind: "subclass"; className: string; source: string; subclassName: string }
   | { kind: "feat"; featName: string };
 
 interface GrantSource {
@@ -32,14 +34,18 @@ function grantSourcesIn(compendium: Compendium): Map<string, GrantSource> {
   };
   for (const cls of listings.classes()) {
     for (const feature of cls.features) {
-      add(feature.grants, { feature: feature.name, level: feature.level, owner: { kind: "class", className: cls.name } });
+      add(feature.grants, {
+        feature: feature.name,
+        level: feature.level,
+        owner: { kind: "class", className: cls.name, source: cls.source },
+      });
     }
     for (const sub of cls.subclasses) {
       for (const feature of sub.features) {
         add(feature.grants, {
           feature: feature.name,
           level: feature.level,
-          owner: { kind: "subclass", className: cls.name, subclassName: sub.name },
+          owner: { kind: "subclass", className: cls.name, source: cls.source, subclassName: sub.name },
         });
       }
     }
@@ -50,8 +56,11 @@ function grantSourcesIn(compendium: Compendium): Map<string, GrantSource> {
   return sources;
 }
 
-/** Whether the character still holds the owner of a grant at the grant's level. Errs toward held. */
-function ownerHeld(source: GrantSource, character: Character): boolean {
+/**
+ * Whether the character still holds the owner of a grant at the grant's level. A class entry holds the
+ * owner when it resolves to the owner's own catalog class (name and source). Errs toward held.
+ */
+function ownerHeld(source: GrantSource, character: Character, classes: readonly ClassData[]): boolean {
   const owner = source.owner;
   if (owner.kind === "feat") {
     const wanted = owner.featName.toLowerCase();
@@ -60,8 +69,9 @@ function ownerHeld(source: GrantSource, character: Character): boolean {
     );
   }
   return character.classes.some((c) => {
-    if (c.className.toLowerCase() !== owner.className.toLowerCase()) return false;
     if (c.level < source.level) return false;
+    const held = findClassData(classes, c);
+    if (!held || held.name !== owner.className || held.source !== owner.source) return false;
     if (owner.kind === "class") return true;
     if ((c.subclassName ?? "").toLowerCase() !== owner.subclassName.toLowerCase()) return false;
     return optionGrantApplies(character, { className: c.className, subclassName: c.subclassName }, { name: source.feature, level: source.level });
@@ -78,11 +88,12 @@ export function pruneInvalidProficiencyPicks(character: Character, compendium: C
   if (!picks || Object.keys(picks).length === 0) return character;
 
   const sources = grantSourcesIn(compendium);
+  const classes = compendium.for().classes();
   const kept: Record<string, string[]> = {};
   const notices: string[] = [];
   for (const [id, names] of Object.entries(picks)) {
     const source = sources.get(id);
-    if (!source || ownerHeld(source, character)) {
+    if (!source || ownerHeld(source, character, classes)) {
       kept[id] = names;
     } else if (names.length > 0) {
       notices.push(`${names.join(", ")} removed from ${source.feature}: no longer granted`);

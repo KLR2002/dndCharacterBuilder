@@ -6,6 +6,7 @@ import { ruleChoiceId } from "./choices/types.ts";
 import { applyRuleChoice, replacedTraitNames } from "./raceRuleChoices.ts";
 import { raisedAbilityGrants } from "./proficiencyPools.ts";
 import { optionGrantApplies } from "./optionFeatureGrants.ts";
+import { findClassData } from "./catalogs.ts";
 
 export function grantedFeatures(character: Character, catalog: FeatureCatalog): FeatureInstance[] {
   const out: FeatureInstance[] = [];
@@ -56,7 +57,7 @@ export function grantedFeatures(character: Character, catalog: FeatureCatalog): 
   } else if (bg?.feature) add({ ...bg.feature, source: bg.source, origin: "Background" }, bg.name);
 
   for (const c of character.classes) {
-    const cls = catalog.classes.find(x => x.name === c.className && x.source === c.source);
+    const cls = findClassData(catalog.classes, c);
     function addClassFeature(f: ClassFeatureData, origin: "Class" | "Subclass", source: string, owner: string) {
       if (f.level > c.level) return;
       const isOptEnabled = Boolean(character.optionalFeatureReplacements?.[f.name]);

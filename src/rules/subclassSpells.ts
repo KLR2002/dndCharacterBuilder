@@ -2,6 +2,7 @@ import { currentCompendium, type Compendium } from "../services/compendium.ts";
 import type { Character, RuleChoiceEntry } from "../types/character.ts";
 import type { SpellData, SubclassData, SubclassAdditionalSpells } from "../types/dnd5e.ts";
 import { resolveOptionName } from "./choices/types.ts";
+import { findClassData } from "./catalogs.ts";
 
 export interface SubclassSpellsResult {
   prepared: SpellData[];
@@ -18,6 +19,8 @@ export interface SubclassSpellOptions {
   activeBooks?: string[];
   chosenCantrips?: string[];
   ruleChoices?: RuleChoiceEntry[];
+  /** The source of the class entry's catalog class. Omitted or unmatched, the first class of the name is read. */
+  classSource?: string;
   /** Defaults to the process-wide current Compendium. */
   compendium?: Compendium;
 }
@@ -236,7 +239,7 @@ export function getSubclassSpells(
     return emptyResult;
   }
 
-  const cls = compendium.findClass(className);
+  const cls = findClassData(compendium.for().classes(), { className, source: options?.classSource });
   if (!cls || !cls.subclasses || cls.subclasses.length === 0) {
     return emptyResult;
   }
@@ -566,7 +569,8 @@ export function getBaselineSubclassSpellNames(
   subclassName: string,
   compendium: Compendium = currentCompendium()
 ): string[] {
-  const cls = compendium.findClass(className);
+  // A name-only caller (the swap validation) has no class entry, so the first class of the name is read.
+  const cls = findClassData(compendium.for().classes(), { className });
   if (!cls || !cls.subclasses) return [];
   const subclass = cls.subclasses.find((sc) => matchesSubclass(sc, subclassName));
   if (!subclass || !subclass.additionalSpells) return [];
@@ -745,15 +749,18 @@ export function getOrphanedSubclassSpells(
 
   if (known.length === 0) return [];
 
+  // The class entry is unique by name, so its source names the catalog class whose subclasses are read.
+  const classSource = (character.classes || []).find((c) => c.className === className)?.source;
+
   // Expanded spells for former subclass
-  const oldSpells = getSubclassSpells(className, oldSubclassName, 20, { activeBooks, compendium });
+  const oldSpells = getSubclassSpells(className, oldSubclassName, 20, { activeBooks, compendium, classSource });
   const oldExpandedSet = new Set(oldSpells.expanded.map(normalizeKey));
   if (oldExpandedSet.size === 0) return [];
 
   // Expanded spells for new subclass (if any)
   const newExpandedSet = new Set(
     newSubclassName
-      ? getSubclassSpells(className, newSubclassName, 20, { activeBooks, compendium }).expanded.map(normalizeKey)
+      ? getSubclassSpells(className, newSubclassName, 20, { activeBooks, compendium, classSource }).expanded.map(normalizeKey)
       : []
   );
 
