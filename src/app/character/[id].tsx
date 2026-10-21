@@ -130,7 +130,7 @@ export default function CharacterSheetScreen() {
           </TouchableOpacity>
 
           {/* Character Title & Summary */}
-          <View style={{ flex: 1, marginHorizontal: 8 }}>
+          <View style={{ flex: 1, minWidth: 0, marginHorizontal: 8 }}>
             <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
               {isEditingName ? (
                 <TextInput
@@ -152,12 +152,15 @@ export default function CharacterSheetScreen() {
                   accessibilityRole="button"
                   accessibilityLabel="Edit character name"
                   style={styles.charNameButton}>
-                  <Text style={[styles.charName, { color: theme.text }, isCompact && { fontSize: 14 }]} numberOfLines={1}>
+                  <Text
+                    style={[styles.charName, { color: theme.text }, isCompact && { fontSize: 14 }]}
+                    numberOfLines={1}
+                    ellipsizeMode="tail">
                     {currentCharacter.name}
                   </Text>
                 </TouchableOpacity>
               )}
-              <Badge label={`Lvl ${totalLevel}`} variant="accent" size="sm" />
+              <Badge label={`Lvl ${totalLevel}`} variant="accent" size="sm" style={{ flexShrink: 0 }} />
             </View>
             <Text style={{ color: theme.textSecondary, fontSize: 11 }} numberOfLines={1}>
               {raceSummary} • {classSummary}
@@ -165,7 +168,7 @@ export default function CharacterSheetScreen() {
           </View>
 
           {/* Quick HP & Rest Buttons */}
-          <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 6, flexShrink: 0 }}>
             <TouchableOpacity
               {...hpQuickEdit.triggerProps}
               style={[styles.quickHpBadge, { borderColor: theme.border, backgroundColor: theme.surfaceHighlight }]}>
@@ -324,13 +327,18 @@ const styles = StyleSheet.create({
   charName: {
     fontSize: 16,
     fontWeight: "bold",
+    flexShrink: 1,
+    minWidth: 0,
+    includeFontPadding: false,
   },
   charNameButton: {
     flexShrink: 1,
+    minWidth: 0,
   },
   charNameInput: {
     flex: 1,
     paddingVertical: 0,
+    textAlignVertical: "center",
     borderBottomWidth: 1,
   },
   quickHpBadge: {
