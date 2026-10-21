@@ -613,7 +613,6 @@
  },
  "srd | rock gnome guild artisan alchemist artificer | L1 | books=all": {
   "tools": [
-   "Thieves' Tools",
    "Tinker's Tools"
   ],
   "expertise": [],
@@ -624,7 +623,6 @@
  },
  "srd | rock gnome guild artisan alchemist artificer | L1 | books=PHB": {
   "tools": [
-   "Thieves' Tools",
    "Tinker's Tools"
   ],
   "expertise": [],
@@ -635,7 +633,6 @@
  },
  "srd | rock gnome guild artisan alchemist artificer | L1 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
   "tools": [
-   "Thieves' Tools",
    "Tinker's Tools"
   ],
   "expertise": [],
@@ -646,7 +643,6 @@
  },
  "srd | rock gnome guild artisan alchemist artificer | L3 | books=all": {
   "tools": [
-   "Thieves' Tools",
    "Tinker's Tools"
   ],
   "expertise": [],
@@ -657,7 +653,6 @@
  },
  "srd | rock gnome guild artisan alchemist artificer | L3 | books=PHB": {
   "tools": [
-   "Thieves' Tools",
    "Tinker's Tools"
   ],
   "expertise": [],
@@ -668,7 +663,6 @@
  },
  "srd | rock gnome guild artisan alchemist artificer | L3 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
   "tools": [
-   "Thieves' Tools",
    "Tinker's Tools"
   ],
   "expertise": [],
@@ -679,11 +673,9 @@
  },
  "srd | rock gnome guild artisan alchemist artificer | L6 | books=all": {
   "tools": [
-   "Thieves' Tools",
    "Tinker's Tools"
   ],
   "expertise": [
-   "Thieves' Tools",
    "Tinker's Tools"
   ],
   "languages": [
@@ -693,11 +685,9 @@
  },
  "srd | rock gnome guild artisan alchemist artificer | L6 | books=PHB": {
   "tools": [
-   "Thieves' Tools",
    "Tinker's Tools"
   ],
   "expertise": [
-   "Thieves' Tools",
    "Tinker's Tools"
   ],
   "languages": [
@@ -707,11 +697,9 @@
  },
  "srd | rock gnome guild artisan alchemist artificer | L6 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
   "tools": [
-   "Thieves' Tools",
    "Tinker's Tools"
   ],
   "expertise": [
-   "Thieves' Tools",
    "Tinker's Tools"
   ],
   "languages": [
@@ -721,11 +709,9 @@
  },
  "srd | rock gnome guild artisan alchemist artificer | L11 | books=all": {
   "tools": [
-   "Thieves' Tools",
    "Tinker's Tools"
   ],
   "expertise": [
-   "Thieves' Tools",
    "Tinker's Tools"
   ],
   "languages": [
@@ -735,11 +721,9 @@
  },
  "srd | rock gnome guild artisan alchemist artificer | L11 | books=PHB": {
   "tools": [
-   "Thieves' Tools",
    "Tinker's Tools"
   ],
   "expertise": [
-   "Thieves' Tools",
    "Tinker's Tools"
   ],
   "languages": [
@@ -749,11 +733,9 @@
  },
  "srd | rock gnome guild artisan alchemist artificer | L11 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
   "tools": [
-   "Thieves' Tools",
    "Tinker's Tools"
   ],
   "expertise": [
-   "Thieves' Tools",
    "Tinker's Tools"
   ],
   "languages": [
@@ -763,11 +745,9 @@
  },
  "srd | rock gnome guild artisan alchemist artificer | L14 | books=all": {
   "tools": [
-   "Thieves' Tools",
    "Tinker's Tools"
   ],
   "expertise": [
-   "Thieves' Tools",
    "Tinker's Tools"
   ],
   "languages": [
@@ -777,11 +757,9 @@
  },
  "srd | rock gnome guild artisan alchemist artificer | L14 | books=PHB": {
   "tools": [
-   "Thieves' Tools",
    "Tinker's Tools"
   ],
   "expertise": [
-   "Thieves' Tools",
    "Tinker's Tools"
   ],
   "languages": [
@@ -791,11 +769,9 @@
  },
  "srd | rock gnome guild artisan alchemist artificer | L14 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
   "tools": [
-   "Thieves' Tools",
    "Tinker's Tools"
   ],
   "expertise": [
-   "Thieves' Tools",
    "Tinker's Tools"
   ],
   "languages": [
@@ -805,11 +781,9 @@
  },
  "srd | rock gnome guild artisan alchemist artificer | L17 | books=all": {
   "tools": [
-   "Thieves' Tools",
    "Tinker's Tools"
   ],
   "expertise": [
-   "Thieves' Tools",
    "Tinker's Tools"
   ],
   "languages": [
@@ -819,11 +793,9 @@
  },
  "srd | rock gnome guild artisan alchemist artificer | L17 | books=PHB": {
   "tools": [
-   "Thieves' Tools",
    "Tinker's Tools"
   ],
   "expertise": [
-   "Thieves' Tools",
    "Tinker's Tools"
   ],
   "languages": [
@@ -833,11 +805,9 @@
  },
  "srd | rock gnome guild artisan alchemist artificer | L17 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
   "tools": [
-   "Thieves' Tools",
    "Tinker's Tools"
   ],
   "expertise": [
-   "Thieves' Tools",
    "Tinker's Tools"
   ],
   "languages": [
@@ -846,463 +816,253 @@
   ]
  },
  "srd | human soldier armorer artificer | L1 | books=all": {
-  "tools": [
-   "Thieves' Tools",
-   "Tinker's Tools"
-  ],
+  "tools": [],
   "expertise": [],
   "languages": [
    "Common"
   ]
  },
  "srd | human soldier armorer artificer | L1 | books=PHB": {
-  "tools": [
-   "Thieves' Tools",
-   "Tinker's Tools"
-  ],
+  "tools": [],
   "expertise": [],
   "languages": [
    "Common"
   ]
  },
  "srd | human soldier armorer artificer | L1 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
-  "tools": [
-   "Thieves' Tools",
-   "Tinker's Tools"
-  ],
+  "tools": [],
   "expertise": [],
   "languages": [
    "Common"
   ]
  },
  "srd | human soldier armorer artificer | L3 | books=all": {
-  "tools": [
-   "Thieves' Tools",
-   "Tinker's Tools"
-  ],
+  "tools": [],
   "expertise": [],
   "languages": [
    "Common"
   ]
  },
  "srd | human soldier armorer artificer | L3 | books=PHB": {
-  "tools": [
-   "Thieves' Tools",
-   "Tinker's Tools"
-  ],
+  "tools": [],
   "expertise": [],
   "languages": [
    "Common"
   ]
  },
  "srd | human soldier armorer artificer | L3 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
-  "tools": [
-   "Thieves' Tools",
-   "Tinker's Tools"
-  ],
+  "tools": [],
   "expertise": [],
   "languages": [
    "Common"
   ]
  },
  "srd | human soldier armorer artificer | L6 | books=all": {
-  "tools": [
-   "Thieves' Tools",
-   "Tinker's Tools"
-  ],
-  "expertise": [
-   "Thieves' Tools",
-   "Tinker's Tools"
-  ],
+  "tools": [],
+  "expertise": [],
   "languages": [
    "Common"
   ]
  },
  "srd | human soldier armorer artificer | L6 | books=PHB": {
-  "tools": [
-   "Thieves' Tools",
-   "Tinker's Tools"
-  ],
-  "expertise": [
-   "Thieves' Tools",
-   "Tinker's Tools"
-  ],
+  "tools": [],
+  "expertise": [],
   "languages": [
    "Common"
   ]
  },
  "srd | human soldier armorer artificer | L6 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
-  "tools": [
-   "Thieves' Tools",
-   "Tinker's Tools"
-  ],
-  "expertise": [
-   "Thieves' Tools",
-   "Tinker's Tools"
-  ],
+  "tools": [],
+  "expertise": [],
   "languages": [
    "Common"
   ]
  },
  "srd | human soldier armorer artificer | L11 | books=all": {
-  "tools": [
-   "Thieves' Tools",
-   "Tinker's Tools"
-  ],
-  "expertise": [
-   "Thieves' Tools",
-   "Tinker's Tools"
-  ],
+  "tools": [],
+  "expertise": [],
   "languages": [
    "Common"
   ]
  },
  "srd | human soldier armorer artificer | L11 | books=PHB": {
-  "tools": [
-   "Thieves' Tools",
-   "Tinker's Tools"
-  ],
-  "expertise": [
-   "Thieves' Tools",
-   "Tinker's Tools"
-  ],
+  "tools": [],
+  "expertise": [],
   "languages": [
    "Common"
   ]
  },
  "srd | human soldier armorer artificer | L11 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
-  "tools": [
-   "Thieves' Tools",
-   "Tinker's Tools"
-  ],
-  "expertise": [
-   "Thieves' Tools",
-   "Tinker's Tools"
-  ],
+  "tools": [],
+  "expertise": [],
   "languages": [
    "Common"
   ]
  },
  "srd | human soldier armorer artificer | L14 | books=all": {
-  "tools": [
-   "Thieves' Tools",
-   "Tinker's Tools"
-  ],
-  "expertise": [
-   "Thieves' Tools",
-   "Tinker's Tools"
-  ],
+  "tools": [],
+  "expertise": [],
   "languages": [
    "Common"
   ]
  },
  "srd | human soldier armorer artificer | L14 | books=PHB": {
-  "tools": [
-   "Thieves' Tools",
-   "Tinker's Tools"
-  ],
-  "expertise": [
-   "Thieves' Tools",
-   "Tinker's Tools"
-  ],
+  "tools": [],
+  "expertise": [],
   "languages": [
    "Common"
   ]
  },
  "srd | human soldier armorer artificer | L14 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
-  "tools": [
-   "Thieves' Tools",
-   "Tinker's Tools"
-  ],
-  "expertise": [
-   "Thieves' Tools",
-   "Tinker's Tools"
-  ],
+  "tools": [],
+  "expertise": [],
   "languages": [
    "Common"
   ]
  },
  "srd | human soldier armorer artificer | L17 | books=all": {
-  "tools": [
-   "Thieves' Tools",
-   "Tinker's Tools"
-  ],
-  "expertise": [
-   "Thieves' Tools",
-   "Tinker's Tools"
-  ],
+  "tools": [],
+  "expertise": [],
   "languages": [
    "Common"
   ]
  },
  "srd | human soldier armorer artificer | L17 | books=PHB": {
-  "tools": [
-   "Thieves' Tools",
-   "Tinker's Tools"
-  ],
-  "expertise": [
-   "Thieves' Tools",
-   "Tinker's Tools"
-  ],
+  "tools": [],
+  "expertise": [],
   "languages": [
    "Common"
   ]
  },
  "srd | human soldier armorer artificer | L17 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
-  "tools": [
-   "Thieves' Tools",
-   "Tinker's Tools"
-  ],
-  "expertise": [
-   "Thieves' Tools",
-   "Tinker's Tools"
-  ],
+  "tools": [],
+  "expertise": [],
   "languages": [
    "Common"
   ]
  },
  "srd | battle smith artificer with a picked artisan tool and expertise | L1 | books=all": {
-  "tools": [
-   "Calligrapher's Supplies",
-   "Thieves' Tools",
-   "Tinker's Tools"
-  ],
+  "tools": [],
   "expertise": [],
   "languages": [
    "Common"
   ]
  },
  "srd | battle smith artificer with a picked artisan tool and expertise | L1 | books=PHB": {
-  "tools": [
-   "Calligrapher's Supplies",
-   "Thieves' Tools",
-   "Tinker's Tools"
-  ],
+  "tools": [],
   "expertise": [],
   "languages": [
    "Common"
   ]
  },
  "srd | battle smith artificer with a picked artisan tool and expertise | L1 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
-  "tools": [
-   "Calligrapher's Supplies",
-   "Thieves' Tools",
-   "Tinker's Tools"
-  ],
+  "tools": [],
   "expertise": [],
   "languages": [
    "Common"
   ]
  },
  "srd | battle smith artificer with a picked artisan tool and expertise | L3 | books=all": {
-  "tools": [
-   "Calligrapher's Supplies",
-   "Thieves' Tools",
-   "Tinker's Tools"
-  ],
+  "tools": [],
   "expertise": [],
   "languages": [
    "Common"
   ]
  },
  "srd | battle smith artificer with a picked artisan tool and expertise | L3 | books=PHB": {
-  "tools": [
-   "Calligrapher's Supplies",
-   "Thieves' Tools",
-   "Tinker's Tools"
-  ],
+  "tools": [],
   "expertise": [],
   "languages": [
    "Common"
   ]
  },
  "srd | battle smith artificer with a picked artisan tool and expertise | L3 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
-  "tools": [
-   "Calligrapher's Supplies",
-   "Thieves' Tools",
-   "Tinker's Tools"
-  ],
+  "tools": [],
   "expertise": [],
   "languages": [
    "Common"
   ]
  },
  "srd | battle smith artificer with a picked artisan tool and expertise | L6 | books=all": {
-  "tools": [
-   "Calligrapher's Supplies",
-   "Thieves' Tools",
-   "Tinker's Tools"
-  ],
-  "expertise": [
-   "Calligrapher's Supplies",
-   "Thieves' Tools",
-   "Tinker's Tools"
-  ],
+  "tools": [],
+  "expertise": [],
   "languages": [
    "Common"
   ]
  },
  "srd | battle smith artificer with a picked artisan tool and expertise | L6 | books=PHB": {
-  "tools": [
-   "Calligrapher's Supplies",
-   "Thieves' Tools",
-   "Tinker's Tools"
-  ],
-  "expertise": [
-   "Calligrapher's Supplies",
-   "Thieves' Tools",
-   "Tinker's Tools"
-  ],
+  "tools": [],
+  "expertise": [],
   "languages": [
    "Common"
   ]
  },
  "srd | battle smith artificer with a picked artisan tool and expertise | L6 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
-  "tools": [
-   "Calligrapher's Supplies",
-   "Thieves' Tools",
-   "Tinker's Tools"
-  ],
-  "expertise": [
-   "Calligrapher's Supplies",
-   "Thieves' Tools",
-   "Tinker's Tools"
-  ],
+  "tools": [],
+  "expertise": [],
   "languages": [
    "Common"
   ]
  },
  "srd | battle smith artificer with a picked artisan tool and expertise | L11 | books=all": {
-  "tools": [
-   "Calligrapher's Supplies",
-   "Thieves' Tools",
-   "Tinker's Tools"
-  ],
-  "expertise": [
-   "Calligrapher's Supplies",
-   "Thieves' Tools",
-   "Tinker's Tools"
-  ],
+  "tools": [],
+  "expertise": [],
   "languages": [
    "Common"
   ]
  },
  "srd | battle smith artificer with a picked artisan tool and expertise | L11 | books=PHB": {
-  "tools": [
-   "Calligrapher's Supplies",
-   "Thieves' Tools",
-   "Tinker's Tools"
-  ],
-  "expertise": [
-   "Calligrapher's Supplies",
-   "Thieves' Tools",
-   "Tinker's Tools"
-  ],
+  "tools": [],
+  "expertise": [],
   "languages": [
    "Common"
   ]
  },
  "srd | battle smith artificer with a picked artisan tool and expertise | L11 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
-  "tools": [
-   "Calligrapher's Supplies",
-   "Thieves' Tools",
-   "Tinker's Tools"
-  ],
-  "expertise": [
-   "Calligrapher's Supplies",
-   "Thieves' Tools",
-   "Tinker's Tools"
-  ],
+  "tools": [],
+  "expertise": [],
   "languages": [
    "Common"
   ]
  },
  "srd | battle smith artificer with a picked artisan tool and expertise | L14 | books=all": {
-  "tools": [
-   "Calligrapher's Supplies",
-   "Thieves' Tools",
-   "Tinker's Tools"
-  ],
-  "expertise": [
-   "Calligrapher's Supplies",
-   "Thieves' Tools",
-   "Tinker's Tools"
-  ],
+  "tools": [],
+  "expertise": [],
   "languages": [
    "Common"
   ]
  },
  "srd | battle smith artificer with a picked artisan tool and expertise | L14 | books=PHB": {
-  "tools": [
-   "Calligrapher's Supplies",
-   "Thieves' Tools",
-   "Tinker's Tools"
-  ],
-  "expertise": [
-   "Calligrapher's Supplies",
-   "Thieves' Tools",
-   "Tinker's Tools"
-  ],
+  "tools": [],
+  "expertise": [],
   "languages": [
    "Common"
   ]
  },
  "srd | battle smith artificer with a picked artisan tool and expertise | L14 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
-  "tools": [
-   "Calligrapher's Supplies",
-   "Thieves' Tools",
-   "Tinker's Tools"
-  ],
-  "expertise": [
-   "Calligrapher's Supplies",
-   "Thieves' Tools",
-   "Tinker's Tools"
-  ],
+  "tools": [],
+  "expertise": [],
   "languages": [
    "Common"
   ]
  },
  "srd | battle smith artificer with a picked artisan tool and expertise | L17 | books=all": {
-  "tools": [
-   "Calligrapher's Supplies",
-   "Thieves' Tools",
-   "Tinker's Tools"
-  ],
-  "expertise": [
-   "Calligrapher's Supplies",
-   "Thieves' Tools",
-   "Tinker's Tools"
-  ],
+  "tools": [],
+  "expertise": [],
   "languages": [
    "Common"
   ]
  },
  "srd | battle smith artificer with a picked artisan tool and expertise | L17 | books=PHB": {
-  "tools": [
-   "Calligrapher's Supplies",
-   "Thieves' Tools",
-   "Tinker's Tools"
-  ],
-  "expertise": [
-   "Calligrapher's Supplies",
-   "Thieves' Tools",
-   "Tinker's Tools"
-  ],
+  "tools": [],
+  "expertise": [],
   "languages": [
    "Common"
   ]
  },
  "srd | battle smith artificer with a picked artisan tool and expertise | L17 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
-  "tools": [
-   "Calligrapher's Supplies",
-   "Thieves' Tools",
-   "Tinker's Tools"
-  ],
-  "expertise": [
-   "Calligrapher's Supplies",
-   "Thieves' Tools",
-   "Tinker's Tools"
-  ],
+  "tools": [],
+  "expertise": [],
   "languages": [
    "Common"
   ]
@@ -1781,7 +1541,8 @@
   ],
   "expertise": [],
   "languages": [
-   "Common"
+   "Common",
+   "Druidic"
   ]
  },
  "srd | druid circle of the land hermit | L1 | books=PHB": {
@@ -1790,7 +1551,8 @@
   ],
   "expertise": [],
   "languages": [
-   "Common"
+   "Common",
+   "Druidic"
   ]
  },
  "srd | druid circle of the land hermit | L1 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
@@ -1799,7 +1561,8 @@
   ],
   "expertise": [],
   "languages": [
-   "Common"
+   "Common",
+   "Druidic"
   ]
  },
  "srd | druid circle of the land hermit | L3 | books=all": {
@@ -1808,7 +1571,8 @@
   ],
   "expertise": [],
   "languages": [
-   "Common"
+   "Common",
+   "Druidic"
   ]
  },
  "srd | druid circle of the land hermit | L3 | books=PHB": {
@@ -1817,7 +1581,8 @@
   ],
   "expertise": [],
   "languages": [
-   "Common"
+   "Common",
+   "Druidic"
   ]
  },
  "srd | druid circle of the land hermit | L3 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
@@ -1826,7 +1591,8 @@
   ],
   "expertise": [],
   "languages": [
-   "Common"
+   "Common",
+   "Druidic"
   ]
  },
  "srd | druid circle of the land hermit | L6 | books=all": {
@@ -1835,7 +1601,8 @@
   ],
   "expertise": [],
   "languages": [
-   "Common"
+   "Common",
+   "Druidic"
   ]
  },
  "srd | druid circle of the land hermit | L6 | books=PHB": {
@@ -1844,7 +1611,8 @@
   ],
   "expertise": [],
   "languages": [
-   "Common"
+   "Common",
+   "Druidic"
   ]
  },
  "srd | druid circle of the land hermit | L6 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
@@ -1853,7 +1621,8 @@
   ],
   "expertise": [],
   "languages": [
-   "Common"
+   "Common",
+   "Druidic"
   ]
  },
  "srd | druid circle of the land hermit | L11 | books=all": {
@@ -1862,7 +1631,8 @@
   ],
   "expertise": [],
   "languages": [
-   "Common"
+   "Common",
+   "Druidic"
   ]
  },
  "srd | druid circle of the land hermit | L11 | books=PHB": {
@@ -1871,7 +1641,8 @@
   ],
   "expertise": [],
   "languages": [
-   "Common"
+   "Common",
+   "Druidic"
   ]
  },
  "srd | druid circle of the land hermit | L11 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
@@ -1880,7 +1651,8 @@
   ],
   "expertise": [],
   "languages": [
-   "Common"
+   "Common",
+   "Druidic"
   ]
  },
  "srd | druid circle of the land hermit | L14 | books=all": {
@@ -1889,7 +1661,8 @@
   ],
   "expertise": [],
   "languages": [
-   "Common"
+   "Common",
+   "Druidic"
   ]
  },
  "srd | druid circle of the land hermit | L14 | books=PHB": {
@@ -1898,7 +1671,8 @@
   ],
   "expertise": [],
   "languages": [
-   "Common"
+   "Common",
+   "Druidic"
   ]
  },
  "srd | druid circle of the land hermit | L14 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
@@ -1907,7 +1681,8 @@
   ],
   "expertise": [],
   "languages": [
-   "Common"
+   "Common",
+   "Druidic"
   ]
  },
  "srd | druid circle of the land hermit | L17 | books=all": {
@@ -1916,7 +1691,8 @@
   ],
   "expertise": [],
   "languages": [
-   "Common"
+   "Common",
+   "Druidic"
   ]
  },
  "srd | druid circle of the land hermit | L17 | books=PHB": {
@@ -1925,7 +1701,8 @@
   ],
   "expertise": [],
   "languages": [
-   "Common"
+   "Common",
+   "Druidic"
   ]
  },
  "srd | druid circle of the land hermit | L17 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
@@ -1934,7 +1711,8 @@
   ],
   "expertise": [],
   "languages": [
-   "Common"
+   "Common",
+   "Druidic"
   ]
  },
  "srd | druid circle of the shepherd hermit | L1 | books=all": {
@@ -1943,7 +1721,8 @@
   ],
   "expertise": [],
   "languages": [
-   "Common"
+   "Common",
+   "Druidic"
   ]
  },
  "srd | druid circle of the shepherd hermit | L1 | books=PHB": {
@@ -1952,7 +1731,8 @@
   ],
   "expertise": [],
   "languages": [
-   "Common"
+   "Common",
+   "Druidic"
   ]
  },
  "srd | druid circle of the shepherd hermit | L1 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
@@ -1961,7 +1741,8 @@
   ],
   "expertise": [],
   "languages": [
-   "Common"
+   "Common",
+   "Druidic"
   ]
  },
  "srd | druid circle of the shepherd hermit | L3 | books=all": {
@@ -1970,7 +1751,8 @@
   ],
   "expertise": [],
   "languages": [
-   "Common"
+   "Common",
+   "Druidic"
   ]
  },
  "srd | druid circle of the shepherd hermit | L3 | books=PHB": {
@@ -1979,7 +1761,8 @@
   ],
   "expertise": [],
   "languages": [
-   "Common"
+   "Common",
+   "Druidic"
   ]
  },
  "srd | druid circle of the shepherd hermit | L3 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
@@ -1988,7 +1771,8 @@
   ],
   "expertise": [],
   "languages": [
-   "Common"
+   "Common",
+   "Druidic"
   ]
  },
  "srd | druid circle of the shepherd hermit | L6 | books=all": {
@@ -1997,7 +1781,8 @@
   ],
   "expertise": [],
   "languages": [
-   "Common"
+   "Common",
+   "Druidic"
   ]
  },
  "srd | druid circle of the shepherd hermit | L6 | books=PHB": {
@@ -2006,7 +1791,8 @@
   ],
   "expertise": [],
   "languages": [
-   "Common"
+   "Common",
+   "Druidic"
   ]
  },
  "srd | druid circle of the shepherd hermit | L6 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
@@ -2015,7 +1801,8 @@
   ],
   "expertise": [],
   "languages": [
-   "Common"
+   "Common",
+   "Druidic"
   ]
  },
  "srd | druid circle of the shepherd hermit | L11 | books=all": {
@@ -2024,7 +1811,8 @@
   ],
   "expertise": [],
   "languages": [
-   "Common"
+   "Common",
+   "Druidic"
   ]
  },
  "srd | druid circle of the shepherd hermit | L11 | books=PHB": {
@@ -2033,7 +1821,8 @@
   ],
   "expertise": [],
   "languages": [
-   "Common"
+   "Common",
+   "Druidic"
   ]
  },
  "srd | druid circle of the shepherd hermit | L11 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
@@ -2042,7 +1831,8 @@
   ],
   "expertise": [],
   "languages": [
-   "Common"
+   "Common",
+   "Druidic"
   ]
  },
  "srd | druid circle of the shepherd hermit | L14 | books=all": {
@@ -2051,7 +1841,8 @@
   ],
   "expertise": [],
   "languages": [
-   "Common"
+   "Common",
+   "Druidic"
   ]
  },
  "srd | druid circle of the shepherd hermit | L14 | books=PHB": {
@@ -2060,7 +1851,8 @@
   ],
   "expertise": [],
   "languages": [
-   "Common"
+   "Common",
+   "Druidic"
   ]
  },
  "srd | druid circle of the shepherd hermit | L14 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
@@ -2069,7 +1861,8 @@
   ],
   "expertise": [],
   "languages": [
-   "Common"
+   "Common",
+   "Druidic"
   ]
  },
  "srd | druid circle of the shepherd hermit | L17 | books=all": {
@@ -2078,7 +1871,8 @@
   ],
   "expertise": [],
   "languages": [
-   "Common"
+   "Common",
+   "Druidic"
   ]
  },
  "srd | druid circle of the shepherd hermit | L17 | books=PHB": {
@@ -2087,7 +1881,8 @@
   ],
   "expertise": [],
   "languages": [
-   "Common"
+   "Common",
+   "Druidic"
   ]
  },
  "srd | druid circle of the shepherd hermit | L17 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
@@ -2096,7 +1891,8 @@
   ],
   "expertise": [],
   "languages": [
-   "Common"
+   "Common",
+   "Druidic"
   ]
  },
  "srd | monk way of the drunken master acolyte | L1 | books=all": {
@@ -4103,7 +3899,8 @@
   ],
   "expertise": [],
   "languages": [
-   "Common"
+   "Common",
+   "Druidic"
   ]
  },
  "srd | multiclass druid shepherd and ranger drakewarden | L1 | books=PHB": {
@@ -4112,7 +3909,8 @@
   ],
   "expertise": [],
   "languages": [
-   "Common"
+   "Common",
+   "Druidic"
   ]
  },
  "srd | multiclass druid shepherd and ranger drakewarden | L1 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
@@ -4121,7 +3919,8 @@
   ],
   "expertise": [],
   "languages": [
-   "Common"
+   "Common",
+   "Druidic"
   ]
  },
  "srd | multiclass druid shepherd and ranger drakewarden | L3 | books=all": {
@@ -4130,7 +3929,8 @@
   ],
   "expertise": [],
   "languages": [
-   "Common"
+   "Common",
+   "Druidic"
   ]
  },
  "srd | multiclass druid shepherd and ranger drakewarden | L3 | books=PHB": {
@@ -4139,7 +3939,8 @@
   ],
   "expertise": [],
   "languages": [
-   "Common"
+   "Common",
+   "Druidic"
   ]
  },
  "srd | multiclass druid shepherd and ranger drakewarden | L3 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
@@ -4148,7 +3949,8 @@
   ],
   "expertise": [],
   "languages": [
-   "Common"
+   "Common",
+   "Druidic"
   ]
  },
  "srd | multiclass druid shepherd and ranger drakewarden | L6 | books=all": {
@@ -4157,7 +3959,8 @@
   ],
   "expertise": [],
   "languages": [
-   "Common"
+   "Common",
+   "Druidic"
   ]
  },
  "srd | multiclass druid shepherd and ranger drakewarden | L6 | books=PHB": {
@@ -4166,7 +3969,8 @@
   ],
   "expertise": [],
   "languages": [
-   "Common"
+   "Common",
+   "Druidic"
   ]
  },
  "srd | multiclass druid shepherd and ranger drakewarden | L6 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
@@ -4175,7 +3979,8 @@
   ],
   "expertise": [],
   "languages": [
-   "Common"
+   "Common",
+   "Druidic"
   ]
  },
  "srd | multiclass druid shepherd and ranger drakewarden | L11 | books=all": {
@@ -4184,7 +3989,8 @@
   ],
   "expertise": [],
   "languages": [
-   "Common"
+   "Common",
+   "Druidic"
   ]
  },
  "srd | multiclass druid shepherd and ranger drakewarden | L11 | books=PHB": {
@@ -4193,7 +3999,8 @@
   ],
   "expertise": [],
   "languages": [
-   "Common"
+   "Common",
+   "Druidic"
   ]
  },
  "srd | multiclass druid shepherd and ranger drakewarden | L11 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
@@ -4202,7 +4009,8 @@
   ],
   "expertise": [],
   "languages": [
-   "Common"
+   "Common",
+   "Druidic"
   ]
  },
  "srd | multiclass druid shepherd and ranger drakewarden | L14 | books=all": {
@@ -4211,7 +4019,8 @@
   ],
   "expertise": [],
   "languages": [
-   "Common"
+   "Common",
+   "Druidic"
   ]
  },
  "srd | multiclass druid shepherd and ranger drakewarden | L14 | books=PHB": {
@@ -4220,7 +4029,8 @@
   ],
   "expertise": [],
   "languages": [
-   "Common"
+   "Common",
+   "Druidic"
   ]
  },
  "srd | multiclass druid shepherd and ranger drakewarden | L14 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
@@ -4229,7 +4039,8 @@
   ],
   "expertise": [],
   "languages": [
-   "Common"
+   "Common",
+   "Druidic"
   ]
  },
  "srd | multiclass druid shepherd and ranger drakewarden | L17 | books=all": {
@@ -4238,7 +4049,8 @@
   ],
   "expertise": [],
   "languages": [
-   "Common"
+   "Common",
+   "Druidic"
   ]
  },
  "srd | multiclass druid shepherd and ranger drakewarden | L17 | books=PHB": {
@@ -4247,7 +4059,8 @@
   ],
   "expertise": [],
   "languages": [
-   "Common"
+   "Common",
+   "Druidic"
   ]
  },
  "srd | multiclass druid shepherd and ranger drakewarden | L17 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
@@ -4256,187 +4069,152 @@
   ],
   "expertise": [],
   "languages": [
-   "Common"
+   "Common",
+   "Druidic"
   ]
  },
  "srd | multiclass artificer alchemist and draconic sorcerer | L1 | books=all": {
-  "tools": [
-   "Thieves' Tools",
-   "Tinker's Tools"
-  ],
+  "tools": [],
   "expertise": [],
   "languages": [
-   "Common"
+   "Common",
+   "Draconic"
   ]
  },
  "srd | multiclass artificer alchemist and draconic sorcerer | L1 | books=PHB": {
-  "tools": [
-   "Thieves' Tools",
-   "Tinker's Tools"
-  ],
+  "tools": [],
   "expertise": [],
   "languages": [
-   "Common"
+   "Common",
+   "Draconic"
   ]
  },
  "srd | multiclass artificer alchemist and draconic sorcerer | L1 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
-  "tools": [
-   "Thieves' Tools",
-   "Tinker's Tools"
-  ],
+  "tools": [],
   "expertise": [],
   "languages": [
-   "Common"
+   "Common",
+   "Draconic"
   ]
  },
  "srd | multiclass artificer alchemist and draconic sorcerer | L3 | books=all": {
-  "tools": [
-   "Thieves' Tools",
-   "Tinker's Tools"
-  ],
+  "tools": [],
   "expertise": [],
   "languages": [
-   "Common"
+   "Common",
+   "Draconic"
   ]
  },
  "srd | multiclass artificer alchemist and draconic sorcerer | L3 | books=PHB": {
-  "tools": [
-   "Thieves' Tools",
-   "Tinker's Tools"
-  ],
+  "tools": [],
   "expertise": [],
   "languages": [
-   "Common"
+   "Common",
+   "Draconic"
   ]
  },
  "srd | multiclass artificer alchemist and draconic sorcerer | L3 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
-  "tools": [
-   "Thieves' Tools",
-   "Tinker's Tools"
-  ],
+  "tools": [],
   "expertise": [],
   "languages": [
-   "Common"
+   "Common",
+   "Draconic"
   ]
  },
  "srd | multiclass artificer alchemist and draconic sorcerer | L6 | books=all": {
-  "tools": [
-   "Thieves' Tools",
-   "Tinker's Tools"
-  ],
+  "tools": [],
   "expertise": [],
   "languages": [
-   "Common"
+   "Common",
+   "Draconic"
   ]
  },
  "srd | multiclass artificer alchemist and draconic sorcerer | L6 | books=PHB": {
-  "tools": [
-   "Thieves' Tools",
-   "Tinker's Tools"
-  ],
+  "tools": [],
   "expertise": [],
   "languages": [
-   "Common"
+   "Common",
+   "Draconic"
   ]
  },
  "srd | multiclass artificer alchemist and draconic sorcerer | L6 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
-  "tools": [
-   "Thieves' Tools",
-   "Tinker's Tools"
-  ],
+  "tools": [],
   "expertise": [],
   "languages": [
-   "Common"
+   "Common",
+   "Draconic"
   ]
  },
  "srd | multiclass artificer alchemist and draconic sorcerer | L11 | books=all": {
-  "tools": [
-   "Thieves' Tools",
-   "Tinker's Tools"
-  ],
+  "tools": [],
   "expertise": [],
   "languages": [
-   "Common"
+   "Common",
+   "Draconic"
   ]
  },
  "srd | multiclass artificer alchemist and draconic sorcerer | L11 | books=PHB": {
-  "tools": [
-   "Thieves' Tools",
-   "Tinker's Tools"
-  ],
+  "tools": [],
   "expertise": [],
   "languages": [
-   "Common"
+   "Common",
+   "Draconic"
   ]
  },
  "srd | multiclass artificer alchemist and draconic sorcerer | L11 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
-  "tools": [
-   "Thieves' Tools",
-   "Tinker's Tools"
-  ],
+  "tools": [],
   "expertise": [],
   "languages": [
-   "Common"
+   "Common",
+   "Draconic"
   ]
  },
  "srd | multiclass artificer alchemist and draconic sorcerer | L14 | books=all": {
-  "tools": [
-   "Thieves' Tools",
-   "Tinker's Tools"
-  ],
+  "tools": [],
   "expertise": [],
   "languages": [
-   "Common"
+   "Common",
+   "Draconic"
   ]
  },
  "srd | multiclass artificer alchemist and draconic sorcerer | L14 | books=PHB": {
-  "tools": [
-   "Thieves' Tools",
-   "Tinker's Tools"
-  ],
+  "tools": [],
   "expertise": [],
   "languages": [
-   "Common"
+   "Common",
+   "Draconic"
   ]
  },
  "srd | multiclass artificer alchemist and draconic sorcerer | L14 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
-  "tools": [
-   "Thieves' Tools",
-   "Tinker's Tools"
-  ],
+  "tools": [],
   "expertise": [],
   "languages": [
-   "Common"
+   "Common",
+   "Draconic"
   ]
  },
  "srd | multiclass artificer alchemist and draconic sorcerer | L17 | books=all": {
-  "tools": [
-   "Thieves' Tools",
-   "Tinker's Tools"
-  ],
+  "tools": [],
   "expertise": [],
   "languages": [
-   "Common"
+   "Common",
+   "Draconic"
   ]
  },
  "srd | multiclass artificer alchemist and draconic sorcerer | L17 | books=PHB": {
-  "tools": [
-   "Thieves' Tools",
-   "Tinker's Tools"
-  ],
+  "tools": [],
   "expertise": [],
   "languages": [
-   "Common"
+   "Common",
+   "Draconic"
   ]
  },
  "srd | multiclass artificer alchemist and draconic sorcerer | L17 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
-  "tools": [
-   "Thieves' Tools",
-   "Tinker's Tools"
-  ],
+  "tools": [],
   "expertise": [],
   "languages": [
-   "Common"
+   "Common",
+   "Draconic"
   ]
  },
  "srd | multiclass rogue with a recorded multiclass tool | L1 | books=all": {
@@ -6126,7 +5904,6 @@
  },
  "integrated | rock gnome guild artisan alchemist artificer | L1 | books=PHB": {
   "tools": [
-   "Thieves' Tools",
    "Tinker's Tools"
   ],
   "expertise": [],
@@ -6148,6 +5925,7 @@
  },
  "integrated | rock gnome guild artisan alchemist artificer | L3 | books=all": {
   "tools": [
+   "Alchemist's Supplies",
    "Thieves' Tools",
    "Tinker's Tools"
   ],
@@ -6159,7 +5937,6 @@
  },
  "integrated | rock gnome guild artisan alchemist artificer | L3 | books=PHB": {
   "tools": [
-   "Thieves' Tools",
    "Tinker's Tools"
   ],
   "expertise": [],
@@ -6170,6 +5947,7 @@
  },
  "integrated | rock gnome guild artisan alchemist artificer | L3 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
   "tools": [
+   "Alchemist's Supplies",
    "Thieves' Tools",
    "Tinker's Tools"
   ],
@@ -6181,10 +5959,12 @@
  },
  "integrated | rock gnome guild artisan alchemist artificer | L6 | books=all": {
   "tools": [
+   "Alchemist's Supplies",
    "Thieves' Tools",
    "Tinker's Tools"
   ],
   "expertise": [
+   "Alchemist's Supplies",
    "Thieves' Tools",
    "Tinker's Tools"
   ],
@@ -6195,11 +5975,9 @@
  },
  "integrated | rock gnome guild artisan alchemist artificer | L6 | books=PHB": {
   "tools": [
-   "Thieves' Tools",
    "Tinker's Tools"
   ],
   "expertise": [
-   "Thieves' Tools",
    "Tinker's Tools"
   ],
   "languages": [
@@ -6209,10 +5987,12 @@
  },
  "integrated | rock gnome guild artisan alchemist artificer | L6 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
   "tools": [
+   "Alchemist's Supplies",
    "Thieves' Tools",
    "Tinker's Tools"
   ],
   "expertise": [
+   "Alchemist's Supplies",
    "Thieves' Tools",
    "Tinker's Tools"
   ],
@@ -6223,10 +6003,12 @@
  },
  "integrated | rock gnome guild artisan alchemist artificer | L11 | books=all": {
   "tools": [
+   "Alchemist's Supplies",
    "Thieves' Tools",
    "Tinker's Tools"
   ],
   "expertise": [
+   "Alchemist's Supplies",
    "Thieves' Tools",
    "Tinker's Tools"
   ],
@@ -6237,11 +6019,9 @@
  },
  "integrated | rock gnome guild artisan alchemist artificer | L11 | books=PHB": {
   "tools": [
-   "Thieves' Tools",
    "Tinker's Tools"
   ],
   "expertise": [
-   "Thieves' Tools",
    "Tinker's Tools"
   ],
   "languages": [
@@ -6251,10 +6031,12 @@
  },
  "integrated | rock gnome guild artisan alchemist artificer | L11 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
   "tools": [
+   "Alchemist's Supplies",
    "Thieves' Tools",
    "Tinker's Tools"
   ],
   "expertise": [
+   "Alchemist's Supplies",
    "Thieves' Tools",
    "Tinker's Tools"
   ],
@@ -6265,10 +6047,12 @@
  },
  "integrated | rock gnome guild artisan alchemist artificer | L14 | books=all": {
   "tools": [
+   "Alchemist's Supplies",
    "Thieves' Tools",
    "Tinker's Tools"
   ],
   "expertise": [
+   "Alchemist's Supplies",
    "Thieves' Tools",
    "Tinker's Tools"
   ],
@@ -6279,11 +6063,9 @@
  },
  "integrated | rock gnome guild artisan alchemist artificer | L14 | books=PHB": {
   "tools": [
-   "Thieves' Tools",
    "Tinker's Tools"
   ],
   "expertise": [
-   "Thieves' Tools",
    "Tinker's Tools"
   ],
   "languages": [
@@ -6293,10 +6075,12 @@
  },
  "integrated | rock gnome guild artisan alchemist artificer | L14 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
   "tools": [
+   "Alchemist's Supplies",
    "Thieves' Tools",
    "Tinker's Tools"
   ],
   "expertise": [
+   "Alchemist's Supplies",
    "Thieves' Tools",
    "Tinker's Tools"
   ],
@@ -6307,10 +6091,12 @@
  },
  "integrated | rock gnome guild artisan alchemist artificer | L17 | books=all": {
   "tools": [
+   "Alchemist's Supplies",
    "Thieves' Tools",
    "Tinker's Tools"
   ],
   "expertise": [
+   "Alchemist's Supplies",
    "Thieves' Tools",
    "Tinker's Tools"
   ],
@@ -6321,11 +6107,9 @@
  },
  "integrated | rock gnome guild artisan alchemist artificer | L17 | books=PHB": {
   "tools": [
-   "Thieves' Tools",
    "Tinker's Tools"
   ],
   "expertise": [
-   "Thieves' Tools",
    "Tinker's Tools"
   ],
   "languages": [
@@ -6335,10 +6119,12 @@
  },
  "integrated | rock gnome guild artisan alchemist artificer | L17 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
   "tools": [
+   "Alchemist's Supplies",
    "Thieves' Tools",
    "Tinker's Tools"
   ],
   "expertise": [
+   "Alchemist's Supplies",
    "Thieves' Tools",
    "Tinker's Tools"
   ],
@@ -6360,8 +6146,6 @@
  },
  "integrated | human soldier armorer artificer | L1 | books=PHB": {
   "tools": [
-   "Thieves' Tools",
-   "Tinker's Tools",
    "Vehicles (Land)"
   ],
   "expertise": [],
@@ -6382,6 +6166,7 @@
  },
  "integrated | human soldier armorer artificer | L3 | books=all": {
   "tools": [
+   "Smith's Tools",
    "Thieves' Tools",
    "Tinker's Tools",
    "Vehicles (Land)"
@@ -6393,8 +6178,6 @@
  },
  "integrated | human soldier armorer artificer | L3 | books=PHB": {
   "tools": [
-   "Thieves' Tools",
-   "Tinker's Tools",
    "Vehicles (Land)"
   ],
   "expertise": [],
@@ -6404,6 +6187,7 @@
  },
  "integrated | human soldier armorer artificer | L3 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
   "tools": [
+   "Smith's Tools",
    "Thieves' Tools",
    "Tinker's Tools",
    "Vehicles (Land)"
@@ -6415,11 +6199,13 @@
  },
  "integrated | human soldier armorer artificer | L6 | books=all": {
   "tools": [
+   "Smith's Tools",
    "Thieves' Tools",
    "Tinker's Tools",
    "Vehicles (Land)"
   ],
   "expertise": [
+   "Smith's Tools",
    "Thieves' Tools",
    "Tinker's Tools",
    "Vehicles (Land)"
@@ -6430,13 +6216,9 @@
  },
  "integrated | human soldier armorer artificer | L6 | books=PHB": {
   "tools": [
-   "Thieves' Tools",
-   "Tinker's Tools",
    "Vehicles (Land)"
   ],
   "expertise": [
-   "Thieves' Tools",
-   "Tinker's Tools",
    "Vehicles (Land)"
   ],
   "languages": [
@@ -6445,11 +6227,13 @@
  },
  "integrated | human soldier armorer artificer | L6 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
   "tools": [
+   "Smith's Tools",
    "Thieves' Tools",
    "Tinker's Tools",
    "Vehicles (Land)"
   ],
   "expertise": [
+   "Smith's Tools",
    "Thieves' Tools",
    "Tinker's Tools",
    "Vehicles (Land)"
@@ -6460,11 +6244,13 @@
  },
  "integrated | human soldier armorer artificer | L11 | books=all": {
   "tools": [
+   "Smith's Tools",
    "Thieves' Tools",
    "Tinker's Tools",
    "Vehicles (Land)"
   ],
   "expertise": [
+   "Smith's Tools",
    "Thieves' Tools",
    "Tinker's Tools",
    "Vehicles (Land)"
@@ -6475,13 +6261,9 @@
  },
  "integrated | human soldier armorer artificer | L11 | books=PHB": {
   "tools": [
-   "Thieves' Tools",
-   "Tinker's Tools",
    "Vehicles (Land)"
   ],
   "expertise": [
-   "Thieves' Tools",
-   "Tinker's Tools",
    "Vehicles (Land)"
   ],
   "languages": [
@@ -6490,11 +6272,13 @@
  },
  "integrated | human soldier armorer artificer | L11 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
   "tools": [
+   "Smith's Tools",
    "Thieves' Tools",
    "Tinker's Tools",
    "Vehicles (Land)"
   ],
   "expertise": [
+   "Smith's Tools",
    "Thieves' Tools",
    "Tinker's Tools",
    "Vehicles (Land)"
@@ -6505,11 +6289,13 @@
  },
  "integrated | human soldier armorer artificer | L14 | books=all": {
   "tools": [
+   "Smith's Tools",
    "Thieves' Tools",
    "Tinker's Tools",
    "Vehicles (Land)"
   ],
   "expertise": [
+   "Smith's Tools",
    "Thieves' Tools",
    "Tinker's Tools",
    "Vehicles (Land)"
@@ -6520,13 +6306,9 @@
  },
  "integrated | human soldier armorer artificer | L14 | books=PHB": {
   "tools": [
-   "Thieves' Tools",
-   "Tinker's Tools",
    "Vehicles (Land)"
   ],
   "expertise": [
-   "Thieves' Tools",
-   "Tinker's Tools",
    "Vehicles (Land)"
   ],
   "languages": [
@@ -6535,11 +6317,13 @@
  },
  "integrated | human soldier armorer artificer | L14 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
   "tools": [
+   "Smith's Tools",
    "Thieves' Tools",
    "Tinker's Tools",
    "Vehicles (Land)"
   ],
   "expertise": [
+   "Smith's Tools",
    "Thieves' Tools",
    "Tinker's Tools",
    "Vehicles (Land)"
@@ -6550,11 +6334,13 @@
  },
  "integrated | human soldier armorer artificer | L17 | books=all": {
   "tools": [
+   "Smith's Tools",
    "Thieves' Tools",
    "Tinker's Tools",
    "Vehicles (Land)"
   ],
   "expertise": [
+   "Smith's Tools",
    "Thieves' Tools",
    "Tinker's Tools",
    "Vehicles (Land)"
@@ -6565,13 +6351,9 @@
  },
  "integrated | human soldier armorer artificer | L17 | books=PHB": {
   "tools": [
-   "Thieves' Tools",
-   "Tinker's Tools",
    "Vehicles (Land)"
   ],
   "expertise": [
-   "Thieves' Tools",
-   "Tinker's Tools",
    "Vehicles (Land)"
   ],
   "languages": [
@@ -6580,11 +6362,13 @@
  },
  "integrated | human soldier armorer artificer | L17 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
   "tools": [
+   "Smith's Tools",
    "Thieves' Tools",
    "Tinker's Tools",
    "Vehicles (Land)"
   ],
   "expertise": [
+   "Smith's Tools",
    "Thieves' Tools",
    "Tinker's Tools",
    "Vehicles (Land)"
@@ -6605,11 +6389,7 @@
   ]
  },
  "integrated | battle smith artificer with a picked artisan tool and expertise | L1 | books=PHB": {
-  "tools": [
-   "Calligrapher's Supplies",
-   "Thieves' Tools",
-   "Tinker's Tools"
-  ],
+  "tools": [],
   "expertise": [],
   "languages": [
    "Common"
@@ -6629,20 +6409,19 @@
  "integrated | battle smith artificer with a picked artisan tool and expertise | L3 | books=all": {
   "tools": [
    "Calligrapher's Supplies",
+   "Smith's Tools",
    "Thieves' Tools",
    "Tinker's Tools"
   ],
-  "expertise": [],
+  "expertise": [
+   "Smith's Tools"
+  ],
   "languages": [
    "Common"
   ]
  },
  "integrated | battle smith artificer with a picked artisan tool and expertise | L3 | books=PHB": {
-  "tools": [
-   "Calligrapher's Supplies",
-   "Thieves' Tools",
-   "Tinker's Tools"
-  ],
+  "tools": [],
   "expertise": [],
   "languages": [
    "Common"
@@ -6651,10 +6430,13 @@
  "integrated | battle smith artificer with a picked artisan tool and expertise | L3 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
   "tools": [
    "Calligrapher's Supplies",
+   "Smith's Tools",
    "Thieves' Tools",
    "Tinker's Tools"
   ],
-  "expertise": [],
+  "expertise": [
+   "Smith's Tools"
+  ],
   "languages": [
    "Common"
   ]
@@ -6662,11 +6444,13 @@
  "integrated | battle smith artificer with a picked artisan tool and expertise | L6 | books=all": {
   "tools": [
    "Calligrapher's Supplies",
+   "Smith's Tools",
    "Thieves' Tools",
    "Tinker's Tools"
   ],
   "expertise": [
    "Calligrapher's Supplies",
+   "Smith's Tools",
    "Thieves' Tools",
    "Tinker's Tools"
   ],
@@ -6675,16 +6459,8 @@
   ]
  },
  "integrated | battle smith artificer with a picked artisan tool and expertise | L6 | books=PHB": {
-  "tools": [
-   "Calligrapher's Supplies",
-   "Thieves' Tools",
-   "Tinker's Tools"
-  ],
-  "expertise": [
-   "Calligrapher's Supplies",
-   "Thieves' Tools",
-   "Tinker's Tools"
-  ],
+  "tools": [],
+  "expertise": [],
   "languages": [
    "Common"
   ]
@@ -6692,11 +6468,13 @@
  "integrated | battle smith artificer with a picked artisan tool and expertise | L6 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
   "tools": [
    "Calligrapher's Supplies",
+   "Smith's Tools",
    "Thieves' Tools",
    "Tinker's Tools"
   ],
   "expertise": [
    "Calligrapher's Supplies",
+   "Smith's Tools",
    "Thieves' Tools",
    "Tinker's Tools"
   ],
@@ -6707,11 +6485,13 @@
  "integrated | battle smith artificer with a picked artisan tool and expertise | L11 | books=all": {
   "tools": [
    "Calligrapher's Supplies",
+   "Smith's Tools",
    "Thieves' Tools",
    "Tinker's Tools"
   ],
   "expertise": [
    "Calligrapher's Supplies",
+   "Smith's Tools",
    "Thieves' Tools",
    "Tinker's Tools"
   ],
@@ -6720,16 +6500,8 @@
   ]
  },
  "integrated | battle smith artificer with a picked artisan tool and expertise | L11 | books=PHB": {
-  "tools": [
-   "Calligrapher's Supplies",
-   "Thieves' Tools",
-   "Tinker's Tools"
-  ],
-  "expertise": [
-   "Calligrapher's Supplies",
-   "Thieves' Tools",
-   "Tinker's Tools"
-  ],
+  "tools": [],
+  "expertise": [],
   "languages": [
    "Common"
   ]
@@ -6737,11 +6509,13 @@
  "integrated | battle smith artificer with a picked artisan tool and expertise | L11 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
   "tools": [
    "Calligrapher's Supplies",
+   "Smith's Tools",
    "Thieves' Tools",
    "Tinker's Tools"
   ],
   "expertise": [
    "Calligrapher's Supplies",
+   "Smith's Tools",
    "Thieves' Tools",
    "Tinker's Tools"
   ],
@@ -6752,11 +6526,13 @@
  "integrated | battle smith artificer with a picked artisan tool and expertise | L14 | books=all": {
   "tools": [
    "Calligrapher's Supplies",
+   "Smith's Tools",
    "Thieves' Tools",
    "Tinker's Tools"
   ],
   "expertise": [
    "Calligrapher's Supplies",
+   "Smith's Tools",
    "Thieves' Tools",
    "Tinker's Tools"
   ],
@@ -6765,16 +6541,8 @@
   ]
  },
  "integrated | battle smith artificer with a picked artisan tool and expertise | L14 | books=PHB": {
-  "tools": [
-   "Calligrapher's Supplies",
-   "Thieves' Tools",
-   "Tinker's Tools"
-  ],
-  "expertise": [
-   "Calligrapher's Supplies",
-   "Thieves' Tools",
-   "Tinker's Tools"
-  ],
+  "tools": [],
+  "expertise": [],
   "languages": [
    "Common"
   ]
@@ -6782,11 +6550,13 @@
  "integrated | battle smith artificer with a picked artisan tool and expertise | L14 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
   "tools": [
    "Calligrapher's Supplies",
+   "Smith's Tools",
    "Thieves' Tools",
    "Tinker's Tools"
   ],
   "expertise": [
    "Calligrapher's Supplies",
+   "Smith's Tools",
    "Thieves' Tools",
    "Tinker's Tools"
   ],
@@ -6797,11 +6567,13 @@
  "integrated | battle smith artificer with a picked artisan tool and expertise | L17 | books=all": {
   "tools": [
    "Calligrapher's Supplies",
+   "Smith's Tools",
    "Thieves' Tools",
    "Tinker's Tools"
   ],
   "expertise": [
    "Calligrapher's Supplies",
+   "Smith's Tools",
    "Thieves' Tools",
    "Tinker's Tools"
   ],
@@ -6810,16 +6582,8 @@
   ]
  },
  "integrated | battle smith artificer with a picked artisan tool and expertise | L17 | books=PHB": {
-  "tools": [
-   "Calligrapher's Supplies",
-   "Thieves' Tools",
-   "Tinker's Tools"
-  ],
-  "expertise": [
-   "Calligrapher's Supplies",
-   "Thieves' Tools",
-   "Tinker's Tools"
-  ],
+  "tools": [],
+  "expertise": [],
   "languages": [
    "Common"
   ]
@@ -6827,11 +6591,13 @@
  "integrated | battle smith artificer with a picked artisan tool and expertise | L17 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
   "tools": [
    "Calligrapher's Supplies",
+   "Smith's Tools",
    "Thieves' Tools",
    "Tinker's Tools"
   ],
   "expertise": [
    "Calligrapher's Supplies",
+   "Smith's Tools",
    "Thieves' Tools",
    "Tinker's Tools"
   ],
@@ -7106,7 +6872,8 @@
   ],
   "expertise": [],
   "languages": [
-   "Common"
+   "Common",
+   "Giant"
   ]
  },
  "integrated | barbarian path of the giant folk hero | L3 | books=PHB": {
@@ -7124,7 +6891,8 @@
   ],
   "expertise": [],
   "languages": [
-   "Common"
+   "Common",
+   "Giant"
   ]
  },
  "integrated | barbarian path of the giant folk hero | L6 | books=all": {
@@ -7133,7 +6901,8 @@
   ],
   "expertise": [],
   "languages": [
-   "Common"
+   "Common",
+   "Giant"
   ]
  },
  "integrated | barbarian path of the giant folk hero | L6 | books=PHB": {
@@ -7151,7 +6920,8 @@
   ],
   "expertise": [],
   "languages": [
-   "Common"
+   "Common",
+   "Giant"
   ]
  },
  "integrated | barbarian path of the giant folk hero | L11 | books=all": {
@@ -7160,7 +6930,8 @@
   ],
   "expertise": [],
   "languages": [
-   "Common"
+   "Common",
+   "Giant"
   ]
  },
  "integrated | barbarian path of the giant folk hero | L11 | books=PHB": {
@@ -7178,7 +6949,8 @@
   ],
   "expertise": [],
   "languages": [
-   "Common"
+   "Common",
+   "Giant"
   ]
  },
  "integrated | barbarian path of the giant folk hero | L14 | books=all": {
@@ -7187,7 +6959,8 @@
   ],
   "expertise": [],
   "languages": [
-   "Common"
+   "Common",
+   "Giant"
   ]
  },
  "integrated | barbarian path of the giant folk hero | L14 | books=PHB": {
@@ -7205,7 +6978,8 @@
   ],
   "expertise": [],
   "languages": [
-   "Common"
+   "Common",
+   "Giant"
   ]
  },
  "integrated | barbarian path of the giant folk hero | L17 | books=all": {
@@ -7214,7 +6988,8 @@
   ],
   "expertise": [],
   "languages": [
-   "Common"
+   "Common",
+   "Giant"
   ]
  },
  "integrated | barbarian path of the giant folk hero | L17 | books=PHB": {
@@ -7232,7 +7007,8 @@
   ],
   "expertise": [],
   "languages": [
-   "Common"
+   "Common",
+   "Giant"
   ]
  },
  "integrated | barbarian berserker outlander | L1 | books=all": {
@@ -7367,7 +7143,8 @@
   ],
   "expertise": [],
   "languages": [
-   "Common"
+   "Common",
+   "Druidic"
   ]
  },
  "integrated | druid circle of the land hermit | L1 | books=PHB": {
@@ -7376,7 +7153,8 @@
   ],
   "expertise": [],
   "languages": [
-   "Common"
+   "Common",
+   "Druidic"
   ]
  },
  "integrated | druid circle of the land hermit | L1 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
@@ -7385,7 +7163,8 @@
   ],
   "expertise": [],
   "languages": [
-   "Common"
+   "Common",
+   "Druidic"
   ]
  },
  "integrated | druid circle of the land hermit | L3 | books=all": {
@@ -7394,7 +7173,8 @@
   ],
   "expertise": [],
   "languages": [
-   "Common"
+   "Common",
+   "Druidic"
   ]
  },
  "integrated | druid circle of the land hermit | L3 | books=PHB": {
@@ -7403,7 +7183,8 @@
   ],
   "expertise": [],
   "languages": [
-   "Common"
+   "Common",
+   "Druidic"
   ]
  },
  "integrated | druid circle of the land hermit | L3 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
@@ -7412,7 +7193,8 @@
   ],
   "expertise": [],
   "languages": [
-   "Common"
+   "Common",
+   "Druidic"
   ]
  },
  "integrated | druid circle of the land hermit | L6 | books=all": {
@@ -7421,7 +7203,8 @@
   ],
   "expertise": [],
   "languages": [
-   "Common"
+   "Common",
+   "Druidic"
   ]
  },
  "integrated | druid circle of the land hermit | L6 | books=PHB": {
@@ -7430,7 +7213,8 @@
   ],
   "expertise": [],
   "languages": [
-   "Common"
+   "Common",
+   "Druidic"
   ]
  },
  "integrated | druid circle of the land hermit | L6 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
@@ -7439,7 +7223,8 @@
   ],
   "expertise": [],
   "languages": [
-   "Common"
+   "Common",
+   "Druidic"
   ]
  },
  "integrated | druid circle of the land hermit | L11 | books=all": {
@@ -7448,7 +7233,8 @@
   ],
   "expertise": [],
   "languages": [
-   "Common"
+   "Common",
+   "Druidic"
   ]
  },
  "integrated | druid circle of the land hermit | L11 | books=PHB": {
@@ -7457,7 +7243,8 @@
   ],
   "expertise": [],
   "languages": [
-   "Common"
+   "Common",
+   "Druidic"
   ]
  },
  "integrated | druid circle of the land hermit | L11 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
@@ -7466,7 +7253,8 @@
   ],
   "expertise": [],
   "languages": [
-   "Common"
+   "Common",
+   "Druidic"
   ]
  },
  "integrated | druid circle of the land hermit | L14 | books=all": {
@@ -7475,7 +7263,8 @@
   ],
   "expertise": [],
   "languages": [
-   "Common"
+   "Common",
+   "Druidic"
   ]
  },
  "integrated | druid circle of the land hermit | L14 | books=PHB": {
@@ -7484,7 +7273,8 @@
   ],
   "expertise": [],
   "languages": [
-   "Common"
+   "Common",
+   "Druidic"
   ]
  },
  "integrated | druid circle of the land hermit | L14 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
@@ -7493,7 +7283,8 @@
   ],
   "expertise": [],
   "languages": [
-   "Common"
+   "Common",
+   "Druidic"
   ]
  },
  "integrated | druid circle of the land hermit | L17 | books=all": {
@@ -7502,7 +7293,8 @@
   ],
   "expertise": [],
   "languages": [
-   "Common"
+   "Common",
+   "Druidic"
   ]
  },
  "integrated | druid circle of the land hermit | L17 | books=PHB": {
@@ -7511,7 +7303,8 @@
   ],
   "expertise": [],
   "languages": [
-   "Common"
+   "Common",
+   "Druidic"
   ]
  },
  "integrated | druid circle of the land hermit | L17 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
@@ -7520,7 +7313,8 @@
   ],
   "expertise": [],
   "languages": [
-   "Common"
+   "Common",
+   "Druidic"
   ]
  },
  "integrated | druid circle of the shepherd hermit | L1 | books=all": {
@@ -7529,7 +7323,8 @@
   ],
   "expertise": [],
   "languages": [
-   "Common"
+   "Common",
+   "Druidic"
   ]
  },
  "integrated | druid circle of the shepherd hermit | L1 | books=PHB": {
@@ -7538,7 +7333,8 @@
   ],
   "expertise": [],
   "languages": [
-   "Common"
+   "Common",
+   "Druidic"
   ]
  },
  "integrated | druid circle of the shepherd hermit | L1 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
@@ -7547,7 +7343,8 @@
   ],
   "expertise": [],
   "languages": [
-   "Common"
+   "Common",
+   "Druidic"
   ]
  },
  "integrated | druid circle of the shepherd hermit | L3 | books=all": {
@@ -7556,7 +7353,9 @@
   ],
   "expertise": [],
   "languages": [
-   "Common"
+   "Common",
+   "Druidic",
+   "Sylvan"
   ]
  },
  "integrated | druid circle of the shepherd hermit | L3 | books=PHB": {
@@ -7565,7 +7364,8 @@
   ],
   "expertise": [],
   "languages": [
-   "Common"
+   "Common",
+   "Druidic"
   ]
  },
  "integrated | druid circle of the shepherd hermit | L3 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
@@ -7574,7 +7374,9 @@
   ],
   "expertise": [],
   "languages": [
-   "Common"
+   "Common",
+   "Druidic",
+   "Sylvan"
   ]
  },
  "integrated | druid circle of the shepherd hermit | L6 | books=all": {
@@ -7583,7 +7385,9 @@
   ],
   "expertise": [],
   "languages": [
-   "Common"
+   "Common",
+   "Druidic",
+   "Sylvan"
   ]
  },
  "integrated | druid circle of the shepherd hermit | L6 | books=PHB": {
@@ -7592,7 +7396,8 @@
   ],
   "expertise": [],
   "languages": [
-   "Common"
+   "Common",
+   "Druidic"
   ]
  },
  "integrated | druid circle of the shepherd hermit | L6 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
@@ -7601,7 +7406,9 @@
   ],
   "expertise": [],
   "languages": [
-   "Common"
+   "Common",
+   "Druidic",
+   "Sylvan"
   ]
  },
  "integrated | druid circle of the shepherd hermit | L11 | books=all": {
@@ -7610,7 +7417,9 @@
   ],
   "expertise": [],
   "languages": [
-   "Common"
+   "Common",
+   "Druidic",
+   "Sylvan"
   ]
  },
  "integrated | druid circle of the shepherd hermit | L11 | books=PHB": {
@@ -7619,7 +7428,8 @@
   ],
   "expertise": [],
   "languages": [
-   "Common"
+   "Common",
+   "Druidic"
   ]
  },
  "integrated | druid circle of the shepherd hermit | L11 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
@@ -7628,7 +7438,9 @@
   ],
   "expertise": [],
   "languages": [
-   "Common"
+   "Common",
+   "Druidic",
+   "Sylvan"
   ]
  },
  "integrated | druid circle of the shepherd hermit | L14 | books=all": {
@@ -7637,7 +7449,9 @@
   ],
   "expertise": [],
   "languages": [
-   "Common"
+   "Common",
+   "Druidic",
+   "Sylvan"
   ]
  },
  "integrated | druid circle of the shepherd hermit | L14 | books=PHB": {
@@ -7646,7 +7460,8 @@
   ],
   "expertise": [],
   "languages": [
-   "Common"
+   "Common",
+   "Druidic"
   ]
  },
  "integrated | druid circle of the shepherd hermit | L14 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
@@ -7655,7 +7470,9 @@
   ],
   "expertise": [],
   "languages": [
-   "Common"
+   "Common",
+   "Druidic",
+   "Sylvan"
   ]
  },
  "integrated | druid circle of the shepherd hermit | L17 | books=all": {
@@ -7664,7 +7481,9 @@
   ],
   "expertise": [],
   "languages": [
-   "Common"
+   "Common",
+   "Druidic",
+   "Sylvan"
   ]
  },
  "integrated | druid circle of the shepherd hermit | L17 | books=PHB": {
@@ -7673,7 +7492,8 @@
   ],
   "expertise": [],
   "languages": [
-   "Common"
+   "Common",
+   "Druidic"
   ]
  },
  "integrated | druid circle of the shepherd hermit | L17 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
@@ -7682,7 +7502,9 @@
   ],
   "expertise": [],
   "languages": [
-   "Common"
+   "Common",
+   "Druidic",
+   "Sylvan"
   ]
  },
  "integrated | monk way of the drunken master acolyte | L1 | books=all": {
@@ -7707,7 +7529,9 @@
   ]
  },
  "integrated | monk way of the drunken master acolyte | L3 | books=all": {
-  "tools": [],
+  "tools": [
+   "Brewer's Supplies"
+  ],
   "expertise": [],
   "languages": [
    "Common"
@@ -7721,14 +7545,18 @@
   ]
  },
  "integrated | monk way of the drunken master acolyte | L3 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
-  "tools": [],
+  "tools": [
+   "Brewer's Supplies"
+  ],
   "expertise": [],
   "languages": [
    "Common"
   ]
  },
  "integrated | monk way of the drunken master acolyte | L6 | books=all": {
-  "tools": [],
+  "tools": [
+   "Brewer's Supplies"
+  ],
   "expertise": [],
   "languages": [
    "Common"
@@ -7742,14 +7570,18 @@
   ]
  },
  "integrated | monk way of the drunken master acolyte | L6 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
-  "tools": [],
+  "tools": [
+   "Brewer's Supplies"
+  ],
   "expertise": [],
   "languages": [
    "Common"
   ]
  },
  "integrated | monk way of the drunken master acolyte | L11 | books=all": {
-  "tools": [],
+  "tools": [
+   "Brewer's Supplies"
+  ],
   "expertise": [],
   "languages": [
    "Common"
@@ -7763,14 +7595,18 @@
   ]
  },
  "integrated | monk way of the drunken master acolyte | L11 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
-  "tools": [],
+  "tools": [
+   "Brewer's Supplies"
+  ],
   "expertise": [],
   "languages": [
    "Common"
   ]
  },
  "integrated | monk way of the drunken master acolyte | L14 | books=all": {
-  "tools": [],
+  "tools": [
+   "Brewer's Supplies"
+  ],
   "expertise": [],
   "languages": [
    "Common"
@@ -7784,14 +7620,18 @@
   ]
  },
  "integrated | monk way of the drunken master acolyte | L14 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
-  "tools": [],
+  "tools": [
+   "Brewer's Supplies"
+  ],
   "expertise": [],
   "languages": [
    "Common"
   ]
  },
  "integrated | monk way of the drunken master acolyte | L17 | books=all": {
-  "tools": [],
+  "tools": [
+   "Brewer's Supplies"
+  ],
   "expertise": [],
   "languages": [
    "Common"
@@ -7805,7 +7645,9 @@
   ]
  },
  "integrated | monk way of the drunken master acolyte | L17 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
-  "tools": [],
+  "tools": [
+   "Brewer's Supplies"
+  ],
   "expertise": [],
   "languages": [
    "Common"
@@ -8013,7 +7855,9 @@
   ]
  },
  "integrated | monk way of mercy acolyte | L3 | books=all": {
-  "tools": [],
+  "tools": [
+   "Herbalism Kit"
+  ],
   "expertise": [],
   "languages": [
    "Common"
@@ -8027,14 +7871,18 @@
   ]
  },
  "integrated | monk way of mercy acolyte | L3 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
-  "tools": [],
+  "tools": [
+   "Herbalism Kit"
+  ],
   "expertise": [],
   "languages": [
    "Common"
   ]
  },
  "integrated | monk way of mercy acolyte | L6 | books=all": {
-  "tools": [],
+  "tools": [
+   "Herbalism Kit"
+  ],
   "expertise": [],
   "languages": [
    "Common"
@@ -8048,14 +7896,18 @@
   ]
  },
  "integrated | monk way of mercy acolyte | L6 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
-  "tools": [],
+  "tools": [
+   "Herbalism Kit"
+  ],
   "expertise": [],
   "languages": [
    "Common"
   ]
  },
  "integrated | monk way of mercy acolyte | L11 | books=all": {
-  "tools": [],
+  "tools": [
+   "Herbalism Kit"
+  ],
   "expertise": [],
   "languages": [
    "Common"
@@ -8069,14 +7921,18 @@
   ]
  },
  "integrated | monk way of mercy acolyte | L11 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
-  "tools": [],
+  "tools": [
+   "Herbalism Kit"
+  ],
   "expertise": [],
   "languages": [
    "Common"
   ]
  },
  "integrated | monk way of mercy acolyte | L14 | books=all": {
-  "tools": [],
+  "tools": [
+   "Herbalism Kit"
+  ],
   "expertise": [],
   "languages": [
    "Common"
@@ -8090,14 +7946,18 @@
   ]
  },
  "integrated | monk way of mercy acolyte | L14 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
-  "tools": [],
+  "tools": [
+   "Herbalism Kit"
+  ],
   "expertise": [],
   "languages": [
    "Common"
   ]
  },
  "integrated | monk way of mercy acolyte | L17 | books=all": {
-  "tools": [],
+  "tools": [
+   "Herbalism Kit"
+  ],
   "expertise": [],
   "languages": [
    "Common"
@@ -8111,7 +7971,9 @@
   ]
  },
  "integrated | monk way of mercy acolyte | L17 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
-  "tools": [],
+  "tools": [
+   "Herbalism Kit"
+  ],
   "expertise": [],
   "languages": [
    "Common"
@@ -8142,7 +8004,8 @@
   "tools": [],
   "expertise": [],
   "languages": [
-   "Common"
+   "Common",
+   "Draconic"
   ]
  },
  "integrated | monk way of the ascendant dragon | L3 | books=PHB": {
@@ -8156,14 +8019,16 @@
   "tools": [],
   "expertise": [],
   "languages": [
-   "Common"
+   "Common",
+   "Draconic"
   ]
  },
  "integrated | monk way of the ascendant dragon | L6 | books=all": {
   "tools": [],
   "expertise": [],
   "languages": [
-   "Common"
+   "Common",
+   "Draconic"
   ]
  },
  "integrated | monk way of the ascendant dragon | L6 | books=PHB": {
@@ -8177,14 +8042,16 @@
   "tools": [],
   "expertise": [],
   "languages": [
-   "Common"
+   "Common",
+   "Draconic"
   ]
  },
  "integrated | monk way of the ascendant dragon | L11 | books=all": {
   "tools": [],
   "expertise": [],
   "languages": [
-   "Common"
+   "Common",
+   "Draconic"
   ]
  },
  "integrated | monk way of the ascendant dragon | L11 | books=PHB": {
@@ -8198,14 +8065,16 @@
   "tools": [],
   "expertise": [],
   "languages": [
-   "Common"
+   "Common",
+   "Draconic"
   ]
  },
  "integrated | monk way of the ascendant dragon | L14 | books=all": {
   "tools": [],
   "expertise": [],
   "languages": [
-   "Common"
+   "Common",
+   "Draconic"
   ]
  },
  "integrated | monk way of the ascendant dragon | L14 | books=PHB": {
@@ -8219,14 +8088,16 @@
   "tools": [],
   "expertise": [],
   "languages": [
-   "Common"
+   "Common",
+   "Draconic"
   ]
  },
  "integrated | monk way of the ascendant dragon | L17 | books=all": {
   "tools": [],
   "expertise": [],
   "languages": [
-   "Common"
+   "Common",
+   "Draconic"
   ]
  },
  "integrated | monk way of the ascendant dragon | L17 | books=PHB": {
@@ -8240,7 +8111,8 @@
   "tools": [],
   "expertise": [],
   "languages": [
-   "Common"
+   "Common",
+   "Draconic"
   ]
  },
  "integrated | monk way of the open hand acolyte | L1 | books=all": {
@@ -8394,7 +8266,8 @@
   "tools": [],
   "expertise": [],
   "languages": [
-   "Common"
+   "Common",
+   "Draconic"
   ]
  },
  "integrated | ranger drakewarden outlander | L3 | books=PHB": {
@@ -8408,14 +8281,16 @@
   "tools": [],
   "expertise": [],
   "languages": [
-   "Common"
+   "Common",
+   "Draconic"
   ]
  },
  "integrated | ranger drakewarden outlander | L6 | books=all": {
   "tools": [],
   "expertise": [],
   "languages": [
-   "Common"
+   "Common",
+   "Draconic"
   ]
  },
  "integrated | ranger drakewarden outlander | L6 | books=PHB": {
@@ -8429,14 +8304,16 @@
   "tools": [],
   "expertise": [],
   "languages": [
-   "Common"
+   "Common",
+   "Draconic"
   ]
  },
  "integrated | ranger drakewarden outlander | L11 | books=all": {
   "tools": [],
   "expertise": [],
   "languages": [
-   "Common"
+   "Common",
+   "Draconic"
   ]
  },
  "integrated | ranger drakewarden outlander | L11 | books=PHB": {
@@ -8450,14 +8327,16 @@
   "tools": [],
   "expertise": [],
   "languages": [
-   "Common"
+   "Common",
+   "Draconic"
   ]
  },
  "integrated | ranger drakewarden outlander | L14 | books=all": {
   "tools": [],
   "expertise": [],
   "languages": [
-   "Common"
+   "Common",
+   "Draconic"
   ]
  },
  "integrated | ranger drakewarden outlander | L14 | books=PHB": {
@@ -8471,14 +8350,16 @@
   "tools": [],
   "expertise": [],
   "languages": [
-   "Common"
+   "Common",
+   "Draconic"
   ]
  },
  "integrated | ranger drakewarden outlander | L17 | books=all": {
   "tools": [],
   "expertise": [],
   "languages": [
-   "Common"
+   "Common",
+   "Draconic"
   ]
  },
  "integrated | ranger drakewarden outlander | L17 | books=PHB": {
@@ -8492,7 +8373,8 @@
   "tools": [],
   "expertise": [],
   "languages": [
-   "Common"
+   "Common",
+   "Draconic"
   ]
  },
  "integrated | ranger hunter outlander | L1 | books=all": {
@@ -8650,6 +8532,8 @@
  },
  "integrated | rogue mastermind criminal | L3 | books=all": {
   "tools": [
+   "Disguise Kit",
+   "Forgery Kit",
    "Thieves' Tools"
   ],
   "expertise": [],
@@ -8668,6 +8552,8 @@
  },
  "integrated | rogue mastermind criminal | L3 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
   "tools": [
+   "Disguise Kit",
+   "Forgery Kit",
    "Thieves' Tools"
   ],
   "expertise": [],
@@ -8677,6 +8563,8 @@
  },
  "integrated | rogue mastermind criminal | L6 | books=all": {
   "tools": [
+   "Disguise Kit",
+   "Forgery Kit",
    "Thieves' Tools"
   ],
   "expertise": [],
@@ -8695,6 +8583,8 @@
  },
  "integrated | rogue mastermind criminal | L6 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
   "tools": [
+   "Disguise Kit",
+   "Forgery Kit",
    "Thieves' Tools"
   ],
   "expertise": [],
@@ -8704,6 +8594,8 @@
  },
  "integrated | rogue mastermind criminal | L11 | books=all": {
   "tools": [
+   "Disguise Kit",
+   "Forgery Kit",
    "Thieves' Tools"
   ],
   "expertise": [],
@@ -8722,6 +8614,8 @@
  },
  "integrated | rogue mastermind criminal | L11 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
   "tools": [
+   "Disguise Kit",
+   "Forgery Kit",
    "Thieves' Tools"
   ],
   "expertise": [],
@@ -8731,6 +8625,8 @@
  },
  "integrated | rogue mastermind criminal | L14 | books=all": {
   "tools": [
+   "Disguise Kit",
+   "Forgery Kit",
    "Thieves' Tools"
   ],
   "expertise": [],
@@ -8749,6 +8645,8 @@
  },
  "integrated | rogue mastermind criminal | L14 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
   "tools": [
+   "Disguise Kit",
+   "Forgery Kit",
    "Thieves' Tools"
   ],
   "expertise": [],
@@ -8758,6 +8656,8 @@
  },
  "integrated | rogue mastermind criminal | L17 | books=all": {
   "tools": [
+   "Disguise Kit",
+   "Forgery Kit",
    "Thieves' Tools"
   ],
   "expertise": [],
@@ -8776,6 +8676,8 @@
  },
  "integrated | rogue mastermind criminal | L17 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
   "tools": [
+   "Disguise Kit",
+   "Forgery Kit",
    "Thieves' Tools"
   ],
   "expertise": [],
@@ -8820,6 +8722,7 @@
   "tools": [
    "Disguise Kit",
    "Forgery Kit",
+   "Poisoner's Kit",
    "Thieves' Tools"
   ],
   "expertise": [],
@@ -8831,6 +8734,7 @@
   "tools": [
    "Disguise Kit",
    "Forgery Kit",
+   "Poisoner's Kit",
    "Thieves' Tools"
   ],
   "expertise": [],
@@ -8842,6 +8746,7 @@
   "tools": [
    "Disguise Kit",
    "Forgery Kit",
+   "Poisoner's Kit",
    "Thieves' Tools"
   ],
   "expertise": [],
@@ -8853,6 +8758,7 @@
   "tools": [
    "Disguise Kit",
    "Forgery Kit",
+   "Poisoner's Kit",
    "Thieves' Tools"
   ],
   "expertise": [],
@@ -8864,6 +8770,7 @@
   "tools": [
    "Disguise Kit",
    "Forgery Kit",
+   "Poisoner's Kit",
    "Thieves' Tools"
   ],
   "expertise": [],
@@ -8875,6 +8782,7 @@
   "tools": [
    "Disguise Kit",
    "Forgery Kit",
+   "Poisoner's Kit",
    "Thieves' Tools"
   ],
   "expertise": [],
@@ -8886,6 +8794,7 @@
   "tools": [
    "Disguise Kit",
    "Forgery Kit",
+   "Poisoner's Kit",
    "Thieves' Tools"
   ],
   "expertise": [],
@@ -8897,6 +8806,7 @@
   "tools": [
    "Disguise Kit",
    "Forgery Kit",
+   "Poisoner's Kit",
    "Thieves' Tools"
   ],
   "expertise": [],
@@ -8908,6 +8818,7 @@
   "tools": [
    "Disguise Kit",
    "Forgery Kit",
+   "Poisoner's Kit",
    "Thieves' Tools"
   ],
   "expertise": [],
@@ -8919,6 +8830,7 @@
   "tools": [
    "Disguise Kit",
    "Forgery Kit",
+   "Poisoner's Kit",
    "Thieves' Tools"
   ],
   "expertise": [],
@@ -8930,6 +8842,7 @@
   "tools": [
    "Disguise Kit",
    "Forgery Kit",
+   "Poisoner's Kit",
    "Thieves' Tools"
   ],
   "expertise": [],
@@ -8941,6 +8854,7 @@
   "tools": [
    "Disguise Kit",
    "Forgery Kit",
+   "Poisoner's Kit",
    "Thieves' Tools"
   ],
   "expertise": [],
@@ -8952,6 +8866,7 @@
   "tools": [
    "Disguise Kit",
    "Forgery Kit",
+   "Poisoner's Kit",
    "Thieves' Tools"
   ],
   "expertise": [],
@@ -8963,6 +8878,7 @@
   "tools": [
    "Disguise Kit",
    "Forgery Kit",
+   "Poisoner's Kit",
    "Thieves' Tools"
   ],
   "expertise": [],
@@ -8974,6 +8890,7 @@
   "tools": [
    "Disguise Kit",
    "Forgery Kit",
+   "Poisoner's Kit",
    "Thieves' Tools"
   ],
   "expertise": [],
@@ -9132,7 +9049,8 @@
   ],
   "expertise": [],
   "languages": [
-   "Common"
+   "Common",
+   "Primordial"
   ]
  },
  "integrated | sorcerer storm sorcery sailor | L1 | books=PHB": {
@@ -9152,7 +9070,8 @@
   ],
   "expertise": [],
   "languages": [
-   "Common"
+   "Common",
+   "Primordial"
   ]
  },
  "integrated | sorcerer storm sorcery sailor | L3 | books=all": {
@@ -9162,7 +9081,8 @@
   ],
   "expertise": [],
   "languages": [
-   "Common"
+   "Common",
+   "Primordial"
   ]
  },
  "integrated | sorcerer storm sorcery sailor | L3 | books=PHB": {
@@ -9182,7 +9102,8 @@
   ],
   "expertise": [],
   "languages": [
-   "Common"
+   "Common",
+   "Primordial"
   ]
  },
  "integrated | sorcerer storm sorcery sailor | L6 | books=all": {
@@ -9192,7 +9113,8 @@
   ],
   "expertise": [],
   "languages": [
-   "Common"
+   "Common",
+   "Primordial"
   ]
  },
  "integrated | sorcerer storm sorcery sailor | L6 | books=PHB": {
@@ -9212,7 +9134,8 @@
   ],
   "expertise": [],
   "languages": [
-   "Common"
+   "Common",
+   "Primordial"
   ]
  },
  "integrated | sorcerer storm sorcery sailor | L11 | books=all": {
@@ -9222,7 +9145,8 @@
   ],
   "expertise": [],
   "languages": [
-   "Common"
+   "Common",
+   "Primordial"
   ]
  },
  "integrated | sorcerer storm sorcery sailor | L11 | books=PHB": {
@@ -9242,7 +9166,8 @@
   ],
   "expertise": [],
   "languages": [
-   "Common"
+   "Common",
+   "Primordial"
   ]
  },
  "integrated | sorcerer storm sorcery sailor | L14 | books=all": {
@@ -9252,7 +9177,8 @@
   ],
   "expertise": [],
   "languages": [
-   "Common"
+   "Common",
+   "Primordial"
   ]
  },
  "integrated | sorcerer storm sorcery sailor | L14 | books=PHB": {
@@ -9272,7 +9198,8 @@
   ],
   "expertise": [],
   "languages": [
-   "Common"
+   "Common",
+   "Primordial"
   ]
  },
  "integrated | sorcerer storm sorcery sailor | L17 | books=all": {
@@ -9282,7 +9209,8 @@
   ],
   "expertise": [],
   "languages": [
-   "Common"
+   "Common",
+   "Primordial"
   ]
  },
  "integrated | sorcerer storm sorcery sailor | L17 | books=PHB": {
@@ -9302,11 +9230,13 @@
   ],
   "expertise": [],
   "languages": [
-   "Common"
+   "Common",
+   "Primordial"
   ]
  },
  "integrated | cleric forge domain soldier | L1 | books=all": {
   "tools": [
+   "Smith's Tools",
    "Vehicles (Land)"
   ],
   "expertise": [],
@@ -9327,6 +9257,7 @@
  },
  "integrated | cleric forge domain soldier | L1 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
   "tools": [
+   "Smith's Tools",
    "Vehicles (Land)"
   ],
   "expertise": [],
@@ -9337,6 +9268,7 @@
  },
  "integrated | cleric forge domain soldier | L3 | books=all": {
   "tools": [
+   "Smith's Tools",
    "Vehicles (Land)"
   ],
   "expertise": [],
@@ -9357,6 +9289,7 @@
  },
  "integrated | cleric forge domain soldier | L3 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
   "tools": [
+   "Smith's Tools",
    "Vehicles (Land)"
   ],
   "expertise": [],
@@ -9367,6 +9300,7 @@
  },
  "integrated | cleric forge domain soldier | L6 | books=all": {
   "tools": [
+   "Smith's Tools",
    "Vehicles (Land)"
   ],
   "expertise": [],
@@ -9387,6 +9321,7 @@
  },
  "integrated | cleric forge domain soldier | L6 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
   "tools": [
+   "Smith's Tools",
    "Vehicles (Land)"
   ],
   "expertise": [],
@@ -9397,6 +9332,7 @@
  },
  "integrated | cleric forge domain soldier | L11 | books=all": {
   "tools": [
+   "Smith's Tools",
    "Vehicles (Land)"
   ],
   "expertise": [],
@@ -9417,6 +9353,7 @@
  },
  "integrated | cleric forge domain soldier | L11 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
   "tools": [
+   "Smith's Tools",
    "Vehicles (Land)"
   ],
   "expertise": [],
@@ -9427,6 +9364,7 @@
  },
  "integrated | cleric forge domain soldier | L14 | books=all": {
   "tools": [
+   "Smith's Tools",
    "Vehicles (Land)"
   ],
   "expertise": [],
@@ -9447,6 +9385,7 @@
  },
  "integrated | cleric forge domain soldier | L14 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
   "tools": [
+   "Smith's Tools",
    "Vehicles (Land)"
   ],
   "expertise": [],
@@ -9457,6 +9396,7 @@
  },
  "integrated | cleric forge domain soldier | L17 | books=all": {
   "tools": [
+   "Smith's Tools",
    "Vehicles (Land)"
   ],
   "expertise": [],
@@ -9477,6 +9417,7 @@
  },
  "integrated | cleric forge domain soldier | L17 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
   "tools": [
+   "Smith's Tools",
    "Vehicles (Land)"
   ],
   "expertise": [],
@@ -9507,10 +9448,13 @@
   ]
  },
  "integrated | fighter rune knight noble | L3 | books=all": {
-  "tools": [],
+  "tools": [
+   "Smith's Tools"
+  ],
   "expertise": [],
   "languages": [
-   "Common"
+   "Common",
+   "Giant"
   ]
  },
  "integrated | fighter rune knight noble | L3 | books=PHB": {
@@ -9521,17 +9465,23 @@
   ]
  },
  "integrated | fighter rune knight noble | L3 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
-  "tools": [],
+  "tools": [
+   "Smith's Tools"
+  ],
   "expertise": [],
   "languages": [
-   "Common"
+   "Common",
+   "Giant"
   ]
  },
  "integrated | fighter rune knight noble | L6 | books=all": {
-  "tools": [],
+  "tools": [
+   "Smith's Tools"
+  ],
   "expertise": [],
   "languages": [
-   "Common"
+   "Common",
+   "Giant"
   ]
  },
  "integrated | fighter rune knight noble | L6 | books=PHB": {
@@ -9542,17 +9492,23 @@
   ]
  },
  "integrated | fighter rune knight noble | L6 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
-  "tools": [],
+  "tools": [
+   "Smith's Tools"
+  ],
   "expertise": [],
   "languages": [
-   "Common"
+   "Common",
+   "Giant"
   ]
  },
  "integrated | fighter rune knight noble | L11 | books=all": {
-  "tools": [],
+  "tools": [
+   "Smith's Tools"
+  ],
   "expertise": [],
   "languages": [
-   "Common"
+   "Common",
+   "Giant"
   ]
  },
  "integrated | fighter rune knight noble | L11 | books=PHB": {
@@ -9563,17 +9519,23 @@
   ]
  },
  "integrated | fighter rune knight noble | L11 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
-  "tools": [],
+  "tools": [
+   "Smith's Tools"
+  ],
   "expertise": [],
   "languages": [
-   "Common"
+   "Common",
+   "Giant"
   ]
  },
  "integrated | fighter rune knight noble | L14 | books=all": {
-  "tools": [],
+  "tools": [
+   "Smith's Tools"
+  ],
   "expertise": [],
   "languages": [
-   "Common"
+   "Common",
+   "Giant"
   ]
  },
  "integrated | fighter rune knight noble | L14 | books=PHB": {
@@ -9584,17 +9546,23 @@
   ]
  },
  "integrated | fighter rune knight noble | L14 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
-  "tools": [],
+  "tools": [
+   "Smith's Tools"
+  ],
   "expertise": [],
   "languages": [
-   "Common"
+   "Common",
+   "Giant"
   ]
  },
  "integrated | fighter rune knight noble | L17 | books=all": {
-  "tools": [],
+  "tools": [
+   "Smith's Tools"
+  ],
   "expertise": [],
   "languages": [
-   "Common"
+   "Common",
+   "Giant"
   ]
  },
  "integrated | fighter rune knight noble | L17 | books=PHB": {
@@ -9605,10 +9573,13 @@
   ]
  },
  "integrated | fighter rune knight noble | L17 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
-  "tools": [],
+  "tools": [
+   "Smith's Tools"
+  ],
   "expertise": [],
   "languages": [
-   "Common"
+   "Common",
+   "Giant"
   ]
  },
  "integrated | paladin oath of devotion acolyte | L1 | books=all": {
@@ -9923,7 +9894,9 @@
   ],
   "expertise": [],
   "languages": [
-   "Common"
+   "Common",
+   "Druidic",
+   "Sylvan"
   ]
  },
  "integrated | multiclass druid shepherd and ranger drakewarden | L1 | books=PHB": {
@@ -9932,7 +9905,8 @@
   ],
   "expertise": [],
   "languages": [
-   "Common"
+   "Common",
+   "Druidic"
   ]
  },
  "integrated | multiclass druid shepherd and ranger drakewarden | L1 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
@@ -9941,7 +9915,9 @@
   ],
   "expertise": [],
   "languages": [
-   "Common"
+   "Common",
+   "Druidic",
+   "Sylvan"
   ]
  },
  "integrated | multiclass druid shepherd and ranger drakewarden | L3 | books=all": {
@@ -9950,7 +9926,9 @@
   ],
   "expertise": [],
   "languages": [
-   "Common"
+   "Common",
+   "Druidic",
+   "Sylvan"
   ]
  },
  "integrated | multiclass druid shepherd and ranger drakewarden | L3 | books=PHB": {
@@ -9959,7 +9937,8 @@
   ],
   "expertise": [],
   "languages": [
-   "Common"
+   "Common",
+   "Druidic"
   ]
  },
  "integrated | multiclass druid shepherd and ranger drakewarden | L3 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
@@ -9968,7 +9947,9 @@
   ],
   "expertise": [],
   "languages": [
-   "Common"
+   "Common",
+   "Druidic",
+   "Sylvan"
   ]
  },
  "integrated | multiclass druid shepherd and ranger drakewarden | L6 | books=all": {
@@ -9977,7 +9958,10 @@
   ],
   "expertise": [],
   "languages": [
-   "Common"
+   "Common",
+   "Draconic",
+   "Druidic",
+   "Sylvan"
   ]
  },
  "integrated | multiclass druid shepherd and ranger drakewarden | L6 | books=PHB": {
@@ -9986,7 +9970,8 @@
   ],
   "expertise": [],
   "languages": [
-   "Common"
+   "Common",
+   "Druidic"
   ]
  },
  "integrated | multiclass druid shepherd and ranger drakewarden | L6 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
@@ -9995,7 +9980,10 @@
   ],
   "expertise": [],
   "languages": [
-   "Common"
+   "Common",
+   "Draconic",
+   "Druidic",
+   "Sylvan"
   ]
  },
  "integrated | multiclass druid shepherd and ranger drakewarden | L11 | books=all": {
@@ -10004,7 +9992,10 @@
   ],
   "expertise": [],
   "languages": [
-   "Common"
+   "Common",
+   "Draconic",
+   "Druidic",
+   "Sylvan"
   ]
  },
  "integrated | multiclass druid shepherd and ranger drakewarden | L11 | books=PHB": {
@@ -10013,7 +10004,8 @@
   ],
   "expertise": [],
   "languages": [
-   "Common"
+   "Common",
+   "Druidic"
   ]
  },
  "integrated | multiclass druid shepherd and ranger drakewarden | L11 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
@@ -10022,7 +10014,10 @@
   ],
   "expertise": [],
   "languages": [
-   "Common"
+   "Common",
+   "Draconic",
+   "Druidic",
+   "Sylvan"
   ]
  },
  "integrated | multiclass druid shepherd and ranger drakewarden | L14 | books=all": {
@@ -10031,7 +10026,10 @@
   ],
   "expertise": [],
   "languages": [
-   "Common"
+   "Common",
+   "Draconic",
+   "Druidic",
+   "Sylvan"
   ]
  },
  "integrated | multiclass druid shepherd and ranger drakewarden | L14 | books=PHB": {
@@ -10040,7 +10038,8 @@
   ],
   "expertise": [],
   "languages": [
-   "Common"
+   "Common",
+   "Druidic"
   ]
  },
  "integrated | multiclass druid shepherd and ranger drakewarden | L14 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
@@ -10049,7 +10048,10 @@
   ],
   "expertise": [],
   "languages": [
-   "Common"
+   "Common",
+   "Draconic",
+   "Druidic",
+   "Sylvan"
   ]
  },
  "integrated | multiclass druid shepherd and ranger drakewarden | L17 | books=all": {
@@ -10058,7 +10060,10 @@
   ],
   "expertise": [],
   "languages": [
-   "Common"
+   "Common",
+   "Draconic",
+   "Druidic",
+   "Sylvan"
   ]
  },
  "integrated | multiclass druid shepherd and ranger drakewarden | L17 | books=PHB": {
@@ -10067,7 +10072,8 @@
   ],
   "expertise": [],
   "languages": [
-   "Common"
+   "Common",
+   "Druidic"
   ]
  },
  "integrated | multiclass druid shepherd and ranger drakewarden | L17 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
@@ -10076,7 +10082,10 @@
   ],
   "expertise": [],
   "languages": [
-   "Common"
+   "Common",
+   "Draconic",
+   "Druidic",
+   "Sylvan"
   ]
  },
  "integrated | multiclass artificer alchemist and draconic sorcerer | L1 | books=all": {
@@ -10086,17 +10095,16 @@
   ],
   "expertise": [],
   "languages": [
-   "Common"
+   "Common",
+   "Draconic"
   ]
  },
  "integrated | multiclass artificer alchemist and draconic sorcerer | L1 | books=PHB": {
-  "tools": [
-   "Thieves' Tools",
-   "Tinker's Tools"
-  ],
+  "tools": [],
   "expertise": [],
   "languages": [
-   "Common"
+   "Common",
+   "Draconic"
   ]
  },
  "integrated | multiclass artificer alchemist and draconic sorcerer | L1 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
@@ -10106,7 +10114,8 @@
   ],
   "expertise": [],
   "languages": [
-   "Common"
+   "Common",
+   "Draconic"
   ]
  },
  "integrated | multiclass artificer alchemist and draconic sorcerer | L3 | books=all": {
@@ -10116,17 +10125,16 @@
   ],
   "expertise": [],
   "languages": [
-   "Common"
+   "Common",
+   "Draconic"
   ]
  },
  "integrated | multiclass artificer alchemist and draconic sorcerer | L3 | books=PHB": {
-  "tools": [
-   "Thieves' Tools",
-   "Tinker's Tools"
-  ],
+  "tools": [],
   "expertise": [],
   "languages": [
-   "Common"
+   "Common",
+   "Draconic"
   ]
  },
  "integrated | multiclass artificer alchemist and draconic sorcerer | L3 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
@@ -10136,7 +10144,8 @@
   ],
   "expertise": [],
   "languages": [
-   "Common"
+   "Common",
+   "Draconic"
   ]
  },
  "integrated | multiclass artificer alchemist and draconic sorcerer | L6 | books=all": {
@@ -10146,17 +10155,16 @@
   ],
   "expertise": [],
   "languages": [
-   "Common"
+   "Common",
+   "Draconic"
   ]
  },
  "integrated | multiclass artificer alchemist and draconic sorcerer | L6 | books=PHB": {
-  "tools": [
-   "Thieves' Tools",
-   "Tinker's Tools"
-  ],
+  "tools": [],
   "expertise": [],
   "languages": [
-   "Common"
+   "Common",
+   "Draconic"
   ]
  },
  "integrated | multiclass artificer alchemist and draconic sorcerer | L6 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
@@ -10166,7 +10174,8 @@
   ],
   "expertise": [],
   "languages": [
-   "Common"
+   "Common",
+   "Draconic"
   ]
  },
  "integrated | multiclass artificer alchemist and draconic sorcerer | L11 | books=all": {
@@ -10176,17 +10185,16 @@
   ],
   "expertise": [],
   "languages": [
-   "Common"
+   "Common",
+   "Draconic"
   ]
  },
  "integrated | multiclass artificer alchemist and draconic sorcerer | L11 | books=PHB": {
-  "tools": [
-   "Thieves' Tools",
-   "Tinker's Tools"
-  ],
+  "tools": [],
   "expertise": [],
   "languages": [
-   "Common"
+   "Common",
+   "Draconic"
   ]
  },
  "integrated | multiclass artificer alchemist and draconic sorcerer | L11 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
@@ -10196,7 +10204,8 @@
   ],
   "expertise": [],
   "languages": [
-   "Common"
+   "Common",
+   "Draconic"
   ]
  },
  "integrated | multiclass artificer alchemist and draconic sorcerer | L14 | books=all": {
@@ -10206,17 +10215,16 @@
   ],
   "expertise": [],
   "languages": [
-   "Common"
+   "Common",
+   "Draconic"
   ]
  },
  "integrated | multiclass artificer alchemist and draconic sorcerer | L14 | books=PHB": {
-  "tools": [
-   "Thieves' Tools",
-   "Tinker's Tools"
-  ],
+  "tools": [],
   "expertise": [],
   "languages": [
-   "Common"
+   "Common",
+   "Draconic"
   ]
  },
  "integrated | multiclass artificer alchemist and draconic sorcerer | L14 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
@@ -10226,7 +10234,8 @@
   ],
   "expertise": [],
   "languages": [
-   "Common"
+   "Common",
+   "Draconic"
   ]
  },
  "integrated | multiclass artificer alchemist and draconic sorcerer | L17 | books=all": {
@@ -10236,17 +10245,16 @@
   ],
   "expertise": [],
   "languages": [
-   "Common"
+   "Common",
+   "Draconic"
   ]
  },
  "integrated | multiclass artificer alchemist and draconic sorcerer | L17 | books=PHB": {
-  "tools": [
-   "Thieves' Tools",
-   "Tinker's Tools"
-  ],
+  "tools": [],
   "expertise": [],
   "languages": [
-   "Common"
+   "Common",
+   "Draconic"
   ]
  },
  "integrated | multiclass artificer alchemist and draconic sorcerer | L17 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
@@ -10256,7 +10264,8 @@
   ],
   "expertise": [],
   "languages": [
-   "Common"
+   "Common",
+   "Draconic"
   ]
  },
  "integrated | multiclass rogue with a recorded multiclass tool | L1 | books=all": {
@@ -10680,7 +10689,9 @@
   ]
  },
  "integrated | human fighter with the chef feat from level 4 | L6 | books=all": {
-  "tools": [],
+  "tools": [
+   "Cook's Utensils"
+  ],
   "expertise": [],
   "languages": [
    "Common"
@@ -10694,14 +10705,18 @@
   ]
  },
  "integrated | human fighter with the chef feat from level 4 | L6 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
-  "tools": [],
+  "tools": [
+   "Cook's Utensils"
+  ],
   "expertise": [],
   "languages": [
    "Common"
   ]
  },
  "integrated | human fighter with the chef feat from level 4 | L11 | books=all": {
-  "tools": [],
+  "tools": [
+   "Cook's Utensils"
+  ],
   "expertise": [],
   "languages": [
    "Common"
@@ -10715,14 +10730,18 @@
   ]
  },
  "integrated | human fighter with the chef feat from level 4 | L11 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
-  "tools": [],
+  "tools": [
+   "Cook's Utensils"
+  ],
   "expertise": [],
   "languages": [
    "Common"
   ]
  },
  "integrated | human fighter with the chef feat from level 4 | L14 | books=all": {
-  "tools": [],
+  "tools": [
+   "Cook's Utensils"
+  ],
   "expertise": [],
   "languages": [
    "Common"
@@ -10736,14 +10755,18 @@
   ]
  },
  "integrated | human fighter with the chef feat from level 4 | L14 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
-  "tools": [],
+  "tools": [
+   "Cook's Utensils"
+  ],
   "expertise": [],
   "languages": [
    "Common"
   ]
  },
  "integrated | human fighter with the chef feat from level 4 | L17 | books=all": {
-  "tools": [],
+  "tools": [
+   "Cook's Utensils"
+  ],
   "expertise": [],
   "languages": [
    "Common"
@@ -10757,7 +10780,9 @@
   ]
  },
  "integrated | human fighter with the chef feat from level 4 | L17 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
-  "tools": [],
+  "tools": [
+   "Cook's Utensils"
+  ],
   "expertise": [],
   "languages": [
    "Common"
@@ -10819,6 +10844,7 @@
  },
  "integrated | human rogue with the poisoner feat from level 4 | L6 | books=all": {
   "tools": [
+   "Poisoner's Kit",
    "Thieves' Tools"
   ],
   "expertise": [],
@@ -10837,6 +10863,7 @@
  },
  "integrated | human rogue with the poisoner feat from level 4 | L6 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
   "tools": [
+   "Poisoner's Kit",
    "Thieves' Tools"
   ],
   "expertise": [],
@@ -10846,6 +10873,7 @@
  },
  "integrated | human rogue with the poisoner feat from level 4 | L11 | books=all": {
   "tools": [
+   "Poisoner's Kit",
    "Thieves' Tools"
   ],
   "expertise": [],
@@ -10864,6 +10892,7 @@
  },
  "integrated | human rogue with the poisoner feat from level 4 | L11 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
   "tools": [
+   "Poisoner's Kit",
    "Thieves' Tools"
   ],
   "expertise": [],
@@ -10873,6 +10902,7 @@
  },
  "integrated | human rogue with the poisoner feat from level 4 | L14 | books=all": {
   "tools": [
+   "Poisoner's Kit",
    "Thieves' Tools"
   ],
   "expertise": [],
@@ -10891,6 +10921,7 @@
  },
  "integrated | human rogue with the poisoner feat from level 4 | L14 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
   "tools": [
+   "Poisoner's Kit",
    "Thieves' Tools"
   ],
   "expertise": [],
@@ -10900,6 +10931,7 @@
  },
  "integrated | human rogue with the poisoner feat from level 4 | L17 | books=all": {
   "tools": [
+   "Poisoner's Kit",
    "Thieves' Tools"
   ],
   "expertise": [],
@@ -10918,6 +10950,7 @@
  },
  "integrated | human rogue with the poisoner feat from level 4 | L17 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
   "tools": [
+   "Poisoner's Kit",
    "Thieves' Tools"
   ],
   "expertise": [],
@@ -10926,7 +10959,9 @@
   ]
  },
  "integrated | human sage with the chef origin feat | L1 | books=all": {
-  "tools": [],
+  "tools": [
+   "Cook's Utensils"
+  ],
   "expertise": [],
   "languages": [
    "Common"
@@ -10940,14 +10975,18 @@
   ]
  },
  "integrated | human sage with the chef origin feat | L1 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
-  "tools": [],
+  "tools": [
+   "Cook's Utensils"
+  ],
   "expertise": [],
   "languages": [
    "Common"
   ]
  },
  "integrated | human sage with the chef origin feat | L3 | books=all": {
-  "tools": [],
+  "tools": [
+   "Cook's Utensils"
+  ],
   "expertise": [],
   "languages": [
    "Common"
@@ -10961,14 +11000,18 @@
   ]
  },
  "integrated | human sage with the chef origin feat | L3 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
-  "tools": [],
+  "tools": [
+   "Cook's Utensils"
+  ],
   "expertise": [],
   "languages": [
    "Common"
   ]
  },
  "integrated | human sage with the chef origin feat | L6 | books=all": {
-  "tools": [],
+  "tools": [
+   "Cook's Utensils"
+  ],
   "expertise": [],
   "languages": [
    "Common"
@@ -10982,14 +11025,18 @@
   ]
  },
  "integrated | human sage with the chef origin feat | L6 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
-  "tools": [],
+  "tools": [
+   "Cook's Utensils"
+  ],
   "expertise": [],
   "languages": [
    "Common"
   ]
  },
  "integrated | human sage with the chef origin feat | L11 | books=all": {
-  "tools": [],
+  "tools": [
+   "Cook's Utensils"
+  ],
   "expertise": [],
   "languages": [
    "Common"
@@ -11003,14 +11050,18 @@
   ]
  },
  "integrated | human sage with the chef origin feat | L11 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
-  "tools": [],
+  "tools": [
+   "Cook's Utensils"
+  ],
   "expertise": [],
   "languages": [
    "Common"
   ]
  },
  "integrated | human sage with the chef origin feat | L14 | books=all": {
-  "tools": [],
+  "tools": [
+   "Cook's Utensils"
+  ],
   "expertise": [],
   "languages": [
    "Common"
@@ -11024,14 +11075,18 @@
   ]
  },
  "integrated | human sage with the chef origin feat | L14 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
-  "tools": [],
+  "tools": [
+   "Cook's Utensils"
+  ],
   "expertise": [],
   "languages": [
    "Common"
   ]
  },
  "integrated | human sage with the chef origin feat | L17 | books=all": {
-  "tools": [],
+  "tools": [
+   "Cook's Utensils"
+  ],
   "expertise": [],
   "languages": [
    "Common"
@@ -11045,7 +11100,9 @@
   ]
  },
  "integrated | human sage with the chef origin feat | L17 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
-  "tools": [],
+  "tools": [
+   "Cook's Utensils"
+  ],
   "expertise": [],
   "languages": [
    "Common"
