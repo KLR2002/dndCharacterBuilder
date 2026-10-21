@@ -22,13 +22,13 @@ import {
  * recorded in SRD and integrated modes, at every level and book set. A recorded save is proficient or
  * not, and its bonus. A change to a save fails here unless the change is a newly applied grant.
  *
- * The baseline records the saves before the Proficiency Sheet. Nothing in it is removed, and every
- * saving throw the sheet adds must be on the allowlist (checks/fixtures/savingThrowsAllowlist.json) as a
- * (scenario, entry) pair that names the Catalog grant behind it. A bonus may change only for a save that
+ * The baseline records the saves the Proficiency Sheet shows at its last deliberate re-record. A saving
+ * throw the sheet adds after that must be on the allowlist (checks/fixtures/savingThrowsAllowlist.json) as
+ * a (scenario, entry) pair that names the Catalog grant behind it. A bonus may change only for a save that
  * is newly granted.
  *
- * The baseline is never edited by hand. To re-record it deliberately (which replaces the pre-sheet
- * record, so the allowlist must then be reviewed again):
+ * The baseline is never edited by hand. To re-record it deliberately (which replaces the recorded saves,
+ * so the allowlist must then be reviewed again):
  *   UPDATE_SAVES_BASELINE=1 node --test checks/savingThrowsCharacterization.test.ts
  */
 

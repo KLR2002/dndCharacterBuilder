@@ -8,7 +8,7 @@ import { pruneInvalidProficiencyPicks } from "../src/rules/proficiencyPicks.ts";
 import { getSubclassSpells } from "../src/rules/subclassSpells.ts";
 import { addMulticlassLevel } from "../src/rules/builderTransitions.ts";
 import { hitDiceByType, maxHp } from "../src/rules/hp.ts";
-import { inMemoryCompendium, makeChar } from "./testUtils.ts";
+import { inMemoryCompendium, integratedTestCompendium, makeChar } from "./testUtils.ts";
 import { anyLanguageChoice, wardenClass } from "./proficiencySheetFixture.ts";
 import type { CharacterClass } from "../src/types/character.ts";
 import type { ClassData, SubclassData } from "../src/types/dnd5e.ts";
@@ -111,10 +111,6 @@ test("the proficiency sheet's class armor comes from the second source when the 
   assert.deepEqual(names(alpha.armor), ["Light armor"]);
 });
 
-// The sheet's saving throws are not asserted here: the base saves read the name-keyed class table
-// (CLASS_DATA), which has no entry for an invented class, and reading the catalog's savingThrows would
-// add Artificer saves that the saving-throws characterization allowlist does not admit.
-
 test("granted class features come from the entry's own source", () => {
   const catalog = { races: [], backgrounds: [], feats: [], classes: [alphaWardcaller(), betaWardcaller()] };
   const features = grantedFeatures(makeChar({ classes: [entry(BETA, 1)] }), catalog);
@@ -189,4 +185,25 @@ test("a class the catalog lacks takes the SRD Baseline's hit die, and an empty s
   assert.deepEqual(Object.keys(hitDiceByType(makeChar({ classes: [fighter] }), [])), ["d10"]);
   const classes = [alphaWardcaller(), betaWardcaller()];
   assert.deepEqual(Object.keys(hitDiceByType(makeChar({ classes: [entry("", 2)] }), classes)), ["d10"]);
+});
+
+test("the proficiency sheet's base saving throws come from the class the entry names", () => {
+  const compendium = bothSources();
+  assert.deepEqual(names(proficiencySheet(makeChar({ classes: [entry(BETA, 1)] }), { compendium }).savingThrows), ["Wisdom", "Charisma"]);
+  assert.deepEqual(names(proficiencySheet(makeChar({ classes: [entry(ALPHA, 1)] }), { compendium }).savingThrows), ["Strength", "Constitution"]);
+});
+
+test("a class the catalog lacks takes its SRD Baseline saving throws", () => {
+  const fighter = { className: "Fighter", source: "PHB", level: 2 };
+  assert.deepEqual(
+    names(proficiencySheet(makeChar({ classes: [fighter] }), { compendium: inMemoryCompendium() }).savingThrows),
+    ["Strength", "Constitution"],
+  );
+});
+
+test("the integrated Artificer's saving throws come from its catalog class", () => {
+  const sheet = proficiencySheet(makeChar({ classes: [{ className: "Artificer", source: "TCE", level: 1 }] }), {
+    compendium: integratedTestCompendium(),
+  });
+  assert.deepEqual(names(sheet.savingThrows), ["Constitution", "Intelligence"]);
 });
