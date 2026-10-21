@@ -14,7 +14,12 @@ import {
   warlockOwnerOf,
 } from "./choices/warlockChoices.ts";
 import { tableOwnerOf } from "./subclassChoiceTable.ts";
-import { moveLegacyClassToolPicks, moveLegacySourcePicks, pruneInvalidProficiencyPicks } from "./proficiencyPicks.ts";
+import {
+  moveAliasedProficiencyPicks,
+  moveLegacyClassToolPicks,
+  moveLegacySourcePicks,
+  pruneInvalidProficiencyPicks,
+} from "./proficiencyPicks.ts";
 import { dropLegacyBackgroundSkills } from "./legacyBackgroundSkills.ts";
 
 /**
@@ -32,7 +37,8 @@ import { dropLegacyBackgroundSkills } from "./legacyBackgroundSkills.ts";
  * Fighting styles run before maneuvers because Superior Technique is gated on a fighting style.
  * The Giant Power cantrip sync reads only its own choice and the Barbarian's known spells, so
  * its position is free; it sits with the other known-spell syncs.
- * The class tool bucket is moved into its Proficiency Choice's pick first, so the pick check sees it, and the
+ * Picks saved under a grant's former id move to the grant's id first, so every later pass reads the current ids.
+ * The class tool bucket is moved into its Proficiency Choice's pick next, so the pick check sees it, and the
  * race and background tool and language buckets follow it.
  * Proficiency picks are released before Expertise, so Expertise is pruned against the released state. A
  * background skill copy that only a turned-off background granted is dropped first, for the same reason.
@@ -55,6 +61,7 @@ export function reconcile(
   updated = syncGiantPowerCantrip(updated);
   updated = pruneInvalidMysticArcanum(updated);
   updated = pruneInvalidInfusions(updated, compendium);
+  updated = moveAliasedProficiencyPicks(updated, compendium);
   updated = moveLegacyClassToolPicks(updated, compendium);
   updated = moveLegacySourcePicks(updated, compendium);
   updated = dropLegacyBackgroundSkills(updated, compendium, options.activeBooks);
