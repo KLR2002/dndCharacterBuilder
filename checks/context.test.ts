@@ -5,9 +5,11 @@ import { runInNewContext } from "node:vm";
 import * as storage from "../src/services/storage.ts";
 const { transpileModule, ModuleKind, JsxEmit } = createRequire(import.meta.url)("typescript");
 import assert from "node:assert/strict";
-import { makeChar } from "./testUtils.ts";
+import { inMemoryCompendium, loadTestCatalog, makeChar } from "./testUtils.ts";
+import type { BackgroundData, ClassData } from "../src/types/dnd5e.ts";
 import type { Character } from "../src/types/character.ts";
 import { migrateCharacter } from "../src/rules/migrateCharacter.ts";
+import { reconcileForActiveBooks } from "../src/rules/characterReconciler.ts";
 import { applyCharacterUpdate } from "../src/context/characterUpdates.ts";
 import { __setKvForTests, loadCharacters, saveCharacters } from "../src/services/storage.ts";
 import * as compendiumStorage from "../src/services/compendiumStorage.ts";
@@ -20,6 +22,8 @@ async function providerHarness(initial: unknown = [makeChar()], options: {
   waitForInit?: boolean;
   races?: any[];
   compendium?: any;
+  /** The Compendium the app reads as current (for the open-character reconcile). Defaults to a stub. */
+  catalog?: any;
 } = {}) {
   const kv = new Map([["@dnd5e_characters", typeof initial === "string" ? initial : JSON.stringify(initial)]]);
   if (options.settings) kv.set("@dnd5e_app_settings", JSON.stringify(options.settings));
@@ -47,7 +51,7 @@ async function providerHarness(initial: unknown = [makeChar()], options: {
     },
     useEffect: (effect: () => void, deps: unknown[]) => {
       const i = cursor++;
-      if (!slots[i] || deps.some((dep, n) => !Object.is(dep, slots[i][n]))) effects.push(effect);
+      if (!deps || !slots[i] || deps.some((dep, n) => !Object.is(dep, slots[i][n]))) effects.push(effect);
       slots[i] = deps;
     },
     useCallback: (callback: (...args: unknown[]) => unknown) => {
@@ -77,13 +81,14 @@ async function providerHarness(initial: unknown = [makeChar()], options: {
     if (name.includes("storage")) return { ...storage, loadAll: options.loadAll ?? storage.loadAll };
     if (name.includes("characterUpdates")) return { applyCharacterUpdate };
     if (name.includes("migrateCharacter")) return { migrateCharacter };
+    if (name.includes("characterReconciler")) return { reconcileForActiveBooks };
     if (name.includes("dataService")) return {
       getRaces: () => options.races ?? [],
     };
     if (name.endsWith("services/compendium")) return {
       integrate: (bundle: any) => { integrated = bundle; },
       revertToSrd: () => { integrated = null; },
-      currentCompendium: () => ({ stale: integrated ? compendiumStorage.isCatalogStale(integrated) : false }),
+      currentCompendium: () => options.catalog ?? { stale: integrated ? compendiumStorage.isCatalogStale(integrated) : false },
     };
     if (name.includes("constants/books")) return { DEFAULT_ACTIVE_BOOK_CODES: [] };
     if (name.includes("builderTransitions")) return { checkActiveBooksIntegrity: () => [] };
@@ -453,4 +458,88 @@ test("malformed character records are rejected, not silently replaced", () => {
   for (const raw of [null, [], "broken", { ...makeChar(), knownSpells: "bad" }, { ...makeChar(), preparedSpells: [3] }, { ...makeChar(), classes: null }]) {
     assert.throws(() => migrateCharacter(raw), /Invalid character/);
   }
+});
+
+// --- Expertise follows the active books for the open character ---
+
+// Invented background from a sourcebook that can be disabled. Its skill is granted by that book alone.
+const classes = loadTestCatalog<ClassData[]>("classes");
+const SMUGGLER: BackgroundData = {
+  name: "Test Smuggler", source: "TST", skillProficiencies: ["Investigation"], toolProficiencies: [],
+  languages: [], startingEquipment: [], feature: null, characteristics: {}, description: "",
+};
+const booksCatalog = () => inMemoryCompendium({ classes, backgrounds: [SMUGGLER] }, { integrated: true });
+const BOOKS_PHB = { schemaVersion: 2, hasCompletedFirstRun: true, activeResourceBooks: ["PHB"] };
+const BOOKS_PHB_TST = { schemaVersion: 2, hasCompletedFirstRun: true, activeResourceBooks: ["PHB", "TST"] };
+
+const rogueWithSmugglerMark = (id: string, expertise: string[]) => makeChar({
+  id,
+  background: { name: SMUGGLER.name, source: "TST" },
+  classes: [{ className: "Rogue", level: 1, source: "PHB" }],
+  chosenSkills: ["Stealth"],
+  chosenExpertise: expertise,
+});
+
+// Lets queued state updates and their saves settle, as the app does between renders.
+async function settle(h: { render: () => void }) {
+  for (let i = 0; i < 3; i++) {
+    await new Promise((resolve) => setImmediate(resolve));
+    h.render();
+  }
+}
+
+test("opening a character releases an Expertise mark only a disabled book grants, and saves the change", { timeout: 3000 }, async () => {
+  const h = await providerHarness([rogueWithSmugglerMark("char_a", ["Investigation", "Stealth"])], {
+    settings: BOOKS_PHB,
+    catalog: booksCatalog(),
+  });
+  assert.deepEqual(h.value.characters[0].chosenExpertise, ["Investigation", "Stealth"], "nothing changes before the character is opened");
+  h.value.selectCharacter("char_a");
+  h.render();
+  await settle(h);
+  assert.deepEqual(h.value.characters[0].chosenExpertise, ["Stealth"]);
+  assert.ok(h.value.characters[0].needsReview?.includes("Investigation Expertise removed: Investigation is no longer a proficient skill or tool"));
+  assert.deepEqual(JSON.parse(h.kv.get("@dnd5e_characters")!)[0].chosenExpertise, ["Stealth"]);
+});
+
+test("opening a character that already fits the active books saves nothing", { timeout: 3000 }, async () => {
+  const h = await providerHarness([rogueWithSmugglerMark("char_b", ["Stealth"])], {
+    settings: BOOKS_PHB,
+    catalog: booksCatalog(),
+  });
+  const before = h.value.characters[0];
+  const set = h.kv.set.bind(h.kv);
+  let writes = 0;
+  h.kv.set = (key: string, value: string) => { writes++; return set(key, value); };
+  h.value.selectCharacter("char_b");
+  h.render();
+  await settle(h);
+  assert.equal(writes, 0, "no save for a character the books do not change");
+  assert.strictEqual(h.value.characters[0], before);
+});
+
+test("changing the active books reconciles only the open character; a restored book does not bring the mark back", { timeout: 3000 }, async () => {
+  const h = await providerHarness([
+    rogueWithSmugglerMark("char_a", ["Investigation", "Stealth"]),
+    rogueWithSmugglerMark("char_b", ["Investigation", "Stealth"]),
+  ], { settings: BOOKS_PHB_TST, catalog: booksCatalog() });
+  h.value.selectCharacter("char_a");
+  h.render();
+  await settle(h);
+  assert.deepEqual(h.value.characters[0].chosenExpertise, ["Investigation", "Stealth"], "TST is still active, so the mark stays");
+
+  void h.value.setActiveBooks(["PHB"]);
+  await settle(h);
+  assert.deepEqual(h.value.characters[0].chosenExpertise, ["Stealth"], "the open character is reconciled");
+  assert.deepEqual(h.value.characters[1].chosenExpertise, ["Investigation", "Stealth"], "the unopened character waits until it is opened");
+
+  h.value.selectCharacter("char_b");
+  h.render();
+  await settle(h);
+  assert.deepEqual(h.value.characters[1].chosenExpertise, ["Stealth"]);
+
+  void h.value.setActiveBooks(["PHB", "TST"]);
+  await settle(h);
+  assert.deepEqual(h.value.characters[0].chosenExpertise, ["Stealth"], "re-enabling the book does not restore the mark");
+  assert.deepEqual(h.value.characters[1].chosenExpertise, ["Stealth"], "re-enabling the book does not restore the mark");
 });
