@@ -4,7 +4,9 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** done
+
+**Landed:** merged from `pr/03-header-name` (787f740). The name shrinks with an ellipsis and never pushes the badges; the layout check has a long-name screen. Open: at 320 px the name still has only about 65 css px next to the HP group and level badge (about six characters); the web check cannot reproduce the native-only defect, so a device pass is needed.
 
 - [ ] At 320 px a long character name is shortened with an ellipsis and does not overlap or push the HP badge.
 - [ ] A layout-check screen exercises a long name, so a regression fails the check.
