@@ -5,7 +5,7 @@ import { cleanTags } from "../parser/tag-cleaner.ts";
 import { extractRuleChoices, RULE_CHOICE_LEVELS, ruleChoiceKey, type ExtractedRuleChoice } from "./rule-choices.ts";
 import type { RaceModel, SubraceModel, TraitModel } from "../types/models.ts";
 import type { ProficiencyReport } from "../types/proficiency.ts";
-import { newProficiencyReport, structuredGrants } from "../parser/proficiency-grants.ts";
+import { newProficiencyReport, structuredGrants, type StructuredProficiencies } from "../parser/proficiency-grants.ts";
 import { PROFICIENCY_GRANT_OVERRIDES } from "../overrides/proficiency-grants.ts";
 
 /** Whether a 5e.tools structured proficiency field names at least one entry. */
@@ -213,12 +213,15 @@ export async function scrapeRaces(
     const attachedSubraces = subraceMap.get(raceKey) || subraceMap.get(raceKeyNoSource) || [];
 
     // Structured tool and language entries on the race itself; a block the mapping cannot state is reported,
-    // not granted. A race whose record names no language speaks Common, as every character does.
+    // not granted. A race whose record names no language speaks Common, as every character does; a race from
+    // Mordenkainen's Presents, whose records name none, also gets one language of the player's choice.
+    const noLanguageEntries: StructuredProficiencies["languages"] =
+      raw.source === "MPMM" ? [{ common: true, other: true }] : [{ common: true }];
     const proficiencies = structuredGrants(
       { source: raw.source, owner: "Race", feature: raw.name, level: 0 },
       {
         tools: raw.toolProficiencies,
-        languages: hasEntries(raw.languageProficiencies) ? raw.languageProficiencies : [{ common: true }],
+        languages: hasEntries(raw.languageProficiencies) ? raw.languageProficiencies : noLanguageEntries,
       },
       PROFICIENCY_GRANT_OVERRIDES.races
     );

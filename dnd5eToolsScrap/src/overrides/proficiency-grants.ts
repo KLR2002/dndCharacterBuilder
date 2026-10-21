@@ -14,8 +14,16 @@ import type { GrantOverride } from "../parser/proficiency-grants.ts";
 export const PROFICIENCY_GRANT_OVERRIDES: { classes: GrantOverride[]; feats: GrantOverride[]; races: GrantOverride[] } = {
   races: [
     // Its tool and skill come after each long rest, not as standing proficiencies, so the race holds
-    // no tool grant. The language every character speaks is kept.
-    { owner: "Race", feature: "Githyanki", level: 0, grants: [{ kind: "fixed", category: "languages", names: ["Common"] }] },
+    // no tool grant. The language every character speaks, and the one language of choice, are kept.
+    {
+      owner: "Race",
+      feature: "Githyanki",
+      level: 0,
+      grants: [
+        { kind: "fixed", category: "languages", names: ["Common"] },
+        { kind: "choice", category: "languages", count: 1, pool: { kind: "any" } },
+      ],
+    },
   ],
   classes: [
     { owner: "Artificer/Alchemist", feature: "Tool Proficiency", level: 3, grants: [{ kind: "fixed", category: "tools", names: ["alchemist's supplies"] }] },

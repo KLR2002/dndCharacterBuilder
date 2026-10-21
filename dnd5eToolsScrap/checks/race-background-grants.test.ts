@@ -100,8 +100,20 @@ test("a race whose record names no language speaks Common, and nothing else", as
   assert.deepEqual(race.grants, [{ id: "TST/Race/Plain Folk@0#0", kind: "fixed", category: "languages", names: ["Common"] }]);
 });
 
+test("a race from the lineage book that names no language speaks Common and one language of the player's choice", async () => {
+  const lineage = { name: "Lineage Folk", source: "MPMM", entries: [], lineage: "VRGR" };
+  const [race] = await scrapeRaces(fakeClient({ "data/races.json": { race: [lineage] } }), newProficiencyReport());
+  assert.deepEqual(race.grants, [
+    { id: "MPMM/Race/Lineage Folk@0#0", kind: "fixed", category: "languages", names: ["Common"] },
+    { id: "MPMM/Race/Lineage Folk@0#1", kind: "choice", category: "languages", count: 1, pool: { kind: "any" } },
+  ]);
+});
+
 test("a reviewed race override replaces the structured grants of that race", async () => {
-  const githyanki = { name: "Githyanki", source: "TST", entries: [], toolProficiencies: [{ any: 1 }] };
+  const githyanki = { name: "Githyanki", source: "MPMM", entries: [], toolProficiencies: [{ any: 1 }] };
   const [race] = await scrapeRaces(fakeClient({ "data/races.json": { race: [githyanki] } }), newProficiencyReport());
-  assert.deepEqual(race.grants, [{ id: "TST/Race/Githyanki@0#0", kind: "fixed", category: "languages", names: ["Common"] }]);
+  assert.deepEqual(race.grants, [
+    { id: "MPMM/Race/Githyanki@0#0", kind: "fixed", category: "languages", names: ["Common"] },
+    { id: "MPMM/Race/Githyanki@0#1", kind: "choice", category: "languages", count: 1, pool: { kind: "any" } },
+  ]);
 });
