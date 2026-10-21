@@ -73,7 +73,7 @@ export function validateFeatPrerequisites(
 
   // 3. Spellcasting
   if (/ability to cast at least one spell/i.test(prereq)) {
-    const canCastClass = (character.classes || []).some(isCastingClass);
+    const canCastClass = (character.classes || []).some((c) => isCastingClass(c));
     const hasKnown = (character.knownSpells || []).length > 0;
     const hasInnate = getInnateSpellProfile(character) != null;
     if (!canCastClass && !hasKnown && !hasInnate) {

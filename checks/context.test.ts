@@ -84,6 +84,7 @@ async function providerHarness(initial: unknown = [makeChar()], options: {
     if (name.includes("characterReconciler")) return { reconcileForActiveBooks };
     if (name.includes("dataService")) return {
       getRaces: () => options.races ?? [],
+      getClasses: () => [],
     };
     if (name.endsWith("services/compendium")) return {
       integrate: (bundle: any) => { integrated = bundle; },

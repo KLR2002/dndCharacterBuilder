@@ -1,7 +1,8 @@
 import type { AbilityKey, AbilityScores, Character, CharacterClass, KnownSpell, RuleChoiceEntry } from "../types/character.ts";
-import type { SpellData } from "../types/dnd5e.ts";
+import type { ClassData, SpellData } from "../types/dnd5e.ts";
 import type { ResolvedAncestry } from "./types.ts";
-import { CLASS_DATA, isThirdCaster, PHB_HALF_CASTER_SLOTS, PHB_THIRD_CASTER_SLOTS } from "./classData.ts";
+import { casterKindOf, isThirdCaster, PHB_HALF_CASTER_SLOTS, PHB_THIRD_CASTER_SLOTS, spellAbilityOf } from "./classData.ts";
+import { allCatalogClasses } from "./catalogs.ts";
 import {
   GIANT_BARBARIAN_OWNER_KEY,
   GIANT_POWER_CANTRIPS,
@@ -59,26 +60,27 @@ function spellOwnerKey(c: CharacterClass): string {
   return isGiantBarbarian(c) ? GIANT_BARBARIAN_OWNER_KEY : `${c.className}__${c.source || "PHB"}`;
 }
 
-export function isCastingClass(c: CharacterClass): boolean {
+/** The caster kind and spell ability come from the Catalog class the entry holds; `classes` defaults to every class in the Compendium. */
+export function isCastingClass(c: CharacterClass, classes: readonly ClassData[] = allCatalogClasses()): boolean {
   if (c.level < 1) return false;
   if (isThirdCaster(c)) return true;
   if (c.className === "Artificer") return true;
   if (isKiCaster(c)) return true;
   if (isGiantBarbarian(c)) return true;
-  const kind = CLASS_DATA[c.className]?.caster;
+  const kind = casterKindOf(c, classes);
   if (kind === "half") return c.level >= 2;
   return kind === "full" || kind === "pact";
 }
 
-export function getSpellcastingAbility(c: CharacterClass): AbilityKey | undefined {
+export function getSpellcastingAbility(c: CharacterClass, classes: readonly ClassData[] = allCatalogClasses()): AbilityKey | undefined {
   if (isThirdCaster(c)) return "int";
   if (c.className === "Artificer") return "int";
   if (isKiCaster(c)) return "wis";
   if (isGiantBarbarian(c)) return "wis";
-  return CLASS_DATA[c.className]?.spellAbility;
+  return spellAbilityOf(c, classes);
 }
 
-export function getMaxSpellLevel(c: CharacterClass): number {
+export function getMaxSpellLevel(c: CharacterClass, classes: readonly ClassData[] = allCatalogClasses()): number {
   if (isThirdCaster(c)) {
     return PHB_THIRD_CASTER_SLOTS[Math.min(c.level, 20)]?.length || 0;
   }
@@ -92,7 +94,7 @@ export function getMaxSpellLevel(c: CharacterClass): number {
     if (c.level >= 3) return 2;
     return 0;
   }
-  const kind = CLASS_DATA[c.className]?.caster;
+  const kind = casterKindOf(c, classes);
   if (kind === "full") {
     return MULTICLASS_SPELL_SLOTS[Math.min(c.level, 20)]?.length || 0;
   }
@@ -140,7 +142,8 @@ export function getClassSpellProfiles(
     swaps?: Record<string, string>;
   } = {}
 ): ClassSpellProfile[] {
-  const castingClasses = (character.classes || []).filter(isCastingClass);
+  const classes = allCatalogClasses();
+  const castingClasses = (character.classes || []).filter((c) => isCastingClass(c, classes));
   if (castingClasses.length === 0) return [];
 
   const pb = proficiencyBonus(totalLevel(character));
@@ -148,11 +151,11 @@ export function getClassSpellProfiles(
   const isSingleCaster = castingClasses.length === 1;
 
   return castingClasses.map(c => {
-    const ability = getSpellcastingAbility(c) || "int";
+    const ability = getSpellcastingAbility(c, classes) || "int";
     const abilityMod = modifiers[ability] ?? 0;
     const spellSaveDc = 8 + pb + abilityMod;
     const spellAttackBonus = pb + abilityMod;
-    const maxSpellLevel = getMaxSpellLevel(c);
+    const maxSpellLevel = getMaxSpellLevel(c, classes);
     const preparedLimit = getPreparedLimit(c, modifiers);
     const classOwnerKey = spellOwnerKey(c);
 
