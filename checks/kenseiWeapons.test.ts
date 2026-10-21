@@ -9,8 +9,15 @@ import { pickRuleChoice } from "../src/rules/ruleChoices.ts";
 import { reconcile } from "../src/rules/characterReconciler.ts";
 import { getWeaponAttacks } from "../src/rules/attacks.ts";
 import { kenseiWeaponNames } from "../src/rules/kenseiWeapons.ts";
+import { poolNames, type ChoiceProficiencyGrant } from "../src/rules/proficiencyPools.ts";
 import { fixedGrant, placeholderFeat } from "./proficiencySheetFixture.ts";
-import { inMemoryCompendium, integratedTestCompendium, loadSrdCatalog, makeChar } from "./testUtils.ts";
+import {
+  inMemoryCompendium,
+  integratedTestCompendium,
+  integratedTestCompendiumWithItems,
+  loadSrdCatalog,
+  makeChar,
+} from "./testUtils.ts";
 
 /**
  * Kensei weapons. The Way of the Kensei monk chooses a melee and a ranged kensei weapon at 3rd
@@ -251,4 +258,102 @@ test("leveling down below 6th level releases the 6th-level kensei weapon pick wi
   assert.equal(out.proficiencyPicks?.[BLADE_6], undefined, "the 6th-level pick no longer applies");
   assert.deepEqual(out.proficiencyPicks?.[MELEE_3], ["Rapier"], "the 3rd-level pick still applies");
   assert.ok(out.needsReview?.some((note) => note.includes("Longbow")), "the release is recorded in needsReview");
+});
+
+test("firearms are kensei weapons too: a martial ranged firearm without heavy or special is in the ranged pool", () => {
+  // The rule is the category, the properties and the attack type only, so the Dungeon Master's Guide's
+  // martial firearms qualify. None of them is in the melee pool.
+  const ranged = optionsOf(monk(3), RANGED_3);
+  for (const name of ["Pistol", "Musket", "Shotgun", "Laser Pistol"]) {
+    assert.ok(ranged.includes(name), `${name} is in the ranged pool`);
+  }
+  assert.equal(optionsOf(monk(3), MELEE_3).includes("Pistol"), false, "a firearm is not a melee weapon");
+});
+
+test("weapons from other books are offered by their category: a melee and a simple ranged one from the Compendium", () => {
+  // Hooked Shortspear (Out of the Abyss, martial, light) and Light Repeating Crossbow (simple, ranged) are not in
+  // the SRD Baseline. The integrated Compendium carries their category, so the pools offer them.
+  assert.ok(optionsOf(monk(3), MELEE_3).includes("Hooked Shortspear"), "a martial melee weapon from another book");
+  assert.ok(optionsOf(monk(3), RANGED_3).includes("Light Repeating Crossbow"), "a simple ranged weapon from another book");
+});
+
+/** An invented weapon from an invented book, shaped as the scraped items are. */
+const inventedWeapon = (overrides: Partial<ItemData>): ItemData => ({
+  name: "Invented Blade",
+  source: "OTB",
+  type: "Melee Weapon",
+  itemCategory: "Weapon",
+  rarity: "None",
+  attunement: false,
+  cost: null,
+  weight: 2,
+  damage: "1d6",
+  damageType: "slashing",
+  range: null,
+  properties: [],
+  ac: null,
+  strengthRequirement: null,
+  stealthDisadvantage: false,
+  description: "",
+  ...overrides,
+});
+
+/** The option names of one Kensei choice, over an invented item list in place of the Compendium's items. */
+const kenseiOptionsWith = (items: ItemData[], id: string): string[] => {
+  const offer = proficiencyChoiceOffers(monk(3), { compendium: integratedTestCompendiumWithItems(items) }).find((o) => o.id === id);
+  assert.ok(offer, `${id} is offered`);
+  return offer.options.map((option) => option.name);
+};
+
+test("a simple or martial weapon from another book is offered when its category is in the Compendium", () => {
+  const items = [
+    inventedWeapon({ name: "Verdant Slicer", weaponCategory: "martial", properties: ["Finesse"] }),
+    inventedWeapon({ name: "Brightsling", type: "Ranged Weapon", weaponCategory: "simple", range: "30/120" }),
+  ];
+  assert.ok(kenseiOptionsWith(items, MELEE_3).includes("Verdant Slicer"), "a martial melee weapon from another book");
+  assert.ok(kenseiOptionsWith(items, RANGED_3).includes("Brightsling"), "a simple ranged weapon from another book");
+  assert.equal(kenseiOptionsWith(items, RANGED_3).includes("Verdant Slicer"), false, "a melee weapon is not ranged");
+});
+
+test("a weapon from another book with the heavy or special property is not offered", () => {
+  const items = [
+    inventedWeapon({ name: "Verdant Maul", weaponCategory: "martial", properties: ["Heavy", "Two-Handed"] }),
+    inventedWeapon({ name: "Verdant Net", weaponCategory: "martial", properties: ["Special"] }),
+  ];
+  const options = kenseiOptionsWith(items, MELEE_3);
+  assert.equal(options.includes("Verdant Maul"), false, "heavy");
+  assert.equal(options.includes("Verdant Net"), false, "special");
+});
+
+test("a magic weapon without a base category is never offered, although it sits beside its base weapon", () => {
+  const items = [
+    inventedWeapon({ name: "Verdant Slicer", weaponCategory: "martial", properties: ["Finesse"] }),
+    inventedWeapon({ name: "Verdant Slicer, +1", rarity: "Uncommon", bonusWeapon: 1 }),
+  ];
+  const options = kenseiOptionsWith(items, MELEE_3);
+  assert.ok(options.includes("Verdant Slicer"));
+  assert.equal(options.includes("Verdant Slicer, +1"), false, "a magic variant is not a base weapon");
+});
+
+test("a standard weapon name is not enough: without its category in the Compendium it is not offered", () => {
+  const items = [inventedWeapon({ name: "Longsword", source: "PHB", properties: [] })];
+  assert.equal(kenseiOptionsWith(items, MELEE_3).includes("Longsword"), false);
+});
+
+test("the SRD Baseline's items give the Kensei options the standard lists gave", () => {
+  const grant = (attackType: "melee" | "ranged"): ChoiceProficiencyGrant => ({
+    id: MELEE_3,
+    kind: "choice",
+    category: "weapons",
+    count: 1,
+    pool: { kind: "weapons", base: ["simple", "martial"], withoutProperties: ["heavy", "special"], plus: ["longbow"], attackType },
+  });
+  const srdItems = loadSrdCatalog<ItemData[]>("items");
+  assert.deepEqual(poolNames(grant("melee"), srdItems), [
+    "Battleaxe", "Club", "Dagger", "Flail", "Greatclub", "Handaxe", "Javelin", "Light Hammer", "Longsword", "Mace",
+    "Morningstar", "Quarterstaff", "Rapier", "Scimitar", "Shortsword", "Sickle", "Spear", "Trident", "War Pick", "Warhammer", "Whip",
+  ]);
+  assert.deepEqual(poolNames(grant("ranged"), srdItems), [
+    "Blowgun", "Dart", "Hand Crossbow", "Light Crossbow", "Longbow", "Shortbow", "Sling",
+  ]);
 });

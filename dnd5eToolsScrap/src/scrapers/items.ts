@@ -89,6 +89,8 @@ export async function scrapeItems(client: ToolsClient): Promise<ItemModel[]> {
   }
 
   const baseItemsList = baseData.baseitem || [];
+  // Base items are told apart from magic items by their origin: only a base weapon carries a category.
+  const baseItemKeys = new Set(baseItemsList.map((raw) => sourceKey(raw.name, raw.source)));
   const combined = [...baseItemsList, ...(itemData.item || [])];
   const resolved = resolveAllCopies(combined);
 
@@ -110,6 +112,10 @@ export async function scrapeItems(client: ToolsClient): Promise<ItemModel[]> {
     const key = `${name.toLowerCase()}__${source.toLowerCase()}`;
     if (seen.has(key)) continue;
     seen.add(key);
+
+    const isBaseWeapon = itemCategory === "Weapon" && baseItemKeys.has(sourceKey(raw.name, raw.source));
+    const rawWeaponCategory: unknown = raw.weaponCategory;
+    const weaponCategory = isBaseWeapon && (rawWeaponCategory === "simple" || rawWeaponCategory === "martial") ? rawWeaponCategory : undefined;
 
     // Rarity
     const rawRarity = raw.rarity || "none";
@@ -200,6 +206,7 @@ export async function scrapeItems(client: ToolsClient): Promise<ItemModel[]> {
       rawEntries: raw.entries,
       ...(bonusWeapon != null && !isNaN(bonusWeapon) ? { bonusWeapon } : {}),
       ...(bonusAc != null && !isNaN(bonusAc) ? { bonusAc } : {}),
+      ...(weaponCategory ? { weaponCategory } : {}),
     });
   }
 
@@ -215,6 +222,11 @@ export async function scrapeItems(client: ToolsClient): Promise<ItemModel[]> {
   }
 
   return items;
+}
+
+/** The key that identifies an item by its own name and source, before any cleaning. */
+function sourceKey(name: string, source: string | undefined): string {
+  return `${String(name).toLowerCase()}__${String(source || "PHB").toLowerCase()}`;
 }
 
 function getItemCategory(typeCode: string, raw: any): string {
