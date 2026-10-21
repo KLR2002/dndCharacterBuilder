@@ -10973,6 +10973,16 @@
         "description": ""
       },
       {
+        "grants": [
+          {
+            "id": "PSD/Subrace/Human (Keldon)@0#0",
+            "kind": "fixed",
+            "category": "skills",
+            "names": [
+              "Athletics"
+            ]
+          }
+        ],
         "name": "Keldon",
         "isVariant": false,
         "source": "PSD",
@@ -14259,6 +14269,17 @@
     ],
     "subraces": [
       {
+        "grants": [
+          {
+            "id": "PSX/Subrace/Merfolk (Ixalan; Blue)@0#0",
+            "kind": "fixed",
+            "category": "skills",
+            "names": [
+              "History",
+              "Nature"
+            ]
+          }
+        ],
         "name": "Ixalan; Blue",
         "isVariant": false,
         "source": "PSX",

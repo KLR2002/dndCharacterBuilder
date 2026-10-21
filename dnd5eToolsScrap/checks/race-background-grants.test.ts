@@ -176,7 +176,7 @@ test("a reviewed subrace override gives the one language of choice its trait nam
   ]);
 });
 
-test("a reviewed subrace override holds a race's count when the subrace's entries restate it", async () => {
+test("a reviewed subrace override holds a race's count when the subrace's entries restate it, and keeps its fixed skill", async () => {
   const keldonRace = { name: "Human", source: "TST", entries: [], languageProficiencies: [{ common: true, anyStandard: 1 }] };
   const keldon = {
     name: "Keldon",
@@ -185,7 +185,12 @@ test("a reviewed subrace override holds a race's count when the subrace's entrie
     raceSource: "TST",
     entries: [],
     languageProficiencies: [{ common: true, other: true }],
+    skillProficiencies: [{ athletics: true }],
   };
   const [race] = await scrapeRaces(fakeClient({ "data/races.json": { race: [keldonRace], subrace: [keldon] } }), newProficiencyReport());
-  assert.equal("grants" in race.subraces[0], false, "the subrace grants nothing beyond its race");
+  assert.deepEqual(
+    race.subraces[0].grants,
+    [{ id: "TST/Subrace/Human (Keldon)@0#0", kind: "fixed", category: "skills", names: ["Athletics"] }],
+    "the subrace grants no language beyond its race, and keeps its fixed skill",
+  );
 });
