@@ -9,9 +9,9 @@ Source for `/to-spec`. The product owner decided each item below one by one. Not
 - **Artificer duplicate subject** (merged). Same-named classes from different sources no longer collide in grant resolution.
 - **Classes resolve by name and source** (merged). Base saves, hit die, caster kind and spell ability are still name-keyed (see B).
 
-## In flight
+## Also done
 
-- **Expertise follows active books.** Branch `feat/expertise-follows-active-books`. Decision: disabling a book removes an Expertise mark that only that book's skill backed, with a review notice. Re-enabling the book does not bring the mark back. Only Expertise is scoped; stored proficiency picks stay.
+- **Expertise follows active books** (merged, `a62aefd`). Decision: disabling a book removes an Expertise mark that only that book's skill backed, with a review notice. Re-enabling the book does not bring the mark back. Only Expertise is scoped; stored proficiency picks stay.
 
 ## To spec (all chosen for this release)
 
@@ -31,10 +31,14 @@ F. **Polish and guards.**
    - The beast browser adoption guard.
    - The proficiency readers guard misses `import * as ns`.
 
+## Retro items (now in the spec)
+
+- 4: type-check `checks/` with a second tsconfig, ratcheted against a recorded baseline (966 errors today).
+- 6: subagent boilerplate in `docs/agents/subagent-tiering.md` plus `scripts/worktree.sh`.
+- 8: one UI navigation line in `AGENTS.md`.
+
 ## Not decided
 
-- **Retro items 4, 6 and 8** from an earlier session: the text was not recoverable. Run `/retro` or restate them.
-- **Haiku `5.5` trailers** on some commits: leave as is unless rewriting local history is wanted.
 - **Device and Android verification** is the product owner's task.
 - **Merge to `master` and push**: not before the above and the device check.
 
