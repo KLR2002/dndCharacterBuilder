@@ -110,7 +110,7 @@ Already done and not part of this spec: catalog format 4, Expertise released whe
 - `AGENTS.md` gains one navigation line for the UI: the character tabs, the builder sections, the shared UI components, the header and the modals, with the folders that hold them.
 
 **Sequencing and format.**
-- The catalog format is bumped once, in the last ticket that changes scraped data, not per ticket; it is already 4 for this release, so the bump is needed only if the data change lands after that value has shipped to anyone.
+- The catalog format is bumped once, in the last ticket that changes scraped data, not per ticket; it moves from 4 to 5 once, in the release gate.
 - The data tickets (A, C) run before B and D, since both read the new data. E, F and the retro items are independent.
 
 ## Testing Decisions
