@@ -12,6 +12,9 @@ import { DND_SKILLS } from "../constants/rules.ts";
  * imports them back.
  */
 
+/** The name of a class's level-1 Proficiency Grants: the starting tools it lists in the Catalog. */
+export const STARTING_PROFICIENCIES = "Starting Proficiencies";
+
 /** The categories a Proficiency Choice can be picked in. Armor is not one of them. */
 export type PickableCategory = "skills" | "tools" | "languages" | "savingThrows" | "weapons";
 

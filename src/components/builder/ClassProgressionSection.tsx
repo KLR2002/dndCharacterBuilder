@@ -13,7 +13,6 @@ import {
 import { reconcile } from "../../rules/characterReconciler";
 import { subclassLevel } from "../../rules/leveling";
 import { currentCompendium } from "../../services/compendium";
-import type { ToolGrant } from "../../rules/proficiencySheet";
 import { Badge } from "../ui/Badge";
 import { Button } from "../ui/Button";
 import { Card } from "../ui/Card";
@@ -54,8 +53,8 @@ export interface ClassProgressionSectionProps {
   skillChoices: { source: string; choose: number; from: string[] }[];
   autoGranted: string[];
   toggleSkill: (skill: string, source?: string) => void;
-  classToolGrant: ToolGrant;
-  toggleClassTool: (tool: string) => void;
+  /** The fixed tools the first class starts with. */
+  classTools: string[];
   availableOptionalFeatures: {
     name: string;
     level: number;
@@ -84,8 +83,7 @@ export const ClassProgressionSection: React.FC<ClassProgressionSectionProps> = (
   skillChoices,
   autoGranted,
   toggleSkill,
-  classToolGrant,
-  toggleClassTool,
+  classTools,
   availableOptionalFeatures,
   pendingAsiSlots,
   primaryClass,
@@ -618,33 +616,19 @@ export const ClassProgressionSection: React.FC<ClassProgressionSectionProps> = (
         </Card>
       )}
 
-      {/* Class tool choices & fixed grants */}
-      {hasAnyClass && (classToolGrant.fixed.length > 0 || classToolGrant.choices.length > 0) && (
+      {/* Starting tools the first class grants. Its tool choice is a Proficiency Choice in the choices below. */}
+      {hasAnyClass && classTools.length > 0 && (
         <Card style={{ gap: 10 }}>
-          {classToolGrant.fixed.length > 0 && (
-            <View style={{ gap: 4 }}>
-              <Text style={{ color: theme.textSecondary, fontSize: 12, fontWeight: "600" }}>
-                Granted Class Tools:
-              </Text>
-              <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6 }}>
-                {classToolGrant.fixed.map((tool) => (
-                  <Badge key={tool} label={tool} variant="surface" size="sm" />
-                ))}
-              </View>
+          <View style={{ gap: 4 }}>
+            <Text style={{ color: theme.textSecondary, fontSize: 12, fontWeight: "600" }}>
+              Granted Class Tools:
+            </Text>
+            <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6 }}>
+              {classTools.map((tool) => (
+                <Badge key={tool} label={tool} variant="surface" size="sm" />
+              ))}
             </View>
-          )}
-          {classToolGrant.choices.map((ch) => (
-            <RuleChoicePicker
-              key={ch.key}
-              label={ch.label}
-              choose={ch.count}
-              from={ch.options}
-              chosen={character.chosenTools?.class || []}
-              autoGranted={classToolGrant.fixed}
-              onToggle={toggleClassTool}
-              theme={theme}
-            />
-          ))}
+          </View>
         </Card>
       )}
 

@@ -5,14 +5,14 @@ import {
   getBackgroundLanguageGrant,
   getRaceToolGrant,
   getBackgroundToolGrant,
-  getClassToolGrant,
   resolveCharacterTools,
 } from "../src/rules/proficiencySources/toolsAndLanguages.ts";
 import { ARTISAN_TOOLS, MUSICAL_INSTRUMENTS, GAMING_SETS } from "../src/rules/proficienciesAndLanguages.ts";
 import { POINT_BUY_COST } from "../src/constants/rules.ts";
 import { proficiencySheet } from "../src/rules/proficiencySheet.ts";
+import { proficiencyChoiceOffers } from "../src/rules/proficiencyChoiceOffers.ts";
 import type { Character } from "../src/types/character.ts";
-import { inMemoryCompendium, loadTestCatalog } from "./testUtils.ts";
+import { inMemoryCompendium, loadTestCatalog, makeChar, srdBaselineCompendium } from "./testUtils.ts";
 
 const races = loadTestCatalog("races");
 const backgrounds = loadTestCatalog("backgrounds");
@@ -182,17 +182,18 @@ test("Criminal background tool grant gives Thieves' Tools and 1 Gaming Set choic
   assert.deepEqual(grant.choices[0].options, GAMING_SETS);
 });
 
-test("Bard class tool grant provides 3 Musical Instrument choices", () => {
-  const grant = getClassToolGrant("Bard", classes);
-  assert.equal(grant.choices.length, 1);
-  assert.equal(grant.choices[0].count, 3);
-  assert.deepEqual(grant.choices[0].options, MUSICAL_INSTRUMENTS);
+test("Bard starting tools are three Musical Instrument picks, offered as a Proficiency Choice", () => {
+  const bard = makeChar({ classes: [{ className: "Bard", source: "SRD", level: 1 }] });
+  const offers = proficiencyChoiceOffers(bard, { compendium: srdBaselineCompendium() });
+  assert.equal(offers.length, 1);
+  assert.equal(offers[0].choose, 3);
+  assert.deepEqual(offers[0].options.map((option) => option.name).sort(), [...MUSICAL_INSTRUMENTS].sort());
 });
 
-test("Rogue class tool grant provides Thieves' Tools fixed", () => {
-  const grant = getClassToolGrant("Rogue", classes);
-  assert.ok(grant.fixed.includes("Thieves' Tools"));
-  assert.equal(grant.choices.length, 0);
+test("Rogue starting tools are Thieves' Tools, held from level 1", () => {
+  const rogue = makeChar({ classes: [{ className: "Rogue", source: "SRD", level: 1 }] });
+  const sheet = proficiencySheet(rogue, { compendium: srdBaselineCompendium() });
+  assert.ok(sheet.tools.some((tool) => tool.name === "Thieves' Tools"));
 });
 
 test("the sheet's languages combine fixed and chosen languages cleanly", () => {
@@ -216,19 +217,14 @@ test("resolveCharacterTools combines fixed and chosen tools cleanly without plac
   const char = createTestChar({
     race: { name: "Dwarf", source: "PHB" },
     background: { name: "Folk Hero", source: "PHB" },
-    classes: [{ className: "Bard", source: "PHB", level: 1 }],
     chosenTools: {
       race: ["Smith's Tools"],
       background: ["Cook's Utensils"],
-      class: ["Lute", "Flute", "Drum"],
     },
   });
   const tools = resolveCharacterTools(char, { compendium: inMemoryCompendium({ races, backgrounds, classes }) });
   assert.ok(tools.includes("Smith's Tools"));
   assert.ok(tools.includes("Cook's Utensils"));
   assert.ok(tools.includes("Vehicles (Land)"));
-  assert.ok(tools.includes("Lute"));
-  assert.ok(tools.includes("Flute"));
-  assert.ok(tools.includes("Drum"));
   assert.ok(!tools.includes("anyArtisansTool"));
 });

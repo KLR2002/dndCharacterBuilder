@@ -138,7 +138,7 @@ test("tools: Artificer level 6 automatically grants Tool Expertise to all tools"
     baseAbilityScores: { str: 10, dex: 14, con: 12, int: 16, wis: 10, cha: 10 },
     classes: [{ className: "Artificer", level: 6, source: "TCE" }], // PB = 3, Dex = +2
     chosenTools: {
-      class: ["Thieves' Tools", "Tinker's Tools", "Alchemist's Supplies"],
+      class: ["Alchemist's Supplies"], // the Artificer's one artisan's tool pick; Thieves' Tools and Tinker's Tools are granted
     },
     chosenExpertise: [], // empty manual picks!
   });

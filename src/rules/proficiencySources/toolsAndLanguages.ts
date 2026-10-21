@@ -271,47 +271,6 @@ export function getBackgroundToolGrant(
   return { fixed, choices };
 }
 
-export function getClassToolGrant(
-  className?: string,
-  _classCatalog: any[] = []
-): ToolGrant {
-  const fixed: string[] = [];
-  const choices: ToolChoice[] = [];
-  if (!className) return { fixed, choices };
-
-  const norm = className.toLowerCase();
-  if (norm === "rogue") {
-    fixed.push("Thieves' Tools");
-  } else if (norm === "druid") {
-    fixed.push("Herbalism Kit");
-  } else if (norm === "artificer") {
-    fixed.push("Thieves' Tools");
-    fixed.push("Tinker's Tools");
-    choices.push({
-      key: "class_artificer_artisan",
-      label: "Artificer: Artisan's Tools",
-      count: 1,
-      options: ARTISAN_TOOLS,
-    });
-  } else if (norm === "bard") {
-    choices.push({
-      key: "class_bard_instruments",
-      label: "Bard: Three Musical Instruments",
-      count: 3,
-      options: MUSICAL_INSTRUMENTS,
-    });
-  } else if (norm === "monk") {
-    choices.push({
-      key: "class_monk_tool",
-      label: "Monk: Artisan's Tool or Musical Instrument",
-      count: 1,
-      options: [...ARTISAN_TOOLS, ...MUSICAL_INSTRUMENTS],
-    });
-  }
-
-  return { fixed, choices };
-}
-
 /** Languages from race, background and picks, before the fallbacks. Used by the Proficiency Sheet. */
 export function structuredLanguages(
   character: Character,
@@ -374,17 +333,6 @@ export function resolveCharacterTools(
   );
   for (const t of bgGrant.fixed) toolSet.add(normalizeToolName(t));
   for (const t of character.chosenTools?.background || []) toolSet.add(normalizeToolName(t));
-
-  // Primary Class
-  const primaryClass = character.classes?.[0]?.className;
-  if (primaryClass) {
-    const classGrant = getClassToolGrant(
-      primaryClass,
-      listings?.classes() ?? []
-    );
-    for (const t of classGrant.fixed) toolSet.add(normalizeToolName(t));
-    for (const t of character.chosenTools?.class || []) toolSet.add(normalizeToolName(t));
-  }
 
   // Multiclass proficiencies
   if (Array.isArray(character.multiclassProficiencies)) {
