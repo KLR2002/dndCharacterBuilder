@@ -369,8 +369,14 @@ function build(
   return specs.map((spec, position) => ({ id: grantId(subject, position), ...spec }) as ProficiencyGrant);
 }
 
+/** The source-less key an override is matched on. An override applies to every source's copy of a feature. */
 function featureKey(s: { owner: string; feature: string; level: number }): string {
   return `${s.owner}|${s.feature}|${s.level}`;
+}
+
+/** The full identity of a grant subject. Two classes with one name from different sources have distinct subjects. */
+function subjectKey(s: GrantSubject): string {
+  return `${s.source}|${s.owner}|${s.feature}|${s.level}`;
 }
 
 /**
@@ -387,27 +393,42 @@ export function unmatchedOverrides(subjects: GrantSubject[], overrides: GrantOve
  * overrides. An override for a feature the scrape does not include has nothing
  * to apply to, and is ignored, because a partial scrape is normal; the tracked
  * data is checked for stale overrides by the enrichment (see unmatchedOverrides).
- * Throws when two features share an owner, name and level. Updates `report`
- * with covered features and the unparsed list.
+ *
+ * Two subjects with the same source, owner, name and level are one feature
+ * listed twice when their descriptions match (a subclass listed under two
+ * parent classes). They resolve once, and every such subject gets that same
+ * result, so the result array stays index-aligned with `subjects`. Such a
+ * feature is counted and reported once. Same key with different descriptions
+ * is an ambiguity and throws. Updates `report` with covered features and the
+ * unparsed list.
  */
 export function resolveFeatureGrants(
   subjects: GrantSubject[],
   overrides: GrantOverride[],
   report: ProficiencyReport
 ): FeatureGrantResult[] {
-  const keys = new Set<string>();
-  for (const subject of subjects) {
-    const key = featureKey(subject);
-    if (keys.has(key)) throw new Error(`duplicate proficiency subject: ${key}`);
-    keys.add(key);
-  }
+  const firstIndex = new Map<string, number>();
+  const firstOf: number[] = subjects.map((subject, i) => {
+    const key = subjectKey(subject);
+    const first = firstIndex.get(key);
+    if (first === undefined) {
+      firstIndex.set(key, i);
+      return i;
+    }
+    if (subjects[first].description !== subject.description) throw new Error(`duplicate proficiency subject: ${key}`);
+    return first;
+  });
+
+  const featureKeys = new Set(subjects.map(featureKey));
   const overrideByKey = new Map<string, GrantOverride>();
   for (const override of overrides) {
     const key = featureKey(override);
-    if (keys.has(key)) overrideByKey.set(key, override);
+    if (featureKeys.has(key)) overrideByKey.set(key, override);
   }
 
-  return subjects.map((subject) => {
+  const resolvedAt = new Map<number, FeatureGrantResult>();
+  subjects.forEach((subject, i) => {
+    if (firstOf[i] !== i) return;
     const override = overrideByKey.get(featureKey(subject));
     let grants: ProficiencyGrant[];
     let unparsed: string[];
@@ -423,8 +444,10 @@ export function resolveFeatureGrants(
     if (!override && unparsed.length > 0) {
       report.unparsed.push({ owner: subject.owner, feature: subject.feature, level: subject.level, unparsed });
     }
-    return { subject, grants, unparsed };
+    resolvedAt.set(i, { subject, grants, unparsed });
   });
+
+  return firstOf.map((first) => resolvedAt.get(first) as FeatureGrantResult);
 }
 
 /**

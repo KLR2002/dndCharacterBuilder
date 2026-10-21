@@ -13,30 +13,37 @@ export interface CoverageGap extends ReviewedFeature {
  * grants nor marked as granting nothing. Reads the enriched data as it is and
  * runs no extraction. Throws when a mark names no feature, or a feature that
  * has grants, so a stale mark cannot hide a gap.
+ *
+ * Tracked refs can share an owner, feature and level when they come from
+ * different sources (two classes with one name). A mark names that key, so it
+ * applies to every ref under it, and it fails if any of them has grants. A gap
+ * is reported once per key, from the first ref under it that has none.
  */
 export function coverageGaps(data: TrackedData, marks: ReviewedFeature[]): CoverageGap[] {
-  const refs = allRefs(data);
-  const byKey = new Map<string, GrantRef>();
-  for (const ref of refs) {
+  const byKey = new Map<string, GrantRef[]>();
+  for (const ref of allRefs(data)) {
     const k = featureKey(ref.subject);
-    if (byKey.has(k)) throw new Error(`duplicate tracked feature: ${k}`);
-    byKey.set(k, ref);
+    byKey.set(k, [...(byKey.get(k) ?? []), ref]);
   }
 
   const marked = new Set<string>();
   for (const mark of marks) {
     const k = featureKey(mark);
-    const ref = byKey.get(k);
-    if (!ref) throw new Error(`reviewed mark matches no feature: ${k}`);
-    if (hasGrants(ref)) throw new Error(`reviewed mark names a feature that has grants: ${k}`);
+    const refs = byKey.get(k);
+    if (!refs) throw new Error(`reviewed mark matches no feature: ${k}`);
+    if (refs.some(hasGrants)) throw new Error(`reviewed mark names a feature that has grants: ${k}`);
     marked.add(k);
   }
 
   const gaps: CoverageGap[] = [];
-  for (const ref of refs) {
-    const sentences = matchedSentences(ref.subject.description);
-    if (sentences.length === 0 || hasGrants(ref) || marked.has(featureKey(ref.subject))) continue;
-    gaps.push({ owner: ref.subject.owner, feature: ref.subject.feature, level: ref.subject.level, sentences });
+  for (const [k, refs] of byKey) {
+    if (marked.has(k)) continue;
+    for (const ref of refs) {
+      const sentences = matchedSentences(ref.subject.description);
+      if (sentences.length === 0 || hasGrants(ref)) continue;
+      gaps.push({ owner: ref.subject.owner, feature: ref.subject.feature, level: ref.subject.level, sentences });
+      break;
+    }
   }
   return gaps;
 }

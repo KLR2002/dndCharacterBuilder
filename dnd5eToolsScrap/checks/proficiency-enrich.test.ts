@@ -140,6 +140,39 @@ test("a file that is not in the tracked format is refused rather than rewritten"
   assert.throws(() => enrichGrantFiles(trailingNewline, noOverrides), /canonical/);
 });
 
+test("two classes with one name from different sources enrich without error, and a subclass listed under both keeps its ids", () => {
+  const subclass = {
+    name: "Sample Path",
+    source: "AAA",
+    features: [{ name: "Mind Guard", level: 3, description: "Your mind grows sharp. You gain proficiency in all saving throws." }],
+  };
+  const twins = [
+    {
+      name: "Sample Twin",
+      source: "AAA",
+      hitDie: "1d8",
+      features: [{ name: "Lantern Training", level: 1, description: "You gain proficiency with lantern-maker's kit.", isOptional: false }],
+      subclasses: [subclass],
+    },
+    {
+      name: "Sample Twin",
+      source: "BBB",
+      hitDie: "1d8",
+      features: [{ name: "Lantern Training", level: 1, description: "You gain proficiency with lantern-maker's kit.", isOptional: false }],
+      subclasses: [subclass],
+    },
+  ];
+  const twinFiles = { classes: canonical(twins), feats: canonical([]) };
+  const enriched = enrichGrantFiles(twinFiles, noOverrides);
+  const [aaa, bbb] = JSON.parse(enriched.classes);
+  assert.deepEqual(aaa.features[0].grants.map((g: { id: string }) => g.id), ["AAA/Sample Twin/Lantern Training@1#0"]);
+  assert.deepEqual(bbb.features[0].grants.map((g: { id: string }) => g.id), ["BBB/Sample Twin/Lantern Training@1#0"]);
+  for (const cls of [aaa, bbb]) {
+    assert.deepEqual(cls.subclasses[0].features[0].grants.map((g: { id: string }) => g.id), ["AAA/Sample Twin/Sample Path/Mind Guard@3#0"]);
+  }
+  assert.deepEqual(stripGrantFiles(enriched), twinFiles);
+});
+
 function withStaleGrant(): { classes: string; feats: string } {
   const data = JSON.parse(original.classes);
   data[0].features[1].grants = [{ id: "TST/Sample Class/Quiet Step@2#0", kind: "fixed", category: "tools", names: ["old tools"] }];

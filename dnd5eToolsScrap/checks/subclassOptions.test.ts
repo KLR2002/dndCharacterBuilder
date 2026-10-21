@@ -1,6 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { scrapeClasses } from "../src/scrapers/classes.ts";
+import { newProficiencyReport } from "../src/parser/proficiency-grants.ts";
 import type { ToolsClient } from "../src/types/models.ts";
 
 // Placeholder records in the raw 5e.tools shape. The structure is real; the text is invented.
@@ -206,4 +207,59 @@ test("a class feature with refClassFeature options gets choices and folds its si
     ],
   });
   assert.deepEqual(barbarian.features.map((f) => f.name), ["Placeholder Pick"]);
+});
+
+// Two classes share a name and a feature name, one per source. Their subclass is listed under both
+// parents, so the subclass feature is one feature that the scraper meets twice.
+test("two classes with one name from different sources scrape, and a subclass listed under both carries the same grant ids", async () => {
+  const LANTERN = "You gain proficiency with lantern-maker's kit.";
+  const raw = {
+    class: [
+      { name: "Sample Artificer", source: "AAA", hd: { number: 1, faces: 8 }, proficiency: ["int", "con"], entries: [] },
+      { name: "Sample Artificer", source: "BBB", hd: { number: 1, faces: 8 }, proficiency: ["int", "con"], entries: [] },
+    ],
+    classFeature: [
+      { name: "Lantern Training", source: "AAA", className: "Sample Artificer", classSource: "AAA", level: 1, entries: [LANTERN] },
+      { name: "Lantern Training", source: "BBB", className: "Sample Artificer", classSource: "BBB", level: 1, entries: [LANTERN] },
+    ],
+    subclass: [
+      { name: "Sample Path", shortName: "Sample Path", source: "AAA", className: "Sample Artificer", classSource: "AAA" },
+      { name: "Sample Path", shortName: "Sample Path", source: "AAA", className: "Sample Artificer", classSource: "BBB" },
+    ],
+    subclassFeature: [
+      {
+        name: "Path Tools",
+        source: "AAA",
+        className: "Sample Artificer",
+        classSource: "AAA",
+        subclassShortName: "Sample Path",
+        subclassSource: "AAA",
+        level: 3,
+        entries: [LANTERN],
+      },
+    ],
+  };
+  const client = {
+    fetchJson: async (endpoint: string) => {
+      if (endpoint === "data/class/index.json") return { sample: "class-sample.json" };
+      if (endpoint === "data/class/class-sample.json") return raw;
+      throw new Error(`unexpected endpoint ${endpoint}`);
+    },
+  } as unknown as ToolsClient;
+
+  const report = newProficiencyReport();
+  const classes = await scrapeClasses(client, report);
+  assert.deepEqual(classes.map((c) => c.source), ["AAA", "BBB"]);
+  for (const cls of classes) {
+    const lantern = named(cls.features, "Lantern Training");
+    assert.deepEqual(lantern.grants?.map((g) => g.id), [`${cls.source}/Sample Artificer/Lantern Training@1#0`]);
+    assert.deepEqual(cls.subclasses.map((sc) => sc.features.map((f) => f.name)), [["Path Tools"]]);
+    assert.deepEqual(
+      cls.subclasses[0].features[0].grants?.map((g) => g.id),
+      ["AAA/Sample Artificer/Sample Path/Path Tools@3#0"],
+      `the shared subclass feature under ${cls.source} carries the same ids`
+    );
+  }
+  assert.equal(report.covered, 3, "two class features and one distinct subclass feature");
+  assert.deepEqual(report.unparsed, []);
 });

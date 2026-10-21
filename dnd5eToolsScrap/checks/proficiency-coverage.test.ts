@@ -107,6 +107,44 @@ test("a mark on a feature that also has grants is an error", () => {
   );
 });
 
+// Two tracked classes with one name, one per source, each with a feature of the same name and level.
+// A mark names that feature by owner, feature and level only, so it covers both copies.
+function twoSourceData(grantedInSecond: boolean): TrackedData {
+  const feature = (grants: unknown[] = []) => ({
+    name: "Lantern Training",
+    level: 1,
+    description: "You are proficient with lantern-maker's kit. Your steps are quiet.",
+    ...(grants.length > 0 ? { grants } : {}),
+  });
+  return {
+    classes: [
+      { name: "Sample Class", source: "AAA", features: [feature()], subclasses: [] },
+      { name: "Sample Class", source: "BBB", features: [feature(grantedInSecond ? [GRANT] : [])], subclasses: [] },
+    ],
+    feats: [],
+  } as unknown as TrackedData;
+}
+
+test("two tracked classes with one name from different sources are read without throwing, and a shared gap is reported once", () => {
+  const gaps = coverageGaps(twoSourceData(false), []);
+  assert.deepEqual(gaps.map(gapName), ["Sample Class / Lantern Training (level 1)"]);
+});
+
+test("a gap on one copy is reported even when the other copy has grants", () => {
+  const gaps = coverageGaps(twoSourceData(true), []);
+  assert.deepEqual(gaps.map(gapName), ["Sample Class / Lantern Training (level 1)"]);
+});
+
+test("a mark naming the shared feature covers every copy of it", () => {
+  const mark: ReviewedFeature = { owner: "Sample Class", feature: "Lantern Training", level: 1 };
+  assert.deepEqual(coverageGaps(twoSourceData(false), [mark]), []);
+});
+
+test("a mark naming the shared feature fails when any copy has grants, so a stale mark cannot hide a gap", () => {
+  const mark: ReviewedFeature = { owner: "Sample Class", feature: "Lantern Training", level: 1 };
+  assert.throws(() => coverageGaps(twoSourceData(true), [mark]), /has grants/);
+});
+
 test("gapName names each feature for the failure message", () => {
   assert.equal(
     gapName({ owner: "Sample Class/Sample Path", feature: "Mind Guard", level: 3, sentences: [] }),
