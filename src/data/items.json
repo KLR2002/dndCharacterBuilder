@@ -89,7 +89,8 @@
     "ac": null,
     "strengthRequirement": null,
     "stealthDisadvantage": false,
-    "description": ""
+    "description": "",
+    "weaponCategory": "martial"
   },
   {
     "name": "Blowgun",
@@ -110,7 +111,8 @@
     "ac": null,
     "strengthRequirement": null,
     "stealthDisadvantage": false,
-    "description": ""
+    "description": "",
+    "weaponCategory": "martial"
   },
   {
     "name": "Blowgun Needle",
@@ -301,7 +303,8 @@
     "ac": null,
     "strengthRequirement": null,
     "stealthDisadvantage": false,
-    "description": ""
+    "description": "",
+    "weaponCategory": "simple"
   },
   {
     "name": "Cobbler's Tools",
@@ -413,7 +416,8 @@
     "ac": null,
     "strengthRequirement": null,
     "stealthDisadvantage": false,
-    "description": ""
+    "description": "",
+    "weaponCategory": "simple"
   },
   {
     "name": "Dart",
@@ -434,7 +438,8 @@
     "ac": null,
     "strengthRequirement": null,
     "stealthDisadvantage": false,
-    "description": ""
+    "description": "",
+    "weaponCategory": "simple"
   },
   {
     "name": "Drum",
@@ -488,7 +493,8 @@
     "ac": null,
     "strengthRequirement": null,
     "stealthDisadvantage": false,
-    "description": ""
+    "description": "",
+    "weaponCategory": "martial"
   },
   {
     "name": "Flute",
@@ -528,7 +534,8 @@
     "ac": null,
     "strengthRequirement": null,
     "stealthDisadvantage": false,
-    "description": ""
+    "description": "",
+    "weaponCategory": "martial"
   },
   {
     "name": "Glassblower's Tools",
@@ -567,7 +574,8 @@
     "ac": null,
     "strengthRequirement": null,
     "stealthDisadvantage": false,
-    "description": ""
+    "description": "",
+    "weaponCategory": "martial"
   },
   {
     "name": "Greatclub",
@@ -587,7 +595,8 @@
     "ac": null,
     "strengthRequirement": null,
     "stealthDisadvantage": false,
-    "description": ""
+    "description": "",
+    "weaponCategory": "simple"
   },
   {
     "name": "Greatsword",
@@ -608,7 +617,8 @@
     "ac": null,
     "strengthRequirement": null,
     "stealthDisadvantage": false,
-    "description": ""
+    "description": "",
+    "weaponCategory": "martial"
   },
   {
     "name": "Halberd",
@@ -630,7 +640,8 @@
     "ac": null,
     "strengthRequirement": null,
     "stealthDisadvantage": false,
-    "description": ""
+    "description": "",
+    "weaponCategory": "martial"
   },
   {
     "name": "Half Plate Armor",
@@ -673,7 +684,8 @@
     "ac": null,
     "strengthRequirement": null,
     "stealthDisadvantage": false,
-    "description": ""
+    "description": "",
+    "weaponCategory": "martial"
   },
   {
     "name": "Handaxe",
@@ -694,7 +706,8 @@
     "ac": null,
     "strengthRequirement": null,
     "stealthDisadvantage": false,
-    "description": ""
+    "description": "",
+    "weaponCategory": "simple"
   },
   {
     "name": "Heavy Crossbow",
@@ -717,7 +730,8 @@
     "ac": null,
     "strengthRequirement": null,
     "stealthDisadvantage": false,
-    "description": ""
+    "description": "",
+    "weaponCategory": "martial"
   },
   {
     "name": "Hide Armor",
@@ -776,7 +790,8 @@
     "ac": null,
     "strengthRequirement": null,
     "stealthDisadvantage": false,
-    "description": ""
+    "description": "",
+    "weaponCategory": "simple"
   },
   {
     "name": "Jeweler's Tools",
@@ -824,7 +839,8 @@
           "You have disadvantage when you use a lance to attack a target within 5 feet of you. Also, a lance requires two hands to wield when you aren't mounted."
         ]
       }
-    ]
+    ],
+    "weaponCategory": "martial"
   },
   {
     "name": "Leather Armor",
@@ -885,7 +901,8 @@
     "ac": null,
     "strengthRequirement": null,
     "stealthDisadvantage": false,
-    "description": ""
+    "description": "",
+    "weaponCategory": "simple"
   },
   {
     "name": "Light Hammer",
@@ -906,7 +923,8 @@
     "ac": null,
     "strengthRequirement": null,
     "stealthDisadvantage": false,
-    "description": ""
+    "description": "",
+    "weaponCategory": "simple"
   },
   {
     "name": "Longbow",
@@ -928,7 +946,8 @@
     "ac": null,
     "strengthRequirement": null,
     "stealthDisadvantage": false,
-    "description": ""
+    "description": "",
+    "weaponCategory": "martial"
   },
   {
     "name": "Longsword",
@@ -948,7 +967,8 @@
     "ac": null,
     "strengthRequirement": null,
     "stealthDisadvantage": false,
-    "description": ""
+    "description": "",
+    "weaponCategory": "martial"
   },
   {
     "name": "Lute",
@@ -1002,7 +1022,8 @@
     "ac": null,
     "strengthRequirement": null,
     "stealthDisadvantage": false,
-    "description": ""
+    "description": "",
+    "weaponCategory": "simple"
   },
   {
     "name": "Mason's Tools",
@@ -1041,7 +1062,8 @@
     "ac": null,
     "strengthRequirement": null,
     "stealthDisadvantage": false,
-    "description": ""
+    "description": "",
+    "weaponCategory": "martial"
   },
   {
     "name": "Morningstar",
@@ -1059,7 +1081,8 @@
     "ac": null,
     "strengthRequirement": null,
     "stealthDisadvantage": false,
-    "description": ""
+    "description": "",
+    "weaponCategory": "martial"
   },
   {
     "name": "Net",
@@ -1089,7 +1112,8 @@
           "A Large or smaller creature hit by a net is {@condition restrained} until it is freed. A net has no effect on creatures that are formless, or creatures that are Huge or larger. A creature can use its action to make a {@dc 10} Strength check, freeing itself or another creature within its reach on a success. Dealing 5 slashing damage to the net (AC 10) also frees the creature without harming it, ending the effect and destroying the net. When you use an action, bonus action, or reaction to attack with a net, you can make only one attack regardless of the number of attacks you can normally make."
         ]
       }
-    ]
+    ],
+    "weaponCategory": "martial"
   },
   {
     "name": "Orb",
@@ -1186,7 +1210,8 @@
     "ac": null,
     "strengthRequirement": null,
     "stealthDisadvantage": false,
-    "description": ""
+    "description": "",
+    "weaponCategory": "martial"
   },
   {
     "name": "Plate Armor",
@@ -1245,7 +1270,8 @@
     "ac": null,
     "strengthRequirement": null,
     "stealthDisadvantage": false,
-    "description": ""
+    "description": "",
+    "weaponCategory": "simple"
   },
   {
     "name": "Rapier",
@@ -1265,7 +1291,8 @@
     "ac": null,
     "strengthRequirement": null,
     "stealthDisadvantage": false,
-    "description": ""
+    "description": "",
+    "weaponCategory": "martial"
   },
   {
     "name": "Ring Mail",
@@ -1346,7 +1373,8 @@
     "ac": null,
     "strengthRequirement": null,
     "stealthDisadvantage": false,
-    "description": ""
+    "description": "",
+    "weaponCategory": "martial"
   },
   {
     "name": "Shawm",
@@ -1427,7 +1455,8 @@
     "ac": null,
     "strengthRequirement": null,
     "stealthDisadvantage": false,
-    "description": ""
+    "description": "",
+    "weaponCategory": "simple"
   },
   {
     "name": "Shortsword",
@@ -1448,7 +1477,8 @@
     "ac": null,
     "strengthRequirement": null,
     "stealthDisadvantage": false,
-    "description": ""
+    "description": "",
+    "weaponCategory": "martial"
   },
   {
     "name": "Sickle",
@@ -1468,7 +1498,8 @@
     "ac": null,
     "strengthRequirement": null,
     "stealthDisadvantage": false,
-    "description": ""
+    "description": "",
+    "weaponCategory": "simple"
   },
   {
     "name": "Sling",
@@ -1488,7 +1519,8 @@
     "ac": null,
     "strengthRequirement": null,
     "stealthDisadvantage": false,
-    "description": ""
+    "description": "",
+    "weaponCategory": "simple"
   },
   {
     "name": "Sling Bullet",
@@ -1563,7 +1595,8 @@
     "ac": null,
     "strengthRequirement": null,
     "stealthDisadvantage": false,
-    "description": ""
+    "description": "",
+    "weaponCategory": "simple"
   },
   {
     "name": "Splint Armor",
@@ -1664,7 +1697,8 @@
     "ac": null,
     "strengthRequirement": null,
     "stealthDisadvantage": false,
-    "description": ""
+    "description": "",
+    "weaponCategory": "martial"
   },
   {
     "name": "Viol",
@@ -1718,7 +1752,8 @@
     "ac": null,
     "strengthRequirement": null,
     "stealthDisadvantage": false,
-    "description": ""
+    "description": "",
+    "weaponCategory": "martial"
   },
   {
     "name": "Warhammer",
@@ -1738,7 +1773,8 @@
     "ac": null,
     "strengthRequirement": null,
     "stealthDisadvantage": false,
-    "description": ""
+    "description": "",
+    "weaponCategory": "martial"
   },
   {
     "name": "Weaver's Tools",
@@ -1777,7 +1813,8 @@
     "ac": null,
     "strengthRequirement": null,
     "stealthDisadvantage": false,
-    "description": ""
+    "description": "",
+    "weaponCategory": "martial"
   },
   {
     "name": "Woodcarver's Tools",
@@ -2115,7 +2152,7 @@
     "ac": null,
     "strengthRequirement": null,
     "stealthDisadvantage": false,
-    "description": "This item first appears to be a Large sealed iron barrel weighing 500 pounds. The barrel has a hidden catch, which can be found with a successful DC 20 Intelligence (Investigation) check. Releasing the catch unlocks a hatch at one end of the barrel, allowing two Medium or smaller creatures to crawl inside. Ten levers are set in a row at the far end, each in a neutral position, able to move either up or down. When certain levers are used, the apparatus transforms to resemble a giant lobster.\n\nThe apparatus of Kwalish is a Large object with the following statistics:\n\n- **Armor Class:** 20\n\n- **Hit Points:** 200\n\n- **Speed:** 30 ft., swim 30 ft. (or 0 ft. for both if the legs and tail aren't extended)\n\n- **Damage Immunities:** poison, psychic\n\nTo be used as a vehicle, the apparatus requires one pilot. While the apparatus's hatch is closed, the compartment is airtight and watertight. The compartment holds enough air for 10 hours of breathing, divided by the number of breathing creatures inside.\n\nThe apparatus floats on water. It can also go underwater to a depth of 900 feet. Below that, the vehicle takes 2d6 bludgeoning damage per minute from pressure.\n\nA creature in the compartment can use an action to move as many as two of the apparatus's levers up or down. After each use, a lever goes back to its neutral position. Each lever, from left to right, functions as shown in the Apparatus of Kwalish Levers table.\n\n**Apparatus of Kwalish Levers:**\n\n\n| Lever | Up | Down |\n\n| --- | --- | --- |\n\n| 1 | Legs and tail extend, allowing the apparatus to walk and swim. | Legs and tail retract, reducing the apparatus's speed to 0 and making it unable to benefit from bonuses to speed. |\n\n| 2 | Forward window shutter opens. | Forward window shutter closes. |\n\n| 3 | Side window shutters open (two per side). | Side window shutters close (two per side). |\n\n| 4 | Two claws extend from the front sides of the apparatus. | The claws retract. |\n\n| 5 | Each extended claw makes the following melee weapon attack: +8 to hit, reach 5 ft., one target. 7 (2d6) bludgeoning damage. | Each extended claw makes the following melee weapon attack: +8 to hit, reach 5 ft., one target. The target is grappled (escape DC 15). |\n\n| 6 | The apparatus walks or swims forward. | The apparatus walks or swims backward. |\n\n| 7 | The apparatus turns 90 degrees left. | The apparatus turns 90 degrees right. |\n\n| 8 | Eyelike fixtures emit bright light in a 30-foot radius and dim light for an additional 30 feet. | The light turns off. |\n\n| 9 | The apparatus sinks as much as 20 feet in liquid. | The apparatus rises up to 20 feet in liquid. |\n\n| 10 | The rear hatch unseals and opens. | The rear hatch closes and seals. |",
+    "description": "This item first appears to be a Large sealed iron barrel weighing 500 pounds. The barrel has a hidden catch, which can be found with a successful DC 20 Intelligence (Investigation) check. Releasing the catch unlocks a hatch at one end of the barrel, allowing two Medium or smaller creatures to crawl inside. Ten levers are set in a row at the far end, each in a neutral position, able to move either up or down. When certain levers are used, the apparatus transforms to resemble a giant lobster.\n\nThe apparatus of Kwalish is a Large object with the following statistics:\n\n- **Armor Class:** 20\n- **Hit Points:** 200\n- **Speed:** 30 ft., swim 30 ft. (or 0 ft. for both if the legs and tail aren't extended)\n- **Damage Immunities:** poison, psychic\n\nTo be used as a vehicle, the apparatus requires one pilot. While the apparatus's hatch is closed, the compartment is airtight and watertight. The compartment holds enough air for 10 hours of breathing, divided by the number of breathing creatures inside.\n\nThe apparatus floats on water. It can also go underwater to a depth of 900 feet. Below that, the vehicle takes 2d6 bludgeoning damage per minute from pressure.\n\nA creature in the compartment can use an action to move as many as two of the apparatus's levers up or down. After each use, a lever goes back to its neutral position. Each lever, from left to right, functions as shown in the Apparatus of Kwalish Levers table.\n\n**Apparatus of Kwalish Levers:**\n\n\n| Lever | Up | Down |\n\n| --- | --- | --- |\n\n| 1 | Legs and tail extend, allowing the apparatus to walk and swim. | Legs and tail retract, reducing the apparatus's speed to 0 and making it unable to benefit from bonuses to speed. |\n\n| 2 | Forward window shutter opens. | Forward window shutter closes. |\n\n| 3 | Side window shutters open (two per side). | Side window shutters close (two per side). |\n\n| 4 | Two claws extend from the front sides of the apparatus. | The claws retract. |\n\n| 5 | Each extended claw makes the following melee weapon attack: +8 to hit, reach 5 ft., one target. 7 (2d6) bludgeoning damage. | Each extended claw makes the following melee weapon attack: +8 to hit, reach 5 ft., one target. The target is grappled (escape DC 15). |\n\n| 6 | The apparatus walks or swims forward. | The apparatus walks or swims backward. |\n\n| 7 | The apparatus turns 90 degrees left. | The apparatus turns 90 degrees right. |\n\n| 8 | Eyelike fixtures emit bright light in a 30-foot radius and dim light for an additional 30 feet. | The light turns off. |\n\n| 9 | The apparatus sinks as much as 20 feet in liquid. | The apparatus rises up to 20 feet in liquid. |\n\n| 10 | The rear hatch unseals and opens. | The rear hatch closes and seals. |",
     "rawEntries": [
       "This item first appears to be a Large sealed iron barrel weighing 500 pounds. The barrel has a hidden catch, which can be found with a successful {@dc 20} Intelligence ({@skill Investigation}) check. Releasing the catch unlocks a hatch at one end of the barrel, allowing two Medium or smaller creatures to crawl inside. Ten levers are set in a row at the far end, each in a neutral position, able to move either up or down. When certain levers are used, the apparatus transforms to resemble a giant lobster.",
       "The apparatus of Kwalish is a Large object with the following statistics:",
@@ -2924,7 +2961,7 @@
     "ac": null,
     "strengthRequirement": null,
     "stealthDisadvantage": false,
-    "description": "While wearing this belt, you gain the following benefits:\n\n- Your Constitution score increases by 2, to a maximum of 20.\n\n- You have advantage on Charisma (Persuasion) checks made to interact with dwarves.\n\nIn addition, while attuned to the belt, you have a 50% chance each day at dawn of growing a full beard if you're capable of growing one, or a visibly thicker beard if you already have one.\n\nIf you aren't a dwarf, you gain the following additional benefits while wearing the belt:\n\n- You have advantage on saving throws against poison, and you have resistance against poison damage.\n\n- You have darkvision out to a range of 60 feet.\n\n- You can speak, read, and write Dwarvish.",
+    "description": "While wearing this belt, you gain the following benefits:\n\n- Your Constitution score increases by 2, to a maximum of 20.\n- You have advantage on Charisma (Persuasion) checks made to interact with dwarves.\n\nIn addition, while attuned to the belt, you have a 50% chance each day at dawn of growing a full beard if you're capable of growing one, or a visibly thicker beard if you already have one.\n\nIf you aren't a dwarf, you gain the following additional benefits while wearing the belt:\n\n- You have advantage on saving throws against poison, and you have resistance against poison damage.\n- You have darkvision out to a range of 60 feet.\n- You can speak, read, and write Dwarvish.",
     "rawEntries": [
       "While wearing this belt, you gain the following benefits:",
       {
@@ -3276,7 +3313,7 @@
     "ac": null,
     "strengthRequirement": null,
     "stealthDisadvantage": false,
-    "description": "These furred boots are snug and feel quite warm. While you wear them, you gain the following benefits:\n\n- You have resistance to cold damage.\n\n- You ignore difficult terrain created by ice or snow.\n\n- You can tolerate temperatures as low as -50 degrees Fahrenheit without any additional protection. If you wear heavy clothes, you can tolerate temperatures as low as -100 degrees Fahrenheit.",
+    "description": "These furred boots are snug and feel quite warm. While you wear them, you gain the following benefits:\n\n- You have resistance to cold damage.\n- You ignore difficult terrain created by ice or snow.\n- You can tolerate temperatures as low as -50 degrees Fahrenheit without any additional protection. If you wear heavy clothes, you can tolerate temperatures as low as -100 degrees Fahrenheit.",
     "rawEntries": [
       "These furred boots are snug and feel quite warm. While you wear them, you gain the following benefits:",
       {
@@ -3523,7 +3560,7 @@
     "ac": null,
     "strengthRequirement": null,
     "stealthDisadvantage": false,
-    "description": "Includes:\n\n- a backpack\n\n- a bag of 1,000 ball bearings\n\n- 10 feet of string\n\n- a bell\n\n- 5 candles\n\n- a crowbar\n\n- a hammer\n\n- 10 pitons\n\n- a hooded lantern\n\n- 2 flasks of oil\n\n- 5 days rations\n\n- a tinderbox\n\n- a waterskin\n\n- 50 feet of hempen rope",
+    "description": "Includes:\n\n- a backpack\n- a bag of 1,000 ball bearings\n- 10 feet of string\n- a bell\n- 5 candles\n- a crowbar\n- a hammer\n- 10 pitons\n- a hooded lantern\n- 2 flasks of oil\n- 5 days rations\n- a tinderbox\n- a waterskin\n- 50 feet of hempen rope",
     "rawEntries": [
       "Includes:",
       {
@@ -4141,7 +4178,7 @@
     "ac": null,
     "strengthRequirement": null,
     "stealthDisadvantage": false,
-    "description": "This fine garment is made of black silk interwoven with faint silvery threads. While wearing it, you gain the following benefits:\n\n- You have resistance to poison damage.\n\n- You have a climbing speed equal to your walking speed.\n\n- You can move up, down, and across vertical surfaces and upside down along ceilings, while leaving your hands free.\n\n- You can't be caught in webs of any sort and can move through webs as if they were difficult terrain.\n\n- You can use an action to cast the web spell (save DC 13). The web created by the spell fills twice its normal area. Once used, this property of the cloak can't be used again until the next dawn.",
+    "description": "This fine garment is made of black silk interwoven with faint silvery threads. While wearing it, you gain the following benefits:\n\n- You have resistance to poison damage.\n- You have a climbing speed equal to your walking speed.\n- You can move up, down, and across vertical surfaces and upside down along ceilings, while leaving your hands free.\n- You can't be caught in webs of any sort and can move through webs as if they were difficult terrain.\n- You can use an action to cast the web spell (save DC 13). The web created by the spell fills twice its normal area. Once used, this property of the cloak can't be used again until the next dawn.",
     "rawEntries": [
       "This fine garment is made of black silk interwoven with faint silvery threads. While wearing it, you gain the following benefits:",
       {
@@ -4688,7 +4725,7 @@
     "ac": null,
     "strengthRequirement": null,
     "stealthDisadvantage": false,
-    "description": "This stoppered flask sloshes when shaken, as if it contains water. The decanter weighs 2 pounds.\n\nYou can use an action to remove the stopper and speak one of three command words, whereupon an amount of fresh water or salt water (your choice) pours out of the flask. The water stops pouring out at the start of your next turn. Choose from the following options:\n\n- \"Stream\" produces 1 gallon of water.\n\n- \"Fountain\" produces 5 gallons of water.\n\n- \"Geyser\" produces 30 gallons of water that gushes forth in a geyser 30 feet long and 1 foot wide. As a bonus action while holding the decanter, you can aim the geyser at a creature you can see within 30 feet of you. The target must succeed on a DC 13 Strength saving throw or take 1d4 bludgeoning damage and fall prone. Instead of a creature, you can target an object that isn't being worn or carried and that weighs no more than 200 pounds. The object is either knocked over or pushed up to 15 feet away from you.",
+    "description": "This stoppered flask sloshes when shaken, as if it contains water. The decanter weighs 2 pounds.\n\nYou can use an action to remove the stopper and speak one of three command words, whereupon an amount of fresh water or salt water (your choice) pours out of the flask. The water stops pouring out at the start of your next turn. Choose from the following options:\n\n- \"Stream\" produces 1 gallon of water.\n- \"Fountain\" produces 5 gallons of water.\n- \"Geyser\" produces 30 gallons of water that gushes forth in a geyser 30 feet long and 1 foot wide. As a bonus action while holding the decanter, you can aim the geyser at a creature you can see within 30 feet of you. The target must succeed on a DC 13 Strength saving throw or take 1d4 bludgeoning damage and fall prone. Instead of a creature, you can target an object that isn't being worn or carried and that weighs no more than 200 pounds. The object is either knocked over or pushed up to 15 feet away from you.",
     "rawEntries": [
       "This stoppered flask sloshes when shaken, as if it contains water. The decanter weighs 2 pounds.",
       "You can use an action to remove the stopper and speak one of three command words, whereupon an amount of fresh water or salt water (your choice) pours out of the flask. The water stops pouring out at the start of your next turn. Choose from the following options:",
@@ -5086,7 +5123,7 @@
     "ac": null,
     "strengthRequirement": null,
     "stealthDisadvantage": false,
-    "description": "A Deck of Many Things typically appears not as individual cards, but as a collection of cards characters can draw from. But this doesn't have to be true; you can give each card a property as a standalone item, so characters who find only one card can still enjoy this famed item and use the card on adventures.\n\nThis approach is particularly useful if you make a Deck of Many Things the object of a quest; as the characters explore, each card they find grants them a magical ability they can use in subsequent adventures to find the cards that remain. Eventually the heroes assemble the entire deck, which they can then use in the traditional manner, drawing transformative cards from it in a fitting climax to the campaign.\n\n*(Note: This deck item comprises the following individual cards:)*\n\n- Balance Card\n\n- Comet Card\n\n- Donjon Card\n\n- Euryale Card\n\n- Fates Card\n\n- Flames Card\n\n- Fool Card\n\n- Gem Card\n\n- Jester Card\n\n- Key Card\n\n- Knight Card\n\n- Moon Card\n\n- Puzzle Card\n\n- Rogue Card\n\n- Ruin Card\n\n- Sage Card\n\n- Skull Card\n\n- Star Card\n\n- Sun Card\n\n- Talons Card\n\n- Throne Card\n\n- Void Card",
+    "description": "A Deck of Many Things typically appears not as individual cards, but as a collection of cards characters can draw from. But this doesn't have to be true; you can give each card a property as a standalone item, so characters who find only one card can still enjoy this famed item and use the card on adventures.\n\nThis approach is particularly useful if you make a Deck of Many Things the object of a quest; as the characters explore, each card they find grants them a magical ability they can use in subsequent adventures to find the cards that remain. Eventually the heroes assemble the entire deck, which they can then use in the traditional manner, drawing transformative cards from it in a fitting climax to the campaign.\n\n*(Note: This deck item comprises the following individual cards:)*\n\n- Balance Card\n- Comet Card\n- Donjon Card\n- Euryale Card\n- Fates Card\n- Flames Card\n- Fool Card\n- Gem Card\n- Jester Card\n- Key Card\n- Knight Card\n- Moon Card\n- Puzzle Card\n- Rogue Card\n- Ruin Card\n- Sage Card\n- Skull Card\n- Star Card\n- Sun Card\n- Talons Card\n- Throne Card\n- Void Card",
     "rawEntries": [
       "A {@item Deck of Many Things} typically appears not as individual cards, but as a collection of cards characters can draw from. But this doesn't have to be true; you can give each card a property as a standalone item, so characters who find only one card can still enjoy this famed item and use the card on adventures.",
       "This approach is particularly useful if you make a {@item Deck of Many Things} the object of a quest; as the characters explore, each card they find grants them a magical ability they can use in subsequent adventures to find the cards that remain. Eventually the heroes assemble the entire deck, which they can then use in the traditional manner, drawing transformative cards from it in a fitting climax to the campaign.",
@@ -5628,7 +5665,7 @@
     "ac": null,
     "strengthRequirement": null,
     "stealthDisadvantage": false,
-    "description": "Includes:\n\n- a chest\n\n- 2 cases for maps and scrolls\n\n- a set of fine clothes\n\n- a bottle of ink\n\n- an ink pen\n\n- a lamp\n\n- 2 flasks of oil\n\n- 5 sheets of paper\n\n- a vial of perfume\n\n- sealing wax\n\n- soap",
+    "description": "Includes:\n\n- a chest\n- 2 cases for maps and scrolls\n- a set of fine clothes\n- a bottle of ink\n- an ink pen\n- a lamp\n- 2 flasks of oil\n- 5 sheets of paper\n- a vial of perfume\n- sealing wax\n- soap",
     "rawEntries": [
       "Includes:",
       {
@@ -5743,7 +5780,7 @@
     "ac": null,
     "strengthRequirement": null,
     "stealthDisadvantage": false,
-    "description": "Includes:\n\n- a backpack\n\n- a crowbar\n\n- a hammer\n\n- 10 pitons\n\n- 10 torches\n\n- a tinderbox\n\n- 10 days of rations\n\n- a waterskin\n\n- 50 feet of hempen rope",
+    "description": "Includes:\n\n- a backpack\n- a crowbar\n- a hammer\n- 10 pitons\n- 10 torches\n- a tinderbox\n- 10 days of rations\n- a waterskin\n- 50 feet of hempen rope",
     "rawEntries": [
       "Includes:",
       {
@@ -6080,7 +6117,7 @@
     "ac": null,
     "strengthRequirement": null,
     "stealthDisadvantage": false,
-    "description": "Includes:\n\n- a backpack\n\n- a bedroll\n\n- 2 costumes\n\n- 5 candles\n\n- 5 days of rations\n\n- a waterskin\n\n- a disguise kit",
+    "description": "Includes:\n\n- a backpack\n- a bedroll\n- 2 costumes\n- 5 candles\n- 5 days of rations\n- a waterskin\n- a disguise kit",
     "rawEntries": [
       "Includes:",
       {
@@ -6177,7 +6214,7 @@
     "ac": null,
     "strengthRequirement": null,
     "stealthDisadvantage": false,
-    "description": "Includes:\n\n- a backpack\n\n- a bedroll\n\n- a mess kit\n\n- a tinderbox\n\n- 10 torches\n\n- 10 days of rations\n\n- a waterskin\n\n- 50 feet of hempen rope",
+    "description": "Includes:\n\n- a backpack\n- a bedroll\n- a mess kit\n- a tinderbox\n- 10 torches\n- 10 days of rations\n- a waterskin\n- 50 feet of hempen rope",
     "rawEntries": [
       "Includes:",
       {
@@ -6382,7 +6419,7 @@
     "ac": null,
     "strengthRequirement": null,
     "stealthDisadvantage": false,
-    "description": "A figurine of wondrous power is a statuette of a beast small enough to fit in a pocket. If you use an action to speak the command word and throw the figurine to a point on the ground within 60 feet of you, the figurine becomes a living creature. If the space where the creature would appear is occupied by other creatures or objects, or if there isn't enough space for the creature, the figurine doesn't become a creature.\n\nThe creature is friendly to you and your companions. It understands your languages and obeys your spoken commands. If you issue no commands, the creature defends itself but takes no other actions.\n\nThe creature exists for a duration specific to each figurine. At the end of the duration, the creature reverts to its figurine form. It reverts to a figurine early if it drops to 0 hit points or if you use an action to speak the command word again while touching it. When the creature becomes a figurine again, its property can't be used again until a certain amount of time has passed, as specified in the figurine's description.\n\n### Ivory Goats\n\n\nThese ivory statuettes of goats are always created in sets of three. Each goat looks unique and functions differently from the others. Their properties are as follows:\n\n- The goat of traveling can become a Large goat with the same statistics as a riding horse. It has 24 charges, and each hour or portion thereof it spends in beast form costs 1 charge. While it has charges, you can use it as often as you wish. When it runs out of charges, it reverts to a figurine and can't be used again until 7 days have passed, when it regains all its charges.\n\n- The goat of travail becomes a giant goat for up to 3 hours. Once it has been used, it can't be used again until 30 days have passed.\n\n- The goat of terror becomes a giant goat for up to 3 hours. The goat can't attack, but you can remove its horns and use them as weapons. One horn becomes a +1 lance, and the other becomes a +2 longsword. Removing a horn requires an action, and the weapons disappear and the horns return when the goat reverts to figurine form. In addition, the goat radiates a 30-foot-radius aura of terror while you are riding it. Any creature hostile to you that starts its turn in the aura must succeed on a DC 15 Wisdom saving throw or be frightened of the goat for 1 minute, or until the goat reverts to figurine form. The frightened creature can repeat the saving throw at the end of each of its turns, ending the effect on itself on a success. Once it successfully saves against the effect, a creature is immune to the goat's aura for the next 24 hours. Once the figurine has been used, it can't be used again until 15 days have passed.",
+    "description": "A figurine of wondrous power is a statuette of a beast small enough to fit in a pocket. If you use an action to speak the command word and throw the figurine to a point on the ground within 60 feet of you, the figurine becomes a living creature. If the space where the creature would appear is occupied by other creatures or objects, or if there isn't enough space for the creature, the figurine doesn't become a creature.\n\nThe creature is friendly to you and your companions. It understands your languages and obeys your spoken commands. If you issue no commands, the creature defends itself but takes no other actions.\n\nThe creature exists for a duration specific to each figurine. At the end of the duration, the creature reverts to its figurine form. It reverts to a figurine early if it drops to 0 hit points or if you use an action to speak the command word again while touching it. When the creature becomes a figurine again, its property can't be used again until a certain amount of time has passed, as specified in the figurine's description.\n\n### Ivory Goats\n\n\nThese ivory statuettes of goats are always created in sets of three. Each goat looks unique and functions differently from the others. Their properties are as follows:\n\n- The goat of traveling can become a Large goat with the same statistics as a riding horse. It has 24 charges, and each hour or portion thereof it spends in beast form costs 1 charge. While it has charges, you can use it as often as you wish. When it runs out of charges, it reverts to a figurine and can't be used again until 7 days have passed, when it regains all its charges.\n- The goat of travail becomes a giant goat for up to 3 hours. Once it has been used, it can't be used again until 30 days have passed.\n- The goat of terror becomes a giant goat for up to 3 hours. The goat can't attack, but you can remove its horns and use them as weapons. One horn becomes a +1 lance, and the other becomes a +2 longsword. Removing a horn requires an action, and the weapons disappear and the horns return when the goat reverts to figurine form. In addition, the goat radiates a 30-foot-radius aura of terror while you are riding it. Any creature hostile to you that starts its turn in the aura must succeed on a DC 15 Wisdom saving throw or be frightened of the goat for 1 minute, or until the goat reverts to figurine form. The frightened creature can repeat the saving throw at the end of each of its turns, ending the effect on itself on a success. Once it successfully saves against the effect, a creature is immune to the goat's aura for the next 24 hours. Once the figurine has been used, it can't be used again until 15 days have passed.",
     "rawEntries": [
       "A figurine of wondrous power is a statuette of a beast small enough to fit in a pocket. If you use an action to speak the command word and throw the figurine to a point on the ground within 60 feet of you, the figurine becomes a living creature. If the space where the creature would appear is occupied by other creatures or objects, or if there isn't enough space for the creature, the figurine doesn't become a creature.",
       "The creature is friendly to you and your companions. It understands your languages and obeys your spoken commands. If you issue no commands, the creature defends itself but takes no other actions.",
@@ -6752,7 +6789,7 @@
     "ac": null,
     "strengthRequirement": null,
     "stealthDisadvantage": false,
-    "description": "This prism has 50 charges. While you are holding it, you can use an action to speak one of three command words to cause one of the following effects:\n\n- The first command word causes the gem to shed bright light in a 30-foot radius and dim light for an additional 30 feet. This effect doesn't expend a charge. It lasts until you use a bonus action to repeat the command word or until you use another function of the gem.\n\n- The second command word expends 1 charge and causes the gem to fire a brilliant beam of light at one creature you can see within 60 feet of you. The creature must succeed on a DC 15 Constitution saving throw or become blinded for 1 minute. The creature can repeat the saving throw at the end of each of its turns, ending the effect on itself on a success.\n\n- The third command word expends 5 charges and causes the gem to flare with blinding light in a 30-foot cone originating from it. Each creature in the cone must make a saving throw as if struck by the beam created with the second command word.\n\nWhen all of the gem's charges are expended, the gem becomes a nonmagical jewel worth 50 gp.",
+    "description": "This prism has 50 charges. While you are holding it, you can use an action to speak one of three command words to cause one of the following effects:\n\n- The first command word causes the gem to shed bright light in a 30-foot radius and dim light for an additional 30 feet. This effect doesn't expend a charge. It lasts until you use a bonus action to repeat the command word or until you use another function of the gem.\n- The second command word expends 1 charge and causes the gem to fire a brilliant beam of light at one creature you can see within 60 feet of you. The creature must succeed on a DC 15 Constitution saving throw or become blinded for 1 minute. The creature can repeat the saving throw at the end of each of its turns, ending the effect on itself on a success.\n- The third command word expends 5 charges and causes the gem to flare with blinding light in a 30-foot cone originating from it. Each creature in the cone must make a saving throw as if struck by the beam created with the second command word.\n\nWhen all of the gem's charges are expended, the gem becomes a nonmagical jewel worth 50 gp.",
     "rawEntries": [
       "This prism has 50 charges. While you are holding it, you can use an action to speak one of three command words to cause one of the following effects:",
       {
@@ -7142,7 +7179,7 @@
     "ac": null,
     "strengthRequirement": null,
     "stealthDisadvantage": false,
-    "description": "This dazzling helm is set with 1d10 diamonds, 2d10 rubies, 3d10 fire opals, and 4d10 opals. Any gem pried from the helm crumbles to dust. When all the gems are removed or destroyed, the helm loses its magic.\n\nYou gain the following benefits while wearing it:\n\n- You can use an action to cast one of the following spells (save DC 18), using one of the helm's gems of the specified type as a component: daylight (opal), fireball (fire opal), prismatic spray (diamond), or wall of fire (ruby). The gem is destroyed when the spell is cast and disappears from the helm.\n\n- As long as it has at least one diamond, the helm emits dim light in a 30-foot radius when at least one undead is within that area. Any undead that starts its turn in that area takes 1d6 radiant damage.\n\n- As long as the helm has at least one ruby, you have resistance to fire damage.\n\n- As long as the helm has at least one fire opal, you can use an action and speak a command word to cause one weapon you are holding to burst into flames. The flames emit bright light in a 10-foot radius and dim light for an additional 10 feet. The flames are harmless to you and the weapon. When you hit with an attack using the blazing weapon, the target takes an extra 1d6 fire damage. The flames last until you use a bonus action to speak the command word again or until you drop or stow the weapon.\n\nRoll a d20 if you are wearing the helm and take fire damage as a result of failing a saving throw against a spell. On a roll of 1, the helm emits beams of light from its remaining gems. Each creature within 60 feet of the helm other than you must succeed on a DC 17 Dexterity saving throw or be struck by a beam, taking radiant damage equal to the number of gems in the helm. The helm and its gems are then destroyed.",
+    "description": "This dazzling helm is set with 1d10 diamonds, 2d10 rubies, 3d10 fire opals, and 4d10 opals. Any gem pried from the helm crumbles to dust. When all the gems are removed or destroyed, the helm loses its magic.\n\nYou gain the following benefits while wearing it:\n\n- You can use an action to cast one of the following spells (save DC 18), using one of the helm's gems of the specified type as a component: daylight (opal), fireball (fire opal), prismatic spray (diamond), or wall of fire (ruby). The gem is destroyed when the spell is cast and disappears from the helm.\n- As long as it has at least one diamond, the helm emits dim light in a 30-foot radius when at least one undead is within that area. Any undead that starts its turn in that area takes 1d6 radiant damage.\n- As long as the helm has at least one ruby, you have resistance to fire damage.\n- As long as the helm has at least one fire opal, you can use an action and speak a command word to cause one weapon you are holding to burst into flames. The flames emit bright light in a 10-foot radius and dim light for an additional 10 feet. The flames are harmless to you and the weapon. When you hit with an attack using the blazing weapon, the target takes an extra 1d6 fire damage. The flames last until you use a bonus action to speak the command word again or until you drop or stow the weapon.\n\nRoll a d20 if you are wearing the helm and take fire damage as a result of failing a saving throw against a spell. On a roll of 1, the helm emits beams of light from its remaining gems. Each creature within 60 feet of the helm other than you must succeed on a DC 17 Dexterity saving throw or be struck by a beam, taking radiant damage equal to the number of gems in the helm. The helm and its gems are then destroyed.",
     "rawEntries": [
       "This dazzling helm is set with {@dice 1d10} diamonds, {@dice 2d10} rubies, {@dice 3d10} fire opals, and {@dice 4d10} opals. Any gem pried from the helm crumbles to dust. When all the gems are removed or destroyed, the helm loses its magic.",
       "You gain the following benefits while wearing it:",
@@ -9238,7 +9275,7 @@
     "ac": null,
     "strengthRequirement": null,
     "stealthDisadvantage": false,
-    "description": "Ages past, on the world of Krynn, elves and humans waged a terrible war against evil dragons. When the world seemed doomed, the wizards of the Towers of High Sorcery came together and worked their greatest magic, forging five Orbs of Dragonkind (or Dragon Orbs) to help them defeat the dragons. One orb was taken to each of the five towers, and there they were used to speed the war toward a victorious end. The wizards used the orbs to lure dragons to them, then destroyed the dragons with powerful magic.\n\nAs the Towers of High Sorcery fell in later ages, the orbs were destroyed or faded into legend, and only three are thought to survive. Their magic has been warped and twisted over the centuries, so although their primary purpose of calling dragons still functions, they also allow some measure of control over dragons.\n\nEach orb contains the essence of an evil dragon, a presence that resents any attempt to coax magic from it. Those lacking in force of personality might find themselves enslaved to an orb.\n\nAn orb is an etched crystal globe about 10 inches in diameter. When used, it grows to about 20 inches in diameter, and mist swirls inside it.\n\nWhile attuned to an orb, you can use an action to peer into the orb's depths and speak its command word. You must then make a DC 15 Charisma check. On a successful check, you control the orb for as long as you remain attuned to it. On a failed check, you become charmed by the orb for as long as you remain attuned to it.\n\nWhile you are charmed by the orb, you can't voluntarily end your attunement to it, and the orb casts suggestion on you at will (save DC 18), urging you to work toward the evil ends it desires. The dragon essence within the orb might want many things: the annihilation of a particular people, freedom from the orb, to spread suffering in the world, to advance the worship of Takhisis (Tiamat's name on Krynn), or something else the DM decides.\n\n### Random Properties\n\n\nAn Orb of Dragonkind has the following random properties:\n\n- 2 minor beneficial properties\n\n- 1 minor detrimental property\n\n- 1 major detrimental property\n\n### Spells\n\n\nThe orb has 7 charges and regains 1d4 + 3 expended charges daily at dawn. If you control the orb, you can use an action and expend 1 or more charges to cast one of the following spells (save DC 18) from it: cure wounds (5th-level version, 3 charges), daylight (1 charge), death ward (2 charges), or scrying (3 charges). You can also use an action to cast the detect magic spell from the orb without using any charges.\n\n### Call Dragons\n\n\nWhile you control the orb, you can use an action to cause the artifact to issue a telepathic call that extends in all directions for 40 miles. Evil dragons in range feel compelled to come to the orb as soon as possible by the most direct route. Dragon deities such as Tiamat are unaffected by this call. Dragons drawn to the orb might be hostile toward you for compelling them against their will. Once you have used this property, it can't be used again for 1 hour.\n\n### Destroying an Orb\n\n\nAn Orb of Dragonkind appears fragile but is impervious to most damage, including the attacks and breath weapons of dragons. A disintegrate spell or one good hit from a +3 magic weapon is sufficient to destroy an orb, however.",
+    "description": "Ages past, on the world of Krynn, elves and humans waged a terrible war against evil dragons. When the world seemed doomed, the wizards of the Towers of High Sorcery came together and worked their greatest magic, forging five Orbs of Dragonkind (or Dragon Orbs) to help them defeat the dragons. One orb was taken to each of the five towers, and there they were used to speed the war toward a victorious end. The wizards used the orbs to lure dragons to them, then destroyed the dragons with powerful magic.\n\nAs the Towers of High Sorcery fell in later ages, the orbs were destroyed or faded into legend, and only three are thought to survive. Their magic has been warped and twisted over the centuries, so although their primary purpose of calling dragons still functions, they also allow some measure of control over dragons.\n\nEach orb contains the essence of an evil dragon, a presence that resents any attempt to coax magic from it. Those lacking in force of personality might find themselves enslaved to an orb.\n\nAn orb is an etched crystal globe about 10 inches in diameter. When used, it grows to about 20 inches in diameter, and mist swirls inside it.\n\nWhile attuned to an orb, you can use an action to peer into the orb's depths and speak its command word. You must then make a DC 15 Charisma check. On a successful check, you control the orb for as long as you remain attuned to it. On a failed check, you become charmed by the orb for as long as you remain attuned to it.\n\nWhile you are charmed by the orb, you can't voluntarily end your attunement to it, and the orb casts suggestion on you at will (save DC 18), urging you to work toward the evil ends it desires. The dragon essence within the orb might want many things: the annihilation of a particular people, freedom from the orb, to spread suffering in the world, to advance the worship of Takhisis (Tiamat's name on Krynn), or something else the DM decides.\n\n### Random Properties\n\n\nAn Orb of Dragonkind has the following random properties:\n\n- 2 minor beneficial properties\n- 1 minor detrimental property\n- 1 major detrimental property\n\n### Spells\n\n\nThe orb has 7 charges and regains 1d4 + 3 expended charges daily at dawn. If you control the orb, you can use an action and expend 1 or more charges to cast one of the following spells (save DC 18) from it: cure wounds (5th-level version, 3 charges), daylight (1 charge), death ward (2 charges), or scrying (3 charges). You can also use an action to cast the detect magic spell from the orb without using any charges.\n\n### Call Dragons\n\n\nWhile you control the orb, you can use an action to cause the artifact to issue a telepathic call that extends in all directions for 40 miles. Evil dragons in range feel compelled to come to the orb as soon as possible by the most direct route. Dragon deities such as Tiamat are unaffected by this call. Dragons drawn to the orb might be hostile toward you for compelling them against their will. Once you have used this property, it can't be used again for 1 hour.\n\n### Destroying an Orb\n\n\nAn Orb of Dragonkind appears fragile but is impervious to most damage, including the attacks and breath weapons of dragons. A disintegrate spell or one good hit from a +3 magic weapon is sufficient to destroy an orb, however.",
     "rawEntries": [
       "Ages past, on the world of Krynn, elves and humans waged a terrible war against evil dragons. When the world seemed doomed, the wizards of the Towers of High Sorcery came together and worked their greatest magic, forging five Orbs of Dragonkind (or Dragon Orbs) to help them defeat the dragons. One orb was taken to each of the five towers, and there they were used to speed the war toward a victorious end. The wizards used the orbs to lure dragons to them, then destroyed the dragons with powerful magic.",
       "As the Towers of High Sorcery fell in later ages, the orbs were destroyed or faded into legend, and only three are thought to survive. Their magic has been warped and twisted over the centuries, so although their primary purpose of calling dragons still functions, they also allow some measure of control over dragons.",
@@ -10517,7 +10554,7 @@
     "ac": null,
     "strengthRequirement": null,
     "stealthDisadvantage": false,
-    "description": "Includes:\n\n- a backpack\n\n- a blanket\n\n- 10 candles\n\n- a tinderbox\n\n- an alms box\n\n- 2 blocks of incense\n\n- a censer\n\n- vestments\n\n- 2 days of rations\n\n- a waterskin.",
+    "description": "Includes:\n\n- a backpack\n- a blanket\n- 10 candles\n- a tinderbox\n- an alms box\n- 2 blocks of incense\n- a censer\n- vestments\n- 2 days of rations\n- a waterskin.",
     "rawEntries": [
       "Includes:",
       {
@@ -10905,7 +10942,7 @@
     "ac": null,
     "strengthRequirement": null,
     "stealthDisadvantage": false,
-    "description": "While wearing this ring, you have advantage on attack rolls against elementals from the Elemental Plane of Air, and they have disadvantage on attack rolls against you. In addition, you have access to properties based on the Elemental Plane of Air.\n\nThe ring has 5 charges. It regains 1d4 + 1 expended charges daily at dawn. Spells cast from the ring have a save DC of 17.\n\nYou can expend 2 of the ring's charges to cast dominate monster on an air elemental. In addition, when you fall, you descend 60 feet per round and take no damage from falling. You can also speak and understand Auran.\n\nIf you help slay an air elemental while attuned to the ring, you gain access to the following additional properties:\n\n- You have resistance to lightning damage.\n\n- You have a flying speed equal to your walking speed and can hover.\n\n- You can cast the following spells from the ring, expending the necessary number of charges: chain lightning (3 charges), gust of wind (2 charges), or wind wall (1 charge).",
+    "description": "While wearing this ring, you have advantage on attack rolls against elementals from the Elemental Plane of Air, and they have disadvantage on attack rolls against you. In addition, you have access to properties based on the Elemental Plane of Air.\n\nThe ring has 5 charges. It regains 1d4 + 1 expended charges daily at dawn. Spells cast from the ring have a save DC of 17.\n\nYou can expend 2 of the ring's charges to cast dominate monster on an air elemental. In addition, when you fall, you descend 60 feet per round and take no damage from falling. You can also speak and understand Auran.\n\nIf you help slay an air elemental while attuned to the ring, you gain access to the following additional properties:\n\n- You have resistance to lightning damage.\n- You have a flying speed equal to your walking speed and can hover.\n- You can cast the following spells from the ring, expending the necessary number of charges: chain lightning (3 charges), gust of wind (2 charges), or wind wall (1 charge).",
     "rawEntries": [
       "While wearing this ring, you have advantage on attack rolls against elementals from the Elemental Plane of Air, and they have disadvantage on attack rolls against you. In addition, you have access to properties based on the Elemental Plane of Air.",
       "The ring has 5 charges. It regains {@dice 1d4 + 1} expended charges daily at dawn. Spells cast from the ring have a save DC of 17.",
@@ -10937,7 +10974,7 @@
     "ac": null,
     "strengthRequirement": null,
     "stealthDisadvantage": false,
-    "description": "This ring has 3 charges, and it regains 1d3 expended charges daily at dawn. While wearing the ring, you can use an action to expend 1 of its charges to cast one of the following spells:\n\n- Animal friendship (save DC 13)\n\n- Fear (save DC 13), targeting only beasts that have an Intelligence of 3 or lower\n\n- Speak with animals",
+    "description": "This ring has 3 charges, and it regains 1d3 expended charges daily at dawn. While wearing the ring, you can use an action to expend 1 of its charges to cast one of the following spells:\n\n- Animal friendship (save DC 13)\n- Fear (save DC 13), targeting only beasts that have an Intelligence of 3 or lower\n- Speak with animals",
     "rawEntries": [
       "This ring has 3 charges, and it regains {@dice 1d3} expended charges daily at dawn. While wearing the ring, you can use an action to expend 1 of its charges to cast one of the following spells:",
       {
@@ -11010,7 +11047,7 @@
     "ac": null,
     "strengthRequirement": null,
     "stealthDisadvantage": false,
-    "description": "While wearing this ring, you have advantage on attack rolls against elementals from the Elemental Plane of Earth and they have disadvantage on attack rolls against you. In addition, you have access to properties based on the Elemental Plane of Earth.\n\nThe ring has 5 charges. It regains 1d4 + 1 expended charges daily at dawn. Spells cast from the ring have a save DC of 17.\n\nYou can expend 2 of the ring's charges to cast dominate monster on an earth elemental. In addition, you can move in difficult terrain that is composed of rubble, rocks, or dirt as if it were normal terrain. You can also speak and understand Terran.\n\nIf you help slay an earth elemental while attuned to the ring, you gain access to the following additional properties:\n\n- You have resistance to acid damage.\n\n- You can move through solid earth or rock as if those areas were difficult terrain. If you end your turn there, you are shunted out to the nearest unoccupied space you last occupied.\n\n- You can cast the following spells from the ring, expending the necessary number of charges: stone shape (2 charges), stoneskin (3 charges), or wall of stone (3 charges).",
+    "description": "While wearing this ring, you have advantage on attack rolls against elementals from the Elemental Plane of Earth and they have disadvantage on attack rolls against you. In addition, you have access to properties based on the Elemental Plane of Earth.\n\nThe ring has 5 charges. It regains 1d4 + 1 expended charges daily at dawn. Spells cast from the ring have a save DC of 17.\n\nYou can expend 2 of the ring's charges to cast dominate monster on an earth elemental. In addition, you can move in difficult terrain that is composed of rubble, rocks, or dirt as if it were normal terrain. You can also speak and understand Terran.\n\nIf you help slay an earth elemental while attuned to the ring, you gain access to the following additional properties:\n\n- You have resistance to acid damage.\n- You can move through solid earth or rock as if those areas were difficult terrain. If you end your turn there, you are shunted out to the nearest unoccupied space you last occupied.\n- You can cast the following spells from the ring, expending the necessary number of charges: stone shape (2 charges), stoneskin (3 charges), or wall of stone (3 charges).",
     "rawEntries": [
       "While wearing this ring, you have advantage on attack rolls against elementals from the Elemental Plane of Earth and they have disadvantage on attack rolls against you. In addition, you have access to properties based on the Elemental Plane of Earth.",
       "The ring has 5 charges. It regains {@dice 1d4 + 1} expended charges daily at dawn. Spells cast from the ring have a save DC of 17.",
@@ -11084,7 +11121,7 @@
     "ac": null,
     "strengthRequirement": null,
     "stealthDisadvantage": false,
-    "description": "While wearing this ring, you have advantage on attack rolls against elementals from the Elemental Plane of Fire and they have disadvantage on attack rolls against you. In addition, you have access to properties based on the Elemental Plane of Fire.\n\nThe ring has 5 charges. It regains 1d4 + 1 expended charges daily at dawn. Spells cast from the ring have a save DC of 17.\n\nYou can expend 2 of the ring's charges to cast dominate monster on a fire elemental. In addition, you have resistance to fire damage. You can also speak and understand Ignan.\n\nIf you help slay a fire elemental while attuned to the ring, you gain access to the following additional properties:\n\n- You are immune to fire damage.\n\n- You can cast the following spells from the ring, expending the necessary number of charges: burning hands (1 charge), fireball (2 charges), and wall of fire (3 charges).",
+    "description": "While wearing this ring, you have advantage on attack rolls against elementals from the Elemental Plane of Fire and they have disadvantage on attack rolls against you. In addition, you have access to properties based on the Elemental Plane of Fire.\n\nThe ring has 5 charges. It regains 1d4 + 1 expended charges daily at dawn. Spells cast from the ring have a save DC of 17.\n\nYou can expend 2 of the ring's charges to cast dominate monster on a fire elemental. In addition, you have resistance to fire damage. You can also speak and understand Ignan.\n\nIf you help slay a fire elemental while attuned to the ring, you gain access to the following additional properties:\n\n- You are immune to fire damage.\n- You can cast the following spells from the ring, expending the necessary number of charges: burning hands (1 charge), fireball (2 charges), and wall of fire (3 charges).",
     "rawEntries": [
       "While wearing this ring, you have advantage on attack rolls against elementals from the Elemental Plane of Fire and they have disadvantage on attack rolls against you. In addition, you have access to properties based on the Elemental Plane of Fire.",
       "The ring has 5 charges. It regains {@dice 1d4 + 1} expended charges daily at dawn. Spells cast from the ring have a save DC of 17.",
@@ -11607,7 +11644,7 @@
     "ac": null,
     "strengthRequirement": null,
     "stealthDisadvantage": false,
-    "description": "While wearing this ring, you have advantage on attack rolls against elementals from the Elemental Plane of Water and they have disadvantage on attack rolls against you. In addition, you have access to properties based on the Elemental Plane of Water.\n\nThe ring has 5 charges. It regains 1d4 + 1 expended charges daily at dawn. Spells cast from the ring have a save DC of 17.\n\nYou can expend 2 of the ring's charges to cast dominate monster on a water elemental. In addition, you can stand on and walk across liquid surfaces as if they were solid ground. You can also speak and understand Aquan.\n\nIf you help slay a water elemental while attuned to the ring, you gain access to the following additional properties:\n\n- You can breathe underwater and have a swimming speed equal to your walking speed.\n\n- You can cast the following spells from the ring, expending the necessary number of charges: create or destroy water (1 charge), control water (3 charges), ice storm (2 charges), or wall of ice (3 charges).",
+    "description": "While wearing this ring, you have advantage on attack rolls against elementals from the Elemental Plane of Water and they have disadvantage on attack rolls against you. In addition, you have access to properties based on the Elemental Plane of Water.\n\nThe ring has 5 charges. It regains 1d4 + 1 expended charges daily at dawn. Spells cast from the ring have a save DC of 17.\n\nYou can expend 2 of the ring's charges to cast dominate monster on a water elemental. In addition, you can stand on and walk across liquid surfaces as if they were solid ground. You can also speak and understand Aquan.\n\nIf you help slay a water elemental while attuned to the ring, you gain access to the following additional properties:\n\n- You can breathe underwater and have a swimming speed equal to your walking speed.\n- You can cast the following spells from the ring, expending the necessary number of charges: create or destroy water (1 charge), control water (3 charges), ice storm (2 charges), or wall of ice (3 charges).",
     "rawEntries": [
       "While wearing this ring, you have advantage on attack rolls against elementals from the Elemental Plane of Water and they have disadvantage on attack rolls against you. In addition, you have access to properties based on the Elemental Plane of Water.",
       "The ring has 5 charges. It regains {@dice 1d4 + 1} expended charges daily at dawn. Spells cast from the ring have a save DC of 17.",
@@ -11681,7 +11718,7 @@
     "ac": null,
     "strengthRequirement": null,
     "stealthDisadvantage": false,
-    "description": "This robe is adorned with eyelike patterns. While you wear the robe, you gain the following benefits:\n\n- The robe lets you see in all directions, and you have advantage on Wisdom (Perception) checks that rely on sight.\n\n- You have darkvision out to a range of 120 feet.\n\n- You can see invisible creatures and objects, as well as see into the Ethereal Plane, out to a range of 120 feet.\n\nThe eyes on the robe can't be closed or averted. Although you can close or avert your own eyes, you are never considered to be doing so while wearing this robe.\n\nA light spell cast on the robe or a daylight spell cast within 5 feet of the robe causes you to be blinded for 1 minute. At the end of each of your turns, you can make a Constitution saving throw (DC 11 for light or DC 15 for daylight), ending the blindness on a success.",
+    "description": "This robe is adorned with eyelike patterns. While you wear the robe, you gain the following benefits:\n\n- The robe lets you see in all directions, and you have advantage on Wisdom (Perception) checks that rely on sight.\n- You have darkvision out to a range of 120 feet.\n- You can see invisible creatures and objects, as well as see into the Ethereal Plane, out to a range of 120 feet.\n\nThe eyes on the robe can't be closed or averted. Although you can close or avert your own eyes, you are never considered to be doing so while wearing this robe.\n\nA light spell cast on the robe or a daylight spell cast within 5 feet of the robe causes you to be blinded for 1 minute. At the end of each of your turns, you can make a Constitution saving throw (DC 11 for light or DC 15 for daylight), ending the blindness on a success.",
     "rawEntries": [
       "This robe is adorned with eyelike patterns. While you wear the robe, you gain the following benefits:",
       {
@@ -11756,7 +11793,7 @@
     "ac": null,
     "strengthRequirement": null,
     "stealthDisadvantage": false,
-    "description": "This elegant garment is made from exquisite cloth of white, gray, or black and adorned with silvery runes. The robe's color corresponds to the alignment for which the item was created. A white robe was made for good, gray for neutral, and black for evil. You can't attune to a robe of the archmagi that doesn't correspond to your alignment.\n\nYou gain these benefits while wearing the robe:\n\n- If you aren't wearing armor, your base Armor Class is 15 + your Dexterity modifier.\n\n- You have advantage on saving throws against spell and other magical effects.\n\n- Your spell save DC and spell attack bonus each increase by 2.",
+    "description": "This elegant garment is made from exquisite cloth of white, gray, or black and adorned with silvery runes. The robe's color corresponds to the alignment for which the item was created. A white robe was made for good, gray for neutral, and black for evil. You can't attune to a robe of the archmagi that doesn't correspond to your alignment.\n\nYou gain these benefits while wearing the robe:\n\n- If you aren't wearing armor, your base Armor Class is 15 + your Dexterity modifier.\n- You have advantage on saving throws against spell and other magical effects.\n- Your spell save DC and spell attack bonus each increase by 2.",
     "rawEntries": [
       "This elegant garment is made from exquisite cloth of white, gray, or black and adorned with silvery runes. The robe's color corresponds to the alignment for which the item was created. A white robe was made for good, gray for neutral, and black for evil. You can't attune to a robe of the archmagi that doesn't correspond to your alignment.",
       "You gain these benefits while wearing the robe:",
@@ -11786,7 +11823,7 @@
     "ac": null,
     "strengthRequirement": null,
     "stealthDisadvantage": false,
-    "description": "This robe has cloth patches of various shapes and colors covering it. While wearing the robe, you can use an action to detach one of the patches, causing it to become the object or creature it represents. Once the last patch is removed, the robe becomes an ordinary garment.\n\nThe robe has two of each of the following patches:\n\n- Dagger\n\n- Bullseye lantern (filled and lit)\n\n- Steel mirror\n\n- 10-foot pole\n\n- Hempen rope (50 feet, coiled)\n\n- Sack\n\nIn addition, the robe has 4d4 other patches. The DM chooses the patches or determines them randomly.\n\n| d100 | Patch |\n\n| --- | --- |\n\n| 01-08 | Bag of 100 gp |\n\n| 09-15 | Silver coffer (1 foot long, 6 inches wide and deep) worth 500 gp |\n\n| 16-22 | Iron door (up to 10 feet wide and 10 feet high, barred on one side of your choice), which you can place in an opening you can reach; it conforms to fit the opening, attaching and hinging itself |\n\n| 23-30 | 10 gems worth 100 gp each |\n\n| 31-44 | Wooden ladder (24 feet long) |\n\n| 45-51 | A riding horse with saddle bags |\n\n| 52-59 | Pit (a cube 10 feet on a side), which you can place on the ground within 10 feet of you |\n\n| 60-68 | 4 potions of healing |\n\n| 69-75 | Rowboat (12 feet long) |\n\n| 76-83 | Spell scroll containing one spell of 1st to 3rd level |\n\n| 84-90 | 2 mastiffs |\n\n| 91-96 | Window (2 feet by 4 feet, up to 2 feet deep), which you can place on a vertical surface you can reach |\n\n| 97-00 | Portable ram |",
+    "description": "This robe has cloth patches of various shapes and colors covering it. While wearing the robe, you can use an action to detach one of the patches, causing it to become the object or creature it represents. Once the last patch is removed, the robe becomes an ordinary garment.\n\nThe robe has two of each of the following patches:\n\n- Dagger\n- Bullseye lantern (filled and lit)\n- Steel mirror\n- 10-foot pole\n- Hempen rope (50 feet, coiled)\n- Sack\n\nIn addition, the robe has 4d4 other patches. The DM chooses the patches or determines them randomly.\n\n| d100 | Patch |\n\n| --- | --- |\n\n| 01-08 | Bag of 100 gp |\n\n| 09-15 | Silver coffer (1 foot long, 6 inches wide and deep) worth 500 gp |\n\n| 16-22 | Iron door (up to 10 feet wide and 10 feet high, barred on one side of your choice), which you can place in an opening you can reach; it conforms to fit the opening, attaching and hinging itself |\n\n| 23-30 | 10 gems worth 100 gp each |\n\n| 31-44 | Wooden ladder (24 feet long) |\n\n| 45-51 | A riding horse with saddle bags |\n\n| 52-59 | Pit (a cube 10 feet on a side), which you can place on the ground within 10 feet of you |\n\n| 60-68 | 4 potions of healing |\n\n| 69-75 | Rowboat (12 feet long) |\n\n| 76-83 | Spell scroll containing one spell of 1st to 3rd level |\n\n| 84-90 | 2 mastiffs |\n\n| 91-96 | Window (2 feet by 4 feet, up to 2 feet deep), which you can place on a vertical surface you can reach |\n\n| 97-00 | Portable ram |",
     "rawEntries": [
       "This robe has cloth patches of various shapes and colors covering it. While wearing the robe, you can use an action to detach one of the patches, causing it to become the object or creature it represents. Once the last patch is removed, the robe becomes an ordinary garment.",
       "The robe has two of each of the following patches:",
@@ -12231,7 +12268,7 @@
     "ac": null,
     "strengthRequirement": null,
     "stealthDisadvantage": false,
-    "description": "If you hold this beetle-shaped medallion in your hand for 1 round, an inscription appears on its surface revealing its magical nature. It provides two benefits while it is on your person:\n\n- You have advantage on saving throws against spells.\n\n- The scarab has 12 charges. If you fail a saving throw against a necromancy spell or a harmful effect originating from an undead creature, you can use your reaction to expend 1 charge and turn the failed save into a successful one. The scarab crumbles into powder and is destroyed when its last charge is expended.",
+    "description": "If you hold this beetle-shaped medallion in your hand for 1 round, an inscription appears on its surface revealing its magical nature. It provides two benefits while it is on your person:\n\n- You have advantage on saving throws against spells.\n- The scarab has 12 charges. If you fail a saving throw against a necromancy spell or a harmful effect originating from an undead creature, you can use your reaction to expend 1 charge and turn the failed save into a successful one. The scarab crumbles into powder and is destroyed when its last charge is expended.",
     "rawEntries": [
       "If you hold this beetle-shaped medallion in your hand for 1 round, an inscription appears on its surface revealing its magical nature. It provides two benefits while it is on your person:",
       {
@@ -12259,7 +12296,7 @@
     "ac": null,
     "strengthRequirement": null,
     "stealthDisadvantage": false,
-    "description": "Includes:\n\n- a backpack\n\n- a book of lore\n\n- a bottle of ink\n\n- an ink pen\n\n- 10 sheets of parchment\n\n- a little bag of sand\n\n- a small knife.",
+    "description": "Includes:\n\n- a backpack\n- a book of lore\n- a bottle of ink\n- an ink pen\n- 10 sheets of parchment\n- a little bag of sand\n- a small knife.",
     "rawEntries": [
       "Includes:",
       {

@@ -203,6 +203,8 @@ export interface ItemModel {
   rawEntries?: any[];
   bonusWeapon?: number;
   bonusAc?: number;
+  /** Set on base weapons only: the simple or martial category the source data gives them. */
+  weaponCategory?: "simple" | "martial";
 }
 
 export interface SpellClassVariantModel {
