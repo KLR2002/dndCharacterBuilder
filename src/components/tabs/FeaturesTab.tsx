@@ -21,6 +21,7 @@ import {
   getOptionsAndFeatures,
 } from "../../services/dataService";
 import { evaluateCharacter } from "../../rules/characterEvaluation";
+import { setOptionalFeatureEnabled } from "../../rules/builderTransitions";
 import { currentCompendium } from "../../services/compendium";
 import { findClassData } from "../../rules/catalogs";
 import {
@@ -621,13 +622,9 @@ export const FeaturesTab: React.FC = () => {
                         variant={isActive ? "primary" : "outline"}
                         size="sm"
                         onPress={() => {
-                          const updated = {
-                            ...(currentCharacter.optionalFeatureReplacements || {}),
-                            [opt.name]: !isActive,
-                          };
-                          updateCharacter(currentCharacter.id, {
-                            optionalFeatureReplacements: updated,
-                          });
+                          updateCharacter(currentCharacter.id, (c) =>
+                            setOptionalFeatureEnabled(c, opt.name, !isActive, currentCompendium(), { activeBooks }),
+                          );
                         }}
                       />
                     </View>

@@ -8,6 +8,7 @@ import {
   changeSubclass,
   confirmLevelUp,
   removeClassLevel as removeClassLevelTransition,
+  setOptionalFeatureEnabled,
   validateMulticlass,
 } from "../../rules/builderTransitions";
 import { reconcile } from "../../rules/characterReconciler";
@@ -171,13 +172,9 @@ export const ClassProgressionSection: React.FC<ClassProgressionSectionProps> = (
   };
 
   const toggleOptionalFeature = (featureName: string) => {
-    const current = character.optionalFeatureReplacements || {};
-    onUpdate({
-      optionalFeatureReplacements: {
-        ...current,
-        [featureName]: !current[featureName],
-      },
-    });
+    onUpdate((cur) =>
+      setOptionalFeatureEnabled(cur, featureName, !cur.optionalFeatureReplacements?.[featureName], currentCompendium(), { activeBooks }),
+    );
   };
 
   return (
