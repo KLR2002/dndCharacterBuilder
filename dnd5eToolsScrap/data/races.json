@@ -4717,6 +4717,15 @@
               "Elvish",
               "Aquan"
             ]
+          },
+          {
+            "id": "MTF/Subrace/Elf (Sea)@0#1",
+            "kind": "choice",
+            "category": "languages",
+            "count": 1,
+            "pool": {
+              "kind": "any"
+            }
           }
         ],
         "name": "Sea",
@@ -5041,6 +5050,17 @@
         ]
       },
       {
+        "grants": [
+          {
+            "id": "PSK/Subrace/Elf (Kaladesh) (Vahadar)@0#0",
+            "kind": "choice",
+            "category": "languages",
+            "count": 1,
+            "pool": {
+              "kind": "any"
+            }
+          }
+        ],
         "name": "Vahadar",
         "isVariant": false,
         "source": "PSK",
@@ -6390,6 +6410,17 @@
     ],
     "subraces": [
       {
+        "grants": [
+          {
+            "id": "MTF/Subrace/Gith (Githyanki)@0#0",
+            "kind": "choice",
+            "category": "languages",
+            "count": 1,
+            "pool": {
+              "kind": "any"
+            }
+          }
+        ],
         "name": "Githyanki",
         "isVariant": false,
         "source": "MTF",
@@ -10688,6 +10719,17 @@
     ],
     "subraces": [
       {
+        "grants": [
+          {
+            "id": "PSA/Subrace/Human (Amonkhet)@0#0",
+            "kind": "choice",
+            "category": "languages",
+            "count": 1,
+            "pool": {
+              "kind": "any"
+            }
+          }
+        ],
         "name": "Amonkhet",
         "isVariant": false,
         "source": "PSA",
@@ -10783,25 +10825,6 @@
         "description": ""
       },
       {
-        "grants": [
-          {
-            "id": "PSD/Subrace/Human (Keldon)@0#0",
-            "kind": "fixed",
-            "category": "languages",
-            "names": [
-              "Common"
-            ]
-          },
-          {
-            "id": "PSD/Subrace/Human (Keldon)@0#1",
-            "kind": "choice",
-            "category": "languages",
-            "count": 1,
-            "pool": {
-              "kind": "any"
-            }
-          }
-        ],
         "name": "Keldon",
         "isVariant": false,
         "source": "PSD",
@@ -14050,34 +14073,6 @@
     ],
     "subraces": [
       {
-        "grants": [
-          {
-            "id": "PSX/Subrace/Merfolk (Ixalan; Blue)@0#0",
-            "kind": "fixed",
-            "category": "languages",
-            "names": [
-              "Common"
-            ]
-          },
-          {
-            "id": "PSX/Subrace/Merfolk (Ixalan; Blue)@0#1",
-            "kind": "choice",
-            "category": "languages",
-            "count": 1,
-            "pool": {
-              "kind": "any"
-            }
-          },
-          {
-            "id": "PSX/Subrace/Merfolk (Ixalan; Blue)@0#2",
-            "kind": "choice",
-            "category": "languages",
-            "count": 1,
-            "pool": {
-              "kind": "any"
-            }
-          }
-        ],
         "name": "Ixalan; Blue",
         "isVariant": false,
         "source": "PSX",
@@ -14132,34 +14127,6 @@
         ]
       },
       {
-        "grants": [
-          {
-            "id": "PSX/Subrace/Merfolk (Ixalan; Green)@0#0",
-            "kind": "fixed",
-            "category": "languages",
-            "names": [
-              "Common"
-            ]
-          },
-          {
-            "id": "PSX/Subrace/Merfolk (Ixalan; Green)@0#1",
-            "kind": "choice",
-            "category": "languages",
-            "count": 1,
-            "pool": {
-              "kind": "any"
-            }
-          },
-          {
-            "id": "PSX/Subrace/Merfolk (Ixalan; Green)@0#2",
-            "kind": "choice",
-            "category": "languages",
-            "count": 1,
-            "pool": {
-              "kind": "any"
-            }
-          }
-        ],
         "name": "Ixalan; Green",
         "isVariant": false,
         "source": "PSX",
