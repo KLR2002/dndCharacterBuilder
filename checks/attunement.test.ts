@@ -5,7 +5,7 @@ import { getWeaponAttacks, checkDualWielding } from "../src/rules/attacks.ts";
 import { armorClass } from "../src/rules/ac.ts";
 import type { InventoryItem } from "../src/types/character.ts";
 
-describe("First-Class Attunement Ledger & 3-Slot Limit (Ticket 04)", () => {
+describe("First-Class Attunement Ledger & 3-Slot Limit", () => {
   const catalogs = loadTestCatalogs();
   const compendium = integratedTestCompendium();
 
