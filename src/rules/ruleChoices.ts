@@ -127,7 +127,7 @@ export function subclassRuleChoices(
   for (const c of character.classes ?? []) {
     const subName = getSubclassName(c);
     for (const row of SUBCLASS_CHOICE_ROWS) {
-      // Written as a negated comparison so a missing level offers nothing, as the hand-written chain did.
+      // Written as a negated comparison so a missing level offers nothing.
       if (!(c.level >= row.level)) continue;
       if (!rowOwnedBy(row, c.className, subName)) continue;
       if (row.requiresOptionalFeature && !hasOptionalFeature(character, row.requiresOptionalFeature)) continue;
