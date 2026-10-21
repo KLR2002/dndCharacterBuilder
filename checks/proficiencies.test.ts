@@ -84,7 +84,7 @@ test("deduplicateWeaponProficiencies: collapses to both categories when characte
 
 test("evaluateCharacter: Elf Fighter collapses elf weapons into Simple and Martial weapons", () => {
   const char = makeTestChar({
-    race: { name: "Elf", source: "PHB", subraceName: "High Elf", subraceSource: "PHB" },
+    race: { name: "Elf", source: "PHB", subraceName: "High", subraceSource: "PHB" },
     classes: [{ className: "Fighter", level: 1, source: "PHB" }],
   });
   const evaluated = evaluateCharacter(char, { compendium: inMemoryCompendium({ races, classes }) });
@@ -100,7 +100,7 @@ test("evaluateCharacter: Elf Fighter collapses elf weapons into Simple and Marti
 
 test("evaluateCharacter: Elf Wizard preserves elf weapons because Wizard lacks martial proficiency", () => {
   const char = makeTestChar({
-    race: { name: "Elf", source: "PHB", subraceName: "High Elf", subraceSource: "PHB" },
+    race: { name: "Elf", source: "PHB", subraceName: "High", subraceSource: "PHB" },
     classes: [{ className: "Wizard", level: 1, source: "PHB" }],
   });
   const evaluated = evaluateCharacter(char, { compendium: inMemoryCompendium({ races, classes }) });

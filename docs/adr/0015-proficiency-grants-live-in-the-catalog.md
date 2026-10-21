@@ -12,8 +12,6 @@ Skills, tools, languages, weapons, armor and saving throws were granted by per-s
 
 ## Known exceptions
 A few hand tables of rule content remain in the app. Each is an exception to the Decision above, and each is to be replaced by Catalog grants when the scraper carries them:
-- `RACE_WEAPON_PROFICIENCIES` in `src/constants/rules.ts`: the race weapon table.
-- `raceTraining` in `src/rules/proficiencySheet.ts`: the race armor case (Mountain Dwarf and Githyanki).
 - `OPTION_FEATURE_CHOICES` in `src/rules/optionFeatureGrants.ts`: the Totem Warrior option table.
 - `KENSEI_SUBCLASS` in `src/rules/kenseiWeapons.ts`: the Kensei subclass name.
 

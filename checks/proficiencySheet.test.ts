@@ -301,9 +301,14 @@ test("a category supersedes the individual weapons it covers, race training incl
   assert.deepEqual(names(sheet.weapons), ["Simple weapons", "Martial weapons"]);
 });
 
-test("without a category, race weapon training is listed by weapon", () => {
-  const sheet = proficiencySheet(makeChar({ race: { name: "Elf", source: "SRD" } }), { compendium: srdBaselineCompendium() });
-  assert.deepEqual(names(sheet.weapons), ["Longswords", "Shortswords", "Shortbows", "Longbows"]);
+test("without a category, a subrace's weapon training is listed by weapon", () => {
+  const highElf = makeChar({ race: { name: "Elf", source: "SRD", subraceName: "High", subraceSource: "SRD" } });
+  assert.deepEqual(names(proficiencySheet(highElf, { compendium: srdBaselineCompendium() }).weapons), ["Longswords", "Shortswords", "Shortbows", "Longbows"]);
+});
+
+test("a race with no weapon entry of its own grants no weapon training", () => {
+  const plainElf = makeChar({ race: { name: "Elf", source: "SRD" } });
+  assert.deepEqual(names(proficiencySheet(plainElf, { compendium: srdBaselineCompendium() }).weapons), []);
 });
 
 test("the SRD Life Domain's heavy armor applies from level 1 without the Integrated Catalog", () => {

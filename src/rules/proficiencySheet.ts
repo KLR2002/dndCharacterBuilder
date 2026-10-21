@@ -1,6 +1,6 @@
 import type { Character } from "../types/character.ts";
 import type { ClassData, ItemData, ProficiencyCategory } from "../types/dnd5e.ts";
-import { DND_SKILLS, RACE_WEAPON_PROFICIENCIES } from "../constants/rules.ts";
+import { DND_SKILLS } from "../constants/rules.ts";
 import { allCatalogClasses, catalogListings, findClassData, type CharacterCatalogs } from "./catalogs.ts";
 import { currentCompendium, type CompendiumListings } from "../services/compendium.ts";
 import { grantedFeatures } from "./grantedFeatures.ts";
@@ -132,26 +132,6 @@ function choicePickNames(
       return validPicks(grant, saved, items);
     }),
   );
-}
-
-/**
- * The armor and weapon training a character's race gives: the weapons its race or subrace lists, and
- * the Mountain Dwarf's and Githyanki's light and medium armor.
- */
-function raceTraining(character: Character): { armor: string[]; weapons: string[] } {
-  const raceName = character.race?.name;
-  const subraceName = character.race?.subraceName;
-  const candidateKeys = [
-    raceName,
-    subraceName,
-    subraceName && raceName ? `${subraceName} ${raceName}` : undefined,
-  ].filter((k): k is string => Boolean(k));
-  const weapons = candidateKeys.flatMap((key) => RACE_WEAPON_PROFICIENCIES[key] ?? []);
-  const armor =
-    subraceName === "Mountain Dwarf" || raceName === "Mountain Dwarf" || raceName === "Githyanki"
-      ? ["Light armor", "Medium armor"]
-      : [];
-  return { armor, weapons };
 }
 
 /**
@@ -329,10 +309,9 @@ export function proficiencySheet(character: Character, catalogs: CharacterCatalo
   const ancestry = resolveCharacterAncestry(character, listings.races());
 
   // Class base proficiencies (the first class's, and the multiclass table for the others), then the
-  // multiclass proficiencies recorded on the character, then race training and the features' grants.
+  // multiclass proficiencies recorded on the character, then the features' grants.
   const classBase = classBaseProficiencies(character, listings.classes());
   const recordedMulticlass = character.multiclassProficiencies ?? [];
-  const race = raceTraining(character);
 
   const items = listings.items();
   const tools = [
@@ -359,14 +338,12 @@ export function proficiencySheet(character: Character, catalogs: CharacterCatalo
   const armorNames = [
     ...classBase.armor,
     ...recordedMulticlass.flatMap((mp) => mp.armor ?? []),
-    ...race.armor,
     ...fixedFeatureNames(features, "armor"),
   ].map(normalizeArmorProficiency);
   const weaponNames = [
     ...classBase.weapons,
     ...recordedMulticlass.flatMap((mp) => mp.weapons ?? []),
     ...legacyWeaponNames(character),
-    ...race.weapons,
     ...fixedFeatureNames(features, "weapons"),
     ...choicePickNames(features, character, "weapons", items),
   ];

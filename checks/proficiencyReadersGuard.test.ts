@@ -345,10 +345,7 @@ test("guard, synthetic: re-exporting a module that exports a guarded table, with
   for (const source of [star, namespaced]) {
     assert.deepEqual(
       violationsFor("components/Synthetic.tsx", source, []).map((v) => [v.file, v.name]).sort(),
-      [
-        ["components/Synthetic.tsx", "MULTICLASS_PROFICIENCIES"],
-        ["components/Synthetic.tsx", "RACE_WEAPON_PROFICIENCIES"],
-      ],
+      [["components/Synthetic.tsx", "MULTICLASS_PROFICIENCIES"]],
       source,
     );
   }
