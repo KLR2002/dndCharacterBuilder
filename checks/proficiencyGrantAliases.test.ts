@@ -64,6 +64,16 @@ test("an old Integrated Catalog with only position ids still resolves a pick sav
   assert.ok(languageNames(proficiencySheet(reconciled, { compendium: oldCatalog }).languages).includes("Elvish"), "the sheet shows the pick");
 });
 
+test("a pick saved under a new id is kept by a catalog that still has position ids, and counts again with the new catalog", () => {
+  const oldCatalog = inMemoryCompendium({
+    classes: [wardenClass({ features: [featureWith({ ...loreGrant, id: FORMER, aliases: undefined })] })],
+  });
+  const saved = held({ proficiencyPicks: { [NEW]: ["Elvish"] } });
+  const kept = reconcile(saved, oldCatalog);
+  assert.deepEqual(kept.proficiencyPicks, { [NEW]: ["Elvish"] }, "the old catalog does not hold the new id, so the pick is kept");
+  assert.deepEqual(reconcile(kept, compendium()).proficiencyPicks, { [NEW]: ["Elvish"] }, "the new catalog holds it again");
+});
+
 test("a former id that no grant in the Compendium carries is kept as saved, not released", () => {
   const saved = held({ proficiencyPicks: { "FIX/Warden/Gone Lore@3#0": ["Elvish"] } });
   assert.deepEqual(reconcile(saved, compendium()).proficiencyPicks, { "FIX/Warden/Gone Lore@3#0": ["Elvish"] });
