@@ -193,6 +193,15 @@
         "names": [
           "Common"
         ]
+      },
+      {
+        "id": "MPMM/Race/Aarakocra@0#1",
+        "kind": "choice",
+        "category": "languages",
+        "count": 1,
+        "pool": {
+          "kind": "any"
+        }
       }
     ],
     "name": "Aarakocra",
@@ -361,6 +370,15 @@
         "names": [
           "Common"
         ]
+      },
+      {
+        "id": "MPMM/Race/Aasimar@0#1",
+        "kind": "choice",
+        "category": "languages",
+        "count": 1,
+        "pool": {
+          "kind": "any"
+        }
       }
     ],
     "name": "Aasimar",
@@ -1475,6 +1493,15 @@
         "names": [
           "Common"
         ]
+      },
+      {
+        "id": "MPMM/Race/Bugbear@0#1",
+        "kind": "choice",
+        "category": "languages",
+        "count": 1,
+        "pool": {
+          "kind": "any"
+        }
       }
     ],
     "name": "Bugbear",
@@ -2076,6 +2103,15 @@
         "names": [
           "Common"
         ]
+      },
+      {
+        "id": "MPMM/Race/Centaur@0#1",
+        "kind": "choice",
+        "category": "languages",
+        "count": 1,
+        "pool": {
+          "kind": "any"
+        }
       }
     ],
     "name": "Centaur",
@@ -2273,6 +2309,15 @@
         "names": [
           "Common"
         ]
+      },
+      {
+        "id": "MPMM/Race/Changeling@0#1",
+        "kind": "choice",
+        "category": "languages",
+        "count": 1,
+        "pool": {
+          "kind": "any"
+        }
       }
     ],
     "name": "Changeling",
@@ -2447,6 +2492,15 @@
         "names": [
           "Common"
         ]
+      },
+      {
+        "id": "MPMM/Race/Deep Gnome@0#1",
+        "kind": "choice",
+        "category": "languages",
+        "count": 1,
+        "pool": {
+          "kind": "any"
+        }
       }
     ],
     "name": "Deep Gnome",
@@ -3416,6 +3470,15 @@
         "names": [
           "Common"
         ]
+      },
+      {
+        "id": "MPMM/Race/Duergar@0#1",
+        "kind": "choice",
+        "category": "languages",
+        "count": 1,
+        "pool": {
+          "kind": "any"
+        }
       }
     ],
     "name": "Duergar",
@@ -4054,6 +4117,15 @@
         "names": [
           "Common"
         ]
+      },
+      {
+        "id": "MPMM/Race/Eladrin@0#1",
+        "kind": "choice",
+        "category": "languages",
+        "count": 1,
+        "pool": {
+          "kind": "any"
+        }
       }
     ],
     "name": "Eladrin",
@@ -5352,6 +5424,15 @@
         "names": [
           "Common"
         ]
+      },
+      {
+        "id": "MPMM/Race/Fairy@0#1",
+        "kind": "choice",
+        "category": "languages",
+        "count": 1,
+        "pool": {
+          "kind": "any"
+        }
       }
     ],
     "name": "Fairy",
@@ -5481,6 +5562,15 @@
         "names": [
           "Common"
         ]
+      },
+      {
+        "id": "MPMM/Race/Firbolg@0#1",
+        "kind": "choice",
+        "category": "languages",
+        "count": 1,
+        "pool": {
+          "kind": "any"
+        }
       }
     ],
     "name": "Firbolg",
@@ -5947,6 +6037,15 @@
         "names": [
           "Common"
         ]
+      },
+      {
+        "id": "MPMM/Race/Genasi@0#1",
+        "kind": "choice",
+        "category": "languages",
+        "count": 1,
+        "pool": {
+          "kind": "any"
+        }
       }
     ],
     "name": "Genasi",
@@ -6442,6 +6541,15 @@
         "names": [
           "Common"
         ]
+      },
+      {
+        "id": "MPMM/Race/Githyanki@0#1",
+        "kind": "choice",
+        "category": "languages",
+        "count": 1,
+        "pool": {
+          "kind": "any"
+        }
       }
     ],
     "name": "Githyanki",
@@ -6506,6 +6614,15 @@
         "names": [
           "Common"
         ]
+      },
+      {
+        "id": "MPMM/Race/Githzerai@0#1",
+        "kind": "choice",
+        "category": "languages",
+        "count": 1,
+        "pool": {
+          "kind": "any"
+        }
       }
     ],
     "name": "Githzerai",
@@ -7565,6 +7682,15 @@
         "names": [
           "Common"
         ]
+      },
+      {
+        "id": "MPMM/Race/Goblin@0#1",
+        "kind": "choice",
+        "category": "languages",
+        "count": 1,
+        "pool": {
+          "kind": "any"
+        }
       }
     ],
     "name": "Goblin",
@@ -8123,6 +8249,15 @@
         "names": [
           "Common"
         ]
+      },
+      {
+        "id": "MPMM/Race/Goliath@0#1",
+        "kind": "choice",
+        "category": "languages",
+        "count": 1,
+        "pool": {
+          "kind": "any"
+        }
       }
     ],
     "name": "Goliath",
@@ -9811,6 +9946,15 @@
         "names": [
           "Common"
         ]
+      },
+      {
+        "id": "MPMM/Race/Harengon@0#1",
+        "kind": "choice",
+        "category": "languages",
+        "count": 1,
+        "pool": {
+          "kind": "any"
+        }
       }
     ],
     "name": "Harengon",
@@ -10284,6 +10428,15 @@
         "names": [
           "Common"
         ]
+      },
+      {
+        "id": "MPMM/Race/Hobgoblin@0#1",
+        "kind": "choice",
+        "category": "languages",
+        "count": 1,
+        "pool": {
+          "kind": "any"
+        }
       }
     ],
     "name": "Hobgoblin",
@@ -12196,6 +12349,15 @@
         "names": [
           "Common"
         ]
+      },
+      {
+        "id": "MPMM/Race/Kenku@0#1",
+        "kind": "choice",
+        "category": "languages",
+        "count": 1,
+        "pool": {
+          "kind": "any"
+        }
       }
     ],
     "name": "Kenku",
@@ -12569,6 +12731,15 @@
         "names": [
           "Common"
         ]
+      },
+      {
+        "id": "MPMM/Race/Kobold@0#1",
+        "kind": "choice",
+        "category": "languages",
+        "count": 1,
+        "pool": {
+          "kind": "any"
+        }
       }
     ],
     "name": "Kobold",
@@ -13221,6 +13392,15 @@
         "names": [
           "Common"
         ]
+      },
+      {
+        "id": "MPMM/Race/Lizardfolk@0#1",
+        "kind": "choice",
+        "category": "languages",
+        "count": 1,
+        "pool": {
+          "kind": "any"
+        }
       }
     ],
     "name": "Lizardfolk",
@@ -14500,6 +14680,15 @@
         "names": [
           "Common"
         ]
+      },
+      {
+        "id": "MPMM/Race/Minotaur@0#1",
+        "kind": "choice",
+        "category": "languages",
+        "count": 1,
+        "pool": {
+          "kind": "any"
+        }
       }
     ],
     "name": "Minotaur",
@@ -15174,6 +15363,15 @@
         "names": [
           "Common"
         ]
+      },
+      {
+        "id": "MPMM/Race/Orc@0#1",
+        "kind": "choice",
+        "category": "languages",
+        "count": 1,
+        "pool": {
+          "kind": "any"
+        }
       }
     ],
     "name": "Orc",
@@ -15935,6 +16133,15 @@
         "names": [
           "Common"
         ]
+      },
+      {
+        "id": "MPMM/Race/Satyr@0#2",
+        "kind": "choice",
+        "category": "languages",
+        "count": 1,
+        "pool": {
+          "kind": "any"
+        }
       }
     ],
     "name": "Satyr",
@@ -16019,6 +16226,15 @@
         "names": [
           "Common"
         ]
+      },
+      {
+        "id": "MPMM/Race/Sea Elf@0#1",
+        "kind": "choice",
+        "category": "languages",
+        "count": 1,
+        "pool": {
+          "kind": "any"
+        }
       }
     ],
     "name": "Sea Elf",
@@ -16138,6 +16354,15 @@
         "names": [
           "Common"
         ]
+      },
+      {
+        "id": "MPMM/Race/Shadar-Kai@0#1",
+        "kind": "choice",
+        "category": "languages",
+        "count": 1,
+        "pool": {
+          "kind": "any"
+        }
       }
     ],
     "name": "Shadar-Kai",
@@ -16520,6 +16745,15 @@
         "names": [
           "Common"
         ]
+      },
+      {
+        "id": "MPMM/Race/Shifter@0#1",
+        "kind": "choice",
+        "category": "languages",
+        "count": 1,
+        "pool": {
+          "kind": "any"
+        }
       }
     ],
     "name": "Shifter",
@@ -16995,6 +17229,15 @@
         "names": [
           "Common"
         ]
+      },
+      {
+        "id": "MPMM/Race/Tabaxi@0#1",
+        "kind": "choice",
+        "category": "languages",
+        "count": 1,
+        "pool": {
+          "kind": "any"
+        }
       }
     ],
     "name": "Tabaxi",
@@ -17847,6 +18090,15 @@
         "names": [
           "Common"
         ]
+      },
+      {
+        "id": "MPMM/Race/Tortle@0#1",
+        "kind": "choice",
+        "category": "languages",
+        "count": 1,
+        "pool": {
+          "kind": "any"
+        }
       }
     ],
     "name": "Tortle",
@@ -18236,6 +18488,15 @@
         "names": [
           "Common"
         ]
+      },
+      {
+        "id": "MPMM/Race/Triton@0#1",
+        "kind": "choice",
+        "category": "languages",
+        "count": 1,
+        "pool": {
+          "kind": "any"
+        }
       }
     ],
     "name": "Triton",
@@ -19364,6 +19625,15 @@
         "names": [
           "Common"
         ]
+      },
+      {
+        "id": "MPMM/Race/Yuan-Ti@0#1",
+        "kind": "choice",
+        "category": "languages",
+        "count": 1,
+        "pool": {
+          "kind": "any"
+        }
       }
     ],
     "name": "Yuan-Ti",
