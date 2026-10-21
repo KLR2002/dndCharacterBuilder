@@ -11,14 +11,15 @@ import {
   reclaimBackgroundGrants,
   setCustomBackground,
 } from "../../rules/builderTransitions";
-import { ALL_LANGUAGE_NAMES } from "../../rules/proficienciesAndLanguages";
-import type { ToolGrant } from "../../rules/proficiencySheet";
+import type { SourceFixedGrants } from "../../rules/proficiencySheet";
+import type { AvailableRuleChoice } from "../../rules/ruleChoices";
 import type { CharacterCatalogs } from "../../rules/catalogs";
 import { Badge } from "../ui/Badge";
 import { Button } from "../ui/Button";
 import { Card } from "../ui/Card";
 import { SearchBar } from "../ui/SearchBar";
-import { builderStyles as styles, pkStyles, RuleChoicePicker } from "./builderStyles";
+import { builderStyles as styles, pkStyles } from "./builderStyles";
+import { ProficiencyChoicePicker } from "./ProficiencyChoicePicker";
 import { useResponsiveLayout } from "../../hooks/useResponsiveLayout";
 import { applyOriginFeat, getBackgroundFeatGrant, removeOriginFeat } from "../../rules/feats";
 import { getFeatAbilityBonusOptions } from "../../rules/leveling";
@@ -28,11 +29,10 @@ export interface BackgroundSectionProps {
   onUpdate: (patchOrUpdater: Partial<Character> | ((prev: Character) => Character)) => void;
   allBackgrounds: BackgroundData[];
   catalogs: CharacterCatalogs;
-  bgLanguageGrant: { label: string; fixed: string[]; choiceCount: number };
-  toggleBgLanguage: (lang: string) => void;
-  bgToolGrant: ToolGrant;
-  toggleBgTool: (tool: string) => void;
-  raceLanguageGrant: { label: string; fixed: string[]; choiceCount: number };
+  /** The fixed languages and tools the background grants. */
+  bgGranted: SourceFixedGrants;
+  /** The background's Proficiency Choices: its tool and language picks. */
+  proficiencyChoices: AvailableRuleChoice[];
   resolvedLanguages: string[];
   resolvedTools: string[];
   onViewDetail: (item: { title: string; subtitle?: string; source?: string; description?: string; tags?: string[] }) => void;
@@ -44,11 +44,8 @@ export const BackgroundSection: React.FC<BackgroundSectionProps> = ({
   onUpdate,
   allBackgrounds,
   catalogs,
-  bgLanguageGrant,
-  toggleBgLanguage,
-  bgToolGrant,
-  toggleBgTool,
-  raceLanguageGrant,
+  bgGranted,
+  proficiencyChoices,
   resolvedLanguages,
   resolvedTools,
   onViewDetail,
@@ -119,23 +116,23 @@ export const BackgroundSection: React.FC<BackgroundSectionProps> = ({
                       </View>
                     </View>
                   )}
-                  {bgToolGrant.fixed.length > 0 && (
+                  {bgGranted.tools.length > 0 && (
                     <View style={{ gap: 4 }}>
                       <Text style={{ color: theme.textMuted, fontSize: 11, fontWeight: "600" }}>
                         Granted Tool Proficiencies:
                       </Text>
                       <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6 }}>
-                        {bgToolGrant.fixed.map((t) => (
+                        {bgGranted.tools.map((t) => (
                           <Badge key={t} label={t} variant="surface" size="sm" />
                         ))}
                       </View>
                     </View>
                   )}
-                  {bgLanguageGrant.fixed.length > 0 && (
+                  {bgGranted.languages.length > 0 && (
                     <View style={{ gap: 4 }}>
                       <Text style={{ color: theme.textMuted, fontSize: 11, fontWeight: "600" }}>Granted Languages:</Text>
                       <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6 }}>
-                        {bgLanguageGrant.fixed.map((l) => (
+                        {bgGranted.languages.map((l) => (
                           <Badge key={l} label={l} variant="accent" size="sm" />
                         ))}
                       </View>
@@ -320,39 +317,11 @@ export const BackgroundSection: React.FC<BackgroundSectionProps> = ({
               );
             })()}
 
-          {/* Background Language Choices */}
-          {character.background && character.background.source !== "Custom" && bgLanguageGrant.choiceCount > 0 && (
-            <Card style={{ gap: 8 }}>
-              <RuleChoicePicker
-                label={bgLanguageGrant.label}
-                choose={bgLanguageGrant.choiceCount}
-                from={ALL_LANGUAGE_NAMES}
-                chosen={character.chosenLanguages?.background || []}
-                autoGranted={[
-                  ...raceLanguageGrant.fixed,
-                  ...(character.chosenLanguages?.race || []),
-                  ...bgLanguageGrant.fixed,
-                ]}
-                onToggle={toggleBgLanguage}
-                theme={theme}
-              />
-            </Card>
-          )}
-
-          {/* Background Tool Choices */}
-          {character.background && character.background.source !== "Custom" && bgToolGrant.choices.length > 0 && (
+          {/* Background Proficiency Choices: its tool and language picks */}
+          {character.background && character.background.source !== "Custom" && proficiencyChoices.length > 0 && (
             <Card style={{ gap: 10 }}>
-              {bgToolGrant.choices.map((ch) => (
-                <RuleChoicePicker
-                  key={ch.key}
-                  label={ch.label}
-                  choose={ch.count}
-                  from={ch.options}
-                  chosen={character.chosenTools?.background || []}
-                  autoGranted={bgToolGrant.fixed}
-                  onToggle={toggleBgTool}
-                  theme={theme}
-                />
+              {proficiencyChoices.map((choice) => (
+                <ProficiencyChoicePicker key={choice.id} choice={choice} character={character} onUpdate={onUpdate} theme={theme} />
               ))}
             </Card>
           )}

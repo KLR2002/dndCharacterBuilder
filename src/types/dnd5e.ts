@@ -59,6 +59,8 @@ export interface SubraceData {
   darkvision: number | null;
   speed?: { walk?: number; swim?: number; climb?: number; fly?: number };
   traits: TraitData[];
+  /** Proficiency Grants from the subrace's structured proficiency fields. */
+  grants?: ProficiencyGrant[];
   description: string;
   rawEntries?: any[];
 }

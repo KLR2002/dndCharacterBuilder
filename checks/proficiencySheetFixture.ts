@@ -5,32 +5,54 @@ import type { BackgroundData, ClassData, FeatData, ProficiencyGrant, RaceData } 
  * made up on purpose: no real 5e prose and no real rule text in fixtures.
  */
 
-export const vellariRace = (overrides: Partial<RaceData> = {}): RaceData => ({
-  name: "Vellari",
-  source: "PHB",
-  size: ["Medium"],
-  speed: { walk: 30 },
-  abilityScoreIncrease: [],
-  darkvision: null,
-  traits: [],
-  languages: ["Common", "Quoral"],
-  subraces: [],
-  description: "Placeholder description for the Vellari.",
-  ...overrides,
-});
+/**
+ * The fixed grant a record's own list gives, as the scraper writes it: one fixed grant of the category,
+ * with the record's own owner and level 0. Absent when the list is empty.
+ */
+const fixedGrantOf = (source: string, owner: string, feature: string, category: "tools" | "languages", names: string[]): ProficiencyGrant[] =>
+  names.length > 0 ? [{ id: `${source}/${owner}/${feature}@0#0`, kind: "fixed", category, names }] : [];
 
-export const lamplighterBackground = (overrides: Partial<BackgroundData> = {}): BackgroundData => ({
-  name: "Lamplighter",
-  source: "PHB",
-  skillProficiencies: [],
-  toolProficiencies: ["lantern kit"],
-  languages: [],
-  startingEquipment: [],
-  feature: null,
-  characteristics: {},
-  description: "Placeholder description for the Lamplighter.",
-  ...overrides,
-});
+export const vellariRace = (overrides: Partial<RaceData> = {}): RaceData => {
+  const record: RaceData = {
+    name: "Vellari",
+    source: "PHB",
+    size: ["Medium"],
+    speed: { walk: 30 },
+    abilityScoreIncrease: [],
+    darkvision: null,
+    traits: [],
+    languages: ["Common", "Quoral"],
+    subraces: [],
+    description: "Placeholder description for the Vellari.",
+    ...overrides,
+  };
+  return {
+    ...record,
+    grants: overrides.grants ?? fixedGrantOf(record.source, "Race", record.name, "languages", record.languages),
+  };
+};
+
+export const lamplighterBackground = (overrides: Partial<BackgroundData> = {}): BackgroundData => {
+  const record: BackgroundData = {
+    name: "Lamplighter",
+    source: "PHB",
+    skillProficiencies: [],
+    toolProficiencies: ["lantern kit"],
+    languages: [],
+    startingEquipment: [],
+    feature: null,
+    characteristics: {},
+    description: "Placeholder description for the Lamplighter.",
+    ...overrides,
+  };
+  return {
+    ...record,
+    grants: overrides.grants ?? [
+      ...fixedGrantOf(record.source, "Background", record.name, "tools", record.toolProficiencies),
+      ...fixedGrantOf(record.source, "Background", record.name, "languages", record.languages),
+    ],
+  };
+};
 
 export const wardenClass = (overrides: Partial<ClassData> = {}): ClassData => ({
   name: "Warden",

@@ -4,9 +4,16 @@ import type { FeatureCatalog, FeatureInstance } from "./types.ts";
 import { getReplacedBaseFeatures } from "./optionalFeatures.ts";
 import { ruleChoiceId } from "./choices/types.ts";
 import { applyRuleChoice, replacedTraitNames } from "./raceRuleChoices.ts";
-import { raisedAbilityGrants } from "./proficiencyPools.ts";
+import { raisedAbilityGrants, sourceToolAndLanguageGrants } from "./proficiencyPools.ts";
 import { optionGrantApplies } from "./optionFeatureGrants.ts";
 import { findClassData } from "./catalogs.ts";
+
+/** The record with this name, from this source when one is named and the name alone when it is not found there. Names match without case. */
+function recordNamed<T extends { name: string; source: string }>(records: readonly T[], name: string, source?: string): T | undefined {
+  const wanted = name.toLowerCase();
+  const named = (r: T) => r.name.toLowerCase() === wanted;
+  return records.find((r) => named(r) && (!source || r.source === source)) ?? records.find(named);
+}
 
 export function grantedFeatures(character: Character, catalog: FeatureCatalog): FeatureInstance[] {
   const out: FeatureInstance[] = [];
@@ -15,6 +22,29 @@ export function grantedFeatures(character: Character, catalog: FeatureCatalog): 
   function add(feature: Omit<FeatureInstance, "id">, owner: string, level = 0) {
     const id = JSON.stringify([feature.origin, feature.source, owner, feature.name, level]);
     if (!out.some(x => x.id === id)) out.push({ ...feature, id });
+  }
+  // The tool and language grants of the race and subrace the character holds. A lineage replacement does not
+  // change them: the race is still the one chosen.
+  if (character.race) {
+    const raceRecord = recordNamed(catalog.races, character.race.name, character.race.source);
+    const subraceRecord = raceRecord && character.race.subraceName
+      ? recordNamed(raceRecord.subraces ?? [], character.race.subraceName, character.race.subraceSource)
+      : undefined;
+    const raceGrants = sourceToolAndLanguageGrants(raceRecord?.grants);
+    if (raceRecord && raceGrants.length > 0) {
+      add({ name: raceRecord.name, description: "", source: raceRecord.source, origin: "Race", grants: raceGrants }, raceRecord.name);
+    }
+    const subraceGrants = sourceToolAndLanguageGrants(subraceRecord?.grants);
+    if (raceRecord && subraceRecord && subraceGrants.length > 0) {
+      add({ name: subraceRecord.name, description: "", source: subraceRecord.source, origin: "Subrace", grants: subraceGrants }, raceRecord.name);
+    }
+  }
+  const backgroundRecord = character.background && !character.background.isCustom
+    ? recordNamed(catalog.backgrounds, character.background.name, character.background.source)
+    : undefined;
+  const backgroundGrants = sourceToolAndLanguageGrants(backgroundRecord?.grants);
+  if (backgroundRecord && backgroundGrants.length > 0) {
+    add({ name: backgroundRecord.name, description: "", source: backgroundRecord.source, origin: "Background", grants: backgroundGrants }, backgroundRecord.name);
   }
   if (character.lineageReplacement) {
     const lineage = catalog.races.find(r => r.name === character.lineageReplacement);

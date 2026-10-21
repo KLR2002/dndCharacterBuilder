@@ -48,15 +48,9 @@ interface Allowance {
 
 const ALLOWANCES: Allowance[] = [
   {
-    files: [
-      "rules/ancestryEngine.ts",
-      "rules/builderTransitions.ts",
-      "components/tabs/BuilderTab.tsx",
-      "components/builder/AncestrySection.tsx",
-      "components/builder/BackgroundSection.tsx",
-    ],
+    files: ["rules/ancestryEngine.ts", "rules/builderTransitions.ts", "components/builder/BackgroundSection.tsx"],
     fields: ["chosenTools", "chosenLanguages"],
-    reason: "the Builder edits its own race and background picks, the buckets the sheet reads",
+    reason: "a race or background change clears the saved race and background buckets the sheet still reads",
   },
   {
     files: ["rules/proficiencyPicks.ts"],
