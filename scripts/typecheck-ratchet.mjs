@@ -65,9 +65,29 @@ export function parseTscOutput(text) {
   return errors;
 }
 
+// One union member: a double-quoted string literal or a bare identifier. A run of two or more members joined by
+// " | " is a union the normalizer may reorder. The lookbehind and lookahead keep a run from starting or ending
+// inside a qualified name (Widget.Part), a generic (Gadget<Shape>) or an object type, so only whole runs match.
+const UNION_MEMBER = String.raw`(?:"[^"]*"|[A-Za-z_$][\w$]*)`;
+const UNION_RUN = new RegExp(
+  String.raw`(?<![\w$."])${UNION_MEMBER}(?: \| ${UNION_MEMBER})+(?![\w$<.\[("]| \|)`,
+  "g",
+);
+const UNION_MEMBER_TOKEN = new RegExp(UNION_MEMBER, "g");
+
+/**
+ * Sorts the members of every union in a message whose members are all quoted literals or identifiers, so the
+ * same union prints the same way whatever order tsc chose. Any other text is left as it is.
+ * @param {string} message
+ * @returns {string}
+ */
+export function normalizeMessage(message) {
+  return message.replace(UNION_RUN, (run) => (run.match(UNION_MEMBER_TOKEN) ?? []).sort().join(" | "));
+}
+
 /** Identity of an error for the baseline: file, code and message. Line and column are not part of it. */
 function keyOf({ file, code, message }) {
-  return JSON.stringify([file, code, message]);
+  return JSON.stringify([file, code, normalizeMessage(message)]);
 }
 
 /** @param {{ file: string, line: number, column: number }} a @param {{ file: string, line: number, column: number }} b */
@@ -87,7 +107,7 @@ export function toBaseline(errors) {
     const key = keyOf({ file, code, message });
     const entry = counted.get(key);
     if (entry) entry.count += 1;
-    else counted.set(key, { file, code, message, count: 1 });
+    else counted.set(key, { file, code, message: normalizeMessage(message), count: 1 });
   }
   const sorted = [...counted.values()].sort(
     (a, b) => a.file.localeCompare(b.file) || a.code.localeCompare(b.code) || a.message.localeCompare(b.message),
