@@ -127,7 +127,8 @@ export async function scrapeRaces(
     // Structured tool and language entries on the subrace, owned by "Subrace" and named with its race.
     const proficiencies = structuredGrants(
       { source: rawSub.source, owner: "Subrace", feature: `${parentName} (${normalized.name})`, level: 0 },
-      { tools: rawSub.toolProficiencies, languages: rawSub.languageProficiencies }
+      { tools: rawSub.toolProficiencies, languages: rawSub.languageProficiencies },
+      PROFICIENCY_GRANT_OVERRIDES.subraces
     );
     if (proficiencies.unparsed.length > 0) {
       report.unparsed.push({ owner: "Subrace", feature: `${parentName} (${normalized.name})`, level: 0, unparsed: proficiencies.unparsed });

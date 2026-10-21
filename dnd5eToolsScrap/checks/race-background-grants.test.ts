@@ -117,3 +117,26 @@ test("a reviewed race override replaces the structured grants of that race", asy
     { id: "MPMM/Race/Githyanki@0#1", kind: "choice", category: "languages", count: 1, pool: { kind: "any" } },
   ]);
 });
+
+test("a reviewed subrace override gives the one language of choice its trait names, when its own entries name none", async () => {
+  const gith = { name: "Gith", source: "TST", entries: [], languageProficiencies: [{ common: true, other: true }] };
+  const githyanki = { name: "Githyanki", source: "TST", raceName: "Gith", raceSource: "TST", entries: [] };
+  const [race] = await scrapeRaces(fakeClient({ "data/races.json": { race: [gith], subrace: [githyanki] } }), newProficiencyReport());
+  assert.deepEqual(race.subraces[0].grants, [
+    { id: "TST/Subrace/Gith (Githyanki)@0#0", kind: "choice", category: "languages", count: 1, pool: { kind: "any" } },
+  ]);
+});
+
+test("a reviewed subrace override holds a race's count when the subrace's entries restate it", async () => {
+  const keldonRace = { name: "Human", source: "TST", entries: [], languageProficiencies: [{ common: true, anyStandard: 1 }] };
+  const keldon = {
+    name: "Keldon",
+    source: "TST",
+    raceName: "Human",
+    raceSource: "TST",
+    entries: [],
+    languageProficiencies: [{ common: true, other: true }],
+  };
+  const [race] = await scrapeRaces(fakeClient({ "data/races.json": { race: [keldonRace], subrace: [keldon] } }), newProficiencyReport());
+  assert.equal("grants" in race.subraces[0], false, "the subrace grants nothing beyond its race");
+});
