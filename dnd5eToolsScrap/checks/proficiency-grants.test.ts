@@ -315,3 +315,72 @@ test("a language the character knows, or sharing one, is not a match", () => {
 test("a real language grant is still a match", () => {
   assert.deepEqual(matchedSentences("You learn two languages of your choice."), ["You learn two languages of your choice"]);
 });
+
+// Two classes can share an owner, feature and level when they come from different sources.
+// Each source's copy is its own subject, and its grant ids carry the source.
+
+const SHARED = { owner: "Sample Artificer", feature: "Lantern Training", level: 1 };
+const LANTERN = "You gain proficiency with lantern-maker's kit.";
+
+test("two subjects with the same owner, feature and level from different sources resolve without throwing, with distinct ids", () => {
+  const { results, report } = run([
+    subject(LANTERN, { ...SHARED, source: "AAA" }),
+    subject(LANTERN, { ...SHARED, source: "BBB" }),
+  ]);
+  assert.deepEqual(
+    results.map((r) => r.grants.map((g) => g.id)),
+    [["AAA/Sample Artificer/Lantern Training@1#0"], ["BBB/Sample Artificer/Lantern Training@1#0"]]
+  );
+  assert.equal(report.covered, 2);
+});
+
+test("a subject listed twice with the same source, owner, feature, level and description resolves once, index-aligned", () => {
+  const twice = subject(LANTERN, { ...SHARED, source: "AAA" });
+  const { results, report } = run([twice, { ...twice }]);
+  assert.equal(results.length, 2, "one result per input subject");
+  assert.deepEqual(results[0].grants, results[1].grants);
+  assert.deepEqual(results[0].grants.map((g) => g.id), ["AAA/Sample Artificer/Lantern Training@1#0"]);
+  assert.equal(report.covered, 1, "one distinct feature is counted once");
+});
+
+test("a duplicated subject with unparsed prose is reported once, and gets no grants on either copy", () => {
+  const unparsedText = "You gain proficiency with these weapons if you don't already have it.";
+  const twice = subject(unparsedText, { ...SHARED, source: "AAA" });
+  const { results, report } = run([twice, { ...twice }]);
+  assert.deepEqual(results[0].grants, []);
+  assert.deepEqual(results[1].grants, []);
+  assert.deepEqual(results[1].unparsed, ["You gain proficiency with these weapons if you don't already have it"]);
+  assert.equal(report.unparsed.length, 1, "the unparsed feature is listed once");
+  assert.equal(report.covered, 0);
+});
+
+test("the same source, owner, feature and level with different descriptions is still an ambiguity and throws, with the source in the message", () => {
+  assert.throws(
+    () =>
+      run([
+        subject(LANTERN, { ...SHARED, source: "AAA" }),
+        subject("You gain proficiency with smith's tools.", { ...SHARED, source: "AAA" }),
+      ]),
+    /^Error: duplicate proficiency subject: AAA\|Sample Artificer\|Lantern Training\|1$/
+  );
+});
+
+test("an override keyed without source applies to every source's copy of the feature", () => {
+  const override: GrantOverride = {
+    owner: SHARED.owner,
+    feature: SHARED.feature,
+    level: SHARED.level,
+    grants: [{ kind: "fixed", category: "tools", names: ["smith's tools"] }],
+  };
+  const { results } = run(
+    [
+      subject("You gain proficiency with these weapons.", { ...SHARED, source: "AAA" }),
+      subject("You gain proficiency with these weapons.", { ...SHARED, source: "BBB" }),
+    ],
+    [override]
+  );
+  assert.deepEqual(results.map((r) => r.grants.map((g) => g.id)), [
+    ["AAA/Sample Artificer/Lantern Training@1#0"],
+    ["BBB/Sample Artificer/Lantern Training@1#0"],
+  ]);
+});
