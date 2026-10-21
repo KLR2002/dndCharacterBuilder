@@ -4,7 +4,9 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** done
+
+**Landed:** merged from `pr/01-agent-docs` (cf00945). Also changed `.gitignore` to ignore `node_modules` without a trailing slash so the script's symlinks are ignored. The install branch of the script (main checkout without node_modules) is untested.
 
 - [ ] The tiering document has one section with the shared implementer rules, and `AGENTS.md` points to it.
 - [ ] Running the worktree script in a fresh worktree makes `npm run check:all` runnable there without manual linking, and the script says so when a link is missing or wrong.

@@ -38,7 +38,8 @@ export function moveLegacyClassToolPicks(character: Character, compendium: Compe
  * The reconciler's check on saved Proficiency Choice picks. It reads the Compendium and the
  * character directly rather than the granted-features pass, which reads the rule-choice module and so
  * cannot be imported from the reconciler. The check errs on the side of keeping a pick: it releases one
- * only when the Compendium names the grant and the character clearly no longer holds its owner.
+ * only when the Compendium names the grant and either the character clearly no longer holds its owner or
+ * the grant belongs to an optional feature that is turned off.
  */
 
 /** A class owner is the catalog class itself, so two classes of one name from different sources are told apart. */
@@ -52,6 +53,8 @@ interface GrantSource {
   feature: string;
   /** The level the feature is gained at. Feats are gained with no level, so 0. */
   level: number;
+  /** Whether the feature is an optional class feature, held only while it is turned on. */
+  optional: boolean;
   owner: GrantOwner;
 }
 
@@ -72,6 +75,7 @@ function grantSourcesIn(compendium: Compendium): Map<string, GrantSource> {
       add(feature.grants, {
         feature: feature.name,
         level: feature.level,
+        optional: feature.isOptional === true,
         owner: { kind: "class", className: cls.name, source: cls.source },
       });
     }
@@ -80,13 +84,14 @@ function grantSourcesIn(compendium: Compendium): Map<string, GrantSource> {
         add(feature.grants, {
           feature: feature.name,
           level: feature.level,
+          optional: feature.isOptional === true,
           owner: { kind: "subclass", className: cls.name, source: cls.source, subclassName: sub.name },
         });
       }
     }
   }
   for (const feat of listings.feats()) {
-    add(feat.grants, { feature: feat.name, level: 0, owner: { kind: "feat", featName: feat.name } });
+    add(feat.grants, { feature: feat.name, level: 0, optional: false, owner: { kind: "feat", featName: feat.name } });
   }
   return sources;
 }
@@ -114,6 +119,15 @@ function ownerHeld(source: GrantSource, character: Character, classes: readonly 
 }
 
 /**
+ * The reason a grant's pick is released, or undefined when the grant still applies. An optional feature
+ * that is turned off grants nothing, as the granted-features pass reads it; otherwise the owner decides.
+ */
+function releaseReason(source: GrantSource, character: Character, classes: readonly ClassData[]): string | undefined {
+  if (source.optional && !character.optionalFeatureReplacements?.[source.feature]) return "feature is turned off";
+  return ownerHeld(source, character, classes) ? undefined : "no longer granted";
+}
+
+/**
  * Releases saved Proficiency Choice picks whose grant no longer applies, each with a review notice.
  * A pick is kept when the Compendium does not hold its grant (a missing or stale catalog), so a saved
  * pick is never lost for want of data. Returns the character unchanged when nothing is released.
@@ -128,10 +142,11 @@ export function pruneInvalidProficiencyPicks(character: Character, compendium: C
   const notices: string[] = [];
   for (const [id, names] of Object.entries(picks)) {
     const source = sources.get(id);
-    if (!source || ownerHeld(source, character, classes)) {
+    const reason = source && releaseReason(source, character, classes);
+    if (!source || !reason) {
       kept[id] = names;
     } else if (names.length > 0) {
-      notices.push(`${names.join(", ")} removed from ${source.feature}: no longer granted`);
+      notices.push(`${names.join(", ")} removed from ${source.feature}: ${reason}`);
     }
   }
   if (Object.keys(kept).length === Object.keys(picks).length) return character;

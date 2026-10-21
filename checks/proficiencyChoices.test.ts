@@ -7,6 +7,7 @@ import { pickerTitles, proficiencyChoiceOffers } from "../src/rules/proficiencyC
 import type { ChoiceProficiencyGrant } from "../src/rules/proficiencyPools.ts";
 import { pickRuleChoice } from "../src/rules/ruleChoices.ts";
 import { reconcile } from "../src/rules/characterReconciler.ts";
+import { setOptionalFeatureEnabled } from "../src/rules/builderTransitions.ts";
 import {
   inMemoryCompendium,
   integratedTestCompendium,
@@ -26,6 +27,7 @@ const LAMP_ID = "FIX/Warden/Lampwright/Lamp Craft@3#0";
 const LAMP_TONGUE_ID = "FIX/Warden/Lampwright/Lamp Tongue@3#0";
 const SCHOLAR_ID = "FIX/Lantern Scholar@0#0";
 const KENSEI_ID = "XGE/Monk/Way of the Kensei/Path of the Kensei@3#0";
+const SHUTTER_ID = "FIX/Warden/Lampwright/Shuttered Lantern@3#0";
 
 const lampwright: SubclassData = {
   name: "Lampwright",
@@ -54,6 +56,21 @@ const lampwright: SubclassData = {
       level: 3,
       description: "Placeholder description for Lamp Tongue.",
       grants: [anyLanguageChoice(LAMP_TONGUE_ID, 1)],
+    },
+    {
+      name: "Shuttered Lantern",
+      level: 3,
+      description: "Placeholder description for Shuttered Lantern.",
+      isOptional: true,
+      grants: [
+        {
+          id: SHUTTER_ID,
+          kind: "choice",
+          category: "skills",
+          count: 1,
+          pool: { kind: "names", names: ["Perception", "Insight"] },
+        },
+      ],
     },
   ],
 };
@@ -280,4 +297,89 @@ test("removing the feat that grants a language choice releases its pick with a n
   const out = reconcile(dropped, compendium);
   assert.equal(out.proficiencyPicks?.[SCHOLAR_ID], undefined);
   assert.ok(out.needsReview?.some((note) => note.includes("Elvish")));
+});
+
+// Optional features: a pick stored for an optional feature that is turned off is released.
+
+const shutteredOn = (extra: Partial<Character> = {}) =>
+  lampWarden(3, { optionalFeatureReplacements: { "Shuttered Lantern": true }, ...extra });
+const shutteredOff = (extra: Partial<Character> = {}) =>
+  lampWarden(3, { optionalFeatureReplacements: { "Shuttered Lantern": false }, ...extra });
+
+test("turning an optional feature off releases the pick stored for its grant, with a notice", () => {
+  const compendium = lampCompendium();
+  const saved = { [SHUTTER_ID]: ["Perception"] };
+  assert.deepEqual(reconcile(shutteredOn({ proficiencyPicks: saved }), compendium).proficiencyPicks, saved, "a feature that is on keeps its pick");
+
+  const released = reconcile(shutteredOff({ proficiencyPicks: saved }), compendium);
+  assert.equal(released.proficiencyPicks, undefined, "the pick is released");
+  assert.ok(
+    released.needsReview?.some((note) => note.includes("Perception") && note.includes("Shuttered Lantern")),
+    "the release is recorded in needsReview",
+  );
+});
+
+test("an optional feature that was never switched on releases a pick stored for it", () => {
+  const released = reconcile(lampWarden(3, { proficiencyPicks: { [SHUTTER_ID]: ["Insight"] } }), lampCompendium());
+  assert.equal(released.proficiencyPicks, undefined);
+  assert.ok(released.needsReview?.some((note) => note.includes("Insight")));
+});
+
+test("turning the optional feature back on asks for the pick again; the old pick is not restored", () => {
+  const compendium = lampCompendium();
+  const released = reconcile(shutteredOff({ proficiencyPicks: { [SHUTTER_ID]: ["Perception"] } }), compendium);
+  const back: Character = { ...released, optionalFeatureReplacements: { "Shuttered Lantern": true } };
+
+  const offer = offerFor(back, SHUTTER_ID, compendium);
+  assert.ok(offer, "the choice is offered again");
+  assert.equal(offer.choose, 1);
+  assert.deepEqual(back.proficiencyPicks?.[SHUTTER_ID] ?? [], [], "Picked 0 / 1: no pick is restored");
+  assert.equal(
+    names(proficiencySheet(reconcile(back, compendium), { compendium }).skills).includes("Perception"),
+    false,
+    "the released pick is not on the sheet",
+  );
+});
+
+test("releasing the pick also releases the Expertise that depended on it, in the same pass", () => {
+  const compendium = lampCompendium();
+  const character = lampWarden(4, {
+    asiSelections: [{ level: 4, type: "feat", featName: "Skill Expert", featSource: "PHB" }],
+    optionalFeatureReplacements: { "Shuttered Lantern": true },
+    proficiencyPicks: { [SHUTTER_ID]: ["Perception"] },
+    chosenExpertise: ["Perception"],
+  });
+  assert.deepEqual(reconcile(character, compendium).chosenExpertise, ["Perception"], "with the feature on, the Expertise is kept");
+
+  const off = reconcile({ ...character, optionalFeatureReplacements: { "Shuttered Lantern": false } }, compendium);
+  assert.deepEqual(off.chosenExpertise, [], "the Expertise that rested on the released pick is released");
+  assert.ok(off.needsReview?.some((note) => note.includes("Perception Expertise removed")));
+});
+
+test("releasing an optional feature's pick is idempotent", () => {
+  const compendium = lampCompendium();
+  const once = reconcile(shutteredOff({ proficiencyPicks: { [SHUTTER_ID]: ["Perception"] } }), compendium);
+  assert.deepEqual(reconcile(once, compendium), once, "a second reconcile changes nothing and adds no notice");
+});
+
+test("with no catalog that holds the optional feature, its pick is kept", () => {
+  const saved = shutteredOff({ proficiencyPicks: { [SHUTTER_ID]: ["Perception"] } });
+  for (const compendium of [srdBaselineCompendium(), inMemoryCompendium()]) {
+    const out = reconcile(saved, compendium);
+    assert.deepEqual(out.proficiencyPicks, saved.proficiencyPicks, "the pick is kept when the grant cannot be seen");
+    assert.deepEqual(out.needsReview ?? [], [], "no notice is added");
+  }
+});
+
+test("the builder transition turns the feature off with its pick released, and on with nothing restored", () => {
+  const compendium = lampCompendium();
+  const on = shutteredOn({ proficiencyPicks: { [SHUTTER_ID]: ["Perception"] } });
+
+  const off = setOptionalFeatureEnabled(on, "Shuttered Lantern", false, compendium);
+  assert.equal(off.optionalFeatureReplacements?.["Shuttered Lantern"], false);
+  assert.equal(off.proficiencyPicks, undefined);
+
+  const backOn = setOptionalFeatureEnabled(off, "Shuttered Lantern", true, compendium);
+  assert.equal(backOn.optionalFeatureReplacements?.["Shuttered Lantern"], true);
+  assert.equal(backOn.proficiencyPicks, undefined, "the old pick is not restored");
 });
