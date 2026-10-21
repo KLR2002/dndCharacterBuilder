@@ -5,26 +5,6 @@ import { allCatalogClasses, findClassData } from "./catalogs.ts";
 import { abilityKeyOf } from "./abilities.ts";
 export { MULTICLASS_PREREQUISITES } from "../constants/rules.ts";
 
-export interface ClassRules {
-  hitDie: number;
-  savingThrows: AbilityKey[];
-  caster?: "full" | "half" | "pact";
-  spellAbility?: AbilityKey;
-}
-export const CLASS_DATA: Record<string, ClassRules> = {
-  Barbarian: { hitDie: 12, savingThrows: ["str", "con"] },
-  Bard: { hitDie: 8, savingThrows: ["dex", "cha"], caster: "full", spellAbility: "cha" },
-  Cleric: { hitDie: 8, savingThrows: ["wis", "cha"], caster: "full", spellAbility: "wis" },
-  Druid: { hitDie: 8, savingThrows: ["int", "wis"], caster: "full", spellAbility: "wis" },
-  Fighter: { hitDie: 10, savingThrows: ["str", "con"] },
-  Monk: { hitDie: 8, savingThrows: ["str", "dex"] },
-  Paladin: { hitDie: 10, savingThrows: ["wis", "cha"], caster: "half", spellAbility: "cha" },
-  Ranger: { hitDie: 10, savingThrows: ["str", "dex"], caster: "half", spellAbility: "wis" },
-  Rogue: { hitDie: 8, savingThrows: ["dex", "int"] },
-  Sorcerer: { hitDie: 6, savingThrows: ["con", "cha"], caster: "full", spellAbility: "cha" },
-  Warlock: { hitDie: 8, savingThrows: ["wis", "cha"], caster: "pact", spellAbility: "cha" },
-  Wizard: { hitDie: 6, savingThrows: ["int", "wis"], caster: "full", spellAbility: "int" },
-};
 /**
  * The Catalog class an entry holds: the class of its name and source in `classes`, else the SRD Baseline's
  * class of that name, so a catalog that lacks a class still gives its SRD values. Undefined for a class
