@@ -11,6 +11,15 @@
         "pool": {
           "kind": "any"
         }
+      },
+      {
+        "id": "PHB/Background/Acolyte@0#1",
+        "kind": "fixed",
+        "category": "skills",
+        "names": [
+          "Insight",
+          "Religion"
+        ]
       }
     ],
     "skillProficiencies": [

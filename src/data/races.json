@@ -361,6 +361,14 @@
           "Common",
           "Elvish"
         ]
+      },
+      {
+        "id": "PHB/Race/Elf@0#1",
+        "kind": "fixed",
+        "category": "skills",
+        "names": [
+          "Perception"
+        ]
       }
     ],
     "name": "Elf",
@@ -825,6 +833,14 @@
         "names": [
           "Common",
           "Orc"
+        ]
+      },
+      {
+        "id": "PHB/Race/Half-Orc@0#1",
+        "kind": "fixed",
+        "category": "skills",
+        "names": [
+          "Intimidation"
         ]
       }
     ],
