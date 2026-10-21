@@ -54,8 +54,8 @@ const ALLOWANCES: Allowance[] = [
   },
   {
     files: ["rules/proficiencyPicks.ts"],
-    fields: ["chosenTools"],
-    reason: "the reconciler moves the saved class tool bucket into the starting tool choice's own pick, once",
+    fields: ["chosenTools", "chosenLanguages"],
+    reason: "the reconciler moves the saved class tool bucket, and the race and background tool and language buckets, into their Proficiency Choices' own picks",
   },
   {
     files: ["rules/builderTransitions.ts"],

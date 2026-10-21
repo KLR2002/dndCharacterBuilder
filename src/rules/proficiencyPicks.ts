@@ -3,7 +3,8 @@ import type { ClassData, ProficiencyGrant } from "../types/dnd5e.ts";
 import type { Compendium } from "../services/compendium.ts";
 import { optionGrantApplies } from "./optionFeatureGrants.ts";
 import { findClassData } from "./catalogs.ts";
-import { STARTING_PROFICIENCIES, type ChoiceProficiencyGrant } from "./proficiencyPools.ts";
+import { poolNames, STARTING_PROFICIENCIES, validPicks, type ChoiceProficiencyGrant } from "./proficiencyPools.ts";
+import { recordGrantSources } from "./recordProficiencyGrants.ts";
 
 /**
  * Moves the class tool picks saved before the starting tool choice was a Proficiency Choice into that
@@ -31,6 +32,73 @@ export function moveLegacyClassToolPicks(character: Character, compendium: Compe
     ...character,
     chosenTools,
     proficiencyPicks: Object.keys(proficiencyPicks).length > 0 ? proficiencyPicks : undefined,
+  };
+}
+
+/** A bucket of the race or the background, the two places a saved tool or language was kept before picks. */
+type SourceBucket = "race" | "background";
+
+/** Which bucket a record-level grant source's saved picks were kept in. */
+const BUCKET_OF = { Race: "race", Subrace: "race", Background: "background" } as const;
+
+/**
+ * Moves the race and background tool and language picks saved before they were Proficiency Choices into the
+ * choice they belong to: each name goes to the first open choice of its category whose pool offers it, and
+ * no choice takes more names than its count. A name no choice takes stays in its bucket, where the sheet keeps
+ * reading it. Returns the character unchanged when nothing moves.
+ */
+export function moveLegacySourcePicks(character: Character, compendium: Compendium): Character {
+  const listings = compendium.for();
+  const sources = recordGrantSources(character, { races: listings.races(), backgrounds: listings.backgrounds() });
+  const picks: Record<string, string[]> = { ...(character.proficiencyPicks ?? {}) };
+  const buckets = {
+    tools: { ...character.chosenTools } as Partial<Record<SourceBucket | "class", string[]>>,
+    languages: { ...character.chosenLanguages } as Partial<Record<SourceBucket, string[]>>,
+  };
+  let moved = false;
+
+  for (const category of ["tools", "languages"] as const) {
+    const bucketsOfCategory = buckets[category];
+    for (const bucket of ["race", "background"] as const) {
+      const names = bucketsOfCategory[bucket] ?? [];
+      let rest = names;
+      for (const source of sources.filter((candidate) => BUCKET_OF[candidate.origin] === bucket)) {
+        for (const grant of source.grants) {
+          if (grant.kind !== "choice" || grant.category !== category || rest.length === 0) continue;
+          const saved = picks[grant.id] ?? [];
+          const offered = poolNames(grant);
+          let open = grant.count - validPicks(grant, saved).length;
+          const taken: string[] = [];
+          rest = rest.filter((name) => {
+            const match = offered.find((option) => option.toLowerCase() === name.trim().toLowerCase());
+            if (!match) return true;
+            if (saved.some((pick) => pick.toLowerCase() === match.toLowerCase())) {
+              moved = true;
+              return false;
+            }
+            if (open <= 0) return true;
+            open -= 1;
+            taken.push(match);
+            moved = true;
+            return false;
+          });
+          if (taken.length > 0) picks[grant.id] = [...saved, ...taken];
+        }
+      }
+      if (rest.length !== names.length) {
+        if (rest.length > 0) bucketsOfCategory[bucket] = rest;
+        else delete bucketsOfCategory[bucket];
+      }
+    }
+  }
+  if (!moved) return character;
+
+  const tidy = <T extends object>(bucketObject: T): T | undefined => (Object.keys(bucketObject).length > 0 ? bucketObject : undefined);
+  return {
+    ...character,
+    chosenTools: tidy(buckets.tools) as Character["chosenTools"],
+    chosenLanguages: tidy(buckets.languages) as Character["chosenLanguages"],
+    proficiencyPicks: Object.keys(picks).length > 0 ? picks : undefined,
   };
 }
 
