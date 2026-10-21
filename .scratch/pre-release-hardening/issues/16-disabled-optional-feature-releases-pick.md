@@ -4,7 +4,9 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** done
+
+**Landed:** merged from `pr/16-optional-pick-release` (4e7f94b). The builder and Features tab now toggle optional features through a reconciling transition. The SRD layout check was green; integrated mode was not run for this ticket.
 
 - [ ] Turning an optional feature off releases the proficiency pick stored for it and adds a notice.
 - [ ] Turning it back on shows the choice as "Picked 0 / N" again; the old pick is not restored.
