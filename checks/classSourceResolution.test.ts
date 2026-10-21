@@ -7,13 +7,17 @@ import { proficiencySheet, type SheetEntry } from "../src/rules/proficiencySheet
 import { pruneInvalidProficiencyPicks } from "../src/rules/proficiencyPicks.ts";
 import { getSubclassSpells } from "../src/rules/subclassSpells.ts";
 import { addMulticlassLevel } from "../src/rules/builderTransitions.ts";
-import { inMemoryCompendium, makeChar } from "./testUtils.ts";
+import { hitDiceByType, maxHp } from "../src/rules/hp.ts";
+import { getSpellcastingAbility, isCastingClass } from "../src/rules/spellcasting.ts";
+import { multiclassSlots } from "../src/rules/slots.ts";
+import { migrateCharacter } from "../src/rules/migrateCharacter.ts";
+import { inMemoryCompendium, integratedTestCompendium, makeChar } from "./testUtils.ts";
 import { anyLanguageChoice, wardenClass } from "./proficiencySheetFixture.ts";
 import type { CharacterClass } from "../src/types/character.ts";
 import type { ClassData, SubclassData } from "../src/types/dnd5e.ts";
 
 // Two invented classes share the name "Wardcaller" but come from different sources, with different
-// saving throws, armor, features and subclasses. Nothing here is real 5e text.
+// hit dice, saving throws, armor, features and subclasses. Nothing here is real 5e text.
 
 const ALPHA = "ALPHA";
 const BETA = "BETA";
@@ -43,6 +47,7 @@ const alphaWardcaller = (overrides: Partial<ClassData> = {}): ClassData =>
   wardenClass({
     name: "Wardcaller",
     source: ALPHA,
+    hitDie: "1d10",
     savingThrows: ["Strength", "Constitution"],
     armorProficiencies: ["light armor"],
     features: [{ name: "Ward Sight", level: 1, description: "Invented ALPHA class feature." }],
@@ -54,7 +59,9 @@ const betaWardcaller = (overrides: Partial<ClassData> = {}): ClassData =>
   wardenClass({
     name: "Wardcaller",
     source: BETA,
+    hitDie: "1d6",
     savingThrows: ["Wisdom", "Charisma"],
+    spellcasting: { ability: "Intelligence", progression: "full" },
     armorProficiencies: ["heavy armor"],
     features: [
       {
@@ -107,10 +114,6 @@ test("the proficiency sheet's class armor comes from the second source when the 
   const alpha = proficiencySheet(makeChar({ classes: [entry(ALPHA, 1)] }), { compendium });
   assert.deepEqual(names(alpha.armor), ["Light armor"]);
 });
-
-// The sheet's saving throws are not asserted here: the base saves read the name-keyed class table
-// (CLASS_DATA), which has no entry for an invented class, and reading the catalog's savingThrows would
-// add Artificer saves that the saving-throws characterization allowlist does not admit.
 
 test("granted class features come from the entry's own source", () => {
   const catalog = { races: [], backgrounds: [], feats: [], classes: [alphaWardcaller(), betaWardcaller()] };
@@ -168,4 +171,66 @@ test("the subclass spells of a class are read from the source the caller names",
 test("adding a class stores the chosen source on the new class entry", () => {
   const added = addMulticlassLevel(makeChar({ classes: [] }), "Wardcaller", BETA);
   assert.deepEqual(added.classes, [{ className: "Wardcaller", source: BETA, level: 1 }]);
+});
+
+test("hit dice and hit points come from the class the entry names", () => {
+  const classes = [alphaWardcaller(), betaWardcaller()];
+  const alpha = makeChar({ classes: [entry(ALPHA, 3)] });
+  const beta = makeChar({ classes: [entry(BETA, 3)] });
+  assert.deepEqual(Object.keys(hitDiceByType(alpha, classes)), ["d10"]);
+  assert.deepEqual(Object.keys(hitDiceByType(beta, classes)), ["d6"]);
+  // The first level takes the full die, each later level the average rounded up, with Constitution at 0.
+  assert.equal(maxHp(alpha, {}, classes), 10 + 2 * 6);
+  assert.equal(maxHp(beta, {}, classes), 6 + 2 * 4);
+});
+
+test("a class the catalog lacks takes the SRD Baseline's hit die, and an empty source takes the first class of its name", () => {
+  const fighter = { className: "Fighter", source: "PHB", level: 2 };
+  assert.deepEqual(Object.keys(hitDiceByType(makeChar({ classes: [fighter] }), [])), ["d10"]);
+  const classes = [alphaWardcaller(), betaWardcaller()];
+  assert.deepEqual(Object.keys(hitDiceByType(makeChar({ classes: [entry("", 2)] }), classes)), ["d10"]);
+});
+
+test("the proficiency sheet's base saving throws come from the class the entry names", () => {
+  const compendium = bothSources();
+  assert.deepEqual(names(proficiencySheet(makeChar({ classes: [entry(BETA, 1)] }), { compendium }).savingThrows), ["Wisdom", "Charisma"]);
+  assert.deepEqual(names(proficiencySheet(makeChar({ classes: [entry(ALPHA, 1)] }), { compendium }).savingThrows), ["Strength", "Constitution"]);
+});
+
+test("a class the catalog lacks takes its SRD Baseline saving throws", () => {
+  const fighter = { className: "Fighter", source: "PHB", level: 2 };
+  assert.deepEqual(
+    names(proficiencySheet(makeChar({ classes: [fighter] }), { compendium: inMemoryCompendium() }).savingThrows),
+    ["Strength", "Constitution"],
+  );
+});
+
+test("the integrated Artificer's saving throws come from its catalog class", () => {
+  const sheet = proficiencySheet(makeChar({ classes: [{ className: "Artificer", source: "TCE", level: 1 }] }), {
+    compendium: integratedTestCompendium(),
+  });
+  assert.deepEqual(names(sheet.savingThrows), ["Constitution", "Intelligence"]);
+});
+
+test("caster kind and spell ability come from the class the entry names", () => {
+  const classes = [alphaWardcaller(), betaWardcaller()];
+  assert.equal(isCastingClass(entry(BETA, 3), classes), true);
+  assert.equal(isCastingClass(entry(ALPHA, 3), classes), false);
+  assert.equal(getSpellcastingAbility(entry(BETA, 3), classes), "int");
+  assert.equal(getSpellcastingAbility(entry(ALPHA, 3), classes), undefined);
+  assert.equal(multiclassSlots(makeChar({ classes: [entry(BETA, 3)] }), classes).isSpellcaster, true);
+  assert.equal(multiclassSlots(makeChar({ classes: [entry(ALPHA, 3)] }), classes).isSpellcaster, false);
+});
+
+test("a caster the catalog lacks takes the SRD Baseline's caster kind and spell ability", () => {
+  const wizard = { className: "Wizard", source: "PHB", level: 3 };
+  assert.equal(isCastingClass(wizard, []), true);
+  assert.equal(getSpellcastingAbility(wizard, []), "int");
+  assert.equal(multiclassSlots(makeChar({ classes: [wizard] }), []).isSpellcaster, true);
+});
+
+test("a legacy spell list is owned by the first class whose catalog entry casts, read from that class", () => {
+  const classes = [alphaWardcaller(), betaWardcaller()];
+  const legacy = { ...makeChar({ classes: [entry(ALPHA, 1), entry(BETA, 1)] }), knownSpells: [{ name: "Ember Dart", source: BETA }] };
+  assert.deepEqual(migrateCharacter(legacy, undefined, classes).knownSpells?.map((spell) => spell.ownerKey), [`Wardcaller__${BETA}`]);
 });

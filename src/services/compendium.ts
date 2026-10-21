@@ -163,6 +163,11 @@ const SRD_BASELINE: CompendiumCollections = {
   books: [],
 };
 
+/** The SRD Baseline's classes, the fallback for a held class the active catalog lacks. */
+export function srdBaselineClasses(): readonly ClassData[] {
+  return SRD_BASELINE.classes;
+}
+
 const srdCompendium = createCompendium(SRD_BASELINE);
 let current: Compendium = srdCompendium;
 

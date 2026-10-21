@@ -1,8 +1,23 @@
-import type { Character } from "../../types/character.ts";
+import type { Character, CharacterClass } from "../../types/character.ts";
 import type { ClassData } from "../../types/dnd5e.ts";
 import { MULTICLASS_PROFICIENCIES } from "../../constants/rules.ts";
+import { ABILITY_NAMES, abilityKeyOf } from "../abilities.ts";
 import { normalizeArmorProficiency, normalizeWeaponProficiency } from "../proficiencies.ts";
 import { findClassData } from "../catalogs.ts";
+import { heldClass } from "../classData.ts";
+
+/**
+ * The saving throws the first class grants, as the Catalog class the entry holds writes them (full names or
+ * keys). Empty for a class that is not held or names no ability.
+ */
+export function classBaseSavingThrows(first: CharacterClass | undefined, classes: readonly ClassData[]): string[] {
+  if (!first) return [];
+  const saves = heldClass(first, classes)?.savingThrows ?? [];
+  return saves.flatMap((raw) => {
+    const key = abilityKeyOf(raw);
+    return key ? [ABILITY_NAMES[key]] : [];
+  });
+}
 
 /**
  * The armor and weapon proficiencies the character's classes grant: the first class's starting

@@ -1,11 +1,11 @@
 import type { Character } from "../types/character.ts";
 import type { ClassData, ItemData, ProficiencyCategory } from "../types/dnd5e.ts";
 import { DND_SKILLS, RACE_WEAPON_PROFICIENCIES } from "../constants/rules.ts";
-import { catalogListings, findClassData, type CharacterCatalogs } from "./catalogs.ts";
+import { allCatalogClasses, catalogListings, findClassData, type CharacterCatalogs } from "./catalogs.ts";
 import { currentCompendium, type CompendiumListings } from "../services/compendium.ts";
 import { grantedFeatures } from "./grantedFeatures.ts";
 import { deduplicateWeaponProficiencies, normalizeArmorProficiency } from "./proficiencies.ts";
-import { classBaseProficiencies } from "./proficiencySources/classBase.ts";
+import { classBaseProficiencies, classBaseSavingThrows } from "./proficiencySources/classBase.ts";
 import type { FeatureInstance, ResolvedAncestry } from "./types.ts";
 import { ALL_LANGUAGE_NAMES, ALL_TOOLS, normalizeToolName } from "./proficienciesAndLanguages.ts";
 import {
@@ -25,8 +25,6 @@ import {
   validPicks,
   type ChoiceProficiencyGrant,
 } from "./proficiencyPools.ts";
-import { ABILITY_NAMES } from "./abilities.ts";
-import { CLASS_DATA } from "./classData.ts";
 import { isKnowledgeCleric, normalizeSkillName } from "./skills.ts";
 import {
   classSkillChoice,
@@ -348,11 +346,10 @@ export function proficiencySheet(character: Character, catalogs: CharacterCatalo
     ...fixedFeatureNames(features, "languages").map(normalizeLanguageName),
     ...choicePickNames(features, character, "languages", items),
   ];
-  // The first class's saves are the base, as they have always been. A later class adds none of its own.
-  const firstClass = character.classes[0];
-  const baseSaves = firstClass ? (catalogs.classRules ?? CLASS_DATA)[firstClass.className]?.savingThrows ?? [] : [];
+  // The first class's saves are the base, from the Catalog class it holds. A later class adds none of its own.
+  const baseSaves = classBaseSavingThrows(character.classes[0], allCatalogClasses(catalogs));
   const savingThrows = sheetEntries([
-    ...baseSaves.map((key) => ABILITY_NAMES[key]),
+    ...baseSaves,
     ...fixedFeatureNames(features, "savingThrows").map(normalizeSavingThrowName),
     ...choicePickNames(features, character, "savingThrows", items),
   ]);
