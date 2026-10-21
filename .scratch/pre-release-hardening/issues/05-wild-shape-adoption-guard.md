@@ -4,7 +4,9 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** done
+
+**Landed:** merged from `pr/05-wild-shape-guard` (48bc38b). Adoption now refuses when the character cannot pay (it used to clamp at 0 and enter anyway). Not guarded: the generic resource-counter stepper, and beast eligibility is still gated only by the modal.
 
 - [ ] A guard test fails when a Wild Shape adoption path does not go through the single adoption handler.
 - [ ] All current adoption entry points (the Features card, the browser modal, any other) pass the guard; any that did not are fixed in this ticket.
