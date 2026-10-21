@@ -7,13 +7,14 @@ import { proficiencySheet, type SheetEntry } from "../src/rules/proficiencySheet
 import { pruneInvalidProficiencyPicks } from "../src/rules/proficiencyPicks.ts";
 import { getSubclassSpells } from "../src/rules/subclassSpells.ts";
 import { addMulticlassLevel } from "../src/rules/builderTransitions.ts";
+import { hitDiceByType, maxHp } from "../src/rules/hp.ts";
 import { inMemoryCompendium, makeChar } from "./testUtils.ts";
 import { anyLanguageChoice, wardenClass } from "./proficiencySheetFixture.ts";
 import type { CharacterClass } from "../src/types/character.ts";
 import type { ClassData, SubclassData } from "../src/types/dnd5e.ts";
 
 // Two invented classes share the name "Wardcaller" but come from different sources, with different
-// saving throws, armor, features and subclasses. Nothing here is real 5e text.
+// hit dice, saving throws, armor, features and subclasses. Nothing here is real 5e text.
 
 const ALPHA = "ALPHA";
 const BETA = "BETA";
@@ -43,6 +44,7 @@ const alphaWardcaller = (overrides: Partial<ClassData> = {}): ClassData =>
   wardenClass({
     name: "Wardcaller",
     source: ALPHA,
+    hitDie: "1d10",
     savingThrows: ["Strength", "Constitution"],
     armorProficiencies: ["light armor"],
     features: [{ name: "Ward Sight", level: 1, description: "Invented ALPHA class feature." }],
@@ -54,6 +56,7 @@ const betaWardcaller = (overrides: Partial<ClassData> = {}): ClassData =>
   wardenClass({
     name: "Wardcaller",
     source: BETA,
+    hitDie: "1d6",
     savingThrows: ["Wisdom", "Charisma"],
     armorProficiencies: ["heavy armor"],
     features: [
@@ -168,4 +171,22 @@ test("the subclass spells of a class are read from the source the caller names",
 test("adding a class stores the chosen source on the new class entry", () => {
   const added = addMulticlassLevel(makeChar({ classes: [] }), "Wardcaller", BETA);
   assert.deepEqual(added.classes, [{ className: "Wardcaller", source: BETA, level: 1 }]);
+});
+
+test("hit dice and hit points come from the class the entry names", () => {
+  const classes = [alphaWardcaller(), betaWardcaller()];
+  const alpha = makeChar({ classes: [entry(ALPHA, 3)] });
+  const beta = makeChar({ classes: [entry(BETA, 3)] });
+  assert.deepEqual(Object.keys(hitDiceByType(alpha, classes)), ["d10"]);
+  assert.deepEqual(Object.keys(hitDiceByType(beta, classes)), ["d6"]);
+  // The first level takes the full die, each later level the average rounded up, with Constitution at 0.
+  assert.equal(maxHp(alpha, {}, classes), 10 + 2 * 6);
+  assert.equal(maxHp(beta, {}, classes), 6 + 2 * 4);
+});
+
+test("a class the catalog lacks takes the SRD Baseline's hit die, and an empty source takes the first class of its name", () => {
+  const fighter = { className: "Fighter", source: "PHB", level: 2 };
+  assert.deepEqual(Object.keys(hitDiceByType(makeChar({ classes: [fighter] }), [])), ["d10"]);
+  const classes = [alphaWardcaller(), betaWardcaller()];
+  assert.deepEqual(Object.keys(hitDiceByType(makeChar({ classes: [entry("", 2)] }), classes)), ["d10"]);
 });

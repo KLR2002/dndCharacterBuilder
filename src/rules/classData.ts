@@ -1,4 +1,7 @@
 import type { AbilityKey, CharacterClass } from "../types/character.ts";
+import type { ClassData } from "../types/dnd5e.ts";
+import { srdBaselineClasses } from "../services/compendium.ts";
+import { allCatalogClasses, findClassData } from "./catalogs.ts";
 export { MULTICLASS_PREREQUISITES } from "../constants/rules.ts";
 
 export interface ClassRules {
@@ -21,6 +24,23 @@ export const CLASS_DATA: Record<string, ClassRules> = {
   Warlock: { hitDie: 8, savingThrows: ["wis", "cha"], caster: "pact", spellAbility: "cha" },
   Wizard: { hitDie: 6, savingThrows: ["int", "wis"], caster: "full", spellAbility: "int" },
 };
+/**
+ * The Catalog class an entry holds: the class of its name and source in `classes`, else the SRD Baseline's
+ * class of that name, so a catalog that lacks a class still gives its SRD values. Undefined for a class
+ * neither has (an invented or unknown class). `classes` defaults to every class in the process-wide Compendium.
+ */
+export function heldClass(entry: { className: string; source?: string }, classes: readonly ClassData[] = allCatalogClasses()): ClassData | undefined {
+  return findClassData(classes, entry) ?? findClassData(srdBaselineClasses(), entry);
+}
+
+/** The hit die a class without one in the Catalog rolls: the d8 every rule falls back to. */
+const DEFAULT_HIT_DIE = 8;
+
+export function hitDieOf(entry: CharacterClass, classes?: readonly ClassData[]): number {
+  const faces = /^1d(\d+)$/.exec(heldClass(entry, classes)?.hitDie ?? "")?.[1];
+  return faces ? Number(faces) : DEFAULT_HIT_DIE;
+}
+
 export const THIRD_CASTERS: Record<string, string> = { Fighter: "Eldritch Knight", Rogue: "Arcane Trickster" };
 export function isThirdCaster(c: CharacterClass): boolean {
   return c.level >= 3 && c.subclassName !== undefined && THIRD_CASTERS[c.className] === c.subclassName;

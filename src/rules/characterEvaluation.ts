@@ -1,8 +1,7 @@
 import type { Character, ResourceCounter } from "../types/character.ts";
 import type { BackgroundData } from "../types/dnd5e.ts";
 import type { ResolvedAncestry } from "./types.ts";
-import { CLASS_DATA } from "./classData.ts";
-import { catalogListings, type CharacterCatalogs } from "./catalogs.ts";
+import { allCatalogClasses, catalogListings, type CharacterCatalogs } from "./catalogs.ts";
 import { effectiveScores } from "./abilities.ts";
 import { maxHp } from "./hp.ts";
 import { getHitDicePools, type HitDiePool } from "./hitDice.ts";
@@ -94,13 +93,13 @@ export function evaluateCharacter(
   const listings = catalogListings(catalogs);
   const ancestry = resolveCharacterAncestry(character, listings.races());
   const background = resolveCharacterBackground(character, listings.backgrounds());
-  const classRules = catalogs?.classRules ?? CLASS_DATA;
+  const classes = allCatalogClasses(catalogs);
 
   const lvl = totalLevel(character);
   const pb = proficiencyBonus(lvl);
   const effScores = effectiveScores(character, ancestry);
-  const maxHitPoints = maxHp(character, ancestry, classRules);
-  const hitDice = getHitDicePools(character, classRules);
+  const maxHitPoints = maxHp(character, ancestry, classes);
+  const hitDice = getHitDicePools(character, classes);
   const acResult = armorClass(character, ancestry);
   const speedsResult = characterSpeeds(character, { ...ancestry, compendium: catalogs?.compendium });
   const speedResult = speedsResult.walk;

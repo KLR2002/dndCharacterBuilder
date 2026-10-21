@@ -350,7 +350,7 @@ export function proficiencySheet(character: Character, catalogs: CharacterCatalo
   ];
   // The first class's saves are the base, as they have always been. A later class adds none of its own.
   const firstClass = character.classes[0];
-  const baseSaves = firstClass ? (catalogs.classRules ?? CLASS_DATA)[firstClass.className]?.savingThrows ?? [] : [];
+  const baseSaves = firstClass ? CLASS_DATA[firstClass.className]?.savingThrows ?? [] : [];
   const savingThrows = sheetEntries([
     ...baseSaves.map((key) => ABILITY_NAMES[key]),
     ...fixedFeatureNames(features, "savingThrows").map(normalizeSavingThrowName),
