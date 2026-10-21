@@ -69,6 +69,7 @@ function grantSourcesIn(compendium: Compendium): Map<string, GrantSource> {
     add(cls.grants, {
       feature: STARTING_PROFICIENCIES,
       level: 1,
+      optional: false,
       owner: { kind: "class", className: cls.name, source: cls.source },
     });
     for (const feature of cls.features) {
