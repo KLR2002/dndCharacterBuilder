@@ -76,6 +76,22 @@ export const PROFICIENCY_GRANT_OVERRIDES: {
     { owner: "Artificer/Artillerist", feature: "Tool Proficiency", level: 3, grants: [{ kind: "fixed", category: "tools", names: ["woodcarver's tools"] }] },
     { owner: "Artificer/Battle Smith", feature: "Tool Proficiency", level: 3, grants: [{ kind: "fixed", category: "tools", names: ["smith's tools"] }] },
     { owner: "Barbarian/Path of the Giant", feature: "Giant Power", level: 3, grants: [{ kind: "fixed", category: "languages", names: ["Giant"] }] },
+    // The Tiger is one option of the Aspect of the Beast choice, so its skill choice applies only while that
+    // pick names the Tiger. The requirement is the Catalog's gate; the grant itself is what the prose says.
+    {
+      owner: "Barbarian/Path of the Totem Warrior",
+      feature: "Tiger",
+      level: 6,
+      grants: [
+        {
+          kind: "choice",
+          category: "skills",
+          count: 2,
+          pool: { kind: "names", names: ["Athletics", "Acrobatics", "Stealth", "Survival"] },
+          requires: { feature: "Aspect of the Beast", level: 6 },
+        },
+      ],
+    },
     {
       owner: "Bard/College of Swords",
       feature: "Bonus Proficiencies",

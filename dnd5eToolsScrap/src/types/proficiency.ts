@@ -26,12 +26,24 @@ export type ProficiencyPool =
       attackType?: "melee" | "ranged";
     };
 
+/**
+ * A pick on another feature's choice that a grant depends on: the grant applies only while the character's
+ * pick on the choice of `feature` (at `level`, in the same subclass) names the feature that carries the grant.
+ * Carried by a grant that is an option's own text, for example a subclass feature that is one option of an
+ * earlier feature's choice.
+ */
+export interface GrantRequirement {
+  feature: string;
+  level: number;
+}
+
 export interface FixedProficiencyGrant {
   /** Built from source, owner, feature, level and position; never changes once shipped. */
   id: string;
   kind: "fixed";
   category: ProficiencyCategory;
   names: string[];
+  requires?: GrantRequirement;
 }
 
 export interface ChoiceProficiencyGrant {
@@ -40,14 +52,15 @@ export interface ChoiceProficiencyGrant {
   category: ProficiencyCategory;
   count: number;
   pool: ProficiencyPool;
+  requires?: GrantRequirement;
 }
 
 export type ProficiencyGrant = FixedProficiencyGrant | ChoiceProficiencyGrant;
 
 /** A grant as written in the override file: names only, no id (the scraper assigns it). */
 export type ProficiencyGrantSpec =
-  | { kind: "fixed"; category: ProficiencyCategory; names: string[] }
-  | { kind: "choice"; category: ProficiencyCategory; count: number; pool: ProficiencyPool };
+  | { kind: "fixed"; category: ProficiencyCategory; names: string[]; requires?: GrantRequirement }
+  | { kind: "choice"; category: ProficiencyCategory; count: number; pool: ProficiencyPool; requires?: GrantRequirement };
 
 /** One item the extractor could not turn into grants, for review. */
 export interface UnparsedProficiency {

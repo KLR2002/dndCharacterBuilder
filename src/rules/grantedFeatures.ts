@@ -6,7 +6,7 @@ import { ruleChoiceId } from "./choices/types.ts";
 import { applyRuleChoice, replacedTraitNames } from "./raceRuleChoices.ts";
 import { raisedAbilityGrants } from "./proficiencyPools.ts";
 import { recordGrantSources } from "./recordProficiencyGrants.ts";
-import { optionGrantApplies } from "./optionFeatureGrants.ts";
+import { grantRequirementMet, type SubclassOwner } from "./optionFeatureGrants.ts";
 import { findClassData } from "./catalogs.ts";
 
 export function grantedFeatures(character: Character, catalog: FeatureCatalog): FeatureInstance[] {
@@ -71,6 +71,11 @@ export function grantedFeatures(character: Character, catalog: FeatureCatalog): 
       } else {
         if (replacedBaseFeatures.has(f.name)) return;
       }
+      const gateOwner = { className: c.className, subclassName: subclassName ?? "", subclassSource: source };
+      // A grant that requires another feature's pick applies only with that pick: an unpicked option's grants are not listed.
+      const grants = (f.grants ?? []).filter((grant) =>
+        origin !== "Subclass" || grantRequirementMet(character, gateOwner, grant.requires, f.name),
+      );
       const feature: Omit<FeatureInstance, "id"> = {
         name: f.name,
         description: f.description,
@@ -79,10 +84,7 @@ export function grantedFeatures(character: Character, catalog: FeatureCatalog): 
         className: c.className,
         ...(subclassName ? { subclassName } : {}),
         level: f.level,
-        // An unpicked option's grants do not apply, so its feature is listed without them.
-        ...(f.grants?.length && (origin !== "Subclass" || optionGrantApplies(character, { className: c.className, subclassName: c.subclassName }, f))
-          ? { grants: f.grants }
-          : {}),
+        ...(grants.length ? { grants } : {}),
       };
       // The catalog repeats these at threshold levels. Retain one grant, not additive uses/attacks.
       if (/^Extra Attack(?: \(\d+\))?$/.test(f.name)) {
@@ -105,6 +107,32 @@ export function grantedFeatures(character: Character, catalog: FeatureCatalog): 
         }
       }
       add(feature, owner, f.level);
+      if (origin === "Subclass") addPickedOptions(f, gateOwner, feature.source, owner, subclassName);
+    }
+    /**
+     * A subclass feature's option features are folded into the feature's choice. An option that carries its own
+     * grants is listed as a feature of its own while the parent's pick names it, so its grants reach the sheet.
+     */
+    function addPickedOptions(f: ClassFeatureData, gateOwner: SubclassOwner, source: string, owner: string, subclassName?: string) {
+      for (const option of f.choices?.options ?? []) {
+        if (!option.grants?.length) continue;
+        if (!grantRequirementMet(character, gateOwner, { feature: f.name, level: f.level }, option.name)) continue;
+        const level = option.level ?? f.level;
+        add(
+          {
+            name: option.name,
+            description: option.description,
+            source: option.source ?? source,
+            origin: "Subclass",
+            className: c.className,
+            ...(subclassName ? { subclassName } : {}),
+            level,
+            grants: option.grants,
+          },
+          owner,
+          level,
+        );
+      }
     }
     for (const f of cls?.features || []) addClassFeature(f, "Class", c.source, c.className);
     const subclass = cls?.subclasses.find(s => s.name === c.subclassName && (!c.subclassSource || s.source === c.subclassSource));

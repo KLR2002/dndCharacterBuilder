@@ -931,6 +931,10 @@
                     "Stealth",
                     "Survival"
                   ]
+                },
+                "requires": {
+                  "feature": "Aspect of the Beast",
+                  "level": 6
                 }
               }
             ]

@@ -1,7 +1,7 @@
 import type { Character } from "../types/character.ts";
-import type { ClassData, ProficiencyGrant } from "../types/dnd5e.ts";
+import type { ClassData, GrantRequirement, ProficiencyGrant } from "../types/dnd5e.ts";
 import type { Compendium } from "../services/compendium.ts";
-import { optionGrantApplies } from "./optionFeatureGrants.ts";
+import { grantRequirementMet } from "./optionFeatureGrants.ts";
 import { findClassData } from "./catalogs.ts";
 import { poolNames, sourceRecordGrants, STARTING_PROFICIENCIES, validPicks, type ChoiceProficiencyGrant } from "./proficiencyPools.ts";
 import { recordGrantSources } from "./recordProficiencyGrants.ts";
@@ -113,7 +113,7 @@ export function moveLegacySourcePicks(character: Character, compendium: Compendi
 /** A class owner is the catalog class itself, so two classes of one name from different sources are told apart. */
 type GrantOwner =
   | { kind: "class"; className: string; source: string }
-  | { kind: "subclass"; className: string; source: string; subclassName: string }
+  | { kind: "subclass"; className: string; source: string; subclassName: string; subclassSource: string }
   | { kind: "feat"; featName: string }
   | { kind: "record"; origin: "Race" | "Subrace" | "Background"; name: string; source: string; raceName?: string; raceSource?: string };
 
@@ -125,6 +125,8 @@ interface GrantSource {
   /** Whether the feature is an optional class feature, held only while it is turned on. */
   optional: boolean;
   owner: GrantOwner;
+  /** The pick on another feature's choice the grant depends on, when it has one. */
+  requires?: GrantRequirement;
 }
 
 /** Every Proficiency Grant id in the Compendium, with the feature that carries it. Unscoped by books. */
@@ -132,7 +134,7 @@ function grantSourcesIn(compendium: Compendium): Map<string, GrantSource> {
   const listings = compendium.for();
   const sources = new Map<string, GrantSource>();
   const add = (grants: ProficiencyGrant[] | undefined, source: GrantSource) => {
-    for (const grant of grants ?? []) sources.set(grant.id, source);
+    for (const grant of grants ?? []) sources.set(grant.id, { ...source, requires: grant.requires ?? source.requires });
   };
   for (const cls of listings.classes()) {
     add(cls.grants, {
@@ -150,13 +152,19 @@ function grantSourcesIn(compendium: Compendium): Map<string, GrantSource> {
       });
     }
     for (const sub of cls.subclasses) {
+      const owner = { kind: "subclass" as const, className: cls.name, source: cls.source, subclassName: sub.name, subclassSource: sub.source };
       for (const feature of sub.features) {
-        add(feature.grants, {
-          feature: feature.name,
-          level: feature.level,
-          optional: feature.isOptional === true,
-          owner: { kind: "subclass", className: cls.name, source: cls.source, subclassName: sub.name },
-        });
+        add(feature.grants, { feature: feature.name, level: feature.level, optional: feature.isOptional === true, owner });
+        // A folded option's grants are its own, applying while the feature's pick names it.
+        for (const option of feature.choices?.options ?? []) {
+          add(option.grants, {
+            feature: option.name,
+            level: option.level ?? feature.level,
+            optional: false,
+            owner,
+            requires: { feature: feature.name, level: feature.level },
+          });
+        }
       }
     }
   }
@@ -205,7 +213,8 @@ function ownerHeld(source: GrantSource, character: Character, classes: readonly 
     if (!held || held.name !== owner.className || held.source !== owner.source) return false;
     if (owner.kind === "class") return true;
     if ((c.subclassName ?? "").toLowerCase() !== owner.subclassName.toLowerCase()) return false;
-    return optionGrantApplies(character, { className: c.className, subclassName: c.subclassName }, { name: source.feature, level: source.level });
+    const gate = { className: c.className, subclassName: owner.subclassName, subclassSource: owner.subclassSource };
+    return grantRequirementMet(character, gate, source.requires, source.feature);
   });
 }
 
