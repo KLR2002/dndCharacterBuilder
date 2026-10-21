@@ -164,6 +164,7 @@ export function getClassSpellProfiles(
       swaps: character.subclassSpellSwaps || opts.swaps,
       activeBooks: opts.activeBooks,
       ruleChoices: character.ruleChoices,
+      classSource: c.source,
     });
 
     const alwaysPrepNames = new Set((subSpells.prepared || []).map(s => s.name.toLowerCase()));

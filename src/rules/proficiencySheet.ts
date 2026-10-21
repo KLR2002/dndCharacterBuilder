@@ -1,7 +1,7 @@
 import type { Character } from "../types/character.ts";
 import type { ItemData, ProficiencyCategory } from "../types/dnd5e.ts";
 import { DND_SKILLS, RACE_WEAPON_PROFICIENCIES } from "../constants/rules.ts";
-import { catalogListings, type CharacterCatalogs } from "./catalogs.ts";
+import { catalogListings, findClassData, type CharacterCatalogs } from "./catalogs.ts";
 import { currentCompendium, type CompendiumListings } from "../services/compendium.ts";
 import { grantedFeatures } from "./grantedFeatures.ts";
 import { deduplicateWeaponProficiencies, normalizeArmorProficiency } from "./proficiencies.ts";
@@ -264,7 +264,7 @@ export function skillChoiceOffers(
 
   const first = character.classes[0];
   if (first) {
-    const classData = (catalogs.compendium ?? currentCompendium()).findClass(first.className, first.source);
+    const classData = findClassData((catalogs.compendium ?? currentCompendium()).for().classes(), first);
     const starting = classSkillChoice(classData);
     if (starting && starting.choose > 0) {
       offers.push({

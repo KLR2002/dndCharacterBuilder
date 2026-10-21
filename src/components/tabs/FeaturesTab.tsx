@@ -13,7 +13,6 @@ import { useCharacters } from "../../context/CharacterContext";
 import { useAppTheme } from "../../context/ThemeContext";
 import { useResponsiveLayout } from "../../hooks/useResponsiveLayout";
 import {
-  findClass,
   findRace,
   getBackgrounds,
   getClasses,
@@ -23,6 +22,7 @@ import {
 } from "../../services/dataService";
 import { evaluateCharacter } from "../../rules/characterEvaluation";
 import { currentCompendium } from "../../services/compendium";
+import { findClassData } from "../../rules/catalogs";
 import {
   getAvailableOptionalFeatures,
   getReplacedBaseFeatures,
@@ -205,7 +205,7 @@ export const FeaturesTab: React.FC = () => {
 
     // 3. Class Features
     for (const c of currentCharacter.classes || []) {
-      const classData = findClass(c.className, c.source);
+      const classData = findClassData(currentCompendium().for().classes(), c);
       if (classData?.features) {
         for (const cf of classData.features) {
           if (cf.level <= c.level) {

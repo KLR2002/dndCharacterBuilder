@@ -14,7 +14,6 @@ import { reconcile } from "../../rules/characterReconciler";
 import { subclassLevel } from "../../rules/leveling";
 import { currentCompendium } from "../../services/compendium";
 import type { ToolGrant } from "../../rules/proficiencySheet";
-import { findClass } from "../../services/dataService";
 import { Badge } from "../ui/Badge";
 import { Button } from "../ui/Button";
 import { Card } from "../ui/Card";
@@ -23,7 +22,7 @@ import { SearchBar } from "../ui/SearchBar";
 import { AsiFeatSection, PendingAsiSlot } from "./AsiFeatSection";
 import { builderStyles as styles, RuleChoicePicker, SkillPicker } from "./builderStyles";
 import { normalizeSkillName } from "../../rules/skills";
-import type { CharacterCatalogs } from "../../rules/catalogs";
+import { findClassData, type CharacterCatalogs } from "../../rules/catalogs";
 import { StartingGrantsSection } from "./StartingGrantsSection";
 import { useResponsiveLayout } from "../../hooks/useResponsiveLayout";
 import {
@@ -108,6 +107,10 @@ export const ClassProgressionSection: React.FC<ClassProgressionSectionProps> = (
     orphaned: string[];
   } | null>(null);
   const hasAnyClass = (character.classes || []).length > 0;
+  // Two listed classes can share a name (the same class from two sources). Only then is a source shown.
+  const sharedClassNames = new Set(
+    allClasses.map((cl) => cl.name).filter((name, index, names) => names.indexOf(name) !== index)
+  );
   // SRD mode has exactly one subclass per class, so there is no choice to offer: it is applied instead.
   const isSrd = !currentCompendium().integrated;
 
@@ -188,7 +191,7 @@ export const ClassProgressionSection: React.FC<ClassProgressionSectionProps> = (
           <Badge label={`Prof +${Math.floor((totalLevel - 1) / 4) + 2}`} variant="accent" />
         </View>
         {character.classes.map((c) => {
-          const cd = findClass(c.className, c.source);
+          const cd = findClassData(currentCompendium().for().classes(), c);
           const subReq = subclassLevel(c.className);
           return (
             <View
@@ -285,7 +288,7 @@ export const ClassProgressionSection: React.FC<ClassProgressionSectionProps> = (
 
       {/* Subclass prompts & Change pickers */}
       {character.classes.map((c) => {
-        const cd = findClass(c.className, c.source);
+        const cd = findClassData(currentCompendium().for().classes(), c);
         const req = subclassLevel(c.className);
         const isChanging = changingSubclassFor === c.className;
         const needsChoice = !c.subclassName;
@@ -744,11 +747,17 @@ export const ClassProgressionSection: React.FC<ClassProgressionSectionProps> = (
         {allClasses
           .filter((cl) => cl.name.toLowerCase().includes(classSearch.toLowerCase()))
           .map((cl) => {
-            const existing = character.classes.some(
-              (c) => c.className.toLowerCase() === cl.name.toLowerCase()
-            );
-            const prereq =
-              existing || !hasAnyClass ? { ok: true } : validateMulticlass(character, cl.name, effectiveScores);
+            // A character holds one entry per class name. The held entry belongs to this card when it resolves
+            // to this catalog class; when it resolves to the other source of the name, this card is taken.
+            const held = character.classes.find((c) => c.className.toLowerCase() === cl.name.toLowerCase());
+            const heldClass = held ? findClassData(allClasses, held) : undefined;
+            const takenFrom = heldClass && heldClass.source !== cl.source ? heldClass.source : undefined;
+            const existing = Boolean(held) && !takenFrom;
+            const prereq = takenFrom
+              ? { ok: false, reason: `Already held from ${takenFrom}` }
+              : existing || !hasAnyClass
+                ? { ok: true }
+                : validateMulticlass(character, cl.name, effectiveScores);
 
             return (
               <Card key={`${cl.name}__${cl.source}`}>
@@ -756,6 +765,7 @@ export const ClassProgressionSection: React.FC<ClassProgressionSectionProps> = (
                   <View style={{ flex: 1 }}>
                     <View style={{ flexDirection: "row", flexWrap: "wrap", alignItems: "center", gap: 6 }}>
                       <Text style={[styles.itemTitle, { color: theme.text }]}>{cl.name}</Text>
+                      {sharedClassNames.has(cl.name) && <Badge label={cl.source} size="sm" />}
                       <Badge label={cl.hitDie} size="sm" />
                       {existing && <Badge label="Active" variant="accent" size="sm" />}
                     </View>

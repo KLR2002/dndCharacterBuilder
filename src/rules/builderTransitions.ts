@@ -20,7 +20,7 @@ import {
   MULTICLASS_PROFICIENCIES,
   DND_SKILLS,
 } from "../constants/rules.ts";
-import type { CharacterCatalogs } from "./catalogs.ts";
+import { findClassData, type CharacterCatalogs } from "./catalogs.ts";
 
 export function setStandardArrayPick(
   character: Character,
@@ -325,7 +325,7 @@ export function applySoleSubclasses(character: Character, compendium: Compendium
   let updated = character;
   for (const entry of character.classes) {
     if (entry.subclassName || entry.subclass || entry.level < subclassLevel(entry.className)) continue;
-    const subclasses = compendium.findClass(entry.className)?.subclasses ?? [];
+    const subclasses = findClassData(compendium.for().classes(), entry)?.subclasses ?? [];
     if (subclasses.length !== 1) continue;
     const [sole] = subclasses;
     updated = changeSubclass(updated, entry.className, sole.name, sole.source, [], compendium);
