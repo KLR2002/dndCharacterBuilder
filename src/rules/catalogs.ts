@@ -1,4 +1,4 @@
-import type { ClassRules } from "./classData.ts";
+import type { ClassData } from "../types/dnd5e.ts";
 import { currentCompendium, type Compendium, type CompendiumListings } from "../services/compendium.ts";
 
 /** The one catalog bundle the rules take: names resolve against a Compendium, scoped to the active books. */
@@ -7,12 +7,19 @@ export interface CharacterCatalogs {
   compendium?: Compendium;
   /** Scopes listings to these books. Omitted means unscoped. */
   activeBooks?: string[];
-  classRules?: Record<string, ClassRules>;
 }
 
 /** The listings a rules function reads from the bundle's Compendium, scoped to its active books. */
 export function catalogListings(catalogs?: CharacterCatalogs): CompendiumListings {
   return (catalogs?.compendium ?? currentCompendium()).for(catalogs?.activeBooks);
+}
+
+/**
+ * Every class in the bundle's Compendium, unscoped. A held class resolves by its name and source whatever
+ * the active books, so a character keeps the class it holds when a book is turned off.
+ */
+export function allCatalogClasses(catalogs?: CharacterCatalogs): readonly ClassData[] {
+  return (catalogs?.compendium ?? currentCompendium()).for().classes();
 }
 
 /**

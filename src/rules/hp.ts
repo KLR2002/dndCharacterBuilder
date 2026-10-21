@@ -1,10 +1,12 @@
 import type { Character } from "../types/character.ts";
 import type { ResolvedAncestry } from "./types.ts";
-import { CLASS_DATA, type ClassRules } from "./classData.ts";
+import type { ClassData } from "../types/dnd5e.ts";
+import { hitDieOf } from "./classData.ts";
+import { allCatalogClasses } from "./catalogs.ts";
 import { effectiveScores, hasFeat } from "./abilities.ts";
 import { totalLevel } from "./proficiencies.ts";
 
-export function maxHp(character: Character, opts: ResolvedAncestry = {}, classes: Record<string, ClassRules> = CLASS_DATA): number {
+export function maxHp(character: Character, opts: ResolvedAncestry = {}, classes: readonly ClassData[] = allCatalogClasses()): number {
   if (character.maxHpOverride != null && character.maxHpOverride > 0) return character.maxHpOverride;
   const con = effectiveScores(character, opts).modifiers.con;
   const isHillDwarf =
@@ -14,7 +16,7 @@ export function maxHp(character: Character, opts: ResolvedAncestry = {}, classes
   if (!character.classes.length) return Math.max(1, 10 + con + (isHillDwarf ? 1 : 0));
   let hp = 0, first = true;
   for (const c of character.classes) {
-    const die = classes[c.className]?.hitDie ?? 8;
+    const die = hitDieOf(c, classes);
     for (let level = 1; level <= c.level; level++) {
       hp += Math.max(1, (first ? die : Math.floor(die / 2) + 1) + con);
       first = false;
@@ -22,10 +24,10 @@ export function maxHp(character: Character, opts: ResolvedAncestry = {}, classes
   }
   return Math.max(1, hp + (hasFeat(character, "Tough") ? 2 * totalLevel(character) : 0) + dwarvenToughness);
 }
-export function hitDiceByType(character: Character, classes: Record<string, ClassRules> = CLASS_DATA) {
+export function hitDiceByType(character: Character, classes: readonly ClassData[] = allCatalogClasses()) {
   const pools: Record<string, { total: number; used: number; remaining: number }> = {};
   for (const c of character.classes) {
-    const key = `d${classes[c.className]?.hitDie ?? 8}`;
+    const key = `d${hitDieOf(c, classes)}`;
     pools[key] ??= { total: 0, used: 0, remaining: 0 };
     pools[key].total += c.level;
   }

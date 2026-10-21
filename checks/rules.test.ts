@@ -14,7 +14,7 @@ import { multiclassSlots, pactSlots } from "../src/rules/slots.ts";
 import { proficiencyBonus, totalLevel } from "../src/rules/proficiencies.ts";
 import { classBaseProficiencies as proficiencies } from "../src/rules/proficiencySources/classBase.ts";
 import { grantedFeatures } from "../src/rules/grantedFeatures.ts";
-import { CLASS_DATA, PHB_HALF_CASTER_SLOTS, PHB_THIRD_CASTER_SLOTS, spellcastingAbility, asiLevels } from "../src/rules/classData.ts";
+import { hitDieOf, PHB_HALF_CASTER_SLOTS, PHB_THIRD_CASTER_SLOTS, spellcastingAbility, asiLevels } from "../src/rules/classData.ts";
 
 // Use the test catalog fixture; production rules receive only resolved plain data.
 const readCatalog = (name: string) => loadTestCatalog(name);
@@ -91,7 +91,7 @@ test("Tough feat adds two HP per level, CON applies retroactively, override wins
 test("shared d8 hit dice are pooled once; paladin keeps its d10 and spent dice counted once", () => {
   const c = makeChar({ classes: [cl("Monk", 2), cl("Bard", 3), cl("Paladin", 2)], usedHitDice: { d8: 2, d10: 1 } });
   assert.deepEqual(hitDiceByType(c), { d8: { total: 5, used: 2, remaining: 3 }, d10: { total: 2, used: 1, remaining: 1 } });
-  assert.equal(CLASS_DATA.Paladin.hitDie, 10);
+  assert.equal(hitDieOf(cl("Paladin", 2)), 10);
 });
 test("multiclass Barbarian 1 / Bard 1 has separate 1d12 and 1d8 hit dice pools", () => {
   const c = makeChar({ classes: [cl("Barbarian", 1), cl("Bard", 1)] });

@@ -12,7 +12,7 @@ import { applyCharacterUpdate } from "./characterUpdates";
 import { migrateCharacter } from "../rules/migrateCharacter";
 import { reconcileForActiveBooks } from "../rules/characterReconciler";
 import { checkActiveBooksIntegrity } from "../rules/builderTransitions";
-import { getRaces } from "../services/dataService";
+import { getClasses, getRaces } from "../services/dataService";
 import { currentCompendium, integrate as integrateCompendium, revertToSrd as revertCompendiumToSrd } from "../services/compendium";
 import {
   clearCompendiumData,
@@ -149,7 +149,8 @@ export function CharacterProvider({ children }: { children: React.ReactNode }) {
         }
         setCatalogStale(currentCompendium().stale);
         const raceCatalog = getRaces();
-        const migratedCharacters = loadedChars.map((c) => migrateCharacter(c, raceCatalog));
+        const classCatalog = getClasses();
+        const migratedCharacters = loadedChars.map((c) => migrateCharacter(c, raceCatalog, classCatalog));
         setActiveBooksState(loadedSettings.activeResourceBooks || DEFAULT_ACTIVE_BOOK_CODES);
         setFullHealOnLevelUpState(loadedSettings.fullHealOnLevelUp);
         setHasCompletedFirstRun(Boolean(loadedSettings.hasCompletedFirstRun));
