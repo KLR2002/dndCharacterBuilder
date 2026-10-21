@@ -42,6 +42,8 @@ export interface RaceModel {
 }
 
 export interface SubraceModel {
+  /** Proficiency Grants the subrace's structured proficiency entries give. Absent when it gives none. */
+  grants?: ProficiencyGrant[];
   name: string;
   /** True when this subrace is a rules variant of its ancestry. */
   isVariant: boolean;

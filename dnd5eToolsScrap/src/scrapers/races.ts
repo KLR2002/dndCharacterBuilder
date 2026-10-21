@@ -118,7 +118,23 @@ export async function scrapeRaces(
 
     const normalized = normalizeSubraceName(rawSub.name);
 
+    // Structured proficiency fields on the subrace, owned by "Subrace" and named with its race.
+    const proficiencies = structuredGrants(
+      { source: rawSub.source, owner: "Subrace", feature: `${parentName} (${normalized.name})`, level: 0 },
+      {
+        skills: rawSub.skillProficiencies,
+        tools: rawSub.toolProficiencies,
+        languages: rawSub.languageProficiencies,
+        weapons: rawSub.weaponProficiencies,
+        armor: rawSub.armorProficiencies,
+      }
+    );
+    if (proficiencies.unparsed.length > 0) {
+      report.unparsed.push({ owner: "Subrace", feature: `${parentName} (${normalized.name})`, level: 0, unparsed: proficiencies.unparsed });
+    }
+
     const subraceModel: SubraceModel = {
+      ...(proficiencies.grants.length > 0 ? { grants: proficiencies.grants } : {}),
       name: normalized.name,
       isVariant: normalized.isVariant,
       source: rawSub.source,
