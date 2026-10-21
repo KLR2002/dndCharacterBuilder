@@ -17,7 +17,6 @@ A few hand tables of rule content remain in the app. Each is an exception to the
 - `raceTraining` in `src/rules/proficiencySheet.ts`: the race armor case (Mountain Dwarf and Githyanki).
 - `OPTION_FEATURE_CHOICES` in `src/rules/optionFeatureGrants.ts`: the Totem Warrior option table.
 - `KENSEI_SUBCLASS` in `src/rules/kenseiWeapons.ts`: the Kensei subclass name.
-- `getClassToolGrant` in `src/rules/proficiencySources/toolsAndLanguages.ts`: the class-name tool if-chain.
 
 ## Considered Options
 A hand-written grants table inside `src/` was rejected: it would bundle non-SRD rule content in the app, and nothing would reveal gaps. Parsing prose at runtime was rejected as unreviewable and slow.
