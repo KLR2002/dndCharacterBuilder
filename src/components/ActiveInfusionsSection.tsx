@@ -293,7 +293,7 @@ export const ActiveInfusionsSection: React.FC = () => {
               Apply {targetSelectModal.infusionName} to an item in your inventory:
             </Text>
 
-            <ScrollView style={styles.modalScroll}>
+            <ScrollView style={styles.modalScroll} nestedScrollEnabled>
               {inventoryItems.length === 0 ? (
                 <Text style={[styles.modalEmpty, { color: theme.textMuted }]}>
                   No items in inventory. Add an item in the Inventory tab first.
