@@ -718,6 +718,21 @@ export function clearBackground(character: Character, catalogs: CharacterCatalog
   return reconcile(cleared, compendium);
 }
 
+/**
+ * Turns an optional class feature on or off. Turning it off releases the Proficiency Choice pick stored
+ * for its grants, with a review notice; turning it back on asks for the pick again.
+ */
+export function setOptionalFeatureEnabled(
+  character: Character,
+  featureName: string,
+  enabled: boolean,
+  compendium: Compendium,
+  options: { activeBooks?: string[] } = {},
+): Character {
+  const optionalFeatureReplacements = { ...(character.optionalFeatureReplacements ?? {}), [featureName]: enabled };
+  return reconcile({ ...character, optionalFeatureReplacements }, compendium, options);
+}
+
 export function parseBackgroundEquipment(startingEquipment: string[] = []): {
   coins: { cp?: number; sp?: number; ep?: number; gp?: number; pp?: number };
   items: { name: string; quantity: number; section: "carried" | "equipped" }[];
