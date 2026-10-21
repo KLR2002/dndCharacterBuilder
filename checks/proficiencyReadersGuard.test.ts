@@ -9,19 +9,51 @@ import { fileURLToPath } from "node:url";
 // or re-exports of the proficiency tables the sheet reads, including reads through a namespace import
 // (`ns.TABLE`, `ns["TABLE"]`, `const { TABLE } = ns`) and `export *` of a module that exports a table.
 // It fails on any use outside the sheet unless the allowlist below names it with a reason. Allowlist entries
-// must still match a use, so a removed use takes its entry out with it.
+// must still match a use, so a removed use takes its entry out with it. Names ADR 0015 deleted (tables, the
+// tool chains, special cases and their modules) fail anywhere under src/, and the allowlist may not name them.
 
 const SRC = fileURLToPath(new URL("../src/", import.meta.url));
 const SHEET_FILE = "rules/proficiencySheet.ts";
 const PRIVATE_FOLDER = "rules/proficiencySources/";
+const ADR_0015 = fileURLToPath(new URL("../docs/adr/0015-proficiency-grants-live-in-the-catalog.md", import.meta.url));
 
-/** Proficiency tables only the sheet reads. A named import or re-export of one is a read. */
-const GUARDED_CONSTANTS = [
-  "RACE_WEAPON_PROFICIENCIES",
-  "MULTICLASS_PROFICIENCIES",
-  "RACE_SKILL_PROFICIENCIES",
-  "BACKGROUND_SKILL_PROFICIENCIES",
+/** Proficiency tables that remain and that only the sheet reads. A named import or re-export of one is a read. */
+const GUARDED_CONSTANTS = ["MULTICLASS_PROFICIENCIES"];
+
+/** An identifier and the pattern that finds it in code. */
+function identifier(name: string): { name: string; pattern: RegExp } {
+  return { name, pattern: new RegExp(`\\b${name}\\b`) };
+}
+
+/**
+ * What ADR 0015 deleted: hand tables, the class-name and race or background tool chains, and special cases.
+ * Each pattern runs on code with comments removed. A match fails anywhere under src/, the sheet and its
+ * private folder included, so a reintroduction cannot hide behind an exemption.
+ */
+const DELETED_NAMES: { name: string; pattern: RegExp }[] = [
+  identifier("RACE_WEAPON_PROFICIENCIES"),
+  identifier("RACE_SKILL_PROFICIENCIES"),
+  identifier("BACKGROUND_SKILL_PROFICIENCIES"),
+  identifier("OPTION_FEATURE_CHOICES"),
+  identifier("CLASS_DATA"),
+  identifier("getClassToolGrant"),
+  identifier("getRaceToolGrant"),
+  identifier("getRaceLanguageGrant"),
+  identifier("getBackgroundToolGrant"),
+  identifier("getBackgroundLanguageGrant"),
+  identifier("sourceToolAndLanguageGrants"),
+  identifier("raceTraining"),
+  identifier("optionGrantApplies"),
+  identifier("KENSEI_SUBCLASS"),
+  { name: '"Way of the Kensei"', pattern: /["']Way of the Kensei["']/ },
+  {
+    name: 'a race comparison with "Githyanki" or "Mountain Dwarf"',
+    pattern: /["'](?:Githyanki|Mountain Dwarf)["']\s*[!=]==?|[!=]==?\s*["'](?:Githyanki|Mountain Dwarf)["']/,
+  },
 ];
+
+/** Source files ADR 0015 deleted, by path relative to src/. */
+const DELETED_MODULES = ["rules/proficiencySources/toolsAndLanguages.ts"];
 
 /** The field names only the sheet reads. A leading dot matches a property access. */
 const GUARDED_FIELDS: { field: string; pattern: RegExp }[] = [
@@ -101,7 +133,7 @@ const ALLOWANCES: Allowance[] = [
 
 interface Finding {
   file: string;
-  kind: "field" | "import" | "constant" | "namespace" | "reexport";
+  kind: "field" | "import" | "constant" | "namespace" | "reexport" | "deleted";
   name: string;
 }
 
@@ -235,6 +267,39 @@ function findingsIn(file: string, source: string, exportsOf: ExportsOf): Finding
   return findings;
 }
 
+/** Every deleted name in one file's code, by the file that holds it. `file` is relative to src/. */
+function deletedIn(file: string, source: string): Finding[] {
+  const code = codeOnly(source);
+  return DELETED_NAMES.filter(({ pattern }) => pattern.test(code)).map(({ name }) => ({ file, kind: "deleted", name }));
+}
+
+/** The deleted source files that are present, given every source path relative to src/. */
+function deletedFileFindings(paths: string[]): Finding[] {
+  return paths.filter((path) => DELETED_MODULES.includes(path)).map((path) => ({ file: path, kind: "deleted", name: path }));
+}
+
+/** The allowlist entries that name a deleted table, chain, special case or module, as `file: name`. */
+function deletedAllowances(allowances: Allowance[]): string[] {
+  const deleted = new Set([...DELETED_NAMES.map((d) => d.name), ...DELETED_MODULES]);
+  return allowances.flatMap((a) =>
+    a.files.flatMap((file) =>
+      [...(a.constants ?? []), ...(a.imports ?? []), ...(a.fields ?? [])].filter((name) => deleted.has(name)).map((name) => `${file}: ${name}`),
+    ),
+  );
+}
+
+/** The table names in ADR 0015's Known exceptions section, in backticks. */
+function knownExceptions(): string[] {
+  const adr = readFileSync(ADR_0015, "utf8");
+  const section = adr.split(/^## /m).find((part) => part.startsWith("Known exceptions")) ?? "";
+  return [...section.matchAll(/`([A-Z][A-Z0-9_]*)`/g)].map((m) => m[1]);
+}
+
+/** Whether some module under src/ exports the name. */
+function exportedSomewhere(name: string): boolean {
+  return sourceFiles(SRC).some((path) => treeExportsOf()(relative(SRC, path).split(sep).join("/")).has(name));
+}
+
 /**
  * Exempt from the guard: the sheet and its private folder (they are the readers), and src/types/, which
  * only declares the shapes of saved characters and catalog records and reads nothing.
@@ -244,6 +309,7 @@ function isExempt(file: string): boolean {
 }
 
 function allowedBy(finding: Finding, allowances: Allowance[]): boolean {
+  if (finding.kind === "deleted") return false;
   return allowances.some((a) => {
     if (!a.files.includes(finding.file)) return false;
     if (finding.kind === "field") return a.fields?.includes(finding.name) ?? false;
@@ -253,6 +319,7 @@ function allowedBy(finding: Finding, allowances: Allowance[]): boolean {
 }
 
 function format(finding: Finding): string {
+  if (finding.kind === "deleted") return `${finding.file} reintroduces ${finding.name}; ADR 0015 deleted it`;
   if (finding.kind === "field") return `${finding.file} reads ${finding.name}; only ${SHEET_FILE} reads proficiency fields`;
   if (finding.kind === "constant") return `${finding.file} imports ${finding.name}; only ${SHEET_FILE} and its private folder read that table`;
   if (finding.kind === "namespace") {
@@ -264,15 +331,20 @@ function format(finding: Finding): string {
 
 /** The findings in one file that no allowance covers. `exportsOf` says what each module exports. */
 function violationsFor(file: string, source: string, allowances: Allowance[], exportsOf: ExportsOf = treeExportsOf()): Finding[] {
-  if (isExempt(file)) return [];
-  return findingsIn(file, source, exportsOf).filter((finding) => !allowedBy(finding, allowances));
+  const deleted = deletedIn(file, source);
+  if (isExempt(file)) return deleted;
+  return [...deleted, ...findingsIn(file, source, exportsOf).filter((finding) => !allowedBy(finding, allowances))];
 }
 
 function treeFindings(): Finding[] {
-  return sourceFiles(SRC).flatMap((path) => {
-    const file = relative(SRC, path).split(sep).join("/");
-    return isExempt(file) ? [] : findingsIn(file, readFileSync(path, "utf8"), treeExportsOf());
-  });
+  const files = sourceFiles(SRC).map((path) => ({ file: relative(SRC, path).split(sep).join("/"), path }));
+  return [
+    ...deletedFileFindings(files.map(({ file }) => file)),
+    ...files.flatMap(({ file, path }) => {
+      const source = readFileSync(path, "utf8");
+      return [...deletedIn(file, source), ...(isExempt(file) ? [] : findingsIn(file, source, treeExportsOf()))];
+    }),
+  ];
 }
 
 test("guard, synthetic: a component that reads a race tool field fails, named by file and field", () => {
@@ -286,7 +358,7 @@ test("guard, synthetic: a component that reads a race tool field fails, named by
 });
 
 test("guard, synthetic: a component importing a sheet-private module fails, named by file and module", () => {
-  const offending = 'import { getRaceToolGrant } from "../rules/proficiencySources/toolsAndLanguages.ts";\n';
+  const offending = 'import { grantedTools } from "../rules/proficiencySources/toolsAndLanguages.ts";\n';
   const violations = violationsFor("components/Synthetic.tsx", offending, []);
   assert.deepEqual(
     violations.map((v) => [v.file, v.name]),
@@ -296,7 +368,7 @@ test("guard, synthetic: a component importing a sheet-private module fails, name
 
 test("guard, synthetic: importing or re-exporting a guarded proficiency table fails, named by file and table", () => {
   const imported = 'import {\n  STANDARD_ARRAY,\n  MULTICLASS_PROFICIENCIES as table,\n} from "../constants/rules.ts";\n';
-  const reexported = 'export { RACE_WEAPON_PROFICIENCIES } from "../constants/rules.ts";\n';
+  const reexported = 'export { MULTICLASS_PROFICIENCIES } from "../constants/rules.ts";\n';
   const harmless = 'import { MULTICLASS_PREREQUISITES } from "../constants/rules.ts";\n';
   assert.deepEqual(
     violationsFor("components/Synthetic.tsx", imported, []).map((v) => [v.file, v.name]),
@@ -304,7 +376,7 @@ test("guard, synthetic: importing or re-exporting a guarded proficiency table fa
   );
   assert.deepEqual(
     violationsFor("components/Synthetic.tsx", reexported, []).map((v) => [v.file, v.name]),
-    [["components/Synthetic.tsx", "RACE_WEAPON_PROFICIENCIES"]],
+    [["components/Synthetic.tsx", "MULTICLASS_PROFICIENCIES"]],
   );
   assert.deepEqual(violationsFor("components/Synthetic.tsx", harmless, []), []);
 });
@@ -376,7 +448,7 @@ test("guard, synthetic: an allowlisted table import passes, and the sheet and it
   ];
   assert.deepEqual(violationsFor("components/Synthetic.tsx", imported, allowed), []);
   assert.deepEqual(violationsFor(SHEET_FILE, imported, []), []);
-  assert.deepEqual(violationsFor("rules/proficiencySources/skillGrants.ts", 'import { BACKGROUND_SKILL_PROFICIENCIES } from "../../constants/rules.ts";\n', []), []);
+  assert.deepEqual(violationsFor("rules/proficiencySources/classBase.ts", 'import { MULTICLASS_PROFICIENCIES } from "../../constants/rules.ts";\n', []), []);
   const namespaced = 'import * as rules from "../constants/rules.ts";\nexport const table = rules.MULTICLASS_PROFICIENCIES;\nexport * from "../constants/rules.ts";\n';
   assert.equal(violationsFor("components/Synthetic.tsx", namespaced, allowed).length, 0);
   assert.deepEqual(violationsFor(SHEET_FILE, namespaced, []), []);
@@ -385,6 +457,77 @@ test("guard, synthetic: an allowlisted table import passes, and the sheet and it
 test("guard, synthetic: comments are not reads, and the sheet itself is exempt", () => {
   assert.deepEqual(violationsFor("components/Synthetic.tsx", "// reads chosenTools in a comment\n", []), []);
   assert.deepEqual(violationsFor(SHEET_FILE, "const x = c.armorProficiencies;", []), []);
+});
+
+test("guard, synthetic: a deleted hand table declared again fails, in a component and in the sheet itself", () => {
+  for (const name of ["RACE_WEAPON_PROFICIENCIES", "RACE_SKILL_PROFICIENCIES", "BACKGROUND_SKILL_PROFICIENCIES", "OPTION_FEATURE_CHOICES", "CLASS_DATA"]) {
+    const table = `export const ${name} = {\n  Vellari: ["Tinkering"],\n};\n`;
+    const inComponent = violationsFor("components/Synthetic.tsx", table, []);
+    assert.deepEqual(inComponent.map((v) => [v.file, v.name]), [["components/Synthetic.tsx", name]], name);
+    assert.equal(format(inComponent[0]), `components/Synthetic.tsx reintroduces ${name}; ADR 0015 deleted it`);
+    assert.deepEqual(violationsFor(SHEET_FILE, table, []).map((v) => [v.file, v.name]), [[SHEET_FILE, name]], name);
+  }
+});
+
+test("guard, synthetic: a deleted class-name or race or background tool chain called or declared again fails", () => {
+  const chains = ["getClassToolGrant", "getRaceToolGrant", "getRaceLanguageGrant", "getBackgroundToolGrant", "getBackgroundLanguageGrant", "sourceToolAndLanguageGrants"];
+  for (const name of chains) {
+    const call = `const grant = ${name}("Scout", classes);\n`;
+    const declared = `export function ${name}(race: string) {\n  return race;\n}\n`;
+    assert.deepEqual(violationsFor("components/Synthetic.tsx", call, []).map((v) => v.name), [name], name);
+    assert.deepEqual(violationsFor("rules/proficiencySources/classBase.ts", declared, []).map((v) => v.name), [name], name);
+  }
+});
+
+test("guard, synthetic: a deleted special case fails, by its function, its name constant, its name literal or its race comparison", () => {
+  const cases: [string, string][] = [
+    ["raceTraining", "function raceTraining(character: Character) {\n  return character;\n}\n"],
+    ["optionGrantApplies", "export function optionGrantApplies(character: Character) {\n  return character;\n}\n"],
+    ["KENSEI_SUBCLASS", 'const KENSEI_SUBCLASS = "Monk";\n'],
+    ['"Way of the Kensei"', 'if (monk.subclassName === "Way of the Kensei") return true;\n'],
+    ['a race comparison with "Githyanki" or "Mountain Dwarf"', 'if (raceName === "Githyanki") armor.push("Light armor");\n'],
+    ['a race comparison with "Githyanki" or "Mountain Dwarf"', 'if ("Mountain Dwarf" === subraceName) armor.push("Light armor");\n'],
+  ];
+  for (const [name, source] of cases) {
+    assert.deepEqual(violationsFor("components/Synthetic.tsx", source, []).map((v) => v.name), [name], source);
+  }
+});
+
+test("guard, synthetic: a deleted module that exists again fails, whoever imports it", () => {
+  const found = deletedFileFindings(["rules/proficiencySources/skillGrants.ts", "rules/proficiencySources/toolsAndLanguages.ts"]);
+  assert.deepEqual(
+    found.map((v) => [v.file, v.name]),
+    [["rules/proficiencySources/toolsAndLanguages.ts", "rules/proficiencySources/toolsAndLanguages.ts"]],
+  );
+});
+
+test("the allowlist names no deleted table, chain, special case or module", () => {
+  assert.deepEqual(
+    deletedAllowances([
+      {
+        files: ["components/Synthetic.tsx"],
+        constants: ["RACE_WEAPON_PROFICIENCIES", "MULTICLASS_PROFICIENCIES"],
+        imports: ["rules/proficiencySources/toolsAndLanguages.ts"],
+        reason: "test",
+      },
+    ]),
+    ["components/Synthetic.tsx: RACE_WEAPON_PROFICIENCIES", "components/Synthetic.tsx: rules/proficiencySources/toolsAndLanguages.ts"],
+  );
+  assert.deepEqual(deletedAllowances(ALLOWANCES), []);
+});
+
+test("no deleted table, chain, special case or module is back under src/, the sheet included", () => {
+  const back = treeFindings().filter((finding) => finding.kind === "deleted");
+  assert.deepEqual(back.map(format), [], "deleted names are back in src/");
+});
+
+test("ADR 0015's Known exceptions names exactly the tables the guard still allowlists, and each one is exported", () => {
+  const named = [...new Set(knownExceptions())].sort();
+  const allowlisted = [...new Set(ALLOWANCES.flatMap((a) => a.constants ?? []))].sort();
+  assert.deepEqual(named, allowlisted, "ADR 0015 Known exceptions must list the allowlisted tables, and only those");
+  for (const name of named) {
+    assert.ok(exportedSomewhere(name), `${name} is named in ADR 0015 but no source file exports it`);
+  }
 });
 
 test("only the Proficiency Sheet reads proficiency fields or imports its private sources", () => {
