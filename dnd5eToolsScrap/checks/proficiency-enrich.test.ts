@@ -2,7 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import { enrichGrantFiles, stripGrantFiles } from "../src/grants/enrich.ts";
-import type { GrantOverride } from "../src/parser/proficiency-grants.ts";
+import { startingToolGrants, type GrantOverride } from "../src/parser/proficiency-grants.ts";
 import { PROFICIENCY_GRANT_OVERRIDES } from "../src/overrides/proficiency-grants.ts";
 
 // Every sentence and name in this file is invented. The files use the tracked files' format:
@@ -123,6 +123,21 @@ test("the tracked files already carry the current overrides: enriching them agai
   assert.deepEqual(enrichGrantFiles(tracked, PROFICIENCY_GRANT_OVERRIDES), tracked);
 });
 
+test("every tracked class's starting tool texts state their grants, so none is silently dropped", () => {
+  const tracked = JSON.parse(fs.readFileSync(new URL("../data/classes.json", import.meta.url), "utf8")) as Array<{
+    name: string;
+    source: string;
+    toolProficiencies: string[];
+  }>;
+  for (const cls of tracked) {
+    const result = startingToolGrants(
+      { source: cls.source, owner: cls.name, feature: "Starting Proficiencies", level: 1 },
+      cls.toolProficiencies
+    );
+    assert.deepEqual(result.unparsed, [], `${cls.name} (${cls.source})`);
+  }
+});
+
 test("an override for a class the tracked files do not contain is an error, since they hold every class", () => {
   const override: GrantOverride = {
     owner: "Missing Class",
@@ -171,6 +186,46 @@ test("two classes with one name from different sources enrich without error, and
     assert.deepEqual(cls.subclasses[0].features[0].grants.map((g: { id: string }) => g.id), ["AAA/Sample Twin/Sample Path/Mind Guard@3#0"]);
   }
   assert.deepEqual(stripGrantFiles(enriched), twinFiles);
+});
+
+test("a class's starting tool texts become its Starting Proficiencies grants, and stripping removes them", () => {
+  const withTools = [
+    {
+      name: "Sample Tinker",
+      source: "TST",
+      hitDie: "1d8",
+      toolProficiencies: ["lantern-maker's kit", "one type of artisan's tools of your choice"],
+      features: [{ name: "Quiet Step", level: 2, description: "You move without a sound. Nothing else changes.", isOptional: false }],
+      subclasses: [],
+    },
+    {
+      name: "Sample Singer",
+      source: "TST",
+      hitDie: "1d8",
+      toolProficiencies: ["two musical instruments of your choice"],
+      features: [],
+      subclasses: [],
+    },
+    { name: "Sample Fighter", source: "TST", hitDie: "1d10", toolProficiencies: [], features: [], subclasses: [] },
+  ];
+  const files = { classes: canonical(withTools), feats: canonical([]) };
+  const enriched = enrichGrantFiles(files, noOverrides);
+  const [tinker, singer, fighter] = JSON.parse(enriched.classes);
+  assert.deepEqual(tinker.grants.map((g: { id: string }) => g.id), [
+    "TST/Sample Tinker/Starting Proficiencies@1#0",
+    "TST/Sample Tinker/Starting Proficiencies@1#1",
+  ]);
+  assert.deepEqual(tinker.grants[0], {
+    id: "TST/Sample Tinker/Starting Proficiencies@1#0",
+    kind: "fixed",
+    category: "tools",
+    names: ["lantern-maker's kit"],
+  });
+  assert.equal(tinker.grants[1].kind, "choice");
+  assert.equal(tinker.grants[1].count, 1);
+  assert.equal(singer.grants[0].count, 2);
+  assert.equal("grants" in fighter, false, "a class with no starting tools gets no grants field");
+  assert.deepEqual(stripGrantFiles(enriched), files);
 });
 
 function withStaleGrant(): { classes: string; feats: string } {

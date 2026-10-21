@@ -18,9 +18,11 @@ export interface TrackedFeature extends GrantHolder {
   description: string;
 }
 
-export interface TrackedClass {
+export interface TrackedClass extends GrantHolder {
   name: string;
   source: string;
+  /** The starting tool texts the class record carries; its "Starting Proficiencies" grants are read from them. */
+  toolProficiencies?: string[];
   features: TrackedFeature[];
   subclasses: Array<{ name: string; source: string; features: TrackedFeature[] }>;
 }
