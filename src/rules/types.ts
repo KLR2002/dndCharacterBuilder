@@ -27,6 +27,8 @@ export interface FeatureInstance {
   description: string;
   origin: "Race" | "Subrace" | "Background" | "Class" | "Subclass" | "Feat";
   className?: string;
+  /** The subclass a Subclass feature belongs to. Absent on every other origin. */
+  subclassName?: string;
   /** The level a class or subclass feature is gained at. Absent on race, background and feat features. */
   level?: number;
   max?: number;

@@ -6,6 +6,7 @@ import type { AvailableRuleChoice, RuleChoiceOrigin } from "./choices/types.ts";
 import type { ProficiencyCategory } from "../types/dnd5e.ts";
 import type { FeatureInstance } from "./types.ts";
 import { featuresOf, proficiencySheet } from "./proficiencySheet.ts";
+import { weaponPickMarksMonkWeapon } from "./kenseiWeapons.ts";
 import {
   clearProficiencyPick,
   isPickableCategory,
@@ -100,6 +101,8 @@ export function proficiencyChoiceOffers(character: Character, query: Proficiency
       // Weapons are held by name or by category, as the sheet's weapon entries record them.
       const heldWeapons = sheet.weapons.map((entry) => entry.name);
       const isHeld = (name: string) => (grant.category === "weapons" ? weaponHeld(name, heldWeapons) : held.has(name.toLowerCase()));
+      // A weapon pick that also marks a Monk Weapon keeps the whole pool: a held weapon still gains that effect.
+      const offersHeld = grant.category === "weapons" && weaponPickMarksMonkWeapon(feature);
 
       offers.push({
         id: grant.id,
@@ -111,7 +114,7 @@ export function proficiencyChoiceOffers(character: Character, query: Proficiency
         origin,
         pick: "proficiency",
         options: poolNames(grant, items)
-          .filter((name) => own.has(name.toLowerCase()) || !isHeld(name))
+          .filter((name) => offersHeld || own.has(name.toLowerCase()) || !isHeld(name))
           .map((name) => ({ name, description: "" })),
       });
     }
