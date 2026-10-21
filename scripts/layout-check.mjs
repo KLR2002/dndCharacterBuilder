@@ -245,6 +245,26 @@ function rangerCharacter() {
   });
 }
 
+// A level 2 Fighter with an invented name long enough that the header has to shorten it with an ellipsis.
+const LONG_NAME_ID = "char_longname";
+const LONG_NAME = "Ysolde Marrowbrook-Vantesk the Unbroken Wanderer";
+function longNameCharacter() {
+  return makeChar({
+    id: LONG_NAME_ID,
+    name: LONG_NAME,
+    createdAt: 7,
+    updatedAt: 7,
+    startingOption: "equipment",
+    baseAbilityScores: { str: 15, dex: 12, con: 14, int: 8, wis: 10, cha: 11 },
+    race: { name: "Human", source: catalogSource("races", "Human") },
+    background: { name: "Acolyte", source: catalogSource("backgrounds", "Acolyte") },
+    classes: [{ className: "Fighter", source: catalogSource("classes", "Fighter"), level: 2 }],
+    currentHp: 18,
+    startingGrantsApplied: true,
+    backgroundGrantsApplied: true,
+  });
+}
+
 // A level 3 Way of the Kensei monk, integrated mode only (the Kensei is not in the SRD). Its Path of the Kensei
 // choices are Proficiency Choices: the brush and the ranged kensei weapon are unmade ("Picked 0 / 1"), and the
 // melee kensei weapon is picked (Rapier), which the Stats tab shows under Weapon Proficiencies.
@@ -332,6 +352,7 @@ function buildSeed() {
       wizardCharacter(),
       halfElfCharacter(),
       rangerCharacter(),
+      longNameCharacter(),
       ...(INTEGRATED ? [kenseiCharacter()] : []),
       bardCharacter(),
     ],
@@ -372,6 +393,7 @@ const RENDAR_ROUTE = `/character/${CHARACTER_ID}`;
 const WIZARD_ROUTE = `/character/${WIZARD_ID}`;
 const HALF_ELF_ROUTE = `/character/${HALF_ELF_ID}`;
 const RANGER_ROUTE = `/character/${RANGER_ID}`;
+const LONG_NAME_ROUTE = `/character/${LONG_NAME_ID}`;
 const KENSEI_ROUTE = `/character/${KENSEI_ID}`;
 const BARD_ROUTE = `/character/${BARD_ID}`;
 const SCREENS = [
@@ -391,6 +413,7 @@ const SCREENS = [
     : []),
   { name: "Builder Class skill proficiency choices", route: BARD_ROUTE, tabs: ["Builder", "Class"], ready: /total level/i, scrollTo: "Class & Subclass Choices" },
   { name: "Stats", route: RENDAR_ROUTE, tabs: ["Stats"], ready: /hit points/i },
+  { name: "Stats long header name", route: LONG_NAME_ROUTE, tabs: ["Stats"], ready: /hit points/i, headerName: LONG_NAME },
   { name: "Stats add tool modal", route: RENDAR_ROUTE, tabs: ["Stats"], open: (page) => page.getByLabel("Add tool proficiency").first().click(), modal: "Add Tool Proficiency" },
   { name: "Stats add language modal", route: RENDAR_ROUTE, tabs: ["Stats"], open: (page) => page.getByLabel("Add language").first().click(), modal: "Add Language" },
   { name: "Spells", route: WIZARD_ROUTE, tabs: ["Spells"], ready: /add spells/i },
@@ -445,6 +468,26 @@ function findLayoutViolations(root) {
     if (pr.width > 0 && r.right > pr.right + 1) out.push(`sticks out of its parent by ${Math.round(r.right - pr.right)}px: "${label.slice(0, 40)}"`);
   }
   return [...new Set(out)];
+}
+
+// Runs in the browser. Checks the header of a character sheet for a long name. The name must be clipped and end
+// with an ellipsis, and it must end before the level badge and the HP badge start. Returns one message per violation.
+function findHeaderNameViolations(name) {
+  const leaves = [...document.querySelectorAll("*")].filter((e) => e.children.length === 0 && e.getBoundingClientRect().height > 0);
+  const nameEl = leaves.find((e) => e.textContent.trim() === name);
+  if (!nameEl) return [`header name "${name.slice(0, 40)}" is not on the screen`];
+  const badgeText = leaves.filter((e) => /^(Lvl \d+|\d+\/\d+.*)$/.test(e.textContent.trim()) && e.getBoundingClientRect().top < 80);
+  const out = [];
+  const nr = nameEl.getBoundingClientRect();
+  const cs = getComputedStyle(nameEl);
+  if (cs.textOverflow !== "ellipsis" || cs.overflow !== "hidden") out.push(`header name has no ellipsis (text-overflow: ${cs.textOverflow}, overflow: ${cs.overflow})`);
+  if (nameEl.scrollWidth <= nameEl.clientWidth) out.push(`header name is not clipped (${nameEl.scrollWidth}px of text in ${nameEl.clientWidth}px)`);
+  if (nr.right > window.innerWidth + 1) out.push(`header name sticks out of the screen by ${Math.round(nr.right - window.innerWidth)}px`);
+  for (const badge of badgeText) {
+    const br = (badge.parentElement ?? badge).getBoundingClientRect();
+    if (nr.right > br.left + 1 && nr.left < br.right - 1) out.push(`header name overlaps the badge "${badge.textContent.trim().slice(0, 20)}" by ${Math.round(nr.right - br.left)}px`);
+  }
+  return out;
 }
 
 // Runs in the browser. Native Text defaults to flexShrink 0 and the web's does not, so a title that wraps in
@@ -684,6 +727,7 @@ async function visitScreen(page, width, screen, state) {
     violations = await page.evaluate(findLayoutViolations, null);
   }
   violations = [...violations, ...(await checkNoShrinkRows(page, screen))];
+  if (screen.headerName) violations = [...violations, ...(await page.evaluate(findHeaderNameViolations, screen.headerName))];
   for (const v of violations) console.log(`${prefix} ${v}`);
   return violations.length;
 }
