@@ -511,11 +511,16 @@ export function resolveFeatureGrants(
  * Grants from a structured proficiency block (race, background, or class
  * starting proficiencies). A block with any entry the mapping cannot state
  * precisely gets no grants at all; the unparsed entries are returned instead.
+ * A reviewed override for the feature replaces the block entirely.
  */
 export function structuredGrants(
   subject: Pick<GrantSubject, "source" | "owner" | "feature" | "level">,
-  raw: StructuredProficiencies
+  raw: StructuredProficiencies,
+  overrides: GrantOverride[] = []
 ): { grants: ProficiencyGrant[]; unparsed: string[] } {
+  const override = overrides.find((candidate) => featureKey(candidate) === featureKey(subject));
+  if (override) return { grants: build(subject, override.grants), unparsed: [] };
+
   const specs: ProficiencyGrantSpec[] = [];
   const unparsed: string[] = [];
   const fixedByCategory = new Map<ProficiencyCategory, Extract<ProficiencyGrantSpec, { kind: "fixed" }>>();
@@ -572,7 +577,7 @@ export function structuredGrants(
           continue;
         }
         if (typeof value === "number") {
-          if (key === "any" && (category === "skills" || category === "languages")) {
+          if (key === "any" && (category === "skills" || category === "languages" || category === "tools")) {
             specs.push({ kind: "choice", category, count: value, pool: { kind: "any" } });
           } else if (key === "anyStandard" && category === "languages") {
             specs.push({ kind: "choice", category, count: value, pool: { kind: "any" } });

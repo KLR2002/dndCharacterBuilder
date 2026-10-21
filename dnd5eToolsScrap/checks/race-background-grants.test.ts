@@ -93,3 +93,15 @@ test("a background's tool and language entries become background grants named af
   );
   assert.deepEqual(report.unparsed, []);
 });
+
+test("a race whose record names no language speaks Common, and nothing else", async () => {
+  const plain = { name: "Plain Folk", source: "TST", entries: [] };
+  const [race] = await scrapeRaces(fakeClient({ "data/races.json": { race: [plain] } }), newProficiencyReport());
+  assert.deepEqual(race.grants, [{ id: "TST/Race/Plain Folk@0#0", kind: "fixed", category: "languages", names: ["Common"] }]);
+});
+
+test("a reviewed race override replaces the structured grants of that race", async () => {
+  const githyanki = { name: "Githyanki", source: "TST", entries: [], toolProficiencies: [{ any: 1 }] };
+  const [race] = await scrapeRaces(fakeClient({ "data/races.json": { race: [githyanki] } }), newProficiencyReport());
+  assert.deepEqual(race.grants, [{ id: "TST/Race/Githyanki@0#0", kind: "fixed", category: "languages", names: ["Common"] }]);
+});

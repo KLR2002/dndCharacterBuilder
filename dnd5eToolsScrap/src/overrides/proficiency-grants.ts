@@ -11,7 +11,12 @@ import type { GrantOverride } from "../parser/proficiency-grants.ts";
  * A TypeScript module rather than a JSON file, because the in-app scraper
  * bundles these modules and cannot read files at runtime.
  */
-export const PROFICIENCY_GRANT_OVERRIDES: { classes: GrantOverride[]; feats: GrantOverride[] } = {
+export const PROFICIENCY_GRANT_OVERRIDES: { classes: GrantOverride[]; feats: GrantOverride[]; races: GrantOverride[] } = {
+  races: [
+    // Its tool and skill come after each long rest, not as standing proficiencies, so the race holds
+    // no tool grant. The language every character speaks is kept.
+    { owner: "Race", feature: "Githyanki", level: 0, grants: [{ kind: "fixed", category: "languages", names: ["Common"] }] },
+  ],
   classes: [
     { owner: "Artificer/Alchemist", feature: "Tool Proficiency", level: 3, grants: [{ kind: "fixed", category: "tools", names: ["alchemist's supplies"] }] },
     {

@@ -517,3 +517,25 @@ test("starting tools: one text the mapping cannot state makes the whole list unp
   assert.deepEqual(armor.grants, []);
   assert.deepEqual(armor.unparsed, ["light armor"]);
 });
+
+test("a tool 'any' entry is a choice of that many tools from any tool", () => {
+  const result = structuredGrants(
+    { source: "TST", owner: "Race", feature: "Sample Folk", level: 0 },
+    { tools: [{ any: 2 }] }
+  );
+  assert.deepEqual(result.unparsed, []);
+  assert.deepEqual(result.grants, [{ id: "TST/Race/Sample Folk@0#0", kind: "choice", category: "tools", count: 2, pool: { kind: "any" } }]);
+});
+
+test("a reviewed override replaces a structured block's grants, and its unparsed entries are not reported", () => {
+  const overrides: GrantOverride[] = [
+    { owner: "Race", feature: "Sample Folk", level: 0, grants: [{ kind: "fixed", category: "languages", names: ["Common"] }] },
+  ];
+  const result = structuredGrants(
+    { source: "TST", owner: "Race", feature: "Sample Folk", level: 0 },
+    { tools: [{ "sample set of things": true }, { any: 1 }], languages: [{ common: true, other: true }] },
+    overrides
+  );
+  assert.deepEqual(result.unparsed, []);
+  assert.deepEqual(result.grants, [{ id: "TST/Race/Sample Folk@0#0", kind: "fixed", category: "languages", names: ["Common"] }]);
+});
