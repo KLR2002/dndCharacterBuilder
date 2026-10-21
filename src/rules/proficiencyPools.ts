@@ -54,8 +54,9 @@ const SIMPLE_WEAPONS = lowerCased(STANDARD_SIMPLE_WEAPONS);
 const MARTIAL_WEAPONS = lowerCased(STANDARD_MARTIAL_WEAPONS);
 
 /**
- * The simple or martial category of a base weapon, by its exact name. Undefined for any other name, so
- * magic variants such as "Longsword, +1" are never taken for their base weapon.
+ * The app's standard simple or martial category for a weapon name, by its exact name. Used only to tell
+ * whether a held category ("Simple weapons") covers a weapon; the Kensei pool reads the category from the
+ * Compendium instead.
  */
 function standardWeaponCategory(name: string): "simple" | "martial" | undefined {
   const key = name.trim().toLowerCase();
@@ -74,9 +75,10 @@ function attackTypesOf(type: string): ("melee" | "ranged")[] {
 }
 
 /**
- * The weapon names a weapons pool offers, read from the Compendium's items: each base weapon of the
- * pool's categories that lacks every excluded property, plus each named weapon, then filtered by attack
- * type. The names are the items' own spellings, sorted and without duplicates.
+ * The weapon names a weapons pool offers, read from the Compendium's items: each base weapon whose own
+ * weapon category the pool allows and that lacks every excluded property, plus each named weapon, then
+ * filtered by attack type. A magic item carries no category, so it is never taken for its base weapon.
+ * The names are the items' own spellings, sorted and without duplicates.
  */
 function weaponPoolNames(pool: Extract<ProficiencyPool, { kind: "weapons" }>, items: readonly ItemData[]): string[] {
   const excluded = new Set(pool.withoutProperties.map((name) => name.toLowerCase()));
@@ -85,8 +87,7 @@ function weaponPoolNames(pool: Extract<ProficiencyPool, { kind: "weapons" }>, it
   for (const item of items) {
     if (item.itemCategory !== "Weapon") continue;
     if (!named.has(item.name.trim().toLowerCase())) {
-      const category = standardWeaponCategory(item.name);
-      if (!category || !pool.base.includes(category)) continue;
+      if (!item.weaponCategory || !pool.base.includes(item.weaponCategory)) continue;
       if (item.properties.some((property) => excluded.has(property.toLowerCase()))) continue;
     }
     if (pool.attackType && !attackTypesOf(item.type).includes(pool.attackType)) continue;

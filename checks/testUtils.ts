@@ -152,6 +152,11 @@ export function integratedTestCompendium(): Compendium {
   return createCompendium(integratedTestBundle());
 }
 
+/** The integrated test Compendium with its items replaced, for tests that need invented weapons. */
+export function integratedTestCompendiumWithItems(items: ItemData[]): Compendium {
+  return createCompendium({ ...integratedTestBundle(), items });
+}
+
 /** The SRD Baseline as a collections bundle, built from the bundled SRD data. */
 export function srdBaselineBundle(): CompendiumCollections {
   return {
