@@ -1,9 +1,19 @@
 import type { Character } from "../types/character.ts";
 import { catalogListings, type CharacterCatalogs } from "./catalogs.ts";
 import { validPicks } from "./proficiencyPools.ts";
+import type { FeatureInstance } from "./types.ts";
 
 /** The Monk subclass whose weapon picks are kensei weapons. */
 const KENSEI_SUBCLASS = "Way of the Kensei";
+
+/**
+ * Whether a weapon pick on this feature marks a Monk Weapon. Every weapon choice of a Way of the Kensei
+ * feature does, so the picker offers its whole pool, including weapons the sheet already holds: a held
+ * weapon still gains the Monk Weapon effect. Decided by the feature's own class and subclass.
+ */
+export function weaponPickMarksMonkWeapon(feature: FeatureInstance): boolean {
+  return feature.origin === "Subclass" && feature.className === "Monk" && feature.subclassName === KENSEI_SUBCLASS;
+}
 
 /**
  * The kensei weapons a character has chosen: the saved weapon picks on the Way of the Kensei features the

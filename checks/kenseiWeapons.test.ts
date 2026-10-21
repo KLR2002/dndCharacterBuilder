@@ -2,12 +2,15 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import type { AvailableRuleChoice } from "../src/rules/choices/types.ts";
 import type { Character, InventoryItem } from "../src/types/character.ts";
+import type { ItemData } from "../src/types/dnd5e.ts";
 import { proficiencySheet, type SheetEntry } from "../src/rules/proficiencySheet.ts";
 import { proficiencyChoiceOffers } from "../src/rules/proficiencyChoiceOffers.ts";
 import { pickRuleChoice } from "../src/rules/ruleChoices.ts";
 import { reconcile } from "../src/rules/characterReconciler.ts";
 import { getWeaponAttacks } from "../src/rules/attacks.ts";
-import { integratedTestCompendium, makeChar } from "./testUtils.ts";
+import { kenseiWeaponNames } from "../src/rules/kenseiWeapons.ts";
+import { fixedGrant, placeholderFeat } from "./proficiencySheetFixture.ts";
+import { inMemoryCompendium, integratedTestCompendium, loadSrdCatalog, makeChar } from "./testUtils.ts";
 
 /**
  * Kensei weapons. The Way of the Kensei monk chooses a melee and a ranged kensei weapon at 3rd
@@ -28,6 +31,16 @@ const names = (entries: SheetEntry[]) => entries.map((entry) => entry.name);
 const monk = (level: number, extra: Partial<Character> = {}) =>
   makeChar({
     classes: [{ className: "Monk", source: "PHB", level, subclassName: "Way of the Kensei", subclassSource: "XGE" }],
+    ...extra,
+  });
+
+/** A Fighter 1 who multiclasses into a Way of the Kensei Monk. The Fighter's class gives both weapon categories. */
+const fighterMonk = (monkLevel: number, extra: Partial<Character> = {}) =>
+  makeChar({
+    classes: [
+      { className: "Fighter", source: "PHB", level: 1 },
+      { className: "Monk", source: "PHB", level: monkLevel, subclassName: "Way of the Kensei", subclassSource: "XGE" },
+    ],
     ...extra,
   });
 
@@ -93,13 +106,96 @@ test("the later choices are either kind, so they offer melee and ranged weapons"
   assert.equal(options.includes("Glaive"), false, "heavy weapons stay out");
 });
 
-test("the picker hides weapons the sheet already holds, by name or by category", () => {
-  // A Monk holds simple weapons (a category) and shortswords (a name) from the class.
+test("the kensei picker shows weapons the sheet already holds, because a kensei weapon is also a Monk Weapon", () => {
+  // A Monk holds simple weapons (a category) and shortswords (a name) from the class. The pick still
+  // makes a Monk Weapon of a weapon it already holds, so the held ones stay on the list.
   const melee = optionsOf(monk(3), MELEE_3);
-  assert.equal(melee.includes("Dagger"), false, "simple weapons are held by category");
-  assert.equal(melee.includes("Shortsword"), false, "shortswords are held by name");
+  assert.ok(melee.includes("Dagger"), "simple weapons held by category are offered");
+  assert.ok(melee.includes("Shortsword"), "shortswords held by name are offered");
   const ranged = optionsOf(monk(3), RANGED_3);
-  assert.equal(ranged.includes("Sling"), false, "simple ranged weapons are held by category");
+  assert.ok(ranged.includes("Sling"), "simple ranged weapons held by category are offered");
+});
+
+test("a Fighter 1 / Way of the Kensei Monk 3 is offered every kensei weapon, including the ones the Fighter already holds", () => {
+  const character = fighterMonk(3);
+  const compendium = integratedTestCompendium();
+  // The precondition: the Fighter holds both weapon categories, so every pool candidate counts as held.
+  assert.deepEqual(
+    names(proficiencySheet(character, { compendium }).weapons).sort(),
+    ["Martial weapons", "Simple weapons"],
+  );
+
+  const melee = optionsOf(character, MELEE_3);
+  assert.ok(melee.length > 0, "the melee kensei choice is not empty");
+  assert.ok(melee.includes("Longsword"), "a martial melee weapon the Fighter holds is offered");
+  assert.ok(melee.includes("Dagger"), "a simple melee weapon the Fighter holds is offered");
+
+  const ranged = optionsOf(character, RANGED_3);
+  assert.ok(ranged.length > 0, "the ranged kensei choice is not empty");
+  assert.ok(ranged.includes("Longbow"), "a martial ranged weapon the Fighter holds is offered");
+  assert.ok(ranged.includes("Sling"), "a simple ranged weapon the Fighter holds is offered");
+});
+
+test("picking a held kensei weapon records it, keeps it a Monk Weapon, and adds no duplicate sheet row", () => {
+  const compendium = integratedTestCompendium();
+  const character = fighterMonk(3);
+  const offer = kenseiOffers(character).find((o) => o.id === MELEE_3);
+  assert.ok(offer, "the melee kensei choice is offered");
+  assert.ok(offer.options.some((option) => option.name === "Rapier"), "Rapier is on the list the player picks from");
+
+  const picked = pickRuleChoice(character, offer, "Rapier", compendium);
+  assert.deepEqual(picked.proficiencyPicks?.[MELEE_3], ["Rapier"], "the pick is recorded under the grant id");
+  assert.deepEqual(kenseiWeaponNames(picked, { compendium }), ["Rapier"], "the pick is a kensei weapon");
+
+  // The Fighter's Martial weapons already cover Rapier, so the sheet shows no row of its own for it.
+  const sheetNames = names(proficiencySheet(picked, { compendium }).weapons);
+  assert.equal(sheetNames.filter((name) => /rapier/i.test(name)).length, 0, "no Rapier row on the sheet");
+  assert.equal(sheetNames.filter((name) => name === "Martial weapons").length, 1, "one Martial weapons row");
+
+  const equipped: InventoryItem = {
+    id: "item_rapier",
+    name: "Rapier",
+    source: "PHB",
+    quantity: 1,
+    isEquipped: true,
+    section: "equipped",
+  };
+  const attacks = getWeaponAttacks({ ...picked, items: [equipped] }, { catalogs: { compendium } });
+  assert.equal(attacks.find((attack) => attack.name === "Rapier")?.isMonkWeapon, true, "a held kensei weapon is a Monk Weapon");
+});
+
+test("a feat's weapon choice still hides the weapons the sheet already holds", () => {
+  // Invented feats: one holds Dagger by a fixed grant, the other offers a simple melee weapon pick.
+  const CLUB_CHOICE = "FIX/Club Drill/melee";
+  const compendium = inMemoryCompendium({
+    items: loadSrdCatalog<ItemData[]>("items"),
+    feats: [
+      placeholderFeat({ name: "Dagger Drill", grants: [fixedGrant("FIX/Dagger Drill", "weapons", ["Dagger"])] }),
+      placeholderFeat({
+        name: "Club Drill",
+        grants: [
+          {
+            id: CLUB_CHOICE,
+            kind: "choice",
+            category: "weapons",
+            count: 1,
+            pool: { kind: "weapons", base: ["simple"], withoutProperties: [], plus: [], attackType: "melee" },
+          },
+        ],
+      }),
+    ],
+  });
+  const character = makeChar({
+    asiSelections: [
+      { level: 4, type: "feat", featName: "Dagger Drill", featSource: "PHB" },
+      { level: 8, type: "feat", featName: "Club Drill", featSource: "PHB" },
+    ],
+  });
+  const offer = proficiencyChoiceOffers(character, { compendium }).find((o) => o.id === CLUB_CHOICE);
+  assert.ok(offer, "the feat's weapon choice is offered");
+  const options = offer.options.map((option) => option.name);
+  assert.ok(options.includes("Club"), "an unheld simple melee weapon is offered");
+  assert.equal(options.includes("Dagger"), false, "Dagger is held by the other feat, so it is hidden");
 });
 
 test("a picked kensei weapon is proficient on the sheet, and a pick outside the pool is not", () => {

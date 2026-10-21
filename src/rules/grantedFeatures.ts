@@ -57,7 +57,7 @@ export function grantedFeatures(character: Character, catalog: FeatureCatalog): 
 
   for (const c of character.classes) {
     const cls = catalog.classes.find(x => x.name === c.className && x.source === c.source);
-    function addClassFeature(f: ClassFeatureData, origin: "Class" | "Subclass", source: string, owner: string) {
+    function addClassFeature(f: ClassFeatureData, origin: "Class" | "Subclass", source: string, owner: string, subclassName?: string) {
       if (f.level > c.level) return;
       const isOptEnabled = Boolean(character.optionalFeatureReplacements?.[f.name]);
       if (f.isOptional) {
@@ -71,6 +71,7 @@ export function grantedFeatures(character: Character, catalog: FeatureCatalog): 
         source,
         origin,
         className: c.className,
+        ...(subclassName ? { subclassName } : {}),
         level: f.level,
         // An unpicked option's grants do not apply, so its feature is listed without them.
         ...(f.grants?.length && (origin !== "Subclass" || optionGrantApplies(character, { className: c.className, subclassName: c.subclassName }, f))
@@ -101,7 +102,7 @@ export function grantedFeatures(character: Character, catalog: FeatureCatalog): 
     }
     for (const f of cls?.features || []) addClassFeature(f, "Class", c.source, c.className);
     const subclass = cls?.subclasses.find(s => s.name === c.subclassName && (!c.subclassSource || s.source === c.subclassSource));
-    for (const f of subclass?.features || []) addClassFeature(f, "Subclass", subclass!.source, `${c.className}/${subclass!.name}`);
+    for (const f of subclass?.features || []) addClassFeature(f, "Subclass", subclass!.source, `${c.className}/${subclass!.name}`, subclass!.name);
   }
   // Feats from the ability score list and from the origin-feat list (a background's feat) both count.
   for (const selection of [...character.asiSelections, ...(character.originFeats ?? [])]) {

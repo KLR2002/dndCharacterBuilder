@@ -12,6 +12,6 @@
 - [ ] A chosen weapon is proficient and a Monk Weapon (Dexterity and the Martial Arts die apply as for other Monk Weapons).
 - [ ] Choices unlock at 3, 6, 11 and 17 and show as pending when unmade; nothing is blocked.
 - [ ] Changing subclass or leveling down releases picks that no longer apply, with a notice.
-- [ ] The picker hides weapons already held.
+- [x] Superseded: kensei weapon pickers show every weapon, held ones included, because a kensei weapon is also a Monk Weapon. A held weapon still gains the Monk Weapon effect. The hiding of held weapons stays for every other weapon choice.
 - [ ] Rows pass `npm run layout:check` in both modes.
 - [ ] `npm run check:all` passes.
