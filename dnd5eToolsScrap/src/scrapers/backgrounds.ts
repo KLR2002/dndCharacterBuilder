@@ -4,7 +4,7 @@ import { renderEntries } from "../parser/entry-renderer.ts";
 import { cleanTags } from "../parser/tag-cleaner.ts";
 import type { BackgroundModel } from "../types/models.ts";
 import type { ProficiencyReport } from "../types/proficiency.ts";
-import { newProficiencyReport, structuredGrants } from "../parser/proficiency-grants.ts";
+import { fixedSkillEntries, newProficiencyReport, structuredGrants } from "../parser/proficiency-grants.ts";
 
 export async function scrapeBackgrounds(
   client: ToolsClient,
@@ -21,8 +21,9 @@ export async function scrapeBackgrounds(
     const skills: string[] = [];
     if (Array.isArray(raw.skillProficiencies)) {
       for (const sp of raw.skillProficiencies) {
+        // Only fixed skills are named here; a `choose` list or a count of `any` is a choice, not a skill.
         for (const [k, v] of Object.entries(sp)) {
-          if (v) {
+          if (v === true) {
             skills.push(k.charAt(0).toUpperCase() + k.slice(1));
           }
         }
@@ -124,7 +125,7 @@ export async function scrapeBackgrounds(
 
     const proficiencies = structuredGrants(
       { source: raw.source, owner: "Background", feature: cleanTags(raw.name, "plain"), level: 0 },
-      { tools: raw.toolProficiencies, languages: raw.languageProficiencies }
+      { tools: raw.toolProficiencies, languages: raw.languageProficiencies, skills: fixedSkillEntries(raw.skillProficiencies) }
     );
     if (proficiencies.unparsed.length > 0) {
       report.unparsed.push({

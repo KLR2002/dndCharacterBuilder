@@ -94,6 +94,55 @@ test("a background's tool and language entries become background grants named af
   assert.deepEqual(report.unparsed, []);
 });
 
+test("a background's fixed skills become a skills grant after its tool and language grants, and its choice names no skill", async () => {
+  const background = {
+    name: "Sample Trade",
+    source: "TST",
+    entries: [],
+    skillProficiencies: [{ "sleight of hand": true, stealth: true }, { choose: { from: ["arcana", "nature"], count: 1 } }],
+    toolProficiencies: [{ "vehicles (land)": true }],
+  };
+  const report = newProficiencyReport();
+  const [result] = await scrapeBackgrounds(fakeClient({ "data/backgrounds.json": { background: [background] } }), report);
+  assert.deepEqual(result.grants, [
+    { id: "TST/Background/Sample Trade@0#0", kind: "fixed", category: "tools", names: ["vehicles (land)"] },
+    { id: "TST/Background/Sample Trade@0#1", kind: "fixed", category: "skills", names: ["Sleight of Hand", "Stealth"] },
+  ]);
+  assert.deepEqual(result.skillProficiencies, ["Sleight of hand", "Stealth"]);
+  assert.deepEqual(report.unparsed, []);
+});
+
+test("a race's fixed skills become a skills grant after its language grants, and a subrace's its own", async () => {
+  const race = {
+    name: "Sample Folk",
+    source: "TST",
+    entries: [],
+    skillProficiencies: [{ perception: true }, { any: 2 }],
+    languageProficiencies: [{ common: true }],
+  };
+  const subrace = {
+    name: "Hillward",
+    source: "TST",
+    raceName: "Sample Folk",
+    raceSource: "TST",
+    entries: [],
+    skillProficiencies: [{ "animal handling": true }, { choose: { from: ["nature"] } }],
+  };
+  const report = newProficiencyReport();
+  const [result] = await scrapeRaces(fakeClient({ "data/races.json": { race: [race], subrace: [subrace] } }), report);
+  assert.deepEqual(
+    result.grants?.map((grant) => [grant.id, grant.category]),
+    [
+      ["TST/Race/Sample Folk@0#0", "languages"],
+      ["TST/Race/Sample Folk@0#1", "skills"],
+    ],
+  );
+  assert.deepEqual(result.subraces[0].grants, [
+    { id: "TST/Subrace/Sample Folk (Hillward)@0#0", kind: "fixed", category: "skills", names: ["Animal Handling"] },
+  ]);
+  assert.deepEqual(report.unparsed, []);
+});
+
 test("a race whose record names no language speaks Common, and nothing else", async () => {
   const plain = { name: "Plain Folk", source: "TST", entries: [] };
   const [race] = await scrapeRaces(fakeClient({ "data/races.json": { race: [plain] } }), newProficiencyReport());
