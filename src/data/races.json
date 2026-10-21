@@ -195,6 +195,17 @@
           "Common",
           "Dwarvish"
         ]
+      },
+      {
+        "id": "PHB/Race/Dwarf@0#2",
+        "kind": "fixed",
+        "category": "weapons",
+        "names": [
+          "battleaxe",
+          "handaxe",
+          "light hammer",
+          "warhammer"
+        ]
       }
     ],
     "name": "Dwarf",
@@ -439,6 +450,17 @@
             "pool": {
               "kind": "any"
             }
+          },
+          {
+            "id": "PHB/Subrace/Elf (High)@0#2",
+            "kind": "fixed",
+            "category": "weapons",
+            "names": [
+              "longsword",
+              "shortsword",
+              "shortbow",
+              "longbow"
+            ]
           }
         ],
         "name": "High",

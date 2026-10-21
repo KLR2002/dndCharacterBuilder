@@ -3637,6 +3637,17 @@
           "Common",
           "Dwarvish"
         ]
+      },
+      {
+        "id": "PHB/Race/Dwarf@0#2",
+        "kind": "fixed",
+        "category": "weapons",
+        "names": [
+          "battleaxe",
+          "handaxe",
+          "light hammer",
+          "warhammer"
+        ]
       }
     ],
     "name": "Dwarf",
@@ -3905,6 +3916,17 @@
         ]
       },
       {
+        "grants": [
+          {
+            "id": "PHB/Subrace/Dwarf (Mountain)@0#0",
+            "kind": "fixed",
+            "category": "armor",
+            "names": [
+              "light armor",
+              "medium armor"
+            ]
+          }
+        ],
         "name": "Mountain",
         "isVariant": false,
         "source": "PHB",
@@ -4400,6 +4422,18 @@
     ],
     "subraces": [
       {
+        "grants": [
+          {
+            "id": "PHB/Subrace/Elf (Drow)@0#0",
+            "kind": "fixed",
+            "category": "weapons",
+            "names": [
+              "rapier",
+              "shortsword",
+              "hand crossbow"
+            ]
+          }
+        ],
         "name": "Drow",
         "isVariant": false,
         "source": "PHB",
@@ -4465,6 +4499,19 @@
         ]
       },
       {
+        "grants": [
+          {
+            "id": "DMG/Subrace/Elf (Eladrin)@0#0",
+            "kind": "fixed",
+            "category": "weapons",
+            "names": [
+              "longsword",
+              "shortsword",
+              "shortbow",
+              "longbow"
+            ]
+          }
+        ],
         "name": "Eladrin",
         "isVariant": false,
         "source": "DMG",
@@ -4603,6 +4650,17 @@
             "pool": {
               "kind": "any"
             }
+          },
+          {
+            "id": "PHB/Subrace/Elf (High)@0#2",
+            "kind": "fixed",
+            "category": "weapons",
+            "names": [
+              "longsword",
+              "shortsword",
+              "shortbow",
+              "longbow"
+            ]
           }
         ],
         "name": "High",
@@ -4800,6 +4858,17 @@
             "pool": {
               "kind": "any"
             }
+          },
+          {
+            "id": "MTF/Subrace/Elf (Sea)@0#2",
+            "kind": "fixed",
+            "category": "weapons",
+            "names": [
+              "spear",
+              "trident",
+              "light crossbow",
+              "net"
+            ]
           }
         ],
         "name": "Sea",
@@ -4905,6 +4974,19 @@
         ]
       },
       {
+        "grants": [
+          {
+            "id": "PHB/Subrace/Elf (Wood)@0#0",
+            "kind": "fixed",
+            "category": "weapons",
+            "names": [
+              "longsword",
+              "shortsword",
+              "shortbow",
+              "longbow"
+            ]
+          }
+        ],
         "name": "Wood",
         "isVariant": false,
         "source": "PHB",
@@ -5027,6 +5109,17 @@
         "category": "skills",
         "names": [
           "Perception"
+        ]
+      },
+      {
+        "id": "PSK/Race/Elf (Kaladesh)@0#2",
+        "kind": "fixed",
+        "category": "weapons",
+        "names": [
+          "longsword",
+          "shortsword",
+          "shortbow",
+          "longbow"
         ]
       }
     ],
@@ -5327,6 +5420,19 @@
     ],
     "subraces": [
       {
+        "grants": [
+          {
+            "id": "PSZ/Subrace/Elf (Zendikar) (Joraga Nation)@0#0",
+            "kind": "fixed",
+            "category": "weapons",
+            "names": [
+              "longsword",
+              "shortsword",
+              "shortbow",
+              "longbow"
+            ]
+          }
+        ],
         "name": "Joraga Nation",
         "isVariant": false,
         "source": "PSZ",
@@ -5378,6 +5484,19 @@
         ]
       },
       {
+        "grants": [
+          {
+            "id": "PSZ/Subrace/Elf (Zendikar) (Mul Daya Nation)@0#0",
+            "kind": "fixed",
+            "category": "weapons",
+            "names": [
+              "longsword",
+              "shortsword",
+              "shortbow",
+              "longbow"
+            ]
+          }
+        ],
         "name": "Mul Daya Nation",
         "isVariant": false,
         "source": "PSZ",
@@ -6391,6 +6510,14 @@
         "names": [
           "Common"
         ]
+      },
+      {
+        "id": "AAG/Race/Giff@0#1",
+        "kind": "fixed",
+        "category": "weapons",
+        "names": [
+          "firearms"
+        ]
       }
     ],
     "name": "Giff",
@@ -6509,6 +6636,25 @@
             "pool": {
               "kind": "any"
             }
+          },
+          {
+            "id": "MTF/Subrace/Gith (Githyanki)@0#1",
+            "kind": "fixed",
+            "category": "weapons",
+            "names": [
+              "shortsword",
+              "longsword",
+              "greatsword"
+            ]
+          },
+          {
+            "id": "MTF/Subrace/Gith (Githyanki)@0#2",
+            "kind": "fixed",
+            "category": "armor",
+            "names": [
+              "light armor",
+              "medium armor"
+            ]
           }
         ],
         "name": "Githyanki",
@@ -9255,6 +9401,19 @@
         ]
       },
       {
+        "grants": [
+          {
+            "id": "SCAG/Subrace/Half-Elf (Moon Elf or Sun Elf Descent)@0#0",
+            "kind": "fixed",
+            "category": "weapons",
+            "names": [
+              "longsword",
+              "shortsword",
+              "shortbow",
+              "longbow"
+            ]
+          }
+        ],
         "name": "Moon Elf or Sun Elf Descent",
         "isVariant": true,
         "source": "SCAG",
@@ -9322,6 +9481,19 @@
         ]
       },
       {
+        "grants": [
+          {
+            "id": "SCAG/Subrace/Half-Elf (Wood Elf Descent)@0#0",
+            "kind": "fixed",
+            "category": "weapons",
+            "names": [
+              "longsword",
+              "shortsword",
+              "shortbow",
+              "longbow"
+            ]
+          }
+        ],
         "name": "Wood Elf Descent",
         "isVariant": true,
         "source": "SCAG",
@@ -12747,6 +12919,16 @@
         "pool": {
           "kind": "any"
         }
+      },
+      {
+        "id": "PSA/Race/Khenra@0#2",
+        "kind": "fixed",
+        "category": "weapons",
+        "names": [
+          "longsword",
+          "spear",
+          "javelin"
+        ]
       }
     ],
     "name": "Khenra",

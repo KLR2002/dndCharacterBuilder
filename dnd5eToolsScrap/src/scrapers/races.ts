@@ -129,10 +129,16 @@ export async function scrapeRaces(
 
     const normalized = normalizeSubraceName(rawSub.name);
 
-    // Structured tool and language entries on the subrace, owned by "Subrace" and named with its race.
+    // Structured tool, language, weapon and armor entries on the subrace, owned by "Subrace" and named with its race.
     const proficiencies = structuredGrants(
       { source: rawSub.source, owner: "Subrace", feature: `${parentName} (${normalized.name})`, level: 0 },
-      { tools: rawSub.toolProficiencies, languages: rawSub.languageProficiencies, skills: fixedSkillEntries(rawSub.skillProficiencies) },
+      {
+        tools: rawSub.toolProficiencies,
+        languages: rawSub.languageProficiencies,
+        skills: fixedSkillEntries(rawSub.skillProficiencies),
+        weapons: rawSub.weaponProficiencies,
+        armor: rawSub.armorProficiencies,
+      },
       PROFICIENCY_GRANT_OVERRIDES.subraces
     );
     if (proficiencies.unparsed.length > 0) {
@@ -229,6 +235,8 @@ export async function scrapeRaces(
         tools: raw.toolProficiencies,
         languages: hasEntries(raw.languageProficiencies) ? raw.languageProficiencies : noLanguageEntries,
         skills: fixedSkillEntries(raw.skillProficiencies),
+        weapons: raw.weaponProficiencies,
+        armor: raw.armorProficiencies,
       },
       PROFICIENCY_GRANT_OVERRIDES.races
     );
