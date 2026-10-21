@@ -5,9 +5,8 @@ import { liftSpellChoice } from "../parser/spell-choice.ts";
 import {
   newProficiencyReport,
   resolveFeatureGrants,
-  structuredGrants,
+  startingToolGrants,
   type GrantSubject,
-  type StructuredProficiencies,
 } from "../parser/proficiency-grants.ts";
 import { PROFICIENCY_GRANT_OVERRIDES } from "../overrides/proficiency-grants.ts";
 import type {
@@ -18,36 +17,6 @@ import type {
   SubclassModel,
 } from "../types/models.ts";
 import type { ProficiencyReport } from "../types/proficiency.ts";
-
-/**
- * A raw starting-proficiency entry in the shape the structured reader takes:
- * strings are cleaned of tags, `optional` entries are dropped (they are rule
- * options, not starting grants), and `proficiency` entries become their name.
- */
-function startingEntries(list: unknown): unknown[] | undefined {
-  if (!Array.isArray(list)) return undefined;
-  const out: unknown[] = [];
-  for (const entry of list) {
-    if (typeof entry === "string") out.push(cleanTags(entry, "plain"));
-    else if (entry && typeof entry === "object") {
-      const o = entry as Record<string, unknown>;
-      if (o.optional === true) continue;
-      if (typeof o.proficiency === "string") out.push(cleanTags(o.proficiency, "plain"));
-      else out.push(entry);
-    }
-  }
-  return out;
-}
-
-function startingFields(raw: any): StructuredProficiencies {
-  const sp = raw.startingProficiencies ?? {};
-  return {
-    skills: startingEntries(sp.skills),
-    tools: startingEntries(sp.tools),
-    weapons: startingEntries(sp.weapons),
-    armor: startingEntries(sp.armor),
-  };
-}
 
 const STAT_NAMES: Record<string, string> = {
   str: "Strength",
@@ -226,6 +195,7 @@ export async function scrapeClasses(
       const armorProficiencies: string[] = [];
       const weaponProficiencies: string[] = [];
       const toolProficiencies: string[] = [];
+      const startingToolTexts: string[] = [];
       let skillProficiencies = { choose: 2, from: [] as string[] };
 
       if (raw.startingProficiencies) {
@@ -241,7 +211,10 @@ export async function scrapeClasses(
         }
         if (Array.isArray(raw.startingProficiencies.tools)) {
           for (const t of raw.startingProficiencies.tools) {
-            toolProficiencies.push(cleanTags(typeof t === "string" ? t : t.full || t.name || "", "plain"));
+            const text = cleanTags(typeof t === "string" ? t : t.full || t.name || "", "plain");
+            toolProficiencies.push(text);
+            // An optional entry is a rule option the class offers, not a starting tool.
+            if (!(t && typeof t === "object" && t.optional === true)) startingToolTexts.push(text);
           }
         }
         if (Array.isArray(raw.startingProficiencies.skills)) {
@@ -289,10 +262,11 @@ export async function scrapeClasses(
         });
       }
 
-      // Starting proficiencies are a grant owner of their own: the class's level-1 grants.
-      const starting = structuredGrants(
+      // Starting tools are a grant owner of their own: the class's level-1 tool grants, read from the same
+      // tool texts the class record carries (see enrich:grants, which applies them to the tracked data).
+      const starting = startingToolGrants(
         { source: raw.source, owner: raw.name, feature: "Starting Proficiencies", level: 1 },
-        { ...startingFields(raw), savingThrows }
+        startingToolTexts
       );
       if (starting.unparsed.length > 0) {
         report.unparsed.push({ owner: raw.name, feature: "Starting Proficiencies", level: 1, unparsed: starting.unparsed });
