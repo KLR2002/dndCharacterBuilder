@@ -11,6 +11,15 @@
         "pool": {
           "kind": "any"
         }
+      },
+      {
+        "id": "PHB/Background/Acolyte@0#1",
+        "kind": "fixed",
+        "category": "skills",
+        "names": [
+          "Insight",
+          "Religion"
+        ]
       }
     ],
     "skillProficiencies": [
@@ -360,6 +369,15 @@
         "pool": {
           "kind": "any"
         }
+      },
+      {
+        "id": "ToA/Background/Anthropologist@0#1",
+        "kind": "fixed",
+        "category": "skills",
+        "names": [
+          "Insight",
+          "Religion"
+        ]
       }
     ],
     "skillProficiencies": [
@@ -756,6 +774,15 @@
         "pool": {
           "kind": "any"
         }
+      },
+      {
+        "id": "ToA/Background/Archaeologist@0#2",
+        "kind": "fixed",
+        "category": "skills",
+        "names": [
+          "History",
+          "Survival"
+        ]
       }
     ],
     "skillProficiencies": [
@@ -1165,6 +1192,15 @@
         "pool": {
           "kind": "any"
         }
+      },
+      {
+        "id": "AAG/Background/Astral Drifter@0#1",
+        "kind": "fixed",
+        "category": "skills",
+        "names": [
+          "Insight",
+          "Religion"
+        ]
       }
     ],
     "skillProficiencies": [
@@ -1306,6 +1342,15 @@
         "pool": {
           "kind": "any"
         }
+      },
+      {
+        "id": "MOT/Background/Athlete@0#2",
+        "kind": "fixed",
+        "category": "skills",
+        "names": [
+          "Acrobatics",
+          "Athletics"
+        ]
       }
     ],
     "skillProficiencies": [
@@ -1732,6 +1777,15 @@
         "names": [
           "thieves' tools"
         ]
+      },
+      {
+        "id": "EGW/Background/Augen Trust (Spy)@0#2",
+        "kind": "fixed",
+        "category": "skills",
+        "names": [
+          "Deception",
+          "Stealth"
+        ]
       }
     ],
     "skillProficiencies": [
@@ -2129,6 +2183,15 @@
         "pool": {
           "kind": "any"
         }
+      },
+      {
+        "id": "GGR/Background/Azorius Functionary@0#1",
+        "kind": "fixed",
+        "category": "skills",
+        "names": [
+          "Insight",
+          "Intimidation"
+        ]
       }
     ],
     "skillProficiencies": [
@@ -2643,6 +2706,15 @@
         "pool": {
           "kind": "any"
         }
+      },
+      {
+        "id": "BGDIA/Background/Baldur's Gate Acolyte@0#1",
+        "kind": "fixed",
+        "category": "skills",
+        "names": [
+          "Insight",
+          "Religion"
+        ]
       }
     ],
     "skillProficiencies": [
@@ -2991,6 +3063,15 @@
         "names": [
           "disguise kit",
           "forgery kit"
+        ]
+      },
+      {
+        "id": "BGDIA/Background/Baldur's Gate Charlatan@0#1",
+        "kind": "fixed",
+        "category": "skills",
+        "names": [
+          "Deception",
+          "Sleight of Hand"
         ]
       }
     ],
@@ -3398,6 +3479,15 @@
         "category": "tools",
         "names": [
           "thieves' tools"
+        ]
+      },
+      {
+        "id": "BGDIA/Background/Baldur's Gate Criminal@0#2",
+        "kind": "fixed",
+        "category": "skills",
+        "names": [
+          "Deception",
+          "Stealth"
         ]
       }
     ],
@@ -3816,6 +3906,15 @@
             "viol"
           ]
         }
+      },
+      {
+        "id": "BGDIA/Background/Baldur's Gate Entertainer@0#2",
+        "kind": "fixed",
+        "category": "skills",
+        "names": [
+          "Acrobatics",
+          "Performance"
+        ]
       }
     ],
     "skillProficiencies": [
@@ -4247,6 +4346,15 @@
         "category": "tools",
         "names": [
           "vehicles (land)"
+        ]
+      },
+      {
+        "id": "BGDIA/Background/Baldur's Gate Folk Hero@0#2",
+        "kind": "fixed",
+        "category": "skills",
+        "names": [
+          "Animal Handling",
+          "Survival"
         ]
       }
     ],
@@ -4682,6 +4790,15 @@
         "pool": {
           "kind": "any"
         }
+      },
+      {
+        "id": "BGDIA/Background/Baldur's Gate Guild Artisan@0#2",
+        "kind": "fixed",
+        "category": "skills",
+        "names": [
+          "Insight",
+          "Persuasion"
+        ]
       }
     ],
     "skillProficiencies": [
@@ -5143,6 +5260,15 @@
         "pool": {
           "kind": "any"
         }
+      },
+      {
+        "id": "BGDIA/Background/Baldur's Gate Hermit@0#2",
+        "kind": "fixed",
+        "category": "skills",
+        "names": [
+          "Medicine",
+          "Religion"
+        ]
       }
     ],
     "skillProficiencies": [
@@ -5562,6 +5688,15 @@
         "pool": {
           "kind": "any"
         }
+      },
+      {
+        "id": "BGDIA/Background/Baldur's Gate Noble@0#2",
+        "kind": "fixed",
+        "category": "skills",
+        "names": [
+          "History",
+          "Persuasion"
+        ]
       }
     ],
     "skillProficiencies": [
@@ -5936,6 +6071,15 @@
         "pool": {
           "kind": "any"
         }
+      },
+      {
+        "id": "BGDIA/Background/Baldur's Gate Outlander@0#2",
+        "kind": "fixed",
+        "category": "skills",
+        "names": [
+          "Athletics",
+          "Survival"
+        ]
       }
     ],
     "skillProficiencies": [
@@ -6349,6 +6493,15 @@
         "pool": {
           "kind": "any"
         }
+      },
+      {
+        "id": "BGDIA/Background/Baldur's Gate Sage@0#1",
+        "kind": "fixed",
+        "category": "skills",
+        "names": [
+          "Arcana",
+          "History"
+        ]
       }
     ],
     "skillProficiencies": [
@@ -6748,6 +6901,15 @@
           "navigator's tools",
           "vehicles (water)"
         ]
+      },
+      {
+        "id": "BGDIA/Background/Baldur's Gate Sailor@0#1",
+        "kind": "fixed",
+        "category": "skills",
+        "names": [
+          "Athletics",
+          "Perception"
+        ]
       }
     ],
     "skillProficiencies": [
@@ -7108,6 +7270,15 @@
         "category": "tools",
         "names": [
           "vehicles (land)"
+        ]
+      },
+      {
+        "id": "BGDIA/Background/Baldur's Gate Soldier@0#2",
+        "kind": "fixed",
+        "category": "skills",
+        "names": [
+          "Athletics",
+          "Intimidation"
         ]
       }
     ],
@@ -7509,6 +7680,15 @@
           "disguise kit",
           "thieves' tools"
         ]
+      },
+      {
+        "id": "BGDIA/Background/Baldur's Gate Urchin@0#1",
+        "kind": "fixed",
+        "category": "skills",
+        "names": [
+          "Sleight of Hand",
+          "Stealth"
+        ]
       }
     ],
     "skillProficiencies": [
@@ -7872,6 +8052,15 @@
         "pool": {
           "kind": "any"
         }
+      },
+      {
+        "id": "GGR/Background/Boros Legionnaire@0#2",
+        "kind": "fixed",
+        "category": "skills",
+        "names": [
+          "Athletics",
+          "Intimidation"
+        ]
       }
     ],
     "skillProficiencies": [
@@ -8407,6 +8596,15 @@
         "pool": {
           "kind": "any"
         }
+      },
+      {
+        "id": "AI/Background/Celebrity Adventurer's Scion@0#2",
+        "kind": "fixed",
+        "category": "skills",
+        "names": [
+          "Perception",
+          "Performance"
+        ]
       }
     ],
     "skillProficiencies": [
@@ -8757,6 +8955,15 @@
         "names": [
           "disguise kit",
           "forgery kit"
+        ]
+      },
+      {
+        "id": "PHB/Background/Charlatan@0#1",
+        "kind": "fixed",
+        "category": "skills",
+        "names": [
+          "Deception",
+          "Sleight of Hand"
         ]
       }
     ],
@@ -9151,6 +9358,15 @@
         "pool": {
           "kind": "any"
         }
+      },
+      {
+        "id": "SCAG/Background/City Watch@0#1",
+        "kind": "fixed",
+        "category": "skills",
+        "names": [
+          "Athletics",
+          "Insight"
+        ]
       }
     ],
     "skillProficiencies": [
@@ -9264,6 +9480,15 @@
         "pool": {
           "kind": "any"
         }
+      },
+      {
+        "id": "SCAG/Background/Clan Crafter@0#3",
+        "kind": "fixed",
+        "category": "skills",
+        "names": [
+          "History",
+          "Insight"
+        ]
       }
     ],
     "skillProficiencies": [
@@ -9348,11 +9573,18 @@
         "pool": {
           "kind": "any"
         }
+      },
+      {
+        "id": "SCAG/Background/Cloistered Scholar@0#1",
+        "kind": "fixed",
+        "category": "skills",
+        "names": [
+          "History"
+        ]
       }
     ],
     "skillProficiencies": [
-      "History",
-      "Choose"
+      "History"
     ],
     "toolProficiencies": [],
     "languages": [
@@ -9431,6 +9663,15 @@
         "pool": {
           "kind": "any"
         }
+      },
+      {
+        "id": "EGW/Background/Cobalt Scholar (Sage)@0#1",
+        "kind": "fixed",
+        "category": "skills",
+        "names": [
+          "Arcana",
+          "History"
+        ]
       }
     ],
     "skillProficiencies": [
@@ -9830,6 +10071,15 @@
         "pool": {
           "kind": "any"
         }
+      },
+      {
+        "id": "SCAG/Background/Courtier@0#1",
+        "kind": "fixed",
+        "category": "skills",
+        "names": [
+          "Insight",
+          "Persuasion"
+        ]
       }
     ],
     "skillProficiencies": [
@@ -9918,6 +10168,15 @@
         "category": "tools",
         "names": [
           "thieves' tools"
+        ]
+      },
+      {
+        "id": "PHB/Background/Criminal@0#2",
+        "kind": "fixed",
+        "category": "skills",
+        "names": [
+          "Deception",
+          "Stealth"
         ]
       }
     ],
@@ -10318,9 +10577,7 @@
         }
       }
     ],
-    "skillProficiencies": [
-      "Any"
-    ],
+    "skillProficiencies": [],
     "toolProficiencies": [],
     "languages": [
       "2 standard languages of your choice"
@@ -10394,6 +10651,15 @@
         "pool": {
           "kind": "any"
         }
+      },
+      {
+        "id": "GGR/Background/Dimir Operative@0#2",
+        "kind": "fixed",
+        "category": "skills",
+        "names": [
+          "Deception",
+          "Stealth"
+        ]
       }
     ],
     "skillProficiencies": [
@@ -10925,6 +11191,15 @@
             "viol"
           ]
         }
+      },
+      {
+        "id": "PHB/Background/Entertainer@0#2",
+        "kind": "fixed",
+        "category": "skills",
+        "names": [
+          "Acrobatics",
+          "Performance"
+        ]
       }
     ],
     "skillProficiencies": [
@@ -11338,6 +11613,15 @@
         "pool": {
           "kind": "any"
         }
+      },
+      {
+        "id": "BGDIA/Background/Faceless@0#2",
+        "kind": "fixed",
+        "category": "skills",
+        "names": [
+          "Deception",
+          "Intimidation"
+        ]
       }
     ],
     "skillProficiencies": [
@@ -11750,11 +12034,18 @@
         "pool": {
           "kind": "any"
         }
+      },
+      {
+        "id": "SCAG/Background/Faction Agent@0#1",
+        "kind": "fixed",
+        "category": "skills",
+        "names": [
+          "Insight"
+        ]
       }
     ],
     "skillProficiencies": [
-      "Insight",
-      "Choose"
+      "Insight"
     ],
     "toolProficiencies": [],
     "languages": [
@@ -11855,6 +12146,15 @@
         "pool": {
           "kind": "any"
         }
+      },
+      {
+        "id": "AI/Background/Failed Merchant@0#2",
+        "kind": "fixed",
+        "category": "skills",
+        "names": [
+          "Investigation",
+          "Persuasion"
+        ]
       }
     ],
     "skillProficiencies": [
@@ -12231,6 +12531,15 @@
         "pool": {
           "kind": "any"
         }
+      },
+      {
+        "id": "SCAG/Background/Far Traveler@0#2",
+        "kind": "fixed",
+        "category": "skills",
+        "names": [
+          "Insight",
+          "Perception"
+        ]
       }
     ],
     "skillProficiencies": [
@@ -12647,6 +12956,15 @@
             "Sylvan"
           ]
         }
+      },
+      {
+        "id": "WBtW/Background/Feylost@0#3",
+        "kind": "fixed",
+        "category": "skills",
+        "names": [
+          "Deception",
+          "Survival"
+        ]
       }
     ],
     "skillProficiencies": [
@@ -13021,6 +13339,15 @@
         "pool": {
           "kind": "any"
         }
+      },
+      {
+        "id": "GoS/Background/Fisher@0#1",
+        "kind": "fixed",
+        "category": "skills",
+        "names": [
+          "History",
+          "Survival"
+        ]
       }
     ],
     "skillProficiencies": [
@@ -13451,6 +13778,15 @@
         "names": [
           "vehicles (land)"
         ]
+      },
+      {
+        "id": "PHB/Background/Folk Hero@0#2",
+        "kind": "fixed",
+        "category": "skills",
+        "names": [
+          "Animal Handling",
+          "Survival"
+        ]
       }
     ],
     "skillProficiencies": [
@@ -13872,6 +14208,15 @@
         "pool": {
           "kind": "any"
         }
+      },
+      {
+        "id": "AI/Background/Gambler@0#2",
+        "kind": "fixed",
+        "category": "skills",
+        "names": [
+          "Deception",
+          "Insight"
+        ]
       }
     ],
     "skillProficiencies": [
@@ -14223,6 +14568,15 @@
         "pool": {
           "kind": "any"
         }
+      },
+      {
+        "id": "SatO/Background/Gate Warden@0#1",
+        "kind": "fixed",
+        "category": "skills",
+        "names": [
+          "Persuasion",
+          "Survival"
+        ]
       }
     ],
     "skillProficiencies": [
@@ -14388,6 +14742,15 @@
         "pool": {
           "kind": "any"
         }
+      },
+      {
+        "id": "BGG/Background/Giant Foundling@0#2",
+        "kind": "fixed",
+        "category": "skills",
+        "names": [
+          "Intimidation",
+          "Survival"
+        ]
       }
     ],
     "skillProficiencies": [
@@ -14590,6 +14953,15 @@
         "pool": {
           "kind": "any"
         }
+      },
+      {
+        "id": "GGR/Background/Golgari Agent@0#2",
+        "kind": "fixed",
+        "category": "skills",
+        "names": [
+          "Nature",
+          "Survival"
+        ]
       }
     ],
     "skillProficiencies": [
@@ -15133,6 +15505,15 @@
             "viol"
           ]
         }
+      },
+      {
+        "id": "EGW/Background/Grinner@0#2",
+        "kind": "fixed",
+        "category": "skills",
+        "names": [
+          "Deception",
+          "Performance"
+        ]
       }
     ],
     "skillProficiencies": [
@@ -15494,6 +15875,15 @@
             "Sylvan"
           ]
         }
+      },
+      {
+        "id": "GGR/Background/Gruul Anarch@0#2",
+        "kind": "fixed",
+        "category": "skills",
+        "names": [
+          "Animal Handling",
+          "Athletics"
+        ]
       }
     ],
     "skillProficiencies": [
@@ -16045,6 +16435,15 @@
         "pool": {
           "kind": "any"
         }
+      },
+      {
+        "id": "PHB/Background/Guild Artisan@0#2",
+        "kind": "fixed",
+        "category": "skills",
+        "names": [
+          "Insight",
+          "Persuasion"
+        ]
       }
     ],
     "skillProficiencies": [
@@ -16519,9 +16918,7 @@
         }
       }
     ],
-    "skillProficiencies": [
-      "Choose"
-    ],
+    "skillProficiencies": [],
     "toolProficiencies": [],
     "languages": [
       "1 standard languages of your choice",
@@ -16909,6 +17306,15 @@
         "pool": {
           "kind": "any"
         }
+      },
+      {
+        "id": "PHB/Background/Hermit@0#2",
+        "kind": "fixed",
+        "category": "skills",
+        "names": [
+          "Medicine",
+          "Religion"
+        ]
       }
     ],
     "skillProficiencies": [
@@ -17397,6 +17803,15 @@
             "viol"
           ]
         }
+      },
+      {
+        "id": "ERLW/Background/House Agent@0#5",
+        "kind": "fixed",
+        "category": "skills",
+        "names": [
+          "Investigation",
+          "Persuasion"
+        ]
       }
     ],
     "skillProficiencies": [
@@ -17900,11 +18315,18 @@
         "pool": {
           "kind": "any"
         }
+      },
+      {
+        "id": "SCAG/Background/Inheritor@0#2",
+        "kind": "fixed",
+        "category": "skills",
+        "names": [
+          "Survival"
+        ]
       }
     ],
     "skillProficiencies": [
-      "Survival",
-      "Choose"
+      "Survival"
     ],
     "toolProficiencies": [
       "choose"
@@ -18039,6 +18461,15 @@
         "category": "tools",
         "names": [
           "vehicles (land)"
+        ]
+      },
+      {
+        "id": "PSA/Background/Initiate@0#2",
+        "kind": "fixed",
+        "category": "skills",
+        "names": [
+          "Athletics",
+          "Intimidation"
         ]
       }
     ],
@@ -18400,6 +18831,15 @@
         "category": "tools",
         "names": [
           "vehicles (land)"
+        ]
+      },
+      {
+        "id": "PSA/Background/Initiate (Dissenter)@0#2",
+        "kind": "fixed",
+        "category": "skills",
+        "names": [
+          "Athletics",
+          "Intimidation"
         ]
       }
     ],
@@ -18775,6 +19215,15 @@
             "woodcarver's tools"
           ]
         }
+      },
+      {
+        "id": "PSI/Background/Inquisitor@0#2",
+        "kind": "fixed",
+        "category": "skills",
+        "names": [
+          "Investigation",
+          "Religion"
+        ]
       }
     ],
     "skillProficiencies": [
@@ -18846,9 +19295,7 @@
         ]
       }
     ],
-    "skillProficiencies": [
-      "Choose"
-    ],
+    "skillProficiencies": [],
     "toolProficiencies": [
       "disguise kit",
       "thieves' tools"
@@ -19248,6 +19695,15 @@
         "pool": {
           "kind": "any"
         }
+      },
+      {
+        "id": "GGR/Background/Izzet Engineer@0#2",
+        "kind": "fixed",
+        "category": "skills",
+        "names": [
+          "Arcana",
+          "Investigation"
+        ]
       }
     ],
     "skillProficiencies": [
@@ -19771,6 +20227,15 @@
         "pool": {
           "kind": "any"
         }
+      },
+      {
+        "id": "DSotDQ/Background/Knight of Solamnia@0#1",
+        "kind": "fixed",
+        "category": "skills",
+        "names": [
+          "Athletics",
+          "Survival"
+        ]
       }
     ],
     "skillProficiencies": [
@@ -19919,11 +20384,18 @@
         "pool": {
           "kind": "any"
         }
+      },
+      {
+        "id": "SCAG/Background/Knight of the Order@0#2",
+        "kind": "fixed",
+        "category": "skills",
+        "names": [
+          "Persuasion"
+        ]
       }
     ],
     "skillProficiencies": [
-      "Persuasion",
-      "Choose"
+      "Persuasion"
     ],
     "toolProficiencies": [
       "choose"
@@ -20003,6 +20475,15 @@
         "pool": {
           "kind": "any"
         }
+      },
+      {
+        "id": "SCC/Background/Lorehold Student@0#1",
+        "kind": "fixed",
+        "category": "skills",
+        "names": [
+          "History",
+          "Religion"
+        ]
       }
     ],
     "skillProficiencies": [
@@ -20172,6 +20653,15 @@
         "pool": {
           "kind": "any"
         }
+      },
+      {
+        "id": "EGW/Background/Luxonborn (Acolyte)@0#1",
+        "kind": "fixed",
+        "category": "skills",
+        "names": [
+          "Insight",
+          "Religion"
+        ]
       }
     ],
     "skillProficiencies": [
@@ -20521,6 +21011,15 @@
         "pool": {
           "kind": "any"
         }
+      },
+      {
+        "id": "DSotDQ/Background/Mage of High Sorcery@0#1",
+        "kind": "fixed",
+        "category": "skills",
+        "names": [
+          "Arcana",
+          "History"
+        ]
       }
     ],
     "skillProficiencies": [
@@ -20642,6 +21141,15 @@
         "names": [
           "vehicles (water)",
           "vehicles (land)"
+        ]
+      },
+      {
+        "id": "GoS/Background/Marine@0#1",
+        "kind": "fixed",
+        "category": "skills",
+        "names": [
+          "Athletics",
+          "Survival"
         ]
       }
     ],
@@ -21051,6 +21559,15 @@
         "names": [
           "vehicles (land)"
         ]
+      },
+      {
+        "id": "SCAG/Background/Mercenary Veteran@0#2",
+        "kind": "fixed",
+        "category": "skills",
+        "names": [
+          "Athletics",
+          "Persuasion"
+        ]
       }
     ],
     "skillProficiencies": [
@@ -21141,6 +21658,15 @@
         "category": "tools",
         "names": [
           "thieves' tools"
+        ]
+      },
+      {
+        "id": "EGW/Background/Myriad Operative (Criminal)@0#2",
+        "kind": "fixed",
+        "category": "skills",
+        "names": [
+          "Deception",
+          "Stealth"
         ]
       }
     ],
@@ -21554,6 +22080,15 @@
         "pool": {
           "kind": "any"
         }
+      },
+      {
+        "id": "PHB/Background/Noble@0#2",
+        "kind": "fixed",
+        "category": "skills",
+        "names": [
+          "History",
+          "Persuasion"
+        ]
       }
     ],
     "skillProficiencies": [
@@ -21906,6 +22441,15 @@
         "pool": {
           "kind": "any"
         }
+      },
+      {
+        "id": "GGR/Background/Orzhov Representative@0#1",
+        "kind": "fixed",
+        "category": "skills",
+        "names": [
+          "Intimidation",
+          "Religion"
+        ]
       }
     ],
     "skillProficiencies": [
@@ -22440,6 +22984,15 @@
         "pool": {
           "kind": "any"
         }
+      },
+      {
+        "id": "PHB/Background/Outlander@0#2",
+        "kind": "fixed",
+        "category": "skills",
+        "names": [
+          "Athletics",
+          "Survival"
+        ]
       }
     ],
     "skillProficiencies": [
@@ -22881,6 +23434,15 @@
         "pool": {
           "kind": "any"
         }
+      },
+      {
+        "id": "AI/Background/Plaintiff@0#2",
+        "kind": "fixed",
+        "category": "skills",
+        "names": [
+          "Medicine",
+          "Persuasion"
+        ]
       }
     ],
     "skillProficiencies": [
@@ -23233,11 +23795,18 @@
         "pool": {
           "kind": "any"
         }
+      },
+      {
+        "id": "SatO/Background/Planar Philosopher@0#1",
+        "kind": "fixed",
+        "category": "skills",
+        "names": [
+          "Arcana"
+        ]
       }
     ],
     "skillProficiencies": [
-      "Arcana",
-      "Choose"
+      "Arcana"
     ],
     "toolProficiencies": [],
     "languages": [
@@ -23585,6 +24154,15 @@
         "pool": {
           "kind": "any"
         }
+      },
+      {
+        "id": "SCC/Background/Prismari Student@0#2",
+        "kind": "fixed",
+        "category": "skills",
+        "names": [
+          "Acrobatics",
+          "Performance"
+        ]
       }
     ],
     "skillProficiencies": [
@@ -23785,6 +24363,15 @@
         "pool": {
           "kind": "any"
         }
+      },
+      {
+        "id": "SCC/Background/Quandrix Student@0#2",
+        "kind": "fixed",
+        "category": "skills",
+        "names": [
+          "Arcana",
+          "Nature"
+        ]
       }
     ],
     "skillProficiencies": [
@@ -23984,6 +24571,15 @@
             "Giant"
           ]
         }
+      },
+      {
+        "id": "GGR/Background/Rakdos Cultist@0#2",
+        "kind": "fixed",
+        "category": "skills",
+        "names": [
+          "Acrobatics",
+          "Performance"
+        ]
       }
     ],
     "skillProficiencies": [
@@ -24561,6 +25157,15 @@
           "navigator's tools",
           "vehicles (water)"
         ]
+      },
+      {
+        "id": "EGW/Background/Revelry Pirate (Sailor)@0#1",
+        "kind": "fixed",
+        "category": "skills",
+        "names": [
+          "Athletics",
+          "Perception"
+        ]
       }
     ],
     "skillProficiencies": [
@@ -24923,6 +25528,15 @@
         "pool": {
           "kind": "any"
         }
+      },
+      {
+        "id": "BMT/Background/Rewarded@0#2",
+        "kind": "fixed",
+        "category": "skills",
+        "names": [
+          "Insight",
+          "Persuasion"
+        ]
       }
     ],
     "skillProficiencies": [
@@ -25155,6 +25769,15 @@
         "pool": {
           "kind": "any"
         }
+      },
+      {
+        "id": "AI/Background/Rival Intern@0#2",
+        "kind": "fixed",
+        "category": "skills",
+        "names": [
+          "History",
+          "Investigation"
+        ]
       }
     ],
     "skillProficiencies": [
@@ -25521,6 +26144,15 @@
         "pool": {
           "kind": "any"
         }
+      },
+      {
+        "id": "BMT/Background/Ruined@0#2",
+        "kind": "fixed",
+        "category": "skills",
+        "names": [
+          "Stealth",
+          "Survival"
+        ]
       }
     ],
     "skillProficiencies": [
@@ -25752,6 +26384,15 @@
         "names": [
           "Giant"
         ]
+      },
+      {
+        "id": "BGG/Background/Rune Carver@0#2",
+        "kind": "fixed",
+        "category": "skills",
+        "names": [
+          "History",
+          "Perception"
+        ]
       }
     ],
     "skillProficiencies": [
@@ -25951,6 +26592,15 @@
         "pool": {
           "kind": "any"
         }
+      },
+      {
+        "id": "PHB/Background/Sage@0#1",
+        "kind": "fixed",
+        "category": "skills",
+        "names": [
+          "Arcana",
+          "History"
+        ]
       }
     ],
     "skillProficiencies": [
@@ -26350,6 +27000,15 @@
           "navigator's tools",
           "vehicles (water)"
         ]
+      },
+      {
+        "id": "PHB/Background/Sailor@0#1",
+        "kind": "fixed",
+        "category": "skills",
+        "names": [
+          "Athletics",
+          "Perception"
+        ]
       }
     ],
     "skillProficiencies": [
@@ -26735,6 +27394,15 @@
         "pool": {
           "kind": "any"
         }
+      },
+      {
+        "id": "GGR/Background/Selesnya Initiate@0#2",
+        "kind": "fixed",
+        "category": "skills",
+        "names": [
+          "Nature",
+          "Persuasion"
+        ]
       }
     ],
     "skillProficiencies": [
@@ -27256,6 +27924,15 @@
           "carpenter's tools",
           "vehicles (water)"
         ]
+      },
+      {
+        "id": "GoS/Background/Shipwright@0#1",
+        "kind": "fixed",
+        "category": "skills",
+        "names": [
+          "History",
+          "Perception"
+        ]
       }
     ],
     "skillProficiencies": [
@@ -27652,6 +28329,15 @@
         "pool": {
           "kind": "any"
         }
+      },
+      {
+        "id": "SCC/Background/Silverquill Student@0#1",
+        "kind": "fixed",
+        "category": "skills",
+        "names": [
+          "Intimidation",
+          "Persuasion"
+        ]
       }
     ],
     "skillProficiencies": [
@@ -27818,6 +28504,15 @@
         "pool": {
           "kind": "any"
         }
+      },
+      {
+        "id": "GGR/Background/Simic Scientist@0#1",
+        "kind": "fixed",
+        "category": "skills",
+        "names": [
+          "Arcana",
+          "Medicine"
+        ]
       }
     ],
     "skillProficiencies": [
@@ -28383,6 +29078,15 @@
         "names": [
           "vehicles (water)"
         ]
+      },
+      {
+        "id": "GoS/Background/Smuggler@0#1",
+        "kind": "fixed",
+        "category": "skills",
+        "names": [
+          "Athletics",
+          "Deception"
+        ]
       }
     ],
     "skillProficiencies": [
@@ -28789,6 +29493,15 @@
         "category": "tools",
         "names": [
           "vehicles (land)"
+        ]
+      },
+      {
+        "id": "PHB/Background/Soldier@0#2",
+        "kind": "fixed",
+        "category": "skills",
+        "names": [
+          "Athletics",
+          "Intimidation"
         ]
       }
     ],
@@ -29209,9 +29922,7 @@
         }
       }
     ],
-    "skillProficiencies": [
-      "Choose"
-    ],
+    "skillProficiencies": [],
     "toolProficiencies": [
       "choose"
     ],
@@ -29279,6 +29990,15 @@
         "names": [
           "disguise kit",
           "thieves' tools"
+        ]
+      },
+      {
+        "id": "PHB/Background/Urchin@0#1",
+        "kind": "fixed",
+        "category": "skills",
+        "names": [
+          "Sleight of Hand",
+          "Stealth"
         ]
       }
     ],
@@ -29666,6 +30386,15 @@
         "pool": {
           "kind": "any"
         }
+      },
+      {
+        "id": "SCAG/Background/Uthgardt Tribe Member@0#2",
+        "kind": "fixed",
+        "category": "skills",
+        "names": [
+          "Athletics",
+          "Survival"
+        ]
       }
     ],
     "skillProficiencies": [
@@ -29753,6 +30482,15 @@
         "pool": {
           "kind": "any"
         }
+      },
+      {
+        "id": "SCAG/Background/Variant City Watch (Investigator)@0#1",
+        "kind": "fixed",
+        "category": "skills",
+        "names": [
+          "Insight",
+          "Investigation"
+        ]
       }
     ],
     "skillProficiencies": [
@@ -29843,6 +30581,15 @@
         "category": "tools",
         "names": [
           "thieves' tools"
+        ]
+      },
+      {
+        "id": "PHB/Background/Variant Criminal (Spy)@0#2",
+        "kind": "fixed",
+        "category": "skills",
+        "names": [
+          "Deception",
+          "Stealth"
         ]
       }
     ],
@@ -30261,6 +31008,15 @@
             "viol"
           ]
         }
+      },
+      {
+        "id": "PHB/Background/Variant Entertainer (Gladiator)@0#2",
+        "kind": "fixed",
+        "category": "skills",
+        "names": [
+          "Acrobatics",
+          "Performance"
+        ]
       }
     ],
     "skillProficiencies": [
@@ -30726,6 +31482,15 @@
         "pool": {
           "kind": "any"
         }
+      },
+      {
+        "id": "PHB/Background/Variant Guild Artisan (Guild Merchant)@0#2",
+        "kind": "fixed",
+        "category": "skills",
+        "names": [
+          "Insight",
+          "Persuasion"
+        ]
       }
     ],
     "skillProficiencies": [
@@ -31220,6 +31985,15 @@
         "pool": {
           "kind": "any"
         }
+      },
+      {
+        "id": "PHB/Background/Variant Noble (Knight)@0#2",
+        "kind": "fixed",
+        "category": "skills",
+        "names": [
+          "History",
+          "Persuasion"
+        ]
       }
     ],
     "skillProficiencies": [
@@ -31588,6 +32362,15 @@
         "pool": {
           "kind": "any"
         }
+      },
+      {
+        "id": "PHB/Background/Variant Noble (Retainers)@0#2",
+        "kind": "fixed",
+        "category": "skills",
+        "names": [
+          "History",
+          "Persuasion"
+        ]
       }
     ],
     "skillProficiencies": [
@@ -31939,6 +32722,15 @@
         "names": [
           "navigator's tools",
           "vehicles (water)"
+        ]
+      },
+      {
+        "id": "PHB/Background/Variant Sailor (Pirate)@0#1",
+        "kind": "fixed",
+        "category": "skills",
+        "names": [
+          "Athletics",
+          "Perception"
         ]
       }
     ],
@@ -32327,6 +33119,15 @@
             "viol"
           ]
         }
+      },
+      {
+        "id": "PSA/Background/Vizier@0#2",
+        "kind": "fixed",
+        "category": "skills",
+        "names": [
+          "History",
+          "Religion"
+        ]
       }
     ],
     "skillProficiencies": [
@@ -32729,6 +33530,15 @@
             "viol"
           ]
         }
+      },
+      {
+        "id": "PSA/Background/Vizier (Dissenter)@0#2",
+        "kind": "fixed",
+        "category": "skills",
+        "names": [
+          "History",
+          "Religion"
+        ]
       }
     ],
     "skillProficiencies": [
@@ -33099,6 +33909,15 @@
         "pool": {
           "kind": "any"
         }
+      },
+      {
+        "id": "EGW/Background/Volstrucker Agent@0#2",
+        "kind": "fixed",
+        "category": "skills",
+        "names": [
+          "Deception",
+          "Stealth"
+        ]
       }
     ],
     "skillProficiencies": [
@@ -33429,6 +34248,15 @@
         "pool": {
           "kind": "any"
         }
+      },
+      {
+        "id": "SCAG/Background/Waterdhavian Noble@0#2",
+        "kind": "fixed",
+        "category": "skills",
+        "names": [
+          "History",
+          "Persuasion"
+        ]
       }
     ],
     "skillProficiencies": [
@@ -33515,6 +34343,15 @@
         "names": [
           "navigator's tools",
           "vehicles (space)"
+        ]
+      },
+      {
+        "id": "AAG/Background/Wildspacer@0#1",
+        "kind": "fixed",
+        "category": "skills",
+        "names": [
+          "Athletics",
+          "Survival"
         ]
       }
     ],
@@ -33670,6 +34507,15 @@
         "pool": {
           "kind": "any"
         }
+      },
+      {
+        "id": "WBtW/Background/Witchlight Hand@0#2",
+        "kind": "fixed",
+        "category": "skills",
+        "names": [
+          "Performance",
+          "Sleight of Hand"
+        ]
       }
     ],
     "skillProficiencies": [
@@ -34001,6 +34847,15 @@
         "pool": {
           "kind": "any"
         }
+      },
+      {
+        "id": "SCC/Background/Witherbloom Student@0#2",
+        "kind": "fixed",
+        "category": "skills",
+        "names": [
+          "Nature",
+          "Survival"
+        ]
       }
     ],
     "skillProficiencies": [
