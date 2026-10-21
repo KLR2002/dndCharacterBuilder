@@ -3,6 +3,36 @@ import type { ClassData, ProficiencyGrant } from "../types/dnd5e.ts";
 import type { Compendium } from "../services/compendium.ts";
 import { optionGrantApplies } from "./optionFeatureGrants.ts";
 import { findClassData } from "./catalogs.ts";
+import { STARTING_PROFICIENCIES, type ChoiceProficiencyGrant } from "./proficiencyPools.ts";
+
+/**
+ * Moves the class tool picks saved before the starting tool choice was a Proficiency Choice into that
+ * choice's own pick, and clears the class bucket. Until this runs the sheet reads the bucket as picks of
+ * the choice, so the sheet is the same before and after. Returns the character unchanged when there is
+ * no bucket, no first class, or no starting tool choice in the Compendium.
+ */
+export function moveLegacyClassToolPicks(character: Character, compendium: Compendium): Character {
+  const bucket = character.chosenTools?.class;
+  const first = character.classes[0];
+  if (bucket === undefined || !first) return character;
+  const cls = findClassData(compendium.for().classes(), first);
+  const choice = cls?.grants?.find(
+    (grant): grant is ChoiceProficiencyGrant => grant.kind === "choice" && grant.category === "tools",
+  );
+  if (!choice) return character;
+
+  const saved = character.proficiencyPicks?.[choice.id] ?? [];
+  const moved = bucket.filter((name) => !saved.some((pick) => pick.toLowerCase() === name.toLowerCase()));
+  const chosenTools = { ...character.chosenTools };
+  delete chosenTools.class;
+  const proficiencyPicks: Record<string, string[]> = { ...(character.proficiencyPicks ?? {}) };
+  if (saved.length + moved.length > 0) proficiencyPicks[choice.id] = [...saved, ...moved];
+  return {
+    ...character,
+    chosenTools,
+    proficiencyPicks: Object.keys(proficiencyPicks).length > 0 ? proficiencyPicks : undefined,
+  };
+}
 
 /**
  * The reconciler's check on saved Proficiency Choice picks. It reads the Compendium and the
@@ -36,6 +66,12 @@ function grantSourcesIn(compendium: Compendium): Map<string, GrantSource> {
     for (const grant of grants ?? []) sources.set(grant.id, source);
   };
   for (const cls of listings.classes()) {
+    add(cls.grants, {
+      feature: STARTING_PROFICIENCIES,
+      level: 1,
+      optional: false,
+      owner: { kind: "class", className: cls.name, source: cls.source },
+    });
     for (const feature of cls.features) {
       add(feature.grants, {
         feature: feature.name,

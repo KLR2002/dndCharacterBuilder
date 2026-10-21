@@ -75,9 +75,9 @@ test("class starting tools and multiclass tool proficiencies both appear", () =>
       classes: [{ className: "Rogue", source: "PHB", level: 1 }],
       multiclassProficiencies: [{ className: "Druid", tools: ["Herbalism Kit"] }],
     }),
-    { compendium: inMemoryCompendium() },
+    { compendium: srdBaselineCompendium() },
   );
-  assert.deepEqual(names(sheet.tools), ["Thieves' Tools", "Herbalism Kit"]);
+  assert.deepEqual(names(sheet.tools).sort(), ["Herbalism Kit", "Thieves' Tools"]);
 });
 
 test("a character with no source shows Common and no tools", () => {

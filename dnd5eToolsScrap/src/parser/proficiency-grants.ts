@@ -59,6 +59,9 @@ const ARTISAN_TOOLS = [
   "leatherworker's tools", "mason's tools", "painter's supplies", "potter's tools", "smith's tools",
   "tinker's tools", "weaver's tools", "woodcarver's tools",
 ];
+const MUSICAL_INSTRUMENTS = [
+  "bagpipes", "drum", "dulcimer", "flute", "horn", "lute", "lyre", "pan flute", "shawm", "viol",
+];
 const STANDARD_LANGUAGES = ["Common", "Dwarvish", "Elvish", "Giant", "Gnomish", "Goblin", "Halfling", "Orc"];
 const WEAPON_NAMES = [
   "club", "dagger", "greatclub", "handaxe", "javelin", "light hammer", "mace", "quarterstaff", "sickle",
@@ -214,6 +217,13 @@ function parseProficiencyBody(input: string): ProficiencyGrantSpec[] | null {
 
   if (/^(?:one|a|an) type of artisan'?s tools of your choice$/i.test(body)) {
     return [{ kind: "choice", category: "tools", count: 1, pool: { kind: "names", names: [...ARTISAN_TOOLS] } }];
+  }
+  if (/^any one type of artisan'?s tools or any one musical instrument of your choice$/i.test(body)) {
+    return [{ kind: "choice", category: "tools", count: 1, pool: { kind: "names", names: [...ARTISAN_TOOLS, ...MUSICAL_INSTRUMENTS] } }];
+  }
+  const instruments = /^(\S+) musical instruments? of your choice$/i.exec(body);
+  if (instruments && parseCount(instruments[1]) !== null) {
+    return [{ kind: "choice", category: "tools", count: parseCount(instruments[1]) as number, pool: { kind: "names", names: [...MUSICAL_INSTRUMENTS] } }];
   }
   if (/^all saving throws$/i.test(body)) {
     return [{ kind: "fixed", category: "savingThrows", names: [...ABILITIES] }];
@@ -532,6 +542,40 @@ export function structuredGrants(
     else unparsed.push(`savingThrows: ${name}`);
   }
 
+  if (unparsed.length > 0) return { grants: [], unparsed };
+  return { grants: build(subject, specs), unparsed };
+}
+
+/**
+ * The starting tools of a class, from the text of each tool entry it lists. Every entry must state a
+ * tool grant, or the whole list gets no grants and its entries are returned as unparsed. Fixed names of
+ * one list merge into one grant; each choice is its own grant after them.
+ */
+export function startingToolGrants(
+  subject: Pick<GrantSubject, "source" | "owner" | "feature" | "level">,
+  toolTexts: string[]
+): { grants: ProficiencyGrant[]; unparsed: string[] } {
+  const specs: ProficiencyGrantSpec[] = [];
+  const unparsed: string[] = [];
+  let fixed: Extract<ProficiencyGrantSpec, { kind: "fixed" }> | undefined;
+  for (const text of toolTexts) {
+    const parsed = parseProficiencyBody(text);
+    if (!parsed || parsed.some((spec) => spec.category !== "tools")) {
+      unparsed.push(text);
+      continue;
+    }
+    for (const spec of parsed) {
+      if (spec.kind === "choice") {
+        specs.push(spec);
+        continue;
+      }
+      if (!fixed) {
+        fixed = { kind: "fixed", category: "tools", names: [] };
+        specs.push(fixed);
+      }
+      for (const name of spec.names) if (!fixed.names.includes(name)) fixed.names.push(name);
+    }
+  }
   if (unparsed.length > 0) return { grants: [], unparsed };
   return { grants: build(subject, specs), unparsed };
 }

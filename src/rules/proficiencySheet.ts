@@ -1,5 +1,5 @@
 import type { Character } from "../types/character.ts";
-import type { ItemData, ProficiencyCategory } from "../types/dnd5e.ts";
+import type { ClassData, ItemData, ProficiencyCategory } from "../types/dnd5e.ts";
 import { DND_SKILLS, RACE_WEAPON_PROFICIENCIES } from "../constants/rules.ts";
 import { catalogListings, findClassData, type CharacterCatalogs } from "./catalogs.ts";
 import { currentCompendium, type CompendiumListings } from "../services/compendium.ts";
@@ -11,7 +11,6 @@ import { ALL_LANGUAGE_NAMES, ALL_TOOLS, normalizeToolName } from "./proficiencie
 import {
   getBackgroundLanguageGrant,
   getBackgroundToolGrant,
-  getClassToolGrant,
   getRaceLanguageGrant,
   getRaceToolGrant,
   resolveCharacterTools,
@@ -19,7 +18,13 @@ import {
   type LanguageGrant,
   type ToolGrant,
 } from "./proficiencySources/toolsAndLanguages.ts";
-import { normalizeLanguageName, normalizeSavingThrowName, validPicks } from "./proficiencyPools.ts";
+import {
+  normalizeLanguageName,
+  normalizeSavingThrowName,
+  STARTING_PROFICIENCIES,
+  validPicks,
+  type ChoiceProficiencyGrant,
+} from "./proficiencyPools.ts";
 import { ABILITY_NAMES } from "./abilities.ts";
 import { CLASS_DATA } from "./classData.ts";
 import { isKnowledgeCleric, normalizeSkillName } from "./skills.ts";
@@ -108,6 +113,15 @@ function fixedFeatureNames(features: FeatureInstance[], category: ProficiencyCat
   );
 }
 
+/**
+ * The class tool picks saved before the starting tool choice was a Proficiency Choice. They sit in the
+ * class bucket, and count as picks of that choice until reconciling moves them into its own pick.
+ */
+function legacyClassToolPicks(feature: FeatureInstance, grant: ChoiceProficiencyGrant, character: Character): string[] {
+  const starting = feature.origin === "Class" && feature.name === STARTING_PROFICIENCIES;
+  return starting && grant.category === "tools" ? (character.chosenTools?.class ?? []) : [];
+}
+
 /** The saved picks of one choice category, for the choice grants on the features the character has now. */
 function choicePickNames(
   features: FeatureInstance[],
@@ -116,11 +130,11 @@ function choicePickNames(
   items: readonly ItemData[],
 ): string[] {
   return features.flatMap((feature) =>
-    (feature.grants ?? []).flatMap((grant) =>
-      grant.kind === "choice" && grant.category === category
-        ? validPicks(grant, character.proficiencyPicks?.[grant.id] ?? [], items)
-        : [],
-    ),
+    (feature.grants ?? []).flatMap((grant) => {
+      if (grant.kind !== "choice" || grant.category !== category) return [];
+      const saved = [...(character.proficiencyPicks?.[grant.id] ?? []), ...legacyClassToolPicks(feature, grant, character)];
+      return validPicks(grant, saved, items);
+    }),
   );
 }
 
@@ -177,14 +191,39 @@ function knowledgeExpertiseSkills(character: Character): string[] {
   return (character.chosenExpertise ?? []).map(normalizeSkillName).filter((name) => KNOWLEDGE_SKILLS.includes(name));
 }
 
-/** The features the character holds, each with the grants its rule gives, read from the listings. */
+/**
+ * The starting proficiencies of the character's first class, as a feature: its level-1 Proficiency Grants
+ * from the Catalog class it resolves to. Only the first class starts with them. Undefined when it has none.
+ */
+function startingFeatureOf(character: Character, classes: readonly ClassData[]): FeatureInstance | undefined {
+  const first = character.classes[0];
+  const cls = first ? findClassData(classes, first) : undefined;
+  if (!cls?.grants?.length) return undefined;
+  return {
+    id: JSON.stringify(["Class", cls.source, cls.name, STARTING_PROFICIENCIES, 1]),
+    name: STARTING_PROFICIENCIES,
+    source: cls.source,
+    description: "",
+    origin: "Class",
+    className: cls.name,
+    level: 1,
+    grants: cls.grants,
+  };
+}
+
+/**
+ * The features the character holds, each with the grants its rule gives, read from the listings. The
+ * first class's starting proficiencies are included as one more feature; they are not granted features.
+ */
 export function featuresOf(character: Character, listings: CompendiumListings): FeatureInstance[] {
-  return grantedFeatures(character, {
+  const features = grantedFeatures(character, {
     races: listings.races(),
     classes: listings.classes(),
     backgrounds: listings.backgrounds(),
     feats: listings.feats(),
   });
+  const starting = startingFeatureOf(character, listings.classes());
+  return starting ? [...features, starting] : features;
 }
 
 /**
@@ -207,13 +246,15 @@ export interface SourceGrants {
   raceTools: ToolGrant;
   backgroundLanguages: LanguageGrant;
   backgroundTools: ToolGrant;
-  classTools: ToolGrant;
+  /** The fixed tools the first class starts with. Its tool choice is a Proficiency Choice, offered on its own. */
+  classTools: string[];
 }
 
 export function sourceGrants(character: Character, catalogs: CharacterCatalogs): SourceGrants {
   const listings = catalogListings(catalogs);
   const races = listings.races();
   const backgrounds = listings.backgrounds();
+  const starting = startingFeatureOf(character, listings.classes());
   return {
     raceLanguages: getRaceLanguageGrant(
       character.race?.name,
@@ -225,7 +266,7 @@ export function sourceGrants(character: Character, catalogs: CharacterCatalogs):
     raceTools: getRaceToolGrant(character.race?.name, character.race?.subraceName, races),
     backgroundLanguages: getBackgroundLanguageGrant(character.background?.name, backgrounds),
     backgroundTools: getBackgroundToolGrant(character.background?.name, backgrounds),
-    classTools: getClassToolGrant(character.classes[0]?.className, listings.classes()),
+    classTools: starting ? fixedFeatureNames([starting], "tools").map(normalizeToolName) : [],
   };
 }
 

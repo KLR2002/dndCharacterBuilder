@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { matchedSentences, resolveFeatureGrants, structuredGrants, type GrantSubject } from "../src/parser/proficiency-grants.ts";
+import { matchedSentences, resolveFeatureGrants, startingToolGrants, structuredGrants, type GrantSubject } from "../src/parser/proficiency-grants.ts";
 import type { GrantOverride } from "../src/parser/proficiency-grants.ts";
 import type { ProficiencyReport } from "../src/types/proficiency.ts";
 
@@ -383,4 +383,48 @@ test("an override keyed without source applies to every source's copy of the fea
     ["AAA/Sample Artificer/Lantern Training@1#0"],
     ["BBB/Sample Artificer/Lantern Training@1#0"],
   ]);
+});
+
+const STARTING = { source: "TST", owner: "Sample Bard", feature: "Starting Proficiencies", level: 1 };
+
+test("starting tools: fixed names merge into one grant and an artisan choice becomes a names pick after them", () => {
+  const result = startingToolGrants(STARTING, ["lantern-maker's kit", "tinker's tools", "one type of artisan's tools of your choice"]);
+  assert.deepEqual(result.unparsed, []);
+  assert.deepEqual(result.grants.map((g) => g.id), ["TST/Sample Bard/Starting Proficiencies@1#0", "TST/Sample Bard/Starting Proficiencies@1#1"]);
+  assert.deepEqual(result.grants[0], {
+    id: "TST/Sample Bard/Starting Proficiencies@1#0",
+    kind: "fixed",
+    category: "tools",
+    names: ["lantern-maker's kit", "tinker's tools"],
+  });
+  assert.equal(result.grants[1].kind, "choice");
+  assert.equal(result.grants[1].kind === "choice" && result.grants[1].count, 1);
+});
+
+test("starting tools: a count of musical instruments of your choice is a pick of that many from the instrument list", () => {
+  const result = startingToolGrants(STARTING, ["two musical instruments of your choice"]);
+  assert.deepEqual(result.unparsed, []);
+  assert.equal(result.grants.length, 1);
+  const [grant] = result.grants;
+  assert.ok(grant.kind === "choice" && grant.count === 2 && grant.category === "tools");
+  assert.ok(grant.kind === "choice" && grant.pool.kind === "names" && grant.pool.names.includes("lute") && grant.pool.names.includes("viol"));
+  assert.ok(grant.kind === "choice" && grant.pool.kind === "names" && !grant.pool.names.includes("smith's tools"));
+});
+
+test("starting tools: an artisan's tool or a musical instrument is one pick from both lists", () => {
+  const result = startingToolGrants(STARTING, ["any one type of artisan's tools or any one musical instrument of your choice"]);
+  assert.deepEqual(result.unparsed, []);
+  const [grant] = result.grants;
+  assert.ok(grant.kind === "choice" && grant.count === 1 && grant.pool.kind === "names");
+  assert.ok(grant.kind === "choice" && grant.pool.kind === "names" && grant.pool.names.includes("smith's tools") && grant.pool.names.includes("bagpipes"));
+});
+
+test("starting tools: one text the mapping cannot state makes the whole list unparsed, and a non-tool text is unparsed", () => {
+  const unknown = startingToolGrants(STARTING, ["lantern-maker's kit", "a sample set of unknown things"]);
+  assert.deepEqual(unknown.grants, []);
+  assert.deepEqual(unknown.unparsed, ["a sample set of unknown things"]);
+
+  const armor = startingToolGrants(STARTING, ["light armor"]);
+  assert.deepEqual(armor.grants, []);
+  assert.deepEqual(armor.unparsed, ["light armor"]);
 });

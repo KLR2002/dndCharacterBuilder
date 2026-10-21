@@ -334,7 +334,7 @@ export const BuilderTab: React.FC<BuilderTabProps> = ({
     raceTools: raceToolGrant,
     backgroundLanguages: bgLanguageGrant,
     backgroundTools: bgToolGrant,
-    classTools: classToolGrant,
+    classTools,
   } = sourceGrants(character, catalogs);
   const ruleChoices = offeredRuleChoices(character, { raceCatalog: allRaces, level: totalLevel, activeBooks, origins: ["race"] });
 
@@ -365,12 +365,6 @@ export const BuilderTab: React.FC<BuilderTabProps> = ({
     const cur = character.chosenTools?.background || [];
     const next = cur.includes(tool) ? cur.filter((x) => x !== tool) : [...cur, tool];
     onUpdate({ chosenTools: { ...character.chosenTools, background: next } });
-  };
-
-  const toggleClassTool = (tool: string) => {
-    const cur = character.chosenTools?.class || [];
-    const next = cur.includes(tool) ? cur.filter((x) => x !== tool) : [...cur, tool];
-    onUpdate({ chosenTools: { ...character.chosenTools, class: next } });
   };
 
   const sectionTabs = [
@@ -478,8 +472,7 @@ export const BuilderTab: React.FC<BuilderTabProps> = ({
           skillChoices={skillChoices}
           autoGranted={classAutoGranted}
           toggleSkill={toggleSkill}
-          classToolGrant={classToolGrant}
-          toggleClassTool={toggleClassTool}
+          classTools={classTools}
           availableOptionalFeatures={availableOptionalFeatures}
           pendingAsiSlots={pendingAsi}
           primaryClass={primaryClass}

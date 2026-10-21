@@ -59,9 +59,9 @@ const ALLOWANCES: Allowance[] = [
     reason: "the Builder edits its own race and background picks, the buckets the sheet reads",
   },
   {
-    files: ["components/builder/ClassProgressionSection.tsx"],
+    files: ["rules/proficiencyPicks.ts"],
     fields: ["chosenTools"],
-    reason: "the Builder edits its own class tool picks, the bucket the sheet reads",
+    reason: "the reconciler moves the saved class tool bucket into the starting tool choice's own pick, once",
   },
   {
     files: ["rules/builderTransitions.ts"],

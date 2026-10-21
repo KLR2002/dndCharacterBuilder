@@ -1,4 +1,10 @@
-import { newProficiencyReport, resolveFeatureGrants, unmatchedOverrides, type GrantOverride } from "../parser/proficiency-grants.ts";
+import {
+  newProficiencyReport,
+  resolveFeatureGrants,
+  startingToolGrants,
+  unmatchedOverrides,
+  type GrantOverride,
+} from "../parser/proficiency-grants.ts";
 import { allRefs, classFeatureRefs, featRefs, type GrantRef, type TrackedClass, type TrackedData, type TrackedFeat } from "./subjects.ts";
 
 /** Reviewed overrides, one list per tracked file. Matches the shape of PROFICIENCY_GRANT_OVERRIDES. */
@@ -26,6 +32,22 @@ export function enrichTrackedData(data: TrackedData, overrides: GrantOverrides):
   requireEveryOverridePlaced(feats, overrides.feats);
   applyGrants(classes, overrides.classes);
   applyGrants(feats, overrides.feats);
+  applyStartingToolGrants(data.classes);
+}
+
+/**
+ * Sets each class's "Starting Proficiencies" grants from its starting tool texts, as the class scraper does.
+ * A class whose tool texts state no grant gets none; the scraper reports those texts when it runs.
+ */
+function applyStartingToolGrants(classes: TrackedClass[]): void {
+  for (const cls of classes) {
+    const { grants } = startingToolGrants(
+      { source: cls.source, owner: cls.name, feature: "Starting Proficiencies", level: 1 },
+      cls.toolProficiencies ?? []
+    );
+    if (grants.length > 0) cls.grants = grants;
+    else delete cls.grants;
+  }
 }
 
 function requireEveryOverridePlaced(refs: GrantRef[], overrides: GrantOverride[]): void {
@@ -48,6 +70,7 @@ export function enrichGrantFiles(files: TrackedFiles, overrides: GrantOverrides)
 export function stripGrantFiles(files: TrackedFiles): TrackedFiles {
   const data = readTracked(files);
   for (const ref of allRefs(data)) delete ref.holder.grants;
+  for (const cls of data.classes) delete cls.grants;
   return writeTracked(data);
 }
 

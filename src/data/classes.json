@@ -553,7 +553,30 @@
         ]
       }
     },
-    "description": ""
+    "description": "",
+    "grants": [
+      {
+        "id": "PHB/Bard/Starting Proficiencies@1#0",
+        "kind": "choice",
+        "category": "tools",
+        "count": 3,
+        "pool": {
+          "kind": "names",
+          "names": [
+            "bagpipes",
+            "drum",
+            "dulcimer",
+            "flute",
+            "horn",
+            "lute",
+            "lyre",
+            "pan flute",
+            "shawm",
+            "viol"
+          ]
+        }
+      }
+    ]
   },
   {
     "name": "Cleric",
@@ -1327,7 +1350,17 @@
         ]
       }
     },
-    "description": ""
+    "description": "",
+    "grants": [
+      {
+        "id": "PHB/Druid/Starting Proficiencies@1#0",
+        "kind": "fixed",
+        "category": "tools",
+        "names": [
+          "herbalism kit"
+        ]
+      }
+    ]
   },
   {
     "name": "Fighter",
@@ -1880,7 +1913,47 @@
         ]
       }
     },
-    "description": ""
+    "description": "",
+    "grants": [
+      {
+        "id": "PHB/Monk/Starting Proficiencies@1#0",
+        "kind": "choice",
+        "category": "tools",
+        "count": 1,
+        "pool": {
+          "kind": "names",
+          "names": [
+            "alchemist's supplies",
+            "brewer's supplies",
+            "calligrapher's supplies",
+            "carpenter's tools",
+            "cartographer's tools",
+            "cobbler's tools",
+            "cook's utensils",
+            "glassblower's tools",
+            "jeweler's tools",
+            "leatherworker's tools",
+            "mason's tools",
+            "painter's supplies",
+            "potter's tools",
+            "smith's tools",
+            "tinker's tools",
+            "weaver's tools",
+            "woodcarver's tools",
+            "bagpipes",
+            "drum",
+            "dulcimer",
+            "flute",
+            "horn",
+            "lute",
+            "lyre",
+            "pan flute",
+            "shawm",
+            "viol"
+          ]
+        }
+      }
+    ]
   },
   {
     "name": "Paladin",
@@ -2850,7 +2923,17 @@
         ]
       }
     },
-    "description": ""
+    "description": "",
+    "grants": [
+      {
+        "id": "PHB/Rogue/Starting Proficiencies@1#0",
+        "kind": "fixed",
+        "category": "tools",
+        "names": [
+          "thieves' tools"
+        ]
+      }
+    ]
   },
   {
     "name": "Sorcerer",
