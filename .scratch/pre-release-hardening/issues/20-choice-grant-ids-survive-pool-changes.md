@@ -4,9 +4,9 @@
 
 **Blocked by:** 15
 
-**Status:** needs-triage
+**Status:** ready-for-agent
 
-**Open question:** decide before the first release that users keep saves for, since later changes would strand picks. Options: key choices on category and kind only (with a disambiguating suffix), or add an alias path when a pool changes. The pins from ticket 15 and the catalog format bump (ticket 17) are affected either way.
+**Decision:** the owner chose to fix this before the release gate. Key choices without their pool; keep the ticket 15 ids and the position ids both resolvable as aliases.
 
 - [ ] A test changes a choice's pool and the saved pick still resolves.
 - [ ] Shipped ids and aliases stay pinned by the grant-id guard.

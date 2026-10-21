@@ -2,7 +2,7 @@
 
 **What to build:** The whole release is verified together. The full check and the layout check pass in both catalog modes, the catalog format is bumped exactly once for the release and no more, and the glossary and decisions note match what shipped.
 
-**Blocked by:** 01, 02, 03, 04, 05, 06, 07, 08, 09, 10, 11, 12, 13, 14, 15, 16
+**Blocked by:** 01, 02, 03, 04, 05, 06, 07, 08, 09, 10, 11, 12, 13, 14, 15, 16, 20
 
 **Status:** ready-for-agent
 
