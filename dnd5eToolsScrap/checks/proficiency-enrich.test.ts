@@ -233,3 +233,57 @@ function withStaleGrant(): { classes: string; feats: string } {
   data[0].features[1].grants = [{ id: "TST/Sample Class/Quiet Step@2#0", kind: "fixed", category: "tools", names: ["old tools"] }];
   return { classes: canonical(data), feats: original.feats };
 }
+
+// A folded option is a feature of its own for grant purposes: its grants live on the option, and the
+// enrichment owns them as it owns a feature's.
+test("a folded option's grants are held on the option, enriched from its own text, and stripped with the rest", () => {
+  const withOption = [
+    {
+      name: "Sample Class",
+      source: "TST",
+      hitDie: "1d8",
+      features: [],
+      subclasses: [
+        {
+          name: "Sample Path",
+          source: "TST",
+          features: [
+            {
+              name: "Sample Pick",
+              level: 6,
+              description: "Choose one option.",
+              choices: {
+                pick: 1,
+                options: [
+                  { name: "Plain Option", description: "Placeholder text.", source: "TST", level: 6 },
+                  {
+                    name: "Skilled Option",
+                    description: "Placeholder text. You gain proficiency in two skills from the following list: Athletics, Stealth.",
+                    source: "TST",
+                    level: 6,
+                  },
+                ],
+              },
+            },
+          ],
+        },
+      ],
+    },
+  ];
+  const files = { classes: canonical(withOption), feats: canonical([]) };
+  const enriched = enrichGrantFiles(files, noOverrides);
+  const [cls] = JSON.parse(enriched.classes);
+  const [plain, skilled] = cls.subclasses[0].features[0].choices.options;
+  assert.equal("grants" in plain, false, "an option whose text grants nothing gets no grants field");
+  assert.deepEqual(skilled.grants, [
+    {
+      id: "TST/Sample Class/Sample Path/Skilled Option@6#0",
+      kind: "choice",
+      category: "skills",
+      count: 2,
+      pool: { kind: "names", names: ["Athletics", "Stealth"] },
+    },
+  ]);
+  assert.equal("grants" in cls.subclasses[0].features[0], false, "the parent's own text grants nothing");
+  assert.deepEqual(stripGrantFiles(enriched), files);
+});

@@ -4,6 +4,7 @@ import type {
   ClassFeatureData,
   FeatureChoice,
   OptionFeatureData,
+  ProficiencyGrant,
   SpellData,
   SubclassData,
 } from "../src/types/dnd5e.ts";
@@ -14,14 +15,29 @@ import type {
  * features they name, and subclasses whose `additionalSpells` lift to a `spellChoice`.
  */
 
+/** The Tiger option's skill grant at 6th level, as the scraper holds it on the folded option. */
+export const TIGER_SKILL_GRANT: ProficiencyGrant = {
+  id: "PHB/Barbarian/Path of the Totem Warrior/Tiger@6#0",
+  kind: "choice",
+  category: "skills",
+  count: 2,
+  pool: { kind: "names", names: ["Athletics", "Acrobatics", "Stealth", "Survival"] },
+};
+
 const placeholderChoices = (level: number): FeatureChoice => ({
   pick: 1,
   options: [
-    { name: "Bear", description: `Placeholder text for Bear at level ${level}.`, source: "PHB" },
-    { name: "Eagle", description: `Placeholder text for Eagle at level ${level}.`, source: "PHB" },
-    { name: "Wolf", description: `Placeholder text for Wolf at level ${level}.`, source: "PHB" },
-    { name: "Elk", description: `Placeholder text for Elk at level ${level}.`, source: "SCAG" },
-    { name: "Tiger", description: `Placeholder text for Tiger at level ${level}.`, source: "SCAG" },
+    { name: "Bear", description: `Placeholder text for Bear at level ${level}.`, source: "PHB", level },
+    { name: "Eagle", description: `Placeholder text for Eagle at level ${level}.`, source: "PHB", level },
+    { name: "Wolf", description: `Placeholder text for Wolf at level ${level}.`, source: "PHB", level },
+    { name: "Elk", description: `Placeholder text for Elk at level ${level}.`, source: "SCAG", level },
+    {
+      name: "Tiger",
+      description: `Placeholder text for Tiger at level ${level}.`,
+      source: "SCAG",
+      level,
+      ...(level === 6 ? { grants: [TIGER_SKILL_GRANT] } : {}),
+    },
   ],
 });
 

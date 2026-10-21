@@ -11,9 +11,7 @@ Skills, tools, languages, weapons, armor and saving throws were granted by per-s
 - The Proficiency Sheet (`src/rules/proficiencySheet.ts`, with private sources in `src/rules/proficiencySources/`) is the only reader of race, background and class proficiency fields. `checks/proficiencyReadersGuard.test.ts` fails any other read, except the Builder's own picks and the card displays its allowlist names.
 
 ## Known exceptions
-A few hand tables of rule content remain in the app. Each is an exception to the Decision above, and each is to be replaced by Catalog grants when the scraper carries them:
-- `OPTION_FEATURE_CHOICES` in `src/rules/optionFeatureGrants.ts`: the Totem Warrior option table.
-- `KENSEI_SUBCLASS` in `src/rules/kenseiWeapons.ts`: the Kensei subclass name.
+None remain. The Totem Warrior's option gate and the Kensei weapon rule are read from the Catalog: a grant on an option of a feature's choice carries its own requirement, and the Monk weapon rule is the shape of a Monk subclass's weapon choice.
 
 ## Considered Options
 A hand-written grants table inside `src/` was rejected: it would bundle non-SRD rule content in the app, and nothing would reveal gaps. Parsing prose at runtime was rejected as unreviewable and slow.

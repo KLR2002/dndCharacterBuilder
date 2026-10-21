@@ -1,6 +1,7 @@
 import type { ProficiencyGrant } from "../../dnd5eToolsScrap/src/types/proficiency.ts";
 
 export type {
+  GrantRequirement,
   ProficiencyCategory,
   ProficiencyGrant,
   ProficiencyGrantSpec,
@@ -70,6 +71,10 @@ export interface ChoiceOption {
   name: string;
   description: string;
   source?: string;
+  /** The level the option feature is gained at. */
+  level?: number;
+  /** The option's own Proficiency Grants, applying while the parent's pick names this option. */
+  grants?: ProficiencyGrant[];
 }
 
 /** A pick from a fixed set of options a feature grants. `from` is the raw filter for cantrip-style lists. */

@@ -1,44 +1,35 @@
 import type { Character } from "../types/character.ts";
+import type { GrantRequirement } from "../types/dnd5e.ts";
 
-/**
- * A subclass feature that is one option of a Rule Choice. The Catalog prints every option
- * as a feature of its own, so the Totem Warrior's Tiger carries its skill grant at 6th level whatever
- * the character chose. Its grants apply only while the character has picked that option.
- *
- * The choice ids are the Subclass Choice Table's frozen ids. A feature not listed here is not an option.
- */
-interface OptionFeatureChoice {
-  choiceId: string;
+/** The subclass a feature belongs to, as a grant's requirement reads it. */
+export interface SubclassOwner {
   className: string;
   subclassName: string;
-  level: number;
-  options: readonly string[];
+  subclassSource: string | undefined;
 }
 
-const OPTION_FEATURE_CHOICES: readonly OptionFeatureChoice[] = [
-  {
-    choiceId: "PHB__Barbarian__Path of the Totem Warrior__Aspect of the Beast 6",
-    className: "Barbarian",
-    subclassName: "Path of the Totem Warrior",
-    level: 6,
-    options: ["Bear", "Eagle", "Elk", "Tiger", "Wolf"],
-  },
-];
+/**
+ * The rule-choice id of the choice a subclass feature offers, read from the feature's Catalog coordinates: the
+ * subclass's book, the class, the subclass name, and the feature's name and level. It is the id the Rule Choice
+ * rows use for the same choice, so a saved pick is found from the Catalog alone.
+ */
+export function subclassChoiceId(owner: SubclassOwner, feature: { name: string; level: number }): string {
+  return `${owner.subclassSource ?? ""}__${owner.className}__${owner.subclassName}__${feature.name} ${feature.level}`;
+}
 
-/** Whether a subclass feature's grants apply to this character: true unless the feature is an unpicked option. */
-export function optionGrantApplies(
+/**
+ * Whether a grant's requirement holds for the feature that carries it: true with no requirement, else the
+ * character's pick on the requiring feature's choice names the carrying feature. A requirement is the
+ * Catalog's: a grant on an option of an earlier feature's choice, or one the data marks as gated.
+ */
+export function grantRequirementMet(
   character: Character,
-  owner: { className: string; subclassName: string | undefined },
-  feature: { name: string; level: number },
+  owner: SubclassOwner,
+  requires: GrantRequirement | undefined,
+  carryingFeature: string,
 ): boolean {
-  const entry = OPTION_FEATURE_CHOICES.find(
-    (choice) =>
-      choice.className.toLowerCase() === owner.className.toLowerCase() &&
-      choice.subclassName.toLowerCase() === (owner.subclassName ?? "").toLowerCase() &&
-      choice.level === feature.level &&
-      choice.options.some((option) => option.toLowerCase() === feature.name.toLowerCase()),
-  );
-  if (!entry) return true;
-  const picked = character.ruleChoices?.find((rc) => rc.id === entry.choiceId)?.picked ?? [];
-  return picked.some((name) => name.toLowerCase() === feature.name.toLowerCase());
+  if (!requires) return true;
+  const id = subclassChoiceId(owner, { name: requires.feature, level: requires.level });
+  const picked = character.ruleChoices?.find((rc) => rc.id === id)?.picked ?? [];
+  return picked.some((name) => name.toLowerCase() === carryingFeature.toLowerCase());
 }

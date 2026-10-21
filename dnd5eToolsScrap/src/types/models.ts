@@ -57,11 +57,17 @@ export interface SubraceModel {
   rawEntries?: any[];
 }
 
-/** One option a feature lets the player pick. `source` is the book it is printed in. */
+/**
+ * One option a feature lets the player pick. `source` is the book it is printed in, and `level` the level
+ * its option feature is gained at. `grants` are the Proficiency Grants of the option's own text: they
+ * apply only while the parent's pick names this option.
+ */
 export interface ChoiceOption {
   name: string;
   description: string;
   source?: string;
+  level?: number;
+  grants?: ProficiencyGrant[];
 }
 
 /** A pick from a fixed set of options a feature grants. `from` is the raw filter for cantrip-style lists. */
