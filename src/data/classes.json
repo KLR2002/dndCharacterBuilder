@@ -559,9 +559,10 @@
     "description": "",
     "grants": [
       {
-        "id": "PHB/Bard/Starting Proficiencies@1#tools:choice:from=bagpipes,drum,dulcimer,flute,horn,lute,lyre,pan flute,shawm,viol",
+        "id": "PHB/Bard/Starting Proficiencies@1#tools:choice:from",
         "aliases": [
-          "PHB/Bard/Starting Proficiencies@1#0"
+          "PHB/Bard/Starting Proficiencies@1#0",
+          "PHB/Bard/Starting Proficiencies@1#tools:choice:from=bagpipes,drum,dulcimer,flute,horn,lute,lyre,pan flute,shawm,viol"
         ],
         "kind": "choice",
         "category": "tools",
@@ -1934,9 +1935,10 @@
     "description": "",
     "grants": [
       {
-        "id": "PHB/Monk/Starting Proficiencies@1#tools:choice:from=alchemist's supplies,bagpipes,brewer's supplies,calligrapher's supplies,carpenter's tools,cartographer's tools,cobbler's tools,cook's utensils,drum,dulcimer,flute,glassblower's tools,horn,jeweler's tools,leatherworker's tools,lute,lyre,mason's tools,painter's supplies,pan flute,potter's tools,shawm,smith's tools,tinker's tools,viol,weaver's tools,woodcarver's tools",
+        "id": "PHB/Monk/Starting Proficiencies@1#tools:choice:from",
         "aliases": [
-          "PHB/Monk/Starting Proficiencies@1#0"
+          "PHB/Monk/Starting Proficiencies@1#0",
+          "PHB/Monk/Starting Proficiencies@1#tools:choice:from=alchemist's supplies,bagpipes,brewer's supplies,calligrapher's supplies,carpenter's tools,cartographer's tools,cobbler's tools,cook's utensils,drum,dulcimer,flute,glassblower's tools,horn,jeweler's tools,leatherworker's tools,lute,lyre,mason's tools,painter's supplies,pan flute,potter's tools,shawm,smith's tools,tinker's tools,viol,weaver's tools,woodcarver's tools"
         ],
         "kind": "choice",
         "category": "tools",

@@ -415,14 +415,25 @@ export function newProficiencyReport(): ProficiencyReport {
 }
 
 /**
- * What a grant is, as the tail of its id: its category, its kind, and what it names or picks from. Names are
- * sorted, so the order a rule lists them in does not move the id. A count is left out, so a change of count
- * keeps the pick; the pool is what identifies a choice.
+ * What a grant is, as the tail of its id: its category and its kind. A fixed grant also names what it grants,
+ * sorted, so the order a rule lists them in does not move the id. A choice names only its kind: `any` for any
+ * entry of its category, `from` for a list of names, `rule` for a weapon rule. What a choice picks from, and how
+ * many it picks, is left out, so a re-scrape that adds or removes an option keeps the id and the pick.
  */
 function grantKey(spec: ProficiencyGrantSpec): string {
   if (spec.kind === "fixed") return `${spec.category}:fixed:${[...spec.names].sort().join(",")}`;
+  const kind = spec.pool.kind === "any" ? "any" : spec.pool.kind === "names" ? "from" : "rule";
+  return `${spec.category}:choice:${kind}`;
+}
+
+/**
+ * The key a choice had in the first release, which named the pool it picks from. Only the alias of a choice
+ * whose id changed is built from it, so a pick saved under the first-release id still resolves. Every other
+ * grant has the same key as in grantKey.
+ */
+function firstReleaseKey(spec: ProficiencyGrantSpec): string {
+  if (spec.kind === "fixed" || spec.pool.kind === "any") return grantKey(spec);
   const { pool } = spec;
-  if (pool.kind === "any") return `${spec.category}:choice:any`;
   if (pool.kind === "names") return `${spec.category}:choice:from=${[...pool.names].sort().join(",")}`;
   const base = [...pool.base].sort().join(",");
   const without = [...pool.withoutProperties].sort().join(",");
@@ -442,22 +453,36 @@ function featurePrefix(subject: Pick<GrantSubject, "source" | "owner" | "feature
   return `${subject.source}/${subject.owner}/${subject.feature}@${subject.level}`;
 }
 
+/** The ids of a feature's grants under one key rule: the key, and `~N` for the N-th grant that has it. */
+function idsByKey(keyOf: (spec: ProficiencyGrantSpec) => string, specs: ProficiencyGrantSpec[]): string[] {
+  const seen = new Map<string, number>();
+  return specs.map((spec) => {
+    const key = keyOf(spec);
+    const occurrence = (seen.get(key) ?? 0) + 1;
+    seen.set(key, occurrence);
+    return occurrence === 1 ? key : `${key}~${occurrence}`;
+  });
+}
+
 /**
  * Builds a feature's grants from its specs, in order. Each grant's id is the feature plus what the grant is
  * (see grantKey). Two grants of one feature with the same key are told apart by order: the second is `~2`, the
- * third `~3`, and so on. Each grant keeps its position-based id as an alias.
+ * third `~3`, and so on. Each grant keeps its position-based id as an alias. A choice whose id differs from its
+ * first-release id (see firstReleaseKey) keeps that id as an alias too.
  */
 function build(
   subject: Pick<GrantSubject, "source" | "owner" | "feature" | "level">,
   specs: ProficiencyGrantSpec[]
 ): ProficiencyGrant[] {
-  const seen = new Map<string, number>();
+  const prefix = featurePrefix(subject);
+  const ids = idsByKey(grantKey, specs);
+  const firstReleaseIds = idsByKey(firstReleaseKey, specs);
   return specs.map((spec, position) => {
-    const key = grantKey(spec);
-    const occurrence = (seen.get(key) ?? 0) + 1;
-    seen.set(key, occurrence);
-    const id = `${featurePrefix(subject)}#${occurrence === 1 ? key : `${key}~${occurrence}`}`;
-    return { id, aliases: [formerGrantId(subject, position)], ...spec } as ProficiencyGrant;
+    const id = `${prefix}#${ids[position]}`;
+    const aliases = [formerGrantId(subject, position)];
+    const firstRelease = `${prefix}#${firstReleaseIds[position]}`;
+    if (firstRelease !== id) aliases.push(firstRelease);
+    return { id, aliases, ...spec } as ProficiencyGrant;
   });
 }
 

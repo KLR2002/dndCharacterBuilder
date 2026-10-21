@@ -26,7 +26,7 @@ const names = (entries: SheetEntry[]) => entries.map((entry) => entry.name);
 const LAMP_ID = "FIX/Warden/Lampwright/Lamp Craft@3#0";
 const LAMP_TONGUE_ID = "FIX/Warden/Lampwright/Lamp Tongue@3#0";
 const SCHOLAR_ID = "FIX/Lantern Scholar@0#0";
-const KENSEI_ID = "XGE/Monk/Way of the Kensei/Path of the Kensei@3#tools:choice:from=calligrapher's supplies,painter's supplies";
+const KENSEI_ID = "XGE/Monk/Way of the Kensei/Path of the Kensei@3#tools:choice:from";
 const SHUTTER_ID = "FIX/Warden/Lampwright/Shuttered Lantern@3#0";
 
 const lampwright: SubclassData = {

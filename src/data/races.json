@@ -177,9 +177,10 @@
   {
     "grants": [
       {
-        "id": "PHB/Race/Dwarf@0#tools:choice:from=brewer's supplies,mason's tools,smith's tools",
+        "id": "PHB/Race/Dwarf@0#tools:choice:from",
         "aliases": [
-          "PHB/Race/Dwarf@0#0"
+          "PHB/Race/Dwarf@0#0",
+          "PHB/Race/Dwarf@0#tools:choice:from=brewer's supplies,mason's tools,smith's tools"
         ],
         "kind": "choice",
         "category": "tools",

@@ -256,9 +256,10 @@
     ],
     "grants": [
       {
-        "id": "TCE/Feat/Artificer Initiate@0#tools:choice:from=alchemist's supplies,brewer's supplies,calligrapher's supplies,carpenter's tools,cartographer's tools,cobbler's tools,cook's utensils,glassblower's tools,jeweler's tools,leatherworker's tools,mason's tools,painter's supplies,potter's tools,smith's tools,tinker's tools,weaver's tools,woodcarver's tools",
+        "id": "TCE/Feat/Artificer Initiate@0#tools:choice:from",
         "aliases": [
-          "TCE/Feat/Artificer Initiate@0#0"
+          "TCE/Feat/Artificer Initiate@0#0",
+          "TCE/Feat/Artificer Initiate@0#tools:choice:from=alchemist's supplies,brewer's supplies,calligrapher's supplies,carpenter's tools,cartographer's tools,cobbler's tools,cook's utensils,glassblower's tools,jeweler's tools,leatherworker's tools,mason's tools,painter's supplies,potter's tools,smith's tools,tinker's tools,weaver's tools,woodcarver's tools"
         ],
         "kind": "choice",
         "category": "tools",
@@ -1820,9 +1821,10 @@
     ],
     "grants": [
       {
-        "id": "PHB/Feat/Resilient@0#savingThrows:choice:from=Charisma,Constitution,Dexterity,Intelligence,Strength,Wisdom",
+        "id": "PHB/Feat/Resilient@0#savingThrows:choice:from",
         "aliases": [
-          "PHB/Feat/Resilient@0#0"
+          "PHB/Feat/Resilient@0#0",
+          "PHB/Feat/Resilient@0#savingThrows:choice:from=Charisma,Constitution,Dexterity,Intelligence,Strength,Wisdom"
         ],
         "kind": "choice",
         "category": "savingThrows",
@@ -2298,9 +2300,10 @@
     ],
     "grants": [
       {
-        "id": "XGE/Feat/Squat Nimbleness@0#skills:choice:from=Acrobatics,Athletics",
+        "id": "XGE/Feat/Squat Nimbleness@0#skills:choice:from",
         "aliases": [
-          "XGE/Feat/Squat Nimbleness@0#0"
+          "XGE/Feat/Squat Nimbleness@0#0",
+          "XGE/Feat/Squat Nimbleness@0#skills:choice:from=Acrobatics,Athletics"
         ],
         "kind": "choice",
         "category": "skills",
@@ -2639,9 +2642,10 @@
     ],
     "grants": [
       {
-        "id": "PHB/Feat/Weapon Master@0#weapons:choice:base=martial,simple;without=;plus=;attack=any",
+        "id": "PHB/Feat/Weapon Master@0#weapons:choice:rule",
         "aliases": [
-          "PHB/Feat/Weapon Master@0#0"
+          "PHB/Feat/Weapon Master@0#0",
+          "PHB/Feat/Weapon Master@0#weapons:choice:base=martial,simple;without=;plus=;attack=any"
         ],
         "kind": "choice",
         "category": "weapons",

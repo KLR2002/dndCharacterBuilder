@@ -49,9 +49,12 @@ export interface FixedProficiencyGrant {
 }
 
 export interface ChoiceProficiencyGrant {
-  /** Built from the feature and the pool the grant picks from. Never changes once shipped. */
+  /** Built from the feature and the kind of choice. The pool it picks from is not part of the id. Never changes once shipped. */
   id: string;
-  /** Former ids this grant was saved under (its position in the feature). A saved pick under one moves to `id`. */
+  /**
+   * Former ids this grant was saved under: its position in the feature, and, for a choice whose id changed, the id that
+   * named its pool. A saved pick under one moves to `id`.
+   */
   aliases?: string[];
   kind: "choice";
   category: ProficiencyCategory;

@@ -64,7 +64,7 @@ test("grants are added to class, subclass and feat features with clear prose, an
   ]);
   assert.deepEqual(shapes(outFeats[0].grants), [
     {
-      id: "TST/Feat/Sample Feat@0#tools:choice:from=calligrapher's supplies,painter's supplies",
+      id: "TST/Feat/Sample Feat@0#tools:choice:from",
       kind: "choice",
       category: "tools",
       count: 1,
@@ -213,7 +213,7 @@ test("a class's starting tool texts become its Starting Proficiencies grants, an
   const [tinker, singer, fighter] = JSON.parse(enriched.classes);
   assert.deepEqual(tinker.grants.map((g: { id: string }) => g.id), [
     "TST/Sample Tinker/Starting Proficiencies@1#tools:fixed:lantern-maker's kit",
-    "TST/Sample Tinker/Starting Proficiencies@1#tools:choice:from=alchemist's supplies,brewer's supplies,calligrapher's supplies,carpenter's tools,cartographer's tools,cobbler's tools,cook's utensils,glassblower's tools,jeweler's tools,leatherworker's tools,mason's tools,painter's supplies,potter's tools,smith's tools,tinker's tools,weaver's tools,woodcarver's tools",
+    "TST/Sample Tinker/Starting Proficiencies@1#tools:choice:from",
   ]);
   assert.deepEqual(withoutAliases(tinker.grants[0]), {
     id: "TST/Sample Tinker/Starting Proficiencies@1#tools:fixed:lantern-maker's kit",
@@ -287,7 +287,7 @@ test("a folded option's grants are held on the option, enriched from its own tex
   assert.equal("grants" in plain, false, "an option whose text grants nothing gets no grants field");
   assert.deepEqual(shapes(skilled.grants), [
     {
-      id: "TST/Sample Class/Sample Path/Skilled Option@6#skills:choice:from=Athletics,Stealth",
+      id: "TST/Sample Class/Sample Path/Skilled Option@6#skills:choice:from",
       kind: "choice",
       category: "skills",
       count: 2,

@@ -3763,9 +3763,10 @@
   {
     "grants": [
       {
-        "id": "PHB/Race/Dwarf@0#tools:choice:from=brewer's supplies,mason's tools,smith's tools",
+        "id": "PHB/Race/Dwarf@0#tools:choice:from",
         "aliases": [
-          "PHB/Race/Dwarf@0#0"
+          "PHB/Race/Dwarf@0#0",
+          "PHB/Race/Dwarf@0#tools:choice:from=brewer's supplies,mason's tools,smith's tools"
         ],
         "kind": "choice",
         "category": "tools",
@@ -4188,9 +4189,10 @@
   {
     "grants": [
       {
-        "id": "PSK/Race/Dwarf (Kaladesh)@0#tools:choice:from=alchemist's supplies,brewer's supplies,calligrapher's supplies,carpenter's tools,cartographer's tools,cobbler's tools,cook's utensils,glassblower's tools,jeweler's tools,leatherworker's tools,mason's tools,painter's supplies,potter's tools,smith's tools,tinker's tools,weaver's tools,woodcarver's tools",
+        "id": "PSK/Race/Dwarf (Kaladesh)@0#tools:choice:from",
         "aliases": [
-          "PSK/Race/Dwarf (Kaladesh)@0#0"
+          "PSK/Race/Dwarf (Kaladesh)@0#0",
+          "PSK/Race/Dwarf (Kaladesh)@0#tools:choice:from=alchemist's supplies,brewer's supplies,calligrapher's supplies,carpenter's tools,cartographer's tools,cobbler's tools,cook's utensils,glassblower's tools,jeweler's tools,leatherworker's tools,mason's tools,painter's supplies,potter's tools,smith's tools,tinker's tools,weaver's tools,woodcarver's tools"
         ],
         "kind": "choice",
         "category": "tools",
@@ -11799,9 +11801,10 @@
       {
         "grants": [
           {
-            "id": "ERLW/Subrace/Human (Mark of Making)@0#tools:choice:from=alchemist's supplies,brewer's supplies,calligrapher's supplies,carpenter's tools,cartographer's tools,cobbler's tools,cook's utensils,glassblower's tools,jeweler's tools,leatherworker's tools,mason's tools,painter's supplies,potter's tools,smith's tools,tinker's tools,weaver's tools,woodcarver's tools",
+            "id": "ERLW/Subrace/Human (Mark of Making)@0#tools:choice:from",
             "aliases": [
-              "ERLW/Subrace/Human (Mark of Making)@0#0"
+              "ERLW/Subrace/Human (Mark of Making)@0#0",
+              "ERLW/Subrace/Human (Mark of Making)@0#tools:choice:from=alchemist's supplies,brewer's supplies,calligrapher's supplies,carpenter's tools,cartographer's tools,cobbler's tools,cook's utensils,glassblower's tools,jeweler's tools,leatherworker's tools,mason's tools,painter's supplies,potter's tools,smith's tools,tinker's tools,weaver's tools,woodcarver's tools"
             ],
             "kind": "choice",
             "category": "tools",
@@ -17024,9 +17027,10 @@
   {
     "grants": [
       {
-        "id": "MOT/Race/Satyr@0#tools:choice:from=bagpipes,drum,dulcimer,flute,horn,lute,lyre,pan flute,shawm,viol",
+        "id": "MOT/Race/Satyr@0#tools:choice:from",
         "aliases": [
-          "MOT/Race/Satyr@0#0"
+          "MOT/Race/Satyr@0#0",
+          "MOT/Race/Satyr@0#tools:choice:from=bagpipes,drum,dulcimer,flute,horn,lute,lyre,pan flute,shawm,viol"
         ],
         "kind": "choice",
         "category": "tools",
@@ -17200,9 +17204,10 @@
   {
     "grants": [
       {
-        "id": "MPMM/Race/Satyr@0#tools:choice:from=bagpipes,drum,dulcimer,flute,horn,lute,lyre,pan flute,shawm,viol",
+        "id": "MPMM/Race/Satyr@0#tools:choice:from",
         "aliases": [
-          "MPMM/Race/Satyr@0#0"
+          "MPMM/Race/Satyr@0#0",
+          "MPMM/Race/Satyr@0#tools:choice:from=bagpipes,drum,dulcimer,flute,horn,lute,lyre,pan flute,shawm,viol"
         ],
         "kind": "choice",
         "category": "tools",

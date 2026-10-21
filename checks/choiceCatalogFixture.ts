@@ -17,8 +17,11 @@ import type {
 
 /** The Tiger option's skill grant at 6th level, as the scraper holds it on the folded option. */
 export const TIGER_SKILL_GRANT: ProficiencyGrant = {
-  id: "PHB/Barbarian/Path of the Totem Warrior/Tiger@6#skills:choice:from=Acrobatics,Athletics,Stealth,Survival",
-  aliases: ["PHB/Barbarian/Path of the Totem Warrior/Tiger@6#0"],
+  id: "PHB/Barbarian/Path of the Totem Warrior/Tiger@6#skills:choice:from",
+  aliases: [
+    "PHB/Barbarian/Path of the Totem Warrior/Tiger@6#0",
+    "PHB/Barbarian/Path of the Totem Warrior/Tiger@6#skills:choice:from=Acrobatics,Athletics,Stealth,Survival",
+  ],
   kind: "choice",
   category: "skills",
   count: 2,
