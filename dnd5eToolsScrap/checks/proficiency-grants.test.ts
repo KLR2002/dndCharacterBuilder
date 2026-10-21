@@ -63,7 +63,7 @@ test("a choice from a named list gives a count and a names pool", () => {
   ]).results;
   assert.deepEqual(result.grants.map(shape), [
     {
-      id: "TST/Wizard2/Sample Circle/Field Training@3#skills:choice:from=Arcana,Insight,Survival",
+      id: "TST/Wizard2/Sample Circle/Field Training@3#skills:choice:from",
       kind: "choice",
       category: "skills",
       count: 2,
@@ -109,7 +109,7 @@ test("your choice of A or B becomes a single pick from a names pool", () => {
   ]).results;
   assert.deepEqual(result.grants.map(shape), [
     {
-      id: "TST/Wizard2/Sample Circle/Field Training@3#tools:choice:from=calligrapher's supplies,painter's supplies",
+      id: "TST/Wizard2/Sample Circle/Field Training@3#tools:choice:from",
       kind: "choice",
       category: "tools",
       count: 1,
@@ -199,7 +199,7 @@ test("an override supplies grants for a feature the extractor could not parse, n
   const { results, report } = run([subject("You gain proficiency with these weapons.")], [override]);
   assert.deepEqual(results[0].grants.map(shape), [
     {
-      id: "TST/Wizard2/Sample Circle/Field Training@3#tools:choice:from=calligrapher's supplies,painter's supplies",
+      id: "TST/Wizard2/Sample Circle/Field Training@3#tools:choice:from",
       kind: "choice",
       category: "tools",
       count: 1,
@@ -284,7 +284,7 @@ test("a language choose list of concrete languages is a names pool of those lang
   assert.deepEqual(result.unparsed, []);
   assert.deepEqual(result.grants.map(shape), [
     {
-      id: "TST/Background/Sample Trade@0#languages:choice:from=Elvish,Gnomish,Sylvan",
+      id: "TST/Background/Sample Trade@0#languages:choice:from",
       kind: "choice",
       category: "languages",
       count: 1,
@@ -486,7 +486,7 @@ const STARTING = { source: "TST", owner: "Sample Bard", feature: "Starting Profi
 test("starting tools: fixed names merge into one grant and an artisan choice becomes a names pick after them", () => {
   const result = startingToolGrants(STARTING, ["lantern-maker's kit", "tinker's tools", "one type of artisan's tools of your choice"]);
   assert.deepEqual(result.unparsed, []);
-  assert.deepEqual(result.grants.map((g) => g.id), ["TST/Sample Bard/Starting Proficiencies@1#tools:fixed:lantern-maker's kit,tinker's tools", "TST/Sample Bard/Starting Proficiencies@1#tools:choice:from=alchemist's supplies,brewer's supplies,calligrapher's supplies,carpenter's tools,cartographer's tools,cobbler's tools,cook's utensils,glassblower's tools,jeweler's tools,leatherworker's tools,mason's tools,painter's supplies,potter's tools,smith's tools,tinker's tools,weaver's tools,woodcarver's tools"]);
+  assert.deepEqual(result.grants.map((g) => g.id), ["TST/Sample Bard/Starting Proficiencies@1#tools:fixed:lantern-maker's kit,tinker's tools", "TST/Sample Bard/Starting Proficiencies@1#tools:choice:from"]);
   assert.deepEqual(shape(result.grants[0]), {
     id: "TST/Sample Bard/Starting Proficiencies@1#tools:fixed:lantern-maker's kit,tinker's tools",
     kind: "fixed",
@@ -547,7 +547,7 @@ test("a reviewed override replaces a structured block's grants, and its unparsed
   assert.deepEqual(result.grants.map(shape), [{ id: "TST/Race/Sample Folk@0#languages:fixed:Common", kind: "fixed", category: "languages", names: ["Common"] }]);
 });
 
-// Grant ids name what a grant is: its category, its kind and what it names or picks from. The position it had
+// Grant ids name what a grant is: its category and kind, and a fixed grant's names. The position it had
 // is kept as an alias, so a saved pick made under it still resolves.
 
 const FIELD = "TST/Wizard2/Sample Circle/Field Training@3";
@@ -570,11 +570,39 @@ test("a fixed grant's id lists its names sorted, so the order a list gives them 
   assert.deepEqual(result.grants.map((g) => g.id), ["TST/Wizard2/Starting Proficiencies@1#tools:fixed:thieves' tools,tinker's tools"]);
 });
 
-test("a choice's id names its pool and not its count", () => {
+test("a choice's id names its category and kind, and not its count", () => {
   const [two] = run([subject("You learn two languages of your choice.")]).results;
   const [one] = run([subject("You learn one language of your choice.")]).results;
   assert.deepEqual(two.grants.map((g) => g.id), [`${FIELD}#languages:choice:any`]);
   assert.deepEqual(one.grants.map((g) => g.id), [`${FIELD}#languages:choice:any`]);
+});
+
+test("a choice from a list keeps its id when an option is added to or removed from its pool", () => {
+  const original = run([subject("You gain proficiency in two skills from the following list: Arcana, Insight, and Survival.")]).results[0];
+  const added = run([subject("You gain proficiency in two skills from the following list: Arcana, Insight, Survival, and Stealth.")]).results[0];
+  const removed = run([subject("You gain proficiency in two skills from the following list: Arcana and Insight.")]).results[0];
+  assert.deepEqual(original.grants.map((g) => g.id), [`${FIELD}#skills:choice:from`]);
+  assert.deepEqual(added.grants.map((g) => g.id), [`${FIELD}#skills:choice:from`]);
+  assert.deepEqual(removed.grants.map((g) => g.id), [`${FIELD}#skills:choice:from`]);
+});
+
+test("an any-choice and a list-choice of one category have different ids: their kinds differ, not their pools", () => {
+  const [any] = run([subject("You learn two languages of your choice.")]).results;
+  const [list] = run([subject("You gain proficiency in two skills from the following list: Arcana and Insight.")]).results;
+  assert.deepEqual(any.grants.map((g) => g.id), [`${FIELD}#languages:choice:any`]);
+  assert.deepEqual(list.grants.map((g) => g.id), [`${FIELD}#skills:choice:from`]);
+});
+
+test("two choices of one kind in one feature are told apart by order, and each keeps its pool-bearing id as an alias", () => {
+  const [result] = run([
+    subject(
+      "You gain proficiency in two skills from the following list: Arcana, Insight, and Survival. You gain proficiency in one skill from the following list: Athletics and Stealth."
+    ),
+  ]).results;
+  assert.deepEqual(result.grants.map((g) => [g.id, g.aliases]), [
+    [`${FIELD}#skills:choice:from`, [`${FIELD}#0`, `${FIELD}#skills:choice:from=Arcana,Insight,Survival`]],
+    [`${FIELD}#skills:choice:from~2`, [`${FIELD}#1`, `${FIELD}#skills:choice:from=Athletics,Stealth`]],
+  ]);
 });
 
 test("two grants of one feature with the same id are told apart by order, deterministically", () => {
@@ -587,6 +615,13 @@ test("two grants of one feature with the same id are told apart by order, determ
 test("each grant carries the position-based id it had before as its alias", () => {
   const [result] = run([subject("You gain proficiency with lantern-maker's kit. You learn to speak, read, and write Giant.")]).results;
   assert.deepEqual(result.grants.map((g) => g.aliases), [[`${FIELD}#0`], [`${FIELD}#1`]]);
+});
+
+test("a choice whose id did not change carries only its position as alias, and one whose id changed also carries its pool-bearing id", () => {
+  const [anyChoice] = run([subject("You learn two languages of your choice.")]).results;
+  assert.deepEqual(anyChoice.grants.map((g) => g.aliases), [[`${FIELD}#0`]]);
+  const [listChoice] = run([subject("You gain proficiency in two skills from the following list: Arcana and Insight.")]).results;
+  assert.deepEqual(listChoice.grants.map((g) => g.aliases), [[`${FIELD}#0`, `${FIELD}#skills:choice:from=Arcana,Insight`]]);
 });
 
 test("a choice's weapon pool is named by its base, its excluded properties, its extra weapons and its attack type", () => {
@@ -606,7 +641,9 @@ test("a choice's weapon pool is named by its base, its excluded properties, its 
     },
   ];
   const [result] = run([subject("Sample text the override replaces.")], overrides).results;
-  assert.deepEqual(result.grants.map((g) => g.id), [`${FIELD}#weapons:choice:base=martial,simple;without=heavy,special;plus=longbow;attack=melee`]);
+  assert.deepEqual(result.grants.map((g) => [g.id, g.aliases]), [
+    [`${FIELD}#weapons:choice:rule`, [`${FIELD}#0`, `${FIELD}#weapons:choice:base=martial,simple;without=heavy,special;plus=longbow;attack=melee`]],
+  ]);
 });
 
 test("an override's grants get ids by the same rule, with their position in the override as the alias", () => {

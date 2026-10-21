@@ -624,9 +624,10 @@
         ]
       },
       {
-        "id": "TCE/Artificer/Starting Proficiencies@1#tools:choice:from=alchemist's supplies,brewer's supplies,calligrapher's supplies,carpenter's tools,cartographer's tools,cobbler's tools,cook's utensils,glassblower's tools,jeweler's tools,leatherworker's tools,mason's tools,painter's supplies,potter's tools,smith's tools,tinker's tools,weaver's tools,woodcarver's tools",
+        "id": "TCE/Artificer/Starting Proficiencies@1#tools:choice:from",
         "aliases": [
-          "TCE/Artificer/Starting Proficiencies@1#1"
+          "TCE/Artificer/Starting Proficiencies@1#1",
+          "TCE/Artificer/Starting Proficiencies@1#tools:choice:from=alchemist's supplies,brewer's supplies,calligrapher's supplies,carpenter's tools,cartographer's tools,cobbler's tools,cook's utensils,glassblower's tools,jeweler's tools,leatherworker's tools,mason's tools,painter's supplies,potter's tools,smith's tools,tinker's tools,weaver's tools,woodcarver's tools"
         ],
         "kind": "choice",
         "category": "tools",
@@ -943,9 +944,10 @@
             "description": "You gain proficiency in two skills from the following list: Athletics, Acrobatics, Stealth, and Survival. The cat spirit hones your survival instincts.",
             "grants": [
               {
-                "id": "PHB/Barbarian/Path of the Totem Warrior/Tiger@6#skills:choice:from=Acrobatics,Athletics,Stealth,Survival",
+                "id": "PHB/Barbarian/Path of the Totem Warrior/Tiger@6#skills:choice:from",
                 "aliases": [
-                  "PHB/Barbarian/Path of the Totem Warrior/Tiger@6#0"
+                  "PHB/Barbarian/Path of the Totem Warrior/Tiger@6#0",
+                  "PHB/Barbarian/Path of the Totem Warrior/Tiger@6#skills:choice:from=Acrobatics,Athletics,Stealth,Survival"
                 ],
                 "kind": "choice",
                 "category": "skills",
@@ -2065,9 +2067,10 @@
     "description": "",
     "grants": [
       {
-        "id": "PHB/Bard/Starting Proficiencies@1#tools:choice:from=bagpipes,drum,dulcimer,flute,horn,lute,lyre,pan flute,shawm,viol",
+        "id": "PHB/Bard/Starting Proficiencies@1#tools:choice:from",
         "aliases": [
-          "PHB/Bard/Starting Proficiencies@1#0"
+          "PHB/Bard/Starting Proficiencies@1#0",
+          "PHB/Bard/Starting Proficiencies@1#tools:choice:from=bagpipes,drum,dulcimer,flute,horn,lute,lyre,pan flute,shawm,viol"
         ],
         "kind": "choice",
         "category": "tools",
@@ -2300,9 +2303,10 @@
                 }
               },
               {
-                "id": "PHB/Cleric/Knowledge Domain/Blessings of Knowledge@1#skills:choice:from=Arcana,History,Nature,Religion",
+                "id": "PHB/Cleric/Knowledge Domain/Blessings of Knowledge@1#skills:choice:from",
                 "aliases": [
-                  "PHB/Cleric/Knowledge Domain/Blessings of Knowledge@1#1"
+                  "PHB/Cleric/Knowledge Domain/Blessings of Knowledge@1#1",
+                  "PHB/Cleric/Knowledge Domain/Blessings of Knowledge@1#skills:choice:from=Arcana,History,Nature,Religion"
                 ],
                 "kind": "choice",
                 "category": "skills",
@@ -2561,9 +2565,10 @@
             "description": "At 1st level, you learn one druid cantrip of your choice. This cantrip doesn't count against the number of cleric cantrips you know. You also gain proficiency in one of the following skills of your choice: Animal Handling, Nature, or Survival.",
             "grants": [
               {
-                "id": "PHB/Cleric/Nature Domain/Acolyte of Nature@1#skills:choice:from=Animal Handling,Nature,Survival",
+                "id": "PHB/Cleric/Nature Domain/Acolyte of Nature@1#skills:choice:from",
                 "aliases": [
-                  "PHB/Cleric/Nature Domain/Acolyte of Nature@1#0"
+                  "PHB/Cleric/Nature Domain/Acolyte of Nature@1#0",
+                  "PHB/Cleric/Nature Domain/Acolyte of Nature@1#skills:choice:from=Animal Handling,Nature,Survival"
                 ],
                 "kind": "choice",
                 "category": "skills",
@@ -3357,9 +3362,10 @@
             "description": "At 1st level, you learn one druid cantrip of your choice. You also gain proficiency in one of the following skills of your choice: Animal Handling, Athletics, Nature, or Survival.",
             "grants": [
               {
-                "id": "PSA/Cleric/Strength Domain (PSA)/Acolyte of Strength@1#skills:choice:from=Animal Handling,Athletics,Nature,Survival",
+                "id": "PSA/Cleric/Strength Domain (PSA)/Acolyte of Strength@1#skills:choice:from",
                 "aliases": [
-                  "PSA/Cleric/Strength Domain (PSA)/Acolyte of Strength@1#0"
+                  "PSA/Cleric/Strength Domain (PSA)/Acolyte of Strength@1#0",
+                  "PSA/Cleric/Strength Domain (PSA)/Acolyte of Strength@1#skills:choice:from=Animal Handling,Athletics,Nature,Survival"
                 ],
                 "kind": "choice",
                 "category": "skills",
@@ -3767,9 +3773,10 @@
                 ]
               },
               {
-                "id": "TCE/Cleric/Order Domain/Bonus Proficiencies@1#skills:choice:from=Intimidation,Persuasion",
+                "id": "TCE/Cleric/Order Domain/Bonus Proficiencies@1#skills:choice:from",
                 "aliases": [
-                  "TCE/Cleric/Order Domain/Bonus Proficiencies@1#1"
+                  "TCE/Cleric/Order Domain/Bonus Proficiencies@1#1",
+                  "TCE/Cleric/Order Domain/Bonus Proficiencies@1#skills:choice:from=Intimidation,Persuasion"
                 ],
                 "kind": "choice",
                 "category": "skills",
@@ -3866,9 +3873,10 @@
             "description": "*1st-level Peace Domain feature*\n\nYou gain proficiency in the Insight, Performance, or Persuasion skill (your choice).",
             "grants": [
               {
-                "id": "TCE/Cleric/Peace Domain/Implement of Peace@1#skills:choice:from=Insight,Performance,Persuasion",
+                "id": "TCE/Cleric/Peace Domain/Implement of Peace@1#skills:choice:from",
                 "aliases": [
-                  "TCE/Cleric/Peace Domain/Implement of Peace@1#0"
+                  "TCE/Cleric/Peace Domain/Implement of Peace@1#0",
+                  "TCE/Cleric/Peace Domain/Implement of Peace@1#skills:choice:from=Insight,Performance,Persuasion"
                 ],
                 "kind": "choice",
                 "category": "skills",
@@ -5119,9 +5127,10 @@
             "description": "At 3rd level, you gain proficiency with one type of artisan's tools of your choice.",
             "grants": [
               {
-                "id": "PHB/Fighter/Battle Master/Student of War@3#tools:choice:from=alchemist's supplies,brewer's supplies,calligrapher's supplies,carpenter's tools,cartographer's tools,cobbler's tools,cook's utensils,glassblower's tools,jeweler's tools,leatherworker's tools,mason's tools,painter's supplies,potter's tools,smith's tools,tinker's tools,weaver's tools,woodcarver's tools",
+                "id": "PHB/Fighter/Battle Master/Student of War@3#tools:choice:from",
                 "aliases": [
-                  "PHB/Fighter/Battle Master/Student of War@3#0"
+                  "PHB/Fighter/Battle Master/Student of War@3#0",
+                  "PHB/Fighter/Battle Master/Student of War@3#tools:choice:from=alchemist's supplies,brewer's supplies,calligrapher's supplies,carpenter's tools,cartographer's tools,cobbler's tools,cook's utensils,glassblower's tools,jeweler's tools,leatherworker's tools,mason's tools,painter's supplies,potter's tools,smith's tools,tinker's tools,weaver's tools,woodcarver's tools"
                 ],
                 "kind": "choice",
                 "category": "tools",
@@ -5390,9 +5399,10 @@
             "description": "At 3rd level, you learn magical theory or some of the secrets of nature—typical for practitioners of this elven martial tradition. You choose to gain proficiency in either the Arcana or the Nature skill, and you choose to learn either the prestidigitation or the druidcraft cantrip.",
             "grants": [
               {
-                "id": "XGE/Fighter/Arcane Archer/Arcane Archer Lore@3#skills:choice:from=Arcana,Nature",
+                "id": "XGE/Fighter/Arcane Archer/Arcane Archer Lore@3#skills:choice:from",
                 "aliases": [
-                  "XGE/Fighter/Arcane Archer/Arcane Archer Lore@3#0"
+                  "XGE/Fighter/Arcane Archer/Arcane Archer Lore@3#0",
+                  "XGE/Fighter/Arcane Archer/Arcane Archer Lore@3#skills:choice:from=Arcana,Nature"
                 ],
                 "kind": "choice",
                 "category": "skills",
@@ -5489,9 +5499,10 @@
             "description": "When you choose this archetype at 3rd level, you gain proficiency in one of the following skills of your choice: Animal Handling, History, Insight, Performance, or Persuasion. Alternatively, you learn one language of your choice.",
             "grants": [
               {
-                "id": "XGE/Fighter/Cavalier/Bonus Proficiency@3#skills:choice:from=Animal Handling,History,Insight,Performance,Persuasion",
+                "id": "XGE/Fighter/Cavalier/Bonus Proficiency@3#skills:choice:from",
                 "aliases": [
-                  "XGE/Fighter/Cavalier/Bonus Proficiency@3#0"
+                  "XGE/Fighter/Cavalier/Bonus Proficiency@3#0",
+                  "XGE/Fighter/Cavalier/Bonus Proficiency@3#skills:choice:from=Animal Handling,History,Insight,Performance,Persuasion"
                 ],
                 "kind": "choice",
                 "category": "skills",
@@ -5560,9 +5571,10 @@
             "description": "When you choose this archetype at 3rd level, you gain proficiency in one of the following skills of your choice: History, Insight, Performance, or Persuasion. Alternatively, you learn one language of your choice.",
             "grants": [
               {
-                "id": "XGE/Fighter/Samurai/Bonus Proficiency@3#skills:choice:from=History,Insight,Performance,Persuasion",
+                "id": "XGE/Fighter/Samurai/Bonus Proficiency@3#skills:choice:from",
                 "aliases": [
-                  "XGE/Fighter/Samurai/Bonus Proficiency@3#0"
+                  "XGE/Fighter/Samurai/Bonus Proficiency@3#0",
+                  "XGE/Fighter/Samurai/Bonus Proficiency@3#skills:choice:from=History,Insight,Performance,Persuasion"
                 ],
                 "kind": "choice",
                 "category": "skills",
@@ -6392,9 +6404,10 @@
             "description": "When you choose this tradition at 3rd level, your special martial arts training leads you to master the use of certain weapons. This path also includes instruction in the deft strokes of calligraphy or painting. You gain the following benefits.\n\n### Kensei Weapons\n\n\nChoose two types of weapons to be your kensei weapons: one melee weapon and one ranged weapon. Each of these weapons can be any simple or martial weapon that lacks the heavy and special properties. The longbow is also a valid choice. You gain proficiency with these weapons if you don't already have it. Weapons of the chosen types are monk weapons for you. Many of this tradition's features work only with your kensei weapons. When you reach 6th, 11th, and 17th level in this class, you can choose another type of weapon—either melee or ranged—to be a kensei weapon for you, following the criteria above.\n\n- **Agile Parry**\n- **Kensei's Shot**\n\n### Way of the Brush\n\n\nYou gain proficiency with your choice of calligrapher's supplies or painter's supplies.",
             "grants": [
               {
-                "id": "XGE/Monk/Way of the Kensei/Path of the Kensei@3#tools:choice:from=calligrapher's supplies,painter's supplies",
+                "id": "XGE/Monk/Way of the Kensei/Path of the Kensei@3#tools:choice:from",
                 "aliases": [
-                  "XGE/Monk/Way of the Kensei/Path of the Kensei@3#0"
+                  "XGE/Monk/Way of the Kensei/Path of the Kensei@3#0",
+                  "XGE/Monk/Way of the Kensei/Path of the Kensei@3#tools:choice:from=calligrapher's supplies,painter's supplies"
                 ],
                 "kind": "choice",
                 "category": "tools",
@@ -6408,9 +6421,10 @@
                 }
               },
               {
-                "id": "XGE/Monk/Way of the Kensei/Path of the Kensei@3#weapons:choice:base=martial,simple;without=heavy,special;plus=longbow;attack=melee",
+                "id": "XGE/Monk/Way of the Kensei/Path of the Kensei@3#weapons:choice:rule",
                 "aliases": [
-                  "XGE/Monk/Way of the Kensei/Path of the Kensei@3#1"
+                  "XGE/Monk/Way of the Kensei/Path of the Kensei@3#1",
+                  "XGE/Monk/Way of the Kensei/Path of the Kensei@3#weapons:choice:base=martial,simple;without=heavy,special;plus=longbow;attack=melee"
                 ],
                 "kind": "choice",
                 "category": "weapons",
@@ -6432,9 +6446,10 @@
                 }
               },
               {
-                "id": "XGE/Monk/Way of the Kensei/Path of the Kensei@3#weapons:choice:base=martial,simple;without=heavy,special;plus=longbow;attack=ranged",
+                "id": "XGE/Monk/Way of the Kensei/Path of the Kensei@3#weapons:choice:rule~2",
                 "aliases": [
-                  "XGE/Monk/Way of the Kensei/Path of the Kensei@3#2"
+                  "XGE/Monk/Way of the Kensei/Path of the Kensei@3#2",
+                  "XGE/Monk/Way of the Kensei/Path of the Kensei@3#weapons:choice:base=martial,simple;without=heavy,special;plus=longbow;attack=ranged"
                 ],
                 "kind": "choice",
                 "category": "weapons",
@@ -6463,9 +6478,10 @@
             "description": "At 6th level, you extend your ki into your kensei weapons, granting you the following benefits.\n\n### Magic Kensei Weapons\n\n\nYour attacks with your kensei weapons count as magical for the purpose of overcoming resistance and immunity to nonmagical attacks and damage.\n\n### Deft Strike\n\n\nWhen you hit a target with a kensei weapon, you can spend 1 ki point to cause the weapon to deal extra damage to the target equal to your Martial Arts die. You can use this feature only once on each of your turns.",
             "grants": [
               {
-                "id": "XGE/Monk/Way of the Kensei/One with the Blade@6#weapons:choice:base=martial,simple;without=heavy,special;plus=longbow;attack=any",
+                "id": "XGE/Monk/Way of the Kensei/One with the Blade@6#weapons:choice:rule",
                 "aliases": [
-                  "XGE/Monk/Way of the Kensei/One with the Blade@6#0"
+                  "XGE/Monk/Way of the Kensei/One with the Blade@6#0",
+                  "XGE/Monk/Way of the Kensei/One with the Blade@6#weapons:choice:base=martial,simple;without=heavy,special;plus=longbow;attack=any"
                 ],
                 "kind": "choice",
                 "category": "weapons",
@@ -6493,9 +6509,10 @@
             "description": "At 11th level, you gain the ability to augment your weapons further with your ki. As a bonus action, you can expend up to 3 ki points to grant one kensei weapon you touch a bonus to attack and damage rolls when you attack with it. The bonus equals the number of ki points you spent. This bonus lasts for 1 minute or until you use this feature again. This feature has no effect on a magic weapon that already has a bonus to attack and damage rolls.",
             "grants": [
               {
-                "id": "XGE/Monk/Way of the Kensei/Sharpen the Blade@11#weapons:choice:base=martial,simple;without=heavy,special;plus=longbow;attack=any",
+                "id": "XGE/Monk/Way of the Kensei/Sharpen the Blade@11#weapons:choice:rule",
                 "aliases": [
-                  "XGE/Monk/Way of the Kensei/Sharpen the Blade@11#0"
+                  "XGE/Monk/Way of the Kensei/Sharpen the Blade@11#0",
+                  "XGE/Monk/Way of the Kensei/Sharpen the Blade@11#weapons:choice:base=martial,simple;without=heavy,special;plus=longbow;attack=any"
                 ],
                 "kind": "choice",
                 "category": "weapons",
@@ -6523,9 +6540,10 @@
             "description": "At 17th level, your mastery of weapons grants you extraordinary accuracy. If you miss with an attack roll using a monk weapon on your turn, you can reroll it. You can use this feature only once on each of your turns.",
             "grants": [
               {
-                "id": "XGE/Monk/Way of the Kensei/Unerring Accuracy@17#weapons:choice:base=martial,simple;without=heavy,special;plus=longbow;attack=any",
+                "id": "XGE/Monk/Way of the Kensei/Unerring Accuracy@17#weapons:choice:rule",
                 "aliases": [
-                  "XGE/Monk/Way of the Kensei/Unerring Accuracy@17#0"
+                  "XGE/Monk/Way of the Kensei/Unerring Accuracy@17#0",
+                  "XGE/Monk/Way of the Kensei/Unerring Accuracy@17#weapons:choice:base=martial,simple;without=heavy,special;plus=longbow;attack=any"
                 ],
                 "kind": "choice",
                 "category": "weapons",
@@ -6777,9 +6795,10 @@
     "description": "",
     "grants": [
       {
-        "id": "PHB/Monk/Starting Proficiencies@1#tools:choice:from=alchemist's supplies,bagpipes,brewer's supplies,calligrapher's supplies,carpenter's tools,cartographer's tools,cobbler's tools,cook's utensils,drum,dulcimer,flute,glassblower's tools,horn,jeweler's tools,leatherworker's tools,lute,lyre,mason's tools,painter's supplies,pan flute,potter's tools,shawm,smith's tools,tinker's tools,viol,weaver's tools,woodcarver's tools",
+        "id": "PHB/Monk/Starting Proficiencies@1#tools:choice:from",
         "aliases": [
-          "PHB/Monk/Starting Proficiencies@1#0"
+          "PHB/Monk/Starting Proficiencies@1#0",
+          "PHB/Monk/Starting Proficiencies@1#tools:choice:from=alchemist's supplies,bagpipes,brewer's supplies,calligrapher's supplies,carpenter's tools,cartographer's tools,cobbler's tools,cook's utensils,drum,dulcimer,flute,glassblower's tools,horn,jeweler's tools,leatherworker's tools,lute,lyre,mason's tools,painter's supplies,pan flute,potter's tools,shawm,smith's tools,tinker's tools,viol,weaver's tools,woodcarver's tools"
         ],
         "kind": "choice",
         "category": "tools",
@@ -7061,9 +7080,10 @@
             "description": "At 1st level, you gain proficiency with two of the following skills of your choice: Animal Handling, Deception, Insight, Intimidation, Investigation, Perception, and Persuasion.",
             "grants": [
               {
-                "id": "UATheMysticClass/Mystic/Order of the Awakened/Awakened Talent@1#skills:choice:from=Animal Handling,Deception,Insight,Intimidation,Investigation,Perception,Persuasion",
+                "id": "UATheMysticClass/Mystic/Order of the Awakened/Awakened Talent@1#skills:choice:from",
                 "aliases": [
-                  "UATheMysticClass/Mystic/Order of the Awakened/Awakened Talent@1#0"
+                  "UATheMysticClass/Mystic/Order of the Awakened/Awakened Talent@1#0",
+                  "UATheMysticClass/Mystic/Order of the Awakened/Awakened Talent@1#skills:choice:from=Animal Handling,Deception,Insight,Intimidation,Investigation,Perception,Persuasion"
                 ],
                 "kind": "choice",
                 "category": "skills",
@@ -7273,9 +7293,10 @@
             "description": "At 1st level, you gain proficiency with two of the following skills of your choice: Animal Handling, Arcana, History, Insight, Medicine, Nature, Perception, Religion, or Survival.",
             "grants": [
               {
-                "id": "UATheMysticClass/Mystic/Order of the Wu Jen/Hermit's Study@1#skills:choice:from=Animal Handling,Arcana,History,Insight,Medicine,Nature,Perception,Religion,Survival",
+                "id": "UATheMysticClass/Mystic/Order of the Wu Jen/Hermit's Study@1#skills:choice:from",
                 "aliases": [
-                  "UATheMysticClass/Mystic/Order of the Wu Jen/Hermit's Study@1#0"
+                  "UATheMysticClass/Mystic/Order of the Wu Jen/Hermit's Study@1#0",
+                  "UATheMysticClass/Mystic/Order of the Wu Jen/Hermit's Study@1#skills:choice:from=Animal Handling,Arcana,History,Insight,Medicine,Nature,Perception,Religion,Survival"
                 ],
                 "kind": "choice",
                 "category": "skills",
@@ -8902,9 +8923,10 @@
             "description": "*3rd-level Fey Wanderer feature*\n\nYour fey qualities give you a supernatural charm. As a result, whenever you make a Charisma check, you gain a bonus to the check equal to your Wisdom modifier (minimum of +1).\n\nIn addition, you gain proficiency in one of the following skills of your choice: Deception, Performance, or Persuasion.",
             "grants": [
               {
-                "id": "TCE/Ranger/Fey Wanderer/Otherworldly Glamour@3#skills:choice:from=Deception,Performance,Persuasion",
+                "id": "TCE/Ranger/Fey Wanderer/Otherworldly Glamour@3#skills:choice:from",
                 "aliases": [
-                  "TCE/Ranger/Fey Wanderer/Otherworldly Glamour@3#0"
+                  "TCE/Ranger/Fey Wanderer/Otherworldly Glamour@3#0",
+                  "TCE/Ranger/Fey Wanderer/Otherworldly Glamour@3#skills:choice:from=Deception,Performance,Persuasion"
                 ],
                 "kind": "choice",
                 "category": "skills",
@@ -9564,9 +9586,10 @@
                 ]
               },
               {
-                "id": "XGE/Rogue/Mastermind/Master of Intrigue@3#tools:choice:from=dice set,dragonchess set,playing card set,three-dragon ante set",
+                "id": "XGE/Rogue/Mastermind/Master of Intrigue@3#tools:choice:from",
                 "aliases": [
-                  "XGE/Rogue/Mastermind/Master of Intrigue@3#1"
+                  "XGE/Rogue/Mastermind/Master of Intrigue@3#1",
+                  "XGE/Rogue/Mastermind/Master of Intrigue@3#tools:choice:from=dice set,dragonchess set,playing card set,three-dragon ante set"
                 ],
                 "kind": "choice",
                 "category": "tools",
@@ -9893,9 +9916,10 @@
         "isOptional": false,
         "grants": [
           {
-            "id": "TCE/Expert Sidekick/Bonus Proficiencies@1#savingThrows:choice:from=Charisma,Dexterity,Intelligence",
+            "id": "TCE/Expert Sidekick/Bonus Proficiencies@1#savingThrows:choice:from",
             "aliases": [
-              "TCE/Expert Sidekick/Bonus Proficiencies@1#0"
+              "TCE/Expert Sidekick/Bonus Proficiencies@1#0",
+              "TCE/Expert Sidekick/Bonus Proficiencies@1#savingThrows:choice:from=Charisma,Dexterity,Intelligence"
             ],
             "kind": "choice",
             "category": "savingThrows",
@@ -10025,9 +10049,10 @@
         "isOptional": false,
         "grants": [
           {
-            "id": "TCE/Expert Sidekick/Sharp Mind@18#savingThrows:choice:from=Charisma,Intelligence,Wisdom",
+            "id": "TCE/Expert Sidekick/Sharp Mind@18#savingThrows:choice:from",
             "aliases": [
-              "TCE/Expert Sidekick/Sharp Mind@18#0"
+              "TCE/Expert Sidekick/Sharp Mind@18#0",
+              "TCE/Expert Sidekick/Sharp Mind@18#savingThrows:choice:from=Charisma,Intelligence,Wisdom"
             ],
             "kind": "choice",
             "category": "savingThrows",
@@ -10081,9 +10106,10 @@
         "isOptional": false,
         "grants": [
           {
-            "id": "TCE/Spellcaster Sidekick/Bonus Proficiencies@1#savingThrows:choice:from=Charisma,Intelligence,Wisdom",
+            "id": "TCE/Spellcaster Sidekick/Bonus Proficiencies@1#savingThrows:choice:from",
             "aliases": [
-              "TCE/Spellcaster Sidekick/Bonus Proficiencies@1#0"
+              "TCE/Spellcaster Sidekick/Bonus Proficiencies@1#0",
+              "TCE/Spellcaster Sidekick/Bonus Proficiencies@1#savingThrows:choice:from=Charisma,Intelligence,Wisdom"
             ],
             "kind": "choice",
             "category": "savingThrows",
@@ -10098,9 +10124,10 @@
             }
           },
           {
-            "id": "TCE/Spellcaster Sidekick/Bonus Proficiencies@1#skills:choice:from=Arcana,History,Insight,Investigation,Medicine,Performance,Persuasion,Religion",
+            "id": "TCE/Spellcaster Sidekick/Bonus Proficiencies@1#skills:choice:from",
             "aliases": [
-              "TCE/Spellcaster Sidekick/Bonus Proficiencies@1#1"
+              "TCE/Spellcaster Sidekick/Bonus Proficiencies@1#1",
+              "TCE/Spellcaster Sidekick/Bonus Proficiencies@1#skills:choice:from=Arcana,History,Insight,Investigation,Medicine,Performance,Persuasion,Religion"
             ],
             "kind": "choice",
             "category": "skills",
@@ -10218,9 +10245,10 @@
         "isOptional": false,
         "grants": [
           {
-            "id": "TCE/Warrior Sidekick/Bonus Proficiencies@1#savingThrows:choice:from=Constitution,Dexterity,Strength",
+            "id": "TCE/Warrior Sidekick/Bonus Proficiencies@1#savingThrows:choice:from",
             "aliases": [
-              "TCE/Warrior Sidekick/Bonus Proficiencies@1#0"
+              "TCE/Warrior Sidekick/Bonus Proficiencies@1#0",
+              "TCE/Warrior Sidekick/Bonus Proficiencies@1#savingThrows:choice:from=Constitution,Dexterity,Strength"
             ],
             "kind": "choice",
             "category": "savingThrows",
@@ -10235,9 +10263,10 @@
             }
           },
           {
-            "id": "TCE/Warrior Sidekick/Bonus Proficiencies@1#skills:choice:from=Acrobatics,Animal Handling,Athletics,Intimidation,Nature,Perception,Survival",
+            "id": "TCE/Warrior Sidekick/Bonus Proficiencies@1#skills:choice:from",
             "aliases": [
-              "TCE/Warrior Sidekick/Bonus Proficiencies@1#1"
+              "TCE/Warrior Sidekick/Bonus Proficiencies@1#1",
+              "TCE/Warrior Sidekick/Bonus Proficiencies@1#skills:choice:from=Acrobatics,Animal Handling,Athletics,Intimidation,Nature,Perception,Survival"
             ],
             "kind": "choice",
             "category": "skills",
@@ -12835,9 +12864,10 @@
                 ]
               },
               {
-                "id": "TCE/Wizard/Bladesinging/Training in War and Song (Bladesinging)@2#weapons:choice:base=martial,simple;without=two-handed;plus=;attack=melee",
+                "id": "TCE/Wizard/Bladesinging/Training in War and Song (Bladesinging)@2#weapons:choice:rule",
                 "aliases": [
-                  "TCE/Wizard/Bladesinging/Training in War and Song (Bladesinging)@2#2"
+                  "TCE/Wizard/Bladesinging/Training in War and Song (Bladesinging)@2#2",
+                  "TCE/Wizard/Bladesinging/Training in War and Song (Bladesinging)@2#weapons:choice:base=martial,simple;without=two-handed;plus=;attack=melee"
                 ],
                 "kind": "choice",
                 "category": "weapons",

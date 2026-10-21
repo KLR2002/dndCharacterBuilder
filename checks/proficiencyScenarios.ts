@@ -345,7 +345,7 @@ export const SKILLS_ONLY: { label: string; build: Build }[] = [
             picked: ["Tiger"],
           },
         ],
-        proficiencyPicks: { "PHB/Barbarian/Path of the Totem Warrior/Tiger@6#skills:choice:from=Acrobatics,Athletics,Stealth,Survival": ["Stealth", "Survival"] },
+        proficiencyPicks: { "PHB/Barbarian/Path of the Totem Warrior/Tiger@6#skills:choice:from": ["Stealth", "Survival"] },
       }),
   },
 ];

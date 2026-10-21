@@ -766,9 +766,10 @@
     "source": "ToA",
     "grants": [
       {
-        "id": "ToA/Background/Archaeologist@0#tools:choice:from=cartographer's tools,navigator's tools",
+        "id": "ToA/Background/Archaeologist@0#tools:choice:from",
         "aliases": [
-          "ToA/Background/Archaeologist@0#0"
+          "ToA/Background/Archaeologist@0#0",
+          "ToA/Background/Archaeologist@0#tools:choice:from=cartographer's tools,navigator's tools"
         ],
         "kind": "choice",
         "category": "tools",
@@ -1792,9 +1793,10 @@
     "source": "EGW",
     "grants": [
       {
-        "id": "EGW/Background/Augen Trust (Spy)@0#tools:choice:from=dice set,dragonchess set,playing card set,three-dragon ante set",
+        "id": "EGW/Background/Augen Trust (Spy)@0#tools:choice:from",
         "aliases": [
-          "EGW/Background/Augen Trust (Spy)@0#0"
+          "EGW/Background/Augen Trust (Spy)@0#0",
+          "EGW/Background/Augen Trust (Spy)@0#tools:choice:from=dice set,dragonchess set,playing card set,three-dragon ante set"
         ],
         "kind": "choice",
         "category": "tools",
@@ -3522,9 +3524,10 @@
     "source": "BGDIA",
     "grants": [
       {
-        "id": "BGDIA/Background/Baldur's Gate Criminal@0#tools:choice:from=dice set,dragonchess set,playing card set,three-dragon ante set",
+        "id": "BGDIA/Background/Baldur's Gate Criminal@0#tools:choice:from",
         "aliases": [
-          "BGDIA/Background/Baldur's Gate Criminal@0#0"
+          "BGDIA/Background/Baldur's Gate Criminal@0#0",
+          "BGDIA/Background/Baldur's Gate Criminal@0#tools:choice:from=dice set,dragonchess set,playing card set,three-dragon ante set"
         ],
         "kind": "choice",
         "category": "tools",
@@ -3962,9 +3965,10 @@
         ]
       },
       {
-        "id": "BGDIA/Background/Baldur's Gate Entertainer@0#tools:choice:from=bagpipes,drum,dulcimer,flute,horn,lute,lyre,pan flute,shawm,viol",
+        "id": "BGDIA/Background/Baldur's Gate Entertainer@0#tools:choice:from",
         "aliases": [
-          "BGDIA/Background/Baldur's Gate Entertainer@0#1"
+          "BGDIA/Background/Baldur's Gate Entertainer@0#1",
+          "BGDIA/Background/Baldur's Gate Entertainer@0#tools:choice:from=bagpipes,drum,dulcimer,flute,horn,lute,lyre,pan flute,shawm,viol"
         ],
         "kind": "choice",
         "category": "tools",
@@ -4394,9 +4398,10 @@
     "source": "BGDIA",
     "grants": [
       {
-        "id": "BGDIA/Background/Baldur's Gate Folk Hero@0#tools:choice:from=alchemist's supplies,brewer's supplies,calligrapher's supplies,carpenter's tools,cartographer's tools,cobbler's tools,cook's utensils,glassblower's tools,jeweler's tools,leatherworker's tools,mason's tools,painter's supplies,potter's tools,smith's tools,tinker's tools,weaver's tools,woodcarver's tools",
+        "id": "BGDIA/Background/Baldur's Gate Folk Hero@0#tools:choice:from",
         "aliases": [
-          "BGDIA/Background/Baldur's Gate Folk Hero@0#0"
+          "BGDIA/Background/Baldur's Gate Folk Hero@0#0",
+          "BGDIA/Background/Baldur's Gate Folk Hero@0#tools:choice:from=alchemist's supplies,brewer's supplies,calligrapher's supplies,carpenter's tools,cartographer's tools,cobbler's tools,cook's utensils,glassblower's tools,jeweler's tools,leatherworker's tools,mason's tools,painter's supplies,potter's tools,smith's tools,tinker's tools,weaver's tools,woodcarver's tools"
         ],
         "kind": "choice",
         "category": "tools",
@@ -4845,9 +4850,10 @@
     "source": "BGDIA",
     "grants": [
       {
-        "id": "BGDIA/Background/Baldur's Gate Guild Artisan@0#tools:choice:from=alchemist's supplies,brewer's supplies,calligrapher's supplies,carpenter's tools,cartographer's tools,cobbler's tools,cook's utensils,glassblower's tools,jeweler's tools,leatherworker's tools,mason's tools,painter's supplies,potter's tools,smith's tools,tinker's tools,weaver's tools,woodcarver's tools",
+        "id": "BGDIA/Background/Baldur's Gate Guild Artisan@0#tools:choice:from",
         "aliases": [
-          "BGDIA/Background/Baldur's Gate Guild Artisan@0#0"
+          "BGDIA/Background/Baldur's Gate Guild Artisan@0#0",
+          "BGDIA/Background/Baldur's Gate Guild Artisan@0#tools:choice:from=alchemist's supplies,brewer's supplies,calligrapher's supplies,carpenter's tools,cartographer's tools,cobbler's tools,cook's utensils,glassblower's tools,jeweler's tools,leatherworker's tools,mason's tools,painter's supplies,potter's tools,smith's tools,tinker's tools,weaver's tools,woodcarver's tools"
         ],
         "kind": "choice",
         "category": "tools",
@@ -5774,9 +5780,10 @@
     "source": "BGDIA",
     "grants": [
       {
-        "id": "BGDIA/Background/Baldur's Gate Noble@0#tools:choice:from=dice set,dragonchess set,playing card set,three-dragon ante set",
+        "id": "BGDIA/Background/Baldur's Gate Noble@0#tools:choice:from",
         "aliases": [
-          "BGDIA/Background/Baldur's Gate Noble@0#0"
+          "BGDIA/Background/Baldur's Gate Noble@0#0",
+          "BGDIA/Background/Baldur's Gate Noble@0#tools:choice:from=dice set,dragonchess set,playing card set,three-dragon ante set"
         ],
         "kind": "choice",
         "category": "tools",
@@ -6160,9 +6167,10 @@
     "source": "BGDIA",
     "grants": [
       {
-        "id": "BGDIA/Background/Baldur's Gate Outlander@0#tools:choice:from=bagpipes,drum,dulcimer,flute,horn,lute,lyre,pan flute,shawm,viol",
+        "id": "BGDIA/Background/Baldur's Gate Outlander@0#tools:choice:from",
         "aliases": [
-          "BGDIA/Background/Baldur's Gate Outlander@0#0"
+          "BGDIA/Background/Baldur's Gate Outlander@0#0",
+          "BGDIA/Background/Baldur's Gate Outlander@0#tools:choice:from=bagpipes,drum,dulcimer,flute,horn,lute,lyre,pan flute,shawm,viol"
         ],
         "kind": "choice",
         "category": "tools",
@@ -7388,9 +7396,10 @@
     "source": "BGDIA",
     "grants": [
       {
-        "id": "BGDIA/Background/Baldur's Gate Soldier@0#tools:choice:from=dice set,dragonchess set,playing card set,three-dragon ante set",
+        "id": "BGDIA/Background/Baldur's Gate Soldier@0#tools:choice:from",
         "aliases": [
-          "BGDIA/Background/Baldur's Gate Soldier@0#0"
+          "BGDIA/Background/Baldur's Gate Soldier@0#0",
+          "BGDIA/Background/Baldur's Gate Soldier@0#tools:choice:from=dice set,dragonchess set,playing card set,three-dragon ante set"
         ],
         "kind": "choice",
         "category": "tools",
@@ -8183,9 +8192,10 @@
     "source": "GGR",
     "grants": [
       {
-        "id": "GGR/Background/Boros Legionnaire@0#tools:choice:from=dice set,dragonchess set,playing card set,three-dragon ante set",
+        "id": "GGR/Background/Boros Legionnaire@0#tools:choice:from",
         "aliases": [
-          "GGR/Background/Boros Legionnaire@0#0"
+          "GGR/Background/Boros Legionnaire@0#0",
+          "GGR/Background/Boros Legionnaire@0#tools:choice:from=dice set,dragonchess set,playing card set,three-dragon ante set"
         ],
         "kind": "choice",
         "category": "tools",
@@ -9620,9 +9630,10 @@
     "source": "SCAG",
     "grants": [
       {
-        "id": "SCAG/Background/Clan Crafter@0#tools:choice:from=alchemist's supplies,brewer's supplies,calligrapher's supplies,carpenter's tools,cartographer's tools,cobbler's tools,cook's utensils,glassblower's tools,jeweler's tools,leatherworker's tools,mason's tools,painter's supplies,potter's tools,smith's tools,tinker's tools,weaver's tools,woodcarver's tools",
+        "id": "SCAG/Background/Clan Crafter@0#tools:choice:from",
         "aliases": [
-          "SCAG/Background/Clan Crafter@0#0"
+          "SCAG/Background/Clan Crafter@0#0",
+          "SCAG/Background/Clan Crafter@0#tools:choice:from=alchemist's supplies,brewer's supplies,calligrapher's supplies,carpenter's tools,cartographer's tools,cobbler's tools,cook's utensils,glassblower's tools,jeweler's tools,leatherworker's tools,mason's tools,painter's supplies,potter's tools,smith's tools,tinker's tools,weaver's tools,woodcarver's tools"
         ],
         "kind": "choice",
         "category": "tools",
@@ -10361,9 +10372,10 @@
     "source": "PHB",
     "grants": [
       {
-        "id": "PHB/Background/Criminal@0#tools:choice:from=dice set,dragonchess set,playing card set,three-dragon ante set",
+        "id": "PHB/Background/Criminal@0#tools:choice:from",
         "aliases": [
-          "PHB/Background/Criminal@0#0"
+          "PHB/Background/Criminal@0#0",
+          "PHB/Background/Criminal@0#tools:choice:from=dice set,dragonchess set,playing card set,three-dragon ante set"
         ],
         "kind": "choice",
         "category": "tools",
@@ -11409,9 +11421,10 @@
         ]
       },
       {
-        "id": "PHB/Background/Entertainer@0#tools:choice:from=bagpipes,drum,dulcimer,flute,horn,lute,lyre,pan flute,shawm,viol",
+        "id": "PHB/Background/Entertainer@0#tools:choice:from",
         "aliases": [
-          "PHB/Background/Entertainer@0#1"
+          "PHB/Background/Entertainer@0#1",
+          "PHB/Background/Entertainer@0#tools:choice:from=bagpipes,drum,dulcimer,flute,horn,lute,lyre,pan flute,shawm,viol"
         ],
         "kind": "choice",
         "category": "tools",
@@ -12369,9 +12382,10 @@
     "source": "AI",
     "grants": [
       {
-        "id": "AI/Background/Failed Merchant@0#tools:choice:from=alchemist's supplies,brewer's supplies,calligrapher's supplies,carpenter's tools,cartographer's tools,cobbler's tools,cook's utensils,glassblower's tools,jeweler's tools,leatherworker's tools,mason's tools,painter's supplies,potter's tools,smith's tools,tinker's tools,weaver's tools,woodcarver's tools",
+        "id": "AI/Background/Failed Merchant@0#tools:choice:from",
         "aliases": [
-          "AI/Background/Failed Merchant@0#0"
+          "AI/Background/Failed Merchant@0#0",
+          "AI/Background/Failed Merchant@0#tools:choice:from=alchemist's supplies,brewer's supplies,calligrapher's supplies,carpenter's tools,cartographer's tools,cobbler's tools,cook's utensils,glassblower's tools,jeweler's tools,leatherworker's tools,mason's tools,painter's supplies,potter's tools,smith's tools,tinker's tools,weaver's tools,woodcarver's tools"
         ],
         "kind": "choice",
         "category": "tools",
@@ -12766,9 +12780,10 @@
     "source": "SCAG",
     "grants": [
       {
-        "id": "SCAG/Background/Far Traveler@0#tools:choice:from=bagpipes,dice set,dragonchess set,drum,dulcimer,flute,horn,lute,lyre,pan flute,playing card set,shawm,three-dragon ante set,viol",
+        "id": "SCAG/Background/Far Traveler@0#tools:choice:from",
         "aliases": [
-          "SCAG/Background/Far Traveler@0#0"
+          "SCAG/Background/Far Traveler@0#0",
+          "SCAG/Background/Far Traveler@0#tools:choice:from=bagpipes,dice set,dragonchess set,drum,dulcimer,flute,horn,lute,lyre,pan flute,playing card set,shawm,three-dragon ante set,viol"
         ],
         "kind": "choice",
         "category": "tools",
@@ -13189,9 +13204,10 @@
     "source": "WBtW",
     "grants": [
       {
-        "id": "WBtW/Background/Feylost@0#tools:choice:from=bagpipes,drum,dulcimer,flute,horn,lute,lyre,pan flute,shawm,viol",
+        "id": "WBtW/Background/Feylost@0#tools:choice:from",
         "aliases": [
-          "WBtW/Background/Feylost@0#0"
+          "WBtW/Background/Feylost@0#0",
+          "WBtW/Background/Feylost@0#tools:choice:from=bagpipes,drum,dulcimer,flute,horn,lute,lyre,pan flute,shawm,viol"
         ],
         "kind": "choice",
         "category": "tools",
@@ -13225,9 +13241,10 @@
         }
       },
       {
-        "id": "WBtW/Background/Feylost@0#languages:choice:from=Elvish,Gnomish,Goblin,Sylvan",
+        "id": "WBtW/Background/Feylost@0#languages:choice:from",
         "aliases": [
-          "WBtW/Background/Feylost@0#2"
+          "WBtW/Background/Feylost@0#2",
+          "WBtW/Background/Feylost@0#languages:choice:from=Elvish,Gnomish,Goblin,Sylvan"
         ],
         "kind": "choice",
         "category": "languages",
@@ -14038,9 +14055,10 @@
     "source": "PHB",
     "grants": [
       {
-        "id": "PHB/Background/Folk Hero@0#tools:choice:from=alchemist's supplies,brewer's supplies,calligrapher's supplies,carpenter's tools,cartographer's tools,cobbler's tools,cook's utensils,glassblower's tools,jeweler's tools,leatherworker's tools,mason's tools,painter's supplies,potter's tools,smith's tools,tinker's tools,weaver's tools,woodcarver's tools",
+        "id": "PHB/Background/Folk Hero@0#tools:choice:from",
         "aliases": [
-          "PHB/Background/Folk Hero@0#0"
+          "PHB/Background/Folk Hero@0#0",
+          "PHB/Background/Folk Hero@0#tools:choice:from=alchemist's supplies,brewer's supplies,calligrapher's supplies,carpenter's tools,cartographer's tools,cobbler's tools,cook's utensils,glassblower's tools,jeweler's tools,leatherworker's tools,mason's tools,painter's supplies,potter's tools,smith's tools,tinker's tools,weaver's tools,woodcarver's tools"
         ],
         "kind": "choice",
         "category": "tools",
@@ -14489,9 +14507,10 @@
     "source": "AI",
     "grants": [
       {
-        "id": "AI/Background/Gambler@0#tools:choice:from=dice set,dragonchess set,playing card set,three-dragon ante set",
+        "id": "AI/Background/Gambler@0#tools:choice:from",
         "aliases": [
-          "AI/Background/Gambler@0#0"
+          "AI/Background/Gambler@0#0",
+          "AI/Background/Gambler@0#tools:choice:from=dice set,dragonchess set,playing card set,three-dragon ante set"
         ],
         "kind": "choice",
         "category": "tools",
@@ -15825,9 +15844,10 @@
         ]
       },
       {
-        "id": "EGW/Background/Grinner@0#tools:choice:from=bagpipes,drum,dulcimer,flute,horn,lute,lyre,pan flute,shawm,viol",
+        "id": "EGW/Background/Grinner@0#tools:choice:from",
         "aliases": [
-          "EGW/Background/Grinner@0#1"
+          "EGW/Background/Grinner@0#1",
+          "EGW/Background/Grinner@0#tools:choice:from=bagpipes,drum,dulcimer,flute,horn,lute,lyre,pan flute,shawm,viol"
         ],
         "kind": "choice",
         "category": "tools",
@@ -16210,9 +16230,10 @@
         ]
       },
       {
-        "id": "GGR/Background/Gruul Anarch@0#languages:choice:from=Draconic,Giant,Goblin,Sylvan",
+        "id": "GGR/Background/Gruul Anarch@0#languages:choice:from",
         "aliases": [
-          "GGR/Background/Gruul Anarch@0#1"
+          "GGR/Background/Gruul Anarch@0#1",
+          "GGR/Background/Gruul Anarch@0#languages:choice:from=Draconic,Giant,Goblin,Sylvan"
         ],
         "kind": "choice",
         "category": "languages",
@@ -16754,9 +16775,10 @@
     "source": "PHB",
     "grants": [
       {
-        "id": "PHB/Background/Guild Artisan@0#tools:choice:from=alchemist's supplies,brewer's supplies,calligrapher's supplies,carpenter's tools,cartographer's tools,cobbler's tools,cook's utensils,glassblower's tools,jeweler's tools,leatherworker's tools,mason's tools,painter's supplies,potter's tools,smith's tools,tinker's tools,weaver's tools,woodcarver's tools",
+        "id": "PHB/Background/Guild Artisan@0#tools:choice:from",
         "aliases": [
-          "PHB/Background/Guild Artisan@0#0"
+          "PHB/Background/Guild Artisan@0#0",
+          "PHB/Background/Guild Artisan@0#tools:choice:from=alchemist's supplies,brewer's supplies,calligrapher's supplies,carpenter's tools,cartographer's tools,cobbler's tools,cook's utensils,glassblower's tools,jeweler's tools,leatherworker's tools,mason's tools,painter's supplies,potter's tools,smith's tools,tinker's tools,weaver's tools,woodcarver's tools"
         ],
         "kind": "choice",
         "category": "tools",
@@ -17265,9 +17287,10 @@
         }
       },
       {
-        "id": "VRGR/Background/Haunted One@0#languages:choice:from=Abyssal,Celestial,Deep Speech,Draconic,Infernal,Primordial,Sylvan,Undercommon",
+        "id": "VRGR/Background/Haunted One@0#languages:choice:from",
         "aliases": [
-          "VRGR/Background/Haunted One@0#1"
+          "VRGR/Background/Haunted One@0#1",
+          "VRGR/Background/Haunted One@0#languages:choice:from=Abyssal,Celestial,Deep Speech,Draconic,Infernal,Primordial,Sylvan,Undercommon"
         ],
         "kind": "choice",
         "category": "languages",
@@ -18114,9 +18137,10 @@
         ]
       },
       {
-        "id": "ERLW/Background/House Agent@0#tools:choice:from=dice set,dragonchess set,playing card set,three-dragon ante set",
+        "id": "ERLW/Background/House Agent@0#tools:choice:from",
         "aliases": [
-          "ERLW/Background/House Agent@0#1"
+          "ERLW/Background/House Agent@0#1",
+          "ERLW/Background/House Agent@0#tools:choice:from=dice set,dragonchess set,playing card set,three-dragon ante set"
         ],
         "kind": "choice",
         "category": "tools",
@@ -18132,9 +18156,10 @@
         }
       },
       {
-        "id": "ERLW/Background/House Agent@0#tools:choice:from=bagpipes,drum,dulcimer,flute,horn,lute,lyre,pan flute,shawm,viol",
+        "id": "ERLW/Background/House Agent@0#tools:choice:from~2",
         "aliases": [
-          "ERLW/Background/House Agent@0#2"
+          "ERLW/Background/House Agent@0#2",
+          "ERLW/Background/House Agent@0#tools:choice:from=bagpipes,drum,dulcimer,flute,horn,lute,lyre,pan flute,shawm,viol"
         ],
         "kind": "choice",
         "category": "tools",
@@ -18156,9 +18181,10 @@
         }
       },
       {
-        "id": "ERLW/Background/House Agent@0#tools:choice:from=dice set,dragonchess set,playing card set,three-dragon ante set~2",
+        "id": "ERLW/Background/House Agent@0#tools:choice:from~3",
         "aliases": [
-          "ERLW/Background/House Agent@0#3"
+          "ERLW/Background/House Agent@0#3",
+          "ERLW/Background/House Agent@0#tools:choice:from=dice set,dragonchess set,playing card set,three-dragon ante set~2"
         ],
         "kind": "choice",
         "category": "tools",
@@ -18174,9 +18200,10 @@
         }
       },
       {
-        "id": "ERLW/Background/House Agent@0#tools:choice:from=bagpipes,drum,dulcimer,flute,horn,lute,lyre,pan flute,shawm,viol~2",
+        "id": "ERLW/Background/House Agent@0#tools:choice:from~4",
         "aliases": [
-          "ERLW/Background/House Agent@0#4"
+          "ERLW/Background/House Agent@0#4",
+          "ERLW/Background/House Agent@0#tools:choice:from=bagpipes,drum,dulcimer,flute,horn,lute,lyre,pan flute,shawm,viol~2"
         ],
         "kind": "choice",
         "category": "tools",
@@ -18679,9 +18706,10 @@
     "source": "SCAG",
     "grants": [
       {
-        "id": "SCAG/Background/Inheritor@0#tools:choice:from=bagpipes,dice set,dragonchess set,drum,dulcimer,flute,horn,lute,lyre,pan flute,playing card set,shawm,three-dragon ante set,viol",
+        "id": "SCAG/Background/Inheritor@0#tools:choice:from",
         "aliases": [
-          "SCAG/Background/Inheritor@0#0"
+          "SCAG/Background/Inheritor@0#0",
+          "SCAG/Background/Inheritor@0#tools:choice:from=bagpipes,dice set,dragonchess set,drum,dulcimer,flute,horn,lute,lyre,pan flute,playing card set,shawm,three-dragon ante set,viol"
         ],
         "kind": "choice",
         "category": "tools",
@@ -18846,9 +18874,10 @@
     "source": "PSA",
     "grants": [
       {
-        "id": "PSA/Background/Initiate@0#tools:choice:from=dice set,dragonchess set,playing card set,three-dragon ante set",
+        "id": "PSA/Background/Initiate@0#tools:choice:from",
         "aliases": [
-          "PSA/Background/Initiate@0#0"
+          "PSA/Background/Initiate@0#0",
+          "PSA/Background/Initiate@0#tools:choice:from=dice set,dragonchess set,playing card set,three-dragon ante set"
         ],
         "kind": "choice",
         "category": "tools",
@@ -19225,9 +19254,10 @@
     "source": "PSA",
     "grants": [
       {
-        "id": "PSA/Background/Initiate (Dissenter)@0#tools:choice:from=dice set,dragonchess set,playing card set,three-dragon ante set",
+        "id": "PSA/Background/Initiate (Dissenter)@0#tools:choice:from",
         "aliases": [
-          "PSA/Background/Initiate (Dissenter)@0#0"
+          "PSA/Background/Initiate (Dissenter)@0#0",
+          "PSA/Background/Initiate (Dissenter)@0#tools:choice:from=dice set,dragonchess set,playing card set,three-dragon ante set"
         ],
         "kind": "choice",
         "category": "tools",
@@ -19615,9 +19645,10 @@
         ]
       },
       {
-        "id": "PSI/Background/Inquisitor@0#tools:choice:from=alchemist's supplies,brewer's supplies,calligrapher's supplies,carpenter's tools,cartographer's tools,cobbler's tools,cook's utensils,glassblower's tools,jeweler's tools,leatherworker's tools,mason's tools,painter's supplies,potter's tools,smith's tools,tinker's tools,weaver's tools,woodcarver's tools",
+        "id": "PSI/Background/Inquisitor@0#tools:choice:from",
         "aliases": [
-          "PSI/Background/Inquisitor@0#1"
+          "PSI/Background/Inquisitor@0#1",
+          "PSI/Background/Inquisitor@0#tools:choice:from=alchemist's supplies,brewer's supplies,calligrapher's supplies,carpenter's tools,cartographer's tools,cobbler's tools,cook's utensils,glassblower's tools,jeweler's tools,leatherworker's tools,mason's tools,painter's supplies,potter's tools,smith's tools,tinker's tools,weaver's tools,woodcarver's tools"
         ],
         "kind": "choice",
         "category": "tools",
@@ -20095,9 +20126,10 @@
     "source": "GGR",
     "grants": [
       {
-        "id": "GGR/Background/Izzet Engineer@0#tools:choice:from=alchemist's supplies,brewer's supplies,calligrapher's supplies,carpenter's tools,cartographer's tools,cobbler's tools,cook's utensils,glassblower's tools,jeweler's tools,leatherworker's tools,mason's tools,painter's supplies,potter's tools,smith's tools,tinker's tools,weaver's tools,woodcarver's tools",
+        "id": "GGR/Background/Izzet Engineer@0#tools:choice:from",
         "aliases": [
-          "GGR/Background/Izzet Engineer@0#0"
+          "GGR/Background/Izzet Engineer@0#0",
+          "GGR/Background/Izzet Engineer@0#tools:choice:from=alchemist's supplies,brewer's supplies,calligrapher's supplies,carpenter's tools,cartographer's tools,cobbler's tools,cook's utensils,glassblower's tools,jeweler's tools,leatherworker's tools,mason's tools,painter's supplies,potter's tools,smith's tools,tinker's tools,weaver's tools,woodcarver's tools"
         ],
         "kind": "choice",
         "category": "tools",
@@ -20802,9 +20834,10 @@
     "source": "SCAG",
     "grants": [
       {
-        "id": "SCAG/Background/Knight of the Order@0#tools:choice:from=bagpipes,dice set,dragonchess set,drum,dulcimer,flute,horn,lute,lyre,pan flute,playing card set,shawm,three-dragon ante set,viol",
+        "id": "SCAG/Background/Knight of the Order@0#tools:choice:from",
         "aliases": [
-          "SCAG/Background/Knight of the Order@0#0"
+          "SCAG/Background/Knight of the Order@0#0",
+          "SCAG/Background/Knight of the Order@0#tools:choice:from=bagpipes,dice set,dragonchess set,drum,dulcimer,flute,horn,lute,lyre,pan flute,playing card set,shawm,three-dragon ante set,viol"
         ],
         "kind": "choice",
         "category": "tools",
@@ -22021,9 +22054,10 @@
     "source": "SCAG",
     "grants": [
       {
-        "id": "SCAG/Background/Mercenary Veteran@0#tools:choice:from=dice set,dragonchess set,playing card set,three-dragon ante set",
+        "id": "SCAG/Background/Mercenary Veteran@0#tools:choice:from",
         "aliases": [
-          "SCAG/Background/Mercenary Veteran@0#0"
+          "SCAG/Background/Mercenary Veteran@0#0",
+          "SCAG/Background/Mercenary Veteran@0#tools:choice:from=dice set,dragonchess set,playing card set,three-dragon ante set"
         ],
         "kind": "choice",
         "category": "tools",
@@ -22130,9 +22164,10 @@
     "source": "EGW",
     "grants": [
       {
-        "id": "EGW/Background/Myriad Operative (Criminal)@0#tools:choice:from=dice set,dragonchess set,playing card set,three-dragon ante set",
+        "id": "EGW/Background/Myriad Operative (Criminal)@0#tools:choice:from",
         "aliases": [
-          "EGW/Background/Myriad Operative (Criminal)@0#0"
+          "EGW/Background/Myriad Operative (Criminal)@0#0",
+          "EGW/Background/Myriad Operative (Criminal)@0#tools:choice:from=dice set,dragonchess set,playing card set,three-dragon ante set"
         ],
         "kind": "choice",
         "category": "tools",
@@ -22559,9 +22594,10 @@
     "source": "PHB",
     "grants": [
       {
-        "id": "PHB/Background/Noble@0#tools:choice:from=dice set,dragonchess set,playing card set,three-dragon ante set",
+        "id": "PHB/Background/Noble@0#tools:choice:from",
         "aliases": [
-          "PHB/Background/Noble@0#0"
+          "PHB/Background/Noble@0#0",
+          "PHB/Background/Noble@0#tools:choice:from=dice set,dragonchess set,playing card set,three-dragon ante set"
         ],
         "kind": "choice",
         "category": "tools",
@@ -23472,9 +23508,10 @@
     "source": "PHB",
     "grants": [
       {
-        "id": "PHB/Background/Outlander@0#tools:choice:from=bagpipes,drum,dulcimer,flute,horn,lute,lyre,pan flute,shawm,viol",
+        "id": "PHB/Background/Outlander@0#tools:choice:from",
         "aliases": [
-          "PHB/Background/Outlander@0#0"
+          "PHB/Background/Outlander@0#0",
+          "PHB/Background/Outlander@0#tools:choice:from=bagpipes,drum,dulcimer,flute,horn,lute,lyre,pan flute,shawm,viol"
         ],
         "kind": "choice",
         "category": "tools",
@@ -23924,9 +23961,10 @@
     "source": "AI",
     "grants": [
       {
-        "id": "AI/Background/Plaintiff@0#tools:choice:from=alchemist's supplies,brewer's supplies,calligrapher's supplies,carpenter's tools,cartographer's tools,cobbler's tools,cook's utensils,glassblower's tools,jeweler's tools,leatherworker's tools,mason's tools,painter's supplies,potter's tools,smith's tools,tinker's tools,weaver's tools,woodcarver's tools",
+        "id": "AI/Background/Plaintiff@0#tools:choice:from",
         "aliases": [
-          "AI/Background/Plaintiff@0#0"
+          "AI/Background/Plaintiff@0#0",
+          "AI/Background/Plaintiff@0#tools:choice:from=alchemist's supplies,brewer's supplies,calligrapher's supplies,carpenter's tools,cartographer's tools,cobbler's tools,cook's utensils,glassblower's tools,jeweler's tools,leatherworker's tools,mason's tools,painter's supplies,potter's tools,smith's tools,tinker's tools,weaver's tools,woodcarver's tools"
         ],
         "kind": "choice",
         "category": "tools",
@@ -24649,9 +24687,10 @@
     "source": "SCC",
     "grants": [
       {
-        "id": "SCC/Background/Prismari Student@0#tools:choice:from=alchemist's supplies,bagpipes,brewer's supplies,calligrapher's supplies,carpenter's tools,cartographer's tools,cobbler's tools,cook's utensils,drum,dulcimer,flute,glassblower's tools,horn,jeweler's tools,leatherworker's tools,lute,lyre,mason's tools,painter's supplies,pan flute,potter's tools,shawm,smith's tools,tinker's tools,viol,weaver's tools,woodcarver's tools",
+        "id": "SCC/Background/Prismari Student@0#tools:choice:from",
         "aliases": [
-          "SCC/Background/Prismari Student@0#0"
+          "SCC/Background/Prismari Student@0#0",
+          "SCC/Background/Prismari Student@0#tools:choice:from=alchemist's supplies,bagpipes,brewer's supplies,calligrapher's supplies,carpenter's tools,cartographer's tools,cobbler's tools,cook's utensils,drum,dulcimer,flute,glassblower's tools,horn,jeweler's tools,leatherworker's tools,lute,lyre,mason's tools,painter's supplies,pan flute,potter's tools,shawm,smith's tools,tinker's tools,viol,weaver's tools,woodcarver's tools"
         ],
         "kind": "choice",
         "category": "tools",
@@ -24877,9 +24916,10 @@
     "source": "SCC",
     "grants": [
       {
-        "id": "SCC/Background/Quandrix Student@0#tools:choice:from=alchemist's supplies,brewer's supplies,calligrapher's supplies,carpenter's tools,cartographer's tools,cobbler's tools,cook's utensils,glassblower's tools,jeweler's tools,leatherworker's tools,mason's tools,painter's supplies,potter's tools,smith's tools,tinker's tools,weaver's tools,woodcarver's tools",
+        "id": "SCC/Background/Quandrix Student@0#tools:choice:from",
         "aliases": [
-          "SCC/Background/Quandrix Student@0#0"
+          "SCC/Background/Quandrix Student@0#0",
+          "SCC/Background/Quandrix Student@0#tools:choice:from=alchemist's supplies,brewer's supplies,calligrapher's supplies,carpenter's tools,cartographer's tools,cobbler's tools,cook's utensils,glassblower's tools,jeweler's tools,leatherworker's tools,mason's tools,painter's supplies,potter's tools,smith's tools,tinker's tools,weaver's tools,woodcarver's tools"
         ],
         "kind": "choice",
         "category": "tools",
@@ -25097,9 +25137,10 @@
     "source": "GGR",
     "grants": [
       {
-        "id": "GGR/Background/Rakdos Cultist@0#tools:choice:from=bagpipes,drum,dulcimer,flute,horn,lute,lyre,pan flute,shawm,viol",
+        "id": "GGR/Background/Rakdos Cultist@0#tools:choice:from",
         "aliases": [
-          "GGR/Background/Rakdos Cultist@0#0"
+          "GGR/Background/Rakdos Cultist@0#0",
+          "GGR/Background/Rakdos Cultist@0#tools:choice:from=bagpipes,drum,dulcimer,flute,horn,lute,lyre,pan flute,shawm,viol"
         ],
         "kind": "choice",
         "category": "tools",
@@ -25121,9 +25162,10 @@
         }
       },
       {
-        "id": "GGR/Background/Rakdos Cultist@0#languages:choice:from=Abyssal,Giant",
+        "id": "GGR/Background/Rakdos Cultist@0#languages:choice:from",
         "aliases": [
-          "GGR/Background/Rakdos Cultist@0#1"
+          "GGR/Background/Rakdos Cultist@0#1",
+          "GGR/Background/Rakdos Cultist@0#languages:choice:from=Abyssal,Giant"
         ],
         "kind": "choice",
         "category": "languages",
@@ -26079,9 +26121,10 @@
     "source": "BMT",
     "grants": [
       {
-        "id": "BMT/Background/Rewarded@0#tools:choice:from=dice set,dragonchess set,playing card set,three-dragon ante set",
+        "id": "BMT/Background/Rewarded@0#tools:choice:from",
         "aliases": [
-          "BMT/Background/Rewarded@0#0"
+          "BMT/Background/Rewarded@0#0",
+          "BMT/Background/Rewarded@0#tools:choice:from=dice set,dragonchess set,playing card set,three-dragon ante set"
         ],
         "kind": "choice",
         "category": "tools",
@@ -26316,9 +26359,10 @@
     "source": "AI",
     "grants": [
       {
-        "id": "AI/Background/Rival Intern@0#tools:choice:from=alchemist's supplies,brewer's supplies,calligrapher's supplies,carpenter's tools,cartographer's tools,cobbler's tools,cook's utensils,glassblower's tools,jeweler's tools,leatherworker's tools,mason's tools,painter's supplies,potter's tools,smith's tools,tinker's tools,weaver's tools,woodcarver's tools",
+        "id": "AI/Background/Rival Intern@0#tools:choice:from",
         "aliases": [
-          "AI/Background/Rival Intern@0#0"
+          "AI/Background/Rival Intern@0#0",
+          "AI/Background/Rival Intern@0#tools:choice:from=alchemist's supplies,brewer's supplies,calligrapher's supplies,carpenter's tools,cartographer's tools,cobbler's tools,cook's utensils,glassblower's tools,jeweler's tools,leatherworker's tools,mason's tools,painter's supplies,potter's tools,smith's tools,tinker's tools,weaver's tools,woodcarver's tools"
         ],
         "kind": "choice",
         "category": "tools",
@@ -26713,9 +26757,10 @@
     "source": "BMT",
     "grants": [
       {
-        "id": "BMT/Background/Ruined@0#tools:choice:from=dice set,dragonchess set,playing card set,three-dragon ante set",
+        "id": "BMT/Background/Ruined@0#tools:choice:from",
         "aliases": [
-          "BMT/Background/Ruined@0#0"
+          "BMT/Background/Ruined@0#0",
+          "BMT/Background/Ruined@0#tools:choice:from=dice set,dragonchess set,playing card set,three-dragon ante set"
         ],
         "kind": "choice",
         "category": "tools",
@@ -26950,9 +26995,10 @@
     "source": "BGG",
     "grants": [
       {
-        "id": "BGG/Background/Rune Carver@0#tools:choice:from=alchemist's supplies,brewer's supplies,calligrapher's supplies,carpenter's tools,cartographer's tools,cobbler's tools,cook's utensils,glassblower's tools,jeweler's tools,leatherworker's tools,mason's tools,painter's supplies,potter's tools,smith's tools,tinker's tools,weaver's tools,woodcarver's tools",
+        "id": "BGG/Background/Rune Carver@0#tools:choice:from",
         "aliases": [
-          "BGG/Background/Rune Carver@0#0"
+          "BGG/Background/Rune Carver@0#0",
+          "BGG/Background/Rune Carver@0#tools:choice:from=alchemist's supplies,brewer's supplies,calligrapher's supplies,carpenter's tools,cartographer's tools,cobbler's tools,cook's utensils,glassblower's tools,jeweler's tools,leatherworker's tools,mason's tools,painter's supplies,potter's tools,smith's tools,tinker's tools,weaver's tools,woodcarver's tools"
         ],
         "kind": "choice",
         "category": "tools",
@@ -27970,9 +28016,10 @@
     "source": "GGR",
     "grants": [
       {
-        "id": "GGR/Background/Selesnya Initiate@0#tools:choice:from=alchemist's supplies,bagpipes,brewer's supplies,calligrapher's supplies,carpenter's tools,cartographer's tools,cobbler's tools,cook's utensils,drum,dulcimer,flute,glassblower's tools,horn,jeweler's tools,leatherworker's tools,lute,lyre,mason's tools,painter's supplies,pan flute,potter's tools,shawm,smith's tools,tinker's tools,viol,weaver's tools,woodcarver's tools",
+        "id": "GGR/Background/Selesnya Initiate@0#tools:choice:from",
         "aliases": [
-          "GGR/Background/Selesnya Initiate@0#0"
+          "GGR/Background/Selesnya Initiate@0#0",
+          "GGR/Background/Selesnya Initiate@0#tools:choice:from=alchemist's supplies,bagpipes,brewer's supplies,calligrapher's supplies,carpenter's tools,cartographer's tools,cobbler's tools,cook's utensils,drum,dulcimer,flute,glassblower's tools,horn,jeweler's tools,leatherworker's tools,lute,lyre,mason's tools,painter's supplies,pan flute,potter's tools,shawm,smith's tools,tinker's tools,viol,weaver's tools,woodcarver's tools"
         ],
         "kind": "choice",
         "category": "tools",
@@ -30127,9 +30174,10 @@
     "source": "PHB",
     "grants": [
       {
-        "id": "PHB/Background/Soldier@0#tools:choice:from=dice set,dragonchess set,playing card set,three-dragon ante set",
+        "id": "PHB/Background/Soldier@0#tools:choice:from",
         "aliases": [
-          "PHB/Background/Soldier@0#0"
+          "PHB/Background/Soldier@0#0",
+          "PHB/Background/Soldier@0#tools:choice:from=dice set,dragonchess set,playing card set,three-dragon ante set"
         ],
         "kind": "choice",
         "category": "tools",
@@ -30559,9 +30607,10 @@
     "source": "SCAG",
     "grants": [
       {
-        "id": "SCAG/Background/Urban Bounty Hunter@0#tools:choice:from=bagpipes,dice set,dragonchess set,drum,dulcimer,flute,horn,lute,lyre,pan flute,playing card set,shawm,thieves' tools,three-dragon ante set,viol",
+        "id": "SCAG/Background/Urban Bounty Hunter@0#tools:choice:from",
         "aliases": [
-          "SCAG/Background/Urban Bounty Hunter@0#0"
+          "SCAG/Background/Urban Bounty Hunter@0#0",
+          "SCAG/Background/Urban Bounty Hunter@0#tools:choice:from=bagpipes,dice set,dragonchess set,drum,dulcimer,flute,horn,lute,lyre,pan flute,playing card set,shawm,thieves' tools,three-dragon ante set,viol"
         ],
         "kind": "choice",
         "category": "tools",
@@ -31013,9 +31062,10 @@
     "source": "SCAG",
     "grants": [
       {
-        "id": "SCAG/Background/Uthgardt Tribe Member@0#tools:choice:from=alchemist's supplies,bagpipes,brewer's supplies,calligrapher's supplies,carpenter's tools,cartographer's tools,cobbler's tools,cook's utensils,drum,dulcimer,flute,glassblower's tools,horn,jeweler's tools,leatherworker's tools,lute,lyre,mason's tools,painter's supplies,pan flute,potter's tools,shawm,smith's tools,tinker's tools,viol,weaver's tools,woodcarver's tools",
+        "id": "SCAG/Background/Uthgardt Tribe Member@0#tools:choice:from",
         "aliases": [
-          "SCAG/Background/Uthgardt Tribe Member@0#0"
+          "SCAG/Background/Uthgardt Tribe Member@0#0",
+          "SCAG/Background/Uthgardt Tribe Member@0#tools:choice:from=alchemist's supplies,bagpipes,brewer's supplies,calligrapher's supplies,carpenter's tools,cartographer's tools,cobbler's tools,cook's utensils,drum,dulcimer,flute,glassblower's tools,horn,jeweler's tools,leatherworker's tools,lute,lyre,mason's tools,painter's supplies,pan flute,potter's tools,shawm,smith's tools,tinker's tools,viol,weaver's tools,woodcarver's tools"
         ],
         "kind": "choice",
         "category": "tools",
@@ -31248,9 +31298,10 @@
     "source": "PHB",
     "grants": [
       {
-        "id": "PHB/Background/Variant Criminal (Spy)@0#tools:choice:from=dice set,dragonchess set,playing card set,three-dragon ante set",
+        "id": "PHB/Background/Variant Criminal (Spy)@0#tools:choice:from",
         "aliases": [
-          "PHB/Background/Variant Criminal (Spy)@0#0"
+          "PHB/Background/Variant Criminal (Spy)@0#0",
+          "PHB/Background/Variant Criminal (Spy)@0#tools:choice:from=dice set,dragonchess set,playing card set,three-dragon ante set"
         ],
         "kind": "choice",
         "category": "tools",
@@ -31688,9 +31739,10 @@
         ]
       },
       {
-        "id": "PHB/Background/Variant Entertainer (Gladiator)@0#tools:choice:from=bagpipes,drum,dulcimer,flute,horn,lute,lyre,pan flute,shawm,viol",
+        "id": "PHB/Background/Variant Entertainer (Gladiator)@0#tools:choice:from",
         "aliases": [
-          "PHB/Background/Variant Entertainer (Gladiator)@0#1"
+          "PHB/Background/Variant Entertainer (Gladiator)@0#1",
+          "PHB/Background/Variant Entertainer (Gladiator)@0#tools:choice:from=bagpipes,drum,dulcimer,flute,horn,lute,lyre,pan flute,shawm,viol"
         ],
         "kind": "choice",
         "category": "tools",
@@ -32151,9 +32203,10 @@
     "source": "PHB",
     "grants": [
       {
-        "id": "PHB/Background/Variant Guild Artisan (Guild Merchant)@0#tools:choice:from=alchemist's supplies,brewer's supplies,calligrapher's supplies,carpenter's tools,cartographer's tools,cobbler's tools,cook's utensils,glassblower's tools,jeweler's tools,leatherworker's tools,mason's tools,navigator's tools,painter's supplies,potter's tools,smith's tools,tinker's tools,weaver's tools,woodcarver's tools",
+        "id": "PHB/Background/Variant Guild Artisan (Guild Merchant)@0#tools:choice:from",
         "aliases": [
-          "PHB/Background/Variant Guild Artisan (Guild Merchant)@0#0"
+          "PHB/Background/Variant Guild Artisan (Guild Merchant)@0#0",
+          "PHB/Background/Variant Guild Artisan (Guild Merchant)@0#tools:choice:from=alchemist's supplies,brewer's supplies,calligrapher's supplies,carpenter's tools,cartographer's tools,cobbler's tools,cook's utensils,glassblower's tools,jeweler's tools,leatherworker's tools,mason's tools,navigator's tools,painter's supplies,potter's tools,smith's tools,tinker's tools,weaver's tools,woodcarver's tools"
         ],
         "kind": "choice",
         "category": "tools",
@@ -32677,9 +32730,10 @@
     "source": "PHB",
     "grants": [
       {
-        "id": "PHB/Background/Variant Noble (Knight)@0#tools:choice:from=dice set,dragonchess set,playing card set,three-dragon ante set",
+        "id": "PHB/Background/Variant Noble (Knight)@0#tools:choice:from",
         "aliases": [
-          "PHB/Background/Variant Noble (Knight)@0#0"
+          "PHB/Background/Variant Noble (Knight)@0#0",
+          "PHB/Background/Variant Noble (Knight)@0#tools:choice:from=dice set,dragonchess set,playing card set,three-dragon ante set"
         ],
         "kind": "choice",
         "category": "tools",
@@ -33063,9 +33117,10 @@
     "source": "PHB",
     "grants": [
       {
-        "id": "PHB/Background/Variant Noble (Retainers)@0#tools:choice:from=dice set,dragonchess set,playing card set,three-dragon ante set",
+        "id": "PHB/Background/Variant Noble (Retainers)@0#tools:choice:from",
         "aliases": [
-          "PHB/Background/Variant Noble (Retainers)@0#0"
+          "PHB/Background/Variant Noble (Retainers)@0#0",
+          "PHB/Background/Variant Noble (Retainers)@0#tools:choice:from=dice set,dragonchess set,playing card set,three-dragon ante set"
         ],
         "kind": "choice",
         "category": "tools",
@@ -33810,9 +33865,10 @@
     "source": "PSA",
     "grants": [
       {
-        "id": "PSA/Background/Vizier@0#tools:choice:from=alchemist's supplies,brewer's supplies,calligrapher's supplies,carpenter's tools,cartographer's tools,cobbler's tools,cook's utensils,glassblower's tools,jeweler's tools,leatherworker's tools,mason's tools,painter's supplies,potter's tools,smith's tools,tinker's tools,weaver's tools,woodcarver's tools",
+        "id": "PSA/Background/Vizier@0#tools:choice:from",
         "aliases": [
-          "PSA/Background/Vizier@0#0"
+          "PSA/Background/Vizier@0#0",
+          "PSA/Background/Vizier@0#tools:choice:from=alchemist's supplies,brewer's supplies,calligrapher's supplies,carpenter's tools,cartographer's tools,cobbler's tools,cook's utensils,glassblower's tools,jeweler's tools,leatherworker's tools,mason's tools,painter's supplies,potter's tools,smith's tools,tinker's tools,weaver's tools,woodcarver's tools"
         ],
         "kind": "choice",
         "category": "tools",
@@ -33841,9 +33897,10 @@
         }
       },
       {
-        "id": "PSA/Background/Vizier@0#tools:choice:from=bagpipes,drum,dulcimer,flute,horn,lute,lyre,pan flute,shawm,viol",
+        "id": "PSA/Background/Vizier@0#tools:choice:from~2",
         "aliases": [
-          "PSA/Background/Vizier@0#1"
+          "PSA/Background/Vizier@0#1",
+          "PSA/Background/Vizier@0#tools:choice:from=bagpipes,drum,dulcimer,flute,horn,lute,lyre,pan flute,shawm,viol"
         ],
         "kind": "choice",
         "category": "tools",
@@ -34230,9 +34287,10 @@
     "source": "PSA",
     "grants": [
       {
-        "id": "PSA/Background/Vizier (Dissenter)@0#tools:choice:from=alchemist's supplies,brewer's supplies,calligrapher's supplies,carpenter's tools,cartographer's tools,cobbler's tools,cook's utensils,glassblower's tools,jeweler's tools,leatherworker's tools,mason's tools,painter's supplies,potter's tools,smith's tools,tinker's tools,weaver's tools,woodcarver's tools",
+        "id": "PSA/Background/Vizier (Dissenter)@0#tools:choice:from",
         "aliases": [
-          "PSA/Background/Vizier (Dissenter)@0#0"
+          "PSA/Background/Vizier (Dissenter)@0#0",
+          "PSA/Background/Vizier (Dissenter)@0#tools:choice:from=alchemist's supplies,brewer's supplies,calligrapher's supplies,carpenter's tools,cartographer's tools,cobbler's tools,cook's utensils,glassblower's tools,jeweler's tools,leatherworker's tools,mason's tools,painter's supplies,potter's tools,smith's tools,tinker's tools,weaver's tools,woodcarver's tools"
         ],
         "kind": "choice",
         "category": "tools",
@@ -34261,9 +34319,10 @@
         }
       },
       {
-        "id": "PSA/Background/Vizier (Dissenter)@0#tools:choice:from=bagpipes,drum,dulcimer,flute,horn,lute,lyre,pan flute,shawm,viol",
+        "id": "PSA/Background/Vizier (Dissenter)@0#tools:choice:from~2",
         "aliases": [
-          "PSA/Background/Vizier (Dissenter)@0#1"
+          "PSA/Background/Vizier (Dissenter)@0#1",
+          "PSA/Background/Vizier (Dissenter)@0#tools:choice:from=bagpipes,drum,dulcimer,flute,horn,lute,lyre,pan flute,shawm,viol"
         ],
         "kind": "choice",
         "category": "tools",
@@ -34981,9 +35040,10 @@
     "source": "SCAG",
     "grants": [
       {
-        "id": "SCAG/Background/Waterdhavian Noble@0#tools:choice:from=bagpipes,dice set,dragonchess set,drum,dulcimer,flute,horn,lute,lyre,pan flute,playing card set,shawm,three-dragon ante set,viol",
+        "id": "SCAG/Background/Waterdhavian Noble@0#tools:choice:from",
         "aliases": [
-          "SCAG/Background/Waterdhavian Noble@0#0"
+          "SCAG/Background/Waterdhavian Noble@0#0",
+          "SCAG/Background/Waterdhavian Noble@0#tools:choice:from=bagpipes,dice set,dragonchess set,drum,dulcimer,flute,horn,lute,lyre,pan flute,playing card set,shawm,three-dragon ante set,viol"
         ],
         "kind": "choice",
         "category": "tools",
@@ -35258,9 +35318,10 @@
     "source": "WBtW",
     "grants": [
       {
-        "id": "WBtW/Background/Witchlight Hand@0#tools:choice:from=bagpipes,disguise kit,drum,dulcimer,flute,horn,lute,lyre,pan flute,shawm,viol",
+        "id": "WBtW/Background/Witchlight Hand@0#tools:choice:from",
         "aliases": [
-          "WBtW/Background/Witchlight Hand@0#0"
+          "WBtW/Background/Witchlight Hand@0#0",
+          "WBtW/Background/Witchlight Hand@0#tools:choice:from=bagpipes,disguise kit,drum,dulcimer,flute,horn,lute,lyre,pan flute,shawm,viol"
         ],
         "kind": "choice",
         "category": "tools",

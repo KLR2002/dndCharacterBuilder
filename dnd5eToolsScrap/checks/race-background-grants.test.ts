@@ -45,7 +45,7 @@ test("a race's structured tool and language entries become race grants, in field
   assert.deepEqual(
     race.grants?.map((grant) => [grant.id, grant.kind, grant.category]),
     [
-      ["TST/Race/Sample Folk@0#tools:choice:from=alchemist's supplies,brewer's supplies,calligrapher's supplies,carpenter's tools,cartographer's tools,cobbler's tools,cook's utensils,glassblower's tools,jeweler's tools,leatherworker's tools,mason's tools,painter's supplies,potter's tools,smith's tools,tinker's tools,weaver's tools,woodcarver's tools", "choice", "tools"],
+      ["TST/Race/Sample Folk@0#tools:choice:from", "choice", "tools"],
       ["TST/Race/Sample Folk@0#languages:fixed:Common", "fixed", "languages"],
       ["TST/Race/Sample Folk@0#languages:choice:any", "choice", "languages"],
     ],
@@ -91,7 +91,7 @@ test("a background's tool and language entries become background grants named af
   assert.deepEqual(
     result.grants?.map((grant) => [grant.id, grant.kind, grant.category]),
     [
-      ["TST/Background/Sample Trade@0#tools:choice:from=dice set,dragonchess set,playing card set,three-dragon ante set", "choice", "tools"],
+      ["TST/Background/Sample Trade@0#tools:choice:from", "choice", "tools"],
       ["TST/Background/Sample Trade@0#tools:fixed:vehicles (land)", "fixed", "tools"],
       ["TST/Background/Sample Trade@0#languages:choice:any", "choice", "languages"],
     ],

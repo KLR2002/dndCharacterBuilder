@@ -195,7 +195,7 @@ test("an Expertise pick on a skill a Prodigy pick gave is released with a notice
  * with no grants, so the Totem tests read the real one.
  */
 const totemCompendium = () => inMemoryCompendium({ classes: loadTestCatalog("classes") }, { integrated: true });
-const TIGER_ID = "PHB/Barbarian/Path of the Totem Warrior/Tiger@6#skills:choice:from=Acrobatics,Athletics,Stealth,Survival";
+const TIGER_ID = "PHB/Barbarian/Path of the Totem Warrior/Tiger@6#skills:choice:from";
 const ASPECT_6 = "PHB__Barbarian__Path of the Totem Warrior__Aspect of the Beast 6";
 
 const totemAt6 = (aspect: string[] | undefined, extra: Partial<Character> = {}) =>

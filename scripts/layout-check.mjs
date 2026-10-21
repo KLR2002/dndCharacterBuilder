@@ -292,7 +292,7 @@ function kenseiCharacter() {
     currentHp: 22,
     startingGrantsApplied: true,
     backgroundGrantsApplied: true,
-    proficiencyPicks: { [`${KENSEI_PATH}#weapons:choice:base=martial,simple;without=heavy,special;plus=longbow;attack=melee`]: ["Rapier"] },
+    proficiencyPicks: { [`${KENSEI_PATH}#weapons:choice:rule`]: ["Rapier"] },
   });
 }
 

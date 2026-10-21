@@ -294,7 +294,7 @@ test("a folded option carries the Proficiency Grants its own prose gives, and it
   assert.equal(hawk.level, 6);
   assert.deepEqual(hawk.grants?.map(({ aliases: _aliases, ...grant }) => grant), [
     {
-      id: "PHB/Barbarian/Path of the Totem Warrior/Hawk@6#skills:choice:from=Athletics,Stealth",
+      id: "PHB/Barbarian/Path of the Totem Warrior/Hawk@6#skills:choice:from",
       kind: "choice",
       category: "skills",
       count: 2,

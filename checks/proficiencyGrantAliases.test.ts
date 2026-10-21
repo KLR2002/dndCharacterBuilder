@@ -4,7 +4,7 @@ import type { Character } from "../src/types/character.ts";
 import type { ProficiencyGrant } from "../src/types/dnd5e.ts";
 import { reconcile, reconcileForActiveBooks } from "../src/rules/characterReconciler.ts";
 import { proficiencySheet, type SheetEntry } from "../src/rules/proficiencySheet.ts";
-import { inMemoryCompendium, makeChar } from "./testUtils.ts";
+import { inMemoryCompendium, integratedTestCompendium, makeChar } from "./testUtils.ts";
 import { vellariRace, wardenClass } from "./proficiencySheetFixture.ts";
 
 // Every class, feature, race, grant and name in this file is invented.
@@ -108,4 +108,67 @@ test("a former id of an optional feature that is turned off moves first, then it
   const released = reconcile(saved, optionalCompendium);
   assert.equal(released.proficiencyPicks, undefined, "the pick is released, not left under the former id");
   assert.deepEqual(released.needsReview, ["Elvish removed from Lantern Lore: feature is turned off"]);
+});
+
+// A choice's id names its kind, not its pool. The first release named the pool in the id, so a re-scrape that
+// changed the options moved the id with no alias and stranded the pick.
+
+const SCRIPT_ID = "FIX/Warden/Lantern Script@3#languages:choice:from";
+const SCRIPT_FIRST_RELEASE = "FIX/Warden/Lantern Script@3#languages:choice:from=Tidal,Vellari";
+const SCRIPT_FORMER = "FIX/Warden/Lantern Script@3#0";
+
+/** A Lantern Script grant, from a pool of names. Its aliases are its former position id and its first-release id. */
+const scriptGrant = (names: string[]): ProficiencyGrant => ({
+  id: SCRIPT_ID,
+  aliases: [SCRIPT_FORMER, SCRIPT_FIRST_RELEASE],
+  kind: "choice",
+  category: "languages",
+  count: 1,
+  pool: { kind: "names", names },
+});
+
+const scriptCompendium = (names: string[]) =>
+  inMemoryCompendium({
+    classes: [
+      wardenClass({
+        features: [{ name: "Lantern Script", level: 3, description: "Placeholder description for Lantern Script.", grants: [scriptGrant(names)] }],
+      }),
+    ],
+  });
+
+test("a choice's pool changes, an option added or removed, and a saved pick still resolves under the same id", () => {
+  for (const pool of [["Tidal", "Vellari"], ["Tidal", "Vellari", "Ember Tongue"], ["Tidal"]]) {
+    const catalog = scriptCompendium(pool);
+    const reconciled = reconcile(held({ proficiencyPicks: { [SCRIPT_ID]: ["Tidal"] } }), catalog);
+    assert.deepEqual(reconciled.proficiencyPicks, { [SCRIPT_ID]: ["Tidal"] }, `pool of ${pool.join(", ")} keeps the pick`);
+    assert.ok(
+      languageNames(proficiencySheet(reconciled, { compendium: catalog }).languages).includes("Tidal"),
+      `pool of ${pool.join(", ")} shows the pick`,
+    );
+  }
+});
+
+test("a pick saved under the choice's first-release id loads under the choice's id", () => {
+  const catalog = scriptCompendium(["Tidal", "Vellari"]);
+  const migrated = reconcile(held({ proficiencyPicks: { [SCRIPT_FIRST_RELEASE]: ["Vellari"] } }), catalog);
+  assert.deepEqual(migrated.proficiencyPicks, { [SCRIPT_ID]: ["Vellari"] });
+  assert.ok(languageNames(proficiencySheet(migrated, { compendium: catalog }).languages).includes("Vellari"), "the sheet shows the pick");
+  assert.deepEqual(reconcile(migrated, catalog), migrated, "migrating again changes nothing");
+});
+
+const KENSEI_FIRST_RELEASE = "XGE/Monk/Way of the Kensei/Path of the Kensei@3#tools:choice:from=calligrapher's supplies,painter's supplies";
+const KENSEI_ID = "XGE/Monk/Way of the Kensei/Path of the Kensei@3#tools:choice:from";
+
+test("on the integrated catalog, a Kensei pick saved under its first-release id loads under the choice's id", () => {
+  const catalog = integratedTestCompendium();
+  const saved = makeChar({
+    classes: [{ className: "Monk", source: "PHB", level: 3, subclassName: "Way of the Kensei", subclassSource: "XGE" }],
+    proficiencyPicks: { [KENSEI_FIRST_RELEASE]: ["Calligrapher's Supplies"] },
+  });
+  const migrated = reconcile(saved, catalog);
+  assert.deepEqual(migrated.proficiencyPicks, { [KENSEI_ID]: ["Calligrapher's Supplies"] });
+  assert.ok(
+    proficiencySheet(migrated, { compendium: catalog }).tools.some((entry) => entry.name === "Calligrapher's Supplies"),
+    "the sheet shows the pick",
+  );
 });
