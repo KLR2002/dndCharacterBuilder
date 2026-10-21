@@ -1,0 +1,14 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "incremental": true,
+    "types": ["node"],
+    "tsBuildInfoFile": "./node_modules/.cache/typecheck/checks.tsbuildinfo"
+  },
+  "include": [
+    "checks/**/*.ts",
+    ".expo/types/**/*.ts",
+    "expo-env.d.ts"
+  ]
+}
