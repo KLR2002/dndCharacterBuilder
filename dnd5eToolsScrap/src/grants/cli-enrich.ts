@@ -10,7 +10,7 @@ import fs from "node:fs";
 import { fileURLToPath } from "node:url";
 import { PROFICIENCY_GRANT_OVERRIDES } from "../overrides/proficiency-grants.ts";
 import { enrichGrantFiles } from "./enrich.ts";
-import { allRefs } from "./subjects.ts";
+import { allRefs, type TrackedData } from "./subjects.ts";
 
 const dataDir = fileURLToPath(new URL("../../data/", import.meta.url));
 const paths = { classes: `${dataDir}classes.json`, feats: `${dataDir}feats.json` };
@@ -22,7 +22,7 @@ for (const name of ["classes", "feats"] as const) {
   if (after[name] !== before[name]) fs.writeFileSync(paths[name], after[name]);
 }
 
-const trackedData = { classes: JSON.parse(after.classes), feats: JSON.parse(after.feats) };
+const trackedData: TrackedData = { classes: JSON.parse(after.classes), feats: JSON.parse(after.feats) };
 const granted =
   allRefs(trackedData).filter((ref) => ref.holder.grants && ref.holder.grants.length > 0).length +
   trackedData.classes.filter((cls) => cls.grants && cls.grants.length > 0).length;
