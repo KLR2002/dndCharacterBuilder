@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync, writeFileSync } from "node:fs";
-import type { ClassData, FeatData, ProficiencyGrant } from "../src/types/dnd5e.ts";
+import type { BackgroundData, ClassData, FeatData, ProficiencyGrant, RaceData } from "../src/types/dnd5e.ts";
 import { loadSrdCatalog, loadTestCatalog } from "./testUtils.ts";
 
 /**
@@ -14,24 +14,40 @@ import { loadSrdCatalog, loadTestCatalog } from "./testUtils.ts";
 
 const RECORD_PATH = new URL("./fixtures/proficiencyGrantIds.json", import.meta.url);
 
-/** Every grant id on a class feature, a subclass feature or a feat: the owners whose grants the sheet carries. */
-function grantIdsOf(classes: ClassData[], feats: FeatData[]): string[] {
-  const grantsOf = (features: { grants?: ProficiencyGrant[] }[]) =>
-    features.flatMap((feature) => (feature.grants ?? []).map((grant) => grant.id));
+interface TrackedRecords {
+  classes: ClassData[];
+  feats: FeatData[];
+  races: RaceData[];
+  backgrounds: BackgroundData[];
+}
+
+/** Every grant id a rule carries: class and subclass features, their folded options, classes, feats, races, subraces and backgrounds. */
+function grantIdsOf({ classes, feats, races, backgrounds }: TrackedRecords): string[] {
+  const grantsOf = (carriers: { grants?: ProficiencyGrant[] }[]) =>
+    carriers.flatMap((carrier) => (carrier.grants ?? []).map((grant) => grant.id));
+  const featuresOf = (features: { grants?: ProficiencyGrant[]; choices?: { options?: { grants?: ProficiencyGrant[] }[] } }[]) =>
+    grantsOf(features.flatMap((feature) => [feature, ...(feature.choices?.options ?? [])]));
   return [
     ...classes.flatMap((cls) => [
-      ...grantsOf(cls.features),
-      ...cls.subclasses.flatMap((sub) => grantsOf(sub.features)),
+      ...grantsOf([cls]),
+      ...featuresOf(cls.features),
+      ...cls.subclasses.flatMap((sub) => featuresOf(sub.features)),
     ]),
     ...grantsOf(feats),
+    ...races.flatMap((race) => [...grantsOf([race]), ...grantsOf(race.subraces)]),
+    ...grantsOf(backgrounds),
   ];
 }
 
 /** The ids in the tracked data: the SRD Baseline and the integrated test catalog (scrap data when present). */
 function currentGrantIds(): string[] {
-  const srd = grantIdsOf(loadSrdCatalog<ClassData[]>("classes"), loadSrdCatalog<FeatData[]>("feats"));
-  const integrated = grantIdsOf(loadTestCatalog<ClassData[]>("classes"), loadTestCatalog<FeatData[]>("feats"));
-  return [...new Set([...srd, ...integrated])].sort();
+  const load = (loader: typeof loadSrdCatalog) => ({
+    classes: loader<ClassData[]>("classes"),
+    feats: loader<FeatData[]>("feats"),
+    races: loader<RaceData[]>("races"),
+    backgrounds: loader<BackgroundData[]>("backgrounds"),
+  });
+  return [...new Set([...grantIdsOf(load(loadSrdCatalog)), ...grantIdsOf(load(loadTestCatalog))])].sort();
 }
 
 test("the recorded grant ids are still present in the tracked class and feat data", () => {
