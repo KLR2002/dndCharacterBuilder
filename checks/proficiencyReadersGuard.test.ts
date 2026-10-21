@@ -16,7 +16,12 @@ const SHEET_FILE = "rules/proficiencySheet.ts";
 const PRIVATE_FOLDER = "rules/proficiencySources/";
 
 /** Proficiency tables only the sheet reads. A named import or re-export of one is a read. */
-const GUARDED_CONSTANTS = ["RACE_WEAPON_PROFICIENCIES", "MULTICLASS_PROFICIENCIES", "BACKGROUND_SKILL_PROFICIENCIES"];
+const GUARDED_CONSTANTS = [
+  "RACE_WEAPON_PROFICIENCIES",
+  "MULTICLASS_PROFICIENCIES",
+  "RACE_SKILL_PROFICIENCIES",
+  "BACKGROUND_SKILL_PROFICIENCIES",
+];
 
 /** The field names only the sheet reads. A leading dot matches a property access. */
 const GUARDED_FIELDS: { field: string; pattern: RegExp }[] = [
@@ -60,7 +65,7 @@ const ALLOWANCES: Allowance[] = [
   {
     files: ["rules/builderTransitions.ts"],
     fields: ["multiclassProficiencies", "skillProficiencies"],
-    reason: "writes the multiclass record the sheet reads, and grants or clears background skills in the chosenSkills bucket",
+    reason: "writes the multiclass record the sheet reads, and clears the background skill copies from the chosenSkills bucket",
   },
   {
     files: ["components/builder/BackgroundSection.tsx"],
@@ -86,11 +91,6 @@ const ALLOWANCES: Allowance[] = [
     files: ["rules/subclassSpells.ts"],
     fields: [".savingThrows"],
     reason: "a spell's own saving throw, not a class's",
-  },
-  {
-    files: ["rules/raceRuleChoices.ts"],
-    imports: ["rules/proficiencySources/skillGrants.ts"],
-    reason: "Ancestral Legacy asks whether the prior race grants any skill (a lineage rule, not held proficiency)",
   },
   {
     files: ["rules/builderTransitions.ts"],

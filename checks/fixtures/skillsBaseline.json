@@ -1,145 +1,91 @@
 {
  "srd | human soldier champion | L1 | books=all": {
-  "proficient": [
-   "Athletics",
-   "Intimidation"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | human soldier champion | L1 | books=PHB": {
-  "proficient": [
-   "Athletics",
-   "Intimidation"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | human soldier champion | L1 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
-  "proficient": [
-   "Athletics",
-   "Intimidation"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | human soldier champion | L3 | books=all": {
-  "proficient": [
-   "Athletics",
-   "Intimidation"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | human soldier champion | L3 | books=PHB": {
-  "proficient": [
-   "Athletics",
-   "Intimidation"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | human soldier champion | L3 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
-  "proficient": [
-   "Athletics",
-   "Intimidation"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | human soldier champion | L6 | books=all": {
-  "proficient": [
-   "Athletics",
-   "Intimidation"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | human soldier champion | L6 | books=PHB": {
-  "proficient": [
-   "Athletics",
-   "Intimidation"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | human soldier champion | L6 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
-  "proficient": [
-   "Athletics",
-   "Intimidation"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | human soldier champion | L11 | books=all": {
-  "proficient": [
-   "Athletics",
-   "Intimidation"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | human soldier champion | L11 | books=PHB": {
-  "proficient": [
-   "Athletics",
-   "Intimidation"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | human soldier champion | L11 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
-  "proficient": [
-   "Athletics",
-   "Intimidation"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | human soldier champion | L14 | books=all": {
-  "proficient": [
-   "Athletics",
-   "Intimidation"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | human soldier champion | L14 | books=PHB": {
-  "proficient": [
-   "Athletics",
-   "Intimidation"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | human soldier champion | L14 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
-  "proficient": [
-   "Athletics",
-   "Intimidation"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | human soldier champion | L17 | books=all": {
-  "proficient": [
-   "Athletics",
-   "Intimidation"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | human soldier champion | L17 | books=PHB": {
-  "proficient": [
-   "Athletics",
-   "Intimidation"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | human soldier champion | L17 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
-  "proficient": [
-   "Athletics",
-   "Intimidation"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
@@ -307,8 +253,6 @@
  },
  "srd | high elf sage evoker with a picked language | L1 | books=all": {
   "proficient": [
-   "Arcana",
-   "History",
    "Perception"
   ],
   "expertise": [],
@@ -316,8 +260,6 @@
  },
  "srd | high elf sage evoker with a picked language | L1 | books=PHB": {
   "proficient": [
-   "Arcana",
-   "History",
    "Perception"
   ],
   "expertise": [],
@@ -325,8 +267,6 @@
  },
  "srd | high elf sage evoker with a picked language | L1 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
   "proficient": [
-   "Arcana",
-   "History",
    "Perception"
   ],
   "expertise": [],
@@ -334,8 +274,6 @@
  },
  "srd | high elf sage evoker with a picked language | L3 | books=all": {
   "proficient": [
-   "Arcana",
-   "History",
    "Perception"
   ],
   "expertise": [],
@@ -343,8 +281,6 @@
  },
  "srd | high elf sage evoker with a picked language | L3 | books=PHB": {
   "proficient": [
-   "Arcana",
-   "History",
    "Perception"
   ],
   "expertise": [],
@@ -352,8 +288,6 @@
  },
  "srd | high elf sage evoker with a picked language | L3 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
   "proficient": [
-   "Arcana",
-   "History",
    "Perception"
   ],
   "expertise": [],
@@ -361,8 +295,6 @@
  },
  "srd | high elf sage evoker with a picked language | L6 | books=all": {
   "proficient": [
-   "Arcana",
-   "History",
    "Perception"
   ],
   "expertise": [],
@@ -370,8 +302,6 @@
  },
  "srd | high elf sage evoker with a picked language | L6 | books=PHB": {
   "proficient": [
-   "Arcana",
-   "History",
    "Perception"
   ],
   "expertise": [],
@@ -379,8 +309,6 @@
  },
  "srd | high elf sage evoker with a picked language | L6 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
   "proficient": [
-   "Arcana",
-   "History",
    "Perception"
   ],
   "expertise": [],
@@ -388,8 +316,6 @@
  },
  "srd | high elf sage evoker with a picked language | L11 | books=all": {
   "proficient": [
-   "Arcana",
-   "History",
    "Perception"
   ],
   "expertise": [],
@@ -397,8 +323,6 @@
  },
  "srd | high elf sage evoker with a picked language | L11 | books=PHB": {
   "proficient": [
-   "Arcana",
-   "History",
    "Perception"
   ],
   "expertise": [],
@@ -406,8 +330,6 @@
  },
  "srd | high elf sage evoker with a picked language | L11 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
   "proficient": [
-   "Arcana",
-   "History",
    "Perception"
   ],
   "expertise": [],
@@ -415,8 +337,6 @@
  },
  "srd | high elf sage evoker with a picked language | L14 | books=all": {
   "proficient": [
-   "Arcana",
-   "History",
    "Perception"
   ],
   "expertise": [],
@@ -424,8 +344,6 @@
  },
  "srd | high elf sage evoker with a picked language | L14 | books=PHB": {
   "proficient": [
-   "Arcana",
-   "History",
    "Perception"
   ],
   "expertise": [],
@@ -433,8 +351,6 @@
  },
  "srd | high elf sage evoker with a picked language | L14 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
   "proficient": [
-   "Arcana",
-   "History",
    "Perception"
   ],
   "expertise": [],
@@ -442,8 +358,6 @@
  },
  "srd | high elf sage evoker with a picked language | L17 | books=all": {
   "proficient": [
-   "Arcana",
-   "History",
    "Perception"
   ],
   "expertise": [],
@@ -451,8 +365,6 @@
  },
  "srd | high elf sage evoker with a picked language | L17 | books=PHB": {
   "proficient": [
-   "Arcana",
-   "History",
    "Perception"
   ],
   "expertise": [],
@@ -460,496 +372,278 @@
  },
  "srd | high elf sage evoker with a picked language | L17 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
   "proficient": [
-   "Arcana",
-   "History",
    "Perception"
   ],
   "expertise": [],
   "eligible": []
  },
  "srd | half-elf criminal thief | L1 | books=all": {
-  "proficient": [
-   "Deception",
-   "Stealth"
-  ],
+  "proficient": [],
   "expertise": [],
-  "eligible": [
-   "Deception",
-   "Stealth"
-  ]
+  "eligible": []
  },
  "srd | half-elf criminal thief | L1 | books=PHB": {
-  "proficient": [
-   "Deception",
-   "Stealth"
-  ],
+  "proficient": [],
   "expertise": [],
-  "eligible": [
-   "Deception",
-   "Stealth"
-  ]
+  "eligible": []
  },
  "srd | half-elf criminal thief | L1 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
-  "proficient": [
-   "Deception",
-   "Stealth"
-  ],
+  "proficient": [],
   "expertise": [],
-  "eligible": [
-   "Deception",
-   "Stealth"
-  ]
+  "eligible": []
  },
  "srd | half-elf criminal thief | L3 | books=all": {
-  "proficient": [
-   "Deception",
-   "Stealth"
-  ],
+  "proficient": [],
   "expertise": [],
-  "eligible": [
-   "Deception",
-   "Stealth"
-  ]
+  "eligible": []
  },
  "srd | half-elf criminal thief | L3 | books=PHB": {
-  "proficient": [
-   "Deception",
-   "Stealth"
-  ],
+  "proficient": [],
   "expertise": [],
-  "eligible": [
-   "Deception",
-   "Stealth"
-  ]
+  "eligible": []
  },
  "srd | half-elf criminal thief | L3 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
-  "proficient": [
-   "Deception",
-   "Stealth"
-  ],
+  "proficient": [],
   "expertise": [],
-  "eligible": [
-   "Deception",
-   "Stealth"
-  ]
+  "eligible": []
  },
  "srd | half-elf criminal thief | L6 | books=all": {
-  "proficient": [
-   "Deception",
-   "Stealth"
-  ],
+  "proficient": [],
   "expertise": [],
-  "eligible": [
-   "Deception",
-   "Stealth"
-  ]
+  "eligible": []
  },
  "srd | half-elf criminal thief | L6 | books=PHB": {
-  "proficient": [
-   "Deception",
-   "Stealth"
-  ],
+  "proficient": [],
   "expertise": [],
-  "eligible": [
-   "Deception",
-   "Stealth"
-  ]
+  "eligible": []
  },
  "srd | half-elf criminal thief | L6 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
-  "proficient": [
-   "Deception",
-   "Stealth"
-  ],
+  "proficient": [],
   "expertise": [],
-  "eligible": [
-   "Deception",
-   "Stealth"
-  ]
+  "eligible": []
  },
  "srd | half-elf criminal thief | L11 | books=all": {
-  "proficient": [
-   "Deception",
-   "Stealth"
-  ],
+  "proficient": [],
   "expertise": [],
-  "eligible": [
-   "Deception",
-   "Stealth"
-  ]
+  "eligible": []
  },
  "srd | half-elf criminal thief | L11 | books=PHB": {
-  "proficient": [
-   "Deception",
-   "Stealth"
-  ],
+  "proficient": [],
   "expertise": [],
-  "eligible": [
-   "Deception",
-   "Stealth"
-  ]
+  "eligible": []
  },
  "srd | half-elf criminal thief | L11 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
-  "proficient": [
-   "Deception",
-   "Stealth"
-  ],
+  "proficient": [],
   "expertise": [],
-  "eligible": [
-   "Deception",
-   "Stealth"
-  ]
+  "eligible": []
  },
  "srd | half-elf criminal thief | L14 | books=all": {
-  "proficient": [
-   "Deception",
-   "Stealth"
-  ],
+  "proficient": [],
   "expertise": [],
-  "eligible": [
-   "Deception",
-   "Stealth"
-  ]
+  "eligible": []
  },
  "srd | half-elf criminal thief | L14 | books=PHB": {
-  "proficient": [
-   "Deception",
-   "Stealth"
-  ],
+  "proficient": [],
   "expertise": [],
-  "eligible": [
-   "Deception",
-   "Stealth"
-  ]
+  "eligible": []
  },
  "srd | half-elf criminal thief | L14 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
-  "proficient": [
-   "Deception",
-   "Stealth"
-  ],
+  "proficient": [],
   "expertise": [],
-  "eligible": [
-   "Deception",
-   "Stealth"
-  ]
+  "eligible": []
  },
  "srd | half-elf criminal thief | L17 | books=all": {
-  "proficient": [
-   "Deception",
-   "Stealth"
-  ],
+  "proficient": [],
   "expertise": [],
-  "eligible": [
-   "Deception",
-   "Stealth"
-  ]
+  "eligible": []
  },
  "srd | half-elf criminal thief | L17 | books=PHB": {
-  "proficient": [
-   "Deception",
-   "Stealth"
-  ],
+  "proficient": [],
   "expertise": [],
-  "eligible": [
-   "Deception",
-   "Stealth"
-  ]
+  "eligible": []
  },
  "srd | half-elf criminal thief | L17 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
-  "proficient": [
-   "Deception",
-   "Stealth"
-  ],
+  "proficient": [],
   "expertise": [],
-  "eligible": [
-   "Deception",
-   "Stealth"
-  ]
+  "eligible": []
  },
  "srd | rock gnome guild artisan alchemist artificer | L1 | books=all": {
-  "proficient": [
-   "Insight",
-   "Persuasion"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | rock gnome guild artisan alchemist artificer | L1 | books=PHB": {
-  "proficient": [
-   "Insight",
-   "Persuasion"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | rock gnome guild artisan alchemist artificer | L1 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
-  "proficient": [
-   "Insight",
-   "Persuasion"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | rock gnome guild artisan alchemist artificer | L3 | books=all": {
-  "proficient": [
-   "Insight",
-   "Persuasion"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | rock gnome guild artisan alchemist artificer | L3 | books=PHB": {
-  "proficient": [
-   "Insight",
-   "Persuasion"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | rock gnome guild artisan alchemist artificer | L3 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
-  "proficient": [
-   "Insight",
-   "Persuasion"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | rock gnome guild artisan alchemist artificer | L6 | books=all": {
-  "proficient": [
-   "Insight",
-   "Persuasion"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | rock gnome guild artisan alchemist artificer | L6 | books=PHB": {
-  "proficient": [
-   "Insight",
-   "Persuasion"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | rock gnome guild artisan alchemist artificer | L6 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
-  "proficient": [
-   "Insight",
-   "Persuasion"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | rock gnome guild artisan alchemist artificer | L11 | books=all": {
-  "proficient": [
-   "Insight",
-   "Persuasion"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | rock gnome guild artisan alchemist artificer | L11 | books=PHB": {
-  "proficient": [
-   "Insight",
-   "Persuasion"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | rock gnome guild artisan alchemist artificer | L11 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
-  "proficient": [
-   "Insight",
-   "Persuasion"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | rock gnome guild artisan alchemist artificer | L14 | books=all": {
-  "proficient": [
-   "Insight",
-   "Persuasion"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | rock gnome guild artisan alchemist artificer | L14 | books=PHB": {
-  "proficient": [
-   "Insight",
-   "Persuasion"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | rock gnome guild artisan alchemist artificer | L14 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
-  "proficient": [
-   "Insight",
-   "Persuasion"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | rock gnome guild artisan alchemist artificer | L17 | books=all": {
-  "proficient": [
-   "Insight",
-   "Persuasion"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | rock gnome guild artisan alchemist artificer | L17 | books=PHB": {
-  "proficient": [
-   "Insight",
-   "Persuasion"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | rock gnome guild artisan alchemist artificer | L17 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
-  "proficient": [
-   "Insight",
-   "Persuasion"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | human soldier armorer artificer | L1 | books=all": {
-  "proficient": [
-   "Athletics",
-   "Intimidation"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | human soldier armorer artificer | L1 | books=PHB": {
-  "proficient": [
-   "Athletics",
-   "Intimidation"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | human soldier armorer artificer | L1 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
-  "proficient": [
-   "Athletics",
-   "Intimidation"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | human soldier armorer artificer | L3 | books=all": {
-  "proficient": [
-   "Athletics",
-   "Intimidation"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | human soldier armorer artificer | L3 | books=PHB": {
-  "proficient": [
-   "Athletics",
-   "Intimidation"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | human soldier armorer artificer | L3 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
-  "proficient": [
-   "Athletics",
-   "Intimidation"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | human soldier armorer artificer | L6 | books=all": {
-  "proficient": [
-   "Athletics",
-   "Intimidation"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | human soldier armorer artificer | L6 | books=PHB": {
-  "proficient": [
-   "Athletics",
-   "Intimidation"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | human soldier armorer artificer | L6 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
-  "proficient": [
-   "Athletics",
-   "Intimidation"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | human soldier armorer artificer | L11 | books=all": {
-  "proficient": [
-   "Athletics",
-   "Intimidation"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | human soldier armorer artificer | L11 | books=PHB": {
-  "proficient": [
-   "Athletics",
-   "Intimidation"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | human soldier armorer artificer | L11 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
-  "proficient": [
-   "Athletics",
-   "Intimidation"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | human soldier armorer artificer | L14 | books=all": {
-  "proficient": [
-   "Athletics",
-   "Intimidation"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | human soldier armorer artificer | L14 | books=PHB": {
-  "proficient": [
-   "Athletics",
-   "Intimidation"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | human soldier armorer artificer | L14 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
-  "proficient": [
-   "Athletics",
-   "Intimidation"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | human soldier armorer artificer | L17 | books=all": {
-  "proficient": [
-   "Athletics",
-   "Intimidation"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | human soldier armorer artificer | L17 | books=PHB": {
-  "proficient": [
-   "Athletics",
-   "Intimidation"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | human soldier armorer artificer | L17 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
-  "proficient": [
-   "Athletics",
-   "Intimidation"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
@@ -1098,767 +792,452 @@
   "eligible": []
  },
  "srd | bard college of lore entertainer with picked instruments | L1 | books=all": {
-  "proficient": [
-   "Acrobatics",
-   "Performance"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | bard college of lore entertainer with picked instruments | L1 | books=PHB": {
-  "proficient": [
-   "Acrobatics",
-   "Performance"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | bard college of lore entertainer with picked instruments | L1 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
-  "proficient": [
-   "Acrobatics",
-   "Performance"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | bard college of lore entertainer with picked instruments | L3 | books=all": {
-  "proficient": [
-   "Acrobatics",
-   "Performance"
-  ],
+  "proficient": [],
   "expertise": [],
-  "eligible": [
-   "Acrobatics",
-   "Performance"
-  ]
+  "eligible": []
  },
  "srd | bard college of lore entertainer with picked instruments | L3 | books=PHB": {
-  "proficient": [
-   "Acrobatics",
-   "Performance"
-  ],
+  "proficient": [],
   "expertise": [],
-  "eligible": [
-   "Acrobatics",
-   "Performance"
-  ]
+  "eligible": []
  },
  "srd | bard college of lore entertainer with picked instruments | L3 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
-  "proficient": [
-   "Acrobatics",
-   "Performance"
-  ],
+  "proficient": [],
   "expertise": [],
-  "eligible": [
-   "Acrobatics",
-   "Performance"
-  ]
+  "eligible": []
  },
  "srd | bard college of lore entertainer with picked instruments | L6 | books=all": {
-  "proficient": [
-   "Acrobatics",
-   "Performance"
-  ],
+  "proficient": [],
   "expertise": [],
-  "eligible": [
-   "Acrobatics",
-   "Performance"
-  ]
+  "eligible": []
  },
  "srd | bard college of lore entertainer with picked instruments | L6 | books=PHB": {
-  "proficient": [
-   "Acrobatics",
-   "Performance"
-  ],
+  "proficient": [],
   "expertise": [],
-  "eligible": [
-   "Acrobatics",
-   "Performance"
-  ]
+  "eligible": []
  },
  "srd | bard college of lore entertainer with picked instruments | L6 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
-  "proficient": [
-   "Acrobatics",
-   "Performance"
-  ],
+  "proficient": [],
   "expertise": [],
-  "eligible": [
-   "Acrobatics",
-   "Performance"
-  ]
+  "eligible": []
  },
  "srd | bard college of lore entertainer with picked instruments | L11 | books=all": {
-  "proficient": [
-   "Acrobatics",
-   "Performance"
-  ],
+  "proficient": [],
   "expertise": [],
-  "eligible": [
-   "Acrobatics",
-   "Performance"
-  ]
+  "eligible": []
  },
  "srd | bard college of lore entertainer with picked instruments | L11 | books=PHB": {
-  "proficient": [
-   "Acrobatics",
-   "Performance"
-  ],
+  "proficient": [],
   "expertise": [],
-  "eligible": [
-   "Acrobatics",
-   "Performance"
-  ]
+  "eligible": []
  },
  "srd | bard college of lore entertainer with picked instruments | L11 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
-  "proficient": [
-   "Acrobatics",
-   "Performance"
-  ],
+  "proficient": [],
   "expertise": [],
-  "eligible": [
-   "Acrobatics",
-   "Performance"
-  ]
+  "eligible": []
  },
  "srd | bard college of lore entertainer with picked instruments | L14 | books=all": {
-  "proficient": [
-   "Acrobatics",
-   "Performance"
-  ],
+  "proficient": [],
   "expertise": [],
-  "eligible": [
-   "Acrobatics",
-   "Performance"
-  ]
+  "eligible": []
  },
  "srd | bard college of lore entertainer with picked instruments | L14 | books=PHB": {
-  "proficient": [
-   "Acrobatics",
-   "Performance"
-  ],
+  "proficient": [],
   "expertise": [],
-  "eligible": [
-   "Acrobatics",
-   "Performance"
-  ]
+  "eligible": []
  },
  "srd | bard college of lore entertainer with picked instruments | L14 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
-  "proficient": [
-   "Acrobatics",
-   "Performance"
-  ],
+  "proficient": [],
   "expertise": [],
-  "eligible": [
-   "Acrobatics",
-   "Performance"
-  ]
+  "eligible": []
  },
  "srd | bard college of lore entertainer with picked instruments | L17 | books=all": {
-  "proficient": [
-   "Acrobatics",
-   "Performance"
-  ],
+  "proficient": [],
   "expertise": [],
-  "eligible": [
-   "Acrobatics",
-   "Performance"
-  ]
+  "eligible": []
  },
  "srd | bard college of lore entertainer with picked instruments | L17 | books=PHB": {
-  "proficient": [
-   "Acrobatics",
-   "Performance"
-  ],
+  "proficient": [],
   "expertise": [],
-  "eligible": [
-   "Acrobatics",
-   "Performance"
-  ]
+  "eligible": []
  },
  "srd | bard college of lore entertainer with picked instruments | L17 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
-  "proficient": [
-   "Acrobatics",
-   "Performance"
-  ],
+  "proficient": [],
   "expertise": [],
-  "eligible": [
-   "Acrobatics",
-   "Performance"
-  ]
+  "eligible": []
  },
  "srd | barbarian path of the giant folk hero | L1 | books=all": {
-  "proficient": [
-   "Animal Handling",
-   "Survival"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | barbarian path of the giant folk hero | L1 | books=PHB": {
-  "proficient": [
-   "Animal Handling",
-   "Survival"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | barbarian path of the giant folk hero | L1 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
-  "proficient": [
-   "Animal Handling",
-   "Survival"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | barbarian path of the giant folk hero | L3 | books=all": {
-  "proficient": [
-   "Animal Handling",
-   "Survival"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | barbarian path of the giant folk hero | L3 | books=PHB": {
-  "proficient": [
-   "Animal Handling",
-   "Survival"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | barbarian path of the giant folk hero | L3 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
-  "proficient": [
-   "Animal Handling",
-   "Survival"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | barbarian path of the giant folk hero | L6 | books=all": {
-  "proficient": [
-   "Animal Handling",
-   "Survival"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | barbarian path of the giant folk hero | L6 | books=PHB": {
-  "proficient": [
-   "Animal Handling",
-   "Survival"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | barbarian path of the giant folk hero | L6 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
-  "proficient": [
-   "Animal Handling",
-   "Survival"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | barbarian path of the giant folk hero | L11 | books=all": {
-  "proficient": [
-   "Animal Handling",
-   "Survival"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | barbarian path of the giant folk hero | L11 | books=PHB": {
-  "proficient": [
-   "Animal Handling",
-   "Survival"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | barbarian path of the giant folk hero | L11 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
-  "proficient": [
-   "Animal Handling",
-   "Survival"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | barbarian path of the giant folk hero | L14 | books=all": {
-  "proficient": [
-   "Animal Handling",
-   "Survival"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | barbarian path of the giant folk hero | L14 | books=PHB": {
-  "proficient": [
-   "Animal Handling",
-   "Survival"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | barbarian path of the giant folk hero | L14 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
-  "proficient": [
-   "Animal Handling",
-   "Survival"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | barbarian path of the giant folk hero | L17 | books=all": {
-  "proficient": [
-   "Animal Handling",
-   "Survival"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | barbarian path of the giant folk hero | L17 | books=PHB": {
-  "proficient": [
-   "Animal Handling",
-   "Survival"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | barbarian path of the giant folk hero | L17 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
-  "proficient": [
-   "Animal Handling",
-   "Survival"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | barbarian berserker outlander | L1 | books=all": {
-  "proficient": [
-   "Athletics",
-   "Survival"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | barbarian berserker outlander | L1 | books=PHB": {
-  "proficient": [
-   "Athletics",
-   "Survival"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | barbarian berserker outlander | L1 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
-  "proficient": [
-   "Athletics",
-   "Survival"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | barbarian berserker outlander | L3 | books=all": {
-  "proficient": [
-   "Athletics",
-   "Survival"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | barbarian berserker outlander | L3 | books=PHB": {
-  "proficient": [
-   "Athletics",
-   "Survival"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | barbarian berserker outlander | L3 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
-  "proficient": [
-   "Athletics",
-   "Survival"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | barbarian berserker outlander | L6 | books=all": {
-  "proficient": [
-   "Athletics",
-   "Survival"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | barbarian berserker outlander | L6 | books=PHB": {
-  "proficient": [
-   "Athletics",
-   "Survival"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | barbarian berserker outlander | L6 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
-  "proficient": [
-   "Athletics",
-   "Survival"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | barbarian berserker outlander | L11 | books=all": {
-  "proficient": [
-   "Athletics",
-   "Survival"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | barbarian berserker outlander | L11 | books=PHB": {
-  "proficient": [
-   "Athletics",
-   "Survival"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | barbarian berserker outlander | L11 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
-  "proficient": [
-   "Athletics",
-   "Survival"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | barbarian berserker outlander | L14 | books=all": {
-  "proficient": [
-   "Athletics",
-   "Survival"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | barbarian berserker outlander | L14 | books=PHB": {
-  "proficient": [
-   "Athletics",
-   "Survival"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | barbarian berserker outlander | L14 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
-  "proficient": [
-   "Athletics",
-   "Survival"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | barbarian berserker outlander | L17 | books=all": {
-  "proficient": [
-   "Athletics",
-   "Survival"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | barbarian berserker outlander | L17 | books=PHB": {
-  "proficient": [
-   "Athletics",
-   "Survival"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | barbarian berserker outlander | L17 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
-  "proficient": [
-   "Athletics",
-   "Survival"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | druid circle of the land hermit | L1 | books=all": {
-  "proficient": [
-   "Medicine",
-   "Religion"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | druid circle of the land hermit | L1 | books=PHB": {
-  "proficient": [
-   "Medicine",
-   "Religion"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | druid circle of the land hermit | L1 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
-  "proficient": [
-   "Medicine",
-   "Religion"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | druid circle of the land hermit | L3 | books=all": {
-  "proficient": [
-   "Medicine",
-   "Religion"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | druid circle of the land hermit | L3 | books=PHB": {
-  "proficient": [
-   "Medicine",
-   "Religion"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | druid circle of the land hermit | L3 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
-  "proficient": [
-   "Medicine",
-   "Religion"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | druid circle of the land hermit | L6 | books=all": {
-  "proficient": [
-   "Medicine",
-   "Religion"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | druid circle of the land hermit | L6 | books=PHB": {
-  "proficient": [
-   "Medicine",
-   "Religion"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | druid circle of the land hermit | L6 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
-  "proficient": [
-   "Medicine",
-   "Religion"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | druid circle of the land hermit | L11 | books=all": {
-  "proficient": [
-   "Medicine",
-   "Religion"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | druid circle of the land hermit | L11 | books=PHB": {
-  "proficient": [
-   "Medicine",
-   "Religion"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | druid circle of the land hermit | L11 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
-  "proficient": [
-   "Medicine",
-   "Religion"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | druid circle of the land hermit | L14 | books=all": {
-  "proficient": [
-   "Medicine",
-   "Religion"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | druid circle of the land hermit | L14 | books=PHB": {
-  "proficient": [
-   "Medicine",
-   "Religion"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | druid circle of the land hermit | L14 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
-  "proficient": [
-   "Medicine",
-   "Religion"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | druid circle of the land hermit | L17 | books=all": {
-  "proficient": [
-   "Medicine",
-   "Religion"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | druid circle of the land hermit | L17 | books=PHB": {
-  "proficient": [
-   "Medicine",
-   "Religion"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | druid circle of the land hermit | L17 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
-  "proficient": [
-   "Medicine",
-   "Religion"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | druid circle of the shepherd hermit | L1 | books=all": {
-  "proficient": [
-   "Medicine",
-   "Religion"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | druid circle of the shepherd hermit | L1 | books=PHB": {
-  "proficient": [
-   "Medicine",
-   "Religion"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | druid circle of the shepherd hermit | L1 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
-  "proficient": [
-   "Medicine",
-   "Religion"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | druid circle of the shepherd hermit | L3 | books=all": {
-  "proficient": [
-   "Medicine",
-   "Religion"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | druid circle of the shepherd hermit | L3 | books=PHB": {
-  "proficient": [
-   "Medicine",
-   "Religion"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | druid circle of the shepherd hermit | L3 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
-  "proficient": [
-   "Medicine",
-   "Religion"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | druid circle of the shepherd hermit | L6 | books=all": {
-  "proficient": [
-   "Medicine",
-   "Religion"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | druid circle of the shepherd hermit | L6 | books=PHB": {
-  "proficient": [
-   "Medicine",
-   "Religion"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | druid circle of the shepherd hermit | L6 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
-  "proficient": [
-   "Medicine",
-   "Religion"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | druid circle of the shepherd hermit | L11 | books=all": {
-  "proficient": [
-   "Medicine",
-   "Religion"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | druid circle of the shepherd hermit | L11 | books=PHB": {
-  "proficient": [
-   "Medicine",
-   "Religion"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | druid circle of the shepherd hermit | L11 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
-  "proficient": [
-   "Medicine",
-   "Religion"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | druid circle of the shepherd hermit | L14 | books=all": {
-  "proficient": [
-   "Medicine",
-   "Religion"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | druid circle of the shepherd hermit | L14 | books=PHB": {
-  "proficient": [
-   "Medicine",
-   "Religion"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | druid circle of the shepherd hermit | L14 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
-  "proficient": [
-   "Medicine",
-   "Religion"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | druid circle of the shepherd hermit | L17 | books=all": {
-  "proficient": [
-   "Medicine",
-   "Religion"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | druid circle of the shepherd hermit | L17 | books=PHB": {
-  "proficient": [
-   "Medicine",
-   "Religion"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | druid circle of the shepherd hermit | L17 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
-  "proficient": [
-   "Medicine",
-   "Religion"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
@@ -2007,146 +1386,92 @@
   "eligible": []
  },
  "srd | monk way of the kensei sailor | L1 | books=all": {
-  "proficient": [
-   "Athletics",
-   "Perception"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | monk way of the kensei sailor | L1 | books=PHB": {
-  "proficient": [
-   "Athletics",
-   "Perception"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | monk way of the kensei sailor | L1 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
-  "proficient": [
-   "Athletics",
-   "Perception"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | monk way of the kensei sailor | L3 | books=all": {
-  "proficient": [
-   "Athletics",
-   "Perception"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | monk way of the kensei sailor | L3 | books=PHB": {
-  "proficient": [
-   "Athletics",
-   "Perception"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | monk way of the kensei sailor | L3 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
-  "proficient": [
-   "Athletics",
-   "Perception"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | monk way of the kensei sailor | L6 | books=all": {
-  "proficient": [
-   "Athletics",
-   "Perception"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | monk way of the kensei sailor | L6 | books=PHB": {
-  "proficient": [
-   "Athletics",
-   "Perception"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | monk way of the kensei sailor | L6 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
-  "proficient": [
-   "Athletics",
-   "Perception"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | monk way of the kensei sailor | L11 | books=all": {
-  "proficient": [
-   "Athletics",
-   "Perception"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | monk way of the kensei sailor | L11 | books=PHB": {
-  "proficient": [
-   "Athletics",
-   "Perception"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | monk way of the kensei sailor | L11 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
-  "proficient": [
-   "Athletics",
-   "Perception"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | monk way of the kensei sailor | L14 | books=all": {
-  "proficient": [
-   "Athletics",
-   "Perception"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | monk way of the kensei sailor | L14 | books=PHB": {
-  "proficient": [
-   "Athletics",
-   "Perception"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | monk way of the kensei sailor | L14 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
-  "proficient": [
-   "Athletics",
-   "Perception"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | monk way of the kensei sailor | L17 | books=all": {
-  "proficient": [
-   "Athletics",
-   "Perception"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | monk way of the kensei sailor | L17 | books=PHB": {
-  "proficient": [
-   "Athletics",
-   "Perception"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | monk way of the kensei sailor | L17 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
-  "proficient": [
-   "Athletics",
-   "Perception"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
@@ -2583,1280 +1908,758 @@
   "eligible": []
  },
  "srd | ranger drakewarden outlander | L1 | books=all": {
-  "proficient": [
-   "Athletics",
-   "Survival"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | ranger drakewarden outlander | L1 | books=PHB": {
-  "proficient": [
-   "Athletics",
-   "Survival"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | ranger drakewarden outlander | L1 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
-  "proficient": [
-   "Athletics",
-   "Survival"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | ranger drakewarden outlander | L3 | books=all": {
-  "proficient": [
-   "Athletics",
-   "Survival"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | ranger drakewarden outlander | L3 | books=PHB": {
-  "proficient": [
-   "Athletics",
-   "Survival"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | ranger drakewarden outlander | L3 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
-  "proficient": [
-   "Athletics",
-   "Survival"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | ranger drakewarden outlander | L6 | books=all": {
-  "proficient": [
-   "Athletics",
-   "Survival"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | ranger drakewarden outlander | L6 | books=PHB": {
-  "proficient": [
-   "Athletics",
-   "Survival"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | ranger drakewarden outlander | L6 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
-  "proficient": [
-   "Athletics",
-   "Survival"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | ranger drakewarden outlander | L11 | books=all": {
-  "proficient": [
-   "Athletics",
-   "Survival"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | ranger drakewarden outlander | L11 | books=PHB": {
-  "proficient": [
-   "Athletics",
-   "Survival"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | ranger drakewarden outlander | L11 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
-  "proficient": [
-   "Athletics",
-   "Survival"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | ranger drakewarden outlander | L14 | books=all": {
-  "proficient": [
-   "Athletics",
-   "Survival"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | ranger drakewarden outlander | L14 | books=PHB": {
-  "proficient": [
-   "Athletics",
-   "Survival"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | ranger drakewarden outlander | L14 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
-  "proficient": [
-   "Athletics",
-   "Survival"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | ranger drakewarden outlander | L17 | books=all": {
-  "proficient": [
-   "Athletics",
-   "Survival"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | ranger drakewarden outlander | L17 | books=PHB": {
-  "proficient": [
-   "Athletics",
-   "Survival"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | ranger drakewarden outlander | L17 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
-  "proficient": [
-   "Athletics",
-   "Survival"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | ranger hunter outlander | L1 | books=all": {
-  "proficient": [
-   "Athletics",
-   "Survival"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | ranger hunter outlander | L1 | books=PHB": {
-  "proficient": [
-   "Athletics",
-   "Survival"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | ranger hunter outlander | L1 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
-  "proficient": [
-   "Athletics",
-   "Survival"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | ranger hunter outlander | L3 | books=all": {
-  "proficient": [
-   "Athletics",
-   "Survival"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | ranger hunter outlander | L3 | books=PHB": {
-  "proficient": [
-   "Athletics",
-   "Survival"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | ranger hunter outlander | L3 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
-  "proficient": [
-   "Athletics",
-   "Survival"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | ranger hunter outlander | L6 | books=all": {
-  "proficient": [
-   "Athletics",
-   "Survival"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | ranger hunter outlander | L6 | books=PHB": {
-  "proficient": [
-   "Athletics",
-   "Survival"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | ranger hunter outlander | L6 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
-  "proficient": [
-   "Athletics",
-   "Survival"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | ranger hunter outlander | L11 | books=all": {
-  "proficient": [
-   "Athletics",
-   "Survival"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | ranger hunter outlander | L11 | books=PHB": {
-  "proficient": [
-   "Athletics",
-   "Survival"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | ranger hunter outlander | L11 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
-  "proficient": [
-   "Athletics",
-   "Survival"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | ranger hunter outlander | L14 | books=all": {
-  "proficient": [
-   "Athletics",
-   "Survival"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | ranger hunter outlander | L14 | books=PHB": {
-  "proficient": [
-   "Athletics",
-   "Survival"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | ranger hunter outlander | L14 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
-  "proficient": [
-   "Athletics",
-   "Survival"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | ranger hunter outlander | L17 | books=all": {
-  "proficient": [
-   "Athletics",
-   "Survival"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | ranger hunter outlander | L17 | books=PHB": {
-  "proficient": [
-   "Athletics",
-   "Survival"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | ranger hunter outlander | L17 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
-  "proficient": [
-   "Athletics",
-   "Survival"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | rogue mastermind criminal | L1 | books=all": {
-  "proficient": [
-   "Deception",
-   "Stealth"
-  ],
+  "proficient": [],
   "expertise": [],
-  "eligible": [
-   "Deception",
-   "Stealth"
-  ]
+  "eligible": []
  },
  "srd | rogue mastermind criminal | L1 | books=PHB": {
-  "proficient": [
-   "Deception",
-   "Stealth"
-  ],
+  "proficient": [],
   "expertise": [],
-  "eligible": [
-   "Deception",
-   "Stealth"
-  ]
+  "eligible": []
  },
  "srd | rogue mastermind criminal | L1 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
-  "proficient": [
-   "Deception",
-   "Stealth"
-  ],
+  "proficient": [],
   "expertise": [],
-  "eligible": [
-   "Deception",
-   "Stealth"
-  ]
+  "eligible": []
  },
  "srd | rogue mastermind criminal | L3 | books=all": {
-  "proficient": [
-   "Deception",
-   "Stealth"
-  ],
+  "proficient": [],
   "expertise": [],
-  "eligible": [
-   "Deception",
-   "Stealth"
-  ]
+  "eligible": []
  },
  "srd | rogue mastermind criminal | L3 | books=PHB": {
-  "proficient": [
-   "Deception",
-   "Stealth"
-  ],
+  "proficient": [],
   "expertise": [],
-  "eligible": [
-   "Deception",
-   "Stealth"
-  ]
+  "eligible": []
  },
  "srd | rogue mastermind criminal | L3 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
-  "proficient": [
-   "Deception",
-   "Stealth"
-  ],
+  "proficient": [],
   "expertise": [],
-  "eligible": [
-   "Deception",
-   "Stealth"
-  ]
+  "eligible": []
  },
  "srd | rogue mastermind criminal | L6 | books=all": {
-  "proficient": [
-   "Deception",
-   "Stealth"
-  ],
+  "proficient": [],
   "expertise": [],
-  "eligible": [
-   "Deception",
-   "Stealth"
-  ]
+  "eligible": []
  },
  "srd | rogue mastermind criminal | L6 | books=PHB": {
-  "proficient": [
-   "Deception",
-   "Stealth"
-  ],
+  "proficient": [],
   "expertise": [],
-  "eligible": [
-   "Deception",
-   "Stealth"
-  ]
+  "eligible": []
  },
  "srd | rogue mastermind criminal | L6 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
-  "proficient": [
-   "Deception",
-   "Stealth"
-  ],
+  "proficient": [],
   "expertise": [],
-  "eligible": [
-   "Deception",
-   "Stealth"
-  ]
+  "eligible": []
  },
  "srd | rogue mastermind criminal | L11 | books=all": {
-  "proficient": [
-   "Deception",
-   "Stealth"
-  ],
+  "proficient": [],
   "expertise": [],
-  "eligible": [
-   "Deception",
-   "Stealth"
-  ]
+  "eligible": []
  },
  "srd | rogue mastermind criminal | L11 | books=PHB": {
-  "proficient": [
-   "Deception",
-   "Stealth"
-  ],
+  "proficient": [],
   "expertise": [],
-  "eligible": [
-   "Deception",
-   "Stealth"
-  ]
+  "eligible": []
  },
  "srd | rogue mastermind criminal | L11 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
-  "proficient": [
-   "Deception",
-   "Stealth"
-  ],
+  "proficient": [],
   "expertise": [],
-  "eligible": [
-   "Deception",
-   "Stealth"
-  ]
+  "eligible": []
  },
  "srd | rogue mastermind criminal | L14 | books=all": {
-  "proficient": [
-   "Deception",
-   "Stealth"
-  ],
+  "proficient": [],
   "expertise": [],
-  "eligible": [
-   "Deception",
-   "Stealth"
-  ]
+  "eligible": []
  },
  "srd | rogue mastermind criminal | L14 | books=PHB": {
-  "proficient": [
-   "Deception",
-   "Stealth"
-  ],
+  "proficient": [],
   "expertise": [],
-  "eligible": [
-   "Deception",
-   "Stealth"
-  ]
+  "eligible": []
  },
  "srd | rogue mastermind criminal | L14 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
-  "proficient": [
-   "Deception",
-   "Stealth"
-  ],
+  "proficient": [],
   "expertise": [],
-  "eligible": [
-   "Deception",
-   "Stealth"
-  ]
+  "eligible": []
  },
  "srd | rogue mastermind criminal | L17 | books=all": {
-  "proficient": [
-   "Deception",
-   "Stealth"
-  ],
+  "proficient": [],
   "expertise": [],
-  "eligible": [
-   "Deception",
-   "Stealth"
-  ]
+  "eligible": []
  },
  "srd | rogue mastermind criminal | L17 | books=PHB": {
-  "proficient": [
-   "Deception",
-   "Stealth"
-  ],
+  "proficient": [],
   "expertise": [],
-  "eligible": [
-   "Deception",
-   "Stealth"
-  ]
+  "eligible": []
  },
  "srd | rogue mastermind criminal | L17 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
-  "proficient": [
-   "Deception",
-   "Stealth"
-  ],
+  "proficient": [],
   "expertise": [],
-  "eligible": [
-   "Deception",
-   "Stealth"
-  ]
+  "eligible": []
  },
  "srd | rogue assassin charlatan | L1 | books=all": {
-  "proficient": [
-   "Deception",
-   "Sleight of Hand"
-  ],
+  "proficient": [],
   "expertise": [],
-  "eligible": [
-   "Deception",
-   "Sleight of Hand"
-  ]
+  "eligible": []
  },
  "srd | rogue assassin charlatan | L1 | books=PHB": {
-  "proficient": [
-   "Deception",
-   "Sleight of Hand"
-  ],
+  "proficient": [],
   "expertise": [],
-  "eligible": [
-   "Deception",
-   "Sleight of Hand"
-  ]
+  "eligible": []
  },
  "srd | rogue assassin charlatan | L1 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
-  "proficient": [
-   "Deception",
-   "Sleight of Hand"
-  ],
+  "proficient": [],
   "expertise": [],
-  "eligible": [
-   "Deception",
-   "Sleight of Hand"
-  ]
+  "eligible": []
  },
  "srd | rogue assassin charlatan | L3 | books=all": {
-  "proficient": [
-   "Deception",
-   "Sleight of Hand"
-  ],
+  "proficient": [],
   "expertise": [],
-  "eligible": [
-   "Deception",
-   "Sleight of Hand"
-  ]
+  "eligible": []
  },
  "srd | rogue assassin charlatan | L3 | books=PHB": {
-  "proficient": [
-   "Deception",
-   "Sleight of Hand"
-  ],
+  "proficient": [],
   "expertise": [],
-  "eligible": [
-   "Deception",
-   "Sleight of Hand"
-  ]
+  "eligible": []
  },
  "srd | rogue assassin charlatan | L3 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
-  "proficient": [
-   "Deception",
-   "Sleight of Hand"
-  ],
+  "proficient": [],
   "expertise": [],
-  "eligible": [
-   "Deception",
-   "Sleight of Hand"
-  ]
+  "eligible": []
  },
  "srd | rogue assassin charlatan | L6 | books=all": {
-  "proficient": [
-   "Deception",
-   "Sleight of Hand"
-  ],
+  "proficient": [],
   "expertise": [],
-  "eligible": [
-   "Deception",
-   "Sleight of Hand"
-  ]
+  "eligible": []
  },
  "srd | rogue assassin charlatan | L6 | books=PHB": {
-  "proficient": [
-   "Deception",
-   "Sleight of Hand"
-  ],
+  "proficient": [],
   "expertise": [],
-  "eligible": [
-   "Deception",
-   "Sleight of Hand"
-  ]
+  "eligible": []
  },
  "srd | rogue assassin charlatan | L6 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
-  "proficient": [
-   "Deception",
-   "Sleight of Hand"
-  ],
+  "proficient": [],
   "expertise": [],
-  "eligible": [
-   "Deception",
-   "Sleight of Hand"
-  ]
+  "eligible": []
  },
  "srd | rogue assassin charlatan | L11 | books=all": {
-  "proficient": [
-   "Deception",
-   "Sleight of Hand"
-  ],
+  "proficient": [],
   "expertise": [],
-  "eligible": [
-   "Deception",
-   "Sleight of Hand"
-  ]
+  "eligible": []
  },
  "srd | rogue assassin charlatan | L11 | books=PHB": {
-  "proficient": [
-   "Deception",
-   "Sleight of Hand"
-  ],
+  "proficient": [],
   "expertise": [],
-  "eligible": [
-   "Deception",
-   "Sleight of Hand"
-  ]
+  "eligible": []
  },
  "srd | rogue assassin charlatan | L11 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
-  "proficient": [
-   "Deception",
-   "Sleight of Hand"
-  ],
+  "proficient": [],
   "expertise": [],
-  "eligible": [
-   "Deception",
-   "Sleight of Hand"
-  ]
+  "eligible": []
  },
  "srd | rogue assassin charlatan | L14 | books=all": {
-  "proficient": [
-   "Deception",
-   "Sleight of Hand"
-  ],
+  "proficient": [],
   "expertise": [],
-  "eligible": [
-   "Deception",
-   "Sleight of Hand"
-  ]
+  "eligible": []
  },
  "srd | rogue assassin charlatan | L14 | books=PHB": {
-  "proficient": [
-   "Deception",
-   "Sleight of Hand"
-  ],
+  "proficient": [],
   "expertise": [],
-  "eligible": [
-   "Deception",
-   "Sleight of Hand"
-  ]
+  "eligible": []
  },
  "srd | rogue assassin charlatan | L14 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
-  "proficient": [
-   "Deception",
-   "Sleight of Hand"
-  ],
+  "proficient": [],
   "expertise": [],
-  "eligible": [
-   "Deception",
-   "Sleight of Hand"
-  ]
+  "eligible": []
  },
  "srd | rogue assassin charlatan | L17 | books=all": {
-  "proficient": [
-   "Deception",
-   "Sleight of Hand"
-  ],
+  "proficient": [],
   "expertise": [],
-  "eligible": [
-   "Deception",
-   "Sleight of Hand"
-  ]
+  "eligible": []
  },
  "srd | rogue assassin charlatan | L17 | books=PHB": {
-  "proficient": [
-   "Deception",
-   "Sleight of Hand"
-  ],
+  "proficient": [],
   "expertise": [],
-  "eligible": [
-   "Deception",
-   "Sleight of Hand"
-  ]
+  "eligible": []
  },
  "srd | rogue assassin charlatan | L17 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
-  "proficient": [
-   "Deception",
-   "Sleight of Hand"
-  ],
+  "proficient": [],
   "expertise": [],
-  "eligible": [
-   "Deception",
-   "Sleight of Hand"
-  ]
+  "eligible": []
  },
  "srd | dragonborn draconic sorcerer noble | L1 | books=all": {
-  "proficient": [
-   "History",
-   "Persuasion"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | dragonborn draconic sorcerer noble | L1 | books=PHB": {
-  "proficient": [
-   "History",
-   "Persuasion"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | dragonborn draconic sorcerer noble | L1 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
-  "proficient": [
-   "History",
-   "Persuasion"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | dragonborn draconic sorcerer noble | L3 | books=all": {
-  "proficient": [
-   "History",
-   "Persuasion"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | dragonborn draconic sorcerer noble | L3 | books=PHB": {
-  "proficient": [
-   "History",
-   "Persuasion"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | dragonborn draconic sorcerer noble | L3 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
-  "proficient": [
-   "History",
-   "Persuasion"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | dragonborn draconic sorcerer noble | L6 | books=all": {
-  "proficient": [
-   "History",
-   "Persuasion"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | dragonborn draconic sorcerer noble | L6 | books=PHB": {
-  "proficient": [
-   "History",
-   "Persuasion"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | dragonborn draconic sorcerer noble | L6 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
-  "proficient": [
-   "History",
-   "Persuasion"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | dragonborn draconic sorcerer noble | L11 | books=all": {
-  "proficient": [
-   "History",
-   "Persuasion"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | dragonborn draconic sorcerer noble | L11 | books=PHB": {
-  "proficient": [
-   "History",
-   "Persuasion"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | dragonborn draconic sorcerer noble | L11 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
-  "proficient": [
-   "History",
-   "Persuasion"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | dragonborn draconic sorcerer noble | L14 | books=all": {
-  "proficient": [
-   "History",
-   "Persuasion"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | dragonborn draconic sorcerer noble | L14 | books=PHB": {
-  "proficient": [
-   "History",
-   "Persuasion"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | dragonborn draconic sorcerer noble | L14 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
-  "proficient": [
-   "History",
-   "Persuasion"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | dragonborn draconic sorcerer noble | L17 | books=all": {
-  "proficient": [
-   "History",
-   "Persuasion"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | dragonborn draconic sorcerer noble | L17 | books=PHB": {
-  "proficient": [
-   "History",
-   "Persuasion"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | dragonborn draconic sorcerer noble | L17 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
-  "proficient": [
-   "History",
-   "Persuasion"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | sorcerer storm sorcery sailor | L1 | books=all": {
-  "proficient": [
-   "Athletics",
-   "Perception"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | sorcerer storm sorcery sailor | L1 | books=PHB": {
-  "proficient": [
-   "Athletics",
-   "Perception"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | sorcerer storm sorcery sailor | L1 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
-  "proficient": [
-   "Athletics",
-   "Perception"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | sorcerer storm sorcery sailor | L3 | books=all": {
-  "proficient": [
-   "Athletics",
-   "Perception"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | sorcerer storm sorcery sailor | L3 | books=PHB": {
-  "proficient": [
-   "Athletics",
-   "Perception"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | sorcerer storm sorcery sailor | L3 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
-  "proficient": [
-   "Athletics",
-   "Perception"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | sorcerer storm sorcery sailor | L6 | books=all": {
-  "proficient": [
-   "Athletics",
-   "Perception"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | sorcerer storm sorcery sailor | L6 | books=PHB": {
-  "proficient": [
-   "Athletics",
-   "Perception"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | sorcerer storm sorcery sailor | L6 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
-  "proficient": [
-   "Athletics",
-   "Perception"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | sorcerer storm sorcery sailor | L11 | books=all": {
-  "proficient": [
-   "Athletics",
-   "Perception"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | sorcerer storm sorcery sailor | L11 | books=PHB": {
-  "proficient": [
-   "Athletics",
-   "Perception"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | sorcerer storm sorcery sailor | L11 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
-  "proficient": [
-   "Athletics",
-   "Perception"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | sorcerer storm sorcery sailor | L14 | books=all": {
-  "proficient": [
-   "Athletics",
-   "Perception"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | sorcerer storm sorcery sailor | L14 | books=PHB": {
-  "proficient": [
-   "Athletics",
-   "Perception"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | sorcerer storm sorcery sailor | L14 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
-  "proficient": [
-   "Athletics",
-   "Perception"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | sorcerer storm sorcery sailor | L17 | books=all": {
-  "proficient": [
-   "Athletics",
-   "Perception"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | sorcerer storm sorcery sailor | L17 | books=PHB": {
-  "proficient": [
-   "Athletics",
-   "Perception"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | sorcerer storm sorcery sailor | L17 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
-  "proficient": [
-   "Athletics",
-   "Perception"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | cleric forge domain soldier | L1 | books=all": {
   "proficient": [
-   "Athletics",
-   "History",
-   "Intimidation"
+   "History"
   ],
   "expertise": [],
   "eligible": []
  },
  "srd | cleric forge domain soldier | L1 | books=PHB": {
   "proficient": [
-   "Athletics",
-   "History",
-   "Intimidation"
+   "History"
   ],
   "expertise": [],
   "eligible": []
  },
  "srd | cleric forge domain soldier | L1 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
   "proficient": [
-   "Athletics",
-   "History",
-   "Intimidation"
+   "History"
   ],
   "expertise": [],
   "eligible": []
  },
  "srd | cleric forge domain soldier | L3 | books=all": {
   "proficient": [
-   "Athletics",
-   "History",
-   "Intimidation"
+   "History"
   ],
   "expertise": [],
   "eligible": []
  },
  "srd | cleric forge domain soldier | L3 | books=PHB": {
   "proficient": [
-   "Athletics",
-   "History",
-   "Intimidation"
+   "History"
   ],
   "expertise": [],
   "eligible": []
  },
  "srd | cleric forge domain soldier | L3 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
   "proficient": [
-   "Athletics",
-   "History",
-   "Intimidation"
+   "History"
   ],
   "expertise": [],
   "eligible": []
  },
  "srd | cleric forge domain soldier | L6 | books=all": {
   "proficient": [
-   "Athletics",
-   "History",
-   "Intimidation"
+   "History"
   ],
   "expertise": [],
   "eligible": []
  },
  "srd | cleric forge domain soldier | L6 | books=PHB": {
   "proficient": [
-   "Athletics",
-   "History",
-   "Intimidation"
+   "History"
   ],
   "expertise": [],
   "eligible": []
  },
  "srd | cleric forge domain soldier | L6 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
   "proficient": [
-   "Athletics",
-   "History",
-   "Intimidation"
+   "History"
   ],
   "expertise": [],
   "eligible": []
  },
  "srd | cleric forge domain soldier | L11 | books=all": {
   "proficient": [
-   "Athletics",
-   "History",
-   "Intimidation"
+   "History"
   ],
   "expertise": [],
   "eligible": []
  },
  "srd | cleric forge domain soldier | L11 | books=PHB": {
   "proficient": [
-   "Athletics",
-   "History",
-   "Intimidation"
+   "History"
   ],
   "expertise": [],
   "eligible": []
  },
  "srd | cleric forge domain soldier | L11 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
   "proficient": [
-   "Athletics",
-   "History",
-   "Intimidation"
+   "History"
   ],
   "expertise": [],
   "eligible": []
  },
  "srd | cleric forge domain soldier | L14 | books=all": {
   "proficient": [
-   "Athletics",
-   "History",
-   "Intimidation"
+   "History"
   ],
   "expertise": [],
   "eligible": []
  },
  "srd | cleric forge domain soldier | L14 | books=PHB": {
   "proficient": [
-   "Athletics",
-   "History",
-   "Intimidation"
+   "History"
   ],
   "expertise": [],
   "eligible": []
  },
  "srd | cleric forge domain soldier | L14 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
   "proficient": [
-   "Athletics",
-   "History",
-   "Intimidation"
+   "History"
   ],
   "expertise": [],
   "eligible": []
  },
  "srd | cleric forge domain soldier | L17 | books=all": {
   "proficient": [
-   "Athletics",
-   "History",
-   "Intimidation"
+   "History"
   ],
   "expertise": [],
   "eligible": []
  },
  "srd | cleric forge domain soldier | L17 | books=PHB": {
   "proficient": [
-   "Athletics",
-   "History",
-   "Intimidation"
+   "History"
   ],
   "expertise": [],
   "eligible": []
  },
  "srd | cleric forge domain soldier | L17 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
   "proficient": [
-   "Athletics",
-   "History",
-   "Intimidation"
+   "History"
   ],
   "expertise": [],
   "eligible": []
  },
  "srd | fighter rune knight noble | L1 | books=all": {
-  "proficient": [
-   "History",
-   "Persuasion"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | fighter rune knight noble | L1 | books=PHB": {
-  "proficient": [
-   "History",
-   "Persuasion"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | fighter rune knight noble | L1 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
-  "proficient": [
-   "History",
-   "Persuasion"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | fighter rune knight noble | L3 | books=all": {
-  "proficient": [
-   "History",
-   "Persuasion"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | fighter rune knight noble | L3 | books=PHB": {
-  "proficient": [
-   "History",
-   "Persuasion"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | fighter rune knight noble | L3 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
-  "proficient": [
-   "History",
-   "Persuasion"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | fighter rune knight noble | L6 | books=all": {
-  "proficient": [
-   "History",
-   "Persuasion"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | fighter rune knight noble | L6 | books=PHB": {
-  "proficient": [
-   "History",
-   "Persuasion"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | fighter rune knight noble | L6 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
-  "proficient": [
-   "History",
-   "Persuasion"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | fighter rune knight noble | L11 | books=all": {
-  "proficient": [
-   "History",
-   "Persuasion"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | fighter rune knight noble | L11 | books=PHB": {
-  "proficient": [
-   "History",
-   "Persuasion"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | fighter rune knight noble | L11 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
-  "proficient": [
-   "History",
-   "Persuasion"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | fighter rune knight noble | L14 | books=all": {
-  "proficient": [
-   "History",
-   "Persuasion"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | fighter rune knight noble | L14 | books=PHB": {
-  "proficient": [
-   "History",
-   "Persuasion"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | fighter rune knight noble | L14 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
-  "proficient": [
-   "History",
-   "Persuasion"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | fighter rune knight noble | L17 | books=all": {
-  "proficient": [
-   "History",
-   "Persuasion"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | fighter rune knight noble | L17 | books=PHB": {
-  "proficient": [
-   "History",
-   "Persuasion"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | fighter rune knight noble | L17 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
-  "proficient": [
-   "History",
-   "Persuasion"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
@@ -4005,634 +2808,364 @@
   "eligible": []
  },
  "srd | warlock the genie charlatan | L1 | books=all": {
-  "proficient": [
-   "Deception",
-   "Sleight of Hand"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | warlock the genie charlatan | L1 | books=PHB": {
-  "proficient": [
-   "Deception",
-   "Sleight of Hand"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | warlock the genie charlatan | L1 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
-  "proficient": [
-   "Deception",
-   "Sleight of Hand"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | warlock the genie charlatan | L3 | books=all": {
-  "proficient": [
-   "Deception",
-   "Sleight of Hand"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | warlock the genie charlatan | L3 | books=PHB": {
-  "proficient": [
-   "Deception",
-   "Sleight of Hand"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | warlock the genie charlatan | L3 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
-  "proficient": [
-   "Deception",
-   "Sleight of Hand"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | warlock the genie charlatan | L6 | books=all": {
-  "proficient": [
-   "Deception",
-   "Sleight of Hand"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | warlock the genie charlatan | L6 | books=PHB": {
-  "proficient": [
-   "Deception",
-   "Sleight of Hand"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | warlock the genie charlatan | L6 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
-  "proficient": [
-   "Deception",
-   "Sleight of Hand"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | warlock the genie charlatan | L11 | books=all": {
-  "proficient": [
-   "Deception",
-   "Sleight of Hand"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | warlock the genie charlatan | L11 | books=PHB": {
-  "proficient": [
-   "Deception",
-   "Sleight of Hand"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | warlock the genie charlatan | L11 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
-  "proficient": [
-   "Deception",
-   "Sleight of Hand"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | warlock the genie charlatan | L14 | books=all": {
-  "proficient": [
-   "Deception",
-   "Sleight of Hand"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | warlock the genie charlatan | L14 | books=PHB": {
-  "proficient": [
-   "Deception",
-   "Sleight of Hand"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | warlock the genie charlatan | L14 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
-  "proficient": [
-   "Deception",
-   "Sleight of Hand"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | warlock the genie charlatan | L17 | books=all": {
-  "proficient": [
-   "Deception",
-   "Sleight of Hand"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | warlock the genie charlatan | L17 | books=PHB": {
-  "proficient": [
-   "Deception",
-   "Sleight of Hand"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | warlock the genie charlatan | L17 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
-  "proficient": [
-   "Deception",
-   "Sleight of Hand"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | multiclass druid shepherd and ranger drakewarden | L1 | books=all": {
-  "proficient": [
-   "Medicine",
-   "Religion"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | multiclass druid shepherd and ranger drakewarden | L1 | books=PHB": {
-  "proficient": [
-   "Medicine",
-   "Religion"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | multiclass druid shepherd and ranger drakewarden | L1 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
-  "proficient": [
-   "Medicine",
-   "Religion"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | multiclass druid shepherd and ranger drakewarden | L3 | books=all": {
-  "proficient": [
-   "Medicine",
-   "Religion"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | multiclass druid shepherd and ranger drakewarden | L3 | books=PHB": {
-  "proficient": [
-   "Medicine",
-   "Religion"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | multiclass druid shepherd and ranger drakewarden | L3 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
-  "proficient": [
-   "Medicine",
-   "Religion"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | multiclass druid shepherd and ranger drakewarden | L6 | books=all": {
-  "proficient": [
-   "Medicine",
-   "Religion"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | multiclass druid shepherd and ranger drakewarden | L6 | books=PHB": {
-  "proficient": [
-   "Medicine",
-   "Religion"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | multiclass druid shepherd and ranger drakewarden | L6 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
-  "proficient": [
-   "Medicine",
-   "Religion"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | multiclass druid shepherd and ranger drakewarden | L11 | books=all": {
-  "proficient": [
-   "Medicine",
-   "Religion"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | multiclass druid shepherd and ranger drakewarden | L11 | books=PHB": {
-  "proficient": [
-   "Medicine",
-   "Religion"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | multiclass druid shepherd and ranger drakewarden | L11 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
-  "proficient": [
-   "Medicine",
-   "Religion"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | multiclass druid shepherd and ranger drakewarden | L14 | books=all": {
-  "proficient": [
-   "Medicine",
-   "Religion"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | multiclass druid shepherd and ranger drakewarden | L14 | books=PHB": {
-  "proficient": [
-   "Medicine",
-   "Religion"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | multiclass druid shepherd and ranger drakewarden | L14 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
-  "proficient": [
-   "Medicine",
-   "Religion"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | multiclass druid shepherd and ranger drakewarden | L17 | books=all": {
-  "proficient": [
-   "Medicine",
-   "Religion"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | multiclass druid shepherd and ranger drakewarden | L17 | books=PHB": {
-  "proficient": [
-   "Medicine",
-   "Religion"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | multiclass druid shepherd and ranger drakewarden | L17 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
-  "proficient": [
-   "Medicine",
-   "Religion"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | multiclass artificer alchemist and draconic sorcerer | L1 | books=all": {
-  "proficient": [
-   "Insight",
-   "Persuasion"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | multiclass artificer alchemist and draconic sorcerer | L1 | books=PHB": {
-  "proficient": [
-   "Insight",
-   "Persuasion"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | multiclass artificer alchemist and draconic sorcerer | L1 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
-  "proficient": [
-   "Insight",
-   "Persuasion"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | multiclass artificer alchemist and draconic sorcerer | L3 | books=all": {
-  "proficient": [
-   "Insight",
-   "Persuasion"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | multiclass artificer alchemist and draconic sorcerer | L3 | books=PHB": {
-  "proficient": [
-   "Insight",
-   "Persuasion"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | multiclass artificer alchemist and draconic sorcerer | L3 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
-  "proficient": [
-   "Insight",
-   "Persuasion"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | multiclass artificer alchemist and draconic sorcerer | L6 | books=all": {
-  "proficient": [
-   "Insight",
-   "Persuasion"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | multiclass artificer alchemist and draconic sorcerer | L6 | books=PHB": {
-  "proficient": [
-   "Insight",
-   "Persuasion"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | multiclass artificer alchemist and draconic sorcerer | L6 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
-  "proficient": [
-   "Insight",
-   "Persuasion"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | multiclass artificer alchemist and draconic sorcerer | L11 | books=all": {
-  "proficient": [
-   "Insight",
-   "Persuasion"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | multiclass artificer alchemist and draconic sorcerer | L11 | books=PHB": {
-  "proficient": [
-   "Insight",
-   "Persuasion"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | multiclass artificer alchemist and draconic sorcerer | L11 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
-  "proficient": [
-   "Insight",
-   "Persuasion"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | multiclass artificer alchemist and draconic sorcerer | L14 | books=all": {
-  "proficient": [
-   "Insight",
-   "Persuasion"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | multiclass artificer alchemist and draconic sorcerer | L14 | books=PHB": {
-  "proficient": [
-   "Insight",
-   "Persuasion"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | multiclass artificer alchemist and draconic sorcerer | L14 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
-  "proficient": [
-   "Insight",
-   "Persuasion"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | multiclass artificer alchemist and draconic sorcerer | L17 | books=all": {
-  "proficient": [
-   "Insight",
-   "Persuasion"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | multiclass artificer alchemist and draconic sorcerer | L17 | books=PHB": {
-  "proficient": [
-   "Insight",
-   "Persuasion"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | multiclass artificer alchemist and draconic sorcerer | L17 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
-  "proficient": [
-   "Insight",
-   "Persuasion"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | multiclass rogue with a recorded multiclass tool | L1 | books=all": {
-  "proficient": [
-   "Athletics",
-   "Intimidation"
-  ],
+  "proficient": [],
   "expertise": [],
-  "eligible": [
-   "Athletics",
-   "Intimidation"
-  ]
+  "eligible": []
  },
  "srd | multiclass rogue with a recorded multiclass tool | L1 | books=PHB": {
-  "proficient": [
-   "Athletics",
-   "Intimidation"
-  ],
+  "proficient": [],
   "expertise": [],
-  "eligible": [
-   "Athletics",
-   "Intimidation"
-  ]
+  "eligible": []
  },
  "srd | multiclass rogue with a recorded multiclass tool | L1 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
-  "proficient": [
-   "Athletics",
-   "Intimidation"
-  ],
+  "proficient": [],
   "expertise": [],
-  "eligible": [
-   "Athletics",
-   "Intimidation"
-  ]
+  "eligible": []
  },
  "srd | multiclass rogue with a recorded multiclass tool | L3 | books=all": {
-  "proficient": [
-   "Athletics",
-   "Intimidation"
-  ],
+  "proficient": [],
   "expertise": [],
-  "eligible": [
-   "Athletics",
-   "Intimidation"
-  ]
+  "eligible": []
  },
  "srd | multiclass rogue with a recorded multiclass tool | L3 | books=PHB": {
-  "proficient": [
-   "Athletics",
-   "Intimidation"
-  ],
+  "proficient": [],
   "expertise": [],
-  "eligible": [
-   "Athletics",
-   "Intimidation"
-  ]
+  "eligible": []
  },
  "srd | multiclass rogue with a recorded multiclass tool | L3 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
-  "proficient": [
-   "Athletics",
-   "Intimidation"
-  ],
+  "proficient": [],
   "expertise": [],
-  "eligible": [
-   "Athletics",
-   "Intimidation"
-  ]
+  "eligible": []
  },
  "srd | multiclass rogue with a recorded multiclass tool | L6 | books=all": {
-  "proficient": [
-   "Athletics",
-   "Intimidation"
-  ],
+  "proficient": [],
   "expertise": [],
-  "eligible": [
-   "Athletics",
-   "Intimidation"
-  ]
+  "eligible": []
  },
  "srd | multiclass rogue with a recorded multiclass tool | L6 | books=PHB": {
-  "proficient": [
-   "Athletics",
-   "Intimidation"
-  ],
+  "proficient": [],
   "expertise": [],
-  "eligible": [
-   "Athletics",
-   "Intimidation"
-  ]
+  "eligible": []
  },
  "srd | multiclass rogue with a recorded multiclass tool | L6 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
-  "proficient": [
-   "Athletics",
-   "Intimidation"
-  ],
+  "proficient": [],
   "expertise": [],
-  "eligible": [
-   "Athletics",
-   "Intimidation"
-  ]
+  "eligible": []
  },
  "srd | multiclass rogue with a recorded multiclass tool | L11 | books=all": {
-  "proficient": [
-   "Athletics",
-   "Intimidation"
-  ],
+  "proficient": [],
   "expertise": [],
-  "eligible": [
-   "Athletics",
-   "Intimidation"
-  ]
+  "eligible": []
  },
  "srd | multiclass rogue with a recorded multiclass tool | L11 | books=PHB": {
-  "proficient": [
-   "Athletics",
-   "Intimidation"
-  ],
+  "proficient": [],
   "expertise": [],
-  "eligible": [
-   "Athletics",
-   "Intimidation"
-  ]
+  "eligible": []
  },
  "srd | multiclass rogue with a recorded multiclass tool | L11 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
-  "proficient": [
-   "Athletics",
-   "Intimidation"
-  ],
+  "proficient": [],
   "expertise": [],
-  "eligible": [
-   "Athletics",
-   "Intimidation"
-  ]
+  "eligible": []
  },
  "srd | multiclass rogue with a recorded multiclass tool | L14 | books=all": {
-  "proficient": [
-   "Athletics",
-   "Intimidation"
-  ],
+  "proficient": [],
   "expertise": [],
-  "eligible": [
-   "Athletics",
-   "Intimidation"
-  ]
+  "eligible": []
  },
  "srd | multiclass rogue with a recorded multiclass tool | L14 | books=PHB": {
-  "proficient": [
-   "Athletics",
-   "Intimidation"
-  ],
+  "proficient": [],
   "expertise": [],
-  "eligible": [
-   "Athletics",
-   "Intimidation"
-  ]
+  "eligible": []
  },
  "srd | multiclass rogue with a recorded multiclass tool | L14 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
-  "proficient": [
-   "Athletics",
-   "Intimidation"
-  ],
+  "proficient": [],
   "expertise": [],
-  "eligible": [
-   "Athletics",
-   "Intimidation"
-  ]
+  "eligible": []
  },
  "srd | multiclass rogue with a recorded multiclass tool | L17 | books=all": {
-  "proficient": [
-   "Athletics",
-   "Intimidation"
-  ],
+  "proficient": [],
   "expertise": [],
-  "eligible": [
-   "Athletics",
-   "Intimidation"
-  ]
+  "eligible": []
  },
  "srd | multiclass rogue with a recorded multiclass tool | L17 | books=PHB": {
-  "proficient": [
-   "Athletics",
-   "Intimidation"
-  ],
+  "proficient": [],
   "expertise": [],
-  "eligible": [
-   "Athletics",
-   "Intimidation"
-  ]
+  "eligible": []
  },
  "srd | multiclass rogue with a recorded multiclass tool | L17 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
-  "proficient": [
-   "Athletics",
-   "Intimidation"
-  ],
+  "proficient": [],
   "expertise": [],
-  "eligible": [
-   "Athletics",
-   "Intimidation"
-  ]
+  "eligible": []
  },
  "srd | human acolyte with picked languages and tools | L1 | books=all": {
   "proficient": [
@@ -5121,146 +3654,92 @@
   ]
  },
  "srd | human sage with the chef origin feat | L1 | books=all": {
-  "proficient": [
-   "Arcana",
-   "History"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | human sage with the chef origin feat | L1 | books=PHB": {
-  "proficient": [
-   "Arcana",
-   "History"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | human sage with the chef origin feat | L1 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
-  "proficient": [
-   "Arcana",
-   "History"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | human sage with the chef origin feat | L3 | books=all": {
-  "proficient": [
-   "Arcana",
-   "History"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | human sage with the chef origin feat | L3 | books=PHB": {
-  "proficient": [
-   "Arcana",
-   "History"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | human sage with the chef origin feat | L3 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
-  "proficient": [
-   "Arcana",
-   "History"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | human sage with the chef origin feat | L6 | books=all": {
-  "proficient": [
-   "Arcana",
-   "History"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | human sage with the chef origin feat | L6 | books=PHB": {
-  "proficient": [
-   "Arcana",
-   "History"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | human sage with the chef origin feat | L6 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
-  "proficient": [
-   "Arcana",
-   "History"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | human sage with the chef origin feat | L11 | books=all": {
-  "proficient": [
-   "Arcana",
-   "History"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | human sage with the chef origin feat | L11 | books=PHB": {
-  "proficient": [
-   "Arcana",
-   "History"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | human sage with the chef origin feat | L11 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
-  "proficient": [
-   "Arcana",
-   "History"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | human sage with the chef origin feat | L14 | books=all": {
-  "proficient": [
-   "Arcana",
-   "History"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | human sage with the chef origin feat | L14 | books=PHB": {
-  "proficient": [
-   "Arcana",
-   "History"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | human sage with the chef origin feat | L14 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
-  "proficient": [
-   "Arcana",
-   "History"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | human sage with the chef origin feat | L17 | books=all": {
-  "proficient": [
-   "Arcana",
-   "History"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | human sage with the chef origin feat | L17 | books=PHB": {
-  "proficient": [
-   "Arcana",
-   "History"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | human sage with the chef origin feat | L17 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
-  "proficient": [
-   "Arcana",
-   "History"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
@@ -5589,490 +4068,274 @@
   "eligible": []
  },
  "srd | human soldier purple dragon knight | L1 | books=all": {
-  "proficient": [
-   "Athletics",
-   "Intimidation"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | human soldier purple dragon knight | L1 | books=PHB": {
-  "proficient": [
-   "Athletics",
-   "Intimidation"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | human soldier purple dragon knight | L1 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
-  "proficient": [
-   "Athletics",
-   "Intimidation"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | human soldier purple dragon knight | L3 | books=all": {
-  "proficient": [
-   "Athletics",
-   "Intimidation"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | human soldier purple dragon knight | L3 | books=PHB": {
-  "proficient": [
-   "Athletics",
-   "Intimidation"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | human soldier purple dragon knight | L3 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
-  "proficient": [
-   "Athletics",
-   "Intimidation"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | human soldier purple dragon knight | L6 | books=all": {
-  "proficient": [
-   "Athletics",
-   "Intimidation"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | human soldier purple dragon knight | L6 | books=PHB": {
-  "proficient": [
-   "Athletics",
-   "Intimidation"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | human soldier purple dragon knight | L6 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
-  "proficient": [
-   "Athletics",
-   "Intimidation"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | human soldier purple dragon knight | L11 | books=all": {
-  "proficient": [
-   "Athletics",
-   "Intimidation"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | human soldier purple dragon knight | L11 | books=PHB": {
-  "proficient": [
-   "Athletics",
-   "Intimidation"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | human soldier purple dragon knight | L11 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
-  "proficient": [
-   "Athletics",
-   "Intimidation"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | human soldier purple dragon knight | L14 | books=all": {
-  "proficient": [
-   "Athletics",
-   "Intimidation"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | human soldier purple dragon knight | L14 | books=PHB": {
-  "proficient": [
-   "Athletics",
-   "Intimidation"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | human soldier purple dragon knight | L14 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
-  "proficient": [
-   "Athletics",
-   "Intimidation"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | human soldier purple dragon knight | L17 | books=all": {
-  "proficient": [
-   "Athletics",
-   "Intimidation"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | human soldier purple dragon knight | L17 | books=PHB": {
-  "proficient": [
-   "Athletics",
-   "Intimidation"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | human soldier purple dragon knight | L17 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
-  "proficient": [
-   "Athletics",
-   "Intimidation"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | human sage bladesinger wizard | L1 | books=all": {
-  "proficient": [
-   "Arcana",
-   "History"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | human sage bladesinger wizard | L1 | books=PHB": {
-  "proficient": [
-   "Arcana",
-   "History"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | human sage bladesinger wizard | L1 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
-  "proficient": [
-   "Arcana",
-   "History"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | human sage bladesinger wizard | L3 | books=all": {
-  "proficient": [
-   "Arcana",
-   "History"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | human sage bladesinger wizard | L3 | books=PHB": {
-  "proficient": [
-   "Arcana",
-   "History"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | human sage bladesinger wizard | L3 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
-  "proficient": [
-   "Arcana",
-   "History"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | human sage bladesinger wizard | L6 | books=all": {
-  "proficient": [
-   "Arcana",
-   "History"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | human sage bladesinger wizard | L6 | books=PHB": {
-  "proficient": [
-   "Arcana",
-   "History"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | human sage bladesinger wizard | L6 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
-  "proficient": [
-   "Arcana",
-   "History"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | human sage bladesinger wizard | L11 | books=all": {
-  "proficient": [
-   "Arcana",
-   "History"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | human sage bladesinger wizard | L11 | books=PHB": {
-  "proficient": [
-   "Arcana",
-   "History"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | human sage bladesinger wizard | L11 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
-  "proficient": [
-   "Arcana",
-   "History"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | human sage bladesinger wizard | L14 | books=all": {
-  "proficient": [
-   "Arcana",
-   "History"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | human sage bladesinger wizard | L14 | books=PHB": {
-  "proficient": [
-   "Arcana",
-   "History"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | human sage bladesinger wizard | L14 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
-  "proficient": [
-   "Arcana",
-   "History"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | human sage bladesinger wizard | L17 | books=all": {
-  "proficient": [
-   "Arcana",
-   "History"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | human sage bladesinger wizard | L17 | books=PHB": {
-  "proficient": [
-   "Arcana",
-   "History"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | human sage bladesinger wizard | L17 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
-  "proficient": [
-   "Arcana",
-   "History"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | human criminal scout rogue | L1 | books=all": {
-  "proficient": [
-   "Deception",
-   "Stealth"
-  ],
+  "proficient": [],
   "expertise": [],
-  "eligible": [
-   "Deception",
-   "Stealth"
-  ]
+  "eligible": []
  },
  "srd | human criminal scout rogue | L1 | books=PHB": {
-  "proficient": [
-   "Deception",
-   "Stealth"
-  ],
+  "proficient": [],
   "expertise": [],
-  "eligible": [
-   "Deception",
-   "Stealth"
-  ]
+  "eligible": []
  },
  "srd | human criminal scout rogue | L1 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
-  "proficient": [
-   "Deception",
-   "Stealth"
-  ],
+  "proficient": [],
   "expertise": [],
-  "eligible": [
-   "Deception",
-   "Stealth"
-  ]
+  "eligible": []
  },
  "srd | human criminal scout rogue | L3 | books=all": {
-  "proficient": [
-   "Deception",
-   "Stealth"
-  ],
+  "proficient": [],
   "expertise": [],
-  "eligible": [
-   "Deception",
-   "Stealth"
-  ]
+  "eligible": []
  },
  "srd | human criminal scout rogue | L3 | books=PHB": {
-  "proficient": [
-   "Deception",
-   "Stealth"
-  ],
+  "proficient": [],
   "expertise": [],
-  "eligible": [
-   "Deception",
-   "Stealth"
-  ]
+  "eligible": []
  },
  "srd | human criminal scout rogue | L3 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
-  "proficient": [
-   "Deception",
-   "Stealth"
-  ],
+  "proficient": [],
   "expertise": [],
-  "eligible": [
-   "Deception",
-   "Stealth"
-  ]
+  "eligible": []
  },
  "srd | human criminal scout rogue | L6 | books=all": {
-  "proficient": [
-   "Deception",
-   "Stealth"
-  ],
+  "proficient": [],
   "expertise": [],
-  "eligible": [
-   "Deception",
-   "Stealth"
-  ]
+  "eligible": []
  },
  "srd | human criminal scout rogue | L6 | books=PHB": {
-  "proficient": [
-   "Deception",
-   "Stealth"
-  ],
+  "proficient": [],
   "expertise": [],
-  "eligible": [
-   "Deception",
-   "Stealth"
-  ]
+  "eligible": []
  },
  "srd | human criminal scout rogue | L6 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
-  "proficient": [
-   "Deception",
-   "Stealth"
-  ],
+  "proficient": [],
   "expertise": [],
-  "eligible": [
-   "Deception",
-   "Stealth"
-  ]
+  "eligible": []
  },
  "srd | human criminal scout rogue | L11 | books=all": {
-  "proficient": [
-   "Deception",
-   "Stealth"
-  ],
+  "proficient": [],
   "expertise": [],
-  "eligible": [
-   "Deception",
-   "Stealth"
-  ]
+  "eligible": []
  },
  "srd | human criminal scout rogue | L11 | books=PHB": {
-  "proficient": [
-   "Deception",
-   "Stealth"
-  ],
+  "proficient": [],
   "expertise": [],
-  "eligible": [
-   "Deception",
-   "Stealth"
-  ]
+  "eligible": []
  },
  "srd | human criminal scout rogue | L11 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
-  "proficient": [
-   "Deception",
-   "Stealth"
-  ],
+  "proficient": [],
   "expertise": [],
-  "eligible": [
-   "Deception",
-   "Stealth"
-  ]
+  "eligible": []
  },
  "srd | human criminal scout rogue | L14 | books=all": {
-  "proficient": [
-   "Deception",
-   "Stealth"
-  ],
+  "proficient": [],
   "expertise": [],
-  "eligible": [
-   "Deception",
-   "Stealth"
-  ]
+  "eligible": []
  },
  "srd | human criminal scout rogue | L14 | books=PHB": {
-  "proficient": [
-   "Deception",
-   "Stealth"
-  ],
+  "proficient": [],
   "expertise": [],
-  "eligible": [
-   "Deception",
-   "Stealth"
-  ]
+  "eligible": []
  },
  "srd | human criminal scout rogue | L14 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
-  "proficient": [
-   "Deception",
-   "Stealth"
-  ],
+  "proficient": [],
   "expertise": [],
-  "eligible": [
-   "Deception",
-   "Stealth"
-  ]
+  "eligible": []
  },
  "srd | human criminal scout rogue | L17 | books=all": {
-  "proficient": [
-   "Deception",
-   "Stealth"
-  ],
+  "proficient": [],
   "expertise": [],
-  "eligible": [
-   "Deception",
-   "Stealth"
-  ]
+  "eligible": []
  },
  "srd | human criminal scout rogue | L17 | books=PHB": {
-  "proficient": [
-   "Deception",
-   "Stealth"
-  ],
+  "proficient": [],
   "expertise": [],
-  "eligible": [
-   "Deception",
-   "Stealth"
-  ]
+  "eligible": []
  },
  "srd | human criminal scout rogue | L17 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
-  "proficient": [
-   "Deception",
-   "Stealth"
-  ],
+  "proficient": [],
   "expertise": [],
-  "eligible": [
-   "Deception",
-   "Stealth"
-  ]
+  "eligible": []
  },
  "srd | human acolyte knowledge cleric with skill expertise | L1 | books=all": {
   "proficient": [
@@ -6399,256 +4662,94 @@
   ]
  },
  "srd | human criminal thief rogue with skill expertise | L1 | books=all": {
-  "proficient": [
-   "Deception",
-   "Stealth"
-  ],
-  "expertise": [
-   "Deception",
-   "Stealth"
-  ],
-  "eligible": [
-   "Deception",
-   "Stealth"
-  ]
+  "proficient": [],
+  "expertise": [],
+  "eligible": []
  },
  "srd | human criminal thief rogue with skill expertise | L1 | books=PHB": {
-  "proficient": [
-   "Deception",
-   "Stealth"
-  ],
-  "expertise": [
-   "Deception",
-   "Stealth"
-  ],
-  "eligible": [
-   "Deception",
-   "Stealth"
-  ]
+  "proficient": [],
+  "expertise": [],
+  "eligible": []
  },
  "srd | human criminal thief rogue with skill expertise | L1 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
-  "proficient": [
-   "Deception",
-   "Stealth"
-  ],
-  "expertise": [
-   "Deception",
-   "Stealth"
-  ],
-  "eligible": [
-   "Deception",
-   "Stealth"
-  ]
+  "proficient": [],
+  "expertise": [],
+  "eligible": []
  },
  "srd | human criminal thief rogue with skill expertise | L3 | books=all": {
-  "proficient": [
-   "Deception",
-   "Stealth"
-  ],
-  "expertise": [
-   "Deception",
-   "Stealth"
-  ],
-  "eligible": [
-   "Deception",
-   "Stealth"
-  ]
+  "proficient": [],
+  "expertise": [],
+  "eligible": []
  },
  "srd | human criminal thief rogue with skill expertise | L3 | books=PHB": {
-  "proficient": [
-   "Deception",
-   "Stealth"
-  ],
-  "expertise": [
-   "Deception",
-   "Stealth"
-  ],
-  "eligible": [
-   "Deception",
-   "Stealth"
-  ]
+  "proficient": [],
+  "expertise": [],
+  "eligible": []
  },
  "srd | human criminal thief rogue with skill expertise | L3 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
-  "proficient": [
-   "Deception",
-   "Stealth"
-  ],
-  "expertise": [
-   "Deception",
-   "Stealth"
-  ],
-  "eligible": [
-   "Deception",
-   "Stealth"
-  ]
+  "proficient": [],
+  "expertise": [],
+  "eligible": []
  },
  "srd | human criminal thief rogue with skill expertise | L6 | books=all": {
-  "proficient": [
-   "Deception",
-   "Stealth"
-  ],
-  "expertise": [
-   "Deception",
-   "Stealth"
-  ],
-  "eligible": [
-   "Deception",
-   "Stealth"
-  ]
+  "proficient": [],
+  "expertise": [],
+  "eligible": []
  },
  "srd | human criminal thief rogue with skill expertise | L6 | books=PHB": {
-  "proficient": [
-   "Deception",
-   "Stealth"
-  ],
-  "expertise": [
-   "Deception",
-   "Stealth"
-  ],
-  "eligible": [
-   "Deception",
-   "Stealth"
-  ]
+  "proficient": [],
+  "expertise": [],
+  "eligible": []
  },
  "srd | human criminal thief rogue with skill expertise | L6 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
-  "proficient": [
-   "Deception",
-   "Stealth"
-  ],
-  "expertise": [
-   "Deception",
-   "Stealth"
-  ],
-  "eligible": [
-   "Deception",
-   "Stealth"
-  ]
+  "proficient": [],
+  "expertise": [],
+  "eligible": []
  },
  "srd | human criminal thief rogue with skill expertise | L11 | books=all": {
-  "proficient": [
-   "Deception",
-   "Stealth"
-  ],
-  "expertise": [
-   "Deception",
-   "Stealth"
-  ],
-  "eligible": [
-   "Deception",
-   "Stealth"
-  ]
+  "proficient": [],
+  "expertise": [],
+  "eligible": []
  },
  "srd | human criminal thief rogue with skill expertise | L11 | books=PHB": {
-  "proficient": [
-   "Deception",
-   "Stealth"
-  ],
-  "expertise": [
-   "Deception",
-   "Stealth"
-  ],
-  "eligible": [
-   "Deception",
-   "Stealth"
-  ]
+  "proficient": [],
+  "expertise": [],
+  "eligible": []
  },
  "srd | human criminal thief rogue with skill expertise | L11 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
-  "proficient": [
-   "Deception",
-   "Stealth"
-  ],
-  "expertise": [
-   "Deception",
-   "Stealth"
-  ],
-  "eligible": [
-   "Deception",
-   "Stealth"
-  ]
+  "proficient": [],
+  "expertise": [],
+  "eligible": []
  },
  "srd | human criminal thief rogue with skill expertise | L14 | books=all": {
-  "proficient": [
-   "Deception",
-   "Stealth"
-  ],
-  "expertise": [
-   "Deception",
-   "Stealth"
-  ],
-  "eligible": [
-   "Deception",
-   "Stealth"
-  ]
+  "proficient": [],
+  "expertise": [],
+  "eligible": []
  },
  "srd | human criminal thief rogue with skill expertise | L14 | books=PHB": {
-  "proficient": [
-   "Deception",
-   "Stealth"
-  ],
-  "expertise": [
-   "Deception",
-   "Stealth"
-  ],
-  "eligible": [
-   "Deception",
-   "Stealth"
-  ]
+  "proficient": [],
+  "expertise": [],
+  "eligible": []
  },
  "srd | human criminal thief rogue with skill expertise | L14 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
-  "proficient": [
-   "Deception",
-   "Stealth"
-  ],
-  "expertise": [
-   "Deception",
-   "Stealth"
-  ],
-  "eligible": [
-   "Deception",
-   "Stealth"
-  ]
+  "proficient": [],
+  "expertise": [],
+  "eligible": []
  },
  "srd | human criminal thief rogue with skill expertise | L17 | books=all": {
-  "proficient": [
-   "Deception",
-   "Stealth"
-  ],
-  "expertise": [
-   "Deception",
-   "Stealth"
-  ],
-  "eligible": [
-   "Deception",
-   "Stealth"
-  ]
+  "proficient": [],
+  "expertise": [],
+  "eligible": []
  },
  "srd | human criminal thief rogue with skill expertise | L17 | books=PHB": {
-  "proficient": [
-   "Deception",
-   "Stealth"
-  ],
-  "expertise": [
-   "Deception",
-   "Stealth"
-  ],
-  "eligible": [
-   "Deception",
-   "Stealth"
-  ]
+  "proficient": [],
+  "expertise": [],
+  "eligible": []
  },
  "srd | human criminal thief rogue with skill expertise | L17 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
-  "proficient": [
-   "Deception",
-   "Stealth"
-  ],
-  "expertise": [
-   "Deception",
-   "Stealth"
-  ],
-  "eligible": [
-   "Deception",
-   "Stealth"
-  ]
+  "proficient": [],
+  "expertise": [],
+  "eligible": []
  },
  "srd | human acolyte college of lore bard with picked skills | L1 | books=all": {
   "proficient": [
@@ -6676,167 +4777,257 @@
  },
  "srd | human acolyte college of lore bard with picked skills | L3 | books=all": {
   "proficient": [
+   "Athletics",
    "Insight",
-   "Religion"
+   "Religion",
+   "Stealth",
+   "Survival"
   ],
   "expertise": [],
   "eligible": [
+   "Athletics",
    "Insight",
-   "Religion"
+   "Religion",
+   "Stealth",
+   "Survival"
   ]
  },
  "srd | human acolyte college of lore bard with picked skills | L3 | books=PHB": {
   "proficient": [
+   "Athletics",
    "Insight",
-   "Religion"
+   "Religion",
+   "Stealth",
+   "Survival"
   ],
   "expertise": [],
   "eligible": [
+   "Athletics",
    "Insight",
-   "Religion"
+   "Religion",
+   "Stealth",
+   "Survival"
   ]
  },
  "srd | human acolyte college of lore bard with picked skills | L3 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
   "proficient": [
+   "Athletics",
    "Insight",
-   "Religion"
+   "Religion",
+   "Stealth",
+   "Survival"
   ],
   "expertise": [],
   "eligible": [
+   "Athletics",
    "Insight",
-   "Religion"
+   "Religion",
+   "Stealth",
+   "Survival"
   ]
  },
  "srd | human acolyte college of lore bard with picked skills | L6 | books=all": {
   "proficient": [
+   "Athletics",
    "Insight",
-   "Religion"
+   "Religion",
+   "Stealth",
+   "Survival"
   ],
   "expertise": [],
   "eligible": [
+   "Athletics",
    "Insight",
-   "Religion"
+   "Religion",
+   "Stealth",
+   "Survival"
   ]
  },
  "srd | human acolyte college of lore bard with picked skills | L6 | books=PHB": {
   "proficient": [
+   "Athletics",
    "Insight",
-   "Religion"
+   "Religion",
+   "Stealth",
+   "Survival"
   ],
   "expertise": [],
   "eligible": [
+   "Athletics",
    "Insight",
-   "Religion"
+   "Religion",
+   "Stealth",
+   "Survival"
   ]
  },
  "srd | human acolyte college of lore bard with picked skills | L6 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
   "proficient": [
+   "Athletics",
    "Insight",
-   "Religion"
+   "Religion",
+   "Stealth",
+   "Survival"
   ],
   "expertise": [],
   "eligible": [
+   "Athletics",
    "Insight",
-   "Religion"
+   "Religion",
+   "Stealth",
+   "Survival"
   ]
  },
  "srd | human acolyte college of lore bard with picked skills | L11 | books=all": {
   "proficient": [
+   "Athletics",
    "Insight",
-   "Religion"
+   "Religion",
+   "Stealth",
+   "Survival"
   ],
   "expertise": [],
   "eligible": [
+   "Athletics",
    "Insight",
-   "Religion"
+   "Religion",
+   "Stealth",
+   "Survival"
   ]
  },
  "srd | human acolyte college of lore bard with picked skills | L11 | books=PHB": {
   "proficient": [
+   "Athletics",
    "Insight",
-   "Religion"
+   "Religion",
+   "Stealth",
+   "Survival"
   ],
   "expertise": [],
   "eligible": [
+   "Athletics",
    "Insight",
-   "Religion"
+   "Religion",
+   "Stealth",
+   "Survival"
   ]
  },
  "srd | human acolyte college of lore bard with picked skills | L11 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
   "proficient": [
+   "Athletics",
    "Insight",
-   "Religion"
+   "Religion",
+   "Stealth",
+   "Survival"
   ],
   "expertise": [],
   "eligible": [
+   "Athletics",
    "Insight",
-   "Religion"
+   "Religion",
+   "Stealth",
+   "Survival"
   ]
  },
  "srd | human acolyte college of lore bard with picked skills | L14 | books=all": {
   "proficient": [
+   "Athletics",
    "Insight",
-   "Religion"
+   "Religion",
+   "Stealth",
+   "Survival"
   ],
   "expertise": [],
   "eligible": [
+   "Athletics",
    "Insight",
-   "Religion"
+   "Religion",
+   "Stealth",
+   "Survival"
   ]
  },
  "srd | human acolyte college of lore bard with picked skills | L14 | books=PHB": {
   "proficient": [
+   "Athletics",
    "Insight",
-   "Religion"
+   "Religion",
+   "Stealth",
+   "Survival"
   ],
   "expertise": [],
   "eligible": [
+   "Athletics",
    "Insight",
-   "Religion"
+   "Religion",
+   "Stealth",
+   "Survival"
   ]
  },
  "srd | human acolyte college of lore bard with picked skills | L14 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
   "proficient": [
+   "Athletics",
    "Insight",
-   "Religion"
+   "Religion",
+   "Stealth",
+   "Survival"
   ],
   "expertise": [],
   "eligible": [
+   "Athletics",
    "Insight",
-   "Religion"
+   "Religion",
+   "Stealth",
+   "Survival"
   ]
  },
  "srd | human acolyte college of lore bard with picked skills | L17 | books=all": {
   "proficient": [
+   "Athletics",
    "Insight",
-   "Religion"
+   "Religion",
+   "Stealth",
+   "Survival"
   ],
   "expertise": [],
   "eligible": [
+   "Athletics",
    "Insight",
-   "Religion"
+   "Religion",
+   "Stealth",
+   "Survival"
   ]
  },
  "srd | human acolyte college of lore bard with picked skills | L17 | books=PHB": {
   "proficient": [
+   "Athletics",
    "Insight",
-   "Religion"
+   "Religion",
+   "Stealth",
+   "Survival"
   ],
   "expertise": [],
   "eligible": [
+   "Athletics",
    "Insight",
-   "Religion"
+   "Religion",
+   "Stealth",
+   "Survival"
   ]
  },
  "srd | human acolyte college of lore bard with picked skills | L17 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
   "proficient": [
+   "Athletics",
    "Insight",
-   "Religion"
+   "Religion",
+   "Stealth",
+   "Survival"
   ],
   "expertise": [],
   "eligible": [
+   "Athletics",
    "Insight",
-   "Religion"
+   "Religion",
+   "Stealth",
+   "Survival"
   ]
  },
  "srd | human acolyte fighter with the skilled feat and picked skills | L1 | books=all": {
@@ -6984,146 +5175,92 @@
   "eligible": []
  },
  "srd | human soldier totem barbarian with the tiger aspect and picked skills | L1 | books=all": {
-  "proficient": [
-   "Athletics",
-   "Intimidation"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | human soldier totem barbarian with the tiger aspect and picked skills | L1 | books=PHB": {
-  "proficient": [
-   "Athletics",
-   "Intimidation"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | human soldier totem barbarian with the tiger aspect and picked skills | L1 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
-  "proficient": [
-   "Athletics",
-   "Intimidation"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | human soldier totem barbarian with the tiger aspect and picked skills | L3 | books=all": {
-  "proficient": [
-   "Athletics",
-   "Intimidation"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | human soldier totem barbarian with the tiger aspect and picked skills | L3 | books=PHB": {
-  "proficient": [
-   "Athletics",
-   "Intimidation"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | human soldier totem barbarian with the tiger aspect and picked skills | L3 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
-  "proficient": [
-   "Athletics",
-   "Intimidation"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | human soldier totem barbarian with the tiger aspect and picked skills | L6 | books=all": {
-  "proficient": [
-   "Athletics",
-   "Intimidation"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | human soldier totem barbarian with the tiger aspect and picked skills | L6 | books=PHB": {
-  "proficient": [
-   "Athletics",
-   "Intimidation"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | human soldier totem barbarian with the tiger aspect and picked skills | L6 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
-  "proficient": [
-   "Athletics",
-   "Intimidation"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | human soldier totem barbarian with the tiger aspect and picked skills | L11 | books=all": {
-  "proficient": [
-   "Athletics",
-   "Intimidation"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | human soldier totem barbarian with the tiger aspect and picked skills | L11 | books=PHB": {
-  "proficient": [
-   "Athletics",
-   "Intimidation"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | human soldier totem barbarian with the tiger aspect and picked skills | L11 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
-  "proficient": [
-   "Athletics",
-   "Intimidation"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | human soldier totem barbarian with the tiger aspect and picked skills | L14 | books=all": {
-  "proficient": [
-   "Athletics",
-   "Intimidation"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | human soldier totem barbarian with the tiger aspect and picked skills | L14 | books=PHB": {
-  "proficient": [
-   "Athletics",
-   "Intimidation"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | human soldier totem barbarian with the tiger aspect and picked skills | L14 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
-  "proficient": [
-   "Athletics",
-   "Intimidation"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | human soldier totem barbarian with the tiger aspect and picked skills | L17 | books=all": {
-  "proficient": [
-   "Athletics",
-   "Intimidation"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | human soldier totem barbarian with the tiger aspect and picked skills | L17 | books=PHB": {
-  "proficient": [
-   "Athletics",
-   "Intimidation"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | human soldier totem barbarian with the tiger aspect and picked skills | L17 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
-  "proficient": [
-   "Athletics",
-   "Intimidation"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
@@ -9017,6 +7154,7 @@
  "integrated | monk way of the drunken master acolyte | L3 | books=all": {
   "proficient": [
    "Insight",
+   "Performance",
    "Religion"
   ],
   "expertise": [],
@@ -9033,6 +7171,7 @@
  "integrated | monk way of the drunken master acolyte | L3 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
   "proficient": [
    "Insight",
+   "Performance",
    "Religion"
   ],
   "expertise": [],
@@ -9041,6 +7180,7 @@
  "integrated | monk way of the drunken master acolyte | L6 | books=all": {
   "proficient": [
    "Insight",
+   "Performance",
    "Religion"
   ],
   "expertise": [],
@@ -9057,6 +7197,7 @@
  "integrated | monk way of the drunken master acolyte | L6 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
   "proficient": [
    "Insight",
+   "Performance",
    "Religion"
   ],
   "expertise": [],
@@ -9065,6 +7206,7 @@
  "integrated | monk way of the drunken master acolyte | L11 | books=all": {
   "proficient": [
    "Insight",
+   "Performance",
    "Religion"
   ],
   "expertise": [],
@@ -9081,6 +7223,7 @@
  "integrated | monk way of the drunken master acolyte | L11 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
   "proficient": [
    "Insight",
+   "Performance",
    "Religion"
   ],
   "expertise": [],
@@ -9089,6 +7232,7 @@
  "integrated | monk way of the drunken master acolyte | L14 | books=all": {
   "proficient": [
    "Insight",
+   "Performance",
    "Religion"
   ],
   "expertise": [],
@@ -9105,6 +7249,7 @@
  "integrated | monk way of the drunken master acolyte | L14 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
   "proficient": [
    "Insight",
+   "Performance",
    "Religion"
   ],
   "expertise": [],
@@ -9113,6 +7258,7 @@
  "integrated | monk way of the drunken master acolyte | L17 | books=all": {
   "proficient": [
    "Insight",
+   "Performance",
    "Religion"
   ],
   "expertise": [],
@@ -9129,6 +7275,7 @@
  "integrated | monk way of the drunken master acolyte | L17 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
   "proficient": [
    "Insight",
+   "Performance",
    "Religion"
   ],
   "expertise": [],
@@ -9305,6 +7452,7 @@
  "integrated | monk way of mercy acolyte | L3 | books=all": {
   "proficient": [
    "Insight",
+   "Medicine",
    "Religion"
   ],
   "expertise": [],
@@ -9321,6 +7469,7 @@
  "integrated | monk way of mercy acolyte | L3 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
   "proficient": [
    "Insight",
+   "Medicine",
    "Religion"
   ],
   "expertise": [],
@@ -9329,6 +7478,7 @@
  "integrated | monk way of mercy acolyte | L6 | books=all": {
   "proficient": [
    "Insight",
+   "Medicine",
    "Religion"
   ],
   "expertise": [],
@@ -9345,6 +7495,7 @@
  "integrated | monk way of mercy acolyte | L6 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
   "proficient": [
    "Insight",
+   "Medicine",
    "Religion"
   ],
   "expertise": [],
@@ -9353,6 +7504,7 @@
  "integrated | monk way of mercy acolyte | L11 | books=all": {
   "proficient": [
    "Insight",
+   "Medicine",
    "Religion"
   ],
   "expertise": [],
@@ -9369,6 +7521,7 @@
  "integrated | monk way of mercy acolyte | L11 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
   "proficient": [
    "Insight",
+   "Medicine",
    "Religion"
   ],
   "expertise": [],
@@ -9377,6 +7530,7 @@
  "integrated | monk way of mercy acolyte | L14 | books=all": {
   "proficient": [
    "Insight",
+   "Medicine",
    "Religion"
   ],
   "expertise": [],
@@ -9393,6 +7547,7 @@
  "integrated | monk way of mercy acolyte | L14 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
   "proficient": [
    "Insight",
+   "Medicine",
    "Religion"
   ],
   "expertise": [],
@@ -9401,6 +7556,7 @@
  "integrated | monk way of mercy acolyte | L17 | books=all": {
   "proficient": [
    "Insight",
+   "Medicine",
    "Religion"
   ],
   "expertise": [],
@@ -9417,6 +7573,7 @@
  "integrated | monk way of mercy acolyte | L17 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
   "proficient": [
    "Insight",
+   "Medicine",
    "Religion"
   ],
   "expertise": [],
@@ -12574,6 +10731,7 @@
  },
  "integrated | human acolyte cleric arcana domain | L1 | books=all": {
   "proficient": [
+   "Arcana",
    "Insight",
    "Religion"
   ],
@@ -12590,6 +10748,7 @@
  },
  "integrated | human acolyte cleric arcana domain | L1 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
   "proficient": [
+   "Arcana",
    "Insight",
    "Religion"
   ],
@@ -12598,6 +10757,7 @@
  },
  "integrated | human acolyte cleric arcana domain | L3 | books=all": {
   "proficient": [
+   "Arcana",
    "Insight",
    "Religion"
   ],
@@ -12614,6 +10774,7 @@
  },
  "integrated | human acolyte cleric arcana domain | L3 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
   "proficient": [
+   "Arcana",
    "Insight",
    "Religion"
   ],
@@ -12622,6 +10783,7 @@
  },
  "integrated | human acolyte cleric arcana domain | L6 | books=all": {
   "proficient": [
+   "Arcana",
    "Insight",
    "Religion"
   ],
@@ -12638,6 +10800,7 @@
  },
  "integrated | human acolyte cleric arcana domain | L6 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
   "proficient": [
+   "Arcana",
    "Insight",
    "Religion"
   ],
@@ -12646,6 +10809,7 @@
  },
  "integrated | human acolyte cleric arcana domain | L11 | books=all": {
   "proficient": [
+   "Arcana",
    "Insight",
    "Religion"
   ],
@@ -12662,6 +10826,7 @@
  },
  "integrated | human acolyte cleric arcana domain | L11 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
   "proficient": [
+   "Arcana",
    "Insight",
    "Religion"
   ],
@@ -12670,6 +10835,7 @@
  },
  "integrated | human acolyte cleric arcana domain | L14 | books=all": {
   "proficient": [
+   "Arcana",
    "Insight",
    "Religion"
   ],
@@ -12686,6 +10852,7 @@
  },
  "integrated | human acolyte cleric arcana domain | L14 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
   "proficient": [
+   "Arcana",
    "Insight",
    "Religion"
   ],
@@ -12694,6 +10861,7 @@
  },
  "integrated | human acolyte cleric arcana domain | L17 | books=all": {
   "proficient": [
+   "Arcana",
    "Insight",
    "Religion"
   ],
@@ -12710,6 +10878,7 @@
  },
  "integrated | human acolyte cleric arcana domain | L17 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
   "proficient": [
+   "Arcana",
    "Insight",
    "Religion"
   ],
@@ -12791,7 +10960,8 @@
  "integrated | human soldier purple dragon knight | L11 | books=all": {
   "proficient": [
    "Athletics",
-   "Intimidation"
+   "Intimidation",
+   "Persuasion"
   ],
   "expertise": [],
   "eligible": []
@@ -12807,7 +10977,8 @@
  "integrated | human soldier purple dragon knight | L11 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
   "proficient": [
    "Athletics",
-   "Intimidation"
+   "Intimidation",
+   "Persuasion"
   ],
   "expertise": [],
   "eligible": []
@@ -12815,7 +10986,8 @@
  "integrated | human soldier purple dragon knight | L14 | books=all": {
   "proficient": [
    "Athletics",
-   "Intimidation"
+   "Intimidation",
+   "Persuasion"
   ],
   "expertise": [],
   "eligible": []
@@ -12831,7 +11003,8 @@
  "integrated | human soldier purple dragon knight | L14 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
   "proficient": [
    "Athletics",
-   "Intimidation"
+   "Intimidation",
+   "Persuasion"
   ],
   "expertise": [],
   "eligible": []
@@ -12839,7 +11012,8 @@
  "integrated | human soldier purple dragon knight | L17 | books=all": {
   "proficient": [
    "Athletics",
-   "Intimidation"
+   "Intimidation",
+   "Persuasion"
   ],
   "expertise": [],
   "eligible": []
@@ -12855,7 +11029,8 @@
  "integrated | human soldier purple dragon knight | L17 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
   "proficient": [
    "Athletics",
-   "Intimidation"
+   "Intimidation",
+   "Persuasion"
   ],
   "expertise": [],
   "eligible": []
@@ -12887,7 +11062,8 @@
  "integrated | human sage bladesinger wizard | L3 | books=all": {
   "proficient": [
    "Arcana",
-   "History"
+   "History",
+   "Performance"
   ],
   "expertise": [],
   "eligible": []
@@ -12903,7 +11079,8 @@
  "integrated | human sage bladesinger wizard | L3 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
   "proficient": [
    "Arcana",
-   "History"
+   "History",
+   "Performance"
   ],
   "expertise": [],
   "eligible": []
@@ -12911,7 +11088,8 @@
  "integrated | human sage bladesinger wizard | L6 | books=all": {
   "proficient": [
    "Arcana",
-   "History"
+   "History",
+   "Performance"
   ],
   "expertise": [],
   "eligible": []
@@ -12927,7 +11105,8 @@
  "integrated | human sage bladesinger wizard | L6 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
   "proficient": [
    "Arcana",
-   "History"
+   "History",
+   "Performance"
   ],
   "expertise": [],
   "eligible": []
@@ -12935,7 +11114,8 @@
  "integrated | human sage bladesinger wizard | L11 | books=all": {
   "proficient": [
    "Arcana",
-   "History"
+   "History",
+   "Performance"
   ],
   "expertise": [],
   "eligible": []
@@ -12951,7 +11131,8 @@
  "integrated | human sage bladesinger wizard | L11 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
   "proficient": [
    "Arcana",
-   "History"
+   "History",
+   "Performance"
   ],
   "expertise": [],
   "eligible": []
@@ -12959,7 +11140,8 @@
  "integrated | human sage bladesinger wizard | L14 | books=all": {
   "proficient": [
    "Arcana",
-   "History"
+   "History",
+   "Performance"
   ],
   "expertise": [],
   "eligible": []
@@ -12975,7 +11157,8 @@
  "integrated | human sage bladesinger wizard | L14 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
   "proficient": [
    "Arcana",
-   "History"
+   "History",
+   "Performance"
   ],
   "expertise": [],
   "eligible": []
@@ -12983,7 +11166,8 @@
  "integrated | human sage bladesinger wizard | L17 | books=all": {
   "proficient": [
    "Arcana",
-   "History"
+   "History",
+   "Performance"
   ],
   "expertise": [],
   "eligible": []
@@ -12999,7 +11183,8 @@
  "integrated | human sage bladesinger wizard | L17 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
   "proficient": [
    "Arcana",
-   "History"
+   "History",
+   "Performance"
   ],
   "expertise": [],
   "eligible": []
@@ -13040,12 +11225,16 @@
  "integrated | human criminal scout rogue | L3 | books=all": {
   "proficient": [
    "Deception",
-   "Stealth"
+   "Nature",
+   "Stealth",
+   "Survival"
   ],
   "expertise": [],
   "eligible": [
    "Deception",
-   "Stealth"
+   "Nature",
+   "Stealth",
+   "Survival"
   ]
  },
  "integrated | human criminal scout rogue | L3 | books=PHB": {
@@ -13062,23 +11251,31 @@
  "integrated | human criminal scout rogue | L3 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
   "proficient": [
    "Deception",
-   "Stealth"
+   "Nature",
+   "Stealth",
+   "Survival"
   ],
   "expertise": [],
   "eligible": [
    "Deception",
-   "Stealth"
+   "Nature",
+   "Stealth",
+   "Survival"
   ]
  },
  "integrated | human criminal scout rogue | L6 | books=all": {
   "proficient": [
    "Deception",
-   "Stealth"
+   "Nature",
+   "Stealth",
+   "Survival"
   ],
   "expertise": [],
   "eligible": [
    "Deception",
-   "Stealth"
+   "Nature",
+   "Stealth",
+   "Survival"
   ]
  },
  "integrated | human criminal scout rogue | L6 | books=PHB": {
@@ -13095,23 +11292,31 @@
  "integrated | human criminal scout rogue | L6 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
   "proficient": [
    "Deception",
-   "Stealth"
+   "Nature",
+   "Stealth",
+   "Survival"
   ],
   "expertise": [],
   "eligible": [
    "Deception",
-   "Stealth"
+   "Nature",
+   "Stealth",
+   "Survival"
   ]
  },
  "integrated | human criminal scout rogue | L11 | books=all": {
   "proficient": [
    "Deception",
-   "Stealth"
+   "Nature",
+   "Stealth",
+   "Survival"
   ],
   "expertise": [],
   "eligible": [
    "Deception",
-   "Stealth"
+   "Nature",
+   "Stealth",
+   "Survival"
   ]
  },
  "integrated | human criminal scout rogue | L11 | books=PHB": {
@@ -13128,23 +11333,31 @@
  "integrated | human criminal scout rogue | L11 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
   "proficient": [
    "Deception",
-   "Stealth"
+   "Nature",
+   "Stealth",
+   "Survival"
   ],
   "expertise": [],
   "eligible": [
    "Deception",
-   "Stealth"
+   "Nature",
+   "Stealth",
+   "Survival"
   ]
  },
  "integrated | human criminal scout rogue | L14 | books=all": {
   "proficient": [
    "Deception",
-   "Stealth"
+   "Nature",
+   "Stealth",
+   "Survival"
   ],
   "expertise": [],
   "eligible": [
    "Deception",
-   "Stealth"
+   "Nature",
+   "Stealth",
+   "Survival"
   ]
  },
  "integrated | human criminal scout rogue | L14 | books=PHB": {
@@ -13161,23 +11374,31 @@
  "integrated | human criminal scout rogue | L14 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
   "proficient": [
    "Deception",
-   "Stealth"
+   "Nature",
+   "Stealth",
+   "Survival"
   ],
   "expertise": [],
   "eligible": [
    "Deception",
-   "Stealth"
+   "Nature",
+   "Stealth",
+   "Survival"
   ]
  },
  "integrated | human criminal scout rogue | L17 | books=all": {
   "proficient": [
    "Deception",
-   "Stealth"
+   "Nature",
+   "Stealth",
+   "Survival"
   ],
   "expertise": [],
   "eligible": [
    "Deception",
-   "Stealth"
+   "Nature",
+   "Stealth",
+   "Survival"
   ]
  },
  "integrated | human criminal scout rogue | L17 | books=PHB": {
@@ -13194,12 +11415,16 @@
  "integrated | human criminal scout rogue | L17 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
   "proficient": [
    "Deception",
-   "Stealth"
+   "Nature",
+   "Stealth",
+   "Survival"
   ],
   "expertise": [],
   "eligible": [
    "Deception",
-   "Stealth"
+   "Nature",
+   "Stealth",
+   "Survival"
   ]
  },
  "integrated | human acolyte knowledge cleric with skill expertise | L1 | books=all": {
@@ -13804,167 +12029,257 @@
  },
  "integrated | human acolyte college of lore bard with picked skills | L3 | books=all": {
   "proficient": [
+   "Athletics",
    "Insight",
-   "Religion"
+   "Religion",
+   "Stealth",
+   "Survival"
   ],
   "expertise": [],
   "eligible": [
+   "Athletics",
    "Insight",
-   "Religion"
+   "Religion",
+   "Stealth",
+   "Survival"
   ]
  },
  "integrated | human acolyte college of lore bard with picked skills | L3 | books=PHB": {
   "proficient": [
+   "Athletics",
    "Insight",
-   "Religion"
+   "Religion",
+   "Stealth",
+   "Survival"
   ],
   "expertise": [],
   "eligible": [
+   "Athletics",
    "Insight",
-   "Religion"
+   "Religion",
+   "Stealth",
+   "Survival"
   ]
  },
  "integrated | human acolyte college of lore bard with picked skills | L3 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
   "proficient": [
+   "Athletics",
    "Insight",
-   "Religion"
+   "Religion",
+   "Stealth",
+   "Survival"
   ],
   "expertise": [],
   "eligible": [
+   "Athletics",
    "Insight",
-   "Religion"
+   "Religion",
+   "Stealth",
+   "Survival"
   ]
  },
  "integrated | human acolyte college of lore bard with picked skills | L6 | books=all": {
   "proficient": [
+   "Athletics",
    "Insight",
-   "Religion"
+   "Religion",
+   "Stealth",
+   "Survival"
   ],
   "expertise": [],
   "eligible": [
+   "Athletics",
    "Insight",
-   "Religion"
+   "Religion",
+   "Stealth",
+   "Survival"
   ]
  },
  "integrated | human acolyte college of lore bard with picked skills | L6 | books=PHB": {
   "proficient": [
+   "Athletics",
    "Insight",
-   "Religion"
+   "Religion",
+   "Stealth",
+   "Survival"
   ],
   "expertise": [],
   "eligible": [
+   "Athletics",
    "Insight",
-   "Religion"
+   "Religion",
+   "Stealth",
+   "Survival"
   ]
  },
  "integrated | human acolyte college of lore bard with picked skills | L6 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
   "proficient": [
+   "Athletics",
    "Insight",
-   "Religion"
+   "Religion",
+   "Stealth",
+   "Survival"
   ],
   "expertise": [],
   "eligible": [
+   "Athletics",
    "Insight",
-   "Religion"
+   "Religion",
+   "Stealth",
+   "Survival"
   ]
  },
  "integrated | human acolyte college of lore bard with picked skills | L11 | books=all": {
   "proficient": [
+   "Athletics",
    "Insight",
-   "Religion"
+   "Religion",
+   "Stealth",
+   "Survival"
   ],
   "expertise": [],
   "eligible": [
+   "Athletics",
    "Insight",
-   "Religion"
+   "Religion",
+   "Stealth",
+   "Survival"
   ]
  },
  "integrated | human acolyte college of lore bard with picked skills | L11 | books=PHB": {
   "proficient": [
+   "Athletics",
    "Insight",
-   "Religion"
+   "Religion",
+   "Stealth",
+   "Survival"
   ],
   "expertise": [],
   "eligible": [
+   "Athletics",
    "Insight",
-   "Religion"
+   "Religion",
+   "Stealth",
+   "Survival"
   ]
  },
  "integrated | human acolyte college of lore bard with picked skills | L11 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
   "proficient": [
+   "Athletics",
    "Insight",
-   "Religion"
+   "Religion",
+   "Stealth",
+   "Survival"
   ],
   "expertise": [],
   "eligible": [
+   "Athletics",
    "Insight",
-   "Religion"
+   "Religion",
+   "Stealth",
+   "Survival"
   ]
  },
  "integrated | human acolyte college of lore bard with picked skills | L14 | books=all": {
   "proficient": [
+   "Athletics",
    "Insight",
-   "Religion"
+   "Religion",
+   "Stealth",
+   "Survival"
   ],
   "expertise": [],
   "eligible": [
+   "Athletics",
    "Insight",
-   "Religion"
+   "Religion",
+   "Stealth",
+   "Survival"
   ]
  },
  "integrated | human acolyte college of lore bard with picked skills | L14 | books=PHB": {
   "proficient": [
+   "Athletics",
    "Insight",
-   "Religion"
+   "Religion",
+   "Stealth",
+   "Survival"
   ],
   "expertise": [],
   "eligible": [
+   "Athletics",
    "Insight",
-   "Religion"
+   "Religion",
+   "Stealth",
+   "Survival"
   ]
  },
  "integrated | human acolyte college of lore bard with picked skills | L14 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
   "proficient": [
+   "Athletics",
    "Insight",
-   "Religion"
+   "Religion",
+   "Stealth",
+   "Survival"
   ],
   "expertise": [],
   "eligible": [
+   "Athletics",
    "Insight",
-   "Religion"
+   "Religion",
+   "Stealth",
+   "Survival"
   ]
  },
  "integrated | human acolyte college of lore bard with picked skills | L17 | books=all": {
   "proficient": [
+   "Athletics",
    "Insight",
-   "Religion"
+   "Religion",
+   "Stealth",
+   "Survival"
   ],
   "expertise": [],
   "eligible": [
+   "Athletics",
    "Insight",
-   "Religion"
+   "Religion",
+   "Stealth",
+   "Survival"
   ]
  },
  "integrated | human acolyte college of lore bard with picked skills | L17 | books=PHB": {
   "proficient": [
+   "Athletics",
    "Insight",
-   "Religion"
+   "Religion",
+   "Stealth",
+   "Survival"
   ],
   "expertise": [],
   "eligible": [
+   "Athletics",
    "Insight",
-   "Religion"
+   "Religion",
+   "Stealth",
+   "Survival"
   ]
  },
  "integrated | human acolyte college of lore bard with picked skills | L17 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
   "proficient": [
+   "Athletics",
    "Insight",
-   "Religion"
+   "Religion",
+   "Stealth",
+   "Survival"
   ],
   "expertise": [],
   "eligible": [
+   "Athletics",
    "Insight",
-   "Religion"
+   "Religion",
+   "Stealth",
+   "Survival"
   ]
  },
  "integrated | human acolyte fighter with the skilled feat and picked skills | L1 | books=all": {
@@ -14017,96 +12332,132 @@
  },
  "integrated | human acolyte fighter with the skilled feat and picked skills | L6 | books=all": {
   "proficient": [
+   "Arcana",
+   "Athletics",
    "Insight",
-   "Religion"
+   "Religion",
+   "Stealth"
   ],
   "expertise": [],
   "eligible": []
  },
  "integrated | human acolyte fighter with the skilled feat and picked skills | L6 | books=PHB": {
   "proficient": [
+   "Arcana",
+   "Athletics",
    "Insight",
-   "Religion"
+   "Religion",
+   "Stealth"
   ],
   "expertise": [],
   "eligible": []
  },
  "integrated | human acolyte fighter with the skilled feat and picked skills | L6 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
   "proficient": [
+   "Arcana",
+   "Athletics",
    "Insight",
-   "Religion"
+   "Religion",
+   "Stealth"
   ],
   "expertise": [],
   "eligible": []
  },
  "integrated | human acolyte fighter with the skilled feat and picked skills | L11 | books=all": {
   "proficient": [
+   "Arcana",
+   "Athletics",
    "Insight",
-   "Religion"
+   "Religion",
+   "Stealth"
   ],
   "expertise": [],
   "eligible": []
  },
  "integrated | human acolyte fighter with the skilled feat and picked skills | L11 | books=PHB": {
   "proficient": [
+   "Arcana",
+   "Athletics",
    "Insight",
-   "Religion"
+   "Religion",
+   "Stealth"
   ],
   "expertise": [],
   "eligible": []
  },
  "integrated | human acolyte fighter with the skilled feat and picked skills | L11 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
   "proficient": [
+   "Arcana",
+   "Athletics",
    "Insight",
-   "Religion"
+   "Religion",
+   "Stealth"
   ],
   "expertise": [],
   "eligible": []
  },
  "integrated | human acolyte fighter with the skilled feat and picked skills | L14 | books=all": {
   "proficient": [
+   "Arcana",
+   "Athletics",
    "Insight",
-   "Religion"
+   "Religion",
+   "Stealth"
   ],
   "expertise": [],
   "eligible": []
  },
  "integrated | human acolyte fighter with the skilled feat and picked skills | L14 | books=PHB": {
   "proficient": [
+   "Arcana",
+   "Athletics",
    "Insight",
-   "Religion"
+   "Religion",
+   "Stealth"
   ],
   "expertise": [],
   "eligible": []
  },
  "integrated | human acolyte fighter with the skilled feat and picked skills | L14 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
   "proficient": [
+   "Arcana",
+   "Athletics",
    "Insight",
-   "Religion"
+   "Religion",
+   "Stealth"
   ],
   "expertise": [],
   "eligible": []
  },
  "integrated | human acolyte fighter with the skilled feat and picked skills | L17 | books=all": {
   "proficient": [
+   "Arcana",
+   "Athletics",
    "Insight",
-   "Religion"
+   "Religion",
+   "Stealth"
   ],
   "expertise": [],
   "eligible": []
  },
  "integrated | human acolyte fighter with the skilled feat and picked skills | L17 | books=PHB": {
   "proficient": [
+   "Arcana",
+   "Athletics",
    "Insight",
-   "Religion"
+   "Religion",
+   "Stealth"
   ],
   "expertise": [],
   "eligible": []
  },
  "integrated | human acolyte fighter with the skilled feat and picked skills | L17 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
   "proficient": [
+   "Arcana",
+   "Athletics",
    "Insight",
-   "Religion"
+   "Religion",
+   "Stealth"
   ],
   "expertise": [],
   "eligible": []

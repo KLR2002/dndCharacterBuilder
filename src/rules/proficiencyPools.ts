@@ -26,11 +26,11 @@ export function isPickableCategory(category: string): category is PickableCatego
 }
 
 /**
- * The grants of a race, subrace or background that the Proficiency Sheet reads as tools and languages.
- * Their skills, weapons and armor are still read by their own tables.
+ * The grants of a race, subrace or background that the Proficiency Sheet reads as tools, languages and
+ * skills. Their weapons and armor are still read by their own tables.
  */
-export function sourceToolAndLanguageGrants(grants: readonly ProficiencyGrant[] | undefined): ProficiencyGrant[] {
-  return (grants ?? []).filter((grant) => grant.category === "tools" || grant.category === "languages");
+export function sourceRecordGrants(grants: readonly ProficiencyGrant[] | undefined): ProficiencyGrant[] {
+  return (grants ?? []).filter((grant) => grant.category === "tools" || grant.category === "languages" || grant.category === "skills");
 }
 
 /** A known language's own spelling, or the name as written with each word capitalized. */

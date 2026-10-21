@@ -799,20 +799,11 @@ function grantBackground(character: Character, bgData?: BackgroundData): Charact
     character.items ?? []
   );
 
-  const existingSkills = new Set((character.chosenSkills || []).map((s) => s.toLowerCase()));
-  const newSkills = [...(character.chosenSkills || [])];
-  for (const s of bgData?.skillProficiencies || []) {
-    if (!existingSkills.has(s.toLowerCase())) {
-      newSkills.push(s);
-      existingSkills.add(s.toLowerCase());
-    }
-  }
-
+  // The background's skills are its Proficiency Grants, read by the sheet; nothing is written to the skill bucket.
   return {
     ...character,
     pouch: updatedPouch,
     items: [...(character.items || []), ...bgItems],
-    chosenSkills: newSkills,
   };
 }
 

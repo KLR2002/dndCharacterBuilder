@@ -175,7 +175,6 @@ function legacySkillNames(
       race: ancestry.race,
       subrace: ancestry.subrace,
       races: listings.races(),
-      backgrounds: listings.backgrounds(),
     }),
     ...fixedFeatureNames(features, "skills").map(normalizeSkillName),
   ];

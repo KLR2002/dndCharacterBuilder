@@ -3,7 +3,7 @@ import type { ClassData, ProficiencyGrant } from "../types/dnd5e.ts";
 import type { Compendium } from "../services/compendium.ts";
 import { optionGrantApplies } from "./optionFeatureGrants.ts";
 import { findClassData } from "./catalogs.ts";
-import { poolNames, sourceToolAndLanguageGrants, STARTING_PROFICIENCIES, validPicks, type ChoiceProficiencyGrant } from "./proficiencyPools.ts";
+import { poolNames, sourceRecordGrants, STARTING_PROFICIENCIES, validPicks, type ChoiceProficiencyGrant } from "./proficiencyPools.ts";
 import { recordGrantSources } from "./recordProficiencyGrants.ts";
 
 /**
@@ -165,9 +165,9 @@ function grantSourcesIn(compendium: Compendium): Map<string, GrantSource> {
   }
   for (const race of listings.races()) {
     const raceOwner = { kind: "record" as const, origin: "Race" as const, name: race.name, source: race.source };
-    add(sourceToolAndLanguageGrants(race.grants), { feature: race.name, level: 0, optional: false, owner: raceOwner });
+    add(sourceRecordGrants(race.grants), { feature: race.name, level: 0, optional: false, owner: raceOwner });
     for (const sub of race.subraces ?? []) {
-      add(sourceToolAndLanguageGrants(sub.grants), {
+      add(sourceRecordGrants(sub.grants), {
         feature: sub.name,
         level: 0,
         optional: false,
@@ -176,7 +176,7 @@ function grantSourcesIn(compendium: Compendium): Map<string, GrantSource> {
     }
   }
   for (const background of listings.backgrounds()) {
-    add(sourceToolAndLanguageGrants(background.grants), {
+    add(sourceRecordGrants(background.grants), {
       feature: background.name,
       level: 0,
       optional: false,

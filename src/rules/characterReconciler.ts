@@ -15,6 +15,7 @@ import {
 } from "./choices/warlockChoices.ts";
 import { tableOwnerOf } from "./subclassChoiceTable.ts";
 import { moveLegacyClassToolPicks, moveLegacySourcePicks, pruneInvalidProficiencyPicks } from "./proficiencyPicks.ts";
+import { dropLegacyBackgroundSkills } from "./legacyBackgroundSkills.ts";
 
 /**
  * The single seam every state-changing builder transition ends in. Idempotent: reconciling a
@@ -33,7 +34,8 @@ import { moveLegacyClassToolPicks, moveLegacySourcePicks, pruneInvalidProficienc
  * its position is free; it sits with the other known-spell syncs.
  * The class tool bucket is moved into its Proficiency Choice's pick first, so the pick check sees it, and the
  * race and background tool and language buckets follow it.
- * Proficiency picks are released before Expertise, so Expertise is pruned against the released state.
+ * Proficiency picks are released before Expertise, so Expertise is pruned against the released state. A
+ * background skill copy that only a turned-off background granted is dropped first, for the same reason.
  *
  * `options.activeBooks` scopes only the Expertise pass: an Expertise mark on a skill that no active book
  * grants is released. Omitted, the pass is unscoped, as it has always been.
@@ -55,6 +57,7 @@ export function reconcile(
   updated = pruneInvalidInfusions(updated, compendium);
   updated = moveLegacyClassToolPicks(updated, compendium);
   updated = moveLegacySourcePicks(updated, compendium);
+  updated = dropLegacyBackgroundSkills(updated, compendium, options.activeBooks);
   updated = pruneInvalidProficiencyPicks(updated, compendium);
   updated = pruneInvalidExpertise(updated, { compendium, activeBooks: options.activeBooks });
 
