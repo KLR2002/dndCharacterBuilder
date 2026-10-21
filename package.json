@@ -48,9 +48,10 @@
     "web": "expo start --web",
     "lint": "EXPO_NO_TELEMETRY=1 expo lint",
     "typecheck": "tsc --noEmit",
+    "typecheck:checks": "node scripts/typecheck-ratchet.mjs",
     "layout:check": "node --experimental-strip-types scripts/layout-check.mjs",
     "test": "node --experimental-strip-types --test checks/ && npm --prefix dnd5eToolsScrap test",
-    "check:all": "npm test && npm run typecheck && npm run lint",
+    "check:all": "npm test && npm run typecheck && npm run typecheck:checks && npm run lint",
     "scrape:books": "npm --prefix dnd5eToolsScrap run scrape:books",
     "scrape:items": "npm --prefix dnd5eToolsScrap run scrape:items",
     "prepare": "git config core.hooksPath .githooks 2>/dev/null || true"
