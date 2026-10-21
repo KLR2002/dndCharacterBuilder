@@ -4,7 +4,7 @@ import { getItems } from "../src/services/dataService.ts";
 import type { InventoryItem } from "../src/types/character.ts";
 import { makeChar } from "./testUtils.ts";
 
-describe("Inventory Compendium & Category Filtering (Ticket 02)", () => {
+describe("Inventory Compendium & Category Filtering", () => {
   it("category filtering returns matching items for all canonical categories without empty screens", () => {
     const allItems = getItems(["PHB", "DMG", "XGE", "TCE"]);
 

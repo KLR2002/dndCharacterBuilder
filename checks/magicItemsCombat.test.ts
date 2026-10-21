@@ -7,7 +7,7 @@ import { evaluateCharacter } from "../src/rules/characterEvaluation.ts";
 import { getTacticalActionLedger } from "../src/rules/tacticalActions.ts";
 import type { InventoryItem } from "../src/types/character.ts";
 
-describe("Combat Economy Engine: Passive Weapon & Armor Enhancement Bonuses (Ticket 03)", () => {
+describe("Combat Economy Engine: Passive Weapon & Armor Enhancement Bonuses", () => {
   const catalogs = loadTestCatalogs();
   const compendium = integratedTestCompendium();
 

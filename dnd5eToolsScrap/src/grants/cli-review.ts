@@ -1,9 +1,8 @@
 /**
  * npm run review:grants
  *
- * Writes .scratch/proficiency-sheet/review.md: every grant added and every mark
- * (the decisions), the matches that still have no decision, and the notes
- * section of .scratch/proficiency-sheet/review-decisions.md.
+ * Writes the review file: every grant added and every mark (the decisions), the
+ * matches that still have no decision, and the notes section of the decisions file.
  */
 import fs from "node:fs";
 import { fileURLToPath } from "node:url";

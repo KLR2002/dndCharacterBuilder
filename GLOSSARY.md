@@ -119,8 +119,12 @@ What a single rule (ancestry, background, class, subclass feature, or feat) give
 _Avoid_: Bonus proficiency (that is a feature name), training
 
 **Proficiency Choice**:
-A Proficiency Grant that lets the player pick from a pool of entries in one category. The pick is stored against the grant. Distinct from a *Rule Choice*, which grants a feature rather than proficiency.
+A Proficiency Grant that lets the player pick from a pool of entries in one category. The pick is stored against the grant's *Grant Id*, and is released with a notice when the rule that grants it stops applying (including an optional feature turned off). Distinct from a *Rule Choice*, which grants a feature rather than proficiency.
 _Avoid_: Proficiency option, proficiency selection
+
+**Grant Id**:
+The stable key of a Proficiency Grant, derived from what the grant is (its category, kind and the names it grants or picks from), never from its position in the feature. A grant keeps the position-based ids it had before as aliases, so a saved pick still resolves after a re-scrape. A choice's id leaves out its pool and count.
+_Avoid_: Index key
 
 **Proficiency Sheet**:
 The single complete answer to "what is this character proficient in", gathering every Proficiency Grant together with any *Added Proficiency*. It is derived, never stored: a rule-granted entry exists only while the ancestry, background, class level, subclass or feat that grants it applies, and cannot be removed by hand. Expertise and the character card read from it.
@@ -139,7 +143,7 @@ Broad weapon proficiency groups ("Simple weapons", "Martial weapons") that super
 _Avoid_: Weapon bundles, mass proficiencies, weapon sets
 
 **Monk Weapon**:
-Shortswords and any simple melee weapons that do not have the two-handed or heavy property, allowing a Monk to use Dexterity for attack and damage rolls and substitute their scaling Martial Arts die if it is higher than the weapon's base damage die. A weapon chosen through a Way of the Kensei choice is also a Monk Weapon.
+Shortswords and any simple melee weapons that do not have the two-handed or heavy property, allowing a Monk to use Dexterity for attack and damage rolls and substitute their scaling Martial Arts die if it is higher than the weapon's base damage die. A weapon chosen through a Monk subclass's weapon choice (such as Way of the Kensei) is also a Monk Weapon, whichever subclass grants the choice.
 _Avoid_: Martial arts weapon, ki weapon
 
 **Ki Spellcasting Profile**:
@@ -255,8 +259,12 @@ The minimal, unencumbered player compendium strictly derived from the 5.1 System
 _Avoid_: Default books, base sourcebook, vanilla data
 
 **Integrated Catalog**:
-The complete player compendium fetched from 5e.tools and persisted in client storage (IndexedDB). It carries a format number; a catalog older than the format the application requires is *stale*, and Settings asks for a re-sync.
+The complete player compendium fetched from 5e.tools and persisted in client storage (IndexedDB). It carries a *Catalog Format*.
 _Avoid_: Scraped dump, external database, download cache
+
+**Catalog Format**:
+The number an Integrated Catalog is saved with. The application bumps the required number when scraped data changes in a way a cached catalog cannot satisfy. A catalog saved below it, or with no number, is *stale*: it still loads, its affected choices are hidden, saved picks are kept, and Settings asks for a re-sync. The SRD Baseline is never stale.
+_Avoid_: Version, schema version, cache key
 
 **Sourcebook Gating**:
 The UI restriction that hides all sourcebook selection and filtering controls until the Integrated Catalog has been successfully populated.

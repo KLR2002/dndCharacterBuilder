@@ -181,10 +181,10 @@ export const RULE_CHOICE_LEVELS: Record<string, RuleChoiceLevel> = {
   "SCAG__Half-Elf__Wood Elf Descent__Variant Feature (Choose 1)": { level: 1 },
 
   // Real build-time choices the catalog also offers. Curated so the catalog
-  // guard passes; not surfaced until a later ticket claims them.
+  // guard passes; not surfaced until a later change models them.
   "GGR__Simic Hybrid____Animal Enhancement": { level: 1 },
   // Both Simic enhancements hang off one trait, and a trait carries a single
-  // choice; the second is left for a ticket that models multiple choices.
+  // choice; the second is left for a change that models multiple choices.
   "GGR__Simic Hybrid____Animal Enhancement#1": { level: 5, deferred: true },
   "MPMM__Kobold____Kobold Legacy": { level: 1 },
   "MPMM__Shifter____Shifting": { level: 1 },
