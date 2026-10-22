@@ -4,7 +4,9 @@
 
 **Blocked by:** None
 
-**Status:** ready-for-agent
+**Status:** done
+
+**Landed:** merged from `pr/26-bg-card-320` (f4567bd). The creator card header row wraps (`flexWrap`, `gap`) and its text block has a 180 px `flexBasis`, so at 320 px the button drops below the text. `npm run layout:check` and `-- --integrated` GREEN (the scenario that was RED at 320 px in the SRD run; the integrated RED was reported by the scenario's author, not re-captured); screenshots of the card at 320 and 393 px viewed by the main session. `check:all` passes. Open items: 360 and 412 px card screenshots and the open form's header row at 320 px not viewed; web only, no Android check.
 
 ## Acceptance criteria
 
