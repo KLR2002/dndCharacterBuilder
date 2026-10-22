@@ -5,13 +5,14 @@ import { AbilityKey, Character } from "../../types/character";
 import type { RaceData } from "../../types/dnd5e";
 import { type AvailableRuleChoice } from "../../rules/ruleChoices";
 import { changeRace, setChoiceRacialBonus } from "../../rules/builderTransitions";
-import { currentCompendium } from "../../services/compendium";
+import { currentCompendium, srdBaselineRaces } from "../../services/compendium";
 import {
   resolveAncestryState,
   applyAncestrySelection,
   applyAncestryChoice,
   setRacialCantrip,
   collectFixedBonuses,
+  offersPlainRaceForm,
 } from "../../rules/ancestryEngine";
 import type { SourceFixedGrants } from "../../rules/proficiencySheet";
 import { ProficiencyChoicePicker } from "./ProficiencyChoicePicker";
@@ -168,6 +169,38 @@ export const AncestrySection: React.FC<AncestrySectionProps> = ({
     setUserSelectedMode(null);
     onUpdate((cur) =>
       applyAncestrySelection(cur, r, sr, { activeBooks })
+    );
+  };
+
+  const renderRaceFormRow = (
+    key: string,
+    label: string,
+    fixed: Record<string, number>,
+    isChoice: boolean,
+    onPress: () => void
+  ) => {
+    const fixedStr = formatRaceASI(Object.entries(fixed).map(([k, v]) => ({ [k]: v })));
+    return (
+      <TouchableOpacity
+        key={key}
+        onPress={onPress}
+        style={[
+          styles.subraceRow,
+          { backgroundColor: theme.surfaceHighlight, borderColor: theme.border },
+        ]}
+      >
+        <View style={{ flex: 1 }}>
+          <Text style={{ color: theme.text, fontWeight: "600", fontSize: 13 }}>{label}</Text>
+          {Boolean(fixedStr) && !isChoice ? (
+            <Text style={{ color: theme.accent, fontSize: 11, fontWeight: "600" }}>
+              {fixedStr}
+            </Text>
+          ) : isChoice ? (
+            <Text style={{ color: theme.accent, fontSize: 11, fontWeight: "600" }}>Choice ASI</Text>
+          ) : null}
+        </View>
+        <Ionicons name="chevron-forward" size={16} color={theme.accent} />
+      </TouchableOpacity>
     );
   };
 
@@ -598,6 +631,8 @@ export const AncestrySection: React.FC<AncestrySectionProps> = ({
                 const displayTraits = singleSubrace
                   ? [...r.traits, ...(singleSubrace.traits || [])]
                   : r.traits;
+                const showPlainRow = offersPlainRaceForm(r, srdBaselineRaces());
+                const raceFixed = collectFixedBonuses(r.abilityScoreIncrease);
                 return (
                   <Card key={`${r.name}__${r.source}`}>
                     {/* Header */}
@@ -650,6 +685,15 @@ export const AncestrySection: React.FC<AncestrySectionProps> = ({
                     {r.subraces.length > 1 ? (
                       <View style={styles.subracesBox}>
                         <Text style={[styles.subLabel, { color: theme.textSecondary }]}>Subraces / Variants:</Text>
+                        {showPlainRow
+                          ? renderRaceFormRow(
+                              "plain",
+                              r.name,
+                              raceFixed,
+                              r.name === "Half-Elf" || Object.keys(raceFixed).length === 0,
+                              () => selectRace(r)
+                            )
+                          : null}
                         {r.subraces.map((sr, idx) => {
                           const combined = collectFixedBonuses(r.abilityScoreIncrease, sr.abilityScoreIncrease);
                           const combinedStr = formatRaceASI(Object.entries(combined).map(([k, v]) => ({ [k]: v })));
@@ -658,29 +702,12 @@ export const AncestrySection: React.FC<AncestrySectionProps> = ({
                             sr.name === "Variant" ||
                             sr.name === "Custom Lineage" ||
                             r.name === "Half-Elf";
-                          return (
-                            <TouchableOpacity
-                              key={`${sr.name || "base"}_${idx}`}
-                              onPress={() => selectRace(r, idx)}
-                              style={[
-                                styles.subraceRow,
-                                { backgroundColor: theme.surfaceHighlight, borderColor: theme.border },
-                              ]}
-                            >
-                              <View style={{ flex: 1 }}>
-                                <Text style={{ color: theme.text, fontWeight: "600", fontSize: 13 }}>
-                                  {sr.name || (r.name === "Human" ? "Standard Human" : r.name)}
-                                </Text>
-                                {Boolean(combinedStr) && !srIsChoice ? (
-                                  <Text style={{ color: theme.accent, fontSize: 11, fontWeight: "600" }}>
-                                    {combinedStr}
-                                  </Text>
-                                ) : srIsChoice ? (
-                                  <Text style={{ color: theme.accent, fontSize: 11, fontWeight: "600" }}>Choice ASI</Text>
-                                ) : null}
-                              </View>
-                              <Ionicons name="chevron-forward" size={16} color={theme.accent} />
-                            </TouchableOpacity>
+                          return renderRaceFormRow(
+                            `${sr.name || "base"}_${idx}`,
+                            sr.name || (r.name === "Human" ? "Standard Human" : r.name),
+                            combined,
+                            srIsChoice,
+                            () => selectRace(r, idx)
                           );
                         })}
                       </View>

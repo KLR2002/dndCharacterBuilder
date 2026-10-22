@@ -1,12 +1,13 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { makeChar, loadTestCatalogs, inMemoryCompendium } from "./testUtils.ts";
+import { makeChar, loadTestCatalogs, loadSrdCatalog, inMemoryCompendium } from "./testUtils.ts";
 import {
   resolveAncestryState,
   applyAncestrySelection,
   applyAncestryChoice,
   clearAncestryChoice,
   setRacialCantrip,
+  offersPlainRaceForm,
 } from "../src/rules/ancestryEngine.ts";
 import { setChoiceRacialBonus } from "../src/rules/builderTransitions.ts";
 import type { RaceData } from "../src/types/dnd5e.ts";
@@ -198,4 +199,49 @@ test("resolveAncestryState reads the selected race from the Compendium it is giv
 
   assert.equal(resolveAncestryState(char, { compendium: inMemoryCompendium({ races: [testfolk] }) }).selectedRace?.name, "Testfolk");
   assert.equal(resolveAncestryState(char, { compendium: inMemoryCompendium({ races: [] }) }).selectedRace, undefined);
+});
+
+test("offersPlainRaceForm offers a plain form to integrated races the SRD holds without a subrace", () => {
+  const srdRaces = loadSrdCatalog<RaceData[]>("races");
+  const offered = (name: string) =>
+    offersPlainRaceForm(races.find((r) => r.name === name && r.source === "PHB")!, srdRaces);
+
+  assert.equal(offered("Half-Elf"), true);
+  assert.equal(offered("Dragonborn"), true);
+  assert.equal(offered("Tiefling"), true);
+  // SRD races held only with a named subrace, Human's unnamed base subrace, and Half-Orc (one integrated subrace).
+  for (const name of ["Dwarf", "Elf", "Halfling", "Gnome", "Human", "Half-Orc"]) {
+    assert.equal(offered(name), false, `${name} should not gain a plain form`);
+  }
+});
+
+test("offersPlainRaceForm withholds the plain form when the SRD has no such race or holds it with a named subrace", () => {
+  const srdRaces = loadSrdCatalog<RaceData[]>("races");
+  const base = races.find((r) => r.name === "Dragonborn" && r.source === "PHB")!;
+  const twoSubraces = [
+    { ...base.subraces![0], name: "Alpha Lineage" },
+    { ...base.subraces![1], name: "Beta Lineage" },
+  ];
+  const unknown = { ...base, name: "Testfolk", source: "TEST", subraces: twoSubraces };
+  assert.equal(offersPlainRaceForm(unknown, srdRaces), false);
+
+  const srdElf = srdRaces.find((r) => r.name === "Elf")!;
+  const srdWithNamedSubrace = { ...srdElf, name: "Testfolk", source: "SRD", subraces: [{ ...srdElf.subraces![0], name: "Gamma" }] };
+  assert.equal(offersPlainRaceForm(unknown, [...srdRaces, srdWithNamedSubrace]), false);
+
+  const srdBare = { ...base, name: "Testfolk", source: "SRD", subraces: [] };
+  assert.equal(offersPlainRaceForm(unknown, [...srdRaces, srdBare]), true);
+});
+
+test("picking the plain integrated Half-Elf leaves no subrace and offers the Choice ASI picker", () => {
+  const halfElf = races.find((r) => r.name === "Half-Elf" && r.source === "PHB")!;
+  const char = applyAncestrySelection(makeChar(), halfElf, undefined, catalogs);
+
+  assert.equal(char.race?.name, "Half-Elf");
+  assert.equal(char.race?.subraceName, undefined);
+  assert.deepEqual(char.racialAbilityBonuses, {});
+
+  const state = resolveAncestryState(char, catalogs);
+  assert.equal(state.selectedSubrace, undefined);
+  assert.equal(state.isChoiceASIRace, true);
 });
