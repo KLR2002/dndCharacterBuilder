@@ -99,7 +99,7 @@ test("a background's tool and language entries become background grants named af
   assert.deepEqual(report.unparsed, []);
 });
 
-test("a background's fixed skills become a skills grant after its tool and language grants, and its choice names no skill", async () => {
+test("a background's fixed skills become a skills grant after its tool grants, and its skill choice becomes a choice grant", async () => {
   const background = {
     name: "Sample Trade",
     source: "TST",
@@ -112,12 +112,13 @@ test("a background's fixed skills become a skills grant after its tool and langu
   assert.deepEqual(shapes(result.grants), [
     { id: "TST/Background/Sample Trade@0#tools:fixed:vehicles (land)", kind: "fixed", category: "tools", names: ["vehicles (land)"] },
     { id: "TST/Background/Sample Trade@0#skills:fixed:Sleight of Hand,Stealth", kind: "fixed", category: "skills", names: ["Sleight of Hand", "Stealth"] },
+    { id: "TST/Background/Sample Trade@0#skills:choice:from", kind: "choice", category: "skills", count: 1, pool: { kind: "names", names: ["Arcana", "Nature"] } },
   ]);
   assert.deepEqual(result.skillProficiencies, ["Sleight of hand", "Stealth"]);
   assert.deepEqual(report.unparsed, []);
 });
 
-test("a race's fixed skills become a skills grant after its language grants, and a subrace's its own", async () => {
+test("a race's fixed and choice skills become skills grants after its language grants, and a subrace's its own", async () => {
   const race = {
     name: "Sample Folk",
     source: "TST",
@@ -140,10 +141,12 @@ test("a race's fixed skills become a skills grant after its language grants, and
     [
       ["TST/Race/Sample Folk@0#languages:fixed:Common", "languages"],
       ["TST/Race/Sample Folk@0#skills:fixed:Perception", "skills"],
+      ["TST/Race/Sample Folk@0#skills:choice:any", "skills"],
     ],
   );
   assert.deepEqual(shapes(result.subraces[0].grants), [
     { id: "TST/Subrace/Sample Folk (Hillward)@0#skills:fixed:Animal Handling", kind: "fixed", category: "skills", names: ["Animal Handling"] },
+    { id: "TST/Subrace/Sample Folk (Hillward)@0#skills:choice:from", kind: "choice", category: "skills", count: 1, pool: { kind: "names", names: ["Nature"] } },
   ]);
   assert.deepEqual(report.unparsed, []);
 });
@@ -258,4 +261,81 @@ test("a reviewed subrace override holds a race's count when the subrace's entrie
     [{ id: "TST/Subrace/Human (Keldon)@0#skills:fixed:Athletics", kind: "fixed", category: "skills", names: ["Athletics"] }],
     "the subrace grants no language beyond its race, and keeps its fixed skill",
   );
+});
+
+test("a background's choose list of skills is a choice of its count from that list, and carries no fixed skill of its own", async () => {
+  const background = {
+    name: "Sample Scholar",
+    source: "TST",
+    entries: [],
+    skillProficiencies: [{ choose: { from: ["insight", "investigation", "perception"], count: 2 } }],
+  };
+  const report = newProficiencyReport();
+  const [result] = await scrapeBackgrounds(fakeClient({ "data/backgrounds.json": { background: [background] } }), report);
+  assert.deepEqual(shapes(result.grants), [
+    {
+      id: "TST/Background/Sample Scholar@0#skills:choice:from",
+      kind: "choice",
+      category: "skills",
+      count: 2,
+      pool: { kind: "names", names: ["Insight", "Investigation", "Perception"] },
+    },
+  ]);
+  assert.deepEqual(result.skillProficiencies, [], "the displayed fixed skills stay the fixed ones");
+  assert.deepEqual(report.unparsed, []);
+});
+
+test("a background's any-skill count is a choice of that many skills from any skill", async () => {
+  const background = { name: "Sample Wanderer", source: "TST", entries: [], skillProficiencies: [{ any: 2 }] };
+  const report = newProficiencyReport();
+  const [result] = await scrapeBackgrounds(fakeClient({ "data/backgrounds.json": { background: [background] } }), report);
+  assert.deepEqual(shapes(result.grants), [
+    { id: "TST/Background/Sample Wanderer@0#skills:choice:any", kind: "choice", category: "skills", count: 2, pool: { kind: "any" } },
+  ]);
+});
+
+test("a background's skill choice the mapping cannot state is reported, and the block gives no grants, as for any unstated entry", async () => {
+  const background = {
+    name: "Sample Oddity",
+    source: "TST",
+    entries: [],
+    skillProficiencies: [{ choose: { from: ["insight", "not a skill"] } }],
+    toolProficiencies: [{ "vehicles (land)": true }],
+  };
+  const report = newProficiencyReport();
+  const [result] = await scrapeBackgrounds(fakeClient({ "data/backgrounds.json": { background: [background] } }), report);
+  assert.equal(result.grants, undefined, "a block with an unstated entry gives no grants");
+  assert.deepEqual(report.unparsed, [{ owner: "Background", feature: "Sample Oddity", level: 0, unparsed: ["skills: choose"] }]);
+});
+
+test("a race's any-skill count and a subrace's choose list are choice grants, not text", async () => {
+  const race = { name: "Sample Wanderer", source: "TST", entries: [], skillProficiencies: [{ any: 1 }] };
+  const subrace = {
+    name: "Hillward",
+    source: "TST",
+    raceName: "Sample Wanderer",
+    raceSource: "TST",
+    entries: [{ name: "Lore", entries: ["You gain proficiency in one skill of your choice."] }],
+    skillProficiencies: [{ choose: { from: ["history", "medicine"], count: 2 } }],
+  };
+  const report = newProficiencyReport();
+  const [result] = await scrapeRaces(fakeClient({ "data/races.json": { race: [race], subrace: [subrace] } }), report);
+  assert.deepEqual(shapes(result.grants), [
+    { id: "TST/Race/Sample Wanderer@0#languages:fixed:Common", kind: "fixed", category: "languages", names: ["Common"] },
+    { id: "TST/Race/Sample Wanderer@0#skills:choice:any", kind: "choice", category: "skills", count: 1, pool: { kind: "any" } },
+  ]);
+  assert.deepEqual(shapes(result.subraces[0].grants), [
+    { id: "TST/Subrace/Sample Wanderer (Hillward)@0#skills:choice:from", kind: "choice", category: "skills", count: 2, pool: { kind: "names", names: ["History", "Medicine"] } },
+  ]);
+  assert.deepEqual(report.unparsed, [], "the trait text is not a second source of the grant");
+});
+
+test("a reviewed subrace override gives the skill of choice its trait names, beside its language of choice", async () => {
+  const human = { name: "Human", source: "TST", entries: [], languageProficiencies: [{ common: true, anyStandard: 1 }] };
+  const amonkhet = { name: "Amonkhet", source: "TST", raceName: "Human", raceSource: "TST", entries: [{ name: "Skills", entries: ["You gain proficiency in one skill of your choice."] }] };
+  const [race] = await scrapeRaces(fakeClient({ "data/races.json": { race: [human], subrace: [amonkhet] } }), newProficiencyReport());
+  assert.deepEqual(shapes(race.subraces[0].grants), [
+    { id: "TST/Subrace/Human (Amonkhet)@0#languages:choice:any", kind: "choice", category: "languages", count: 1, pool: { kind: "any" } },
+    { id: "TST/Subrace/Human (Amonkhet)@0#skills:choice:any", kind: "choice", category: "skills", count: 1, pool: { kind: "any" } },
+  ]);
 });

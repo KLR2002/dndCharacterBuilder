@@ -48,6 +48,8 @@ const DELETED_NAMES: { name: string; pattern: RegExp }[] = [
   identifier("raceTraining"),
   identifier("optionGrantApplies"),
   identifier("KENSEI_SUBCLASS"),
+  identifier("getRacialSkillChoices"),
+  identifier("RacialSkillChoice"),
   identifier("MULTICLASS_PROFICIENCIES"),
   { name: '"Way of the Kensei"', pattern: /["']Way of the Kensei["']/ },
   {
@@ -581,4 +583,16 @@ test("every allowlist entry still matches a use, so the list cannot go stale", (
     ]),
   );
   assert.deepEqual(stale, [], "these allowlist entries no longer match a use; remove them");
+});
+
+test("guard, synthetic: the race skill text parse and its type are deleted names, called or declared again", () => {
+  const names = ["getRacialSkillChoices", "RacialSkillChoice"];
+  for (const name of names) {
+    const call = `const x = ${name}("Sample Folk");\n`;
+    assert.deepEqual(violationsFor("components/Synthetic.tsx", call, []).map((v) => v.name), [name], name);
+  }
+  assert.deepEqual(
+    violationsFor("rules/proficiencySources/skillGrants.ts", "export function getRacialSkillChoices(raceName?: string) {\n  return [];\n}\n", []).map((v) => v.name),
+    ["getRacialSkillChoices"],
+  );
 });

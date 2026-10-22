@@ -13,6 +13,8 @@ import { maxHp } from "./hp.ts";
 import { fullHealAtLevelUp, followRaisedMaxHp } from "./hitPoints.ts";
 import { currentCompendium, type Compendium } from "../services/compendium.ts";
 import { normalizeSkillName } from "./skills.ts";
+import { moveLegacySkillPicks } from "./proficiencyPicks.ts";
+import { CUSTOM_BACKGROUND_SKILLS_ID } from "./customBackground.ts";
 import { ABILITY_NAMES } from "./abilities.ts";
 import {
   STANDARD_ARRAY,
@@ -244,17 +246,20 @@ export function clearRuleChoices(character: Character): Character {
  * Choices and skill picks, then reconciles. Class-origin choices are kept.
  */
 export function changeRace(character: Character, compendium: Compendium = currentCompendium()): Character {
-  const oldRaceChoices = (character.skillChoices || []).filter((sc) => sc.origin === "race");
+  // Skill picks saved in the old bucket move into their choices while the race is still held. A pick no choice
+  // takes is the race's legacy entry, and it goes with the race.
+  const migrated = moveLegacySkillPicks(character, compendium);
+  const oldRaceChoices = (migrated.skillChoices || []).filter((sc) => sc.origin === "race");
   const oldRacePicks = new Set(oldRaceChoices.flatMap((sc) => sc.picked.map(normalizeSkillName)));
   return reconcile(
     {
-      ...character,
+      ...migrated,
       race: null,
       racialAbilityBonuses: {},
       racialChoiceBonus: [],
       ruleChoices: (character.ruleChoices || []).filter((rc) => rc.origin !== "race"),
-      skillChoices: (character.skillChoices || []).filter((sc) => sc.origin !== "race"),
-      chosenSkills: (character.chosenSkills || []).filter((s) => !oldRacePicks.has(normalizeSkillName(s))),
+      skillChoices: (migrated.skillChoices || []).filter((sc) => sc.origin !== "race"),
+      chosenSkills: (migrated.chosenSkills || []).filter((s) => !oldRacePicks.has(normalizeSkillName(s))),
     },
     compendium
   );
@@ -611,36 +616,44 @@ export function reclaimStartingGrants(
   };
 }
 
+/**
+ * Makes the character's background a custom one, named by the player, with its two skill picks. The picks are
+ * the custom background's skill Proficiency Choice. A skill the old custom background picked from the old skill
+ * bucket is dropped with it, unless a class choice still holds it.
+ */
 export function setCustomBackground(
   character: Character,
   name: string,
-  skills: string[]
+  skills: string[],
+  compendium: Compendium = currentCompendium()
 ): Character {
-  const oldBgChoice = character.skillChoices?.find((sc) => sc.origin === "background");
-  const oldPicked = new Set(oldBgChoice?.picked ?? []);
+  const legacyBackground = (character.skillChoices ?? []).filter((sc) => sc.origin === "background");
+  const droppedSkills = new Set(legacyBackground.flatMap((sc) => sc.picked.map((s) => normalizeSkillName(s).toLowerCase())));
+  const classPicked = new Set(
+    (character.skillChoices ?? [])
+      .filter((sc) => sc.origin === "class")
+      .flatMap((sc) => sc.picked.map((s) => normalizeSkillName(s).toLowerCase()))
+  );
+  const proficiencyPicks: Record<string, string[]> = { ...(character.proficiencyPicks ?? {}) };
+  if (skills.length > 0) proficiencyPicks[CUSTOM_BACKGROUND_SKILLS_ID] = [...skills];
+  else delete proficiencyPicks[CUSTOM_BACKGROUND_SKILLS_ID];
 
-  const retainedSkills = (character.chosenSkills ?? []).filter((s) => !oldPicked.has(s));
-  const newChosenSkills = Array.from(new Set([...retainedSkills, ...skills]));
-
-  const newBgChoice: SkillChoiceEntry = {
-    id: "background_skills",
-    origin: "background",
-    choose: skills.length,
-    from: [...skills],
-    picked: [...skills],
-  };
-
-  const otherChoices = (character.skillChoices ?? []).filter((sc) => sc.origin !== "background");
-
-  return {
-    ...character,
-    background: {
-      name,
-      source: "Custom",
+  return reconcile(
+    {
+      ...character,
+      background: {
+        name,
+        source: "Custom",
+      },
+      chosenSkills: (character.chosenSkills ?? []).filter((s) => {
+        const key = normalizeSkillName(s).toLowerCase();
+        return !droppedSkills.has(key) || classPicked.has(key);
+      }),
+      skillChoices: (character.skillChoices ?? []).filter((sc) => sc.origin !== "background"),
+      proficiencyPicks: Object.keys(proficiencyPicks).length > 0 ? proficiencyPicks : undefined,
     },
-    chosenSkills: newChosenSkills,
-    skillChoices: [...otherChoices, newBgChoice],
-  };
+    compendium
+  );
 }
 
 /**
@@ -651,25 +664,27 @@ export function setCustomBackground(
  */
 export function clearBackground(character: Character, catalogs: CharacterCatalogs = {}): Character {
   const compendium = catalogs.compendium ?? currentCompendium();
-  const bg = character.background;
+  // Skill picks saved in the old bucket move into their choices while the background is still held.
+  const current = moveLegacySkillPicks(character, compendium);
+  const bg = current.background;
   const bgName = bg?.name ?? "previous";
   const bgData = bg ? compendium.findBackground(bg.name, bg.source) : undefined;
 
   const normalize = (s: string) => s.trim().toLowerCase();
-  const bgSkillChoice = character.skillChoices?.find((sc) => sc.origin === "background");
+  const bgSkillChoice = current.skillChoices?.find((sc) => sc.origin === "background");
   const bgSkills = new Set(
     [...(bgData?.skillProficiencies ?? []), ...(bgSkillChoice?.picked ?? [])].map(normalize)
   );
   const otherSkillSources = new Set(
-    (character.skillChoices ?? [])
+    (current.skillChoices ?? [])
       .filter((sc) => sc.origin !== "background")
       .flatMap((sc) => sc.picked)
       .map(normalize)
   );
-  const removedSkills = character.chosenSkills.filter(
+  const removedSkills = current.chosenSkills.filter(
     (s) => bgSkills.has(normalize(s)) && !otherSkillSources.has(normalize(s))
   );
-  const chosenSkills = character.chosenSkills.filter((s) => !removedSkills.includes(s));
+  const chosenSkills = current.chosenSkills.filter((s) => !removedSkills.includes(s));
 
   const grantedFeats = (character.originFeats ?? []).filter((f) => f.featSource === "Background");
   const keptFeats = (character.originFeats ?? []).filter((f) => f.featSource !== "Background");
@@ -686,10 +701,10 @@ export function clearBackground(character: Character, catalogs: CharacterCatalog
   ];
 
   const cleared: Character = {
-    ...character,
+    ...current,
     background: null,
     chosenSkills,
-    skillChoices: (character.skillChoices ?? []).filter((sc) => sc.origin !== "background"),
+    skillChoices: (current.skillChoices ?? []).filter((sc) => sc.origin !== "background"),
     chosenLanguages: { ...character.chosenLanguages, background: [] },
     chosenTools: { ...character.chosenTools, background: [] },
     originFeats: keptFeats,

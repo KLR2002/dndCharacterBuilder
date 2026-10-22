@@ -4,6 +4,7 @@ import { teardownSubclass } from "../src/rules/characterReconciler.ts";
 import { reconcile } from "../src/rules/characterReconciler.ts";
 import { currentCompendium } from "../src/services/compendium.ts";
 import { makeChar, inMemoryCompendium } from "./testUtils.ts";
+import { CUSTOM_BACKGROUND_SKILLS_ID } from "../src/rules/customBackground.ts";
 import { effectiveScores } from "../src/rules/abilities.ts";
 import {
   setStandardArrayPick,
@@ -377,7 +378,7 @@ test("applyStartingGrants reconciles cleanly when switching between gold and equ
   assert.equal(switchedBackToGear.items.length, 2); // starting sword restored, custom torch preserved
 });
 
-test("setCustomBackground sets background to Custom and configures chosen skills", () => {
+test("setCustomBackground sets background to Custom and records its skill picks as its Proficiency Choice", () => {
   const initial = makeChar({
     chosenSkills: ["Athletics"],
   });
@@ -387,18 +388,14 @@ test("setCustomBackground sets background to Custom and configures chosen skills
     name: "Gladiator",
     source: "Custom",
   });
-  assert.ok(custom.chosenSkills.includes("Acrobatics"));
-  assert.ok(custom.chosenSkills.includes("Performance"));
-  assert.ok(custom.chosenSkills.includes("Athletics")); // Retains existing non-background skills
+  assert.deepEqual(custom.proficiencyPicks?.[CUSTOM_BACKGROUND_SKILLS_ID], ["Acrobatics", "Performance"]);
+  assert.deepEqual(custom.chosenSkills, ["Athletics"], "the old skill bucket is not written; other skills stay");
 
-  // Replacing custom background cleanly replaces prior custom background skills
+  // Replacing the custom background replaces its picks.
   const changed = setCustomBackground(custom, "Sage", ["Arcana", "History"]);
   assert.equal(changed.background?.name, "Sage");
-  assert.ok(changed.chosenSkills.includes("Arcana"));
-  assert.ok(changed.chosenSkills.includes("History"));
-  assert.ok(changed.chosenSkills.includes("Athletics"));
-  assert.ok(!changed.chosenSkills.includes("Acrobatics"));
-  assert.ok(!changed.chosenSkills.includes("Performance"));
+  assert.deepEqual(changed.proficiencyPicks?.[CUSTOM_BACKGROUND_SKILLS_ID], ["Arcana", "History"]);
+  assert.deepEqual(changed.chosenSkills, ["Athletics"]);
 });
 
 test("applyBackgroundGrants grants coins and equipment items, and writes no skill (its skills are its grants)", () => {
@@ -837,7 +834,7 @@ test("clearing a custom background removes the skills it chose and keeps class s
   assert.deepEqual(updated.chosenSkills, ["Athletics"]);
   assert.deepEqual(updated.skillChoices, [classSkills]);
   assert.deepEqual(updated.needsReview, [
-    "Sage background removed: granted skills, languages and tools cleared",
+    "Arcana, History removed from Custom Background: no longer granted",
   ]);
 });
 

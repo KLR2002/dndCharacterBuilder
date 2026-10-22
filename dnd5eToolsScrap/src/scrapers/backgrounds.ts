@@ -4,7 +4,7 @@ import { renderEntries } from "../parser/entry-renderer.ts";
 import { cleanTags } from "../parser/tag-cleaner.ts";
 import type { BackgroundModel } from "../types/models.ts";
 import type { ProficiencyReport } from "../types/proficiency.ts";
-import { fixedSkillEntries, newProficiencyReport, structuredGrants } from "../parser/proficiency-grants.ts";
+import { newProficiencyReport, structuredGrants } from "../parser/proficiency-grants.ts";
 
 export async function scrapeBackgrounds(
   client: ToolsClient,
@@ -125,7 +125,7 @@ export async function scrapeBackgrounds(
 
     const proficiencies = structuredGrants(
       { source: raw.source, owner: "Background", feature: cleanTags(raw.name, "plain"), level: 0 },
-      { tools: raw.toolProficiencies, languages: raw.languageProficiencies, skills: fixedSkillEntries(raw.skillProficiencies) }
+      { tools: raw.toolProficiencies, languages: raw.languageProficiencies, skills: raw.skillProficiencies }
     );
     if (proficiencies.unparsed.length > 0) {
       report.unparsed.push({

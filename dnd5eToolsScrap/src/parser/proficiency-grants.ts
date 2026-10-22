@@ -568,20 +568,6 @@ export function resolveFeatureGrants(
 }
 
 /**
- * The fixed skill entries of a 5e.tools skill block, such as `{ perception: true }`. Skill choices (a
- * `choose` list, or a count of `any`) are left out: they are not grants yet, and the skill-choice offers
- * still read them.
- */
-export function fixedSkillEntries(entries: unknown): unknown[] {
-  if (!Array.isArray(entries)) return [];
-  return entries.flatMap((entry) => {
-    if (!entry || typeof entry !== "object") return [];
-    const fixed = Object.fromEntries(Object.entries(entry).filter(([key, value]) => value === true && key !== "choose"));
-    return Object.keys(fixed).length > 0 ? [fixed] : [];
-  });
-}
-
-/**
  * The categories a block's weapon and armor entries form. They are one group: when one of their entries
  * cannot be stated, the group's grants are left out and reported, and the rest of the block still ships.
  * A race's weapon choice the mapping does not state is the case this exists for.
@@ -607,6 +593,8 @@ export function structuredGrants(
   const specs: ProficiencyGrantSpec[] = [];
   const unparsed: string[] = [];
   const training: ProficiencyGrantSpec[] = [];
+  // Skill choices are listed after the training group, so a block that gains one keeps every other grant's position.
+  const skillChoices: ProficiencyGrantSpec[] = [];
   const trainingUnparsed: string[] = [];
   const fixedByCategory = new Map<ProficiencyCategory, Extract<ProficiencyGrantSpec, { kind: "fixed" }>>();
 
@@ -621,7 +609,7 @@ export function structuredGrants(
   };
 
   // A grant's position is its id, so each field keeps its place: tools, languages and skills come first, in that
-  // order, and the training group comes after all of them. Shipped ids therefore do not move.
+  // order, then the training group, then the skill choices (see skillChoices). Shipped ids therefore do not move.
   const fields: Array<[keyof StructuredProficiencies, ProficiencyCategory]> = [
     ["tools", "tools"],
     ["languages", "languages"],
@@ -630,7 +618,7 @@ export function structuredGrants(
     ["armor", "armor"],
   ];
   for (const [field, category] of fields) {
-    const list = TRAINING_CATEGORIES.has(category) ? training : specs;
+    const list = TRAINING_CATEGORIES.has(category) ? training : category === "skills" ? skillChoices : specs;
     const problems = TRAINING_CATEGORIES.has(category) ? trainingUnparsed : unparsed;
     for (const entry of (raw[field] as unknown[] | undefined) ?? []) {
       if (typeof entry === "string") {
@@ -688,8 +676,8 @@ export function structuredGrants(
   }
 
   if (unparsed.length > 0) return { grants: [], unparsed: [...unparsed, ...trainingUnparsed] };
-  if (trainingUnparsed.length > 0) return { grants: build(subject, specs), unparsed: trainingUnparsed };
-  return { grants: build(subject, [...specs, ...training]), unparsed: [] };
+  if (trainingUnparsed.length > 0) return { grants: build(subject, [...specs, ...skillChoices]), unparsed: trainingUnparsed };
+  return { grants: build(subject, [...specs, ...training, ...skillChoices]), unparsed: [] };
 }
 
 /**

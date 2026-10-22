@@ -20,8 +20,7 @@ import { Button } from "../ui/Button";
 import { Card } from "../ui/Card";
 import { Modal } from "../ui/Modal";
 import { SearchBar } from "../ui/SearchBar";
-import { ABILITY_KEYS, ABILITY_LABELS, builderStyles as styles, RuleChoicePicker, SkillPicker } from "./builderStyles";
-import { normalizeSkillName } from "../../rules/skills";
+import { ABILITY_KEYS, ABILITY_LABELS, builderStyles as styles, RuleChoicePicker } from "./builderStyles";
 import { useCharacters } from "../../context/CharacterContext";
 import { getFeats, getSpells } from "../../services/dataService";
 import { validateFeatPrerequisites, applyOriginFeat, removeOriginFeat } from "../../rules/feats";
@@ -44,9 +43,6 @@ export interface AncestrySectionProps {
   character: Character;
   onUpdate: (patchOrUpdater: Partial<Character> | ((prev: Character) => Character)) => void;
   allRaces: RaceData[];
-  skillChoices: { source: string; choose: number; from: string[] }[];
-  autoGranted: string[];
-  toggleSkill: (skill: string, source?: string) => void;
   /** The fixed languages and tools the race and subrace grant. */
   raceGranted: SourceFixedGrants;
   /** The race's Proficiency Choices: its tool and language picks. */
@@ -59,9 +55,6 @@ export const AncestrySection: React.FC<AncestrySectionProps> = ({
   character,
   onUpdate,
   allRaces,
-  skillChoices,
-  autoGranted,
-  toggleSkill,
   raceGranted,
   proficiencyChoices,
   onViewDetail,
@@ -308,37 +301,6 @@ export const AncestrySection: React.FC<AncestrySectionProps> = ({
           </View>
         </Card>
       )}
-
-      {/* Race skill choices */}
-      {character.race &&
-        skillChoices.filter((sc) => sc.source.startsWith("Race:") || sc.source.startsWith("Variant")).length > 0 && (
-          <Card style={{ gap: 10 }}>
-            {skillChoices
-              .filter((sc) => sc.source.startsWith("Race:") || sc.source.startsWith("Variant"))
-              .map((sc) => {
-                const choiceEntry = character.skillChoices?.find((c) => c.id === sc.source);
-                const normFrom = sc.from.map(normalizeSkillName);
-                const normAuto = autoGranted.map(normalizeSkillName);
-                const chosen = choiceEntry
-                  ? choiceEntry.picked
-                  : (character.chosenSkills || []).filter(
-                      (s) => normFrom.includes(normalizeSkillName(s)) && !normAuto.includes(normalizeSkillName(s))
-                    );
-                return (
-                  <SkillPicker
-                    key={sc.source}
-                    label={sc.source}
-                    choose={sc.choose}
-                    from={sc.from}
-                    chosen={chosen}
-                    autoGranted={autoGranted}
-                    onToggle={(skill) => toggleSkill(skill, sc.source)}
-                    theme={theme}
-                  />
-                );
-              })}
-          </Card>
-        )}
 
       {/* Ancestry Rule Choices: one pick from a fixed set, gated by level */}
       {(character.race || character.lineageReplacement) && ancestryState.availableRuleChoices.length > 0 && (

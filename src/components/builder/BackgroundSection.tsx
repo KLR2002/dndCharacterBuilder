@@ -81,22 +81,6 @@ export const BackgroundSection: React.FC<BackgroundSectionProps> = ({
             <Button title="Change" variant="outline" size="sm" onPress={() => onUpdate((cur) => clearBackground(cur, catalogs))} />
           </Card>
 
-          {/* Custom background skills */}
-          {character.background.source === "Custom" && (
-            <Card style={{ gap: 6 }}>
-              <Text style={[styles.heading, { color: theme.text }]}>Custom Background Skill Proficiencies:</Text>
-              <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6 }}>
-                {(
-                  character.skillChoices?.find((sc) => sc.origin === "background")?.picked ||
-                  character.chosenSkills ||
-                  []
-                ).map((s) => (
-                  <Badge key={s} label={s} variant="accent" size="sm" />
-                ))}
-              </View>
-            </Card>
-          )}
-
           {/* Auto-granted background skills & equipment (official) */}
           {character.background.source !== "Custom" &&
             (() => {
@@ -317,8 +301,8 @@ export const BackgroundSection: React.FC<BackgroundSectionProps> = ({
               );
             })()}
 
-          {/* Background Proficiency Choices: its tool and language picks */}
-          {character.background && character.background.source !== "Custom" && proficiencyChoices.length > 0 && (
+          {/* Background Proficiency Choices: its skill, tool and language picks, custom backgrounds included */}
+          {proficiencyChoices.length > 0 && (
             <Card style={{ gap: 10 }}>
               {proficiencyChoices.map((choice) => (
                 <ProficiencyChoicePicker key={choice.id} choice={choice} character={character} onUpdate={onUpdate} theme={theme} />

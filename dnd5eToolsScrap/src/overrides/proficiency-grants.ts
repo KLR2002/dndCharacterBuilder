@@ -42,7 +42,16 @@ export const PROFICIENCY_GRANT_OVERRIDES: {
       ],
     },
     { owner: "Subrace", feature: "Elf (Kaladesh) (Vahadar)", level: 0, grants: [{ kind: "choice", category: "languages", count: 1, pool: { kind: "any" } }] },
-    { owner: "Subrace", feature: "Human (Amonkhet)", level: 0, grants: [{ kind: "choice", category: "languages", count: 1, pool: { kind: "any" } }] },
+    // Its trait text gives one skill of choice, which the subrace's record does not carry as a structured entry.
+    {
+      owner: "Subrace",
+      feature: "Human (Amonkhet)",
+      level: 0,
+      grants: [
+        { kind: "choice", category: "languages", count: 1, pool: { kind: "any" } },
+        { kind: "choice", category: "skills", count: 1, pool: { kind: "any" } },
+      ],
+    },
     // These subraces' language entries restate their race's choice, so the subrace grants no language beyond the race.
     // Their fixed skills are kept, because an override replaces the whole structured block.
     { owner: "Subrace", feature: "Merfolk (Ixalan; Blue)", level: 0, grants: [{ kind: "fixed", category: "skills", names: ["History", "Nature"] }] },

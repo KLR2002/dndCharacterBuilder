@@ -18,7 +18,6 @@ import {
   STARTING_GOLD_BY_CLASS,
 } from "../../rules/builderTransitions";
 import { reconcile } from "../../rules/characterReconciler";
-import { ancestryRuleChoices } from "../../rules/ruleChoices";
 import { proficiencyChoiceOffers } from "../../rules/proficiencyChoiceOffers";
 import { getPendingLevelChoices } from "../../rules/leveling";
 import { normalizeSkillName } from "../../rules/skills";
@@ -200,24 +199,10 @@ export const BuilderTab: React.FC<BuilderTabProps> = ({
   // ─────────────────────────────────────────────────────────────────────────
   const autoGrantedBase = ruleGrantedSkills(character, catalogs);
 
-  const chosenAncestryOption = (c: typeof character, catalog: typeof allRaces): string | undefined => {
-    const entry = (c.ruleChoices ?? [])[0];
-    if (!entry) return undefined;
-    const match = ancestryRuleChoices(c, catalog).find((choice) => choice.id === entry.id);
-    return match?.options.some((o) => o.name === entry.picked[0]) ? entry.picked[0] : undefined;
-  };
-
+  // The class's skill choice is the only skill choice on this path. Race, subrace and background skill picks are
+  // Proficiency Choices, offered below.
   type SkillChoice = { source: string; choose: number; from: string[] };
-  const skillChoices: SkillChoice[] = skillChoiceOffers(
-    character,
-    catalogs,
-    character.race ? chosenAncestryOption(character, allRaces) : undefined
-  );
-
-  const raceChoices = skillChoices.filter(
-    (sc) => sc.source.startsWith("Race:") || sc.source.startsWith("Variant")
-  );
-  const classChoices = skillChoices.filter((sc) => sc.source.startsWith("Class:"));
+  const skillChoices: SkillChoice[] = skillChoiceOffers(character, catalogs);
 
   const getPickedSkillsForSource = (source: string): string[] => {
     const entry = (character.skillChoices || []).find((sc) => sc.id === source);
@@ -228,22 +213,8 @@ export const BuilderTab: React.FC<BuilderTabProps> = ({
     const available = (character.chosenSkills || [])
       .map(normalizeSkillName)
       .filter((s) => !autoGrantedBase.includes(s));
-    if (source.startsWith("Race:") || source.startsWith("Variant")) {
-      return available.filter((s) => normFrom.includes(s)).slice(0, sc.choose);
-    }
-    const racePicks = new Set(
-      raceChoices.flatMap((rc) =>
-        available.filter((s) => rc.from.map(normalizeSkillName).includes(s)).slice(0, rc.choose)
-      )
-    );
-    return available.filter((s) => !racePicks.has(s) && normFrom.includes(s)).slice(0, sc.choose);
+    return available.filter((s) => normFrom.includes(s)).slice(0, sc.choose);
   };
-
-  const racePickedSkills = raceChoices.flatMap((rc) => getPickedSkillsForSource(rc.source));
-  const classPickedSkills = classChoices.flatMap((cc) => getPickedSkillsForSource(cc.source));
-
-  const raceAutoGranted = Array.from(new Set([...autoGrantedBase, ...classPickedSkills]));
-  const classAutoGranted = Array.from(new Set([...autoGrantedBase, ...racePickedSkills]));
 
   const toggleSkill = (s: string, source?: string) => {
     const norm = normalizeSkillName(s);
@@ -267,13 +238,6 @@ export const BuilderTab: React.FC<BuilderTabProps> = ({
       }
     }
 
-    const origin: "race" | "class" | "background" =
-      targetSource.startsWith("Race:") || targetSource.startsWith("Variant")
-        ? "race"
-        : targetSource.startsWith("Class:")
-        ? "class"
-        : "background";
-
     const updatedSkillChoices: SkillChoiceEntry[] = [];
     let updatedTarget = false;
 
@@ -281,17 +245,16 @@ export const BuilderTab: React.FC<BuilderTabProps> = ({
       if (sc.source === targetSource) {
         updatedSkillChoices.push({
           id: sc.source,
-          origin,
+          origin: "class",
           choose: sc.choose,
           from: sc.from,
           picked: nextPicks,
         });
         updatedTarget = true;
       } else {
-        const scOrigin: "race" | "class" = sc.source.startsWith("Class:") ? "class" : "race";
         updatedSkillChoices.push({
           id: sc.source,
-          origin: scOrigin,
+          origin: "class",
           choose: sc.choose,
           from: sc.from,
           picked: getPickedSkillsForSource(sc.source),
@@ -302,27 +265,34 @@ export const BuilderTab: React.FC<BuilderTabProps> = ({
     if (!updatedTarget) {
       updatedSkillChoices.push({
         id: targetSource,
-        origin,
+        origin: "class",
         choose: maxChoose,
         from: targetSc ? targetSc.from : [norm],
         picked: nextPicks,
       });
     }
 
-    for (const existing of character.skillChoices || []) {
-      if (existing.origin === "background" && !updatedSkillChoices.some((u) => u.id === existing.id)) {
-        updatedSkillChoices.push(existing);
-      }
-    }
-
-    const allPicked = Array.from(new Set(updatedSkillChoices.flatMap((sc) => sc.picked.map(normalizeSkillName))));
+    // The old skill bucket keeps every skill no class choice holds, so a name saved there is never dropped.
+    const previousClassPicks = new Set(
+      (character.skillChoices || [])
+        .filter((sc) => sc.origin === "class")
+        .flatMap((sc) => sc.picked.map(normalizeSkillName))
+    );
+    const classPicks = updatedSkillChoices.flatMap((sc) => sc.picked.map(normalizeSkillName));
+    const allPicked = Array.from(
+      new Set([
+        ...(character.chosenSkills || []).map(normalizeSkillName).filter((s) => !previousClassPicks.has(s)),
+        ...classPicks,
+      ])
+    );
 
     onUpdate((cur) =>
       reconcile(
         {
           ...cur,
           chosenSkills: allPicked,
-          skillChoices: updatedSkillChoices,
+          // A legacy race or background entry is kept as saved: it holds only the picks no choice took.
+          skillChoices: [...updatedSkillChoices, ...(cur.skillChoices || []).filter((sc) => sc.origin !== "class")],
         },
         currentCompendium(),
         { activeBooks }
@@ -402,9 +372,6 @@ export const BuilderTab: React.FC<BuilderTabProps> = ({
           character={character}
           onUpdate={onUpdate}
           allRaces={allRaces}
-          skillChoices={skillChoices}
-          autoGranted={raceAutoGranted}
-          toggleSkill={toggleSkill}
           raceGranted={raceGranted}
           proficiencyChoices={raceProficiencyChoices}
           onViewDetail={onViewDetail}
@@ -437,7 +404,7 @@ export const BuilderTab: React.FC<BuilderTabProps> = ({
           totalLevel={totalLevel}
           effectiveScores={effectiveScores}
           skillChoices={skillChoices}
-          autoGranted={classAutoGranted}
+          autoGranted={autoGrantedBase}
           toggleSkill={toggleSkill}
           classTools={classTools}
           availableOptionalFeatures={availableOptionalFeatures}
