@@ -24,6 +24,7 @@ import { evaluateCharacter } from "../../rules/characterEvaluation";
 import { setOptionalFeatureEnabled } from "../../rules/builderTransitions";
 import { currentCompendium } from "../../services/compendium";
 import { findClassData } from "../../rules/catalogs";
+import { isCustomBackground } from "../../rules/customBackground";
 import {
   getAvailableOptionalFeatures,
   getReplacedBaseFeatures,
@@ -179,7 +180,15 @@ export const FeaturesTab: React.FC = () => {
 
     // 2. Background Features
     if (currentCharacter.background) {
-      if (currentCharacter.background.isCustom) {
+      if (isCustomBackground(currentCharacter.background) && currentCharacter.background.customFeatureName) {
+        list.push({
+          id: "bg_custom",
+          name: currentCharacter.background.customFeatureName,
+          origin: "Background",
+          source: currentCharacter.background.name,
+          description: currentCharacter.background.customFeatureDesc || "Custom feature description.",
+        });
+      } else if (currentCharacter.background.isCustom) {
         list.push({
           id: "bg_custom",
           name: currentCharacter.background.customFeatureName || "Custom Background Feature",

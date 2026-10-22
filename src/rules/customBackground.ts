@@ -12,6 +12,9 @@ import type { FeatureInstance } from "./types.ts";
 /** The id of a custom background's skill choice, under which its two skill picks are saved. */
 export const CUSTOM_BACKGROUND_SKILLS_ID = "Custom/Background/Custom Background@0#skills:choice:any";
 
+/** The id of a custom background's tool-or-language choice, under which its two picks are saved. */
+export const CUSTOM_BACKGROUND_TOOLS_OR_LANGUAGES_ID = "Custom/Background/Custom Background@0#languages:choice:any";
+
 export const CUSTOM_BACKGROUND_GRANTS: ProficiencyGrant[] = [
   {
     id: CUSTOM_BACKGROUND_SKILLS_ID,
@@ -21,7 +24,7 @@ export const CUSTOM_BACKGROUND_GRANTS: ProficiencyGrant[] = [
     pool: { kind: "any" },
   },
   {
-    id: "Custom/Background/Custom Background@0#languages:choice:any",
+    id: CUSTOM_BACKGROUND_TOOLS_OR_LANGUAGES_ID,
     kind: "choice",
     category: "languages",
     count: 2,
@@ -46,4 +49,12 @@ export function customBackgroundFeature(character: Character): FeatureInstance |
     level: 0,
     grants: CUSTOM_BACKGROUND_GRANTS,
   };
+}
+
+/** The name of the catalog's own "Custom Background" entry: a placeholder the custom background form replaces. */
+const CATALOG_CUSTOM_BACKGROUND_NAME = "Custom Background";
+
+/** The backgrounds the Builder offers: the catalog's own "Custom Background" entry, and its placeholder feature, are left out. */
+export function withoutCatalogCustomBackground<T extends { name: string }>(backgrounds: T[]): T[] {
+  return backgrounds.filter((background) => background.name !== CATALOG_CUSTOM_BACKGROUND_NAME);
 }
