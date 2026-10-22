@@ -4,7 +4,9 @@ import type { Compendium } from "../services/compendium.ts";
 import { grantRequirementMet } from "./optionFeatureGrants.ts";
 import { findClassData } from "./catalogs.ts";
 import { poolNames, sourceRecordGrants, STARTING_PROFICIENCIES, validPicks, type ChoiceProficiencyGrant } from "./proficiencyPools.ts";
-import { recordGrantSources } from "./recordProficiencyGrants.ts";
+import { heldSubraceOf, raceSkillPickApplies, recordGrantSources, subracePickApplies } from "./recordProficiencyGrants.ts";
+import { CUSTOM_BACKGROUND_GRANTS, isCustomBackground } from "./customBackground.ts";
+import { normalizeSkillName } from "./skills.ts";
 
 /**
  * Moves the class tool picks saved before the starting tool choice was a Proficiency Choice into that
@@ -149,7 +151,8 @@ type GrantOwner =
   | { kind: "class"; className: string; source: string }
   | { kind: "subclass"; className: string; source: string; subclassName: string; subclassSource: string }
   | { kind: "feat"; featName: string }
-  | { kind: "record"; origin: "Race" | "Subrace" | "Background"; name: string; source: string; raceName?: string; raceSource?: string };
+  | { kind: "record"; origin: "Race" | "Subrace" | "Background"; name: string; source: string; raceName?: string; raceSource?: string }
+  | { kind: "custom" };
 
 interface GrantSource {
   /** The grant's id, and the former ids it was saved under. */
@@ -164,15 +167,22 @@ interface GrantSource {
   owner: GrantOwner;
   /** The pick on another feature's choice the grant depends on, when it has one. */
   requires?: GrantRequirement;
+  /** Whether a grant of a held record applies to the character beyond its owner (a race's skill pick, a descent's). */
+  applies?: (character: Character) => boolean;
 }
 
 /** Every Proficiency Grant id in the Compendium, with the feature that carries it. Unscoped by books. */
 function grantSourcesIn(compendium: Compendium): Map<string, GrantSource> {
   const listings = compendium.for();
   const sources = new Map<string, GrantSource>();
-  const add = (grants: ProficiencyGrant[] | undefined, source: Omit<GrantSource, "id" | "aliases">) => {
+  const add = (
+    grants: ProficiencyGrant[] | undefined,
+    source: Omit<GrantSource, "id" | "aliases">,
+    appliesTo?: (grant: ProficiencyGrant, character: Character) => boolean,
+  ) => {
     for (const grant of grants ?? []) {
-      sources.set(grant.id, { ...source, id: grant.id, aliases: grant.aliases ?? [], requires: grant.requires ?? source.requires });
+      const applies = appliesTo && ((character: Character) => appliesTo(grant, character));
+      sources.set(grant.id, { ...source, id: grant.id, aliases: grant.aliases ?? [], requires: grant.requires ?? source.requires, applies });
     }
   };
   for (const cls of listings.classes()) {
@@ -212,14 +222,21 @@ function grantSourcesIn(compendium: Compendium): Map<string, GrantSource> {
   }
   for (const race of listings.races()) {
     const raceOwner = { kind: "record" as const, origin: "Race" as const, name: race.name, source: race.source };
-    add(sourceRecordGrants(race.grants), { feature: race.name, level: 0, optional: false, owner: raceOwner });
+    // A race's skill pick depends on the descent the character holds, so each grant is gated on it (see raceSkillPickApplies).
+    add(sourceRecordGrants(race.grants), { feature: race.name, level: 0, optional: false, owner: raceOwner }, (grant, character) =>
+      raceSkillPickApplies(race, heldSubraceOf(race, character), character, grant),
+    );
     for (const sub of race.subraces ?? []) {
-      add(sourceRecordGrants(sub.grants), {
-        feature: sub.name,
-        level: 0,
-        optional: false,
-        owner: { kind: "record", origin: "Subrace", name: sub.name, source: sub.source, raceName: race.name, raceSource: race.source },
-      });
+      add(
+        sourceRecordGrants(sub.grants),
+        {
+          feature: sub.name,
+          level: 0,
+          optional: false,
+          owner: { kind: "record", origin: "Subrace", name: sub.name, source: sub.source, raceName: race.name, raceSource: race.source },
+        },
+        (grant, character) => subracePickApplies(race, sub, character, grant),
+      );
     }
   }
   for (const background of listings.backgrounds()) {
@@ -230,6 +247,7 @@ function grantSourcesIn(compendium: Compendium): Map<string, GrantSource> {
       owner: { kind: "record", origin: "Background", name: background.name, source: background.source },
     });
   }
+  add(CUSTOM_BACKGROUND_GRANTS, { feature: "Custom Background", level: 0, optional: false, owner: { kind: "custom" } });
   return sources;
 }
 
@@ -239,6 +257,7 @@ function grantSourcesIn(compendium: Compendium): Map<string, GrantSource> {
  */
 function ownerHeld(source: GrantSource, character: Character, classes: readonly ClassData[]): boolean {
   const owner = source.owner;
+  if (owner.kind === "custom") return isCustomBackground(character.background);
   if (owner.kind === "record") return recordHeld(owner, character);
   if (owner.kind === "feat") {
     const wanted = owner.featName.toLowerCase();
@@ -265,7 +284,7 @@ function sameRecord(name: string, source: string | undefined, record: { name: st
 /** Whether the character still holds a race, subrace or background record that grants this pick. */
 function recordHeld(owner: Extract<GrantOwner, { kind: "record" }>, character: Character): boolean {
   if (owner.origin === "Background") {
-    return Boolean(character.background && !character.background.isCustom && sameRecord(character.background.name, character.background.source, owner));
+    return Boolean(character.background && !isCustomBackground(character.background) && sameRecord(character.background.name, character.background.source, owner));
   }
   const race = character.race;
   if (!race) return false;
@@ -281,7 +300,8 @@ function recordHeld(owner: Extract<GrantOwner, { kind: "record" }>, character: C
  */
 function releaseReason(source: GrantSource, character: Character, classes: readonly ClassData[]): string | undefined {
   if (source.optional && !character.optionalFeatureReplacements?.[source.feature]) return "feature is turned off";
-  return ownerHeld(source, character, classes) ? undefined : "no longer granted";
+  if (!ownerHeld(source, character, classes)) return "no longer granted";
+  return source.applies && !source.applies(character) ? "no longer granted" : undefined;
 }
 
 /**
@@ -312,5 +332,68 @@ export function pruneInvalidProficiencyPicks(character: Character, compendium: C
     ...character,
     proficiencyPicks: Object.keys(kept).length > 0 ? kept : undefined,
     needsReview: notices.length > 0 ? Array.from(new Set([...(character.needsReview ?? []), ...notices])) : character.needsReview,
+  };
+}
+
+/**
+ * Moves the race, subrace and background skill picks saved before they were Proficiency Choices into the
+ * skill choice they belong to: each name goes to the first open skill choice of a race, subrace or background
+ * held now whose pool offers it, up to that choice's count. A name no choice takes stays in its legacy entry, and
+ * in the old skill bucket, where the sheet keeps reading it. A legacy entry is dropped once every name it held has
+ * moved. Class skill choices are left alone. Returns the character unchanged when nothing moves or changes.
+ */
+export function moveLegacySkillPicks(character: Character, compendium: Compendium): Character {
+  const legacy = (character.skillChoices ?? []).filter((entry) => entry.origin === "race" || entry.origin === "background");
+  if (legacy.length === 0) return character;
+
+  const listings = compendium.for();
+  const offered = [
+    ...recordGrantSources(character, { races: listings.races(), backgrounds: listings.backgrounds() }).flatMap((source) =>
+      source.grants.map((grant) => ({ grant, origins: source.origin === "Background" ? ["Background"] : ["Race", "Subrace"] })),
+    ),
+    ...(isCustomBackground(character.background) ? CUSTOM_BACKGROUND_GRANTS.map((grant) => ({ grant, origins: ["Background"] })) : []),
+  ].filter((entry): entry is { grant: ChoiceProficiencyGrant; origins: string[] } => entry.grant.kind === "choice" && entry.grant.category === "skills");
+
+  const picks: Record<string, string[]> = { ...(character.proficiencyPicks ?? {}) };
+  const moved = new Set<string>();
+  const leftover = new Set<string>();
+  for (const entry of legacy) {
+    const wanted = entry.origin === "race" ? "Race" : "Background";
+    for (const name of entry.picked) {
+      const key = normalizeSkillName(name).toLowerCase();
+      const target = offered.find(({ grant, origins }) => {
+        if (!origins.includes(wanted) || !poolNames(grant).some((option) => option.toLowerCase() === key)) return false;
+        const held = validPicks(grant, picks[grant.id] ?? []);
+        return held.length < grant.count && !held.some((pick) => pick.toLowerCase() === key);
+      });
+      if (!target) {
+        leftover.add(key);
+        continue;
+      }
+      const canonical = poolNames(target.grant).find((option) => option.toLowerCase() === key) as string;
+      picks[target.grant.id] = [...(picks[target.grant.id] ?? []), canonical];
+      moved.add(key);
+    }
+  }
+
+  const skillChoices = (character.skillChoices ?? []).flatMap((entry) => {
+    if (!legacy.includes(entry)) return [entry];
+    const rest = entry.picked.filter((name) => leftover.has(normalizeSkillName(name).toLowerCase()));
+    return rest.length > 0 ? [{ ...entry, picked: rest }] : [];
+  });
+  if (moved.size === 0 && JSON.stringify(skillChoices) === JSON.stringify(character.skillChoices)) return character;
+
+  const classPicked = new Set(
+    skillChoices.filter((entry) => entry.origin === "class").flatMap((entry) => entry.picked.map((pick) => normalizeSkillName(pick).toLowerCase())),
+  );
+  const chosenSkills = (character.chosenSkills ?? []).filter((skill) => {
+    const key = normalizeSkillName(skill).toLowerCase();
+    return !moved.has(key) || classPicked.has(key) || leftover.has(key);
+  });
+  return {
+    ...character,
+    proficiencyPicks: Object.keys(picks).length > 0 ? picks : undefined,
+    skillChoices,
+    chosenSkills,
   };
 }

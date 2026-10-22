@@ -11,6 +11,7 @@ import { reconcile } from "./characterReconciler.ts";
 import { currentCompendium } from "../services/compendium.ts";
 import { getBackgroundFeatGrant } from "./feats.ts";
 import { normalizeSkillName } from "./skills.ts";
+import { moveLegacySkillPicks } from "./proficiencyPicks.ts";
 
 export interface AncestryTraitView {
   name: string;
@@ -252,13 +253,17 @@ export function applyAncestrySelection(
   const nextChosenLanguages = { ...character.chosenLanguages, race: [] };
   const nextChosenTools = { ...character.chosenTools, race: [] };
 
-  const oldRaceChoices = (character.skillChoices || []).filter((sc) => sc.origin === "race");
+  const compendium = catalogs?.compendium ?? currentCompendium();
+  // A skill pick saved in the old bucket moves into its choice while the old race is still held; a pick no choice
+  // takes is the old race's legacy entry, and it goes with the race.
+  const migrated = moveLegacySkillPicks(character, compendium);
+  const oldRaceChoices = (migrated.skillChoices || []).filter((sc) => sc.origin === "race");
   const oldRacePicks = new Set(oldRaceChoices.flatMap((sc) => sc.picked.map(normalizeSkillName)));
-  const nextSkillChoices = (character.skillChoices || []).filter((sc) => sc.origin !== "race");
-  const nextChosenSkills = (character.chosenSkills || []).filter((s) => !oldRacePicks.has(normalizeSkillName(s)));
+  const nextSkillChoices = (migrated.skillChoices || []).filter((sc) => sc.origin !== "race");
+  const nextChosenSkills = (migrated.chosenSkills || []).filter((s) => !oldRacePicks.has(normalizeSkillName(s)));
 
   const cleaned: Character = {
-    ...character,
+    ...migrated,
     race: updatedRace,
     racialAbilityBonuses: bonuses,
     racialChoiceBonus: [],
@@ -269,7 +274,7 @@ export function applyAncestrySelection(
     chosenSkills: nextChosenSkills,
   };
 
-  return reconcile(cleaned, catalogs?.compendium ?? currentCompendium());
+  return reconcile(cleaned, compendium);
 }
 
 export function applyAncestryChoice(

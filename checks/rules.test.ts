@@ -9,7 +9,7 @@ import { speed, carryingWeight } from "../src/rules/speed.ts";
 import { savingThrows } from "../src/rules/saves.ts";
 import { proficiencySheet } from "../src/rules/proficiencySheet.ts";
 import { skills } from "../src/rules/skills.ts";
-import { getRacialSkillChoices } from "../src/rules/proficiencySources/skillGrants.ts";
+import { proficiencyChoiceOffers } from "../src/rules/proficiencyChoiceOffers.ts";
 import { multiclassSlots, pactSlots } from "../src/rules/slots.ts";
 import { proficiencyBonus, totalLevel } from "../src/rules/proficiencies.ts";
 import { classBaseProficiencies as proficiencies } from "../src/rules/proficiencySources/classBase.ts";
@@ -261,42 +261,53 @@ test("grantedFeatures respects optional feature replacements (e.g., TCoE Ranger)
   assert.ok(tashaFeatures.some(f => f.name === "Deft Explorer"));
 });
 
-test("getRacialSkillChoices extracts dynamic skill choices from any race or book", () => {
-  // 1. Lizardfolk choice: 2 from Hunter's Lore / Nature's Intuition
-  const lizChoices = getRacialSkillChoices("Lizardfolk", undefined, catalog.races);
-  assert.equal(lizChoices.length, 1);
-  assert.equal(lizChoices[0].choose, 2);
-  assert.ok(lizChoices[0].from.includes("Animal Handling"));
-  assert.ok(lizChoices[0].from.includes("Stealth"));
-  assert.ok(lizChoices[0].from.includes("Survival"));
+test("race skill picks are Proficiency Choices from the Catalog's choice grants, in any book, and trait text offers none", () => {
+  const compendium = integratedTestCompendium();
+  const skillOffer = (race: { name: string; source: string }) =>
+    proficiencyChoiceOffers(makeChar({ race }), { compendium }).filter((offer) => offer.id.includes("#skills:"));
 
-  // 2. Base Half-Elf has Skill Versatility: 2 from all 18 skills
-  const heChoices = getRacialSkillChoices("Half-Elf", undefined, catalog.races);
-  assert.equal(heChoices.length, 1);
-  assert.equal(heChoices[0].choose, 2);
-  assert.equal(heChoices[0].from.length, 18);
+  // Lizardfolk (Volo's Guide): 2 from its five-skill list.
+  const liz = skillOffer({ name: "Lizardfolk", source: "VGM" });
+  assert.equal(liz.length, 1);
+  assert.equal(liz[0].choose, 2);
+  assert.deepEqual(liz[0].options.map((o) => o.name), ["Animal Handling", "Nature", "Perception", "Stealth", "Survival"]);
 
-  // 3. Mark of Detection Half-Elf variant trades away Skill Versatility
-  const markChoices = getRacialSkillChoices("Half-Elf", "Mark of Detection", catalog.races);
-  assert.equal(markChoices.length, 0);
+  // Base Half-Elf has Skill Versatility: 2 from all 18 skills.
+  const heOffer = skillOffer({ name: "Half-Elf", source: "PHB" });
+  assert.equal(heOffer.length, 1);
+  assert.equal(heOffer[0].choose, 2);
+  assert.equal(heOffer[0].options.length, 18);
 
-  // 4. Custom/arbitrary race from another resource loaded dynamically
-  const customRace = {
-    name: "Custom Beastfolk",
-    source: "Homebrew",
-    traits: [
+  // Mark of Detection Half-Elf has no Skill Versatility.
+  const mark = proficiencyChoiceOffers(
+    makeChar({ race: { name: "Half-Elf", source: "PHB", subraceName: "Mark of Detection", subraceSource: "ERLW" } }),
+    { compendium },
+  ).filter((offer) => offer.id.includes("#skills:"));
+  assert.equal(mark.length, 0);
+
+  // A race that only names its skill pick in trait text is offered nothing: the text is not a grant.
+  const textOnly = inMemoryCompendium({
+    races: [
       {
-        name: "Wild Senses",
-        description: "You gain proficiency with two of the following skills of your choice: Perception, Stealth, or Survival.",
+        name: "Custom Beastfolk",
+        source: "Homebrew",
+        size: ["Medium"],
+        speed: { walk: 30 },
+        abilityScoreIncrease: [],
+        darkvision: null,
+        traits: [
+          {
+            name: "Wild Senses",
+            description: "You gain proficiency with two of the following skills of your choice: Perception, Stealth, or Survival.",
+          },
+        ],
+        languages: [],
+        subraces: [],
+        description: "Placeholder description for the Custom Beastfolk.",
       },
     ],
-  };
-  const customChoices = getRacialSkillChoices("Custom Beastfolk", undefined, [customRace]);
-  assert.equal(customChoices.length, 1);
-  assert.equal(customChoices[0].choose, 2);
-  assert.ok(customChoices[0].from.includes("Perception"));
-  assert.ok(customChoices[0].from.includes("Stealth"));
-  assert.ok(customChoices[0].from.includes("Survival"));
+  });
+  assert.deepEqual(proficiencyChoiceOffers(makeChar({ race: { name: "Custom Beastfolk", source: "Homebrew" } }), { compendium: textOnly }).filter((offer) => offer.id.includes("#skills:")), []);
 });
 
 test("grantedFeatures includes both base race traits and subrace traits", () => {

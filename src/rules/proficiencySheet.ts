@@ -16,12 +16,9 @@ import {
   type ChoiceProficiencyGrant,
 } from "./proficiencyPools.ts";
 import { isKnowledgeCleric, normalizeSkillName } from "./skills.ts";
-import {
-  classSkillChoice,
-  getAutoGrantedSkills,
-  getRacialSkillChoices,
-} from "./proficiencySources/skillGrants.ts";
+import { classSkillChoice, getAutoGrantedSkills } from "./proficiencySources/skillGrants.ts";
 import { resolveCharacterAncestry } from "./characterAncestry.ts";
+import { customBackgroundFeature } from "./customBackground.ts";
 
 export { classSkillChoice } from "./proficiencySources/skillGrants.ts";
 
@@ -188,7 +185,8 @@ function startingFeatureOf(character: Character, classes: readonly ClassData[]):
 
 /**
  * The features the character holds, each with the grants its rule gives, read from the listings. The
- * first class's starting proficiencies are included as one more feature; they are not granted features.
+ * first class's starting proficiencies, and a custom background's picks, are included as more features;
+ * they are not granted features.
  */
 export function featuresOf(character: Character, listings: CompendiumListings): FeatureInstance[] {
   const features = grantedFeatures(character, {
@@ -198,18 +196,24 @@ export function featuresOf(character: Character, listings: CompendiumListings): 
     feats: listings.feats(),
   });
   const starting = startingFeatureOf(character, listings.classes());
-  return starting ? [...features, starting] : features;
+  const custom = customBackgroundFeature(character);
+  return [...features, ...(starting ? [starting] : []), ...(custom ? [custom] : [])];
 }
 
 /**
- * The skills a character holds from the rules alone: background, race and Rule Choice grants, and the
- * fixed skill grants of the features the character has now. The builder lists these as already held,
- * so a skill picked elsewhere cannot duplicate them.
+ * The skills a character holds from the rules alone: background, race and Rule Choice grants, the fixed skill
+ * grants of the features the character has now, and the race, subrace and background skill picks. The builder
+ * lists these as already held, so a skill picked elsewhere cannot duplicate them.
  */
 export function ruleGrantedSkills(character: Character, catalogs?: CharacterCatalogs): string[] {
   const listings = catalogListings(catalogs);
   const ancestry = resolveCharacterAncestry(character, listings.races());
-  return legacySkillNames(character, ancestry, listings, featuresOf(character, listings));
+  const features = featuresOf(character, listings);
+  const recordFeatures = features.filter((feature) => feature.origin !== "Class" && feature.origin !== "Subclass" && feature.origin !== "Feat");
+  return [
+    ...legacySkillNames(character, ancestry, listings, features),
+    ...choicePickNames(recordFeatures, character, "skills", listings.items()),
+  ];
 }
 
 /** The fixed languages and tools a race, its subrace or a background grants, as the Builder lists them. */
@@ -247,7 +251,7 @@ export function sourceGrants(character: Character, catalogs: CharacterCatalogs):
   };
 }
 
-/** A skill choice a race or class offers the Builder: its source label, pick count and the skills to pick from. */
+/** A skill choice the Builder offers: its source label, pick count and the skills to pick from. */
 export interface SkillChoiceOffer {
   source: string;
   choose: number;
@@ -255,48 +259,26 @@ export interface SkillChoiceOffer {
 }
 
 /**
- * The skill choices a race and the first class offer. The race's choices take the subrace and the
- * ancestry option the character picked; the class's take its starting list, or every skill when the
- * list is empty. The Builder reads its offers here, so no builder file reads a race or class skill field.
+ * The skill choice the first class offers the Builder: its starting list, or every skill when the list is empty.
+ * A race's, subrace's and background's skill picks are Proficiency Choices, offered through
+ * `proficiencyChoiceOffers`, so no builder file reads a race or background skill field.
  */
-export function skillChoiceOffers(
-  character: Character,
-  catalogs: CharacterCatalogs,
-  raceChosenOption?: string
-): SkillChoiceOffer[] {
-  const listings = catalogListings(catalogs);
-  const offers: SkillChoiceOffer[] = [];
-
-  if (character.race) {
-    const racial = getRacialSkillChoices(
-      character.race.name,
-      character.race.subraceName,
-      listings.races(),
-      character.race.source,
-      raceChosenOption
-    );
-    for (const choice of racial) {
-      offers.push({ source: choice.source, choose: choice.choose, from: choice.from.map(normalizeSkillName) });
-    }
-  }
-
+export function skillChoiceOffers(character: Character, catalogs: CharacterCatalogs): SkillChoiceOffer[] {
   const first = character.classes[0];
-  if (first) {
-    const classData = findClassData((catalogs.compendium ?? currentCompendium()).for().classes(), first);
-    const starting = classSkillChoice(classData);
-    if (starting && starting.choose > 0) {
-      offers.push({
-        source: `Class: ${first.className}`,
-        choose: starting.choose,
-        from:
-          starting.from && starting.from.length > 0
-            ? starting.from.map(normalizeSkillName)
-            : DND_SKILLS.map((s) => normalizeSkillName(s.name)),
-      });
-    }
-  }
-
-  return offers;
+  if (!first) return [];
+  const classData = findClassData((catalogs.compendium ?? currentCompendium()).for().classes(), first);
+  const starting = classSkillChoice(classData);
+  if (!starting || starting.choose <= 0) return [];
+  return [
+    {
+      source: `Class: ${first.className}`,
+      choose: starting.choose,
+      from:
+        starting.from && starting.from.length > 0
+          ? starting.from.map(normalizeSkillName)
+          : DND_SKILLS.map((s) => normalizeSkillName(s.name)),
+    },
+  ];
 }
 
 /**
