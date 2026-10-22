@@ -74,7 +74,7 @@ test("a race entry the mapping cannot state gives the race no grants, and the ra
   const [race] = await scrapeRaces(fakeClient({ "data/races.json": { race: [odd] } }), report);
   assert.equal("grants" in race, false);
   assert.deepEqual(report.unparsed, [
-    { owner: "Race", feature: "Odd Folk", level: 0, unparsed: ["tools: sample set of things"] },
+    { owner: "Race", feature: "Odd Folk", level: 0, unparsed: ['tools: {"sample set of things":true}'] },
   ]);
 });
 
@@ -229,7 +229,7 @@ test("a race weapon choice the mapping cannot state leaves out the race's weapon
     { id: "TST/Race/Sample Folk@0#languages:fixed:Common,Goblin", kind: "fixed", category: "languages", names: ["Common", "Goblin"] },
   ]);
   assert.deepEqual(report.unparsed, [
-    { owner: "Race", feature: "Sample Folk", level: 0, unparsed: ["weapons: choose"] },
+    { owner: "Race", feature: "Sample Folk", level: 0, unparsed: ['weapons: {"choose":{"fromFilter":"type=martial weapon|miscellaneous=mundane","count":2}}'] },
   ]);
 });
 
@@ -305,7 +305,7 @@ test("a background's skill choice the mapping cannot state is reported, and the 
   const report = newProficiencyReport();
   const [result] = await scrapeBackgrounds(fakeClient({ "data/backgrounds.json": { background: [background] } }), report);
   assert.equal(result.grants, undefined, "a block with an unstated entry gives no grants");
-  assert.deepEqual(report.unparsed, [{ owner: "Background", feature: "Sample Oddity", level: 0, unparsed: ["skills: choose"] }]);
+  assert.deepEqual(report.unparsed, [{ owner: "Background", feature: "Sample Oddity", level: 0, unparsed: ['skills: {"choose":{"from":["insight","not a skill"]}}'] }]);
 });
 
 test("a race's any-skill count and a subrace's choose list are choice grants, not text", async () => {
@@ -338,4 +338,101 @@ test("a reviewed subrace override gives the skill of choice its trait names, bes
     { id: "TST/Subrace/Human (Amonkhet)@0#languages:choice:any", kind: "choice", category: "languages", count: 1, pool: { kind: "any" } },
     { id: "TST/Subrace/Human (Amonkhet)@0#skills:choice:any", kind: "choice", category: "skills", count: 1, pool: { kind: "any" } },
   ]);
+});
+
+// Structured entries the mapping does not state are reported with their owner, feature and raw entry, never
+// dropped. Each record below is invented: the names and the entry shapes are made up for these tests.
+
+test("a race's choose list of skills is a choice grant of its count from that list", async () => {
+  const race = { name: "Sample Ridge", source: "TST", entries: [], languageProficiencies: [{ common: true }], skillProficiencies: [{ choose: { from: ["insight", "perception"], count: 2 } }] };
+  const report = newProficiencyReport();
+  const [result] = await scrapeRaces(fakeClient({ "data/races.json": { race: [race] } }), report);
+  assert.deepEqual(shapes(result.grants), [
+    { id: "TST/Race/Sample Ridge@0#languages:fixed:Common", kind: "fixed", category: "languages", names: ["Common"] },
+    { id: "TST/Race/Sample Ridge@0#skills:choice:from", kind: "choice", category: "skills", count: 2, pool: { kind: "names", names: ["Insight", "Perception"] } },
+  ]);
+  assert.deepEqual(report.unparsed, []);
+});
+
+test("a race's any-skill count is a choice grant of that many skills from any skill", async () => {
+  const race = { name: "Sample Ridge", source: "TST", entries: [], languageProficiencies: [{ common: true }], skillProficiencies: [{ any: 3 }] };
+  const report = newProficiencyReport();
+  const [result] = await scrapeRaces(fakeClient({ "data/races.json": { race: [race] } }), report);
+  assert.deepEqual(shapes(result.grants), [
+    { id: "TST/Race/Sample Ridge@0#languages:fixed:Common", kind: "fixed", category: "languages", names: ["Common"] },
+    { id: "TST/Race/Sample Ridge@0#skills:choice:any", kind: "choice", category: "skills", count: 3, pool: { kind: "any" } },
+  ]);
+  assert.deepEqual(report.unparsed, []);
+});
+
+test("a race's fixed list of skills is a fixed skills grant", async () => {
+  const race = { name: "Sample Ridge", source: "TST", entries: [], languageProficiencies: [{ common: true }], skillProficiencies: [{ insight: true, perception: true }] };
+  const report = newProficiencyReport();
+  const [result] = await scrapeRaces(fakeClient({ "data/races.json": { race: [race] } }), report);
+  assert.deepEqual(shapes(result.grants), [
+    { id: "TST/Race/Sample Ridge@0#languages:fixed:Common", kind: "fixed", category: "languages", names: ["Common"] },
+    { id: "TST/Race/Sample Ridge@0#skills:fixed:Insight,Perception", kind: "fixed", category: "skills", names: ["Insight", "Perception"] },
+  ]);
+  assert.deepEqual(report.unparsed, []);
+});
+
+test("a structured entry that is a bare number is reported with its owner, feature and raw value, and the block gives no grants", async () => {
+  const race = { name: "Sample Ridge", source: "TST", entries: [], skillProficiencies: [{ perception: true }, 3] };
+  const report = newProficiencyReport();
+  const [result] = await scrapeRaces(fakeClient({ "data/races.json": { race: [race] } }), report);
+  assert.equal("grants" in result, false);
+  assert.deepEqual(report.unparsed, [{ owner: "Race", feature: "Sample Ridge", level: 0, unparsed: ["skills: 3"] }]);
+});
+
+test("an empty structured entry is reported, not skipped", async () => {
+  const race = { name: "Sample Ridge", source: "TST", entries: [], skillProficiencies: [{}] };
+  const report = newProficiencyReport();
+  const [result] = await scrapeRaces(fakeClient({ "data/races.json": { race: [race] } }), report);
+  assert.equal("grants" in result, false);
+  assert.deepEqual(report.unparsed, [{ owner: "Race", feature: "Sample Ridge", level: 0, unparsed: ["skills: {}"] }]);
+});
+
+test("an object entry with a key the mapping does not know is reported with the whole raw entry", async () => {
+  const race = { name: "Sample Ridge", source: "TST", entries: [], toolProficiencies: [{ "sample pick": { count: 2 } }] };
+  const report = newProficiencyReport();
+  const [result] = await scrapeRaces(fakeClient({ "data/races.json": { race: [race] } }), report);
+  assert.equal("grants" in result, false);
+  assert.deepEqual(report.unparsed, [
+    { owner: "Race", feature: "Sample Ridge", level: 0, unparsed: ['tools: {"sample pick":{"count":2}}'] },
+  ]);
+});
+
+test("a structured field that is an object rather than a list is reported, not thrown on", async () => {
+  const race = { name: "Sample Ridge", source: "TST", entries: [], skillProficiencies: { choose: { from: ["insight"], count: 1 } } };
+  const report = newProficiencyReport();
+  const [result] = await scrapeRaces(fakeClient({ "data/races.json": { race: [race] } }), report);
+  assert.equal("grants" in result, false);
+  assert.deepEqual(report.unparsed, [
+    { owner: "Race", feature: "Sample Ridge", level: 0, unparsed: ['skills: {"choose":{"from":["insight"],"count":1}}'] },
+  ]);
+});
+
+test("a null structured field is no entry: it gives no grants and nothing is reported", async () => {
+  const subrace = { name: "Hillward", source: "TST", raceName: "Sample Ridge", raceSource: "TST", entries: [], skillProficiencies: null };
+  const report = newProficiencyReport();
+  const [result] = await scrapeRaces(fakeClient({ "data/races.json": { race: [{ name: "Sample Ridge", source: "TST", entries: [] }], subrace: [subrace] } }), report);
+  assert.equal("grants" in result.subraces[0], false);
+  assert.deepEqual(report.unparsed, []);
+});
+
+test("a background's weapon and armor entries become grants, as a race's do", async () => {
+  const background = {
+    name: "Sample Trade",
+    source: "TST",
+    entries: [],
+    weaponProficiencies: [{ simple: true }],
+    armorProficiencies: [{ light: true }],
+  };
+  const report = newProficiencyReport();
+  const [result] = await scrapeBackgrounds(fakeClient({ "data/backgrounds.json": { background: [background] } }), report);
+  assert.deepEqual(shapes(result.grants), [
+    { id: "TST/Background/Sample Trade@0#weapons:fixed:simple weapons", kind: "fixed", category: "weapons", names: ["simple weapons"] },
+    { id: "TST/Background/Sample Trade@0#armor:fixed:light armor", kind: "fixed", category: "armor", names: ["light armor"] },
+  ]);
+  assert.deepEqual(report.unparsed, []);
 });

@@ -574,6 +574,16 @@ export function resolveFeatureGrants(
  */
 const TRAINING_CATEGORIES: ReadonlySet<ProficiencyCategory> = new Set<ProficiencyCategory>(["weapons", "armor"]);
 
+/** Whether a structured entry is an object: a record of keys, not a string, a number, a boolean, null or a list. */
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+/** The text an unparsed structured entry is reported as: its field, then the raw entry as written (a string as it is, anything else as JSON). */
+function rawEntryText(field: string, entry: unknown): string {
+  return `${field}: ${typeof entry === "string" ? entry : JSON.stringify(entry)}`;
+}
+
 /**
  * Grants from a structured proficiency block (race, background, or class
  * starting proficiencies). A block with any tool, language, skill or saving
@@ -620,53 +630,67 @@ export function structuredGrants(
   for (const [field, category] of fields) {
     const list = TRAINING_CATEGORIES.has(category) ? training : category === "skills" ? skillChoices : specs;
     const problems = TRAINING_CATEGORIES.has(category) ? trainingUnparsed : unparsed;
-    for (const entry of (raw[field] as unknown[] | undefined) ?? []) {
+    const value = raw[field];
+    // An absent or null field names nothing. A field that is not a list cannot be stated entry by entry, so it is reported whole.
+    if (value === undefined || value === null) continue;
+    if (!Array.isArray(value)) {
+      problems.push(rawEntryText(field, value));
+      continue;
+    }
+    for (const entry of value as unknown[]) {
       if (typeof entry === "string") {
         const parsed = parseProficiencyBody(entry);
-        if (!parsed) problems.push(`${field}: ${entry}`);
+        if (!parsed) problems.push(rawEntryText(field, entry));
         else for (const spec of parsed) {
           if (spec.kind === "fixed") for (const name of spec.names) addFixed(spec.category, name);
           else list.push(spec);
         }
         continue;
       }
-      if (!entry || typeof entry !== "object") continue;
-      for (const [key, value] of Object.entries(entry as Record<string, unknown>)) {
-        const token = `${field}: ${key}`;
-        if (value === false) continue;
-        if (key === "choose" && value && typeof value === "object") {
-          const choose = value as { from?: unknown; count?: unknown };
+      // An entry that is not an object, or an object with no keys, states nothing the mapping can use.
+      if (!isRecord(entry) || Object.keys(entry).length === 0) {
+        problems.push(rawEntryText(field, entry));
+        continue;
+      }
+      // Every key of an object entry must be stated. One key that is not makes the whole entry unparsed, reported as it was written.
+      let stated = true;
+      for (const [key, token] of Object.entries(entry)) {
+        if (token === false) continue;
+        if (key === "choose" && isRecord(token)) {
+          const choose = token as { from?: unknown; count?: unknown };
           const from = Array.isArray(choose.from) ? choose.from.map(String) : [];
-          const count = typeof choose.count === "number" ? choose.count : 1;
-          const chosen = from.length > 0 ? listedChoice(from, category, count) : null;
+          // A choose without a count picks one. A count that is not a number is not stated.
+          const count = choose.count === undefined ? 1 : typeof choose.count === "number" ? choose.count : null;
+          const chosen = from.length > 0 && count !== null ? listedChoice(from, category, count) : null;
           if (chosen) list.push(...chosen);
-          else problems.push(`${field}: choose`);
+          else stated = false;
           continue;
         }
-        if (key === "other" && category === "languages" && value === true) {
+        if (key === "other" && category === "languages" && token === true) {
           list.push({ kind: "choice", category, count: 1, pool: { kind: "any" } });
           continue;
         }
-        if (value === true) {
+        if (token === true) {
           const name = category === "languages" ? languageName(key) : classify(key.split("|")[0], category)?.name;
           if (name) addFixed(category, name);
-          else problems.push(token);
+          else stated = false;
           continue;
         }
-        if (typeof value === "number") {
+        if (typeof token === "number") {
           if (key === "any" && (category === "skills" || category === "languages" || category === "tools")) {
-            list.push({ kind: "choice", category, count: value, pool: { kind: "any" } });
+            list.push({ kind: "choice", category, count: token, pool: { kind: "any" } });
           } else if (key === "anyStandard" && category === "languages") {
-            list.push({ kind: "choice", category, count: value, pool: { kind: "any" } });
+            list.push({ kind: "choice", category, count: token, pool: { kind: "any" } });
           } else if (category === "tools" && COUNTED_TOOL_POOLS[key]) {
-            list.push({ kind: "choice", category, count: value, pool: { kind: "names", names: [...COUNTED_TOOL_POOLS[key]] } });
+            list.push({ kind: "choice", category, count: token, pool: { kind: "names", names: [...COUNTED_TOOL_POOLS[key]] } });
           } else {
-            problems.push(token);
+            stated = false;
           }
           continue;
         }
-        problems.push(token);
+        stated = false;
       }
+      if (!stated) problems.push(rawEntryText(field, entry));
     }
   }
 
