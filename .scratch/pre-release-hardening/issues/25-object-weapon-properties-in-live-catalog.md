@@ -4,7 +4,9 @@
 
 **Blocked by:** None
 
-**Status:** ready-for-agent
+**Status:** done
+
+**Landed:** merged from `pr/25-object-properties` (194a65f, b6d4d9f). Found by `npm run check:live`. The scraper maps an object property entry to the property its `uid` names (base items and magic variants; entries that are neither a string nor an object with a `uid` are dropped); `weaponPoolNames` skips non-string properties, so a catalog cached before the fix does not throw. `check:live` passes (52 tests) and `check:all` passes (1164 app tests, 162 scraper tests, 322 known type errors none new). Open items: a pre-fix cached catalog reads an object property as absent until the next re-sync (so a cached Lance does not count as Two-Handed for an exclusion pool); `ActionsTab` prints `[object Object]` for a cached object property until re-sync; no layout check (no UI).
 
 ## Design notes
 
