@@ -145,7 +145,8 @@ export interface ClassData {
   multiclassing?: {
     requirements?: Record<string, number>;
     proficienciesGained?: {
-      armor?: string[];
+      /** A plain token ("light", "shield") or an object whose `proficiency` is the token, with the full text in `full`. */
+      armor?: (string | { proficiency: string; full?: string })[];
       weapons?: string[];
       tools?: string[];
       skills?: any;

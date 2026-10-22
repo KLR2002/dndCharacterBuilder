@@ -17,8 +17,11 @@ const SHEET_FILE = "rules/proficiencySheet.ts";
 const PRIVATE_FOLDER = "rules/proficiencySources/";
 const ADR_0015 = fileURLToPath(new URL("../docs/adr/0015-proficiency-grants-live-in-the-catalog.md", import.meta.url));
 
-/** Proficiency tables that remain and that only the sheet reads. A named import or re-export of one is a read. */
-const GUARDED_CONSTANTS = ["MULTICLASS_PROFICIENCIES"];
+/**
+ * Proficiency tables that remain and that only the sheet reads. A named import or re-export of one is a read.
+ * None remain (ADR 0015); the table tests below run against a synthetic table, so the mechanism stays covered.
+ */
+const GUARDED_CONSTANTS: string[] = [];
 
 /** An identifier and the pattern that finds it in code. */
 function identifier(name: string): { name: string; pattern: RegExp } {
@@ -45,6 +48,7 @@ const DELETED_NAMES: { name: string; pattern: RegExp }[] = [
   identifier("raceTraining"),
   identifier("optionGrantApplies"),
   identifier("KENSEI_SUBCLASS"),
+  identifier("MULTICLASS_PROFICIENCIES"),
   { name: '"Way of the Kensei"', pattern: /["']Way of the Kensei["']/ },
   {
     name: 'a race comparison with "Githyanki" or "Mountain Dwarf"',
@@ -63,6 +67,7 @@ const GUARDED_FIELDS: { field: string; pattern: RegExp }[] = [
   "skillProficiencies",
   "languageProficiencies",
   "multiclassProficiencies",
+  "proficienciesGained",
   "chosenTools",
   "chosenLanguages",
   ".savingThrows",
@@ -123,11 +128,6 @@ const ALLOWANCES: Allowance[] = [
     files: ["rules/subclassSpells.ts"],
     fields: [".savingThrows"],
     reason: "a spell's own saving throw, not a class's",
-  },
-  {
-    files: ["rules/builderTransitions.ts"],
-    constants: ["MULTICLASS_PROFICIENCIES"],
-    reason: "looks up the multiclass table to write the multiclass record the sheet reads when a class is added",
   },
 ];
 
@@ -232,7 +232,7 @@ function destructuredFrom(code: string, ns: string): string[] {
 }
 
 /** Every guarded field, sheet-private import and guarded table reached in one file. `file` is relative to src/. */
-function findingsIn(file: string, source: string, exportsOf: ExportsOf): Finding[] {
+function findingsIn(file: string, source: string, exportsOf: ExportsOf, guarded: readonly string[] = GUARDED_CONSTANTS): Finding[] {
   const code = codeOnly(source);
   const findings: Finding[] = [];
   for (const { field, pattern } of GUARDED_FIELDS) {
@@ -249,18 +249,18 @@ function findingsIn(file: string, source: string, exportsOf: ExportsOf): Finding
   const named = [...code.matchAll(/\b(?:import|export)\s+(?:type\s+)?(?:[\w$]+\s*,\s*)?\{([^}]*)\}\s*from\s*["']/g)].flatMap((m) =>
     m[1].split(",").map((part) => part.trim().replace(/^type\s+/, "").split(/\s+as\s+/)[0]),
   );
-  for (const name of GUARDED_CONSTANTS) {
+  for (const name of guarded) {
     if (named.includes(name)) findings.push({ file, kind: "constant", name });
   }
   for (const ns of namespaceNames(code)) {
     const destructured = destructuredFrom(code, ns);
-    for (const name of GUARDED_CONSTANTS) {
+    for (const name of guarded) {
       if (namespaceReads(code, ns, name) || destructured.includes(name)) findings.push({ file, kind: "namespace", name });
     }
   }
   for (const m of code.matchAll(/\bexport\s*\*\s*(?:as\s+[\w$]+\s*)?from\s*["'](\.[^"']+)["']/g)) {
     const exported = exportsOf(moduleOf(file, m[1]));
-    for (const name of GUARDED_CONSTANTS) {
+    for (const name of guarded) {
       if (exported.has(name)) findings.push({ file, kind: "reexport", name });
     }
   }
@@ -330,10 +330,16 @@ function format(finding: Finding): string {
 }
 
 /** The findings in one file that no allowance covers. `exportsOf` says what each module exports. */
-function violationsFor(file: string, source: string, allowances: Allowance[], exportsOf: ExportsOf = treeExportsOf()): Finding[] {
+function violationsFor(
+  file: string,
+  source: string,
+  allowances: Allowance[],
+  exportsOf: ExportsOf = treeExportsOf(),
+  guarded: readonly string[] = GUARDED_CONSTANTS,
+): Finding[] {
   const deleted = deletedIn(file, source);
   if (isExempt(file)) return deleted;
-  return [...deleted, ...findingsIn(file, source, exportsOf).filter((finding) => !allowedBy(finding, allowances))];
+  return [...deleted, ...findingsIn(file, source, exportsOf, guarded).filter((finding) => !allowedBy(finding, allowances))];
 }
 
 function treeFindings(): Finding[] {
@@ -366,36 +372,42 @@ test("guard, synthetic: a component importing a sheet-private module fails, name
   );
 });
 
+// The table tests run against a synthetic table: no proficiency table remains for the guard to list, but the
+// mechanism that finds a named, namespaced or re-exported table must keep working for the next one.
+const SYNTHETIC_TABLE = "SYNTHETIC_TABLE";
+const guard = (file: string, source: string, allowances: Allowance[] = [], exportsOf?: ExportsOf) =>
+  violationsFor(file, source, allowances, exportsOf, [SYNTHETIC_TABLE]);
+
 test("guard, synthetic: importing or re-exporting a guarded proficiency table fails, named by file and table", () => {
-  const imported = 'import {\n  STANDARD_ARRAY,\n  MULTICLASS_PROFICIENCIES as table,\n} from "../constants/rules.ts";\n';
-  const reexported = 'export { MULTICLASS_PROFICIENCIES } from "../constants/rules.ts";\n';
+  const imported = 'import {\n  STANDARD_ARRAY,\n  SYNTHETIC_TABLE as table,\n} from "../constants/rules.ts";\n';
+  const reexported = 'export { SYNTHETIC_TABLE } from "../constants/rules.ts";\n';
   const harmless = 'import { MULTICLASS_PREREQUISITES } from "../constants/rules.ts";\n';
   assert.deepEqual(
-    violationsFor("components/Synthetic.tsx", imported, []).map((v) => [v.file, v.name]),
-    [["components/Synthetic.tsx", "MULTICLASS_PROFICIENCIES"]],
+    guard("components/Synthetic.tsx", imported, []).map((v) => [v.file, v.name]),
+    [["components/Synthetic.tsx", "SYNTHETIC_TABLE"]],
   );
   assert.deepEqual(
-    violationsFor("components/Synthetic.tsx", reexported, []).map((v) => [v.file, v.name]),
-    [["components/Synthetic.tsx", "MULTICLASS_PROFICIENCIES"]],
+    guard("components/Synthetic.tsx", reexported, []).map((v) => [v.file, v.name]),
+    [["components/Synthetic.tsx", "SYNTHETIC_TABLE"]],
   );
-  assert.deepEqual(violationsFor("components/Synthetic.tsx", harmless, []), []);
+  assert.deepEqual(guard("components/Synthetic.tsx", harmless, []), []);
 });
 
 test("guard, synthetic: a namespace import that reaches a guarded table fails, by dot, optional dot, bracket or destructuring", () => {
-  const dot = 'import * as rules from "../constants/rules.ts";\nexport const table = rules.MULTICLASS_PROFICIENCIES;\n';
+  const dot = 'import * as rules from "../constants/rules.ts";\nexport const table = rules.SYNTHETIC_TABLE;\n';
   const optional = 'import * as rules from "../constants/rules.ts";\nexport const table = rules?.RACE_WEAPON_PROFICIENCIES;\n';
-  const bracket = "import * as rules from '../constants/rules.ts';\nexport const table = rules[\"MULTICLASS_PROFICIENCIES\"];\n";
-  const destructured = 'import * as rules from "../constants/rules.ts";\nconst { MULTICLASS_PROFICIENCIES: table } = rules;\n';
+  const bracket = "import * as rules from '../constants/rules.ts';\nexport const table = rules[\"SYNTHETIC_TABLE\"];\n";
+  const destructured = 'import * as rules from "../constants/rules.ts";\nconst { SYNTHETIC_TABLE: table } = rules;\n';
   for (const source of [dot, optional, bracket, destructured]) {
-    assert.equal(violationsFor("components/Synthetic.tsx", source, []).length, 1, source);
+    assert.equal(guard("components/Synthetic.tsx", source, []).length, 1, source);
   }
   assert.deepEqual(
-    violationsFor("components/Synthetic.tsx", dot, []).map((v) => [v.file, v.name]),
-    [["components/Synthetic.tsx", "MULTICLASS_PROFICIENCIES"]],
+    guard("components/Synthetic.tsx", dot, []).map((v) => [v.file, v.name]),
+    [["components/Synthetic.tsx", "SYNTHETIC_TABLE"]],
   );
   assert.equal(
-    format(violationsFor("components/Synthetic.tsx", bracket, [])[0]),
-    "components/Synthetic.tsx reaches MULTICLASS_PROFICIENCIES through a namespace import; only rules/proficiencySheet.ts and its private folder read that table",
+    format(guard("components/Synthetic.tsx", bracket, [])[0]),
+    "components/Synthetic.tsx reaches SYNTHETIC_TABLE through a namespace import; only rules/proficiencySheet.ts and its private folder read that table",
   );
 });
 
@@ -403,21 +415,22 @@ test("guard, synthetic: a namespace import that reads only untabled members pass
   const harmless = [
     'import * as rules from "../constants/rules.ts";\nexport const size = rules.STANDARD_ARRAY;\n',
     'import * as rules from "../constants/rules.ts";\nconst { STANDARD_ARRAY } = rules;\n',
-    'import * as rules from "../constants/rules.ts";\n// rules.MULTICLASS_PROFICIENCIES is named in a comment only\n',
-    'import * as rules from "../constants/rules.ts";\nconst grants = otherRules.MULTICLASS_PROFICIENCIES;\n',
+    'import * as rules from "../constants/rules.ts";\n// rules.SYNTHETIC_TABLE is named in a comment only\n',
+    'import * as rules from "../constants/rules.ts";\nconst grants = otherRules.SYNTHETIC_TABLE;\n',
   ];
   for (const source of harmless) {
-    assert.deepEqual(violationsFor("components/Synthetic.tsx", source, []), [], source);
+    assert.deepEqual(guard("components/Synthetic.tsx", source, []), [], source);
   }
 });
 
 test("guard, synthetic: re-exporting a module that exports a guarded table, with export * or export * as, fails", () => {
+  const exportsOf = buildExportsIndex(new Map([["constants/rules.ts", `export const ${SYNTHETIC_TABLE} = {};\n`]]));
   const star = 'export * from "../constants/rules.ts";\n';
   const namespaced = 'export * as rules from "../constants/rules.ts";\n';
   for (const source of [star, namespaced]) {
     assert.deepEqual(
-      violationsFor("components/Synthetic.tsx", source, []).map((v) => [v.file, v.name]).sort(),
-      [["components/Synthetic.tsx", "MULTICLASS_PROFICIENCIES"]],
+      guard("components/Synthetic.tsx", source, [], exportsOf).map((v) => [v.file, v.name]).sort(),
+      [["components/Synthetic.tsx", "SYNTHETIC_TABLE"]],
       source,
     );
   }
@@ -426,7 +439,7 @@ test("guard, synthetic: re-exporting a module that exports a guarded table, with
 test("guard, synthetic: a star re-export follows a chain of star re-exports to a guarded table, and stops at a module without one", () => {
   const exportsOf = buildExportsIndex(
     new Map([
-      ["constants/tables.ts", "export const MULTICLASS_PROFICIENCIES = {};\n"],
+      ["constants/tables.ts", "export const SYNTHETIC_TABLE = {};\n"],
       ["constants/barrel.ts", 'export * from "./tables.ts";\nexport { STANDARD_ARRAY } from "./plain.ts";\n'],
       ["constants/plain.ts", "export const STANDARD_ARRAY = [15, 14];\n"],
       ["constants/outer.ts", 'export * from "./barrel.ts";\n'],
@@ -434,24 +447,24 @@ test("guard, synthetic: a star re-export follows a chain of star re-exports to a
     ]),
   );
   assert.deepEqual(
-    violationsFor("components/Synthetic.tsx", 'export * from "../constants/outer.ts";\n', [], exportsOf).map((v) => [v.kind, v.name]),
-    [["reexport", "MULTICLASS_PROFICIENCIES"]],
+    guard("components/Synthetic.tsx", 'export * from "../constants/outer.ts";\n', [], exportsOf).map((v) => [v.kind, v.name]),
+    [["reexport", "SYNTHETIC_TABLE"]],
   );
-  assert.deepEqual(violationsFor("components/Synthetic.tsx", 'export * from "../constants/plainBarrel.ts";\n', [], exportsOf), []);
-  assert.deepEqual(violationsFor("components/Synthetic.tsx", 'export * as plain from "../constants/plain.ts";\n', [], exportsOf), []);
+  assert.deepEqual(guard("components/Synthetic.tsx", 'export * from "../constants/plainBarrel.ts";\n', [], exportsOf), []);
+  assert.deepEqual(guard("components/Synthetic.tsx", 'export * as plain from "../constants/plain.ts";\n', [], exportsOf), []);
 });
 
 test("guard, synthetic: an allowlisted table import passes, and the sheet and its private folder are exempt", () => {
-  const imported = 'import { MULTICLASS_PROFICIENCIES } from "../constants/rules.ts";\n';
+  const imported = 'import { SYNTHETIC_TABLE } from "../constants/rules.ts";\n';
   const allowed: Allowance[] = [
-    { files: ["components/Synthetic.tsx"], constants: ["MULTICLASS_PROFICIENCIES", "RACE_WEAPON_PROFICIENCIES"], reason: "test" },
+    { files: ["components/Synthetic.tsx"], constants: ["SYNTHETIC_TABLE", "RACE_WEAPON_PROFICIENCIES"], reason: "test" },
   ];
-  assert.deepEqual(violationsFor("components/Synthetic.tsx", imported, allowed), []);
-  assert.deepEqual(violationsFor(SHEET_FILE, imported, []), []);
-  assert.deepEqual(violationsFor("rules/proficiencySources/classBase.ts", 'import { MULTICLASS_PROFICIENCIES } from "../../constants/rules.ts";\n', []), []);
-  const namespaced = 'import * as rules from "../constants/rules.ts";\nexport const table = rules.MULTICLASS_PROFICIENCIES;\nexport * from "../constants/rules.ts";\n';
-  assert.equal(violationsFor("components/Synthetic.tsx", namespaced, allowed).length, 0);
-  assert.deepEqual(violationsFor(SHEET_FILE, namespaced, []), []);
+  assert.deepEqual(guard("components/Synthetic.tsx", imported, allowed), []);
+  assert.deepEqual(guard(SHEET_FILE, imported, []), []);
+  assert.deepEqual(guard("rules/proficiencySources/classBase.ts", 'import { SYNTHETIC_TABLE } from "../../constants/rules.ts";\n', []), []);
+  const namespaced = 'import * as rules from "../constants/rules.ts";\nexport const table = rules.SYNTHETIC_TABLE;\nexport * from "../constants/rules.ts";\n';
+  assert.equal(guard("components/Synthetic.tsx", namespaced, allowed).length, 0);
+  assert.deepEqual(guard(SHEET_FILE, namespaced, []), []);
 });
 
 test("guard, synthetic: comments are not reads, and the sheet itself is exempt", () => {
@@ -460,13 +473,21 @@ test("guard, synthetic: comments are not reads, and the sheet itself is exempt",
 });
 
 test("guard, synthetic: a deleted hand table declared again fails, in a component and in the sheet itself", () => {
-  for (const name of ["RACE_WEAPON_PROFICIENCIES", "RACE_SKILL_PROFICIENCIES", "BACKGROUND_SKILL_PROFICIENCIES", "OPTION_FEATURE_CHOICES", "CLASS_DATA"]) {
+  for (const name of ["RACE_WEAPON_PROFICIENCIES", "RACE_SKILL_PROFICIENCIES", "BACKGROUND_SKILL_PROFICIENCIES", "OPTION_FEATURE_CHOICES", "CLASS_DATA", "MULTICLASS_PROFICIENCIES"]) {
     const table = `export const ${name} = {\n  Vellari: ["Tinkering"],\n};\n`;
     const inComponent = violationsFor("components/Synthetic.tsx", table, []);
     assert.deepEqual(inComponent.map((v) => [v.file, v.name]), [["components/Synthetic.tsx", name]], name);
     assert.equal(format(inComponent[0]), `components/Synthetic.tsx reintroduces ${name}; ADR 0015 deleted it`);
     assert.deepEqual(violationsFor(SHEET_FILE, table, []).map((v) => [v.file, v.name]), [[SHEET_FILE, name]], name);
   }
+});
+
+test("guard, synthetic: a class's multiclass grant record read outside the sheet fails, in a component and in the Builder", () => {
+  const offending = "export const grants = held.multiclassing?.proficienciesGained;\n";
+  for (const file of ["components/Synthetic.tsx", "rules/builderTransitions.ts"]) {
+    assert.deepEqual(violationsFor(file, offending, []).map((v) => [v.file, v.name]), [[file, "proficienciesGained"]], file);
+  }
+  assert.deepEqual(violationsFor("rules/proficiencySources/classBase.ts", offending, []), []);
 });
 
 test("guard, synthetic: a deleted class-name or race or background tool chain called or declared again fails", () => {
@@ -511,7 +532,11 @@ test("the allowlist names no deleted table, chain, special case or module", () =
         reason: "test",
       },
     ]),
-    ["components/Synthetic.tsx: RACE_WEAPON_PROFICIENCIES", "components/Synthetic.tsx: rules/proficiencySources/toolsAndLanguages.ts"],
+    [
+      "components/Synthetic.tsx: RACE_WEAPON_PROFICIENCIES",
+      "components/Synthetic.tsx: MULTICLASS_PROFICIENCIES",
+      "components/Synthetic.tsx: rules/proficiencySources/toolsAndLanguages.ts",
+    ],
   );
   assert.deepEqual(deletedAllowances(ALLOWANCES), []);
 });
@@ -528,6 +553,13 @@ test("ADR 0015's Known exceptions names exactly the tables the guard still allow
   for (const name of named) {
     assert.ok(exportedSomewhere(name), `${name} is named in ADR 0015 but no source file exports it`);
   }
+});
+
+test("ADR 0015's Known exceptions reads None remain, since the guard has no proficiency table left to allowlist", () => {
+  const adr = readFileSync(ADR_0015, "utf8");
+  const section = adr.split(/^## /m).find((part) => part.startsWith("Known exceptions")) ?? "";
+  assert.match(section, /^Known exceptions\n+None remain\b/);
+  assert.deepEqual(GUARDED_CONSTANTS, []);
 });
 
 test("only the Proficiency Sheet reads proficiency fields or imports its private sources", () => {

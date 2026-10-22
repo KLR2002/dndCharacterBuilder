@@ -62,60 +62,6 @@ export const MULTICLASS_PREREQUISITES: Record<string, { ability: AbilityKey; min
   Artificer: [{ ability: "int", minScore: 13 }],
 };
 
-// Multiclass Proficiencies Gained
-export const MULTICLASS_PROFICIENCIES: Record<string, {
-  armor?: string[];
-  weapons?: string[];
-  tools?: string[];
-  skills?: string;
-}> = {
-  Barbarian: {
-    armor: ["Shields"],
-    weapons: ["Simple weapons", "Martial weapons"],
-  },
-  Bard: {
-    armor: ["Light armor"],
-    skills: "One skill of your choice",
-    tools: ["One musical instrument of your choice"],
-  },
-  Cleric: {
-    armor: ["Light armor", "Medium armor", "Shields"],
-  },
-  Druid: {
-    armor: ["Light armor", "Medium armor", "Shields"],
-  },
-  Fighter: {
-    armor: ["Light armor", "Medium armor", "Shields"],
-    weapons: ["Simple weapons", "Martial weapons"],
-  },
-  Monk: {
-    weapons: ["Simple weapons", "Shortswords"],
-  },
-  Paladin: {
-    armor: ["Light armor", "Medium armor", "Shields"],
-    weapons: ["Simple weapons", "Martial weapons"],
-  },
-  Ranger: {
-    armor: ["Light armor", "Medium armor", "Shields"],
-    weapons: ["Simple weapons", "Martial weapons"],
-  },
-  Rogue: {
-    armor: ["Light armor"],
-    tools: ["Thieves' tools"],
-    skills: "One skill from the Rogue skill list",
-  },
-  Sorcerer: {},
-  Warlock: {
-    armor: ["Light armor"],
-    weapons: ["Simple weapons"],
-  },
-  Wizard: {},
-  Artificer: {
-    armor: ["Light armor", "Medium armor", "Shields"],
-    tools: ["Thieves' tools", "Tinker's tools"],
-  },
-};
-
 // Multiclass Spell Slots Table: slots per spell level (1-9) for combined caster level 1-20
 export const MULTICLASS_SPELL_SLOTS: Record<number, number[]> = {
   1:  [2],
