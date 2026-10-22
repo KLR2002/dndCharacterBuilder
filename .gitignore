@@ -5,6 +5,9 @@ node_modules
 
 # Expo
 .expo/
+
+# local caches (the live catalog built by npm run catalog:live)
+.cache/
 dist/
 web-build/
 expo-env.d.ts

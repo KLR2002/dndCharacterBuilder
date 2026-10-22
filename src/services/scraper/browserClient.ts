@@ -2,10 +2,13 @@ export interface ScraperProgressCallback {
   (category: string, currentStep: number, totalSteps: number): void;
 }
 
+/** The raw GitHub mirror the in-app sync reads the 5etools data from. */
+export const RAW_MIRROR_BASE_URL = "https://raw.githubusercontent.com/5etools-mirror-3/5etools-src/master";
+
 export class BrowserToolsClient {
   private baseUrl: string;
 
-  constructor(baseUrl = "https://raw.githubusercontent.com/5etools-mirror-3/5etools-src/master") {
+  constructor(baseUrl = RAW_MIRROR_BASE_URL) {
     this.baseUrl = baseUrl.replace(/\/$/, "");
   }
 
