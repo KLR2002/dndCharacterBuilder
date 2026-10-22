@@ -1,7 +1,9 @@
 // Responsive layout check at phone widths. Visits every screen in SCREENS (the character tabs and the
-// Builder subtabs, home, settings, and the Rest, Conditions and New Character modals), the hit point
-// modal (from the Stats HP number and the header HP badge), and the Active Wild Shape box (Stats tab,
-// header badge, Features tab).
+// Builder subtabs, including the race picker for a character with no race, the background picker and the
+// Custom Background creator for one with no background, home, settings, and the Rest, Conditions and New
+// Character modals), the hit point modal (from the Stats HP number and the header HP badge), and the Active
+// Wild Shape box (Stats tab, header badge, Features tab). The helpers that start the app and seed it are in
+// scripts/lib/app-driver.mjs (see docs/agents/driving-the-app.md).
 //
 // Usage: `npm run layout:check` (not part of check:all). The script starts the Expo web server itself
 // on the port in BASE, unless a server already answers there. `npm run layout:check -- --integrated`
@@ -15,11 +17,19 @@
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { spawn } from "node:child_process";
 import fs from "node:fs";
 import { chromium } from "playwright";
 import { makeChar, defaultSettings } from "../checks/testUtils.ts";
-import { REQUIRED_CATALOG_FORMAT } from "../src/services/compendiumStorage.ts";
+import {
+  httpStatus,
+  integratedCollections,
+  makeCatalogReader,
+  seedBrowser,
+  signalExpoGroup,
+  spawnExpoWeb,
+  stopExpoWeb,
+  waitForExpoWeb,
+} from "./lib/app-driver.mjs";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const BASE = process.env.BASE ?? "http://localhost:8099";
@@ -29,116 +39,28 @@ const WIDTHS = (process.env.WIDTHS ?? "393,360,320,412").split(",").map(Number);
 const INTEGRATED = process.argv.includes("--integrated") || process.env.LAYOUT_INTEGRATED === "1";
 const SERVER_WAIT_MS = 180_000;
 
-const sleep = (ms) => new Promise((done) => setTimeout(done, ms));
-
-// HTTP status of `url`, or 0 when nothing answers.
-async function httpStatus(url) {
-  try {
-    const res = await fetch(url, { signal: AbortSignal.timeout(3000) });
-    await res.body?.cancel();
-    return res.status;
-  } catch {
-    return 0;
-  }
-}
-
 // The Expo web server this script started. It runs in its own process group, so one signal stops it and its children.
 let server = null;
 
 function signalServerGroup(signal) {
-  if (server) {
-    try {
-      process.kill(-server.pid, signal);
-    } catch {
-      // The group is already gone.
-    }
-  }
-}
-
-function serverGroupAlive() {
-  if (!server) return false;
-  try {
-    process.kill(-server.pid, 0);
-    return true;
-  } catch {
-    return false;
-  }
+  if (server) signalExpoGroup(server, signal);
 }
 
 async function stopServer() {
   if (!server) return;
-  signalServerGroup("SIGTERM");
-  for (let i = 0; i < 25 && serverGroupAlive(); i++) await sleep(200);
-  if (serverGroupAlive()) signalServerGroup("SIGKILL");
+  await stopExpoWeb(server);
   server = null;
 }
 
-// Starts `npx expo start --web --clear` with CI set (no reload prompts, no telemetry), logging to `logPath`.
-// `--clear` drops Metro's cache, so a stale bundle cannot pass the check.
-// Resolves "up" once BASE answers 200, "exited" if the process ends first, "timeout" if the wait runs out.
+// Starts the Expo web server on PORT (see spawnExpoWeb). Resolves "up", "exited" or "timeout" (see waitForExpoWeb).
 async function startServer(logPath) {
-  const fd = fs.openSync(logPath, "w");
-  let exited = false;
-  const child = spawn("npx", ["expo", "start", "--web", "--port", PORT, "--clear"], {
-    cwd: ROOT,
-    env: { ...process.env, CI: "1", EXPO_NO_TELEMETRY: "1" },
-    detached: true,
-    stdio: ["ignore", fd, fd],
-  });
-  fs.closeSync(fd);
-  child.on("exit", () => {
-    exited = true;
-  });
-  child.on("error", () => {
-    exited = true;
-  });
-  server = child;
-  const deadline = Date.now() + SERVER_WAIT_MS;
-  while (!exited && Date.now() < deadline) {
-    if ((await httpStatus(BASE)) === 200) return "up";
-    await sleep(1000);
-  }
-  return exited ? "exited" : "timeout";
-}
-
-// The integrated catalog's collections, read from dnd5eToolsScrap/data. Conditions are optional.
-function readScrapJson(name) {
-  return JSON.parse(fs.readFileSync(join(ROOT, "dnd5eToolsScrap", "data", `${name}.json`), "utf8"));
-}
-
-function integratedCollections() {
-  const hasConditions = fs.existsSync(join(ROOT, "dnd5eToolsScrap", "data", "conditions.json"));
-  return {
-    hasIntegratedCatalog: true,
-    catalogFormat: REQUIRED_CATALOG_FORMAT,
-    integratedAt: new Date().toISOString(),
-    races: readScrapJson("races"),
-    classes: readScrapJson("classes"),
-    feats: readScrapJson("feats"),
-    backgrounds: readScrapJson("backgrounds"),
-    items: readScrapJson("items"),
-    spells: readScrapJson("spells"),
-    beasts: readScrapJson("beasts"),
-    conditions: hasConditions ? readScrapJson("conditions") : [],
-    optionsAndFeatures: readScrapJson("options_and_features"),
-    books: readScrapJson("books"),
-  };
+  server = spawnExpoWeb({ root: ROOT, port: PORT, logPath });
+  return waitForExpoWeb(server, BASE, SERVER_WAIT_MS);
 }
 
 // Record sources the active catalog uses, so seeded characters refer to records the app can find.
 const catalogDir = INTEGRATED ? join(ROOT, "dnd5eToolsScrap", "data") : join(ROOT, "src", "data");
-const catalogCache = new Map();
-function catalogRecords(collection) {
-  if (!catalogCache.has(collection)) {
-    catalogCache.set(collection, JSON.parse(fs.readFileSync(join(catalogDir, `${collection}.json`), "utf8")));
-  }
-  return catalogCache.get(collection);
-}
-function catalogSource(collection, name) {
-  const record = catalogRecords(collection).find((r) => r.name === name);
-  if (!record) throw new Error(`${name} is not in ${collection}.json (${catalogDir})`);
-  return record.source;
-}
+const { catalogSource } = makeCatalogReader(catalogDir);
 
 // The character the builder shows: Half-Orc, Acolyte background, level 1 Paladin, equipment claimed.
 const CHARACTER_ID = "char_rendar";
@@ -316,6 +238,39 @@ function bardCharacter() {
   });
 }
 
+// A new character with no race and no background: the race picker starts here.
+const NO_RACE_ID = "char_norace";
+function noRaceCharacter() {
+  return makeChar({
+    id: NO_RACE_ID,
+    name: "Sable",
+    createdAt: 8,
+    updatedAt: 8,
+    startingOption: "equipment",
+    baseAbilityScores: { str: 10, dex: 12, con: 10, int: 14, wis: 10, cha: 12 },
+    startingGrantsApplied: true,
+    backgroundGrantsApplied: true,
+  });
+}
+
+// A level 1 Human Fighter with no background: the background picker and the Custom Background creator start here.
+const NO_BG_ID = "char_nobg";
+function noBackgroundCharacter() {
+  return makeChar({
+    id: NO_BG_ID,
+    name: "Pim",
+    createdAt: 9,
+    updatedAt: 9,
+    startingOption: "equipment",
+    baseAbilityScores: { str: 15, dex: 13, con: 14, int: 8, wis: 10, cha: 12 },
+    race: { name: "Human", source: catalogSource("races", "Human") },
+    classes: [{ className: "Fighter", source: catalogSource("classes", "Fighter"), level: 1 }],
+    currentHp: 12,
+    startingGrantsApplied: true,
+    backgroundGrantsApplied: true,
+  });
+}
+
 // The seed the browser starts from: the characters, folders, settings, and (integrated mode) the catalog.
 function buildSeed() {
   const defaults = defaultSettings();
@@ -355,6 +310,8 @@ function buildSeed() {
       longNameCharacter(),
       ...(INTEGRATED ? [kenseiCharacter()] : []),
       bardCharacter(),
+      noRaceCharacter(),
+      noBackgroundCharacter(),
     ],
     folders: [],
     settings: {
@@ -362,28 +319,8 @@ function buildSeed() {
       hasCompletedFirstRun: true,
       activeResourceBooks: INTEGRATED ? [...new Set([...defaults.activeResourceBooks, "MM"])] : defaults.activeResourceBooks,
     },
-    integrated: INTEGRATED ? integratedCollections() : null,
+    integrated: INTEGRATED ? integratedCollections(ROOT) : null,
   };
-}
-
-// Runs in the browser before the app loads. Seeds localStorage once per context and, in integrated
-// mode, the IndexedDB catalog the app reads on launch.
-function seedBrowser(s) {
-  if (localStorage.getItem("__seeded")) return;
-  localStorage.setItem("@dnd5e_characters", JSON.stringify(s.characters));
-  localStorage.setItem("@dnd5e_folders", JSON.stringify(s.folders));
-  localStorage.setItem("@dnd5e_app_settings", JSON.stringify(s.settings));
-  if (s.integrated) {
-    const open = indexedDB.open("dnd5e_compendium_db", 2);
-    open.onupgradeneeded = () => {
-      if (!open.result.objectStoreNames.contains("collections")) open.result.createObjectStore("collections");
-    };
-    open.onsuccess = () => {
-      const tx = open.result.transaction("collections", "readwrite");
-      tx.objectStore("collections").put(s.integrated, "@dnd5e_integrated_compendium");
-    };
-  }
-  localStorage.setItem("__seeded", "1");
 }
 
 // The screens each width visits, in order. `route` is opened first (a modal always reopens its route).
@@ -396,12 +333,37 @@ const RANGER_ROUTE = `/character/${RANGER_ID}`;
 const LONG_NAME_ROUTE = `/character/${LONG_NAME_ID}`;
 const KENSEI_ROUTE = `/character/${KENSEI_ID}`;
 const BARD_ROUTE = `/character/${BARD_ID}`;
+const NO_RACE_ROUTE = `/character/${NO_RACE_ID}`;
+const NO_BG_ROUTE = `/character/${NO_BG_ID}`;
 const SCREENS = [
   { name: "Builder Abilities", route: RENDAR_ROUTE, tabs: ["Builder", "Abilities"], ready: /points remaining/i },
   { name: "Builder Race", route: RENDAR_ROUTE, tabs: ["Builder", "Race"], ready: /traits:/i },
   { name: "Builder Race language choice", route: HALF_ELF_ROUTE, tabs: ["Builder", "Race"], ready: /Granted Languages:/, scrollTo: "Granted Languages:" },
   { name: "Builder Class feats", route: HALF_ELF_ROUTE, tabs: ["Builder", "Class"], ready: /Selected Ability Improvements/i, scrollTo: "Selected Ability Improvements" },
   { name: "Builder Background", route: RENDAR_ROUTE, tabs: ["Builder", "Background"], ready: /background benefits/i, scrollTo: "Claim again" },
+  // Pickers for characters with no race (the race list) or no background (the background list, then the Custom Background creator).
+  // In integrated mode Half-Elf's card has the plain row, the race's own form with no subrace name, under "Subraces / Variants:".
+  { name: "Builder Race picker", route: NO_RACE_ROUTE, tabs: ["Builder", "Race"], ready: "Half-Elf", scrollTo: "Half-Elf", expect: { placeholders: ["Search races…"], plainRaceRow: INTEGRATED ? "Half-Elf" : undefined } },
+  { name: "Builder Background picker", route: NO_BG_ROUTE, tabs: ["Builder", "Background"], ready: "Create Custom", expect: { texts: ["Acolyte"], placeholders: ["Search backgrounds…"] } },
+  {
+    name: "Builder Background custom form",
+    route: NO_BG_ROUTE,
+    tabs: ["Builder", "Background"],
+    open: (page) => page.getByText("Create Custom", { exact: true }).first().click(),
+    ready: "Apply Custom Background",
+    scrollTo: "Feature from Another Background (optional):",
+    expect: {
+      texts: [
+        "Background Name:",
+        "Select 2 Skill Proficiencies:",
+        "Acrobatics",
+        "Select 2 Tool or Language Proficiencies:",
+        "Elvish",
+        "Feature from Another Background (optional):",
+      ],
+      placeholders: ["e.g. Bounty Hunter, Village Hero...", "Search features…"],
+    },
+  },
   { name: "Builder Class", route: RENDAR_ROUTE, tabs: ["Builder", "Class"], ready: /total level/i, scrollTo: "Starting Equipment" },
   { name: "Builder Class proficiency choices", route: RANGER_ROUTE, tabs: ["Builder", "Class"], ready: /total level/i, scrollTo: "Class & Subclass Choices" },
   // Kensei weapons (integrated mode only): the Path of the Kensei choices, and the weapon rows they add to the sheet.
@@ -532,6 +494,18 @@ async function checkNoShrinkRows(page, screen) {
     await page.evaluate(restoreNoShrinkRows);
   }
   return out.map((v) => `row, native text (flexShrink 0): ${v}`);
+}
+
+// Runs in the browser. True when the race card titled `name` has a plain row under its "Subraces / Variants:" label:
+// the row for the race's own form, which is the card's title text inside that box.
+function findPlainRaceRow(name) {
+  const leaves = [...document.querySelectorAll("*")].filter((e) => e.children.length === 0);
+  const title = leaves.find((e) => e.textContent.trim() === name);
+  for (let card = title?.parentElement; card; card = card.parentElement) {
+    const label = [...card.querySelectorAll("*")].find((e) => e.children.length === 0 && e.textContent.trim() === "Subraces / Variants:");
+    if (label) return [...label.parentElement.querySelectorAll("*")].some((e) => e.children.length === 0 && e.textContent.trim() === name);
+  }
+  return false;
 }
 
 // Runs in the browser. The open modal dialog whose title is `title`, or null.
@@ -685,6 +659,22 @@ async function checkWildShapeFeatures(ctx, width) {
   return failures;
 }
 
+// Checks what a picker screen must show that the layout rules cannot see: texts and input placeholders on the page,
+// and (`plainRaceRow`) the plain race row. Returns one message per missing control.
+async function checkExpected(page, expect) {
+  const out = [];
+  for (const text of expect.texts ?? []) {
+    if (!(await page.getByText(text, { exact: true }).first().isVisible())) out.push(`missing "${text}"`);
+  }
+  for (const placeholder of expect.placeholders ?? []) {
+    if (!(await page.getByPlaceholder(placeholder).first().isVisible())) out.push(`missing the input with placeholder "${placeholder}"`);
+  }
+  if (expect.plainRaceRow && !(await page.evaluate(findPlainRaceRow, expect.plainRaceRow))) {
+    out.push(`no plain "${expect.plainRaceRow}" row under "Subraces / Variants:"`);
+  }
+  return out;
+}
+
 // Visits one screen of SCREENS and checks it. Returns the number of violations (or 1 if it never became ready).
 async function visitScreen(page, width, screen, state) {
   const prefix = `[${width}px ${screen.name}]`;
@@ -728,6 +718,7 @@ async function visitScreen(page, width, screen, state) {
   }
   violations = [...violations, ...(await checkNoShrinkRows(page, screen))];
   if (screen.headerName) violations = [...violations, ...(await page.evaluate(findHeaderNameViolations, screen.headerName))];
+  if (screen.expect) violations = [...violations, ...(await checkExpected(page, screen.expect))];
   for (const v of violations) console.log(`${prefix} ${v}`);
   return violations.length;
 }
