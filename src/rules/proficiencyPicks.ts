@@ -124,7 +124,7 @@ export function moveAliasedProficiencyPicks(character: Character, compendium: Co
     }
   }
   const next: Record<string, string[]> = {};
-  const aliased: Array<[string, string[]]> = [];
+  const aliased: [string, string[]][] = [];
   for (const [key, names] of Object.entries(picks)) {
     if (!sources.has(key) && idOfAlias.has(key)) aliased.push([key, names]);
     else next[key] = names;
