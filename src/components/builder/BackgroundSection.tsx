@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import { Text, TextInput, TouchableOpacity, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { Character } from "../../types/character";
@@ -12,6 +12,14 @@ import {
   setCustomBackground,
 } from "../../rules/builderTransitions";
 import type { SourceFixedGrants } from "../../rules/proficiencySheet";
+import {
+  borrowableFeatures,
+  CUSTOM_BACKGROUND_TOOLS_OR_LANGUAGES_GRANT,
+  withoutCatalogCustomBackground,
+  type BorrowableFeature,
+} from "../../rules/customBackground";
+import { heldByOtherSources } from "../../rules/proficiencyChoiceOffers";
+import { poolNames } from "../../rules/proficiencyPools";
 import type { AvailableRuleChoice } from "../../rules/ruleChoices";
 import type { CharacterCatalogs } from "../../rules/catalogs";
 import { Badge } from "../ui/Badge";
@@ -56,15 +64,78 @@ export const BackgroundSection: React.FC<BackgroundSectionProps> = ({
   const [isCustomBg, setIsCustomBg] = useState(false);
   const [customBgName, setCustomBgName] = useState("");
   const [customBgSkills, setCustomBgSkills] = useState<string[]>([]);
+  const [customBgTools, setCustomBgTools] = useState<string[]>([]);
+  const [customBgFeature, setCustomBgFeature] = useState<BorrowableFeature | null>(null);
+  const [featureSearch, setFeatureSearch] = useState("");
+
+  const selectableBackgrounds = useMemo(() => withoutCatalogCustomBackground(allBackgrounds), [allBackgrounds]);
+  const borrowable = useMemo(() => borrowableFeatures(allBackgrounds), [allBackgrounds]);
+  // The tool and language names the rest of the character does not already hold: the choice's pool less those.
+  const toolOrLanguageOptions = useMemo(() => {
+    const isHeld = heldByOtherSources(character, CUSTOM_BACKGROUND_TOOLS_OR_LANGUAGES_GRANT, {
+      compendium: catalogs.compendium,
+      activeBooks: catalogs.activeBooks,
+    });
+    return poolNames(CUSTOM_BACKGROUND_TOOLS_OR_LANGUAGES_GRANT).filter((name) => !isHeld(name));
+  }, [character, catalogs.compendium, catalogs.activeBooks]);
+  const featureQuery = featureSearch.trim().toLowerCase();
+  const featureRows = borrowable.filter((row) => row.label.toLowerCase().includes(featureQuery));
 
   const handleApplyCustomBackground = () => {
     const trimmed = customBgName.trim();
-    if (!trimmed || customBgSkills.length !== 2) return;
-    onUpdate((current) => setCustomBackground(current, trimmed, customBgSkills));
+    if (!trimmed || customBgSkills.length !== 2 || customBgTools.length !== 2) return;
+    onUpdate((current) =>
+      setCustomBackground(current, trimmed, customBgSkills, {
+        toolsOrLanguages: customBgTools,
+        feature: customBgFeature ? { name: customBgFeature.name, description: customBgFeature.description } : undefined,
+      })
+    );
     setIsCustomBg(false);
     setCustomBgName("");
     setCustomBgSkills([]);
+    setCustomBgTools([]);
+    setCustomBgFeature(null);
+    setFeatureSearch("");
   };
+
+  // A row of two picks: the counter turns accent once both are made.
+  const pickCounter = (label: string, count: number) => (
+    <View style={{ flexDirection: "row", flexWrap: "wrap", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
+      <Text style={{ color: theme.textSecondary, fontSize: 12, fontWeight: "600", flexShrink: 1 }}>{label}</Text>
+      <Text style={{ color: count === 2 ? theme.accent : theme.warning, fontSize: 12, fontWeight: "700" }}>{count}/2</Text>
+    </View>
+  );
+
+  // Toggle chips for a two-pick choice: a picked chip is deselected, and no third pick is taken.
+  const pickChips = (options: string[], picked: string[], setPicked: (next: string[]) => void) =>
+    options.map((name) => {
+      const isPicked = picked.includes(name);
+      const canPick = !isPicked && picked.length < 2;
+      return (
+        <TouchableOpacity
+          key={name}
+          onPress={() => {
+            if (isPicked) {
+              setPicked(picked.filter((pick) => pick !== name));
+            } else if (canPick) {
+              setPicked([...picked, name]);
+            }
+          }}
+          style={[
+            pkStyles.chip,
+            {
+              backgroundColor: isPicked ? theme.accentGlow : theme.surfaceHighlight,
+              borderColor: isPicked ? theme.accent : theme.border,
+              opacity: !isPicked && !canPick ? 0.4 : 1,
+            },
+          ]}
+        >
+          <Text style={{ color: isPicked ? theme.accent : theme.textSecondary, fontSize: 12, fontWeight: "600" }}>
+            {name}
+          </Text>
+        </TouchableOpacity>
+      );
+    });
 
   return (
     <View style={styles.section}>
@@ -318,7 +389,8 @@ export const BackgroundSection: React.FC<BackgroundSectionProps> = ({
               <View style={{ flex: 1 }}>
                 <Text style={[styles.itemTitle, { color: theme.text }]}>Custom Background</Text>
                 <Text style={{ color: theme.textMuted, fontSize: 12 }}>
-                  Create your own background with a custom name and 2 skill proficiencies.
+                  Create your own background with a custom name, 2 skill proficiencies and 2 tool or language
+                  proficiencies.
                 </Text>
               </View>
               <Button
@@ -342,40 +414,42 @@ export const BackgroundSection: React.FC<BackgroundSectionProps> = ({
                   value={customBgName}
                   onChangeText={setCustomBgName}
                 />
-                <View style={{ flexDirection: "row", flexWrap: "wrap", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
-                  <Text style={{ color: theme.textSecondary, fontSize: 12, fontWeight: "600", flexShrink: 1 }}>
-                    Select 2 Skill Proficiencies:
-                  </Text>
-                  <Text
-                    style={{
-                      color: customBgSkills.length === 2 ? theme.accent : theme.warning,
-                      fontSize: 12,
-                      fontWeight: "700",
-                    }}
-                  >
-                    {customBgSkills.length}/2
-                  </Text>
-                </View>
+                {pickCounter("Select 2 Skill Proficiencies:", customBgSkills.length)}
                 <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6 }}>
-                  {DND_SKILLS.map((s) => {
-                    const isPicked = customBgSkills.includes(s.name);
-                    const canPick = !isPicked && customBgSkills.length < 2;
+                  {pickChips(
+                    DND_SKILLS.map((s) => s.name),
+                    customBgSkills,
+                    setCustomBgSkills
+                  )}
+                </View>
+                {pickCounter("Select 2 Tool or Language Proficiencies:", customBgTools.length)}
+                <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6 }}>
+                  {pickChips(toolOrLanguageOptions, customBgTools, setCustomBgTools)}
+                </View>
+                <Text style={{ color: theme.textSecondary, fontSize: 12, fontWeight: "600" }}>
+                  Feature from Another Background (optional):
+                </Text>
+                {customBgFeature && (
+                  <View style={{ flexDirection: "row", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
+                    <Text style={{ color: theme.accent, fontSize: 12, fontWeight: "600", flexShrink: 1 }}>
+                      {customBgFeature.label}
+                    </Text>
+                    <Button title="Clear" variant="ghost" size="sm" onPress={() => setCustomBgFeature(null)} />
+                  </View>
+                )}
+                <SearchBar value={featureSearch} onChangeText={setFeatureSearch} placeholder="Search features…" />
+                <View style={{ gap: 6 }}>
+                  {featureRows.map((row) => {
+                    const isPicked = customBgFeature?.key === row.key;
                     return (
                       <TouchableOpacity
-                        key={s.name}
-                        onPress={() => {
-                          if (isPicked) {
-                            setCustomBgSkills(customBgSkills.filter((sk) => sk !== s.name));
-                          } else if (canPick) {
-                            setCustomBgSkills([...customBgSkills, s.name]);
-                          }
-                        }}
+                        key={row.key}
+                        onPress={() => setCustomBgFeature(isPicked ? null : row)}
                         style={[
                           pkStyles.chip,
                           {
                             backgroundColor: isPicked ? theme.accentGlow : theme.surfaceHighlight,
                             borderColor: isPicked ? theme.accent : theme.border,
-                            opacity: !isPicked && !canPick ? 0.4 : 1,
                           },
                         ]}
                       >
@@ -384,9 +458,10 @@ export const BackgroundSection: React.FC<BackgroundSectionProps> = ({
                             color: isPicked ? theme.accent : theme.textSecondary,
                             fontSize: 12,
                             fontWeight: "600",
+                            flexShrink: 1,
                           }}
                         >
-                          {s.name}
+                          {row.label}
                         </Text>
                       </TouchableOpacity>
                     );
@@ -397,7 +472,7 @@ export const BackgroundSection: React.FC<BackgroundSectionProps> = ({
                     title="Apply Custom Background"
                     variant="primary"
                     size="sm"
-                    disabled={!customBgName.trim() || customBgSkills.length !== 2}
+                    disabled={!customBgName.trim() || customBgSkills.length !== 2 || customBgTools.length !== 2}
                     onPress={handleApplyCustomBackground}
                     style={isCompact ? { width: "100%" } : undefined}
                   />
@@ -408,7 +483,7 @@ export const BackgroundSection: React.FC<BackgroundSectionProps> = ({
 
           <SearchBar value={bgSearch} onChangeText={setBgSearch} placeholder="Search backgrounds…" />
           <View style={{ gap: 10 }}>
-            {allBackgrounds
+            {selectableBackgrounds
               .filter((b) => b.name.toLowerCase().includes(bgSearch.toLowerCase()))
               .map((b) => (
                 <Card key={`${b.name}__${b.source}`}>

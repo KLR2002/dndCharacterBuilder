@@ -14,7 +14,7 @@ import { fullHealAtLevelUp, followRaisedMaxHp } from "./hitPoints.ts";
 import { currentCompendium, type Compendium } from "../services/compendium.ts";
 import { normalizeSkillName } from "./skills.ts";
 import { moveLegacySkillPicks } from "./proficiencyPicks.ts";
-import { CUSTOM_BACKGROUND_SKILLS_ID } from "./customBackground.ts";
+import { CUSTOM_BACKGROUND_SKILLS_ID, CUSTOM_BACKGROUND_TOOLS_OR_LANGUAGES_ID, isCustomBackground } from "./customBackground.ts";
 import { ABILITY_NAMES } from "./abilities.ts";
 import {
   STANDARD_ARRAY,
@@ -616,15 +616,25 @@ export function reclaimStartingGrants(
   };
 }
 
+/** The picks and the optional borrowed feature a custom background is made with. */
+export interface CustomBackgroundDetails {
+  /** Tool or language picks, in any combination. Saved under the custom background's tool-or-language choice. */
+  toolsOrLanguages?: string[];
+  /** A feature of another background, granted by the custom background. */
+  feature?: { name: string; description: string };
+}
+
 /**
  * Makes the character's background a custom one, named by the player, with its two skill picks. The picks are
- * the custom background's skill Proficiency Choice. A skill the old custom background picked from the old skill
+ * the custom background's skill Proficiency Choice, and the tool-or-language picks are its second. A borrowed
+ * feature is stored on the background. A skill the old custom background picked from the old skill
  * bucket is dropped with it, unless a class choice still holds it.
  */
 export function setCustomBackground(
   character: Character,
   name: string,
   skills: string[],
+  details: CustomBackgroundDetails = {},
   compendium: Compendium = currentCompendium()
 ): Character {
   const legacyBackground = (character.skillChoices ?? []).filter((sc) => sc.origin === "background");
@@ -635,8 +645,9 @@ export function setCustomBackground(
       .flatMap((sc) => sc.picked.map((s) => normalizeSkillName(s).toLowerCase()))
   );
   const proficiencyPicks: Record<string, string[]> = { ...(character.proficiencyPicks ?? {}) };
-  if (skills.length > 0) proficiencyPicks[CUSTOM_BACKGROUND_SKILLS_ID] = [...skills];
-  else delete proficiencyPicks[CUSTOM_BACKGROUND_SKILLS_ID];
+  storePicks(proficiencyPicks, CUSTOM_BACKGROUND_SKILLS_ID, skills);
+  storePicks(proficiencyPicks, CUSTOM_BACKGROUND_TOOLS_OR_LANGUAGES_ID, details.toolsOrLanguages ?? []);
+  const feature = details.feature;
 
   return reconcile(
     {
@@ -644,6 +655,7 @@ export function setCustomBackground(
       background: {
         name,
         source: "Custom",
+        ...(feature ? { customFeatureName: feature.name, customFeatureDesc: feature.description } : {}),
       },
       chosenSkills: (character.chosenSkills ?? []).filter((s) => {
         const key = normalizeSkillName(s).toLowerCase();
@@ -654,6 +666,12 @@ export function setCustomBackground(
     },
     compendium
   );
+}
+
+/** Saves a custom background's picks under its choice id, or drops the entry when none are made. */
+function storePicks(picks: Record<string, string[]>, id: string, values: string[]): void {
+  if (values.length > 0) picks[id] = [...values];
+  else delete picks[id];
 }
 
 /**
@@ -853,7 +871,7 @@ export function checkActiveBooksIntegrity(
   // 3. Background
   if (
     character.background?.source &&
-    !character.background.isCustom &&
+    !isCustomBackground(character.background) &&
     !activeSet.has(character.background.source.toUpperCase())
   ) {
     warnings.push(`Background "${character.background.name}" is from disabled sourcebook "${character.background.source}".`);

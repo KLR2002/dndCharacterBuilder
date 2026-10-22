@@ -8,6 +8,7 @@ import { raisedAbilityGrants } from "./proficiencyPools.ts";
 import { recordGrantSources } from "./recordProficiencyGrants.ts";
 import { grantRequirementMet, type SubclassOwner } from "./optionFeatureGrants.ts";
 import { findClassData } from "./catalogs.ts";
+import { isCustomBackground } from "./customBackground.ts";
 
 export function grantedFeatures(character: Character, catalog: FeatureCatalog): FeatureInstance[] {
   const out: FeatureInstance[] = [];
@@ -57,7 +58,7 @@ export function grantedFeatures(character: Character, catalog: FeatureCatalog): 
   }
   const background = character.background;
   const bg = catalog.backgrounds.find(b => b.name === background?.name && b.source === background.source);
-  if (background?.isCustom && background.customFeatureName) {
+  if (isCustomBackground(background) && background?.customFeatureName) {
     add({ name: background.customFeatureName, description: background.customFeatureDesc || "", source: background.source, origin: "Background" }, background.name);
   } else if (bg?.feature) add({ ...bg.feature, source: bg.source, origin: "Background" }, bg.name);
 
