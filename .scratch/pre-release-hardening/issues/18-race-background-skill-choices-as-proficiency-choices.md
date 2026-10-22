@@ -4,10 +4,13 @@
 
 **Blocked by:** 10
 
-**Status:** needs-triage
+**Status:** ready-for-agent
 
-**Open question:** not required for the release gate; decide whether it ships before release. Needs scraper choice grants, a gate for the Half-Elf variant subraces, and a migration of saved race and background picks into `proficiencyPicks`.
+**Decision:** the owner asked for this to be finished. Needs scraper choice grants, a gate for the Half-Elf variant subraces, and a migration of saved race and background picks into `proficiencyPicks`.
 
+**Owner report:** some backgrounds (Investigator, Cloistered Scholar, and the custom background) offer no way to choose proficiencies from a pool. Each must offer its pool choice (for example Cloistered Scholar's History plus one of a short list; the custom background's free picks), covered by a test per example.
+
+- [ ] Investigator, Cloistered Scholar and the custom background offer their pool picks.
 - [ ] Race and background skill picks are Proficiency Choices and old saved picks still load.
 - [ ] The text-parse offers are deleted.
 - [ ] `npm run check:all` passes.
