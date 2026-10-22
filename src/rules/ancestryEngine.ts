@@ -59,6 +59,21 @@ export function collectFixedBonuses(
   return bonuses;
 }
 
+/**
+ * Whether a race's card in the race picker offers a plain form: the race with no subrace. Only a race the
+ * integrated catalog splits into several named subraces qualifies, when the SRD Baseline holds a race of
+ * the same name with no subraces (or only unnamed ones). Races the SRD holds only with a named subrace
+ * already select through that subrace, so they get no plain form.
+ */
+export function offersPlainRaceForm(race: RaceData, srdRaces: readonly RaceData[]): boolean {
+  const subraces = race.subraces ?? [];
+  if (subraces.length < 2 || subraces.some((sr) => !sr.name?.trim())) return false;
+  return srdRaces.some(
+    (srd) =>
+      srd.name === race.name && (srd.subraces ?? []).every((sr) => !sr.name?.trim())
+  );
+}
+
 export function resolveAncestryState(
   character: Character,
   catalogs?: CharacterCatalogs
