@@ -1979,6 +1979,25 @@
           "Common",
           "Sylvan"
         ]
+      },
+      {
+        "id": "GGR/Race/Centaur@0#skills:choice:from",
+        "aliases": [
+          "GGR/Race/Centaur@0#1",
+          "GGR/Race/Centaur@0#skills:choice:from=Animal Handling,Medicine,Nature,Survival"
+        ],
+        "kind": "choice",
+        "category": "skills",
+        "count": 1,
+        "pool": {
+          "kind": "names",
+          "names": [
+            "Animal Handling",
+            "Medicine",
+            "Nature",
+            "Survival"
+          ]
+        }
       }
     ],
     "name": "Centaur",
@@ -2120,6 +2139,25 @@
           "Common",
           "Sylvan"
         ]
+      },
+      {
+        "id": "MOT/Race/Centaur@0#skills:choice:from",
+        "aliases": [
+          "MOT/Race/Centaur@0#1",
+          "MOT/Race/Centaur@0#skills:choice:from=Animal Handling,Medicine,Nature,Survival"
+        ],
+        "kind": "choice",
+        "category": "skills",
+        "count": 1,
+        "pool": {
+          "kind": "names",
+          "names": [
+            "Animal Handling",
+            "Medicine",
+            "Nature",
+            "Survival"
+          ]
+        }
       }
     ],
     "name": "Centaur",
@@ -2272,6 +2310,25 @@
         "pool": {
           "kind": "any"
         }
+      },
+      {
+        "id": "MPMM/Race/Centaur@0#skills:choice:from",
+        "aliases": [
+          "MPMM/Race/Centaur@0#2",
+          "MPMM/Race/Centaur@0#skills:choice:from=Animal Handling,Medicine,Nature,Survival"
+        ],
+        "kind": "choice",
+        "category": "skills",
+        "count": 1,
+        "pool": {
+          "kind": "names",
+          "names": [
+            "Animal Handling",
+            "Medicine",
+            "Nature",
+            "Survival"
+          ]
+        }
       }
     ],
     "name": "Centaur",
@@ -2371,6 +2428,25 @@
         "count": 2,
         "pool": {
           "kind": "any"
+        }
+      },
+      {
+        "id": "ERLW/Race/Changeling@0#skills:choice:from",
+        "aliases": [
+          "ERLW/Race/Changeling@0#2",
+          "ERLW/Race/Changeling@0#skills:choice:from=Deception,Insight,Intimidation,Persuasion"
+        ],
+        "kind": "choice",
+        "category": "skills",
+        "count": 2,
+        "pool": {
+          "kind": "names",
+          "names": [
+            "Deception",
+            "Insight",
+            "Intimidation",
+            "Persuasion"
+          ]
         }
       }
     ],
@@ -2490,6 +2566,26 @@
         "pool": {
           "kind": "any"
         }
+      },
+      {
+        "id": "MPMM/Race/Changeling@0#skills:choice:from",
+        "aliases": [
+          "MPMM/Race/Changeling@0#2",
+          "MPMM/Race/Changeling@0#skills:choice:from=Deception,Insight,Intimidation,Performance,Persuasion"
+        ],
+        "kind": "choice",
+        "category": "skills",
+        "count": 2,
+        "pool": {
+          "kind": "names",
+          "names": [
+            "Deception",
+            "Insight",
+            "Intimidation",
+            "Performance",
+            "Persuasion"
+          ]
+        }
       }
     ],
     "name": "Changeling",
@@ -2576,6 +2672,18 @@
         ],
         "kind": "choice",
         "category": "languages",
+        "count": 1,
+        "pool": {
+          "kind": "any"
+        }
+      },
+      {
+        "id": "TCE/Race/Custom Lineage@0#skills:choice:any",
+        "aliases": [
+          "TCE/Race/Custom Lineage@0#2"
+        ],
+        "kind": "choice",
+        "category": "skills",
         "count": 1,
         "pool": {
           "kind": "any"
@@ -9429,6 +9537,18 @@
         "pool": {
           "kind": "any"
         }
+      },
+      {
+        "id": "PHB/Race/Half-Elf@0#skills:choice:any",
+        "aliases": [
+          "PHB/Race/Half-Elf@0#2"
+        ],
+        "kind": "choice",
+        "category": "skills",
+        "count": 2,
+        "pool": {
+          "kind": "any"
+        }
       }
     ],
     "name": "Half-Elf",
@@ -9534,6 +9654,20 @@
         ]
       },
       {
+        "grants": [
+          {
+            "id": "SCAG/Subrace/Half-Elf (Drow Descent)@0#skills:choice:any",
+            "aliases": [
+              "SCAG/Subrace/Half-Elf (Drow Descent)@0#0"
+            ],
+            "kind": "choice",
+            "category": "skills",
+            "count": 2,
+            "pool": {
+              "kind": "any"
+            }
+          }
+        ],
         "name": "Drow Descent",
         "isVariant": true,
         "source": "SCAG",
@@ -9792,6 +9926,18 @@
               "shortbow",
               "longbow"
             ]
+          },
+          {
+            "id": "SCAG/Subrace/Half-Elf (Moon Elf or Sun Elf Descent)@0#skills:choice:any",
+            "aliases": [
+              "SCAG/Subrace/Half-Elf (Moon Elf or Sun Elf Descent)@0#1"
+            ],
+            "kind": "choice",
+            "category": "skills",
+            "count": 2,
+            "pool": {
+              "kind": "any"
+            }
           }
         ],
         "name": "Moon Elf or Sun Elf Descent",
@@ -9875,6 +10021,18 @@
               "shortbow",
               "longbow"
             ]
+          },
+          {
+            "id": "SCAG/Subrace/Half-Elf (Wood Elf Descent)@0#skills:choice:any",
+            "aliases": [
+              "SCAG/Subrace/Half-Elf (Wood Elf Descent)@0#1"
+            ],
+            "kind": "choice",
+            "category": "skills",
+            "count": 2,
+            "pool": {
+              "kind": "any"
+            }
           }
         ],
         "name": "Wood Elf Descent",
@@ -10889,6 +11047,18 @@
         "names": [
           "Common"
         ]
+      },
+      {
+        "id": "VRGR/Race/Hexblood@0#skills:choice:any",
+        "aliases": [
+          "VRGR/Race/Hexblood@0#1"
+        ],
+        "kind": "choice",
+        "category": "skills",
+        "count": 2,
+        "pool": {
+          "kind": "any"
+        }
       }
     ],
     "name": "Hexblood",
@@ -11481,6 +11651,18 @@
             ],
             "kind": "choice",
             "category": "languages",
+            "count": 1,
+            "pool": {
+              "kind": "any"
+            }
+          },
+          {
+            "id": "PSA/Subrace/Human (Amonkhet)@0#skills:choice:any",
+            "aliases": [
+              "PSA/Subrace/Human (Amonkhet)@0#1"
+            ],
+            "kind": "choice",
+            "category": "skills",
             "count": 1,
             "pool": {
               "kind": "any"
@@ -12122,6 +12304,20 @@
         ]
       },
       {
+        "grants": [
+          {
+            "id": "PHB/Subrace/Human (Variant)@0#skills:choice:any",
+            "aliases": [
+              "PHB/Subrace/Human (Variant)@0#0"
+            ],
+            "kind": "choice",
+            "category": "skills",
+            "count": 1,
+            "pool": {
+              "kind": "any"
+            }
+          }
+        ],
         "name": "Variant",
         "isVariant": true,
         "source": "PHB",
@@ -13084,6 +13280,26 @@
         "names": [
           "Common"
         ]
+      },
+      {
+        "id": "DSotDQ/Race/Kender@0#skills:choice:from",
+        "aliases": [
+          "DSotDQ/Race/Kender@0#1",
+          "DSotDQ/Race/Kender@0#skills:choice:from=Insight,Investigation,Sleight of Hand,Stealth,Survival"
+        ],
+        "kind": "choice",
+        "category": "skills",
+        "count": 1,
+        "pool": {
+          "kind": "names",
+          "names": [
+            "Insight",
+            "Investigation",
+            "Sleight of Hand",
+            "Stealth",
+            "Survival"
+          ]
+        }
       }
     ],
     "name": "Kender",
@@ -13235,6 +13451,18 @@
         "pool": {
           "kind": "any"
         }
+      },
+      {
+        "id": "MPMM/Race/Kenku@0#skills:choice:any",
+        "aliases": [
+          "MPMM/Race/Kenku@0#2"
+        ],
+        "kind": "choice",
+        "category": "skills",
+        "count": 2,
+        "pool": {
+          "kind": "any"
+        }
       }
     ],
     "name": "Kenku",
@@ -13314,6 +13542,25 @@
           "Common",
           "Auran"
         ]
+      },
+      {
+        "id": "VGM/Race/Kenku@0#skills:choice:from",
+        "aliases": [
+          "VGM/Race/Kenku@0#1",
+          "VGM/Race/Kenku@0#skills:choice:from=Acrobatics,Deception,Sleight of Hand,Stealth"
+        ],
+        "kind": "choice",
+        "category": "skills",
+        "count": 2,
+        "pool": {
+          "kind": "names",
+          "names": [
+            "Acrobatics",
+            "Deception",
+            "Sleight of Hand",
+            "Stealth"
+          ]
+        }
       }
     ],
     "name": "Kenku",
@@ -13647,6 +13894,26 @@
         "count": 1,
         "pool": {
           "kind": "any"
+        }
+      },
+      {
+        "id": "MPMM/Race/Kobold@0#skills:choice:from",
+        "aliases": [
+          "MPMM/Race/Kobold@0#2",
+          "MPMM/Race/Kobold@0#skills:choice:from=Arcana,Investigation,Medicine,Sleight of Hand,Survival"
+        ],
+        "kind": "choice",
+        "category": "skills",
+        "count": 1,
+        "pool": {
+          "kind": "names",
+          "names": [
+            "Arcana",
+            "Investigation",
+            "Medicine",
+            "Sleight of Hand",
+            "Survival"
+          ]
         }
       }
     ],
@@ -14135,6 +14402,25 @@
         "pool": {
           "kind": "any"
         }
+      },
+      {
+        "id": "MOT/Race/Leonin@0#skills:choice:from",
+        "aliases": [
+          "MOT/Race/Leonin@0#2",
+          "MOT/Race/Leonin@0#skills:choice:from=Athletics,Intimidation,Perception,Survival"
+        ],
+        "kind": "choice",
+        "category": "skills",
+        "count": 1,
+        "pool": {
+          "kind": "names",
+          "names": [
+            "Athletics",
+            "Intimidation",
+            "Perception",
+            "Survival"
+          ]
+        }
       }
     ],
     "name": "Leonin",
@@ -14348,6 +14634,27 @@
         "pool": {
           "kind": "any"
         }
+      },
+      {
+        "id": "MPMM/Race/Lizardfolk@0#skills:choice:from",
+        "aliases": [
+          "MPMM/Race/Lizardfolk@0#2",
+          "MPMM/Race/Lizardfolk@0#skills:choice:from=Animal Handling,Medicine,Nature,Perception,Stealth,Survival"
+        ],
+        "kind": "choice",
+        "category": "skills",
+        "count": 2,
+        "pool": {
+          "kind": "names",
+          "names": [
+            "Animal Handling",
+            "Medicine",
+            "Nature",
+            "Perception",
+            "Stealth",
+            "Survival"
+          ]
+        }
       }
     ],
     "name": "Lizardfolk",
@@ -14448,6 +14755,26 @@
           "Common",
           "Draconic"
         ]
+      },
+      {
+        "id": "VGM/Race/Lizardfolk@0#skills:choice:from",
+        "aliases": [
+          "VGM/Race/Lizardfolk@0#1",
+          "VGM/Race/Lizardfolk@0#skills:choice:from=Animal Handling,Nature,Perception,Stealth,Survival"
+        ],
+        "kind": "choice",
+        "category": "skills",
+        "count": 2,
+        "pool": {
+          "kind": "names",
+          "names": [
+            "Animal Handling",
+            "Nature",
+            "Perception",
+            "Stealth",
+            "Survival"
+          ]
+        }
       }
     ],
     "name": "Lizardfolk",
@@ -15398,6 +15725,23 @@
         "pool": {
           "kind": "any"
         }
+      },
+      {
+        "id": "GGR/Race/Minotaur@0#skills:choice:from",
+        "aliases": [
+          "GGR/Race/Minotaur@0#2",
+          "GGR/Race/Minotaur@0#skills:choice:from=Intimidation,Persuasion"
+        ],
+        "kind": "choice",
+        "category": "skills",
+        "count": 1,
+        "pool": {
+          "kind": "names",
+          "names": [
+            "Intimidation",
+            "Persuasion"
+          ]
+        }
       }
     ],
     "name": "Minotaur",
@@ -15543,6 +15887,23 @@
         "count": 1,
         "pool": {
           "kind": "any"
+        }
+      },
+      {
+        "id": "MOT/Race/Minotaur@0#skills:choice:from",
+        "aliases": [
+          "MOT/Race/Minotaur@0#2",
+          "MOT/Race/Minotaur@0#skills:choice:from=Intimidation,Persuasion"
+        ],
+        "kind": "choice",
+        "category": "skills",
+        "count": 1,
+        "pool": {
+          "kind": "names",
+          "names": [
+            "Intimidation",
+            "Persuasion"
+          ]
         }
       }
     ],
@@ -16145,6 +16506,27 @@
           "Common",
           "Orc"
         ]
+      },
+      {
+        "id": "EGW/Race/Orc@0#skills:choice:from",
+        "aliases": [
+          "EGW/Race/Orc@0#1",
+          "EGW/Race/Orc@0#skills:choice:from=Animal Handling,Insight,Intimidation,Medicine,Perception,Survival"
+        ],
+        "kind": "choice",
+        "category": "skills",
+        "count": 2,
+        "pool": {
+          "kind": "names",
+          "names": [
+            "Animal Handling",
+            "Insight",
+            "Intimidation",
+            "Medicine",
+            "Perception",
+            "Survival"
+          ]
+        }
       }
     ],
     "name": "Orc",
@@ -16274,6 +16656,28 @@
           "Common",
           "Orc"
         ]
+      },
+      {
+        "id": "ERLW/Race/Orc@0#skills:choice:from",
+        "aliases": [
+          "ERLW/Race/Orc@0#1",
+          "ERLW/Race/Orc@0#skills:choice:from=Animal Handling,Insight,Intimidation,Medicine,Nature,Perception,Survival"
+        ],
+        "kind": "choice",
+        "category": "skills",
+        "count": 2,
+        "pool": {
+          "kind": "names",
+          "names": [
+            "Animal Handling",
+            "Insight",
+            "Intimidation",
+            "Medicine",
+            "Nature",
+            "Perception",
+            "Survival"
+          ]
+        }
       }
     ],
     "name": "Orc",
@@ -16492,6 +16896,28 @@
           "Common",
           "Orc"
         ]
+      },
+      {
+        "id": "VGM/Race/Orc@0#skills:choice:from",
+        "aliases": [
+          "VGM/Race/Orc@0#1",
+          "VGM/Race/Orc@0#skills:choice:from=Animal Handling,Insight,Intimidation,Medicine,Nature,Perception,Survival"
+        ],
+        "kind": "choice",
+        "category": "skills",
+        "count": 2,
+        "pool": {
+          "kind": "names",
+          "names": [
+            "Animal Handling",
+            "Insight",
+            "Intimidation",
+            "Medicine",
+            "Nature",
+            "Perception",
+            "Survival"
+          ]
+        }
       }
     ],
     "name": "Orc",
@@ -17969,6 +18395,25 @@
         "pool": {
           "kind": "any"
         }
+      },
+      {
+        "id": "MPMM/Race/Shifter@0#skills:choice:from",
+        "aliases": [
+          "MPMM/Race/Shifter@0#2",
+          "MPMM/Race/Shifter@0#skills:choice:from=Acrobatics,Athletics,Intimidation,Survival"
+        ],
+        "kind": "choice",
+        "category": "skills",
+        "count": 1,
+        "pool": {
+          "kind": "names",
+          "names": [
+            "Acrobatics",
+            "Athletics",
+            "Intimidation",
+            "Survival"
+          ]
+        }
       }
     ],
     "name": "Shifter",
@@ -19377,6 +19822,27 @@
         "pool": {
           "kind": "any"
         }
+      },
+      {
+        "id": "MPMM/Race/Tortle@0#skills:choice:from",
+        "aliases": [
+          "MPMM/Race/Tortle@0#2",
+          "MPMM/Race/Tortle@0#skills:choice:from=Animal Handling,Medicine,Nature,Perception,Stealth,Survival"
+        ],
+        "kind": "choice",
+        "category": "skills",
+        "count": 1,
+        "pool": {
+          "kind": "names",
+          "names": [
+            "Animal Handling",
+            "Medicine",
+            "Nature",
+            "Perception",
+            "Stealth",
+            "Survival"
+          ]
+        }
       }
     ],
     "name": "Tortle",
@@ -20427,6 +20893,27 @@
         "pool": {
           "kind": "any"
         }
+      },
+      {
+        "id": "GGR/Race/Vedalken@0#skills:choice:from",
+        "aliases": [
+          "GGR/Race/Vedalken@0#4",
+          "GGR/Race/Vedalken@0#skills:choice:from=Arcana,History,Investigation,Medicine,Performance,Sleight of Hand"
+        ],
+        "kind": "choice",
+        "category": "skills",
+        "count": 1,
+        "pool": {
+          "kind": "names",
+          "names": [
+            "Arcana",
+            "History",
+            "Investigation",
+            "Medicine",
+            "Performance",
+            "Sleight of Hand"
+          ]
+        }
       }
     ],
     "name": "Vedalken",
@@ -20837,6 +21324,18 @@
         ],
         "kind": "choice",
         "category": "languages",
+        "count": 1,
+        "pool": {
+          "kind": "any"
+        }
+      },
+      {
+        "id": "ERLW/Race/Warforged@0#skills:choice:any",
+        "aliases": [
+          "ERLW/Race/Warforged@0#3"
+        ],
+        "kind": "choice",
+        "category": "skills",
         "count": 1,
         "pool": {
           "kind": "any"

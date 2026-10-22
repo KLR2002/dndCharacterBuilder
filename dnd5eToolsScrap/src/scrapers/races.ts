@@ -6,7 +6,6 @@ import { extractRuleChoices, RULE_CHOICE_LEVELS, ruleChoiceKey, type ExtractedRu
 import type { RaceModel, SubraceModel, TraitModel } from "../types/models.ts";
 import type { ProficiencyReport } from "../types/proficiency.ts";
 import {
-  fixedSkillEntries,
   newProficiencyReport,
   structuredGrants,
   type StructuredProficiencies,
@@ -135,7 +134,7 @@ export async function scrapeRaces(
       {
         tools: rawSub.toolProficiencies,
         languages: rawSub.languageProficiencies,
-        skills: fixedSkillEntries(rawSub.skillProficiencies),
+        skills: rawSub.skillProficiencies,
         weapons: rawSub.weaponProficiencies,
         armor: rawSub.armorProficiencies,
       },
@@ -234,7 +233,7 @@ export async function scrapeRaces(
       {
         tools: raw.toolProficiencies,
         languages: hasEntries(raw.languageProficiencies) ? raw.languageProficiencies : noLanguageEntries,
-        skills: fixedSkillEntries(raw.skillProficiencies),
+        skills: raw.skillProficiencies,
         weapons: raw.weaponProficiencies,
         armor: raw.armorProficiencies,
       },

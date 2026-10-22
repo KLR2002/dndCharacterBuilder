@@ -9793,6 +9793,24 @@
         "names": [
           "History"
         ]
+      },
+      {
+        "id": "SCAG/Background/Cloistered Scholar@0#skills:choice:from",
+        "aliases": [
+          "SCAG/Background/Cloistered Scholar@0#2",
+          "SCAG/Background/Cloistered Scholar@0#skills:choice:from=Arcana,Nature,Religion"
+        ],
+        "kind": "choice",
+        "category": "skills",
+        "count": 1,
+        "pool": {
+          "kind": "names",
+          "names": [
+            "Arcana",
+            "Nature",
+            "Religion"
+          ]
+        }
       }
     ],
     "skillProficiencies": [
@@ -10808,6 +10826,18 @@
         ],
         "kind": "choice",
         "category": "languages",
+        "count": 2,
+        "pool": {
+          "kind": "any"
+        }
+      },
+      {
+        "id": "PHB/Background/Custom Background@0#skills:choice:any",
+        "aliases": [
+          "PHB/Background/Custom Background@0#1"
+        ],
+        "kind": "choice",
+        "category": "skills",
         "count": 2,
         "pool": {
           "kind": "any"
@@ -12313,6 +12343,34 @@
         "names": [
           "Insight"
         ]
+      },
+      {
+        "id": "SCAG/Background/Faction Agent@0#skills:choice:from",
+        "aliases": [
+          "SCAG/Background/Faction Agent@0#2",
+          "SCAG/Background/Faction Agent@0#skills:choice:from=Animal Handling,Arcana,Deception,History,Intimidation,Investigation,Medicine,Nature,Perception,Performance,Persuasion,Religion,Survival"
+        ],
+        "kind": "choice",
+        "category": "skills",
+        "count": 1,
+        "pool": {
+          "kind": "names",
+          "names": [
+            "Arcana",
+            "Animal Handling",
+            "Deception",
+            "History",
+            "Intimidation",
+            "Investigation",
+            "Medicine",
+            "Nature",
+            "Perception",
+            "Performance",
+            "Persuasion",
+            "Religion",
+            "Survival"
+          ]
+        }
       }
     ],
     "skillProficiencies": [
@@ -17308,6 +17366,25 @@
             "Undercommon"
           ]
         }
+      },
+      {
+        "id": "VRGR/Background/Haunted One@0#skills:choice:from",
+        "aliases": [
+          "VRGR/Background/Haunted One@0#2",
+          "VRGR/Background/Haunted One@0#skills:choice:from=Arcana,Investigation,Religion,Survival"
+        ],
+        "kind": "choice",
+        "category": "skills",
+        "count": 2,
+        "pool": {
+          "kind": "names",
+          "names": [
+            "Arcana",
+            "Investigation",
+            "Religion",
+            "Survival"
+          ]
+        }
       }
     ],
     "skillProficiencies": [],
@@ -18756,6 +18833,24 @@
         "names": [
           "Survival"
         ]
+      },
+      {
+        "id": "SCAG/Background/Inheritor@0#skills:choice:from",
+        "aliases": [
+          "SCAG/Background/Inheritor@0#3",
+          "SCAG/Background/Inheritor@0#skills:choice:from=Arcana,History,Religion"
+        ],
+        "kind": "choice",
+        "category": "skills",
+        "count": 1,
+        "pool": {
+          "kind": "names",
+          "names": [
+            "Arcana",
+            "History",
+            "Religion"
+          ]
+        }
       }
     ],
     "skillProficiencies": [
@@ -19759,6 +19854,24 @@
           "disguise kit",
           "thieves' tools"
         ]
+      },
+      {
+        "id": "VRGR/Background/Investigator@0#skills:choice:from",
+        "aliases": [
+          "VRGR/Background/Investigator@0#1",
+          "VRGR/Background/Investigator@0#skills:choice:from=Insight,Investigation,Perception"
+        ],
+        "kind": "choice",
+        "category": "skills",
+        "count": 2,
+        "pool": {
+          "kind": "names",
+          "names": [
+            "Insight",
+            "Investigation",
+            "Perception"
+          ]
+        }
       }
     ],
     "skillProficiencies": [],
@@ -20884,6 +20997,25 @@
         "names": [
           "Persuasion"
         ]
+      },
+      {
+        "id": "SCAG/Background/Knight of the Order@0#skills:choice:from",
+        "aliases": [
+          "SCAG/Background/Knight of the Order@0#3",
+          "SCAG/Background/Knight of the Order@0#skills:choice:from=Arcana,History,Nature,Religion"
+        ],
+        "kind": "choice",
+        "category": "skills",
+        "count": 1,
+        "pool": {
+          "kind": "names",
+          "names": [
+            "Arcana",
+            "History",
+            "Nature",
+            "Religion"
+          ]
+        }
       }
     ],
     "skillProficiencies": [
@@ -24381,6 +24513,33 @@
         "names": [
           "Arcana"
         ]
+      },
+      {
+        "id": "SatO/Background/Planar Philosopher@0#skills:choice:from",
+        "aliases": [
+          "SatO/Background/Planar Philosopher@0#2",
+          "SatO/Background/Planar Philosopher@0#skills:choice:from=Athletics,History,Insight,Intimidation,Medicine,Nature,Perception,Performance,Persuasion,Religion,Stealth,Survival"
+        ],
+        "kind": "choice",
+        "category": "skills",
+        "count": 1,
+        "pool": {
+          "kind": "names",
+          "names": [
+            "Religion",
+            "Insight",
+            "Nature",
+            "Intimidation",
+            "History",
+            "Stealth",
+            "Perception",
+            "Medicine",
+            "Survival",
+            "Persuasion",
+            "Performance",
+            "Athletics"
+          ]
+        }
       }
     ],
     "skillProficiencies": [
@@ -30633,6 +30792,25 @@
             "shawm",
             "viol",
             "thieves' tools"
+          ]
+        }
+      },
+      {
+        "id": "SCAG/Background/Urban Bounty Hunter@0#skills:choice:from",
+        "aliases": [
+          "SCAG/Background/Urban Bounty Hunter@0#1",
+          "SCAG/Background/Urban Bounty Hunter@0#skills:choice:from=Deception,Insight,Persuasion,Stealth"
+        ],
+        "kind": "choice",
+        "category": "skills",
+        "count": 2,
+        "pool": {
+          "kind": "names",
+          "names": [
+            "Deception",
+            "Insight",
+            "Persuasion",
+            "Stealth"
           ]
         }
       }
