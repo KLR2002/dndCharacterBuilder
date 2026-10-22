@@ -1,6 +1,7 @@
 import type { Character } from "../types/character.ts";
-import type { ProficiencyGrant } from "../types/dnd5e.ts";
+import type { BackgroundData, ProficiencyGrant } from "../types/dnd5e.ts";
 import type { FeatureInstance } from "./types.ts";
+import type { ChoiceProficiencyGrant } from "./proficiencyPools.ts";
 
 /**
  * A custom background: one the player names and builds, with no record in the Catalog. Its free picks are
@@ -15,6 +16,15 @@ export const CUSTOM_BACKGROUND_SKILLS_ID = "Custom/Background/Custom Background@
 /** The id of a custom background's tool-or-language choice, under which its two picks are saved. */
 export const CUSTOM_BACKGROUND_TOOLS_OR_LANGUAGES_ID = "Custom/Background/Custom Background@0#languages:choice:any";
 
+/** The tool-or-language choice: two picks from tools and languages together. */
+export const CUSTOM_BACKGROUND_TOOLS_OR_LANGUAGES_GRANT: ChoiceProficiencyGrant = {
+  id: CUSTOM_BACKGROUND_TOOLS_OR_LANGUAGES_ID,
+  kind: "choice",
+  category: "languages",
+  count: 2,
+  pool: { kind: "anyOf", categories: ["tools", "languages"] },
+};
+
 export const CUSTOM_BACKGROUND_GRANTS: ProficiencyGrant[] = [
   {
     id: CUSTOM_BACKGROUND_SKILLS_ID,
@@ -23,13 +33,7 @@ export const CUSTOM_BACKGROUND_GRANTS: ProficiencyGrant[] = [
     count: 2,
     pool: { kind: "any" },
   },
-  {
-    id: CUSTOM_BACKGROUND_TOOLS_OR_LANGUAGES_ID,
-    kind: "choice",
-    category: "languages",
-    count: 2,
-    pool: { kind: "anyOf", categories: ["tools", "languages"] },
-  },
+  CUSTOM_BACKGROUND_TOOLS_OR_LANGUAGES_GRANT,
 ];
 
 /** Whether the character's background is a custom one, built in the Builder or flagged as custom. */
@@ -57,4 +61,37 @@ const CATALOG_CUSTOM_BACKGROUND_NAME = "Custom Background";
 /** The backgrounds the Builder offers: the catalog's own "Custom Background" entry, and its placeholder feature, are left out. */
 export function withoutCatalogCustomBackground<T extends { name: string }>(backgrounds: T[]): T[] {
   return backgrounds.filter((background) => background.name !== CATALOG_CUSTOM_BACKGROUND_NAME);
+}
+
+/** A background feature a custom background can borrow. */
+export interface BorrowableFeature {
+  /** Unique within a list: the source, background name and feature name. */
+  key: string;
+  /** The row label: the feature name, then the background it comes from. */
+  label: string;
+  name: string;
+  description: string;
+  background: string;
+}
+
+/**
+ * The features a custom background can borrow from the given backgrounds, one per background feature, sorted by
+ * label. The catalog's own "Custom Background" entry is left out, with its placeholder feature.
+ */
+export function borrowableFeatures(backgrounds: BackgroundData[]): BorrowableFeature[] {
+  return withoutCatalogCustomBackground(backgrounds)
+    .flatMap((background) =>
+      background.feature
+        ? [
+            {
+              key: JSON.stringify([background.source, background.name, background.feature.name]),
+              label: `${background.feature.name} (${background.name})`,
+              name: background.feature.name,
+              description: background.feature.description,
+              background: background.name,
+            },
+          ]
+        : [],
+    )
+    .sort((a, b) => a.label.localeCompare(b.label));
 }

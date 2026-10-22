@@ -78,6 +78,23 @@ export function pickerTitles(featureName: string, grants: readonly ChoiceProfici
   });
 }
 
+/**
+ * Whether a name is held from a source other than this Proficiency Choice's own pick: the sheet is read with the
+ * pick set aside. A weapon is held by its name or its category, as the sheet's weapon entries record it.
+ */
+export function heldByOtherSources(
+  character: Character,
+  grant: ChoiceProficiencyGrant,
+  query: ProficiencyChoiceQuery = {},
+): (name: string) => boolean {
+  const compendium = query.compendium ?? currentCompendium();
+  const activeBooks = query.activeBooks?.length ? query.activeBooks : undefined;
+  const sheet = proficiencySheet(clearProficiencyPick(character, grant.id), { compendium, activeBooks });
+  const held = new Set(pickCategories(grant).flatMap((category) => sheet[category]).map((entry) => entry.name.toLowerCase()));
+  const heldWeapons = sheet.weapons.map((entry) => entry.name);
+  return (name) => (grant.category === "weapons" ? weaponHeld(name, heldWeapons) : held.has(name.toLowerCase()));
+}
+
 export function proficiencyChoiceOffers(character: Character, query: ProficiencyChoiceQuery = {}): AvailableRuleChoice[] {
   const compendium = query.compendium ?? currentCompendium();
   const activeBooks = query.activeBooks?.length ? query.activeBooks : undefined;
@@ -98,14 +115,8 @@ export function proficiencyChoiceOffers(character: Character, query: Proficiency
     );
     const titles = pickerTitles(feature.name, choices);
     for (const [index, grant] of choices.entries()) {
-      // What the character holds from every other source, with this choice's own pick set aside.
-      const sheet = proficiencySheet(clearProficiencyPick(character, grant.id), { compendium, activeBooks });
+      const isHeld = heldByOtherSources(character, grant, { compendium, activeBooks });
       const own = new Set(validPicks(grant, character.proficiencyPicks?.[grant.id] ?? [], items).map((name) => name.toLowerCase()));
-      const heldEntries = pickCategories(grant).flatMap((category) => sheet[category]);
-      const held = new Set(heldEntries.map((entry) => entry.name.toLowerCase()));
-      // Weapons are held by name or by category, as the sheet's weapon entries record them.
-      const heldWeapons = sheet.weapons.map((entry) => entry.name);
-      const isHeld = (name: string) => (grant.category === "weapons" ? weaponHeld(name, heldWeapons) : held.has(name.toLowerCase()));
       // A weapon pick that also marks a Monk Weapon keeps the whole pool: a held weapon still gains that effect.
       const offersHeld = grant.category === "weapons" && weaponPickMarksMonkWeapon(feature);
 

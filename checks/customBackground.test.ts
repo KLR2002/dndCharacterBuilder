@@ -3,14 +3,18 @@ import assert from "node:assert/strict";
 import { grantedFeatures } from "../src/rules/grantedFeatures.ts";
 import {
   CUSTOM_BACKGROUND_SKILLS_ID,
+  CUSTOM_BACKGROUND_TOOLS_OR_LANGUAGES_GRANT,
   CUSTOM_BACKGROUND_TOOLS_OR_LANGUAGES_ID,
+  borrowableFeatures,
   isCustomBackground,
   withoutCatalogCustomBackground,
 } from "../src/rules/customBackground.ts";
 import { catalogListings } from "../src/rules/catalogs.ts";
+import { heldByOtherSources } from "../src/rules/proficiencyChoiceOffers.ts";
+import type { BackgroundData } from "../src/types/dnd5e.ts";
 import { clearBackground, setCustomBackground } from "../src/rules/builderTransitions.ts";
 import { proficiencySheet } from "../src/rules/proficiencySheet.ts";
-import { makeChar, integratedTestCompendium, inMemoryCompendium } from "./testUtils.ts";
+import { makeChar, integratedTestCompendium, inMemoryCompendium, srdBaselineCompendium } from "./testUtils.ts";
 
 const EMPTY_CATALOG = { races: [], classes: [], backgrounds: [], feats: [] };
 const borrowedFeatures = (character: ReturnType<typeof makeChar>) =>
@@ -108,4 +112,52 @@ test("the integrated catalog lists the Custom Background entry, and the Builder'
     withoutCatalogCustomBackground(backgrounds).some((background) => background.name === "Custom Background"),
     false,
   );
+});
+
+test("the borrowable features are one row per background feature, labelled by feature and background, without the catalog placeholder", () => {
+  const backgrounds = [
+    { name: "Custom Background", source: "PHB", feature: { name: "Choose a Feature", description: "Placeholder." } },
+    { name: "Lamp Keeper", source: "INV", feature: { name: "Invented Lantern", description: "Invented lantern text." } },
+    { name: "Plain Trade", source: "INV", feature: null },
+    { name: "Road Scribe", source: "INV", feature: { name: "Invented Route", description: "Invented route text." } },
+  ] as unknown as BackgroundData[];
+  const rows = borrowableFeatures(backgrounds);
+  assert.deepEqual(
+    rows.map((row) => [row.label, row.name, row.background, row.description]),
+    [
+      ["Invented Lantern (Lamp Keeper)", "Invented Lantern", "Lamp Keeper", "Invented lantern text."],
+      ["Invented Route (Road Scribe)", "Invented Route", "Road Scribe", "Invented route text."],
+    ],
+  );
+  assert.equal(new Set(rows.map((row) => row.key)).size, rows.length, "each row has its own key");
+});
+
+test("the integrated catalog's borrowable features are one per background that has a feature, and none is the placeholder", () => {
+  const backgrounds = catalogListings({ compendium: integratedTestCompendium() }).backgrounds();
+  const withFeature = withoutCatalogCustomBackground(backgrounds).filter((background) => background.feature);
+  const rows = borrowableFeatures(backgrounds);
+  assert.equal(rows.length, withFeature.length);
+  assert.equal(rows.some((row) => row.background === "Custom Background"), false);
+  assert.equal(rows.some((row) => row.name === "Choose a Feature"), false);
+});
+
+test("the custom background's tool-or-language grant is exported, and held-by-other-sources sees what the rest of the character holds", () => {
+  assert.equal(CUSTOM_BACKGROUND_TOOLS_OR_LANGUAGES_GRANT.id, CUSTOM_BACKGROUND_TOOLS_OR_LANGUAGES_ID);
+  const compendium = srdBaselineCompendium();
+  const held = heldByOtherSources(
+    makeChar({ race: { name: "Dwarf", source: "PHB" }, addedTools: ["Smith's Tools"] }),
+    CUSTOM_BACKGROUND_TOOLS_OR_LANGUAGES_GRANT,
+    { compendium },
+  );
+  assert.equal(held("Smith's Tools"), true, "a tool held by hand");
+  assert.equal(held("Dwarvish"), true, "a language the race grants");
+  assert.equal(held("Elvish"), false, "a language nothing holds");
+});
+
+test("a pick on the choice does not hold its own name", () => {
+  const compendium = inMemoryCompendium({});
+  const picked = makeChar({
+    proficiencyPicks: { [CUSTOM_BACKGROUND_TOOLS_OR_LANGUAGES_ID]: ["Elvish"] },
+  });
+  assert.equal(heldByOtherSources(picked, CUSTOM_BACKGROUND_TOOLS_OR_LANGUAGES_GRANT, { compendium })("Elvish"), false);
 });
