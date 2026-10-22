@@ -4,7 +4,9 @@
 
 **Blocked by:** None
 
-**Status:** ready-for-agent
+**Status:** done
+
+**Landed:** merged from `pr/23-base-race-form` (1032657, 6ad1743). `check:all` passes (1142 app tests, 149 scraper tests, 322 known type errors none new); layout checks green in both modes. `offersPlainRaceForm` (`src/rules/ancestryEngine.ts`) gives Half-Elf, Dragonborn and Tiefling a plain-form row in the integrated race picker (the SRD Baseline holds each without a subrace; the base records match the SRD's bonuses); Dwarf, Elf, Halfling, Gnome, Human, Half-Orc and races with no SRD record get none. Picking the plain Half-Elf leaves no subrace and the Choice ASI picker shows. Open items: the layout script's seeded character already has a race, so the race picker card is covered by unit tests but not by a screenshot; the subrace rows and the plain row now share one row renderer.
 
 ## Design notes
 
