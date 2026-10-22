@@ -422,7 +422,7 @@ export function newProficiencyReport(): ProficiencyReport {
  */
 function grantKey(spec: ProficiencyGrantSpec): string {
   if (spec.kind === "fixed") return `${spec.category}:fixed:${[...spec.names].sort().join(",")}`;
-  const kind = spec.pool.kind === "any" ? "any" : spec.pool.kind === "names" ? "from" : "rule";
+  const kind = spec.pool.kind === "names" ? "from" : spec.pool.kind === "weapons" ? "rule" : "any";
   return `${spec.category}:choice:${kind}`;
 }
 
@@ -432,7 +432,7 @@ function grantKey(spec: ProficiencyGrantSpec): string {
  * grant has the same key as in grantKey.
  */
 function firstReleaseKey(spec: ProficiencyGrantSpec): string {
-  if (spec.kind === "fixed" || spec.pool.kind === "any") return grantKey(spec);
+  if (spec.kind === "fixed" || spec.pool.kind === "any" || spec.pool.kind === "anyOf") return grantKey(spec);
   const { pool } = spec;
   if (pool.kind === "names") return `${spec.category}:choice:from=${[...pool.names].sort().join(",")}`;
   const base = [...pool.base].sort().join(",");
