@@ -19,10 +19,9 @@ import { ABILITY_NAMES } from "./abilities.ts";
 import {
   STANDARD_ARRAY,
   MULTICLASS_PREREQUISITES,
-  MULTICLASS_PROFICIENCIES,
-  DND_SKILLS,
 } from "../constants/rules.ts";
-import { findClassData, type CharacterCatalogs } from "./catalogs.ts";
+import { allCatalogClasses, findClassData, type CharacterCatalogs } from "./catalogs.ts";
+import { multiclassGrantsOf } from "./proficiencySheet.ts";
 
 export function setStandardArrayPick(
   character: Character,
@@ -133,31 +132,16 @@ export function validateMulticlass(
   return { ok: true };
 }
 
-const ROGUE_SKILL_LIST = [
-  "Acrobatics",
-  "Athletics",
-  "Deception",
-  "Insight",
-  "Intimidation",
-  "Investigation",
-  "Perception",
-  "Performance",
-  "Persuasion",
-  "Sleight of Hand",
-  "Stealth",
-];
-
-function getMulticlassProficiencyGrant(className: string) {
-  const match = Object.keys(MULTICLASS_PROFICIENCIES).find(
-    (k) => k.toLowerCase() === className.toLowerCase()
-  );
-  return match ? MULTICLASS_PROFICIENCIES[match] : undefined;
-}
-
+/**
+ * Adds a class entry for `className` from `source`, or one level to the class the character already holds.
+ * A later class records the multiclass grants of the Catalog class it names, and a skill choice when its
+ * record gives one. `catalogs` defaults to the process-wide Compendium.
+ */
 export function addMulticlassLevel(
   character: Character,
   className: string,
-  source: string
+  source: string,
+  catalogs?: CharacterCatalogs
 ): Character {
   const existingIdx = character.classes.findIndex(
     (c) => c.className.toLowerCase() === className.toLowerCase()
@@ -177,7 +161,7 @@ export function addMulticlassLevel(
   const newClass: CharacterClass = { className, source, level: 1 };
   const updatedClasses = [...character.classes, newClass];
 
-  const grants = getMulticlassProficiencyGrant(className);
+  const grants = multiclassGrantsOf({ className, source }, allCatalogClasses(catalogs));
   const updatedSkillChoices = character.skillChoices ? [...character.skillChoices] : [];
   const updatedMulticlassProfs = character.multiclassProficiencies
     ? [...character.multiclassProficiencies]
@@ -189,18 +173,17 @@ export function addMulticlassLevel(
       updatedSkillChoices.push({
         id: choiceId,
         origin: "class",
-        choose: 1,
-        from: className.toLowerCase() === "rogue" ? ROGUE_SKILL_LIST : DND_SKILLS.map((s) => s.name),
+        choose: grants.skills.choose,
+        from: [...grants.skills.from],
         picked: [],
       });
     }
 
     updatedMulticlassProfs.push({
       className,
-      ...(grants.armor ? { armor: [...grants.armor] } : {}),
-      ...(grants.weapons ? { weapons: [...grants.weapons] } : {}),
-      ...(grants.tools ? { tools: [...grants.tools] } : {}),
-      ...(grants.skills ? { skills: grants.skills } : {}),
+      ...(grants.armor.length > 0 ? { armor: grants.armor } : {}),
+      ...(grants.weapons.length > 0 ? { weapons: grants.weapons } : {}),
+      ...(grants.tools.length > 0 ? { tools: grants.tools } : {}),
     });
   }
 

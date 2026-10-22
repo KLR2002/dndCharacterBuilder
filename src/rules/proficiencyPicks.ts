@@ -118,8 +118,10 @@ export function moveAliasedProficiencyPicks(character: Character, compendium: Co
 
   const sources = grantSourcesIn(compendium);
   const idOfAlias = new Map<string, string>();
-  for (const source of sources.values()) {
-    for (const alias of source.aliases) idOfAlias.set(alias, source.id);
+  for (const [id, owners] of sources) {
+    for (const owner of owners) {
+      for (const alias of owner.aliases) idOfAlias.set(alias, id);
+    }
   }
   const next: Record<string, string[]> = {};
   const aliased: Array<[string, string[]]> = [];
@@ -154,6 +156,10 @@ type GrantOwner =
   | { kind: "record"; origin: "Race" | "Subrace" | "Background"; name: string; source: string; raceName?: string; raceSource?: string }
   | { kind: "custom" };
 
+/**
+ * One place a Proficiency Grant is printed. A subclass printed under two classes of one name carries the same
+ * grant id under each class, so an id can have several of these, one per owner.
+ */
 interface GrantSource {
   /** The grant's id, and the former ids it was saved under. */
   id: string;
@@ -171,18 +177,23 @@ interface GrantSource {
   applies?: (character: Character) => boolean;
 }
 
-/** Every Proficiency Grant id in the Compendium, with the feature that carries it. Unscoped by books. */
-function grantSourcesIn(compendium: Compendium): Map<string, GrantSource> {
+/**
+ * Every Proficiency Grant id in the Compendium, with each place that carries it, in catalog order. Unscoped by books.
+ * An id keeps all its owners: a pick is released only when none of them is held.
+ */
+function grantSourcesIn(compendium: Compendium): Map<string, GrantSource[]> {
   const listings = compendium.for();
-  const sources = new Map<string, GrantSource>();
+  const sources = new Map<string, GrantSource[]>();
   const add = (
     grants: ProficiencyGrant[] | undefined,
-    source: Omit<GrantSource, "id" | "aliases">,
+    source: Omit<GrantSource, "id" | "aliases" | "applies">,
     appliesTo?: (grant: ProficiencyGrant, character: Character) => boolean,
   ) => {
     for (const grant of grants ?? []) {
+      const owners = sources.get(grant.id) ?? [];
       const applies = appliesTo && ((character: Character) => appliesTo(grant, character));
-      sources.set(grant.id, { ...source, id: grant.id, aliases: grant.aliases ?? [], requires: grant.requires ?? source.requires, applies });
+      owners.push({ ...source, id: grant.id, aliases: grant.aliases ?? [], requires: grant.requires ?? source.requires, applies });
+      sources.set(grant.id, owners);
     }
   };
   for (const cls of listings.classes()) {
@@ -295,13 +306,28 @@ function recordHeld(owner: Extract<GrantOwner, { kind: "record" }>, character: C
 }
 
 /**
- * The reason a grant's pick is released, or undefined when the grant still applies. An optional feature
+ * The reason one place's grant is released, or undefined when that place still applies. An optional feature
  * that is turned off grants nothing, as the granted-features pass reads it; otherwise the owner decides.
  */
-function releaseReason(source: GrantSource, character: Character, classes: readonly ClassData[]): string | undefined {
+function placeReleaseReason(source: GrantSource, character: Character, classes: readonly ClassData[]): string | undefined {
   if (source.optional && !character.optionalFeatureReplacements?.[source.feature]) return "feature is turned off";
   if (!ownerHeld(source, character, classes)) return "no longer granted";
   return source.applies && !source.applies(character) ? "no longer granted" : undefined;
+}
+
+/**
+ * The reason a grant's pick is released, or undefined when the grant still applies. The grant applies while
+ * any of its owners applies, so a shared id is released only when every owner has released it. The reason is
+ * the first owner's.
+ */
+function releaseReason(owners: readonly GrantSource[], character: Character, classes: readonly ClassData[]): string | undefined {
+  let reason: string | undefined;
+  for (const owner of owners) {
+    const ownerReason = placeReleaseReason(owner, character, classes);
+    if (ownerReason === undefined) return undefined;
+    reason ??= ownerReason;
+  }
+  return reason;
 }
 
 /**
@@ -318,12 +344,12 @@ export function pruneInvalidProficiencyPicks(character: Character, compendium: C
   const kept: Record<string, string[]> = {};
   const notices: string[] = [];
   for (const [id, names] of Object.entries(picks)) {
-    const source = sources.get(id);
-    const reason = source && releaseReason(source, character, classes);
-    if (!source || !reason) {
+    const owners = sources.get(id);
+    const reason = owners && releaseReason(owners, character, classes);
+    if (!owners || !reason) {
       kept[id] = names;
     } else if (names.length > 0) {
-      notices.push(`${names.join(", ")} removed from ${source.feature}: ${reason}`);
+      notices.push(`${names.join(", ")} removed from ${owners[0].feature}: ${reason}`);
     }
   }
   if (Object.keys(kept).length === Object.keys(picks).length) return character;
