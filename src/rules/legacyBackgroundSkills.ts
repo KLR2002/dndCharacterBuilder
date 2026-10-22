@@ -1,5 +1,6 @@
 import type { Character } from "../types/character.ts";
 import type { Compendium } from "../services/compendium.ts";
+import { isCustomBackground } from "./customBackground.ts";
 import { normalizeSkillName } from "./skills.ts";
 
 /**
@@ -33,7 +34,7 @@ export function dropLegacyBackgroundSkills(
 ): Character {
   const bg = character.background;
   const bucket = character.chosenSkills ?? [];
-  if (!bg || bg.isCustom || bg.source === "Custom" || bucket.length === 0) return character;
+  if (!bg || isCustomBackground(bg) || bucket.length === 0) return character;
 
   const wanted = bg.name.toLowerCase();
   const stillActive = compendium

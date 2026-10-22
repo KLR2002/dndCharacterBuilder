@@ -6,6 +6,7 @@ import {
   CUSTOM_BACKGROUND_TOOLS_OR_LANGUAGES_GRANT,
   CUSTOM_BACKGROUND_TOOLS_OR_LANGUAGES_ID,
   borrowableFeatures,
+  hasCustomFlag,
   isCustomBackground,
   withoutCatalogCustomBackground,
 } from "../src/rules/customBackground.ts";
@@ -14,6 +15,7 @@ import { heldByOtherSources } from "../src/rules/proficiencyChoiceOffers.ts";
 import type { BackgroundData } from "../src/types/dnd5e.ts";
 import { checkActiveBooksIntegrity, clearBackground, setCustomBackground } from "../src/rules/builderTransitions.ts";
 import { proficiencySheet } from "../src/rules/proficiencySheet.ts";
+import { dropLegacyBackgroundSkills } from "../src/rules/legacyBackgroundSkills.ts";
 import { makeChar, integratedTestCompendium, inMemoryCompendium, srdBaselineCompendium } from "./testUtils.ts";
 
 const EMPTY_CATALOG = { races: [], classes: [], backgrounds: [], feats: [] };
@@ -83,6 +85,33 @@ test("a custom background is one whose source is Custom or that is flagged custo
   assert.equal(isCustomBackground({ name: "Acolyte", source: "PHB" }), false);
   assert.equal(isCustomBackground(null), false);
   assert.equal(isCustomBackground(undefined), false);
+});
+
+test("hasCustomFlag reads only the legacy flag, so a source Custom background without it is not flagged", () => {
+  assert.equal(hasCustomFlag({ name: "Gladiator", source: "PHB", isCustom: true }), true);
+  assert.equal(hasCustomFlag({ name: "Gladiator", source: "Custom" }), false);
+  assert.equal(hasCustomFlag(undefined), false);
+});
+
+test("the legacy skill cleanup keeps a custom background's chosen skill, flagged or source Custom, even when its name matches a catalog background", () => {
+  const acolyte: BackgroundData = {
+    name: "Acolyte",
+    source: "PHB",
+    skillProficiencies: ["Insight"],
+    toolProficiencies: [],
+    languages: [],
+    grants: [{ id: "PHB/Background/Acolyte@0#0", kind: "fixed", category: "skills", names: ["Insight"] }],
+    startingEquipment: [],
+    feature: null,
+    characteristics: {},
+    description: "",
+  };
+  const compendium = inMemoryCompendium({ backgrounds: [acolyte] }, { integrated: true });
+  const activeBooks = ["TCE"];
+  const flagged = makeChar({ background: { name: "Acolyte", source: "PHB", isCustom: true }, chosenSkills: ["Insight"] });
+  const bySource = makeChar({ background: { name: "Acolyte", source: "Custom" }, chosenSkills: ["Insight"] });
+  assert.equal(dropLegacyBackgroundSkills(flagged, compendium, activeBooks), flagged);
+  assert.equal(dropLegacyBackgroundSkills(bySource, compendium, activeBooks), bySource);
 });
 
 test("grantedFeatures reads the borrowed feature of a custom background by its source, and of a flagged one", () => {
