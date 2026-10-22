@@ -41,6 +41,15 @@ export function isCustomBackground(background: Character["background"] | undefin
   return Boolean(background && (background.isCustom || background.source === "Custom"));
 }
 
+/**
+ * Whether the background carries the custom flag an earlier version wrote, whatever its source. Only the Features
+ * tab's legacy branch asks this: it keeps a flagged background's placeholder feature, which a background with
+ * source "Custom" and no borrowed feature does not get. Everything else asks isCustomBackground.
+ */
+export function hasCustomFlag(background: Character["background"] | undefined): boolean {
+  return Boolean(background?.isCustom);
+}
+
 /** The feature a custom background's Proficiency Choices sit on. Undefined for any other background. */
 export function customBackgroundFeature(character: Character): FeatureInstance | undefined {
   if (!isCustomBackground(character.background)) return undefined;
