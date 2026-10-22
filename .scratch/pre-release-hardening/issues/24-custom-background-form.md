@@ -8,7 +8,9 @@
 
 **Blocked by:** 22 (done)
 
-**Status:** ready-for-agent
+**Status:** done
+
+**Landed:** merged from `pr/24-custom-bg-form` (3b85850, e6f6820, 9516442, 14a7f31; merge 592510c). `check:all` passes on the merged tip (1157 app tests, 149 scraper tests, 322 known type errors none new); layout checks green in both modes with a temporary custom-background scenario (reverted, not committed). The catalog's own "Custom Background" entry is filtered out of the Builder's list. The creator form takes the name, 2 skills, 2 tool-or-language picks and an optional borrowed feature (searchable list of `Feature name (Background name)`, catalog placeholder excluded); `setCustomBackground` stores the picks under the tool-or-language grant id and the feature on the background; `grantedFeatures`, the Features tab and the disabled-sourcebook check all use `isCustomBackground`. Open items: the layout script has no permanent custom-background scenario; the feature list is not virtualised and was not measured on the full integrated catalog; the Features tab attributes the borrowed feature by the custom background's name; not exercised by hand in the running app; no device check.
 
 ## Design notes
 
