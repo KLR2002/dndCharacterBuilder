@@ -11,6 +11,8 @@ import { ALL_LANGUAGE_NAMES, ALL_TOOLS, normalizeToolName } from "./proficiencie
 import {
   normalizeLanguageName,
   normalizeSavingThrowName,
+  pickCategories,
+  pickLandsIn,
   STARTING_PROFICIENCIES,
   validPicks,
   type ChoiceProficiencyGrant,
@@ -116,7 +118,10 @@ function legacyClassToolPicks(feature: FeatureInstance, grant: ChoiceProficiency
   return starting && grant.category === "tools" ? (character.chosenTools?.class ?? []) : [];
 }
 
-/** The saved picks of one choice category, for the choice grants on the features the character has now. */
+/**
+ * The saved picks of one category, for the choice grants on the features the character has now. A pick lands in
+ * the category whose list names it, so a mixed grant's tool is a tool and its language a language.
+ */
 function choicePickNames(
   features: FeatureInstance[],
   character: Character,
@@ -125,9 +130,9 @@ function choicePickNames(
 ): string[] {
   return features.flatMap((feature) =>
     (feature.grants ?? []).flatMap((grant) => {
-      if (grant.kind !== "choice" || grant.category !== category) return [];
+      if (grant.kind !== "choice" || !pickCategories(grant).includes(category)) return [];
       const saved = [...(character.proficiencyPicks?.[grant.id] ?? []), ...legacyClassToolPicks(feature, grant, character)];
-      return validPicks(grant, saved, items);
+      return validPicks(grant, saved, items).filter((name) => pickLandsIn(grant, name) === category);
     }),
   );
 }
