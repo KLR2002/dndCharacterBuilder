@@ -168,6 +168,11 @@ export function srdBaselineClasses(): readonly ClassData[] {
   return SRD_BASELINE.classes;
 }
 
+/** The SRD Baseline's races, the reference for which races the race picker offers a plain form. */
+export function srdBaselineRaces(): readonly RaceData[] {
+  return SRD_BASELINE.races;
+}
+
 const srdCompendium = createCompendium(SRD_BASELINE);
 let current: Compendium = srdCompendium;
 
