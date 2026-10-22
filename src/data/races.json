@@ -792,6 +792,18 @@
         "pool": {
           "kind": "any"
         }
+      },
+      {
+        "id": "PHB/Race/Half-Elf@0#skills:choice:any",
+        "aliases": [
+          "PHB/Race/Half-Elf@0#2"
+        ],
+        "kind": "choice",
+        "category": "skills",
+        "count": 2,
+        "pool": {
+          "kind": "any"
+        }
       }
     ],
     "name": "Half-Elf",
