@@ -4,7 +4,7 @@ import type { FeatureInstance } from "./types.ts";
 
 /**
  * A custom background: one the player names and builds, with no record in the Catalog. Its free picks are
- * the skills and the languages of your choice that a custom background allows. The SRD Baseline carries no
+ * the two skills of your choice, and two tools or languages in any combination. The SRD Baseline carries no
  * record to read them from, so they are declared here as Proficiency Choices, with ids by the Grant Id rule.
  * A leaf module: the granted-features pass, the sheet and the reconciler all read it.
  */
@@ -25,7 +25,7 @@ export const CUSTOM_BACKGROUND_GRANTS: ProficiencyGrant[] = [
     kind: "choice",
     category: "languages",
     count: 2,
-    pool: { kind: "any" },
+    pool: { kind: "anyOf", categories: ["tools", "languages"] },
   },
 ];
 

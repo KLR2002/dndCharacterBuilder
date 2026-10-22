@@ -35,6 +35,8 @@ export function getAutoGrantedSkills(
       ?.subraces?.find((sr) => sr.name.toLowerCase() === character.race?.subraceName?.toLowerCase())?.traits || []),
   ];
   for (const t of traits) {
+    // Stonecunning's text only conditions a History check; it does not make the character proficient.
+    if (t.name === "Stonecunning") continue;
     const desc = t.description || "";
     for (const skill of DND_SKILLS) {
       const reg = new RegExp(

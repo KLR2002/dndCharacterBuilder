@@ -50,6 +50,7 @@ export function describeGrant(spec: ProficiencyGrantSpec): string {
   if (spec.kind === "fixed") return `${spec.category}: ${spec.names.join(", ")}`;
   const { pool } = spec;
   if (pool.kind === "any") return `${spec.category}: choose ${spec.count} of any`;
+  if (pool.kind === "anyOf") return `${spec.category}: choose ${spec.count} of ${pool.categories.join(" or ")}`;
   if (pool.kind === "names") return `${spec.category}: choose ${spec.count} from ${pool.names.join(", ")}`;
   const rule = [`${pool.base.join(" and ")} weapons`];
   if (pool.withoutProperties.length > 0) rule.push(`without ${pool.withoutProperties.join(", ")}`);

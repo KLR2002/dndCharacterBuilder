@@ -5,7 +5,8 @@ import { proficiencySheet, skillChoiceOffers, type SheetEntry } from "../src/rul
 import { proficiencyChoiceOffers } from "../src/rules/proficiencyChoiceOffers.ts";
 import { reconcile } from "../src/rules/characterReconciler.ts";
 import { clearBackground, setCustomBackground } from "../src/rules/builderTransitions.ts";
-import { ancestryRuleChoices } from "../src/rules/ruleChoices.ts";
+import { ancestryRuleChoices, pickRuleChoice } from "../src/rules/ruleChoices.ts";
+import { ALL_LANGUAGE_NAMES, ALL_TOOLS } from "../src/rules/proficienciesAndLanguages.ts";
 import { inMemoryCompendium, integratedTestCompendium, makeChar, srdBaselineCompendium } from "./testUtils.ts";
 
 // Race, subrace and background skill picks are Proficiency Choices read from the Catalog's choice grants.
@@ -115,6 +116,78 @@ test("a custom background saved with the old skill bucket moves its picks into i
   assert.equal(after.skillChoices?.some((entry) => entry.origin === "background"), false);
   assert.deepEqual(after.chosenSkills, ["Athletics"], "only the unattributed skill stays in the old bucket");
   assert.deepEqual(names(proficiencySheet(after, { compendium }).skills), names(proficiencySheet(before, { compendium }).skills));
+});
+
+// The custom background's second Proficiency Choice draws from tools and languages together: one pick of two.
+const customWith = (picks: string[], extra: Partial<Character> = {}) =>
+  makeChar({
+    background: { name: "Lamp Warden", source: "Custom" },
+    classes: [{ className: "Fighter", source: "PHB", level: 1 }],
+    proficiencyPicks: { [CUSTOM_LANGUAGES_ID]: picks },
+    ...extra,
+  });
+
+const toolOrLanguageOffer = (character: Character) =>
+  proficiencyChoiceOffers(character, { compendium: srdBaselineCompendium() }).find((offer) => offer.id === CUSTOM_LANGUAGES_ID);
+
+test("a custom background's second choice offers two picks from tools and languages together, titled Tool or language", () => {
+  const offer = toolOrLanguageOffer(makeChar({ background: { name: "Lamp Warden", source: "Custom" } }));
+  assert.ok(offer, "the custom background offers its tool or language picks");
+  assert.equal(offer.choose, 2);
+  assert.equal(offer.traitName, "Custom Background: Tool or language");
+  // Every character holds Common, so it is not offered; the rest of both lists is.
+  const offered = [...ALL_TOOLS, ...ALL_LANGUAGE_NAMES.filter((name) => name !== "Common")];
+  assert.deepEqual(offer.options.map((option) => option.name).sort(), offered.sort());
+});
+
+test("a custom background's skill choice keeps its two skill picks of any", () => {
+  const offers = proficiencyChoiceOffers(makeChar({ background: { name: "Lamp Warden", source: "Custom" } }), { compendium: srdBaselineCompendium() });
+  const skillOffer = offers.find((offer) => offer.id === CUSTOM_SKILLS_ID);
+  assert.equal(skillOffer?.choose, 2);
+  assert.equal(skillOffer?.traitName, "Custom Background: Skill");
+});
+
+test("a pick on the custom background's tool or language choice moves its counter, and a third pick makes way for the newest", () => {
+  const base = makeChar({ background: { name: "Lamp Warden", source: "Custom" } });
+  const offer = toolOrLanguageOffer(base);
+  if (!offer) throw new Error("expected the tool or language offer");
+  const first = pickRuleChoice(base, offer, "Smith's Tools");
+  assert.deepEqual(first.proficiencyPicks?.[CUSTOM_LANGUAGES_ID], ["Smith's Tools"]);
+  const second = pickRuleChoice(first, offer, "Elvish");
+  assert.deepEqual(second.proficiencyPicks?.[CUSTOM_LANGUAGES_ID], ["Smith's Tools", "Elvish"]);
+  const third = pickRuleChoice(second, offer, "Thieves' tools");
+  assert.deepEqual(third.proficiencyPicks?.[CUSTOM_LANGUAGES_ID], ["Elvish", "Thieves' tools"]);
+});
+
+test("a tool pick on the custom background is among the sheet's tools, and a language pick among its languages", () => {
+  const compendium = srdBaselineCompendium();
+  const sheet = proficiencySheet(customWith(["Smith's Tools", "Elvish"]), { compendium });
+  assert.ok(names(sheet.tools).includes("Smith's Tools"), "the tool pick is a tool");
+  assert.equal(names(sheet.tools).includes("Elvish"), false, "a language is not a tool");
+  assert.ok(names(sheet.languages).includes("Elvish"), "the language pick is a language");
+  assert.equal(names(sheet.languages).includes("Smith's Tools"), false, "a tool is not a language");
+});
+
+test("a tool or language the character holds from another source is not offered again on the custom background's choice", () => {
+  const held = makeChar({
+    background: { name: "Lamp Warden", source: "Custom" },
+    race: { name: "Dwarf", source: "PHB" },
+    addedTools: ["Smith's Tools"],
+  });
+  const offer = toolOrLanguageOffer(held);
+  if (!offer) throw new Error("expected the tool or language offer");
+  const options = offer.options.map((option) => option.name);
+  assert.equal(options.includes("Smith's Tools"), false, "a tool held by hand is not offered");
+  assert.equal(options.includes("Dwarvish"), false, "a language the race grants is not offered");
+  assert.ok(options.includes("Elvish"), "a language nothing holds is still offered");
+});
+
+test("a saved language pick under the old id stays valid, and is still a language on the sheet", () => {
+  const compendium = srdBaselineCompendium();
+  const saved = customWith(["Elvish"]);
+  assert.deepEqual(names(proficiencySheet(saved, { compendium }).languages).filter((language) => language === "Elvish"), ["Elvish"]);
+  const offer = toolOrLanguageOffer(saved);
+  assert.equal(offer?.options.some((option) => option.name === "Elvish"), true, "the saved pick stays selectable");
 });
 
 const halfElf = (subraceName?: string) =>

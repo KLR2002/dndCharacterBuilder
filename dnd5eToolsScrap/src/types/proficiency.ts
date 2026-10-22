@@ -14,6 +14,11 @@ export type ProficiencyPool =
   /** Any entry of the grant's category, for example any language. */
   | { kind: "any" }
   /**
+   * Any entry of the listed categories, for example any tool or any language. Type-only: the scraper never
+   * emits it, and the app declares it for a custom background's choice.
+   */
+  | { kind: "anyOf"; categories: Array<"tools" | "languages"> }
+  /**
    * A property rule over weapons: any of the listed base types that lack every
    * listed property, plus any weapons named explicitly. `attackType`, when set,
    * keeps only melee or only ranged weapons.

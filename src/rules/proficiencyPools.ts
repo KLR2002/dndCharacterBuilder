@@ -1,5 +1,5 @@
 import type { AbilityKey, Character } from "../types/character.ts";
-import type { ItemData, ProficiencyGrant, ProficiencyPool } from "../types/dnd5e.ts";
+import type { ItemData, ProficiencyCategory, ProficiencyGrant, ProficiencyPool } from "../types/dnd5e.ts";
 import { ABILITY_NAMES } from "./abilities.ts";
 import { ALL_LANGUAGE_NAMES, ALL_TOOLS, normalizeToolName } from "./proficienciesAndLanguages.ts";
 import { normalizeWeaponProficiency, STANDARD_MARTIAL_WEAPONS, STANDARD_SIMPLE_WEAPONS } from "./proficiencies.ts";
@@ -107,8 +107,29 @@ function weaponPoolNames(pool: Extract<ProficiencyPool, { kind: "weapons" }>, it
   return [...names].sort((a, b) => a.localeCompare(b));
 }
 
+/**
+ * The categories a grant's picks can land in: its own category, or each category of a mixed pool. A pick lands
+ * in the category whose list names it (see `pickLandsIn`).
+ */
+export function pickCategories(grant: ChoiceProficiencyGrant): ProficiencyCategory[] {
+  return grant.pool.kind === "anyOf" ? grant.pool.categories : [grant.category];
+}
+
+/**
+ * The category one saved pick of a grant lands in. A pick of a mixed pool is a tool when the tool list names it,
+ * and a language otherwise, since the two lists share no name.
+ */
+export function pickLandsIn(grant: ChoiceProficiencyGrant, name: string): ProficiencyCategory {
+  if (grant.pool.kind !== "anyOf") return grant.category;
+  const clean = name.trim().toLowerCase();
+  return ALL_TOOLS.some((tool) => tool.toLowerCase() === clean) ? "tools" : "languages";
+}
+
 /** The names a pickable grant offers, normalized. Empty when the pool does not apply to the grant's category. */
 export function poolNames(grant: ChoiceProficiencyGrant, items: readonly ItemData[] = []): string[] {
+  if (grant.pool.kind === "anyOf") {
+    return grant.pool.categories.flatMap((category) => (category === "tools" ? [...ALL_TOOLS] : [...ALL_LANGUAGE_NAMES]));
+  }
   if (!isPickableCategory(grant.category)) return [];
   if (grant.pool.kind === "names") {
     return grant.pool.names.map((name) => normalizeProficiencyName(grant.category as PickableCategory, name));
