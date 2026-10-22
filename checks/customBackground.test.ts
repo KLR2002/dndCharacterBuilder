@@ -12,7 +12,7 @@ import {
 import { catalogListings } from "../src/rules/catalogs.ts";
 import { heldByOtherSources } from "../src/rules/proficiencyChoiceOffers.ts";
 import type { BackgroundData } from "../src/types/dnd5e.ts";
-import { clearBackground, setCustomBackground } from "../src/rules/builderTransitions.ts";
+import { checkActiveBooksIntegrity, clearBackground, setCustomBackground } from "../src/rules/builderTransitions.ts";
 import { proficiencySheet } from "../src/rules/proficiencySheet.ts";
 import { makeChar, integratedTestCompendium, inMemoryCompendium, srdBaselineCompendium } from "./testUtils.ts";
 
@@ -160,4 +160,16 @@ test("a pick on the choice does not hold its own name", () => {
     proficiencyPicks: { [CUSTOM_BACKGROUND_TOOLS_OR_LANGUAGES_ID]: ["Elvish"] },
   });
   assert.equal(heldByOtherSources(picked, CUSTOM_BACKGROUND_TOOLS_OR_LANGUAGES_GRANT, { compendium })("Elvish"), false);
+});
+
+test("a custom background built in the Builder is not warned as from a disabled sourcebook", () => {
+  const character = makeChar({ background: { name: "Gladiator Guild", source: "Custom" } });
+  assert.deepEqual(checkActiveBooksIntegrity(character, ["PHB"]), []);
+});
+
+test("a non-custom background from a disabled sourcebook still gets the warning", () => {
+  const character = makeChar({ background: { name: "Acolyte", source: "PHB" } });
+  assert.deepEqual(checkActiveBooksIntegrity(character, ["XGE"]), [
+    'Background "Acolyte" is from disabled sourcebook "PHB".',
+  ]);
 });

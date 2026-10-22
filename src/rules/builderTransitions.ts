@@ -14,7 +14,7 @@ import { fullHealAtLevelUp, followRaisedMaxHp } from "./hitPoints.ts";
 import { currentCompendium, type Compendium } from "../services/compendium.ts";
 import { normalizeSkillName } from "./skills.ts";
 import { moveLegacySkillPicks } from "./proficiencyPicks.ts";
-import { CUSTOM_BACKGROUND_SKILLS_ID, CUSTOM_BACKGROUND_TOOLS_OR_LANGUAGES_ID } from "./customBackground.ts";
+import { CUSTOM_BACKGROUND_SKILLS_ID, CUSTOM_BACKGROUND_TOOLS_OR_LANGUAGES_ID, isCustomBackground } from "./customBackground.ts";
 import { ABILITY_NAMES } from "./abilities.ts";
 import {
   STANDARD_ARRAY,
@@ -871,7 +871,7 @@ export function checkActiveBooksIntegrity(
   // 3. Background
   if (
     character.background?.source &&
-    !character.background.isCustom &&
+    !isCustomBackground(character.background) &&
     !activeSet.has(character.background.source.toUpperCase())
   ) {
     warnings.push(`Background "${character.background.name}" is from disabled sourcebook "${character.background.source}".`);
