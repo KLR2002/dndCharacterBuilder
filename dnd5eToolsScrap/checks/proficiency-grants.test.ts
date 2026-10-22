@@ -343,7 +343,7 @@ test("a structured entry the mapping cannot state precisely makes the whole bloc
     }
   );
   assert.deepEqual(result.grants, []);
-  assert.deepEqual(result.unparsed, ["tools: gaming set"]);
+  assert.deepEqual(result.unparsed, ['tools: {"gaming set":true}']);
 });
 
 test("a tool choose list with an entry that names no tool is unparsed as a whole", () => {
@@ -352,7 +352,7 @@ test("a tool choose list with an entry that names no tool is unparsed as a whole
     { tools: [{ choose: { from: ["sample set of things", "navigator's tools"] } }] }
   );
   assert.deepEqual(result.grants, []);
-  assert.deepEqual(result.unparsed, ["tools: choose"]);
+  assert.deepEqual(result.unparsed, ['tools: {"choose":{"from":["sample set of things","navigator\'s tools"]}}']);
 });
 
 test("the vocabulary matches 'proficient' wording, not only 'proficiency'", () => {

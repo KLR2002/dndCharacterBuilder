@@ -125,7 +125,13 @@ export async function scrapeBackgrounds(
 
     const proficiencies = structuredGrants(
       { source: raw.source, owner: "Background", feature: cleanTags(raw.name, "plain"), level: 0 },
-      { tools: raw.toolProficiencies, languages: raw.languageProficiencies, skills: raw.skillProficiencies }
+      {
+        tools: raw.toolProficiencies,
+        languages: raw.languageProficiencies,
+        skills: raw.skillProficiencies,
+        weapons: raw.weaponProficiencies,
+        armor: raw.armorProficiencies,
+      }
     );
     if (proficiencies.unparsed.length > 0) {
       report.unparsed.push({
