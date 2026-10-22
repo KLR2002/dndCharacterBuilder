@@ -7,8 +7,9 @@ import { proficiencyChoiceOffers } from "../src/rules/proficiencyChoiceOffers.ts
 import { reconcile } from "../src/rules/characterReconciler.ts";
 import { evaluateCharacter } from "../src/rules/characterEvaluation.ts";
 import { getAvailableExpertiseMilestones } from "../src/rules/expertise.ts";
-import { inMemoryCompendium, integratedTestCompendium, loadTestCatalog, makeChar } from "./testUtils.ts";
-import { fixedGrant, placeholderFeat, wardenClass } from "./proficiencySheetFixture.ts";
+import { getAutoGrantedSkills } from "../src/rules/proficiencySources/skillGrants.ts";
+import { inMemoryCompendium, integratedTestCompendium, loadTestCatalog, makeChar, srdBaselineCompendium } from "./testUtils.ts";
+import { fixedGrant, placeholderFeat, vellariRace, wardenClass } from "./proficiencySheetFixture.ts";
 
 /**
  * Skill proficiencies on the Proficiency Sheet. Invented fixtures (Lampwright, Lantern
@@ -224,4 +225,34 @@ test("a Tiger pick is released with a notice when the aspect changes away from T
   const changed = reconcile({ ...tiger, ruleChoices: [{ ...tiger.ruleChoices![0], picked: ["Bear"] }] }, compendium);
   assert.equal(changed.proficiencyPicks?.[TIGER_ID], undefined, "the Tiger skills are no longer granted, so the pick goes");
   assert.ok(changed.needsReview?.some((note) => note.includes("Stealth") && note.includes("no longer granted")));
+});
+
+// A trait's name decides whether its text grants a skill: the text is invented here. The Dwarf's real
+// Stonecunning is checked on the Compendium below, as the sheet reads it.
+const STONE_TRAIT = { name: "Stonecunning", description: "Invented text: you are proficient in the History skill when you read carved quarry walls." };
+const LORE_TRAIT = { name: "Quarry Lore", description: "Invented text: you are proficient in the Arcana skill when you read carved quarry walls." };
+const quarryfolk = (traits: { name: string; description: string }[]) => vellariRace({ name: "Quarryfolk", traits });
+
+test("a race trait named Stonecunning does not grant the skill its text names, and a trait of another name still does", () => {
+  const character = makeChar({ race: { name: "Quarryfolk", source: "PHB" } });
+  assert.deepEqual(getAutoGrantedSkills(character, { race: { name: "Quarryfolk", traits: [STONE_TRAIT] } }), []);
+  assert.deepEqual(getAutoGrantedSkills(character, { race: { name: "Quarryfolk", traits: [LORE_TRAIT] } }), ["Arcana"]);
+  assert.deepEqual(
+    getAutoGrantedSkills(character, { race: { name: "Quarryfolk", traits: [STONE_TRAIT, LORE_TRAIT] } }),
+    ["Arcana"],
+    "the Stonecunning text is skipped while the other trait still counts",
+  );
+});
+
+test("on the sheet, a Stonecunning trait holds no History, and a differently named trait holds its skill", () => {
+  const compendium = inMemoryCompendium({ races: [quarryfolk([STONE_TRAIT])] });
+  const held = makeChar({ race: { name: "Quarryfolk", source: "PHB" } });
+  assert.equal(skillsOf(held, compendium).includes("History"), false);
+  const lore = inMemoryCompendium({ races: [quarryfolk([LORE_TRAIT])] });
+  assert.equal(skillsOf(held, lore).includes("Arcana"), true);
+});
+
+test("a Hill Dwarf holds no History from Stonecunning on the Proficiency Sheet", () => {
+  const dwarf = makeChar({ race: { name: "Dwarf", source: "PHB", subraceName: "Hill", subraceSource: "PHB" } });
+  assert.equal(skillsOf(dwarf, srdBaselineCompendium()).includes("History"), false);
 });

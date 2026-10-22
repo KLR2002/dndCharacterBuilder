@@ -91,7 +91,6 @@
  },
  "srd | dwarf hill cleric life domain | L1 | books=all": {
   "proficient": [
-   "History",
    "Insight",
    "Religion"
   ],
@@ -100,7 +99,6 @@
  },
  "srd | dwarf hill cleric life domain | L1 | books=PHB": {
   "proficient": [
-   "History",
    "Insight",
    "Religion"
   ],
@@ -109,7 +107,6 @@
  },
  "srd | dwarf hill cleric life domain | L1 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
   "proficient": [
-   "History",
    "Insight",
    "Religion"
   ],
@@ -118,7 +115,6 @@
  },
  "srd | dwarf hill cleric life domain | L3 | books=all": {
   "proficient": [
-   "History",
    "Insight",
    "Religion"
   ],
@@ -127,7 +123,6 @@
  },
  "srd | dwarf hill cleric life domain | L3 | books=PHB": {
   "proficient": [
-   "History",
    "Insight",
    "Religion"
   ],
@@ -136,7 +131,6 @@
  },
  "srd | dwarf hill cleric life domain | L3 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
   "proficient": [
-   "History",
    "Insight",
    "Religion"
   ],
@@ -145,7 +139,6 @@
  },
  "srd | dwarf hill cleric life domain | L6 | books=all": {
   "proficient": [
-   "History",
    "Insight",
    "Religion"
   ],
@@ -154,7 +147,6 @@
  },
  "srd | dwarf hill cleric life domain | L6 | books=PHB": {
   "proficient": [
-   "History",
    "Insight",
    "Religion"
   ],
@@ -163,7 +155,6 @@
  },
  "srd | dwarf hill cleric life domain | L6 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
   "proficient": [
-   "History",
    "Insight",
    "Religion"
   ],
@@ -172,7 +163,6 @@
  },
  "srd | dwarf hill cleric life domain | L11 | books=all": {
   "proficient": [
-   "History",
    "Insight",
    "Religion"
   ],
@@ -181,7 +171,6 @@
  },
  "srd | dwarf hill cleric life domain | L11 | books=PHB": {
   "proficient": [
-   "History",
    "Insight",
    "Religion"
   ],
@@ -190,7 +179,6 @@
  },
  "srd | dwarf hill cleric life domain | L11 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
   "proficient": [
-   "History",
    "Insight",
    "Religion"
   ],
@@ -199,7 +187,6 @@
  },
  "srd | dwarf hill cleric life domain | L14 | books=all": {
   "proficient": [
-   "History",
    "Insight",
    "Religion"
   ],
@@ -208,7 +195,6 @@
  },
  "srd | dwarf hill cleric life domain | L14 | books=PHB": {
   "proficient": [
-   "History",
    "Insight",
    "Religion"
   ],
@@ -217,7 +203,6 @@
  },
  "srd | dwarf hill cleric life domain | L14 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
   "proficient": [
-   "History",
    "Insight",
    "Religion"
   ],
@@ -226,7 +211,6 @@
  },
  "srd | dwarf hill cleric life domain | L17 | books=all": {
   "proficient": [
-   "History",
    "Insight",
    "Religion"
   ],
@@ -235,7 +219,6 @@
  },
  "srd | dwarf hill cleric life domain | L17 | books=PHB": {
   "proficient": [
-   "History",
    "Insight",
    "Religion"
   ],
@@ -244,7 +227,6 @@
  },
  "srd | dwarf hill cleric life domain | L17 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
   "proficient": [
-   "History",
    "Insight",
    "Religion"
   ],
@@ -2448,128 +2430,92 @@
   "eligible": []
  },
  "srd | cleric forge domain soldier | L1 | books=all": {
-  "proficient": [
-   "History"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | cleric forge domain soldier | L1 | books=PHB": {
-  "proficient": [
-   "History"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | cleric forge domain soldier | L1 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
-  "proficient": [
-   "History"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | cleric forge domain soldier | L3 | books=all": {
-  "proficient": [
-   "History"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | cleric forge domain soldier | L3 | books=PHB": {
-  "proficient": [
-   "History"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | cleric forge domain soldier | L3 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
-  "proficient": [
-   "History"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | cleric forge domain soldier | L6 | books=all": {
-  "proficient": [
-   "History"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | cleric forge domain soldier | L6 | books=PHB": {
-  "proficient": [
-   "History"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | cleric forge domain soldier | L6 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
-  "proficient": [
-   "History"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | cleric forge domain soldier | L11 | books=all": {
-  "proficient": [
-   "History"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | cleric forge domain soldier | L11 | books=PHB": {
-  "proficient": [
-   "History"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | cleric forge domain soldier | L11 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
-  "proficient": [
-   "History"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | cleric forge domain soldier | L14 | books=all": {
-  "proficient": [
-   "History"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | cleric forge domain soldier | L14 | books=PHB": {
-  "proficient": [
-   "History"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | cleric forge domain soldier | L14 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
-  "proficient": [
-   "History"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | cleric forge domain soldier | L17 | books=all": {
-  "proficient": [
-   "History"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | cleric forge domain soldier | L17 | books=PHB": {
-  "proficient": [
-   "History"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
  "srd | cleric forge domain soldier | L17 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
-  "proficient": [
-   "History"
-  ],
+  "proficient": [],
   "expertise": [],
   "eligible": []
  },
@@ -5410,7 +5356,6 @@
  },
  "integrated | dwarf hill cleric life domain | L1 | books=all": {
   "proficient": [
-   "History",
    "Insight",
    "Religion"
   ],
@@ -5419,7 +5364,6 @@
  },
  "integrated | dwarf hill cleric life domain | L1 | books=PHB": {
   "proficient": [
-   "History",
    "Insight",
    "Religion"
   ],
@@ -5428,7 +5372,6 @@
  },
  "integrated | dwarf hill cleric life domain | L1 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
   "proficient": [
-   "History",
    "Insight",
    "Religion"
   ],
@@ -5437,7 +5380,6 @@
  },
  "integrated | dwarf hill cleric life domain | L3 | books=all": {
   "proficient": [
-   "History",
    "Insight",
    "Religion"
   ],
@@ -5446,7 +5388,6 @@
  },
  "integrated | dwarf hill cleric life domain | L3 | books=PHB": {
   "proficient": [
-   "History",
    "Insight",
    "Religion"
   ],
@@ -5455,7 +5396,6 @@
  },
  "integrated | dwarf hill cleric life domain | L3 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
   "proficient": [
-   "History",
    "Insight",
    "Religion"
   ],
@@ -5464,7 +5404,6 @@
  },
  "integrated | dwarf hill cleric life domain | L6 | books=all": {
   "proficient": [
-   "History",
    "Insight",
    "Religion"
   ],
@@ -5473,7 +5412,6 @@
  },
  "integrated | dwarf hill cleric life domain | L6 | books=PHB": {
   "proficient": [
-   "History",
    "Insight",
    "Religion"
   ],
@@ -5482,7 +5420,6 @@
  },
  "integrated | dwarf hill cleric life domain | L6 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
   "proficient": [
-   "History",
    "Insight",
    "Religion"
   ],
@@ -5491,7 +5428,6 @@
  },
  "integrated | dwarf hill cleric life domain | L11 | books=all": {
   "proficient": [
-   "History",
    "Insight",
    "Religion"
   ],
@@ -5500,7 +5436,6 @@
  },
  "integrated | dwarf hill cleric life domain | L11 | books=PHB": {
   "proficient": [
-   "History",
    "Insight",
    "Religion"
   ],
@@ -5509,7 +5444,6 @@
  },
  "integrated | dwarf hill cleric life domain | L11 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
   "proficient": [
-   "History",
    "Insight",
    "Religion"
   ],
@@ -5518,7 +5452,6 @@
  },
  "integrated | dwarf hill cleric life domain | L14 | books=all": {
   "proficient": [
-   "History",
    "Insight",
    "Religion"
   ],
@@ -5527,7 +5460,6 @@
  },
  "integrated | dwarf hill cleric life domain | L14 | books=PHB": {
   "proficient": [
-   "History",
    "Insight",
    "Religion"
   ],
@@ -5536,7 +5468,6 @@
  },
  "integrated | dwarf hill cleric life domain | L14 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
   "proficient": [
-   "History",
    "Insight",
    "Religion"
   ],
@@ -5545,7 +5476,6 @@
  },
  "integrated | dwarf hill cleric life domain | L17 | books=all": {
   "proficient": [
-   "History",
    "Insight",
    "Religion"
   ],
@@ -5554,7 +5484,6 @@
  },
  "integrated | dwarf hill cleric life domain | L17 | books=PHB": {
   "proficient": [
-   "History",
    "Insight",
    "Religion"
   ],
@@ -5563,7 +5492,6 @@
  },
  "integrated | dwarf hill cleric life domain | L17 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
   "proficient": [
-   "History",
    "Insight",
    "Religion"
   ],
@@ -8842,7 +8770,6 @@
  "integrated | cleric forge domain soldier | L1 | books=all": {
   "proficient": [
    "Athletics",
-   "History",
    "Intimidation"
   ],
   "expertise": [],
@@ -8851,7 +8778,6 @@
  "integrated | cleric forge domain soldier | L1 | books=PHB": {
   "proficient": [
    "Athletics",
-   "History",
    "Intimidation"
   ],
   "expertise": [],
@@ -8860,7 +8786,6 @@
  "integrated | cleric forge domain soldier | L1 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
   "proficient": [
    "Athletics",
-   "History",
    "Intimidation"
   ],
   "expertise": [],
@@ -8869,7 +8794,6 @@
  "integrated | cleric forge domain soldier | L3 | books=all": {
   "proficient": [
    "Athletics",
-   "History",
    "Intimidation"
   ],
   "expertise": [],
@@ -8878,7 +8802,6 @@
  "integrated | cleric forge domain soldier | L3 | books=PHB": {
   "proficient": [
    "Athletics",
-   "History",
    "Intimidation"
   ],
   "expertise": [],
@@ -8887,7 +8810,6 @@
  "integrated | cleric forge domain soldier | L3 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
   "proficient": [
    "Athletics",
-   "History",
    "Intimidation"
   ],
   "expertise": [],
@@ -8896,7 +8818,6 @@
  "integrated | cleric forge domain soldier | L6 | books=all": {
   "proficient": [
    "Athletics",
-   "History",
    "Intimidation"
   ],
   "expertise": [],
@@ -8905,7 +8826,6 @@
  "integrated | cleric forge domain soldier | L6 | books=PHB": {
   "proficient": [
    "Athletics",
-   "History",
    "Intimidation"
   ],
   "expertise": [],
@@ -8914,7 +8834,6 @@
  "integrated | cleric forge domain soldier | L6 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
   "proficient": [
    "Athletics",
-   "History",
    "Intimidation"
   ],
   "expertise": [],
@@ -8923,7 +8842,6 @@
  "integrated | cleric forge domain soldier | L11 | books=all": {
   "proficient": [
    "Athletics",
-   "History",
    "Intimidation"
   ],
   "expertise": [],
@@ -8932,7 +8850,6 @@
  "integrated | cleric forge domain soldier | L11 | books=PHB": {
   "proficient": [
    "Athletics",
-   "History",
    "Intimidation"
   ],
   "expertise": [],
@@ -8941,7 +8858,6 @@
  "integrated | cleric forge domain soldier | L11 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
   "proficient": [
    "Athletics",
-   "History",
    "Intimidation"
   ],
   "expertise": [],
@@ -8950,7 +8866,6 @@
  "integrated | cleric forge domain soldier | L14 | books=all": {
   "proficient": [
    "Athletics",
-   "History",
    "Intimidation"
   ],
   "expertise": [],
@@ -8959,7 +8874,6 @@
  "integrated | cleric forge domain soldier | L14 | books=PHB": {
   "proficient": [
    "Athletics",
-   "History",
    "Intimidation"
   ],
   "expertise": [],
@@ -8968,7 +8882,6 @@
  "integrated | cleric forge domain soldier | L14 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
   "proficient": [
    "Athletics",
-   "History",
    "Intimidation"
   ],
   "expertise": [],
@@ -8977,7 +8890,6 @@
  "integrated | cleric forge domain soldier | L17 | books=all": {
   "proficient": [
    "Athletics",
-   "History",
    "Intimidation"
   ],
   "expertise": [],
@@ -8986,7 +8898,6 @@
  "integrated | cleric forge domain soldier | L17 | books=PHB": {
   "proficient": [
    "Athletics",
-   "History",
    "Intimidation"
   ],
   "expertise": [],
@@ -8995,7 +8906,6 @@
  "integrated | cleric forge domain soldier | L17 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
   "proficient": [
    "Athletics",
-   "History",
    "Intimidation"
   ],
   "expertise": [],
