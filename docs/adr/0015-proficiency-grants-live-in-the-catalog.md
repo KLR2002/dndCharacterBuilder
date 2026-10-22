@@ -12,7 +12,7 @@ Skills, tools, languages, weapons, armor and saving throws were granted by per-s
 - The Proficiency Sheet (`src/rules/proficiencySheet.ts`, with private sources in `src/rules/proficiencySources/`) is the only reader of race, background and class proficiency fields. `checks/proficiencyReadersGuard.test.ts` fails any other read, except the Builder's own picks and the card displays its allowlist names.
 
 ## Known exceptions
-- `MULTICLASS_PROFICIENCIES` (`src/constants/rules.ts`) is still a hand-written table: the armor, weapon, tool and skill grants of a later class's multiclassing. The Catalog class records carry a multiclassing field (`multiclassing.proficienciesGained`) that the sheet does not read yet. The sheet's class-base source reads the table, and the readers guard allowlists the one use outside the sheet (`builderTransitions.ts`).
+None remain.
 
 ## Considered Options
 A hand-written grants table inside `src/` was rejected: it would bundle non-SRD rule content in the app, and nothing would reveal gaps. Parsing prose at runtime was rejected as unreviewable and slow.

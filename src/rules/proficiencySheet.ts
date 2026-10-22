@@ -24,6 +24,7 @@ import {
 import { resolveCharacterAncestry } from "./characterAncestry.ts";
 
 export { classSkillChoice } from "./proficiencySources/skillGrants.ts";
+export { multiclassGrantsOf, type MulticlassGrants } from "./proficiencySources/classBase.ts";
 
 /** The Knowledge Domain's four skills. A Knowledge Cleric's Expertise on one of them has always made it proficient. */
 const KNOWLEDGE_SKILLS = ["Arcana", "History", "Nature", "Religion"];
@@ -308,9 +309,9 @@ export function proficiencySheet(character: Character, catalogs: CharacterCatalo
   const features = featuresOf(character, listings);
   const ancestry = resolveCharacterAncestry(character, listings.races());
 
-  // Class base proficiencies (the first class's, and the multiclass table for the others), then the
+  // Class base proficiencies (the first class's, and each later class's multiclass grants from the Catalog), then the
   // multiclass proficiencies recorded on the character, then the features' grants.
-  const classBase = classBaseProficiencies(character, listings.classes());
+  const classBase = classBaseProficiencies(character, listings.classes(), allCatalogClasses(catalogs));
   const recordedMulticlass = character.multiclassProficiencies ?? [];
 
   const items = listings.items();
