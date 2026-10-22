@@ -385,8 +385,8 @@ export const BackgroundSection: React.FC<BackgroundSectionProps> = ({
         <>
           {/* Custom Background creator card */}
           <Card style={{ gap: 10, borderColor: isCustomBg ? theme.accent : theme.border }}>
-            <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
-              <View style={{ flex: 1 }}>
+            <View style={{ flexDirection: "row", flexWrap: "wrap", justifyContent: "space-between", alignItems: "center", gap: 10 }}>
+              <View style={{ flexGrow: 1, flexShrink: 1, flexBasis: 180 }}>
                 <Text style={[styles.itemTitle, { color: theme.text }]}>Custom Background</Text>
                 <Text style={{ color: theme.textMuted, fontSize: 12 }}>
                   Create your own background with a custom name, 2 skill proficiencies and 2 tool or language
