@@ -9,7 +9,9 @@ Not in scope: Astral Elf and Githyanki keep losing their long-rest skill offer (
 
 **Blocked by:** None
 
-**Status:** ready-for-agent
+**Status:** done
+
+**Landed:** merged from `pr/22-custom-bg-stonecunning` (c2bedbd, 1d9514b, fa42850). `check:all` passes (1139 app tests, 149 scraper tests, 322 known type errors none new). A custom background offers one pick of 2 from tools and languages together (new type-only pool kind `anyOf`; the grant keeps its id and `languages` category, so saved language picks stay valid); a pick lands in the sheet's tools or languages by which list names it (the two lists share no name). Picker title reads "Tool or language". `getAutoGrantedSkills` skips the Stonecunning trait, so Dwarves hold no History from it; the skills baseline was re-recorded by its env var and 72 rows changed, each losing only `proficient: History` (the Hill Dwarf and Forge cleric scenarios). Open items: layout check not run (no UI file changed, only a longer picker title); no device check; devices with a cached catalog are unaffected (the custom background is declared in app code).
 
 ## Design notes
 
