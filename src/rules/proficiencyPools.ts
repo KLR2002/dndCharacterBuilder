@@ -89,7 +89,8 @@ function attackTypesOf(type: string): ("melee" | "ranged")[] {
  * The weapon names a weapons pool offers, read from the Compendium's items: each base weapon whose own
  * weapon category the pool allows and that lacks every excluded property, plus each named weapon, then
  * filtered by attack type. A magic item carries no category, so it is never taken for its base weapon.
- * The names are the items' own spellings, sorted and without duplicates.
+ * A property entry that is not a string, as a catalog cached before the scraper named object-form properties
+ * may hold, excludes nothing. The names are the items' own spellings, sorted and without duplicates.
  */
 function weaponPoolNames(pool: Extract<ProficiencyPool, { kind: "weapons" }>, items: readonly ItemData[]): string[] {
   const excluded = new Set(pool.withoutProperties.map((name) => name.toLowerCase()));
@@ -99,7 +100,7 @@ function weaponPoolNames(pool: Extract<ProficiencyPool, { kind: "weapons" }>, it
     if (item.itemCategory !== "Weapon") continue;
     if (!named.has(item.name.trim().toLowerCase())) {
       if (!item.weaponCategory || !pool.base.includes(item.weaponCategory)) continue;
-      if (item.properties.some((property) => excluded.has(property.toLowerCase()))) continue;
+      if (item.properties.some((property) => typeof property === "string" && excluded.has(property.toLowerCase()))) continue;
     }
     if (pool.attackType && !attackTypesOf(item.type).includes(pool.attackType)) continue;
     names.add(item.name);
