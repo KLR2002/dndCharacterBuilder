@@ -13,6 +13,7 @@ import { scrapeSpells } from "./scrapers/spells.ts";
 import { scrapeBooks } from "./scrapers/books.ts";
 import { scrapeConditions } from "./scrapers/conditions.ts";
 import { newProficiencyReport } from "./parser/proficiency-grants.ts";
+import { newStartingEquipmentReport } from "./parser/starting-equipment.ts";
 
 interface CliOptions {
   only: string[];
@@ -110,6 +111,7 @@ async function main(): Promise<void> {
 
   const summary: Record<string, { count: number; size: string; file: string }> = {};
   const proficiency = newProficiencyReport();
+  const startingEquipment = newStartingEquipmentReport();
 
   try {
     // 1. Races
@@ -130,7 +132,7 @@ async function main(): Promise<void> {
     // 2. Classes
     if (shouldRun("classes")) {
       console.log("\n[2/7] Scraping Classes, Subclasses & Features...");
-      const classes = await scrapeClasses(client, proficiency);
+      const classes = await scrapeClasses(client, proficiency, startingEquipment);
       const file = path.join(opts.outputDir, "classes.json");
       const { count, bytes } = saveJson(file, classes);
       const totalSubclasses = classes.reduce((acc, c) => acc + (c.subclasses?.length || 0), 0);
@@ -140,6 +142,12 @@ async function main(): Promise<void> {
         file: path.relative(process.cwd(), file),
       };
       console.log(`  ✓ Saved ${count} classes (${totalSubclasses} subclasses) -> ${file} (${formatBytes(bytes)})`);
+      if (startingEquipment.unrecognised.length > 0) {
+        console.log(`  ! ${startingEquipment.unrecognised.length} starting equipment entries not recognised (kept in place as "unrecognised"):`);
+        for (const issue of startingEquipment.unrecognised) {
+          console.log(`  · ${issue.owner}: ${issue.message}`);
+        }
+      }
     }
 
     // 3. Feats

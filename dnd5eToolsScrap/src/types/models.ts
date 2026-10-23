@@ -11,6 +11,7 @@ export interface RuleChoiceModel {
 }
 
 import type { ProficiencyGrant } from "./proficiency.ts";
+import type { StartingEquipmentSlot } from "./startingEquipment.ts";
 
 export interface TraitModel {
   name: string;
@@ -129,6 +130,8 @@ export interface ClassModel {
     progression: string;
     preparedSpells?: string;
   } | null;
+  /** The starting equipment slots, in printed order. Absent for a class whose record carries none. */
+  startingEquipment?: StartingEquipmentSlot[];
   features: ClassFeatureModel[];
   subclasses: SubclassModel[];
   /** Proficiency Grants from the class's starting proficiencies (the "Starting Proficiencies" grant owner). */

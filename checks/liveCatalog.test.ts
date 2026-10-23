@@ -8,6 +8,7 @@ import { isCatalogStale, REQUIRED_CATALOG_FORMAT, type CompendiumCollections } f
 import { proficiencyChoiceOffers } from "../src/rules/proficiencyChoiceOffers.ts";
 import { poolNames, type ChoiceProficiencyGrant } from "../src/rules/proficiencyPools.ts";
 import { pickRuleChoice } from "../src/rules/ruleChoices.ts";
+import { STARTING_EQUIPMENT_TYPES } from "../src/rules/startingEquipmentTypes.ts";
 import { reconcile } from "../src/rules/characterReconciler.ts";
 import type { AvailableRuleChoice } from "../src/rules/choices/types.ts";
 import { makeChar } from "./testUtils.ts";
@@ -160,6 +161,36 @@ test("live catalog: every weapons Proficiency Choice pool reads its names", { sk
     }
   }
   assert.deepEqual([...failing].map(([id, message]) => `${id}: ${message}`), [], "weapons pools that cannot be read");
+});
+
+test("live catalog: every class starting equipment entry names a catalog item or a known generic type", { skip: SKIP }, () => {
+  const classes = live!.compendium.for().classes().filter((cls) => (cls.startingEquipment?.length ?? 0) > 0);
+  assert.ok(classes.length > 0, "no class carries starting equipment: the check below would pass vacuously");
+
+  const itemNames = new Set(live!.compendium.for().items().map((item) => item.name.toLowerCase()));
+  const unresolved: string[] = [];
+  for (const cls of classes) {
+    for (const [index, slot] of (cls.startingEquipment ?? []).entries()) {
+      if (slot.kind === "unrecognised") {
+        unresolved.push(`${printKey(cls)} slot ${index}: a slot of an unrecognised shape`);
+        continue;
+      }
+      const options = slot.kind === "fixed" ? [{ letter: "", entries: slot.entries }] : slot.options;
+      for (const option of options) {
+        const where = `${printKey(cls)} slot ${index}${option.letter ? ` option ${option.letter}` : ""}`;
+        for (const entry of option.entries) {
+          if (entry.kind === "item" && !itemNames.has(entry.name.toLowerCase())) {
+            unresolved.push(`${where}: no item named ${entry.name}`);
+          } else if (entry.kind === "type" && !STARTING_EQUIPMENT_TYPES.has(entry.equipmentType)) {
+            unresolved.push(`${where}: no known generic type ${entry.equipmentType}`);
+          } else if (entry.kind === "unrecognised") {
+            unresolved.push(`${where}: an entry of an unrecognised shape`);
+          }
+        }
+      }
+    }
+  }
+  assert.deepEqual(unresolved, [], "starting equipment entries that do not resolve");
 });
 
 test("live catalog: the catalog has Proficiency Choice ids shared by class prints (what the next checks guard)", { skip: SKIP }, () => {

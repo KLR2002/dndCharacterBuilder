@@ -39,6 +39,79 @@
       "progression": "artificer",
       "preparedSpells": "<$level$> / 2 + <$int_mod$>"
     },
+    "startingEquipment": [
+      {
+        "kind": "fixed",
+        "entries": [
+          {
+            "kind": "type",
+            "equipmentType": "weaponSimple",
+            "quantity": 2
+          }
+        ]
+      },
+      {
+        "kind": "fixed",
+        "entries": [
+          {
+            "kind": "item",
+            "name": "light crossbow",
+            "source": "PHB",
+            "quantity": 1
+          },
+          {
+            "kind": "item",
+            "name": "crossbow bolts (20)",
+            "source": "PHB",
+            "quantity": 1
+          }
+        ]
+      },
+      {
+        "kind": "choice",
+        "options": [
+          {
+            "letter": "a",
+            "entries": [
+              {
+                "kind": "item",
+                "name": "studded leather armor",
+                "source": "PHB",
+                "quantity": 1
+              }
+            ]
+          },
+          {
+            "letter": "b",
+            "entries": [
+              {
+                "kind": "item",
+                "name": "scale mail",
+                "source": "PHB",
+                "quantity": 1
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "kind": "fixed",
+        "entries": [
+          {
+            "kind": "item",
+            "name": "thieves' tools",
+            "source": "PHB",
+            "quantity": 1
+          },
+          {
+            "kind": "item",
+            "name": "dungeoneer's pack",
+            "source": "PHB",
+            "quantity": 1
+          }
+        ]
+      }
+    ],
     "features": [
       {
         "name": "Magical Tinkering",
@@ -688,6 +761,77 @@
       ]
     },
     "spellcasting": null,
+    "startingEquipment": [
+      {
+        "kind": "choice",
+        "options": [
+          {
+            "letter": "a",
+            "entries": [
+              {
+                "kind": "item",
+                "name": "greataxe",
+                "source": "PHB",
+                "quantity": 1
+              }
+            ]
+          },
+          {
+            "letter": "b",
+            "entries": [
+              {
+                "kind": "type",
+                "equipmentType": "weaponMartialMelee",
+                "quantity": 1
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "kind": "choice",
+        "options": [
+          {
+            "letter": "a",
+            "entries": [
+              {
+                "kind": "item",
+                "name": "handaxe",
+                "source": "PHB",
+                "quantity": 2
+              }
+            ]
+          },
+          {
+            "letter": "b",
+            "entries": [
+              {
+                "kind": "type",
+                "equipmentType": "weaponSimple",
+                "quantity": 1
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "kind": "fixed",
+        "entries": [
+          {
+            "kind": "item",
+            "name": "explorer's pack",
+            "source": "PHB",
+            "quantity": 1
+          },
+          {
+            "kind": "item",
+            "name": "javelin",
+            "source": "PHB",
+            "quantity": 4
+          }
+        ]
+      }
+    ],
     "features": [
       {
         "name": "Rage",
@@ -1436,6 +1580,115 @@
       "ability": "Charisma",
       "progression": "full"
     },
+    "startingEquipment": [
+      {
+        "kind": "choice",
+        "options": [
+          {
+            "letter": "a",
+            "entries": [
+              {
+                "kind": "item",
+                "name": "rapier",
+                "source": "PHB",
+                "quantity": 1
+              }
+            ]
+          },
+          {
+            "letter": "b",
+            "entries": [
+              {
+                "kind": "item",
+                "name": "longsword",
+                "source": "PHB",
+                "quantity": 1
+              }
+            ]
+          },
+          {
+            "letter": "c",
+            "entries": [
+              {
+                "kind": "type",
+                "equipmentType": "weaponSimple",
+                "quantity": 1
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "kind": "choice",
+        "options": [
+          {
+            "letter": "a",
+            "entries": [
+              {
+                "kind": "item",
+                "name": "diplomat's pack",
+                "source": "PHB",
+                "quantity": 1
+              }
+            ]
+          },
+          {
+            "letter": "b",
+            "entries": [
+              {
+                "kind": "item",
+                "name": "entertainer's pack",
+                "source": "PHB",
+                "quantity": 1
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "kind": "choice",
+        "options": [
+          {
+            "letter": "a",
+            "entries": [
+              {
+                "kind": "item",
+                "name": "lute",
+                "source": "PHB",
+                "quantity": 1
+              }
+            ]
+          },
+          {
+            "letter": "b",
+            "entries": [
+              {
+                "kind": "type",
+                "equipmentType": "instrumentMusical",
+                "quantity": 1
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "kind": "fixed",
+        "entries": [
+          {
+            "kind": "item",
+            "name": "leather armor",
+            "source": "PHB",
+            "quantity": 1
+          },
+          {
+            "kind": "item",
+            "name": "dagger",
+            "source": "PHB",
+            "quantity": 1
+          }
+        ]
+      }
+    ],
     "features": [
       {
         "name": "Bardic Inspiration",
@@ -2126,6 +2379,148 @@
       "progression": "full",
       "preparedSpells": "<$level$> + <$wis_mod$>"
     },
+    "startingEquipment": [
+      {
+        "kind": "choice",
+        "options": [
+          {
+            "letter": "a",
+            "entries": [
+              {
+                "kind": "item",
+                "name": "mace",
+                "source": "PHB",
+                "quantity": 1
+              }
+            ]
+          },
+          {
+            "letter": "b",
+            "entries": [
+              {
+                "kind": "item",
+                "name": "warhammer",
+                "source": "PHB",
+                "quantity": 1
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "kind": "choice",
+        "options": [
+          {
+            "letter": "a",
+            "entries": [
+              {
+                "kind": "item",
+                "name": "scale mail",
+                "source": "PHB",
+                "quantity": 1
+              }
+            ]
+          },
+          {
+            "letter": "b",
+            "entries": [
+              {
+                "kind": "item",
+                "name": "leather armor",
+                "source": "PHB",
+                "quantity": 1
+              }
+            ]
+          },
+          {
+            "letter": "c",
+            "entries": [
+              {
+                "kind": "item",
+                "name": "chain mail",
+                "source": "PHB",
+                "quantity": 1
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "kind": "choice",
+        "options": [
+          {
+            "letter": "a",
+            "entries": [
+              {
+                "kind": "item",
+                "name": "light crossbow",
+                "source": "PHB",
+                "quantity": 1
+              },
+              {
+                "kind": "item",
+                "name": "crossbow bolts (20)",
+                "source": "PHB",
+                "quantity": 1
+              }
+            ]
+          },
+          {
+            "letter": "b",
+            "entries": [
+              {
+                "kind": "type",
+                "equipmentType": "weaponSimple",
+                "quantity": 1
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "kind": "choice",
+        "options": [
+          {
+            "letter": "a",
+            "entries": [
+              {
+                "kind": "item",
+                "name": "priest's pack",
+                "source": "PHB",
+                "quantity": 1
+              }
+            ]
+          },
+          {
+            "letter": "b",
+            "entries": [
+              {
+                "kind": "item",
+                "name": "explorer's pack",
+                "source": "PHB",
+                "quantity": 1
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "kind": "fixed",
+        "entries": [
+          {
+            "kind": "item",
+            "name": "shield",
+            "source": "PHB",
+            "quantity": 1
+          },
+          {
+            "kind": "type",
+            "equipmentType": "focusSpellcastingHoly",
+            "quantity": 1
+          }
+        ]
+      }
+    ],
     "features": [
       {
         "name": "Divine Domain",
@@ -4120,6 +4515,82 @@
       "progression": "full",
       "preparedSpells": "<$level$> + <$wis_mod$>"
     },
+    "startingEquipment": [
+      {
+        "kind": "choice",
+        "options": [
+          {
+            "letter": "a",
+            "entries": [
+              {
+                "kind": "item",
+                "name": "shield",
+                "source": "PHB",
+                "quantity": 1
+              }
+            ]
+          },
+          {
+            "letter": "b",
+            "entries": [
+              {
+                "kind": "type",
+                "equipmentType": "weaponSimple",
+                "quantity": 1
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "kind": "choice",
+        "options": [
+          {
+            "letter": "a",
+            "entries": [
+              {
+                "kind": "item",
+                "name": "scimitar",
+                "source": "PHB",
+                "quantity": 1
+              }
+            ]
+          },
+          {
+            "letter": "b",
+            "entries": [
+              {
+                "kind": "type",
+                "equipmentType": "weaponSimpleMelee",
+                "quantity": 1
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "kind": "fixed",
+        "entries": [
+          {
+            "kind": "item",
+            "name": "Leather armor",
+            "source": "PHB",
+            "quantity": 1
+          },
+          {
+            "kind": "item",
+            "name": "explorer's pack",
+            "source": "PHB",
+            "quantity": 1
+          },
+          {
+            "kind": "type",
+            "equipmentType": "focusSpellcastingDruidic",
+            "quantity": 1
+          }
+        ]
+      }
+    ],
     "features": [
       {
         "name": "Druidic",
@@ -4953,6 +5424,138 @@
       ]
     },
     "spellcasting": null,
+    "startingEquipment": [
+      {
+        "kind": "choice",
+        "options": [
+          {
+            "letter": "a",
+            "entries": [
+              {
+                "kind": "item",
+                "name": "chain mail",
+                "source": "PHB",
+                "quantity": 1
+              }
+            ]
+          },
+          {
+            "letter": "b",
+            "entries": [
+              {
+                "kind": "item",
+                "name": "leather armor",
+                "source": "PHB",
+                "quantity": 1
+              },
+              {
+                "kind": "item",
+                "name": "longbow",
+                "source": "PHB",
+                "quantity": 1
+              },
+              {
+                "kind": "item",
+                "name": "arrows (20)",
+                "source": "PHB",
+                "quantity": 1
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "kind": "choice",
+        "options": [
+          {
+            "letter": "a",
+            "entries": [
+              {
+                "kind": "type",
+                "equipmentType": "weaponMartial",
+                "quantity": 1
+              },
+              {
+                "kind": "item",
+                "name": "shield",
+                "source": "PHB",
+                "quantity": 1
+              }
+            ]
+          },
+          {
+            "letter": "b",
+            "entries": [
+              {
+                "kind": "type",
+                "equipmentType": "weaponMartial",
+                "quantity": 2
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "kind": "choice",
+        "options": [
+          {
+            "letter": "a",
+            "entries": [
+              {
+                "kind": "item",
+                "name": "light crossbow",
+                "source": "PHB",
+                "quantity": 1
+              },
+              {
+                "kind": "item",
+                "name": "crossbow bolts (20)",
+                "source": "PHB",
+                "quantity": 1
+              }
+            ]
+          },
+          {
+            "letter": "b",
+            "entries": [
+              {
+                "kind": "item",
+                "name": "handaxe",
+                "source": "PHB",
+                "quantity": 2
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "kind": "choice",
+        "options": [
+          {
+            "letter": "a",
+            "entries": [
+              {
+                "kind": "item",
+                "name": "dungeoneer's pack",
+                "source": "PHB",
+                "quantity": 1
+              }
+            ]
+          },
+          {
+            "letter": "b",
+            "entries": [
+              {
+                "kind": "item",
+                "name": "explorer's pack",
+                "source": "PHB",
+                "quantity": 1
+              }
+            ]
+          }
+        ]
+      }
+    ],
     "features": [
       {
         "name": "Fighting Style",
@@ -5897,6 +6500,72 @@
       ]
     },
     "spellcasting": null,
+    "startingEquipment": [
+      {
+        "kind": "choice",
+        "options": [
+          {
+            "letter": "a",
+            "entries": [
+              {
+                "kind": "item",
+                "name": "shortsword",
+                "source": "PHB",
+                "quantity": 1
+              }
+            ]
+          },
+          {
+            "letter": "b",
+            "entries": [
+              {
+                "kind": "type",
+                "equipmentType": "weaponSimple",
+                "quantity": 1
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "kind": "choice",
+        "options": [
+          {
+            "letter": "a",
+            "entries": [
+              {
+                "kind": "item",
+                "name": "dungeoneer's pack",
+                "source": "PHB",
+                "quantity": 1
+              }
+            ]
+          },
+          {
+            "letter": "b",
+            "entries": [
+              {
+                "kind": "item",
+                "name": "explorer's pack",
+                "source": "PHB",
+                "quantity": 1
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "kind": "fixed",
+        "entries": [
+          {
+            "kind": "item",
+            "name": "dart",
+            "source": "PHB",
+            "quantity": 10
+          }
+        ]
+      }
+    ],
     "features": [
       {
         "name": "Martial Arts",
@@ -6867,6 +7536,121 @@
       ]
     },
     "spellcasting": null,
+    "startingEquipment": [
+      {
+        "kind": "choice",
+        "options": [
+          {
+            "letter": "a",
+            "entries": [
+              {
+                "kind": "item",
+                "name": "spear",
+                "source": "PHB",
+                "quantity": 1
+              }
+            ]
+          },
+          {
+            "letter": "b",
+            "entries": [
+              {
+                "kind": "item",
+                "name": "mace",
+                "source": "PHB",
+                "quantity": 1
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "kind": "choice",
+        "options": [
+          {
+            "letter": "a",
+            "entries": [
+              {
+                "kind": "item",
+                "name": "leather armor",
+                "source": "PHB",
+                "quantity": 1
+              }
+            ]
+          },
+          {
+            "letter": "b",
+            "entries": [
+              {
+                "kind": "item",
+                "name": "studded leather armor",
+                "source": "PHB",
+                "quantity": 1
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "kind": "choice",
+        "options": [
+          {
+            "letter": "a",
+            "entries": [
+              {
+                "kind": "item",
+                "name": "light crossbow",
+                "source": "PHB",
+                "quantity": 1
+              },
+              {
+                "kind": "item",
+                "name": "crossbow bolts (20)",
+                "source": "PHB",
+                "quantity": 1
+              }
+            ]
+          },
+          {
+            "letter": "b",
+            "entries": [
+              {
+                "kind": "type",
+                "equipmentType": "weaponSimple",
+                "quantity": 1
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "kind": "choice",
+        "options": [
+          {
+            "letter": "a",
+            "entries": [
+              {
+                "kind": "item",
+                "name": "scholar's pack",
+                "source": "PHB",
+                "quantity": 1
+              }
+            ]
+          },
+          {
+            "letter": "b",
+            "entries": [
+              {
+                "kind": "item",
+                "name": "explorer's pack",
+                "source": "PHB",
+                "quantity": 1
+              }
+            ]
+          }
+        ]
+      }
+    ],
     "features": [
       {
         "name": "Mystic Order",
@@ -7375,6 +8159,108 @@
       "progression": "1/2",
       "preparedSpells": "<$level$> / 2 + <$cha_mod$>"
     },
+    "startingEquipment": [
+      {
+        "kind": "choice",
+        "options": [
+          {
+            "letter": "a",
+            "entries": [
+              {
+                "kind": "type",
+                "equipmentType": "weaponMartial",
+                "quantity": 1
+              },
+              {
+                "kind": "item",
+                "name": "shield",
+                "source": "PHB",
+                "quantity": 1
+              }
+            ]
+          },
+          {
+            "letter": "b",
+            "entries": [
+              {
+                "kind": "type",
+                "equipmentType": "weaponMartial",
+                "quantity": 2
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "kind": "choice",
+        "options": [
+          {
+            "letter": "a",
+            "entries": [
+              {
+                "kind": "item",
+                "name": "javelin",
+                "source": "PHB",
+                "quantity": 5
+              }
+            ]
+          },
+          {
+            "letter": "b",
+            "entries": [
+              {
+                "kind": "type",
+                "equipmentType": "weaponSimpleMelee",
+                "quantity": 1
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "kind": "choice",
+        "options": [
+          {
+            "letter": "a",
+            "entries": [
+              {
+                "kind": "item",
+                "name": "priest's pack",
+                "source": "PHB",
+                "quantity": 1
+              }
+            ]
+          },
+          {
+            "letter": "b",
+            "entries": [
+              {
+                "kind": "item",
+                "name": "explorer's pack",
+                "source": "PHB",
+                "quantity": 1
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "kind": "fixed",
+        "entries": [
+          {
+            "kind": "item",
+            "name": "chain mail",
+            "source": "PHB",
+            "quantity": 1
+          },
+          {
+            "kind": "type",
+            "equipmentType": "focusSpellcastingHoly",
+            "quantity": 1
+          }
+        ]
+      }
+    ],
     "features": [
       {
         "name": "Divine Sense",
@@ -8309,6 +9195,105 @@
       "ability": "Wisdom",
       "progression": "1/2"
     },
+    "startingEquipment": [
+      {
+        "kind": "choice",
+        "options": [
+          {
+            "letter": "a",
+            "entries": [
+              {
+                "kind": "item",
+                "name": "scale mail",
+                "source": "PHB",
+                "quantity": 1
+              }
+            ]
+          },
+          {
+            "letter": "b",
+            "entries": [
+              {
+                "kind": "item",
+                "name": "leather armor",
+                "source": "PHB",
+                "quantity": 1
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "kind": "choice",
+        "options": [
+          {
+            "letter": "a",
+            "entries": [
+              {
+                "kind": "item",
+                "name": "shortsword",
+                "source": "PHB",
+                "quantity": 2
+              }
+            ]
+          },
+          {
+            "letter": "b",
+            "entries": [
+              {
+                "kind": "type",
+                "equipmentType": "weaponSimpleMelee",
+                "quantity": 2
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "kind": "choice",
+        "options": [
+          {
+            "letter": "a",
+            "entries": [
+              {
+                "kind": "item",
+                "name": "dungeoneer's pack",
+                "source": "PHB",
+                "quantity": 1
+              }
+            ]
+          },
+          {
+            "letter": "b",
+            "entries": [
+              {
+                "kind": "item",
+                "name": "explorer's pack",
+                "source": "PHB",
+                "quantity": 1
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "kind": "fixed",
+        "entries": [
+          {
+            "kind": "item",
+            "name": "longbow",
+            "source": "PHB",
+            "quantity": 1
+          },
+          {
+            "kind": "item",
+            "name": "arrows (20)",
+            "source": "PHB",
+            "quantity": 1
+          }
+        ]
+      }
+    ],
     "features": [
       {
         "name": "Deft Explorer",
@@ -9188,6 +10173,129 @@
       ]
     },
     "spellcasting": null,
+    "startingEquipment": [
+      {
+        "kind": "choice",
+        "options": [
+          {
+            "letter": "a",
+            "entries": [
+              {
+                "kind": "item",
+                "name": "rapier",
+                "source": "PHB",
+                "quantity": 1
+              }
+            ]
+          },
+          {
+            "letter": "b",
+            "entries": [
+              {
+                "kind": "item",
+                "name": "shortsword",
+                "source": "PHB",
+                "quantity": 1
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "kind": "choice",
+        "options": [
+          {
+            "letter": "a",
+            "entries": [
+              {
+                "kind": "item",
+                "name": "shortbow",
+                "source": "PHB",
+                "quantity": 1
+              },
+              {
+                "kind": "item",
+                "name": "arrows (20)",
+                "source": "PHB",
+                "quantity": 1
+              }
+            ]
+          },
+          {
+            "letter": "b",
+            "entries": [
+              {
+                "kind": "item",
+                "name": "shortsword",
+                "source": "PHB",
+                "quantity": 1
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "kind": "choice",
+        "options": [
+          {
+            "letter": "a",
+            "entries": [
+              {
+                "kind": "item",
+                "name": "burglar's pack",
+                "source": "PHB",
+                "quantity": 1
+              }
+            ]
+          },
+          {
+            "letter": "b",
+            "entries": [
+              {
+                "kind": "item",
+                "name": "dungeoneer's pack",
+                "source": "PHB",
+                "quantity": 1
+              }
+            ]
+          },
+          {
+            "letter": "c",
+            "entries": [
+              {
+                "kind": "item",
+                "name": "explorer's pack",
+                "source": "PHB",
+                "quantity": 1
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "kind": "fixed",
+        "entries": [
+          {
+            "kind": "item",
+            "name": "leather armor",
+            "source": "PHB",
+            "quantity": 1
+          },
+          {
+            "kind": "item",
+            "name": "dagger",
+            "source": "PHB",
+            "quantity": 2
+          },
+          {
+            "kind": "item",
+            "name": "thieves' tools",
+            "source": "PHB",
+            "quantity": 1
+          }
+        ]
+      }
+    ],
     "features": [
       {
         "name": "Expertise",
@@ -10438,6 +11546,104 @@
       "ability": "Charisma",
       "progression": "full"
     },
+    "startingEquipment": [
+      {
+        "kind": "choice",
+        "options": [
+          {
+            "letter": "a",
+            "entries": [
+              {
+                "kind": "item",
+                "name": "light crossbow",
+                "source": "PHB",
+                "quantity": 1
+              },
+              {
+                "kind": "item",
+                "name": "crossbow bolts (20)",
+                "source": "PHB",
+                "quantity": 1
+              }
+            ]
+          },
+          {
+            "letter": "b",
+            "entries": [
+              {
+                "kind": "type",
+                "equipmentType": "weaponSimple",
+                "quantity": 1
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "kind": "choice",
+        "options": [
+          {
+            "letter": "a",
+            "entries": [
+              {
+                "kind": "item",
+                "name": "component pouch",
+                "source": "PHB",
+                "quantity": 1
+              }
+            ]
+          },
+          {
+            "letter": "b",
+            "entries": [
+              {
+                "kind": "type",
+                "equipmentType": "focusSpellcastingArcane",
+                "quantity": 1
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "kind": "choice",
+        "options": [
+          {
+            "letter": "a",
+            "entries": [
+              {
+                "kind": "item",
+                "name": "dungeoneer's pack",
+                "source": "PHB",
+                "quantity": 1
+              }
+            ]
+          },
+          {
+            "letter": "b",
+            "entries": [
+              {
+                "kind": "item",
+                "name": "explorer's pack",
+                "source": "PHB",
+                "quantity": 1
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "kind": "fixed",
+        "entries": [
+          {
+            "kind": "item",
+            "name": "dagger",
+            "source": "PHB",
+            "quantity": 2
+          }
+        ]
+      }
+    ],
     "features": [
       {
         "name": "Sorcerous Origin",
@@ -11383,6 +12589,115 @@
       "ability": "Charisma",
       "progression": "pact"
     },
+    "startingEquipment": [
+      {
+        "kind": "choice",
+        "options": [
+          {
+            "letter": "a",
+            "entries": [
+              {
+                "kind": "item",
+                "name": "light crossbow",
+                "source": "PHB",
+                "quantity": 1
+              },
+              {
+                "kind": "item",
+                "name": "crossbow bolts (20)",
+                "source": "PHB",
+                "quantity": 1
+              }
+            ]
+          },
+          {
+            "letter": "b",
+            "entries": [
+              {
+                "kind": "type",
+                "equipmentType": "weaponSimple",
+                "quantity": 1
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "kind": "choice",
+        "options": [
+          {
+            "letter": "a",
+            "entries": [
+              {
+                "kind": "item",
+                "name": "component pouch",
+                "source": "PHB",
+                "quantity": 1
+              }
+            ]
+          },
+          {
+            "letter": "b",
+            "entries": [
+              {
+                "kind": "type",
+                "equipmentType": "focusSpellcastingArcane",
+                "quantity": 1
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "kind": "choice",
+        "options": [
+          {
+            "letter": "a",
+            "entries": [
+              {
+                "kind": "item",
+                "name": "scholar's pack",
+                "source": "PHB",
+                "quantity": 1
+              }
+            ]
+          },
+          {
+            "letter": "b",
+            "entries": [
+              {
+                "kind": "item",
+                "name": "dungeoneer's pack",
+                "source": "PHB",
+                "quantity": 1
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "kind": "fixed",
+        "entries": [
+          {
+            "kind": "item",
+            "name": "leather armor",
+            "source": "PHB",
+            "quantity": 1
+          },
+          {
+            "kind": "type",
+            "equipmentType": "weaponSimple",
+            "quantity": 1
+          },
+          {
+            "kind": "item",
+            "name": "dagger",
+            "source": "PHB",
+            "quantity": 2
+          }
+        ]
+      }
+    ],
     "features": [
       {
         "name": "Otherworldly Patron",
@@ -12261,6 +13576,99 @@
       "progression": "full",
       "preparedSpells": "<$level$> + <$int_mod$>"
     },
+    "startingEquipment": [
+      {
+        "kind": "choice",
+        "options": [
+          {
+            "letter": "a",
+            "entries": [
+              {
+                "kind": "item",
+                "name": "quarterstaff",
+                "source": "PHB",
+                "quantity": 1
+              }
+            ]
+          },
+          {
+            "letter": "b",
+            "entries": [
+              {
+                "kind": "item",
+                "name": "dagger",
+                "source": "PHB",
+                "quantity": 1
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "kind": "choice",
+        "options": [
+          {
+            "letter": "a",
+            "entries": [
+              {
+                "kind": "item",
+                "name": "component pouch",
+                "source": "PHB",
+                "quantity": 1
+              }
+            ]
+          },
+          {
+            "letter": "b",
+            "entries": [
+              {
+                "kind": "type",
+                "equipmentType": "focusSpellcastingArcane",
+                "quantity": 1
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "kind": "choice",
+        "options": [
+          {
+            "letter": "a",
+            "entries": [
+              {
+                "kind": "item",
+                "name": "scholar's pack",
+                "source": "PHB",
+                "quantity": 1
+              }
+            ]
+          },
+          {
+            "letter": "b",
+            "entries": [
+              {
+                "kind": "item",
+                "name": "explorer's pack",
+                "source": "PHB",
+                "quantity": 1
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "kind": "fixed",
+        "entries": [
+          {
+            "kind": "item",
+            "name": "spellbook",
+            "source": "PHB",
+            "quantity": 1
+          }
+        ]
+      }
+    ],
     "features": [
       {
         "name": "Arcane Recovery",

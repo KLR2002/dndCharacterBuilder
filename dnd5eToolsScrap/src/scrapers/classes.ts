@@ -8,6 +8,11 @@ import {
   startingToolGrants,
   type GrantSubject,
 } from "../parser/proficiency-grants.ts";
+import {
+  newStartingEquipmentReport,
+  parseStartingEquipment,
+  type StartingEquipmentReport,
+} from "../parser/starting-equipment.ts";
 import { PROFICIENCY_GRANT_OVERRIDES } from "../overrides/proficiency-grants.ts";
 import type {
   ChoiceOption,
@@ -179,7 +184,8 @@ function optionGrantSubjects(
 
 export async function scrapeClasses(
   client: ToolsClient,
-  report: ProficiencyReport = newProficiencyReport()
+  report: ProficiencyReport = newProficiencyReport(),
+  equipmentReport: StartingEquipmentReport = newStartingEquipmentReport()
 ): Promise<ClassModel[]> {
   console.log("  → Fetching class index from data/class/index.json...");
   const classIndex = await client.fetchJson<Record<string, string>>("data/class/index.json");
@@ -257,6 +263,12 @@ export async function scrapeClasses(
             preparedSpells: raw.preparedSpells ? cleanTags(raw.preparedSpells, "plain") : undefined,
           }
         : null;
+
+      // Starting equipment slots. An unrecognised entry or slot is kept in place and reported, not dropped.
+      const startingEquipment = parseStartingEquipment(raw.startingEquipment);
+      for (const message of startingEquipment.unrecognised) {
+        equipmentReport.unrecognised.push({ owner: raw.name, message });
+      }
 
       // Class Features (Level 1-20)
       const features: ClassFeatureModel[] = [];
@@ -379,6 +391,7 @@ export async function scrapeClasses(
         toolProficiencies,
         skillProficiencies,
         spellcasting,
+        ...(startingEquipment.slots.length > 0 ? { startingEquipment: startingEquipment.slots } : {}),
         features,
         subclasses,
         ...(starting.grants.length > 0 ? { grants: starting.grants } : {}),

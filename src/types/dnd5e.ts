@@ -1,4 +1,5 @@
 import type { ProficiencyGrant } from "../../dnd5eToolsScrap/src/types/proficiency.ts";
+import type { StartingEquipmentSlot } from "../../dnd5eToolsScrap/src/types/startingEquipment.ts";
 
 export type {
   GrantRequirement,
@@ -7,6 +8,15 @@ export type {
   ProficiencyGrantSpec,
   ProficiencyPool,
 } from "../../dnd5eToolsScrap/src/types/proficiency.ts";
+
+export type {
+  StartingEquipmentEntry,
+  StartingEquipmentItem,
+  StartingEquipmentOption,
+  StartingEquipmentSlot,
+  StartingEquipmentType,
+  StartingEquipmentUnrecognised,
+} from "../../dnd5eToolsScrap/src/types/startingEquipment.ts";
 
 export interface TraitChoiceData {
   /** How many options the player must pick. */
@@ -138,6 +148,8 @@ export interface ClassData {
     progression: string;
     preparedSpells?: string;
   } | null;
+  /** The starting equipment slots, in printed order. Absent for a class whose record carries none. */
+  startingEquipment?: StartingEquipmentSlot[];
   features: ClassFeatureData[];
   subclasses: SubclassData[];
   /** Proficiency Grants from the class's starting proficiencies. */
