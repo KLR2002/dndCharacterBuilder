@@ -10,7 +10,7 @@ How to start the Expo web build, seed a character and a catalog into the browser
 ## Start the web build
 
 - Start Expo through the script, never by hand. `spawnExpoWeb({ root, port, logPath })` runs `npx expo start --web --port <port> --clear` with `CI=1` and `EXPO_NO_TELEMETRY=1`, detached in its own process group. `waitForExpoWeb(child, base, waitMs)` resolves `"up"` once `base` answers 200. `stopExpoWeb(child)` sends SIGTERM and then SIGKILL to the group.
-- Or run `npm run layout:check`, which starts and stops its own server on `BASE`.
+- Or run `npm run layout:check`, which starts and stops its own server on `BASE`. `WIDTHS` (comma-separated, default `393,360,320,412`) picks the widths, which run at the same time, and `ONLY` (comma-separated substrings, ignoring case) visits only the scenarios whose name contains one of them.
 - Give each run its own port and its own screenshot folder (`BASE` and `SHOTS` for layout-check). Layout-check uses a server that already answers at `BASE`, and that server may be stale, so pick a free port.
 - Stop what you started. Do not `pkill -f` with a pattern that appears in your own command line.
 
