@@ -7,6 +7,7 @@ import {
   resolveStartingEquipment,
   setStartingEquipmentItems,
   setStartingEquipmentOption,
+  startingEquipmentCard,
   startingEquipmentOffers,
   startingEquipmentPool,
   type StartingEquipmentAddress,
@@ -377,4 +378,77 @@ test("the SRD Baseline focus types each offer only their kind's focus items, and
 
   const all = [...arcane, ...holy, ...druidic];
   assert.equal(new Set(all).size, all.length, "no focus item serves two kinds");
+});
+
+test("the card lists a fixed slot's entries, and each choice slot's offered options only", () => {
+  const card = startingEquipmentCard(ferry(), catalogs);
+  assert.equal(card.hasSlots, true);
+  assert.equal(card.complete, false);
+  assert.deepEqual(
+    card.slots.map((slot) => {
+      if (slot.kind === "choice") return ["choice", slot.slot, slot.options.map((o) => o.letter)];
+      if (slot.kind === "unrecognised") return ["unrecognised", slot.slot];
+      const names = slot.entries.map((e) => (e.kind === "item" ? e.name : e.kind === "type" ? e.equipmentType : "?"));
+      return ["fixed", slot.slot, names];
+    }),
+    [
+      ["choice", 0, ["a"]],
+      ["choice", 1, ["a", "b"]],
+      ["fixed", 2, ["weaponSimple", "Tidestone"]],
+      ["choice", 3, ["b"]],
+    ],
+    "the martial option of slot 0 and the heavy armor of slot 3 are not shown",
+  );
+});
+
+test("the card marks the picked option and gives each generic entry its picks and its pool", () => {
+  let c = setStartingEquipmentOption(ferry(), 1, "b", catalogs);
+  c = setStartingEquipmentItems(c, { slot: 1, option: "b", entry: 1 }, ["Brass Fiddle"], catalogs);
+  const card = startingEquipmentCard(c, catalogs);
+
+  const slot1 = card.slots[1];
+  assert.equal(slot1.kind, "choice");
+  if (slot1.kind !== "choice") return;
+  assert.deepEqual(slot1.options.map((o) => [o.letter, o.chosen]), [["a", false], ["b", true]]);
+  const generic = slot1.options[1].entries[1];
+  assert.equal(generic.kind, "type");
+  if (generic.kind !== "type") return;
+  assert.deepEqual([generic.quantity, generic.picks, generic.pool], [1, ["Brass Fiddle"], ["Brass Fiddle"]]);
+
+  const fixedEntry = card.slots[2];
+  assert.equal(fixedEntry.kind, "fixed");
+  if (fixedEntry.kind !== "fixed") return;
+  const simple = fixedEntry.entries[0];
+  assert.equal(simple.kind, "type");
+  if (simple.kind !== "type") return;
+  assert.deepEqual([simple.quantity, simple.picks, simple.pool], [2, [], ["Hand Sling", "Quill Knife"]]);
+});
+
+test("the card's complete flag is the claim's: true only when every slot and quantity is picked", () => {
+  assert.equal(startingEquipmentCard(pickedFerry(), catalogs).complete, true);
+  assert.equal(startingEquipmentCard(pickedFerry(ferry(), "a", ["Quill Knife"]), catalogs).complete, false);
+  assert.equal(startingEquipmentCard(ferry(), catalogs).complete, false);
+});
+
+test("the card of a class with no slots has no slots and is never complete", () => {
+  const card = startingEquipmentCard(makeChar({ classes: [{ className: "Drifter", source: SRC, level: 1 }] }), catalogs);
+  assert.deepEqual(card, { hasSlots: false, complete: false, slots: [] });
+});
+
+test("the SRD Baseline Fighter card offers the two-name martial slot as one generic entry of quantity 2", () => {
+  const srd = srdBaselineCompendium();
+  const srdCatalogs = { compendium: srd };
+  const fighter = srd.for().classes().find((c) => c.name === "Fighter");
+  if (!fighter) throw new Error("the Fighter is missing from the SRD Baseline");
+  const card = startingEquipmentCard(makeChar({ classes: [{ className: "Fighter", source: fighter.source, level: 1 }] }), srdCatalogs);
+  assert.equal(card.slots.length, 4);
+  const slot1 = card.slots[1];
+  assert.equal(slot1.kind, "choice");
+  if (slot1.kind !== "choice") return;
+  const option = slot1.options.find((o) => o.letter === "b");
+  const entry = option?.entries[0];
+  assert.equal(entry?.kind, "type");
+  if (entry?.kind !== "type") return;
+  assert.equal(entry.quantity, 2, "two pickers for quantity 2");
+  assert.ok(entry.pool.includes("Longsword"));
 });
