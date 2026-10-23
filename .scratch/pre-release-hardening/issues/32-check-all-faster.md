@@ -7,7 +7,9 @@
 
 **Blocked by:** None
 
-**Status:** ready-for-agent
+**Status:** done
+
+**Landed:** merged from `pr/32-check-all-faster` (772fe7c, e0fe465, ea20ef5). `check:all` now runs lint, typecheck, ratchet, then tests: a deliberate lint error fails in 2.3 s instead of 27 s. The four sweep files compute their sweep once (a memoised `sweep()`), and the Kensei file builds one Compendium; median app-test time 21.9 s to 16.0 s, `check:all` 27.4 s to 21.7 s (the main session measured 19.8 to 24.9 s on the merged tip). Test names, assertions and baseline files are unchanged: a changed baseline value still fails the same eight tests with the same messages, and the recorder variables write byte-identical fixtures (the weapons recorder changes its fixture by design and was restored). Open items: the first test of each sweep pair still takes 1 to 1.5 s; "class and subclass Rule Choices match the recorded baseline" (0.43 s) and "the baseline exercises every subclass choice family" (0.36 s) are next; many integration tests build an integrated Compendium per test (60 to 70 ms each), and a shared fixture could save more.
 
 ## Design notes
 
