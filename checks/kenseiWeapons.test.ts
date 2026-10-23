@@ -52,8 +52,10 @@ const fighterMonk = (monkLevel: number, extra: Partial<Character> = {}) =>
     ...extra,
   });
 
+/** Built once for every offer lookup: building a Compendium costs most of a lookup. */
+const kenseiCompendium = integratedTestCompendium();
 const kenseiOffers = (character: Character): AvailableRuleChoice[] =>
-  proficiencyChoiceOffers(character, { compendium: integratedTestCompendium() }).filter((offer) =>
+  proficiencyChoiceOffers(character, { compendium: kenseiCompendium }).filter((offer) =>
     offer.id.startsWith("XGE/Monk/Way of the Kensei/"),
   );
 
