@@ -8,6 +8,8 @@
 
 ## Design notes
 
+- The rules API is in ticket 28's Landed note (`src/rules/startingEquipment.ts`): read the slots from the class data (`allCatalogClasses` in `src/rules/catalogs.ts`, as `heldClassData` does; export a small reader from the rules module if the component needs the first class's slots), the offered option letters from `startingEquipmentOffers`, the pool of a generic entry from `startingEquipmentPool`, the current picks from `character.startingEquipmentPicks`, completeness from `resolveStartingEquipment(...).complete`. Write picks with `setStartingEquipmentOption` and `setStartingEquipmentItems` through the Builder's `onUpdate` pattern. Today `StartingGrantsSection` shows a text saying to choose an option and a disabled button: replace that with the real controls.
+
 - Edit `src/components/builder/StartingGrantsSection.tsx` (and the handlers in `src/components/tabs/BuilderTab.tsx`, `ClassProgressionSection.tsx` prop passing). Replace the "Standard equipment pack" badge preview. Pickers can reuse an existing searchable chooser if the Builder has one (for example the `BackgroundSection.tsx` chips/search or a shared `ui/` component); otherwise a plain list with a search field for lists longer than about 12 items. Do not create a new design language.
 - UI copy carries essential mechanics only (`CODING_STANDARDS.md` section 8): option labels are the item names with quantities; no explanatory paragraphs. Obey section 7: option rows and item lists wrap at 320 px, no horizontal overflow; touch targets as elsewhere.
 - Picks write through the same `onUpdate` pattern as the other builder choices, using ticket 28's functions; nothing computes inventory in the component.
