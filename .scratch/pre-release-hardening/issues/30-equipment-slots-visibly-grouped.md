@@ -4,7 +4,9 @@
 
 **Blocked by:** None
 
-**Status:** ready-for-agent
+**Status:** done
+
+**Landed:** merged from `pr/30-equipment-slot-groups` (b820b5b, 79304b8, fd448be, 05a3fc2, 5b070bf). `check:all` passes on the merged tip (1193 app tests, 7 skipped, 178 scraper tests, 322 known type errors none new); both layout runs green on the branch (a full run takes about 8 minutes). Each choice slot is a bordered, slightly raised box with a `Choice N of M` header and a check once complete; options are separated by a hairline `or`; fixed items sit in an `Included` box; the gap between boxes is larger than the one inside. Two layout fixes found in the screenshots: a picker's chosen name broke mid-word at 320 px, and a 1 px sideways overflow. I viewed the Fighter picker-open and the Life Domain Cleric at 320 px. Open items: the 360, 393 and 412 px screenshots were not viewed; a slot with a single offered option (a Cleric's mace) still shows as a one-option choice; no device check.
 
 ## Design notes
 
