@@ -167,7 +167,6 @@ const TypePicker: React.FC<TypePickerProps> = ({ entry, onPick, theme }) => {
               onPress={() => setOpenIndex(open ? null : index)}
               style={{
                 flexDirection: "row",
-                flexWrap: "wrap",
                 alignItems: "center",
                 justifyContent: "space-between",
                 gap: 8,
