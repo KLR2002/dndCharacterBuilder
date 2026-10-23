@@ -235,8 +235,7 @@ const TypePicker: React.FC<TypePickerProps> = ({ entry, onPick, theme }) => {
                     color: current ? theme.accent : theme.textMuted,
                     fontSize: 13,
                     fontWeight: "700",
-                    flexShrink: 1,
-                    minWidth: 0,
+                    flexShrink: 0,
                   }}
                 >
                   {current ?? "Choose"}
