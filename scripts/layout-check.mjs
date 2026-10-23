@@ -11,9 +11,11 @@
 // needs `npx playwright install chromium` once.
 //
 // Fails (one line per violation) on squeezed text and on elements that stick out of a non-scrolling
-// parent. Env: BASE (default http://localhost:8099), WIDTHS (default "393,360,320,412"), SHOTS
-// (screenshot dir, default a layout-check folder under the OS temp dir). Exit: 0 green, 1 violations,
-// 2 no browser or no server (the server log path is printed then).
+// parent. Env: BASE (default http://localhost:8099), WIDTHS (default "393,360,320,412"), ONLY (a comma-separated
+// list of substrings: only the scenarios whose name contains one of them, ignoring case, are visited in every
+// width; unset visits all), SHOTS (screenshot dir, default a layout-check folder under the OS temp dir). Exit:
+// 0 green, 1 violations, 2 no browser or no server (the server log path is printed then), or an ONLY term that
+// matches no scenario (the scenario names are printed then).
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -36,6 +38,8 @@ const BASE = process.env.BASE ?? "http://localhost:8099";
 const PORT = new URL(BASE).port || "8099";
 const SHOTS = process.env.SHOTS ?? join(tmpdir(), "layout-check");
 const WIDTHS = (process.env.WIDTHS ?? "393,360,320,412").split(",").map(Number);
+// Lowercase substrings from ONLY. Empty when ONLY is unset or blank, which visits every scenario.
+const ONLY = (process.env.ONLY ?? "").split(",").map((term) => term.trim().toLowerCase()).filter(Boolean);
 const INTEGRATED = process.argv.includes("--integrated") || process.env.LAYOUT_INTEGRATED === "1";
 const SERVER_WAIT_MS = 180_000;
 
@@ -826,12 +830,12 @@ async function visitScreen(page, width, screen, state) {
   return violations.length;
 }
 
-// Visits every screen in SCREENS on one width's context.
+// Visits the screens in SCREENS that ONLY selects, on one width's context.
 async function checkScreens(ctx, width) {
   const page = await ctx.newPage();
   const state = { route: null };
   let failures = 0;
-  for (const screen of SCREENS) failures += await visitScreen(page, width, screen, state);
+  for (const screen of SCREENS) if (selected(screen.name)) failures += await visitScreen(page, width, screen, state);
   await page.close();
   return failures;
 }
@@ -878,6 +882,29 @@ async function checkHitPointModals(ctx, width) {
   return failures;
 }
 
+// The checks that open their own page rather than a SCREENS entry. Each is a scenario, so ONLY selects it by name.
+const EXTRA_CHECKS = [
+  { name: "HP modals", run: checkHitPointModals },
+  { name: "Wild Shape Stats", run: checkWildShapeScreen },
+  { name: "Wild Shape Features", run: checkWildShapeFeatures },
+];
+
+// Every scenario name of this run: the SCREENS entries of the active catalog, then the extra checks.
+function scenarioNames() {
+  return [...SCREENS.map((screen) => screen.name), ...EXTRA_CHECKS.map((check) => check.name)];
+}
+
+// Whether ONLY visits the scenario `name` (every scenario when ONLY is empty).
+function selected(name) {
+  return ONLY.length === 0 || ONLY.some((term) => name.toLowerCase().includes(term));
+}
+
+// The ONLY terms that no scenario name contains. Such a term is a typo, so it fails the run instead of visiting nothing.
+function unmatchedOnlyTerms() {
+  const names = scenarioNames().map((name) => name.toLowerCase());
+  return ONLY.filter((term) => !names.some((name) => name.includes(term)));
+}
+
 // Runs every check at every width. Returns the number of violations.
 async function runChecks(browser) {
   const seed = buildSeed();
@@ -886,9 +913,7 @@ async function runChecks(browser) {
     const ctx = await browser.newContext({ viewport: { width, height: 851 }, deviceScaleFactor: 2, hasTouch: true, isMobile: true });
     await ctx.addInitScript(seedBrowser, seed);
     failures += await checkScreens(ctx, width);
-    failures += await checkHitPointModals(ctx, width);
-    failures += await checkWildShapeScreen(ctx, width);
-    failures += await checkWildShapeFeatures(ctx, width);
+    for (const check of EXTRA_CHECKS) if (selected(check.name)) failures += await check.run(ctx, width);
     await ctx.close();
   }
   return failures;
@@ -904,6 +929,11 @@ async function shutdown(code) {
 }
 
 async function main() {
+  const unmatched = unmatchedOnlyTerms();
+  if (unmatched.length > 0) {
+    console.error(`ONLY matches no scenario: ${unmatched.map((term) => `"${term}"`).join(", ")}. Scenarios in this run: ${scenarioNames().join(", ")}`);
+    return 2;
+  }
   fs.mkdirSync(SHOTS, { recursive: true });
   try {
     browser = await chromium.launch();
