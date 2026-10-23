@@ -905,18 +905,24 @@ function unmatchedOnlyTerms() {
   return ONLY.filter((term) => !names.some((name) => name.includes(term)));
 }
 
-// Runs every check at every width. Returns the number of violations.
-async function runChecks(browser) {
-  const seed = buildSeed();
-  let failures = 0;
-  for (const width of WIDTHS) {
-    const ctx = await browser.newContext({ viewport: { width, height: 851 }, deviceScaleFactor: 2, hasTouch: true, isMobile: true });
+// Runs every check at one width, on that width's own browser context. Returns the number of violations.
+async function checkWidth(browser, seed, width) {
+  const ctx = await browser.newContext({ viewport: { width, height: 851 }, deviceScaleFactor: 2, hasTouch: true, isMobile: true });
+  try {
     await ctx.addInitScript(seedBrowser, seed);
-    failures += await checkScreens(ctx, width);
+    let failures = await checkScreens(ctx, width);
     for (const check of EXTRA_CHECKS) if (selected(check.name)) failures += await check.run(ctx, width);
+    return failures;
+  } finally {
     await ctx.close();
   }
-  return failures;
+}
+
+// Runs every check at every width, the widths at the same time. Returns the number of violations.
+async function runChecks(browser) {
+  const seed = buildSeed();
+  const counts = await Promise.all(WIDTHS.map((width) => checkWidth(browser, seed, width)));
+  return counts.reduce((total, count) => total + count, 0);
 }
 
 let browser = null;
