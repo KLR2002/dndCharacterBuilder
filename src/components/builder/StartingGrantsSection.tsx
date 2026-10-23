@@ -41,10 +41,14 @@ export const StartingGrantsSection: React.FC<StartingGrantsSectionProps> = ({
   if (!hasAnyClass) return null;
 
   const claimed = character.startingGrantsApplied === true;
+  // A class with no equipment slots takes gold only: no Equipment option is shown.
+  const equipmentOffered = startingCard.hasSlots;
+  const goldChosen = !equipmentOffered || character.startingOption === "gold";
   // Equipment cannot be claimed or switched to until every slot is picked; the claim returns the character unchanged then.
   const equipmentBlocked = !startingCard.complete;
   // The picks stay visible while equipment is the chosen option, and after any claim so they can be changed.
-  const showChoices = startingCard.hasSlots && (character.startingOption === "equipment" || claimed);
+  const showChoices = equipmentOffered && (character.startingOption === "equipment" || claimed);
+  const options = equipmentOffered ? (["equipment", "gold"] as const) : (["gold"] as const);
 
   return (
     <Card style={{ gap: 10 }}>
@@ -54,15 +58,15 @@ export const StartingGrantsSection: React.FC<StartingGrantsSectionProps> = ({
       </View>
 
       <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 10 }}>
-        {(["equipment", "gold"] as const).map((opt) => {
-          const active = character.startingOption === opt;
+        {options.map((opt) => {
+          const active = opt === "gold" ? goldChosen : character.startingOption === "equipment";
           const blocked = opt === "equipment" && claimed && equipmentBlocked;
           return (
             <TouchableOpacity
               key={opt}
               disabled={blocked}
               onPress={() => {
-                if (character.startingOption !== opt) {
+                if (!active) {
                   if (character.startingGrantsApplied) {
                     if (opt === "gold") onClaimGold();
                     else onClaimEquipment();
@@ -143,7 +147,7 @@ export const StartingGrantsSection: React.FC<StartingGrantsSectionProps> = ({
         </View>
       ) : null}
 
-      {!claimed && character.startingOption === "gold" ? (
+      {!claimed && goldChosen ? (
         <View style={{ gap: 8 }}>
           <Text style={{ color: theme.textSecondary, fontSize: 12 }}>
             Average starting gold for {primaryClass || "Class"}:{" "}
@@ -164,17 +168,11 @@ export const StartingGrantsSection: React.FC<StartingGrantsSectionProps> = ({
         </View>
       ) : null}
 
-      {!startingCard.hasSlots && character.startingOption === "equipment" ? (
-        <Text style={{ color: theme.textSecondary, fontSize: 12 }}>
-          {primaryClass || "This class"} has no starting equipment to claim.
-        </Text>
-      ) : null}
-
       {showChoices ? (
         <StartingEquipmentChoices card={startingCard} onPickOption={onPickOption} onPickItems={onPickItems} theme={theme} />
       ) : null}
 
-      {!claimed && character.startingOption === "equipment" && startingCard.hasSlots ? (
+      {!claimed && equipmentOffered && character.startingOption === "equipment" ? (
         <View style={{ gap: 8 }}>
           {equipmentBlocked ? (
             <Text style={{ color: theme.textSecondary, fontSize: 12 }}>
