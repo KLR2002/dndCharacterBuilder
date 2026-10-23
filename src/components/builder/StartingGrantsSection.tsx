@@ -3,17 +3,20 @@ import { Text, TouchableOpacity, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { Character } from "../../types/character";
 import { STARTING_GOLD_BY_CLASS } from "../../rules/builderTransitions";
-import type { StartingEquipmentKit } from "../../rules/startingEquipment";
+import type { StartingEquipmentAddress, StartingEquipmentCard } from "../../rules/startingEquipment";
 import { Badge } from "../ui/Badge";
 import { Button } from "../ui/Button";
 import { Card } from "../ui/Card";
 import { builderStyles as styles } from "./builderStyles";
+import { StartingEquipmentChoices } from "./StartingEquipmentChoices";
 import { useResponsiveLayout } from "../../hooks/useResponsiveLayout";
 
 export interface StartingGrantsSectionProps {
   character: Character;
   primaryClass?: string;
-  startingKit: StartingEquipmentKit;
+  startingCard: StartingEquipmentCard;
+  onPickOption: (slot: number, letter: string) => void;
+  onPickItems: (address: StartingEquipmentAddress, names: string[]) => void;
   onClaimGold: () => void;
   onClaimEquipment: () => void;
   onClaimAgain: () => void;
@@ -24,7 +27,9 @@ export interface StartingGrantsSectionProps {
 export const StartingGrantsSection: React.FC<StartingGrantsSectionProps> = ({
   character,
   primaryClass,
-  startingKit,
+  startingCard,
+  onPickOption,
+  onPickItems,
   onClaimGold,
   onClaimEquipment,
   onClaimAgain,
@@ -35,6 +40,16 @@ export const StartingGrantsSection: React.FC<StartingGrantsSectionProps> = ({
   const hasAnyClass = (character.classes || []).length > 0;
   if (!hasAnyClass) return null;
 
+  const claimed = character.startingGrantsApplied === true;
+  // A class with no equipment slots takes gold only: no Equipment option is shown.
+  const equipmentOffered = startingCard.hasSlots;
+  const goldChosen = !equipmentOffered || character.startingOption === "gold";
+  // Equipment cannot be claimed or switched to until every slot is picked; the claim returns the character unchanged then.
+  const equipmentBlocked = !startingCard.complete;
+  // The picks stay visible while equipment is the chosen option, and after any claim so they can be changed.
+  const showChoices = equipmentOffered && (character.startingOption === "equipment" || claimed);
+  const options = equipmentOffered ? (["equipment", "gold"] as const) : (["gold"] as const);
+
   return (
     <Card style={{ gap: 10 }}>
       <View style={{ flexDirection: "row", flexWrap: "wrap", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
@@ -43,13 +58,15 @@ export const StartingGrantsSection: React.FC<StartingGrantsSectionProps> = ({
       </View>
 
       <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 10 }}>
-        {(["equipment", "gold"] as const).map((opt) => {
-          const active = character.startingOption === opt;
+        {options.map((opt) => {
+          const active = opt === "gold" ? goldChosen : character.startingOption === "equipment";
+          const blocked = opt === "equipment" && claimed && equipmentBlocked;
           return (
             <TouchableOpacity
               key={opt}
+              disabled={blocked}
               onPress={() => {
-                if (character.startingOption !== opt) {
+                if (!active) {
                   if (character.startingGrantsApplied) {
                     if (opt === "gold") onClaimGold();
                     else onClaimEquipment();
@@ -63,6 +80,7 @@ export const StartingGrantsSection: React.FC<StartingGrantsSectionProps> = ({
                 {
                   backgroundColor: active ? theme.accentGlow : theme.surface,
                   borderColor: active ? theme.accent : theme.border,
+                  opacity: blocked ? 0.4 : 1,
                 },
               ]}
             >
@@ -82,7 +100,7 @@ export const StartingGrantsSection: React.FC<StartingGrantsSectionProps> = ({
         })}
       </View>
 
-      {character.startingGrantsApplied ? (
+      {claimed ? (
         <View
           style={{
             flexDirection: "row",
@@ -112,6 +130,7 @@ export const StartingGrantsSection: React.FC<StartingGrantsSectionProps> = ({
               title={character.startingOption === "gold" ? "Switch to Equipment" : "Switch to Gold"}
               variant="outline"
               size="sm"
+              disabled={character.startingOption === "gold" && equipmentBlocked}
               onPress={() => {
                 if (character.startingOption === "gold") onClaimEquipment();
                 else onClaimGold();
@@ -121,73 +140,58 @@ export const StartingGrantsSection: React.FC<StartingGrantsSectionProps> = ({
               title={`Claim ${character.startingOption === "gold" ? "Gold" : "Equipment"} again`}
               variant="outline"
               size="sm"
+              disabled={character.startingOption === "equipment" && equipmentBlocked}
               onPress={onClaimAgain}
             />
           </View>
         </View>
-      ) : (
-        <>
-          {character.startingOption === "gold" ? (
-            <View style={{ gap: 8 }}>
-              <Text style={{ color: theme.textSecondary, fontSize: 12 }}>
-                Average starting gold for {primaryClass || "Class"}:{" "}
-                <Text style={{ color: theme.accent, fontWeight: "700" }}>
-                  {STARTING_GOLD_BY_CLASS[primaryClass || "Fighter"] ?? 100} gp
-                </Text>
-              </Text>
-              <View style={{ flexDirection: isCompact ? "column" : "row" }}>
-                <Button
-                  title={`Claim Starting Gold (${STARTING_GOLD_BY_CLASS[primaryClass || "Fighter"] ?? 100} gp)`}
-                  variant="primary"
-                  size="sm"
-                  icon="cash-outline"
-                  onPress={onClaimGold}
-                  style={isCompact ? { width: "100%" } : undefined}
-                />
-              </View>
-            </View>
-          ) : (
-            <View style={{ gap: 8 }}>
-              {!startingKit.hasSlots ? (
-                <Text style={{ color: theme.textSecondary, fontSize: 12 }}>
-                  {primaryClass || "This class"} has no starting equipment to claim.
-                </Text>
-              ) : startingKit.complete ? (
-                <>
-                  <Text style={{ color: theme.textSecondary, fontSize: 12 }}>
-                    Starting equipment for {primaryClass || "Class"}:
-                  </Text>
-                  <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 4 }}>
-                    {startingKit.items.map((item) => (
-                      <Badge
-                        key={item.id}
-                        label={`${item.name}${item.quantity > 1 ? ` (×${item.quantity})` : ""}`}
-                        variant="surface"
-                        size="sm"
-                      />
-                    ))}
-                  </View>
-                </>
-              ) : (
-                <Text style={{ color: theme.textSecondary, fontSize: 12 }}>
-                  Choose one option for each equipment slot to claim it.
-                </Text>
-              )}
-              <View style={{ flexDirection: isCompact ? "column" : "row" }}>
-                <Button
-                  title="Claim Starting Equipment"
-                  variant="primary"
-                  size="sm"
-                  icon="bag-add-outline"
-                  disabled={!startingKit.complete}
-                  onPress={onClaimEquipment}
-                  style={isCompact ? { width: "100%" } : undefined}
-                />
-              </View>
-            </View>
-          )}
-        </>
-      )}
+      ) : null}
+
+      {!claimed && goldChosen ? (
+        <View style={{ gap: 8 }}>
+          <Text style={{ color: theme.textSecondary, fontSize: 12 }}>
+            Average starting gold for {primaryClass || "Class"}:{" "}
+            <Text style={{ color: theme.accent, fontWeight: "700" }}>
+              {STARTING_GOLD_BY_CLASS[primaryClass || "Fighter"] ?? 100} gp
+            </Text>
+          </Text>
+          <View style={{ flexDirection: isCompact ? "column" : "row" }}>
+            <Button
+              title={`Claim Starting Gold (${STARTING_GOLD_BY_CLASS[primaryClass || "Fighter"] ?? 100} gp)`}
+              variant="primary"
+              size="sm"
+              icon="cash-outline"
+              onPress={onClaimGold}
+              style={isCompact ? { width: "100%" } : undefined}
+            />
+          </View>
+        </View>
+      ) : null}
+
+      {showChoices ? (
+        <StartingEquipmentChoices card={startingCard} onPickOption={onPickOption} onPickItems={onPickItems} theme={theme} />
+      ) : null}
+
+      {!claimed && equipmentOffered && character.startingOption === "equipment" ? (
+        <View style={{ gap: 8 }}>
+          {equipmentBlocked ? (
+            <Text style={{ color: theme.textSecondary, fontSize: 12 }}>
+              Choose one option for each equipment slot to claim it.
+            </Text>
+          ) : null}
+          <View style={{ flexDirection: isCompact ? "column" : "row" }}>
+            <Button
+              title="Claim Starting Equipment"
+              variant="primary"
+              size="sm"
+              icon="bag-add-outline"
+              disabled={equipmentBlocked}
+              onPress={onClaimEquipment}
+              style={isCompact ? { width: "100%" } : undefined}
+            />
+          </View>
+        </View>
+      ) : null}
     </Card>
   );
 };

@@ -176,6 +176,87 @@ export function startingEquipmentPool(equipmentType: string, catalogs: Character
   return [...names.values()].sort((a, b) => a.localeCompare(b));
 }
 
+/** One entry of an option as the card shows it. A generic entry carries its address, its picks and the names it offers. */
+export type StartingEquipmentCardEntry =
+  | { kind: "item"; name: string; quantity: number }
+  | {
+      kind: "type";
+      address: StartingEquipmentAddress;
+      equipmentType: string;
+      quantity: number;
+      picks: string[];
+      pool: string[];
+    }
+  | { kind: "unrecognised" };
+
+/** An offered option of a choice slot: whether the character picked it, and the entries it grants. */
+export interface StartingEquipmentCardOption {
+  letter: string;
+  chosen: boolean;
+  entries: StartingEquipmentCardEntry[];
+}
+
+/** A slot as the card shows it. Only the options the character is offered are listed. */
+export type StartingEquipmentCardSlot =
+  | { kind: "fixed"; slot: number; entries: StartingEquipmentCardEntry[] }
+  | { kind: "choice"; slot: number; options: StartingEquipmentCardOption[] }
+  | { kind: "unrecognised"; slot: number };
+
+/** The first class's equipment slots with the character's picks, and whether the claim would grant a whole kit. */
+export interface StartingEquipmentCard {
+  hasSlots: boolean;
+  complete: boolean;
+  slots: StartingEquipmentCardSlot[];
+}
+
+/** The equipment card the Builder shows: every slot, the offered options flagged by the pick, and the pickers' state. */
+export function startingEquipmentCard(character: Character, catalogs: CharacterCatalogs = {}): StartingEquipmentCard {
+  const slots = slotsOf(character, catalogs);
+  const picks = picksOfFirstClass(character);
+  const offered = new Map(startingEquipmentOffers(character, catalogs).map((o) => [o.slot, new Set(o.options)]));
+
+  const cardEntries = (entries: StartingEquipmentEntry[], slot: number, option: string | null): StartingEquipmentCardEntry[] =>
+    entries.map((entry, entryIndex): StartingEquipmentCardEntry => {
+      if (entry.kind === "item") {
+        const record = catalogItem(entry.name, entry.source, catalogs);
+        return { kind: "item", name: record?.name ?? entry.name, quantity: entry.quantity };
+      }
+      if (entry.kind === "type") {
+        const address = { slot, option, entry: entryIndex };
+        return {
+          kind: "type",
+          address,
+          equipmentType: entry.equipmentType,
+          quantity: entry.quantity,
+          picks: picks?.items[startingEquipmentEntryKey(address)] ?? [],
+          pool: startingEquipmentPool(entry.equipmentType, catalogs),
+        };
+      }
+      return { kind: "unrecognised" };
+    });
+
+  return {
+    hasSlots: slots.length > 0,
+    complete: resolveStartingEquipment(character, catalogs).complete,
+    slots: slots.map((slot, index): StartingEquipmentCardSlot => {
+      if (slot.kind === "fixed") return { kind: "fixed", slot: index, entries: cardEntries(slot.entries, index, null) };
+      if (slot.kind === "unrecognised") return { kind: "unrecognised", slot: index };
+      const shown = offered.get(index) ?? new Set<string>();
+      return {
+        kind: "choice",
+        slot: index,
+        options: slot.options
+          .filter((o) => shown.has(o.letter))
+          .map((o) => ({
+            letter: o.letter,
+            chosen: picks?.options[String(index)] === o.letter,
+            entries: cardEntries(o.entries, index, o.letter),
+          })),
+      };
+    }),
+  };
+}
+
 function freshPicks(character: Character): StartingEquipmentPicks {
   const first = character.classes[0];
   return { className: first?.className ?? "", source: first?.source ?? "", options: {}, items: {} };

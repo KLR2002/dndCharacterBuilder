@@ -16,7 +16,12 @@ import {
   setStandardArrayPick,
   STARTING_GOLD_BY_CLASS,
 } from "../../rules/builderTransitions";
-import { resolveStartingEquipment } from "../../rules/startingEquipment";
+import {
+  setStartingEquipmentItems,
+  setStartingEquipmentOption,
+  startingEquipmentCard,
+  type StartingEquipmentAddress,
+} from "../../rules/startingEquipment";
 import { reconcile } from "../../rules/characterReconciler";
 import { proficiencyChoiceOffers } from "../../rules/proficiencyChoiceOffers";
 import { getPendingLevelChoices } from "../../rules/leveling";
@@ -147,8 +152,16 @@ export const BuilderTab: React.FC<BuilderTabProps> = ({
   // ─────────────────────────────────────────────────────────────────────────
   const startingGoldFor = (className: string) => STARTING_GOLD_BY_CLASS[className] ?? 100;
 
-  // The starting equipment the player's picks resolve to, shown on the claim card and claimed as it stands.
-  const startingKit = resolveStartingEquipment(character, catalogs);
+  // The equipment slots of the first class with the player's picks, shown on the claim card.
+  const startingCard = startingEquipmentCard(character, catalogs);
+
+  const handlePickOption = (slot: number, letter: string) => {
+    onUpdate((current) => setStartingEquipmentOption(current, slot, letter, catalogs));
+  };
+
+  const handlePickItems = (address: StartingEquipmentAddress, names: string[]) => {
+    onUpdate((current) => setStartingEquipmentItems(current, address, names, catalogs));
+  };
 
   const handleClaimGold = () => {
     if (!primaryClass) return;
@@ -384,7 +397,9 @@ export const BuilderTab: React.FC<BuilderTabProps> = ({
           availableOptionalFeatures={availableOptionalFeatures}
           pendingAsiSlots={pendingAsi}
           primaryClass={primaryClass}
-          startingKit={startingKit}
+          startingCard={startingCard}
+          onPickOption={handlePickOption}
+          onPickItems={handlePickItems}
           onClaimGold={handleClaimGold}
           onClaimEquipment={handleClaimEquipment}
           onClaimAgain={handleClaimAgain}

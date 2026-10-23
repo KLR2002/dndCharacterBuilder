@@ -271,6 +271,64 @@ function noBackgroundCharacter() {
   });
 }
 
+// Level 1 Fighters for the equipment card. The unpicked one has no picks, so Claim Starting Equipment is disabled. The
+// picked one has a pick in every slot (chain mail, a martial weapon and a shield, a light crossbow, a dungeoneer's pack),
+// so Claim is enabled, and its martial weapon picker is the one a screen opens.
+const FIGHTER_ID = "char_fighter";
+const FIGHTER_PICKED_ID = "char_fighterpicked";
+function fighterCharacter({ id, name, picked }) {
+  const classSource = catalogSource("classes", "Fighter");
+  return makeChar({
+    id,
+    name,
+    createdAt: 4,
+    updatedAt: 4,
+    race: { name: "Human", source: catalogSource("races", "Human") },
+    background: { name: "Acolyte", source: catalogSource("backgrounds", "Acolyte") },
+    startingOption: "equipment",
+    classes: [{ className: "Fighter", source: classSource, level: 1 }],
+    currentHp: 12,
+    backgroundGrantsApplied: true,
+    ...(picked
+      ? {
+          startingEquipmentPicks: {
+            className: "Fighter",
+            source: classSource,
+            options: { 0: "a", 1: "a", 2: "a", 3: "a" },
+            items: { "1.a.0": ["Longsword"] },
+          },
+        }
+      : {}),
+  });
+}
+
+// Level 1 Clerics. Without a domain the warhammer and chain mail need proficiencies this Cleric does not have, so
+// neither is offered. A Life Domain gives heavy armor, so chain mail is offered (the warhammer still is not).
+const CLERIC_ID = "char_cleric";
+const CLERIC_DOMAIN_ID = "char_clericdomain";
+function clericCharacter({ id, name, domain }) {
+  const domainSource = INTEGRATED ? "PHB" : "SRD";
+  return makeChar({
+    id,
+    name,
+    createdAt: 5,
+    updatedAt: 5,
+    race: { name: "Human", source: catalogSource("races", "Human") },
+    background: { name: "Acolyte", source: catalogSource("backgrounds", "Acolyte") },
+    startingOption: "equipment",
+    classes: [
+      {
+        className: "Cleric",
+        source: catalogSource("classes", "Cleric"),
+        level: 1,
+        ...(domain ? { subclassName: "Life Domain", subclassSource: domainSource } : {}),
+      },
+    ],
+    currentHp: 9,
+    backgroundGrantsApplied: true,
+  });
+}
+
 // The seed the browser starts from: the characters, folders, settings, and (integrated mode) the catalog.
 function buildSeed() {
   const defaults = defaultSettings();
@@ -312,6 +370,10 @@ function buildSeed() {
       bardCharacter(),
       noRaceCharacter(),
       noBackgroundCharacter(),
+      fighterCharacter({ id: FIGHTER_ID, name: "Tavish", picked: false }),
+      fighterCharacter({ id: FIGHTER_PICKED_ID, name: "Brannoc", picked: true }),
+      ...(INTEGRATED ? [clericCharacter({ id: CLERIC_ID, name: "Corwin", domain: false })] : []),
+      clericCharacter({ id: CLERIC_DOMAIN_ID, name: "Ysolde", domain: true }),
     ],
     folders: [],
     settings: {
@@ -335,6 +397,10 @@ const KENSEI_ROUTE = `/character/${KENSEI_ID}`;
 const BARD_ROUTE = `/character/${BARD_ID}`;
 const NO_RACE_ROUTE = `/character/${NO_RACE_ID}`;
 const NO_BG_ROUTE = `/character/${NO_BG_ID}`;
+const FIGHTER_ROUTE = `/character/${FIGHTER_ID}`;
+const FIGHTER_PICKED_ROUTE = `/character/${FIGHTER_PICKED_ID}`;
+const CLERIC_ROUTE = `/character/${CLERIC_ID}`;
+const CLERIC_DOMAIN_ROUTE = `/character/${CLERIC_DOMAIN_ID}`;
 const SCREENS = [
   { name: "Builder Abilities", route: RENDAR_ROUTE, tabs: ["Builder", "Abilities"], ready: /points remaining/i },
   { name: "Builder Race", route: RENDAR_ROUTE, tabs: ["Builder", "Race"], ready: /traits:/i },
@@ -372,6 +438,15 @@ const SCREENS = [
         { name: "Builder Class kensei weapon choices", route: KENSEI_ROUTE, tabs: ["Builder", "Class"], ready: /total level/i, scrollTo: "Path of the Kensei" },
         { name: "Stats kensei weapon proficiencies", route: KENSEI_ROUTE, tabs: ["Stats"], ready: /hit points/i, scrollTo: "Weapon Proficiencies" },
       ]
+    : []),
+  // The equipment card: one option per slot, the picker of a generic entry, Claim disabled until every slot is picked.
+  { name: "Builder Class equipment choices", route: FIGHTER_ROUTE, tabs: ["Builder", "Class"], ready: "Starting Equipment & Gold:", scrollTo: "Starting Equipment & Gold:", expect: { texts: ["Chain Mail"], disabled: ["Claim Starting Equipment"], fitsWidth: true } },
+  { name: "Builder Class equipment picked", route: FIGHTER_PICKED_ROUTE, tabs: ["Builder", "Class"], ready: "Starting Equipment & Gold:", scrollTo: "Starting Equipment & Gold:", expect: { enabled: ["Claim Starting Equipment"], fitsWidth: true } },
+  { name: "Builder Class equipment picker open", route: FIGHTER_PICKED_ROUTE, tabs: ["Builder", "Class"], open: (page) => page.getByText("Martial weapon", { exact: true }).first().click(), ready: "Greatsword", scrollTo: "Martial weapon", expect: { placeholders: ["Search…"] } },
+  { name: "Builder Class equipment cleric domain", route: CLERIC_DOMAIN_ROUTE, tabs: ["Builder", "Class"], ready: "Starting Equipment & Gold:", scrollTo: "Starting Equipment & Gold:", expect: { texts: ["Chain Mail"], absent: ["Warhammer"], fitsWidth: true } },
+  // The SRD Baseline has one Cleric domain, which the app applies at once, so a Cleric without a domain exists in integrated mode only.
+  ...(INTEGRATED
+    ? [{ name: "Builder Class equipment cleric", route: CLERIC_ROUTE, tabs: ["Builder", "Class"], ready: "Starting Equipment & Gold:", scrollTo: "Starting Equipment & Gold:", expect: { texts: ["Scale Mail"], absent: ["Warhammer", "Chain Mail"], fitsWidth: true } }]
     : []),
   { name: "Builder Class skill proficiency choices", route: BARD_ROUTE, tabs: ["Builder", "Class"], ready: /total level/i, scrollTo: "Class & Subclass Choices" },
   { name: "Stats", route: RENDAR_ROUTE, tabs: ["Stats"], ready: /hit points/i },
@@ -494,6 +569,19 @@ async function checkNoShrinkRows(page, screen) {
     await page.evaluate(restoreNoShrinkRows);
   }
   return out.map((v) => `row, native text (flexShrink 0): ${v}`);
+}
+
+// Runs in the browser. Whether the button labelled `text` is disabled, read from the aria-disabled that the Button
+// sets on its touch target (the element with a tabindex). Null when no such label is on the page; `state` says what was read.
+function buttonDisabled(text) {
+  const el = [...document.querySelectorAll("*")].find((e) => e.children.length === 0 && e.textContent.includes(text));
+  const target = el?.closest("[tabindex]");
+  if (!target) {
+    const near = [...document.querySelectorAll("*")].filter((e) => e.children.length === 0 && /Claim|Choose|Starting|Equipment/.test(e.textContent)).map((e) => e.textContent).slice(0, 10);
+    return { disabled: null, state: `no button with that label; near: ${near.join(" | ")}` };
+  }
+  const aria = target.getAttribute("aria-disabled");
+  return { disabled: aria === "true", state: `aria-disabled=${aria}` };
 }
 
 // Runs in the browser. True when the race card titled `name` has a plain row under its "Subraces / Variants:" label:
@@ -668,6 +756,21 @@ async function checkExpected(page, expect) {
   }
   for (const placeholder of expect.placeholders ?? []) {
     if (!(await page.getByPlaceholder(placeholder).first().isVisible())) out.push(`missing the input with placeholder "${placeholder}"`);
+  }
+  for (const text of expect.absent ?? []) {
+    if (await page.getByText(text, { exact: true }).first().isVisible()) out.push(`"${text}" is shown but should not be`);
+  }
+  for (const text of expect.disabled ?? []) {
+    const { disabled, state } = await page.evaluate(buttonDisabled, text);
+    if (disabled !== true) out.push(`"${text}" is not disabled (${state})`);
+  }
+  for (const text of expect.enabled ?? []) {
+    const { disabled, state } = await page.evaluate(buttonDisabled, text);
+    if (disabled !== false) out.push(`"${text}" is not enabled (${state})`);
+  }
+  if (expect.fitsWidth) {
+    const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
+    if (overflow > 0) out.push(`the page scrolls sideways by ${overflow}px`);
   }
   if (expect.plainRaceRow && !(await page.evaluate(findPlainRaceRow, expect.plainRaceRow))) {
     out.push(`no plain "${expect.plainRaceRow}" row under "Subraces / Variants:"`);

@@ -37,7 +37,7 @@ import {
 import { getOrphanedSubclassSpells } from "../../rules/subclassSpells";
 import { proficiencyChoiceOffers } from "../../rules/proficiencyChoiceOffers";
 import { clearProficiencyPick } from "../../rules/proficiencyPools";
-import type { StartingEquipmentKit } from "../../rules/startingEquipment";
+import type { StartingEquipmentAddress, StartingEquipmentCard } from "../../rules/startingEquipment";
 import {
   getAvailableExpertiseMilestones,
   getMilestonePicks,
@@ -66,8 +66,10 @@ export interface ClassProgressionSectionProps {
   }[];
   pendingAsiSlots: PendingAsiSlot[];
   primaryClass?: string;
-  /** The starting equipment the class's picks resolve to. */
-  startingKit: StartingEquipmentKit;
+  /** The first class's equipment slots with the picks made in them. */
+  startingCard: StartingEquipmentCard;
+  onPickOption: (slot: number, letter: string) => void;
+  onPickItems: (address: StartingEquipmentAddress, names: string[]) => void;
   onClaimGold: () => void;
   onClaimEquipment: () => void;
   onClaimAgain: () => void;
@@ -91,7 +93,9 @@ export const ClassProgressionSection: React.FC<ClassProgressionSectionProps> = (
   availableOptionalFeatures,
   pendingAsiSlots,
   primaryClass,
-  startingKit,
+  startingCard,
+  onPickOption,
+  onPickItems,
   onClaimGold,
   onClaimEquipment,
   onClaimAgain,
@@ -582,7 +586,9 @@ export const ClassProgressionSection: React.FC<ClassProgressionSectionProps> = (
       <StartingGrantsSection
         character={character}
         primaryClass={primaryClass}
-        startingKit={startingKit}
+        startingCard={startingCard}
+        onPickOption={onPickOption}
+        onPickItems={onPickItems}
         onClaimGold={onClaimGold}
         onClaimEquipment={onClaimEquipment}
         onClaimAgain={onClaimAgain}
