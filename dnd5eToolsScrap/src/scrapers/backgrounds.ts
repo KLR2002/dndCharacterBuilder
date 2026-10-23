@@ -3,8 +3,13 @@ import { resolveAllCopies } from "../parser/copy-resolver.ts";
 import { renderEntries } from "../parser/entry-renderer.ts";
 import { cleanTags } from "../parser/tag-cleaner.ts";
 import type { BackgroundModel } from "../types/models.ts";
+import type { ProficiencyReport } from "../types/proficiency.ts";
+import { newProficiencyReport, structuredGrants } from "../parser/proficiency-grants.ts";
 
-export async function scrapeBackgrounds(client: ToolsClient): Promise<BackgroundModel[]> {
+export async function scrapeBackgrounds(
+  client: ToolsClient,
+  report: ProficiencyReport = newProficiencyReport()
+): Promise<BackgroundModel[]> {
   console.log("  → Fetching backgrounds from data/backgrounds.json...");
   const rawData = await client.fetchJson<{ background: any[] }>("data/backgrounds.json");
 
@@ -16,8 +21,9 @@ export async function scrapeBackgrounds(client: ToolsClient): Promise<Background
     const skills: string[] = [];
     if (Array.isArray(raw.skillProficiencies)) {
       for (const sp of raw.skillProficiencies) {
+        // Only fixed skills are named here; a `choose` list or a count of `any` is a choice, not a skill.
         for (const [k, v] of Object.entries(sp)) {
-          if (v) {
+          if (v === true) {
             skills.push(k.charAt(0).toUpperCase() + k.slice(1));
           }
         }
@@ -117,9 +123,29 @@ export async function scrapeBackgrounds(client: ToolsClient): Promise<Background
       }
     }
 
+    const proficiencies = structuredGrants(
+      { source: raw.source, owner: "Background", feature: cleanTags(raw.name, "plain"), level: 0 },
+      {
+        tools: raw.toolProficiencies,
+        languages: raw.languageProficiencies,
+        skills: raw.skillProficiencies,
+        weapons: raw.weaponProficiencies,
+        armor: raw.armorProficiencies,
+      }
+    );
+    if (proficiencies.unparsed.length > 0) {
+      report.unparsed.push({
+        owner: "Background",
+        feature: cleanTags(raw.name, "plain"),
+        level: 0,
+        unparsed: proficiencies.unparsed,
+      });
+    }
+
     backgrounds.push({
       name: cleanTags(raw.name, "plain"),
       source: raw.source,
+      ...(proficiencies.grants.length > 0 ? { grants: proficiencies.grants } : {}),
       skillProficiencies: skills,
       toolProficiencies: tools,
       languages,

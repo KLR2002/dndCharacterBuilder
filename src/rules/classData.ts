@@ -1,32 +1,52 @@
 import type { AbilityKey, CharacterClass } from "../types/character.ts";
-export { MULTICLASS_PROFICIENCIES, MULTICLASS_PREREQUISITES } from "../constants/rules.ts";
+import type { ClassData } from "../types/dnd5e.ts";
+import { srdBaselineClasses } from "../services/compendium.ts";
+import { allCatalogClasses, findClassData } from "./catalogs.ts";
+import { abilityKeyOf } from "./abilities.ts";
+export { MULTICLASS_PREREQUISITES } from "../constants/rules.ts";
 
-export interface ClassRules {
-  hitDie: number;
-  savingThrows: AbilityKey[];
-  caster?: "full" | "half" | "pact";
-  spellAbility?: AbilityKey;
+/**
+ * The Catalog class an entry holds: the class of its name and source in `classes`, else the SRD Baseline's
+ * class of that name, so a catalog that lacks a class still gives its SRD values. Undefined for a class
+ * neither has (an invented or unknown class). `classes` defaults to every class in the process-wide Compendium.
+ */
+export function heldClass(entry: { className: string; source?: string }, classes: readonly ClassData[] = allCatalogClasses()): ClassData | undefined {
+  return findClassData(classes, entry) ?? findClassData(srdBaselineClasses(), entry);
 }
-export const CLASS_DATA: Record<string, ClassRules> = {
-  Barbarian: { hitDie: 12, savingThrows: ["str", "con"] },
-  Bard: { hitDie: 8, savingThrows: ["dex", "cha"], caster: "full", spellAbility: "cha" },
-  Cleric: { hitDie: 8, savingThrows: ["wis", "cha"], caster: "full", spellAbility: "wis" },
-  Druid: { hitDie: 8, savingThrows: ["int", "wis"], caster: "full", spellAbility: "wis" },
-  Fighter: { hitDie: 10, savingThrows: ["str", "con"] },
-  Monk: { hitDie: 8, savingThrows: ["str", "dex"] },
-  Paladin: { hitDie: 10, savingThrows: ["wis", "cha"], caster: "half", spellAbility: "cha" },
-  Ranger: { hitDie: 10, savingThrows: ["str", "dex"], caster: "half", spellAbility: "wis" },
-  Rogue: { hitDie: 8, savingThrows: ["dex", "int"] },
-  Sorcerer: { hitDie: 6, savingThrows: ["con", "cha"], caster: "full", spellAbility: "cha" },
-  Warlock: { hitDie: 8, savingThrows: ["wis", "cha"], caster: "pact", spellAbility: "cha" },
-  Wizard: { hitDie: 6, savingThrows: ["int", "wis"], caster: "full", spellAbility: "int" },
-};
+
+/** The hit die a class without one in the Catalog rolls: the d8 every rule falls back to. */
+const DEFAULT_HIT_DIE = 8;
+
+export function hitDieOf(entry: CharacterClass, classes?: readonly ClassData[]): number {
+  const faces = /^1d(\d+)$/.exec(heldClass(entry, classes)?.hitDie ?? "")?.[1];
+  return faces ? Number(faces) : DEFAULT_HIT_DIE;
+}
+
+/** The caster kinds the class-level rules tell apart. A progression with no kind here casts by its own rule, or not at all. */
+export type CasterKind = "full" | "half" | "pact";
+
+/** The caster kind of a Catalog spellcasting progression. Artificer's progression and anything else has no kind here. */
+export function casterKindOfProgression(progression: string | undefined): CasterKind | undefined {
+  if (progression === "full") return "full";
+  if (progression === "1/2") return "half";
+  if (progression === "pact") return "pact";
+  return undefined;
+}
+
+export function casterKindOf(entry: CharacterClass, classes?: readonly ClassData[]): CasterKind | undefined {
+  return casterKindOfProgression(heldClass(entry, classes)?.spellcasting?.progression);
+}
+
+export function spellAbilityOf(entry: CharacterClass, classes?: readonly ClassData[]): AbilityKey | undefined {
+  return abilityKeyOf(heldClass(entry, classes)?.spellcasting?.ability);
+}
+
 export const THIRD_CASTERS: Record<string, string> = { Fighter: "Eldritch Knight", Rogue: "Arcane Trickster" };
 export function isThirdCaster(c: CharacterClass): boolean {
   return c.level >= 3 && c.subclassName !== undefined && THIRD_CASTERS[c.className] === c.subclassName;
 }
-export function spellcastingAbility(c: CharacterClass): AbilityKey | undefined {
-  return isThirdCaster(c) ? "int" : CLASS_DATA[c.className]?.spellAbility;
+export function spellcastingAbility(c: CharacterClass, classes?: readonly ClassData[]): AbilityKey | undefined {
+  return isThirdCaster(c) ? "int" : spellAbilityOf(c, classes);
 }
 // PHB individual paladin/ranger progression (NOT floor(level / 2) multiclass slots).
 export function asiLevels(name: string): number[] {

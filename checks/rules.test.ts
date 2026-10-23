@@ -1,17 +1,20 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { makeChar, loadTestCatalog } from "./testUtils.ts";
+import { makeChar, loadTestCatalog, inMemoryCompendium, integratedTestCompendium } from "./testUtils.ts";
 import type { CharacterClass } from "../src/types/character.ts";
 import { effectiveScores, getAbilityModifier, formatModifier } from "../src/rules/abilities.ts";
 import { maxHp, hitDiceByType } from "../src/rules/hp.ts";
 import { armorClass } from "../src/rules/ac.ts";
 import { speed, carryingWeight } from "../src/rules/speed.ts";
 import { savingThrows } from "../src/rules/saves.ts";
-import { skills, getRacialSkillChoices } from "../src/rules/skills.ts";
+import { proficiencySheet } from "../src/rules/proficiencySheet.ts";
+import { skills } from "../src/rules/skills.ts";
+import { proficiencyChoiceOffers } from "../src/rules/proficiencyChoiceOffers.ts";
 import { multiclassSlots, pactSlots } from "../src/rules/slots.ts";
-import { proficiencyBonus, totalLevel, proficiencies } from "../src/rules/proficiencies.ts";
+import { proficiencyBonus, totalLevel } from "../src/rules/proficiencies.ts";
+import { classBaseProficiencies as proficiencies } from "../src/rules/proficiencySources/classBase.ts";
 import { grantedFeatures } from "../src/rules/grantedFeatures.ts";
-import { CLASS_DATA, PHB_HALF_CASTER_SLOTS, PHB_THIRD_CASTER_SLOTS, spellcastingAbility, asiLevels } from "../src/rules/classData.ts";
+import { hitDieOf, PHB_HALF_CASTER_SLOTS, PHB_THIRD_CASTER_SLOTS, spellcastingAbility, asiLevels } from "../src/rules/classData.ts";
 
 // Use the test catalog fixture; production rules receive only resolved plain data.
 const readCatalog = (name: string) => loadTestCatalog(name);
@@ -88,7 +91,7 @@ test("Tough feat adds two HP per level, CON applies retroactively, override wins
 test("shared d8 hit dice are pooled once; paladin keeps its d10 and spent dice counted once", () => {
   const c = makeChar({ classes: [cl("Monk", 2), cl("Bard", 3), cl("Paladin", 2)], usedHitDice: { d8: 2, d10: 1 } });
   assert.deepEqual(hitDiceByType(c), { d8: { total: 5, used: 2, remaining: 3 }, d10: { total: 2, used: 1, remaining: 1 } });
-  assert.equal(CLASS_DATA.Paladin.hitDie, 10);
+  assert.equal(hitDieOf(cl("Paladin", 2)), 10);
 });
 test("multiclass Barbarian 1 / Bard 1 has separate 1d12 and 1d8 hit dice pools", () => {
   const c = makeChar({ classes: [cl("Barbarian", 1), cl("Bard", 1)] });
@@ -132,7 +135,7 @@ test("carrying weight includes quantity and coins, with STR capacity", () => {
 });
 test("saves use first class only and total-level proficiency", () => {
   const c = makeChar({ classes: [cl("Fighter", 1), cl("Wizard", 4)] });
-  const saves = savingThrows(c, CLASS_DATA);
+  const saves = savingThrows(c, proficiencySheet(c, { compendium: inMemoryCompendium() }).savingThrows);
   assert.equal(saves.str.proficient, true);
   assert.equal(saves.con.isProficient, true);
   assert.equal(saves.int.proficient, false);
@@ -140,7 +143,7 @@ test("saves use first class only and total-level proficiency", () => {
   assert.equal(totalLevel(c), 5);
   assert.deepEqual([1, 5, 9, 13, 17, 20].map(proficiencyBonus), [2, 3, 4, 5, 6, 6]);
 });
-test("initial armor/weapon/tool proficiencies differ from multiclass grants", () => {
+test("initial armor proficiencies differ from multiclass grants", () => {
   const c = makeChar({ classes: [cl("Wizard", 1), cl("Fighter", 1)] });
   const p = proficiencies(c, catalog.classes);
   assert.ok(p.armor.includes("Medium armor"));
@@ -149,7 +152,7 @@ test("initial armor/weapon/tool proficiencies differ from multiclass grants", ()
 });
 test("skills distinguish expertise and Jack of All Trades; passive trio and Observant", () => {
   const c = makeChar({ classes: [cl("Bard", 5)], baseAbilityScores: scores({ wis: 16, int: 14 }), chosenSkills: ["Perception", "Insight"], chosenExpertise: ["Perception"] });
-  const row = (name: string, char = c) => skills(char).find(x => x.name === name)!;
+  const row = (name: string, char = c) => skills(char, proficiencySheet(char, { compendium: inMemoryCompendium() }).skills).find(x => x.name === name)!;
   assert.equal(row("Perception").bonus, 9);
   assert.equal(row("Perception").isExpertise, true);
   assert.equal(row("Perception").isJackOfAllTrades, false);
@@ -217,7 +220,7 @@ test("skills includes racial and background proficiencies and matches case-insen
     chosenSkills: ["animal handling", "sleight of hand"], // Lowercase input!
   });
 
-  const skillList = skills(bugbearAcolyte);
+  const skillList = skills(bugbearAcolyte, proficiencySheet(bugbearAcolyte, { compendium: integratedTestCompendium() }).skills);
   const byName = (n: string) => skillList.find(s => s.name === n);
 
   // Bugbear trait
@@ -258,42 +261,53 @@ test("grantedFeatures respects optional feature replacements (e.g., TCoE Ranger)
   assert.ok(tashaFeatures.some(f => f.name === "Deft Explorer"));
 });
 
-test("getRacialSkillChoices extracts dynamic skill choices from any race or book", () => {
-  // 1. Lizardfolk choice: 2 from Hunter's Lore / Nature's Intuition
-  const lizChoices = getRacialSkillChoices("Lizardfolk", undefined, catalog.races);
-  assert.equal(lizChoices.length, 1);
-  assert.equal(lizChoices[0].choose, 2);
-  assert.ok(lizChoices[0].from.includes("Animal Handling"));
-  assert.ok(lizChoices[0].from.includes("Stealth"));
-  assert.ok(lizChoices[0].from.includes("Survival"));
+test("race skill picks are Proficiency Choices from the Catalog's choice grants, in any book, and trait text offers none", () => {
+  const compendium = integratedTestCompendium();
+  const skillOffer = (race: { name: string; source: string }) =>
+    proficiencyChoiceOffers(makeChar({ race }), { compendium }).filter((offer) => offer.id.includes("#skills:"));
 
-  // 2. Base Half-Elf has Skill Versatility: 2 from all 18 skills
-  const heChoices = getRacialSkillChoices("Half-Elf", undefined, catalog.races);
-  assert.equal(heChoices.length, 1);
-  assert.equal(heChoices[0].choose, 2);
-  assert.equal(heChoices[0].from.length, 18);
+  // Lizardfolk (Volo's Guide): 2 from its five-skill list.
+  const liz = skillOffer({ name: "Lizardfolk", source: "VGM" });
+  assert.equal(liz.length, 1);
+  assert.equal(liz[0].choose, 2);
+  assert.deepEqual(liz[0].options.map((o) => o.name), ["Animal Handling", "Nature", "Perception", "Stealth", "Survival"]);
 
-  // 3. Mark of Detection Half-Elf variant trades away Skill Versatility
-  const markChoices = getRacialSkillChoices("Half-Elf", "Mark of Detection", catalog.races);
-  assert.equal(markChoices.length, 0);
+  // Base Half-Elf has Skill Versatility: 2 from all 18 skills.
+  const heOffer = skillOffer({ name: "Half-Elf", source: "PHB" });
+  assert.equal(heOffer.length, 1);
+  assert.equal(heOffer[0].choose, 2);
+  assert.equal(heOffer[0].options.length, 18);
 
-  // 4. Custom/arbitrary race from another resource loaded dynamically
-  const customRace = {
-    name: "Custom Beastfolk",
-    source: "Homebrew",
-    traits: [
+  // Mark of Detection Half-Elf has no Skill Versatility.
+  const mark = proficiencyChoiceOffers(
+    makeChar({ race: { name: "Half-Elf", source: "PHB", subraceName: "Mark of Detection", subraceSource: "ERLW" } }),
+    { compendium },
+  ).filter((offer) => offer.id.includes("#skills:"));
+  assert.equal(mark.length, 0);
+
+  // A race that only names its skill pick in trait text is offered nothing: the text is not a grant.
+  const textOnly = inMemoryCompendium({
+    races: [
       {
-        name: "Wild Senses",
-        description: "You gain proficiency with two of the following skills of your choice: Perception, Stealth, or Survival.",
+        name: "Custom Beastfolk",
+        source: "Homebrew",
+        size: ["Medium"],
+        speed: { walk: 30 },
+        abilityScoreIncrease: [],
+        darkvision: null,
+        traits: [
+          {
+            name: "Wild Senses",
+            description: "You gain proficiency with two of the following skills of your choice: Perception, Stealth, or Survival.",
+          },
+        ],
+        languages: [],
+        subraces: [],
+        description: "Placeholder description for the Custom Beastfolk.",
       },
     ],
-  };
-  const customChoices = getRacialSkillChoices("Custom Beastfolk", undefined, [customRace]);
-  assert.equal(customChoices.length, 1);
-  assert.equal(customChoices[0].choose, 2);
-  assert.ok(customChoices[0].from.includes("Perception"));
-  assert.ok(customChoices[0].from.includes("Stealth"));
-  assert.ok(customChoices[0].from.includes("Survival"));
+  });
+  assert.deepEqual(proficiencyChoiceOffers(makeChar({ race: { name: "Custom Beastfolk", source: "Homebrew" } }), { compendium: textOnly }).filter((offer) => offer.id.includes("#skills:")), []);
 });
 
 test("grantedFeatures includes both base race traits and subrace traits", () => {

@@ -9,11 +9,17 @@ import { scrapeSpells } from "../../../dnd5eToolsScrap/src/scrapers/spells.ts";
 import { scrapeBeasts } from "../../../dnd5eToolsScrap/src/scrapers/beasts.ts";
 import { scrapeBooks } from "../../../dnd5eToolsScrap/src/scrapers/books.ts";
 import { scrapeConditions } from "../../../dnd5eToolsScrap/src/scrapers/conditions.ts";
-import { saveCompendiumData, type CompendiumCollections } from "../compendiumStorage.ts";
-import { setCompendiumStore } from "../dataService.ts";
+import { REQUIRED_CATALOG_FORMAT, saveCompendiumData, type CompendiumCollections } from "../compendiumStorage.ts";
+import { integrate } from "../compendium.ts";
 
-export async function runInAppIntegration(onProgress?: ScraperProgressCallback): Promise<CompendiumCollections> {
-  const client = new BrowserToolsClient();
+/**
+ * Scrapes every category through the client and returns the collections. Nothing is integrated or saved here:
+ * the in-app sync does both after this, and the live catalog build (`scripts/build-live-catalog.mjs`) stops here.
+ */
+export async function collectIntegratedCatalog(
+  client: BrowserToolsClient,
+  onProgress?: ScraperProgressCallback,
+): Promise<CompendiumCollections> {
   const total = 10;
 
   onProgress?.("Races", 1, total);
@@ -48,6 +54,7 @@ export async function runInAppIntegration(onProgress?: ScraperProgressCallback):
 
   const compendium: CompendiumCollections = {
     hasIntegratedCatalog: true,
+    catalogFormat: REQUIRED_CATALOG_FORMAT,
     integratedAt: new Date().toISOString(),
     races: races as any,
     classes: classes as any,
@@ -60,8 +67,12 @@ export async function runInAppIntegration(onProgress?: ScraperProgressCallback):
     conditions: conditions as any,
     books: books as any,
   };
+  return compendium;
+}
 
-  setCompendiumStore(compendium);
+export async function runInAppIntegration(onProgress?: ScraperProgressCallback): Promise<CompendiumCollections> {
+  const compendium = await collectIntegratedCatalog(new BrowserToolsClient(), onProgress);
+  integrate(compendium);
   await saveCompendiumData(compendium);
   return compendium;
 }

@@ -1,5 +1,6 @@
-import type { Character } from "../types/character";
+import type { Character, ResourceCounter } from "../types/character";
 import type { BeastData } from "../types/dnd5e";
+import { enterWildShape, type WildShapeHpPatch } from "./wildShapeHp.ts";
 
 export interface WildShapeLimits {
   hasWildShape: boolean;
@@ -91,19 +92,9 @@ export function getWildShapeLimits(character: Character): WildShapeLimits {
 
 /**
  * Evaluates whether a creature is a legally accessible Wild Shape form for a character.
+ * Which beasts exist is decided by the Compendium (active books); this applies only Wild Shape's own limits.
  */
-export function isBeastEligible(
-  beast: BeastData,
-  character: Character,
-  activeBooks?: string[]
-): boolean {
-  if (activeBooks && activeBooks.length > 0) {
-    const bookSet = new Set(activeBooks.map((b) => b.toLowerCase()));
-    if (!bookSet.has(beast.source.toLowerCase())) {
-      return false;
-    }
-  }
-
+export function isBeastEligible(beast: BeastData, character: Character): boolean {
   const limits = getWildShapeLimits(character);
   if (!limits.hasWildShape) {
     return false;
@@ -198,3 +189,37 @@ export function getWildShapeCharges(character: Character): number {
   return character.resourceCounters?.wild_shape?.current ?? 2;
 }
 
+/** The character fields an adoption changes: the Wild Shape counter and the active form. */
+export type WildShapeAdoptionPatch = WildShapeHpPatch & { resourceCounters: Record<string, ResourceCounter> };
+
+/**
+ * The single adoption path for a Wild Shape form. It pays the form's charges (1 for a beast, 2 for an
+ * elemental) and enters the form at its full HP. Returns null when the character cannot pay, and then
+ * nothing changes. An Archdruid's charges are unlimited, so nothing is deducted for them.
+ */
+export function adoptWildShape(character: Character, beast: BeastData): WildShapeAdoptionPatch | null {
+  const available = getWildShapeCharges(character);
+  const cost = getRequiredWildShapeCharges(beast);
+  if (available < cost) return null;
+
+  const isArchdruid = getWildShapeLimits(character).druidLevel >= 20;
+  const existingCounter = (character.resourceCounters || {})["wild_shape"];
+  const counter: ResourceCounter = {
+    id: "wild_shape",
+    name: "Wild Shape",
+    current: isArchdruid ? 999 : available - cost,
+    max: isArchdruid ? 999 : (existingCounter ? existingCounter.max : 2),
+    resetOn: "short",
+  };
+
+  return {
+    resourceCounters: { ...(character.resourceCounters || {}), wild_shape: counter },
+    ...enterWildShape(character, {
+      name: beast.name,
+      source: beast.source,
+      currentHp: beast.hp.average,
+      maxHp: beast.hp.average,
+      ac: beast.ac,
+    }),
+  };
+}

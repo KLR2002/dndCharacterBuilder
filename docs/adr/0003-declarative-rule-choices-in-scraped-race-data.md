@@ -1,6 +1,6 @@
 # Declarative Rule Choices in scraped race data
 
-Half-Elf variants, Eladrin seasons, and Aasimar revelations were all unimplemented even though 5e.tools stores them in a uniform `inset` / `list` shape. We lift that shape into a `choices` field on the trait that grants it (`traits[].choices = { pick, options: [{ name, description }] }`) in the scraper, rather than hand-writing three special cases alongside the existing `CHOICE_ASI_RACES` and `RACE_SKILL_PROFICIENCIES` sets — the half-elf variant already fell out of that approach, because `skills.ts` looked for a trait literally named `Skill Versatility` that SCAG variants do not have.
+Half-Elf variants, Eladrin seasons, and Aasimar revelations were all unimplemented even though 5e.tools stores them in a uniform `inset` / `list` shape. We lift that shape into a `choices` field on the trait that grants it (`traits[].choices = { pick, options: [{ name, description }] }`) in the scraper, rather than hand-writing three special cases alongside the existing `CHOICE_ASI_RACES` and `RACE_SKILL_PROFICIENCIES` sets — the half-elf variant already fell out of that approach, because the skill reader (`src/rules/proficiencySources/skillGrants.ts`, then `skills.ts`) looked for a trait literally named `Skill Versatility` that SCAG variants do not have.
 
 ## Consequences
 

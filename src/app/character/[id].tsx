@@ -3,6 +3,7 @@ import {
   ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
@@ -19,10 +20,13 @@ import { SpellsTab } from "../../components/tabs/SpellsTab";
 import { StatsTab } from "../../components/tabs/StatsTab";
 import { Badge } from "../../components/ui/Badge";
 import { Button } from "../../components/ui/Button";
+import { HpQuickEditModal } from "../../components/HpQuickEditModal";
 import { useCharacters } from "../../context/CharacterContext";
 import { useAppTheme } from "../../context/ThemeContext";
+import { useHpQuickEdit } from "../../hooks/useHpQuickEdit";
 import { useResponsiveLayout } from "../../hooks/useResponsiveLayout";
-import { evaluateCharacter } from "../../services/dndRules";
+import { evaluateCharacter } from "../../rules/characterEvaluation";
+import { commitCharacterName } from "../../rules/characterName";
 
 type TabKey = "builder" | "stats" | "spells" | "inventory" | "features" | "journal" | "actions";
 
@@ -45,12 +49,14 @@ const TABS: TabDefinition[] = [
 export default function CharacterSheetScreen() {
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { characters, currentCharacter, selectCharacter } = useCharacters();
+  const { characters, currentCharacter, selectCharacter, updateCharacter } = useCharacters();
   const { theme } = useAppTheme();
   const { isCompact } = useResponsiveLayout();
 
   const [activeTab, setActiveTab] = useState<TabKey>("builder");
   const [restModalVisible, setRestModalVisible] = useState(false);
+  const [isEditingName, setIsEditingName] = useState(false);
+  const [nameDraft, setNameDraft] = useState("");
   const [scrollX, setScrollX] = useState(0);
   const [scrollWidth, setScrollWidth] = useState(0);
   const [layoutWidth, setLayoutWidth] = useState(0);
@@ -64,6 +70,12 @@ export default function CharacterSheetScreen() {
   const evaluated = useMemo(
     () => (currentCharacter ? evaluateCharacter(currentCharacter) : null),
     [currentCharacter]
+  );
+  // While a wild shape is active the header badge shows the form's HP and opens its HP box.
+  const hpQuickEdit = useHpQuickEdit(
+    currentCharacter,
+    evaluated?.hp.max ?? 0,
+    currentCharacter?.activeWildShape ? "wildShape" : "character"
   );
 
   if (!currentCharacter || !evaluated) {
@@ -81,10 +93,25 @@ export default function CharacterSheetScreen() {
 
   const totalLevel = evaluated.totalLevel;
   const maxHp = evaluated.hp.max;
+  const activeWildShape = currentCharacter.activeWildShape;
+  const formTempHp = activeWildShape?.tempHp ?? 0;
   const classSummary = (currentCharacter.classes || [])
     .map((c) => `${c.className} ${c.level}`)
     .join(" / ") || "Lvl 1";
   const raceSummary = currentCharacter.race?.name || "Race Unset";
+
+  const startNameEdit = () => {
+    setNameDraft(currentCharacter.name);
+    setIsEditingName(true);
+  };
+
+  const finishNameEdit = () => {
+    setIsEditingName(false);
+    const name = commitCharacterName(nameDraft, currentCharacter.name);
+    if (name !== currentCharacter.name) {
+      updateCharacter(currentCharacter.id, { name });
+    }
+  };
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
@@ -103,12 +130,37 @@ export default function CharacterSheetScreen() {
           </TouchableOpacity>
 
           {/* Character Title & Summary */}
-          <View style={{ flex: 1, marginHorizontal: 8 }}>
+          <View style={{ flex: 1, minWidth: 0, marginHorizontal: 8 }}>
             <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-              <Text style={[styles.charName, { color: theme.text }, isCompact && { fontSize: 14 }]} numberOfLines={1}>
-                {currentCharacter.name}
-              </Text>
-              <Badge label={`Lvl ${totalLevel}`} variant="accent" size="sm" />
+              {isEditingName ? (
+                <TextInput
+                  value={nameDraft}
+                  onChangeText={setNameDraft}
+                  onSubmitEditing={finishNameEdit}
+                  onBlur={finishNameEdit}
+                  autoFocus
+                  selectTextOnFocus
+                  returnKeyType="done"
+                  maxLength={60}
+                  accessibilityLabel="Character name"
+                  style={[styles.charName, styles.charNameInput, { color: theme.text, borderBottomColor: theme.accent }, isCompact && { fontSize: 14 }]}
+                />
+              ) : (
+                <TouchableOpacity
+                  onPress={startNameEdit}
+                  hitSlop={{ top: 8, bottom: 8, left: 4, right: 4 }}
+                  accessibilityRole="button"
+                  accessibilityLabel="Edit character name"
+                  style={styles.charNameButton}>
+                  <Text
+                    style={[styles.charName, { color: theme.text }, isCompact && { fontSize: 14 }]}
+                    numberOfLines={1}
+                    ellipsizeMode="tail">
+                    {currentCharacter.name}
+                  </Text>
+                </TouchableOpacity>
+              )}
+              <Badge label={`Lvl ${totalLevel}`} variant="accent" size="sm" style={{ flexShrink: 0 }} />
             </View>
             <Text style={{ color: theme.textSecondary, fontSize: 11 }} numberOfLines={1}>
               {raceSummary} • {classSummary}
@@ -116,15 +168,23 @@ export default function CharacterSheetScreen() {
           </View>
 
           {/* Quick HP & Rest Buttons */}
-          <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-            <View style={[styles.quickHpBadge, { borderColor: theme.border, backgroundColor: theme.surfaceHighlight }]}>
-              {!isCompact && (
-                <Ionicons name="heart" size={14} color={currentCharacter.currentHp > 0 ? theme.hpGreen : theme.danger} />
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 6, flexShrink: 0 }}>
+            <TouchableOpacity
+              {...hpQuickEdit.triggerProps}
+              style={[styles.quickHpBadge, { borderColor: theme.border, backgroundColor: theme.surfaceHighlight }]}>
+              {activeWildShape ? (
+                // The paw marks the number as beast HP, so it stays visible in compact layouts too.
+                <Ionicons name="paw" size={14} color={activeWildShape.currentHp > 0 ? theme.hpGreen : theme.danger} />
+              ) : (
+                !isCompact && <Ionicons name="heart" size={14} color={currentCharacter.currentHp > 0 ? theme.hpGreen : theme.danger} />
               )}
               <Text style={[styles.quickHpText, { color: theme.text }]}>
-                {currentCharacter.currentHp}/{maxHp}
+                {activeWildShape
+                  ? `${activeWildShape.currentHp}/${activeWildShape.maxHp}`
+                  : `${currentCharacter.currentHp}/${maxHp}`}
+                {formTempHp > 0 && <Text style={{ color: theme.tempHpYellow }}> +{formTempHp}</Text>}
               </Text>
-            </View>
+            </TouchableOpacity>
 
             <View style={[styles.quickHpBadge, { borderColor: theme.border, backgroundColor: theme.surfaceHighlight }]}>
               <Ionicons name="shield-outline" size={13} color={theme.accent} />
@@ -226,6 +286,9 @@ export default function CharacterSheetScreen() {
         onClose={() => setRestModalVisible(false)}
         onTakeRest={() => setRestModalVisible(false)}
       />
+
+      {/* Hit Points Quick Edit Modal */}
+      <HpQuickEditModal {...hpQuickEdit.modalProps} />
     </SafeAreaView>
   );
 }
@@ -264,6 +327,19 @@ const styles = StyleSheet.create({
   charName: {
     fontSize: 16,
     fontWeight: "bold",
+    flexShrink: 1,
+    minWidth: 0,
+    includeFontPadding: false,
+  },
+  charNameButton: {
+    flexShrink: 1,
+    minWidth: 0,
+  },
+  charNameInput: {
+    flex: 1,
+    paddingVertical: 0,
+    textAlignVertical: "center",
+    borderBottomWidth: 1,
   },
   quickHpBadge: {
     flexDirection: "row",

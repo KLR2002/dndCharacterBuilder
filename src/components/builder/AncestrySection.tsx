@@ -2,24 +2,26 @@ import React, { useMemo, useState } from "react";
 import { ScrollView, Text, TouchableOpacity, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { AbilityKey, Character } from "../../types/character";
-import type { BackgroundData, RaceData } from "../../types/dnd5e";
+import type { RaceData } from "../../types/dnd5e";
 import { type AvailableRuleChoice } from "../../rules/ruleChoices";
-import { reconcileCharacter, setChoiceRacialBonus } from "../../rules/builderTransitions";
+import { changeRace, setChoiceRacialBonus } from "../../rules/builderTransitions";
+import { currentCompendium, srdBaselineRaces } from "../../services/compendium";
 import {
   resolveAncestryState,
   applyAncestrySelection,
   applyAncestryChoice,
   setRacialCantrip,
   collectFixedBonuses,
+  offersPlainRaceForm,
 } from "../../rules/ancestryEngine";
-import { ALL_LANGUAGE_NAMES, ToolGrant } from "../../rules/proficienciesAndLanguages";
+import type { SourceFixedGrants } from "../../rules/proficiencySheet";
+import { ProficiencyChoicePicker } from "./ProficiencyChoicePicker";
 import { Badge } from "../ui/Badge";
 import { Button } from "../ui/Button";
 import { Card } from "../ui/Card";
 import { Modal } from "../ui/Modal";
 import { SearchBar } from "../ui/SearchBar";
-import { ABILITY_KEYS, ABILITY_LABELS, builderStyles as styles, RuleChoicePicker, SkillPicker } from "./builderStyles";
-import { normalizeSkillName } from "../../rules/skills";
+import { ABILITY_KEYS, ABILITY_LABELS, builderStyles as styles, RuleChoicePicker } from "./builderStyles";
 import { useCharacters } from "../../context/CharacterContext";
 import { getFeats, getSpells } from "../../services/dataService";
 import { validateFeatPrerequisites, applyOriginFeat, removeOriginFeat } from "../../rules/feats";
@@ -42,15 +44,10 @@ export interface AncestrySectionProps {
   character: Character;
   onUpdate: (patchOrUpdater: Partial<Character> | ((prev: Character) => Character)) => void;
   allRaces: RaceData[];
-  allBackgrounds: BackgroundData[];
-  skillChoices: { source: string; choose: number; from: string[] }[];
-  autoGranted: string[];
-  toggleSkill: (skill: string, source?: string) => void;
-  raceLanguageGrant: { label: string; fixed: string[]; choiceCount: number };
-  toggleRaceLanguage: (lang: string) => void;
-  raceToolGrant: ToolGrant;
-  toggleRaceTool: (tool: string) => void;
-  ruleChoices?: AvailableRuleChoice[];
+  /** The fixed languages and tools the race and subrace grant. */
+  raceGranted: SourceFixedGrants;
+  /** The race's Proficiency Choices: its tool and language picks. */
+  proficiencyChoices: AvailableRuleChoice[];
   onViewDetail: (item: { title: string; subtitle?: string; source?: string; description?: string }) => void;
   theme: any;
 }
@@ -59,14 +56,8 @@ export const AncestrySection: React.FC<AncestrySectionProps> = ({
   character,
   onUpdate,
   allRaces,
-  allBackgrounds,
-  skillChoices,
-  autoGranted,
-  toggleSkill,
-  raceLanguageGrant,
-  toggleRaceLanguage,
-  raceToolGrant,
-  toggleRaceTool,
+  raceGranted,
+  proficiencyChoices,
   onViewDetail,
   theme,
 }) => {
@@ -124,12 +115,8 @@ export const AncestrySection: React.FC<AncestrySectionProps> = ({
   }, [activeBooks]);
 
   const ancestryState = useMemo(() => {
-    return resolveAncestryState(character, {
-      races: allRaces,
-      backgrounds: allBackgrounds,
-      activeBooks,
-    });
-  }, [character, allRaces, allBackgrounds, activeBooks]);
+    return resolveAncestryState(character, { activeBooks });
+  }, [character, activeBooks]);
 
   const {
     isChoiceASIRace,
@@ -181,7 +168,39 @@ export const AncestrySection: React.FC<AncestrySectionProps> = ({
     const sr = subraceIdx !== undefined ? r.subraces?.[subraceIdx] : undefined;
     setUserSelectedMode(null);
     onUpdate((cur) =>
-      applyAncestrySelection(cur, r, sr, { races: allRaces, backgrounds: allBackgrounds })
+      applyAncestrySelection(cur, r, sr, { activeBooks })
+    );
+  };
+
+  const renderRaceFormRow = (
+    key: string,
+    label: string,
+    fixed: Record<string, number>,
+    isChoice: boolean,
+    onPress: () => void
+  ) => {
+    const fixedStr = formatRaceASI(Object.entries(fixed).map(([k, v]) => ({ [k]: v })));
+    return (
+      <TouchableOpacity
+        key={key}
+        onPress={onPress}
+        style={[
+          styles.subraceRow,
+          { backgroundColor: theme.surfaceHighlight, borderColor: theme.border },
+        ]}
+      >
+        <View style={{ flex: 1 }}>
+          <Text style={{ color: theme.text, fontWeight: "600", fontSize: 13 }}>{label}</Text>
+          {Boolean(fixedStr) && !isChoice ? (
+            <Text style={{ color: theme.accent, fontSize: 11, fontWeight: "600" }}>
+              {fixedStr}
+            </Text>
+          ) : isChoice ? (
+            <Text style={{ color: theme.accent, fontSize: 11, fontWeight: "600" }}>Choice ASI</Text>
+          ) : null}
+        </View>
+        <Ionicons name="chevron-forward" size={16} color={theme.accent} />
+      </TouchableOpacity>
     );
   };
 
@@ -207,19 +226,7 @@ export const AncestrySection: React.FC<AncestrySectionProps> = ({
             size="sm"
             onPress={() => {
               setUserSelectedMode(null);
-              onUpdate((cur) => {
-                const oldRaceChoices = (cur.skillChoices || []).filter((sc) => sc.origin === "race");
-                const oldRacePicks = new Set(oldRaceChoices.flatMap((sc) => sc.picked.map(normalizeSkillName)));
-                return reconcileCharacter({
-                  ...cur,
-                  race: null,
-                  racialAbilityBonuses: {},
-                  racialChoiceBonus: [],
-                  ruleChoices: (cur.ruleChoices || []).filter((rc) => rc.origin !== "race"),
-                  skillChoices: (cur.skillChoices || []).filter((sc) => sc.origin !== "race"),
-                  chosenSkills: (cur.chosenSkills || []).filter((s) => !oldRacePicks.has(normalizeSkillName(s))),
-                });
-              });
+              onUpdate((cur) => changeRace(cur, currentCompendium()));
             }}
           />
         </Card>
@@ -328,37 +335,6 @@ export const AncestrySection: React.FC<AncestrySectionProps> = ({
         </Card>
       )}
 
-      {/* Race skill choices */}
-      {character.race &&
-        skillChoices.filter((sc) => sc.source.startsWith("Race:") || sc.source.startsWith("Variant")).length > 0 && (
-          <Card style={{ gap: 10 }}>
-            {skillChoices
-              .filter((sc) => sc.source.startsWith("Race:") || sc.source.startsWith("Variant"))
-              .map((sc) => {
-                const choiceEntry = character.skillChoices?.find((c) => c.id === sc.source);
-                const normFrom = sc.from.map(normalizeSkillName);
-                const normAuto = autoGranted.map(normalizeSkillName);
-                const chosen = choiceEntry
-                  ? choiceEntry.picked
-                  : (character.chosenSkills || []).filter(
-                      (s) => normFrom.includes(normalizeSkillName(s)) && !normAuto.includes(normalizeSkillName(s))
-                    );
-                return (
-                  <SkillPicker
-                    key={sc.source}
-                    label={sc.source}
-                    choose={sc.choose}
-                    from={sc.from}
-                    chosen={chosen}
-                    autoGranted={autoGranted}
-                    onToggle={(skill) => toggleSkill(skill, sc.source)}
-                    theme={theme}
-                  />
-                );
-              })}
-          </Card>
-        )}
-
       {/* Ancestry Rule Choices: one pick from a fixed set, gated by level */}
       {(character.race || character.lineageReplacement) && ancestryState.availableRuleChoices.length > 0 && (
         <Card style={{ gap: 10 }}>
@@ -373,11 +349,7 @@ export const AncestrySection: React.FC<AncestrySectionProps> = ({
                 chosen={entry?.picked ?? []}
                 onToggle={(option) =>
                   onUpdate((cur) =>
-                    applyAncestryChoice(cur, choice.id, option, {
-                      races: allRaces,
-                      backgrounds: allBackgrounds,
-                      activeBooks,
-                    })
+                    applyAncestryChoice(cur, choice.id, option, { activeBooks })
                   )
                 }
                 theme={theme}
@@ -387,59 +359,33 @@ export const AncestrySection: React.FC<AncestrySectionProps> = ({
         </Card>
       )}
 
-      {/* Race language choices and granted languages */}
-      {character.race && (raceLanguageGrant.fixed.length > 0 || raceLanguageGrant.choiceCount > 0) && (
+      {/* Race languages and tools: the fixed grants, then the Proficiency Choices the race offers */}
+      {character.race && (raceGranted.languages.length > 0 || raceGranted.tools.length > 0 || proficiencyChoices.length > 0) && (
         <Card style={{ gap: 10 }}>
-          {raceLanguageGrant.fixed.length > 0 && (
+          {raceGranted.languages.length > 0 && (
             <View style={{ gap: 4 }}>
               <Text style={{ color: theme.textSecondary, fontSize: 12, fontWeight: "600" }}>Granted Languages:</Text>
               <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6 }}>
-                {raceLanguageGrant.fixed.map((lang) => (
+                {raceGranted.languages.map((lang) => (
                   <Badge key={lang} label={lang} variant="accent" size="sm" />
                 ))}
               </View>
             </View>
           )}
-          {raceLanguageGrant.choiceCount > 0 && (
-            <RuleChoicePicker
-              label={raceLanguageGrant.label}
-              choose={raceLanguageGrant.choiceCount}
-              from={ALL_LANGUAGE_NAMES}
-              chosen={character.chosenLanguages?.race || []}
-              autoGranted={raceLanguageGrant.fixed}
-              onToggle={toggleRaceLanguage}
-              theme={theme}
-            />
-          )}
-        </Card>
-      )}
-
-      {/* Race tool choices and granted tools */}
-      {character.race && (raceToolGrant.fixed.length > 0 || raceToolGrant.choices.length > 0) && (
-        <Card style={{ gap: 10 }}>
-          {raceToolGrant.fixed.length > 0 && (
+          {raceGranted.tools.length > 0 && (
             <View style={{ gap: 4 }}>
               <Text style={{ color: theme.textSecondary, fontSize: 12, fontWeight: "600" }}>
                 Granted Tool Proficiencies:
               </Text>
               <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6 }}>
-                {raceToolGrant.fixed.map((tool) => (
+                {raceGranted.tools.map((tool) => (
                   <Badge key={tool} label={tool} variant="surface" size="sm" />
                 ))}
               </View>
             </View>
           )}
-          {raceToolGrant.choices.map((ch) => (
-            <RuleChoicePicker
-              key={ch.key}
-              label={ch.label}
-              choose={ch.count}
-              from={ch.options}
-              chosen={character.chosenTools?.race || []}
-              autoGranted={raceToolGrant.fixed}
-              onToggle={toggleRaceTool}
-              theme={theme}
-            />
+          {proficiencyChoices.map((choice) => (
+            <ProficiencyChoicePicker key={choice.id} choice={choice} character={character} onUpdate={onUpdate} theme={theme} />
           ))}
         </Card>
       )}
@@ -685,6 +631,8 @@ export const AncestrySection: React.FC<AncestrySectionProps> = ({
                 const displayTraits = singleSubrace
                   ? [...r.traits, ...(singleSubrace.traits || [])]
                   : r.traits;
+                const showPlainRow = offersPlainRaceForm(r, srdBaselineRaces());
+                const raceFixed = collectFixedBonuses(r.abilityScoreIncrease);
                 return (
                   <Card key={`${r.name}__${r.source}`}>
                     {/* Header */}
@@ -737,6 +685,15 @@ export const AncestrySection: React.FC<AncestrySectionProps> = ({
                     {r.subraces.length > 1 ? (
                       <View style={styles.subracesBox}>
                         <Text style={[styles.subLabel, { color: theme.textSecondary }]}>Subraces / Variants:</Text>
+                        {showPlainRow
+                          ? renderRaceFormRow(
+                              "plain",
+                              r.name,
+                              raceFixed,
+                              r.name === "Half-Elf" || Object.keys(raceFixed).length === 0,
+                              () => selectRace(r)
+                            )
+                          : null}
                         {r.subraces.map((sr, idx) => {
                           const combined = collectFixedBonuses(r.abilityScoreIncrease, sr.abilityScoreIncrease);
                           const combinedStr = formatRaceASI(Object.entries(combined).map(([k, v]) => ({ [k]: v })));
@@ -745,29 +702,12 @@ export const AncestrySection: React.FC<AncestrySectionProps> = ({
                             sr.name === "Variant" ||
                             sr.name === "Custom Lineage" ||
                             r.name === "Half-Elf";
-                          return (
-                            <TouchableOpacity
-                              key={`${sr.name || "base"}_${idx}`}
-                              onPress={() => selectRace(r, idx)}
-                              style={[
-                                styles.subraceRow,
-                                { backgroundColor: theme.surfaceHighlight, borderColor: theme.border },
-                              ]}
-                            >
-                              <View style={{ flex: 1 }}>
-                                <Text style={{ color: theme.text, fontWeight: "600", fontSize: 13 }}>
-                                  {sr.name || (r.name === "Human" ? "Standard Human" : r.name)}
-                                </Text>
-                                {Boolean(combinedStr) && !srIsChoice ? (
-                                  <Text style={{ color: theme.accent, fontSize: 11, fontWeight: "600" }}>
-                                    {combinedStr}
-                                  </Text>
-                                ) : srIsChoice ? (
-                                  <Text style={{ color: theme.accent, fontSize: 11, fontWeight: "600" }}>Choice ASI</Text>
-                                ) : null}
-                              </View>
-                              <Ionicons name="chevron-forward" size={16} color={theme.accent} />
-                            </TouchableOpacity>
+                          return renderRaceFormRow(
+                            `${sr.name || "base"}_${idx}`,
+                            sr.name || (r.name === "Human" ? "Standard Human" : r.name),
+                            combined,
+                            srIsChoice,
+                            () => selectRace(r, idx)
                           );
                         })}
                       </View>
@@ -803,7 +743,7 @@ export const AncestrySection: React.FC<AncestrySectionProps> = ({
           onChangeText={setFeatSearch}
           placeholder="Search feats..."
         />
-        <ScrollView style={{ marginTop: 10, maxHeight: 450 }}>
+        <ScrollView style={{ marginTop: 10, maxHeight: 450 }} nestedScrollEnabled>
           <View style={{ gap: 8 }}>
             {allFeats
               .filter((f) => f.name.toLowerCase().includes(featSearch.toLowerCase()))
@@ -903,7 +843,7 @@ export const AncestrySection: React.FC<AncestrySectionProps> = ({
           onChangeText={setCantripSearch}
           placeholder="Search wizard cantrips..."
         />
-        <ScrollView style={{ marginTop: 10, maxHeight: 450 }}>
+        <ScrollView style={{ marginTop: 10, maxHeight: 450 }} nestedScrollEnabled>
           <View style={{ gap: 8 }}>
             {wizardCantrips
               .filter((s) => s.name.toLowerCase().includes(cantripSearch.toLowerCase()))

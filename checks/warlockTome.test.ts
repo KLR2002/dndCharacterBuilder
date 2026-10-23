@@ -1,14 +1,14 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
+import { reconcile } from "../src/rules/characterReconciler.ts";
+import { currentCompendium } from "../src/services/compendium.ts";
 import { makeChar } from "./testUtils.ts";
 import {
   warlockTomeCantripChoices,
-  syncWarlockTomeCantrips,
   warlockPactBoonChoices,
   subclassRuleChoices,
   availableSubclassRuleChoices,
-  pickSubclassRuleChoice,
-  pruneInvalidInvocations,
+  pickRuleChoice,
 } from "../src/rules/ruleChoices.ts";
 import { getClassSpellProfiles } from "../src/rules/spellcasting.ts";
 
@@ -163,7 +163,7 @@ test("Picking 3 cantrips synchronizes them into character.knownSpells with owner
   assert.ok(tomeChoice);
 
   // Pick first cantrip: Guidance
-  char = pickSubclassRuleChoice(char, tomeChoice, "Guidance");
+  char = pickRuleChoice(char, tomeChoice, "Guidance");
   assert.equal(char.knownSpells.length, 2);
   const guidance = char.knownSpells.find((k) => k.name === "Guidance");
   assert.ok(guidance);
@@ -172,7 +172,7 @@ test("Picking 3 cantrips synchronizes them into character.knownSpells with owner
   assert.equal(guidance.className, "Warlock");
 
   // Pick second cantrip: Vicious Mockery
-  char = pickSubclassRuleChoice(char, tomeChoice, "Vicious Mockery");
+  char = pickRuleChoice(char, tomeChoice, "Vicious Mockery");
   assert.equal(char.knownSpells.length, 3);
   const vm = char.knownSpells.find((k) => k.name === "Vicious Mockery");
   assert.ok(vm);
@@ -180,7 +180,7 @@ test("Picking 3 cantrips synchronizes them into character.knownSpells with owner
   assert.equal(vm.ability, "cha");
 
   // Pick third cantrip: Sacred Flame
-  char = pickSubclassRuleChoice(char, tomeChoice, "Sacred Flame");
+  char = pickRuleChoice(char, tomeChoice, "Sacred Flame");
   assert.equal(char.knownSpells.length, 4);
   const sf = char.knownSpells.find((k) => k.name === "Sacred Flame");
   assert.ok(sf);
@@ -291,7 +291,7 @@ test("Switching Pact Boon to Pact of the Blade purges Tome cantrips from knownSp
   assert.ok(pactBoonChoice);
 
   // Switch boon to Pact of the Blade
-  char = pickSubclassRuleChoice(char, pactBoonChoice, "Pact of the Blade");
+  char = pickRuleChoice(char, pactBoonChoice, "Pact of the Blade");
 
   // Verify Pact Boon is now Pact of the Blade
   const updatedBoon = char.ruleChoices?.find((rc) => rc.id.includes("Pact Boon"));
@@ -353,7 +353,7 @@ test("De-leveling Warlock to level 2 purges Tome cantrips and rule choices", () 
     classes: [{ className: "Warlock", level: 2, source: "PHB" }],
   };
 
-  const pruned = pruneInvalidInvocations(charLvl2);
+  const pruned = reconcile(charLvl2, currentCompendium());
 
   // Pact Boon should be purged
   assert.equal(pruned.ruleChoices?.some((rc) => rc.id.includes("Pact Boon")), false);

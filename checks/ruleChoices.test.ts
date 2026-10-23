@@ -4,10 +4,9 @@ import { migrateCharacter } from "../src/rules/migrateCharacter.ts";
 import {
   availableRuleChoices,
   availableSubclassRuleChoices,
-  pickSubclassRuleChoice,
+  pickRuleChoice,
   ruleChoiceId,
   subclassRuleChoices,
-  toggleSubclassRuleChoice,
   type Character,
 } from "../src/rules/ruleChoices.ts";
 import { makeChar, loadTestCatalog } from "./testUtils.ts";
@@ -219,20 +218,16 @@ test("availableSubclassRuleChoices filters by activeBooks", () => {
   assert.equal(availableSubclassRuleChoices(sorc, ["PHB", "XGE"]).length, 1);
 });
 
-test("pickSubclassRuleChoice updates character ruleChoices with origin subclass", () => {
+test("pickRuleChoice updates character ruleChoices with origin subclass", () => {
   const druid = makeChar({
     classes: [{ className: "Druid", source: "PHB", level: 2, subclassName: "Circle of the Land" }],
   });
   const choices = subclassRuleChoices(druid);
-  const updated = pickSubclassRuleChoice(druid, choices[0], "Coast");
+  const updated = pickRuleChoice(druid, choices[0], "Coast");
   assert.equal(updated.ruleChoices?.length, 1);
   assert.equal(updated.ruleChoices[0].id, "PHB__Druid__Circle of the Land__Biome");
   assert.equal(updated.ruleChoices[0].origin, "subclass");
   assert.deepEqual(updated.ruleChoices[0].picked, ["Coast"]);
-
-  // Deprecated alias works identically
-  const aliased = toggleSubclassRuleChoice(druid, choices[0], "Coast");
-  assert.deepEqual(aliased.ruleChoices, updated.ruleChoices);
 });
 
 test("Warlock with The Genie subclass offers Genie Kind rule choice", () => {

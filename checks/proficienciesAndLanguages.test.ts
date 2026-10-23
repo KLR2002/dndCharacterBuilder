@@ -1,24 +1,25 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import {
-  getRaceLanguageGrant,
-  getBackgroundLanguageGrant,
-  getRaceToolGrant,
-  getBackgroundToolGrant,
-  getClassToolGrant,
-  resolveCharacterLanguages,
-  resolveCharacterTools,
-  ARTISAN_TOOLS,
-  MUSICAL_INSTRUMENTS,
-  GAMING_SETS,
-} from "../src/rules/proficienciesAndLanguages.ts";
+import { ARTISAN_TOOLS, GAMING_SETS, MUSICAL_INSTRUMENTS } from "../src/rules/proficienciesAndLanguages.ts";
 import { POINT_BUY_COST } from "../src/constants/rules.ts";
+import { proficiencySheet, type SheetEntry } from "../src/rules/proficiencySheet.ts";
+import { proficiencyChoiceOffers } from "../src/rules/proficiencyChoiceOffers.ts";
+import type { AvailableRuleChoice } from "../src/rules/choices/types.ts";
 import type { Character } from "../src/types/character.ts";
-import { loadTestCatalog } from "./testUtils.ts";
+import { inMemoryCompendium, integratedTestCompendium, loadTestCatalog, makeChar, srdBaselineCompendium } from "./testUtils.ts";
 
+const integrated = integratedTestCompendium();
 const races = loadTestCatalog("races");
 const backgrounds = loadTestCatalog("backgrounds");
 const classes = loadTestCatalog("classes");
+
+const sheetLanguages = (char: Character, catalogs: Parameters<typeof proficiencySheet>[1]) =>
+  proficiencySheet(char, catalogs).languages.map((l) => l.name);
+const sheetNames = (entries: SheetEntry[]) => entries.map((entry) => entry.name);
+
+/** The Proficiency Choices a character is offered from one origin, with their pools as names. */
+const offersFrom = (char: Character, origin: AvailableRuleChoice["origin"], compendium = integrated) =>
+  proficiencyChoiceOffers(char, { compendium }).filter((choice) => choice.origin === origin);
 
 function createTestChar(overrides: Partial<Character> = {}): Character {
   return {
@@ -74,51 +75,40 @@ test("Point buy cost table matches 2014 D&D rules strictly", () => {
   assert.equal(POINT_BUY_COST[15], 9); // 14->15 costs 2
 });
 
-test("Dwarf language grant gives Common and Dwarvish with 0 choices", () => {
-  const grant = getRaceLanguageGrant("Dwarf", undefined, races);
-  assert.ok(grant.fixed.includes("Common"));
-  assert.ok(grant.fixed.includes("Dwarvish"));
-  assert.equal(grant.choiceCount, 0);
+test("Dwarf gives Common and Dwarvish, and one tool choice from smith's, brewer's and mason's tools", () => {
+  const dwarf = createTestChar({ race: { name: "Dwarf", source: "PHB" } });
+  const sheet = proficiencySheet(dwarf, { compendium: integrated });
+  assert.deepEqual(sheetNames(sheet.languages).sort(), ["Common", "Dwarvish"]);
+  assert.deepEqual(sheetNames(sheet.tools), []);
+  const [choice] = offersFrom(dwarf, "race");
+  assert.equal(choice.choose, 1);
+  assert.deepEqual(choice.options.map((option) => option.name), ["Smith's Tools", "Brewer's Supplies", "Mason's Tools"]);
 });
 
-test("Human language grant gives Common and 1 choice", () => {
-  const grant = getRaceLanguageGrant("Human", undefined, races);
-  assert.ok(grant.fixed.includes("Common"));
-  assert.equal(grant.choiceCount, 1);
+test("Human gives Common and one language choice of any language", () => {
+  const human = createTestChar({ race: { name: "Human", source: "PHB" } });
+  assert.deepEqual(sheetLanguages(human, { compendium: integrated }), ["Common"]);
+  const offers = offersFrom(human, "race").filter((choice) => choice.choose === 1);
+  assert.ok(offers.length >= 1);
+  assert.ok(offers.some((choice) => choice.options.some((option) => option.name === "Draconic")));
 });
 
-test("High Elf language grant gives Common, Elvish, and 1 extra choice", () => {
-  const grant = getRaceLanguageGrant("Elf", "High", races);
-  assert.ok(grant.fixed.includes("Common"));
-  assert.ok(grant.fixed.includes("Elvish"));
-  assert.equal(grant.choiceCount, 1);
+test("High Elf gives Common and Elvish, with one language choice", () => {
+  const elf = createTestChar({ race: { name: "Elf", source: "PHB", subraceName: "High", subraceSource: "PHB" } });
+  assert.deepEqual(sheetLanguages(elf, { compendium: integrated }).sort(), ["Common", "Elvish"]);
+  assert.ok(offersFrom(elf, "race").some((choice) => choice.choose === 1));
 });
 
-test("MPMM race language grant gives Common and 1 choice of language", () => {
-  const mpmmRace = races.find((r) => r.name === "Lizardfolk" && r.source === "MPMM");
-  assert.ok(mpmmRace, "MPMM Lizardfolk should exist in catalog");
-  const grant = getRaceLanguageGrant("Lizardfolk", undefined, [mpmmRace]);
-  assert.ok(grant.fixed.includes("Common"));
-  assert.equal(grant.choiceCount, 1);
-});
-
-test("Half-Elf variant does not crash and grants Common, Elvish, and 1 choice", () => {
-  const grant = getRaceLanguageGrant("Half-Elf", "Variant; Aquatic Elf Descent", races);
-  assert.ok(grant.fixed.includes("Common"));
-  assert.ok(grant.fixed.includes("Elvish"));
-  assert.equal(grant.choiceCount, 1);
-});
-
-test("resolveCharacterLanguages handles Half-Elf variant cleanly", () => {
+test("the sheet's languages handle a Half-Elf variant cleanly", () => {
   const char = createTestChar({
     race: { name: "Half-Elf", source: "PHB", subraceName: "Variant; Aquatic Elf Descent" },
   });
-  const langs = resolveCharacterLanguages(char, { races, backgrounds });
+  const langs = sheetLanguages(char, { compendium: inMemoryCompendium({ races, backgrounds }) });
   assert.ok(langs.includes("Common"));
   assert.ok(langs.includes("Elvish"));
 });
 
-test("Races with subraces lacking a name property do not throw when querying grants", () => {
+test("races whose subraces lack a name do not throw when their grants are read", () => {
   const testCases = [
     { race: "Dragonborn", subrace: "Draconic Ancestry" },
     { race: "Half-Elf", subrace: "Variant; Drow Descent" },
@@ -128,73 +118,65 @@ test("Races with subraces lacking a name property do not throw when querying gra
   ];
   for (const tc of testCases) {
     assert.doesNotThrow(() => {
-      getRaceLanguageGrant(tc.race, tc.subrace, races);
+      proficiencySheet(createTestChar({ race: { name: tc.race, source: "PHB", subraceName: tc.subrace } }), { compendium: integrated });
     }, `Failed for ${tc.race} - ${tc.subrace}`);
   }
 });
 
-test("Acolyte background language grant gives 2 choices", () => {
-  const grant = getBackgroundLanguageGrant("Acolyte", backgrounds);
-  assert.equal(grant.choiceCount, 2);
-  assert.equal(grant.fixed.length, 0);
+test("Acolyte gives two language choices and no fixed language beyond Common", () => {
+  const acolyte = createTestChar({ background: { name: "Acolyte", source: "PHB" } });
+  assert.deepEqual(sheetLanguages(acolyte, { compendium: integrated }), ["Common"]);
+  const [choice] = offersFrom(acolyte, "background");
+  assert.equal(choice.choose, 2);
 });
 
-test("Hermit background language grant gives 1 choice", () => {
-  const grant = getBackgroundLanguageGrant("Hermit", backgrounds);
-  assert.equal(grant.choiceCount, 1);
+test("Hermit gives one language choice", () => {
+  const hermit = createTestChar({ background: { name: "Hermit", source: "PHB" } });
+  const [choice] = offersFrom(hermit, "background");
+  assert.equal(choice.choose, 1);
 });
 
-test("Dwarf tool grant provides 1 choice between Smith, Brewer, or Mason tools", () => {
-  const grant = getRaceToolGrant("Dwarf", undefined, races);
-  assert.equal(grant.choices.length, 1);
-  assert.equal(grant.choices[0].count, 1);
-  assert.deepEqual(grant.choices[0].options, [
-    "Smith's Tools",
-    "Brewer's Supplies",
-    "Mason's Tools",
-  ]);
+test("Rock Gnome gives Tinker's Tools as a fixed tool", () => {
+  const rockGnome = createTestChar({ race: { name: "Gnome", source: "PHB", subraceName: "Rock", subraceSource: "PHB" } });
+  assert.ok(sheetNames(proficiencySheet(rockGnome, { compendium: integrated }).tools).includes("Tinker's Tools"));
 });
 
-test("Rock Gnome tool grant provides Tinker's Tools as fixed grant", () => {
-  const grant = getRaceToolGrant("Gnome", "Rock", races);
-  assert.ok(grant.fixed.includes("Tinker's Tools"));
+test("Folk Hero gives Vehicles (Land) and one artisan tool choice", () => {
+  const folkHero = createTestChar({ background: { name: "Folk Hero", source: "PHB" } });
+  assert.ok(sheetNames(proficiencySheet(folkHero, { compendium: integrated }).tools).includes("Vehicles (Land)"));
+  const [choice] = offersFrom(folkHero, "background");
+  assert.deepEqual(choice.options.map((option) => option.name).sort(), [...ARTISAN_TOOLS].sort());
 });
 
-test("Folk Hero background tool grant gives 1 artisan tool choice and Vehicles (Land)", () => {
-  const grant = getBackgroundToolGrant("Folk Hero", backgrounds);
-  assert.ok(grant.fixed.includes("Vehicles (Land)"));
-  assert.equal(grant.choices.length, 1);
-  assert.deepEqual(grant.choices[0].options, ARTISAN_TOOLS);
+test("Entertainer gives Disguise Kit and one musical instrument choice", () => {
+  const entertainer = createTestChar({ background: { name: "Entertainer", source: "PHB" } });
+  assert.ok(sheetNames(proficiencySheet(entertainer, { compendium: integrated }).tools).includes("Disguise Kit"));
+  const [choice] = offersFrom(entertainer, "background");
+  assert.deepEqual(choice.options.map((option) => option.name).sort(), [...MUSICAL_INSTRUMENTS].sort());
 });
 
-test("Entertainer background tool grant gives Disguise Kit and 1 Musical Instrument choice", () => {
-  const grant = getBackgroundToolGrant("Entertainer", backgrounds);
-  assert.ok(grant.fixed.includes("Disguise Kit"));
-  assert.equal(grant.choices.length, 1);
-  assert.deepEqual(grant.choices[0].options, MUSICAL_INSTRUMENTS);
+test("Criminal gives Thieves' Tools and one gaming set choice", () => {
+  const criminal = createTestChar({ background: { name: "Criminal", source: "PHB" } });
+  assert.ok(sheetNames(proficiencySheet(criminal, { compendium: integrated }).tools).includes("Thieves' Tools"));
+  const [choice] = offersFrom(criminal, "background");
+  assert.deepEqual(choice.options.map((option) => option.name).sort(), [...GAMING_SETS].sort());
 });
 
-test("Criminal background tool grant gives Thieves' Tools and 1 Gaming Set choice", () => {
-  const grant = getBackgroundToolGrant("Criminal", backgrounds);
-  assert.ok(grant.fixed.includes("Thieves' Tools"));
-  assert.equal(grant.choices.length, 1);
-  assert.deepEqual(grant.choices[0].options, GAMING_SETS);
+test("Bard starting tools are three Musical Instrument picks, offered as a Proficiency Choice", () => {
+  const bard = makeChar({ classes: [{ className: "Bard", source: "SRD", level: 1 }] });
+  const offers = proficiencyChoiceOffers(bard, { compendium: srdBaselineCompendium() });
+  assert.equal(offers.length, 1);
+  assert.equal(offers[0].choose, 3);
+  assert.deepEqual(offers[0].options.map((option) => option.name).sort(), [...MUSICAL_INSTRUMENTS].sort());
 });
 
-test("Bard class tool grant provides 3 Musical Instrument choices", () => {
-  const grant = getClassToolGrant("Bard", classes);
-  assert.equal(grant.choices.length, 1);
-  assert.equal(grant.choices[0].count, 3);
-  assert.deepEqual(grant.choices[0].options, MUSICAL_INSTRUMENTS);
+test("Rogue starting tools are Thieves' Tools, held from level 1", () => {
+  const rogue = makeChar({ classes: [{ className: "Rogue", source: "SRD", level: 1 }] });
+  const sheet = proficiencySheet(rogue, { compendium: srdBaselineCompendium() });
+  assert.ok(sheet.tools.some((tool) => tool.name === "Thieves' Tools"));
 });
 
-test("Rogue class tool grant provides Thieves' Tools fixed", () => {
-  const grant = getClassToolGrant("Rogue", classes);
-  assert.ok(grant.fixed.includes("Thieves' Tools"));
-  assert.equal(grant.choices.length, 0);
-});
-
-test("resolveCharacterLanguages combines fixed and chosen languages cleanly", () => {
+test("the sheet's languages combine fixed and chosen languages cleanly", () => {
   const char = createTestChar({
     race: { name: "Human", source: "PHB" },
     background: { name: "Acolyte", source: "PHB" },
@@ -203,7 +185,7 @@ test("resolveCharacterLanguages combines fixed and chosen languages cleanly", ()
       background: ["Celestial", "Infernal"],
     },
   });
-  const langs = resolveCharacterLanguages(char, { races, backgrounds });
+  const langs = sheetLanguages(char, { compendium: inMemoryCompendium({ races, backgrounds }) });
   assert.ok(langs.includes("Common"));
   assert.ok(langs.includes("Draconic"));
   assert.ok(langs.includes("Celestial"));
@@ -211,23 +193,18 @@ test("resolveCharacterLanguages combines fixed and chosen languages cleanly", ()
   assert.equal(langs.length, 4);
 });
 
-test("resolveCharacterTools combines fixed and chosen tools cleanly without placeholders", () => {
+test("the sheet's tools combine fixed tools and saved picks cleanly without placeholders", () => {
   const char = createTestChar({
     race: { name: "Dwarf", source: "PHB" },
     background: { name: "Folk Hero", source: "PHB" },
-    classes: [{ className: "Bard", source: "PHB", level: 1 }],
     chosenTools: {
       race: ["Smith's Tools"],
       background: ["Cook's Utensils"],
-      class: ["Lute", "Flute", "Drum"],
     },
   });
-  const tools = resolveCharacterTools(char, { races, backgrounds, classes });
+  const tools = sheetNames(proficiencySheet(char, { compendium: inMemoryCompendium({ races, backgrounds, classes }) }).tools);
   assert.ok(tools.includes("Smith's Tools"));
   assert.ok(tools.includes("Cook's Utensils"));
   assert.ok(tools.includes("Vehicles (Land)"));
-  assert.ok(tools.includes("Lute"));
-  assert.ok(tools.includes("Flute"));
-  assert.ok(tools.includes("Drum"));
   assert.ok(!tools.includes("anyArtisansTool"));
 });

@@ -1,13 +1,13 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { reconcile } from "../src/rules/characterReconciler.ts";
+import { currentCompendium } from "../src/services/compendium.ts";
 import type { Character } from "../src/types/character.ts";
 import type { SpellData } from "../src/types/dnd5e.ts";
 import {
   warlockAncientSecretsStartingRituals,
   availableSubclassRuleChoices,
-  syncAncientSecretsRituals,
-  pickSubclassRuleChoice,
-  pruneInvalidInvocations,
+  pickRuleChoice,
   getMaxRitualBookLevel,
   isSpellEligibleForRitualBook,
 } from "../src/rules/ruleChoices.ts";
@@ -137,8 +137,8 @@ test("Book of Ancient Secrets: picking starting rituals synchronizes into charac
   const char = createTestWarlock(3);
   const choice = warlockAncientSecretsStartingRituals(char)[0];
 
-  const updated1 = pickSubclassRuleChoice(char, choice, "Find Familiar");
-  const updated2 = pickSubclassRuleChoice(updated1, choice, "Identify");
+  const updated1 = pickRuleChoice(char, choice, "Find Familiar");
+  const updated2 = pickRuleChoice(updated1, choice, "Identify");
 
   assert.ok(updated2.ritualBook);
   assert.equal(updated2.ritualBook.length, 2);
@@ -157,8 +157,8 @@ test("Book of Ancient Secrets: picking starting rituals synchronizes into charac
 test("Book of Ancient Secrets: ritual ledger isolation from known spells and prepared counts", () => {
   const char = createTestWarlock(3);
   const choice = warlockAncientSecretsStartingRituals(char)[0];
-  let updated = pickSubclassRuleChoice(char, choice, "Find Familiar");
-  updated = pickSubclassRuleChoice(updated, choice, "Identify");
+  let updated = pickRuleChoice(char, choice, "Find Familiar");
+  updated = pickRuleChoice(updated, choice, "Identify");
 
   // Inscribe an adventure ritual
   updated = {
@@ -185,8 +185,8 @@ test("Book of Ancient Secrets: ritual ledger isolation from known spells and pre
 test("Book of Ancient Secrets: adventure inscription preserves starting rituals and allows removal of inscribed only", () => {
   const char = createTestWarlock(5);
   const choice = warlockAncientSecretsStartingRituals(char)[0];
-  let updated = pickSubclassRuleChoice(char, choice, "Find Familiar");
-  updated = pickSubclassRuleChoice(updated, choice, "Identify");
+  let updated = pickRuleChoice(char, choice, "Find Familiar");
+  updated = pickRuleChoice(updated, choice, "Identify");
 
   // Add adventure inscribed rituals (Level <= Math.ceil(5/2) = 3)
   updated = {
@@ -201,7 +201,7 @@ test("Book of Ancient Secrets: adventure inscription preserves starting rituals 
   assert.equal(updated.ritualBook.length, 4);
 
   // Changing one starting ritual preserves inscribed rituals
-  const updatedStarting = pickSubclassRuleChoice(updated, choice, "Alarm");
+  const updatedStarting = pickRuleChoice(updated, choice, "Alarm");
   const names = (updatedStarting.ritualBook || []).map((r) => r.name);
   assert.ok(names.includes("Water Breathing"));
   assert.ok(names.includes("Leomund's Tiny Hut"));
@@ -211,8 +211,8 @@ test("Book of Ancient Secrets: adventure inscription preserves starting rituals 
 test("Book of Ancient Secrets: switching Pact Boon or losing invocation completely cleanses ritualBook and populates needsReview", () => {
   const char = createTestWarlock(3);
   const choice = warlockAncientSecretsStartingRituals(char)[0];
-  let updated = pickSubclassRuleChoice(char, choice, "Find Familiar");
-  updated = pickSubclassRuleChoice(updated, choice, "Identify");
+  let updated = pickRuleChoice(char, choice, "Find Familiar");
+  updated = pickRuleChoice(updated, choice, "Identify");
   // Also add an inscribed adventure ritual
   updated = {
     ...updated,
@@ -232,7 +232,7 @@ test("Book of Ancient Secrets: switching Pact Boon or losing invocation complete
   };
 
   // Pruning invocations will prune Book of Ancient Secrets (since it requires Tome)
-  const pruned = pruneInvalidInvocations(bladeChar);
+  const pruned = reconcile(bladeChar, currentCompendium());
   assert.ok(
     !pruned.ruleChoices?.some((rc) => rc.id.includes("Book of Ancient Secrets")),
     "Starting rituals ruleChoice should be pruned"
@@ -252,7 +252,7 @@ test("Book of Ancient Secrets: switching Pact Boon or losing invocation complete
       rc.id.includes("Invocations 2") ? { ...rc, picked: ["Agonizing Blast", "Armor of Shadows"] } : rc
     ),
   };
-  const syncedAfterLost = syncAncientSecretsRituals(lostInvocationChar);
+  const syncedAfterLost = reconcile(lostInvocationChar, currentCompendium());
   assert.equal(syncedAfterLost.ritualBook, undefined, "ritualBook must be completely cleansed when invocation is lost");
   assert.ok(
     syncedAfterLost.needsReview?.includes(

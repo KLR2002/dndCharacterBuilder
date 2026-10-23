@@ -848,3 +848,18 @@ test("getClassSpellProfiles: Ranger and Sorcerer profiles include subclassKnownS
 });
 
 
+
+test("ClassSpellProfile carries its Spell Owner key, including the Giant Barbarian owner", () => {
+  const cleric = makeChar({ classes: [cl("Cleric", 3)] });
+  assert.equal(getClassSpellProfiles(cleric)[0].ownerKey, "Cleric__PHB");
+
+  const wizardXge = makeChar({ classes: [cl("Wizard", 3, undefined, "XGE")] });
+  assert.equal(getClassSpellProfiles(wizardXge)[0].ownerKey, "Wizard__XGE");
+
+  const giant = makeChar({ classes: [cl("Barbarian", 3, "Path of the Giant")] });
+  assert.equal(getClassSpellProfiles(giant)[0].ownerKey, "Barbarian__BGG");
+
+  // A non-Giant Barbarian is not a casting class, so the owner key falls back to the class key.
+  const berserker = makeChar({ classes: [cl("Barbarian", 3, "Path of the Berserker")] });
+  assert.deepEqual(getClassSpellProfiles(berserker), []);
+});

@@ -2,12 +2,11 @@ import React, { useState } from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useAppTheme } from "../context/ThemeContext";
-import { evaluateCharacter } from "../services/dndRules";
+import { evaluateCharacter } from "../rules/characterEvaluation";
 import { applyLongRest, applyShortRest } from "../rules/rest";
 import { spendHitDie } from "../rules/hitDice";
-import { CHANGEABLE_AT_LONG_REST, availableRuleChoices } from "../rules/ruleChoices";
+import { CHANGEABLE_AT_LONG_REST, offeredRuleChoices, pickRuleChoice } from "../rules/ruleChoices";
 import { getRaces } from "../services/dataService";
-import { setRuleChoicePick } from "../rules/builderTransitions";
 import { Character } from "../types/character";
 import { Button } from "./ui/Button";
 import { Card } from "./ui/Card";
@@ -83,12 +82,11 @@ export const RestModal: React.FC<RestModalProps> = ({
 
   // Choices the player may change because they finish a long rest: the eladrin's
   // season, per MToF. Long rest clears them, so they are offered here.
-  const changeableChoices = availableRuleChoices(
-    characterWithPending ?? character,
-    getRaces(activeBooks),
-    undefined,
-    activeBooks
-  ).filter((choice) => CHANGEABLE_AT_LONG_REST.has(choice.traitName));
+  const changeableChoices = offeredRuleChoices(characterWithPending ?? character, {
+    raceCatalog: getRaces(activeBooks),
+    activeBooks,
+    origins: ["race"],
+  }).filter((choice) => CHANGEABLE_AT_LONG_REST.has(choice.traitName));
 
   const executeLongRest = () => {
     const updated = applyLongRest(characterWithPending ?? character);
@@ -252,14 +250,7 @@ export const RestModal: React.FC<RestModalProps> = ({
                               onPress={() =>
                                 setPendingChoices((prev) => ({
                                   ...prev,
-                                  ...setRuleChoicePick(
-                                    characterWithPending ?? character,
-                                    choice.id,
-                                    choice.traitName,
-                                    option.name,
-                                    choice.options.map((o) => o.name),
-                                    choice.choose
-                                  ),
+                                  ...pickRuleChoice(characterWithPending ?? character, choice, option.name),
                                 }))
                               }
                               style={{

@@ -37,6 +37,8 @@ Judgement calls and rules conventions enforced during code review.
     - Level-gated milestones (e.g., Monk Elemental Disciplines, class archetype unlocks): must verify higher-tier choices are absent/rejected at lower levels, and pre-unlock levels offer zero choices.
 - **Dual-Mode SRD vs. Compendium Invariant**:
   - Mechanics or UI altering ancestry traits, race variants, or class progression must verify behavior across both SRD-only mode and integrated compendium mode to ensure changes for one mode do not regress choices in the other.
+- **Live Catalog Invariant**:
+  - The in-app sync builds a different catalog from the tracked snapshot (both prints of every class, items in the 2024 shapes). A change that reads grants, owners, items or class records must hold on that catalog: `npm run check:live` passes, and a new invariant about catalog shape goes into `checks/liveCatalog.test.ts`.
 
 ## 5. Equipment Economy, Attunement & Mundane Invariants
 - **Attunement Gating**:
@@ -49,3 +51,24 @@ Judgement calls and rules conventions enforced during code review.
 ## 6. Cross-Platform Runtime & Storage
 - **Mobile-Native Compatibility**:
   - Shared services and storage layers must never access browser DOM globals (`window`, `document`, `indexedDB`, `localStorage`) without platform checking (`Platform.OS === "web"`). Mobile targets (Android/iOS) must use `AsyncStorage` or native file-system adapters.
+
+## 7. Responsive Layout
+- **Fluid, Not Breakpoint-Driven**:
+  - Layout must not depend only on breakpoints to avoid overflow. `isCompact` tunes density (spacing, font size, stacking); it must never be the only thing keeping a row from overflowing.
+  - The app is used at 360-430dp, which is not compact. A layout that is only correct at 393dp is a bug.
+- **Rows Wrap or Shrink**:
+  - A row that mixes text and buttons or badges must set `flexWrap: "wrap"`, or its text must set `flexShrink: 1` / `minWidth: 0`. React Native defaults to `flexShrink: 0`, so an unmarked text child will not shrink.
+  - Badges, option names and other long user or catalog text must be able to wrap inside their parent.
+- **Inputs and Text Controls**:
+  - Never give a `TextInput` or other text-bearing control a fixed `height` or `width`. Use `minHeight`, `minWidth`, `flexBasis` or `maxWidth`.
+  - On Android set `paddingVertical: 0`, `textAlignVertical: "center"` and `includeFontPadding: false` on inputs, or the text clips at the top.
+- **Verify at Phone Widths**:
+  - Check UI changes at 320, 360, 393 and 412 px. Run `npm run layout:check`, which starts the Expo web server itself (`npx playwright install chromium` once; add `-- --integrated` for the integrated catalog). It fails on squeezed text and on elements that stick out of their parent.
+  - Some issues are native-only (such as Android text clipping) and cannot be caught by the web check. Say so in the review.
+
+## 8. UI Copy
+- **Essential Description Only**:
+  - Show only the essential description of a mechanic on screen.
+  - Add help text only for a rule the player could not guess and would get wrong.
+- **Derived Rules Stay Off Screen**:
+  - Keep rules that follow from the controls or from the game's own rules in `GLOSSARY.md` and tests, not on screen.

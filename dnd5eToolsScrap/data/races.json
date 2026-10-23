@@ -1,5 +1,18 @@
 [
   {
+    "grants": [
+      {
+        "id": "DMG/Race/Aarakocra@0#languages:fixed:Auran",
+        "aliases": [
+          "DMG/Race/Aarakocra@0#0"
+        ],
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Auran"
+        ]
+      }
+    ],
     "name": "Aarakocra",
     "source": "DMG",
     "size": [
@@ -60,6 +73,32 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "EEPC/Race/Aarakocra@0#languages:fixed:Auran,Common",
+        "aliases": [
+          "EEPC/Race/Aarakocra@0#0"
+        ],
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common",
+          "Auran"
+        ]
+      },
+      {
+        "id": "EEPC/Race/Aarakocra@0#languages:choice:any",
+        "aliases": [
+          "EEPC/Race/Aarakocra@0#1"
+        ],
+        "kind": "choice",
+        "category": "languages",
+        "count": 1,
+        "pool": {
+          "kind": "any"
+        }
+      }
+    ],
     "name": "Aarakocra",
     "source": "EEPC",
     "size": [
@@ -155,6 +194,31 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "MPMM/Race/Aarakocra@0#languages:fixed:Common",
+        "aliases": [
+          "MPMM/Race/Aarakocra@0#0"
+        ],
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common"
+        ]
+      },
+      {
+        "id": "MPMM/Race/Aarakocra@0#languages:choice:any",
+        "aliases": [
+          "MPMM/Race/Aarakocra@0#1"
+        ],
+        "kind": "choice",
+        "category": "languages",
+        "count": 1,
+        "pool": {
+          "kind": "any"
+        }
+      }
+    ],
     "name": "Aarakocra",
     "source": "MPMM",
     "size": [
@@ -209,6 +273,20 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "DMG/Race/Aasimar@0#languages:fixed:Celestial,Common",
+        "aliases": [
+          "DMG/Race/Aasimar@0#0"
+        ],
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common",
+          "Celestial"
+        ]
+      }
+    ],
     "name": "Aasimar",
     "source": "DMG",
     "size": [
@@ -302,6 +380,31 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "MPMM/Race/Aasimar@0#languages:fixed:Common",
+        "aliases": [
+          "MPMM/Race/Aasimar@0#0"
+        ],
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common"
+        ]
+      },
+      {
+        "id": "MPMM/Race/Aasimar@0#languages:choice:any",
+        "aliases": [
+          "MPMM/Race/Aasimar@0#1"
+        ],
+        "kind": "choice",
+        "category": "languages",
+        "count": 1,
+        "pool": {
+          "kind": "any"
+        }
+      }
+    ],
     "name": "Aasimar",
     "source": "MPMM",
     "size": [
@@ -428,6 +531,20 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "VGM/Race/Aasimar@0#languages:fixed:Celestial,Common",
+        "aliases": [
+          "VGM/Race/Aasimar@0#0"
+        ],
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common",
+          "Celestial"
+        ]
+      }
+    ],
     "name": "Aasimar",
     "source": "VGM",
     "size": [
@@ -625,6 +742,42 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "PSK/Race/Aetherborn@0#languages:fixed:Common",
+        "aliases": [
+          "PSK/Race/Aetherborn@0#0"
+        ],
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common"
+        ]
+      },
+      {
+        "id": "PSK/Race/Aetherborn@0#languages:choice:any",
+        "aliases": [
+          "PSK/Race/Aetherborn@0#1"
+        ],
+        "kind": "choice",
+        "category": "languages",
+        "count": 2,
+        "pool": {
+          "kind": "any"
+        }
+      },
+      {
+        "id": "PSK/Race/Aetherborn@0#skills:fixed:Intimidation",
+        "aliases": [
+          "PSK/Race/Aetherborn@0#2"
+        ],
+        "kind": "fixed",
+        "category": "skills",
+        "names": [
+          "Intimidation"
+        ]
+      }
+    ],
     "name": "Aetherborn",
     "source": "PSK",
     "size": [
@@ -743,6 +896,30 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "AAG/Race/Astral Elf@0#languages:fixed:Common",
+        "aliases": [
+          "AAG/Race/Astral Elf@0#0"
+        ],
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common"
+        ]
+      },
+      {
+        "id": "AAG/Race/Astral Elf@0#skills:fixed:Perception",
+        "aliases": [
+          "AAG/Race/Astral Elf@0#1"
+        ],
+        "kind": "fixed",
+        "category": "skills",
+        "names": [
+          "Perception"
+        ]
+      }
+    ],
     "name": "Astral Elf",
     "source": "AAG",
     "size": [
@@ -840,6 +1017,31 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "AAG/Race/Autognome@0#tools:choice:any",
+        "aliases": [
+          "AAG/Race/Autognome@0#0"
+        ],
+        "kind": "choice",
+        "category": "tools",
+        "count": 2,
+        "pool": {
+          "kind": "any"
+        }
+      },
+      {
+        "id": "AAG/Race/Autognome@0#languages:fixed:Common",
+        "aliases": [
+          "AAG/Race/Autognome@0#1"
+        ],
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common"
+        ]
+      }
+    ],
     "name": "Autognome",
     "source": "AAG",
     "size": [
@@ -937,6 +1139,31 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "PSA/Race/Aven@0#languages:fixed:Common",
+        "aliases": [
+          "PSA/Race/Aven@0#0"
+        ],
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common"
+        ]
+      },
+      {
+        "id": "PSA/Race/Aven@0#languages:choice:any",
+        "aliases": [
+          "PSA/Race/Aven@0#1"
+        ],
+        "kind": "choice",
+        "category": "languages",
+        "count": 1,
+        "pool": {
+          "kind": "any"
+        }
+      }
+    ],
     "name": "Aven",
     "source": "PSA",
     "size": [
@@ -980,6 +1207,19 @@
     ],
     "subraces": [
       {
+        "grants": [
+          {
+            "id": "PSA/Subrace/Aven (Hawk-Headed)@0#skills:fixed:Perception",
+            "aliases": [
+              "PSA/Subrace/Aven (Hawk-Headed)@0#0"
+            ],
+            "kind": "fixed",
+            "category": "skills",
+            "names": [
+              "Perception"
+            ]
+          }
+        ],
         "name": "Hawk-Headed",
         "isVariant": false,
         "source": "PSA",
@@ -1078,6 +1318,42 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "PSD/Race/Aven@0#languages:fixed:Common",
+        "aliases": [
+          "PSD/Race/Aven@0#0"
+        ],
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common"
+        ]
+      },
+      {
+        "id": "PSD/Race/Aven@0#languages:choice:any",
+        "aliases": [
+          "PSD/Race/Aven@0#1"
+        ],
+        "kind": "choice",
+        "category": "languages",
+        "count": 1,
+        "pool": {
+          "kind": "any"
+        }
+      },
+      {
+        "id": "PSD/Race/Aven@0#skills:fixed:Perception",
+        "aliases": [
+          "PSD/Race/Aven@0#2"
+        ],
+        "kind": "fixed",
+        "category": "skills",
+        "names": [
+          "Perception"
+        ]
+      }
+    ],
     "name": "Aven",
     "source": "PSD",
     "size": [
@@ -1109,7 +1385,7 @@
       },
       {
         "name": "Flight",
-        "description": "You have a flying speed of 30 feet. You can't use your flying speed while you wear medium or heavy armor. (If your campaign uses the variant rule for PHB, you can't use your flying speed if you are encumbered.)"
+        "description": "You have a flying speed of 30 feet. You can't use your flying speed while you wear medium or heavy armor. (If your campaign uses the variant rule for encumbrance, you can't use your flying speed if you are encumbered.)"
       },
       {
         "name": "Languages",
@@ -1125,7 +1401,7 @@
       "Other"
     ],
     "subraces": [],
-    "description": "### Age\n\n\nLike humans, aven reach adulthood in their late teens and can live into their 80s.\n\n### Alignment\n\n\nAven are inclined toward the lawful good alignment of the Church of Serra\n\n### Size\n\n\nAven stand from 5 to 6 feet tall, but their bodies are slender and their bones are partially hollow to facilitate their flight. Your size is Medium.\n\n### Flight\n\n\nYou have a flying speed of 30 feet. You can't use your flying speed while you wear medium or heavy armor. (If your campaign uses the variant rule for PHB, you can't use your flying speed if you are encumbered.)\n\n### Languages\n\n\nYou can speak, read, and write Common and Aven.\n\n### Hawkeyed\n\n\nYou have proficiency in the Perception skill. In addition, attacking at long range doesn't impose disadvantage on your ranged weapon attack rolls.",
+    "description": "### Age\n\n\nLike humans, aven reach adulthood in their late teens and can live into their 80s.\n\n### Alignment\n\n\nAven are inclined toward the lawful good alignment of the Church of Serra\n\n### Size\n\n\nAven stand from 5 to 6 feet tall, but their bodies are slender and their bones are partially hollow to facilitate their flight. Your size is Medium.\n\n### Flight\n\n\nYou have a flying speed of 30 feet. You can't use your flying speed while you wear medium or heavy armor. (If your campaign uses the variant rule for encumbrance, you can't use your flying speed if you are encumbered.)\n\n### Languages\n\n\nYou can speak, read, and write Common and Aven.\n\n### Hawkeyed\n\n\nYou have proficiency in the Perception skill. In addition, attacking at long range doesn't impose disadvantage on your ranged weapon attack rolls.",
     "rawEntries": [
       {
         "type": "entries",
@@ -1172,6 +1448,31 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "ERLW/Race/Bugbear@0#languages:fixed:Common,Goblin",
+        "aliases": [
+          "ERLW/Race/Bugbear@0#0"
+        ],
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common",
+          "Goblin"
+        ]
+      },
+      {
+        "id": "ERLW/Race/Bugbear@0#skills:fixed:Stealth",
+        "aliases": [
+          "ERLW/Race/Bugbear@0#1"
+        ],
+        "kind": "fixed",
+        "category": "skills",
+        "names": [
+          "Stealth"
+        ]
+      }
+    ],
     "name": "Bugbear",
     "source": "ERLW",
     "size": [
@@ -1298,6 +1599,42 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "MPMM/Race/Bugbear@0#languages:fixed:Common",
+        "aliases": [
+          "MPMM/Race/Bugbear@0#0"
+        ],
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common"
+        ]
+      },
+      {
+        "id": "MPMM/Race/Bugbear@0#languages:choice:any",
+        "aliases": [
+          "MPMM/Race/Bugbear@0#1"
+        ],
+        "kind": "choice",
+        "category": "languages",
+        "count": 1,
+        "pool": {
+          "kind": "any"
+        }
+      },
+      {
+        "id": "MPMM/Race/Bugbear@0#skills:fixed:Stealth",
+        "aliases": [
+          "MPMM/Race/Bugbear@0#2"
+        ],
+        "kind": "fixed",
+        "category": "skills",
+        "names": [
+          "Stealth"
+        ]
+      }
+    ],
     "name": "Bugbear",
     "source": "MPMM",
     "size": [
@@ -1394,6 +1731,31 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "VGM/Race/Bugbear@0#languages:fixed:Common,Goblin",
+        "aliases": [
+          "VGM/Race/Bugbear@0#0"
+        ],
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common",
+          "Goblin"
+        ]
+      },
+      {
+        "id": "VGM/Race/Bugbear@0#skills:fixed:Stealth",
+        "aliases": [
+          "VGM/Race/Bugbear@0#1"
+        ],
+        "kind": "fixed",
+        "category": "skills",
+        "names": [
+          "Stealth"
+        ]
+      }
+    ],
     "name": "Bugbear",
     "source": "VGM",
     "size": [
@@ -1509,6 +1871,20 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "DMG/Race/Bullywug@0#languages:choice:any",
+        "aliases": [
+          "DMG/Race/Bullywug@0#0"
+        ],
+        "kind": "choice",
+        "category": "languages",
+        "count": 1,
+        "pool": {
+          "kind": "any"
+        }
+      }
+    ],
     "name": "Bullywug",
     "source": "DMG",
     "size": [
@@ -1591,6 +1967,39 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "GGR/Race/Centaur@0#languages:fixed:Common,Sylvan",
+        "aliases": [
+          "GGR/Race/Centaur@0#0"
+        ],
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common",
+          "Sylvan"
+        ]
+      },
+      {
+        "id": "GGR/Race/Centaur@0#skills:choice:from",
+        "aliases": [
+          "GGR/Race/Centaur@0#1",
+          "GGR/Race/Centaur@0#skills:choice:from=Animal Handling,Medicine,Nature,Survival"
+        ],
+        "kind": "choice",
+        "category": "skills",
+        "count": 1,
+        "pool": {
+          "kind": "names",
+          "names": [
+            "Animal Handling",
+            "Medicine",
+            "Nature",
+            "Survival"
+          ]
+        }
+      }
+    ],
     "name": "Centaur",
     "source": "GGR",
     "size": [
@@ -1718,6 +2127,39 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "MOT/Race/Centaur@0#languages:fixed:Common,Sylvan",
+        "aliases": [
+          "MOT/Race/Centaur@0#0"
+        ],
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common",
+          "Sylvan"
+        ]
+      },
+      {
+        "id": "MOT/Race/Centaur@0#skills:choice:from",
+        "aliases": [
+          "MOT/Race/Centaur@0#1",
+          "MOT/Race/Centaur@0#skills:choice:from=Animal Handling,Medicine,Nature,Survival"
+        ],
+        "kind": "choice",
+        "category": "skills",
+        "count": 1,
+        "pool": {
+          "kind": "names",
+          "names": [
+            "Animal Handling",
+            "Medicine",
+            "Nature",
+            "Survival"
+          ]
+        }
+      }
+    ],
     "name": "Centaur",
     "source": "MOT",
     "size": [
@@ -1845,6 +2287,50 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "MPMM/Race/Centaur@0#languages:fixed:Common",
+        "aliases": [
+          "MPMM/Race/Centaur@0#0"
+        ],
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common"
+        ]
+      },
+      {
+        "id": "MPMM/Race/Centaur@0#languages:choice:any",
+        "aliases": [
+          "MPMM/Race/Centaur@0#1"
+        ],
+        "kind": "choice",
+        "category": "languages",
+        "count": 1,
+        "pool": {
+          "kind": "any"
+        }
+      },
+      {
+        "id": "MPMM/Race/Centaur@0#skills:choice:from",
+        "aliases": [
+          "MPMM/Race/Centaur@0#2",
+          "MPMM/Race/Centaur@0#skills:choice:from=Animal Handling,Medicine,Nature,Survival"
+        ],
+        "kind": "choice",
+        "category": "skills",
+        "count": 1,
+        "pool": {
+          "kind": "names",
+          "names": [
+            "Animal Handling",
+            "Medicine",
+            "Nature",
+            "Survival"
+          ]
+        }
+      }
+    ],
     "name": "Centaur",
     "source": "MPMM",
     "size": [
@@ -1920,6 +2406,50 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "ERLW/Race/Changeling@0#languages:fixed:Common",
+        "aliases": [
+          "ERLW/Race/Changeling@0#0"
+        ],
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common"
+        ]
+      },
+      {
+        "id": "ERLW/Race/Changeling@0#languages:choice:any",
+        "aliases": [
+          "ERLW/Race/Changeling@0#1"
+        ],
+        "kind": "choice",
+        "category": "languages",
+        "count": 2,
+        "pool": {
+          "kind": "any"
+        }
+      },
+      {
+        "id": "ERLW/Race/Changeling@0#skills:choice:from",
+        "aliases": [
+          "ERLW/Race/Changeling@0#2",
+          "ERLW/Race/Changeling@0#skills:choice:from=Deception,Insight,Intimidation,Persuasion"
+        ],
+        "kind": "choice",
+        "category": "skills",
+        "count": 2,
+        "pool": {
+          "kind": "names",
+          "names": [
+            "Deception",
+            "Insight",
+            "Intimidation",
+            "Persuasion"
+          ]
+        }
+      }
+    ],
     "name": "Changeling",
     "source": "ERLW",
     "size": [
@@ -2013,6 +2543,51 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "MPMM/Race/Changeling@0#languages:fixed:Common",
+        "aliases": [
+          "MPMM/Race/Changeling@0#0"
+        ],
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common"
+        ]
+      },
+      {
+        "id": "MPMM/Race/Changeling@0#languages:choice:any",
+        "aliases": [
+          "MPMM/Race/Changeling@0#1"
+        ],
+        "kind": "choice",
+        "category": "languages",
+        "count": 1,
+        "pool": {
+          "kind": "any"
+        }
+      },
+      {
+        "id": "MPMM/Race/Changeling@0#skills:choice:from",
+        "aliases": [
+          "MPMM/Race/Changeling@0#2",
+          "MPMM/Race/Changeling@0#skills:choice:from=Deception,Insight,Intimidation,Performance,Persuasion"
+        ],
+        "kind": "choice",
+        "category": "skills",
+        "count": 2,
+        "pool": {
+          "kind": "names",
+          "names": [
+            "Deception",
+            "Insight",
+            "Intimidation",
+            "Performance",
+            "Persuasion"
+          ]
+        }
+      }
+    ],
     "name": "Changeling",
     "source": "MPMM",
     "size": [
@@ -2078,6 +2653,43 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "TCE/Race/Custom Lineage@0#languages:fixed:Common",
+        "aliases": [
+          "TCE/Race/Custom Lineage@0#0"
+        ],
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common"
+        ]
+      },
+      {
+        "id": "TCE/Race/Custom Lineage@0#languages:choice:any",
+        "aliases": [
+          "TCE/Race/Custom Lineage@0#1"
+        ],
+        "kind": "choice",
+        "category": "languages",
+        "count": 1,
+        "pool": {
+          "kind": "any"
+        }
+      },
+      {
+        "id": "TCE/Race/Custom Lineage@0#skills:choice:any",
+        "aliases": [
+          "TCE/Race/Custom Lineage@0#2"
+        ],
+        "kind": "choice",
+        "category": "skills",
+        "count": 1,
+        "pool": {
+          "kind": "any"
+        }
+      }
+    ],
     "name": "Custom Lineage",
     "source": "TCE",
     "size": [
@@ -2158,6 +2770,31 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "MPMM/Race/Deep Gnome@0#languages:fixed:Common",
+        "aliases": [
+          "MPMM/Race/Deep Gnome@0#0"
+        ],
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common"
+        ]
+      },
+      {
+        "id": "MPMM/Race/Deep Gnome@0#languages:choice:any",
+        "aliases": [
+          "MPMM/Race/Deep Gnome@0#1"
+        ],
+        "kind": "choice",
+        "category": "languages",
+        "count": 1,
+        "pool": {
+          "kind": "any"
+        }
+      }
+    ],
     "name": "Deep Gnome",
     "source": "MPMM",
     "size": [
@@ -2233,6 +2870,19 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "VRGR/Race/Dhampir@0#languages:fixed:Common",
+        "aliases": [
+          "VRGR/Race/Dhampir@0#0"
+        ],
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common"
+        ]
+      }
+    ],
     "name": "Dhampir",
     "source": "VRGR",
     "size": [
@@ -2330,6 +2980,20 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "PHB/Race/Dragonborn@0#languages:fixed:Common,Draconic",
+        "aliases": [
+          "PHB/Race/Dragonborn@0#0"
+        ],
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common",
+          "Draconic"
+        ]
+      }
+    ],
     "name": "Dragonborn",
     "source": "PHB",
     "size": [
@@ -2740,6 +3404,19 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "FTD/Race/Dragonborn (Chromatic)@0#languages:fixed:Common",
+        "aliases": [
+          "FTD/Race/Dragonborn (Chromatic)@0#0"
+        ],
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common"
+        ]
+      }
+    ],
     "name": "Dragonborn (Chromatic)",
     "source": "FTD",
     "size": [
@@ -2838,6 +3515,19 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "FTD/Race/Dragonborn (Gem)@0#languages:fixed:Common",
+        "aliases": [
+          "FTD/Race/Dragonborn (Gem)@0#0"
+        ],
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common"
+        ]
+      }
+    ],
     "name": "Dragonborn (Gem)",
     "source": "FTD",
     "size": [
@@ -2947,6 +3637,19 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "FTD/Race/Dragonborn (Metallic)@0#languages:fixed:Common",
+        "aliases": [
+          "FTD/Race/Dragonborn (Metallic)@0#0"
+        ],
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common"
+        ]
+      }
+    ],
     "name": "Dragonborn (Metallic)",
     "source": "FTD",
     "size": [
@@ -3066,6 +3769,31 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "MPMM/Race/Duergar@0#languages:fixed:Common",
+        "aliases": [
+          "MPMM/Race/Duergar@0#0"
+        ],
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common"
+        ]
+      },
+      {
+        "id": "MPMM/Race/Duergar@0#languages:choice:any",
+        "aliases": [
+          "MPMM/Race/Duergar@0#1"
+        ],
+        "kind": "choice",
+        "category": "languages",
+        "count": 1,
+        "pool": {
+          "kind": "any"
+        }
+      }
+    ],
     "name": "Duergar",
     "source": "MPMM",
     "size": [
@@ -3141,6 +3869,52 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "PHB/Race/Dwarf@0#tools:choice:from",
+        "aliases": [
+          "PHB/Race/Dwarf@0#0",
+          "PHB/Race/Dwarf@0#tools:choice:from=brewer's supplies,mason's tools,smith's tools"
+        ],
+        "kind": "choice",
+        "category": "tools",
+        "count": 1,
+        "pool": {
+          "kind": "names",
+          "names": [
+            "smith's tools",
+            "brewer's supplies",
+            "mason's tools"
+          ]
+        }
+      },
+      {
+        "id": "PHB/Race/Dwarf@0#languages:fixed:Common,Dwarvish",
+        "aliases": [
+          "PHB/Race/Dwarf@0#1"
+        ],
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common",
+          "Dwarvish"
+        ]
+      },
+      {
+        "id": "PHB/Race/Dwarf@0#weapons:fixed:battleaxe,handaxe,light hammer,warhammer",
+        "aliases": [
+          "PHB/Race/Dwarf@0#2"
+        ],
+        "kind": "fixed",
+        "category": "weapons",
+        "names": [
+          "battleaxe",
+          "handaxe",
+          "light hammer",
+          "warhammer"
+        ]
+      }
+    ],
     "name": "Dwarf",
     "source": "PHB",
     "size": [
@@ -3199,6 +3973,21 @@
     ],
     "subraces": [
       {
+        "grants": [
+          {
+            "id": "MTF/Subrace/Dwarf (Duergar)@0#languages:fixed:Common,Dwarvish,Undercommon",
+            "aliases": [
+              "MTF/Subrace/Dwarf (Duergar)@0#0"
+            ],
+            "kind": "fixed",
+            "category": "languages",
+            "names": [
+              "Common",
+              "Dwarvish",
+              "Undercommon"
+            ]
+          }
+        ],
         "name": "Duergar",
         "isVariant": false,
         "source": "MTF",
@@ -3395,6 +4184,20 @@
         ]
       },
       {
+        "grants": [
+          {
+            "id": "PHB/Subrace/Dwarf (Mountain)@0#armor:fixed:light armor,medium armor",
+            "aliases": [
+              "PHB/Subrace/Dwarf (Mountain)@0#0"
+            ],
+            "kind": "fixed",
+            "category": "armor",
+            "names": [
+              "light armor",
+              "medium armor"
+            ]
+          }
+        ],
         "name": "Mountain",
         "isVariant": false,
         "source": "PHB",
@@ -3492,6 +4295,52 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "PSK/Race/Dwarf (Kaladesh)@0#tools:choice:from",
+        "aliases": [
+          "PSK/Race/Dwarf (Kaladesh)@0#0",
+          "PSK/Race/Dwarf (Kaladesh)@0#tools:choice:from=alchemist's supplies,brewer's supplies,calligrapher's supplies,carpenter's tools,cartographer's tools,cobbler's tools,cook's utensils,glassblower's tools,jeweler's tools,leatherworker's tools,mason's tools,painter's supplies,potter's tools,smith's tools,tinker's tools,weaver's tools,woodcarver's tools"
+        ],
+        "kind": "choice",
+        "category": "tools",
+        "count": 2,
+        "pool": {
+          "kind": "names",
+          "names": [
+            "alchemist's supplies",
+            "brewer's supplies",
+            "calligrapher's supplies",
+            "carpenter's tools",
+            "cartographer's tools",
+            "cobbler's tools",
+            "cook's utensils",
+            "glassblower's tools",
+            "jeweler's tools",
+            "leatherworker's tools",
+            "mason's tools",
+            "painter's supplies",
+            "potter's tools",
+            "smith's tools",
+            "tinker's tools",
+            "weaver's tools",
+            "woodcarver's tools"
+          ]
+        }
+      },
+      {
+        "id": "PSK/Race/Dwarf (Kaladesh)@0#languages:fixed:Common,Dwarvish",
+        "aliases": [
+          "PSK/Race/Dwarf (Kaladesh)@0#1"
+        ],
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common",
+          "Dwarvish"
+        ]
+      }
+    ],
     "name": "Dwarf (Kaladesh)",
     "source": "PSK",
     "size": [
@@ -3618,6 +4467,42 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "MPMM/Race/Eladrin@0#languages:fixed:Common",
+        "aliases": [
+          "MPMM/Race/Eladrin@0#0"
+        ],
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common"
+        ]
+      },
+      {
+        "id": "MPMM/Race/Eladrin@0#languages:choice:any",
+        "aliases": [
+          "MPMM/Race/Eladrin@0#1"
+        ],
+        "kind": "choice",
+        "category": "languages",
+        "count": 1,
+        "pool": {
+          "kind": "any"
+        }
+      },
+      {
+        "id": "MPMM/Race/Eladrin@0#skills:fixed:Perception",
+        "aliases": [
+          "MPMM/Race/Eladrin@0#2"
+        ],
+        "kind": "fixed",
+        "category": "skills",
+        "names": [
+          "Perception"
+        ]
+      }
+    ],
     "name": "Eladrin",
     "source": "MPMM",
     "size": [
@@ -3755,6 +4640,31 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "PHB/Race/Elf@0#languages:fixed:Common,Elvish",
+        "aliases": [
+          "PHB/Race/Elf@0#0"
+        ],
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common",
+          "Elvish"
+        ]
+      },
+      {
+        "id": "PHB/Race/Elf@0#skills:fixed:Perception",
+        "aliases": [
+          "PHB/Race/Elf@0#1"
+        ],
+        "kind": "fixed",
+        "category": "skills",
+        "names": [
+          "Perception"
+        ]
+      }
+    ],
     "name": "Elf",
     "source": "PHB",
     "size": [
@@ -3805,6 +4715,21 @@
     ],
     "subraces": [
       {
+        "grants": [
+          {
+            "id": "PHB/Subrace/Elf (Drow)@0#weapons:fixed:hand crossbow,rapier,shortsword",
+            "aliases": [
+              "PHB/Subrace/Elf (Drow)@0#0"
+            ],
+            "kind": "fixed",
+            "category": "weapons",
+            "names": [
+              "rapier",
+              "shortsword",
+              "hand crossbow"
+            ]
+          }
+        ],
         "name": "Drow",
         "isVariant": false,
         "source": "PHB",
@@ -3870,6 +4795,22 @@
         ]
       },
       {
+        "grants": [
+          {
+            "id": "DMG/Subrace/Elf (Eladrin)@0#weapons:fixed:longbow,longsword,shortbow,shortsword",
+            "aliases": [
+              "DMG/Subrace/Elf (Eladrin)@0#0"
+            ],
+            "kind": "fixed",
+            "category": "weapons",
+            "names": [
+              "longsword",
+              "shortsword",
+              "shortbow",
+              "longbow"
+            ]
+          }
+        ],
         "name": "Eladrin",
         "isVariant": false,
         "source": "DMG",
@@ -3990,6 +4931,46 @@
         ]
       },
       {
+        "grants": [
+          {
+            "id": "PHB/Subrace/Elf (High)@0#languages:fixed:Common,Elvish",
+            "aliases": [
+              "PHB/Subrace/Elf (High)@0#0"
+            ],
+            "kind": "fixed",
+            "category": "languages",
+            "names": [
+              "Common",
+              "Elvish"
+            ]
+          },
+          {
+            "id": "PHB/Subrace/Elf (High)@0#languages:choice:any",
+            "aliases": [
+              "PHB/Subrace/Elf (High)@0#1"
+            ],
+            "kind": "choice",
+            "category": "languages",
+            "count": 1,
+            "pool": {
+              "kind": "any"
+            }
+          },
+          {
+            "id": "PHB/Subrace/Elf (High)@0#weapons:fixed:longbow,longsword,shortbow,shortsword",
+            "aliases": [
+              "PHB/Subrace/Elf (High)@0#2"
+            ],
+            "kind": "fixed",
+            "category": "weapons",
+            "names": [
+              "longsword",
+              "shortsword",
+              "shortbow",
+              "longbow"
+            ]
+          }
+        ],
         "name": "High",
         "isVariant": false,
         "source": "PHB",
@@ -4166,6 +5147,47 @@
         ]
       },
       {
+        "grants": [
+          {
+            "id": "MTF/Subrace/Elf (Sea)@0#languages:fixed:Aquan,Common,Elvish",
+            "aliases": [
+              "MTF/Subrace/Elf (Sea)@0#0"
+            ],
+            "kind": "fixed",
+            "category": "languages",
+            "names": [
+              "Common",
+              "Elvish",
+              "Aquan"
+            ]
+          },
+          {
+            "id": "MTF/Subrace/Elf (Sea)@0#languages:choice:any",
+            "aliases": [
+              "MTF/Subrace/Elf (Sea)@0#1"
+            ],
+            "kind": "choice",
+            "category": "languages",
+            "count": 1,
+            "pool": {
+              "kind": "any"
+            }
+          },
+          {
+            "id": "MTF/Subrace/Elf (Sea)@0#weapons:fixed:light crossbow,net,spear,trident",
+            "aliases": [
+              "MTF/Subrace/Elf (Sea)@0#2"
+            ],
+            "kind": "fixed",
+            "category": "weapons",
+            "names": [
+              "spear",
+              "trident",
+              "light crossbow",
+              "net"
+            ]
+          }
+        ],
         "name": "Sea",
         "isVariant": false,
         "source": "MTF",
@@ -4269,6 +5291,22 @@
         ]
       },
       {
+        "grants": [
+          {
+            "id": "PHB/Subrace/Elf (Wood)@0#weapons:fixed:longbow,longsword,shortbow,shortsword",
+            "aliases": [
+              "PHB/Subrace/Elf (Wood)@0#0"
+            ],
+            "kind": "fixed",
+            "category": "weapons",
+            "names": [
+              "longsword",
+              "shortsword",
+              "shortbow",
+              "longbow"
+            ]
+          }
+        ],
         "name": "Wood",
         "isVariant": false,
         "source": "PHB",
@@ -4375,6 +5413,45 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "PSK/Race/Elf (Kaladesh)@0#languages:fixed:Common,Elvish",
+        "aliases": [
+          "PSK/Race/Elf (Kaladesh)@0#0"
+        ],
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common",
+          "Elvish"
+        ]
+      },
+      {
+        "id": "PSK/Race/Elf (Kaladesh)@0#skills:fixed:Perception",
+        "aliases": [
+          "PSK/Race/Elf (Kaladesh)@0#1"
+        ],
+        "kind": "fixed",
+        "category": "skills",
+        "names": [
+          "Perception"
+        ]
+      },
+      {
+        "id": "PSK/Race/Elf (Kaladesh)@0#weapons:fixed:longbow,longsword,shortbow,shortsword",
+        "aliases": [
+          "PSK/Race/Elf (Kaladesh)@0#2"
+        ],
+        "kind": "fixed",
+        "category": "weapons",
+        "names": [
+          "longsword",
+          "shortsword",
+          "shortbow",
+          "longbow"
+        ]
+      }
+    ],
     "name": "Elf (Kaladesh)",
     "source": "PSK",
     "size": [
@@ -4477,6 +5554,20 @@
         ]
       },
       {
+        "grants": [
+          {
+            "id": "PSK/Subrace/Elf (Kaladesh) (Vahadar)@0#languages:choice:any",
+            "aliases": [
+              "PSK/Subrace/Elf (Kaladesh) (Vahadar)@0#0"
+            ],
+            "kind": "choice",
+            "category": "languages",
+            "count": 1,
+            "pool": {
+              "kind": "any"
+            }
+          }
+        ],
         "name": "Vahadar",
         "isVariant": false,
         "source": "PSK",
@@ -4592,6 +5683,31 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "PSZ/Race/Elf (Zendikar)@0#languages:fixed:Common,Elvish",
+        "aliases": [
+          "PSZ/Race/Elf (Zendikar)@0#0"
+        ],
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common",
+          "Elvish"
+        ]
+      },
+      {
+        "id": "PSZ/Race/Elf (Zendikar)@0#skills:fixed:Perception",
+        "aliases": [
+          "PSZ/Race/Elf (Zendikar)@0#1"
+        ],
+        "kind": "fixed",
+        "category": "skills",
+        "names": [
+          "Perception"
+        ]
+      }
+    ],
     "name": "Elf (Zendikar)",
     "source": "PSZ",
     "size": [
@@ -4642,6 +5758,22 @@
     ],
     "subraces": [
       {
+        "grants": [
+          {
+            "id": "PSZ/Subrace/Elf (Zendikar) (Joraga Nation)@0#weapons:fixed:longbow,longsword,shortbow,shortsword",
+            "aliases": [
+              "PSZ/Subrace/Elf (Zendikar) (Joraga Nation)@0#0"
+            ],
+            "kind": "fixed",
+            "category": "weapons",
+            "names": [
+              "longsword",
+              "shortsword",
+              "shortbow",
+              "longbow"
+            ]
+          }
+        ],
         "name": "Joraga Nation",
         "isVariant": false,
         "source": "PSZ",
@@ -4693,6 +5825,22 @@
         ]
       },
       {
+        "grants": [
+          {
+            "id": "PSZ/Subrace/Elf (Zendikar) (Mul Daya Nation)@0#weapons:fixed:longbow,longsword,shortbow,shortsword",
+            "aliases": [
+              "PSZ/Subrace/Elf (Zendikar) (Mul Daya Nation)@0#0"
+            ],
+            "kind": "fixed",
+            "category": "weapons",
+            "names": [
+              "longsword",
+              "shortsword",
+              "shortbow",
+              "longbow"
+            ]
+          }
+        ],
         "name": "Mul Daya Nation",
         "isVariant": false,
         "source": "PSZ",
@@ -4841,6 +5989,31 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "MPMM/Race/Fairy@0#languages:fixed:Common",
+        "aliases": [
+          "MPMM/Race/Fairy@0#0"
+        ],
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common"
+        ]
+      },
+      {
+        "id": "MPMM/Race/Fairy@0#languages:choice:any",
+        "aliases": [
+          "MPMM/Race/Fairy@0#1"
+        ],
+        "kind": "choice",
+        "category": "languages",
+        "count": 1,
+        "pool": {
+          "kind": "any"
+        }
+      }
+    ],
     "name": "Fairy",
     "source": "MPMM",
     "size": [
@@ -4895,6 +6068,19 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "WBtW/Race/Fairy@0#languages:fixed:Common",
+        "aliases": [
+          "WBtW/Race/Fairy@0#0"
+        ],
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common"
+        ]
+      }
+    ],
     "name": "Fairy",
     "source": "WBtW",
     "size": [
@@ -4950,6 +6136,31 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "MPMM/Race/Firbolg@0#languages:fixed:Common",
+        "aliases": [
+          "MPMM/Race/Firbolg@0#0"
+        ],
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common"
+        ]
+      },
+      {
+        "id": "MPMM/Race/Firbolg@0#languages:choice:any",
+        "aliases": [
+          "MPMM/Race/Firbolg@0#1"
+        ],
+        "kind": "choice",
+        "category": "languages",
+        "count": 1,
+        "pool": {
+          "kind": "any"
+        }
+      }
+    ],
     "name": "Firbolg",
     "source": "MPMM",
     "size": [
@@ -5014,6 +6225,21 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "VGM/Race/Firbolg@0#languages:fixed:Common,Elvish,Giant",
+        "aliases": [
+          "VGM/Race/Firbolg@0#0"
+        ],
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common",
+          "Elvish",
+          "Giant"
+        ]
+      }
+    ],
     "name": "Firbolg",
     "source": "VGM",
     "size": [
@@ -5119,6 +6345,20 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "EEPC/Race/Genasi@0#languages:fixed:Common,Primordial",
+        "aliases": [
+          "EEPC/Race/Genasi@0#0"
+        ],
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common",
+          "Primordial"
+        ]
+      }
+    ],
     "name": "Genasi",
     "source": "EEPC",
     "size": [
@@ -5383,6 +6623,31 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "MPMM/Race/Genasi@0#languages:fixed:Common",
+        "aliases": [
+          "MPMM/Race/Genasi@0#0"
+        ],
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common"
+        ]
+      },
+      {
+        "id": "MPMM/Race/Genasi@0#languages:choice:any",
+        "aliases": [
+          "MPMM/Race/Genasi@0#1"
+        ],
+        "kind": "choice",
+        "category": "languages",
+        "count": 1,
+        "pool": {
+          "kind": "any"
+        }
+      }
+    ],
     "name": "Genasi",
     "source": "MPMM",
     "size": [
@@ -5608,6 +6873,30 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "AAG/Race/Giff@0#languages:fixed:Common",
+        "aliases": [
+          "AAG/Race/Giff@0#0"
+        ],
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common"
+        ]
+      },
+      {
+        "id": "AAG/Race/Giff@0#weapons:fixed:firearms",
+        "aliases": [
+          "AAG/Race/Giff@0#1"
+        ],
+        "kind": "fixed",
+        "category": "weapons",
+        "names": [
+          "firearms"
+        ]
+      }
+    ],
     "name": "Giff",
     "source": "AAG",
     "size": [
@@ -5662,6 +6951,31 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "MTF/Race/Gith@0#languages:fixed:Common",
+        "aliases": [
+          "MTF/Race/Gith@0#0"
+        ],
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common"
+        ]
+      },
+      {
+        "id": "MTF/Race/Gith@0#languages:choice:any",
+        "aliases": [
+          "MTF/Race/Gith@0#1"
+        ],
+        "kind": "choice",
+        "category": "languages",
+        "count": 1,
+        "pool": {
+          "kind": "any"
+        }
+      }
+    ],
     "name": "Gith",
     "source": "MTF",
     "size": [
@@ -5696,6 +7010,45 @@
     ],
     "subraces": [
       {
+        "grants": [
+          {
+            "id": "MTF/Subrace/Gith (Githyanki)@0#languages:choice:any",
+            "aliases": [
+              "MTF/Subrace/Gith (Githyanki)@0#0"
+            ],
+            "kind": "choice",
+            "category": "languages",
+            "count": 1,
+            "pool": {
+              "kind": "any"
+            }
+          },
+          {
+            "id": "MTF/Subrace/Gith (Githyanki)@0#weapons:fixed:greatsword,longsword,shortsword",
+            "aliases": [
+              "MTF/Subrace/Gith (Githyanki)@0#1"
+            ],
+            "kind": "fixed",
+            "category": "weapons",
+            "names": [
+              "shortsword",
+              "longsword",
+              "greatsword"
+            ]
+          },
+          {
+            "id": "MTF/Subrace/Gith (Githyanki)@0#armor:fixed:light armor,medium armor",
+            "aliases": [
+              "MTF/Subrace/Gith (Githyanki)@0#2"
+            ],
+            "kind": "fixed",
+            "category": "armor",
+            "names": [
+              "light armor",
+              "medium armor"
+            ]
+          }
+        ],
         "name": "Githyanki",
         "isVariant": false,
         "source": "MTF",
@@ -5839,6 +7192,31 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "MPMM/Race/Githyanki@0#languages:fixed:Common",
+        "aliases": [
+          "MPMM/Race/Githyanki@0#0"
+        ],
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common"
+        ]
+      },
+      {
+        "id": "MPMM/Race/Githyanki@0#languages:choice:any",
+        "aliases": [
+          "MPMM/Race/Githyanki@0#1"
+        ],
+        "kind": "choice",
+        "category": "languages",
+        "count": 1,
+        "pool": {
+          "kind": "any"
+        }
+      }
+    ],
     "name": "Githyanki",
     "source": "MPMM",
     "size": [
@@ -5893,6 +7271,31 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "MPMM/Race/Githzerai@0#languages:fixed:Common",
+        "aliases": [
+          "MPMM/Race/Githzerai@0#0"
+        ],
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common"
+        ]
+      },
+      {
+        "id": "MPMM/Race/Githzerai@0#languages:choice:any",
+        "aliases": [
+          "MPMM/Race/Githzerai@0#1"
+        ],
+        "kind": "choice",
+        "category": "languages",
+        "count": 1,
+        "pool": {
+          "kind": "any"
+        }
+      }
+    ],
     "name": "Githzerai",
     "source": "MPMM",
     "size": [
@@ -5947,6 +7350,19 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "DMG/Race/Gnoll@0#languages:fixed:Common",
+        "aliases": [
+          "DMG/Race/Gnoll@0#0"
+        ],
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common"
+        ]
+      }
+    ],
     "name": "Gnoll",
     "source": "DMG",
     "size": [
@@ -6004,6 +7420,20 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "PHB/Race/Gnome@0#languages:fixed:Common,Gnomish",
+        "aliases": [
+          "PHB/Race/Gnome@0#0"
+        ],
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common",
+          "Gnomish"
+        ]
+      }
+    ],
     "name": "Gnome",
     "source": "PHB",
     "size": [
@@ -6046,6 +7476,21 @@
     ],
     "subraces": [
       {
+        "grants": [
+          {
+            "id": "MTF/Subrace/Gnome (Deep)@0#languages:fixed:Common,Gnomish,Undercommon",
+            "aliases": [
+              "MTF/Subrace/Gnome (Deep)@0#0"
+            ],
+            "kind": "fixed",
+            "category": "languages",
+            "names": [
+              "Common",
+              "Gnomish",
+              "Undercommon"
+            ]
+          }
+        ],
         "name": "Deep",
         "isVariant": false,
         "source": "MTF",
@@ -6145,6 +7590,21 @@
         ]
       },
       {
+        "grants": [
+          {
+            "id": "SCAG/Subrace/Gnome (Deep/Svirfneblin)@0#languages:fixed:Common,Gnomish,Undercommon",
+            "aliases": [
+              "SCAG/Subrace/Gnome (Deep/Svirfneblin)@0#0"
+            ],
+            "kind": "fixed",
+            "category": "languages",
+            "names": [
+              "Common",
+              "Gnomish",
+              "Undercommon"
+            ]
+          }
+        ],
         "name": "Deep/Svirfneblin",
         "isVariant": false,
         "source": "SCAG",
@@ -6369,6 +7829,19 @@
         ]
       },
       {
+        "grants": [
+          {
+            "id": "PHB/Subrace/Gnome (Rock)@0#tools:fixed:tinker's tools",
+            "aliases": [
+              "PHB/Subrace/Gnome (Rock)@0#0"
+            ],
+            "kind": "fixed",
+            "category": "tools",
+            "names": [
+              "tinker's tools"
+            ]
+          }
+        ],
         "name": "Rock",
         "isVariant": false,
         "source": "PHB",
@@ -6471,6 +7944,21 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "DMG/Race/Gnome (Deep)@0#languages:fixed:Gnomish,Terran,Undercommon",
+        "aliases": [
+          "DMG/Race/Gnome (Deep)@0#0"
+        ],
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Gnomish",
+          "Terran",
+          "Undercommon"
+        ]
+      }
+    ],
     "name": "Gnome (Deep)",
     "source": "DMG",
     "size": [
@@ -6574,6 +8062,20 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "DMG/Race/Goblin@0#languages:fixed:Common,Goblin",
+        "aliases": [
+          "DMG/Race/Goblin@0#0"
+        ],
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common",
+          "Goblin"
+        ]
+      }
+    ],
     "name": "Goblin",
     "source": "DMG",
     "size": [
@@ -6634,6 +8136,20 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "ERLW/Race/Goblin@0#languages:fixed:Common,Goblin",
+        "aliases": [
+          "ERLW/Race/Goblin@0#0"
+        ],
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common",
+          "Goblin"
+        ]
+      }
+    ],
     "name": "Goblin",
     "source": "ERLW",
     "size": [
@@ -6738,6 +8254,20 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "GGR/Race/Goblin@0#languages:fixed:Common,Goblin",
+        "aliases": [
+          "GGR/Race/Goblin@0#0"
+        ],
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common",
+          "Goblin"
+        ]
+      }
+    ],
     "name": "Goblin",
     "source": "GGR",
     "size": [
@@ -6842,6 +8372,31 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "MPMM/Race/Goblin@0#languages:fixed:Common",
+        "aliases": [
+          "MPMM/Race/Goblin@0#0"
+        ],
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common"
+        ]
+      },
+      {
+        "id": "MPMM/Race/Goblin@0#languages:choice:any",
+        "aliases": [
+          "MPMM/Race/Goblin@0#1"
+        ],
+        "kind": "choice",
+        "category": "languages",
+        "count": 1,
+        "pool": {
+          "kind": "any"
+        }
+      }
+    ],
     "name": "Goblin",
     "source": "MPMM",
     "size": [
@@ -6917,6 +8472,20 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "PSZ/Race/Goblin@0#languages:fixed:Common,Goblin",
+        "aliases": [
+          "PSZ/Race/Goblin@0#0"
+        ],
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common",
+          "Goblin"
+        ]
+      }
+    ],
     "name": "Goblin",
     "source": "PSZ",
     "size": [
@@ -6977,14 +8546,14 @@
           },
           {
             "name": "Agile Climber",
-            "description": "You have a climbing speed of 25 feet. You can't use your climbing speed while you wear medium or heavy armor. (If your campaign uses the variant rule for PHB, you can't use your climbing speed if you are encumbered.)"
+            "description": "You have a climbing speed of 25 feet. You can't use your climbing speed while you wear medium or heavy armor. (If your campaign uses the variant rule for encumbrance, you can't use your climbing speed if you are encumbered.)"
           },
           {
             "name": "Languages",
             "description": "You can speak, read, and write Common (if it exists in your campaign) and Goblin."
           }
         ],
-        "description": "### Alignment\n\n\nMost goblins are wildly chaotic, with no particular inclination toward good or evil but a strong tendency toward mischief.\n\n### Agile Climber\n\n\nYou have a climbing speed of 25 feet. You can't use your climbing speed while you wear medium or heavy armor. (If your campaign uses the variant rule for PHB, you can't use your climbing speed if you are encumbered.)\n\n### Languages\n\n\nYou can speak, read, and write Common (if it exists in your campaign) and Goblin.",
+        "description": "### Alignment\n\n\nMost goblins are wildly chaotic, with no particular inclination toward good or evil but a strong tendency toward mischief.\n\n### Agile Climber\n\n\nYou have a climbing speed of 25 feet. You can't use your climbing speed while you wear medium or heavy armor. (If your campaign uses the variant rule for encumbrance, you can't use your climbing speed if you are encumbered.)\n\n### Languages\n\n\nYou can speak, read, and write Common (if it exists in your campaign) and Goblin.",
         "rawEntries": [
           {
             "type": "entries",
@@ -7016,6 +8585,19 @@
         ]
       },
       {
+        "grants": [
+          {
+            "id": "PSZ/Subrace/Goblin (Zendikar; Grotag Tribe)@0#skills:fixed:Animal Handling",
+            "aliases": [
+              "PSZ/Subrace/Goblin (Zendikar; Grotag Tribe)@0#0"
+            ],
+            "kind": "fixed",
+            "category": "skills",
+            "names": [
+              "Animal Handling"
+            ]
+          }
+        ],
         "name": "Zendikar; Grotag Tribe",
         "isVariant": false,
         "source": "PSZ",
@@ -7074,6 +8656,19 @@
         ]
       },
       {
+        "grants": [
+          {
+            "id": "PSZ/Subrace/Goblin (Zendikar; Tuktuk Tribe)@0#tools:fixed:thieves' tools",
+            "aliases": [
+              "PSZ/Subrace/Goblin (Zendikar; Tuktuk Tribe)@0#0"
+            ],
+            "kind": "fixed",
+            "category": "tools",
+            "names": [
+              "thieves' tools"
+            ]
+          }
+        ],
         "name": "Zendikar; Tuktuk Tribe",
         "isVariant": false,
         "source": "PSZ",
@@ -7150,6 +8745,20 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "VGM/Race/Goblin@0#languages:fixed:Common,Goblin",
+        "aliases": [
+          "VGM/Race/Goblin@0#0"
+        ],
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common",
+          "Goblin"
+        ]
+      }
+    ],
     "name": "Goblin",
     "source": "VGM",
     "size": [
@@ -7243,6 +8852,20 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "AWM/Race/Goblin (Dankwood)@0#languages:fixed:Common,Goblin",
+        "aliases": [
+          "AWM/Race/Goblin (Dankwood)@0#0"
+        ],
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common",
+          "Goblin"
+        ]
+      }
+    ],
     "name": "Goblin (Dankwood)",
     "source": "AWM",
     "size": [
@@ -7347,6 +8970,42 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "MPMM/Race/Goliath@0#languages:fixed:Common",
+        "aliases": [
+          "MPMM/Race/Goliath@0#0"
+        ],
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common"
+        ]
+      },
+      {
+        "id": "MPMM/Race/Goliath@0#languages:choice:any",
+        "aliases": [
+          "MPMM/Race/Goliath@0#1"
+        ],
+        "kind": "choice",
+        "category": "languages",
+        "count": 1,
+        "pool": {
+          "kind": "any"
+        }
+      },
+      {
+        "id": "MPMM/Race/Goliath@0#skills:fixed:Athletics",
+        "aliases": [
+          "MPMM/Race/Goliath@0#2"
+        ],
+        "kind": "fixed",
+        "category": "skills",
+        "names": [
+          "Athletics"
+        ]
+      }
+    ],
     "name": "Goliath",
     "source": "MPMM",
     "size": [
@@ -7400,6 +9059,31 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "VGM/Race/Goliath@0#languages:fixed:Common,Giant",
+        "aliases": [
+          "VGM/Race/Goliath@0#0"
+        ],
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common",
+          "Giant"
+        ]
+      },
+      {
+        "id": "VGM/Race/Goliath@0#skills:fixed:Athletics",
+        "aliases": [
+          "VGM/Race/Goliath@0#1"
+        ],
+        "kind": "fixed",
+        "category": "skills",
+        "names": [
+          "Athletics"
+        ]
+      }
+    ],
     "name": "Goliath",
     "source": "VGM",
     "size": [
@@ -7504,6 +9188,19 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "DMG/Race/Grimlock@0#languages:fixed:Undercommon",
+        "aliases": [
+          "DMG/Race/Grimlock@0#0"
+        ],
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Undercommon"
+        ]
+      }
+    ],
     "name": "Grimlock",
     "source": "DMG",
     "size": [
@@ -7574,6 +9271,31 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "OGA/Race/Grung@0#languages:choice:any",
+        "aliases": [
+          "OGA/Race/Grung@0#0"
+        ],
+        "kind": "choice",
+        "category": "languages",
+        "count": 1,
+        "pool": {
+          "kind": "any"
+        }
+      },
+      {
+        "id": "OGA/Race/Grung@0#skills:fixed:Perception",
+        "aliases": [
+          "OGA/Race/Grung@0#1"
+        ],
+        "kind": "fixed",
+        "category": "skills",
+        "names": [
+          "Perception"
+        ]
+      }
+    ],
     "name": "Grung",
     "source": "OGA",
     "size": [
@@ -7712,6 +9434,19 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "AAG/Race/Hadozee@0#languages:fixed:Common",
+        "aliases": [
+          "AAG/Race/Hadozee@0#0"
+        ],
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common"
+        ]
+      }
+    ],
     "name": "Hadozee",
     "source": "AAG",
     "size": [
@@ -7778,6 +9513,44 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "PHB/Race/Half-Elf@0#languages:fixed:Common,Elvish",
+        "aliases": [
+          "PHB/Race/Half-Elf@0#0"
+        ],
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common",
+          "Elvish"
+        ]
+      },
+      {
+        "id": "PHB/Race/Half-Elf@0#languages:choice:any",
+        "aliases": [
+          "PHB/Race/Half-Elf@0#1"
+        ],
+        "kind": "choice",
+        "category": "languages",
+        "count": 1,
+        "pool": {
+          "kind": "any"
+        }
+      },
+      {
+        "id": "PHB/Race/Half-Elf@0#skills:choice:any",
+        "aliases": [
+          "PHB/Race/Half-Elf@0#2"
+        ],
+        "kind": "choice",
+        "category": "skills",
+        "count": 2,
+        "pool": {
+          "kind": "any"
+        }
+      }
+    ],
     "name": "Half-Elf",
     "source": "PHB",
     "size": [
@@ -7881,6 +9654,20 @@
         ]
       },
       {
+        "grants": [
+          {
+            "id": "SCAG/Subrace/Half-Elf (Drow Descent)@0#skills:choice:any",
+            "aliases": [
+              "SCAG/Subrace/Half-Elf (Drow Descent)@0#0"
+            ],
+            "kind": "choice",
+            "category": "skills",
+            "count": 2,
+            "pool": {
+              "kind": "any"
+            }
+          }
+        ],
         "name": "Drow Descent",
         "isVariant": true,
         "source": "SCAG",
@@ -8125,6 +9912,34 @@
         ]
       },
       {
+        "grants": [
+          {
+            "id": "SCAG/Subrace/Half-Elf (Moon Elf or Sun Elf Descent)@0#weapons:fixed:longbow,longsword,shortbow,shortsword",
+            "aliases": [
+              "SCAG/Subrace/Half-Elf (Moon Elf or Sun Elf Descent)@0#0"
+            ],
+            "kind": "fixed",
+            "category": "weapons",
+            "names": [
+              "longsword",
+              "shortsword",
+              "shortbow",
+              "longbow"
+            ]
+          },
+          {
+            "id": "SCAG/Subrace/Half-Elf (Moon Elf or Sun Elf Descent)@0#skills:choice:any",
+            "aliases": [
+              "SCAG/Subrace/Half-Elf (Moon Elf or Sun Elf Descent)@0#1"
+            ],
+            "kind": "choice",
+            "category": "skills",
+            "count": 2,
+            "pool": {
+              "kind": "any"
+            }
+          }
+        ],
         "name": "Moon Elf or Sun Elf Descent",
         "isVariant": true,
         "source": "SCAG",
@@ -8192,6 +10007,34 @@
         ]
       },
       {
+        "grants": [
+          {
+            "id": "SCAG/Subrace/Half-Elf (Wood Elf Descent)@0#weapons:fixed:longbow,longsword,shortbow,shortsword",
+            "aliases": [
+              "SCAG/Subrace/Half-Elf (Wood Elf Descent)@0#0"
+            ],
+            "kind": "fixed",
+            "category": "weapons",
+            "names": [
+              "longsword",
+              "shortsword",
+              "shortbow",
+              "longbow"
+            ]
+          },
+          {
+            "id": "SCAG/Subrace/Half-Elf (Wood Elf Descent)@0#skills:choice:any",
+            "aliases": [
+              "SCAG/Subrace/Half-Elf (Wood Elf Descent)@0#1"
+            ],
+            "kind": "choice",
+            "category": "skills",
+            "count": 2,
+            "pool": {
+              "kind": "any"
+            }
+          }
+        ],
         "name": "Wood Elf Descent",
         "isVariant": true,
         "source": "SCAG",
@@ -8317,6 +10160,31 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "PHB/Race/Half-Orc@0#languages:fixed:Common,Orc",
+        "aliases": [
+          "PHB/Race/Half-Orc@0#0"
+        ],
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common",
+          "Orc"
+        ]
+      },
+      {
+        "id": "PHB/Race/Half-Orc@0#skills:fixed:Intimidation",
+        "aliases": [
+          "PHB/Race/Half-Orc@0#1"
+        ],
+        "kind": "fixed",
+        "category": "skills",
+        "names": [
+          "Intimidation"
+        ]
+      }
+    ],
     "name": "Half-Orc",
     "source": "PHB",
     "size": [
@@ -8368,6 +10236,20 @@
     ],
     "subraces": [
       {
+        "grants": [
+          {
+            "id": "ERLW/Subrace/Half-Orc (Mark of Finding)@0#languages:fixed:Common,Goblin",
+            "aliases": [
+              "ERLW/Subrace/Half-Orc (Mark of Finding)@0#0"
+            ],
+            "kind": "fixed",
+            "category": "languages",
+            "names": [
+              "Common",
+              "Goblin"
+            ]
+          }
+        ],
         "name": "Mark of Finding",
         "isVariant": true,
         "source": "ERLW",
@@ -8540,6 +10422,20 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "PHB/Race/Halfling@0#languages:fixed:Common,Halfling",
+        "aliases": [
+          "PHB/Race/Halfling@0#0"
+        ],
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common",
+          "Halfling"
+        ]
+      }
+    ],
     "name": "Halfling",
     "source": "PHB",
     "size": [
@@ -8930,6 +10826,42 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "MPMM/Race/Harengon@0#languages:fixed:Common",
+        "aliases": [
+          "MPMM/Race/Harengon@0#0"
+        ],
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common"
+        ]
+      },
+      {
+        "id": "MPMM/Race/Harengon@0#languages:choice:any",
+        "aliases": [
+          "MPMM/Race/Harengon@0#1"
+        ],
+        "kind": "choice",
+        "category": "languages",
+        "count": 1,
+        "pool": {
+          "kind": "any"
+        }
+      },
+      {
+        "id": "MPMM/Race/Harengon@0#skills:fixed:Perception",
+        "aliases": [
+          "MPMM/Race/Harengon@0#2"
+        ],
+        "kind": "fixed",
+        "category": "skills",
+        "names": [
+          "Perception"
+        ]
+      }
+    ],
     "name": "Harengon",
     "source": "MPMM",
     "size": [
@@ -9005,6 +10937,30 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "WBtW/Race/Harengon@0#languages:fixed:Common",
+        "aliases": [
+          "WBtW/Race/Harengon@0#0"
+        ],
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common"
+        ]
+      },
+      {
+        "id": "WBtW/Race/Harengon@0#skills:fixed:Perception",
+        "aliases": [
+          "WBtW/Race/Harengon@0#1"
+        ],
+        "kind": "fixed",
+        "category": "skills",
+        "names": [
+          "Perception"
+        ]
+      }
+    ],
     "name": "Harengon",
     "source": "WBtW",
     "size": [
@@ -9080,6 +11036,31 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "VRGR/Race/Hexblood@0#languages:fixed:Common",
+        "aliases": [
+          "VRGR/Race/Hexblood@0#0"
+        ],
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common"
+        ]
+      },
+      {
+        "id": "VRGR/Race/Hexblood@0#skills:choice:any",
+        "aliases": [
+          "VRGR/Race/Hexblood@0#1"
+        ],
+        "kind": "choice",
+        "category": "skills",
+        "count": 2,
+        "pool": {
+          "kind": "any"
+        }
+      }
+    ],
     "name": "Hexblood",
     "source": "VRGR",
     "size": [
@@ -9192,6 +11173,20 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "DMG/Race/Hobgoblin@0#languages:fixed:Common,Goblin",
+        "aliases": [
+          "DMG/Race/Hobgoblin@0#0"
+        ],
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common",
+          "Goblin"
+        ]
+      }
+    ],
     "name": "Hobgoblin",
     "source": "DMG",
     "size": [
@@ -9247,6 +11242,20 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "ERLW/Race/Hobgoblin@0#languages:fixed:Common,Goblin",
+        "aliases": [
+          "ERLW/Race/Hobgoblin@0#0"
+        ],
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common",
+          "Goblin"
+        ]
+      }
+    ],
     "name": "Hobgoblin",
     "source": "ERLW",
     "size": [
@@ -9351,6 +11360,31 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "MPMM/Race/Hobgoblin@0#languages:fixed:Common",
+        "aliases": [
+          "MPMM/Race/Hobgoblin@0#0"
+        ],
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common"
+        ]
+      },
+      {
+        "id": "MPMM/Race/Hobgoblin@0#languages:choice:any",
+        "aliases": [
+          "MPMM/Race/Hobgoblin@0#1"
+        ],
+        "kind": "choice",
+        "category": "languages",
+        "count": 1,
+        "pool": {
+          "kind": "any"
+        }
+      }
+    ],
     "name": "Hobgoblin",
     "source": "MPMM",
     "size": [
@@ -9447,6 +11481,20 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "VGM/Race/Hobgoblin@0#languages:fixed:Common,Goblin",
+        "aliases": [
+          "VGM/Race/Hobgoblin@0#0"
+        ],
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common",
+          "Goblin"
+        ]
+      }
+    ],
     "name": "Hobgoblin",
     "source": "VGM",
     "size": [
@@ -9540,6 +11588,31 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "PHB/Race/Human@0#languages:fixed:Common",
+        "aliases": [
+          "PHB/Race/Human@0#0"
+        ],
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common"
+        ]
+      },
+      {
+        "id": "PHB/Race/Human@0#languages:choice:any",
+        "aliases": [
+          "PHB/Race/Human@0#1"
+        ],
+        "kind": "choice",
+        "category": "languages",
+        "count": 1,
+        "pool": {
+          "kind": "any"
+        }
+      }
+    ],
     "name": "Human",
     "source": "PHB",
     "size": [
@@ -9570,6 +11643,32 @@
     ],
     "subraces": [
       {
+        "grants": [
+          {
+            "id": "PSA/Subrace/Human (Amonkhet)@0#languages:choice:any",
+            "aliases": [
+              "PSA/Subrace/Human (Amonkhet)@0#0"
+            ],
+            "kind": "choice",
+            "category": "languages",
+            "count": 1,
+            "pool": {
+              "kind": "any"
+            }
+          },
+          {
+            "id": "PSA/Subrace/Human (Amonkhet)@0#skills:choice:any",
+            "aliases": [
+              "PSA/Subrace/Human (Amonkhet)@0#1"
+            ],
+            "kind": "choice",
+            "category": "skills",
+            "count": 1,
+            "pool": {
+              "kind": "any"
+            }
+          }
+        ],
         "name": "Amonkhet",
         "isVariant": false,
         "source": "PSA",
@@ -9665,6 +11764,19 @@
         "description": ""
       },
       {
+        "grants": [
+          {
+            "id": "PSD/Subrace/Human (Keldon)@0#skills:fixed:Athletics",
+            "aliases": [
+              "PSD/Subrace/Human (Keldon)@0#0"
+            ],
+            "kind": "fixed",
+            "category": "skills",
+            "names": [
+              "Athletics"
+            ]
+          }
+        ],
         "name": "Keldon",
         "isVariant": false,
         "source": "PSD",
@@ -9869,6 +11981,40 @@
         ]
       },
       {
+        "grants": [
+          {
+            "id": "ERLW/Subrace/Human (Mark of Making)@0#tools:choice:from",
+            "aliases": [
+              "ERLW/Subrace/Human (Mark of Making)@0#0",
+              "ERLW/Subrace/Human (Mark of Making)@0#tools:choice:from=alchemist's supplies,brewer's supplies,calligrapher's supplies,carpenter's tools,cartographer's tools,cobbler's tools,cook's utensils,glassblower's tools,jeweler's tools,leatherworker's tools,mason's tools,painter's supplies,potter's tools,smith's tools,tinker's tools,weaver's tools,woodcarver's tools"
+            ],
+            "kind": "choice",
+            "category": "tools",
+            "count": 1,
+            "pool": {
+              "kind": "names",
+              "names": [
+                "alchemist's supplies",
+                "brewer's supplies",
+                "calligrapher's supplies",
+                "carpenter's tools",
+                "cartographer's tools",
+                "cobbler's tools",
+                "cook's utensils",
+                "glassblower's tools",
+                "jeweler's tools",
+                "leatherworker's tools",
+                "mason's tools",
+                "painter's supplies",
+                "potter's tools",
+                "smith's tools",
+                "tinker's tools",
+                "weaver's tools",
+                "woodcarver's tools"
+              ]
+            }
+          }
+        ],
         "name": "Mark of Making",
         "isVariant": false,
         "source": "ERLW",
@@ -10158,6 +12304,20 @@
         ]
       },
       {
+        "grants": [
+          {
+            "id": "PHB/Subrace/Human (Variant)@0#skills:choice:any",
+            "aliases": [
+              "PHB/Subrace/Human (Variant)@0#0"
+            ],
+            "kind": "choice",
+            "category": "skills",
+            "count": 1,
+            "pool": {
+              "kind": "any"
+            }
+          }
+        ],
         "name": "Variant",
         "isVariant": true,
         "source": "PHB",
@@ -10194,6 +12354,20 @@
         ]
       },
       {
+        "grants": [
+          {
+            "id": "ERLW/Subrace/Human (Mark of Finding)@0#languages:fixed:Common,Goblin",
+            "aliases": [
+              "ERLW/Subrace/Human (Mark of Finding)@0#0"
+            ],
+            "kind": "fixed",
+            "category": "languages",
+            "names": [
+              "Common",
+              "Goblin"
+            ]
+          }
+        ],
         "name": "Mark of Finding",
         "isVariant": true,
         "source": "ERLW",
@@ -10331,6 +12505,31 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "PSI/Race/Human (Innistrad)@0#languages:fixed:Common",
+        "aliases": [
+          "PSI/Race/Human (Innistrad)@0#0"
+        ],
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common"
+        ]
+      },
+      {
+        "id": "PSI/Race/Human (Innistrad)@0#languages:choice:any",
+        "aliases": [
+          "PSI/Race/Human (Innistrad)@0#1"
+        ],
+        "kind": "choice",
+        "category": "languages",
+        "count": 1,
+        "pool": {
+          "kind": "any"
+        }
+      }
+    ],
     "name": "Human (Innistrad)",
     "source": "PSI",
     "size": [
@@ -10385,6 +12584,19 @@
         "description": ""
       },
       {
+        "grants": [
+          {
+            "id": "PSI/Subrace/Human (Innistrad) (Kessig)@0#skills:fixed:Survival",
+            "aliases": [
+              "PSI/Subrace/Human (Innistrad) (Kessig)@0#0"
+            ],
+            "kind": "fixed",
+            "category": "skills",
+            "names": [
+              "Survival"
+            ]
+          }
+        ],
         "name": "Kessig",
         "isVariant": false,
         "source": "PSI",
@@ -10478,6 +12690,19 @@
         ]
       },
       {
+        "grants": [
+          {
+            "id": "PSI/Subrace/Human (Innistrad) (Stensia)@0#skills:fixed:Intimidation",
+            "aliases": [
+              "PSI/Subrace/Human (Innistrad) (Stensia)@0#0"
+            ],
+            "kind": "fixed",
+            "category": "skills",
+            "names": [
+              "Intimidation"
+            ]
+          }
+        ],
         "name": "Stensia",
         "isVariant": false,
         "source": "PSI",
@@ -10552,6 +12777,55 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "PSX/Race/Human (Ixalan)@0#languages:fixed:Common",
+        "aliases": [
+          "PSX/Race/Human (Ixalan)@0#0"
+        ],
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common"
+        ]
+      },
+      {
+        "id": "PSX/Race/Human (Ixalan)@0#languages:choice:any",
+        "aliases": [
+          "PSX/Race/Human (Ixalan)@0#1"
+        ],
+        "kind": "choice",
+        "category": "languages",
+        "count": 1,
+        "pool": {
+          "kind": "any"
+        }
+      },
+      {
+        "id": "PSX/Race/Human (Ixalan)@0#languages:choice:any~2",
+        "aliases": [
+          "PSX/Race/Human (Ixalan)@0#2"
+        ],
+        "kind": "choice",
+        "category": "languages",
+        "count": 1,
+        "pool": {
+          "kind": "any"
+        }
+      },
+      {
+        "id": "PSX/Race/Human (Ixalan)@0#languages:choice:any~3",
+        "aliases": [
+          "PSX/Race/Human (Ixalan)@0#3"
+        ],
+        "kind": "choice",
+        "category": "languages",
+        "count": 1,
+        "pool": {
+          "kind": "any"
+        }
+      }
+    ],
     "name": "Human (Ixalan)",
     "source": "PSX",
     "size": [
@@ -10641,6 +12915,31 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "PSK/Race/Human (Kaladesh)@0#languages:fixed:Common",
+        "aliases": [
+          "PSK/Race/Human (Kaladesh)@0#0"
+        ],
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common"
+        ]
+      },
+      {
+        "id": "PSK/Race/Human (Kaladesh)@0#languages:choice:any",
+        "aliases": [
+          "PSK/Race/Human (Kaladesh)@0#1"
+        ],
+        "kind": "choice",
+        "category": "languages",
+        "count": 1,
+        "pool": {
+          "kind": "any"
+        }
+      }
+    ],
     "name": "Human (Kaladesh)",
     "source": "PSK",
     "size": [
@@ -10727,6 +13026,31 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "PSZ/Race/Human (Zendikar)@0#languages:fixed:Common",
+        "aliases": [
+          "PSZ/Race/Human (Zendikar)@0#0"
+        ],
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common"
+        ]
+      },
+      {
+        "id": "PSZ/Race/Human (Zendikar)@0#languages:choice:any",
+        "aliases": [
+          "PSZ/Race/Human (Zendikar)@0#1"
+        ],
+        "kind": "choice",
+        "category": "languages",
+        "count": 1,
+        "pool": {
+          "kind": "any"
+        }
+      }
+    ],
     "name": "Human (Zendikar)",
     "source": "PSZ",
     "size": [
@@ -10791,6 +13115,43 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "ERLW/Race/Kalashtar@0#languages:fixed:Common",
+        "aliases": [
+          "ERLW/Race/Kalashtar@0#0"
+        ],
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common"
+        ]
+      },
+      {
+        "id": "ERLW/Race/Kalashtar@0#languages:choice:any",
+        "aliases": [
+          "ERLW/Race/Kalashtar@0#1"
+        ],
+        "kind": "choice",
+        "category": "languages",
+        "count": 1,
+        "pool": {
+          "kind": "any"
+        }
+      },
+      {
+        "id": "ERLW/Race/Kalashtar@0#languages:choice:any~2",
+        "aliases": [
+          "ERLW/Race/Kalashtar@0#2"
+        ],
+        "kind": "choice",
+        "category": "languages",
+        "count": 1,
+        "pool": {
+          "kind": "any"
+        }
+      }
+    ],
     "name": "Kalashtar",
     "source": "ERLW",
     "size": [
@@ -10908,6 +13269,39 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "DSotDQ/Race/Kender@0#languages:fixed:Common",
+        "aliases": [
+          "DSotDQ/Race/Kender@0#0"
+        ],
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common"
+        ]
+      },
+      {
+        "id": "DSotDQ/Race/Kender@0#skills:choice:from",
+        "aliases": [
+          "DSotDQ/Race/Kender@0#1",
+          "DSotDQ/Race/Kender@0#skills:choice:from=Insight,Investigation,Sleight of Hand,Stealth,Survival"
+        ],
+        "kind": "choice",
+        "category": "skills",
+        "count": 1,
+        "pool": {
+          "kind": "names",
+          "names": [
+            "Insight",
+            "Investigation",
+            "Sleight of Hand",
+            "Stealth",
+            "Survival"
+          ]
+        }
+      }
+    ],
     "name": "Kender",
     "source": "DSotDQ",
     "size": [
@@ -10961,6 +13355,20 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "DMG/Race/Kenku@0#languages:fixed:Auran,Common",
+        "aliases": [
+          "DMG/Race/Kenku@0#0"
+        ],
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common",
+          "Auran"
+        ]
+      }
+    ],
     "name": "Kenku",
     "source": "DMG",
     "size": [
@@ -11020,6 +13428,43 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "MPMM/Race/Kenku@0#languages:fixed:Common",
+        "aliases": [
+          "MPMM/Race/Kenku@0#0"
+        ],
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common"
+        ]
+      },
+      {
+        "id": "MPMM/Race/Kenku@0#languages:choice:any",
+        "aliases": [
+          "MPMM/Race/Kenku@0#1"
+        ],
+        "kind": "choice",
+        "category": "languages",
+        "count": 1,
+        "pool": {
+          "kind": "any"
+        }
+      },
+      {
+        "id": "MPMM/Race/Kenku@0#skills:choice:any",
+        "aliases": [
+          "MPMM/Race/Kenku@0#2"
+        ],
+        "kind": "choice",
+        "category": "skills",
+        "count": 2,
+        "pool": {
+          "kind": "any"
+        }
+      }
+    ],
     "name": "Kenku",
     "source": "MPMM",
     "size": [
@@ -11085,6 +13530,39 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "VGM/Race/Kenku@0#languages:fixed:Auran,Common",
+        "aliases": [
+          "VGM/Race/Kenku@0#0"
+        ],
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common",
+          "Auran"
+        ]
+      },
+      {
+        "id": "VGM/Race/Kenku@0#skills:choice:from",
+        "aliases": [
+          "VGM/Race/Kenku@0#1",
+          "VGM/Race/Kenku@0#skills:choice:from=Acrobatics,Deception,Sleight of Hand,Stealth"
+        ],
+        "kind": "choice",
+        "category": "skills",
+        "count": 2,
+        "pool": {
+          "kind": "names",
+          "names": [
+            "Acrobatics",
+            "Deception",
+            "Sleight of Hand",
+            "Stealth"
+          ]
+        }
+      }
+    ],
     "name": "Kenku",
     "source": "VGM",
     "size": [
@@ -11178,6 +13656,44 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "PSA/Race/Khenra@0#languages:fixed:Common",
+        "aliases": [
+          "PSA/Race/Khenra@0#0"
+        ],
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common"
+        ]
+      },
+      {
+        "id": "PSA/Race/Khenra@0#languages:choice:any",
+        "aliases": [
+          "PSA/Race/Khenra@0#1"
+        ],
+        "kind": "choice",
+        "category": "languages",
+        "count": 1,
+        "pool": {
+          "kind": "any"
+        }
+      },
+      {
+        "id": "PSA/Race/Khenra@0#weapons:fixed:javelin,longsword,spear",
+        "aliases": [
+          "PSA/Race/Khenra@0#2"
+        ],
+        "kind": "fixed",
+        "category": "weapons",
+        "names": [
+          "longsword",
+          "spear",
+          "javelin"
+        ]
+      }
+    ],
     "name": "Khenra",
     "source": "PSA",
     "size": [
@@ -11271,6 +13787,20 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "DMG/Race/Kobold@0#languages:fixed:Common,Draconic",
+        "aliases": [
+          "DMG/Race/Kobold@0#0"
+        ],
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common",
+          "Draconic"
+        ]
+      }
+    ],
     "name": "Kobold",
     "source": "DMG",
     "size": [
@@ -11342,6 +13872,51 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "MPMM/Race/Kobold@0#languages:fixed:Common",
+        "aliases": [
+          "MPMM/Race/Kobold@0#0"
+        ],
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common"
+        ]
+      },
+      {
+        "id": "MPMM/Race/Kobold@0#languages:choice:any",
+        "aliases": [
+          "MPMM/Race/Kobold@0#1"
+        ],
+        "kind": "choice",
+        "category": "languages",
+        "count": 1,
+        "pool": {
+          "kind": "any"
+        }
+      },
+      {
+        "id": "MPMM/Race/Kobold@0#skills:choice:from",
+        "aliases": [
+          "MPMM/Race/Kobold@0#2",
+          "MPMM/Race/Kobold@0#skills:choice:from=Arcana,Investigation,Medicine,Sleight of Hand,Survival"
+        ],
+        "kind": "choice",
+        "category": "skills",
+        "count": 1,
+        "pool": {
+          "kind": "names",
+          "names": [
+            "Arcana",
+            "Investigation",
+            "Medicine",
+            "Sleight of Hand",
+            "Survival"
+          ]
+        }
+      }
+    ],
     "name": "Kobold",
     "source": "MPMM",
     "size": [
@@ -11433,6 +14008,20 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "VGM/Race/Kobold@0#languages:fixed:Common,Draconic",
+        "aliases": [
+          "VGM/Race/Kobold@0#0"
+        ],
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common",
+          "Draconic"
+        ]
+      }
+    ],
     "name": "Kobold",
     "source": "VGM",
     "size": [
@@ -11536,6 +14125,43 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "PSZ/Race/Kor@0#languages:fixed:Common",
+        "aliases": [
+          "PSZ/Race/Kor@0#0"
+        ],
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common"
+        ]
+      },
+      {
+        "id": "PSZ/Race/Kor@0#languages:choice:any",
+        "aliases": [
+          "PSZ/Race/Kor@0#1"
+        ],
+        "kind": "choice",
+        "category": "languages",
+        "count": 1,
+        "pool": {
+          "kind": "any"
+        }
+      },
+      {
+        "id": "PSZ/Race/Kor@0#skills:fixed:Acrobatics,Athletics",
+        "aliases": [
+          "PSZ/Race/Kor@0#2"
+        ],
+        "kind": "fixed",
+        "category": "skills",
+        "names": [
+          "Athletics",
+          "Acrobatics"
+        ]
+      }
+    ],
     "name": "Kor",
     "source": "PSZ",
     "size": [
@@ -11652,6 +14278,19 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "DMG/Race/Kuo-Toa@0#languages:fixed:Undercommon",
+        "aliases": [
+          "DMG/Race/Kuo-Toa@0#0"
+        ],
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Undercommon"
+        ]
+      }
+    ],
     "name": "Kuo-Toa",
     "source": "DMG",
     "size": [
@@ -11740,6 +14379,50 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "MOT/Race/Leonin@0#languages:fixed:Common",
+        "aliases": [
+          "MOT/Race/Leonin@0#0"
+        ],
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common"
+        ]
+      },
+      {
+        "id": "MOT/Race/Leonin@0#languages:choice:any",
+        "aliases": [
+          "MOT/Race/Leonin@0#1"
+        ],
+        "kind": "choice",
+        "category": "languages",
+        "count": 1,
+        "pool": {
+          "kind": "any"
+        }
+      },
+      {
+        "id": "MOT/Race/Leonin@0#skills:choice:from",
+        "aliases": [
+          "MOT/Race/Leonin@0#2",
+          "MOT/Race/Leonin@0#skills:choice:from=Athletics,Intimidation,Perception,Survival"
+        ],
+        "kind": "choice",
+        "category": "skills",
+        "count": 1,
+        "pool": {
+          "kind": "names",
+          "names": [
+            "Athletics",
+            "Intimidation",
+            "Perception",
+            "Survival"
+          ]
+        }
+      }
+    ],
     "name": "Leonin",
     "source": "MOT",
     "size": [
@@ -11855,6 +14538,19 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "DMG/Race/Lizardfolk@0#languages:fixed:Draconic",
+        "aliases": [
+          "DMG/Race/Lizardfolk@0#0"
+        ],
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Draconic"
+        ]
+      }
+    ],
     "name": "Lizardfolk",
     "source": "DMG",
     "size": [
@@ -11915,6 +14611,52 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "MPMM/Race/Lizardfolk@0#languages:fixed:Common",
+        "aliases": [
+          "MPMM/Race/Lizardfolk@0#0"
+        ],
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common"
+        ]
+      },
+      {
+        "id": "MPMM/Race/Lizardfolk@0#languages:choice:any",
+        "aliases": [
+          "MPMM/Race/Lizardfolk@0#1"
+        ],
+        "kind": "choice",
+        "category": "languages",
+        "count": 1,
+        "pool": {
+          "kind": "any"
+        }
+      },
+      {
+        "id": "MPMM/Race/Lizardfolk@0#skills:choice:from",
+        "aliases": [
+          "MPMM/Race/Lizardfolk@0#2",
+          "MPMM/Race/Lizardfolk@0#skills:choice:from=Animal Handling,Medicine,Nature,Perception,Stealth,Survival"
+        ],
+        "kind": "choice",
+        "category": "skills",
+        "count": 2,
+        "pool": {
+          "kind": "names",
+          "names": [
+            "Animal Handling",
+            "Medicine",
+            "Nature",
+            "Perception",
+            "Stealth",
+            "Survival"
+          ]
+        }
+      }
+    ],
     "name": "Lizardfolk",
     "source": "MPMM",
     "size": [
@@ -12001,6 +14743,40 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "VGM/Race/Lizardfolk@0#languages:fixed:Common,Draconic",
+        "aliases": [
+          "VGM/Race/Lizardfolk@0#0"
+        ],
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common",
+          "Draconic"
+        ]
+      },
+      {
+        "id": "VGM/Race/Lizardfolk@0#skills:choice:from",
+        "aliases": [
+          "VGM/Race/Lizardfolk@0#1",
+          "VGM/Race/Lizardfolk@0#skills:choice:from=Animal Handling,Nature,Perception,Stealth,Survival"
+        ],
+        "kind": "choice",
+        "category": "skills",
+        "count": 2,
+        "pool": {
+          "kind": "names",
+          "names": [
+            "Animal Handling",
+            "Nature",
+            "Perception",
+            "Stealth",
+            "Survival"
+          ]
+        }
+      }
+    ],
     "name": "Lizardfolk",
     "source": "VGM",
     "size": [
@@ -12139,6 +14915,32 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "LR/Race/Locathah@0#languages:fixed:Aquan,Common",
+        "aliases": [
+          "LR/Race/Locathah@0#0"
+        ],
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Aquan",
+          "Common"
+        ]
+      },
+      {
+        "id": "LR/Race/Locathah@0#skills:fixed:Athletics,Perception",
+        "aliases": [
+          "LR/Race/Locathah@0#1"
+        ],
+        "kind": "fixed",
+        "category": "skills",
+        "names": [
+          "Athletics",
+          "Perception"
+        ]
+      }
+    ],
     "name": "Locathah",
     "source": "LR",
     "size": [
@@ -12255,6 +15057,31 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "GGR/Race/Loxodon@0#languages:fixed:Common",
+        "aliases": [
+          "GGR/Race/Loxodon@0#0"
+        ],
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common"
+        ]
+      },
+      {
+        "id": "GGR/Race/Loxodon@0#languages:choice:any",
+        "aliases": [
+          "GGR/Race/Loxodon@0#1"
+        ],
+        "kind": "choice",
+        "category": "languages",
+        "count": 1,
+        "pool": {
+          "kind": "any"
+        }
+      }
+    ],
     "name": "Loxodon",
     "source": "GGR",
     "size": [
@@ -12389,6 +15216,20 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "DMG/Race/Merfolk@0#languages:fixed:Aquan,Common",
+        "aliases": [
+          "DMG/Race/Merfolk@0#0"
+        ],
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common",
+          "Aquan"
+        ]
+      }
+    ],
     "name": "Merfolk",
     "source": "DMG",
     "size": [
@@ -12434,6 +15275,43 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "PSZ/Race/Merfolk@0#languages:fixed:Common",
+        "aliases": [
+          "PSZ/Race/Merfolk@0#0"
+        ],
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common"
+        ]
+      },
+      {
+        "id": "PSZ/Race/Merfolk@0#languages:choice:any",
+        "aliases": [
+          "PSZ/Race/Merfolk@0#1"
+        ],
+        "kind": "choice",
+        "category": "languages",
+        "count": 1,
+        "pool": {
+          "kind": "any"
+        }
+      },
+      {
+        "id": "PSZ/Race/Merfolk@0#languages:choice:any~2",
+        "aliases": [
+          "PSZ/Race/Merfolk@0#2"
+        ],
+        "kind": "choice",
+        "category": "languages",
+        "count": 1,
+        "pool": {
+          "kind": "any"
+        }
+      }
+    ],
     "name": "Merfolk",
     "source": "PSZ",
     "size": [
@@ -12482,6 +15360,20 @@
     ],
     "subraces": [
       {
+        "grants": [
+          {
+            "id": "PSX/Subrace/Merfolk (Ixalan; Blue)@0#skills:fixed:History,Nature",
+            "aliases": [
+              "PSX/Subrace/Merfolk (Ixalan; Blue)@0#0"
+            ],
+            "kind": "fixed",
+            "category": "skills",
+            "names": [
+              "History",
+              "Nature"
+            ]
+          }
+        ],
         "name": "Ixalan; Blue",
         "isVariant": false,
         "source": "PSX",
@@ -12590,6 +15482,20 @@
         ]
       },
       {
+        "grants": [
+          {
+            "id": "PSZ/Subrace/Merfolk (Zendikar; Cosi Creed)@0#skills:fixed:Sleight of Hand,Stealth",
+            "aliases": [
+              "PSZ/Subrace/Merfolk (Zendikar; Cosi Creed)@0#0"
+            ],
+            "kind": "fixed",
+            "category": "skills",
+            "names": [
+              "Sleight of Hand",
+              "Stealth"
+            ]
+          }
+        ],
         "name": "Zendikar; Cosi Creed",
         "isVariant": false,
         "source": "PSZ",
@@ -12631,6 +15537,20 @@
         ]
       },
       {
+        "grants": [
+          {
+            "id": "PSZ/Subrace/Merfolk (Zendikar; Emeria Creed)@0#skills:fixed:Deception,Persuasion",
+            "aliases": [
+              "PSZ/Subrace/Merfolk (Zendikar; Emeria Creed)@0#0"
+            ],
+            "kind": "fixed",
+            "category": "skills",
+            "names": [
+              "Deception",
+              "Persuasion"
+            ]
+          }
+        ],
         "name": "Zendikar; Emeria Creed",
         "isVariant": false,
         "source": "PSZ",
@@ -12671,6 +15591,30 @@
         ]
       },
       {
+        "grants": [
+          {
+            "id": "PSZ/Subrace/Merfolk (Zendikar; Ula Creed)@0#tools:fixed:navigator's tools",
+            "aliases": [
+              "PSZ/Subrace/Merfolk (Zendikar; Ula Creed)@0#0"
+            ],
+            "kind": "fixed",
+            "category": "tools",
+            "names": [
+              "navigator's tools"
+            ]
+          },
+          {
+            "id": "PSZ/Subrace/Merfolk (Zendikar; Ula Creed)@0#skills:fixed:Survival",
+            "aliases": [
+              "PSZ/Subrace/Merfolk (Zendikar; Ula Creed)@0#1"
+            ],
+            "kind": "fixed",
+            "category": "skills",
+            "names": [
+              "Survival"
+            ]
+          }
+        ],
         "name": "Zendikar; Ula Creed",
         "isVariant": false,
         "source": "PSZ",
@@ -12758,6 +15702,48 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "GGR/Race/Minotaur@0#languages:fixed:Common",
+        "aliases": [
+          "GGR/Race/Minotaur@0#0"
+        ],
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common"
+        ]
+      },
+      {
+        "id": "GGR/Race/Minotaur@0#languages:choice:any",
+        "aliases": [
+          "GGR/Race/Minotaur@0#1"
+        ],
+        "kind": "choice",
+        "category": "languages",
+        "count": 1,
+        "pool": {
+          "kind": "any"
+        }
+      },
+      {
+        "id": "GGR/Race/Minotaur@0#skills:choice:from",
+        "aliases": [
+          "GGR/Race/Minotaur@0#2",
+          "GGR/Race/Minotaur@0#skills:choice:from=Intimidation,Persuasion"
+        ],
+        "kind": "choice",
+        "category": "skills",
+        "count": 1,
+        "pool": {
+          "kind": "names",
+          "names": [
+            "Intimidation",
+            "Persuasion"
+          ]
+        }
+      }
+    ],
     "name": "Minotaur",
     "source": "GGR",
     "size": [
@@ -12879,6 +15865,48 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "MOT/Race/Minotaur@0#languages:fixed:Common",
+        "aliases": [
+          "MOT/Race/Minotaur@0#0"
+        ],
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common"
+        ]
+      },
+      {
+        "id": "MOT/Race/Minotaur@0#languages:choice:any",
+        "aliases": [
+          "MOT/Race/Minotaur@0#1"
+        ],
+        "kind": "choice",
+        "category": "languages",
+        "count": 1,
+        "pool": {
+          "kind": "any"
+        }
+      },
+      {
+        "id": "MOT/Race/Minotaur@0#skills:choice:from",
+        "aliases": [
+          "MOT/Race/Minotaur@0#2",
+          "MOT/Race/Minotaur@0#skills:choice:from=Intimidation,Persuasion"
+        ],
+        "kind": "choice",
+        "category": "skills",
+        "count": 1,
+        "pool": {
+          "kind": "names",
+          "names": [
+            "Intimidation",
+            "Persuasion"
+          ]
+        }
+      }
+    ],
     "name": "Minotaur",
     "source": "MOT",
     "size": [
@@ -13000,6 +16028,31 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "MPMM/Race/Minotaur@0#languages:fixed:Common",
+        "aliases": [
+          "MPMM/Race/Minotaur@0#0"
+        ],
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common"
+        ]
+      },
+      {
+        "id": "MPMM/Race/Minotaur@0#languages:choice:any",
+        "aliases": [
+          "MPMM/Race/Minotaur@0#1"
+        ],
+        "kind": "choice",
+        "category": "languages",
+        "count": 1,
+        "pool": {
+          "kind": "any"
+        }
+      }
+    ],
     "name": "Minotaur",
     "source": "MPMM",
     "size": [
@@ -13063,6 +16116,42 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "PSA/Race/Minotaur (Amonkhet)@0#languages:fixed:Common",
+        "aliases": [
+          "PSA/Race/Minotaur (Amonkhet)@0#0"
+        ],
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common"
+        ]
+      },
+      {
+        "id": "PSA/Race/Minotaur (Amonkhet)@0#languages:choice:any",
+        "aliases": [
+          "PSA/Race/Minotaur (Amonkhet)@0#1"
+        ],
+        "kind": "choice",
+        "category": "languages",
+        "count": 1,
+        "pool": {
+          "kind": "any"
+        }
+      },
+      {
+        "id": "PSA/Race/Minotaur (Amonkhet)@0#skills:fixed:Intimidation",
+        "aliases": [
+          "PSA/Race/Minotaur (Amonkhet)@0#2"
+        ],
+        "kind": "fixed",
+        "category": "skills",
+        "names": [
+          "Intimidation"
+        ]
+      }
+    ],
     "name": "Minotaur (Amonkhet)",
     "source": "PSA",
     "size": [
@@ -13178,6 +16267,42 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "PSA/Race/Naga@0#tools:fixed:poisoner's kit",
+        "aliases": [
+          "PSA/Race/Naga@0#0"
+        ],
+        "kind": "fixed",
+        "category": "tools",
+        "names": [
+          "poisoner's kit"
+        ]
+      },
+      {
+        "id": "PSA/Race/Naga@0#languages:fixed:Common",
+        "aliases": [
+          "PSA/Race/Naga@0#1"
+        ],
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common"
+        ]
+      },
+      {
+        "id": "PSA/Race/Naga@0#languages:choice:any",
+        "aliases": [
+          "PSA/Race/Naga@0#2"
+        ],
+        "kind": "choice",
+        "category": "languages",
+        "count": 1,
+        "pool": {
+          "kind": "any"
+        }
+      }
+    ],
     "name": "Naga",
     "source": "PSA",
     "size": [
@@ -13295,6 +16420,20 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "DMG/Race/Orc@0#languages:fixed:Common,Orc",
+        "aliases": [
+          "DMG/Race/Orc@0#0"
+        ],
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common",
+          "Orc"
+        ]
+      }
+    ],
     "name": "Orc",
     "source": "DMG",
     "size": [
@@ -13355,6 +16494,41 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "EGW/Race/Orc@0#languages:fixed:Common,Orc",
+        "aliases": [
+          "EGW/Race/Orc@0#0"
+        ],
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common",
+          "Orc"
+        ]
+      },
+      {
+        "id": "EGW/Race/Orc@0#skills:choice:from",
+        "aliases": [
+          "EGW/Race/Orc@0#1",
+          "EGW/Race/Orc@0#skills:choice:from=Animal Handling,Insight,Intimidation,Medicine,Perception,Survival"
+        ],
+        "kind": "choice",
+        "category": "skills",
+        "count": 2,
+        "pool": {
+          "kind": "names",
+          "names": [
+            "Animal Handling",
+            "Insight",
+            "Intimidation",
+            "Medicine",
+            "Perception",
+            "Survival"
+          ]
+        }
+      }
+    ],
     "name": "Orc",
     "source": "EGW",
     "size": [
@@ -13470,6 +16644,42 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "ERLW/Race/Orc@0#languages:fixed:Common,Orc",
+        "aliases": [
+          "ERLW/Race/Orc@0#0"
+        ],
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common",
+          "Orc"
+        ]
+      },
+      {
+        "id": "ERLW/Race/Orc@0#skills:choice:from",
+        "aliases": [
+          "ERLW/Race/Orc@0#1",
+          "ERLW/Race/Orc@0#skills:choice:from=Animal Handling,Insight,Intimidation,Medicine,Nature,Perception,Survival"
+        ],
+        "kind": "choice",
+        "category": "skills",
+        "count": 2,
+        "pool": {
+          "kind": "names",
+          "names": [
+            "Animal Handling",
+            "Insight",
+            "Intimidation",
+            "Medicine",
+            "Nature",
+            "Perception",
+            "Survival"
+          ]
+        }
+      }
+    ],
     "name": "Orc",
     "source": "ERLW",
     "size": [
@@ -13585,6 +16795,31 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "MPMM/Race/Orc@0#languages:fixed:Common",
+        "aliases": [
+          "MPMM/Race/Orc@0#0"
+        ],
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common"
+        ]
+      },
+      {
+        "id": "MPMM/Race/Orc@0#languages:choice:any",
+        "aliases": [
+          "MPMM/Race/Orc@0#1"
+        ],
+        "kind": "choice",
+        "category": "languages",
+        "count": 1,
+        "pool": {
+          "kind": "any"
+        }
+      }
+    ],
     "name": "Orc",
     "source": "MPMM",
     "size": [
@@ -13649,6 +16884,42 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "VGM/Race/Orc@0#languages:fixed:Common,Orc",
+        "aliases": [
+          "VGM/Race/Orc@0#0"
+        ],
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common",
+          "Orc"
+        ]
+      },
+      {
+        "id": "VGM/Race/Orc@0#skills:choice:from",
+        "aliases": [
+          "VGM/Race/Orc@0#1",
+          "VGM/Race/Orc@0#skills:choice:from=Animal Handling,Insight,Intimidation,Medicine,Nature,Perception,Survival"
+        ],
+        "kind": "choice",
+        "category": "skills",
+        "count": 2,
+        "pool": {
+          "kind": "names",
+          "names": [
+            "Animal Handling",
+            "Insight",
+            "Intimidation",
+            "Medicine",
+            "Nature",
+            "Perception",
+            "Survival"
+          ]
+        }
+      }
+    ],
     "name": "Orc",
     "source": "VGM",
     "size": [
@@ -13753,6 +17024,31 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "PSX/Race/Orc (Ixalan)@0#languages:fixed:Common,Orc",
+        "aliases": [
+          "PSX/Race/Orc (Ixalan)@0#0"
+        ],
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common",
+          "Orc"
+        ]
+      },
+      {
+        "id": "PSX/Race/Orc (Ixalan)@0#skills:fixed:Intimidation",
+        "aliases": [
+          "PSX/Race/Orc (Ixalan)@0#1"
+        ],
+        "kind": "fixed",
+        "category": "skills",
+        "names": [
+          "Intimidation"
+        ]
+      }
+    ],
     "name": "Orc (Ixalan)",
     "source": "PSX",
     "size": [
@@ -13868,6 +17164,30 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "SCC/Race/Owlin@0#languages:fixed:Common",
+        "aliases": [
+          "SCC/Race/Owlin@0#0"
+        ],
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common"
+        ]
+      },
+      {
+        "id": "SCC/Race/Owlin@0#skills:fixed:Stealth",
+        "aliases": [
+          "SCC/Race/Owlin@0#1"
+        ],
+        "kind": "fixed",
+        "category": "skills",
+        "names": [
+          "Stealth"
+        ]
+      }
+    ],
     "name": "Owlin",
     "source": "SCC",
     "size": [
@@ -13933,6 +17253,19 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "AAG/Race/Plasmoid@0#languages:fixed:Common",
+        "aliases": [
+          "AAG/Race/Plasmoid@0#0"
+        ],
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common"
+        ]
+      }
+    ],
     "name": "Plasmoid",
     "source": "AAG",
     "size": [
@@ -14031,6 +17364,19 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "VRGR/Race/Reborn@0#languages:fixed:Common",
+        "aliases": [
+          "VRGR/Race/Reborn@0#0"
+        ],
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common"
+        ]
+      }
+    ],
     "name": "Reborn",
     "source": "VRGR",
     "size": [
@@ -14105,6 +17451,57 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "MOT/Race/Satyr@0#tools:choice:from",
+        "aliases": [
+          "MOT/Race/Satyr@0#0",
+          "MOT/Race/Satyr@0#tools:choice:from=bagpipes,drum,dulcimer,flute,horn,lute,lyre,pan flute,shawm,viol"
+        ],
+        "kind": "choice",
+        "category": "tools",
+        "count": 1,
+        "pool": {
+          "kind": "names",
+          "names": [
+            "bagpipes",
+            "drum",
+            "dulcimer",
+            "flute",
+            "horn",
+            "lute",
+            "lyre",
+            "pan flute",
+            "shawm",
+            "viol"
+          ]
+        }
+      },
+      {
+        "id": "MOT/Race/Satyr@0#languages:fixed:Common,Sylvan",
+        "aliases": [
+          "MOT/Race/Satyr@0#1"
+        ],
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common",
+          "Sylvan"
+        ]
+      },
+      {
+        "id": "MOT/Race/Satyr@0#skills:fixed:Performance,Persuasion",
+        "aliases": [
+          "MOT/Race/Satyr@0#2"
+        ],
+        "kind": "fixed",
+        "category": "skills",
+        "names": [
+          "Performance",
+          "Persuasion"
+        ]
+      }
+    ],
     "name": "Satyr",
     "source": "MOT",
     "size": [
@@ -14231,6 +17628,68 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "MPMM/Race/Satyr@0#tools:choice:from",
+        "aliases": [
+          "MPMM/Race/Satyr@0#0",
+          "MPMM/Race/Satyr@0#tools:choice:from=bagpipes,drum,dulcimer,flute,horn,lute,lyre,pan flute,shawm,viol"
+        ],
+        "kind": "choice",
+        "category": "tools",
+        "count": 1,
+        "pool": {
+          "kind": "names",
+          "names": [
+            "bagpipes",
+            "drum",
+            "dulcimer",
+            "flute",
+            "horn",
+            "lute",
+            "lyre",
+            "pan flute",
+            "shawm",
+            "viol"
+          ]
+        }
+      },
+      {
+        "id": "MPMM/Race/Satyr@0#languages:fixed:Common",
+        "aliases": [
+          "MPMM/Race/Satyr@0#1"
+        ],
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common"
+        ]
+      },
+      {
+        "id": "MPMM/Race/Satyr@0#languages:choice:any",
+        "aliases": [
+          "MPMM/Race/Satyr@0#2"
+        ],
+        "kind": "choice",
+        "category": "languages",
+        "count": 1,
+        "pool": {
+          "kind": "any"
+        }
+      },
+      {
+        "id": "MPMM/Race/Satyr@0#skills:fixed:Performance,Persuasion",
+        "aliases": [
+          "MPMM/Race/Satyr@0#3"
+        ],
+        "kind": "fixed",
+        "category": "skills",
+        "names": [
+          "Performance",
+          "Persuasion"
+        ]
+      }
+    ],
     "name": "Satyr",
     "source": "MPMM",
     "size": [
@@ -14305,6 +17764,42 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "MPMM/Race/Sea Elf@0#languages:fixed:Common",
+        "aliases": [
+          "MPMM/Race/Sea Elf@0#0"
+        ],
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common"
+        ]
+      },
+      {
+        "id": "MPMM/Race/Sea Elf@0#languages:choice:any",
+        "aliases": [
+          "MPMM/Race/Sea Elf@0#1"
+        ],
+        "kind": "choice",
+        "category": "languages",
+        "count": 1,
+        "pool": {
+          "kind": "any"
+        }
+      },
+      {
+        "id": "MPMM/Race/Sea Elf@0#skills:fixed:Perception",
+        "aliases": [
+          "MPMM/Race/Sea Elf@0#2"
+        ],
+        "kind": "fixed",
+        "category": "skills",
+        "names": [
+          "Perception"
+        ]
+      }
+    ],
     "name": "Sea Elf",
     "source": "MPMM",
     "size": [
@@ -14414,6 +17909,42 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "MPMM/Race/Shadar-Kai@0#languages:fixed:Common",
+        "aliases": [
+          "MPMM/Race/Shadar-Kai@0#0"
+        ],
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common"
+        ]
+      },
+      {
+        "id": "MPMM/Race/Shadar-Kai@0#languages:choice:any",
+        "aliases": [
+          "MPMM/Race/Shadar-Kai@0#1"
+        ],
+        "kind": "choice",
+        "category": "languages",
+        "count": 1,
+        "pool": {
+          "kind": "any"
+        }
+      },
+      {
+        "id": "MPMM/Race/Shadar-Kai@0#skills:fixed:Perception",
+        "aliases": [
+          "MPMM/Race/Shadar-Kai@0#2"
+        ],
+        "kind": "fixed",
+        "category": "skills",
+        "names": [
+          "Perception"
+        ]
+      }
+    ],
     "name": "Shadar-Kai",
     "source": "MPMM",
     "size": [
@@ -14512,6 +18043,19 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "ERLW/Race/Shifter@0#languages:fixed:Common",
+        "aliases": [
+          "ERLW/Race/Shifter@0#0"
+        ],
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common"
+        ]
+      }
+    ],
     "name": "Shifter",
     "source": "ERLW",
     "size": [
@@ -14557,6 +18101,19 @@
     ],
     "subraces": [
       {
+        "grants": [
+          {
+            "id": "ERLW/Subrace/Shifter (Beasthide)@0#skills:fixed:Athletics",
+            "aliases": [
+              "ERLW/Subrace/Shifter (Beasthide)@0#0"
+            ],
+            "kind": "fixed",
+            "category": "skills",
+            "names": [
+              "Athletics"
+            ]
+          }
+        ],
         "name": "Beasthide",
         "isVariant": false,
         "source": "ERLW",
@@ -14598,6 +18155,19 @@
         ]
       },
       {
+        "grants": [
+          {
+            "id": "ERLW/Subrace/Shifter (Longtooth)@0#skills:fixed:Intimidation",
+            "aliases": [
+              "ERLW/Subrace/Shifter (Longtooth)@0#0"
+            ],
+            "kind": "fixed",
+            "category": "skills",
+            "names": [
+              "Intimidation"
+            ]
+          }
+        ],
         "name": "Longtooth",
         "isVariant": false,
         "source": "ERLW",
@@ -14639,6 +18209,19 @@
         ]
       },
       {
+        "grants": [
+          {
+            "id": "ERLW/Subrace/Shifter (Swiftstride)@0#skills:fixed:Acrobatics",
+            "aliases": [
+              "ERLW/Subrace/Shifter (Swiftstride)@0#0"
+            ],
+            "kind": "fixed",
+            "category": "skills",
+            "names": [
+              "Acrobatics"
+            ]
+          }
+        ],
         "name": "Swiftstride",
         "isVariant": false,
         "source": "ERLW",
@@ -14680,6 +18263,19 @@
         ]
       },
       {
+        "grants": [
+          {
+            "id": "ERLW/Subrace/Shifter (Wildhunt)@0#skills:fixed:Survival",
+            "aliases": [
+              "ERLW/Subrace/Shifter (Wildhunt)@0#0"
+            ],
+            "kind": "fixed",
+            "category": "skills",
+            "names": [
+              "Survival"
+            ]
+          }
+        ],
         "name": "Wildhunt",
         "isVariant": false,
         "source": "ERLW",
@@ -14776,6 +18372,50 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "MPMM/Race/Shifter@0#languages:fixed:Common",
+        "aliases": [
+          "MPMM/Race/Shifter@0#0"
+        ],
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common"
+        ]
+      },
+      {
+        "id": "MPMM/Race/Shifter@0#languages:choice:any",
+        "aliases": [
+          "MPMM/Race/Shifter@0#1"
+        ],
+        "kind": "choice",
+        "category": "languages",
+        "count": 1,
+        "pool": {
+          "kind": "any"
+        }
+      },
+      {
+        "id": "MPMM/Race/Shifter@0#skills:choice:from",
+        "aliases": [
+          "MPMM/Race/Shifter@0#2",
+          "MPMM/Race/Shifter@0#skills:choice:from=Acrobatics,Athletics,Intimidation,Survival"
+        ],
+        "kind": "choice",
+        "category": "skills",
+        "count": 1,
+        "pool": {
+          "kind": "names",
+          "names": [
+            "Acrobatics",
+            "Athletics",
+            "Intimidation",
+            "Survival"
+          ]
+        }
+      }
+    ],
     "name": "Shifter",
     "source": "MPMM",
     "size": [
@@ -14877,6 +18517,31 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "GGR/Race/Simic Hybrid@0#languages:fixed:Common",
+        "aliases": [
+          "GGR/Race/Simic Hybrid@0#0"
+        ],
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common"
+        ]
+      },
+      {
+        "id": "GGR/Race/Simic Hybrid@0#languages:choice:any",
+        "aliases": [
+          "GGR/Race/Simic Hybrid@0#1"
+        ],
+        "kind": "choice",
+        "category": "languages",
+        "count": 1,
+        "pool": {
+          "kind": "any"
+        }
+      }
+    ],
     "name": "Simic Hybrid",
     "source": "GGR",
     "size": [
@@ -15031,6 +18696,31 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "PSX/Race/Siren@0#languages:fixed:Common",
+        "aliases": [
+          "PSX/Race/Siren@0#0"
+        ],
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common"
+        ]
+      },
+      {
+        "id": "PSX/Race/Siren@0#languages:choice:any",
+        "aliases": [
+          "PSX/Race/Siren@0#1"
+        ],
+        "kind": "choice",
+        "category": "languages",
+        "count": 1,
+        "pool": {
+          "kind": "any"
+        }
+      }
+    ],
     "name": "Siren",
     "source": "PSX",
     "size": [
@@ -15061,7 +18751,7 @@
       },
       {
         "name": "Flight",
-        "description": "You have a flying speed of 30 feet. You can't use your flying speed while you wear medium or heavy armor. (If your campaign uses the variant rule for PHB, you can't use your flying speed if you are encumbered.)"
+        "description": "You have a flying speed of 30 feet. You can't use your flying speed while you wear medium or heavy armor. (If your campaign uses the variant rule for encumbrance, you can't use your flying speed if you are encumbered.)"
       },
       {
         "name": "Languages",
@@ -15073,7 +18763,7 @@
       "Other"
     ],
     "subraces": [],
-    "description": "### Alignment\n\n\nMost sirens lean toward chaotic alignment, cherishing the freedom and independence that comes from joining a pirate crew.\n\n### Size\n\n\nSirens stand about 5 to 6 feet tall, but their bodies are slender and their bones partially hollow to facilitate their flight. Your size is Medium.\n\n### Siren's Song\n\n\nYou know the friends cantrip and can cast it without material components.\n\n### Flight\n\n\nYou have a flying speed of 30 feet. You can't use your flying speed while you wear medium or heavy armor. (If your campaign uses the variant rule for PHB, you can't use your flying speed if you are encumbered.)\n\n### Languages\n\n\nYou can speak, read, and write Common (if it exists in your campaign) and Siren.",
+    "description": "### Alignment\n\n\nMost sirens lean toward chaotic alignment, cherishing the freedom and independence that comes from joining a pirate crew.\n\n### Size\n\n\nSirens stand about 5 to 6 feet tall, but their bodies are slender and their bones partially hollow to facilitate their flight. Your size is Medium.\n\n### Siren's Song\n\n\nYou know the friends cantrip and can cast it without material components.\n\n### Flight\n\n\nYou have a flying speed of 30 feet. You can't use your flying speed while you wear medium or heavy armor. (If your campaign uses the variant rule for encumbrance, you can't use your flying speed if you are encumbered.)\n\n### Languages\n\n\nYou can speak, read, and write Common (if it exists in your campaign) and Siren.",
     "rawEntries": [
       {
         "type": "entries",
@@ -15113,6 +18803,19 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "DMG/Race/Skeleton@0#languages:fixed:Common",
+        "aliases": [
+          "DMG/Race/Skeleton@0#0"
+        ],
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common"
+        ]
+      }
+    ],
     "name": "Skeleton",
     "source": "DMG",
     "size": [
@@ -15193,6 +18896,43 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "MPMM/Race/Tabaxi@0#languages:fixed:Common",
+        "aliases": [
+          "MPMM/Race/Tabaxi@0#0"
+        ],
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common"
+        ]
+      },
+      {
+        "id": "MPMM/Race/Tabaxi@0#languages:choice:any",
+        "aliases": [
+          "MPMM/Race/Tabaxi@0#1"
+        ],
+        "kind": "choice",
+        "category": "languages",
+        "count": 1,
+        "pool": {
+          "kind": "any"
+        }
+      },
+      {
+        "id": "MPMM/Race/Tabaxi@0#skills:fixed:Perception,Stealth",
+        "aliases": [
+          "MPMM/Race/Tabaxi@0#2"
+        ],
+        "kind": "fixed",
+        "category": "skills",
+        "names": [
+          "Perception",
+          "Stealth"
+        ]
+      }
+    ],
     "name": "Tabaxi",
     "source": "MPMM",
     "size": [
@@ -15280,6 +19020,43 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "VGM/Race/Tabaxi@0#languages:fixed:Common",
+        "aliases": [
+          "VGM/Race/Tabaxi@0#0"
+        ],
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common"
+        ]
+      },
+      {
+        "id": "VGM/Race/Tabaxi@0#languages:choice:any",
+        "aliases": [
+          "VGM/Race/Tabaxi@0#1"
+        ],
+        "kind": "choice",
+        "category": "languages",
+        "count": 1,
+        "pool": {
+          "kind": "any"
+        }
+      },
+      {
+        "id": "VGM/Race/Tabaxi@0#skills:fixed:Perception,Stealth",
+        "aliases": [
+          "VGM/Race/Tabaxi@0#2"
+        ],
+        "kind": "fixed",
+        "category": "skills",
+        "names": [
+          "Perception",
+          "Stealth"
+        ]
+      }
+    ],
     "name": "Tabaxi",
     "source": "VGM",
     "size": [
@@ -15385,6 +19162,19 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "AAG/Race/Thri-kreen@0#languages:fixed:Common",
+        "aliases": [
+          "AAG/Race/Thri-kreen@0#0"
+        ],
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common"
+        ]
+      }
+    ],
     "name": "Thri-kreen",
     "source": "AAG",
     "size": [
@@ -15483,6 +19273,20 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "PHB/Race/Tiefling@0#languages:fixed:Common,Infernal",
+        "aliases": [
+          "PHB/Race/Tiefling@0#0"
+        ],
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common",
+          "Infernal"
+        ]
+      }
+    ],
     "name": "Tiefling",
     "source": "PHB",
     "size": [
@@ -15995,6 +19799,52 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "MPMM/Race/Tortle@0#languages:fixed:Common",
+        "aliases": [
+          "MPMM/Race/Tortle@0#0"
+        ],
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common"
+        ]
+      },
+      {
+        "id": "MPMM/Race/Tortle@0#languages:choice:any",
+        "aliases": [
+          "MPMM/Race/Tortle@0#1"
+        ],
+        "kind": "choice",
+        "category": "languages",
+        "count": 1,
+        "pool": {
+          "kind": "any"
+        }
+      },
+      {
+        "id": "MPMM/Race/Tortle@0#skills:choice:from",
+        "aliases": [
+          "MPMM/Race/Tortle@0#2",
+          "MPMM/Race/Tortle@0#skills:choice:from=Animal Handling,Medicine,Nature,Perception,Stealth,Survival"
+        ],
+        "kind": "choice",
+        "category": "skills",
+        "count": 1,
+        "pool": {
+          "kind": "names",
+          "names": [
+            "Animal Handling",
+            "Medicine",
+            "Nature",
+            "Perception",
+            "Stealth",
+            "Survival"
+          ]
+        }
+      }
+    ],
     "name": "Tortle",
     "source": "MPMM",
     "size": [
@@ -16081,6 +19931,31 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "TTP/Race/Tortle@0#languages:fixed:Aquan,Common",
+        "aliases": [
+          "TTP/Race/Tortle@0#0"
+        ],
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Aquan",
+          "Common"
+        ]
+      },
+      {
+        "id": "TTP/Race/Tortle@0#skills:fixed:Survival",
+        "aliases": [
+          "TTP/Race/Tortle@0#1"
+        ],
+        "kind": "fixed",
+        "category": "skills",
+        "names": [
+          "Survival"
+        ]
+      }
+    ],
     "name": "Tortle",
     "source": "TTP",
     "size": [
@@ -16213,6 +20088,20 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "MOT/Race/Triton@0#languages:fixed:Common,Primordial",
+        "aliases": [
+          "MOT/Race/Triton@0#0"
+        ],
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common",
+          "Primordial"
+        ]
+      }
+    ],
     "name": "Triton",
     "source": "MOT",
     "size": [
@@ -16352,6 +20241,31 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "MPMM/Race/Triton@0#languages:fixed:Common",
+        "aliases": [
+          "MPMM/Race/Triton@0#0"
+        ],
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common"
+        ]
+      },
+      {
+        "id": "MPMM/Race/Triton@0#languages:choice:any",
+        "aliases": [
+          "MPMM/Race/Triton@0#1"
+        ],
+        "kind": "choice",
+        "category": "languages",
+        "count": 1,
+        "pool": {
+          "kind": "any"
+        }
+      }
+    ],
     "name": "Triton",
     "source": "MPMM",
     "size": [
@@ -16439,6 +20353,20 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "VGM/Race/Triton@0#languages:fixed:Common,Primordial",
+        "aliases": [
+          "VGM/Race/Triton@0#0"
+        ],
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common",
+          "Primordial"
+        ]
+      }
+    ],
     "name": "Triton",
     "source": "VGM",
     "size": [
@@ -16567,6 +20495,20 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "DMG/Race/Troglodyte@0#languages:choice:any",
+        "aliases": [
+          "DMG/Race/Troglodyte@0#0"
+        ],
+        "kind": "choice",
+        "category": "languages",
+        "count": 1,
+        "pool": {
+          "kind": "any"
+        }
+      }
+    ],
     "name": "Troglodyte",
     "source": "DMG",
     "size": [
@@ -16661,6 +20603,31 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "PSZ/Race/Vampire@0#languages:fixed:Common",
+        "aliases": [
+          "PSZ/Race/Vampire@0#0"
+        ],
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common"
+        ]
+      },
+      {
+        "id": "PSZ/Race/Vampire@0#languages:choice:any",
+        "aliases": [
+          "PSZ/Race/Vampire@0#1"
+        ],
+        "kind": "choice",
+        "category": "languages",
+        "count": 1,
+        "pool": {
+          "kind": "any"
+        }
+      }
+    ],
     "name": "Vampire",
     "source": "PSZ",
     "size": [
@@ -16879,6 +20846,76 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "GGR/Race/Vedalken@0#tools:choice:any",
+        "aliases": [
+          "GGR/Race/Vedalken@0#0"
+        ],
+        "kind": "choice",
+        "category": "tools",
+        "count": 1,
+        "pool": {
+          "kind": "any"
+        }
+      },
+      {
+        "id": "GGR/Race/Vedalken@0#languages:fixed:Common",
+        "aliases": [
+          "GGR/Race/Vedalken@0#1"
+        ],
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common"
+        ]
+      },
+      {
+        "id": "GGR/Race/Vedalken@0#languages:choice:any",
+        "aliases": [
+          "GGR/Race/Vedalken@0#2"
+        ],
+        "kind": "choice",
+        "category": "languages",
+        "count": 1,
+        "pool": {
+          "kind": "any"
+        }
+      },
+      {
+        "id": "GGR/Race/Vedalken@0#languages:choice:any~2",
+        "aliases": [
+          "GGR/Race/Vedalken@0#3"
+        ],
+        "kind": "choice",
+        "category": "languages",
+        "count": 1,
+        "pool": {
+          "kind": "any"
+        }
+      },
+      {
+        "id": "GGR/Race/Vedalken@0#skills:choice:from",
+        "aliases": [
+          "GGR/Race/Vedalken@0#4",
+          "GGR/Race/Vedalken@0#skills:choice:from=Arcana,History,Investigation,Medicine,Performance,Sleight of Hand"
+        ],
+        "kind": "choice",
+        "category": "skills",
+        "count": 1,
+        "pool": {
+          "kind": "names",
+          "names": [
+            "Arcana",
+            "History",
+            "Investigation",
+            "Medicine",
+            "Performance",
+            "Sleight of Hand"
+          ]
+        }
+      }
+    ],
     "name": "Vedalken",
     "source": "GGR",
     "size": [
@@ -16985,6 +21022,31 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "PSK/Race/Vedalken@0#languages:fixed:Common",
+        "aliases": [
+          "PSK/Race/Vedalken@0#0"
+        ],
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common"
+        ]
+      },
+      {
+        "id": "PSK/Race/Vedalken@0#languages:choice:any",
+        "aliases": [
+          "PSK/Race/Vedalken@0#1"
+        ],
+        "kind": "choice",
+        "category": "languages",
+        "count": 1,
+        "pool": {
+          "kind": "any"
+        }
+      }
+    ],
     "name": "Vedalken",
     "source": "PSK",
     "size": [
@@ -17078,6 +21140,43 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "AI/Race/Verdan@0#languages:fixed:Common,Goblin",
+        "aliases": [
+          "AI/Race/Verdan@0#0"
+        ],
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common",
+          "Goblin"
+        ]
+      },
+      {
+        "id": "AI/Race/Verdan@0#languages:choice:any",
+        "aliases": [
+          "AI/Race/Verdan@0#1"
+        ],
+        "kind": "choice",
+        "category": "languages",
+        "count": 1,
+        "pool": {
+          "kind": "any"
+        }
+      },
+      {
+        "id": "AI/Race/Verdan@0#skills:fixed:Persuasion",
+        "aliases": [
+          "AI/Race/Verdan@0#2"
+        ],
+        "kind": "fixed",
+        "category": "skills",
+        "names": [
+          "Persuasion"
+        ]
+      }
+    ],
     "name": "Verdan",
     "source": "AI",
     "size": [
@@ -17194,6 +21293,55 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "ERLW/Race/Warforged@0#tools:choice:any",
+        "aliases": [
+          "ERLW/Race/Warforged@0#0"
+        ],
+        "kind": "choice",
+        "category": "tools",
+        "count": 1,
+        "pool": {
+          "kind": "any"
+        }
+      },
+      {
+        "id": "ERLW/Race/Warforged@0#languages:fixed:Common",
+        "aliases": [
+          "ERLW/Race/Warforged@0#1"
+        ],
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common"
+        ]
+      },
+      {
+        "id": "ERLW/Race/Warforged@0#languages:choice:any",
+        "aliases": [
+          "ERLW/Race/Warforged@0#2"
+        ],
+        "kind": "choice",
+        "category": "languages",
+        "count": 1,
+        "pool": {
+          "kind": "any"
+        }
+      },
+      {
+        "id": "ERLW/Race/Warforged@0#skills:choice:any",
+        "aliases": [
+          "ERLW/Race/Warforged@0#3"
+        ],
+        "kind": "choice",
+        "category": "skills",
+        "count": 1,
+        "pool": {
+          "kind": "any"
+        }
+      }
+    ],
     "name": "Warforged",
     "source": "ERLW",
     "size": [
@@ -17325,6 +21473,31 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "MPMM/Race/Yuan-Ti@0#languages:fixed:Common",
+        "aliases": [
+          "MPMM/Race/Yuan-Ti@0#0"
+        ],
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common"
+        ]
+      },
+      {
+        "id": "MPMM/Race/Yuan-Ti@0#languages:choice:any",
+        "aliases": [
+          "MPMM/Race/Yuan-Ti@0#1"
+        ],
+        "kind": "choice",
+        "category": "languages",
+        "count": 1,
+        "pool": {
+          "kind": "any"
+        }
+      }
+    ],
     "name": "Yuan-Ti",
     "source": "MPMM",
     "size": [
@@ -17401,6 +21574,21 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "VGM/Race/Yuan-ti Pureblood@0#languages:fixed:Abyssal,Common,Draconic",
+        "aliases": [
+          "VGM/Race/Yuan-ti Pureblood@0#0"
+        ],
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common",
+          "Abyssal",
+          "Draconic"
+        ]
+      }
+    ],
     "name": "Yuan-ti Pureblood",
     "source": "VGM",
     "size": [
@@ -17506,6 +21694,19 @@
     ]
   },
   {
+    "grants": [
+      {
+        "id": "DMG/Race/Zombie@0#languages:fixed:Common",
+        "aliases": [
+          "DMG/Race/Zombie@0#0"
+        ],
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common"
+        ]
+      }
+    ],
     "name": "Zombie",
     "source": "DMG",
     "size": [

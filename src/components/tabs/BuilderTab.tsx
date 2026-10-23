@@ -1,46 +1,33 @@
 import React, { useState } from "react";
 import { ScrollView, Text, TouchableOpacity } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { DND_SKILLS, POINT_BUY_COST } from "../../constants/rules";
-import {
-  getBackgroundLanguageGrant,
-  getBackgroundToolGrant,
-  getClassToolGrant,
-  getRaceLanguageGrant,
-  getRaceToolGrant,
-  resolveCharacterLanguages,
-  resolveCharacterTools,
-} from "../../rules/proficienciesAndLanguages";
+import { POINT_BUY_COST } from "../../constants/rules";
+import { proficiencySheet, ruleGrantedSkills, skillChoiceOffers, sourceGrants } from "../../rules/proficiencySheet";
 import { useCharacters } from "../../context/CharacterContext";
 import { useAppTheme } from "../../context/ThemeContext";
-import {
-  findClass,
-  findItem,
-  getBackgrounds,
-  getClasses,
-  getFeats,
-  getRaces,
-} from "../../services/dataService";
-import {
-  calculateEffectiveAbilityScores,
-  calculateTotalLevel,
-} from "../../services/dndRules";
+import { getFeats } from "../../services/dataService";
+import { currentCompendium } from "../../services/compendium";
+import { calculateTotalLevel } from "../../services/dndRules";
+import { evaluateCharacter } from "../../rules/characterEvaluation";
+import { catalogListings, type CharacterCatalogs } from "../../rules/catalogs";
 import {
   applyStartingGrants,
-  CLASS_STARTING_EQUIPMENT,
+  reclaimStartingGrants,
   setStandardArrayPick,
   STARTING_GOLD_BY_CLASS,
 } from "../../rules/builderTransitions";
-import { pruneInvalidExpertise } from "../../rules/expertise";
-import { ancestryRuleChoices, availableRuleChoices } from "../../rules/ruleChoices";
-import { getPendingLevelChoices } from "../../rules/leveling";
 import {
-  getAutoGrantedSkills,
-  getRacialSkillChoices,
-  normalizeSkillName,
-} from "../../rules/skills";
+  setStartingEquipmentItems,
+  setStartingEquipmentOption,
+  startingEquipmentCard,
+  type StartingEquipmentAddress,
+} from "../../rules/startingEquipment";
+import { reconcile } from "../../rules/characterReconciler";
+import { proficiencyChoiceOffers } from "../../rules/proficiencyChoiceOffers";
+import { getPendingLevelChoices } from "../../rules/leveling";
+import { normalizeSkillName } from "../../rules/skills";
 import { getAvailableOptionalFeatures } from "../../rules/optionalFeatures";
-import { AbilityKey, Character, InventoryItem, SkillChoiceEntry } from "../../types/character";
+import { AbilityKey, Character, SkillChoiceEntry } from "../../types/character";
 import { DetailModal } from "../DetailModal";
 import { AbilityScoresSection } from "../builder/AbilityScoresSection";
 import { AncestrySection } from "../builder/AncestrySection";
@@ -63,7 +50,7 @@ export const BuilderTab: React.FC<BuilderTabProps> = ({
   onViewDetail: propViewDetail,
 }) => {
   const { theme } = useAppTheme();
-  const { currentCharacter, updateCharacter: contextUpdate, activeBooks } = useCharacters();
+  const { currentCharacter, updateCharacter: contextUpdate, activeBooks, fullHealOnLevelUp } = useCharacters();
 
   const [localDetail, setLocalDetail] = useState<any>(null);
   const [activeSection, setActiveSection] = useState<"abilities" | "race" | "background" | "class">("abilities");
@@ -86,12 +73,14 @@ export const BuilderTab: React.FC<BuilderTabProps> = ({
   if (!character) return null;
 
   // ── Data ──────────────────────────────────────────────────────────────────
-  const allRaces = getRaces(activeBooks);
-  const allClasses = getClasses(activeBooks).filter((cl) => !SIDEKICK_CLASSES.has(cl.name));
-  const allBackgrounds = getBackgrounds(activeBooks);
+  const catalogs: CharacterCatalogs = { compendium: currentCompendium(), activeBooks };
+  const listings = catalogListings(catalogs);
+  const allRaces = listings.races();
+  const allClasses = listings.classes().filter((cl) => !SIDEKICK_CLASSES.has(cl.name));
+  const allBackgrounds = listings.backgrounds();
   const allFeats = getFeats(activeBooks);
 
-  const { scores: effectiveScores, modifiers } = calculateEffectiveAbilityScores(character);
+  const { scores: effectiveScores, modifiers } = evaluateCharacter(character).effectiveScores;
   const totalLevel = calculateTotalLevel(character);
   const primaryClass = character.classes[0]?.className;
 
@@ -161,94 +150,46 @@ export const BuilderTab: React.FC<BuilderTabProps> = ({
   // ─────────────────────────────────────────────────────────────────────────
   // STARTING GRANTS HELPERS
   // ─────────────────────────────────────────────────────────────────────────
+  const startingGoldFor = (className: string) => STARTING_GOLD_BY_CLASS[className] ?? 100;
+
+  // The equipment slots of the first class with the player's picks, shown on the claim card.
+  const startingCard = startingEquipmentCard(character, catalogs);
+
+  const handlePickOption = (slot: number, letter: string) => {
+    onUpdate((current) => setStartingEquipmentOption(current, slot, letter, catalogs));
+  };
+
+  const handlePickItems = (address: StartingEquipmentAddress, names: string[]) => {
+    onUpdate((current) => setStartingEquipmentItems(current, address, names, catalogs));
+  };
+
   const handleClaimGold = () => {
     if (!primaryClass) return;
-    const goldAmount = STARTING_GOLD_BY_CLASS[primaryClass] ?? 100;
+    const goldAmount = startingGoldFor(primaryClass);
     onUpdate((current) => applyStartingGrants(current, "gold", { goldAmount }));
   };
 
   const handleClaimEquipment = () => {
     if (!primaryClass) return;
-    const defs = CLASS_STARTING_EQUIPMENT[primaryClass] || [
-      { name: "Dagger", quantity: 1, isEquipped: true, section: "equipped" as const },
-      { name: "Explorer's Pack", quantity: 1, isEquipped: false, section: "carried" as const },
-    ];
-    const equipmentItems: InventoryItem[] = defs.map((def, idx) => {
-      const itemData = findItem(def.name);
-      return {
-        id: `start_${primaryClass.toLowerCase()}_${idx}_${def.name.toLowerCase().replace(/[^a-z0-9]/g, "_")}`,
-        name: def.name,
-        source: itemData?.source || "PHB",
-        quantity: def.quantity,
-        isEquipped: def.isEquipped,
-        section: def.section,
-        weight: itemData?.weight ?? null,
-        cost: itemData?.cost ?? null,
-        damage: itemData?.damage || null,
-        damageType: itemData?.damageType || null,
-        range: itemData?.range || null,
-        ac: itemData?.ac ?? null,
-        description: itemData?.description || "",
-      };
-    });
-    onUpdate((current) => applyStartingGrants(current, "equipment", { equipmentItems }));
+    onUpdate((current) => applyStartingGrants(current, "equipment", { catalogs }));
+  };
+
+  const handleClaimAgain = () => {
+    if (!primaryClass) return;
+    const mode = character.startingOption;
+    const options = mode === "gold" ? { goldAmount: startingGoldFor(primaryClass) } : { catalogs };
+    onUpdate((current) => reclaimStartingGrants(current, mode, options));
   };
 
   // ─────────────────────────────────────────────────────────────────────────
   // SKILLS, LANGUAGES & TOOLS
   // ─────────────────────────────────────────────────────────────────────────
-  const autoGrantedBase = getAutoGrantedSkills(character, {
-    races: allRaces,
-    backgrounds: allBackgrounds,
-  });
+  const autoGrantedBase = ruleGrantedSkills(character, catalogs);
 
-  const chosenAncestryOption = (c: typeof character, catalog: typeof allRaces): string | undefined => {
-    const entry = (c.ruleChoices ?? [])[0];
-    if (!entry) return undefined;
-    const match = ancestryRuleChoices(c, catalog).find((choice) => choice.id === entry.id);
-    return match?.options.some((o) => o.name === entry.picked[0]) ? entry.picked[0] : undefined;
-  };
-
+  // The class's skill choice is the only skill choice on this path. Race, subrace and background skill picks are
+  // Proficiency Choices, offered below.
   type SkillChoice = { source: string; choose: number; from: string[] };
-  const skillChoices: SkillChoice[] = [];
-
-  if (character.race) {
-    const racialChoices = getRacialSkillChoices(
-      character.race.name,
-      character.race.subraceName,
-      allRaces,
-      character.race.source,
-      chosenAncestryOption(character, allRaces)
-    );
-    for (const rc of racialChoices) {
-      skillChoices.push({
-        source: rc.source,
-        choose: rc.choose,
-        from: rc.from.map(normalizeSkillName),
-      });
-    }
-  }
-
-  if (character.classes.length > 0) {
-    const classData = findClass(character.classes[0].className, character.classes[0].source);
-    if (classData?.skillProficiencies) {
-      const { choose, from } = classData.skillProficiencies;
-      const fromList =
-        from && from.length > 0 ? from.map(normalizeSkillName) : DND_SKILLS.map((s) => normalizeSkillName(s.name));
-      if (choose > 0) {
-        skillChoices.push({
-          source: `Class: ${character.classes[0].className}`,
-          choose,
-          from: fromList,
-        });
-      }
-    }
-  }
-
-  const raceChoices = skillChoices.filter(
-    (sc) => sc.source.startsWith("Race:") || sc.source.startsWith("Variant")
-  );
-  const classChoices = skillChoices.filter((sc) => sc.source.startsWith("Class:"));
+  const skillChoices: SkillChoice[] = skillChoiceOffers(character, catalogs);
 
   const getPickedSkillsForSource = (source: string): string[] => {
     const entry = (character.skillChoices || []).find((sc) => sc.id === source);
@@ -259,22 +200,8 @@ export const BuilderTab: React.FC<BuilderTabProps> = ({
     const available = (character.chosenSkills || [])
       .map(normalizeSkillName)
       .filter((s) => !autoGrantedBase.includes(s));
-    if (source.startsWith("Race:") || source.startsWith("Variant")) {
-      return available.filter((s) => normFrom.includes(s)).slice(0, sc.choose);
-    }
-    const racePicks = new Set(
-      raceChoices.flatMap((rc) =>
-        available.filter((s) => rc.from.map(normalizeSkillName).includes(s)).slice(0, rc.choose)
-      )
-    );
-    return available.filter((s) => !racePicks.has(s) && normFrom.includes(s)).slice(0, sc.choose);
+    return available.filter((s) => normFrom.includes(s)).slice(0, sc.choose);
   };
-
-  const racePickedSkills = raceChoices.flatMap((rc) => getPickedSkillsForSource(rc.source));
-  const classPickedSkills = classChoices.flatMap((cc) => getPickedSkillsForSource(cc.source));
-
-  const raceAutoGranted = Array.from(new Set([...autoGrantedBase, ...classPickedSkills]));
-  const classAutoGranted = Array.from(new Set([...autoGrantedBase, ...racePickedSkills]));
 
   const toggleSkill = (s: string, source?: string) => {
     const norm = normalizeSkillName(s);
@@ -298,13 +225,6 @@ export const BuilderTab: React.FC<BuilderTabProps> = ({
       }
     }
 
-    const origin: "race" | "class" | "background" =
-      targetSource.startsWith("Race:") || targetSource.startsWith("Variant")
-        ? "race"
-        : targetSource.startsWith("Class:")
-        ? "class"
-        : "background";
-
     const updatedSkillChoices: SkillChoiceEntry[] = [];
     let updatedTarget = false;
 
@@ -312,17 +232,16 @@ export const BuilderTab: React.FC<BuilderTabProps> = ({
       if (sc.source === targetSource) {
         updatedSkillChoices.push({
           id: sc.source,
-          origin,
+          origin: "class",
           choose: sc.choose,
           from: sc.from,
           picked: nextPicks,
         });
         updatedTarget = true;
       } else {
-        const scOrigin: "race" | "class" = sc.source.startsWith("Class:") ? "class" : "race";
         updatedSkillChoices.push({
           id: sc.source,
-          origin: scOrigin,
+          origin: "class",
           choose: sc.choose,
           from: sc.from,
           picked: getPickedSkillsForSource(sc.source),
@@ -333,88 +252,50 @@ export const BuilderTab: React.FC<BuilderTabProps> = ({
     if (!updatedTarget) {
       updatedSkillChoices.push({
         id: targetSource,
-        origin,
+        origin: "class",
         choose: maxChoose,
         from: targetSc ? targetSc.from : [norm],
         picked: nextPicks,
       });
     }
 
-    for (const existing of character.skillChoices || []) {
-      if (existing.origin === "background" && !updatedSkillChoices.some((u) => u.id === existing.id)) {
-        updatedSkillChoices.push(existing);
-      }
-    }
-
-    const allPicked = Array.from(new Set(updatedSkillChoices.flatMap((sc) => sc.picked.map(normalizeSkillName))));
+    // The old skill bucket keeps every skill no class choice holds, so a name saved there is never dropped.
+    const previousClassPicks = new Set(
+      (character.skillChoices || [])
+        .filter((sc) => sc.origin === "class")
+        .flatMap((sc) => sc.picked.map(normalizeSkillName))
+    );
+    const classPicks = updatedSkillChoices.flatMap((sc) => sc.picked.map(normalizeSkillName));
+    const allPicked = Array.from(
+      new Set([
+        ...(character.chosenSkills || []).map(normalizeSkillName).filter((s) => !previousClassPicks.has(s)),
+        ...classPicks,
+      ])
+    );
 
     onUpdate((cur) =>
-      pruneInvalidExpertise(
+      reconcile(
         {
           ...cur,
           chosenSkills: allPicked,
-          skillChoices: updatedSkillChoices,
+          // A legacy race or background entry is kept as saved: it holds only the picks no choice took.
+          skillChoices: [...updatedSkillChoices, ...(cur.skillChoices || []).filter((sc) => sc.origin !== "class")],
         },
-        { races: allRaces, backgrounds: allBackgrounds, classes: allClasses }
+        currentCompendium(),
+        { activeBooks }
       )
     );
   };
 
-  const raceLanguageGrant = getRaceLanguageGrant(
-    character.race?.name,
-    character.race?.subraceName,
-    allRaces,
-    character.race?.source,
-    character.race?.subraceSource
-  );
-  const raceToolGrant = getRaceToolGrant(character.race?.name, character.race?.subraceName, allRaces);
-  const ruleChoices = availableRuleChoices(character, allRaces, totalLevel, activeBooks);
-  const bgLanguageGrant = getBackgroundLanguageGrant(character.background?.name, allBackgrounds);
-  const bgToolGrant = getBackgroundToolGrant(character.background?.name, allBackgrounds);
-  const classToolGrant = getClassToolGrant(primaryClass, allClasses);
+  const { race: raceGranted, background: backgroundGranted, classTools } = sourceGrants(character, catalogs);
+  const proficiencyOffers = proficiencyChoiceOffers(character, { activeBooks });
+  const raceProficiencyChoices = proficiencyOffers.filter((choice) => choice.origin === "race");
+  const backgroundProficiencyChoices = proficiencyOffers.filter((choice) => choice.origin === "background");
 
-  const resolvedLanguages = resolveCharacterLanguages(character, { races: allRaces, backgrounds: allBackgrounds });
-  const resolvedTools = resolveCharacterTools(character, {
-    races: allRaces,
-    backgrounds: allBackgrounds,
-    classes: allClasses,
-  });
-
-  const toggleRaceLanguage = (lang: string) => {
-    const cur = character.chosenLanguages?.race || [];
-    const next = cur.includes(lang) ? cur.filter((x) => x !== lang) : [...cur, lang];
-    const nextChosen = { ...character.chosenLanguages, race: next };
-    const temp = { ...character, chosenLanguages: nextChosen };
-    const resolved = resolveCharacterLanguages(temp, { races: allRaces, backgrounds: allBackgrounds });
-    onUpdate({ chosenLanguages: nextChosen, languages: resolved });
-  };
-
-  const toggleRaceTool = (tool: string) => {
-    const cur = character.chosenTools?.race || [];
-    const next = cur.includes(tool) ? cur.filter((x) => x !== tool) : [...cur, tool];
-    onUpdate({ chosenTools: { ...character.chosenTools, race: next } });
-  };
-
-  const toggleBgLanguage = (lang: string) => {
-    const cur = character.chosenLanguages?.background || [];
-    const next = cur.includes(lang) ? cur.filter((x) => x !== lang) : [...cur, lang];
-    const nextChosen = { ...character.chosenLanguages, background: next };
-    const temp = { ...character, chosenLanguages: nextChosen };
-    const resolved = resolveCharacterLanguages(temp, { races: allRaces, backgrounds: allBackgrounds });
-    onUpdate({ chosenLanguages: nextChosen, languages: resolved });
-  };
-
-  const toggleBgTool = (tool: string) => {
-    const cur = character.chosenTools?.background || [];
-    const next = cur.includes(tool) ? cur.filter((x) => x !== tool) : [...cur, tool];
-    onUpdate({ chosenTools: { ...character.chosenTools, background: next } });
-  };
-
-  const toggleClassTool = (tool: string) => {
-    const cur = character.chosenTools?.class || [];
-    const next = cur.includes(tool) ? cur.filter((x) => x !== tool) : [...cur, tool];
-    onUpdate({ chosenTools: { ...character.chosenTools, class: next } });
-  };
+  // The Proficiency Sheet is the one source for the language and tool lists the Builder shows.
+  const sheet = proficiencySheet(character, catalogs);
+  const resolvedLanguages = sheet.languages.map((l) => l.name);
+  const resolvedTools = sheet.tools.map((t) => t.name);
 
   const sectionTabs = [
     { key: "abilities" as const, label: "Abilities", icon: "body-outline" as const },
@@ -478,15 +359,8 @@ export const BuilderTab: React.FC<BuilderTabProps> = ({
           character={character}
           onUpdate={onUpdate}
           allRaces={allRaces}
-          allBackgrounds={allBackgrounds}
-          skillChoices={skillChoices}
-          autoGranted={raceAutoGranted}
-          toggleSkill={toggleSkill}
-          raceLanguageGrant={raceLanguageGrant}
-          toggleRaceLanguage={toggleRaceLanguage}
-          raceToolGrant={raceToolGrant}
-          toggleRaceTool={toggleRaceTool}
-          ruleChoices={ruleChoices}
+          raceGranted={raceGranted}
+          proficiencyChoices={raceProficiencyChoices}
           onViewDetail={onViewDetail}
           theme={theme}
         />
@@ -497,12 +371,9 @@ export const BuilderTab: React.FC<BuilderTabProps> = ({
           character={character}
           onUpdate={onUpdate}
           allBackgrounds={allBackgrounds}
-          allRaces={allRaces}
-          bgLanguageGrant={bgLanguageGrant}
-          toggleBgLanguage={toggleBgLanguage}
-          bgToolGrant={bgToolGrant}
-          toggleBgTool={toggleBgTool}
-          raceLanguageGrant={raceLanguageGrant}
+          catalogs={catalogs}
+          bgGranted={backgroundGranted}
+          proficiencyChoices={backgroundProficiencyChoices}
           resolvedLanguages={resolvedLanguages}
           resolvedTools={resolvedTools}
           onViewDetail={onViewDetail}
@@ -514,20 +385,24 @@ export const BuilderTab: React.FC<BuilderTabProps> = ({
         <ClassProgressionSection
           character={character}
           onUpdate={onUpdate}
+          fullHealOnLevelUp={fullHealOnLevelUp}
           allClasses={allClasses}
           allFeats={allFeats}
           totalLevel={totalLevel}
           effectiveScores={effectiveScores}
           skillChoices={skillChoices}
-          autoGranted={classAutoGranted}
+          autoGranted={autoGrantedBase}
           toggleSkill={toggleSkill}
-          classToolGrant={classToolGrant}
-          toggleClassTool={toggleClassTool}
+          classTools={classTools}
           availableOptionalFeatures={availableOptionalFeatures}
           pendingAsiSlots={pendingAsi}
           primaryClass={primaryClass}
+          startingCard={startingCard}
+          onPickOption={handlePickOption}
+          onPickItems={handlePickItems}
           onClaimGold={handleClaimGold}
           onClaimEquipment={handleClaimEquipment}
+          onClaimAgain={handleClaimAgain}
           onViewDetail={onViewDetail}
           theme={theme}
           activeBooks={activeBooks}

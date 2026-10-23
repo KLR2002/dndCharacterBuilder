@@ -1,8 +1,23 @@
 import type { Character } from "../../types/character.ts";
-import { getOptionsAndFeatures } from "../../services/dataService.ts";
-import { setRuleChoicePick } from "../builderTransitions.ts";
-import { type AvailableRuleChoice, getSubclassName } from "./types.ts";
+import { currentCompendium, type Compendium } from "../../services/compendium.ts";
+import { type AvailableRuleChoice, type ChoiceOwner, getSubclassName, setRuleChoicePick } from "./types.ts";
 import { hasFightingStyle } from "./fightingStyles.ts";
+
+/** The Martial Adept feat choice. Its id is frozen. Callers look it up by this exact id. */
+export const MARTIAL_ADEPT_CHOICE_ID = "PHB__Feat__Martial Adept__Maneuvers";
+
+const BATTLE_MASTER_MANEUVERS = /^PHB__Fighter__Battle Master__Maneuvers \d+$/;
+
+/**
+ * The owner of a maneuver choice id. Battle Master levels belong to the Fighter's Battle Master
+ * subclass; Superior Technique belongs to the Fighter class. Martial Adept is feat-granted, so it
+ * has no class owner.
+ */
+export function maneuverOwnerOf(id: string): ChoiceOwner | undefined {
+  if (BATTLE_MASTER_MANEUVERS.test(id)) return { className: "Fighter", subclass: "Battle Master" };
+  if (id === "TCE__Fighter__Superior Technique__Maneuver") return { className: "Fighter" };
+  return undefined;
+}
 
 /**
  * Checks if a rule choice ID belongs to a maneuver choice.
@@ -42,11 +57,12 @@ export function getChosenManeuvers(character: Character): string[] {
  */
 export function battleMasterManeuverChoices(
   character: Character,
-  activeBooks?: string[]
+  activeBooks?: string[],
+  compendium: Compendium = currentCompendium()
 ): AvailableRuleChoice[] {
   const out: AvailableRuleChoice[] = [];
   const upperBooks = activeBooks ? activeBooks.map((b) => b.toUpperCase()) : undefined;
-  const allOptions = getOptionsAndFeatures(upperBooks);
+  const allOptions = compendium.for(upperBooks).optionsAndFeatures();
 
   const seenManeuverNames = new Set<string>();
   const maneuverOptions: { name: string; description: string }[] = [];
@@ -126,7 +142,7 @@ export function battleMasterManeuverChoices(
   ].some((s) => s.type === "feat" && s.featName?.toLowerCase() === "martial adept");
 
   if (hasMartialAdept) {
-    const id = "PHB__Feat__Martial Adept__Maneuvers";
+    const id = MARTIAL_ADEPT_CHOICE_ID;
     const otherPicked = getPickedInOtherChoices(id);
     out.push({
       id,
@@ -167,7 +183,7 @@ export function pruneInvalidManeuvers(character: Character): Character {
   ].some((s) => s.type === "feat" && s.featName?.toLowerCase() === "martial adept");
 
   if (hasMartialAdept) {
-    validIds.add("PHB__Feat__Martial Adept__Maneuvers");
+    validIds.add(MARTIAL_ADEPT_CHOICE_ID);
   }
 
   const nextRuleChoices = (character.ruleChoices || []).filter((rc) => {
@@ -177,9 +193,21 @@ export function pruneInvalidManeuvers(character: Character): Character {
     return true;
   });
 
+  const removed = (character.ruleChoices || []).filter((rc) => !nextRuleChoices.includes(rc));
+
   return {
     ...character,
     ruleChoices: nextRuleChoices,
+    ...(removed.length > 0
+      ? {
+          needsReview: Array.from(
+            new Set([
+              ...(character.needsReview || []),
+              ...removed.map((rc) => `${rc.trait} removed: prerequisite no longer satisfied`),
+            ])
+          ),
+        }
+      : {}),
   };
 }
 

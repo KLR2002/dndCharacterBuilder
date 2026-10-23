@@ -11,21 +11,34 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { useCharacters } from "../../context/CharacterContext";
 import { useAppTheme } from "../../context/ThemeContext";
-import { getBackgrounds, getClasses, getConditions, getRaces, findBeast } from "../../services/dataService";
+import { getConditions } from "../../services/dataService";
+import { currentCompendium } from "../../services/compendium";
 import {
   spendHitDie,
   recoverHitDie,
 } from "../../rules/hitDice";
+import { damage, heal } from "../../rules/hitPoints";
+import { setWildShapeTempHp } from "../../rules/wildShapeHp";
+import { formatModifier } from "../../services/dndRules";
+import { evaluateCharacter } from "../../rules/characterEvaluation";
+import { proficiencySheet } from "../../rules/proficiencySheet";
 import {
-  evaluateCharacter,
-  formatModifier,
-} from "../../services/dndRules";
+  addAddedProficiency,
+  addedProficiencyOptions,
+  removeAddedProficiency,
+  type AddedCategory,
+} from "../../rules/addedProficiencies";
 import { AbilityKey } from "../../types/character";
+import { AddedProficiencyModal } from "../AddedProficiencyModal";
 import { Badge } from "../ui/Badge";
 import { Button } from "../ui/Button";
 import { Card } from "../ui/Card";
 import { DetailModal } from "../DetailModal";
 import { RestModal } from "../RestModal";
+import { HpQuickEditModal } from "../HpQuickEditModal";
+import { HitPointBlock } from "../HitPointBlock";
+import { ActiveWildShapeCard } from "../ActiveWildShapeCard";
+import { useHpQuickEdit } from "../../hooks/useHpQuickEdit";
 import { useResponsiveLayout } from "../../hooks/useResponsiveLayout";
 
 const ABILITY_ORDER: AbilityKey[] = ["str", "dex", "con", "int", "wis", "cha"];
@@ -53,7 +66,7 @@ export const StatsTab: React.FC = () => {
 
   const [conditionModalVisible, setConditionModalVisible] = useState(false);
   const [restModalVisible, setRestModalVisible] = useState(false);
-  const [hpModalVisible, setHpModalVisible] = useState(false);
+  const [maxHpOverrideVisible, setMaxHpOverrideVisible] = useState(false);
   const [detailModal, setDetailModal] = useState<{
     visible: boolean;
     title: string;
@@ -64,23 +77,34 @@ export const StatsTab: React.FC = () => {
   const [hpChangeAmount, setHpChangeAmount] = useState("1");
   const [tempHpAmount, setTempHpAmount] = useState("");
   const [maxHpOverrideInput, setMaxHpOverrideInput] = useState("");
+  const [addModal, setAddModal] = useState<AddedCategory | null>(null);
 
   const evaluated = useMemo(() => {
     if (!currentCharacter) return null;
-    return evaluateCharacter(currentCharacter, {
-      races: getRaces(activeBooks || []),
-      backgrounds: getBackgrounds(activeBooks || []),
-      classes: getClasses(activeBooks || []),
-    });
+    return evaluateCharacter(currentCharacter, { compendium: currentCompendium(), activeBooks });
+  }, [currentCharacter, activeBooks]);
+
+  const sheet = useMemo(() => {
+    if (!currentCharacter) return null;
+    return proficiencySheet(currentCharacter, { compendium: currentCompendium(), activeBooks });
   }, [currentCharacter, activeBooks]);
 
   const derivedProficiencies = useMemo(() => {
     return evaluated?.proficiencies ?? { armor: [], weapons: [], tools: [], languages: [] };
   }, [evaluated]);
 
+  // Rule-granted languages make the summary line; added ones get their own rows.
   const derivedLanguages = useMemo(() => {
-    return evaluated?.proficiencies.languages ?? ["Common"];
-  }, [evaluated]);
+    return sheet?.languages.filter((l) => l.ruleGranted).map((l) => l.name) ?? ["Common"];
+  }, [sheet]);
+
+  const addedLanguages = useMemo(() => {
+    return sheet?.languages.filter((l) => !l.ruleGranted) ?? [];
+  }, [sheet]);
+
+  const addedToolNames = useMemo(() => {
+    return new Set((sheet?.tools ?? []).filter((t) => !t.ruleGranted).map((t) => t.name));
+  }, [sheet]);
 
   const classDice = useMemo(() => {
     return evaluated?.combatDice ?? { bardicInspiration: null, sneakAttack: null, martialArts: null, superiorityDice: null };
@@ -105,7 +129,20 @@ export const StatsTab: React.FC = () => {
     return hdEntries.map(([die, p]) => `${p.total}${die}`).join(" + ");
   }, [hdEntries]);
 
+  const hpQuickEdit = useHpQuickEdit(currentCharacter, evaluated?.hp.max ?? 0);
+
   if (!currentCharacter || !evaluated) return null;
+
+  const addCatalogs = () => ({ compendium: currentCompendium(), activeBooks });
+  const handleAdd = (category: AddedCategory, raw: string) => {
+    const result = addAddedProficiency(currentCharacter, addCatalogs(), category, raw);
+    if (!result.ok) return;
+    updateCharacter(currentCharacter.id, result.character);
+    setAddModal(null);
+  };
+  const handleRemove = (category: AddedCategory, name: string) => {
+    updateCharacter(currentCharacter.id, (c) => removeAddedProficiency(c, category, name));
+  };
 
   const profBonus = evaluated.proficiencyBonus;
   const { scores, modifiers } = evaluated.effectiveScores;
@@ -127,32 +164,22 @@ export const StatsTab: React.FC = () => {
   const allConditions = getConditions();
 
   // HP Handlers
-  const applyDamage = (amount: number) => {
-    let temp = currentCharacter.tempHp;
-    let hp = currentCharacter.currentHp;
+  const hpState = { currentHp: currentCharacter.currentHp, tempHp: currentCharacter.tempHp };
 
-    if (temp > 0) {
-      if (amount <= temp) {
-        temp -= amount;
-        amount = 0;
-      } else {
-        amount -= temp;
-        temp = 0;
-      }
-    }
-    hp = Math.max(0, hp - amount);
-    updateCharacter(currentCharacter.id, { currentHp: hp, tempHp: temp });
+  const applyDamage = (amount: number) => {
+    updateCharacter(currentCharacter.id, damage(hpState, amount));
   };
 
   const applyHeal = (amount: number) => {
-    const newHp = Math.min(calculatedMaxHp, currentCharacter.currentHp + amount);
-    updateCharacter(currentCharacter.id, { currentHp: newHp });
+    updateCharacter(currentCharacter.id, heal(hpState, amount, calculatedMaxHp));
   };
 
   const setTempHp = () => {
     const val = parseInt(tempHpAmount, 10);
     if (!isNaN(val) && val >= 0) {
-      updateCharacter(currentCharacter.id, { tempHp: val });
+      // While a form is active, temp HP goes on the form (see wildShapeHp.ts), not the character.
+      const patch = currentCharacter.activeWildShape ? setWildShapeTempHp(currentCharacter, val) : { tempHp: val };
+      updateCharacter(currentCharacter.id, patch);
       setTempHpAmount("");
     }
   };
@@ -164,7 +191,7 @@ export const StatsTab: React.FC = () => {
     } else {
       updateCharacter(currentCharacter.id, { maxHpOverride: null });
     }
-    setHpModalVisible(false);
+    setMaxHpOverrideVisible(false);
   };
 
   // Conditions
@@ -218,30 +245,6 @@ export const StatsTab: React.FC = () => {
     });
   };
 
-  const handleRevertWildShape = () => {
-    if (!currentCharacter) return;
-    updateCharacter(currentCharacter.id, {
-      activeWildShape: null,
-    });
-  };
-
-  const updateWildShapeHp = (delta: number) => {
-    if (!currentCharacter?.activeWildShape) return;
-    const current = currentCharacter.activeWildShape.currentHp;
-    const max = currentCharacter.activeWildShape.maxHp;
-    const nextHp = current + delta;
-    if (nextHp <= 0) {
-      handleRevertWildShape();
-    } else {
-      updateCharacter(currentCharacter.id, {
-        activeWildShape: {
-          ...currentCharacter.activeWildShape,
-          currentHp: Math.min(max, nextHp),
-        },
-      });
-    }
-  };
-
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       {/* Rest Buttons Bar */}
@@ -264,117 +267,7 @@ export const StatsTab: React.FC = () => {
         />
       </View>
 
-      {/* Active Wild Shape Combat Banner */}
-      {currentCharacter.activeWildShape && (
-        <Card
-          style={{
-            padding: 14,
-            marginBottom: 16,
-            backgroundColor: theme.surfaceHighlight,
-            borderColor: theme.accentBorder,
-            borderWidth: 1.5,
-          }}>
-          <View
-            style={{
-              flexDirection: isCompact ? "column" : "row",
-              justifyContent: "space-between",
-              alignItems: isCompact ? "flex-start" : "center",
-              gap: 12,
-            }}>
-            <View style={{ flex: 1 }}>
-              <View style={{ flexDirection: "row", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
-                <Badge label="ACTIVE WILD SHAPE" variant="accent" size="sm" />
-                <Text style={{ fontSize: 17, fontWeight: "700", color: theme.text }}>
-                  {currentCharacter.activeWildShape.name}
-                </Text>
-                <Badge label={`AC ${currentCharacter.activeWildShape.ac}`} variant="secondary" size="sm" />
-              </View>
-              <Text style={{ color: theme.textSecondary, fontSize: 12, marginTop: 4 }}>
-                Damage reduces beast HP first. Form drops when HP reaches 0.
-              </Text>
-            </View>
-
-            {/* HP Stepper Controls */}
-            <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-              <TouchableOpacity
-                onPress={() => updateWildShapeHp(-1)}
-                hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-                style={[styles.beastStepperBtn, { backgroundColor: theme.surfaceRaised, borderColor: theme.border }]}>
-                <Ionicons name="remove" size={16} color={theme.text} />
-              </TouchableOpacity>
-
-              <View style={{ alignItems: "center", minWidth: 70 }}>
-                <Text
-                  style={{
-                    fontSize: 16,
-                    fontWeight: "700",
-                    color: currentCharacter.activeWildShape.currentHp > 0 ? theme.accent : theme.danger,
-                  }}>
-                  {currentCharacter.activeWildShape.currentHp}{" "}
-                  <Text style={{ color: theme.textSecondary, fontSize: 13, fontWeight: "400" }}>
-                    / {currentCharacter.activeWildShape.maxHp} HP
-                  </Text>
-                </Text>
-              </View>
-
-              <TouchableOpacity
-                onPress={() => updateWildShapeHp(1)}
-                disabled={currentCharacter.activeWildShape.currentHp >= currentCharacter.activeWildShape.maxHp}
-                hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-                style={[
-                  styles.beastStepperBtn,
-                  {
-                    backgroundColor: theme.surfaceRaised,
-                    borderColor: theme.border,
-                    opacity: currentCharacter.activeWildShape.currentHp >= currentCharacter.activeWildShape.maxHp ? 0.5 : 1,
-                  },
-                ]}>
-                <Ionicons
-                  name="add"
-                  size={16}
-                  color={
-                    currentCharacter.activeWildShape.currentHp >= currentCharacter.activeWildShape.maxHp
-                      ? theme.textMuted
-                      : theme.text
-                  }
-                />
-              </TouchableOpacity>
-            </View>
-          </View>
-
-          {/* Action Buttons: Inspect Beast & Revert */}
-          <View style={{ flexDirection: "row", gap: 8, marginTop: 12, flexWrap: "wrap" }}>
-            <Button
-              title="View Beast Attacks & Actions"
-              icon="flash-outline"
-              variant="outline"
-              size="sm"
-              style={{ flex: 1, minWidth: 160 }}
-              onPress={() => {
-                const b = findBeast(
-                  currentCharacter.activeWildShape!.name,
-                  currentCharacter.activeWildShape!.source
-                );
-                if (b) {
-                  setDetailModal({
-                    visible: true,
-                    title: b.name,
-                    subtitle: `CR ${b.cr} • ${b.size} ${b.type}`,
-                    content: `**AC**: ${b.ac}\n**HP**: ${b.hp.average} (${b.hp.formula})\n**Speed**: Walk ${b.speed.walk || 0}ft${b.speed.swim ? `, Swim ${b.speed.swim}ft` : ""}${b.speed.fly ? `, Fly ${b.speed.fly}ft` : ""}\n\n**STR** ${b.abilities.str} | **DEX** ${b.abilities.dex} | **CON** ${b.abilities.con} | **INT** ${b.abilities.int} | **WIS** ${b.abilities.wis} | **CHA** ${b.abilities.cha}\n\n${(b.traits || []).map((t) => `**${t.name}**: ${t.description}`).join("\n\n")}\n\n${(b.actions || []).map((a) => `**${a.name}**: ${a.description}`).join("\n\n")}`,
-                  });
-                }
-              }}
-            />
-            <Button
-              title="Revert"
-              icon="arrow-undo-outline"
-              variant="secondary"
-              size="sm"
-              onPress={handleRevertWildShape}
-            />
-          </View>
-        </Card>
-      )}
+      <ActiveWildShapeCard character={currentCharacter} />
 
       {/* Active Conditions Display */}
       {currentCharacter.conditions && currentCharacter.conditions.length > 0 && (
@@ -412,87 +305,34 @@ export const StatsTab: React.FC = () => {
 
       {/* HP Section Card */}
       <Card style={styles.hpCard}>
-        <View style={styles.hpHeader}>
-          <View>
-            <Text style={[styles.labelMuted, { color: theme.textMuted }]}>HIT POINTS</Text>
-            <View style={{ flexDirection: "row", alignItems: "baseline", gap: 6 }}>
-              <Text style={[styles.hpCurrentText, { color: currentCharacter.currentHp > 0 ? theme.hpGreen : theme.danger }]}>
-                {currentCharacter.currentHp}
-              </Text>
-              <Text style={[styles.hpMaxText, { color: theme.textSecondary }]}>
-                / {calculatedMaxHp}
-              </Text>
-              {currentCharacter.tempHp > 0 && (
-                <Text style={{ color: theme.tempHpYellow, fontWeight: "700", fontSize: 16 }}>
-                  (+{currentCharacter.tempHp} Temp)
-                </Text>
-              )}
-            </View>
-          </View>
-
-          <TouchableOpacity
-            onPress={() => {
-              setMaxHpOverrideInput(currentCharacter.maxHpOverride ? String(currentCharacter.maxHpOverride) : "");
-              setHpModalVisible(true);
-            }}
-            style={[styles.hpEditBtn, { backgroundColor: theme.surfaceHighlight, borderColor: theme.border }]}>
-            <Ionicons name="settings-outline" size={16} color={theme.textSecondary} />
-            <Text style={{ color: theme.textSecondary, fontSize: 12 }}>HP Settings</Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* Health Bar */}
-        <View style={[styles.hpBarTrack, { backgroundColor: theme.surfaceRaised }]}>
-          <View
-            style={[
-              styles.hpBarFill,
-              {
-                backgroundColor: currentCharacter.currentHp > calculatedMaxHp * 0.25 ? theme.hpGreen : theme.danger,
-                width: `${Math.min(100, Math.max(0, (currentCharacter.currentHp / calculatedMaxHp) * 100))}%`,
-              },
-            ]}
-          />
-        </View>
-
-        {/* HP Modification Quick Controls */}
-        <View style={styles.hpActionsRow}>
-          <View style={[styles.hpInputContainer, { backgroundColor: theme.surfaceHighlight, borderColor: theme.border }]}>
-            <TextInput
-              style={[styles.hpInput, { color: theme.text }]}
-              value={hpChangeAmount}
-              onChangeText={setHpChangeAmount}
-              keyboardType="number-pad"
-              placeholder="Amt"
-              placeholderTextColor={theme.textMuted}
-            />
-          </View>
-
-          <Button
-            title="Damage"
-            variant="danger"
-            size="sm"
-            onPress={() => {
-              const val = parseInt(hpChangeAmount, 10) || 1;
-              applyDamage(val);
-            }}
-            style={{ flex: 1 }}
-          />
-
-          <Button
-            title="Heal"
-            variant="success"
-            size="sm"
-            onPress={() => {
-              const val = parseInt(hpChangeAmount, 10) || 1;
-              applyHeal(val);
-            }}
-            style={{ flex: 1 }}
-          />
-        </View>
+        <HitPointBlock
+          label="HIT POINTS"
+          currentHp={currentCharacter.currentHp}
+          maxHp={calculatedMaxHp}
+          tempHp={currentCharacter.tempHp}
+          numberProps={hpQuickEdit.triggerProps}
+          headerRight={
+            <TouchableOpacity
+              onPress={() => {
+                setMaxHpOverrideInput(currentCharacter.maxHpOverride ? String(currentCharacter.maxHpOverride) : "");
+                setMaxHpOverrideVisible(true);
+              }}
+              style={[styles.hpEditBtn, { backgroundColor: theme.surfaceHighlight, borderColor: theme.border }]}>
+              <Ionicons name="settings-outline" size={16} color={theme.textSecondary} />
+              <Text style={{ color: theme.textSecondary, fontSize: 12 }}>HP Settings</Text>
+            </TouchableOpacity>
+          }
+          amount={hpChangeAmount}
+          onAmountChange={setHpChangeAmount}
+          onDamage={() => applyDamage(parseInt(hpChangeAmount, 10) || 1)}
+          onHeal={() => applyHeal(parseInt(hpChangeAmount, 10) || 1)}
+        />
 
         {/* Temp HP Row */}
         <View style={styles.tempHpRow}>
-          <Text style={{ color: theme.textSecondary, fontSize: 13, flex: 1 }}>Temp HP:</Text>
+          <Text style={{ color: theme.textSecondary, fontSize: 13, flex: 1, flexBasis: "auto", flexShrink: 1 }}>
+            {currentCharacter.activeWildShape ? "Wild Shape Temp HP:" : "Temp HP:"}
+          </Text>
           <TextInput
             style={[styles.tempInput, { color: theme.text, backgroundColor: theme.surfaceHighlight, borderColor: theme.border }]}
             value={tempHpAmount}
@@ -974,7 +814,18 @@ export const StatsTab: React.FC = () => {
         </View>
 
         <View>
-          <Text style={[styles.profCatTitle, { color: theme.accent, marginBottom: 4 }]}>Tool Proficiencies</Text>
+          <View style={[styles.headingRow, { marginBottom: 4 }]}>
+            <Text style={[styles.profCatTitle, { color: theme.accent }]}>Tool Proficiencies</Text>
+            <TouchableOpacity
+              accessibilityRole="button"
+              accessibilityLabel="Add tool proficiency"
+              onPress={() => setAddModal("tools")}
+              hitSlop={8}
+              style={styles.addBtn}
+            >
+              <Ionicons name="add" size={20} color={theme.accent} />
+            </TouchableOpacity>
+          </View>
           {evaluated.tools && evaluated.tools.length > 0 ? (
             <View style={{ gap: 6 }}>
               {evaluated.tools.map((t, idx) => (
@@ -1016,18 +867,36 @@ export const StatsTab: React.FC = () => {
                     <Text style={{ color: theme.text, fontSize: 13, flex: 1 }}>
                       {t.name}
                     </Text>
+                    {addedToolNames.has(t.name) ? (
+                      <Text style={[styles.addedMark, { color: theme.textSecondary, borderColor: theme.border }]}>
+                        added
+                      </Text>
+                    ) : null}
                   </View>
-                  <Text
-                    style={{
-                      fontSize: 13,
-                      fontWeight: "bold",
-                      color: t.isExpertise ? theme.warning : theme.accent,
-                    }}
-                  >
-                    {t.ability
-                      ? `(${t.displayModifier}, ${t.ability.charAt(0).toUpperCase() + t.ability.slice(1)})`
-                      : `(${t.displayModifier})`}
-                  </Text>
+                  <View style={styles.trailing}>
+                    <Text
+                      style={{
+                        fontSize: 13,
+                        fontWeight: "bold",
+                        color: t.isExpertise ? theme.warning : theme.accent,
+                      }}
+                    >
+                      {t.ability
+                        ? `(${t.displayModifier}, ${t.ability.charAt(0).toUpperCase() + t.ability.slice(1)})`
+                        : `(${t.displayModifier})`}
+                    </Text>
+                    {addedToolNames.has(t.name) ? (
+                      <TouchableOpacity
+                        accessibilityRole="button"
+                        accessibilityLabel={`Remove ${t.name}`}
+                        onPress={() => handleRemove("tools", t.name)}
+                        hitSlop={8}
+                        style={styles.removeBtn}
+                      >
+                        <Text style={{ color: theme.textSecondary, fontSize: 16, fontWeight: "bold" }}>×</Text>
+                      </TouchableOpacity>
+                    ) : null}
+                  </View>
                 </View>
               ))}
             </View>
@@ -1038,17 +907,60 @@ export const StatsTab: React.FC = () => {
       </Card>
 
       {/* Languages Summary */}
-      <Text style={[styles.blockTitle, { color: theme.textSecondary, marginTop: 20 }]}>
-        LANGUAGES
-      </Text>
-      <Card style={{ gap: 6 }}>
-        <Text style={{ color: theme.text, fontSize: 13, lineHeight: 20 }}>
-          {derivedLanguages.length > 0 ? derivedLanguages.join(", ") : "Common"}
+      <View style={[styles.headingRow, { marginTop: 20, marginBottom: 8 }]}>
+        <Text style={[styles.blockTitle, { color: theme.textSecondary, marginBottom: 0 }]}>
+          LANGUAGES
         </Text>
+        <TouchableOpacity
+          accessibilityRole="button"
+          accessibilityLabel="Add language"
+          onPress={() => setAddModal("languages")}
+          hitSlop={8}
+          style={styles.addBtn}
+        >
+          <Ionicons name="add" size={20} color={theme.accent} />
+        </TouchableOpacity>
+      </View>
+      <Card style={{ gap: 6 }}>
+        {derivedLanguages.length > 0 || addedLanguages.length === 0 ? (
+          <Text style={{ color: theme.text, fontSize: 13, lineHeight: 20 }}>
+            {derivedLanguages.length > 0 ? derivedLanguages.join(", ") : "Common"}
+          </Text>
+        ) : null}
+        {addedLanguages.map((l) => (
+          <View key={l.name} style={styles.addedRow}>
+            <Text style={{ color: theme.text, fontSize: 13, flexShrink: 1 }}>{l.name}</Text>
+            <View style={styles.trailing}>
+              <Text style={[styles.addedMark, { color: theme.textSecondary, borderColor: theme.border }]}>
+                added
+              </Text>
+              <TouchableOpacity
+                accessibilityRole="button"
+                accessibilityLabel={`Remove ${l.name}`}
+                onPress={() => handleRemove("languages", l.name)}
+                hitSlop={8}
+                style={styles.removeBtn}
+              >
+                <Text style={{ color: theme.textSecondary, fontSize: 16, fontWeight: "bold" }}>×</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        ))}
       </Card>
 
+      <AddedProficiencyModal
+        visible={addModal !== null}
+        category={addModal ?? "tools"}
+        options={addModal ? addedProficiencyOptions(currentCharacter, addCatalogs(), addModal) : []}
+        isAddable={(raw) => addModal !== null && addAddedProficiency(currentCharacter, addCatalogs(), addModal, raw).ok}
+        onAdd={(raw) => {
+          if (addModal) handleAdd(addModal, raw);
+        }}
+        onClose={() => setAddModal(null)}
+      />
+
       {/* HP Override Settings Modal */}
-      <RNModal visible={hpModalVisible} transparent animationType="fade">
+      <RNModal visible={maxHpOverrideVisible} transparent animationType="fade">
         <View style={styles.modalOverlay}>
           <Card style={[styles.modalCard, { backgroundColor: theme.surface, borderColor: theme.border }]}>
             <Text style={[styles.sectionTitle, { color: theme.text, marginBottom: 12 }]}>
@@ -1069,12 +981,15 @@ export const StatsTab: React.FC = () => {
               placeholderTextColor={theme.textMuted}
             />
             <View style={{ flexDirection: "row", justifyContent: "flex-end", gap: 10, marginTop: 16 }}>
-              <Button title="Cancel" variant="secondary" size="sm" onPress={() => setHpModalVisible(false)} />
+              <Button title="Cancel" variant="secondary" size="sm" onPress={() => setMaxHpOverrideVisible(false)} />
               <Button title="Save" variant="primary" size="sm" onPress={setMaxHpOverride} />
             </View>
           </Card>
         </View>
       </RNModal>
+
+      {/* Hit Points Quick Edit Modal */}
+      <HpQuickEditModal {...hpQuickEdit.modalProps} />
 
       {/* Condition Picker Modal */}
       <RNModal visible={conditionModalVisible} transparent animationType="slide">
@@ -1169,25 +1084,6 @@ const styles = StyleSheet.create({
     padding: 14,
     marginBottom: 16,
   },
-  hpHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 8,
-  },
-  labelMuted: {
-    fontSize: 11,
-    fontWeight: "700",
-    letterSpacing: 0.5,
-  },
-  hpCurrentText: {
-    fontSize: 32,
-    fontWeight: "bold",
-  },
-  hpMaxText: {
-    fontSize: 20,
-    fontWeight: "600",
-  },
   hpEditBtn: {
     flexDirection: "row",
     alignItems: "center",
@@ -1196,37 +1092,6 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
     borderRadius: 6,
     borderWidth: 1,
-  },
-  hpBarTrack: {
-    height: 10,
-    borderRadius: 5,
-    overflow: "hidden",
-    marginVertical: 8,
-  },
-  hpBarFill: {
-    height: "100%",
-    borderRadius: 5,
-  },
-  hpActionsRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    marginTop: 8,
-  },
-  hpInputContainer: {
-    width: 60,
-    height: 36,
-    borderRadius: 6,
-    borderWidth: 1,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  hpInput: {
-    width: "100%",
-    textAlign: "center",
-    fontSize: 14,
-    fontWeight: "bold",
-    padding: 0,
   },
   tempHpRow: {
     flexDirection: "row",
@@ -1238,12 +1103,17 @@ const styles = StyleSheet.create({
     borderTopColor: "rgba(255,255,255,0.06)",
   },
   tempInput: {
-    width: 80,
-    height: 32,
+    minWidth: 96,
+    flexGrow: 1,
+    maxWidth: 160,
+    minHeight: 36,
     borderRadius: 6,
     borderWidth: 1,
     paddingHorizontal: 8,
+    paddingVertical: 0,
     fontSize: 13,
+    textAlignVertical: "center",
+    includeFontPadding: false,
   },
   deathSavesContainer: {
     marginTop: 12,
@@ -1400,6 +1270,49 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: "700",
   },
+  headingRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    flexWrap: "wrap",
+    gap: 8,
+  },
+  addBtn: {
+    minWidth: 32,
+    minHeight: 32,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  addedRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 8,
+    paddingVertical: 2,
+  },
+  trailing: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    alignItems: "center",
+    justifyContent: "flex-end",
+    gap: 8,
+    flexShrink: 1,
+  },
+  addedMark: {
+    fontSize: 10,
+    fontWeight: "600",
+    paddingHorizontal: 5,
+    paddingVertical: 1,
+    borderWidth: 1,
+    borderRadius: 4,
+  },
+  removeBtn: {
+    minWidth: 24,
+    minHeight: 24,
+    alignItems: "center",
+    justifyContent: "center",
+  },
   profCatTitle: {
     fontSize: 12,
     fontWeight: "700",
@@ -1433,13 +1346,5 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     marginBottom: 6,
     gap: 8,
-  },
-  beastStepperBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 8,
-    borderWidth: 1,
-    alignItems: "center",
-    justifyContent: "center",
   },
 });

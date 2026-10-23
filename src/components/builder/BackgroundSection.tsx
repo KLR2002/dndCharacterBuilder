@@ -1,16 +1,33 @@
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import { Text, TextInput, TouchableOpacity, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { Character } from "../../types/character";
-import { BackgroundData, RaceData } from "../../types/dnd5e";
+import { BackgroundData } from "../../types/dnd5e";
 import { DND_SKILLS } from "../../constants/rules";
-import { applyBackgroundGrants, parseBackgroundEquipment, setCustomBackground } from "../../rules/builderTransitions";
-import { ALL_LANGUAGE_NAMES, resolveCharacterLanguages, ToolGrant } from "../../rules/proficienciesAndLanguages";
+import {
+  applyBackgroundGrants,
+  clearBackground,
+  parseBackgroundEquipment,
+  reclaimBackgroundGrants,
+  setCustomBackground,
+} from "../../rules/builderTransitions";
+import type { SourceFixedGrants } from "../../rules/proficiencySheet";
+import {
+  borrowableFeatures,
+  CUSTOM_BACKGROUND_TOOLS_OR_LANGUAGES_GRANT,
+  withoutCatalogCustomBackground,
+  type BorrowableFeature,
+} from "../../rules/customBackground";
+import { heldByOtherSources } from "../../rules/proficiencyChoiceOffers";
+import { poolNames } from "../../rules/proficiencyPools";
+import type { AvailableRuleChoice } from "../../rules/ruleChoices";
+import type { CharacterCatalogs } from "../../rules/catalogs";
 import { Badge } from "../ui/Badge";
 import { Button } from "../ui/Button";
 import { Card } from "../ui/Card";
 import { SearchBar } from "../ui/SearchBar";
-import { builderStyles as styles, pkStyles, RuleChoicePicker } from "./builderStyles";
+import { builderStyles as styles, pkStyles } from "./builderStyles";
+import { ProficiencyChoicePicker } from "./ProficiencyChoicePicker";
 import { useResponsiveLayout } from "../../hooks/useResponsiveLayout";
 import { applyOriginFeat, getBackgroundFeatGrant, removeOriginFeat } from "../../rules/feats";
 import { getFeatAbilityBonusOptions } from "../../rules/leveling";
@@ -19,12 +36,11 @@ export interface BackgroundSectionProps {
   character: Character;
   onUpdate: (patchOrUpdater: Partial<Character> | ((prev: Character) => Character)) => void;
   allBackgrounds: BackgroundData[];
-  allRaces: RaceData[];
-  bgLanguageGrant: { label: string; fixed: string[]; choiceCount: number };
-  toggleBgLanguage: (lang: string) => void;
-  bgToolGrant: ToolGrant;
-  toggleBgTool: (tool: string) => void;
-  raceLanguageGrant: { label: string; fixed: string[]; choiceCount: number };
+  catalogs: CharacterCatalogs;
+  /** The fixed languages and tools the background grants. */
+  bgGranted: SourceFixedGrants;
+  /** The background's Proficiency Choices: its tool and language picks. */
+  proficiencyChoices: AvailableRuleChoice[];
   resolvedLanguages: string[];
   resolvedTools: string[];
   onViewDetail: (item: { title: string; subtitle?: string; source?: string; description?: string; tags?: string[] }) => void;
@@ -35,12 +51,9 @@ export const BackgroundSection: React.FC<BackgroundSectionProps> = ({
   character,
   onUpdate,
   allBackgrounds,
-  allRaces,
-  bgLanguageGrant,
-  toggleBgLanguage,
-  bgToolGrant,
-  toggleBgTool,
-  raceLanguageGrant,
+  catalogs,
+  bgGranted,
+  proficiencyChoices,
   resolvedLanguages,
   resolvedTools,
   onViewDetail,
@@ -51,15 +64,78 @@ export const BackgroundSection: React.FC<BackgroundSectionProps> = ({
   const [isCustomBg, setIsCustomBg] = useState(false);
   const [customBgName, setCustomBgName] = useState("");
   const [customBgSkills, setCustomBgSkills] = useState<string[]>([]);
+  const [customBgTools, setCustomBgTools] = useState<string[]>([]);
+  const [customBgFeature, setCustomBgFeature] = useState<BorrowableFeature | null>(null);
+  const [featureSearch, setFeatureSearch] = useState("");
+
+  const selectableBackgrounds = useMemo(() => withoutCatalogCustomBackground(allBackgrounds), [allBackgrounds]);
+  const borrowable = useMemo(() => borrowableFeatures(allBackgrounds), [allBackgrounds]);
+  // The tool and language names the rest of the character does not already hold: the choice's pool less those.
+  const toolOrLanguageOptions = useMemo(() => {
+    const isHeld = heldByOtherSources(character, CUSTOM_BACKGROUND_TOOLS_OR_LANGUAGES_GRANT, {
+      compendium: catalogs.compendium,
+      activeBooks: catalogs.activeBooks,
+    });
+    return poolNames(CUSTOM_BACKGROUND_TOOLS_OR_LANGUAGES_GRANT).filter((name) => !isHeld(name));
+  }, [character, catalogs.compendium, catalogs.activeBooks]);
+  const featureQuery = featureSearch.trim().toLowerCase();
+  const featureRows = borrowable.filter((row) => row.label.toLowerCase().includes(featureQuery));
 
   const handleApplyCustomBackground = () => {
     const trimmed = customBgName.trim();
-    if (!trimmed || customBgSkills.length !== 2) return;
-    onUpdate((current) => setCustomBackground(current, trimmed, customBgSkills));
+    if (!trimmed || customBgSkills.length !== 2 || customBgTools.length !== 2) return;
+    onUpdate((current) =>
+      setCustomBackground(current, trimmed, customBgSkills, {
+        toolsOrLanguages: customBgTools,
+        feature: customBgFeature ? { name: customBgFeature.name, description: customBgFeature.description } : undefined,
+      })
+    );
     setIsCustomBg(false);
     setCustomBgName("");
     setCustomBgSkills([]);
+    setCustomBgTools([]);
+    setCustomBgFeature(null);
+    setFeatureSearch("");
   };
+
+  // A row of two picks: the counter turns accent once both are made.
+  const pickCounter = (label: string, count: number) => (
+    <View style={{ flexDirection: "row", flexWrap: "wrap", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
+      <Text style={{ color: theme.textSecondary, fontSize: 12, fontWeight: "600", flexShrink: 1 }}>{label}</Text>
+      <Text style={{ color: count === 2 ? theme.accent : theme.warning, fontSize: 12, fontWeight: "700" }}>{count}/2</Text>
+    </View>
+  );
+
+  // Toggle chips for a two-pick choice: a picked chip is deselected, and no third pick is taken.
+  const pickChips = (options: string[], picked: string[], setPicked: (next: string[]) => void) =>
+    options.map((name) => {
+      const isPicked = picked.includes(name);
+      const canPick = !isPicked && picked.length < 2;
+      return (
+        <TouchableOpacity
+          key={name}
+          onPress={() => {
+            if (isPicked) {
+              setPicked(picked.filter((pick) => pick !== name));
+            } else if (canPick) {
+              setPicked([...picked, name]);
+            }
+          }}
+          style={[
+            pkStyles.chip,
+            {
+              backgroundColor: isPicked ? theme.accentGlow : theme.surfaceHighlight,
+              borderColor: isPicked ? theme.accent : theme.border,
+              opacity: !isPicked && !canPick ? 0.4 : 1,
+            },
+          ]}
+        >
+          <Text style={{ color: isPicked ? theme.accent : theme.textSecondary, fontSize: 12, fontWeight: "600" }}>
+            {name}
+          </Text>
+        </TouchableOpacity>
+      );
+    });
 
   return (
     <View style={styles.section}>
@@ -73,24 +149,8 @@ export const BackgroundSection: React.FC<BackgroundSectionProps> = ({
                 {character.background.source === "Custom" ? "Custom Background" : character.background.source}
               </Text>
             </View>
-            <Button title="Change" variant="outline" size="sm" onPress={() => onUpdate({ background: null })} />
+            <Button title="Change" variant="outline" size="sm" onPress={() => onUpdate((cur) => clearBackground(cur, catalogs))} />
           </Card>
-
-          {/* Custom background skills */}
-          {character.background.source === "Custom" && (
-            <Card style={{ gap: 6 }}>
-              <Text style={[styles.heading, { color: theme.text }]}>Custom Background Skill Proficiencies:</Text>
-              <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6 }}>
-                {(
-                  character.skillChoices?.find((sc) => sc.origin === "background")?.picked ||
-                  character.chosenSkills ||
-                  []
-                ).map((s) => (
-                  <Badge key={s} label={s} variant="accent" size="sm" />
-                ))}
-              </View>
-            </Card>
-          )}
 
           {/* Auto-granted background skills & equipment (official) */}
           {character.background.source !== "Custom" &&
@@ -111,23 +171,23 @@ export const BackgroundSection: React.FC<BackgroundSectionProps> = ({
                       </View>
                     </View>
                   )}
-                  {bgToolGrant.fixed.length > 0 && (
+                  {bgGranted.tools.length > 0 && (
                     <View style={{ gap: 4 }}>
                       <Text style={{ color: theme.textMuted, fontSize: 11, fontWeight: "600" }}>
                         Granted Tool Proficiencies:
                       </Text>
                       <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6 }}>
-                        {bgToolGrant.fixed.map((t) => (
+                        {bgGranted.tools.map((t) => (
                           <Badge key={t} label={t} variant="surface" size="sm" />
                         ))}
                       </View>
                     </View>
                   )}
-                  {bgLanguageGrant.fixed.length > 0 && (
+                  {bgGranted.languages.length > 0 && (
                     <View style={{ gap: 4 }}>
                       <Text style={{ color: theme.textMuted, fontSize: 11, fontWeight: "600" }}>Granted Languages:</Text>
                       <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6 }}>
-                        {bgLanguageGrant.fixed.map((l) => (
+                        {bgGranted.languages.map((l) => (
                           <Badge key={l} label={l} variant="accent" size="sm" />
                         ))}
                       </View>
@@ -155,11 +215,17 @@ export const BackgroundSection: React.FC<BackgroundSectionProps> = ({
                           ))}
                         </View>
                         {character.backgroundGrantsApplied ? (
-                          <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginTop: 4 }}>
+                          <View style={{ flexDirection: "row", flexWrap: "wrap", alignItems: "center", gap: 6, marginTop: 4 }}>
                             <Ionicons name="checkmark-circle" size={16} color={theme.success} />
-                            <Text style={{ color: theme.success, fontSize: 12, fontWeight: "600" }}>
+                            <Text style={{ color: theme.success, fontSize: 12, fontWeight: "600", flexShrink: 1 }}>
                               Background Equipment & Funds Claimed
                             </Text>
+                            <Button
+                              title="Claim again"
+                              variant="outline"
+                              size="sm"
+                              onPress={() => onUpdate((cur) => reclaimBackgroundGrants(cur, bgData))}
+                            />
                           </View>
                         ) : (
                           <View style={{ flexDirection: isCompact ? "column" : "row" }}>
@@ -217,10 +283,10 @@ export const BackgroundSection: React.FC<BackgroundSectionProps> = ({
 
                         {bgOriginFeat ? (
                           <View style={{ gap: 6 }}>
-                            <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
-                              <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+                            <View style={{ flexDirection: "row", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
+                              <View style={{ flexDirection: "row", alignItems: "center", gap: 6, flexShrink: 1 }}>
                                 <Ionicons name="checkmark-circle" size={16} color={theme.success} />
-                                <Text style={{ color: theme.success, fontSize: 12, fontWeight: "600" }}>
+                                <Text style={{ color: theme.success, fontSize: 12, fontWeight: "600", flexShrink: 1 }}>
                                   Feat Added to Character
                                 </Text>
                               </View>
@@ -306,39 +372,11 @@ export const BackgroundSection: React.FC<BackgroundSectionProps> = ({
               );
             })()}
 
-          {/* Background Language Choices */}
-          {character.background && character.background.source !== "Custom" && bgLanguageGrant.choiceCount > 0 && (
-            <Card style={{ gap: 8 }}>
-              <RuleChoicePicker
-                label={bgLanguageGrant.label}
-                choose={bgLanguageGrant.choiceCount}
-                from={ALL_LANGUAGE_NAMES}
-                chosen={character.chosenLanguages?.background || []}
-                autoGranted={[
-                  ...raceLanguageGrant.fixed,
-                  ...(character.chosenLanguages?.race || []),
-                  ...bgLanguageGrant.fixed,
-                ]}
-                onToggle={toggleBgLanguage}
-                theme={theme}
-              />
-            </Card>
-          )}
-
-          {/* Background Tool Choices */}
-          {character.background && character.background.source !== "Custom" && bgToolGrant.choices.length > 0 && (
+          {/* Background Proficiency Choices: its skill, tool and language picks, custom backgrounds included */}
+          {proficiencyChoices.length > 0 && (
             <Card style={{ gap: 10 }}>
-              {bgToolGrant.choices.map((ch) => (
-                <RuleChoicePicker
-                  key={ch.key}
-                  label={ch.label}
-                  choose={ch.count}
-                  from={ch.options}
-                  chosen={character.chosenTools?.background || []}
-                  autoGranted={bgToolGrant.fixed}
-                  onToggle={toggleBgTool}
-                  theme={theme}
-                />
+              {proficiencyChoices.map((choice) => (
+                <ProficiencyChoicePicker key={choice.id} choice={choice} character={character} onUpdate={onUpdate} theme={theme} />
               ))}
             </Card>
           )}
@@ -347,11 +385,12 @@ export const BackgroundSection: React.FC<BackgroundSectionProps> = ({
         <>
           {/* Custom Background creator card */}
           <Card style={{ gap: 10, borderColor: isCustomBg ? theme.accent : theme.border }}>
-            <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
-              <View style={{ flex: 1 }}>
+            <View style={{ flexDirection: "row", flexWrap: "wrap", justifyContent: "space-between", alignItems: "center", gap: 10 }}>
+              <View style={{ flexGrow: 1, flexShrink: 1, flexBasis: 180 }}>
                 <Text style={[styles.itemTitle, { color: theme.text }]}>Custom Background</Text>
                 <Text style={{ color: theme.textMuted, fontSize: 12 }}>
-                  Create your own background with a custom name and 2 skill proficiencies.
+                  Create your own background with a custom name, 2 skill proficiencies and 2 tool or language
+                  proficiencies.
                 </Text>
               </View>
               <Button
@@ -375,40 +414,42 @@ export const BackgroundSection: React.FC<BackgroundSectionProps> = ({
                   value={customBgName}
                   onChangeText={setCustomBgName}
                 />
-                <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
-                  <Text style={{ color: theme.textSecondary, fontSize: 12, fontWeight: "600" }}>
-                    Select 2 Skill Proficiencies:
-                  </Text>
-                  <Text
-                    style={{
-                      color: customBgSkills.length === 2 ? theme.accent : theme.warning,
-                      fontSize: 12,
-                      fontWeight: "700",
-                    }}
-                  >
-                    {customBgSkills.length}/2
-                  </Text>
-                </View>
+                {pickCounter("Select 2 Skill Proficiencies:", customBgSkills.length)}
                 <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6 }}>
-                  {DND_SKILLS.map((s) => {
-                    const isPicked = customBgSkills.includes(s.name);
-                    const canPick = !isPicked && customBgSkills.length < 2;
+                  {pickChips(
+                    DND_SKILLS.map((s) => s.name),
+                    customBgSkills,
+                    setCustomBgSkills
+                  )}
+                </View>
+                {pickCounter("Select 2 Tool or Language Proficiencies:", customBgTools.length)}
+                <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6 }}>
+                  {pickChips(toolOrLanguageOptions, customBgTools, setCustomBgTools)}
+                </View>
+                <Text style={{ color: theme.textSecondary, fontSize: 12, fontWeight: "600" }}>
+                  Feature from Another Background (optional):
+                </Text>
+                {customBgFeature && (
+                  <View style={{ flexDirection: "row", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
+                    <Text style={{ color: theme.accent, fontSize: 12, fontWeight: "600", flexShrink: 1 }}>
+                      {customBgFeature.label}
+                    </Text>
+                    <Button title="Clear" variant="ghost" size="sm" onPress={() => setCustomBgFeature(null)} />
+                  </View>
+                )}
+                <SearchBar value={featureSearch} onChangeText={setFeatureSearch} placeholder="Search features…" />
+                <View style={{ gap: 6 }}>
+                  {featureRows.map((row) => {
+                    const isPicked = customBgFeature?.key === row.key;
                     return (
                       <TouchableOpacity
-                        key={s.name}
-                        onPress={() => {
-                          if (isPicked) {
-                            setCustomBgSkills(customBgSkills.filter((sk) => sk !== s.name));
-                          } else if (canPick) {
-                            setCustomBgSkills([...customBgSkills, s.name]);
-                          }
-                        }}
+                        key={row.key}
+                        onPress={() => setCustomBgFeature(isPicked ? null : row)}
                         style={[
                           pkStyles.chip,
                           {
                             backgroundColor: isPicked ? theme.accentGlow : theme.surfaceHighlight,
                             borderColor: isPicked ? theme.accent : theme.border,
-                            opacity: !isPicked && !canPick ? 0.4 : 1,
                           },
                         ]}
                       >
@@ -417,9 +458,10 @@ export const BackgroundSection: React.FC<BackgroundSectionProps> = ({
                             color: isPicked ? theme.accent : theme.textSecondary,
                             fontSize: 12,
                             fontWeight: "600",
+                            flexShrink: 1,
                           }}
                         >
-                          {s.name}
+                          {row.label}
                         </Text>
                       </TouchableOpacity>
                     );
@@ -430,7 +472,7 @@ export const BackgroundSection: React.FC<BackgroundSectionProps> = ({
                     title="Apply Custom Background"
                     variant="primary"
                     size="sm"
-                    disabled={!customBgName.trim() || customBgSkills.length !== 2}
+                    disabled={!customBgName.trim() || customBgSkills.length !== 2 || customBgTools.length !== 2}
                     onPress={handleApplyCustomBackground}
                     style={isCompact ? { width: "100%" } : undefined}
                   />
@@ -441,7 +483,7 @@ export const BackgroundSection: React.FC<BackgroundSectionProps> = ({
 
           <SearchBar value={bgSearch} onChangeText={setBgSearch} placeholder="Search backgrounds…" />
           <View style={{ gap: 10 }}>
-            {allBackgrounds
+            {selectableBackgrounds
               .filter((b) => b.name.toLowerCase().includes(bgSearch.toLowerCase()))
               .map((b) => (
                 <Card key={`${b.name}__${b.source}`}>
@@ -470,20 +512,10 @@ export const BackgroundSection: React.FC<BackgroundSectionProps> = ({
                       title="Select"
                       size="sm"
                       onPress={() => {
-                        const nextChosenLanguages = { ...character.chosenLanguages, background: [] };
-                        const nextChosenTools = { ...character.chosenTools, background: [] };
-                        const temp = {
-                          ...character,
-                          background: { name: b.name, source: b.source },
-                          chosenLanguages: nextChosenLanguages,
-                          chosenTools: nextChosenTools,
-                        };
-                        const resolved = resolveCharacterLanguages(temp, { races: allRaces, backgrounds: allBackgrounds });
                         onUpdate({
                           background: { name: b.name, source: b.source },
-                          chosenLanguages: nextChosenLanguages,
-                          chosenTools: nextChosenTools,
-                          languages: resolved,
+                          chosenLanguages: { ...character.chosenLanguages, background: [] },
+                          chosenTools: { ...character.chosenTools, background: [] },
                         });
                       }}
                     />

@@ -10,7 +10,7 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { useAppTheme } from "../context/ThemeContext";
 import { useResponsiveLayout } from "../hooks/useResponsiveLayout";
-import { getBeasts } from "../services/dataService";
+import { getBeasts, isCompendiumIntegrated } from "../services/dataService";
 import {
   getWildShapeLimits,
   isBeastEligible,
@@ -72,13 +72,15 @@ export const WildShapeModal: React.FC<WildShapeModalProps> = ({
     () => (activeBooks || []).some((b) => b.toUpperCase() === "MM"),
     [activeBooks]
   );
+  // The SRD Baseline carries its own beasts, so the Monster Manual warning only applies to an Integrated Catalog.
+  const isIntegrated = isCompendiumIntegrated();
 
   // Filter beasts list
   const filteredBeasts = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
 
     return allBeasts.filter((beast) => {
-      const isEligible = isBeastEligible(beast, character, activeBooks);
+      const isEligible = isBeastEligible(beast, character);
       if (!showAllLocked && !isEligible) {
         return false;
       }
@@ -108,7 +110,6 @@ export const WildShapeModal: React.FC<WildShapeModalProps> = ({
   }, [
     allBeasts,
     character,
-    activeBooks,
     showAllLocked,
     favoritesOnly,
     favoritesSet,
@@ -136,7 +137,7 @@ export const WildShapeModal: React.FC<WildShapeModalProps> = ({
       }>
       {inspectedBeast ? (
         // ─── STATBLOCK INSPECTOR VIEW ─────────────────────────────────
-        <ScrollView style={{ maxHeight: 520 }} showsVerticalScrollIndicator={false}>
+        <ScrollView style={{ maxHeight: 520 }} showsVerticalScrollIndicator={false} nestedScrollEnabled>
           <View style={{ gap: 12, paddingBottom: 16 }}>
             {/* Header Badges */}
             <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6 }}>
@@ -290,7 +291,7 @@ export const WildShapeModal: React.FC<WildShapeModalProps> = ({
                 onPress={() => setInspectedBeast(null)}
               />
               {(() => {
-                const isEligible = isBeastEligible(inspectedBeast, character, activeBooks);
+                const isEligible = isBeastEligible(inspectedBeast, character);
                 const requiredCharges = getRequiredWildShapeCharges(inspectedBeast);
                 const hasCharges = currentWildShapeCharges >= requiredCharges;
 
@@ -321,7 +322,7 @@ export const WildShapeModal: React.FC<WildShapeModalProps> = ({
         // ─── BROWSER CATALOG LIST VIEW ────────────────────────────────
         <View style={{ gap: 12 }}>
           {/* Monster Manual Inactive Warning */}
-          {!isMmActive && (
+          {isIntegrated && !isMmActive && (
             <Card
               style={{
                 padding: 10,
@@ -496,7 +497,7 @@ export const WildShapeModal: React.FC<WildShapeModalProps> = ({
           </View>
 
           {/* Beast Items Scrollable List */}
-          <ScrollView style={{ maxHeight: 380 }} showsVerticalScrollIndicator={false}>
+          <ScrollView style={{ maxHeight: 380 }} showsVerticalScrollIndicator={false} nestedScrollEnabled>
             {filteredBeasts.length === 0 ? (
               <View style={{ alignItems: "center", paddingVertical: 32 }}>
                 <Ionicons name="paw-outline" size={36} color={theme.textMuted} />
@@ -509,7 +510,7 @@ export const WildShapeModal: React.FC<WildShapeModalProps> = ({
                 {filteredBeasts.map((beast) => {
                   const beastKey = `${beast.name}__${beast.source}`;
                   const isFavorited = favoritesSet.has(beastKey);
-                  const isEligible = isBeastEligible(beast, character, activeBooks);
+                  const isEligible = isBeastEligible(beast, character);
                   const lockReason = !isEligible ? getBeastFilterReason(beast, character) : null;
                   const requiredCharges = getRequiredWildShapeCharges(beast);
                   const hasCharges = currentWildShapeCharges >= requiredCharges;

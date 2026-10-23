@@ -4,7 +4,7 @@
 
 ### Issue tracker
 
-GitHub issues via `gh` CLI. See `docs/agents/issue-tracker.md`.
+Local markdown: specs and tickets live under `.scratch/<feature>/`. See `docs/agents/issue-tracker.md`.
 
 ### Triage labels
 

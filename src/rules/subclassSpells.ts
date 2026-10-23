@@ -1,6 +1,8 @@
-import { findClass, getSpells } from "../services/dataService.ts";
+import { currentCompendium, type Compendium } from "../services/compendium.ts";
 import type { Character, RuleChoiceEntry } from "../types/character.ts";
 import type { SpellData, SubclassData, SubclassAdditionalSpells } from "../types/dnd5e.ts";
+import { resolveOptionName } from "./choices/types.ts";
+import { findClassData } from "./catalogs.ts";
 
 export interface SubclassSpellsResult {
   prepared: SpellData[];
@@ -17,29 +19,55 @@ export interface SubclassSpellOptions {
   activeBooks?: string[];
   chosenCantrips?: string[];
   ruleChoices?: RuleChoiceEntry[];
+  /** The source of the class entry's catalog class. Omitted or unmatched, the first class of the name is read. */
+  classSource?: string;
+  /** Defaults to the process-wide current Compendium. */
+  compendium?: Compendium;
 }
 
 export function normalizeKey(str: string): string {
   return str.toLowerCase().replace(/[^a-z0-9]/g, "");
 }
 
-let spellCatalogMap: Map<string, SpellData> | null = null;
+let spellCatalogs = new WeakMap<Compendium, Map<string, SpellData[]>>();
 
-function getSpellCatalog(): Map<string, SpellData> {
-  if (!spellCatalogMap) {
-    const map = new Map<string, SpellData>();
-    for (const spell of getSpells()) {
-      map.set(normalizeKey(spell.name), spell);
+// One name-keyed spell index per Compendium, so a dataset swap never reads a stale catalog.
+// A name can exist under several Sources, so every copy is kept in compendium order.
+function getSpellCatalog(compendium: Compendium): Map<string, SpellData[]> {
+  let map = spellCatalogs.get(compendium);
+  if (!map) {
+    map = new Map<string, SpellData[]>();
+    for (const spell of compendium.for().spells()) {
+      const key = normalizeKey(spell.name);
+      const copies = map.get(key);
+      if (copies) copies.push(spell);
+      else map.set(key, [spell]);
     }
-    spellCatalogMap = map;
+    spellCatalogs.set(compendium, map);
   }
-  return spellCatalogMap;
+  return map;
+}
+
+// Prefers the copy from an active book; otherwise falls back to the first copy.
+function pickSpell(copies: SpellData[] | undefined, activeBooks?: string[]): SpellData | undefined {
+  if (!copies || copies.length === 0) return undefined;
+  if (activeBooks && activeBooks.length > 0) {
+    const books = new Set(activeBooks.map((b) => b.toUpperCase()));
+    const active = copies.find((s) => books.has((s.source || "").toUpperCase()));
+    if (active) return active;
+  }
+  return copies[0];
 }
 
 export function resetSpellCatalogCache(): void {
-  spellCatalogMap = null;
+  spellCatalogs = new WeakMap<Compendium, Map<string, SpellData[]>>();
 }
 
+/**
+ * Curated ki cost of each Elemental Discipline that casts a spell, keyed by the discipline's catalog
+ * name in lower case. A saved pick is matched to a key through `resolveOptionName`, so an old saved
+ * name still finds its entry. Disciplines that cast no spell are listed in NON_SPELL_DISCIPLINES.
+ */
 export const ELEMENTAL_DISCIPLINE_SPELL_MAP: Record<
   string,
   { spellName: string; kiCost: number; customSpell?: Partial<SpellData> }
@@ -70,7 +98,7 @@ export const ELEMENTAL_DISCIPLINE_SPELL_MAP: Record<
       savingThrows: ["dex"],
     },
   },
-  "fist of unbroken air": {
+  "unbroken air": {
     spellName: "Fist of Unbroken Air",
     kiCost: 2,
     customSpell: {
@@ -113,6 +141,12 @@ export const ELEMENTAL_DISCIPLINE_SPELL_MAP: Record<
     },
   },
 };
+
+/**
+ * Elemental Disciplines that cast no spell, so have no entry in the ki-cost table. Together with the
+ * table they partition the catalog's discipline records; a completeness test holds that.
+ */
+export const NON_SPELL_DISCIPLINES: readonly string[] = ["Elemental Attunement"];
 
 function matchesSubclass(sc: SubclassData, subName: string): boolean {
   const normTarget = normalizeKey(subName);
@@ -193,6 +227,7 @@ export function getSubclassSpells(
   classLevel: number,
   options?: SubclassSpellOptions
 ): SubclassSpellsResult {
+  const compendium = options?.compendium ?? currentCompendium();
   const emptyResult: SubclassSpellsResult = {
     prepared: [],
     known: [],
@@ -204,7 +239,7 @@ export function getSubclassSpells(
     return emptyResult;
   }
 
-  const cls = findClass(className);
+  const cls = findClassData(compendium.for().classes(), { className, source: options?.classSource });
   if (!cls || !cls.subclasses || cls.subclasses.length === 0) {
     return emptyResult;
   }
@@ -233,7 +268,7 @@ export function getSubclassSpells(
     }
   }
 
-  const catalog = getSpellCatalog();
+  const catalog = getSpellCatalog(compendium);
   const entriesToProcess = isFourElementsMonk
     ? []
     : selectAdditionalSpellsEntries(
@@ -248,7 +283,7 @@ export function getSubclassSpells(
   const expandedSet = new Set<string>();
 
   const resolveSpell = (rawName: string): SpellData | undefined => {
-    const baseSpell = catalog.get(normalizeKey(rawName));
+    const baseSpell = pickSpell(catalog.get(normalizeKey(rawName)), options?.activeBooks);
     const canonicalBaseName = baseSpell ? baseSpell.name : rawName;
     let target = rawName;
     let isReplaced = false;
@@ -264,7 +299,7 @@ export function getSubclassSpells(
       }
     }
 
-    const resolved = catalog.get(normalizeKey(target));
+    const resolved = pickSpell(catalog.get(normalizeKey(target)), options?.activeBooks);
     if (!resolved) {
       if (baseSpell) {
         return { ...baseSpell, isReplaced: false, originalName: canonicalBaseName };
@@ -425,8 +460,8 @@ export function getSubclassSpells(
         ) {
           if (Array.isArray(rc.picked)) {
             for (const pickedName of rc.picked) {
-              const key = pickedName.toLowerCase().trim();
-              const mapping = ELEMENTAL_DISCIPLINE_SPELL_MAP[key];
+              const key = resolveOptionName(pickedName, Object.keys(ELEMENTAL_DISCIPLINE_SPELL_MAP));
+              const mapping = key ? ELEMENTAL_DISCIPLINE_SPELL_MAP[key] : undefined;
               if (mapping) {
                 if (mapping.customSpell) {
                   const custom = mapping.customSpell;
@@ -495,7 +530,7 @@ export function getSubclassSpells(
   }
 
   for (const name of cantripNamesToResolve) {
-    const spell = catalog.get(normalizeKey(name));
+    const spell = pickSpell(catalog.get(normalizeKey(name)), options?.activeBooks);
     if (spell) {
       cantripsMap.set(spell.name, spell);
     }
@@ -531,9 +566,11 @@ export function getSubclassAllowedSwapSchools(subclassName: string): string[] {
 
 export function getBaselineSubclassSpellNames(
   className: string,
-  subclassName: string
+  subclassName: string,
+  compendium: Compendium = currentCompendium()
 ): string[] {
-  const cls = findClass(className);
+  // A name-only caller (the swap validation) has no class entry, so the first class of the name is read.
+  const cls = findClassData(compendium.for().classes(), { className });
   if (!cls || !cls.subclasses) return [];
   const subclass = cls.subclasses.find((sc) => matchesSubclass(sc, subclassName));
   if (!subclass || !subclass.additionalSpells) return [];
@@ -571,7 +608,8 @@ export function validateSubclassSpellSwap(
   subclassName: string,
   originalSpellName: string,
   replacementSpellName: string,
-  activeBooks?: string[]
+  activeBooks?: string[],
+  compendium: Compendium = currentCompendium()
 ): { valid: boolean; reason?: string } {
   if (!className || !subclassName) {
     return { valid: false, reason: "Class and subclass must be specified." };
@@ -581,7 +619,7 @@ export function validateSubclassSpellSwap(
     return { valid: false, reason: `Subclass ${subclassName} does not permit spell swaps.` };
   }
 
-  const baselineNames = getBaselineSubclassSpellNames(className, subclassName);
+  const baselineNames = getBaselineSubclassSpellNames(className, subclassName, compendium);
   const normOriginal = normalizeKey(originalSpellName);
   const isBaseline = baselineNames.some((n) => normalizeKey(n) === normOriginal);
   if (!isBaseline) {
@@ -591,8 +629,8 @@ export function validateSubclassSpellSwap(
     };
   }
 
-  const catalog = getSpellCatalog();
-  const origSpell = catalog.get(normOriginal);
+  const catalog = getSpellCatalog(compendium);
+  const origSpell = pickSpell(catalog.get(normOriginal), activeBooks);
   if (!origSpell) {
     return { valid: false, reason: `Original spell "${originalSpellName}" not found in catalog.` };
   }
@@ -605,7 +643,7 @@ export function validateSubclassSpellSwap(
   }
 
   const normRepl = normalizeKey(replacementSpellName);
-  const replSpell = catalog.get(normRepl);
+  const replSpell = pickSpell(catalog.get(normRepl), activeBooks);
   if (!replSpell) {
     return { valid: false, reason: `Replacement spell "${replacementSpellName}" does not exist.` };
   }
@@ -657,18 +695,21 @@ export function validateSubclassSpellSwap(
 export function getEligibleSubclassSpellSwaps(
   subclassName: string,
   originalSpell: SpellData,
-  activeBooks?: string[]
+  activeBooks?: string[],
+  compendium: Compendium = currentCompendium()
 ): SpellData[] {
   if (!subclassName || !originalSpell || originalSpell.level === 0) return [];
   const allowedSchools = getSubclassAllowedSwapSchools(subclassName).map((s) => s.toLowerCase());
   if (allowedSchools.length === 0) return [];
 
-  const catalog = getSpellCatalog();
+  const catalog = getSpellCatalog(compendium);
   const allowedClasses = ["sorcerer", "warlock", "wizard"];
   const activeBooksSet = activeBooks ? new Set(activeBooks.map((b) => b.toUpperCase())) : null;
 
   const eligible: SpellData[] = [];
-  for (const spell of catalog.values()) {
+  for (const copies of catalog.values()) {
+    const spell = pickSpell(copies, activeBooks);
+    if (!spell) continue;
     if (spell.level !== originalSpell.level) continue;
     if (!allowedSchools.includes((spell.school || "").toLowerCase())) continue;
     if (!spell.classes?.some((c) => allowedClasses.includes(c.toLowerCase()))) continue;
@@ -690,7 +731,8 @@ export function getOrphanedSubclassSpells(
   className: string,
   oldSubclassName: string,
   newSubclassName?: string,
-  activeBooks?: string[]
+  activeBooks?: string[],
+  compendium: Compendium = currentCompendium()
 ): string[] {
   if (!oldSubclassName) return [];
   const classLower = className.toLowerCase();
@@ -707,19 +749,22 @@ export function getOrphanedSubclassSpells(
 
   if (known.length === 0) return [];
 
+  // The class entry is unique by name, so its source names the catalog class whose subclasses are read.
+  const classSource = (character.classes || []).find((c) => c.className === className)?.source;
+
   // Expanded spells for former subclass
-  const oldSpells = getSubclassSpells(className, oldSubclassName, 20, { activeBooks });
+  const oldSpells = getSubclassSpells(className, oldSubclassName, 20, { activeBooks, compendium, classSource });
   const oldExpandedSet = new Set(oldSpells.expanded.map(normalizeKey));
   if (oldExpandedSet.size === 0) return [];
 
   // Expanded spells for new subclass (if any)
   const newExpandedSet = new Set(
     newSubclassName
-      ? getSubclassSpells(className, newSubclassName, 20, { activeBooks }).expanded.map(normalizeKey)
+      ? getSubclassSpells(className, newSubclassName, 20, { activeBooks, compendium, classSource }).expanded.map(normalizeKey)
       : []
   );
 
-  const catalog = getSpellCatalog();
+  const catalog = getSpellCatalog(compendium);
   const orphaned: string[] = [];
 
   for (const k of known) {
@@ -731,7 +776,7 @@ export function getOrphanedSubclassSpells(
     if (newExpandedSet.has(norm)) continue;
 
     // Is it a native class spell on the base spell list?
-    const spellData = catalog.get(norm);
+    const spellData = pickSpell(catalog.get(norm), activeBooks);
     const isNativeBaseSpell = spellData?.classes?.some((c) => c.toLowerCase() === classLower);
     if (isNativeBaseSpell) continue;
 

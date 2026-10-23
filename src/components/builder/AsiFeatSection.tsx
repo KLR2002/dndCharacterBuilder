@@ -3,13 +3,16 @@ import { ScrollView, Text, TouchableOpacity, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { AbilityKey, Character } from "../../types/character";
 import { FeatData } from "../../types/dnd5e";
-import { applyAsiSelection, getFeatAbilityBonusOptions, removeAsiSelection } from "../../rules/leveling";
+import { getFeatAbilityBonusOptions, removeAsiSelection } from "../../rules/leveling";
+import { applyAsiWithHitPoints } from "../../rules/builderTransitions";
 import { validateFeatPrerequisites } from "../../rules/feats";
 import {
   battleMasterManeuverChoices,
+  ELDRITCH_ADEPT_CHOICE_ID,
+  FIGHTING_INITIATE_CHOICE_ID,
+  MARTIAL_ADEPT_CHOICE_ID,
   fightingStyleRuleChoices,
-  pickFightingStyleChoice,
-  pickSubclassRuleChoice,
+  pickRuleChoice,
   warlockInvocationChoices,
 } from "../../rules/ruleChoices";
 import { Badge } from "../ui/Badge";
@@ -32,11 +35,13 @@ export interface AsiFeatSectionProps {
   onViewDetail: (item: { title: string; subtitle?: string; source?: string; description?: string; tags?: string[] }) => void;
   theme: any;
   activeBooks?: string[];
+  fullHealOnLevelUp: boolean;
 }
 
 export const AsiFeatSection: React.FC<AsiFeatSectionProps> = ({
   character,
   onUpdate,
+  fullHealOnLevelUp,
   pendingAsiSlots,
   allFeats,
   primaryClass,
@@ -63,25 +68,25 @@ export const AsiFeatSection: React.FC<AsiFeatSectionProps> = ({
       if (asiMode === "plus2") {
         if (!asiPlus2Pick) return;
         onUpdate((current) =>
-          applyAsiSelection(current, {
+          applyAsiWithHitPoints(current, {
             className,
             classLevel,
             level: classLevel,
             type: "asi",
             asi: { [asiPlus2Pick]: 2 },
-          })
+          }, fullHealOnLevelUp)
         );
         setAsiPlus2Pick(null);
       } else {
         if (asiPlus1Picks.length !== 2) return;
         onUpdate((current) =>
-          applyAsiSelection(current, {
+          applyAsiWithHitPoints(current, {
             className,
             classLevel,
             level: classLevel,
             type: "asi",
             asi: { [asiPlus1Picks[0]]: 1, [asiPlus1Picks[1]]: 1 },
-          })
+          }, fullHealOnLevelUp)
         );
         setAsiPlus1Picks([]);
       }
@@ -91,7 +96,7 @@ export const AsiFeatSection: React.FC<AsiFeatSectionProps> = ({
       if (opts.type === "choice" && !asiSelectedFeatAbility) return;
       const featAbility = opts.type === "fixed" ? opts.abilities[0] : asiSelectedFeatAbility || undefined;
       onUpdate((current) => {
-        let updated = applyAsiSelection(current, {
+        let updated = applyAsiWithHitPoints(current, {
           className,
           classLevel,
           level: classLevel,
@@ -100,28 +105,28 @@ export const AsiFeatSection: React.FC<AsiFeatSectionProps> = ({
           featSource: asiSelectedFeat.source,
           featAbility,
           asi: featAbility ? { [featAbility]: 1 } : undefined,
-        });
+        }, fullHealOnLevelUp);
         if (asiSelectedFeat.name.toLowerCase() === "fighting initiate" && asiSelectedFightingStyle) {
           const fsChoices = fightingStyleRuleChoices(updated);
-          const fiChoice = fsChoices.find((c) => c.id.includes("Fighting Initiate"));
+          const fiChoice = fsChoices.find((c) => c.id === FIGHTING_INITIATE_CHOICE_ID);
           if (fiChoice) {
-            updated = pickFightingStyleChoice(updated, fiChoice, asiSelectedFightingStyle);
+            updated = pickRuleChoice(updated, fiChoice, asiSelectedFightingStyle);
           }
         }
         if (asiSelectedFeat.name.toLowerCase() === "martial adept" && asiSelectedManeuvers.length > 0) {
           const mChoices = battleMasterManeuverChoices(updated);
-          const maChoice = mChoices.find((c) => c.id.includes("Martial Adept"));
+          const maChoice = mChoices.find((c) => c.id === MARTIAL_ADEPT_CHOICE_ID);
           if (maChoice) {
             for (const m of asiSelectedManeuvers) {
-              updated = pickSubclassRuleChoice(updated, maChoice, m);
+              updated = pickRuleChoice(updated, maChoice, m);
             }
           }
         }
         if (asiSelectedFeat.name.toLowerCase() === "eldritch adept" && asiSelectedInvocation) {
           const invChoices = warlockInvocationChoices(updated, activeBooks);
-          const eaChoice = invChoices.find((c) => c.id.includes("Eldritch Adept"));
+          const eaChoice = invChoices.find((c) => c.id === ELDRITCH_ADEPT_CHOICE_ID);
           if (eaChoice) {
-            updated = pickSubclassRuleChoice(updated, eaChoice, asiSelectedInvocation);
+            updated = pickRuleChoice(updated, eaChoice, asiSelectedInvocation);
           }
         }
         return updated;
@@ -501,7 +506,7 @@ export const AsiFeatSection: React.FC<AsiFeatSectionProps> = ({
                           { type: "feat", featName: "Fighting Initiate", level: 1 },
                         ],
                       };
-                      const fsChoice = fightingStyleRuleChoices(tempChar).find((c) => c.id.includes("Fighting Initiate"));
+                      const fsChoice = fightingStyleRuleChoices(tempChar).find((c) => c.id === FIGHTING_INITIATE_CHOICE_ID);
                       const options = fsChoice?.options ?? [];
                       return (
                         <View
@@ -566,7 +571,7 @@ export const AsiFeatSection: React.FC<AsiFeatSectionProps> = ({
                           { type: "feat", featName: "Martial Adept", level: 1 },
                         ],
                       };
-                      const maChoice = battleMasterManeuverChoices(tempChar).find((c) => c.id.includes("Martial Adept"));
+                      const maChoice = battleMasterManeuverChoices(tempChar).find((c) => c.id === MARTIAL_ADEPT_CHOICE_ID);
                       const options = maChoice?.options ?? [];
                       return (
                         <View
@@ -643,7 +648,7 @@ export const AsiFeatSection: React.FC<AsiFeatSectionProps> = ({
                           { type: "feat", featName: "Eldritch Adept", level: 1 },
                         ],
                       };
-                      const eaChoice = warlockInvocationChoices(tempChar, activeBooks).find((c) => c.id.includes("Eldritch Adept"));
+                      const eaChoice = warlockInvocationChoices(tempChar, activeBooks).find((c) => c.id === ELDRITCH_ADEPT_CHOICE_ID);
                       const options = eaChoice?.options ?? [];
                       return (
                         <View
@@ -747,17 +752,17 @@ export const AsiFeatSection: React.FC<AsiFeatSectionProps> = ({
                 key={`${slotKey}_${idx}`}
                 style={[styles.featureRow, { borderColor: theme.border, flexDirection: "column", alignItems: "stretch", gap: 8 }]}
               >
-                <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
-                  <View style={{ flex: 1 }}>
-                    <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+                <View style={{ flexDirection: "row", flexWrap: "wrap", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
+                  <View style={{ flexGrow: 1, flexShrink: 1, maxWidth: "100%" }}>
+                    <View style={{ flexDirection: "row", flexWrap: "wrap", alignItems: "center", gap: 6 }}>
                       <Badge label={`${clsName} Lvl ${lvl}`} variant="accent" size="sm" />
-                      <Text style={{ color: theme.text, fontWeight: "600", fontSize: 13 }}>
+                      <Text style={{ color: theme.text, fontWeight: "600", fontSize: 13, flexShrink: 1, maxWidth: "100%" }}>
                         {isAsi ? "Ability Score Improvement" : sel.featName}
                       </Text>
                     </View>
                     <Text style={{ color: theme.textSecondary, fontSize: 12, marginTop: 2 }}>{summary}</Text>
                   </View>
-                  <View style={{ flexDirection: "row", gap: 6, alignItems: "center" }}>
+                  <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6, alignItems: "center" }}>
                     {!isAsi && (
                       <Button
                         title="Info"
@@ -792,8 +797,8 @@ export const AsiFeatSection: React.FC<AsiFeatSectionProps> = ({
                 </View>
 
                 {sel.featName?.toLowerCase() === "fighting initiate" && (() => {
-                  const fsChoice = fightingStyleRuleChoices(character).find((c) => c.id.includes("Fighting Initiate"));
-                  const currentPick = character.ruleChoices?.find((rc) => rc.id.includes("Fighting Initiate"))?.picked?.[0];
+                  const fsChoice = fightingStyleRuleChoices(character).find((c) => c.id === FIGHTING_INITIATE_CHOICE_ID);
+                  const currentPick = character.ruleChoices?.find((rc) => rc.id === FIGHTING_INITIATE_CHOICE_ID)?.picked?.[0];
                   if (!fsChoice) return null;
                   return (
                     <View style={{ marginTop: 4, gap: 6, paddingTop: 6, borderTopWidth: 1, borderTopColor: theme.border }}>
@@ -806,7 +811,7 @@ export const AsiFeatSection: React.FC<AsiFeatSectionProps> = ({
                           return (
                             <TouchableOpacity
                               key={opt.name}
-                              onPress={() => onUpdate((cur) => pickFightingStyleChoice(cur, fsChoice, opt.name))}
+                              onPress={() => onUpdate((cur) => pickRuleChoice(cur, fsChoice, opt.name))}
                               hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                               style={[
                                 styles.choiceChip,
@@ -844,8 +849,8 @@ export const AsiFeatSection: React.FC<AsiFeatSectionProps> = ({
                 })()}
 
                 {sel.featName?.toLowerCase() === "martial adept" && (() => {
-                  const maChoice = battleMasterManeuverChoices(character).find((c) => c.id.includes("Martial Adept"));
-                  const currentPicks = character.ruleChoices?.find((rc) => rc.id.includes("Martial Adept"))?.picked || [];
+                  const maChoice = battleMasterManeuverChoices(character).find((c) => c.id === MARTIAL_ADEPT_CHOICE_ID);
+                  const currentPicks = character.ruleChoices?.find((rc) => rc.id === MARTIAL_ADEPT_CHOICE_ID)?.picked || [];
                   if (!maChoice) return null;
                   return (
                     <View style={{ marginTop: 4, gap: 6, paddingTop: 6, borderTopWidth: 1, borderTopColor: theme.border }}>
@@ -862,7 +867,7 @@ export const AsiFeatSection: React.FC<AsiFeatSectionProps> = ({
                           return (
                             <TouchableOpacity
                               key={opt.name}
-                              onPress={() => onUpdate((cur) => pickSubclassRuleChoice(cur, maChoice, opt.name))}
+                              onPress={() => onUpdate((cur) => pickRuleChoice(cur, maChoice, opt.name))}
                               hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                               style={[
                                 styles.choiceChip,
@@ -904,8 +909,8 @@ export const AsiFeatSection: React.FC<AsiFeatSectionProps> = ({
                 })()}
 
                 {sel.featName?.toLowerCase() === "eldritch adept" && (() => {
-                  const eaChoice = warlockInvocationChoices(character, activeBooks).find((c) => c.id.includes("Eldritch Adept"));
-                  const currentPick = character.ruleChoices?.find((rc) => rc.id.includes("Eldritch Adept"))?.picked?.[0];
+                  const eaChoice = warlockInvocationChoices(character, activeBooks).find((c) => c.id === ELDRITCH_ADEPT_CHOICE_ID);
+                  const currentPick = character.ruleChoices?.find((rc) => rc.id === ELDRITCH_ADEPT_CHOICE_ID)?.picked?.[0];
                   if (!eaChoice) return null;
                   return (
                     <View style={{ marginTop: 4, gap: 6, paddingTop: 6, borderTopWidth: 1, borderTopColor: theme.border }}>
@@ -918,7 +923,7 @@ export const AsiFeatSection: React.FC<AsiFeatSectionProps> = ({
                           return (
                             <TouchableOpacity
                               key={opt.name}
-                              onPress={() => onUpdate((cur) => pickSubclassRuleChoice(cur, eaChoice, opt.name))}
+                              onPress={() => onUpdate((cur) => pickRuleChoice(cur, eaChoice, opt.name))}
                               hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                               style={[
                                 styles.choiceChip,

@@ -32,8 +32,11 @@ export default function OptionsScreen() {
   const {
     activeBooks,
     setActiveBooks,
+    fullHealOnLevelUp,
+    setFullHealOnLevelUp,
     isIntegrated,
     integratedAt,
+    catalogStale,
     triggerIntegration,
     revertToSrd,
   } = useCharacters();
@@ -256,6 +259,41 @@ export default function OptionsScreen() {
           </Card>
         </View>
 
+        {/* LEVEL-UP HIT POINTS */}
+        <View style={{ marginBottom: 20 }}>
+          <Card style={{ padding: 14 }}>
+            <TouchableOpacity
+              onPress={() => setFullHealOnLevelUp(!fullHealOnLevelUp)}
+              accessibilityRole="checkbox"
+              accessibilityState={{ checked: fullHealOnLevelUp }}
+              style={[
+                styles.bookRow,
+                {
+                  backgroundColor: fullHealOnLevelUp ? theme.surface : "transparent",
+                  borderColor: fullHealOnLevelUp ? theme.accent : theme.border,
+                },
+              ]}
+            >
+              <Text
+                style={{
+                  flex: 1,
+                  minWidth: 0,
+                  color: theme.text,
+                  fontSize: 14,
+                  fontWeight: "600",
+                }}
+              >
+                Full heal at level up
+              </Text>
+              <Ionicons
+                name={fullHealOnLevelUp ? "checkbox" : "square-outline"}
+                size={22}
+                color={fullHealOnLevelUp ? theme.accent : theme.textMuted}
+              />
+            </TouchableOpacity>
+          </Card>
+        </View>
+
         {/* 5ETOOLS SOURCEBOOK INTEGRATION */}
         <View style={{ marginBottom: 20 }}>
           <View
@@ -267,14 +305,14 @@ export default function OptionsScreen() {
             }}
           >
             <View
-              style={{ flexDirection: "row", alignItems: "center", gap: 8 }}
+              style={{ flexDirection: "row", alignItems: "center", gap: 8, flex: 1, minWidth: 0 }}
             >
               <Ionicons
                 name="cloud-download-outline"
                 size={18}
                 color={theme.accent}
               />
-              <Text style={[styles.sectionHeading, { color: theme.text }]}>
+              <Text style={[styles.sectionHeading, { color: theme.text, flexShrink: 1 }]}>
                 5ETOOLS SOURCEBOOK INTEGRATION
               </Text>
             </View>
@@ -352,6 +390,18 @@ export default function OptionsScreen() {
                     ? ` (Last synced: ${new Date(integratedAt).toLocaleDateString()})`
                     : ""}
                 </Text>
+                {catalogStale ? (
+                  <Text
+                    style={{
+                      color: theme.textSecondary,
+                      fontSize: 13,
+                      lineHeight: 18,
+                      marginTop: 6,
+                    }}
+                  >
+                    Re-sync to get the latest class options
+                  </Text>
+                ) : null}
 
                 <View
                   style={{

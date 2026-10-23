@@ -1,13 +1,14 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { makeChar } from "./testUtils.ts";
+import { inMemoryCompendium, makeChar } from "./testUtils.ts";
+import { proficiencySheet } from "../src/rules/proficiencySheet.ts";
 import {
   subclassRuleChoices,
   availableSubclassRuleChoices,
-  pickSubclassRuleChoice,
-  getUnchosenBarbarianSkills,
-  BARBARIAN_CLASS_SKILLS,
+  pickRuleChoice,
 } from "../src/rules/ruleChoices.ts";
+import { createCompendium } from "../src/services/compendium.ts";
+import { choiceCatalogBundle, choiceCatalogClasses } from "./choiceCatalogFixture.ts";
 import { skills } from "../src/rules/skills.ts";
 import {
   getClassSpellProfiles,
@@ -90,8 +91,8 @@ test("Primal Knowledge: excludes already proficient Barbarian skills and grants 
   assert.equal(offeredNames.includes("Perception"), false);
   assert.deepEqual(offeredNames.sort(), ["Animal Handling", "Intimidation", "Nature", "Survival"].sort());
 
-  // Pick "Survival" using pickSubclassRuleChoice
-  const updatedChar = pickSubclassRuleChoice(char, pk3, "Survival");
+  // Pick "Survival" using pickRuleChoice
+  const updatedChar = pickRuleChoice(char, pk3, "Survival");
   assert.ok(
     updatedChar.ruleChoices?.some(
       (rc) => rc.id === "TCE__Barbarian__Primal Knowledge 3" && rc.picked.includes("Survival")
@@ -99,7 +100,7 @@ test("Primal Knowledge: excludes already proficient Barbarian skills and grants 
   );
 
   // Survival should now evaluate as proficient
-  const evalSkills = skills(updatedChar);
+  const evalSkills = skills(updatedChar, proficiencySheet(updatedChar, { compendium: inMemoryCompendium() }).skills);
   const survivalSkill = evalSkills.find((s) => s.name === "Survival");
   assert.equal(survivalSkill?.isProficient, true, "Survival should be proficient after picking Primal Knowledge");
 
@@ -113,6 +114,21 @@ test("Primal Knowledge: excludes already proficient Barbarian skills and grants 
   const offeredNames10 = pk10.options.map((o) => o.name);
   assert.equal(offeredNames10.includes("Survival"), false, "Survival picked at level 3 must not be offered at level 10");
   assert.deepEqual(offeredNames10.sort(), ["Animal Handling", "Intimidation", "Nature"].sort());
+});
+
+test("Primal Knowledge: the pool is the Barbarian's skill list from the catalog, so no Barbarian class means no offer", () => {
+  const withoutBarbarian = createCompendium(
+    choiceCatalogBundle({ classes: choiceCatalogClasses().filter((c) => c.name !== "Barbarian") }),
+  );
+  const char = makeChar({
+    classes: [{ className: "Barbarian", level: 3 }],
+    optionalFeatureReplacements: { "Primal Knowledge": true },
+  });
+  assert.equal(
+    subclassRuleChoices(char, undefined, withoutBarbarian).some((c) => c.traitName.includes("Primal Knowledge")),
+    false,
+    "a catalog with no Barbarian class offers no Primal Knowledge choice",
+  );
 });
 
 test("Path of the Giant: level gating, cantrip choice, and Wisdom spellcasting profile", () => {
@@ -142,7 +158,7 @@ test("Path of the Giant: level gating, cantrip choice, and Wisdom spellcasting p
   );
 
   // Pick "Druidcraft"
-  const charWithCantrip = pickSubclassRuleChoice(giantLvl3, giantChoice, "Druidcraft");
+  const charWithCantrip = pickRuleChoice(giantLvl3, giantChoice, "Druidcraft");
   const known = charWithCantrip.knownSpells?.find((k) => k.name === "Druidcraft");
   assert.ok(known, "Druidcraft must be added to character knownSpells");
   assert.equal(known.ownerKey, "Barbarian__BGG");
@@ -227,7 +243,7 @@ test("Path of the Totem Warrior: 3 distinct milestones with choose: 1", () => {
   assert.ok(lvl14Choices.some((c) => c.id === "PHB__Barbarian__Path of the Totem Warrior__Totemic Attunement 14"));
 });
 
-test("Path of the Totem Warrior: independent animal picks across milestones and Bear Totem detection", () => {
+test("Path of the Totem Warrior: independent animal picks across milestones", () => {
   const totemChar = makeChar({
     classes: [{ className: "Barbarian", level: 14, subclassName: "Path of the Totem Warrior" }],
   });
@@ -237,9 +253,9 @@ test("Path of the Totem Warrior: independent animal picks across milestones and 
   const ch14 = choices.find((c) => c.id === "PHB__Barbarian__Path of the Totem Warrior__Totemic Attunement 14")!;
 
   // Pick Bear at 3, Eagle at 6, Wolf at 14
-  let updated = pickSubclassRuleChoice(totemChar, ch3, "Bear");
-  updated = pickSubclassRuleChoice(updated, ch6, "Eagle");
-  updated = pickSubclassRuleChoice(updated, ch14, "Wolf");
+  let updated = pickRuleChoice(totemChar, ch3, "Bear");
+  updated = pickRuleChoice(updated, ch6, "Eagle");
+  updated = pickRuleChoice(updated, ch14, "Wolf");
 
   assert.equal(updated.ruleChoices?.length, 3);
   const pick3 = updated.ruleChoices?.find((rc) => rc.id === ch3.id)?.picked;
@@ -249,25 +265,4 @@ test("Path of the Totem Warrior: independent animal picks across milestones and 
   assert.deepEqual(pick3, ["Bear"]);
   assert.deepEqual(pick6, ["Eagle"]);
   assert.deepEqual(pick14, ["Wolf"]);
-
-  // Bear Totem Spirit detection check
-  const hasBearSpirit = Boolean(
-    updated.ruleChoices?.some(
-      (rc) =>
-        (rc.id.includes("Totem Spirit") || rc.trait.includes("Totem Spirit") || rc.id.includes("Totem Warrior")) &&
-        rc.picked?.some((p) => p.toLowerCase() === "bear")
-    )
-  );
-  assert.equal(hasBearSpirit, true, "Character with Bear Totem Spirit must be detected for rage resistance note");
-
-  // Eagle only: if 3rd level is Eagle, Bear Spirit check should return false
-  const eagle3Char = pickSubclassRuleChoice(totemChar, ch3, "Eagle");
-  const hasBearSpiritEagle = Boolean(
-    eagle3Char.ruleChoices?.some(
-      (rc) =>
-        (rc.id.includes("Totem Spirit") || rc.trait.includes("Totem Spirit") || rc.id.includes("Totem Warrior")) &&
-        rc.picked?.some((p) => p.toLowerCase() === "bear")
-    )
-  );
-  assert.equal(hasBearSpiritEagle, false, "Character with Eagle Totem Spirit must not trigger Bear resistance note");
 });

@@ -1,3 +1,23 @@
+import type { ProficiencyGrant } from "../../dnd5eToolsScrap/src/types/proficiency.ts";
+import type { StartingEquipmentSlot } from "../../dnd5eToolsScrap/src/types/startingEquipment.ts";
+
+export type {
+  GrantRequirement,
+  ProficiencyCategory,
+  ProficiencyGrant,
+  ProficiencyGrantSpec,
+  ProficiencyPool,
+} from "../../dnd5eToolsScrap/src/types/proficiency.ts";
+
+export type {
+  StartingEquipmentEntry,
+  StartingEquipmentItem,
+  StartingEquipmentOption,
+  StartingEquipmentSlot,
+  StartingEquipmentType,
+  StartingEquipmentUnrecognised,
+} from "../../dnd5eToolsScrap/src/types/startingEquipment.ts";
+
 export interface TraitChoiceData {
   /** How many options the player must pick. */
   pick: number;
@@ -32,6 +52,8 @@ export interface RaceData {
   darkvision: number | null;
   traits: TraitData[];
   languages: string[];
+  /** Proficiency Grants from the race's structured proficiency fields. */
+  grants?: ProficiencyGrant[];
   subraces: SubraceData[];
   description: string;
   rawEntries?: any[];
@@ -48,8 +70,28 @@ export interface SubraceData {
   darkvision: number | null;
   speed?: { walk?: number; swim?: number; climb?: number; fly?: number };
   traits: TraitData[];
+  /** Proficiency Grants from the subrace's structured proficiency fields. */
+  grants?: ProficiencyGrant[];
   description: string;
   rawEntries?: any[];
+}
+
+/** One option a feature lets the player pick. `source` is the book it is printed in. */
+export interface ChoiceOption {
+  name: string;
+  description: string;
+  source?: string;
+  /** The level the option feature is gained at. */
+  level?: number;
+  /** The option's own Proficiency Grants, applying while the parent's pick names this option. */
+  grants?: ProficiencyGrant[];
+}
+
+/** A pick from a fixed set of options a feature grants. `from` is the raw filter for cantrip-style lists. */
+export interface FeatureChoice {
+  pick: number;
+  options?: ChoiceOption[];
+  from?: { filter: string; count?: number };
 }
 
 export interface ClassFeatureData {
@@ -57,11 +99,16 @@ export interface ClassFeatureData {
   level: number;
   description: string;
   isOptional?: boolean;
+  /** Present when the scraped feature grants a pick from its option features. */
+  choices?: FeatureChoice;
+  /** Proficiency Grants extracted from the feature's prose, or from its override. */
+  grants?: ProficiencyGrant[];
 }
 
 export interface SubclassAdditionalSpells {
   prepared?: Record<string, string[]>;
-  known?: Record<string, any[]>;
+  /** Per spell level: a list of spell names, or a `_` list of `choose` filters (cantrip lists). */
+  known?: Record<string, any>;
   expanded?: Record<string, any>;
   innate?: Record<string, any>;
   name?: string;
@@ -76,6 +123,8 @@ export interface SubclassData {
   spellcastingAbility?: string;
   features: ClassFeatureData[];
   additionalSpells?: SubclassAdditionalSpells[];
+  /** Present when the additional spells grant a pick between named options, lifted from them. */
+  spellChoice?: FeatureChoice;
   description: string;
 }
 
@@ -99,12 +148,17 @@ export interface ClassData {
     progression: string;
     preparedSpells?: string;
   } | null;
+  /** The starting equipment slots, in printed order. Absent for a class whose record carries none. */
+  startingEquipment?: StartingEquipmentSlot[];
   features: ClassFeatureData[];
   subclasses: SubclassData[];
+  /** Proficiency Grants from the class's starting proficiencies. */
+  grants?: ProficiencyGrant[];
   multiclassing?: {
     requirements?: Record<string, number>;
     proficienciesGained?: {
-      armor?: string[];
+      /** A plain token ("light", "shield") or an object whose `proficiency` is the token, with the full text in `full`. */
+      armor?: (string | { proficiency: string; full?: string })[];
       weapons?: string[];
       tools?: string[];
       skills?: any;
@@ -120,6 +174,8 @@ export interface FeatData {
   abilityScoreIncrease: Record<string, number>[] | null;
   description: string;
   rawEntries?: any[];
+  /** Proficiency Grants extracted from the feat's prose, or from its override. */
+  grants?: ProficiencyGrant[];
 }
 
 export interface BackgroundData {
@@ -128,6 +184,8 @@ export interface BackgroundData {
   skillProficiencies: string[];
   toolProficiencies: string[];
   languages: string[];
+  /** Proficiency Grants from the background's structured proficiency fields. */
+  grants?: ProficiencyGrant[];
   startingEquipment: string[];
   feature: {
     name: string;
@@ -163,6 +221,8 @@ export interface ItemData {
   rawEntries?: any[];
   bonusWeapon?: number;
   bonusAc?: number;
+  /** Set on base weapons only: the simple or martial category the source data gives them. */
+  weaponCategory?: "simple" | "martial";
 }
 
 export interface SpellClassVariant {
@@ -215,6 +275,8 @@ export interface OptionFeatureData {
   prerequisite: string | null;
   description: string;
   rawEntries?: any[];
+  /** Set on a record that carries replicable-item tables; it is not a selectable option. */
+  isUmbrella?: boolean;
 }
 
 export interface BeastAction {

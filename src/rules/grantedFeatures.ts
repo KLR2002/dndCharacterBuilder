@@ -2,7 +2,13 @@ import type { Character } from "../types/character.ts";
 import type { ClassFeatureData } from "../types/dnd5e.ts";
 import type { FeatureCatalog, FeatureInstance } from "./types.ts";
 import { getReplacedBaseFeatures } from "./optionalFeatures.ts";
-import { applyRuleChoice, replacedTraitNames, ruleChoiceId } from "./ruleChoices.ts";
+import { ruleChoiceId } from "./choices/types.ts";
+import { applyRuleChoice, replacedTraitNames } from "./raceRuleChoices.ts";
+import { raisedAbilityGrants } from "./proficiencyPools.ts";
+import { recordGrantSources } from "./recordProficiencyGrants.ts";
+import { grantRequirementMet, type SubclassOwner } from "./optionFeatureGrants.ts";
+import { findClassData } from "./catalogs.ts";
+import { isCustomBackground } from "./customBackground.ts";
 
 export function grantedFeatures(character: Character, catalog: FeatureCatalog): FeatureInstance[] {
   const out: FeatureInstance[] = [];
@@ -11,6 +17,10 @@ export function grantedFeatures(character: Character, catalog: FeatureCatalog): 
   function add(feature: Omit<FeatureInstance, "id">, owner: string, level = 0) {
     const id = JSON.stringify([feature.origin, feature.source, owner, feature.name, level]);
     if (!out.some(x => x.id === id)) out.push({ ...feature, id });
+  }
+  // The tool and language grants of the race, subrace and background the character holds: each is a feature of its own.
+  for (const record of recordGrantSources(character, catalog)) {
+    add({ name: record.name, description: "", source: record.source, origin: record.origin, grants: record.grants }, record.owner);
   }
   if (character.lineageReplacement) {
     const lineage = catalog.races.find(r => r.name === character.lineageReplacement);
@@ -48,13 +58,13 @@ export function grantedFeatures(character: Character, catalog: FeatureCatalog): 
   }
   const background = character.background;
   const bg = catalog.backgrounds.find(b => b.name === background?.name && b.source === background.source);
-  if (background?.isCustom && background.customFeatureName) {
+  if (isCustomBackground(background) && background?.customFeatureName) {
     add({ name: background.customFeatureName, description: background.customFeatureDesc || "", source: background.source, origin: "Background" }, background.name);
   } else if (bg?.feature) add({ ...bg.feature, source: bg.source, origin: "Background" }, bg.name);
 
   for (const c of character.classes) {
-    const cls = catalog.classes.find(x => x.name === c.className && x.source === c.source);
-    function addClassFeature(f: ClassFeatureData, origin: "Class" | "Subclass", source: string, owner: string) {
+    const cls = findClassData(catalog.classes, c);
+    function addClassFeature(f: ClassFeatureData, origin: "Class" | "Subclass", source: string, owner: string, subclassName?: string) {
       if (f.level > c.level) return;
       const isOptEnabled = Boolean(character.optionalFeatureReplacements?.[f.name]);
       if (f.isOptional) {
@@ -62,7 +72,21 @@ export function grantedFeatures(character: Character, catalog: FeatureCatalog): 
       } else {
         if (replacedBaseFeatures.has(f.name)) return;
       }
-      const feature: Omit<FeatureInstance, "id"> = { name: f.name, description: f.description, source, origin, className: c.className };
+      const gateOwner = { className: c.className, subclassName: subclassName ?? "", subclassSource: source };
+      // A grant that requires another feature's pick applies only with that pick: an unpicked option's grants are not listed.
+      const grants = (f.grants ?? []).filter((grant) =>
+        origin !== "Subclass" || grantRequirementMet(character, gateOwner, grant.requires, f.name),
+      );
+      const feature: Omit<FeatureInstance, "id"> = {
+        name: f.name,
+        description: f.description,
+        source,
+        origin,
+        className: c.className,
+        ...(subclassName ? { subclassName } : {}),
+        level: f.level,
+        ...(grants.length ? { grants } : {}),
+      };
       // The catalog repeats these at threshold levels. Retain one grant, not additive uses/attacks.
       if (/^Extra Attack(?: \(\d+\))?$/.test(f.name)) {
         feature.name = "Extra Attack";
@@ -84,15 +108,45 @@ export function grantedFeatures(character: Character, catalog: FeatureCatalog): 
         }
       }
       add(feature, owner, f.level);
+      if (origin === "Subclass") addPickedOptions(f, gateOwner, feature.source, owner, subclassName);
+    }
+    /**
+     * A subclass feature's option features are folded into the feature's choice. An option that carries its own
+     * grants is listed as a feature of its own while the parent's pick names it, so its grants reach the sheet.
+     */
+    function addPickedOptions(f: ClassFeatureData, gateOwner: SubclassOwner, source: string, owner: string, subclassName?: string) {
+      for (const option of f.choices?.options ?? []) {
+        if (!option.grants?.length) continue;
+        if (!grantRequirementMet(character, gateOwner, { feature: f.name, level: f.level }, option.name)) continue;
+        const level = option.level ?? f.level;
+        add(
+          {
+            name: option.name,
+            description: option.description,
+            source: option.source ?? source,
+            origin: "Subclass",
+            className: c.className,
+            ...(subclassName ? { subclassName } : {}),
+            level,
+            grants: option.grants,
+          },
+          owner,
+          level,
+        );
+      }
     }
     for (const f of cls?.features || []) addClassFeature(f, "Class", c.source, c.className);
     const subclass = cls?.subclasses.find(s => s.name === c.subclassName && (!c.subclassSource || s.source === c.subclassSource));
-    for (const f of subclass?.features || []) addClassFeature(f, "Subclass", subclass!.source, `${c.className}/${subclass!.name}`);
+    for (const f of subclass?.features || []) addClassFeature(f, "Subclass", subclass!.source, `${c.className}/${subclass!.name}`, subclass!.name);
   }
-  for (const selection of character.asiSelections) {
+  // Feats from the ability score list and from the origin-feat list (a background's feat) both count.
+  for (const selection of [...character.asiSelections, ...(character.originFeats ?? [])]) {
     if (selection.type !== "feat") continue;
     const feat = catalog.feats.find(x => x.name === selection.featName && (!selection.featSource || x.source === selection.featSource));
-    if (feat) add({ name: feat.name, description: feat.description, source: feat.source, origin: "Feat" }, feat.name);
+    if (feat) {
+      const grants = raisedAbilityGrants(feat.grants ?? [], selection.featAbility);
+      add({ name: feat.name, description: feat.description, source: feat.source, origin: "Feat", ...(grants.length ? { grants } : {}) }, feat.name);
+    }
   }
   return out;
 }

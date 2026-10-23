@@ -91,7 +91,7 @@ test("glossary consistency: prohibited domain symbol patterns do not appear in c
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i];
       // Skip deprecated alias declarations or comments
-      if (line.includes("@deprecated") || line.includes("export const toggleSubclassRuleChoice")) continue;
+      if (line.includes("@deprecated")) continue;
       for (const p of domainPatterns) {
         if (p.regex.test(line)) {
           patternViolations.push({

@@ -12,6 +12,8 @@ import { scrapeRaces } from "./scrapers/races.ts";
 import { scrapeSpells } from "./scrapers/spells.ts";
 import { scrapeBooks } from "./scrapers/books.ts";
 import { scrapeConditions } from "./scrapers/conditions.ts";
+import { newProficiencyReport } from "./parser/proficiency-grants.ts";
+import { newStartingEquipmentReport } from "./parser/starting-equipment.ts";
 
 interface CliOptions {
   only: string[];
@@ -108,12 +110,14 @@ async function main(): Promise<void> {
     opts.only.length === 0 || opts.only.includes(category);
 
   const summary: Record<string, { count: number; size: string; file: string }> = {};
+  const proficiency = newProficiencyReport();
+  const startingEquipment = newStartingEquipmentReport();
 
   try {
     // 1. Races
     if (shouldRun("races")) {
       console.log("\n[1/7] Scraping Races & Subraces...");
-      const races = await scrapeRaces(client);
+      const races = await scrapeRaces(client, proficiency);
       const file = path.join(opts.outputDir, "races.json");
       const { count, bytes } = saveJson(file, races);
       const totalSubraces = races.reduce((acc, r) => acc + (r.subraces?.length || 0), 0);
@@ -128,7 +132,7 @@ async function main(): Promise<void> {
     // 2. Classes
     if (shouldRun("classes")) {
       console.log("\n[2/7] Scraping Classes, Subclasses & Features...");
-      const classes = await scrapeClasses(client);
+      const classes = await scrapeClasses(client, proficiency, startingEquipment);
       const file = path.join(opts.outputDir, "classes.json");
       const { count, bytes } = saveJson(file, classes);
       const totalSubclasses = classes.reduce((acc, c) => acc + (c.subclasses?.length || 0), 0);
@@ -138,12 +142,18 @@ async function main(): Promise<void> {
         file: path.relative(process.cwd(), file),
       };
       console.log(`  ✓ Saved ${count} classes (${totalSubclasses} subclasses) -> ${file} (${formatBytes(bytes)})`);
+      if (startingEquipment.unrecognised.length > 0) {
+        console.log(`  ! ${startingEquipment.unrecognised.length} starting equipment entries not recognised (kept in place as "unrecognised"):`);
+        for (const issue of startingEquipment.unrecognised) {
+          console.log(`  · ${issue.owner}: ${issue.message}`);
+        }
+      }
     }
 
     // 3. Feats
     if (shouldRun("feats")) {
       console.log("\n[3/7] Scraping Feats...");
-      const feats = await scrapeFeats(client);
+      const feats = await scrapeFeats(client, proficiency);
       const file = path.join(opts.outputDir, "feats.json");
       const { count, bytes } = saveJson(file, feats);
       summary["Feats"] = {
@@ -171,7 +181,7 @@ async function main(): Promise<void> {
     // 5. Backgrounds
     if (shouldRun("backgrounds")) {
       console.log("\n[5/7] Scraping Backgrounds...");
-      const backgrounds = await scrapeBackgrounds(client);
+      const backgrounds = await scrapeBackgrounds(client, proficiency);
       const file = path.join(opts.outputDir, "backgrounds.json");
       const { count, bytes } = saveJson(file, backgrounds);
       summary["Backgrounds"] = {
@@ -287,6 +297,14 @@ async function main(): Promise<void> {
           console.log(`  ✓ Synced conditions to ${p}`);
           break;
         }
+      }
+    }
+
+    // Proficiency Grants: how many features carry grants, and which ones matched the vocabulary but did not parse.
+    if (proficiency.covered > 0 || proficiency.unparsed.length > 0) {
+      console.log(`\n  Proficiency grants: ${proficiency.covered} features covered, ${proficiency.unparsed.length} unparsed`);
+      for (const entry of proficiency.unparsed) {
+        console.log(`  · ${entry.owner} / ${entry.feature}@${entry.level}: ${entry.unparsed.join(" | ")}`);
       }
     }
 

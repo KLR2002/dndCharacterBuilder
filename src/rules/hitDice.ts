@@ -1,5 +1,6 @@
 import type { Character } from "../types/character.ts";
-import { CLASS_DATA, type ClassRules } from "./classData.ts";
+import type { ClassData } from "../types/dnd5e.ts";
+import { allCatalogClasses } from "./catalogs.ts";
 import { effectiveScores } from "./abilities.ts";
 import { maxHp, hitDiceByType } from "./hp.ts";
 import { totalLevel } from "./proficiencies.ts";
@@ -28,7 +29,7 @@ export function isValidHitDie(die: string): boolean {
  */
 export function getHitDicePools(
   character: Character,
-  classes: Record<string, ClassRules> = CLASS_DATA
+  classes: readonly ClassData[] = allCatalogClasses()
 ): Record<string, HitDiePool> {
   return hitDiceByType(character, classes);
 }

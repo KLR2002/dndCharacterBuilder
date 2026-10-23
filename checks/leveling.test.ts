@@ -1,6 +1,6 @@
-import { test } from "node:test";
+import { describe, test } from "node:test";
 import assert from "node:assert/strict";
-import { makeChar } from "./testUtils.ts";
+import { makeChar, inMemoryCompendium } from "./testUtils.ts";
 import {
   getPendingLevelChoices,
   applyAsiSelection,
@@ -10,7 +10,7 @@ import {
   getFeatAbilityBonusOptions,
 } from "../src/rules/leveling.ts";
 import { effectiveScores } from "../src/rules/abilities.ts";
-import type { CharacterClass, AsiSelection } from "../src/types/character.ts";
+import type { CharacterClass, AsiSelection, RuleChoiceEntry } from "../src/types/character.ts";
 
 const cl = (className: string, level: number, subclassName?: string): CharacterClass => ({
   className,
@@ -303,4 +303,100 @@ test("half-feats: effectiveScores includes ability increase from half-feat selec
   // Removing selection removes the ability increase
   const removed = removeAsiSelection(withActor, "Bard", 4);
   assert.equal(effectiveScores(removed).scores.cha, 14);
+});
+
+describe("Replacing an ASI or feat selection reconciles the choices that depended on the old one", () => {
+  const fighterStyle: RuleChoiceEntry = {
+    id: "PHB__Fighter__Fighting Style",
+    trait: "Fighting Style",
+    origin: "class",
+    choose: 1,
+    from: [],
+    picked: ["Dueling"],
+  };
+  const initiateStyle: RuleChoiceEntry = {
+    id: "TCE__Feat__Fighting Initiate__Style",
+    trait: "Fighting Initiate Style",
+    origin: "class",
+    choose: 1,
+    from: [],
+    picked: ["Archery"],
+  };
+  const martialAdeptManeuvers: RuleChoiceEntry = {
+    id: "PHB__Feat__Martial Adept__Maneuvers",
+    trait: "Martial Adept Maneuvers",
+    origin: "class",
+    choose: 2,
+    from: [],
+    picked: ["Parry", "Riposte"],
+  };
+
+  test("prunes the Fighting Initiate style when the feat is replaced by an ASI", () => {
+    const char = makeChar({
+      classes: [cl("Fighter", 4)],
+      asiSelections: [
+        { level: 4, className: "Fighter", classLevel: 4, type: "feat", featName: "Fighting Initiate", featSource: "PHB" },
+      ],
+      ruleChoices: [fighterStyle, initiateStyle],
+    });
+
+    const updated = applyAsiSelection(char, {
+      level: 4,
+      className: "Fighter",
+      classLevel: 4,
+      type: "asi",
+      asi: { str: 2 },
+    }, inMemoryCompendium({}));
+
+    assert.deepEqual(updated.ruleChoices, [fighterStyle]);
+    assert.deepEqual(updated.needsReview, [
+      "Fighting Initiate Style removed: prerequisite no longer satisfied",
+    ]);
+  });
+
+  test("prunes Martial Adept maneuvers when the feat is replaced by an ASI", () => {
+    const char = makeChar({
+      classes: [cl("Fighter", 4)],
+      asiSelections: [
+        { level: 4, className: "Fighter", classLevel: 4, type: "feat", featName: "Martial Adept", featSource: "PHB" },
+      ],
+      ruleChoices: [fighterStyle, martialAdeptManeuvers],
+    });
+
+    const updated = applyAsiSelection(char, {
+      level: 4,
+      className: "Fighter",
+      classLevel: 4,
+      type: "asi",
+      asi: { str: 2 },
+    }, inMemoryCompendium({}));
+
+    assert.deepEqual(updated.ruleChoices, [fighterStyle]);
+    assert.deepEqual(updated.needsReview, [
+      "Martial Adept Maneuvers removed: prerequisite no longer satisfied",
+    ]);
+  });
+
+  test("keeps choices granted by a feat at another level when a different level's selection is replaced", () => {
+    const char = makeChar({
+      classes: [cl("Fighter", 8)],
+      asiSelections: [
+        { level: 4, className: "Fighter", classLevel: 4, type: "feat", featName: "Fighting Initiate", featSource: "PHB" },
+        { level: 8, className: "Fighter", classLevel: 8, type: "asi", asi: { dex: 2 } },
+      ],
+      ruleChoices: [fighterStyle, initiateStyle],
+    });
+
+    const updated = applyAsiSelection(char, {
+      level: 8,
+      className: "Fighter",
+      classLevel: 8,
+      type: "feat",
+      featName: "Alert",
+      featSource: "PHB",
+    }, inMemoryCompendium({}));
+
+    assert.deepEqual(updated.ruleChoices, [fighterStyle, initiateStyle]);
+    assert.deepEqual(updated.needsReview ?? [], []);
+  });
 });

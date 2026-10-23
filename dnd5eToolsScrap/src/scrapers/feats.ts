@@ -3,6 +3,9 @@ import { resolveAllCopies } from "../parser/copy-resolver.ts";
 import { renderEntries } from "../parser/entry-renderer.ts";
 import { cleanTags } from "../parser/tag-cleaner.ts";
 import type { FeatModel } from "../types/models.ts";
+import type { ProficiencyReport } from "../types/proficiency.ts";
+import { newProficiencyReport, resolveFeatureGrants, type GrantSubject } from "../parser/proficiency-grants.ts";
+import { PROFICIENCY_GRANT_OVERRIDES } from "../overrides/proficiency-grants.ts";
 
 const STAT_NAMES: Record<string, string> = {
   str: "Strength",
@@ -13,7 +16,10 @@ const STAT_NAMES: Record<string, string> = {
   cha: "Charisma",
 };
 
-export async function scrapeFeats(client: ToolsClient): Promise<FeatModel[]> {
+export async function scrapeFeats(
+  client: ToolsClient,
+  report: ProficiencyReport = newProficiencyReport()
+): Promise<FeatModel[]> {
   console.log("  → Fetching feats from data/feats.json...");
   const rawData = await client.fetchJson<{ feat: any[] }>("data/feats.json");
 
@@ -32,6 +38,19 @@ export async function scrapeFeats(client: ToolsClient): Promise<FeatModel[]> {
       rawEntries: raw.entries,
     });
   }
+
+  // A feat is its own grant owner: its prose is the feature.
+  const subjects: GrantSubject[] = feats.map((feat) => ({
+    source: feat.source,
+    owner: "Feat",
+    feature: feat.name,
+    level: 0,
+    description: feat.description,
+  }));
+  const resolved = resolveFeatureGrants(subjects, PROFICIENCY_GRANT_OVERRIDES.feats, report);
+  resolved.forEach((result, i) => {
+    if (result.grants.length > 0) feats[i].grants = result.grants;
+  });
 
   return feats;
 }

@@ -1,6 +1,6 @@
 import type { Character, KnownSpell, SkillChoiceEntry } from "../types/character.ts";
-import type { RaceData } from "../types/dnd5e.ts";
-import { CLASS_DATA } from "./classData.ts";
+import type { ClassData, RaceData } from "../types/dnd5e.ts";
+import { spellAbilityOf } from "./classData.ts";
 import { totalLevel } from "./proficiencies.ts";
 import { availableRuleChoices } from "./ruleChoices.ts";
 
@@ -13,9 +13,11 @@ function isRecord(value: unknown): value is Record<string, unknown> {
  *
  * `raceCatalog` is optional so this stays a pure function of the record; when
  * supplied it lets the migration notice an ancestry choice that was never
- * recorded, which only the catalog can say is missing.
+ * recorded, which only the catalog can say is missing. `classCatalog` works the
+ * same way for the class that owns a legacy spell list; without it the SRD
+ * Baseline's classes stand in.
  */
-export function migrateCharacter(raw: unknown, raceCatalog?: RaceData[]): Character {
+export function migrateCharacter(raw: unknown, raceCatalog?: RaceData[], classCatalog: readonly ClassData[] = []): Character {
   if (!isRecord(raw) || typeof raw.id !== "string" || typeof raw.name !== "string" ||
       typeof raw.createdAt !== "number" || !Number.isFinite(raw.createdAt)) {
     throw new Error("Invalid character: expected an identified character record");
@@ -47,7 +49,7 @@ export function migrateCharacter(raw: unknown, raceCatalog?: RaceData[]): Charac
     }
   }
   // Match the legacy SpellsTab mapping, including its non-PHB class-name entries.
-  const owner = classes.find(entry => CLASS_DATA[entry.className]?.spellAbility ||
+  const owner = classes.find(entry => spellAbilityOf(entry, classCatalog) ||
     ["Artificer", "Arcane Trickster", "Eldritch Knight"].includes(entry.className));
   const ownerKey = owner ? `${owner.className}__${owner.source}` : "unknown__unknown";
   const knownSpells: KnownSpell[] = known.map(spell => ({ ...spell, ownerKey: spell.ownerKey ?? ownerKey }));

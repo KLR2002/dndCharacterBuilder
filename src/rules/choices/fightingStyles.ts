@@ -1,11 +1,31 @@
 import type { Character, KnownSpell } from "../../types/character.ts";
-import { getOptionsAndFeatures, getSpells } from "../../services/dataService.ts";
-import { setRuleChoicePick } from "../builderTransitions.ts";
+import { currentCompendium, type Compendium } from "../../services/compendium.ts";
 import {
   type AvailableRuleChoice,
+  type ChoiceOwner,
   formatCantripOptions,
   getSubclassName,
+  setRuleChoicePick,
 } from "./types.ts";
+
+/** The Fighting Initiate feat choice. Its id is frozen. Callers look it up by this exact id. */
+export const FIGHTING_INITIATE_CHOICE_ID = "TCE__Feat__Fighting Initiate__Style";
+
+/** Who owns each fighting style choice id this module issues. Feat-granted ids have no class owner. */
+const FIGHTING_STYLE_OWNERS = new Map<string, ChoiceOwner>([
+  ["PHB__Fighter__Fighting Style", { className: "Fighter" }],
+  ["PHB__Fighter__Additional Fighting Style 10", { className: "Fighter", subclass: "Champion" }],
+  ["PHB__Paladin__Fighting Style", { className: "Paladin" }],
+  ["PHB__Ranger__Fighting Style", { className: "Ranger" }],
+  ["XGE__Bard__College of Swords__Fighting Style", { className: "Bard", subclass: "College of Swords" }],
+  ["TCE__Paladin__Blessed Warrior Cantrips", { className: "Paladin" }],
+  ["TCE__Ranger__Druidic Warrior Cantrips", { className: "Ranger" }],
+]);
+
+/** The owner of a fighting style choice id, or undefined when this module does not issue the id. */
+export function fightingStyleOwnerOf(id: string): ChoiceOwner | undefined {
+  return FIGHTING_STYLE_OWNERS.get(id);
+}
 
 /**
  * Checks if character has chosen this fighting style in any rule choice.
@@ -24,11 +44,12 @@ export function hasFightingStyle(character: Character, styleName: string): boole
  */
 export function fightingStyleRuleChoices(
   character: Character,
-  activeBooks?: string[]
+  activeBooks?: string[],
+  compendium: Compendium = currentCompendium()
 ): AvailableRuleChoice[] {
-  const out: AvailableRuleChoice[] = [];
+  const out: Omit<AvailableRuleChoice, "origin" | "pick">[] = [];
   const upperBooks = activeBooks ? activeBooks.map((b) => b.toUpperCase()) : undefined;
-  const allOptions = getOptionsAndFeatures(upperBooks);
+  const allOptions = compendium.for(upperBooks).optionsAndFeatures();
 
   const getStyleOptions = (featureTag: string): { name: string; description: string }[] => {
     return allOptions
@@ -137,7 +158,7 @@ export function fightingStyleRuleChoices(
   ].some((s) => s.type === "feat" && s.featName?.toLowerCase() === "fighting initiate");
 
   if (hasFightingInitiate) {
-    const id = "TCE__Feat__Fighting Initiate__Style";
+    const id = FIGHTING_INITIATE_CHOICE_ID;
     const otherPicked = getPickedInOtherChoices(id);
     out.push({
       id,
@@ -151,7 +172,7 @@ export function fightingStyleRuleChoices(
 
   // Cantrip Sub-Choices
   if (hasFightingStyle(character, "Blessed Warrior")) {
-    const clericCantrips = getSpells(upperBooks).filter(
+    const clericCantrips = compendium.for(upperBooks).spells().filter(
       (s) => s.level === 0 && s.classes?.some((cls) => cls.toLowerCase() === "cleric")
     );
     out.push({
@@ -165,7 +186,7 @@ export function fightingStyleRuleChoices(
   }
 
   if (hasFightingStyle(character, "Druidic Warrior")) {
-    const druidCantrips = getSpells(upperBooks).filter(
+    const druidCantrips = compendium.for(upperBooks).spells().filter(
       (s) => s.level === 0 && s.classes?.some((cls) => cls.toLowerCase() === "druid")
     );
     out.push({
@@ -178,7 +199,15 @@ export function fightingStyleRuleChoices(
     });
   }
 
-  return out;
+  // Every row here records through the specialised fighting style pick. The origin matches
+  // what that pick stores: College of Swords styles are subclass-granted, the rest are class.
+  return out.map(
+    (choice): AvailableRuleChoice => ({
+      ...choice,
+      origin: choice.id.includes("College of Swords") ? "subclass" : "class",
+      pick: "fightingStyle",
+    })
+  );
 }
 
 /**
@@ -187,7 +216,8 @@ export function fightingStyleRuleChoices(
 export function pickFightingStyleChoice(
   character: Character,
   choice: AvailableRuleChoice,
-  option: string
+  option: string,
+  compendium: Compendium = currentCompendium()
 ): Character {
   const isSubclass = choice.id.includes("College of Swords");
   let updated = setRuleChoicePick(
@@ -205,7 +235,7 @@ export function pickFightingStyleChoice(
     const picked = updated.ruleChoices?.find((rc) => rc.id === choice.id)?.picked || [];
     const prevKnown = (updated.knownSpells || []).filter((k) => k.ownerKey !== "Paladin__TCE");
     const newSpells: KnownSpell[] = picked.map((cName) => {
-      const sp = getSpells().find((s) => s.name.toLowerCase() === cName.toLowerCase());
+      const sp = compendium.for().spells().find((s) => s.name.toLowerCase() === cName.toLowerCase());
       return {
         name: cName,
         source: sp?.source || "PHB",
@@ -225,7 +255,7 @@ export function pickFightingStyleChoice(
     const picked = updated.ruleChoices?.find((rc) => rc.id === choice.id)?.picked || [];
     const prevKnown = (updated.knownSpells || []).filter((k) => k.ownerKey !== "Ranger__TCE");
     const newSpells: KnownSpell[] = picked.map((cName) => {
-      const sp = getSpells().find((s) => s.name.toLowerCase() === cName.toLowerCase());
+      const sp = compendium.for().spells().find((s) => s.name.toLowerCase() === cName.toLowerCase());
       return {
         name: cName,
         source: sp?.source || "PHB",
@@ -296,7 +326,7 @@ export function pruneInvalidFightingStyles(character: Character): Character {
   if (bard && bard.level >= 3 && (subBard.includes("swords") || subBard.includes("college of swords"))) {
     validIds.add("XGE__Bard__College of Swords__Fighting Style");
   }
-  if (hasFightingInitiate) validIds.add("TCE__Feat__Fighting Initiate__Style");
+  if (hasFightingInitiate) validIds.add(FIGHTING_INITIATE_CHOICE_ID);
 
   let nextChoices = (character.ruleChoices || []).filter((rc) => {
     if (rc.id.includes("Fighting Style") || rc.id.includes("Fighting Initiate")) {
@@ -333,9 +363,21 @@ export function pruneInvalidFightingStyles(character: Character): Character {
     nextChoices = nextChoices.filter((rc) => rc.id !== "TCE__Fighter__Superior Technique__Maneuver");
   }
 
+  const removed = (character.ruleChoices || []).filter((rc) => !nextChoices.includes(rc));
+
   return {
     ...character,
     ruleChoices: nextChoices,
     knownSpells: nextKnownSpells,
+    ...(removed.length > 0
+      ? {
+          needsReview: Array.from(
+            new Set([
+              ...(character.needsReview || []),
+              ...removed.map((rc) => `${rc.trait} removed: prerequisite no longer satisfied`),
+            ])
+          ),
+        }
+      : {}),
   };
 }

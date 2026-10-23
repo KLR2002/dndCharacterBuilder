@@ -11,7 +11,7 @@ import {
   getSneakAttackDice,
 } from "./combatDice.ts";
 import { getChosenManeuvers } from "./ruleChoices.ts";
-import { findSpell, getOptionsAndFeatures } from "../services/dataService.ts";
+import { currentCompendium, type Compendium } from "../services/compendium.ts";
 
 export interface TacticalCardItem {
   name: string;
@@ -119,8 +119,21 @@ export const SAVING_THROW_MANEUVERS = new Set([
   "trip attack",
 ]);
 
-const REACTION_MANEUVERS = new Set(["brace", "parry", "riposte"]);
-const BONUS_ACTION_MANEUVERS = new Set(["commander's strike", "feinting attack", "quick toss", "rally"]);
+export const REACTION_MANEUVERS = new Set(["brace", "parry", "riposte"]);
+export const BONUS_ACTION_MANEUVERS = new Set(["commander's strike", "feinting attack", "quick toss", "rally"]);
+/** Maneuvers that are none of the three sets above. They keep the default Attack Rider category. */
+export const OTHER_MANEUVERS = new Set([
+  "ambush",
+  "bait and switch",
+  "commanding presence",
+  "distracting strike",
+  "evasive footwork",
+  "grappling strike",
+  "lunging attack",
+  "maneuvering attack",
+  "precision attack",
+  "tactical assessment",
+]);
 
 function formatMod(val: number): string {
   return val >= 0 ? `+${val}` : `${val}`;
@@ -135,8 +148,11 @@ export function getTacticalActionLedger(
   evaluated: EvaluatedCharacter,
   catalogs?: {
     activeBooks?: string[];
+    /** Defaults to the process-wide current Compendium. */
+    compendium?: Compendium;
   }
 ): TacticalActionLedger {
+  const compendium = catalogs?.compendium ?? currentCompendium();
   const weaponAttacks = evaluated.weaponAttacks ?? [];
   const dualWield = checkDualWielding(character, weaponAttacks);
   const extraAttackCount = evaluated.attacks?.extraAttackCount ?? 1;
@@ -167,7 +183,7 @@ export function getTacticalActionLedger(
     if (seenSpellNames.has(norm)) continue;
     seenSpellNames.add(norm);
 
-    const sp = k.spellObj || findSpell(k.name, k.source);
+    const sp = k.spellObj || compendium.findSpell(k.name, k.source);
     const isDamagingOrCombat =
       sp &&
       (sp.level === 0 ||
@@ -197,7 +213,7 @@ export function getTacticalActionLedger(
   const chosenManeuvers = getChosenManeuvers(character);
   const maneuverDc = evaluated.combatDcs?.maneuverSaveDc ?? 8;
   const superiorityDice = evaluated.combatDice?.superiorityDice ?? null;
-  const allOptions = getOptionsAndFeatures(catalogs?.activeBooks);
+  const allOptions = compendium.for(catalogs?.activeBooks).optionsAndFeatures();
   const maneuverMap = new Map<string, string>();
 
   for (const o of allOptions) {
@@ -256,24 +272,10 @@ export function getTacticalActionLedger(
       });
     }
     if (clsLower === "barbarian") {
-      const hasBearTotem3 = Boolean(
-        character.ruleChoices?.some(
-          (rc) =>
-            (rc.id === "PHB__Barbarian__Path of the Totem Warrior__Totem Spirit 3" ||
-              rc.trait === "Totem Spirit (3rd Level)" ||
-              (rc.trait.toLowerCase().includes("totem spirit") &&
-                !rc.trait.toLowerCase().includes("aspect") &&
-                !rc.trait.toLowerCase().includes("attunement"))) &&
-            rc.picked?.some((p) => p.toLowerCase() === "bear")
-        )
-      );
-      const bearNote = hasBearTotem3
-        ? " While raging, Bear Totem grants resistance to all damage except psychic."
-        : "";
       bonusActions.push({
         name: "Enter Rage",
         source: "Barbarian 1",
-        desc: `In battle, you fight with primal ferocity. On your turn, you can enter a rage as a bonus action.${bearNote}`,
+        desc: "In battle, you fight with primal ferocity. On your turn, you can enter a rage as a bonus action.",
       });
     }
     if (clsLower === "fighter") {
@@ -374,7 +376,7 @@ export function getTacticalActionLedger(
 
   // Check for Reaction spells
   for (const k of character.knownSpells || []) {
-    const sp = findSpell(k.name, k.source);
+    const sp = compendium.findSpell(k.name, k.source);
     if (sp && (sp.castingTime || "").toLowerCase().includes("reaction")) {
       reactions.push({
         name: sp.name,

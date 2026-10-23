@@ -31,7 +31,8 @@ export interface RuleChoiceEntry {
   id: string;
   /** The trait that grants the choice, so consumers need not parse the id. */
   trait: string;
-  origin: "race" | "class" | "subclass";
+  /** "feat" and "background" are only ever offered for Proficiency Choices, which are stored outside ruleChoices. */
+  origin: "race" | "background" | "class" | "subclass" | "feat";
   choose: number;
   from: string[];
   picked: string[];
@@ -107,6 +108,18 @@ export interface InventoryItem {
   itemCategory?: string;
 }
 
+/**
+ * The player's picks for the first class's starting equipment. `options` holds the option letter taken in each
+ * choice slot, by slot index. `items` holds the item names chosen for each generic entry, by the entry's address
+ * (see `startingEquipmentEntryKey`). The picks belong to the class named by `className` and `source`.
+ */
+export interface StartingEquipmentPicks {
+  className: string;
+  source: string;
+  options: Record<string, string>;
+  items: Record<string, string[]>;
+}
+
 export interface ResourceCounter {
   id: string;
   name: string;
@@ -121,6 +134,8 @@ export interface ActiveWildShape {
   currentHp: number;
   maxHp: number;
   ac: number;
+  /** Temporary HP held by the form. Absent on saves from before it existed, which counts as 0. */
+  tempHp?: number;
 }
 
 export interface Character {
@@ -168,8 +183,14 @@ export interface Character {
   startingOption: "equipment" | "gold";
   startingGrantsApplied?: boolean;
   startingGrantedGold?: number;
+  /** The player's starting equipment picks for the first class. Absent on saves made before they existed. */
+  startingEquipmentPicks?: StartingEquipmentPicks;
   backgroundGrantsApplied?: boolean;
+  /** Legacy: saved by older builds and no longer written or read. The Proficiency Sheet derives languages. */
   languages?: string[];
+  // Added Proficiencies: tools and languages the player records by hand (GLOSSARY).
+  addedTools?: string[];
+  addedLanguages?: string[];
   chosenLanguages?: {
     race?: string[];
     background?: string[];
@@ -180,6 +201,12 @@ export interface Character {
     class?: string[];
   };
   optionalFeatureReplacements?: Record<string, boolean>;
+  /**
+   * Picks made for Proficiency Choices (ADR 0015), keyed by the choice's Proficiency Grant id. Never
+   * rewritten into or out of the race, background and class buckets above; released by the reconciler
+   * when the grant no longer applies.
+   */
+  proficiencyPicks?: Record<string, string[]>;
   multiclassProficiencies?: {
     className: string;
     armor?: string[];

@@ -3,18 +3,7 @@ import { resolveAllCopies } from "../parser/copy-resolver.ts";
 import { renderEntries } from "../parser/entry-renderer.ts";
 import { cleanTags } from "../parser/tag-cleaner.ts";
 import type { SpellModel } from "../types/models.ts";
-
-const SCHOOL_MAP: Record<string, string> = {
-  A: "Abjuration",
-  V: "Evocation",
-  E: "Enchantment",
-  I: "Illusion",
-  D: "Divination",
-  N: "Necromancy",
-  T: "Transmutation",
-  C: "Conjuration",
-  P: "Psionic",
-};
+import { SCHOOL_MAP } from "../parser/spell-schools.ts";
 
 export async function scrapeSpells(client: ToolsClient): Promise<SpellModel[]> {
   console.log("  → Fetching spell index from data/spells/index.json...");

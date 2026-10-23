@@ -11,6 +11,7 @@ export interface AppSettings {
   hasCompletedFirstRun: boolean;
   activeResourceBooks: string[];
   themeAccentId: string;
+  fullHealOnLevelUp: boolean;
 }
 
 export const DEFAULT_SETTINGS: AppSettings = {
@@ -18,6 +19,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   hasCompletedFirstRun: false,
   activeResourceBooks: DEFAULT_ACTIVE_BOOK_CODES,
   themeAccentId: "crimson",
+  fullHealOnLevelUp: true,
 };
 
 export interface StoredState {
@@ -83,6 +85,9 @@ function normalizeSettings(value: unknown): AppSettings {
   }
   if (value.themeAccentId !== undefined && typeof value.themeAccentId !== "string") {
     throw new Error("Invalid settings: themeAccentId must be a string");
+  }
+  if (value.fullHealOnLevelUp !== undefined && typeof value.fullHealOnLevelUp !== "boolean") {
+    throw new Error("Invalid settings: fullHealOnLevelUp must be boolean");
   }
   if (value.activeResourceBooks !== undefined && (!Array.isArray(value.activeResourceBooks) ||
     !value.activeResourceBooks.every(book => typeof book === "string"))) {

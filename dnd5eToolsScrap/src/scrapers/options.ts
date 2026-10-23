@@ -34,21 +34,43 @@ export async function scrapeOptions(client: ToolsClient): Promise<OptionFeatureM
   const resolvedChar = resolveAllCopies(rawChar.charoption || []);
 
   const results: OptionFeatureModel[] = [];
+  // items.json is fetched on first need only, and at most once.
+  let itemsByName: Promise<Map<string, any[]>> | undefined;
 
   for (const raw of resolvedOpt) {
     const featureTypes: string[] = Array.isArray(raw.featureType) ? raw.featureType : [];
     const category =
       featureTypes.map((ft) => FEATURE_TYPE_MAP[ft] || ft).join(", ") || "Other Option";
 
+    const replicableRows = featureTypes.includes("AI") ? replicableItemRows(raw.entries) : [];
+    const umbrellaName = cleanTags(raw.name, "plain");
+
     results.push({
-      name: cleanTags(raw.name, "plain"),
+      name: umbrellaName,
       source: raw.source,
       category,
       featureType: featureTypes,
       prerequisite: formatOptionPrerequisites(raw.prerequisite),
       description: renderEntries(raw.entries, "markdown"),
       rawEntries: raw.entries,
+      ...(replicableRows.length > 0 ? { isUmbrella: true } : {}),
     });
+
+    // Each table row of a Replicable Items infusion is an infusion of its own, at the level its caption names.
+    for (const row of replicableRows) {
+      itemsByName ??= loadItemsByName(client);
+      const item = pickReplicatedItem(await itemsByName, row.item, raw.source);
+      const generic = `Replicates the ${row.item}. ${row.attunement}`;
+      const text = item ? renderEntries(item.entries, "markdown").trim() : "";
+      results.push({
+        name: `${umbrellaName}: ${row.item}`,
+        source: raw.source,
+        category,
+        featureType: featureTypes,
+        prerequisite: `${row.level}${getOrdinal(row.level)}-level Artificer`,
+        description: text ? `${generic}\n\n${text}` : generic,
+      });
+    }
   }
 
   for (const raw of resolvedChar) {
@@ -68,6 +90,55 @@ export async function scrapeOptions(client: ToolsClient): Promise<OptionFeatureM
   }
 
   return results;
+}
+
+/** items.json indexed by plain, lower-cased name. A failed fetch is logged and leaves the index empty. */
+async function loadItemsByName(client: ToolsClient): Promise<Map<string, any[]>> {
+  const index = new Map<string, any[]>();
+  try {
+    const rawItems = await client.fetchJson<{ item?: any[] }>("data/items.json");
+    for (const item of resolveAllCopies(rawItems?.item ?? [])) {
+      const key = cleanTags(item.name, "plain").toLowerCase();
+      index.set(key, [...(index.get(key) ?? []), item]);
+    }
+  } catch (err) {
+    const reason = err instanceof Error ? err.message : String(err);
+    console.warn(`  ! Could not load data/items.json; Replicate Magic Item rows keep their generic text (${reason})`);
+  }
+  return index;
+}
+
+/** The item a replicable row names: the copy from the infusion's own source, else the first copy by name. */
+function pickReplicatedItem(index: Map<string, any[]>, itemName: string, infusionSource: string): any | undefined {
+  const candidates = index.get(itemName.trim().toLowerCase()) ?? [];
+  const sameSource = candidates.find(
+    (c) => String(c.source ?? "").toLowerCase() === String(infusionSource ?? "").toLowerCase(),
+  );
+  return sameSource ?? candidates[0];
+}
+
+const REPLICABLE_CAPTION = /\((\d+)(?:st|nd|rd|th)-Level Artificer\)/i;
+
+/** The rows of every "Replicable Items (Nth-Level Artificer)" table in an infusion's entries, in print order. */
+function replicableItemRows(entries: any[] | undefined): { level: number; item: string; attunement: string }[] {
+  const rows: { level: number; item: string; attunement: string }[] = [];
+  for (const entry of entries ?? []) {
+    if (!entry || typeof entry !== "object" || entry.type !== "table") continue;
+    const match = REPLICABLE_CAPTION.exec(String(entry.caption ?? ""));
+    if (!match) continue;
+    const level = parseInt(match[1], 10);
+    for (const row of entry.rows ?? []) {
+      if (!Array.isArray(row) || typeof row[0] !== "string") continue;
+      // The item is the {@item X} tag; any text printed after it in the cell is not part of the name.
+      const tag = /\{@item\s+([^}|]+)[^}]*\}/.exec(row[0]);
+      const item = (tag ? tag[1] : cleanTags(row[0], "plain")).trim();
+      const attunement = /^yes/i.test(cleanTags(String(row[1] ?? ""), "plain").trim())
+        ? "Requires attunement."
+        : "Does not require attunement.";
+      rows.push({ level, item, attunement });
+    }
+  }
+  return rows;
 }
 
 function formatOptionPrerequisites(prereqs: any[] | any | null | undefined): string | null {

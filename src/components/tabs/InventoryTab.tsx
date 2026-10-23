@@ -14,7 +14,7 @@ import { useCharacters } from "../../context/CharacterContext";
 import { useAppTheme } from "../../context/ThemeContext";
 import { useResponsiveLayout } from "../../hooks/useResponsiveLayout";
 import { getItems } from "../../services/dataService";
-import { evaluateCharacter } from "../../services/dndRules";
+import { evaluateCharacter } from "../../rules/characterEvaluation";
 import { InventoryItem } from "../../types/character";
 import { Badge } from "../ui/Badge";
 import { Button } from "../ui/Button";
@@ -323,7 +323,7 @@ export const InventoryTab: React.FC = () => {
       {/* Weight Limit Toggle & Capacity Bar */}
       <Card style={styles.weightCard}>
         <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
-          <View>
+          <View style={{ flex: 1, minWidth: 0 }}>
             <Text style={[styles.sectionTitle, { color: theme.text }]}>CARRYING WEIGHT</Text>
             <Text style={{ color: theme.textSecondary, fontSize: 12 }}>
               Str × 15 = {maxCapacity} lbs capacity
@@ -729,7 +729,7 @@ export const InventoryTab: React.FC = () => {
               </TouchableOpacity>
             </View>
 
-            <ScrollView style={{ maxHeight: 400 }}>
+            <ScrollView style={{ maxHeight: 400 }} nestedScrollEnabled>
               <Text style={styles.fieldLabel}>Item Name *</Text>
               <TextInput
                 style={[styles.input, { color: theme.text, backgroundColor: theme.surfaceHighlight, borderColor: theme.border }]}

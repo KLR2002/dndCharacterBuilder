@@ -1,11 +1,19 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Text, TouchableOpacity, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { AbilityKey, Character, CharacterClass } from "../../types/character";
+import { AbilityKey, Character } from "../../types/character";
 import { ClassData, FeatData } from "../../types/dnd5e";
-import { addMulticlassLevel, reconcileCharacter, teardownSubclass, validateMulticlass } from "../../rules/builderTransitions";
-import { ToolGrant } from "../../rules/proficienciesAndLanguages";
-import { findClass } from "../../services/dataService";
+import {
+  applySoleSubclasses,
+  changeSubclass,
+  confirmLevelUp,
+  removeClassLevel as removeClassLevelTransition,
+  setOptionalFeatureEnabled,
+  validateMulticlass,
+} from "../../rules/builderTransitions";
+import { reconcile } from "../../rules/characterReconciler";
+import { subclassLevel } from "../../rules/leveling";
+import { currentCompendium } from "../../services/compendium";
 import { Badge } from "../ui/Badge";
 import { Button } from "../ui/Button";
 import { Card } from "../ui/Card";
@@ -14,27 +22,32 @@ import { SearchBar } from "../ui/SearchBar";
 import { AsiFeatSection, PendingAsiSlot } from "./AsiFeatSection";
 import { builderStyles as styles, RuleChoicePicker, SkillPicker } from "./builderStyles";
 import { normalizeSkillName } from "../../rules/skills";
+import { findClassData, type CharacterCatalogs } from "../../rules/catalogs";
 import { StartingGrantsSection } from "./StartingGrantsSection";
 import { useResponsiveLayout } from "../../hooks/useResponsiveLayout";
 import {
-  availableSubclassRuleChoices,
-  pickSubclassRuleChoice,
+  offeredRuleChoices,
+  pickRuleChoice,
   isManeuverChoiceId,
   isInvocationChoiceId,
   isInfusionChoiceId,
+  pickedOptionNames,
   AvailableRuleChoice,
 } from "../../rules/ruleChoices";
 import { getOrphanedSubclassSpells } from "../../rules/subclassSpells";
+import { proficiencyChoiceOffers } from "../../rules/proficiencyChoiceOffers";
+import { clearProficiencyPick } from "../../rules/proficiencyPools";
+import type { StartingEquipmentAddress, StartingEquipmentCard } from "../../rules/startingEquipment";
 import {
   getAvailableExpertiseMilestones,
   getMilestonePicks,
-  pruneInvalidExpertise,
   toggleExpertiseChoice,
 } from "../../rules/expertise";
 
 export interface ClassProgressionSectionProps {
   character: Character;
   onUpdate: (patchOrUpdater: Partial<Character> | ((prev: Character) => Character)) => void;
+  fullHealOnLevelUp: boolean;
   allClasses: ClassData[];
   allFeats: FeatData[];
   totalLevel: number;
@@ -42,8 +55,8 @@ export interface ClassProgressionSectionProps {
   skillChoices: { source: string; choose: number; from: string[] }[];
   autoGranted: string[];
   toggleSkill: (skill: string, source?: string) => void;
-  classToolGrant: ToolGrant;
-  toggleClassTool: (tool: string) => void;
+  /** The fixed tools the first class starts with. */
+  classTools: string[];
   availableOptionalFeatures: {
     name: string;
     level: number;
@@ -53,8 +66,13 @@ export interface ClassProgressionSectionProps {
   }[];
   pendingAsiSlots: PendingAsiSlot[];
   primaryClass?: string;
+  /** The first class's equipment slots with the picks made in them. */
+  startingCard: StartingEquipmentCard;
+  onPickOption: (slot: number, letter: string) => void;
+  onPickItems: (address: StartingEquipmentAddress, names: string[]) => void;
   onClaimGold: () => void;
   onClaimEquipment: () => void;
+  onClaimAgain: () => void;
   onViewDetail: (item: { title: string; subtitle?: string; source?: string; description?: string; tags?: string[] }) => void;
   theme: any;
   activeBooks?: string[];
@@ -63,6 +81,7 @@ export interface ClassProgressionSectionProps {
 export const ClassProgressionSection: React.FC<ClassProgressionSectionProps> = ({
   character,
   onUpdate,
+  fullHealOnLevelUp,
   allClasses,
   allFeats,
   totalLevel,
@@ -70,13 +89,16 @@ export const ClassProgressionSection: React.FC<ClassProgressionSectionProps> = (
   skillChoices,
   autoGranted,
   toggleSkill,
-  classToolGrant,
-  toggleClassTool,
+  classTools,
   availableOptionalFeatures,
   pendingAsiSlots,
   primaryClass,
+  startingCard,
+  onPickOption,
+  onPickItems,
   onClaimGold,
   onClaimEquipment,
+  onClaimAgain,
   onViewDetail,
   theme,
   activeBooks,
@@ -92,73 +114,27 @@ export const ClassProgressionSection: React.FC<ClassProgressionSectionProps> = (
     orphaned: string[];
   } | null>(null);
   const hasAnyClass = (character.classes || []).length > 0;
+  // Two listed classes can share a name (the same class from two sources). Only then is a source shown.
+  const sharedClassNames = new Set(
+    allClasses.map((cl) => cl.name).filter((name, index, names) => names.indexOf(name) !== index)
+  );
+  // SRD mode has exactly one subclass per class, so there is no choice to offer: it is applied instead.
+  const isSrd = !currentCompendium().integrated;
+
+  // Re-runs on a compendium mode switch too (isSrd), since the sole subclass depends on the compendium.
+  useEffect(() => {
+    const next = applySoleSubclasses(character, currentCompendium());
+    if (next !== character) {
+      onUpdate((current) => applySoleSubclasses(current, currentCompendium()));
+    }
+  }, [character, isSrd, onUpdate]);
 
   const handleAddClassLevel = (className: string, source: string) => {
-    onUpdate((current) => addMulticlassLevel(current, className, source));
+    onUpdate((current) => confirmLevelUp(current, className, source, fullHealOnLevelUp));
   };
 
   const removeClassLevel = (className: string) => {
-    const existing = character.classes.find((c) => c.className === className);
-    if (!existing) return;
-
-    const oldSubclass = existing.subclassName || existing.subclass;
-    const req = ["Cleric", "Sorcerer", "Warlock"].includes(className)
-      ? 1
-      : ["Druid", "Wizard"].includes(className)
-      ? 2
-      : 3;
-
-    let updatedChar = character;
-    let updatedClasses: CharacterClass[];
-
-    if (existing.level <= 1) {
-      updatedChar = teardownSubclass(updatedChar, className, oldSubclass || "");
-      updatedClasses = updatedChar.classes.filter((c) => c.className !== className);
-      const classSourceKey = `Class: ${className}`;
-      const prunedChoices = (updatedChar.skillChoices || []).filter(
-        (sc) => sc.id !== classSourceKey && !sc.id.startsWith(`multiclass_skill_${className.toLowerCase()}`)
-      );
-      const removedPicks = new Set(
-        (updatedChar.skillChoices || [])
-          .filter((sc) => sc.id === classSourceKey || sc.id.startsWith(`multiclass_skill_${className.toLowerCase()}`))
-          .flatMap((sc) => sc.picked.map(normalizeSkillName))
-      );
-      const prunedChosenSkills = (updatedChar.chosenSkills || []).filter(
-        (s) => !removedPicks.has(normalizeSkillName(s))
-      );
-      updatedChar = {
-        ...updatedChar,
-        skillChoices: prunedChoices,
-        chosenSkills: prunedChosenSkills,
-      };
-    } else {
-      const newLevel = existing.level - 1;
-      const losesSubclass = newLevel < req && Boolean(oldSubclass);
-      if (losesSubclass && oldSubclass) {
-        updatedChar = teardownSubclass(updatedChar, className, oldSubclass);
-      }
-      updatedClasses = updatedChar.classes.map((c) =>
-        c.className === className
-          ? {
-              ...c,
-              level: newLevel,
-              ...(losesSubclass
-                ? { subclassName: undefined, subclass: undefined, subclassSource: undefined }
-                : {}),
-            }
-          : c
-      );
-    }
-
-    onUpdate(
-      reconcileCharacter(
-        {
-          ...updatedChar,
-          classes: updatedClasses,
-        },
-        { classes: allClasses }
-      )
-    );
+    onUpdate(removeClassLevelTransition(character, className, currentCompendium()));
   };
 
   const selectSubclass = (className: string, subclassName: string, subclassSource: string) => {
@@ -194,70 +170,32 @@ export const ClassProgressionSection: React.FC<ClassProgressionSectionProps> = (
     subclassSource: string,
     unlearnOrphaned?: string[]
   ) => {
-    const existing = character.classes.find((c) => c.className === className);
-    const oldSubclass = existing?.subclassName || existing?.subclass;
-
-    let updated = character;
-    if (oldSubclass && oldSubclass !== newSubclassName) {
-      updated = teardownSubclass(updated, className, oldSubclass, newSubclassName);
-    }
-
-    if (unlearnOrphaned && unlearnOrphaned.length > 0) {
-      const unlearnSet = new Set(unlearnOrphaned.map((s) => s.toLowerCase()));
-      updated = {
-        ...updated,
-        knownSpells: (updated.knownSpells || []).filter(
-          (k) => !unlearnSet.has(k.name.toLowerCase())
-        ),
-      };
-    }
-
-    const updatedClasses = updated.classes.map((c) =>
-      c.className === className
-        ? { ...c, subclassName: newSubclassName, subclassSource, subclass: newSubclassName }
-        : c
-    );
-
     onUpdate(
-      reconcileCharacter(
-        {
-          ...updated,
-          classes: updatedClasses,
-        },
-        { classes: allClasses }
-      )
+      changeSubclass(character, className, newSubclassName, subclassSource, unlearnOrphaned, currentCompendium())
     );
     setChangingSubclassFor(null);
     setOrphanWarning(null);
   };
 
   const toggleOptionalFeature = (featureName: string) => {
-    const current = character.optionalFeatureReplacements || {};
-    onUpdate({
-      optionalFeatureReplacements: {
-        ...current,
-        [featureName]: !current[featureName],
-      },
-    });
+    onUpdate((cur) =>
+      setOptionalFeatureEnabled(cur, featureName, !cur.optionalFeatureReplacements?.[featureName], currentCompendium(), { activeBooks }),
+    );
   };
 
   return (
     <View style={styles.section}>
       {/* Total level card */}
       <Card highlight style={{ gap: 12 }}>
-        <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
-          <Text style={[styles.bannerTitle, { color: theme.text }]}>
+        <View style={{ flexDirection: "row", flexWrap: "wrap", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
+          <Text style={[styles.bannerTitle, { color: theme.text, flexShrink: 1 }]}>
             Total Level: <Text style={{ color: theme.accent }}>{totalLevel}</Text>
           </Text>
           <Badge label={`Prof +${Math.floor((totalLevel - 1) / 4) + 2}`} variant="accent" />
         </View>
         {character.classes.map((c) => {
-          const cd = findClass(c.className, c.source);
-          const subReq = ["Cleric", "Sorcerer", "Warlock"].includes(c.className)
-            ? 1
-            : ["Druid", "Wizard"].includes(c.className)
-            ? 2
-            : 3;
+          const cd = findClassData(currentCompendium().for().classes(), c);
+          const subReq = subclassLevel(c.className);
           return (
             <View
               key={c.className}
@@ -300,20 +238,26 @@ export const ClassProgressionSection: React.FC<ClassProgressionSectionProps> = (
 
               <View style={{ flex: isPhone ? undefined : 1 }}>
                 {c.subclassName ? (
-                  <TouchableOpacity
-                    onPress={() =>
-                      setChangingSubclassFor(
-                        changingSubclassFor === c.className ? null : c.className
-                      )
-                    }
-                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                    style={{ flexDirection: "row", alignItems: "center", gap: 4, marginTop: isPhone ? 0 : 2 }}
-                  >
-                    <Text style={{ color: theme.accent, fontSize: 12, flexWrap: "wrap", fontWeight: "600" }}>
+                  isSrd ? (
+                    <Text style={{ color: theme.accent, fontSize: 12, flexWrap: "wrap", fontWeight: "600", marginTop: isPhone ? 0 : 2 }}>
                       Archetype: {c.subclassName}
                     </Text>
-                    <Ionicons name="pencil-outline" size={13} color={theme.accent} />
-                  </TouchableOpacity>
+                  ) : (
+                    <TouchableOpacity
+                      onPress={() =>
+                        setChangingSubclassFor(
+                          changingSubclassFor === c.className ? null : c.className
+                        )
+                      }
+                      hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                      style={{ flexDirection: "row", alignItems: "center", gap: 4, marginTop: isPhone ? 0 : 2 }}
+                    >
+                      <Text style={{ color: theme.accent, fontSize: 12, flexWrap: "wrap", fontWeight: "600" }}>
+                        Archetype: {c.subclassName}
+                      </Text>
+                      <Ionicons name="pencil-outline" size={13} color={theme.accent} />
+                    </TouchableOpacity>
+                  )
                 ) : (
                   <Text style={{ color: theme.accent, fontSize: 12, marginTop: isPhone ? 0 : 2, flexWrap: "wrap" }}>
                     Subclass at Lvl {subReq}
@@ -347,19 +291,15 @@ export const ClassProgressionSection: React.FC<ClassProgressionSectionProps> = (
 
       {/* Subclass prompts & Change pickers */}
       {character.classes.map((c) => {
-        const cd = findClass(c.className, c.source);
-        const req = ["Cleric", "Sorcerer", "Warlock"].includes(c.className)
-          ? 1
-          : ["Druid", "Wizard"].includes(c.className)
-          ? 2
-          : 3;
+        const cd = findClassData(currentCompendium().for().classes(), c);
+        const req = subclassLevel(c.className);
         const isChanging = changingSubclassFor === c.className;
         const needsChoice = !c.subclassName;
-        if (c.level >= req && (needsChoice || isChanging) && cd?.subclasses?.length) {
+        if (!isSrd && c.level >= req && (needsChoice || isChanging) && cd?.subclasses?.length) {
           return (
             <Card key={`sub_${c.className}`} style={{ gap: 8, borderColor: isChanging ? theme.accent : theme.warning }}>
-              <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
-                <Text style={{ color: isChanging ? theme.accent : theme.warning, fontWeight: "700", fontSize: 14 }}>
+              <View style={{ flexDirection: "row", flexWrap: "wrap", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
+                <Text style={{ color: isChanging ? theme.accent : theme.warning, fontWeight: "700", fontSize: 14, flexShrink: 1 }}>
                   {needsChoice ? "⚠️ " : ""}Choose Subclass for {c.className} (Level {c.level})
                 </Text>
                 {isChanging && (
@@ -415,7 +355,12 @@ export const ClassProgressionSection: React.FC<ClassProgressionSectionProps> = (
 
       {/* Modular Progression & Class/Subclass Rule Choices */}
       {(() => {
-        const allSubclassChoices = availableSubclassRuleChoices(character, activeBooks);
+        const allSubclassChoices = [
+          ...offeredRuleChoices(character, { activeBooks, origins: ["class", "subclass"] }),
+          ...proficiencyChoiceOffers(character, { activeBooks }).filter(
+            (choice) => choice.origin === "class" || choice.origin === "subclass" || choice.origin === "feat",
+          ),
+        ];
         if (allSubclassChoices.length === 0) return null;
 
         const isFightingStyle = (id: string) =>
@@ -452,11 +397,11 @@ export const ClassProgressionSection: React.FC<ClassProgressionSectionProps> = (
 
         const handleClearChoice = (choice: AvailableRuleChoice) => {
           onUpdate((cur) => {
-            const next: Character = {
-              ...cur,
-              ruleChoices: (cur.ruleChoices || []).filter((rc) => rc.id !== choice.id),
-            };
-            return reconcileCharacter(next, { classes: allClasses });
+            const next: Character =
+              choice.pick === "proficiency"
+                ? clearProficiencyPick(cur, choice.id)
+                : { ...cur, ruleChoices: (cur.ruleChoices || []).filter((rc) => rc.id !== choice.id) };
+            return reconcile(next, currentCompendium(), { activeBooks });
           });
         };
 
@@ -480,8 +425,11 @@ export const ClassProgressionSection: React.FC<ClassProgressionSectionProps> = (
                 {badge && <Badge label={badge} variant="accent" size="sm" />}
               </View>
               {choices.map((choice) => {
-                const entry = character.ruleChoices?.find((rc) => rc.id === choice.id);
-                const chosen = entry?.picked ?? [];
+                const saved =
+                  choice.pick === "proficiency"
+                    ? (character.proficiencyPicks?.[choice.id] ?? [])
+                    : (character.ruleChoices?.find((rc) => rc.id === choice.id)?.picked ?? []);
+                const chosen = pickedOptionNames(saved, choice.options.map((o) => o.name));
                 return (
                   <View key={choice.id} style={{ gap: 4 }}>
                     <RuleChoicePicker
@@ -490,7 +438,7 @@ export const ClassProgressionSection: React.FC<ClassProgressionSectionProps> = (
                       from={choice.options.map((o) => o.name)}
                       chosen={chosen}
                       onToggle={(option) =>
-                        onUpdate((cur) => pickSubclassRuleChoice(cur, choice, option))
+                        onUpdate((cur) => pickRuleChoice(cur, choice, option))
                       }
                       onClear={() => handleClearChoice(choice)}
                       theme={theme}
@@ -558,7 +506,8 @@ export const ClassProgressionSection: React.FC<ClassProgressionSectionProps> = (
 
       {/* Expertise Choices (Rogue, Bard, Knowledge Cleric, Ranger Deft Explorer, Feats) */}
       {(() => {
-        const milestones = getAvailableExpertiseMilestones(character, { classes: allClasses });
+        const catalogs: CharacterCatalogs = { compendium: currentCompendium(), activeBooks };
+        const milestones = getAvailableExpertiseMilestones(character, catalogs);
         if (milestones.length === 0) return null;
         const picks = getMilestonePicks(milestones, character.chosenExpertise);
         const allAllowed = new Set(milestones.flatMap((m) => m.options.map((o) => o.toLowerCase())));
@@ -592,7 +541,7 @@ export const ClassProgressionSection: React.FC<ClassProgressionSectionProps> = (
                   The following choices are no longer proficient: {invalidPicks.join(", ")}.
                 </Text>
                 <TouchableOpacity
-                  onPress={() => onUpdate((cur) => pruneInvalidExpertise(cur, { classes: allClasses }))}
+                  onPress={() => onUpdate((cur) => reconcile(cur, currentCompendium(), { activeBooks }))}
                   hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                   style={{ alignSelf: "flex-start", marginTop: 2 }}
                 >
@@ -610,7 +559,7 @@ export const ClassProgressionSection: React.FC<ClassProgressionSectionProps> = (
                   from={from}
                   chosen={chosen}
                   onToggle={(item) =>
-                    onUpdate((cur) => toggleExpertiseChoice(cur, item, { classes: allClasses }))
+                    onUpdate((cur) => toggleExpertiseChoice(cur, item, catalogs))
                   }
                   theme={theme}
                 />
@@ -624,6 +573,7 @@ export const ClassProgressionSection: React.FC<ClassProgressionSectionProps> = (
       <AsiFeatSection
         character={character}
         onUpdate={onUpdate}
+        fullHealOnLevelUp={fullHealOnLevelUp}
         pendingAsiSlots={pendingAsiSlots}
         allFeats={allFeats}
         primaryClass={primaryClass}
@@ -636,8 +586,12 @@ export const ClassProgressionSection: React.FC<ClassProgressionSectionProps> = (
       <StartingGrantsSection
         character={character}
         primaryClass={primaryClass}
+        startingCard={startingCard}
+        onPickOption={onPickOption}
+        onPickItems={onPickItems}
         onClaimGold={onClaimGold}
         onClaimEquipment={onClaimEquipment}
+        onClaimAgain={onClaimAgain}
         onUpdateOption={(opt) => onUpdate({ startingOption: opt })}
         theme={theme}
       />
@@ -672,33 +626,19 @@ export const ClassProgressionSection: React.FC<ClassProgressionSectionProps> = (
         </Card>
       )}
 
-      {/* Class tool choices & fixed grants */}
-      {hasAnyClass && (classToolGrant.fixed.length > 0 || classToolGrant.choices.length > 0) && (
+      {/* Starting tools the first class grants. Its tool choice is a Proficiency Choice in the choices below. */}
+      {hasAnyClass && classTools.length > 0 && (
         <Card style={{ gap: 10 }}>
-          {classToolGrant.fixed.length > 0 && (
-            <View style={{ gap: 4 }}>
-              <Text style={{ color: theme.textSecondary, fontSize: 12, fontWeight: "600" }}>
-                Granted Class Tools:
-              </Text>
-              <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6 }}>
-                {classToolGrant.fixed.map((tool) => (
-                  <Badge key={tool} label={tool} variant="surface" size="sm" />
-                ))}
-              </View>
+          <View style={{ gap: 4 }}>
+            <Text style={{ color: theme.textSecondary, fontSize: 12, fontWeight: "600" }}>
+              Granted Class Tools:
+            </Text>
+            <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6 }}>
+              {classTools.map((tool) => (
+                <Badge key={tool} label={tool} variant="surface" size="sm" />
+              ))}
             </View>
-          )}
-          {classToolGrant.choices.map((ch) => (
-            <RuleChoicePicker
-              key={ch.key}
-              label={ch.label}
-              choose={ch.count}
-              from={ch.options}
-              chosen={character.chosenTools?.class || []}
-              autoGranted={classToolGrant.fixed}
-              onToggle={toggleClassTool}
-              theme={theme}
-            />
-          ))}
+          </View>
         </Card>
       )}
 
@@ -801,18 +741,25 @@ export const ClassProgressionSection: React.FC<ClassProgressionSectionProps> = (
         {allClasses
           .filter((cl) => cl.name.toLowerCase().includes(classSearch.toLowerCase()))
           .map((cl) => {
-            const existing = character.classes.some(
-              (c) => c.className.toLowerCase() === cl.name.toLowerCase()
-            );
-            const prereq =
-              existing || !hasAnyClass ? { ok: true } : validateMulticlass(character, cl.name, effectiveScores);
+            // A character holds one entry per class name. The held entry belongs to this card when it resolves
+            // to this catalog class; when it resolves to the other source of the name, this card is taken.
+            const held = character.classes.find((c) => c.className.toLowerCase() === cl.name.toLowerCase());
+            const heldClass = held ? findClassData(allClasses, held) : undefined;
+            const takenFrom = heldClass && heldClass.source !== cl.source ? heldClass.source : undefined;
+            const existing = Boolean(held) && !takenFrom;
+            const prereq = takenFrom
+              ? { ok: false, reason: `Already held from ${takenFrom}` }
+              : existing || !hasAnyClass
+                ? { ok: true }
+                : validateMulticlass(character, cl.name, effectiveScores);
 
             return (
               <Card key={`${cl.name}__${cl.source}`}>
                 <View style={styles.row}>
                   <View style={{ flex: 1 }}>
-                    <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+                    <View style={{ flexDirection: "row", flexWrap: "wrap", alignItems: "center", gap: 6 }}>
                       <Text style={[styles.itemTitle, { color: theme.text }]}>{cl.name}</Text>
+                      {sharedClassNames.has(cl.name) && <Badge label={cl.source} size="sm" />}
                       <Badge label={cl.hitDie} size="sm" />
                       {existing && <Badge label="Active" variant="accent" size="sm" />}
                     </View>

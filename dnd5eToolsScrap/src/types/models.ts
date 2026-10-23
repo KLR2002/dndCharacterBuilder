@@ -10,6 +10,9 @@ export interface RuleChoiceModel {
   options: Array<{ name: string; description: string }>;
 }
 
+import type { ProficiencyGrant } from "./proficiency.ts";
+import type { StartingEquipmentSlot } from "./startingEquipment.ts";
+
 export interface TraitModel {
   name: string;
   description: string;
@@ -35,9 +38,13 @@ export interface RaceModel {
   subraces: SubraceModel[];
   description: string;
   rawEntries?: any[];
+  /** Proficiency Grants from the race's structured proficiency fields. */
+  grants?: ProficiencyGrant[];
 }
 
 export interface SubraceModel {
+  /** Proficiency Grants the subrace's structured proficiency entries give. Absent when it gives none. */
+  grants?: ProficiencyGrant[];
   name: string;
   /** True when this subrace is a rules variant of its ancestry. */
   isVariant: boolean;
@@ -51,16 +58,41 @@ export interface SubraceModel {
   rawEntries?: any[];
 }
 
+/**
+ * One option a feature lets the player pick. `source` is the book it is printed in, and `level` the level
+ * its option feature is gained at. `grants` are the Proficiency Grants of the option's own text: they
+ * apply only while the parent's pick names this option.
+ */
+export interface ChoiceOption {
+  name: string;
+  description: string;
+  source?: string;
+  level?: number;
+  grants?: ProficiencyGrant[];
+}
+
+/** A pick from a fixed set of options a feature grants. `from` is the raw filter for cantrip-style lists. */
+export interface FeatureChoice {
+  pick: number;
+  options?: ChoiceOption[];
+  from?: { filter: string; count?: number };
+}
+
 export interface ClassFeatureModel {
   name: string;
   level: number;
   description: string;
   isOptional?: boolean;
+  /** Present when the feature's raw `options` entry resolves to its option features. */
+  choices?: FeatureChoice;
+  /** Proficiency Grants extracted from the feature's prose, or from its override. */
+  grants?: ProficiencyGrant[];
 }
 
 export interface SubclassAdditionalSpells {
   prepared?: Record<string, string[]>;
-  known?: Record<string, any[]>;
+  /** Per spell level: a list of spell names, or a `_` list of `choose` filters (cantrip lists). */
+  known?: Record<string, any>;
   expanded?: Record<string, any>;
   innate?: Record<string, any>;
   name?: string;
@@ -75,6 +107,8 @@ export interface SubclassModel {
   spellcastingAbility?: string;
   features: ClassFeatureModel[];
   additionalSpells?: SubclassAdditionalSpells[];
+  /** Present when the additional spells grant a pick between named options, lifted from them. */
+  spellChoice?: FeatureChoice;
   description: string;
 }
 
@@ -96,8 +130,12 @@ export interface ClassModel {
     progression: string;
     preparedSpells?: string;
   } | null;
+  /** The starting equipment slots, in printed order. Absent for a class whose record carries none. */
+  startingEquipment?: StartingEquipmentSlot[];
   features: ClassFeatureModel[];
   subclasses: SubclassModel[];
+  /** Proficiency Grants from the class's starting proficiencies (the "Starting Proficiencies" grant owner). */
+  grants?: ProficiencyGrant[];
   multiclassing?: {
     requirements?: Record<string, number>;
     proficienciesGained?: {
@@ -117,6 +155,8 @@ export interface FeatModel {
   abilityScoreIncrease: Array<Record<string, number>> | null;
   description: string;
   rawEntries?: any[];
+  /** Proficiency Grants extracted from the feat's prose, or from its override. */
+  grants?: ProficiencyGrant[];
 }
 
 export interface OptionFeatureModel {
@@ -127,6 +167,8 @@ export interface OptionFeatureModel {
   prerequisite: string | null;
   description: string;
   rawEntries?: any[];
+  /** Set on a record that carries replicable-item tables; the app does not offer it as a selectable option. */
+  isUmbrella?: boolean;
 }
 
 export interface BackgroundModel {
@@ -135,6 +177,8 @@ export interface BackgroundModel {
   skillProficiencies: string[];
   toolProficiencies: string[];
   languages: string[];
+  /** Proficiency Grants from the background's structured proficiency fields. */
+  grants?: ProficiencyGrant[];
   startingEquipment: string[];
   feature: {
     name: string;
@@ -170,6 +214,8 @@ export interface ItemModel {
   rawEntries?: any[];
   bonusWeapon?: number;
   bonusAc?: number;
+  /** Set on base weapons only: the simple or martial category the source data gives them. */
+  weaponCategory?: "simple" | "martial";
 }
 
 export interface SpellClassVariantModel {

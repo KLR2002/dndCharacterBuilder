@@ -21,7 +21,7 @@ import { Modal } from "../components/ui/Modal";
 import { SearchBar } from "../components/ui/SearchBar";
 import { useCharacters } from "../context/CharacterContext";
 import { useAppTheme } from "../context/ThemeContext";
-import { evaluateCharacter } from "../services/dndRules";
+import { evaluateCharacter } from "../rules/characterEvaluation";
 import { Character, Folder } from "../types/character";
 
 export default function HomeScreen() {
@@ -277,7 +277,7 @@ export default function HomeScreen() {
       {/* Header Bar */}
       <View style={[styles.headerBar, { borderBottomColor: theme.border }]}>
         <View style={styles.headerBarInner}>
-          <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 10, flex: 1, minWidth: 0 }}>
             <View
               style={[
                 styles.logoIconBox,
@@ -292,7 +292,7 @@ export default function HomeScreen() {
                 resizeMode="contain"
               />
             </View>
-            <View>
+            <View style={{ flexShrink: 1 }}>
               <Text style={[styles.appTitle, { color: theme.text }]}>
                 5e Character Builder
               </Text>

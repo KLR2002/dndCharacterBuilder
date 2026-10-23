@@ -1,11 +1,11 @@
 {
-  "scrapedAt": "2026-10-10T20:37:08.014Z",
+  "scrapedAt": "2026-10-21T09:12:52.146Z",
   "source": "https://2014.5e.tools",
   "categories": {
-    "Races": {
-      "count": 134,
-      "size": "904.84 KB",
-      "file": "data/races.json"
+    "Items": {
+      "count": 2023,
+      "size": "3.50 MB",
+      "file": "data/items.json"
     }
   }
 }

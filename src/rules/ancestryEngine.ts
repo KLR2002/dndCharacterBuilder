@@ -1,19 +1,17 @@
 import type { AbilityKey, AsiSelection, Character, RuleChoiceEntry } from "../types/character.ts";
-import type { BackgroundData, RaceData, SubraceData } from "../types/dnd5e.ts";
+import type { RaceData, SubraceData } from "../types/dnd5e.ts";
 import {
-  availableRuleChoices,
+  offeredRuleChoices,
+  pickRuleChoice,
   type AvailableRuleChoice,
 } from "./ruleChoices.ts";
-import { reconcileCharacter, setChoiceRacialBonus, setRuleChoicePick } from "./builderTransitions.ts";
-import { resolveCharacterLanguages } from "./proficienciesAndLanguages.ts";
+import { catalogListings, type CharacterCatalogs } from "./characterEvaluation.ts";
+import { setChoiceRacialBonus } from "./builderTransitions.ts";
+import { reconcile } from "./characterReconciler.ts";
+import { currentCompendium } from "../services/compendium.ts";
 import { getBackgroundFeatGrant } from "./feats.ts";
 import { normalizeSkillName } from "./skills.ts";
-
-export interface CharacterCatalogs {
-  races?: RaceData[];
-  backgrounds?: BackgroundData[];
-  activeBooks?: string[];
-}
+import { moveLegacySkillPicks } from "./proficiencyPicks.ts";
 
 export interface AncestryTraitView {
   name: string;
@@ -61,11 +59,26 @@ export function collectFixedBonuses(
   return bonuses;
 }
 
+/**
+ * Whether a race's card in the race picker offers a plain form: the race with no subrace. Only a race the
+ * integrated catalog splits into several named subraces qualifies, when the SRD Baseline holds a race of
+ * the same name with no subraces (or only unnamed ones). Races the SRD holds only with a named subrace
+ * already select through that subrace, so they get no plain form.
+ */
+export function offersPlainRaceForm(race: RaceData, srdRaces: readonly RaceData[]): boolean {
+  const subraces = race.subraces ?? [];
+  if (subraces.length < 2 || subraces.some((sr) => !sr.name?.trim())) return false;
+  return srdRaces.some(
+    (srd) =>
+      srd.name === race.name && (srd.subraces ?? []).every((sr) => !sr.name?.trim())
+  );
+}
+
 export function resolveAncestryState(
   character: Character,
   catalogs?: CharacterCatalogs
 ): AncestryState {
-  const allRaces = catalogs?.races ?? [];
+  const allRaces = catalogListings(catalogs).races();
   const selectedRace = character.race
     ? allRaces.find(
         (r) =>
@@ -105,7 +118,7 @@ export function resolveAncestryState(
   })();
 
   const availChoices = (character.race || character.lineageReplacement)
-    ? availableRuleChoices(character, allRaces, undefined, catalogs?.activeBooks)
+    ? offeredRuleChoices(character, { raceCatalog: allRaces, activeBooks: catalogs?.activeBooks, origins: ["race"] })
     : [];
 
   const ruleChoicesWithPicks = availChoices.map((choice) => {
@@ -255,38 +268,28 @@ export function applyAncestrySelection(
   const nextChosenLanguages = { ...character.chosenLanguages, race: [] };
   const nextChosenTools = { ...character.chosenTools, race: [] };
 
-  const temp: Character = {
-    ...character,
-    race: updatedRace,
-    chosenLanguages: nextChosenLanguages,
-    chosenTools: nextChosenTools,
-    racialAbilityBonuses: bonuses,
-    racialChoiceBonus: [],
-  };
-
-  const allRaces = catalogs?.races ?? [];
-  const allBackgrounds = catalogs?.backgrounds ?? [];
-  const resolvedLangs = resolveCharacterLanguages(temp, { races: allRaces, backgrounds: allBackgrounds });
-
-  const oldRaceChoices = (character.skillChoices || []).filter((sc) => sc.origin === "race");
+  const compendium = catalogs?.compendium ?? currentCompendium();
+  // A skill pick saved in the old bucket moves into its choice while the old race is still held; a pick no choice
+  // takes is the old race's legacy entry, and it goes with the race.
+  const migrated = moveLegacySkillPicks(character, compendium);
+  const oldRaceChoices = (migrated.skillChoices || []).filter((sc) => sc.origin === "race");
   const oldRacePicks = new Set(oldRaceChoices.flatMap((sc) => sc.picked.map(normalizeSkillName)));
-  const nextSkillChoices = (character.skillChoices || []).filter((sc) => sc.origin !== "race");
-  const nextChosenSkills = (character.chosenSkills || []).filter((s) => !oldRacePicks.has(normalizeSkillName(s)));
+  const nextSkillChoices = (migrated.skillChoices || []).filter((sc) => sc.origin !== "race");
+  const nextChosenSkills = (migrated.chosenSkills || []).filter((s) => !oldRacePicks.has(normalizeSkillName(s)));
 
   const cleaned: Character = {
-    ...character,
+    ...migrated,
     race: updatedRace,
     racialAbilityBonuses: bonuses,
     racialChoiceBonus: [],
     chosenLanguages: nextChosenLanguages,
     chosenTools: nextChosenTools,
-    languages: resolvedLangs,
     ruleChoices: (character.ruleChoices || []).filter((rc) => rc.origin !== "race"),
     skillChoices: nextSkillChoices,
     chosenSkills: nextChosenSkills,
   };
 
-  return reconcileCharacter(cleaned);
+  return reconcile(cleaned, compendium);
 }
 
 export function applyAncestryChoice(
@@ -295,19 +298,16 @@ export function applyAncestryChoice(
   option: string,
   catalogs?: CharacterCatalogs
 ): Character {
-  const allRaces = catalogs?.races ?? [];
-  const choices = availableRuleChoices(character, allRaces, undefined, catalogs?.activeBooks);
+  const allRaces = catalogListings(catalogs).races();
+  const choices = offeredRuleChoices(character, {
+    raceCatalog: allRaces,
+    activeBooks: catalogs?.activeBooks,
+    origins: ["race"],
+  });
   const choice = choices.find((c) => c.id === choiceId);
   if (!choice) return character;
 
-  const updated = setRuleChoicePick(
-    character,
-    choice.id,
-    choice.traitName,
-    option,
-    choice.options.map((o) => o.name),
-    choice.choose
-  );
+  const updated = pickRuleChoice(character, choice, option, catalogs?.compendium);
 
   // Cascading invalidation: if this choice has a "Cantrip" option, and "Cantrip" is NOT picked in updated state
   // (either because user picked another option OR toggled Cantrip off), purge any cantrip choice!

@@ -1,8 +1,15 @@
-import type { Character } from "../types/character.ts";
+import type { Character, KnownSpell } from "../types/character.ts";
 import type { SpellData } from "../types/dnd5e.ts";
 import type { EvaluatedCharacter } from "./characterEvaluation.ts";
 import { multiclassSlots as calculateMulticlassSpellSlots } from "./slots.ts";
-import { calculateWarlockPactSlots } from "./spellcasting.ts";
+import {
+  calculateWarlockPactSlots,
+  isSpellAvailableForClass,
+  profileSpellContext,
+  type ClassSpellProfile,
+} from "./spellcasting.ts";
+import { reconcile } from "./characterReconciler.ts";
+import type { Compendium } from "../services/compendium.ts";
 import { getMysticArcanumTiers, type MysticArcanumTierInfo } from "./ruleChoices.ts";
 import type { InnateSpellEntry } from "./innateMagic.ts";
 
@@ -288,36 +295,167 @@ export function resetSubclassSpellSwap(
   };
 }
 
-/**
- * Toggles a spell's preparation state in character.preparedSpells.
- */
-export function togglePreparedSpell(
-  character: Character,
-  item: { name: string; source: string; ownerKey?: string }
-): Character {
-  const currentPrepared = character.preparedSpells || [];
-  const ownerKey = item.ownerKey || "";
-  const canonicalKey = ownerKey ? `${item.name}__${item.source}__${ownerKey}` : `${item.name}__${item.source}`;
-  const legacyKey = `${item.name}__${item.source}`;
+/** A spell as the spells tab identifies it: its name, source and, optionally, the Spell Owner it is listed under. */
+export interface SpellIdentity {
+  name: string;
+  source: string;
+  ownerKey?: string;
+}
 
-  const isPrepared = currentPrepared.some(
+function ownerOf(spell: SpellIdentity, profile: ClassSpellProfile): string {
+  return spell.ownerKey ?? profile.ownerKey;
+}
+
+/** The stored form of a prepared entry under an owner: `name__source__owner`. */
+function canonicalPreparedKey(spell: SpellIdentity, profile: ClassSpellProfile): string {
+  return `${spell.name}__${spell.source}__${ownerOf(spell, profile)}`;
+}
+
+/** The legacy, owner-less prepared entry: `name__source`. */
+function legacyPreparedKey(spell: SpellIdentity): string {
+  return `${spell.name}__${spell.source}`;
+}
+
+/**
+ * Whether the spell is known by the profile's Spell Owner. A stored entry matches when its owner is
+ * the profile's owner, or when it is a legacy entry with no owner and the same class.
+ */
+export function isKnown(character: Character, profile: ClassSpellProfile, spell: SpellIdentity): boolean {
+  const owner = ownerOf(spell, profile);
+  return (character.knownSpells || []).some(
     (k) =>
-      k === canonicalKey ||
-      k === legacyKey ||
-      (typeof k === "string" && k.toLowerCase().startsWith(`${item.name.toLowerCase()}__${item.source.toLowerCase()}`))
+      k.name === spell.name &&
+      k.source === spell.source &&
+      (k.ownerKey === owner || (!k.ownerKey && k.className === profile.className))
+  );
+}
+
+/** Whether the spell is prepared under the Spell Owner. Exact match on the canonical or legacy key. */
+export function isPrepared(character: Character, profile: ClassSpellProfile, spell: SpellIdentity): boolean {
+  const canonical = canonicalPreparedKey(spell, profile);
+  const legacy = legacyPreparedKey(spell);
+  return (character.preparedSpells || []).some((k) => k === canonical || k === legacy);
+}
+
+/**
+ * Counts the prepared spells that count against the preparation limit: prepared, levelled, and not
+ * always-prepared. Always-prepared spells are excluded.
+ */
+export function countPrepared(character: Character, profile: ClassSpellProfile, compendium: Compendium): number {
+  return profile.knownSpells.filter((k) => {
+    if (isAlwaysPrepared(profile, k.name)) return false;
+    if ((compendium.findSpell(k.name, k.source)?.level ?? 0) === 0) return false;
+    return isPrepared(character, profile, k);
+  }).length;
+}
+
+function isAlwaysPrepared(profile: ClassSpellProfile, name: string): boolean {
+  const lower = name.toLowerCase();
+  return (profile.alwaysPreparedSpells || []).some((s) => s.name.toLowerCase() === lower);
+}
+
+/**
+ * Whether the spell is on the owner's class list under the active books. Fighter and Rogue gate
+ * against the Wizard list.
+ */
+function isOnOwnerList(profile: ClassSpellProfile, spell: SpellData, activeBooks?: string[]): boolean {
+  const gatingClass =
+    profile.className === "Fighter" || profile.className === "Rogue" ? "Wizard" : profile.className;
+  return isSpellAvailableForClass(spell, gatingClass, activeBooks, profileSpellContext(profile));
+}
+
+/**
+ * Whether the owner may learn or prepare the spell: on its class list under the active books, and
+ * within the owner's maximum spell level.
+ */
+function withinOwnerGate(profile: ClassSpellProfile, spell: SpellData, activeBooks?: string[]): boolean {
+  return spell.level <= profile.maxSpellLevel && isOnOwnerList(profile, spell, activeBooks);
+}
+
+/**
+ * Toggles a spell's preparation under its Spell Owner. Unpreparing removes only that owner's entry
+ * (and a matching legacy entry). Preparing is rejected, returning the character unchanged, when the
+ * spell is always prepared or fails the class-list, active-book or level gate. The prepared limit is
+ * not enforced: going over it is a warning shown by the spells tab.
+ */
+export function togglePrepared(
+  character: Character,
+  profile: ClassSpellProfile,
+  spell: SpellIdentity,
+  compendium: Compendium,
+  activeBooks?: string[]
+): Character {
+  if (isAlwaysPrepared(profile, spell.name)) return character;
+
+  const current = character.preparedSpells || [];
+  const canonical = canonicalPreparedKey(spell, profile);
+  const legacy = legacyPreparedKey(spell);
+
+  if (isPrepared(character, profile, spell)) {
+    return reconcile(
+      { ...character, preparedSpells: current.filter((k) => k !== canonical && k !== legacy) },
+      compendium
+    );
+  }
+
+  const data = compendium.findSpell(spell.name, spell.source);
+  if (data && !withinOwnerGate(profile, data, activeBooks)) return character;
+
+  return reconcile({ ...character, preparedSpells: [...current, canonical] }, compendium);
+}
+
+/**
+ * Learns a spell under the profile's Spell Owner. Rejected, returning the character unchanged, when
+ * the spell fails the owner's class-list, active-book or maximum-spell-level gate, or when the owner
+ * already knows it. A spell the Compendium does not know is not gated, matching the existing
+ * synthetic-spell behaviour.
+ */
+export function learnSpell(
+  character: Character,
+  profile: ClassSpellProfile,
+  spell: { name: string; source: string },
+  compendium: Compendium,
+  activeBooks?: string[]
+): Character {
+  const data = compendium.findSpell(spell.name, spell.source);
+  if (data && !withinOwnerGate(profile, data, activeBooks)) return character;
+  if (isKnown(character, profile, spell)) return character;
+
+  const learned: KnownSpell = {
+    name: spell.name,
+    source: spell.source,
+    ownerKey: profile.ownerKey,
+    className: profile.className,
+  };
+  return reconcile({ ...character, knownSpells: [...(character.knownSpells || []), learned] }, compendium);
+}
+
+/**
+ * Forgets a spell under its Spell Owner. Removes that owner's known entry and that owner's prepared
+ * entry; other owners' copies are untouched. The legacy prepared key names no owner, so it is dropped
+ * only once no owner still knows the spell.
+ */
+export function forgetSpell(
+  character: Character,
+  profile: ClassSpellProfile,
+  spell: SpellIdentity,
+  compendium: Compendium
+): Character {
+  const owner = ownerOf(spell, profile);
+  const knownSpells = (character.knownSpells || []).filter(
+    (k) =>
+      !(
+        k.name === spell.name &&
+        k.source === spell.source &&
+        (k.ownerKey === owner || (!k.ownerKey && (!k.className || k.className === profile.className)))
+      )
+  );
+  const stillKnown = knownSpells.some((k) => k.name === spell.name && k.source === spell.source);
+  const canonical = canonicalPreparedKey(spell, profile);
+  const legacy = legacyPreparedKey(spell);
+  const preparedSpells = (character.preparedSpells || []).filter(
+    (k) => k !== canonical && !(k === legacy && !stillKnown)
   );
 
-  const updatedPrepared = isPrepared
-    ? currentPrepared.filter(
-        (k) =>
-          k !== canonicalKey &&
-          k !== legacyKey &&
-          !k.toLowerCase().startsWith(`${item.name.toLowerCase()}__${item.source.toLowerCase()}`)
-      )
-    : [...currentPrepared, canonicalKey];
-
-  return {
-    ...character,
-    preparedSpells: updatedPrepared,
-  };
+  return reconcile({ ...character, knownSpells, preparedSpells }, compendium);
 }

@@ -1,5 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
+import { reconcile } from "../src/rules/characterReconciler.ts";
+import { currentCompendium } from "../src/services/compendium.ts";
 import { makeChar } from "./testUtils.ts";
 import {
   getSuperiorityDice,
@@ -9,13 +11,12 @@ import {
 import {
   battleMasterManeuverChoices,
   getChosenManeuvers,
-  pickSubclassRuleChoice,
-  pruneInvalidManeuvers,
+  pickRuleChoice,
   isManeuverChoiceId,
   subclassRuleChoices,
 } from "../src/rules/ruleChoices.ts";
 import { removeAsiSelection } from "../src/rules/leveling.ts";
-import { teardownSubclass } from "../src/rules/builderTransitions.ts";
+import { teardownSubclass } from "../src/rules/characterReconciler.ts";
 
 test("Battle Master level 3 offers 3 maneuvers and 4d8 superiority dice", () => {
   const bm3 = makeChar({
@@ -152,9 +153,9 @@ test("Deduplication: maneuver chosen at 3 is not offered at 7", () => {
   const choice3 = choices.find((c) => c.id === "PHB__Fighter__Battle Master__Maneuvers 3")!;
 
   // Pick 3 maneuvers at level 3
-  char = pickSubclassRuleChoice(char, choice3, "Trip Attack");
-  char = pickSubclassRuleChoice(char, choice3, "Riposte");
-  char = pickSubclassRuleChoice(char, choice3, "Disarming Attack");
+  char = pickRuleChoice(char, choice3, "Trip Attack");
+  char = pickRuleChoice(char, choice3, "Riposte");
+  char = pickRuleChoice(char, choice3, "Disarming Attack");
 
   const chosen = getChosenManeuvers(char);
   assert.deepEqual(chosen.sort(), ["Disarming Attack", "Riposte", "Trip Attack"].sort());
@@ -410,7 +411,7 @@ test("Negative boundaries: Level gating and non-Battle Master classes", () => {
   assert.equal(battleMasterManeuverChoices(wiz).length, 0);
 });
 
-test("pruneInvalidManeuvers: trims choices and picks upon de-leveling or subclass change", () => {
+test("reconcile: trims choices and picks upon de-leveling or subclass change", () => {
   // Character at Battle Master 7 with picks in Maneuvers 3 and Maneuvers 7
   const bm7 = makeChar({
     classes: [{ className: "Fighter", level: 7, hitDiceType: "d10", subclassName: "Battle Master" }],
@@ -435,24 +436,24 @@ test("pruneInvalidManeuvers: trims choices and picks upon de-leveling or subclas
   });
 
   // De-level to 6
-  const deLeveled = pruneInvalidManeuvers({
+  const deLeveled = reconcile({
     ...bm7,
     classes: [{ className: "Fighter", level: 6, hitDiceType: "d10", subclassName: "Battle Master" }],
-  });
+  }, currentCompendium());
 
   assert.equal(deLeveled.ruleChoices?.length, 1);
   assert.equal(deLeveled.ruleChoices?.[0].id, "PHB__Fighter__Battle Master__Maneuvers 3");
   assert.deepEqual(deLeveled.ruleChoices?.[0].picked, ["Trip Attack", "Riposte", "Disarming Attack"]);
 
   // De-level to 2 (loses Battle Master entirely)
-  const lvl2 = pruneInvalidManeuvers({
+  const lvl2 = reconcile({
     ...bm7,
     classes: [{ className: "Fighter", level: 2, hitDiceType: "d10" }],
-  });
+  }, currentCompendium());
   assert.equal(lvl2.ruleChoices?.length, 0);
 
   // Subclass teardown: changing Battle Master to Champion
-  const toreDown = teardownSubclass(bm7, "Fighter", "Battle Master", "Champion");
+  const toreDown = teardownSubclass(bm7, "Fighter", "Battle Master");
   assert.equal(
     toreDown.ruleChoices?.filter((rc) => isManeuverChoiceId(rc.id)).length,
     0,

@@ -2,7 +2,7 @@ import type { Character } from "../types/character.ts";
 import type { RulesOptions, ResolvedAncestry } from "./types.ts";
 import { armorCategory } from "./ac.ts";
 import { effectiveScores, hasFeat } from "./abilities.ts";
-import { getRaces } from "../services/dataService.ts";
+import { currentCompendium } from "../services/compendium.ts";
 
 export interface MovementSpeedDetail {
   mode: "walk" | "swim" | "climb" | "fly";
@@ -27,7 +27,7 @@ export function characterSpeeds(character: Character, opts: RulesOptions = {}): 
   // Resolve from catalog if not provided in opts
   if (!resolvedRace && character.race) {
     try {
-      const allRaces = opts.races || getRaces();
+      const allRaces = opts.races || (opts.compendium ?? currentCompendium()).for().races();
       resolvedRace = allRaces.find(
         (r: any) => r.name === character.race?.name && (!character.race?.source || r.source === character.race.source)
       );
@@ -45,7 +45,7 @@ export function characterSpeeds(character: Character, opts: RulesOptions = {}): 
   let lineageRace: any = undefined;
   if (character.lineageReplacement) {
     try {
-      const allRaces = opts.races || getRaces();
+      const allRaces = opts.races || (opts.compendium ?? currentCompendium()).for().races();
       lineageRace = allRaces.find((r: any) => r.name === character.lineageReplacement);
       // If resolvedRace is the lineage race, resolve prior race from character.race for Ancestral Legacy
       if (

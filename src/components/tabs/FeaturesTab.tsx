@@ -13,21 +13,24 @@ import { useCharacters } from "../../context/CharacterContext";
 import { useAppTheme } from "../../context/ThemeContext";
 import { useResponsiveLayout } from "../../hooks/useResponsiveLayout";
 import {
-  findClass,
   findRace,
-  findBeast,
   getBackgrounds,
   getClasses,
   getFeats,
   getRaces,
   getOptionsAndFeatures,
 } from "../../services/dataService";
-import { evaluateCharacter } from "../../services/dndRules";
+import { evaluateCharacter } from "../../rules/characterEvaluation";
+import { setOptionalFeatureEnabled } from "../../rules/builderTransitions";
+import { currentCompendium } from "../../services/compendium";
+import { findClassData } from "../../rules/catalogs";
+import { hasCustomFlag, isCustomBackground } from "../../rules/customBackground";
 import {
   getAvailableOptionalFeatures,
   getReplacedBaseFeatures,
 } from "../../rules/optionalFeatures";
-import { getWildShapeLimits, getWildShapeCharges, getRequiredWildShapeCharges } from "../../rules/wildShape";
+import { adoptWildShape, getWildShapeLimits } from "../../rules/wildShape";
+import { describeClassFeature } from "../../rules/featureOptions";
 import { ResourceCounter } from "../../types/character";
 import type { BeastData } from "../../types/dnd5e";
 import { Badge } from "../ui/Badge";
@@ -35,7 +38,8 @@ import { Button } from "../ui/Button";
 import { Card } from "../ui/Card";
 import { DetailModal } from "../DetailModal";
 import { WildShapeModal } from "../WildShapeModal";
-import { applyRuleChoice, getChosenInvocations, getKnownInfusions, ALL_ARTIFICER_INFUSIONS, replacedTraitNames, ruleChoiceId } from "../../rules/ruleChoices";
+import { ActiveWildShapeCard } from "../ActiveWildShapeCard";
+import { applyRuleChoice, findArtificerInfusion, getChosenInvocations, getKnownInfusions, replacedTraitNames, ruleChoiceId } from "../../rules/ruleChoices";
 import { ActiveInfusionsSection } from "../ActiveInfusionsSection";
 
 interface FeatureDisplay {
@@ -90,11 +94,7 @@ export const FeaturesTab: React.FC = () => {
 
   const evaluated = useMemo(() => {
     if (!currentCharacter) return null;
-    return evaluateCharacter(currentCharacter, {
-      races: getRaces(activeBooks || []),
-      backgrounds: getBackgrounds(activeBooks || []),
-      classes: getClasses(activeBooks || []),
-    });
+    return evaluateCharacter(currentCharacter, { compendium: currentCompendium(), activeBooks });
   }, [currentCharacter, activeBooks]);
 
   // Unified Resource Counters from evaluated model
@@ -180,7 +180,15 @@ export const FeaturesTab: React.FC = () => {
 
     // 2. Background Features
     if (currentCharacter.background) {
-      if (currentCharacter.background.isCustom) {
+      if (isCustomBackground(currentCharacter.background) && currentCharacter.background.customFeatureName) {
+        list.push({
+          id: "bg_custom",
+          name: currentCharacter.background.customFeatureName,
+          origin: "Background",
+          source: currentCharacter.background.name,
+          description: currentCharacter.background.customFeatureDesc || "Custom feature description.",
+        });
+      } else if (hasCustomFlag(currentCharacter.background)) {
         list.push({
           id: "bg_custom",
           name: currentCharacter.background.customFeatureName || "Custom Background Feature",
@@ -206,7 +214,7 @@ export const FeaturesTab: React.FC = () => {
 
     // 3. Class Features
     for (const c of currentCharacter.classes || []) {
-      const classData = findClass(c.className, c.source);
+      const classData = findClassData(currentCompendium().for().classes(), c);
       if (classData?.features) {
         for (const cf of classData.features) {
           if (cf.level <= c.level) {
@@ -216,23 +224,12 @@ export const FeaturesTab: React.FC = () => {
             } else {
               if (replacedBaseFeatures.has(cf.name)) continue;
             }
-            let description = cf.description || `A ${c.className} feature gained at level ${cf.level}.`;
-            if (c.className === "Barbarian" && cf.name === "Rage") {
-              const hasBearTotem3 = Boolean(
-                currentCharacter.ruleChoices?.some(
-                  (rc) =>
-                    (rc.id === "PHB__Barbarian__Path of the Totem Warrior__Totem Spirit 3" ||
-                      rc.trait === "Totem Spirit (3rd Level)" ||
-                      (rc.trait.toLowerCase().includes("totem spirit") &&
-                        !rc.trait.toLowerCase().includes("aspect") &&
-                        !rc.trait.toLowerCase().includes("attunement"))) &&
-                    rc.picked?.some((p) => p.toLowerCase() === "bear")
-                )
-              );
-              if (hasBearTotem3) {
-                description += "\n\nWhile raging, Bear Totem grants resistance to all damage except psychic.";
-              }
-            }
+            const description = describeClassFeature(
+              cf,
+              classData.source,
+              activeBooks,
+              `A ${c.className} feature gained at level ${cf.level}.`
+            );
             list.push({
               id: `class_${c.className}_${cf.name}_${cf.level}`,
               name: `${cf.name} (Lvl ${cf.level})`,
@@ -277,9 +274,7 @@ export const FeaturesTab: React.FC = () => {
           const activeEntry = activeInfusions.find(
             (a) => a.infusionName.toLowerCase() === infName.toLowerCase()
           );
-          const def = ALL_ARTIFICER_INFUSIONS.find(
-            (d) => d.name.toLowerCase() === infName.toLowerCase()
-          );
+          const def = findArtificerInfusion(infName);
           const badge = activeEntry
             ? activeEntry.targetItemName
               ? `Active (Infused: ${activeEntry.targetItemName})`
@@ -315,7 +310,12 @@ export const FeaturesTab: React.FC = () => {
                 name: `${sf.name} (Lvl ${sf.level})`,
                 origin: "Subclass",
                 source: c.subclassName,
-                description: sf.description || `A ${c.subclassName} archetype feature gained at level ${sf.level}.`,
+                description: describeClassFeature(
+                  sf,
+                  sc.source,
+                  activeBooks,
+                  `A ${c.subclassName} archetype feature gained at level ${sf.level}.`
+                ),
               });
             }
           }
@@ -401,56 +401,9 @@ export const FeaturesTab: React.FC = () => {
 
   const handleAdoptShape = (beast: BeastData) => {
     if (!currentCharacter) return;
-    const requiredCharges = getRequiredWildShapeCharges(beast);
-    const currentCharges = getWildShapeCharges(currentCharacter);
-    const isLevel20 = Boolean(wildShapeLimits?.druidLevel && wildShapeLimits.druidLevel >= 20);
-    const existingCounter = (currentCharacter.resourceCounters || {})["wild_shape"];
-    const maxCharges = isLevel20 ? 999 : (existingCounter ? existingCounter.max : 2);
-    const nextCharges = isLevel20 ? 999 : Math.max(0, currentCharges - requiredCharges);
-
-    updateCharacter(currentCharacter.id, {
-      resourceCounters: {
-        ...(currentCharacter.resourceCounters || {}),
-        wild_shape: {
-          id: "wild_shape",
-          name: "Wild Shape",
-          current: nextCharges,
-          max: maxCharges,
-          resetOn: "short",
-        },
-      },
-      activeWildShape: {
-        name: beast.name,
-        source: beast.source,
-        currentHp: beast.hp.average,
-        maxHp: beast.hp.average,
-        ac: beast.ac,
-      },
-    });
-  };
-
-  const handleRevertShape = () => {
-    if (!currentCharacter) return;
-    updateCharacter(currentCharacter.id, {
-      activeWildShape: null,
-    });
-  };
-
-  const updateWildShapeHp = (delta: number) => {
-    if (!currentCharacter?.activeWildShape) return;
-    const current = currentCharacter.activeWildShape.currentHp;
-    const max = currentCharacter.activeWildShape.maxHp;
-    const nextHp = current + delta;
-    if (nextHp <= 0) {
-      handleRevertShape();
-    } else {
-      updateCharacter(currentCharacter.id, {
-        activeWildShape: {
-          ...currentCharacter.activeWildShape,
-          currentHp: Math.min(max, nextHp),
-        },
-      });
-    }
+    const patch = adoptWildShape(currentCharacter, beast);
+    if (!patch) return;
+    updateCharacter(currentCharacter.id, patch);
   };
 
   const handleToggleFavoriteBeast = (beastKey: string) => {
@@ -471,7 +424,7 @@ export const FeaturesTab: React.FC = () => {
       {/* Interactive Resource Counters Card */}
       <Card style={styles.countersCard}>
         <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-          <View>
+          <View style={{ flex: 1, minWidth: 0 }}>
             <Text style={[styles.sectionTitle, { color: theme.text }]}>RESOURCE TRACKERS</Text>
             <Text style={{ color: theme.textSecondary, fontSize: 12 }}>
               Charges reset on Short / Long Rest
@@ -599,8 +552,8 @@ export const FeaturesTab: React.FC = () => {
             )}
           </View>
 
-          {/* Monster Manual Inactive Warning */}
-          {!isMmActive && (
+          {/* Monster Manual Inactive Warning (Integrated Catalog only; the SRD Baseline carries its own beasts) */}
+          {currentCompendium().integrated && !isMmActive && (
             <Card
               style={{
                 padding: 10,
@@ -626,107 +579,7 @@ export const FeaturesTab: React.FC = () => {
             </Card>
           )}
 
-          {/* Active Wild Shape Transformation Banner */}
-          {currentCharacter.activeWildShape && (
-            <Card
-              style={{
-                padding: 12,
-                marginTop: 10,
-                backgroundColor: theme.surfaceHighlight,
-                borderColor: theme.accentBorder,
-                borderWidth: 1.5,
-              }}>
-              <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", gap: 8 }}>
-                <View style={{ flex: 1 }}>
-                  <View style={{ flexDirection: "row", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
-                    <Badge label="ACTIVE FORM" variant="accent" size="sm" />
-                    <Text style={{ fontSize: 16, fontWeight: "700", color: theme.text }}>
-                      {currentCharacter.activeWildShape.name}
-                    </Text>
-                    <Badge label={`AC ${currentCharacter.activeWildShape.ac}`} variant="secondary" size="sm" />
-                  </View>
-                  <Text style={{ color: theme.textSecondary, fontSize: 12, marginTop: 4 }}>
-                    Damage reduces beast HP first. Drops when HP reaches 0.
-                  </Text>
-                </View>
-
-                {/* HP Stepper Controls */}
-                <View style={styles.counterStepper}>
-                  <TouchableOpacity
-                    onPress={() => updateWildShapeHp(-1)}
-                    hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-                    style={[styles.stepperBtn, { backgroundColor: theme.surfaceRaised }]}>
-                    <Ionicons name="remove" size={16} color={theme.text} />
-                  </TouchableOpacity>
-
-                  <View style={styles.counterCountBox}>
-                    <Text
-                      style={[
-                        styles.counterCurrent,
-                        {
-                          color:
-                            currentCharacter.activeWildShape.currentHp > 0
-                              ? theme.accent
-                              : theme.danger,
-                        },
-                      ]}>
-                      {currentCharacter.activeWildShape.currentHp}
-                    </Text>
-                    <Text style={{ color: theme.textSecondary, fontSize: 13 }}>
-                      {" "}
-                      / {currentCharacter.activeWildShape.maxHp}
-                    </Text>
-                  </View>
-
-                  <TouchableOpacity
-                    onPress={() => updateWildShapeHp(1)}
-                    disabled={currentCharacter.activeWildShape.currentHp >= currentCharacter.activeWildShape.maxHp}
-                    hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-                    style={[styles.stepperBtn, { backgroundColor: theme.surfaceRaised }]}>
-                    <Ionicons
-                      name="add"
-                      size={16}
-                      color={
-                        currentCharacter.activeWildShape.currentHp >= currentCharacter.activeWildShape.maxHp
-                          ? theme.textMuted
-                          : theme.text
-                      }
-                    />
-                  </TouchableOpacity>
-                </View>
-              </View>
-
-              {/* Action Buttons: Inspect & Revert */}
-              <View style={{ flexDirection: "row", gap: 8, marginTop: 10 }}>
-                <Button
-                  title="Inspect Beast Statblock"
-                  variant="secondary"
-                  size="sm"
-                  style={{ flex: 1 }}
-                  onPress={() => {
-                    const b = findBeast(
-                      currentCharacter.activeWildShape!.name,
-                      currentCharacter.activeWildShape!.source
-                    );
-                    if (b) {
-                      setDetailModal({
-                        visible: true,
-                        title: b.name,
-                        subtitle: `CR ${b.cr} • ${b.size} ${b.type}`,
-                        content: `**AC**: ${b.ac}\n**HP**: ${b.hp.average} (${b.hp.formula})\n**Speed**: Walk ${b.speed.walk || 0}ft${b.speed.swim ? `, Swim ${b.speed.swim}ft` : ""}${b.speed.fly ? `, Fly ${b.speed.fly}ft` : ""}\n\n**STR** ${b.abilities.str} | **DEX** ${b.abilities.dex} | **CON** ${b.abilities.con} | **INT** ${b.abilities.int} | **WIS** ${b.abilities.wis} | **CHA** ${b.abilities.cha}\n\n${(b.traits || []).map((t) => `**${t.name}**: ${t.description}`).join("\n\n")}\n\n${(b.actions || []).map((a) => `**${a.name}**: ${a.description}`).join("\n\n")}`,
-                      });
-                    }
-                  }}
-                />
-                <Button
-                  title="Revert to Normal"
-                  variant="secondary"
-                  size="sm"
-                  onPress={handleRevertShape}
-                />
-              </View>
-            </Card>
-          )}
+          <ActiveWildShapeCard character={currentCharacter} />
         </Card>
       )}
 
@@ -778,13 +631,9 @@ export const FeaturesTab: React.FC = () => {
                         variant={isActive ? "primary" : "outline"}
                         size="sm"
                         onPress={() => {
-                          const updated = {
-                            ...(currentCharacter.optionalFeatureReplacements || {}),
-                            [opt.name]: !isActive,
-                          };
-                          updateCharacter(currentCharacter.id, {
-                            optionalFeatureReplacements: updated,
-                          });
+                          updateCharacter(currentCharacter.id, (c) =>
+                            setOptionalFeatureEnabled(c, opt.name, !isActive, currentCompendium(), { activeBooks }),
+                          );
                         }}
                       />
                     </View>

@@ -7,6 +7,7 @@ import {
   getBeastFilterReason,
   getWildShapeCharges,
   getRequiredWildShapeCharges,
+  adoptWildShape,
 } from "../src/rules/wildShape.ts";
 import type { BeastData } from "../src/types/dnd5e.ts";
 
@@ -128,7 +129,7 @@ test("wildShape: Circle of the Moon scaling across levels and Elemental Wild Sha
   assert.equal(getWildShapeLimits(moon18).maxCr, 6.0);
 });
 
-test("wildShape: isBeastEligible accurately checks level, movement speed, CR, and activeBooks", () => {
+test("wildShape: isBeastEligible accurately checks level, movement speed, and CR", () => {
   const beasts = loadTestCatalog<BeastData[]>("beasts");
   const wolf = beasts.find((b) => b.name === "Wolf" && b.source === "MM")!;
   const giantPoisonousSnake = beasts.find((b) => b.name === "Giant Poisonous Snake" && b.source === "MM")!; // swim 30, CR 1/4
@@ -183,10 +184,7 @@ test("wildShape: isBeastEligible accurately checks level, movement speed, CR, an
   });
   assert.equal(isBeastEligible(airElemental, moon10), true, "Air Elemental allowed for Moon druid 10");
   assert.equal(isBeastEligible(airElemental, druid8), false, "Non-moon druids cannot take elementals");
-
-  // activeBooks gating:
-  assert.equal(isBeastEligible(wolf, druid2, ["PHB"]), false, "Wolf from MM not in activeBooks PHB");
-  assert.equal(isBeastEligible(wolf, druid2, ["PHB", "MM"]), true, "Wolf in activeBooks PHB, MM");
+  // Book scoping is the Compendium's job; see checks/wildShapeSrdBeasts.test.ts.
 });
 
 test("wildShape: getBeastFilterReason returns human-readable lock explanations", () => {
@@ -254,4 +252,65 @@ test("wildShape: getRequiredWildShapeCharges returns 2 for elementals and 1 for 
   assert.equal(getRequiredWildShapeCharges(airElemental), 2);
 });
 
+test("adoptWildShape: a standard beast costs 1 charge and enters the form at its full HP", () => {
+  const beasts = loadTestCatalog<BeastData[]>("beasts");
+  const wolf = beasts.find((b) => b.name === "Wolf" && b.source === "MM")!;
+  const druid = makeChar({
+    classes: [{ className: "Druid", source: "PHB", level: 2 }],
+    resourceCounters: { wild_shape: { id: "wild_shape", name: "Wild Shape", current: 2, max: 2, resetOn: "short" } },
+  });
 
+  const patch = adoptWildShape(druid, wolf)!;
+  assert.equal(patch.resourceCounters.wild_shape.current, 1);
+  assert.equal(patch.resourceCounters.wild_shape.max, 2);
+  assert.equal(patch.activeWildShape?.name, "Wolf");
+  assert.equal(patch.activeWildShape?.maxHp, wolf.hp.average);
+  assert.equal(patch.activeWildShape?.currentHp, wolf.hp.average);
+});
+
+test("adoptWildShape: an Elemental Wild Shape costs 2 charges", () => {
+  const beasts = loadTestCatalog<BeastData[]>("beasts");
+  const airElemental = beasts.find((b) => b.name === "Air Elemental" && b.source === "MM")!;
+  const moon10 = makeChar({
+    classes: [{ className: "Druid", source: "PHB", level: 10, subclassName: "Circle of the Moon" }],
+    resourceCounters: { wild_shape: { id: "wild_shape", name: "Wild Shape", current: 2, max: 2, resetOn: "short" } },
+  });
+
+  const patch = adoptWildShape(moon10, airElemental)!;
+  assert.equal(patch.resourceCounters.wild_shape.current, 0);
+  assert.equal(patch.activeWildShape?.name, "Air Elemental");
+});
+
+test("adoptWildShape: refuses when the charges cannot cover the form, and changes nothing", () => {
+  const beasts = loadTestCatalog<BeastData[]>("beasts");
+  const wolf = beasts.find((b) => b.name === "Wolf" && b.source === "MM")!;
+  const airElemental = beasts.find((b) => b.name === "Air Elemental" && b.source === "MM")!;
+  const spent = makeChar({
+    classes: [{ className: "Druid", source: "PHB", level: 2 }],
+    resourceCounters: { wild_shape: { id: "wild_shape", name: "Wild Shape", current: 0, max: 2, resetOn: "short" } },
+  });
+  assert.equal(adoptWildShape(spent, wolf), null);
+
+  const moonWithOne = makeChar({
+    classes: [{ className: "Druid", source: "PHB", level: 10, subclassName: "Circle of the Moon" }],
+    resourceCounters: { wild_shape: { id: "wild_shape", name: "Wild Shape", current: 1, max: 2, resetOn: "short" } },
+  });
+  assert.equal(adoptWildShape(moonWithOne, airElemental), null);
+});
+
+test("adoptWildShape: a non-druid cannot adopt a form", () => {
+  const beasts = loadTestCatalog<BeastData[]>("beasts");
+  const wolf = beasts.find((b) => b.name === "Wolf" && b.source === "MM")!;
+  const fighter = makeChar({ classes: [{ className: "Fighter", source: "PHB", level: 5 }] });
+  assert.equal(adoptWildShape(fighter, wolf), null);
+});
+
+test("adoptWildShape: an Archdruid keeps unlimited charges", () => {
+  const beasts = loadTestCatalog<BeastData[]>("beasts");
+  const wolf = beasts.find((b) => b.name === "Wolf" && b.source === "MM")!;
+  const archdruid = makeChar({
+    classes: [{ className: "Druid", source: "PHB", level: 20 }],
+    resourceCounters: { wild_shape: { id: "wild_shape", name: "Wild Shape", current: 999, max: 999, resetOn: "short" } },
+  });
+  assert.equal(adoptWildShape(archdruid, wolf)!.resourceCounters.wild_shape.current, 999);
+});

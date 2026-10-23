@@ -12,13 +12,12 @@ import { useCharacters } from "../../context/CharacterContext";
 import { useAppTheme } from "../../context/ThemeContext";
 import { useResponsiveLayout } from "../../hooks/useResponsiveLayout";
 import { findSpell, getSpells } from "../../services/dataService";
-import {
-  calculateMulticlassSpellSlots,
-  evaluateCharacter,
-  formatModifier,
-} from "../../services/dndRules";
+import { calculateMulticlassSpellSlots, formatModifier } from "../../services/dndRules";
+import { evaluateCharacter } from "../../rules/characterEvaluation";
+import { currentCompendium } from "../../services/compendium";
 import {
   isSpellAvailableForClass,
+  profileSpellContext,
   type ClassSpellProfile,
 } from "../../rules/spellcasting";
 import {
@@ -37,6 +36,11 @@ import {
   removeInscribedRitual as removeInscribedRitualRule,
   swapSubclassSpell,
   resetSubclassSpellSwap,
+  isPrepared as isSpellPrepared,
+  togglePrepared as togglePreparedRule,
+  learnSpell as learnSpellRule,
+  forgetSpell as forgetSpellRule,
+  countPrepared,
 } from "../../rules/characterSpells";
 import {
   isSubclassSpellReplaceable,
@@ -49,11 +53,9 @@ import {
   getMysticArcanumTiers,
   hasInvocation,
   isSpellEligibleForRitualBook,
-  pruneInvalidInvocations,
 } from "../../rules/ruleChoices";
 import { effectiveScores } from "../../rules/abilities";
 import { proficiencyBonus, totalLevel } from "../../rules/proficiencies";
-import type { Character, KnownSpell } from "../../types/character";
 import type { SpellData } from "../../types/dnd5e";
 import { Badge } from "../ui/Badge";
 import { Button } from "../ui/Button";
@@ -124,17 +126,6 @@ function formatOrdinal(n: number): string {
   return `${n}th`;
 }
 
-function checkIsSpellPrepared(
-  item: { name: string; source: string; ownerKey?: string },
-  profile: ClassSpellProfile,
-  preparedSpellsList: string[]
-): boolean {
-  const ownerKey = item.ownerKey || `${profile.className}__${profile.source}`;
-  const canonicalKey = `${item.name}__${item.source}__${ownerKey}`;
-  const legacyKey = `${item.name}__${item.source}`;
-  return preparedSpellsList.some((k) => k === canonicalKey || k === legacyKey);
-}
-
 function getSubclassPreparedBadgeLabel(className: string): string {
   switch (className) {
     case "Cleric":
@@ -201,7 +192,7 @@ export const SpellsTab: React.FC = () => {
   // Unified Character Evaluation pass
   const evaluated = useMemo(() => {
     if (!currentCharacter) return null;
-    return evaluateCharacter(currentCharacter, { activeBooks });
+    return evaluateCharacter(currentCharacter, { compendium: currentCompendium(), activeBooks });
   }, [currentCharacter, activeBooks]);
 
   // Spell slot ledger from pure domain engine
@@ -299,7 +290,7 @@ export const SpellsTab: React.FC = () => {
       }
     }
 
-    const ownerKey = `${activeProfile.className}__${activeProfile.source}`;
+    const ownerKey = activeProfile.ownerKey;
     for (const spell of activeProfile.alwaysPreparedSpells || []) {
       const norm = spell.name.toLowerCase();
       if (!seenNames.has(norm)) {
@@ -373,19 +364,8 @@ export const SpellsTab: React.FC = () => {
   // Prepared non-cantrip spells count for the active profile (excluding always-prepared spells)
   const preparedCount = useMemo(() => {
     if (!activeProfile || !currentCharacter) return 0;
-    const prepList = currentCharacter.preparedSpells || [];
-    const alwaysPrepNames = new Set(
-      (activeProfile.alwaysPreparedSpells || []).map((s) => s.name.toLowerCase())
-    );
-
-    return activeKnownSpells.filter((item) => {
-      if (alwaysPrepNames.has(item.name.toLowerCase())) return false;
-      const details = findSpell(item.name, item.source);
-      const lvl = details?.level ?? 0;
-      if (lvl === 0) return false;
-      return checkIsSpellPrepared(item, activeProfile, prepList);
-    }).length;
-  }, [activeProfile, currentCharacter, activeKnownSpells]);
+    return countPrepared(currentCharacter, activeProfile, currentCompendium());
+  }, [activeProfile, currentCharacter]);
 
   const alwaysPreparedCount = useMemo(() => {
     if (!activeProfile || !activeProfile.alwaysPreparedSpells) return 0;
@@ -456,7 +436,7 @@ export const SpellsTab: React.FC = () => {
         s,
         targetCastingClass,
         activeBooks,
-        activeProfile.subclass
+        profileSpellContext(activeProfile)
       );
       const matchesMaxLevel = s.level <= activeProfile.maxSpellLevel;
       const matchesLevel =
@@ -839,89 +819,18 @@ export const SpellsTab: React.FC = () => {
 
   // Known & Prepared Spell handlers
   const togglePrepared = (item: { name: string; source: string; ownerKey?: string }) => {
-    if (
-      currentProfile.alwaysPreparedSpells?.some(
-        (s) => s.name.toLowerCase() === item.name.toLowerCase()
-      )
-    ) {
-      return;
-    }
-
-    const ownerKey = item.ownerKey || `${currentProfile.className}__${currentProfile.source}`;
-    const canonicalKey = `${item.name}__${item.source}__${ownerKey}`;
-    const legacyKey = `${item.name}__${item.source}`;
-    const currentPrep = currentCharacter.preparedSpells || [];
-    const isCurrentlyPrepared = currentPrep.some((k) => k === canonicalKey || k === legacyKey);
-
-    let nextPrep: string[];
-    if (isCurrentlyPrepared) {
-      nextPrep = currentPrep.filter((k) => k !== canonicalKey && k !== legacyKey);
-    } else {
-      const spell = findSpell(item.name, item.source);
-      const targetClass =
-        currentProfile.className === "Fighter" || currentProfile.className === "Rogue"
-          ? "Wizard"
-          : currentProfile.className;
-      if (
-        spell &&
-        !isSpellAvailableForClass(spell, targetClass, activeBooks, currentProfile.subclass)
-      ) {
-        return;
-      }
-      nextPrep = [...currentPrep, canonicalKey];
-    }
-    updateCharacter(currentCharacter.id, {
-      preparedSpells: nextPrep,
-    });
+    const next = togglePreparedRule(currentCharacter, currentProfile, item, currentCompendium(), activeBooks);
+    if (next !== currentCharacter) updateCharacter(currentCharacter.id, next);
   };
 
   const addSpellToCharacter = (name: string, source: string) => {
-    const spell = findSpell(name, source);
-    const targetClass =
-      currentProfile.className === "Fighter" || currentProfile.className === "Rogue"
-        ? "Wizard"
-        : currentProfile.className;
-    if (
-      spell &&
-      !isSpellAvailableForClass(spell, targetClass, activeBooks, currentProfile.subclass)
-    ) {
-      return;
-    }
-    const ownerKey = `${currentProfile.className}__${currentProfile.source}`;
-    const exists = (currentCharacter.knownSpells || []).some(
-      (s) =>
-        s.name === name &&
-        s.source === source &&
-        (s.ownerKey === ownerKey || (!s.ownerKey && s.className === currentProfile.className))
-    );
-    if (!exists) {
-      const newKnownSpell: KnownSpell = {
-        name,
-        source,
-        ownerKey,
-        className: currentProfile.className,
-      };
-      updateCharacter(currentCharacter.id, {
-        knownSpells: [...(currentCharacter.knownSpells || []), newKnownSpell],
-      });
-    }
+    const next = learnSpellRule(currentCharacter, currentProfile, { name, source }, currentCompendium(), activeBooks);
+    if (next !== currentCharacter) updateCharacter(currentCharacter.id, next);
   };
 
-  const removeSpellFromCharacter = (name: string, source: string, ownerKey: string) => {
-    const filtered = (currentCharacter.knownSpells || []).filter(
-      (s) => !(s.name === name && s.source === source && (s.ownerKey === ownerKey || s.ownerKey === undefined))
-    );
-    const canonicalKey = `${name}__${source}__${ownerKey}`;
-    const legacyKey = `${name}__${source}`;
-    const nextPrep = (currentCharacter.preparedSpells || []).filter(
-      (k) => k !== canonicalKey && k !== legacyKey && !k.startsWith(`${name}__${source}__`)
-    );
-    const updatedChar: Character = {
-      ...currentCharacter,
-      knownSpells: filtered,
-      preparedSpells: nextPrep,
-    };
-    updateCharacter(currentCharacter.id, pruneInvalidInvocations(updatedChar));
+  const removeSpellFromCharacter = (name: string, source: string, ownerKey?: string) => {
+    const next = forgetSpellRule(currentCharacter, currentProfile, { name, source, ownerKey }, currentCompendium());
+    updateCharacter(currentCharacter.id, next);
   };
 
   const openSwapModal = (item: {
@@ -1085,7 +994,7 @@ export const SpellsTab: React.FC = () => {
       {currentProfile.preparedLimit !== undefined && (
         <Card style={[styles.preparedCard, { borderColor: theme.border, backgroundColor: theme.surface }]}>
           <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
-            <View>
+            <View style={{ flex: 1, minWidth: 0 }}>
               <Text style={[styles.sectionTitle, { color: theme.text }]}>
                 {currentProfile.className.toUpperCase()} PREPARED SPELLS
               </Text>
@@ -1460,7 +1369,7 @@ export const SpellsTab: React.FC = () => {
 
       {/* Known / Prepared Spells Header */}
       <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-        <View>
+        <View style={{ flex: 1, minWidth: 0 }}>
           <Text style={[styles.sectionTitle, { color: theme.text }]}>
             {currentProfile.className === "Monk"
               ? "MONK KI SPELLS"
@@ -1511,11 +1420,7 @@ export const SpellsTab: React.FC = () => {
 
             <Card style={{ padding: 4 }}>
               {spellsAtLevel.map((item, idx) => {
-                const isPrepared = checkIsSpellPrepared(
-                  item,
-                  currentProfile,
-                  currentCharacter.preparedSpells || []
-                );
+                const isPrepared = isSpellPrepared(currentCharacter, currentProfile, item);
 
                 return (
                   <View
@@ -1817,12 +1722,8 @@ export const SpellsTab: React.FC = () => {
 
             <ScrollView style={{ flex: 1 }}>
               {filteredPickerSpells.slice(0, 100).map((s) => {
-                const ownerKey = `${currentProfile.className}__${currentProfile.source}`;
                 const alreadyHas = activeKnownSpells.some(
-                  (k) =>
-                    k.name === s.name &&
-                    k.source === s.source &&
-                    (k.ownerKey === ownerKey || (!k.ownerKey && k.className === currentProfile.className))
+                  (k) => k.name === s.name && k.source === s.source && k.ownerKey === currentProfile.ownerKey
                 );
 
                 return (

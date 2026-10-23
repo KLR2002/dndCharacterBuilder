@@ -57,6 +57,19 @@ const PROPERTY_MAP: Record<string, string> = {
   V: "Versatile",
 };
 
+/**
+ * The property name one source-data property entry names, or null when the entry names none. A string entry is a
+ * code with an optional book suffix ("F|OTB"). An object entry names its property in its uid ("2H|XPHB") and
+ * carries a note, which is dropped. Either code is mapped through PROPERTY_MAP.
+ */
+function propertyName(entry: unknown): string | null {
+  const uid = typeof entry === "object" && entry !== null ? (entry as { uid?: unknown }).uid : undefined;
+  const code = typeof entry === "string" ? entry : typeof uid === "string" ? uid : null;
+  if (code === null) return null;
+  const base = code.split("|")[0].trim();
+  return PROPERTY_MAP[base] || base;
+}
+
 const DAMAGE_TYPE_MAP: Record<string, string> = {
   S: "slashing",
   P: "piercing",
@@ -89,6 +102,8 @@ export async function scrapeItems(client: ToolsClient): Promise<ItemModel[]> {
   }
 
   const baseItemsList = baseData.baseitem || [];
+  // Base items are told apart from magic items by their origin: only a base weapon carries a category.
+  const baseItemKeys = new Set(baseItemsList.map((raw) => sourceKey(raw.name, raw.source)));
   const combined = [...baseItemsList, ...(itemData.item || [])];
   const resolved = resolveAllCopies(combined);
 
@@ -110,6 +125,10 @@ export async function scrapeItems(client: ToolsClient): Promise<ItemModel[]> {
     const key = `${name.toLowerCase()}__${source.toLowerCase()}`;
     if (seen.has(key)) continue;
     seen.add(key);
+
+    const isBaseWeapon = itemCategory === "Weapon" && baseItemKeys.has(sourceKey(raw.name, raw.source));
+    const rawWeaponCategory: unknown = raw.weaponCategory;
+    const weaponCategory = isBaseWeapon && (rawWeaponCategory === "simple" || rawWeaponCategory === "martial") ? rawWeaponCategory : undefined;
 
     // Rarity
     const rawRarity = raw.rarity || "none";
@@ -142,8 +161,8 @@ export async function scrapeItems(client: ToolsClient): Promise<ItemModel[]> {
     const properties: string[] = [];
     if (Array.isArray(raw.property)) {
       for (const p of raw.property) {
-        const cleanProp = typeof p === "string" ? p.split("|")[0].trim() : p;
-        properties.push(PROPERTY_MAP[cleanProp] || cleanProp);
+        const name = propertyName(p);
+        if (name !== null) properties.push(name);
       }
     }
 
@@ -200,6 +219,7 @@ export async function scrapeItems(client: ToolsClient): Promise<ItemModel[]> {
       rawEntries: raw.entries,
       ...(bonusWeapon != null && !isNaN(bonusWeapon) ? { bonusWeapon } : {}),
       ...(bonusAc != null && !isNaN(bonusAc) ? { bonusAc } : {}),
+      ...(weaponCategory ? { weaponCategory } : {}),
     });
   }
 
@@ -215,6 +235,11 @@ export async function scrapeItems(client: ToolsClient): Promise<ItemModel[]> {
   }
 
   return items;
+}
+
+/** The key that identifies an item by its own name and source, before any cleaning. */
+function sourceKey(name: string, source: string | undefined): string {
+  return `${String(name).toLowerCase()}__${String(source || "PHB").toLowerCase()}`;
 }
 
 function getItemCategory(typeCode: string, raw: any): string {
@@ -259,10 +284,7 @@ function generateMagicVariants(baseItems: any[]): ItemModel[] {
 
   const formatProps = (props: any[] | undefined): string[] => {
     if (!Array.isArray(props)) return [];
-    return props.map((p) => {
-      const clean = typeof p === "string" ? p.split("|")[0].trim() : p;
-      return PROPERTY_MAP[clean] || clean;
-    });
+    return props.map(propertyName).filter((name): name is string => name !== null);
   };
 
   // 1. Weapon Variants (+1, +2, +3, Weapon of Warning, Vicious Weapon)

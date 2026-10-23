@@ -4,6 +4,18 @@ import { renderEntries } from "../parser/entry-renderer.ts";
 import { cleanTags } from "../parser/tag-cleaner.ts";
 import { extractRuleChoices, RULE_CHOICE_LEVELS, ruleChoiceKey, type ExtractedRuleChoice } from "./rule-choices.ts";
 import type { RaceModel, SubraceModel, TraitModel } from "../types/models.ts";
+import type { ProficiencyReport } from "../types/proficiency.ts";
+import {
+  newProficiencyReport,
+  structuredGrants,
+  type StructuredProficiencies,
+} from "../parser/proficiency-grants.ts";
+import { PROFICIENCY_GRANT_OVERRIDES } from "../overrides/proficiency-grants.ts";
+
+/** Whether a 5e.tools structured proficiency field names at least one entry. */
+function hasEntries(field: unknown): boolean {
+  return Array.isArray(field) && field.length > 0;
+}
 
 /** 5e.tools prefixes variant subraces with this; it is a source convention, not a rules term. */
 const VARIANT_PREFIX = /^Variant;?\s*/;
@@ -71,7 +83,10 @@ const SIZE_MAP: Record<string, string> = {
   G: "Gargantuan",
 };
 
-export async function scrapeRaces(client: ToolsClient): Promise<RaceModel[]> {
+export async function scrapeRaces(
+  client: ToolsClient,
+  report: ProficiencyReport = newProficiencyReport()
+): Promise<RaceModel[]> {
   console.log("  → Fetching races from data/races.json...");
   const rawData = await client.fetchJson<{ race: any[]; subrace?: any[] }>("data/races.json");
 
@@ -113,7 +128,24 @@ export async function scrapeRaces(client: ToolsClient): Promise<RaceModel[]> {
 
     const normalized = normalizeSubraceName(rawSub.name);
 
+    // Structured tool, language, weapon and armor entries on the subrace, owned by "Subrace" and named with its race.
+    const proficiencies = structuredGrants(
+      { source: rawSub.source, owner: "Subrace", feature: `${parentName} (${normalized.name})`, level: 0 },
+      {
+        tools: rawSub.toolProficiencies,
+        languages: rawSub.languageProficiencies,
+        skills: rawSub.skillProficiencies,
+        weapons: rawSub.weaponProficiencies,
+        armor: rawSub.armorProficiencies,
+      },
+      PROFICIENCY_GRANT_OVERRIDES.subraces
+    );
+    if (proficiencies.unparsed.length > 0) {
+      report.unparsed.push({ owner: "Subrace", feature: `${parentName} (${normalized.name})`, level: 0, unparsed: proficiencies.unparsed });
+    }
+
     const subraceModel: SubraceModel = {
+      ...(proficiencies.grants.length > 0 ? { grants: proficiencies.grants } : {}),
       name: normalized.name,
       isVariant: normalized.isVariant,
       source: rawSub.source,
@@ -191,7 +223,28 @@ export async function scrapeRaces(client: ToolsClient): Promise<RaceModel[]> {
     const raceKeyNoSource = `${raw.name.toLowerCase()}__`;
     const attachedSubraces = subraceMap.get(raceKey) || subraceMap.get(raceKeyNoSource) || [];
 
+    // Structured tool and language entries on the race itself; a block the mapping cannot state is reported,
+    // not granted. A race whose record names no language speaks Common, as every character does; a race from
+    // Mordenkainen's Presents, whose records name none, also gets one language of the player's choice.
+    const noLanguageEntries: StructuredProficiencies["languages"] =
+      raw.source === "MPMM" ? [{ common: true, other: true }] : [{ common: true }];
+    const proficiencies = structuredGrants(
+      { source: raw.source, owner: "Race", feature: raw.name, level: 0 },
+      {
+        tools: raw.toolProficiencies,
+        languages: hasEntries(raw.languageProficiencies) ? raw.languageProficiencies : noLanguageEntries,
+        skills: raw.skillProficiencies,
+        weapons: raw.weaponProficiencies,
+        armor: raw.armorProficiencies,
+      },
+      PROFICIENCY_GRANT_OVERRIDES.races
+    );
+    if (proficiencies.unparsed.length > 0) {
+      report.unparsed.push({ owner: "Race", feature: raw.name, level: 0, unparsed: proficiencies.unparsed });
+    }
+
     races.push({
+      ...(proficiencies.grants.length > 0 ? { grants: proficiencies.grants } : {}),
       name: raw.name,
       source: raw.source,
       size: sizes,

@@ -29,7 +29,7 @@ Gaining levels in multiple classes subject to ability score prerequisites and th
 _Avoid_: Cross-classing, hybrid class
 
 **Rule Choice**:
-A selection the player makes from a fixed set of options granted by a single rule, where exactly one option takes effect. Distinct from a *Proficiency Choice*, which grants proficiency rather than a feature, and from a *Replacement*, which substitutes one fixed feature for another with no player choice.
+A selection the player makes from a fixed set of options granted by a single rule, where exactly one option takes effect. It originates from ancestry, class, or subclass, and its id is its persisted identity, so ids never change once shipped. The options of a non-SRD Rule Choice come from the Integrated Catalog and are never bundled with the application; without that catalog the choice is not offered, and a character's saved picks are kept. Distinct from a *Proficiency Choice*, which grants proficiency rather than a feature, and from a *Replacement*, which substitutes one fixed feature for another with no player choice.
 _Avoid_: variant, option, mode, toggle
 
 **Ancestral Variant**:
@@ -76,6 +76,10 @@ _Avoid_: DLC spell, bonus spell, non-core spell
 A Druid class feature (gained at 2nd level) allowing the character to magically assume the shape of a beast they have seen before for up to half their druid level in hours, expending a use from a pool that recovers on a Short or Long Rest.
 _Avoid_: Shapeshift, polymorph, animal form, morph
 
+**Active Wild Shape**:
+The beast or elemental form a Druid is currently in. It has its own armor class and its own hit points (the Wild Shape hit points), separate from the character's normal hit points. Temporary hit points travel with the form: assuming a shape moves the character's temporary hit points onto it, temporary hit points granted while in the form go to the form, and the Revert button moves them back. When the Wild Shape hit points reach 0 the form ends, its temporary hit points having absorbed damage first, and any excess damage carries over to the character's normal hit points; healing never carries over. A form that ends at 0 Wild Shape hit points, whether by damage or by setting its hit points to 0, takes its temporary hit points with it.
+_Avoid_: Beast form, current shape, transformation
+
 **Circle Forms**:
 The Circle of the Moon subclass feature that replaces the standard Wild Shape CR limit with higher combat ratings (CR 1 at 2nd level, CR equal to Druid level divided by 3 at 6th level and higher), while continuing to adhere to standard swimming and flying speed level restrictions.
 _Avoid_: Combat wild shape, moon forms, enhanced shape
@@ -83,6 +87,8 @@ _Avoid_: Combat wild shape, moon forms, enhanced shape
 **Beast Statblock**:
 The complete game statistics (size, AC, hit points, speeds, ability scores, traits, and actions) of a beast creature available for Wild Shape reference and active transformation tracking.
 _Avoid_: Monster sheet, creature profile, beast card
+
+The SRD Baseline carries the SRD's beasts and elementals, so a Druid can browse and adopt forms without an Integrated Catalog. Which Beast Statblocks exist follows Sourcebook Gating; Wild Shape adds only its own limits (challenge rating, swimming and flying levels, elementals for Moon Druids).
 
 **Elemental Wild Shape**:
 The 10th-level Circle of the Moon feature allowing the expenditure of two Wild Shape uses simultaneously to assume the form of an Air, Earth, Fire, or Water Elemental.
@@ -108,6 +114,26 @@ _Avoid_: Spell reroll, school swap, spell retrain
 A class feature (such as Rogue 1st/6th level, Bard 3rd/10th level, Knowledge Cleric 1st level, Ranger Deft Explorer, or the Skill Expert feat) that doubles the character's proficiency bonus (2 × PB) on ability checks using a chosen proficient skill or tool.
 _Avoid_: Double proficiency, mastery, skill mastery, spec
 
+**Proficiency Grant**:
+What a single rule (ancestry, background, class, subclass feature, or feat) gives a character in proficiencies: skills, tools, languages, weapons, armor, or saving throws. It is either fixed or a *Proficiency Choice* in which the player picks from a stated pool. It is part of the Catalog's data for that rule, not something the app encodes.
+_Avoid_: Bonus proficiency (that is a feature name), training
+
+**Proficiency Choice**:
+A Proficiency Grant that lets the player pick from a pool of entries in one category. The pick is stored against the grant's *Grant Id*, and is released with a notice when the rule that grants it stops applying (including an optional feature turned off). Distinct from a *Rule Choice*, which grants a feature rather than proficiency.
+_Avoid_: Proficiency option, proficiency selection
+
+**Grant Id**:
+The stable key of a Proficiency Grant, derived from what the grant is (its category, kind and the names it grants or picks from), never from its position in the feature. A grant keeps the position-based ids it had before as aliases, so a saved pick still resolves after a re-scrape. A choice's id leaves out its pool and count.
+_Avoid_: Index key
+
+**Proficiency Sheet**:
+The single complete answer to "what is this character proficient in", gathering every Proficiency Grant together with any *Added Proficiency*. It is derived, never stored: a rule-granted entry exists only while the ancestry, background, class level, subclass or feat that grants it applies, and cannot be removed by hand. Expertise and the character card read from it.
+_Avoid_: Proficiency ledger, proficiency list
+
+**Added Proficiency**:
+A tool or language the player adds to a character by hand, for example one learned during downtime. It sits beside rule-granted proficiencies, is marked as added, and can be removed.
+_Avoid_: Custom proficiency, manual grant
+
 **Scaling Combat Die**:
 A class-specific die (such as Bardic Inspiration, Rogue Sneak Attack, or Monk Martial Arts) whose die face or dice pool size scales automatically at specific class level milestones.
 _Avoid_: Growth die, level die, damage counter
@@ -117,7 +143,7 @@ Broad weapon proficiency groups ("Simple weapons", "Martial weapons") that super
 _Avoid_: Weapon bundles, mass proficiencies, weapon sets
 
 **Monk Weapon**:
-Shortswords and any simple melee weapons that do not have the two-handed or heavy property, allowing a Monk to use Dexterity for attack and damage rolls and substitute their scaling Martial Arts die if it is higher than the weapon's base damage die.
+Shortswords and any simple melee weapons that do not have the two-handed or heavy property, allowing a Monk to use Dexterity for attack and damage rolls and substitute their scaling Martial Arts die if it is higher than the weapon's base damage die. A weapon chosen through a Monk subclass's weapon choice (such as Way of the Kensei) is also a Monk Weapon, whichever subclass grants the choice.
 _Avoid_: Martial arts weapon, ki weapon
 
 **Ki Spellcasting Profile**:
@@ -197,8 +223,12 @@ The idempotent domain module enforcing progression prerequisites, modular rule c
 _Avoid_: Choice cleaner, state sanitizer, pruning cascade
 
 **Spellbook Ledger**:
-The pure domain module governing spell slot expenditure, pact magic, sorcery points, ritual inscriptions, and Mystic Arcanum.
+The pure domain module governing spell slot expenditure, pact magic, sorcery points, ritual inscriptions, Mystic Arcanum, and the identity of known and prepared spells (learning, forgetting, preparing).
 _Avoid_: Spell manager, casting controller, slot tracker
+
+**Spell Owner**:
+The class spellcasting feature, or granting feature such as Pact of the Tome or Path of the Giant, that a known or prepared spell belongs to. The same spell can be known or prepared separately per Spell Owner on a multiclass character.
+_Avoid_: spell class, owner tag
 
 **Tactical Action Ledger**:
 The evaluated collection of standard actions, class bonus actions, reactions, and attack riders available to a character in combat.
@@ -229,12 +259,20 @@ The minimal, unencumbered player compendium strictly derived from the 5.1 System
 _Avoid_: Default books, base sourcebook, vanilla data
 
 **Integrated Catalog**:
-The complete player compendium fetched from 5e.tools and persisted in client storage (IndexedDB).
+The complete player compendium fetched from 5e.tools and persisted in client storage (IndexedDB). It carries a *Catalog Format*.
 _Avoid_: Scraped dump, external database, download cache
+
+**Catalog Format**:
+The number an Integrated Catalog is saved with. The application bumps the required number when scraped data changes in a way a cached catalog cannot satisfy. A catalog saved below it, or with no number, is *stale*: it still loads, its affected choices are hidden, saved picks are kept, and Settings asks for a re-sync. The SRD Baseline is never stale.
+_Avoid_: Version, schema version, cache key
 
 **Sourcebook Gating**:
 The UI restriction that hides all sourcebook selection and filtering controls until the Integrated Catalog has been successfully populated.
 _Avoid_: Book lock, catalog curtain, toggle hiding
+
+**Compendium**:
+The synchronous, read-only view over the active player catalog (the SRD Baseline or the Integrated Catalog). Listings are scoped to the active sourcebooks; lookups by name are not, so a character's existing choices always resolve.
+_Avoid_: data service, catalog store, content provider
 
 **Dataset Swapping**:
 The runtime cutover mechanism that unloads the SRD Baseline from memory and exclusively queries the Integrated Catalog once integration is active, preventing duplicate entities or overlapping source confusion.

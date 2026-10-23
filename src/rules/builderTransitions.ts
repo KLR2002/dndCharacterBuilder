@@ -1,28 +1,28 @@
 import type {
   AbilityKey,
+  AsiSelection,
   Character,
   CharacterClass,
   InventoryItem,
   SkillChoiceEntry,
 } from "../types/character.ts";
 import type { BackgroundData } from "../types/dnd5e.ts";
+import { reconcile, teardownSubclass } from "./characterReconciler.ts";
+import { applyAsiSelection, subclassLevel } from "./leveling.ts";
+import { maxHp } from "./hp.ts";
+import { fullHealAtLevelUp, followRaisedMaxHp } from "./hitPoints.ts";
+import { currentCompendium, type Compendium } from "../services/compendium.ts";
+import { normalizeSkillName } from "./skills.ts";
+import { moveLegacySkillPicks } from "./proficiencyPicks.ts";
+import { CUSTOM_BACKGROUND_SKILLS_ID, CUSTOM_BACKGROUND_TOOLS_OR_LANGUAGES_ID, isCustomBackground } from "./customBackground.ts";
+import { ABILITY_NAMES } from "./abilities.ts";
 import {
   STANDARD_ARRAY,
   MULTICLASS_PREREQUISITES,
-  MULTICLASS_PROFICIENCIES,
-  DND_SKILLS,
 } from "../constants/rules.ts";
-import { pruneInvalidExpertise } from "./expertise.ts";
-import {
-  pruneInvalidFightingStyles,
-  pruneInvalidManeuvers,
-  pruneInvalidInvocations,
-  pruneInvalidMysticArcanum,
-  pruneInvalidInfusions,
-  syncWarlockTomeCantrips,
-  syncAncientSecretsRituals,
-} from "./ruleChoices.ts";
-import type { CharacterCatalogs } from "./characterEvaluation.ts";
+import { allCatalogClasses, findClassData, type CharacterCatalogs } from "./catalogs.ts";
+import { multiclassGrantsOf } from "./proficiencySheet.ts";
+import { resolveStartingEquipment, type StartingEquipmentKit } from "./startingEquipment.ts";
 
 export function setStandardArrayPick(
   character: Character,
@@ -73,15 +73,6 @@ export function setChoiceRacialBonus(
     racialAbilityBonuses: updatedBonuses,
   };
 }
-
-const ABILITY_NAMES: Record<AbilityKey, string> = {
-  str: "Strength",
-  dex: "Dexterity",
-  con: "Constitution",
-  int: "Intelligence",
-  wis: "Wisdom",
-  cha: "Charisma",
-};
 
 function getPrereqForClass(className: string) {
   const match = Object.keys(MULTICLASS_PREREQUISITES).find(
@@ -142,31 +133,16 @@ export function validateMulticlass(
   return { ok: true };
 }
 
-const ROGUE_SKILL_LIST = [
-  "Acrobatics",
-  "Athletics",
-  "Deception",
-  "Insight",
-  "Intimidation",
-  "Investigation",
-  "Perception",
-  "Performance",
-  "Persuasion",
-  "Sleight of Hand",
-  "Stealth",
-];
-
-function getMulticlassProficiencyGrant(className: string) {
-  const match = Object.keys(MULTICLASS_PROFICIENCIES).find(
-    (k) => k.toLowerCase() === className.toLowerCase()
-  );
-  return match ? MULTICLASS_PROFICIENCIES[match] : undefined;
-}
-
+/**
+ * Adds a class entry for `className` from `source`, or one level to the class the character already holds.
+ * A later class records the multiclass grants of the Catalog class it names, and a skill choice when its
+ * record gives one. `catalogs` defaults to the process-wide Compendium.
+ */
 export function addMulticlassLevel(
   character: Character,
   className: string,
-  source: string
+  source: string,
+  catalogs?: CharacterCatalogs
 ): Character {
   const existingIdx = character.classes.findIndex(
     (c) => c.className.toLowerCase() === className.toLowerCase()
@@ -186,7 +162,7 @@ export function addMulticlassLevel(
   const newClass: CharacterClass = { className, source, level: 1 };
   const updatedClasses = [...character.classes, newClass];
 
-  const grants = getMulticlassProficiencyGrant(className);
+  const grants = multiclassGrantsOf({ className, source }, allCatalogClasses(catalogs));
   const updatedSkillChoices = character.skillChoices ? [...character.skillChoices] : [];
   const updatedMulticlassProfs = character.multiclassProficiencies
     ? [...character.multiclassProficiencies]
@@ -198,18 +174,17 @@ export function addMulticlassLevel(
       updatedSkillChoices.push({
         id: choiceId,
         origin: "class",
-        choose: 1,
-        from: className.toLowerCase() === "rogue" ? ROGUE_SKILL_LIST : DND_SKILLS.map((s) => s.name),
+        choose: grants.skills.choose,
+        from: [...grants.skills.from],
         picked: [],
       });
     }
 
     updatedMulticlassProfs.push({
       className,
-      ...(grants.armor ? { armor: [...grants.armor] } : {}),
-      ...(grants.weapons ? { weapons: [...grants.weapons] } : {}),
-      ...(grants.tools ? { tools: [...grants.tools] } : {}),
-      ...(grants.skills ? { skills: grants.skills } : {}),
+      ...(grants.armor.length > 0 ? { armor: grants.armor } : {}),
+      ...(grants.weapons.length > 0 ? { weapons: grants.weapons } : {}),
+      ...(grants.tools.length > 0 ? { tools: grants.tools } : {}),
     });
   }
 
@@ -222,42 +197,184 @@ export function addMulticlassLevel(
 }
 
 /**
- * Records a player's pick for a Rule Choice, or clears it when the option is
- * deselected. Choices are keyed by id, so switching ancestries cannot leave a
- * stale pick behind under an id the new ancestry never offered.
+ * Confirms a level-up: adds one level to the class, then, when full heal on level-up is on,
+ * sets current HP to the levelled character's max and clears death saves. Temp HP and hit dice
+ * are not changed. The max is read after the level is added, so a new class's hit die counts.
  */
-export function setRuleChoicePick(
+export function confirmLevelUp(
   character: Character,
-  id: string,
-  trait: string,
-  option: string,
-  from: string[],
-  choose: number,
-  origin: "race" | "class" | "subclass" = "race"
+  className: string,
+  source: string,
+  fullHealOnLevelUp: boolean
 ): Character {
-  const current = character.ruleChoices ?? [];
-  const entry = current.find((rc) => rc.id === id);
-  const picked = entry
-    ? entry.picked.includes(option)
-      ? entry.picked.filter((p) => p !== option)
-      : choose === 1
-      ? [option]
-      : entry.picked.length >= choose
-      ? [...entry.picked.slice(1), option]
-      : [...entry.picked, option]
-    : [option];
-  const originToUse = entry?.origin ?? origin;
-  const next = { id, trait, origin: originToUse, choose, from, picked };
-  const others = current.filter((rc) => rc.id !== id);
-  return {
-    ...character,
-    ruleChoices: picked.length === 0 ? others : [...others, next],
-  };
+  const levelled = addMulticlassLevel(character, className, source);
+  if (!fullHealOnLevelUp) return levelled;
+  const healed = fullHealAtLevelUp(
+    { currentHp: levelled.currentHp, tempHp: levelled.tempHp },
+    maxHp(levelled)
+  );
+  return { ...levelled, ...healed };
+}
+
+/**
+ * Applies an ability score improvement or feat pick. With full heal on level-up on, a max raised by
+ * the pick (Constitution, Tough) lifts current HP with it, but only when the character was at full HP
+ * before the pick. Death saves, temp HP and hit dice are left as they were.
+ */
+export function applyAsiWithHitPoints(
+  character: Character,
+  selection: AsiSelection,
+  fullHealOnLevelUp: boolean,
+  compendium: Compendium = currentCompendium()
+): Character {
+  const picked = applyAsiSelection(character, selection, compendium);
+  if (!fullHealOnLevelUp) return picked;
+  const followed = followRaisedMaxHp(
+    { currentHp: picked.currentHp, tempHp: picked.tempHp },
+    maxHp(character),
+    maxHp(picked)
+  );
+  return { ...picked, ...followed };
 }
 
 /** Drops every recorded Rule Choice, used when the ancestry itself changes. */
 export function clearRuleChoices(character: Character): Character {
   return character.ruleChoices?.length ? { ...character, ruleChoices: [] } : character;
+}
+
+/**
+ * Changes the character's race: drops the race, its ability bonuses, and its race-origin Rule
+ * Choices and skill picks, then reconciles. Class-origin choices are kept.
+ */
+export function changeRace(character: Character, compendium: Compendium = currentCompendium()): Character {
+  // Skill picks saved in the old bucket move into their choices while the race is still held. A pick no choice
+  // takes is the race's legacy entry, and it goes with the race.
+  const migrated = moveLegacySkillPicks(character, compendium);
+  const oldRaceChoices = (migrated.skillChoices || []).filter((sc) => sc.origin === "race");
+  const oldRacePicks = new Set(oldRaceChoices.flatMap((sc) => sc.picked.map(normalizeSkillName)));
+  return reconcile(
+    {
+      ...migrated,
+      race: null,
+      racialAbilityBonuses: {},
+      racialChoiceBonus: [],
+      ruleChoices: (character.ruleChoices || []).filter((rc) => rc.origin !== "race"),
+      skillChoices: (migrated.skillChoices || []).filter((sc) => sc.origin !== "race"),
+      chosenSkills: (migrated.chosenSkills || []).filter((s) => !oldRacePicks.has(normalizeSkillName(s))),
+    },
+    compendium
+  );
+}
+
+/**
+ * Sets a class's subclass. Tears down the previous subclass's dependents, unlearns the spells the
+ * caller has confirmed as orphaned (matched by name), then reconciles.
+ */
+export function changeSubclass(
+  character: Character,
+  className: string,
+  newSubclassName: string,
+  subclassSource: string,
+  unlearnOrphaned: string[] = [],
+  compendium: Compendium = currentCompendium()
+): Character {
+  const existing = character.classes.find((c) => c.className === className);
+  const oldSubclass = existing?.subclassName || existing?.subclass;
+
+  let updated = character;
+  if (oldSubclass && oldSubclass !== newSubclassName) {
+    updated = teardownSubclass(updated, className, oldSubclass, compendium);
+  }
+
+  if (unlearnOrphaned.length > 0) {
+    const unlearnSet = new Set(unlearnOrphaned.map((s) => s.toLowerCase()));
+    updated = {
+      ...updated,
+      knownSpells: (updated.knownSpells || []).filter((k) => !unlearnSet.has(k.name.toLowerCase())),
+    };
+  }
+
+  const updatedClasses = updated.classes.map((c) =>
+    c.className === className
+      ? { ...c, subclassName: newSubclassName, subclassSource, subclass: newSubclassName }
+      : c
+  );
+
+  return reconcile({ ...updated, classes: updatedClasses }, compendium);
+}
+
+/**
+ * In SRD mode each class has exactly one subclass, so there is nothing to choose: once a class
+ * reaches its subclass level without one, that subclass is applied through `changeSubclass`. Classes
+ * with several subclasses are left alone, and an integrated compendium is never changed.
+ */
+export function applySoleSubclasses(character: Character, compendium: Compendium = currentCompendium()): Character {
+  if (compendium.integrated) return character;
+
+  let updated = character;
+  for (const entry of character.classes) {
+    if (entry.subclassName || entry.subclass || entry.level < subclassLevel(entry.className)) continue;
+    const subclasses = findClassData(compendium.for().classes(), entry)?.subclasses ?? [];
+    if (subclasses.length !== 1) continue;
+    const [sole] = subclasses;
+    updated = changeSubclass(updated, entry.className, sole.name, sole.source, [], compendium);
+  }
+  return updated;
+}
+
+/**
+ * Removes one level of a class. Removing a class's last level drops the class and every skill
+ * pick it granted. Removing a higher level keeps the class and drops the subclass when the new
+ * level falls below its requirement. Either way the old subclass's dependents are torn down,
+ * then the character is reconciled.
+ */
+export function removeClassLevel(
+  character: Character,
+  className: string,
+  compendium: Compendium = currentCompendium()
+): Character {
+  const existing = character.classes.find((c) => c.className === className);
+  if (!existing) return character;
+
+  const oldSubclass = existing.subclassName || existing.subclass;
+  let updated = character;
+  let updatedClasses: CharacterClass[];
+
+  if (existing.level <= 1) {
+    updated = teardownSubclass(updated, className, oldSubclass || "", compendium);
+    updatedClasses = updated.classes.filter((c) => c.className !== className);
+
+    const classSourceKey = `Class: ${className}`;
+    const isClassChoice = (sc: SkillChoiceEntry) =>
+      sc.id === classSourceKey || sc.id.startsWith(`multiclass_skill_${className.toLowerCase()}`);
+    const removedPicks = new Set(
+      (updated.skillChoices || []).filter(isClassChoice).flatMap((sc) => sc.picked.map(normalizeSkillName))
+    );
+    updated = {
+      ...updated,
+      skillChoices: (updated.skillChoices || []).filter((sc) => !isClassChoice(sc)),
+      chosenSkills: (updated.chosenSkills || []).filter((s) => !removedPicks.has(normalizeSkillName(s))),
+    };
+  } else {
+    const newLevel = existing.level - 1;
+    const losesSubclass = newLevel < subclassLevel(className) && Boolean(oldSubclass);
+    if (losesSubclass && oldSubclass) {
+      updated = teardownSubclass(updated, className, oldSubclass, compendium);
+    }
+    updatedClasses = updated.classes.map((c) =>
+      c.className === className
+        ? {
+            ...c,
+            level: newLevel,
+            ...(losesSubclass
+              ? { subclassName: undefined, subclass: undefined, subclassSource: undefined }
+              : {}),
+          }
+        : c
+    );
+  }
+
+  return reconcile({ ...updated, classes: updatedClasses }, compendium);
 }
 
 export const STARTING_GOLD_BY_CLASS: Record<string, number> = {
@@ -276,132 +393,82 @@ export const STARTING_GOLD_BY_CLASS: Record<string, number> = {
   Artificer: 125,
 };
 
-export const CLASS_STARTING_EQUIPMENT: Record<
-  string,
-  { name: string; quantity: number; isEquipped: boolean; section: "equipped" | "carried" }[]
-> = {
-  Barbarian: [
-    { name: "Greataxe", quantity: 1, isEquipped: true, section: "equipped" },
-    { name: "Handaxe", quantity: 2, isEquipped: false, section: "carried" },
-    { name: "Explorer's Pack", quantity: 1, isEquipped: false, section: "carried" },
-    { name: "Javelin", quantity: 4, isEquipped: false, section: "carried" },
-  ],
-  Bard: [
-    { name: "Rapier", quantity: 1, isEquipped: true, section: "equipped" },
-    { name: "Diplomat's Pack", quantity: 1, isEquipped: false, section: "carried" },
-    { name: "Lute", quantity: 1, isEquipped: false, section: "carried" },
-    { name: "Leather Armor", quantity: 1, isEquipped: true, section: "equipped" },
-    { name: "Dagger", quantity: 1, isEquipped: false, section: "carried" },
-  ],
-  Cleric: [
-    { name: "Mace", quantity: 1, isEquipped: true, section: "equipped" },
-    { name: "Scale Mail", quantity: 1, isEquipped: true, section: "equipped" },
-    { name: "Light Crossbow", quantity: 1, isEquipped: false, section: "carried" },
-    { name: "Crossbow Bolt", quantity: 20, isEquipped: false, section: "carried" },
-    { name: "Priest's Pack", quantity: 1, isEquipped: false, section: "carried" },
-    { name: "Shield", quantity: 1, isEquipped: true, section: "equipped" },
-    { name: "Holy Symbol", quantity: 1, isEquipped: false, section: "carried" },
-  ],
-  Druid: [
-    { name: "Wooden Shield", quantity: 1, isEquipped: true, section: "equipped" },
-    { name: "Scimitar", quantity: 1, isEquipped: true, section: "equipped" },
-    { name: "Leather Armor", quantity: 1, isEquipped: true, section: "equipped" },
-    { name: "Explorer's Pack", quantity: 1, isEquipped: false, section: "carried" },
-    { name: "Druidic Focus", quantity: 1, isEquipped: false, section: "carried" },
-  ],
-  Fighter: [
-    { name: "Chain Mail", quantity: 1, isEquipped: true, section: "equipped" },
-    { name: "Longsword", quantity: 1, isEquipped: true, section: "equipped" },
-    { name: "Shield", quantity: 1, isEquipped: true, section: "equipped" },
-    { name: "Light Crossbow", quantity: 1, isEquipped: false, section: "carried" },
-    { name: "Crossbow Bolt", quantity: 20, isEquipped: false, section: "carried" },
-    { name: "Dungeoneer's Pack", quantity: 1, isEquipped: false, section: "carried" },
-  ],
-  Monk: [
-    { name: "Shortsword", quantity: 1, isEquipped: true, section: "equipped" },
-    { name: "Dungeoneer's Pack", quantity: 1, isEquipped: false, section: "carried" },
-    { name: "Dart", quantity: 10, isEquipped: false, section: "carried" },
-  ],
-  Paladin: [
-    { name: "Longsword", quantity: 1, isEquipped: true, section: "equipped" },
-    { name: "Shield", quantity: 1, isEquipped: true, section: "equipped" },
-    { name: "Javelin", quantity: 5, isEquipped: false, section: "carried" },
-    { name: "Priest's Pack", quantity: 1, isEquipped: false, section: "carried" },
-    { name: "Chain Mail", quantity: 1, isEquipped: true, section: "equipped" },
-    { name: "Holy Symbol", quantity: 1, isEquipped: false, section: "carried" },
-  ],
-  Ranger: [
-    { name: "Scale Mail", quantity: 1, isEquipped: true, section: "equipped" },
-    { name: "Shortsword", quantity: 2, isEquipped: true, section: "equipped" },
-    { name: "Dungeoneer's Pack", quantity: 1, isEquipped: false, section: "carried" },
-    { name: "Longbow", quantity: 1, isEquipped: false, section: "carried" },
-    { name: "Arrow", quantity: 20, isEquipped: false, section: "carried" },
-  ],
-  Rogue: [
-    { name: "Rapier", quantity: 1, isEquipped: true, section: "equipped" },
-    { name: "Shortbow", quantity: 1, isEquipped: false, section: "carried" },
-    { name: "Arrow", quantity: 20, isEquipped: false, section: "carried" },
-    { name: "Burglar's Pack", quantity: 1, isEquipped: false, section: "carried" },
-    { name: "Leather Armor", quantity: 1, isEquipped: true, section: "equipped" },
-    { name: "Dagger", quantity: 2, isEquipped: false, section: "carried" },
-    { name: "Thieves' Tools", quantity: 1, isEquipped: false, section: "carried" },
-  ],
-  Sorcerer: [
-    { name: "Light Crossbow", quantity: 1, isEquipped: false, section: "carried" },
-    { name: "Crossbow Bolt", quantity: 20, isEquipped: false, section: "carried" },
-    { name: "Component Pouch", quantity: 1, isEquipped: false, section: "carried" },
-    { name: "Dungeoneer's Pack", quantity: 1, isEquipped: false, section: "carried" },
-    { name: "Dagger", quantity: 2, isEquipped: false, section: "carried" },
-  ],
-  Warlock: [
-    { name: "Light Crossbow", quantity: 1, isEquipped: false, section: "carried" },
-    { name: "Crossbow Bolt", quantity: 20, isEquipped: false, section: "carried" },
-    { name: "Component Pouch", quantity: 1, isEquipped: false, section: "carried" },
-    { name: "Scholar's Pack", quantity: 1, isEquipped: false, section: "carried" },
-    { name: "Leather Armor", quantity: 1, isEquipped: true, section: "equipped" },
-    { name: "Dagger", quantity: 2, isEquipped: false, section: "carried" },
-  ],
-  Wizard: [
-    { name: "Quarterstaff", quantity: 1, isEquipped: true, section: "equipped" },
-    { name: "Component Pouch", quantity: 1, isEquipped: false, section: "carried" },
-    { name: "Scholar's Pack", quantity: 1, isEquipped: false, section: "carried" },
-    { name: "Spellbook", quantity: 1, isEquipped: false, section: "carried" },
-  ],
-  Artificer: [
-    { name: "Dagger", quantity: 2, isEquipped: false, section: "carried" },
-    { name: "Studded Leather Armor", quantity: 1, isEquipped: true, section: "equipped" },
-    { name: "Thieves' Tools", quantity: 1, isEquipped: false, section: "carried" },
-    { name: "Dungeoneer's Pack", quantity: 1, isEquipped: false, section: "carried" },
-  ],
-};
-
-export function applyStartingGrants(
-  character: Character,
-  mode: "gold" | "equipment",
-  options?: {
-    goldAmount?: number;
-    equipmentItems?: InventoryItem[];
-  }
-): Character {
-  if (character.startingGrantsApplied && character.startingOption === mode) {
-    return character;
-  }
-
+/** The starting gold a claim grants when the player gives no amount: the first class's default, or 100 for no known class. */
+function startingGoldOf(character: Character): number {
   const primary = character.classes[0]?.className;
   const match = primary
     ? Object.keys(STARTING_GOLD_BY_CLASS).find((k) => k.toLowerCase() === primary.toLowerCase())
     : undefined;
-  const defaultGold = match ? STARTING_GOLD_BY_CLASS[match] : 100;
+  return match ? STARTING_GOLD_BY_CLASS[match] : 100;
+}
+
+/** Gives each item an id not used by `existing` or an earlier item here, appending _2, _3, ... on a clash. */
+function withUniqueIds(items: InventoryItem[], existing: InventoryItem[]): InventoryItem[] {
+  const taken = new Set(existing.map((item) => item.id));
+  return items.map((item) => {
+    let id = item.id;
+    for (let n = 2; taken.has(id); n++) id = `${item.id}_${n}`;
+    taken.add(id);
+    return { ...item, id };
+  });
+}
+
+/** Options a starting-grant claim takes. `equipmentItems` replaces the kit the picks resolve to; the claim does not check it. */
+export interface StartingGrantOptions {
+  goldAmount?: number;
+  equipmentItems?: InventoryItem[];
+  catalogs?: CharacterCatalogs;
+}
+
+/** The equipment a claim grants: the items the caller gives, or else the kit the picks resolve to. */
+function equipmentKitFor(character: Character, options?: StartingGrantOptions): StartingEquipmentKit {
+  const resolved = resolveStartingEquipment(character, options?.catalogs ?? {});
+  return options?.equipmentItems ? { ...resolved, complete: true, items: options.equipmentItems } : resolved;
+}
+
+/**
+ * True when every item of the kit is already in the inventory as granted, and no other start_ item is left over.
+ * A claim of an unchanged kit then changes nothing.
+ */
+function kitInstalled(items: InventoryItem[], kit: InventoryItem[]): boolean {
+  const installed = (granted: InventoryItem) =>
+    items.some((i) => i.id === granted.id && i.name === granted.name && i.quantity === granted.quantity);
+  return kit.every(installed) && items.every((i) => !i.id.startsWith("start_") || kit.some((k) => k.id === i.id));
+}
+
+/**
+ * Claims starting gold or equipment, replacing an earlier claim of the same kind. Equipment is the kit the picks
+ * resolve to; incomplete picks grant nothing and the character is returned unchanged.
+ */
+export function applyStartingGrants(
+  character: Character,
+  mode: "gold" | "equipment",
+  options?: StartingGrantOptions
+): Character {
+  const kit = mode === "equipment" ? equipmentKitFor(character, options) : undefined;
+  if (kit && !kit.complete) return character;
+  if (
+    character.startingGrantsApplied &&
+    character.startingOption === mode &&
+    (!kit || kitInstalled(character.items ?? [], kit.items))
+  ) {
+    return character;
+  }
+
+  const defaultGold = startingGoldOf(character);
   const gold = options?.goldAmount ?? defaultGold;
 
   // Clean up any previously granted starting items (items with id starting with "start_")
   const cleanedItems = (character.items ?? []).filter((item) => !item.id.startsWith("start_"));
 
-  // Clean up any previously granted starting gold if we were in gold mode
+  // Remove any starting gold recorded by an earlier claim, whichever mode made it. A gold claim with
+  // no recorded amount (older saves) had the default amount granted, so that is removed instead.
   const currentPouch = { ...(character.pouch ?? { cp: 0, sp: 0, ep: 0, gp: 0, pp: 0 }) };
-  if (character.startingGrantsApplied && character.startingOption === "gold") {
-    const goldToRemove = character.startingGrantedGold ?? defaultGold;
-    currentPouch.gp = Math.max(0, (currentPouch.gp ?? 0) - goldToRemove);
+  const grantedGold =
+    character.startingGrantedGold ??
+    (character.startingGrantsApplied && character.startingOption === "gold" ? defaultGold : 0);
+  if (grantedGold) {
+    currentPouch.gp = Math.max(0, (currentPouch.gp ?? 0) - grantedGold);
   }
 
   if (mode === "gold") {
@@ -419,59 +486,182 @@ export function applyStartingGrants(
   }
 
   // mode === "equipment"
-  let newItems = options?.equipmentItems;
-  if (!newItems) {
-    const defs = match ? CLASS_STARTING_EQUIPMENT[match] : [];
-    newItems = defs.map((d, idx) => ({
-      id: `start_${(primary || "item").toLowerCase()}_${idx}`,
-      name: d.name,
-      source: "PHB",
-      quantity: d.quantity,
-      isEquipped: d.isEquipped,
-      section: d.section,
-    }));
-  }
-
   return {
     ...character,
     startingOption: "equipment",
     startingGrantsApplied: true,
     startingGrantedGold: undefined,
-    items: [...cleanedItems, ...newItems],
+    items: [...cleanedItems, ...(kit?.items ?? [])],
     pouch: currentPouch,
   };
 }
 
+/**
+ * Claims starting gold or equipment again on top of what the character already has. Earlier grants
+ * are kept: nothing is removed. Gold accumulates in `startingGrantedGold`, so a later switch to
+ * equipment through `applyStartingGrants` removes all of it. Equipment ids are made unique, and
+ * incomplete picks grant nothing.
+ * Touches only items, the pouch and the starting-grant markers, so it does not call `reconcile`.
+ */
+export function reclaimStartingGrants(
+  character: Character,
+  mode: "gold" | "equipment",
+  options?: StartingGrantOptions
+): Character {
+  if (mode === "gold") {
+    const gold = options?.goldAmount ?? startingGoldOf(character);
+    const pouch = character.pouch ?? { cp: 0, sp: 0, ep: 0, gp: 0, pp: 0 };
+    return {
+      ...character,
+      startingOption: "gold",
+      startingGrantsApplied: true,
+      startingGrantedGold: (character.startingGrantedGold ?? 0) + gold,
+      pouch: { ...pouch, gp: (pouch.gp ?? 0) + gold },
+    };
+  }
+
+  const kit = equipmentKitFor(character, options);
+  if (!kit.complete) return character;
+  const newItems = withUniqueIds(kit.items, character.items ?? []);
+  return {
+    ...character,
+    startingOption: "equipment",
+    startingGrantsApplied: true,
+    items: [...(character.items ?? []), ...newItems],
+  };
+}
+
+/** The picks and the optional borrowed feature a custom background is made with. */
+export interface CustomBackgroundDetails {
+  /** Tool or language picks, in any combination. Saved under the custom background's tool-or-language choice. */
+  toolsOrLanguages?: string[];
+  /** A feature of another background, granted by the custom background. */
+  feature?: { name: string; description: string };
+}
+
+/**
+ * Makes the character's background a custom one, named by the player, with its two skill picks. The picks are
+ * the custom background's skill Proficiency Choice, and the tool-or-language picks are its second. A borrowed
+ * feature is stored on the background. A skill the old custom background picked from the old skill
+ * bucket is dropped with it, unless a class choice still holds it.
+ */
 export function setCustomBackground(
   character: Character,
   name: string,
-  skills: string[]
+  skills: string[],
+  details: CustomBackgroundDetails = {},
+  compendium: Compendium = currentCompendium()
 ): Character {
-  const oldBgChoice = character.skillChoices?.find((sc) => sc.origin === "background");
-  const oldPicked = new Set(oldBgChoice?.picked ?? []);
+  const legacyBackground = (character.skillChoices ?? []).filter((sc) => sc.origin === "background");
+  const droppedSkills = new Set(legacyBackground.flatMap((sc) => sc.picked.map((s) => normalizeSkillName(s).toLowerCase())));
+  const classPicked = new Set(
+    (character.skillChoices ?? [])
+      .filter((sc) => sc.origin === "class")
+      .flatMap((sc) => sc.picked.map((s) => normalizeSkillName(s).toLowerCase()))
+  );
+  const proficiencyPicks: Record<string, string[]> = { ...(character.proficiencyPicks ?? {}) };
+  storePicks(proficiencyPicks, CUSTOM_BACKGROUND_SKILLS_ID, skills);
+  storePicks(proficiencyPicks, CUSTOM_BACKGROUND_TOOLS_OR_LANGUAGES_ID, details.toolsOrLanguages ?? []);
+  const feature = details.feature;
 
-  const retainedSkills = (character.chosenSkills ?? []).filter((s) => !oldPicked.has(s));
-  const newChosenSkills = Array.from(new Set([...retainedSkills, ...skills]));
-
-  const newBgChoice: SkillChoiceEntry = {
-    id: "background_skills",
-    origin: "background",
-    choose: skills.length,
-    from: [...skills],
-    picked: [...skills],
-  };
-
-  const otherChoices = (character.skillChoices ?? []).filter((sc) => sc.origin !== "background");
-
-  return {
-    ...character,
-    background: {
-      name,
-      source: "Custom",
+  return reconcile(
+    {
+      ...character,
+      background: {
+        name,
+        source: "Custom",
+        ...(feature ? { customFeatureName: feature.name, customFeatureDesc: feature.description } : {}),
+      },
+      chosenSkills: (character.chosenSkills ?? []).filter((s) => {
+        const key = normalizeSkillName(s).toLowerCase();
+        return !droppedSkills.has(key) || classPicked.has(key);
+      }),
+      skillChoices: (character.skillChoices ?? []).filter((sc) => sc.origin !== "background"),
+      proficiencyPicks: Object.keys(proficiencyPicks).length > 0 ? proficiencyPicks : undefined,
     },
-    chosenSkills: newChosenSkills,
-    skillChoices: [...otherChoices, newBgChoice],
+    compendium
+  );
+}
+
+/** Saves a custom background's picks under its choice id, or drops the entry when none are made. */
+function storePicks(picks: Record<string, string[]>, id: string, values: string[]): void {
+  if (values.length > 0) picks[id] = [...values];
+  else delete picks[id];
+}
+
+/**
+ * Clears the character's background and the grants that came from it: the background's skill
+ * proficiencies (kept when another source also grants the skill), its language and tool picks,
+ * and any origin feat it granted. Ends in the Character Reconciler, which prunes the choices that
+ * depended on a removed feat. Records a review notice for each background grant removed.
+ */
+export function clearBackground(character: Character, catalogs: CharacterCatalogs = {}): Character {
+  const compendium = catalogs.compendium ?? currentCompendium();
+  // Skill picks saved in the old bucket move into their choices while the background is still held.
+  const current = moveLegacySkillPicks(character, compendium);
+  const bg = current.background;
+  const bgName = bg?.name ?? "previous";
+  const bgData = bg ? compendium.findBackground(bg.name, bg.source) : undefined;
+
+  const normalize = (s: string) => s.trim().toLowerCase();
+  const bgSkillChoice = current.skillChoices?.find((sc) => sc.origin === "background");
+  const bgSkills = new Set(
+    [...(bgData?.skillProficiencies ?? []), ...(bgSkillChoice?.picked ?? [])].map(normalize)
+  );
+  const otherSkillSources = new Set(
+    (current.skillChoices ?? [])
+      .filter((sc) => sc.origin !== "background")
+      .flatMap((sc) => sc.picked)
+      .map(normalize)
+  );
+  const removedSkills = current.chosenSkills.filter(
+    (s) => bgSkills.has(normalize(s)) && !otherSkillSources.has(normalize(s))
+  );
+  const chosenSkills = current.chosenSkills.filter((s) => !removedSkills.includes(s));
+
+  const grantedFeats = (character.originFeats ?? []).filter((f) => f.featSource === "Background");
+  const keptFeats = (character.originFeats ?? []).filter((f) => f.featSource !== "Background");
+
+  const hadLanguagesOrTools =
+    (character.chosenLanguages?.background ?? []).length > 0 ||
+    (character.chosenTools?.background ?? []).length > 0;
+
+  const notices = [
+    ...grantedFeats.map((f) => `${f.featName} removed: granted by the ${bgName} background`),
+    ...(removedSkills.length > 0 || hadLanguagesOrTools
+      ? [`${bgName} background removed: granted skills, languages and tools cleared`]
+      : []),
+  ];
+
+  const cleared: Character = {
+    ...current,
+    background: null,
+    chosenSkills,
+    skillChoices: (current.skillChoices ?? []).filter((sc) => sc.origin !== "background"),
+    chosenLanguages: { ...character.chosenLanguages, background: [] },
+    chosenTools: { ...character.chosenTools, background: [] },
+    originFeats: keptFeats,
+    ...(notices.length > 0
+      ? { needsReview: Array.from(new Set([...(character.needsReview ?? []), ...notices])) }
+      : {}),
   };
+
+  return reconcile(cleared, compendium);
+}
+
+/**
+ * Turns an optional class feature on or off. Turning it off releases the Proficiency Choice pick stored
+ * for its grants, with a review notice; turning it back on asks for the pick again.
+ */
+export function setOptionalFeatureEnabled(
+  character: Character,
+  featureName: string,
+  enabled: boolean,
+  compendium: Compendium,
+  options: { activeBooks?: string[] } = {},
+): Character {
+  const optionalFeatureReplacements = { ...(character.optionalFeatureReplacements ?? {}), [featureName]: enabled };
+  return reconcile({ ...character, optionalFeatureReplacements }, compendium, options);
 }
 
 export function parseBackgroundEquipment(startingEquipment: string[] = []): {
@@ -515,15 +705,8 @@ export function parseBackgroundEquipment(startingEquipment: string[] = []): {
   return { coins, items };
 }
 
-export function applyBackgroundGrants(
-  character: Character,
-  backgroundData?: BackgroundData
-): Character {
-  if (character.backgroundGrantsApplied) {
-    return character;
-  }
-
-  const bgData = backgroundData;
+/** Adds a background's coins, equipment and skill proficiencies to the character, without touching the marker or calling `reconcile`. */
+function grantBackground(character: Character, bgData?: BackgroundData): Character {
   const startingEquipment = bgData?.startingEquipment || [];
   const { coins, items } = parseBackgroundEquipment(startingEquipment);
 
@@ -535,165 +718,39 @@ export function applyBackgroundGrants(
     pp: (character.pouch?.pp ?? 0) + (coins.pp || 0),
   };
 
-  const bgItems: InventoryItem[] = items.map((it, idx) => ({
-    id: `bg_item_${idx}`,
-    name: it.name,
-    source: bgData?.source || "PHB",
-    quantity: it.quantity,
-    isEquipped: false,
-    section: it.section,
-  }));
+  const bgItems: InventoryItem[] = withUniqueIds(
+    items.map((it, idx) => ({
+      id: `bg_item_${idx}`,
+      name: it.name,
+      source: bgData?.source || "PHB",
+      quantity: it.quantity,
+      isEquipped: false,
+      section: it.section,
+    })),
+    character.items ?? []
+  );
 
-  const existingSkills = new Set((character.chosenSkills || []).map((s) => s.toLowerCase()));
-  const newSkills = [...(character.chosenSkills || [])];
-  for (const s of bgData?.skillProficiencies || []) {
-    if (!existingSkills.has(s.toLowerCase())) {
-      newSkills.push(s);
-      existingSkills.add(s.toLowerCase());
-    }
-  }
-
+  // The background's skills are its Proficiency Grants, read by the sheet; nothing is written to the skill bucket.
   return {
     ...character,
-    backgroundGrantsApplied: true,
     pouch: updatedPouch,
     items: [...(character.items || []), ...bgItems],
-    chosenSkills: newSkills,
   };
 }
 
-export function setLanguages(character: Character, languages: string[]): Character {
-  return {
-    ...character,
-    languages: [...languages],
-  };
-}
-
-/**
- * Cleanly removes subclass-specific data from a character when changing or removing a subclass:
- * 1. Clears obsolete subclass RuleChoices (e.g. Circle of the Land Biome, Divine Soul Affinity, Domain Cantrips)
- * 2. Clears subclassSpellSwaps (for Sorcerer or general)
- * 3. Removes old subclass-specific resource counters
- */
-export function teardownSubclass(
+export function applyBackgroundGrants(
   character: Character,
-  className: string,
-  previousSubclassName?: string,
-  _newSubclassName?: string
+  backgroundData?: BackgroundData
 ): Character {
-  const clsLower = className.toLowerCase();
-
-  // 1. Clear obsolete subclass rule choices for this class
-  const keptRuleChoices = (character.ruleChoices || []).filter((rc) => {
-    if (rc.origin === "subclass") {
-      const idLower = rc.id.toLowerCase();
-      const traitLower = rc.trait.toLowerCase();
-      if (idLower.includes(clsLower) || traitLower.includes(clsLower)) return false;
-      if (clsLower === "druid" && (idLower.includes("land") || traitLower.includes("biome"))) return false;
-      if (clsLower === "sorcerer" && (idLower.includes("divine soul") || traitLower.includes("affinity"))) return false;
-      if (clsLower === "cleric" && (idLower.includes("nature") || idLower.includes("death") || idLower.includes("arcana"))) return false;
-      if (clsLower === "bard" && (idLower.includes("swords") || traitLower.includes("swords"))) return false;
-    }
-    if (clsLower === "fighter" && previousSubclassName?.toLowerCase().includes("champion") && rc.id.includes("Additional Fighting Style")) {
-      return false;
-    }
-    if (clsLower === "fighter" && previousSubclassName?.toLowerCase().includes("battle master") && rc.id.includes("Battle Master__Maneuvers")) {
-      return false;
-    }
-    return true;
-  });
-
-  // 2. Clear subclassSpellSwaps if this class is Sorcerer (or if previous subclass was a swapper)
-  let nextSwaps = character.subclassSpellSwaps;
-  if (
-    clsLower === "sorcerer" ||
-    previousSubclassName?.toLowerCase().includes("clockwork") ||
-    previousSubclassName?.toLowerCase().includes("aberrant")
-  ) {
-    nextSwaps = undefined;
+  if (character.backgroundGrantsApplied) {
+    return character;
   }
-
-  // 3. Remove old subclass resource counters
-  const nextCounters = { ...(character.resourceCounters || {}) };
-  if (previousSubclassName) {
-    const prevNorm = previousSubclassName.toLowerCase();
-    const isBladesinger = prevNorm.includes("bladesing");
-    for (const [key, counter] of Object.entries(nextCounters)) {
-      const kLower = key.toLowerCase();
-      const nLower = counter.name.toLowerCase();
-      if (
-        kLower.includes(prevNorm) ||
-        nLower.includes(prevNorm) ||
-        (isBladesinger && (kLower.includes("bladesong") || nLower.includes("bladesong")))
-      ) {
-        delete nextCounters[key];
-      }
-    }
-  }
-
-  // 4. Remove granted subclass spells from knownSpells (e.g. Barbarian__BGG Giant Power cantrips)
-  let nextKnownSpells = character.knownSpells;
-  if (
-    clsLower === "barbarian" ||
-    previousSubclassName?.toLowerCase().includes("giant")
-  ) {
-    nextKnownSpells = (character.knownSpells || []).filter(
-      (k) => !(k.ownerKey === "Barbarian__BGG" && ["druidcraft", "thaumaturgy"].includes(k.name.toLowerCase()))
-    );
-  }
-
-  const cleaned: Character = {
-    ...character,
-    ruleChoices: keptRuleChoices,
-    subclassSpellSwaps: nextSwaps,
-    resourceCounters: nextCounters,
-    knownSpells: nextKnownSpells,
-  };
-
-  return reconcileCharacter(cleaned);
+  return { ...grantBackground(character, backgroundData), backgroundGrantsApplied: true };
 }
 
-/**
- * Idempotent domain reconciler enforcing all progression prerequisites, modular rule choices,
- * and teardown invariants in a single cohesive pass.
- * Validates:
- * 1. Fighting Styles (levels, milestones, feats)
- * 2. Battle Master Maneuvers (levels, Superior Technique, Martial Adept)
- * 3. Eldritch Invocations & Pact Boons (Warlock levels, boon prerequisites, cantrips)
- * 4. Mystic Arcanum tiers (Warlock levels 11, 13, 15, 17)
- * 5. Artificer Infusions (Artificer level capacity, active items)
- * 6. Tome cantrips & Ancient Secrets rituals
- * 7. Expertise proficiencies
- */
-export function reconcileCharacter(
-  character: Character,
-  catalogs?: CharacterCatalogs
-): Character {
-  let updated = character;
-
-  // 1. Reconcile Fighting Styles
-  updated = pruneInvalidFightingStyles(updated);
-
-  // 2. Reconcile Maneuvers
-  updated = pruneInvalidManeuvers(updated);
-
-  // 3. Reconcile Invocations & Pact Boons
-  updated = pruneInvalidInvocations(updated);
-
-  // 4. Reconcile Mystic Arcanum
-  updated = pruneInvalidMysticArcanum(updated);
-
-  // 5. Reconcile Artificer Infusions
-  updated = pruneInvalidInfusions(updated);
-
-  // 6. Reconcile Tome Cantrips & Ancient Secrets Rituals
-  updated = syncWarlockTomeCantrips(updated);
-  updated = syncAncientSecretsRituals(updated);
-
-  // 7. Reconcile Expertise proficiencies
-  updated = pruneInvalidExpertise(updated, { classes: catalogs?.classes });
-
-  return updated;
+/** Claims the background's coins and equipment again, on top of what was already granted. Does not call `reconcile`. */
+export function reclaimBackgroundGrants(character: Character, backgroundData?: BackgroundData): Character {
+  return { ...grantBackground(character, backgroundData), backgroundGrantsApplied: true };
 }
 
 /**
@@ -729,7 +786,7 @@ export function checkActiveBooksIntegrity(
   // 3. Background
   if (
     character.background?.source &&
-    !character.background.isCustom &&
+    !isCustomBackground(character.background) &&
     !activeSet.has(character.background.source.toUpperCase())
   ) {
     warnings.push(`Background "${character.background.name}" is from disabled sourcebook "${character.background.source}".`);
@@ -770,5 +827,3 @@ export function checkActiveBooksIntegrity(
 
   return Array.from(new Set(warnings));
 }
-
-

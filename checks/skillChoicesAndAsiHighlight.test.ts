@@ -1,29 +1,29 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { makeChar } from "./testUtils.ts";
-import {
-  getAutoGrantedSkills,
-  normalizeSkillName,
-  skills,
-} from "../src/rules/skills.ts";
+import { makeChar, inMemoryCompendium } from "./testUtils.ts";
+import { normalizeSkillName, skills } from "../src/rules/skills.ts";
+import { getAutoGrantedSkills } from "../src/rules/proficiencySources/skillGrants.ts";
 import { setChoiceRacialBonus } from "../src/rules/builderTransitions.ts";
+import { proficiencySheet } from "../src/rules/proficiencySheet.ts";
 import { applyAncestrySelection } from "../src/rules/ancestryEngine.ts";
 import type { RaceData, BackgroundData } from "../src/types/dnd5e.ts";
 
-test("getAutoGrantedSkills collects background skills, fixed race skills, and rule choice grants", () => {
-  const backgrounds: BackgroundData[] = [
-    {
-      name: "Soldier",
-      source: "PHB",
-      skillProficiencies: ["Athletics", "Intimidation"],
-      toolProficiencies: [],
-      languages: [],
-      startingEquipment: [],
-      feature: null,
-      characteristics: {},
-      description: "",
-    },
-  ];
+// Invented background whose fixed skills are its Proficiency Grants, as the Catalog carries them.
+const soldierBackground = (): BackgroundData => ({
+  name: "Soldier",
+  source: "PHB",
+  grants: [{ id: "PHB/Background/Soldier@0#0", kind: "fixed", category: "skills", names: ["Athletics", "Intimidation"] }],
+  skillProficiencies: ["Athletics", "Intimidation"],
+  toolProficiencies: [],
+  languages: [],
+  startingEquipment: [],
+  feature: null,
+  characteristics: {},
+  description: "",
+});
+
+test("getAutoGrantedSkills collects trait-text and rule choice skills; a background's grants are read by the sheet", () => {
+  const backgrounds: BackgroundData[] = [soldierBackground()];
 
   const races: RaceData[] = [
     {
@@ -58,11 +58,46 @@ test("getAutoGrantedSkills collects background skills, fixed race skills, and ru
     ],
   });
 
-  const granted = getAutoGrantedSkills(char, { races, backgrounds });
-  assert.ok(granted.includes("Athletics"), "Must include background skill Athletics");
-  assert.ok(granted.includes("Intimidation"), "Must include background skill Intimidation");
-  assert.ok(granted.includes("Perception"), "Must include fixed race skill Perception");
+  const granted = getAutoGrantedSkills(char, { races });
+  assert.ok(granted.includes("Perception"), "Must include race skill Perception named in trait text");
   assert.ok(granted.includes("Survival"), "Must include ancestral legacy pick Survival");
+  assert.equal(granted.includes("Athletics"), false, "a background's skills are its grants, read by the sheet");
+
+  const sheet = proficiencySheet(char, { compendium: inMemoryCompendium({ races, backgrounds }) });
+  assert.deepEqual(sheet.skills.map((skill) => skill.name).sort(), ["Athletics", "Intimidation", "Perception", "Survival"]);
+});
+
+test("the sheet resolves race and background from a catalog bundle", () => {
+  // Invented names. The background's skills are only known through its grants in the catalog.
+  const scholar: BackgroundData = {
+    name: "Test Scholar",
+    source: "TEST",
+    grants: [{ id: "TEST/Background/Test Scholar@0#0", kind: "fixed", category: "skills", names: ["Arcana", "Nature"] }],
+    skillProficiencies: ["Arcana", "Nature"],
+    toolProficiencies: [],
+    languages: [],
+    startingEquipment: [],
+    feature: null,
+    characteristics: {},
+    description: "",
+  };
+  const testfolk: RaceData = {
+    name: "Testfolk",
+    source: "TEST",
+    speed: { walk: 30 },
+    size: ["Medium"],
+    abilityScoreIncrease: [{ dex: 2 }],
+    traits: [{ name: "Test Sense", description: "You have proficiency in the Survival skill." }],
+    subraces: [],
+    description: "",
+  };
+  const char = makeChar({
+    background: { name: "Test Scholar", source: "TEST" },
+    race: { name: "Testfolk", source: "TEST" },
+  });
+
+  const sheet = proficiencySheet(char, { compendium: inMemoryCompendium({ races: [testfolk], backgrounds: [scholar] }) });
+  assert.deepEqual(sheet.skills.map((skill) => skill.name).sort(), ["Arcana", "Nature", "Survival"]);
 });
 
 test("Race skill choices do not consume class skill choices and lock already granted proficiencies", () => {
@@ -138,7 +173,7 @@ test("Race skill choices do not consume class skill choices and lock already gra
     ],
   });
 
-  const allSheetSkills = skills(char);
+  const allSheetSkills = skills(char, proficiencySheet(char, { compendium: inMemoryCompendium({ backgrounds: [soldierBackground()] }) }).skills);
   const proficient = allSheetSkills.filter((s) => s.isProficient).map((s) => s.name);
 
   // All 6 skills must be proficient

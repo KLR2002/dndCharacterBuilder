@@ -1,5 +1,11 @@
 import type { AbilityKey } from "../types/character.ts";
 
+/** The Spell Owner key for a Path of the Giant Barbarian's granted cantrips (Druidcraft, Thaumaturgy). */
+export const GIANT_BARBARIAN_OWNER_KEY = "Barbarian__BGG";
+
+/** The cantrips a Path of the Giant Barbarian may take as its Giant Power cantrip (lowercase names). */
+export const GIANT_POWER_CANTRIPS: ReadonlySet<string> = new Set(["druidcraft", "thaumaturgy"]);
+
 export interface SkillDefinition {
   name: string;
   ability: AbilityKey;
@@ -54,60 +60,6 @@ export const MULTICLASS_PREREQUISITES: Record<string, { ability: AbilityKey; min
   Warlock: [{ ability: "cha", minScore: 13 }],
   Wizard: [{ ability: "int", minScore: 13 }],
   Artificer: [{ ability: "int", minScore: 13 }],
-};
-
-// Multiclass Proficiencies Gained
-export const MULTICLASS_PROFICIENCIES: Record<string, {
-  armor?: string[];
-  weapons?: string[];
-  tools?: string[];
-  skills?: string;
-}> = {
-  Barbarian: {
-    armor: ["Shields"],
-    weapons: ["Simple weapons", "Martial weapons"],
-  },
-  Bard: {
-    armor: ["Light armor"],
-    skills: "One skill of your choice",
-    tools: ["One musical instrument of your choice"],
-  },
-  Cleric: {
-    armor: ["Light armor", "Medium armor", "Shields"],
-  },
-  Druid: {
-    armor: ["Light armor", "Medium armor", "Shields"],
-  },
-  Fighter: {
-    armor: ["Light armor", "Medium armor", "Shields"],
-    weapons: ["Simple weapons", "Martial weapons"],
-  },
-  Monk: {
-    weapons: ["Simple weapons", "Shortswords"],
-  },
-  Paladin: {
-    armor: ["Light armor", "Medium armor", "Shields"],
-    weapons: ["Simple weapons", "Martial weapons"],
-  },
-  Ranger: {
-    armor: ["Light armor", "Medium armor", "Shields"],
-    weapons: ["Simple weapons", "Martial weapons"],
-  },
-  Rogue: {
-    armor: ["Light armor"],
-    tools: ["Thieves' tools"],
-    skills: "One skill from the Rogue skill list",
-  },
-  Sorcerer: {},
-  Warlock: {
-    armor: ["Light armor"],
-    weapons: ["Simple weapons"],
-  },
-  Wizard: {},
-  Artificer: {
-    armor: ["Light armor", "Medium armor", "Shields"],
-    tools: ["Thieves' tools", "Tinker's tools"],
-  },
 };
 
 // Multiclass Spell Slots Table: slots per spell level (1-9) for combined caster level 1-20

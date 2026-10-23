@@ -1,12 +1,13 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { makeChar, loadTestCatalogs } from "./testUtils.ts";
+import { makeChar, loadTestCatalogs, integratedTestCompendium } from "./testUtils.ts";
 import { getWeaponAttacks, checkDualWielding } from "../src/rules/attacks.ts";
 import { armorClass } from "../src/rules/ac.ts";
 import type { InventoryItem } from "../src/types/character.ts";
 
-describe("First-Class Attunement Ledger & 3-Slot Limit (Ticket 04)", () => {
+describe("First-Class Attunement Ledger & 3-Slot Limit", () => {
   const catalogs = loadTestCatalogs();
+  const compendium = integratedTestCompendium();
 
   it("accurately counts attuned items and enforces 3-slot maximum capacity logic", () => {
     const item1: InventoryItem = {
@@ -122,14 +123,14 @@ describe("First-Class Attunement Ledger & 3-Slot Limit (Ticket 04)", () => {
 
     // 1. Unattuned weapon without numeric bonus still shows Unattuned badge
     const charUnattuned = { ...fighter, items: [warningSword] };
-    const attacksUnattuned = getWeaponAttacks(charUnattuned, { classes: catalogs.classes });
+    const attacksUnattuned = getWeaponAttacks(charUnattuned, { catalogs: { compendium } });
     assert.equal(attacksUnattuned[0].toHit, 5);
     assert.equal(attacksUnattuned[0].damage, "1d8 + 3");
     assert.deepEqual(attacksUnattuned[0].calculationBadges, ["Unattuned"]);
 
     // 2. Attuned weapon without numeric bonus removes Unattuned badge
     const charAttuned = { ...fighter, items: [{ ...warningSword, isAttuned: true }] };
-    const attacksAttuned = getWeaponAttacks(charAttuned, { classes: catalogs.classes });
+    const attacksAttuned = getWeaponAttacks(charAttuned, { catalogs: { compendium } });
     assert.equal(attacksAttuned[0].toHit, 5);
     assert.equal(attacksAttuned[0].damage, "1d8 + 3");
     assert.equal(attacksAttuned[0].calculationBadges, undefined);
@@ -151,7 +152,7 @@ describe("First-Class Attunement Ledger & 3-Slot Limit (Ticket 04)", () => {
 
     // Unattuned: no +3 bonus, shows Unattuned
     const charHolyUnattuned = { ...fighter, items: [holyAvenger] };
-    const attacksHolyUnattuned = getWeaponAttacks(charHolyUnattuned, { classes: catalogs.classes });
+    const attacksHolyUnattuned = getWeaponAttacks(charHolyUnattuned, { catalogs: { compendium } });
     assert.equal(attacksHolyUnattuned[0].toHit, 5);
     assert.equal(attacksHolyUnattuned[0].damage, "1d8 + 3");
     assert.equal(attacksHolyUnattuned[0].itemBonus, undefined);
@@ -159,7 +160,7 @@ describe("First-Class Attunement Ledger & 3-Slot Limit (Ticket 04)", () => {
 
     // Attuned: grants +3 bonus, shows Item +3
     const charHolyAttuned = { ...fighter, items: [{ ...holyAvenger, isAttuned: true }] };
-    const attacksHolyAttuned = getWeaponAttacks(charHolyAttuned, { classes: catalogs.classes });
+    const attacksHolyAttuned = getWeaponAttacks(charHolyAttuned, { catalogs: { compendium } });
     assert.equal(attacksHolyAttuned[0].toHit, 8, "Str 3 + PB 2 + Item 3 = 8");
     assert.equal(attacksHolyAttuned[0].damage, "1d8 + 6", "Str 3 + Item 3 = 6");
     assert.equal(attacksHolyAttuned[0].itemBonus, 3);

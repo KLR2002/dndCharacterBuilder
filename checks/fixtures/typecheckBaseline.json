@@ -1,0 +1,456 @@
+{
+  "version": 1,
+  "note": "Recorded by scripts/typecheck-ratchet.mjs with UPDATE_TYPECHECK_BASELINE=1. Do not edit by hand.",
+  "errors": [
+    {
+      "file": "checks/artificerInfusionCatalog.test.ts",
+      "code": "TS2353",
+      "message": "Object literal may only specify known properties, and 'hitDiceType' does not exist in type 'CharacterClass'.",
+      "count": 1
+    },
+    {
+      "file": "checks/artificerInfusions.test.ts",
+      "code": "TS2353",
+      "message": "Object literal may only specify known properties, and 'hitDiceType' does not exist in type 'CharacterClass'.",
+      "count": 16
+    },
+    {
+      "file": "checks/artificerInfusions.test.ts",
+      "code": "TS2353",
+      "message": "Object literal may only specify known properties, and 'options' does not exist in type 'RuleChoiceEntry'.",
+      "count": 1
+    },
+    {
+      "file": "checks/artificerInfusions.test.ts",
+      "code": "TS2741",
+      "message": "Property 'origin' is missing in type '{ id: string; trait: string; choose: number; from: never[]; picked: string[]; }' but required in type 'RuleChoiceEntry'.",
+      "count": 5
+    },
+    {
+      "file": "checks/artificerInfusions.test.ts",
+      "code": "TS2741",
+      "message": "Property 'source' is missing in type '{ className: string; level: number; }' but required in type 'CharacterClass'.",
+      "count": 24
+    },
+    {
+      "file": "checks/artificerInfusions.test.ts",
+      "code": "TS2741",
+      "message": "Property 'source' is missing in type '{ className: string; level: number; subclassName: string; }' but required in type 'CharacterClass'.",
+      "count": 6
+    },
+    {
+      "file": "checks/artificerInfusionsMundane.test.ts",
+      "code": "TS2353",
+      "message": "Object literal may only specify known properties, and 'hitDiceType' does not exist in type 'CharacterClass'.",
+      "count": 1
+    },
+    {
+      "file": "checks/artificerInfusionsMundane.test.ts",
+      "code": "TS2739",
+      "message": "Type '{ id: string; name: string; source: string; quantity: number; ac: number; bonusAc: number; rarity: string; }' is missing the following properties from type 'InventoryItem': isEquipped, section",
+      "count": 2
+    },
+    {
+      "file": "checks/artificerInfusionsMundane.test.ts",
+      "code": "TS2739",
+      "message": "Type '{ id: string; name: string; source: string; quantity: number; ac: number; rarity: string; }' is missing the following properties from type 'InventoryItem': isEquipped, section",
+      "count": 1
+    },
+    {
+      "file": "checks/artificerInfusionsMundane.test.ts",
+      "code": "TS2739",
+      "message": "Type '{ id: string; name: string; source: string; quantity: number; bonusAc: number; rarity: string; }' is missing the following properties from type 'InventoryItem': isEquipped, section",
+      "count": 1
+    },
+    {
+      "file": "checks/artificerInfusionsMundane.test.ts",
+      "code": "TS2739",
+      "message": "Type '{ id: string; name: string; source: string; quantity: number; bonusWeapon: number; rarity: string; }' is missing the following properties from type 'InventoryItem': isEquipped, section",
+      "count": 2
+    },
+    {
+      "file": "checks/artificerInfusionsMundane.test.ts",
+      "code": "TS2739",
+      "message": "Type '{ id: string; name: string; source: string; quantity: number; isInfused: true; infusedWith: string; }' is missing the following properties from type 'InventoryItem': isEquipped, section",
+      "count": 1
+    },
+    {
+      "file": "checks/artificerInfusionsMundane.test.ts",
+      "code": "TS2739",
+      "message": "Type '{ id: string; name: string; source: string; quantity: number; rarity: string; }' is missing the following properties from type 'InventoryItem': isEquipped, section",
+      "count": 1
+    },
+    {
+      "file": "checks/artificerInfusionsMundane.test.ts",
+      "code": "TS2739",
+      "message": "Type '{ id: string; name: string; source: string; quantity: number; rarity: string; bonusWeapon: number; isInfused: true; infusedWith: string; }' is missing the following properties from type 'InventoryItem': isEquipped, section",
+      "count": 1
+    },
+    {
+      "file": "checks/artificerInfusionsMundane.test.ts",
+      "code": "TS2739",
+      "message": "Type '{ id: string; name: string; source: string; quantity: number; weight: number; }' is missing the following properties from type 'InventoryItem': isEquipped, section",
+      "count": 1
+    },
+    {
+      "file": "checks/artificerInfusionsMundane.test.ts",
+      "code": "TS2739",
+      "message": "Type '{ id: string; name: string; source: string; quantity: number; weight: number; ac: number; }' is missing the following properties from type 'InventoryItem': isEquipped, section",
+      "count": 1
+    },
+    {
+      "file": "checks/artificerInfusionsMundane.test.ts",
+      "code": "TS2739",
+      "message": "Type '{ id: string; name: string; source: string; quantity: number; weight: number; ac: number; rarity: string; }' is missing the following properties from type 'InventoryItem': isEquipped, section",
+      "count": 1
+    },
+    {
+      "file": "checks/artificerInfusionsMundane.test.ts",
+      "code": "TS2739",
+      "message": "Type '{ id: string; name: string; source: string; quantity: number; weight: number; rarity: string; }' is missing the following properties from type 'InventoryItem': isEquipped, section",
+      "count": 1
+    },
+    {
+      "file": "checks/attunement.test.ts",
+      "code": "TS2741",
+      "message": "Property 'source' is missing in type '{ className: string; level: number; }' but required in type 'CharacterClass'.",
+      "count": 3
+    },
+    {
+      "file": "checks/barbarianChoices.test.ts",
+      "code": "TS2345",
+      "message": "Argument of type '{ classes: { className: string; level: number; }[]; id: string; name: string; folderId: null | string; gender: string; alignment: string; faction: { name: string; rank: string; renown: string; notes: string; }; ... 63 more ...; notes: string; }' is not assignable to parameter of type 'Character'.",
+      "count": 1
+    },
+    {
+      "file": "checks/barbarianChoices.test.ts",
+      "code": "TS2741",
+      "message": "Property 'source' is missing in type '{ className: string; level: number; }' but required in type 'CharacterClass'.",
+      "count": 6
+    },
+    {
+      "file": "checks/barbarianChoices.test.ts",
+      "code": "TS2741",
+      "message": "Property 'source' is missing in type '{ className: string; level: number; subclassName: string; }' but required in type 'CharacterClass'.",
+      "count": 5
+    },
+    {
+      "file": "checks/battleMasterManeuvers.test.ts",
+      "code": "TS2353",
+      "message": "Object literal may only specify known properties, and 'hitDiceType' does not exist in type 'CharacterClass'.",
+      "count": 25
+    },
+    {
+      "file": "checks/builderTransitions.test.ts",
+      "code": "TS2353",
+      "message": "Object literal may only specify known properties, and 'options' does not exist in type 'RuleChoiceEntry'.",
+      "count": 8
+    },
+    {
+      "file": "checks/builderTransitions.test.ts",
+      "code": "TS2739",
+      "message": "Type '{ gp: number; }' is missing the following properties from type '{ cp: number; sp: number; ep: number; gp: number; pp: number; }': cp, sp, ep, pp",
+      "count": 2
+    },
+    {
+      "file": "checks/builderTransitions.test.ts",
+      "code": "TS2741",
+      "message": "Property 'source' is missing in type '{ className: string; level: number; }' but required in type 'CharacterClass'.",
+      "count": 1
+    },
+    {
+      "file": "checks/characterEvaluation.test.ts",
+      "code": "TS2322",
+      "message": "Type '{ name: string; source: string; subraces: never[]; size?: string[] | undefined; speed?: { walk: number; fly?: number; swim?: number; climb?: number; burrow?: number; } | undefined; abilityScoreIncrease?: Record<...>[] | undefined; ... 5 more ...; rawEntries?: any[]; }' is not assignable to type 'RaceData'.",
+      "count": 2
+    },
+    {
+      "file": "checks/characterReconciler.test.ts",
+      "code": "TS2353",
+      "message": "Object literal may only specify known properties, and 'options' does not exist in type 'RuleChoiceEntry'.",
+      "count": 7
+    },
+    {
+      "file": "checks/characterSpells.test.ts",
+      "code": "TS2345",
+      "message": "Argument of type '{ name: string; source: string; level: number; castLimit: string; resourceCounterId: string; }' is not assignable to parameter of type 'InnateSpellEntry'.",
+      "count": 2
+    },
+    {
+      "file": "checks/characterSpells.test.ts",
+      "code": "TS2353",
+      "message": "Object literal may only specify known properties, and 'entries' does not exist in type 'SpellData'.",
+      "count": 1
+    },
+    {
+      "file": "checks/choiceCatalogFixture.test.ts",
+      "code": "TS7006",
+      "message": "Parameter 'o' implicitly has an 'any' type.",
+      "count": 1
+    },
+    {
+      "file": "checks/choiceCatalogFixture.test.ts",
+      "code": "TS7022",
+      "message": "'feature' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.",
+      "count": 1
+    },
+    {
+      "file": "checks/choiceCatalogFixture.ts",
+      "code": "TS2322",
+      "message": "Type '{ choose: string; }' is not assignable to type 'string'.",
+      "count": 2
+    },
+    {
+      "file": "checks/combatDice.test.ts",
+      "code": "TS2322",
+      "message": "Type '{ id: string; name: string; folderId?: null | string | undefined; gender?: string | undefined; alignment?: string | undefined; faction?: { name: string; rank: string; renown: string; notes: string; } | undefined; ... 64 more ...; notes?: string | undefined; }' is not assignable to type 'Character'.",
+      "count": 1
+    },
+    {
+      "file": "checks/eladrinSeason.test.ts",
+      "code": "TS2532",
+      "message": "Object is possibly 'undefined'.",
+      "count": 2
+    },
+    {
+      "file": "checks/eldritchInvocations.test.ts",
+      "code": "TS2353",
+      "message": "Object literal may only specify known properties, and 'hitDiceType' does not exist in type 'CharacterClass'.",
+      "count": 33
+    },
+    {
+      "file": "checks/eldritchInvocations.test.ts",
+      "code": "TS2353",
+      "message": "Object literal may only specify known properties, and 'options' does not exist in type 'RuleChoiceEntry'.",
+      "count": 14
+    },
+    {
+      "file": "checks/elementalDisciplines.test.ts",
+      "code": "TS2305",
+      "message": "Module '\"../src/rules/choices/types.ts\"' has no exported member 'RuleChoiceEntry'.",
+      "count": 1
+    },
+    {
+      "file": "checks/expertise.test.ts",
+      "code": "TS2322",
+      "message": "Type '{ id: string; name: string; folderId?: null | string | undefined; gender?: string | undefined; alignment?: string | undefined; faction?: { name: string; rank: string; renown: string; notes: string; } | undefined; ... 64 more ...; notes?: string | undefined; }' is not assignable to type 'Character'.",
+      "count": 1
+    },
+    {
+      "file": "checks/fightingStyles.test.ts",
+      "code": "TS2353",
+      "message": "Object literal may only specify known properties, and 'armorCategory' does not exist in type 'Partial<InventoryItem>'.",
+      "count": 2
+    },
+    {
+      "file": "checks/fightingStyles.test.ts",
+      "code": "TS2353",
+      "message": "Object literal may only specify known properties, and 'hitDiceType' does not exist in type 'CharacterClass'.",
+      "count": 25
+    },
+    {
+      "file": "checks/fightingStyles.test.ts",
+      "code": "TS2353",
+      "message": "Object literal may only specify known properties, and 'properties' does not exist in type 'Partial<InventoryItem>'.",
+      "count": 5
+    },
+    {
+      "file": "checks/halfElfVariant.test.ts",
+      "code": "TS18048",
+      "message": "'variant' is possibly 'undefined'.",
+      "count": 2
+    },
+    {
+      "file": "checks/innateMagic.test.ts",
+      "code": "TS2322",
+      "message": "Type '\"High Elf\"' is not assignable to type '\"background\" | \"class\" | \"feat\" | \"race\" | \"subclass\"'.",
+      "count": 2
+    },
+    {
+      "file": "checks/innateMagic.test.ts",
+      "code": "TS2741",
+      "message": "Property 'trait' is missing in type '{ id: string; origin: \"race\"; choose: number; from: never[]; picked: string[]; }' but required in type 'RuleChoiceEntry'.",
+      "count": 2
+    },
+    {
+      "file": "checks/innateMagic.test.ts",
+      "code": "TS2741",
+      "message": "Property 'trait' is missing in type '{ id: string; origin: \"race\"; choose: number; from: string[]; picked: string[]; }' but required in type 'RuleChoiceEntry'.",
+      "count": 2
+    },
+    {
+      "file": "checks/magicItemsCombat.test.ts",
+      "code": "TS2353",
+      "message": "Object literal may only specify known properties, and 'level' does not exist in type 'RuleChoiceEntry'.",
+      "count": 2
+    },
+    {
+      "file": "checks/magicItemsCombat.test.ts",
+      "code": "TS2741",
+      "message": "Property 'source' is missing in type '{ className: string; level: number; }' but required in type 'CharacterClass'.",
+      "count": 6
+    },
+    {
+      "file": "checks/monkKiSpells.test.ts",
+      "code": "TS2353",
+      "message": "Object literal may only specify known properties, and 'inventory' does not exist in type 'Character'.",
+      "count": 1
+    },
+    {
+      "file": "checks/mysticArcanum.test.ts",
+      "code": "TS2353",
+      "message": "Object literal may only specify known properties, and 'hitDiceSpent' does not exist in type 'CharacterClass'.",
+      "count": 2
+    },
+    {
+      "file": "checks/pactBoonCatalog.test.ts",
+      "code": "TS2353",
+      "message": "Object literal may only specify known properties, and 'hitDiceType' does not exist in type 'CharacterClass'.",
+      "count": 2
+    },
+    {
+      "file": "checks/proficiencies.test.ts",
+      "code": "TS2322",
+      "message": "Type '{ id: string; name: string; folderId?: null | string | undefined; gender?: string | undefined; alignment?: string | undefined; faction?: { name: string; rank: string; renown: string; notes: string; } | undefined; ... 64 more ...; notes?: string | undefined; }' is not assignable to type 'Character'.",
+      "count": 1
+    },
+    {
+      "file": "checks/proficienciesAndLanguages.test.ts",
+      "code": "TS2322",
+      "message": "Type '{ id: string; name: string; folderId?: null | string | undefined; gender?: string | undefined; alignment?: string | undefined; faction?: { name: string; rank: string; renown: string; notes: string; } | undefined; ... 64 more ...; notes: string; }' is not assignable to type 'Character'.",
+      "count": 1
+    },
+    {
+      "file": "checks/revelation.test.ts",
+      "code": "TS2322",
+      "message": "Type '{ id: string; origin: \"race\"; choose: number; from: string[]; picked: string[]; }[]' is not assignable to type 'RuleChoiceEntry[]'.",
+      "count": 1
+    },
+    {
+      "file": "checks/ritualBook.test.ts",
+      "code": "TS18048",
+      "message": "'updated.ritualBook' is possibly 'undefined'.",
+      "count": 2
+    },
+    {
+      "file": "checks/ritualBook.test.ts",
+      "code": "TS2353",
+      "message": "Object literal may only specify known properties, and 'hitDiceSpent' does not exist in type 'CharacterClass'.",
+      "count": 1
+    },
+    {
+      "file": "checks/ritualBook.test.ts",
+      "code": "TS2740",
+      "message": "Type '{ name: string; level: number; school: string; classes: string[]; source: string; }' is missing the following properties from type 'SpellData': castingTime, range, components, componentsString, and 8 more.",
+      "count": 3
+    },
+    {
+      "file": "checks/ritualBook.test.ts",
+      "code": "TS2740",
+      "message": "Type '{ name: string; level: number; school: string; classes: string[]; source: string; ritual: true; }' is missing the following properties from type 'SpellData': castingTime, range, components, componentsString, and 7 more.",
+      "count": 4
+    },
+    {
+      "file": "checks/ritualBook.test.ts",
+      "code": "TS2741",
+      "message": "Property 'from' is missing in type '{ id: string; trait: string; picked: string[]; choose: number; origin: \"class\"; }' but required in type 'RuleChoiceEntry'.",
+      "count": 4
+    },
+    {
+      "file": "checks/ruleChoiceInterface.test.ts",
+      "code": "TS2741",
+      "message": "Property 'source' is missing in type '{ className: string; level: number; }' but required in type 'CharacterClass'.",
+      "count": 2
+    },
+    {
+      "file": "checks/ruleChoiceInterface.test.ts",
+      "code": "TS2769",
+      "message": "No overload matches this call.",
+      "count": 1
+    },
+    {
+      "file": "checks/ruleChoices.test.ts",
+      "code": "TS2459",
+      "message": "Module '\"../src/rules/ruleChoices.ts\"' declares 'Character' locally, but it is not exported.",
+      "count": 1
+    },
+    {
+      "file": "checks/ruleChoices.test.ts",
+      "code": "TS2741",
+      "message": "Property 'source' is missing in type '{ className: string; level: number; subclassName: string; }' but required in type 'CharacterClass'.",
+      "count": 1
+    },
+    {
+      "file": "checks/rulesCompendium.test.ts",
+      "code": "TS2353",
+      "message": "Object literal may only specify known properties, and 'hitDiceType' does not exist in type 'CharacterClass'.",
+      "count": 7
+    },
+    {
+      "file": "checks/skillChoicesAndAsiHighlight.test.ts",
+      "code": "TS2739",
+      "message": "Type '{ name: string; source: string; speed: { walk: number; }; size: string[]; abilityScoreIncrease: { con: number; }[]; traits: never[]; subraces: never[]; description: string; }' is missing the following properties from type 'RaceData': darkvision, languages",
+      "count": 1
+    },
+    {
+      "file": "checks/skillChoicesAndAsiHighlight.test.ts",
+      "code": "TS2739",
+      "message": "Type '{ name: string; source: string; speed: { walk: number; }; size: string[]; abilityScoreIncrease: { dex: number; }[]; traits: { name: string; description: string; }[]; subraces: never[]; description: string; }' is missing the following properties from type 'RaceData': darkvision, languages",
+      "count": 2
+    },
+    {
+      "file": "checks/speeds.test.ts",
+      "code": "TS2353",
+      "message": "Object literal may only specify known properties, and 'armorCategory' does not exist in type 'InventoryItem'.",
+      "count": 1
+    },
+    {
+      "file": "checks/speeds.test.ts",
+      "code": "TS2353",
+      "message": "Object literal may only specify known properties, and 'isStartingClass' does not exist in type 'CharacterClass'.",
+      "count": 3
+    },
+    {
+      "file": "checks/srdBaselineIntegrity.test.ts",
+      "code": "TS2353",
+      "message": "Object literal may only specify known properties, and 'hitDiceType' does not exist in type 'CharacterClass'.",
+      "count": 1
+    },
+    {
+      "file": "checks/staleCatalogGate.test.ts",
+      "code": "TS2353",
+      "message": "Object literal may only specify known properties, and 'hitDiceType' does not exist in type 'CharacterClass'.",
+      "count": 1
+    },
+    {
+      "file": "checks/subclassSpells.test.ts",
+      "code": "TS2769",
+      "message": "No overload matches this call.",
+      "count": 1
+    },
+    {
+      "file": "checks/tacticalActions.test.ts",
+      "code": "TS2353",
+      "message": "Object literal may only specify known properties, and 'options' does not exist in type 'RuleChoiceEntry'.",
+      "count": 1
+    },
+    {
+      "file": "checks/warlockTome.test.ts",
+      "code": "TS18048",
+      "message": "'char.knownSpells' is possibly 'undefined'.",
+      "count": 10
+    },
+    {
+      "file": "checks/warlockTome.test.ts",
+      "code": "TS18048",
+      "message": "'pruned.knownSpells' is possibly 'undefined'.",
+      "count": 3
+    },
+    {
+      "file": "checks/wildShapeHp.test.ts",
+      "code": "TS2345",
+      "message": "Argument of type '{ currentHp: number; tempHp: number; activeWildShape: null | object; }' is not assignable to parameter of type 'WildShapeCharacter'.",
+      "count": 30
+    }
+  ]
+}

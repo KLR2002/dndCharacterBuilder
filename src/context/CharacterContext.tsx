@@ -1,6 +1,7 @@
 import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
 import { DEFAULT_ACTIVE_BOOK_CODES } from "../constants/books";
 import {
+  DEFAULT_SETTINGS,
   loadAll,
   saveCharacters,
   saveFolders,
@@ -9,8 +10,10 @@ import {
 import type { Character, Folder } from "../types/character";
 import { applyCharacterUpdate } from "./characterUpdates";
 import { migrateCharacter } from "../rules/migrateCharacter";
+import { reconcileForActiveBooks } from "../rules/characterReconciler";
 import { checkActiveBooksIntegrity } from "../rules/builderTransitions";
-import { clearCompendiumStore, getRaces, setCompendiumStore } from "../services/dataService";
+import { getClasses, getRaces } from "../services/dataService";
+import { currentCompendium, integrate as integrateCompendium, revertToSrd as revertCompendiumToSrd } from "../services/compendium";
 import {
   clearCompendiumData,
   loadCompendiumData,
@@ -46,12 +49,16 @@ interface CharacterContextValue {
   deleteFolder: (id: string) => Promise<void>;
   moveCharacterToFolder: (charId: string, folderId: string | null) => Promise<void>;
   setActiveBooks: (books: string[]) => Promise<void>;
+  fullHealOnLevelUp: boolean;
+  setFullHealOnLevelUp: (on: boolean) => Promise<void>;
   setFirstRunCompleted: (books: string[]) => Promise<void>;
   getCharacter: (id: string) => Character | undefined;
 
   // Compendium Integration
   isIntegrated: boolean;
   integratedAt: string | null;
+  /** The loaded Integrated Catalog is below the format the application requires. Always false for the SRD Baseline. */
+  catalogStale: boolean;
   triggerIntegration: (onProgress?: (category: string, step: number, total: number) => void) => Promise<void>;
   revertToSrd: () => Promise<void>;
 }
@@ -104,9 +111,11 @@ export function CharacterProvider({ children }: { children: React.ReactNode }) {
     if (!ready.current) throw new Error("Load characters successfully before editing. Retry initialization or restore your backup.");
   };
   const [activeBooks, setActiveBooksState] = useState<string[]>(DEFAULT_ACTIVE_BOOK_CODES);
+  const [fullHealOnLevelUp, setFullHealOnLevelUpState] = useState<boolean>(DEFAULT_SETTINGS.fullHealOnLevelUp);
   const [hasCompletedFirstRun, setHasCompletedFirstRun] = useState<boolean>(true); // default true to avoid flash
   const [isIntegrated, setIsIntegrated] = useState<boolean>(false);
   const [integratedAt, setIntegratedAt] = useState<string | null>(null);
+  const [catalogStale, setCatalogStale] = useState<boolean>(false);
   const [selectedCharacterId, setSelectedCharacterId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [initError, setInitError] = useState<string | null>(null);
@@ -130,17 +139,20 @@ export function CharacterProvider({ children }: { children: React.ReactNode }) {
           console.warn("Compendium storage load failed, defaulting to SRD baseline:", storageErr);
         }
         if (compData && compData.hasIntegratedCatalog) {
-          setCompendiumStore(compData);
+          integrateCompendium(compData);
           setIsIntegrated(true);
           setIntegratedAt(compData.integratedAt || null);
         } else {
-          clearCompendiumStore();
+          revertCompendiumToSrd();
           setIsIntegrated(false);
           setIntegratedAt(null);
         }
+        setCatalogStale(currentCompendium().stale);
         const raceCatalog = getRaces();
-        const migratedCharacters = loadedChars.map((c) => migrateCharacter(c, raceCatalog));
+        const classCatalog = getClasses();
+        const migratedCharacters = loadedChars.map((c) => migrateCharacter(c, raceCatalog, classCatalog));
         setActiveBooksState(loadedSettings.activeResourceBooks || DEFAULT_ACTIVE_BOOK_CODES);
+        setFullHealOnLevelUpState(loadedSettings.fullHealOnLevelUp);
         setHasCompletedFirstRun(Boolean(loadedSettings.hasCompletedFirstRun));
         setCharacters(migratedCharacters);
         setFolders(loadedFolds);
@@ -299,6 +311,11 @@ export function CharacterProvider({ children }: { children: React.ReactNode }) {
     );
   };
 
+  const setFullHealOnLevelUp = async (on: boolean) => {
+    setFullHealOnLevelUpState(on);
+    await updateSettings({ fullHealOnLevelUp: on });
+  };
+
   const setFirstRunCompleted = async (books: string[]) => {
     setHasCompletedFirstRun(true);
     setActiveBooksState(books);
@@ -313,17 +330,19 @@ export function CharacterProvider({ children }: { children: React.ReactNode }) {
     onProgress?: (category: string, step: number, total: number) => void
   ) => {
     const compendium = await runInAppIntegration(onProgress);
-    setCompendiumStore(compendium);
+    integrateCompendium(compendium);
     setIsIntegrated(true);
     setIntegratedAt(compendium.integratedAt || new Date().toISOString());
+    setCatalogStale(currentCompendium().stale);
     await setActiveBooks(DEFAULT_ACTIVE_BOOK_CODES);
   };
 
   const revertToSrd = async () => {
     await clearCompendiumData();
-    clearCompendiumStore();
+    revertCompendiumToSrd();
     setIsIntegrated(false);
     setIntegratedAt(null);
+    setCatalogStale(false);
     await setActiveBooks(["SRD"]);
   };
 
@@ -334,6 +353,27 @@ export function CharacterProvider({ children }: { children: React.ReactNode }) {
   const selectCharacter = (id: string | null) => {
     setSelectedCharacterId(id);
   };
+
+  // The open character is reconciled against the active books when it is opened, when the books change,
+  // when the catalog is swapped, and once loading finishes (it may be selected before its record loads).
+  // Unopened characters are reconciled when they are opened. The committed characters are read through a
+  // ref, so the check runs at those moments only. The save goes through updateCharacter, and only when
+  // reconciling changed the character.
+  const committed = useRef({ characters, updateCharacter });
+  useEffect(() => {
+    committed.current = { characters, updateCharacter };
+  });
+  useEffect(() => {
+    if (isLoading || selectedCharacterId === null) return;
+    const { characters: loaded, updateCharacter: update } = committed.current;
+    const character = loaded.find((c) => c.id === selectedCharacterId);
+    if (!character) return;
+    const compendium = currentCompendium();
+    if (reconcileForActiveBooks(character, compendium, activeBooks) === character) return;
+    update(selectedCharacterId, (c) => reconcileForActiveBooks(c, compendium, activeBooks)).catch((error) =>
+      console.error("Could not save the character reconciled to the active books:", error)
+    );
+  }, [selectedCharacterId, activeBooks, integratedAt, isLoading]);
 
   const currentCharacter = characters.find((c) => c.id === selectedCharacterId) || null;
 
@@ -358,10 +398,13 @@ export function CharacterProvider({ children }: { children: React.ReactNode }) {
         deleteFolder,
         moveCharacterToFolder,
         setActiveBooks,
+        fullHealOnLevelUp,
+        setFullHealOnLevelUp,
         setFirstRunCompleted,
         getCharacter,
         isIntegrated,
         integratedAt,
+        catalogStale,
         triggerIntegration,
         revertToSrd,
       }}>
