@@ -51,9 +51,19 @@ const isSimpleWeapon = (item: ItemData) => WEAPON_TYPES.has(item.type) && item.w
 const isMartialWeapon = (item: ItemData) => WEAPON_TYPES.has(item.type) && item.weaponCategory === "martial";
 const isFocus = (item: ItemData) => item.type === "Spellcasting Focus";
 
+/** The Spellcasting Focus names each focus kind takes, by the 5e rules. */
+const FOCUS_NAMES = {
+  arcane: ["Crystal", "Orb", "Rod", "Staff", "Wand"],
+  holy: ["Amulet", "Emblem", "Reliquary"],
+  druidic: ["Sprig of Mistletoe", "Totem", "Wooden Staff", "Yew Wand"],
+};
+
+const isNamedFocus = (names: string[]) => (item: ItemData) =>
+  isFocus(item) && names.some((name) => name.toLowerCase() === item.name.toLowerCase());
+
 /**
  * The catalog items each generic type names. The catalog does not say which focus kind (arcane, holy, druidic) an
- * item serves, so each focus type offers every Spellcasting Focus item.
+ * item serves, so each focus type takes the Spellcasting Focus items named for its kind in FOCUS_NAMES.
  */
 const GENERIC_FILTERS: Record<string, (item: ItemData) => boolean> = {
   weaponSimple: isSimpleWeapon,
@@ -61,9 +71,9 @@ const GENERIC_FILTERS: Record<string, (item: ItemData) => boolean> = {
   weaponSimpleMelee: (item) => isSimpleWeapon(item) && item.type === "Melee Weapon",
   weaponMartialMelee: (item) => isMartialWeapon(item) && item.type === "Melee Weapon",
   instrumentMusical: (item) => item.type === "Instrument",
-  focusSpellcastingArcane: isFocus,
-  focusSpellcastingHoly: isFocus,
-  focusSpellcastingDruidic: isFocus,
+  focusSpellcastingArcane: isNamedFocus(FOCUS_NAMES.arcane),
+  focusSpellcastingHoly: isNamedFocus(FOCUS_NAMES.holy),
+  focusSpellcastingDruidic: isNamedFocus(FOCUS_NAMES.druidic),
 };
 
 /** The filter a generic type names, or undefined for a type the app does not know (see STARTING_EQUIPMENT_TYPES). */

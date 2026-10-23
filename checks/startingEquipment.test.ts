@@ -60,6 +60,7 @@ const ITEMS: ItemData[] = [
   item("Gull Shield", "Shield"),
   item("Brass Fiddle", "Instrument"),
   item("Tidestone", "Spellcasting Focus"),
+  item("Amulet", "Spellcasting Focus"),
 ];
 
 const pick = (name: string, quantity = 1): StartingEquipmentEntry => ({ kind: "item", name, source: SRC, quantity });
@@ -159,7 +160,7 @@ test("a generic entry is resolved to catalog items of its type, each name once, 
   assert.deepEqual(startingEquipmentPool("weaponSimpleMelee", catalogs), ["Quill Knife"]);
   assert.deepEqual(startingEquipmentPool("weaponMartialMelee", catalogs), ["Oarblade"]);
   assert.deepEqual(startingEquipmentPool("instrumentMusical", catalogs), ["Brass Fiddle"]);
-  assert.deepEqual(startingEquipmentPool("focusSpellcastingHoly", catalogs), ["Tidestone"]);
+  assert.deepEqual(startingEquipmentPool("focusSpellcastingHoly", catalogs), ["Amulet"], "Tidestone names no kind");
   assert.deepEqual(startingEquipmentPool("notAType", catalogs), []);
 
   const twice = pickedFerry(ferry(), "a", ["Hand Sling", "Hand Sling"]);
@@ -361,4 +362,19 @@ test("across the SRD Baseline classes with only their own proficiencies, the hid
     "Cleric slot 0 option b: warhammer",
     "Cleric slot 1 option c: chain mail",
   ]);
+});
+
+test("the SRD Baseline focus types each offer only their kind's focus items, and the three pools share no name", () => {
+  const srd = srdBaselineCompendium();
+  const srdCatalogs = { compendium: srd };
+  const arcane = ["Crystal", "Orb", "Rod", "Staff", "Wand"];
+  const holy = ["Amulet", "Emblem", "Reliquary"];
+  const druidic = ["Sprig of Mistletoe", "Totem", "Wooden Staff", "Yew Wand"];
+
+  assert.deepEqual(startingEquipmentPool("focusSpellcastingArcane", srdCatalogs), arcane);
+  assert.deepEqual(startingEquipmentPool("focusSpellcastingHoly", srdCatalogs), holy);
+  assert.deepEqual(startingEquipmentPool("focusSpellcastingDruidic", srdCatalogs), druidic);
+
+  const all = [...arcane, ...holy, ...druidic];
+  assert.equal(new Set(all).size, all.length, "no focus item serves two kinds");
 });
