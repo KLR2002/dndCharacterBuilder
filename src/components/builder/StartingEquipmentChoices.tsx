@@ -229,7 +229,7 @@ const TypePicker: React.FC<TypePickerProps> = ({ entry, onPick, theme }) => {
               }}
             >
               <Text style={{ color: theme.text, fontSize: 13, flexShrink: 1, minWidth: 0 }}>{label}</Text>
-              <View style={{ flexDirection: "row", alignItems: "center", gap: 4, flexShrink: 1, minWidth: 0 }}>
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
                 <Text
                   style={{
                     color: current ? theme.accent : theme.textMuted,
