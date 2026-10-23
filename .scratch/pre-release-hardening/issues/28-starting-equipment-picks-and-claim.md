@@ -15,6 +15,7 @@
 - Fixed and picked entries become inventory items with ids `start_<class>_<n>` (the `start_` prefix is how a later claim cleans up). Equip rule: one body armor and a shield are equipped; melee weapons are equipped; ranged weapons, ammunition, packs, tools, instruments and foci are carried. Quantity from the entry. An item the catalog does not know still gets added by its printed name and source so a claim never silently loses an item.
 - `applyStartingGrants` keeps its contract (clean earlier `start_` items, gold handling, markers) and gets the resolved items from the picks; calling it for equipment with incomplete picks must not grant a partial kit (return the character unchanged; the UI keeps Claim disabled until complete). `reclaimStartingGrants` adds the same resolved items on top, ids unique, as now.
 - A class with no slots (a 2024-print class, a homebrew class): equipment cannot be claimed; the character can still take gold. Expose a helper `hasStartingEquipmentChoices(character, compendium)` for the UI.
+- Bump `REQUIRED_CATALOG_FORMAT` (`src/services/compendiumStorage.ts`) from 5 to 6: a catalog cached before ticket 27 has no equipment slots, and the bump makes the app ask for a re-sync. Check the tests and fixtures that name the format.
 - Delete `CLASS_STARTING_EQUIPMENT` and its imports once nothing reads it (the UI preview in `StartingGrantsSection.tsx` is replaced in ticket 29; keep it compiling by having that component read the new module's helper for now, or make ticket 29's change minimal here, whichever keeps `check:all` green). `STARTING_GOLD_BY_CLASS` stays.
 - Test first at the module seam with an invented class record (a fixed slot, an a/b slot with different item counts, a generic slot with quantity 2) and a small invented item list: picks complete/incomplete, the exact items granted for each option, no item from the unpicked option, the equip rule, a claim then a changed pick then a re-claim leaving no stale `start_` items, old save without the picks field loads. One test over the real SRD baseline Fighter proves the printed structure (chain mail or the leather/longbow/arrows option; no both).
 - Existing characterization baselines that change: re-record only through their recorder env var and explain each changed row.
@@ -25,4 +26,5 @@
 - [ ] A Cleric without heavy-armor or martial-weapon proficiency is not offered chain mail or the warhammer; with a domain that grants them, they are offered.
 - [ ] A generic slot is resolved by a picked catalog item; quantity-2 slots take two picks.
 - [ ] Incomplete picks grant nothing; the class change clears picks; old saves load.
+- [ ] The catalog format is 6.
 - [ ] `CLASS_STARTING_EQUIPMENT` is gone. `npm run check:all` passes.

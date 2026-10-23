@@ -4,7 +4,9 @@
 
 **Blocked by:** None
 
-**Status:** ready-for-agent
+**Status:** done
+
+**Landed:** merged from `pr/27-class-equipment-data` (ce12c68, a08c307, f740ddf, e5ad026, 865e767; merge of the tip bc265ea). `check:all` passes on the merged tip (1164 app tests, 178 scraper tests, 322 known type errors none new); `check:live` passed on the branch (30 classes, 14 carry slots, every item and generic type resolves). `ClassData.startingEquipment` is a list of slots: `fixed` (entries) or `choice` (options with a letter and entries), plus an `unrecognised` variant kept in place so slot indexes never shift; an entry is `item` (name, source, quantity), `type` (equipmentType, quantity) or `unrecognised`. Slot id = position in the list, option id = its letter. The generic type list is `STARTING_EQUIPMENT_TYPES` in `src/rules/startingEquipmentTypes.ts`. Item sources are capitalised to the catalog code. Open items: the tracked class data was already stale against the current scraper (171 differences, mostly subclass features, choices and grants), so the regeneration was not committed in full; the new field was inserted into the committed files (additive only, 0 deletions with `--patience`) and pruned; a catalog cached before this has no slots, so ticket 28 bumps the catalog format.
 
 ## Design notes
 
