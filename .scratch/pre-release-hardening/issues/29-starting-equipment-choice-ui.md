@@ -1,6 +1,6 @@
 # 29: The Builder asks for one option per equipment slot before Claim
 
-**What to build:** Owner request. The UI half. In the Builder's "Starting Equipment & Gold" card, with Equipment selected, show each slot of the class: a fixed slot lists its items; an a/b/c slot shows the options as radio-like choices (exactly one selectable, the items of each listed in the label); a generic entry inside the chosen option shows a picker for the specific item (two pickers for a quantity of 2). "Claim Starting Equipment" is enabled only when every slot is complete. After claiming, the card shows the claimed state as now, and the picks stay visible and changeable (changing them and pressing "Claim again"/switching works through ticket 28's functions). A class with no slots shows only the gold option with no Equipment choice (use `hasStartingEquipmentChoices`).
+**What to build:** Owner request. The UI half. In the Builder's "Starting Equipment & Gold" card, with Equipment selected, show each slot of the class: a fixed slot lists its items; an a/b/c slot shows the options as radio-like choices (exactly one selectable, the items of each listed in the label); a generic entry inside the chosen option shows a picker for the specific item (two pickers for a quantity of 2). "Claim Starting Equipment" is enabled only when every slot is complete. After claiming, the card shows the claimed state as now, and the picks stay visible and changeable (changing them and pressing "Claim again"/switching works through ticket 28's functions). Options the character is not proficient to take (ticket 28's gate, e.g. a Cleric without a heavy-armor domain) are not shown. A class with no slots shows only the gold option with no Equipment choice (use `hasStartingEquipmentChoices`).
 
 **Blocked by:** 28
 
@@ -17,6 +17,7 @@
 ## Acceptance criteria
 
 - [ ] For the Fighter, the card shows four slots; each can take only one option; Claim is disabled until all four (and any generic pickers inside the chosen options) are filled.
+- [ ] A Cleric with a heavy-armor domain sees the chain mail option; one without does not.
 - [ ] Claiming adds only the chosen items to the inventory.
 - [ ] No horizontal overflow at 320, 360 and 412 px in both catalog modes.
 - [ ] `npm run check:all`, `npm run layout:check` and `npm run layout:check -- --integrated` pass.
