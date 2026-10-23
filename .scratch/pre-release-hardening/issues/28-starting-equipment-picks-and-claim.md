@@ -4,7 +4,9 @@
 
 **Blocked by:** 27
 
-**Status:** ready-for-agent
+**Status:** done
+
+**Landed:** merged from `pr/28-equipment-picks-claim` (eaf7626, d2f0be2, 2bee185). `check:all` passes on the merged tip (1191 app tests, 7 skipped, 178 scraper tests, 322 known type errors none new); `check:live` 53 of 53 on the branch. Rules module `src/rules/startingEquipment.ts`: `hasStartingEquipmentChoices(character, catalogs?)`, `startingEquipmentOffers(character, catalogs?)` (per choice slot, the option letters offered now), `startingEquipmentPool(equipmentType, catalogs?)`, `setStartingEquipmentOption(character, slot, letter, catalogs?)`, `setStartingEquipmentItems(character, {slot, option, entry}, names, catalogs?)`, `resolveStartingEquipment(character, catalogs?)` returning `{hasSlots, complete, items}`; picks live in `Character.startingEquipmentPicks` (`src/rules/startingEquipmentPicks.ts`), pruned by the reconciler when the first class changes. `applyStartingGrants`/`reclaimStartingGrants` take `{goldAmount?, equipmentItems?, catalogs?}` and grant the resolved kit; incomplete picks grant nothing. The proficiency gate reads the Proficiency Sheet: on the SRD baseline the only hidden options are the Cleric's warhammer and chain mail (the Druid's shield needed a name match for the sheet's `Shields (...)` entry). The three focus types each offer their own names. `CLASS_STARTING_EQUIPMENT` is gone; catalog format is 6. Open items: until ticket 29 the Claim button is disabled for every class with slots; `applyStartingGrants` still accepts an `equipmentItems` override because ten existing transition tests use it as their seam; the typecheck baseline was re-recorded with its recorder (message text of five entries, total still 322); the first 18 tests were written by an implementer killed mid-session, so no red output was seen for them.
 
 ## Design notes
 
