@@ -9,6 +9,7 @@ import type {
 } from "../../rules/startingEquipment";
 import { SearchBar } from "../ui/SearchBar";
 import { pkStyles } from "./builderStyles";
+import { choiceSlotHeaders } from "./equipmentSlotGroups";
 
 type TypeEntry = Extract<StartingEquipmentCardEntry, { kind: "type" }>;
 
@@ -45,88 +46,135 @@ export interface StartingEquipmentChoicesProps {
   theme: any;
 }
 
-/** The equipment slots of the first class: a fixed slot lists its items, a choice slot takes one option. */
-export const StartingEquipmentChoices: React.FC<StartingEquipmentChoicesProps> = ({ card, onPickOption, onPickItems, theme }) => (
-  <View style={{ gap: 12 }}>
-    {card.slots.map((slot) => {
-      if (slot.kind === "unrecognised") {
-        return (
-          <Text key={slot.slot} style={{ color: theme.danger, fontSize: 12 }}>
-            This slot cannot be read from the catalog.
-          </Text>
-        );
-      }
-      if (slot.kind === "fixed") {
-        return (
-          <View key={slot.slot} style={{ gap: 4 }}>
-            {slot.entries.map((entry, i) =>
-              entry.kind === "type" ? (
-                <TypePicker key={i} entry={entry} onPick={(names) => onPickItems(entry.address, names)} theme={theme} />
-              ) : (
-                <Text key={i} style={{ color: theme.text, fontSize: 13, flexShrink: 1 }}>
-                  {entryLabel(entry)}
-                </Text>
-              ),
-            )}
-          </View>
-        );
-      }
-      return (
-        <View key={slot.slot} style={{ gap: 6 }}>
-          {slot.options.map((option) => (
-            <View key={option.letter} style={{ gap: 4 }}>
-              <TouchableOpacity
-                accessibilityRole="radio"
-                accessibilityState={{ checked: option.chosen }}
-                hitSlop={{ top: 4, bottom: 4, left: 4, right: 4 }}
-                onPress={() => onPickOption(slot.slot, option.letter)}
-                style={{
-                  flexDirection: "row",
-                  alignItems: "center",
-                  gap: 10,
-                  minHeight: 44,
-                  paddingVertical: 8,
-                  paddingHorizontal: 10,
-                  borderRadius: 8,
-                  borderWidth: 1,
-                  backgroundColor: option.chosen ? theme.accentGlow : theme.surface,
-                  borderColor: option.chosen ? theme.accent : theme.border,
-                }}
-              >
-                <Ionicons
-                  name={option.chosen ? "radio-button-on" : "radio-button-off"}
-                  size={18}
-                  color={option.chosen ? theme.accent : theme.textMuted}
-                />
-                <Text
-                  style={{
-                    flex: 1,
-                    minWidth: 0,
-                    flexShrink: 1,
-                    color: option.chosen ? theme.accent : theme.textSecondary,
-                    fontSize: 13,
-                    fontWeight: option.chosen ? "700" : "500",
-                  }}
-                >
-                  {optionLabel(option)}
-                </Text>
-              </TouchableOpacity>
-              {option.chosen
-                ? option.entries.map((entry, i) =>
-                    entry.kind === "type" ? (
-                      <View key={i} style={{ paddingLeft: 28 }}>
-                        <TypePicker entry={entry} onPick={(names) => onPickItems(entry.address, names)} theme={theme} />
-                      </View>
-                    ) : null,
-                  )
-                : null}
-            </View>
-          ))}
-        </View>
-      );
-    })}
+/** A slot's own box: a rounded, bordered group with a slightly raised background, so each slot reads as one choice. */
+const SlotGroup: React.FC<{ children: React.ReactNode; theme: any }> = ({ children, theme }) => (
+  <View
+    style={{
+      gap: 8,
+      padding: 10,
+      borderRadius: 10,
+      borderWidth: 1,
+      borderColor: theme.border,
+      backgroundColor: theme.surfaceRaised,
+    }}
+  >
+    {children}
   </View>
 );
+
+const SlotHeader: React.FC<{ label: string; complete?: boolean; theme: any }> = ({ label, complete, theme }) => (
+  <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
+    <Text style={{ color: theme.textSecondary, fontSize: 12, fontWeight: "700", flexShrink: 1, minWidth: 0 }}>{label}</Text>
+    {complete ? <Ionicons name="checkmark-circle" size={16} color={theme.accent} /> : null}
+  </View>
+);
+
+/** The line between two options of one slot, so the options read as alternatives. */
+const OrDivider: React.FC<{ theme: any }> = ({ theme }) => (
+  <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+    <View style={{ flex: 1, height: 1, backgroundColor: theme.border }} />
+    <Text style={{ color: theme.textMuted, fontSize: 11, fontWeight: "600" }}>or</Text>
+    <View style={{ flex: 1, height: 1, backgroundColor: theme.border }} />
+  </View>
+);
+
+/** The equipment slots of the first class: a fixed slot lists its items, a choice slot takes one option. */
+export const StartingEquipmentChoices: React.FC<StartingEquipmentChoicesProps> = ({ card, onPickOption, onPickItems, theme }) => {
+  const headers = choiceSlotHeaders(card.slots);
+  return (
+    <View style={{ gap: 16 }}>
+      {card.slots.map((slot) => {
+        if (slot.kind === "unrecognised") {
+          return (
+            <SlotGroup key={slot.slot} theme={theme}>
+              <Text style={{ color: theme.danger, fontSize: 12 }}>This slot cannot be read from the catalog.</Text>
+            </SlotGroup>
+          );
+        }
+        if (slot.kind === "fixed") {
+          return (
+            <SlotGroup key={slot.slot} theme={theme}>
+              <SlotHeader label="Included" theme={theme} />
+              <View style={{ gap: 4 }}>
+                {slot.entries.map((entry, i) =>
+                  entry.kind === "type" ? (
+                    <TypePicker key={i} entry={entry} onPick={(names) => onPickItems(entry.address, names)} theme={theme} />
+                  ) : (
+                    <Text key={i} style={{ color: theme.text, fontSize: 13, flexShrink: 1 }}>
+                      {entryLabel(entry)}
+                    </Text>
+                  ),
+                )}
+              </View>
+            </SlotGroup>
+          );
+        }
+        const header = headers.get(slot.slot);
+        return (
+          <SlotGroup key={slot.slot} theme={theme}>
+            {header ? (
+              <SlotHeader label={`Choice ${header.number} of ${header.total}`} complete={header.complete} theme={theme} />
+            ) : null}
+            <View style={{ gap: 8 }}>
+              {slot.options.map((option, optionIndex) => (
+                <React.Fragment key={option.letter}>
+                  {optionIndex > 0 ? <OrDivider theme={theme} /> : null}
+                  <View style={{ gap: 4 }}>
+                    <TouchableOpacity
+                      accessibilityRole="radio"
+                      accessibilityState={{ checked: option.chosen }}
+                      hitSlop={{ top: 4, bottom: 4, left: 4, right: 4 }}
+                      onPress={() => onPickOption(slot.slot, option.letter)}
+                      style={{
+                        flexDirection: "row",
+                        alignItems: "center",
+                        gap: 10,
+                        minHeight: 44,
+                        paddingVertical: 8,
+                        paddingHorizontal: 10,
+                        borderRadius: 8,
+                        borderWidth: 1,
+                        backgroundColor: option.chosen ? theme.accentGlow : theme.surface,
+                        borderColor: option.chosen ? theme.accent : theme.border,
+                      }}
+                    >
+                      <Ionicons
+                        name={option.chosen ? "radio-button-on" : "radio-button-off"}
+                        size={18}
+                        color={option.chosen ? theme.accent : theme.textMuted}
+                      />
+                      <Text
+                        style={{
+                          flex: 1,
+                          minWidth: 0,
+                          flexShrink: 1,
+                          color: option.chosen ? theme.accent : theme.textSecondary,
+                          fontSize: 13,
+                          fontWeight: option.chosen ? "700" : "500",
+                        }}
+                      >
+                        {optionLabel(option)}
+                      </Text>
+                    </TouchableOpacity>
+                    {option.chosen
+                      ? option.entries.map((entry, i) =>
+                          entry.kind === "type" ? (
+                            <View key={i} style={{ paddingLeft: 28 }}>
+                              <TypePicker entry={entry} onPick={(names) => onPickItems(entry.address, names)} theme={theme} />
+                            </View>
+                          ) : null,
+                        )
+                      : null}
+                  </View>
+                </React.Fragment>
+              ))}
+            </View>
+          </SlotGroup>
+        );
+      })}
+    </View>
+  );
+};
 
 interface TypePickerProps {
   entry: TypeEntry;
