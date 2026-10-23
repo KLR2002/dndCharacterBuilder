@@ -1,5 +1,5 @@
 ## Verification
-Verify all changes: `npm run check:all`. Changes to grants, the scraper or anything that reads catalog records also need `npm run check:live`: it builds the catalog the in-app sync produces (network, about a minute) and checks the rules against it, which the tracked snapshot cannot do. UI changes also need `npm run layout:check` (it starts its own Expo web server; add `-- --integrated` for the integrated catalog; first run needs `npx playwright install chromium`); layout rules are in `CODING_STANDARDS.md` section 7.
+Verify all changes: `npm run check:all`. Changes to grants, the scraper or anything that reads catalog records also need `npm run check:live`: it builds the catalog the in-app sync produces (network, about a minute) and checks the rules against it, which the tracked snapshot cannot do. UI changes also need `npm run layout:check` (it starts its own Expo web server and runs the four widths in parallel, about 3 minutes for the SRD Baseline and 3.3 minutes with `-- --integrated`; `ONLY=<name>` visits only the scenarios whose name contains it; first run needs `npx playwright install chromium`); layout rules are in `CODING_STANDARDS.md` section 7.
 
 ## Subagents
 - Implementer rules (Git, worktree setup, data folders, baselines): `docs/agents/subagent-tiering.md`, section "Implementer Rules".
