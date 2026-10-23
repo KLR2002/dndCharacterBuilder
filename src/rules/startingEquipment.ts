@@ -99,6 +99,13 @@ function catalogItem(name: string, source: string, catalogs: CharacterCatalogs):
 }
 
 /**
+ * True when a sheet armor name is the needed name, or the needed name followed by a parenthesised restriction, as
+ * the Druid's shield proficiency is printed: "Shields (druids will not wear armor or use shields made of metal)".
+ */
+const namesArmorProficiency = (sheetName: string, needed: string) =>
+  sheetName === needed || sheetName.startsWith(`${needed} (`);
+
+/**
  * Whether the character is proficient with a catalog item the option names. Weapons go through the existing
  * weapon matcher; the catalog's weapon category is passed as the description it reads when the standard table has
  * no entry for the weapon. Body armor and shields need the armor category on the sheet. Anything else is not gated.
@@ -118,7 +125,7 @@ function proficientWith(item: ItemData, sheet: ProficiencySheet): boolean {
     return isProficientWithWeapon(asItem, sheet.weapons.map((w) => w.name));
   }
   const needed = ARMOR_PROFICIENCY[item.type];
-  return needed ? sheet.armor.some((a) => a.name === needed) : true;
+  return needed ? sheet.armor.some((a) => namesArmorProficiency(a.name, needed)) : true;
 }
 
 /** An option is offered when the character is proficient with every catalog armor and weapon it names. */

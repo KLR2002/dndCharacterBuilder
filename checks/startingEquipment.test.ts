@@ -332,7 +332,13 @@ test("the SRD Baseline Cleric is offered chain mail and the warhammer only with 
     "the Life Domain's Bonus Proficiency gives heavy armor, so chain mail is offered");
 });
 
-test("across the SRD Baseline classes with only their own proficiencies, the hidden options are the Cleric's warhammer and chain mail and the Druid's shield", () => {
+test("the SRD Baseline Druid is offered the shield, whose sheet name carries the printed druid restriction", () => {
+  const srd = srdBaselineCompendium();
+  const druid = makeChar({ classes: [{ className: "Druid", source: "SRD", level: 1 }] });
+  assert.deepEqual(startingEquipmentOffers(druid, { compendium: srd })[0], { slot: 0, options: ["a", "b"] });
+});
+
+test("across the SRD Baseline classes with only their own proficiencies, the hidden options are the Cleric's warhammer and chain mail", () => {
   const srd = srdBaselineCompendium();
   const srdCatalogs = { compendium: srd };
   const hidden: string[] = [];
@@ -351,13 +357,8 @@ test("across the SRD Baseline classes with only their own proficiencies, the hid
       }
     }
   }
-  // Reported, not loosened: the Druid's shield proficiency is on the sheet with its printed restriction
-  // ("Shields (druids will not wear armor or use shields made of metal)"), so the exact name "Shields" the gate
-  // reads is absent and the Druid's shield option is hidden. Fixing it means changing how the sheet names the
-  // entry, which is the Proficiency Sheet's decision.
   assert.deepEqual(hidden, [
     "Cleric slot 0 option b: warhammer",
     "Cleric slot 1 option c: chain mail",
-    "Druid slot 0 option a: shield",
   ]);
 });
