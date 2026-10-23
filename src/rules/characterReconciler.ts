@@ -22,6 +22,7 @@ import {
   pruneInvalidProficiencyPicks,
 } from "./proficiencyPicks.ts";
 import { dropLegacyBackgroundSkills } from "./legacyBackgroundSkills.ts";
+import { pruneStartingEquipmentPicks } from "./startingEquipmentPicks.ts";
 
 /**
  * The single seam every state-changing builder transition ends in. Idempotent: reconciling a
@@ -45,6 +46,8 @@ import { dropLegacyBackgroundSkills } from "./legacyBackgroundSkills.ts";
  * Proficiency picks are released before Expertise, so Expertise is pruned against the released state. A
  * background skill copy that only a turned-off background granted is dropped first, for the same reason.
  *
+ * Starting equipment picks are dropped first when the first class is no longer the one they were made for.
+ *
  * `options.activeBooks` scopes only the Expertise pass: an Expertise mark on a skill that no active book
  * grants is released. Omitted, the pass is unscoped, as it has always been.
  */
@@ -53,7 +56,7 @@ export function reconcile(
   compendium: Compendium,
   options: { activeBooks?: string[] } = {},
 ): Character {
-  let updated = character;
+  let updated = pruneStartingEquipmentPicks(character);
 
   updated = pruneInvalidFightingStyles(updated);
   updated = pruneInvalidManeuvers(updated);

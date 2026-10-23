@@ -18,8 +18,9 @@ import type {
  * classes from different sources apart.
  * Format 5 changes the class, race, background, skill, weapon and armor Proficiency Grants, the Tiger
  * grants and the grant ids (now stable, with aliases for the former position-based ids).
+ * Format 6 adds the class starting equipment slots, which a catalog saved at format 5 does not carry.
  */
-export const REQUIRED_CATALOG_FORMAT = 5;
+export const REQUIRED_CATALOG_FORMAT = 6;
 
 /** True for an Integrated Catalog saved below the required format (or with none). The SRD Baseline is never stale. */
 export function isCatalogStale(collections: Pick<CompendiumCollections, "hasIntegratedCatalog" | "catalogFormat">): boolean {
