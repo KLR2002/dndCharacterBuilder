@@ -1,0 +1,25 @@
+# 27: Class starting equipment slots come from the catalog
+
+**What to build:** Owner request (the starting equipment claim gives the whole kit; a player must choose one option per slot). This ticket is the data half. Today `CLASS_STARTING_EQUIPMENT` in `src/rules/builderTransitions.ts` is a hand-typed flat list per class (the Fighter one is not even the printed kit). The 5etools class files carry the real structure in `startingEquipment.defaultData`: an array of slots, each either `{ "_": [...] }` (always granted) or `{ "a": [...], "b": [...], "c": [...] }` (the player takes exactly one option). An entry inside a list is `"name|source"`, `{ "item": "name|source", "quantity": n }`, or a generic `{ "equipmentType": "weaponMartial", "quantity": n }` (the player picks any item of that type). Store this on each class record in the catalog, in a shape the app can read, for the 2014-print classes. The app does not support 2024 rules: a class whose `defaultData` is the 2024 kit form (options keyed `A`/`B`/`C`, with `value` entries) gets no slots.
+
+**Blocked by:** None
+
+**Status:** ready-for-agent
+
+## Design notes
+
+- Add an optional field to `ClassData` (`src/types/dnd5e.ts`) and `ClassModel` (`dnd5eToolsScrap/src/types/models.ts`), for example `startingEquipment?: StartingEquipmentSlot[]`. A slot is either fixed items or a list of options (each option a list of entries); an entry is a catalog item reference (`name`, `source`, `quantity`) or a generic pick (`equipmentType`, `quantity`). Keep ids/labels stable and derived from position (`slot index`, option letter) so a later ticket can store picks by them.
+- Parse it in `dnd5eToolsScrap/src/scrapers/classes.ts` in a small, tested parser module (like `parser/proficiency-grants.ts`). Item names are matched case-insensitively later, so keep the printed name; strip the `|source` into `source` (default `PHB`). The generic types seen in the PHB/TCE data are `weaponSimple`, `weaponMartial`, `weaponSimpleMelee`, `weaponMartialMelee`, `instrumentMusical`, `focusSpellcastingArcane|Holy|Druidic`; keep the type string as is, resolving it is a later ticket.
+- Never drop an entry silently, as in the proficiency parser: an entry or slot shape the parser does not recognise is reported (collected and logged by the scrape), not skipped. Test with an invented class record built from each shape above, plus an unrecognised shape.
+- Add a structure check next to `dnd5eToolsScrap/checks/structured-choice-coverage.test.ts`: over the snapshot classes, every 2014-print class (one whose `defaultData` has `_`/`a`/`b` keys) yields at least one slot and no unrecognised entry. Skipped when the snapshot is absent, like the existing one.
+- Live check: add an invariant to `checks/liveCatalog.test.ts` (gated by `LIVE_CATALOG_CHECK=1`): for every class with `startingEquipment`, every item reference resolves to an item in the catalog by name (case-insensitive, `Arrows (20)` style names as printed) and every generic type is one the app knows. Name the known generic types in one exported list/set in `src/rules/` so the later resolver and this check share it.
+- SRD baseline: `src/data/classes.json` is produced by `node scripts/prune-to-srd.mjs` from `dnd5eToolsScrap/data/classes.json`, which a scrape produces. This ticket says to run it: run the classes scrape from the cached snapshot (`npm --prefix dnd5eToolsScrap run scrape:classes`; if it needs the network and fails offline, report that instead of hand-editing), commit the regenerated `dnd5eToolsScrap/data/classes.json` and the pruned `src/data/classes.json` in their own commit, and check with `git diff --stat` that only the new field changed (revert any unrelated drift and report it). The 12 PHB classes should carry slots; subclasses and features must be unchanged.
+- Do not touch `CLASS_STARTING_EQUIPMENT` or any UI here.
+- Run `npm run check:live` and report whether it ends green.
+
+## Acceptance criteria
+
+- [ ] Parsed slots for a PHB class match its printed choices (fixed slot, a/b slot, a/b/c slot, quantity entries, generic entries) in tests with invented names.
+- [ ] The scrape reports an unrecognised entry shape instead of dropping it.
+- [ ] The tracked SRD baseline classes carry `startingEquipment` for the 12 PHB classes, with no other changes in the diff.
+- [ ] `npm run check:all` and `npm run check:live` pass.
