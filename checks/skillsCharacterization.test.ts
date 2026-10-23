@@ -90,6 +90,10 @@ function recordSkills(character: Parameters<typeof evaluateCharacter>[0], comp: 
   };
 }
 
+/** The sweep is the slow part of these tests, so it is computed once: both tests read the same record. */
+let recorded: Record<string, Recorded> | undefined;
+const sweep = (): Record<string, Recorded> => (recorded ??= captureAll());
+
 function loadBaseline(): Record<string, Recorded> {
   return JSON.parse(readFileSync(BASELINE_PATH, "utf8")) as Record<string, Recorded>;
 }
@@ -133,7 +137,7 @@ function grantIdsOf(compendium: Compendium): Set<string> {
 }
 
 test("every skill and Expertise entry in the baseline is still shown", () => {
-  const actual = captureAll();
+  const actual = sweep();
   if (process.env.UPDATE_SKILLS_BASELINE) {
     writeFileSync(BASELINE_PATH, `${JSON.stringify(actual, null, 1)}\n`);
   }
@@ -143,7 +147,7 @@ test("every skill and Expertise entry in the baseline is still shown", () => {
 });
 
 test("every new skill or Expertise entry is allowlisted, and every allowlisted entry is shown", () => {
-  const added = new Set(addedPairs(loadBaseline(), captureAll()));
+  const added = new Set(addedPairs(loadBaseline(), sweep()));
   const allowed = new Set(ALLOWLIST.map((p) => pairKey(p.scenario, p.entry)));
   assert.deepEqual(
     [...added].filter((pair) => !allowed.has(pair)).map((pair) => JSON.parse(pair)),
