@@ -67,6 +67,10 @@ const CATEGORIES = ["tools", "expertise", "languages"] as const;
 const scenarioOf = (key: string) => key.split(" | ").slice(0, 2).join(" | ");
 const pairKey = (scenario: string, entry: string) => JSON.stringify([scenario, entry]);
 
+/** The sweep is the slow part of these tests, so it is computed once: both tests read the same record. */
+let recorded: Record<string, Recorded> | undefined;
+const sweep = (): Record<string, Recorded> => (recorded ??= captureAll());
+
 function loadBaseline(): Record<string, Recorded> {
   return JSON.parse(readFileSync(BASELINE_PATH, "utf8")) as Record<string, Recorded>;
 }
@@ -110,7 +114,7 @@ function grantIdsOf(compendium: Compendium): Set<string> {
 }
 
 test("every tool, Expertise tool and language in the baseline is still shown", () => {
-  const actual = captureAll();
+  const actual = sweep();
   if (process.env.UPDATE_PROFICIENCY_SHEET_BASELINE) {
     writeFileSync(BASELINE_PATH, `${JSON.stringify(actual, null, 1)}\n`);
   }
@@ -120,7 +124,7 @@ test("every tool, Expertise tool and language in the baseline is still shown", (
 });
 
 test("every new tool, Expertise tool or language is allowlisted, and every allowlisted entry is shown", () => {
-  const added = new Set(addedPairs(loadBaseline(), captureAll()));
+  const added = new Set(addedPairs(loadBaseline(), sweep()));
   const allowed = new Set(ALLOWLIST.map((p) => pairKey(p.scenario, p.entry)));
   assert.deepEqual(
     [...added].filter((pair) => !allowed.has(pair)).map((pair) => JSON.parse(pair)),
