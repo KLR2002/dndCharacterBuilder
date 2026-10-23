@@ -120,6 +120,10 @@ function captureAll(): Record<string, Recorded> {
   return out;
 }
 
+/** The sweep is the slow part of these tests, so it is computed once: both tests read the same record. */
+let recorded: Record<string, Recorded> | undefined;
+const sweep = (): Record<string, Recorded> => (recorded ??= captureAll());
+
 function loadBaseline(): Record<string, Recorded> {
   return JSON.parse(readFileSync(BASELINE_PATH, "utf8")) as Record<string, Recorded>;
 }
@@ -165,7 +169,7 @@ function addedPairs(expected: Record<string, Recorded>, actual: Record<string, R
 }
 
 test("every saving throw in the baseline is still held, and unchanged saves keep their bonus", () => {
-  const actual = captureAll();
+  const actual = sweep();
   if (process.env.UPDATE_SAVES_BASELINE) {
     writeFileSync(BASELINE_PATH, `${JSON.stringify(actual, null, 1)}\n`);
   }
@@ -176,7 +180,7 @@ test("every saving throw in the baseline is still held, and unchanged saves keep
 });
 
 test("every new saving throw is allowlisted, and every allowlisted entry is shown", () => {
-  const added = new Set(addedPairs(loadBaseline(), captureAll()));
+  const added = new Set(addedPairs(loadBaseline(), sweep()));
   const allowed = new Set(ALLOWLIST.map((p) => pairKey(p.scenario, p.entry)));
   assert.deepEqual(
     [...added].filter((pair) => !allowed.has(pair)).map((pair) => JSON.parse(pair)),
