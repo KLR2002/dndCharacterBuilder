@@ -4,7 +4,9 @@
 
 **Blocked by:** 28
 
-**Status:** ready-for-agent
+**Status:** done
+
+**Landed:** merged from `pr/29-equipment-choice-ui` (9499f5c, 908a0ae, 1399639, 1df8b04, bc203a7, b4665d2, 1a5f757). `check:all` passes on the merged tip (1190 app tests, 7 skipped, 178 scraper tests, 322 known type errors none new); layout checks green at 320, 360, 393 and 412 px in both catalog modes on the branch. The Builder's equipment card shows each slot as a radio list of options (item names, quantities), with an inline searchable picker under an option that holds a generic entry; Claim is enabled only when every slot is complete; a class with no slots shows gold only; options the character cannot take (the proficiency gate) are not listed. I viewed the Fighter slots, the open picker and the Life Domain Cleric at 320 px: no overflow, Chain Mail offered and the Warhammer not. Permanent layout scenarios added (Fighter slots, picked, picker open, Cleric with and without a domain). Open items: Claim, the claimed state and changing a pick after claiming are covered by rules tests but not driven in the browser; the card tests from the first implementer were not seen red; in SRD mode a Cleric always has Life Domain (the app applies the sole SRD subclass), so the no-domain case exists only with integration; a focus list and a long martial weapon pool were not measured on a real device.
 
 ## Design notes
 
