@@ -440,10 +440,10 @@ const SCREENS = [
       ]
     : []),
   // The equipment card: one option per slot, the picker of a generic entry, Claim disabled until every slot is picked.
-  { name: "Builder Class equipment choices", route: FIGHTER_ROUTE, tabs: ["Builder", "Class"], ready: "Starting Equipment & Gold:", scrollTo: "Starting Equipment & Gold:", expect: { texts: ["Chain Mail"], disabled: ["Claim Starting Equipment"], fitsWidth: true } },
+  { name: "Builder Class equipment choices", route: FIGHTER_ROUTE, tabs: ["Builder", "Class"], ready: "Starting Equipment & Gold:", scrollTo: "Starting Equipment & Gold:", expect: { texts: ["Chain Mail", "Choice 1 of 4"], disabled: ["Claim Starting Equipment"], fitsWidth: true } },
   { name: "Builder Class equipment picked", route: FIGHTER_PICKED_ROUTE, tabs: ["Builder", "Class"], ready: "Starting Equipment & Gold:", scrollTo: "Starting Equipment & Gold:", expect: { enabled: ["Claim Starting Equipment"], fitsWidth: true } },
   { name: "Builder Class equipment picker open", route: FIGHTER_PICKED_ROUTE, tabs: ["Builder", "Class"], open: (page) => page.getByText("Martial weapon", { exact: true }).first().click(), ready: "Greatsword", scrollTo: "Martial weapon", expect: { placeholders: ["Search…"] } },
-  { name: "Builder Class equipment cleric domain", route: CLERIC_DOMAIN_ROUTE, tabs: ["Builder", "Class"], ready: "Starting Equipment & Gold:", scrollTo: "Starting Equipment & Gold:", expect: { texts: ["Chain Mail"], absent: ["Warhammer"], fitsWidth: true } },
+  { name: "Builder Class equipment cleric domain", route: CLERIC_DOMAIN_ROUTE, tabs: ["Builder", "Class"], ready: "Starting Equipment & Gold:", scrollTo: "Starting Equipment & Gold:", expect: { texts: ["Chain Mail", "Included"], absent: ["Warhammer"], fitsWidth: true } },
   // The SRD Baseline has one Cleric domain, which the app applies at once, so a Cleric without a domain exists in integrated mode only.
   ...(INTEGRATED
     ? [{ name: "Builder Class equipment cleric", route: CLERIC_ROUTE, tabs: ["Builder", "Class"], ready: "Starting Equipment & Gold:", scrollTo: "Starting Equipment & Gold:", expect: { texts: ["Scale Mail"], absent: ["Warhammer", "Chain Mail"], fitsWidth: true } }]
