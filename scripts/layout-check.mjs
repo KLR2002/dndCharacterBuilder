@@ -271,6 +271,54 @@ function noBackgroundCharacter() {
   });
 }
 
+// Level 1 Fighters for the equipment card. The unpicked one has no picks, so Claim Starting Equipment is disabled. The
+// picked one has a pick in every slot (chain mail, a martial weapon and a shield, a light crossbow, a dungeoneer's pack),
+// so Claim is enabled, and its martial weapon picker is the one a screen opens.
+const FIGHTER_ID = "char_fighter";
+const FIGHTER_PICKED_ID = "char_fighterpicked";
+function fighterCharacter({ id, name, picked }) {
+  const classSource = catalogSource("classes", "Fighter");
+  return makeChar({
+    id,
+    name,
+    createdAt: 4,
+    updatedAt: 4,
+    race: { name: "Human", source: catalogSource("races", "Human") },
+    background: { name: "Acolyte", source: catalogSource("backgrounds", "Acolyte") },
+    startingOption: "equipment",
+    classes: [{ className: "Fighter", source: classSource, level: 1 }],
+    currentHp: 12,
+    backgroundGrantsApplied: true,
+    ...(picked
+      ? {
+          startingEquipmentPicks: {
+            className: "Fighter",
+            source: classSource,
+            options: { 0: "a", 1: "a", 2: "a", 3: "a" },
+            items: { "1.a.0": ["Longsword"] },
+          },
+        }
+      : {}),
+  });
+}
+
+// A level 1 Cleric. The warhammer needs martial weapons, which this Cleric does not have, so it is not offered.
+const CLERIC_ID = "char_cleric";
+function clericCharacter() {
+  return makeChar({
+    id: CLERIC_ID,
+    name: "Corwin",
+    createdAt: 5,
+    updatedAt: 5,
+    race: { name: "Human", source: catalogSource("races", "Human") },
+    background: { name: "Acolyte", source: catalogSource("backgrounds", "Acolyte") },
+    startingOption: "equipment",
+    classes: [{ className: "Cleric", source: catalogSource("classes", "Cleric"), level: 1 }],
+    currentHp: 9,
+    backgroundGrantsApplied: true,
+  });
+}
+
 // The seed the browser starts from: the characters, folders, settings, and (integrated mode) the catalog.
 function buildSeed() {
   const defaults = defaultSettings();
@@ -312,6 +360,9 @@ function buildSeed() {
       bardCharacter(),
       noRaceCharacter(),
       noBackgroundCharacter(),
+      fighterCharacter({ id: FIGHTER_ID, name: "Tavish", picked: false }),
+      fighterCharacter({ id: FIGHTER_PICKED_ID, name: "Brannoc", picked: true }),
+      clericCharacter(),
     ],
     folders: [],
     settings: {
@@ -335,6 +386,9 @@ const KENSEI_ROUTE = `/character/${KENSEI_ID}`;
 const BARD_ROUTE = `/character/${BARD_ID}`;
 const NO_RACE_ROUTE = `/character/${NO_RACE_ID}`;
 const NO_BG_ROUTE = `/character/${NO_BG_ID}`;
+const FIGHTER_ROUTE = `/character/${FIGHTER_ID}`;
+const FIGHTER_PICKED_ROUTE = `/character/${FIGHTER_PICKED_ID}`;
+const CLERIC_ROUTE = `/character/${CLERIC_ID}`;
 const SCREENS = [
   { name: "Builder Abilities", route: RENDAR_ROUTE, tabs: ["Builder", "Abilities"], ready: /points remaining/i },
   { name: "Builder Race", route: RENDAR_ROUTE, tabs: ["Builder", "Race"], ready: /traits:/i },
@@ -373,6 +427,11 @@ const SCREENS = [
         { name: "Stats kensei weapon proficiencies", route: KENSEI_ROUTE, tabs: ["Stats"], ready: /hit points/i, scrollTo: "Weapon Proficiencies" },
       ]
     : []),
+  // The equipment card: one option per slot, the picker of a generic entry, Claim disabled until every slot is picked.
+  { name: "Builder Class equipment choices", route: FIGHTER_ROUTE, tabs: ["Builder", "Class"], ready: "Starting Equipment & Gold:", scrollTo: "Starting Equipment & Gold:", expect: { texts: ["Chain Mail"], disabled: ["Claim Starting Equipment"] } },
+  { name: "Builder Class equipment picked", route: FIGHTER_PICKED_ROUTE, tabs: ["Builder", "Class"], ready: "Starting Equipment & Gold:", scrollTo: "Starting Equipment & Gold:", expect: { enabled: ["Claim Starting Equipment"] } },
+  { name: "Builder Class equipment picker open", route: FIGHTER_PICKED_ROUTE, tabs: ["Builder", "Class"], open: (page) => page.getByText("Martial weapon", { exact: true }).first().click(), ready: "Greatsword", scrollTo: "Martial weapon", expect: { placeholders: ["Search…"] } },
+  { name: "Builder Class equipment cleric", route: CLERIC_ROUTE, tabs: ["Builder", "Class"], ready: "Starting Equipment & Gold:", scrollTo: "Starting Equipment & Gold:", expect: { texts: ["Scale Mail"], absent: ["Warhammer"] } },
   { name: "Builder Class skill proficiency choices", route: BARD_ROUTE, tabs: ["Builder", "Class"], ready: /total level/i, scrollTo: "Class & Subclass Choices" },
   { name: "Stats", route: RENDAR_ROUTE, tabs: ["Stats"], ready: /hit points/i },
   { name: "Stats long header name", route: LONG_NAME_ROUTE, tabs: ["Stats"], ready: /hit points/i, headerName: LONG_NAME },
@@ -494,6 +553,20 @@ async function checkNoShrinkRows(page, screen) {
     await page.evaluate(restoreNoShrinkRows);
   }
   return out.map((v) => `row, native text (flexShrink 0): ${v}`);
+}
+
+// Runs in the browser. Whether the button with this exact text is disabled (aria-disabled, or the dimmed opacity of a
+// disabled Button), or null when no such text is on the page. `state` describes what was read, for the message.
+function buttonDisabled(text) {
+  const el = [...document.querySelectorAll("*")].find((e) => e.children.length === 0 && e.textContent === text);
+  const button = el?.closest('[role="button"], [aria-disabled]');
+  if (!button) {
+    const near = [...document.querySelectorAll("*")].filter((e) => e.children.length === 0 && /Claim|Choose|Starting|Equipment/.test(e.textContent)).map((e) => e.textContent).slice(0, 10);
+    return { disabled: null, state: `no element with that text; near: ${near.join(" | ")}` };
+  }
+  const aria = button.getAttribute("aria-disabled");
+  const opacity = getComputedStyle(button).opacity;
+  return { disabled: aria === "true" || opacity === "0.4", state: `aria-disabled=${aria} opacity=${opacity} role=${button.getAttribute("role")}` };
 }
 
 // Runs in the browser. True when the race card titled `name` has a plain row under its "Subraces / Variants:" label:
@@ -668,6 +741,17 @@ async function checkExpected(page, expect) {
   }
   for (const placeholder of expect.placeholders ?? []) {
     if (!(await page.getByPlaceholder(placeholder).first().isVisible())) out.push(`missing the input with placeholder "${placeholder}"`);
+  }
+  for (const text of expect.absent ?? []) {
+    if (await page.getByText(text, { exact: true }).first().isVisible()) out.push(`"${text}" is shown but should not be`);
+  }
+  for (const text of expect.disabled ?? []) {
+    const { disabled, state } = await page.evaluate(buttonDisabled, text);
+    if (disabled !== true) out.push(`"${text}" is not disabled (${state})`);
+  }
+  for (const text of expect.enabled ?? []) {
+    const { disabled, state } = await page.evaluate(buttonDisabled, text);
+    if (disabled !== false) out.push(`"${text}" is not enabled (${state})`);
   }
   if (expect.plainRaceRow && !(await page.evaluate(findPlainRaceRow, expect.plainRaceRow))) {
     out.push(`no plain "${expect.plainRaceRow}" row under "Subraces / Variants:"`);
