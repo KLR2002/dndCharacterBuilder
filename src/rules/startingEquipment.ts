@@ -217,7 +217,10 @@ export function startingEquipmentCard(character: Character, catalogs: CharacterC
 
   const cardEntries = (entries: StartingEquipmentEntry[], slot: number, option: string | null): StartingEquipmentCardEntry[] =>
     entries.map((entry, entryIndex): StartingEquipmentCardEntry => {
-      if (entry.kind === "item") return { kind: "item", name: entry.name, quantity: entry.quantity };
+      if (entry.kind === "item") {
+        const record = catalogItem(entry.name, entry.source, catalogs);
+        return { kind: "item", name: record?.name ?? entry.name, quantity: entry.quantity };
+      }
       if (entry.kind === "type") {
         const address = { slot, option, entry: entryIndex };
         return {

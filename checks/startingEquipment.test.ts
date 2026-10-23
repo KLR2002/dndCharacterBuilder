@@ -452,3 +452,15 @@ test("the SRD Baseline Fighter card offers the two-name martial slot as one gene
   assert.equal(entry.quantity, 2, "two pickers for quantity 2");
   assert.ok(entry.pool.includes("Longsword"));
 });
+
+test("the card names each item as the catalog does, not as the class entry prints it", () => {
+  const srd = srdBaselineCompendium();
+  const cleric = srd.for().classes().find((c) => c.name === "Cleric");
+  if (!cleric) throw new Error("the Cleric is missing from the SRD Baseline");
+  const clericChar = makeChar({ classes: [{ className: "Cleric", source: cleric.source, level: 1 }] });
+  const card = startingEquipmentCard(clericChar, { compendium: srd });
+  const slot0 = card.slots[0];
+  assert.equal(slot0.kind, "choice");
+  if (slot0.kind !== "choice") return;
+  assert.deepEqual(slot0.options[0].entries, [{ kind: "item", name: "Mace", quantity: 1 }]);
+});
