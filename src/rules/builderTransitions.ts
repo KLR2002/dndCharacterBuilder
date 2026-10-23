@@ -22,6 +22,7 @@ import {
 } from "../constants/rules.ts";
 import { allCatalogClasses, findClassData, type CharacterCatalogs } from "./catalogs.ts";
 import { multiclassGrantsOf } from "./proficiencySheet.ts";
+import { resolveStartingEquipment, type StartingEquipmentKit } from "./startingEquipment.ts";
 
 export function setStandardArrayPick(
   character: Character,
@@ -392,123 +393,13 @@ export const STARTING_GOLD_BY_CLASS: Record<string, number> = {
   Artificer: 125,
 };
 
-export const CLASS_STARTING_EQUIPMENT: Record<
-  string,
-  { name: string; quantity: number; isEquipped: boolean; section: "equipped" | "carried" }[]
-> = {
-  Barbarian: [
-    { name: "Greataxe", quantity: 1, isEquipped: true, section: "equipped" },
-    { name: "Handaxe", quantity: 2, isEquipped: false, section: "carried" },
-    { name: "Explorer's Pack", quantity: 1, isEquipped: false, section: "carried" },
-    { name: "Javelin", quantity: 4, isEquipped: false, section: "carried" },
-  ],
-  Bard: [
-    { name: "Rapier", quantity: 1, isEquipped: true, section: "equipped" },
-    { name: "Diplomat's Pack", quantity: 1, isEquipped: false, section: "carried" },
-    { name: "Lute", quantity: 1, isEquipped: false, section: "carried" },
-    { name: "Leather Armor", quantity: 1, isEquipped: true, section: "equipped" },
-    { name: "Dagger", quantity: 1, isEquipped: false, section: "carried" },
-  ],
-  Cleric: [
-    { name: "Mace", quantity: 1, isEquipped: true, section: "equipped" },
-    { name: "Scale Mail", quantity: 1, isEquipped: true, section: "equipped" },
-    { name: "Light Crossbow", quantity: 1, isEquipped: false, section: "carried" },
-    { name: "Crossbow Bolt", quantity: 20, isEquipped: false, section: "carried" },
-    { name: "Priest's Pack", quantity: 1, isEquipped: false, section: "carried" },
-    { name: "Shield", quantity: 1, isEquipped: true, section: "equipped" },
-    { name: "Holy Symbol", quantity: 1, isEquipped: false, section: "carried" },
-  ],
-  Druid: [
-    { name: "Wooden Shield", quantity: 1, isEquipped: true, section: "equipped" },
-    { name: "Scimitar", quantity: 1, isEquipped: true, section: "equipped" },
-    { name: "Leather Armor", quantity: 1, isEquipped: true, section: "equipped" },
-    { name: "Explorer's Pack", quantity: 1, isEquipped: false, section: "carried" },
-    { name: "Druidic Focus", quantity: 1, isEquipped: false, section: "carried" },
-  ],
-  Fighter: [
-    { name: "Chain Mail", quantity: 1, isEquipped: true, section: "equipped" },
-    { name: "Longsword", quantity: 1, isEquipped: true, section: "equipped" },
-    { name: "Shield", quantity: 1, isEquipped: true, section: "equipped" },
-    { name: "Light Crossbow", quantity: 1, isEquipped: false, section: "carried" },
-    { name: "Crossbow Bolt", quantity: 20, isEquipped: false, section: "carried" },
-    { name: "Dungeoneer's Pack", quantity: 1, isEquipped: false, section: "carried" },
-  ],
-  Monk: [
-    { name: "Shortsword", quantity: 1, isEquipped: true, section: "equipped" },
-    { name: "Dungeoneer's Pack", quantity: 1, isEquipped: false, section: "carried" },
-    { name: "Dart", quantity: 10, isEquipped: false, section: "carried" },
-  ],
-  Paladin: [
-    { name: "Longsword", quantity: 1, isEquipped: true, section: "equipped" },
-    { name: "Shield", quantity: 1, isEquipped: true, section: "equipped" },
-    { name: "Javelin", quantity: 5, isEquipped: false, section: "carried" },
-    { name: "Priest's Pack", quantity: 1, isEquipped: false, section: "carried" },
-    { name: "Chain Mail", quantity: 1, isEquipped: true, section: "equipped" },
-    { name: "Holy Symbol", quantity: 1, isEquipped: false, section: "carried" },
-  ],
-  Ranger: [
-    { name: "Scale Mail", quantity: 1, isEquipped: true, section: "equipped" },
-    { name: "Shortsword", quantity: 2, isEquipped: true, section: "equipped" },
-    { name: "Dungeoneer's Pack", quantity: 1, isEquipped: false, section: "carried" },
-    { name: "Longbow", quantity: 1, isEquipped: false, section: "carried" },
-    { name: "Arrow", quantity: 20, isEquipped: false, section: "carried" },
-  ],
-  Rogue: [
-    { name: "Rapier", quantity: 1, isEquipped: true, section: "equipped" },
-    { name: "Shortbow", quantity: 1, isEquipped: false, section: "carried" },
-    { name: "Arrow", quantity: 20, isEquipped: false, section: "carried" },
-    { name: "Burglar's Pack", quantity: 1, isEquipped: false, section: "carried" },
-    { name: "Leather Armor", quantity: 1, isEquipped: true, section: "equipped" },
-    { name: "Dagger", quantity: 2, isEquipped: false, section: "carried" },
-    { name: "Thieves' Tools", quantity: 1, isEquipped: false, section: "carried" },
-  ],
-  Sorcerer: [
-    { name: "Light Crossbow", quantity: 1, isEquipped: false, section: "carried" },
-    { name: "Crossbow Bolt", quantity: 20, isEquipped: false, section: "carried" },
-    { name: "Component Pouch", quantity: 1, isEquipped: false, section: "carried" },
-    { name: "Dungeoneer's Pack", quantity: 1, isEquipped: false, section: "carried" },
-    { name: "Dagger", quantity: 2, isEquipped: false, section: "carried" },
-  ],
-  Warlock: [
-    { name: "Light Crossbow", quantity: 1, isEquipped: false, section: "carried" },
-    { name: "Crossbow Bolt", quantity: 20, isEquipped: false, section: "carried" },
-    { name: "Component Pouch", quantity: 1, isEquipped: false, section: "carried" },
-    { name: "Scholar's Pack", quantity: 1, isEquipped: false, section: "carried" },
-    { name: "Leather Armor", quantity: 1, isEquipped: true, section: "equipped" },
-    { name: "Dagger", quantity: 2, isEquipped: false, section: "carried" },
-  ],
-  Wizard: [
-    { name: "Quarterstaff", quantity: 1, isEquipped: true, section: "equipped" },
-    { name: "Component Pouch", quantity: 1, isEquipped: false, section: "carried" },
-    { name: "Scholar's Pack", quantity: 1, isEquipped: false, section: "carried" },
-    { name: "Spellbook", quantity: 1, isEquipped: false, section: "carried" },
-  ],
-  Artificer: [
-    { name: "Dagger", quantity: 2, isEquipped: false, section: "carried" },
-    { name: "Studded Leather Armor", quantity: 1, isEquipped: true, section: "equipped" },
-    { name: "Thieves' Tools", quantity: 1, isEquipped: false, section: "carried" },
-    { name: "Dungeoneer's Pack", quantity: 1, isEquipped: false, section: "carried" },
-  ],
-};
-
-/** The gold and equipment a character's first class grants when the player does not supply their own. */
-function startingDefaults(character: Character): { gold: number; equipment: InventoryItem[] } {
+/** The starting gold a claim grants when the player gives no amount: the first class's default, or 100 for no known class. */
+function startingGoldOf(character: Character): number {
   const primary = character.classes[0]?.className;
   const match = primary
     ? Object.keys(STARTING_GOLD_BY_CLASS).find((k) => k.toLowerCase() === primary.toLowerCase())
     : undefined;
-  const defs = match ? CLASS_STARTING_EQUIPMENT[match] : [];
-  return {
-    gold: match ? STARTING_GOLD_BY_CLASS[match] : 100,
-    equipment: defs.map((d, idx) => ({
-      id: `start_${(primary || "item").toLowerCase()}_${idx}`,
-      name: d.name,
-      source: "PHB",
-      quantity: d.quantity,
-      isEquipped: d.isEquipped,
-      section: d.section,
-    })),
-  };
+  return match ? STARTING_GOLD_BY_CLASS[match] : 100;
 }
 
 /** Gives each item an id not used by `existing` or an earlier item here, appending _2, _3, ... on a clash. */
@@ -522,20 +413,49 @@ function withUniqueIds(items: InventoryItem[], existing: InventoryItem[]): Inven
   });
 }
 
+/** Options a starting-grant claim takes. `equipmentItems` replaces the kit the picks resolve to; the claim does not check it. */
+export interface StartingGrantOptions {
+  goldAmount?: number;
+  equipmentItems?: InventoryItem[];
+  catalogs?: CharacterCatalogs;
+}
+
+/** The equipment a claim grants: the items the caller gives, or else the kit the picks resolve to. */
+function equipmentKitFor(character: Character, options?: StartingGrantOptions): StartingEquipmentKit {
+  const resolved = resolveStartingEquipment(character, options?.catalogs ?? {});
+  return options?.equipmentItems ? { ...resolved, complete: true, items: options.equipmentItems } : resolved;
+}
+
+/**
+ * True when every item of the kit is already in the inventory as granted, and no other start_ item is left over.
+ * A claim of an unchanged kit then changes nothing.
+ */
+function kitInstalled(items: InventoryItem[], kit: InventoryItem[]): boolean {
+  const installed = (granted: InventoryItem) =>
+    items.some((i) => i.id === granted.id && i.name === granted.name && i.quantity === granted.quantity);
+  return kit.every(installed) && items.every((i) => !i.id.startsWith("start_") || kit.some((k) => k.id === i.id));
+}
+
+/**
+ * Claims starting gold or equipment, replacing an earlier claim of the same kind. Equipment is the kit the picks
+ * resolve to; incomplete picks grant nothing and the character is returned unchanged.
+ */
 export function applyStartingGrants(
   character: Character,
   mode: "gold" | "equipment",
-  options?: {
-    goldAmount?: number;
-    equipmentItems?: InventoryItem[];
-  }
+  options?: StartingGrantOptions
 ): Character {
-  if (character.startingGrantsApplied && character.startingOption === mode) {
+  const kit = mode === "equipment" ? equipmentKitFor(character, options) : undefined;
+  if (kit && !kit.complete) return character;
+  if (
+    character.startingGrantsApplied &&
+    character.startingOption === mode &&
+    (!kit || kitInstalled(character.items ?? [], kit.items))
+  ) {
     return character;
   }
 
-  const defaults = startingDefaults(character);
-  const defaultGold = defaults.gold;
+  const defaultGold = startingGoldOf(character);
   const gold = options?.goldAmount ?? defaultGold;
 
   // Clean up any previously granted starting items (items with id starting with "start_")
@@ -566,14 +486,12 @@ export function applyStartingGrants(
   }
 
   // mode === "equipment"
-  const newItems = options?.equipmentItems ?? defaults.equipment;
-
   return {
     ...character,
     startingOption: "equipment",
     startingGrantsApplied: true,
     startingGrantedGold: undefined,
-    items: [...cleanedItems, ...newItems],
+    items: [...cleanedItems, ...(kit?.items ?? [])],
     pouch: currentPouch,
   };
 }
@@ -581,19 +499,17 @@ export function applyStartingGrants(
 /**
  * Claims starting gold or equipment again on top of what the character already has. Earlier grants
  * are kept: nothing is removed. Gold accumulates in `startingGrantedGold`, so a later switch to
- * equipment through `applyStartingGrants` removes all of it. Equipment ids are made unique.
+ * equipment through `applyStartingGrants` removes all of it. Equipment ids are made unique, and
+ * incomplete picks grant nothing.
  * Touches only items, the pouch and the starting-grant markers, so it does not call `reconcile`.
  */
 export function reclaimStartingGrants(
   character: Character,
   mode: "gold" | "equipment",
-  options?: {
-    goldAmount?: number;
-    equipmentItems?: InventoryItem[];
-  }
+  options?: StartingGrantOptions
 ): Character {
   if (mode === "gold") {
-    const gold = options?.goldAmount ?? startingDefaults(character).gold;
+    const gold = options?.goldAmount ?? startingGoldOf(character);
     const pouch = character.pouch ?? { cp: 0, sp: 0, ep: 0, gp: 0, pp: 0 };
     return {
       ...character,
@@ -604,10 +520,9 @@ export function reclaimStartingGrants(
     };
   }
 
-  const newItems = withUniqueIds(
-    options?.equipmentItems ?? startingDefaults(character).equipment,
-    character.items ?? []
-  );
+  const kit = equipmentKitFor(character, options);
+  if (!kit.complete) return character;
+  const newItems = withUniqueIds(kit.items, character.items ?? []);
   return {
     ...character,
     startingOption: "equipment",

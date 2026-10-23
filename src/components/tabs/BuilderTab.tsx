@@ -5,24 +5,24 @@ import { POINT_BUY_COST } from "../../constants/rules";
 import { proficiencySheet, ruleGrantedSkills, skillChoiceOffers, sourceGrants } from "../../rules/proficiencySheet";
 import { useCharacters } from "../../context/CharacterContext";
 import { useAppTheme } from "../../context/ThemeContext";
-import { findItem, getFeats } from "../../services/dataService";
+import { getFeats } from "../../services/dataService";
 import { currentCompendium } from "../../services/compendium";
 import { calculateTotalLevel } from "../../services/dndRules";
 import { evaluateCharacter } from "../../rules/characterEvaluation";
 import { catalogListings, type CharacterCatalogs } from "../../rules/catalogs";
 import {
   applyStartingGrants,
-  CLASS_STARTING_EQUIPMENT,
   reclaimStartingGrants,
   setStandardArrayPick,
   STARTING_GOLD_BY_CLASS,
 } from "../../rules/builderTransitions";
+import { resolveStartingEquipment } from "../../rules/startingEquipment";
 import { reconcile } from "../../rules/characterReconciler";
 import { proficiencyChoiceOffers } from "../../rules/proficiencyChoiceOffers";
 import { getPendingLevelChoices } from "../../rules/leveling";
 import { normalizeSkillName } from "../../rules/skills";
 import { getAvailableOptionalFeatures } from "../../rules/optionalFeatures";
-import { AbilityKey, Character, InventoryItem, SkillChoiceEntry } from "../../types/character";
+import { AbilityKey, Character, SkillChoiceEntry } from "../../types/character";
 import { DetailModal } from "../DetailModal";
 import { AbilityScoresSection } from "../builder/AbilityScoresSection";
 import { AncestrySection } from "../builder/AncestrySection";
@@ -147,30 +147,8 @@ export const BuilderTab: React.FC<BuilderTabProps> = ({
   // ─────────────────────────────────────────────────────────────────────────
   const startingGoldFor = (className: string) => STARTING_GOLD_BY_CLASS[className] ?? 100;
 
-  const startingEquipmentFor = (className: string): InventoryItem[] => {
-    const defs = CLASS_STARTING_EQUIPMENT[className] || [
-      { name: "Dagger", quantity: 1, isEquipped: true, section: "equipped" as const },
-      { name: "Explorer's Pack", quantity: 1, isEquipped: false, section: "carried" as const },
-    ];
-    return defs.map((def, idx) => {
-      const itemData = findItem(def.name);
-      return {
-        id: `start_${className.toLowerCase()}_${idx}_${def.name.toLowerCase().replace(/[^a-z0-9]/g, "_")}`,
-        name: def.name,
-        source: itemData?.source || "PHB",
-        quantity: def.quantity,
-        isEquipped: def.isEquipped,
-        section: def.section,
-        weight: itemData?.weight ?? null,
-        cost: itemData?.cost ?? null,
-        damage: itemData?.damage || null,
-        damageType: itemData?.damageType || null,
-        range: itemData?.range || null,
-        ac: itemData?.ac ?? null,
-        description: itemData?.description || "",
-      };
-    });
-  };
+  // The starting equipment the player's picks resolve to, shown on the claim card and claimed as it stands.
+  const startingKit = resolveStartingEquipment(character, catalogs);
 
   const handleClaimGold = () => {
     if (!primaryClass) return;
@@ -180,17 +158,13 @@ export const BuilderTab: React.FC<BuilderTabProps> = ({
 
   const handleClaimEquipment = () => {
     if (!primaryClass) return;
-    const equipmentItems = startingEquipmentFor(primaryClass);
-    onUpdate((current) => applyStartingGrants(current, "equipment", { equipmentItems }));
+    onUpdate((current) => applyStartingGrants(current, "equipment", { catalogs }));
   };
 
   const handleClaimAgain = () => {
     if (!primaryClass) return;
     const mode = character.startingOption;
-    const options =
-      mode === "gold"
-        ? { goldAmount: startingGoldFor(primaryClass) }
-        : { equipmentItems: startingEquipmentFor(primaryClass) };
+    const options = mode === "gold" ? { goldAmount: startingGoldFor(primaryClass) } : { catalogs };
     onUpdate((current) => reclaimStartingGrants(current, mode, options));
   };
 
@@ -410,6 +384,7 @@ export const BuilderTab: React.FC<BuilderTabProps> = ({
           availableOptionalFeatures={availableOptionalFeatures}
           pendingAsiSlots={pendingAsi}
           primaryClass={primaryClass}
+          startingKit={startingKit}
           onClaimGold={handleClaimGold}
           onClaimEquipment={handleClaimEquipment}
           onClaimAgain={handleClaimAgain}

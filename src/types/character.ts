@@ -108,6 +108,18 @@ export interface InventoryItem {
   itemCategory?: string;
 }
 
+/**
+ * The player's picks for the first class's starting equipment. `options` holds the option letter taken in each
+ * choice slot, by slot index. `items` holds the item names chosen for each generic entry, by the entry's address
+ * (see `startingEquipmentEntryKey`). The picks belong to the class named by `className` and `source`.
+ */
+export interface StartingEquipmentPicks {
+  className: string;
+  source: string;
+  options: Record<string, string>;
+  items: Record<string, string[]>;
+}
+
 export interface ResourceCounter {
   id: string;
   name: string;
@@ -171,6 +183,8 @@ export interface Character {
   startingOption: "equipment" | "gold";
   startingGrantsApplied?: boolean;
   startingGrantedGold?: number;
+  /** The player's starting equipment picks for the first class. Absent on saves made before they existed. */
+  startingEquipmentPicks?: StartingEquipmentPicks;
   backgroundGrantsApplied?: boolean;
   /** Legacy: saved by older builds and no longer written or read. The Proficiency Sheet derives languages. */
   languages?: string[];

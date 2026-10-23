@@ -2,7 +2,8 @@ import React from "react";
 import { Text, TouchableOpacity, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { Character } from "../../types/character";
-import { CLASS_STARTING_EQUIPMENT, STARTING_GOLD_BY_CLASS } from "../../rules/builderTransitions";
+import { STARTING_GOLD_BY_CLASS } from "../../rules/builderTransitions";
+import type { StartingEquipmentKit } from "../../rules/startingEquipment";
 import { Badge } from "../ui/Badge";
 import { Button } from "../ui/Button";
 import { Card } from "../ui/Card";
@@ -12,6 +13,7 @@ import { useResponsiveLayout } from "../../hooks/useResponsiveLayout";
 export interface StartingGrantsSectionProps {
   character: Character;
   primaryClass?: string;
+  startingKit: StartingEquipmentKit;
   onClaimGold: () => void;
   onClaimEquipment: () => void;
   onClaimAgain: () => void;
@@ -22,6 +24,7 @@ export interface StartingGrantsSectionProps {
 export const StartingGrantsSection: React.FC<StartingGrantsSectionProps> = ({
   character,
   primaryClass,
+  startingKit,
   onClaimGold,
   onClaimEquipment,
   onClaimAgain,
@@ -145,25 +148,38 @@ export const StartingGrantsSection: React.FC<StartingGrantsSectionProps> = ({
             </View>
           ) : (
             <View style={{ gap: 8 }}>
-              <Text style={{ color: theme.textSecondary, fontSize: 12 }}>
-                Standard equipment pack for {primaryClass || "Class"}:
-              </Text>
-              <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 4 }}>
-                {(CLASS_STARTING_EQUIPMENT[primaryClass || "Fighter"] || []).map((eq) => (
-                  <Badge
-                    key={eq.name}
-                    label={`${eq.name}${eq.quantity > 1 ? ` (×${eq.quantity})` : ""}`}
-                    variant="surface"
-                    size="sm"
-                  />
-                ))}
-              </View>
+              {!startingKit.hasSlots ? (
+                <Text style={{ color: theme.textSecondary, fontSize: 12 }}>
+                  {primaryClass || "This class"} has no starting equipment to claim.
+                </Text>
+              ) : startingKit.complete ? (
+                <>
+                  <Text style={{ color: theme.textSecondary, fontSize: 12 }}>
+                    Starting equipment for {primaryClass || "Class"}:
+                  </Text>
+                  <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 4 }}>
+                    {startingKit.items.map((item) => (
+                      <Badge
+                        key={item.id}
+                        label={`${item.name}${item.quantity > 1 ? ` (×${item.quantity})` : ""}`}
+                        variant="surface"
+                        size="sm"
+                      />
+                    ))}
+                  </View>
+                </>
+              ) : (
+                <Text style={{ color: theme.textSecondary, fontSize: 12 }}>
+                  Choose one option for each equipment slot to claim it.
+                </Text>
+              )}
               <View style={{ flexDirection: isCompact ? "column" : "row" }}>
                 <Button
                   title="Claim Starting Equipment"
                   variant="primary"
                   size="sm"
                   icon="bag-add-outline"
+                  disabled={!startingKit.complete}
                   onPress={onClaimEquipment}
                   style={isCompact ? { width: "100%" } : undefined}
                 />
