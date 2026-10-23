@@ -7,7 +7,9 @@
 
 **Blocked by:** None
 
-**Status:** ready-for-agent
+**Status:** done
+
+**Landed:** merged from `pr/31-layout-check-faster` (bfc7cef, 743f4b6, 1c4bf4f, merge 2d6e5ce; merge 7f55700). The four widths run in parallel and `ONLY=<name>` visits only matching scenarios (a term that matches nothing exits 2 and lists the names; a blank value counts as unset; the HP modals and Wild Shape checks are now named scenarios). Measured by the implementer: full SRD run 501 s to 179 s, full integrated 572 s to 198 s, `ONLY=equipment WIDTHS=320` 42 s. The main session measured 181 s for the full SRD run and 39 s for `ONLY=equipment WIDTHS=320` on the merged tip, both green. The visited scenarios (128 visits SRD, 140 integrated) and the verdicts are identical before and after, and a violation at one width alone still gives exit 1. `check:all` passes on the merged tip. Open items: output lines of different widths interleave (the width prefix keeps them readable); a multi-line violation message loses the prefix on its continuation lines (as before); the fixed sleeps and per-modal reloads inside a scenario are untouched; the integrated run was not re-timed by the main session.
 
 ## Design notes
 
