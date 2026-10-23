@@ -23,6 +23,21 @@ test("a fixed slot keeps its item references: a name|source string, and an item 
   ]);
 });
 
+test("a source is kept as the capitalised code the catalog uses", () => {
+  const result = parseStartingEquipment({
+    defaultData: [{ _: ["Quill Knife|tst", { item: "Brass Tinderbox|phb", quantity: 2 }] }],
+  });
+  assert.deepEqual(result.slots, [
+    {
+      kind: "fixed",
+      entries: [
+        { kind: "item", name: "Quill Knife", source: "TST", quantity: 1 },
+        { kind: "item", name: "Brass Tinderbox", source: "PHB", quantity: 2 },
+      ],
+    },
+  ]);
+});
+
 test("an item reference without a source names the PHB", () => {
   const result = parseStartingEquipment({ defaultData: [{ _: ["Quill Knife"] }] });
   assert.deepEqual(result.slots, [{ kind: "fixed", entries: [{ kind: "item", name: "Quill Knife", source: "PHB", quantity: 1 }] }]);

@@ -122,12 +122,15 @@ function parseEntry(entry: unknown, where: string, issues: string[]): StartingEq
   return { kind: "unrecognised", raw: entry };
 }
 
-/** The name and source of a `"name|source"` reference. A reference with a third part is not one this reads. */
+/**
+ * The name and source of a `"name|source"` reference. The source is capitalised to the code the catalog uses, since
+ * the source prints in lower case. A reference with a third part is not one this reads.
+ */
 function parseItemName(text: string): { name: string; source: string } | undefined {
   const parts = text.split("|");
   const name = parts[0].trim();
   if (!name || parts.length > 2) return undefined;
-  return { name, source: parts[1]?.trim() || DEFAULT_SOURCE };
+  return { name, source: parts[1]?.trim().toUpperCase() || DEFAULT_SOURCE };
 }
 
 /** A quantity is a whole number of one or more; a missing one is one. Anything else is not read. */
