@@ -1,56 +1,78 @@
-# Welcome to your Expo app 👋
+# D&D 5e Character Builder
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+A character builder and sheet for **Dungeons & Dragons 5th Edition (2014 rules)**. It runs on Android and the web, and character data stays on your device.
 
-## Get started
+**Try it:** [Web version](https://characterbuilder5e.expo.app/)
 
-1. Install dependencies
+**Download:** [Android APK (GitHub Releases)](https://github.com/KLR2002/dndCharacterBuilder/releases)
 
-   ```bash
-   npm install
-   ```
+## Features
 
-2. Start the app
+- Build a character step by step: race, class, background, ability scores, skills, and starting equipment.
+- Character sheet with tabs for Builder, Stats, Actions, Spells, Features, Inventory and Journal.
+- Calculated armor class, attacks, proficiencies, spell slots and level-up progression.
+- Ships with the SRD rules. You can also sync a larger catalog from inside the app. That sync needs an internet connection.
 
-   ```bash
-   npx expo start
-   ```
+## Build from source
 
-In the output, you'll find options to open the app in a
-
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
-
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
+Requirements: Node.js 24+ and npm. For Android builds you also need JDK 17 and the Android SDK.
 
 ```bash
-npm run reset-project
+git clone https://github.com/KLR2002/dndCharacterBuilder.git
+cd dndCharacterBuilder
+npm install
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+### Run it
 
-### Other setup steps
+```bash
+npm run web       # web version in the browser
+npm run android   # Android device or emulator (needs the Android SDK)
+```
 
-- To set up ESLint for linting, run `npx expo lint`, or follow our guide on ["Using ESLint and Prettier"](https://docs.expo.dev/guides/using-eslint/)
-- If you'd like to set up unit testing, follow our guide on ["Unit Testing with Jest"](https://docs.expo.dev/develop/unit-testing/)
-- Learn more about the TypeScript setup in this template in our guide on ["Using TypeScript"](https://docs.expo.dev/guides/typescript/)
+### Build an APK locally
+setup ANDROID_HOME variable
+```bash
+# EAS unpacks the project in /tmp by default, which can be a small RAM disk.
+# The native build needs several GB, so use a directory on disk instead.
+export EAS_LOCAL_BUILD_WORKINGDIR=$HOME/.cache/eas-local-build
+mkdir -p "$EAS_LOCAL_BUILD_WORKINGDIR"
 
-## Learn more
+npx eas-cli build --platform android --profile preview --local --output app.apk
+```
 
-To learn more about developing your project with Expo, look at the following resources:
+This needs an Expo account (`npx eas-cli login`). Expect several minutes on the first run.
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+### Static web build
 
-## Join the community
+```bash
+npx expo export --platform web   # output goes to dist/
+```
 
-Join our community of developers creating universal apps.
+## Checks
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+```bash
+npm run check:all     # lint, type checks and tests
+npm run layout:check  # UI layout check in a browser (first run: npx playwright install chromium)
+```
+
+## Project layout
+
+- `src/rules/`: game rules (proficiencies, spells, armor class, equipment).
+- `src/components/`: UI. Character tabs are in `tabs/` and builder steps in `builder/`.
+- `src/data/`: bundled SRD data.
+- `dnd5eToolsScrap/`: scraper that builds the expanded catalog.
+- `docs/`: architecture decisions and contributor notes.
+
+## Disclaimer
+
+## Legal disclaimer
+
+Dungeons & Dragons, D&D and all related names, rules and content are the property of Wizards of the Coast LLC. This is an unofficial, fan-made project. It is not affiliated with, endorsed by or sponsored by Wizards of the Coast.
+
+The app is meant only as a reference and helper for sourcebooks you already own. It does not replace them, and you should have legal access to any material you use with it. Content beyond the SRD is not included in the app. It comes from third-party data that you choose to sync yourself.
+
+I make no money from this app. It is free, has no ads or paid features, and I receive no financial benefit from it.
+
+
+Unofficial fan project, not affiliated with Wizards of the Coast. Game content beyond the SRD comes from third-party data the user syncs themselves.
