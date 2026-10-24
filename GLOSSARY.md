@@ -111,7 +111,7 @@ The class feature rule (e.g., TCoE Clockwork Magic or Psionic Spells) allowing a
 _Avoid_: Spell reroll, school swap, spell retrain
 
 **Expertise**:
-A class feature (such as Rogue 1st/6th level, Bard 3rd/10th level, Knowledge Cleric 1st level, Ranger Deft Explorer, or the Skill Expert feat) that doubles the character's proficiency bonus (2 × PB) on ability checks using a chosen proficient skill or tool.
+A feature (such as Rogue 1st/6th level, Bard 3rd/10th level, Ranger Deft Explorer, or the Skill Expert feat) that doubles the character's proficiency bonus (2 × PB) on ability checks using a chosen proficient skill or tool. A skill grant whose feature doubles the bonus for the skills it grants (Blessings of Knowledge, Survivalist, Royal Envoy) carries an *expertise* mark in the Catalog: the skills it gives have Expertise, with no separate pick.
 _Avoid_: Double proficiency, mastery, skill mastery, spec
 
 **Proficiency Grant**:

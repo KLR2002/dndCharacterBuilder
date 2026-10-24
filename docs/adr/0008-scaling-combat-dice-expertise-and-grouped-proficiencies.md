@@ -12,7 +12,7 @@ Several foundational 5e 2014 progression mechanics directly impact the character
 
 1. **Unified Skill & Tool Expertise Architecture**:
    - `character.chosenExpertise: string[]` stores both skill names and tool names (e.g. `"Thieves' Tools"`).
-   - In `ClassProgressionSection.tsx`, dedicated milestone pickers render when classes reach expertise levels (Rogue 1: 2 picks, Rogue 6: 2 picks, Bard 3: 2 picks, Bard 10: 2 picks, Knowledge Cleric 1: 2 picks from Arcana/History/Nature/Religion, Deft Explorer: 1 pick).
+   - In `ClassProgressionSection.tsx`, dedicated milestone pickers render when classes reach expertise levels (Rogue 1: 2 picks, Rogue 6: 2 picks, Bard 3: 2 picks, Bard 10: 2 picks, Knowledge Cleric 1 is no longer a milestone: its skills carry Expertise from the grant (ADR 0015), Deft Explorer: 1 pick).
    - The picker strictly filters options to skills/tools the character is currently proficient in.
    - On `StatsTab.tsx`:
      - Skills display the double-dot indicator `[●●]` and calculated $2 \times \text{PB}$ bonus.
