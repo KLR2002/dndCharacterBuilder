@@ -249,18 +249,18 @@ export function featuresOf(character: Character, listings: CompendiumListings): 
 }
 
 /**
- * The skills a character holds from the rules alone: background, race and Rule Choice grants, the fixed skill
- * grants of the features the character has now, and the race, subrace and background skill picks. The builder
- * lists these as already held, so a skill picked elsewhere cannot duplicate them.
+ * The skills a character holds from the rules alone, not from the starting skill picker: the fixed skill grants of
+ * the features the character has now, the race, subrace and background skill picks, and the skill picks of every
+ * feature (class, subclass and feat included, such as a subclass's pick or a later class's multiclass pick). The
+ * starting skill picker lists these as already held, so a skill picked elsewhere cannot duplicate them.
  */
 export function ruleGrantedSkills(character: Character, catalogs?: CharacterCatalogs): string[] {
   const listings = catalogListings(catalogs);
   const ancestry = resolveCharacterAncestry(character, listings.races());
   const features = featuresOf(character, listings);
-  const recordFeatures = features.filter((feature) => feature.origin !== "Class" && feature.origin !== "Subclass" && feature.origin !== "Feat");
   return [
     ...legacySkillNames(character, ancestry, listings, features),
-    ...choicePickNames(recordFeatures, character, "skills", listings.items()),
+    ...choicePickNames(features, character, "skills", listings.items()),
   ];
 }
 

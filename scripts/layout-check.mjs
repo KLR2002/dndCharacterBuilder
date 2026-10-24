@@ -333,6 +333,54 @@ function clericCharacter({ id, name, domain }) {
   });
 }
 
+// The Skills card. Integrated: a Human Acolyte Cleric 1 with the Knowledge Domain, who picked Arcana and History for
+// Blessings of Knowledge, and a Rogue 1, so the card holds the starting picker, the Rogue's multiclass pick and the
+// Blessings picks, with Expertise on the two Blessings picks. SRD Baseline (no Knowledge Domain): a Fighter 1 and a
+// Rogue 1, so the card holds the Fighter's starting picker and the Rogue's multiclass pick.
+const KNOWLEDGE_ID = "char_knowledge";
+const MULTICLASS_SKILLS_ID = "char_multiclass_skills";
+function knowledgeClericCharacter() {
+  return makeChar({
+    id: KNOWLEDGE_ID,
+    name: "Corwin",
+    createdAt: 7,
+    updatedAt: 7,
+    race: { name: "Human", source: catalogSource("races", "Human") },
+    background: { name: "Acolyte", source: catalogSource("backgrounds", "Acolyte") },
+    startingOption: "equipment",
+    classes: [
+      {
+        className: "Cleric",
+        source: catalogSource("classes", "Cleric"),
+        level: 1,
+        subclassName: "Knowledge Domain",
+        subclassSource: "PHB",
+      },
+      { className: "Rogue", source: catalogSource("classes", "Rogue"), level: 1 },
+    ],
+    proficiencyPicks: { "PHB/Cleric/Knowledge Domain/Blessings of Knowledge@1#skills:choice:from": ["Arcana", "History"] },
+    currentHp: 9,
+    backgroundGrantsApplied: true,
+  });
+}
+function multiclassSkillCharacter() {
+  return makeChar({
+    id: MULTICLASS_SKILLS_ID,
+    name: "Tamsin",
+    createdAt: 8,
+    updatedAt: 8,
+    race: { name: "Human", source: catalogSource("races", "Human") },
+    background: { name: "Acolyte", source: catalogSource("backgrounds", "Acolyte") },
+    startingOption: "equipment",
+    classes: [
+      { className: "Fighter", source: catalogSource("classes", "Fighter"), level: 1 },
+      { className: "Rogue", source: catalogSource("classes", "Rogue"), level: 1 },
+    ],
+    currentHp: 12,
+    backgroundGrantsApplied: true,
+  });
+}
+
 // The seed the browser starts from: the characters, folders, settings, and (integrated mode) the catalog.
 function buildSeed() {
   const defaults = defaultSettings();
@@ -378,6 +426,7 @@ function buildSeed() {
       fighterCharacter({ id: FIGHTER_PICKED_ID, name: "Brannoc", picked: true }),
       ...(INTEGRATED ? [clericCharacter({ id: CLERIC_ID, name: "Corwin", domain: false })] : []),
       clericCharacter({ id: CLERIC_DOMAIN_ID, name: "Ysolde", domain: true }),
+      INTEGRATED ? knowledgeClericCharacter() : multiclassSkillCharacter(),
     ],
     folders: [],
     settings: {
@@ -405,6 +454,8 @@ const FIGHTER_ROUTE = `/character/${FIGHTER_ID}`;
 const FIGHTER_PICKED_ROUTE = `/character/${FIGHTER_PICKED_ID}`;
 const CLERIC_ROUTE = `/character/${CLERIC_ID}`;
 const CLERIC_DOMAIN_ROUTE = `/character/${CLERIC_DOMAIN_ID}`;
+const KNOWLEDGE_ROUTE = `/character/${KNOWLEDGE_ID}`;
+const MULTICLASS_SKILLS_ROUTE = `/character/${MULTICLASS_SKILLS_ID}`;
 const SCREENS = [
   { name: "Builder Abilities", route: RENDAR_ROUTE, tabs: ["Builder", "Abilities"], ready: /points remaining/i },
   { name: "Builder Race", route: RENDAR_ROUTE, tabs: ["Builder", "Race"], ready: /traits:/i },
@@ -453,6 +504,10 @@ const SCREENS = [
     ? [{ name: "Builder Class equipment cleric", route: CLERIC_ROUTE, tabs: ["Builder", "Class"], ready: "Starting Equipment & Gold:", scrollTo: "Starting Equipment & Gold:", expect: { texts: ["Scale Mail"], absent: ["Warhammer", "Chain Mail"], fitsWidth: true } }]
     : []),
   { name: "Builder Class skill proficiency choices", route: BARD_ROUTE, tabs: ["Builder", "Class"], ready: /total level/i, scrollTo: "Class & Subclass Choices" },
+  // The Skills card above Class & Subclass Choices: each skill pick named by its source, with Expertise on the Blessings picks.
+  ...(INTEGRATED
+    ? [{ name: "Builder Class skills card cleric", route: KNOWLEDGE_ROUTE, tabs: ["Builder", "Class"], ready: /total level/i, scrollTo: "starting skills", expect: { texts: ["Cleric starting skills", "Blessings of Knowledge", "Rogue multiclass skill", "Expertise"], fitsWidth: true } }]
+    : [{ name: "Builder Class skills card multiclass", route: MULTICLASS_SKILLS_ROUTE, tabs: ["Builder", "Class"], ready: /total level/i, scrollTo: "starting skills", expect: { texts: ["Fighter starting skills", "Rogue multiclass skill"], fitsWidth: true } }]),
   { name: "Stats", route: RENDAR_ROUTE, tabs: ["Stats"], ready: /hit points/i },
   { name: "Stats long header name", route: LONG_NAME_ROUTE, tabs: ["Stats"], ready: /hit points/i, headerName: LONG_NAME },
   { name: "Stats add tool modal", route: RENDAR_ROUTE, tabs: ["Stats"], open: (page) => page.getByLabel("Add tool proficiency").first().click(), modal: "Add Tool Proficiency" },
