@@ -76,3 +76,7 @@ I make no money from this app. It is free, has no ads or paid features, and I re
 
 
 Unofficial fan project, not affiliated with Wizards of the Coast. Game content beyond the SRD comes from third-party data the user syncs themselves.
+
+## Credits
+
+This project would not have been possible without [5eTools](https://2014.5e.tools/).
