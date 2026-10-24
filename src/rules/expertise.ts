@@ -1,5 +1,5 @@
 import type { Character } from "../types/character.ts";
-import { isKnowledgeCleric, skills } from "./skills.ts";
+import { skills } from "./skills.ts";
 import type { CharacterCatalogs } from "./catalogs.ts";
 import { proficiencySheet } from "./proficiencySheet.ts";
 
@@ -96,16 +96,6 @@ export function getAvailableExpertiseMilestones(
         options: proficientSkills,
       });
     }
-  }
-
-  // Knowledge Domain Cleric
-  if (isKnowledgeCleric(character)) {
-    milestones.push({
-      id: "cleric_knowledge_1",
-      label: "Blessings of Knowledge (Cleric Level 1)",
-      count: 2,
-      options: ["Arcana", "History", "Nature", "Religion"],
-    });
   }
 
   // Ranger (TCoE Deft Explorer: Canny)

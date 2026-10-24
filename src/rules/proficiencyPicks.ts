@@ -167,6 +167,8 @@ interface GrantSource {
   /** The grant's id, and the former ids it was saved under. */
   id: string;
   aliases: string[];
+  /** The grant as the catalog prints it, with its Expertise mark when it has one. */
+  grant: ProficiencyGrant;
   /** The feature the grant is printed on, named in the review notice. */
   feature: string;
   /** The level the feature is gained at. Feats are gained with no level, so 0. */
@@ -189,13 +191,13 @@ function grantSourcesIn(compendium: Compendium): Map<string, GrantSource[]> {
   const sources = new Map<string, GrantSource[]>();
   const add = (
     grants: ProficiencyGrant[] | undefined,
-    source: Omit<GrantSource, "id" | "aliases" | "applies">,
+    source: Omit<GrantSource, "id" | "aliases" | "applies" | "grant">,
     appliesTo?: (grant: ProficiencyGrant, character: Character) => boolean,
   ) => {
     for (const grant of grants ?? []) {
       const owners = sources.get(grant.id) ?? [];
       const applies = appliesTo && ((character: Character) => appliesTo(grant, character));
-      owners.push({ ...source, id: grant.id, aliases: grant.aliases ?? [], requires: grant.requires ?? source.requires, applies });
+      owners.push({ ...source, id: grant.id, aliases: grant.aliases ?? [], grant, requires: grant.requires ?? source.requires, applies });
       sources.set(grant.id, owners);
     }
   };
@@ -436,6 +438,52 @@ export function moveLegacySkillPicks(character: Character, compendium: Compendiu
     skillChoices,
     chosenSkills,
   };
+}
+
+/**
+ * Moves Expertise picks saved in chosenExpertise into a held skill choice that now carries Expertise. A name the
+ * choice offers goes into its free slots, in the order it was picked; a name already among its picks is dropped,
+ * since the grant gives its Expertise. A name no free slot takes stays in chosenExpertise, and the Expertise pass
+ * releases it with its review notice. Before this, a Knowledge Domain Cleric's Blessings Expertise was a separate
+ * milestone. Returns the character unchanged when nothing moves.
+ */
+export function moveExpertisePicksToGrants(character: Character, compendium: Compendium): Character {
+  const expertise = character.chosenExpertise ?? [];
+  if (expertise.length === 0) return character;
+
+  const classes = compendium.for().classes();
+  const offered: { id: string; grant: ChoiceProficiencyGrant }[] = [];
+  for (const [id, owners] of grantSourcesIn(compendium)) {
+    const grant = owners[0].grant;
+    if (grant.kind !== "choice" || grant.category !== "skills" || grant.expertise !== true) continue;
+    if (releaseReason(owners, character, classes) !== undefined) continue;
+    offered.push({ id, grant });
+  }
+  if (offered.length === 0) return character;
+
+  const picks: Record<string, string[]> = { ...(character.proficiencyPicks ?? {}) };
+  const kept: string[] = [];
+  let moved = false;
+  for (const name of expertise) {
+    const key = name.trim().toLowerCase();
+    const target = offered.find(({ id, grant }) => {
+      if (!poolNames(grant).some((option) => option.toLowerCase() === key)) return false;
+      const held = validPicks(grant, picks[id] ?? []);
+      return held.some((pick) => pick.toLowerCase() === key) || held.length < grant.count;
+    });
+    if (!target) {
+      kept.push(name);
+      continue;
+    }
+    const held = validPicks(target.grant, picks[target.id] ?? []);
+    if (!held.some((pick) => pick.toLowerCase() === key)) {
+      const option = poolNames(target.grant).find((candidate) => candidate.toLowerCase() === key) as string;
+      picks[target.id] = [...(picks[target.id] ?? []), option];
+    }
+    moved = true;
+  }
+  if (!moved) return character;
+  return { ...character, proficiencyPicks: picks, chosenExpertise: kept };
 }
 
 /**

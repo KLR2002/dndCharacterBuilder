@@ -298,7 +298,7 @@ export const SKILLS_ONLY: { label: string; build: Build }[] = [
       withClasses([cls("Cleric", l, "Knowledge Domain")], {
         race: race("Human"),
         background: background("Acolyte"),
-        chosenExpertise: ["Arcana", "History"],
+        proficiencyPicks: { "PHB/Cleric/Knowledge Domain/Blessings of Knowledge@1#skills:choice:from": ["Arcana", "History"] },
       }),
   },
   {

@@ -673,3 +673,66 @@ test("structured race and starting-tool grants get ids by the same rule and keep
     ["TST/Sample Bard/Starting Proficiencies@1#tools:fixed:thieves' tools", ["TST/Sample Bard/Starting Proficiencies@1#0"]],
   ]);
 });
+
+// Expertise: a skill grant whose own feature doubles the bonus for the granted skills is marked expertise.
+// The sentences below are invented; only the doubling phrase is shared with the rule text the matcher reads.
+
+test("a skill choice whose feature doubles the bonus for those skills is marked expertise, and keeps its id", () => {
+  const description =
+    "Your lantern sense sharpens. You gain proficiency in two skills of your choice: Acrobatics or Athletics. Your proficiency bonus is doubled for any ability check you make that uses either of those skills.";
+  const { results } = run([subject(description)]);
+  assert.deepEqual(results[0].grants.map(shape), [
+    {
+      id: "TST/Wizard2/Sample Circle/Field Training@3#skills:choice:from",
+      kind: "choice",
+      category: "skills",
+      count: 2,
+      pool: { kind: "names", names: ["Acrobatics", "Athletics"] },
+      expertise: true,
+    },
+  ]);
+});
+
+test("a fixed skill grant whose feature doubles the bonus for that skill is marked expertise", () => {
+  const description =
+    "You gain proficiency in Acrobatics. Your proficiency bonus is doubled for any ability check you make that uses Acrobatics.";
+  const { results } = run([subject(description)]);
+  assert.deepEqual(results[0].grants.map(shape), [
+    { id: "TST/Wizard2/Sample Circle/Field Training@3#skills:fixed:Acrobatics", kind: "fixed", category: "skills", names: ["Acrobatics"], expertise: true },
+  ]);
+});
+
+test("a skill choice whose doubled skill is one the character already holds is not marked", () => {
+  const description =
+    "You gain proficiency in one skill of your choice. Pick one skill you already know. Your proficiency bonus is doubled for any ability check you make with that skill.";
+  const { results } = run([subject(description)]);
+  assert.equal(results[0].grants.length, 1);
+  assert.equal("expertise" in results[0].grants[0], false);
+});
+
+test("a skill grant with no doubling sentence is not marked", () => {
+  const { results } = run([subject("You gain proficiency in Acrobatics and Athletics.")]);
+  assert.equal("expertise" in results[0].grants[0], false);
+});
+
+test("a doubling sentence that refers to a tool grant does not mark it: only skill grants carry Expertise", () => {
+  const description =
+    "You gain proficiency with lantern-maker's kit. Your proficiency bonus is doubled for any ability check you make that uses either of those proficiencies.";
+  const { results } = run([subject(description)]);
+  assert.equal(results[0].grants.length, 1);
+  assert.equal("expertise" in results[0].grants[0], false);
+});
+
+test("an override's skill grant is marked expertise from the feature's own text, not from the override", () => {
+  const override: GrantOverride = {
+    owner: CIRCLE,
+    feature: "Field Training",
+    level: 3,
+    grants: [{ kind: "fixed", category: "skills", names: ["Athletics"] }],
+  };
+  const description = "Your lantern sense sharpens. Your proficiency bonus is doubled for any ability check you make that uses Athletics.";
+  const { results } = run([subject(description)], [override]);
+  assert.deepEqual(results[0].grants.map(shape), [
+    { id: "TST/Wizard2/Sample Circle/Field Training@3#skills:fixed:Athletics", kind: "fixed", category: "skills", names: ["Athletics"], expertise: true },
+  ]);
+});

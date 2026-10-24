@@ -1,10 +1,10 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
-import { coverageGaps, gapName, type CoverageGap } from "../src/grants/coverage.ts";
+import { coverageGaps, expertiseGaps, gapName, type CoverageGap } from "../src/grants/coverage.ts";
 import { describeGrant, notesSection, renderDecisionReview } from "../src/grants/review.ts";
 import type { TrackedData } from "../src/grants/subjects.ts";
-import { REVIEWED_GRANTS_NOTHING, type ReviewedFeature } from "../src/overrides/proficiency-grants.ts";
+import { REVIEWED_GRANTS_NOTHING, REVIEWED_NOT_A_SKILL_GRANT, type ReviewedFeature } from "../src/overrides/proficiency-grants.ts";
 
 // The tracked-data gate is on: every matching feature is covered by grants or marked as granting nothing.
 const GATE_ENFORCED = true;
@@ -245,4 +245,65 @@ test("the tracked data has no uncovered proficiency features, once the gate is e
   };
   const gaps = coverageGaps(tracked, REVIEWED_GRANTS_NOTHING);
   assert.deepEqual(gaps.map(gapName), []);
+});
+
+// Expertise gate: a feature whose text doubles the proficiency bonus needs an Expertise grant on a skill grant, or a review mark.
+
+const DOUBLING_TEXT = "You gain proficiency in Acrobatics. Your proficiency bonus is doubled for any ability check you make that uses Acrobatics.";
+
+const EXPERTISE_GRANT = {
+  id: "TST/Sample Class/Lantern Training@1#skills:fixed:Acrobatics",
+  kind: "fixed",
+  category: "skills",
+  names: ["Acrobatics"],
+  expertise: true,
+};
+
+test("a feature whose text doubles the bonus, with no expertise grant or mark, is an expertise gap with its doubling sentence", () => {
+  const gaps = expertiseGaps(data([{ description: DOUBLING_TEXT }]), []);
+  assert.deepEqual(gaps, [
+    {
+      owner: "Sample Class",
+      feature: "Lantern Training",
+      level: 1,
+      sentences: ["Your proficiency bonus is doubled for any ability check you make that uses Acrobatics"],
+    },
+  ]);
+});
+
+test("a skills grant marked expertise covers its feature", () => {
+  assert.deepEqual(expertiseGaps(data([{ description: DOUBLING_TEXT, grants: [EXPERTISE_GRANT] }]), []), []);
+});
+
+test("a feature with no doubling sentence is not an expertise gap", () => {
+  assert.deepEqual(expertiseGaps(data([{ description: "You move without a sound." }]), []), []);
+});
+
+test("a review mark covers a doubling feature that has other grants", () => {
+  const mark: ReviewedFeature = { owner: "Sample Class", feature: "Lantern Training", level: 1 };
+  const grants = [{ id: "TST/Sample Class/Lantern Training@1#tools:fixed:lantern-maker's kit", kind: "fixed", category: "tools", names: ["lantern-maker's kit"] }];
+  assert.deepEqual(expertiseGaps(data([{ description: DOUBLING_TEXT, grants }]), [mark]), []);
+});
+
+test("a review mark on a feature whose skill grant is marked expertise is an error", () => {
+  const mark: ReviewedFeature = { owner: "Sample Class", feature: "Lantern Training", level: 1 };
+  assert.throws(() => expertiseGaps(data([{ description: DOUBLING_TEXT, grants: [EXPERTISE_GRANT] }]), [mark]), /marked expertise/);
+});
+
+test("a review mark on a feature whose text doubles no proficiency bonus is an error", () => {
+  const mark: ReviewedFeature = { owner: "Sample Class", feature: "Lantern Training", level: 1 };
+  assert.throws(() => expertiseGaps(data([{ description: "You move without a sound." }]), [mark]), /doubles no proficiency bonus/);
+});
+
+test("an expertise grant on a grant that is not a skill grant is an error", () => {
+  const grants = [{ id: "TST/Sample Class/Lantern Training@1#tools:fixed:x", kind: "fixed", category: "tools", names: ["lantern-maker's kit"], expertise: true }];
+  assert.throws(() => expertiseGaps(data([{ description: DOUBLING_TEXT, grants }]), []), /not a skills grant/);
+});
+
+test("the tracked data has no unreviewed Expertise features", () => {
+  const tracked: TrackedData = {
+    classes: JSON.parse(fs.readFileSync(new URL("../data/classes.json", import.meta.url), "utf8")),
+    feats: JSON.parse(fs.readFileSync(new URL("../data/feats.json", import.meta.url), "utf8")),
+  };
+  assert.deepEqual(expertiseGaps(tracked, REVIEWED_NOT_A_SKILL_GRANT).map(gapName), []);
 });

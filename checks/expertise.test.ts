@@ -209,25 +209,6 @@ test("milestones: Bard 3 and Bard 10 generate milestone cards", () => {
   assert.equal(milestones[1].count, 2);
 });
 
-test("milestones: Knowledge Domain Cleric grants Arcana/History/Nature/Religion", () => {
-  const char = makeTestChar({
-    classes: [{ className: "Cleric", level: 1, source: "PHB", subclassName: "Knowledge Domain" }],
-    chosenExpertise: ["Arcana", "History"],
-  });
-
-  const milestones = getAvailableExpertiseMilestones(char, { compendium: inMemoryCompendium({ classes }) });
-  assert.equal(milestones.length, 1);
-  assert.equal(milestones[0].id, "cleric_knowledge_1");
-  assert.deepEqual(milestones[0].options, ["Arcana", "History", "Nature", "Religion"]);
-
-  // Knowledge Cleric chosen skills become proficient automatically
-  const skillList = skills(char, proficiencySheet(char, { compendium: inMemoryCompendium() }).skills);
-  const arcana = skillList.find((s) => s.name === "Arcana");
-  assert.ok(arcana);
-  assert.equal(arcana.isProficient, true);
-  assert.equal(arcana.isExpertise, true);
-});
-
 test("milestones: Deft Explorer Ranger Canny grants 1 pick from proficient skills", () => {
   const char = makeTestChar({
     classes: [{ className: "Ranger", level: 1, source: "PHB" }],

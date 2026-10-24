@@ -113,7 +113,7 @@ test("a skill choice grant is offered as a proficiency choice, with held skills 
   assert.deepEqual(offer.options.map((option) => option.name), ["Nature"], "Survival is already held, so it is hidden");
 });
 
-test("the skills the buckets hold, Primal Knowledge picks and Knowledge Domain Expertise are still on the sheet", () => {
+test("the skills the buckets hold and Primal Knowledge picks are still on the sheet", () => {
   const compendium = lampCompendium();
   const primal = makeChar({
     classes: [{ className: "Barbarian", source: "PHB", level: 3 }],
@@ -125,12 +125,6 @@ test("the skills the buckets hold, Primal Knowledge picks and Knowledge Domain E
 
   const bucket = makeChar({ chosenSkills: ["Stealth"] });
   assert.equal(names(proficiencySheet(bucket, { compendium }).skills).includes("Stealth"), true);
-
-  const knowledge = makeChar({
-    classes: [{ className: "Cleric", source: "PHB", level: 1, subclassName: "Knowledge Domain", subclassSource: "PHB" }],
-    chosenExpertise: ["Arcana"],
-  });
-  assert.equal(names(proficiencySheet(knowledge, { compendium }).skills).includes("Arcana"), true);
 });
 
 test("the Drunken Master's Performance is on the sheet from 3rd level in the integrated Compendium", () => {

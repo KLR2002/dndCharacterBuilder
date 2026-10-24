@@ -131,6 +131,16 @@ test("live catalog: the cache is at the catalog format the app requires", { skip
   assert.equal(isCatalogStale(live!.collections), false, `catalog format ${live!.collections.catalogFormat} is below ${REQUIRED_CATALOG_FORMAT}`);
 });
 
+test("live catalog: every expertise mark is on a skills grant", { skip: SKIP }, () => {
+  const misplaced: string[] = [];
+  for (const [kind, record] of grantOwnerRecords(live!.collections)) {
+    for (const grant of grantsIn(record)) {
+      if (grant.expertise === true && grant.category !== "skills") misplaced.push(`${kind} ${record.name} (${record.source}): ${grant.id}`);
+    }
+  }
+  assert.deepEqual(misplaced, []);
+});
+
 test("live catalog: every grant id is unique within its owner record", { skip: SKIP }, () => {
   const duplicates: string[] = [];
   for (const [kind, record] of grantOwnerRecords(live!.collections)) {
