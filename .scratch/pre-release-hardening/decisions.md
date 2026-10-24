@@ -29,6 +29,12 @@ E. **Disabled optional feature releases its pick.** Built by ticket 16. Turning 
 
 F. **Polish and guards.** Built by tickets 03 (the header name shortens with an ellipsis at 320 px), 04 (the nested-scroll guard reads heights in style objects), 05 (the Wild Shape adoption guard) and 06 (the readers guard flags `import * as` access to a guarded table).
 
+## Skill choices and Expertise (owner bug report, tickets 33 to 35)
+
+- **Multiclass skill choice** (ticket 33). A later class's "choose a skill" multiclass grant (Rogue, Ranger, Bard) is a Proficiency Choice read from the class record, offered in the Class card and stored with the other picks.
+- **Expertise follows the skill grant** (ticket 34). A skill grant whose feature doubles the proficiency bonus carries an `expertise` mark in the catalog (catalog format 7). The skills picked are the skills with Expertise; the Knowledge Cleric's separate Expertise picker is removed, and the same data rule covers Scout's Survivalist and Royal Envoy. Owner decision: all such features, not Blessings of Knowledge alone.
+- **Skill choices shown together** (ticket 35). The Class tab shows the starting, multiclass and subclass skill choices in one "Skills" card, each named by its source.
+
 ## Retro items (now in the spec)
 
 - 4: type-check `checks/` with a second tsconfig, ratcheted against a recorded baseline. Built by ticket 02. The baseline holds 322 known errors at the release. Burn-down is separate.
