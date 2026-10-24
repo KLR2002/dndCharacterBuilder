@@ -95,7 +95,14 @@ export function heldByOtherSources(
   return (name) => (grant.category === "weapons" ? weaponHeld(name, heldWeapons) : held.has(name.toLowerCase()));
 }
 
-export function proficiencyChoiceOffers(character: Character, query: ProficiencyChoiceQuery = {}): AvailableRuleChoice[] {
+/** One Proficiency Choice offer, with the feature and the grant it came from. */
+interface ChoiceOfferEntry {
+  offer: AvailableRuleChoice;
+  feature: FeatureInstance;
+  grant: ChoiceProficiencyGrant;
+}
+
+function choiceOfferEntries(character: Character, query: ProficiencyChoiceQuery): ChoiceOfferEntry[] {
   const compendium = query.compendium ?? currentCompendium();
   const activeBooks = query.activeBooks?.length ? query.activeBooks : undefined;
   const active = activeBooks ? new Set(activeBooks.map((book) => book.toUpperCase())) : undefined;
@@ -103,7 +110,7 @@ export function proficiencyChoiceOffers(character: Character, query: Proficiency
   const items = listings.items();
   const features = featuresOf(character, listings);
 
-  const offers: AvailableRuleChoice[] = [];
+  const entries: ChoiceOfferEntry[] = [];
   for (const feature of features) {
     const origin = ORIGIN_OF[feature.origin];
     if (!origin) continue;
@@ -114,30 +121,68 @@ export function proficiencyChoiceOffers(character: Character, query: Proficiency
       (grant): grant is ChoiceProficiencyGrant => grant.kind === "choice" && isPickableCategory(grant.category),
     );
     // A later class's multiclass pick is titled after its class, so the picker names whose skill it is.
-    const titles =
-      feature.origin === "Class" && feature.name === MULTICLASS_FEATURE
-        ? choices.map((grant) => `${feature.className} multiclass: ${descriptorOf(grant)}`)
-        : pickerTitles(feature.name, choices);
+    const titles = isMulticlassFeature(feature)
+      ? choices.map((grant) => `${feature.className} multiclass: ${descriptorOf(grant)}`)
+      : pickerTitles(feature.name, choices);
     for (const [index, grant] of choices.entries()) {
       const isHeld = heldByOtherSources(character, grant, { compendium, activeBooks });
       const own = new Set(validPicks(grant, character.proficiencyPicks?.[grant.id] ?? [], items).map((name) => name.toLowerCase()));
       // A weapon pick that also marks a Monk Weapon keeps the whole pool: a held weapon still gains that effect.
       const offersHeld = grant.category === "weapons" && weaponPickMarksMonkWeapon(feature);
 
-      offers.push({
-        id: grant.id,
-        traitName: titles[index],
-        choose: grant.count,
-        level: feature.level ?? 0,
-        effectLevel: feature.level ?? 0,
-        source: feature.source,
-        origin,
-        pick: "proficiency",
-        options: poolNames(grant, items)
-          .filter((name) => offersHeld || own.has(name.toLowerCase()) || !isHeld(name))
-          .map((name) => ({ name, description: "" })),
+      entries.push({
+        grant,
+        feature,
+        offer: {
+          id: grant.id,
+          traitName: titles[index],
+          choose: grant.count,
+          level: feature.level ?? 0,
+          effectLevel: feature.level ?? 0,
+          source: feature.source,
+          origin,
+          pick: "proficiency",
+          options: poolNames(grant, items)
+            .filter((name) => offersHeld || own.has(name.toLowerCase()) || !isHeld(name))
+            .map((name) => ({ name, description: "" })),
+        },
       });
     }
   }
-  return offers;
+  return entries;
+}
+
+export function proficiencyChoiceOffers(character: Character, query: ProficiencyChoiceQuery = {}): AvailableRuleChoice[] {
+  return choiceOfferEntries(character, query).map((entry) => entry.offer);
+}
+
+/** A skill Proficiency Choice the Builder's Skills card shows. `expertise` is set when its grant gives Expertise. */
+export type SkillPickOffer = AvailableRuleChoice & { expertise: boolean };
+
+/**
+ * The skill Proficiency Choices a character is offered: a subclass's or feature's skill pick, and a later class's
+ * multiclass skill pick. Each is the offer `proficiencyChoiceOffers` gives it, titled for its source (the feature's
+ * name, or "<Class> multiclass skill"), and marked when its grant gives Expertise.
+ */
+export function skillPickOffers(character: Character, query: ProficiencyChoiceQuery = {}): SkillPickOffer[] {
+  return choiceOfferEntries(character, query)
+    .filter(({ grant }) => grant.category === "skills")
+    .map(({ offer, feature, grant }) => ({
+      ...offer,
+      traitName: skillPickTitle(feature, grant),
+      expertise: grant.expertise === true,
+    }));
+}
+
+function isMulticlassFeature(feature: FeatureInstance): boolean {
+  return feature.origin === "Class" && feature.name === MULTICLASS_FEATURE;
+}
+
+/** The title of a skill pick: its source, numbered when its feature carries more than one skill pick. */
+function skillPickTitle(feature: FeatureInstance, grant: ChoiceProficiencyGrant): string {
+  if (isMulticlassFeature(feature)) return `${feature.className} multiclass skill`;
+  const skillPicks = (feature.grants ?? []).filter(
+    (other): other is ChoiceProficiencyGrant => other.kind === "choice" && other.category === "skills",
+  );
+  return skillPicks.length > 1 ? `${feature.name}: Skill ${skillPicks.indexOf(grant) + 1}` : feature.name;
 }
