@@ -4,7 +4,9 @@
 
 **Blocked by:** 33, 34
 
-**Status:** ready-for-agent
+**Status:** done
+
+**Landed:** merged from `pr/35-class-skill-choices-grouped` (00add39, 161076f). `check:all` passes on the merged tip (1219 app tests, 8 skipped, 192 scraper tests); `check:live` 54 of 54 on the branch; full `npm run layout:check -- --integrated` GREEN on the merged tip (main session run) and the SRD run GREEN on the branch. The Class tab has one `Skills` card above Class & Subclass Choices: `<Class> starting skills`, the feature name for a subclass pick (`Blessings of Knowledge`), `<Class> multiclass skill`; picks whose grant carries Expertise show an `Expertise` tag; the old `Class: <Class>` card at the bottom is gone. `skillPickOffers` in `src/rules/proficiencyChoiceOffers.ts` lists the skill picks; `ruleGrantedSkills` now reads the picks of every feature, so the starting picker holds a skill taken as a subclass or multiclass pick, and the pick offers already hid the starting picks. Two layout scenarios added (integrated Knowledge Cleric + Rogue; SRD Fighter + Rogue). Screenshots at 320 and 393 px viewed by the main session. Open items: an old save whose starting pick duplicates a Blessings pick shows that pick locked and not counted, and cannot be unpicked until the Blessings pick is cleared; the Fighter class card's level badge sits tight against the minus button at 320 px (not part of this change, not checked against an older build); the claim of starting equipment and the picks are still not clicked through in the running app by the main session.
 
 ## Design notes
 
