@@ -3,6 +3,7 @@ import type { ClassData, GrantRequirement, ProficiencyGrant } from "../types/dnd
 import type { Compendium } from "../services/compendium.ts";
 import { grantRequirementMet } from "./optionFeatureGrants.ts";
 import { findClassData } from "./catalogs.ts";
+import { MULTICLASS_FEATURE, multiclassSkillGrantOf } from "./proficiencySheet.ts";
 import { poolNames, sourceRecordGrants, STARTING_PROFICIENCIES, validPicks, type ChoiceProficiencyGrant } from "./proficiencyPools.ts";
 import { heldSubraceOf, raceSkillPickApplies, recordGrantSources, subracePickApplies } from "./recordProficiencyGrants.ts";
 import { CUSTOM_BACKGROUND_GRANTS, isCustomBackground } from "./customBackground.ts";
@@ -151,6 +152,8 @@ export function moveAliasedProficiencyPicks(character: Character, compendium: Co
 /** A class owner is the catalog class itself, so two classes of one name from different sources are told apart. */
 type GrantOwner =
   | { kind: "class"; className: string; source: string }
+  /** A later class's multiclass skill choice: held only while the class is an entry after the first. */
+  | { kind: "multiclass"; className: string; source: string }
   | { kind: "subclass"; className: string; source: string; subclassName: string; subclassSource: string }
   | { kind: "feat"; featName: string }
   | { kind: "record"; origin: "Race" | "Subrace" | "Background"; name: string; source: string; raceName?: string; raceSource?: string }
@@ -209,6 +212,15 @@ function grantSourcesIn(compendium: Compendium): Map<string, GrantSource[]> {
         level: feature.level,
         optional: feature.isOptional === true,
         owner: { kind: "class", className: cls.name, source: cls.source },
+      });
+    }
+    const multiclassSkill = multiclassSkillGrantOf(cls);
+    if (multiclassSkill) {
+      add([multiclassSkill], {
+        feature: MULTICLASS_FEATURE,
+        level: 1,
+        optional: false,
+        owner: { kind: "multiclass", className: cls.name, source: cls.source },
       });
     }
     for (const sub of cls.subclasses) {
@@ -276,11 +288,13 @@ function ownerHeld(source: GrantSource, character: Character, classes: readonly 
       (selection) => selection.type === "feat" && selection.featName?.toLowerCase() === wanted,
     );
   }
-  return character.classes.some((c) => {
+  // A multiclass grant is held by a class entry after the first only, as the sheet reads it.
+  const entries = owner.kind === "multiclass" ? character.classes.slice(1) : character.classes;
+  return entries.some((c) => {
     if (c.level < source.level) return false;
     const held = findClassData(classes, c);
     if (!held || held.name !== owner.className || held.source !== owner.source) return false;
-    if (owner.kind === "class") return true;
+    if (owner.kind === "class" || owner.kind === "multiclass") return true;
     if ((c.subclassName ?? "").toLowerCase() !== owner.subclassName.toLowerCase()) return false;
     const gate = { className: c.className, subclassName: owner.subclassName, subclassSource: owner.subclassSource };
     return grantRequirementMet(character, gate, source.requires, source.feature);
@@ -422,4 +436,16 @@ export function moveLegacySkillPicks(character: Character, compendium: Compendiu
     skillChoices,
     chosenSkills,
   };
+}
+
+/**
+ * Drops the empty multiclass skill entries that saves kept in `skillChoices` before a later class's skill choice
+ * was a Proficiency Choice. Nothing could pick into them, so an empty one holds nothing. An entry that holds a
+ * pick is kept as saved. Returns the character unchanged when there is no such entry.
+ */
+export function dropLegacyMulticlassSkillEntries(character: Character): Character {
+  const entries = character.skillChoices ?? [];
+  const kept = entries.filter((entry) => !(entry.id.startsWith("multiclass_skill_") && entry.picked.length === 0));
+  if (kept.length === entries.length) return character;
+  return { ...character, skillChoices: kept.length > 0 ? kept : undefined };
 }

@@ -5,6 +5,10 @@ import { normalizeArmorProficiency, normalizeWeaponProficiency } from "../profic
 import { normalizeSkillName } from "../skills.ts";
 import { findClassData } from "../catalogs.ts";
 import { heldClass } from "../classData.ts";
+import type { ChoiceProficiencyGrant } from "../proficiencyPools.ts";
+
+/** The feature a later class's multiclass skill choice is printed on. The Class card titles its pick after the class. */
+export const MULTICLASS_FEATURE = "Multiclass Proficiencies";
 
 /**
  * The saving throws the first class grants, as the Catalog class the entry holds writes them (full names or
@@ -24,8 +28,6 @@ export interface MulticlassGrants {
   armor: string[];
   weapons: string[];
   tools: string[];
-  /** The skill choice the class adds, from the list its record gives. Absent when the record names none. */
-  skills?: { choose: number; from: string[] };
 }
 
 /** Catalog text with its tags removed: `{@item shortsword|phb|shortswords}` reads as `shortsword`. */
@@ -42,20 +44,37 @@ function grantToken(raw: unknown): string {
 /**
  * The multiclass grants of the class an entry holds, from the Catalog class's `multiclassing.proficienciesGained`
  * (the SRD Baseline when the catalog lacks it). Undefined for a class with no `multiclassing` record, which a
- * later class cannot be taken from. A record with no `proficienciesGained` grants nothing.
+ * later class cannot be taken from. A record with no `proficienciesGained` grants nothing. Its skill choice is
+ * `multiclassSkillGrantOf`.
  */
 export function multiclassGrantsOf(entry: { className: string; source?: string }, classes: readonly ClassData[]): MulticlassGrants | undefined {
   const held = heldClass(entry, classes);
   if (!held?.multiclassing) return undefined;
   const gained = held.multiclassing.proficienciesGained;
-  const choice = (gained?.skills ?? []).find((s: { choose?: unknown } | null) => s?.choose);
   return {
     armor: (gained?.armor ?? []).map(grantToken).filter(Boolean).map(normalizeArmorProficiency),
     weapons: (gained?.weapons ?? []).map(grantToken).filter(Boolean).map(normalizeWeaponProficiency),
     tools: (gained?.tools ?? []).map(plainText).filter(Boolean).map((t) => t.charAt(0).toUpperCase() + t.slice(1)),
-    ...(choice
-      ? { skills: { choose: choice.choose.count ?? 1, from: (choice.choose.from ?? []).map((s: string) => normalizeSkillName(plainText(s))) } }
-      : {}),
+  };
+}
+
+/**
+ * The skill choice a class grants a character who takes it as a later class, as a Proficiency Choice. The pool is the
+ * record's list, or every skill when the record names none. The id names the class and the kind of pool, never the
+ * pool or the count (ADR 0015). Undefined when the record gives no skill choice.
+ */
+export function multiclassSkillGrantOf(cls: ClassData): ChoiceProficiencyGrant | undefined {
+  const choice = (cls.multiclassing?.proficienciesGained?.skills ?? []).find((s: { choose?: unknown } | null) => s?.choose);
+  if (!choice) return undefined;
+  const names: string[] = (choice.choose.from ?? []).map((s: string) => normalizeSkillName(plainText(s)));
+  const pool = names.length > 0 ? ({ kind: "names", names } as const) : ({ kind: "any" } as const);
+  return {
+    // The feature is gained at level 1 of the class, so the id carries level 1.
+    id: `${cls.source}/${cls.name}/${MULTICLASS_FEATURE}@1#skills:choice:${pool.kind === "names" ? "from" : "any"}`,
+    kind: "choice",
+    category: "skills",
+    count: choice.choose.count ?? 1,
+    pool,
   };
 }
 
