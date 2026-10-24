@@ -169,12 +169,8 @@ test("addMulticlassLevel increments existing class or adds new class with multic
   assert.equal(wizardRogue.classes[1].className, "Rogue");
   assert.equal(wizardRogue.classes[1].level, 1);
 
-  // Rogue grants: Light armor, Thieves' tools, 1 skill from Rogue skill list
-  const rogueSkillsChoice = wizardRogue.skillChoices?.find((sc) => sc.id.includes("rogue"));
-  assert.ok(rogueSkillsChoice, "Expected Rogue skill choice entry");
-  assert.equal(rogueSkillsChoice?.choose, 1);
-  assert.ok(rogueSkillsChoice?.from.includes("Stealth"));
-  assert.ok(!rogueSkillsChoice?.from.includes("Religion")); // Not a rogue skill
+  // The Rogue skill pick is a Proficiency Choice on the sheet, not a skill choice entry.
+  assert.equal(wizardRogue.skillChoices, undefined);
 
   // Multiclass proficiencies record
   const rogueProf = wizardRogue.multiclassProficiencies?.find((p) => p.className === "Rogue");

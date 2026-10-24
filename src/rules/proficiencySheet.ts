@@ -5,7 +5,12 @@ import { allCatalogClasses, catalogListings, findClassData, type CharacterCatalo
 import { currentCompendium, type CompendiumListings } from "../services/compendium.ts";
 import { grantedFeatures } from "./grantedFeatures.ts";
 import { deduplicateWeaponProficiencies, normalizeArmorProficiency } from "./proficiencies.ts";
-import { classBaseProficiencies, classBaseSavingThrows } from "./proficiencySources/classBase.ts";
+import {
+  classBaseProficiencies,
+  classBaseSavingThrows,
+  MULTICLASS_FEATURE,
+  multiclassSkillGrantOf,
+} from "./proficiencySources/classBase.ts";
 import type { FeatureInstance, ResolvedAncestry } from "./types.ts";
 import { ALL_LANGUAGE_NAMES, ALL_TOOLS, normalizeToolName } from "./proficienciesAndLanguages.ts";
 import {
@@ -23,7 +28,12 @@ import { resolveCharacterAncestry } from "./characterAncestry.ts";
 import { customBackgroundFeature } from "./customBackground.ts";
 
 export { classSkillChoice } from "./proficiencySources/skillGrants.ts";
-export { multiclassGrantsOf, type MulticlassGrants } from "./proficiencySources/classBase.ts";
+export {
+  multiclassGrantsOf,
+  multiclassSkillGrantOf,
+  MULTICLASS_FEATURE,
+  type MulticlassGrants,
+} from "./proficiencySources/classBase.ts";
 
 /**
  * One entry on the Proficiency Sheet, in any of its categories. Only tools and languages can be added
@@ -197,9 +207,33 @@ function startingFeatureOf(character: Character, classes: readonly ClassData[]):
 }
 
 /**
+ * The multiclass skill choice of each later class entry whose Catalog record gives one, as a feature carrying that
+ * one Proficiency Choice. The first class has none: its skill is the starting skill choice.
+ */
+function multiclassFeaturesOf(character: Character, classes: readonly ClassData[]): FeatureInstance[] {
+  return character.classes.slice(1).flatMap((entry) => {
+    const cls = findClassData(classes, entry);
+    const grant = cls && multiclassSkillGrantOf(cls);
+    if (!cls || !grant || entry.level < 1) return [];
+    return [
+      {
+        id: JSON.stringify(["Class", cls.source, cls.name, MULTICLASS_FEATURE, 1]),
+        name: MULTICLASS_FEATURE,
+        source: cls.source,
+        description: "",
+        origin: "Class",
+        className: cls.name,
+        level: 1,
+        grants: [grant],
+      },
+    ];
+  });
+}
+
+/**
  * The features the character holds, each with the grants its rule gives, read from the listings. The
- * first class's starting proficiencies, and a custom background's picks, are included as more features;
- * they are not granted features.
+ * first class's starting proficiencies, the later classes' multiclass skill choices, and a custom background's
+ * picks, are included as more features; they are not granted features.
  */
 export function featuresOf(character: Character, listings: CompendiumListings): FeatureInstance[] {
   const features = grantedFeatures(character, {
@@ -209,8 +243,9 @@ export function featuresOf(character: Character, listings: CompendiumListings): 
     feats: listings.feats(),
   });
   const starting = startingFeatureOf(character, listings.classes());
+  const multiclass = multiclassFeaturesOf(character, listings.classes());
   const custom = customBackgroundFeature(character);
-  return [...features, ...(starting ? [starting] : []), ...(custom ? [custom] : [])];
+  return [...features, ...(starting ? [starting] : []), ...multiclass, ...(custom ? [custom] : [])];
 }
 
 /**
