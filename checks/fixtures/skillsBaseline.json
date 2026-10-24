@@ -10977,9 +10977,7 @@
   ],
   "eligible": [
    "Deception",
-   "Nature",
-   "Stealth",
-   "Survival"
+   "Stealth"
   ]
  },
  "integrated | human criminal scout rogue | L3 | books=PHB": {
@@ -11006,9 +11004,7 @@
   ],
   "eligible": [
    "Deception",
-   "Nature",
-   "Stealth",
-   "Survival"
+   "Stealth"
   ]
  },
  "integrated | human criminal scout rogue | L6 | books=all": {
@@ -11024,9 +11020,7 @@
   ],
   "eligible": [
    "Deception",
-   "Nature",
-   "Stealth",
-   "Survival"
+   "Stealth"
   ]
  },
  "integrated | human criminal scout rogue | L6 | books=PHB": {
@@ -11053,9 +11047,7 @@
   ],
   "eligible": [
    "Deception",
-   "Nature",
-   "Stealth",
-   "Survival"
+   "Stealth"
   ]
  },
  "integrated | human criminal scout rogue | L11 | books=all": {
@@ -11071,9 +11063,7 @@
   ],
   "eligible": [
    "Deception",
-   "Nature",
-   "Stealth",
-   "Survival"
+   "Stealth"
   ]
  },
  "integrated | human criminal scout rogue | L11 | books=PHB": {
@@ -11100,9 +11090,7 @@
   ],
   "eligible": [
    "Deception",
-   "Nature",
-   "Stealth",
-   "Survival"
+   "Stealth"
   ]
  },
  "integrated | human criminal scout rogue | L14 | books=all": {
@@ -11118,9 +11106,7 @@
   ],
   "eligible": [
    "Deception",
-   "Nature",
-   "Stealth",
-   "Survival"
+   "Stealth"
   ]
  },
  "integrated | human criminal scout rogue | L14 | books=PHB": {
@@ -11147,9 +11133,7 @@
   ],
   "eligible": [
    "Deception",
-   "Nature",
-   "Stealth",
-   "Survival"
+   "Stealth"
   ]
  },
  "integrated | human criminal scout rogue | L17 | books=all": {
@@ -11165,9 +11149,7 @@
   ],
   "eligible": [
    "Deception",
-   "Nature",
-   "Stealth",
-   "Survival"
+   "Stealth"
   ]
  },
  "integrated | human criminal scout rogue | L17 | books=PHB": {
@@ -11194,9 +11176,7 @@
   ],
   "eligible": [
    "Deception",
-   "Nature",
-   "Stealth",
-   "Survival"
+   "Stealth"
   ]
  },
  "integrated | human acolyte knowledge cleric with skill expertise | L1 | books=all": {

@@ -135,7 +135,7 @@ test("the Drunken Master's Performance is on the sheet from 3rd level in the int
   assert.equal(names(proficiencySheet(monk(3), { compendium }).skills).includes("Performance"), true);
 });
 
-test("a skill granted by a Scout's Survivalist is an Expertise option for a Rogue", () => {
+test("a skill granted by a Scout's Survivalist has its Expertise from the grant, so no Rogue milestone offers it", () => {
   const compendium = integratedTestCompendium();
   const scout = makeChar({
     classes: [
@@ -143,8 +143,9 @@ test("a skill granted by a Scout's Survivalist is an Expertise option for a Rogu
     ],
   });
   const rogue = getAvailableExpertiseMilestones(scout, { compendium }).find((m) => m.id === "rogue_1");
-  assert.ok(rogue?.options.includes("Nature"), "Survivalist gives Nature, so Nature is eligible");
-  assert.ok(rogue?.options.includes("Survival"), "Survivalist gives Survival, so Survival is eligible");
+  assert.ok(rogue, "the Rogue milestone is still there");
+  assert.ok(!rogue.options.includes("Nature"), "Survivalist gives Nature Expertise, so Nature is not offered");
+  assert.ok(!rogue.options.includes("Survival"), "Survivalist gives Survival Expertise, so Survival is not offered");
 });
 
 test("the card's skill proficiencies are the sheet's, so the evaluated skill rows agree with the sheet", () => {
