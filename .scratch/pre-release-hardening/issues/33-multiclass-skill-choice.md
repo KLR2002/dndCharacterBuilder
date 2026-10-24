@@ -4,7 +4,9 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** done
+
+**Landed:** merged from `pr/33-multiclass-skill-choice` (9899da2). `check:all` passes on the merged tip (1197 app tests, 7 skipped, 178 scraper tests); `check:live` 53 of 53 on the branch. `multiclassSkillGrantOf(cls)` in `src/rules/proficiencySources/classBase.ts` builds the choice grant from the class record; `featuresOf` adds a `Multiclass Proficiencies` feature per later class entry; the picker is titled `<Class> multiclass: Skill`; grant id `<source>/<Class>/Multiclass Proficiencies@1#skills:choice:from` (`:any` when the record names no list). The pick is released when its class is removed or becomes the first class. `dropLegacyMulticlassSkillEntries` (run by the reconciler) drops empty `multiclass_skill_*` entries from old saves. Live catalog, one Rogue/Ranger/Bard later class: Rogue 11 options, Ranger 8, Bard 18, Monk and Wizard none. Open items: the first class's skill picker still reads `ruleGrantedSkills`, which leaves out class-origin features, so a skill taken as a multiclass pick can still be offered there (ticket 35 closes it); a later class from a turned-off book loses its pick on the sheet while the book is off and the pick is kept; `removeClassLevel` keeps a dead `multiclass_skill_` branch; no layout check, no UI code.
 
 ## Design notes
 
