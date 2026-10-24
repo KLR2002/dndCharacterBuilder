@@ -17,16 +17,13 @@ import {
   validPicks,
   type ChoiceProficiencyGrant,
 } from "./proficiencyPools.ts";
-import { isKnowledgeCleric, normalizeSkillName } from "./skills.ts";
+import { normalizeSkillName } from "./skills.ts";
 import { classSkillChoice, getAutoGrantedSkills } from "./proficiencySources/skillGrants.ts";
 import { resolveCharacterAncestry } from "./characterAncestry.ts";
 import { customBackgroundFeature } from "./customBackground.ts";
 
 export { classSkillChoice } from "./proficiencySources/skillGrants.ts";
 export { multiclassGrantsOf, type MulticlassGrants } from "./proficiencySources/classBase.ts";
-
-/** The Knowledge Domain's four skills. A Knowledge Cleric's Expertise on one of them has always made it proficient. */
-const KNOWLEDGE_SKILLS = ["Arcana", "History", "Nature", "Religion"];
 
 /**
  * One entry on the Proficiency Sheet, in any of its categories. Only tools and languages can be added
@@ -35,6 +32,8 @@ const KNOWLEDGE_SKILLS = ["Arcana", "History", "Nature", "Religion"];
 export interface SheetEntry {
   name: string;
   ruleGranted: boolean;
+  /** A skill whose Expertise a Proficiency Grant gives: the grant's fixed skill, or a pick of its choice. */
+  expertise?: true;
 }
 
 /**
@@ -163,10 +162,18 @@ function legacySkillNames(
   ];
 }
 
-/** Knowledge Cleric Expertise on a Knowledge skill, which makes that skill proficient. */
-function knowledgeExpertiseSkills(character: Character): string[] {
-  if (!isKnowledgeCleric(character)) return [];
-  return (character.chosenExpertise ?? []).map(normalizeSkillName).filter((name) => KNOWLEDGE_SKILLS.includes(name));
+/**
+ * The skills that carry Expertise from a Proficiency Grant marked `expertise`: the fixed names of such a skills grant,
+ * and the picks the character holds on such a skill choice. Derived with the grant, so it goes when the grant does.
+ */
+function grantExpertiseNames(features: FeatureInstance[], character: Character, items: readonly ItemData[]): string[] {
+  return features.flatMap((feature) =>
+    (feature.grants ?? []).flatMap((grant) => {
+      if (grant.category !== "skills" || grant.expertise !== true) return [];
+      if (grant.kind === "fixed") return grant.names;
+      return validPicks(grant, character.proficiencyPicks?.[grant.id] ?? [], items);
+    }),
+  );
 }
 
 /**
@@ -340,8 +347,8 @@ export function proficiencySheet(character: Character, catalogs: CharacterCatalo
     ...legacySkillNames(character, ancestry, listings, features),
     ...(character.chosenSkills ?? []).map(normalizeSkillName),
     ...choicePickNames(features, character, "skills", items),
-    ...knowledgeExpertiseSkills(character),
   ];
+  const expertiseKeys = new Set(grantExpertiseNames(features, character, items).map((name) => name.trim().toLowerCase()));
 
   const toolRules = sheetEntries(tools);
   const languageRules = sheetEntries(languages);
@@ -351,6 +358,6 @@ export function proficiencySheet(character: Character, catalogs: CharacterCatalo
     armor: sheetEntries(armorNames),
     weapons: sheetEntries(deduplicateWeaponProficiencies(weaponNames)),
     savingThrows,
-    skills: sheetEntries(skillNames),
+    skills: sheetEntries(skillNames).map((entry) => (expertiseKeys.has(entry.name.toLowerCase()) ? { ...entry, expertise: true } : entry)),
   };
 }

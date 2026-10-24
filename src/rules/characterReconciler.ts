@@ -17,6 +17,7 @@ import { tableOwnerOf } from "./subclassChoiceTable.ts";
 import {
   moveAliasedProficiencyPicks,
   moveLegacyClassToolPicks,
+  moveExpertisePicksToGrants,
   moveLegacySkillPicks,
   moveLegacySourcePicks,
   pruneInvalidProficiencyPicks,
@@ -42,7 +43,8 @@ import { pruneStartingEquipmentPicks } from "./startingEquipmentPicks.ts";
  * Picks saved under a grant's former id move to the grant's id first, so every later pass reads the current ids.
  * The class tool bucket is moved into its Proficiency Choice's pick next, so the pick check sees it, and the
  * race and background tool and language buckets follow it. The race and background skill picks saved in the
- * old skill choices move into their own Proficiency Choices after those buckets.
+ * old skill choices move into their own Proficiency Choices after those buckets. Expertise picks saved on a skill
+ * choice that now carries Expertise move into it next, so the pick release sees them.
  * Proficiency picks are released before Expertise, so Expertise is pruned against the released state. A
  * background skill copy that only a turned-off background granted is dropped first, for the same reason.
  *
@@ -70,6 +72,7 @@ export function reconcile(
   updated = moveLegacyClassToolPicks(updated, compendium);
   updated = moveLegacySourcePicks(updated, compendium);
   updated = moveLegacySkillPicks(updated, compendium);
+  updated = moveExpertisePicksToGrants(updated, compendium);
   updated = dropLegacyBackgroundSkills(updated, compendium, options.activeBooks);
   updated = pruneInvalidProficiencyPicks(updated, compendium);
   updated = pruneInvalidExpertise(updated, { compendium, activeBooks: options.activeBooks });

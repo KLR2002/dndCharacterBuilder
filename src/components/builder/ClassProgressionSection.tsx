@@ -504,7 +504,7 @@ export const ClassProgressionSection: React.FC<ClassProgressionSectionProps> = (
         );
       })()}
 
-      {/* Expertise Choices (Rogue, Bard, Knowledge Cleric, Ranger Deft Explorer, Feats) */}
+      {/* Expertise Choices (Rogue, Bard, Ranger Deft Explorer, Feats) */}
       {(() => {
         const catalogs: CharacterCatalogs = { compendium: currentCompendium(), activeBooks };
         const milestones = getAvailableExpertiseMilestones(character, catalogs);
