@@ -218,6 +218,25 @@ test("a saved Expertise pick on a skill a grant already gives Expertise is relea
   assert.ok(!notices.some((note) => note.includes("no longer a proficient")), "Perception is still proficient");
 });
 
+test("a Rogue Expertise pick on a skill in a marked choice's pool stays in the Rogue milestone while the choice has a free slot", () => {
+  const compendium = beaconCompendium();
+  const character = makeChar({
+    classes: [
+      { className: "Warden", source: "PHB", level: 3, subclassName: "Beacon Keeper", subclassSource: "PHB" },
+      { className: "Rogue", source: "PHB", level: 1 },
+    ],
+    chosenSkills: ["Nature"],
+    chosenExpertise: ["Nature"],
+    proficiencyPicks: { [SIGHT_ID]: ["Insight"] },
+  });
+  assert.equal(moveExpertisePicksToGrants(character, compendium), character, "the Rogue milestone holds Nature, so nothing moves");
+  const migrated = reconcile(character, compendium);
+  assert.deepEqual(migrated.chosenExpertise, ["Nature"]);
+  assert.deepEqual(migrated.proficiencyPicks, { [SIGHT_ID]: ["Insight"] }, "Blessings keeps its one pick and its free slot");
+  const rows = skills(migrated, sheetSkills(migrated, compendium));
+  assert.deepEqual(rows.filter((row) => row.isExpertise).map((row) => row.name).sort(), ["Insight", "Nature"]);
+});
+
 test("an old Expertise pick on a skill in a marked choice's pool moves into the free slot when no milestone holds it", () => {
   const migrated = reconcile(beaconWarden(3, { chosenExpertise: ["Nature"] }), beaconCompendium());
   assert.deepEqual(migrated.chosenExpertise, []);
