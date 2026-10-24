@@ -8,6 +8,7 @@ import { poolNames, sourceRecordGrants, STARTING_PROFICIENCIES, validPicks, type
 import { heldSubraceOf, raceSkillPickApplies, recordGrantSources, subracePickApplies } from "./recordProficiencyGrants.ts";
 import { CUSTOM_BACKGROUND_GRANTS, isCustomBackground } from "./customBackground.ts";
 import { normalizeSkillName } from "./skills.ts";
+import { getAvailableExpertiseMilestones, getMilestonePicks } from "./expertise.ts";
 
 /**
  * Moves the class tool picks saved before the starting tool choice was a Proficiency Choice into that
@@ -443,7 +444,8 @@ export function moveLegacySkillPicks(character: Character, compendium: Compendiu
 /**
  * Moves Expertise picks saved in chosenExpertise into a held skill choice that now carries Expertise. A name the
  * choice offers goes into its free slots, in the order it was picked; a name already among its picks is dropped,
- * since the grant gives its Expertise. A name no free slot takes stays in chosenExpertise, and the Expertise pass
+ * since the grant gives its Expertise. A name an Expertise milestone of the character holds stays in chosenExpertise,
+ * so the milestone keeps its own slot. A name no free slot takes stays in chosenExpertise, and the Expertise pass
  * releases it with its review notice. Before this, a Knowledge Domain Cleric's Blessings Expertise was a separate
  * milestone. Returns the character unchanged when nothing moves.
  */
@@ -461,11 +463,20 @@ export function moveExpertisePicksToGrants(character: Character, compendium: Com
   }
   if (offered.length === 0) return character;
 
+  const milestoneHeld = new Set(
+    getMilestonePicks(getAvailableExpertiseMilestones(character, { compendium }), expertise).flatMap((pick) =>
+      pick.chosen.map((name) => name.trim().toLowerCase()),
+    ),
+  );
   const picks: Record<string, string[]> = { ...(character.proficiencyPicks ?? {}) };
   const kept: string[] = [];
   let moved = false;
   for (const name of expertise) {
     const key = name.trim().toLowerCase();
+    if (milestoneHeld.has(key)) {
+      kept.push(name);
+      continue;
+    }
     const target = offered.find(({ id, grant }) => {
       if (!poolNames(grant).some((option) => option.toLowerCase() === key)) return false;
       const held = validPicks(grant, picks[id] ?? []);

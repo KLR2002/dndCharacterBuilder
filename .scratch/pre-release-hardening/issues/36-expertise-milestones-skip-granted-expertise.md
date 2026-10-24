@@ -4,7 +4,9 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** done
+
+**Landed:** merged from `pr/36-expertise-milestones-skip-granted` (572d18d, 1937537). `check:all` passes on the merged tip (1212 app tests, 8 skipped, 192 scraper tests); `check:live` 54 of 54 on the branch. `getAvailableExpertiseMilestones` leaves out skills whose sheet entry has `expertise: true`; `pruneInvalidExpertise` releases a saved pick on such a skill with the notice `<skill> Expertise removed: <skill> already has Expertise from a grant`; `moveExpertisePicksToGrants` keeps a name an Expertise milestone of the character holds. `skillsBaseline.json` re-recorded through its recorder: 10 rows, the Scout Rogue's expertise-eligible list at levels 3, 6, 11, 14 and 17 in two book sets loses Nature and Survival. Open items: a Rogue pick on a Blessings-pool skill that no milestone holds still moves into a free Blessings slot (the old-save case); `review:grants` does not list `REVIEWED_NOT_A_SKILL_GRANT`; a comment in `skillsCharacterization.test.ts` about re-reviewing the allowlist may be stale.
 
 ## Design notes
 
