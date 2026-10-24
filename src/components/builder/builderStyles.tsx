@@ -86,6 +86,8 @@ export interface RuleChoicePickerProps {
   autoGranted?: string[];
   onToggle: (item: string) => void;
   onClear?: () => void;
+  /** A short tag shown on each picked option, for example "Expertise". */
+  chipTag?: string;
   theme: any;
 }
 
@@ -97,6 +99,7 @@ export const RuleChoicePicker: React.FC<RuleChoicePickerProps> = ({
   autoGranted = [],
   onToggle,
   onClear,
+  chipTag,
   theme,
 }) => {
   const normFrom = from;
@@ -149,6 +152,9 @@ export const RuleChoicePicker: React.FC<RuleChoicePickerProps> = ({
               >
                 {item}
               </Text>
+              {isChosen && chipTag && (
+                <Text style={{ color: theme.accent, fontSize: 10, fontWeight: "700", marginLeft: 5 }}>{chipTag}</Text>
+              )}
             </TouchableOpacity>
           );
         })}

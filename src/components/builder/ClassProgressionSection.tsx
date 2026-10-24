@@ -35,7 +35,7 @@ import {
   AvailableRuleChoice,
 } from "../../rules/ruleChoices";
 import { getOrphanedSubclassSpells } from "../../rules/subclassSpells";
-import { proficiencyChoiceOffers } from "../../rules/proficiencyChoiceOffers";
+import { proficiencyChoiceOffers, skillPickOffers } from "../../rules/proficiencyChoiceOffers";
 import { clearProficiencyPick } from "../../rules/proficiencyPools";
 import type { StartingEquipmentAddress, StartingEquipmentCard } from "../../rules/startingEquipment";
 import {
@@ -114,6 +114,11 @@ export const ClassProgressionSection: React.FC<ClassProgressionSectionProps> = (
     orphaned: string[];
   } | null>(null);
   const hasAnyClass = (character.classes || []).length > 0;
+  // The skill picks the class tab offers, all in the Skills card: the first class's starting picker, and the skill
+  // Proficiency Choices (a subclass's or feature's pick, and a later class's multiclass pick).
+  const startingSkillChoices = skillChoices.filter((sc) => sc.source.startsWith("Class:"));
+  const skillOffers = skillPickOffers(character, { activeBooks });
+  const skillPickIds = new Set(skillOffers.map((offer) => offer.id));
   // Two listed classes can share a name (the same class from two sources). Only then is a source shown.
   const sharedClassNames = new Set(
     allClasses.map((cl) => cl.name).filter((name, index, names) => names.indexOf(name) !== index)
@@ -358,10 +363,13 @@ export const ClassProgressionSection: React.FC<ClassProgressionSectionProps> = (
         const allSubclassChoices = [
           ...offeredRuleChoices(character, { activeBooks, origins: ["class", "subclass"] }),
           ...proficiencyChoiceOffers(character, { activeBooks }).filter(
-            (choice) => choice.origin === "class" || choice.origin === "subclass" || choice.origin === "feat",
+            (choice) =>
+              (choice.origin === "class" || choice.origin === "subclass" || choice.origin === "feat") &&
+              !skillPickIds.has(choice.id),
           ),
         ];
-        if (allSubclassChoices.length === 0) return null;
+        const hasSkillCard = startingSkillChoices.length > 0 || skillOffers.length > 0;
+        if (allSubclassChoices.length === 0 && !hasSkillCard) return null;
 
         const isFightingStyle = (id: string) =>
           id.includes("Fighting Style") ||
@@ -405,6 +413,42 @@ export const ClassProgressionSection: React.FC<ClassProgressionSectionProps> = (
           });
         };
 
+        const renderChoice = (choice: AvailableRuleChoice, chipTag?: string) => {
+          const saved =
+            choice.pick === "proficiency"
+              ? (character.proficiencyPicks?.[choice.id] ?? [])
+              : (character.ruleChoices?.find((rc) => rc.id === choice.id)?.picked ?? []);
+          const chosen = pickedOptionNames(saved, choice.options.map((o) => o.name));
+          return (
+            <View key={choice.id} style={{ gap: 4 }}>
+              <RuleChoicePicker
+                label={choice.traitName}
+                choose={choice.choose}
+                from={choice.options.map((o) => o.name)}
+                chosen={chosen}
+                onToggle={(option) => onUpdate((cur) => pickRuleChoice(cur, choice, option))}
+                onClear={() => handleClearChoice(choice)}
+                chipTag={chipTag}
+                theme={theme}
+              />
+              {chosen.length > 0 && (
+                <View style={{ gap: 2, marginTop: 2 }}>
+                  {chosen.map((cName) => {
+                    const opt = choice.options.find((o) => o.name === cName);
+                    if (!opt?.description) return null;
+                    return (
+                      <Text key={cName} style={{ color: theme.textMuted, fontSize: 11 }}>
+                        <Text style={{ color: theme.accent, fontWeight: "600" }}>{opt.name}: </Text>
+                        {opt.description}
+                      </Text>
+                    );
+                  })}
+                </View>
+              )}
+            </View>
+          );
+        };
+
         const renderChoiceCard = (
           key: string,
           title: string,
@@ -424,48 +468,46 @@ export const ClassProgressionSection: React.FC<ClassProgressionSectionProps> = (
                 </View>
                 {badge && <Badge label={badge} variant="accent" size="sm" />}
               </View>
-              {choices.map((choice) => {
-                const saved =
-                  choice.pick === "proficiency"
-                    ? (character.proficiencyPicks?.[choice.id] ?? [])
-                    : (character.ruleChoices?.find((rc) => rc.id === choice.id)?.picked ?? []);
-                const chosen = pickedOptionNames(saved, choice.options.map((o) => o.name));
-                return (
-                  <View key={choice.id} style={{ gap: 4 }}>
-                    <RuleChoicePicker
-                      label={choice.traitName}
-                      choose={choice.choose}
-                      from={choice.options.map((o) => o.name)}
-                      chosen={chosen}
-                      onToggle={(option) =>
-                        onUpdate((cur) => pickRuleChoice(cur, choice, option))
-                      }
-                      onClear={() => handleClearChoice(choice)}
-                      theme={theme}
-                    />
-                    {chosen.length > 0 && (
-                      <View style={{ gap: 2, marginTop: 2 }}>
-                        {chosen.map((cName) => {
-                          const opt = choice.options.find((o) => o.name === cName);
-                          if (!opt?.description) return null;
-                          return (
-                            <Text key={cName} style={{ color: theme.textMuted, fontSize: 11 }}>
-                              <Text style={{ color: theme.accent, fontWeight: "600" }}>{opt.name}: </Text>
-                              {opt.description}
-                            </Text>
-                          );
-                        })}
-                      </View>
-                    )}
-                  </View>
-                );
-              })}
+              {choices.map((choice) => renderChoice(choice))}
             </Card>
           );
         };
 
+        // One card for every skill pick: the starting picker, then the Proficiency Choices that are skill picks.
+        // Each is named by its source, and a pick whose grant gives Expertise is tagged on the picked names.
+        const skillsCard =
+          !hasSkillCard ? null : (
+            <Card key="prog_skills" style={{ gap: 12 }}>
+              <Text style={[styles.heading, { color: theme.text }]}>Skills</Text>
+              {startingSkillChoices.map((sc) => {
+                const choiceEntry = character.skillChoices?.find((c) => c.id === sc.source);
+                const normFrom = sc.from.map(normalizeSkillName);
+                const normAuto = autoGranted.map(normalizeSkillName);
+                const chosen = choiceEntry
+                  ? choiceEntry.picked
+                  : (character.chosenSkills || []).filter(
+                      (s) => normFrom.includes(normalizeSkillName(s)) && !normAuto.includes(normalizeSkillName(s))
+                    );
+                return (
+                  <SkillPicker
+                    key={sc.source}
+                    label={`${primaryClass} starting skills`}
+                    choose={sc.choose}
+                    from={sc.from}
+                    chosen={chosen}
+                    autoGranted={autoGranted}
+                    onToggle={(skill) => toggleSkill(skill, sc.source)}
+                    theme={theme}
+                  />
+                );
+              })}
+              {skillOffers.map((offer) => renderChoice(offer, offer.expertise ? "Expertise" : undefined))}
+            </Card>
+          );
+
         return (
           <>
+            {skillsCard}
             {renderChoiceCard(
               "prog_fighting_styles",
               "Fighting Styles",
@@ -595,36 +637,6 @@ export const ClassProgressionSection: React.FC<ClassProgressionSectionProps> = (
         onUpdateOption={(opt) => onUpdate({ startingOption: opt })}
         theme={theme}
       />
-
-      {/* Class skill choices */}
-      {skillChoices.filter((sc) => sc.source.startsWith("Class:")).length > 0 && (
-        <Card style={{ gap: 10 }}>
-          {skillChoices
-            .filter((sc) => sc.source.startsWith("Class:"))
-            .map((sc) => {
-              const choiceEntry = character.skillChoices?.find((c) => c.id === sc.source);
-              const normFrom = sc.from.map(normalizeSkillName);
-              const normAuto = autoGranted.map(normalizeSkillName);
-              const chosen = choiceEntry
-                ? choiceEntry.picked
-                : (character.chosenSkills || []).filter(
-                    (s) => normFrom.includes(normalizeSkillName(s)) && !normAuto.includes(normalizeSkillName(s))
-                  );
-              return (
-                <SkillPicker
-                  key={sc.source}
-                  label={sc.source}
-                  choose={sc.choose}
-                  from={sc.from}
-                  chosen={chosen}
-                  autoGranted={autoGranted}
-                  onToggle={(skill) => toggleSkill(skill, sc.source)}
-                  theme={theme}
-                />
-              );
-            })}
-        </Card>
-      )}
 
       {/* Starting tools the first class grants. Its tool choice is a Proficiency Choice in the choices below. */}
       {hasAnyClass && classTools.length > 0 && (
