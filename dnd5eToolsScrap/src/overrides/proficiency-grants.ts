@@ -380,6 +380,26 @@ export interface ReviewedFeature {
 }
 
 /**
+ * Features whose text doubles the proficiency bonus, reviewed and found not to be the Expertise of a skills grant: the
+ * doubling is for a skill the character already holds, or for a tool, or for a check that no grant names. Names only.
+ * The expertise gate fails on a mark that names an unknown feature, a feature whose text doubles no bonus, or a feature
+ * with an Expertise grant. A mark may sit on a feature that has other grants.
+ */
+export const REVIEWED_NOT_A_SKILL_GRANT: ReviewedFeature[] = [
+  { owner: "Bard", feature: "Expertise", level: 3 },
+  { owner: "Bard", feature: "Expertise", level: 10 },
+  { owner: "Rogue", feature: "Expertise", level: 1 },
+  { owner: "Expert Sidekick", feature: "Expertise", level: 3 },
+  { owner: "Expert Sidekick", feature: "Expertise", level: 15 },
+  { owner: "Ranger", feature: "Deft Explorer", level: 1 },
+  { owner: "Ranger", feature: "Natural Explorer", level: 1 },
+  { owner: "Sorcerer/Draconic Bloodline", feature: "Dragon Ancestor", level: 1 },
+  { owner: "Artificer", feature: "Tool Expertise", level: 6 },
+  { owner: "Feat", feature: "Prodigy", level: 0 },
+  { owner: "Feat", feature: "Skill Expert", level: 0 },
+];
+
+/**
  * Features reviewed and found to grant no proficiency, though their prose
  * matches the proficiency vocabulary. Names only. The coverage gate fails on a
  * mark that names an unknown feature, or a feature that has grants.

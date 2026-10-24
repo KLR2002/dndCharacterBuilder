@@ -42,6 +42,12 @@ export interface GrantRequirement {
   level: number;
 }
 
+/**
+ * Set on a skills grant whose feature's own text doubles the proficiency bonus for checks that use the granted skills:
+ * those skills carry Expertise. Only skills grants carry it, and it is absent on every other grant.
+ */
+export type ExpertiseMark = true;
+
 export interface FixedProficiencyGrant {
   /** Built from the feature and what the grant names. Never changes once shipped. */
   id: string;
@@ -51,6 +57,7 @@ export interface FixedProficiencyGrant {
   category: ProficiencyCategory;
   names: string[];
   requires?: GrantRequirement;
+  expertise?: ExpertiseMark;
 }
 
 export interface ChoiceProficiencyGrant {
@@ -66,6 +73,7 @@ export interface ChoiceProficiencyGrant {
   count: number;
   pool: ProficiencyPool;
   requires?: GrantRequirement;
+  expertise?: ExpertiseMark;
 }
 
 export type ProficiencyGrant = FixedProficiencyGrant | ChoiceProficiencyGrant;
