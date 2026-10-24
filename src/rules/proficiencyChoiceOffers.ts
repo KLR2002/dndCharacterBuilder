@@ -5,7 +5,7 @@ import { catalogListings } from "./catalogs.ts";
 import type { AvailableRuleChoice, RuleChoiceOrigin } from "./choices/types.ts";
 import type { ProficiencyCategory } from "../types/dnd5e.ts";
 import type { FeatureInstance } from "./types.ts";
-import { featuresOf, proficiencySheet } from "./proficiencySheet.ts";
+import { featuresOf, MULTICLASS_FEATURE, proficiencySheet } from "./proficiencySheet.ts";
 import { weaponPickMarksMonkWeapon } from "./kenseiWeapons.ts";
 import {
   clearProficiencyPick,
@@ -113,7 +113,11 @@ export function proficiencyChoiceOffers(character: Character, query: Proficiency
     const choices = (feature.grants ?? []).filter(
       (grant): grant is ChoiceProficiencyGrant => grant.kind === "choice" && isPickableCategory(grant.category),
     );
-    const titles = pickerTitles(feature.name, choices);
+    // A later class's multiclass pick is titled after its class, so the picker names whose skill it is.
+    const titles =
+      feature.origin === "Class" && feature.name === MULTICLASS_FEATURE
+        ? choices.map((grant) => `${feature.className} multiclass: ${descriptorOf(grant)}`)
+        : pickerTitles(feature.name, choices);
     for (const [index, grant] of choices.entries()) {
       const isHeld = heldByOtherSources(character, grant, { compendium, activeBooks });
       const own = new Set(validPicks(grant, character.proficiencyPicks?.[grant.id] ?? [], items).map((name) => name.toLowerCase()));
