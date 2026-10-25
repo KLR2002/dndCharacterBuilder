@@ -4,10 +4,12 @@
 
 **Blocked by:** 02
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] The race and subrace scrapers extract an Initiative Bonus onto each trait whose prose adds a number to initiative, using the same extractor and override list as tickets 01 and 02. The Initiative Bonus is carried on the trait through the app's catalog trait type.
-- [ ] The tracked race data is updated by extending the sanctioned enrich tool to cover race and subrace traits (never by hand, and without a full scraper run).
-- [ ] Engine tests against the invented test catalog: a race trait adds its bonus; a trait suppressed by a variant ancestry or a lineage replacement adds nothing; a subrace trait adds its bonus.
-- [ ] `check:live` asserts that Hare-Trigger carries a `proficiency` bonus in the real catalog and that a Harengon character's initiative includes the proficiency bonus.
-- [ ] `npm run check:all` and `npm run check:live` pass.
+**Landed:** fast-forward of `worktree-agent-a79fe28984b2eedb6` (tip 1eb8db5). `check:all` passes (1261 app, 227 scraper); `check:live` 64/64. Race and subrace scrapers write `initiativeBonus` on the trait through one shared helper; owner is the race name, `Race/Subrace` for a subrace trait. The enrich tool covers `races.json` (only change: the two Harengon Hare-Trigger traits). No app change was needed: `grantedFeatures` and `applyRuleChoice` already spread the trait; engine tests were mutation-checked. Open items: the in-app sync (`runner.ts`) calls `scrapeRaces` with no report, so an unreadable race-trait initiative sentence is dropped silently there; the worktree lacks the scraper `.cache`, so two coverage tests skip outside the main checkout.
+
+- [x] The race and subrace scrapers extract an Initiative Bonus onto each trait whose prose adds a number to initiative, using the same extractor and override list as tickets 01 and 02. The Initiative Bonus is carried on the trait through the app's catalog trait type.
+- [x] The tracked race data is updated by extending the sanctioned enrich tool to cover race and subrace traits (never by hand, and without a full scraper run).
+- [x] Engine tests against the invented test catalog: a race trait adds its bonus; a trait suppressed by a variant ancestry or a lineage replacement adds nothing; a subrace trait adds its bonus.
+- [x] `check:live` asserts that Hare-Trigger carries a `proficiency` bonus in the real catalog and that a Harengon character's initiative includes the proficiency bonus.
+- [x] `npm run check:all` and `npm run check:live` pass.
