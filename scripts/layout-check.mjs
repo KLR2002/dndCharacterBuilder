@@ -509,10 +509,21 @@ const SCREENS = [
   ...(INTEGRATED
     ? [{ name: "Builder Class skills card cleric", route: KNOWLEDGE_ROUTE, tabs: ["Builder", "Class"], ready: /total level/i, scrollTo: "starting skills", expect: { texts: ["Cleric starting skills", "Blessings of Knowledge", "Rogue multiclass skill", "Expertise"], absent: ["Variant"], fitsWidth: true } }]
     : [{ name: "Builder Class skills card multiclass", route: MULTICLASS_SKILLS_ROUTE, tabs: ["Builder", "Class"], ready: /total level/i, scrollTo: "starting skills", expect: { texts: ["Fighter starting skills", "Rogue multiclass skill"], fitsWidth: true } }]),
-  // The picks cards collapse and expand: the Skills card here, the Race and Background picks cards below. Collapsed, a card shows its title row only.
+  // The Knowledge Cleric's Class & Subclass Choices and Expertise cards, open: the picker of each card is listed.
   ...(INTEGRATED
-    ? [{ name: "Builder Class skills card collapsed", route: KNOWLEDGE_ROUTE, tabs: ["Builder", "Class"], ready: /total level/i, open: (page) => page.getByText("Skills", { exact: true }).first().click(), scrollTo: "Class & Subclass Choices", expect: { texts: ["Skills"], absent: ["Blessings of Knowledge", "Cleric starting skills"], fitsWidth: true } }]
+    ? [{ name: "Builder Class skills card cleric choices", route: KNOWLEDGE_ROUTE, tabs: ["Builder", "Class"], ready: /total level/i, scrollTo: "Class & Subclass Choices", expect: { texts: ["Class & Subclass Choices", "Blessings of Knowledge: Language", "Expertise", "Rogue Expertise (Level 1)"], fitsWidth: true } }]
+    : []),
+  // The picks cards collapse and expand: the Skills, Class & Subclass Choices and Expertise cards here, the Race and Background
+  // picks cards below, and the Optional & Replacement Class Features card (Ranger, both modes). Collapsed, a card shows its
+  // title row and subtitle only, and a reopened card lists its picks again.
+  ...(INTEGRATED
+    ? [
+        { name: "Builder Class skills card collapsed", route: KNOWLEDGE_ROUTE, tabs: ["Builder", "Class"], ready: /total level/i, open: async (page) => { for (const title of ["Skills", "Class & Subclass Choices", "Expertise"]) await page.getByText(title, { exact: true }).first().click(); }, scrollTo: "Class & Subclass Choices", expect: { texts: ["Skills", "Class & Subclass Choices", "Expertise"], absent: ["Blessings of Knowledge", "Cleric starting skills", "Blessings of Knowledge: Language", "Rogue Expertise (Level 1)"], fitsWidth: true } },
+        { name: "Builder Class skills card reopened", route: KNOWLEDGE_ROUTE, tabs: ["Builder", "Class"], ready: /total level/i, open: async (page) => { const title = page.getByText("Class & Subclass Choices", { exact: true }).first(); await title.click(); await title.click(); }, scrollTo: "Class & Subclass Choices", expect: { texts: ["Class & Subclass Choices", "Blessings of Knowledge: Language"], fitsWidth: true } },
+      ]
     : [{ name: "Builder Class skills card collapsed", route: MULTICLASS_SKILLS_ROUTE, tabs: ["Builder", "Class"], ready: /total level/i, open: (page) => page.getByText("Skills", { exact: true }).first().click(), scrollTo: "Class & Subclass Choices", expect: { texts: ["Skills"], absent: ["Fighter starting skills"], fitsWidth: true } }]),
+  { name: "Builder Class optional features card", route: RANGER_ROUTE, tabs: ["Builder", "Class"], ready: /total level/i, scrollTo: "Optional & Replacement Class Features:", expect: { texts: ["Optional & Replacement Class Features:", "Deft Explorer", "Favored Foe"], fitsWidth: true } },
+  { name: "Builder Class optional features card collapsed", route: RANGER_ROUTE, tabs: ["Builder", "Class"], ready: /total level/i, open: (page) => page.getByText("Optional & Replacement Class Features:", { exact: true }).first().click(), scrollTo: "Optional & Replacement Class Features:", expect: { texts: ["Optional & Replacement Class Features:", "Tasha's Cauldron optional features and replacements for your classes."], absent: ["Deft Explorer", "Favored Foe"], fitsWidth: true } },
   // The Race card: the Variant Human's language and skill picks, named by what they pick, then collapsed to its title.
   ...(INTEGRATED
     ? [
