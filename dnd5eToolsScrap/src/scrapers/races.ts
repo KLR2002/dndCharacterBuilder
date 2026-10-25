@@ -11,10 +11,39 @@ import {
   type StructuredProficiencies,
 } from "../parser/proficiency-grants.ts";
 import { PROFICIENCY_GRANT_OVERRIDES } from "../overrides/proficiency-grants.ts";
+import { INITIATIVE_BONUS_OVERRIDES } from "../overrides/initiative-bonuses.ts";
+import { resolveInitiativeBonuses } from "../parser/initiative-bonuses.ts";
 
 /** Whether a 5e.tools structured proficiency field names at least one entry. */
 function hasEntries(field: unknown): boolean {
   return Array.isArray(field) && field.length > 0;
+}
+
+/**
+ * The traits of a race, or of a subrace, each with the Initiative Bonus its own prose gives (ADR 0016). The owner is the
+ * race's name, or `Race/Subrace` for a subrace, the key the tracked enrichment uses for these traits.
+ */
+function scrapeTraits(
+  entries: unknown,
+  subject: { source: string; owner: string },
+  report: ProficiencyReport
+): TraitModel[] {
+  if (!Array.isArray(entries)) return [];
+  const traits: TraitModel[] = [];
+  for (const ent of entries) {
+    if (ent && typeof ent === "object" && ent.name) {
+      traits.push({
+        name: cleanTags(ent.name, "plain"),
+        description: renderEntries(ent.entries || ent.entry, "markdown"),
+      });
+    }
+  }
+  const bonuses = resolveInitiativeBonuses(
+    traits.map((trait) => ({ ...subject, feature: trait.name, level: 0, description: trait.description })),
+    INITIATIVE_BONUS_OVERRIDES,
+    report
+  );
+  return traits.map((trait, i) => (bonuses[i] ? { ...trait, initiativeBonus: bonuses[i] } : trait));
 }
 
 /** 5e.tools prefixes variant subraces with this; it is a source convention, not a rules term. */
@@ -114,19 +143,8 @@ export async function scrapeRaces(
 
     const parentKey = `${parentName.toLowerCase()}__${(parentSource || "").toLowerCase()}`;
 
-    const traits: TraitModel[] = [];
-    if (Array.isArray(rawSub.entries)) {
-      for (const ent of rawSub.entries) {
-        if (ent && typeof ent === "object" && ent.name) {
-          traits.push({
-            name: cleanTags(ent.name, "plain"),
-            description: renderEntries(ent.entries || ent.entry, "markdown"),
-          });
-        }
-      }
-    }
-
     const normalized = normalizeSubraceName(rawSub.name);
+    const traits = scrapeTraits(rawSub.entries, { source: rawSub.source, owner: `${parentName}/${normalized.name}` }, report);
 
     // Structured tool, language, weapon and armor entries on the subrace, owned by "Subrace" and named with its race.
     const proficiencies = structuredGrants(
@@ -188,17 +206,7 @@ export async function scrapeRaces(
     }
 
     // Process traits
-    const traits: TraitModel[] = [];
-    if (Array.isArray(raw.entries)) {
-      for (const ent of raw.entries) {
-        if (ent && typeof ent === "object" && ent.name) {
-          traits.push({
-            name: cleanTags(ent.name, "plain"),
-            description: renderEntries(ent.entries || ent.entry, "markdown"),
-          });
-        }
-      }
-    }
+    const traits = scrapeTraits(raw.entries, { source: raw.source, owner: raw.name }, report);
     const traitsWithChoices = attachChoices(traits, extractRuleChoices(raw.entries, [renderEntries(raw.entries, "plain")]), {
       source: raw.source,
       race: raw.name,

@@ -2,6 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { scrapeClasses } from "../src/scrapers/classes.ts";
 import { scrapeFeats } from "../src/scrapers/feats.ts";
+import { scrapeRaces } from "../src/scrapers/races.ts";
 import { newProficiencyReport } from "../src/parser/proficiency-grants.ts";
 import type { ToolsClient } from "../src/types/models.ts";
 
@@ -80,5 +81,48 @@ test("a candidate initiative sentence the scraper cannot read is reported for re
   await scrapeClasses(client, report);
   assert.deepEqual(report.unparsed, [
     { owner: "Sample Artificer", feature: "Ally Banner", level: 2, unparsed: ["Each ally within 30 feet gains a +2 bonus to initiative rolls"] },
+  ]);
+});
+
+// A race and a subrace whose traits carry Initiative Bonuses (ADR 0016): the bonus sits on the trait, not the race.
+const HOPPER = {
+  name: "Sample Hopper",
+  source: "TST",
+  entries: [
+    { type: "entries", name: "Quick Hop", entries: ["Placeholder text.", "You can add your proficiency bonus to your initiative rolls."] },
+    { type: "entries", name: "Plain Trait", entries: ["Placeholder text."] },
+    { type: "entries", name: "Hop Banner", entries: ["Each ally within 30 feet gains a +2 bonus to initiative rolls."] },
+  ],
+};
+
+const HOPPER_SUBRACE = {
+  name: "Hillward",
+  source: "TST",
+  raceName: "Sample Hopper",
+  raceSource: "TST",
+  entries: [{ type: "entries", name: "Sample Gift", entries: ["You add your Wisdom modifier to your initiative rolls."] }],
+};
+
+test("a race trait and a subrace trait carry the Initiative Bonus their own prose gives, and no others do", async () => {
+  const report = newProficiencyReport();
+  const payloads: Record<string, unknown> = { "data/races.json": { race: [HOPPER], subrace: [HOPPER_SUBRACE] } };
+  const raceClient = {
+    fetchJson: async (endpoint: string) => {
+      if (!(endpoint in payloads)) throw new Error(`unexpected endpoint ${endpoint}`);
+      return payloads[endpoint];
+    },
+  } as unknown as ToolsClient;
+  const [hopper] = await scrapeRaces(raceClient, report);
+  const quick = hopper.traits.find((trait) => trait.name === "Quick Hop");
+  const plain = hopper.traits.find((trait) => trait.name === "Plain Trait");
+  const banner = hopper.traits.find((trait) => trait.name === "Hop Banner");
+  const gift = hopper.subraces[0].traits.find((trait) => trait.name === "Sample Gift");
+
+  assert.deepEqual(quick?.initiativeBonus, { kind: "proficiency" });
+  assert.deepEqual(gift?.initiativeBonus, { kind: "ability", ability: "wis" });
+  assert.equal(banner && "initiativeBonus" in banner, false, "a bonus given only to allies is reported, not given to the holder");
+  assert.equal(plain && "initiativeBonus" in plain, false, "a trait with no initiative sentence carries none");
+  assert.deepEqual(report.unparsed, [
+    { owner: "Sample Hopper", feature: "Hop Banner", level: 0, unparsed: ["Each ally within 30 feet gains a +2 bonus to initiative rolls"] },
   ]);
 });

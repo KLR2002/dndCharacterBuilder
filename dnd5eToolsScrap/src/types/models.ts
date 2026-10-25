@@ -18,6 +18,8 @@ export interface TraitModel {
   description: string;
   /** Present when this trait grants a pick from a fixed set of options. */
   choice?: RuleChoiceModel;
+  /** The Initiative Bonus the trait's prose gives, or from its override (ADR 0016). */
+  initiativeBonus?: InitiativeBonus;
 }
 
 export interface RaceModel {

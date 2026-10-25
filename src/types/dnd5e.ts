@@ -36,6 +36,8 @@ export interface TraitData {
   description: string;
   /** Present when this trait grants a pick from a fixed set of options. */
   choice?: TraitChoiceData;
+  /** The Initiative Bonus the trait gives (ADR 0016). Absent when it gives none. */
+  initiativeBonus?: InitiativeBonus;
 }
 
 export interface RaceData {
