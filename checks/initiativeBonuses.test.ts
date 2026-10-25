@@ -4,7 +4,8 @@ import { evaluateCharacter } from "../src/rules/characterEvaluation.ts";
 import type { AbilityScores, Character, CharacterClass } from "../src/types/character.ts";
 import { inMemoryCompendium, makeChar } from "./testUtils.ts";
 import { ruleChoiceId } from "../src/rules/ruleChoices.ts";
-import { initiativeClasses, initiativeFeats, initiativeRaces } from "./initiativeFixture.ts";
+import { KNOWN_FEATURE_REPLACEMENTS } from "../src/rules/optionalFeatures.ts";
+import { initiativeClasses, initiativeFeats, initiativeRaces, optionalClasses, replacementClasses } from "./initiativeFixture.ts";
 
 // Initiative is the Dexterity modifier plus each Initiative Bonus the character's features carry (ADR 0016). The
 // classes, feats and races are invented (checks/initiativeFixture.ts); the engine reads their bonuses the same way for every rule.
@@ -280,5 +281,63 @@ test("a lineage replacement drops the original race's trait bonus, and the linea
   assert.deepEqual(evaluated.initiativeBreakdown, [
     { label: "Dexterity", value: 2 },
     { label: "Sample Trance", value: 1 },
+  ]);
+});
+
+// Optional features and replacements
+
+const tinkerCatalogs = { compendium: inMemoryCompendium({ classes: optionalClasses() }) };
+const tinker = (optionalFeatureReplacements: Record<string, boolean>) =>
+  makeChar({
+    classes: [{ className: "Sample Tinker", source: "PHB", level: 2 }],
+    baseAbilityScores: scores({ dex: 14 }),
+    optionalFeatureReplacements,
+  });
+
+test("an optional feature's Initiative Bonus counts only while the character has the feature switched on", () => {
+  const on = evaluateCharacter(tinker({ "Sample Gadget": true }), tinkerCatalogs);
+  assert.equal(on.initiative, 4);
+  assert.deepEqual(on.initiativeBreakdown, [
+    { label: "Dexterity", value: 2 },
+    { label: "Sample Gadget", value: 2 },
+  ]);
+});
+
+test("an optional feature's Initiative Bonus drops out when the feature is switched off or never switched on", () => {
+  const offSets: Record<string, boolean>[] = [{ "Sample Gadget": false }, {}];
+  for (const replacements of offSets) {
+    const evaluated = evaluateCharacter(tinker(replacements), tinkerCatalogs);
+    assert.equal(evaluated.initiative, 2, JSON.stringify(replacements));
+    assert.deepEqual(evaluated.initiativeBreakdown, [{ label: "Dexterity", value: 2 }], JSON.stringify(replacements));
+  }
+});
+
+// The replacement pair is read from the engine's table, so the test names no real feature. Its first entry gives a
+// replacing feature and the base feature it replaces.
+const [[replacer, replacedNames]] = Object.entries(KNOWN_FEATURE_REPLACEMENTS);
+const replaced = replacedNames[0];
+const charmerCatalogs = { compendium: inMemoryCompendium({ classes: replacementClasses(replaced, replacer) }) };
+const charmer = (optionalFeatureReplacements: Record<string, boolean>) =>
+  makeChar({
+    classes: [{ className: "Sample Charmer", source: "PHB", level: 2 }],
+    baseAbilityScores: scores({ dex: 14 }),
+    optionalFeatureReplacements,
+  });
+
+test("a base feature that an enabled optional feature replaces adds nothing to initiative", () => {
+  const replacedOn = evaluateCharacter(charmer({ [replacer]: true }), charmerCatalogs);
+  assert.equal(replacedOn.initiative, 3, "Dexterity 2 and the replacing feature's +1; the replaced feature's +3 is gone");
+  assert.deepEqual(replacedOn.initiativeBreakdown, [
+    { label: "Dexterity", value: 2 },
+    { label: replacer, value: 1 },
+  ]);
+});
+
+test("the base feature's Initiative Bonus counts again once its replacement is switched off", () => {
+  const replacedOff = evaluateCharacter(charmer({ [replacer]: false }), charmerCatalogs);
+  assert.equal(replacedOff.initiative, 5);
+  assert.deepEqual(replacedOff.initiativeBreakdown, [
+    { label: "Dexterity", value: 2 },
+    { label: replaced, value: 3 },
   ]);
 });

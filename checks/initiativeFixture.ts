@@ -129,3 +129,21 @@ export const initiativeRaces = (): RaceData[] => [
   ),
   race("Sample Lineage", [trait("Sample Trance", { kind: "flat", value: 1 })], []),
 ];
+
+/** An invented class whose optional feature gives a flat +2 only while the character has it switched on. */
+export const optionalClasses = (): ClassData[] => [
+  classRecord("Sample Tinker", "1d8", [{ ...feature("Sample Gadget", 2, { kind: "flat", value: 2 }), isOptional: true }], []),
+];
+
+/**
+ * An invented class with a base feature (a flat +3) and an optional feature (+1) that replaces it. The two names are
+ * passed in, so the test can take them from the engine's replacement table and no feature name is written here.
+ */
+export const replacementClasses = (replaced: string, replacer: string): ClassData[] => [
+  classRecord(
+    "Sample Charmer",
+    "1d8",
+    [feature(replaced, 2, { kind: "flat", value: 3 }), { ...feature(replacer, 2, { kind: "flat", value: 1 }), isOptional: true }],
+    [],
+  ),
+];
