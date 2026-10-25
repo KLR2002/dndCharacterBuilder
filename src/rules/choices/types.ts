@@ -1,5 +1,5 @@
 import type { Character } from "../../types/character.ts";
-import type { SpellData } from "../../types/dnd5e.ts";
+import type { ProficiencyCategory, SpellData } from "../../types/dnd5e.ts";
 
 export interface RuleChoiceIdParts {
   source: string;
@@ -49,6 +49,8 @@ export interface AvailableRuleChoice {
   replaces?: string;
   /** The book the choice is printed in. Set by table rows, which gate on it; others gate on the id prefix. */
   source?: string;
+  /** The categories a Proficiency Choice's pick lands in. Set by Proficiency Choices only. */
+  categories?: ProficiencyCategory[];
   origin: RuleChoiceOrigin;
   pick?: SpecialisedPick;
   options: { name: string; description: string }[];

@@ -17,6 +17,7 @@ import { currentCompendium } from "../../services/compendium";
 import { Badge } from "../ui/Badge";
 import { Button } from "../ui/Button";
 import { Card } from "../ui/Card";
+import { CollapsibleCard } from "../ui/CollapsibleCard";
 import { Modal } from "../ui/Modal";
 import { SearchBar } from "../ui/SearchBar";
 import { AsiFeatSection, PendingAsiSlot } from "./AsiFeatSection";
@@ -477,8 +478,7 @@ export const ClassProgressionSection: React.FC<ClassProgressionSectionProps> = (
         // Each is named by its source, and a pick whose grant gives Expertise is tagged on the picked names.
         const skillsCard =
           !hasSkillCard ? null : (
-            <Card key="prog_skills" style={{ gap: 12 }}>
-              <Text style={[styles.heading, { color: theme.text }]}>Skills</Text>
+            <CollapsibleCard key="prog_skills" title="Skills" style={{ gap: 12 }}>
               {startingSkillChoices.map((sc) => {
                 const choiceEntry = character.skillChoices?.find((c) => c.id === sc.source);
                 const normFrom = sc.from.map(normalizeSkillName);
@@ -502,7 +502,7 @@ export const ClassProgressionSection: React.FC<ClassProgressionSectionProps> = (
                 );
               })}
               {skillOffers.map((offer) => renderChoice(offer, offer.expertise ? "Expertise" : undefined))}
-            </Card>
+            </CollapsibleCard>
           );
 
         return (
