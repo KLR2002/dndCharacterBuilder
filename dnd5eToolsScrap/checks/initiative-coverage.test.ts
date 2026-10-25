@@ -114,10 +114,8 @@ test("a race trait and a feat that add to initiative are gaps, and are covered b
   assert.deepEqual(covered, []);
 });
 
-// The tracked-data gate is on: every feature whose prose adds a number to initiative has a bonus or a reviewed mark.
-const GATE_ENFORCED = true;
-
-test("the tracked data has no uncovered initiative features, once the gate is enforced", { skip: GATE_ENFORCED ? false : "gate off until the review is done; set GATE_ENFORCED to true" }, () => {
+// Every feature in the tracked data whose prose adds a number to initiative has a bonus or a reviewed mark.
+test("the tracked data has no uncovered initiative features", () => {
   const tracked: TrackedData = {
     classes: JSON.parse(fs.readFileSync(new URL("../data/classes.json", import.meta.url), "utf8")),
     feats: JSON.parse(fs.readFileSync(new URL("../data/feats.json", import.meta.url), "utf8")),
