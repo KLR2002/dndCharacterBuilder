@@ -1,4 +1,4 @@
-import type { ClassData, ClassFeatureData, SubclassData } from "../src/types/dnd5e.ts";
+import type { ClassData, ClassFeatureData, FeatData, SubclassData } from "../src/types/dnd5e.ts";
 
 /**
  * Invented classes for the Initiative Bonus engine tests. Names and text are made up on purpose: no real 5e prose
@@ -52,4 +52,17 @@ export const initiativeClasses = (): ClassData[] => [
     ],
   ),
   classRecord("Sample Mage", "1d6", [feature("Sample Insight", 2, { kind: "ability", ability: "int" })], []),
+  classRecord("Sample Warden", "1d10", [feature("Sample Vigil", 3, { kind: "proficiency" })], []),
+];
+
+/** An invented feat whose flat Initiative Bonus is +5. Taken through an ability score improvement or as an origin feat. */
+export const initiativeFeats = (): FeatData[] => [
+  {
+    name: "Sample Watchword",
+    source: "PHB",
+    prerequisite: null,
+    abilityScoreIncrease: null,
+    description: "Placeholder description for the feat.",
+    initiativeBonus: { kind: "flat", value: 5 },
+  },
 ];

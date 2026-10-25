@@ -1,6 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { scrapeClasses } from "../src/scrapers/classes.ts";
+import { scrapeFeats } from "../src/scrapers/feats.ts";
 import { newProficiencyReport } from "../src/parser/proficiency-grants.ts";
 import type { ToolsClient } from "../src/types/models.ts";
 
@@ -51,8 +52,27 @@ test("a class feature and a subclass feature carry the Initiative Bonus their pr
 
   assert.deepEqual(quick?.initiativeBonus, { kind: "ability", ability: "wis" });
   assert.deepEqual(gambit?.initiativeBonus, { kind: "ability", ability: "cha" });
-  assert.equal(banner && "initiativeBonus" in banner, false, "a flat bonus is not extracted yet");
+  assert.equal(banner && "initiativeBonus" in banner, false, "a bonus given only to allies is reported, not given to the holder");
   assert.equal(plain && "initiativeBonus" in plain, false, "a feature with no initiative sentence carries none");
+});
+
+test("a feat's flat Initiative Bonus is read from its prose, and a feat with no initiative sentence carries none", async () => {
+  const featClient = {
+    fetchJson: async (endpoint: string) => {
+      if (endpoint === "data/feats.json") {
+        return {
+          feat: [
+            { name: "Sample Sentry", source: "AAA", entries: ["Placeholder text.", "You gain a +3 bonus to initiative."] },
+            { name: "Sample Plain", source: "AAA", entries: ["Placeholder text."] },
+          ],
+        };
+      }
+      throw new Error(`unexpected endpoint ${endpoint}`);
+    },
+  } as unknown as ToolsClient;
+  const [sentry, plain] = await scrapeFeats(featClient, newProficiencyReport());
+  assert.deepEqual(sentry.initiativeBonus, { kind: "flat", value: 3 });
+  assert.equal("initiativeBonus" in plain, false);
 });
 
 test("a candidate initiative sentence the scraper cannot read is reported for review, not dropped", async () => {

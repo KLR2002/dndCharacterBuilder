@@ -179,6 +179,8 @@ export interface FeatData {
   rawEntries?: any[];
   /** Proficiency Grants extracted from the feat's prose, or from its override. */
   grants?: ProficiencyGrant[];
+  /** The Initiative Bonus the feat gives (ADR 0016). Absent when it gives none. */
+  initiativeBonus?: InitiativeBonus;
 }
 
 export interface BackgroundData {

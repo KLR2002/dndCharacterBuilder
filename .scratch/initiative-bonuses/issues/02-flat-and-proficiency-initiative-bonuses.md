@@ -4,10 +4,12 @@
 
 **Blocked by:** 01
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] The extractor turns "a +N bonus to initiative" into a `flat` bonus and "a bonus to initiative equal to your proficiency bonus" / "add your proficiency bonus to your initiative rolls" into a `proficiency` bonus. Sentence-level tests (invented sentences) cover both, and cover sentences that must not match (a bonus to damage or to AC that mentions neither initiative).
-- [ ] Feats carry an Initiative Bonus end to end: scraper, enriched tracked data, app catalog types, `grantedFeatures` (a feat taken through an ability score improvement or as an origin feat), evaluated initiative.
-- [ ] Engine tests against the invented test catalog: a feat with a flat bonus adds it; a proficiency bonus grows with character level; ability, flat and proficiency bonuses from a feat and two classes all stack; breakdown order and labels.
-- [ ] `check:live` asserts that Alert carries `flat` 5 and Aura of the Sentinel carries `proficiency` in the real catalog.
-- [ ] `npm run check:all` and `npm run check:live` pass.
+**Landed:** fast-forward of `worktree-agent-a15287f36c4aa222c` (tip b5cfe60). `check:all` passes (1257 app, 222 scraper); `check:live` 62/62. Feats carry the bonus; Alert's 2014 print is `flat` 5 and its 2024 print is `proficiency` ("When you roll Initiative, you can add your Proficiency Bonus to the roll"); Aura of the Sentinel is `proficiency`. A bonus gained by another creature is reported, not given to the holder. Catalog format stays 8 (no release has shipped it). Open items: Avatar of Battle, Tandem Footwork and roll-trigger sentences (Hound of Ill Omen) still unparsed, for ticket 04's marks; Hare-Trigger now extractable, wired in ticket 03.
+
+- [x] The extractor turns "a +N bonus to initiative" into a `flat` bonus and "a bonus to initiative equal to your proficiency bonus" / "add your proficiency bonus to your initiative rolls" into a `proficiency` bonus. Sentence-level tests (invented sentences) cover both, and cover sentences that must not match (a bonus to damage or to AC that mentions neither initiative).
+- [x] Feats carry an Initiative Bonus end to end: scraper, enriched tracked data, app catalog types, `grantedFeatures` (a feat taken through an ability score improvement or as an origin feat), evaluated initiative.
+- [x] Engine tests against the invented test catalog: a feat with a flat bonus adds it; a proficiency bonus grows with character level; ability, flat and proficiency bonuses from a feat and two classes all stack; breakdown order and labels.
+- [x] `check:live` asserts (each print's own bonus) that Alert carries `flat` 5 or `proficiency`, and Aura of the Sentinel carries `proficiency` in the real catalog.
+- [x] `npm run check:all` and `npm run check:live` pass.

@@ -35,9 +35,9 @@ export interface TrackedFiles {
 
 /**
  * Adds, replaces or removes the `grants` field on every tracked class feature,
- * subclass feature and feat, and the `initiativeBonus` field on every class and
- * subclass feature, using the same extractors and overrides as the scraper.
- * Nothing else on the data is touched.
+ * subclass feature and feat, and the `initiativeBonus` field on every class
+ * feature, subclass feature and feat, using the same extractors and overrides as
+ * the scraper. Nothing else on the data is touched.
  */
 export function enrichTrackedData(data: TrackedData, overrides: GrantOverrides): void {
   const classes = classFeatureRefs(data.classes);
@@ -47,10 +47,11 @@ export function enrichTrackedData(data: TrackedData, overrides: GrantOverrides):
   // The tracked files hold every class and feat, so an override that names none of them is stale.
   requireEveryOverridePlaced(classes, overrides.classes);
   requireEveryOverridePlaced(feats, overrides.feats);
-  requireEveryInitiativeOverridePlaced(features, initiativeBonuses);
+  const initiativeRefs = [...features, ...feats];
+  requireEveryInitiativeOverridePlaced(initiativeRefs, initiativeBonuses);
   applyGrants(classes, overrides.classes);
   applyGrants(feats, overrides.feats);
-  applyInitiativeBonuses(features, initiativeBonuses);
+  applyInitiativeBonuses(initiativeRefs, initiativeBonuses);
   applyStartingToolGrants(data.classes);
 }
 
@@ -59,7 +60,7 @@ function requireEveryInitiativeOverridePlaced(refs: GrantRef[], overrides: Initi
   if (stale) throw new Error(`initiative bonus override matches no feature: ${stale.owner}|${stale.feature}|${stale.level}`);
 }
 
-/** Writes each feature's Initiative Bonus, or removes a stale one. */
+/** Writes each class, subclass or feat's Initiative Bonus, or removes a stale one. */
 function applyInitiativeBonuses(refs: GrantRef[], overrides: InitiativeBonusOverride[]): void {
   const bonuses = resolveInitiativeBonuses(refs.map((ref) => ref.subject), overrides, newProficiencyReport());
   bonuses.forEach((bonus, i) => {

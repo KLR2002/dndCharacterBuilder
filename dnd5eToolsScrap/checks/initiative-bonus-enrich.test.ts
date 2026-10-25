@@ -108,4 +108,24 @@ test("the tracked class features carry the Initiative Bonuses their prose gives,
   assert.deepEqual(byName.get("Wizard/War Magic/Tactical Wit"), { kind: "ability", ability: "int" });
   assert.deepEqual(byName.get("Wizard/Chronurgy Magic/Temporal Awareness"), { kind: "ability", ability: "int" });
   assert.deepEqual(byName.get("Ranger/Gloom Stalker/Dread Ambusher"), { kind: "ability", ability: "wis" });
+  assert.deepEqual(byName.get("Paladin/Oath of the Watchers/Aura of the Sentinel"), { kind: "proficiency" });
+
+  const feats = JSON.parse(tracked.feats) as Array<{ name: string; initiativeBonus?: unknown }>;
+  assert.deepEqual(feats.find((feat) => feat.name === "Alert")?.initiativeBonus, { kind: "flat", value: 5 });
+});
+
+test("a feat's Initiative Bonus is written on the feat, and stripping enrichment removes it", () => {
+  const feats = canonical([
+    { name: "Sample Sentry", source: "TST", description: "Always on the lookout. You gain a +3 bonus to initiative.", prerequisite: null },
+  ]);
+  const enriched = enrichGrantFiles({ classes: original.classes, feats }, noOverrides);
+  assert.deepEqual(JSON.parse(enriched.feats)[0].initiativeBonus, { kind: "flat", value: 3 });
+  assert.deepEqual(stripGrantFiles(enriched), { classes: original.classes, feats });
+});
+
+test("an override supplies the Initiative Bonus for a feat the extractor cannot read", () => {
+  const feats = canonical([{ name: "Sample Chant", source: "TST", description: "Your voice carries. Nothing else changes.", prerequisite: null }]);
+  const override: InitiativeBonusOverride = { owner: "Feat", feature: "Sample Chant", level: 0, bonus: { kind: "proficiency" } };
+  const enriched = enrichGrantFiles({ classes: original.classes, feats }, { classes: [], feats: [], initiativeBonuses: [override] });
+  assert.deepEqual(JSON.parse(enriched.feats)[0].initiativeBonus, { kind: "proficiency" });
 });
