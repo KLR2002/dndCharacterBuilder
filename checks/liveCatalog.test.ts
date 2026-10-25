@@ -12,6 +12,7 @@ import { STARTING_EQUIPMENT_TYPES } from "../src/rules/startingEquipmentTypes.ts
 import { reconcile } from "../src/rules/characterReconciler.ts";
 import type { AvailableRuleChoice } from "../src/rules/choices/types.ts";
 import { makeChar } from "./testUtils.ts";
+import { evaluateCharacter } from "../src/rules/characterEvaluation.ts";
 
 // Checks against the Integrated Catalog the in-app sync builds, read from the cache that
 // `npm run catalog:live` writes. Without the cache every test here is skipped. The live check runs only
@@ -265,3 +266,38 @@ for (const fighter of samuraiFighters) {
     });
   }
 }
+
+// Initiative Bonuses (ADR 0016): the rules that add an ability modifier to initiative carry it in the catalog the in-app sync builds.
+const LIVE_INITIATIVE_BONUSES: Array<[string, { kind: "ability"; ability: "cha" | "int" | "wis" }]> = [
+  ["Rakish Audacity", { kind: "ability", ability: "cha" }],
+  ["Tactical Wit", { kind: "ability", ability: "int" }],
+  ["Temporal Awareness", { kind: "ability", ability: "int" }],
+  ["Dread Ambusher", { kind: "ability", ability: "wis" }],
+];
+
+for (const [name, expected] of LIVE_INITIATIVE_BONUSES) {
+  test(`live catalog: ${name} carries the ${expected.ability} Initiative Bonus`, { skip: SKIP }, () => {
+    const features = SKIP ? [] : live!.collections.classes.flatMap((cls) => [
+      ...cls.features,
+      ...cls.subclasses.flatMap((sc) => sc.features),
+    ]).filter((feature) => feature.name === name);
+    assert.ok(features.length > 0, `no ${name} feature in the catalog`);
+    assert.deepEqual(features.map((feature) => feature.initiativeBonus), features.map(() => expected));
+  });
+}
+
+test("live catalog: a Swashbuckler 3 with DEX 14 and CHA 16 has initiative +5, from Rakish Audacity", { skip: SKIP }, () => {
+  const rogue = SKIP ? undefined : live!.compendium.for().classes().find((cls) => cls.name === "Rogue" && cls.subclasses.some((sc) => sc.name === "Swashbuckler"));
+  assert.ok(rogue, "no Rogue with a Swashbuckler subclass");
+  const swashbuckler = rogue.subclasses.find((sc) => sc.name === "Swashbuckler")!;
+  const character = makeChar({
+    classes: [{ className: rogue.name, source: rogue.source, level: 3, subclassName: swashbuckler.name, subclassSource: swashbuckler.source }],
+    baseAbilityScores: { str: 10, dex: 14, con: 10, int: 10, wis: 10, cha: 16 },
+  });
+  const evaluated = evaluateCharacter(character, { compendium: live!.compendium });
+  assert.equal(evaluated.initiative, 5);
+  assert.deepEqual(evaluated.initiativeBreakdown, [
+    { label: "Dexterity", value: 2 },
+    { label: "Rakish Audacity", value: 3 },
+  ]);
+});
