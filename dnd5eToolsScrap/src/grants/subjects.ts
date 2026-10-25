@@ -43,9 +43,53 @@ export interface TrackedFeat extends GrantHolder {
   description: string;
 }
 
+/** A tracked race or subrace trait. Only its Initiative Bonus is written by the enrichment tooling (ADR 0016). */
+export interface TrackedTrait {
+  name: string;
+  description: string;
+  initiativeBonus?: InitiativeBonus;
+}
+
+export interface TrackedSubrace {
+  name: string;
+  source: string;
+  traits: TrackedTrait[];
+}
+
+export interface TrackedRace {
+  name: string;
+  source: string;
+  traits: TrackedTrait[];
+  subraces: TrackedSubrace[];
+}
+
 export interface TrackedData {
   classes: TrackedClass[];
   feats: TrackedFeat[];
+  /** The tracked races. Absent when the caller enriches only classes and feats. */
+  races?: TrackedRace[];
+}
+
+/**
+ * Race traits, then the traits of each race's subraces. A race trait's owner is the race; a subrace trait's owner is
+ * `Race/Subrace`, the keys the race scraper uses (src/scrapers/races.ts). Every trait's level is 0.
+ */
+export function traitRefs(races: TrackedRace[]): GrantRef[] {
+  const refs: GrantRef[] = [];
+  for (const race of races) {
+    for (const trait of race.traits) refs.push(traitRef({ source: race.source, owner: race.name }, trait));
+    for (const sub of race.subraces) {
+      for (const trait of sub.traits) refs.push(traitRef({ source: sub.source, owner: `${race.name}/${sub.name}` }, trait));
+    }
+  }
+  return refs;
+}
+
+function traitRef(owner: { source: string; owner: string }, trait: TrackedTrait): GrantRef {
+  return {
+    subject: { source: owner.source, owner: owner.owner, feature: trait.name, level: 0, description: trait.description },
+    holder: trait,
+  };
 }
 
 /**

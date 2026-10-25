@@ -11,10 +11,12 @@ import {
   classFeatureOnlyRefs,
   classFeatureRefs,
   featRefs,
+  traitRefs,
   type GrantRef,
   type TrackedClass,
   type TrackedData,
   type TrackedFeat,
+  type TrackedRace,
 } from "./subjects.ts";
 
 /**
@@ -27,27 +29,29 @@ export interface GrantOverrides {
   initiativeBonuses?: InitiativeBonusOverride[];
 }
 
-/** The text of the two tracked files this tooling enriches. */
+/** The text of the tracked files this tooling enriches. `races` is optional: a caller that enriches only classes and feats leaves it out. */
 export interface TrackedFiles {
   classes: string;
   feats: string;
+  races?: string;
 }
 
 /**
  * Adds, replaces or removes the `grants` field on every tracked class feature,
  * subclass feature and feat, and the `initiativeBonus` field on every class
- * feature, subclass feature and feat, using the same extractors and overrides as
- * the scraper. Nothing else on the data is touched.
+ * feature, subclass feature, feat and race or subrace trait, using the same
+ * extractors and overrides as the scraper. Nothing else on the data is touched.
  */
 export function enrichTrackedData(data: TrackedData, overrides: GrantOverrides): void {
   const classes = classFeatureRefs(data.classes);
   const feats = featRefs(data.feats);
   const features = classFeatureOnlyRefs(data.classes);
+  const traits = data.races ? traitRefs(data.races) : [];
   const initiativeBonuses = overrides.initiativeBonuses ?? [];
   // The tracked files hold every class and feat, so an override that names none of them is stale.
   requireEveryOverridePlaced(classes, overrides.classes);
   requireEveryOverridePlaced(feats, overrides.feats);
-  const initiativeRefs = [...features, ...feats];
+  const initiativeRefs = [...features, ...feats, ...traits];
   requireEveryInitiativeOverridePlaced(initiativeRefs, initiativeBonuses);
   applyGrants(classes, overrides.classes);
   applyGrants(feats, overrides.feats);
@@ -91,7 +95,7 @@ function requireEveryOverridePlaced(refs: GrantRef[], overrides: GrantOverride[]
 }
 
 /**
- * Enriches the text of both tracked files. Each file must already be in the
+ * Enriches the text of the tracked files. Each file must already be in the
  * tracked format, so that writing it back reproduces every byte that the
  * enrichment did not change.
  */
@@ -101,7 +105,10 @@ export function enrichGrantFiles(files: TrackedFiles, overrides: GrantOverrides)
   return writeTracked(data);
 }
 
-/** Removes every `grants` and `initiativeBonus` field from features and feats. The inverse of enrichment on the same data. */
+/**
+ * Removes every `grants` and `initiativeBonus` field from features and feats, and every `initiativeBonus` from race and
+ * subrace traits (their grants come from the scraper, not from this tooling). The inverse of enrichment on the same data.
+ */
 export function stripGrantFiles(files: TrackedFiles): TrackedFiles {
   const data = readTracked(files);
   for (const ref of allRefs(data)) {
@@ -109,6 +116,7 @@ export function stripGrantFiles(files: TrackedFiles): TrackedFiles {
     delete ref.holder.initiativeBonus;
   }
   for (const cls of data.classes) delete cls.grants;
+  for (const ref of traitRefs(data.races ?? [])) delete ref.holder.initiativeBonus;
   return writeTracked(data);
 }
 
@@ -130,11 +138,16 @@ function readTracked(files: TrackedFiles): TrackedData {
   return {
     classes: parseCanonical(files.classes, "classes.json") as TrackedClass[],
     feats: parseCanonical(files.feats, "feats.json") as TrackedFeat[],
+    ...(files.races !== undefined ? { races: parseCanonical(files.races, "races.json") as TrackedRace[] } : {}),
   };
 }
 
 function writeTracked(data: TrackedData): TrackedFiles {
-  return { classes: canonical(data.classes), feats: canonical(data.feats) };
+  return {
+    classes: canonical(data.classes),
+    feats: canonical(data.feats),
+    ...(data.races !== undefined ? { races: canonical(data.races) } : {}),
+  };
 }
 
 function parseCanonical(text: string, name: string): unknown {

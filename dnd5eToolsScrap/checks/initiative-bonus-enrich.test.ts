@@ -129,3 +129,68 @@ test("an override supplies the Initiative Bonus for a feat the extractor cannot 
   const enriched = enrichGrantFiles({ classes: original.classes, feats }, { classes: [], feats: [], initiativeBonuses: [override] });
   assert.deepEqual(JSON.parse(enriched.feats)[0].initiativeBonus, { kind: "proficiency" });
 });
+
+// A race's traits, and a subrace's traits, in the tracked races file's shape. Names and sentences are invented.
+const hopperRaces = [
+  {
+    name: "Sample Hopper",
+    source: "TST",
+    traits: [
+      { name: "Quick Hop", description: "You can add your proficiency bonus to your initiative rolls." },
+      { name: "Plain Trait", description: "Placeholder text." },
+    ],
+    subraces: [
+      {
+        name: "Hillward",
+        source: "TST",
+        raceName: "Sample Hopper",
+        raceSource: "TST",
+        traits: [{ name: "Sample Gift", description: "You add your Wisdom modifier to your initiative rolls." }],
+      },
+    ],
+  },
+];
+const withRaces = { ...original, races: canonical(hopperRaces) };
+
+test("a race trait and a subrace trait carry the Initiative Bonus their prose gives, and stripping enrichment removes it", () => {
+  const enriched = enrichGrantFiles(withRaces, noOverrides);
+  const [hopper] = JSON.parse(enriched.races ?? "[]");
+  assert.deepEqual(hopper.traits[0].initiativeBonus, { kind: "proficiency" });
+  assert.equal("initiativeBonus" in hopper.traits[1], false, "a trait with no initiative sentence gets no bonus");
+  assert.deepEqual(hopper.subraces[0].traits[0].initiativeBonus, { kind: "ability", ability: "wis" });
+  assert.deepEqual(stripGrantFiles(enriched), withRaces);
+});
+
+test("an override names a subrace trait by its race and subrace, and supplies its Initiative Bonus", () => {
+  const override: InitiativeBonusOverride = {
+    owner: "Sample Hopper/Hillward",
+    feature: "Sample Gift",
+    level: 0,
+    bonus: { kind: "flat", value: 2 },
+  };
+  const enriched = enrichGrantFiles(withRaces, { classes: [], feats: [], initiativeBonuses: [override] });
+  const [hopper] = JSON.parse(enriched.races ?? "[]");
+  assert.deepEqual(hopper.subraces[0].traits[0].initiativeBonus, { kind: "flat", value: 2 });
+});
+
+test("an Initiative Bonus override that names a race trait the files do not contain is an error", () => {
+  const override: InitiativeBonusOverride = { owner: "Sample Hopper", feature: "No Such Trait", level: 0, bonus: { kind: "proficiency" } };
+  assert.throws(
+    () => enrichGrantFiles(withRaces, { classes: [], feats: [], initiativeBonuses: [override] }),
+    /initiative bonus override matches no feature/,
+  );
+});
+
+test("the tracked race traits carry the Initiative Bonuses their prose gives, and enriching them again changes nothing", () => {
+  const tracked = {
+    classes: fs.readFileSync(new URL("../data/classes.json", import.meta.url), "utf8"),
+    feats: fs.readFileSync(new URL("../data/feats.json", import.meta.url), "utf8"),
+    races: fs.readFileSync(new URL("../data/races.json", import.meta.url), "utf8"),
+  };
+  const enriched = enrichGrantFiles(tracked, { ...PROFICIENCY_GRANT_OVERRIDES, initiativeBonuses: INITIATIVE_BONUS_OVERRIDES });
+  assert.deepEqual(enriched, tracked);
+
+  const races = JSON.parse(tracked.races) as Array<{ name: string; traits: Array<{ name: string; initiativeBonus?: unknown }> }>;
+  const harengon = races.find((race) => race.name === "Harengon");
+  assert.deepEqual(harengon?.traits.find((trait) => trait.name === "Hare-Trigger")?.initiativeBonus, { kind: "proficiency" });
+});
