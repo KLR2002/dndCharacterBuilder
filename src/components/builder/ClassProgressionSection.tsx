@@ -459,18 +459,15 @@ export const ClassProgressionSection: React.FC<ClassProgressionSectionProps> = (
         ) => {
           if (choices.length === 0) return null;
           return (
-            <Card key={key} style={{ gap: 12 }}>
-              <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", gap: 8 }}>
-                <View style={{ flex: 1 }}>
-                  <Text style={[styles.heading, { color: theme.text }]}>{title}</Text>
-                  <Text style={{ color: theme.textMuted, fontSize: 11, marginTop: 2 }}>
-                    {subtitle}
-                  </Text>
-                </View>
-                {badge && <Badge label={badge} variant="accent" size="sm" />}
-              </View>
+            <CollapsibleCard
+              key={key}
+              title={title}
+              subtitle={subtitle}
+              badge={badge ? <Badge label={badge} variant="accent" size="sm" /> : undefined}
+              style={{ gap: 12 }}
+            >
               {choices.map((choice) => renderChoice(choice))}
-            </Card>
+            </CollapsibleCard>
           );
         };
 
@@ -558,13 +555,11 @@ export const ClassProgressionSection: React.FC<ClassProgressionSectionProps> = (
         );
 
         return (
-          <Card style={{ gap: 12 }}>
-            <View>
-              <Text style={[styles.heading, { color: theme.text }]}>Expertise</Text>
-              <Text style={{ color: theme.textMuted, fontSize: 11, marginTop: 2 }}>
-                Doubled proficiency bonus (2× PB) on chosen proficient skills and tools.
-              </Text>
-            </View>
+          <CollapsibleCard
+            title="Expertise"
+            subtitle="Doubled proficiency bonus (2× PB) on chosen proficient skills and tools."
+            style={{ gap: 12 }}
+          >
             {invalidPicks.length > 0 && (
               <View
                 style={{
@@ -607,7 +602,7 @@ export const ClassProgressionSection: React.FC<ClassProgressionSectionProps> = (
                 />
               </View>
             ))}
-          </Card>
+          </CollapsibleCard>
         );
       })()}
 
@@ -656,14 +651,10 @@ export const ClassProgressionSection: React.FC<ClassProgressionSectionProps> = (
 
       {/* Optional & Replacement Class Features (Tasha's) */}
       {hasAnyClass && availableOptionalFeatures.length > 0 && (
-        <Card style={{ gap: 10 }}>
-          <View>
-            <Text style={[styles.heading, { color: theme.text }]}>Optional &amp; Replacement Class Features:</Text>
-            <Text style={{ color: theme.textMuted, fontSize: 11, marginTop: 2 }}>
-              Tasha&apos;s Cauldron optional features and replacements for your classes.
-            </Text>
-          </View>
-
+        <CollapsibleCard
+          title="Optional & Replacement Class Features:"
+          subtitle="Tasha's Cauldron optional features and replacements for your classes."
+        >
           <View style={{ gap: 8 }}>
             {availableOptionalFeatures.map((opt) => {
               const isEnabled = Boolean(character.optionalFeatureReplacements?.[opt.name]);
@@ -725,7 +716,7 @@ export const ClassProgressionSection: React.FC<ClassProgressionSectionProps> = (
               );
             })}
           </View>
-        </Card>
+        </CollapsibleCard>
       )}
 
       {/* Multiclassing note */}
