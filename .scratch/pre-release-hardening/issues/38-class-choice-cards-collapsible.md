@@ -4,7 +4,9 @@
 
 **Blocked by:** 37
 
-**Status:** ready-for-agent
+**Status:** done
+
+**Landed:** merged from `pr/38-class-choice-cards-collapsible`. `check:all` passes on the merged tip; full `npm run layout:check` (SRD and `--integrated`) GREEN on the branch. `CollapsibleCard` takes an optional `subtitle` and `badge`; the five `renderChoiceCard` cards, Expertise and Optional & Replacement Class Features use it, open by default, subtitle and badge shown in both states. Layout scenarios cover collapsed Skills, Class & Subclass Choices, Expertise, Fighting Styles and the Ranger's Optional card. Screenshot at 320 px viewed by the main session. Open items: Maneuvers, Pact Boon and Infusions cards share the code path but have no scenario of their own; the Race tab's ancestry Rule Choices card (no title), ability-choice card, lineage picker, origin feat and racial cantrip cards, and the Background picker list have no collapsible header.
 
 ## Design notes
 
