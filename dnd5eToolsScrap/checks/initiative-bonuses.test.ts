@@ -16,6 +16,13 @@ test("adding an ability modifier to initiative rolls is an ability Initiative Bo
   assert.deepEqual(result, { bonus: { kind: "ability", ability: "int" }, unparsed: [] });
 });
 
+test("a roll sentence under an Initiative Bonus heading is an ability Initiative Bonus, and the heading is not reported", () => {
+  const result = extractInitiativeBonus(
+    "### Sample Initiative Bonus\n\nWhen you roll initiative, you can add your Wisdom modifier to the roll.",
+  );
+  assert.deepEqual(result, { bonus: { kind: "ability", ability: "wis" }, unparsed: [] });
+});
+
 test("every ability name reads as its key", () => {
   const abilities: Array<[string, string]> = [
     ["Strength", "str"],

@@ -38,6 +38,8 @@ const ABILITY = "(Strength|Dexterity|Constitution|Intelligence|Wisdom|Charisma)"
 const GIVEN_ABILITY = new RegExp(`\\ba bonus to (?:your )?initiative(?: rolls)? equal to your ${ABILITY} modifier$`, "i");
 /** "... add your Intelligence modifier to your initiative rolls", as the rule text adds it. */
 const ADDED_ABILITY = new RegExp(`\\badd your ${ABILITY} modifier to (?:your )?initiative(?: rolls)?$`, "i");
+/** "When you roll initiative, you can add your Wisdom modifier to the roll", as the rule text states it under its heading. */
+const ROLL_ABILITY = new RegExp(`\\bwhen you roll initiative, you can add your ${ABILITY} modifier to the roll$`, "i");
 
 /** A sentence that names initiative and gives a bonus to it. Advantage and shared initiative counts do not match. */
 function isInitiativeBonusSentence(sentence: string): boolean {
@@ -45,7 +47,7 @@ function isInitiativeBonusSentence(sentence: string): boolean {
 }
 
 function parseSentence(sentence: string): InitiativeBonus | null {
-  const match = GIVEN_ABILITY.exec(sentence) ?? ADDED_ABILITY.exec(sentence);
+  const match = GIVEN_ABILITY.exec(sentence) ?? ADDED_ABILITY.exec(sentence) ?? ROLL_ABILITY.exec(sentence);
   if (!match) return null;
   const ability = ABILITY_KEYS.get((match[1] ?? "").toLowerCase());
   return ability ? { kind: "ability", ability } : null;
@@ -58,6 +60,7 @@ function parseSentence(sentence: string): InitiativeBonus | null {
  */
 export function extractInitiativeBonus(description: string): InitiativeBonusExtraction {
   const sentences = proseSentences(description)
+    .filter((sentence) => !sentence.startsWith("#"))
     .map((sentence) => sentence.replace(/[.!?]+$/, "").trim())
     .filter(isInitiativeBonusSentence);
   const parsed: InitiativeBonus[] = [];
