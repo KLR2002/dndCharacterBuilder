@@ -14,6 +14,7 @@ import { getWeaponAttacks, type WeaponAttackOption } from "./attacks.ts";
 import { proficiencySheet } from "./proficiencySheet.ts";
 import { grantedFeatures } from "./grantedFeatures.ts";
 import { initiativeOf, type InitiativePart } from "./initiative.ts";
+import { halfProficiencyFor } from "./halfProficiency.ts";
 import { resolveCharacterAncestry } from "./characterAncestry.ts";
 import {
   evaluateCharacterTools,
@@ -117,6 +118,7 @@ export function evaluateCharacter(
     }),
     effScores.modifiers,
     pb,
+    halfProficiencyFor(character, "dex", pb),
   );
   const savesResult = savingThrows(character, sheet.savingThrows, ancestry);
   const weightResult = carryingWeight(character, ancestry);
