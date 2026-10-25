@@ -318,6 +318,39 @@ test("live catalog: every Aura of the Sentinel carries a proficiency Initiative 
   assert.deepEqual(auras.map((feature) => feature.initiativeBonus), auras.map(() => ({ kind: "proficiency" })));
 });
 
+test("live catalog: every print that has Hare-Trigger carries the proficiency Initiative Bonus on that trait", { skip: SKIP }, () => {
+  const prints = SKIP ? [] : live!.collections.races.filter((race) => race.traits.some((trait) => trait.name === "Hare-Trigger"));
+  assert.ok(prints.length > 0, "no race with a Hare-Trigger trait in the catalog");
+  assert.deepEqual(
+    prints.map((race) => race.traits.find((trait) => trait.name === "Hare-Trigger")?.initiativeBonus),
+    prints.map(() => ({ kind: "proficiency" })),
+  );
+});
+
+test("live catalog: a Harengon of each print has initiative that includes the proficiency bonus from Hare-Trigger", { skip: SKIP }, () => {
+  const harengons = SKIP ? [] : live!.compendium.for().races().filter((race) => race.name === "Harengon");
+  assert.ok(harengons.length > 0, "no Harengon in the catalog");
+  const fighter = SKIP ? undefined : live!.compendium.for().classes().find((cls) => cls.name === "Fighter");
+  assert.ok(fighter, "no Fighter in the catalog");
+  for (const harengon of harengons) {
+    const character = makeChar({
+      race: { name: harengon.name, source: harengon.source },
+      classes: [{ className: fighter.name, source: fighter.source, level: 5 }],
+      baseAbilityScores: { str: 10, dex: 14, con: 10, int: 10, wis: 10, cha: 10 },
+    });
+    const evaluated = evaluateCharacter(character, { compendium: live!.compendium });
+    assert.deepEqual(
+      evaluated.initiativeBreakdown,
+      [
+        { label: "Dexterity", value: 2 },
+        { label: "Hare-Trigger", value: 3 },
+      ],
+      `${harengon.name} (${harengon.source}): DEX +2 and proficiency +3 at level 5`,
+    );
+    assert.equal(evaluated.initiative, 5);
+  }
+});
+
 test("live catalog: a Paladin with the Aura of the Sentinel and the flat Alert has initiative DEX + proficiency + 5, at the level the aura is gained", { skip: SKIP }, () => {
   const alert = SKIP ? undefined : live!.collections.feats.find((feat) => feat.name === "Alert" && feat.initiativeBonus?.kind === "flat");
   assert.ok(alert, "no Alert feat with a flat Initiative Bonus in the catalog");

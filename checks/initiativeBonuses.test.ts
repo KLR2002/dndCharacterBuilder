@@ -1,14 +1,17 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { evaluateCharacter } from "../src/rules/characterEvaluation.ts";
-import type { AbilityScores, CharacterClass } from "../src/types/character.ts";
+import type { AbilityScores, Character, CharacterClass } from "../src/types/character.ts";
 import { inMemoryCompendium, makeChar } from "./testUtils.ts";
-import { initiativeClasses, initiativeFeats } from "./initiativeFixture.ts";
+import { ruleChoiceId } from "../src/rules/ruleChoices.ts";
+import { initiativeClasses, initiativeFeats, initiativeRaces } from "./initiativeFixture.ts";
 
 // Initiative is the Dexterity modifier plus each Initiative Bonus the character's features carry (ADR 0016). The
-// classes and feats are invented (checks/initiativeFixture.ts); the engine reads their bonuses the same way for every rule.
+// classes, feats and races are invented (checks/initiativeFixture.ts); the engine reads their bonuses the same way for every rule.
 
-const catalogs = { compendium: inMemoryCompendium({ classes: initiativeClasses(), feats: initiativeFeats() }) };
+const catalogs = {
+  compendium: inMemoryCompendium({ classes: initiativeClasses(), feats: initiativeFeats(), races: initiativeRaces() }),
+};
 
 const scores = (overrides: Partial<AbilityScores>): AbilityScores => ({
   str: 10,
@@ -194,5 +197,88 @@ test("an ability-score change moves the Initiative Bonus with the modifier", () 
   assert.deepEqual(after.initiativeBreakdown, [
     { label: "Dexterity", value: 2 },
     { label: "Sample Gambit", value: 4 },
+  ]);
+});
+
+const kin = (subrace?: { name: string; source: string }): Character["race"] => ({
+  name: "Sample Kin",
+  source: "PHB",
+  ...(subrace ? { subraceName: subrace.name, subraceSource: subrace.source } : {}),
+});
+
+test("a race trait's Initiative Bonus adds to initiative, on a line named after the trait", () => {
+  const evaluated = evaluateCharacter(
+    makeChar({ race: kin(), classes: [scout(1)], baseAbilityScores: scores({ dex: 14 }) }),
+    catalogs,
+  );
+  assert.equal(evaluated.initiative, 4, "DEX +2 and proficiency +2 at level 1");
+  assert.deepEqual(evaluated.initiativeBreakdown, [
+    { label: "Dexterity", value: 2 },
+    { label: "Sample Hop", value: 2 },
+  ]);
+});
+
+test("a subrace trait's Initiative Bonus adds to initiative, after the race's own trait", () => {
+  const evaluated = evaluateCharacter(
+    makeChar({
+      race: kin({ name: "Sample Hillward", source: "PHB" }),
+      classes: [scout(1)],
+      baseAbilityScores: scores({ dex: 14, wis: 14 }),
+    }),
+    catalogs,
+  );
+  assert.equal(evaluated.initiative, 6);
+  assert.deepEqual(evaluated.initiativeBreakdown, [
+    { label: "Dexterity", value: 2 },
+    { label: "Sample Hop", value: 2 },
+    { label: "Sample Gift", value: 2 },
+  ]);
+});
+
+test("a race trait a variant ancestry replaces adds nothing once the variant's choice replaces it", () => {
+  const variantChoice = ruleChoiceId({
+    source: "PHB",
+    race: "Sample Kin",
+    subrace: { name: "Sample Variant" },
+    trait: "Variant Feature (Choose 1)",
+  });
+  const variant = (picked: string) =>
+    makeChar({
+      race: kin({ name: "Sample Variant", source: "PHB" }),
+      classes: [scout(1)],
+      baseAbilityScores: scores({ dex: 14 }),
+      ruleChoices: [
+        { id: variantChoice, trait: "Variant Feature (Choose 1)", origin: "race", choose: 1, from: ["Sample Hop", "Sample Grit"], picked: [picked] },
+      ],
+    });
+  const replaced = evaluateCharacter(variant("Sample Grit"), catalogs);
+  assert.equal(replaced.initiative, 2, "the variant replaced Sample Hop, so only Dexterity counts");
+  assert.deepEqual(replaced.initiativeBreakdown, [{ label: "Dexterity", value: 2 }]);
+
+  const kept = evaluateCharacter(variant("Sample Hop"), catalogs);
+  assert.deepEqual(
+    kept.initiativeBreakdown,
+    [
+      { label: "Dexterity", value: 2 },
+      { label: "Sample Hop", value: 2 },
+    ],
+    "picking the option that keeps Sample Hop keeps its bonus",
+  );
+});
+
+test("a lineage replacement drops the original race's trait bonus, and the lineage's own trait adds its bonus", () => {
+  const evaluated = evaluateCharacter(
+    makeChar({
+      race: kin(),
+      lineageReplacement: "Sample Lineage",
+      classes: [scout(1)],
+      baseAbilityScores: scores({ dex: 14 }),
+    }),
+    catalogs,
+  );
+  assert.equal(evaluated.initiative, 3);
+  assert.deepEqual(evaluated.initiativeBreakdown, [
+    { label: "Dexterity", value: 2 },
+    { label: "Sample Trance", value: 1 },
   ]);
 });

@@ -1,4 +1,4 @@
-import type { ClassData, ClassFeatureData, FeatData, SubclassData } from "../src/types/dnd5e.ts";
+import type { ClassData, ClassFeatureData, FeatData, RaceData, SubclassData, SubraceData, TraitData } from "../src/types/dnd5e.ts";
 
 /**
  * Invented classes for the Initiative Bonus engine tests. Names and text are made up on purpose: no real 5e prose
@@ -65,4 +65,67 @@ export const initiativeFeats = (): FeatData[] => [
     description: "Placeholder description for the feat.",
     initiativeBonus: { kind: "flat", value: 5 },
   },
+];
+
+const trait = (name: string, initiativeBonus?: TraitData["initiativeBonus"], choice?: TraitData["choice"]): TraitData => ({
+  name,
+  description: "Placeholder description for the trait.",
+  ...(initiativeBonus ? { initiativeBonus } : {}),
+  ...(choice ? { choice } : {}),
+});
+
+const subrace = (name: string, traits: TraitData[], isVariant = false): SubraceData => ({
+  name,
+  isVariant,
+  source: "PHB",
+  raceName: "Sample Kin",
+  raceSource: "PHB",
+  abilityScoreIncrease: [],
+  darkvision: null,
+  traits,
+  description: "Placeholder description for the subrace.",
+});
+
+const race = (name: string, traits: TraitData[], subraces: SubraceData[]): RaceData => ({
+  name,
+  source: "PHB",
+  size: ["Medium"],
+  speed: { walk: 30 },
+  abilityScoreIncrease: [],
+  darkvision: null,
+  traits,
+  languages: [],
+  subraces,
+  description: "Placeholder description for the race.",
+});
+
+/**
+ * An invented race whose Sample Hop trait gives the proficiency bonus, with two subraces: Sample Hillward, whose Sample
+ * Gift gives a Wisdom-modifier bonus, and a variant, Sample Variant, whose choice replaces Sample Hop. Sample Lineage is an
+ * invented lineage whose own trait gives +1.
+ */
+export const initiativeRaces = (): RaceData[] => [
+  race(
+    "Sample Kin",
+    [trait("Sample Hop", { kind: "proficiency" })],
+    [
+      subrace("Sample Hillward", [trait("Sample Gift", { kind: "ability", ability: "wis" })]),
+      subrace(
+        "Sample Variant",
+        [
+          trait("Variant Feature (Choose 1)", undefined, {
+            pick: 1,
+            level: 1,
+            replaces: "Sample Hop",
+            options: [
+              { name: "Sample Hop", description: "Placeholder description for the option." },
+              { name: "Sample Grit", description: "Placeholder description for the option." },
+            ],
+          }),
+        ],
+        true,
+      ),
+    ],
+  ),
+  race("Sample Lineage", [trait("Sample Trance", { kind: "flat", value: 1 })], []),
 ];
