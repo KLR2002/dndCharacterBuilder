@@ -90,6 +90,13 @@ test("adding the proficiency bonus to initiative rolls is a proficiency Initiati
   assert.deepEqual(result, { bonus: { kind: "proficiency" }, unparsed: [] });
 });
 
+test("a roll sentence under a proficiency heading is a proficiency Initiative Bonus, and the heading is not reported", () => {
+  const result = extractInitiativeBonus(
+    "### Sample Keenness\n\nWhen you roll initiative, you can add your proficiency bonus to the roll.",
+  );
+  assert.deepEqual(result, { bonus: { kind: "proficiency" }, unparsed: [] });
+});
+
 test("a flat bonus to initiative is a flat Initiative Bonus of that value", () => {
   const result = extractInitiativeBonus("Sample Sentry. Always on the lookout, you gain a +4 bonus to initiative.");
   assert.deepEqual(result, { bonus: { kind: "flat", value: 4 }, unparsed: [] });

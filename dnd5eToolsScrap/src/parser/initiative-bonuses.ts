@@ -44,6 +44,8 @@ const ROLL_ABILITY = new RegExp(`\\bwhen you roll initiative, you can add your $
 /** "... you all gain a bonus to initiative equal to your proficiency bonus", and "... add your proficiency bonus to your initiative rolls". */
 const GIVEN_PROFICIENCY = /\ba bonus to (?:your )?initiative(?: rolls)? equal to your proficiency bonus$/i;
 const ADDED_PROFICIENCY = /\badd your proficiency bonus to (?:your )?initiative(?: rolls)?$/i;
+/** "When you roll initiative, you can add your proficiency bonus to the roll", as the rule text states it under its heading. */
+const ROLL_PROFICIENCY = /\bwhen you roll initiative, you can add your proficiency bonus to the roll$/i;
 /** "... you gain a +5 bonus to initiative", and "+5 bonus to initiative" with no article. */
 const FLAT = /\+(\d+) bonus to (?:your )?initiative(?: rolls)?$/i;
 
@@ -67,7 +69,8 @@ function parseSentence(sentence: string): InitiativeBonus | null {
     const ability = ABILITY_KEYS.get((abilityMatch[1] ?? "").toLowerCase());
     return ability ? { kind: "ability", ability } : null;
   }
-  if (ADDED_PROFICIENCY.test(sentence) || (holderGains && GIVEN_PROFICIENCY.test(sentence))) return { kind: "proficiency" };
+  const proficiencyAdded = ADDED_PROFICIENCY.test(sentence) || ROLL_PROFICIENCY.test(sentence);
+  if (proficiencyAdded || (holderGains && GIVEN_PROFICIENCY.test(sentence))) return { kind: "proficiency" };
   const flat = holderGains ? FLAT.exec(sentence) : null;
   return flat ? { kind: "flat", value: Number(flat[1]) } : null;
 }

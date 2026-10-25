@@ -302,10 +302,14 @@ test("live catalog: a Swashbuckler 3 with DEX 14 and CHA 16 has initiative +5, f
   ]);
 });
 
-test("live catalog: every Alert feat carries a flat Initiative Bonus of 5", { skip: SKIP }, () => {
+test("live catalog: each Alert print carries the Initiative Bonus its own text gives (2014: +5; 2024: the proficiency bonus)", { skip: SKIP }, () => {
   const alerts = SKIP ? [] : live!.collections.feats.filter((feat) => feat.name === "Alert");
   assert.ok(alerts.length > 0, "no Alert feat in the catalog");
-  assert.deepEqual(alerts.map((feat) => feat.initiativeBonus), alerts.map(() => ({ kind: "flat", value: 5 })));
+  const expected: Record<string, unknown> = { PHB: { kind: "flat", value: 5 }, XPHB: { kind: "proficiency" } };
+  assert.deepEqual(
+    alerts.map((feat) => [feat.source, feat.initiativeBonus]),
+    alerts.map((feat) => [feat.source, expected[feat.source]]),
+  );
 });
 
 test("live catalog: every Aura of the Sentinel carries a proficiency Initiative Bonus", { skip: SKIP }, () => {
@@ -314,9 +318,9 @@ test("live catalog: every Aura of the Sentinel carries a proficiency Initiative 
   assert.deepEqual(auras.map((feature) => feature.initiativeBonus), auras.map(() => ({ kind: "proficiency" })));
 });
 
-test("live catalog: a Paladin with the Aura of the Sentinel and Alert has initiative DEX + proficiency + 5, at the level the aura is gained", { skip: SKIP }, () => {
-  const alert = SKIP ? undefined : live!.collections.feats.find((feat) => feat.name === "Alert");
-  assert.ok(alert, "no Alert feat in the catalog");
+test("live catalog: a Paladin with the Aura of the Sentinel and the flat Alert has initiative DEX + proficiency + 5, at the level the aura is gained", { skip: SKIP }, () => {
+  const alert = SKIP ? undefined : live!.collections.feats.find((feat) => feat.name === "Alert" && feat.initiativeBonus?.kind === "flat");
+  assert.ok(alert, "no Alert feat with a flat Initiative Bonus in the catalog");
   // Every subclass print that gains the aura, at the level it is gained.
   const holders: Array<{ cls: ClassData; sc: SubclassData; level: number }> = [];
   for (const cls of SKIP ? [] : live!.compendium.for().classes()) {
