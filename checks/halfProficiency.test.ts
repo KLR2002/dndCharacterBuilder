@@ -251,3 +251,13 @@ test("Jack of All Trades still applies to a non-proficient skill that Remarkable
   assert.equal(row.isJackOfAllTrades, true);
   assert.equal(row.halfProficiency, "Jack of All Trades");
 });
+
+test("a Champion named only in the subclass field, and not in subclassName, gets Remarkable Athlete", () => {
+  const row = skillRow(
+    [{ className: "Fighter", source: "PHB", level: 7, subclass: "Champion" }],
+    "Athletics",
+    { baseAbilityScores: scores({ str: 16 }) },
+  );
+  assert.equal(row.bonus, 3 + 2, "Strength modifier 3 plus ceil(3/2)");
+  assert.equal(row.halfProficiency, "Remarkable Athlete");
+});
