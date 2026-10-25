@@ -84,13 +84,11 @@ test("advantage on initiative rolls, a shared initiative count and a roll trigge
   assert.deepEqual(gaps, []);
 });
 
-test("a roll trigger that counts a Proficiency Bonus of creatures, and grants no initiative bonus, is not a gap", () => {
-  const gaps = initiativeCoverageGaps(
-    data([{ name: "Sample Muster", description: "When you roll initiative and aren't incapacitated, you can choose a number of creatures equal to your Proficiency Bonus that you can see." }]),
-    []
-  );
+test("a roll trigger that counts bells by a Proficiency Bonus, and grants no initiative bonus, is not a gap", () => {
+  const sentence = "When you roll initiative and are not hushed, you can choose a number of bells equal to your Proficiency Bonus that you can hear.";
+  const gaps = initiativeCoverageGaps(data([{ name: "Sample Muster", description: sentence }]), []);
   assert.deepEqual(gaps, []);
-  assert.deepEqual(candidateSentences("When you roll initiative and aren't incapacitated, you can choose a number of creatures equal to your Proficiency Bonus that you can see."), []);
+  assert.deepEqual(candidateSentences(sentence), []);
 });
 
 test("a race trait and a feat that add to initiative are gaps, and are covered by a bonus or a mark", () => {
