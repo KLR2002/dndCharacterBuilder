@@ -193,10 +193,11 @@ export async function scrapeClasses(
   const classIndex = await client.fetchJson<Record<string, string>>("data/class/index.json");
 
   const classes: ClassModel[] = [];
-  /** Features whose prose grants are resolved once every class is read (overrides may name any of them). */
-  const pending: Array<{ holder: { grants?: ProficiencyGrant[] }; subject: GrantSubject }> = [];
-  /** Class and subclass features, whose Initiative Bonuses are resolved with the grants. */
-  const initiativeFeatures: Array<{ holder: ClassFeatureModel; subject: GrantSubject }> = [];
+  /**
+   * Features and folded options whose prose grants are resolved once every class is read (overrides may name any of
+   * them). A class or subclass feature also names itself, so its Initiative Bonus is resolved from the same entry.
+   */
+  const pending: Array<{ holder: { grants?: ProficiencyGrant[] }; subject: GrantSubject; feature?: ClassFeatureModel }> = [];
 
   for (const [classKey, fileName] of Object.entries(classIndex)) {
     console.log(`  → Fetching ${classKey} (${fileName})...`);
@@ -293,8 +294,7 @@ export async function scrapeClasses(
         };
         features.push(feature);
         const subject = { source: raw.source, owner: raw.name, feature: feature.name, level: feature.level, description: feature.description };
-        pending.push({ holder: feature, subject });
-        initiativeFeatures.push({ holder: feature, subject });
+        pending.push({ holder: feature, subject, feature });
         pending.push(...optionGrantSubjects(choices, folded, { source: raw.source, owner: raw.name }));
       }
 
@@ -339,8 +339,7 @@ export async function scrapeClasses(
           scFeatures.push(feature);
           const owner = { source: sc.source, owner: `${raw.name}/${subclassName}` };
           const subject = { ...owner, feature: feature.name, level: feature.level, description: feature.description };
-          pending.push({ holder: feature, subject });
-          initiativeFeatures.push({ holder: feature, subject });
+          pending.push({ holder: feature, subject, feature });
           pending.push(...optionGrantSubjects(choices, folded, owner));
         }
 
@@ -412,13 +411,14 @@ export async function scrapeClasses(
     if (result.grants.length > 0) pending[i].holder.grants = result.grants;
   });
 
+  const featureEntries = pending.filter((p): p is typeof p & { feature: ClassFeatureModel } => p.feature !== undefined);
   const bonuses = resolveInitiativeBonuses(
-    initiativeFeatures.map((f) => f.subject),
+    featureEntries.map((p) => p.subject),
     INITIATIVE_BONUS_OVERRIDES,
     report
   );
   bonuses.forEach((bonus, i) => {
-    if (bonus) initiativeFeatures[i].holder.initiativeBonus = bonus;
+    if (bonus) featureEntries[i].feature.initiativeBonus = bonus;
   });
 
   return classes;
