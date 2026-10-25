@@ -4,7 +4,9 @@
 
 **Blocked by:** 35
 
-**Status:** ready-for-agent
+**Status:** done
+
+**Landed:** merged from `pr/37-ancestry-picks-collapsible`. `check:all` passes on the merged tip (1224 app tests, 8 skipped, 192 scraper tests); `check:live` 54 of 54 and both full layout checks (SRD and `--integrated`) GREEN on the branch. Race picks are titled `Language` and `Skill` (numbered across race and subrace when several share a kind); `skillPickOffers` holds only class, subclass and feat picks; a new `CollapsibleCard` (`src/components/ui/`) heads the Race, Background and Class Skills cards, open by default, state local. The Race and Background cards are named `Languages` when every pick is a language, otherwise `Languages & Proficiencies`. Screenshots at 320 and 393 px viewed by the main session (Race, Class). Open items: `checkExpected` in `scripts/layout-check.mjs` takes the first DOM match of a text, so an `absent` or `texts` check can pass or fail for the wrong node; Background picks keep their `<Background>: Skill` titles.
 
 ## Design notes
 
