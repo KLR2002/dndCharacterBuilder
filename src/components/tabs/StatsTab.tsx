@@ -722,7 +722,7 @@ export const StatsTab: React.FC = () => {
                             },
                           ]}
                         />
-                      ) : skill.isJackOfAllTrades ? (
+                      ) : skill.halfProficiency ? (
                         <View
                           style={[
                             styles.profIndicator,
@@ -773,7 +773,7 @@ export const StatsTab: React.FC = () => {
                               ? theme.warning
                               : skill.isProficient
                               ? theme.accent
-                              : skill.isJackOfAllTrades
+                              : skill.halfProficiency
                               ? theme.text
                               : theme.textSecondary,
                           },
