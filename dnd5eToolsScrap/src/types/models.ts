@@ -10,7 +10,7 @@ export interface RuleChoiceModel {
   options: Array<{ name: string; description: string }>;
 }
 
-import type { ProficiencyGrant } from "./proficiency.ts";
+import type { InitiativeBonus, ProficiencyGrant } from "./proficiency.ts";
 import type { StartingEquipmentSlot } from "./startingEquipment.ts";
 
 export interface TraitModel {
@@ -87,6 +87,8 @@ export interface ClassFeatureModel {
   choices?: FeatureChoice;
   /** Proficiency Grants extracted from the feature's prose, or from its override. */
   grants?: ProficiencyGrant[];
+  /** The Initiative Bonus the feature's prose gives, or from its override (ADR 0016). */
+  initiativeBonus?: InitiativeBonus;
 }
 
 export interface SubclassAdditionalSpells {

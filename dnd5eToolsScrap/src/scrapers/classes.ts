@@ -14,6 +14,8 @@ import {
   type StartingEquipmentReport,
 } from "../parser/starting-equipment.ts";
 import { PROFICIENCY_GRANT_OVERRIDES } from "../overrides/proficiency-grants.ts";
+import { resolveInitiativeBonuses } from "../parser/initiative-bonuses.ts";
+import { INITIATIVE_BONUS_OVERRIDES } from "../overrides/initiative-bonuses.ts";
 import type {
   ChoiceOption,
   ClassFeatureModel,
@@ -193,6 +195,8 @@ export async function scrapeClasses(
   const classes: ClassModel[] = [];
   /** Features whose prose grants are resolved once every class is read (overrides may name any of them). */
   const pending: Array<{ holder: { grants?: ProficiencyGrant[] }; subject: GrantSubject }> = [];
+  /** Class and subclass features, whose Initiative Bonuses are resolved with the grants. */
+  const initiativeFeatures: Array<{ holder: ClassFeatureModel; subject: GrantSubject }> = [];
 
   for (const [classKey, fileName] of Object.entries(classIndex)) {
     console.log(`  → Fetching ${classKey} (${fileName})...`);
@@ -288,10 +292,9 @@ export async function scrapeClasses(
           ...(choices ? { choices } : {}),
         };
         features.push(feature);
-        pending.push({
-          holder: feature,
-          subject: { source: raw.source, owner: raw.name, feature: feature.name, level: feature.level, description: feature.description },
-        });
+        const subject = { source: raw.source, owner: raw.name, feature: feature.name, level: feature.level, description: feature.description };
+        pending.push({ holder: feature, subject });
+        initiativeFeatures.push({ holder: feature, subject });
         pending.push(...optionGrantSubjects(choices, folded, { source: raw.source, owner: raw.name }));
       }
 
@@ -335,10 +338,9 @@ export async function scrapeClasses(
           };
           scFeatures.push(feature);
           const owner = { source: sc.source, owner: `${raw.name}/${subclassName}` };
-          pending.push({
-            holder: feature,
-            subject: { ...owner, feature: feature.name, level: feature.level, description: feature.description },
-          });
+          const subject = { ...owner, feature: feature.name, level: feature.level, description: feature.description };
+          pending.push({ holder: feature, subject });
+          initiativeFeatures.push({ holder: feature, subject });
           pending.push(...optionGrantSubjects(choices, folded, owner));
         }
 
@@ -408,6 +410,15 @@ export async function scrapeClasses(
   );
   resolved.forEach((result, i) => {
     if (result.grants.length > 0) pending[i].holder.grants = result.grants;
+  });
+
+  const bonuses = resolveInitiativeBonuses(
+    initiativeFeatures.map((f) => f.subject),
+    INITIATIVE_BONUS_OVERRIDES,
+    report
+  );
+  bonuses.forEach((bonus, i) => {
+    if (bonus) initiativeFeatures[i].holder.initiativeBonus = bonus;
   });
 
   return classes;

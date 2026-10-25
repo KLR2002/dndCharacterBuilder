@@ -9686,7 +9686,11 @@
           {
             "name": "Dread Ambusher",
             "level": 3,
-            "description": "At 3rd level, you master the art of the ambush. You can give yourself a bonus to your initiative rolls equal to your Wisdom modifier.\n\nAt the start of your first turn of each combat, your walking speed increases by 10 feet, which lasts until the end of that turn. If you take the Attack action on that turn, you can make one additional weapon attack as part of that action. If that attack hits, the target takes an extra 1d8 damage of the weapon's damage type."
+            "description": "At 3rd level, you master the art of the ambush. You can give yourself a bonus to your initiative rolls equal to your Wisdom modifier.\n\nAt the start of your first turn of each combat, your walking speed increases by 10 feet, which lasts until the end of that turn. If you take the Attack action on that turn, you can make one additional weapon attack as part of that action. If that attack hits, the target takes an extra 1d8 damage of the weapon's damage type.",
+            "initiativeBonus": {
+              "kind": "ability",
+              "ability": "wis"
+            }
           },
           {
             "name": "Gloom Stalker Magic",
@@ -10826,7 +10830,11 @@
           {
             "name": "Rakish Audacity",
             "level": 3,
-            "description": "Starting at 3rd level, your confidence propels you into battle. You can give yourself a bonus to your initiative rolls equal to your Charisma modifier.\n\nYou also gain an additional way to use your Sneak Attack; you don't need advantage on your attack roll to use Sneak Attack against a creature if you are within 5 feet of it, no other creatures are within 5 feet of you, and you don't have disadvantage on the attack roll. All the other rules for Sneak Attack still apply to you."
+            "description": "Starting at 3rd level, your confidence propels you into battle. You can give yourself a bonus to your initiative rolls equal to your Charisma modifier.\n\nYou also gain an additional way to use your Sneak Attack; you don't need advantage on your attack roll to use Sneak Attack against a creature if you are within 5 feet of it, no other creatures are within 5 feet of you, and you don't have disadvantage on the attack roll. All the other rules for Sneak Attack still apply to you.",
+            "initiativeBonus": {
+              "kind": "ability",
+              "ability": "cha"
+            }
           },
           {
             "name": "Panache",
@@ -14108,7 +14116,11 @@
           {
             "name": "Tactical Wit",
             "level": 2,
-            "description": "Starting at 2nd level, your keen ability to assess tactical situations allows you to act quickly in battle. You can give yourself a bonus to your initiative rolls equal to your Intelligence modifier."
+            "description": "Starting at 2nd level, your keen ability to assess tactical situations allows you to act quickly in battle. You can give yourself a bonus to your initiative rolls equal to your Intelligence modifier.",
+            "initiativeBonus": {
+              "kind": "ability",
+              "ability": "int"
+            }
           },
           {
             "name": "Power Surge",
@@ -14148,7 +14160,11 @@
           {
             "name": "Temporal Awareness",
             "level": 2,
-            "description": "*2nd-level Chronurgy Magic feature*\n\nYou can add your Intelligence modifier to your initiative rolls."
+            "description": "*2nd-level Chronurgy Magic feature*\n\nYou can add your Intelligence modifier to your initiative rolls.",
+            "initiativeBonus": {
+              "kind": "ability",
+              "ability": "int"
+            }
           },
           {
             "name": "Momentary Stasis",
