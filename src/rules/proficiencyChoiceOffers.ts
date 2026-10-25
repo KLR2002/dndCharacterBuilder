@@ -59,6 +59,19 @@ function descriptorOf(grant: ChoiceProficiencyGrant): string {
   return DESCRIPTOR_OF_CATEGORY[grant.category];
 }
 
+/** Each descriptor in order, numbered when several share it ("Tool 1", "Tool 2"). A descriptor held once keeps its name. */
+function numberedDescriptors(descriptors: readonly string[]): string[] {
+  const counts = new Map<string, number>();
+  for (const descriptor of descriptors) counts.set(descriptor, (counts.get(descriptor) ?? 0) + 1);
+  const seen = new Map<string, number>();
+  return descriptors.map((descriptor) => {
+    if ((counts.get(descriptor) ?? 0) < 2) return descriptor;
+    const ordinal = (seen.get(descriptor) ?? 0) + 1;
+    seen.set(descriptor, ordinal);
+    return `${descriptor} ${ordinal}`;
+  });
+}
+
 /**
  * The picker titles of one feature's Proficiency Choices, in grant order. A feature with a single choice
  * keeps its name. With several, each title adds what its grant picks ("Path of the Kensei: Melee weapon"),
@@ -66,16 +79,14 @@ function descriptorOf(grant: ChoiceProficiencyGrant): string {
  */
 export function pickerTitles(featureName: string, grants: readonly ChoiceProficiencyGrant[]): string[] {
   if (grants.length <= 1) return grants.map(() => featureName);
-  const descriptors = grants.map(descriptorOf);
-  const counts = new Map<string, number>();
-  for (const descriptor of descriptors) counts.set(descriptor, (counts.get(descriptor) ?? 0) + 1);
-  const seen = new Map<string, number>();
-  return descriptors.map((descriptor) => {
-    if ((counts.get(descriptor) ?? 0) < 2) return `${featureName}: ${descriptor}`;
-    const ordinal = (seen.get(descriptor) ?? 0) + 1;
-    seen.set(descriptor, ordinal);
-    return `${featureName}: ${descriptor} ${ordinal}`;
-  });
+  return numberedDescriptors(grants.map(descriptorOf)).map((descriptor) => `${featureName}: ${descriptor}`);
+}
+
+/** The Proficiency Choice grants a feature offers a pick for: the pickable choices, in grant order. */
+function pickableChoicesOf(feature: FeatureInstance): ChoiceProficiencyGrant[] {
+  return (feature.grants ?? []).filter(
+    (grant): grant is ChoiceProficiencyGrant => grant.kind === "choice" && isPickableCategory(grant.category),
+  );
 }
 
 /**
@@ -110,20 +121,28 @@ function choiceOfferEntries(character: Character, query: ProficiencyChoiceQuery)
   const items = listings.items();
   const features = featuresOf(character, listings);
 
-  const entries: ChoiceOfferEntry[] = [];
-  for (const feature of features) {
+  const offered = features.flatMap((feature) => {
     const origin = ORIGIN_OF[feature.origin];
-    if (!origin) continue;
+    if (!origin) return [];
     const source = feature.source.toUpperCase();
-    if (active && KNOWN_BOOKS.has(source) && !active.has(source)) continue;
+    if (active && KNOWN_BOOKS.has(source) && !active.has(source)) return [];
+    return [{ feature, origin, choices: pickableChoicesOf(feature) }];
+  });
 
-    const choices = (feature.grants ?? []).filter(
-      (grant): grant is ChoiceProficiencyGrant => grant.kind === "choice" && isPickableCategory(grant.category),
-    );
+  // The Race tab shows a race's and its subrace's picks together, so each is titled by what it picks, numbered across both.
+  const raceGrants = offered.filter(({ origin }) => origin === "race").flatMap(({ choices }) => choices);
+  const raceTitles = numberedDescriptors(raceGrants.map(descriptorOf));
+  const raceTitleOf = new Map(raceGrants.map((grant, index) => [grant, raceTitles[index]]));
+
+  const entries: ChoiceOfferEntry[] = [];
+  for (const { feature, origin, choices } of offered) {
     // A later class's multiclass pick is titled after its class, so the picker names whose skill it is.
-    const titles = isMulticlassFeature(feature)
-      ? choices.map((grant) => `${feature.className} multiclass: ${descriptorOf(grant)}`)
-      : pickerTitles(feature.name, choices);
+    const titles =
+      origin === "race"
+        ? choices.map((grant) => raceTitleOf.get(grant) ?? descriptorOf(grant))
+        : isMulticlassFeature(feature)
+          ? choices.map((grant) => `${feature.className} multiclass: ${descriptorOf(grant)}`)
+          : pickerTitles(feature.name, choices);
     for (const [index, grant] of choices.entries()) {
       const isHeld = heldByOtherSources(character, grant, { compendium, activeBooks });
       const own = new Set(validPicks(grant, character.proficiencyPicks?.[grant.id] ?? [], items).map((name) => name.toLowerCase()));
@@ -159,14 +178,17 @@ export function proficiencyChoiceOffers(character: Character, query: Proficiency
 /** A skill Proficiency Choice the Builder's Skills card shows. `expertise` is set when its grant gives Expertise. */
 export type SkillPickOffer = AvailableRuleChoice & { expertise: boolean };
 
+/** The origins whose skill picks the Class tab's Skills card holds. A race or background pick is shown on its own tab. */
+const SKILL_CARD_ORIGINS: ReadonlySet<RuleChoiceOrigin> = new Set<RuleChoiceOrigin>(["class", "subclass", "feat"]);
+
 /**
- * The skill Proficiency Choices a character is offered: a subclass's or feature's skill pick, and a later class's
- * multiclass skill pick. Each is the offer `proficiencyChoiceOffers` gives it, titled for its source (the feature's
- * name, or "<Class> multiclass skill"), and marked when its grant gives Expertise.
+ * The skill Proficiency Choices the Class tab's Skills card holds: a class's, subclass's or feat's skill pick, and a
+ * later class's multiclass skill pick. Each is the offer `proficiencyChoiceOffers` gives it, titled for its source (the
+ * feature's name, or "<Class> multiclass skill"), and marked when its grant gives Expertise.
  */
 export function skillPickOffers(character: Character, query: ProficiencyChoiceQuery = {}): SkillPickOffer[] {
   return choiceOfferEntries(character, query)
-    .filter(({ grant }) => grant.category === "skills")
+    .filter(({ grant, offer }) => grant.category === "skills" && SKILL_CARD_ORIGINS.has(offer.origin))
     .map(({ offer, feature, grant }) => ({
       ...offer,
       traitName: skillPickTitle(feature, grant),

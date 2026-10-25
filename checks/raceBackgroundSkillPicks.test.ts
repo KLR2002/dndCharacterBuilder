@@ -1,12 +1,14 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import type { Character } from "../src/types/character.ts";
+import type { SubraceData } from "../src/types/dnd5e.ts";
 import { proficiencySheet, skillChoiceOffers, type SheetEntry } from "../src/rules/proficiencySheet.ts";
 import { proficiencyChoiceOffers } from "../src/rules/proficiencyChoiceOffers.ts";
 import { reconcile } from "../src/rules/characterReconciler.ts";
 import { clearBackground, setCustomBackground } from "../src/rules/builderTransitions.ts";
 import { ancestryRuleChoices, pickRuleChoice } from "../src/rules/ruleChoices.ts";
 import { ALL_LANGUAGE_NAMES, ALL_TOOLS } from "../src/rules/proficienciesAndLanguages.ts";
+import { anyLanguageChoice, vellariRace } from "./proficiencySheetFixture.ts";
 import { inMemoryCompendium, integratedTestCompendium, makeChar, srdBaselineCompendium } from "./testUtils.ts";
 
 // Race, subrace and background skill picks are Proficiency Choices read from the Catalog's choice grants.
@@ -328,4 +330,37 @@ test("migrating a race or background pick twice changes nothing, and a class ski
   const once = reconcile(before, compendium);
   assert.deepEqual(once.skillChoices, [{ id: "Class: Rogue", origin: "class", choose: 1, from: ["Athletics"], picked: ["Athletics"] }]);
   assert.deepEqual(reconcile(once, compendium), once);
+});
+
+// The Race tab shows a race's and its subrace's picks together, so each is titled by what it picks.
+const raceOfferTitles = (character: Character, compendium = integratedTestCompendium()) =>
+  proficiencyChoiceOffers(character, { compendium })
+    .filter((offer) => offer.origin === "race")
+    .map((offer) => offer.traitName);
+
+test("a Variant Human's picks are titled Language and Skill, not the name of the race or the subrace", () => {
+  const variantHuman = makeChar({ race: { name: "Human", source: "PHB", subraceName: "Variant", subraceSource: "PHB" } });
+  assert.deepEqual(raceOfferTitles(variantHuman), ["Language", "Skill"]);
+});
+
+test("race and subrace picks that share a descriptor are numbered across the race and its subrace, in grant order", () => {
+  const sampleDescent: SubraceData = {
+    name: "Sample Descent",
+    source: "GAMMA",
+    raceName: "Vellari",
+    raceSource: "GAMMA",
+    abilityScoreIncrease: [],
+    darkvision: null,
+    traits: [],
+    description: "Placeholder description for the Sample Descent.",
+    grants: [
+      anyLanguageChoice("GAMMA/Subrace/Sample Descent@0#languages:choice:any", 1),
+      { id: "GAMMA/Subrace/Sample Descent@0#skills:choice:any", kind: "choice", category: "skills", count: 1, pool: { kind: "any" } },
+    ],
+  };
+  const compendium = inMemoryCompendium({
+    races: [vellariRace({ source: "GAMMA", grants: [anyLanguageChoice("GAMMA/Race/Vellari@0#languages:choice:any", 1)], subraces: [sampleDescent] })],
+  });
+  const character = makeChar({ race: { name: "Vellari", source: "GAMMA", subraceName: "Sample Descent", subraceSource: "GAMMA" } });
+  assert.deepEqual(raceOfferTitles(character, compendium), ["Language 1", "Language 2", "Skill"]);
 });
