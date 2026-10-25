@@ -11,6 +11,9 @@ Skills, tools, languages, weapons, armor and saving throws were granted by per-s
 - The Catalog format number increases, so the stale-catalog gate forces a re-sync; the SRD baseline is regenerated through `scripts/prune-to-srd.mjs` as its own commit.
 - The Proficiency Sheet (`src/rules/proficiencySheet.ts`, with private sources in `src/rules/proficiencySources/`) is the only reader of race, background and class proficiency fields. `checks/proficiencyReadersGuard.test.ts` fails any other read, except the Builder's own picks and the card displays its allowlist names.
 
+- A skills grant whose feature text doubles the proficiency bonus for the skills it grants carries an `expertise` mark, written by the scraper (catalog format 7). The Proficiency Sheet marks those skills, fixed or picked, as having Expertise and stores nothing. A scraper test fails when a feature's text doubles the bonus and the feature has neither the mark nor a review entry (`REVIEWED_NOT_A_SKILL_GRANT`). The Expertise milestones stay for features that double the bonus on a skill the character already holds.
+- A later class's skill choice from its `multiclassing` record is a Proficiency Choice on a `Multiclass Proficiencies` feature of that class entry, with a grant id built from the class's source and name.
+
 ## Known exceptions
 None remain.
 

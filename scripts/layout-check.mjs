@@ -333,6 +333,55 @@ function clericCharacter({ id, name, domain }) {
   });
 }
 
+// The Skills card. Integrated: a Variant Human Acolyte Cleric 1 with the Knowledge Domain, who picked Arcana and History
+// for Blessings of Knowledge, and a Rogue 1, so the card holds the starting picker, the Rogue's multiclass pick and the
+// Blessings picks, with Expertise on the two Blessings picks. The Variant Human's skill pick is a Race pick, so it is
+// on the Race tab and not on this card. SRD Baseline (no Knowledge Domain): a Fighter 1 and a Rogue 1, so the card
+// holds the Fighter's starting picker and the Rogue's multiclass pick.
+const KNOWLEDGE_ID = "char_knowledge";
+const MULTICLASS_SKILLS_ID = "char_multiclass_skills";
+function knowledgeClericCharacter() {
+  return makeChar({
+    id: KNOWLEDGE_ID,
+    name: "Corwin",
+    createdAt: 7,
+    updatedAt: 7,
+    race: { name: "Human", source: catalogSource("races", "Human"), subraceName: "Variant", subraceSource: "PHB" },
+    background: { name: "Acolyte", source: catalogSource("backgrounds", "Acolyte") },
+    startingOption: "equipment",
+    classes: [
+      {
+        className: "Cleric",
+        source: catalogSource("classes", "Cleric"),
+        level: 1,
+        subclassName: "Knowledge Domain",
+        subclassSource: "PHB",
+      },
+      { className: "Rogue", source: catalogSource("classes", "Rogue"), level: 1 },
+    ],
+    proficiencyPicks: { "PHB/Cleric/Knowledge Domain/Blessings of Knowledge@1#skills:choice:from": ["Arcana", "History"] },
+    currentHp: 9,
+    backgroundGrantsApplied: true,
+  });
+}
+function multiclassSkillCharacter() {
+  return makeChar({
+    id: MULTICLASS_SKILLS_ID,
+    name: "Tamsin",
+    createdAt: 8,
+    updatedAt: 8,
+    race: { name: "Human", source: catalogSource("races", "Human") },
+    background: { name: "Acolyte", source: catalogSource("backgrounds", "Acolyte") },
+    startingOption: "equipment",
+    classes: [
+      { className: "Fighter", source: catalogSource("classes", "Fighter"), level: 1 },
+      { className: "Rogue", source: catalogSource("classes", "Rogue"), level: 1 },
+    ],
+    currentHp: 12,
+    backgroundGrantsApplied: true,
+  });
+}
+
 // The seed the browser starts from: the characters, folders, settings, and (integrated mode) the catalog.
 function buildSeed() {
   const defaults = defaultSettings();
@@ -378,6 +427,7 @@ function buildSeed() {
       fighterCharacter({ id: FIGHTER_PICKED_ID, name: "Brannoc", picked: true }),
       ...(INTEGRATED ? [clericCharacter({ id: CLERIC_ID, name: "Corwin", domain: false })] : []),
       clericCharacter({ id: CLERIC_DOMAIN_ID, name: "Ysolde", domain: true }),
+      INTEGRATED ? knowledgeClericCharacter() : multiclassSkillCharacter(),
     ],
     folders: [],
     settings: {
@@ -405,6 +455,8 @@ const FIGHTER_ROUTE = `/character/${FIGHTER_ID}`;
 const FIGHTER_PICKED_ROUTE = `/character/${FIGHTER_PICKED_ID}`;
 const CLERIC_ROUTE = `/character/${CLERIC_ID}`;
 const CLERIC_DOMAIN_ROUTE = `/character/${CLERIC_DOMAIN_ID}`;
+const KNOWLEDGE_ROUTE = `/character/${KNOWLEDGE_ID}`;
+const MULTICLASS_SKILLS_ROUTE = `/character/${MULTICLASS_SKILLS_ID}`;
 const SCREENS = [
   { name: "Builder Abilities", route: RENDAR_ROUTE, tabs: ["Builder", "Abilities"], ready: /points remaining/i },
   { name: "Builder Race", route: RENDAR_ROUTE, tabs: ["Builder", "Race"], ready: /traits:/i },
@@ -453,6 +505,39 @@ const SCREENS = [
     ? [{ name: "Builder Class equipment cleric", route: CLERIC_ROUTE, tabs: ["Builder", "Class"], ready: "Starting Equipment & Gold:", scrollTo: "Starting Equipment & Gold:", expect: { texts: ["Scale Mail"], absent: ["Warhammer", "Chain Mail"], fitsWidth: true } }]
     : []),
   { name: "Builder Class skill proficiency choices", route: BARD_ROUTE, tabs: ["Builder", "Class"], ready: /total level/i, scrollTo: "Class & Subclass Choices" },
+  // The Skills card above Class & Subclass Choices: each skill pick named by its source, with Expertise on the Blessings picks.
+  ...(INTEGRATED
+    ? [{ name: "Builder Class skills card cleric", route: KNOWLEDGE_ROUTE, tabs: ["Builder", "Class"], ready: /total level/i, scrollTo: "starting skills", expect: { texts: ["Cleric starting skills", "Blessings of Knowledge", "Rogue multiclass skill", "Expertise"], absent: ["Variant"], fitsWidth: true } }]
+    : [{ name: "Builder Class skills card multiclass", route: MULTICLASS_SKILLS_ROUTE, tabs: ["Builder", "Class"], ready: /total level/i, scrollTo: "starting skills", expect: { texts: ["Fighter starting skills", "Rogue multiclass skill"], fitsWidth: true } }]),
+  // The Knowledge Cleric's Class & Subclass Choices and Expertise cards, open: the picker of each card is listed.
+  ...(INTEGRATED
+    ? [{ name: "Builder Class skills card cleric choices", route: KNOWLEDGE_ROUTE, tabs: ["Builder", "Class"], ready: /total level/i, scrollTo: "Class & Subclass Choices", expect: { texts: ["Class & Subclass Choices", "Blessings of Knowledge: Language", "Expertise", "Rogue Expertise (Level 1)"], fitsWidth: true } }]
+    : []),
+  // The picks cards collapse and expand: the Skills, Class & Subclass Choices and Expertise cards here, the Race and Background
+  // picks cards below, and the Optional & Replacement Class Features card (Ranger, both modes). Collapsed, a card shows its
+  // title row and subtitle only, and a reopened card lists its picks again. Each collapsed-state scenario loads its route
+  // again (`fresh`), so the cards start open whatever the scenario before it left collapsed.
+  ...(INTEGRATED
+    ? [
+        { name: "Builder Class skills card collapsed", route: KNOWLEDGE_ROUTE, fresh: true, tabs: ["Builder", "Class"], ready: /total level/i, open: async (page) => { for (const title of ["Skills", "Class & Subclass Choices", "Expertise"]) await page.getByText(title, { exact: true }).first().click(); }, scrollTo: "Class & Subclass Choices", expect: { texts: ["Skills", "Class & Subclass Choices", "Expertise"], absent: ["Blessings of Knowledge", "Cleric starting skills", "Blessings of Knowledge: Language", "Rogue Expertise (Level 1)"], fitsWidth: true } },
+        { name: "Builder Class skills card reopened", route: KNOWLEDGE_ROUTE, fresh: true, tabs: ["Builder", "Class"], ready: /total level/i, open: async (page) => { const title = page.getByText("Class & Subclass Choices", { exact: true }).first(); await title.click(); await title.click(); }, scrollTo: "Class & Subclass Choices", expect: { texts: ["Class & Subclass Choices", "Blessings of Knowledge: Language"], fitsWidth: true } },
+      ]
+    : [{ name: "Builder Class skills card collapsed", route: MULTICLASS_SKILLS_ROUTE, tabs: ["Builder", "Class"], ready: /total level/i, open: (page) => page.getByText("Skills", { exact: true }).first().click(), scrollTo: "Class & Subclass Choices", expect: { texts: ["Skills"], absent: ["Fighter starting skills"], fitsWidth: true } }]),
+  { name: "Builder Class optional features card", route: RANGER_ROUTE, tabs: ["Builder", "Class"], ready: /total level/i, scrollTo: "Optional & Replacement Class Features:", expect: { texts: ["Optional & Replacement Class Features:", "Deft Explorer", "Favored Foe"], fitsWidth: true } },
+  { name: "Builder Class optional features card collapsed", route: RANGER_ROUTE, fresh: true, tabs: ["Builder", "Class"], ready: /total level/i, open: (page) => page.getByText("Optional & Replacement Class Features:", { exact: true }).first().click(), scrollTo: "Optional & Replacement Class Features:", expect: { texts: ["Optional & Replacement Class Features:", "Tasha's Cauldron optional features and replacements for your classes."], absent: ["Deft Explorer", "Favored Foe"], fitsWidth: true } },
+  // A choice card with a badge: the Fighting Style badge sits in the title row beside the chevron, in both states.
+  { name: "Builder Class fighting styles card", route: FIGHTER_ROUTE, fresh: true, tabs: ["Builder", "Class"], ready: /total level/i, scrollTo: "Fighting Styles", expect: { texts: ["Fighting Styles", "Fighting Style", "Martial specialization granting passive combat bonuses or additional cantrips."], fitsWidth: true } },
+  { name: "Builder Class fighting styles card collapsed", route: FIGHTER_ROUTE, fresh: true, tabs: ["Builder", "Class"], ready: /total level/i, open: (page) => page.getByText("Fighting Styles", { exact: true }).first().click(), scrollTo: "Fighting Styles", expect: { texts: ["Fighting Styles", "Fighting Style", "Martial specialization granting passive combat bonuses or additional cantrips."], absent: ["Archery", "Blind Fighting", "Defense"], fitsWidth: true } },
+  // The Race card: the Variant Human's language and skill picks, named by what they pick, then collapsed to its title.
+  ...(INTEGRATED
+    ? [
+        { name: "Builder Race skill picks", route: KNOWLEDGE_ROUTE, tabs: ["Builder", "Race"], ready: /traits:/i, scrollTo: "Languages & Proficiencies", expect: { texts: ["Languages & Proficiencies", "Language", "Skill"], fitsWidth: true } },
+        { name: "Builder Race skill picks collapsed", route: KNOWLEDGE_ROUTE, tabs: ["Builder", "Race"], ready: "Languages & Proficiencies", open: (page) => page.getByText("Languages & Proficiencies", { exact: true }).first().click(), scrollTo: "Languages & Proficiencies", expect: { absent: ["Granted Languages:", "Language", "Skill"], fitsWidth: true } },
+      ]
+    : [{ name: "Builder Race skill picks collapsed", route: HALF_ELF_ROUTE, tabs: ["Builder", "Race"], ready: "Languages & Proficiencies", open: (page) => page.getByText("Languages & Proficiencies", { exact: true }).first().click(), scrollTo: "Languages & Proficiencies", expect: { absent: ["Granted Languages:"], fitsWidth: true } }]),
+  // The picks card's options are listed under its title when open, and the title row alone when collapsed.
+  { name: "Builder Background picks card", route: RENDAR_ROUTE, tabs: ["Builder", "Background"], ready: /background benefits/i, scrollTo: "Languages", expect: { texts: ["Languages", "Dwarvish"], fitsWidth: true } },
+  { name: "Builder Background picks card collapsed", route: RENDAR_ROUTE, tabs: ["Builder", "Background"], ready: "Languages", open: (page) => page.getByText("Languages", { exact: true }).first().click(), scrollTo: "Languages", expect: { texts: ["Languages"], absent: ["Dwarvish"], fitsWidth: true } },
   { name: "Stats", route: RENDAR_ROUTE, tabs: ["Stats"], ready: /hit points/i },
   { name: "Stats long header name", route: LONG_NAME_ROUTE, tabs: ["Stats"], ready: /hit points/i, headerName: LONG_NAME },
   { name: "Stats add tool modal", route: RENDAR_ROUTE, tabs: ["Stats"], open: (page) => page.getByLabel("Add tool proficiency").first().click(), modal: "Add Tool Proficiency" },
@@ -788,7 +873,7 @@ async function visitScreen(page, width, screen, state) {
   const ready = screen.modal ?? screen.ready;
   const readyLocator = typeof ready === "string" ? page.getByText(ready, { exact: true }) : page.getByText(ready);
   try {
-    if (screen.modal || state.route !== screen.route) {
+    if (screen.modal || screen.fresh || state.route !== screen.route) {
       await page.goto(`${BASE}${screen.route}`, { waitUntil: "networkidle", timeout: 120000 });
       await page.waitForTimeout(1500);
     }

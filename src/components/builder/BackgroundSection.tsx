@@ -18,13 +18,14 @@ import {
   withoutCatalogCustomBackground,
   type BorrowableFeature,
 } from "../../rules/customBackground";
-import { heldByOtherSources } from "../../rules/proficiencyChoiceOffers";
+import { heldByOtherSources, picksOnlyLanguages } from "../../rules/proficiencyChoiceOffers";
 import { poolNames } from "../../rules/proficiencyPools";
 import type { AvailableRuleChoice } from "../../rules/ruleChoices";
 import type { CharacterCatalogs } from "../../rules/catalogs";
 import { Badge } from "../ui/Badge";
 import { Button } from "../ui/Button";
 import { Card } from "../ui/Card";
+import { CollapsibleCard } from "../ui/CollapsibleCard";
 import { SearchBar } from "../ui/SearchBar";
 import { builderStyles as styles, pkStyles } from "./builderStyles";
 import { ProficiencyChoicePicker } from "./ProficiencyChoicePicker";
@@ -374,11 +375,11 @@ export const BackgroundSection: React.FC<BackgroundSectionProps> = ({
 
           {/* Background Proficiency Choices: its skill, tool and language picks, custom backgrounds included */}
           {proficiencyChoices.length > 0 && (
-            <Card style={{ gap: 10 }}>
+            <CollapsibleCard title={picksOnlyLanguages(proficiencyChoices) ? "Languages" : "Languages & Proficiencies"}>
               {proficiencyChoices.map((choice) => (
                 <ProficiencyChoicePicker key={choice.id} choice={choice} character={character} onUpdate={onUpdate} theme={theme} />
               ))}
-            </Card>
+            </CollapsibleCard>
           )}
         </>
       ) : (

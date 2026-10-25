@@ -112,8 +112,8 @@ test("the Compendium reports stale only for an integrated catalog below the requ
   assert.equal(createCompendium(bundle({ hasIntegratedCatalog: false })).stale, false, "the SRD Baseline is never stale");
 });
 
-test("the release bumps the catalog format by one: a catalog saved at format 5 is stale, one at 6 is current", () => {
-  assert.equal(REQUIRED_CATALOG_FORMAT, 6, "the required format is 6 for this release");
-  assert.equal(createCompendium(bundle({ catalogFormat: 5 })).stale, true, "the previous release's catalog must re-sync");
-  assert.equal(createCompendium(bundle({ catalogFormat: 6 })).stale, false, "a catalog at the new format is current");
+test("the release bumps the catalog format by one: a catalog saved at format 6 is stale, one at 7 is current", () => {
+  assert.equal(REQUIRED_CATALOG_FORMAT, 7, "the required format is 7 for this release");
+  assert.equal(createCompendium(bundle({ catalogFormat: 6 })).stale, true, "the previous release's catalog must re-sync");
+  assert.equal(createCompendium(bundle({ catalogFormat: 7 })).stale, false, "a catalog at the new format is current");
 });

@@ -14,15 +14,6 @@ export interface SkillRow {
   passiveBonus: number;
 }
 
-export function isKnowledgeCleric(character: Character): boolean {
-  return (character.classes || []).some(
-    (c) =>
-      c.className === "Cleric" &&
-      Boolean((c.subclassName || c.subclass)?.toLowerCase().includes("knowledge")) &&
-      c.level >= 1
-  );
-}
-
 export function normalizeSkillName(raw: string): string {
   if (!raw) return "";
   const trimmed = raw.trim();
@@ -32,12 +23,13 @@ export function normalizeSkillName(raw: string): string {
 
 /**
  * The skill rows. Proficiency comes from the Proficiency Sheet's skills, passed in, so the
- * card, Expertise and every other reader agree on which skills the character holds. Expertise and
- * Jack of All Trades are decided here.
+ * card, Expertise and every other reader agree on which skills the character holds. A sheet entry
+ * carries Expertise when a Proficiency Grant gives it; a chosen Expertise adds the rest. Jack of All
+ * Trades is decided here.
  */
 export function skills(
   character: Character,
-  sheetSkills: readonly { name: string }[],
+  sheetSkills: readonly { name: string; expertise?: true }[],
   opts: ResolvedAncestry = {}
 ): SkillRow[] {
   const { modifiers } = effectiveScores(character, opts);
@@ -45,6 +37,7 @@ export function skills(
   const jack = (character.classes || []).some((c) => c.className === "Bard" && c.level >= 2);
 
   const proficientSkillNames = new Set(sheetSkills.map((entry) => normalizeSkillName(entry.name)));
+  const grantExpertiseNames = new Set(sheetSkills.filter((entry) => entry.expertise).map((entry) => normalizeSkillName(entry.name)));
 
   // Normalize chosen expertise
   const expertiseSkillNames = new Set<string>();
@@ -55,7 +48,7 @@ export function skills(
 
   return DND_SKILLS.map((skill) => {
     const isProficient = proficientSkillNames.has(skill.name);
-    const isExpertise = isProficient && expertiseSkillNames.has(skill.name);
+    const isExpertise = isProficient && (grantExpertiseNames.has(skill.name) || expertiseSkillNames.has(skill.name));
     const isJackOfAllTrades = !isProficient && jack;
     const bonus =
       modifiers[skill.ability] +

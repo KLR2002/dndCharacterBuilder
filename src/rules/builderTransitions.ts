@@ -135,8 +135,9 @@ export function validateMulticlass(
 
 /**
  * Adds a class entry for `className` from `source`, or one level to the class the character already holds.
- * A later class records the multiclass grants of the Catalog class it names, and a skill choice when its
- * record gives one. `catalogs` defaults to the process-wide Compendium.
+ * A later class records the multiclass armor, weapon and tool grants of the Catalog class it names. Its skill
+ * choice is a Proficiency Choice on the sheet, read from the same record. `catalogs` defaults to the
+ * process-wide Compendium.
  */
 export function addMulticlassLevel(
   character: Character,
@@ -163,23 +164,11 @@ export function addMulticlassLevel(
   const updatedClasses = [...character.classes, newClass];
 
   const grants = multiclassGrantsOf({ className, source }, allCatalogClasses(catalogs));
-  const updatedSkillChoices = character.skillChoices ? [...character.skillChoices] : [];
   const updatedMulticlassProfs = character.multiclassProficiencies
     ? [...character.multiclassProficiencies]
     : [];
 
   if (grants && character.classes.length > 0) {
-    const choiceId = `multiclass_skill_${className.toLowerCase()}`;
-    if (grants.skills && !updatedSkillChoices.some((sc) => sc.id === choiceId)) {
-      updatedSkillChoices.push({
-        id: choiceId,
-        origin: "class",
-        choose: grants.skills.choose,
-        from: [...grants.skills.from],
-        picked: [],
-      });
-    }
-
     updatedMulticlassProfs.push({
       className,
       ...(grants.armor.length > 0 ? { armor: grants.armor } : {}),
@@ -191,7 +180,6 @@ export function addMulticlassLevel(
   return {
     ...character,
     classes: updatedClasses,
-    ...(updatedSkillChoices.length > 0 ? { skillChoices: updatedSkillChoices } : {}),
     ...(updatedMulticlassProfs.length > 0 ? { multiclassProficiencies: updatedMulticlassProfs } : {}),
   };
 }

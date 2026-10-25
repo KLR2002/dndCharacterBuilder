@@ -5,7 +5,12 @@ import { allCatalogClasses, catalogListings, findClassData, type CharacterCatalo
 import { currentCompendium, type CompendiumListings } from "../services/compendium.ts";
 import { grantedFeatures } from "./grantedFeatures.ts";
 import { deduplicateWeaponProficiencies, normalizeArmorProficiency } from "./proficiencies.ts";
-import { classBaseProficiencies, classBaseSavingThrows } from "./proficiencySources/classBase.ts";
+import {
+  classBaseProficiencies,
+  classBaseSavingThrows,
+  MULTICLASS_FEATURE,
+  multiclassSkillGrantOf,
+} from "./proficiencySources/classBase.ts";
 import type { FeatureInstance, ResolvedAncestry } from "./types.ts";
 import { ALL_LANGUAGE_NAMES, ALL_TOOLS, normalizeToolName } from "./proficienciesAndLanguages.ts";
 import {
@@ -17,16 +22,18 @@ import {
   validPicks,
   type ChoiceProficiencyGrant,
 } from "./proficiencyPools.ts";
-import { isKnowledgeCleric, normalizeSkillName } from "./skills.ts";
+import { normalizeSkillName } from "./skills.ts";
 import { classSkillChoice, getAutoGrantedSkills } from "./proficiencySources/skillGrants.ts";
 import { resolveCharacterAncestry } from "./characterAncestry.ts";
 import { customBackgroundFeature } from "./customBackground.ts";
 
 export { classSkillChoice } from "./proficiencySources/skillGrants.ts";
-export { multiclassGrantsOf, type MulticlassGrants } from "./proficiencySources/classBase.ts";
-
-/** The Knowledge Domain's four skills. A Knowledge Cleric's Expertise on one of them has always made it proficient. */
-const KNOWLEDGE_SKILLS = ["Arcana", "History", "Nature", "Religion"];
+export {
+  multiclassGrantsOf,
+  multiclassSkillGrantOf,
+  MULTICLASS_FEATURE,
+  type MulticlassGrants,
+} from "./proficiencySources/classBase.ts";
 
 /**
  * One entry on the Proficiency Sheet, in any of its categories. Only tools and languages can be added
@@ -35,6 +42,8 @@ const KNOWLEDGE_SKILLS = ["Arcana", "History", "Nature", "Religion"];
 export interface SheetEntry {
   name: string;
   ruleGranted: boolean;
+  /** A skill whose Expertise a Proficiency Grant gives: the grant's fixed skill, or a pick of its choice. */
+  expertise?: true;
 }
 
 /**
@@ -163,10 +172,18 @@ function legacySkillNames(
   ];
 }
 
-/** Knowledge Cleric Expertise on a Knowledge skill, which makes that skill proficient. */
-function knowledgeExpertiseSkills(character: Character): string[] {
-  if (!isKnowledgeCleric(character)) return [];
-  return (character.chosenExpertise ?? []).map(normalizeSkillName).filter((name) => KNOWLEDGE_SKILLS.includes(name));
+/**
+ * The skills that carry Expertise from a Proficiency Grant marked `expertise`: the fixed names of such a skills grant,
+ * and the picks the character holds on such a skill choice. Derived with the grant, so it goes when the grant does.
+ */
+function grantExpertiseNames(features: FeatureInstance[], character: Character, items: readonly ItemData[]): string[] {
+  return features.flatMap((feature) =>
+    (feature.grants ?? []).flatMap((grant) => {
+      if (grant.category !== "skills" || grant.expertise !== true) return [];
+      if (grant.kind === "fixed") return grant.names;
+      return validPicks(grant, character.proficiencyPicks?.[grant.id] ?? [], items);
+    }),
+  );
 }
 
 /**
@@ -190,9 +207,33 @@ function startingFeatureOf(character: Character, classes: readonly ClassData[]):
 }
 
 /**
+ * The multiclass skill choice of each later class entry whose Catalog record gives one, as a feature carrying that
+ * one Proficiency Choice. The first class has none: its skill is the starting skill choice.
+ */
+function multiclassFeaturesOf(character: Character, classes: readonly ClassData[]): FeatureInstance[] {
+  return character.classes.slice(1).flatMap((entry) => {
+    const cls = findClassData(classes, entry);
+    const grant = cls && multiclassSkillGrantOf(cls);
+    if (!cls || !grant || entry.level < 1) return [];
+    return [
+      {
+        id: JSON.stringify(["Class", cls.source, cls.name, MULTICLASS_FEATURE, 1]),
+        name: MULTICLASS_FEATURE,
+        source: cls.source,
+        description: "",
+        origin: "Class",
+        className: cls.name,
+        level: 1,
+        grants: [grant],
+      },
+    ];
+  });
+}
+
+/**
  * The features the character holds, each with the grants its rule gives, read from the listings. The
- * first class's starting proficiencies, and a custom background's picks, are included as more features;
- * they are not granted features.
+ * first class's starting proficiencies, the later classes' multiclass skill choices, and a custom background's
+ * picks, are included as more features; they are not granted features.
  */
 export function featuresOf(character: Character, listings: CompendiumListings): FeatureInstance[] {
   const features = grantedFeatures(character, {
@@ -202,23 +243,24 @@ export function featuresOf(character: Character, listings: CompendiumListings): 
     feats: listings.feats(),
   });
   const starting = startingFeatureOf(character, listings.classes());
+  const multiclass = multiclassFeaturesOf(character, listings.classes());
   const custom = customBackgroundFeature(character);
-  return [...features, ...(starting ? [starting] : []), ...(custom ? [custom] : [])];
+  return [...features, ...(starting ? [starting] : []), ...multiclass, ...(custom ? [custom] : [])];
 }
 
 /**
- * The skills a character holds from the rules alone: background, race and Rule Choice grants, the fixed skill
- * grants of the features the character has now, and the race, subrace and background skill picks. The builder
- * lists these as already held, so a skill picked elsewhere cannot duplicate them.
+ * The skills a character holds from the rules alone, not from the starting skill picker: the fixed skill grants of
+ * the features the character has now, the race, subrace and background skill picks, and the skill picks of every
+ * feature (class, subclass and feat included, such as a subclass's pick or a later class's multiclass pick). The
+ * starting skill picker lists these as already held, so a skill picked elsewhere cannot duplicate them.
  */
 export function ruleGrantedSkills(character: Character, catalogs?: CharacterCatalogs): string[] {
   const listings = catalogListings(catalogs);
   const ancestry = resolveCharacterAncestry(character, listings.races());
   const features = featuresOf(character, listings);
-  const recordFeatures = features.filter((feature) => feature.origin !== "Class" && feature.origin !== "Subclass" && feature.origin !== "Feat");
   return [
     ...legacySkillNames(character, ancestry, listings, features),
-    ...choicePickNames(recordFeatures, character, "skills", listings.items()),
+    ...choicePickNames(features, character, "skills", listings.items()),
   ];
 }
 
@@ -340,8 +382,8 @@ export function proficiencySheet(character: Character, catalogs: CharacterCatalo
     ...legacySkillNames(character, ancestry, listings, features),
     ...(character.chosenSkills ?? []).map(normalizeSkillName),
     ...choicePickNames(features, character, "skills", items),
-    ...knowledgeExpertiseSkills(character),
   ];
+  const expertiseKeys = new Set(grantExpertiseNames(features, character, items).map((name) => name.trim().toLowerCase()));
 
   const toolRules = sheetEntries(tools);
   const languageRules = sheetEntries(languages);
@@ -351,6 +393,6 @@ export function proficiencySheet(character: Character, catalogs: CharacterCatalo
     armor: sheetEntries(armorNames),
     weapons: sheetEntries(deduplicateWeaponProficiencies(weaponNames)),
     savingThrows,
-    skills: sheetEntries(skillNames),
+    skills: sheetEntries(skillNames).map((entry) => (expertiseKeys.has(entry.name.toLowerCase()) ? { ...entry, expertise: true } : entry)),
   };
 }

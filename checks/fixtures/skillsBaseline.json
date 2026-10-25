@@ -4285,327 +4285,147 @@
  },
  "srd | human acolyte knowledge cleric with skill expertise | L1 | books=all": {
   "proficient": [
-   "Arcana",
-   "History",
    "Insight",
    "Religion"
   ],
-  "expertise": [
-   "Arcana",
-   "History"
-  ],
-  "eligible": [
-   "Arcana",
-   "History",
-   "Nature",
-   "Religion"
-  ]
+  "expertise": [],
+  "eligible": []
  },
  "srd | human acolyte knowledge cleric with skill expertise | L1 | books=PHB": {
   "proficient": [
-   "Arcana",
-   "History",
    "Insight",
    "Religion"
   ],
-  "expertise": [
-   "Arcana",
-   "History"
-  ],
-  "eligible": [
-   "Arcana",
-   "History",
-   "Nature",
-   "Religion"
-  ]
+  "expertise": [],
+  "eligible": []
  },
  "srd | human acolyte knowledge cleric with skill expertise | L1 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
   "proficient": [
-   "Arcana",
-   "History",
    "Insight",
    "Religion"
   ],
-  "expertise": [
-   "Arcana",
-   "History"
-  ],
-  "eligible": [
-   "Arcana",
-   "History",
-   "Nature",
-   "Religion"
-  ]
+  "expertise": [],
+  "eligible": []
  },
  "srd | human acolyte knowledge cleric with skill expertise | L3 | books=all": {
   "proficient": [
-   "Arcana",
-   "History",
    "Insight",
    "Religion"
   ],
-  "expertise": [
-   "Arcana",
-   "History"
-  ],
-  "eligible": [
-   "Arcana",
-   "History",
-   "Nature",
-   "Religion"
-  ]
+  "expertise": [],
+  "eligible": []
  },
  "srd | human acolyte knowledge cleric with skill expertise | L3 | books=PHB": {
   "proficient": [
-   "Arcana",
-   "History",
    "Insight",
    "Religion"
   ],
-  "expertise": [
-   "Arcana",
-   "History"
-  ],
-  "eligible": [
-   "Arcana",
-   "History",
-   "Nature",
-   "Religion"
-  ]
+  "expertise": [],
+  "eligible": []
  },
  "srd | human acolyte knowledge cleric with skill expertise | L3 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
   "proficient": [
-   "Arcana",
-   "History",
    "Insight",
    "Religion"
   ],
-  "expertise": [
-   "Arcana",
-   "History"
-  ],
-  "eligible": [
-   "Arcana",
-   "History",
-   "Nature",
-   "Religion"
-  ]
+  "expertise": [],
+  "eligible": []
  },
  "srd | human acolyte knowledge cleric with skill expertise | L6 | books=all": {
   "proficient": [
-   "Arcana",
-   "History",
    "Insight",
    "Religion"
   ],
-  "expertise": [
-   "Arcana",
-   "History"
-  ],
-  "eligible": [
-   "Arcana",
-   "History",
-   "Nature",
-   "Religion"
-  ]
+  "expertise": [],
+  "eligible": []
  },
  "srd | human acolyte knowledge cleric with skill expertise | L6 | books=PHB": {
   "proficient": [
-   "Arcana",
-   "History",
    "Insight",
    "Religion"
   ],
-  "expertise": [
-   "Arcana",
-   "History"
-  ],
-  "eligible": [
-   "Arcana",
-   "History",
-   "Nature",
-   "Religion"
-  ]
+  "expertise": [],
+  "eligible": []
  },
  "srd | human acolyte knowledge cleric with skill expertise | L6 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
   "proficient": [
-   "Arcana",
-   "History",
    "Insight",
    "Religion"
   ],
-  "expertise": [
-   "Arcana",
-   "History"
-  ],
-  "eligible": [
-   "Arcana",
-   "History",
-   "Nature",
-   "Religion"
-  ]
+  "expertise": [],
+  "eligible": []
  },
  "srd | human acolyte knowledge cleric with skill expertise | L11 | books=all": {
   "proficient": [
-   "Arcana",
-   "History",
    "Insight",
    "Religion"
   ],
-  "expertise": [
-   "Arcana",
-   "History"
-  ],
-  "eligible": [
-   "Arcana",
-   "History",
-   "Nature",
-   "Religion"
-  ]
+  "expertise": [],
+  "eligible": []
  },
  "srd | human acolyte knowledge cleric with skill expertise | L11 | books=PHB": {
   "proficient": [
-   "Arcana",
-   "History",
    "Insight",
    "Religion"
   ],
-  "expertise": [
-   "Arcana",
-   "History"
-  ],
-  "eligible": [
-   "Arcana",
-   "History",
-   "Nature",
-   "Religion"
-  ]
+  "expertise": [],
+  "eligible": []
  },
  "srd | human acolyte knowledge cleric with skill expertise | L11 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
   "proficient": [
-   "Arcana",
-   "History",
    "Insight",
    "Religion"
   ],
-  "expertise": [
-   "Arcana",
-   "History"
-  ],
-  "eligible": [
-   "Arcana",
-   "History",
-   "Nature",
-   "Religion"
-  ]
+  "expertise": [],
+  "eligible": []
  },
  "srd | human acolyte knowledge cleric with skill expertise | L14 | books=all": {
   "proficient": [
-   "Arcana",
-   "History",
    "Insight",
    "Religion"
   ],
-  "expertise": [
-   "Arcana",
-   "History"
-  ],
-  "eligible": [
-   "Arcana",
-   "History",
-   "Nature",
-   "Religion"
-  ]
+  "expertise": [],
+  "eligible": []
  },
  "srd | human acolyte knowledge cleric with skill expertise | L14 | books=PHB": {
   "proficient": [
-   "Arcana",
-   "History",
    "Insight",
    "Religion"
   ],
-  "expertise": [
-   "Arcana",
-   "History"
-  ],
-  "eligible": [
-   "Arcana",
-   "History",
-   "Nature",
-   "Religion"
-  ]
+  "expertise": [],
+  "eligible": []
  },
  "srd | human acolyte knowledge cleric with skill expertise | L14 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
   "proficient": [
-   "Arcana",
-   "History",
    "Insight",
    "Religion"
   ],
-  "expertise": [
-   "Arcana",
-   "History"
-  ],
-  "eligible": [
-   "Arcana",
-   "History",
-   "Nature",
-   "Religion"
-  ]
+  "expertise": [],
+  "eligible": []
  },
  "srd | human acolyte knowledge cleric with skill expertise | L17 | books=all": {
   "proficient": [
-   "Arcana",
-   "History",
    "Insight",
    "Religion"
   ],
-  "expertise": [
-   "Arcana",
-   "History"
-  ],
-  "eligible": [
-   "Arcana",
-   "History",
-   "Nature",
-   "Religion"
-  ]
+  "expertise": [],
+  "eligible": []
  },
  "srd | human acolyte knowledge cleric with skill expertise | L17 | books=PHB": {
   "proficient": [
-   "Arcana",
-   "History",
    "Insight",
    "Religion"
   ],
-  "expertise": [
-   "Arcana",
-   "History"
-  ],
-  "eligible": [
-   "Arcana",
-   "History",
-   "Nature",
-   "Religion"
-  ]
+  "expertise": [],
+  "eligible": []
  },
  "srd | human acolyte knowledge cleric with skill expertise | L17 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
   "proficient": [
-   "Arcana",
-   "History",
    "Insight",
    "Religion"
   ],
-  "expertise": [
-   "Arcana",
-   "History"
-  ],
-  "eligible": [
-   "Arcana",
-   "History",
-   "Nature",
-   "Religion"
-  ]
+  "expertise": [],
+  "eligible": []
  },
  "srd | human criminal thief rogue with skill expertise | L1 | books=all": {
   "proficient": [],
@@ -10873,7 +10693,9 @@
    "Intimidation",
    "Persuasion"
   ],
-  "expertise": [],
+  "expertise": [
+   "Persuasion"
+  ],
   "eligible": []
  },
  "integrated | human soldier purple dragon knight | L11 | books=PHB": {
@@ -10890,7 +10712,9 @@
    "Intimidation",
    "Persuasion"
   ],
-  "expertise": [],
+  "expertise": [
+   "Persuasion"
+  ],
   "eligible": []
  },
  "integrated | human soldier purple dragon knight | L14 | books=all": {
@@ -10899,7 +10723,9 @@
    "Intimidation",
    "Persuasion"
   ],
-  "expertise": [],
+  "expertise": [
+   "Persuasion"
+  ],
   "eligible": []
  },
  "integrated | human soldier purple dragon knight | L14 | books=PHB": {
@@ -10916,7 +10742,9 @@
    "Intimidation",
    "Persuasion"
   ],
-  "expertise": [],
+  "expertise": [
+   "Persuasion"
+  ],
   "eligible": []
  },
  "integrated | human soldier purple dragon knight | L17 | books=all": {
@@ -10925,7 +10753,9 @@
    "Intimidation",
    "Persuasion"
   ],
-  "expertise": [],
+  "expertise": [
+   "Persuasion"
+  ],
   "eligible": []
  },
  "integrated | human soldier purple dragon knight | L17 | books=PHB": {
@@ -10942,7 +10772,9 @@
    "Intimidation",
    "Persuasion"
   ],
-  "expertise": [],
+  "expertise": [
+   "Persuasion"
+  ],
   "eligible": []
  },
  "integrated | human sage bladesinger wizard | L1 | books=all": {
@@ -11139,12 +10971,13 @@
    "Stealth",
    "Survival"
   ],
-  "expertise": [],
+  "expertise": [
+   "Nature",
+   "Survival"
+  ],
   "eligible": [
    "Deception",
-   "Nature",
-   "Stealth",
-   "Survival"
+   "Stealth"
   ]
  },
  "integrated | human criminal scout rogue | L3 | books=PHB": {
@@ -11165,12 +10998,13 @@
    "Stealth",
    "Survival"
   ],
-  "expertise": [],
+  "expertise": [
+   "Nature",
+   "Survival"
+  ],
   "eligible": [
    "Deception",
-   "Nature",
-   "Stealth",
-   "Survival"
+   "Stealth"
   ]
  },
  "integrated | human criminal scout rogue | L6 | books=all": {
@@ -11180,12 +11014,13 @@
    "Stealth",
    "Survival"
   ],
-  "expertise": [],
+  "expertise": [
+   "Nature",
+   "Survival"
+  ],
   "eligible": [
    "Deception",
-   "Nature",
-   "Stealth",
-   "Survival"
+   "Stealth"
   ]
  },
  "integrated | human criminal scout rogue | L6 | books=PHB": {
@@ -11206,12 +11041,13 @@
    "Stealth",
    "Survival"
   ],
-  "expertise": [],
+  "expertise": [
+   "Nature",
+   "Survival"
+  ],
   "eligible": [
    "Deception",
-   "Nature",
-   "Stealth",
-   "Survival"
+   "Stealth"
   ]
  },
  "integrated | human criminal scout rogue | L11 | books=all": {
@@ -11221,12 +11057,13 @@
    "Stealth",
    "Survival"
   ],
-  "expertise": [],
+  "expertise": [
+   "Nature",
+   "Survival"
+  ],
   "eligible": [
    "Deception",
-   "Nature",
-   "Stealth",
-   "Survival"
+   "Stealth"
   ]
  },
  "integrated | human criminal scout rogue | L11 | books=PHB": {
@@ -11247,12 +11084,13 @@
    "Stealth",
    "Survival"
   ],
-  "expertise": [],
+  "expertise": [
+   "Nature",
+   "Survival"
+  ],
   "eligible": [
    "Deception",
-   "Nature",
-   "Stealth",
-   "Survival"
+   "Stealth"
   ]
  },
  "integrated | human criminal scout rogue | L14 | books=all": {
@@ -11262,12 +11100,13 @@
    "Stealth",
    "Survival"
   ],
-  "expertise": [],
+  "expertise": [
+   "Nature",
+   "Survival"
+  ],
   "eligible": [
    "Deception",
-   "Nature",
-   "Stealth",
-   "Survival"
+   "Stealth"
   ]
  },
  "integrated | human criminal scout rogue | L14 | books=PHB": {
@@ -11288,12 +11127,13 @@
    "Stealth",
    "Survival"
   ],
-  "expertise": [],
+  "expertise": [
+   "Nature",
+   "Survival"
+  ],
   "eligible": [
    "Deception",
-   "Nature",
-   "Stealth",
-   "Survival"
+   "Stealth"
   ]
  },
  "integrated | human criminal scout rogue | L17 | books=all": {
@@ -11303,12 +11143,13 @@
    "Stealth",
    "Survival"
   ],
-  "expertise": [],
+  "expertise": [
+   "Nature",
+   "Survival"
+  ],
   "eligible": [
    "Deception",
-   "Nature",
-   "Stealth",
-   "Survival"
+   "Stealth"
   ]
  },
  "integrated | human criminal scout rogue | L17 | books=PHB": {
@@ -11329,12 +11170,13 @@
    "Stealth",
    "Survival"
   ],
-  "expertise": [],
+  "expertise": [
+   "Nature",
+   "Survival"
+  ],
   "eligible": [
    "Deception",
-   "Nature",
-   "Stealth",
-   "Survival"
+   "Stealth"
   ]
  },
  "integrated | human acolyte knowledge cleric with skill expertise | L1 | books=all": {
@@ -11348,12 +11190,7 @@
    "Arcana",
    "History"
   ],
-  "eligible": [
-   "Arcana",
-   "History",
-   "Nature",
-   "Religion"
-  ]
+  "eligible": []
  },
  "integrated | human acolyte knowledge cleric with skill expertise | L1 | books=PHB": {
   "proficient": [
@@ -11366,12 +11203,7 @@
    "Arcana",
    "History"
   ],
-  "eligible": [
-   "Arcana",
-   "History",
-   "Nature",
-   "Religion"
-  ]
+  "eligible": []
  },
  "integrated | human acolyte knowledge cleric with skill expertise | L1 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
   "proficient": [
@@ -11384,12 +11216,7 @@
    "Arcana",
    "History"
   ],
-  "eligible": [
-   "Arcana",
-   "History",
-   "Nature",
-   "Religion"
-  ]
+  "eligible": []
  },
  "integrated | human acolyte knowledge cleric with skill expertise | L3 | books=all": {
   "proficient": [
@@ -11402,12 +11229,7 @@
    "Arcana",
    "History"
   ],
-  "eligible": [
-   "Arcana",
-   "History",
-   "Nature",
-   "Religion"
-  ]
+  "eligible": []
  },
  "integrated | human acolyte knowledge cleric with skill expertise | L3 | books=PHB": {
   "proficient": [
@@ -11420,12 +11242,7 @@
    "Arcana",
    "History"
   ],
-  "eligible": [
-   "Arcana",
-   "History",
-   "Nature",
-   "Religion"
-  ]
+  "eligible": []
  },
  "integrated | human acolyte knowledge cleric with skill expertise | L3 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
   "proficient": [
@@ -11438,12 +11255,7 @@
    "Arcana",
    "History"
   ],
-  "eligible": [
-   "Arcana",
-   "History",
-   "Nature",
-   "Religion"
-  ]
+  "eligible": []
  },
  "integrated | human acolyte knowledge cleric with skill expertise | L6 | books=all": {
   "proficient": [
@@ -11456,12 +11268,7 @@
    "Arcana",
    "History"
   ],
-  "eligible": [
-   "Arcana",
-   "History",
-   "Nature",
-   "Religion"
-  ]
+  "eligible": []
  },
  "integrated | human acolyte knowledge cleric with skill expertise | L6 | books=PHB": {
   "proficient": [
@@ -11474,12 +11281,7 @@
    "Arcana",
    "History"
   ],
-  "eligible": [
-   "Arcana",
-   "History",
-   "Nature",
-   "Religion"
-  ]
+  "eligible": []
  },
  "integrated | human acolyte knowledge cleric with skill expertise | L6 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
   "proficient": [
@@ -11492,12 +11294,7 @@
    "Arcana",
    "History"
   ],
-  "eligible": [
-   "Arcana",
-   "History",
-   "Nature",
-   "Religion"
-  ]
+  "eligible": []
  },
  "integrated | human acolyte knowledge cleric with skill expertise | L11 | books=all": {
   "proficient": [
@@ -11510,12 +11307,7 @@
    "Arcana",
    "History"
   ],
-  "eligible": [
-   "Arcana",
-   "History",
-   "Nature",
-   "Religion"
-  ]
+  "eligible": []
  },
  "integrated | human acolyte knowledge cleric with skill expertise | L11 | books=PHB": {
   "proficient": [
@@ -11528,12 +11320,7 @@
    "Arcana",
    "History"
   ],
-  "eligible": [
-   "Arcana",
-   "History",
-   "Nature",
-   "Religion"
-  ]
+  "eligible": []
  },
  "integrated | human acolyte knowledge cleric with skill expertise | L11 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
   "proficient": [
@@ -11546,12 +11333,7 @@
    "Arcana",
    "History"
   ],
-  "eligible": [
-   "Arcana",
-   "History",
-   "Nature",
-   "Religion"
-  ]
+  "eligible": []
  },
  "integrated | human acolyte knowledge cleric with skill expertise | L14 | books=all": {
   "proficient": [
@@ -11564,12 +11346,7 @@
    "Arcana",
    "History"
   ],
-  "eligible": [
-   "Arcana",
-   "History",
-   "Nature",
-   "Religion"
-  ]
+  "eligible": []
  },
  "integrated | human acolyte knowledge cleric with skill expertise | L14 | books=PHB": {
   "proficient": [
@@ -11582,12 +11359,7 @@
    "Arcana",
    "History"
   ],
-  "eligible": [
-   "Arcana",
-   "History",
-   "Nature",
-   "Religion"
-  ]
+  "eligible": []
  },
  "integrated | human acolyte knowledge cleric with skill expertise | L14 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
   "proficient": [
@@ -11600,12 +11372,7 @@
    "Arcana",
    "History"
   ],
-  "eligible": [
-   "Arcana",
-   "History",
-   "Nature",
-   "Religion"
-  ]
+  "eligible": []
  },
  "integrated | human acolyte knowledge cleric with skill expertise | L17 | books=all": {
   "proficient": [
@@ -11618,12 +11385,7 @@
    "Arcana",
    "History"
   ],
-  "eligible": [
-   "Arcana",
-   "History",
-   "Nature",
-   "Religion"
-  ]
+  "eligible": []
  },
  "integrated | human acolyte knowledge cleric with skill expertise | L17 | books=PHB": {
   "proficient": [
@@ -11636,12 +11398,7 @@
    "Arcana",
    "History"
   ],
-  "eligible": [
-   "Arcana",
-   "History",
-   "Nature",
-   "Religion"
-  ]
+  "eligible": []
  },
  "integrated | human acolyte knowledge cleric with skill expertise | L17 | books=PHB+XGE+TCE+FTD+BGG+SCAG+DMG": {
   "proficient": [
@@ -11654,12 +11411,7 @@
    "Arcana",
    "History"
   ],
-  "eligible": [
-   "Arcana",
-   "History",
-   "Nature",
-   "Religion"
-  ]
+  "eligible": []
  },
  "integrated | human criminal thief rogue with skill expertise | L1 | books=all": {
   "proficient": [

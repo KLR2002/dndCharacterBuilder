@@ -113,7 +113,7 @@ test("a skill choice grant is offered as a proficiency choice, with held skills 
   assert.deepEqual(offer.options.map((option) => option.name), ["Nature"], "Survival is already held, so it is hidden");
 });
 
-test("the skills the buckets hold, Primal Knowledge picks and Knowledge Domain Expertise are still on the sheet", () => {
+test("the skills the buckets hold and Primal Knowledge picks are still on the sheet", () => {
   const compendium = lampCompendium();
   const primal = makeChar({
     classes: [{ className: "Barbarian", source: "PHB", level: 3 }],
@@ -125,12 +125,6 @@ test("the skills the buckets hold, Primal Knowledge picks and Knowledge Domain E
 
   const bucket = makeChar({ chosenSkills: ["Stealth"] });
   assert.equal(names(proficiencySheet(bucket, { compendium }).skills).includes("Stealth"), true);
-
-  const knowledge = makeChar({
-    classes: [{ className: "Cleric", source: "PHB", level: 1, subclassName: "Knowledge Domain", subclassSource: "PHB" }],
-    chosenExpertise: ["Arcana"],
-  });
-  assert.equal(names(proficiencySheet(knowledge, { compendium }).skills).includes("Arcana"), true);
 });
 
 test("the Drunken Master's Performance is on the sheet from 3rd level in the integrated Compendium", () => {
@@ -141,7 +135,7 @@ test("the Drunken Master's Performance is on the sheet from 3rd level in the int
   assert.equal(names(proficiencySheet(monk(3), { compendium }).skills).includes("Performance"), true);
 });
 
-test("a skill granted by a Scout's Survivalist is an Expertise option for a Rogue", () => {
+test("a skill granted by a Scout's Survivalist has its Expertise from the grant, so no Rogue milestone offers it", () => {
   const compendium = integratedTestCompendium();
   const scout = makeChar({
     classes: [
@@ -149,8 +143,9 @@ test("a skill granted by a Scout's Survivalist is an Expertise option for a Rogu
     ],
   });
   const rogue = getAvailableExpertiseMilestones(scout, { compendium }).find((m) => m.id === "rogue_1");
-  assert.ok(rogue?.options.includes("Nature"), "Survivalist gives Nature, so Nature is eligible");
-  assert.ok(rogue?.options.includes("Survival"), "Survivalist gives Survival, so Survival is eligible");
+  assert.ok(rogue, "the Rogue milestone is still there");
+  assert.ok(!rogue.options.includes("Nature"), "Survivalist gives Nature Expertise, so Nature is not offered");
+  assert.ok(!rogue.options.includes("Survival"), "Survivalist gives Survival Expertise, so Survival is not offered");
 });
 
 test("the card's skill proficiencies are the sheet's, so the evaluated skill rows agree with the sheet", () => {

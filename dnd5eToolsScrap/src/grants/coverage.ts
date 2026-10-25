@@ -1,5 +1,5 @@
 import type { ReviewedFeature } from "../overrides/proficiency-grants.ts";
-import { matchedSentences } from "../parser/proficiency-grants.ts";
+import { doublingSentences, matchedSentences } from "../parser/proficiency-grants.ts";
 import { allRefs, type GrantRef, type TrackedData } from "./subjects.ts";
 
 /** A feature whose prose matches the proficiency vocabulary, with neither grants nor a mark. */
@@ -20,11 +20,7 @@ export interface CoverageGap extends ReviewedFeature {
  * is reported once per key, from the first ref under it that has none.
  */
 export function coverageGaps(data: TrackedData, marks: ReviewedFeature[]): CoverageGap[] {
-  const byKey = new Map<string, GrantRef[]>();
-  for (const ref of allRefs(data)) {
-    const k = featureKey(ref.subject);
-    byKey.set(k, [...(byKey.get(k) ?? []), ref]);
-  }
+  const byKey = refsByKey(data);
 
   const marked = new Set<string>();
   for (const mark of marks) {
@@ -48,9 +44,63 @@ export function coverageGaps(data: TrackedData, marks: ReviewedFeature[]): Cover
   return gaps;
 }
 
+/**
+ * The features whose text doubles the proficiency bonus, and that carry no Expertise on a skills grant, and no review mark.
+ * Each is reported once per key, with its doubling sentences. Throws when a mark names no feature, a feature whose text
+ * doubles no bonus, or a feature with an Expertise grant, and when an Expertise grant is on anything but a skills grant.
+ */
+export function expertiseGaps(data: TrackedData, marks: ReviewedFeature[]): CoverageGap[] {
+  const byKey = refsByKey(data);
+  for (const refs of byKey.values()) {
+    for (const ref of refs) {
+      if (ref.holder.grants?.some((grant) => grant.expertise === true && grant.category !== "skills")) {
+        throw new Error(`expertise grant is not a skills grant: ${featureKey(ref.subject)}`);
+      }
+    }
+  }
+
+  const marked = new Set<string>();
+  for (const mark of marks) {
+    const k = featureKey(mark);
+    const refs = byKey.get(k);
+    if (!refs) throw new Error(`reviewed expertise mark matches no feature: ${k}`);
+    if (!refs.some((ref) => doublingSentences(ref.subject.description).length > 0)) {
+      throw new Error(`reviewed expertise mark names a feature that doubles no proficiency bonus: ${k}`);
+    }
+    if (refs.some(hasExpertiseGrant)) throw new Error(`reviewed expertise mark names a feature marked expertise: ${k}`);
+    marked.add(k);
+  }
+
+  const gaps: CoverageGap[] = [];
+  for (const [k, refs] of byKey) {
+    if (marked.has(k)) continue;
+    for (const ref of refs) {
+      const sentences = doublingSentences(ref.subject.description);
+      if (sentences.length === 0 || hasExpertiseGrant(ref)) continue;
+      gaps.push({ owner: ref.subject.owner, feature: ref.subject.feature, level: ref.subject.level, sentences });
+      break;
+    }
+  }
+  return gaps;
+}
+
 /** A gap as one line for a failure message: `Owner / Feature (level N)`. */
 export function gapName(gap: Pick<CoverageGap, "owner" | "feature" | "level">): string {
   return `${gap.owner} / ${gap.feature} (level ${gap.level})`;
+}
+
+/** The tracked refs of each feature key. Two refs share a key when they come from different sources with one name. */
+function refsByKey(data: TrackedData): Map<string, GrantRef[]> {
+  const byKey = new Map<string, GrantRef[]>();
+  for (const ref of allRefs(data)) {
+    const k = featureKey(ref.subject);
+    byKey.set(k, [...(byKey.get(k) ?? []), ref]);
+  }
+  return byKey;
+}
+
+function hasExpertiseGrant(ref: GrantRef): boolean {
+  return ref.holder.grants?.some((grant) => grant.expertise === true) ?? false;
 }
 
 function hasGrants(ref: GrantRef): boolean {

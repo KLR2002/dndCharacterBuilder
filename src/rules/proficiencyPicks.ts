@@ -3,10 +3,12 @@ import type { ClassData, GrantRequirement, ProficiencyGrant } from "../types/dnd
 import type { Compendium } from "../services/compendium.ts";
 import { grantRequirementMet } from "./optionFeatureGrants.ts";
 import { findClassData } from "./catalogs.ts";
+import { MULTICLASS_FEATURE, multiclassSkillGrantOf } from "./proficiencySheet.ts";
 import { poolNames, sourceRecordGrants, STARTING_PROFICIENCIES, validPicks, type ChoiceProficiencyGrant } from "./proficiencyPools.ts";
 import { heldSubraceOf, raceSkillPickApplies, recordGrantSources, subracePickApplies } from "./recordProficiencyGrants.ts";
 import { CUSTOM_BACKGROUND_GRANTS, isCustomBackground } from "./customBackground.ts";
 import { normalizeSkillName } from "./skills.ts";
+import { getAvailableExpertiseMilestones, getMilestonePicks } from "./expertise.ts";
 
 /**
  * Moves the class tool picks saved before the starting tool choice was a Proficiency Choice into that
@@ -151,6 +153,8 @@ export function moveAliasedProficiencyPicks(character: Character, compendium: Co
 /** A class owner is the catalog class itself, so two classes of one name from different sources are told apart. */
 type GrantOwner =
   | { kind: "class"; className: string; source: string }
+  /** A later class's multiclass skill choice: held only while the class is an entry after the first. */
+  | { kind: "multiclass"; className: string; source: string }
   | { kind: "subclass"; className: string; source: string; subclassName: string; subclassSource: string }
   | { kind: "feat"; featName: string }
   | { kind: "record"; origin: "Race" | "Subrace" | "Background"; name: string; source: string; raceName?: string; raceSource?: string }
@@ -164,6 +168,8 @@ interface GrantSource {
   /** The grant's id, and the former ids it was saved under. */
   id: string;
   aliases: string[];
+  /** The grant as the catalog prints it, with its Expertise mark when it has one. */
+  grant: ProficiencyGrant;
   /** The feature the grant is printed on, named in the review notice. */
   feature: string;
   /** The level the feature is gained at. Feats are gained with no level, so 0. */
@@ -186,13 +192,13 @@ function grantSourcesIn(compendium: Compendium): Map<string, GrantSource[]> {
   const sources = new Map<string, GrantSource[]>();
   const add = (
     grants: ProficiencyGrant[] | undefined,
-    source: Omit<GrantSource, "id" | "aliases" | "applies">,
+    source: Omit<GrantSource, "id" | "aliases" | "applies" | "grant">,
     appliesTo?: (grant: ProficiencyGrant, character: Character) => boolean,
   ) => {
     for (const grant of grants ?? []) {
       const owners = sources.get(grant.id) ?? [];
       const applies = appliesTo && ((character: Character) => appliesTo(grant, character));
-      owners.push({ ...source, id: grant.id, aliases: grant.aliases ?? [], requires: grant.requires ?? source.requires, applies });
+      owners.push({ ...source, id: grant.id, aliases: grant.aliases ?? [], grant, requires: grant.requires ?? source.requires, applies });
       sources.set(grant.id, owners);
     }
   };
@@ -209,6 +215,15 @@ function grantSourcesIn(compendium: Compendium): Map<string, GrantSource[]> {
         level: feature.level,
         optional: feature.isOptional === true,
         owner: { kind: "class", className: cls.name, source: cls.source },
+      });
+    }
+    const multiclassSkill = multiclassSkillGrantOf(cls);
+    if (multiclassSkill) {
+      add([multiclassSkill], {
+        feature: MULTICLASS_FEATURE,
+        level: 1,
+        optional: false,
+        owner: { kind: "multiclass", className: cls.name, source: cls.source },
       });
     }
     for (const sub of cls.subclasses) {
@@ -276,11 +291,13 @@ function ownerHeld(source: GrantSource, character: Character, classes: readonly 
       (selection) => selection.type === "feat" && selection.featName?.toLowerCase() === wanted,
     );
   }
-  return character.classes.some((c) => {
+  // A multiclass grant is held by a class entry after the first only, as the sheet reads it.
+  const entries = owner.kind === "multiclass" ? character.classes.slice(1) : character.classes;
+  return entries.some((c) => {
     if (c.level < source.level) return false;
     const held = findClassData(classes, c);
     if (!held || held.name !== owner.className || held.source !== owner.source) return false;
-    if (owner.kind === "class") return true;
+    if (owner.kind === "class" || owner.kind === "multiclass") return true;
     if ((c.subclassName ?? "").toLowerCase() !== owner.subclassName.toLowerCase()) return false;
     const gate = { className: c.className, subclassName: owner.subclassName, subclassSource: owner.subclassSource };
     return grantRequirementMet(character, gate, source.requires, source.feature);
@@ -422,4 +439,72 @@ export function moveLegacySkillPicks(character: Character, compendium: Compendiu
     skillChoices,
     chosenSkills,
   };
+}
+
+/**
+ * Moves Expertise picks saved in chosenExpertise into a held skill choice that now carries Expertise. A name the
+ * choice offers goes into its free slots, in the order it was picked; a name already among its picks is dropped,
+ * since the grant gives its Expertise. A name an Expertise milestone of the character holds stays in chosenExpertise,
+ * so the milestone keeps its own slot. A name no free slot takes stays in chosenExpertise, and the Expertise pass
+ * releases it with its review notice. Before this, a Knowledge Domain Cleric's Blessings Expertise was a separate
+ * milestone. Returns the character unchanged when nothing moves.
+ */
+export function moveExpertisePicksToGrants(character: Character, compendium: Compendium): Character {
+  const expertise = character.chosenExpertise ?? [];
+  if (expertise.length === 0) return character;
+
+  const classes = compendium.for().classes();
+  const offered: { id: string; grant: ChoiceProficiencyGrant }[] = [];
+  for (const [id, owners] of grantSourcesIn(compendium)) {
+    const grant = owners[0].grant;
+    if (grant.kind !== "choice" || grant.category !== "skills" || grant.expertise !== true) continue;
+    if (releaseReason(owners, character, classes) !== undefined) continue;
+    offered.push({ id, grant });
+  }
+  if (offered.length === 0) return character;
+
+  const milestoneHeld = new Set(
+    getMilestonePicks(getAvailableExpertiseMilestones(character, { compendium }), expertise).flatMap((pick) =>
+      pick.chosen.map((name) => name.trim().toLowerCase()),
+    ),
+  );
+  const picks: Record<string, string[]> = { ...(character.proficiencyPicks ?? {}) };
+  const kept: string[] = [];
+  let moved = false;
+  for (const name of expertise) {
+    const key = name.trim().toLowerCase();
+    if (milestoneHeld.has(key)) {
+      kept.push(name);
+      continue;
+    }
+    const target = offered.find(({ id, grant }) => {
+      if (!poolNames(grant).some((option) => option.toLowerCase() === key)) return false;
+      const held = validPicks(grant, picks[id] ?? []);
+      return held.some((pick) => pick.toLowerCase() === key) || held.length < grant.count;
+    });
+    if (!target) {
+      kept.push(name);
+      continue;
+    }
+    const held = validPicks(target.grant, picks[target.id] ?? []);
+    if (!held.some((pick) => pick.toLowerCase() === key)) {
+      const option = poolNames(target.grant).find((candidate) => candidate.toLowerCase() === key) as string;
+      picks[target.id] = [...(picks[target.id] ?? []), option];
+    }
+    moved = true;
+  }
+  if (!moved) return character;
+  return { ...character, proficiencyPicks: picks, chosenExpertise: kept };
+}
+
+/**
+ * Drops the empty multiclass skill entries that saves kept in `skillChoices` before a later class's skill choice
+ * was a Proficiency Choice. Nothing could pick into them, so an empty one holds nothing. An entry that holds a
+ * pick is kept as saved. Returns the character unchanged when there is no such entry.
+ */
+export function dropLegacyMulticlassSkillEntries(character: Character): Character {
+  const entries = character.skillChoices ?? [];
+  const kept = entries.filter((entry) => !(entry.id.startsWith("multiclass_skill_") && entry.picked.length === 0));
+  if (kept.length === entries.length) return character;
+  return { ...character, skillChoices: kept.length > 0 ? kept : undefined };
 }

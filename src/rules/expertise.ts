@@ -1,7 +1,7 @@
 import type { Character } from "../types/character.ts";
-import { isKnowledgeCleric, skills } from "./skills.ts";
+import { skills } from "./skills.ts";
 import type { CharacterCatalogs } from "./catalogs.ts";
-import { proficiencySheet } from "./proficiencySheet.ts";
+import { proficiencySheet, type ProficiencySheet } from "./proficiencySheet.ts";
 
 export interface ExpertiseMilestone {
   id: string;
@@ -43,12 +43,20 @@ export function getAvailableExpertiseMilestones(
   character: Character,
   catalogs: CharacterCatalogs
 ): ExpertiseMilestone[] {
+  return milestonesFromSheet(character, proficiencySheet(character, catalogs));
+}
+
+/**
+ * The Expertise milestones the character has, read from its Proficiency Sheet. A skill whose Expertise a grant
+ * already gives is not offered to any milestone: Expertise does not stack, so a pick there would waste its slot.
+ */
+function milestonesFromSheet(character: Character, sheet: ProficiencySheet): ExpertiseMilestone[] {
   const milestones: ExpertiseMilestone[] = [];
   // Skills and tools both come from the Proficiency Sheet, so background, feat and subclass grants and
   // Added tools are eligible (ADR 0015).
-  const sheet = proficiencySheet(character, catalogs);
+  const grantExpertise = grantExpertiseNames(sheet);
   const proficientSkills = skills(character, sheet.skills)
-    .filter((s) => s.isProficient)
+    .filter((s) => s.isProficient && !grantExpertise.has(s.name.toLowerCase()))
     .map((s) => s.name);
   const sheetTools = sheet.tools.map((t) => t.name);
   const hasThievesTools = sheetTools.some((t) => t.toLowerCase() === "thieves' tools");
@@ -98,16 +106,6 @@ export function getAvailableExpertiseMilestones(
     }
   }
 
-  // Knowledge Domain Cleric
-  if (isKnowledgeCleric(character)) {
-    milestones.push({
-      id: "cleric_knowledge_1",
-      label: "Blessings of Knowledge (Cleric Level 1)",
-      count: 2,
-      options: ["Arcana", "History", "Nature", "Religion"],
-    });
-  }
-
   // Ranger (TCoE Deft Explorer: Canny)
   const ranger = (character.classes || []).find((c) => c.className === "Ranger");
   const isDeftExplorer = Boolean(
@@ -151,11 +149,18 @@ export function getAvailableExpertiseMilestones(
   return milestones;
 }
 
+/** The lower-cased names of the skills a Proficiency Grant gives Expertise. */
+function grantExpertiseNames(sheet: ProficiencySheet): Set<string> {
+  return new Set(sheet.skills.filter((entry) => entry.expertise).map((entry) => entry.name.toLowerCase()));
+}
+
 export function pruneInvalidExpertise(
   character: Character,
   catalogs: CharacterCatalogs
 ): Character {
-  const milestones = getAvailableExpertiseMilestones(character, catalogs);
+  const sheet = proficiencySheet(character, catalogs);
+  const grantExpertise = grantExpertiseNames(sheet);
+  const milestones = milestonesFromSheet(character, sheet);
   const totalCapacity = milestones.reduce((sum, m) => sum + m.count, 0);
 
   const allAllowedOptions = new Set<string>();
@@ -183,7 +188,7 @@ export function pruneInvalidExpertise(
     return character;
   }
 
-  // Each dropped pick gets a review notice: no longer offered, or no slot left for it.
+  // Each dropped pick gets a review notice: granted Expertise, no slot left, or no longer held.
   const keptKeys = new Set(pruned.map((x) => x.trim().toLowerCase()));
   const notices: string[] = [];
   const seenKeys = new Set<string>();
@@ -192,9 +197,11 @@ export function pruneInvalidExpertise(
     if (keptKeys.has(key) || seenKeys.has(key)) continue;
     seenKeys.add(key);
     notices.push(
-      allAllowedOptions.has(key)
-        ? `${exp} Expertise removed: no Expertise slot left`
-        : `${exp} Expertise removed: ${exp} is no longer a proficient skill or tool`
+      grantExpertise.has(key)
+        ? `${exp} Expertise removed: ${exp} already has Expertise from a grant`
+        : allAllowedOptions.has(key)
+          ? `${exp} Expertise removed: no Expertise slot left`
+          : `${exp} Expertise removed: ${exp} is no longer a proficient skill or tool`
     );
   }
 

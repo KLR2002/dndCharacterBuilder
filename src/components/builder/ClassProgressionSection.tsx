@@ -17,6 +17,7 @@ import { currentCompendium } from "../../services/compendium";
 import { Badge } from "../ui/Badge";
 import { Button } from "../ui/Button";
 import { Card } from "../ui/Card";
+import { CollapsibleCard } from "../ui/CollapsibleCard";
 import { Modal } from "../ui/Modal";
 import { SearchBar } from "../ui/SearchBar";
 import { AsiFeatSection, PendingAsiSlot } from "./AsiFeatSection";
@@ -35,7 +36,7 @@ import {
   AvailableRuleChoice,
 } from "../../rules/ruleChoices";
 import { getOrphanedSubclassSpells } from "../../rules/subclassSpells";
-import { proficiencyChoiceOffers } from "../../rules/proficiencyChoiceOffers";
+import { proficiencyChoiceOffers, skillPickOffers } from "../../rules/proficiencyChoiceOffers";
 import { clearProficiencyPick } from "../../rules/proficiencyPools";
 import type { StartingEquipmentAddress, StartingEquipmentCard } from "../../rules/startingEquipment";
 import {
@@ -114,6 +115,11 @@ export const ClassProgressionSection: React.FC<ClassProgressionSectionProps> = (
     orphaned: string[];
   } | null>(null);
   const hasAnyClass = (character.classes || []).length > 0;
+  // The skill picks the class tab offers, all in the Skills card: the first class's starting picker, and the skill
+  // Proficiency Choices (a subclass's or feature's pick, and a later class's multiclass pick).
+  const startingSkillChoices = skillChoices.filter((sc) => sc.source.startsWith("Class:"));
+  const skillOffers = skillPickOffers(character, { activeBooks });
+  const skillPickIds = new Set(skillOffers.map((offer) => offer.id));
   // Two listed classes can share a name (the same class from two sources). Only then is a source shown.
   const sharedClassNames = new Set(
     allClasses.map((cl) => cl.name).filter((name, index, names) => names.indexOf(name) !== index)
@@ -358,10 +364,13 @@ export const ClassProgressionSection: React.FC<ClassProgressionSectionProps> = (
         const allSubclassChoices = [
           ...offeredRuleChoices(character, { activeBooks, origins: ["class", "subclass"] }),
           ...proficiencyChoiceOffers(character, { activeBooks }).filter(
-            (choice) => choice.origin === "class" || choice.origin === "subclass" || choice.origin === "feat",
+            (choice) =>
+              (choice.origin === "class" || choice.origin === "subclass" || choice.origin === "feat") &&
+              !skillPickIds.has(choice.id),
           ),
         ];
-        if (allSubclassChoices.length === 0) return null;
+        const hasSkillCard = startingSkillChoices.length > 0 || skillOffers.length > 0;
+        if (allSubclassChoices.length === 0 && !hasSkillCard) return null;
 
         const isFightingStyle = (id: string) =>
           id.includes("Fighting Style") ||
@@ -405,6 +414,42 @@ export const ClassProgressionSection: React.FC<ClassProgressionSectionProps> = (
           });
         };
 
+        const renderChoice = (choice: AvailableRuleChoice, chipTag?: string) => {
+          const saved =
+            choice.pick === "proficiency"
+              ? (character.proficiencyPicks?.[choice.id] ?? [])
+              : (character.ruleChoices?.find((rc) => rc.id === choice.id)?.picked ?? []);
+          const chosen = pickedOptionNames(saved, choice.options.map((o) => o.name));
+          return (
+            <View key={choice.id} style={{ gap: 4 }}>
+              <RuleChoicePicker
+                label={choice.traitName}
+                choose={choice.choose}
+                from={choice.options.map((o) => o.name)}
+                chosen={chosen}
+                onToggle={(option) => onUpdate((cur) => pickRuleChoice(cur, choice, option))}
+                onClear={() => handleClearChoice(choice)}
+                chipTag={chipTag}
+                theme={theme}
+              />
+              {chosen.length > 0 && (
+                <View style={{ gap: 2, marginTop: 2 }}>
+                  {chosen.map((cName) => {
+                    const opt = choice.options.find((o) => o.name === cName);
+                    if (!opt?.description) return null;
+                    return (
+                      <Text key={cName} style={{ color: theme.textMuted, fontSize: 11 }}>
+                        <Text style={{ color: theme.accent, fontWeight: "600" }}>{opt.name}: </Text>
+                        {opt.description}
+                      </Text>
+                    );
+                  })}
+                </View>
+              )}
+            </View>
+          );
+        };
+
         const renderChoiceCard = (
           key: string,
           title: string,
@@ -414,58 +459,52 @@ export const ClassProgressionSection: React.FC<ClassProgressionSectionProps> = (
         ) => {
           if (choices.length === 0) return null;
           return (
-            <Card key={key} style={{ gap: 12 }}>
-              <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", gap: 8 }}>
-                <View style={{ flex: 1 }}>
-                  <Text style={[styles.heading, { color: theme.text }]}>{title}</Text>
-                  <Text style={{ color: theme.textMuted, fontSize: 11, marginTop: 2 }}>
-                    {subtitle}
-                  </Text>
-                </View>
-                {badge && <Badge label={badge} variant="accent" size="sm" />}
-              </View>
-              {choices.map((choice) => {
-                const saved =
-                  choice.pick === "proficiency"
-                    ? (character.proficiencyPicks?.[choice.id] ?? [])
-                    : (character.ruleChoices?.find((rc) => rc.id === choice.id)?.picked ?? []);
-                const chosen = pickedOptionNames(saved, choice.options.map((o) => o.name));
-                return (
-                  <View key={choice.id} style={{ gap: 4 }}>
-                    <RuleChoicePicker
-                      label={choice.traitName}
-                      choose={choice.choose}
-                      from={choice.options.map((o) => o.name)}
-                      chosen={chosen}
-                      onToggle={(option) =>
-                        onUpdate((cur) => pickRuleChoice(cur, choice, option))
-                      }
-                      onClear={() => handleClearChoice(choice)}
-                      theme={theme}
-                    />
-                    {chosen.length > 0 && (
-                      <View style={{ gap: 2, marginTop: 2 }}>
-                        {chosen.map((cName) => {
-                          const opt = choice.options.find((o) => o.name === cName);
-                          if (!opt?.description) return null;
-                          return (
-                            <Text key={cName} style={{ color: theme.textMuted, fontSize: 11 }}>
-                              <Text style={{ color: theme.accent, fontWeight: "600" }}>{opt.name}: </Text>
-                              {opt.description}
-                            </Text>
-                          );
-                        })}
-                      </View>
-                    )}
-                  </View>
-                );
-              })}
-            </Card>
+            <CollapsibleCard
+              key={key}
+              title={title}
+              subtitle={subtitle}
+              badge={badge ? <Badge label={badge} variant="accent" size="sm" /> : undefined}
+              style={{ gap: 12 }}
+            >
+              {choices.map((choice) => renderChoice(choice))}
+            </CollapsibleCard>
           );
         };
 
+        // One card for every skill pick: the starting picker, then the Proficiency Choices that are skill picks.
+        // Each is named by its source, and a pick whose grant gives Expertise is tagged on the picked names.
+        const skillsCard =
+          !hasSkillCard ? null : (
+            <CollapsibleCard key="prog_skills" title="Skills" style={{ gap: 12 }}>
+              {startingSkillChoices.map((sc) => {
+                const choiceEntry = character.skillChoices?.find((c) => c.id === sc.source);
+                const normFrom = sc.from.map(normalizeSkillName);
+                const normAuto = autoGranted.map(normalizeSkillName);
+                const chosen = choiceEntry
+                  ? choiceEntry.picked
+                  : (character.chosenSkills || []).filter(
+                      (s) => normFrom.includes(normalizeSkillName(s)) && !normAuto.includes(normalizeSkillName(s))
+                    );
+                return (
+                  <SkillPicker
+                    key={sc.source}
+                    label={`${primaryClass} starting skills`}
+                    choose={sc.choose}
+                    from={sc.from}
+                    chosen={chosen}
+                    autoGranted={autoGranted}
+                    onToggle={(skill) => toggleSkill(skill, sc.source)}
+                    theme={theme}
+                  />
+                );
+              })}
+              {skillOffers.map((offer) => renderChoice(offer, offer.expertise ? "Expertise" : undefined))}
+            </CollapsibleCard>
+          );
+
         return (
           <>
+            {skillsCard}
             {renderChoiceCard(
               "prog_fighting_styles",
               "Fighting Styles",
@@ -504,7 +543,7 @@ export const ClassProgressionSection: React.FC<ClassProgressionSectionProps> = (
         );
       })()}
 
-      {/* Expertise Choices (Rogue, Bard, Knowledge Cleric, Ranger Deft Explorer, Feats) */}
+      {/* Expertise Choices (Rogue, Bard, Ranger Deft Explorer, Feats) */}
       {(() => {
         const catalogs: CharacterCatalogs = { compendium: currentCompendium(), activeBooks };
         const milestones = getAvailableExpertiseMilestones(character, catalogs);
@@ -516,13 +555,11 @@ export const ClassProgressionSection: React.FC<ClassProgressionSectionProps> = (
         );
 
         return (
-          <Card style={{ gap: 12 }}>
-            <View>
-              <Text style={[styles.heading, { color: theme.text }]}>Expertise</Text>
-              <Text style={{ color: theme.textMuted, fontSize: 11, marginTop: 2 }}>
-                Doubled proficiency bonus (2× PB) on chosen proficient skills and tools.
-              </Text>
-            </View>
+          <CollapsibleCard
+            title="Expertise"
+            subtitle="Doubled proficiency bonus (2× PB) on chosen proficient skills and tools."
+            style={{ gap: 12 }}
+          >
             {invalidPicks.length > 0 && (
               <View
                 style={{
@@ -565,7 +602,7 @@ export const ClassProgressionSection: React.FC<ClassProgressionSectionProps> = (
                 />
               </View>
             ))}
-          </Card>
+          </CollapsibleCard>
         );
       })()}
 
@@ -596,36 +633,6 @@ export const ClassProgressionSection: React.FC<ClassProgressionSectionProps> = (
         theme={theme}
       />
 
-      {/* Class skill choices */}
-      {skillChoices.filter((sc) => sc.source.startsWith("Class:")).length > 0 && (
-        <Card style={{ gap: 10 }}>
-          {skillChoices
-            .filter((sc) => sc.source.startsWith("Class:"))
-            .map((sc) => {
-              const choiceEntry = character.skillChoices?.find((c) => c.id === sc.source);
-              const normFrom = sc.from.map(normalizeSkillName);
-              const normAuto = autoGranted.map(normalizeSkillName);
-              const chosen = choiceEntry
-                ? choiceEntry.picked
-                : (character.chosenSkills || []).filter(
-                    (s) => normFrom.includes(normalizeSkillName(s)) && !normAuto.includes(normalizeSkillName(s))
-                  );
-              return (
-                <SkillPicker
-                  key={sc.source}
-                  label={sc.source}
-                  choose={sc.choose}
-                  from={sc.from}
-                  chosen={chosen}
-                  autoGranted={autoGranted}
-                  onToggle={(skill) => toggleSkill(skill, sc.source)}
-                  theme={theme}
-                />
-              );
-            })}
-        </Card>
-      )}
-
       {/* Starting tools the first class grants. Its tool choice is a Proficiency Choice in the choices below. */}
       {hasAnyClass && classTools.length > 0 && (
         <Card style={{ gap: 10 }}>
@@ -644,14 +651,10 @@ export const ClassProgressionSection: React.FC<ClassProgressionSectionProps> = (
 
       {/* Optional & Replacement Class Features (Tasha's) */}
       {hasAnyClass && availableOptionalFeatures.length > 0 && (
-        <Card style={{ gap: 10 }}>
-          <View>
-            <Text style={[styles.heading, { color: theme.text }]}>Optional &amp; Replacement Class Features:</Text>
-            <Text style={{ color: theme.textMuted, fontSize: 11, marginTop: 2 }}>
-              Tasha&apos;s Cauldron optional features and replacements for your classes.
-            </Text>
-          </View>
-
+        <CollapsibleCard
+          title="Optional & Replacement Class Features:"
+          subtitle="Tasha's Cauldron optional features and replacements for your classes."
+        >
           <View style={{ gap: 8 }}>
             {availableOptionalFeatures.map((opt) => {
               const isEnabled = Boolean(character.optionalFeatureReplacements?.[opt.name]);
@@ -713,7 +716,7 @@ export const ClassProgressionSection: React.FC<ClassProgressionSectionProps> = (
               );
             })}
           </View>
-        </Card>
+        </CollapsibleCard>
       )}
 
       {/* Multiclassing note */}

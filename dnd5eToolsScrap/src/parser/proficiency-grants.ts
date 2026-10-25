@@ -129,7 +129,13 @@ const NON_GRANT_MENTIONS: RegExp[] = [
   // Language words that are not grants: sharing a language, or a language the character already knows.
   /\bshare\s+(?:a|an|one|the|any)\s+languages?\b/gi,
   /\b(?:a|an|any|one|the)\s+languages?\s+you\s+(?:already\s+)?(?:know|speak|understand)\b/gi,
+  // A doubled check that uses the skills or proficiencies a grant names: "uses either of those proficiencies". The grant is
+  // in another sentence; this one only doubles the bonus for it.
+  /\buses?\s+(?:either\s+of\s+|any\s+of\s+)?(?:those|the chosen|these)\s+(?:skills?|proficiencies|proficiency)\b/gi,
 ];
+
+/** A sentence that doubles the proficiency bonus, as the rule text states it: "is doubled", or "double your proficiency bonus". */
+const DOUBLES_BONUS = /\bproficiency bonus is (?:now )?doubled\b|\bdoubles? (?:your|its) proficiency bonus\b/i;
 
 /** A saving throw DC or attack formula, such as "Spell save DC = 8 + your Wisdom modifier". A grant is never a formula. */
 const FORMULA = /\bDC\b|\battack modifier\b/i;
@@ -398,6 +404,11 @@ export function matchedSentences(description: string): string[] {
   return proseSentences(description).filter(mentionsGrantable).map(stripTerminal);
 }
 
+/** The sentences of a feature's prose that double the proficiency bonus, without their final punctuation. */
+export function doublingSentences(description: string): string[] {
+  return proseSentences(description).filter((s) => DOUBLES_BONUS.test(s)).map(stripTerminal);
+}
+
 /** Extracts grant specs from prose. Sentences that match the vocabulary but do not parse are returned as `unparsed`. */
 export function extractProseGrants(description: string): { specs: ProficiencyGrantSpec[]; unparsed: string[] } {
   const specs: ProficiencyGrantSpec[] = [];
@@ -506,6 +517,26 @@ export function unmatchedOverrides(subjects: GrantSubject[], overrides: GrantOve
 }
 
 /**
+ * Marks each skills grant of a feature `expertise` when the feature's own text doubles the proficiency bonus for a
+ * sentence that names one of the grant's skills or refers back to "those skills" or "those proficiencies". A doubling
+ * sentence about a skill the character already holds ("with that skill") names no grant, so its feature is not marked.
+ * The mark reads the text, so it applies to an override's grants too; no id changes.
+ */
+function markExpertise(subject: GrantSubject, grants: ProficiencyGrant[]): ProficiencyGrant[] {
+  const skills = grants.flatMap((grant) => {
+    if (grant.category !== "skills") return [];
+    if (grant.kind === "fixed") return grant.names;
+    return grant.pool.kind === "names" ? grant.pool.names : [];
+  });
+  if (skills.length === 0) return grants;
+  const doubled = doublingSentences(subject.description).some(
+    (sentence) => /\bthose (?:skills|proficiencies)\b/i.test(sentence) || skills.some((name) => sentence.includes(name))
+  );
+  if (!doubled) return grants;
+  return grants.map((grant) => (grant.category === "skills" ? { ...grant, expertise: true } : grant));
+}
+
+/**
  * Resolves the grants of every feature in a scrape: prose extraction, then
  * overrides. An override for a feature the scrape does not include has nothing
  * to apply to, and is ignored, because a partial scrape is normal; the tracked
@@ -561,7 +592,7 @@ export function resolveFeatureGrants(
     if (!override && unparsed.length > 0) {
       report.unparsed.push({ owner: subject.owner, feature: subject.feature, level: subject.level, unparsed });
     }
-    resolvedAt.set(i, { subject, grants, unparsed });
+    resolvedAt.set(i, { subject, grants: markExpertise(subject, grants), unparsed });
   });
 
   return firstOf.map((first) => resolvedAt.get(first) as FeatureGrantResult);

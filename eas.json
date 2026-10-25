@@ -9,10 +9,37 @@
       "distribution": "internal"
     },
     "preview": {
-      "distribution": "internal"
+      "distribution": "internal",
+      "android": {
+        "buildType": "apk"
+      }
     },
     "production": {
       "autoIncrement": true
+    },
+    "preview-arm64-v8a": {
+      "extends": "preview",
+      "android": {
+        "gradleCommand": ":app:assembleRelease -PreactNativeArchitectures=arm64-v8a"
+      }
+    },
+    "preview-armeabi-v7a": {
+      "extends": "preview",
+      "android": {
+        "gradleCommand": ":app:assembleRelease -PreactNativeArchitectures=armeabi-v7a"
+      }
+    },
+    "preview-x86_64": {
+      "extends": "preview",
+      "android": {
+        "gradleCommand": ":app:assembleRelease -PreactNativeArchitectures=x86_64"
+      }
+    },
+    "preview-x86": {
+      "extends": "preview",
+      "android": {
+        "gradleCommand": ":app:assembleRelease -PreactNativeArchitectures=x86"
+      }
     }
   },
   "submit": {

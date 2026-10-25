@@ -15,10 +15,12 @@ import {
   offersPlainRaceForm,
 } from "../../rules/ancestryEngine";
 import type { SourceFixedGrants } from "../../rules/proficiencySheet";
+import { picksOnlyLanguages } from "../../rules/proficiencyChoiceOffers";
 import { ProficiencyChoicePicker } from "./ProficiencyChoicePicker";
 import { Badge } from "../ui/Badge";
 import { Button } from "../ui/Button";
 import { Card } from "../ui/Card";
+import { CollapsibleCard } from "../ui/CollapsibleCard";
 import { Modal } from "../ui/Modal";
 import { SearchBar } from "../ui/SearchBar";
 import { ABILITY_KEYS, ABILITY_LABELS, builderStyles as styles, RuleChoicePicker } from "./builderStyles";
@@ -361,7 +363,7 @@ export const AncestrySection: React.FC<AncestrySectionProps> = ({
 
       {/* Race languages and tools: the fixed grants, then the Proficiency Choices the race offers */}
       {character.race && (raceGranted.languages.length > 0 || raceGranted.tools.length > 0 || proficiencyChoices.length > 0) && (
-        <Card style={{ gap: 10 }}>
+        <CollapsibleCard title={raceGranted.tools.length === 0 && picksOnlyLanguages(proficiencyChoices) ? "Languages" : "Languages & Proficiencies"}>
           {raceGranted.languages.length > 0 && (
             <View style={{ gap: 4 }}>
               <Text style={{ color: theme.textSecondary, fontSize: 12, fontWeight: "600" }}>Granted Languages:</Text>
@@ -387,7 +389,7 @@ export const AncestrySection: React.FC<AncestrySectionProps> = ({
           {proficiencyChoices.map((choice) => (
             <ProficiencyChoicePicker key={choice.id} choice={choice} character={character} onUpdate={onUpdate} theme={theme} />
           ))}
-        </Card>
+        </CollapsibleCard>
       )}
 
       {/* Origin Feat for Variant Human and Custom Lineage */}
