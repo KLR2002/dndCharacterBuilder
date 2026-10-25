@@ -184,7 +184,7 @@ test("a Bard of 1st level with an Initiative Bonus shows only the bonus line aft
 test("a non-proficient Athletics gets Remarkable Athlete's half proficiency, rounded up, from a Champion of 7th level", () => {
   const row = skillRow([champion(7)], "Athletics", { baseAbilityScores: scores({ str: 16 }) });
   assert.equal(row.bonus, 3 + 2, "Strength modifier 3 plus ceil(3/2)");
-  assert.equal(row.isJackOfAllTrades, false);
+  assert.equal(row.halfProficiency === "Jack of All Trades", false);
   assert.equal(row.halfProficiency, "Remarkable Athlete");
 });
 
@@ -206,7 +206,7 @@ test("Remarkable Athlete does not reach a non-STR/DEX/CON skill", () => {
   const row = skillRow([champion(7)], "Perception", { baseAbilityScores: scores({ wis: 14 }) });
   assert.equal(row.bonus, 2, "Wisdom modifier only, no half proficiency");
   assert.equal(row.halfProficiency, null);
-  assert.equal(row.isJackOfAllTrades, false);
+  assert.equal(row.halfProficiency === "Jack of All Trades", false);
 });
 
 test("a proficient Athletics keeps its proficiency bonus and is not given Remarkable Athlete", () => {
@@ -236,7 +236,7 @@ test("Remarkable Athlete and Jack of All Trades together on skills: the higher a
 
   const investigation = skillRow(classes, "Investigation", { baseAbilityScores: scores({ int: 12 }) });
   assert.equal(investigation.bonus, 1 + 2, "Investigation takes Jack of All Trades' 2");
-  assert.equal(investigation.isJackOfAllTrades, true);
+  assert.equal(investigation.halfProficiency === "Jack of All Trades", true);
   assert.equal(investigation.halfProficiency, "Jack of All Trades");
 });
 
@@ -248,7 +248,7 @@ test("Bard 2 with Champion 7 on a STR/DEX skill at proficiency bonus 4 gives the
 test("Jack of All Trades still applies to a non-proficient skill that Remarkable Athlete does not reach", () => {
   const row = skillRow([bard(2)], "Perception", { baseAbilityScores: scores({ wis: 14 }) });
   assert.equal(row.bonus, 2 + 1);
-  assert.equal(row.isJackOfAllTrades, true);
+  assert.equal(row.halfProficiency === "Jack of All Trades", true);
   assert.equal(row.halfProficiency, "Jack of All Trades");
 });
 

@@ -10,7 +10,6 @@ export interface SkillRow {
   ability: AbilityKey;
   isProficient: boolean;
   isExpertise: boolean;
-  isJackOfAllTrades: boolean;
   /** The half-proficiency rule that adds to a non-proficient skill, or null. */
   halfProficiency: HalfProficiencyRule | null;
   bonus: number;
@@ -72,7 +71,6 @@ export function skills(
       ...skill,
       isProficient,
       isExpertise,
-      isJackOfAllTrades: halfProficiency?.rule === "Jack of All Trades",
       halfProficiency: halfProficiency?.rule ?? null,
       bonus,
       passiveBonus,
