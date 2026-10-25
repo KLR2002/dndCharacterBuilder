@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import type { Character } from "../src/types/character.ts";
 import type { SubraceData } from "../src/types/dnd5e.ts";
 import { proficiencySheet, skillChoiceOffers, type SheetEntry } from "../src/rules/proficiencySheet.ts";
-import { proficiencyChoiceOffers } from "../src/rules/proficiencyChoiceOffers.ts";
+import { picksOnlyLanguages, proficiencyChoiceOffers } from "../src/rules/proficiencyChoiceOffers.ts";
 import { reconcile } from "../src/rules/characterReconciler.ts";
 import { clearBackground, setCustomBackground } from "../src/rules/builderTransitions.ts";
 import { ancestryRuleChoices, pickRuleChoice } from "../src/rules/ruleChoices.ts";
@@ -363,4 +363,17 @@ test("race and subrace picks that share a descriptor are numbered across the rac
   });
   const character = makeChar({ race: { name: "Vellari", source: "GAMMA", subraceName: "Sample Descent", subraceSource: "GAMMA" } });
   assert.deepEqual(raceOfferTitles(character, compendium), ["Language 1", "Language 2", "Skill"]);
+});
+
+test("a card of picks that are all languages is told apart from one holding a skill, a tool or a tool-or-language pick", () => {
+  const compendium = integratedTestCompendium();
+  const raceOffers = (character: Character) => proficiencyChoiceOffers(character, { compendium }).filter((offer) => offer.origin === "race");
+  assert.equal(picksOnlyLanguages(raceOffers(makeChar({ race: { name: "Human", source: "PHB" } }))), true, "Human's language pick");
+  const variant = makeChar({ race: { name: "Human", source: "PHB", subraceName: "Variant", subraceSource: "PHB" } });
+  assert.equal(picksOnlyLanguages(raceOffers(variant)), false, "Variant Human's skill pick");
+  const custom = setCustomBackground(makeChar(), "Lamp Warden", []);
+  const customOffers = proficiencyChoiceOffers(custom, { compendium: srdBaselineCompendium() }).filter((offer) => offer.origin === "background");
+  assert.equal(picksOnlyLanguages(customOffers.filter((offer) => offer.id === CUSTOM_LANGUAGES_ID)), false, "a tool or language pick");
+  const acolyte = proficiencyChoiceOffers(makeChar({ background: { name: "Acolyte", source: "PHB" } }), { compendium }).filter((offer) => offer.origin === "background");
+  assert.equal(picksOnlyLanguages(acolyte), true, "Acolyte's language picks");
 });

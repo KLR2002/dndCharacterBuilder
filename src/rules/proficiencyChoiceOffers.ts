@@ -159,6 +159,7 @@ function choiceOfferEntries(character: Character, query: ProficiencyChoiceQuery)
           level: feature.level ?? 0,
           effectLevel: feature.level ?? 0,
           source: feature.source,
+          categories: pickCategories(grant),
           origin,
           pick: "proficiency",
           options: poolNames(grant, items)
@@ -173,6 +174,14 @@ function choiceOfferEntries(character: Character, query: ProficiencyChoiceQuery)
 
 export function proficiencyChoiceOffers(character: Character, query: ProficiencyChoiceQuery = {}): AvailableRuleChoice[] {
   return choiceOfferEntries(character, query).map((entry) => entry.offer);
+}
+
+/**
+ * Whether every pick in a card of Proficiency Choice offers is a language pick alone, so the card can be named
+ * for languages. A tool, skill, or tool-or-language pick makes it a card of proficiencies.
+ */
+export function picksOnlyLanguages(offers: readonly AvailableRuleChoice[]): boolean {
+  return offers.every((offer) => offer.categories?.every((category) => category === "languages") === true);
 }
 
 /** A skill Proficiency Choice the Builder's Skills card shows. `expertise` is set when its grant gives Expertise. */
