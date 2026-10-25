@@ -86,6 +86,7 @@ export function grantedFeatures(character: Character, catalog: FeatureCatalog): 
         ...(subclassName ? { subclassName } : {}),
         level: f.level,
         ...(grants.length ? { grants } : {}),
+        ...(f.initiativeBonus ? { initiativeBonus: f.initiativeBonus } : {}),
       };
       // The catalog repeats these at threshold levels. Retain one grant, not additive uses/attacks.
       if (/^Extra Attack(?: \(\d+\))?$/.test(f.name)) {

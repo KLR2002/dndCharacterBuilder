@@ -1,8 +1,9 @@
-import type { ProficiencyGrant } from "../../dnd5eToolsScrap/src/types/proficiency.ts";
+import type { InitiativeBonus, ProficiencyGrant } from "../../dnd5eToolsScrap/src/types/proficiency.ts";
 import type { StartingEquipmentSlot } from "../../dnd5eToolsScrap/src/types/startingEquipment.ts";
 
 export type {
   GrantRequirement,
+  InitiativeBonus,
   ProficiencyCategory,
   ProficiencyGrant,
   ProficiencyGrantSpec,
@@ -103,6 +104,8 @@ export interface ClassFeatureData {
   choices?: FeatureChoice;
   /** Proficiency Grants extracted from the feature's prose, or from its override. */
   grants?: ProficiencyGrant[];
+  /** The Initiative Bonus the feature gives (ADR 0016). Absent when it gives none. */
+  initiativeBonus?: InitiativeBonus;
 }
 
 export interface SubclassAdditionalSpells {

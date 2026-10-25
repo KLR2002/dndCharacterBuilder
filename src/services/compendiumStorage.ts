@@ -20,8 +20,9 @@ import type {
  * grants and the grant ids (now stable, with aliases for the former position-based ids).
  * Format 6 adds the class starting equipment slots, which a catalog saved at format 5 does not carry.
  * Format 7 adds the expertise marks on skill grants, which a catalog saved at format 6 does not carry.
+ * Format 8 adds the Initiative Bonuses on class and subclass features, which a catalog saved at format 7 does not carry.
  */
-export const REQUIRED_CATALOG_FORMAT = 7;
+export const REQUIRED_CATALOG_FORMAT = 8;
 
 /** True for an Integrated Catalog saved below the required format (or with none). The SRD Baseline is never stale. */
 export function isCatalogStale(collections: Pick<CompendiumCollections, "hasIntegratedCatalog" | "catalogFormat">): boolean {
