@@ -140,13 +140,24 @@ export function grantedFeatures(character: Character, catalog: FeatureCatalog): 
     const subclass = cls?.subclasses.find(s => s.name === c.subclassName && (!c.subclassSource || s.source === c.subclassSource));
     for (const f of subclass?.features || []) addClassFeature(f, "Subclass", subclass!.source, `${c.className}/${subclass!.name}`, subclass!.name);
   }
-  // Feats from the ability score list and from the origin-feat list (a background's feat) both count.
+  // Feats from the ability score list and from the origin-feat list (a background's feat) both count. A feat held both
+  // ways is one feature instance, so its Initiative Bonus counts once.
   for (const selection of [...character.asiSelections, ...(character.originFeats ?? [])]) {
     if (selection.type !== "feat") continue;
     const feat = catalog.feats.find(x => x.name === selection.featName && (!selection.featSource || x.source === selection.featSource));
     if (feat) {
       const grants = raisedAbilityGrants(feat.grants ?? [], selection.featAbility);
-      add({ name: feat.name, description: feat.description, source: feat.source, origin: "Feat", ...(grants.length ? { grants } : {}) }, feat.name);
+      add(
+        {
+          name: feat.name,
+          description: feat.description,
+          source: feat.source,
+          origin: "Feat",
+          ...(grants.length ? { grants } : {}),
+          ...(feat.initiativeBonus ? { initiativeBonus: feat.initiativeBonus } : {}),
+        },
+        feat.name
+      );
     }
   }
   return out;

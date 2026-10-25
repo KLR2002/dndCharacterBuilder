@@ -3,12 +3,12 @@ import assert from "node:assert/strict";
 import { evaluateCharacter } from "../src/rules/characterEvaluation.ts";
 import type { AbilityScores, CharacterClass } from "../src/types/character.ts";
 import { inMemoryCompendium, makeChar } from "./testUtils.ts";
-import { initiativeClasses } from "./initiativeFixture.ts";
+import { initiativeClasses, initiativeFeats } from "./initiativeFixture.ts";
 
 // Initiative is the Dexterity modifier plus each Initiative Bonus the character's features carry (ADR 0016). The
-// classes are invented (checks/initiativeFixture.ts); the engine reads their bonuses the same way for every rule.
+// classes and feats are invented (checks/initiativeFixture.ts); the engine reads their bonuses the same way for every rule.
 
-const catalogs = { compendium: inMemoryCompendium({ classes: initiativeClasses() }) };
+const catalogs = { compendium: inMemoryCompendium({ classes: initiativeClasses(), feats: initiativeFeats() }) };
 
 const scores = (overrides: Partial<AbilityScores>): AbilityScores => ({
   str: 10,
@@ -93,18 +93,90 @@ test("Initiative Bonuses from two classes add together, listed in class order", 
   ]);
 });
 
-test("a rule reached twice is counted once", () => {
+const warden = (level: number): CharacterClass => ({ className: "Sample Warden", source: "PHB", level });
+
+const watchword = { level: 4, type: "feat" as const, featName: "Sample Watchword", featSource: "PHB" };
+const originWatchword = { ...watchword, level: 1 };
+
+test("a feat's flat Initiative Bonus adds to initiative when the feat is taken through an ability score improvement", () => {
+  const evaluated = evaluateCharacter(
+    makeChar({ classes: [scout(4)], baseAbilityScores: scores({ dex: 14 }), asiSelections: [watchword] }),
+    catalogs,
+  );
+  assert.equal(evaluated.initiative, 7);
+  assert.deepEqual(evaluated.initiativeBreakdown, [
+    { label: "Dexterity", value: 2 },
+    { label: "Sample Watchword", value: 5 },
+  ]);
+});
+
+test("a feat's flat Initiative Bonus adds to initiative when the feat is an origin feat", () => {
+  const evaluated = evaluateCharacter(
+    makeChar({ classes: [scout(4)], baseAbilityScores: scores({ dex: 14 }), originFeats: [originWatchword] }),
+    catalogs,
+  );
+  assert.equal(evaluated.initiative, 7);
+  assert.deepEqual(evaluated.initiativeBreakdown, [
+    { label: "Dexterity", value: 2 },
+    { label: "Sample Watchword", value: 5 },
+  ]);
+});
+
+test("a feat held through both an ability score improvement and an origin feat is counted once", () => {
   const evaluated = evaluateCharacter(
     makeChar({
-      classes: [scout(3, "Sample Blade"), scout(3, "Sample Blade")],
-      baseAbilityScores: scores({ dex: 14, cha: 16 }),
+      classes: [scout(4)],
+      baseAbilityScores: scores({ dex: 14 }),
+      asiSelections: [watchword],
+      originFeats: [originWatchword],
     }),
     catalogs,
   );
-  assert.equal(evaluated.initiative, 5);
+  assert.equal(evaluated.initiative, 7);
+  assert.deepEqual(evaluated.initiativeBreakdown, [
+    { label: "Dexterity", value: 2 },
+    { label: "Sample Watchword", value: 5 },
+  ]);
+});
+
+test("a proficiency Initiative Bonus is the proficiency bonus, and grows with character level", () => {
+  const at3 = evaluateCharacter(makeChar({ classes: [warden(3)], baseAbilityScores: scores({ dex: 14 }) }), catalogs);
+  assert.equal(at3.initiative, 4, "DEX +2 and proficiency +2 at level 3");
+  assert.deepEqual(at3.initiativeBreakdown, [
+    { label: "Dexterity", value: 2 },
+    { label: "Sample Vigil", value: 2 },
+  ]);
+  const at5 = evaluateCharacter(makeChar({ classes: [warden(5)], baseAbilityScores: scores({ dex: 14 }) }), catalogs);
+  assert.equal(at5.initiative, 5, "proficiency +3 at level 5");
+  assert.deepEqual(at5.initiativeBreakdown, [
+    { label: "Dexterity", value: 2 },
+    { label: "Sample Vigil", value: 3 },
+  ]);
+});
+
+test("a proficiency Initiative Bonus is absent below the level of its feature", () => {
+  const evaluated = evaluateCharacter(makeChar({ classes: [warden(2)], baseAbilityScores: scores({ dex: 14 }) }), catalogs);
+  assert.equal(evaluated.initiative, 2);
+  assert.deepEqual(evaluated.initiativeBreakdown, [{ label: "Dexterity", value: 2 }]);
+});
+
+test("ability, flat and proficiency bonuses from a feat and two classes all stack, in the order the features are held", () => {
+  const evaluated = evaluateCharacter(
+    makeChar({
+      classes: [scout(3, "Sample Blade"), mage(2), warden(3)],
+      baseAbilityScores: scores({ dex: 14, cha: 16, int: 14 }),
+      asiSelections: [watchword],
+    }),
+    catalogs,
+  );
+  // Total level 8, so the proficiency bonus is +3: DEX +2, CHA +3, INT +2, proficiency +3, flat +5.
+  assert.equal(evaluated.initiative, 15);
   assert.deepEqual(evaluated.initiativeBreakdown, [
     { label: "Dexterity", value: 2 },
     { label: "Sample Gambit", value: 3 },
+    { label: "Sample Insight", value: 2 },
+    { label: "Sample Vigil", value: 3 },
+    { label: "Sample Watchword", value: 5 },
   ]);
 });
 

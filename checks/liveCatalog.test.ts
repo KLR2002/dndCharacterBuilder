@@ -301,3 +301,44 @@ test("live catalog: a Swashbuckler 3 with DEX 14 and CHA 16 has initiative +5, f
     { label: "Rakish Audacity", value: 3 },
   ]);
 });
+
+test("live catalog: every Alert feat carries a flat Initiative Bonus of 5", { skip: SKIP }, () => {
+  const alerts = SKIP ? [] : live!.collections.feats.filter((feat) => feat.name === "Alert");
+  assert.ok(alerts.length > 0, "no Alert feat in the catalog");
+  assert.deepEqual(alerts.map((feat) => feat.initiativeBonus), alerts.map(() => ({ kind: "flat", value: 5 })));
+});
+
+test("live catalog: every Aura of the Sentinel carries a proficiency Initiative Bonus", { skip: SKIP }, () => {
+  const auras = SKIP ? [] : live!.collections.classes.flatMap((cls) => cls.subclasses.flatMap((sc) => sc.features)).filter((feature) => feature.name === "Aura of the Sentinel");
+  assert.ok(auras.length > 0, "no Aura of the Sentinel feature in the catalog");
+  assert.deepEqual(auras.map((feature) => feature.initiativeBonus), auras.map(() => ({ kind: "proficiency" })));
+});
+
+test("live catalog: a Paladin with the Aura of the Sentinel and Alert has initiative DEX + proficiency + 5, at the level the aura is gained", { skip: SKIP }, () => {
+  const alert = SKIP ? undefined : live!.collections.feats.find((feat) => feat.name === "Alert");
+  assert.ok(alert, "no Alert feat in the catalog");
+  // Every subclass print that gains the aura, at the level it is gained.
+  const holders: Array<{ cls: ClassData; sc: SubclassData; level: number }> = [];
+  for (const cls of SKIP ? [] : live!.compendium.for().classes()) {
+    for (const sc of cls.subclasses) {
+      const aura = sc.features.find((feature) => feature.name === "Aura of the Sentinel");
+      if (aura) holders.push({ cls, sc, level: aura.level });
+    }
+  }
+  assert.ok(holders.length > 0, "no subclass with Aura of the Sentinel");
+  for (const { cls, sc, level } of holders) {
+    const character = makeChar({
+      classes: [{ className: cls.name, source: cls.source, level, subclassName: sc.name, subclassSource: sc.source }],
+      baseAbilityScores: { str: 10, dex: 14, con: 10, int: 10, wis: 10, cha: 10 },
+      asiSelections: [{ level: 4, type: "feat", featName: alert!.name, featSource: alert!.source }],
+    });
+    const proficiency = Math.floor((level - 1) / 4) + 2;
+    const evaluated = evaluateCharacter(character, { compendium: live!.compendium });
+    assert.equal(evaluated.initiative, 2 + proficiency + 5, `${printKey(cls)} / ${sc.name} at level ${level}`);
+    assert.deepEqual(evaluated.initiativeBreakdown, [
+      { label: "Dexterity", value: 2 },
+      { label: "Aura of the Sentinel", value: proficiency },
+      { label: "Alert", value: 5 },
+    ]);
+  }
+});
