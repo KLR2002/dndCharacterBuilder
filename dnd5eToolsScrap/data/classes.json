@@ -9093,7 +9093,10 @@
           {
             "name": "Aura of the Sentinel",
             "level": 7,
-            "description": "*7th-level Oath of the Watchers feature*\n\nYou emit an aura of alertness while you aren't incapacitated. When you and any creatures of your choice within 10 feet of you roll initiative, you all gain a bonus to initiative equal to your proficiency bonus.\n\nAt 18th level, the range of this aura increases to 30 feet."
+            "description": "*7th-level Oath of the Watchers feature*\n\nYou emit an aura of alertness while you aren't incapacitated. When you and any creatures of your choice within 10 feet of you roll initiative, you all gain a bonus to initiative equal to your proficiency bonus.\n\nAt 18th level, the range of this aura increases to 30 feet.",
+            "initiativeBonus": {
+              "kind": "proficiency"
+            }
           },
           {
             "name": "Vigilant Rebuke",

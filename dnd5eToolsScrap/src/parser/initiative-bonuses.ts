@@ -41,16 +41,35 @@ const ADDED_ABILITY = new RegExp(`\\badd your ${ABILITY} modifier to (?:your )?i
 /** "When you roll initiative, you can add your Wisdom modifier to the roll", as the rule text states it under its heading. */
 const ROLL_ABILITY = new RegExp(`\\bwhen you roll initiative, you can add your ${ABILITY} modifier to the roll$`, "i");
 
+/** "... you all gain a bonus to initiative equal to your proficiency bonus", and "... add your proficiency bonus to your initiative rolls". */
+const GIVEN_PROFICIENCY = /\ba bonus to (?:your )?initiative(?: rolls)? equal to your proficiency bonus$/i;
+const ADDED_PROFICIENCY = /\badd your proficiency bonus to (?:your )?initiative(?: rolls)?$/i;
+/** "... you gain a +5 bonus to initiative", and "+5 bonus to initiative" with no article. */
+const FLAT = /\+(\d+) bonus to (?:your )?initiative(?: rolls)?$/i;
+
+/**
+ * The holder is the one who gains the bonus: "you gain", "you all gain", "you can gain", or "you can give yourself".
+ * A bonus that another creature gains is not the holder's, even when the sentence also says "you" in a condition
+ * ("each ally who can see you gains a +2 bonus"). The given forms need this; the "add your ... to your initiative
+ * rolls" forms name the holder as the one who adds, so they need no check.
+ */
+const HOLDER_GAINS = /\byou(?: all)?(?: can)? (?:gain|have|get)\b|\bgive yourself\b/i;
+
 /** A sentence that names initiative and gives a bonus to it. Advantage and shared initiative counts do not match. */
 function isInitiativeBonusSentence(sentence: string): boolean {
   return /\binitiative\b/i.test(sentence) && /\b(?:bonus|add)\b/i.test(sentence);
 }
 
 function parseSentence(sentence: string): InitiativeBonus | null {
-  const match = GIVEN_ABILITY.exec(sentence) ?? ADDED_ABILITY.exec(sentence) ?? ROLL_ABILITY.exec(sentence);
-  if (!match) return null;
-  const ability = ABILITY_KEYS.get((match[1] ?? "").toLowerCase());
-  return ability ? { kind: "ability", ability } : null;
+  const holderGains = HOLDER_GAINS.test(sentence);
+  const abilityMatch = (holderGains ? GIVEN_ABILITY.exec(sentence) : null) ?? ADDED_ABILITY.exec(sentence) ?? ROLL_ABILITY.exec(sentence);
+  if (abilityMatch) {
+    const ability = ABILITY_KEYS.get((abilityMatch[1] ?? "").toLowerCase());
+    return ability ? { kind: "ability", ability } : null;
+  }
+  if (ADDED_PROFICIENCY.test(sentence) || (holderGains && GIVEN_PROFICIENCY.test(sentence))) return { kind: "proficiency" };
+  const flat = holderGains ? FLAT.exec(sentence) : null;
+  return flat ? { kind: "flat", value: Number(flat[1]) } : null;
 }
 
 /**

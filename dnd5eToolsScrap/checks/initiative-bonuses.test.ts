@@ -72,3 +72,63 @@ test("two different initiative bonuses in one feature are reported, not picked b
   assert.equal(result.bonus, undefined);
   assert.equal(result.unparsed.length, 2);
 });
+
+test("a bonus to initiative equal to the proficiency bonus is a proficiency Initiative Bonus", () => {
+  const result = extractInitiativeBonus(
+    "Sample Beacon. While you are awake, you and any companions within 10 feet of you roll initiative, and you all gain a bonus to initiative equal to your proficiency bonus.",
+  );
+  assert.deepEqual(result, { bonus: { kind: "proficiency" }, unparsed: [] });
+});
+
+test("a bonus to initiative rolls equal to the proficiency bonus is a proficiency Initiative Bonus", () => {
+  const result = extractInitiativeBonus("Sample Snap. You can give yourself a bonus to your initiative rolls equal to your proficiency bonus.");
+  assert.deepEqual(result, { bonus: { kind: "proficiency" }, unparsed: [] });
+});
+
+test("adding the proficiency bonus to initiative rolls is a proficiency Initiative Bonus", () => {
+  const result = extractInitiativeBonus("Sample Reflex. Your training is sharp: you add your proficiency bonus to your initiative rolls.");
+  assert.deepEqual(result, { bonus: { kind: "proficiency" }, unparsed: [] });
+});
+
+test("a flat bonus to initiative is a flat Initiative Bonus of that value", () => {
+  const result = extractInitiativeBonus("Sample Sentry. Always on the lookout, you gain a +4 bonus to initiative.");
+  assert.deepEqual(result, { bonus: { kind: "flat", value: 4 }, unparsed: [] });
+});
+
+test("a flat bonus with no article reads the same as one with 'a'", () => {
+  const result = extractInitiativeBonus("Sample Watch. You gain +3 bonus to initiative rolls.");
+  assert.deepEqual(result, { bonus: { kind: "flat", value: 3 }, unparsed: [] });
+});
+
+test("a proficiency bonus to initiative granted only to others is reported, not given to the holder", () => {
+  const result = extractInitiativeBonus(
+    "Sample Chant. Each creature within 10 feet gains a bonus to initiative equal to your proficiency bonus.",
+  );
+  assert.deepEqual(result, {
+    bonus: undefined,
+    unparsed: ["Each creature within 10 feet gains a bonus to initiative equal to your proficiency bonus"],
+  });
+});
+
+test("a flat bonus an ally gains is reported, not given to the holder, even when the sentence says 'you' in a condition", () => {
+  const result = extractInitiativeBonus(
+    "Sample Chant. While you are awake, each ally within 30 feet of you who can hear you gains a +2 bonus to initiative rolls.",
+  );
+  assert.deepEqual(result, {
+    bonus: undefined,
+    unparsed: ["While you are awake, each ally within 30 feet of you who can hear you gains a +2 bonus to initiative rolls"],
+  });
+});
+
+test("a bonus to armor class or damage that does not mention initiative is not an Initiative Bonus and is not reported", () => {
+  const result = extractInitiativeBonus("Sample Guard. You gain a +2 bonus to armor class. Your strikes add a +2 bonus to damage rolls.");
+  assert.deepEqual(result, { bonus: undefined, unparsed: [] });
+});
+
+test("a flat and a proficiency bonus in one feature are two different bonuses, reported, not picked between", () => {
+  const result = extractInitiativeBonus(
+    "Sample Twin. You gain a +2 bonus to initiative. You add your proficiency bonus to your initiative rolls.",
+  );
+  assert.equal(result.bonus, undefined);
+  assert.equal(result.unparsed.length, 2);
+});
