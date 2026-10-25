@@ -1,5 +1,5 @@
 import type { InitiativeBonus, ProficiencyReport } from "../types/proficiency.ts";
-import { proseSentences, type GrantSubject } from "./proficiency-grants.ts";
+import { featureKey, proseSentences, type GrantSubject } from "./proficiency-grants.ts";
 
 /**
  * Turns Initiative Bonuses out of feature prose, beside the Proficiency Grant extractor (ADR 0016). A sentence that
@@ -110,10 +110,6 @@ export function extractInitiativeBonus(description: string): InitiativeBonusExtr
   const distinct = [...new Map(parsed.map((bonus) => [JSON.stringify(bonus), bonus])).values()];
   if (unparsed.length > 0 || distinct.length > 1) return { bonus: undefined, unparsed: unparsed.length > 0 ? unparsed : sentences };
   return { bonus: distinct[0], unparsed: [] };
-}
-
-function featureKey(s: { owner: string; feature: string; level: number }): string {
-  return `${s.owner}|${s.feature}|${s.level}`;
 }
 
 /**

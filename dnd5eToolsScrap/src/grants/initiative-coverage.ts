@@ -1,4 +1,5 @@
 import type { ReviewedFeature } from "../overrides/proficiency-grants.ts";
+import { featureKey } from "../parser/proficiency-grants.ts";
 import { candidateSentences } from "../parser/initiative-bonuses.ts";
 import type { CoverageGap } from "./coverage.ts";
 import { classFeatureRefs, featRefs, optionRecordRefs, traitRefs, type GrantRef, type TrackedData } from "./subjects.ts";
@@ -64,6 +65,3 @@ function hasBonus(ref: GrantRef): boolean {
   return ref.holder.initiativeBonus !== undefined;
 }
 
-function featureKey(s: ReviewedFeature): string {
-  return `${s.owner}|${s.feature}|${s.level}`;
-}

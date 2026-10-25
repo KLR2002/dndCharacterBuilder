@@ -498,7 +498,7 @@ function build(
 }
 
 /** The source-less key an override is matched on. An override applies to every source's copy of a feature. */
-function featureKey(s: { owner: string; feature: string; level: number }): string {
+export function featureKey(s: { owner: string; feature: string; level: number }): string {
   return `${s.owner}|${s.feature}|${s.level}`;
 }
 

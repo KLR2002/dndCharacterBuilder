@@ -1,5 +1,5 @@
 import type { ReviewedFeature } from "../overrides/proficiency-grants.ts";
-import { doublingSentences, matchedSentences } from "../parser/proficiency-grants.ts";
+import { doublingSentences, featureKey, matchedSentences } from "../parser/proficiency-grants.ts";
 import { allRefs, type GrantRef, type TrackedData } from "./subjects.ts";
 
 /** A feature whose prose matches the proficiency vocabulary, with neither grants nor a mark. */
@@ -107,6 +107,3 @@ function hasGrants(ref: GrantRef): boolean {
   return ref.holder.grants !== undefined && ref.holder.grants.length > 0;
 }
 
-function featureKey(s: ReviewedFeature): string {
-  return `${s.owner}|${s.feature}|${s.level}`;
-}
