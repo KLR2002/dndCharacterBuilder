@@ -8,7 +8,7 @@
 
 ## Design notes
 
-- Reuse `src/components/ui/CollapsibleCard.tsx`. These cards carry a subtitle line (and `renderChoiceCard` a badge), so give `CollapsibleCard` an optional `subtitle` (shown under the title, in the muted 11 px style the cards use today, hidden when collapsed or kept? Keep it visible in both states, so a collapsed card still says what it is) and an optional `badge` (the `Badge` the title row shows today, to the left of the chevron). Do not add a second collapsible component.
+- Reuse `src/components/ui/CollapsibleCard.tsx`. These cards carry a subtitle line (and `renderChoiceCard` a badge), so give `CollapsibleCard` an optional `subtitle` (shown under the title in the muted 11 px style the cards use today, in both states, so a collapsed card still says what it is) and an optional `badge` (the `Badge` the title row shows today, to the left of the chevron). Do not add a second collapsible component.
 - Cards to convert in `src/components/builder/ClassProgressionSection.tsx`: every card `renderChoiceCard` returns (Fighting Styles, Battle Master Maneuvers, Pact Boon & Eldritch Invocations, Infusions Known, Class & Subclass Choices), the Expertise card, and the "Optional & Replacement Class Features" card. Leave cards that hold no picker as they are (Granted Class Tools, Multiclassing Rules, the class list, the subclass-change card).
 - Open by default; state local to the card. Keep the copy unchanged (`CODING_STANDARDS.md` section 8).
 - The Expertise card also shows a warning block and the milestone pickers; both stay inside the collapsible body.
