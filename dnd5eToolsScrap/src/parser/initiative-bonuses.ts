@@ -23,7 +23,9 @@ export interface InitiativeBonusExtraction {
   unparsed: string[];
 }
 
-const ABILITY_KEYS = new Map<string, "str" | "dex" | "con" | "int" | "wis" | "cha">([
+type AbilityKey = Extract<InitiativeBonus, { kind: "ability" }>["ability"];
+
+const ABILITY_KEYS = new Map<string, AbilityKey>([
   ["strength", "str"],
   ["dexterity", "dex"],
   ["constitution", "con"],
