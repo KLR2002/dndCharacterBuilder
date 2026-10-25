@@ -13,6 +13,10 @@ import { reconcile } from "../src/rules/characterReconciler.ts";
 import type { AvailableRuleChoice } from "../src/rules/choices/types.ts";
 import { makeChar } from "./testUtils.ts";
 import { evaluateCharacter } from "../src/rules/characterEvaluation.ts";
+import { initiativeCoverageGaps } from "../dnd5eToolsScrap/src/grants/initiative-coverage.ts";
+import { gapName } from "../dnd5eToolsScrap/src/grants/coverage.ts";
+import type { TrackedData } from "../dnd5eToolsScrap/src/grants/subjects.ts";
+import { REVIEWED_NO_INITIATIVE_BONUS, REVIEWED_NO_INITIATIVE_BONUS_LIVE_ONLY } from "../dnd5eToolsScrap/src/overrides/initiative-bonuses.ts";
 
 // Checks against the Integrated Catalog the in-app sync builds, read from the cache that
 // `npm run catalog:live` writes. Without the cache every test here is skipped. The live check runs only
@@ -378,4 +382,20 @@ test("live catalog: a Paladin with the Aura of the Sentinel and the flat Alert h
       { label: "Alert", value: 5 },
     ]);
   }
+});
+
+test("live catalog: every feature whose prose adds to initiative has an Initiative Bonus or a reviewed mark", { skip: SKIP }, () => {
+  // The live catalog's classes, feats, races and Options and Features records, read by the same gate as the tracked data.
+  const catalog = {
+    classes: live!.collections.classes,
+    feats: live!.collections.feats,
+    races: live!.collections.races,
+    optionsAndFeatures: live!.collections.optionsAndFeatures,
+  } as unknown as TrackedData;
+  const gaps = initiativeCoverageGaps(catalog, [...REVIEWED_NO_INITIATIVE_BONUS, ...REVIEWED_NO_INITIATIVE_BONUS_LIVE_ONLY]);
+  assert.deepEqual(
+    gaps.map((gap) => `${gapName(gap)}: ${gap.sentences.join(" | ")}`),
+    [],
+    "features whose prose adds to initiative, with no Initiative Bonus and no reviewed mark, in the live catalog"
+  );
 });

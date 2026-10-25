@@ -63,11 +63,20 @@ export interface TrackedRace {
   subraces: TrackedSubrace[];
 }
 
+/** An Options and Features record outside the classes, such as a maneuver. Only the live catalog carries these; the tracked files do not. */
+export interface TrackedOptionRecord extends GrantHolder {
+  name: string;
+  source: string;
+  description: string;
+}
+
 export interface TrackedData {
   classes: TrackedClass[];
   feats: TrackedFeat[];
   /** The tracked races. Absent when the caller enriches only classes and feats. */
   races?: TrackedRace[];
+  /** The Options and Features records. Absent unless the caller reads the live catalog. */
+  optionsAndFeatures?: TrackedOptionRecord[];
 }
 
 /**
@@ -144,6 +153,14 @@ export function featRefs(feats: TrackedFeat[]): GrantRef[] {
   return feats.map((feat) => ({
     subject: { source: feat.source, owner: "Feat", feature: feat.name, level: 0, description: feat.description },
     holder: feat,
+  }));
+}
+
+/** Options and Features records are their own owner: owner "Option", level 0, as feats are "Feat". */
+export function optionRecordRefs(records: TrackedOptionRecord[]): GrantRef[] {
+  return records.map((record) => ({
+    subject: { source: record.source, owner: "Option", feature: record.name, level: 0, description: record.description },
+    holder: record,
   }));
 }
 

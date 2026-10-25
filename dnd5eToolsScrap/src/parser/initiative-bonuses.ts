@@ -57,9 +57,25 @@ const FLAT = /\+(\d+) bonus to (?:your )?initiative(?: rolls)?$/i;
  */
 const HOLDER_GAINS = /\byou(?: all)?(?: can)? (?:gain|have|get)\b|\bgive yourself\b/i;
 
-/** A sentence that names initiative and gives a bonus to it. Advantage and shared initiative counts do not match. */
+/**
+ * A sentence that names initiative and gives a bonus to it: "bonus to initiative", "bonus to your initiative rolls",
+ * or an "add" to a roll. A bare "bonus" does not count, so "your Proficiency Bonus" in a roll trigger does not match.
+ * Advantage and shared initiative counts do not match.
+ */
 function isInitiativeBonusSentence(sentence: string): boolean {
-  return /\binitiative\b/i.test(sentence) && /\b(?:bonus|add)\b/i.test(sentence);
+  return /\binitiative\b/i.test(sentence) && /\b(?:bonus (?:to )?(?:your )?initiative|add)\b/i.test(sentence);
+}
+
+/**
+ * The sentences of a feature's prose that name initiative and give it a bonus, without their final punctuation.
+ * The extractor and the coverage gate both read candidates through this function, so they agree on what a
+ * candidate is. Headings are not candidates.
+ */
+export function candidateSentences(description: string): string[] {
+  return proseSentences(description)
+    .filter((sentence) => !sentence.startsWith("#"))
+    .map((sentence) => sentence.replace(/[.!?]+$/, "").trim())
+    .filter(isInitiativeBonusSentence);
 }
 
 function parseSentence(sentence: string): InitiativeBonus | null {
@@ -81,10 +97,7 @@ function parseSentence(sentence: string): InitiativeBonus | null {
  * and every candidate sentence is reported.
  */
 export function extractInitiativeBonus(description: string): InitiativeBonusExtraction {
-  const sentences = proseSentences(description)
-    .filter((sentence) => !sentence.startsWith("#"))
-    .map((sentence) => sentence.replace(/[.!?]+$/, "").trim())
-    .filter(isInitiativeBonusSentence);
+  const sentences = candidateSentences(description);
   const parsed: InitiativeBonus[] = [];
   const unparsed: string[] = [];
   for (const sentence of sentences) {
