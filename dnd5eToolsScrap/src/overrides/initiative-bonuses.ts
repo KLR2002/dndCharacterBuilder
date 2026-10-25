@@ -18,7 +18,7 @@ export const INITIATIVE_BONUS_OVERRIDES: InitiativeBonusOverride[] = [];
  * Names only. The coverage gate fails on a mark that names an unknown feature, or a feature that has a bonus.
  */
 export const REVIEWED_NO_INITIATIVE_BONUS: ReviewedFeature[] = [
-  // Gives its bonus only to allies within 30 feet who can see the holder, not to the holder.
+  // Reaches only allies.
   { owner: "Mystic/Order of the Avatar", feature: "Avatar of Battle", level: 3 },
 ];
 
@@ -27,8 +27,8 @@ export const REVIEWED_NO_INITIATIVE_BONUS: ReviewedFeature[] = [
  * tracked gate cannot name them (an unknown mark throws there), so only the live gate reads this list.
  */
 export const REVIEWED_NO_INITIATIVE_BONUS_LIVE_ONLY: ReviewedFeature[] = [
-  // Adds the roll of a Bardic Inspiration die, spent on each use: a cost the holder pays, not a standing bonus.
+  // Spent on each use.
   { owner: "Bard/College of Dance", feature: "Tandem Footwork", level: 6 },
-  // Adds a superiority die the holder spends on each use, and is a maneuver option rather than a class feature.
+  // Spent on each use; a maneuver option, not a class feature.
   { owner: "Option", feature: "Ambush", level: 0 },
 ];
