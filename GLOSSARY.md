@@ -171,7 +171,7 @@ A martial specialization chosen by Fighter (1st & 10th level), Paladin (2nd leve
 _Avoid_: Martial stance, combat perk, weapon discipline
 
 **Superiority Die**:
-A combat die (d8, d10, d12, or d6) expended to fuel Battle Master maneuvers, recovering on a Short or Long Rest.
+A combat die expended to fuel maneuvers, recovering on a Short or Long Rest. The Battle Master's dice (d8, scaling to d10 and d12) are one pool. Each die granted by Superior Technique or Martial Adept is a d6 in a separate pool that does not scale with the Battle Master.
 _Avoid_: Maneuver die, tactic counter, stamina die
 
 **Maneuver**:
