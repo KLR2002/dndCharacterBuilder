@@ -148,12 +148,59 @@ test("a feat held as an origin feat gives its source, and a feat held both ways 
   assert.equal(bothWays.grantedSpellSources.filter((source) => source.title === "Sample Warding").length, 1);
 });
 
-test("a feat whose ability is a pick, or whose only spell is a pick, gives no source yet", () => {
+test("a feat whose ability is a pick gives no source yet, and no card is invented for it", () => {
   const evaluated = evaluateCharacter(
-    makeChar({ classes: [mage(4)], asiSelections: [takenFeat("Sample Chooser", "int"), takenFeat("Sample Picker")] }),
+    makeChar({ classes: [mage(4)], asiSelections: [takenFeat("Sample Chooser", "int")] }),
     catalogs,
   );
   assert.deepEqual(evaluated.grantedSpellSources, []);
+});
+
+test("a feat whose only spell is a pick that has not been made gives a card with a needs-review notice and no spell", () => {
+  const evaluated = evaluateCharacter(
+    makeChar({ classes: [mage(4)], asiSelections: [takenFeat("Sample Picker")] }),
+    catalogs,
+  );
+  const picker = sourceTitled(evaluated.grantedSpellSources, "Sample Picker");
+  assert.ok(picker, "the card is kept, so the player can see what is missing");
+  assert.deepEqual(picker.spells, [], "the unpicked spell is not invented");
+  assert.ok(picker.notices?.length, "the unpicked part raises a needs-review notice");
+});
+
+test("a named spell list the player has not chosen gives a card with a needs-review notice and no spells", () => {
+  const evaluated = evaluateCharacter(
+    makeChar({ classes: [mage(4)], asiSelections: [takenFeat("Sample Initiate")] }),
+    catalogs,
+  );
+  const initiate = sourceTitled(evaluated.grantedSpellSources, "Sample Initiate");
+  assert.ok(initiate, "the feat keeps its card until a list is chosen");
+  assert.equal(initiate.ability, undefined, "no list chosen, so no casting ability yet");
+  assert.equal(initiate.spellSaveDc, undefined);
+  assert.deepEqual(initiate.spells, []);
+  assert.ok(initiate.notices?.some((notice) => /spell list/i.test(notice)), "the notice asks for the list");
+});
+
+test("an inherited ability with no recorded increase keeps its card and raises a needs-review notice", () => {
+  const evaluated = evaluateCharacter(
+    makeChar({ classes: [mage(4)], asiSelections: [takenFeat("Sample Cinder")] }),
+    catalogs,
+  );
+  const cinder = sourceTitled(evaluated.grantedSpellSources, "Sample Cinder");
+  assert.ok(cinder, "the card is not silently lost");
+  assert.equal(cinder.ability, undefined, "the ability is unknown until the increase is recorded");
+  assert.ok(cinder.spells.some((spell) => spell.name === "Sample Ember"), "the fixed cantrip is still listed");
+  assert.ok(cinder.notices?.length, "a notice says what is missing");
+});
+
+test("a granted spell from a book that is switched off resolves to nothing", () => {
+  const sparkle = (activeBooks?: string[]) =>
+    evaluateCharacter(
+      makeChar({ classes: [mage(4)], asiSelections: [takenFeat("Sample Sparkle", "int")] }),
+      { compendium: catalogs.compendium, activeBooks },
+    );
+  assert.equal(sourceTitled(sparkle(["TST"]).grantedSpellSources, "Sample Sparkle"), undefined, "its only spell is in TST2, which is off");
+  const onBook = sourceTitled(sparkle(["TST", "TST2"]).grantedSpellSources, "Sample Sparkle");
+  assert.ok(onBook?.spells.some((spell) => spell.name === "Sample Spark"), "with the book on, the spell is listed");
 });
 
 test("granted spells are in no class's known or prepared list and leave its limits as they were", () => {
