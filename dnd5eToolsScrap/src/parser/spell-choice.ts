@@ -1,4 +1,4 @@
-import type { FeatureChoice, SubclassAdditionalSpells } from "../types/models.ts";
+import type { FeatureChoice, AdditionalSpells } from "../types/models.ts";
 
 /**
  * Lifts a subclass's `additionalSpells` into the pick it grants, when they carry one. Three shapes
@@ -17,7 +17,7 @@ import type { FeatureChoice, SubclassAdditionalSpells } from "../types/models.ts
  * `additionalSpells` are left as they are; this only reads them.
  */
 export function liftSpellChoice(
-  additionalSpells: readonly SubclassAdditionalSpells[] | undefined
+  additionalSpells: readonly AdditionalSpells[] | undefined
 ): FeatureChoice | undefined {
   if (!additionalSpells || additionalSpells.length === 0) return undefined;
 
@@ -49,7 +49,7 @@ export function liftSpellChoice(
 }
 
 /** The spell names a named entry grants through `prepared`, `known` and `expanded`, once each, in order. */
-function grantedSpellNames(entry: SubclassAdditionalSpells): string[] {
+function grantedSpellNames(entry: AdditionalSpells): string[] {
   const names: string[] = [];
   for (const grants of [entry.prepared, entry.known, entry.expanded]) {
     for (const spells of Object.values(grants ?? {})) {
@@ -64,7 +64,7 @@ function grantedSpellNames(entry: SubclassAdditionalSpells): string[] {
 }
 
 /** The one cantrip an unnamed entry grants through `innate`, or undefined when it grants other than exactly one. */
-function innateCantripName(entry: SubclassAdditionalSpells): string | undefined {
+function innateCantripName(entry: AdditionalSpells): string | undefined {
   const names = new Set<string>();
   for (const spells of Object.values(entry.innate ?? {})) {
     if (!Array.isArray(spells)) return undefined;
@@ -87,7 +87,7 @@ interface KnownFilterGrant {
  * The cantrip-list pick the `known` entries name, or undefined when they name none or name two
  * different filters. The filter at the lowest level key is the one offered.
  */
-function cantripListChoice(additionalSpells: readonly SubclassAdditionalSpells[]): FeatureChoice | undefined {
+function cantripListChoice(additionalSpells: readonly AdditionalSpells[]): FeatureChoice | undefined {
   const grants = additionalSpells.flatMap(knownFilterGrants);
   if (grants.length === 0) return undefined;
   if (new Set(grants.map((grant) => grant.filter)).size > 1) return undefined;
@@ -98,7 +98,7 @@ function cantripListChoice(additionalSpells: readonly SubclassAdditionalSpells[]
 }
 
 /** The `choose` filters an entry's `known` grants at each numeric level, read from `_`. */
-function knownFilterGrants(entry: SubclassAdditionalSpells): KnownFilterGrant[] {
+function knownFilterGrants(entry: AdditionalSpells): KnownFilterGrant[] {
   const grants: KnownFilterGrant[] = [];
   for (const [levelKey, byKey] of Object.entries(entry.known ?? {}) as [string, unknown][]) {
     const level = Number(levelKey);

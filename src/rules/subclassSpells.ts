@@ -1,6 +1,6 @@
 import { currentCompendium, type Compendium } from "../services/compendium.ts";
 import type { Character, RuleChoiceEntry } from "../types/character.ts";
-import type { SpellData, SubclassData, SubclassAdditionalSpells } from "../types/dnd5e.ts";
+import type { SpellData, SubclassData, AdditionalSpells } from "../types/dnd5e.ts";
 import { resolveOptionName } from "./choices/types.ts";
 import { findClassData } from "./catalogs.ts";
 
@@ -61,6 +61,15 @@ function pickSpell(copies: SpellData[] | undefined, activeBooks?: string[]): Spe
 
 export function resetSpellCatalogCache(): void {
   spellCatalogs = new WeakMap<Compendium, Map<string, SpellData[]>>();
+}
+
+/** The catalog spell a grant names (a name as the scraper normalises it), preferring a copy from an active book. */
+export function resolveSpellName(
+  name: string,
+  activeBooks: string[] | undefined,
+  compendium: Compendium = currentCompendium()
+): SpellData | undefined {
+  return pickSpell(getSpellCatalog(compendium).get(normalizeKey(name)), activeBooks);
 }
 
 /**
@@ -161,10 +170,10 @@ function matchesSubclass(sc: SubclassData, subName: string): boolean {
 }
 
 function selectAdditionalSpellsEntries(
-  additionalSpells: SubclassAdditionalSpells[],
+  additionalSpells: AdditionalSpells[],
   subclassName: string,
   options?: SubclassSpellOptions
-): SubclassAdditionalSpells[] {
+): AdditionalSpells[] {
   if (additionalSpells.length === 0) return [];
 
   const hasNamedVariants = additionalSpells.some((entry) => Boolean(entry.name));

@@ -93,13 +93,18 @@ export interface ClassFeatureModel {
   initiativeBonus?: InitiativeBonus;
 }
 
-export interface SubclassAdditionalSpells {
+/**
+ * One spell grant of a subclass, feat, race or background, as the source gives it. `ability` is the casting ability: a fixed
+ * key, `inherit` (the ability the feat's increase raised) or a `choose` list. A `choose` object inside a spell list is a pick.
+ */
+export interface AdditionalSpells {
+  name?: string;
+  ability?: string | { choose: string[] };
   prepared?: Record<string, string[]>;
   /** Per spell level: a list of spell names, or a `_` list of `choose` filters (cantrip lists). */
   known?: Record<string, any>;
   expanded?: Record<string, any>;
   innate?: Record<string, any>;
-  name?: string;
 }
 
 export interface SubclassModel {
@@ -110,7 +115,7 @@ export interface SubclassModel {
   classSource: string;
   spellcastingAbility?: string;
   features: ClassFeatureModel[];
-  additionalSpells?: SubclassAdditionalSpells[];
+  additionalSpells?: AdditionalSpells[];
   /** Present when the additional spells grant a pick between named options, lifted from them. */
   spellChoice?: FeatureChoice;
   description: string;

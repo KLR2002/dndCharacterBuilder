@@ -34,6 +34,8 @@ import {
   calculateAutoResourceCounters,
   getMergedResourceCounters,
 } from "./resourceCounters.ts";
+import { grantedSpellSources } from "./grantedSpells.ts";
+import type { InnateSpellProfile } from "./innateMagic.ts";
 
 export { catalogListings, type CharacterCatalogs } from "./catalogs.ts";
 
@@ -71,6 +73,8 @@ export interface EvaluatedCharacter {
   resolvedAncestry: ResolvedAncestry;
   resolvedBackground?: BackgroundData;
   spellProfiles: ClassSpellProfile[];
+  /** The Innate Magic sources the character's feats grant (ADR 0017), one card each. Not class spells. */
+  grantedSpellSources: InnateSpellProfile[];
   pactMagic: { count: number; level: number } | null;
   combatDice: ClassDiceSummary;
   combatDcs: {
@@ -147,6 +151,10 @@ export function evaluateCharacter(
     ...ancestry,
     activeBooks: catalogs?.activeBooks,
   });
+  const grantedSources = grantedSpellSources(character, catalogs, {
+    modifiers: effScores.modifiers,
+    proficiencyBonus: pb,
+  });
   const pactMagic = calculateWarlockPactSlots(character);
   const combatDice = getClassDice(character);
   const maneuverSaveDc = getManeuverSaveDc(character);
@@ -191,6 +199,7 @@ export function evaluateCharacter(
     resolvedAncestry: ancestry,
     resolvedBackground: background,
     spellProfiles,
+    grantedSpellSources: grantedSources,
     pactMagic,
     combatDice,
     combatDcs,

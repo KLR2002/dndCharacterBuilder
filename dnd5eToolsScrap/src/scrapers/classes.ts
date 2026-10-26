@@ -21,7 +21,7 @@ import type {
   ClassFeatureModel,
   ClassModel,
   FeatureChoice,
-  SubclassAdditionalSpells,
+  AdditionalSpells,
   SubclassModel,
 } from "../types/models.ts";
 import type { ProficiencyGrant, ProficiencyReport } from "../types/proficiency.ts";
@@ -61,10 +61,10 @@ function cleanSpellVal(val: any): any {
   return val;
 }
 
-function parseAdditionalSpells(rawAdditionalSpells: any): SubclassAdditionalSpells[] | undefined {
+function parseAdditionalSpells(rawAdditionalSpells: any): AdditionalSpells[] | undefined {
   if (!Array.isArray(rawAdditionalSpells) || rawAdditionalSpells.length === 0) return undefined;
   return rawAdditionalSpells.map((entry) => {
-    const res: SubclassAdditionalSpells = {};
+    const res: AdditionalSpells = {};
     if (entry.name) res.name = cleanTags(entry.name, "plain");
     for (const cat of ["prepared", "known", "expanded", "innate"] as const) {
       if (entry[cat]) {
