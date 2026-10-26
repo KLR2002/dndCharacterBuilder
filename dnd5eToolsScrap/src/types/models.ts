@@ -42,11 +42,15 @@ export interface RaceModel {
   rawEntries?: any[];
   /** Proficiency Grants from the race's structured proficiency fields. */
   grants?: ProficiencyGrant[];
+  /** The spells the race grants, as the source gives them (ADR 0017). Absent when it grants none. */
+  additionalSpells?: AdditionalSpells[];
 }
 
 export interface SubraceModel {
   /** Proficiency Grants the subrace's structured proficiency entries give. Absent when it gives none. */
   grants?: ProficiencyGrant[];
+  /** The spells the subrace grants, as the source gives them (ADR 0017). Absent when it grants none. */
+  additionalSpells?: AdditionalSpells[];
   name: string;
   /** True when this subrace is a rules variant of its ancestry. */
   isVariant: boolean;

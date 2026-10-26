@@ -3,8 +3,9 @@ import { resolveAllCopies } from "../parser/copy-resolver.ts";
 import { renderEntries } from "../parser/entry-renderer.ts";
 import { cleanTags } from "../parser/tag-cleaner.ts";
 import { extractRuleChoices, RULE_CHOICE_LEVELS, ruleChoiceKey, type ExtractedRuleChoice } from "./rule-choices.ts";
-import type { RaceModel, SubraceModel, TraitModel } from "../types/models.ts";
+import type { AdditionalSpells, RaceModel, SubraceModel, TraitModel } from "../types/models.ts";
 import type { ProficiencyReport } from "../types/proficiency.ts";
+import { parseAdditionalSpells } from "../parser/additional-spells.ts";
 import {
   newProficiencyReport,
   structuredGrants,
@@ -56,7 +57,7 @@ const VARIANT_PREFIX = /^Variant;?\s*/;
  * named `Variant` and twelve are named `Variant; <descent>` - so anything
  * matching an exact name was only ever finding the first kind.
  */
-function normalizeSubraceName(rawName: string | null | undefined): { name: string; isVariant: boolean } {
+export function normalizeSubraceName(rawName: string | null | undefined): { name: string; isVariant: boolean } {
   const name = (rawName ?? "").trim();
   const isVariant = VARIANT_PREFIX.test(name);
   if (!isVariant) return { name, isVariant };
@@ -162,8 +163,10 @@ export async function scrapeRaces(
       report.unparsed.push({ owner: "Subrace", feature: `${parentName} (${normalized.name})`, level: 0, unparsed: proficiencies.unparsed });
     }
 
+    const subraceSpells = parseAdditionalSpells(rawSub.additionalSpells);
     const subraceModel: SubraceModel = {
       ...(proficiencies.grants.length > 0 ? { grants: proficiencies.grants } : {}),
+      ...(subraceSpells ? { additionalSpells: subraceSpells } : {}),
       name: normalized.name,
       isVariant: normalized.isVariant,
       source: rawSub.source,
@@ -251,8 +254,10 @@ export async function scrapeRaces(
       report.unparsed.push({ owner: "Race", feature: raw.name, level: 0, unparsed: proficiencies.unparsed });
     }
 
+    const raceSpells = parseAdditionalSpells(raw.additionalSpells);
     races.push({
       ...(proficiencies.grants.length > 0 ? { grants: proficiencies.grants } : {}),
+      ...(raceSpells ? { additionalSpells: raceSpells } : {}),
       name: raw.name,
       source: raw.source,
       size: sizes,
@@ -268,6 +273,37 @@ export async function scrapeRaces(
   }
 
   return races;
+}
+
+/** The key a race's spell grants are looked up by: its name and source. */
+export function raceKey(name: string, source: string): string {
+  return `${name}|${source}`;
+}
+
+/** The key a subrace's spell grants are looked up by: its parent race's key, then its own normalised name and source. */
+export function subraceKey(raceName: string, raceSource: string, name: string, source: string): string {
+  return `${raceKey(raceName, raceSource)}/${name}|${source}`;
+}
+
+/**
+ * The spell grants of each race and subrace in a raw races file, keyed by raceKey and subraceKey. A record without grants is
+ * absent. A subrace that copies another keeps the copied grants, as the scraper resolves the copy first.
+ */
+export function additionalSpellsByRace(rawData: { race?: any[]; subrace?: any[] }): Map<string, AdditionalSpells[]> {
+  const grants = new Map<string, AdditionalSpells[]>();
+  for (const raw of resolveAllCopies(rawData.race || [])) {
+    const spells = parseAdditionalSpells(raw.additionalSpells);
+    if (spells) grants.set(raceKey(raw.name, raw.source), spells);
+  }
+  for (const raw of resolveAllCopies(rawData.subrace || [])) {
+    const spells = parseAdditionalSpells(raw.additionalSpells);
+    const parentName = raw.raceName || raw._copy?.raceName;
+    if (!spells || !parentName) continue;
+    const parentSource = raw.raceSource || raw._copy?.raceSource || "";
+    const { name } = normalizeSubraceName(raw.name);
+    grants.set(subraceKey(parentName, parentSource, name, raw.source), spells);
+  }
+  return grants;
 }
 
 function parseAbilityScores(ability: any): Array<Record<string, number>> {
