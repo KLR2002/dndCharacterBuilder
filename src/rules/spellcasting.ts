@@ -28,6 +28,8 @@ export interface ClassSpellProfile {
   preparedLimit?: number;
   alwaysPreparedSpells?: SpellData[];
   subclassKnownSpells?: SpellData[];
+  /** The names the character's background adds to this class's list (its expanded spell lists, ADR 0017). */
+  backgroundSpells?: string[];
   /** The Spell Owner key this class's known and prepared spells are stored under. */
   ownerKey: string;
   knownSpells: KnownSpell[];
@@ -140,9 +142,13 @@ export function getClassSpellProfiles(
     biome?: string;
     affinity?: string;
     swaps?: Record<string, string>;
+    /** The classes the character's entries resolve against. Defaults to every class in the process-wide Compendium. */
+    classes?: readonly ClassData[];
+    /** The names the character's background adds to each spellcasting class's list. */
+    backgroundSpells?: string[];
   } = {}
 ): ClassSpellProfile[] {
-  const classes = allCatalogClasses();
+  const classes = opts.classes ?? allCatalogClasses();
   const castingClasses = (character.classes || []).filter((c) => isCastingClass(c, classes));
   if (castingClasses.length === 0) return [];
 
@@ -227,6 +233,7 @@ export function getClassSpellProfiles(
       className: c.className,
       subclass: subName,
       ...(character.ruleChoices ? { ruleChoices: character.ruleChoices } : {}),
+      ...(opts.backgroundSpells ? { backgroundSpells: opts.backgroundSpells } : {}),
       source: c.source || "PHB",
       level: c.level,
       ability,
@@ -253,14 +260,21 @@ export interface SpellAvailabilityContext {
   classLevel?: number;
   kind?: string;
   ruleChoices?: RuleChoiceEntry[];
+  /** Names the character's background adds to the list (its expanded spell lists). */
+  backgroundSpells?: string[];
 }
 
 /**
- * The availability context for a class profile's Spell Owner: its subclass and the character's rule
- * choices, so a subclass variant (e.g. the Genie kind) resolves as the character chose it.
+ * The availability context for a class profile's Spell Owner: its subclass, the character's rule
+ * choices, so a subclass variant (e.g. the Genie kind) resolves as the character chose it, and the
+ * background's expanded spell names.
  */
 export function profileSpellContext(profile: ClassSpellProfile): SpellAvailabilityContext {
-  return { subclassName: profile.subclass, ruleChoices: profile.ruleChoices };
+  return {
+    subclassName: profile.subclass,
+    ruleChoices: profile.ruleChoices,
+    ...(profile.backgroundSpells ? { backgroundSpells: profile.backgroundSpells } : {}),
+  };
 }
 
 /**
@@ -322,6 +336,11 @@ export function isSpellAvailableForClass(
       (spell.source || "").toUpperCase() === "SRD" ||
       activeBooks.some((b) => b.toUpperCase() === (spell.source || "").toUpperCase());
     if (!isSpellSourceActive) return false;
+  }
+
+  // The character's background adds its expanded spell names to every spellcasting class's list, cantrips included (ADR 0017).
+  if (parsedContext.backgroundSpells?.some((name) => normalizeKey(name) === normalizeKey(spell.name))) {
+    return true;
   }
 
   // Divine Soul Sorcerers have access to the complete Cleric spell list
