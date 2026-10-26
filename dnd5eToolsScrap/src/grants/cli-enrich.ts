@@ -7,7 +7,8 @@
  * features, and to the race and subrace traits in data/races.json; and the
  * `additionalSpells` field to each tracked feat that grants spells, and to each tracked background
  * with expanded spell lists, read from the raw feats and backgrounds files (the scraper's cache, or
- * the network when it is not cached).
+ * the network when it is not cached); and the `spellAttack` field to each tracked spell in data/spells.json that needs an
+ * attack roll, read from the raw spells files the same way.
  * Idempotent; writes a file only when its content changes. The only way grants,
  * Initiative Bonuses and feat spell grants reach the tracked data (see ADR 0015,
  * ADR 0016 and ADR 0017).
@@ -19,7 +20,8 @@ import { PROFICIENCY_GRANT_OVERRIDES } from "../overrides/proficiency-grants.ts"
 import { INITIATIVE_BONUS_OVERRIDES } from "../overrides/initiative-bonuses.ts";
 import { additionalSpellsByFeat } from "../scrapers/feats.ts";
 import { additionalSpellsByBackground } from "../scrapers/backgrounds.ts";
-import { enrichGrantFiles, type TrackedFiles } from "./enrich.ts";
+import { fetchResolvedSpells, spellAttackMap } from "../scrapers/spells.ts";
+import { enrichGrantFiles, enrichSpellAttacks, type TrackedFiles } from "./enrich.ts";
 import { allRefs, classFeatureOnlyRefs, featRefs, traitRefs, type TrackedData } from "./subjects.ts";
 
 const dataDir = fileURLToPath(new URL("../../data/", import.meta.url));
@@ -28,6 +30,7 @@ const paths = {
   feats: `${dataDir}feats.json`,
   races: `${dataDir}races.json`,
   backgrounds: `${dataDir}backgrounds.json`,
+  spells: `${dataDir}spells.json`,
 };
 
 const before: Required<TrackedFiles> = {
@@ -51,6 +54,10 @@ for (const name of names) {
   if (after[name] !== before[name]) fs.writeFileSync(paths[name], after[name]);
 }
 
+const spellsBefore = fs.readFileSync(paths.spells, "utf8");
+const spellsAfter = enrichSpellAttacks(spellsBefore, spellAttackMap(await fetchResolvedSpells(client)));
+if (spellsAfter !== spellsBefore) fs.writeFileSync(paths.spells, spellsAfter);
+
 const trackedData: TrackedData = {
   classes: JSON.parse(after.classes),
   feats: JSON.parse(after.feats),
@@ -64,7 +71,8 @@ const initiative = [...classFeatureOnlyRefs(trackedData.classes), ...featRefs(tr
 const raceTraits = traitRefs(trackedData.races ?? []).filter((ref) => ref.holder.initiativeBonus).length;
 const spellFeats = trackedData.feats.filter((feat) => feat.additionalSpells && feat.additionalSpells.length > 0).length;
 const spellBackgrounds = (trackedData.backgrounds ?? []).filter((background) => background.additionalSpells).length;
-const changed = names.filter((name) => after[name] !== before[name]);
+const spellAttacks = (JSON.parse(spellsAfter) as Array<{ spellAttack?: string[] }>).filter((spell) => spell.spellAttack).length;
+const changed = [...names.filter((name) => after[name] !== before[name]), ...(spellsAfter !== spellsBefore ? ["spells"] : [])];
 console.log(
-  `enrich:grants: ${granted} class, subclass and feat features carry grants; ${initiative} class, subclass and feat features and ${raceTraits} race and subrace traits carry an Initiative Bonus; ${spellFeats} feats carry spell grants; ${spellBackgrounds} backgrounds carry expanded spell lists; ${changed.length ? `wrote ${changed.join(", ")}` : "no file changed"}`
+  `enrich:grants: ${granted} class, subclass and feat features carry grants; ${initiative} class, subclass and feat features and ${raceTraits} race and subrace traits carry an Initiative Bonus; ${spellFeats} feats carry spell grants; ${spellBackgrounds} backgrounds carry expanded spell lists; ${spellAttacks} spells carry an attack roll; ${changed.length ? `wrote ${changed.join(", ")}` : "no file changed"}`
 );

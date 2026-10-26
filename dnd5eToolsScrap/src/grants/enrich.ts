@@ -7,6 +7,7 @@ import {
 } from "../parser/proficiency-grants.ts";
 import { resolveInitiativeBonuses, type InitiativeBonusOverride } from "../parser/initiative-bonuses.ts";
 import { featKey } from "../scrapers/feats.ts";
+import { spellKey } from "../scrapers/spells.ts";
 import { backgroundKey } from "../scrapers/backgrounds.ts";
 import type { AdditionalSpells } from "../types/models.ts";
 import {
@@ -191,6 +192,20 @@ function writeTracked(data: TrackedData): TrackedFiles {
     ...(data.races !== undefined ? { races: canonical(data.races) } : {}),
     ...(data.backgrounds !== undefined ? { backgrounds: canonical(data.backgrounds) } : {}),
   };
+}
+
+/**
+ * Writes each tracked spell's attack-roll kinds from the raw spells (the scraper's `spellAttackMap`), or removes a stale one.
+ * The field sits before the spell's raw entries, where the scraper puts it. Returns the text unchanged when nothing changes.
+ */
+export function enrichSpellAttacks(spellsText: string, attacks: Map<string, string[]>): string {
+  const spells = parseCanonical(spellsText, "spells.json") as Array<Record<string, unknown>>;
+  const enriched = spells.map((spell) => {
+    const { spellAttack: _stale, rawEntries, ...rest } = spell;
+    const kinds = attacks.get(spellKey(String(spell.name), String(spell.source)));
+    return { ...rest, ...(kinds ? { spellAttack: kinds } : {}), ...(rawEntries !== undefined ? { rawEntries } : {}) };
+  });
+  return canonical(enriched);
 }
 
 function parseCanonical(text: string, name: string): unknown {
