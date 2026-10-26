@@ -7,7 +7,8 @@ import { createCompendium, type Compendium } from "../src/services/compendium.ts
 import { isCatalogStale, REQUIRED_CATALOG_FORMAT, type CompendiumCollections } from "../src/services/compendiumStorage.ts";
 import { proficiencyChoiceOffers } from "../src/rules/proficiencyChoiceOffers.ts";
 import { poolNames, type ChoiceProficiencyGrant } from "../src/rules/proficiencyPools.ts";
-import { pickRuleChoice } from "../src/rules/ruleChoices.ts";
+import { featSpellChoicesOf, featSpellRuleChoices, pickRuleChoice } from "../src/rules/ruleChoices.ts";
+import { parseSpellFilter } from "../src/rules/choices/featSpells.ts";
 import { STARTING_EQUIPMENT_TYPES } from "../src/rules/startingEquipmentTypes.ts";
 import { reconcile } from "../src/rules/characterReconciler.ts";
 import type { AvailableRuleChoice } from "../src/rules/choices/types.ts";
@@ -447,6 +448,137 @@ test("live catalog: a Wizard with Telekinetic (INT) has Mage Hand at will, and w
   assert.ok(detectThoughts?.resourceCounterId, "Detect Thoughts has a Long Rest counter");
   assert.equal(telekinetic?.ability, "int");
   assert.equal(telekinetic?.spellSaveDc, 8 + 3 + 3, "level 5 (+3) and INT 16 raised to 17 (+3)");
+});
+
+/** Every `choose` filter string a feat's known and innate groups carry: the groups the reader reads. */
+function chooseFiltersOf(feat: Pick<FeatData, "additionalSpells">): string[] {
+  const found: string[] = [];
+  const walk = (value: unknown) => {
+    if (Array.isArray(value)) value.forEach(walk);
+    else if (value && typeof value === "object") {
+      const choose = (value as { choose?: unknown }).choose;
+      if (typeof choose === "string") found.push(choose);
+      Object.values(value).forEach(walk);
+    }
+  };
+  for (const grant of feat.additionalSpells ?? []) {
+    walk(grant.known);
+    walk(grant.innate);
+  }
+  return found;
+}
+
+test("live catalog: Strixhaven Initiate, Fey Touched, Shadow Touched and Spell Sniper carry grants of the expected shape", { skip: SKIP }, () => {
+  const feat = (name: string): FeatData => {
+    const found = live!.collections.feats.find((candidate) => candidate.name === name);
+    assert.ok(found, `no ${name} feat in the catalog`);
+    return found;
+  };
+  const strixhaven = feat("Strixhaven Initiate");
+  const lorehold = strixhaven.additionalSpells?.find((grant) => grant.name === "Lorehold 1");
+  assert.ok(lorehold, `Strixhaven Initiate has no Lorehold 1 entry: ${JSON.stringify(strixhaven.additionalSpells)}`);
+  assert.deepEqual(lorehold.ability, { choose: ["int", "wis", "cha"] }, "the college's entry leaves the ability to the player");
+  assert.ok(chooseFiltersOf(strixhaven).includes("level=1|class=cleric;wizard"), "its first-level pick names two classes");
+
+  const feyTouched = feat("Fey Touched");
+  assert.equal(feyTouched.additionalSpells?.[0]?.ability, "inherit", "Fey Touched takes the ability its increase raised");
+  assert.ok(JSON.stringify(feyTouched.additionalSpells).includes("misty step"), "Fey Touched grants Misty Step");
+  assert.ok(chooseFiltersOf(feyTouched).includes("level=1|school=E;D"), "Fey Touched's pick names two schools");
+
+  const shadowTouched = feat("Shadow Touched");
+  assert.equal(shadowTouched.additionalSpells?.[0]?.ability, "inherit");
+  assert.ok(JSON.stringify(shadowTouched.additionalSpells).includes("invisibility"), "Shadow Touched grants Invisibility");
+  assert.ok(chooseFiltersOf(shadowTouched).includes("level=1|school=I;N"));
+
+  const sniper = feat("Spell Sniper");
+  const wizardList = sniper.additionalSpells?.find((grant) => grant.name === "Wizard Spells");
+  assert.ok(wizardList, `Spell Sniper has no Wizard Spells list: ${JSON.stringify(sniper.additionalSpells)}`);
+  assert.equal(wizardList.ability, "int");
+  assert.ok(chooseFiltersOf(sniper).includes("level=0|class=Wizard|spell attack=m;r;o"), "Spell Sniper's pick names the attack-roll cantrips");
+});
+
+test("live catalog: a Strixhaven college is offered under the cantrips it gives, and its card names the college", { skip: SKIP }, () => {
+  const wizard = live!.compendium.for().classes().find((cls) => cls.name === "Wizard");
+  assert.ok(wizard, "no Wizard class in the catalog");
+  let character = makeChar({
+    classes: [{ className: wizard.name, source: wizard.source, level: 5 }],
+    asiSelections: [{ level: 4, type: "feat", featName: "Strixhaven Initiate", featSource: "SCC" }],
+  });
+  const list = featSpellRuleChoices(character, live!.compendium).find((choice) => choice.id.includes("Strixhaven Initiate") && choice.id.endsWith("__Spell List"));
+  assert.ok(list, "Strixhaven Initiate offers its colleges");
+  const lorehold = list.options.find((option) => option.name === "Lorehold 1");
+  assert.equal(lorehold?.label, "Lorehold: Light, Sacred Flame", "the college is labelled by its fixed cantrips");
+  character = pickRuleChoice(character, list, "Lorehold 1", live!.compendium);
+  const ability = featSpellRuleChoices(character, live!.compendium).find((choice) => choice.id.includes("Strixhaven Initiate") && choice.id.endsWith("__Casting Ability"));
+  assert.ok(ability, "the casting ability is offered once for the feat");
+  character = pickRuleChoice(character, ability, "int", live!.compendium);
+  const card = evaluateCharacter(character, { compendium: live!.compendium }).grantedSpellSources.find((source) => source.title === "Strixhaven Initiate (Lorehold)");
+  assert.ok(card, "the card is titled by the feat and the college");
+  assert.equal(card.ability, "int");
+  assert.deepEqual(card.spells.filter((spell) => spell.isCantrip).map((spell) => spell.name).sort(), ["Light", "Sacred Flame"], "its cantrips are at will");
+  assert.ok(card.notices?.some((notice) => /1 more spell/.test(notice)), "its first-level spell is still to be picked");
+});
+
+test("live catalog: some cantrips carry their attack-roll kind and others carry none", { skip: SKIP }, () => {
+  const cantrips = live!.compendium.for().spells().filter((spell) => spell.level === 0);
+  assert.ok(cantrips.some((spell) => spell.spellAttack?.length), "a cantrip that needs an attack roll carries its kind");
+  assert.ok(cantrips.some((spell) => !spell.spellAttack), "a cantrip that needs no attack roll carries none");
+  assert.deepEqual(cantrips.find((spell) => spell.name === "Fire Bolt")?.spellAttack, ["R"], "Fire Bolt is a ranged attack");
+  assert.equal(cantrips.find((spell) => spell.name === "Light")?.spellAttack, undefined, "Light needs no attack roll");
+});
+
+test("live catalog: a Wizard with Spell Sniper (Wizard spells) is offered only the Wizard cantrips that need an attack roll", { skip: SKIP }, () => {
+  const wizard = live!.compendium.for().classes().find((cls) => cls.name === "Wizard");
+  assert.ok(wizard, "no Wizard class in the catalog");
+  let character = makeChar({
+    classes: [{ className: wizard.name, source: wizard.source, level: 5 }],
+    asiSelections: [{ level: 4, type: "feat", featName: "Spell Sniper", featSource: "PHB" }],
+  });
+  const list = featSpellRuleChoices(character, live!.compendium).find((choice) => choice.id.endsWith("__Spell List") && choice.id.includes("Spell Sniper"));
+  assert.ok(list, "Spell Sniper offers its lists");
+  character = pickRuleChoice(character, list, "Wizard Spells", live!.compendium);
+  const cantrip = featSpellChoicesOf(character, { name: "Spell Sniper", source: "PHB" }, live!.compendium).find((choice) => choice.traitName.endsWith("Cantrip"));
+  assert.ok(cantrip, "the Wizard cantrip pick is offered");
+  // Every copy of a cantrip in every book counts: the expected names are the Wizard cantrips with an attack roll in any copy.
+  const wizardAttackCantrips = [
+    ...new Set(
+      live!.compendium
+        .for()
+        .spells()
+        .filter((spell) => spell.level === 0 && spell.spellAttack?.length && isSpellAvailableForClass(spell, "Wizard"))
+        .map((spell) => spell.name),
+    ),
+  ].sort();
+  assert.ok(wizardAttackCantrips.length > 0, "the catalog has Wizard cantrips that need an attack roll");
+  assert.deepEqual(
+    cantrip.options.map((option) => option.name).sort(),
+    wizardAttackCantrips,
+    "the pick offers exactly the Wizard cantrips that need an attack roll",
+  );
+});
+
+test("live catalog: every filter a feat's known and innate groups carry uses a key the reader models, or is a ritual filter it leaves out", { skip: SKIP }, () => {
+  const unknown = live!.collections.feats.flatMap((feat) =>
+    chooseFiltersOf(feat).flatMap((filter) => parseSpellFilter(filter).unknownKeys.map((key) => `${feat.name}: ${key}`)),
+  );
+  assert.deepEqual(unknown, [], "filter keys the reader does not model, which would match nothing");
+});
+
+test("live catalog: the feats whose spell grants use a prepared group, which the reader does not model yet", { skip: SKIP }, () => {
+  // Reported, not modelled: a prepared group grants always-prepared spells, which the spec's grant groups do not cover. Pinned
+  // so that a new feat with one is seen here, and so that modelling it updates this list on purpose.
+  const prepared = live!.collections.feats
+    .filter((feat) => (feat.additionalSpells ?? []).some((grant) => grant.prepared))
+    .map((feat) => feat.name)
+    .sort();
+  assert.deepEqual(prepared, [
+    "Aberrant Dragonmark", "Abjuration Adept", "Boon of Magic School Mastery", "Boon of Revelry", "Boon of Siberys", "Cloying Mists",
+    "Conjuration Adept", "Divination Adept", "Emerald Enclave Fledgling", "Enchantment Adept", "Enclave Magic", "Evocation Adept",
+    "Familiar Friend", "Gathered Whispers", "Illusion Adept", "Magic Connoisseur", "Mark of Detection", "Mark of Finding",
+    "Mark of Handling", "Mark of Healing", "Mark of Hospitality", "Mark of Making", "Mark of Passage", "Mark of Scribing",
+    "Mark of Sentinel", "Mark of Shadow", "Mark of Storm", "Mark of Warding", "Necromancy Adept", "Ritual Caster", "Second Skin",
+    "Shadowmoor Hexer", "Transmutation Adept", "Treacherous Allure", "Vampire Touched", "Warlike Familiar", "Watchers",
+  ]);
 });
 
 // Background expanded spell lists (ADR 0017): a background's lists join the list of each spellcasting class the character has.
