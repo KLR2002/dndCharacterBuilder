@@ -155,8 +155,8 @@ test("skills distinguish expertise and Jack of All Trades; passive trio and Obse
   const row = (name: string, char = c) => skills(char, proficiencySheet(char, { compendium: inMemoryCompendium() }).skills).find(x => x.name === name)!;
   assert.equal(row("Perception").bonus, 9);
   assert.equal(row("Perception").isExpertise, true);
-  assert.equal(row("Perception").isJackOfAllTrades, false);
-  assert.equal(row("Investigation").isJackOfAllTrades, true);
+  assert.equal(row("Perception").halfProficiency === "Jack of All Trades", false);
+  assert.equal(row("Investigation").halfProficiency === "Jack of All Trades", true);
   assert.equal(row("Investigation").bonus, 3);
   assert.deepEqual(["Perception", "Investigation", "Insight"].map(n => row(n).passiveBonus), [19, 13, 16]);
   const observant = { ...c, asiSelections: [{ level: 4, type: "feat" as const, featName: "Observant" }] };

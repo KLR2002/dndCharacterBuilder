@@ -12,6 +12,9 @@ import { skills } from "./skills.ts";
 import { totalLevel, proficiencyBonus } from "./proficiencies.ts";
 import { getWeaponAttacks, type WeaponAttackOption } from "./attacks.ts";
 import { proficiencySheet } from "./proficiencySheet.ts";
+import { grantedFeatures } from "./grantedFeatures.ts";
+import { initiativeOf, type InitiativePart } from "./initiative.ts";
+import { halfProficiencyFor } from "./halfProficiency.ts";
 import { resolveCharacterAncestry } from "./characterAncestry.ts";
 import {
   evaluateCharacterTools,
@@ -38,6 +41,8 @@ export interface EvaluatedCharacter {
   totalLevel: number;
   proficiencyBonus: number;
   initiative: number;
+  /** The parts of `initiative`: Dexterity first, then each Initiative Bonus that contributes. */
+  initiativeBreakdown: InitiativePart[];
   effectiveScores: ReturnType<typeof effectiveScores>;
   hp: {
     max: number;
@@ -104,6 +109,17 @@ export function evaluateCharacter(
   const speedsResult = characterSpeeds(character, { ...ancestry, compendium: catalogs?.compendium });
   const speedResult = speedsResult.walk;
   const sheet = proficiencySheet(character, catalogs ?? {});
+  const initiativeResult = initiativeOf(
+    grantedFeatures(character, {
+      races: listings.races(),
+      classes: listings.classes(),
+      backgrounds: listings.backgrounds(),
+      feats: listings.feats(),
+    }),
+    effScores.modifiers,
+    pb,
+    halfProficiencyFor(character, "dex", pb),
+  );
   const savesResult = savingThrows(character, sheet.savingThrows, ancestry);
   const weightResult = carryingWeight(character, ancestry);
 
@@ -145,7 +161,8 @@ export function evaluateCharacter(
   return {
     totalLevel: lvl,
     proficiencyBonus: pb,
-    initiative: effScores.modifiers.dex ?? 0,
+    initiative: initiativeResult.total,
+    initiativeBreakdown: initiativeResult.breakdown,
     effectiveScores: effScores,
     hp: {
       max: maxHitPoints,

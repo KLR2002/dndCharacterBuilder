@@ -6,6 +6,8 @@ import type { FeatModel } from "../types/models.ts";
 import type { ProficiencyReport } from "../types/proficiency.ts";
 import { newProficiencyReport, resolveFeatureGrants, type GrantSubject } from "../parser/proficiency-grants.ts";
 import { PROFICIENCY_GRANT_OVERRIDES } from "../overrides/proficiency-grants.ts";
+import { resolveInitiativeBonuses } from "../parser/initiative-bonuses.ts";
+import { INITIATIVE_BONUS_OVERRIDES } from "../overrides/initiative-bonuses.ts";
 
 const STAT_NAMES: Record<string, string> = {
   str: "Strength",
@@ -50,6 +52,10 @@ export async function scrapeFeats(
   const resolved = resolveFeatureGrants(subjects, PROFICIENCY_GRANT_OVERRIDES.feats, report);
   resolved.forEach((result, i) => {
     if (result.grants.length > 0) feats[i].grants = result.grants;
+  });
+  const bonuses = resolveInitiativeBonuses(subjects, INITIATIVE_BONUS_OVERRIDES, report);
+  bonuses.forEach((bonus, i) => {
+    if (bonus) feats[i].initiativeBonus = bonus;
   });
 
   return feats;

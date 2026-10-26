@@ -10,7 +10,7 @@ export interface RuleChoiceModel {
   options: Array<{ name: string; description: string }>;
 }
 
-import type { ProficiencyGrant } from "./proficiency.ts";
+import type { InitiativeBonus, ProficiencyGrant } from "./proficiency.ts";
 import type { StartingEquipmentSlot } from "./startingEquipment.ts";
 
 export interface TraitModel {
@@ -18,6 +18,8 @@ export interface TraitModel {
   description: string;
   /** Present when this trait grants a pick from a fixed set of options. */
   choice?: RuleChoiceModel;
+  /** The Initiative Bonus the trait's prose gives, or from its override (ADR 0016). */
+  initiativeBonus?: InitiativeBonus;
 }
 
 export interface RaceModel {
@@ -87,6 +89,8 @@ export interface ClassFeatureModel {
   choices?: FeatureChoice;
   /** Proficiency Grants extracted from the feature's prose, or from its override. */
   grants?: ProficiencyGrant[];
+  /** The Initiative Bonus the feature's prose gives, or from its override (ADR 0016). */
+  initiativeBonus?: InitiativeBonus;
 }
 
 export interface SubclassAdditionalSpells {
@@ -157,6 +161,8 @@ export interface FeatModel {
   rawEntries?: any[];
   /** Proficiency Grants extracted from the feat's prose, or from its override. */
   grants?: ProficiencyGrant[];
+  /** The Initiative Bonus the feat's prose gives, or from its override (ADR 0016). */
+  initiativeBonus?: InitiativeBonus;
 }
 
 export interface OptionFeatureModel {

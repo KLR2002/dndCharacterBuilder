@@ -12,6 +12,11 @@ import { STARTING_EQUIPMENT_TYPES } from "../src/rules/startingEquipmentTypes.ts
 import { reconcile } from "../src/rules/characterReconciler.ts";
 import type { AvailableRuleChoice } from "../src/rules/choices/types.ts";
 import { makeChar } from "./testUtils.ts";
+import { evaluateCharacter } from "../src/rules/characterEvaluation.ts";
+import { initiativeCoverageGaps } from "../dnd5eToolsScrap/src/grants/initiative-coverage.ts";
+import { gapName } from "../dnd5eToolsScrap/src/grants/coverage.ts";
+import type { TrackedData } from "../dnd5eToolsScrap/src/grants/subjects.ts";
+import { REVIEWED_NO_INITIATIVE_BONUS, REVIEWED_NO_INITIATIVE_BONUS_LIVE_ONLY } from "../dnd5eToolsScrap/src/overrides/initiative-bonuses.ts";
 
 // Checks against the Integrated Catalog the in-app sync builds, read from the cache that
 // `npm run catalog:live` writes. Without the cache every test here is skipped. The live check runs only
@@ -265,3 +270,132 @@ for (const fighter of samuraiFighters) {
     });
   }
 }
+
+// Initiative Bonuses (ADR 0016): the rules that add an ability modifier to initiative carry it in the catalog the in-app sync builds.
+const LIVE_INITIATIVE_BONUSES: Array<[string, { kind: "ability"; ability: "cha" | "int" | "wis" }]> = [
+  ["Rakish Audacity", { kind: "ability", ability: "cha" }],
+  ["Tactical Wit", { kind: "ability", ability: "int" }],
+  ["Temporal Awareness", { kind: "ability", ability: "int" }],
+  ["Dread Ambusher", { kind: "ability", ability: "wis" }],
+];
+
+for (const [name, expected] of LIVE_INITIATIVE_BONUSES) {
+  test(`live catalog: ${name} carries the ${expected.ability} Initiative Bonus`, { skip: SKIP }, () => {
+    const features = SKIP ? [] : live!.collections.classes.flatMap((cls) => [
+      ...cls.features,
+      ...cls.subclasses.flatMap((sc) => sc.features),
+    ]).filter((feature) => feature.name === name);
+    assert.ok(features.length > 0, `no ${name} feature in the catalog`);
+    assert.deepEqual(features.map((feature) => feature.initiativeBonus), features.map(() => expected));
+  });
+}
+
+test("live catalog: a Swashbuckler 3 with DEX 14 and CHA 16 has initiative +5, from Rakish Audacity", { skip: SKIP }, () => {
+  const rogue = SKIP ? undefined : live!.compendium.for().classes().find((cls) => cls.name === "Rogue" && cls.subclasses.some((sc) => sc.name === "Swashbuckler"));
+  assert.ok(rogue, "no Rogue with a Swashbuckler subclass");
+  const swashbuckler = rogue.subclasses.find((sc) => sc.name === "Swashbuckler")!;
+  const character = makeChar({
+    classes: [{ className: rogue.name, source: rogue.source, level: 3, subclassName: swashbuckler.name, subclassSource: swashbuckler.source }],
+    baseAbilityScores: { str: 10, dex: 14, con: 10, int: 10, wis: 10, cha: 16 },
+  });
+  const evaluated = evaluateCharacter(character, { compendium: live!.compendium });
+  assert.equal(evaluated.initiative, 5);
+  assert.deepEqual(evaluated.initiativeBreakdown, [
+    { label: "Dexterity", value: 2 },
+    { label: "Rakish Audacity", value: 3 },
+  ]);
+});
+
+test("live catalog: each Alert print carries the Initiative Bonus its own text gives (2014: +5; 2024: the proficiency bonus)", { skip: SKIP }, () => {
+  const alerts = SKIP ? [] : live!.collections.feats.filter((feat) => feat.name === "Alert");
+  assert.ok(alerts.length > 0, "no Alert feat in the catalog");
+  const expected: Record<string, unknown> = { PHB: { kind: "flat", value: 5 }, XPHB: { kind: "proficiency" } };
+  assert.deepEqual(
+    alerts.map((feat) => [feat.source, feat.initiativeBonus]),
+    alerts.map((feat) => [feat.source, expected[feat.source]]),
+  );
+});
+
+test("live catalog: every Aura of the Sentinel carries a proficiency Initiative Bonus", { skip: SKIP }, () => {
+  const auras = SKIP ? [] : live!.collections.classes.flatMap((cls) => cls.subclasses.flatMap((sc) => sc.features)).filter((feature) => feature.name === "Aura of the Sentinel");
+  assert.ok(auras.length > 0, "no Aura of the Sentinel feature in the catalog");
+  assert.deepEqual(auras.map((feature) => feature.initiativeBonus), auras.map(() => ({ kind: "proficiency" })));
+});
+
+test("live catalog: every print that has Hare-Trigger carries the proficiency Initiative Bonus on that trait", { skip: SKIP }, () => {
+  const prints = SKIP ? [] : live!.collections.races.filter((race) => race.traits.some((trait) => trait.name === "Hare-Trigger"));
+  assert.ok(prints.length > 0, "no race with a Hare-Trigger trait in the catalog");
+  assert.deepEqual(
+    prints.map((race) => race.traits.find((trait) => trait.name === "Hare-Trigger")?.initiativeBonus),
+    prints.map(() => ({ kind: "proficiency" })),
+  );
+});
+
+test("live catalog: a Harengon of each print has initiative that includes the proficiency bonus from Hare-Trigger", { skip: SKIP }, () => {
+  const harengons = SKIP ? [] : live!.compendium.for().races().filter((race) => race.name === "Harengon");
+  assert.ok(harengons.length > 0, "no Harengon in the catalog");
+  const fighter = SKIP ? undefined : live!.compendium.for().classes().find((cls) => cls.name === "Fighter");
+  assert.ok(fighter, "no Fighter in the catalog");
+  for (const harengon of harengons) {
+    const character = makeChar({
+      race: { name: harengon.name, source: harengon.source },
+      classes: [{ className: fighter.name, source: fighter.source, level: 5 }],
+      baseAbilityScores: { str: 10, dex: 14, con: 10, int: 10, wis: 10, cha: 10 },
+    });
+    const evaluated = evaluateCharacter(character, { compendium: live!.compendium });
+    assert.deepEqual(
+      evaluated.initiativeBreakdown,
+      [
+        { label: "Dexterity", value: 2 },
+        { label: "Hare-Trigger", value: 3 },
+      ],
+      `${harengon.name} (${harengon.source}): DEX +2 and proficiency +3 at level 5`,
+    );
+    assert.equal(evaluated.initiative, 5);
+  }
+});
+
+test("live catalog: a Paladin with the Aura of the Sentinel and the flat Alert has initiative DEX + proficiency + 5, at the level the aura is gained", { skip: SKIP }, () => {
+  const alert = SKIP ? undefined : live!.collections.feats.find((feat) => feat.name === "Alert" && feat.initiativeBonus?.kind === "flat");
+  assert.ok(alert, "no Alert feat with a flat Initiative Bonus in the catalog");
+  // Every subclass print that gains the aura, at the level it is gained.
+  const holders: Array<{ cls: ClassData; sc: SubclassData; level: number }> = [];
+  for (const cls of SKIP ? [] : live!.compendium.for().classes()) {
+    for (const sc of cls.subclasses) {
+      const aura = sc.features.find((feature) => feature.name === "Aura of the Sentinel");
+      if (aura) holders.push({ cls, sc, level: aura.level });
+    }
+  }
+  assert.ok(holders.length > 0, "no subclass with Aura of the Sentinel");
+  for (const { cls, sc, level } of holders) {
+    const character = makeChar({
+      classes: [{ className: cls.name, source: cls.source, level, subclassName: sc.name, subclassSource: sc.source }],
+      baseAbilityScores: { str: 10, dex: 14, con: 10, int: 10, wis: 10, cha: 10 },
+      asiSelections: [{ level: 4, type: "feat", featName: alert!.name, featSource: alert!.source }],
+    });
+    const proficiency = Math.floor((level - 1) / 4) + 2;
+    const evaluated = evaluateCharacter(character, { compendium: live!.compendium });
+    assert.equal(evaluated.initiative, 2 + proficiency + 5, `${printKey(cls)} / ${sc.name} at level ${level}`);
+    assert.deepEqual(evaluated.initiativeBreakdown, [
+      { label: "Dexterity", value: 2 },
+      { label: "Aura of the Sentinel", value: proficiency },
+      { label: "Alert", value: 5 },
+    ]);
+  }
+});
+
+test("live catalog: every feature whose prose adds to initiative has an Initiative Bonus or a reviewed mark", { skip: SKIP }, () => {
+  // The live catalog's classes, feats, races and Options and Features records, read by the same gate as the tracked data.
+  const catalog = {
+    classes: live!.collections.classes,
+    feats: live!.collections.feats,
+    races: live!.collections.races,
+    optionsAndFeatures: live!.collections.optionsAndFeatures,
+  } as unknown as TrackedData;
+  const gaps = initiativeCoverageGaps(catalog, [...REVIEWED_NO_INITIATIVE_BONUS, ...REVIEWED_NO_INITIATIVE_BONUS_LIVE_ONLY]);
+  assert.deepEqual(
+    gaps.map((gap) => `${gapName(gap)}: ${gap.sentences.join(" | ")}`),
+    [],
+    "features whose prose adds to initiative, with no Initiative Bonus and no reviewed mark, in the live catalog"
+  );
+});

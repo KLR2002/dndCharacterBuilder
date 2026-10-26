@@ -235,7 +235,11 @@
           "Other creatures don't gain advantage on attack rolls against you as a result of being unseen by you."
         ]
       }
-    ]
+    ],
+    "initiativeBonus": {
+      "kind": "flat",
+      "value": 5
+    }
   },
   {
     "name": "Artificer Initiate",
