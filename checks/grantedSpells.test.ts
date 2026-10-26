@@ -192,6 +192,14 @@ test("an inherited ability with no recorded increase keeps its card and raises a
   assert.ok(cinder.notices?.length, "a notice says what is missing");
 });
 
+test("a granted SRD Baseline spell stays on whatever books are switched on, as it does for class lists", () => {
+  const flicker = evaluateCharacter(
+    makeChar({ classes: [mage(4)], asiSelections: [takenFeat("Sample Flicker Grant", "int")] }),
+    { compendium: catalogs.compendium, activeBooks: ["TST"] },
+  );
+  assert.ok(sourceTitled(flicker.grantedSpellSources, "Sample Flicker Grant")?.spells.some((spell) => spell.name === "Sample Flicker"));
+});
+
 test("a granted spell from a book that is switched off resolves to nothing", () => {
   const sparkle = (activeBooks?: string[]) =>
     evaluateCharacter(

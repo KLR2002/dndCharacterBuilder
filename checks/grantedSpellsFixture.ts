@@ -36,6 +36,8 @@ export const grantedSpellSpells = (): SpellData[] => [
   spell("Sample Blessing", 0, ["Sample Cleric"]),
   spell("Sample Ward", 1, ["Sample Cleric"]),
   spell("Sample Spark", 0, ["Sample Cleric"], "TST2"),
+  // A record of the SRD Baseline, which is always on whatever books are switched on.
+  spell("Sample Flicker", 0, ["Sample Mage"], "SRD"),
 ];
 
 /** An invented spellcasting class whose spells are the sample spells above. */
@@ -133,6 +135,15 @@ export const grantedSpellFeats = (): FeatData[] => [
         name: "Sample Odd Spells",
         ability: "cha",
         innate: { _: { daily: { "1": [{ choose: "level=1|colour=red" }] } } },
+      },
+    ],
+  }),
+  // A fixed grant of a spell from the SRD Baseline, which stays on when the player switches books off.
+  feat("Sample Flicker Grant", {
+    additionalSpells: [
+      {
+        ability: "int",
+        known: { _: ["sample flicker"] },
       },
     ],
   }),

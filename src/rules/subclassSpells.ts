@@ -49,13 +49,15 @@ function getSpellCatalog(compendium: Compendium): Map<string, SpellData[]> {
 }
 
 // Prefers the copy from an active book; otherwise falls back to the first copy, unless only active copies are wanted.
+// With `activeOnly`, the SRD Baseline is always on, as it is for class spell lists (isSpellAvailableForClass).
 function pickSpell(copies: SpellData[] | undefined, activeBooks?: string[], activeOnly = false): SpellData | undefined {
   if (!copies || copies.length === 0) return undefined;
   if (activeBooks && activeBooks.length > 0) {
     const books = new Set(activeBooks.map((b) => b.toUpperCase()));
-    const active = copies.find((s) => books.has((s.source || "").toUpperCase()));
+    const source = (s: SpellData) => (s.source || "").toUpperCase();
+    const active = copies.find((s) => books.has(source(s)));
     if (active) return active;
-    if (activeOnly) return undefined;
+    if (activeOnly) return copies.find((s) => source(s) === "SRD");
   }
   return copies[0];
 }
