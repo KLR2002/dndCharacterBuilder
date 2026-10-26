@@ -275,6 +275,52 @@ function noBackgroundCharacter() {
   });
 }
 
+// A level 4 Battle Master with Superior Technique and the Martial Adept feat, so the Stats badge, the Features counters
+// and the Actions maneuver cards show both superiority pools: the Battle Master's d8 dice and the bonus d6 dice.
+const BATTLE_MASTER_ID = "char_battlemaster";
+function battleMasterCharacter() {
+  return makeChar({
+    id: BATTLE_MASTER_ID,
+    name: "Orrin",
+    createdAt: 9,
+    updatedAt: 9,
+    startingOption: "equipment",
+    race: { name: "Human", source: catalogSource("races", "Human") },
+    background: { name: "Acolyte", source: catalogSource("backgrounds", "Acolyte") },
+    classes: [
+      {
+        className: "Fighter",
+        source: catalogSource("classes", "Fighter"),
+        level: 4,
+        subclassName: "Battle Master",
+        subclassSource: "PHB",
+      },
+    ],
+    currentHp: 28,
+    startingGrantsApplied: true,
+    backgroundGrantsApplied: true,
+    ruleChoices: [
+      {
+        id: "PHB__Fighter__Fighting Style",
+        trait: "Fighting Style",
+        origin: "class",
+        choose: 1,
+        from: ["Superior Technique"],
+        picked: ["Superior Technique"],
+      },
+      {
+        id: "PHB__Fighter__Battle Master__Maneuvers 3",
+        trait: "Combat Superiority (3rd Level)",
+        origin: "subclass",
+        choose: 3,
+        from: ["Riposte", "Rally", "Trip Attack"],
+        picked: ["Riposte", "Rally", "Trip Attack"],
+      },
+    ],
+    asiSelections: [{ className: "Fighter", classLevel: 4, level: 4, type: "feat", featName: "Martial Adept" }],
+  });
+}
+
 // Level 1 Fighters for the equipment card. The unpicked one has no picks, so Claim Starting Equipment is disabled. The
 // picked one has a pick in every slot (chain mail, a martial weapon and a shield, a light crossbow, a dungeoneer's pack),
 // so Claim is enabled, and its martial weapon picker is the one a screen opens.
@@ -425,6 +471,7 @@ function buildSeed() {
       noBackgroundCharacter(),
       fighterCharacter({ id: FIGHTER_ID, name: "Tavish", picked: false }),
       fighterCharacter({ id: FIGHTER_PICKED_ID, name: "Brannoc", picked: true }),
+      battleMasterCharacter(),
       ...(INTEGRATED ? [clericCharacter({ id: CLERIC_ID, name: "Corwin", domain: false })] : []),
       clericCharacter({ id: CLERIC_DOMAIN_ID, name: "Ysolde", domain: true }),
       INTEGRATED ? knowledgeClericCharacter() : multiclassSkillCharacter(),
@@ -453,6 +500,7 @@ const NO_RACE_ROUTE = `/character/${NO_RACE_ID}`;
 const NO_BG_ROUTE = `/character/${NO_BG_ID}`;
 const FIGHTER_ROUTE = `/character/${FIGHTER_ID}`;
 const FIGHTER_PICKED_ROUTE = `/character/${FIGHTER_PICKED_ID}`;
+const BATTLE_MASTER_ROUTE = `/character/${BATTLE_MASTER_ID}`;
 const CLERIC_ROUTE = `/character/${CLERIC_ID}`;
 const CLERIC_DOMAIN_ROUTE = `/character/${CLERIC_DOMAIN_ID}`;
 const KNOWLEDGE_ROUTE = `/character/${KNOWLEDGE_ID}`;
@@ -547,6 +595,9 @@ const SCREENS = [
   { name: "Features", route: RENDAR_ROUTE, tabs: ["Features"], ready: /resource trackers/i },
   { name: "Journal", route: RENDAR_ROUTE, tabs: ["Journal"], ready: /character name/i },
   { name: "Actions", route: RENDAR_ROUTE, tabs: ["Actions"], ready: /attack action/i },
+  { name: "Stats battle master superiority dice", route: BATTLE_MASTER_ROUTE, tabs: ["Stats"], ready: /hit points/i, scrollTo: "Superiority Dice: 4d8 + 2d6", expect: { texts: ["Superiority Dice: 4d8 + 2d6"], fitsWidth: true } },
+  { name: "Features battle master superiority counters", route: BATTLE_MASTER_ROUTE, tabs: ["Features"], ready: /resource trackers/i, scrollTo: "Superiority Dice [d6]", expect: { texts: ["Superiority Dice [d8]", "Superiority Dice [d6]"], fitsWidth: true } },
+  { name: "Actions battle master maneuver dice", route: BATTLE_MASTER_ROUTE, tabs: ["Actions"], ready: /battle master maneuvers/i, scrollTo: "BATTLE MASTER MANEUVERS", expect: { texts: ["Die: d8 / d6", "+d8 / d6"], fitsWidth: true } },
   { name: "Rest modal", route: RENDAR_ROUTE, tabs: ["Stats"], open: (page) => page.getByText(/^Take Rest/).first().click(), modal: "Rest & Recovery" },
   { name: "Conditions modal", route: RENDAR_ROUTE, tabs: ["Stats"], open: (page) => page.getByText(/^Conditions \(/).first().click(), modal: "Toggle Conditions" },
   { name: "Home", route: "/", ready: /5e Character Builder/ },
