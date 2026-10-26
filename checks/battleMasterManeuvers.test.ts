@@ -16,6 +16,10 @@ import {
   subclassRuleChoices,
 } from "../src/rules/ruleChoices.ts";
 import { removeAsiSelection } from "../src/rules/leveling.ts";
+import {
+  calculateAutoResourceCounters,
+  getMergedResourceCounters,
+} from "../src/rules/resourceCounters.ts";
 import { teardownSubclass } from "../src/rules/characterReconciler.ts";
 
 test("Battle Master level 3 offers 3 maneuvers and 4d8 superiority dice", () => {
@@ -31,10 +35,10 @@ test("Battle Master level 3 offers 3 maneuvers and 4d8 superiority dice", () => 
   });
 
   const dice = getSuperiorityDice(bm3);
-  assert.deepEqual(dice, { count: 4, die: "d8" });
+  assert.deepEqual(dice, { battleMaster: { count: 4, die: "d8" }, bonus: null });
 
   const classDice = getClassDice(bm3);
-  assert.deepEqual(classDice.superiorityDice, { count: 4, die: "d8" });
+  assert.deepEqual(classDice.superiorityDice, { battleMaster: { count: 4, die: "d8" }, bonus: null });
 
   const choices = battleMasterManeuverChoices(bm3);
   assert.equal(choices.length, 1);
@@ -62,7 +66,7 @@ test("Battle Master level 7 offers +2 maneuvers and 5d8 superiority dice", () =>
   });
 
   const dice = getSuperiorityDice(bm7);
-  assert.deepEqual(dice, { count: 5, die: "d8" });
+  assert.deepEqual(dice, { battleMaster: { count: 5, die: "d8" }, bonus: null });
 
   const choices = battleMasterManeuverChoices(bm7);
   assert.equal(choices.length, 2);
@@ -88,7 +92,7 @@ test("Battle Master level 10 scales dice to d10 and offers +2 maneuvers", () => 
   });
 
   const dice = getSuperiorityDice(bm10);
-  assert.deepEqual(dice, { count: 5, die: "d10" });
+  assert.deepEqual(dice, { battleMaster: { count: 5, die: "d10" }, bonus: null });
 
   const choices = battleMasterManeuverChoices(bm10);
   assert.equal(choices.length, 3);
@@ -111,7 +115,7 @@ test("Battle Master level 15 offers 6d10 dice and +2 maneuvers", () => {
   });
 
   const dice = getSuperiorityDice(bm15);
-  assert.deepEqual(dice, { count: 6, die: "d10" });
+  assert.deepEqual(dice, { battleMaster: { count: 6, die: "d10" }, bonus: null });
 
   const choices = battleMasterManeuverChoices(bm15);
   assert.equal(choices.length, 4);
@@ -134,7 +138,7 @@ test("Battle Master level 18 scales dice to d12", () => {
   });
 
   const dice = getSuperiorityDice(bm18);
-  assert.deepEqual(dice, { count: 6, die: "d12" });
+  assert.deepEqual(dice, { battleMaster: { count: 6, die: "d12" }, bonus: null });
 });
 
 test("Deduplication: maneuver chosen at 3 is not offered at 7", () => {
@@ -178,7 +182,7 @@ test("Deduplication: maneuver chosen at 3 is not offered at 7", () => {
   assert.ok(choice3OptionNames.includes("Disarming Attack"));
 });
 
-test("Superior Technique adds +1 die (scaled to Battle Master die or d6 if non-Battle Master) and offers 1 maneuver", () => {
+test("Superior Technique is a separate d6 pool and offers 1 maneuver", () => {
   // Non-Battle Master with Superior Technique
   const paladinWithStyle = makeChar({
     classes: [{ className: "Paladin", level: 2, hitDiceType: "d10" }],
@@ -195,14 +199,14 @@ test("Superior Technique adds +1 die (scaled to Battle Master die or d6 if non-B
   });
 
   const paladinDice = getSuperiorityDice(paladinWithStyle);
-  assert.deepEqual(paladinDice, { count: 1, die: "d6" });
+  assert.deepEqual(paladinDice, { battleMaster: null, bonus: { count: 1, die: "d6" } });
 
   const paladinChoices = battleMasterManeuverChoices(paladinWithStyle);
   assert.equal(paladinChoices.length, 1);
   assert.equal(paladinChoices[0].id, "TCE__Fighter__Superior Technique__Maneuver");
   assert.equal(paladinChoices[0].choose, 1);
 
-  // Battle Master 3 with Superior Technique -> 4 + 1 = 5d8
+  // Battle Master 3 with Superior Technique -> 4d8 plus a separate 1d6
   const bm3WithStyle = makeChar({
     classes: [
       {
@@ -225,9 +229,9 @@ test("Superior Technique adds +1 die (scaled to Battle Master die or d6 if non-B
   });
 
   const bm3Dice = getSuperiorityDice(bm3WithStyle);
-  assert.deepEqual(bm3Dice, { count: 5, die: "d8" });
+  assert.deepEqual(bm3Dice, { battleMaster: { count: 4, die: "d8" }, bonus: { count: 1, die: "d6" } });
 
-  // Battle Master 10 with Superior Technique -> 5 + 1 = 6d10
+  // Battle Master 10 with Superior Technique -> 5d10 plus a separate 1d6
   const bm10WithStyle = makeChar({
     classes: [
       {
@@ -250,10 +254,10 @@ test("Superior Technique adds +1 die (scaled to Battle Master die or d6 if non-B
   });
 
   const bm10Dice = getSuperiorityDice(bm10WithStyle);
-  assert.deepEqual(bm10Dice, { count: 6, die: "d10" });
+  assert.deepEqual(bm10Dice, { battleMaster: { count: 5, die: "d10" }, bonus: { count: 1, die: "d6" } });
 });
 
-test("Martial Adept adds +1 die (scaled to Battle Master die or d6 if non-Battle Master) and offers 2 maneuvers", () => {
+test("Martial Adept is a separate d6 pool and offers 2 maneuvers", () => {
   // Rogue with Martial Adept feat in asiSelections
   const rogueWithFeat = makeChar({
     classes: [{ className: "Rogue", level: 4, hitDiceType: "d8" }],
@@ -269,14 +273,14 @@ test("Martial Adept adds +1 die (scaled to Battle Master die or d6 if non-Battle
   });
 
   const rogueDice = getSuperiorityDice(rogueWithFeat);
-  assert.deepEqual(rogueDice, { count: 1, die: "d6" });
+  assert.deepEqual(rogueDice, { battleMaster: null, bonus: { count: 1, die: "d6" } });
 
   const rogueChoices = battleMasterManeuverChoices(rogueWithFeat);
   assert.equal(rogueChoices.length, 1);
   assert.equal(rogueChoices[0].id, "PHB__Feat__Martial Adept__Maneuvers");
   assert.equal(rogueChoices[0].choose, 2);
 
-  // Battle Master 3 with Martial Adept -> 4 + 1 = 5d8
+  // Battle Master 3 with Martial Adept -> 4d8 plus a separate 1d6
   const bm3WithFeat = makeChar({
     classes: [
       {
@@ -298,9 +302,9 @@ test("Martial Adept adds +1 die (scaled to Battle Master die or d6 if non-Battle
   });
 
   const bm3FeatDice = getSuperiorityDice(bm3WithFeat);
-  assert.deepEqual(bm3FeatDice, { count: 5, die: "d8" });
+  assert.deepEqual(bm3FeatDice, { battleMaster: { count: 4, die: "d8" }, bonus: { count: 1, die: "d6" } });
 
-  // Non-Battle Master with BOTH Superior Technique and Martial Adept -> 2d6
+  // Non-Battle Master with BOTH Superior Technique and Martial Adept -> 2d6 in one bonus pool
   const bothNonBm = makeChar({
     classes: [{ className: "Paladin", level: 4, hitDiceType: "d10" }],
     ruleChoices: [
@@ -325,9 +329,9 @@ test("Martial Adept adds +1 die (scaled to Battle Master die or d6 if non-Battle
   });
 
   const bothDice = getSuperiorityDice(bothNonBm);
-  assert.deepEqual(bothDice, { count: 2, die: "d6" });
+  assert.deepEqual(bothDice, { battleMaster: null, bonus: { count: 2, die: "d6" } });
 
-  // Battle Master 3 with BOTH Superior Technique and Martial Adept -> 4 + 1 + 1 = 6d8
+  // Battle Master 3 with BOTH Superior Technique and Martial Adept -> 4d8 plus a separate 2d6
   const bm3Both = makeChar({
     classes: [
       {
@@ -359,7 +363,144 @@ test("Martial Adept adds +1 die (scaled to Battle Master die or d6 if non-Battle
   });
 
   const bm3BothDice = getSuperiorityDice(bm3Both);
-  assert.deepEqual(bm3BothDice, { count: 6, die: "d8" });
+  assert.deepEqual(bm3BothDice, { battleMaster: { count: 4, die: "d8" }, bonus: { count: 2, die: "d6" } });
+});
+
+test("Battle Master 10 with Superior Technique and Martial Adept keeps 5d10 and a separate 2d6", () => {
+  const bm10Both = makeChar({
+    classes: [{ className: "Fighter", source: "PHB", level: 10, subclassName: "Battle Master" }],
+    ruleChoices: [
+      {
+        id: "PHB__Fighter__Fighting Style",
+        trait: "Fighting Style",
+        origin: "class",
+        choose: 1,
+        from: ["Superior Technique"],
+        picked: ["Superior Technique"],
+      },
+    ],
+    asiSelections: [
+      { className: "Fighter", classLevel: 4, level: 4, type: "feat", featName: "Martial Adept" },
+    ],
+  });
+
+  assert.deepEqual(getSuperiorityDice(bm10Both), {
+    battleMaster: { count: 5, die: "d10" },
+    bonus: { count: 2, die: "d6" },
+  });
+});
+
+test("Battle Master 18 with Superior Technique keeps d12 for its pool and d6 for the bonus", () => {
+  const bm18WithStyle = makeChar({
+    classes: [{ className: "Fighter", source: "PHB", level: 18, subclassName: "Battle Master" }],
+    ruleChoices: [
+      {
+        id: "PHB__Fighter__Fighting Style",
+        trait: "Fighting Style",
+        origin: "class",
+        choose: 1,
+        from: ["Superior Technique"],
+        picked: ["Superior Technique"],
+      },
+    ],
+  });
+
+  assert.deepEqual(getSuperiorityDice(bm18WithStyle), {
+    battleMaster: { count: 6, die: "d12" },
+    bonus: { count: 1, die: "d6" },
+  });
+});
+
+const SUPERIORITY_STYLE_CHOICE = {
+  id: "PHB__Fighter__Fighting Style",
+  trait: "Fighting Style",
+  origin: "class" as const,
+  choose: 1,
+  from: ["Superior Technique"],
+  picked: ["Superior Technique"],
+};
+
+test("superiority counters: the Battle Master pool and the bonus pool are two counters", () => {
+  const bm3WithStyle = makeChar({
+    classes: [{ className: "Fighter", source: "PHB", level: 3, subclassName: "Battle Master" }],
+    ruleChoices: [SUPERIORITY_STYLE_CHOICE],
+  });
+
+  const counters = calculateAutoResourceCounters(bm3WithStyle, {});
+  assert.deepEqual(counters.superiority_dice, {
+    id: "superiority_dice",
+    name: "Superiority Dice [d8]",
+    current: 4,
+    max: 4,
+    resetOn: "short",
+  });
+  assert.deepEqual(counters.superiority_dice_d6, {
+    id: "superiority_dice_d6",
+    name: "Superiority Dice [d6]",
+    current: 1,
+    max: 1,
+    resetOn: "short",
+  });
+});
+
+test("superiority counters: a non-Battle Master holds only the d6 counter", () => {
+  const paladinWithStyle = makeChar({
+    classes: [{ className: "Paladin", source: "PHB", level: 2 }],
+    ruleChoices: [{ ...SUPERIORITY_STYLE_CHOICE, id: "PHB__Paladin__Fighting Style" }],
+  });
+
+  const counters = calculateAutoResourceCounters(paladinWithStyle, {});
+  assert.equal(counters.superiority_dice, undefined);
+  assert.equal(counters.superiority_dice_d6?.name, "Superiority Dice [d6]");
+  assert.equal(counters.superiority_dice_d6?.max, 1);
+});
+
+test("superiority counters: a saved Battle Master spent count survives and clamps to the new max", () => {
+  const bm3WithStyle = makeChar({
+    classes: [{ className: "Fighter", source: "PHB", level: 3, subclassName: "Battle Master" }],
+    ruleChoices: [SUPERIORITY_STYLE_CHOICE],
+    resourceCounters: {
+      superiority_dice: { id: "superiority_dice", name: "Superiority Dice [d8]", current: 2, max: 5, resetOn: "short" },
+    },
+  });
+  const merged = getMergedResourceCounters(bm3WithStyle, calculateAutoResourceCounters(bm3WithStyle, {}));
+  assert.equal(merged.superiority_dice.current, 2);
+  assert.equal(merged.superiority_dice.max, 4);
+  assert.equal(merged.superiority_dice_d6.current, 1);
+
+  const overSpent = makeChar({
+    ...bm3WithStyle,
+    resourceCounters: {
+      superiority_dice: { id: "superiority_dice", name: "Superiority Dice [d8]", current: 9, max: 9, resetOn: "short" },
+    },
+  });
+  const clamped = getMergedResourceCounters(overSpent, calculateAutoResourceCounters(overSpent, {}));
+  assert.equal(clamped.superiority_dice.current, 4);
+});
+
+test("superiority counters: a saved spent count moves to the d6 counter when the Battle Master pool is gone", () => {
+  const paladinWithStyle = makeChar({
+    classes: [{ className: "Paladin", source: "PHB", level: 2 }],
+    ruleChoices: [{ ...SUPERIORITY_STYLE_CHOICE, id: "PHB__Paladin__Fighting Style" }],
+    resourceCounters: {
+      superiority_dice: { id: "superiority_dice", name: "Superiority Dice [d6]", current: 0, max: 1, resetOn: "short" },
+    },
+  });
+  const merged = getMergedResourceCounters(paladinWithStyle, calculateAutoResourceCounters(paladinWithStyle, {}));
+  assert.equal(merged.superiority_dice, undefined);
+  assert.equal(merged.superiority_dice_d6.current, 0);
+});
+
+test("superiority counters: a character with no superiority pool drops both counters", () => {
+  const wiz = makeChar({
+    classes: [{ className: "Wizard", source: "PHB", level: 5 }],
+    resourceCounters: {
+      superiority_dice: { id: "superiority_dice", name: "Superiority Dice [d8]", current: 1, max: 4, resetOn: "short" },
+    },
+  });
+  const merged = getMergedResourceCounters(wiz, calculateAutoResourceCounters(wiz, {}));
+  assert.equal(merged.superiority_dice, undefined);
+  assert.equal(merged.superiority_dice_d6, undefined);
 });
 
 test("Maneuver Save DC equals 8 + PB + max(Str, Dex)", () => {

@@ -4,7 +4,7 @@
 
 Across 5e martial and modular progression, characters make customizable choices from structured option pools:
 1. **Fighting Styles**: Granted to Fighters (1st & 10th level Champion), Paladins (2nd level), Rangers (2nd level), and via the *Fighting Initiate* feat. 2014 RAW forbids duplicate style choices across classes or milestones. Several styles grant passive bonuses (*Archery* +2 to hit, *Defense* +1 AC in armor, *Dueling* +2 damage), while TCoE introduces styles granting cantrips (*Blessed Warrior*, *Druidic Warrior*) or tactical features (*Superior Technique*, *Interception*).
-2. **Battle Master Maneuvers & Superiority Dice**: Battle Master Fighters learn maneuvers at levels 3 (3), 7 (5), 10 (7), and 15 (9), fueled by Superiority Dice (4 at 3rd, 5 at 7th, 6 at 15th) that scale in die face ($d8 \to d10 \to d12$). When combined with *Superior Technique* (+1 die) or the *Martial Adept* feat (+1 die), RAW requires upgrading bonus dice to match the Battle Master's higher die face. Maneuvers require dedicated tactical cards with dynamic Save DC ($8 + \text{PB} + \max(\text{STR}, \text{DEX})$).
+2. **Battle Master Maneuvers & Superiority Dice**: Battle Master Fighters learn maneuvers at levels 3 (3), 7 (5), 10 (7), and 15 (9), fueled by Superiority Dice (4 at 3rd, 5 at 7th, 6 at 15th) that scale in die face ($d8 \to d10 \to d12$). *Superior Technique* and the *Martial Adept* feat each grant one superiority die of d6 that does not scale; these dice are a separate pool from the Battle Master's dice. Maneuvers require dedicated tactical cards with dynamic Save DC ($8 + \text{PB} + \max(\text{STR}, \text{DEX})$).
 3. **Eldritch Invocations**: Warlocks learn 2 to 8 invocations across levels 2 to 20 (and via *Eldritch Adept*). Invocations impose strict prerequisites (Warlock level, Pact Boon, *Eldritch Blast* cantrip). Invocations grant at-will spells, slot-expending spells, or combat modifiers (*Agonizing Blast*). Build alterations (such as changing Pact Boon or deleveling) must not leave orphaned choices in character state.
 4. **Artificer Infusions**: Artificers have a two-tier system: Infusions Known ($4 \to 12$) from level-gated options (2nd, 6th, 10th, 14th) and Active Infused Items ($2 \to 6$, +2 for Armorer 9). *Replicate Magic Item* can be chosen multiple times for different items. Active enhancements (*Enhanced Defense*, *Enhanced Weapon*) bind to specific equipment and modify sheet numbers.
 
@@ -23,9 +23,11 @@ Across 5e martial and modular progression, characters make customizable choices 
    - *Fighting Initiate*, *Martial Adept*, and *Eldritch Adept* generate inline `ruleChoices` sub-entries within `AsiFeatSection.tsx` (`TCE__Feat__Fighting Initiate__Style`, `PHB__Feat__Martial Adept__Maneuvers`, `TCE__Feat__Eldritch Adept__Invocation`).
    - Prerequisites for *Eldritch Adept* strictly verify whether the character is a qualifying Warlock before offering gated invocations.
 
-3. **Consolidated Superiority Dice Pool**:
-   - In `src/rules/combatDice.ts`, export `getSuperiorityDice(character): { count: number; die: string } | null`.
-   - If Battle Master is present, base count and die size are computed from Fighter level. *Superior Technique* and *Martial Adept* increment `count`, and their bonus dice automatically scale to the Battle Master's current die face ($d8/d10/d12$). Without Battle Master, bonus dice remain a standalone $d6$.
+3. **Separate Superiority Dice Pools**:
+   - In `src/rules/combatDice.ts`, export `getSuperiorityDice(character): { battleMaster, bonus } | null`, where each pool is `{ count, die }` or `null`.
+   - `battleMaster` is present for a Battle Master: count and die size are computed from Fighter level ($d8/d10/d12$). It never includes the bonus dice.
+   - `bonus` holds one d6 for *Superior Technique* and one for *Martial Adept*. It stays $d6$ at every level, with or without Battle Master.
+   - Each pool is its own resource counter (`superiority_dice` for the Battle Master pool, `superiority_dice_d6` for the bonus pool).
 
 4. **Automated Combat Math & Source Transparency**:
    - `attacks.ts`: *Archery* adds +2 to ranged weapon attacks; *Dueling* adds +2 damage to single one-handed melee weapon attacks; *Two-Weapon Fighting* adds ability modifier to off-hand damage; *Agonizing Blast* adds Charisma modifier to *Eldritch Blast* damage.

@@ -65,12 +65,23 @@ export function calculateAutoResourceCounters(
   }
 
   const supDice = getSuperiorityDice(character);
-  if (supDice) {
+  if (supDice?.battleMaster) {
+    const { count, die } = supDice.battleMaster;
     res["superiority_dice"] = {
       id: "superiority_dice",
-      name: `Superiority Dice [${supDice.die}]`,
-      current: supDice.count,
-      max: supDice.count,
+      name: `Superiority Dice [${die}]`,
+      current: count,
+      max: count,
+      resetOn: "short",
+    };
+  }
+  if (supDice?.bonus) {
+    const { count, die } = supDice.bonus;
+    res["superiority_dice_d6"] = {
+      id: "superiority_dice_d6",
+      name: `Superiority Dice [${die}]`,
+      current: count,
+      max: count,
       resetOn: "short",
     };
   }
@@ -106,9 +117,21 @@ export function getMergedResourceCounters(
     }
   }
 
-  // Clean up obsolete superiority dice if character no longer possesses any
+  // A character who lost the Battle Master pool keeps its spent count on the bonus counter, which is new under its own id.
+  const bonusCounter = autoCounters["superiority_dice_d6"];
+  if (bonusCounter && !autoCounters["superiority_dice"] && existing["superiority_dice"] && !existing["superiority_dice_d6"]) {
+    merged["superiority_dice_d6"] = {
+      ...bonusCounter,
+      current: Math.min(existing["superiority_dice"].current, bonusCounter.max),
+    };
+  }
+
+  // Clean up obsolete superiority dice counters if character no longer possesses the pool
   if (!autoCounters["superiority_dice"]) {
     delete merged["superiority_dice"];
+  }
+  if (!autoCounters["superiority_dice_d6"]) {
+    delete merged["superiority_dice_d6"];
   }
 
   return merged;

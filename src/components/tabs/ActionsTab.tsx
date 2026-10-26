@@ -18,6 +18,7 @@ import {
   STANDARD_ACTIONS,
 } from "../../rules/tacticalActions";
 import { findStandardWeapon } from "../../rules/attacks";
+import { superiorityDieLabel } from "../../rules/combatDice";
 import { Badge } from "../ui/Badge";
 import { Card } from "../ui/Card";
 import { DetailModal } from "../DetailModal";
@@ -56,7 +57,7 @@ export const ActionsTab: React.FC = () => {
   const classBonusActions = ledger?.bonusActions ?? [];
   const classReactions = ledger?.reactions ?? [];
   const maneuverDc = evaluated?.combatDcs?.maneuverSaveDc ?? 8;
-  const superiorityDice = evaluated?.combatDice?.superiorityDice ?? null;
+  const superiorityDie = superiorityDieLabel(evaluated?.combatDice?.superiorityDice ?? null);
 
   // Ki Spellcasting Profile (Monk)
   const kiProfile = useMemo(() => {
@@ -375,8 +376,8 @@ export const ActionsTab: React.FC = () => {
             </Text>
             <View style={{ flexDirection: "row", gap: 6 }}>
               <Badge label={`Save DC ${maneuverDc}`} variant="accent" size="sm" />
-              {superiorityDice && (
-                <Badge label={`Die: ${superiorityDice.die}`} variant="secondary" size="sm" />
+              {superiorityDie && (
+                <Badge label={`Die: ${superiorityDie}`} variant="secondary" size="sm" />
               )}
             </View>
           </View>
@@ -389,11 +390,11 @@ export const ActionsTab: React.FC = () => {
                   setDetailModal({
                     visible: true,
                     title: m.name,
-                    subtitle: `${m.categoryLabel} • Superiority Die [${superiorityDice ? superiorityDice.die : "d8"}]${
+                    subtitle: `${m.categoryLabel} • Superiority Die [${superiorityDie ?? "d8"}]${
                       SAVING_THROW_MANEUVERS.has(m.name.toLowerCase()) ? ` • Save DC ${maneuverDc}` : ""
                     }`,
                     content: `${m.description}\n\n• Action Type: ${m.categoryLabel}\n• Superiority Die: ${
-                      superiorityDice ? superiorityDice.die : "d8"
+                      superiorityDie ?? "d8"
                     }${
                       SAVING_THROW_MANEUVERS.has(m.name.toLowerCase())
                         ? `\n• Maneuver Save DC: ${maneuverDc} (8 + PB ${profBonus} + max(Str, Dex))`
@@ -430,7 +431,7 @@ export const ActionsTab: React.FC = () => {
                       />
                     )}
                     <Badge
-                      label={`+${superiorityDice ? superiorityDice.die : "d8"}`}
+                      label={`+${superiorityDie ?? "d8"}`}
                       size="sm"
                       variant="secondary"
                     />

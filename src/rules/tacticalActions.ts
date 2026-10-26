@@ -9,6 +9,7 @@ import {
   getBardicInspirationDie,
   getMartialArtsDie,
   getSneakAttackDice,
+  superiorityDieLabel,
 } from "./combatDice.ts";
 import { getChosenManeuvers } from "./ruleChoices.ts";
 import { currentCompendium, type Compendium } from "../services/compendium.ts";
@@ -212,7 +213,7 @@ export function getTacticalActionLedger(
   // 3. Maneuvers
   const chosenManeuvers = getChosenManeuvers(character);
   const maneuverDc = evaluated.combatDcs?.maneuverSaveDc ?? 8;
-  const superiorityDice = evaluated.combatDice?.superiorityDice ?? null;
+  const superiorityDie = superiorityDieLabel(evaluated.combatDice?.superiorityDice ?? null);
   const allOptions = compendium.for(catalogs?.activeBooks).optionsAndFeatures();
   const maneuverMap = new Map<string, string>();
 
@@ -245,7 +246,7 @@ export function getTacticalActionLedger(
       categoryLabel,
       description,
       dc: hasSave ? maneuverDc : undefined,
-      die: superiorityDice?.die ?? "d8",
+      die: superiorityDie ?? "d8",
     };
   });
 
