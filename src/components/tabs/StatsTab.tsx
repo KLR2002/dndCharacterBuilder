@@ -34,6 +34,7 @@ import { Badge } from "../ui/Badge";
 import { Button } from "../ui/Button";
 import { Card } from "../ui/Card";
 import { DetailModal } from "../DetailModal";
+import { InitiativeBreakdownModal } from "../InitiativeBreakdownModal";
 import { RestModal } from "../RestModal";
 import { HpQuickEditModal } from "../HpQuickEditModal";
 import { HitPointBlock } from "../HitPointBlock";
@@ -66,6 +67,7 @@ export const StatsTab: React.FC = () => {
 
   const [conditionModalVisible, setConditionModalVisible] = useState(false);
   const [restModalVisible, setRestModalVisible] = useState(false);
+  const [initiativeModalVisible, setInitiativeModalVisible] = useState(false);
   const [maxHpOverrideVisible, setMaxHpOverrideVisible] = useState(false);
   const [detailModal, setDetailModal] = useState<{
     visible: boolean;
@@ -417,11 +419,15 @@ export const StatsTab: React.FC = () => {
           )}
         </TouchableOpacity>
 
-        <View style={[styles.statBox, { backgroundColor: theme.surface, borderColor: theme.border }]}>
+        <TouchableOpacity
+          accessibilityLabel="Initiative breakdown"
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          onPress={() => setInitiativeModalVisible(true)}
+          style={[styles.statBox, { backgroundColor: theme.surface, borderColor: theme.border }]}>
           <Ionicons name="flash" size={18} color={theme.accent} />
           <Text style={[styles.statBoxValue, { color: theme.text }]}>{formatModifier(initiative)}</Text>
           <Text style={[styles.statBoxLabel, { color: theme.textMuted }]}>INITIATIVE</Text>
-        </View>
+        </TouchableOpacity>
 
         <TouchableOpacity
           onPress={() => {
@@ -722,7 +728,7 @@ export const StatsTab: React.FC = () => {
                             },
                           ]}
                         />
-                      ) : skill.isJackOfAllTrades ? (
+                      ) : skill.halfProficiency ? (
                         <View
                           style={[
                             styles.profIndicator,
@@ -773,7 +779,7 @@ export const StatsTab: React.FC = () => {
                               ? theme.warning
                               : skill.isProficient
                               ? theme.accent
-                              : skill.isJackOfAllTrades
+                              : skill.halfProficiency
                               ? theme.text
                               : theme.textSecondary,
                           },
@@ -1041,6 +1047,14 @@ export const StatsTab: React.FC = () => {
         visible={restModalVisible}
         onClose={() => setRestModalVisible(false)}
         onTakeRest={() => setRestModalVisible(false)}
+      />
+
+      {/* Initiative Breakdown Modal */}
+      <InitiativeBreakdownModal
+        visible={initiativeModalVisible}
+        onClose={() => setInitiativeModalVisible(false)}
+        parts={evaluated.initiativeBreakdown}
+        total={initiative}
       />
 
       {/* Detail Modal */}

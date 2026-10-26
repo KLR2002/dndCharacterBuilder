@@ -222,6 +222,30 @@ function kenseiCharacter() {
   });
 }
 
+// A level 3 Rogue Swashbuckler who is also a level 2 War Magic Wizard, integrated mode only (neither subclass is in the
+// SRD). Their Initiative Bonuses are Rakish Audacity (Charisma) and Tactical Wit (Intelligence), so the Initiative
+// breakdown has three parts: Dexterity +2, Rakish Audacity +3, Tactical Wit +3, total +8. Both books are default-active.
+const INITIATIVE_ID = "char_initiative";
+function initiativeCharacter() {
+  return makeChar({
+    id: INITIATIVE_ID,
+    name: "Sylvane",
+    createdAt: 8,
+    updatedAt: 8,
+    startingOption: "equipment",
+    baseAbilityScores: { str: 10, dex: 14, con: 10, int: 16, wis: 10, cha: 16 },
+    race: { name: "Human", source: catalogSource("races", "Human") },
+    background: { name: "Acolyte", source: catalogSource("backgrounds", "Acolyte") },
+    classes: [
+      { className: "Rogue", source: catalogSource("classes", "Rogue"), level: 3, subclassName: "Swashbuckler", subclassSource: "XGE" },
+      { className: "Wizard", source: catalogSource("classes", "Wizard"), level: 2, subclassName: "War Magic", subclassSource: "XGE" },
+    ],
+    currentHp: 22,
+    startingGrantsApplied: true,
+    backgroundGrantsApplied: true,
+  });
+}
+
 // A level 3 College of Lore Bard with no picks yet. Its Bonus Proficiencies are a skill Proficiency Choice
 // in the Class & Subclass Choices card ("Picked 0 / 3"), offering the skills the Bard does not hold yet.
 const BARD_ID = "char_bard";
@@ -420,6 +444,7 @@ function buildSeed() {
       rangerCharacter(),
       longNameCharacter(),
       ...(INTEGRATED ? [kenseiCharacter()] : []),
+      ...(INTEGRATED ? [initiativeCharacter()] : []),
       bardCharacter(),
       noRaceCharacter(),
       noBackgroundCharacter(),
@@ -448,6 +473,7 @@ const HALF_ELF_ROUTE = `/character/${HALF_ELF_ID}`;
 const RANGER_ROUTE = `/character/${RANGER_ID}`;
 const LONG_NAME_ROUTE = `/character/${LONG_NAME_ID}`;
 const KENSEI_ROUTE = `/character/${KENSEI_ID}`;
+const INITIATIVE_ROUTE = `/character/${INITIATIVE_ID}`;
 const BARD_ROUTE = `/character/${BARD_ID}`;
 const NO_RACE_ROUTE = `/character/${NO_RACE_ID}`;
 const NO_BG_ROUTE = `/character/${NO_BG_ID}`;
@@ -542,6 +568,19 @@ const SCREENS = [
   { name: "Stats long header name", route: LONG_NAME_ROUTE, tabs: ["Stats"], ready: /hit points/i, headerName: LONG_NAME },
   { name: "Stats add tool modal", route: RENDAR_ROUTE, tabs: ["Stats"], open: (page) => page.getByLabel("Add tool proficiency").first().click(), modal: "Add Tool Proficiency" },
   { name: "Stats add language modal", route: RENDAR_ROUTE, tabs: ["Stats"], open: (page) => page.getByLabel("Add language").first().click(), modal: "Add Language" },
+  // The Initiative box opens its breakdown (integrated mode only, where the Rogue's and the Wizard's Initiative Bonuses exist).
+  ...(INTEGRATED
+    ? [
+        {
+          name: "Stats initiative breakdown modal",
+          route: INITIATIVE_ROUTE,
+          tabs: ["Stats"],
+          open: (page) => page.getByLabel("Initiative breakdown", { exact: true }).first().click(),
+          modal: "Initiative",
+          expect: { texts: ["Dexterity", "+2", "Rakish Audacity", "+3", "Tactical Wit", "+3", "Total", "+8"], fitsWidth: true },
+        },
+      ]
+    : []),
   { name: "Spells", route: WIZARD_ROUTE, tabs: ["Spells"], ready: /add spells/i },
   { name: "Inventory", route: WIZARD_ROUTE, tabs: ["Inventory"], ready: /total wealth/i },
   { name: "Features", route: RENDAR_ROUTE, tabs: ["Features"], ready: /resource trackers/i },

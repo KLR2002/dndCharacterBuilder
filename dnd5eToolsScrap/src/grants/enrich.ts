@@ -5,34 +5,73 @@ import {
   unmatchedOverrides,
   type GrantOverride,
 } from "../parser/proficiency-grants.ts";
-import { allRefs, classFeatureRefs, featRefs, type GrantRef, type TrackedClass, type TrackedData, type TrackedFeat } from "./subjects.ts";
+import { resolveInitiativeBonuses, type InitiativeBonusOverride } from "../parser/initiative-bonuses.ts";
+import {
+  allRefs,
+  classFeatureOnlyRefs,
+  classFeatureRefs,
+  featRefs,
+  traitRefs,
+  type GrantRef,
+  type TrackedClass,
+  type TrackedData,
+  type TrackedFeat,
+  type TrackedRace,
+} from "./subjects.ts";
 
-/** Reviewed overrides, one list per tracked file. Matches the shape of PROFICIENCY_GRANT_OVERRIDES. */
+/**
+ * Reviewed overrides, one list per tracked file. Matches the shape of PROFICIENCY_GRANT_OVERRIDES. The Initiative Bonus
+ * overrides are optional: a caller that enriches only grants leaves them out.
+ */
 export interface GrantOverrides {
   classes: GrantOverride[];
   feats: GrantOverride[];
+  initiativeBonuses?: InitiativeBonusOverride[];
 }
 
-/** The text of the two tracked files this tooling enriches. */
+/** The text of the tracked files this tooling enriches. `races` is optional: a caller that enriches only classes and feats leaves it out. */
 export interface TrackedFiles {
   classes: string;
   feats: string;
+  races?: string;
 }
 
 /**
  * Adds, replaces or removes the `grants` field on every tracked class feature,
- * subclass feature and feat, using the same extractor and overrides as the
- * scraper. Nothing else on the data is touched.
+ * subclass feature and feat, and the `initiativeBonus` field on every class
+ * feature, subclass feature, feat and race or subrace trait, using the same
+ * extractors and overrides as the scraper. Nothing else on the data is touched.
  */
 export function enrichTrackedData(data: TrackedData, overrides: GrantOverrides): void {
   const classes = classFeatureRefs(data.classes);
   const feats = featRefs(data.feats);
+  const features = classFeatureOnlyRefs(data.classes);
+  const traits = data.races ? traitRefs(data.races) : [];
+  const initiativeBonuses = overrides.initiativeBonuses ?? [];
   // The tracked files hold every class and feat, so an override that names none of them is stale.
   requireEveryOverridePlaced(classes, overrides.classes);
   requireEveryOverridePlaced(feats, overrides.feats);
+  const initiativeRefs = [...features, ...feats, ...traits];
+  requireEveryInitiativeOverridePlaced(initiativeRefs, initiativeBonuses);
   applyGrants(classes, overrides.classes);
   applyGrants(feats, overrides.feats);
+  applyInitiativeBonuses(initiativeRefs, initiativeBonuses);
   applyStartingToolGrants(data.classes);
+}
+
+function requireEveryInitiativeOverridePlaced(refs: GrantRef[], overrides: InitiativeBonusOverride[]): void {
+  const [stale] = unmatchedOverrides(refs.map((ref) => ref.subject), overrides);
+  if (stale) throw new Error(`initiative bonus override matches no feature: ${stale.owner}|${stale.feature}|${stale.level}`);
+}
+
+/** Writes each class, subclass or feat's Initiative Bonus, or removes a stale one. */
+function applyInitiativeBonuses(refs: GrantRef[], overrides: InitiativeBonusOverride[]): void {
+  const bonuses = resolveInitiativeBonuses(refs.map((ref) => ref.subject), overrides, newProficiencyReport());
+  bonuses.forEach((bonus, i) => {
+    const holder = refs[i].holder;
+    if (bonus) holder.initiativeBonus = bonus;
+    else delete holder.initiativeBonus;
+  });
 }
 
 /**
@@ -56,7 +95,7 @@ function requireEveryOverridePlaced(refs: GrantRef[], overrides: GrantOverride[]
 }
 
 /**
- * Enriches the text of both tracked files. Each file must already be in the
+ * Enriches the text of the tracked files. Each file must already be in the
  * tracked format, so that writing it back reproduces every byte that the
  * enrichment did not change.
  */
@@ -66,11 +105,18 @@ export function enrichGrantFiles(files: TrackedFiles, overrides: GrantOverrides)
   return writeTracked(data);
 }
 
-/** Removes every `grants` field from features and feats. The inverse of enrichment on the same data. */
+/**
+ * Removes every `grants` and `initiativeBonus` field from features and feats, and every `initiativeBonus` from race and
+ * subrace traits (their grants come from the scraper, not from this tooling). The inverse of enrichment on the same data.
+ */
 export function stripGrantFiles(files: TrackedFiles): TrackedFiles {
   const data = readTracked(files);
-  for (const ref of allRefs(data)) delete ref.holder.grants;
+  for (const ref of allRefs(data)) {
+    delete ref.holder.grants;
+    delete ref.holder.initiativeBonus;
+  }
   for (const cls of data.classes) delete cls.grants;
+  for (const ref of traitRefs(data.races ?? [])) delete ref.holder.initiativeBonus;
   return writeTracked(data);
 }
 
@@ -92,11 +138,16 @@ function readTracked(files: TrackedFiles): TrackedData {
   return {
     classes: parseCanonical(files.classes, "classes.json") as TrackedClass[],
     feats: parseCanonical(files.feats, "feats.json") as TrackedFeat[],
+    ...(files.races !== undefined ? { races: parseCanonical(files.races, "races.json") as TrackedRace[] } : {}),
   };
 }
 
 function writeTracked(data: TrackedData): TrackedFiles {
-  return { classes: canonical(data.classes), feats: canonical(data.feats) };
+  return {
+    classes: canonical(data.classes),
+    feats: canonical(data.feats),
+    ...(data.races !== undefined ? { races: canonical(data.races) } : {}),
+  };
 }
 
 function parseCanonical(text: string, name: string): unknown {

@@ -134,6 +134,10 @@ _Avoid_: Proficiency ledger, proficiency list
 A tool or language the player adds to a character by hand, for example one learned during downtime. It sits beside rule-granted proficiencies, is marked as added, and can be removed.
 _Avoid_: Custom proficiency, manual grant
 
+**Initiative Bonus**:
+A number a single rule (a class or subclass feature, a feat, or an ancestry trait) adds to the character's initiative: an ability modifier, the proficiency bonus, or a flat value. An ability-modifier bonus never counts below 0, and each rule adds its bonus once. Advantage on initiative is not an Initiative Bonus.
+_Avoid_: Initiative modifier, initiative boost, alertness bonus
+
 **Scaling Combat Die**:
 A class-specific die (such as Bardic Inspiration, Rogue Sneak Attack, or Monk Martial Arts) whose die face or dice pool size scales automatically at specific class level milestones.
 _Avoid_: Growth die, level die, damage counter

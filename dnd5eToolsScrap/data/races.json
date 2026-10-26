@@ -10880,7 +10880,10 @@
       },
       {
         "name": "Hare-Trigger",
-        "description": "You can add your proficiency bonus to your initiative rolls."
+        "description": "You can add your proficiency bonus to your initiative rolls.",
+        "initiativeBonus": {
+          "kind": "proficiency"
+        }
       },
       {
         "name": "Leporine Senses",
@@ -10979,7 +10982,10 @@
       },
       {
         "name": "Hare-Trigger",
-        "description": "You can add your proficiency bonus to your initiative rolls."
+        "description": "You can add your proficiency bonus to your initiative rolls.",
+        "initiativeBonus": {
+          "kind": "proficiency"
+        }
       },
       {
         "name": "Leporine Senses",

@@ -3,13 +3,15 @@ import type { ResolvedAncestry } from "./types.ts";
 import { DND_SKILLS } from "../constants/rules.ts";
 import { effectiveScores, hasFeat } from "./abilities.ts";
 import { proficiencyBonus, totalLevel } from "./proficiencies.ts";
+import { halfProficiencyFor, type HalfProficiencyRule } from "./halfProficiency.ts";
 
 export interface SkillRow {
   name: string;
   ability: AbilityKey;
   isProficient: boolean;
   isExpertise: boolean;
-  isJackOfAllTrades: boolean;
+  /** The half-proficiency rule that adds to a non-proficient skill, or null. */
+  halfProficiency: HalfProficiencyRule | null;
   bonus: number;
   passiveBonus: number;
 }
@@ -24,8 +26,8 @@ export function normalizeSkillName(raw: string): string {
 /**
  * The skill rows. Proficiency comes from the Proficiency Sheet's skills, passed in, so the
  * card, Expertise and every other reader agree on which skills the character holds. A sheet entry
- * carries Expertise when a Proficiency Grant gives it; a chosen Expertise adds the rest. Jack of All
- * Trades is decided here.
+ * carries Expertise when a Proficiency Grant gives it; a chosen Expertise adds the rest. The half-proficiency
+ * rule for a non-proficient skill (Jack of All Trades or Remarkable Athlete) is decided here.
  */
 export function skills(
   character: Character,
@@ -34,7 +36,6 @@ export function skills(
 ): SkillRow[] {
   const { modifiers } = effectiveScores(character, opts);
   const prof = proficiencyBonus(totalLevel(character));
-  const jack = (character.classes || []).some((c) => c.className === "Bard" && c.level >= 2);
 
   const proficientSkillNames = new Set(sheetSkills.map((entry) => normalizeSkillName(entry.name)));
   const grantExpertiseNames = new Set(sheetSkills.filter((entry) => entry.expertise).map((entry) => normalizeSkillName(entry.name)));
@@ -49,15 +50,15 @@ export function skills(
   return DND_SKILLS.map((skill) => {
     const isProficient = proficientSkillNames.has(skill.name);
     const isExpertise = isProficient && (grantExpertiseNames.has(skill.name) || expertiseSkillNames.has(skill.name));
-    const isJackOfAllTrades = !isProficient && jack;
+    const halfProficiency = isProficient ? null : halfProficiencyFor(character, skill.ability, prof);
     const bonus =
       modifiers[skill.ability] +
       (isExpertise
         ? 2 * prof
         : isProficient
         ? prof
-        : isJackOfAllTrades
-        ? Math.floor(prof / 2)
+        : halfProficiency
+        ? halfProficiency.bonus
         : 0);
     const passiveBonus =
       10 +
@@ -70,7 +71,7 @@ export function skills(
       ...skill,
       isProficient,
       isExpertise,
-      isJackOfAllTrades,
+      halfProficiency: halfProficiency?.rule ?? null,
       bonus,
       passiveBonus,
     };

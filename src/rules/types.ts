@@ -1,5 +1,5 @@
 import type { InventoryItem } from "../types/character.ts";
-import type { RaceData, ClassData, BackgroundData, FeatData, ProficiencyGrant } from "../types/dnd5e.ts";
+import type { RaceData, ClassData, BackgroundData, FeatData, InitiativeBonus, ProficiencyGrant } from "../types/dnd5e.ts";
 import type { Compendium } from "../services/compendium.ts";
 
 export interface ResolvedAncestry {
@@ -38,4 +38,6 @@ export interface FeatureInstance {
   chosenOption?: string;
   /** Proficiency Grants the feature carries from the Catalog (ADR 0015). Absent when it grants none. */
   grants?: ProficiencyGrant[];
+  /** The Initiative Bonus the feature carries from the Catalog (ADR 0016). Absent when it gives none. */
+  initiativeBonus?: InitiativeBonus;
 }

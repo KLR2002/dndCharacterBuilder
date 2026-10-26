@@ -83,6 +83,16 @@ export type ProficiencyGrantSpec =
   | { kind: "fixed"; category: ProficiencyCategory; names: string[]; requires?: GrantRequirement }
   | { kind: "choice"; category: ProficiencyCategory; count: number; pool: ProficiencyPool; requires?: GrantRequirement };
 
+/**
+ * Initiative Bonus: a number a single rule adds to the character's initiative (ADR 0016). `ability` adds an ability
+ * modifier (never below 0 in the app), `proficiency` the proficiency bonus, `flat` a fixed value. Carried on the
+ * feature that grants it, with no id. Shares the ability keys of the app's character type.
+ */
+export type InitiativeBonus =
+  | { kind: "ability"; ability: "str" | "dex" | "con" | "int" | "wis" | "cha" }
+  | { kind: "proficiency" }
+  | { kind: "flat"; value: number };
+
 /** One item the extractor could not turn into grants, for review. */
 export interface UnparsedProficiency {
   owner: string;

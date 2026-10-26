@@ -382,7 +382,7 @@ function parseSentence(sentence: string): ProficiencyGrantSpec[] | null {
 }
 
 /** Splits prose into sentences, dropping markdown emphasis and list markers. */
-function proseSentences(prose: string): string[] {
+export function proseSentences(prose: string): string[] {
   return prose
     .split(/\n+|\s{2,}/)
     .map((line) => line.replace(/[*_`]/g, "").replace(/^\s*(?:[-•]\s*)+/, "").trim())
@@ -498,7 +498,7 @@ function build(
 }
 
 /** The source-less key an override is matched on. An override applies to every source's copy of a feature. */
-function featureKey(s: { owner: string; feature: string; level: number }): string {
+export function featureKey(s: { owner: string; feature: string; level: number }): string {
   return `${s.owner}|${s.feature}|${s.level}`;
 }
 
@@ -511,7 +511,10 @@ function subjectKey(s: GrantSubject): string {
  * The overrides that name no feature in `subjects`. Whether that is an error is
  * the caller's call: the tracked files hold every class, so there it is.
  */
-export function unmatchedOverrides(subjects: GrantSubject[], overrides: GrantOverride[]): GrantOverride[] {
+export function unmatchedOverrides<T extends { owner: string; feature: string; level: number }>(
+  subjects: GrantSubject[],
+  overrides: T[]
+): T[] {
   const keys = new Set(subjects.map(featureKey));
   return overrides.filter((override) => !keys.has(featureKey(override)));
 }
