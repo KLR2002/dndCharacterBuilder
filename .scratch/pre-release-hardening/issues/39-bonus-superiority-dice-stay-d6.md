@@ -4,7 +4,9 @@
 
 **Blocked by:** none
 
-**Status:** ready-for-agent
+**Status:** done
+
+**Landed:** the three implementation commits of `pr/39-bonus-superiority-dice-d6` cherry-picked onto `spec/pre-release-hardening` (the branch had been cut from `feature/initiative-bonuses`, so it was not merged). `check:all` passes on the integration tip (1232 app tests, 8 skipped; 190 scraper tests, 2 skipped); full SRD and integrated layout runs GREEN on the branch, and the Battle Master scenarios GREEN on the integration tip at 393 px. `getSuperiorityDice` returns `{ battleMaster, bonus }`: the Battle Master pool scales, the bonus pool is up to 2 d6 (`BONUS_SUPERIORITY_DIE`); two counters (`superiority_dice`, `superiority_dice_d6`), maneuver cards name both faces (`d8 / d6`), the Stats badge reads `4d8 + 2d6`. ADR 0010 and the glossary state the rule. Screenshots at 393 px viewed by the implementer. Open items: the d6 is a named constant, not read from the catalog; `TacticalManeuverItem.die` and `ActionsTab` read the pool from two places; the Actions tab lists Rally twice (maneuver card and Bonus Actions); `check:live` not run (no catalog reader touched).
 
 ## Design notes
 
