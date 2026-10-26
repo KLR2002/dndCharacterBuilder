@@ -21,6 +21,7 @@ import { damage, heal } from "../../rules/hitPoints";
 import { setWildShapeTempHp } from "../../rules/wildShapeHp";
 import { formatModifier } from "../../services/dndRules";
 import { evaluateCharacter } from "../../rules/characterEvaluation";
+import { listSuperiorityPools } from "../../rules/combatDice";
 import { proficiencySheet } from "../../rules/proficiencySheet";
 import {
   addAddedProficiency,
@@ -109,6 +110,8 @@ export const StatsTab: React.FC = () => {
   const classDice = useMemo(() => {
     return evaluated?.combatDice ?? { bardicInspiration: null, sneakAttack: null, martialArts: null, superiorityDice: null };
   }, [evaluated]);
+  const superiorityPools = listSuperiorityPools(classDice.superiorityDice);
+  const superiorityLabel = superiorityPools.map((p) => `${p.count}${p.die}`).join(" + ");
 
   // Hit Dice
   const hdPools = useMemo(() => evaluated?.hitDice ?? {}, [evaluated]);
@@ -532,11 +535,11 @@ export const StatsTab: React.FC = () => {
                   setDetailModal({
                     visible: true,
                     title: "Superiority Dice",
-                    subtitle: `${classDice.superiorityDice?.count}${classDice.superiorityDice?.die}`,
-                    content: `You have ${classDice.superiorityDice?.count} superiority dice, which are ${classDice.superiorityDice?.die}s.\n\nYou expend superiority dice to fuel your Battle Master maneuvers. You regain all of your expended superiority dice when you finish a short or long rest.`,
+                    subtitle: superiorityLabel,
+                    content: `You have ${superiorityPools.map((p) => `${p.count} ${p.die}`).join(" and ")} superiority dice.\n\nYou expend superiority dice to fuel your maneuvers. You regain all of your expended superiority dice when you finish a short or long rest.`,
                   })
                 }>
-                <Badge label={`Superiority Dice: ${classDice.superiorityDice.count}${classDice.superiorityDice.die}`} variant="accent" size="sm" />
+                <Badge label={`Superiority Dice: ${superiorityLabel}`} variant="accent" size="sm" />
               </TouchableOpacity>
             )}
           </View>

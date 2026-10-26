@@ -98,6 +98,47 @@ test("getTacticalActionLedger categorizes Battle Master maneuvers into tactical 
   assert.ok(ledger.bonusActions.some((b) => b.name.includes("Rally")));
 });
 
+test("getTacticalActionLedger names both superiority faces on maneuver cards when the bonus pool is held", () => {
+  const picked = ["Riposte", "Rally", "Trip Attack"];
+  const maneuverChoice = {
+    id: "PHB__Fighter__Battle Master__Maneuvers 3",
+    trait: "Combat Superiority",
+    from: picked,
+    picked,
+    choose: 3,
+    options: [],
+    origin: "class" as const,
+  };
+  const bmWithStyle = makeChar({
+    classes: [{ className: "Fighter", source: "PHB", level: 3, subclassName: "Battle Master" }],
+    ruleChoices: [
+      maneuverChoice,
+      {
+        id: "PHB__Fighter__Fighting Style",
+        trait: "Fighting Style",
+        origin: "class",
+        choose: 1,
+        from: ["Superior Technique"],
+        picked: ["Superior Technique"],
+      },
+    ],
+  });
+  const withStyleLedger = getTacticalActionLedger(bmWithStyle, evaluateCharacter(bmWithStyle));
+  assert.ok(withStyleLedger.maneuvers.length > 0);
+  for (const m of withStyleLedger.maneuvers) {
+    assert.equal(m.die, "d8 / d6");
+  }
+
+  const bmAlone = makeChar({
+    classes: [{ className: "Fighter", source: "PHB", level: 3, subclassName: "Battle Master" }],
+    ruleChoices: [maneuverChoice],
+  });
+  const aloneLedger = getTacticalActionLedger(bmAlone, evaluateCharacter(bmAlone));
+  for (const m of aloneLedger.maneuvers) {
+    assert.equal(m.die, "d8");
+  }
+});
+
 test("getTacticalActionLedger detects dual wielding off-hand attack in bonus actions", () => {
   const char = makeChar({
     classes: [{ className: "Fighter", source: "PHB", level: 1 }],
