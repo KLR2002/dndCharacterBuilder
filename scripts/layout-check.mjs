@@ -345,6 +345,38 @@ function battleMasterCharacter() {
   });
 }
 
+// A level 4 Wizard who took Magic Initiate and chose its Wizard list, so the feat's own pick controls show the list's
+// cantrip and spell choices. Integrated mode only (Magic Initiate is not in the SRD Baseline).
+const MAGIC_INITIATE_ID = "char_magicinitiate";
+const MAGIC_INITIATE_ROUTE = `/character/${MAGIC_INITIATE_ID}`;
+function magicInitiateCharacter() {
+  const featSource = catalogSource("feats", "Magic Initiate");
+  return makeChar({
+    id: MAGIC_INITIATE_ID,
+    name: "Ilse",
+    createdAt: 10,
+    updatedAt: 10,
+    startingOption: "equipment",
+    race: { name: "Human", source: catalogSource("races", "Human") },
+    background: { name: "Acolyte", source: catalogSource("backgrounds", "Acolyte") },
+    classes: [{ className: "Wizard", source: catalogSource("classes", "Wizard"), level: 4 }],
+    currentHp: 20,
+    startingGrantsApplied: true,
+    backgroundGrantsApplied: true,
+    asiSelections: [{ level: 4, className: "Wizard", classLevel: 4, type: "feat", featName: "Magic Initiate", featSource }],
+    ruleChoices: [
+      {
+        id: `${featSource}__Feat Spells__Magic Initiate__Spell List`,
+        trait: "Magic Initiate Spell List",
+        origin: "feat",
+        choose: 1,
+        from: ["Bard Spells", "Cleric Spells", "Druid Spells", "Sorcerer Spells", "Warlock Spells", "Wizard Spells"],
+        picked: ["Wizard Spells"],
+      },
+    ],
+  });
+}
+
 // Level 1 Fighters for the equipment card. The unpicked one has no picks, so Claim Starting Equipment is disabled. The
 // picked one has a pick in every slot (chain mail, a martial weapon and a shield, a light crossbow, a dungeoneer's pack),
 // so Claim is enabled, and its martial weapon picker is the one a screen opens.
@@ -497,6 +529,7 @@ function buildSeed() {
       fighterCharacter({ id: FIGHTER_ID, name: "Tavish", picked: false }),
       fighterCharacter({ id: FIGHTER_PICKED_ID, name: "Brannoc", picked: true }),
       battleMasterCharacter(),
+      ...(INTEGRATED ? [magicInitiateCharacter()] : []),
       ...(INTEGRATED ? [clericCharacter({ id: CLERIC_ID, name: "Corwin", domain: false })] : []),
       clericCharacter({ id: CLERIC_DOMAIN_ID, name: "Ysolde", domain: true }),
       INTEGRATED ? knowledgeClericCharacter() : multiclassSkillCharacter(),
@@ -567,6 +600,19 @@ const SCREENS = [
     ? [
         { name: "Builder Class kensei weapon choices", route: KENSEI_ROUTE, tabs: ["Builder", "Class"], ready: /total level/i, scrollTo: "Path of the Kensei" },
         { name: "Stats kensei weapon proficiencies", route: KENSEI_ROUTE, tabs: ["Stats"], ready: /hit points/i, scrollTo: "Weapon Proficiencies" },
+      ]
+    : []),
+  // Magic Initiate's own picks (integrated mode only): its spell list, then the cantrips and spell of the list chosen.
+  ...(INTEGRATED
+    ? [
+        {
+          name: "Builder Class feat spell picks",
+          route: MAGIC_INITIATE_ROUTE,
+          tabs: ["Builder", "Class"],
+          ready: /Selected Ability Improvements/i,
+          scrollTo: "Magic Initiate Spell List (choose 1)",
+          expect: { texts: ["Magic Initiate Spell List (choose 1)", "Magic Initiate Cantrip (choose 2)", "Magic Initiate Spell (choose 1)"], fitsWidth: true },
+        },
       ]
     : []),
   // The equipment card: one option per slot, the picker of a generic entry, Claim disabled until every slot is picked.

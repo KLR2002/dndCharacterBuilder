@@ -287,3 +287,14 @@ function addSlots(valid: Map<string, string[] | undefined>, feat: FeatData, gran
     );
   }
 }
+
+/** The feat spell picks of one feat the character holds, for the feat's own control on the builder. */
+export function featSpellChoicesOf(
+  character: Character,
+  feat: { name: string; source: string },
+  compendium: Compendium,
+  activeBooks?: readonly string[]
+): AvailableRuleChoice[] {
+  const prefix = `${feat.source}__${FEAT_SPELLS_MARK}__${feat.name}__`;
+  return featSpellRuleChoices(character, compendium, activeBooks).filter((choice) => choice.id.startsWith(prefix));
+}
