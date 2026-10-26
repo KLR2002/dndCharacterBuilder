@@ -60,6 +60,8 @@ export interface RaceData {
   subraces: SubraceData[];
   description: string;
   rawEntries?: any[];
+  /** The spells the race grants, as the source gives them (ADR 0017). Absent when it grants none. */
+  additionalSpells?: AdditionalSpells[];
 }
 
 export interface SubraceData {
@@ -75,6 +77,8 @@ export interface SubraceData {
   traits: TraitData[];
   /** Proficiency Grants from the subrace's structured proficiency fields. */
   grants?: ProficiencyGrant[];
+  /** The spells the subrace grants, as the source gives them (ADR 0017). Absent when it grants none. */
+  additionalSpells?: AdditionalSpells[];
   description: string;
   rawEntries?: any[];
 }

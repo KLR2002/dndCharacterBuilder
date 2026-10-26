@@ -673,11 +673,16 @@ export const SpellsTab: React.FC = () => {
     showMinLevel: true,
   };
 
+  const FEAT_INNATE_COPY = {
+    subtitle: "Spells from this feat (Long Rest reset)",
+    showMinLevel: false,
+  };
+
+  /** The race's and subrace's cards and each feat's, through the one card renderer; the copy follows the source's origin. */
   const renderGrantedCards = () =>
     grantedProfiles.map((profile, index) =>
       renderInnateCard(profile, {
-        subtitle: "Spells from this feat (Long Rest reset)",
-        showMinLevel: false,
+        ...(profile.origin === "race" ? RACE_INNATE_COPY : FEAT_INNATE_COPY),
         key: `granted_${index}`,
       })
     );

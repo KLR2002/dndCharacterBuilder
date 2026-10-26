@@ -1,4 +1,4 @@
-import type { ClassData, FeatData, SpellData } from "../src/types/dnd5e.ts";
+import type { ClassData, FeatData, RaceData, SpellData, SubraceData } from "../src/types/dnd5e.ts";
 
 /**
  * Invented classes, feats and spells for the granted spell engine tests. Every name and sentence is made up on purpose:
@@ -109,5 +109,58 @@ export const grantedSpellFeats = (): FeatData[] => [
         innate: { _: { daily: { "1": [{ choose: "level=1|class=Sample Mage" }] } } },
       },
     ],
+  }),
+];
+
+const race = (name: string, extra: Partial<RaceData>): RaceData => ({
+  name,
+  source: "TST",
+  size: ["Medium"],
+  speed: { walk: 30 },
+  abilityScoreIncrease: [],
+  darkvision: null,
+  traits: [],
+  languages: ["Common"],
+  subraces: [],
+  description: "Placeholder description for the race.",
+  ...extra,
+});
+
+const subrace = (name: string, raceName: string, extra: Partial<SubraceData>): SubraceData => ({
+  name,
+  source: "TST",
+  raceName,
+  raceSource: "TST",
+  isVariant: false,
+  abilityScoreIncrease: [],
+  darkvision: null,
+  traits: [],
+  description: "Placeholder description for the subrace.",
+  ...extra,
+});
+
+/**
+ * Invented races. Sample Kin grants a cantrip at will from level 1 and a daily spell from level 3, with a fixed Charisma
+ * ability. Its subrace Sample Line has grants of its own (Intelligence, a per-rest spell), so they replace the race's.
+ * Sample Plain has none, so the race's grants stay. Sample Chooser's ability is a pick, so it gives no card yet.
+ */
+export const grantedSpellRaces = (): RaceData[] => [
+  race("Sample Kin", {
+    subraces: [
+      subrace("Sample Line", "Sample Kin", {
+        additionalSpells: [{ ability: "int", known: { "1": { rest: { "1": ["sample glimmer"] } } } }],
+      }),
+      subrace("Sample Plain", "Sample Kin", {}),
+    ],
+    additionalSpells: [
+      {
+        ability: "cha",
+        known: { "1": ["sample ember"] },
+        innate: { "3": { daily: { "1": ["sample pulse"] } } },
+      },
+    ],
+  }),
+  race("Sample Chooser", {
+    additionalSpells: [{ ability: { choose: ["int", "wis", "cha"] }, known: { "1": ["sample ember"] } }],
   }),
 ];
