@@ -75,6 +75,18 @@ test("a feat's fixed daily spell has a Long Rest counter, and a long rest restor
   assert.equal(rested.resourceCounters[veil.resourceCounterId!]?.current, 1, "a long rest restores the counter");
 });
 
+test("an innate spell that is at will carries no counter, even when it is not a cantrip", () => {
+  const evaluated = evaluateCharacter(
+    makeChar({ classes: [mage(4)], asiSelections: [takenFeat("Sample Sight", "int")] }),
+    catalogs,
+  );
+  const sight = sourceTitled(evaluated.grantedSpellSources, "Sample Sight");
+  const veil = sight?.spells.find((spell) => spell.name === "Sample Veil");
+  assert.ok(veil, "the at-will spell is listed");
+  assert.equal(veil.isCantrip, false);
+  assert.equal(veil.resourceCounterId, undefined, "no counter: it is cast at will");
+});
+
 test("a fixed ability gives the feat's own save DC and attack bonus from that ability", () => {
   const evaluated = evaluateCharacter(
     makeChar({ classes: [mage(4)], asiSelections: [takenFeat("Sample Warding")], baseAbilityScores: scores({ wis: 16 }) }),

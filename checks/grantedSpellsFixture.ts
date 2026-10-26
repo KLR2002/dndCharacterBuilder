@@ -86,6 +86,14 @@ export const grantedSpellFeats = (): FeatData[] => [
       },
     ],
   }),
+  feat("Sample Sight", {
+    additionalSpells: [
+      {
+        ability: "int",
+        innate: { _: { will: ["sample veil"] } },
+      },
+    ],
+  }),
   feat("Sample Chooser", {
     additionalSpells: [
       {

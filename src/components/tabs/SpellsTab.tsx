@@ -639,7 +639,7 @@ export const SpellsTab: React.FC = () => {
                   </Text>
                 </TouchableOpacity>
 
-                {spell.isCantrip ? (
+                {spell.resourceCounterId === undefined ? (
                   <Badge label="At Will" variant="secondary" size="sm" />
                 ) : (
                   <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
