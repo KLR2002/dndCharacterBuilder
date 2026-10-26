@@ -6,11 +6,13 @@ import { effectiveScores } from "./abilities.ts";
 import { proficiencyBonus, totalLevel } from "./proficiencies.ts";
 import { resolveSpellName } from "./subclassSpells.ts";
 import {
+  chosenAbilityOptionsOf,
   chosenSpellsOf,
   fixedGrantAbility,
   heldFeatsOf,
   offeredSpellLists,
   pickSlotsOf,
+  pickedAbilityOf,
   pickedSpellListOf,
   spellListLabel,
   usesOf,
@@ -85,14 +87,16 @@ function grantSource(
   seen: Set<string>,
   title: string
 ): InnateSpellProfile | undefined {
-  const ability = fixedAbility(grant, selection);
-  // A pick of ability is not offered yet, so that grant gives no source.
-  if (ability === undefined && grant.ability !== "inherit") return undefined;
+  const ability = abilityOf(ctx.character, feat, grant, selection);
+  // A grant that names no casting ability at all gives no source, as it always has.
+  if (ability === undefined && grant.ability === undefined) return undefined;
 
   const entryName = typeof grant.name === "string" ? grant.name : undefined;
   const spells = grantedSpells(feat.name, grant, seen, ctx);
   const notices: string[] = [];
-  if (ability === undefined) notices.push("Needs review: the ability increase is not recorded");
+  if (ability === undefined) {
+    notices.push(grant.ability === "inherit" ? "Needs review: the ability increase is not recorded" : "Needs review: choose a casting ability");
+  }
   for (const slot of pickSlotsOf(grant)) {
     const chosen = chosenSpellsOf(ctx.character, feat, grant, slot, ctx.compendium, ctx.activeBooks);
     for (const data of chosen) {
@@ -118,9 +122,16 @@ function grantSource(
   };
 }
 
-/** The casting ability a grant fixes: a named key, or the ability the feat's increase raised. A pick yields none yet. */
-function fixedAbility(grant: AdditionalSpells, selection: AsiSelection): AbilityKey | undefined {
+/**
+ * The casting ability a grant gives: the ability the feat's increase raised, the one the player chose for the feat (of the ones
+ * the grant offers), or the fixed one. Undefined while it is not resolved.
+ */
+function abilityOf(character: Character, feat: FeatData, grant: AdditionalSpells, selection: AsiSelection): AbilityKey | undefined {
   if (grant.ability === "inherit") return selection.featAbility;
+  if (grant.ability !== undefined && typeof grant.ability === "object") {
+    const picked = pickedAbilityOf(character, feat);
+    return picked !== undefined && chosenAbilityOptionsOf(grant).includes(picked) ? picked : undefined;
+  }
   return fixedGrantAbility(grant);
 }
 

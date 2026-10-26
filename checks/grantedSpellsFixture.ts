@@ -6,7 +6,13 @@ import type { ClassData, FeatData, SpellData } from "../src/types/dnd5e.ts";
  * names; a `choose` object is a pick the player makes).
  */
 
-const spell = (name: string, level: number, classes: string[] = ["Sample Mage"], source = "TST"): SpellData => ({
+const spell = (
+  name: string,
+  level: number,
+  classes: string[] = ["Sample Mage"],
+  source = "TST",
+  extra: Partial<SpellData> = {},
+): SpellData => ({
   name,
   source,
   level,
@@ -24,6 +30,7 @@ const spell = (name: string, level: number, classes: string[] = ["Sample Mage"],
   savingThrows: [],
   description: "Placeholder description for the spell.",
   higherLevels: null,
+  ...extra,
 });
 
 /** The spells the sample feats name, a cantrip and a spell of each level the feats use. */
@@ -32,6 +39,12 @@ export const grantedSpellSpells = (): SpellData[] => [
   spell("Sample Glimmer", 0),
   spell("Sample Veil", 2),
   spell("Sample Pulse", 1),
+  // Two first-level mage spells of two schools (the cleric list stays as the Magic Initiate cases expect), and two mage
+  // cantrips that need an attack roll: a ranged one and a melee one.
+  spell("Sample Lure", 1, ["Sample Mage"], "TST", { school: "Enchantment" }),
+  spell("Sample Augur", 1, ["Sample Mage"], "TST", { school: "Divination" }),
+  spell("Sample Shot", 0, ["Sample Mage"], "TST", { spellAttack: ["R"] }),
+  spell("Sample Jab", 0, ["Sample Mage"], "TST", { spellAttack: ["M"] }),
   // A second invented class, and a cantrip in a second invented book that a player may switch off.
   spell("Sample Blessing", 0, ["Sample Cleric"]),
   spell("Sample Ward", 1, ["Sample Cleric"]),
@@ -169,6 +182,74 @@ export const grantedSpellFeats = (): FeatData[] => [
       {
         ability: "int",
         innate: { _: { daily: { "1": [{ choose: "level=1|class=Sample Mage" }] } } },
+      },
+    ],
+  }),
+  // Named alternatives, each with its own fixed cantrips and one casting ability the player chooses for the feat. The
+  // class list is written in lower case, as the source writes it.
+  feat("Sample Lorekeeper", {
+    additionalSpells: [
+      {
+        name: "Sample Hall 1",
+        ability: { choose: ["int", "wis", "cha"] },
+        known: { _: ["sample ember", "sample glimmer"] },
+        innate: { _: { daily: { "1": [{ choose: "level=1|class=sample cleric;sample mage" }] } } },
+      },
+      {
+        name: "Sample Hall 2",
+        ability: { choose: ["int", "wis", "cha"] },
+        known: { _: ["sample ember", "sample jab"] },
+        innate: { _: { daily: { "1": [{ choose: "level=1|class=sample cleric;sample mage" }] } } },
+      },
+    ],
+  }),
+  // A cantrip the player picks from the mage's cantrips that need an attack roll.
+  feat("Sample Duelist", {
+    additionalSpells: [
+      {
+        ability: "int",
+        known: { _: [{ choose: "level=0|class=Sample Mage|spell attack=m;r;o", count: 1 }] },
+      },
+    ],
+  }),
+  // A daily spell fixed by the feat, and a pick of a first-level spell of two schools, with the ability its increase raised.
+  feat("Sample Charmer", {
+    additionalSpells: [
+      {
+        ability: "inherit",
+        innate: { _: { daily: { "1e": ["sample pulse", { choose: "level=1|school=E;D" }] } } },
+      },
+    ],
+  }),
+  // A first-level pick from the spells of two classes at once.
+  feat("Sample Multi", {
+    additionalSpells: [
+      {
+        ability: "int",
+        innate: { _: { daily: { "1": [{ choose: "level=1|class=Sample Mage;Sample Cleric" }] } } },
+      },
+    ],
+  }),
+  // Two picks from a named list of spells.
+  feat("Sample Scholar", {
+    additionalSpells: [
+      {
+        ability: "cha",
+        innate: { _: { daily: { "1": [{ choose: { from: ["sample pulse", "sample ward"], count: 2 } }] } } },
+      },
+    ],
+  }),
+  // A pick that the ritual book gives, which the reader does not model.
+  feat("Sample Ritualist", {
+    additionalSpells: [
+      {
+        ability: "int",
+        innate: {
+          _: {
+            daily: { "1": [{ choose: "level=1|class=Sample Mage|components & miscellaneous=ritual", count: 2 }] },
+            ritual: ["sample pulse"],
+          },
+        },
       },
     ],
   }),

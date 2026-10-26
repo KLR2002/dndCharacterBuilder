@@ -148,12 +148,16 @@ test("a feat held as an origin feat gives its source, and a feat held both ways 
   assert.equal(bothWays.grantedSpellSources.filter((source) => source.title === "Sample Warding").length, 1);
 });
 
-test("a feat whose ability is a pick gives no source yet, and no card is invented for it", () => {
+test("a feat whose ability is a pick gives a card with a needs-review notice and no ability until the pick is made", () => {
   const evaluated = evaluateCharacter(
     makeChar({ classes: [mage(4)], asiSelections: [takenFeat("Sample Chooser", "int")] }),
     catalogs,
   );
-  assert.deepEqual(evaluated.grantedSpellSources, []);
+  const chooser = sourceTitled(evaluated.grantedSpellSources, "Sample Chooser");
+  assert.ok(chooser, "the fixed cantrip is shown, so the player sees what the feat gives");
+  assert.deepEqual(chooser.spells.map((s) => s.name), ["Sample Ember"]);
+  assert.equal(chooser.ability, undefined, "no ability is invented");
+  assert.ok(chooser.notices?.some((notice) => /casting ability/i.test(notice)));
 });
 
 test("a feat whose only spell is a pick that has not been made gives a card with a needs-review notice and no spell", () => {

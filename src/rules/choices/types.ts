@@ -53,7 +53,8 @@ export interface AvailableRuleChoice {
   categories?: ProficiencyCategory[];
   origin: RuleChoiceOrigin;
   pick?: SpecialisedPick;
-  options: { name: string; description: string }[];
+  /** The option's saved name is `name`; `label`, when given, is the text the option is shown under. */
+  options: { name: string; description: string; label?: string }[];
 }
 
 /**

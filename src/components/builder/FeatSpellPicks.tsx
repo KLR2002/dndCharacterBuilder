@@ -51,9 +51,10 @@ export const FeatSpellPicks: React.FC<FeatSpellPicksProps> = ({ character, feat,
                         color: isSelected ? theme.accent : theme.textSecondary,
                         fontSize: 11,
                         fontWeight: isSelected ? "700" : "500",
+                        flexShrink: 1,
                       }}
                     >
-                      {opt.name}
+                      {opt.label ?? opt.name}
                     </Text>
                   </TouchableOpacity>
                 );

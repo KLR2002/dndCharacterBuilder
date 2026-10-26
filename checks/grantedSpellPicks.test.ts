@@ -210,3 +210,92 @@ test("a book switched off releases a pick that is no longer offered, with a noti
   assert.ok(!(reconciled.ruleChoices ?? []).some((rc) => rc.picked.includes("Sample Spark")), "the pick is released");
   assert.ok(reconciled.needsReview?.some((notice) => /Sample Initiate/.test(notice)));
 });
+
+// The rest of the filter vocabulary, the named alternatives and the casting ability the player chooses (ADR 0017).
+
+test("a named alternative is offered by the label of its fixed cantrips, and its spells come from a lower-case class list", () => {
+  let character = makeChar({ classes: [mage(4)], originFeats: [takenFeat("Sample Lorekeeper")] });
+  const lists = offeredChoices(character).find((c) => featOf(c) === "Sample Lorekeeper" && c.options.length === 2);
+  assert.ok(lists, "the college list is offered");
+  assert.deepEqual(
+    lists.options.map((o) => o.label),
+    ["Sample Hall: Sample Ember, Sample Glimmer", "Sample Hall: Sample Ember, Sample Jab"],
+    "each college is labelled by the cantrips it gives",
+  );
+  character = pickOption(character, "Sample Hall 1", "Sample Lorekeeper");
+  const daily = offeredChoices(character).find((c) => featOf(c) === "Sample Lorekeeper" && c.options.some((o) => o.name === "Sample Pulse"));
+  assert.deepEqual(
+    daily?.options.map((o) => o.name).sort(),
+    ["Sample Augur", "Sample Lure", "Sample Pulse", "Sample Ward"],
+    "a lower-case class list offers the first-level spells of each class it names",
+  );
+});
+
+test("the casting ability is chosen once for the feat: the card has none until it is chosen, then uses the one picked", () => {
+  let character = makeChar({ classes: [mage(4)], originFeats: [takenFeat("Sample Lorekeeper")], baseAbilityScores: scores({ wis: 16 }) });
+  character = pickOption(character, "Sample Hall 1", "Sample Lorekeeper");
+  const abilityChoice = offeredChoices(character).find((c) => featOf(c) === "Sample Lorekeeper" && c.options.some((o) => o.name === "wis"));
+  assert.ok(abilityChoice, "the ability is offered for the feat, once");
+  assert.equal(abilityChoice.choose, 1);
+  assert.deepEqual(abilityChoice.options.map((o) => o.label), ["Intelligence", "Wisdom", "Charisma"]);
+
+  let card = cardTitled(evaluateCharacter(character, catalogs).grantedSpellSources, "Sample Lorekeeper (Sample Hall)");
+  assert.ok(card, "the card is titled by the feat and the college");
+  assert.equal(card.ability, undefined, "no ability is invented before it is chosen");
+  assert.ok(card.notices?.some((notice) => /casting ability/i.test(notice)), "the missing ability is a needs-review notice");
+  assert.deepEqual(card.spells.map((s) => s.name).sort(), ["Sample Ember", "Sample Glimmer"], "the fixed cantrips are at will already");
+
+  character = pickOption(character, "wis", "Sample Lorekeeper");
+  card = cardTitled(evaluateCharacter(character, catalogs).grantedSpellSources, "Sample Lorekeeper (Sample Hall)");
+  assert.equal(card?.ability, "wis");
+  assert.equal(card?.spellSaveDc, 8 + 2 + 3, "8 + proficiency bonus + WIS 16");
+  assert.equal(card?.spellAttackBonus, 2 + 3);
+  assert.ok(!card?.notices?.some((notice) => /casting ability/i.test(notice)), "the notice clears once it is chosen");
+
+  const removed = removeOriginFeat(character, "Sample Lorekeeper", compendium);
+  assert.deepEqual(removed.ruleChoices ?? [], [], "removing the feat releases the ability and the college with it");
+});
+
+test("a pick from a filter's school list offers only the spells of those schools, and a fixed daily spell sits beside it", () => {
+  let character = makeChar({ classes: [mage(4)], originFeats: [takenFeat("Sample Charmer", "cha")] });
+  const offered = offeredChoices(character).find((c) => featOf(c) === "Sample Charmer");
+  assert.deepEqual(offered?.options.map((o) => o.name).sort(), ["Sample Augur", "Sample Lure"], "Enchantment and Divination only");
+  character = pickOption(character, "Sample Lure", "Sample Charmer");
+  const card = cardTitled(evaluateCharacter(character, catalogs).grantedSpellSources, "Sample Charmer");
+  assert.equal(card?.ability, "cha", "the ability is the one the feat's increase raised");
+  assert.ok(card?.spells.find((s) => s.name === "Sample Pulse")?.resourceCounterId, "the fixed daily spell has its counter");
+  assert.ok(card?.spells.find((s) => s.name === "Sample Lure")?.resourceCounterId, "and so does the picked one");
+  assert.deepEqual(card?.notices ?? [], []);
+});
+
+test("a filter naming several classes offers the spells of each of them at that level", () => {
+  const offered = offeredChoices(makeChar({ classes: [mage(4)], originFeats: [takenFeat("Sample Multi")] })).find((c) => featOf(c) === "Sample Multi");
+  assert.deepEqual(
+    offered?.options.map((o) => o.name).sort(),
+    ["Sample Augur", "Sample Lure", "Sample Pulse", "Sample Ward"],
+    "the first-level spells of the mage and of the cleric",
+  );
+});
+
+test("an attack-roll filter offers only the cantrips that need an attack roll", () => {
+  const offered = offeredChoices(makeChar({ classes: [mage(4)], originFeats: [takenFeat("Sample Duelist")] })).find((c) => featOf(c) === "Sample Duelist");
+  assert.deepEqual(offered?.options.map((o) => o.name).sort(), ["Sample Jab", "Sample Shot"], "the ranged and the melee cantrip, not Sample Ember");
+});
+
+test("a pick from a named list is one of the listed spells, and each pick counts toward the list's count", () => {
+  let character = makeChar({ classes: [mage(4)], originFeats: [takenFeat("Sample Scholar")], baseAbilityScores: scores({ cha: 14 }) });
+  const offered = offeredChoices(character).find((c) => featOf(c) === "Sample Scholar");
+  assert.equal(offered?.choose, 2, "two picks are owed");
+  assert.deepEqual(offered?.options.map((o) => o.name).sort(), ["Sample Pulse", "Sample Ward"]);
+  character = pickOption(character, "Sample Pulse", "Sample Scholar");
+  character = pickOption(character, "Sample Ward", "Sample Scholar");
+  const card = cardTitled(evaluateCharacter(character, catalogs).grantedSpellSources, "Sample Scholar");
+  assert.deepEqual(card?.spells.map((s) => s.name).sort(), ["Sample Pulse", "Sample Ward"]);
+  assert.deepEqual(card?.notices ?? [], [], "nothing is owed once both are picked");
+});
+
+test("a ritual-only pick is not modelled: no choice is offered for it, and no card or notice is made", () => {
+  const character = makeChar({ classes: [mage(4)], originFeats: [takenFeat("Sample Ritualist")] });
+  assert.equal(offeredChoices(character).some((c) => featOf(c) === "Sample Ritualist"), false, "no pick is offered");
+  assert.deepEqual(evaluateCharacter(character, catalogs).grantedSpellSources, [], "and no card, since nothing else is granted");
+});

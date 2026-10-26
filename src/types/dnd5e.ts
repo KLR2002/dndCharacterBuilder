@@ -270,6 +270,8 @@ export interface SpellData {
   savingThrows: string[];
   description: string;
   higherLevels: string | null;
+  /** The kinds of attack roll the spell needs: "M" melee, "R" ranged, "O" other. Absent when it needs none. */
+  spellAttack?: string[];
   rawEntries?: any[];
   isReplaced?: boolean;
   originalName?: string;
