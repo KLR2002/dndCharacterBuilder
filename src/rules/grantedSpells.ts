@@ -195,22 +195,26 @@ function grantedSpells(input: { holder: GrantHolder; grant: AdditionalSpells; se
     const data = resolveSpellName(name, ctx.activeBooks, ctx.compendium, { activeOnly: true });
     if (!data) continue;
     seen.add(key);
-    spells.push(innateEntry(data, holder, entryName, uses, minCharacterLevel));
+    spells.push(innateEntry(data, holder, entryName, uses, minCharacterLevel, grant.castLevels?.[key]));
   }
   return spells;
 }
 
-/** The Innate Magic entry of a resolved spell. A spell with a use count carries the counter a Long Rest restores. */
+/**
+ * The Innate Magic entry of a resolved spell. It is cast at the level the grant gives when it names one, else at the spell's
+ * own level. A spell with a use count carries the counter a Long Rest restores.
+ */
 function innateEntry(
   data: SpellData,
   holder: GrantHolder,
   entryName: string | undefined,
   uses: number | undefined,
-  minCharacterLevel: number
+  minCharacterLevel: number,
+  castLevel?: number
 ): InnateSpellEntry {
   return {
     name: data.name,
-    level: data.level,
+    level: castLevel ?? data.level,
     minCharacterLevel,
     castingTime: data.castingTime,
     source: data.source,

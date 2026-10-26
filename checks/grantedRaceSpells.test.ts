@@ -146,7 +146,22 @@ test("on the SRD Baseline alone, a Tiefling has Thaumaturgy at will, and Hellish
   const level3 = sourceTitled(evaluateCharacter(tiefling(3), srd).grantedSpellSources, "Tiefling");
   const rebuke = level3?.spells.find((spell) => spell.name === "Hellish Rebuke");
   assert.equal(rebuke?.resourceCounterId, "innate_spell_hellish_rebuke", "the id the old table saved");
+  assert.equal(rebuke?.level, 2, "the source casts Hellish Rebuke at level 2, as the old table had it");
 
   const level5 = sourceTitled(evaluateCharacter(tiefling(5), srd).grantedSpellSources, "Tiefling");
   assert.ok(level5?.spells.some((spell) => spell.name === "Darkness"));
+});
+
+test("a race's spell with a cast-level suffix is listed at that level, and one without keeps its own level", () => {
+  const caster = makeChar({
+    classes: [mage(3)],
+    race: { name: "Sample Caster", source: "TST" },
+    baseAbilityScores: { str: 10, dex: 10, con: 10, int: 10, wis: 10, cha: 16 },
+  });
+  const card = sourceTitled(evaluateCharacter(caster, catalogs).grantedSpellSources, "Sample Caster");
+  const pulse = card?.spells.find((spell) => spell.name === "Sample Pulse");
+  const veil = card?.spells.find((spell) => spell.name === "Sample Veil");
+  assert.equal(pulse?.level, 2, "Sample Pulse is catalogued at level 1 but cast at level 2");
+  assert.equal(pulse?.isCantrip, false);
+  assert.equal(veil?.level, 2, "Sample Veil has no suffix and keeps its catalogued level");
 });

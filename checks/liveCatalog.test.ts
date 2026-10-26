@@ -489,6 +489,20 @@ test("live catalog: a Water Genasi of level 3 keeps the counter id the old race 
   assert.equal(spell.resourceCounterId, "innate_spell_create_water");
 });
 
+test("live catalog: a level-3 Tiefling's Hellish Rebuke is cast at 2nd level, and its counter is the one the old table saved", { skip: SKIP }, () => {
+  const character = makeChar({
+    classes: [{ className: "Fighter", source: "PHB", level: 3 }],
+    race: { name: "Tiefling", source: "PHB" },
+    baseAbilityScores: { str: 10, dex: 10, con: 10, int: 10, wis: 10, cha: 16 },
+  });
+  const evaluated = evaluateCharacter(character, { compendium: live!.compendium });
+  const tiefling = evaluated.grantedSpellSources.find((source) => source.title === "Tiefling");
+  const rebuke = tiefling?.spells.find((entry) => entry.name === "Hellish Rebuke");
+  assert.ok(rebuke, `no Hellish Rebuke on the Tiefling card: ${JSON.stringify(tiefling?.spells.map((entry) => entry.name))}`);
+  assert.equal(rebuke.level, 2, "the grant says the spell is cast at level 2");
+  assert.equal(rebuke.resourceCounterId, "innate_spell_hellish_rebuke");
+});
+
 // Background expanded spell lists (ADR 0017): a background's lists join the list of each spellcasting class the character has.
 
 test("live catalog: a Strixhaven college background and a Ravnica guild background carry expanded spell lists", { skip: SKIP }, () => {

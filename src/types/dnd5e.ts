@@ -126,6 +126,8 @@ export interface AdditionalSpells {
   known?: Record<string, any>;
   expanded?: Record<string, any>;
   innate?: Record<string, any>;
+  /** The level each named spell is cast at where the source's `#N` suffix gives one, keyed by the lower-case spell name. */
+  castLevels?: Record<string, number>;
 }
 
 export interface SubclassData {
