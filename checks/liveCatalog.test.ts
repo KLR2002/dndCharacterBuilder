@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { existsSync, readFileSync } from "node:fs";
 import type { Character } from "../src/types/character.ts";
-import type { ClassData, ProficiencyGrant, SubclassData } from "../src/types/dnd5e.ts";
+import type { ClassData, FeatData, ProficiencyGrant, SubclassData } from "../src/types/dnd5e.ts";
 import { createCompendium, type Compendium } from "../src/services/compendium.ts";
 import { isCatalogStale, REQUIRED_CATALOG_FORMAT, type CompendiumCollections } from "../src/services/compendiumStorage.ts";
 import { proficiencyChoiceOffers } from "../src/rules/proficiencyChoiceOffers.ts";
@@ -398,4 +398,52 @@ test("live catalog: every feature whose prose adds to initiative has an Initiati
     [],
     "features whose prose adds to initiative, with no Initiative Bonus and no reviewed mark, in the live catalog"
   );
+});
+
+// Granted spells (ADR 0017): the feats' spell grants are carried by the catalog the in-app sync builds, and the engine reads them.
+
+/** Every spell name a feat's grants name, in any group (known, innate at-will, daily, per rest). */
+function grantedSpellNames(feat: Pick<FeatData, "additionalSpells">): string[] {
+  const namesIn = (value: unknown): string[] => {
+    if (typeof value === "string") return [value];
+    if (Array.isArray(value)) return value.flatMap(namesIn);
+    if (value && typeof value === "object") return Object.values(value).flatMap(namesIn);
+    return [];
+  };
+  return (feat.additionalSpells ?? []).flatMap((grant) =>
+    Object.entries(grant)
+      .filter(([key]) => key !== "ability" && key !== "name")
+      .flatMap(([, group]) => namesIn(group)),
+  );
+}
+
+test("live catalog: Telekinetic carries Mage Hand, and Telepathic carries Detect Thoughts", { skip: SKIP }, () => {
+  const telekinetic = live!.collections.feats.find((feat) => feat.name === "Telekinetic" && feat.source === "TCE");
+  const telepathic = live!.collections.feats.find((feat) => feat.name === "Telepathic" && feat.source === "TCE");
+  assert.ok(telekinetic, "no Telekinetic feat in the catalog");
+  assert.ok(telepathic, "no Telepathic feat in the catalog");
+  assert.ok(grantedSpellNames(telekinetic).includes("mage hand"), `Telekinetic grants: ${JSON.stringify(telekinetic.additionalSpells)}`);
+  assert.ok(grantedSpellNames(telepathic).includes("detect thoughts"), `Telepathic grants: ${JSON.stringify(telepathic.additionalSpells)}`);
+});
+
+test("live catalog: a Wizard with Telekinetic (INT) has Mage Hand at will, and with Telepathic has Detect Thoughts once per Long Rest", { skip: SKIP }, () => {
+  const wizard = live!.compendium.for().classes().find((cls) => cls.name === "Wizard");
+  assert.ok(wizard, "no Wizard class in the catalog");
+  const character = makeChar({
+    classes: [{ className: wizard.name, source: wizard.source, level: 5 }],
+    baseAbilityScores: { str: 10, dex: 10, con: 10, int: 16, wis: 10, cha: 10 },
+    asiSelections: [
+      { level: 4, type: "feat", featName: "Telekinetic", featSource: "TCE", featAbility: "int" },
+      { level: 4, type: "feat", featName: "Telepathic", featSource: "TCE", featAbility: "cha" },
+    ],
+  });
+  const evaluated = evaluateCharacter(character, { compendium: live!.compendium });
+  const telekinetic = evaluated.grantedSpellSources.find((source) => source.title === "Telekinetic");
+  const telepathic = evaluated.grantedSpellSources.find((source) => source.title === "Telepathic");
+  const mageHand = telekinetic?.spells.find((spell) => spell.name === "Mage Hand");
+  const detectThoughts = telepathic?.spells.find((spell) => spell.name === "Detect Thoughts");
+  assert.equal(mageHand?.resourceCounterId, undefined, "Mage Hand is at will");
+  assert.ok(detectThoughts?.resourceCounterId, "Detect Thoughts has a Long Rest counter");
+  assert.equal(telekinetic?.ability, "int");
+  assert.equal(telekinetic?.spellSaveDc, 8 + 3 + 3, "level 5 (+3) and INT 16 raised to 17 (+3)");
 });
