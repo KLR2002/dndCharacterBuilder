@@ -19,6 +19,9 @@ import { initiativeCoverageGaps } from "../dnd5eToolsScrap/src/grants/initiative
 import { gapName } from "../dnd5eToolsScrap/src/grants/coverage.ts";
 import type { TrackedData } from "../dnd5eToolsScrap/src/grants/subjects.ts";
 import { REVIEWED_NO_INITIATIVE_BONUS, REVIEWED_NO_INITIATIVE_BONUS_LIVE_ONLY } from "../dnd5eToolsScrap/src/overrides/initiative-bonuses.ts";
+import { spellCoverageGaps } from "../dnd5eToolsScrap/src/grants/spell-coverage.ts";
+import { readsSpellGrants } from "../dnd5eToolsScrap/src/parser/spell-grant-prose.ts";
+import { REVIEWED_NO_SPELL_GRANTS, REVIEWED_NO_SPELL_GRANTS_LIVE_ONLY } from "../dnd5eToolsScrap/src/overrides/granted-spells.ts";
 
 // Checks against the Integrated Catalog the in-app sync builds, read from the cache that
 // `npm run catalog:live` writes. Without the cache every test here is skipped. The live check runs only
@@ -564,21 +567,56 @@ test("live catalog: every filter a feat's known and innate groups carry uses a k
   assert.deepEqual(unknown, [], "filter keys the reader does not model, which would match nothing");
 });
 
-test("live catalog: the feats whose spell grants use a prepared group, which the reader does not model yet", { skip: SKIP }, () => {
-  // Reported, not modelled: a prepared group grants always-prepared spells, which the spec's grant groups do not cover. Pinned
-  // so that a new feat with one is seen here, and so that modelling it updates this list on purpose.
-  const prepared = live!.collections.feats
-    .filter((feat) => (feat.additionalSpells ?? []).some((grant) => grant.prepared))
-    .map((feat) => feat.name)
-    .sort();
-  assert.deepEqual(prepared, [
-    "Aberrant Dragonmark", "Abjuration Adept", "Boon of Magic School Mastery", "Boon of Revelry", "Boon of Siberys", "Cloying Mists",
-    "Conjuration Adept", "Divination Adept", "Emerald Enclave Fledgling", "Enchantment Adept", "Enclave Magic", "Evocation Adept",
-    "Familiar Friend", "Gathered Whispers", "Illusion Adept", "Magic Connoisseur", "Mark of Detection", "Mark of Finding",
-    "Mark of Handling", "Mark of Healing", "Mark of Hospitality", "Mark of Making", "Mark of Passage", "Mark of Scribing",
-    "Mark of Sentinel", "Mark of Shadow", "Mark of Storm", "Mark of Warding", "Necromancy Adept", "Ritual Caster", "Second Skin",
-    "Shadowmoor Hexer", "Transmutation Adept", "Treacherous Allure", "Vampire Touched", "Warlike Familiar", "Watchers",
-  ]);
+test("live catalog: every feat whose spell grants the reader does not read has a reviewed mark", { skip: SKIP }, () => {
+  // The same gate as the tracked data, over the live catalog. A prepared group, a grant with no casting ability and a ritual
+  // pick are not read by the reader, so each of their feats needs a mark (ADR 0017).
+  const catalog = { classes: [], feats: live!.collections.feats } as unknown as TrackedData;
+  const gaps = spellCoverageGaps(catalog, [...REVIEWED_NO_SPELL_GRANTS, ...REVIEWED_NO_SPELL_GRANTS_LIVE_ONLY]);
+  assert.deepEqual(
+    gaps.map((gap) => `${gapName(gap)}: ${gap.sentences.join(" | ")}`),
+    [],
+    "feats whose spell grants the reader does not read, with no reviewed mark, in the live catalog",
+  );
+});
+
+test("live catalog: every feat the gate counts as covered gives the reader a source", { skip: SKIP }, () => {
+  // The gate counts a feat as covered when its grant is one the reader reads. This checks that on the real catalog: the
+  // reader gives such a feat a card or an owed pick.
+  const covered = live!.collections.feats.filter((feat) => readsSpellGrants(feat.additionalSpells));
+  assert.ok(covered.length > 0, "no feat in the catalog has spell grants the reader reads");
+  const silent = covered.filter((feat) => {
+    const character = makeChar({
+      classes: [{ className: "Fighter", source: "PHB", level: 5 }],
+      asiSelections: [{ level: 4, type: "feat", featName: feat.name, featSource: feat.source }],
+    });
+    return !evaluateCharacter(character, { compendium: live!.compendium }).grantedSpellSources.some((source) => source.title.startsWith(feat.name));
+  });
+  assert.deepEqual(
+    silent.map((feat) => `${feat.name} (${feat.source})`),
+    [],
+    "feats the gate counts as covered that the reader gives no source",
+  );
+});
+
+test("live catalog: Magic Initiate carries its Cleric list, and a Wizard with it (Cleric) has a card with Wisdom as its ability", { skip: SKIP }, () => {
+  const magicInitiate = live!.collections.feats.find((feat) => feat.name === "Magic Initiate" && feat.source === "PHB");
+  assert.ok(magicInitiate, "no Magic Initiate feat in the catalog");
+  const cleric = magicInitiate.additionalSpells?.find((grant) => grant.name === "Cleric Spells");
+  assert.ok(cleric, `Magic Initiate has no Cleric Spells list: ${JSON.stringify(magicInitiate.additionalSpells)}`);
+  assert.equal(cleric.ability, "wis", "the Cleric list casts with Wisdom");
+
+  const wizard = live!.compendium.for().classes().find((cls) => cls.name === "Wizard");
+  assert.ok(wizard, "no Wizard class in the catalog");
+  let character = makeChar({
+    classes: [{ className: wizard.name, source: wizard.source, level: 5 }],
+    asiSelections: [{ level: 4, type: "feat", featName: "Magic Initiate", featSource: "PHB" }],
+  });
+  const list = featSpellRuleChoices(character, live!.compendium).find((choice) => choice.id.includes("Magic Initiate") && choice.id.endsWith("__Spell List"));
+  assert.ok(list, "Magic Initiate offers its spell lists");
+  character = pickRuleChoice(character, list, "Cleric Spells", live!.compendium);
+  const card = evaluateCharacter(character, { compendium: live!.compendium }).grantedSpellSources.find((source) => source.title.startsWith("Magic Initiate"));
+  assert.ok(card, `no Magic Initiate card; sources: ${evaluateCharacter(character, { compendium: live!.compendium }).grantedSpellSources.map((source) => source.title).join(", ")}`);
+  assert.equal(card.ability, "wis");
 });
 
 test("live catalog: Drow, Tiefling and Firbolg carry their spell grants on the race or subrace", { skip: SKIP }, () => {
