@@ -4,12 +4,14 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] The feat scraper copies `additionalSpells` onto the feat model (types shared with the subclass type); the in-app sync builds it too. Spell names are normalised as the subclass ones are. Tracked data is regenerated only through the sanctioned tools.
-- [ ] `REQUIRED_CATALOG_FORMAT` is 9 and the compendium tests expect it.
-- [ ] Engine tests against an invented test catalog (no real prose): a feat with a fixed cantrip gives an at-will entry; a fixed daily spell gives a counter and a long rest resets it; a fixed ability, an ability inherited from the feat's chosen increase, and two feats with different abilities each give their own DC and attack bonus.
-- [ ] Granted spells appear in no class's known or prepared list and do not change the prepared or known limits (test).
-- [ ] The feat-prerequisite check that a character can cast a spell is true for a character whose only spell is granted (test).
-- [ ] The Spells tab renders one card per granted source with its title, ability, DC, attack bonus and spells; the existing race card is untouched.
-- [ ] `npm run check:all` passes; `npm run check:live` asserts Telekinetic carries Mage Hand and Telepathic carries Detect Thoughts in the real catalog.
+**Landed:** fast-forward of `worktree-agent-ac6d1d4888580dd78` (tip fea70b7). `check:all` passes (1285 app, 244 scraper); `check:live` 67/67; layout check green (no new scenario). Feats carry `additionalSpells` (shared type `AdditionalSpells`), reader `grantedSpellSources` exposed as `evaluated.grantedSpellSources`, counters `innate_feat_<feat>_<spell>`, Catalog Format 9. Open items for 02: an `inherit` feat without `featAbility` loses its card silently (needs-review), cards titled by feat only (title by pick), spell names resolve by `pickSpell` which falls back to inactive books.
+
+- [x] The feat scraper copies `additionalSpells` onto the feat model (types shared with the subclass type); the in-app sync builds it too. Spell names are normalised as the subclass ones are. Tracked data is regenerated only through the sanctioned tools.
+- [x] `REQUIRED_CATALOG_FORMAT` is 9 and the compendium tests expect it.
+- [x] Engine tests against an invented test catalog (no real prose): a feat with a fixed cantrip gives an at-will entry; a fixed daily spell gives a counter and a long rest resets it; a fixed ability, an ability inherited from the feat's chosen increase, and two feats with different abilities each give their own DC and attack bonus.
+- [x] Granted spells appear in no class's known or prepared list and do not change the prepared or known limits (test).
+- [x] The feat-prerequisite check that a character can cast a spell is true for a character whose only spell is granted (test).
+- [x] The Spells tab renders one card per granted source with its title, ability, DC, attack bonus and spells; the existing race card is untouched.
+- [x] `npm run check:all` passes; `npm run check:live` asserts Telekinetic carries Mage Hand and Telepathic carries Detect Thoughts in the real catalog.
