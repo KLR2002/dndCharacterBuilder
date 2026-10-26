@@ -5,6 +5,23 @@ import { cleanTags } from "../parser/tag-cleaner.ts";
 import type { BackgroundModel } from "../types/models.ts";
 import type { ProficiencyReport } from "../types/proficiency.ts";
 import { newProficiencyReport, structuredGrants } from "../parser/proficiency-grants.ts";
+import { parseAdditionalSpells } from "../parser/additional-spells.ts";
+import type { AdditionalSpells } from "../types/models.ts";
+
+/** The key a background's spell lists are looked up by: its cleaned name and its source. */
+export function backgroundKey(name: string, source: string): string {
+  return `${name}|${source}`;
+}
+
+/** The expanded spell lists of each background in a raw backgrounds file, keyed by backgroundKey. A background without any is absent. */
+export function additionalSpellsByBackground(rawData: { background?: any[] }): Map<string, AdditionalSpells[]> {
+  const lists = new Map<string, AdditionalSpells[]>();
+  for (const raw of resolveAllCopies(rawData.background || [])) {
+    const spells = parseAdditionalSpells(raw.additionalSpells);
+    if (spells) lists.set(backgroundKey(cleanTags(raw.name, "plain"), raw.source), spells);
+  }
+  return lists;
+}
 
 export async function scrapeBackgrounds(
   client: ToolsClient,
@@ -142,10 +159,13 @@ export async function scrapeBackgrounds(
       });
     }
 
+    const additionalSpells = parseAdditionalSpells(raw.additionalSpells);
+
     backgrounds.push({
       name: cleanTags(raw.name, "plain"),
       source: raw.source,
       ...(proficiencies.grants.length > 0 ? { grants: proficiencies.grants } : {}),
+      ...(additionalSpells ? { additionalSpells } : {}),
       skillProficiencies: skills,
       toolProficiencies: tools,
       languages,

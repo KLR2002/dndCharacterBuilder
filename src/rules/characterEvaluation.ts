@@ -35,6 +35,7 @@ import {
   getMergedResourceCounters,
 } from "./resourceCounters.ts";
 import { grantedSpellSources } from "./grantedSpells.ts";
+import { backgroundExpandedSpellNames } from "./backgroundSpells.ts";
 import type { InnateSpellProfile } from "./innateMagic.ts";
 
 export { catalogListings, type CharacterCatalogs } from "./catalogs.ts";
@@ -150,6 +151,8 @@ export function evaluateCharacter(
   const spellProfiles = getClassSpellProfiles(character, {
     ...ancestry,
     activeBooks: catalogs?.activeBooks,
+    classes,
+    backgroundSpells: backgroundExpandedSpellNames(background),
   });
   const grantedSources = grantedSpellSources(character, catalogs, {
     modifiers: effScores.modifiers,

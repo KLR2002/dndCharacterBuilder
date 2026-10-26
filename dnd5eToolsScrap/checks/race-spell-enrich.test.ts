@@ -34,7 +34,7 @@ const raceSpells = new Map<string, AdditionalSpells[]>([
 ]);
 
 test("a race's and a subrace's spell grants are written onto the tracked records; one without grants gets none", () => {
-  const enriched = enrichGrantFiles(original, noOverrides, undefined, raceSpells);
+  const enriched = enrichGrantFiles(original, noOverrides, undefined, undefined, raceSpells);
   const [kin, plainKin] = JSON.parse(enriched.races!);
   assert.deepEqual(kin.additionalSpells, kinSpells);
   assert.deepEqual(kin.subraces[0].additionalSpells, lineSpells);
@@ -43,25 +43,25 @@ test("a race's and a subrace's spell grants are written onto the tracked records
 });
 
 test("enriching the races twice changes nothing the second time, for spell grants too", () => {
-  const once = enrichGrantFiles(original, noOverrides, undefined, raceSpells);
-  assert.deepEqual(enrichGrantFiles(once, noOverrides, undefined, raceSpells), once);
+  const once = enrichGrantFiles(original, noOverrides, undefined, undefined, raceSpells);
+  assert.deepEqual(enrichGrantFiles(once, noOverrides, undefined, undefined, raceSpells), once);
 });
 
 test("stripping enrichment removes the race spell grants and gives back the original bytes", () => {
-  const enriched = enrichGrantFiles(original, noOverrides, undefined, raceSpells);
+  const enriched = enrichGrantFiles(original, noOverrides, undefined, undefined, raceSpells);
   assert.notEqual(enriched.races, original.races, "the enrichment must add the grants for this to mean anything");
   assert.deepEqual(stripGrantFiles(enriched), original);
 });
 
 test("a race whose grants are no longer in the raw file loses them on the next enrichment", () => {
-  const withGrants = enrichGrantFiles(original, noOverrides, undefined, raceSpells);
-  const without = enrichGrantFiles(withGrants, noOverrides, undefined, new Map());
+  const withGrants = enrichGrantFiles(original, noOverrides, undefined, undefined, raceSpells);
+  const without = enrichGrantFiles(withGrants, noOverrides, undefined, undefined, new Map());
   const [kin] = JSON.parse(without.races!);
   assert.equal("additionalSpells" in kin, false);
   assert.equal("additionalSpells" in kin.subraces[0], false);
 });
 
 test("without a raw races input, the enrichment leaves the race spell grants already on the tracked races alone", () => {
-  const withGrants = enrichGrantFiles(original, noOverrides, undefined, raceSpells);
+  const withGrants = enrichGrantFiles(original, noOverrides, undefined, undefined, raceSpells);
   assert.equal(enrichGrantFiles(withGrants, noOverrides).races, withGrants.races);
 });

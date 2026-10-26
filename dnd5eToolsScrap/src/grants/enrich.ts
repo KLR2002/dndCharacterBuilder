@@ -8,6 +8,7 @@ import {
 import { resolveInitiativeBonuses, type InitiativeBonusOverride } from "../parser/initiative-bonuses.ts";
 import { featKey } from "../scrapers/feats.ts";
 import { raceKey, subraceKey } from "../scrapers/races.ts";
+import { backgroundKey } from "../scrapers/backgrounds.ts";
 import type { AdditionalSpells } from "../types/models.ts";
 import {
   allRefs,
@@ -16,6 +17,7 @@ import {
   featRefs,
   traitRefs,
   type GrantRef,
+  type TrackedBackground,
   type TrackedClass,
   type TrackedData,
   type TrackedFeat,
@@ -37,6 +39,7 @@ export interface TrackedFiles {
   classes: string;
   feats: string;
   races?: string;
+  backgrounds?: string;
 }
 
 /**
@@ -51,6 +54,7 @@ export function enrichTrackedData(
   data: TrackedData,
   overrides: GrantOverrides,
   featSpells?: Map<string, AdditionalSpells[]>,
+  backgroundSpells?: Map<string, AdditionalSpells[]>,
   raceSpells?: Map<string, AdditionalSpells[]>,
 ): void {
   const classes = classFeatureRefs(data.classes);
@@ -68,6 +72,7 @@ export function enrichTrackedData(
   applyInitiativeBonuses(initiativeRefs, initiativeBonuses);
   applyStartingToolGrants(data.classes);
   if (featSpells) applyFeatSpells(data.feats, featSpells);
+  if (backgroundSpells && data.backgrounds) applyBackgroundSpells(data.backgrounds, backgroundSpells);
   if (raceSpells && data.races) applyRaceSpells(data.races, raceSpells);
 }
 
@@ -91,6 +96,15 @@ function applyRaceSpells(races: TrackedRace[], raceSpells: Map<string, Additiona
       if (subSpells) sub.additionalSpells = subSpells;
       else delete sub.additionalSpells;
     }
+  }
+}
+
+/** Writes each background's expanded spell lists from the raw backgrounds file, or removes a stale one. */
+function applyBackgroundSpells(backgrounds: TrackedBackground[], spellsByBackground: Map<string, AdditionalSpells[]>): void {
+  for (const background of backgrounds) {
+    const spells = spellsByBackground.get(backgroundKey(background.name, background.source));
+    if (spells) background.additionalSpells = spells;
+    else delete background.additionalSpells;
   }
 }
 
@@ -138,10 +152,11 @@ export function enrichGrantFiles(
   files: TrackedFiles,
   overrides: GrantOverrides,
   featSpells?: Map<string, AdditionalSpells[]>,
+  backgroundSpells?: Map<string, AdditionalSpells[]>,
   raceSpells?: Map<string, AdditionalSpells[]>,
 ): TrackedFiles {
   const data = readTracked(files);
-  enrichTrackedData(data, overrides, featSpells, raceSpells);
+  enrichTrackedData(data, overrides, featSpells, backgroundSpells, raceSpells);
   return writeTracked(data);
 }
 
@@ -161,6 +176,7 @@ export function stripGrantFiles(files: TrackedFiles): TrackedFiles {
     delete race.additionalSpells;
     for (const sub of race.subraces) delete sub.additionalSpells;
   }
+  for (const background of data.backgrounds ?? []) delete background.additionalSpells;
   for (const ref of traitRefs(data.races ?? [])) delete ref.holder.initiativeBonus;
   return writeTracked(data);
 }
@@ -184,6 +200,9 @@ function readTracked(files: TrackedFiles): TrackedData {
     classes: parseCanonical(files.classes, "classes.json") as TrackedClass[],
     feats: parseCanonical(files.feats, "feats.json") as TrackedFeat[],
     ...(files.races !== undefined ? { races: parseCanonical(files.races, "races.json") as TrackedRace[] } : {}),
+    ...(files.backgrounds !== undefined
+      ? { backgrounds: parseCanonical(files.backgrounds, "backgrounds.json") as TrackedBackground[] }
+      : {}),
   };
 }
 
@@ -192,6 +211,7 @@ function writeTracked(data: TrackedData): TrackedFiles {
     classes: canonical(data.classes),
     feats: canonical(data.feats),
     ...(data.races !== undefined ? { races: canonical(data.races) } : {}),
+    ...(data.backgrounds !== undefined ? { backgrounds: canonical(data.backgrounds) } : {}),
   };
 }
 

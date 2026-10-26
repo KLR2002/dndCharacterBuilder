@@ -13,6 +13,7 @@ import { reconcile } from "../src/rules/characterReconciler.ts";
 import type { AvailableRuleChoice } from "../src/rules/choices/types.ts";
 import { makeChar } from "./testUtils.ts";
 import { evaluateCharacter } from "../src/rules/characterEvaluation.ts";
+import { isSpellAvailableForClass, profileSpellContext } from "../src/rules/spellcasting.ts";
 import { initiativeCoverageGaps } from "../dnd5eToolsScrap/src/grants/initiative-coverage.ts";
 import { gapName } from "../dnd5eToolsScrap/src/grants/coverage.ts";
 import type { TrackedData } from "../dnd5eToolsScrap/src/grants/subjects.ts";
@@ -486,4 +487,43 @@ test("live catalog: a Water Genasi of level 3 keeps the counter id the old race 
   const spell = water?.spells.find((entry) => entry.name === "Create or Destroy Water");
   assert.ok(spell, `no Create or Destroy Water on the Water card: ${JSON.stringify(water?.spells.map((entry) => entry.name))}`);
   assert.equal(spell.resourceCounterId, "innate_spell_create_water");
+});
+
+// Background expanded spell lists (ADR 0017): a background's lists join the list of each spellcasting class the character has.
+
+test("live catalog: a Strixhaven college background and a Ravnica guild background carry expanded spell lists", { skip: SKIP }, () => {
+  const backgrounds = [
+    live!.collections.backgrounds.find((background) => background.name === "Lorehold Student" && background.source === "SCC"),
+    live!.collections.backgrounds.find((background) => background.name === "Izzet Engineer" && background.source === "GGR"),
+  ];
+  for (const background of backgrounds) {
+    assert.ok(background, "a Strixhaven college or Ravnica guild background is missing from the catalog");
+    const lists = (background.additionalSpells ?? []).flatMap((grant) => Object.values(grant.expanded ?? {}));
+    assert.ok(
+      lists.some((list) => Array.isArray(list) && list.length > 0),
+      `${background.name} carries no expanded spells: ${JSON.stringify(background.additionalSpells)}`,
+    );
+  }
+});
+
+test("live catalog: a Wizard with the Lorehold Student background can learn Spirit Guardians, and a Fighter with it has no spell list", { skip: SKIP }, () => {
+  const spiritGuardians = live!.compendium.for().spells().find((spell) => spell.name === "Spirit Guardians");
+  assert.ok(spiritGuardians, "no Spirit Guardians spell in the catalog");
+  const holding = (className: string) => {
+    const cls = live!.compendium.for().classes().find((candidate) => candidate.name === className);
+    assert.ok(cls, `no ${className} class in the catalog`);
+    return makeChar({
+      classes: [{ className: cls.name, source: cls.source, level: 5 }],
+      background: { name: "Lorehold Student", source: "SCC" },
+    });
+  };
+
+  const wizard = evaluateCharacter(holding("Wizard"), { compendium: live!.compendium }).spellProfiles.find(
+    (profile) => profile.className === "Wizard",
+  );
+  assert.ok(wizard, "a Wizard of level 5 has a spell profile");
+  assert.equal(isSpellAvailableForClass(spiritGuardians, "Wizard", undefined, profileSpellContext(wizard)), true);
+
+  const fighter = evaluateCharacter(holding("Fighter"), { compendium: live!.compendium });
+  assert.deepEqual(fighter.spellProfiles, [], "a Fighter with no casting class gets no spell profile");
 });

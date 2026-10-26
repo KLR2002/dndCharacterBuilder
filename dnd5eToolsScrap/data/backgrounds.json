@@ -2745,6 +2745,36 @@
           "An Azorius soldier or lawmage is a force for order, charged with fighting crime on the streets—and in the halls of power. You might spend your time foiling thefts, putting a stop to Orzhov extortion, rooting out Dimir spies, or hunting down Golgari assassins. Perhaps you take your orders from a precognitive mage (or you are one yourself) who receives unpredictable and cryptic visions of future crimes that you and your allies must try to prevent."
         ]
       }
+    ],
+    "additionalSpells": [
+      {
+        "expanded": {
+          "s0": [
+            "friends",
+            "message"
+          ],
+          "s1": [
+            "command",
+            "ensnaring strike"
+          ],
+          "s2": [
+            "arcane lock",
+            "calm emotions",
+            "hold person"
+          ],
+          "s3": [
+            "clairvoyance",
+            "counterspell"
+          ],
+          "s4": [
+            "compulsion",
+            "divination"
+          ],
+          "s5": [
+            "dominate person"
+          ]
+        }
+      }
     ]
   },
   {
@@ -8746,6 +8776,35 @@
           }
         ]
       }
+    ],
+    "additionalSpells": [
+      {
+        "expanded": {
+          "s0": [
+            "fire bolt",
+            "sacred flame"
+          ],
+          "s1": [
+            "guiding bolt",
+            "heroism"
+          ],
+          "s2": [
+            "aid",
+            "scorching ray"
+          ],
+          "s3": [
+            "beacon of hope",
+            "blinding smite"
+          ],
+          "s4": [
+            "death ward",
+            "wall of fire"
+          ],
+          "s5": [
+            "flame strike"
+          ]
+        }
+      }
     ]
   },
   {
@@ -11432,6 +11491,36 @@
           "As a Dimir adventurer, you are a member of the guild's network of spies, thieves, assassins, and mind mages that lurks behind the facade of the public guild. On the surface, House Dimir presents the appearance of a network of couriers, investigators, media reporters, and archivists, dealing in information and spreading news. But you and your peers trade in secrets. You use secret symbols, runes, and signals to surreptitiously communicate with other Dimir agents, often in plain sight.",
           "Like any good spy, you have multiple identities: your true face as an agent of House Dimir; a guildless identity; and a role as a member of another guild. Within that secondary guild, you might already be on a mission for House Dimir, assigned to spy on the guild, collect information about a person, or recruit another spy from the ranks of the guild. Or that guild could be a launching point for your real mission. Perhaps, for example, you were ordered to infiltrate the Azorius in hopes of gaining access to a notorious inmate in an Azorius prison."
         ]
+      }
+    ],
+    "additionalSpells": [
+      {
+        "expanded": {
+          "s0": [
+            "encode thoughts",
+            "mage hand"
+          ],
+          "s1": [
+            "disguise self",
+            "sleep"
+          ],
+          "s2": [
+            "detect thoughts",
+            "pass without trace"
+          ],
+          "s3": [
+            "gaseous form",
+            "meld into stone",
+            "nondetection"
+          ],
+          "s4": [
+            "arcane eye",
+            "freedom of movement"
+          ],
+          "s5": [
+            "modify memory"
+          ]
+        }
       }
     ]
   },
@@ -15884,6 +15973,37 @@
           "The shamans of the Golgari use their magic to accelerate the cycle of decay and regrowth. You might be sent to spread spores throughout an area that the Golgari want to claim as their territory or to convince the inhabitants of such a territory to abandon it. You might also contend with the ever-present threat of hostile monsters encroaching into Golgari-controlled regions."
         ]
       }
+    ],
+    "additionalSpells": [
+      {
+        "expanded": {
+          "s0": [
+            "dancing lights",
+            "spare the dying"
+          ],
+          "s1": [
+            "entangle",
+            "ray of sickness"
+          ],
+          "s2": [
+            "protection from poison",
+            "ray of enfeeblement",
+            "spider climb"
+          ],
+          "s3": [
+            "animate dead",
+            "plant growth"
+          ],
+          "s4": [
+            "giant insect",
+            "grasping vine"
+          ],
+          "s5": [
+            "cloudkill",
+            "insect plague"
+          ]
+        }
+      }
     ]
   },
   {
@@ -16825,6 +16945,36 @@
           "You will frequently be summoned to participate in a raid your clan is launching against the city or against a group of its defenders. Your clan leader might also send you on a special mission, though it would almost certainly still qualify as a raid. You might join a small group of Gruul warriors on a dangerous charge deep into the settled streets to plunder a certain location, retrieve an item stolen from your clan, or assault a Boros garrison.",
           "Sometimes your objective might be more esoteric. With prophecies of the return of Ilharg the Raze-Boar spreading like wildfire among the Gruul druids, you might be asked to carry out some task that the druids believe will speed his coming. Such a task might involve collecting a sacred relic held in an Orzhov vault or collecting sacrifices for a grand ceremony in the Raze-Boar's honor."
         ]
+      }
+    ],
+    "additionalSpells": [
+      {
+        "expanded": {
+          "s0": [
+            "fire bolt",
+            "produce flame"
+          ],
+          "s1": [
+            "compelled duel",
+            "speak with animals",
+            "thunderwave"
+          ],
+          "s2": [
+            "beast sense",
+            "shatter"
+          ],
+          "s3": [
+            "conjure animals",
+            "conjure barrage"
+          ],
+          "s4": [
+            "dominate beast",
+            "stoneskin"
+          ],
+          "s5": [
+            "destructive wave"
+          ]
+        }
       }
     ]
   },
@@ -20802,6 +20952,39 @@
           "Whatever your role in the Izzet League, you are expected to contribute to its research in some way. That contribution might involve participating in tests, whether as an assistant, a researcher, or a subject. You might be one of the soldiers who protects a laboratory, or a laborer responsible for lifting heavy pieces of equipment into place. Everyone's contribution matters, even if the Izzet know that some matter more than others."
         ]
       }
+    ],
+    "additionalSpells": [
+      {
+        "expanded": {
+          "s0": [
+            "produce flame",
+            "shocking grasp"
+          ],
+          "s1": [
+            "chaos bolt",
+            "create or destroy water",
+            "unseen servant"
+          ],
+          "s2": [
+            "heat metal",
+            "rope trick"
+          ],
+          "s3": [
+            "call lightning",
+            "elemental weapon",
+            "glyph of warding"
+          ],
+          "s4": [
+            "conjure minor elementals",
+            "divination",
+            "otiluke's resilient sphere"
+          ],
+          "s5": [
+            "animate objects",
+            "conjure elemental"
+          ]
+        }
+      }
     ]
   },
   {
@@ -21268,6 +21451,32 @@
             ]
           }
         ]
+      }
+    ],
+    "additionalSpells": [
+      {
+        "expanded": {
+          "s1": [
+            "comprehend languages",
+            "identify"
+          ],
+          "s2": [
+            "borrowed knowledge",
+            "locate object"
+          ],
+          "s3": [
+            "speak with dead",
+            "spirit guardians"
+          ],
+          "s4": [
+            "arcane eye",
+            "stone shape"
+          ],
+          "s5": [
+            "flame strike",
+            "legend lore"
+          ]
+        }
       }
     ]
   },
@@ -23633,6 +23842,38 @@
           "For most of your career, you can expect to engage in some aspect of the day-to-day criminal operations of the guild. That can mean throwing your weight around to enforce the will of the guild or using religious authority to extort offerings from the people. But it can also mean doing various errands for your superiors, from bearing messages to carrying out assassinations."
         ]
       }
+    ],
+    "additionalSpells": [
+      {
+        "expanded": {
+          "s0": [
+            "friends",
+            "guidance"
+          ],
+          "s1": [
+            "command",
+            "illusory script"
+          ],
+          "s2": [
+            "enthrall",
+            "ray of enfeeblement",
+            "zone of truth"
+          ],
+          "s3": [
+            "bestow curse",
+            "speak with dead",
+            "spirit guardians"
+          ],
+          "s4": [
+            "blight",
+            "death ward",
+            "leomund's secret chest"
+          ],
+          "s5": [
+            "geas"
+          ]
+        }
+      }
     ]
   },
   {
@@ -25068,6 +25309,32 @@
           }
         ]
       }
+    ],
+    "additionalSpells": [
+      {
+        "expanded": {
+          "s1": [
+            "chromatic orb",
+            "thunderwave"
+          ],
+          "s2": [
+            "flaming sphere",
+            "kinetic jaunt"
+          ],
+          "s3": [
+            "haste",
+            "water walk"
+          ],
+          "s4": [
+            "freedom of movement",
+            "wall of fire"
+          ],
+          "s5": [
+            "cone of cold",
+            "conjure elemental"
+          ]
+        }
+      }
     ]
   },
   {
@@ -25288,6 +25555,32 @@
             ]
           }
         ]
+      }
+    ],
+    "additionalSpells": [
+      {
+        "expanded": {
+          "s1": [
+            "entangle",
+            "guiding bolt"
+          ],
+          "s2": [
+            "enlarge/reduce",
+            "vortex warp"
+          ],
+          "s3": [
+            "aura of vitality",
+            "haste"
+          ],
+          "s4": [
+            "control water",
+            "freedom of movement"
+          ],
+          "s5": [
+            "circle of power",
+            "passwall"
+          ]
+        }
       }
     ]
   },
@@ -25910,6 +26203,37 @@
           "The Cult of Rakdos encourages independent action on the part of its members. Its goal is fomenting chaos, and it firmly believes in putting its own house in disorder before carrying that mission into the larger city. So your role is to execute your vision of grand satire and disruptive performance art, as you aspire to outdo your guild mates and attract the attention of Rakdos himself.",
           "You work as part of a troupe, with your artistic talents used in service to a ringmaster's vision. But your performance is your own, and no one expects you to follow a script. In fact, if you go through a performance without doing something you haven't done before, you're clearly not trying hard enough."
         ]
+      }
+    ],
+    "additionalSpells": [
+      {
+        "expanded": {
+          "s0": [
+            "fire bolt",
+            "vicious mockery"
+          ],
+          "s1": [
+            "burning hands",
+            "dissonant whispers",
+            "hellish rebuke"
+          ],
+          "s2": [
+            "crown of madness",
+            "enthrall",
+            "flaming sphere"
+          ],
+          "s3": [
+            "fear",
+            "haste"
+          ],
+          "s4": [
+            "confusion",
+            "wall of fire"
+          ],
+          "s5": [
+            "dominate person"
+          ]
+        }
       }
     ]
   },
@@ -28746,6 +29070,38 @@
           "That said, you must never lose sight of the fact that you are part of a larger community. That includes the whole guild, of course, but your ties to community start with your vernadi (enclave) and its voda (dryad leader). The dryads want to know what you're doing and what purpose it serves, and they act to curtail your actions—or even expel you from the guild—if they determine that you aren't serving Selesnya's best interests."
         ]
       }
+    ],
+    "additionalSpells": [
+      {
+        "expanded": {
+          "s0": [
+            "druidcraft",
+            "friends"
+          ],
+          "s1": [
+            "animal friendship",
+            "charm person"
+          ],
+          "s2": [
+            "aid",
+            "animal messenger",
+            "calm emotions",
+            "warding bond"
+          ],
+          "s3": [
+            "plant growth",
+            "speak with plants"
+          ],
+          "s4": [
+            "aura of life",
+            "conjure minor elementals"
+          ],
+          "s5": [
+            "awaken",
+            "commune with nature"
+          ]
+        }
+      }
     ]
   },
   {
@@ -29338,6 +29694,32 @@
           }
         ]
       }
+    ],
+    "additionalSpells": [
+      {
+        "expanded": {
+          "s1": [
+            "dissonant whispers",
+            "silvery barbs"
+          ],
+          "s2": [
+            "calm emotions",
+            "darkness"
+          ],
+          "s3": [
+            "beacon of hope",
+            "daylight"
+          ],
+          "s4": [
+            "compulsion",
+            "confusion"
+          ],
+          "s5": [
+            "dominate person",
+            "rary's telepathic bond"
+          ]
+        }
+      }
     ]
   },
   {
@@ -29918,6 +30300,38 @@
           "As a Simic adventurer, your mission likely aligns with the Adaptationist philosophy; the disagreements and tensions among the guilds will soon erupt into open conflict, and your guild needs your help to ensure that the Simic survive. That help might come in the form of defending against Golgari incursions into Simic zonots or shielding Simic research from Azorius intrusion. It could also involve more subtle, diplomatic work to maintain balance among the guilds, or subterfuge aimed at undermining another guild's grab for power.",
           "Self-improvement is also an important part of your mission. Anything you can do to make yourself more capable—whether learning a new spell or adopting a new hybridizing mutation—gives the Simic a stronger weapon in its arsenal. The combine must change to survive, and that means individual members of the guild must grow and adapt as well."
         ]
+      }
+    ],
+    "additionalSpells": [
+      {
+        "expanded": {
+          "s0": [
+            "acid splash",
+            "druidcraft"
+          ],
+          "s1": [
+            "detect poison and disease",
+            "expeditious retreat",
+            "jump"
+          ],
+          "s2": [
+            "alter self",
+            "enhance ability",
+            "enlarge/reduce"
+          ],
+          "s3": [
+            "gaseous form",
+            "water breathing",
+            "wind wall"
+          ],
+          "s4": [
+            "freedom of movement",
+            "polymorph"
+          ],
+          "s5": [
+            "creation"
+          ]
+        }
       }
     ]
   },
@@ -36053,6 +36467,32 @@
             ]
           }
         ]
+      }
+    ],
+    "additionalSpells": [
+      {
+        "expanded": {
+          "s1": [
+            "cure wounds",
+            "inflict wounds"
+          ],
+          "s2": [
+            "lesser restoration",
+            "wither and bloom"
+          ],
+          "s3": [
+            "revivify",
+            "vampiric touch"
+          ],
+          "s4": [
+            "blight",
+            "death ward"
+          ],
+          "s5": [
+            "antilife shell",
+            "greater restoration"
+          ]
+        }
       }
     ]
   }

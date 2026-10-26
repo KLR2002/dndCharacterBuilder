@@ -217,6 +217,8 @@ export interface BackgroundData {
   };
   description: string;
   rawEntries?: any[];
+  /** The expanded spell lists the background adds to a spellcasting class's list (ADR 0017). Absent when none. */
+  additionalSpells?: AdditionalSpells[];
 }
 
 export interface ItemData {

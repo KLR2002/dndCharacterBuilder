@@ -82,8 +82,18 @@ export interface TrackedData {
   feats: TrackedFeat[];
   /** The tracked races. Absent when the caller enriches only classes and feats. */
   races?: TrackedRace[];
+  /** The tracked backgrounds. Absent when the caller enriches only classes and feats. */
+  backgrounds?: TrackedBackground[];
   /** The Options and Features records. Absent unless the caller reads the live catalog. */
   optionsAndFeatures?: TrackedOptionRecord[];
+}
+
+/** One tracked background. Only its expanded spell lists are written by the enrichment tooling (ADR 0017). */
+export interface TrackedBackground {
+  name: string;
+  source: string;
+  /** The expanded spell lists the background adds to a class's list, from the raw backgrounds file. Absent when none. */
+  additionalSpells?: AdditionalSpells[];
 }
 
 /**
