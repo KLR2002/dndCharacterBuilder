@@ -23,8 +23,9 @@ import type {
  * Format 8 adds Initiative Bonuses on class and subclass features, feats and ancestry traits, which a catalog saved at
  * format 7 does not carry.
  * Format 9 adds the spell grants of feats (ADR 0017), which a catalog saved at format 8 does not carry.
+ * Format 10 adds the expanded spell lists of backgrounds (ADR 0017), which a catalog saved at format 9 does not carry.
  */
-export const REQUIRED_CATALOG_FORMAT = 9;
+export const REQUIRED_CATALOG_FORMAT = 10;
 
 /** True for an Integrated Catalog saved below the required format (or with none). The SRD Baseline is never stale. */
 export function isCatalogStale(collections: Pick<CompendiumCollections, "hasIntegratedCatalog" | "catalogFormat">): boolean {
