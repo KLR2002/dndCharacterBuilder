@@ -262,6 +262,8 @@ export interface SpellModel {
   savingThrows: string[];
   description: string;
   higherLevels: string | null;
+  /** The kinds of attack roll the spell needs, as the source names them: "M" melee, "R" ranged, "O" other. Absent when none. */
+  spellAttack?: string[];
   rawEntries?: any[];
 }
 
