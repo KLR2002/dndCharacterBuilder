@@ -1,14 +1,22 @@
 import type { AbilityKey, Character, AsiSelection } from "../types/character.ts";
-import type { AdditionalSpells, FeatData } from "../types/dnd5e.ts";
+import type { AdditionalSpells, FeatData, SpellData } from "../types/dnd5e.ts";
 import type { InnateSpellEntry, InnateSpellProfile } from "./innateMagic.ts";
 import { catalogListings, type CharacterCatalogs } from "./catalogs.ts";
 import { resolveCharacterAncestry } from "./characterAncestry.ts";
 import { effectiveScores } from "./abilities.ts";
 import { proficiencyBonus, totalLevel } from "./proficiencies.ts";
 import { resolveSpellName } from "./subclassSpells.ts";
+import {
+  chosenSpellsOf,
+  fixedGrantAbility,
+  heldFeatsOf,
+  offeredSpellLists,
+  pickSlotsOf,
+  pickedSpellListOf,
+  spellListLabel,
+  usesOf,
+} from "./choices/featSpells.ts";
 import { currentCompendium, type Compendium } from "../services/compendium.ts";
-
-const ABILITY_KEYS: readonly AbilityKey[] = ["str", "dex", "con", "int", "wis", "cha"];
 
 /**
  * Counter ids the old race table saved under, for the spells whose id does not follow the slug of their name. Keeping them
@@ -24,13 +32,24 @@ export interface GrantedSpellScores {
   proficiencyBonus: number;
 }
 
-/** One thing that grants spells: a feat the character holds, or the character's race or subrace. */
+/** What one reading of the character's grants needs, shared by every source it builds. */
+interface GrantContext {
+  character: Character;
+  compendium: Compendium;
+  activeBooks: string[] | undefined;
+  level: number;
+  proficiencyBonus: number;
+  modifiers: Record<AbilityKey, number>;
+}
+
+/**
+ * Whose grant a source is: the character's race or subrace, or a feat it holds. `name` is the race, subrace or feat's name.
+ * A feat holder carries its record, so its picks can be read.
+ */
 interface GrantHolder {
-  title: string;
   origin: "race" | "feat";
-  grants: AdditionalSpells[];
-  /** The ability score improvement that gave a feat, which an `inherit` ability reads. */
-  selection?: AsiSelection;
+  name: string;
+  feat?: FeatData;
 }
 
 /** A spell a grant names: the character level its key gives (a feat's `_` gives 1) and its uses per Long Rest (none: at will). */
@@ -41,117 +60,163 @@ interface NamedSpell {
 }
 
 /**
- * The Innate Magic sources the character's race, subrace and feats grant (ADR 0017). Each holder gives one source per spell
- * grant that resolves now: its spells, at will or with a once-per-Long-Rest counter, and its own casting ability. Spells are
- * never written into a class's known or prepared lists. Spells gated by a character level are listed from that level. Grants
- * whose ability or spells are a pick are left out until the pick is made.
+ * The Innate Magic sources the character's race, subrace and feats grant (ADR 0017). Each grant gives one source: its spells,
+ * at will or with a once-per-Long-Rest counter, and its own casting ability. A feat that offers named spell lists gives the
+ * source of the list the player picked. Spells are never written into a class's known or prepared lists. A race's or
+ * subrace's spells are listed from the character level that unlocks them. A part that is not yet resolved (an ability not
+ * recorded, a list or a spell not picked) keeps its source and raises a needs-review notice instead.
  */
 export function grantedSpellSources(
   character: Character,
   catalogs?: CharacterCatalogs,
   scores?: GrantedSpellScores
 ): InnateSpellProfile[] {
-  const compendium = catalogs?.compendium ?? currentCompendium();
   const level = totalLevel(character);
-  const pb = scores?.proficiencyBonus ?? proficiencyBonus(level);
-  const modifiers = scores?.modifiers ?? effectiveScores(character).modifiers;
+  const ctx: GrantContext = {
+    character,
+    compendium: catalogs?.compendium ?? currentCompendium(),
+    activeBooks: catalogs?.activeBooks,
+    level,
+    proficiencyBonus: scores?.proficiencyBonus ?? proficiencyBonus(level),
+    modifiers: scores?.modifiers ?? effectiveScores(character).modifiers,
+  };
   const sources: InnateSpellProfile[] = [];
 
-  for (const holder of grantHolders(character, catalogs)) {
+  const race = raceGrants(character, catalogs);
+  if (race) {
+    const holder: GrantHolder = { origin: "race", name: race.title };
     const seen = new Set<string>();
-    for (const grant of holder.grants) {
-      const ability = fixedAbility(grant, holder.selection);
-      if (!ability) continue;
-      const spells = grantedSpells({ holder, grant, seen, level, activeBooks: catalogs?.activeBooks, compendium });
-      if (spells.length === 0) continue;
-      const mod = modifiers[ability] ?? 0;
-      sources.push({
-        title: holder.title,
-        origin: holder.origin,
-        ability,
-        spellSaveDc: 8 + pb + mod,
-        spellAttackBonus: pb + mod,
-        spells,
-      });
+    for (const grant of race.grants) {
+      const source = grantSource(ctx, holder, grant, undefined, seen, race.title);
+      if (source) sources.push(source);
+    }
+  }
+
+  for (const { feat, selection } of heldFeatsOf(character, catalogListings(catalogs).feats())) {
+    if (!feat.additionalSpells) continue;
+    const holder: GrantHolder = { origin: "feat", name: feat.name, feat };
+    // Spells named by this feat are listed once, across all its grants.
+    const seen = new Set<string>();
+    if (offeredSpellLists(feat).length > 0) {
+      const picked = pickedSpellListOf(character, feat);
+      if (picked) {
+        const source = grantSource(ctx, holder, picked, selection, seen, `${feat.name} (${spellListLabel(picked.name ?? "")})`);
+        if (source) sources.push(source);
+      } else {
+        sources.push({ title: feat.name, origin: "feat", spells: [], notices: ["Needs review: choose a spell list"] });
+      }
+    }
+    for (const grant of feat.additionalSpells) {
+      if (typeof grant.name === "string") continue;
+      const source = grantSource(ctx, holder, grant, selection, seen, feat.name);
+      if (source) sources.push(source);
     }
   }
   return sources;
 }
 
 /**
- * What grants spells to the character: its race or subrace, then each feat it holds. A subrace whose own grants exist
- * replaces the race's, as its trait takes the place of the race's Innate Magic; a subrace without grants leaves them.
+ * The grants of the character's race or subrace. A subrace whose own grants exist replaces the race's, as its trait takes
+ * the place of the race's Innate Magic; a subrace without grants leaves them.
  */
-function grantHolders(character: Character, catalogs?: CharacterCatalogs): GrantHolder[] {
-  const holders: GrantHolder[] = [];
+function raceGrants(character: Character, catalogs?: CharacterCatalogs): { title: string; grants: AdditionalSpells[] } | undefined {
   const ancestry = resolveCharacterAncestry(character, catalogListings(catalogs).races());
   const subrace = ancestry.subrace;
   const race = ancestry.race;
-  if (subrace?.additionalSpells?.length && subrace.name) {
-    holders.push({ title: subrace.name, origin: "race", grants: subrace.additionalSpells });
-  } else if (race?.additionalSpells?.length && race.name) {
-    holders.push({ title: race.name, origin: "race", grants: race.additionalSpells });
-  }
-  for (const { feat, selection } of heldFeats(character, catalogListings(catalogs).feats())) {
-    if (feat.additionalSpells) holders.push({ title: feat.name, origin: "feat", grants: feat.additionalSpells, selection });
-  }
-  return holders;
+  if (subrace?.additionalSpells?.length && subrace.name) return { title: subrace.name, grants: subrace.additionalSpells };
+  if (race?.additionalSpells?.length && race.name) return { title: race.name, grants: race.additionalSpells };
+  return undefined;
 }
 
-/** Each feat the character holds once, with the selection that gave it (the ability increase it carries, if any). */
-function heldFeats(character: Character, feats: FeatData[]): { feat: FeatData; selection: AsiSelection }[] {
-  const held: { feat: FeatData; selection: AsiSelection }[] = [];
-  for (const selection of [...(character.asiSelections ?? []), ...(character.originFeats ?? [])]) {
-    if (selection.type !== "feat") continue;
-    const feat = feats.find((f) => f.name === selection.featName && (!selection.featSource || f.source === selection.featSource));
-    if (feat && !held.some((entry) => entry.feat === feat)) held.push({ feat, selection });
+/** One source for one grant, or nothing when the grant gives no spell and nothing is awaiting a pick. */
+function grantSource(
+  ctx: GrantContext,
+  holder: GrantHolder,
+  grant: AdditionalSpells,
+  selection: AsiSelection | undefined,
+  seen: Set<string>,
+  title: string
+): InnateSpellProfile | undefined {
+  const ability = fixedAbility(grant, selection);
+  // A pick of ability is not offered yet, so that grant gives no source.
+  if (ability === undefined && grant.ability !== "inherit") return undefined;
+
+  const entryName = typeof grant.name === "string" ? grant.name : undefined;
+  const spells = grantedSpells({ holder, grant, seen, ctx });
+  const notices: string[] = [];
+  if (ability === undefined) notices.push("Needs review: the ability increase is not recorded");
+  // Picks are made by feats only; a race's picks come later (ticket 07).
+  const slots = holder.feat ? pickSlotsOf(grant) : [];
+  for (const slot of slots) {
+    const chosen = chosenSpellsOf(ctx.character, holder.feat!, grant, slot, ctx.compendium, ctx.activeBooks);
+    for (const data of chosen) {
+      if (seen.has(data.name.toLowerCase())) continue;
+      spells.push(innateEntry(data, holder, entryName, slot.uses, 1));
+      seen.add(data.name.toLowerCase());
+    }
+    const owed = slot.count - chosen.length;
+    if (owed > 0) notices.push(`Needs review: pick ${owed} more ${owed === 1 ? "spell" : "spells"}`);
   }
-  return held;
+  if (spells.length === 0 && notices.length === 0) return undefined;
+
+  const notesField = notices.length > 0 ? { notices } : {};
+  if (ability === undefined) return { title, origin: holder.origin, spells, ...notesField };
+  const mod = ctx.modifiers[ability] ?? 0;
+  return {
+    title,
+    origin: holder.origin,
+    ability,
+    spellSaveDc: 8 + ctx.proficiencyBonus + mod,
+    spellAttackBonus: ctx.proficiencyBonus + mod,
+    spells,
+    ...notesField,
+  };
 }
 
 /** The casting ability a grant fixes: a named key, or the ability the feat's increase raised. A pick yields none yet. */
-function fixedAbility(grant: AdditionalSpells, selection?: AsiSelection): AbilityKey | undefined {
-  const ability = grant.ability;
-  if (ability === "inherit") return selection?.featAbility;
-  if (typeof ability === "string" && (ABILITY_KEYS as readonly string[]).includes(ability)) return ability as AbilityKey;
-  return undefined;
+function fixedAbility(grant: AdditionalSpells, selection: AsiSelection | undefined): AbilityKey | undefined {
+  if (grant.ability === "inherit") return selection?.featAbility;
+  return fixedGrantAbility(grant);
 }
 
 /**
  * The spells one grant gives that resolve now and whose level the character has reached. Known spells and the innate
- * at-will list are at will. Daily and per-rest spells carry a counter that a Long Rest restores. Ritual-only spells and picks
- * are left out. A spell already listed for this holder is not listed twice.
+ * at-will list are at will. Daily and per-rest spells carry a counter that a Long Rest restores. Ritual-only spells and
+ * picks are left out. A spell already listed for this holder is not listed twice.
  */
-function grantedSpells(input: {
-  holder: GrantHolder;
-  grant: AdditionalSpells;
-  seen: Set<string>;
-  level: number;
-  activeBooks: string[] | undefined;
-  compendium: Compendium;
-}): InnateSpellEntry[] {
-  const { holder, grant, seen, level, activeBooks, compendium } = input;
+function grantedSpells(input: { holder: GrantHolder; grant: AdditionalSpells; seen: Set<string>; ctx: GrantContext }): InnateSpellEntry[] {
+  const { holder, grant, seen, ctx } = input;
+  const entryName = typeof grant.name === "string" ? grant.name : undefined;
   const spells: InnateSpellEntry[] = [];
   for (const { name, minCharacterLevel, uses } of namedSpells(grant)) {
-    if (minCharacterLevel > level) continue;
+    if (minCharacterLevel > ctx.level) continue;
     const key = name.toLowerCase();
     if (seen.has(key)) continue;
-    const data = resolveSpellName(name, activeBooks, compendium);
+    const data = resolveSpellName(name, ctx.activeBooks, ctx.compendium, { activeOnly: true });
     if (!data) continue;
     seen.add(key);
-    spells.push({
-      name: data.name,
-      level: data.level,
-      minCharacterLevel,
-      castingTime: data.castingTime,
-      source: data.source,
-      isCantrip: data.level === 0,
-      ...(uses !== undefined
-        ? { resourceCounterId: counterId(holder, data.name), maxUses: uses }
-        : {}),
-    });
+    spells.push(innateEntry(data, holder, entryName, uses, minCharacterLevel));
   }
   return spells;
+}
+
+/** The Innate Magic entry of a resolved spell. A spell with a use count carries the counter a Long Rest restores. */
+function innateEntry(
+  data: SpellData,
+  holder: GrantHolder,
+  entryName: string | undefined,
+  uses: number | undefined,
+  minCharacterLevel: number
+): InnateSpellEntry {
+  return {
+    name: data.name,
+    level: data.level,
+    minCharacterLevel,
+    castingTime: data.castingTime,
+    source: data.source,
+    isCantrip: data.level === 0,
+    ...(uses !== undefined ? { resourceCounterId: counterId(holder, data.name, entryName), maxUses: uses } : {}),
+  };
 }
 
 /** Every spell a grant names in its known and innate sections, in section and level order. */
@@ -199,21 +264,17 @@ function collectNamed(value: unknown, minCharacterLevel: number, uses: number | 
   }
 }
 
-/** The uses a daily or per-rest key allows: `"1"` and `"1e"` are one use. */
-function usesOf(count: string): number {
-  const uses = parseInt(count, 10);
-  return Number.isFinite(uses) && uses > 0 ? uses : 1;
-}
-
 /**
- * The counter id of a daily or per-rest spell. A feat's is unique to the feat and the spell. A race's is the spell's own id,
- * the one the old race table saved, so a saved use survives the move.
+ * The counter id of a daily or per-rest spell. A feat's is unique to the feat, the list it was picked from (when named) and the
+ * spell: two feats, or two lists of one feat, never share a counter. A race's is the spell's own id, the one the old race table
+ * saved, so a saved use survives the move.
  */
-function counterId(holder: GrantHolder, spellName: string): string {
+function counterId(holder: GrantHolder, spellName: string, entryName?: string): string {
   if (holder.origin === "race") {
     return LEGACY_RACE_COUNTER_IDS[spellName.toLowerCase()] ?? `innate_spell_${slug(spellName)}`;
   }
-  return `innate_feat_${slug(holder.title)}_${slug(spellName)}`;
+  const list = entryName ? `_${slug(entryName)}` : "";
+  return `innate_feat_${slug(holder.name)}${list}_${slug(spellName)}`;
 }
 
 function slug(text: string): string {

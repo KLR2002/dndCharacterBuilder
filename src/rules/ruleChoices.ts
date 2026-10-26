@@ -44,6 +44,7 @@ export * from "./choices/maneuvers.ts";
 export * from "./choices/warlockChoices.ts";
 export * from "./choices/artificerInfusions.ts";
 export { LINEAGE_NAMES, ancestryRuleChoices, applyRuleChoice, lineageInheritsElements, replacedTraitNames } from "./raceRuleChoices.ts";
+export { featSpellChoicesOf, featSpellRuleChoices, featSpellListChoiceId, featSpellSlotChoiceId } from "./choices/featSpells.ts";
 
 /**
  * A Rule Choice is a selection from a fixed set of options granted by a single

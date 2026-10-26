@@ -17,6 +17,7 @@ import {
 import type { SourceFixedGrants } from "../../rules/proficiencySheet";
 import { picksOnlyLanguages } from "../../rules/proficiencyChoiceOffers";
 import { ProficiencyChoicePicker } from "./ProficiencyChoicePicker";
+import { FeatSpellPicks } from "./FeatSpellPicks";
 import { Badge } from "../ui/Badge";
 import { Button } from "../ui/Button";
 import { Card } from "../ui/Card";
@@ -482,6 +483,14 @@ export const AncestrySection: React.FC<AncestrySectionProps> = ({
                   </View>
                 );
               })()}
+
+              <FeatSpellPicks
+                character={character}
+                feat={{ name: currentOriginFeat.featName || "", source: currentOriginFeat.featSource || "PHB" }}
+                onUpdate={onUpdate}
+                activeBooks={activeBooks}
+                theme={theme}
+              />
             </View>
           ) : (
             <Button

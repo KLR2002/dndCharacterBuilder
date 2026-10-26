@@ -48,13 +48,16 @@ function getSpellCatalog(compendium: Compendium): Map<string, SpellData[]> {
   return map;
 }
 
-// Prefers the copy from an active book; otherwise falls back to the first copy.
-function pickSpell(copies: SpellData[] | undefined, activeBooks?: string[]): SpellData | undefined {
+// Prefers the copy from an active book; otherwise falls back to the first copy, unless only active copies are wanted.
+// With `activeOnly`, the SRD Baseline is always on, as it is for class spell lists (isSpellAvailableForClass).
+function pickSpell(copies: SpellData[] | undefined, activeBooks?: string[], activeOnly = false): SpellData | undefined {
   if (!copies || copies.length === 0) return undefined;
   if (activeBooks && activeBooks.length > 0) {
     const books = new Set(activeBooks.map((b) => b.toUpperCase()));
-    const active = copies.find((s) => books.has((s.source || "").toUpperCase()));
+    const source = (s: SpellData) => (s.source || "").toUpperCase();
+    const active = copies.find((s) => books.has(source(s)));
     if (active) return active;
+    if (activeOnly) return copies.find((s) => source(s) === "SRD");
   }
   return copies[0];
 }
@@ -64,12 +67,17 @@ export function resetSpellCatalogCache(): void {
 }
 
 /** The catalog spell a grant names (a name as the scraper normalises it), preferring a copy from an active book. */
+/**
+ * The catalog spell a name resolves to. `activeOnly` drops a name whose only copies are in books that are switched off,
+ * instead of falling back to the first copy.
+ */
 export function resolveSpellName(
   name: string,
   activeBooks: string[] | undefined,
-  compendium: Compendium = currentCompendium()
+  compendium: Compendium = currentCompendium(),
+  options: { activeOnly?: boolean } = {}
 ): SpellData | undefined {
-  return pickSpell(getSpellCatalog(compendium).get(normalizeKey(name)), activeBooks);
+  return pickSpell(getSpellCatalog(compendium).get(normalizeKey(name)), activeBooks, options.activeOnly);
 }
 
 /**

@@ -17,10 +17,13 @@ export interface InnateSpellProfile {
   title: string;
   /** Whether the source is the character's race or subrace, or one of its feats. */
   origin: "race" | "feat";
-  ability: AbilityKey;
-  spellSaveDc: number;
-  spellAttackBonus: number;
+  /** Absent while the source's casting ability is still to be recorded (a granted source only). */
+  ability?: AbilityKey;
+  spellSaveDc?: number;
+  spellAttackBonus?: number;
   spells: InnateSpellEntry[];
+  /** Needs-review notices for the parts of the source that are not yet resolved. */
+  notices?: string[];
 }
 
 /**

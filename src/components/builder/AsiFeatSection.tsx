@@ -15,6 +15,7 @@ import {
   pickRuleChoice,
   warlockInvocationChoices,
 } from "../../rules/ruleChoices";
+import { FeatSpellPicks } from "./FeatSpellPicks";
 import { Badge } from "../ui/Badge";
 import { Button } from "../ui/Button";
 import { Card } from "../ui/Card";
@@ -847,6 +848,16 @@ export const AsiFeatSection: React.FC<AsiFeatSectionProps> = ({
                     </View>
                   );
                 })()}
+
+                {!isAsi && sel.featName && (
+                  <FeatSpellPicks
+                    character={character}
+                    feat={{ name: sel.featName, source: sel.featSource || "PHB" }}
+                    onUpdate={onUpdate}
+                    activeBooks={activeBooks}
+                    theme={theme}
+                  />
+                )}
 
                 {sel.featName?.toLowerCase() === "martial adept" && (() => {
                   const maChoice = battleMasterManeuverChoices(character).find((c) => c.id === MARTIAL_ADEPT_CHOICE_ID);

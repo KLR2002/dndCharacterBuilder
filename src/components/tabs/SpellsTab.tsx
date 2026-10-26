@@ -533,9 +533,10 @@ export const SpellsTab: React.FC = () => {
     profile: InnateSpellProfile | null,
     copy: { subtitle: string; showMinLevel: boolean; key?: string }
   ) => {
-    if (!profile || profile.spells.length === 0 || !currentCharacter) return null;
+    if (!profile || (profile.spells.length === 0 && !profile.notices?.length) || !currentCharacter) return null;
 
-    const sign = profile.spellAttackBonus >= 0 ? "+" : "";
+    const sign = (profile.spellAttackBonus ?? 0) >= 0 ? "+" : "";
+    const ability = profile.ability;
 
     return (
       <Card key={copy.key} style={[styles.innateCard, { borderColor: theme.accent, backgroundColor: theme.surface }]}>
@@ -548,31 +549,39 @@ export const SpellsTab: React.FC = () => {
               {copy.subtitle}
             </Text>
           </View>
-          <Badge
-            label={`${profile.ability.toUpperCase()} (DC ${profile.spellSaveDc} / ${sign}${profile.spellAttackBonus})`}
-            variant="accent"
-            size="sm"
-          />
+          {ability && (
+            <Badge
+              label={`${ability.toUpperCase()} (DC ${profile.spellSaveDc} / ${sign}${profile.spellAttackBonus})`}
+              variant="accent"
+              size="sm"
+            />
+          )}
         </View>
+
+        {profile.notices?.map((notice) => (
+          <Text key={notice} style={{ color: theme.warning, fontSize: 12, marginBottom: 6 }}>
+            {notice}
+          </Text>
+        ))}
 
         {/* Racial Spellcasting Stats */}
         <View style={[styles.innateStatsRow, { backgroundColor: theme.surfaceHighlight, borderColor: theme.border }]}>
           <View style={styles.innateStatCol}>
             <Text style={[styles.statLabel, { color: theme.textMuted }]}>ABILITY</Text>
             <Text style={[styles.innateStatVal, { color: theme.accent }]}>
-              {profile.ability.toUpperCase()}
+              {ability ? ability.toUpperCase() : "—"}
             </Text>
           </View>
           <View style={styles.innateStatCol}>
             <Text style={[styles.statLabel, { color: theme.textMuted }]}>SAVE DC</Text>
             <Text style={[styles.innateStatVal, { color: theme.text }]}>
-              {profile.spellSaveDc}
+              {profile.spellSaveDc ?? "—"}
             </Text>
           </View>
           <View style={styles.innateStatCol}>
             <Text style={[styles.statLabel, { color: theme.textMuted }]}>ATTACK BONUS</Text>
             <Text style={[styles.innateStatVal, { color: theme.text }]}>
-              {formatModifier(profile.spellAttackBonus)}
+              {profile.spellAttackBonus === undefined ? "—" : formatModifier(profile.spellAttackBonus)}
             </Text>
           </View>
         </View>
