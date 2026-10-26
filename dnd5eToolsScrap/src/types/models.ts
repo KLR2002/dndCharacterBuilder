@@ -168,6 +168,8 @@ export interface FeatModel {
   grants?: ProficiencyGrant[];
   /** The Initiative Bonus the feat's prose gives, or from its override (ADR 0016). */
   initiativeBonus?: InitiativeBonus;
+  /** The spells the feat grants, as the source gives them (ADR 0017). Absent when it grants none. */
+  additionalSpells?: AdditionalSpells[];
 }
 
 export interface OptionFeatureModel {

@@ -6,6 +6,8 @@ import {
   type GrantOverride,
 } from "../parser/proficiency-grants.ts";
 import { resolveInitiativeBonuses, type InitiativeBonusOverride } from "../parser/initiative-bonuses.ts";
+import { featKey } from "../scrapers/feats.ts";
+import type { AdditionalSpells } from "../types/models.ts";
 import {
   allRefs,
   classFeatureOnlyRefs,
@@ -40,9 +42,15 @@ export interface TrackedFiles {
  * Adds, replaces or removes the `grants` field on every tracked class feature,
  * subclass feature and feat, and the `initiativeBonus` field on every class
  * feature, subclass feature, feat and race or subrace trait, using the same
- * extractors and overrides as the scraper. Nothing else on the data is touched.
+ * extractors and overrides as the scraper. When the raw feats' spell grants are
+ * given, it also sets or removes each feat's `additionalSpells` (ADR 0017).
+ * Nothing else on the data is touched.
  */
-export function enrichTrackedData(data: TrackedData, overrides: GrantOverrides): void {
+export function enrichTrackedData(
+  data: TrackedData,
+  overrides: GrantOverrides,
+  featSpells?: Map<string, AdditionalSpells[]>,
+): void {
   const classes = classFeatureRefs(data.classes);
   const feats = featRefs(data.feats);
   const features = classFeatureOnlyRefs(data.classes);
@@ -57,6 +65,16 @@ export function enrichTrackedData(data: TrackedData, overrides: GrantOverrides):
   applyGrants(feats, overrides.feats);
   applyInitiativeBonuses(initiativeRefs, initiativeBonuses);
   applyStartingToolGrants(data.classes);
+  if (featSpells) applyFeatSpells(data.feats, featSpells);
+}
+
+/** Writes each feat's spell grants from the raw feats file, or removes a stale one. */
+function applyFeatSpells(feats: TrackedFeat[], featSpells: Map<string, AdditionalSpells[]>): void {
+  for (const feat of feats) {
+    const spells = featSpells.get(featKey(feat.name, feat.source));
+    if (spells) feat.additionalSpells = spells;
+    else delete feat.additionalSpells;
+  }
 }
 
 function requireEveryInitiativeOverridePlaced(refs: GrantRef[], overrides: InitiativeBonusOverride[]): void {
@@ -99,9 +117,13 @@ function requireEveryOverridePlaced(refs: GrantRef[], overrides: GrantOverride[]
  * tracked format, so that writing it back reproduces every byte that the
  * enrichment did not change.
  */
-export function enrichGrantFiles(files: TrackedFiles, overrides: GrantOverrides): TrackedFiles {
+export function enrichGrantFiles(
+  files: TrackedFiles,
+  overrides: GrantOverrides,
+  featSpells?: Map<string, AdditionalSpells[]>,
+): TrackedFiles {
   const data = readTracked(files);
-  enrichTrackedData(data, overrides);
+  enrichTrackedData(data, overrides, featSpells);
   return writeTracked(data);
 }
 
@@ -116,6 +138,7 @@ export function stripGrantFiles(files: TrackedFiles): TrackedFiles {
     delete ref.holder.initiativeBonus;
   }
   for (const cls of data.classes) delete cls.grants;
+  for (const feat of data.feats) delete feat.additionalSpells;
   for (const ref of traitRefs(data.races ?? [])) delete ref.holder.initiativeBonus;
   return writeTracked(data);
 }

@@ -3,15 +3,20 @@
  *
  * Adds the `grants` field to the tracked class, subclass and feat features in
  * data/classes.json and data/feats.json, and to each tracked class's starting
- * tools; and the `initiativeBonus` field to the tracked class, subclass and feat
- * features, and to the race and subrace traits in data/races.json. Idempotent;
- * writes a file only when its content changes. The only way grants and Initiative
- * Bonuses reach the tracked data (see ADR 0015 and ADR 0016).
+ * tools; the `initiativeBonus` field to the tracked class, subclass and feat
+ * features, and to the race and subrace traits in data/races.json; and the
+ * `additionalSpells` field to each tracked feat that grants spells, read from the
+ * raw feats file (the scraper's cache, or the network when it is not cached).
+ * Idempotent; writes a file only when its content changes. The only way grants,
+ * Initiative Bonuses and feat spell grants reach the tracked data (see ADR 0015,
+ * ADR 0016 and ADR 0017).
  */
 import fs from "node:fs";
 import { fileURLToPath } from "node:url";
+import { ToolsClient } from "../client.ts";
 import { PROFICIENCY_GRANT_OVERRIDES } from "../overrides/proficiency-grants.ts";
 import { INITIATIVE_BONUS_OVERRIDES } from "../overrides/initiative-bonuses.ts";
+import { additionalSpellsByFeat } from "../scrapers/feats.ts";
 import { enrichGrantFiles, type TrackedFiles } from "./enrich.ts";
 import { allRefs, classFeatureOnlyRefs, featRefs, traitRefs, type TrackedData } from "./subjects.ts";
 
@@ -23,7 +28,12 @@ const before: Required<TrackedFiles> = {
   feats: fs.readFileSync(paths.feats, "utf8"),
   races: fs.readFileSync(paths.races, "utf8"),
 };
-const after = enrichGrantFiles(before, { ...PROFICIENCY_GRANT_OVERRIDES, initiativeBonuses: INITIATIVE_BONUS_OVERRIDES }) as Required<TrackedFiles>;
+const rawFeats = await new ToolsClient().fetchJson<{ feat: unknown[] }>("data/feats.json");
+const after = enrichGrantFiles(
+  before,
+  { ...PROFICIENCY_GRANT_OVERRIDES, initiativeBonuses: INITIATIVE_BONUS_OVERRIDES },
+  additionalSpellsByFeat(rawFeats),
+) as Required<TrackedFiles>;
 
 const names = ["classes", "feats", "races"] as const;
 for (const name of names) {
@@ -40,7 +50,8 @@ const granted =
   trackedData.classes.filter((cls) => cls.grants && cls.grants.length > 0).length;
 const initiative = [...classFeatureOnlyRefs(trackedData.classes), ...featRefs(trackedData.feats)].filter((ref) => ref.holder.initiativeBonus).length;
 const raceTraits = traitRefs(trackedData.races ?? []).filter((ref) => ref.holder.initiativeBonus).length;
+const spellFeats = trackedData.feats.filter((feat) => feat.additionalSpells && feat.additionalSpells.length > 0).length;
 const changed = names.filter((name) => after[name] !== before[name]);
 console.log(
-  `enrich:grants: ${granted} class, subclass and feat features carry grants; ${initiative} class, subclass and feat features and ${raceTraits} race and subrace traits carry an Initiative Bonus; ${changed.length ? `wrote ${changed.join(", ")}` : "no file changed"}`
+  `enrich:grants: ${granted} class, subclass and feat features carry grants; ${initiative} class, subclass and feat features and ${raceTraits} race and subrace traits carry an Initiative Bonus; ${spellFeats} feats carry spell grants; ${changed.length ? `wrote ${changed.join(", ")}` : "no file changed"}`
 );

@@ -1,5 +1,6 @@
 import type { GrantSubject } from "../parser/proficiency-grants.ts";
 import type { InitiativeBonus, ProficiencyGrant } from "../types/proficiency.ts";
+import type { AdditionalSpells } from "../types/models.ts";
 
 /** The fields the enrichment tooling writes on a tracked feature or feat: its Proficiency Grants and Initiative Bonus. */
 export interface GrantHolder {
@@ -41,6 +42,8 @@ export interface TrackedFeat extends GrantHolder {
   name: string;
   source: string;
   description: string;
+  /** The spells the feat grants, from the raw feats file (ADR 0017). Absent when it grants none. */
+  additionalSpells?: AdditionalSpells[];
 }
 
 /** A tracked race or subrace trait. Only its Initiative Bonus is written by the enrichment tooling (ADR 0016). */
