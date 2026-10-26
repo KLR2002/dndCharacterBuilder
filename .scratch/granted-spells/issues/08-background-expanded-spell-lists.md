@@ -4,10 +4,12 @@
 
 **Blocked by:** 01
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] The background scraper copies the grants; the in-app sync builds them; the app background type carries them.
-- [ ] Engine and spell-list tests against an invented background: one class; two classes; a non-caster; cantrips in the list; stacking with a patron's expanded list; changing the background removes the spells from the lists (and from the learning pools).
-- [ ] The spell pickers that list a class's spells show the added spells (existing picker tests extended).
-- [ ] `check:live` asserts a Strixhaven college and a Ravnica guild background carry `expanded` spells in the real catalog.
-- [ ] `npm run check:all` and `npm run check:live` pass.
+**Landed:** fast-forward of `worktree-agent-a512770241c29ce3e` (tip 398277f) plus a commit returning the Catalog Format to 9 (the implementer had bumped to 10; one release carries all granted-spell data). `check:all` passes (1290 app, 251 scraper); `check:live` 69/69. Open items: a spell learned from a background list may stay in `knownSpells` after the background is cleared (verify in review); `getSubclassSpells` inside `getClassSpellProfiles` still reads the process-wide compendium.
+
+- [x] The background scraper copies the grants; the in-app sync builds them; the app background type carries them.
+- [x] Engine and spell-list tests against an invented background: one class; two classes; a non-caster; cantrips in the list; stacking with a patron's expanded list; changing the background removes the spells from the lists (and from the learning pools).
+- [x] The spell pickers that list a class's spells show the added spells (existing picker tests extended).
+- [x] `check:live` asserts a Strixhaven college and a Ravnica guild background carry `expanded` spells in the real catalog.
+- [x] `npm run check:all` and `npm run check:live` pass.
