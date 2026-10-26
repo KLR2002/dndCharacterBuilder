@@ -1,4 +1,4 @@
-import type { ClassData, FeatData, RaceData, SpellData, SubraceData } from "../src/types/dnd5e.ts";
+import type { BackgroundData, ClassData, FeatData, RaceData, SpellData, SubraceData } from "../src/types/dnd5e.ts";
 
 /**
  * Invented classes, feats and spells for the granted spell engine tests. Every name and sentence is made up on purpose:
@@ -316,4 +316,25 @@ export const grantedSpellRaces = (): RaceData[] => [
   race("Sample Chooser", {
     additionalSpells: [{ ability: { choose: ["int", "wis", "cha"] }, known: { "1": ["sample ember"] } }],
   }),
+];
+
+const background = (name: string, featureName: string, featureDescription: string): BackgroundData => ({
+  name,
+  source: "TST",
+  skillProficiencies: [],
+  toolProficiencies: [],
+  languages: [],
+  startingEquipment: [],
+  feature: { name: featureName, description: featureDescription },
+  characteristics: {},
+  description: "Placeholder description for the background.",
+});
+
+/**
+ * Invented backgrounds. Sample Drifter's feature grants the Sample Initiate feat, and Sample Keeper's grants Sample Warding,
+ * in the sentence the background section reads a granted feat from.
+ */
+export const grantedSpellBackgrounds = (): BackgroundData[] => [
+  background("Sample Drifter", "Sample Drifting", "You gain the Sample Initiate feat."),
+  background("Sample Keeper", "Sample Keeping", "You gain the Sample Warding feat."),
 ];

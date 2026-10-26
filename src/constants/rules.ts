@@ -1,5 +1,11 @@
 import type { AbilityKey } from "../types/character.ts";
 
+/**
+ * The featSource a feat a background grants carries. Its feat record is not in the Background's source, so the feat is
+ * held by name; the origin feat is removed when the background is cleared.
+ */
+export const BACKGROUND_FEAT_SOURCE = "Background";
+
 /** The Spell Owner key for a Path of the Giant Barbarian's granted cantrips (Druidcraft, Thaumaturgy). */
 export const GIANT_BARBARIAN_OWNER_KEY = "Barbarian__BGG";
 

@@ -2,13 +2,16 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { evaluateCharacter } from "../src/rules/characterEvaluation.ts";
 import { featSpellRuleChoices, pickRuleChoice } from "../src/rules/ruleChoices.ts";
-import { applyOriginFeat, removeOriginFeat } from "../src/rules/feats.ts";
+import { applyOriginFeat, getBackgroundFeatGrant, grantBackgroundFeat, removeOriginFeat } from "../src/rules/feats.ts";
 import { reconcileForActiveBooks } from "../src/rules/characterReconciler.ts";
+import { clearBackground } from "../src/rules/builderTransitions.ts";
+import { resolveAncestryState } from "../src/rules/ancestryEngine.ts";
+import { toggleInnateSpellUse } from "../src/rules/characterSpells.ts";
 import type { AbilityScores, AsiSelection, Character, CharacterClass } from "../src/types/character.ts";
 import type { AvailableRuleChoice } from "../src/rules/choices/types.ts";
 import type { InnateSpellProfile } from "../src/rules/innateMagic.ts";
 import { inMemoryCompendium, makeChar } from "./testUtils.ts";
-import { grantedSpellClasses, grantedSpellFeats, grantedSpellSpells } from "./grantedSpellsFixture.ts";
+import { grantedSpellBackgrounds, grantedSpellClasses, grantedSpellFeats, grantedSpellSpells } from "./grantedSpellsFixture.ts";
 
 // Picks for a granted spell list (ADR 0017, ticket 02). Every name is invented (checks/grantedSpellsFixture.ts).
 // Sample Initiate offers a Mage list and a Cleric list; each takes two cantrips and one first-level spell. The
@@ -18,6 +21,7 @@ const compendium = inMemoryCompendium({
   classes: grantedSpellClasses(),
   feats: grantedSpellFeats(),
   spells: grantedSpellSpells(),
+  backgrounds: grantedSpellBackgrounds(),
 });
 
 const ACTIVE = ["TST"];
@@ -298,4 +302,129 @@ test("a ritual-only pick is not modelled: no choice is offered for it, and no ca
   const character = makeChar({ classes: [mage(4)], originFeats: [takenFeat("Sample Ritualist")] });
   assert.equal(offeredChoices(character).some((c) => featOf(c) === "Sample Ritualist"), false, "no pick is offered");
   assert.deepEqual(evaluateCharacter(character, catalogs).grantedSpellSources, [], "and no card, since nothing else is granted");
+});
+
+// A background that grants a spell feat (ADR 0017). The background section claims the feat with the Background source
+// marker; the reader must hold it by name, and its picks and counters follow the background's life.
+
+const DRIFTER = { name: "Sample Drifter", source: "TST" };
+const KEEPER = { name: "Sample Keeper", source: "TST" };
+
+/** Selects a background as the background section does: the background is set, and no feat yet. */
+const selectBackground = (character: Character, background: { name: string; source: string }): Character => ({ ...character, background });
+
+/** Claims the feat a background's feature grants, as the background section does (the feat has the Background source). */
+function claimBackgroundFeat(character: Character, backgroundName: string, featureDescription: string): Character {
+  const grant = getBackgroundFeatGrant(backgroundName, featureDescription);
+  assert.ok(grant, `${backgroundName} grants a feat`);
+  return claimFeat(character, grant.featName);
+}
+
+/** Claims a feat under the Background source marker, as the background section does for a feat it grants. */
+const claimFeat = (character: Character, featName: string): Character => grantBackgroundFeat(character, featName, undefined, compendium);
+
+/** Every granted spell of a card, with the character's picks made for Sample Initiate and its first-level spell. */
+const initiateCard = (character: Character) => cardTitled(evaluateCharacter(character, catalogs).grantedSpellSources, "Sample Initiate (Sample Mage)");
+
+test("a background-granted feat is held once claimed: its card appears and its picks are offered", () => {
+  const base = makeChar({ background: DRIFTER, classes: [mage(4)], baseAbilityScores: scores({ int: 14 }) });
+  assert.equal(evaluateCharacter(base, catalogs).grantedSpellSources.length, 0, "not held before it is claimed");
+
+  let character = claimBackgroundFeat(base, "Sample Drifter", "You gain the Sample Initiate feat.");
+  assert.ok(offeredChoices(character).some((c) => featOf(c) === "Sample Initiate"), "the feat's picks are offered");
+  character = pickOption(character, "Sample Mage Spells", "Sample Initiate");
+  const card = initiateCard(character);
+  assert.ok(card, "the card is titled by the feat and the picked list");
+  assert.equal(card.ability, "int", "the ability is the list's own");
+  assert.equal(card.spellSaveDc, 8 + 2 + 2, "8 + proficiency bonus + INT 14");
+});
+
+test("clearing the background releases the granted feat's picks, its card and its long-rest counters, with a notice", () => {
+  let character = claimBackgroundFeat(makeChar({ background: DRIFTER, classes: [mage(4)] }), "Sample Drifter", "You gain the Sample Initiate feat.");
+  character = pickOption(character, "Sample Mage Spells", "Sample Initiate");
+  character = pickOption(character, "Sample Ember", "Sample Initiate");
+  character = pickOption(character, "Sample Glimmer", "Sample Initiate");
+  character = pickOption(character, "Sample Pulse", "Sample Initiate");
+  const pulse = initiateCard(character)?.spells.find((s) => s.name === "Sample Pulse");
+  assert.ok(pulse?.resourceCounterId, "the first-level spell has a long-rest counter");
+  character = toggleInnateSpellUse(character, pulse);
+  assert.ok(character.resourceCounters?.[pulse.resourceCounterId], "the counter has been used");
+
+  const cleared = clearBackground(character, { compendium });
+  assert.equal(cleared.background, null);
+  assert.deepEqual(cleared.ruleChoices ?? [], [], "every pick of the feat is released");
+  assert.equal(evaluateCharacter(cleared, catalogs).grantedSpellSources.length, 0, "and its card is gone");
+  assert.equal(cleared.resourceCounters?.[pulse.resourceCounterId], undefined, "and its counter is dropped");
+  assert.ok(cleared.needsReview?.some((notice) => /Sample Initiate removed/.test(notice)), "the feat's removal is recorded");
+  assert.ok(cleared.needsReview?.some((notice) => /Sample Pulse removed/.test(notice)), "and the counter's removal is recorded");
+});
+
+test("changing to a background that grants the same feat releases the old picks, and the feat must be picked again", () => {
+  let character = claimBackgroundFeat(makeChar({ background: DRIFTER, classes: [mage(4)] }), "Sample Drifter", "You gain the Sample Initiate feat.");
+  character = pickOption(character, "Sample Mage Spells", "Sample Initiate");
+  character = pickOption(character, "Sample Ember", "Sample Initiate");
+  const changed = claimBackgroundFeat(selectBackground(clearBackground(character, { compendium }), DRIFTER), "Sample Drifter", "You gain the Sample Initiate feat.");
+  assert.deepEqual(changed.ruleChoices ?? [], [], "the old picks do not survive the change");
+  assert.ok(changed.needsReview?.some((notice) => /Sample Initiate removed/.test(notice)), "the release is recorded");
+  const card = cardTitled(evaluateCharacter(changed, catalogs).grantedSpellSources, "Sample Initiate");
+  assert.ok(card, "the feat is held again");
+  assert.equal(card.spells.length, 0, "and nothing is picked until the player picks it again");
+  assert.ok(card.notices?.some((notice) => /spell list/.test(notice)), "the list is asked for again");
+});
+
+test("changing to a background that grants a different feat releases the old feat's picks and counters", () => {
+  let character = claimBackgroundFeat(makeChar({ background: DRIFTER, classes: [mage(4)] }), "Sample Drifter", "You gain the Sample Initiate feat.");
+  character = pickOption(character, "Sample Mage Spells", "Sample Initiate");
+  character = pickOption(character, "Sample Ember", "Sample Initiate");
+  character = pickOption(character, "Sample Pulse", "Sample Initiate");
+  const changed = claimBackgroundFeat(selectBackground(clearBackground(character, { compendium }), KEEPER), "Sample Keeper", "You gain the Sample Warding feat.");
+  assert.ok(!(changed.ruleChoices ?? []).some((rc) => rc.id.includes("Sample Initiate")), "no pick of the old feat survives");
+  const sources = evaluateCharacter(changed, catalogs).grantedSpellSources;
+  assert.equal(cardTitled(sources, "Sample Initiate (Sample Mage)"), undefined, "the old feat's card is gone");
+  assert.ok(cardTitled(sources, "Sample Warding"), "the new feat's own card is there");
+});
+
+test("when a background offers a choice of feats, the picks follow the feat the player claimed, and switching releases the other's", () => {
+  let character = makeChar({ background: DRIFTER, classes: [mage(4)], baseAbilityScores: scores({ int: 14 }) });
+  character = claimFeat(character, "Sample Warding");
+  assert.ok(!offeredChoices(character).some((c) => featOf(c) === "Sample Initiate"), "no pick of an unclaimed option is offered");
+  assert.ok(cardTitled(evaluateCharacter(character, catalogs).grantedSpellSources, "Sample Warding"), "the claimed option gives its card");
+
+  character = claimFeat(removeOriginFeat(character, "Sample Warding", compendium), "Sample Initiate");
+  assert.ok(offeredChoices(character).some((c) => featOf(c) === "Sample Initiate"), "the other option's picks are offered once it is claimed");
+  assert.equal(cardTitled(evaluateCharacter(character, catalogs).grantedSpellSources, "Sample Warding"), undefined, "and the first option's card is gone");
+});
+
+test("a feat a background grants is never the ancestry's origin feat, whichever feat the background grants", () => {
+  const character = makeChar({
+    race: { name: "Variant Human", source: "PHB" },
+    background: KEEPER,
+    originFeats: [
+      { level: 1, type: "feat", featName: "Sample Warding", featSource: "Background" },
+      { level: 1, type: "feat", featName: "Sample Cinder", featSource: "TST" },
+    ],
+  });
+  assert.equal(resolveAncestryState(character, { compendium }).currentOriginFeat?.featName, "Sample Cinder");
+});
+
+test("releasing a background feat keeps the counters of another held feat whose name it begins with", () => {
+  let character = makeChar({
+    background: DRIFTER,
+    classes: [mage(4)],
+    asiSelections: [takenFeat("Sample Initiate Alt")],
+  });
+  character = claimBackgroundFeat(character, "Sample Drifter", "You gain the Sample Initiate feat.");
+  character = pickOption(character, "Sample Mage Spells", "Sample Initiate");
+  character = pickOption(character, "Sample Ember", "Sample Initiate");
+  character = pickOption(character, "Sample Pulse", "Sample Initiate");
+  character = pickOption(character, "Sample Mage Spells", "Sample Initiate Alt");
+  character = pickOption(character, "Sample Glimmer", "Sample Initiate Alt");
+  character = pickOption(character, "Sample Pulse", "Sample Initiate Alt");
+  const altPulse = cardTitled(evaluateCharacter(character, catalogs).grantedSpellSources, "Sample Initiate Alt (Sample Mage)")?.spells.find((s) => s.name === "Sample Pulse");
+  assert.ok(altPulse?.resourceCounterId);
+  character = toggleInnateSpellUse(character, altPulse);
+
+  const cleared = clearBackground(character, { compendium });
+  assert.ok(cleared.resourceCounters?.[altPulse.resourceCounterId], "the other feat's counter is kept");
+  assert.ok(!cleared.needsReview?.some((notice) => /Sample Initiate Alt/.test(notice)), "and gets no notice");
 });

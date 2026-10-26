@@ -1,6 +1,7 @@
 import type { AbilityKey, AsiSelection, Character, RuleChoiceEntry } from "../../types/character.ts";
 import type { AdditionalSpells, FeatData, SpellData } from "../../types/dnd5e.ts";
 import type { Compendium } from "../../services/compendium.ts";
+import { BACKGROUND_FEAT_SOURCE } from "../../constants/rules.ts";
 import { ABILITY_NAMES } from "../abilities.ts";
 import { isSpellAvailableForClass } from "../spellcasting.ts";
 import { resolveSpellName } from "../subclassSpells.ts";
@@ -67,12 +68,22 @@ export interface SpellFilter {
   unknownKeys: string[];
 }
 
+/**
+ * The feat record a selection names. A feat a background grants carries the Background source marker, which is no
+ * sourcebook, so it resolves by name; the first record of that name is taken.
+ */
+export function featOfSelection(selection: AsiSelection, feats: FeatData[]): FeatData | undefined {
+  const named = feats.filter((f) => f.name === selection.featName);
+  if (!selection.featSource || selection.featSource === BACKGROUND_FEAT_SOURCE) return named[0];
+  return named.find((f) => f.source === selection.featSource);
+}
+
 /** Each feat the character holds once, in the order the character recorded them. */
 export function heldFeatsOf(character: Character, feats: FeatData[]): HeldFeat[] {
   const held: HeldFeat[] = [];
   for (const selection of [...(character.asiSelections ?? []), ...(character.originFeats ?? [])]) {
     if (selection.type !== "feat") continue;
-    const feat = feats.find((f) => f.name === selection.featName && (!selection.featSource || f.source === selection.featSource));
+    const feat = featOfSelection(selection, feats);
     if (feat && !held.some((entry) => entry.feat === feat)) held.push({ feat, selection });
   }
   return held;
@@ -263,6 +274,23 @@ function titleCase(text: string): string {
   return text.replace(/\b\w/g, (letter) => letter.toUpperCase());
 }
 
+const FEAT_COUNTER_PREFIX = "innate_feat__";
+const COUNTER_SEGMENT = "__";
+
+/** A name as a counter or choice id segment: lower case, with runs of other characters as one underscore. Never holds "__". */
+export function slugOf(text: string): string {
+  return text.toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "");
+}
+
+/**
+ * The counter id of a feat's daily or per-rest spell: the feat, the spell list it was picked from (when named) and the spell.
+ * Each segment is closed by "__", so one feat's counters never begin with another feat's prefix.
+ */
+export function featCounterId(featName: string, listName: string | undefined, spellName: string): string {
+  const list = listName ? `${slugOf(listName)}${COUNTER_SEGMENT}` : "";
+  return `${FEAT_COUNTER_PREFIX}${slugOf(featName)}${COUNTER_SEGMENT}${list}${slugOf(spellName)}`;
+}
+
 /** The choice id of a feat's spell list pick. */
 export function featSpellListChoiceId(feat: FeatData): string {
   return `${feat.source}__${FEAT_SPELLS_MARK}__${feat.name}__Spell List`;
@@ -406,6 +434,33 @@ export function pruneInvalidFeatSpellPicks(character: Character, compendium: Com
   return {
     ...character,
     ruleChoices: kept,
+    needsReview: Array.from(new Set([...(character.needsReview ?? []), ...notices])),
+  };
+}
+
+/**
+ * Releases the long-rest counters of the feats the character no longer holds, with a review notice for each. A counter is a
+ * feat's when its id begins with the feat prefix; the feat it names is the segment after it. Other counters are untouched.
+ * Returns the character itself when none is released.
+ */
+export function pruneReleasedFeatCounters(character: Character, compendium: Compendium): Character {
+  const counters = character.resourceCounters ?? {};
+  const featKeys = Object.keys(counters).filter((key) => key.startsWith(FEAT_COUNTER_PREFIX));
+  if (featKeys.length === 0) return character;
+
+  const heldSlugs = new Set(heldFeatsOf(character, compendium.for().feats()).map(({ feat }) => slugOf(feat.name)));
+  const released = featKeys.filter((key) => !heldSlugs.has(key.slice(FEAT_COUNTER_PREFIX.length).split(COUNTER_SEGMENT)[0]));
+  if (released.length === 0) return character;
+
+  const nextCounters = { ...counters };
+  const notices: string[] = [];
+  for (const key of released) {
+    notices.push(`${counters[key].name} removed: feat no longer held`);
+    delete nextCounters[key];
+  }
+  return {
+    ...character,
+    resourceCounters: nextCounters,
     needsReview: Array.from(new Set([...(character.needsReview ?? []), ...notices])),
   };
 }

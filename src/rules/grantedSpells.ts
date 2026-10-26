@@ -9,12 +9,14 @@ import { resolveSpellName } from "./subclassSpells.ts";
 import {
   chosenAbilityOptionsOf,
   chosenSpellsOf,
+  featCounterId,
   fixedGrantAbility,
   heldFeatsOf,
   offeredSpellLists,
   pickSlotsOf,
   pickedAbilityOf,
   pickedSpellListOf,
+  slugOf,
   spellListLabel,
   usesOf,
 } from "./choices/featSpells.ts";
@@ -287,12 +289,7 @@ function collectNamed(value: unknown, minCharacterLevel: number, uses: number | 
  */
 function counterId(holder: GrantHolder, spellName: string, entryName?: string): string {
   if (holder.origin === "race") {
-    return LEGACY_RACE_COUNTER_IDS[spellName.toLowerCase()] ?? `innate_spell_${slug(spellName)}`;
+    return LEGACY_RACE_COUNTER_IDS[spellName.toLowerCase()] ?? `innate_spell_${slugOf(spellName)}`;
   }
-  const list = entryName ? `_${slug(entryName)}` : "";
-  return `innate_feat_${slug(holder.name)}${list}_${slug(spellName)}`;
-}
-
-function slug(text: string): string {
-  return text.toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "");
+  return featCounterId(holder.name, entryName, spellName);
 }

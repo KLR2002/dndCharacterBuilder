@@ -17,6 +17,7 @@ import { moveLegacySkillPicks } from "./proficiencyPicks.ts";
 import { CUSTOM_BACKGROUND_SKILLS_ID, CUSTOM_BACKGROUND_TOOLS_OR_LANGUAGES_ID, isCustomBackground } from "./customBackground.ts";
 import { ABILITY_NAMES } from "./abilities.ts";
 import {
+  BACKGROUND_FEAT_SOURCE,
   STANDARD_ARRAY,
   MULTICLASS_PREREQUISITES,
 } from "../constants/rules.ts";
@@ -607,8 +608,8 @@ export function clearBackground(character: Character, catalogs: CharacterCatalog
   );
   const chosenSkills = current.chosenSkills.filter((s) => !removedSkills.includes(s));
 
-  const grantedFeats = (character.originFeats ?? []).filter((f) => f.featSource === "Background");
-  const keptFeats = (character.originFeats ?? []).filter((f) => f.featSource !== "Background");
+  const grantedFeats = (character.originFeats ?? []).filter((f) => f.featSource === BACKGROUND_FEAT_SOURCE);
+  const keptFeats = (character.originFeats ?? []).filter((f) => f.featSource !== BACKGROUND_FEAT_SOURCE);
 
   const hadLanguagesOrTools =
     (character.chosenLanguages?.background ?? []).length > 0 ||
