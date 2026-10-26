@@ -6,6 +6,7 @@ import { fightingStyleOwnerOf, pruneInvalidFightingStyles } from "./choices/figh
 import { maneuverOwnerOf, pruneInvalidManeuvers } from "./choices/maneuvers.ts";
 import { infusionOwnerOf, pruneInvalidInfusions } from "./choices/artificerInfusions.ts";
 import { type ChoiceOwner, GIANT_POWER_CHOICE_ID } from "./choices/types.ts";
+import { pruneInvalidFeatSpellPicks } from "./choices/featSpells.ts";
 import {
   pruneInvalidInvocations,
   pruneInvalidMysticArcanum,
@@ -78,6 +79,7 @@ export function reconcile(
   updated = dropLegacyMulticlassSkillEntries(updated);
   updated = dropLegacyBackgroundSkills(updated, compendium, options.activeBooks);
   updated = pruneInvalidProficiencyPicks(updated, compendium);
+  updated = pruneInvalidFeatSpellPicks(updated, compendium, options.activeBooks);
   updated = pruneInvalidExpertise(updated, { compendium, activeBooks: options.activeBooks });
 
   return updated;
