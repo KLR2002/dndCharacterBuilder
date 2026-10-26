@@ -5,6 +5,8 @@ import { cleanTags } from "../parser/tag-cleaner.ts";
 import type { BackgroundModel } from "../types/models.ts";
 import type { ProficiencyReport } from "../types/proficiency.ts";
 import { newProficiencyReport, structuredGrants } from "../parser/proficiency-grants.ts";
+import { parseAdditionalSpells } from "../parser/additional-spells.ts";
+import type { AdditionalSpells } from "../types/models.ts";
 
 export async function scrapeBackgrounds(
   client: ToolsClient,
@@ -142,10 +144,13 @@ export async function scrapeBackgrounds(
       });
     }
 
+    const additionalSpells = parseAdditionalSpells(raw.additionalSpells);
+
     backgrounds.push({
       name: cleanTags(raw.name, "plain"),
       source: raw.source,
       ...(proficiencies.grants.length > 0 ? { grants: proficiencies.grants } : {}),
+      ...(additionalSpells ? { additionalSpells } : {}),
       skillProficiencies: skills,
       toolProficiencies: tools,
       languages,
