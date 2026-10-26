@@ -42,11 +42,15 @@ export interface RaceModel {
   rawEntries?: any[];
   /** Proficiency Grants from the race's structured proficiency fields. */
   grants?: ProficiencyGrant[];
+  /** The spells the race grants, as the source gives them (ADR 0017). Absent when it grants none. */
+  additionalSpells?: AdditionalSpells[];
 }
 
 export interface SubraceModel {
   /** Proficiency Grants the subrace's structured proficiency entries give. Absent when it gives none. */
   grants?: ProficiencyGrant[];
+  /** The spells the subrace grants, as the source gives them (ADR 0017). Absent when it grants none. */
+  additionalSpells?: AdditionalSpells[];
   name: string;
   /** True when this subrace is a rules variant of its ancestry. */
   isVariant: boolean;
@@ -105,6 +109,8 @@ export interface AdditionalSpells {
   known?: Record<string, any>;
   expanded?: Record<string, any>;
   innate?: Record<string, any>;
+  /** The level each named spell is cast at where the source's `#N` suffix gives one, keyed by the lower-case spell name. */
+  castLevels?: Record<string, number>;
 }
 
 export interface SubclassModel {

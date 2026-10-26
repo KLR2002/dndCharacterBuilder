@@ -57,6 +57,8 @@ export interface TrackedSubrace {
   name: string;
   source: string;
   traits: TrackedTrait[];
+  /** The spells the subrace grants, from the raw races file (ADR 0017). Absent when it grants none. */
+  additionalSpells?: AdditionalSpells[];
 }
 
 export interface TrackedRace {
@@ -64,6 +66,8 @@ export interface TrackedRace {
   source: string;
   traits: TrackedTrait[];
   subraces: TrackedSubrace[];
+  /** The spells the race grants, from the raw races file (ADR 0017). Absent when it grants none. */
+  additionalSpells?: AdditionalSpells[];
 }
 
 /** An Options and Features record outside the classes, such as a maneuver. Only the live catalog carries these; the tracked files do not. */

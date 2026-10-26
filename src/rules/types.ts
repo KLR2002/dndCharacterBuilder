@@ -1,10 +1,10 @@
 import type { InventoryItem } from "../types/character.ts";
-import type { RaceData, ClassData, BackgroundData, FeatData, InitiativeBonus, ProficiencyGrant } from "../types/dnd5e.ts";
+import type { RaceData, ClassData, BackgroundData, FeatData, InitiativeBonus, ProficiencyGrant, AdditionalSpells } from "../types/dnd5e.ts";
 import type { Compendium } from "../services/compendium.ts";
 
 export interface ResolvedAncestry {
-  race?: { name?: string; abilityScoreIncrease?: Record<string, number>[]; speed?: { walk?: number; swim?: number; climb?: number; fly?: number }; traits?: { name: string; description?: string; text?: any }[] };
-  subrace?: { name?: string; abilityScoreIncrease?: Record<string, number>[]; speed?: { walk?: number; swim?: number; climb?: number; fly?: number }; traits?: { name: string; description?: string; text?: any }[] };
+  race?: { name?: string; abilityScoreIncrease?: Record<string, number>[]; speed?: { walk?: number; swim?: number; climb?: number; fly?: number }; traits?: { name: string; description?: string; text?: any }[]; additionalSpells?: AdditionalSpells[] };
+  subrace?: { name?: string; abilityScoreIncrease?: Record<string, number>[]; speed?: { walk?: number; swim?: number; climb?: number; fly?: number }; traits?: { name: string; description?: string; text?: any }[]; additionalSpells?: AdditionalSpells[] };
 }
 // Structural extension until Task 3 persists normalized equipment mechanics.
 export type ArmorItem = InventoryItem & { armorCategory?: string };

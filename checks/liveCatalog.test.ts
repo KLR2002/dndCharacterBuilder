@@ -581,6 +581,60 @@ test("live catalog: the feats whose spell grants use a prepared group, which the
   ]);
 });
 
+test("live catalog: Drow, Tiefling and Firbolg carry their spell grants on the race or subrace", { skip: SKIP }, () => {
+  const races = live!.collections.races;
+  const drow = races.find((race) => race.name === "Elf" && race.source === "PHB")?.subraces.find((sub) => sub.name === "Drow");
+  const tiefling = races.find((race) => race.name === "Tiefling" && race.source === "PHB");
+  const firbolg = races.find((race) => race.name === "Firbolg" && race.source === "VGM");
+  assert.ok(drow, "no Drow subrace of the PHB Elf in the catalog");
+  assert.ok(tiefling, "no PHB Tiefling in the catalog");
+  assert.ok(firbolg, "no VGM Firbolg in the catalog");
+  assert.ok(grantedSpellNames(drow).includes("dancing lights"), `Drow grants: ${JSON.stringify(drow.additionalSpells)}`);
+  assert.ok(grantedSpellNames(tiefling).includes("hellish rebuke"), `Tiefling grants: ${JSON.stringify(tiefling.additionalSpells)}`);
+  assert.ok(grantedSpellNames(firbolg).includes("detect magic"), `Firbolg grants: ${JSON.stringify(firbolg.additionalSpells)}`);
+});
+
+test("live catalog: a level-5 Drow has Dancing Lights, Faerie Fire and Darkness from the catalog", { skip: SKIP }, () => {
+  const character = makeChar({
+    classes: [{ className: "Fighter", source: "PHB", level: 5 }],
+    race: { name: "Elf", source: "PHB", subraceName: "Drow", subraceSource: "PHB" },
+    baseAbilityScores: { str: 10, dex: 10, con: 10, int: 10, wis: 10, cha: 16 },
+  });
+  const evaluated = evaluateCharacter(character, { compendium: live!.compendium });
+  const drow = evaluated.grantedSpellSources.find((source) => source.title === "Drow");
+  assert.ok(drow, `no Drow card; sources: ${evaluated.grantedSpellSources.map((source) => source.title).join(", ")}`);
+  assert.equal(drow.ability, "cha");
+  const names = drow.spells.map((spell) => spell.name);
+  for (const name of ["Dancing Lights", "Faerie Fire", "Darkness"]) assert.ok(names.includes(name), `${name} is on the Drow card: ${names.join(", ")}`);
+});
+
+test("live catalog: a Water Genasi of level 3 keeps the counter id the old race table saved for Create or Destroy Water", { skip: SKIP }, () => {
+  const character = makeChar({
+    classes: [{ className: "Fighter", source: "PHB", level: 3 }],
+    race: { name: "Genasi", source: "EEPC", subraceName: "Water", subraceSource: "EEPC" },
+    baseAbilityScores: { str: 10, dex: 10, con: 10, int: 10, wis: 10, cha: 10 },
+  });
+  const evaluated = evaluateCharacter(character, { compendium: live!.compendium });
+  const water = evaluated.grantedSpellSources.find((source) => source.title === "Water");
+  const spell = water?.spells.find((entry) => entry.name === "Create or Destroy Water");
+  assert.ok(spell, `no Create or Destroy Water on the Water card: ${JSON.stringify(water?.spells.map((entry) => entry.name))}`);
+  assert.equal(spell.resourceCounterId, "innate_spell_create_water");
+});
+
+test("live catalog: a level-3 Tiefling's Hellish Rebuke is cast at 2nd level, and its counter is the one the old table saved", { skip: SKIP }, () => {
+  const character = makeChar({
+    classes: [{ className: "Fighter", source: "PHB", level: 3 }],
+    race: { name: "Tiefling", source: "PHB" },
+    baseAbilityScores: { str: 10, dex: 10, con: 10, int: 10, wis: 10, cha: 16 },
+  });
+  const evaluated = evaluateCharacter(character, { compendium: live!.compendium });
+  const tiefling = evaluated.grantedSpellSources.find((source) => source.title === "Tiefling");
+  const rebuke = tiefling?.spells.find((entry) => entry.name === "Hellish Rebuke");
+  assert.ok(rebuke, `no Hellish Rebuke on the Tiefling card: ${JSON.stringify(tiefling?.spells.map((entry) => entry.name))}`);
+  assert.equal(rebuke.level, 2, "the grant says the spell is cast at level 2");
+  assert.equal(rebuke.resourceCounterId, "innate_spell_hellish_rebuke");
+});
+
 // Background expanded spell lists (ADR 0017): a background's lists join the list of each spellcasting class the character has.
 
 test("live catalog: a Strixhaven college background and a Ravnica guild background carry expanded spell lists", { skip: SKIP }, () => {

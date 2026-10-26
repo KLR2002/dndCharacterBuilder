@@ -8,6 +8,7 @@ import {
 import { resolveInitiativeBonuses, type InitiativeBonusOverride } from "../parser/initiative-bonuses.ts";
 import { featKey } from "../scrapers/feats.ts";
 import { spellKey } from "../scrapers/spells.ts";
+import { raceKey, subraceKey } from "../scrapers/races.ts";
 import { backgroundKey } from "../scrapers/backgrounds.ts";
 import type { AdditionalSpells } from "../types/models.ts";
 import {
@@ -55,6 +56,7 @@ export function enrichTrackedData(
   overrides: GrantOverrides,
   featSpells?: Map<string, AdditionalSpells[]>,
   backgroundSpells?: Map<string, AdditionalSpells[]>,
+  raceSpells?: Map<string, AdditionalSpells[]>,
 ): void {
   const classes = classFeatureRefs(data.classes);
   const feats = featRefs(data.feats);
@@ -72,6 +74,7 @@ export function enrichTrackedData(
   applyStartingToolGrants(data.classes);
   if (featSpells) applyFeatSpells(data.feats, featSpells);
   if (backgroundSpells && data.backgrounds) applyBackgroundSpells(data.backgrounds, backgroundSpells);
+  if (raceSpells && data.races) applyRaceSpells(data.races, raceSpells);
 }
 
 /** Writes each feat's spell grants from the raw feats file, or removes a stale one. */
@@ -80,6 +83,20 @@ function applyFeatSpells(feats: TrackedFeat[], featSpells: Map<string, Additiona
     const spells = featSpells.get(featKey(feat.name, feat.source));
     if (spells) feat.additionalSpells = spells;
     else delete feat.additionalSpells;
+  }
+}
+
+/** Writes each race's and subrace's spell grants from the raw races file, or removes a stale one (ADR 0017). */
+function applyRaceSpells(races: TrackedRace[], raceSpells: Map<string, AdditionalSpells[]>): void {
+  for (const race of races) {
+    const spells = raceSpells.get(raceKey(race.name, race.source));
+    if (spells) race.additionalSpells = spells;
+    else delete race.additionalSpells;
+    for (const sub of race.subraces) {
+      const subSpells = raceSpells.get(subraceKey(race.name, race.source, sub.name, sub.source));
+      if (subSpells) sub.additionalSpells = subSpells;
+      else delete sub.additionalSpells;
+    }
   }
 }
 
@@ -137,9 +154,10 @@ export function enrichGrantFiles(
   overrides: GrantOverrides,
   featSpells?: Map<string, AdditionalSpells[]>,
   backgroundSpells?: Map<string, AdditionalSpells[]>,
+  raceSpells?: Map<string, AdditionalSpells[]>,
 ): TrackedFiles {
   const data = readTracked(files);
-  enrichTrackedData(data, overrides, featSpells, backgroundSpells);
+  enrichTrackedData(data, overrides, featSpells, backgroundSpells, raceSpells);
   return writeTracked(data);
 }
 
@@ -155,6 +173,10 @@ export function stripGrantFiles(files: TrackedFiles): TrackedFiles {
   }
   for (const cls of data.classes) delete cls.grants;
   for (const feat of data.feats) delete feat.additionalSpells;
+  for (const race of data.races ?? []) {
+    delete race.additionalSpells;
+    for (const sub of race.subraces) delete sub.additionalSpells;
+  }
   for (const background of data.backgrounds ?? []) delete background.additionalSpells;
   for (const ref of traitRefs(data.races ?? [])) delete ref.holder.initiativeBonus;
   return writeTracked(data);
