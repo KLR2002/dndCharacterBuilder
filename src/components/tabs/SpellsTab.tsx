@@ -243,6 +243,11 @@ export const SpellsTab: React.FC = () => {
     return currentCharacter ? getInnateSpellProfile(currentCharacter) : null;
   }, [currentCharacter]);
 
+  // 4b. Innate Magic from the feats the character holds: one card per source (ADR 0017)
+  const grantedProfiles: InnateSpellProfile[] = useMemo(() => {
+    return evaluated?.grantedSpellSources ?? [];
+  }, [evaluated]);
+
   // Library spells
   const allSpells = useMemo(() => getSpells(activeBooks), [activeBooks]);
 
@@ -523,24 +528,28 @@ export const SpellsTab: React.FC = () => {
     updateCharacter(currentCharacter.id, toggleInnateSpellUseRule(currentCharacter, spell));
   };
 
-  const renderInnateCard = () => {
-    if (!innateProfile || innateProfile.spells.length === 0 || !currentCharacter) return null;
+  /** One Innate Magic card: the race's, or one per feat that grants spells. `copy` sets its subtitle and whether rows show Min Level. */
+  const renderInnateCard = (
+    profile: InnateSpellProfile | null,
+    copy: { subtitle: string; showMinLevel: boolean; key?: string }
+  ) => {
+    if (!profile || profile.spells.length === 0 || !currentCharacter) return null;
 
-    const sign = innateProfile.spellAttackBonus >= 0 ? "+" : "";
+    const sign = profile.spellAttackBonus >= 0 ? "+" : "";
 
     return (
-      <Card style={[styles.innateCard, { borderColor: theme.accent, backgroundColor: theme.surface }]}>
-        <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
-          <View style={{ flex: 1, paddingRight: 8 }}>
+      <Card key={copy.key} style={[styles.innateCard, { borderColor: theme.accent, backgroundColor: theme.surface }]}>
+        <View style={{ flexDirection: "row", flexWrap: "wrap", justifyContent: "space-between", alignItems: "center", gap: 8, marginBottom: 8 }}>
+          <View style={{ flex: 1, minWidth: 0, paddingRight: 8 }}>
             <Text style={[styles.sectionTitle, { color: theme.accent }]}>
-              {innateProfile.title.toUpperCase()}
+              {profile.title.toUpperCase()}
             </Text>
             <Text style={{ color: theme.textSecondary, fontSize: 12, marginTop: 2 }}>
-              Innate racial magic from your ancestry (Long Rest reset)
+              {copy.subtitle}
             </Text>
           </View>
           <Badge
-            label={`${innateProfile.ability.toUpperCase()} (DC ${innateProfile.spellSaveDc} / ${sign}${innateProfile.spellAttackBonus})`}
+            label={`${profile.ability.toUpperCase()} (DC ${profile.spellSaveDc} / ${sign}${profile.spellAttackBonus})`}
             variant="accent"
             size="sm"
           />
@@ -551,30 +560,31 @@ export const SpellsTab: React.FC = () => {
           <View style={styles.innateStatCol}>
             <Text style={[styles.statLabel, { color: theme.textMuted }]}>ABILITY</Text>
             <Text style={[styles.innateStatVal, { color: theme.accent }]}>
-              {innateProfile.ability.toUpperCase()}
+              {profile.ability.toUpperCase()}
             </Text>
           </View>
           <View style={styles.innateStatCol}>
             <Text style={[styles.statLabel, { color: theme.textMuted }]}>SAVE DC</Text>
             <Text style={[styles.innateStatVal, { color: theme.text }]}>
-              {innateProfile.spellSaveDc}
+              {profile.spellSaveDc}
             </Text>
           </View>
           <View style={styles.innateStatCol}>
             <Text style={[styles.statLabel, { color: theme.textMuted }]}>ATTACK BONUS</Text>
             <Text style={[styles.innateStatVal, { color: theme.text }]}>
-              {formatModifier(innateProfile.spellAttackBonus)}
+              {formatModifier(profile.spellAttackBonus)}
             </Text>
           </View>
         </View>
 
         {/* Spells List */}
         <View style={{ marginTop: 8, gap: 6 }}>
-          {innateProfile.spells.map((spell) => {
+          {profile.spells.map((spell) => {
+            const max = spell.maxUses ?? 1;
             const counter = spell.resourceCounterId
               ? currentCharacter.resourceCounters?.[spell.resourceCounterId]
               : undefined;
-            const remaining = counter !== undefined ? counter.current : 1;
+            const remaining = counter !== undefined ? counter.current : max;
             const isUsed = remaining === 0;
 
             return (
@@ -621,7 +631,8 @@ export const SpellsTab: React.FC = () => {
                     <Ionicons name="information-circle-outline" size={14} color={theme.textMuted} />
                   </View>
                   <Text style={{ color: theme.textSecondary, fontSize: 11 }}>
-                    {spell.castingTime} • Min Level {spell.minCharacterLevel}
+                    {spell.castingTime}
+                    {copy.showMinLevel ? ` • Min Level ${spell.minCharacterLevel}` : ""}
                     {spell.name.toLowerCase() === "eldritch blast" && hasAgonizingBlast
                       ? ` • 1d10 + ${chaModifier} force`
                       : ""}
@@ -633,7 +644,7 @@ export const SpellsTab: React.FC = () => {
                 ) : (
                   <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
                     <Text style={{ color: theme.textSecondary, fontSize: 11 }}>
-                      {isUsed ? "0/1 (Used)" : "1/1"}
+                      {isUsed ? `0/${max} (Used)` : `${max}/${max}`}
                     </Text>
                     <TouchableOpacity
                       onPress={() => toggleInnateSpellUse(spell)}
@@ -656,6 +667,20 @@ export const SpellsTab: React.FC = () => {
       </Card>
     );
   };
+
+  const RACE_INNATE_COPY = {
+    subtitle: "Innate racial magic from your ancestry (Long Rest reset)",
+    showMinLevel: true,
+  };
+
+  const renderGrantedCards = () =>
+    grantedProfiles.map((profile, index) =>
+      renderInnateCard(profile, {
+        subtitle: "Spells from this feat (Long Rest reset)",
+        showMinLevel: false,
+        key: `granted_${index}`,
+      })
+    );
 
   const atWillInvocations = useMemo(() => {
     return currentCharacter ? getAtWillInvocationSpells(currentCharacter) : [];
@@ -722,10 +747,11 @@ export const SpellsTab: React.FC = () => {
   }
 
   if (spellProfiles.length === 0) {
-    if ((innateProfile && innateProfile.spells.length > 0) || atWillInvocations.length > 0) {
+    if ((innateProfile && innateProfile.spells.length > 0) || grantedProfiles.length > 0 || atWillInvocations.length > 0) {
       return (
         <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-          {renderInnateCard()}
+          {renderInnateCard(innateProfile, RACE_INNATE_COPY)}
+          {renderGrantedCards()}
           {renderAtWillInvocationsCard()}
           <Card style={[styles.emptyCard, { backgroundColor: theme.surface, borderColor: theme.border, marginTop: 16 }]}>
             <Ionicons name="sparkles-outline" size={32} color={theme.textMuted} style={{ marginBottom: 8 }} />
@@ -1271,8 +1297,9 @@ export const SpellsTab: React.FC = () => {
         </Card>
       )}
 
-      {/* Innate & Racial Spells (if ancestry has innate magic) */}
-      {renderInnateCard()}
+      {/* Innate & Racial Spells (if ancestry has innate magic), then the spells of each feat that grants some */}
+      {renderInnateCard(innateProfile, RACE_INNATE_COPY)}
+      {renderGrantedCards()}
 
       {/* Ritual Book (Book of Ancient Secrets) */}
       {Boolean(hasAncientSecrets) && (
