@@ -1,6 +1,9 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { evaluateCharacter } from "../src/rules/characterEvaluation.ts";
+import { validateFeatPrerequisites } from "../src/rules/feats.ts";
+import { toggleInnateSpellUse } from "../src/rules/characterSpells.ts";
+import { applyLongRest } from "../src/rules/rest.ts";
 import type { CharacterClass } from "../src/types/character.ts";
 import type { InnateSpellProfile } from "../src/rules/innateMagic.ts";
 import { inMemoryCompendium, makeChar, srdBaselineCompendium } from "./testUtils.ts";
@@ -65,6 +68,18 @@ test("a race's per-rest spell has a counter that a long rest restores", () => {
   const evaluated = evaluateCharacter(character, catalogs);
   const glimmer = sourceTitled(evaluated.grantedSpellSources, "Sample Line")?.spells.find((spell) => spell.name === "Sample Glimmer");
   assert.ok(glimmer?.resourceCounterId, "the per-rest spell has a counter");
+
+  const spell = glimmer!;
+  const used = toggleInnateSpellUse(character, spell);
+  assert.equal(used.resourceCounters[spell.resourceCounterId!]?.current, 0, "casting it uses the counter");
+  const rested = applyLongRest(used);
+  assert.equal(rested.resourceCounters[spell.resourceCounterId!]?.current, 1, "a long rest restores the counter");
+});
+
+test("a race's granted spell satisfies a feat prerequisite of being able to cast a spell", () => {
+  const prerequisite = { name: "Sample Requirement", prerequisite: "The ability to cast at least one spell" };
+  assert.equal(validateFeatPrerequisites(kin(1), prerequisite, { catalogs }).met, true);
+  assert.equal(validateFeatPrerequisites(makeChar({ classes: [mage(1)] }), prerequisite, { catalogs }).met, false);
 });
 
 test("a saved counter id from the old race table keeps its used state", () => {
