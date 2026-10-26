@@ -7118,6 +7118,9 @@
                   ]
                 }
               }
+            },
+            "castLevels": {
+              "create or destroy water": 2
             }
           }
         ]
@@ -20764,6 +20767,9 @@
                   ]
                 }
               }
+            },
+            "castLevels": {
+              "ray of sickness": 2
             }
           }
         ]
@@ -20882,6 +20888,9 @@
                   ]
                 }
               }
+            },
+            "castLevels": {
+              "charm person": 2
             }
           }
         ]
@@ -21000,6 +21009,9 @@
                   ]
                 }
               }
+            },
+            "castLevels": {
+              "armor of agathys": 2
             }
           }
         ]
@@ -21108,6 +21120,9 @@
                   ]
                 }
               }
+            },
+            "castLevels": {
+              "burning hands": 2
             }
           }
         ]
@@ -21177,6 +21192,9 @@
                   ]
                 }
               }
+            },
+            "castLevels": {
+              "charm person": 2
             }
           }
         ]
@@ -21246,6 +21264,9 @@
                   ]
                 }
               }
+            },
+            "castLevels": {
+              "burning hands": 2
             }
           }
         ]
@@ -21403,6 +21424,9 @@
                   ]
                 }
               }
+            },
+            "castLevels": {
+              "searing smite": 2
             }
           }
         ]
@@ -21476,6 +21500,9 @@
               ]
             }
           }
+        },
+        "castLevels": {
+          "hellish rebuke": 2
         }
       }
     ]

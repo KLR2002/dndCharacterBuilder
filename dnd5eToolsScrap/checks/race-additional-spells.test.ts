@@ -23,6 +23,18 @@ const raw = {
       ],
     },
     { name: "Sample Plain", source: "AAA", entries: ["Placeholder text."] },
+    {
+      name: "Sample Caster",
+      source: "AAA",
+      entries: ["Placeholder text."],
+      additionalSpells: [
+        {
+          ability: "cha",
+          known: { "1": ["sample ember#c"] },
+          innate: { "3": { daily: { "1": ["sample pulse#2"] } } },
+        },
+      ],
+    },
   ],
   subrace: [
     {
@@ -65,6 +77,21 @@ test("a subrace's spell grants are copied onto the subrace, and a subrace that c
   const expected = [{ ability: "int", known: { "1": { rest: { "1": ["sample glimmer"] } } } }];
   assert.deepEqual(line?.additionalSpells, expected);
   assert.deepEqual(copy?.additionalSpells, expected);
+});
+
+test("a spell the source casts at a level keeps that cast level beside the grant; a spell with no suffix has none", async () => {
+  const races = await scrapeRaces(client, newProficiencyReport());
+  const caster = races.find((race) => race.name === "Sample Caster");
+  assert.deepEqual(caster?.additionalSpells, [
+    {
+      ability: "cha",
+      known: { "1": ["sample ember"] },
+      innate: { "3": { daily: { "1": ["sample pulse"] } } },
+      castLevels: { "sample pulse": 2 },
+    },
+  ]);
+  const kin = races.find((race) => race.name === "Sample Kin");
+  assert.equal("castLevels" in (kin?.additionalSpells?.[0] ?? {}), false, "no suffix, no cast level");
 });
 
 test("a race with no spell grants has no additionalSpells field", async () => {
