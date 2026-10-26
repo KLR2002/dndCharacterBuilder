@@ -205,6 +205,8 @@ export interface BackgroundModel {
   };
   description: string;
   rawEntries?: any[];
+  /** The expanded spell lists the background adds to a class's list, as the source gives them (ADR 0017). Absent when none. */
+  additionalSpells?: AdditionalSpells[];
 }
 
 export interface ItemModel {

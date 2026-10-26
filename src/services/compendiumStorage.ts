@@ -22,7 +22,8 @@ import type {
  * Format 7 adds the expertise marks on skill grants, which a catalog saved at format 6 does not carry.
  * Format 8 adds Initiative Bonuses on class and subclass features, feats and ancestry traits, which a catalog saved at
  * format 7 does not carry.
- * Format 9 adds the spell grants of feats (ADR 0017), which a catalog saved at format 8 does not carry.
+ * Format 9 adds the spell grants of feats, races and subraces and the expanded spell lists of backgrounds (ADR 0017), which a
+ * catalog saved at format 8 does not carry.
  */
 export const REQUIRED_CATALOG_FORMAT = 9;
 
