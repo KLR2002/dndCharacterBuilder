@@ -114,6 +114,24 @@ test("the legacy skill cleanup keeps a custom background's chosen skill, flagged
   assert.equal(dropLegacyBackgroundSkills(bySource, compendium, activeBooks), bySource);
 });
 
+test("the legacy skill cleanup finds a background saved on the SRD Baseline in the catalog, and drops its copy once the book is off", () => {
+  const scholar: BackgroundData = {
+    name: "Sample Scholar",
+    source: "TST",
+    skillProficiencies: ["Insight"],
+    toolProficiencies: [],
+    languages: [],
+    grants: [{ id: "TST/Background/Sample Scholar@0#0", kind: "fixed", category: "skills", names: ["Insight"] }],
+    startingEquipment: [],
+    feature: null,
+    characteristics: {},
+    description: "",
+  };
+  const compendium = inMemoryCompendium({ backgrounds: [scholar] }, { integrated: true });
+  const character = makeChar({ background: { name: "Sample Scholar", source: "SRD" }, chosenSkills: ["Insight"] });
+  assert.deepEqual(dropLegacyBackgroundSkills(character, compendium, ["ALT"]).chosenSkills, []);
+});
+
 test("grantedFeatures reads the borrowed feature of a custom background by its source, and of a flagged one", () => {
   const bySource = makeChar({
     background: { name: "Gladiator", source: "Custom", customFeatureName: "Invented Favor", customFeatureDesc: "Invented." },

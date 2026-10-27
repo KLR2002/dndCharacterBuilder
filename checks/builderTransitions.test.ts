@@ -3,7 +3,8 @@ import assert from "node:assert/strict";
 import { teardownSubclass } from "../src/rules/characterReconciler.ts";
 import { reconcile } from "../src/rules/characterReconciler.ts";
 import { currentCompendium } from "../src/services/compendium.ts";
-import { makeChar, inMemoryCompendium } from "./testUtils.ts";
+import { makeChar, inMemoryCompendium, integratedTestCompendium } from "./testUtils.ts";
+import { DEFAULT_ACTIVE_BOOK_CODES } from "../src/constants/books.ts";
 import { CUSTOM_BACKGROUND_SKILLS_ID } from "../src/rules/customBackground.ts";
 import { effectiveScores } from "../src/rules/abilities.ts";
 import {
@@ -808,6 +809,43 @@ test("clearing a background removes its skill, language and tool grants and keep
   assert.deepEqual(updated.needsReview, [
     "Soldier background removed: granted skills, languages and tools cleared",
   ]);
+});
+
+// Invented background records, in the sources the two catalogs hold them under.
+const SCHOLAR: BackgroundData = {
+  name: "Sample Scholar",
+  source: "TST",
+  skillProficiencies: ["Insight", "Religion"],
+  toolProficiencies: [],
+  languages: [],
+  startingEquipment: [],
+  feature: null,
+  characteristics: {},
+  description: "",
+};
+const SCHOLAR_NOTICE = "Sample Scholar background removed: granted skills, languages and tools cleared";
+
+test("clearing a background saved on the SRD Baseline clears its legacy skills on the integrated catalog, which holds it under another source", () => {
+  const integrated = inMemoryCompendium({ backgrounds: [SCHOLAR] }, { integrated: true });
+  const char = makeChar({ background: { name: "Sample Scholar", source: "SRD" }, chosenSkills: ["Insight", "Religion"] });
+  const updated = clearBackground(char, { compendium: integrated, activeBooks: ["TST"] });
+  assert.deepEqual(updated.chosenSkills, []);
+  assert.deepEqual(updated.needsReview, [SCHOLAR_NOTICE]);
+});
+
+test("clearing a background saved on the integrated catalog clears its legacy skills on the SRD Baseline alone, which holds it under SRD", () => {
+  const srdOnly = inMemoryCompendium({ backgrounds: [{ ...SCHOLAR, source: "SRD" }] });
+  const char = makeChar({ background: { name: "Sample Scholar", source: "TST" }, chosenSkills: ["Insight", "Religion"] });
+  const updated = clearBackground(char, { compendium: srdOnly, activeBooks: ["SRD"] });
+  assert.deepEqual(updated.chosenSkills, []);
+  assert.deepEqual(updated.needsReview, [SCHOLAR_NOTICE]);
+});
+
+test("clearing the Acolyte saved on the SRD Baseline clears its legacy skills on the real integrated catalog", () => {
+  const char = makeChar({ background: { name: "Acolyte", source: "SRD" }, chosenSkills: ["Insight"] });
+  const updated = clearBackground(char, { compendium: integratedTestCompendium(), activeBooks: [...DEFAULT_ACTIVE_BOOK_CODES] });
+  assert.deepEqual(updated.chosenSkills, []);
+  assert.deepEqual(updated.needsReview, ["Acolyte background removed: granted skills, languages and tools cleared"]);
 });
 
 test("clearing a custom background removes the skills it chose and keeps class skills", () => {

@@ -15,6 +15,7 @@ import { currentCompendium, type Compendium } from "../services/compendium.ts";
 import { normalizeSkillName } from "./skills.ts";
 import { moveLegacySkillPicks } from "./proficiencyPicks.ts";
 import { CUSTOM_BACKGROUND_SKILLS_ID, CUSTOM_BACKGROUND_TOOLS_OR_LANGUAGES_ID, isCustomBackground } from "./customBackground.ts";
+import { findHeldRecord } from "./raceLookup.ts";
 import { ABILITY_NAMES } from "./abilities.ts";
 import { releaseExpandedOnlySpells } from "./backgroundSpells.ts";
 import { isGrantSpellChoiceId, releaseSupersededRacePicks } from "./choices/featSpells.ts";
@@ -634,7 +635,9 @@ export function clearBackground(character: Character, catalogs: CharacterCatalog
   const current = moveLegacySkillPicks(character, compendium);
   const bg = current.background;
   const bgName = bg?.name ?? "previous";
-  const bgData = bg ? compendium.findBackground(bg.name, bg.source) : undefined;
+  // The record of the held background, found as the shared lookup finds it: its saved source, else an active book's, else the
+  // first listed. Unscoped by books, so a background whose book is switched off still gives the skills it granted.
+  const bgData = bg && !isCustomBackground(bg) ? findHeldRecord(compendium.for().backgrounds(), bg, catalogs.activeBooks) : undefined;
 
   const normalize = (s: string) => s.trim().toLowerCase();
   const bgSkillChoice = current.skillChoices?.find((sc) => sc.origin === "background");
