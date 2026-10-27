@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { BACKGROUND_FEAT_SOURCE } from "../src/constants/rules.ts";
 import { featCounterId, featSpellRuleChoices, heldFeatsOf } from "../src/rules/choices/featSpells.ts";
 import { pickRuleChoice } from "../src/rules/ruleChoices.ts";
-import { reconcile } from "../src/rules/characterReconciler.ts";
+import { reconcile, teardownSubclass } from "../src/rules/characterReconciler.ts";
 import { migrateCharacter } from "../src/rules/migrateCharacter.ts";
 import { applyOriginFeat } from "../src/rules/feats.ts";
 import { applyAsiSelection } from "../src/rules/leveling.ts";
@@ -167,4 +167,10 @@ test("applying an ability score increase keeps the counter of a background-claim
   );
   assert.ok(applied.resourceCounters?.[MAGE_COUNTER], "the counter of the list held is kept");
   assert.deepEqual(applied.needsReview ?? [], [], "no notice is raised");
+});
+
+test("tearing down a subclass keeps the counter of a background-claimed feat that two active books hold, with no notice", () => {
+  const torn = teardownSubclass(claimedWithMageCounter(), "Sample Mage", "Sample Old Path", twoListsCompendium, TWO_ACTIVE_BOOKS);
+  assert.ok(torn.resourceCounters?.[MAGE_COUNTER], "the counter of the list held is kept");
+  assert.deepEqual(torn.needsReview ?? [], [], "no notice is raised");
 });

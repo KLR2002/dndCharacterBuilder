@@ -157,13 +157,14 @@ const SUBCLASS_NO_LONGER_HELD = "subclass no longer held";
  * 2. Clears subclassSpellSwaps when a Sorcerer's Clockwork Soul or Aberrant Mind is torn down
  * 3. Removes old subclass-specific resource counters
  * 4. Removes the Path of the Giant cantrips when a Giant Barbarian's subclass is torn down
- * Every removal appends a review notice.
+ * Every removal appends a review notice. `activeBooks` scopes the reconcile that ends the teardown, as in `reconcile`.
  */
 export function teardownSubclass(
   character: Character,
   className: string,
   previousSubclassName?: string,
-  compendium: Compendium = currentCompendium()
+  compendium: Compendium = currentCompendium(),
+  activeBooks?: string[]
 ): Character {
   const clsLower = className.toLowerCase();
   const prevLower = previousSubclassName?.toLowerCase() ?? "";
@@ -232,5 +233,5 @@ export function teardownSubclass(
     knownSpells: nextKnownSpells,
   };
 
-  return reconcile(withNotices(cleaned, notices), compendium);
+  return reconcile(withNotices(cleaned, notices), compendium, { activeBooks });
 }
