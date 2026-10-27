@@ -1,6 +1,25 @@
 import type { ReviewedFeature } from "./proficiency-grants.ts";
 
 /**
+ * A subrace whose spell grant waits on an option the player picks in one of the subrace's Rule Choices (ADR 0017). The grant
+ * is read only while that option is picked. Names only: the race and subrace, the trait holding the choice, and the option.
+ * The scraper writes the gate onto each of the subrace's grants as the Rule Choice id it waits on and the option.
+ */
+export interface SpellGrantGate {
+  race: string;
+  subrace: string;
+  subraceSource: string;
+  trait: string;
+  option: string;
+}
+
+/** The reviewed spell grant gates. A gate that names no subrace with spell grants fails the tracked-data check. */
+export const SPELL_GRANT_GATES: SpellGrantGate[] = [
+  // The Moon Elf or Sun Elf descent's wizard cantrip is read only when the Cantrip option of the Variant Feature is picked.
+  { race: "Half-Elf", subrace: "Moon Elf or Sun Elf Descent", subraceSource: "SCAG", trait: "Variant Feature (Choose 1)", option: "Cantrip" },
+];
+
+/**
  * A feat whose spell grants the reader does not turn into Innate Magic, reviewed (ADR 0017). The reason says what is not
  * modelled, so the follow-up is visible from this file. The gate reads names only; the reason is for the reviewer.
  */
