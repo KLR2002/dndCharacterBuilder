@@ -17,6 +17,43 @@ export interface SpellGrantGate {
 export const SPELL_GRANT_GATES: SpellGrantGate[] = [
   // The Moon Elf or Sun Elf descent's wizard cantrip is read only when the Cantrip option of the Variant Feature is picked.
   { race: "Half-Elf", subrace: "Moon Elf or Sun Elf Descent", subraceSource: "SCAG", trait: "Variant Feature (Choose 1)", option: "Cantrip" },
+  // The Drow Descent's spells are read only while the Drow Magic option of its Variant Feature is picked.
+  { race: "Half-Elf", subrace: "Drow Descent", subraceSource: "SCAG", trait: "Variant Feature (Choose 1)", option: "Drow Magic" },
+];
+
+/**
+ * A race's or subrace's spell grant whose source data gives its spells in a different shape from the trait text that grants
+ * them, corrected to the trait text (ADR 0017). Each section the correction gives (`known`, `innate`) replaces that section of
+ * the grant; a section it leaves out stays as the source gives it, and so do the ability and the expanded lists. A subrace
+ * names its own record with `subrace` and `subraceSource`; a race's own grant leaves both out. The reason is for the reviewer.
+ */
+export interface SpellGrantCorrection {
+  race: string;
+  raceSource: string;
+  subrace?: string;
+  subraceSource?: string;
+  reason: string;
+  known?: Record<string, unknown>;
+  innate?: Record<string, unknown>;
+}
+
+/** The reviewed spell grant corrections. A correction that names no grant fails the tracked-data check. */
+export const SPELL_GRANT_CORRECTIONS: SpellGrantCorrection[] = [
+  {
+    race: "Dwarf",
+    raceSource: "PHB",
+    subrace: "Mark of Warding",
+    subraceSource: "ERLW",
+    reason: "the trait adds arcane lock from 3rd level, which the grant does not give",
+    known: { "1": ["alarm", "mage armor"], "3": ["arcane lock"] },
+  },
+  {
+    race: "Gnome (Deep)",
+    raceSource: "DMG",
+    reason: "the trait gives nondetection at will and the other three once per Long Rest; the grant gives all four once per Long Rest",
+    known: { "1": ["blindness/deafness", "blur", "disguise self"] },
+    innate: { "1": ["nondetection"] },
+  },
 ];
 
 /**
