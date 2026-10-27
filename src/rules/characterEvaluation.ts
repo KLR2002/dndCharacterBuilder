@@ -99,7 +99,7 @@ export function evaluateCharacter(
 ): EvaluatedCharacter {
   const listings = catalogListings(catalogs);
   const ancestry = resolveCharacterAncestry(character, listings.races(), catalogs?.activeBooks);
-  const background = resolveCharacterBackground(character, listings.backgrounds());
+  const background = resolveCharacterBackground(character, listings.backgrounds(), catalogs?.activeBooks);
   const classes = allCatalogClasses(catalogs);
 
   const lvl = totalLevel(character);

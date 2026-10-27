@@ -31,10 +31,17 @@ export interface ExpandedSpellSource {
   names: string[];
 }
 
-/** The background the character holds, found by its name and, when the character records one, its source. */
-export function resolveCharacterBackground(character: Character, backgroundCatalog?: BackgroundData[]): BackgroundData | undefined {
+/**
+ * The background the character holds, found by the shared record lookup: the record of its saved source, else an active book's
+ * record, else the first listed. `activeBooks` is given with the listing it scopes.
+ */
+export function resolveCharacterBackground(
+  character: Character,
+  backgroundCatalog?: BackgroundData[],
+  activeBooks?: readonly string[]
+): BackgroundData | undefined {
   if (!character.background || !backgroundCatalog) return undefined;
-  return findHeldRecord(backgroundCatalog, character.background);
+  return findHeldRecord(backgroundCatalog, character.background, activeBooks);
 }
 
 /**
@@ -49,7 +56,7 @@ function heldExpandedSources(
 ): ExpandedSpellSource[] {
   const listings = compendium.for(activeBooks);
   const sources: ExpandedSpellSource[] = [];
-  const background = resolveCharacterBackground(character, listings.backgrounds());
+  const background = resolveCharacterBackground(character, listings.backgrounds(), activeBooks);
   if (background) sources.push({ title: `${background.name} background`, names: expandedSpellNamesOf(background.additionalSpells) });
   for (const { feat } of heldFeatsOf(character, listings.feats(), activeBooks)) {
     sources.push({ title: `${feat.name} feat`, names: expandedSpellNamesOf(feat.additionalSpells) });

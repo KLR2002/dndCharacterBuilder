@@ -247,7 +247,7 @@ export function changeRace(
 ): Character {
   // Skill picks saved in the old bucket move into their choices while the race is still held. A pick no choice
   // takes is the race's legacy entry, and it goes with the race.
-  const migrated = moveLegacySkillPicks(character, compendium);
+  const migrated = moveLegacySkillPicks(character, compendium, activeBooks);
   const oldRaceChoices = (migrated.skillChoices || []).filter((sc) => sc.origin === "race");
   const oldRacePicks = new Set(oldRaceChoices.flatMap((sc) => sc.picked.map(normalizeSkillName)));
   // The race's spell picks stay until releaseSupersededRacePicks names and drops them, as the ancestry transition does.
@@ -632,7 +632,7 @@ function storePicks(picks: Record<string, string[]>, id: string, values: string[
 export function clearBackground(character: Character, catalogs: CharacterCatalogs = {}): Character {
   const compendium = catalogs.compendium ?? currentCompendium();
   // Skill picks saved in the old bucket move into their choices while the background is still held.
-  const current = moveLegacySkillPicks(character, compendium);
+  const current = moveLegacySkillPicks(character, compendium, catalogs.activeBooks);
   const bg = current.background;
   const bgName = bg?.name ?? "previous";
   // The record of the held background, found as the shared lookup finds it: its saved source, else an active book's, else the

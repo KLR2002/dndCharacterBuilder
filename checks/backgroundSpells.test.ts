@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { evaluateCharacter } from "../src/rules/characterEvaluation.ts";
 import { isSpellAvailableForClass, profileSpellContext, type ClassSpellProfile } from "../src/rules/spellcasting.ts";
 import { clearBackground } from "../src/rules/builderTransitions.ts";
+import { resolveCharacterBackground } from "../src/rules/backgroundSpells.ts";
 import { isKnown, learnSpell } from "../src/rules/characterSpells.ts";
 import { findSpell } from "../src/services/dataService.ts";
 import type { CharacterClass } from "../src/types/character.ts";
@@ -147,4 +148,21 @@ test("clearing the background releases the known spells only its list gave, with
   const releasedScribe = clearBackground(scribe, catalogs);
   assert.deepEqual(releasedScribe.knownSpells?.map((k) => k.name), ["Sample Ember"], "a mage cantrip the class list gives stays known");
   assert.ok(!releasedScribe.needsReview?.some((notice) => /Sample Ember/.test(notice)), "and no notice is made for it");
+});
+
+test("a background held in two books resolves to the record of the active book when the saved source is not listed", () => {
+  const record = (source: string) => ({
+    name: "Sample Scholar",
+    source,
+    skillProficiencies: [],
+    toolProficiencies: [],
+    languages: [],
+    startingEquipment: [],
+    feature: null,
+    characteristics: {},
+    description: "",
+  });
+  const character = makeChar({ background: { name: "Sample Scholar", source: "GONE" } });
+  assert.equal(resolveCharacterBackground(character, [record("OLD"), record("ALT")], ["ALT"])?.source, "ALT");
+  assert.equal(resolveCharacterBackground(character, [record("OLD"), record("ALT")])?.source, "OLD", "without active books, the first listed");
 });

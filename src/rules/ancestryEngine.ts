@@ -209,7 +209,7 @@ export function applyAncestrySelection(
   const compendium = catalogs?.compendium ?? currentCompendium();
   // A skill pick saved in the old bucket moves into its choice while the old race is still held; a pick no choice
   // takes is the old race's legacy entry, and it goes with the race.
-  const migrated = moveLegacySkillPicks(character, compendium);
+  const migrated = moveLegacySkillPicks(character, compendium, catalogs?.activeBooks);
   const oldRaceChoices = (migrated.skillChoices || []).filter((sc) => sc.origin === "race");
   const oldRacePicks = new Set(oldRaceChoices.flatMap((sc) => sc.picked.map(normalizeSkillName)));
   const nextSkillChoices = (migrated.skillChoices || []).filter((sc) => sc.origin !== "race");
