@@ -1,6 +1,8 @@
 # 05: Race naming everywhere
 
-**Status:** ready-for-agent
+**Status:** done
+
+**Landed:** every race pick trait text and the legacy cantrip migration notice use the race title rule ("High Elf Cantrip (choose 1)"); the prepared-spell badge already read "High Elf" and is pinned by a test; pick and counter ids unchanged. check:all, check:live and the full integrated layout run green. Open: the ancestry banner "Elf — High" and the race-picker subrace badge still show the subrace alone; saved rule choices keep the trait label they were saved with; the Vahadar subrace reads "Vahadar Elf (Kaladesh)".
 
 Spec: `.scratch/record-lookup-and-releases/spec.md`.
 
@@ -14,9 +16,9 @@ A High Elf's builder rule-choice trait reads "High Elf Cantrip (choose 1)" and t
 
 ## Acceptance Criteria
 
-- [ ] The builder trait of the High Elf cantrip pick reads "High Elf Cantrip (choose 1)" and the prepared-spell badge reads "High Elf" (AC-11).
-- [ ] A multi-word subrace (a Half-Elf descent) reads by its own name in both places.
-- [ ] `npm run check:all` passes; the builder race and Spells-tab layout scenarios pass at four widths, integrated, with screenshots viewed.
+- [x] The builder trait of the High Elf cantrip pick reads "High Elf Cantrip (choose 1)" and the prepared-spell badge reads "High Elf" (AC-11).
+- [x] A multi-word subrace (a Half-Elf descent) reads by its own name in both places.
+- [x] `npm run check:all` passes; the builder race and Spells-tab layout scenarios pass at four widths, integrated, with screenshots viewed.
 
 ## Verification
 
