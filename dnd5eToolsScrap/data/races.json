@@ -10951,6 +10951,10 @@
                   }
                 ]
               }
+            },
+            "gatedBy": {
+              "choiceId": "SCAG__Half-Elf__Moon Elf or Sun Elf Descent__Variant Feature (Choose 1)",
+              "option": "Cantrip"
             }
           }
         ]
