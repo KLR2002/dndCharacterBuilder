@@ -180,10 +180,10 @@ export function chosenAbilityOptionsOf(grant: AdditionalSpells): AbilityKey[] {
   return ABILITY_KEYS.filter((key) => options.includes(key));
 }
 
-/** The abilities the player may choose for an owner: those of its grants whose ability is a choice. The player picks one, once. */
+/** The abilities the player may choose for an owner: those of its modelled grants whose ability is a choice. The player picks one, once. */
 function abilityOptionsOfGrants(grants: readonly AdditionalSpells[]): AbilityKey[] {
   const options = new Set<AbilityKey>();
-  for (const grant of grants) for (const key of chosenAbilityOptionsOf(grant)) options.add(key);
+  for (const grant of grants.filter(isModelledGrant)) for (const key of chosenAbilityOptionsOf(grant)) options.add(key);
   return ABILITY_KEYS.filter((key) => options.has(key));
 }
 
@@ -193,9 +193,9 @@ export function pickedAbilityOf(character: Character, owner: GrantOwner): Abilit
   return (ABILITY_KEYS as readonly string[]).includes(picked ?? "") ? (picked as AbilityKey) : undefined;
 }
 
-/** The named spell lists a grant set offers. Every named grant is a list; the list's ability may be fixed or chosen. */
+/** The named spell lists a grant set offers: the named grants the reader models. The list's ability may be fixed or chosen. */
 export function offeredSpellLists(grants: readonly AdditionalSpells[]): AdditionalSpells[] {
-  return grants.filter((grant) => typeof grant.name === "string");
+  return grants.filter((grant) => typeof grant.name === "string" && isModelledGrant(grant));
 }
 
 /** The grant of the spell list the player picked for an owner, if one is picked. */
@@ -257,15 +257,33 @@ function collectEntries(value: unknown, minCharacterLevel: number, uses: number 
 }
 
 /**
- * The pick slots of a grant, in order: the picks its known entries make, then those of its innate entries. A ritual pick is
- * not a slot (the ritual book is not modelled, ADR 0017).
+ * Whether the reader can fill a pick: a named list is always fillable, and a filter is when it is not a ritual filter and every
+ * one of its keys is one the reader models. A pick that cannot be filled is never offered.
+ */
+function isFillablePick(choose: string | { from: string[] }): boolean {
+  if (typeof choose !== "string") return true;
+  const parsed = parseSpellFilter(choose);
+  return !parsed.ritual && parsed.unknownKeys.length === 0;
+}
+
+/**
+ * Whether the reader models a grant: it gives a spell, or it has a pick it can fill. A grant with neither (a prepared group,
+ * or ritual spells only) is not modelled, so it gives no card and offers no pick.
+ */
+export function isModelledGrant(grant: AdditionalSpells): boolean {
+  return grantEntries(grant).some((entry) => entry.kind === "spell" || (entry.kind === "pick" && isFillablePick(entry.choose)));
+}
+
+/**
+ * The pick slots of a grant, in order: the picks its known entries make, then those of its innate entries. A pick that cannot
+ * be filled is not a slot: a ritual pick (the ritual book is not modelled, ADR 0017) or one with a key the reader does not model.
  */
 export function pickSlotsOf(grant: AdditionalSpells): PickSlot[] {
   const slots: PickSlot[] = [];
   for (const entry of grantEntries(grant)) {
     if (entry.kind !== "pick") continue;
     const choose = entry.choose;
-    if (typeof choose === "string" && parseSpellFilter(choose).ritual) continue;
+    if (!isFillablePick(choose)) continue;
     slots.push({
       index: slots.length,
       count: entry.count,

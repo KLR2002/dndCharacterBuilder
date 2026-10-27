@@ -177,6 +177,30 @@ export const grantedSpellFeats = (): FeatData[] => [
       },
     ],
   }),
+  // A prepared group the reader does not model, with the casting ability the player chooses: nothing can be cast from it.
+  feat("Sample Boon", {
+    additionalSpells: [
+      {
+        ability: { choose: ["int", "wis", "cha"] },
+        prepared: { _: ["sample veil"] },
+      },
+    ],
+  }),
+  // Named lists whose only spell is a ritual pick, which the reader does not model.
+  feat("Sample Ritual Lists", {
+    additionalSpells: [
+      {
+        name: "Sample Ritual Mage Spells",
+        ability: "int",
+        innate: { _: { daily: { "1": [{ choose: "level=1|class=Sample Mage|components & miscellaneous=ritual", count: 2 }] } } },
+      },
+      {
+        name: "Sample Ritual Cleric Spells",
+        ability: "wis",
+        innate: { _: { daily: { "1": [{ choose: "level=1|class=Sample Cleric|components & miscellaneous=ritual", count: 2 }] } } },
+      },
+    ],
+  }),
   feat("Sample Picker", {
     additionalSpells: [
       {

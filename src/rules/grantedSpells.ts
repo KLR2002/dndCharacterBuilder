@@ -13,6 +13,7 @@ import {
   fixedGrantAbility,
   grantEntries,
   heldFeatsOf,
+  isModelledGrant,
   offeredSpellLists,
   pickedAbilityOf,
   pickedSpellListOf,
@@ -104,7 +105,10 @@ export function grantedSpellSources(
   return sources;
 }
 
-/** One source for one grant, or nothing when the grant names no casting ability, or gives no spell and awaits no pick. */
+/**
+ * One source for one grant, or nothing when the grant is not modelled (see isModelledGrant), names no casting ability, or
+ * gives no spell and awaits no pick.
+ */
 function grantSource(
   ctx: GrantContext,
   owner: GrantOwner,
@@ -113,6 +117,7 @@ function grantSource(
   seen: Set<string>,
   title: string
 ): InnateSpellProfile | undefined {
+  if (!isModelledGrant(grant)) return undefined;
   const ability = abilityOf(ctx.character, owner, grant, selection);
   if (ability === undefined && grant.ability === undefined) return undefined;
 

@@ -245,3 +245,9 @@ test("a granted spell satisfies a feat prerequisite of being able to cast a spel
   assert.equal(validateFeatPrerequisites(withGrant, prerequisite, { catalogs }).met, true);
   assert.equal(validateFeatPrerequisites(withoutGrant, prerequisite, { catalogs }).met, false);
 });
+
+test("a source with a pick still owed and no spell does not satisfy the prerequisite of being able to cast a spell", () => {
+  const prerequisite = { name: "Sample Requirement", prerequisite: "The ability to cast at least one spell" };
+  const pickOnly = makeChar({ asiSelections: [takenFeat("Sample Picker", "int")] });
+  assert.equal(validateFeatPrerequisites(pickOnly, prerequisite, { catalogs }).met, false);
+});

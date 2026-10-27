@@ -76,7 +76,8 @@ export function validateFeatPrerequisites(
   if (/ability to cast at least one spell/i.test(prereq)) {
     const canCastClass = (character.classes || []).some((c) => isCastingClass(c));
     const hasKnown = (character.knownSpells || []).length > 0;
-    const hasInnate = grantedSpellSources(character, options.catalogs).length > 0;
+    // A source that holds no spell yet (a pick still owed) does not count: only a spell the character can cast does.
+    const hasInnate = grantedSpellSources(character, options.catalogs).some((source) => source.spells.length > 0);
     if (!canCastClass && !hasKnown && !hasInnate) {
       return { met: false, reason: "Requires the ability to cast at least one spell" };
     }

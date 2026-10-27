@@ -139,13 +139,34 @@ test("a pick of a spell from a switched-off book resolves to nothing, and that p
   assert.ok(off.notices?.some((notice) => /1 more spell/.test(notice)), "the switched-off cantrip is owed again");
 });
 
-test("a filter key this ticket does not support matches nothing, so its pick is owed and never guessed", () => {
-  const character = pickOption(makeChar({ classes: [mage(4)], asiSelections: [takenFeat("Sample Odd Initiate")] }), "Sample Odd Spells", "Sample Odd Initiate");
-  const spell = offeredChoices(character).find((c) => c.traitName === "Sample Odd Initiate Spell");
-  assert.ok(spell, "the spell pick is still shown");
-  assert.deepEqual(spell.options, [], "an unknown key offers no spell");
-  const card = cardTitled(evaluateCharacter(character, catalogs).grantedSpellSources, "Sample Odd Initiate (Sample Odd)");
-  assert.ok(card?.notices?.some((notice) => /1 more spell/.test(notice)));
+test("a pick whose filter uses a key the reader does not model is not offered, and its feat gives no card", () => {
+  const character = makeChar({ classes: [mage(4)], asiSelections: [takenFeat("Sample Odd Initiate")] });
+  assert.equal(offeredChoices(character).some((c) => featOf(c) === "Sample Odd Initiate"), false, "no list and no spell pick is offered");
+  assert.equal(
+    evaluateCharacter(character, catalogs).grantedSpellSources.some((source) => source.title.startsWith("Sample Odd Initiate")),
+    false,
+    "no card, since nothing on it can be filled",
+  );
+});
+
+test("a grant the reader does not model, a prepared group with a chosen ability, offers no ability pick and gives no card", () => {
+  const character = makeChar({ classes: [mage(4)], originFeats: [takenFeat("Sample Boon")] });
+  assert.equal(offeredChoices(character).some((c) => featOf(c) === "Sample Boon"), false, "the ability is not offered");
+  assert.equal(
+    evaluateCharacter(character, catalogs).grantedSpellSources.some((source) => source.title.startsWith("Sample Boon")),
+    false,
+    "and no card is shown",
+  );
+});
+
+test("named lists of ritual spells offer no list and no spell pick, and give no card", () => {
+  const character = makeChar({ classes: [mage(4)], originFeats: [takenFeat("Sample Ritual Lists")] });
+  assert.equal(offeredChoices(character).some((c) => featOf(c) === "Sample Ritual Lists"), false, "no list is offered");
+  assert.equal(
+    evaluateCharacter(character, catalogs).grantedSpellSources.some((source) => source.title.startsWith("Sample Ritual Lists")),
+    false,
+    "and no card is shown",
+  );
 });
 
 test("removing the feat releases its picks, and raises a review notice", () => {
