@@ -89,5 +89,6 @@ test("every reviewed correction names a tracked record whose spell grant carries
     assert.ok(grant, `${correction.race} (${correction.subrace ?? "race"}) gives spells in the tracked races`);
     if (correction.known) assert.deepEqual(grant.known, correction.known, `${correction.race}'s known spells follow the correction`);
     if (correction.innate) assert.deepEqual(grant.innate, correction.innate, `${correction.race}'s innate spells follow the correction`);
+    if (correction.notes) assert.deepEqual(grant.notes, correction.notes, `${correction.race}'s spell notes follow the correction`);
   }
 });
