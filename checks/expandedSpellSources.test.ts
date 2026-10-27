@@ -172,6 +172,24 @@ test("a spell a second held source still lists stays known when one source goes"
   assert.ok(!released.needsReview?.some((notice) => /Sample Ward/.test(notice)), "so no notice is made");
 });
 
+test("a spell is judged by the class that owns it: a Pact copy goes when only the feat gave it to Pact, though the Mage still lists it", () => {
+  const character = makeChar({
+    classes: [cls("Sample Mage", 3), cls("Sample Pact", 2)],
+    asiSelections: [takenMark()],
+    knownSpells: [known("Sample Ember", "Sample Pact"), known("Sample Ember", "Sample Mage")],
+  });
+  const released = removeAsiSelection(character, "Sample Mage", 4, compendium);
+  assert.deepEqual(
+    released.knownSpells?.map((k) => k.ownerKey),
+    ["Sample Mage__TST"],
+    "the Pact's copy is released; the Mage's own list keeps its copy",
+  );
+  assert.ok(
+    released.needsReview?.some((notice) => /Sample Ember removed: only on the Sample Rune Mark feat's spell list/.test(notice)),
+    `the release is noticed: ${JSON.stringify(released.needsReview)}`,
+  );
+});
+
 test("picking a different race or subrace in the ancestry picker releases the spell only the old subrace's list gave", () => {
   const [runekin] = expandedSpellRaces();
   const [runeLine] = runekin.subraces ?? [];

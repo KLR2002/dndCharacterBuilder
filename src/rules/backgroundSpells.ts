@@ -65,9 +65,14 @@ export function heldExpandedSpellNames(character: Character, compendium?: Compen
   return heldExpandedSources(character, compendium, activeBooks).flatMap((source) => source.names);
 }
 
-/** Whether one of the character's classes lists the spell on its own list: its class list or subclass expansion, with no expanded list. */
-function listedByOwnClass(character: Character, spell: SpellData): boolean {
+/**
+ * Whether the class that owns a known spell still lists it on its own list: its class list or subclass expansion, with no
+ * expanded list. The owner is the class the spell's owner key names, or its class name when it has no owner key.
+ */
+function listedByOwnClass(character: Character, known: { ownerKey?: string; className?: string }, spell: SpellData): boolean {
+  const ownerName = known.ownerKey?.split("__")[0] ?? known.className;
   return (character.classes ?? []).some((cls) =>
+    cls.className === ownerName &&
     isSpellAvailableForClass(spell, cls.className, undefined, {
       subclassName: cls.subclassName || cls.subclass,
       classLevel: cls.level,
@@ -108,7 +113,7 @@ export function releaseExpandedOnlySpells(
     const title = sourceOf.get(key);
     if (!title) return true;
     const spell = resolveSpellName(known.name, activeBooks, compendium);
-    if (!spell || listedByOwnClass(after, spell)) return true;
+    if (!spell || listedByOwnClass(after, known, spell)) return true;
     released.add(key);
     notices.push(`${known.name} removed: only on the ${title}'s spell list`);
     return false;
