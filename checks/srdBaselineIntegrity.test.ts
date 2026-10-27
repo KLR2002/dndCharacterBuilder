@@ -131,7 +131,7 @@ test("srdBaseline: Dwarf, Elf, Gnome, and Halfling have their single SRD subrace
     "High Elf in SRD must have +2 DEX and +1 INT"
   );
   assert.equal(appliedElf.race?.subraceName, "High");
-  const elfPick = raceSpellRuleChoices(appliedElf, srd).find((choice) => choice.traitName === "High Cantrip");
+  const elfPick = raceSpellRuleChoices(appliedElf, srd).find((choice) => choice.traitName === "High Elf Cantrip");
   assert.ok(elfPick, "High Elf must offer its wizard cantrip as a race pick on the SRD Baseline");
   assert.equal(elfPick.choose, 1);
 
