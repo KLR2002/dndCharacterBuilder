@@ -4376,6 +4376,9 @@
               "1": [
                 "alarm",
                 "mage armor"
+              ],
+              "3": [
+                "arcane lock"
               ]
             },
             "expanded": {
@@ -8891,10 +8894,14 @@
         "ability": "int",
         "known": {
           "1": [
-            "nondetection",
             "blindness/deafness",
             "blur",
             "disguise self"
+          ]
+        },
+        "innate": {
+          "1": [
+            "nondetection"
           ]
         }
       }
@@ -10584,6 +10591,10 @@
                   ]
                 }
               }
+            },
+            "gatedBy": {
+              "choiceId": "SCAG__Half-Elf__Drow Descent__Variant Feature (Choose 1)",
+              "option": "Drow Magic"
             }
           }
         ]
