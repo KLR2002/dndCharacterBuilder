@@ -422,3 +422,32 @@ export const grantedSpellBackgrounds = (): BackgroundData[] => [
   background("Sample Drifter", "Sample Drifting", "You gain the Sample Initiate feat."),
   background("Sample Keeper", "Sample Keeping", "You gain the Sample Warding feat."),
 ];
+
+/**
+ * Invented feats whose grants name spells and no casting ability. Sample Charter gives a cantrip at will and a daily spell with
+ * no ability. Sample Envoy gives only a daily spell. Sample Ledger gives only a ritual spell, which the reader does not model.
+ */
+export const grantedNoAbilityFeats = (): FeatData[] => [
+  feat("Sample Charter", {
+    additionalSpells: [
+      {
+        known: { _: ["sample ember"] },
+        innate: { _: { daily: { "1e": ["sample pulse"] } } },
+      },
+    ],
+  }),
+  feat("Sample Envoy", {
+    additionalSpells: [
+      {
+        innate: { _: { daily: { "1e": ["sample pulse"] } } },
+      },
+    ],
+  }),
+  feat("Sample Ledger", {
+    additionalSpells: [
+      {
+        innate: { _: { ritual: ["sample pulse"] } },
+      },
+    ],
+  }),
+];
