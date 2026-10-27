@@ -1,5 +1,5 @@
 import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
-import { DEFAULT_ACTIVE_BOOK_CODES } from "../constants/books";
+import { DEFAULT_ACTIVE_BOOK_CODES, SRD_SOURCE } from "../constants/books";
 import {
   DEFAULT_SETTINGS,
   loadAll,
@@ -343,7 +343,7 @@ export function CharacterProvider({ children }: { children: React.ReactNode }) {
     setIsIntegrated(false);
     setIntegratedAt(null);
     setCatalogStale(false);
-    await setActiveBooks(["SRD"]);
+    await setActiveBooks([SRD_SOURCE]);
   };
 
   const getCharacter = (id: string) => {

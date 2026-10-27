@@ -25,6 +25,7 @@ import {
   STANDARD_ARRAY,
   MULTICLASS_PREREQUISITES,
 } from "../constants/rules.ts";
+import { SRD_SOURCE } from "../constants/books.ts";
 import { allCatalogClasses, findClassData, type CharacterCatalogs } from "./catalogs.ts";
 import { multiclassGrantsOf } from "./proficiencySheet.ts";
 import { resolveStartingEquipment, type StartingEquipmentKit } from "./startingEquipment.ts";
@@ -799,7 +800,7 @@ export function checkActiveBooksIntegrity(
   character: Character,
   activeBooks: string[]
 ): string[] {
-  const activeSet = new Set((activeBooks || []).map((b) => b.toUpperCase()));
+  const activeSet = new Set([SRD_SOURCE, ...(activeBooks || []).map((b) => b.toUpperCase())]);
   const warnings: string[] = [];
 
   // 1. Race & Subrace

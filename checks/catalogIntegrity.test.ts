@@ -322,4 +322,21 @@ test("books: a feat a background grants is not from a disabled sourcebook, while
   );
 });
 
+test("books: SRD records are never warned under DEFAULT_ACTIVE_BOOK_CODES, while a disabled book still warns", () => {
+  const srdHero = makeChar({
+    race: { name: "Dwarf", source: "SRD" },
+    classes: [{ className: "Barbarian", source: "SRD", level: 3 }],
+    background: { name: "Acolyte", source: "SRD" },
+    originFeats: [{ level: 1, type: "feat", featName: "Grappler", featSource: "SRD" }],
+    knownSpells: [{ name: "Detect Magic", source: "SRD", ownerKey: "Cleric__SRD" }],
+  });
+  assert.deepEqual(checkActiveBooksIntegrity(srdHero, DEFAULT_ACTIVE_BOOK_CODES), []);
+
+  const disabledRace = makeChar({ race: { name: "Sample Folk", source: "MM" } });
+  assert.ok(
+    checkActiveBooksIntegrity(disabledRace, DEFAULT_ACTIVE_BOOK_CODES).some((w) => w.includes("Sample Folk") && w.includes("MM")),
+    "a race of a book that is switched off still warns"
+  );
+});
+
 

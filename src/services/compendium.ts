@@ -21,6 +21,7 @@ import type {
 } from "../types/dnd5e.ts";
 import { isCatalogStale, type CompendiumCollections } from "./compendiumStorage.ts";
 import { findHeldRace } from "../rules/raceLookup.ts";
+import { SRD_SOURCE } from "../constants/books.ts";
 
 /** Read-only, synchronous view over one catalog bundle (SRD Baseline or Integrated Catalog). */
 export interface CompendiumListings {
@@ -68,7 +69,7 @@ function resolve<T extends Sourced>(
   baselineRecords: readonly T[],
 ): Resolved<T> {
   if (!integrated) return { records: [...(own ?? [])], fromBaseline: false };
-  if (own?.length) return { records: own.filter((r) => r.source !== "SRD"), fromBaseline: false };
+  if (own?.length) return { records: own.filter((r) => r.source !== SRD_SOURCE), fromBaseline: false };
   return { records: [...baselineRecords], fromBaseline: true };
 }
 
@@ -76,7 +77,7 @@ function resolve<T extends Sourced>(
 // records that came from the baseline fallback.
 function admitter(activeBooks: readonly string[], fromBaseline: boolean): (source: string) => boolean {
   const books = new Set(activeBooks);
-  return (source) => books.has(source) || (fromBaseline && source === "SRD");
+  return (source) => books.has(source) || (fromBaseline && source === SRD_SOURCE);
 }
 
 function findIn<T extends { name: string; source: string }>(records: T[], name: string, source?: string): T | undefined {
