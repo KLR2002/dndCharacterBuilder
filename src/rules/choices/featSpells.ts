@@ -1051,9 +1051,13 @@ export function migrateLegacyRacialCantrip(character: Character, races: RaceData
     from: [picked],
     picked: [picked],
   };
-  // A pick already under the race's key stands, as moveLegacyRacePickIds keeps it.
-  if ((cleaned.ruleChoices ?? []).some((existing) => existing.id === entry.id)) return cleaned;
-  return { ...cleaned, ruleChoices: [...(cleaned.ruleChoices ?? []), entry] };
+  // A pick already made under the race's key stands. An entry under that key with no pick holds nothing, so the cantrip takes it.
+  const existing = cleaned.ruleChoices ?? [];
+  if (existing.some((rc) => rc.id === entry.id && rc.picked.length > 0)) return cleaned;
+  const ruleChoices = existing.some((rc) => rc.id === entry.id)
+    ? existing.map((rc) => (rc.id === entry.id ? entry : rc))
+    : [...existing, entry];
+  return { ...cleaned, ruleChoices };
 }
 
 /** The first pick of the grants that takes one cantrip from a named class's list, with the grant it sits in. */

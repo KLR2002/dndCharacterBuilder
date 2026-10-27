@@ -1,14 +1,14 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { evaluateCharacter } from "../src/rules/characterEvaluation.ts";
-import { raceSpellRuleChoices } from "../src/rules/choices/featSpells.ts";
+import { migrateLegacyRacialCantrip, raceSpellRuleChoices } from "../src/rules/choices/featSpells.ts";
 import { pickRuleChoice } from "../src/rules/ruleChoices.ts";
 import { reconcile } from "../src/rules/characterReconciler.ts";
 import { migrateCharacter } from "../src/rules/migrateCharacter.ts";
 import type { CharacterClass } from "../src/types/character.ts";
 import type { RaceData } from "../src/types/dnd5e.ts";
 import { inMemoryCompendium, makeChar } from "./testUtils.ts";
-import { grantedSpellBackgrounds, grantedSpellClasses, grantedSpellFeats, grantedSpellSpells } from "./grantedSpellsFixture.ts";
+import { grantedSpellBackgrounds, grantedSpellClasses, grantedSpellFeats, grantedSpellRaces, grantedSpellSpells } from "./grantedSpellsFixture.ts";
 
 // Race picks across catalogs (ADR 0017). Every name is invented (checks/grantedSpellsFixture.ts). "SRD" is the
 // SRD-like catalog's source; "TST" is the integrated-like catalog's source of the same race.
@@ -140,4 +140,40 @@ test("a race pick is kept while the catalog lacks the race's book, and released 
     released.needsReview?.includes("Sample Shot removed from Sample High: ancestry no longer grants it"),
     `got ${JSON.stringify(released.needsReview)}`,
   );
+});
+
+// A character of the invented race Sample Gifted, saved with its cantrip from the Sample Mage list as a legacy racial known spell.
+// The race's pick under its key is the one the migration writes.
+const legacyGiftedCantrip = () =>
+  makeChar({
+    classes: [mage(1)],
+    race: { name: "Sample Gifted", source: "TST" },
+    knownSpells: [{ name: "Sample Ember", source: "TST", ownerKey: "racial__innate" }],
+  });
+
+test("a legacy racial cantrip moves into the race's pick although an empty entry already holds that key", () => {
+  const races = grantedSpellRaces();
+  const racePick = migrateLegacyRacialCantrip(legacyGiftedCantrip(), races).ruleChoices?.find((entry) => entry.origin === "race");
+  assert.ok(racePick, "the legacy cantrip has a race pick to move into");
+
+  const withEmptyEntry = { ...legacyGiftedCantrip(), ruleChoices: [{ ...racePick, picked: [] }] };
+  const loaded = migrateLegacyRacialCantrip(withEmptyEntry, races);
+  assert.deepEqual(
+    loaded.ruleChoices?.find((entry) => entry.id === racePick.id)?.picked,
+    ["Sample Ember"],
+    "the cantrip is picked under the race's key",
+  );
+  assert.equal(loaded.knownSpells?.some((spell) => spell.ownerKey === "racial__innate"), false, "the legacy known spell is released");
+});
+
+test("a race pick that already holds a spell stands, and the legacy cantrip adds no second entry under its key", () => {
+  const races = grantedSpellRaces();
+  const racePick = migrateLegacyRacialCantrip(legacyGiftedCantrip(), races).ruleChoices?.find((entry) => entry.origin === "race");
+  assert.ok(racePick, "the legacy cantrip has a race pick to move into");
+
+  const withPick = { ...legacyGiftedCantrip(), ruleChoices: [{ ...racePick, picked: ["Sample Glimmer"] }] };
+  const loaded = migrateLegacyRacialCantrip(withPick, races);
+  const underKey = loaded.ruleChoices?.filter((entry) => entry.id === racePick.id) ?? [];
+  assert.equal(underKey.length, 1, "one entry is held under the race's key");
+  assert.deepEqual(underKey[0]?.picked, ["Sample Glimmer"], "the pick already made stands");
 });
