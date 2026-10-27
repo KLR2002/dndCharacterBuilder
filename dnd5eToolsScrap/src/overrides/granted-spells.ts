@@ -52,9 +52,10 @@ export const SPELL_GRANT_CORRECTIONS: SpellGrantCorrection[] = [
   {
     race: "Gnome (Deep)",
     raceSource: "DMG",
-    reason: "the trait gives nondetection at will and the other three once per Long Rest; the grant gives all four once per Long Rest",
+    reason: "the trait gives nondetection at will, on the caster only, and the other three once per Long Rest; the grant gives all four once per Long Rest",
     known: { "1": ["blindness/deafness", "blur", "disguise self"] },
     innate: { "1": ["nondetection"] },
+    notes: { nondetection: "self only" },
   },
 ];
 
