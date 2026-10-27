@@ -555,7 +555,8 @@ export function setCustomBackground(
   name: string,
   skills: string[],
   details: CustomBackgroundDetails = {},
-  compendium: Compendium = currentCompendium()
+  compendium: Compendium = currentCompendium(),
+  activeBooks?: string[]
 ): Character {
   const legacyBackground = (character.skillChoices ?? []).filter((sc) => sc.origin === "background");
   const droppedSkills = new Set(legacyBackground.flatMap((sc) => sc.picked.map((s) => normalizeSkillName(s).toLowerCase())));
@@ -584,7 +585,8 @@ export function setCustomBackground(
       skillChoices: (character.skillChoices ?? []).filter((sc) => sc.origin !== "background"),
       proficiencyPicks: Object.keys(proficiencyPicks).length > 0 ? proficiencyPicks : undefined,
     },
-    compendium
+    compendium,
+    { activeBooks }
   );
 }
 

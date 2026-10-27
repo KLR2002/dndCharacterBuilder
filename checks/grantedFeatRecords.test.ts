@@ -7,7 +7,7 @@ import { reconcile, teardownSubclass } from "../src/rules/characterReconciler.ts
 import { migrateCharacter } from "../src/rules/migrateCharacter.ts";
 import { applyOriginFeat } from "../src/rules/feats.ts";
 import { applyAsiSelection } from "../src/rules/leveling.ts";
-import { applySoleSubclasses, changeRace, changeSubclass, removeClassLevel } from "../src/rules/builderTransitions.ts";
+import { applySoleSubclasses, changeRace, changeSubclass, removeClassLevel, setCustomBackground } from "../src/rules/builderTransitions.ts";
 import type { Character, CharacterClass } from "../src/types/character.ts";
 import type { ClassData, FeatData } from "../src/types/dnd5e.ts";
 import type { AvailableRuleChoice } from "../src/rules/choices/types.ts";
@@ -194,6 +194,26 @@ test("applying the lone subclass keeps the counter of a background-claimed feat 
   assert.equal(applied.classes[0]?.subclassName, "Sample Sole Path", "the lone subclass is applied");
   assert.ok(applied.resourceCounters?.[MAGE_COUNTER], "the counter of the list held is kept");
   assert.deepEqual(applied.needsReview ?? [], [], "no notice is raised");
+});
+
+// A custom background has no book of its own, so with both books active the record resolved is the first of them in catalog
+// order. A third, inactive book listed first is what would otherwise be resolved once the background is custom.
+const customBackgroundCatalog = (): FeatData[] => [
+  { ...sampleInitiate, source: "TST3", additionalSpells: (sampleInitiate.additionalSpells ?? []).filter((grant) => grant.name === "Sample Cleric Spells") },
+  ...twoListsCatalog(),
+];
+
+test("setting a custom background keeps the counter of a background-claimed feat that two active books hold, with no notice", () => {
+  const compendium = inMemoryCompendium({
+    classes: grantedSpellClasses(),
+    feats: customBackgroundCatalog(),
+    spells: grantedSpellSpells(),
+    backgrounds: grantedSpellBackgrounds(),
+  });
+  const changed = setCustomBackground(claimedWithMageCounter(), "Sample Custom", [], {}, compendium, TWO_ACTIVE_BOOKS);
+  assert.equal(changed.background?.source, "Custom", "the background is custom");
+  assert.ok(changed.resourceCounters?.[MAGE_COUNTER], "the counter of the list held is kept");
+  assert.deepEqual(changed.needsReview ?? [], [], "no notice is raised");
 });
 
 test("removing a class level keeps the counter of a background-claimed feat that two active books hold, with no notice", () => {
