@@ -160,11 +160,11 @@ function raceOwner(record: { name: string; source: string }): GrantOwner {
 }
 
 /**
- * The title a race or subrace is shown by: a subrace reads with its race ("High Elf", "Hill Dwarf") unless its own name already
- * reads as a name, having more than one word or containing the race's name ("Drow Descent", "Mark of Finding"). A race with no
+ * The title a race or subrace is shown by: a subrace reads with its race ("Lumen Sample Kin") unless its own name already
+ * reads as a name, having more than one word or containing the race's name ("Veil Descent", "Sample Kin Heritage"). A race with no
  * parent reads by its own name.
  */
-export function raceTitle(name: string, parentRace: string | undefined): string {
+function raceTitle(name: string, parentRace: string | undefined): string {
   if (parentRace === undefined || /\s/.test(name) || name.toLowerCase().includes(parentRace.toLowerCase())) return name;
   return `${name} ${parentRace}`;
 }
@@ -1005,21 +1005,21 @@ export function featSpellChoicesOf(
 }
 
 /**
- * A Rule Choice id a High Elf cantrip was saved under (ADR 0017). It is the documented example of the legacy ids the migration
+ * A Rule Choice id a legacy racial cantrip was saved under (ADR 0017). It is the documented example of the legacy ids the migration
  * reads: see isLegacyHighElfCantripId. No new pick is saved under it.
  */
 export const LEGACY_HIGH_ELF_CANTRIP_CHOICE_ID = "PHB__Elf__PHB__High Elf__Cantrip";
 
 /**
- * Whether a Rule Choice id is a legacy High Elf cantrip pick, saved from any source. The legacy reader matched any id that names
- * High Elf, so this does too; a granted spell's own pick id is never one.
+ * Whether a Rule Choice id is a legacy racial cantrip pick, saved from any source. The legacy reader matched any id that contains
+ * the legacy race title, so this does too; a granted spell's own pick id is never one.
  */
 function isLegacyHighElfCantripId(id: string): boolean {
   return !isGrantSpellChoiceId(id) && id.includes("High Elf");
 }
 
 /**
- * Moves a saved High Elf or Half-Elf descent cantrip to the race's own pick (ADR 0017). The cantrip was saved under a legacy Rule
+ * Moves a saved legacy racial cantrip to the race's own pick (ADR 0017). The cantrip was saved under a legacy Rule
  * Choice id, or as a known spell under the legacy `racial__innate` owner key. Both are released. The cantrip moves to the race's
  * first cantrip slot that takes its spell from a class list, whatever the class, when the character's race still grants one.
  * Otherwise it is released with a review notice. A cantrip the offered spells no longer include is released by the reconciler,
