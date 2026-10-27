@@ -130,6 +130,23 @@ test("reconciling against a catalog that does not hold the feat keeps its picks,
   assert.deepEqual(reconciled.needsReview ?? [], character.needsReview ?? [], "no notice is raised");
 });
 
+test("reconciling against a catalog that holds other books but not the feat's book keeps its picks, counters and notices", () => {
+  // The SRD Baseline is the catalog when the integrated one is not loaded: it holds feats, but none of the feat's book.
+  const character = withPulseUsed(initiateWithMageList());
+  const baselineOnly = inMemoryCompendium({
+    classes: grantedSpellClasses(),
+    feats: [{ name: "Sample Elsewhere", source: "SRD", prerequisite: null, abilityScoreIncrease: null, description: "Placeholder description for the feat." }],
+    races: grantedSpellRaces(),
+    spells: grantedSpellSpells(),
+    backgrounds: grantedSpellBackgrounds(),
+  });
+
+  const reconciled = reconcile(character, baselineOnly);
+  assert.deepEqual(reconciled.ruleChoices, character.ruleChoices, "every pick is kept");
+  assert.deepEqual(reconciled.resourceCounters, character.resourceCounters, "every counter is kept");
+  assert.deepEqual(reconciled.needsReview ?? [], character.needsReview ?? [], "no notice is raised");
+});
+
 test("reconciling against a loaded catalog that no longer holds the feat still releases its picks and counters", () => {
   const character = withPulseUsed(initiateWithMageList());
   const withoutFeat = inMemoryCompendium({
