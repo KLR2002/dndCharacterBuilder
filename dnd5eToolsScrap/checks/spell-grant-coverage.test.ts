@@ -55,10 +55,17 @@ test("a grant that names no casting ability is a gap, even with no prose", () =>
   assert.equal(readsSpellGrants([{ known: { _: ["sample spark"] } }]), false);
 });
 
-test("a grant that uses only a prepared group is a gap, since the reader does not model it", () => {
-  const grants = [{ ability: "int", prepared: { "1": ["sample spark"] } }];
+test("a grant whose prepared group names a spell is covered, with or without a casting ability", () => {
+  const grants = [{ prepared: { _: ["sample spark"], s2: ["sample flare"] } }, { ability: "int", prepared: { "3": { daily: { "1": ["sample glow"] } } } }];
+  assert.equal(readsSpellGrants(grants), true);
+  const gaps = spellCoverageGaps(data([{ description: "You always have one sample spell prepared.", additionalSpells: grants }]), []);
+  assert.deepEqual(gaps, []);
+});
+
+test("a prepared group that picks only ritual spells is a gap, since the ritual book is not modelled", () => {
+  const grants = [{ prepared: { "1": [{ choose: "level=1|components & miscellaneous=ritual", count: 2 }] } }];
   assert.equal(readsSpellGrants(grants), false);
-  const gaps = spellCoverageGaps(data([{ description: "You learn one sample spell.", additionalSpells: grants }]), []);
+  const gaps = spellCoverageGaps(data([{ description: "You learn two sample rituals.", additionalSpells: grants }]), []);
   assert.deepEqual(gaps.map(gapName), ["Feat / Sample Feat (level 0)"]);
 });
 

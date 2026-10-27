@@ -26,12 +26,15 @@ export function spellGrantSentences(description: string): string[] {
 }
 
 /**
- * Whether the reader can give spells from these grants: a grant needs a casting ability (fixed, chosen or inherited), and
- * a known or innate spell the reader models, a named spell or a pick that is not a ritual pick. A prepared group is not
- * read, and a grant with no ability gives no source.
+ * Whether the reader can give spells from these grants. A known or innate spell needs a casting ability (fixed, chosen or
+ * inherited) and is one the reader models: a named spell or a pick that is not a ritual pick. A prepared spell needs no
+ * ability, since the class's own ability casts it (ADR 0017 amendment).
  */
 export function readsSpellGrants(grants: AdditionalSpells[] | undefined): boolean {
-  return (grants ?? []).some((grant) => grant.ability !== undefined && (modelledSpells(grant.known) || modelledSpells(grant.innate)));
+  return (grants ?? []).some(
+    (grant) =>
+      (grant.ability !== undefined && (modelledSpells(grant.known) || modelledSpells(grant.innate))) || modelledSpells(grant.prepared),
+  );
 }
 
 function modelledSpells(value: unknown): boolean {
