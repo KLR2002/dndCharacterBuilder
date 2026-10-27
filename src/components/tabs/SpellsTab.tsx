@@ -273,6 +273,8 @@ export const SpellsTab: React.FC = () => {
         className?: string;
         details?: SpellData;
         isAlwaysPrepared?: boolean;
+        /** The feat or race an always-prepared spell comes from, which its badge names. */
+        grantedSource?: string;
         isSubclassGrant?: boolean;
         isReplaced?: boolean;
         originalName?: string;
@@ -297,7 +299,12 @@ export const SpellsTab: React.FC = () => {
       const isAlwaysPrep = alwaysPrepMap.has(item.name.toLowerCase());
       seenNames.add(item.name.toLowerCase());
       if (map[lvl]) {
-        map[lvl].push({ ...item, details, isAlwaysPrepared: isAlwaysPrep });
+        map[lvl].push({
+          ...item,
+          details,
+          isAlwaysPrepared: isAlwaysPrep,
+          grantedSource: isAlwaysPrep ? activeProfile.grantedPreparedSources?.[item.name.toLowerCase()] : undefined,
+        });
       }
     }
 
@@ -315,6 +322,7 @@ export const SpellsTab: React.FC = () => {
             className: activeProfile.className,
             details: spell,
             isAlwaysPrepared: true,
+            grantedSource: activeProfile.grantedPreparedSources?.[norm],
           });
         }
       }
@@ -378,9 +386,11 @@ export const SpellsTab: React.FC = () => {
     return countPrepared(currentCharacter, activeProfile, currentCompendium());
   }, [activeProfile, currentCharacter]);
 
+  // The header's "+ N" names the subclass's free spells, so a feat's or race's are not counted here.
   const alwaysPreparedCount = useMemo(() => {
     if (!activeProfile || !activeProfile.alwaysPreparedSpells) return 0;
-    return activeProfile.alwaysPreparedSpells.filter((s) => s.level > 0).length;
+    const granted = activeProfile.grantedPreparedSources ?? {};
+    return activeProfile.alwaysPreparedSpells.filter((s) => s.level > 0 && granted[s.name.toLowerCase()] === undefined).length;
   }, [activeProfile]);
 
   const hasAgonizingBlast = useMemo(() => {
@@ -1502,7 +1512,7 @@ export const SpellsTab: React.FC = () => {
                         </Text>
                         {item.isAlwaysPrepared && (
                           <Badge
-                            label={getSubclassPreparedBadgeLabel(currentProfile.className)}
+                            label={item.grantedSource ?? getSubclassPreparedBadgeLabel(currentProfile.className)}
                             variant="secondary"
                             size="sm"
                           />

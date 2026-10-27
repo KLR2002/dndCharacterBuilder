@@ -568,8 +568,8 @@ test("live catalog: every filter a feat's known and innate groups carry uses a k
 });
 
 test("live catalog: every feat whose spell grants the reader does not read has a reviewed mark", { skip: SKIP }, () => {
-  // The same gate as the tracked data, over the live catalog. A prepared group, a grant with no casting ability and a ritual
-  // pick are not read by the reader, so each of their feats needs a mark (ADR 0017).
+  // The same gate as the tracked data, over the live catalog. A grant with no casting ability, a ritual pick and a feat with no
+  // spell grant in the catalog are not read by the reader, so each of their feats needs a mark (ADR 0017).
   const catalog = { classes: [], feats: live!.collections.feats } as unknown as TrackedData;
   const gaps = spellCoverageGaps(catalog, [...REVIEWED_NO_SPELL_GRANTS, ...REVIEWED_NO_SPELL_GRANTS_LIVE_ONLY]);
   assert.deepEqual(
@@ -581,15 +581,22 @@ test("live catalog: every feat whose spell grants the reader does not read has a
 
 test("live catalog: every feat the gate counts as covered gives the reader a source", { skip: SKIP }, () => {
   // The gate counts a feat as covered when its grant is one the reader reads. This checks that on the real catalog: the
-  // reader gives such a feat a card or an owed pick.
+  // reader gives such a feat a card, a listed prepared spell, or a pick it offers (a named list not yet picked). A Wizard
+  // holds the feat, so a prepared spell gated on a spell slot level or a character level from 5 is listed.
   const covered = live!.collections.feats.filter((feat) => readsSpellGrants(feat.additionalSpells));
   assert.ok(covered.length > 0, "no feat in the catalog has spell grants the reader reads");
   const silent = covered.filter((feat) => {
     const character = makeChar({
-      classes: [{ className: "Fighter", source: "PHB", level: 5 }],
+      classes: [{ className: "Wizard", source: "PHB", level: 5 }],
       asiSelections: [{ level: 4, type: "feat", featName: feat.name, featSource: feat.source }],
     });
-    return !evaluateCharacter(character, { compendium: live!.compendium }).grantedSpellSources.some((source) => source.title.startsWith(feat.name));
+    const evaluated = evaluateCharacter(character, { compendium: live!.compendium });
+    const hasCard = evaluated.grantedSpellSources.some((source) => source.title.startsWith(feat.name));
+    const listsPrepared = evaluated.spellProfiles.some((profile) =>
+      Object.values(profile.grantedPreparedSources ?? {}).some((source) => source.startsWith(feat.name)),
+    );
+    const offersPick = featSpellChoicesOf(character, feat, live!.compendium).length > 0;
+    return !hasCard && !listsPrepared && !offersPick;
   });
   assert.deepEqual(
     silent.map((feat) => `${feat.name} (${feat.source})`),
@@ -597,6 +604,29 @@ test("live catalog: every feat the gate counts as covered gives the reader a sou
     "feats the gate counts as covered that the reader gives no source",
   );
 });
+
+test("live catalog: every spell a prepared group names is a spell of the catalog", { skip: SKIP }, () => {
+  // A prepared group names spells by name (or picks them). A name the catalog does not hold would be listed nowhere, silently.
+  const names = new Set(live!.collections.spells.map((spell) => spell.name.toLowerCase()));
+  const named: { owner: string; spell: string }[] = [];
+  for (const record of [...live!.collections.feats, ...live!.collections.races]) {
+    const subraceGrants = "subraces" in record ? (record.subraces ?? []).flatMap((sub) => sub.additionalSpells ?? []) : [];
+    for (const grant of [...(record.additionalSpells ?? []), ...subraceGrants]) {
+      for (const spell of preparedNamesOf(grant.prepared)) named.push({ owner: record.name, spell });
+    }
+  }
+  assert.ok(named.length > 0, "the catalog has prepared groups that name spells");
+  const missing = named.filter((entry) => !names.has(entry.spell.toLowerCase())).map((entry) => `${entry.owner}: ${entry.spell}`);
+  assert.deepEqual(missing, [], "prepared spell names the catalog does not hold");
+});
+
+/** The spell names a prepared group names outright: strings at any depth, not the names inside a `choose` filter. */
+function preparedNamesOf(value: unknown): string[] {
+  if (typeof value === "string") return [value];
+  if (Array.isArray(value)) return value.flatMap(preparedNamesOf);
+  if (!value || typeof value !== "object" || "choose" in value) return [];
+  return Object.values(value).flatMap(preparedNamesOf);
+}
 
 test("live catalog: Magic Initiate carries its Cleric list, and a Wizard with it (Cleric) has a card with Wisdom as its ability", { skip: SKIP }, () => {
   const magicInitiate = live!.collections.feats.find((feat) => feat.name === "Magic Initiate" && feat.source === "PHB");

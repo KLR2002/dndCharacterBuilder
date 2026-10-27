@@ -1,0 +1,184 @@
+import test from "node:test";
+import assert from "node:assert/strict";
+import { evaluateCharacter } from "../src/rules/characterEvaluation.ts";
+import { featSpellRuleChoices, raceSpellRuleChoices } from "../src/rules/choices/featSpells.ts";
+import type { AbilityKey, AbilityScores, AsiSelection, Character, CharacterClass, RuleChoiceEntry } from "../src/types/character.ts";
+import type { ClassSpellProfile } from "../src/rules/spellcasting.ts";
+import { inMemoryCompendium, makeChar } from "./testUtils.ts";
+import { grantedSpellClasses } from "./grantedSpellsFixture.ts";
+import { preparedGrantFeats, preparedGrantRaces, preparedGrantSpells } from "./grantedPreparedFixture.ts";
+
+// Prepared spells of a held feat or race are Always-Prepared Spells (ADR 0017, amendment). Every name here is invented
+// (checks/grantedPreparedFixture.ts). The spells listed are the ones the feat or race's prepared group names.
+
+const compendium = inMemoryCompendium({
+  classes: grantedSpellClasses(),
+  feats: preparedGrantFeats(),
+  races: preparedGrantRaces(),
+  spells: preparedGrantSpells(),
+});
+const catalogs = { compendium };
+
+const scores = (overrides: Partial<AbilityScores>): AbilityScores => ({
+  str: 10,
+  dex: 10,
+  con: 10,
+  int: 10,
+  wis: 10,
+  cha: 10,
+  ...overrides,
+});
+
+const mage = (level: number): CharacterClass => ({ className: "Sample Mage", source: "TST", level });
+const cleric = (level: number): CharacterClass => ({ className: "Sample Cleric", source: "TST", level });
+
+/** A feat taken through an ability score improvement at level 4. */
+const takenFeat = (featName: string, featAbility?: AbilityKey): AsiSelection => ({
+  level: 4,
+  type: "feat",
+  featName,
+  featSource: "TST",
+  ...(featAbility ? { featAbility } : {}),
+});
+
+const profileFor = (profiles: ClassSpellProfile[], className: string): ClassSpellProfile => {
+  const profile = profiles.find((p) => p.className === className);
+  assert.ok(profile, `${className} has a spell profile`);
+  return profile;
+};
+
+const listedNames = (profile: ClassSpellProfile): string[] => (profile.alwaysPreparedSpells ?? []).map((s) => s.name);
+
+test("a prepared spell of a held feat is listed in the class list, badged for the feat, and stored nowhere", () => {
+  const withFeat = makeChar({ classes: [mage(4)], asiSelections: [takenFeat("Sample Keeper Mark", "int")] });
+  const without = makeChar({ classes: [mage(4)] });
+  const profile = profileFor(evaluateCharacter(withFeat, catalogs).spellProfiles, "Sample Mage");
+  const baseline = profileFor(evaluateCharacter(without, catalogs).spellProfiles, "Sample Mage");
+
+  assert.ok(listedNames(profile).includes("Sample Bulwark"), "the prepared spell is listed as always prepared");
+  assert.equal(profile.grantedPreparedSources?.["sample bulwark"], "Sample Keeper Mark", "the badge names the feat");
+  assert.ok(!profile.knownSpells.some((k) => k.name === "Sample Bulwark"), "not a known spell");
+  assert.ok(!profile.preparedSpells.some((key) => key.startsWith("Sample Bulwark__")), "not a stored prepared spell");
+  assert.equal(profile.preparedLimit, baseline.preparedLimit, "the prepared limit is unchanged");
+  assert.deepEqual(profile.preparedSpells, baseline.preparedSpells, "the prepared count is unchanged");
+});
+
+test("a prepared spell is listed in every spellcasting class's list, with each class's own spell ability", () => {
+  const character = makeChar({
+    classes: [mage(3), cleric(2)],
+    asiSelections: [takenFeat("Sample Keeper Mark", "int")],
+    baseAbilityScores: scores({ int: 16, wis: 10 }),
+  });
+  const profiles = evaluateCharacter(character, catalogs).spellProfiles;
+  const mageProfile = profileFor(profiles, "Sample Mage");
+  const clericProfile = profileFor(profiles, "Sample Cleric");
+
+  assert.ok(listedNames(mageProfile).includes("Sample Bulwark"), "the mage's list has it");
+  assert.ok(listedNames(clericProfile).includes("Sample Bulwark"), "the cleric's list has it");
+  // Total level 5 gives proficiency +3. The mage casts with Intelligence (+3) and the cleric with Wisdom (+0).
+  assert.equal(mageProfile.spellSaveDc, 14);
+  assert.equal(mageProfile.spellAttackBonus, 6);
+  assert.equal(clericProfile.spellSaveDc, 11);
+  assert.equal(clericProfile.spellAttackBonus, 3);
+});
+
+test("a prepared spell with a character level is absent below it and listed from it", () => {
+  const holding = (level: number) =>
+    makeChar({ classes: [mage(level)], race: { name: "Sample Late Blood", source: "TST" } });
+
+  const below = profileFor(evaluateCharacter(holding(2), catalogs).spellProfiles, "Sample Mage");
+  const from = profileFor(evaluateCharacter(holding(3), catalogs).spellProfiles, "Sample Mage");
+  assert.ok(!listedNames(below).includes("Sample Anchor"), "absent at level 2");
+  assert.ok(listedNames(from).includes("Sample Anchor"), "listed at level 3");
+});
+
+test("a prepared spell with a spell slot level is listed once the character has slots of that level", () => {
+  const holding = (level: number) => makeChar({ classes: [mage(level)], asiSelections: [takenFeat("Sample Slot Adept")] });
+
+  // Level 2 has first-level slots only: the first-level spell is listed, the second-level one is not.
+  const early = profileFor(evaluateCharacter(holding(2), catalogs).spellProfiles, "Sample Mage");
+  assert.ok(listedNames(early).includes("Sample Fetch"));
+  assert.ok(!listedNames(early).includes("Sample Thread"));
+
+  // Level 3 has second-level slots, so the second-level spell is listed too.
+  const later = profileFor(evaluateCharacter(holding(3), catalogs).spellProfiles, "Sample Mage");
+  assert.ok(listedNames(later).includes("Sample Thread"));
+});
+
+test("removing the feat removes its prepared spells from every list", () => {
+  const character = makeChar({ classes: [mage(4), cleric(1)], asiSelections: [takenFeat("Sample Keeper Mark", "int")] });
+  const removed = { ...character, asiSelections: [] };
+  for (const className of ["Sample Mage", "Sample Cleric"]) {
+    const profile = profileFor(evaluateCharacter(removed, catalogs).spellProfiles, className);
+    assert.ok(!listedNames(profile).includes("Sample Bulwark"), `${className} no longer lists it`);
+    assert.equal(profile.grantedPreparedSources?.["sample bulwark"], undefined);
+  }
+});
+
+test("a prepared-only feat offers no casting ability and gives no card", () => {
+  const character = makeChar({ classes: [mage(4)], asiSelections: [takenFeat("Sample Keeper Mark", "int")] });
+  const evaluated = evaluateCharacter(character, catalogs);
+
+  assert.deepEqual(evaluated.grantedSpellSources, [], "no Innate Magic card and no notice-only card");
+  const choices = featSpellRuleChoices(character, compendium);
+  assert.ok(!choices.some((choice) => choice.id.endsWith("__Casting Ability")), "no ability pick is offered");
+});
+
+test("a named prepared list is offered as a list choice, and lists nothing until one is picked", () => {
+  const unpicked = makeChar({ classes: [mage(4)], asiSelections: [takenFeat("Sample Boon")] });
+  assert.deepEqual(listedNames(profileFor(evaluateCharacter(unpicked, catalogs).spellProfiles, "Sample Mage")), []);
+  const offered = featSpellRuleChoices(unpicked, compendium);
+  assert.ok(offered.some((choice) => choice.id === "TST__Feat Spells__Sample Boon__Spell List"), "the list is offered");
+  assert.ok(!offered.some((choice) => choice.id.endsWith("__Casting Ability")), "no ability pick for a prepared list");
+
+  const picked: Character = {
+    ...unpicked,
+    ruleChoices: [
+      {
+        id: "TST__Feat Spells__Sample Boon__Spell List",
+        trait: "Sample Boon Spell List",
+        origin: "feat",
+        choose: 1,
+        from: ["Sample Mark A", "Sample Mark B"],
+        picked: ["Sample Mark B"],
+      },
+    ],
+  };
+  const profile = profileFor(evaluateCharacter(picked, catalogs).spellProfiles, "Sample Mage");
+  assert.ok(listedNames(profile).includes("Sample Fetch"), "the picked list's spell is listed");
+  assert.equal(profile.grantedPreparedSources?.["sample fetch"], "Sample Boon (Sample Mark B)");
+  assert.ok(!listedNames(profile).includes("Sample Bulwark"), "the other list's spell is not");
+});
+
+test("a prepared pick is listed once the player picks the spell, and is not stored", () => {
+  const character = makeChar({ classes: [mage(4)], asiSelections: [takenFeat("Sample Pick Feat")] });
+  const unpicked = profileFor(evaluateCharacter(character, catalogs).spellProfiles, "Sample Mage");
+  assert.deepEqual(listedNames(unpicked), [], "nothing is listed before the pick");
+
+  const pick: RuleChoiceEntry = {
+    id: "TST__Feat Spells__Sample Pick Feat__-__0",
+    trait: "Sample Pick Feat Spell",
+    origin: "feat",
+    choose: 1,
+    from: ["Sample Lure", "Sample Fetch"],
+    picked: ["Sample Lure"],
+  };
+  const picked: Character = { ...character, ruleChoices: [pick] };
+  const profile = profileFor(evaluateCharacter(picked, catalogs).spellProfiles, "Sample Mage");
+  assert.ok(listedNames(profile).includes("Sample Lure"));
+  assert.ok(!profile.knownSpells.some((k) => k.name === "Sample Lure"));
+});
+
+test("a race's prepared spell is listed, and its casting-ability choice is not offered", () => {
+  const character = makeChar({ classes: [mage(4)], race: { name: "Sample Hexed", source: "TST" } });
+  const profile = profileFor(evaluateCharacter(character, catalogs).spellProfiles, "Sample Mage");
+  assert.ok(listedNames(profile).includes("Sample Fetch"));
+  assert.equal(profile.grantedPreparedSources?.["sample fetch"], "Sample Hexed");
+  assert.deepEqual(raceSpellRuleChoices(character, compendium), [], "no ability pick and no pick for the race");
+  assert.deepEqual(evaluateCharacter(character, catalogs).grantedSpellSources, [], "no race card");
+});
+
+test("a prepared spell is not listed for a character with no spellcasting class", () => {
+  const character = makeChar({ classes: [{ className: "Sample Fighter", source: "TST", level: 4 }], asiSelections: [takenFeat("Sample Keeper Mark", "int")] });
+  assert.deepEqual(evaluateCharacter(character, catalogs).spellProfiles, []);
+});

@@ -34,7 +34,7 @@ import {
   calculateAutoResourceCounters,
   getMergedResourceCounters,
 } from "./resourceCounters.ts";
-import { grantedSpellSources } from "./grantedSpells.ts";
+import { grantedPreparedSpells, grantedSpellSources } from "./grantedSpells.ts";
 import { backgroundExpandedSpellNames } from "./backgroundSpells.ts";
 import type { InnateSpellProfile } from "./innateMagic.ts";
 
@@ -154,6 +154,7 @@ export function evaluateCharacter(
     classes,
     compendium: catalogs?.compendium,
     backgroundSpells: backgroundExpandedSpellNames(background),
+    grantedPrepared: grantedPreparedSpells(character, catalogs),
   });
   const grantedSources = grantedSpellSources(character, catalogs, {
     modifiers: effScores.modifiers,
