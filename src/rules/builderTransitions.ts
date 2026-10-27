@@ -652,7 +652,12 @@ export function clearBackground(character: Character, catalogs: CharacterCatalog
   };
 
   // The spells only the background's expanded list gave are released, with a notice (ADR 0017).
-  return releaseExpandedOnlySpells(current, reconcile(withNotices(cleared, notices), compendium), compendium, catalogs.activeBooks);
+  return releaseExpandedOnlySpells(
+    current,
+    reconcile(withNotices(cleared, notices), compendium, { activeBooks: catalogs.activeBooks }),
+    compendium,
+    catalogs.activeBooks
+  );
 }
 
 /**
