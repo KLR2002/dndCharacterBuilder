@@ -119,7 +119,7 @@ test("a legacy cantrip the character's race no longer grants raises a review not
   });
   const loaded = migrateCharacter(dwarf, races, tracked.classes);
   assert.equal(loaded.ruleChoices?.some((entry) => entry.id === LEGACY_HIGH_ELF_ID), false);
-  assert.ok(loaded.needsReview?.some((message) => message.includes("High Elf Cantrip") && message.includes("removed")));
+  assert.ok(loaded.needsReview?.some((message) => message.includes("Fire Bolt") && message.includes("removed from Dwarf")));
 });
 
 test("a legacy pick the offered spells no longer include raises a review notice when the character is opened", () => {

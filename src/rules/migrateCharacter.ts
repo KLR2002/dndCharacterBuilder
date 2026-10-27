@@ -105,6 +105,7 @@ export function migrateCharacter(raw: unknown, raceCatalog?: RaceData[], classCa
     preparedSpells: prepared.map(key => key.split("__").length < 4 ? `${key}__${ownerKey}` : key),
     pactSlotsUsed: c.pactSlotsUsed ?? c.usedPactSlots ?? 0,
   };
-  // The High Elf and Half-Elf cantrip moves to the race's own pick once the catalog says what the race grants.
-  return raceCatalog ? migrateLegacyRacialCantrip(migrated, raceCatalog) : migrated;
+  // The High Elf and Half-Elf cantrip moves to the race's own pick once the catalog says what the race grants. An empty race
+  // catalog is not loaded, so the cantrip is kept as saved, with no notice.
+  return raceCatalog?.length ? migrateLegacyRacialCantrip(migrated, raceCatalog) : migrated;
 }

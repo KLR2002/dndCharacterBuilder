@@ -101,7 +101,7 @@ test("applyAncestrySelection resets old picks and assigns fixed bonuses", () => 
   assert.equal(dwarfState.fixedBonuses.str, 2);
   assert.equal(dwarfState.fixedBonuses.con, 2);
   assert.equal(char.ruleChoices?.length ?? 0, 0);
-  assert.ok(char.needsReview?.some((message) => message.includes("Cantrip removed")));
+  assert.ok(char.needsReview?.includes("Prestidigitation removed from High: ancestry no longer grants it"), JSON.stringify(char.needsReview));
 });
 
 
