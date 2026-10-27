@@ -9,7 +9,7 @@ import { catalogListings, type CharacterCatalogs } from "./characterEvaluation.t
 import { setChoiceRacialBonus } from "./builderTransitions.ts";
 import { reconcile } from "./characterReconciler.ts";
 import { currentCompendium } from "../services/compendium.ts";
-import { getBackgroundFeatGrant } from "./feats.ts";
+import { BACKGROUND_FEAT_SOURCE } from "../constants/rules.ts";
 import { normalizeSkillName } from "./skills.ts";
 import { isGrantSpellChoiceId } from "./choices/featSpells.ts";
 import { moveLegacySkillPicks } from "./proficiencyPicks.ts";
@@ -169,10 +169,8 @@ export function resolveAncestryState(
     }
 
     if (hasOriginFeat) {
-      const bgGrant = character.background ? getBackgroundFeatGrant(character.background.name) : null;
-      currentOriginFeat = (character.originFeats || []).find(
-        (f) => !bgGrant || f.featName?.toLowerCase() !== bgGrant.featName.toLowerCase()
-      );
+      // The feat a background grants carries the Background source, so the origin feat is the one the player chose.
+      currentOriginFeat = (character.originFeats || []).find((f) => f.featSource !== BACKGROUND_FEAT_SOURCE);
     }
   }
 

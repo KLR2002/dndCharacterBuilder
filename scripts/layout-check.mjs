@@ -398,6 +398,38 @@ function magicInitiateCharacter() {
   });
 }
 
+// A level 4 Wizard whose background grants Magic Initiate: the feat is claimed in the background section and its list is
+// picked there. Integrated mode only (the background and the feat are not in the SRD Baseline).
+const BACKGROUND_FEAT_ID = "char_backgroundfeat";
+const BACKGROUND_FEAT_ROUTE = `/character/${BACKGROUND_FEAT_ID}`;
+function backgroundFeatCharacter() {
+  const featSource = catalogSource("feats", "Magic Initiate");
+  return makeChar({
+    id: BACKGROUND_FEAT_ID,
+    name: "Tamsin",
+    createdAt: 11,
+    updatedAt: 11,
+    startingOption: "equipment",
+    race: { name: "Human", source: catalogSource("races", "Human") },
+    background: { name: "Astral Drifter", source: catalogSource("backgrounds", "Astral Drifter") },
+    classes: [{ className: "Wizard", source: catalogSource("classes", "Wizard"), level: 4 }],
+    currentHp: 20,
+    startingGrantsApplied: true,
+    backgroundGrantsApplied: true,
+    originFeats: [{ level: 1, type: "feat", featName: "Magic Initiate", featSource: "Background" }],
+    ruleChoices: [
+      {
+        id: `${featSource}__Feat Spells__Magic Initiate__Spell List`,
+        trait: "Magic Initiate Spell List",
+        origin: "feat",
+        choose: 1,
+        from: ["Bard Spells", "Cleric Spells", "Druid Spells", "Sorcerer Spells", "Warlock Spells", "Wizard Spells"],
+        picked: ["Wizard Spells"],
+      },
+    ],
+  });
+}
+
 // Level 1 Fighters for the equipment card. The unpicked one has no picks, so Claim Starting Equipment is disabled. The
 // picked one has a pick in every slot (chain mail, a martial weapon and a shield, a light crossbow, a dungeoneer's pack),
 // so Claim is enabled, and its martial weapon picker is the one a screen opens.
@@ -551,6 +583,7 @@ function buildSeed() {
       fighterCharacter({ id: FIGHTER_PICKED_ID, name: "Brannoc", picked: true }),
       battleMasterCharacter(),
       ...(INTEGRATED ? [magicInitiateCharacter(), highElfCharacter()] : []),
+      ...(INTEGRATED ? [backgroundFeatCharacter()] : []),
       ...(INTEGRATED ? [clericCharacter({ id: CLERIC_ID, name: "Corwin", domain: false })] : []),
       clericCharacter({ id: CLERIC_DOMAIN_ID, name: "Ysolde", domain: true }),
       INTEGRATED ? knowledgeClericCharacter() : multiclassSkillCharacter(),
@@ -559,7 +592,8 @@ function buildSeed() {
     settings: {
       ...defaults,
       hasCompletedFirstRun: true,
-      activeResourceBooks: INTEGRATED ? [...new Set([...defaults.activeResourceBooks, "MM"])] : defaults.activeResourceBooks,
+      // AAG is switched on for the Astral Drifter background, which grants Magic Initiate (the background section lists its feat only when the book is on).
+      activeResourceBooks: INTEGRATED ? [...new Set([...defaults.activeResourceBooks, "MM", "AAG"])] : defaults.activeResourceBooks,
     },
     integrated: INTEGRATED ? integratedCollections(ROOT) : null,
   };
@@ -641,6 +675,15 @@ const SCREENS = [
           ready: /traits:/i,
           scrollTo: "Racial Spells",
           expect: { texts: ["Racial Spells", "High Cantrip (choose 1)"], fitsWidth: true },
+        },
+        // A background that grants Magic Initiate: its pick controls sit under the feat the background section shows.
+        {
+          name: "Builder Background feat spell picks",
+          route: BACKGROUND_FEAT_ROUTE,
+          tabs: ["Builder", "Background"],
+          ready: /background feat/i,
+          scrollTo: "Magic Initiate Spell List (choose 1)",
+          expect: { texts: ["Feat Added to Character", "Magic Initiate Spell List (choose 1)", "Magic Initiate Cantrip (choose 2)", "Magic Initiate Spell (choose 1)"], fitsWidth: true },
         },
       ]
     : []),

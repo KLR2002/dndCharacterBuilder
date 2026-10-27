@@ -3,7 +3,7 @@ import { Text, TextInput, TouchableOpacity, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { Character } from "../../types/character";
 import { BackgroundData } from "../../types/dnd5e";
-import { DND_SKILLS } from "../../constants/rules";
+import { BACKGROUND_FEAT_SOURCE, DND_SKILLS } from "../../constants/rules";
 import {
   applyBackgroundGrants,
   clearBackground,
@@ -20,8 +20,11 @@ import {
 } from "../../rules/customBackground";
 import { heldByOtherSources, picksOnlyLanguages } from "../../rules/proficiencyChoiceOffers";
 import { poolNames } from "../../rules/proficiencyPools";
-import type { AvailableRuleChoice } from "../../rules/ruleChoices";
-import type { CharacterCatalogs } from "../../rules/catalogs";
+import { featSpellChoicesOf, type AvailableRuleChoice } from "../../rules/ruleChoices";
+import { currentCompendium } from "../../services/compendium";
+import { catalogListings, type CharacterCatalogs } from "../../rules/catalogs";
+import { featOfSelection } from "../../rules/choices/featSpells";
+import { GrantedSpellPicks } from "./GrantedSpellPicks";
 import { Badge } from "../ui/Badge";
 import { Button } from "../ui/Button";
 import { Card } from "../ui/Card";
@@ -30,7 +33,7 @@ import { SearchBar } from "../ui/SearchBar";
 import { builderStyles as styles, pkStyles } from "./builderStyles";
 import { ProficiencyChoicePicker } from "./ProficiencyChoicePicker";
 import { useResponsiveLayout } from "../../hooks/useResponsiveLayout";
-import { applyOriginFeat, getBackgroundFeatGrant, removeOriginFeat } from "../../rules/feats";
+import { applyOriginFeat, getBackgroundFeatGrant, grantBackgroundFeat, removeOriginFeat } from "../../rules/feats";
 import { getFeatAbilityBonusOptions } from "../../rules/leveling";
 
 export interface BackgroundSectionProps {
@@ -265,16 +268,17 @@ export const BackgroundSection: React.FC<BackgroundSectionProps> = ({
                   {(() => {
                     const bgFeatGrant = getBackgroundFeatGrant(character.background!.name, bgData.feature?.description);
                     if (!bgFeatGrant) return null;
-                    const bgOriginFeat = (character.originFeats || []).find(
-                      (f) => f.featName?.toLowerCase() === bgFeatGrant.featName.toLowerCase()
-                    );
+                    // A choice of feats (Rewarded) offers each of its options; the feat claimed is the background's one.
+                    const offeredFeats = bgFeatGrant.isChoice ? bgFeatGrant.choiceOptions ?? [bgFeatGrant.featName] : [bgFeatGrant.featName];
+                    const bgOriginFeat = (character.originFeats || []).find((f) => f.featSource === BACKGROUND_FEAT_SOURCE);
+                    const bgFeatRecord = bgOriginFeat ? featOfSelection(bgOriginFeat, catalogListings(catalogs).feats()) : undefined;
 
                     return (
                       <View style={{ gap: 8, marginTop: 6, paddingTop: 8, borderTopWidth: 1, borderTopColor: theme.border }}>
                         <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
                           <View style={{ flex: 1 }}>
                             <Text style={{ color: theme.accent, fontSize: 13, fontWeight: "700" }}>
-                              Background Feat: {bgFeatGrant.featName}
+                              Background Feat: {bgOriginFeat ? bgOriginFeat.featName : bgFeatGrant.isChoice ? "choose one" : bgFeatGrant.featName}
                             </Text>
                             <Text style={{ color: theme.textSecondary, fontSize: 11 }}>
                               Granted by your background
@@ -343,28 +347,40 @@ export const BackgroundSection: React.FC<BackgroundSectionProps> = ({
                                 </View>
                               );
                             })()}
+
+                            <GrantedSpellPicks
+                              character={character}
+                              choices={featSpellChoicesOf(
+                                character,
+                                {
+                                  name: bgFeatRecord?.name ?? bgOriginFeat.featName ?? "",
+                                  source: bgFeatRecord?.source ?? BACKGROUND_FEAT_SOURCE,
+                                },
+                                currentCompendium(),
+                                catalogs.activeBooks
+                              )}
+                              onUpdate={onUpdate}
+                              theme={theme}
+                            />
                           </View>
                         ) : (
-                          <Button
-                            title={`Claim Feat (${bgFeatGrant.featName})`}
-                            variant="secondary"
-                            size="sm"
-                            icon="ribbon-outline"
-                            onPress={() => {
-                              const bonusOptions = getFeatAbilityBonusOptions(bgFeatGrant.featName);
-                              const initialAbility =
-                                bonusOptions.abilities.length === 1 ? bonusOptions.abilities[0] : undefined;
-                              onUpdate((cur) =>
-                                applyOriginFeat(cur, {
-                                  level: 1,
-                                  type: "feat",
-                                  featName: bgFeatGrant.featName,
-                                  featSource: "Background",
-                                  featAbility: initialAbility,
-                                })
-                              );
-                            }}
-                          />
+                          <View style={{ gap: 6 }}>
+                            {offeredFeats.map((featName) => (
+                              <Button
+                                key={featName}
+                                title={`Claim Feat (${featName})`}
+                                variant="secondary"
+                                size="sm"
+                                icon="ribbon-outline"
+                                onPress={() => {
+                                  const bonusOptions = getFeatAbilityBonusOptions(featName);
+                                  const initialAbility =
+                                    bonusOptions.abilities.length === 1 ? bonusOptions.abilities[0] : undefined;
+                                  onUpdate((cur) => grantBackgroundFeat(cur, featName, initialAbility));
+                                }}
+                              />
+                            ))}
+                          </View>
                         )}
                       </View>
                     );

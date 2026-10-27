@@ -4,9 +4,11 @@
 
 **Blocked by:** 03
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] Engine tests against an invented background that grants a spell feat: the feat's card and picks appear; changing the background removes the card, the picks and the counters, with a notice; a choice-of-feats background shows the chosen feat's controls.
-- [ ] The background section shows the pick controls under the granted feat.
-- [ ] No background name appears in app code for spells (the existing background-feat table is not changed by this ticket).
-- [ ] `npm run check:all` passes.
+**Landed:** background-claimed feats are held by name (marker constant in `src/constants/rules.ts`), their counters are pruned when released, and the Background section shows the pick controls, with claim buttons for choice backgrounds. Integrated layout seed now also activates AAG; the full layout run belongs to ticket 09.
+
+- [x] Engine tests against an invented background that grants a spell feat: the feat's card and picks appear; changing the background removes the card, the picks and the counters, with a notice; a choice-of-feats background shows the chosen feat's controls.
+- [x] The background section shows the pick controls under the granted feat.
+- [x] No background name appears in app code for spells (the existing background-feat table is not changed by this ticket).
+- [x] `npm run check:all` passes.

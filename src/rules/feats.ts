@@ -7,6 +7,7 @@ import { proficiencySheet } from "./proficiencySheet.ts";
 import type { CharacterCatalogs } from "./catalogs.ts";
 import { reconcile } from "./characterReconciler.ts";
 import { currentCompendium, type Compendium } from "../services/compendium.ts";
+import { BACKGROUND_FEAT_SOURCE } from "../constants/rules.ts";
 
 export interface FeatPrerequisiteResult {
   met: boolean;
@@ -164,6 +165,19 @@ export function applyOriginFeat(
     },
     compendium
   );
+}
+
+/**
+ * Adds the feat a background grants, or the one of its choices the player takes. It carries the Background source, so
+ * clearing the background removes it with its picks and counters. Its picks are made on its card, as for any origin feat.
+ */
+export function grantBackgroundFeat(
+  character: Character,
+  featName: string,
+  featAbility?: AbilityKey,
+  compendium: Compendium = currentCompendium()
+): Character {
+  return applyOriginFeat(character, { level: 1, type: "feat", featName, featSource: BACKGROUND_FEAT_SOURCE, featAbility }, undefined, compendium);
 }
 
 /** Removes an origin feat by name, then reconciles the choices that feat granted. */
