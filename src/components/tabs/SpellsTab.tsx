@@ -635,9 +635,13 @@ export const SpellsTab: React.FC = () => {
                         {
                           color: isUsed ? theme.textMuted : theme.text,
                           textDecorationLine: isUsed ? "line-through" : "none",
+                          flexShrink: 1,
                         },
                       ]}>
                       {spell.name}
+                      {spell.note !== undefined && (
+                        <Text style={{ fontWeight: "400", color: theme.textSecondary }}>{` (${spell.note})`}</Text>
+                      )}
                     </Text>
                     {spell.isCantrip ? (
                       <Badge label="Cantrip" variant="surface" size="sm" />

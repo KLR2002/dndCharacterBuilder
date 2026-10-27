@@ -194,6 +194,17 @@ test("a race's spell with a cast-level suffix is listed at that level, and one w
   assert.equal(veil?.level, 2, "Sample Veil has no suffix and keeps its catalogued level");
 });
 
+test("a race's spell with a note carries it on its entry, and a spell without one carries none", () => {
+  const caster = makeChar({
+    classes: [mage(3)],
+    race: { name: "Sample Caster", source: "TST" },
+    baseAbilityScores: { str: 10, dex: 10, con: 10, int: 10, wis: 10, cha: 16 },
+  });
+  const card = sourceTitled(evaluateCharacter(caster, catalogs).grantedSpellSources, "Sample Caster");
+  assert.equal(card?.spells.find((spell) => spell.name === "Sample Veil")?.note, "self only");
+  assert.equal("note" in (card?.spells.find((spell) => spell.name === "Sample Pulse") ?? {}), false);
+});
+
 test("a race's spell list offered for the race words its casting ability as chosen for the race, not for a feat", () => {
   const character = makeChar({ classes: [mage(1)], race: { name: "Sample Listed", source: "TST" } });
   const lists = raceSpellRuleChoices(character, catalogs.compendium).find((choice) => choice.options.some((o) => o.name === "Sample Listed Spells"));
