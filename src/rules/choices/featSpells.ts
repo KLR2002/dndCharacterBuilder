@@ -81,6 +81,8 @@ interface PickSlot {
   uses?: number;
   /** Whether the slot sits in a known group (see usesOfEntry). */
   fromKnown: boolean;
+  /** Whether the slot sits in a prepared group: the spell it picks is always prepared, not known. */
+  prepared: boolean;
   /** The level the grant unlocks the slot at: 1 for a feat's, the section key for a race's. */
   minCharacterLevel: number;
 }
@@ -90,10 +92,14 @@ interface GrantSpell {
   kind: "spell";
   name: string;
   minCharacterLevel: number;
+  /** Set for a prepared entry under an `sN` key: the spell slot level the character needs to have (ADR 0017 amendment). */
+  minSpellLevel?: number;
   /** Set under a `daily` or `rest` key: the uses per Long Rest. Absent for at-will spells. */
   uses?: number;
   /** Whether the spell sits in a known group (see usesOfEntry). */
   fromKnown: boolean;
+  /** Whether the spell sits in a prepared group: an Always-Prepared Spell, not a known one. */
+  prepared: boolean;
 }
 
 interface GrantPick {
@@ -101,8 +107,19 @@ interface GrantPick {
   choose: string | { from: string[] };
   count: number;
   minCharacterLevel: number;
+  minSpellLevel?: number;
   uses?: number;
   fromKnown: boolean;
+  prepared: boolean;
+}
+
+/** Where an entry sits in a grant: its section, the level it unlocks at, and its uses when a daily or per-rest key gives them. */
+interface EntryContext {
+  minCharacterLevel: number;
+  minSpellLevel?: number;
+  uses?: number;
+  fromKnown: boolean;
+  prepared: boolean;
 }
 
 /**
@@ -200,9 +217,12 @@ export function pickedAbilityOf(character: Character, owner: GrantOwner): Abilit
   return (ABILITIES as readonly string[]).includes(picked ?? "") ? (picked as AbilityKey) : undefined;
 }
 
-/** The named spell lists a grant set offers: the named grants the reader models. The list's ability may be fixed or chosen. */
+/**
+ * The named spell lists a grant set offers: the named grants the reader models, as Innate Magic or as prepared spells. The
+ * list's ability may be fixed or chosen (a prepared list ignores it).
+ */
 export function offeredSpellLists(grants: readonly AdditionalSpells[]): AdditionalSpells[] {
-  return grants.filter((grant) => typeof grant.name === "string" && isModelledGrant(grant));
+  return grants.filter((grant) => typeof grant.name === "string" && (isModelledGrant(grant) || isPreparedGrant(grant)));
 }
 
 /** The grant of the spell list the player picked for an owner, if one is picked. */
@@ -219,29 +239,62 @@ export function pickedSpellListOf(character: Character, owner: GrantOwner, grant
  * An entry of the known section is marked, since a leveled one of it is cast once per Long Rest (see usesOfEntry).
  */
 export function grantEntries(grant: AdditionalSpells): GrantEntry[] {
+  return sectionEntries([
+    [grant.known, true, false],
+    [grant.innate, false, false],
+  ]);
+}
+
+/**
+ * Every entry of a grant's prepared group, in key order (ADR 0017 amendment). A key is `_` (no level gate), a character level
+ * (the level the entry unlocks at), or `sN`: the spell slot level N, which gates the entry on the character having slots of that
+ * level. Uses under a `daily` or `rest` key are not read here: the prepared spell is listed, and its free casting stays in the
+ * feat's text.
+ */
+export function preparedEntries(grant: AdditionalSpells): GrantEntry[] {
+  return sectionEntries([[grant.prepared, false, true]]);
+}
+
+function sectionEntries(sections: readonly (readonly [unknown, boolean, boolean])[]): GrantEntry[] {
   const entries: GrantEntry[] = [];
-  for (const [section, fromKnown] of [
-    [grant.known, true],
-    [grant.innate, false],
-  ] as const) {
+  for (const [section, fromKnown, prepared] of sections) {
     if (!section || typeof section !== "object") continue;
     for (const [key, value] of Object.entries(section)) {
-      const minCharacterLevel = key === "_" ? 1 : Number(key);
-      if (!Number.isFinite(minCharacterLevel)) continue;
-      collectEntries(value, minCharacterLevel, undefined, entries, fromKnown);
+      const gate = gateOfKey(key, prepared);
+      if (!gate) continue;
+      collectEntries(value, { ...gate, fromKnown, prepared }, entries);
     }
   }
   return entries;
 }
 
-function collectEntries(value: unknown, minCharacterLevel: number, uses: number | undefined, out: GrantEntry[], fromKnown: boolean): void {
-  const usesField = uses !== undefined ? { uses } : {};
+/** The level gate a section key gives, or undefined for a key the reader does not read. */
+function gateOfKey(key: string, prepared: boolean): { minCharacterLevel: number; minSpellLevel?: number } | undefined {
+  if (key === "_") return { minCharacterLevel: 1 };
+  const slot = prepared ? /^s(\d+)$/.exec(key) : null;
+  if (slot) return { minCharacterLevel: 1, minSpellLevel: parseInt(slot[1], 10) };
+  const level = Number(key);
+  return Number.isFinite(level) ? { minCharacterLevel: level } : undefined;
+}
+
+/** The fields an entry carries from the context it sits in. Optional fields are left out when they do not apply. */
+function entryFields(ctx: EntryContext): Omit<EntryContext, "uses"> & { uses?: number } {
+  return {
+    minCharacterLevel: ctx.minCharacterLevel,
+    fromKnown: ctx.fromKnown,
+    prepared: ctx.prepared,
+    ...(ctx.minSpellLevel !== undefined ? { minSpellLevel: ctx.minSpellLevel } : {}),
+    ...(ctx.uses !== undefined ? { uses: ctx.uses } : {}),
+  };
+}
+
+function collectEntries(value: unknown, ctx: EntryContext, out: GrantEntry[]): void {
   if (typeof value === "string") {
-    out.push({ kind: "spell", name: value, minCharacterLevel, ...usesField, fromKnown });
+    out.push({ kind: "spell", name: value, ...entryFields(ctx) });
     return;
   }
   if (Array.isArray(value)) {
-    for (const item of value) collectEntries(item, minCharacterLevel, uses, out, fromKnown);
+    for (const item of value) collectEntries(item, ctx, out);
     return;
   }
   if (!value || typeof value !== "object") return;
@@ -249,16 +302,14 @@ function collectEntries(value: unknown, minCharacterLevel: number, uses: number 
   if ("choose" in record) {
     const payload = record.choose;
     if (typeof payload === "string") {
-      out.push({ kind: "pick", choose: payload, count: countOf(record.count), minCharacterLevel, ...usesField, fromKnown });
+      out.push({ kind: "pick", choose: payload, count: countOf(record.count), ...entryFields(ctx) });
     } else if (payload && typeof payload === "object" && Array.isArray((payload as { from?: unknown }).from)) {
       const from = ((payload as { from: unknown[] }).from).filter((name): name is string => typeof name === "string");
       out.push({
         kind: "pick",
         choose: { from },
         count: countOf((payload as { count?: unknown }).count),
-        minCharacterLevel,
-        ...usesField,
-        fromKnown,
+        ...entryFields(ctx),
       });
     }
     return;
@@ -266,10 +317,10 @@ function collectEntries(value: unknown, minCharacterLevel: number, uses: number 
   for (const [key, inner] of Object.entries(record)) {
     if (key === "daily" || key === "rest") {
       if (inner && typeof inner === "object") {
-        for (const [count, names] of Object.entries(inner)) collectEntries(names, minCharacterLevel, usesOf(count), out, fromKnown);
+        for (const [count, names] of Object.entries(inner)) collectEntries(names, { ...ctx, uses: usesOf(count) }, out);
       }
     } else if (key === "will" || key === "_") {
-      collectEntries(inner, minCharacterLevel, uses, out, fromKnown);
+      collectEntries(inner, ctx, out);
     }
   }
 }
@@ -285,27 +336,42 @@ function isFillablePick(choose: string | { from: string[] }): boolean {
 }
 
 /**
- * Whether the reader models a grant: it gives a spell, or it has a pick it can fill. A grant with neither (a prepared group,
- * or ritual spells only) is not modelled, so it gives no card and offers no pick.
+ * Whether the reader models a grant's Innate Magic: it gives a spell, or it has a pick it can fill. A grant with neither (a
+ * prepared group alone, or ritual spells only) gives no card and offers no ability pick.
  */
 export function isModelledGrant(grant: AdditionalSpells): boolean {
-  return grantEntries(grant).some((entry) => entry.kind === "spell" || (entry.kind === "pick" && isFillablePick(entry.choose)));
+  return grantEntries(grant).some(isFillableEntry);
 }
 
 /**
- * The pick slots of a grant, in order: the picks its known entries make, then those of its innate entries. A pick that cannot
- * be filled is not a slot: a ritual pick (the ritual book is not modelled, ADR 0017) or one with a key the reader does not model.
+ * Whether the reader models a grant's prepared group: it names a prepared spell, or it has a pick it can fill (ADR 0017
+ * amendment). A pick under an `sN` key is not read, so it does not count.
+ */
+export function isPreparedGrant(grant: AdditionalSpells): boolean {
+  return preparedEntries(grant).some(isFillableEntry);
+}
+
+function isFillableEntry(entry: GrantEntry): boolean {
+  if (entry.kind === "spell") return true;
+  return isFillablePick(entry.choose) && entry.minSpellLevel === undefined;
+}
+
+/**
+ * The pick slots of a grant, in order: the picks its known entries make, then those of its innate entries, then those of its
+ * prepared group. A pick that cannot be filled is not a slot: a ritual pick (the ritual book is not modelled, ADR 0017), one with
+ * a key the reader does not model, or one under an `sN` key.
  */
 export function pickSlotsOf(grant: AdditionalSpells): PickSlot[] {
   const slots: PickSlot[] = [];
-  for (const entry of grantEntries(grant)) {
+  for (const entry of [...grantEntries(grant), ...preparedEntries(grant)]) {
     if (entry.kind !== "pick") continue;
     const choose = entry.choose;
-    if (!isFillablePick(choose)) continue;
+    if (!isFillableEntry(entry)) continue;
     slots.push({
       index: slots.length,
       count: entry.count,
       fromKnown: entry.fromKnown,
+      prepared: entry.prepared,
       minCharacterLevel: entry.minCharacterLevel,
       ...(typeof choose === "string" ? { filter: choose } : { from: choose.from }),
       ...(entry.uses !== undefined ? { uses: entry.uses } : {}),
@@ -556,9 +622,12 @@ function grantChoicesOf(
       origin: originOf(owner),
       options: lists.map((grant) => {
         const fixed = chosenAbilityOptionsOf(grant).length === 0 ? fixedGrantAbility(grant) : undefined;
+        const description = !isModelledGrant(grant)
+          ? "Always-prepared spells"
+          : fixed ? `Casting ability: ${fixed.toUpperCase()}` : `Casting ability: chosen for the ${owner.kind}`;
         return {
           name: grant.name ?? "",
-          description: fixed ? `Casting ability: ${fixed.toUpperCase()}` : `Casting ability: chosen for the ${owner.kind}`,
+          description,
           label: spellListOptionLabel(grant, compendium, activeBooks),
         };
       }),
@@ -770,7 +839,7 @@ export function migrateLegacyRacialCantrip(character: Character, races: RaceData
 function cantripSlotOf(grants: AdditionalSpells[]): { grant: AdditionalSpells; slot: PickSlot } | undefined {
   for (const grant of grants) {
     for (const slot of pickSlotsOf(grant)) {
-      if (!slot.filter) continue;
+      if (!slot.filter || slot.prepared) continue;
       const parsed = parseSpellFilter(slot.filter);
       if (parsed.level === 0 && parsed.classes.length > 0) return { grant, slot };
     }

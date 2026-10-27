@@ -1,6 +1,7 @@
 import type { AbilityKey, Character } from "../types/character.ts";
 import type { AdditionalSpells, SpellData } from "../types/dnd5e.ts";
 import type { InnateSpellEntry, InnateSpellProfile } from "./innateMagic.ts";
+import type { GrantedPreparedSpell } from "./spellcasting.ts";
 import { catalogListings, type CharacterCatalogs } from "./catalogs.ts";
 import { effectiveScores } from "./abilities.ts";
 import { proficiencyBonus, totalLevel } from "./proficiencies.ts";
@@ -18,6 +19,7 @@ import {
   pickedAbilityOf,
   pickedSpellListOf,
   pickSlotsOf,
+  preparedEntries,
   raceGrantsOf,
   slugOf,
   spellListLabel,
@@ -83,7 +85,8 @@ export function grantedSpellSources(
     const owner = featOwner(feat);
     // Spells named by this feat are listed once, across all its grants.
     const seen = new Set<string>();
-    if (offeredSpellLists(feat.additionalSpells).length > 0) {
+    // A prepared-only list is never a card, so a feat whose lists are all prepared asks for no list here.
+    if (offeredSpellLists(feat.additionalSpells).some(isModelledGrant)) {
       const picked = pickedSpellListOf(character, owner, feat.additionalSpells);
       if (picked) {
         const source = grantSource(ctx, owner, picked, selection, seen, `${feat.name} (${spellListLabel(picked.name ?? "")})`);
@@ -99,6 +102,52 @@ export function grantedSpellSources(
     }
   }
   return sources;
+}
+
+/**
+ * The prepared spells the character's feats and race give: the fixed spells of each prepared group and the picks made from it.
+ * A named list counts only once the player has picked it. Each spell carries its source, and the class profiles apply the level
+ * gates (see getClassSpellProfiles). A spell the active books do not hold is left out.
+ */
+export function grantedPreparedSpells(character: Character, catalogs?: CharacterCatalogs): GrantedPreparedSpell[] {
+  const listings = catalogListings(catalogs);
+  const compendium = catalogs?.compendium ?? currentCompendium();
+  const activeBooks = catalogs?.activeBooks;
+  const out: GrantedPreparedSpell[] = [];
+
+  const addGrant = (owner: GrantOwner, grant: AdditionalSpells, source: string) => {
+    for (const entry of preparedEntries(grant)) {
+      if (entry.kind !== "spell") continue;
+      const data = resolveSpellName(entry.name, activeBooks, compendium, { activeOnly: true });
+      if (!data) continue;
+      out.push({
+        spell: data,
+        source,
+        minCharacterLevel: entry.minCharacterLevel,
+        ...(entry.minSpellLevel !== undefined ? { minSpellLevel: entry.minSpellLevel } : {}),
+      });
+    }
+    for (const slot of pickSlotsOf(grant)) {
+      if (!slot.prepared) continue;
+      for (const data of chosenSpellsOf(character, owner, grant, slot, compendium, activeBooks)) {
+        out.push({ spell: data, source, minCharacterLevel: slot.minCharacterLevel });
+      }
+    }
+  };
+
+  const race = raceGrantsOf(character, listings.races());
+  if (race) for (const grant of race.grants) addGrant(race.owner, grant, race.owner.name);
+
+  for (const { feat } of heldFeatsOf(character, listings.feats())) {
+    if (!feat.additionalSpells) continue;
+    const owner = featOwner(feat);
+    const picked = pickedSpellListOf(character, owner, feat.additionalSpells);
+    if (picked) addGrant(owner, picked, `${feat.name} (${spellListLabel(picked.name ?? "")})`);
+    for (const grant of feat.additionalSpells) {
+      if (typeof grant.name !== "string") addGrant(owner, grant, feat.name);
+    }
+  }
+  return out;
 }
 
 /**
@@ -124,7 +173,7 @@ function grantSource(
     notices.push(grant.ability === "inherit" ? "Needs review: the ability increase is not recorded" : "Needs review: choose a casting ability");
   }
   for (const slot of pickSlotsOf(grant)) {
-    if (slot.minCharacterLevel > ctx.level) continue;
+    if (slot.prepared || slot.minCharacterLevel > ctx.level) continue;
     const chosen = chosenSpellsOf(ctx.character, owner, grant, slot, ctx.compendium, ctx.activeBooks);
     for (const data of chosen) {
       if (seen.has(data.name.toLowerCase())) continue;

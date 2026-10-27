@@ -15,6 +15,17 @@ import { proficiencyBonus, totalLevel } from "./proficiencies.ts";
 import { getSubclassSpells, normalizeKey } from "./subclassSpells.ts";
 import type { Compendium } from "../services/compendium.ts";
 
+/** A prepared spell a held feat or race gives, badged with the feat or race it comes from (ADR 0017 amendment). */
+export interface GrantedPreparedSpell {
+  spell: SpellData;
+  /** The feat or race the spell comes from, named on the class list's badge. */
+  source: string;
+  /** The character level the spell is listed from. */
+  minCharacterLevel: number;
+  /** Set for a prepared entry under an `sN` key: the spell slot level the character needs to have. */
+  minSpellLevel?: number;
+}
+
 export interface ClassSpellProfile {
   className: string;
   subclass?: string;
@@ -27,7 +38,10 @@ export interface ClassSpellProfile {
   spellAttackBonus: number;
   maxSpellLevel: number;
   preparedLimit?: number;
+  /** The subclass's always-prepared spells, then those a held feat or race gives (ADR 0017 amendment). */
   alwaysPreparedSpells?: SpellData[];
+  /** The feat or race each always-prepared spell a feat or race gives is badged with, keyed by the lower-case spell name. */
+  grantedPreparedSources?: Record<string, string>;
   subclassKnownSpells?: SpellData[];
   /** The names the character's background adds to this class's list (its expanded spell lists, ADR 0017). */
   backgroundSpells?: string[];
@@ -149,13 +163,17 @@ export function getClassSpellProfiles(
     backgroundSpells?: string[];
     /** The Compendium the subclass spells are read from. Defaults to the process-wide one. */
     compendium?: Compendium;
+    /** The prepared spells the character's feats and race give, each with its gates (ADR 0017 amendment). */
+    grantedPrepared?: GrantedPreparedSpell[];
   } = {}
 ): ClassSpellProfile[] {
   const classes = opts.classes ?? allCatalogClasses();
   const castingClasses = (character.classes || []).filter((c) => isCastingClass(c, classes));
   if (castingClasses.length === 0) return [];
 
-  const pb = proficiencyBonus(totalLevel(character));
+  const level = totalLevel(character);
+  const slotLevel = Math.max(0, ...castingClasses.map((c) => getMaxSpellLevel(c, classes)));
+  const pb = proficiencyBonus(level);
   const { modifiers } = effectiveScores(character, opts);
   const isSingleCaster = castingClasses.length === 1;
 
@@ -180,7 +198,9 @@ export function getClassSpellProfiles(
       compendium: opts.compendium,
     });
 
-    const alwaysPrepNames = new Set((subSpells.prepared || []).map(s => s.name.toLowerCase()));
+    const grantedPrepared = grantedAlwaysPrepared(opts.grantedPrepared ?? [], level, slotLevel, subSpells.prepared);
+    // A spell the feat or race gives is always prepared, so a stored prepared copy of it is not counted, as a subclass spell's is not.
+    const alwaysPrepNames = new Set([...subSpells.prepared, ...grantedPrepared.map((g) => g.spell)].map(s => s.name.toLowerCase()));
 
     // A Giant Barbarian's Giant Power cantrip is the one picked. The catalog lists both cantrips as
     // known, so they are dropped from the subclass grants; getSubclassSpells resolves the pick into
@@ -245,7 +265,10 @@ export function getClassSpellProfiles(
       spellAttackBonus,
       maxSpellLevel,
       ...(preparedLimit !== undefined ? { preparedLimit } : {}),
-      alwaysPreparedSpells: subSpells.prepared,
+      alwaysPreparedSpells: [...subSpells.prepared, ...grantedPrepared.map((g) => g.spell)],
+      ...(grantedPrepared.length > 0
+        ? { grantedPreparedSources: Object.fromEntries(grantedPrepared.map((g) => [g.spell.name.toLowerCase(), g.source])) }
+        : {}),
       subclassKnownSpells: [
         ...(isGiant ? subSpells.known.filter(s => !GIANT_POWER_CANTRIPS.has(s.name.toLowerCase())) : subSpells.known),
         ...subSpells.cantrips,
@@ -257,6 +280,28 @@ export function getClassSpellProfiles(
 
     return profile;
   });
+}
+
+/**
+ * The feat- and race-granted prepared spells one class lists: those whose character level and spell slot level the character has
+ * reached. A spell the subclass already lists is not listed twice, and the first source of a spell is the one it is badged with.
+ */
+function grantedAlwaysPrepared(
+  grants: GrantedPreparedSpell[],
+  level: number,
+  slotLevel: number,
+  subclassPrepared: SpellData[]
+): GrantedPreparedSpell[] {
+  const taken = new Set(subclassPrepared.map((s) => s.name.toLowerCase()));
+  const listed: GrantedPreparedSpell[] = [];
+  for (const grant of grants) {
+    if (grant.minCharacterLevel > level || (grant.minSpellLevel ?? 0) > slotLevel) continue;
+    const key = grant.spell.name.toLowerCase();
+    if (taken.has(key)) continue;
+    taken.add(key);
+    listed.push(grant);
+  }
+  return listed;
 }
 
 export interface SpellAvailabilityContext {

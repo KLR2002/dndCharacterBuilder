@@ -104,7 +104,8 @@ export interface ClassFeatureModel {
 export interface AdditionalSpells {
   name?: string;
   ability?: string | { choose: string[] };
-  prepared?: Record<string, string[]>;
+  /** Always-prepared spells, keyed by character level, `_`, or `sN` (a spell slot level). Each key holds names, `daily` or `will` groups, or picks. */
+  prepared?: Record<string, any>;
   /** Per spell level: a list of spell names, or a `_` list of `choose` filters (cantrip lists). */
   known?: Record<string, any>;
   expanded?: Record<string, any>;
