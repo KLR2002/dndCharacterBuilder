@@ -877,7 +877,7 @@ export function pruneInvalidFeatSpellPicks(character: Character, compendium: Com
   if (!entries.some((entry) => isGrantSpellChoiceId(entry.id))) return character;
 
   const listings = compendium.for();
-  const held = heldGrantsOf(character, candidateFeatsOf(character, listings.feats()), compendium.for(activeBooks).races(), activeBooks);
+  const held = heldGrantsOf(character, candidateFeatsOf(character, listings.feats()), listings.races(), activeBooks);
   const heldKeys = new Set(held.map(({ owner }) => ownerKey(owner)));
   // The offered options of each pick the character's owners still make, keyed by the choice id.
   const valid = new Map<string, string[] | undefined>();

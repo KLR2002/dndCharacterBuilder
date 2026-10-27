@@ -4,7 +4,7 @@ import { findHeldRace } from "../src/rules/raceLookup.ts";
 import { evaluateCharacter } from "../src/rules/characterEvaluation.ts";
 import { resolveAncestryState } from "../src/rules/ancestryEngine.ts";
 import { grantedFeatures } from "../src/rules/grantedFeatures.ts";
-import { offeredRuleChoices } from "../src/rules/ruleChoices.ts";
+import { offeredRuleChoices, pickRuleChoice } from "../src/rules/ruleChoices.ts";
 import { heldSubraceOf } from "../src/rules/recordProficiencyGrants.ts";
 import { pruneInvalidFeatSpellPicks, raceGrantsOf, raceSpellRuleChoices } from "../src/rules/choices/featSpells.ts";
 import { characterSpeeds } from "../src/rules/speed.ts";
@@ -315,6 +315,55 @@ test("a lineage's spell pick is judged against the active book's record when ano
     ruleChoices: [{ id: slot.id, trait: slot.traitName, origin: "race" as const, choose: slot.choose, from: slot.options.map((o) => o.name), picked: ["Sample Lure"] }],
   };
   assert.equal(pruneInvalidFeatSpellPicks(held, compendium, books), held, "the pick still applies, so nothing is released");
+});
+
+// A held lineage that grants a first-level cantrip pick from a class list, with the lineage in the book `source`.
+const lineageUnder = (source: string): RaceData =>
+  race("Sample Lineage", source, {
+    additionalSpells: [{ ability: "int", known: { "1": { _: [{ choose: "level=0|class=Sample Mage" }] } } }],
+  });
+
+const lineageCharacter = (): Character =>
+  makeChar({
+    classes: [{ className: "Sample Mage", source: "TST", level: 1 }],
+    race: { name: "Sample Folk", source: "TST" },
+    lineageReplacement: "Sample Lineage",
+  });
+
+test("a held lineage whose book is switched off keeps its recorded pick, with no notice", () => {
+  const compendium = inMemoryCompendium(
+    { races: [race("Sample Folk", "TST"), lineageUnder("ALT")], classes: grantedSpellClasses(), spells: grantedSpellSpells() },
+    { integrated: true },
+  );
+  const both = ["TST", "ALT"];
+  const character = lineageCharacter();
+  const choice = raceSpellRuleChoices(character, compendium, both).find((c) => c.options.some((o) => o.name === "Sample Ember"));
+  assert.ok(choice, "the lineage offers Sample Ember while its book is on");
+  const picked = pickRuleChoice(character, choice, "Sample Ember", compendium, both);
+  assert.equal(pruneInvalidFeatSpellPicks(picked, compendium, ["TST"]), picked, "switching the lineage's book off releases nothing");
+});
+
+test("a catalog that holds the lineage's book but not the lineage releases the lineage's pick, with a notice", () => {
+  const spellsAndClasses = { classes: grantedSpellClasses(), spells: grantedSpellSpells() };
+  const full = inMemoryCompendium(
+    { ...spellsAndClasses, races: [race("Sample Folk", "TST"), lineageUnder("ALT")] },
+    { integrated: true },
+  );
+  const withoutLineage = inMemoryCompendium(
+    { ...spellsAndClasses, races: [race("Sample Folk", "TST"), race("Sample Other", "ALT")] },
+    { integrated: true },
+  );
+  const both = ["TST", "ALT"];
+  const character = lineageCharacter();
+  const choice = raceSpellRuleChoices(character, full, both).find((c) => c.options.some((o) => o.name === "Sample Ember"));
+  assert.ok(choice, "the lineage offers Sample Ember");
+  const picked = pickRuleChoice(character, choice, "Sample Ember", full, both);
+  const released = pruneInvalidFeatSpellPicks(picked, withoutLineage, both);
+  assert.equal(released.ruleChoices?.some((entry) => entry.picked.includes("Sample Ember")), false, "the pick is released");
+  assert.ok(
+    released.needsReview?.includes("Sample Ember removed from Sample Lineage: ancestry no longer grants it"),
+    `the release is noticed: ${JSON.stringify(released.needsReview)}`,
+  );
 });
 
 // Invented subclass, background and feat under one source, for the saved-source oracles below.
