@@ -152,6 +152,7 @@ export function evaluateCharacter(
     ...ancestry,
     activeBooks: catalogs?.activeBooks,
     classes,
+    compendium: catalogs?.compendium,
     backgroundSpells: backgroundExpandedSpellNames(background),
   });
   const grantedSources = grantedSpellSources(character, catalogs, {

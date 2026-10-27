@@ -356,7 +356,7 @@ export const BackgroundSection: React.FC<BackgroundSectionProps> = ({
                                   name: bgFeatRecord?.name ?? bgOriginFeat.featName ?? "",
                                   source: bgFeatRecord?.source ?? BACKGROUND_FEAT_SOURCE,
                                 },
-                                currentCompendium(),
+                                catalogs.compendium ?? currentCompendium(),
                                 catalogs.activeBooks
                               )}
                               onUpdate={onUpdate}

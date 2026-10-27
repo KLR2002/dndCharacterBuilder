@@ -258,12 +258,12 @@ export function applyAncestryChoice(
   return pickRuleChoice(character, choice, option, catalogs?.compendium);
 }
 
-export function clearAncestryChoice(character: Character, choiceId: string): Character {
+export function clearAncestryChoice(character: Character, choiceId: string, catalogs?: CharacterCatalogs): Character {
   const cleared: Character = {
     ...character,
     ruleChoices: (character.ruleChoices || []).filter((rc) => rc.id !== choiceId),
   };
-  return reconcile(cleared, currentCompendium());
+  return reconcile(cleared, catalogs?.compendium ?? currentCompendium());
 }
 
 export function setAncestryChoiceASI(

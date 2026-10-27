@@ -1,6 +1,8 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { makeChar, loadTestCatalog } from "./testUtils.ts";
+import { makeChar, loadTestCatalog, inMemoryCompendium } from "./testUtils.ts";
+import { evaluateCharacter } from "../src/rules/characterEvaluation.ts";
+import { grantedSpellClasses, grantedSpellSpells } from "./grantedSpellsFixture.ts";
 import { findSpell } from "../src/services/dataService.ts";
 import {
   getClassSpellProfiles,
@@ -862,4 +864,22 @@ test("ClassSpellProfile carries its Spell Owner key, including the Giant Barbari
   // A non-Giant Barbarian is not a casting class, so the owner key falls back to the class key.
   const berserker = makeChar({ classes: [cl("Barbarian", 3, "Path of the Berserker")] });
   assert.deepEqual(getClassSpellProfiles(berserker), []);
+});
+
+test("a class's subclass spells are read from the Compendium the evaluation was given, not the process-wide one", () => {
+  const order = {
+    name: "Sample Order",
+    shortName: "Order",
+    source: "TST",
+    className: "Sample Mage",
+    classSource: "TST",
+    features: [],
+    additionalSpells: [{ known: { "3": ["sample ward"] } }],
+    description: "Placeholder description for the subclass.",
+  };
+  const classes = grantedSpellClasses().map((cls) => (cls.name === "Sample Mage" ? { ...cls, subclasses: [order] } : cls));
+  const compendium = inMemoryCompendium({ classes, spells: grantedSpellSpells() });
+  const character = makeChar({ classes: [{ className: "Sample Mage", source: "TST", level: 3, subclassName: "Sample Order" }] });
+  const [profile] = evaluateCharacter(character, { compendium }).spellProfiles;
+  assert.deepEqual(profile.subclassKnownSpells?.map((spell) => spell.name), ["Sample Ward"]);
 });

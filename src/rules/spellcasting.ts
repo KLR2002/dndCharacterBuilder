@@ -13,6 +13,7 @@ import { GIANT_POWER_CHOICE_ID } from "./choices/types.ts";
 import { effectiveScores } from "./abilities.ts";
 import { proficiencyBonus, totalLevel } from "./proficiencies.ts";
 import { getSubclassSpells, normalizeKey } from "./subclassSpells.ts";
+import type { Compendium } from "../services/compendium.ts";
 
 export interface ClassSpellProfile {
   className: string;
@@ -146,6 +147,8 @@ export function getClassSpellProfiles(
     classes?: readonly ClassData[];
     /** The names the character's background adds to each spellcasting class's list. */
     backgroundSpells?: string[];
+    /** The Compendium the subclass spells are read from. Defaults to the process-wide one. */
+    compendium?: Compendium;
   } = {}
 ): ClassSpellProfile[] {
   const classes = opts.classes ?? allCatalogClasses();
@@ -174,6 +177,7 @@ export function getClassSpellProfiles(
       activeBooks: opts.activeBooks,
       ruleChoices: character.ruleChoices,
       classSource: c.source,
+      compendium: opts.compendium,
     });
 
     const alwaysPrepNames = new Set((subSpells.prepared || []).map(s => s.name.toLowerCase()));
