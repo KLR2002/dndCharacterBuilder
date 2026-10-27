@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { evaluateCharacter } from "../src/rules/characterEvaluation.ts";
 import { changeRace } from "../src/rules/builderTransitions.ts";
+import { raceSpellRuleChoices } from "../src/rules/choices/featSpells.ts";
 import type { CharacterClass } from "../src/types/character.ts";
 import type { RaceData, SpellData, SubraceData } from "../src/types/dnd5e.ts";
 import { inMemoryCompendium, loadSrdCatalog, makeChar } from "./testUtils.ts";
@@ -140,4 +141,72 @@ test("the SRD Baseline's High Elf and Tiefling read as High Elf and Tiefling", (
   const tiefling = makeChar({ classes: [mage(1)], race: { name: "Tiefling", source: "SRD" } });
   assert.ok(titlesOf(elf, { compendium: srd }).includes("High Elf"), "the High Elf card is titled High Elf");
   assert.ok(titlesOf(tiefling, { compendium: srd }).includes("Tiefling"), "the Tiefling card is titled Tiefling");
+});
+
+const srdCatalog = () => inMemoryCompendium({ classes: loadSrdCatalog("classes"), races: loadSrdCatalog("races"), spells: loadSrdCatalog("spells") });
+
+test("a High Elf's cantrip pick is titled High Elf Cantrip", () => {
+  const elf = makeChar({ classes: [mage(1)], race: { name: "Elf", source: "SRD", subraceName: "High", subraceSource: "SRD" } });
+  const pick = raceSpellRuleChoices(elf, srdCatalog()).find((choice) => choice.options.some((option) => option.name === "Fire Bolt"));
+  assert.ok(pick, "the High Elf offers its cantrip pick");
+  assert.equal(pick.traitName, "High Elf Cantrip");
+  assert.equal(pick.choose, 1);
+});
+
+test("a High Elf's cantrip pick keeps the id it was saved under, which names the subrace alone", () => {
+  const elf = makeChar({ classes: [mage(1)], race: { name: "Elf", source: "SRD", subraceName: "High", subraceSource: "SRD" } });
+  const pick = raceSpellRuleChoices(elf, srdCatalog()).find((choice) => choice.options.some((option) => option.name === "Fire Bolt"));
+  assert.equal(pick?.id, "-__Race Spells__High__-__0");
+});
+
+// A Sample Folk subrace of one word picks a cantrip and a casting ability; a Sample Blooded descent of two words picks a cantrip.
+const pickingRaces = (): RaceData[] => [
+  race("Sample Folk", {
+    subraces: [subrace("Brook", "Sample Folk", { additionalSpells: [{ ability: { choose: ["int", "wis"] }, known: { _: [{ choose: "level=0|class=Sample Mage", count: 1 }] } }] })],
+  }),
+  race("Sample Blooded", {
+    subraces: [subrace("Ember Descent", "Sample Blooded", { additionalSpells: [{ known: { _: [{ choose: "level=0|class=Sample Mage", count: 1 }] } }] })],
+  }),
+];
+
+const pickingCompendium = () => inMemoryCompendium({ classes: grantedSpellClasses(), races: pickingRaces(), spells: grantedSpellSpells() });
+
+test("a one-word subrace's cantrip pick and casting ability read with its race", () => {
+  const folk = makeChar({ classes: [mage(3)], race: { name: "Sample Folk", source: "TST", subraceName: "Brook", subraceSource: "TST" } });
+  const choices = raceSpellRuleChoices(folk, pickingCompendium());
+  const cantrip = choices.find((choice) => choice.options.some((option) => option.name === "Sample Shot"));
+  const ability = choices.find((choice) => choice.id.endsWith("__Casting Ability"));
+  assert.equal(cantrip?.traitName, "Brook Sample Folk Cantrip");
+  assert.equal(ability?.traitName, "Brook Sample Folk Casting Ability");
+});
+
+test("a descent subrace of several words reads by its own name in its cantrip pick", () => {
+  const blooded = makeChar({ classes: [mage(3)], race: { name: "Sample Blooded", source: "TST", subraceName: "Ember Descent", subraceSource: "TST" } });
+  const cantrip = raceSpellRuleChoices(blooded, pickingCompendium()).find((choice) => choice.options.some((option) => option.name === "Sample Shot"));
+  assert.equal(cantrip?.traitName, "Ember Descent Cantrip");
+});
+
+test("the prepared spell badge of a High Elf reads High Elf", () => {
+  const races = loadSrdCatalog("races").map((record: RaceData) =>
+    record.name === "Elf"
+      ? { ...record, subraces: record.subraces?.map((sub) => ({ ...sub, additionalSpells: [...(sub.additionalSpells ?? []), { prepared: { _: ["Fire Bolt"] } }] })) }
+      : record,
+  );
+  const wizard = makeChar({
+    classes: [{ className: "Wizard", source: "SRD", level: 3 }],
+    race: { name: "Elf", source: "SRD", subraceName: "High", subraceSource: "SRD" },
+  });
+  const evaluated = evaluateCharacter(wizard, { compendium: inMemoryCompendium({ classes: loadSrdCatalog("classes"), races, spells: loadSrdCatalog("spells") }) });
+  assert.equal(evaluated.spellProfiles[0]?.grantedPreparedSources?.["fire bolt"], "High Elf");
+});
+
+test("the prepared spell badge of a descent subrace of several words reads by its own name", () => {
+  const prepared = races().map((record) =>
+    record.name === "Sample Blooded"
+      ? { ...record, subraces: [subrace("Ember Descent", "Sample Blooded", { additionalSpells: [{ prepared: { _: ["Sample Glimmer"] } }] })] }
+      : record,
+  );
+  const blooded = makeChar({ classes: [mage(3)], race: { name: "Sample Blooded", source: "TST", subraceName: "Ember Descent", subraceSource: "TST" } });
+  const evaluated = evaluateCharacter(blooded, { compendium: inMemoryCompendium({ classes: grantedSpellClasses(), races: prepared, spells: grantedSpellSpells() }) });
+  assert.equal(evaluated.spellProfiles[0]?.grantedPreparedSources?.["sample glimmer"], "Ember Descent");
 });

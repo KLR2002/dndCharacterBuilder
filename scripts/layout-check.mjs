@@ -887,7 +887,7 @@ const SCREENS = [
           tabs: ["Builder", "Race"],
           ready: /traits:/i,
           scrollTo: "Racial Spells",
-          expect: { texts: ["Racial Spells", "High Cantrip (choose 1)"], fitsWidth: true },
+          expect: { texts: ["Racial Spells", "High Elf Cantrip (choose 1)"], fitsWidth: true },
         },
         // A background that grants Magic Initiate: its pick controls sit under the feat the background section shows.
         {

@@ -1045,7 +1045,7 @@ test("live catalog: a High Elf offers the wizard cantrip filter, a Vahadar Elf t
   const offered = (race: Character["race"]) => raceSpellRuleChoices(makeChar({ classes: [{ className: "Fighter", source: "PHB", level: 1 }], race }), compendium);
 
   const highElf = offered({ name: "Elf", source: "PHB", subraceName: "High", subraceSource: "PHB" });
-  const wizard = highElf.find((choice) => choice.traitName === "High Cantrip");
+  const wizard = highElf.find((choice) => choice.traitName === "High Elf Cantrip");
   assert.ok(wizard, `the High Elf offers its cantrip pick: ${highElf.map((choice) => choice.traitName).join(", ")}`);
   assert.equal(wizard.choose, 1);
   assert.ok(wizard.options.some((option) => option.name === "Fire Bolt"), "the wizard cantrips are offered");
@@ -1053,7 +1053,7 @@ test("live catalog: a High Elf offers the wizard cantrip filter, a Vahadar Elf t
 
   // The tracked Wood Elf carries no spell grant, so the Vahadar Elf of Elf (Kaladesh) stands in for a druid cantrip filter.
   const vahadar = offered({ name: "Elf (Kaladesh)", source: "PSK", subraceName: "Vahadar", subraceSource: "PSK" });
-  const druid = vahadar.find((choice) => choice.traitName === "Vahadar Cantrip");
+  const druid = vahadar.find((choice) => choice.traitName === "Vahadar Elf (Kaladesh) Cantrip");
   assert.ok(druid, `the Vahadar Elf offers a cantrip pick: ${vahadar.map((choice) => choice.traitName).join(", ")}`);
   assert.ok(druid.options.some((option) => option.name === "Druidcraft"), "the druid cantrips are offered");
 

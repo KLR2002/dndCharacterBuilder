@@ -178,6 +178,11 @@ export function raceTitleOf(character: Character, name: string): string {
   return raceTitle(name, parent);
 }
 
+/** The name an owner's picks are titled by: a race's title, or a feat's name. Pick ids keep the owner's own name. */
+function ownerTitle(character: Character, owner: GrantOwner): string {
+  return owner.kind === "race" ? raceTitleOf(character, owner.name) : owner.name;
+}
+
 /**
  * The source slot of a race's pick key. A race is held by its name whichever book holds it, so its key names no book: a pick
  * made on one catalog's record of a race is the same pick on another catalog's.
@@ -730,7 +735,7 @@ function grantChoicesOf(
   if (lists.length > 0) {
     out.push({
       id: spellListChoiceId(owner),
-      traitName: `${owner.name} Spell List`,
+      traitName: `${ownerTitle(character, owner)} Spell List`,
       choose: 1,
       level: 1,
       effectLevel: 1,
@@ -756,7 +761,7 @@ function grantChoicesOf(
   if (abilities.length > 0) {
     out.push({
       id: abilityChoiceId(owner),
-      traitName: `${owner.name} ${ABILITY_CHOICE_KEY}`,
+      traitName: `${ownerTitle(character, owner)} ${ABILITY_CHOICE_KEY}`,
       choose: 1,
       level: 1,
       effectLevel: 1,
@@ -780,7 +785,7 @@ function slotChoicesOf(character: Character, owner: GrantOwner, grant: Additiona
       const cantrip = slot.filter !== undefined && parseSpellFilter(slot.filter).level === 0;
       return {
         id: grantSlotChoiceId(owner, grant, slot),
-        traitName: `${owner.name} ${cantrip ? "Cantrip" : "Spell"}`,
+        traitName: `${ownerTitle(character, owner)} ${cantrip ? "Cantrip" : "Spell"}`,
         choose: slot.count,
         level: slot.minCharacterLevel,
         effectLevel: slot.minCharacterLevel,
@@ -1041,11 +1046,12 @@ export function migrateLegacyRacialCantrip(character: Character, races: RaceData
   const race = raceGrantsOf(cleaned, races);
   const slot = race ? cantripSlotOf(race.grants) : undefined;
   if (!race || !slot) {
-    return withNotices(cleaned, [`${picked} removed from ${character.race?.name ?? "ancestry"}: ancestry no longer grants it`]);
+    const held = character.race ? raceTitleOf(character, character.race.subraceName ?? character.race.name) : "ancestry";
+    return withNotices(cleaned, [`${picked} removed from ${held}: ancestry no longer grants it`]);
   }
   const entry: RuleChoiceEntry = {
     id: grantSlotChoiceId(race.owner, slot.grant, slot.slot),
-    trait: `${race.owner.name} Cantrip`,
+    trait: `${ownerTitle(cleaned, race.owner)} Cantrip`,
     origin: "race",
     choose: 1,
     from: [picked],
