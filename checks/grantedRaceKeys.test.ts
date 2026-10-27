@@ -108,3 +108,36 @@ test("a cantrip picked on the integrated catalog stands after the SRD-like catal
   assert.deepEqual(opened.ruleChoices, picked.ruleChoices, "the pick is kept with its id");
   assert.deepEqual(opened.needsReview ?? [], [], "no notice is raised");
 });
+
+test("a race pick is kept while the catalog lacks the race's book, and released once that book holds the race without the subrace", () => {
+  const saved = makeChar({
+    classes: [mage(1)],
+    race: { name: "Sample Elf", source: "SRD", subraceName: "Sample High", subraceSource: "SRD" },
+    ruleChoices: [
+      { id: "-__Race Spells__Sample High__-__0", trait: "Sample High Cantrip", origin: "race", choose: 1, from: ["Sample Shot"], picked: ["Sample Shot"] },
+    ],
+  });
+
+  // The catalog holds only a race of another book, so the SRD book is not loaded and the pick stays with no notice.
+  const bookAbsent = inMemoryCompendium({
+    classes: grantedSpellClasses(),
+    races: [{ ...sampleRace("TST"), name: "Sample Other" }],
+    spells: grantedSpellSpells(),
+  });
+  const kept = reconcile(saved, bookAbsent);
+  assert.deepEqual(kept.ruleChoices, saved.ruleChoices, "the pick is kept while its book is absent");
+  assert.deepEqual(kept.needsReview ?? [], [], "no notice is raised while its book is absent");
+
+  // The SRD book is loaded and its race has no High subrace, so the pick is released with a notice.
+  const bookWithoutSubrace = inMemoryCompendium({
+    classes: grantedSpellClasses(),
+    races: [{ ...sampleRace("SRD"), subraces: [] }],
+    spells: grantedSpellSpells(),
+  });
+  const released = reconcile(saved, bookWithoutSubrace);
+  assert.deepEqual(released.ruleChoices ?? [], [], "the pick is released once the book is loaded without the subrace");
+  assert.ok(
+    released.needsReview?.includes("Sample Shot removed from Sample High: ancestry no longer grants it"),
+    `got ${JSON.stringify(released.needsReview)}`,
+  );
+});
