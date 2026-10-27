@@ -5,7 +5,7 @@ import { isSpellAvailableForClass, profileSpellContext, type ClassSpellProfile }
 import { changeRace, clearBackground } from "../src/rules/builderTransitions.ts";
 import { applyAncestrySelection } from "../src/rules/ancestryEngine.ts";
 import { applyAsiSelection, removeAsiSelection } from "../src/rules/leveling.ts";
-import { removeOriginFeat } from "../src/rules/feats.ts";
+import { applyOriginFeat, removeOriginFeat } from "../src/rules/feats.ts";
 import { isKnown, learnSpell } from "../src/rules/characterSpells.ts";
 import type { AsiSelection, Character, CharacterClass } from "../src/types/character.ts";
 import type { ClassData, SpellData } from "../src/types/dnd5e.ts";
@@ -185,6 +185,25 @@ test("picking a different race or subrace in the ancestry picker releases the sp
   assert.ok(
     picked.needsReview?.some((notice) => /Sample Spirit removed: only on the Sample Rune Line race's spell list/.test(notice)),
     `the release is noticed: ${JSON.stringify(picked.needsReview)}`,
+  );
+});
+
+test("swapping an origin feat for another releases the spell only the replaced feat's list gave, with a notice", () => {
+  const character = makeChar({
+    classes: [cls("Sample Mage", 5)],
+    originFeats: [{ level: 0, type: "feat", featName: "Sample Rune Mark", featSource: "TST" }],
+    knownSpells: [known("Sample Warding")],
+  });
+  const swapped = applyOriginFeat(
+    character,
+    { level: 0, type: "feat", featName: "Sample Rune Sign", featSource: "TST" },
+    "Sample Rune Mark",
+    compendium,
+  );
+  assert.deepEqual(swapped.knownSpells, [], "the spell only the replaced feat listed leaves the known spells");
+  assert.ok(
+    swapped.needsReview?.some((notice) => /Sample Warding removed: only on the Sample Rune Mark feat's spell list/.test(notice)),
+    `the release is noticed: ${JSON.stringify(swapped.needsReview)}`,
   );
 });
 

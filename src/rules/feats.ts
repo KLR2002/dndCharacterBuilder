@@ -144,6 +144,7 @@ export function validateFeatPrerequisites(
 /**
  * Adds an origin feat, or replaces the one named by `oldFeatName`, then reconciles so that the
  * choices the replaced feat granted (e.g. Fighting Initiate's style) are pruned with a review notice.
+ * The spells only the replaced feat's expanded list gave are released too (ADR 0017).
  */
 export function applyOriginFeat(
   character: Character,
@@ -160,11 +161,9 @@ export function applyOriginFeat(
   } else {
     updated.push(selection);
   }
-  return reconcile(
-    {
-      ...character,
-      originFeats: updated,
-    },
+  return releaseExpandedOnlySpells(
+    character,
+    reconcile({ ...character, originFeats: updated }, compendium),
     compendium
   );
 }

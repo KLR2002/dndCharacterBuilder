@@ -28,6 +28,8 @@ export const expandedSpellFeats = (): FeatData[] => [
       },
     ],
   }),
+  // A feat with no spell grant, to swap a Sample Rune Mark for.
+  feat("Sample Rune Sign", {}),
 ];
 
 const race = (name: string, extra: Partial<RaceData>): RaceData => ({
