@@ -827,12 +827,14 @@ function releaseNotices(character: Character, entry: RuleChoiceEntry, reason: st
 }
 
 /**
- * Releases the spell picks of the race `before` held when `next` names another race or subrace, with a review notice that titles
- * the race as `before` held it. Only the character from before the change can title a race it no longer holds. A pick under the
- * race or subrace `next` holds stays for the reconciler to judge.
+ * Releases the spell picks of the race `before` held when `next` names another race, subrace or lineage, with a review notice
+ * that titles the race as `before` held it. Only the character from before the change can title a race it no longer holds. A
+ * pick under the race, subrace or lineage `next` holds stays for the reconciler to judge.
  */
 export function releaseSupersededRacePicks(before: Character, next: Character): Character {
-  const held = new Set([next.race?.name, next.race?.subraceName].filter((name): name is string => name !== undefined));
+  const held = new Set(
+    [next.race?.name, next.race?.subraceName, next.lineageReplacement].filter((name): name is string => name != null)
+  );
   const notices: string[] = [];
   const kept = (next.ruleChoices ?? []).filter((entry) => {
     if (!isGrantSpellChoiceId(entry.id)) return true;

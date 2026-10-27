@@ -270,8 +270,8 @@ export function changeRace(
 export type LineageChoice = { kind: "none" } | { kind: "custom" } | { kind: "lineage"; name: string };
 
 /**
- * Replaces the character's lineage with the one chosen, or with none. The spells only the old lineage's expanded list gave are
- * released, with a notice (ADR 0017).
+ * Replaces the character's lineage with the one chosen, or with none, and reconciles in the same step. The race picks of the
+ * old lineage are released with a notice, and so are the spells only its expanded list gave (ADR 0017).
  */
 export function changeLineage(
   character: Character,
@@ -287,7 +287,10 @@ export function changeLineage(
           customLineage: false,
           lineageReplacement: lineage.kind === "lineage" ? lineage.name : null,
         };
-  return releaseExpandedOnlySpells(character, changed, compendium, activeBooks);
+  // The picks the new state no longer grants are released from the character before the change, which titles them;
+  // the reconcile then judges the rest, as changeRace does.
+  const reconciled = reconcile(releaseSupersededRacePicks(character, changed), compendium, { activeBooks });
+  return releaseExpandedOnlySpells(character, reconciled, compendium, activeBooks);
 }
 
 /**
