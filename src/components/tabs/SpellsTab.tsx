@@ -586,27 +586,28 @@ export const SpellsTab: React.FC = () => {
           </Text>
         ))}
 
-        {/* Racial Spellcasting Stats */}
-        <View style={[styles.innateStatsRow, { backgroundColor: theme.surfaceHighlight, borderColor: theme.border }]}>
-          <View style={styles.innateStatCol}>
-            <Text style={[styles.statLabel, { color: theme.textMuted }]}>ABILITY</Text>
-            <Text style={[styles.innateStatVal, { color: theme.accent }]}>
-              {ability ? ability.toUpperCase() : "—"}
-            </Text>
+        {ability && (
+          <View style={[styles.innateStatsRow, { backgroundColor: theme.surfaceHighlight, borderColor: theme.border }]}>
+            <View style={styles.innateStatCol}>
+              <Text style={[styles.statLabel, { color: theme.textMuted }]}>ABILITY</Text>
+              <Text style={[styles.innateStatVal, { color: theme.accent }]}>
+                {ability.toUpperCase()}
+              </Text>
+            </View>
+            <View style={styles.innateStatCol}>
+              <Text style={[styles.statLabel, { color: theme.textMuted }]}>SAVE DC</Text>
+              <Text style={[styles.innateStatVal, { color: theme.text }]}>
+                {profile.spellSaveDc ?? "—"}
+              </Text>
+            </View>
+            <View style={styles.innateStatCol}>
+              <Text style={[styles.statLabel, { color: theme.textMuted }]}>ATTACK BONUS</Text>
+              <Text style={[styles.innateStatVal, { color: theme.text }]}>
+                {profile.spellAttackBonus === undefined ? "—" : formatModifier(profile.spellAttackBonus)}
+              </Text>
+            </View>
           </View>
-          <View style={styles.innateStatCol}>
-            <Text style={[styles.statLabel, { color: theme.textMuted }]}>SAVE DC</Text>
-            <Text style={[styles.innateStatVal, { color: theme.text }]}>
-              {profile.spellSaveDc ?? "—"}
-            </Text>
-          </View>
-          <View style={styles.innateStatCol}>
-            <Text style={[styles.statLabel, { color: theme.textMuted }]}>ATTACK BONUS</Text>
-            <Text style={[styles.innateStatVal, { color: theme.text }]}>
-              {profile.spellAttackBonus === undefined ? "—" : formatModifier(profile.spellAttackBonus)}
-            </Text>
-          </View>
-        </View>
+        )}
 
         {/* Spells List */}
         <View style={{ marginTop: 8, gap: 6 }}>

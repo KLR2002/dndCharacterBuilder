@@ -69,10 +69,6 @@ interface ReviewedSpellFeat extends ReviewedFeature {
  * mark that names an unknown feat, or a feat the reader covers.
  */
 export const REVIEWED_NO_SPELL_GRANTS: ReviewedSpellFeat[] = [
-  // The grant names no casting ability, so the reader gives no card.
-  { owner: "Feat", feature: "Cartomancer", level: 0, reason: "not modelled: no casting ability in the grant" },
-  { owner: "Feat", feature: "Outlands Envoy", level: 0, reason: "not modelled: no casting ability in the grant" },
-  { owner: "Feat", feature: "Rune Shaper", level: 0, reason: "not modelled: no casting ability in the grant" },
   // Ritual-only grants: the ritual book is not modelled.
   { owner: "Feat", feature: "Quicksmithing", level: 0, reason: "not modelled: the ritual book" },
   // The 2024 print also grants an always-prepared group.
@@ -86,9 +82,6 @@ export const REVIEWED_NO_SPELL_GRANTS: ReviewedSpellFeat[] = [
  * cannot name them (an unknown mark throws there), so only the live gate reads this list.
  */
 export const REVIEWED_NO_SPELL_GRANTS_LIVE_ONLY: ReviewedSpellFeat[] = [
-  // The grant names no casting ability.
-  { owner: "Feat", feature: "Boon of Misty Escape", level: 0, reason: "not modelled: no casting ability in the grant" },
-  { owner: "Feat", feature: "Light Bringer", level: 0, reason: "not modelled: no casting ability in the grant" },
   // Its spells are cast from the feat's own text, with no spell grant in the catalog.
   { owner: "Feat", feature: "Genie Magic", level: 0, reason: "not modelled: no spell grant in the catalog" },
 ];

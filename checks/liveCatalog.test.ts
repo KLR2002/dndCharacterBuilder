@@ -726,6 +726,41 @@ test("live catalog: Cloying Mists's daily spell is a card with no ability row, o
   assert.ok(!wizardListedNames(character).includes("Fog Cloud"));
 });
 
+test("live catalog: a feat that names spells and no ability is a card with no ability row, its cantrips at will and its daily spells on counters", { skip: SKIP }, () => {
+  const cartomancer = innateCardOf(wizardHolding("Cartomancer", "BMT"), "Cartomancer");
+  assert.ok(cartomancer, "no Cartomancer card");
+  assert.equal(cartomancer.ability, undefined);
+  assert.equal(cartomancer.spellSaveDc, undefined);
+  assert.equal(cartomancer.spellAttackBonus, undefined);
+  assert.equal(cartomancer.notices, undefined, "no ability is named, so there is none to choose");
+  assert.equal(cartomancer.spells.find((spell) => spell.name === "Prestidigitation")?.resourceCounterId, undefined, "a cantrip is at will");
+
+  const envoy = innateCardOf(wizardHolding("Outlands Envoy", "SatO"), "Outlands Envoy");
+  assert.ok(envoy, "no Outlands Envoy card");
+  assert.equal(envoy.ability, undefined);
+  for (const name of ["Misty Step", "Tongues"]) {
+    const spell: InnateSpellEntry | undefined = envoy.spells.find((entry) => entry.name === name);
+    assert.equal(spell?.maxUses, 1, `${name} is cast once per Long Rest`);
+    assert.ok(spell?.resourceCounterId, `${name} has a Long Rest counter`);
+  }
+});
+
+test("live catalog: Light Bringer's list is a card with no ability once picked", { skip: SKIP }, () => {
+  let character = wizardHolding("Light Bringer", "ABH");
+  const list = featSpellRuleChoices(character, live!.compendium).find((choice) => choice.id === "ABH__Feat Spells__Light Bringer__Spell List");
+  assert.ok(list, "Light Bringer offers its spell lists");
+  character = pickRuleChoice(character, list, "Light", live!.compendium);
+  const card = evaluateCharacter(character, { compendium: live!.compendium }).grantedSpellSources.find((source) => source.title.startsWith("Light Bringer"));
+  assert.ok(card, "no card for the picked list");
+  assert.equal(card.ability, undefined, "the grant names no ability, so the card has none");
+  assert.equal(card.spellSaveDc, undefined);
+});
+
+test("live catalog: Servo Crafting and Strixhaven Mascot, whose grants are ritual spells only, give no card", { skip: SKIP }, () => {
+  assert.equal(innateCardOf(wizardHolding("Servo Crafting", "PSK"), "Servo Crafting"), undefined);
+  assert.equal(innateCardOf(wizardHolding("Strixhaven Mascot", "SCC"), "Strixhaven Mascot"), undefined);
+});
+
 test("live catalog: Magic Connoisseur's list casts with the ability its feat's increase raised", { skip: SKIP }, () => {
   let character = wizardHolding("Magic Connoisseur", "AU", "int");
   const list = featSpellRuleChoices(character, live!.compendium).find((choice) => choice.id === "AU__Feat Spells__Magic Connoisseur__Spell List");

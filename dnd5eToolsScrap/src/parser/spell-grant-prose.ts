@@ -26,14 +26,13 @@ export function spellGrantSentences(description: string): string[] {
 }
 
 /**
- * Whether the reader can give spells from these grants. A known or innate spell needs a casting ability (fixed, chosen or
- * inherited) and is one the reader models: a named spell or a pick that is not a ritual pick. A prepared spell needs no
- * ability, since the class's own ability casts it (ADR 0017 amendment).
+ * Whether the reader can give spells from these grants: a known or innate spell is one the reader models, a named spell or a
+ * pick that is not a ritual pick, whether or not the grant names a casting ability (ADR 0017). A prepared spell is one the
+ * reader models the same way, and needs no ability of its own (ADR 0017 amendment).
  */
 export function readsSpellGrants(grants: AdditionalSpells[] | undefined): boolean {
   return (grants ?? []).some(
-    (grant) =>
-      (grant.ability !== undefined && (modelledSpells(grant.known) || modelledSpells(grant.innate))) || modelledSpells(grant.prepared),
+    (grant) => modelledSpells(grant.known) || modelledSpells(grant.innate) || modelledSpells(grant.prepared),
   );
 }
 
@@ -44,7 +43,8 @@ function modelledSpells(value: unknown): boolean {
   const choose = (value as { choose?: unknown }).choose;
   if (typeof choose === "string") return !isRitualFilter(choose);
   if (choose && typeof choose === "object" && Array.isArray((choose as { from?: unknown }).from)) return true;
-  return Object.entries(value).some(([key, inner]) => key !== "count" && modelledSpells(inner));
+  // A ritual list is the ritual book, which the reader does not read (ADR 0017).
+  return Object.entries(value).some(([key, inner]) => key !== "count" && key !== "ritual" && modelledSpells(inner));
 }
 
 /** A `key=value|key=value` filter with a `components & miscellaneous=ritual` part: the ritual book, which is not modelled. */

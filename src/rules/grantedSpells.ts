@@ -155,8 +155,8 @@ export function grantedPreparedSpells(character: Character, catalogs?: Character
 }
 
 /**
- * One source for one grant, or nothing when the grant is not modelled (see isModelledGrant), or it names no casting ability and
- * its prepared group is not Innate Magic (see isInnatePreparedGrant).
+ * One source for one grant, or nothing when the grant is not modelled (see isModelledGrant). A grant that names no casting
+ * ability gives a source with no ability, save DC or attack bonus.
  */
 function grantSource(
   ctx: GrantContext,
@@ -168,9 +168,7 @@ function grantSource(
 ): InnateSpellProfile | undefined {
   if (!isModelledGrant(grant)) return undefined;
   const ability = abilityOf(ctx.character, owner, grant, selection);
-  // With no ability named, an Innate Magic prepared group still gets its card, without an ability row (ADR 0017 amendment).
   const innatePrepared = isInnatePreparedGrant(grant);
-  if (ability === undefined && grant.ability === undefined && !innatePrepared) return undefined;
 
   const entryName = typeof grant.name === "string" ? grant.name : undefined;
   const spells = grantedSpells({ owner, grant, seen, ctx, entryName });
