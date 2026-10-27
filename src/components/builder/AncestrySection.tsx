@@ -379,7 +379,7 @@ export const AncestrySection: React.FC<AncestrySectionProps> = ({
             </View>
           )}
           {proficiencyChoices.map((choice) => (
-            <ProficiencyChoicePicker key={choice.id} choice={choice} character={character} onUpdate={onUpdate} theme={theme} />
+            <ProficiencyChoicePicker key={choice.id} choice={choice} character={character} onUpdate={onUpdate} theme={theme} activeBooks={activeBooks} />
           ))}
         </CollapsibleCard>
       )}

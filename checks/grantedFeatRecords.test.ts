@@ -252,6 +252,26 @@ test("a pick made in the rest modal keeps the counter of a background-claimed fe
   assert.deepEqual(picked.needsReview ?? [], [], "no notice is raised");
 });
 
+test("a proficiency pick keeps the counter of a background-claimed feat that two active books hold, with no notice", () => {
+  // An invented background choice of a tool, the kind a Proficiency Choice offers.
+  const proficiency: AvailableRuleChoice = {
+    id: "TST__Sample Background__Sample Tool Pick",
+    traitName: "Sample Tool Pick",
+    choose: 1,
+    level: 1,
+    effectLevel: 1,
+    origin: "background",
+    pick: "proficiency",
+    options: [
+      { name: "Sample Lute", description: "Placeholder tool." },
+      { name: "Sample Kit", description: "Placeholder tool." },
+    ],
+  };
+  const picked = pickRuleChoice(claimedWithMageCounter(), proficiency, "Sample Lute", twoListsCompendium, TWO_ACTIVE_BOOKS);
+  assert.ok(picked.resourceCounters?.[MAGE_COUNTER], "the counter of the list held is kept");
+  assert.deepEqual(picked.needsReview ?? [], [], "no notice is raised");
+});
+
 test("removing a class level keeps the counter of a background-claimed feat that two active books hold, with no notice", () => {
   const removed = removeClassLevel(claimedWithMageCounter(), "Sample Mage", twoListsCompendium, TWO_ACTIVE_BOOKS);
   assert.equal(removed.classes[0]?.level, 3, "the level is removed");
