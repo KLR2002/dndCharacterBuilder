@@ -1259,8 +1259,8 @@ for (const name of Object.keys(SAVED_ON_SRD)) {
 
 test("live catalog: the High Elf's cantrip choice keeps its id, and every cantrip the SRD Baseline offers is offered on the integrated catalog", { skip: SKIP }, () => {
   const character = SAVED_ON_SRD["High Elf Wizard"];
-  const onSrd = raceSpellRuleChoices(character, srdBaseline, RACE_SRD_BOOKS).find((choice) => choice.traitName === "High Cantrip");
-  const onLive = raceSpellRuleChoices(character, live!.compendium, [...DEFAULT_ACTIVE_BOOK_CODES]).find((choice) => choice.traitName === "High Cantrip");
+  const onSrd = raceSpellRuleChoices(character, srdBaseline, RACE_SRD_BOOKS).find((choice) => choice.traitName === "High Elf Cantrip");
+  const onLive = raceSpellRuleChoices(character, live!.compendium, [...DEFAULT_ACTIVE_BOOK_CODES]).find((choice) => choice.traitName === "High Elf Cantrip");
   assert.ok(onSrd, "the SRD Baseline offers the High Elf's cantrip choice");
   assert.equal(onLive?.id, onSrd.id);
   const liveOptions = new Set(onLive?.options.map((option) => option.name));
