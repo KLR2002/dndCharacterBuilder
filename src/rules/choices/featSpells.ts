@@ -721,7 +721,7 @@ function grantChoicesOf(
         const description = !isModelledGrant(grant)
           ? "Always-prepared spells"
           : grant.ability === undefined ? "Casting ability: none"
-          : grant.ability === "inherit" ? "Casting ability: the ability the increase raised"
+          : grant.ability === "inherit" ? "Casting ability: from the feat's increase"
           : fixed ? `Casting ability: ${fixed.toUpperCase()}` : `Casting ability: chosen for the ${owner.kind}`;
         return {
           name: grant.name ?? "",

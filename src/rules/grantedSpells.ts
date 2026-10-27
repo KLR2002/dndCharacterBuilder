@@ -167,7 +167,7 @@ function grantSource(
 ): InnateSpellProfile | undefined {
   if (!isModelledGrant(grant)) return undefined;
   const ability = abilityOf(ctx.character, owner, grant, selection);
-  // A grant names no ability when it gives uses from its prepared group: its card has no ability row (ADR 0017 amendment).
+  // With no ability named, an Innate Magic prepared group still gets its card, without an ability row (ADR 0017 amendment).
   const innatePrepared = isInnatePreparedGrant(grant);
   if (ability === undefined && grant.ability === undefined && !innatePrepared) return undefined;
 
