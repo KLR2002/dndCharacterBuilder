@@ -177,7 +177,7 @@ export function getClassSpellProfiles(
 
   const level = totalLevel(character);
   // The highest slot level the character has: the pooled multiclass table's, or its Pact Magic level. A class's own level is a
-  // floor, for the casters the pooled table has no row for (Ki and Giant casters, Artificers).
+  // floor, for the casters the pooled table has no row for (Ki and Giant casters).
   const pooled = multiclassSlots(character, classes);
   const slotLevel = Math.max(pooled.slots.length, pooled.pact?.level ?? 0, ...castingClasses.map((c) => getMaxSpellLevel(c, classes)));
   const pb = proficiencyBonus(level);
