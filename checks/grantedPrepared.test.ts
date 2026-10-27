@@ -185,3 +185,41 @@ test("a prepared spell is not listed for a character with no spellcasting class"
   const character = makeChar({ classes: [{ className: "Sample Fighter", source: "TST", level: 4 }], asiSelections: [takenFeat("Sample Keeper Mark", "int")] });
   assert.deepEqual(evaluateCharacter(character, catalogs).spellProfiles, []);
 });
+
+const fighter = (level: number): CharacterClass => ({ className: "Sample Fighter", source: "TST", level });
+
+const lockedNames = (cards: { spells: { name: string }[] }[]): string[] => cards.flatMap((card) => card.spells.map((s) => s.name));
+
+test("a held plain prepared source gives a locked card to a character with no spellcasting class", () => {
+  const character = makeChar({ classes: [fighter(4)], asiSelections: [takenFeat("Sample Keeper Mark", "int")] });
+  const evaluated = evaluateCharacter(character, catalogs);
+
+  assert.deepEqual(evaluated.spellProfiles, [], "no class list");
+  assert.deepEqual(evaluated.grantedSpellSources, [], "no Innate Magic card");
+  assert.equal(evaluated.lockedPreparedCards.length, 1, "one locked card for the source");
+  const [card] = evaluated.lockedPreparedCards;
+  assert.equal(card.title, "Sample Keeper Mark", "the card is titled with the feat");
+  assert.deepEqual(lockedNames([card]), ["Sample Bulwark"], "the card lists the prepared spell");
+  assert.ok(!("ability" in card) && !("spellSaveDc" in card) && !("spellAttackBonus" in card), "no ability, save DC or attack row");
+  assert.ok(card.spells.every((s) => !("resourceCounterId" in s) && !("maxUses" in s)), "no counters");
+});
+
+test("taking a spellcasting class removes the locked card and lists the spell in the class list", () => {
+  const character = makeChar({
+    classes: [fighter(4), mage(1)],
+    asiSelections: [takenFeat("Sample Keeper Mark", "int")],
+  });
+  const evaluated = evaluateCharacter(character, catalogs);
+
+  assert.deepEqual(evaluated.lockedPreparedCards, [], "the card is gone");
+  assert.ok(listedNames(profileFor(evaluated.spellProfiles, "Sample Mage")).includes("Sample Bulwark"), "the class list has the spell");
+});
+
+test("a locked card's spell is absent below the character level it is listed from, and a spell slot spell is never on it", () => {
+  const holding = (level: number) => makeChar({ classes: [fighter(level)], race: { name: "Sample Late Blood", source: "TST" } });
+  assert.deepEqual(evaluateCharacter(holding(2), catalogs).lockedPreparedCards, [], "absent at level 2");
+  assert.deepEqual(lockedNames(evaluateCharacter(holding(3), catalogs).lockedPreparedCards), ["Sample Anchor"], "listed at level 3");
+
+  const slotAdept = makeChar({ classes: [fighter(4)], asiSelections: [takenFeat("Sample Slot Adept")] });
+  assert.deepEqual(evaluateCharacter(slotAdept, catalogs).lockedPreparedCards, [], "spell slot levels need a spellcasting class");
+});

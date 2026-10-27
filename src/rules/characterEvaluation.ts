@@ -23,7 +23,9 @@ import {
 import {
   getClassSpellProfiles,
   calculateWarlockPactSlots,
+  lockedPreparedCards,
   type ClassSpellProfile,
+  type LockedPreparedCard,
 } from "./spellcasting.ts";
 import {
   getClassDice,
@@ -76,6 +78,8 @@ export interface EvaluatedCharacter {
   spellProfiles: ClassSpellProfile[];
   /** The Innate Magic sources the character's feats, races and subraces grant (ADR 0017), one card each. Not class spells. */
   grantedSpellSources: InnateSpellProfile[];
+  /** The plain prepared spells of the character's feats and race, on one locked card per source, when it has no spellcasting class. */
+  lockedPreparedCards: LockedPreparedCard[];
   pactMagic: { count: number; level: number } | null;
   combatDice: ClassDiceSummary;
   combatDcs: {
@@ -141,14 +145,16 @@ export function evaluateCharacter(
 
   const attacksList = getWeaponAttacks(character, { catalogs });
 
+  const grantedPrepared = grantedPreparedSpells(character, catalogs);
   const spellProfiles = getClassSpellProfiles(character, {
     ...ancestry,
     activeBooks: catalogs?.activeBooks,
     classes,
     compendium: catalogs?.compendium,
     expandedSpells: heldExpandedSpellNames(character, catalogs?.compendium, catalogs?.activeBooks),
-    grantedPrepared: grantedPreparedSpells(character, catalogs),
+    grantedPrepared,
   });
+  const lockedCards = spellProfiles.length === 0 ? lockedPreparedCards(grantedPrepared, lvl) : [];
   const grantedSources = grantedSpellSources(character, catalogs, {
     modifiers: effScores.modifiers,
     proficiencyBonus: pb,
@@ -198,6 +204,7 @@ export function evaluateCharacter(
     resolvedBackground: background,
     spellProfiles,
     grantedSpellSources: grantedSources,
+    lockedPreparedCards: lockedCards,
     pactMagic,
     combatDice,
     combatDcs,

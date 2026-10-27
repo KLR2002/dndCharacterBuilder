@@ -304,6 +304,28 @@ function grantedAlwaysPrepared(
   return listed;
 }
 
+/** The plain prepared spells of one held feat or race, shown on a locked card when the character has no spellcasting class. */
+export interface LockedPreparedCard {
+  title: string;
+  spells: SpellData[];
+}
+
+/**
+ * One locked card per source with plain prepared spells, for a character with no spellcasting class. Only the spells whose
+ * character level the character has reached are listed. With no class there are no spell slots, so a spell with a slot level is
+ * left out.
+ */
+export function lockedPreparedCards(grants: GrantedPreparedSpell[], level: number): LockedPreparedCard[] {
+  const cards = new Map<string, LockedPreparedCard>();
+  for (const grant of grants) {
+    if (grant.minCharacterLevel > level || (grant.minSpellLevel ?? 0) > 0) continue;
+    const card = cards.get(grant.source) ?? { title: grant.source, spells: [] };
+    if (!card.spells.some((s) => s.name === grant.spell.name)) card.spells.push(grant.spell);
+    cards.set(grant.source, card);
+  }
+  return [...cards.values()];
+}
+
 export interface SpellAvailabilityContext {
   subclassName?: string;
   classLevel?: number;
