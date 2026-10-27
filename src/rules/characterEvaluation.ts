@@ -74,7 +74,7 @@ export interface EvaluatedCharacter {
   resolvedAncestry: ResolvedAncestry;
   resolvedBackground?: BackgroundData;
   spellProfiles: ClassSpellProfile[];
-  /** The Innate Magic sources the character's feats grant (ADR 0017), one card each. Not class spells. */
+  /** The Innate Magic sources the character's feats, races and subraces grant (ADR 0017), one card each. Not class spells. */
   grantedSpellSources: InnateSpellProfile[];
   pactMagic: { count: number; level: number } | null;
   combatDice: ClassDiceSummary;

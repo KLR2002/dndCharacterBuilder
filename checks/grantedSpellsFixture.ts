@@ -141,7 +141,7 @@ export const grantedSpellFeats = (): FeatData[] => [
       },
     ],
   }),
-  // A pick whose filter uses a key this ticket does not support: it matches nothing.
+  // A pick whose filter uses a key the reader does not model: it is not offered.
   feat("Sample Odd Initiate", {
     additionalSpells: [
       {
@@ -361,6 +361,16 @@ export const grantedSpellRaces = (): RaceData[] => [
   // A fixed casting ability and one cantrip the player picks from a class list, as the High Elf's wizard cantrip is.
   race("Sample Gifted", {
     additionalSpells: [{ ability: "int", known: { "1": { _: [{ choose: "level=0|class=Sample Mage" }] } } }],
+  }),
+  // A race that offers two named spell lists, each with a casting ability the player chooses for the race.
+  race("Sample Listed", {
+    additionalSpells: [
+      {
+        name: "Sample Listed Spells",
+        ability: { choose: ["int", "wis", "cha"] },
+        known: { _: [{ choose: "level=0|class=Sample Mage", count: 1 }] },
+      },
+    ],
   }),
   // A subrace whose cantrip is read only while the Cantrip option of its own choice is picked (the gate names that choice).
   race("Sample Gated", {

@@ -66,10 +66,9 @@ export function resetSpellCatalogCache(): void {
   spellCatalogs = new WeakMap<Compendium, Map<string, SpellData[]>>();
 }
 
-/** The catalog spell a grant names (a name as the scraper normalises it), preferring a copy from an active book. */
 /**
- * The catalog spell a name resolves to. `activeOnly` drops a name whose only copies are in books that are switched off,
- * instead of falling back to the first copy.
+ * The catalog spell a name resolves to, a name as the scraper normalises it, preferring a copy from an active book. `activeOnly`
+ * drops a name whose only copies are in books that are switched off, instead of falling back to the first copy.
  */
 export function resolveSpellName(
   name: string,

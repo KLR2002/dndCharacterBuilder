@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { evaluateCharacter } from "../src/rules/characterEvaluation.ts";
 import { validateFeatPrerequisites } from "../src/rules/feats.ts";
 import { toggleInnateSpellUse } from "../src/rules/characterSpells.ts";
+import { raceSpellRuleChoices } from "../src/rules/choices/featSpells.ts";
 import { applyLongRest } from "../src/rules/rest.ts";
 import type { CharacterClass, RuleChoiceEntry } from "../src/types/character.ts";
 import type { InnateSpellEntry, InnateSpellProfile } from "../src/rules/innateMagic.ts";
@@ -95,7 +96,7 @@ test("a race's granted spell satisfies a feat prerequisite of being able to cast
   assert.equal(validateFeatPrerequisites(makeChar({ classes: [mage(1)] }), prerequisite, { catalogs }).met, false);
 });
 
-test("a saved counter id from the old race table keeps its used state", () => {
+test("a saved counter under a race spell's id keeps its used state", () => {
   const character = makeChar({
     classes: [mage(3)],
     race: { name: "Sample Kin", source: "TST" },
@@ -161,8 +162,8 @@ test("on the SRD Baseline alone, a Tiefling has Thaumaturgy at will, and Hellish
 
   const level3 = sourceTitled(evaluateCharacter(tiefling(3), srd).grantedSpellSources, "Tiefling");
   const rebuke = level3?.spells.find((spell) => spell.name === "Hellish Rebuke");
-  assert.equal(rebuke?.resourceCounterId, "innate_spell_hellish_rebuke", "the id the old table saved");
-  assert.equal(rebuke?.level, 2, "the source casts Hellish Rebuke at level 2, as the old table had it");
+  assert.equal(rebuke?.resourceCounterId, "innate_spell_hellish_rebuke", "the counter id is the spell's own id");
+  assert.equal(rebuke?.level, 2, "the source casts Hellish Rebuke at level 2");
 
   const level5 = sourceTitled(evaluateCharacter(tiefling(5), srd).grantedSpellSources, "Tiefling");
   assert.ok(level5?.spells.some((spell) => spell.name === "Darkness"));
@@ -180,6 +181,13 @@ test("a race's spell with a cast-level suffix is listed at that level, and one w
   assert.equal(pulse?.level, 2, "Sample Pulse is catalogued at level 1 but cast at level 2");
   assert.equal(pulse?.isCantrip, false);
   assert.equal(veil?.level, 2, "Sample Veil has no suffix and keeps its catalogued level");
+});
+
+test("a race's spell list offered for the race words its casting ability as chosen for the race, not for a feat", () => {
+  const character = makeChar({ classes: [mage(1)], race: { name: "Sample Listed", source: "TST" } });
+  const lists = raceSpellRuleChoices(character, catalogs.compendium).find((choice) => choice.options.some((o) => o.name === "Sample Listed Spells"));
+  assert.ok(lists, "the race's list is offered");
+  assert.equal(lists.options[0].description, "Casting ability: chosen for the race");
 });
 
 test("a subrace's grant is read only while the option that gates it is picked in the Rule Choice it waits on", () => {

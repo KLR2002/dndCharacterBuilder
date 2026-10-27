@@ -558,7 +558,7 @@ function grantChoicesOf(
         const fixed = chosenAbilityOptionsOf(grant).length === 0 ? fixedGrantAbility(grant) : undefined;
         return {
           name: grant.name ?? "",
-          description: fixed ? `Casting ability: ${fixed.toUpperCase()}` : "Casting ability: chosen for the feat",
+          description: fixed ? `Casting ability: ${fixed.toUpperCase()}` : `Casting ability: chosen for the ${owner.kind}`,
           label: spellListOptionLabel(grant, compendium, activeBooks),
         };
       }),
@@ -724,14 +724,14 @@ export function featSpellChoicesOf(
 }
 
 /**
- * The Rule Choice id the old race table saved a High Elf cantrip under (ADR 0017). It is the documented example of the legacy
- * ids the migration reads: see isLegacyHighElfCantripId. No new pick is saved under it.
+ * A Rule Choice id a High Elf cantrip was saved under (ADR 0017). It is the documented example of the legacy ids the migration
+ * reads: see isLegacyHighElfCantripId. No new pick is saved under it.
  */
 export const LEGACY_HIGH_ELF_CANTRIP_CHOICE_ID = "PHB__Elf__PHB__High Elf__Cantrip";
 
 /**
- * Whether a Rule Choice id is a legacy High Elf cantrip pick, saved from any source by the old race table. The old reader matched
- * any id that names High Elf, so this does too; a granted spell's own pick id is never one.
+ * Whether a Rule Choice id is a legacy High Elf cantrip pick, saved from any source. The legacy reader matched any id that names
+ * High Elf, so this does too; a granted spell's own pick id is never one.
  */
 function isLegacyHighElfCantripId(id: string): boolean {
   return !isGrantSpellChoiceId(id) && id.includes("High Elf");

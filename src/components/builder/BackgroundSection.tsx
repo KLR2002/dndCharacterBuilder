@@ -268,7 +268,7 @@ export const BackgroundSection: React.FC<BackgroundSectionProps> = ({
                   {(() => {
                     const bgFeatGrant = getBackgroundFeatGrant(character.background!.name, bgData.feature?.description);
                     if (!bgFeatGrant) return null;
-                    // A choice of feats (Rewarded) offers each of its options; the feat claimed is the background's one.
+                    // A choice of feats offers each of its options; the feat claimed is the background's one.
                     const offeredFeats = bgFeatGrant.isChoice ? bgFeatGrant.choiceOptions ?? [bgFeatGrant.featName] : [bgFeatGrant.featName];
                     const bgOriginFeat = (character.originFeats || []).find((f) => f.featSource === BACKGROUND_FEAT_SOURCE);
                     const bgFeatRecord = bgOriginFeat ? featOfSelection(bgOriginFeat, catalogListings(catalogs).feats()) : undefined;
