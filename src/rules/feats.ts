@@ -3,6 +3,7 @@ import { effectiveScores, hasFeat } from "./abilities.ts";
 import { totalLevel } from "./proficiencies.ts";
 import { isCastingClass } from "./spellcasting.ts";
 import { grantedSpellSources } from "./grantedSpells.ts";
+import { releaseExpandedOnlySpells } from "./backgroundSpells.ts";
 import { proficiencySheet } from "./proficiencySheet.ts";
 import type { CharacterCatalogs } from "./catalogs.ts";
 import { reconcile } from "./characterReconciler.ts";
@@ -189,11 +190,10 @@ export function removeOriginFeat(
 ): Character {
   const current = character.originFeats || [];
   const updated = current.filter(s => s.featName?.toLowerCase() !== featName.toLowerCase());
-  return reconcile(
-    {
-      ...character,
-      originFeats: updated,
-    },
+  // The spells only the feat's expanded list gave are released, with a notice (ADR 0017).
+  return releaseExpandedOnlySpells(
+    character,
+    reconcile({ ...character, originFeats: updated }, compendium),
     compendium
   );
 }
