@@ -669,7 +669,7 @@ test("live catalog: a level-5 Drow has Dancing Lights, Faerie Fire and Darkness 
     baseAbilityScores: { str: 10, dex: 10, con: 10, int: 10, wis: 10, cha: 16 },
   });
   const evaluated = evaluateCharacter(character, { compendium: live!.compendium });
-  const drow = evaluated.grantedSpellSources.find((source) => source.title === "Drow");
+  const drow = evaluated.grantedSpellSources.find((source) => source.title === "Drow Elf");
   assert.ok(drow, `no Drow card; sources: ${evaluated.grantedSpellSources.map((source) => source.title).join(", ")}`);
   assert.equal(drow.ability, "cha");
   const names = drow.spells.map((spell) => spell.name);
@@ -714,7 +714,7 @@ test("live catalog: a Water Genasi of level 3 has its Create or Destroy Water co
     baseAbilityScores: { str: 10, dex: 10, con: 10, int: 10, wis: 10, cha: 10 },
   });
   const evaluated = evaluateCharacter(character, { compendium: live!.compendium });
-  const water = evaluated.grantedSpellSources.find((source) => source.title === "Water");
+  const water = evaluated.grantedSpellSources.find((source) => source.title === "Water Genasi");
   const spell = water?.spells.find((entry) => entry.name === "Create or Destroy Water");
   assert.ok(spell, `no Create or Destroy Water on the Water card: ${JSON.stringify(water?.spells.map((entry) => entry.name))}`);
   assert.equal(spell.resourceCounterId, "innate_spell_create_or_destroy_water");
