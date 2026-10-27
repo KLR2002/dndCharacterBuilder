@@ -286,9 +286,10 @@ export function sourceGrants(character: Character, catalogs: CharacterCatalogs):
   const features = featuresOf(character, listings);
   const fixedOf = (origins: FeatureInstance["origin"][]): SourceFixedGrants => {
     const sourced = features.filter((feature) => origins.includes(feature.origin));
+    // A race and its subrace may both grant the same language or tool; each is listed once.
     return {
-      languages: fixedFeatureNames(sourced, "languages").map(normalizeLanguageName),
-      tools: fixedFeatureNames(sourced, "tools").map(normalizeToolName),
+      languages: [...new Set(fixedFeatureNames(sourced, "languages").map(normalizeLanguageName))],
+      tools: [...new Set(fixedFeatureNames(sourced, "tools").map(normalizeToolName))],
     };
   };
   const starting = startingFeatureOf(character, listings.classes());
