@@ -895,15 +895,16 @@ export function pruneInvalidFeatSpellPicks(character: Character, compendium: Com
  * kept. Other counters are untouched, and a catalog that holds no feat is not loaded, so none is released.
  * Returns the character itself when none is released.
  */
-export function pruneReleasedFeatCounters(character: Character, compendium: Compendium): Character {
+export function pruneReleasedFeatCounters(character: Character, compendium: Compendium, activeBooks?: readonly string[]): Character {
   const listings = compendium.for();
   const counters = character.resourceCounters ?? {};
   const featKeys = Object.keys(counters).filter((key) => key.startsWith(FEAT_COUNTER_PREFIX));
   if (featKeys.length === 0 || listings.feats().length === 0) return character;
 
   // Each feat the character holds, by its slug, with the slug of the spell list it holds (undefined when none is picked).
+  // The record is the one the reader offers for the active books, so a feat in two books keeps the list the reader shows.
   const held = new Map<string, { name: string; list: string | undefined }>();
-  for (const { feat } of heldFeatsOf(character, listings.feats())) {
+  for (const { feat } of heldFeatsOf(character, listings.feats(), activeBooks)) {
     const picked = pickedSpellListOf(character, featOwner(feat), feat.additionalSpells ?? []);
     held.set(slugOf(feat.name), { name: feat.name, list: picked?.name ? slugOf(picked.name) : undefined });
   }

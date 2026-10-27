@@ -142,7 +142,7 @@ export function grantedPreparedSpells(character: Character, catalogs?: Character
   const race = raceGrantsOf(character, listings.races());
   if (race) for (const grant of race.grants) addGrant(race.owner, grant, race.owner.name);
 
-  for (const { feat } of heldFeatsOf(character, listings.feats())) {
+  for (const { feat } of heldFeatsOf(character, listings.feats(), activeBooks)) {
     if (!feat.additionalSpells) continue;
     const owner = featOwner(feat);
     const picked = pickedSpellListOf(character, owner, feat.additionalSpells);

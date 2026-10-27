@@ -2,10 +2,13 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { evaluateCharacter } from "../src/rules/characterEvaluation.ts";
 import { featSpellRuleChoices, raceSpellRuleChoices } from "../src/rules/choices/featSpells.ts";
+import { grantedPreparedSpells } from "../src/rules/grantedSpells.ts";
+import { BACKGROUND_FEAT_SOURCE } from "../src/constants/rules.ts";
 import type { AbilityKey, AbilityScores, AsiSelection, Character, CharacterClass, RuleChoiceEntry } from "../src/types/character.ts";
+import type { FeatData } from "../src/types/dnd5e.ts";
 import type { ClassSpellProfile } from "../src/rules/spellcasting.ts";
 import { inMemoryCompendium, makeChar } from "./testUtils.ts";
-import { grantedSpellClasses } from "./grantedSpellsFixture.ts";
+import { grantedSpellClasses, grantedSpellSpells } from "./grantedSpellsFixture.ts";
 import { preparedGrantFeats, preparedGrantRaces, preparedGrantSpells } from "./grantedPreparedFixture.ts";
 
 // Prepared spells of a held feat or race are Always-Prepared Spells (ADR 0017, amendment). Every name here is invented
@@ -222,4 +225,31 @@ test("a locked card's spell is absent below the character level it is listed fro
 
   const slotAdept = makeChar({ classes: [fighter(4)], asiSelections: [takenFeat("Sample Slot Adept")] });
   assert.deepEqual(evaluateCharacter(slotAdept, catalogs).lockedPreparedCards, [], "spell slot levels need a spellcasting class");
+});
+
+test("a background-claimed feat held in two active books lists the prepared spells of the record the reader offers", () => {
+  // The record in TST is the first of the catalog; the background's book, TST2, holds the other one.
+  const twinIn = (source: string, spell: string): FeatData => ({
+    name: "Sample Twin",
+    source,
+    prerequisite: null,
+    abilityScoreIncrease: null,
+    description: "Placeholder description for the feat.",
+    additionalSpells: [{ prepared: { _: [spell] } }],
+  });
+  const twins = inMemoryCompendium(
+    {
+      classes: grantedSpellClasses(),
+      feats: [twinIn("TST", "Sample Pulse"), twinIn("TST2", "Sample Ward")],
+      spells: grantedSpellSpells(),
+    },
+    { integrated: true },
+  );
+  const character = makeChar({
+    classes: [mage(4)],
+    background: { name: "Sample Scholar", source: "TST2" },
+    originFeats: [{ level: 1, type: "feat", featName: "Sample Twin", featSource: BACKGROUND_FEAT_SOURCE }],
+  });
+  const granted = grantedPreparedSpells(character, { compendium: twins, activeBooks: ["TST", "TST2"] });
+  assert.deepEqual(granted.map((g) => g.spell.name), ["Sample Pulse"], "the record the reader offers gives its spell");
 });

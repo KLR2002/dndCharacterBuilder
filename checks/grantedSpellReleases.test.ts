@@ -7,7 +7,9 @@ import { removeOriginFeat } from "../src/rules/feats.ts";
 import { reconcile, reconcileForActiveBooks } from "../src/rules/characterReconciler.ts";
 import { migrateCharacter } from "../src/rules/migrateCharacter.ts";
 import { toggleInnateSpellUse } from "../src/rules/characterSpells.ts";
+import { BACKGROUND_FEAT_SOURCE } from "../src/constants/rules.ts";
 import type { AsiSelection, Character, CharacterClass } from "../src/types/character.ts";
+import type { AdditionalSpells, FeatData } from "../src/types/dnd5e.ts";
 import type { AvailableRuleChoice } from "../src/rules/choices/types.ts";
 import type { InnateSpellProfile } from "../src/rules/innateMagic.ts";
 import { inMemoryCompendium, makeChar } from "./testUtils.ts";
@@ -220,6 +222,61 @@ test("removing a feat notices its released casting ability by name, and the feat
     removed.needsReview?.includes("Intelligence casting ability removed from Sample Lorekeeper: feat no longer held"),
     `got ${JSON.stringify(removed.needsReview)}`,
   );
+});
+
+test("reconciling against two active books that both hold a background-claimed feat releases nothing", () => {
+  // The feat's record in TST lists a Mage list (the list picked); its record in TST2, the background's book, lists only a Cleric list.
+  const twinIn = (source: string, lists: AdditionalSpells[]): FeatData => ({
+    name: "Sample Twin",
+    source,
+    prerequisite: null,
+    abilityScoreIncrease: null,
+    description: "Placeholder description for the feat.",
+    additionalSpells: lists,
+  });
+  const twinCompendium = inMemoryCompendium(
+    {
+      classes: grantedSpellClasses(),
+      feats: [
+        twinIn("TST", [{ name: "Sample Mage Spells", ability: "int", innate: { _: { daily: { "1": ["Sample Pulse"] } } } }]),
+        twinIn("TST2", [{ name: "Sample Cleric Spells", ability: "wis", innate: { _: { daily: { "1": ["Sample Ward"] } } } }]),
+      ],
+      spells: grantedSpellSpells(),
+      races: grantedSpellRaces(),
+      backgrounds: grantedSpellBackgrounds(),
+    },
+    { integrated: true },
+  );
+  const both = ["TST", "TST2"];
+  const pulseCounter = featCounterId("Sample Twin", "Sample Mage Spells", "Sample Pulse");
+  const character = makeChar({
+    classes: [mage(4)],
+    background: { name: "Sample Scholar", source: "TST2" },
+    originFeats: [{ level: 1, type: "feat", featName: "Sample Twin", featSource: BACKGROUND_FEAT_SOURCE }],
+    ruleChoices: [
+      {
+        id: "TST__Feat Spells__Sample Twin__Spell List",
+        trait: "Sample Twin Spell List",
+        origin: "feat",
+        choose: 1,
+        from: ["Sample Mage Spells", "Sample Cleric Spells"],
+        picked: ["Sample Mage Spells"],
+      },
+    ],
+    resourceCounters: {
+      [pulseCounter]: { id: pulseCounter, name: "Innate: Sample Pulse", current: 0, max: 1, resetOn: "long" },
+    },
+  });
+  const card = evaluateCharacter(character, { compendium: twinCompendium, activeBooks: both }).grantedSpellSources;
+  assert.ok(
+    card.some((source) => source.spells.some((spell) => spell.name === "Sample Pulse")),
+    "the reader gives the picked list's spell from the feat's record in TST",
+  );
+
+  const reconciled = reconcileForActiveBooks(character, twinCompendium, both);
+  assert.deepEqual(reconciled.resourceCounters, character.resourceCounters, "the used counter is kept");
+  assert.deepEqual(reconciled.ruleChoices, character.ruleChoices, "the pick is kept");
+  assert.deepEqual(reconciled.needsReview ?? [], [], "no notice is raised");
 });
 
 /** The character with its Sample Pulse counter used, as a player leaves it after a Long Rest's use. */

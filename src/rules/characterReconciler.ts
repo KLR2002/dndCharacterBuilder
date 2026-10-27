@@ -82,7 +82,7 @@ export function reconcile(
   updated = dropLegacyBackgroundSkills(updated, compendium, options.activeBooks);
   updated = pruneInvalidProficiencyPicks(updated, compendium);
   updated = pruneInvalidFeatSpellPicks(updated, compendium, options.activeBooks);
-  updated = pruneReleasedFeatCounters(updated, compendium);
+  updated = pruneReleasedFeatCounters(updated, compendium, options.activeBooks);
   updated = moveLegacyInnateCounters(updated, compendium, options.activeBooks);
   updated = pruneInvalidExpertise(updated, { compendium, activeBooks: options.activeBooks });
 

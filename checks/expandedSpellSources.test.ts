@@ -8,7 +8,8 @@ import { applyAsiSelection, removeAsiSelection } from "../src/rules/leveling.ts"
 import { applyOriginFeat, removeOriginFeat } from "../src/rules/feats.ts";
 import { isKnown, learnSpell } from "../src/rules/characterSpells.ts";
 import type { AsiSelection, Character, CharacterClass } from "../src/types/character.ts";
-import type { ClassData, SpellData } from "../src/types/dnd5e.ts";
+import type { ClassData, FeatData, SpellData } from "../src/types/dnd5e.ts";
+import { BACKGROUND_FEAT_SOURCE } from "../src/constants/rules.ts";
 import { inMemoryCompendium, makeChar } from "./testUtils.ts";
 import { backgroundSpellBackgrounds, backgroundSpellClasses, backgroundSpellSpells } from "./backgroundSpellsFixture.ts";
 import { expandedSpellFeats, expandedSpellRaces } from "./expandedSpellSourcesFixture.ts";
@@ -216,4 +217,37 @@ test("clearing the background keeps a spell a held feat's list still gives", () 
   });
   const cleared = clearBackground(character, catalogs);
   assert.deepEqual(cleared.knownSpells?.map((k) => k.name), ["Sample Ward"], "the feat's list still gives it");
+});
+
+test("clearing a background-claimed feat held in two active books releases the spell only the record the reader offers lists", () => {
+  // The record in TST is the first of the catalog and lists Sample Warding; the background's book, TST2, lists Sample Ward.
+  const twinIn = (source: string, spell: string): FeatData => ({
+    name: "Sample Twin",
+    source,
+    prerequisite: null,
+    abilityScoreIncrease: null,
+    description: "Placeholder description for the feat.",
+    additionalSpells: [{ expanded: { s1: [spell] } }],
+  });
+  const twins = inMemoryCompendium(
+    {
+      classes: backgroundSpellClasses(),
+      spells: backgroundSpellSpells(),
+      backgrounds: backgroundSpellBackgrounds(),
+      feats: [twinIn("TST", "sample warding"), twinIn("TST2", "sample ward")],
+    },
+    { integrated: true },
+  );
+  const character = makeChar({
+    classes: [cls("Sample Mage", 5)],
+    background: { name: "Sample Scholar", source: "TST2" },
+    originFeats: [{ level: 1, type: "feat", featName: "Sample Twin", featSource: BACKGROUND_FEAT_SOURCE }],
+    knownSpells: [known("Sample Warding")],
+  });
+  const cleared = clearBackground(character, { compendium: twins, activeBooks: ["TST", "TST2"] });
+  assert.deepEqual(cleared.knownSpells, [], "the spell only the record the reader offers listed leaves the known spells");
+  assert.ok(
+    cleared.needsReview?.some((notice) => /Sample Warding removed: only on the Sample Twin feat's spell list/.test(notice)),
+    `the release is noticed: ${JSON.stringify(cleared.needsReview)}`,
+  );
 });

@@ -91,9 +91,9 @@ export function releaseExpandedOnlySpells(
   compendium: Compendium = currentCompendium(),
   activeBooks?: string[]
 ): Character {
-  const stillListed = new Set(heldExpandedSources(after, compendium).flatMap((source) => source.names.map(normalizeKey)));
+  const stillListed = new Set(heldExpandedSources(after, compendium, activeBooks).flatMap((source) => source.names.map(normalizeKey)));
   const sourceOf = new Map<string, string>();
-  for (const source of heldExpandedSources(before, compendium)) {
+  for (const source of heldExpandedSources(before, compendium, activeBooks)) {
     for (const name of source.names) {
       const key = normalizeKey(name);
       if (!stillListed.has(key) && !sourceOf.has(key)) sourceOf.set(key, source.title);
