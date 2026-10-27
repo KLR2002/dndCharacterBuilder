@@ -49,10 +49,15 @@ test("prose that only mentions casting a spell as a trigger is not a grant", () 
   assert.deepEqual(spellGrantSentences("Whenever you cast a spell that deals sample damage, you gain a sample bonus."), []);
 });
 
-test("a grant that names no casting ability is a gap, even with no prose", () => {
-  const gaps = spellCoverageGaps(data([{ additionalSpells: [{ known: { _: ["sample spark"] } }] }]), []);
-  assert.deepEqual(gaps, [{ owner: "Feat", feature: "Sample Feat", level: 0, sentences: [] }]);
-  assert.equal(readsSpellGrants([{ known: { _: ["sample spark"] } }]), false);
+test("a grant that names no casting ability and gives a spell is read, so its feat is covered with no prose", () => {
+  const grants = [{ known: { _: ["sample spark"] } }];
+  assert.equal(readsSpellGrants(grants), true);
+  assert.deepEqual(spellCoverageGaps(data([{ additionalSpells: grants }]), []), []);
+});
+
+test("a grant whose only spells are ritual spells is not read, with or without a casting ability", () => {
+  assert.equal(readsSpellGrants([{ innate: { _: { ritual: ["sample spark"] } } }]), false);
+  assert.equal(readsSpellGrants([{ ability: "int", innate: { _: { ritual: ["sample spark"] } } }]), false);
 });
 
 test("a grant whose prepared group names a spell is covered, with or without a casting ability", () => {
@@ -102,7 +107,7 @@ test("a mark on a feat that has readable spell grants is an error", () => {
 
 test("a feat whose prose grants a spell and that has an unreadable grant is a gap, not a covered feat", () => {
   const gaps = spellCoverageGaps(
-    data([{ description: "You learn a sample spell.", additionalSpells: [{ known: { _: ["sample spark"] } }] }]),
+    data([{ description: "You learn a sample spell.", additionalSpells: [{ innate: { _: { ritual: ["sample spark"] } } }] }]),
     [],
   );
   assert.deepEqual(gaps.map(gapName), ["Feat / Sample Feat (level 0)"]);
