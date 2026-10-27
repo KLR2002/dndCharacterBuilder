@@ -1,11 +1,12 @@
 import type { Character } from "../types/character.ts";
-import type { ClassData, GrantRequirement, ProficiencyGrant } from "../types/dnd5e.ts";
+import type { BackgroundData, ClassData, GrantRequirement, ProficiencyGrant, RaceData } from "../types/dnd5e.ts";
 import type { Compendium } from "../services/compendium.ts";
 import { grantRequirementMet } from "./optionFeatureGrants.ts";
 import { findClassData } from "./catalogs.ts";
 import { MULTICLASS_FEATURE, multiclassSkillGrantOf } from "./proficiencySheet.ts";
 import { poolNames, sourceRecordGrants, STARTING_PROFICIENCIES, validPicks, type ChoiceProficiencyGrant } from "./proficiencyPools.ts";
 import { heldSubraceOf, raceSkillPickApplies, recordGrantSources, subracePickApplies } from "./recordProficiencyGrants.ts";
+import { findHeldRace, findHeldRecord } from "./raceLookup.ts";
 import { CUSTOM_BACKGROUND_GRANTS, isCustomBackground } from "./customBackground.ts";
 import { normalizeSkillName } from "./skills.ts";
 import { withNotices } from "./needsReview.ts";
@@ -52,9 +53,9 @@ const BUCKET_OF = { Race: "race", Subrace: "race", Background: "background" } as
  * no choice takes more names than its count. A name no choice takes stays in its bucket, where the sheet keeps
  * reading it. Returns the character unchanged when nothing moves.
  */
-export function moveLegacySourcePicks(character: Character, compendium: Compendium): Character {
+export function moveLegacySourcePicks(character: Character, compendium: Compendium, activeBooks?: readonly string[]): Character {
   const listings = compendium.for();
-  const sources = recordGrantSources(character, { races: listings.races(), backgrounds: listings.backgrounds() });
+  const sources = recordGrantSources(character, { races: listings.races(), backgrounds: listings.backgrounds(), activeBooks });
   const picks: Record<string, string[]> = { ...(character.proficiencyPicks ?? {}) };
   const buckets = {
     tools: { ...character.chosenTools } as Partial<Record<SourceBucket | "class", string[]>>,
@@ -282,10 +283,10 @@ function grantSourcesIn(compendium: Compendium): Map<string, GrantSource[]> {
  * Whether the character still holds the owner of a grant at the grant's level. A class entry holds the
  * owner when it resolves to the owner's own catalog class (name and source). Errs toward held.
  */
-function ownerHeld(source: GrantSource, character: Character, classes: readonly ClassData[]): boolean {
+function ownerHeld(source: GrantSource, character: Character, classes: readonly ClassData[], held: HeldRecordIds): boolean {
   const owner = source.owner;
   if (owner.kind === "custom") return isCustomBackground(character.background);
-  if (owner.kind === "record") return recordHeld(owner, character);
+  if (owner.kind === "record") return recordHeld(owner, held);
   if (owner.kind === "feat") {
     const wanted = owner.featName.toLowerCase();
     return [...(character.asiSelections ?? []), ...(character.originFeats ?? [])].some(
@@ -305,31 +306,58 @@ function ownerHeld(source: GrantSource, character: Character, classes: readonly 
   });
 }
 
-/** Whether a name and an optional source match a held entry: the source is compared only when the character names one. */
-function sameRecord(name: string, source: string | undefined, record: { name: string; source: string }): boolean {
-  return record.name.toLowerCase() === name.toLowerCase() && (!source || record.source === source);
+/** The identity of a catalog record: its name and the book it is from. */
+interface RecordIdentity {
+  name: string;
+  source: string;
+}
+
+/**
+ * The race, subrace and background a character holds, each as the record the shared lookup resolves it to. A held record is
+ * compared with an owner by identity, so a record saved under one book is held on a catalog that has its name in another.
+ */
+interface HeldRecordIds {
+  race?: RecordIdentity;
+  subrace?: RecordIdentity;
+  background?: RecordIdentity;
+}
+
+function heldRecordIdsOf(
+  character: Character,
+  races: readonly RaceData[],
+  backgrounds: readonly BackgroundData[],
+  activeBooks: readonly string[] | undefined,
+): HeldRecordIds {
+  const { race, subrace } = findHeldRace(races, character.race, activeBooks);
+  const background = character.background && !isCustomBackground(character.background)
+    ? findHeldRecord(backgrounds, character.background, activeBooks)
+    : undefined;
+  return {
+    race: race && { name: race.name, source: race.source },
+    subrace: subrace && { name: subrace.name, source: subrace.source },
+    background: background && { name: background.name, source: background.source },
+  };
+}
+
+function isHeldAs(held: RecordIdentity | undefined, record: RecordIdentity): boolean {
+  return held !== undefined && held.name === record.name && held.source === record.source;
 }
 
 /** Whether the character still holds a race, subrace or background record that grants this pick. */
-function recordHeld(owner: Extract<GrantOwner, { kind: "record" }>, character: Character): boolean {
-  if (owner.origin === "Background") {
-    return Boolean(character.background && !isCustomBackground(character.background) && sameRecord(character.background.name, character.background.source, owner));
-  }
-  const race = character.race;
-  if (!race) return false;
-  if (owner.origin === "Race") return sameRecord(race.name, race.source, owner);
+function recordHeld(owner: Extract<GrantOwner, { kind: "record" }>, held: HeldRecordIds): boolean {
+  if (owner.origin === "Background") return isHeldAs(held.background, owner);
+  if (owner.origin === "Race") return isHeldAs(held.race, owner);
   // A subrace is held under its race: the race must be the owner's race, and the subrace the owner's.
-  const ownRace = { name: owner.raceName ?? "", source: owner.raceSource ?? "" };
-  return sameRecord(race.name, race.source, ownRace) && Boolean(race.subraceName) && sameRecord(race.subraceName ?? "", race.subraceSource, owner);
+  return isHeldAs(held.race, { name: owner.raceName ?? "", source: owner.raceSource ?? "" }) && isHeldAs(held.subrace, owner);
 }
 
 /**
  * The reason one place's grant is released, or undefined when that place still applies. An optional feature
  * that is turned off grants nothing, as the granted-features pass reads it; otherwise the owner decides.
  */
-function placeReleaseReason(source: GrantSource, character: Character, classes: readonly ClassData[]): string | undefined {
+function placeReleaseReason(source: GrantSource, character: Character, classes: readonly ClassData[], held: HeldRecordIds): string | undefined {
   if (source.optional && !character.optionalFeatureReplacements?.[source.feature]) return "feature is turned off";
-  if (!ownerHeld(source, character, classes)) return "no longer granted";
+  if (!ownerHeld(source, character, classes, held)) return "no longer granted";
   return source.applies && !source.applies(character) ? "no longer granted" : undefined;
 }
 
@@ -338,10 +366,10 @@ function placeReleaseReason(source: GrantSource, character: Character, classes: 
  * any of its owners applies, so a shared id is released only when every owner has released it. The reason is
  * the first owner's.
  */
-function releaseReason(owners: readonly GrantSource[], character: Character, classes: readonly ClassData[]): string | undefined {
+function releaseReason(owners: readonly GrantSource[], character: Character, classes: readonly ClassData[], held: HeldRecordIds): string | undefined {
   let reason: string | undefined;
   for (const owner of owners) {
-    const ownerReason = placeReleaseReason(owner, character, classes);
+    const ownerReason = placeReleaseReason(owner, character, classes, held);
     if (ownerReason === undefined) return undefined;
     reason ??= ownerReason;
   }
@@ -353,17 +381,18 @@ function releaseReason(owners: readonly GrantSource[], character: Character, cla
  * A pick is kept when the Compendium does not hold its grant (a missing or stale catalog), so a saved
  * pick is never lost for want of data. Returns the character unchanged when nothing is released.
  */
-export function pruneInvalidProficiencyPicks(character: Character, compendium: Compendium): Character {
+export function pruneInvalidProficiencyPicks(character: Character, compendium: Compendium, activeBooks?: readonly string[]): Character {
   const picks = character.proficiencyPicks;
   if (!picks || Object.keys(picks).length === 0) return character;
 
   const sources = grantSourcesIn(compendium);
-  const classes = compendium.for().classes();
+  const listings = compendium.for();
+  const held = heldRecordIdsOf(character, listings.races(), listings.backgrounds(), activeBooks);
   const kept: Record<string, string[]> = {};
   const notices: string[] = [];
   for (const [id, names] of Object.entries(picks)) {
     const owners = sources.get(id);
-    const reason = owners && releaseReason(owners, character, classes);
+    const reason = owners && releaseReason(owners, character, listings.classes(), held);
     if (!owners || !reason) {
       kept[id] = names;
     } else if (names.length > 0) {
@@ -382,13 +411,13 @@ export function pruneInvalidProficiencyPicks(character: Character, compendium: C
  * in the old skill bucket, where the sheet keeps reading it. A legacy entry is dropped once every name it held has
  * moved. Class skill choices are left alone. Returns the character unchanged when nothing moves or changes.
  */
-export function moveLegacySkillPicks(character: Character, compendium: Compendium): Character {
+export function moveLegacySkillPicks(character: Character, compendium: Compendium, activeBooks?: readonly string[]): Character {
   const legacy = (character.skillChoices ?? []).filter((entry) => entry.origin === "race" || entry.origin === "background");
   if (legacy.length === 0) return character;
 
   const listings = compendium.for();
   const offered = [
-    ...recordGrantSources(character, { races: listings.races(), backgrounds: listings.backgrounds() }).flatMap((source) =>
+    ...recordGrantSources(character, { races: listings.races(), backgrounds: listings.backgrounds(), activeBooks }).flatMap((source) =>
       source.grants.map((grant) => ({ grant, origins: source.origin === "Background" ? ["Background"] : ["Race", "Subrace"] })),
     ),
     ...(isCustomBackground(character.background) ? CUSTOM_BACKGROUND_GRANTS.map((grant) => ({ grant, origins: ["Background"] })) : []),
@@ -446,16 +475,18 @@ export function moveLegacySkillPicks(character: Character, compendium: Compendiu
  * releases it with its review notice. Before this, a Knowledge Domain Cleric's Blessings Expertise was a separate
  * milestone. Returns the character unchanged when nothing moves.
  */
-export function moveExpertisePicksToGrants(character: Character, compendium: Compendium): Character {
+export function moveExpertisePicksToGrants(character: Character, compendium: Compendium, activeBooks?: readonly string[]): Character {
   const expertise = character.chosenExpertise ?? [];
   if (expertise.length === 0) return character;
 
-  const classes = compendium.for().classes();
+  const listings = compendium.for();
+  const held = heldRecordIdsOf(character, listings.races(), listings.backgrounds(), activeBooks);
+  const classes = listings.classes();
   const offered: { id: string; grant: ChoiceProficiencyGrant }[] = [];
   for (const [id, owners] of grantSourcesIn(compendium)) {
     const grant = owners[0].grant;
     if (grant.kind !== "choice" || grant.category !== "skills" || grant.expertise !== true) continue;
-    if (releaseReason(owners, character, classes) !== undefined) continue;
+    if (releaseReason(owners, character, classes, held) !== undefined) continue;
     offered.push({ id, grant });
   }
   if (offered.length === 0) return character;
