@@ -1,13 +1,14 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { existsSync, readFileSync } from "node:fs";
-import type { Character } from "../src/types/character.ts";
+import type { AbilityKey, Character } from "../src/types/character.ts";
 import type { ClassData, FeatData, ProficiencyGrant, SubclassData } from "../src/types/dnd5e.ts";
 import { createCompendium, type Compendium } from "../src/services/compendium.ts";
 import { isCatalogStale, REQUIRED_CATALOG_FORMAT, type CompendiumCollections } from "../src/services/compendiumStorage.ts";
 import { proficiencyChoiceOffers } from "../src/rules/proficiencyChoiceOffers.ts";
 import { poolNames, type ChoiceProficiencyGrant } from "../src/rules/proficiencyPools.ts";
 import { featSpellChoicesOf, featSpellRuleChoices, pickRuleChoice, raceSpellRuleChoices, ruleChoiceId } from "../src/rules/ruleChoices.ts";
+import type { InnateSpellEntry, InnateSpellProfile } from "../src/rules/innateMagic.ts";
 import { parseSpellFilter } from "../src/rules/choices/featSpells.ts";
 import { STARTING_EQUIPMENT_TYPES } from "../src/rules/startingEquipmentTypes.ts";
 import { reconcile } from "../src/rules/characterReconciler.ts";
@@ -647,6 +648,109 @@ test("live catalog: Magic Initiate carries its Cleric list, and a Wizard with it
   const card = evaluateCharacter(character, { compendium: live!.compendium }).grantedSpellSources.find((source) => source.title.startsWith("Magic Initiate"));
   assert.ok(card, `no Magic Initiate card; sources: ${evaluateCharacter(character, { compendium: live!.compendium }).grantedSpellSources.map((source) => source.title).join(", ")}`);
   assert.equal(card.ability, "wis");
+});
+
+/** A level 5 Wizard that took the feat at level 4, with the feat's ability increase when one is given. */
+function wizardHolding(featName: string, featSource: string, featAbility?: AbilityKey): Character {
+  return makeChar({
+    classes: [{ className: "Wizard", source: "PHB", level: 5 }],
+    asiSelections: [{ level: 4, type: "feat", featName, featSource, ...(featAbility ? { featAbility } : {}) }],
+  });
+}
+
+const innateCardOf = (character: Character, title: string): InnateSpellProfile | undefined =>
+  evaluateCharacter(character, { compendium: live!.compendium }).grantedSpellSources.find((source) => source.title === title);
+
+const wizardListedNames = (character: Character): string[] =>
+  (evaluateCharacter(character, { compendium: live!.compendium }).spellProfiles.find((profile) => profile.className === "Wizard")?.alwaysPreparedSpells ?? []).map(
+    (spell) => spell.name,
+  );
+
+test("live catalog: Mark of Detection's prepared group is a card with the ability picked, daily spells on counters, and no class list spell", { skip: SKIP }, () => {
+  let character = wizardHolding("Mark of Detection", "EFA");
+  const ability = featSpellRuleChoices(character, live!.compendium).find((choice) => choice.id === "EFA__Feat Spells__Mark of Detection__Casting Ability");
+  assert.ok(ability, "Mark of Detection offers its casting ability");
+  character = pickRuleChoice(character, ability, "int", live!.compendium);
+
+  const card = innateCardOf(character, "Mark of Detection");
+  assert.ok(card, "no Mark of Detection card");
+  assert.equal(card.ability, "int");
+  assert.ok(card.spellSaveDc !== undefined, "the card has its save DC");
+  for (const name of ["Detect Magic", "See Invisibility"]) {
+    const spell: InnateSpellEntry | undefined = card.spells.find((entry) => entry.name === name);
+    assert.equal(spell?.maxUses, 1, `${name} is cast once per Long Rest, as the group gives it (${card.spells.map((entry) => entry.name).join(", ")})`);
+    assert.ok(spell?.resourceCounterId, `${name} has a Long Rest counter`);
+  }
+  assert.ok(!wizardListedNames(character).some((name) => name === "Detect Magic" || name === "See Invisibility"), "neither spell is in the class list");
+});
+
+test("live catalog: Boon of Siberys's named list is a card once picked, with the ability picked for the feat", { skip: SKIP }, () => {
+  let character = wizardHolding("Boon of Siberys", "EFA");
+  const list = featSpellRuleChoices(character, live!.compendium).find((choice) => choice.id === "EFA__Feat Spells__Boon of Siberys__Spell List");
+  assert.ok(list, "Boon of Siberys offers its spell lists");
+  character = pickRuleChoice(character, list, "Mark of Detection", live!.compendium);
+  const ability = featSpellRuleChoices(character, live!.compendium).find((choice) => choice.id === "EFA__Feat Spells__Boon of Siberys__Casting Ability");
+  assert.ok(ability, "the picked list's casting ability is offered");
+  character = pickRuleChoice(character, ability, "wis", live!.compendium);
+
+  const card = innateCardOf(character, "Boon of Siberys (Mark of Detection)");
+  assert.ok(card, `no card for the picked list; sources: ${evaluateCharacter(character, { compendium: live!.compendium }).grantedSpellSources.map((s) => s.title).join(", ")}`);
+  assert.equal(card.ability, "wis");
+  assert.equal(card.spells.find((spell) => spell.name === "True Seeing")?.maxUses, 1);
+});
+
+test("live catalog: Vampire Touched's record names no ability and no uses, so its spells stay in the class list", { skip: SKIP }, () => {
+  // The record gives its spells as plain prepared names. Until the scraper's record names an ability or uses, the rule reads it as
+  // a plain group. This test fails when that changes, so the rule is looked at again.
+  const feat = live!.collections.feats.find((entry) => entry.name === "Vampire Touched" && entry.source === "ABH");
+  assert.ok(feat, "no Vampire Touched feat in the catalog");
+  assert.ok(
+    feat.additionalSpells?.every((grant) => grant.ability === undefined && JSON.stringify(grant.prepared ?? {}).indexOf('"daily"') < 0),
+    `Vampire Touched's record now names an ability or uses: ${JSON.stringify(feat.additionalSpells)}`,
+  );
+  const character = wizardHolding("Vampire Touched", "ABH");
+  assert.ok(wizardListedNames(character).includes("Spider Climb"), "Spider Climb is in the Wizard's class list");
+  assert.equal(innateCardOf(character, "Vampire Touched"), undefined, "and there is no card");
+});
+
+test("live catalog: Cloying Mists's daily spell is a card with no ability row, on a counter, and not in the class list", { skip: SKIP }, () => {
+  const character = wizardHolding("Cloying Mists", "ABH");
+  const card = innateCardOf(character, "Cloying Mists");
+  assert.ok(card, "no Cloying Mists card");
+  assert.equal(card.ability, undefined);
+  assert.equal(card.spellSaveDc, undefined);
+  assert.equal(card.notices, undefined, "no ability is named, so there is none to choose");
+  assert.equal(card.spells.find((spell) => spell.name === "Fog Cloud")?.maxUses, 1);
+  assert.ok(!wizardListedNames(character).includes("Fog Cloud"));
+});
+
+test("live catalog: Magic Connoisseur's list casts with the ability its feat's increase raised", { skip: SKIP }, () => {
+  let character = wizardHolding("Magic Connoisseur", "AU", "int");
+  const list = featSpellRuleChoices(character, live!.compendium).find((choice) => choice.id === "AU__Feat Spells__Magic Connoisseur__Spell List");
+  assert.ok(list, "Magic Connoisseur offers its spell lists");
+  character = pickRuleChoice(character, list, "Wizard Spells", live!.compendium);
+  const card = innateCardOf(character, "Magic Connoisseur (Wizard)");
+  assert.ok(card, "no Magic Connoisseur card for the Wizard list");
+  assert.equal(card.ability, "int", "the ability is the one the increase raised");
+});
+
+test("live catalog: Boon of Magic School Mastery's school list is a card with no ability row once picked", { skip: SKIP }, () => {
+  let character = wizardHolding("Boon of Magic School Mastery", "AU");
+  const list = featSpellRuleChoices(character, live!.compendium).find((choice) => choice.id === "AU__Feat Spells__Boon of Magic School Mastery__Spell List");
+  assert.ok(list, "Boon of Magic School Mastery offers its school lists");
+  character = pickRuleChoice(character, list, "Evocation", live!.compendium);
+  const card = innateCardOf(character, "Boon of Magic School Mastery (Evocation)");
+  assert.ok(card, "no card for the Evocation list");
+  assert.equal(card.ability, undefined, "the record names no ability, so the card has none");
+});
+
+test("live catalog: a plain prepared group, an Adept feat's slot lists or Treacherous Allure, stays in the class list with no card", { skip: SKIP }, () => {
+  const adept = wizardHolding("Abjuration Adept", "AU");
+  assert.ok(wizardListedNames(adept).includes("Shield"), "the Adept's first-level spell is in the Wizard's list");
+  assert.equal(innateCardOf(adept, "Abjuration Adept"), undefined);
+  const allure = wizardHolding("Treacherous Allure", "ABH");
+  assert.ok(wizardListedNames(allure).includes("Charm Person"), "Treacherous Allure's spell is in the Wizard's list");
+  assert.equal(innateCardOf(allure, "Treacherous Allure"), undefined);
 });
 
 test("live catalog: Drow, Tiefling and Firbolg carry their spell grants on the race or subrace", { skip: SKIP }, () => {
