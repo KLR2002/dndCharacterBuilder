@@ -3,7 +3,7 @@ import type { BackgroundData, ProficiencyGrant, RaceData, SubraceData } from "..
 import { sourceRecordGrants } from "./proficiencyPools.ts";
 import { ruleChoiceId } from "./choices/types.ts";
 import { isCustomBackground } from "./customBackground.ts";
-import { findHeldRecord } from "./raceLookup.ts";
+import { findHeldRace, findHeldRecord } from "./raceLookup.ts";
 
 /**
  * The race, subrace and background a character holds, each with the tool, language and skill grants its record
@@ -92,8 +92,7 @@ export function recordGrantSources(
 ): RecordGrantSource[] {
   const out: RecordGrantSource[] = [];
   if (character.race) {
-    const race = findHeldRecord(catalog.races, character.race, catalog.activeBooks);
-    const subrace = race ? heldSubraceOf(race, character) : undefined;
+    const { race, subrace } = findHeldRace(catalog.races, character.race, catalog.activeBooks);
     const raceGrants = race
       ? sourceRecordGrants(race.grants).filter((grant) => raceSkillPickApplies(race, subrace, character, grant))
       : [];

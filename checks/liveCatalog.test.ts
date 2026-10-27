@@ -1267,6 +1267,17 @@ test("live catalog: the High Elf's cantrip choice keeps its id, and every cantri
   assert.deepEqual(missing, [], "no SRD cantrip is missing from the integrated catalog's options");
 });
 
+test("live catalog: a High Elf saved on the SRD Baseline keeps its High subrace, Common and Elvish when another book also lists Elf", { skip: SKIP }, () => {
+  const character = SAVED_ON_SRD["High Elf Wizard"];
+  const withOther = raceSnapshot(character, live!.compendium, [...DEFAULT_ACTIVE_BOOK_CODES, "LFL"]);
+  assert.deepEqual(withOther.ancestry, ["Elf", "High"]);
+  assert.ok(withOther.languages.includes("Common") && withOther.languages.includes("Elvish"), `languages: ${withOther.languages.join(", ")}`);
+  const withDefault = raceSnapshot(character, live!.compendium, [...DEFAULT_ACTIVE_BOOK_CODES]);
+  assert.deepEqual(withOther.raceTraits, withDefault.raceTraits);
+  assert.deepEqual(withOther.scores, withDefault.scores);
+  assert.equal(withOther.speed, withDefault.speed);
+});
+
 test("live catalog: Hill Dwarf Cleric keeps 10 hit points on the integrated catalog", { skip: SKIP }, () => {
   const onLive = raceSnapshot(SAVED_ON_SRD["Hill Dwarf Cleric"], live!.compendium, [...DEFAULT_ACTIVE_BOOK_CODES]);
   assert.equal(onLive.hp, 10);

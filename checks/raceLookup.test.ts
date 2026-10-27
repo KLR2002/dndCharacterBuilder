@@ -125,6 +125,20 @@ test("the subrace follows the same order within the resolved race", () => {
   assert.equal(listed?.source, "TST", "catalog order is the last resort");
 });
 
+test("a race name held by two active books resolves to the one that lists the held subrace", () => {
+  const races = [race("Sample Folk", "TST"), race("Sample Folk", "ALT", { subraces: [subrace("Brook", "ALT")] })];
+  const found = findHeldRace(races, { name: "Sample Folk", source: "OLD", subraceName: "Brook", subraceSource: "SRD" }, ["TST", "ALT"]);
+  assert.equal(found.race?.source, "ALT");
+  assert.equal(found.subrace?.name, "Brook");
+});
+
+test("without an active book listing the held subrace, any record that lists it is used", () => {
+  const races = [race("Sample Folk", "TST"), race("Sample Folk", "ALT", { subraces: [subrace("Brook", "ALT")] })];
+  const found = findHeldRace(races, { name: "Sample Folk", source: "OLD", subraceName: "Brook", subraceSource: "OLD" }, ["TST"]);
+  assert.equal(found.race?.source, "ALT");
+  assert.equal(found.subrace?.name, "Brook");
+});
+
 test("a race held with no subrace takes its unnamed subrace, the plain form, and a race with named subraces only takes none", () => {
   const plain = race("Sample Folk", "TST", {
     subraces: [subrace("", "TST", { abilityScoreIncrease: [{ str: 1 }] }), subrace("Brook", "TST")],

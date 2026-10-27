@@ -233,14 +233,16 @@ function multiclassFeaturesOf(character: Character, classes: readonly ClassData[
 /**
  * The features the character holds, each with the grants its rule gives, read from the listings. The
  * first class's starting proficiencies, the later classes' multiclass skill choices, and a custom background's
- * picks, are included as more features; they are not granted features.
+ * picks, are included as more features; they are not granted features. The race and background records resolve within
+ * `activeBooks` when given.
  */
-export function featuresOf(character: Character, listings: CompendiumListings): FeatureInstance[] {
+export function featuresOf(character: Character, listings: CompendiumListings, activeBooks?: readonly string[]): FeatureInstance[] {
   const features = grantedFeatures(character, {
     races: listings.races(),
     classes: listings.classes(),
     backgrounds: listings.backgrounds(),
     feats: listings.feats(),
+    activeBooks,
   });
   const starting = startingFeatureOf(character, listings.classes());
   const multiclass = multiclassFeaturesOf(character, listings.classes());
@@ -257,7 +259,7 @@ export function featuresOf(character: Character, listings: CompendiumListings): 
 export function ruleGrantedSkills(character: Character, catalogs?: CharacterCatalogs): string[] {
   const listings = catalogListings(catalogs);
   const ancestry = resolveCharacterAncestry(character, listings.races(), catalogs?.activeBooks);
-  const features = featuresOf(character, listings);
+  const features = featuresOf(character, listings, catalogs?.activeBooks);
   return [
     ...legacySkillNames(character, ancestry, listings, features),
     ...choicePickNames(features, character, "skills", listings.items()),
@@ -283,7 +285,7 @@ export interface SourceGrants {
 
 export function sourceGrants(character: Character, catalogs: CharacterCatalogs): SourceGrants {
   const listings = catalogListings(catalogs);
-  const features = featuresOf(character, listings);
+  const features = featuresOf(character, listings, catalogs?.activeBooks);
   const fixedOf = (origins: FeatureInstance["origin"][]): SourceFixedGrants => {
     const sourced = features.filter((feature) => origins.includes(feature.origin));
     // A race and its subrace may both grant the same language or tool; each is listed once.
@@ -336,7 +338,7 @@ export function skillChoiceOffers(character: Character, catalogs: CharacterCatal
  */
 export function proficiencySheet(character: Character, catalogs: CharacterCatalogs): ProficiencySheet {
   const listings = catalogListings(catalogs);
-  const features = featuresOf(character, listings);
+  const features = featuresOf(character, listings, catalogs?.activeBooks);
   const ancestry = resolveCharacterAncestry(character, listings.races(), catalogs.activeBooks);
 
   // Class base proficiencies (the first class's, and each later class's multiclass grants from the Catalog), then the

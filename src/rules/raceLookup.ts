@@ -14,11 +14,11 @@ export interface ResolvedRace {
 }
 
 /**
- * The race and subrace a held race resolves to within `races`. The record of the saved source comes first. Without one,
- * the record of an active book, then the first record in the given order. The subrace follows the same order within the
- * resolved race, and no subrace held means the plain form (the unnamed subrace, when the catalog lists one). Pass the
- * listings already scoped to the active books, and the books too, so both the scope and the order hold. The held
- * sources are read and never written.
+ * The race and subrace a held race resolves to within `races`. The record of the saved source comes first. Without one, a
+ * record of the name that lists the held subrace (an active book's first, then any), then an active book's record, then
+ * the first record in the given order. The subrace follows the same order within the resolved race, and no subrace held
+ * means the plain form (the unnamed subrace, when the catalog lists one). Pass the listings already scoped to the active
+ * books, and the books too, so both the scope and the order hold. The held sources are read and never written.
  */
 export function findHeldRace(
   races: readonly RaceData[],
@@ -26,8 +26,10 @@ export function findHeldRace(
   activeBooks?: readonly string[],
 ): ResolvedRace {
   if (!held) return { race: undefined, subrace: undefined };
-  const race = pickRecord(races, held.name, held.source, activeBooks);
-  const subrace = race ? pickRecord(race.subraces ?? [], held.subraceName ?? "", held.subraceSource, activeBooks) : undefined;
+  const subraceName = held.subraceName ?? "";
+  const listsSubrace = subraceName ? (race: RaceData) => (race.subraces ?? []).some((sub) => sub.name === subraceName) : undefined;
+  const race = pickRecord(races, held.name, held.source, activeBooks, listsSubrace);
+  const subrace = race ? pickRecord(race.subraces ?? [], subraceName, held.subraceSource, activeBooks) : undefined;
   return { race, subrace };
 }
 
@@ -63,13 +65,25 @@ export function heldSourceOf(saved: string | undefined, record: { source: string
   return saved || record.source;
 }
 
+/**
+ * The record of a name: the saved source's, else the first that `prefers` (in an active book, then in any), else an active
+ * book's, else the first listed. `prefers` is only given where the name alone does not settle the record.
+ */
 function pickRecord<T extends { name: string; source: string }>(
   records: readonly T[],
   name: string,
   source: string | undefined,
   activeBooks: readonly string[] | undefined,
+  prefers?: (record: T) => boolean,
 ): T | undefined {
   const named = records.filter((record) => record.name === name);
   const saved = source ? named.find((record) => record.source === source) : undefined;
-  return saved ?? named.find((record) => activeBooks?.includes(record.source)) ?? named[0];
+  if (saved) return saved;
+  const isActive = (record: T) => activeBooks?.includes(record.source) ?? false;
+  const tests = prefers ? [(record: T) => isActive(record) && prefers(record), prefers, isActive] : [isActive];
+  for (const test of tests) {
+    const found = named.find(test);
+    if (found) return found;
+  }
+  return named[0];
 }
