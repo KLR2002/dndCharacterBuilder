@@ -78,7 +78,7 @@ export function grantedSpellSources(
     }
   }
 
-  for (const { feat, selection } of heldFeatsOf(character, listings.feats())) {
+  for (const { feat, selection } of heldFeatsOf(character, listings.feats(), ctx.activeBooks)) {
     if (!feat.additionalSpells) continue;
     const owner = featOwner(feat);
     // Spells named by this feat are listed once, across all its grants.

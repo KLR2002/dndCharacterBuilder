@@ -152,25 +152,58 @@ function originOf(owner: GrantOwner): RuleChoiceOrigin {
   return owner.kind === "feat" ? "feat" : "race";
 }
 
+/** What a background-claimed feat's record is chosen by: the books active now, and the book of the character's background. */
+export interface FeatResolution {
+  activeBooks?: readonly string[];
+  backgroundSource?: string;
+}
+
 /**
  * The feat record a selection names. A feat a background grants carries the Background source marker, which is no
- * sourcebook, so it resolves by name; the first record of that name is taken.
+ * sourcebook, so it resolves by name, among the records of that name in this order: a record of an active book, then
+ * the record of the background's own book, then the first in catalog order. The order is the same on every load, so
+ * the owner key of the picks made on it is too.
  */
-export function featOfSelection(selection: AsiSelection, feats: FeatData[]): FeatData | undefined {
+export function featOfSelection(selection: AsiSelection, feats: FeatData[], resolution: FeatResolution = {}): FeatData | undefined {
   const named = feats.filter((f) => f.name === selection.featName);
-  if (!selection.featSource || selection.featSource === BACKGROUND_FEAT_SOURCE) return named[0];
-  return named.find((f) => f.source === selection.featSource);
+  if (selection.featSource && selection.featSource !== BACKGROUND_FEAT_SOURCE) {
+    return named.find((f) => f.source === selection.featSource);
+  }
+  const rank = (feat: FeatData): number =>
+    resolution.activeBooks?.includes(feat.source) ? 0 : feat.source === resolution.backgroundSource ? 1 : 2;
+  let best: FeatData | undefined;
+  for (const feat of named) if (!best || rank(feat) < rank(best)) best = feat;
+  return best;
 }
 
 /** Each feat the character holds once, in the order the character recorded them. */
-export function heldFeatsOf(character: Character, feats: FeatData[]): HeldFeat[] {
+export function heldFeatsOf(character: Character, feats: FeatData[], activeBooks?: readonly string[]): HeldFeat[] {
+  const resolution: FeatResolution = { activeBooks, backgroundSource: character.background?.source };
   const held: HeldFeat[] = [];
   for (const selection of [...(character.asiSelections ?? []), ...(character.originFeats ?? [])]) {
     if (selection.type !== "feat") continue;
-    const feat = featOfSelection(selection, feats);
+    const feat = featOfSelection(selection, feats, resolution);
     if (feat && !held.some((entry) => entry.feat === feat)) held.push({ feat, selection });
   }
   return held;
+}
+
+/**
+ * Every record a held feat may stand for. A background-claimed feat is held by its name, so each record of that name
+ * counts: a pick saved under one record stays held while the book that holds it is not the one chosen now (the reader
+ * offers the record featOfSelection resolves to). The reconciler checks picks against these, not the one resolved.
+ */
+export function candidateFeatsOf(character: Character, feats: FeatData[]): FeatData[] {
+  const candidates: FeatData[] = [];
+  for (const selection of [...(character.asiSelections ?? []), ...(character.originFeats ?? [])]) {
+    if (selection.type !== "feat") continue;
+    const explicit = selection.featSource && selection.featSource !== BACKGROUND_FEAT_SOURCE;
+    for (const feat of feats) {
+      if (feat.name !== selection.featName || (explicit && feat.source !== selection.featSource)) continue;
+      if (!candidates.includes(feat)) candidates.push(feat);
+    }
+  }
+  return candidates;
 }
 
 /** The ability a grant names outright. Undefined for an inherited or chosen ability. */
@@ -507,10 +540,10 @@ export function grantGateOpen(character: Character, grant: AdditionalSpells): bo
   return picked.includes(gate.option);
 }
 
-/** Every owner of spell grants the character holds: its feats (with their records) and its race or subrace. */
-function heldGrantsOf(character: Character, feats: FeatData[], races: RaceData[]): HeldGrants[] {
+/** Every owner of spell grants the character holds: the given feats (with their records) and its race or subrace. */
+function heldGrantsOf(character: Character, heldFeats: FeatData[], races: RaceData[]): HeldGrants[] {
   const held: HeldGrants[] = [];
-  for (const { feat } of heldFeatsOf(character, feats)) {
+  for (const feat of heldFeats) {
     if (feat.additionalSpells) held.push({ owner: featOwner(feat), grants: feat.additionalSpells, feat });
   }
   const race = raceGrantsOf(character, races);
@@ -521,7 +554,7 @@ function heldGrantsOf(character: Character, feats: FeatData[], races: RaceData[]
 /** The feat-spell Rule Choices the character is offered now, for every feat it holds. Offered spells come from the active books. */
 export function featSpellRuleChoices(character: Character, compendium: Compendium, activeBooks?: readonly string[]): AvailableRuleChoice[] {
   const out: AvailableRuleChoice[] = [];
-  for (const { feat } of heldFeatsOf(character, compendium.for(activeBooks).feats())) {
+  for (const { feat } of heldFeatsOf(character, compendium.for(activeBooks).feats(), activeBooks)) {
     if (feat.additionalSpells) out.push(...grantChoicesOf(character, featOwner(feat), feat.additionalSpells, compendium, activeBooks));
   }
   return out;
@@ -660,7 +693,7 @@ export function pruneInvalidFeatSpellPicks(character: Character, compendium: Com
   if (!entries.some((entry) => isGrantSpellChoiceId(entry.id))) return character;
 
   const listings = compendium.for();
-  const held = heldGrantsOf(character, listings.feats(), listings.races());
+  const held = heldGrantsOf(character, candidateFeatsOf(character, listings.feats()), listings.races());
   const heldKeys = new Set(held.map(({ owner }) => ownerKey(owner)));
   // The offered options of each pick the character's owners still make, keyed by the choice id.
   const valid = new Map<string, string[] | undefined>();
