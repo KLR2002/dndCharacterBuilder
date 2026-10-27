@@ -43,8 +43,8 @@ export interface ClassSpellProfile {
   /** The feat or race each always-prepared spell a feat or race gives is badged with, keyed by the lower-case spell name. */
   grantedPreparedSources?: Record<string, string>;
   subclassKnownSpells?: SpellData[];
-  /** The names the character's background adds to this class's list (its expanded spell lists, ADR 0017). */
-  backgroundSpells?: string[];
+  /** The names the character's expanded lists (background, feats, race) add to this class's list (ADR 0017). */
+  expandedSpells?: string[];
   /** The Spell Owner key this class's known and prepared spells are stored under. */
   ownerKey: string;
   knownSpells: KnownSpell[];
@@ -159,8 +159,8 @@ export function getClassSpellProfiles(
     swaps?: Record<string, string>;
     /** The classes the character's entries resolve against. Defaults to every class in the process-wide Compendium. */
     classes?: readonly ClassData[];
-    /** The names the character's background adds to each spellcasting class's list. */
-    backgroundSpells?: string[];
+    /** The names the character's expanded lists add to each spellcasting class's list. */
+    expandedSpells?: string[];
     /** The Compendium the subclass spells are read from. Defaults to the process-wide one. */
     compendium?: Compendium;
     /** The prepared spells the character's feats and race give, each with its gates (ADR 0017 amendment). */
@@ -257,7 +257,7 @@ export function getClassSpellProfiles(
       className: c.className,
       subclass: subName,
       ...(character.ruleChoices ? { ruleChoices: character.ruleChoices } : {}),
-      ...(opts.backgroundSpells ? { backgroundSpells: opts.backgroundSpells } : {}),
+      ...(opts.expandedSpells ? { expandedSpells: opts.expandedSpells } : {}),
       source: c.source || "PHB",
       level: c.level,
       ability,
@@ -309,20 +309,20 @@ export interface SpellAvailabilityContext {
   classLevel?: number;
   kind?: string;
   ruleChoices?: RuleChoiceEntry[];
-  /** Names the character's background adds to the list (its expanded spell lists). */
-  backgroundSpells?: string[];
+  /** Names the character's expanded lists (background, feats, race) add to the list. */
+  expandedSpells?: string[];
 }
 
 /**
  * The availability context for a class profile's Spell Owner: its subclass, the character's rule
  * choices, so a subclass variant (e.g. the Genie kind) resolves as the character chose it, and the
- * background's expanded spell names.
+ * expanded spell names of the character's sources.
  */
 export function profileSpellContext(profile: ClassSpellProfile): SpellAvailabilityContext {
   return {
     subclassName: profile.subclass,
     ruleChoices: profile.ruleChoices,
-    ...(profile.backgroundSpells ? { backgroundSpells: profile.backgroundSpells } : {}),
+    ...(profile.expandedSpells ? { expandedSpells: profile.expandedSpells } : {}),
   };
 }
 
@@ -387,8 +387,8 @@ export function isSpellAvailableForClass(
     if (!isSpellSourceActive) return false;
   }
 
-  // The character's background adds its expanded spell names to every spellcasting class's list, cantrips included (ADR 0017).
-  if (parsedContext.backgroundSpells?.some((name) => normalizeKey(name) === normalizeKey(spell.name))) {
+  // The character's expanded lists (background, feats, race) add their spell names to every spellcasting class's list, cantrips included (ADR 0017).
+  if (parsedContext.expandedSpells?.some((name) => normalizeKey(name) === normalizeKey(spell.name))) {
     return true;
   }
 

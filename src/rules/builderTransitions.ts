@@ -16,7 +16,7 @@ import { normalizeSkillName } from "./skills.ts";
 import { moveLegacySkillPicks } from "./proficiencyPicks.ts";
 import { CUSTOM_BACKGROUND_SKILLS_ID, CUSTOM_BACKGROUND_TOOLS_OR_LANGUAGES_ID, isCustomBackground } from "./customBackground.ts";
 import { ABILITY_NAMES } from "./abilities.ts";
-import { backgroundOnlyKnownSpells } from "./backgroundSpells.ts";
+import { releaseExpandedOnlySpells } from "./backgroundSpells.ts";
 import { withNotices } from "./needsReview.ts";
 import {
   BACKGROUND_FEAT_SOURCE,
@@ -243,7 +243,7 @@ export function changeRace(character: Character, compendium: Compendium = curren
   const migrated = moveLegacySkillPicks(character, compendium);
   const oldRaceChoices = (migrated.skillChoices || []).filter((sc) => sc.origin === "race");
   const oldRacePicks = new Set(oldRaceChoices.flatMap((sc) => sc.picked.map(normalizeSkillName)));
-  return reconcile(
+  const reconciled = reconcile(
     {
       ...migrated,
       race: null,
@@ -255,6 +255,8 @@ export function changeRace(character: Character, compendium: Compendium = curren
     },
     compendium
   );
+  // The spells only the old race's expanded lists gave are released, with a notice (ADR 0017).
+  return releaseExpandedOnlySpells(character, reconciled, compendium);
 }
 
 /**
@@ -614,23 +616,12 @@ export function clearBackground(character: Character, catalogs: CharacterCatalog
   const grantedFeats = (character.originFeats ?? []).filter((f) => f.featSource === BACKGROUND_FEAT_SOURCE);
   const keptFeats = (character.originFeats ?? []).filter((f) => f.featSource !== BACKGROUND_FEAT_SOURCE);
 
-  // The known spells only the background's expanded list gave are released, with their prepared keys (ADR 0017).
-  const releasedSpells = backgroundOnlyKnownSpells(current, bgData, compendium, catalogs.activeBooks);
-  const releasedNames = new Set(releasedSpells.map((k) => k.name.toLowerCase()));
-  const keptSpells = (current.knownSpells ?? []).filter((k) => !releasedNames.has(k.name.toLowerCase()));
-  const keptNames = new Set(keptSpells.map((k) => k.name.toLowerCase()));
-  const keptPrepared = (current.preparedSpells ?? []).filter((key) => {
-    const name = key.split("__")[0].toLowerCase();
-    return !releasedNames.has(name) || keptNames.has(name);
-  });
-
   const hadLanguagesOrTools =
     (character.chosenLanguages?.background ?? []).length > 0 ||
     (character.chosenTools?.background ?? []).length > 0;
 
   const notices = [
     ...grantedFeats.map((f) => `${f.featName} removed: granted by the ${bgName} background`),
-    ...releasedSpells.map((k) => `${k.name} removed: only on the ${bgName} background's spell list`),
     ...(removedSkills.length > 0 || hadLanguagesOrTools
       ? [`${bgName} background removed: granted skills, languages and tools cleared`]
       : []),
@@ -644,10 +635,10 @@ export function clearBackground(character: Character, catalogs: CharacterCatalog
     chosenLanguages: { ...character.chosenLanguages, background: [] },
     chosenTools: { ...character.chosenTools, background: [] },
     originFeats: keptFeats,
-    ...(releasedSpells.length > 0 ? { knownSpells: keptSpells, preparedSpells: keptPrepared } : {}),
   };
 
-  return reconcile(withNotices(cleared, notices), compendium);
+  // The spells only the background's expanded list gave are released, with a notice (ADR 0017).
+  return releaseExpandedOnlySpells(current, reconcile(withNotices(cleared, notices), compendium), compendium, catalogs.activeBooks);
 }
 
 /**

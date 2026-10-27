@@ -1,17 +1,18 @@
-import type { BackgroundData } from "../types/dnd5e.ts";
-import type { Character, KnownSpell, LegacyKnownSpell } from "../types/character.ts";
-import type { Compendium } from "../services/compendium.ts";
+import type { AdditionalSpells, BackgroundData, SpellData } from "../types/dnd5e.ts";
+import type { Character } from "../types/character.ts";
+import { currentCompendium, type Compendium } from "../services/compendium.ts";
+import { withNotices } from "./needsReview.ts";
+import { heldFeatsOf, raceGrantsOf } from "./choices/featSpells.ts";
 import { isSpellAvailableForClass } from "./spellcasting.ts";
 import { normalizeKey, resolveSpellName } from "./subclassSpells.ts";
 
 /**
- * The spell names a background's expanded lists add to the list of each spellcasting class the character has (ADR 0017).
- * The lists are keyed by spell level (the cantrip list is `s0`); a background's lists carry no level gate, so every name
- * counts. A background without lists gives none.
+ * The spell names a list of spell grants adds to the list of each spellcasting class the character has (ADR 0017). The
+ * expanded lists are keyed by spell level (the cantrip list is `s0`); they carry no level gate, so every name counts.
  */
-export function backgroundExpandedSpellNames(background: BackgroundData | undefined): string[] {
+export function expandedSpellNamesOf(grants: readonly AdditionalSpells[] | undefined): string[] {
   const names: string[] = [];
-  for (const grant of background?.additionalSpells ?? []) {
+  for (const grant of grants ?? []) {
     for (const list of Object.values(grant.expanded ?? {})) {
       if (!Array.isArray(list)) continue;
       for (const name of list) {
@@ -22,32 +23,102 @@ export function backgroundExpandedSpellNames(background: BackgroundData | undefi
   return names;
 }
 
+/** A source the character holds whose expanded lists add spells to its classes' lists, and the names those lists give. */
+export interface ExpandedSpellSource {
+  /** How a notice names the source: "Sample Rune Mark feat", "Sample Rune Line race" or "Sample Scholar background". */
+  title: string;
+  names: string[];
+}
+
+/** The background the character holds, found by its name and, when the character records one, its source. */
+export function resolveCharacterBackground(character: Character, backgroundCatalog?: BackgroundData[]): BackgroundData | undefined {
+  if (!character.background || !backgroundCatalog) return undefined;
+  return backgroundCatalog.find(
+    (b) => b.name === character.background?.name && (!character.background?.source || b.source === character.background?.source)
+  );
+}
+
 /**
- * The known spells that only the background's expanded lists make available: each is on the background's list and on no list
- * the character's classes give without it (their own lists and subclass expansions). A spell a class gives stays known, and so
- * does a name the Catalog does not hold. Clearing the background releases these, as a subclass change releases its own
- * expanded spells (see getOrphanedSubclassSpells).
+ * The expanded lists the character's sources give: its background, each feat it holds, and its race or subrace (the grants the
+ * reader reads). A source with no expanded list is left out. The background and the race are read from the Compendium scoped to
+ * the active books, the feats as heldFeatsOf reads them.
  */
-export function backgroundOnlyKnownSpells(
+export function heldExpandedSources(
   character: Character,
-  background: BackgroundData | undefined,
-  compendium: Compendium,
+  compendium: Compendium = currentCompendium(),
+  activeBooks?: readonly string[]
+): ExpandedSpellSource[] {
+  const listings = compendium.for(activeBooks);
+  const sources: ExpandedSpellSource[] = [];
+  const background = resolveCharacterBackground(character, listings.backgrounds());
+  if (background) sources.push({ title: `${background.name} background`, names: expandedSpellNamesOf(background.additionalSpells) });
+  for (const { feat } of heldFeatsOf(character, listings.feats(), activeBooks)) {
+    sources.push({ title: `${feat.name} feat`, names: expandedSpellNamesOf(feat.additionalSpells) });
+  }
+  const race = raceGrantsOf(character, listings.races());
+  if (race) sources.push({ title: `${race.owner.name} race`, names: expandedSpellNamesOf(race.grants) });
+  return sources.filter((source) => source.names.length > 0);
+}
+
+/** The names every held expanded list adds to each spellcasting class's list: the input to a class profile's expanded spells. */
+export function heldExpandedSpellNames(character: Character, compendium?: Compendium, activeBooks?: readonly string[]): string[] {
+  return heldExpandedSources(character, compendium, activeBooks).flatMap((source) => source.names);
+}
+
+/** Whether one of the character's classes lists the spell on its own list: its class list or subclass expansion, with no expanded list. */
+function listedByOwnClass(character: Character, spell: SpellData): boolean {
+  return (character.classes ?? []).some((cls) =>
+    isSpellAvailableForClass(spell, cls.className, undefined, {
+      subclassName: cls.subclassName || cls.subclass,
+      classLevel: cls.level,
+      ruleChoices: character.ruleChoices,
+    })
+  );
+}
+
+/**
+ * Releases the known spells that only the expanded lists `before` held gave and `after` no longer gives (ADR 0017): a spell
+ * on no expanded list `after` holds and on no class list of `after`. Each release is noticed, naming the spell and the source
+ * it came from. A spell a class gives itself stays, and so does a name the Catalog does not hold. Its prepared key goes with
+ * it. Returns `after` itself when nothing is released.
+ *
+ * The transitions that remove a background, feat or race call this with the state before the change and the reconciled state
+ * after it, so the same rule covers every source.
+ */
+export function releaseExpandedOnlySpells(
+  before: Character,
+  after: Character,
+  compendium: Compendium = currentCompendium(),
   activeBooks?: string[]
-): (KnownSpell | LegacyKnownSpell)[] {
-  const listed = new Set(backgroundExpandedSpellNames(background).map(normalizeKey));
-  if (listed.size === 0) return [];
-  return (character.knownSpells ?? []).filter((known) => {
-    if (!listed.has(normalizeKey(known.name))) return false;
+): Character {
+  const stillListed = new Set(heldExpandedSources(after, compendium).flatMap((source) => source.names.map(normalizeKey)));
+  const sourceOf = new Map<string, string>();
+  for (const source of heldExpandedSources(before, compendium)) {
+    for (const name of source.names) {
+      const key = normalizeKey(name);
+      if (!stillListed.has(key) && !sourceOf.has(key)) sourceOf.set(key, source.title);
+    }
+  }
+  if (sourceOf.size === 0) return after;
+
+  const notices: string[] = [];
+  const released = new Set<string>();
+  const knownSpells = (after.knownSpells ?? []).filter((known) => {
+    const key = normalizeKey(known.name);
+    const title = sourceOf.get(key);
+    if (!title) return true;
     const spell = resolveSpellName(known.name, activeBooks, compendium);
-    if (!spell) return false;
-    // The background is held no longer, so only the classes' own lists are asked. Books are not gated here: a spell on a
-    // class's list in a book that is off is still that class's spell.
-    return !(character.classes ?? []).some((cls) =>
-      isSpellAvailableForClass(spell, cls.className, undefined, {
-        subclassName: cls.subclassName || cls.subclass,
-        classLevel: cls.level,
-        ruleChoices: character.ruleChoices,
-      })
-    );
+    if (!spell || listedByOwnClass(after, spell)) return true;
+    released.add(key);
+    notices.push(`${known.name} removed: only on the ${title}'s spell list`);
+    return false;
   });
+  if (released.size === 0) return after;
+
+  const keptNames = new Set(knownSpells.map((known) => normalizeKey(known.name)));
+  const preparedSpells = (after.preparedSpells ?? []).filter((prepared) => {
+    const key = normalizeKey(prepared.split("__")[0]);
+    return !released.has(key) || keptNames.has(key);
+  });
+  return withNotices({ ...after, knownSpells, preparedSpells }, notices);
 }

@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { existsSync, readFileSync } from "node:fs";
 import type { AbilityKey, Character } from "../src/types/character.ts";
-import type { ClassData, FeatData, ProficiencyGrant, SubclassData } from "../src/types/dnd5e.ts";
+import type { AdditionalSpells, ClassData, FeatData, ProficiencyGrant, SpellData, SubclassData } from "../src/types/dnd5e.ts";
 import { createCompendium, type Compendium } from "../src/services/compendium.ts";
 import { isCatalogStale, REQUIRED_CATALOG_FORMAT, type CompendiumCollections } from "../src/services/compendiumStorage.ts";
 import { proficiencyChoiceOffers } from "../src/rules/proficiencyChoiceOffers.ts";
@@ -16,6 +16,8 @@ import type { AvailableRuleChoice } from "../src/rules/choices/types.ts";
 import { makeChar } from "./testUtils.ts";
 import { evaluateCharacter } from "../src/rules/characterEvaluation.ts";
 import { isSpellAvailableForClass, profileSpellContext } from "../src/rules/spellcasting.ts";
+import { resolveSpellName } from "../src/rules/subclassSpells.ts";
+import { removeAsiSelection } from "../src/rules/leveling.ts";
 import { initiativeCoverageGaps } from "../dnd5eToolsScrap/src/grants/initiative-coverage.ts";
 import { gapName } from "../dnd5eToolsScrap/src/grants/coverage.ts";
 import type { TrackedData } from "../dnd5eToolsScrap/src/grants/subjects.ts";
@@ -1018,4 +1020,98 @@ test("live catalog: a High Elf offers the wizard cantrip filter, a Vahadar Elf t
   const ability = aarakocra.find((choice) => choice.id.endsWith("__Casting Ability"));
   assert.ok(ability, `the MPMM Aarakocra offers an ability choice: ${aarakocra.map((choice) => choice.id).join(", ")}`);
   assert.deepEqual(ability.options.map((option) => option.name), ["int", "wis", "cha"]);
+});
+
+// Expanded lists of held feats and races (ADR 0017): a Mark's lists join every spellcasting class's list, and are released with a
+// notice when the Mark goes. Only names and ids are read from the catalog.
+
+const expandedNamesOf = (grants: AdditionalSpells[] = []): string[] =>
+  grants.flatMap((grant) => Object.values(grant.expanded ?? {})).flatMap((list) =>
+    Array.isArray(list) ? list.filter((name): name is string => typeof name === "string") : [],
+  );
+
+/** A spell of a Mark's expanded lists the Cleric's own list does not give, so only the Mark can put it on the Cleric's list. */
+function markOnlySpell(names: string[]): SpellData | undefined {
+  for (const name of names) {
+    const spell = resolveSpellName(name, undefined, live!.compendium);
+    if (spell && !isSpellAvailableForClass(spell, "Cleric")) return spell;
+  }
+  return undefined;
+}
+
+test("live catalog: every spell a Mark feat's expanded list names is a spell of the catalog", { skip: SKIP }, () => {
+  const marks = live!.compendium.for().feats().filter((feat) => feat.additionalSpells?.some((grant) => grant.expanded));
+  assert.ok(marks.length > 0, "the catalog carries Mark feats with expanded lists");
+  const unresolved = marks.flatMap((feat) =>
+    expandedNamesOf(feat.additionalSpells).filter((name) => !resolveSpellName(name, undefined, live!.compendium)).map((name) => `${feat.name}: ${name}`),
+  );
+  assert.deepEqual(unresolved, [], "every named spell of a Mark's expanded list is in the catalog");
+});
+
+test("live catalog: a Mark of Detection feat puts its expanded spell on a Cleric's list, and a Cleric without it does not have that spell", { skip: SKIP }, () => {
+  const mark = live!.compendium.for().feats().find((feat) => feat.name === "Mark of Detection" && feat.source === "EFA");
+  assert.ok(mark, "the Mark of Detection feat is missing from the catalog");
+  const cleric = live!.compendium.for().classes().find((cls) => cls.name === "Cleric");
+  assert.ok(cleric, "no Cleric class in the catalog");
+  const spell = markOnlySpell(expandedNamesOf(mark.additionalSpells));
+  assert.ok(spell, "a Mark of Detection spell the Cleric's own list does not give is missing");
+
+  const clericAt = (asiSelections: Character["asiSelections"]) =>
+    evaluateCharacter(
+      makeChar({
+        classes: [{ className: cleric.name, source: cleric.source, level: 5 }],
+        asiSelections,
+      }),
+      { compendium: live!.compendium },
+    ).spellProfiles.find((profile) => profile.className === "Cleric");
+
+  const withMark = clericAt([{ level: 4, className: "Cleric", classLevel: 4, type: "feat", featName: mark.name, featSource: mark.source }]);
+  assert.ok(withMark, "a Cleric of level 5 has a spell profile");
+  assert.equal(isSpellAvailableForClass(spell, "Cleric", undefined, profileSpellContext(withMark)), true, `${spell.name} is on the Cleric's list with the Mark`);
+  const withoutMark = clericAt([]);
+  assert.ok(withoutMark);
+  assert.equal(isSpellAvailableForClass(spell, "Cleric", undefined, profileSpellContext(withoutMark)), false, `${spell.name} is not on the Cleric's list without it`);
+});
+
+test("live catalog: a Half-Elf of the Mark of Detection subrace puts its expanded spell on a Cleric's list", { skip: SKIP }, () => {
+  const race = live!.collections.races.find((candidate) =>
+    (candidate.subraces ?? []).some((sub) => sub.name === "Mark of Detection" && sub.source === "ERLW"),
+  );
+  assert.ok(race, "no race carries the ERLW Mark of Detection subrace");
+  const subrace = (race.subraces ?? []).find((sub) => sub.name === "Mark of Detection" && sub.source === "ERLW");
+  assert.ok(subrace);
+  const spell = markOnlySpell(expandedNamesOf(subrace.additionalSpells));
+  assert.ok(spell, "a Mark of Detection subrace spell the Cleric's own list does not give is missing");
+  const cleric = live!.compendium.for().classes().find((cls) => cls.name === "Cleric");
+  assert.ok(cleric);
+
+  const profile = evaluateCharacter(
+    makeChar({
+      classes: [{ className: cleric.name, source: cleric.source, level: 5 }],
+      race: { name: race.name, source: race.source, subraceName: subrace.name, subraceSource: subrace.source },
+    }),
+    { compendium: live!.compendium },
+  ).spellProfiles.find((candidate) => candidate.className === "Cleric");
+  assert.ok(profile, "a Cleric of level 5 has a spell profile");
+  assert.equal(isSpellAvailableForClass(spell, "Cleric", undefined, profileSpellContext(profile)), true, `${spell.name} is on the Cleric's list with the subrace`);
+});
+
+test("live catalog: removing a Mark of Detection feat releases the spell its expanded list gave, with a notice that names the feat", { skip: SKIP }, () => {
+  const mark = live!.compendium.for().feats().find((feat) => feat.name === "Mark of Detection" && feat.source === "EFA");
+  assert.ok(mark);
+  const cleric = live!.compendium.for().classes().find((cls) => cls.name === "Cleric");
+  assert.ok(cleric);
+  const spell = markOnlySpell(expandedNamesOf(mark.additionalSpells));
+  assert.ok(spell);
+  const character = makeChar({
+    classes: [{ className: cleric.name, source: cleric.source, level: 5 }],
+    asiSelections: [{ level: 4, className: "Cleric", classLevel: 4, type: "feat", featName: mark.name, featSource: mark.source }],
+    knownSpells: [{ name: spell.name, source: spell.source, ownerKey: `${cleric.name}__${cleric.source}`, className: cleric.name }],
+  });
+  const released = removeAsiSelection(character, "Cleric", 4, live!.compendium);
+  assert.deepEqual(released.knownSpells, [], `${spell.name} leaves the known spells`);
+  assert.ok(
+    released.needsReview?.some((notice) => notice.includes(`${spell.name} removed: only on the Mark of Detection feat's spell list`)),
+    `the release is noticed: ${JSON.stringify(released.needsReview)}`,
+  );
 });
