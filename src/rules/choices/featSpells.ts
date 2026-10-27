@@ -160,6 +160,16 @@ function raceOwner(record: { name: string; source: string }): GrantOwner {
 }
 
 /**
+ * The name a race or subrace reads by: the subrace with its race, as in "High Elf". The owner's key holds only the subrace's
+ * name, so the race is found in the catalog. A name that is no listed subrace, or a subrace that names its race, is returned as is.
+ */
+export function raceDisplayName(name: string, races: readonly RaceData[]): string {
+  const parent = races.find((race) => race.subraces?.some((subrace) => subrace.name === name));
+  if (!parent || name.toLowerCase().includes(parent.name.toLowerCase())) return name;
+  return `${name} ${parent.name}`;
+}
+
+/**
  * The source slot of a race's pick key. A race is held by its name whichever book holds it, so its key names no book: a pick
  * made on one catalog's record of a race is the same pick on another catalog's.
  */
@@ -789,10 +799,11 @@ function releasedPickLabel(entry: RuleChoiceEntry, pick: string): string {
  * The review notices for the picks an entry released: one per pick, each naming the pick and the feat or race it came from.
  * An entry with no pick recorded is named by its trait.
  */
-function releaseNotices(entry: RuleChoiceEntry, reason: string, picks: readonly string[] = entry.picked): string[] {
+function releaseNotices(entry: RuleChoiceEntry, reason: string, races: readonly RaceData[], picks: readonly string[] = entry.picked): string[] {
   if (picks.length === 0) return [`${entry.trait} removed: ${reason}`];
   // A Rule Choice id is the source, the owner's kind mark, the owner's name, then the pick (see ownerKey and the id builders).
-  const owner = entry.id.split("__")[2];
+  const [, mark, name] = entry.id.split("__");
+  const owner = mark === OWNER_MARK.race ? raceDisplayName(name, races) : name;
   return picks.map((pick) => `${releasedPickLabel(entry, pick)} removed from ${owner}: ${reason}`);
 }
 
@@ -862,13 +873,13 @@ export function pruneInvalidFeatSpellPicks(character: Character, compendium: Com
       const reason = !heldOwner
         ? (isFeat ? "feat no longer held" : "ancestry no longer grants it")
         : (isFeat ? "spell list changed" : "no longer offered");
-      notices.push(...releaseNotices(entry, reason));
+      notices.push(...releaseNotices(entry, reason, listings.races()));
       continue;
     }
     const offered = valid.get(entry.id);
     const picked = offered ? entry.picked.filter((name) => offered.includes(name)) : entry.picked;
     const dropped = entry.picked.filter((name) => !picked.includes(name));
-    if (dropped.length > 0) notices.push(...releaseNotices(entry, "no longer offered", dropped));
+    if (dropped.length > 0) notices.push(...releaseNotices(entry, "no longer offered", listings.races(), dropped));
     if (picked.length > 0) kept.push(picked.length === entry.picked.length ? entry : { ...entry, picked });
   }
 

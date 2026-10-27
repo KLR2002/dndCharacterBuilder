@@ -21,6 +21,7 @@ import {
   pickedSpellListOf,
   pickSlotsOf,
   preparedEntries,
+  raceDisplayName,
   raceGrantsOf,
   slugOf,
   spellListLabel,
@@ -76,7 +77,7 @@ export function grantedSpellSources(
   if (race) {
     const seen = new Set<string>();
     for (const grant of race.grants) {
-      const source = grantSource(ctx, race.owner, grant, undefined, seen, race.owner.name);
+      const source = grantSource(ctx, race.owner, grant, undefined, seen, raceDisplayName(race.owner.name, listings.races()));
       if (source) sources.push(source);
     }
   }

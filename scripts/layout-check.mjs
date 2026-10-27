@@ -346,7 +346,7 @@ function battleMasterCharacter() {
 }
 
 // A level 1 High Elf Wizard with no cantrip picked yet. The race card shows the wizard cantrip pick the High Elf's
-// subrace grants, with the Intelligence casting ability. Integrated mode only (the SRD Baseline has no catalog source here).
+// subrace grants, with the Intelligence casting ability. The Builder Race scenario reads it in integrated mode only.
 const HIGH_ELF_ID = "char_highelf";
 const HIGH_ELF_ROUTE = `/character/${HIGH_ELF_ID}`;
 function highElfCharacter() {
@@ -740,7 +740,8 @@ function buildSeed() {
       fighterCharacter({ id: FIGHTER_ID, name: "Tavish", picked: false }),
       fighterCharacter({ id: FIGHTER_PICKED_ID, name: "Brannoc", picked: true }),
       battleMasterCharacter(),
-      ...(INTEGRATED ? [magicInitiateCharacter(), highElfCharacter()] : []),
+      ...(INTEGRATED ? [magicInitiateCharacter()] : []),
+      highElfCharacter(),
       ...(INTEGRATED ? [backgroundFeatCharacter()] : []),
       grantedSpellsCharacter(),
       ...(INTEGRATED ? [preparedGrantCharacter()] : []),
@@ -932,6 +933,15 @@ const SCREENS = [
         : ["TIEFLING", "Thaumaturgy", "Hellish Rebuke", "Darkness"],
       fitsWidth: true,
     },
+  },
+  // The race card is titled with the subrace and its race, in both catalogs.
+  {
+    name: "Spells race card title",
+    route: HIGH_ELF_ROUTE,
+    tabs: ["Spells"],
+    ready: /Innate racial magic from your ancestry/,
+    scrollTo: "HIGH ELF",
+    expect: { texts: ["HIGH ELF"], fitsWidth: true },
   },
   // A feat's prepared spells in the Wizard's class list: the lock icon, and the feat's name as the badge (integrated mode only).
   ...(INTEGRATED
