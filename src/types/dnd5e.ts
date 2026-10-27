@@ -131,6 +131,8 @@ export interface AdditionalSpells {
   gatedBy?: { choiceId: string; option: string };
   /** The level each named spell is cast at where the source's `#N` suffix gives one, keyed by the lower-case spell name. */
   castLevels?: Record<string, number>;
+  /** A short note on a named spell of the grant, keyed by the lower-case spell name. Set by the reviewed catalog data. */
+  notes?: Record<string, string>;
 }
 
 export interface SubclassData {

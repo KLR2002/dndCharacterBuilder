@@ -358,6 +358,7 @@ export const grantedSpellRaces = (): RaceData[] => [
         innate: { "3": { daily: { "1": ["sample pulse", "sample veil"] } } },
         // The source casts Sample Pulse at level 2, as a `#2` suffix says; Sample Veil has no suffix and keeps its own level.
         castLevels: { "sample pulse": 2 },
+        notes: { "sample veil": "self only" },
       },
     ],
   }),

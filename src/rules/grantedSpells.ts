@@ -238,14 +238,15 @@ function grantedSpells(input: { owner: GrantOwner; grant: AdditionalSpells; seen
     const data = resolveSpellName(entry.name, ctx.activeBooks, ctx.compendium, { activeOnly: true });
     if (!data) continue;
     seen.add(key);
-    spells.push(innateEntry(data, owner, entryName, usesOfEntry(entry, data.level), entry.minCharacterLevel, grant.castLevels?.[key]));
+    const note = grant.notes?.[key];
+    spells.push(innateEntry(data, owner, entryName, usesOfEntry(entry, data.level), entry.minCharacterLevel, grant.castLevels?.[key], note));
   }
   return spells;
 }
 
 /**
  * The Innate Magic entry of a resolved spell. It is cast at the level the grant gives when it names one, else at the spell's
- * own level. A spell with a use count carries the counter a Long Rest restores.
+ * own level. A spell with a use count carries the counter a Long Rest restores. A spell the grant notes carries the note.
  */
 function innateEntry(
   data: SpellData,
@@ -253,7 +254,8 @@ function innateEntry(
   entryName: string | undefined,
   uses: number | undefined,
   minCharacterLevel: number,
-  castLevel?: number
+  castLevel?: number,
+  note?: string
 ): InnateSpellEntry {
   return {
     name: data.name,
@@ -263,6 +265,7 @@ function innateEntry(
     source: data.source,
     isCantrip: data.level === 0,
     ...(uses !== undefined ? { resourceCounterId: counterId(owner, data.name, entryName), maxUses: uses } : {}),
+    ...(note !== undefined ? { note } : {}),
   };
 }
 
