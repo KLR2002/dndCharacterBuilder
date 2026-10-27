@@ -155,11 +155,11 @@ export const ClassProgressionSection: React.FC<
 
   // Re-runs on a compendium mode switch too (isSrd), since the sole subclass depends on the compendium.
   useEffect(() => {
-    const next = applySoleSubclasses(character, currentCompendium());
+    const next = applySoleSubclasses(character, currentCompendium(), activeBooks);
     if (next !== character) {
-      onUpdate((current) => applySoleSubclasses(current, currentCompendium()));
+      onUpdate((current) => applySoleSubclasses(current, currentCompendium(), activeBooks));
     }
-  }, [character, isSrd, onUpdate]);
+  }, [character, isSrd, onUpdate, activeBooks]);
 
   const handleAddClassLevel = (className: string, source: string) => {
     onUpdate((current) =>
@@ -218,6 +218,7 @@ export const ClassProgressionSection: React.FC<
         subclassSource,
         unlearnOrphaned,
         currentCompendium(),
+        activeBooks,
       ),
     );
     setChangingSubclassFor(null);

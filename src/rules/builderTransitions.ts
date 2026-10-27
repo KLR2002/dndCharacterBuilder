@@ -275,14 +275,15 @@ export function changeSubclass(
   newSubclassName: string,
   subclassSource: string,
   unlearnOrphaned: string[] = [],
-  compendium: Compendium = currentCompendium()
+  compendium: Compendium = currentCompendium(),
+  activeBooks?: string[]
 ): Character {
   const existing = character.classes.find((c) => c.className === className);
   const oldSubclass = existing?.subclassName || existing?.subclass;
 
   let updated = character;
   if (oldSubclass && oldSubclass !== newSubclassName) {
-    updated = teardownSubclass(updated, className, oldSubclass, compendium);
+    updated = teardownSubclass(updated, className, oldSubclass, compendium, activeBooks);
   }
 
   if (unlearnOrphaned.length > 0) {
@@ -299,7 +300,7 @@ export function changeSubclass(
       : c
   );
 
-  return reconcile({ ...updated, classes: updatedClasses }, compendium);
+  return reconcile({ ...updated, classes: updatedClasses }, compendium, { activeBooks });
 }
 
 /**
@@ -307,7 +308,11 @@ export function changeSubclass(
  * reaches its subclass level without one, that subclass is applied through `changeSubclass`. Classes
  * with several subclasses are left alone, and an integrated compendium is never changed.
  */
-export function applySoleSubclasses(character: Character, compendium: Compendium = currentCompendium()): Character {
+export function applySoleSubclasses(
+  character: Character,
+  compendium: Compendium = currentCompendium(),
+  activeBooks?: string[]
+): Character {
   if (compendium.integrated) return character;
 
   let updated = character;
@@ -316,7 +321,7 @@ export function applySoleSubclasses(character: Character, compendium: Compendium
     const subclasses = findClassData(compendium.for().classes(), entry)?.subclasses ?? [];
     if (subclasses.length !== 1) continue;
     const [sole] = subclasses;
-    updated = changeSubclass(updated, entry.className, sole.name, sole.source, [], compendium);
+    updated = changeSubclass(updated, entry.className, sole.name, sole.source, [], compendium, activeBooks);
   }
   return updated;
 }

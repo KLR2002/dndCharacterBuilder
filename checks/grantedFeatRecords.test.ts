@@ -7,9 +7,9 @@ import { reconcile, teardownSubclass } from "../src/rules/characterReconciler.ts
 import { migrateCharacter } from "../src/rules/migrateCharacter.ts";
 import { applyOriginFeat } from "../src/rules/feats.ts";
 import { applyAsiSelection } from "../src/rules/leveling.ts";
-import { changeRace } from "../src/rules/builderTransitions.ts";
+import { applySoleSubclasses, changeRace, changeSubclass } from "../src/rules/builderTransitions.ts";
 import type { Character, CharacterClass } from "../src/types/character.ts";
-import type { FeatData } from "../src/types/dnd5e.ts";
+import type { ClassData, FeatData } from "../src/types/dnd5e.ts";
 import type { AvailableRuleChoice } from "../src/rules/choices/types.ts";
 import { inMemoryCompendium, makeChar } from "./testUtils.ts";
 import {
@@ -165,6 +165,33 @@ test("applying an ability score increase keeps the counter of a background-claim
     twoListsCompendium,
     TWO_ACTIVE_BOOKS,
   );
+  assert.ok(applied.resourceCounters?.[MAGE_COUNTER], "the counter of the list held is kept");
+  assert.deepEqual(applied.needsReview ?? [], [], "no notice is raised");
+});
+
+test("changing the subclass keeps the counter of a background-claimed feat that two active books hold, with no notice", () => {
+  const withPath = {
+    ...claimedWithMageCounter(),
+    classes: [{ ...mage(4), subclassName: "Sample Old Path", subclass: "Sample Old Path", subclassSource: "TST" }],
+  };
+  const changed = changeSubclass(withPath, "Sample Mage", "Sample New Path", "TST", [], twoListsCompendium, TWO_ACTIVE_BOOKS);
+  assert.ok(changed.resourceCounters?.[MAGE_COUNTER], "the counter of the list held is kept");
+  assert.deepEqual(changed.needsReview ?? [], [], "no notice is raised");
+});
+
+test("applying the lone subclass keeps the counter of a background-claimed feat that two active books hold, with no notice", () => {
+  const mageWithOneSubclass = {
+    ...grantedSpellClasses().find((c) => c.name === "Sample Mage"),
+    subclasses: [{ name: "Sample Sole Path", source: "TST" }],
+  } as unknown as ClassData;
+  const compendium = inMemoryCompendium({
+    classes: [mageWithOneSubclass],
+    feats: twoListsCatalog(),
+    spells: grantedSpellSpells(),
+    backgrounds: grantedSpellBackgrounds(),
+  });
+  const applied = applySoleSubclasses(claimedWithMageCounter(), compendium, TWO_ACTIVE_BOOKS);
+  assert.equal(applied.classes[0]?.subclassName, "Sample Sole Path", "the lone subclass is applied");
   assert.ok(applied.resourceCounters?.[MAGE_COUNTER], "the counter of the list held is kept");
   assert.deepEqual(applied.needsReview ?? [], [], "no notice is raised");
 });
