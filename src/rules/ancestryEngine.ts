@@ -1,4 +1,4 @@
-import type { AbilityKey, AsiSelection, Character, RuleChoiceEntry } from "../types/character.ts";
+import type { AbilityKey, AsiSelection, Character } from "../types/character.ts";
 import type { RaceData, SubraceData } from "../types/dnd5e.ts";
 import {
   offeredRuleChoices,
@@ -11,6 +11,7 @@ import { reconcile } from "./characterReconciler.ts";
 import { currentCompendium } from "../services/compendium.ts";
 import { getBackgroundFeatGrant } from "./feats.ts";
 import { normalizeSkillName } from "./skills.ts";
+import { isGrantSpellChoiceId } from "./choices/featSpells.ts";
 import { moveLegacySkillPicks } from "./proficiencyPicks.ts";
 
 export interface AncestryTraitView {
@@ -36,13 +37,9 @@ export interface AncestryState {
   hasOriginFeat: boolean;
   originFeatTitle?: string;
   currentOriginFeat?: AsiSelection;
-  hasRacialCantrip: boolean;
-  racialCantripTitle?: string;
-  currentRacialCantrip?: string;
 }
 
 const CHOICE_ASI_RACES = new Set(["Half-Elf", "Custom Lineage"]);
-export const HIGH_ELF_CANTRIP_CHOICE_ID = "PHB__Elf__PHB__High Elf__Cantrip";
 
 export function collectFixedBonuses(
   raceASI?: Record<string, number>[],
@@ -179,51 +176,6 @@ export function resolveAncestryState(
     }
   }
 
-  // Racial Cantrip resolution (High Elf, Half-Elf High descent)
-  let hasRacialCantrip = false;
-  let racialCantripTitle: string | undefined;
-  let currentRacialCantrip: string | undefined;
-
-  if (character.race) {
-    const raceLower = character.race.name.toLowerCase();
-    const subraceLower = (character.race.subraceName || "").toLowerCase();
-
-    const isElfHigh =
-      raceLower === "elf" &&
-      (subraceLower === "high" ||
-        subraceLower === "high elf" ||
-        subraceLower.includes("high") ||
-        subraceLower.includes("sun") ||
-        subraceLower.includes("moon"));
-
-    const isHalfElfHigh =
-      raceLower.includes("half-elf") &&
-      (subraceLower.includes("high") || subraceLower.includes("sun") || subraceLower.includes("moon"));
-
-    const halfElfHasCantrip =
-      isHalfElfHigh &&
-      Boolean(
-        character.ruleChoices?.some(
-          (r) => r.from?.includes("Cantrip") && r.picked?.includes("Cantrip")
-        )
-      );
-
-    if (isElfHigh) {
-      hasRacialCantrip = true;
-      racialCantripTitle = "High Elf Cantrip";
-    } else if (halfElfHasCantrip) {
-      hasRacialCantrip = true;
-      racialCantripTitle = "Half-Elf Cantrip";
-    }
-
-    if (hasRacialCantrip) {
-      const highElfPick = character.ruleChoices?.find(
-        (r) => r.id === HIGH_ELF_CANTRIP_CHOICE_ID || r.id.includes("High Elf")
-      )?.picked?.[0];
-      currentRacialCantrip = highElfPick || character.knownSpells?.find((k) => k.ownerKey === "racial__innate")?.name;
-    }
-  }
-
   return {
     selectedRace,
     selectedSubrace,
@@ -241,9 +193,6 @@ export function resolveAncestryState(
     hasOriginFeat,
     originFeatTitle,
     currentOriginFeat,
-    hasRacialCantrip,
-    racialCantripTitle,
-    currentRacialCantrip,
   };
 }
 
@@ -277,6 +226,7 @@ export function applyAncestrySelection(
   const nextSkillChoices = (migrated.skillChoices || []).filter((sc) => sc.origin !== "race");
   const nextChosenSkills = (migrated.chosenSkills || []).filter((s) => !oldRacePicks.has(normalizeSkillName(s)));
 
+  // A race's pick of spells is kept here: the reconciler releases it, with a notice, once the race no longer grants it.
   const cleaned: Character = {
     ...migrated,
     race: updatedRace,
@@ -284,7 +234,7 @@ export function applyAncestrySelection(
     racialChoiceBonus: [],
     chosenLanguages: nextChosenLanguages,
     chosenTools: nextChosenTools,
-    ruleChoices: (character.ruleChoices || []).filter((rc) => rc.origin !== "race"),
+    ruleChoices: (character.ruleChoices || []).filter((rc) => rc.origin !== "race" || isGrantSpellChoiceId(rc.id)),
     skillChoices: nextSkillChoices,
     chosenSkills: nextChosenSkills,
   };
@@ -307,72 +257,15 @@ export function applyAncestryChoice(
   const choice = choices.find((c) => c.id === choiceId);
   if (!choice) return character;
 
-  const updated = pickRuleChoice(character, choice, option, catalogs?.compendium);
-
-  // Cascading invalidation: if this choice has a "Cantrip" option, and "Cantrip" is NOT picked in updated state
-  // (either because user picked another option OR toggled Cantrip off), purge any cantrip choice!
-  const hasCantripOption = choice.options.some((o) => o.name === "Cantrip");
-  const isCantripStillPicked = (updated.ruleChoices || [])
-    .find((rc) => rc.id === choice.id)
-    ?.picked.includes("Cantrip");
-
-  if (hasCantripOption && !isCantripStillPicked) {
-    return {
-      ...updated,
-      ruleChoices: (updated.ruleChoices || []).filter(
-        (rc) => rc.id !== HIGH_ELF_CANTRIP_CHOICE_ID && !rc.id.includes("High Elf")
-      ),
-    };
-  }
-
-  return updated;
+  return pickRuleChoice(character, choice, option, catalogs?.compendium);
 }
 
-export function clearAncestryChoice(
-  character: Character,
-  choiceId: string
-): Character {
-  return {
+export function clearAncestryChoice(character: Character, choiceId: string): Character {
+  const cleared: Character = {
     ...character,
-    ruleChoices: (character.ruleChoices || []).filter(
-      (rc) => rc.id !== choiceId && (rc.id !== HIGH_ELF_CANTRIP_CHOICE_ID && !rc.id.includes("High Elf"))
-    ),
+    ruleChoices: (character.ruleChoices || []).filter((rc) => rc.id !== choiceId),
   };
-}
-
-export function setRacialCantrip(
-  character: Character,
-  cantripName: string | null
-): Character {
-  if (!cantripName) {
-    return {
-      ...character,
-      ruleChoices: (character.ruleChoices || []).filter(
-        (rc) => rc.id !== HIGH_ELF_CANTRIP_CHOICE_ID && !rc.id.includes("High Elf")
-      ),
-      knownSpells: (character.knownSpells || []).filter(
-        (k) => k.ownerKey !== "racial__innate"
-      ),
-    };
-  }
-
-  const existingChoices = (character.ruleChoices || []).filter(
-    (rc) => rc.id !== HIGH_ELF_CANTRIP_CHOICE_ID && !rc.id.includes("High Elf")
-  );
-
-  const cantripEntry: RuleChoiceEntry = {
-    id: HIGH_ELF_CANTRIP_CHOICE_ID,
-    trait: "Cantrip",
-    origin: "race",
-    choose: 1,
-    from: [cantripName],
-    picked: [cantripName],
-  };
-
-  return {
-    ...character,
-    ruleChoices: [...existingChoices, cantripEntry],
-  };
+  return reconcile(cleared, currentCompendium());
 }
 
 export function setAncestryChoiceASI(

@@ -15,7 +15,7 @@ import {
 } from "../src/rules/choices/warlockChoices.ts";
 import { ARTIFICER_INFUSIONS_KNOWN_ID, artificerInfusionChoices } from "../src/rules/choices/artificerInfusions.ts";
 import { GIANT_POWER_CHOICE_ID } from "../src/rules/choices/types.ts";
-import { HIGH_ELF_CANTRIP_CHOICE_ID } from "../src/rules/ancestryEngine.ts";
+import { LEGACY_HIGH_ELF_CANTRIP_CHOICE_ID } from "../src/rules/choices/featSpells.ts";
 
 /**
  * Rule Choice ids are persisted in saved characters. Renaming one orphans every pick made under it,
@@ -205,7 +205,7 @@ test("the feat, Warlock, Artificer, Giant Power and High Elf ids keep their pers
   assert.equal(ELDRITCH_ADEPT_CHOICE_ID, "TCE__Feat__Eldritch Adept__Invocation");
   assert.equal(ARTIFICER_INFUSIONS_KNOWN_ID, "TCE__Artificer__Infusions Known");
   assert.equal(GIANT_POWER_CHOICE_ID, "BGG__Barbarian__Path of the Giant__Giant Power");
-  assert.equal(HIGH_ELF_CANTRIP_CHOICE_ID, "PHB__Elf__PHB__High Elf__Cantrip");
+  assert.equal(LEGACY_HIGH_ELF_CANTRIP_CHOICE_ID, "PHB__Elf__PHB__High Elf__Cantrip");
 });
 
 test("the frozen list is free of duplicates and every entry is a non-empty id", () => {

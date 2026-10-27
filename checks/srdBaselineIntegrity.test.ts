@@ -4,7 +4,7 @@ import { DEFAULT_ACTIVE_BOOK_CODES } from "../src/constants/books.ts";
 import { createCompendium, currentCompendium, type Compendium } from "../src/services/compendium.ts";
 import { isSpellAvailableForClass } from "../src/rules/spellcasting.ts";
 import { resolveAncestryState, applyAncestrySelection } from "../src/rules/ancestryEngine.ts";
-import { subclassRuleChoices } from "../src/rules/ruleChoices.ts";
+import { raceSpellRuleChoices, subclassRuleChoices } from "../src/rules/ruleChoices.ts";
 import { maxHp } from "../src/rules/hp.ts";
 import { srdBaselineBundle, srdBaselineCompendium, integratedTestCompendium, makeChar, withSpellChoiceFixtures } from "./testUtils.ts";
 
@@ -131,9 +131,9 @@ test("srdBaseline: Dwarf, Elf, Gnome, and Halfling have their single SRD subrace
     "High Elf in SRD must have +2 DEX and +1 INT"
   );
   assert.equal(appliedElf.race?.subraceName, "High");
-  const elfState = resolveAncestryState(appliedElf, { compendium: srd });
-  assert.equal(elfState.hasRacialCantrip, true, "High Elf must have racial wizard cantrip choice");
-  assert.equal(elfState.racialCantripTitle, "High Elf Cantrip");
+  const elfPick = raceSpellRuleChoices(appliedElf, srd).find((choice) => choice.traitName === "High Cantrip");
+  assert.ok(elfPick, "High Elf must offer its wizard cantrip as a race pick on the SRD Baseline");
+  assert.equal(elfPick.choose, 1);
 
   // 3. Gnome -> Rock Gnome
   const gnome = races.find((r) => r.name === "Gnome");

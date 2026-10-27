@@ -110,12 +110,15 @@ test("a subrace's own grants replace the race's, and a subrace without grants ke
   );
 });
 
-test("a race whose casting ability is a pick gives no card yet", () => {
+test("a race whose casting ability is a pick has a card that needs the ability until it is chosen (ticket 07)", () => {
   const character = makeChar({
     classes: [mage(1)],
     race: { name: "Sample Chooser", source: "TST" },
   });
-  assert.deepEqual(evaluateCharacter(character, catalogs).grantedSpellSources, []);
+  const card = sourceTitled(evaluateCharacter(character, catalogs).grantedSpellSources, "Sample Chooser");
+  assert.equal(card?.ability, undefined);
+  assert.ok(card?.spells.some((spell) => spell.name === "Sample Ember"), "the fixed spell is listed");
+  assert.deepEqual(card?.notices, ["Needs review: choose a casting ability"]);
 });
 
 test("a race source has origin race and a feat source has origin feat", () => {

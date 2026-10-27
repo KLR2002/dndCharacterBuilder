@@ -21,7 +21,6 @@ import {
   type ClassSpellProfile,
 } from "../../rules/spellcasting";
 import {
-  getInnateSpellProfile,
   type InnateSpellProfile,
   type InnateSpellEntry,
 } from "../../rules/innateMagic";
@@ -238,12 +237,7 @@ export const SpellsTab: React.FC = () => {
     return currentCharacter ? calculateMulticlassSpellSlots(currentCharacter) : { slots: [] as number[] };
   }, [currentCharacter]);
 
-  // 4. Innate & Racial Spells profile
-  const innateProfile: InnateSpellProfile | null = useMemo(() => {
-    return currentCharacter ? getInnateSpellProfile(currentCharacter) : null;
-  }, [currentCharacter]);
-
-  // 4b. Innate Magic from the feats the character holds: one card per source (ADR 0017)
+  // 4. Innate Magic from the race, subrace and feats the character holds: one card per source (ADR 0017)
   const grantedProfiles: InnateSpellProfile[] = useMemo(() => {
     return evaluated?.grantedSpellSources ?? [];
   }, [evaluated]);
@@ -761,10 +755,9 @@ export const SpellsTab: React.FC = () => {
   }
 
   if (spellProfiles.length === 0) {
-    if ((innateProfile && innateProfile.spells.length > 0) || grantedProfiles.length > 0 || atWillInvocations.length > 0) {
+    if (grantedProfiles.length > 0 || atWillInvocations.length > 0) {
       return (
         <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-          {renderInnateCard(innateProfile, RACE_INNATE_COPY)}
           {renderGrantedCards()}
           {renderAtWillInvocationsCard()}
           <Card style={[styles.emptyCard, { backgroundColor: theme.surface, borderColor: theme.border, marginTop: 16 }]}>
@@ -1311,8 +1304,7 @@ export const SpellsTab: React.FC = () => {
         </Card>
       )}
 
-      {/* Innate & Racial Spells (if ancestry has innate magic), then the spells of each feat that grants some */}
-      {renderInnateCard(innateProfile, RACE_INNATE_COPY)}
+      {/* The spells of the race and of each feat that grants some: one card per source */}
       {renderGrantedCards()}
 
       {/* Ritual Book (Book of Ancient Secrets) */}

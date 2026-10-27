@@ -84,7 +84,7 @@ const feat = (name: string, extra: Partial<FeatData>): FeatData => ({
 /**
  * Invented feats. Sample Cinder grants a cantrip at will and a daily spell, with the ability its increase raised (inherit).
  * Sample Warding grants a cantrip at will and a daily spell with a fixed Wisdom ability. Sample Chooser's ability is a pick
- * and Sample Picker's only spell is a pick: neither gives a card yet.
+ * and Sample Picker's only spell is a pick: a pick is not a spell, so Sample Picker gives no card.
  */
 export const grantedSpellFeats = (): FeatData[] => [
   feat("Sample Cinder", {
@@ -285,7 +285,7 @@ const subrace = (name: string, raceName: string, extra: Partial<SubraceData>): S
 /**
  * Invented races. Sample Kin grants a cantrip at will from level 1 and a daily spell from level 3, with a fixed Charisma
  * ability. Its subrace Sample Line has grants of its own (Intelligence, a per-rest spell), so they replace the race's.
- * Sample Plain has none, so the race's grants stay. Sample Chooser's ability is a pick, so it gives no card yet.
+ * Sample Plain has none, so the race's grants stay. Sample Chooser's ability is a pick, so its card needs the ability until one is chosen.
  */
 export const grantedSpellRaces = (): RaceData[] => [
   race("Sample Kin", {
@@ -315,5 +315,19 @@ export const grantedSpellRaces = (): RaceData[] => [
   }),
   race("Sample Chooser", {
     additionalSpells: [{ ability: { choose: ["int", "wis", "cha"] }, known: { "1": ["sample ember"] } }],
+  }),
+  // A fixed casting ability and one cantrip the player picks from a class list, as the High Elf's wizard cantrip is.
+  race("Sample Gifted", {
+    additionalSpells: [{ ability: "int", known: { "1": { _: [{ choose: "level=0|class=Sample Mage" }] } } }],
+  }),
+  // A casting ability the player chooses, one cantrip pick, and a first-level pick that unlocks at level 3.
+  race("Sample Caller", {
+    additionalSpells: [
+      {
+        ability: { choose: ["int", "wis", "cha"] },
+        known: { _: [{ choose: "level=0|class=Sample Mage", count: 1 }] },
+        innate: { "3": { daily: { "1": [{ choose: "level=1|class=Sample Mage" }] } } },
+      },
+    ],
   }),
 ];

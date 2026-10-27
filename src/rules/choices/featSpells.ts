@@ -1,23 +1,24 @@
 import type { AbilityKey, AsiSelection, Character, RuleChoiceEntry } from "../../types/character.ts";
-import type { AdditionalSpells, FeatData, SpellData } from "../../types/dnd5e.ts";
+import type { AdditionalSpells, FeatData, RaceData, SpellData, SubraceData } from "../../types/dnd5e.ts";
 import type { Compendium } from "../../services/compendium.ts";
 import { ABILITY_NAMES } from "../abilities.ts";
+import { totalLevel } from "../proficiencies.ts";
 import { isSpellAvailableForClass } from "../spellcasting.ts";
 import { resolveSpellName } from "../subclassSpells.ts";
-import type { AvailableRuleChoice } from "./types.ts";
+import { ruleChoiceId, type AvailableRuleChoice, type RuleChoiceOrigin } from "./types.ts";
 
 /**
- * The spell picks a feat's grant asks for (ADR 0017). A feat that offers named spell lists is a choice between them: the
- * player picks one list, and that list's `choose` slots then take their spells. A grant without names has its slots directly.
- * A grant whose casting ability is a choice takes it from one Rule Choice the feat holds, saved once for all its grants.
- * Every pick is a Rule Choice of origin "feat", keyed by the feat and what it picks, so two feats never share a pick. The ids
- * are read by the reader and the reconciler; keep them in this module.
+ * The spell picks a granted spell source asks for (ADR 0017). A grant's owner is a feat the character holds or the race or
+ * subrace whose grant it is. A feat that offers named spell lists is a choice between them: the player picks one list, and
+ * that list's `choose` slots then take their spells. A grant whose casting ability is a choice takes it from one Rule Choice
+ * its owner holds, saved once for all its grants. Every pick is a Rule Choice keyed by its owner and what it picks, so two
+ * owners never share a pick. The ids are read by the reader and the reconciler; keep them in this module.
  */
 
 const ABILITY_KEYS: readonly AbilityKey[] = ["str", "dex", "con", "int", "wis", "cha"];
-const FEAT_SPELLS_MARK = "Feat Spells";
 const UNNAMED_GRANT_KEY = "-";
 const ABILITY_CHOICE_KEY = "Casting Ability";
+const SPELL_LIST_KEY = "Spell List";
 
 /** The school each one-letter code of a filter names, as the Catalog spells SpellData.school. */
 const SCHOOL_BY_CODE: Readonly<Record<string, string>> = {
@@ -31,15 +32,50 @@ const SCHOOL_BY_CODE: Readonly<Record<string, string>> = {
   V: "Evocation",
 };
 
+/**
+ * A Rule Choice the descent or subrace option named here switches on: the subrace's spell grant is read only when the
+ * player picked the option. The catalog lists the grant whatever the pick, so the gate is a pointer from a frozen Rule
+ * Choice id to the option that opens it (ADR 0014). Only the Cantrip option of the Moon or Sun Elf descent is gated.
+ */
+const GRANT_GATED_BY_OPTION: ReadonlyMap<string, string> = new Map([
+  ["SCAG__Half-Elf__Moon Elf or Sun Elf Descent__Variant Feature (Choose 1)", "Cantrip"],
+]);
+
+/** The mark each kind of owner puts in its pick ids. */
+const OWNER_MARK: Record<GrantOwner["kind"], string> = { feat: "Feat Spells", race: "Race Spells" };
+
+/**
+ * Whose spell grant a pick is for: a feat the character holds, or the race or subrace record that gives the grant. `source`
+ * and `name` are the owner's own record, so two owners of one kind never collide.
+ */
+export interface GrantOwner {
+  kind: "feat" | "race";
+  source: string;
+  name: string;
+}
+
 /** A feat the character holds, with the selection that gave it. */
 export interface HeldFeat {
   feat: FeatData;
   selection: AsiSelection;
 }
 
+/** The grants of one owner the character holds. A feat carries its record, so its named lists can be read. */
+export interface HeldGrants {
+  owner: GrantOwner;
+  grants: AdditionalSpells[];
+  feat?: FeatData;
+}
+
+/** A race's or subrace's grants, with the record that owns them. */
+export interface RaceGrants {
+  owner: GrantOwner;
+  grants: AdditionalSpells[];
+}
+
 /**
- * A place in a grant where the player picks spells: its index among the grant's picks, how many, what it picks from, and the
- * uses of its key. A pick chooses from a filter, or from the named spells the grant lists.
+ * A place in a grant where the player picks spells: its index among the grant's picks, how many, what it picks from, the uses
+ * of its key and the character level it unlocks at. A pick chooses from a filter, or from the named spells the grant lists.
  */
 export interface PickSlot {
   index: number;
@@ -50,7 +86,28 @@ export interface PickSlot {
   from?: string[];
   /** Set for a daily or per-rest slot: the uses a Long Rest restores. Absent for a known or at-will slot. */
   uses?: number;
+  /** The level the grant unlocks the slot at: 1 for a feat's, the section key for a race's. */
+  minCharacterLevel: number;
 }
+
+/** One entry of a grant: a spell it gives, or a place where the player picks one. */
+export interface GrantSpell {
+  kind: "spell";
+  name: string;
+  minCharacterLevel: number;
+  /** Set under a `daily` or `rest` key: the uses per Long Rest. Absent for at-will spells. */
+  uses?: number;
+}
+
+export interface GrantPick {
+  kind: "pick";
+  choose: string | { from: string[] };
+  count: number;
+  minCharacterLevel: number;
+  uses?: number;
+}
+
+export type GrantEntry = GrantSpell | GrantPick;
 
 /**
  * The parsed `key=value|key=value` filter of a `choose` object. Keys this module does not model are listed, and match nothing.
@@ -65,6 +122,26 @@ export interface SpellFilter {
   attacks: string[];
   ritual: boolean;
   unknownKeys: string[];
+}
+
+/** The owner of a feat's grants. */
+export function featOwner(feat: { name: string; source: string }): GrantOwner {
+  return { kind: "feat", source: feat.source, name: feat.name };
+}
+
+/** The owner of a race's or subrace's grants: the record that gives them. */
+function raceOwner(record: { name: string; source: string }): GrantOwner {
+  return { kind: "race", source: record.source, name: record.name };
+}
+
+/** The key an owner's picks share: its source, its kind's mark and its name. */
+export function ownerKey(owner: GrantOwner): string {
+  return `${owner.source}__${OWNER_MARK[owner.kind]}__${owner.name}`;
+}
+
+/** The Rule Choice origin of an owner's picks. */
+function originOf(owner: GrantOwner): RuleChoiceOrigin {
+  return owner.kind === "feat" ? "feat" : "race";
 }
 
 /** Each feat the character holds once, in the order the character recorded them. */
@@ -92,59 +169,101 @@ export function chosenAbilityOptionsOf(grant: AdditionalSpells): AbilityKey[] {
   return ABILITY_KEYS.filter((key) => options.includes(key));
 }
 
-/** The abilities the player may choose for a feat: those of its grants whose ability is a choice. The player picks one, once. */
-export function featAbilityOptionsOf(feat: FeatData): AbilityKey[] {
+/** The abilities the player may choose for an owner: those of its grants whose ability is a choice. The player picks one, once. */
+export function abilityOptionsOfGrants(grants: readonly AdditionalSpells[]): AbilityKey[] {
   const options = new Set<AbilityKey>();
-  for (const grant of feat.additionalSpells ?? []) for (const key of chosenAbilityOptionsOf(grant)) options.add(key);
+  for (const grant of grants) for (const key of chosenAbilityOptionsOf(grant)) options.add(key);
   return ABILITY_KEYS.filter((key) => options.has(key));
 }
 
-/** The casting ability the player chose for a feat, if one is chosen and the feat offers it. */
-export function pickedAbilityOf(character: Character, feat: FeatData): AbilityKey | undefined {
-  const picked = character.ruleChoices?.find((entry) => entry.id === featAbilityChoiceId(feat))?.picked[0];
-  return featAbilityOptionsOf(feat).find((key) => key === picked);
+/** The casting ability the player chose for an owner, if one is recorded. A grant checks it against its own options. */
+export function pickedAbilityOf(character: Character, owner: GrantOwner): AbilityKey | undefined {
+  const picked = character.ruleChoices?.find((entry) => entry.id === abilityChoiceId(owner))?.picked[0];
+  return (ABILITY_KEYS as readonly string[]).includes(picked ?? "") ? (picked as AbilityKey) : undefined;
 }
 
-/** The named spell lists a feat offers. Every named grant is a list; the list's ability may be fixed or chosen. */
-export function offeredSpellLists(feat: FeatData): AdditionalSpells[] {
-  return (feat.additionalSpells ?? []).filter((grant) => typeof grant.name === "string");
+/** The named spell lists a grant set offers. Every named grant is a list; the list's ability may be fixed or chosen. */
+export function offeredSpellLists(grants: readonly AdditionalSpells[]): AdditionalSpells[] {
+  return grants.filter((grant) => typeof grant.name === "string");
 }
 
-/** The grant of the spell list the player picked for a feat, if one is picked. */
-export function pickedSpellListOf(character: Character, feat: FeatData): AdditionalSpells | undefined {
-  const picked = character.ruleChoices?.find((entry) => entry.id === featSpellListChoiceId(feat))?.picked[0];
+/** The grant of the spell list the player picked for an owner, if one is picked. */
+export function pickedSpellListOf(character: Character, owner: GrantOwner, grants: readonly AdditionalSpells[]): AdditionalSpells | undefined {
+  const picked = character.ruleChoices?.find((entry) => entry.id === spellListChoiceId(owner))?.picked[0];
   if (!picked) return undefined;
-  return offeredSpellLists(feat).find((grant) => grant.name === picked);
+  return offeredSpellLists(grants).find((grant) => grant.name === picked);
 }
 
-/** The pick slots of a grant, in order: its known `choose` objects, then its innate ones (at will, daily and per rest). */
-export function pickSlotsOf(grant: AdditionalSpells): PickSlot[] {
-  const found: Omit<PickSlot, "index">[] = [];
-  const take = (list: unknown, uses?: number) => {
-    for (const item of Array.isArray(list) ? list : []) {
-      if (!item || typeof item !== "object") continue;
-      const { choose, count } = item as { choose?: unknown; count?: unknown };
-      const usesField = uses !== undefined ? { uses } : {};
-      if (typeof choose === "string") {
-        // The ritual book is not modelled, so a ritual pick is left out without a notice (ADR 0017).
-        if (parseSpellFilter(choose).ritual) continue;
-        found.push({ count: countOf(count), filter: choose, ...usesField });
-      } else if (choose && typeof choose === "object" && Array.isArray((choose as { from?: unknown }).from)) {
-        const pick = choose as { from: unknown[]; count?: unknown };
-        found.push({ count: countOf(pick.count), from: pick.from.filter((name): name is string => typeof name === "string"), ...usesField });
-      }
-    }
-  };
-  for (const list of Object.values(grant.known ?? {})) take(list);
-  for (const group of Object.values(grant.innate ?? {})) {
-    if (!group || typeof group !== "object") continue;
-    take((group as Record<string, unknown>).will);
-    for (const key of ["daily", "rest"] as const) {
-      const byCount = (group as Record<string, Record<string, unknown> | undefined>)[key] ?? {};
-      for (const [count, list] of Object.entries(byCount)) take(list, usesOf(count));
+/**
+ * Every entry of a grant in its known and innate sections, in section and key order. A key is a character level for a race
+ * (the level the entry unlocks at) and `_` for a feat (no level gate beyond the feat itself). A list is at will unless it sits
+ * under a `daily` or `rest` key, which give its uses per Long Rest. A `choose` object is a pick. A `ritual` list is left out.
+ */
+export function grantEntries(grant: AdditionalSpells): GrantEntry[] {
+  const entries: GrantEntry[] = [];
+  for (const section of [grant.known, grant.innate]) {
+    if (!section || typeof section !== "object") continue;
+    for (const [key, value] of Object.entries(section)) {
+      const minCharacterLevel = key === "_" ? 1 : Number(key);
+      if (!Number.isFinite(minCharacterLevel)) continue;
+      collectEntries(value, minCharacterLevel, undefined, entries);
     }
   }
-  return found.map((slot, index) => ({ index, ...slot }));
+  return entries;
+}
+
+function collectEntries(value: unknown, minCharacterLevel: number, uses: number | undefined, out: GrantEntry[]): void {
+  const usesField = uses !== undefined ? { uses } : {};
+  if (typeof value === "string") {
+    out.push({ kind: "spell", name: value, minCharacterLevel, ...usesField });
+    return;
+  }
+  if (Array.isArray(value)) {
+    for (const item of value) collectEntries(item, minCharacterLevel, uses, out);
+    return;
+  }
+  if (!value || typeof value !== "object") return;
+  const record = value as Record<string, unknown>;
+  if ("choose" in record) {
+    const payload = record.choose;
+    if (typeof payload === "string") {
+      out.push({ kind: "pick", choose: payload, count: countOf(record.count), minCharacterLevel, ...usesField });
+    } else if (payload && typeof payload === "object" && Array.isArray((payload as { from?: unknown }).from)) {
+      const from = ((payload as { from: unknown[] }).from).filter((name): name is string => typeof name === "string");
+      out.push({ kind: "pick", choose: { from }, count: countOf((payload as { count?: unknown }).count), minCharacterLevel, ...usesField });
+    }
+    return;
+  }
+  for (const [key, inner] of Object.entries(record)) {
+    if (key === "daily" || key === "rest") {
+      if (inner && typeof inner === "object") {
+        for (const [count, names] of Object.entries(inner)) collectEntries(names, minCharacterLevel, usesOf(count), out);
+      }
+    } else if (key === "will" || key === "_") {
+      collectEntries(inner, minCharacterLevel, uses, out);
+    }
+  }
+}
+
+/**
+ * The pick slots of a grant, in order: the picks its known entries make, then those of its innate entries. A ritual pick is
+ * not a slot (the ritual book is not modelled, ADR 0017).
+ */
+export function pickSlotsOf(grant: AdditionalSpells): PickSlot[] {
+  const slots: PickSlot[] = [];
+  for (const entry of grantEntries(grant)) {
+    if (entry.kind !== "pick") continue;
+    const choose = entry.choose;
+    if (typeof choose === "string" && parseSpellFilter(choose).ritual) continue;
+    slots.push({
+      index: slots.length,
+      count: entry.count,
+      minCharacterLevel: entry.minCharacterLevel,
+      ...(typeof choose === "string" ? { filter: choose } : { from: choose.from }),
+      ...(entry.uses !== undefined ? { uses: entry.uses } : {}),
+    });
+  }
+  return slots;
 }
 
 /** How many spells a pick takes, as its `count` gives it; one when the source gives none. */
@@ -218,13 +337,13 @@ export function offeredSpellsOf(slot: PickSlot, compendium: Compendium, activeBo
 /** The spells the player picked for a slot that are still offered: a pick whose spell is switched off or no longer listed drops out. */
 export function chosenSpellsOf(
   character: Character,
-  feat: FeatData,
+  owner: GrantOwner,
   grant: AdditionalSpells,
   slot: PickSlot,
   compendium: Compendium,
   activeBooks?: readonly string[]
 ): SpellData[] {
-  const picked = character.ruleChoices?.find((entry) => entry.id === featSpellSlotChoiceId(feat, grant, slot))?.picked ?? [];
+  const picked = character.ruleChoices?.find((entry) => entry.id === grantSlotChoiceId(owner, grant, slot))?.picked ?? [];
   if (picked.length === 0) return [];
   const offered = offeredSpellsOf(slot, compendium, activeBooks);
   const chosen: SpellData[] = [];
@@ -263,134 +382,204 @@ function titleCase(text: string): string {
   return text.replace(/\b\w/g, (letter) => letter.toUpperCase());
 }
 
-/** The choice id of a feat's spell list pick. */
-export function featSpellListChoiceId(feat: FeatData): string {
-  return `${feat.source}__${FEAT_SPELLS_MARK}__${feat.name}__Spell List`;
+/** The choice id of an owner's spell list pick. */
+export function spellListChoiceId(owner: GrantOwner): string {
+  return `${ownerKey(owner)}__${SPELL_LIST_KEY}`;
 }
 
-/** The choice id of the casting ability the player picks for a feat, once for all its grants. */
-export function featAbilityChoiceId(feat: FeatData): string {
-  return `${feat.source}__${FEAT_SPELLS_MARK}__${feat.name}__${ABILITY_CHOICE_KEY}`;
+/** The choice id of the casting ability the player picks for an owner, once for all its grants. */
+export function abilityChoiceId(owner: GrantOwner): string {
+  return `${ownerKey(owner)}__${ABILITY_CHOICE_KEY}`;
 }
 
-/** The choice id of one slot of a grant: its feat, its list (or `-`), and its index. */
-export function featSpellSlotChoiceId(feat: FeatData, grant: AdditionalSpells, slot: PickSlot): string {
+/** The choice id of one slot of a grant: its owner, its list (or `-`), and its index. */
+export function grantSlotChoiceId(owner: GrantOwner, grant: AdditionalSpells, slot: PickSlot): string {
   const list = typeof grant.name === "string" ? grant.name : UNNAMED_GRANT_KEY;
-  return `${feat.source}__${FEAT_SPELLS_MARK}__${feat.name}__${list}__${slot.index}`;
+  return `${ownerKey(owner)}__${list}__${slot.index}`;
 }
 
-/** Whether a Rule Choice id is one of the feat spell picks this module issues. */
-export function isFeatSpellChoiceId(id: string): boolean {
-  return id.split("__")[1] === FEAT_SPELLS_MARK;
+/** Whether a Rule Choice id is one of the granted spell picks this module issues (a feat's or a race's). */
+export function isGrantSpellChoiceId(id: string): boolean {
+  const mark = id.split("__")[1];
+  return mark === OWNER_MARK.feat || mark === OWNER_MARK.race;
 }
 
 /**
- * The feat spell picks the character is offered now: the spell list choice of each feat that offers lists, the picks of
- * the list the player has chosen, the casting ability of each feat with a choice of ability, and the picks of each unnamed
- * grant. Offered spells come from the active books.
+ * The race or subrace whose spell grant the character has, read from the catalog. A subrace whose grants exist replaces the
+ * race's, as its trait takes the place of the race's Innate Magic, unless the subrace's option gate is shut (see
+ * GRANT_GATED_BY_OPTION). Undefined when neither gives spells.
  */
+export function raceGrantsOf(character: Character, races: RaceData[]): RaceGrants | undefined {
+  // A lineage replacement stands in for the race, as the catalog resolves it.
+  const lineage = character.lineageReplacement ? races.find((r) => r.name === character.lineageReplacement) : undefined;
+  if (lineage) return lineage.additionalSpells?.length ? { owner: raceOwner(lineage), grants: lineage.additionalSpells } : undefined;
+
+  const choice = character.race;
+  if (!choice) return undefined;
+  const race = races.find((r) => r.name === choice.name && (!choice.source || r.source === choice.source));
+  const subrace = race?.subraces?.find(
+    (s) => s.name === choice.subraceName && (!choice.subraceSource || s.source === choice.subraceSource)
+  );
+  if (subrace?.additionalSpells?.length && subraceGrantOpen(character, subrace)) {
+    return { owner: raceOwner(subrace), grants: subrace.additionalSpells };
+  }
+  if (race?.additionalSpells?.length) return { owner: raceOwner(race), grants: race.additionalSpells };
+  return undefined;
+}
+
+/** Whether every option gate on a subrace's choices is open: the player picked each gating option. */
+function subraceGrantOpen(character: Character, subrace: SubraceData): boolean {
+  for (const trait of subrace.traits ?? []) {
+    if (!trait.choice) continue;
+    const id = ruleChoiceId({ source: subrace.source, race: character.race?.name ?? "", subrace: { name: subrace.name }, trait: trait.name });
+    const gate = GRANT_GATED_BY_OPTION.get(id);
+    if (gate === undefined) continue;
+    const picked = character.ruleChoices?.find((entry) => entry.id === id)?.picked ?? [];
+    if (!picked.includes(gate)) return false;
+  }
+  return true;
+}
+
+/** Every owner of spell grants the character holds: its feats (with their records) and its race or subrace. */
+export function heldGrantsOf(character: Character, feats: FeatData[], races: RaceData[]): HeldGrants[] {
+  const held: HeldGrants[] = [];
+  for (const { feat } of heldFeatsOf(character, feats)) {
+    if (feat.additionalSpells) held.push({ owner: featOwner(feat), grants: feat.additionalSpells, feat });
+  }
+  const race = raceGrantsOf(character, races);
+  if (race) held.push({ owner: race.owner, grants: race.grants });
+  return held;
+}
+
+/** The feat-spell Rule Choices the character is offered now, for every feat it holds. Offered spells come from the active books. */
 export function featSpellRuleChoices(character: Character, compendium: Compendium, activeBooks?: readonly string[]): AvailableRuleChoice[] {
   const out: AvailableRuleChoice[] = [];
   for (const { feat } of heldFeatsOf(character, compendium.for(activeBooks).feats())) {
-    if (!feat.additionalSpells) continue;
-    const lists = offeredSpellLists(feat);
-    if (lists.length > 0) {
-      out.push({
-        id: featSpellListChoiceId(feat),
-        traitName: `${feat.name} Spell List`,
-        choose: 1,
-        level: 1,
-        effectLevel: 1,
-        origin: "feat",
-        options: lists.map((grant) => {
-          const fixed = chosenAbilityOptionsOf(grant).length === 0 ? fixedGrantAbility(grant) : undefined;
-          return {
-            name: grant.name ?? "",
-            description: fixed ? `Casting ability: ${fixed.toUpperCase()}` : "Casting ability: chosen for the feat",
-            label: spellListOptionLabel(grant, compendium, activeBooks),
-          };
-        }),
-      });
-      const picked = pickedSpellListOf(character, feat);
-      if (picked) out.push(...slotChoicesOf(feat, picked, compendium, activeBooks));
-    }
-    const abilities = featAbilityOptionsOf(feat);
-    if (abilities.length > 0) {
-      out.push({
-        id: featAbilityChoiceId(feat),
-        traitName: `${feat.name} ${ABILITY_CHOICE_KEY}`,
-        choose: 1,
-        level: 1,
-        effectLevel: 1,
-        origin: "feat",
-        options: abilities.map((key) => ({ name: key, description: `Casting ability: ${ABILITY_NAMES[key]}`, label: ABILITY_NAMES[key] })),
-      });
-    }
-    for (const grant of feat.additionalSpells) {
-      if (typeof grant.name === "string") continue;
-      out.push(...slotChoicesOf(feat, grant, compendium, activeBooks));
-    }
+    if (feat.additionalSpells) out.push(...grantChoicesOf(character, featOwner(feat), feat.additionalSpells, compendium, activeBooks));
   }
   return out;
 }
 
-/** The pick choices of one grant: one per slot, offering the spells the slot chooses from. */
-function slotChoicesOf(feat: FeatData, grant: AdditionalSpells, compendium: Compendium, activeBooks?: readonly string[]): AvailableRuleChoice[] {
-  return pickSlotsOf(grant).map((slot) => {
-    const cantrip = slot.filter !== undefined && parseSpellFilter(slot.filter).level === 0;
-    return {
-      id: featSpellSlotChoiceId(feat, grant, slot),
-      traitName: `${feat.name} ${cantrip ? "Cantrip" : "Spell"}`,
-      choose: slot.count,
+/**
+ * The race spell Rule Choices the character is offered now: its casting ability when the race lets the player choose it, and
+ * the picks of its grant (each from the level it unlocks at). Offered spells come from the active books.
+ */
+export function raceSpellRuleChoices(character: Character, compendium: Compendium, activeBooks?: readonly string[]): AvailableRuleChoice[] {
+  const race = raceGrantsOf(character, compendium.for(activeBooks).races());
+  return race ? grantChoicesOf(character, race.owner, race.grants, compendium, activeBooks) : [];
+}
+
+/** The Rule Choices one owner's grants offer: its spell list, the picks of the list chosen, its casting ability and its unnamed picks. */
+function grantChoicesOf(
+  character: Character,
+  owner: GrantOwner,
+  grants: AdditionalSpells[],
+  compendium: Compendium,
+  activeBooks?: readonly string[]
+): AvailableRuleChoice[] {
+  const out: AvailableRuleChoice[] = [];
+  const lists = offeredSpellLists(grants);
+  if (lists.length > 0) {
+    out.push({
+      id: spellListChoiceId(owner),
+      traitName: `${owner.name} Spell List`,
+      choose: 1,
       level: 1,
       effectLevel: 1,
-      origin: "feat",
-      options: offeredSpellsOf(slot, compendium, activeBooks).map((spell) => ({
-        name: spell.name,
-        description: `${spell.level === 0 ? "Cantrip" : `Level ${spell.level}`}, ${spell.school}`,
-      })),
-    };
-  });
+      origin: originOf(owner),
+      options: lists.map((grant) => {
+        const fixed = chosenAbilityOptionsOf(grant).length === 0 ? fixedGrantAbility(grant) : undefined;
+        return {
+          name: grant.name ?? "",
+          description: fixed ? `Casting ability: ${fixed.toUpperCase()}` : "Casting ability: chosen for the feat",
+          label: spellListOptionLabel(grant, compendium, activeBooks),
+        };
+      }),
+    });
+    const picked = pickedSpellListOf(character, owner, grants);
+    if (picked) out.push(...slotChoicesOf(character, owner, picked, compendium, activeBooks));
+  }
+  const abilities = abilityOptionsOfGrants(grants);
+  if (abilities.length > 0) {
+    out.push({
+      id: abilityChoiceId(owner),
+      traitName: `${owner.name} ${ABILITY_CHOICE_KEY}`,
+      choose: 1,
+      level: 1,
+      effectLevel: 1,
+      origin: originOf(owner),
+      options: abilities.map((key) => ({ name: key, description: `Casting ability: ${ABILITY_NAMES[key]}`, label: ABILITY_NAMES[key] })),
+    });
+  }
+  for (const grant of grants) {
+    if (typeof grant.name === "string") continue;
+    out.push(...slotChoicesOf(character, owner, grant, compendium, activeBooks));
+  }
+  return out;
+}
+
+/** The pick choices of one grant: one per slot the character has reached, offering the spells the slot chooses from. */
+function slotChoicesOf(character: Character, owner: GrantOwner, grant: AdditionalSpells, compendium: Compendium, activeBooks?: readonly string[]): AvailableRuleChoice[] {
+  const level = totalLevel(character);
+  return pickSlotsOf(grant)
+    .filter((slot) => slot.minCharacterLevel <= level)
+    .map((slot) => {
+      const cantrip = slot.filter !== undefined && parseSpellFilter(slot.filter).level === 0;
+      return {
+        id: grantSlotChoiceId(owner, grant, slot),
+        traitName: `${owner.name} ${cantrip ? "Cantrip" : "Spell"}`,
+        choose: slot.count,
+        level: slot.minCharacterLevel,
+        effectLevel: slot.minCharacterLevel,
+        origin: originOf(owner),
+        options: offeredSpellsOf(slot, compendium, activeBooks).map((spell) => ({
+          name: spell.name,
+          description: `${spell.level === 0 ? "Cantrip" : `Level ${spell.level}`}, ${spell.school}`,
+        })),
+      };
+    });
 }
 
 /**
- * Releases the feat spell picks that no longer hold, with a review notice for each release. A pick is released when its
- * feat is no longer held, when its list is no longer the one picked, or (with the active books given) when the spell is no
+ * Releases the granted spell picks that no longer hold, with a review notice for each release. A pick is released when its
+ * owner is no longer held, when its list is no longer the one picked, or (with the active books given) when the spell is no
  * longer offered. Picks of other choices are untouched. Returns the character itself when nothing changes.
  */
 export function pruneInvalidFeatSpellPicks(character: Character, compendium: Compendium, activeBooks?: readonly string[]): Character {
   const entries = character.ruleChoices ?? [];
-  if (!entries.some((entry) => isFeatSpellChoiceId(entry.id))) return character;
+  if (!entries.some((entry) => isGrantSpellChoiceId(entry.id))) return character;
 
-  const held = heldFeatsOf(character, compendium.for().feats());
-  const heldKeys = new Set(held.map(({ feat }) => `${feat.source}__${feat.name}`));
-  // The offered options of each pick the character's held feats still make, keyed by the choice id.
+  const held = heldGrantsOf(character, compendium.for().feats(), compendium.for().races());
+  const heldKeys = new Set(held.map(({ owner }) => ownerKey(owner)));
+  // The offered options of each pick the character's owners still make, keyed by the choice id.
   const valid = new Map<string, string[] | undefined>();
-  for (const { feat } of held) {
-    if (!feat.additionalSpells) continue;
-    const lists = offeredSpellLists(feat);
-    if (lists.length > 0) {
-      valid.set(featSpellListChoiceId(feat), undefined);
-      const picked = pickedSpellListOf(character, feat);
-      if (picked) addSlots(valid, feat, picked, compendium, activeBooks);
+  for (const { owner, grants, feat } of held) {
+    if (feat && offeredSpellLists(grants).length > 0) {
+      valid.set(spellListChoiceId(owner), undefined);
+      const picked = pickedSpellListOf(character, owner, grants);
+      if (picked) addSlots(valid, character, owner, picked, compendium, activeBooks);
     }
-    const abilities = featAbilityOptionsOf(feat);
-    if (abilities.length > 0) valid.set(featAbilityChoiceId(feat), abilities);
-    for (const grant of feat.additionalSpells) {
-      if (typeof grant.name !== "string") addSlots(valid, feat, grant, compendium, activeBooks);
+    const abilities = abilityOptionsOfGrants(grants);
+    if (abilities.length > 0) valid.set(abilityChoiceId(owner), abilities);
+    for (const grant of grants) {
+      if (typeof grant.name !== "string") addSlots(valid, character, owner, grant, compendium, activeBooks);
     }
   }
 
   const notices: string[] = [];
   const kept: RuleChoiceEntry[] = [];
   for (const entry of entries) {
-    if (!isFeatSpellChoiceId(entry.id)) {
+    if (!isGrantSpellChoiceId(entry.id)) {
       kept.push(entry);
       continue;
     }
     if (!valid.has(entry.id)) {
-      const [source, , featName] = entry.id.split("__");
-      const reason = heldKeys.has(`${source}__${featName}`) ? "spell list changed" : "feat no longer held";
+      const [source, mark, name] = entry.id.split("__");
+      const isFeat = mark === OWNER_MARK.feat;
+      const heldOwner = heldKeys.has(`${source}__${mark}__${name}`);
+      const reason = !heldOwner
+        ? (isFeat ? "feat no longer held" : "ancestry no longer grants it")
+        : (isFeat ? "spell list changed" : "no longer offered");
       notices.push(`${entry.trait} removed: ${reason}`);
       continue;
     }
@@ -410,11 +599,20 @@ export function pruneInvalidFeatSpellPicks(character: Character, compendium: Com
   };
 }
 
-/** Records, under each slot's choice id, the spells that slot offers. */
-function addSlots(valid: Map<string, string[] | undefined>, feat: FeatData, grant: AdditionalSpells, compendium: Compendium, activeBooks?: readonly string[]) {
+/** Records, under each slot's choice id, the spells that slot offers at the character's level. */
+function addSlots(
+  valid: Map<string, string[] | undefined>,
+  character: Character,
+  owner: GrantOwner,
+  grant: AdditionalSpells,
+  compendium: Compendium,
+  activeBooks?: readonly string[]
+) {
+  const level = totalLevel(character);
   for (const slot of pickSlotsOf(grant)) {
+    if (slot.minCharacterLevel > level) continue;
     valid.set(
-      featSpellSlotChoiceId(feat, grant, slot),
+      grantSlotChoiceId(owner, grant, slot),
       offeredSpellsOf(slot, compendium, activeBooks).map((spell) => spell.name)
     );
   }
@@ -427,6 +625,60 @@ export function featSpellChoicesOf(
   compendium: Compendium,
   activeBooks?: readonly string[]
 ): AvailableRuleChoice[] {
-  const prefix = `${feat.source}__${FEAT_SPELLS_MARK}__${feat.name}__`;
+  const prefix = `${ownerKey(featOwner(feat))}__`;
   return featSpellRuleChoices(character, compendium, activeBooks).filter((choice) => choice.id.startsWith(prefix));
+}
+
+/**
+ * The Rule Choice id a race's legacy High Elf cantrip was saved under (the old race table's pick, ADR 0017). Its value is frozen:
+ * the migration reads it, and no new pick is saved under it.
+ */
+export const LEGACY_HIGH_ELF_CANTRIP_CHOICE_ID = "PHB__Elf__PHB__High Elf__Cantrip";
+
+/**
+ * Moves a saved High Elf or Half-Elf descent wizard cantrip to the race's own pick (ADR 0017). The cantrip was saved under the
+ * legacy Rule Choice id, or as a known spell under the legacy `racial__innate` owner key. Both are released. The cantrip moves to
+ * the race's wizard cantrip slot when the character's race still grants one. Otherwise it is released with a review notice. A
+ * cantrip the offered spells no longer include is released by the reconciler, on the next open of the character.
+ */
+export function migrateLegacyRacialCantrip(character: Character, races: RaceData[]): Character {
+  const legacyEntries = (character.ruleChoices ?? []).filter((entry) => entry.id === LEGACY_HIGH_ELF_CANTRIP_CHOICE_ID);
+  const legacyKnown = (character.knownSpells ?? []).filter((spell) => spell.ownerKey === "racial__innate");
+  if (legacyEntries.length === 0 && legacyKnown.length === 0) return character;
+
+  const cleaned: Character = {
+    ...character,
+    ruleChoices: (character.ruleChoices ?? []).filter((entry) => entry.id !== LEGACY_HIGH_ELF_CANTRIP_CHOICE_ID),
+    knownSpells: (character.knownSpells ?? []).filter((spell) => spell.ownerKey !== "racial__innate"),
+  };
+  const picked = legacyEntries.flatMap((entry) => entry.picked)[0] ?? legacyKnown[0]?.name;
+  if (!picked) return cleaned;
+
+  const race = raceGrantsOf(cleaned, races);
+  const slot = race ? wizardCantripSlotOf(race.grants) : undefined;
+  if (!race || !slot) {
+    const notice = "High Elf Cantrip removed: the ancestry no longer grants a wizard cantrip";
+    return { ...cleaned, needsReview: Array.from(new Set([...(cleaned.needsReview ?? []), notice])) };
+  }
+  const entry: RuleChoiceEntry = {
+    id: grantSlotChoiceId(race.owner, slot.grant, slot.slot),
+    trait: `${race.owner.name} Cantrip`,
+    origin: "race",
+    choose: 1,
+    from: [picked],
+    picked: [picked],
+  };
+  return { ...cleaned, ruleChoices: [...(cleaned.ruleChoices ?? []), entry] };
+}
+
+/** The pick of a grant that takes one wizard cantrip, with the grant it sits in. */
+function wizardCantripSlotOf(grants: AdditionalSpells[]): { grant: AdditionalSpells; slot: PickSlot } | undefined {
+  for (const grant of grants) {
+    for (const slot of pickSlotsOf(grant)) {
+      if (!slot.filter) continue;
+      const parsed = parseSpellFilter(slot.filter);
+      if (parsed.level === 0 && parsed.classes.some((cls) => cls.toLowerCase() === "wizard")) return { grant, slot };
+    }
+  }
+  return undefined;
 }

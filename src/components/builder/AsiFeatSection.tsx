@@ -11,11 +11,13 @@ import {
   ELDRITCH_ADEPT_CHOICE_ID,
   FIGHTING_INITIATE_CHOICE_ID,
   MARTIAL_ADEPT_CHOICE_ID,
+  featSpellChoicesOf,
   fightingStyleRuleChoices,
   pickRuleChoice,
   warlockInvocationChoices,
 } from "../../rules/ruleChoices";
-import { FeatSpellPicks } from "./FeatSpellPicks";
+import { currentCompendium } from "../../services/compendium";
+import { GrantedSpellPicks } from "./GrantedSpellPicks";
 import { Badge } from "../ui/Badge";
 import { Button } from "../ui/Button";
 import { Card } from "../ui/Card";
@@ -850,11 +852,10 @@ export const AsiFeatSection: React.FC<AsiFeatSectionProps> = ({
                 })()}
 
                 {!isAsi && sel.featName && (
-                  <FeatSpellPicks
+                  <GrantedSpellPicks
                     character={character}
-                    feat={{ name: sel.featName, source: sel.featSource || "PHB" }}
+                    choices={featSpellChoicesOf(character, { name: sel.featName, source: sel.featSource || "PHB" }, currentCompendium(), activeBooks)}
                     onUpdate={onUpdate}
-                    activeBooks={activeBooks}
                     theme={theme}
                   />
                 )}

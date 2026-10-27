@@ -2,7 +2,6 @@ import type { AbilityKey, AbilityScores, AsiSelection, Character } from "../type
 import { effectiveScores, hasFeat } from "./abilities.ts";
 import { totalLevel } from "./proficiencies.ts";
 import { isCastingClass } from "./spellcasting.ts";
-import { getInnateSpellProfile } from "./innateMagic.ts";
 import { grantedSpellSources } from "./grantedSpells.ts";
 import { proficiencySheet } from "./proficiencySheet.ts";
 import type { CharacterCatalogs } from "./catalogs.ts";
@@ -76,7 +75,7 @@ export function validateFeatPrerequisites(
   if (/ability to cast at least one spell/i.test(prereq)) {
     const canCastClass = (character.classes || []).some((c) => isCastingClass(c));
     const hasKnown = (character.knownSpells || []).length > 0;
-    const hasInnate = getInnateSpellProfile(character) != null || grantedSpellSources(character, options.catalogs).length > 0;
+    const hasInnate = grantedSpellSources(character, options.catalogs).length > 0;
     if (!canCastClass && !hasKnown && !hasInnate) {
       return { met: false, reason: "Requires the ability to cast at least one spell" };
     }

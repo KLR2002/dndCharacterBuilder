@@ -1,11 +1,9 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import type { Character } from "../src/types/character.ts";
-import { getInnateSpellProfile } from "../src/rules/innateMagic.ts";
 import { applyLongRest } from "../src/rules/rest.ts";
 
-// Race and subrace spells come from the Catalog (ADR 0017): see grantedRaceSpells.test.ts and liveCatalog.test.ts. Only the
-// High Elf and half-elf descent cantrip is read here, until ticket 07 moves it.
+// Race and subrace spells come from the Catalog (ADR 0017): see grantedRaceSpells.test.ts, grantedRacePicks.test.ts and liveCatalog.test.ts.
 
 function makeChar(overrides: Partial<Character> = {}): Character {
   return {
@@ -76,95 +74,6 @@ describe("Innate Magic Rules", () => {
       // Take long rest
       char = applyLongRest(char);
       assert.equal(char.resourceCounters["innate_spell_faerie_fire"].current, 1);
-    });
-  });
-
-  describe("High Elf Cantrip", () => {
-    it("includes chosen high elf cantrip in innate profile with INT ability", () => {
-      const highElf = makeChar({
-        race: { name: "Elf", subraceName: "High Elf", source: "PHB" },
-        ruleChoices: [
-          {
-            id: "PHB__Elf__PHB__High Elf__Cantrip",
-            origin: "High Elf",
-            choose: 1,
-            from: [],
-            picked: ["Fire Bolt"],
-          },
-        ],
-      });
-      const profile = getInnateSpellProfile(highElf);
-      assert.ok(profile);
-      assert.equal(profile?.ability, "int");
-      assert.ok(profile?.spells.some(s => s.name === "Fire Bolt"));
-    });
-
-    it("matches PHB subrace name 'High' as well as 'High Elf'", () => {
-      const highElfPhb = makeChar({
-        race: { name: "Elf", subraceName: "High", source: "PHB" },
-        ruleChoices: [
-          {
-            id: "PHB__Elf__PHB__High Elf__Cantrip",
-            origin: "High Elf",
-            choose: 1,
-            from: [],
-            picked: ["Prestidigitation"],
-          },
-        ],
-      });
-      const profile = getInnateSpellProfile(highElfPhb);
-      assert.ok(profile);
-      assert.ok(profile?.spells.some(s => s.name === "Prestidigitation"));
-    });
-
-    it("Half-Elf with Moon Elf or Sun Elf Descent gets cantrip when Cantrip feature is chosen", () => {
-      const halfElf = makeChar({
-        race: { name: "Half-Elf", subraceName: "Moon Elf or Sun Elf Descent", source: "PHB" },
-        ruleChoices: [
-          {
-            id: "SCAG__Half-Elf__Moon Elf or Sun Elf Descent__Variant Feature (Choose 1)",
-            origin: "race",
-            choose: 1,
-            from: ["Skill Versatility", "Elf Weapon Training", "Cantrip"],
-            picked: ["Cantrip"],
-          },
-          {
-            id: "PHB__Elf__PHB__High Elf__Cantrip",
-            origin: "race",
-            choose: 1,
-            from: [],
-            picked: ["Minor Illusion"],
-          },
-        ],
-      });
-      const profile = getInnateSpellProfile(halfElf);
-      assert.ok(profile);
-      assert.equal(profile?.ability, "int");
-      assert.ok(profile?.spells.some(s => s.name === "Minor Illusion"));
-    });
-
-    it("Half-Elf with Moon Elf or Sun Elf Descent does NOT get cantrip when Skill Versatility is chosen", () => {
-      const halfElf = makeChar({
-        race: { name: "Half-Elf", subraceName: "Moon Elf or Sun Elf Descent", source: "PHB" },
-        ruleChoices: [
-          {
-            id: "SCAG__Half-Elf__Moon Elf or Sun Elf Descent__Variant Feature (Choose 1)",
-            origin: "race",
-            choose: 1,
-            from: ["Skill Versatility", "Elf Weapon Training", "Cantrip"],
-            picked: ["Skill Versatility"],
-          },
-          {
-            id: "PHB__Elf__PHB__High Elf__Cantrip",
-            origin: "race",
-            choose: 1,
-            from: [],
-            picked: ["Minor Illusion"],
-          },
-        ],
-      });
-      const profile = getInnateSpellProfile(halfElf);
-      assert.equal(profile, null);
     });
   });
 });

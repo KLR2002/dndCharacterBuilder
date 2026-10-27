@@ -1,24 +1,22 @@
 import React from "react";
 import { Text, TouchableOpacity, View } from "react-native";
 import type { Character } from "../../types/character";
-import { currentCompendium } from "../../services/compendium";
-import { featSpellChoicesOf, pickRuleChoice } from "../../rules/ruleChoices";
+import { pickRuleChoice, type AvailableRuleChoice } from "../../rules/ruleChoices";
 import { builderStyles as styles } from "./builderStyles";
 
-export interface FeatSpellPicksProps {
+export interface GrantedSpellPicksProps {
   character: Character;
-  feat: { name: string; source: string };
+  /** The picks to show: a feat's (featSpellChoicesOf) or a race's (raceSpellRuleChoices). */
+  choices: AvailableRuleChoice[];
   onUpdate: (updater: (cur: Character) => Character) => void;
-  activeBooks?: string[];
   theme: any;
 }
 
 /**
- * The spell picks a feat grants: its spell list when it offers several, then the spells of the list the player chose. Each
- * tap saves the pick as a rule choice. Renders nothing for a feat that grants no picks.
+ * The spell picks a granted spell source asks for: a feat's spell list when it offers several, then the spells of the list the
+ * player chose, and a casting ability the player chooses. Each tap saves the pick as a rule choice. Renders nothing without picks.
  */
-export const FeatSpellPicks: React.FC<FeatSpellPicksProps> = ({ character, feat, onUpdate, activeBooks, theme }) => {
-  const choices = featSpellChoicesOf(character, feat, currentCompendium(), activeBooks);
+export const GrantedSpellPicks: React.FC<GrantedSpellPicksProps> = ({ character, choices, onUpdate, theme }) => {
   if (choices.length === 0) return null;
 
   return (

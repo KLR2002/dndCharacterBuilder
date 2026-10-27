@@ -3,6 +3,7 @@ import type { ClassData, RaceData } from "../types/dnd5e.ts";
 import { spellAbilityOf } from "./classData.ts";
 import { totalLevel } from "./proficiencies.ts";
 import { availableRuleChoices } from "./ruleChoices.ts";
+import { migrateLegacyRacialCantrip } from "./choices/featSpells.ts";
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return value !== null && typeof value === "object" && !Array.isArray(value);
@@ -90,7 +91,7 @@ export function migrateCharacter(raw: unknown, raceCatalog?: RaceData[], classCa
     }
   }
 
-  return {
+  const migrated: Character = {
     ...c,
     ...(needsReview.size ? { needsReview: [...needsReview] } : {}),
     ruleChoices,
@@ -104,4 +105,6 @@ export function migrateCharacter(raw: unknown, raceCatalog?: RaceData[], classCa
     preparedSpells: prepared.map(key => key.split("__").length < 4 ? `${key}__${ownerKey}` : key),
     pactSlotsUsed: c.pactSlotsUsed ?? c.usedPactSlots ?? 0,
   };
+  // The High Elf and Half-Elf cantrip moves to the race's own pick once the catalog says what the race grants.
+  return raceCatalog ? migrateLegacyRacialCantrip(migrated, raceCatalog) : migrated;
 }
