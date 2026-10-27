@@ -26,13 +26,8 @@ import {
 } from "./choices/featSpells.ts";
 import { currentCompendium, type Compendium } from "../services/compendium.ts";
 
-/**
- * Counter ids the old race table saved under, for the spells whose id does not follow the slug of their name. Keeping them
- * means a saved use of the spell survives the move to the Catalog.
- */
-const LEGACY_RACE_COUNTER_IDS: Record<string, string> = {
-  "create or destroy water": "innate_spell_create_water",
-};
+/** The prefix of a race's or subrace's daily or per-rest counter id. A feat's counters use their own prefix. */
+const INNATE_SPELL_COUNTER_PREFIX = "innate_spell_";
 
 /** The ability modifiers and proficiency bonus a source's save DC and attack bonus are read from. */
 interface GrantedSpellScores {
@@ -220,12 +215,38 @@ function innateEntry(
 
 /**
  * The counter id of a daily or per-rest spell. A feat's is unique to the feat, the list it was picked from (when named) and the
- * spell: two feats, or two lists of one feat, never share a counter. A race's is the spell's own id, the one the old race table
- * saved, so a saved use survives the move.
+ * spell: two feats, or two lists of one feat, never share a counter. A race's is the spell's own id; a saved use under an older
+ * id moves to it (moveLegacyInnateCounters).
  */
 function counterId(owner: GrantOwner, spellName: string, entryName?: string): string {
-  if (owner.kind === "race") {
-    return LEGACY_RACE_COUNTER_IDS[spellName.toLowerCase()] ?? `innate_spell_${slugOf(spellName)}`;
-  }
+  if (owner.kind === "race") return `${INNATE_SPELL_COUNTER_PREFIX}${slugOf(spellName)}`;
   return featCounterId(owner.name, entryName, spellName);
+}
+
+/**
+ * Moves each saved race or subrace counter that no current source owns to the id of the spell it names (ADR 0017). The counter
+ * carries its spell's name ("Innate: <spell>"), so an id an older release saved under is found by name, not by a table of old
+ * ids. A counter whose spell no current source gives, or whose current id is already taken, is left as it is.
+ */
+export function moveLegacyInnateCounters(character: Character, compendium: Compendium, activeBooks?: string[]): Character {
+  const counters = character.resourceCounters ?? {};
+  const legacyKeys = Object.keys(counters).filter((key) => key.startsWith(INNATE_SPELL_COUNTER_PREFIX));
+  if (legacyKeys.length === 0) return character;
+
+  const currentIds = new Map<string, string>();
+  for (const source of grantedSpellSources(character, { compendium, activeBooks })) {
+    for (const spell of source.spells) {
+      if (spell.resourceCounterId) currentIds.set(`innate: ${spell.name}`.toLowerCase(), spell.resourceCounterId);
+    }
+  }
+  const next = { ...counters };
+  let moved = false;
+  for (const key of legacyKeys) {
+    const target = currentIds.get(counters[key].name.toLowerCase());
+    if (!target || target === key || next[target]) continue;
+    next[target] = { ...counters[key], id: target };
+    delete next[key];
+    moved = true;
+  }
+  return moved ? { ...character, resourceCounters: next } : character;
 }

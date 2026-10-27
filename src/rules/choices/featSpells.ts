@@ -724,32 +724,41 @@ export function featSpellChoicesOf(
 }
 
 /**
- * The Rule Choice id a race's legacy High Elf cantrip was saved under (the old race table's pick, ADR 0017). Its value is frozen:
- * the migration reads it, and no new pick is saved under it.
+ * The Rule Choice id the old race table saved a High Elf cantrip under (ADR 0017). It is the documented example of the legacy
+ * ids the migration reads: see isLegacyHighElfCantripId. No new pick is saved under it.
  */
 export const LEGACY_HIGH_ELF_CANTRIP_CHOICE_ID = "PHB__Elf__PHB__High Elf__Cantrip";
 
 /**
- * Moves a saved High Elf or Half-Elf descent wizard cantrip to the race's own pick (ADR 0017). The cantrip was saved under the
- * legacy Rule Choice id, or as a known spell under the legacy `racial__innate` owner key. Both are released. The cantrip moves to
- * the race's wizard cantrip slot when the character's race still grants one. Otherwise it is released with a review notice. A
- * cantrip the offered spells no longer include is released by the reconciler, on the next open of the character.
+ * Whether a Rule Choice id is a legacy High Elf cantrip pick, saved from any source by the old race table. The old reader matched
+ * any id that names High Elf, so this does too; a granted spell's own pick id is never one.
+ */
+function isLegacyHighElfCantripId(id: string): boolean {
+  return !isGrantSpellChoiceId(id) && id.includes("High Elf");
+}
+
+/**
+ * Moves a saved High Elf or Half-Elf descent cantrip to the race's own pick (ADR 0017). The cantrip was saved under a legacy Rule
+ * Choice id, or as a known spell under the legacy `racial__innate` owner key. Both are released. The cantrip moves to the race's
+ * first cantrip slot that takes its spell from a class list, whatever the class, when the character's race still grants one.
+ * Otherwise it is released with a review notice. A cantrip the offered spells no longer include is released by the reconciler,
+ * on the next open of the character.
  */
 export function migrateLegacyRacialCantrip(character: Character, races: RaceData[]): Character {
-  const legacyEntries = (character.ruleChoices ?? []).filter((entry) => entry.id === LEGACY_HIGH_ELF_CANTRIP_CHOICE_ID);
+  const legacyEntries = (character.ruleChoices ?? []).filter((entry) => isLegacyHighElfCantripId(entry.id));
   const legacyKnown = (character.knownSpells ?? []).filter((spell) => spell.ownerKey === "racial__innate");
   if (legacyEntries.length === 0 && legacyKnown.length === 0) return character;
 
   const cleaned: Character = {
     ...character,
-    ruleChoices: (character.ruleChoices ?? []).filter((entry) => entry.id !== LEGACY_HIGH_ELF_CANTRIP_CHOICE_ID),
+    ruleChoices: (character.ruleChoices ?? []).filter((entry) => !isLegacyHighElfCantripId(entry.id)),
     knownSpells: (character.knownSpells ?? []).filter((spell) => spell.ownerKey !== "racial__innate"),
   };
   const picked = legacyEntries.flatMap((entry) => entry.picked)[0] ?? legacyKnown[0]?.name;
   if (!picked) return cleaned;
 
   const race = raceGrantsOf(cleaned, races);
-  const slot = race ? wizardCantripSlotOf(race.grants) : undefined;
+  const slot = race ? cantripSlotOf(race.grants) : undefined;
   if (!race || !slot) {
     const notice = "High Elf Cantrip removed: the ancestry no longer grants a wizard cantrip";
     return { ...cleaned, needsReview: Array.from(new Set([...(cleaned.needsReview ?? []), notice])) };
@@ -765,13 +774,13 @@ export function migrateLegacyRacialCantrip(character: Character, races: RaceData
   return { ...cleaned, ruleChoices: [...(cleaned.ruleChoices ?? []), entry] };
 }
 
-/** The pick of a grant that takes one wizard cantrip, with the grant it sits in. */
-function wizardCantripSlotOf(grants: AdditionalSpells[]): { grant: AdditionalSpells; slot: PickSlot } | undefined {
+/** The first pick of the grants that takes one cantrip from a named class's list, with the grant it sits in. */
+function cantripSlotOf(grants: AdditionalSpells[]): { grant: AdditionalSpells; slot: PickSlot } | undefined {
   for (const grant of grants) {
     for (const slot of pickSlotsOf(grant)) {
       if (!slot.filter) continue;
       const parsed = parseSpellFilter(slot.filter);
-      if (parsed.level === 0 && parsed.classes.some((cls) => cls.toLowerCase() === "wizard")) return { grant, slot };
+      if (parsed.level === 0 && parsed.classes.length > 0) return { grant, slot };
     }
   }
   return undefined;

@@ -2,11 +2,12 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { evaluateCharacter } from "../src/rules/characterEvaluation.ts";
 import { migrateCharacter } from "../src/rules/migrateCharacter.ts";
-import { reconcileForActiveBooks } from "../src/rules/characterReconciler.ts";
+import { reconcile, reconcileForActiveBooks } from "../src/rules/characterReconciler.ts";
 import type { Character, CharacterClass } from "../src/types/character.ts";
 import type { InnateSpellProfile } from "../src/rules/innateMagic.ts";
 import type { RaceData } from "../src/types/dnd5e.ts";
 import { inMemoryCompendium, loadTestCatalogs, makeChar } from "./testUtils.ts";
+import { grantedSpellClasses, grantedSpellRaces, grantedSpellSpells } from "./grantedSpellsFixture.ts";
 
 // A character saved before race spell picks moved to the Rule Choice storage keeps its High Elf or
 // Half-Elf cantrip on load. The catalogs are the ones the repo tracks; the names are the source's own, no prose is added.
@@ -74,6 +75,40 @@ test("a legacy Half-Elf descent cantrip moves to the subrace's pick, and its car
   const loaded = migrateCharacter(saved, races, tracked.classes);
   const card = cardTitled(evaluateCharacter(loaded, { compendium }).grantedSpellSources, "Moon Elf or Sun Elf Descent");
   assert.ok(card?.spells.some((spell) => spell.name === "Shocking Grasp" && spell.isCantrip));
+});
+
+test("a legacy cantrip moves to the race's cantrip pick whatever class that pick takes", () => {
+  const sampleRaces = grantedSpellRaces();
+  const sampleCompendium = inMemoryCompendium({ classes: grantedSpellClasses(), races: sampleRaces, spells: grantedSpellSpells() });
+  const saved = makeChar({
+    classes: [{ className: "Sample Mage", source: "TST", level: 1 }],
+    race: { name: "Sample Gifted", source: "TST" },
+    ruleChoices: [legacyPick("Sample Ember")],
+  });
+  const loaded = migrateCharacter(saved, sampleRaces, grantedSpellClasses());
+  const card = cardTitled(evaluateCharacter(loaded, { compendium: sampleCompendium }).grantedSpellSources, "Sample Gifted");
+  assert.ok(card?.spells.some((spell) => spell.name === "Sample Ember" && spell.isCantrip), "the cantrip is listed at will on the race's card");
+});
+
+test("a legacy High Elf cantrip saved under another source's id moves to the race's pick too", () => {
+  const saved = highElf({ ruleChoices: [{ ...legacyPick("Fire Bolt"), id: "XGE__Elf__XGE__High Elf__Cantrip" }] });
+  const loaded = migrateCharacter(saved, races, tracked.classes);
+  const card = cardTitled(evaluateCharacter(loaded, { compendium }).grantedSpellSources, "High");
+  assert.ok(card?.spells.some((spell) => spell.name === "Fire Bolt" && spell.isCantrip), "the cantrip is listed on the race's card");
+  assert.equal(loaded.ruleChoices?.some((entry) => entry.id.includes("High Elf")), false, "the legacy entry is released");
+});
+
+test("a saved use of a race's spell under the counter id an older release gave it moves to the spell's current id", () => {
+  const waterGenasi = makeChar({
+    classes: [{ className: "Wizard", source: "PHB", level: 3 }],
+    race: { name: "Genasi", source: "EEPC", subraceName: "Water", subraceSource: "EEPC" },
+    resourceCounters: {
+      innate_spell_create_water: { id: "innate_spell_create_water", name: "Innate: Create or Destroy Water", current: 0, max: 1, resetOn: "long" },
+    },
+  });
+  const opened = reconcile(waterGenasi, compendium);
+  assert.equal(opened.resourceCounters?.innate_spell_create_water, undefined, "the counter under the old id is gone");
+  assert.equal(opened.resourceCounters?.innate_spell_create_or_destroy_water?.current, 0, "the use is kept under the spell's own id");
 });
 
 test("a legacy cantrip the character's race no longer grants raises a review notice and is released", () => {

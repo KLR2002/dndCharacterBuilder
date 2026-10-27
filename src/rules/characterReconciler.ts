@@ -7,6 +7,7 @@ import { maneuverOwnerOf, pruneInvalidManeuvers } from "./choices/maneuvers.ts";
 import { infusionOwnerOf, pruneInvalidInfusions } from "./choices/artificerInfusions.ts";
 import { type ChoiceOwner, GIANT_POWER_CHOICE_ID } from "./choices/types.ts";
 import { pruneInvalidFeatSpellPicks, pruneReleasedFeatCounters } from "./choices/featSpells.ts";
+import { moveLegacyInnateCounters } from "./grantedSpells.ts";
 import {
   pruneInvalidInvocations,
   pruneInvalidMysticArcanum,
@@ -81,6 +82,7 @@ export function reconcile(
   updated = pruneInvalidProficiencyPicks(updated, compendium);
   updated = pruneInvalidFeatSpellPicks(updated, compendium, options.activeBooks);
   updated = pruneReleasedFeatCounters(updated, compendium);
+  updated = moveLegacyInnateCounters(updated, compendium, options.activeBooks);
   updated = pruneInvalidExpertise(updated, { compendium, activeBooks: options.activeBooks });
 
   return updated;
