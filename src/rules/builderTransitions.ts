@@ -17,6 +17,7 @@ import { moveLegacySkillPicks } from "./proficiencyPicks.ts";
 import { CUSTOM_BACKGROUND_SKILLS_ID, CUSTOM_BACKGROUND_TOOLS_OR_LANGUAGES_ID, isCustomBackground } from "./customBackground.ts";
 import { ABILITY_NAMES } from "./abilities.ts";
 import { backgroundOnlyKnownSpells } from "./backgroundSpells.ts";
+import { withNotices } from "./needsReview.ts";
 import {
   BACKGROUND_FEAT_SOURCE,
   STANDARD_ARRAY,
@@ -644,12 +645,9 @@ export function clearBackground(character: Character, catalogs: CharacterCatalog
     chosenTools: { ...character.chosenTools, background: [] },
     originFeats: keptFeats,
     ...(releasedSpells.length > 0 ? { knownSpells: keptSpells, preparedSpells: keptPrepared } : {}),
-    ...(notices.length > 0
-      ? { needsReview: Array.from(new Set([...(character.needsReview ?? []), ...notices])) }
-      : {}),
   };
 
-  return reconcile(cleared, compendium);
+  return reconcile(withNotices(cleared, notices), compendium);
 }
 
 /**

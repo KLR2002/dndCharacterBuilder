@@ -8,6 +8,7 @@ import { poolNames, sourceRecordGrants, STARTING_PROFICIENCIES, validPicks, type
 import { heldSubraceOf, raceSkillPickApplies, recordGrantSources, subracePickApplies } from "./recordProficiencyGrants.ts";
 import { CUSTOM_BACKGROUND_GRANTS, isCustomBackground } from "./customBackground.ts";
 import { normalizeSkillName } from "./skills.ts";
+import { withNotices } from "./needsReview.ts";
 import { getAvailableExpertiseMilestones, getMilestonePicks } from "./expertise.ts";
 
 /**
@@ -371,11 +372,7 @@ export function pruneInvalidProficiencyPicks(character: Character, compendium: C
   }
   if (Object.keys(kept).length === Object.keys(picks).length) return character;
 
-  return {
-    ...character,
-    proficiencyPicks: Object.keys(kept).length > 0 ? kept : undefined,
-    needsReview: notices.length > 0 ? Array.from(new Set([...(character.needsReview ?? []), ...notices])) : character.needsReview,
-  };
+  return withNotices({ ...character, proficiencyPicks: Object.keys(kept).length > 0 ? kept : undefined }, notices);
 }
 
 /**

@@ -142,6 +142,18 @@ function getSubclassPreparedBadgeLabel(className: string): string {
   }
 }
 
+/** The copy of a race's Innate Magic card: its subtitle, and whether its rows show the Min Level. */
+const RACE_INNATE_COPY = {
+  subtitle: "Innate racial magic from your ancestry (Long Rest reset)",
+  showMinLevel: true,
+};
+
+/** The copy of a feat's Innate Magic card: its subtitle, and whether its rows show the Min Level. */
+const FEAT_INNATE_COPY = {
+  subtitle: "Spells from this feat (Long Rest reset)",
+  showMinLevel: false,
+};
+
 function getSubclassPreparedCounterSuffix(className: string): string {
   switch (className) {
     case "Cleric":
@@ -524,10 +536,10 @@ export const SpellsTab: React.FC = () => {
 
   /** One Innate Magic card: the race's, or one per feat that grants spells. `copy` sets its subtitle and whether rows show Min Level. */
   const renderInnateCard = (
-    profile: InnateSpellProfile | null,
+    profile: InnateSpellProfile,
     copy: { subtitle: string; showMinLevel: boolean; key?: string }
   ) => {
-    if (!profile || (profile.spells.length === 0 && !profile.notices?.length) || !currentCharacter) return null;
+    if ((profile.spells.length === 0 && !profile.notices?.length) || !currentCharacter) return null;
 
     const sign = (profile.spellAttackBonus ?? 0) >= 0 ? "+" : "";
     const ability = profile.ability;
@@ -669,16 +681,6 @@ export const SpellsTab: React.FC = () => {
         </View>
       </Card>
     );
-  };
-
-  const RACE_INNATE_COPY = {
-    subtitle: "Innate racial magic from your ancestry (Long Rest reset)",
-    showMinLevel: true,
-  };
-
-  const FEAT_INNATE_COPY = {
-    subtitle: "Spells from this feat (Long Rest reset)",
-    showMinLevel: false,
   };
 
   /** The race's and subrace's cards and each feat's, through the one card renderer; the copy follows the source's origin. */

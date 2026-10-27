@@ -2,7 +2,8 @@ import type { AbilityKey, AsiSelection, Character, RuleChoiceEntry } from "../..
 import type { AdditionalSpells, FeatData, RaceData, SpellData } from "../../types/dnd5e.ts";
 import type { Compendium } from "../../services/compendium.ts";
 import { BACKGROUND_FEAT_SOURCE } from "../../constants/rules.ts";
-import { ABILITY_NAMES } from "../abilities.ts";
+import { ABILITIES, ABILITY_NAMES } from "../abilities.ts";
+import { withNotices } from "../needsReview.ts";
 import { totalLevel } from "../proficiencies.ts";
 import { isSpellAvailableForClass } from "../spellcasting.ts";
 import { resolveSpellName } from "../subclassSpells.ts";
@@ -16,7 +17,6 @@ import type { AvailableRuleChoice, RuleChoiceOrigin } from "./types.ts";
  * owners never share a pick. The ids are read by the reader and the reconciler; keep them in this module.
  */
 
-const ABILITY_KEYS: readonly AbilityKey[] = ["str", "dex", "con", "int", "wis", "cha"];
 const UNNAMED_GRANT_KEY = "-";
 const ABILITY_CHOICE_KEY = "Casting Ability";
 const SPELL_LIST_KEY = "Spell List";
@@ -176,7 +176,7 @@ export function heldFeatsOf(character: Character, feats: FeatData[]): HeldFeat[]
 /** The ability a grant names outright. Undefined for an inherited or chosen ability. */
 export function fixedGrantAbility(grant: AdditionalSpells): AbilityKey | undefined {
   const ability = grant.ability;
-  return typeof ability === "string" && (ABILITY_KEYS as readonly string[]).includes(ability) ? (ability as AbilityKey) : undefined;
+  return typeof ability === "string" && (ABILITIES as readonly string[]).includes(ability) ? (ability as AbilityKey) : undefined;
 }
 
 /** The abilities a grant lets the player choose from, when its ability is a choice. Empty otherwise. */
@@ -184,20 +184,20 @@ export function chosenAbilityOptionsOf(grant: AdditionalSpells): AbilityKey[] {
   const ability = grant.ability;
   if (!ability || typeof ability !== "object" || !Array.isArray(ability.choose)) return [];
   const options: readonly string[] = ability.choose;
-  return ABILITY_KEYS.filter((key) => options.includes(key));
+  return ABILITIES.filter((key) => options.includes(key));
 }
 
 /** The abilities the player may choose for an owner: those of its modelled grants whose ability is a choice. The player picks one, once. */
 function abilityOptionsOfGrants(grants: readonly AdditionalSpells[]): AbilityKey[] {
   const options = new Set<AbilityKey>();
   for (const grant of grants.filter(isModelledGrant)) for (const key of chosenAbilityOptionsOf(grant)) options.add(key);
-  return ABILITY_KEYS.filter((key) => options.has(key));
+  return ABILITIES.filter((key) => options.has(key));
 }
 
 /** The casting ability the player chose for an owner, if one is recorded. A grant checks it against its own options. */
 export function pickedAbilityOf(character: Character, owner: GrantOwner): AbilityKey | undefined {
   const picked = character.ruleChoices?.find((entry) => entry.id === abilityChoiceId(owner))?.picked[0];
-  return (ABILITY_KEYS as readonly string[]).includes(picked ?? "") ? (picked as AbilityKey) : undefined;
+  return (ABILITIES as readonly string[]).includes(picked ?? "") ? (picked as AbilityKey) : undefined;
 }
 
 /** The named spell lists a grant set offers: the named grants the reader models. The list's ability may be fixed or chosen. */
@@ -659,11 +659,7 @@ export function pruneInvalidFeatSpellPicks(character: Character, compendium: Com
   }
 
   if (notices.length === 0 && kept.length === entries.length && kept.every((entry, i) => entry === entries[i])) return character;
-  return {
-    ...character,
-    ruleChoices: kept,
-    needsReview: Array.from(new Set([...(character.needsReview ?? []), ...notices])),
-  };
+  return withNotices({ ...character, ruleChoices: kept }, notices);
 }
 
 /**
@@ -686,11 +682,7 @@ export function pruneReleasedFeatCounters(character: Character, compendium: Comp
     notices.push(`${counters[key].name} removed: feat no longer held`);
     delete nextCounters[key];
   }
-  return {
-    ...character,
-    resourceCounters: nextCounters,
-    needsReview: Array.from(new Set([...(character.needsReview ?? []), ...notices])),
-  };
+  return withNotices({ ...character, resourceCounters: nextCounters }, notices);
 }
 
 /** Records, under each slot's choice id, the spells that slot offers at the character's level. */
@@ -761,7 +753,7 @@ export function migrateLegacyRacialCantrip(character: Character, races: RaceData
   const slot = race ? cantripSlotOf(race.grants) : undefined;
   if (!race || !slot) {
     const notice = "High Elf Cantrip removed: the ancestry no longer grants a wizard cantrip";
-    return { ...cleaned, needsReview: Array.from(new Set([...(cleaned.needsReview ?? []), notice])) };
+    return withNotices(cleaned, [notice]);
   }
   const entry: RuleChoiceEntry = {
     id: grantSlotChoiceId(race.owner, slot.grant, slot.slot),

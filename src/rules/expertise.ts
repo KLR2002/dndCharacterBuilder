@@ -2,6 +2,7 @@ import type { Character } from "../types/character.ts";
 import { skills } from "./skills.ts";
 import type { CharacterCatalogs } from "./catalogs.ts";
 import { proficiencySheet, type ProficiencySheet } from "./proficiencySheet.ts";
+import { withNotices } from "./needsReview.ts";
 
 export interface ExpertiseMilestone {
   id: string;
@@ -205,11 +206,7 @@ export function pruneInvalidExpertise(
     );
   }
 
-  return {
-    ...character,
-    chosenExpertise: pruned,
-    needsReview: Array.from(new Set([...(character.needsReview || []), ...notices])),
-  };
+  return withNotices({ ...character, chosenExpertise: pruned }, notices);
 }
 
 export function toggleExpertiseChoice(

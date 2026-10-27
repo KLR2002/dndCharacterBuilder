@@ -8,6 +8,7 @@ import { infusionOwnerOf, pruneInvalidInfusions } from "./choices/artificerInfus
 import { type ChoiceOwner, GIANT_POWER_CHOICE_ID } from "./choices/types.ts";
 import { pruneInvalidFeatSpellPicks, pruneReleasedFeatCounters } from "./choices/featSpells.ts";
 import { moveLegacyInnateCounters } from "./grantedSpells.ts";
+import { withNotices } from "./needsReview.ts";
 import {
   pruneInvalidInvocations,
   pruneInvalidMysticArcanum,
@@ -103,15 +104,6 @@ export function reconcileForActiveBooks(
 ): Character {
   const reconciled = reconcile(character, compendium, { activeBooks });
   return JSON.stringify(reconciled) === JSON.stringify(character) ? character : reconciled;
-}
-
-/** Appends review notices to `needsReview`, skipping any already present. Unchanged when there are none. */
-function withNotices(character: Character, notices: string[]): Character {
-  if (notices.length === 0) return character;
-  return {
-    ...character,
-    needsReview: Array.from(new Set([...(character.needsReview || []), ...notices])),
-  };
 }
 
 /**
