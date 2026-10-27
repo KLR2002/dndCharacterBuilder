@@ -7,7 +7,7 @@ import { createCompendium, type Compendium } from "../src/services/compendium.ts
 import { isCatalogStale, REQUIRED_CATALOG_FORMAT, type CompendiumCollections } from "../src/services/compendiumStorage.ts";
 import { proficiencyChoiceOffers } from "../src/rules/proficiencyChoiceOffers.ts";
 import { poolNames, type ChoiceProficiencyGrant } from "../src/rules/proficiencyPools.ts";
-import { featSpellChoicesOf, featSpellRuleChoices, pickRuleChoice, raceSpellRuleChoices } from "../src/rules/ruleChoices.ts";
+import { featSpellChoicesOf, featSpellRuleChoices, pickRuleChoice, raceSpellRuleChoices, ruleChoiceId } from "../src/rules/ruleChoices.ts";
 import { parseSpellFilter } from "../src/rules/choices/featSpells.ts";
 import { STARTING_EQUIPMENT_TYPES } from "../src/rules/startingEquipmentTypes.ts";
 import { reconcile } from "../src/rules/characterReconciler.ts";
@@ -646,6 +646,37 @@ test("live catalog: a level-5 Drow has Dancing Lights, Faerie Fire and Darkness 
   for (const name of ["Dancing Lights", "Faerie Fire", "Darkness"]) assert.ok(names.includes(name), `${name} is on the Drow card: ${names.join(", ")}`);
 });
 
+test("live catalog: a Half-Elf of the Drow Descent has no Drow spell until its Drow Magic option is picked, then has all three", { skip: SKIP }, () => {
+  const character = makeChar({
+    classes: [{ className: "Fighter", source: "PHB", level: 5 }],
+    race: { name: "Half-Elf", source: "PHB", subraceName: "Drow Descent", subraceSource: "SCAG" },
+    baseAbilityScores: { str: 10, dex: 10, con: 10, int: 10, wis: 10, cha: 16 },
+  });
+  const sourceWithCantrip = (candidate: Character) =>
+    evaluateCharacter(candidate, { compendium: live!.compendium }).grantedSpellSources.find((source) =>
+      source.spells.some((spell) => spell.name === "Dancing Lights"),
+    );
+  assert.equal(sourceWithCantrip(character), undefined, "the option is not picked, so the descent's spells are not read");
+
+  const picked: Character = {
+    ...character,
+    ruleChoices: [
+      {
+        id: ruleChoiceId({ source: "SCAG", race: "Half-Elf", subrace: { name: "Drow Descent" }, trait: "Variant Feature (Choose 1)" }),
+        trait: "Variant Feature (Choose 1)",
+        origin: "race",
+        choose: 1,
+        from: ["Skill Versatility", "Drow Magic"],
+        picked: ["Drow Magic"],
+      },
+    ],
+  };
+  const descent = sourceWithCantrip(picked);
+  assert.ok(descent, "picked, the descent's spells are read");
+  const names = descent.spells.map((spell) => spell.name);
+  for (const name of ["Dancing Lights", "Faerie Fire", "Darkness"]) assert.ok(names.includes(name), `${name} is listed: ${names.join(", ")}`);
+});
+
 test("live catalog: a Water Genasi of level 3 has its Create or Destroy Water counter under the spell's id, and a use saved under an older id moves there", { skip: SKIP }, () => {
   const character = makeChar({
     classes: [{ className: "Fighter", source: "PHB", level: 3 }],
@@ -681,6 +712,116 @@ test("live catalog: a level-3 Tiefling's Hellish Rebuke is cast at 2nd level, an
   assert.ok(rebuke, `no Hellish Rebuke on the Tiefling card: ${JSON.stringify(tiefling?.spells.map((entry) => entry.name))}`);
   assert.equal(rebuke.level, 2, "the grant says the spell is cast at level 2");
   assert.equal(rebuke.resourceCounterId, "innate_spell_hellish_rebuke");
+});
+
+// The nine race and subrace grants with leveled known spells (ADR 0017). Each is read at level 3, where the character has every
+// spell the grant's trait gives: a spell the trait lets the player cast once per Long Rest is 1, and one it casts at will is "at will".
+const LEVELED_KNOWN_GRANTS: Array<{
+  label: string;
+  race: string;
+  subrace?: string;
+  subraceSource?: string;
+  source?: string;
+  spells: Array<[string, 1 | "at will"]>;
+}> = [
+  {
+    label: "Dwarf Mark of Warding",
+    race: "Dwarf",
+    subrace: "Mark of Warding",
+    subraceSource: "ERLW",
+    spells: [
+      ["Alarm", 1],
+      ["Arcane Lock", 1],
+      ["Mage Armor", 1],
+    ],
+  },
+  { label: "Genasi Air", race: "Genasi", subrace: "Air", subraceSource: "EEPC", spells: [["Levitate", 1]] },
+  { label: "Genasi Earth", race: "Genasi", subrace: "Earth", subraceSource: "EEPC", spells: [["Pass without Trace", 1]] },
+  {
+    label: "Gnome (Deep)",
+    race: "Gnome (Deep)",
+    source: "DMG",
+    spells: [
+      ["Blindness/Deafness", 1],
+      ["Blur", 1],
+      ["Disguise Self", 1],
+      ["Nondetection", "at will"],
+    ],
+  },
+  {
+    label: "Halfling Mark of Hospitality",
+    race: "Halfling",
+    subrace: "Mark of Hospitality",
+    subraceSource: "ERLW",
+    spells: [
+      ["Prestidigitation", "at will"],
+      ["Purify Food and Drink", 1],
+      ["Unseen Servant", 1],
+    ],
+  },
+  {
+    label: "Hexblood",
+    race: "Hexblood",
+    source: "VRGR",
+    spells: [
+      ["Disguise Self", 1],
+      ["Hex", 1],
+    ],
+  },
+  {
+    label: "Human Mark of Making",
+    race: "Human",
+    subrace: "Mark of Making",
+    subraceSource: "ERLW",
+    spells: [
+      ["Magic Weapon", 1],
+      ["Mending", "at will"],
+    ],
+  },
+  { label: "Human Mark of Passage", race: "Human", subrace: "Mark of Passage", subraceSource: "ERLW", spells: [["Misty Step", 1]] },
+  { label: "Human Mark of Sentinel", race: "Human", subrace: "Mark of Sentinel", subraceSource: "ERLW", spells: [["Shield", 1]] },
+];
+
+/** A character of the grant's race, found in the live catalog by the name of the record that holds the grant. */
+function characterOfGrant(grant: (typeof LEVELED_KNOWN_GRANTS)[number], level: number): Character {
+  const records = grant.subrace
+    ? live!.collections.races.filter((race) => race.name === grant.race && race.subraces.some((sub) => sub.name === grant.subrace && sub.source === grant.subraceSource))
+    : live!.collections.races.filter((race) => race.name === grant.race && race.source === grant.source);
+  const record = records[0];
+  assert.ok(record, `no ${grant.race} record holds the ${grant.label} grant`);
+  return makeChar({
+    classes: [{ className: "Fighter", source: "PHB", level }],
+    race: {
+      name: record.name,
+      source: record.source,
+      ...(grant.subrace ? { subraceName: grant.subrace, subraceSource: grant.subraceSource } : {}),
+    },
+    baseAbilityScores: { str: 10, dex: 10, con: 10, int: 10, wis: 10, cha: 16 },
+  });
+}
+
+/** The spells a character's race grants at its level, each with its uses (1 once per Long Rest, or "at will"), sorted by name. */
+function raceSpellsAt(character: Character): Array<[string, 1 | "at will"]> {
+  const sources = evaluateCharacter(character, { compendium: live!.compendium }).grantedSpellSources;
+  assert.equal(sources.length, 1, `one race grant is read: ${sources.map((source) => source.title).join(", ")}`);
+  return sources[0].spells
+    .map((spell): [string, 1 | "at will"] => [spell.name, spell.maxUses === undefined ? "at will" : (spell.maxUses as 1)])
+    .sort((a, b) => a[0].localeCompare(b[0]));
+}
+
+for (const grant of LEVELED_KNOWN_GRANTS) {
+  test(`live catalog: the ${grant.label} grant reads its spells at their trait's level and uses`, { skip: SKIP }, () => {
+    const expected = [...grant.spells].sort((a, b) => a[0].localeCompare(b[0]));
+    assert.deepEqual(raceSpellsAt(characterOfGrant(grant, 3)), expected);
+  });
+}
+
+test("live catalog: the Dwarf Mark of Warding's Arcane Lock is read from 3rd level, not before", { skip: SKIP }, () => {
+  const grant = LEVELED_KNOWN_GRANTS[0];
+  const names = (level: number) => raceSpellsAt(characterOfGrant(grant, level)).map(([name]) => name);
+  assert.ok(names(2).includes("Alarm") && names(2).includes("Mage Armor"), "alarm and mage armor are read from level 1");
+  assert.equal(names(2).includes("Arcane Lock"), false, "the trait adds arcane lock at 3rd level");
+  assert.ok(names(3).includes("Arcane Lock"), "arcane lock is read at 3rd level");
 });
 
 // Background expanded spell lists (ADR 0017): a background's lists join the list of each spellcasting class the character has.
