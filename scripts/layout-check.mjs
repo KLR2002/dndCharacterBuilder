@@ -676,6 +676,25 @@ function clericCharacter({ id, name, domain }) {
   });
 }
 
+// A level 5 Artificer (TCE, so integrated mode only). Its own table gives four first-level and two second-level slots.
+const ARTIFICER_ID = "char_artificer";
+function artificerCharacter() {
+  return makeChar({
+    id: ARTIFICER_ID,
+    name: "Tinnet",
+    createdAt: 6,
+    updatedAt: 6,
+    race: { name: "Human", source: catalogSource("races", "Human") },
+    background: { name: "Acolyte", source: catalogSource("backgrounds", "Acolyte") },
+    startingOption: "equipment",
+    baseAbilityScores: { str: 8, dex: 12, con: 12, int: 16, wis: 12, cha: 10 },
+    classes: [{ className: "Artificer", source: catalogSource("classes", "Artificer"), level: 5 }],
+    currentHp: 30,
+    startingGrantsApplied: true,
+    backgroundGrantsApplied: true,
+  });
+}
+
 // The Skills card. Integrated: a Variant Human Acolyte Cleric 1 with the Knowledge Domain, who picked Arcana and History
 // for Blessings of Knowledge, and a Rogue 1, so the card holds the starting picker, the Rogue's multiclass pick and the
 // Blessings picks, with Expertise on the two Blessings picks. The Variant Human's skill pick is a Race pick, so it is
@@ -759,6 +778,7 @@ function buildSeed() {
         activeWildShape: { name: "Black Bear", source: "SRD", ac: 11, currentHp: 12, maxHp: 19, tempHp: 4 },
       }),
       wizardCharacter(),
+      ...(INTEGRATED ? [artificerCharacter()] : []),
       halfElfCharacter(),
       rangerCharacter(),
       longNameCharacter(),
@@ -796,6 +816,7 @@ function buildSeed() {
 // title. `ready` (a string or regex) is text the screen shows once it is ready. `scrollTo` scrolls a needle into view.
 const RENDAR_ROUTE = `/character/${CHARACTER_ID}`;
 const WIZARD_ROUTE = `/character/${WIZARD_ID}`;
+const ARTIFICER_ROUTE = `/character/${ARTIFICER_ID}`;
 const HALF_ELF_ROUTE = `/character/${HALF_ELF_ID}`;
 const RANGER_ROUTE = `/character/${RANGER_ID}`;
 const LONG_NAME_ROUTE = `/character/${LONG_NAME_ID}`;
@@ -940,6 +961,19 @@ const SCREENS = [
       ]
     : []),
   { name: "Spells", route: WIZARD_ROUTE, tabs: ["Spells"], ready: /add spells/i },
+  // A level 5 Artificer's slots come from its own table: four first-level and two second-level, and no third-level row.
+  ...(INTEGRATED
+    ? [
+        {
+          name: "Spells artificer slots",
+          route: ARTIFICER_ROUTE,
+          tabs: ["Spells"],
+          ready: /add spells/i,
+          scrollTo: "SPELL SLOTS",
+          expect: { texts: ["SPELL SLOTS", "1st Level", "2nd Level"], absent: ["3rd Level"], fitsWidth: true },
+        },
+      ]
+    : []),
   // One card per granting source (ADR 0017): the race card in both catalogs, and in integrated mode the Magic Initiate card,
   // the Strixhaven Initiate card with long spell names and a chosen ability, the race card's chosen ability, and the needs-review card.
   {
