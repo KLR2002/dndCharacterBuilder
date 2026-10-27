@@ -133,3 +133,50 @@ test("a legacy pick the offered spells no longer include raises a review notice 
   const card = cardTitled(evaluateCharacter(opened, { compendium }).grantedSpellSources, "High Elf");
   assert.equal(card?.spells.some((spell) => spell.name === "Eldritch Blast"), false, "the unmatched cantrip is not listed");
 });
+
+test("a saved SRD High Elf cantrip pick migrates against an integrated catalog that holds the race only under its own book", () => {
+  const integrated = inMemoryCompendium(tracked, { integrated: true });
+  const srdHighElf = highElf({
+    race: { name: "Elf", source: "SRD", subraceName: "High", subraceSource: "SRD" },
+    ruleChoices: [{ ...legacyPick("Fire Bolt"), id: "SRD__Elf__SRD__High Elf__Cantrip" }],
+  });
+  const loaded = migrateCharacter(srdHighElf, races, tracked.classes);
+  assert.equal(loaded.ruleChoices?.some((entry) => entry.id === "SRD__Elf__SRD__High Elf__Cantrip"), false, "the legacy entry is released");
+  const card = cardTitled(evaluateCharacter(loaded, { compendium: integrated }).grantedSpellSources, "High Elf");
+  assert.ok(card?.spells.some((spell) => spell.name === "Fire Bolt" && spell.isCantrip), "the cantrip is listed at will on the race's card");
+});
+
+test("a saved race the catalog has no record of keeps its legacy cantrip as saved, with no notice", () => {
+  const srdHighElf = highElf({
+    race: { name: "Elf", source: "SRD", subraceName: "High", subraceSource: "SRD" },
+    ruleChoices: [{ ...legacyPick("Fire Bolt"), id: "SRD__Elf__SRD__High Elf__Cantrip" }],
+  });
+  const withoutElf = races.filter((race) => race.name !== "Elf");
+  assert.ok(withoutElf.length > 0, "the catalog is not empty");
+  const loaded = migrateCharacter(srdHighElf, withoutElf, tracked.classes);
+  assert.deepEqual(loaded.ruleChoices, srdHighElf.ruleChoices, "the legacy entry is kept as saved");
+  assert.deepEqual(loaded.needsReview ?? [], [], "no notice is raised");
+});
+
+test("a legacy High Elf cantrip never adds a second entry under the race key a pick already holds", () => {
+  const migrated = migrateCharacter(highElf({ ruleChoices: [legacyPick("Fire Bolt")] }), races, tracked.classes);
+  assert.equal(migrated.ruleChoices?.length, 1, "the legacy cantrip moved to one entry");
+
+  const again = migrateCharacter(highElf({ ruleChoices: [...(migrated.ruleChoices ?? []), legacyPick("Mage Hand")] }), races, tracked.classes);
+  assert.equal(again.ruleChoices?.length, 1, "no second entry is added");
+  assert.deepEqual(again.ruleChoices?.[0].picked, ["Fire Bolt"], "the pick already under the key stands");
+});
+
+test("a legacy race pick whose new key a pick already holds is dropped, and the pick under the new key stands", () => {
+  const newId = "-__Race Spells__High__-__0";
+  const saved = makeChar({
+    classes: [wizard],
+    race: { name: "Elf", source: "SRD", subraceName: "High", subraceSource: "SRD" },
+    ruleChoices: [
+      { id: "SRD__Race Spells__High__-__0", trait: "Cantrip", origin: "race", choose: 1, from: ["Fire Bolt"], picked: ["Fire Bolt"] },
+      { id: newId, trait: "Cantrip", origin: "race", choose: 1, from: ["Mage Hand"], picked: ["Mage Hand"] },
+    ],
+  });
+  const loaded = migrateCharacter(saved);
+  assert.deepEqual(loaded.ruleChoices?.map((entry) => [entry.id, entry.picked]), [[newId, ["Mage Hand"]]]);
+});

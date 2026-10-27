@@ -1024,6 +1024,8 @@ export function migrateLegacyRacialCantrip(character: Character, races: RaceData
     from: [picked],
     picked: [picked],
   };
+  // A pick already under the race's key stands, as moveLegacyRacePickIds keeps it.
+  if ((cleaned.ruleChoices ?? []).some((existing) => existing.id === entry.id)) return cleaned;
   return { ...cleaned, ruleChoices: [...(cleaned.ruleChoices ?? []), entry] };
 }
 

@@ -105,9 +105,18 @@ export function migrateCharacter(raw: unknown, raceCatalog?: RaceData[], classCa
     preparedSpells: prepared.map(key => key.split("__").length < 4 ? `${key}__${ownerKey}` : key),
     pactSlotsUsed: c.pactSlotsUsed ?? c.usedPactSlots ?? 0,
   };
-  // The High Elf and Half-Elf cantrip moves to the race's own pick once the catalog says what the race grants. A race whose book
-  // the catalog does not hold is not loaded, so the cantrip is kept as saved, with no notice.
-  const raceBookLoaded = raceCatalog?.some((race) => race.source === c.race?.source) ?? false;
+  // The High Elf and Half-Elf cantrip moves to the race's own pick once the catalog says what the race grants. A race the catalog
+  // does not hold is not loaded, so the cantrip is kept as saved, with no notice.
   const rekeyed = moveLegacyRacePickIds(migrated);
-  return raceCatalog && raceBookLoaded ? migrateLegacyRacialCantrip(rekeyed, raceCatalog) : rekeyed;
+  return raceCatalog && isRaceListed(c.race, raceCatalog) ? migrateLegacyRacialCantrip(rekeyed, raceCatalog) : rekeyed;
+}
+
+/**
+ * Whether the catalog holds a saved race. The record of its own book is the one held; when the catalog holds no record of that
+ * book, the race is found by its name, as the reader finds it (see raceGrantsOf).
+ */
+function isRaceListed(race: { name: string; source: string } | null | undefined, races: readonly RaceData[]): boolean {
+  if (!race) return false;
+  if (races.some((record) => record.name === race.name && record.source === race.source)) return true;
+  return !races.some((record) => record.source === race.source) && races.some((record) => record.name === race.name);
 }
