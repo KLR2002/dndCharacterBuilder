@@ -63,6 +63,21 @@ test("a correction names one record: the race's own grant, and a subrace it does
   assert.deepEqual(grants.get(raceKey("Sample Kin", "AAA")), [{ ability: "int", known: { "1": ["sample ember", "sample spark"] } }]);
 });
 
+test("a reviewed correction's notes are carried on the race's spell grant, and a subrace it does not name keeps none", () => {
+  const noteCorrection: SpellGrantCorrection = {
+    race: "Sample Kin",
+    raceSource: "AAA",
+    reason: "invented: the trait limits the second spell to its caster",
+    notes: { "sample spark": "self only" },
+  };
+  const grants = additionalSpellsByRace(raw, [], [noteCorrection]);
+  assert.deepEqual(grants.get(raceKey("Sample Kin", "AAA")), [
+    { ability: "int", known: { "1": ["sample ember", "sample spark"] }, notes: { "sample spark": "self only" } },
+  ]);
+  const [line] = grants.get(subraceKey("Sample Kin", "AAA", "Sample Line", "AAA")) ?? [];
+  assert.equal("notes" in (line ?? {}), false, "the subrace's grant keeps no note");
+});
+
 test("every reviewed correction names a tracked record whose spell grant carries the sections it gives, so a stale correction fails", () => {
   const races = JSON.parse(readFileSync(new URL("../data/races.json", import.meta.url), "utf8")) as TrackedRaceGrants[];
   for (const correction of SPELL_GRANT_CORRECTIONS) {
