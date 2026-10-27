@@ -123,11 +123,12 @@ export const FeaturesTab: React.FC = () => {
         }
       }
     } else if (currentCharacter.race) {
-      const { race: raceData, subrace: subraceData } = findHeldRace(getRaces(activeBooks), currentCharacter.race, activeBooks);
+      const races = getRaces(activeBooks);
+      const { race: raceData, subrace: subraceData } = findHeldRace(races, currentCharacter.race, activeBooks);
       // A trait a recorded choice replaced must not appear at all, and the
       // Features tab builds its own list rather than going through
       // grantedFeatures, so suppression is applied here too.
-      const suppressed = replacedTraitNames(currentCharacter, getRaces(activeBooks), activeBooks);
+      const suppressed = replacedTraitNames(currentCharacter, races, activeBooks);
       const raceChoiceId = (trait: string) =>
         ruleChoiceId({
           source: raceData ? heldSourceOf(currentCharacter.race!.source, raceData) : currentCharacter.race!.source,
@@ -170,7 +171,7 @@ export const FeaturesTab: React.FC = () => {
               id: `subrace_${trait.name}`,
               name: `${trait.name} (${subraceData.name})`,
               origin: "Race",
-              source: `${subraceData.name} ${raceData?.name}`,
+              source: raceData ? `${subraceData.name} ${raceData.name}` : subraceData.name,
               description: resolved.description,
               chosenOption: resolved.chosenOption,
             });
