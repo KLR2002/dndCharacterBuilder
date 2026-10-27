@@ -1,6 +1,8 @@
 # 06: Releases and notices are exact
 
-**Status:** ready-for-agent
+**Status:** done
+
+**Landed:** list change releases the old list's counters, an unloaded catalog keeps picks, counters and notices, release notices name the spell and the source. check:all and check:live green. Open: AC-16 (race picks across catalogs) may be partly covered by the per-book keep rule; ticket 08 must verify it end to end.
 
 Spec: `.scratch/granted-spells-followups/spec.md` (ADR 0017 and its amendment, GLOSSARY *Always-Prepared Spells*, *Expanded Spell List*).
 
@@ -16,10 +18,10 @@ When a player picks another spell list for a feat, the old list's picks and its 
 
 ## Acceptance Criteria
 
-- [ ] Picking list B releases list A's picks and counters with a notice (AC-10).
-- [ ] A transition with an unloaded catalog keeps every counter, pick and notice (AC-11).
-- [ ] A release notice names the spell and the source (AC-12).
-- [ ] `npm run check:all` passes.
+- [x] Picking list B releases list A's picks and counters with a notice (AC-10).
+- [x] A transition with an unloaded catalog keeps every counter, pick and notice (AC-11).
+- [x] A release notice names the spell and the source (AC-12).
+- [x] `npm run check:all` passes.
 
 ## Verification
 

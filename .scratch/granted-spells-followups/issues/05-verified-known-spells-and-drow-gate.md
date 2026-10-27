@@ -1,6 +1,8 @@
 # 05: Leveled known race spells verified, Drow Descent gated
 
-**Status:** ready-for-agent
+**Status:** done
+
+**Landed:** Drow Descent gated by reviewed data; two of nine leveled known grants corrected (Dwarf Mark of Warding gains arcane lock at level 3, Gnome (Deep) nondetection at will), the other seven verified and pinned; Catalog Format 10. check:all and check:live green. Open: nondetection's "self only" limit is not shown; the Hexblood record in RHW has a prepared group.
 
 Spec: `.scratch/granted-spells-followups/spec.md` (ADR 0017 and its amendment, GLOSSARY *Always-Prepared Spells*, *Expanded Spell List*).
 
@@ -15,10 +17,10 @@ Nine race grants put leveled spells in `known` groups (Dwarf Mark of Warding, Ge
 
 ## Acceptance Criteria
 
-- [ ] Each of the 9 grants reads with the level gate and uses its trait text gives, and a test pins each (AC-8).
-- [ ] Any correction is a reviewed override in the scraper, not an app rule (AC-8).
-- [ ] Drow Descent's grant is absent until its option is picked and present after (AC-9); the gate is data.
-- [ ] `npm run check:all` and `npm run check:live` pass. If the data changes, the Catalog Format is 10.
+- [x] Each of the 9 grants reads with the level gate and uses its trait text gives, and a test pins each (AC-8).
+- [x] Any correction is a reviewed override in the scraper, not an app rule (AC-8).
+- [x] Drow Descent's grant is absent until its option is picked and present after (AC-9); the gate is data.
+- [x] `npm run check:all` and `npm run check:live` pass. If the data changes, the Catalog Format is 10.
 
 ## Verification
 
