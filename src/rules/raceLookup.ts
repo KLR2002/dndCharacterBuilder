@@ -32,6 +32,30 @@ export function findHeldRace(
 }
 
 /**
+ * Whether the catalog holds the race a character holds: the record of its saved source, or, when the catalog holds no record of
+ * that source, a record of its name. The same rule decides whether a race's picks are checked against the catalog.
+ */
+export function heldRaceListed(held: { name: string; source: string } | null | undefined, races: readonly RaceData[]): boolean {
+  if (!held) return false;
+  if (races.some((race) => race.name === held.name && race.source === held.source)) return true;
+  return !races.some((race) => race.source === held.source) && races.some((race) => race.name === held.name);
+}
+
+/**
+ * The record a held name and saved source resolve to within `records`, by the rule findHeldRace follows: the record of the saved
+ * source, then an active book's record, then the first record of the name. Used for every record kind a character saves with a
+ * source (subclass, background, feat). The saved source is read and never written.
+ */
+export function findHeldRecord<T extends { name: string; source: string }>(
+  records: readonly T[],
+  held: { name: string; source?: string } | null | undefined,
+  activeBooks?: readonly string[],
+): T | undefined {
+  if (!held) return undefined;
+  return pickRecord(records, held.name, held.source, activeBooks);
+}
+
+/**
  * The source a held record's Rule Choice ids carry: the source it was saved under, else the record's own. A race saved on one
  * catalog keeps the ids it was saved with when another catalog resolves it, so its picks still apply.
  */

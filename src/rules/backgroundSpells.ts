@@ -5,6 +5,7 @@ import { withNotices } from "./needsReview.ts";
 import { heldFeatsOf, raceGrantsOf, raceTitleOf } from "./choices/featSpells.ts";
 import { isSpellAvailableForClass } from "./spellcasting.ts";
 import { normalizeKey, resolveSpellName } from "./subclassSpells.ts";
+import { findHeldRecord } from "./raceLookup.ts";
 
 /**
  * The spell names a list of spell grants adds to the list of each spellcasting class the character has (ADR 0017). The
@@ -33,9 +34,7 @@ export interface ExpandedSpellSource {
 /** The background the character holds, found by its name and, when the character records one, its source. */
 export function resolveCharacterBackground(character: Character, backgroundCatalog?: BackgroundData[]): BackgroundData | undefined {
   if (!character.background || !backgroundCatalog) return undefined;
-  return backgroundCatalog.find(
-    (b) => b.name === character.background?.name && (!character.background?.source || b.source === character.background?.source)
-  );
+  return findHeldRecord(backgroundCatalog, character.background);
 }
 
 /**

@@ -9,7 +9,7 @@ import { recordGrantSources } from "./recordProficiencyGrants.ts";
 import { grantRequirementMet, type SubclassOwner } from "./optionFeatureGrants.ts";
 import { findClassData } from "./catalogs.ts";
 import { isCustomBackground } from "./customBackground.ts";
-import { findHeldRace, heldSourceOf } from "./raceLookup.ts";
+import { findHeldRace, findHeldRecord, heldSourceOf } from "./raceLookup.ts";
 
 export function grantedFeatures(character: Character, catalog: FeatureCatalog): FeatureInstance[] {
   const out: FeatureInstance[] = [];
@@ -57,7 +57,7 @@ export function grantedFeatures(character: Character, catalog: FeatureCatalog): 
     }
   }
   const background = character.background;
-  const bg = catalog.backgrounds.find(b => b.name === background?.name && b.source === background.source);
+  const bg = findHeldRecord(catalog.backgrounds, background, catalog.activeBooks);
   if (isCustomBackground(background) && background?.customFeatureName) {
     add({ name: background.customFeatureName, description: background.customFeatureDesc || "", source: background.source, origin: "Background" }, background.name);
   } else if (bg?.feature) add({ ...bg.feature, source: bg.source, origin: "Background" }, bg.name);
@@ -137,14 +137,14 @@ export function grantedFeatures(character: Character, catalog: FeatureCatalog): 
       }
     }
     for (const f of cls?.features || []) addClassFeature(f, "Class", c.source, c.className);
-    const subclass = cls?.subclasses.find(s => s.name === c.subclassName && (!c.subclassSource || s.source === c.subclassSource));
+    const subclass = cls && c.subclassName ? findHeldRecord(cls.subclasses, { name: c.subclassName, source: c.subclassSource }, catalog.activeBooks) : undefined;
     for (const f of subclass?.features || []) addClassFeature(f, "Subclass", subclass!.source, `${c.className}/${subclass!.name}`, subclass!.name);
   }
   // Feats from the ability score list and from the origin-feat list (a background's feat) both count. A feat held both
   // ways is one feature instance, so its Initiative Bonus counts once.
   for (const selection of [...character.asiSelections, ...(character.originFeats ?? [])]) {
     if (selection.type !== "feat") continue;
-    const feat = catalog.feats.find(x => x.name === selection.featName && (!selection.featSource || x.source === selection.featSource));
+    const feat = selection.featName ? findHeldRecord(catalog.feats, { name: selection.featName, source: selection.featSource }, catalog.activeBooks) : undefined;
     if (feat) {
       const grants = raisedAbilityGrants(feat.grants ?? [], selection.featAbility);
       add(
