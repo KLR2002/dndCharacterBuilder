@@ -1,6 +1,8 @@
 # 07: Race card title and background-feat warning
 
-**Status:** ready-for-agent
+**Status:** done
+
+**Landed:** race cards and their release notices read "High Elf" (subrace with its race); the integrity check skips the Background feat marker and still warns for a really disabled book. check:all, check:live and the full layout runs (SRD and integrated) green. Open: Half-Elf descents read subrace-first ("Drow Descent Half-Elf"); the class-list badge for prepared race spells and the builder trait "High Cantrip" still use the subrace name.
 
 Spec: `.scratch/granted-spells-followups/spec.md` (ADR 0017 and its amendment, GLOSSARY *Always-Prepared Spells*, *Expanded Spell List*).
 
@@ -15,9 +17,9 @@ A race card shows its race name with the subrace ("High Elf"), not the subrace a
 
 ## Acceptance Criteria
 
-- [ ] A High Elf's card title reads "High Elf" (AC-13).
-- [ ] A background-claimed feat raises no "disabled sourcebook" warning, while a feat from a really disabled book still does (AC-14).
-- [ ] `npm run check:all` passes; the layout scenario with the race card passes at four widths.
+- [x] A High Elf's card title reads "High Elf" (AC-13).
+- [x] A background-claimed feat raises no "disabled sourcebook" warning, while a feat from a really disabled book still does (AC-14).
+- [x] `npm run check:all` passes; the layout scenario with the race card passes at four widths.
 
 ## Verification
 
