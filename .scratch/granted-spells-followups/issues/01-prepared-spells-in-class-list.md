@@ -1,6 +1,8 @@
 # 01: Prepared spells of feats and races in the class list
 
-**Status:** ready-for-agent
+**Status:** done
+
+**Landed:** plain prepared spells of held feats and races list in every spellcasting class with the lock icon and a source badge, stored nowhere and counted nowhere; 30 live-only "not modelled" marks removed; layout scenario green SRD and integrated. check:all and check:live green. Open: prepared groups with their own ability or uses are corrected by ticket 09; Magic Connoisseur is not tied to the Magic Initiate pick; a subrace whose only grants are prepared would replace the race's innate grants (no live data hits this).
 
 Spec: `.scratch/granted-spells-followups/spec.md` (ADR 0017 and its amendment, GLOSSARY *Always-Prepared Spells*, *Expanded Spell List*).
 
@@ -18,12 +20,12 @@ A feat or race with a `prepared` group (Mark feats and races, Adept feats, Vampi
 
 ## Acceptance Criteria
 
-- [ ] A prepared spell of a held feat or race is listed in the class list with a lock icon and a source badge, is not stored in known or prepared spells, and leaves the prepared count and limit unchanged (AC-1).
-- [ ] On a multiclass character it is listed in every spellcasting class's list, and its DC and attack bonus use the active class's ability (AC-2).
-- [ ] A prepared spell with a level key is absent below that character level and listed from it (AC-3).
-- [ ] Removing or swapping the feat or race removes the spell from every list and leaves no stored ghost (AC-5).
-- [ ] A prepared-only feat offers no ability pick. A feat the reader now models has no reviewed "not modelled" mark, and the coverage gate passes (AC-17).
-- [ ] `npm run check:all` and `npm run check:live` pass; a Spells-tab layout scenario passes at four widths, SRD and `-- --integrated`.
+- [x] A prepared spell of a held feat or race is listed in the class list with a lock icon and a source badge, is not stored in known or prepared spells, and leaves the prepared count and limit unchanged (AC-1).
+- [x] On a multiclass character it is listed in every spellcasting class's list, and its DC and attack bonus use the active class's ability (AC-2).
+- [x] A prepared spell with a level key is absent below that character level and listed from it (AC-3).
+- [x] Removing or swapping the feat or race removes the spell from every list and leaves no stored ghost (AC-5).
+- [x] A prepared-only feat offers no ability pick. A feat the reader now models has no reviewed "not modelled" mark, and the coverage gate passes (AC-17).
+- [x] `npm run check:all` and `npm run check:live` pass; a Spells-tab layout scenario passes at four widths, SRD and `-- --integrated`.
 
 ## Verification
 
