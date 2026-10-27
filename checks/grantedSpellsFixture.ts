@@ -362,6 +362,20 @@ export const grantedSpellRaces = (): RaceData[] => [
   race("Sample Gifted", {
     additionalSpells: [{ ability: "int", known: { "1": { _: [{ choose: "level=0|class=Sample Mage" }] } } }],
   }),
+  // A subrace whose cantrip is read only while the Cantrip option of its own choice is picked (the gate names that choice).
+  race("Sample Gated", {
+    subraces: [
+      subrace("Sample Gated Line", "Sample Gated", {
+        additionalSpells: [
+          {
+            ability: "int",
+            known: { "1": ["sample ember"] },
+            gatedBy: { choiceId: "TST__Sample Gated__Sample Gated Line__Sample Option (Choose 1)", option: "Sample Cantrip" },
+          },
+        ],
+      }),
+    ],
+  }),
   // A first-level spell known from level 1, as the source keys a leveled spell of its known group.
   race("Sample Learned", {
     additionalSpells: [{ ability: "int", known: { "1": ["sample pulse"] } }],

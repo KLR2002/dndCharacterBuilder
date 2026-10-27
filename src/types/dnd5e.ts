@@ -126,6 +126,8 @@ export interface AdditionalSpells {
   known?: Record<string, any>;
   expanded?: Record<string, any>;
   innate?: Record<string, any>;
+  /** The Rule Choice option this grant waits on: the grant is read only while the player picked it (ADR 0014). Set by a reviewed gate. */
+  gatedBy?: { choiceId: string; option: string };
   /** The level each named spell is cast at where the source's `#N` suffix gives one, keyed by the lower-case spell name. */
   castLevels?: Record<string, number>;
 }

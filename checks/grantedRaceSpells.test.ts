@@ -4,7 +4,7 @@ import { evaluateCharacter } from "../src/rules/characterEvaluation.ts";
 import { validateFeatPrerequisites } from "../src/rules/feats.ts";
 import { toggleInnateSpellUse } from "../src/rules/characterSpells.ts";
 import { applyLongRest } from "../src/rules/rest.ts";
-import type { CharacterClass } from "../src/types/character.ts";
+import type { CharacterClass, RuleChoiceEntry } from "../src/types/character.ts";
 import type { InnateSpellEntry, InnateSpellProfile } from "../src/rules/innateMagic.ts";
 import { inMemoryCompendium, integratedTestCompendium, makeChar, srdBaselineCompendium } from "./testUtils.ts";
 import { grantedSpellClasses, grantedSpellFeats, grantedSpellRaces, grantedSpellSpells } from "./grantedSpellsFixture.ts";
@@ -180,6 +180,47 @@ test("a race's spell with a cast-level suffix is listed at that level, and one w
   assert.equal(pulse?.level, 2, "Sample Pulse is catalogued at level 1 but cast at level 2");
   assert.equal(pulse?.isCantrip, false);
   assert.equal(veil?.level, 2, "Sample Veil has no suffix and keeps its catalogued level");
+});
+
+test("a subrace's grant is read only while the option that gates it is picked in the Rule Choice it waits on", () => {
+  const gated = (ruleChoices?: RuleChoiceEntry[]) =>
+    makeChar({
+      classes: [mage(1)],
+      race: { name: "Sample Gated", source: "TST", subraceName: "Sample Gated Line", subraceSource: "TST" },
+      ...(ruleChoices ? { ruleChoices } : {}),
+    });
+  const shut = evaluateCharacter(gated(), catalogs).grantedSpellSources;
+  assert.equal(sourceTitled(shut, "Sample Gated Line"), undefined, "the option is not picked, so the grant is not read");
+
+  const pick: RuleChoiceEntry = {
+    id: "TST__Sample Gated__Sample Gated Line__Sample Option (Choose 1)",
+    trait: "Sample Option (Choose 1)",
+    origin: "race",
+    choose: 1,
+    from: ["Sample Cantrip", "Sample Other"],
+    picked: ["Sample Cantrip"],
+  };
+  const open = evaluateCharacter(gated([pick]), catalogs).grantedSpellSources;
+  assert.ok(sourceTitled(open, "Sample Gated Line")?.spells.some((spell) => spell.name === "Sample Ember"), "picked, the grant is read");
+});
+
+test("the tracked catalog reads the Moon Elf or Sun Elf descent's wizard cantrip only once its Cantrip option is picked", () => {
+  const integrated = { compendium: integratedTestCompendium() };
+  const descent = { name: "Half-Elf", source: "PHB", subraceName: "Moon Elf or Sun Elf Descent", subraceSource: "SCAG" };
+  const wizard = { className: "Wizard", source: "PHB", level: 1 };
+  const shut = evaluateCharacter(makeChar({ classes: [wizard], race: descent }), integrated).grantedSpellSources;
+  assert.equal(sourceTitled(shut, "Moon Elf or Sun Elf Descent"), undefined, "the option is not picked, so the cantrip is not read");
+
+  const pick: RuleChoiceEntry = {
+    id: "SCAG__Half-Elf__Moon Elf or Sun Elf Descent__Variant Feature (Choose 1)",
+    trait: "Variant Feature (Choose 1)",
+    origin: "race",
+    choose: 1,
+    from: ["Cantrip", "Other"],
+    picked: ["Cantrip"],
+  };
+  const open = evaluateCharacter(makeChar({ classes: [wizard], race: descent, ruleChoices: [pick] }), integrated).grantedSpellSources;
+  assert.ok(sourceTitled(open, "Moon Elf or Sun Elf Descent"), "picked, the grant is read and offers its wizard cantrip");
 });
 
 test("the tracked catalog gives Deep Gnome and Hexblood their leveled known spells once per Long Rest from level 1", () => {

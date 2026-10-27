@@ -1,12 +1,12 @@
 import type { AbilityKey, AsiSelection, Character, RuleChoiceEntry } from "../../types/character.ts";
-import type { AdditionalSpells, FeatData, RaceData, SpellData, SubraceData } from "../../types/dnd5e.ts";
+import type { AdditionalSpells, FeatData, RaceData, SpellData } from "../../types/dnd5e.ts";
 import type { Compendium } from "../../services/compendium.ts";
 import { BACKGROUND_FEAT_SOURCE } from "../../constants/rules.ts";
 import { ABILITY_NAMES } from "../abilities.ts";
 import { totalLevel } from "../proficiencies.ts";
 import { isSpellAvailableForClass } from "../spellcasting.ts";
 import { resolveSpellName } from "../subclassSpells.ts";
-import { ruleChoiceId, type AvailableRuleChoice, type RuleChoiceOrigin } from "./types.ts";
+import type { AvailableRuleChoice, RuleChoiceOrigin } from "./types.ts";
 
 /**
  * The spell picks a granted spell source asks for (ADR 0017). A grant's owner is a feat the character holds or the race or
@@ -32,15 +32,6 @@ const SCHOOL_BY_CODE: Readonly<Record<string, string>> = {
   T: "Transmutation",
   V: "Evocation",
 };
-
-/**
- * A Rule Choice the descent or subrace option named here switches on: the subrace's spell grant is read only when the
- * player picked the option. The catalog lists the grant whatever the pick, so the gate is a pointer from a frozen Rule
- * Choice id to the option that opens it (ADR 0014). Only the Cantrip option of the Moon or Sun Elf descent is gated.
- */
-const GRANT_GATED_BY_OPTION: ReadonlyMap<string, string> = new Map([
-  ["SCAG__Half-Elf__Moon Elf or Sun Elf Descent__Variant Feature (Choose 1)", "Cantrip"],
-]);
 
 /** The mark each kind of owner puts in its pick ids. */
 const OWNER_MARK: Record<GrantOwner["kind"], string> = { feat: "Feat Spells", race: "Race Spells" };
@@ -479,14 +470,14 @@ export function isGrantSpellChoiceId(id: string): boolean {
 }
 
 /**
- * The race or subrace whose spell grant the character has, read from the catalog. A subrace whose grants exist replaces the
- * race's, as its trait takes the place of the race's Innate Magic, unless the subrace's option gate is shut (see
- * GRANT_GATED_BY_OPTION). Undefined when neither gives spells.
+ * The race or subrace whose spell grant the character has, read from the catalog. A subrace whose grants are read replaces the
+ * race's, as its trait takes the place of the race's Innate Magic. Only the grants whose gate is open are read (see
+ * grantGateOpen). Undefined when neither gives spells the character reads.
  */
 export function raceGrantsOf(character: Character, races: RaceData[]): RaceGrants | undefined {
   // A lineage replacement stands in for the race, as the catalog resolves it.
   const lineage = character.lineageReplacement ? races.find((r) => r.name === character.lineageReplacement) : undefined;
-  if (lineage) return lineage.additionalSpells?.length ? { owner: raceOwner(lineage), grants: lineage.additionalSpells } : undefined;
+  if (lineage) return openRaceGrants(character, raceOwner(lineage), lineage.additionalSpells);
 
   const choice = character.race;
   if (!choice) return undefined;
@@ -494,24 +485,26 @@ export function raceGrantsOf(character: Character, races: RaceData[]): RaceGrant
   const subrace = race?.subraces?.find(
     (s) => s.name === choice.subraceName && (!choice.subraceSource || s.source === choice.subraceSource)
   );
-  if (subrace?.additionalSpells?.length && subraceGrantOpen(character, subrace)) {
-    return { owner: raceOwner(subrace), grants: subrace.additionalSpells };
-  }
-  if (race?.additionalSpells?.length) return { owner: raceOwner(race), grants: race.additionalSpells };
-  return undefined;
+  const subraceGrants = subrace ? openRaceGrants(character, raceOwner(subrace), subrace.additionalSpells) : undefined;
+  if (subraceGrants) return subraceGrants;
+  return race ? openRaceGrants(character, raceOwner(race), race.additionalSpells) : undefined;
 }
 
-/** Whether every option gate on a subrace's choices is open: the player picked each gating option. */
-function subraceGrantOpen(character: Character, subrace: SubraceData): boolean {
-  for (const trait of subrace.traits ?? []) {
-    if (!trait.choice) continue;
-    const id = ruleChoiceId({ source: subrace.source, race: character.race?.name ?? "", subrace: { name: subrace.name }, trait: trait.name });
-    const gate = GRANT_GATED_BY_OPTION.get(id);
-    if (gate === undefined) continue;
-    const picked = character.ruleChoices?.find((entry) => entry.id === id)?.picked ?? [];
-    if (!picked.includes(gate)) return false;
-  }
-  return true;
+/** The grants of a race or subrace whose gate is open, with the record that owns them. Undefined when none is open. */
+function openRaceGrants(character: Character, owner: GrantOwner, grants: AdditionalSpells[] | undefined): RaceGrants | undefined {
+  const open = (grants ?? []).filter((grant) => grantGateOpen(character, grant));
+  return open.length > 0 ? { owner, grants: open } : undefined;
+}
+
+/**
+ * Whether a grant's gate is open. A grant with no gate always is. A gated grant is read only while the player picked the
+ * gate's option in the Rule Choice it names (ADR 0014): the gate is written into the Catalog by the scraper.
+ */
+export function grantGateOpen(character: Character, grant: AdditionalSpells): boolean {
+  const gate = grant.gatedBy;
+  if (!gate) return true;
+  const picked = character.ruleChoices?.find((entry) => entry.id === gate.choiceId)?.picked ?? [];
+  return picked.includes(gate.option);
 }
 
 /** Every owner of spell grants the character holds: its feats (with their records) and its race or subrace. */
