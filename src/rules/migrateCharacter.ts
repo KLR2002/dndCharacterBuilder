@@ -3,7 +3,7 @@ import type { ClassData, RaceData } from "../types/dnd5e.ts";
 import { spellAbilityOf } from "./classData.ts";
 import { totalLevel } from "./proficiencies.ts";
 import { availableRuleChoices } from "./ruleChoices.ts";
-import { migrateLegacyRacialCantrip } from "./choices/featSpells.ts";
+import { migrateLegacyRacialCantrip, moveLegacyRacePickIds } from "./choices/featSpells.ts";
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return value !== null && typeof value === "object" && !Array.isArray(value);
@@ -108,5 +108,6 @@ export function migrateCharacter(raw: unknown, raceCatalog?: RaceData[], classCa
   // The High Elf and Half-Elf cantrip moves to the race's own pick once the catalog says what the race grants. A race whose book
   // the catalog does not hold is not loaded, so the cantrip is kept as saved, with no notice.
   const raceBookLoaded = raceCatalog?.some((race) => race.source === c.race?.source) ?? false;
-  return raceCatalog && raceBookLoaded ? migrateLegacyRacialCantrip(migrated, raceCatalog) : migrated;
+  const rekeyed = moveLegacyRacePickIds(migrated);
+  return raceCatalog && raceBookLoaded ? migrateLegacyRacialCantrip(rekeyed, raceCatalog) : rekeyed;
 }

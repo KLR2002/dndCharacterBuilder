@@ -38,7 +38,7 @@ const OWNER_MARK: Record<GrantOwner["kind"], string> = { feat: "Feat Spells", ra
 
 /**
  * Whose spell grant a pick is for: a feat the character holds, or the race or subrace record that gives the grant. `source`
- * and `name` are the owner's own record, so two owners of one kind never collide.
+ * and `name` are the owner's own record; a race's key carries no source (see ownerKey).
  */
 export interface GrantOwner {
   kind: "feat" | "race";
@@ -142,9 +142,16 @@ function raceOwner(record: { name: string; source: string }): GrantOwner {
   return { kind: "race", source: record.source, name: record.name };
 }
 
-/** The key an owner's picks share: its source, its kind's mark and its name. */
+/**
+ * The source slot of a race's pick key. A race is held by its name whichever book holds it, so its key names no book: a pick
+ * made on one catalog's record of a race is the same pick on another catalog's.
+ */
+export const RACE_KEY_SOURCE = "-";
+
+/** The key an owner's picks share: its source (none for a race), its kind's mark and its name. */
 export function ownerKey(owner: GrantOwner): string {
-  return `${owner.source}__${OWNER_MARK[owner.kind]}__${owner.name}`;
+  const source = owner.kind === "race" ? RACE_KEY_SOURCE : owner.source;
+  return `${source}__${OWNER_MARK[owner.kind]}__${owner.name}`;
 }
 
 /** The Rule Choice origin of an owner's picks. */
@@ -485,6 +492,32 @@ export function featCounterId(featName: string, listName: string | undefined, sp
   return `${FEAT_COUNTER_PREFIX}${slugOf(featName)}${COUNTER_SEGMENT}${list}${slugOf(spellName)}`;
 }
 
+/**
+ * Moves the race picks a save keyed by the race's source to the race's key (see RACE_KEY_SOURCE), so a save made before the key
+ * changed still holds its picks. A legacy pick whose new key a pick already holds is dropped: the pick under the new key stands.
+ * Returns the character itself when no race pick is keyed by a source.
+ */
+export function moveLegacyRacePickIds(character: Character): Character {
+  const entries = character.ruleChoices ?? [];
+  const isLegacy = (id: string) => id.split("__")[1] === OWNER_MARK.race && id.split("__")[0] !== RACE_KEY_SOURCE;
+  if (!entries.some((entry) => isLegacy(entry.id))) return character;
+
+  const taken = new Set(entries.filter((entry) => !isLegacy(entry.id)).map((entry) => entry.id));
+  const moved: RuleChoiceEntry[] = [];
+  for (const entry of entries) {
+    if (!isLegacy(entry.id)) {
+      moved.push(entry);
+      continue;
+    }
+    const source = entry.id.split("__")[0];
+    const id = `${RACE_KEY_SOURCE}${entry.id.slice(source.length)}`;
+    if (taken.has(id)) continue;
+    taken.add(id);
+    moved.push({ ...entry, id });
+  }
+  return { ...character, ruleChoices: moved };
+}
+
 /** The choice id of the casting ability the player picks for an owner, once for all its grants. */
 function abilityChoiceId(owner: GrantOwner): string {
   return `${ownerKey(owner)}__${ABILITY_CHOICE_KEY}`;
@@ -503,6 +536,14 @@ export function isGrantSpellChoiceId(id: string): boolean {
 }
 
 /**
+ * The record of a name the saved source names, or else the record of that name whatever book holds it. A race saved on the SRD
+ * Baseline is still the race when the integrated catalog, which has no SRD record, is the one loaded.
+ */
+function recordNamed<T extends { name: string; source: string }>(records: readonly T[], name: string, source?: string): T | undefined {
+  return records.find((r) => r.name === name && r.source === source) ?? records.find((r) => r.name === name);
+}
+
+/**
  * The race or subrace whose spell grant the character has, read from the catalog. A subrace whose grants are read replaces the
  * race's, as its trait takes the place of the race's Innate Magic. Only the grants whose gate is open are read (see
  * grantGateOpen). Undefined when neither gives spells the character reads.
@@ -514,10 +555,8 @@ export function raceGrantsOf(character: Character, races: RaceData[]): RaceGrant
 
   const choice = character.race;
   if (!choice) return undefined;
-  const race = races.find((r) => r.name === choice.name && (!choice.source || r.source === choice.source));
-  const subrace = race?.subraces?.find(
-    (s) => s.name === choice.subraceName && (!choice.subraceSource || s.source === choice.subraceSource)
-  );
+  const race = recordNamed(races, choice.name, choice.source);
+  const subrace = race?.subraces ? recordNamed(race.subraces, choice.subraceName ?? "", choice.subraceSource) : undefined;
   const subraceGrants = subrace ? openRaceGrants(character, raceOwner(subrace), subrace.additionalSpells) : undefined;
   if (subraceGrants) return subraceGrants;
   return race ? openRaceGrants(character, raceOwner(race), race.additionalSpells) : undefined;
@@ -676,10 +715,14 @@ function bookLoadedFor(kind: "feat" | "race", source: string | undefined, listin
   return books.includes(source);
 }
 
-/** Whether the book the owner of a Rule Choice id came from is loaded (see bookLoadedFor). An id starts with that book. */
-function ownerBookLoaded(id: string, listings: CompendiumListings): boolean {
+/**
+ * Whether the book of the owner of a Rule Choice id is loaded (see bookLoadedFor). A feat's book is the id's source. A race's
+ * id names no book, so its book is the one the character's race was picked from.
+ */
+function ownerBookLoaded(id: string, listings: CompendiumListings, character: Character): boolean {
   const [source, mark] = id.split("__");
-  return bookLoadedFor(mark === OWNER_MARK.feat ? "feat" : "race", source, listings);
+  if (mark === OWNER_MARK.race) return bookLoadedFor("race", character.race?.subraceSource ?? character.race?.source, listings);
+  return bookLoadedFor("feat", source, listings);
 }
 
 /**
@@ -713,7 +756,7 @@ export function pruneInvalidFeatSpellPicks(character: Character, compendium: Com
   const notices: string[] = [];
   const kept: RuleChoiceEntry[] = [];
   for (const entry of entries) {
-    if (!isGrantSpellChoiceId(entry.id) || !ownerBookLoaded(entry.id, listings)) {
+    if (!isGrantSpellChoiceId(entry.id) || !ownerBookLoaded(entry.id, listings, character)) {
       kept.push(entry);
       continue;
     }
