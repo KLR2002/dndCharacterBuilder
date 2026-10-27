@@ -1276,6 +1276,7 @@ test("live catalog: a High Elf saved on the SRD Baseline keeps its High subrace,
   assert.deepEqual(withOther.raceTraits, withDefault.raceTraits);
   assert.deepEqual(withOther.scores, withDefault.scores);
   assert.equal(withOther.speed, withDefault.speed);
+  assert.deepEqual(withOther.spellChoices, withDefault.spellChoices, "the race's spell picks are offered from the same records");
 });
 
 test("live catalog: Hill Dwarf Cleric keeps 10 hit points on the integrated catalog", { skip: SKIP }, () => {

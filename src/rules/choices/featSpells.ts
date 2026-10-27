@@ -7,7 +7,7 @@ import { withNotices } from "../needsReview.ts";
 import { totalLevel } from "../proficiencies.ts";
 import { isSpellAvailableForClass } from "../spellcasting.ts";
 import { resolveSpellName } from "../subclassSpells.ts";
-import { findHeldRecord, heldRaceListed } from "../raceLookup.ts";
+import { findHeldRace, heldRaceListed } from "../raceLookup.ts";
 import type { AvailableRuleChoice, RuleChoiceOrigin } from "./types.ts";
 
 /**
@@ -667,21 +667,19 @@ export function isGrantSpellChoiceId(id: string): boolean {
 /**
  * The race or subrace whose spell grant the character has, read from the catalog. A subrace whose grants are read replaces the
  * race's, as its trait takes the place of the race's Innate Magic. Only the grants whose gate is open are read (see
- * grantGateOpen). Undefined when neither gives spells the character reads. The race is resolved by the shared lookup, scoped to
- * `activeBooks` when given.
+ * grantGateOpen). Undefined when neither gives spells the character reads. The race, its subrace and a lineage replacement are
+ * resolved by the shared lookup, scoped to `activeBooks` when given.
  */
 export function raceGrantsOf(character: Character, races: RaceData[], activeBooks?: readonly string[]): RaceGrants | undefined {
   // A lineage replacement stands in for the race, as the catalog resolves it.
-  const lineage = character.lineageReplacement ? races.find((r) => r.name === character.lineageReplacement) : undefined;
+  const lineage = character.lineageReplacement ? findHeldRace(races, { name: character.lineageReplacement }, activeBooks).race : undefined;
   if (lineage) return openRaceGrants(character, raceOwner(lineage), lineage.additionalSpells);
 
-  const choice = character.race;
-  if (!choice) return undefined;
-  const race = findHeldRecord(races, choice, activeBooks);
-  const subrace = race?.subraces ? findHeldRecord(race.subraces, { name: choice.subraceName ?? "", source: choice.subraceSource }, activeBooks) : undefined;
+  const { race, subrace } = findHeldRace(races, character.race, activeBooks);
+  if (!race) return undefined;
   const subraceGrants = subrace ? openRaceGrants(character, raceOwner(subrace), subrace.additionalSpells) : undefined;
   if (subraceGrants) return subraceGrants;
-  return race ? openRaceGrants(character, raceOwner(race), race.additionalSpells) : undefined;
+  return openRaceGrants(character, raceOwner(race), race.additionalSpells);
 }
 
 /** The grants of a race or subrace whose gate is open, with the record that owns them. Undefined when none is open. */
@@ -726,7 +724,7 @@ export function featSpellRuleChoices(character: Character, compendium: Compendiu
  * the picks of its grant (each from the level it unlocks at). Offered spells come from the active books.
  */
 export function raceSpellRuleChoices(character: Character, compendium: Compendium, activeBooks?: readonly string[]): AvailableRuleChoice[] {
-  const race = raceGrantsOf(character, compendium.for(activeBooks).races());
+  const race = raceGrantsOf(character, compendium.for(activeBooks).races(), activeBooks);
   return race ? grantChoicesOf(character, race.owner, race.grants, compendium, activeBooks) : [];
 }
 
@@ -879,7 +877,7 @@ export function pruneInvalidFeatSpellPicks(character: Character, compendium: Com
   if (!entries.some((entry) => isGrantSpellChoiceId(entry.id))) return character;
 
   const listings = compendium.for();
-  const held = heldGrantsOf(character, candidateFeatsOf(character, listings.feats()), listings.races(), activeBooks);
+  const held = heldGrantsOf(character, candidateFeatsOf(character, listings.feats()), compendium.for(activeBooks).races(), activeBooks);
   const heldKeys = new Set(held.map(({ owner }) => ownerKey(owner)));
   // The offered options of each pick the character's owners still make, keyed by the choice id.
   const valid = new Map<string, string[] | undefined>();

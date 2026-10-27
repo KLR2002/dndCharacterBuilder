@@ -5,9 +5,12 @@ import { evaluateCharacter } from "../src/rules/characterEvaluation.ts";
 import { resolveAncestryState } from "../src/rules/ancestryEngine.ts";
 import { grantedFeatures } from "../src/rules/grantedFeatures.ts";
 import { offeredRuleChoices } from "../src/rules/ruleChoices.ts";
+import { heldSubraceOf } from "../src/rules/recordProficiencyGrants.ts";
+import { pruneInvalidFeatSpellPicks, raceGrantsOf, raceSpellRuleChoices } from "../src/rules/choices/featSpells.ts";
 import type { Character } from "../src/types/character.ts";
 import type { RaceData, SubraceData } from "../src/types/dnd5e.ts";
 import { inMemoryCompendium, makeChar } from "./testUtils.ts";
+import { grantedSpellClasses, grantedSpellSpells } from "./grantedSpellsFixture.ts";
 
 // Invented races, subraces and books throughout: every name and sentence here is a placeholder. The order a race is
 // found in is the rule under test: the saved source, then an active book, then catalog order.
@@ -262,4 +265,53 @@ test("the Compendium's race finder takes the saved source first, then an active 
   assert.equal(compendium.findRace("Sample Folk", "OLD", ["ALT"])?.source, "ALT");
   assert.equal(compendium.findRace("Sample Folk", "OLD")?.source, "TST");
   assert.equal(compendium.findRace("Sample Other", "SRD"), undefined);
+});
+
+test("a subrace name held twice in one race resolves to the subrace of an active book", () => {
+  const folk = race("Sample Folk", "ALT", { subraces: [subrace("Brook", "TST"), subrace("Brook", "ALT")] });
+  const held = makeChar({ race: { name: "Sample Folk", source: "OLD", subraceName: "Brook", subraceSource: "OLD" } });
+  assert.equal(heldSubraceOf(folk, held, ["ALT"])?.source, "ALT");
+  assert.equal(heldSubraceOf(folk, held)?.source, "TST", "without active books, catalog order decides");
+});
+
+test("a lineage held in two books is read from the record of the active book, not the first listed", () => {
+  const lineage = (source: string, spell: string) =>
+    race("Sample Lineage", source, { additionalSpells: [{ ability: "int", known: { "1": [spell] } }] });
+  const records = [lineage("OLD", "sample ember"), lineage("ALT", "sample pulse")];
+  const grants = raceGrantsOf(makeChar({ lineageReplacement: "Sample Lineage" }), records, ["ALT"]);
+  assert.deepEqual(grants?.grants[0].known, { "1": ["sample pulse"] });
+});
+
+test("a lineage's spell pick is judged against the active book's record when another book also lists the lineage", () => {
+  const compendium = inMemoryCompendium(
+    {
+      races: [
+        race("Sample Folk", "TST"),
+        race("Sample Lineage", "OLD", {
+          additionalSpells: [{ ability: "int", known: { "1": { _: [{ choose: "level=0|class=Sample Mage" }] } } }],
+        }),
+        race("Sample Lineage", "ALT", {
+          additionalSpells: [{ ability: "int", known: { "1": { _: [{ choose: "level=1|class=Sample Mage" }] } } }],
+        }),
+      ],
+      classes: grantedSpellClasses(),
+      spells: grantedSpellSpells(),
+    },
+    { integrated: true },
+  );
+  const books = ["TST", "ALT"];
+  const character = makeChar({
+    classes: [{ className: "Sample Mage", source: "TST", level: 1 }],
+    race: { name: "Sample Folk", source: "TST" },
+    lineageReplacement: "Sample Lineage",
+  });
+  const slot = raceSpellRuleChoices(character, compendium, books).find((choice) =>
+    choice.options.some((option) => option.name === "Sample Lure"),
+  );
+  assert.ok(slot, "the active book's lineage offers a first-level pick");
+  const held = {
+    ...character,
+    ruleChoices: [{ id: slot.id, trait: slot.traitName, origin: "race" as const, choose: slot.choose, from: slot.options.map((o) => o.name), picked: ["Sample Lure"] }],
+  };
+  assert.equal(pruneInvalidFeatSpellPicks(held, compendium, books), held, "the pick still applies, so nothing is released");
 });

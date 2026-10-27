@@ -74,11 +74,12 @@ export function subracePickApplies(
   return descentPicksSkillVersatility(race, subrace, character);
 }
 
-/** The subrace of a race the character holds, matched as the record lookup matches it. */
-export function heldSubraceOf(race: RaceData, character: Pick<Character, "race">): SubraceData | undefined {
-  const held = character.race;
-  if (!held?.subraceName) return undefined;
-  return findHeldRecord(race.subraces ?? [], { name: held.subraceName, source: held.subraceSource });
+/**
+ * The subrace of a race the character holds, resolved by the shared lookup within `activeBooks` when given. The race
+ * is `race` itself: the lookup is given it alone, so only its own subraces are read.
+ */
+export function heldSubraceOf(race: RaceData, character: Pick<Character, "race">, activeBooks?: readonly string[]): SubraceData | undefined {
+  return findHeldRace([race], character.race, activeBooks).subrace;
 }
 
 /**

@@ -186,10 +186,11 @@ interface GrantSource {
 }
 
 /**
- * Every Proficiency Grant id in the Compendium, with each place that carries it, in catalog order. Unscoped by books.
- * An id keeps all its owners: a pick is released only when none of them is held.
+ * Every Proficiency Grant id in the Compendium, with each place that carries it, in catalog order. Unscoped by books; the
+ * held subrace a race's skill pick is gated on resolves within `activeBooks` when given. An id keeps all its owners: a pick
+ * is released only when none of them is held.
  */
-function grantSourcesIn(compendium: Compendium): Map<string, GrantSource[]> {
+function grantSourcesIn(compendium: Compendium, activeBooks?: readonly string[]): Map<string, GrantSource[]> {
   const listings = compendium.for();
   const sources = new Map<string, GrantSource[]>();
   const add = (
@@ -252,7 +253,7 @@ function grantSourcesIn(compendium: Compendium): Map<string, GrantSource[]> {
     const raceOwner = { kind: "record" as const, origin: "Race" as const, name: race.name, source: race.source };
     // A race's skill pick depends on the descent the character holds, so each grant is gated on it (see raceSkillPickApplies).
     add(sourceRecordGrants(race.grants), { feature: race.name, level: 0, optional: false, owner: raceOwner }, (grant, character) =>
-      raceSkillPickApplies(race, heldSubraceOf(race, character), character, grant),
+      raceSkillPickApplies(race, heldSubraceOf(race, character, activeBooks), character, grant),
     );
     for (const sub of race.subraces ?? []) {
       add(
@@ -385,7 +386,7 @@ export function pruneInvalidProficiencyPicks(character: Character, compendium: C
   const picks = character.proficiencyPicks;
   if (!picks || Object.keys(picks).length === 0) return character;
 
-  const sources = grantSourcesIn(compendium);
+  const sources = grantSourcesIn(compendium, activeBooks);
   const listings = compendium.for();
   const held = heldRecordIdsOf(character, listings.races(), listings.backgrounds(), activeBooks);
   const kept: Record<string, string[]> = {};
@@ -483,7 +484,7 @@ export function moveExpertisePicksToGrants(character: Character, compendium: Com
   const held = heldRecordIdsOf(character, listings.races(), listings.backgrounds(), activeBooks);
   const classes = listings.classes();
   const offered: { id: string; grant: ChoiceProficiencyGrant }[] = [];
-  for (const [id, owners] of grantSourcesIn(compendium)) {
+  for (const [id, owners] of grantSourcesIn(compendium, activeBooks)) {
     const grant = owners[0].grant;
     if (grant.kind !== "choice" || grant.category !== "skills" || grant.expertise !== true) continue;
     if (releaseReason(owners, character, classes, held) !== undefined) continue;

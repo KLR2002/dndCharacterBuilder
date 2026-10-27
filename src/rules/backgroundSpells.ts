@@ -54,7 +54,7 @@ function heldExpandedSources(
   for (const { feat } of heldFeatsOf(character, listings.feats(), activeBooks)) {
     sources.push({ title: `${feat.name} feat`, names: expandedSpellNamesOf(feat.additionalSpells) });
   }
-  const race = raceGrantsOf(character, listings.races());
+  const race = raceGrantsOf(character, listings.races(), activeBooks);
   if (race) sources.push({ title: `${raceTitleOf(character, race.owner.name)} race`, names: expandedSpellNamesOf(race.grants) });
   return sources.filter((source) => source.names.length > 0);
 }

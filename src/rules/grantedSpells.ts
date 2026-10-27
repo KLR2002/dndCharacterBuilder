@@ -73,7 +73,7 @@ export function grantedSpellSources(
   const listings = catalogListings(catalogs);
   const sources: InnateSpellProfile[] = [];
 
-  const race = raceGrantsOf(character, listings.races());
+  const race = raceGrantsOf(character, listings.races(), ctx.activeBooks);
   if (race) {
     const seen = new Set<string>();
     for (const grant of race.grants) {
@@ -139,7 +139,7 @@ export function grantedPreparedSpells(character: Character, catalogs?: Character
     }
   };
 
-  const race = raceGrantsOf(character, listings.races());
+  const race = raceGrantsOf(character, listings.races(), activeBooks);
   if (race) for (const grant of race.grants) addGrant(race.owner, grant, raceTitleOf(character, race.owner.name));
 
   for (const { feat } of heldFeatsOf(character, listings.feats(), activeBooks)) {
