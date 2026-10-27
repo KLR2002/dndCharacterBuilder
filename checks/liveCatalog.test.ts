@@ -646,7 +646,7 @@ test("live catalog: a level-5 Drow has Dancing Lights, Faerie Fire and Darkness 
   for (const name of ["Dancing Lights", "Faerie Fire", "Darkness"]) assert.ok(names.includes(name), `${name} is on the Drow card: ${names.join(", ")}`);
 });
 
-test("live catalog: a Water Genasi of level 3 keeps the counter id the old race table saved for Create or Destroy Water", { skip: SKIP }, () => {
+test("live catalog: a Water Genasi of level 3 has its Create or Destroy Water counter under the spell's id, and a use saved under an older id moves there", { skip: SKIP }, () => {
   const character = makeChar({
     classes: [{ className: "Fighter", source: "PHB", level: 3 }],
     race: { name: "Genasi", source: "EEPC", subraceName: "Water", subraceSource: "EEPC" },
@@ -656,7 +656,17 @@ test("live catalog: a Water Genasi of level 3 keeps the counter id the old race 
   const water = evaluated.grantedSpellSources.find((source) => source.title === "Water");
   const spell = water?.spells.find((entry) => entry.name === "Create or Destroy Water");
   assert.ok(spell, `no Create or Destroy Water on the Water card: ${JSON.stringify(water?.spells.map((entry) => entry.name))}`);
-  assert.equal(spell.resourceCounterId, "innate_spell_create_water");
+  assert.equal(spell.resourceCounterId, "innate_spell_create_or_destroy_water");
+
+  const savedUnderOldId = {
+    ...character,
+    resourceCounters: {
+      innate_spell_create_water: { id: "innate_spell_create_water", name: "Innate: Create or Destroy Water", current: 0, max: 1, resetOn: "long" as const },
+    },
+  };
+  const moved = reconcile(savedUnderOldId, live!.compendium);
+  assert.equal(moved.resourceCounters?.innate_spell_create_water, undefined, "the counter under the older id is gone");
+  assert.equal(moved.resourceCounters?.innate_spell_create_or_destroy_water?.current, 0, "the saved use is kept under the spell's id");
 });
 
 test("live catalog: a level-3 Tiefling's Hellish Rebuke is cast at 2nd level, and its counter is the one the old table saved", { skip: SKIP }, () => {
