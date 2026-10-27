@@ -430,6 +430,101 @@ function backgroundFeatCharacter() {
   });
 }
 
+// A level 8 Wizard whose sources grant spells, so the Spells tab shows one card per source. The SRD Baseline has the race
+// only (a Tiefling, cast with Charisma). The integrated catalog adds: a Githyanki with its casting ability picked (Intelligence);
+// Magic Initiate from an origin feat, with its Wizard list picked; a Strixhaven Initiate (Silverquill) with long spell names
+// and Wisdom picked; and Fey Touched with no ability increase recorded, which shows the needs-review notices.
+const GRANTED_ID = "char_granted";
+const GRANTED_ROUTE = `/character/${GRANTED_ID}`;
+function grantedSpellsCharacter() {
+  const base = {
+    id: GRANTED_ID,
+    name: "Vesper",
+    createdAt: 12,
+    updatedAt: 12,
+    startingOption: "equipment",
+    background: { name: "Acolyte", source: catalogSource("backgrounds", "Acolyte") },
+    classes: [{ className: "Wizard", source: catalogSource("classes", "Wizard"), level: 8 }],
+    currentHp: 40,
+    startingGrantsApplied: true,
+    backgroundGrantsApplied: true,
+  };
+  if (!INTEGRATED) {
+    return makeChar({ ...base, race: { name: "Tiefling", source: catalogSource("races", "Tiefling") } });
+  }
+  const magicInitiate = catalogSource("feats", "Magic Initiate");
+  const strixhaven = catalogSource("feats", "Strixhaven Initiate");
+  const feyTouched = catalogSource("feats", "Fey Touched");
+  const githyanki = catalogSource("races", "Githyanki");
+  return makeChar({
+    ...base,
+    race: { name: "Githyanki", source: githyanki },
+    originFeats: [{ level: 1, type: "feat", featName: "Magic Initiate", featSource: magicInitiate }],
+    asiSelections: [
+      { level: 4, className: "Wizard", classLevel: 4, type: "feat", featName: "Strixhaven Initiate", featSource: strixhaven },
+      { level: 8, className: "Wizard", classLevel: 8, type: "feat", featName: "Fey Touched", featSource: feyTouched },
+    ],
+    ruleChoices: [
+      {
+        id: `${githyanki}__Race Spells__Githyanki__Casting Ability`,
+        trait: "Githyanki Casting Ability",
+        origin: "race",
+        choose: 1,
+        from: ["int", "wis", "cha"],
+        picked: ["int"],
+      },
+      {
+        id: `${magicInitiate}__Feat Spells__Magic Initiate__Spell List`,
+        trait: "Magic Initiate Spell List",
+        origin: "feat",
+        choose: 1,
+        from: ["Bard Spells", "Cleric Spells", "Druid Spells", "Sorcerer Spells", "Warlock Spells", "Wizard Spells"],
+        picked: ["Wizard Spells"],
+      },
+      {
+        id: `${magicInitiate}__Feat Spells__Magic Initiate__Wizard Spells__0`,
+        trait: "Magic Initiate Cantrip",
+        origin: "feat",
+        choose: 2,
+        from: ["Fire Bolt", "Light", "Mage Hand", "Minor Illusion", "Prestidigitation", "Ray of Frost"],
+        picked: ["Fire Bolt", "Mage Hand"],
+      },
+      {
+        id: `${magicInitiate}__Feat Spells__Magic Initiate__Wizard Spells__1`,
+        trait: "Magic Initiate Spell",
+        origin: "feat",
+        choose: 1,
+        from: ["Find Familiar", "Magic Missile", "Tenser's Floating Disk"],
+        picked: ["Tenser's Floating Disk"],
+      },
+      {
+        id: `${strixhaven}__Feat Spells__Strixhaven Initiate__Spell List`,
+        trait: "Strixhaven Initiate Spell List",
+        origin: "feat",
+        choose: 1,
+        from: ["Silverquill 2"],
+        picked: ["Silverquill 2"],
+      },
+      {
+        id: `${strixhaven}__Feat Spells__Strixhaven Initiate__Casting Ability`,
+        trait: "Strixhaven Initiate Casting Ability",
+        origin: "feat",
+        choose: 1,
+        from: ["int", "wis", "cha"],
+        picked: ["wis"],
+      },
+      {
+        id: `${strixhaven}__Feat Spells__Strixhaven Initiate__Silverquill 2__0`,
+        trait: "Strixhaven Initiate Spell",
+        origin: "feat",
+        choose: 1,
+        from: ["Protection from Evil and Good", "Guiding Bolt", "Sanctuary"],
+        picked: ["Protection from Evil and Good"],
+      },
+    ],
+  });
+}
+
 // Level 1 Fighters for the equipment card. The unpicked one has no picks, so Claim Starting Equipment is disabled. The
 // picked one has a pick in every slot (chain mail, a martial weapon and a shield, a light crossbow, a dungeoneer's pack),
 // so Claim is enabled, and its martial weapon picker is the one a screen opens.
@@ -584,6 +679,7 @@ function buildSeed() {
       battleMasterCharacter(),
       ...(INTEGRATED ? [magicInitiateCharacter(), highElfCharacter()] : []),
       ...(INTEGRATED ? [backgroundFeatCharacter()] : []),
+      grantedSpellsCharacter(),
       ...(INTEGRATED ? [clericCharacter({ id: CLERIC_ID, name: "Corwin", domain: false })] : []),
       clericCharacter({ id: CLERIC_DOMAIN_ID, name: "Ysolde", domain: true }),
       INTEGRATED ? knowledgeClericCharacter() : multiclassSkillCharacter(),
@@ -593,7 +689,8 @@ function buildSeed() {
       ...defaults,
       hasCompletedFirstRun: true,
       // AAG is switched on for the Astral Drifter background, which grants Magic Initiate (the background section lists its feat only when the book is on).
-      activeResourceBooks: INTEGRATED ? [...new Set([...defaults.activeResourceBooks, "MM", "AAG"])] : defaults.activeResourceBooks,
+      // SCC is switched on for Strixhaven Initiate, which the Spells tab scenario holds.
+      activeResourceBooks: INTEGRATED ? [...new Set([...defaults.activeResourceBooks, "MM", "AAG", "SCC"])] : defaults.activeResourceBooks,
     },
     integrated: INTEGRATED ? integratedCollections(ROOT) : null,
   };
@@ -748,6 +845,30 @@ const SCREENS = [
       ]
     : []),
   { name: "Spells", route: WIZARD_ROUTE, tabs: ["Spells"], ready: /add spells/i },
+  // One card per granting source (ADR 0017): the race card in both catalogs, and in integrated mode the Magic Initiate card,
+  // the Strixhaven Initiate card with long spell names and a chosen ability, the race card's chosen ability, and the needs-review card.
+  {
+    name: "Spells granted cards",
+    route: GRANTED_ROUTE,
+    tabs: ["Spells"],
+    ready: /Innate racial magic from your ancestry/,
+    scrollTo: "STRIXHAVEN INITIATE",
+    expect: {
+      texts: INTEGRATED
+        ? [
+            "GITHYANKI",
+            "MAGIC INITIATE (WIZARD)",
+            "STRIXHAVEN INITIATE (SILVERQUILL)",
+            "FEY TOUCHED",
+            "Protection from Evil and Good",
+            "Tenser's Floating Disk",
+            "Needs review: the ability increase is not recorded",
+            "Needs review: pick 1 more spell",
+          ]
+        : ["TIEFLING", "Thaumaturgy", "Hellish Rebuke", "Darkness"],
+      fitsWidth: true,
+    },
+  },
   { name: "Inventory", route: WIZARD_ROUTE, tabs: ["Inventory"], ready: /total wealth/i },
   { name: "Features", route: RENDAR_ROUTE, tabs: ["Features"], ready: /resource trackers/i },
   { name: "Journal", route: RENDAR_ROUTE, tabs: ["Journal"], ready: /character name/i },
