@@ -795,12 +795,12 @@ export function checkActiveBooksIntegrity(
 
   // 4. Feats (ASIs & Origin Feats)
   for (const asi of character.asiSelections || []) {
-    if (asi.type === "feat" && asi.featSource && !activeSet.has(asi.featSource.toUpperCase())) {
+    if (asi.type === "feat" && asi.featSource && asi.featSource !== BACKGROUND_FEAT_SOURCE && !activeSet.has(asi.featSource.toUpperCase())) {
       warnings.push(`Feat "${asi.featName}" is from disabled sourcebook "${asi.featSource}".`);
     }
   }
   for (const feat of character.originFeats || []) {
-    if (feat.featSource && !activeSet.has(feat.featSource.toUpperCase())) {
+    if (feat.featSource && feat.featSource !== BACKGROUND_FEAT_SOURCE && !activeSet.has(feat.featSource.toUpperCase())) {
       warnings.push(`Feat "${feat.featName}" is from disabled sourcebook "${feat.featSource}".`);
     }
   }
