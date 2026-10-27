@@ -31,4 +31,4 @@ Follow `docs/agents/subagent-tiering.md` "Implementer Rules". Invent names and p
 
 ## Blocked by
 
-01
+01 (merged), 09

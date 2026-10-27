@@ -95,7 +95,7 @@ The 10th-level Circle of the Moon feature allowing the expenditure of two Wild S
 _Avoid_: Elemental form, circle elementals
 
 **Always-Prepared Spells**:
-Spells granted automatically by a character's subclass (e.g. Cleric Domain Spells, Druid Circle Spells, Paladin Oath Spells, Artificer Specialist Spells), or by a feat or race through a prepared grant (e.g. Mark feats), that are permanently prepared and do not count against the character's prepared spell limit. A subclass's count as spells of that class; a feat's or race's are shown in the list of every spellcasting class the character has, use that class's ability, and are never stored in the class's known or prepared spells.
+Spells granted automatically by a character's subclass (e.g. Cleric Domain Spells, Druid Circle Spells, Paladin Oath Spells, Artificer Specialist Spells), or by a feat or race through a plain prepared grant (e.g. Adept feats), one that names no ability of its own and gives no uses, that are permanently prepared and do not count against the character's prepared spell limit. A subclass's count as spells of that class; a feat's or race's are shown in the list of every spellcasting class the character has, use that class's ability, and are never stored in the class's known or prepared spells.
 _Avoid_: Auto spells, free prepared spells, bonus domain slots
 
 **Expanded Spell List**:

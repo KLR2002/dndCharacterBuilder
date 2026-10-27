@@ -112,10 +112,16 @@ After the granted-spells release, many spell grants from feats and races still d
 **When** the coverage gate runs
 **Then** their reviewed "not modelled" marks are removed (a stale mark throws), and `check:live` stays green.
 
+### AC-18: Prepared groups with their own ability or uses are Innate Magic
+
+**Given** a feat or race whose `prepared` group names its own casting ability (fixed, chosen or inherited from the feat's increase) or gives at-will or daily casts (Mark of Detection, Vampire Touched, Boon of Siberys, Magic Connoisseur shapes)
+**When** the Spells tab opens
+**Then** the source has its own card with that ability's save DC and attack bonus, its at-will spells and its daily spells with Long Rest counters, and its spells are not in the class list. A prepared group with neither (Adept feats, plain lists) stays in the class list under AC-1.
+
 ## Architecture Constraints
 
 - ADR 0017 stands, as amended. `prepared` grants of feats and races are Always-Prepared Spells, shown in class lists and never stored or counted. No feat, race or background name enters app code; wrong data is fixed in the scraper's reviewed overrides.
-- The feat's own ability field is ignored for `prepared` groups. Slot casting stays in the feat text.
+- A `prepared` group that names its own ability or gives uses is Innate Magic (AC-18); only plain prepared groups use the class's ability and the class list. Slot casting stays in the feat text.
 - If the scraped record shape changes, the Catalog Format rises to 10, because format 9 is pushed before this work lands.
 - The class list reader reads its data from the evaluation's supplied Catalog, not the process-wide compendium.
 - No explanatory UI copy beyond the badge and notice texts. Layout rules follow CODING_STANDARDS §7.
@@ -127,6 +133,7 @@ After the granted-spells release, many spell grants from feats and races still d
 | AC-1 to AC-5 | `evaluateCharacter` and `getClassSpellProfiles`, invented catalog in `checks/` | Listed or absent entries, stored spells unchanged, counts unchanged; `npm run check:all` |
 | AC-1, AC-4 UI | Spells tab | New `layout:check` scenarios, SRD and `-- --integrated`, four widths, screenshots viewed |
 | AC-6 | Spell availability and background-release path, invented catalog | Offered or absent, released with notice; `check:all` |
+| AC-18 | `grantedSpellSources` and class profiles, invented catalog | Red-then-green tests: card with ability and counters, absent from the class list; plain groups unchanged |
 | AC-7 | `grantedSpellSources` | Card has spells and counters, no ability row |
 | AC-8, AC-9, AC-17 | Scraper enrich and gate tests, live build | `check:live`, each of the 9 grants pinned |
 | AC-10 to AC-12, AC-14 to AC-16 | Reconciler and `migrateCharacter`, invented catalog | Counters, picks and notices asserted; `check:all` |
