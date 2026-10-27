@@ -2,6 +2,8 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { reconcile } from "../src/rules/characterReconciler.ts";
 import { currentCompendium } from "../src/services/compendium.ts";
+import { DEFAULT_ACTIVE_BOOK_CODES } from "../src/constants/books.ts";
+import { srdBaselineCompendium } from "./testUtils.ts";
 import type { Character } from "../src/types/character.ts";
 import type { SpellData } from "../src/types/dnd5e.ts";
 import {
@@ -356,5 +358,17 @@ test("isSpellEligibleForRitualBook: rejects non-ritual spells, cantrips, and ove
     isSpellEligibleForRitualBook(xgeRitual, 5, ["PHB", "XGE"]),
     true,
     "XGE ritual is accepted when XGE is active"
+  );
+});
+
+test("isSpellEligibleForRitualBook accepts an SRD ritual under DEFAULT_ACTIVE_BOOK_CODES, and refuses a ritual of a switched-off book", () => {
+  const detectMagic = srdBaselineCompendium().findSpell("Detect Magic", "SRD");
+  assert.ok(detectMagic, "the SRD holds Detect Magic");
+  const activeBooks = [...DEFAULT_ACTIVE_BOOK_CODES];
+  assert.equal(isSpellEligibleForRitualBook(detectMagic, 3, activeBooks), true, "an SRD ritual is eligible while the SRD is on");
+  assert.equal(
+    isSpellEligibleForRitualBook({ ...detectMagic, source: "MM" }, 3, activeBooks),
+    false,
+    "a ritual of a switched-off book is refused"
   );
 });
