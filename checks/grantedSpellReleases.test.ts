@@ -1,8 +1,9 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { evaluateCharacter } from "../src/rules/characterEvaluation.ts";
-import { featCounterId, featSpellRuleChoices } from "../src/rules/choices/featSpells.ts";
+import { featCounterId, featSpellRuleChoices, raceSpellRuleChoices } from "../src/rules/choices/featSpells.ts";
 import { pickRuleChoice } from "../src/rules/ruleChoices.ts";
+import { changeRace } from "../src/rules/builderTransitions.ts";
 import { removeOriginFeat } from "../src/rules/feats.ts";
 import { reconcile, reconcileForActiveBooks } from "../src/rules/characterReconciler.ts";
 import { migrateCharacter } from "../src/rules/migrateCharacter.ts";
@@ -344,3 +345,22 @@ function withPulseUsed(character: Character): Character {
   assert.ok(pulse?.resourceCounterId);
   return toggleInnateSpellUse(character, pulse);
 }
+
+test("changing the race notices each race pick it drops, naming the spell and the race", () => {
+  const gifted = makeChar({ classes: [mage(1)], race: { name: "Sample Gifted", source: "TST" } });
+  const choice = raceSpellRuleChoices(gifted, compendium, ACTIVE).find((candidate) =>
+    candidate.options.some((option) => option.name === "Sample Ember"),
+  );
+  assert.ok(choice, "the race offers Sample Ember as its cantrip");
+  const picked = pickRuleChoice(gifted, choice, "Sample Ember", compendium, ACTIVE);
+  const changed = changeRace(picked, compendium, ACTIVE);
+  assert.equal(
+    changed.ruleChoices?.some((entry) => entry.picked.includes("Sample Ember")),
+    false,
+    "the pick is released",
+  );
+  assert.ok(
+    changed.needsReview?.includes("Sample Ember removed from Sample Gifted: ancestry no longer grants it"),
+    `the release is noticed: ${JSON.stringify(changed.needsReview)}`,
+  );
+});

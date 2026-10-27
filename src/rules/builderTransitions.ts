@@ -17,6 +17,7 @@ import { moveLegacySkillPicks } from "./proficiencyPicks.ts";
 import { CUSTOM_BACKGROUND_SKILLS_ID, CUSTOM_BACKGROUND_TOOLS_OR_LANGUAGES_ID, isCustomBackground } from "./customBackground.ts";
 import { ABILITY_NAMES } from "./abilities.ts";
 import { releaseExpandedOnlySpells } from "./backgroundSpells.ts";
+import { isGrantSpellChoiceId, releaseSupersededRacePicks } from "./choices/featSpells.ts";
 import { withNotices } from "./needsReview.ts";
 import {
   BACKGROUND_FEAT_SOURCE,
@@ -248,19 +249,17 @@ export function changeRace(
   const migrated = moveLegacySkillPicks(character, compendium);
   const oldRaceChoices = (migrated.skillChoices || []).filter((sc) => sc.origin === "race");
   const oldRacePicks = new Set(oldRaceChoices.flatMap((sc) => sc.picked.map(normalizeSkillName)));
-  const reconciled = reconcile(
-    {
-      ...migrated,
-      race: null,
-      racialAbilityBonuses: {},
-      racialChoiceBonus: [],
-      ruleChoices: (character.ruleChoices || []).filter((rc) => rc.origin !== "race"),
-      skillChoices: (migrated.skillChoices || []).filter((sc) => sc.origin !== "race"),
-      chosenSkills: (migrated.chosenSkills || []).filter((s) => !oldRacePicks.has(normalizeSkillName(s))),
-    },
-    compendium,
-    { activeBooks }
-  );
+  // The race's spell picks stay until releaseSupersededRacePicks names and drops them, as the ancestry transition does.
+  const cleared: Character = {
+    ...migrated,
+    race: null,
+    racialAbilityBonuses: {},
+    racialChoiceBonus: [],
+    ruleChoices: (character.ruleChoices || []).filter((rc) => rc.origin !== "race" || isGrantSpellChoiceId(rc.id)),
+    skillChoices: (migrated.skillChoices || []).filter((sc) => sc.origin !== "race"),
+    chosenSkills: (migrated.chosenSkills || []).filter((s) => !oldRacePicks.has(normalizeSkillName(s))),
+  };
+  const reconciled = reconcile(releaseSupersededRacePicks(character, cleared), compendium, { activeBooks });
   // The spells only the old race's expanded lists gave are released, with a notice (ADR 0017).
   return releaseExpandedOnlySpells(character, reconciled, compendium, activeBooks);
 }
