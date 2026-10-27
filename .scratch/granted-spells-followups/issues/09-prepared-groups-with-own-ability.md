@@ -1,6 +1,8 @@
 # 09: Prepared groups with their own ability or uses are Innate Magic
 
-**Status:** ready-for-agent
+**Status:** done
+
+**Landed:** a prepared group that names an ability of any kind, or holds will/daily/rest uses, is Innate Magic (`isInnatePreparedGrant`): a card with that ability's DC and attack and Long Rest counters, out of the class list; plain groups stay in the class list. check:all and check:live green; layout scenario green. Open: Vampire Touched's scraped record carries no ability or uses so it stays in the class list (needs a reviewed override); Boon of Magic School Mastery's pick has no class filter; one full layout run after a merge failed the new scenario and could not be reproduced (later runs, mine included, green).
 
 Spec: `.scratch/granted-spells-followups/spec.md` (AC-18; ADR 0017 amendment; GLOSSARY *Always-Prepared Spells*, *Innate Magic*).
 
@@ -14,11 +16,11 @@ Ticket 01 puts every `prepared` spell of a feat or race in the class list with t
 
 ## Acceptance Criteria
 
-- [ ] A prepared group naming its own ability shows a source card with that ability's DC and attack bonus, and its spells are absent from the class list (AC-18).
-- [ ] A prepared group giving at-will or daily casts shows them on the card, the daily ones with Long Rest counters that a long rest restores (AC-18).
-- [ ] A chosen or inherited ability is picked or read where the feat or race is chosen, as for the other grants, and a missing pick shows a review notice (AC-18).
-- [ ] A plain prepared group (no ability, no uses) stays in the class list unchanged (AC-1 still holds).
-- [ ] `npm run check:all` and `npm run check:live` pass; the layout scenario of the Spells tab covers a card of this kind at four widths, integrated.
+- [x] A prepared group naming its own ability shows a source card with that ability's DC and attack bonus, and its spells are absent from the class list (AC-18).
+- [x] A prepared group giving at-will or daily casts shows them on the card, the daily ones with Long Rest counters that a long rest restores (AC-18).
+- [x] A chosen or inherited ability is picked or read where the feat or race is chosen, as for the other grants, and a missing pick shows a review notice (AC-18).
+- [x] A plain prepared group (no ability, no uses) stays in the class list unchanged (AC-1 still holds).
+- [x] `npm run check:all` and `npm run check:live` pass; the layout scenario of the Spells tab covers a card of this kind at four widths, integrated.
 
 ## Verification
 
