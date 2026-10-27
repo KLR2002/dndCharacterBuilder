@@ -6,6 +6,7 @@ import { reconcile, reconcileForActiveBooks } from "../src/rules/characterReconc
 import type { Character, CharacterClass } from "../src/types/character.ts";
 import type { InnateSpellProfile } from "../src/rules/innateMagic.ts";
 import type { RaceData } from "../src/types/dnd5e.ts";
+import { raceSpellRuleChoices } from "../src/rules/choices/featSpells.ts";
 import { inMemoryCompendium, loadTestCatalogs, makeChar } from "./testUtils.ts";
 import { grantedSpellClasses, grantedSpellRaces, grantedSpellSpells } from "./grantedSpellsFixture.ts";
 
@@ -179,4 +180,28 @@ test("a legacy race pick whose new key a pick already holds is dropped, and the 
   });
   const loaded = migrateCharacter(saved);
   assert.deepEqual(loaded.ruleChoices?.map((entry) => [entry.id, entry.picked]), [[newId, ["Mage Hand"]]]);
+});
+
+test("a legacy race pick moves into an entry under its new key that holds no pick, and that entry takes the pick", () => {
+  const newId = "-__Race Spells__High__-__0";
+  const saved = makeChar({
+    classes: [wizard],
+    race: { name: "Elf", source: "SRD", subraceName: "High", subraceSource: "SRD" },
+    ruleChoices: [
+      { id: "SRD__Race Spells__High__-__0", trait: "Cantrip", origin: "race", choose: 1, from: ["Fire Bolt"], picked: ["Fire Bolt"] },
+      { id: newId, trait: "Cantrip", origin: "race", choose: 1, from: [], picked: [] },
+    ],
+  });
+  const loaded = migrateCharacter(saved);
+  assert.deepEqual(loaded.ruleChoices?.map((entry) => [entry.id, entry.picked]), [[newId, ["Fire Bolt"]]], "one entry, holding the pick");
+});
+
+test("a legacy High Elf cantrip takes the empty entry under the race's key, and that entry takes the pick", () => {
+  const offered = raceSpellRuleChoices(highElf(), compendium, ACTIVE).find((choice) =>
+    choice.options.some((option) => option.name === "Fire Bolt"),
+  );
+  assert.ok(offered, "the High Elf offers a cantrip");
+  const emptyEntry = { id: offered.id, trait: offered.traitName, origin: "race" as const, choose: 1, from: [], picked: [] };
+  const loaded = migrateCharacter(highElf({ ruleChoices: [legacyPick("Fire Bolt"), emptyEntry] }), races, tracked.classes);
+  assert.deepEqual(loaded.ruleChoices?.map((entry) => [entry.id, entry.picked]), [[offered.id, ["Fire Bolt"]]], "one entry, holding the pick");
 });

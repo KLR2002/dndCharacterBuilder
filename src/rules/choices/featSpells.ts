@@ -608,26 +608,40 @@ export function featCounterId(featName: string, listName: string | undefined, sp
 
 /**
  * Moves the race picks a save keyed by the race's source to the race's key (see RACE_KEY_SOURCE), so a save made before the key
- * changed still holds its picks. A legacy pick whose new key a pick already holds is dropped: the pick under the new key stands.
- * Returns the character itself when no race pick is keyed by a source.
+ * changed still holds its picks. A key that already holds a pick stands: a legacy pick under it is dropped. An entry under the
+ * key that holds no pick is taken by the legacy pick, which replaces it. Returns the character itself when no race pick is keyed
+ * by a source.
  */
 export function moveLegacyRacePickIds(character: Character): Character {
   const entries = character.ruleChoices ?? [];
-  const isLegacy = (id: string) => id.split("__")[1] === OWNER_MARK.race && id.split("__")[0] !== RACE_KEY_SOURCE;
-  if (!entries.some((entry) => isLegacy(entry.id))) return character;
+  const isLegacy = (entry: RuleChoiceEntry) => entry.id.split("__")[1] === OWNER_MARK.race && entry.id.split("__")[0] !== RACE_KEY_SOURCE;
+  if (!entries.some(isLegacy)) return character;
 
-  const taken = new Set(entries.filter((entry) => !isLegacy(entry.id)).map((entry) => entry.id));
+  const newKeyOf = (entry: RuleChoiceEntry) => `${RACE_KEY_SOURCE}${entry.id.slice(entry.id.split("__")[0].length)}`;
+  const pickedKeys = new Set(entries.filter((entry) => !isLegacy(entry) && entry.picked.length > 0).map((entry) => entry.id));
+  const heldKeys = new Set(entries.filter((entry) => !isLegacy(entry)).map((entry) => entry.id));
+  // The first legacy pick for each key that no pick holds claims it.
+  const claims = new Map<string, RuleChoiceEntry>();
+  for (const entry of entries) {
+    if (!isLegacy(entry)) continue;
+    const id = newKeyOf(entry);
+    if (!pickedKeys.has(id) && !claims.has(id)) claims.set(id, entry);
+  }
+
   const moved: RuleChoiceEntry[] = [];
   for (const entry of entries) {
-    if (!isLegacy(entry.id)) {
-      moved.push(entry);
+    if (isLegacy(entry)) {
+      const id = newKeyOf(entry);
+      if (claims.get(id) === entry && !heldKeys.has(id)) moved.push({ ...entry, id });
       continue;
     }
-    const source = entry.id.split("__")[0];
-    const id = `${RACE_KEY_SOURCE}${entry.id.slice(source.length)}`;
-    if (taken.has(id)) continue;
-    taken.add(id);
-    moved.push({ ...entry, id });
+    const claim = entry.picked.length === 0 ? claims.get(entry.id) : undefined;
+    if (claim) {
+      moved.push({ ...claim, id: entry.id });
+      claims.delete(entry.id);
+    } else {
+      moved.push(entry);
+    }
   }
   return { ...character, ruleChoices: moved };
 }
