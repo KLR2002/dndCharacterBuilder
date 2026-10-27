@@ -8,14 +8,14 @@ import type { AbilityKey, AbilityScores, AsiSelection, Character, CharacterClass
 import type { FeatData } from "../src/types/dnd5e.ts";
 import type { ClassSpellProfile } from "../src/rules/spellcasting.ts";
 import { inMemoryCompendium, makeChar } from "./testUtils.ts";
-import { grantedSpellClasses, grantedSpellSpells } from "./grantedSpellsFixture.ts";
+import { grantedArtificerClass, grantedSpellClasses, grantedSpellSpells } from "./grantedSpellsFixture.ts";
 import { preparedGrantFeats, preparedGrantRaces, preparedGrantSpells } from "./grantedPreparedFixture.ts";
 
 // Prepared spells of a held feat or race are Always-Prepared Spells (ADR 0017, amendment). Every name here is invented
 // (checks/grantedPreparedFixture.ts). The spells listed are the ones the feat or race's prepared group names.
 
 const compendium = inMemoryCompendium({
-  classes: grantedSpellClasses(),
+  classes: [...grantedSpellClasses(), grantedArtificerClass()],
   feats: preparedGrantFeats(),
   races: preparedGrantRaces(),
   spells: preparedGrantSpells(),
@@ -34,6 +34,7 @@ const scores = (overrides: Partial<AbilityScores>): AbilityScores => ({
 
 const mage = (level: number): CharacterClass => ({ className: "Sample Mage", source: "TST", level });
 const cleric = (level: number): CharacterClass => ({ className: "Sample Cleric", source: "TST", level });
+const artificer = (level: number): CharacterClass => ({ className: "Sample Artificer", source: "TST", level });
 
 /** A feat taken through an ability score improvement at level 4. */
 const takenFeat = (featName: string, featAbility?: AbilityKey): AsiSelection => ({
@@ -102,6 +103,16 @@ test("a spell slot level gate counts the pooled slots of a multiclass caster, no
 
   const single = makeChar({ classes: [mage(3)], asiSelections: [takenFeat("Sample Third Adept")] });
   assert.equal(listedNames(profileFor(evaluateCharacter(single, catalogs).spellProfiles, "Sample Mage")).includes("Sample Vigil"), false, "not listed for a single class's slots");
+});
+
+test("an Artificer's levels round up into the pooled slots that gate a prepared spell", () => {
+  // Mage 3 with Artificer 3 pools to caster level 5, so the third-level slots. Artificer 3 has its own first-level slots.
+  const pooled = makeChar({ classes: [mage(3), artificer(3)], asiSelections: [takenFeat("Sample Third Adept")] });
+  assert.ok(listedNames(profileFor(evaluateCharacter(pooled, catalogs).spellProfiles, "Sample Mage")).includes("Sample Vigil"), "listed for the pooled slots");
+
+  // Mage 3 with Artificer 1 pools to caster level 4, so only the second-level slots: the third-level spell is absent.
+  const short = makeChar({ classes: [mage(3), artificer(1)], asiSelections: [takenFeat("Sample Third Adept")] });
+  assert.equal(listedNames(profileFor(evaluateCharacter(short, catalogs).spellProfiles, "Sample Mage")).includes("Sample Vigil"), false, "absent below the pooled third-level slots");
 });
 
 test("a prepared spell with a spell slot level is listed once the character has slots of that level", () => {

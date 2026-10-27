@@ -1,7 +1,7 @@
 import type { AbilityKey, AbilityScores, Character, CharacterClass, KnownSpell, RuleChoiceEntry } from "../types/character.ts";
 import type { ClassData, SpellData } from "../types/dnd5e.ts";
 import type { ResolvedAncestry } from "./types.ts";
-import { casterKindOf, isThirdCaster, PHB_HALF_CASTER_SLOTS, PHB_THIRD_CASTER_SLOTS, spellAbilityOf } from "./classData.ts";
+import { ARTIFICER_SLOTS, casterKindOf, isThirdCaster, PHB_HALF_CASTER_SLOTS, PHB_THIRD_CASTER_SLOTS, spellAbilityOf } from "./classData.ts";
 import { allCatalogClasses } from "./catalogs.ts";
 import {
   GIANT_BARBARIAN_OWNER_KEY,
@@ -87,7 +87,7 @@ export function isCastingClass(c: CharacterClass, classes: readonly ClassData[] 
   if (isGiantBarbarian(c)) return true;
   const kind = casterKindOf(c, classes);
   if (kind === "half") return c.level >= 2;
-  return kind === "full" || kind === "pact";
+  return kind === "full" || kind === "artificer" || kind === "pact";
 }
 
 export function getSpellcastingAbility(c: CharacterClass, classes: readonly ClassData[] = allCatalogClasses()): AbilityKey | undefined {
@@ -119,11 +119,14 @@ export function getMaxSpellLevel(c: CharacterClass, classes: readonly ClassData[
   if (kind === "half") {
     return PHB_HALF_CASTER_SLOTS[Math.min(c.level, 20)]?.length || 0;
   }
+  if (kind === "artificer") {
+    return ARTIFICER_SLOTS[Math.min(c.level, 20)]?.length || 0;
+  }
   if (kind === "pact") {
     return WARLOCK_PACT_SLOTS[Math.min(c.level, 20)]?.slotLevel || 0;
   }
   if (c.className === "Artificer") {
-    return Math.min(5, Math.ceil(c.level / 4));
+    return ARTIFICER_SLOTS[Math.min(c.level, 20)]?.length || 0;
   }
   return 0;
 }

@@ -7,12 +7,14 @@ import { findSpell } from "../src/services/dataService.ts";
 import {
   getClassSpellProfiles,
   calculateWarlockPactSlots,
+  getMaxSpellLevel,
   isSpellAvailableForClass,
   getAvailableSpellsForClass,
   type ClassSpellProfile,
 } from "../src/rules/spellcasting.ts";
+import { ARTIFICER_SLOTS } from "../src/rules/classData.ts";
 import type { CharacterClass } from "../src/types/character.ts";
-import type { SpellData } from "../src/types/dnd5e.ts";
+import type { ClassData, SpellData } from "../src/types/dnd5e.ts";
 
 const cl = (className: string, level: number, subclassName?: string, source = "PHB"): CharacterClass => ({
   className,
@@ -882,4 +884,13 @@ test("a class's subclass spells are read from the Compendium the evaluation was 
   const character = makeChar({ classes: [{ className: "Sample Mage", source: "TST", level: 3, subclassName: "Sample Order" }] });
   const [profile] = evaluateCharacter(character, { compendium }).spellProfiles;
   assert.deepEqual(profile.subclassKnownSpells?.map((spell) => spell.name), ["Sample Ward"]);
+});
+
+test("an Artificer's highest spell level is the top of its own table, with or without its Catalog class", () => {
+  const catalogClasses = loadTestCatalog<ClassData[]>("classes");
+  for (let level = 1; level <= 20; level++) {
+    const artificer = cl("Artificer", level, undefined, "TCE");
+    assert.equal(getMaxSpellLevel(artificer, catalogClasses), ARTIFICER_SLOTS[level].length, `level ${level} from the Catalog`);
+    assert.equal(getMaxSpellLevel(artificer, []), ARTIFICER_SLOTS[level].length, `level ${level} without it`);
+  }
 });

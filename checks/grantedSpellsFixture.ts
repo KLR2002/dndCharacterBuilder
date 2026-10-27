@@ -72,6 +72,12 @@ const sampleClass = (name: string, ability: string): ClassData => ({
 
 export const grantedSpellClasses = (): ClassData[] => [sampleClass("Sample Mage", "int"), sampleClass("Sample Cleric", "wis")];
 
+/** An invented class on the Artificer's half-caster progression, which pools its levels rounded up. */
+export const grantedArtificerClass = (): ClassData => ({
+  ...sampleClass("Sample Artificer", "int"),
+  spellcasting: { ability: "int", progression: "artificer" },
+});
+
 const feat = (name: string, extra: Partial<FeatData>): FeatData => ({
   name,
   source: "TST",
