@@ -3,6 +3,7 @@ import type { RaceData, TraitChoiceData, TraitData } from "../types/dnd5e.ts";
 import { DND_SKILLS } from "../constants/rules.ts";
 import { totalLevel } from "./proficiencies.ts";
 import { type AvailableRuleChoice, ruleChoiceId } from "./choices/types.ts";
+import { findHeldRace, heldSourceOf } from "./raceLookup.ts";
 
 /**
  * Race Rule Choices: what an ancestry or lineage grants as choices, and how a granted race trait
@@ -12,20 +13,15 @@ import { type AvailableRuleChoice, ruleChoiceId } from "./choices/types.ts";
  */
 export const LINEAGE_NAMES = new Set(["Dhampir", "Hexblood", "Reborn"]);
 
-export function lineageInheritsElements(character: Character, raceCatalog: RaceData[]): boolean {
+export function lineageInheritsElements(
+  character: Character,
+  raceCatalog: RaceData[],
+  activeBooks?: readonly string[],
+): boolean {
   if (!character.lineageReplacement || !character.race?.name) return false;
   if (LINEAGE_NAMES.has(character.race.name)) return false;
 
-  const priorRace = raceCatalog.find(
-    (r) => r.name === character.race?.name && (!character.race?.source || r.source === character.race.source)
-  );
-  const priorSubrace = character.race?.subraceName
-    ? priorRace?.subraces?.find(
-        (s) =>
-          s.name === character.race?.subraceName &&
-          (!character.race?.subraceSource || s.source === character.race.subraceSource)
-      )
-    : undefined;
+  const { race: priorRace, subrace: priorSubrace } = findHeldRace(raceCatalog, character.race, activeBooks);
 
   const hasSpecialSpeed = Boolean(
     ((priorRace?.speed?.swim ?? 0) > 0) ||
@@ -65,12 +61,16 @@ export function lineageInheritsElements(character: Character, raceCatalog: RaceD
  * Every Rule Choice the character's ancestry grants, ignoring level gating.
  * Level gating is applied by `availableRuleChoices`, which needs the level.
  */
-export function ancestryRuleChoices(character: Character, raceCatalog: RaceData[]): AvailableRuleChoice[] {
+export function ancestryRuleChoices(
+  character: Character,
+  raceCatalog: RaceData[],
+  activeBooks?: readonly string[],
+): AvailableRuleChoice[] {
   const choice = character.race;
   const lineageName = character.lineageReplacement || (choice && LINEAGE_NAMES.has(choice.name) ? choice.name : null);
 
   if (lineageName) {
-    const inherits = lineageInheritsElements(character, raceCatalog);
+    const inherits = lineageInheritsElements(character, raceCatalog, activeBooks);
     if (!inherits) {
       return [
         {
@@ -92,19 +92,12 @@ export function ancestryRuleChoices(character: Character, raceCatalog: RaceData[
 
   if (!choice) return [];
 
-  const race = raceCatalog.find(
-    (r) => r.name === choice.name && (!choice.source || r.source === choice.source)
-  );
-  const subrace = choice.subraceName
-    ? race?.subraces?.find(
-        (s) =>
-          s.name === choice.subraceName &&
-          (!choice.subraceSource || s.source === choice.subraceSource)
-      )
-    : undefined;
+  const { race, subrace } = findHeldRace(raceCatalog, choice, activeBooks);
 
-  const source = subrace?.source ?? choice.source;
-  const traitSource = subrace ? source : race?.source ?? choice.source;
+  // The id carries the source the race was saved under; `source` is the book the record was found in, which gates the choice.
+  const raceSource = race ? heldSourceOf(choice.source, race) : choice.source;
+  const traitSource = subrace ? heldSourceOf(choice.subraceSource, subrace) : raceSource;
+  const recordSource = subrace?.source ?? race?.source;
 
   const toChoice = (trait: TraitData, data: TraitChoiceData): AvailableRuleChoice => ({
     id: ruleChoiceId({ source: traitSource, race: choice.name, subrace: subrace ? { name: subrace.name } : null, trait: trait.name }),
@@ -114,6 +107,7 @@ export function ancestryRuleChoices(character: Character, raceCatalog: RaceData[
     level: data.level,
     effectLevel: data.effectLevel ?? data.level,
     ...(data.replaces ? { replaces: data.replaces } : {}),
+    ...(recordSource ? { source: recordSource } : {}),
     options: data.options,
   });
 
@@ -185,9 +179,13 @@ function withoutOptionList(description: string, data: TraitChoiceData): string {
  * sheet at all. A replaced trait usually carries no choice of its own, so it
  * cannot discover its own replacement by looking inward.
  */
-export function replacedTraitNames(character: Character, raceCatalog: RaceData[]): Set<string> {
+export function replacedTraitNames(
+  character: Character,
+  raceCatalog: RaceData[],
+  activeBooks?: readonly string[],
+): Set<string> {
   const suppressed = new Set<string>();
-  for (const choice of ancestryRuleChoices(character, raceCatalog)) {
+  for (const choice of ancestryRuleChoices(character, raceCatalog, activeBooks)) {
     if (!choice.replaces) continue;
     const entry = (character.ruleChoices ?? []).find((rc) => rc.id === choice.id);
     const picked = entry?.picked?.[0];

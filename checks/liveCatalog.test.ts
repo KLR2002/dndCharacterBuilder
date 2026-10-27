@@ -7,13 +7,17 @@ import { createCompendium, type Compendium } from "../src/services/compendium.ts
 import { isCatalogStale, REQUIRED_CATALOG_FORMAT, type CompendiumCollections } from "../src/services/compendiumStorage.ts";
 import { proficiencyChoiceOffers } from "../src/rules/proficiencyChoiceOffers.ts";
 import { poolNames, type ChoiceProficiencyGrant } from "../src/rules/proficiencyPools.ts";
-import { featSpellChoicesOf, featSpellRuleChoices, pickRuleChoice, raceSpellRuleChoices, ruleChoiceId } from "../src/rules/ruleChoices.ts";
+import { featSpellChoicesOf, featSpellRuleChoices, offeredRuleChoices, pickRuleChoice, raceSpellRuleChoices, ruleChoiceId } from "../src/rules/ruleChoices.ts";
+import { resolveAncestryState } from "../src/rules/ancestryEngine.ts";
+import { grantedFeatures } from "../src/rules/grantedFeatures.ts";
+import { proficiencySheet } from "../src/rules/proficiencySheet.ts";
+import { DEFAULT_ACTIVE_BOOK_CODES } from "../src/constants/books.ts";
 import type { InnateSpellEntry, InnateSpellProfile } from "../src/rules/innateMagic.ts";
 import { parseSpellFilter } from "../src/rules/choices/featSpells.ts";
 import { STARTING_EQUIPMENT_TYPES } from "../src/rules/startingEquipmentTypes.ts";
 import { reconcile } from "../src/rules/characterReconciler.ts";
 import type { AvailableRuleChoice } from "../src/rules/choices/types.ts";
-import { makeChar } from "./testUtils.ts";
+import { makeChar, srdBaselineCompendium } from "./testUtils.ts";
 import { evaluateCharacter } from "../src/rules/characterEvaluation.ts";
 import { isSpellAvailableForClass, profileSpellContext } from "../src/rules/spellcasting.ts";
 import { resolveSpellName } from "../src/rules/subclassSpells.ts";
@@ -1155,4 +1159,124 @@ test("live catalog: removing a Mark of Detection feat releases the spell its exp
     released.needsReview?.some((notice) => notice.includes(`${spell.name} removed: only on the Mark of Detection feat's spell list`)),
     `the release is noticed: ${JSON.stringify(released.needsReview)}`,
   );
+});
+
+// A race saved under the SRD Baseline's source is found by name on the integrated catalog, and the reverse. Each side is
+// read through the same evaluation, so the comparison is between the two catalogs' results for the same saved character.
+const RACE_SRD_BOOKS = ["SRD"];
+
+/** The three characters of the race lookup cases, saved with the given race and class source. */
+function savedRaceCharacters(raceSource: string, classSource: string): Record<string, Character> {
+  const scores = { str: 10, dex: 10, con: 10, int: 10, wis: 10, cha: 10 };
+  return {
+    "High Elf Wizard": makeChar({
+      classes: [{ className: "Wizard", source: classSource, level: 1 }],
+      race: { name: "Elf", source: raceSource, subraceName: "High", subraceSource: raceSource },
+      baseAbilityScores: scores,
+    }),
+    "Hill Dwarf Cleric": makeChar({
+      classes: [{ className: "Cleric", source: classSource, level: 1 }],
+      race: { name: "Dwarf", source: raceSource, subraceName: "Hill", subraceSource: raceSource },
+      baseAbilityScores: scores,
+    }),
+    "Human Fighter": makeChar({
+      classes: [{ className: "Fighter", source: classSource, level: 1 }],
+      race: { name: "Human", source: raceSource },
+      baseAbilityScores: scores,
+    }),
+  };
+}
+
+/** What a character shows for its race: names, numbers, granted traits, offered race choices and the proficiency sheet's languages. */
+function raceSnapshot(character: Character, compendium: Compendium, activeBooks: string[]) {
+  const catalogs = { compendium, activeBooks };
+  const listings = compendium.for(activeBooks);
+  const evaluated = evaluateCharacter(character, catalogs);
+  const panel = resolveAncestryState(character, catalogs);
+  return {
+    panelRace: panel.selectedRace?.name,
+    ancestry: [evaluated.resolvedAncestry.race?.name, evaluated.resolvedAncestry.subrace?.name ?? ""],
+    scores: evaluated.effectiveScores.scores,
+    size: panel.size,
+    darkvision: panel.darkvision,
+    speed: evaluated.speed,
+    speedSources: evaluated.speeds.details.map((detail) => detail.source),
+    raceTraits: grantedFeatures(character, {
+      races: listings.races(),
+      classes: listings.classes(),
+      backgrounds: listings.backgrounds(),
+      feats: listings.feats(),
+      activeBooks,
+    })
+      .filter((feature) => feature.origin === "Race" || feature.origin === "Subrace")
+      .map((feature) => feature.name)
+      .sort(),
+    raceChoices: offeredRuleChoices(character, { raceCatalog: listings.races(), activeBooks, origins: ["race"] }).map((choice) => ({
+      id: choice.id,
+      trait: choice.traitName,
+      choose: choice.choose,
+      options: choice.options.map((option) => option.name),
+    })),
+    // The cantrip options are not compared here: the integrated catalog lists more cantrips than the SRD Baseline does.
+    spellChoices: raceSpellRuleChoices(character, compendium, activeBooks).map((choice) => ({
+      id: choice.id,
+      trait: choice.traitName,
+      choose: choice.choose,
+    })),
+    hp: evaluated.hp.max,
+    languages: proficiencySheet(character, catalogs).languages.map((language) => language.name).sort(),
+  };
+}
+
+const srdBaseline = srdBaselineCompendium();
+const SAVED_ON_SRD = savedRaceCharacters("SRD", "SRD");
+const SAVED_ON_INTEGRATED = savedRaceCharacters("PHB", "PHB");
+
+for (const name of Object.keys(SAVED_ON_SRD)) {
+  test(`live catalog: ${name} saved on the SRD Baseline evaluates the same on the integrated catalog`, { skip: SKIP }, () => {
+    const character = SAVED_ON_SRD[name];
+    const onSrd = raceSnapshot(character, srdBaseline, RACE_SRD_BOOKS);
+    const onLive = raceSnapshot(character, live!.compendium, [...DEFAULT_ACTIVE_BOOK_CODES]);
+    assert.ok(onSrd.raceTraits.length > 0 || onSrd.raceChoices.length > 0, "the SRD side reads the race's traits or choices");
+    assert.deepEqual(onLive, onSrd);
+  });
+
+  test(`live catalog: ${name} saved on the integrated catalog evaluates the same on the SRD Baseline alone`, { skip: SKIP }, () => {
+    const character = SAVED_ON_INTEGRATED[name];
+    const onLive = raceSnapshot(character, live!.compendium, [...DEFAULT_ACTIVE_BOOK_CODES]);
+    const onSrd = raceSnapshot(character, srdBaseline, RACE_SRD_BOOKS);
+    assert.deepEqual(onSrd, onLive);
+  });
+
+  test(`live catalog: ${name} keeps its saved race and class sources through loading and evaluating`, { skip: SKIP }, () => {
+    const character = SAVED_ON_SRD[name];
+    const before = structuredClone(character);
+    raceSnapshot(character, live!.compendium, [...DEFAULT_ACTIVE_BOOK_CODES]);
+    raceSnapshot(character, srdBaseline, RACE_SRD_BOOKS);
+    assert.deepEqual(character, before);
+  });
+}
+
+test("live catalog: the High Elf's cantrip choice keeps its id, and every cantrip the SRD Baseline offers is offered on the integrated catalog", { skip: SKIP }, () => {
+  const character = SAVED_ON_SRD["High Elf Wizard"];
+  const onSrd = raceSpellRuleChoices(character, srdBaseline, RACE_SRD_BOOKS).find((choice) => choice.traitName === "High Elf Cantrip");
+  const onLive = raceSpellRuleChoices(character, live!.compendium, [...DEFAULT_ACTIVE_BOOK_CODES]).find((choice) => choice.traitName === "High Elf Cantrip");
+  assert.ok(onSrd, "the SRD Baseline offers the High Elf's cantrip choice");
+  assert.equal(onLive?.id, onSrd.id);
+  const liveOptions = new Set(onLive?.options.map((option) => option.name));
+  const missing = onSrd.options.map((option) => option.name).filter((name) => !liveOptions.has(name));
+  assert.deepEqual(missing, [], "no SRD cantrip is missing from the integrated catalog's options");
+});
+
+test("live catalog: Hill Dwarf Cleric keeps 10 hit points on the integrated catalog", { skip: SKIP }, () => {
+  const onLive = raceSnapshot(SAVED_ON_SRD["Hill Dwarf Cleric"], live!.compendium, [...DEFAULT_ACTIVE_BOOK_CODES]);
+  assert.equal(onLive.hp, 10);
+});
+
+test("live catalog: a race finds its integrated record by name, scoped to the active books, and by its saved source first", { skip: SKIP }, () => {
+  const compendium = live!.compendium;
+  for (const name of ["Elf", "Dwarf", "Human"]) {
+    assert.equal(compendium.findRace(name, "SRD", [...DEFAULT_ACTIVE_BOOK_CODES])?.source, "PHB", `${name} resolves to its PHB record`);
+  }
+  assert.equal(compendium.findRace("Elf", "PHB")?.source, "PHB", "the saved source is found first");
 });

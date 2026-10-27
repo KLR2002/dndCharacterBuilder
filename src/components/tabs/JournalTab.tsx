@@ -56,7 +56,7 @@ function parseLoreSections(text: string): LoreSection[] {
 }
 
 export const JournalTab: React.FC = () => {
-  const { currentCharacter, updateCharacter } = useCharacters();
+  const { currentCharacter, updateCharacter, activeBooks } = useCharacters();
   const { theme } = useAppTheme();
 
   const [urlModalVisible, setUrlModalVisible] = useState(false);
@@ -66,7 +66,7 @@ export const JournalTab: React.FC = () => {
 
   // Find auto-populated race info
   const raceData = currentCharacter?.race
-    ? findRace(currentCharacter.race.name, currentCharacter.race.source)
+    ? findRace(currentCharacter.race.name, currentCharacter.race.source, activeBooks)
     : null;
 
   const raceLore = useMemo(() => {

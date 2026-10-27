@@ -13,12 +13,16 @@ export interface RulesOptions extends ResolvedAncestry {
   races?: RaceData[];
   /** Resolves races by name when no race is given. Defaults to the process-wide current Compendium. */
   compendium?: Compendium;
+  /** The books a race resolves within, when the race is found by name (see findHeldRace). */
+  activeBooks?: readonly string[];
 }
 export interface FeatureCatalog {
   races: RaceData[];
   classes: ClassData[];
   backgrounds: BackgroundData[];
   feats: FeatData[];
+  /** The books a race resolves within, when the race is found by name (see findHeldRace). */
+  activeBooks?: readonly string[];
 }
 export interface FeatureInstance {
   id: string;

@@ -98,7 +98,7 @@ export function evaluateCharacter(
   catalogs?: CharacterCatalogs
 ): EvaluatedCharacter {
   const listings = catalogListings(catalogs);
-  const ancestry = resolveCharacterAncestry(character, listings.races());
+  const ancestry = resolveCharacterAncestry(character, listings.races(), catalogs?.activeBooks);
   const background = resolveCharacterBackground(character, listings.backgrounds());
   const classes = allCatalogClasses(catalogs);
 
@@ -108,7 +108,7 @@ export function evaluateCharacter(
   const maxHitPoints = maxHp(character, ancestry, classes);
   const hitDice = getHitDicePools(character, classes);
   const acResult = armorClass(character, ancestry);
-  const speedsResult = characterSpeeds(character, { ...ancestry, compendium: catalogs?.compendium });
+  const speedsResult = characterSpeeds(character, { ...ancestry, compendium: catalogs?.compendium, activeBooks: catalogs?.activeBooks });
   const speedResult = speedsResult.walk;
   const sheet = proficiencySheet(character, catalogs ?? {});
   const initiativeResult = initiativeOf(
@@ -117,6 +117,7 @@ export function evaluateCharacter(
       classes: listings.classes(),
       backgrounds: listings.backgrounds(),
       feats: listings.feats(),
+      activeBooks: catalogs?.activeBooks,
     }),
     effScores.modifiers,
     pb,

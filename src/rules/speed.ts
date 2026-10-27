@@ -1,7 +1,9 @@
 import type { Character } from "../types/character.ts";
+import type { RaceData } from "../types/dnd5e.ts";
 import type { RulesOptions, ResolvedAncestry } from "./types.ts";
 import { armorCategory } from "./ac.ts";
 import { effectiveScores, hasFeat } from "./abilities.ts";
+import { findHeldRace } from "./raceLookup.ts";
 import { currentCompendium } from "../services/compendium.ts";
 
 export interface MovementSpeedDetail {
@@ -23,19 +25,14 @@ export interface MovementSpeeds {
 export function characterSpeeds(character: Character, opts: RulesOptions = {}): MovementSpeeds {
   let resolvedRace: any = opts.race;
   let resolvedSubrace: any = opts.subrace;
+  const allRaces = (): RaceData[] => opts.races || (opts.compendium ?? currentCompendium()).for(opts.activeBooks).races();
 
   // Resolve from catalog if not provided in opts
   if (!resolvedRace && character.race) {
     try {
-      const allRaces = opts.races || (opts.compendium ?? currentCompendium()).for().races();
-      resolvedRace = allRaces.find(
-        (r: any) => r.name === character.race?.name && (!character.race?.source || r.source === character.race.source)
-      );
-      if (resolvedRace?.subraces && character.race.subraceName) {
-        resolvedSubrace = resolvedRace.subraces.find(
-          (s: any) => s.name === character.race?.subraceName && (!character.race?.subraceSource || s.source === character.race.subraceSource)
-        );
-      }
+      const resolved = findHeldRace(allRaces(), character.race, opts.activeBooks);
+      resolvedRace = resolved.race;
+      resolvedSubrace = resolved.subrace;
     } catch {
       // fallback
     }
@@ -45,22 +42,16 @@ export function characterSpeeds(character: Character, opts: RulesOptions = {}): 
   let lineageRace: any = undefined;
   if (character.lineageReplacement) {
     try {
-      const allRaces = opts.races || (opts.compendium ?? currentCompendium()).for().races();
-      lineageRace = allRaces.find((r: any) => r.name === character.lineageReplacement);
+      lineageRace = findHeldRace(allRaces(), { name: character.lineageReplacement }, opts.activeBooks).race;
       // If resolvedRace is the lineage race, resolve prior race from character.race for Ancestral Legacy
       if (
         (!resolvedRace || resolvedRace.name === character.lineageReplacement) &&
         character.race &&
         character.race.name !== character.lineageReplacement
       ) {
-        resolvedRace = allRaces.find(
-          (r: any) => r.name === character.race?.name && (!character.race?.source || r.source === character.race.source)
-        );
-        if (resolvedRace?.subraces && character.race.subraceName) {
-          resolvedSubrace = resolvedRace.subraces.find(
-            (s: any) => s.name === character.race?.subraceName && (!character.race?.subraceSource || s.source === character.race.subraceSource)
-          );
-        }
+        const prior = findHeldRace(allRaces(), character.race, opts.activeBooks);
+        resolvedRace = prior.race;
+        resolvedSubrace = prior.subrace;
       }
     } catch {
       // fallback
@@ -75,8 +66,9 @@ export function characterSpeeds(character: Character, opts: RulesOptions = {}): 
         ...(resolvedSubrace?.traits || []),
       ];
 
-  // Active race for walking speed
-  const activeRaceForWalk = lineageRace ?? resolvedSubrace ?? resolvedRace;
+  // Active race for walking speed. A plain subrace (unnamed) adds nothing of its own, so the race names the speed.
+  const namedSubrace = resolvedSubrace?.name ? resolvedSubrace : undefined;
+  const activeRaceForWalk = lineageRace ?? namedSubrace ?? resolvedRace;
   const rawBaseWalk = activeRaceForWalk?.speed?.walk ?? (typeof (activeRaceForWalk as any)?.speed === "number" ? (activeRaceForWalk as any).speed : 30);
   let baseWalk = typeof rawBaseWalk === "number" ? rawBaseWalk : 30;
   let baseWalkName = activeRaceForWalk?.name ?? "Base Speed";

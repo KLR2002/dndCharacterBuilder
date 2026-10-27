@@ -54,8 +54,8 @@ export function getOptionsAndFeatures(activeBooks?: string[]): OptionFeatureData
   return currentCompendium().for(activeBooks).optionsAndFeatures();
 }
 
-export function findRace(name: string, source?: string): RaceData | undefined {
-  return currentCompendium().findRace(name, source);
+export function findRace(name: string, source?: string, activeBooks?: readonly string[]): RaceData | undefined {
+  return currentCompendium().findRace(name, source, activeBooks);
 }
 
 export function findClass(name: string, source?: string): ClassData | undefined {

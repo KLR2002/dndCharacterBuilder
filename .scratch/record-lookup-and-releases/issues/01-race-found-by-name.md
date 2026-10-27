@@ -1,6 +1,8 @@
 # 01: Race and subrace found by name
 
-**Status:** ready-for-agent
+**Status:** done
+
+**Landed:** `raceLookup.ts` (`findHeldRace`: saved source, then an active book's record, then catalog order; subrace the same) serves ancestry, granted features, speed, race rule choices, the ancestry engine, `findRace`, the Features and Journal tabs; an SRD-saved High Elf, Hill Dwarf and Human evaluate equally on both catalogs (Hill Dwarf HP 10), saved sources untouched. A race held with no subrace takes its unnamed subrace when the catalog lists one (only Human PHB does). check:all and check:live (120/120) green. Open: `bookLoadedFor`/`ownerBookLoaded` in featSpells, `proficiencyPicks.sameRecord`, and the name fallbacks in `recordProficiencyGrants` and `migrateCharacter` are not routed through the lookup.
 
 Spec: `.scratch/record-lookup-and-releases/spec.md`.
 
@@ -17,12 +19,12 @@ A character saved on the SRD Baseline (race source "SRD") keeps its racial abili
 
 ## Acceptance Criteria
 
-- [ ] An SRD-saved High Elf Wizard, Hill Dwarf Cleric and Human Fighter evaluated under the integrated catalog equal their SRD-catalog results for ability bonuses, size, darkvision, speed, granted traits and rule choices; Hill Dwarf HP stays 10 (AC-1).
-- [ ] The same characters saved on the integrated catalog evaluate equally under the SRD Baseline alone (AC-2).
-- [ ] With the race in two sources, the record of the saved source is used; with none matching, an active book's record, then catalog order, identically on every load; the subrace follows the same rule (AC-3).
-- [ ] The character's saved race and subrace sources are unchanged after loading and evaluating (AC-5).
-- [ ] The proficiency sheet, ancestry panel and sheet agree on the resolved race.
-- [ ] `npm run check:all` and `npm run check:live` pass.
+- [x] An SRD-saved High Elf Wizard, Hill Dwarf Cleric and Human Fighter evaluated under the integrated catalog equal their SRD-catalog results for ability bonuses, size, darkvision, speed, granted traits and rule choices; Hill Dwarf HP stays 10 (AC-1).
+- [x] The same characters saved on the integrated catalog evaluate equally under the SRD Baseline alone (AC-2).
+- [x] With the race in two sources, the record of the saved source is used; with none matching, an active book's record, then catalog order, identically on every load; the subrace follows the same rule (AC-3).
+- [x] The character's saved race and subrace sources are unchanged after loading and evaluating (AC-5).
+- [x] The proficiency sheet, ancestry panel and sheet agree on the resolved race.
+- [x] `npm run check:all` and `npm run check:live` pass.
 
 ## Verification
 
