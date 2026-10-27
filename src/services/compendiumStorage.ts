@@ -24,8 +24,10 @@ import type {
  * format 7 does not carry.
  * Format 9 adds the spell grants of feats, races and subraces (with the gate on a subrace's grant) and the expanded spell lists
  * of backgrounds (ADR 0017), which a catalog saved at format 8 does not carry.
+ * Format 10 adds the Drow Descent's spell gate and the corrected spell grants of two races, which a catalog saved at format 9
+ * does not carry.
  */
-export const REQUIRED_CATALOG_FORMAT = 9;
+export const REQUIRED_CATALOG_FORMAT = 10;
 
 /** True for an Integrated Catalog saved below the required format (or with none). The SRD Baseline is never stale. */
 export function isCatalogStale(collections: Pick<CompendiumCollections, "hasIntegratedCatalog" | "catalogFormat">): boolean {

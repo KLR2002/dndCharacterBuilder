@@ -109,7 +109,7 @@ test("changing race releases the race's spell picks and raises a review notice",
 
   assert.equal(switched.ruleChoices?.some((entry) => entry.picked.includes("Sample Shot")), false, "the old race's pick is released");
   assert.ok(
-    switched.needsReview?.includes("Sample Gifted Cantrip removed: ancestry no longer grants it"),
+    switched.needsReview?.includes("Sample Shot removed from Sample Gifted: ancestry no longer grants it"),
     `a notice names the released pick: ${JSON.stringify(switched.needsReview)}`
   );
 });

@@ -231,10 +231,31 @@ test("the tracked catalog reads the Moon Elf or Sun Elf descent's wizard cantrip
   assert.ok(sourceTitled(open, "Moon Elf or Sun Elf Descent"), "picked, the grant is read and offers its wizard cantrip");
 });
 
-test("the tracked catalog gives Deep Gnome and Hexblood their leveled known spells once per Long Rest from level 1", () => {
+test("the tracked catalog reads Half-Elf Drow Descent's spells only once its Drow Magic option is picked", () => {
+  const integrated = { compendium: integratedTestCompendium() };
+  const descent = { name: "Half-Elf", source: "PHB", subraceName: "Drow Descent", subraceSource: "SCAG" };
+  const fighter = { className: "Fighter", source: "PHB", level: 5 };
+  const shut = evaluateCharacter(makeChar({ classes: [fighter], race: descent }), integrated).grantedSpellSources;
+  assert.equal(sourceTitled(shut, "Drow Descent"), undefined, "the option is not picked, so the descent's spells are not read");
+
+  const pick: RuleChoiceEntry = {
+    id: "SCAG__Half-Elf__Drow Descent__Variant Feature (Choose 1)",
+    trait: "Variant Feature (Choose 1)",
+    origin: "race",
+    choose: 1,
+    from: ["Skill Versatility", "Drow Magic"],
+    picked: ["Drow Magic"],
+  };
+  const open = evaluateCharacter(makeChar({ classes: [fighter], race: descent, ruleChoices: [pick] }), integrated).grantedSpellSources;
+  const card = sourceTitled(open, "Drow Descent");
+  assert.ok(card, "picked, the descent's spells are read");
+  assert.ok(card.spells.some((spell) => spell.name === "Dancing Lights"), "its cantrip is listed");
+});
+
+test("the tracked catalog gives Deep Gnome and Hexblood their leveled spells once per Long Rest from level 1, Deep Gnome's nondetection at will", () => {
   const integrated = { compendium: integratedTestCompendium() };
   const cases = [
-    { race: "Gnome (Deep)", source: "DMG", spells: ["Disguise Self", "Nondetection"] },
+    { race: "Gnome (Deep)", source: "DMG", spells: ["Disguise Self"] },
     { race: "Hexblood", source: "VRGR", spells: ["Disguise Self", "Hex"] },
   ];
   for (const { race, source, spells } of cases) {
@@ -249,4 +270,8 @@ test("the tracked catalog gives Deep Gnome and Hexblood their leveled known spel
       assert.ok(spell.resourceCounterId, `${name} has a counter`);
     }
   }
+  const gnome = makeChar({ classes: [{ className: "Wizard", source: "PHB", level: 1 }], race: { name: "Gnome (Deep)", source: "DMG" } });
+  const nondetection = sourceTitled(evaluateCharacter(gnome, integrated).grantedSpellSources, "Gnome (Deep)")?.spells.find((spell) => spell.name === "Nondetection");
+  assert.ok(nondetection, "Nondetection is listed");
+  assert.equal(nondetection.resourceCounterId, undefined, "the trait casts Nondetection at will, with no counter");
 });
