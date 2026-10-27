@@ -1,6 +1,8 @@
 # 08: Stable record identity for feats and race picks
 
-**Status:** ready-for-agent
+**Status:** done
+
+**Landed:** a background-claimed feat resolves by active book, then the background's book, then catalog order; race picks are keyed by race and subrace (not source) and saves under the old key move on load. check:all and check:live green. Open: speed, traits and ancestry readers still match the saved race by source, so a character saved on the SRD Baseline may show wrong speed or traits after an integrated sync (not verified in the app).
 
 Spec: `.scratch/granted-spells-followups/spec.md` (ADR 0017 and its amendment, GLOSSARY *Always-Prepared Spells*, *Expanded Spell List*).
 
@@ -15,9 +17,9 @@ A background-claimed feat that exists in two books resolves deterministically (a
 
 ## Acceptance Criteria
 
-- [ ] With the same feat in two books, a background claim resolves per the stated order and the same record on every load (AC-15).
-- [ ] A High Elf cantrip picked on the SRD Baseline survives syncing the integrated catalog, with no release and no notice (AC-16).
-- [ ] `npm run check:all` and `npm run check:live` pass.
+- [x] With the same feat in two books, a background claim resolves per the stated order and the same record on every load (AC-15).
+- [x] A High Elf cantrip picked on the SRD Baseline survives syncing the integrated catalog, with no release and no notice (AC-16).
+- [x] `npm run check:all` and `npm run check:live` pass.
 
 ## Verification
 
