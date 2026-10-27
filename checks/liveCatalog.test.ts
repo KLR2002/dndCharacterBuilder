@@ -1342,6 +1342,18 @@ test("live catalog: record kind: a Fighter 5 and a Wizard 3 saved on the SRD Bas
   }
 });
 
+test("live catalog: record kind: a Fighter 5 saved on the SRD Baseline is offered the same Fighting Style choice on the integrated catalog, with every SRD option", { skip: SKIP }, () => {
+  const character = RECORD_KIND_SRD["Fighter 5 Champion with Grappler"];
+  const fightingStyle = (compendium: Compendium) =>
+    offeredRuleChoices(character, { compendium, activeBooks: RECORD_KIND_BOOKS }).find((choice) => choice.traitName === "Fighting Style");
+  const onSrd = fightingStyle(srdBaseline);
+  const onLive = fightingStyle(live!.compendium);
+  assert.ok(onSrd, "the SRD Baseline offers the Fighting Style choice");
+  assert.equal(onLive?.id, onSrd.id);
+  const liveOptions = new Set(onLive?.options.map((option) => option.name));
+  assert.deepEqual(onSrd.options.map((option) => option.name).filter((name) => !liveOptions.has(name)), [], "no SRD option is missing");
+});
+
 test("live catalog: record kind: a Fighter 5 and a Wizard 3 saved on the integrated catalog have the same class features on the SRD Baseline", { skip: SKIP }, () => {
   for (const name of ["Fighter 5 Champion with Grappler", "Wizard 3 Evocation"]) {
     assert.deepEqual(featureNamesOf(RECORD_KIND_PHB[name], srdBaseline, ["Class"]), featureNamesOf(RECORD_KIND_PHB[name], live!.compendium, ["Class"]), `${name}: class features`);
