@@ -564,6 +564,27 @@ function preparedGrantCharacter() {
   });
 }
 
+// A level 4 Fighter, who has no spellcasting class, holding the plain-group feat. The Spells tab shows its spells on one locked
+// card: the lock icon on each spell, no ability, save DC or attack row.
+const PREPARED_FIGHTER_ID = "char_prepared_fighter";
+const PREPARED_FIGHTER_ROUTE = `/character/${PREPARED_FIGHTER_ID}`;
+function preparedFighterCharacter() {
+  return makeChar({
+    id: PREPARED_FIGHTER_ID,
+    name: "Tobin",
+    createdAt: 14,
+    updatedAt: 14,
+    startingOption: "equipment",
+    race: { name: "Human", source: catalogSource("races", "Human") },
+    background: { name: "Acolyte", source: catalogSource("backgrounds", "Acolyte") },
+    classes: [{ className: "Fighter", source: catalogSource("classes", "Fighter"), level: 4 }],
+    currentHp: 30,
+    startingGrantsApplied: true,
+    backgroundGrantsApplied: true,
+    asiSelections: [{ level: 4, className: "Fighter", classLevel: 4, type: "feat", featName: PREPARED_FEAT, featSource: "PHB" }],
+  });
+}
+
 // The integrated catalog with the invented prepared-group feats added. Their books are the default-active PHB, so they need no
 // book switched on. The spells they name are in the tracked snapshot.
 function withPreparedGrantFeat(collections) {
@@ -744,7 +765,7 @@ function buildSeed() {
       highElfCharacter(),
       ...(INTEGRATED ? [backgroundFeatCharacter()] : []),
       grantedSpellsCharacter(),
-      ...(INTEGRATED ? [preparedGrantCharacter()] : []),
+      ...(INTEGRATED ? [preparedGrantCharacter(), preparedFighterCharacter()] : []),
       ...(INTEGRATED ? [clericCharacter({ id: CLERIC_ID, name: "Corwin", domain: false })] : []),
       clericCharacter({ id: CLERIC_DOMAIN_ID, name: "Ysolde", domain: true }),
       INTEGRATED ? knowledgeClericCharacter() : multiclassSkillCharacter(),
@@ -953,6 +974,19 @@ const SCREENS = [
           ready: /add spells/i,
           scrollTo: "Misty Step",
           expect: { texts: ["Shield", "Detect Magic", "Misty Step", PREPARED_FEAT], absent: ["Needs review"], fitsWidth: true },
+        },
+        // A Fighter with no spellcasting class: the feat's plain prepared spells on one locked card, with no stats row.
+        {
+          name: "Spells locked prepared card",
+          route: PREPARED_FIGHTER_ROUTE,
+          tabs: ["Spells"],
+          ready: /No Class Spellcasting/,
+          scrollTo: PREPARED_FEAT.toUpperCase(),
+          expect: {
+            texts: [PREPARED_FEAT.toUpperCase(), "Shield", "Detect Magic", "Misty Step", "No Class Spellcasting"],
+            absent: ["Needs review", "SAVE DC", "ATTACK BONUS"],
+            fitsWidth: true,
+          },
         },
         // A prepared group that names its own ability: an Innate Magic card with the picked ability's stats, its at-will spell and
         // its daily spell (the long name wraps in the card).

@@ -19,6 +19,7 @@ import {
   isSpellAvailableForClass,
   profileSpellContext,
   type ClassSpellProfile,
+  type LockedPreparedCard,
 } from "../../rules/spellcasting";
 import {
   type InnateSpellProfile,
@@ -252,6 +253,11 @@ export const SpellsTab: React.FC = () => {
   // 4. Innate Magic from the race, subrace and feats the character holds: one card per source (ADR 0017)
   const grantedProfiles: InnateSpellProfile[] = useMemo(() => {
     return evaluated?.grantedSpellSources ?? [];
+  }, [evaluated]);
+
+  // 5. Plain prepared spells of the held sources, on locked cards while the character has no spellcasting class
+  const lockedCards: LockedPreparedCard[] = useMemo(() => {
+    return evaluated?.lockedPreparedCards ?? [];
   }, [evaluated]);
 
   // Library spells
@@ -702,6 +708,36 @@ export const SpellsTab: React.FC = () => {
       })
     );
 
+  /** The locked card of a source's plain prepared spells: each spell carries the lock, with no counter and no ability row. */
+  const renderLockedCards = () =>
+    lockedCards.map((card, index) => (
+      <Card key={`locked_${index}`} style={[styles.innateCard, { borderColor: theme.accent, backgroundColor: theme.surface }]}>
+        <Text style={[styles.sectionTitle, { color: theme.accent }]}>{card.title.toUpperCase()}</Text>
+        <View style={{ marginTop: 8, gap: 6 }}>
+          {card.spells.map((spell) => (
+            <View key={`locked_${card.title}_${spell.name}`} style={[styles.innateSpellRow, { borderBottomColor: theme.border }]}>
+              <Ionicons name="lock-closed" size={16} color={theme.accent} />
+              <TouchableOpacity
+                activeOpacity={0.7}
+                onPress={() => showSpellDetail({ name: spell.name, source: spell.source, details: spell })}
+                style={{ flex: 1, gap: 2 }}>
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+                  <Text style={[styles.spellTitle, { color: theme.text }]}>{spell.name}</Text>
+                  <Badge
+                    label={spell.level === 0 ? "Cantrip" : `${formatOrdinal(spell.level)} Level`}
+                    variant="surface"
+                    size="sm"
+                  />
+                  <Ionicons name="information-circle-outline" size={14} color={theme.textMuted} />
+                </View>
+                <Text style={{ color: theme.textSecondary, fontSize: 11 }}>{spell.castingTime}</Text>
+              </TouchableOpacity>
+            </View>
+          ))}
+        </View>
+      </Card>
+    ));
+
   const atWillInvocations = useMemo(() => {
     return currentCharacter ? getAtWillInvocationSpells(currentCharacter) : [];
   }, [currentCharacter]);
@@ -767,10 +803,11 @@ export const SpellsTab: React.FC = () => {
   }
 
   if (spellProfiles.length === 0) {
-    if (grantedProfiles.length > 0 || atWillInvocations.length > 0) {
+    if (grantedProfiles.length > 0 || lockedCards.length > 0 || atWillInvocations.length > 0) {
       return (
         <ScrollView style={styles.container} contentContainerStyle={styles.content}>
           {renderGrantedCards()}
+          {renderLockedCards()}
           {renderAtWillInvocationsCard()}
           <Card style={[styles.emptyCard, { backgroundColor: theme.surface, borderColor: theme.border, marginTop: 16 }]}>
             <Ionicons name="sparkles-outline" size={32} color={theme.textMuted} style={{ marginBottom: 8 }} />
