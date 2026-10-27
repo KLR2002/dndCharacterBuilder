@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { evaluateCharacter } from "../src/rules/characterEvaluation.ts";
 import { isSpellAvailableForClass, profileSpellContext, type ClassSpellProfile } from "../src/rules/spellcasting.ts";
+import { clearBackground } from "../src/rules/builderTransitions.ts";
 import { isKnown, learnSpell } from "../src/rules/characterSpells.ts";
 import { findSpell } from "../src/services/dataService.ts";
 import type { CharacterClass } from "../src/types/character.ts";
@@ -129,4 +130,21 @@ test("a background's expanded list stacks with a Warlock patron's expanded list"
     "a patron without the spell does not add it",
   );
   assert.equal(offers(archfeyWarlock, "Sample Spirit"), true, "the background adds its own spells to any patron");
+});
+
+test("clearing the background releases the known spells only its list gave, with a notice, and keeps a spell a class list also gives", () => {
+  const known = (name: string) => ({ name, source: "TST", ownerKey: "Sample Mage__TST", className: "Sample Mage" });
+  const scholar = {
+    ...withBackground("Sample Scholar", [cls("Sample Mage", 5)]),
+    knownSpells: [known("Sample Chime"), known("Sample Ward")],
+  };
+  const releasedScholar = clearBackground(scholar, catalogs);
+  assert.deepEqual(releasedScholar.knownSpells, [], "both spells came from the background's list alone");
+  assert.ok(releasedScholar.needsReview?.some((notice) => /Sample Chime removed/.test(notice)), "the cantrip's release is recorded");
+  assert.ok(releasedScholar.needsReview?.some((notice) => /Sample Ward removed/.test(notice)), "and the spell's");
+
+  const scribe = { ...withBackground("Sample Scribe", [cls("Sample Mage", 5)]), knownSpells: [known("Sample Ember")] };
+  const releasedScribe = clearBackground(scribe, catalogs);
+  assert.deepEqual(releasedScribe.knownSpells?.map((k) => k.name), ["Sample Ember"], "a mage cantrip the class list gives stays known");
+  assert.ok(!releasedScribe.needsReview?.some((notice) => /Sample Ember/.test(notice)), "and no notice is made for it");
 });

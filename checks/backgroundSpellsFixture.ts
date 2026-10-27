@@ -96,10 +96,16 @@ const background = (name: string, extra: Partial<BackgroundData>): BackgroundDat
   ...extra,
 });
 
-/** Sample Scholar adds a cantrip, a 1st level and a 3rd level spell to the lists of its spellcasting classes. Sample Idler adds none. */
+/**
+ * Sample Scholar adds a cantrip, a 1st level and a 3rd level spell to the lists of its spellcasting classes. Sample Scribe adds
+ * a cantrip that the mage's own list gives too. Sample Idler adds none.
+ */
 export const backgroundSpellBackgrounds = (): BackgroundData[] => [
   background("Sample Scholar", {
     additionalSpells: [{ expanded: { s0: ["sample chime"], s1: ["sample ward"], s3: ["sample spirit"] } }],
+  }),
+  background("Sample Scribe", {
+    additionalSpells: [{ expanded: { s0: ["sample ember"] } }],
   }),
   background("Sample Idler", {}),
 ];

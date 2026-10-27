@@ -16,6 +16,7 @@ import { normalizeSkillName } from "./skills.ts";
 import { moveLegacySkillPicks } from "./proficiencyPicks.ts";
 import { CUSTOM_BACKGROUND_SKILLS_ID, CUSTOM_BACKGROUND_TOOLS_OR_LANGUAGES_ID, isCustomBackground } from "./customBackground.ts";
 import { ABILITY_NAMES } from "./abilities.ts";
+import { backgroundOnlyKnownSpells } from "./backgroundSpells.ts";
 import {
   BACKGROUND_FEAT_SOURCE,
   STANDARD_ARRAY,
@@ -581,8 +582,9 @@ function storePicks(picks: Record<string, string[]>, id: string, values: string[
 /**
  * Clears the character's background and the grants that came from it: the background's skill
  * proficiencies (kept when another source also grants the skill), its language and tool picks,
- * and any origin feat it granted. Ends in the Character Reconciler, which prunes the choices that
- * depended on a removed feat. Records a review notice for each background grant removed.
+ * any origin feat it granted, and the known spells that only its expanded spell list gave. Ends in
+ * the Character Reconciler, which prunes the choices that depended on a removed feat. Records a
+ * review notice for each background grant removed.
  */
 export function clearBackground(character: Character, catalogs: CharacterCatalogs = {}): Character {
   const compendium = catalogs.compendium ?? currentCompendium();
@@ -611,12 +613,23 @@ export function clearBackground(character: Character, catalogs: CharacterCatalog
   const grantedFeats = (character.originFeats ?? []).filter((f) => f.featSource === BACKGROUND_FEAT_SOURCE);
   const keptFeats = (character.originFeats ?? []).filter((f) => f.featSource !== BACKGROUND_FEAT_SOURCE);
 
+  // The known spells only the background's expanded list gave are released, with their prepared keys (ADR 0017).
+  const releasedSpells = backgroundOnlyKnownSpells(current, bgData, compendium, catalogs.activeBooks);
+  const releasedNames = new Set(releasedSpells.map((k) => k.name.toLowerCase()));
+  const keptSpells = (current.knownSpells ?? []).filter((k) => !releasedNames.has(k.name.toLowerCase()));
+  const keptNames = new Set(keptSpells.map((k) => k.name.toLowerCase()));
+  const keptPrepared = (current.preparedSpells ?? []).filter((key) => {
+    const name = key.split("__")[0].toLowerCase();
+    return !releasedNames.has(name) || keptNames.has(name);
+  });
+
   const hadLanguagesOrTools =
     (character.chosenLanguages?.background ?? []).length > 0 ||
     (character.chosenTools?.background ?? []).length > 0;
 
   const notices = [
     ...grantedFeats.map((f) => `${f.featName} removed: granted by the ${bgName} background`),
+    ...releasedSpells.map((k) => `${k.name} removed: only on the ${bgName} background's spell list`),
     ...(removedSkills.length > 0 || hadLanguagesOrTools
       ? [`${bgName} background removed: granted skills, languages and tools cleared`]
       : []),
@@ -630,6 +643,7 @@ export function clearBackground(character: Character, catalogs: CharacterCatalog
     chosenLanguages: { ...character.chosenLanguages, background: [] },
     chosenTools: { ...character.chosenTools, background: [] },
     originFeats: keptFeats,
+    ...(releasedSpells.length > 0 ? { knownSpells: keptSpells, preparedSpells: keptPrepared } : {}),
     ...(notices.length > 0
       ? { needsReview: Array.from(new Set([...(character.needsReview ?? []), ...notices])) }
       : {}),
