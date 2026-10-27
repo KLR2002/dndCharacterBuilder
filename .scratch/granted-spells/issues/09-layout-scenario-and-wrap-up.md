@@ -4,8 +4,10 @@
 
 **Blocked by:** 04, 07, 08
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] The scenario passes at all four widths, SRD and `-- --integrated`.
-- [ ] ADR 0004 is annotated; no dead code remains from the old race table.
-- [ ] `npm run check:all` and `npm run check:live` pass on the integrated branch.
+**Landed:** "Spells granted cards" layout scenario (SRD and integrated, four widths, green), ADR 0004 annotated to point to ADR 0017, dead helpers and ticket references removed. `check:all` and `check:live` (82/82) green.
+
+- [x] The scenario passes at all four widths, SRD and `-- --integrated`.
+- [x] ADR 0004 is annotated; no dead code remains from the old race table.
+- [x] `npm run check:all` and `npm run check:live` pass on the integrated branch.
