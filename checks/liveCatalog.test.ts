@@ -7,7 +7,7 @@ import { createCompendium, type Compendium } from "../src/services/compendium.ts
 import { isCatalogStale, REQUIRED_CATALOG_FORMAT, type CompendiumCollections } from "../src/services/compendiumStorage.ts";
 import { proficiencyChoiceOffers } from "../src/rules/proficiencyChoiceOffers.ts";
 import { poolNames, type ChoiceProficiencyGrant } from "../src/rules/proficiencyPools.ts";
-import { featSpellChoicesOf, featSpellRuleChoices, pickRuleChoice } from "../src/rules/ruleChoices.ts";
+import { featSpellChoicesOf, featSpellRuleChoices, pickRuleChoice, raceSpellRuleChoices } from "../src/rules/ruleChoices.ts";
 import { parseSpellFilter } from "../src/rules/choices/featSpells.ts";
 import { STARTING_EQUIPMENT_TYPES } from "../src/rules/startingEquipmentTypes.ts";
 import { reconcile } from "../src/rules/characterReconciler.ts";
@@ -710,4 +710,27 @@ test("live catalog: a Wizard with the Lorehold Student background can learn Spir
 
   const fighter = evaluateCharacter(holding("Fighter"), { compendium: live!.compendium });
   assert.deepEqual(fighter.spellProfiles, [], "a Fighter with no casting class gets no spell profile");
+});
+
+test("live catalog: a High Elf offers the wizard cantrip filter, a Vahadar Elf the druid one, and an MPMM race its casting ability", { skip: SKIP }, () => {
+  const compendium = live!.compendium;
+  const offered = (race: Character["race"]) => raceSpellRuleChoices(makeChar({ classes: [{ className: "Fighter", source: "PHB", level: 1 }], race }), compendium);
+
+  const highElf = offered({ name: "Elf", source: "PHB", subraceName: "High", subraceSource: "PHB" });
+  const wizard = highElf.find((choice) => choice.traitName === "High Cantrip");
+  assert.ok(wizard, `the High Elf offers its cantrip pick: ${highElf.map((choice) => choice.traitName).join(", ")}`);
+  assert.equal(wizard.choose, 1);
+  assert.ok(wizard.options.some((option) => option.name === "Fire Bolt"), "the wizard cantrips are offered");
+  assert.ok(wizard.options.every((option) => option.description.startsWith("Cantrip")), "every option is a cantrip");
+
+  // The tracked Wood Elf carries no spell grant, so the Vahadar Elf of Elf (Kaladesh) stands in for a druid cantrip filter.
+  const vahadar = offered({ name: "Elf (Kaladesh)", source: "PSK", subraceName: "Vahadar", subraceSource: "PSK" });
+  const druid = vahadar.find((choice) => choice.traitName === "Vahadar Cantrip");
+  assert.ok(druid, `the Vahadar Elf offers a cantrip pick: ${vahadar.map((choice) => choice.traitName).join(", ")}`);
+  assert.ok(druid.options.some((option) => option.name === "Druidcraft"), "the druid cantrips are offered");
+
+  const aarakocra = offered({ name: "Aarakocra", source: "MPMM" });
+  const ability = aarakocra.find((choice) => choice.id.endsWith("__Casting Ability"));
+  assert.ok(ability, `the MPMM Aarakocra offers an ability choice: ${aarakocra.map((choice) => choice.id).join(", ")}`);
+  assert.deepEqual(ability.options.map((option) => option.name), ["int", "wis", "cha"]);
 });

@@ -345,6 +345,27 @@ function battleMasterCharacter() {
   });
 }
 
+// A level 1 High Elf Wizard with no cantrip picked yet. The race card shows the wizard cantrip pick the High Elf's
+// subrace grants, with the Intelligence casting ability. Integrated mode only (the SRD Baseline has no catalog source here).
+const HIGH_ELF_ID = "char_highelf";
+const HIGH_ELF_ROUTE = `/character/${HIGH_ELF_ID}`;
+function highElfCharacter() {
+  const elfSource = catalogSource("races", "Elf");
+  return makeChar({
+    id: HIGH_ELF_ID,
+    name: "Aelindra",
+    createdAt: 11,
+    updatedAt: 11,
+    startingOption: "equipment",
+    race: { name: "Elf", source: elfSource, subraceName: "High", subraceSource: elfSource },
+    background: { name: "Acolyte", source: catalogSource("backgrounds", "Acolyte") },
+    classes: [{ className: "Wizard", source: catalogSource("classes", "Wizard"), level: 1 }],
+    currentHp: 8,
+    startingGrantsApplied: true,
+    backgroundGrantsApplied: true,
+  });
+}
+
 // A level 4 Wizard who took Magic Initiate and chose its Wizard list, so the feat's own pick controls show the list's
 // cantrip and spell choices. Integrated mode only (Magic Initiate is not in the SRD Baseline).
 const MAGIC_INITIATE_ID = "char_magicinitiate";
@@ -529,7 +550,7 @@ function buildSeed() {
       fighterCharacter({ id: FIGHTER_ID, name: "Tavish", picked: false }),
       fighterCharacter({ id: FIGHTER_PICKED_ID, name: "Brannoc", picked: true }),
       battleMasterCharacter(),
-      ...(INTEGRATED ? [magicInitiateCharacter()] : []),
+      ...(INTEGRATED ? [magicInitiateCharacter(), highElfCharacter()] : []),
       ...(INTEGRATED ? [clericCharacter({ id: CLERIC_ID, name: "Corwin", domain: false })] : []),
       clericCharacter({ id: CLERIC_DOMAIN_ID, name: "Ysolde", domain: true }),
       INTEGRATED ? knowledgeClericCharacter() : multiclassSkillCharacter(),
@@ -612,6 +633,14 @@ const SCREENS = [
           ready: /Selected Ability Improvements/i,
           scrollTo: "Magic Initiate Spell List (choose 1)",
           expect: { texts: ["Magic Initiate Spell List (choose 1)", "Magic Initiate Cantrip (choose 2)", "Magic Initiate Spell (choose 1)"], fitsWidth: true },
+        },
+        {
+          name: "Builder Race spell picks",
+          route: HIGH_ELF_ROUTE,
+          tabs: ["Builder", "Race"],
+          ready: /traits:/i,
+          scrollTo: "Racial Spells",
+          expect: { texts: ["Racial Spells", "High Cantrip (choose 1)"], fitsWidth: true },
         },
       ]
     : []),
