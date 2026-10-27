@@ -177,6 +177,24 @@ export const grantedSpellFeats = (): FeatData[] => [
       },
     ],
   }),
+  // A cantrip and a first-level spell both known from the start: the cantrip is at will, the spell once per Long Rest.
+  feat("Sample Study", {
+    additionalSpells: [
+      {
+        ability: "int",
+        known: { _: ["sample ember", "sample veil"] },
+      },
+    ],
+  }),
+  // A known pick of a first-level spell: the picked spell is once per Long Rest.
+  feat("Sample Lesson", {
+    additionalSpells: [
+      {
+        ability: "int",
+        known: { _: [{ choose: "level=1|class=Sample Mage" }] },
+      },
+    ],
+  }),
   // A prepared group the reader does not model, with the casting ability the player chooses: nothing can be cast from it.
   feat("Sample Boon", {
     additionalSpells: [
@@ -343,6 +361,10 @@ export const grantedSpellRaces = (): RaceData[] => [
   // A fixed casting ability and one cantrip the player picks from a class list, as the High Elf's wizard cantrip is.
   race("Sample Gifted", {
     additionalSpells: [{ ability: "int", known: { "1": { _: [{ choose: "level=0|class=Sample Mage" }] } } }],
+  }),
+  // A first-level spell known from level 1, as the source keys a leveled spell of its known group.
+  race("Sample Learned", {
+    additionalSpells: [{ ability: "int", known: { "1": ["sample pulse"] } }],
   }),
   // A casting ability the player chooses, one cantrip pick, and a first-level pick that unlocks at level 3.
   race("Sample Caller", {

@@ -5,8 +5,8 @@ import { validateFeatPrerequisites } from "../src/rules/feats.ts";
 import { toggleInnateSpellUse } from "../src/rules/characterSpells.ts";
 import { applyLongRest } from "../src/rules/rest.ts";
 import type { CharacterClass } from "../src/types/character.ts";
-import type { InnateSpellProfile } from "../src/rules/innateMagic.ts";
-import { inMemoryCompendium, makeChar, srdBaselineCompendium } from "./testUtils.ts";
+import type { InnateSpellEntry, InnateSpellProfile } from "../src/rules/innateMagic.ts";
+import { inMemoryCompendium, integratedTestCompendium, makeChar, srdBaselineCompendium } from "./testUtils.ts";
 import { grantedSpellClasses, grantedSpellFeats, grantedSpellRaces, grantedSpellSpells } from "./grantedSpellsFixture.ts";
 
 // Race and subrace spell grants are Innate Magic sources too (ADR 0017). Every name here is invented
@@ -43,6 +43,19 @@ test("a race's fixed cantrip is at will, on a card titled for the race", () => {
   assert.ok(ember, "the cantrip is listed");
   assert.equal(ember.isCantrip, true);
   assert.equal(ember.resourceCounterId, undefined, "a cantrip is at will");
+});
+
+test("a race's leveled spell in its known group is cast once per Long Rest from the level its key gives", () => {
+  const character = makeChar({
+    classes: [mage(1)],
+    race: { name: "Sample Learned", source: "TST" },
+    baseAbilityScores: { str: 10, dex: 10, con: 10, int: 16, wis: 10, cha: 10 },
+  });
+  const card = sourceTitled(evaluateCharacter(character, catalogs).grantedSpellSources, "Sample Learned");
+  const pulse = card?.spells.find((spell) => spell.name === "Sample Pulse");
+  assert.equal(pulse?.minCharacterLevel, 1, "the key gives level 1");
+  assert.equal(pulse?.resourceCounterId, "innate_spell_sample_pulse", "its counter is the spell's own id");
+  assert.equal(pulse?.maxUses, 1);
 });
 
 test("a race's spell from a later level is listed only from that level, with its counter", () => {
@@ -167,4 +180,24 @@ test("a race's spell with a cast-level suffix is listed at that level, and one w
   assert.equal(pulse?.level, 2, "Sample Pulse is catalogued at level 1 but cast at level 2");
   assert.equal(pulse?.isCantrip, false);
   assert.equal(veil?.level, 2, "Sample Veil has no suffix and keeps its catalogued level");
+});
+
+test("the tracked catalog gives Deep Gnome and Hexblood their leveled known spells once per Long Rest from level 1", () => {
+  const integrated = { compendium: integratedTestCompendium() };
+  const cases = [
+    { race: "Gnome (Deep)", source: "DMG", spells: ["Disguise Self", "Nondetection"] },
+    { race: "Hexblood", source: "VRGR", spells: ["Disguise Self", "Hex"] },
+  ];
+  for (const { race, source, spells } of cases) {
+    const character = makeChar({ classes: [{ className: "Wizard", source: "PHB", level: 1 }], race: { name: race, source } });
+    const card = sourceTitled(evaluateCharacter(character, integrated).grantedSpellSources, race);
+    assert.ok(card, `${race} has its card`);
+    for (const name of spells) {
+      const spell: InnateSpellEntry | undefined = card.spells.find((candidate) => candidate.name === name);
+      assert.ok(spell, `${name} is listed`);
+      assert.equal(spell.minCharacterLevel, 1, "the data keys it at level 1");
+      assert.equal(spell.maxUses, 1, "a leveled spell of a known group is once per Long Rest");
+      assert.ok(spell.resourceCounterId, `${name} has a counter`);
+    }
+  }
 });

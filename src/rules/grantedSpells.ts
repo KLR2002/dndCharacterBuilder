@@ -21,6 +21,7 @@ import {
   raceGrantsOf,
   slugOf,
   spellListLabel,
+  usesOfEntry,
   type GrantOwner,
 } from "./choices/featSpells.ts";
 import { currentCompendium, type Compendium } from "../services/compendium.ts";
@@ -132,7 +133,7 @@ function grantSource(
     const chosen = chosenSpellsOf(ctx.character, owner, grant, slot, ctx.compendium, ctx.activeBooks);
     for (const data of chosen) {
       if (seen.has(data.name.toLowerCase())) continue;
-      spells.push(innateEntry(data, owner, entryName, slot.uses, slot.minCharacterLevel));
+      spells.push(innateEntry(data, owner, entryName, usesOfEntry(slot, data.level), slot.minCharacterLevel));
       seen.add(data.name.toLowerCase());
     }
     const owed = slot.count - chosen.length;
@@ -174,9 +175,9 @@ function abilityOf(
 }
 
 /**
- * The spells one grant gives that resolve now and whose level the character has reached. Known spells and the innate
- * at-will list are at will. Daily and per-rest spells carry a counter that a Long Rest restores. Ritual-only spells and
- * picks are left out. A spell already listed for this owner is not listed twice.
+ * The spells one grant gives that resolve now and whose level the character has reached. Cantrips of the known groups and the
+ * innate at-will list are at will. Daily and per-rest spells, and a leveled spell of a known group, carry a counter that a Long
+ * Rest restores. Ritual-only spells and picks are left out. A spell already listed for this owner is not listed twice.
  */
 function grantedSpells(input: { owner: GrantOwner; grant: AdditionalSpells; seen: Set<string>; ctx: GrantContext; entryName?: string }): InnateSpellEntry[] {
   const { owner, grant, seen, ctx, entryName } = input;
@@ -189,7 +190,7 @@ function grantedSpells(input: { owner: GrantOwner; grant: AdditionalSpells; seen
     const data = resolveSpellName(entry.name, ctx.activeBooks, ctx.compendium, { activeOnly: true });
     if (!data) continue;
     seen.add(key);
-    spells.push(innateEntry(data, owner, entryName, entry.uses, entry.minCharacterLevel, grant.castLevels?.[key]));
+    spells.push(innateEntry(data, owner, entryName, usesOfEntry(entry, data.level), entry.minCharacterLevel, grant.castLevels?.[key]));
   }
   return spells;
 }

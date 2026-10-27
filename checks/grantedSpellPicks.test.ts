@@ -149,6 +149,14 @@ test("a pick whose filter uses a key the reader does not model is not offered, a
   );
 });
 
+test("a leveled spell picked from a feat's known group is cast once per Long Rest", () => {
+  let character = makeChar({ classes: [mage(4)], originFeats: [takenFeat("Sample Lesson")] });
+  character = pickOption(character, "Sample Pulse", "Sample Lesson");
+  const pulse = cardTitled(evaluateCharacter(character, catalogs).grantedSpellSources, "Sample Lesson")?.spells.find((s) => s.name === "Sample Pulse");
+  assert.ok(pulse?.resourceCounterId, "the picked spell has a Long Rest counter");
+  assert.equal(pulse.maxUses, 1);
+});
+
 test("a grant the reader does not model, a prepared group with a chosen ability, offers no ability pick and gives no card", () => {
   const character = makeChar({ classes: [mage(4)], originFeats: [takenFeat("Sample Boon")] });
   assert.equal(offeredChoices(character).some((c) => featOf(c) === "Sample Boon"), false, "the ability is not offered");

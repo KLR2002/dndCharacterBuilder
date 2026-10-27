@@ -246,6 +246,17 @@ test("a granted spell satisfies a feat prerequisite of being able to cast a spel
   assert.equal(validateFeatPrerequisites(withoutGrant, prerequisite, { catalogs }).met, false);
 });
 
+test("a leveled spell in a feat's known group is cast once per Long Rest, and a cantrip beside it stays at will", () => {
+  const character = makeChar({ classes: [mage(4)], asiSelections: [takenFeat("Sample Study", "int")] });
+  const card = sourceTitled(evaluateCharacter(character, catalogs).grantedSpellSources, "Sample Study");
+  assert.equal(card?.spells.find((spell) => spell.name === "Sample Ember")?.resourceCounterId, undefined, "the cantrip is at will");
+  const veil = card?.spells.find((spell) => spell.name === "Sample Veil");
+  assert.ok(veil?.resourceCounterId, "the leveled spell has a Long Rest counter");
+  assert.equal(veil.maxUses, 1);
+  const used = toggleInnateSpellUse(character, veil);
+  assert.equal(applyLongRest(used).resourceCounters[veil.resourceCounterId!]?.current, 1, "a long rest restores it");
+});
+
 test("a source with a pick still owed and no spell does not satisfy the prerequisite of being able to cast a spell", () => {
   const prerequisite = { name: "Sample Requirement", prerequisite: "The ability to cast at least one spell" };
   const pickOnly = makeChar({ asiSelections: [takenFeat("Sample Picker", "int")] });

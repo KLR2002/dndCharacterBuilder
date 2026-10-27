@@ -76,7 +76,8 @@ interface RaceGrants {
 
 /**
  * A place in a grant where the player picks spells: its index among the grant's picks, how many, what it picks from, the uses
- * of its key and the character level it unlocks at. A pick chooses from a filter, or from the named spells the grant lists.
+ * of its key, whether it sits in a known group and the character level it unlocks at. A pick chooses from a filter, or from
+ * the named spells the grant lists.
  */
 interface PickSlot {
   index: number;
@@ -87,6 +88,8 @@ interface PickSlot {
   from?: string[];
   /** Set for a daily or per-rest slot: the uses a Long Rest restores. Absent for a known or at-will slot. */
   uses?: number;
+  /** Whether the slot sits in a known group (see usesOfEntry). */
+  fromKnown: boolean;
   /** The level the grant unlocks the slot at: 1 for a feat's, the section key for a race's. */
   minCharacterLevel: number;
 }
@@ -98,6 +101,8 @@ interface GrantSpell {
   minCharacterLevel: number;
   /** Set under a `daily` or `rest` key: the uses per Long Rest. Absent for at-will spells. */
   uses?: number;
+  /** Whether the spell sits in a known group (see usesOfEntry). */
+  fromKnown: boolean;
 }
 
 interface GrantPick {
@@ -106,6 +111,17 @@ interface GrantPick {
   count: number;
   minCharacterLevel: number;
   uses?: number;
+  fromKnown: boolean;
+}
+
+/**
+ * The uses per Long Rest a granted spell carries, read from its entry and the spell's own level. A daily or per-rest key gives
+ * its uses. A leveled spell of a known group is cast once per Long Rest too; a cantrip of one, and any spell of an innate
+ * at-will list, is at will (undefined).
+ */
+export function usesOfEntry(entry: { uses?: number; fromKnown: boolean }, spellLevel: number): number | undefined {
+  if (entry.uses !== undefined) return entry.uses;
+  return entry.fromKnown && spellLevel > 0 ? 1 : undefined;
 }
 
 type GrantEntry = GrantSpell | GrantPick;
@@ -209,28 +225,32 @@ export function pickedSpellListOf(character: Character, owner: GrantOwner, grant
  * Every entry of a grant in its known and innate sections, in section and key order. A key is a character level for a race
  * (the level the entry unlocks at) and `_` for a feat (no level gate beyond the feat itself). A list is at will unless it sits
  * under a `daily` or `rest` key, which give its uses per Long Rest. A `choose` object is a pick. A `ritual` list is left out.
+ * An entry of the known section is marked, since a leveled one of it is cast once per Long Rest (see usesOfEntry).
  */
 export function grantEntries(grant: AdditionalSpells): GrantEntry[] {
   const entries: GrantEntry[] = [];
-  for (const section of [grant.known, grant.innate]) {
+  for (const [section, fromKnown] of [
+    [grant.known, true],
+    [grant.innate, false],
+  ] as const) {
     if (!section || typeof section !== "object") continue;
     for (const [key, value] of Object.entries(section)) {
       const minCharacterLevel = key === "_" ? 1 : Number(key);
       if (!Number.isFinite(minCharacterLevel)) continue;
-      collectEntries(value, minCharacterLevel, undefined, entries);
+      collectEntries(value, minCharacterLevel, undefined, entries, fromKnown);
     }
   }
   return entries;
 }
 
-function collectEntries(value: unknown, minCharacterLevel: number, uses: number | undefined, out: GrantEntry[]): void {
+function collectEntries(value: unknown, minCharacterLevel: number, uses: number | undefined, out: GrantEntry[], fromKnown: boolean): void {
   const usesField = uses !== undefined ? { uses } : {};
   if (typeof value === "string") {
-    out.push({ kind: "spell", name: value, minCharacterLevel, ...usesField });
+    out.push({ kind: "spell", name: value, minCharacterLevel, ...usesField, fromKnown });
     return;
   }
   if (Array.isArray(value)) {
-    for (const item of value) collectEntries(item, minCharacterLevel, uses, out);
+    for (const item of value) collectEntries(item, minCharacterLevel, uses, out, fromKnown);
     return;
   }
   if (!value || typeof value !== "object") return;
@@ -238,20 +258,27 @@ function collectEntries(value: unknown, minCharacterLevel: number, uses: number 
   if ("choose" in record) {
     const payload = record.choose;
     if (typeof payload === "string") {
-      out.push({ kind: "pick", choose: payload, count: countOf(record.count), minCharacterLevel, ...usesField });
+      out.push({ kind: "pick", choose: payload, count: countOf(record.count), minCharacterLevel, ...usesField, fromKnown });
     } else if (payload && typeof payload === "object" && Array.isArray((payload as { from?: unknown }).from)) {
       const from = ((payload as { from: unknown[] }).from).filter((name): name is string => typeof name === "string");
-      out.push({ kind: "pick", choose: { from }, count: countOf((payload as { count?: unknown }).count), minCharacterLevel, ...usesField });
+      out.push({
+        kind: "pick",
+        choose: { from },
+        count: countOf((payload as { count?: unknown }).count),
+        minCharacterLevel,
+        ...usesField,
+        fromKnown,
+      });
     }
     return;
   }
   for (const [key, inner] of Object.entries(record)) {
     if (key === "daily" || key === "rest") {
       if (inner && typeof inner === "object") {
-        for (const [count, names] of Object.entries(inner)) collectEntries(names, minCharacterLevel, usesOf(count), out);
+        for (const [count, names] of Object.entries(inner)) collectEntries(names, minCharacterLevel, usesOf(count), out, fromKnown);
       }
     } else if (key === "will" || key === "_") {
-      collectEntries(inner, minCharacterLevel, uses, out);
+      collectEntries(inner, minCharacterLevel, uses, out, fromKnown);
     }
   }
 }
@@ -287,6 +314,7 @@ export function pickSlotsOf(grant: AdditionalSpells): PickSlot[] {
     slots.push({
       index: slots.length,
       count: entry.count,
+      fromKnown: entry.fromKnown,
       minCharacterLevel: entry.minCharacterLevel,
       ...(typeof choose === "string" ? { filter: choose } : { from: choose.from }),
       ...(entry.uses !== undefined ? { uses: entry.uses } : {}),
