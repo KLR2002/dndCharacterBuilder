@@ -65,7 +65,7 @@ test("a cantrip picked for a race on the SRD-like catalog stands after the integ
   const opened = reconcile(loaded, integratedLike());
   assert.deepEqual(opened.ruleChoices, picked.ruleChoices, "the pick is kept with its id");
   assert.deepEqual(opened.needsReview ?? [], [], "no notice is raised");
-  const card = evaluateCharacter(opened, { compendium: integratedLike() }).grantedSpellSources.find((source) => source.title === "Sample High Sample Elf");
+  const card = evaluateCharacter(opened, { compendium: integratedLike() }).grantedSpellSources.find((source) => source.title === "Sample High");
   assert.ok(card?.spells.some((spell) => spell.name === "Sample Shot" && spell.isCantrip), "the cantrip is still listed at will on the race's card");
 });
 
@@ -90,7 +90,7 @@ test("a save that keys a race pick by its source loads with the pick under the r
     [["-__Race Spells__Sample High__-__0", ["Sample Shot"]]],
     "the pick is kept under the key the race now has",
   );
-  const card = evaluateCharacter(loaded, { compendium: srdLike() }).grantedSpellSources.find((source) => source.title === "Sample High Sample Elf");
+  const card = evaluateCharacter(loaded, { compendium: srdLike() }).grantedSpellSources.find((source) => source.title === "Sample High");
   assert.ok(card?.spells.some((spell) => spell.name === "Sample Shot" && spell.isCantrip), "the cantrip is listed on the race's card");
 });
 

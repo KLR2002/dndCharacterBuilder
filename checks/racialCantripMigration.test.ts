@@ -73,7 +73,7 @@ test("a legacy Half-Elf descent cantrip moves to the subrace's pick, and its car
     ],
   });
   const loaded = migrateCharacter(saved, races, tracked.classes);
-  const card = cardTitled(evaluateCharacter(loaded, { compendium }).grantedSpellSources, "Moon Elf or Sun Elf Descent Half-Elf");
+  const card = cardTitled(evaluateCharacter(loaded, { compendium }).grantedSpellSources, "Moon Elf or Sun Elf Descent");
   assert.ok(card?.spells.some((spell) => spell.name === "Shocking Grasp" && spell.isCantrip));
 });
 

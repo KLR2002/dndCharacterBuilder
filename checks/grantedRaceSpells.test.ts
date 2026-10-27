@@ -80,7 +80,7 @@ test("a race's per-rest spell has a counter that a long rest restores", () => {
     baseAbilityScores: { str: 10, dex: 10, con: 10, int: 16, wis: 10, cha: 10 },
   });
   const evaluated = evaluateCharacter(character, catalogs);
-  const glimmer = sourceTitled(evaluated.grantedSpellSources, "Sample Line Sample Kin")?.spells.find((spell) => spell.name === "Sample Glimmer");
+  const glimmer = sourceTitled(evaluated.grantedSpellSources, "Sample Line")?.spells.find((spell) => spell.name === "Sample Glimmer");
   assert.ok(glimmer?.resourceCounterId, "the per-rest spell has a counter");
 
   const spell = glimmer!;
@@ -114,7 +114,7 @@ test("a saved counter under a race spell's id keeps its used state", () => {
 test("a subrace's own grants replace the race's, and a subrace without grants keeps them", () => {
   const withOwn = evaluateCharacter(kin(1, "Sample Line"), catalogs);
   const titles = withOwn.grantedSpellSources.map((source) => source.title);
-  assert.deepEqual(titles, ["Sample Line Sample Kin"], "only the subrace's source is listed");
+  assert.deepEqual(titles, ["Sample Line"], "only the subrace's source is listed");
 
   const withoutOwn = evaluateCharacter(kin(1, "Sample Plain"), catalogs);
   assert.deepEqual(
@@ -228,7 +228,7 @@ test("the tracked catalog reads the Moon Elf or Sun Elf descent's wizard cantrip
   const descent = { name: "Half-Elf", source: "PHB", subraceName: "Moon Elf or Sun Elf Descent", subraceSource: "SCAG" };
   const wizard = { className: "Wizard", source: "PHB", level: 1 };
   const shut = evaluateCharacter(makeChar({ classes: [wizard], race: descent }), integrated).grantedSpellSources;
-  assert.equal(sourceTitled(shut, "Moon Elf or Sun Elf Descent Half-Elf"), undefined, "the option is not picked, so the cantrip is not read");
+  assert.equal(sourceTitled(shut, "Moon Elf or Sun Elf Descent"), undefined, "the option is not picked, so the cantrip is not read");
 
   const pick: RuleChoiceEntry = {
     id: "SCAG__Half-Elf__Moon Elf or Sun Elf Descent__Variant Feature (Choose 1)",
@@ -239,7 +239,7 @@ test("the tracked catalog reads the Moon Elf or Sun Elf descent's wizard cantrip
     picked: ["Cantrip"],
   };
   const open = evaluateCharacter(makeChar({ classes: [wizard], race: descent, ruleChoices: [pick] }), integrated).grantedSpellSources;
-  assert.ok(sourceTitled(open, "Moon Elf or Sun Elf Descent Half-Elf"), "picked, the grant is read and offers its wizard cantrip");
+  assert.ok(sourceTitled(open, "Moon Elf or Sun Elf Descent"), "picked, the grant is read and offers its wizard cantrip");
 });
 
 test("the tracked catalog reads Half-Elf Drow Descent's spells only once its Drow Magic option is picked", () => {
@@ -247,7 +247,7 @@ test("the tracked catalog reads Half-Elf Drow Descent's spells only once its Dro
   const descent = { name: "Half-Elf", source: "PHB", subraceName: "Drow Descent", subraceSource: "SCAG" };
   const fighter = { className: "Fighter", source: "PHB", level: 5 };
   const shut = evaluateCharacter(makeChar({ classes: [fighter], race: descent }), integrated).grantedSpellSources;
-  assert.equal(sourceTitled(shut, "Drow Descent Half-Elf"), undefined, "the option is not picked, so the descent's spells are not read");
+  assert.equal(sourceTitled(shut, "Drow Descent"), undefined, "the option is not picked, so the descent's spells are not read");
 
   const pick: RuleChoiceEntry = {
     id: "SCAG__Half-Elf__Drow Descent__Variant Feature (Choose 1)",
@@ -258,7 +258,7 @@ test("the tracked catalog reads Half-Elf Drow Descent's spells only once its Dro
     picked: ["Drow Magic"],
   };
   const open = evaluateCharacter(makeChar({ classes: [fighter], race: descent, ruleChoices: [pick] }), integrated).grantedSpellSources;
-  const card = sourceTitled(open, "Drow Descent Half-Elf");
+  const card = sourceTitled(open, "Drow Descent");
   assert.ok(card, "picked, the descent's spells are read");
   assert.ok(card.spells.some((spell) => spell.name === "Dancing Lights"), "its cantrip is listed");
 });

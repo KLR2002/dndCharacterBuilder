@@ -144,21 +144,21 @@ test("a Half-Elf of high descent gets the wizard cantrip only once the descent c
     race: { name: "Half-Elf", source: "PHB", subraceName: "Moon Elf or Sun Elf Descent", subraceSource: "SCAG" },
     baseAbilityScores: scores({ int: 16 }),
   });
-  assert.equal(sourceTitled(evaluateCharacter(halfElf, real).grantedSpellSources, "Moon Elf or Sun Elf Descent Half-Elf"), undefined, "no card before Cantrip is picked");
+  assert.equal(sourceTitled(evaluateCharacter(halfElf, real).grantedSpellSources, "Moon Elf or Sun Elf Descent"), undefined, "no card before Cantrip is picked");
 
   const descent = ancestryRuleChoices(halfElf, tracked.races as RaceData[]).find((c) => c.options.some((o) => o.name === "Cantrip"));
   assert.ok(descent, "the descent choice offers Cantrip");
   const withCantrip = pickRuleChoice(halfElf, descent, "Cantrip", real.compendium);
-  const unpicked = sourceTitled(evaluateCharacter(withCantrip, real).grantedSpellSources, "Moon Elf or Sun Elf Descent Half-Elf");
+  const unpicked = sourceTitled(evaluateCharacter(withCantrip, real).grantedSpellSources, "Moon Elf or Sun Elf Descent");
   assert.equal(unpicked?.ability, "int");
   assert.deepEqual(unpicked?.notices, ["Needs review: pick 1 more spell"]);
 
   const spellChoice = raceSpellRuleChoices(withCantrip, real.compendium).find((c) => c.options.some((o) => o.name === "Fire Bolt"));
   assert.ok(spellChoice, "the wizard cantrips are offered once Cantrip is picked");
   const withSpell = pickRuleChoice(withCantrip, spellChoice, "Fire Bolt", real.compendium);
-  assert.ok(sourceTitled(evaluateCharacter(withSpell, real).grantedSpellSources, "Moon Elf or Sun Elf Descent Half-Elf")?.spells.some((spell) => spell.name === "Fire Bolt"));
+  assert.ok(sourceTitled(evaluateCharacter(withSpell, real).grantedSpellSources, "Moon Elf or Sun Elf Descent")?.spells.some((spell) => spell.name === "Fire Bolt"));
 
   const otherDescent = pickRuleChoice(withSpell, descent, "Skill Versatility", real.compendium);
-  assert.equal(sourceTitled(evaluateCharacter(otherDescent, real).grantedSpellSources, "Moon Elf or Sun Elf Descent Half-Elf"), undefined, "the card goes when Cantrip is not picked");
+  assert.equal(sourceTitled(evaluateCharacter(otherDescent, real).grantedSpellSources, "Moon Elf or Sun Elf Descent"), undefined, "the card goes when Cantrip is not picked");
   assert.equal(otherDescent.ruleChoices?.some((entry) => entry.picked.includes("Fire Bolt")), false, "and the wizard cantrip pick is released");
 });

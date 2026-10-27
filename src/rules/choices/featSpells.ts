@@ -160,13 +160,22 @@ function raceOwner(record: { name: string; source: string }): GrantOwner {
 }
 
 /**
- * The name a race or subrace reads by: the subrace with its race, as in "High Elf". The owner's key holds only the subrace's
- * name, so the race is found in the catalog. A name that is no listed subrace, or a subrace that names its race, is returned as is.
+ * The title a race or subrace is shown by: a subrace reads with its race ("High Elf", "Hill Dwarf") unless its own name already
+ * reads as a name, having more than one word or containing the race's name ("Drow Descent", "Mark of Finding"). A race with no
+ * parent reads by its own name.
  */
-export function raceDisplayName(name: string, races: readonly RaceData[]): string {
-  const parent = races.find((race) => race.subraces?.some((subrace) => subrace.name === name));
-  if (!parent || name.toLowerCase().includes(parent.name.toLowerCase())) return name;
-  return `${name} ${parent.name}`;
+export function raceTitle(name: string, parentRace: string | undefined): string {
+  if (parentRace === undefined || /\s/.test(name) || name.toLowerCase().includes(parentRace.toLowerCase())) return name;
+  return `${name} ${parentRace}`;
+}
+
+/**
+ * The title of a race or subrace the character holds. The character's own race is the parent of its subrace, so the catalog is
+ * never asked which race a subrace belongs to: several races can list a subrace of one name.
+ */
+export function raceTitleOf(character: Character, name: string): string {
+  const parent = character.race && character.race.subraceName === name ? character.race.name : undefined;
+  return raceTitle(name, parent);
 }
 
 /**
@@ -799,12 +808,31 @@ function releasedPickLabel(entry: RuleChoiceEntry, pick: string): string {
  * The review notices for the picks an entry released: one per pick, each naming the pick and the feat or race it came from.
  * An entry with no pick recorded is named by its trait.
  */
-function releaseNotices(entry: RuleChoiceEntry, reason: string, races: readonly RaceData[], picks: readonly string[] = entry.picked): string[] {
+function releaseNotices(character: Character, entry: RuleChoiceEntry, reason: string, picks: readonly string[] = entry.picked): string[] {
   if (picks.length === 0) return [`${entry.trait} removed: ${reason}`];
   // A Rule Choice id is the source, the owner's kind mark, the owner's name, then the pick (see ownerKey and the id builders).
   const [, mark, name] = entry.id.split("__");
-  const owner = mark === OWNER_MARK.race ? raceDisplayName(name, races) : name;
+  const owner = mark === OWNER_MARK.race ? raceTitleOf(character, name) : name;
   return picks.map((pick) => `${releasedPickLabel(entry, pick)} removed from ${owner}: ${reason}`);
+}
+
+/**
+ * Releases the spell picks of the race `before` held when `next` names another race or subrace, with a review notice that titles
+ * the race as `before` held it. Only the character from before the change can title a race it no longer holds. A pick under the
+ * race or subrace `next` holds stays for the reconciler to judge.
+ */
+export function releaseSupersededRacePicks(before: Character, next: Character): Character {
+  const held = new Set([next.race?.name, next.race?.subraceName].filter((name): name is string => name !== undefined));
+  const notices: string[] = [];
+  const kept = (next.ruleChoices ?? []).filter((entry) => {
+    if (!isGrantSpellChoiceId(entry.id)) return true;
+    const [, mark, name] = entry.id.split("__");
+    if (mark !== OWNER_MARK.race || held.has(name)) return true;
+    notices.push(...releaseNotices(before, entry, "ancestry no longer grants it"));
+    return false;
+  });
+  if (notices.length === 0) return next;
+  return withNotices({ ...next, ruleChoices: kept }, notices);
 }
 
 /**
@@ -873,13 +901,13 @@ export function pruneInvalidFeatSpellPicks(character: Character, compendium: Com
       const reason = !heldOwner
         ? (isFeat ? "feat no longer held" : "ancestry no longer grants it")
         : (isFeat ? "spell list changed" : "no longer offered");
-      notices.push(...releaseNotices(entry, reason, listings.races()));
+      notices.push(...releaseNotices(character, entry, reason));
       continue;
     }
     const offered = valid.get(entry.id);
     const picked = offered ? entry.picked.filter((name) => offered.includes(name)) : entry.picked;
     const dropped = entry.picked.filter((name) => !picked.includes(name));
-    if (dropped.length > 0) notices.push(...releaseNotices(entry, "no longer offered", listings.races(), dropped));
+    if (dropped.length > 0) notices.push(...releaseNotices(character, entry, "no longer offered", dropped));
     if (picked.length > 0) kept.push(picked.length === entry.picked.length ? entry : { ...entry, picked });
   }
 

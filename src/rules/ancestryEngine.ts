@@ -11,7 +11,7 @@ import { reconcile } from "./characterReconciler.ts";
 import { currentCompendium } from "../services/compendium.ts";
 import { BACKGROUND_FEAT_SOURCE } from "../constants/rules.ts";
 import { normalizeSkillName } from "./skills.ts";
-import { isGrantSpellChoiceId } from "./choices/featSpells.ts";
+import { isGrantSpellChoiceId, releaseSupersededRacePicks } from "./choices/featSpells.ts";
 import { moveLegacySkillPicks } from "./proficiencyPicks.ts";
 import { releaseExpandedOnlySpells } from "./backgroundSpells.ts";
 
@@ -239,7 +239,7 @@ export function applyAncestrySelection(
   };
 
   // The spells only the old race's or subrace's expanded lists gave are released, with a notice (ADR 0017).
-  return releaseExpandedOnlySpells(character, reconcile(cleaned, compendium), compendium);
+  return releaseExpandedOnlySpells(character, reconcile(releaseSupersededRacePicks(character, cleaned), compendium), compendium);
 }
 
 export function applyAncestryChoice(

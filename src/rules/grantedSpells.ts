@@ -21,7 +21,7 @@ import {
   pickedSpellListOf,
   pickSlotsOf,
   preparedEntries,
-  raceDisplayName,
+  raceTitleOf,
   raceGrantsOf,
   slugOf,
   spellListLabel,
@@ -77,7 +77,7 @@ export function grantedSpellSources(
   if (race) {
     const seen = new Set<string>();
     for (const grant of race.grants) {
-      const source = grantSource(ctx, race.owner, grant, undefined, seen, raceDisplayName(race.owner.name, listings.races()));
+      const source = grantSource(ctx, race.owner, grant, undefined, seen, raceTitleOf(character, race.owner.name));
       if (source) sources.push(source);
     }
   }
@@ -140,7 +140,7 @@ export function grantedPreparedSpells(character: Character, catalogs?: Character
   };
 
   const race = raceGrantsOf(character, listings.races());
-  if (race) for (const grant of race.grants) addGrant(race.owner, grant, race.owner.name);
+  if (race) for (const grant of race.grants) addGrant(race.owner, grant, raceTitleOf(character, race.owner.name));
 
   for (const { feat } of heldFeatsOf(character, listings.feats(), activeBooks)) {
     if (!feat.additionalSpells) continue;

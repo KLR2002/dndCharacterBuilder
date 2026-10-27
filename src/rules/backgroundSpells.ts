@@ -2,7 +2,7 @@ import type { AdditionalSpells, BackgroundData, SpellData } from "../types/dnd5e
 import type { Character } from "../types/character.ts";
 import { currentCompendium, type Compendium } from "../services/compendium.ts";
 import { withNotices } from "./needsReview.ts";
-import { heldFeatsOf, raceGrantsOf } from "./choices/featSpells.ts";
+import { heldFeatsOf, raceGrantsOf, raceTitleOf } from "./choices/featSpells.ts";
 import { isSpellAvailableForClass } from "./spellcasting.ts";
 import { normalizeKey, resolveSpellName } from "./subclassSpells.ts";
 
@@ -56,7 +56,7 @@ export function heldExpandedSources(
     sources.push({ title: `${feat.name} feat`, names: expandedSpellNamesOf(feat.additionalSpells) });
   }
   const race = raceGrantsOf(character, listings.races());
-  if (race) sources.push({ title: `${race.owner.name} race`, names: expandedSpellNamesOf(race.grants) });
+  if (race) sources.push({ title: `${raceTitleOf(character, race.owner.name)} race`, names: expandedSpellNamesOf(race.grants) });
   return sources.filter((source) => source.names.length > 0);
 }
 
