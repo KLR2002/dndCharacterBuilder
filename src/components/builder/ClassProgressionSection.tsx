@@ -169,7 +169,7 @@ export const ClassProgressionSection: React.FC<
 
   const removeClassLevel = (className: string) => {
     onUpdate(
-      removeClassLevelTransition(character, className, currentCompendium()),
+      removeClassLevelTransition(character, className, currentCompendium(), activeBooks),
     );
   };
 

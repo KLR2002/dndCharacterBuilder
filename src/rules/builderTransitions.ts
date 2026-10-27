@@ -335,7 +335,8 @@ export function applySoleSubclasses(
 export function removeClassLevel(
   character: Character,
   className: string,
-  compendium: Compendium = currentCompendium()
+  compendium: Compendium = currentCompendium(),
+  activeBooks?: string[]
 ): Character {
   const existing = character.classes.find((c) => c.className === className);
   if (!existing) return character;
@@ -345,7 +346,7 @@ export function removeClassLevel(
   let updatedClasses: CharacterClass[];
 
   if (existing.level <= 1) {
-    updated = teardownSubclass(updated, className, oldSubclass || "", compendium);
+    updated = teardownSubclass(updated, className, oldSubclass || "", compendium, activeBooks);
     updatedClasses = updated.classes.filter((c) => c.className !== className);
 
     const classSourceKey = `Class: ${className}`;
@@ -363,7 +364,7 @@ export function removeClassLevel(
     const newLevel = existing.level - 1;
     const losesSubclass = newLevel < subclassLevel(className) && Boolean(oldSubclass);
     if (losesSubclass && oldSubclass) {
-      updated = teardownSubclass(updated, className, oldSubclass, compendium);
+      updated = teardownSubclass(updated, className, oldSubclass, compendium, activeBooks);
     }
     updatedClasses = updated.classes.map((c) =>
       c.className === className
@@ -378,7 +379,7 @@ export function removeClassLevel(
     );
   }
 
-  return reconcile({ ...updated, classes: updatedClasses }, compendium);
+  return reconcile({ ...updated, classes: updatedClasses }, compendium, { activeBooks });
 }
 
 export const STARTING_GOLD_BY_CLASS: Record<string, number> = {

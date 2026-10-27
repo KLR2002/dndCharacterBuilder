@@ -7,7 +7,7 @@ import { reconcile, teardownSubclass } from "../src/rules/characterReconciler.ts
 import { migrateCharacter } from "../src/rules/migrateCharacter.ts";
 import { applyOriginFeat } from "../src/rules/feats.ts";
 import { applyAsiSelection } from "../src/rules/leveling.ts";
-import { applySoleSubclasses, changeRace, changeSubclass } from "../src/rules/builderTransitions.ts";
+import { applySoleSubclasses, changeRace, changeSubclass, removeClassLevel } from "../src/rules/builderTransitions.ts";
 import type { Character, CharacterClass } from "../src/types/character.ts";
 import type { ClassData, FeatData } from "../src/types/dnd5e.ts";
 import type { AvailableRuleChoice } from "../src/rules/choices/types.ts";
@@ -194,6 +194,13 @@ test("applying the lone subclass keeps the counter of a background-claimed feat 
   assert.equal(applied.classes[0]?.subclassName, "Sample Sole Path", "the lone subclass is applied");
   assert.ok(applied.resourceCounters?.[MAGE_COUNTER], "the counter of the list held is kept");
   assert.deepEqual(applied.needsReview ?? [], [], "no notice is raised");
+});
+
+test("removing a class level keeps the counter of a background-claimed feat that two active books hold, with no notice", () => {
+  const removed = removeClassLevel(claimedWithMageCounter(), "Sample Mage", twoListsCompendium, TWO_ACTIVE_BOOKS);
+  assert.equal(removed.classes[0]?.level, 3, "the level is removed");
+  assert.ok(removed.resourceCounters?.[MAGE_COUNTER], "the counter of the list held is kept");
+  assert.deepEqual(removed.needsReview ?? [], [], "no notice is raised");
 });
 
 test("tearing down a subclass keeps the counter of a background-claimed feat that two active books hold, with no notice", () => {
