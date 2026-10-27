@@ -110,7 +110,7 @@ test("a subrace's own grants replace the race's, and a subrace without grants ke
   );
 });
 
-test("a race whose casting ability is a pick has a card that needs the ability until it is chosen (ticket 07)", () => {
+test("a race whose casting ability is a pick has a card that needs the ability until it is chosen", () => {
   const character = makeChar({
     classes: [mage(1)],
     race: { name: "Sample Chooser", source: "TST" },

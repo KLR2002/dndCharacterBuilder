@@ -13,7 +13,7 @@ import type { InnateSpellProfile } from "../src/rules/innateMagic.ts";
 import { inMemoryCompendium, makeChar } from "./testUtils.ts";
 import { grantedSpellBackgrounds, grantedSpellClasses, grantedSpellFeats, grantedSpellSpells } from "./grantedSpellsFixture.ts";
 
-// Picks for a granted spell list (ADR 0017, ticket 02). Every name is invented (checks/grantedSpellsFixture.ts).
+// Picks for a granted spell list (ADR 0017). Every name is invented (checks/grantedSpellsFixture.ts).
 // Sample Initiate offers a Mage list and a Cleric list; each takes two cantrips and one first-level spell. The
 // Cleric list's cantrip Sample Spark is in the second invented book TST2, so it is offered only when TST2 is active.
 

@@ -51,7 +51,7 @@ export interface TrackedFiles {
  * given, it also sets or removes each feat's `additionalSpells` (ADR 0017).
  * Nothing else on the data is touched.
  */
-export function enrichTrackedData(
+function enrichTrackedData(
   data: TrackedData,
   overrides: GrantOverrides,
   featSpells?: Map<string, AdditionalSpells[]>,

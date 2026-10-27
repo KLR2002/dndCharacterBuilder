@@ -57,7 +57,7 @@ const VARIANT_PREFIX = /^Variant;?\s*/;
  * named `Variant` and twelve are named `Variant; <descent>` - so anything
  * matching an exact name was only ever finding the first kind.
  */
-export function normalizeSubraceName(rawName: string | null | undefined): { name: string; isVariant: boolean } {
+function normalizeSubraceName(rawName: string | null | undefined): { name: string; isVariant: boolean } {
   const name = (rawName ?? "").trim();
   const isVariant = VARIANT_PREFIX.test(name);
   if (!isVariant) return { name, isVariant };

@@ -8,7 +8,7 @@ import type { InnateSpellProfile } from "../src/rules/innateMagic.ts";
 import type { RaceData } from "../src/types/dnd5e.ts";
 import { inMemoryCompendium, loadTestCatalogs, makeChar } from "./testUtils.ts";
 
-// A character saved before race spell picks moved to the Rule Choice storage (ticket 07) keeps its High Elf or
+// A character saved before race spell picks moved to the Rule Choice storage keeps its High Elf or
 // Half-Elf cantrip on load. The catalogs are the ones the repo tracks; the names are the source's own, no prose is added.
 
 const tracked = loadTestCatalogs();

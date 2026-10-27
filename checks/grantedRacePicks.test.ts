@@ -10,7 +10,7 @@ import type { RaceData } from "../src/types/dnd5e.ts";
 import { inMemoryCompendium, loadTestCatalogs, makeChar, srdBaselineCompendium } from "./testUtils.ts";
 import { grantedSpellClasses, grantedSpellFeats, grantedSpellRaces, grantedSpellSpells } from "./grantedSpellsFixture.ts";
 
-// A race's pick of spells and its casting ability (ADR 0017, ticket 07). Every name is invented
+// A race's pick of spells and its casting ability (ADR 0017). Every name is invented
 // (checks/grantedSpellsFixture.ts), except the Half-Elf and High Elf cases, which read the catalogs the repo tracks.
 
 const compendium = inMemoryCompendium({

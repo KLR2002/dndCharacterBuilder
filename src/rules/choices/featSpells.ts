@@ -56,20 +56,20 @@ export interface GrantOwner {
 }
 
 /** A feat the character holds, with the selection that gave it. */
-export interface HeldFeat {
+interface HeldFeat {
   feat: FeatData;
   selection: AsiSelection;
 }
 
 /** The grants of one owner the character holds. A feat carries its record, so its named lists can be read. */
-export interface HeldGrants {
+interface HeldGrants {
   owner: GrantOwner;
   grants: AdditionalSpells[];
   feat?: FeatData;
 }
 
 /** A race's or subrace's grants, with the record that owns them. */
-export interface RaceGrants {
+interface RaceGrants {
   owner: GrantOwner;
   grants: AdditionalSpells[];
 }
@@ -78,7 +78,7 @@ export interface RaceGrants {
  * A place in a grant where the player picks spells: its index among the grant's picks, how many, what it picks from, the uses
  * of its key and the character level it unlocks at. A pick chooses from a filter, or from the named spells the grant lists.
  */
-export interface PickSlot {
+interface PickSlot {
   index: number;
   count: number;
   /** The `key=value|key=value` filter the pick chooses from. Absent for a pick from named spells. */
@@ -92,7 +92,7 @@ export interface PickSlot {
 }
 
 /** One entry of a grant: a spell it gives, or a place where the player picks one. */
-export interface GrantSpell {
+interface GrantSpell {
   kind: "spell";
   name: string;
   minCharacterLevel: number;
@@ -100,7 +100,7 @@ export interface GrantSpell {
   uses?: number;
 }
 
-export interface GrantPick {
+interface GrantPick {
   kind: "pick";
   choose: string | { from: string[] };
   count: number;
@@ -108,7 +108,7 @@ export interface GrantPick {
   uses?: number;
 }
 
-export type GrantEntry = GrantSpell | GrantPick;
+type GrantEntry = GrantSpell | GrantPick;
 
 /**
  * The parsed `key=value|key=value` filter of a `choose` object. Keys this module does not model are listed, and match nothing.
@@ -181,7 +181,7 @@ export function chosenAbilityOptionsOf(grant: AdditionalSpells): AbilityKey[] {
 }
 
 /** The abilities the player may choose for an owner: those of its grants whose ability is a choice. The player picks one, once. */
-export function abilityOptionsOfGrants(grants: readonly AdditionalSpells[]): AbilityKey[] {
+function abilityOptionsOfGrants(grants: readonly AdditionalSpells[]): AbilityKey[] {
   const options = new Set<AbilityKey>();
   for (const grant of grants) for (const key of chosenAbilityOptionsOf(grant)) options.add(key);
   return ABILITY_KEYS.filter((key) => options.has(key));
@@ -283,7 +283,7 @@ function countOf(count: unknown): number {
 }
 
 /** The uses a daily or per-rest key allows: `"1"` and `"1e"` are one use. */
-export function usesOf(count: string): number {
+function usesOf(count: string): number {
   const uses = parseInt(count, 10);
   return Number.isFinite(uses) && uses > 0 ? uses : 1;
 }
@@ -314,7 +314,7 @@ export function parseSpellFilter(filter: string): SpellFilter {
  * attack-roll kinds, in the active books (the same rule `isSpellAvailableForClass` applies, so the Alternative Spell Lists
  * count). Sorted by name. A filter with a key this module does not model, or a ritual filter, offers nothing.
  */
-export function spellsMatching(filter: string, compendium: Compendium, activeBooks?: readonly string[]): SpellData[] {
+function spellsMatching(filter: string, compendium: Compendium, activeBooks?: readonly string[]): SpellData[] {
   const parsed = parseSpellFilter(filter);
   if (parsed.unknownKeys.length > 0 || parsed.ritual) return [];
   const seen = new Set<string>();
@@ -335,7 +335,7 @@ export function spellsMatching(filter: string, compendium: Compendium, activeBoo
  * The spells a pick slot offers: those its filter matches, or the named spells it chooses from that the active books hold.
  * A named spell that a switched-off book holds is not offered.
  */
-export function offeredSpellsOf(slot: PickSlot, compendium: Compendium, activeBooks?: readonly string[]): SpellData[] {
+function offeredSpellsOf(slot: PickSlot, compendium: Compendium, activeBooks?: readonly string[]): SpellData[] {
   if (slot.filter !== undefined) return spellsMatching(slot.filter, compendium, activeBooks);
   const offered: SpellData[] = [];
   for (const name of slot.from ?? []) {
@@ -371,7 +371,7 @@ export function spellListLabel(listName: string): string {
 }
 
 /** The spells a grant gives outright, in its known groups. A `choose` object is a pick and is left out. */
-export function fixedKnownSpellNamesOf(grant: AdditionalSpells): string[] {
+function fixedKnownSpellNamesOf(grant: AdditionalSpells): string[] {
   return Object.values(grant.known ?? {}).flatMap((list) =>
     Array.isArray(list) ? list.filter((item): item is string => typeof item === "string") : [],
   );
@@ -381,7 +381,7 @@ export function fixedKnownSpellNamesOf(grant: AdditionalSpells): string[] {
  * The label a named spell list is offered under: its spells that it gives outright, named (`Lorehold: Light, Sacred Flame`), or
  * the list's own name when it gives none outright.
  */
-export function spellListOptionLabel(grant: AdditionalSpells, compendium: Compendium, activeBooks?: readonly string[]): string {
+function spellListOptionLabel(grant: AdditionalSpells, compendium: Compendium, activeBooks?: readonly string[]): string {
   const name = grant.name ?? "";
   const fixed = fixedKnownSpellNamesOf(grant);
   if (fixed.length === 0) return name;
@@ -394,7 +394,7 @@ function titleCase(text: string): string {
 }
 
 /** The choice id of an owner's spell list pick. */
-export function spellListChoiceId(owner: GrantOwner): string {
+function spellListChoiceId(owner: GrantOwner): string {
   return `${ownerKey(owner)}__${SPELL_LIST_KEY}`;
 }
 
@@ -415,18 +415,13 @@ export function featCounterId(featName: string, listName: string | undefined, sp
   return `${FEAT_COUNTER_PREFIX}${slugOf(featName)}${COUNTER_SEGMENT}${list}${slugOf(spellName)}`;
 }
 
-/** The choice id of a feat's spell list pick. */
-export function featSpellListChoiceId(feat: FeatData): string {
-  return spellListChoiceId(featOwner(feat));
-}
-
 /** The choice id of the casting ability the player picks for an owner, once for all its grants. */
-export function abilityChoiceId(owner: GrantOwner): string {
+function abilityChoiceId(owner: GrantOwner): string {
   return `${ownerKey(owner)}__${ABILITY_CHOICE_KEY}`;
 }
 
 /** The choice id of one slot of a grant: its owner, its list (or `-`), and its index. */
-export function grantSlotChoiceId(owner: GrantOwner, grant: AdditionalSpells, slot: PickSlot): string {
+function grantSlotChoiceId(owner: GrantOwner, grant: AdditionalSpells, slot: PickSlot): string {
   const list = typeof grant.name === "string" ? grant.name : UNNAMED_GRANT_KEY;
   return `${ownerKey(owner)}__${list}__${slot.index}`;
 }
@@ -474,7 +469,7 @@ function subraceGrantOpen(character: Character, subrace: SubraceData): boolean {
 }
 
 /** Every owner of spell grants the character holds: its feats (with their records) and its race or subrace. */
-export function heldGrantsOf(character: Character, feats: FeatData[], races: RaceData[]): HeldGrants[] {
+function heldGrantsOf(character: Character, feats: FeatData[], races: RaceData[]): HeldGrants[] {
   const held: HeldGrants[] = [];
   for (const { feat } of heldFeatsOf(character, feats)) {
     if (feat.additionalSpells) held.push({ owner: featOwner(feat), grants: feat.additionalSpells, feat });

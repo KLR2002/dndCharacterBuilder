@@ -4,7 +4,7 @@ import type { ReviewedFeature } from "./proficiency-grants.ts";
  * A feat whose spell grants the reader does not turn into Innate Magic, reviewed (ADR 0017). The reason says what is not
  * modelled, so the follow-up is visible from this file. The gate reads names only; the reason is for the reviewer.
  */
-export interface ReviewedSpellFeat extends ReviewedFeature {
+interface ReviewedSpellFeat extends ReviewedFeature {
   reason: string;
 }
 

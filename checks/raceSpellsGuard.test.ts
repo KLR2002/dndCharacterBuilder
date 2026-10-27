@@ -6,7 +6,7 @@ import { fileURLToPath } from "node:url";
 
 // The race spell table is gone: a race's or subrace's spells come from the Catalog (ADR 0017). This guard fails if the rules
 // folder names the table's former entries again, whether as the trait titles the table gave or as the race names it matched.
-// High Elf and half-elf descent stay as the one isolated special case (ticket 07 moves them), so they are not named here.
+// High Elf and half-elf descent are the one isolated special case (their cantrip migration), so they are not named here.
 
 const RULES_DIR = fileURLToPath(new URL("../src/rules/", import.meta.url));
 

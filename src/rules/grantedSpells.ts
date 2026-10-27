@@ -33,7 +33,7 @@ const LEGACY_RACE_COUNTER_IDS: Record<string, string> = {
 };
 
 /** The ability modifiers and proficiency bonus a source's save DC and attack bonus are read from. */
-export interface GrantedSpellScores {
+interface GrantedSpellScores {
   modifiers: Record<AbilityKey, number>;
   proficiencyBonus: number;
 }
