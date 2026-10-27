@@ -21,6 +21,7 @@ import {
   getOptionsAndFeatures,
 } from "../../services/dataService";
 import { evaluateCharacter } from "../../rules/characterEvaluation";
+import { findHeldRace, heldSourceOf } from "../../rules/raceLookup";
 import { setOptionalFeatureEnabled } from "../../rules/builderTransitions";
 import { currentCompendium } from "../../services/compendium";
 import { findClassData } from "../../rules/catalogs";
@@ -109,7 +110,7 @@ export const FeaturesTab: React.FC = () => {
 
     // 1. Race / Lineage Features
     if (currentCharacter.lineageReplacement) {
-      const lineageData = findRace(currentCharacter.lineageReplacement);
+      const lineageData = findRace(currentCharacter.lineageReplacement, undefined, activeBooks);
       if (lineageData?.traits) {
         for (const trait of lineageData.traits) {
           list.push({
@@ -122,13 +123,18 @@ export const FeaturesTab: React.FC = () => {
         }
       }
     } else if (currentCharacter.race) {
-      const raceData = findRace(currentCharacter.race.name, currentCharacter.race.source);
+      const { race: raceData, subrace: subraceData } = findHeldRace(getRaces(activeBooks), currentCharacter.race, activeBooks);
       // A trait a recorded choice replaced must not appear at all, and the
       // Features tab builds its own list rather than going through
       // grantedFeatures, so suppression is applied here too.
-      const suppressed = replacedTraitNames(currentCharacter, getRaces(activeBooks));
+      const suppressed = replacedTraitNames(currentCharacter, getRaces(activeBooks), activeBooks);
       const raceChoiceId = (trait: string) =>
-        ruleChoiceId({ source: raceData?.source ?? currentCharacter.race!.source, race: currentCharacter.race!.name, subrace: null, trait });
+        ruleChoiceId({
+          source: raceData ? heldSourceOf(currentCharacter.race!.source, raceData) : currentCharacter.race!.source,
+          race: currentCharacter.race!.name,
+          subrace: null,
+          trait,
+        });
       if (raceData?.traits) {
         for (const trait of raceData.traits) {
           if (suppressed.has(trait.name)) continue;
@@ -143,16 +149,11 @@ export const FeaturesTab: React.FC = () => {
           });
         }
       }
-      if (currentCharacter.race.subraceName && raceData?.subraces) {
-        const subraceData = raceData.subraces.find(
-          (s) =>
-            s.name === currentCharacter.race?.subraceName &&
-            (!currentCharacter.race?.subraceSource || s.source === currentCharacter.race.subraceSource)
-        );
-        if (subraceData?.traits) {
+      if (currentCharacter.race.subraceName && subraceData) {
+        if (subraceData.traits) {
           const subraceChoiceId = (trait: string) =>
             ruleChoiceId({
-              source: subraceData.source,
+              source: heldSourceOf(currentCharacter.race!.subraceSource, subraceData),
               race: currentCharacter.race!.name,
               subrace: { name: subraceData.name },
               trait,
@@ -169,7 +170,7 @@ export const FeaturesTab: React.FC = () => {
               id: `subrace_${trait.name}`,
               name: `${trait.name} (${subraceData.name})`,
               origin: "Race",
-              source: `${subraceData.name} ${raceData.name}`,
+              source: `${subraceData.name} ${raceData?.name}`,
               description: resolved.description,
               chosenOption: resolved.chosenOption,
             });

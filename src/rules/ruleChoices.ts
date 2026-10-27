@@ -68,10 +68,10 @@ export function availableRuleChoices(
   const currentLevel = level ?? totalLevel(character);
   const books = activeBooks ? new Set(activeBooks.map((b) => b.toUpperCase())) : null;
 
-  return ancestryRuleChoices(character, raceCatalog).filter((choice) => {
+  return ancestryRuleChoices(character, raceCatalog, activeBooks).filter((choice) => {
     if (choice.level > currentLevel) return false;
     if (books) {
-      const source = choice.id.split("__")[0]?.toUpperCase();
+      const source = (choice.source ?? choice.id.split("__")[0])?.toUpperCase();
       if (source && !books.has(source)) return false;
     }
     return true;

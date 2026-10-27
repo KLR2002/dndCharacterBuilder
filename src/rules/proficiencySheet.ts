@@ -256,7 +256,7 @@ export function featuresOf(character: Character, listings: CompendiumListings): 
  */
 export function ruleGrantedSkills(character: Character, catalogs?: CharacterCatalogs): string[] {
   const listings = catalogListings(catalogs);
-  const ancestry = resolveCharacterAncestry(character, listings.races());
+  const ancestry = resolveCharacterAncestry(character, listings.races(), catalogs?.activeBooks);
   const features = featuresOf(character, listings);
   return [
     ...legacySkillNames(character, ancestry, listings, features),
@@ -337,7 +337,7 @@ export function skillChoiceOffers(character: Character, catalogs: CharacterCatal
 export function proficiencySheet(character: Character, catalogs: CharacterCatalogs): ProficiencySheet {
   const listings = catalogListings(catalogs);
   const features = featuresOf(character, listings);
-  const ancestry = resolveCharacterAncestry(character, listings.races());
+  const ancestry = resolveCharacterAncestry(character, listings.races(), catalogs.activeBooks);
 
   // Class base proficiencies (the first class's, and each later class's multiclass grants from the Catalog), then the
   // multiclass proficiencies recorded on the character, then the features' grants.

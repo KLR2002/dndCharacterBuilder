@@ -47,7 +47,7 @@ export interface AvailableRuleChoice {
   effectLevel: number;
   /** The feature this choice replaces, when the catalog marks one. */
   replaces?: string;
-  /** The book the choice is printed in. Set by table rows, which gate on it; others gate on the id prefix. */
+  /** The book the choice is printed in. Set by table rows and by race choices, which gate on it; others gate on the id prefix. */
   source?: string;
   /** The categories a Proficiency Choice's pick lands in. Set by Proficiency Choices only. */
   categories?: ProficiencyCategory[];

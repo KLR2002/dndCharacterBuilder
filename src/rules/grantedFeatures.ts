@@ -9,6 +9,7 @@ import { recordGrantSources } from "./recordProficiencyGrants.ts";
 import { grantRequirementMet, type SubclassOwner } from "./optionFeatureGrants.ts";
 import { findClassData } from "./catalogs.ts";
 import { isCustomBackground } from "./customBackground.ts";
+import { findHeldRace, heldSourceOf } from "./raceLookup.ts";
 
 export function grantedFeatures(character: Character, catalog: FeatureCatalog): FeatureInstance[] {
   const out: FeatureInstance[] = [];
@@ -23,7 +24,7 @@ export function grantedFeatures(character: Character, catalog: FeatureCatalog): 
     add({ name: record.name, description: "", source: record.source, origin: record.origin, grants: record.grants }, record.owner);
   }
   if (character.lineageReplacement) {
-    const lineage = catalog.races.find(r => r.name === character.lineageReplacement);
+    const lineage = findHeldRace(catalog.races, { name: character.lineageReplacement }, catalog.activeBooks).race;
     if (lineage) {
       for (const trait of lineage.traits || []) {
         add({ ...trait, source: lineage.source, origin: "Race" }, lineage.name);
@@ -31,8 +32,7 @@ export function grantedFeatures(character: Character, catalog: FeatureCatalog): 
     }
   } else {
     const choice = character.race;
-    const race = catalog.races.find(r => r.name === choice?.name && r.source === choice.source);
-    const subrace = race?.subraces?.find(s => s.name === choice?.subraceName && (!choice.subraceSource || s.source === choice.subraceSource));
+    const { race, subrace } = findHeldRace(catalog.races, choice, catalog.activeBooks);
     const idFor = (source: string, trait: string) =>
       ruleChoiceId({
         source,
@@ -40,18 +40,18 @@ export function grantedFeatures(character: Character, catalog: FeatureCatalog): 
         subrace: choice!.subraceName ? { name: choice!.subraceName } : null,
         trait,
       });
-    const suppressed = replacedTraitNames(character, catalog.races);
+    const suppressed = replacedTraitNames(character, catalog.races, catalog.activeBooks);
     for (const trait of race?.traits || []) {
       if (suppressed.has(trait.name)) continue;
       add(
-        applyRuleChoice(character, { ...trait, source: race!.source, origin: "Race" }, trait.choice, idFor(race!.source, trait.name)),
+        applyRuleChoice(character, { ...trait, source: race!.source, origin: "Race" }, trait.choice, idFor(heldSourceOf(choice?.source, race!), trait.name)),
         race!.name
       );
     }
     for (const trait of subrace?.traits || []) {
       if (suppressed.has(trait.name)) continue;
       add(
-        applyRuleChoice(character, { ...trait, source: subrace!.source, origin: "Subrace" }, trait.choice, idFor(subrace!.source, trait.name)),
+        applyRuleChoice(character, { ...trait, source: subrace!.source, origin: "Subrace" }, trait.choice, idFor(heldSourceOf(choice?.subraceSource, subrace!), trait.name)),
         subrace!.name
       );
     }

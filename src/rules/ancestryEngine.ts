@@ -14,6 +14,7 @@ import { normalizeSkillName } from "./skills.ts";
 import { isGrantSpellChoiceId, releaseSupersededRacePicks } from "./choices/featSpells.ts";
 import { moveLegacySkillPicks } from "./proficiencyPicks.ts";
 import { releaseExpandedOnlySpells } from "./backgroundSpells.ts";
+import { findHeldRace } from "./raceLookup.ts";
 
 export interface AncestryTraitView {
   name: string;
@@ -77,18 +78,7 @@ export function resolveAncestryState(
   catalogs?: CharacterCatalogs
 ): AncestryState {
   const allRaces = catalogListings(catalogs).races();
-  const selectedRace = character.race
-    ? allRaces.find(
-        (r) =>
-          r.name === character.race?.name &&
-          (!character.race.source || r.source === character.race.source)
-      ) || allRaces.find((r) => r.name === character.race?.name)
-    : undefined;
-  const selectedSubrace = selectedRace?.subraces?.find(
-    (sr) =>
-      sr.name === character.race?.subraceName &&
-      (!character.race?.subraceSource || sr.source === character.race.subraceSource)
-  ) || selectedRace?.subraces?.find((sr) => sr.name === character.race?.subraceName);
+  const { race: selectedRace, subrace: selectedSubrace } = findHeldRace(allRaces, character.race, catalogs?.activeBooks);
 
   const fixedBonuses = character.race
     ? collectFixedBonuses(selectedRace?.abilityScoreIncrease, selectedSubrace?.abilityScoreIncrease)
@@ -133,7 +123,7 @@ export function resolveAncestryState(
   let currentOriginFeat: AsiSelection | undefined;
 
   const lineageRace = character.lineageReplacement
-    ? allRaces.find((r) => r.name === character.lineageReplacement)
+    ? findHeldRace(allRaces, { name: character.lineageReplacement }, catalogs?.activeBooks).race
     : undefined;
 
   const speed =
