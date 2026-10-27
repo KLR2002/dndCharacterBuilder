@@ -8,6 +8,7 @@ import { infusionOwnerOf, pruneInvalidInfusions } from "./choices/artificerInfus
 import { type ChoiceOwner, GIANT_POWER_CHOICE_ID } from "./choices/types.ts";
 import { pruneInvalidFeatSpellPicks, pruneReleasedFeatCounters } from "./choices/featSpells.ts";
 import { moveLegacyInnateCounters } from "./grantedSpells.ts";
+import { releaseStrandedExpandedSpells } from "./backgroundSpells.ts";
 import { withNotices } from "./needsReview.ts";
 import {
   pruneInvalidInvocations,
@@ -102,7 +103,7 @@ export function reconcileForActiveBooks(
   compendium: Compendium,
   activeBooks: string[],
 ): Character {
-  const reconciled = reconcile(character, compendium, { activeBooks });
+  const reconciled = releaseStrandedExpandedSpells(reconcile(character, compendium, { activeBooks }), compendium, activeBooks);
   return JSON.stringify(reconciled) === JSON.stringify(character) ? character : reconciled;
 }
 

@@ -12,7 +12,8 @@ import type { ClassData, FeatData, SpellData } from "../src/types/dnd5e.ts";
 import { BACKGROUND_FEAT_SOURCE } from "../src/constants/rules.ts";
 import { inMemoryCompendium, makeChar } from "./testUtils.ts";
 import { backgroundSpellBackgrounds, backgroundSpellClasses, backgroundSpellSpells } from "./backgroundSpellsFixture.ts";
-import { expandedSpellFeats, expandedSpellLineages, expandedSpellRaces } from "./expandedSpellSourcesFixture.ts";
+import { expandedSourcesOfBook, expandedSpellFeats, expandedSpellLineages, expandedSpellRaces } from "./expandedSpellSourcesFixture.ts";
+import { reconcileForActiveBooks } from "../src/rules/characterReconciler.ts";
 
 // A held feat's or race's expanded lists join the spell list of every spellcasting class, as a background's do (ADR 0017).
 // A spell learned only from such a list is released with a review notice when its source goes. Every name is invented
@@ -368,4 +369,125 @@ test("dropping a lineage for no lineage releases the spell its list alone gave",
   assert.equal(dropped.lineageReplacement, null);
   assert.deepEqual(dropped.knownSpells, [], "the spell only the dropped lineage listed leaves the known spells");
   assert.ok(dropped.needsReview?.some((notice) => /Sample Warding removed: only on the Sample Lineage A race's spell list/.test(notice)));
+});
+
+// A held source whose book is switched off leaves its expanded list's spells stranded (ADR 0017). Each source is held on ALT
+// and TST stays on; ALT is switched off unless a test says otherwise.
+
+const ALT_OFF = ["TST"];
+const ALT_ON = ["TST", "ALT"];
+const onAlt = (featName = "Sample Rune Mark"): AsiSelection => ({
+  className: "Sample Mage",
+  classLevel: 4,
+  level: 4,
+  type: "feat",
+  featName,
+  featSource: "ALT",
+});
+const offBookCompendium = inMemoryCompendium(
+  { classes: backgroundSpellClasses(), spells: backgroundSpellSpells(), ...expandedSourcesOfBook("ALT") },
+  { integrated: true },
+);
+
+/** One held source of each kind, its character, and the spell its expanded list gave with the title its notice names. */
+const SOURCE_KINDS = [
+  {
+    kind: "feat",
+    character: makeChar({ classes: [cls("Sample Mage", 5)], asiSelections: [onAlt()], knownSpells: [known("Sample Warding")] }),
+    spell: "Sample Warding",
+    title: "Sample Rune Mark feat",
+  },
+  {
+    kind: "race",
+    character: makeChar({
+      classes: [cls("Sample Mage", 5)],
+      race: { name: "Sample Runekin", source: "ALT", subraceName: "Sample Rune Line", subraceSource: "ALT" },
+      knownSpells: [known("Sample Spirit")],
+    }),
+    spell: "Sample Spirit",
+    title: "Sample Rune Line race",
+  },
+  {
+    kind: "lineage",
+    character: makeChar({
+      classes: [cls("Sample Mage", 5)],
+      lineageReplacement: "Sample Lineage A",
+      knownSpells: [known("Sample Warding")],
+    }),
+    spell: "Sample Warding",
+    title: "Sample Lineage A race",
+  },
+  {
+    kind: "background",
+    character: makeChar({
+      classes: [cls("Sample Mage", 5)],
+      background: { name: "Sample Scholar", source: "ALT" },
+      knownSpells: [known("Sample Ward")],
+    }),
+    spell: "Sample Ward",
+    title: "Sample Scholar background",
+  },
+];
+
+for (const source of SOURCE_KINDS) {
+  test(`a held ${source.kind}'s spell only its expanded list gave is released with a notice when its book is switched off or the character is opened with it off`, () => {
+    assert.deepEqual(
+      reconcileForActiveBooks(source.character, offBookCompendium, ALT_ON).knownSpells,
+      source.character.knownSpells,
+      "with the book on, the spell stays",
+    );
+    const released = reconcileForActiveBooks(source.character, offBookCompendium, ALT_OFF);
+    assert.deepEqual(released.knownSpells, [], "the spell leaves the known spells");
+    assert.deepEqual(released.needsReview, [`${source.spell} removed: only on the ${source.title}'s spell list`]);
+  });
+
+  test(`switching the ${source.kind}'s book back on after its release restores nothing`, () => {
+    const released = reconcileForActiveBooks(source.character, offBookCompendium, ALT_OFF);
+    const restored = reconcileForActiveBooks(released, offBookCompendium, ALT_ON);
+    assert.deepEqual(restored.knownSpells, [], "the released spell is not restored");
+  });
+}
+
+test("a spell the character's own class lists stays when the book of a feat that also lists it is switched off", () => {
+  const character = makeChar({
+    classes: [cls("Sample Mage", 5)],
+    asiSelections: [onAlt()],
+    knownSpells: [known("Sample Ember")],
+  });
+  const kept = reconcileForActiveBooks(character, offBookCompendium, ALT_OFF);
+  assert.deepEqual(kept.knownSpells, character.knownSpells, "the mage's own cantrip stays");
+  assert.equal(kept.needsReview, undefined, "and no notice is made");
+});
+
+test("a spell an active source still offers stays when the book of a feat that also lists it is switched off", () => {
+  const withActiveScholar = inMemoryCompendium(
+    {
+      classes: backgroundSpellClasses(),
+      spells: backgroundSpellSpells(),
+      feats: expandedSourcesOfBook("ALT").feats,
+      backgrounds: backgroundSpellBackgrounds(),
+    },
+    { integrated: true },
+  );
+  const character = makeChar({
+    classes: [cls("Sample Mage", 5)],
+    asiSelections: [onAlt()],
+    background: { name: "Sample Scholar", source: "TST" },
+    knownSpells: [known("Sample Ward")],
+  });
+  const kept = reconcileForActiveBooks(character, withActiveScholar, ALT_OFF);
+  assert.deepEqual(kept.knownSpells?.map((k) => k.name), ["Sample Ward"], "the active background still lists it");
+  assert.equal(kept.needsReview, undefined, "so no notice is made");
+});
+
+test("a catalog that does not hold the feat's record at all keeps the spell, as not loaded", () => {
+  const withoutFeat = inMemoryCompendium({ classes: backgroundSpellClasses(), spells: backgroundSpellSpells() }, { integrated: true });
+  const character = makeChar({
+    classes: [cls("Sample Mage", 5)],
+    asiSelections: [onAlt()],
+    knownSpells: [known("Sample Warding")],
+  });
+  const kept = reconcileForActiveBooks(character, withoutFeat, ALT_OFF);
+  assert.deepEqual(kept.knownSpells?.map((k) => k.name), ["Sample Warding"], "the record is not loaded, so nothing is judged");
+  assert.equal(kept.needsReview, undefined);
 });

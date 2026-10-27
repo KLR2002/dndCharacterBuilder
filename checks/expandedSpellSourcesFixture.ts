@@ -1,4 +1,5 @@
 import type { FeatData, RaceData, SubraceData } from "../src/types/dnd5e.ts";
+import { backgroundSpellBackgrounds } from "./backgroundSpellsFixture.ts";
 
 /**
  * Invented feats and races whose expanded spell lists join the spell list of every spellcasting class the character has
@@ -78,3 +79,19 @@ export const expandedSpellRaces = (): RaceData[] => [
     ],
   }),
 ];
+
+/**
+ * The invented sources of the fixtures above, each held on the book `source`: the feat, the race with its subrace, the two
+ * lineages and the background. A test switches that book off by leaving it out of the active books.
+ */
+export const expandedSourcesOfBook = (source: string) => {
+  const runekin = expandedSpellRaces()[0];
+  return {
+    feats: expandedSpellFeats().map((entry) => ({ ...entry, source })),
+    races: [
+      { ...runekin, source, subraces: (runekin.subraces ?? []).map((sub) => ({ ...sub, source, raceSource: source })) },
+      ...expandedSpellLineages().map((lineage) => ({ ...lineage, source })),
+    ],
+    backgrounds: backgroundSpellBackgrounds().map((background) => ({ ...background, source })),
+  };
+};
