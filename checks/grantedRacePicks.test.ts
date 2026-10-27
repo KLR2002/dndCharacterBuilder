@@ -135,7 +135,7 @@ test("on the SRD Baseline alone, a High Elf picks its wizard cantrip, and the ca
 });
 
 // The descent choice's Cantrip option gives the wizard cantrip; the other options give nothing. The catalog lists the
-// cantrip on the subrace whatever the pick, so the grant is read only once the player picks Cantrip (ticket 07).
+// cantrip on the subrace whatever the pick, so the grant is read only once the player picks Cantrip.
 test("a Half-Elf of high descent gets the wizard cantrip only once the descent choice is Cantrip", () => {
   const tracked = loadTestCatalogs();
   const real = { compendium: inMemoryCompendium(tracked) };
