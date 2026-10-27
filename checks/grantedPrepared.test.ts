@@ -95,6 +95,15 @@ test("a prepared spell with a character level is absent below it and listed from
   assert.ok(listedNames(from).includes("Sample Anchor"), "listed at level 3");
 });
 
+test("a spell slot level gate counts the pooled slots of a multiclass caster, not the highest single class's", () => {
+  // Wizard 3 / Cleric 3 has the pooled table's third-level slots; a Wizard 3 alone has second-level slots.
+  const pooled = makeChar({ classes: [mage(3), cleric(3)], asiSelections: [takenFeat("Sample Third Adept")] });
+  assert.ok(listedNames(profileFor(evaluateCharacter(pooled, catalogs).spellProfiles, "Sample Mage")).includes("Sample Vigil"), "listed for the pooled slots");
+
+  const single = makeChar({ classes: [mage(3)], asiSelections: [takenFeat("Sample Third Adept")] });
+  assert.equal(listedNames(profileFor(evaluateCharacter(single, catalogs).spellProfiles, "Sample Mage")).includes("Sample Vigil"), false, "not listed for a single class's slots");
+});
+
 test("a prepared spell with a spell slot level is listed once the character has slots of that level", () => {
   const holding = (level: number) => makeChar({ classes: [mage(level)], asiSelections: [takenFeat("Sample Slot Adept")] });
 

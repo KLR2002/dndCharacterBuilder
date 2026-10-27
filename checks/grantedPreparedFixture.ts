@@ -33,6 +33,7 @@ export const preparedGrantSpells = (): SpellData[] => [
   spell("Sample Fetch", 1, ["Sample Mage"], "Conjuration"),
   spell("Sample Lure", 1, ["Sample Mage"], "Enchantment"),
   spell("Sample Anchor", 1, ["Sample Cleric"], "Abjuration"),
+  spell("Sample Vigil", 3, ["Sample Mage"], "Evocation"),
 ];
 
 const feat = (name: string, extra: Partial<FeatData>): FeatData => ({
@@ -69,6 +70,9 @@ export const preparedGrantFeats = (): FeatData[] => [
   }),
   feat("Sample Slot Adept", {
     additionalSpells: [{ prepared: { s1: ["sample fetch"], s2: ["sample thread"] } }],
+  }),
+  feat("Sample Third Adept", {
+    additionalSpells: [{ prepared: { s3: ["sample vigil"] } }],
   }),
   feat("Sample Pick Feat", {
     additionalSpells: [{ prepared: { _: [{ choose: "level=1|class=Sample Mage" }] } }],

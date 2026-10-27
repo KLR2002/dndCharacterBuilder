@@ -11,6 +11,7 @@ import {
 } from "../constants/rules.ts";
 import { GIANT_POWER_CHOICE_ID } from "./choices/types.ts";
 import { effectiveScores } from "./abilities.ts";
+import { multiclassSlots } from "./slots.ts";
 import { proficiencyBonus, totalLevel } from "./proficiencies.ts";
 import { getSubclassSpells, normalizeKey } from "./subclassSpells.ts";
 import type { Compendium } from "../services/compendium.ts";
@@ -172,7 +173,10 @@ export function getClassSpellProfiles(
   if (castingClasses.length === 0) return [];
 
   const level = totalLevel(character);
-  const slotLevel = Math.max(0, ...castingClasses.map((c) => getMaxSpellLevel(c, classes)));
+  // The highest slot level the character has: the pooled multiclass table's, or its Pact Magic level. A class's own level is a
+  // floor, for the casters the pooled table has no row for (Ki and Giant casters, Artificers).
+  const pooled = multiclassSlots(character, classes);
+  const slotLevel = Math.max(pooled.slots.length, pooled.pact?.level ?? 0, ...castingClasses.map((c) => getMaxSpellLevel(c, classes)));
   const pb = proficiencyBonus(level);
   const { modifiers } = effectiveScores(character, opts);
   const isSingleCaster = castingClasses.length === 1;
