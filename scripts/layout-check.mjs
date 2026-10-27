@@ -534,6 +534,7 @@ const PREPARED_ID = "char_prepared";
 const PREPARED_ROUTE = `/character/${PREPARED_ID}`;
 const PREPARED_FEAT = "Wardwright Mark of Lasting Layout";
 const PREPARED_CARD_FEAT = "Wardwright Mark of Ember";
+const PREPARED_PLAIN_CARD_FEAT = "Wardwright Charter";
 function preparedGrantCharacter() {
   return makeChar({
     id: PREPARED_ID,
@@ -551,6 +552,7 @@ function preparedGrantCharacter() {
       { level: 4, className: "Wizard", classLevel: 4, type: "feat", featName: PREPARED_FEAT, featSource: "PHB" },
       { level: 8, className: "Wizard", classLevel: 8, type: "feat", featName: PREPARED_CARD_FEAT, featSource: "PHB" },
     ],
+    originFeats: [{ level: 4, type: "feat", featName: PREPARED_PLAIN_CARD_FEAT, featSource: "PHB" }],
     ruleChoices: [
       {
         id: `PHB__Feat Spells__${PREPARED_CARD_FEAT}__Casting Ability`,
@@ -585,7 +587,16 @@ function withPreparedGrantFeat(collections) {
       { ability: { choose: ["int", "wis", "cha"] }, prepared: { _: { will: ["Thunderwave"], daily: { "1": ["Tenser's Floating Disk"] } } } },
     ],
   };
-  return { ...collections, feats: [...collections.feats, plain, withCard] };
+  // A feat that names spells and no ability: its cantrip is at will and its daily spell is on a counter, with no DC row.
+  const plainCard = {
+    name: PREPARED_PLAIN_CARD_FEAT,
+    source: "PHB",
+    prerequisite: null,
+    abilityScoreIncrease: null,
+    description: "Placeholder description for the feat.",
+    additionalSpells: [{ known: { _: ["Mage Hand"] }, innate: { _: { daily: { "1e": ["Fog Cloud"] } } } }],
+  };
+  return { ...collections, feats: [...collections.feats, plain, withCard, plainCard] };
 }
 
 // Level 1 Fighters for the equipment card. The unpicked one has no picks, so Claim Starting Equipment is disabled. The
@@ -968,6 +979,21 @@ const SCREENS = [
             fitsWidth: true,
           },
         },
+        // A feat that names no ability: its card has the cantrip and the daily spell, and no ability, save DC or attack row. The
+        // class header of the Wizard shows those labels too, so the row is checked inside the card alone.
+        {
+          name: "Spells card without ability",
+          route: PREPARED_ROUTE,
+          tabs: ["Spells"],
+          ready: /add spells/i,
+          scrollTo: PREPARED_PLAIN_CARD_FEAT.toUpperCase(),
+          expect: {
+            texts: [PREPARED_PLAIN_CARD_FEAT.toUpperCase(), "Mage Hand", "Fog Cloud"],
+            absent: ["Needs review"],
+            cardWithout: { title: PREPARED_PLAIN_CARD_FEAT.toUpperCase(), spell: "Fog Cloud", rows: ["ABILITY", "SAVE DC", "ATTACK BONUS", "(DC"] },
+            fitsWidth: true,
+          },
+        },
       ]
     : []),
   { name: "Inventory", route: WIZARD_ROUTE, tabs: ["Inventory"], ready: /total wealth/i },
@@ -1266,10 +1292,28 @@ async function checkWildShapeFeatures(ctx, width) {
   return failures;
 }
 
+// The text of the smallest element that holds both needles: the card that shows a title and one of its spells.
+function smallestTextWith([first, second]) {
+  let best = "";
+  for (const element of document.querySelectorAll("*")) {
+    const text = element.innerText ?? "";
+    if (text.includes(first) && text.includes(second) && (best === "" || text.length < best.length)) best = text;
+  }
+  return best;
+}
+
 // Checks what a picker screen must show that the layout rules cannot see: texts and input placeholders on the page,
 // and (`plainRaceRow`) the plain race row. Returns one message per missing control.
 async function checkExpected(page, expect) {
   const out = [];
+  if (expect.cardWithout) {
+    const { title, spell, rows } = expect.cardWithout;
+    const card = await page.evaluate(smallestTextWith, [title, spell]);
+    if (card === "") out.push(`no "${title}" card shows "${spell}"`);
+    for (const row of rows) {
+      if (card.includes(row)) out.push(`the "${title}" card shows "${row}"`);
+    }
+  }
   for (const text of expect.texts ?? []) {
     if (!(await page.getByText(text, { exact: true }).first().isVisible())) out.push(`missing "${text}"`);
   }
