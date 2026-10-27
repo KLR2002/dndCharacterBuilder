@@ -4,10 +4,12 @@
 
 **Blocked by:** 03, 06
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] Engine tests against an invented catalog: a race with a chosen ability; a race with a filter cantrip pick; changing race releases the picks with a notice; a character saved with the old High Elf pick gets the same cantrip on its card after loading; an unmatched legacy pick raises a notice.
-- [ ] The ancestry section shows the ability and cantrip controls with the shared controls.
-- [ ] The old special cases for the High Elf cantrip in the ancestry engine and the old reader are removed.
-- [ ] `check:live` asserts a Wood Elf (or equivalent real race) offers the druid cantrip filter and an MPMM race offers the ability choice.
-- [ ] `npm run check:all` and `npm run check:live` pass.
+**Landed:** race and subrace grants take picks and a casting ability through the feat machinery (`GrantedSpellPicks`, renamed from `FeatSpellPicks`); the High Elf special case and its ancestry state are gone; saved High Elf and Half-Elf cantrips migrate on load from the legacy rule choice and the `racial__innate` known spell. Wood Elf carries no grant in the tracked data, so the live test uses Elf (Kaladesh) / Vahadar.
+
+- [x] Engine tests against an invented catalog: a race with a chosen ability; a race with a filter cantrip pick; changing race releases the picks with a notice; a character saved with the old High Elf pick gets the same cantrip on its card after loading; an unmatched legacy pick raises a notice.
+- [x] The ancestry section shows the ability and cantrip controls with the shared controls.
+- [x] The old special cases for the High Elf cantrip in the ancestry engine and the old reader are removed.
+- [x] `check:live` asserts a Wood Elf (or equivalent real race) offers the druid cantrip filter and an MPMM race offers the ability choice.
+- [x] `npm run check:all` and `npm run check:live` pass.
