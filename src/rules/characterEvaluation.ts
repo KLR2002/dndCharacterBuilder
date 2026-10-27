@@ -35,7 +35,7 @@ import {
   getMergedResourceCounters,
 } from "./resourceCounters.ts";
 import { grantedPreparedSpells, grantedSpellSources } from "./grantedSpells.ts";
-import { backgroundExpandedSpellNames } from "./backgroundSpells.ts";
+import { heldExpandedSpellNames, resolveCharacterBackground } from "./backgroundSpells.ts";
 import type { InnateSpellProfile } from "./innateMagic.ts";
 
 export { catalogListings, type CharacterCatalogs } from "./catalogs.ts";
@@ -83,13 +83,6 @@ export interface EvaluatedCharacter {
     spellSaveDc?: number;
   };
   featureCounters: Record<string, ResourceCounter>;
-}
-
-export function resolveCharacterBackground(character: Character, backgroundCatalog?: BackgroundData[]): BackgroundData | undefined {
-  if (!character.background || !backgroundCatalog) return undefined;
-  return backgroundCatalog.find(
-    (b) => b.name === character.background?.name && (!character.background?.source || b.source === character.background?.source)
-  );
 }
 
 /**
@@ -153,7 +146,7 @@ export function evaluateCharacter(
     activeBooks: catalogs?.activeBooks,
     classes,
     compendium: catalogs?.compendium,
-    backgroundSpells: backgroundExpandedSpellNames(background),
+    expandedSpells: heldExpandedSpellNames(character, catalogs?.compendium, catalogs?.activeBooks),
     grantedPrepared: grantedPreparedSpells(character, catalogs),
   });
   const grantedSources = grantedSpellSources(character, catalogs, {

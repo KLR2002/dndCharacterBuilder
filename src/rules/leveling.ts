@@ -1,6 +1,7 @@
 import type { Character, AsiSelection, AbilityKey } from "../types/character.ts";
 import { asiLevels } from "./classData.ts";
 import { reconcile } from "./characterReconciler.ts";
+import { releaseExpandedOnlySpells } from "./backgroundSpells.ts";
 import { currentCompendium, type Compendium } from "../services/compendium.ts";
 
 export { asiLevels } from "./classData.ts";
@@ -230,11 +231,10 @@ export function applyAsiSelection(
     selections.push(normalizedSelection);
   }
 
-  return reconcile(
-    {
-      ...character,
-      asiSelections: selections,
-    },
+  // A feat this replaces releases the spells only its expanded list gave, with a notice (ADR 0017).
+  return releaseExpandedOnlySpells(
+    character,
+    reconcile({ ...character, asiSelections: selections }, compendium),
     compendium
   );
 }
@@ -267,5 +267,6 @@ export function removeAsiSelection(
     asiSelections: filtered,
   };
 
-  return reconcile(updatedChar, compendium);
+  // A feat removed releases the spells only its expanded list gave, with a notice (ADR 0017).
+  return releaseExpandedOnlySpells(character, reconcile(updatedChar, compendium), compendium);
 }
