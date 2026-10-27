@@ -195,7 +195,7 @@ export const grantedSpellFeats = (): FeatData[] => [
       },
     ],
   }),
-  // A prepared group the reader does not model, with the casting ability the player chooses: nothing can be cast from it.
+  // A prepared group that names a chosen ability, so it is Innate Magic: its card holds the spell, and no class list does.
   feat("Sample Boon", {
     additionalSpells: [
       {

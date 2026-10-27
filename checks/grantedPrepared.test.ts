@@ -129,7 +129,10 @@ test("a named prepared list is offered as a list choice, and lists nothing until
   assert.deepEqual(listedNames(profileFor(evaluateCharacter(unpicked, catalogs).spellProfiles, "Sample Mage")), []);
   const offered = featSpellRuleChoices(unpicked, compendium);
   assert.ok(offered.some((choice) => choice.id === "TST__Feat Spells__Sample Boon__Spell List"), "the list is offered");
-  assert.ok(!offered.some((choice) => choice.id.endsWith("__Casting Ability")), "no ability pick for a prepared list");
+  assert.ok(
+    offered.some((choice) => choice.id === "TST__Feat Spells__Sample Boon__Casting Ability"),
+    "Sample Mark A names a chosen ability (Innate Magic), so the ability is offered",
+  );
 
   const picked: Character = {
     ...unpicked,
@@ -169,11 +172,11 @@ test("a prepared pick is listed once the player picks the spell, and is not stor
   assert.ok(!profile.knownSpells.some((k) => k.name === "Sample Lure"));
 });
 
-test("a race's prepared spell is listed, and its casting-ability choice is not offered", () => {
-  const character = makeChar({ classes: [mage(4)], race: { name: "Sample Hexed", source: "TST" } });
+test("a race's plain prepared spell is listed, and offers no ability pick and no card", () => {
+  const character = makeChar({ classes: [mage(4)], race: { name: "Sample Late Blood", source: "TST" } });
   const profile = profileFor(evaluateCharacter(character, catalogs).spellProfiles, "Sample Mage");
-  assert.ok(listedNames(profile).includes("Sample Fetch"));
-  assert.equal(profile.grantedPreparedSources?.["sample fetch"], "Sample Hexed");
+  assert.ok(listedNames(profile).includes("Sample Anchor"));
+  assert.equal(profile.grantedPreparedSources?.["sample anchor"], "Sample Late Blood");
   assert.deepEqual(raceSpellRuleChoices(character, compendium), [], "no ability pick and no pick for the race");
   assert.deepEqual(evaluateCharacter(character, catalogs).grantedSpellSources, [], "no race card");
 });

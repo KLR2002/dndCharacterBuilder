@@ -12,8 +12,9 @@ import {
   featOwner,
   featCounterId,
   fixedGrantAbility,
-  grantEntries,
   heldFeatsOf,
+  innateEntriesOf,
+  isInnatePreparedGrant,
   isModelledGrant,
   offeredSpellLists,
   pickedAbilityOf,
@@ -116,6 +117,8 @@ export function grantedPreparedSpells(character: Character, catalogs?: Character
   const out: GrantedPreparedSpell[] = [];
 
   const addGrant = (owner: GrantOwner, grant: AdditionalSpells, source: string) => {
+    // An Innate Magic group is a card, not a class-list spell (see grantSource).
+    if (isInnatePreparedGrant(grant)) return;
     for (const entry of preparedEntries(grant)) {
       if (entry.kind !== "spell") continue;
       const data = resolveSpellName(entry.name, activeBooks, compendium, { activeOnly: true });
@@ -151,8 +154,8 @@ export function grantedPreparedSpells(character: Character, catalogs?: Character
 }
 
 /**
- * One source for one grant, or nothing when the grant is not modelled (see isModelledGrant), names no casting ability, or
- * gives no spell and awaits no pick.
+ * One source for one grant, or nothing when the grant is not modelled (see isModelledGrant), or it names no casting ability and
+ * its prepared group is not Innate Magic (see isInnatePreparedGrant).
  */
 function grantSource(
   ctx: GrantContext,
@@ -164,16 +167,18 @@ function grantSource(
 ): InnateSpellProfile | undefined {
   if (!isModelledGrant(grant)) return undefined;
   const ability = abilityOf(ctx.character, owner, grant, selection);
-  if (ability === undefined && grant.ability === undefined) return undefined;
+  // A grant names no ability when it gives uses from its prepared group: its card has no ability row (ADR 0017 amendment).
+  const innatePrepared = isInnatePreparedGrant(grant);
+  if (ability === undefined && grant.ability === undefined && !innatePrepared) return undefined;
 
   const entryName = typeof grant.name === "string" ? grant.name : undefined;
   const spells = grantedSpells({ owner, grant, seen, ctx, entryName });
   const notices: string[] = [];
-  if (ability === undefined) {
+  if (ability === undefined && grant.ability !== undefined) {
     notices.push(grant.ability === "inherit" ? "Needs review: the ability increase is not recorded" : "Needs review: choose a casting ability");
   }
   for (const slot of pickSlotsOf(grant)) {
-    if (slot.prepared || slot.minCharacterLevel > ctx.level) continue;
+    if ((slot.prepared && !innatePrepared) || slot.minCharacterLevel > ctx.level) continue;
     const chosen = chosenSpellsOf(ctx.character, owner, grant, slot, ctx.compendium, ctx.activeBooks);
     for (const data of chosen) {
       if (seen.has(data.name.toLowerCase())) continue;
@@ -226,7 +231,7 @@ function abilityOf(
 function grantedSpells(input: { owner: GrantOwner; grant: AdditionalSpells; seen: Set<string>; ctx: GrantContext; entryName?: string }): InnateSpellEntry[] {
   const { owner, grant, seen, ctx, entryName } = input;
   const spells: InnateSpellEntry[] = [];
-  for (const entry of grantEntries(grant)) {
+  for (const entry of innateEntriesOf(grant)) {
     if (entry.kind !== "spell") continue;
     if (entry.minCharacterLevel > ctx.level) continue;
     const key = entry.name.toLowerCase();

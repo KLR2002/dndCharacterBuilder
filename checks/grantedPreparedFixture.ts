@@ -45,16 +45,27 @@ const feat = (name: string, extra: Partial<FeatData>): FeatData => ({
 });
 
 /**
- * Invented feats with prepared groups. Sample Keeper Mark is prepared-only and still names an ability, which a prepared
- * group ignores. Sample Ward Mark gives one spell at once and one from character level 3. Sample Slot Adept gives spells by
- * spell slot level. Sample Pick Feat's prepared spell is a pick from the mage list. Sample Boon offers two named lists.
+ * Invented feats with prepared groups. A plain group names no ability and gives no uses, so its spells are Always-Prepared
+ * Spells: Sample Keeper Mark, Sample Slot Adept, Sample Pick Feat and Sample Boon's Sample Mark B. A group that names an ability
+ * or gives uses is Innate Magic (ADR 0017 amendment): Sample Ward Mark names a fixed ability, Sample Ember Mark a chosen one,
+ * Sample Familiar Mark the one its feat's increase raised, and Sample Cloud Mark gives daily casts with no ability. Sample
+ * Boon's Sample Mark A is a chosen-ability list.
  */
 export const preparedGrantFeats = (): FeatData[] => [
   feat("Sample Keeper Mark", {
-    additionalSpells: [{ ability: { choose: ["int", "wis", "cha"] }, prepared: { _: ["sample bulwark"] } }],
+    additionalSpells: [{ prepared: { _: ["sample bulwark"] } }],
   }),
   feat("Sample Ward Mark", {
     additionalSpells: [{ ability: "wis", prepared: { _: ["sample bulwark"], "3": ["sample thread"] } }],
+  }),
+  feat("Sample Ember Mark", {
+    additionalSpells: [{ ability: { choose: ["int", "wis", "cha"] }, prepared: { _: { daily: { "1": ["sample bulwark"] } } } }],
+  }),
+  feat("Sample Familiar Mark", {
+    additionalSpells: [{ ability: "inherit", prepared: { _: { daily: { "1": ["sample fetch"] } } } }],
+  }),
+  feat("Sample Cloud Mark", {
+    additionalSpells: [{ prepared: { _: { daily: { "1": ["sample lure"] } } } }],
   }),
   feat("Sample Slot Adept", {
     additionalSpells: [{ prepared: { s1: ["sample fetch"], s2: ["sample thread"] } }],
@@ -89,14 +100,14 @@ const race = (name: string, extra: Partial<RaceData>): RaceData => ({
 });
 
 /**
- * Invented races with prepared groups. Sample Hexed chooses its casting ability, which a prepared group ignores. Sample Late
- * Blood gives its spell from character level 3.
+ * Invented races with prepared groups. Sample Hexed chooses its casting ability and gives its spell once per Long Rest
+ * (Innate Magic). Sample Late Blood's plain group gives its spell from character level 3 and names no ability.
  */
 export const preparedGrantRaces = (): RaceData[] => [
   race("Sample Hexed", {
     additionalSpells: [{ ability: { choose: ["int", "wis", "cha"] }, prepared: { _: { daily: { "1e": ["sample fetch"] } } } }],
   }),
   race("Sample Late Blood", {
-    additionalSpells: [{ ability: "cha", prepared: { "3": ["sample anchor"] } }],
+    additionalSpells: [{ prepared: { "3": ["sample anchor"] } }],
   }),
 ];

@@ -288,8 +288,8 @@ export function grantEntries(grant: AdditionalSpells): GrantEntry[] {
 /**
  * Every entry of a grant's prepared group, in key order (ADR 0017 amendment). A key is `_` (no level gate), a character level
  * (the level the entry unlocks at), or `sN`: the spell slot level N, which gates the entry on the character having slots of that
- * level. Uses under a `daily` or `rest` key are not read here: the prepared spell is listed, and its free casting stays in the
- * feat's text.
+ * level. Uses under a `daily`, `will` or `rest` key are read only for an Innate Magic group (see innateEntriesOf). For a plain
+ * group the prepared spell is listed, and its free casting stays in the feat's text.
  */
 export function preparedEntries(grant: AdditionalSpells): GrantEntry[] {
   return sectionEntries([[grant.prepared, false, true]]);
@@ -375,20 +375,44 @@ function isFillablePick(choose: string | { from: string[] }): boolean {
   return !parsed.ritual && parsed.unknownKeys.length === 0;
 }
 
+/** The use groups a prepared key may hold: at will, daily, or per rest. */
+const USE_GROUP_KEYS = ["will", "daily", "rest"];
+
 /**
- * Whether the reader models a grant's Innate Magic: it gives a spell, or it has a pick it can fill. A grant with neither (a
- * prepared group alone, or ritual spells only) gives no card and offers no ability pick.
+ * Whether a grant's prepared group is Innate Magic (ADR 0017 amendment): the grant names its own casting ability, or the group
+ * gives at-will, daily or per-rest casts under one of its keys. A plain prepared group, with neither, is an Always-Prepared
+ * Spell and is listed in the class lists.
  */
-export function isModelledGrant(grant: AdditionalSpells): boolean {
-  return grantEntries(grant).some(isFillableEntry);
+export function isInnatePreparedGrant(grant: AdditionalSpells): boolean {
+  if (grant.prepared === undefined) return false;
+  if (grant.ability !== undefined) return true;
+  return Object.values(grant.prepared).some(
+    (group) => !!group && typeof group === "object" && !Array.isArray(group) && USE_GROUP_KEYS.some((key) => key in group),
+  );
 }
 
 /**
- * Whether the reader models a grant's prepared group: it names a prepared spell, or it has a pick it can fill (ADR 0017
- * amendment). A pick under an `sN` key is not read, so it does not count.
+ * The entries of a grant that are Innate Magic: its known and innate sections, and its prepared group when that group is
+ * Innate Magic too (see isInnatePreparedGrant). The card lists these, with their uses.
+ */
+export function innateEntriesOf(grant: AdditionalSpells): GrantEntry[] {
+  return isInnatePreparedGrant(grant) ? [...grantEntries(grant), ...preparedEntries(grant)] : grantEntries(grant);
+}
+
+/**
+ * Whether the reader models a grant's Innate Magic: it gives a spell, or it has a pick it can fill. A grant with neither (a
+ * plain prepared group alone, or ritual spells only) gives no card and offers no ability pick.
+ */
+export function isModelledGrant(grant: AdditionalSpells): boolean {
+  return innateEntriesOf(grant).some(isFillableEntry);
+}
+
+/**
+ * Whether the reader models a grant's plain prepared group: it names a prepared spell, or it has a pick it can fill (ADR 0017
+ * amendment). A pick under an `sN` key is not read, so it does not count. An Innate Magic group is not a plain one.
  */
 export function isPreparedGrant(grant: AdditionalSpells): boolean {
-  return preparedEntries(grant).some(isFillableEntry);
+  return !isInnatePreparedGrant(grant) && preparedEntries(grant).some(isFillableEntry);
 }
 
 function isFillableEntry(entry: GrantEntry): boolean {
@@ -696,6 +720,8 @@ function grantChoicesOf(
         const fixed = chosenAbilityOptionsOf(grant).length === 0 ? fixedGrantAbility(grant) : undefined;
         const description = !isModelledGrant(grant)
           ? "Always-prepared spells"
+          : grant.ability === undefined ? "Casting ability: none"
+          : grant.ability === "inherit" ? "Casting ability: the ability the increase raised"
           : fixed ? `Casting ability: ${fixed.toUpperCase()}` : `Casting ability: chosen for the ${owner.kind}`;
         return {
           name: grant.name ?? "",

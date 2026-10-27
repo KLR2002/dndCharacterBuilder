@@ -157,13 +157,17 @@ test("a leveled spell picked from a feat's known group is cast once per Long Res
   assert.equal(pulse.maxUses, 1);
 });
 
-test("a grant the reader does not model, a prepared group with a chosen ability, offers no ability pick and gives no card", () => {
+test("a prepared group with a chosen ability is Innate Magic: the ability is offered, and its card holds the spell until it is picked", () => {
   const character = makeChar({ classes: [mage(4)], originFeats: [takenFeat("Sample Boon")] });
-  assert.equal(offeredChoices(character).some((c) => featOf(c) === "Sample Boon"), false, "the ability is not offered");
-  assert.equal(
-    evaluateCharacter(character, catalogs).grantedSpellSources.some((source) => source.title.startsWith("Sample Boon")),
-    false,
-    "and no card is shown",
+  assert.equal(offeredChoices(character).some((c) => featOf(c) === "Sample Boon"), true, "the ability is offered");
+  const evaluated = evaluateCharacter(character, catalogs);
+  const card = cardTitled(evaluated.grantedSpellSources, "Sample Boon");
+  assert.ok(card, "the feat has its card");
+  assert.deepEqual(card.notices, ["Needs review: choose a casting ability"]);
+  assert.ok(card.spells.some((spell) => spell.name === "Sample Veil"), "the spell is on the card");
+  assert.ok(
+    !evaluated.spellProfiles.some((profile) => profile.alwaysPreparedSpells?.some((spell) => spell.name === "Sample Veil")),
+    "and it is in no class list",
   );
 });
 
