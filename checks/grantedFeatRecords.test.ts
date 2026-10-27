@@ -16,7 +16,7 @@ import {
   grantedSpellSpells,
 } from "./grantedSpellsFixture.ts";
 
-// Which record of a feat held in two books a background claim resolves to (ADR 0017, AC-15). Every name is invented
+// Which record of a feat held in two books a background claim resolves to (ADR 0017). Every name is invented
 // (checks/grantedSpellsFixture.ts). "TST" and "TST2" are two invented books that each hold Sample Initiate.
 
 const mage = (level: number): CharacterClass => ({ className: "Sample Mage", source: "TST", level });

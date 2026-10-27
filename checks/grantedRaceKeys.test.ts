@@ -10,7 +10,7 @@ import type { RaceData } from "../src/types/dnd5e.ts";
 import { inMemoryCompendium, makeChar } from "./testUtils.ts";
 import { grantedSpellBackgrounds, grantedSpellClasses, grantedSpellFeats, grantedSpellSpells } from "./grantedSpellsFixture.ts";
 
-// Race picks across catalogs (ADR 0017, AC-16). Every name is invented (checks/grantedSpellsFixture.ts). "SRD" is the
+// Race picks across catalogs (ADR 0017). Every name is invented (checks/grantedSpellsFixture.ts). "SRD" is the
 // SRD-like catalog's source; "TST" is the integrated-like catalog's source of the same race.
 
 const mage = (level: number): CharacterClass => ({ className: "Sample Mage", source: "TST", level });
