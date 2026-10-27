@@ -1,6 +1,6 @@
 import type { AbilityKey, AsiSelection, Character, RuleChoiceEntry } from "../../types/character.ts";
 import type { AdditionalSpells, FeatData, RaceData, SpellData } from "../../types/dnd5e.ts";
-import type { Compendium } from "../../services/compendium.ts";
+import type { Compendium, CompendiumListings } from "../../services/compendium.ts";
 import { BACKGROUND_FEAT_SOURCE } from "../../constants/rules.ts";
 import { ABILITIES, ABILITY_NAMES } from "../abilities.ts";
 import { withNotices } from "../needsReview.ts";
@@ -608,15 +608,59 @@ function slotChoicesOf(character: Character, owner: GrantOwner, grant: Additiona
 }
 
 /**
+ * The name a released pick's notice gives it: the spell it was picked as, the spell list, or the casting ability.
+ */
+function releasedPickLabel(entry: RuleChoiceEntry, pick: string): string {
+  if (entry.id.endsWith(`__${SPELL_LIST_KEY}`)) return pick;
+  if (entry.id.endsWith(`__${ABILITY_CHOICE_KEY}`)) {
+    return (ABILITIES as readonly string[]).includes(pick) ? `${ABILITY_NAMES[pick as AbilityKey]} casting ability` : pick;
+  }
+  return pick;
+}
+
+/**
+ * The review notices for the picks an entry released: one per pick, each naming the pick and the feat or race it came from.
+ * An entry with no pick recorded is named by its trait.
+ */
+function releaseNotices(entry: RuleChoiceEntry, reason: string, picks: readonly string[] = entry.picked): string[] {
+  if (picks.length === 0) return [`${entry.trait} removed: ${reason}`];
+  // A Rule Choice id is the source, the owner's kind mark, the owner's name, then the pick (see ownerKey and the id builders).
+  const owner = entry.id.split("__")[2];
+  return picks.map((pick) => `${releasedPickLabel(entry, pick)} removed from ${owner}: ${reason}`);
+}
+
+/**
+ * Whether the catalog holds a feat or race record of a source book. A book it holds no such record of is not loaded: the catalog
+ * cannot say that a record of that book is gone, so the reconciler releases nothing the book owns. A background's feat has no
+ * book of its own, so it counts as loaded while the catalog holds any feat.
+ */
+function bookLoadedFor(kind: "feat" | "race", source: string | undefined, listings: CompendiumListings): boolean {
+  // A race's books are its own and its subraces' books: a subrace's grant is owned by the subrace's book.
+  const books: string[] = kind === "feat"
+    ? listings.feats().map((feat) => feat.source)
+    : listings.races().flatMap((race) => [race.source, ...(race.subraces ?? []).map((subrace) => subrace.source)]);
+  if (source === undefined || source === BACKGROUND_FEAT_SOURCE) return books.length > 0;
+  return books.includes(source);
+}
+
+/** Whether the book the owner of a Rule Choice id came from is loaded (see bookLoadedFor). An id starts with that book. */
+function ownerBookLoaded(id: string, listings: CompendiumListings): boolean {
+  const [source, mark] = id.split("__");
+  return bookLoadedFor(mark === OWNER_MARK.feat ? "feat" : "race", source, listings);
+}
+
+/**
  * Releases the granted spell picks that no longer hold, with a review notice for each release. A pick is released when its
  * owner is no longer held, when its list is no longer the one picked, or (with the active books given) when the spell is no
- * longer offered. Picks of other choices are untouched. Returns the character itself when nothing changes.
+ * longer offered. Picks of other choices are untouched. A pick whose owner's book the catalog does not hold is not loaded, so it
+ * is kept without a notice. Returns the character itself when nothing changes.
  */
 export function pruneInvalidFeatSpellPicks(character: Character, compendium: Compendium, activeBooks?: readonly string[]): Character {
   const entries = character.ruleChoices ?? [];
   if (!entries.some((entry) => isGrantSpellChoiceId(entry.id))) return character;
 
-  const held = heldGrantsOf(character, compendium.for().feats(), compendium.for().races());
+  const listings = compendium.for();
+  const held = heldGrantsOf(character, listings.feats(), listings.races());
   const heldKeys = new Set(held.map(({ owner }) => ownerKey(owner)));
   // The offered options of each pick the character's owners still make, keyed by the choice id.
   const valid = new Map<string, string[] | undefined>();
@@ -636,7 +680,7 @@ export function pruneInvalidFeatSpellPicks(character: Character, compendium: Com
   const notices: string[] = [];
   const kept: RuleChoiceEntry[] = [];
   for (const entry of entries) {
-    if (!isGrantSpellChoiceId(entry.id)) {
+    if (!isGrantSpellChoiceId(entry.id) || !ownerBookLoaded(entry.id, listings)) {
       kept.push(entry);
       continue;
     }
@@ -647,14 +691,13 @@ export function pruneInvalidFeatSpellPicks(character: Character, compendium: Com
       const reason = !heldOwner
         ? (isFeat ? "feat no longer held" : "ancestry no longer grants it")
         : (isFeat ? "spell list changed" : "no longer offered");
-      notices.push(`${entry.trait} removed: ${reason}`);
+      notices.push(...releaseNotices(entry, reason));
       continue;
     }
     const offered = valid.get(entry.id);
     const picked = offered ? entry.picked.filter((name) => offered.includes(name)) : entry.picked;
-    if (picked.length < entry.picked.length) {
-      notices.push(`${entry.trait} ${entry.picked.filter((name) => !picked.includes(name)).join(", ")} removed: no longer offered`);
-    }
+    const dropped = entry.picked.filter((name) => !picked.includes(name));
+    if (dropped.length > 0) notices.push(...releaseNotices(entry, "no longer offered", dropped));
     if (picked.length > 0) kept.push(picked.length === entry.picked.length ? entry : { ...entry, picked });
   }
 
@@ -663,25 +706,54 @@ export function pruneInvalidFeatSpellPicks(character: Character, compendium: Com
 }
 
 /**
- * Releases the long-rest counters of the feats the character no longer holds, with a review notice for each. A counter is a
- * feat's when its id begins with the feat prefix; the feat it names is the segment after it. Other counters are untouched.
+ * Releases the long-rest counters of a feat's spell that no longer holds, with a review notice for each. A counter is a feat's
+ * when its id begins with the feat prefix. Its segments are the feat, then the spell list it was picked from (only when the
+ * feat offers named lists), then the spell. A counter is released when its feat is no longer held, or when its list is not the
+ * one the feat holds now. A feat the character selected whose book the catalog does not hold is not loaded, so its counters are
+ * kept. Other counters are untouched, and a catalog that holds no feat is not loaded, so none is released.
  * Returns the character itself when none is released.
  */
 export function pruneReleasedFeatCounters(character: Character, compendium: Compendium): Character {
+  const listings = compendium.for();
   const counters = character.resourceCounters ?? {};
   const featKeys = Object.keys(counters).filter((key) => key.startsWith(FEAT_COUNTER_PREFIX));
-  if (featKeys.length === 0) return character;
+  if (featKeys.length === 0 || listings.feats().length === 0) return character;
 
-  const heldSlugs = new Set(heldFeatsOf(character, compendium.for().feats()).map(({ feat }) => slugOf(feat.name)));
-  const released = featKeys.filter((key) => !heldSlugs.has(key.slice(FEAT_COUNTER_PREFIX.length).split(COUNTER_SEGMENT)[0]));
-  if (released.length === 0) return character;
+  // Each feat the character holds, by its slug, with the slug of the spell list it holds (undefined when none is picked).
+  const held = new Map<string, { name: string; list: string | undefined }>();
+  for (const { feat } of heldFeatsOf(character, listings.feats())) {
+    const picked = pickedSpellListOf(character, featOwner(feat), feat.additionalSpells ?? []);
+    held.set(slugOf(feat.name), { name: feat.name, list: picked?.name ? slugOf(picked.name) : undefined });
+  }
+
+  // Every feat the character selected, held or not, by slug, with the book its selection names (none for a background's feat).
+  const selectedBooks = new Map<string, string | undefined>();
+  for (const selection of [...(character.asiSelections ?? []), ...(character.originFeats ?? [])]) {
+    if (selection.type === "feat" && selection.featName) selectedBooks.set(slugOf(selection.featName), selection.featSource);
+  }
 
   const nextCounters = { ...counters };
   const notices: string[] = [];
-  for (const key of released) {
-    notices.push(`${counters[key].name} removed: feat no longer held`);
-    delete nextCounters[key];
+  for (const key of featKeys) {
+    const [featSlug, ...segments] = key.slice(FEAT_COUNTER_PREFIX.length).split(COUNTER_SEGMENT);
+    const counterName = counters[key].name;
+    const heldFeat = held.get(featSlug);
+    if (!heldFeat) {
+      if (selectedBooks.has(featSlug) && !bookLoadedFor("feat", selectedBooks.get(featSlug), listings)) continue;
+      const catalogName = listings.feats().find((feat) => slugOf(feat.name) === featSlug)?.name;
+      notices.push(catalogName
+        ? `${counterName} removed from ${catalogName}: feat no longer held`
+        : `${counterName} removed: feat no longer held`);
+      delete nextCounters[key];
+      continue;
+    }
+    const listSlug = segments.length === 2 ? segments[0] : undefined;
+    if (listSlug !== undefined && listSlug !== heldFeat.list) {
+      notices.push(`${counterName} removed from ${heldFeat.name}: spell list changed`);
+      delete nextCounters[key];
+    }
   }
+  if (notices.length === 0) return character;
   return withNotices({ ...character, resourceCounters: nextCounters }, notices);
 }
 
@@ -752,8 +824,7 @@ export function migrateLegacyRacialCantrip(character: Character, races: RaceData
   const race = raceGrantsOf(cleaned, races);
   const slot = race ? cantripSlotOf(race.grants) : undefined;
   if (!race || !slot) {
-    const notice = "High Elf Cantrip removed: the ancestry no longer grants a wizard cantrip";
-    return withNotices(cleaned, [notice]);
+    return withNotices(cleaned, [`${picked} removed from ${character.race?.name ?? "ancestry"}: ancestry no longer grants it`]);
   }
   const entry: RuleChoiceEntry = {
     id: grantSlotChoiceId(race.owner, slot.grant, slot.slot),
