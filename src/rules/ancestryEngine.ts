@@ -271,7 +271,7 @@ export function clearAncestryChoice(character: Character, choiceId: string, cata
     ...character,
     ruleChoices: (character.ruleChoices || []).filter((rc) => rc.id !== choiceId),
   };
-  return reconcile(cleared, catalogs?.compendium ?? currentCompendium());
+  return reconcile(cleared, catalogs?.compendium ?? currentCompendium(), { activeBooks: catalogs?.activeBooks });
 }
 
 export function setAncestryChoiceASI(

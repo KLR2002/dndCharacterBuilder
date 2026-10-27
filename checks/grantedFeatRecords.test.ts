@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { BACKGROUND_FEAT_SOURCE } from "../src/constants/rules.ts";
 import { featCounterId, featSpellRuleChoices, heldFeatsOf } from "../src/rules/choices/featSpells.ts";
+import { clearAncestryChoice } from "../src/rules/ancestryEngine.ts";
 import { pickRuleChoice } from "../src/rules/ruleChoices.ts";
 import { reconcile, teardownSubclass } from "../src/rules/characterReconciler.ts";
 import { migrateCharacter } from "../src/rules/migrateCharacter.ts";
@@ -214,6 +215,21 @@ test("setting a custom background keeps the counter of a background-claimed feat
   assert.equal(changed.background?.source, "Custom", "the background is custom");
   assert.ok(changed.resourceCounters?.[MAGE_COUNTER], "the counter of the list held is kept");
   assert.deepEqual(changed.needsReview ?? [], [], "no notice is raised");
+});
+
+test("clearing an ancestry choice keeps the counter of a background-claimed feat that two active books hold, with no notice", () => {
+  const base = claimedWithMageCounter();
+  const withAncestryPick: Character = {
+    ...base,
+    ruleChoices: [
+      ...(base.ruleChoices ?? []),
+      { id: "TST__Sample Race__Sample Pick", trait: "Sample Pick", origin: "race", choose: 1, from: ["Sample Alpha", "Sample Beta"], picked: ["Sample Alpha"] },
+    ],
+  };
+  const cleared = clearAncestryChoice(withAncestryPick, "TST__Sample Race__Sample Pick", { compendium: twoListsCompendium, activeBooks: TWO_ACTIVE_BOOKS });
+  assert.equal(cleared.ruleChoices?.some((entry) => entry.id === "TST__Sample Race__Sample Pick"), false, "the ancestry pick is cleared");
+  assert.ok(cleared.resourceCounters?.[MAGE_COUNTER], "the counter of the list held is kept");
+  assert.deepEqual(cleared.needsReview ?? [], [], "no notice is raised");
 });
 
 test("removing a class level keeps the counter of a background-claimed feat that two active books hold, with no notice", () => {
