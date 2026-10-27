@@ -95,11 +95,11 @@ The 10th-level Circle of the Moon feature allowing the expenditure of two Wild S
 _Avoid_: Elemental form, circle elementals
 
 **Always-Prepared Spells**:
-Spells granted automatically by a character's subclass (e.g. Cleric Domain Spells, Druid Circle Spells, Paladin Oath Spells, Artificer Specialist Spells) that are permanently prepared, do not count against the character's prepared spell limit, and count as spells of that class.
+Spells granted automatically by a character's subclass (e.g. Cleric Domain Spells, Druid Circle Spells, Paladin Oath Spells, Artificer Specialist Spells), or by a feat or race through a prepared grant (e.g. Mark feats), that are permanently prepared and do not count against the character's prepared spell limit. A subclass's count as spells of that class; a feat's or race's are shown in the list of every spellcasting class the character has, use that class's ability, and are never stored in the class's known or prepared spells.
 _Avoid_: Auto spells, free prepared spells, bonus domain slots
 
 **Expanded Spell List**:
-Spells added by a subclass (such as an Otherworldly Patron) or a background (such as a Strixhaven college or a Ravnica guild) to the pool of spells a character can choose from when learning spells, without automatically being prepared or counting as free spells known. A background's list is added to every spellcasting class the character has, once the character has Spellcasting or Pact Magic.
+Spells added by a subclass (such as an Otherworldly Patron), a background (such as a Strixhaven college or a Ravnica guild), or a feat or race (such as a Mark) to the pool of spells a character can choose from when learning spells, without automatically being prepared or counting as free spells known. A background's, feat's or race's list is added to every spellcasting class the character has, once the character has Spellcasting or Pact Magic.
 _Avoid_: Patron spells, extra spells, bonus known spells
 
 **Subclass Spells Known**:

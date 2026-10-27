@@ -14,3 +14,8 @@ Races got their Innate Magic from a table of race names and spells in `src/rules
 
 ## Considered Options
 Keeping the race table and adding a feat table was rejected for the reason in ADR 0014: it bundles non-SRD rule content and nothing reveals the entries it misses.
+
+## Amendment: prepared grants and expanded lists of feats and races
+- A feat's or race's `prepared` spells are Always-Prepared Spells, not Innate Magic: they are listed in the class list of every spellcasting class with the lock icon and a source badge, use the class's ability, and are never stored in the class's known or prepared spells nor counted against a limit. A character with no spellcasting class sees them on a small locked card for the source.
+- A feat's or race's `expanded` lists work like a background's: they join every spellcasting class's list once the character has Spellcasting or Pact Magic, and are released with a review notice when the source goes.
+- A grant that names no casting ability still gets a card, without an ability, save DC or attack row.
