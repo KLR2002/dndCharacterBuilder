@@ -39,7 +39,7 @@ export interface ClassSpellProfile {
   spellAttackBonus: number;
   maxSpellLevel: number;
   preparedLimit?: number;
-  /** The subclass's always-prepared spells, then those a held feat or race gives (ADR 0017 amendment). */
+  /** The subclass's always-prepared spells, then those a held feat or race gives. */
   alwaysPreparedSpells?: SpellData[];
   /** The feat or race each always-prepared spell a feat or race gives is badged with, keyed by the lower-case spell name. */
   grantedPreparedSources?: Record<string, string>;
@@ -164,7 +164,7 @@ export function getClassSpellProfiles(
     expandedSpells?: string[];
     /** The Compendium the subclass spells are read from. Defaults to the process-wide one. */
     compendium?: Compendium;
-    /** The prepared spells the character's feats and race give, each with its gates (ADR 0017 amendment). */
+    /** The prepared spells the character's feats and race give, each with its gates. */
     grantedPrepared?: GrantedPreparedSpell[];
   } = {}
 ): ClassSpellProfile[] {

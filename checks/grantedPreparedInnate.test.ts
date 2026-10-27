@@ -11,7 +11,7 @@ import { grantedSpellClasses } from "./grantedSpellsFixture.ts";
 import { preparedGrantFeats, preparedGrantRaces, preparedGrantSpells } from "./grantedPreparedFixture.ts";
 
 // A prepared group that names its own casting ability, or gives at-will or daily casts, is Innate Magic: a card with that
-// ability's DC and attack, and its spells are not in any class list (ADR 0017 amendment, AC-18). Every name here is invented
+// ability's DC and attack, and its spells are not in any class list (ADR 0017 amendment). Every name here is invented
 // (checks/grantedPreparedFixture.ts). A plain prepared group stays in the class list (grantedPrepared.test.ts).
 
 const compendium = inMemoryCompendium({

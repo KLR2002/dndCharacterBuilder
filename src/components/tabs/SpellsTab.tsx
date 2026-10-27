@@ -250,15 +250,11 @@ export const SpellsTab: React.FC = () => {
     return currentCharacter ? calculateMulticlassSpellSlots(currentCharacter) : { slots: [] as number[] };
   }, [currentCharacter]);
 
-  // 4. Innate Magic from the race, subrace and feats the character holds: one card per source (ADR 0017)
   const grantedProfiles: InnateSpellProfile[] = useMemo(() => {
     return evaluated?.grantedSpellSources ?? [];
   }, [evaluated]);
 
-  // 5. Plain prepared spells of the held sources, on locked cards while the character has no spellcasting class
-  const lockedCards: LockedPreparedCard[] = useMemo(() => {
-    return evaluated?.lockedPreparedCards ?? [];
-  }, [evaluated]);
+  const lockedCards: LockedPreparedCard[] = evaluated?.lockedPreparedCards ?? [];
 
   // Library spells
   const allSpells = useMemo(() => getSpells(activeBooks), [activeBooks]);
@@ -550,7 +546,6 @@ export const SpellsTab: React.FC = () => {
     updateCharacter(currentCharacter.id, toggleInnateSpellUseRule(currentCharacter, spell));
   };
 
-  /** One Innate Magic card: the race's, or one per feat that grants spells. `copy` sets its subtitle and whether rows show Min Level. */
   const renderInnateCard = (
     profile: InnateSpellProfile,
     copy: { subtitle: string; showMinLevel: boolean; key?: string }
@@ -700,7 +695,6 @@ export const SpellsTab: React.FC = () => {
     );
   };
 
-  /** The race's and subrace's cards and each feat's, through the one card renderer; the copy follows the source's origin. */
   const renderGrantedCards = () =>
     grantedProfiles.map((profile, index) =>
       renderInnateCard(profile, {
@@ -1354,7 +1348,6 @@ export const SpellsTab: React.FC = () => {
         </Card>
       )}
 
-      {/* The spells of the race and of each feat that grants some: one card per source */}
       {renderGrantedCards()}
 
       {/* Ritual Book (Book of Ancient Secrets) */}

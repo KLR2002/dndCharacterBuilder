@@ -92,7 +92,7 @@ interface GrantSpell {
   kind: "spell";
   name: string;
   minCharacterLevel: number;
-  /** Set for a prepared entry under an `sN` key: the spell slot level the character needs to have (ADR 0017 amendment). */
+  /** Set for a prepared entry under an `sN` key: the spell slot level the character needs to have. */
   minSpellLevel?: number;
   /** Set under a `daily` or `rest` key: the uses per Long Rest. Absent for at-will spells. */
   uses?: number;
@@ -182,7 +182,7 @@ export function raceTitleOf(character: Character, name: string): string {
  * The source slot of a race's pick key. A race is held by its name whichever book holds it, so its key names no book: a pick
  * made on one catalog's record of a race is the same pick on another catalog's.
  */
-export const RACE_KEY_SOURCE = "-";
+const RACE_KEY_SOURCE = "-";
 
 /** The key an owner's picks share: its source (none for a race), its kind's mark and its name. */
 export function ownerKey(owner: GrantOwner): string {
@@ -196,7 +196,7 @@ function originOf(owner: GrantOwner): RuleChoiceOrigin {
 }
 
 /** What a background-claimed feat's record is chosen by: the books active now, and the book of the character's background. */
-export interface FeatResolution {
+interface FeatResolution {
   activeBooks?: readonly string[];
   backgroundSource?: string;
 }
@@ -236,7 +236,7 @@ export function heldFeatsOf(character: Character, feats: FeatData[], activeBooks
  * counts: a pick saved under one record stays held while the book that holds it is not the one chosen now (the reader
  * offers the record featOfSelection resolves to). The reconciler checks picks against these, not the one resolved.
  */
-export function candidateFeatsOf(character: Character, feats: FeatData[]): FeatData[] {
+function candidateFeatsOf(character: Character, feats: FeatData[]): FeatData[] {
   const candidates: FeatData[] = [];
   for (const selection of [...(character.asiSelections ?? []), ...(character.originFeats ?? [])]) {
     if (selection.type !== "feat") continue;
@@ -297,7 +297,7 @@ export function pickedSpellListOf(character: Character, owner: GrantOwner, grant
  * under a `daily` or `rest` key, which give its uses per Long Rest. A `choose` object is a pick. A `ritual` list is left out.
  * An entry of the known section is marked, since a leveled one of it is cast once per Long Rest (see usesOfEntry).
  */
-export function grantEntries(grant: AdditionalSpells): GrantEntry[] {
+function grantEntries(grant: AdditionalSpells): GrantEntry[] {
   return sectionEntries([
     [grant.known, true, false],
     [grant.innate, false, false],
@@ -305,7 +305,7 @@ export function grantEntries(grant: AdditionalSpells): GrantEntry[] {
 }
 
 /**
- * Every entry of a grant's prepared group, in key order (ADR 0017 amendment). A key is `_` (no level gate), a character level
+ * Every entry of a grant's prepared group, in key order. A key is `_` (no level gate), a character level
  * (the level the entry unlocks at), or `sN`: the spell slot level N, which gates the entry on the character having slots of that
  * level. Uses under a `daily`, `will` or `rest` key are read only for an Innate Magic group (see innateEntriesOf). For a plain
  * group the prepared spell is listed, and its free casting stays in the feat's text.
@@ -427,10 +427,10 @@ export function isModelledGrant(grant: AdditionalSpells): boolean {
 }
 
 /**
- * Whether the reader models a grant's plain prepared group: it names a prepared spell, or it has a pick it can fill (ADR 0017
- * amendment). A pick under an `sN` key is not read, so it does not count. An Innate Magic group is not a plain one.
+ * Whether the reader models a grant's plain prepared group: it names a prepared spell, or it has a pick it can fill. A pick under
+ * an `sN` key is not read, so it does not count. An Innate Magic group is not a plain one.
  */
-export function isPreparedGrant(grant: AdditionalSpells): boolean {
+function isPreparedGrant(grant: AdditionalSpells): boolean {
   return !isInnatePreparedGrant(grant) && preparedEntries(grant).some(isFillableEntry);
 }
 
@@ -797,7 +797,6 @@ function slotChoicesOf(character: Character, owner: GrantOwner, grant: Additiona
  * The name a released pick's notice gives it: the spell it was picked as, the spell list, or the casting ability.
  */
 function releasedPickLabel(entry: RuleChoiceEntry, pick: string): string {
-  if (entry.id.endsWith(`__${SPELL_LIST_KEY}`)) return pick;
   if (entry.id.endsWith(`__${ABILITY_CHOICE_KEY}`)) {
     return (ABILITIES as readonly string[]).includes(pick) ? `${ABILITY_NAMES[pick as AbilityKey]} casting ability` : pick;
   }
@@ -916,7 +915,7 @@ export function pruneInvalidFeatSpellPicks(character: Character, compendium: Com
 }
 
 /**
- * Releases the long-rest counters of a feat's spell that no longer holds, with a review notice for each. A counter is a feat's
+ * Releases the long-rest counters of feat spells whose feat, or whose spell list, is no longer held, with a review notice for each. A counter is a feat's
  * when its id begins with the feat prefix. Its segments are the feat, then the spell list it was picked from (only when the
  * feat offers named lists), then the spell. A counter is released when its feat is no longer held, or when its list is not the
  * one the feat holds now. A feat whose book the catalog does not hold is not loaded, so its counters are kept. Other counters are untouched, and a catalog that holds no feat is not loaded, so none is released.

@@ -346,7 +346,7 @@ function battleMasterCharacter() {
 }
 
 // A level 1 High Elf Wizard with no cantrip picked yet. The race card shows the wizard cantrip pick the High Elf's
-// subrace grants, with the Intelligence casting ability. The Builder Race scenario reads it in integrated mode only.
+// subrace grants, with the Intelligence casting ability.
 const HIGH_ELF_ID = "char_highelf";
 const HIGH_ELF_ROUTE = `/character/${HIGH_ELF_ID}`;
 function highElfCharacter() {
@@ -525,11 +525,9 @@ function grantedSpellsCharacter() {
   });
 }
 
-// A level 8 Wizard holding two feats whose prepared groups name spells (integrated mode only, since the SRD Baseline has no
-// prepared group). The feats are invented and added to the seeded integrated catalog (withPreparedGrantFeat), because the
-// tracked snapshot holds no prepared group. The first is a plain group: its spells are listed in the class list with the lock
-// icon and the feat's name as the badge. The second names a casting ability and gives daily casts, so it is Innate Magic: a
-// card with the ability the player picked, its at-will spell, and its daily spell on a Long Rest counter.
+// A level 8 Wizard holding two invented feats with prepared groups, in integrated mode only: withPreparedGrantFeat adds them to the
+// seeded catalog. The first group is plain: its spells are in the class list with the lock and the feat's badge. The second names
+// a casting ability and gives daily casts, so it is Innate Magic with its own card.
 const PREPARED_ID = "char_prepared";
 const PREPARED_ROUTE = `/character/${PREPARED_ID}`;
 const PREPARED_FEAT = "Wardwright Mark of Lasting Layout";

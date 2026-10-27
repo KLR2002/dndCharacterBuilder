@@ -10,7 +10,7 @@ import { normalizeKey, resolveSpellName } from "./subclassSpells.ts";
  * The spell names a list of spell grants adds to the list of each spellcasting class the character has (ADR 0017). The
  * expanded lists are keyed by spell level (the cantrip list is `s0`); they carry no level gate, so every name counts.
  */
-export function expandedSpellNamesOf(grants: readonly AdditionalSpells[] | undefined): string[] {
+function expandedSpellNamesOf(grants: readonly AdditionalSpells[] | undefined): string[] {
   const names: string[] = [];
   for (const grant of grants ?? []) {
     for (const list of Object.values(grant.expanded ?? {})) {
@@ -43,7 +43,7 @@ export function resolveCharacterBackground(character: Character, backgroundCatal
  * reader reads). A source with no expanded list is left out. The background and the race are read from the Compendium scoped to
  * the active books, the feats as heldFeatsOf reads them.
  */
-export function heldExpandedSources(
+function heldExpandedSources(
   character: Character,
   compendium: Compendium = currentCompendium(),
   activeBooks?: readonly string[]
