@@ -330,7 +330,7 @@ const lineageCharacter = (): Character =>
     lineageReplacement: "Sample Lineage",
   });
 
-test("a held lineage whose book is switched off keeps its recorded pick, with no notice", () => {
+test("a held lineage whose book is switched off releases its recorded pick, with a notice", () => {
   const compendium = inMemoryCompendium(
     { races: [race("Sample Folk", "TST"), lineageUnder("ALT")], classes: grantedSpellClasses(), spells: grantedSpellSpells() },
     { integrated: true },
@@ -340,7 +340,12 @@ test("a held lineage whose book is switched off keeps its recorded pick, with no
   const choice = raceSpellRuleChoices(character, compendium, both).find((c) => c.options.some((o) => o.name === "Sample Ember"));
   assert.ok(choice, "the lineage offers Sample Ember while its book is on");
   const picked = pickRuleChoice(character, choice, "Sample Ember", compendium, both);
-  assert.equal(pruneInvalidFeatSpellPicks(picked, compendium, ["TST"]), picked, "switching the lineage's book off releases nothing");
+  const released = pruneInvalidFeatSpellPicks(picked, compendium, ["TST"]);
+  assert.equal(released.ruleChoices?.some((entry) => entry.picked.includes("Sample Ember")), false, "the pick is released");
+  assert.ok(
+    released.needsReview?.includes("Sample Ember removed from Sample Lineage: book switched off"),
+    `the release is noticed: ${JSON.stringify(released.needsReview)}`,
+  );
 });
 
 test("a catalog that holds the lineage's book but not the lineage releases the lineage's pick, with a notice", () => {

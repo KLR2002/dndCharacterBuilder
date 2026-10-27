@@ -1,6 +1,8 @@
 # 01: Switched-off books release their picks
 
-**Status:** ready-for-agent
+**Status:** done
+
+**Landed:** a switched-off owner book (race, lineage, feat) releases its picks and the feat's Long Rest counters with a notice ("book switched off"); a catalog that lacks the owner record still keeps them; the four readers agree; the selection effect in `CharacterContext.tsx` (lines 366-376, deps `selectedCharacterId`, `activeBooks`, `integratedAt`, `isLoading`) runs the reconcile on open; re-enabling offers the choice again, empty. check:all and check:live (134/134) green. Open: a known spell learned from an expanded list is not released on a book switch (ticket 05); race identity is by name by design.
 
 Spec: `.scratch/spells-wrap-up/spec.md`.
 
@@ -17,12 +19,12 @@ When the player switches a sourcebook off, every pick that belongs to it goes wi
 
 ## Acceptance Criteria
 
-- [ ] Switching a book off releases a race, lineage or feat pick whose owner comes from it, with a notice naming the spell and the source, and the choice is hidden (AC-1).
-- [ ] A catalog that lacks the owner record entirely keeps the pick; a loaded catalog that lost the record releases it (AC-1).
-- [ ] Selecting a character saved before its book was switched off releases the picks with the notice (AC-2).
-- [ ] The four readers give the same verdict for the same switched-off book (AC-3).
-- [ ] Switching the book back on offers the choice again, empty (AC-4).
-- [ ] `npm run check:all` passes.
+- [x] Switching a book off releases a race, lineage or feat pick whose owner comes from it, with a notice naming the spell and the source, and the choice is hidden (AC-1).
+- [x] A catalog that lacks the owner record entirely keeps the pick; a loaded catalog that lost the record releases it (AC-1).
+- [x] Selecting a character saved before its book was switched off releases the picks with the notice (AC-2).
+- [x] The four readers give the same verdict for the same switched-off book (AC-3).
+- [x] Switching the book back on offers the choice again, empty (AC-4).
+- [x] `npm run check:all` passes.
 
 ## Verification
 

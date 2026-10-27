@@ -57,6 +57,18 @@ Closing the spell work. A pick whose sourcebook the player switched off must go,
 **When** any reader resolves it where the active books are known (the Journal tab, the legacy cantrip migration, `resolveCharacterBackground`, the Fighting Style ids)
 **Then** the active books scope the choice, a custom background named like a catalog one never resolves to the catalog record, and the Fighting Style id takes its source from the class record, not a fixed book.
 
+### AC-8: Expanded-list spells stranded by a book switch
+
+**Given** a spell the character knows only because a held feat's, race's, lineage's or background's expanded list offered it
+**When** the book of that source is switched off (or the character is opened with it switched off)
+**Then** the spell is released with a notice naming the spell and the source; a spell a class lists itself stays; switching the book back on does not restore it.
+
+### AC-9: Custom Lineage to none
+
+**Given** a character whose lineage is Custom Lineage
+**When** the player chooses "None"
+**Then** the character is left in a consistent state: the custom race is cleared (the player picks a race again) and nothing of the custom race remains granted.
+
 ## Architecture Constraints
 
 - ADR 0017 stands. No non-SRD name in app code: the "(self only)" note is reviewed scraper data carried on the spell entry. Catalog Format rises to 11 if the scraped record shape changes (format 10 is already pushed).
@@ -71,6 +83,7 @@ Closing the spell work. A pick whose sourcebook the player switched off must go,
 | AC-2 | `CharacterContext` selection effect and `reconcileForActiveBooks` | Test of the reconcile on a stale character; the effect's trigger on selection verified by test or read with line reference |
 | AC-5 | `changeLineage`, invented lineages including Custom | Red-then-green tests |
 | AC-6 | Scraper override and enrich tests, the Spells tab | `check:live` for the real grant, layout scenario at four widths, integrated, screenshots viewed |
+| AC-8, 9 | `reconcileForActiveBooks`, `changeLineage`, invented catalog | Red-then-green tests |
 | AC-7 | Each reader with an invented two-book catalog | Red-then-green tests |
 
 ## Out of Scope

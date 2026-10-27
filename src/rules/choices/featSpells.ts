@@ -827,12 +827,14 @@ function releaseNotices(character: Character, entry: RuleChoiceEntry, reason: st
 }
 
 /**
- * Releases the spell picks of the race `before` held when `next` names another race or subrace, with a review notice that titles
- * the race as `before` held it. Only the character from before the change can title a race it no longer holds. A pick under the
- * race or subrace `next` holds stays for the reconciler to judge.
+ * Releases the spell picks of the race `before` held when `next` names another race, subrace or lineage, with a review notice
+ * that titles the race as `before` held it. Only the character from before the change can title a race it no longer holds. A
+ * pick under the race, subrace or lineage `next` holds stays for the reconciler to judge.
  */
 export function releaseSupersededRacePicks(before: Character, next: Character): Character {
-  const held = new Set([next.race?.name, next.race?.subraceName].filter((name): name is string => name !== undefined));
+  const held = new Set(
+    [next.race?.name, next.race?.subraceName, next.lineageReplacement].filter((name): name is string => name != null)
+  );
   const notices: string[] = [];
   const kept = (next.ruleChoices ?? []).filter((entry) => {
     if (!isGrantSpellChoiceId(entry.id)) return true;
@@ -866,19 +868,28 @@ function ownerBookLoaded(id: string, listings: CompendiumListings, character: Ch
   return bookLoadedFor(source, listings);
 }
 
+/** The reason a pick or counter is released when its owner's book is switched off. */
+const BOOK_SWITCHED_OFF = "book switched off";
+
 /**
  * Releases the granted spell picks that no longer hold, with a review notice for each release. A pick is released when its
  * owner is no longer held, when its list is no longer the one picked, or (with the active books given) when the spell is no
- * longer offered. Picks of other choices are untouched. A pick whose owner's book the catalog does not hold is not loaded, so it
- * is kept without a notice. Returns the character itself when nothing changes.
+ * longer offered. An owner whose record the loaded catalog holds but whose book is switched off is released with the reason
+ * BOOK_SWITCHED_OFF. Picks of other choices are untouched. A pick whose owner the catalog does not hold at all is not loaded,
+ * so it is kept without a notice. Returns the character itself when nothing changes.
  */
 export function pruneInvalidFeatSpellPicks(character: Character, compendium: Compendium, activeBooks?: readonly string[]): Character {
   const entries = character.ruleChoices ?? [];
   if (!entries.some((entry) => isGrantSpellChoiceId(entry.id))) return character;
 
+  // The loaded catalog says whether an owner is in the catalog at all; the listings of the active books say whether it is offered.
   const listings = compendium.for();
-  const held = heldGrantsOf(character, candidateFeatsOf(character, listings.feats()), listings.races(), activeBooks);
+  const offered = compendium.for(activeBooks);
+  const held = heldGrantsOf(character, candidateFeatsOf(character, offered.feats()), offered.races(), activeBooks);
   const heldKeys = new Set(held.map(({ owner }) => ownerKey(owner)));
+  const loadedKeys = new Set(
+    heldGrantsOf(character, candidateFeatsOf(character, listings.feats()), listings.races()).map(({ owner }) => ownerKey(owner))
+  );
   // The offered options of each pick the character's owners still make, keyed by the choice id.
   const valid = new Map<string, string[] | undefined>();
   for (const { owner, grants, feat } of held) {
@@ -904,9 +915,11 @@ export function pruneInvalidFeatSpellPicks(character: Character, compendium: Com
     if (!valid.has(entry.id)) {
       const [source, mark, name] = entry.id.split("__");
       const isFeat = mark === OWNER_MARK.feat;
-      const heldOwner = heldKeys.has(`${source}__${mark}__${name}`);
-      const reason = !heldOwner
-        ? (isFeat ? "feat no longer held" : "ancestry no longer grants it")
+      const owner = `${source}__${mark}__${name}`;
+      const reason = !heldKeys.has(owner)
+        ? loadedKeys.has(owner)
+          ? BOOK_SWITCHED_OFF
+          : (isFeat ? "feat no longer held" : "ancestry no longer grants it")
         : (isFeat ? "spell list changed" : "no longer offered");
       notices.push(...releaseNotices(character, entry, reason));
       continue;
@@ -926,7 +939,9 @@ export function pruneInvalidFeatSpellPicks(character: Character, compendium: Com
  * Releases the long-rest counters of feat spells whose feat, or whose spell list, is no longer held, with a review notice for each. A counter is a feat's
  * when its id begins with the feat prefix. Its segments are the feat, then the spell list it was picked from (only when the
  * feat offers named lists), then the spell. A counter is released when its feat is no longer held, or when its list is not the
- * one the feat holds now. A feat whose book the catalog does not hold is not loaded, so its counters are kept. Other counters are untouched, and a catalog that holds no feat is not loaded, so none is released.
+ * one the feat holds now. A feat whose book the catalog does not hold is not loaded, so its counters are kept. A feat whose record
+ * the catalog holds in a book the active books switch off is released with the reason BOOK_SWITCHED_OFF. Other counters are
+ * untouched, and a catalog that holds no feat is not loaded, so none is released.
  * Returns the character itself when none is released.
  */
 export function pruneReleasedFeatCounters(character: Character, compendium: Compendium, activeBooks?: readonly string[]): Character {
@@ -938,7 +953,7 @@ export function pruneReleasedFeatCounters(character: Character, compendium: Comp
   // Each feat the character holds, by its slug, with the slug of the spell list it holds (undefined when none is picked).
   // The record is the one the reader offers for the active books, so a feat in two books keeps the list the reader shows.
   const held = new Map<string, { name: string; list: string | undefined }>();
-  for (const { feat } of heldFeatsOf(character, listings.feats(), activeBooks)) {
+  for (const { feat } of heldFeatsOf(character, compendium.for(activeBooks).feats(), activeBooks)) {
     const picked = pickedSpellListOf(character, featOwner(feat), feat.additionalSpells ?? []);
     held.set(slugOf(feat.name), { name: feat.name, list: picked?.name ? slugOf(picked.name) : undefined });
   }
@@ -966,9 +981,13 @@ export function pruneReleasedFeatCounters(character: Character, compendium: Comp
       const book = bookOf.get(featSlug);
       if (book !== undefined && !bookLoadedFor(book, listings)) continue;
       const catalogName = listings.feats().find((feat) => slugOf(feat.name) === featSlug)?.name;
+      // The feat's record is in its book, which the active books no longer include: the feat is switched off, not removed.
+      const switchedOff = book !== undefined && activeBooks !== undefined && !activeBooks.includes(book)
+        && listings.feats().some((feat) => slugOf(feat.name) === featSlug && feat.source === book);
+      const reason = switchedOff ? BOOK_SWITCHED_OFF : "feat no longer held";
       notices.push(catalogName
-        ? `${counterName} removed from ${catalogName}: feat no longer held`
-        : `${counterName} removed: feat no longer held`);
+        ? `${counterName} removed from ${catalogName}: ${reason}`
+        : `${counterName} removed: ${reason}`);
       delete nextCounters[key];
       continue;
     }
