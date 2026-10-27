@@ -7,8 +7,9 @@ import { grantedFeatures } from "../src/rules/grantedFeatures.ts";
 import { offeredRuleChoices } from "../src/rules/ruleChoices.ts";
 import { heldSubraceOf } from "../src/rules/recordProficiencyGrants.ts";
 import { pruneInvalidFeatSpellPicks, raceGrantsOf, raceSpellRuleChoices } from "../src/rules/choices/featSpells.ts";
+import { characterSpeeds } from "../src/rules/speed.ts";
 import type { Character } from "../src/types/character.ts";
-import type { RaceData, SubraceData } from "../src/types/dnd5e.ts";
+import type { BackgroundData, ClassData, FeatData, RaceData, SubraceData } from "../src/types/dnd5e.ts";
 import { inMemoryCompendium, makeChar } from "./testUtils.ts";
 import { grantedSpellClasses, grantedSpellSpells } from "./grantedSpellsFixture.ts";
 
@@ -314,4 +315,104 @@ test("a lineage's spell pick is judged against the active book's record when ano
     ruleChoices: [{ id: slot.id, trait: slot.traitName, origin: "race" as const, choose: slot.choose, from: slot.options.map((o) => o.name), picked: ["Sample Lure"] }],
   };
   assert.equal(pruneInvalidFeatSpellPicks(held, compendium, books), held, "the pick still applies, so nothing is released");
+});
+
+// Invented subclass, background and feat under one source, for the saved-source oracles below.
+const recordsUnder = (source: string): { classes: ClassData[]; backgrounds: BackgroundData[]; feats: FeatData[] } => ({
+  classes: [
+    {
+      name: "Sample Warrior",
+      source,
+      hitDie: "1d6",
+      primaryAbility: [],
+      savingThrows: [],
+      armorProficiencies: [],
+      weaponProficiencies: [],
+      toolProficiencies: [],
+      skillProficiencies: { choose: 0, from: [] },
+      features: [],
+      subclasses: [
+        {
+          name: "Sample Path",
+          shortName: "Sample Path",
+          source,
+          className: "Sample Warrior",
+          classSource: source,
+          features: [{ name: "Sample Path Edge", level: 3, description: "Placeholder description for the feature." }],
+          description: "Placeholder description for the subclass.",
+        },
+      ],
+      description: "Placeholder description for the class.",
+    },
+  ],
+  backgrounds: [
+    {
+      name: "Sample Scholar",
+      source,
+      skillProficiencies: [],
+      toolProficiencies: [],
+      languages: [],
+      startingEquipment: [],
+      feature: { name: "Sample Lore", description: "Placeholder description for the feature." },
+      characteristics: {},
+      description: "Placeholder description for the background.",
+    },
+  ],
+  feats: [
+    {
+      name: "Sample Feat",
+      source,
+      prerequisite: null,
+      abilityScoreIncrease: null,
+      description: "Placeholder description for the feat.",
+    },
+  ],
+});
+
+/** The names and origins of the features a character with the Sample Warrior, Sample Scholar and Sample Feat reads. */
+function savedFeatures(source: string, compendium: ReturnType<typeof inMemoryCompendium>, activeBooks: string[]): string[] {
+  const character = makeChar({
+    classes: [{ className: "Sample Warrior", source, level: 3, subclassName: "Sample Path", subclassSource: source }],
+    background: { name: "Sample Scholar", source },
+    asiSelections: [{ level: 4, type: "feat", featName: "Sample Feat", featSource: source }],
+  });
+  const listings = compendium.for(activeBooks);
+  return grantedFeatures(character, {
+    races: listings.races(),
+    classes: listings.classes(),
+    backgrounds: listings.backgrounds(),
+    feats: listings.feats(),
+    activeBooks,
+  })
+    .map((feature) => `${feature.origin}: ${feature.name}`)
+    .sort();
+}
+
+test("a subclass, background and feat saved as SRD read the same features on a catalog that holds them under another source", () => {
+  const onIntegrated = savedFeatures("SRD", inMemoryCompendium(recordsUnder("TST"), { integrated: true }), ["TST"]);
+  const onSrd = savedFeatures("SRD", inMemoryCompendium(recordsUnder("SRD")), ["SRD"]);
+  assert.deepEqual(onIntegrated, onSrd);
+  assert.deepEqual(onIntegrated, ["Background: Sample Lore", "Feat: Sample Feat", "Subclass: Sample Path Edge"]);
+});
+
+test("a subclass, background and feat saved from another book read the same features on an SRD-style catalog", () => {
+  const onSrd = savedFeatures("TST", inMemoryCompendium(recordsUnder("SRD")), ["SRD"]);
+  const onIntegrated = savedFeatures("TST", inMemoryCompendium(recordsUnder("TST"), { integrated: true }), ["TST"]);
+  assert.deepEqual(onSrd, onIntegrated);
+  assert.deepEqual(onSrd, ["Background: Sample Lore", "Feat: Sample Feat", "Subclass: Sample Path Edge"]);
+});
+
+test("a race's plain subrace holds its fixed ability bonus when the character is saved with no subrace", () => {
+  const plain = race("Sample Kin", "TST", {
+    subraces: [subrace("", "TST", { abilityScoreIncrease: [{ cha: 1 }] })],
+  });
+  const compendium = inMemoryCompendium({ races: [plain] }, { integrated: true });
+  const character = makeChar({ race: { name: "Sample Kin", source: "TST" }, baseAbilityScores: BASE_SCORES });
+  assert.equal(evaluateCharacter(character, { compendium, activeBooks: ["TST"] }).effectiveScores.scores.cha, 11);
+});
+
+test("a race saved on the SRD Baseline reads the speed of the record its name finds, not only a record of its own source", () => {
+  const compendium = inMemoryCompendium({ races: [folkUnder("TST")] }, { integrated: true });
+  const character = makeChar({ race: { name: "Sample Folk", source: "SRD" }, baseAbilityScores: BASE_SCORES });
+  assert.equal(characterSpeeds(character, { compendium, activeBooks: ["TST"] }).walk, 25);
 });
