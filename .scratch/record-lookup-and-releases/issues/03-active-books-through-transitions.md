@@ -1,6 +1,8 @@
 # 03: Active books threaded through the remaining transitions
 
-**Status:** ready-for-agent
+**Status:** done
+
+**Landed:** the active books reach the subclass change, sole-subclass application, class level removal, custom background, background clear, ancestry clear, rest-modal pick and proficiency pick; each has a red-then-green counter test. check:all, check:live and the SRD layout run green. Open: the `removeClassLevel` wrapper in ClassProgressionSection passes the rendered character instead of the updater's current one (predates this work).
 
 Spec: `.scratch/record-lookup-and-releases/spec.md`.
 
@@ -14,9 +16,9 @@ A used Long Rest counter of a background-claimed feat held in two active books s
 
 ## Acceptance Criteria
 
-- [ ] For each remaining transition (class change, subclass change and teardown, custom background, ancestry clear, rest-modal rule-choice pick), a counter of the picked list of a feat held in two active books is kept (AC-6).
-- [ ] No new `currentCompendium()` read is introduced by the change.
-- [ ] `npm run check:all` passes.
+- [x] For each remaining transition (class change, subclass change and teardown, custom background, ancestry clear, rest-modal rule-choice pick), a counter of the picked list of a feat held in two active books is kept (AC-6).
+- [x] No new `currentCompendium()` read is introduced by the change.
+- [x] `npm run check:all` passes.
 
 ## Verification
 
