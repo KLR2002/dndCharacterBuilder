@@ -1,6 +1,8 @@
 # 05: Expanded-list spells stranded by a book switch, and Custom Lineage to none
 
-**Status:** ready-for-agent
+**Status:** done
+
+**Landed:** `reconcileForActiveBooks` releases a known spell only a held feat, race, lineage or background expanded list offered once that source's book is off (also when a character is opened), keeping class-listed, other-source and catalog-lacks cases; `changeLineage` clears the custom race when leaving Custom Lineage. check:all and check:live (135/135) green. Open: saves already in the broken Custom Lineage state are not migrated; picking "Custom Lineage" from the race search list sets the race without the lineage flag (both handled in the final repair).
 
 Spec: `.scratch/spells-wrap-up/spec.md` (AC-8, AC-9).
 
@@ -15,10 +17,10 @@ A known spell that only a held source's expanded list offered stays in the chara
 
 ## Acceptance Criteria
 
-- [ ] Switching off the book of a held feat, race, lineage or background releases a known spell only its expanded list offered, with a notice naming the spell and the source; opening a character saved with the book already off does the same (AC-8).
-- [ ] A spell a class lists itself, or another active source offers, stays; switching the book back on restores nothing (AC-8).
-- [ ] Custom Lineage to none clears the custom race and leaves a consistent character (AC-9).
-- [ ] `npm run check:all` passes.
+- [x] Switching off the book of a held feat, race, lineage or background releases a known spell only its expanded list offered, with a notice naming the spell and the source; opening a character saved with the book already off does the same (AC-8).
+- [x] A spell a class lists itself, or another active source offers, stays; switching the book back on restores nothing (AC-8).
+- [x] Custom Lineage to none clears the custom race and leaves a consistent character (AC-9).
+- [x] `npm run check:all` passes.
 
 ## Verification
 
