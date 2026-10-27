@@ -233,8 +233,7 @@ function multiclassFeaturesOf(character: Character, classes: readonly ClassData[
 /**
  * The features the character holds, each with the grants its rule gives, read from the listings. The
  * first class's starting proficiencies, the later classes' multiclass skill choices, and a custom background's
- * picks, are included as more features; they are not granted features. The race and background records resolve within
- * `activeBooks` when given.
+ * picks, are included as more features; they are not granted features.
  */
 export function featuresOf(character: Character, listings: CompendiumListings, activeBooks?: readonly string[]): FeatureInstance[] {
   const features = grantedFeatures(character, {

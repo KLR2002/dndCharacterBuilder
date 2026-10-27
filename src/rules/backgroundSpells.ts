@@ -31,10 +31,7 @@ export interface ExpandedSpellSource {
   names: string[];
 }
 
-/**
- * The background the character holds, found by the shared record lookup: the record of its saved source, else an active book's
- * record, else the first listed. `activeBooks` is given with the listing it scopes.
- */
+/** The background the character holds, found by the shared record lookup (see findHeldRecord). */
 export function resolveCharacterBackground(
   character: Character,
   backgroundCatalog?: BackgroundData[],

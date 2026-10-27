@@ -635,8 +635,7 @@ export function clearBackground(character: Character, catalogs: CharacterCatalog
   const current = moveLegacySkillPicks(character, compendium, catalogs.activeBooks);
   const bg = current.background;
   const bgName = bg?.name ?? "previous";
-  // The record of the held background, found as the shared lookup finds it: its saved source, else an active book's, else the
-  // first listed. Unscoped by books, so a background whose book is switched off still gives the skills it granted.
+  // Unscoped by books, so a background whose book is switched off still gives the skills it granted.
   const bgData = bg && !isCustomBackground(bg) ? findHeldRecord(compendium.for().backgrounds(), bg, catalogs.activeBooks) : undefined;
 
   const normalize = (s: string) => s.trim().toLowerCase();

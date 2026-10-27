@@ -65,10 +65,7 @@ export function heldSourceOf(saved: string | undefined, record: { source: string
   return saved || record.source;
 }
 
-/**
- * The record of a name: the saved source's, else the first that `prefers` (in an active book, then in any), else an active
- * book's, else the first listed. `prefers` is only given where the name alone does not settle the record.
- */
+/** The record of a name: the saved source's, else the first that `prefers` (in an active book, then in any), else an active book's, else the first listed. */
 function pickRecord<T extends { name: string; source: string }>(
   records: readonly T[],
   name: string,
