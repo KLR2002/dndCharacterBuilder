@@ -695,9 +695,9 @@ export function validateSubclassSpellSwap(
   }
 
   if (activeBooks && activeBooks.length > 0) {
-    const isSourceActive = activeBooks.some(
-      (b) => b.toUpperCase() === (replSpell.source || "").toUpperCase()
-    );
+    const isSourceActive =
+      (replSpell.source || "").toUpperCase() === SRD_SOURCE ||
+      activeBooks.some((b) => b.toUpperCase() === (replSpell.source || "").toUpperCase());
     if (!isSourceActive) {
       return {
         valid: false,
@@ -721,11 +721,11 @@ export function getEligibleSubclassSpellSwaps(
 
   const catalog = getSpellCatalog(compendium);
   const allowedClasses = ["sorcerer", "warlock", "wizard"];
-  const activeBooksSet = activeBooks ? new Set(activeBooks.map((b) => b.toUpperCase())) : null;
+  const activeBooksSet = activeBooks ? new Set([SRD_SOURCE, ...activeBooks.map((b) => b.toUpperCase())]) : null;
 
   const eligible: SpellData[] = [];
   for (const copies of catalog.values()) {
-    const spell = pickSpell(copies, activeBooks);
+    const spell = pickSpell(copies, activeBooks, true);
     if (!spell) continue;
     if (spell.level !== originalSpell.level) continue;
     if (!allowedSchools.includes((spell.school || "").toLowerCase())) continue;

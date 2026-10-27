@@ -593,5 +593,27 @@ test("a Cleric of the SRD Life Domain at level 5 gets the domain's spells on the
   assert.deepEqual(domainSpells([...DEFAULT_ACTIVE_BOOK_CODES], 2), ["Bless", "Cure Wounds"], "the first level's spells only at level 2");
 });
 
+test("SRD spells are allowed subclass spell swaps under DEFAULT_ACTIVE_BOOK_CODES", () => {
+  // The SRD's spells and Sorcerer class, with a Clockwork Soul subclass stub that grants Alarm (its book is not in the SRD).
+  const srd = srdBaselineCompendium();
+  const srdSorcerer = srd.for().classes().find((cls) => cls.name === "Sorcerer");
+  assert.ok(srdSorcerer, "the SRD Baseline holds the Sorcerer");
+  const clockwork = { name: "Clockwork Soul", shortName: "Clockwork Soul", source: "TCE", additionalSpells: [{ known: { "1": ["Alarm"] } }] };
+  const compendium = createCompendium(
+    compendiumBundle({
+      hasIntegratedCatalog: false,
+      spells: srd.for().spells(),
+      classes: [{ ...srdSorcerer, subclasses: [clockwork] } as unknown as ClassData],
+    }),
+  );
+  const activeBooks = [...DEFAULT_ACTIVE_BOOK_CODES];
+  const alarm = compendium.findSpell("Alarm", "SRD");
+  assert.ok(alarm, "the SRD holds Alarm");
+  const validation = validateSubclassSpellSwap("Sorcerer", "Clockwork Soul", "Alarm", "Mage Armor", activeBooks, compendium);
+  assert.equal(validation.valid, true, `the SRD replacement is accepted: ${validation.reason ?? ""}`);
+  const swaps = getEligibleSubclassSpellSwaps("Clockwork Soul", alarm, activeBooks, compendium);
+  assert.ok(swaps.some((spell) => spell.name === "Mage Armor" && spell.source === "SRD"), "Mage Armor is offered as a swap for Alarm");
+});
+
 
 
