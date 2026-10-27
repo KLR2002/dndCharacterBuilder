@@ -92,7 +92,7 @@ export const BackgroundSection: React.FC<BackgroundSectionProps> = ({
       setCustomBackground(current, trimmed, customBgSkills, {
         toolsOrLanguages: customBgTools,
         feature: customBgFeature ? { name: customBgFeature.name, description: customBgFeature.description } : undefined,
-      }, catalogs.compendium ?? currentCompendium(), catalogs.activeBooks)
+      }, undefined, catalogs.activeBooks)
     );
     setIsCustomBg(false);
     setCustomBgName("");
