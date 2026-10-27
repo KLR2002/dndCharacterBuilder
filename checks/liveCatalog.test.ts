@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { existsSync, readFileSync } from "node:fs";
-import type { AbilityKey, Character } from "../src/types/character.ts";
+import type { AbilityKey, Character, RuleChoiceEntry } from "../src/types/character.ts";
 import type { AdditionalSpells, ClassData, FeatData, ProficiencyGrant, SpellData, SubclassData } from "../src/types/dnd5e.ts";
 import { createCompendium, type Compendium } from "../src/services/compendium.ts";
 import { isCatalogStale, REQUIRED_CATALOG_FORMAT, type CompendiumCollections } from "../src/services/compendiumStorage.ts";
@@ -13,8 +13,7 @@ import { grantedFeatures } from "../src/rules/grantedFeatures.ts";
 import { proficiencySheet } from "../src/rules/proficiencySheet.ts";
 import { DEFAULT_ACTIVE_BOOK_CODES } from "../src/constants/books.ts";
 import type { InnateSpellEntry, InnateSpellProfile } from "../src/rules/innateMagic.ts";
-import { parseSpellFilter } from "../src/rules/choices/featSpells.ts";
-import { STARTING_EQUIPMENT_TYPES } from "../src/rules/startingEquipmentTypes.ts";
+import { parseSpellFilter, pruneInvalidFeatSpellPicks } from "../src/rules/choices/featSpells.ts";import { STARTING_EQUIPMENT_TYPES } from "../src/rules/startingEquipmentTypes.ts";
 import { reconcile } from "../src/rules/characterReconciler.ts";
 import type { AvailableRuleChoice } from "../src/rules/choices/types.ts";
 import { makeChar, srdBaselineCompendium } from "./testUtils.ts";
@@ -1279,4 +1278,190 @@ test("live catalog: a race finds its integrated record by name, scoped to the ac
     assert.equal(compendium.findRace(name, "SRD", [...DEFAULT_ACTIVE_BOOK_CODES])?.source, "PHB", `${name} resolves to its PHB record`);
   }
   assert.equal(compendium.findRace("Elf", "PHB")?.source, "PHB", "the saved source is found first");
+});
+
+// Records of the other kinds a character saves with a source (class, subclass, background, feat) and the picks kept on them,
+// saved on the SRD Baseline and on the integrated catalog, read on both catalogs. Spell lists are not compared here.
+const RECORD_KIND_SCORES = { str: 15, dex: 14, con: 13, int: 12, wis: 10, cha: 8 };
+const RECORD_KIND_BOOKS = [...DEFAULT_ACTIVE_BOOK_CODES];
+
+/** One character per record kind, all saved with the given source. */
+function savedRecordKindCharacters(src: string): Record<string, Character> {
+  const race = { name: "Human", source: src };
+  return {
+    "Fighter 5 Champion with Grappler": makeChar({
+      classes: [{ className: "Fighter", source: src, level: 5, subclassName: "Champion", subclassSource: src }],
+      race,
+      baseAbilityScores: RECORD_KIND_SCORES,
+      asiSelections: [{ level: 4, type: "feat", className: "Fighter", classLevel: 4, featName: "Grappler", featSource: src, featAbility: "str" }],
+    }),
+    "Wizard 3 Evocation": makeChar({
+      classes: [{ className: "Wizard", source: src, level: 3, subclassName: "School of Evocation", subclassSource: src }],
+      race,
+      baseAbilityScores: RECORD_KIND_SCORES,
+    }),
+    "Cleric 1 Life with Acolyte": makeChar({
+      classes: [{ className: "Cleric", source: src, level: 1, subclassName: "Life Domain", subclassSource: src }],
+      race,
+      baseAbilityScores: RECORD_KIND_SCORES,
+      background: { name: "Acolyte", source: src },
+    }),
+    "Fighter 1 with Grappler as an origin feat": makeChar({
+      classes: [{ className: "Fighter", source: src, level: 1 }],
+      race,
+      baseAbilityScores: RECORD_KIND_SCORES,
+      originFeats: [{ level: 0, type: "feat", featName: "Grappler", featSource: src, featAbility: "str" }],
+    }),
+  };
+}
+
+/** The names of the features a character gets from the given origins, as the features pass lists them, on one catalog. */
+function featureNamesOf(character: Character, compendium: Compendium, origins: string[]): string[] {
+  const listings = compendium.for(RECORD_KIND_BOOKS);
+  return grantedFeatures(character, {
+    races: listings.races(),
+    classes: listings.classes(),
+    backgrounds: listings.backgrounds(),
+    feats: listings.feats(),
+    activeBooks: RECORD_KIND_BOOKS,
+  })
+    .filter((feature) => origins.includes(feature.origin))
+    .map((feature) => `${feature.origin}:${feature.name}`)
+    .sort();
+}
+
+const RECORD_KIND_SRD = savedRecordKindCharacters("SRD");
+const RECORD_KIND_PHB = savedRecordKindCharacters("PHB");
+
+test("live catalog: record kind: a Fighter 5 and a Wizard 3 saved on the SRD Baseline have the same class features and hit points on the integrated catalog", { skip: SKIP }, () => {
+  for (const name of ["Fighter 5 Champion with Grappler", "Wizard 3 Evocation"]) {
+    const onSrd = evaluateCharacter(RECORD_KIND_SRD[name], { compendium: srdBaseline, activeBooks: RECORD_KIND_BOOKS });
+    const onLive = evaluateCharacter(RECORD_KIND_SRD[name], { compendium: live!.compendium, activeBooks: RECORD_KIND_BOOKS });
+    assert.deepEqual(featureNamesOf(RECORD_KIND_SRD[name], live!.compendium, ["Class"]), featureNamesOf(RECORD_KIND_SRD[name], srdBaseline, ["Class"]), `${name}: class features`);
+    assert.equal(onLive.hp.max, onSrd.hp.max, `${name}: hit points`);
+  }
+});
+
+test("live catalog: record kind: a Fighter 5 saved on the SRD Baseline is offered the same Fighting Style choice on the integrated catalog, with every SRD option", { skip: SKIP }, () => {
+  const character = RECORD_KIND_SRD["Fighter 5 Champion with Grappler"];
+  const fightingStyle = (compendium: Compendium) =>
+    offeredRuleChoices(character, { compendium, activeBooks: RECORD_KIND_BOOKS }).find((choice) => choice.traitName === "Fighting Style");
+  const onSrd = fightingStyle(srdBaseline);
+  const onLive = fightingStyle(live!.compendium);
+  assert.ok(onSrd, "the SRD Baseline offers the Fighting Style choice");
+  assert.equal(onLive?.id, onSrd.id);
+  const liveOptions = new Set(onLive?.options.map((option) => option.name));
+  assert.deepEqual(onSrd.options.map((option) => option.name).filter((name) => !liveOptions.has(name)), [], "no SRD option is missing");
+});
+
+test("live catalog: record kind: a Fighter 5 and a Wizard 3 saved on the integrated catalog have the same class features on the SRD Baseline", { skip: SKIP }, () => {
+  for (const name of ["Fighter 5 Champion with Grappler", "Wizard 3 Evocation"]) {
+    assert.deepEqual(featureNamesOf(RECORD_KIND_PHB[name], srdBaseline, ["Class"]), featureNamesOf(RECORD_KIND_PHB[name], live!.compendium, ["Class"]), `${name}: class features`);
+  }
+});
+
+// The integrated School of Evocation print lists its own name twice (at levels 2 and 3); the SRD record lists it once. Each feature
+// name is compared once, so the subclass test reads the same features on both catalogs.
+const uniqueNames = (names: string[]): string[] => [...new Set(names)];
+
+test("live catalog: record kind: a Champion and an Evocation subclass saved on the SRD Baseline give their subclass features on the integrated catalog", { skip: SKIP }, () => {
+  for (const name of ["Fighter 5 Champion with Grappler", "Wizard 3 Evocation"]) {
+    assert.deepEqual(uniqueNames(featureNamesOf(RECORD_KIND_SRD[name], live!.compendium, ["Subclass"])), uniqueNames(featureNamesOf(RECORD_KIND_SRD[name], srdBaseline, ["Subclass"])), `${name}: subclass features`);
+  }
+});
+
+test("live catalog: record kind: a Champion and an Evocation subclass saved on the integrated catalog give their subclass features on the SRD Baseline", { skip: SKIP }, () => {
+  for (const name of ["Fighter 5 Champion with Grappler", "Wizard 3 Evocation"]) {
+    assert.deepEqual(uniqueNames(featureNamesOf(RECORD_KIND_PHB[name], srdBaseline, ["Subclass"])), uniqueNames(featureNamesOf(RECORD_KIND_PHB[name], live!.compendium, ["Subclass"])), `${name}: subclass features`);
+  }
+});
+
+test("live catalog: record kind: an Acolyte saved on the SRD Baseline gives its background and background feature on the integrated catalog", { skip: SKIP }, () => {
+  const character = RECORD_KIND_SRD["Cleric 1 Life with Acolyte"];
+  const onSrd = evaluateCharacter(character, { compendium: srdBaseline, activeBooks: RECORD_KIND_BOOKS });
+  const onLive = evaluateCharacter(character, { compendium: live!.compendium, activeBooks: RECORD_KIND_BOOKS });
+  assert.equal(onLive.resolvedBackground?.name, onSrd.resolvedBackground?.name, "the background resolves to the same record name");
+  assert.deepEqual(featureNamesOf(character, live!.compendium, ["Background"]), featureNamesOf(character, srdBaseline, ["Background"]));
+  assert.deepEqual(onLive.proficiencies, onSrd.proficiencies, "the Life Domain's armor and the background's proficiencies are the same");
+});
+
+test("live catalog: record kind: an Acolyte saved on the integrated catalog gives its background feature on the SRD Baseline", { skip: SKIP }, () => {
+  const character = RECORD_KIND_PHB["Cleric 1 Life with Acolyte"];
+  const onSrd = evaluateCharacter(character, { compendium: srdBaseline, activeBooks: RECORD_KIND_BOOKS });
+  const onLive = evaluateCharacter(character, { compendium: live!.compendium, activeBooks: RECORD_KIND_BOOKS });
+  assert.equal(onSrd.resolvedBackground?.name, onLive.resolvedBackground?.name);
+  assert.deepEqual(featureNamesOf(character, srdBaseline, ["Background"]), featureNamesOf(character, live!.compendium, ["Background"]));
+});
+
+test("live catalog: record kind: a Grappler saved on the SRD Baseline, as an ability score feat or an origin feat, gives its feat feature on the integrated catalog", { skip: SKIP }, () => {
+  for (const name of ["Fighter 5 Champion with Grappler", "Fighter 1 with Grappler as an origin feat"]) {
+    assert.deepEqual(featureNamesOf(RECORD_KIND_SRD[name], live!.compendium, ["Feat"]), featureNamesOf(RECORD_KIND_SRD[name], srdBaseline, ["Feat"]), `${name}: feat features`);
+  }
+  assert.ok(featureNamesOf(RECORD_KIND_SRD["Fighter 1 with Grappler as an origin feat"], live!.compendium, ["Feat"]).includes("Feat:Grappler"));
+});
+
+test("live catalog: record kind: a Grappler saved on the integrated catalog gives its feat feature on the SRD Baseline", { skip: SKIP }, () => {
+  for (const name of ["Fighter 5 Champion with Grappler", "Fighter 1 with Grappler as an origin feat"]) {
+    assert.deepEqual(featureNamesOf(RECORD_KIND_PHB[name], srdBaseline, ["Feat"]), featureNamesOf(RECORD_KIND_PHB[name], live!.compendium, ["Feat"]), `${name}: feat features`);
+  }
+});
+
+test("live catalog: record kind: a race's skill pick and a background's language pick saved on the SRD Baseline are kept by a reconcile on the integrated catalog", { skip: SKIP }, () => {
+  const halfElf = makeChar({
+    classes: [{ className: "Fighter", source: "SRD", level: 1 }],
+    race: { name: "Half-Elf", source: "SRD" },
+    baseAbilityScores: RECORD_KIND_SCORES,
+    proficiencyPicks: { "PHB/Race/Half-Elf@0#skills:choice:any": ["Insight", "Stealth"] },
+  });
+  const acolyte = RECORD_KIND_SRD["Cleric 1 Life with Acolyte"];
+  const withLanguages = { ...acolyte, proficiencyPicks: { "PHB/Background/Acolyte@0#languages:choice:any": ["Dwarvish", "Elvish"] } };
+  for (const [character, id, names] of [
+    [halfElf, "PHB/Race/Half-Elf@0#skills:choice:any", ["Insight", "Stealth"]],
+    [withLanguages, "PHB/Background/Acolyte@0#languages:choice:any", ["Dwarvish", "Elvish"]],
+  ] as const) {
+    const reconciled = reconcile(character, live!.compendium, { activeBooks: RECORD_KIND_BOOKS });
+    assert.deepEqual(reconciled.proficiencyPicks?.[id], [...names], `${id} is kept`);
+    assert.deepEqual(reconciled.needsReview ?? [], [], `${id} is not released for review`);
+  }
+});
+
+test("live catalog: record kind: a race's skill pick and a background's language pick saved on the integrated catalog are kept by a reconcile on the SRD Baseline", { skip: SKIP }, () => {
+  const halfElf = makeChar({
+    classes: [{ className: "Fighter", source: "PHB", level: 1 }],
+    race: { name: "Half-Elf", source: "PHB" },
+    baseAbilityScores: RECORD_KIND_SCORES,
+    proficiencyPicks: { "PHB/Race/Half-Elf@0#skills:choice:any": ["Insight", "Stealth"] },
+  });
+  const reconciled = reconcile(halfElf, srdBaseline, { activeBooks: RECORD_KIND_BOOKS });
+  assert.deepEqual(reconciled.proficiencyPicks?.["PHB/Race/Half-Elf@0#skills:choice:any"], ["Insight", "Stealth"]);
+  assert.deepEqual(reconciled.needsReview ?? [], []);
+});
+
+test("live catalog: record kind: a High Elf's race spell pick that is not offered is released on both catalogs when saved on the SRD Baseline", { skip: SKIP }, () => {
+  const releasedOn = (src: string, compendium: Compendium): string[] => {
+    const base = makeChar({
+      classes: [{ className: "Wizard", source: src, level: 3 }],
+      race: { name: "Elf", source: src, subraceName: "High", subraceSource: src },
+      baseAbilityScores: RECORD_KIND_SCORES,
+    });
+    const offer = raceSpellRuleChoices(base, compendium, RECORD_KIND_BOOKS)[0];
+    const entry: RuleChoiceEntry = { id: offer.id, trait: offer.traitName, origin: "race", choose: 1, from: [], picked: ["Druidcraft"] };
+    const pruned = pruneInvalidFeatSpellPicks({ ...base, ruleChoices: [entry] }, compendium, RECORD_KIND_BOOKS);
+    return [JSON.stringify(pruned.ruleChoices ?? []), ...(pruned.needsReview ?? [])];
+  };
+  const reference = releasedOn("PHB", live!.compendium);
+  assert.deepEqual(reference[1], "Druidcraft removed from High Elf: no longer offered", "the reference release is noticed");
+  assert.deepEqual(releasedOn("SRD", live!.compendium), reference, "saved on the SRD Baseline, on the integrated catalog");
+  assert.deepEqual(releasedOn("SRD", srdBaseline), releasedOn("PHB", srdBaseline), "saved on the SRD Baseline, on the SRD Baseline");
+});
+
+test("live catalog: record kind: a character saved on the SRD Baseline keeps its saved sources through every record kind's reads", { skip: SKIP }, () => {
+  for (const name of Object.keys(RECORD_KIND_SRD)) {
+    const character = RECORD_KIND_SRD[name];
+    const before = structuredClone(character);
+    evaluateCharacter(character, { compendium: live!.compendium, activeBooks: RECORD_KIND_BOOKS });
+    featureNamesOf(character, live!.compendium, ["Class", "Subclass", "Background", "Feat"]);
+    reconcile(character, live!.compendium, { activeBooks: RECORD_KIND_BOOKS });
+    assert.deepEqual(character, before, name);
+  }
 });

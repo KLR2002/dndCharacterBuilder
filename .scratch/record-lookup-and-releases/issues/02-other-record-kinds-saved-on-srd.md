@@ -1,6 +1,8 @@
 # 02: Other record kinds saved on the SRD
 
-**Status:** ready-for-agent
+**Status:** done
+
+**Landed:** probed class, subclass, background and feat records saved with source "SRD" on both catalogs. Already fine: class features, hit points and Fighting Style. Fixed through the shared record lookup: subclass features, background feature and record, feat features, race and background skill/language pick ownership, race spell pick release, race grant records. check:all and check:live (133/133) green. Open: subclass spells on the SRD Baseline (`getSubclassSpells` checks the subclass source against the active books, and "SRD" is never one; not fixed, needs a rule for admitting Baseline records); feat spell picks on an SRD-saved feat unprobed (the SRD has no spell feat); callers without activeBooks still resolve a name to the first catalog record; Fighting Style ids hard-code PHB.
 
 Spec: `.scratch/record-lookup-and-releases/spec.md`.
 
@@ -14,9 +16,9 @@ Probe the other record kinds a character saves with a source: class, subclass, b
 
 ## Acceptance Criteria
 
-- [ ] For each of class, subclass, background and feat, a character saved with source "SRD" has the same sheet (proficiencies, features, hit points, spells, skills, choices) under the integrated catalog as under the SRD, or the break is fixed and pinned (AC-4).
-- [ ] The report lists each kind as already fine or fixed.
-- [ ] `npm run check:all` and `npm run check:live` pass.
+- [x] For each of class, subclass, background and feat, a character saved with source "SRD" has the same sheet (proficiencies, features, hit points, spells, skills, choices) under the integrated catalog as under the SRD, or the break is fixed and pinned (AC-4).
+- [x] The report lists each kind as already fine or fixed.
+- [x] `npm run check:all` and `npm run check:live` pass.
 
 ## Verification
 

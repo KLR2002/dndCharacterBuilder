@@ -75,12 +75,12 @@ export function reconcile(
   updated = pruneInvalidInfusions(updated, compendium);
   updated = moveAliasedProficiencyPicks(updated, compendium);
   updated = moveLegacyClassToolPicks(updated, compendium);
-  updated = moveLegacySourcePicks(updated, compendium);
-  updated = moveLegacySkillPicks(updated, compendium);
-  updated = moveExpertisePicksToGrants(updated, compendium);
+  updated = moveLegacySourcePicks(updated, compendium, options.activeBooks);
+  updated = moveLegacySkillPicks(updated, compendium, options.activeBooks);
+  updated = moveExpertisePicksToGrants(updated, compendium, options.activeBooks);
   updated = dropLegacyMulticlassSkillEntries(updated);
   updated = dropLegacyBackgroundSkills(updated, compendium, options.activeBooks);
-  updated = pruneInvalidProficiencyPicks(updated, compendium);
+  updated = pruneInvalidProficiencyPicks(updated, compendium, options.activeBooks);
   updated = pruneInvalidFeatSpellPicks(updated, compendium, options.activeBooks);
   updated = pruneReleasedFeatCounters(updated, compendium, options.activeBooks);
   updated = moveLegacyInnateCounters(updated, compendium, options.activeBooks);

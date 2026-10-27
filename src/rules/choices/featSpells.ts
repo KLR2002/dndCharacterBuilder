@@ -7,6 +7,7 @@ import { withNotices } from "../needsReview.ts";
 import { totalLevel } from "../proficiencies.ts";
 import { isSpellAvailableForClass } from "../spellcasting.ts";
 import { resolveSpellName } from "../subclassSpells.ts";
+import { findHeldRecord, heldRaceListed } from "../raceLookup.ts";
 import type { AvailableRuleChoice, RuleChoiceOrigin } from "./types.ts";
 
 /**
@@ -664,27 +665,20 @@ export function isGrantSpellChoiceId(id: string): boolean {
 }
 
 /**
- * The record of a name the saved source names, or else the record of that name whatever book holds it. A race saved on the SRD
- * Baseline is still the race when the integrated catalog, which has no SRD record, is the one loaded.
- */
-function recordNamed<T extends { name: string; source: string }>(records: readonly T[], name: string, source?: string): T | undefined {
-  return records.find((r) => r.name === name && r.source === source) ?? records.find((r) => r.name === name);
-}
-
-/**
  * The race or subrace whose spell grant the character has, read from the catalog. A subrace whose grants are read replaces the
  * race's, as its trait takes the place of the race's Innate Magic. Only the grants whose gate is open are read (see
- * grantGateOpen). Undefined when neither gives spells the character reads.
+ * grantGateOpen). Undefined when neither gives spells the character reads. The race is resolved by the shared lookup, scoped to
+ * `activeBooks` when given.
  */
-export function raceGrantsOf(character: Character, races: RaceData[]): RaceGrants | undefined {
+export function raceGrantsOf(character: Character, races: RaceData[], activeBooks?: readonly string[]): RaceGrants | undefined {
   // A lineage replacement stands in for the race, as the catalog resolves it.
   const lineage = character.lineageReplacement ? races.find((r) => r.name === character.lineageReplacement) : undefined;
   if (lineage) return openRaceGrants(character, raceOwner(lineage), lineage.additionalSpells);
 
   const choice = character.race;
   if (!choice) return undefined;
-  const race = recordNamed(races, choice.name, choice.source);
-  const subrace = race?.subraces ? recordNamed(race.subraces, choice.subraceName ?? "", choice.subraceSource) : undefined;
+  const race = findHeldRecord(races, choice, activeBooks);
+  const subrace = race?.subraces ? findHeldRecord(race.subraces, { name: choice.subraceName ?? "", source: choice.subraceSource }, activeBooks) : undefined;
   const subraceGrants = subrace ? openRaceGrants(character, raceOwner(subrace), subrace.additionalSpells) : undefined;
   if (subraceGrants) return subraceGrants;
   return race ? openRaceGrants(character, raceOwner(race), race.additionalSpells) : undefined;
@@ -708,12 +702,12 @@ export function grantGateOpen(character: Character, grant: AdditionalSpells): bo
 }
 
 /** Every owner of spell grants the character holds: the given feats (with their records) and its race or subrace. */
-function heldGrantsOf(character: Character, heldFeats: FeatData[], races: RaceData[]): HeldGrants[] {
+function heldGrantsOf(character: Character, heldFeats: FeatData[], races: RaceData[], activeBooks?: readonly string[]): HeldGrants[] {
   const held: HeldGrants[] = [];
   for (const feat of heldFeats) {
     if (feat.additionalSpells) held.push({ owner: featOwner(feat), grants: feat.additionalSpells, feat });
   }
-  const race = raceGrantsOf(character, races);
+  const race = raceGrantsOf(character, races, activeBooks);
   if (race) held.push({ owner: race.owner, grants: race.grants });
   return held;
 }
@@ -854,27 +848,24 @@ export function releaseSupersededRacePicks(before: Character, next: Character): 
 }
 
 /**
- * Whether the catalog holds a feat or race record of a source book. A book it holds no such record of is not loaded: the catalog
- * cannot say that a record of that book is gone, so the reconciler releases nothing the book owns. An owner with no recorded
- * book counts as loaded while the catalog holds any record of its kind.
+ * Whether the catalog holds a feat record of a source book. A book it holds no such record of is not loaded: the catalog cannot
+ * say that a record of that book is gone, so the reconciler releases nothing the book owns. An undefined source counts as
+ * loaded while the catalog holds any feat.
  */
-function bookLoadedFor(kind: "feat" | "race", source: string | undefined, listings: CompendiumListings): boolean {
-  // A race's books are its own and its subraces' books: a subrace's grant is owned by the subrace's book.
-  const books: string[] = kind === "feat"
-    ? listings.feats().map((feat) => feat.source)
-    : listings.races().flatMap((race) => [race.source, ...(race.subraces ?? []).map((subrace) => subrace.source)]);
+function bookLoadedFor(source: string | undefined, listings: CompendiumListings): boolean {
+  const books: string[] = listings.feats().map((feat) => feat.source);
   if (source === undefined) return books.length > 0;
   return books.includes(source);
 }
 
 /**
  * Whether the book of the owner of a Rule Choice id is loaded (see bookLoadedFor). A feat's book is the id's source. A race's
- * id names no book, so its book is the one the character's race was picked from.
+ * id names no book, so the race is loaded when the catalog holds the race the character holds (see heldRaceListed).
  */
 function ownerBookLoaded(id: string, listings: CompendiumListings, character: Character): boolean {
   const [source, mark] = id.split("__");
-  if (mark === OWNER_MARK.race) return bookLoadedFor("race", character.race?.subraceSource ?? character.race?.source, listings);
-  return bookLoadedFor("feat", source, listings);
+  if (mark === OWNER_MARK.race) return heldRaceListed(character.race, listings.races());
+  return bookLoadedFor(source, listings);
 }
 
 /**
@@ -888,7 +879,7 @@ export function pruneInvalidFeatSpellPicks(character: Character, compendium: Com
   if (!entries.some((entry) => isGrantSpellChoiceId(entry.id))) return character;
 
   const listings = compendium.for();
-  const held = heldGrantsOf(character, candidateFeatsOf(character, listings.feats()), listings.races());
+  const held = heldGrantsOf(character, candidateFeatsOf(character, listings.feats()), listings.races(), activeBooks);
   const heldKeys = new Set(held.map(({ owner }) => ownerKey(owner)));
   // The offered options of each pick the character's owners still make, keyed by the choice id.
   const valid = new Map<string, string[] | undefined>();
@@ -975,7 +966,7 @@ export function pruneReleasedFeatCounters(character: Character, compendium: Comp
     const heldFeat = held.get(featSlug);
     if (!heldFeat) {
       const book = bookOf.get(featSlug);
-      if (book !== undefined && !bookLoadedFor("feat", book, listings)) continue;
+      if (book !== undefined && !bookLoadedFor(book, listings)) continue;
       const catalogName = listings.feats().find((feat) => slugOf(feat.name) === featSlug)?.name;
       notices.push(catalogName
         ? `${counterName} removed from ${catalogName}: feat no longer held`

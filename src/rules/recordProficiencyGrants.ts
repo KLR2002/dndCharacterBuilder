@@ -3,6 +3,7 @@ import type { BackgroundData, ProficiencyGrant, RaceData, SubraceData } from "..
 import { sourceRecordGrants } from "./proficiencyPools.ts";
 import { ruleChoiceId } from "./choices/types.ts";
 import { isCustomBackground } from "./customBackground.ts";
+import { findHeldRecord } from "./raceLookup.ts";
 
 /**
  * The race, subrace and background a character holds, each with the tool, language and skill grants its record
@@ -77,28 +78,21 @@ export function subracePickApplies(
 export function heldSubraceOf(race: RaceData, character: Pick<Character, "race">): SubraceData | undefined {
   const held = character.race;
   if (!held?.subraceName) return undefined;
-  return recordNamed(race.subraces ?? [], held.subraceName, held.subraceSource);
-}
-
-/** The record with this name, from this source when one is named and the name alone when it is not found there. Names match without case. */
-function recordNamed<T extends { name: string; source: string }>(records: readonly T[], name: string, source?: string): T | undefined {
-  const wanted = name.toLowerCase();
-  const named = (r: T) => r.name.toLowerCase() === wanted;
-  return records.find((r) => named(r) && (!source || r.source === source)) ?? records.find(named);
+  return findHeldRecord(race.subraces ?? [], { name: held.subraceName, source: held.subraceSource });
 }
 
 /**
  * The tool, language and skill grant sources of the race, subrace and background the character holds, in that
  * order. A lineage replacement does not change them: the race is still the one chosen. A custom background
- * has no record.
+ * has no record. The records resolve by the shared record lookup, scoped to `activeBooks` when given.
  */
 export function recordGrantSources(
   character: Character,
-  catalog: { races: readonly RaceData[]; backgrounds: readonly BackgroundData[] },
+  catalog: { races: readonly RaceData[]; backgrounds: readonly BackgroundData[]; activeBooks?: readonly string[] },
 ): RecordGrantSource[] {
   const out: RecordGrantSource[] = [];
   if (character.race) {
-    const race = recordNamed(catalog.races, character.race.name, character.race.source);
+    const race = findHeldRecord(catalog.races, character.race, catalog.activeBooks);
     const subrace = race ? heldSubraceOf(race, character) : undefined;
     const raceGrants = race
       ? sourceRecordGrants(race.grants).filter((grant) => raceSkillPickApplies(race, subrace, character, grant))
@@ -110,7 +104,7 @@ export function recordGrantSources(
     }
   }
   const background = character.background && !isCustomBackground(character.background)
-    ? recordNamed(catalog.backgrounds, character.background.name, character.background.source)
+    ? findHeldRecord(catalog.backgrounds, character.background, catalog.activeBooks)
     : undefined;
   const backgroundGrants = sourceRecordGrants(background?.grants);
   if (background && backgroundGrants.length > 0) {
