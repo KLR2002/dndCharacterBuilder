@@ -525,6 +525,44 @@ function grantedSpellsCharacter() {
   });
 }
 
+// A level 8 Wizard holding a feat whose prepared group names spells: they are listed in the class list with the lock icon and
+// the feat's name as the badge (integrated mode only, since the SRD Baseline has no prepared group). The feat is invented and
+// added to the seeded integrated catalog (withPreparedGrantFeat), because the tracked snapshot holds no prepared group. Its
+// casting ability is a choice the feat's prepared spells ignore, so the Spells tab shows no ability for it.
+const PREPARED_ID = "char_prepared";
+const PREPARED_ROUTE = `/character/${PREPARED_ID}`;
+const PREPARED_FEAT = "Wardwright Mark of Lasting Layout";
+function preparedGrantCharacter() {
+  return makeChar({
+    id: PREPARED_ID,
+    name: "Oriel",
+    createdAt: 13,
+    updatedAt: 13,
+    startingOption: "equipment",
+    race: { name: "Human", source: catalogSource("races", "Human") },
+    background: { name: "Acolyte", source: catalogSource("backgrounds", "Acolyte") },
+    classes: [{ className: "Wizard", source: catalogSource("classes", "Wizard"), level: 8 }],
+    currentHp: 40,
+    startingGrantsApplied: true,
+    backgroundGrantsApplied: true,
+    asiSelections: [{ level: 4, className: "Wizard", classLevel: 4, type: "feat", featName: PREPARED_FEAT, featSource: "PHB" }],
+  });
+}
+
+// The integrated catalog with the invented prepared-group feat added. Its books are the default-active PHB, so it needs no
+// book switched on. The spells it names are in the tracked snapshot: one at once, and one from character level 3.
+function withPreparedGrantFeat(collections) {
+  const feat = {
+    name: PREPARED_FEAT,
+    source: "PHB",
+    prerequisite: null,
+    abilityScoreIncrease: null,
+    description: "Placeholder description for the feat.",
+    additionalSpells: [{ ability: { choose: ["int", "wis", "cha"] }, prepared: { _: ["Shield", "Detect Magic"], 3: ["Misty Step"] } }],
+  };
+  return { ...collections, feats: [...collections.feats, feat] };
+}
+
 // Level 1 Fighters for the equipment card. The unpicked one has no picks, so Claim Starting Equipment is disabled. The
 // picked one has a pick in every slot (chain mail, a martial weapon and a shield, a light crossbow, a dungeoneer's pack),
 // so Claim is enabled, and its martial weapon picker is the one a screen opens.
@@ -680,6 +718,7 @@ function buildSeed() {
       ...(INTEGRATED ? [magicInitiateCharacter(), highElfCharacter()] : []),
       ...(INTEGRATED ? [backgroundFeatCharacter()] : []),
       grantedSpellsCharacter(),
+      ...(INTEGRATED ? [preparedGrantCharacter()] : []),
       ...(INTEGRATED ? [clericCharacter({ id: CLERIC_ID, name: "Corwin", domain: false })] : []),
       clericCharacter({ id: CLERIC_DOMAIN_ID, name: "Ysolde", domain: true }),
       INTEGRATED ? knowledgeClericCharacter() : multiclassSkillCharacter(),
@@ -692,7 +731,7 @@ function buildSeed() {
       // SCC is switched on for Strixhaven Initiate, which the Spells tab scenario holds.
       activeResourceBooks: INTEGRATED ? [...new Set([...defaults.activeResourceBooks, "MM", "AAG", "SCC"])] : defaults.activeResourceBooks,
     },
-    integrated: INTEGRATED ? integratedCollections(ROOT) : null,
+    integrated: INTEGRATED ? withPreparedGrantFeat(integratedCollections(ROOT)) : null,
   };
 }
 
@@ -869,6 +908,19 @@ const SCREENS = [
       fitsWidth: true,
     },
   },
+  // A feat's prepared spells in the Wizard's class list: the lock icon, and the feat's name as the badge (integrated mode only).
+  ...(INTEGRATED
+    ? [
+        {
+          name: "Spells prepared grant class list",
+          route: PREPARED_ROUTE,
+          tabs: ["Spells"],
+          ready: /add spells/i,
+          scrollTo: "Misty Step",
+          expect: { texts: ["Shield", "Detect Magic", "Misty Step", PREPARED_FEAT], absent: ["Needs review"], fitsWidth: true },
+        },
+      ]
+    : []),
   { name: "Inventory", route: WIZARD_ROUTE, tabs: ["Inventory"], ready: /total wealth/i },
   { name: "Features", route: RENDAR_ROUTE, tabs: ["Features"], ready: /resource trackers/i },
   { name: "Journal", route: RENDAR_ROUTE, tabs: ["Journal"], ready: /character name/i },
