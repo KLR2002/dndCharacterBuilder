@@ -525,13 +525,15 @@ function grantedSpellsCharacter() {
   });
 }
 
-// A level 8 Wizard holding a feat whose prepared group names spells: they are listed in the class list with the lock icon and
-// the feat's name as the badge (integrated mode only, since the SRD Baseline has no prepared group). The feat is invented and
-// added to the seeded integrated catalog (withPreparedGrantFeat), because the tracked snapshot holds no prepared group. Its
-// casting ability is a choice the feat's prepared spells ignore, so the Spells tab shows no ability for it.
+// A level 8 Wizard holding two feats whose prepared groups name spells (integrated mode only, since the SRD Baseline has no
+// prepared group). The feats are invented and added to the seeded integrated catalog (withPreparedGrantFeat), because the
+// tracked snapshot holds no prepared group. The first is a plain group: its spells are listed in the class list with the lock
+// icon and the feat's name as the badge. The second names a casting ability and gives daily casts, so it is Innate Magic: a
+// card with the ability the player picked, its at-will spell, and its daily spell on a Long Rest counter.
 const PREPARED_ID = "char_prepared";
 const PREPARED_ROUTE = `/character/${PREPARED_ID}`;
 const PREPARED_FEAT = "Wardwright Mark of Lasting Layout";
+const PREPARED_CARD_FEAT = "Wardwright Mark of Ember";
 function preparedGrantCharacter() {
   return makeChar({
     id: PREPARED_ID,
@@ -545,22 +547,45 @@ function preparedGrantCharacter() {
     currentHp: 40,
     startingGrantsApplied: true,
     backgroundGrantsApplied: true,
-    asiSelections: [{ level: 4, className: "Wizard", classLevel: 4, type: "feat", featName: PREPARED_FEAT, featSource: "PHB" }],
+    asiSelections: [
+      { level: 4, className: "Wizard", classLevel: 4, type: "feat", featName: PREPARED_FEAT, featSource: "PHB" },
+      { level: 8, className: "Wizard", classLevel: 8, type: "feat", featName: PREPARED_CARD_FEAT, featSource: "PHB" },
+    ],
+    ruleChoices: [
+      {
+        id: `PHB__Feat Spells__${PREPARED_CARD_FEAT}__Casting Ability`,
+        trait: `${PREPARED_CARD_FEAT} Casting Ability`,
+        origin: "feat",
+        choose: 1,
+        from: ["int", "wis", "cha"],
+        picked: ["int"],
+      },
+    ],
   });
 }
 
-// The integrated catalog with the invented prepared-group feat added. Its books are the default-active PHB, so it needs no
-// book switched on. The spells it names are in the tracked snapshot: one at once, and one from character level 3.
+// The integrated catalog with the invented prepared-group feats added. Their books are the default-active PHB, so they need no
+// book switched on. The spells they name are in the tracked snapshot.
 function withPreparedGrantFeat(collections) {
-  const feat = {
+  const plain = {
     name: PREPARED_FEAT,
     source: "PHB",
     prerequisite: null,
     abilityScoreIncrease: null,
     description: "Placeholder description for the feat.",
-    additionalSpells: [{ ability: { choose: ["int", "wis", "cha"] }, prepared: { _: ["Shield", "Detect Magic"], 3: ["Misty Step"] } }],
+    additionalSpells: [{ prepared: { _: ["Shield", "Detect Magic"], 3: ["Misty Step"] } }],
   };
-  return { ...collections, feats: [...collections.feats, feat] };
+  const withCard = {
+    name: PREPARED_CARD_FEAT,
+    source: "PHB",
+    prerequisite: null,
+    abilityScoreIncrease: null,
+    description: "Placeholder description for the feat.",
+    additionalSpells: [
+      { ability: { choose: ["int", "wis", "cha"] }, prepared: { _: { will: ["Thunderwave"], daily: { "1": ["Tenser's Floating Disk"] } } } },
+    ],
+  };
+  return { ...collections, feats: [...collections.feats, plain, withCard] };
 }
 
 // Level 1 Fighters for the equipment card. The unpicked one has no picks, so Claim Starting Equipment is disabled. The
@@ -918,6 +943,20 @@ const SCREENS = [
           ready: /add spells/i,
           scrollTo: "Misty Step",
           expect: { texts: ["Shield", "Detect Magic", "Misty Step", PREPARED_FEAT], absent: ["Needs review"], fitsWidth: true },
+        },
+        // A prepared group that names its own ability: an Innate Magic card with the picked ability's stats, its at-will spell and
+        // its daily spell (the long name wraps in the card).
+        {
+          name: "Spells prepared grant card",
+          route: PREPARED_ROUTE,
+          tabs: ["Spells"],
+          ready: /add spells/i,
+          scrollTo: PREPARED_CARD_FEAT.toUpperCase(),
+          expect: {
+            texts: [PREPARED_CARD_FEAT.toUpperCase(), "INT (DC 11 / +3)", "SAVE DC", "ATTACK BONUS", "Thunderwave", "Tenser's Floating Disk"],
+            absent: ["Needs review"],
+            fitsWidth: true,
+          },
         },
       ]
     : []),
