@@ -279,6 +279,65 @@ test("reconciling against two active books that both hold a background-claimed f
   assert.deepEqual(reconciled.needsReview ?? [], [], "no notice is raised");
 });
 
+test("a background-claimed feat whose book the catalog lacks keeps its picks and counters, with no notice", () => {
+  const unloaded = inMemoryCompendium({
+    classes: grantedSpellClasses(),
+    feats: [{ name: "Sample Elsewhere", source: "SRD", prerequisite: null, abilityScoreIncrease: null, description: "Placeholder description for the feat." }],
+    races: grantedSpellRaces(),
+    spells: grantedSpellSpells(),
+    backgrounds: grantedSpellBackgrounds(),
+  });
+  const character = backgroundClaimedPulseUsed();
+
+  const reconciled = reconcile(character, unloaded);
+  assert.deepEqual(reconciled.ruleChoices, character.ruleChoices, "the pick is kept");
+  assert.deepEqual(reconciled.resourceCounters, character.resourceCounters, "the counter is kept with its pick");
+  assert.deepEqual(reconciled.needsReview ?? [], character.needsReview ?? [], "no notice is raised");
+});
+
+test("removing a background-claimed feat whose book the catalog lacks keeps its pick and counter, and releases both once the book loads", () => {
+  const unloaded = inMemoryCompendium({
+    classes: grantedSpellClasses(),
+    feats: [{ name: "Sample Elsewhere", source: "SRD", prerequisite: null, abilityScoreIncrease: null, description: "Placeholder description for the feat." }],
+    races: grantedSpellRaces(),
+    spells: grantedSpellSpells(),
+    backgrounds: grantedSpellBackgrounds(),
+  });
+  const character = backgroundClaimedPulseUsed();
+
+  const removed = removeOriginFeat(character, "Sample Initiate", unloaded);
+  assert.deepEqual(removed.ruleChoices, character.ruleChoices, "the pick is kept while its book is absent");
+  assert.deepEqual(removed.resourceCounters, character.resourceCounters, "the counter is kept with its pick");
+
+  const loaded = reconcile(removed, compendium);
+  assert.deepEqual(loaded.ruleChoices ?? [], [], "the pick is released once the book is loaded");
+  assert.deepEqual(loaded.resourceCounters ?? {}, {}, "the counter is released with it");
+  assert.ok(loaded.needsReview?.includes("Innate: Sample Pulse removed from Sample Initiate: feat no longer held"));
+});
+
+/** A background-claimed Sample Initiate with its Mage list picked and its Sample Pulse counter used, in the book TST. */
+function backgroundClaimedPulseUsed(): Character {
+  const pulseCounter = featCounterId("Sample Initiate", "Sample Mage Spells", "Sample Pulse");
+  return makeChar({
+    classes: [mage(4)],
+    background: { name: "Sample Drifter", source: "TST" },
+    originFeats: [{ level: 1, type: "feat", featName: "Sample Initiate", featSource: BACKGROUND_FEAT_SOURCE }],
+    ruleChoices: [
+      {
+        id: "TST__Feat Spells__Sample Initiate__Spell List",
+        trait: "Sample Initiate Spell List",
+        origin: "feat",
+        choose: 1,
+        from: ["Sample Mage Spells", "Sample Cleric Spells"],
+        picked: ["Sample Mage Spells"],
+      },
+    ],
+    resourceCounters: {
+      [pulseCounter]: { id: pulseCounter, name: "Innate: Sample Pulse", current: 0, max: 1, resetOn: "long" },
+    },
+  });
+}
+
 /** The character with its Sample Pulse counter used, as a player leaves it after a Long Rest's use. */
 function withPulseUsed(character: Character): Character {
   const pulse = initiateCard(character)?.spells.find((spell) => spell.name === "Sample Pulse");

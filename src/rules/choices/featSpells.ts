@@ -809,15 +809,15 @@ function releaseNotices(entry: RuleChoiceEntry, reason: string, races: readonly 
 
 /**
  * Whether the catalog holds a feat or race record of a source book. A book it holds no such record of is not loaded: the catalog
- * cannot say that a record of that book is gone, so the reconciler releases nothing the book owns. A background's feat has no
- * book of its own, so it counts as loaded while the catalog holds any feat.
+ * cannot say that a record of that book is gone, so the reconciler releases nothing the book owns. An owner with no recorded
+ * book counts as loaded while the catalog holds any record of its kind.
  */
 function bookLoadedFor(kind: "feat" | "race", source: string | undefined, listings: CompendiumListings): boolean {
   // A race's books are its own and its subraces' books: a subrace's grant is owned by the subrace's book.
   const books: string[] = kind === "feat"
     ? listings.feats().map((feat) => feat.source)
     : listings.races().flatMap((race) => [race.source, ...(race.subraces ?? []).map((subrace) => subrace.source)]);
-  if (source === undefined || source === BACKGROUND_FEAT_SOURCE) return books.length > 0;
+  if (source === undefined) return books.length > 0;
   return books.includes(source);
 }
 
@@ -891,8 +891,7 @@ export function pruneInvalidFeatSpellPicks(character: Character, compendium: Com
  * Releases the long-rest counters of a feat's spell that no longer holds, with a review notice for each. A counter is a feat's
  * when its id begins with the feat prefix. Its segments are the feat, then the spell list it was picked from (only when the
  * feat offers named lists), then the spell. A counter is released when its feat is no longer held, or when its list is not the
- * one the feat holds now. A feat the character selected whose book the catalog does not hold is not loaded, so its counters are
- * kept. Other counters are untouched, and a catalog that holds no feat is not loaded, so none is released.
+ * one the feat holds now. A feat whose book the catalog does not hold is not loaded, so its counters are kept. Other counters are untouched, and a catalog that holds no feat is not loaded, so none is released.
  * Returns the character itself when none is released.
  */
 export function pruneReleasedFeatCounters(character: Character, compendium: Compendium, activeBooks?: readonly string[]): Character {
@@ -909,10 +908,17 @@ export function pruneReleasedFeatCounters(character: Character, compendium: Comp
     held.set(slugOf(feat.name), { name: feat.name, list: picked?.name ? slugOf(picked.name) : undefined });
   }
 
-  // Every feat the character selected, held or not, by slug, with the book its selection names (none for a background's feat).
-  const selectedBooks = new Map<string, string | undefined>();
+  // The book of each feat the character selected or picked from, by slug. A selection names its book unless the feat is
+  // background-claimed, so that feat's picks name it: the book of the record its picks were made on.
+  const bookOf = new Map<string, string>();
   for (const selection of [...(character.asiSelections ?? []), ...(character.originFeats ?? [])]) {
-    if (selection.type === "feat" && selection.featName) selectedBooks.set(slugOf(selection.featName), selection.featSource);
+    const explicit = selection.featSource && selection.featSource !== BACKGROUND_FEAT_SOURCE ? selection.featSource : undefined;
+    if (selection.type === "feat" && selection.featName && explicit) bookOf.set(slugOf(selection.featName), explicit);
+  }
+  for (const entry of character.ruleChoices ?? []) {
+    if (!isGrantSpellChoiceId(entry.id)) continue;
+    const [source, mark, name] = entry.id.split("__");
+    if (mark === OWNER_MARK.feat && !bookOf.has(slugOf(name))) bookOf.set(slugOf(name), source);
   }
 
   const nextCounters = { ...counters };
@@ -922,7 +928,8 @@ export function pruneReleasedFeatCounters(character: Character, compendium: Comp
     const counterName = counters[key].name;
     const heldFeat = held.get(featSlug);
     if (!heldFeat) {
-      if (selectedBooks.has(featSlug) && !bookLoadedFor("feat", selectedBooks.get(featSlug), listings)) continue;
+      const book = bookOf.get(featSlug);
+      if (book !== undefined && !bookLoadedFor("feat", book, listings)) continue;
       const catalogName = listings.feats().find((feat) => slugOf(feat.name) === featSlug)?.name;
       notices.push(catalogName
         ? `${counterName} removed from ${catalogName}: feat no longer held`
