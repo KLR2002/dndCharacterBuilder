@@ -1,6 +1,8 @@
 # 02: Lineage change reconciles
 
-**Status:** ready-for-agent
+**Status:** done
+
+**Landed:** `changeLineage` releases the old lineage's race picks (with a notice) and reconciles with the active books in the same step; a held lineage's picks are no longer dropped by `changeRace`; Custom Lineage, none and swap are tested. check:all and check:live green. Open: switching Custom Lineage to none leaves the race as "Custom Lineage" (handled in the final repair).
 
 Spec: `.scratch/spells-wrap-up/spec.md`.
 
@@ -14,9 +16,9 @@ Spec: `.scratch/spells-wrap-up/spec.md`.
 
 ## Acceptance Criteria
 
-- [ ] After a lineage swap the old lineage's race picks are released with a notice in the same step (AC-5).
-- [ ] Swapping to Custom Lineage and to none is covered by tests, and picks of the new race are not released by mistake (AC-5).
-- [ ] `npm run check:all` passes.
+- [x] After a lineage swap the old lineage's race picks are released with a notice in the same step (AC-5).
+- [x] Swapping to Custom Lineage and to none is covered by tests, and picks of the new race are not released by mistake (AC-5).
+- [x] `npm run check:all` passes.
 
 ## Verification
 
