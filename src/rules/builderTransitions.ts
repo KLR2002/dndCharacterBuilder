@@ -264,6 +264,30 @@ export function changeRace(
   return releaseExpandedOnlySpells(character, reconciled, compendium, activeBooks);
 }
 
+/** The lineage a character takes in place of its race: none, the Custom Lineage, or a named lineage. */
+export type LineageChoice = { kind: "none" } | { kind: "custom" } | { kind: "lineage"; name: string };
+
+/**
+ * Replaces the character's lineage with the one chosen, or with none. The spells only the old lineage's expanded list gave are
+ * released, with a notice (ADR 0017).
+ */
+export function changeLineage(
+  character: Character,
+  lineage: LineageChoice,
+  compendium: Compendium = currentCompendium(),
+  activeBooks?: string[]
+): Character {
+  const changed: Character =
+    lineage.kind === "custom"
+      ? { ...character, customLineage: true, lineageReplacement: null, race: { name: "Custom Lineage", source: "TCE" } }
+      : {
+          ...character,
+          customLineage: false,
+          lineageReplacement: lineage.kind === "lineage" ? lineage.name : null,
+        };
+  return releaseExpandedOnlySpells(character, changed, compendium, activeBooks);
+}
+
 /**
  * Sets a class's subclass. Tears down the previous subclass's dependents, unlearns the spells the
  * caller has confirmed as orphaned (matched by name), then reconciles.
@@ -378,7 +402,9 @@ export function removeClassLevel(
     );
   }
 
-  return reconcile({ ...updated, classes: updatedClasses }, compendium, { activeBooks });
+  // The spells only a held expanded list gave a class that no longer casts are released, with a notice (ADR 0017).
+  const reconciled = reconcile({ ...updated, classes: updatedClasses }, compendium, { activeBooks });
+  return releaseExpandedOnlySpells(character, reconciled, compendium, activeBooks);
 }
 
 export const STARTING_GOLD_BY_CLASS: Record<string, number> = {

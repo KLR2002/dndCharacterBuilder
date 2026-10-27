@@ -59,6 +59,15 @@ const subrace = (name: string, raceName: string, extra: Partial<SubraceData>): S
   ...extra,
 });
 
+/**
+ * Two invented lineages. Sample Lineage A lists Sample Warding and Sample Ward; Sample Lineage B lists only Sample Ward, so a
+ * swap from A to B releases Sample Warding alone.
+ */
+export const expandedSpellLineages = (): RaceData[] => [
+  race("Sample Lineage A", { additionalSpells: [{ expanded: { s1: ["sample warding", "sample ward"] } }] }),
+  race("Sample Lineage B", { additionalSpells: [{ expanded: { s1: ["sample ward"] } }] }),
+];
+
 /** Sample Runekin has no spell grant of its own. Its subrace Sample Rune Line lists a third-level spell no class lists. */
 export const expandedSpellRaces = (): RaceData[] => [
   race("Sample Runekin", {

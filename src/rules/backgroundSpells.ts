@@ -1,9 +1,9 @@
-import type { AdditionalSpells, BackgroundData, SpellData } from "../types/dnd5e.ts";
+import type { AdditionalSpells, BackgroundData, ClassData, SpellData } from "../types/dnd5e.ts";
 import type { Character } from "../types/character.ts";
 import { currentCompendium, type Compendium } from "../services/compendium.ts";
 import { withNotices } from "./needsReview.ts";
 import { heldFeatsOf, raceGrantsOf, raceTitleOf } from "./choices/featSpells.ts";
-import { isSpellAvailableForClass } from "./spellcasting.ts";
+import { isCastingClass, isSpellAvailableForClass } from "./spellcasting.ts";
 import { normalizeKey, resolveSpellName } from "./subclassSpells.ts";
 
 /**
@@ -65,6 +65,16 @@ export function heldExpandedSpellNames(character: Character, compendium?: Compen
   return heldExpandedSources(character, compendium, activeBooks).flatMap((source) => source.names);
 }
 
+/** Whether the character holds a class of this name, casting or not. */
+function classNamed(character: Character, className: string): boolean {
+  return (character.classes ?? []).some((cls) => cls.className === className);
+}
+
+/** Whether the character's class of this name casts, so that the expanded lists join its list. */
+function castsIn(character: Character, className: string, classes: readonly ClassData[]): boolean {
+  return (character.classes ?? []).some((cls) => cls.className === className && isCastingClass(cls, classes));
+}
+
 /**
  * Whether the class that owns a known spell still lists it on its own list: its class list or subclass expansion, with no
  * expanded list. The owner is the class the spell's owner key names, or its class name when it has no owner key.
@@ -82,13 +92,16 @@ function listedByOwnClass(character: Character, known: { ownerKey?: string; clas
 }
 
 /**
- * Releases the known spells that only the expanded lists `before` held gave and `after` no longer gives (ADR 0017): a spell
- * on no expanded list `after` holds and on no class list of `after`. Each release is noticed, naming the spell and the source
- * it came from. A spell a class gives itself stays, and so does a name the Catalog does not hold. Its prepared key goes with
- * it. Returns `after` itself when nothing is released.
+ * Releases the known spells that only the expanded lists `before` held gave and `after` no longer gives (ADR 0017). Each release
+ * is noticed, naming the spell and the source it came from. A spell a class gives itself stays, and so does a name the Catalog
+ * does not hold. Its prepared key goes with it. Returns `after` itself when nothing is released.
  *
- * The transitions that remove a background, feat or race call this with the state before the change and the reconciled state
- * after it, so the same rule covers every source.
+ * A known copy is judged by the class that owns it. While that class still casts, the expanded lists of `after` and its own
+ * list keep the copy. Once the class has lost its casting (a level dropped below Spellcasting, or the class removed), the copy
+ * is judged by that class's own list before the change, since no expanded list joins a class that does not cast.
+ *
+ * The transitions that remove a background, feat, race or class call this with the state before the change and the reconciled
+ * state after it, so the same rule covers every source.
  */
 export function releaseExpandedOnlySpells(
   before: Character,
@@ -96,12 +109,13 @@ export function releaseExpandedOnlySpells(
   compendium: Compendium = currentCompendium(),
   activeBooks?: string[]
 ): Character {
+  const classes = compendium.for(activeBooks).classes();
   const stillListed = new Set(heldExpandedSources(after, compendium, activeBooks).flatMap((source) => source.names.map(normalizeKey)));
   const sourceOf = new Map<string, string>();
   for (const source of heldExpandedSources(before, compendium, activeBooks)) {
     for (const name of source.names) {
       const key = normalizeKey(name);
-      if (!stillListed.has(key) && !sourceOf.has(key)) sourceOf.set(key, source.title);
+      if (!sourceOf.has(key)) sourceOf.set(key, source.title);
     }
   }
   if (sourceOf.size === 0) return after;
@@ -113,7 +127,13 @@ export function releaseExpandedOnlySpells(
     const title = sourceOf.get(key);
     if (!title) return true;
     const spell = resolveSpellName(known.name, activeBooks, compendium);
-    if (!spell || listedByOwnClass(after, known, spell)) return true;
+    if (!spell) return true;
+    const ownerName = known.ownerKey?.split("__")[0] ?? known.className ?? "";
+    const ownerLost = classNamed(before, ownerName) && !castsIn(after, ownerName, classes);
+    const stays = ownerLost
+      ? listedByOwnClass(before, known, spell)
+      : stillListed.has(key) || listedByOwnClass(after, known, spell);
+    if (stays) return true;
     released.add(key);
     notices.push(`${known.name} removed: only on the ${title}'s spell list`);
     return false;

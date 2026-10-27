@@ -4,7 +4,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { AbilityKey, Character } from "../../types/character";
 import type { RaceData } from "../../types/dnd5e";
 import { featSpellChoicesOf, raceSpellRuleChoices, type AvailableRuleChoice } from "../../rules/ruleChoices";
-import { changeRace, setChoiceRacialBonus } from "../../rules/builderTransitions";
+import { changeLineage, changeRace, setChoiceRacialBonus, type LineageChoice } from "../../rules/builderTransitions";
 import { currentCompendium, srdBaselineRaces } from "../../services/compendium";
 import {
   resolveAncestryState,
@@ -547,17 +547,9 @@ export const AncestrySection: React.FC<AncestrySectionProps> = ({
                 <TouchableOpacity
                   key={opt}
                   onPress={() => {
-                    if (opt === "None") {
-                      onUpdate({ lineageReplacement: null, customLineage: false });
-                    } else if (opt === "Custom Lineage") {
-                      onUpdate({
-                        customLineage: true,
-                        lineageReplacement: null,
-                        race: { name: "Custom Lineage", source: "TCE" },
-                      });
-                    } else {
-                      onUpdate({ lineageReplacement: opt, customLineage: false });
-                    }
+                    const choice: LineageChoice =
+                      opt === "None" ? { kind: "none" } : opt === "Custom Lineage" ? { kind: "custom" } : { kind: "lineage", name: opt };
+                    onUpdate((prev) => changeLineage(prev, choice, currentCompendium(), activeBooks));
                   }}
                   style={[
                     styles.lineageChip,
