@@ -2,6 +2,7 @@ import React from "react";
 import { Text, TouchableOpacity, View } from "react-native";
 import type { Character } from "../../types/character";
 import { pickRuleChoice, type AvailableRuleChoice } from "../../rules/ruleChoices";
+import { currentCompendium } from "../../services/compendium";
 import { builderStyles as styles } from "./builderStyles";
 
 export interface GrantedSpellPicksProps {
@@ -10,13 +11,14 @@ export interface GrantedSpellPicksProps {
   choices: AvailableRuleChoice[];
   onUpdate: (updater: (cur: Character) => Character) => void;
   theme: any;
+  activeBooks?: string[];
 }
 
 /**
  * The spell picks a granted spell source asks for: a feat's spell list when it offers several, then the spells of the list the
  * player chose, and a casting ability the player chooses. Each tap saves the pick as a rule choice. Renders nothing without picks.
  */
-export const GrantedSpellPicks: React.FC<GrantedSpellPicksProps> = ({ character, choices, onUpdate, theme }) => {
+export const GrantedSpellPicks: React.FC<GrantedSpellPicksProps> = ({ character, choices, onUpdate, theme, activeBooks }) => {
   if (choices.length === 0) return null;
 
   return (
@@ -34,7 +36,7 @@ export const GrantedSpellPicks: React.FC<GrantedSpellPicksProps> = ({ character,
                 return (
                   <TouchableOpacity
                     key={opt.name}
-                    onPress={() => onUpdate((cur) => pickRuleChoice(cur, choice, opt.name))}
+                    onPress={() => onUpdate((cur) => pickRuleChoice(cur, choice, opt.name, currentCompendium(), activeBooks))}
                     hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                     style={[
                       styles.choiceChip,

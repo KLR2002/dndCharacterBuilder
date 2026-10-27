@@ -239,7 +239,13 @@ export function applyAncestrySelection(
   };
 
   // The spells only the old race's or subrace's expanded lists gave are released, with a notice (ADR 0017).
-  return releaseExpandedOnlySpells(character, reconcile(releaseSupersededRacePicks(character, cleaned), compendium), compendium);
+  const activeBooks = catalogs?.activeBooks;
+  return releaseExpandedOnlySpells(
+    character,
+    reconcile(releaseSupersededRacePicks(character, cleaned), compendium, { activeBooks }),
+    compendium,
+    activeBooks
+  );
 }
 
 export function applyAncestryChoice(
@@ -257,7 +263,7 @@ export function applyAncestryChoice(
   const choice = choices.find((c) => c.id === choiceId);
   if (!choice) return character;
 
-  return pickRuleChoice(character, choice, option, catalogs?.compendium);
+  return pickRuleChoice(character, choice, option, catalogs?.compendium, catalogs?.activeBooks);
 }
 
 export function clearAncestryChoice(character: Character, choiceId: string, catalogs?: CharacterCatalogs): Character {

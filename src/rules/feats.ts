@@ -144,13 +144,15 @@ export function validateFeatPrerequisites(
 /**
  * Adds an origin feat, or replaces the one named by `oldFeatName`, then reconciles so that the
  * choices the replaced feat granted (e.g. Fighting Initiate's style) are pruned with a review notice.
- * The spells only the replaced feat's expanded list gave are released too (ADR 0017).
+ * The spells only the replaced feat's expanded list gave are released too (ADR 0017). `activeBooks` scopes the reconcile and the
+ * release to the books now active; omitted, they are unscoped.
  */
 export function applyOriginFeat(
   character: Character,
   selection: AsiSelection,
   oldFeatName?: string,
-  compendium: Compendium = currentCompendium()
+  compendium: Compendium = currentCompendium(),
+  activeBooks?: string[]
 ): Character {
   const current = character.originFeats || [];
   const targetName = (oldFeatName || selection.featName)?.toLowerCase();
@@ -163,8 +165,9 @@ export function applyOriginFeat(
   }
   return releaseExpandedOnlySpells(
     character,
-    reconcile({ ...character, originFeats: updated }, compendium),
-    compendium
+    reconcile({ ...character, originFeats: updated }, compendium, { activeBooks }),
+    compendium,
+    activeBooks
   );
 }
 
@@ -176,24 +179,33 @@ export function grantBackgroundFeat(
   character: Character,
   featName: string,
   featAbility?: AbilityKey,
-  compendium: Compendium = currentCompendium()
+  compendium: Compendium = currentCompendium(),
+  activeBooks?: string[]
 ): Character {
-  return applyOriginFeat(character, { level: 1, type: "feat", featName, featSource: BACKGROUND_FEAT_SOURCE, featAbility }, undefined, compendium);
+  return applyOriginFeat(
+    character,
+    { level: 1, type: "feat", featName, featSource: BACKGROUND_FEAT_SOURCE, featAbility },
+    undefined,
+    compendium,
+    activeBooks
+  );
 }
 
 /** Removes an origin feat by name, then reconciles the choices that feat granted. */
 export function removeOriginFeat(
   character: Character,
   featName: string,
-  compendium: Compendium = currentCompendium()
+  compendium: Compendium = currentCompendium(),
+  activeBooks?: string[]
 ): Character {
   const current = character.originFeats || [];
   const updated = current.filter(s => s.featName?.toLowerCase() !== featName.toLowerCase());
   // The spells only the feat's expanded list gave are released, with a notice (ADR 0017).
   return releaseExpandedOnlySpells(
     character,
-    reconcile({ ...character, originFeats: updated }, compendium),
-    compendium
+    reconcile({ ...character, originFeats: updated }, compendium, { activeBooks }),
+    compendium,
+    activeBooks
   );
 }
 

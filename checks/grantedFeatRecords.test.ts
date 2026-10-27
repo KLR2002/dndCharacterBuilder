@@ -1,10 +1,13 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { BACKGROUND_FEAT_SOURCE } from "../src/constants/rules.ts";
-import { featSpellRuleChoices, heldFeatsOf } from "../src/rules/choices/featSpells.ts";
+import { featCounterId, featSpellRuleChoices, heldFeatsOf } from "../src/rules/choices/featSpells.ts";
 import { pickRuleChoice } from "../src/rules/ruleChoices.ts";
 import { reconcile } from "../src/rules/characterReconciler.ts";
 import { migrateCharacter } from "../src/rules/migrateCharacter.ts";
+import { applyOriginFeat } from "../src/rules/feats.ts";
+import { applyAsiSelection } from "../src/rules/leveling.ts";
+import { changeRace } from "../src/rules/builderTransitions.ts";
 import type { Character, CharacterClass } from "../src/types/character.ts";
 import type { FeatData } from "../src/types/dnd5e.ts";
 import type { AvailableRuleChoice } from "../src/rules/choices/types.ts";
@@ -96,4 +99,72 @@ test("a background book switched off keeps the pick made on the record still off
   const reconciled = reconcile(character, compendium);
   assert.deepEqual(reconciled.ruleChoices, character.ruleChoices, "the pick is kept");
   assert.deepEqual(reconciled.needsReview ?? [], [], "no notice is raised");
+});
+
+// Two records of Sample Initiate: the first book's lists the Mage and the Cleric list, the second book's only the Cleric list.
+// The background comes from the second book, so without the active books the second record is the one held.
+const twoListsCatalog = (): FeatData[] => [
+  { ...sampleInitiate, source: "TST" },
+  { ...sampleInitiate, source: "TST2", additionalSpells: (sampleInitiate.additionalSpells ?? []).filter((grant) => grant.name === "Sample Cleric Spells") },
+  ...grantedSpellFeats().filter((feat) => feat.name !== "Sample Initiate"),
+];
+
+const twoListsCompendium = inMemoryCompendium({
+  classes: grantedSpellClasses(),
+  feats: twoListsCatalog(),
+  spells: grantedSpellSpells(),
+  backgrounds: grantedSpellBackgrounds(),
+});
+
+const TWO_ACTIVE_BOOKS = ["TST", "TST2"];
+const MAGE_COUNTER = featCounterId("Sample Initiate", "Sample Mage Spells", "Sample Pulse");
+
+/** A background from the second book claims Sample Initiate. The first book's record is held, its Mage list is picked and that list's counter is used. */
+const claimedWithMageCounter = (): Character =>
+  makeChar({
+    classes: [mage(4)],
+    background: { name: "Sample Drifter", source: "TST2" },
+    originFeats: [{ level: 1, type: "feat", featName: "Sample Initiate", featSource: BACKGROUND_FEAT_SOURCE }],
+    ruleChoices: [
+      {
+        id: "TST__Feat Spells__Sample Initiate__Spell List",
+        trait: "Sample Initiate Spell List",
+        origin: "feat",
+        choose: 1,
+        from: ["Sample Mage Spells", "Sample Cleric Spells"],
+        picked: ["Sample Mage Spells"],
+      },
+    ],
+    resourceCounters: {
+      [MAGE_COUNTER]: { id: MAGE_COUNTER, name: "Innate: Sample Pulse", current: 0, max: 1, resetOn: "long" },
+    },
+  });
+
+test("applying an origin feat keeps the counter of a background-claimed feat that two active books hold, with no notice", () => {
+  const applied = applyOriginFeat(
+    claimedWithMageCounter(),
+    { level: 1, type: "feat", featName: "Sample Study", featSource: "TST" },
+    undefined,
+    twoListsCompendium,
+    TWO_ACTIVE_BOOKS,
+  );
+  assert.ok(applied.resourceCounters?.[MAGE_COUNTER], "the counter of the list held is kept");
+  assert.deepEqual(applied.needsReview ?? [], [], "no notice is raised");
+});
+
+test("changing race keeps the counter of a background-claimed feat that two active books hold, with no notice", () => {
+  const changed = changeRace(claimedWithMageCounter(), twoListsCompendium, TWO_ACTIVE_BOOKS);
+  assert.ok(changed.resourceCounters?.[MAGE_COUNTER], "the counter of the list held is kept");
+  assert.deepEqual(changed.needsReview ?? [], [], "no notice is raised");
+});
+
+test("applying an ability score increase keeps the counter of a background-claimed feat that two active books hold, with no notice", () => {
+  const applied = applyAsiSelection(
+    claimedWithMageCounter(),
+    { level: 4, type: "feat", featName: "Sample Study", featSource: "TST" },
+    twoListsCompendium,
+    TWO_ACTIVE_BOOKS,
+  );
+  assert.ok(applied.resourceCounters?.[MAGE_COUNTER], "the counter of the list held is kept");
+  assert.deepEqual(applied.needsReview ?? [], [], "no notice is raised");
 });

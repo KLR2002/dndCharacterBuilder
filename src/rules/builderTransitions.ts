@@ -216,9 +216,10 @@ export function applyAsiWithHitPoints(
   character: Character,
   selection: AsiSelection,
   fullHealOnLevelUp: boolean,
-  compendium: Compendium = currentCompendium()
+  compendium: Compendium = currentCompendium(),
+  activeBooks?: string[]
 ): Character {
-  const picked = applyAsiSelection(character, selection, compendium);
+  const picked = applyAsiSelection(character, selection, compendium, activeBooks);
   if (!fullHealOnLevelUp) return picked;
   const followed = followRaisedMaxHp(
     { currentHp: picked.currentHp, tempHp: picked.tempHp },
@@ -237,7 +238,11 @@ export function clearRuleChoices(character: Character): Character {
  * Changes the character's race: drops the race, its ability bonuses, and its race-origin Rule
  * Choices and skill picks, then reconciles. Class-origin choices are kept.
  */
-export function changeRace(character: Character, compendium: Compendium = currentCompendium()): Character {
+export function changeRace(
+  character: Character,
+  compendium: Compendium = currentCompendium(),
+  activeBooks?: string[]
+): Character {
   // Skill picks saved in the old bucket move into their choices while the race is still held. A pick no choice
   // takes is the race's legacy entry, and it goes with the race.
   const migrated = moveLegacySkillPicks(character, compendium);
@@ -253,10 +258,11 @@ export function changeRace(character: Character, compendium: Compendium = curren
       skillChoices: (migrated.skillChoices || []).filter((sc) => sc.origin !== "race"),
       chosenSkills: (migrated.chosenSkills || []).filter((s) => !oldRacePicks.has(normalizeSkillName(s))),
     },
-    compendium
+    compendium,
+    { activeBooks }
   );
   // The spells only the old race's expanded lists gave are released, with a notice (ADR 0017).
-  return releaseExpandedOnlySpells(character, reconciled, compendium);
+  return releaseExpandedOnlySpells(character, reconciled, compendium, activeBooks);
 }
 
 /**

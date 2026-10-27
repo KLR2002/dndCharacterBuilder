@@ -906,7 +906,7 @@ export const SpellsTab: React.FC = () => {
   };
 
   const removeSpellFromCharacter = (name: string, source: string, ownerKey?: string) => {
-    const next = forgetSpellRule(currentCharacter, currentProfile, { name, source, ownerKey }, currentCompendium());
+    const next = forgetSpellRule(currentCharacter, currentProfile, { name, source, ownerKey }, currentCompendium(), activeBooks);
     updateCharacter(currentCharacter.id, next);
   };
 

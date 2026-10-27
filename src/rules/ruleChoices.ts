@@ -222,7 +222,8 @@ export function pickRuleChoice(
   character: Character,
   choice: AvailableRuleChoice,
   option: string,
-  compendium: Compendium = currentCompendium()
+  compendium: Compendium = currentCompendium(),
+  activeBooks?: string[]
 ): Character {
   const recorded =
     choice.pick === "fightingStyle"
@@ -240,5 +241,5 @@ export function pickRuleChoice(
           choice.choose,
           choice.origin
         );
-  return reconcile(recorded, compendium);
+  return reconcile(recorded, compendium, { activeBooks });
 }

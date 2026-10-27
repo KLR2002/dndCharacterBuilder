@@ -302,7 +302,9 @@ export const BackgroundSection: React.FC<BackgroundSectionProps> = ({
                                 variant="ghost"
                                 size="sm"
                                 onPress={() => {
-                                  onUpdate((cur) => removeOriginFeat(cur, bgOriginFeat.featName || ""));
+                                  onUpdate((cur) =>
+                                    removeOriginFeat(cur, bgOriginFeat.featName || "", catalogs.compendium ?? currentCompendium(), catalogs.activeBooks)
+                                  );
                                 }}
                               />
                             </View>
@@ -324,7 +326,13 @@ export const BackgroundSection: React.FC<BackgroundSectionProps> = ({
                                           key={ab}
                                           onPress={() => {
                                             onUpdate((cur) =>
-                                              applyOriginFeat(cur, { ...bgOriginFeat, featAbility: ab })
+                                              applyOriginFeat(
+                                                cur,
+                                                { ...bgOriginFeat, featAbility: ab },
+                                                undefined,
+                                                catalogs.compendium ?? currentCompendium(),
+                                                catalogs.activeBooks
+                                              )
                                             );
                                           }}
                                           style={[
@@ -362,6 +370,7 @@ export const BackgroundSection: React.FC<BackgroundSectionProps> = ({
                                 catalogs.activeBooks
                               )}
                               onUpdate={onUpdate}
+                              activeBooks={catalogs.activeBooks}
                               theme={theme}
                             />
                           </View>
@@ -378,7 +387,9 @@ export const BackgroundSection: React.FC<BackgroundSectionProps> = ({
                                   const bonusOptions = getFeatAbilityBonusOptions(featName);
                                   const initialAbility =
                                     bonusOptions.abilities.length === 1 ? bonusOptions.abilities[0] : undefined;
-                                  onUpdate((cur) => grantBackgroundFeat(cur, featName, initialAbility));
+                                  onUpdate((cur) =>
+                                    grantBackgroundFeat(cur, featName, initialAbility, catalogs.compendium ?? currentCompendium(), catalogs.activeBooks)
+                                  );
                                 }}
                               />
                             ))}

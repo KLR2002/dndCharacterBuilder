@@ -615,7 +615,7 @@ export const ClassProgressionSection: React.FC<
                 from={choice.options.map((o) => o.name)}
                 chosen={chosen}
                 onToggle={(option) =>
-                  onUpdate((cur) => pickRuleChoice(cur, choice, option))
+                  onUpdate((cur) => pickRuleChoice(cur, choice, option, currentCompendium(), activeBooks))
                 }
                 onClear={() => handleClearChoice(choice)}
                 chipTag={chipTag}

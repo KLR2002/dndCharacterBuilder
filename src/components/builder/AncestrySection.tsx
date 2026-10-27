@@ -220,7 +220,7 @@ export const AncestrySection: React.FC<AncestrySectionProps> = ({
             size="sm"
             onPress={() => {
               setUserSelectedMode(null);
-              onUpdate((cur) => changeRace(cur, currentCompendium()));
+              onUpdate((cur) => changeRace(cur, currentCompendium(), activeBooks));
             }}
           />
         </Card>
@@ -388,7 +388,7 @@ export const AncestrySection: React.FC<AncestrySectionProps> = ({
       {character.race && raceSpellChoices.length > 0 && (
         <Card style={{ gap: 10 }}>
           <Text style={[styles.heading, { color: theme.text }]}>Racial Spells</Text>
-          <GrantedSpellPicks character={character} choices={raceSpellChoices} onUpdate={onUpdate} theme={theme} />
+          <GrantedSpellPicks character={character} choices={raceSpellChoices} onUpdate={onUpdate} theme={theme} activeBooks={activeBooks} />
         </Card>
       )}
 
@@ -431,7 +431,7 @@ export const AncestrySection: React.FC<AncestrySectionProps> = ({
                   size="sm"
                   onPress={() => {
                     if (currentOriginFeat.featName) {
-                      onUpdate((cur) => removeOriginFeat(cur, currentOriginFeat.featName!));
+                      onUpdate((cur) => removeOriginFeat(cur, currentOriginFeat.featName!, currentCompendium(), activeBooks));
                     }
                   }}
                 />
@@ -456,7 +456,9 @@ export const AncestrySection: React.FC<AncestrySectionProps> = ({
                                 applyOriginFeat(
                                   cur,
                                   { ...currentOriginFeat, featAbility: ab },
-                                  currentOriginFeat.featName
+                                  currentOriginFeat.featName,
+                                  currentCompendium(),
+                                  activeBooks
                                 )
                               );
                             }}
@@ -488,6 +490,7 @@ export const AncestrySection: React.FC<AncestrySectionProps> = ({
                 choices={featSpellChoicesOf(character, { name: currentOriginFeat.featName || "", source: currentOriginFeat.featSource || "PHB" }, currentCompendium(), activeBooks)}
                 onUpdate={onUpdate}
                 theme={theme}
+                activeBooks={activeBooks}
               />
             </View>
           ) : (
@@ -733,7 +736,9 @@ export const AncestrySection: React.FC<AncestrySectionProps> = ({
                             featSource: f.source,
                             featAbility: initialAbility,
                           },
-                          currentOriginFeat?.featName
+                          currentOriginFeat?.featName,
+                          currentCompendium(),
+                          activeBooks
                         )
                       );
                       setFeatModalVisible(false);
@@ -782,7 +787,9 @@ export const AncestrySection: React.FC<AncestrySectionProps> = ({
                               featSource: f.source,
                               featAbility: initialAbility,
                             },
-                            currentOriginFeat?.featName
+                            currentOriginFeat?.featName,
+                            currentCompendium(),
+                            activeBooks
                           )
                         );
                         setFeatModalVisible(false);
