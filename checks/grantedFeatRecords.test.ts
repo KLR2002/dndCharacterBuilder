@@ -2,14 +2,15 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { BACKGROUND_FEAT_SOURCE } from "../src/constants/rules.ts";
 import { featCounterId, featSpellRuleChoices, heldFeatsOf } from "../src/rules/choices/featSpells.ts";
+import { clearAncestryChoice } from "../src/rules/ancestryEngine.ts";
 import { pickRuleChoice } from "../src/rules/ruleChoices.ts";
-import { reconcile } from "../src/rules/characterReconciler.ts";
+import { reconcile, teardownSubclass } from "../src/rules/characterReconciler.ts";
 import { migrateCharacter } from "../src/rules/migrateCharacter.ts";
 import { applyOriginFeat } from "../src/rules/feats.ts";
 import { applyAsiSelection } from "../src/rules/leveling.ts";
-import { changeRace } from "../src/rules/builderTransitions.ts";
+import { applySoleSubclasses, changeRace, changeSubclass, removeClassLevel, setCustomBackground } from "../src/rules/builderTransitions.ts";
 import type { Character, CharacterClass } from "../src/types/character.ts";
-import type { FeatData } from "../src/types/dnd5e.ts";
+import type { ClassData, FeatData } from "../src/types/dnd5e.ts";
 import type { AvailableRuleChoice } from "../src/rules/choices/types.ts";
 import { inMemoryCompendium, makeChar } from "./testUtils.ts";
 import {
@@ -167,4 +168,119 @@ test("applying an ability score increase keeps the counter of a background-claim
   );
   assert.ok(applied.resourceCounters?.[MAGE_COUNTER], "the counter of the list held is kept");
   assert.deepEqual(applied.needsReview ?? [], [], "no notice is raised");
+});
+
+test("changing the subclass keeps the counter of a background-claimed feat that two active books hold, with no notice", () => {
+  const withPath = {
+    ...claimedWithMageCounter(),
+    classes: [{ ...mage(4), subclassName: "Sample Old Path", subclass: "Sample Old Path", subclassSource: "TST" }],
+  };
+  const changed = changeSubclass(withPath, "Sample Mage", "Sample New Path", "TST", [], twoListsCompendium, TWO_ACTIVE_BOOKS);
+  assert.ok(changed.resourceCounters?.[MAGE_COUNTER], "the counter of the list held is kept");
+  assert.deepEqual(changed.needsReview ?? [], [], "no notice is raised");
+});
+
+test("applying the lone subclass keeps the counter of a background-claimed feat that two active books hold, with no notice", () => {
+  const mageWithOneSubclass = {
+    ...grantedSpellClasses().find((c) => c.name === "Sample Mage"),
+    subclasses: [{ name: "Sample Sole Path", source: "TST" }],
+  } as unknown as ClassData;
+  const compendium = inMemoryCompendium({
+    classes: [mageWithOneSubclass],
+    feats: twoListsCatalog(),
+    spells: grantedSpellSpells(),
+    backgrounds: grantedSpellBackgrounds(),
+  });
+  const applied = applySoleSubclasses(claimedWithMageCounter(), compendium, TWO_ACTIVE_BOOKS);
+  assert.equal(applied.classes[0]?.subclassName, "Sample Sole Path", "the lone subclass is applied");
+  assert.ok(applied.resourceCounters?.[MAGE_COUNTER], "the counter of the list held is kept");
+  assert.deepEqual(applied.needsReview ?? [], [], "no notice is raised");
+});
+
+// A custom background has no book of its own, so with both books active the record resolved is the first of them in catalog
+// order. A third, inactive book listed first is what would otherwise be resolved once the background is custom.
+const customBackgroundCatalog = (): FeatData[] => [
+  { ...sampleInitiate, source: "TST3", additionalSpells: (sampleInitiate.additionalSpells ?? []).filter((grant) => grant.name === "Sample Cleric Spells") },
+  ...twoListsCatalog(),
+];
+
+test("setting a custom background keeps the counter of a background-claimed feat that two active books hold, with no notice", () => {
+  const compendium = inMemoryCompendium({
+    classes: grantedSpellClasses(),
+    feats: customBackgroundCatalog(),
+    spells: grantedSpellSpells(),
+    backgrounds: grantedSpellBackgrounds(),
+  });
+  const changed = setCustomBackground(claimedWithMageCounter(), "Sample Custom", [], {}, compendium, TWO_ACTIVE_BOOKS);
+  assert.equal(changed.background?.source, "Custom", "the background is custom");
+  assert.ok(changed.resourceCounters?.[MAGE_COUNTER], "the counter of the list held is kept");
+  assert.deepEqual(changed.needsReview ?? [], [], "no notice is raised");
+});
+
+test("clearing an ancestry choice keeps the counter of a background-claimed feat that two active books hold, with no notice", () => {
+  const base = claimedWithMageCounter();
+  const withAncestryPick: Character = {
+    ...base,
+    ruleChoices: [
+      ...(base.ruleChoices ?? []),
+      { id: "TST__Sample Race__Sample Pick", trait: "Sample Pick", origin: "race", choose: 1, from: ["Sample Alpha", "Sample Beta"], picked: ["Sample Alpha"] },
+    ],
+  };
+  const cleared = clearAncestryChoice(withAncestryPick, "TST__Sample Race__Sample Pick", { compendium: twoListsCompendium, activeBooks: TWO_ACTIVE_BOOKS });
+  assert.equal(cleared.ruleChoices?.some((entry) => entry.id === "TST__Sample Race__Sample Pick"), false, "the ancestry pick is cleared");
+  assert.ok(cleared.resourceCounters?.[MAGE_COUNTER], "the counter of the list held is kept");
+  assert.deepEqual(cleared.needsReview ?? [], [], "no notice is raised");
+});
+
+test("a pick made in the rest modal keeps the counter of a background-claimed feat that two active books hold, with no notice", () => {
+  // An invented race choice of the kind a long rest lets the player change.
+  const changeable: AvailableRuleChoice = {
+    id: "TST__Sample Race__Sample Pick",
+    traitName: "Sample Pick",
+    choose: 1,
+    level: 1,
+    effectLevel: 1,
+    origin: "race",
+    options: [
+      { name: "Sample Alpha", description: "Placeholder option." },
+      { name: "Sample Beta", description: "Placeholder option." },
+    ],
+  };
+  const picked = pickRuleChoice(claimedWithMageCounter(), changeable, "Sample Alpha", twoListsCompendium, TWO_ACTIVE_BOOKS);
+  assert.ok(picked.ruleChoices?.some((entry) => entry.id === changeable.id && entry.picked.includes("Sample Alpha")), "the pick is recorded");
+  assert.ok(picked.resourceCounters?.[MAGE_COUNTER], "the counter of the list held is kept");
+  assert.deepEqual(picked.needsReview ?? [], [], "no notice is raised");
+});
+
+test("a proficiency pick keeps the counter of a background-claimed feat that two active books hold, with no notice", () => {
+  // An invented background choice of a tool, the kind a Proficiency Choice offers.
+  const proficiency: AvailableRuleChoice = {
+    id: "TST__Sample Background__Sample Tool Pick",
+    traitName: "Sample Tool Pick",
+    choose: 1,
+    level: 1,
+    effectLevel: 1,
+    origin: "background",
+    pick: "proficiency",
+    options: [
+      { name: "Sample Lute", description: "Placeholder tool." },
+      { name: "Sample Kit", description: "Placeholder tool." },
+    ],
+  };
+  const picked = pickRuleChoice(claimedWithMageCounter(), proficiency, "Sample Lute", twoListsCompendium, TWO_ACTIVE_BOOKS);
+  assert.ok(picked.resourceCounters?.[MAGE_COUNTER], "the counter of the list held is kept");
+  assert.deepEqual(picked.needsReview ?? [], [], "no notice is raised");
+});
+
+test("removing a class level keeps the counter of a background-claimed feat that two active books hold, with no notice", () => {
+  const removed = removeClassLevel(claimedWithMageCounter(), "Sample Mage", twoListsCompendium, TWO_ACTIVE_BOOKS);
+  assert.equal(removed.classes[0]?.level, 3, "the level is removed");
+  assert.ok(removed.resourceCounters?.[MAGE_COUNTER], "the counter of the list held is kept");
+  assert.deepEqual(removed.needsReview ?? [], [], "no notice is raised");
+});
+
+test("tearing down a subclass keeps the counter of a background-claimed feat that two active books hold, with no notice", () => {
+  const torn = teardownSubclass(claimedWithMageCounter(), "Sample Mage", "Sample Old Path", twoListsCompendium, TWO_ACTIVE_BOOKS);
+  assert.ok(torn.resourceCounters?.[MAGE_COUNTER], "the counter of the list held is kept");
+  assert.deepEqual(torn.needsReview ?? [], [], "no notice is raised");
 });

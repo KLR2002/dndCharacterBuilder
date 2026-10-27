@@ -92,7 +92,7 @@ export const BackgroundSection: React.FC<BackgroundSectionProps> = ({
       setCustomBackground(current, trimmed, customBgSkills, {
         toolsOrLanguages: customBgTools,
         feature: customBgFeature ? { name: customBgFeature.name, description: customBgFeature.description } : undefined,
-      })
+      }, undefined, catalogs.activeBooks)
     );
     setIsCustomBg(false);
     setCustomBgName("");
@@ -406,7 +406,7 @@ export const BackgroundSection: React.FC<BackgroundSectionProps> = ({
           {proficiencyChoices.length > 0 && (
             <CollapsibleCard title={picksOnlyLanguages(proficiencyChoices) ? "Languages" : "Languages & Proficiencies"}>
               {proficiencyChoices.map((choice) => (
-                <ProficiencyChoicePicker key={choice.id} choice={choice} character={character} onUpdate={onUpdate} theme={theme} />
+                <ProficiencyChoicePicker key={choice.id} choice={choice} character={character} onUpdate={onUpdate} theme={theme} activeBooks={catalogs.activeBooks} />
               ))}
             </CollapsibleCard>
           )}

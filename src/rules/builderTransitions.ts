@@ -275,14 +275,15 @@ export function changeSubclass(
   newSubclassName: string,
   subclassSource: string,
   unlearnOrphaned: string[] = [],
-  compendium: Compendium = currentCompendium()
+  compendium: Compendium = currentCompendium(),
+  activeBooks?: string[]
 ): Character {
   const existing = character.classes.find((c) => c.className === className);
   const oldSubclass = existing?.subclassName || existing?.subclass;
 
   let updated = character;
   if (oldSubclass && oldSubclass !== newSubclassName) {
-    updated = teardownSubclass(updated, className, oldSubclass, compendium);
+    updated = teardownSubclass(updated, className, oldSubclass, compendium, activeBooks);
   }
 
   if (unlearnOrphaned.length > 0) {
@@ -299,7 +300,7 @@ export function changeSubclass(
       : c
   );
 
-  return reconcile({ ...updated, classes: updatedClasses }, compendium);
+  return reconcile({ ...updated, classes: updatedClasses }, compendium, { activeBooks });
 }
 
 /**
@@ -307,7 +308,11 @@ export function changeSubclass(
  * reaches its subclass level without one, that subclass is applied through `changeSubclass`. Classes
  * with several subclasses are left alone, and an integrated compendium is never changed.
  */
-export function applySoleSubclasses(character: Character, compendium: Compendium = currentCompendium()): Character {
+export function applySoleSubclasses(
+  character: Character,
+  compendium: Compendium = currentCompendium(),
+  activeBooks?: string[]
+): Character {
   if (compendium.integrated) return character;
 
   let updated = character;
@@ -316,7 +321,7 @@ export function applySoleSubclasses(character: Character, compendium: Compendium
     const subclasses = findClassData(compendium.for().classes(), entry)?.subclasses ?? [];
     if (subclasses.length !== 1) continue;
     const [sole] = subclasses;
-    updated = changeSubclass(updated, entry.className, sole.name, sole.source, [], compendium);
+    updated = changeSubclass(updated, entry.className, sole.name, sole.source, [], compendium, activeBooks);
   }
   return updated;
 }
@@ -330,7 +335,8 @@ export function applySoleSubclasses(character: Character, compendium: Compendium
 export function removeClassLevel(
   character: Character,
   className: string,
-  compendium: Compendium = currentCompendium()
+  compendium: Compendium = currentCompendium(),
+  activeBooks?: string[]
 ): Character {
   const existing = character.classes.find((c) => c.className === className);
   if (!existing) return character;
@@ -340,7 +346,7 @@ export function removeClassLevel(
   let updatedClasses: CharacterClass[];
 
   if (existing.level <= 1) {
-    updated = teardownSubclass(updated, className, oldSubclass || "", compendium);
+    updated = teardownSubclass(updated, className, oldSubclass || "", compendium, activeBooks);
     updatedClasses = updated.classes.filter((c) => c.className !== className);
 
     const classSourceKey = `Class: ${className}`;
@@ -358,7 +364,7 @@ export function removeClassLevel(
     const newLevel = existing.level - 1;
     const losesSubclass = newLevel < subclassLevel(className) && Boolean(oldSubclass);
     if (losesSubclass && oldSubclass) {
-      updated = teardownSubclass(updated, className, oldSubclass, compendium);
+      updated = teardownSubclass(updated, className, oldSubclass, compendium, activeBooks);
     }
     updatedClasses = updated.classes.map((c) =>
       c.className === className
@@ -373,7 +379,7 @@ export function removeClassLevel(
     );
   }
 
-  return reconcile({ ...updated, classes: updatedClasses }, compendium);
+  return reconcile({ ...updated, classes: updatedClasses }, compendium, { activeBooks });
 }
 
 export const STARTING_GOLD_BY_CLASS: Record<string, number> = {
@@ -549,7 +555,8 @@ export function setCustomBackground(
   name: string,
   skills: string[],
   details: CustomBackgroundDetails = {},
-  compendium: Compendium = currentCompendium()
+  compendium: Compendium = currentCompendium(),
+  activeBooks?: string[]
 ): Character {
   const legacyBackground = (character.skillChoices ?? []).filter((sc) => sc.origin === "background");
   const droppedSkills = new Set(legacyBackground.flatMap((sc) => sc.picked.map((s) => normalizeSkillName(s).toLowerCase())));
@@ -578,7 +585,8 @@ export function setCustomBackground(
       skillChoices: (character.skillChoices ?? []).filter((sc) => sc.origin !== "background"),
       proficiencyPicks: Object.keys(proficiencyPicks).length > 0 ? proficiencyPicks : undefined,
     },
-    compendium
+    compendium,
+    { activeBooks }
   );
 }
 
@@ -644,7 +652,12 @@ export function clearBackground(character: Character, catalogs: CharacterCatalog
   };
 
   // The spells only the background's expanded list gave are released, with a notice (ADR 0017).
-  return releaseExpandedOnlySpells(current, reconcile(withNotices(cleared, notices), compendium), compendium, catalogs.activeBooks);
+  return releaseExpandedOnlySpells(
+    current,
+    reconcile(withNotices(cleared, notices), compendium, { activeBooks: catalogs.activeBooks }),
+    compendium,
+    catalogs.activeBooks
+  );
 }
 
 /**
