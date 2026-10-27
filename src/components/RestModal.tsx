@@ -250,7 +250,7 @@ export const RestModal: React.FC<RestModalProps> = ({
                               onPress={() =>
                                 setPendingChoices((prev) => ({
                                   ...prev,
-                                  ...pickRuleChoice(characterWithPending ?? character, choice, option.name),
+                                  ...pickRuleChoice(characterWithPending ?? character, choice, option.name, undefined, activeBooks),
                                 }))
                               }
                               style={{

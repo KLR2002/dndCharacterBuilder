@@ -232,6 +232,26 @@ test("clearing an ancestry choice keeps the counter of a background-claimed feat
   assert.deepEqual(cleared.needsReview ?? [], [], "no notice is raised");
 });
 
+test("a pick made in the rest modal keeps the counter of a background-claimed feat that two active books hold, with no notice", () => {
+  // An invented race choice of the kind a long rest lets the player change.
+  const changeable: AvailableRuleChoice = {
+    id: "TST__Sample Race__Sample Pick",
+    traitName: "Sample Pick",
+    choose: 1,
+    level: 1,
+    effectLevel: 1,
+    origin: "race",
+    options: [
+      { name: "Sample Alpha", description: "Placeholder option." },
+      { name: "Sample Beta", description: "Placeholder option." },
+    ],
+  };
+  const picked = pickRuleChoice(claimedWithMageCounter(), changeable, "Sample Alpha", twoListsCompendium, TWO_ACTIVE_BOOKS);
+  assert.ok(picked.ruleChoices?.some((entry) => entry.id === changeable.id && entry.picked.includes("Sample Alpha")), "the pick is recorded");
+  assert.ok(picked.resourceCounters?.[MAGE_COUNTER], "the counter of the list held is kept");
+  assert.deepEqual(picked.needsReview ?? [], [], "no notice is raised");
+});
+
 test("removing a class level keeps the counter of a background-claimed feat that two active books hold, with no notice", () => {
   const removed = removeClassLevel(claimedWithMageCounter(), "Sample Mage", twoListsCompendium, TWO_ACTIVE_BOOKS);
   assert.equal(removed.classes[0]?.level, 3, "the level is removed");
