@@ -894,3 +894,28 @@ test("an Artificer's highest spell level is the top of its own table, with or wi
     assert.equal(getMaxSpellLevel(artificer, []), ARTIFICER_SLOTS[level].length, `level ${level} without it`);
   }
 });
+
+test("a spell's alternative class list defined in the SRD Baseline counts whatever books are switched on", () => {
+  const variantSpell = (definedInSource: string): SpellData => ({
+    name: "Sample Variant",
+    source: "PHB",
+    level: 1,
+    school: "Evocation",
+    castingTime: "1 action",
+    range: "Self",
+    components: { verbal: true, somatic: false, material: false },
+    componentsString: "V",
+    duration: "Instantaneous",
+    concentration: false,
+    ritual: false,
+    classes: [],
+    classVariants: [{ name: "Sample Mage", source: "PHB", definedInSource }],
+    subclasses: [],
+    damageTypes: [],
+    savingThrows: [],
+    description: "Placeholder description for the spell.",
+    higherLevels: null,
+  });
+  assert.equal(isSpellAvailableForClass(variantSpell("SRD"), "Sample Mage", ["PHB"]), true);
+  assert.equal(isSpellAvailableForClass(variantSpell("OLD"), "Sample Mage", ["PHB"]), false, "a switched-off book's variant does not count");
+});

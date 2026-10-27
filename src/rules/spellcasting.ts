@@ -2,6 +2,7 @@ import type { AbilityKey, AbilityScores, Character, CharacterClass, KnownSpell, 
 import type { ClassData, SpellData } from "../types/dnd5e.ts";
 import type { ResolvedAncestry } from "./types.ts";
 import { ARTIFICER_SLOTS, casterKindOf, isThirdCaster, PHB_HALF_CASTER_SLOTS, PHB_THIRD_CASTER_SLOTS, spellAbilityOf } from "./classData.ts";
+import { SRD_SOURCE } from "../constants/books.ts";
 import { allCatalogClasses } from "./catalogs.ts";
 import {
   GIANT_BARBARIAN_OWNER_KEY,
@@ -411,7 +412,7 @@ export function isSpellAvailableForClass(
   // Active book gating: spell's own sourcebook must be active if activeBooks is provided
   if (activeBooks !== undefined) {
     const isSpellSourceActive =
-      (spell.source || "").toUpperCase() === "SRD" ||
+      (spell.source || "").toUpperCase() === SRD_SOURCE ||
       activeBooks.some((b) => b.toUpperCase() === (spell.source || "").toUpperCase());
     if (!isSpellSourceActive) return false;
   }
@@ -438,9 +439,8 @@ export function isSpellAvailableForClass(
     const hasVariantGrant = spell.classVariants.some((v) => {
       if (v.name.toLowerCase() !== targetLower) return false;
       if (activeBooks === undefined) return true;
-      return activeBooks.some(
-        (b) => b.toUpperCase() === (v.definedInSource || "").toUpperCase()
-      );
+      const book = (v.definedInSource || "").toUpperCase();
+      return book === SRD_SOURCE || activeBooks.some((b) => b.toUpperCase() === book);
     });
     if (hasVariantGrant) return true;
   }

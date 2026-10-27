@@ -11,6 +11,8 @@ import {
 import { isSpellAvailableForClass } from "../src/rules/spellcasting.ts";
 import { findSpell } from "../src/services/dataService.ts";
 import { createCompendium, type Compendium } from "../src/services/compendium.ts";
+import { DEFAULT_ACTIVE_BOOK_CODES } from "../src/constants/books.ts";
+import { srdBaselineCompendium } from "./testUtils.ts";
 import type { CompendiumCollections } from "../src/services/compendiumStorage.ts";
 import type { ClassData, SpellData } from "../src/types/dnd5e.ts";
 import { makeChar } from "./testUtils.ts";
@@ -580,6 +582,16 @@ for (const xphbFirst of [false, true]) {
     assert.equal(validation.valid, true, validation.reason);
   });
 }
+
+test("a Cleric of the SRD Life Domain at level 5 gets the domain's spells on the SRD Baseline with the default active sourcebooks", () => {
+  const compendium = srdBaselineCompendium();
+  const domainSpells = (activeBooks: string[], level: number) =>
+    getSubclassSpells("Cleric", "Life Domain", level, { compendium, activeBooks }).prepared.map((spell) => spell.name).sort();
+  const expected = ["Beacon of Hope", "Bless", "Cure Wounds", "Lesser Restoration", "Revivify", "Spiritual Weapon"];
+  assert.deepEqual(domainSpells([...DEFAULT_ACTIVE_BOOK_CODES], 5), expected);
+  assert.deepEqual(domainSpells(["SRD"], 5), expected, "the same spells with only the SRD switched on");
+  assert.deepEqual(domainSpells([...DEFAULT_ACTIVE_BOOK_CODES], 2), ["Bless", "Cure Wounds"], "the first level's spells only at level 2");
+});
 
 
 

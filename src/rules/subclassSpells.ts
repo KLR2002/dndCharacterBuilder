@@ -3,6 +3,7 @@ import type { Character, RuleChoiceEntry } from "../types/character.ts";
 import type { SpellData, SubclassData, AdditionalSpells } from "../types/dnd5e.ts";
 import { resolveOptionName } from "./choices/types.ts";
 import { findClassData } from "./catalogs.ts";
+import { SRD_SOURCE } from "../constants/books.ts";
 
 export interface SubclassSpellsResult {
   prepared: SpellData[];
@@ -57,7 +58,7 @@ function pickSpell(copies: SpellData[] | undefined, activeBooks?: string[], acti
     const source = (s: SpellData) => (s.source || "").toUpperCase();
     const active = copies.find((s) => books.has(source(s)));
     if (active) return active;
-    if (activeOnly) return copies.find((s) => source(s) === "SRD");
+    if (activeOnly) return copies.find((s) => source(s) === SRD_SOURCE);
   }
   return copies[0];
 }
@@ -274,11 +275,11 @@ export function getSubclassSpells(
     return emptyResult;
   }
 
-  // Subclass source check under activeBooks
+  // Subclass source check under activeBooks. The SRD Baseline is always on, as it is for class spell lists.
   if (options?.activeBooks && options.activeBooks.length > 0) {
-    const isSubclassSourceActive = options.activeBooks.some(
-      (b) => b.toUpperCase() === (subclass.source || "").toUpperCase()
-    );
+    const subclassSource = (subclass.source || "").toUpperCase();
+    const isSubclassSourceActive =
+      subclassSource === SRD_SOURCE || options.activeBooks.some((b) => b.toUpperCase() === subclassSource);
     if (!isSubclassSourceActive) {
       return emptyResult;
     }
