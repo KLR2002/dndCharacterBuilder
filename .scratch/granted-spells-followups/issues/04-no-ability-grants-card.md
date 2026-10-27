@@ -1,6 +1,8 @@
 # 04: Grants with no casting ability get a card
 
-**Status:** ready-for-agent
+**Status:** done
+
+**Landed:** a grant that names spells and no ability gets a card with at-will cantrips and Long Rest counters and no ability, DC or attack row; the coverage gate reads ability-less grants and ignores ritual lists (Cartomancer, Outlands Envoy, Rune Shaper, Boon of Misty Escape and Light Bringer reach the reader; Servo Crafting and Strixhaven Mascot are ritual-only and keep their marks). check:all, check:live and the layout runs green. Open: a card awaiting a chosen ability also loses the stats row.
 
 Spec: `.scratch/granted-spells-followups/spec.md` (ADR 0017 and its amendment, GLOSSARY *Always-Prepared Spells*, *Expanded Spell List*).
 
@@ -14,9 +16,9 @@ A feat whose grant names spells but no casting ability (Cartomancer, Outlands En
 
 ## Acceptance Criteria
 
-- [ ] A feat with spells and no ability shows a card with at-will cantrips and counters for daily spells (AC-7).
-- [ ] The card has no ability, DC or attack row (AC-7).
-- [ ] `npm run check:all` and `npm run check:live` pass; a layout scenario of such a card passes at four widths.
+- [x] A feat with spells and no ability shows a card with at-will cantrips and counters for daily spells (AC-7).
+- [x] The card has no ability, DC or attack row (AC-7).
+- [x] `npm run check:all` and `npm run check:live` pass; a layout scenario of such a card passes at four widths.
 
 ## Verification
 
