@@ -885,15 +885,16 @@ test("live catalog: a level-3 Tiefling's Hellish Rebuke is cast at 2nd level, an
   assert.equal(rebuke.resourceCounterId, "innate_spell_hellish_rebuke");
 });
 
-// The nine race and subrace grants with leveled known spells (ADR 0017). Each is read at level 3, where the character has every
-// spell the grant's trait gives: a spell the trait lets the player cast once per Long Rest is 1, and one it casts at will is "at will".
+// The nine race and subrace grants with leveled known spells (ADR 0017). Each spell is `[name, uses, level gate]`: a spell the
+// trait lets the player cast once per Long Rest has 1 uses, one it casts at will is "at will", and the gate is the character level
+// the trait unlocks it at. Each grant is read at every level from 1 to 3: a spell is listed from its gate and not before.
 const LEVELED_KNOWN_GRANTS: Array<{
   label: string;
   race: string;
   subrace?: string;
   subraceSource?: string;
   source?: string;
-  spells: Array<[string, 1 | "at will"]>;
+  spells: Array<[string, 1 | "at will", number]>;
 }> = [
   {
     label: "Dwarf Mark of Warding",
@@ -901,22 +902,22 @@ const LEVELED_KNOWN_GRANTS: Array<{
     subrace: "Mark of Warding",
     subraceSource: "ERLW",
     spells: [
-      ["Alarm", 1],
-      ["Arcane Lock", 1],
-      ["Mage Armor", 1],
+      ["Alarm", 1, 1],
+      ["Arcane Lock", 1, 3],
+      ["Mage Armor", 1, 1],
     ],
   },
-  { label: "Genasi Air", race: "Genasi", subrace: "Air", subraceSource: "EEPC", spells: [["Levitate", 1]] },
-  { label: "Genasi Earth", race: "Genasi", subrace: "Earth", subraceSource: "EEPC", spells: [["Pass without Trace", 1]] },
+  { label: "Genasi Air", race: "Genasi", subrace: "Air", subraceSource: "EEPC", spells: [["Levitate", 1, 1]] },
+  { label: "Genasi Earth", race: "Genasi", subrace: "Earth", subraceSource: "EEPC", spells: [["Pass without Trace", 1, 1]] },
   {
     label: "Gnome (Deep)",
     race: "Gnome (Deep)",
     source: "DMG",
     spells: [
-      ["Blindness/Deafness", 1],
-      ["Blur", 1],
-      ["Disguise Self", 1],
-      ["Nondetection", "at will"],
+      ["Blindness/Deafness", 1, 1],
+      ["Blur", 1, 1],
+      ["Disguise Self", 1, 1],
+      ["Nondetection", "at will", 1],
     ],
   },
   {
@@ -925,9 +926,9 @@ const LEVELED_KNOWN_GRANTS: Array<{
     subrace: "Mark of Hospitality",
     subraceSource: "ERLW",
     spells: [
-      ["Prestidigitation", "at will"],
-      ["Purify Food and Drink", 1],
-      ["Unseen Servant", 1],
+      ["Prestidigitation", "at will", 1],
+      ["Purify Food and Drink", 1, 1],
+      ["Unseen Servant", 1, 1],
     ],
   },
   {
@@ -935,8 +936,8 @@ const LEVELED_KNOWN_GRANTS: Array<{
     race: "Hexblood",
     source: "VRGR",
     spells: [
-      ["Disguise Self", 1],
-      ["Hex", 1],
+      ["Disguise Self", 1, 1],
+      ["Hex", 1, 1],
     ],
   },
   {
@@ -945,12 +946,12 @@ const LEVELED_KNOWN_GRANTS: Array<{
     subrace: "Mark of Making",
     subraceSource: "ERLW",
     spells: [
-      ["Magic Weapon", 1],
-      ["Mending", "at will"],
+      ["Magic Weapon", 1, 1],
+      ["Mending", "at will", 1],
     ],
   },
-  { label: "Human Mark of Passage", race: "Human", subrace: "Mark of Passage", subraceSource: "ERLW", spells: [["Misty Step", 1]] },
-  { label: "Human Mark of Sentinel", race: "Human", subrace: "Mark of Sentinel", subraceSource: "ERLW", spells: [["Shield", 1]] },
+  { label: "Human Mark of Passage", race: "Human", subrace: "Mark of Passage", subraceSource: "ERLW", spells: [["Misty Step", 1, 1]] },
+  { label: "Human Mark of Sentinel", race: "Human", subrace: "Mark of Sentinel", subraceSource: "ERLW", spells: [["Shield", 1, 1]] },
 ];
 
 /** A character of the grant's race, found in the live catalog by the name of the record that holds the grant. */
@@ -981,9 +982,14 @@ function raceSpellsAt(character: Character): Array<[string, 1 | "at will"]> {
 }
 
 for (const grant of LEVELED_KNOWN_GRANTS) {
-  test(`live catalog: the ${grant.label} grant reads its spells at their trait's level and uses`, { skip: SKIP }, () => {
-    const expected = [...grant.spells].sort((a, b) => a[0].localeCompare(b[0]));
-    assert.deepEqual(raceSpellsAt(characterOfGrant(grant, 3)), expected);
+  test(`live catalog: the ${grant.label} grant lists each spell from its trait's level, with its uses`, { skip: SKIP }, () => {
+    for (const level of [1, 2, 3]) {
+      const expected = grant.spells
+        .filter(([, , gate]) => gate <= level)
+        .map(([name, uses]): [string, 1 | "at will"] => [name, uses])
+        .sort((a, b) => a[0].localeCompare(b[0]));
+      assert.deepEqual(raceSpellsAt(characterOfGrant(grant, level)), expected, `at character level ${level}`);
+    }
   });
 }
 
