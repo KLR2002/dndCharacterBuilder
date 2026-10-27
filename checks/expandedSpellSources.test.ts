@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { evaluateCharacter } from "../src/rules/characterEvaluation.ts";
 import { isSpellAvailableForClass, profileSpellContext, type ClassSpellProfile } from "../src/rules/spellcasting.ts";
 import { changeRace, clearBackground } from "../src/rules/builderTransitions.ts";
+import { applyAncestrySelection } from "../src/rules/ancestryEngine.ts";
 import { applyAsiSelection, removeAsiSelection } from "../src/rules/leveling.ts";
 import { removeOriginFeat } from "../src/rules/feats.ts";
 import { isKnown, learnSpell } from "../src/rules/characterSpells.ts";
@@ -168,6 +169,23 @@ test("a spell a second held source still lists stays known when one source goes"
   const released = removeAsiSelection(character, "Sample Mage", 4, compendium);
   assert.deepEqual(released.knownSpells?.map((k) => k.name), ["Sample Ward"], "the background's list still gives it");
   assert.ok(!released.needsReview?.some((notice) => /Sample Ward/.test(notice)), "so no notice is made");
+});
+
+test("picking a different race or subrace in the ancestry picker releases the spell only the old subrace's list gave", () => {
+  const [runekin] = expandedSpellRaces();
+  const [runeLine] = runekin.subraces ?? [];
+  assert.ok(runeLine, "the invented race has its subrace");
+  const character = makeChar({
+    classes: [cls("Sample Mage", 5)],
+    race: sampleRunekin,
+    knownSpells: [known("Sample Spirit")],
+  });
+  const picked = applyAncestrySelection(character, runekin, undefined, catalogs);
+  assert.deepEqual(picked.knownSpells, [], "the spell only the old subrace listed leaves the known spells");
+  assert.ok(
+    picked.needsReview?.some((notice) => /Sample Spirit removed: only on the Sample Rune Line race's spell list/.test(notice)),
+    `the release is noticed: ${JSON.stringify(picked.needsReview)}`,
+  );
 });
 
 test("clearing the background keeps a spell a held feat's list still gives", () => {
