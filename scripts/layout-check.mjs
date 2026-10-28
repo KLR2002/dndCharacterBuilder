@@ -216,6 +216,24 @@ function noticesCharacter() {
   });
 }
 
+// The same Rogue with ten long notices, so the expanded list is taller than the window at a phone width.
+const NOTICES_MANY_ID = "char_notices_many";
+const NOTICES_MANY = [
+  "Thornwick Veil removed from Ashgrove Coven: the spell list it belonged to is not offered in your active books",
+  "Lanternmoss Charm removed from Quiet Archive of Halmere: its source book was switched off",
+  "Cinder Hook released from Duskmantle Initiate: the feat is no longer held by this character",
+  "Gloamfern Tithe released from Pact of the Hollow Crown: the Warlock level no longer meets its prerequisite",
+  "Mirrorfall Rune removed from Stonebell Cantrips: the class that granted it is no longer on the sheet",
+  "Ivorywind Sigil released from Vesper Lodge Initiate: the feat is no longer held by this character",
+  "Hushwater Glyph removed from Emberlark Circle: the spell list it belonged to is not offered in your active books",
+  "Saltglass Lantern released from Tidewhisper Pact: the Warlock level no longer meets its prerequisite",
+  "Quillbrook Spark removed from Northreach Tome: its source book was switched off",
+  "Ravenhollow Knot released from Greywind Initiate: the feat is no longer held by this character",
+];
+function noticesManyCharacter() {
+  return { ...noticesCharacter(), id: NOTICES_MANY_ID, name: "Thistle", createdAt: 13, updatedAt: 13, needsReview: NOTICES_MANY };
+}
+
 // A level 3 Way of the Kensei monk, integrated mode only (the Kensei is not in the SRD). Its Path of the Kensei
 // choices are Proficiency Choices: the brush and the ranged kensei weapon are unmade ("Picked 0 / 1"), and the
 // melee kensei weapon is picked (Rapier), which the Stats tab shows under Weapon Proficiencies.
@@ -812,6 +830,7 @@ function buildSeed() {
       rangerCharacter(),
       longNameCharacter(),
       noticesCharacter(),
+      noticesManyCharacter(),
       ...(INTEGRATED ? [kenseiCharacter()] : []),
       ...(INTEGRATED ? [initiativeCharacter()] : []),
       bardCharacter(),
@@ -851,6 +870,7 @@ const HALF_ELF_ROUTE = `/character/${HALF_ELF_ID}`;
 const RANGER_ROUTE = `/character/${RANGER_ID}`;
 const LONG_NAME_ROUTE = `/character/${LONG_NAME_ID}`;
 const NOTICES_ROUTE = `/character/${NOTICES_ID}`;
+const NOTICES_MANY_ROUTE = `/character/${NOTICES_MANY_ID}`;
 const KENSEI_ROUTE = `/character/${KENSEI_ID}`;
 const INITIATIVE_ROUTE = `/character/${INITIATIVE_ID}`;
 const BARD_ROUTE = `/character/${BARD_ID}`;
@@ -1099,6 +1119,7 @@ const SCREENS = [
   { name: "Actions", route: RENDAR_ROUTE, tabs: ["Actions"], ready: /attack action/i },
   { name: "Review notices collapsed", route: NOTICES_ROUTE, tabs: ["Stats"], ready: "4 to review", expect: { texts: ["4 to review"], absent: [REVIEW_NOTICES[0]], fitsWidth: true } },
   { name: "Review notices expanded", route: NOTICES_ROUTE, tabs: ["Journal"], open: (page) => page.getByText("4 to review", { exact: true }).first().click(), ready: "Dismiss all", scrollTo: "Dismiss all", expect: { texts: [...REVIEW_NOTICES, "Dismiss all"], fitsWidth: true } },
+  { name: "Review notices many expanded", route: NOTICES_MANY_ROUTE, tabs: ["Journal"], open: (page) => page.getByText("10 to review", { exact: true }).first().click(), ready: "Dismiss all", expect: { texts: ["10 to review", "Dismiss all"], tabContentBelowNotices: { count: "10 to review", minHeight: 120 }, fitsWidth: true } },
   { name: "Review notices none", route: RENDAR_ROUTE, tabs: ["Stats"], ready: /hit points/i, expect: { absentMatching: [/ to review$/], fitsWidth: true } },
   { name: "Stats battle master superiority dice", route: BATTLE_MASTER_ROUTE, tabs: ["Stats"], ready: /hit points/i, scrollTo: "Superiority Dice: 4d8 + 2d6", expect: { texts: ["Superiority Dice: 4d8 + 2d6"], fitsWidth: true } },
   { name: "Features battle master superiority counters", route: BATTLE_MASTER_ROUTE, tabs: ["Features"], ready: /resource trackers/i, scrollTo: "Superiority Dice [d6]", expect: { texts: ["Superiority Dice [d8]", "Superiority Dice [d6]"], fitsWidth: true } },
@@ -1402,6 +1423,17 @@ function smallestTextWith([first, second]) {
   return best;
 }
 
+// Runs in the browser. The tab content under the review notices box whose count row reads `count`: the element after the
+// notices box, or null when that box is not on the screen. Its height and bottom edge are what the tab content gets.
+function findTabContentBelowNotices(count) {
+  const leaf = [...document.querySelectorAll("*")].find((e) => e.children.length === 0 && e.textContent.trim() === count);
+  const header = leaf?.closest('button, [role="button"]');
+  const content = header?.parentElement?.parentElement?.nextElementSibling;
+  if (!content) return null;
+  const r = content.getBoundingClientRect();
+  return { height: r.height, bottom: r.bottom, viewport: window.innerHeight };
+}
+
 // Checks what a picker screen must show that the layout rules cannot see: texts and input placeholders on the page,
 // and (`plainRaceRow`) the plain race row. Returns one message per missing control.
 async function checkExpected(page, expect) {
@@ -1433,6 +1465,15 @@ async function checkExpected(page, expect) {
   for (const text of expect.enabled ?? []) {
     const { disabled, state } = await page.evaluate(buttonDisabled, text);
     if (disabled !== false) out.push(`"${text}" is not enabled (${state})`);
+  }
+  if (expect.tabContentBelowNotices) {
+    const { count, minHeight } = expect.tabContentBelowNotices;
+    const box = await page.evaluate(findTabContentBelowNotices, count);
+    if (!box) out.push(`no tab content found below the "${count}" notices box`);
+    else {
+      if (box.height < minHeight) out.push(`tab content below the notices is ${Math.round(box.height)}px tall, under ${minHeight}px`);
+      if (box.bottom > box.viewport + 1) out.push(`tab content below the notices ends ${Math.round(box.bottom - box.viewport)}px below the window`);
+    }
   }
   if (expect.fitsWidth) {
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
