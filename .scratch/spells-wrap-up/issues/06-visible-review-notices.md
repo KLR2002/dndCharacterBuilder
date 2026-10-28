@@ -1,6 +1,8 @@
 # 06: Review notices are visible
 
-**Status:** ready-for-agent
+**Status:** done
+
+**Landed:** a collapsible "N to review" row between the tab bar and the tab content on every tab, with the expanded list capped at 40% of the window and scrolling inside, per-notice and Dismiss all (persisted), always collapsed by default, player-facing notice wording; the stale ancestry notice clears itself once the choice is recorded; the legacy duplicate-feat dedupe keeps the ability increase. check:all, check:live and the full SRD and integrated layout runs green. Open (by design): a notice for a condition that still holds returns on load.
 
 Spec: `.scratch/spells-wrap-up/spec.md` (AC-10, AC-11).
 
@@ -17,11 +19,11 @@ Also (AC-11): the legacy-duplicate normalisation in `src/rules/migrateCharacter.
 
 ## Acceptance Criteria
 
-- [ ] A character with notices shows a count and the list above the tab content on every tab, and a character without shows nothing (AC-10).
-- [ ] A single notice and all notices can be dismissed, the change persists, and a dismissed notice does not return on reload (AC-10).
-- [ ] The surface fits and wraps cleanly at 320, 360, 393 and 412 px with long notices, in the SRD baseline and the integrated catalog layout runs (AC-10).
-- [ ] The legacy duplicate-feat dedupe keeps the ability increase (AC-11).
-- [ ] `npm run check:all` passes.
+- [x] A character with notices shows a count and the list above the tab content on every tab, and a character without shows nothing (AC-10).
+- [x] A single notice and all notices can be dismissed, the change persists, and a dismissed notice does not return on reload (AC-10).
+- [x] The surface fits and wraps cleanly at 320, 360, 393 and 412 px with long notices, in the SRD baseline and the integrated catalog layout runs (AC-10).
+- [x] The legacy duplicate-feat dedupe keeps the ability increase (AC-11).
+- [x] `npm run check:all` passes.
 
 ## Verification
 
