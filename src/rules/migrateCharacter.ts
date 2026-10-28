@@ -7,6 +7,8 @@ import { migrateLegacyRacialCantrip, moveLegacyRacePickIds } from "./choices/fea
 import { heldRaceListed } from "./raceLookup.ts";
 import { BACKGROUND_FEAT_SOURCE, UNKNOWN_OWNER_KEY } from "../constants/rules.ts";
 
+const ANCESTRY_CHOICE_NOTICE = "Your ancestry has a choice to make in the Builder.";
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return value !== null && typeof value === "object" && !Array.isArray(value);
 }
@@ -123,9 +125,11 @@ export function migrateCharacter(
     const missing = availableRuleChoices(c, raceCatalog, totalLevel(c)).filter(
       (choice) => !recorded.has(choice.id)
     );
-    if (missing.length > 0) {
-      needsReview.add("Your ancestry has a choice to make in the Builder.");
-    }
+    if (missing.length > 0) needsReview.add(ANCESTRY_CHOICE_NOTICE);
+    else needsReview.delete(ANCESTRY_CHOICE_NOTICE);
+  } else if (raceCatalog || !c.race) {
+    // A recorded choice, or no ancestry at all, leaves the notice nothing to ask for.
+    needsReview.delete(ANCESTRY_CHOICE_NOTICE);
   }
 
   const migrated: Character = {
@@ -145,6 +149,8 @@ export function migrateCharacter(
     pactSlotsUsed: c.pactSlotsUsed ?? c.usedPactSlots ?? 0,
     ...(Array.isArray(c.originFeats) ? { originFeats: oneEntryPerFeat(c.originFeats) } : {}),
   };
+  // The stored list is spread above; when every notice in it was removed, the character holds no list.
+  if (needsReview.size === 0 && c.needsReview?.length) delete migrated.needsReview;
   // A saved legacy racial cantrip moves to the race's own pick once the catalog says what the race grants. A race the catalog
   // does not hold is not loaded, so the cantrip is kept as saved, with no notice.
   const rekeyed = moveLegacyRacePickIds(migrated);
