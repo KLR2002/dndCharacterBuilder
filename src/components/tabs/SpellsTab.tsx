@@ -640,7 +640,7 @@ export const SpellsTab: React.FC = () => {
                       ]}>
                       {spell.name}
                       {spell.note !== undefined && (
-                        <Text style={{ fontWeight: "400", color: theme.textSecondary }}>{` (${spell.note.replace(/ /g, " ")})`}</Text>
+                        <Text style={{ fontWeight: "400", color: theme.textSecondary }}>{` (${spell.note.replace(/ /g, "\u00A0")})`}</Text>
                       )}
                     </Text>
                     {spell.isCantrip ? (
