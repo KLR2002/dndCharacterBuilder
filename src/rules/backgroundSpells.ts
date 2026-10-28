@@ -1,9 +1,9 @@
 import type { AdditionalSpells, BackgroundData, ClassData, SpellData } from "../types/dnd5e.ts";
-import type { Character, KnownSpell, LegacyKnownSpell } from "../types/character.ts";
+import type { Character, CharacterClass, KnownSpell, LegacyKnownSpell } from "../types/character.ts";
 import { currentCompendium, type Compendium } from "../services/compendium.ts";
 import { withNotices } from "./needsReview.ts";
 import { heldFeatsOf, raceGrantsOf, raceTitleOf } from "./choices/featSpells.ts";
-import { isCastingClass, isSpellAvailableForClass } from "./spellcasting.ts";
+import { isCastingClass, isGiantBarbarian, isSpellAvailableForClass, spellOwnerKey } from "./spellcasting.ts";
 import { normalizeKey, resolveSpellName } from "./subclassSpells.ts";
 import { findHeldRecord } from "./raceLookup.ts";
 import { isCustomBackground } from "./customBackground.ts";
@@ -24,6 +24,9 @@ function expandedSpellNamesOf(grants: readonly AdditionalSpells[] | undefined): 
   }
   return names;
 }
+
+/** The owner key a known copy takes when no class owned it on migration (see migrateCharacter). */
+const UNKNOWN_OWNER_KEY = "unknown__unknown";
 
 /** A source the character holds whose expanded lists add spells to its classes' lists, and the names those lists give. */
 export interface ExpandedSpellSource {
@@ -99,6 +102,14 @@ function listedByOwnClass(character: Character, known: { ownerKey?: string; clas
 }
 
 /**
+ * The Spell Owner keys of the plain class owners among `classes`. A known copy under any other key (Pact of the Tome, the Blessed
+ * Warrior and Giant Power cantrips) is drawn from its own list, not from the class list, so no expanded list can have stranded it.
+ */
+function plainOwnerKeysOf(classes: readonly CharacterClass[]): Set<string> {
+  return new Set(classes.filter((cls) => !isGiantBarbarian(cls)).map((cls) => spellOwnerKey(cls)));
+}
+
+/**
  * Releases the known spells that only the expanded lists `before` held gave and `after` no longer gives (ADR 0017). Each release
  * is noticed, naming the spell and the source it came from. A spell a class gives itself stays, and so does a name the Catalog
  * does not hold. Its prepared key goes with it. Returns `after` itself when nothing is released.
@@ -126,14 +137,15 @@ export function releaseExpandedOnlySpells(
     return ownerLost
       ? listedByOwnClass(before, known, spell)
       : stillListed.has(key) || listedByOwnClass(after, known, spell);
-  }, compendium, activeBooks);
+  }, [...(before.classes ?? []), ...(after.classes ?? [])], compendium, activeBooks);
 }
 
 /**
  * Releases the known spells that a switched-off book's expanded list gave (ADR 0017). A spell is stranded when it is on the
  * expanded list of a source the character holds whose book is not active, and no active source's list gives it and its owning
- * class does not list it. A source the catalog does not hold at all is not judged, so its spells stay. Switching the book back
- * on restores nothing. Run with the active books when they change and when a character is opened.
+ * class does not list it. Only a copy under its class's plain owner key can be stranded. A source the catalog does not hold at
+ * all is not judged, so its spells stay. Switching the book back on restores nothing. Run with the active books when they change
+ * and when a character is opened.
  */
 export function releaseStrandedExpandedSpells(
   character: Character,
@@ -146,6 +158,7 @@ export function releaseStrandedExpandedSpells(
     character,
     loaded,
     (known, spell) => stillListed.has(normalizeKey(known.name)) || listedByOwnClass(character, known, spell),
+    character.classes ?? [],
     compendium,
     activeBooks
   );
@@ -170,22 +183,27 @@ function sourceTitlesOf(sources: readonly ExpandedSpellSource[]): Map<string, st
 
 /**
  * Removes the known spells of `sourceOf` that `stays` does not keep, each with a review notice naming the spell and its source,
- * and drops their prepared keys. A name the catalog does not hold is kept. Returns `character` itself when nothing is released.
+ * and drops their prepared keys. Only a copy under a plain owner key of `ownerClasses` is a candidate, and a name the catalog
+ * does not hold is kept. Returns `character` itself when nothing is released.
  */
 function releaseExpandedKnownSpells(
   character: Character,
   sourceOf: ReadonlyMap<string, string>,
   stays: (known: KnownSpell | LegacyKnownSpell, spell: SpellData) => boolean,
+  ownerClasses: readonly CharacterClass[],
   compendium: Compendium,
   activeBooks?: string[]
 ): Character {
   if (sourceOf.size === 0) return character;
+  const plainOwnerKeys = plainOwnerKeysOf(ownerClasses);
   const notices: string[] = [];
   const released = new Set<string>();
   const knownSpells = (character.knownSpells ?? []).filter((known) => {
     const key = normalizeKey(known.name);
     const title = sourceOf.get(key);
     if (!title) return true;
+    const ownerKey = known.ownerKey;
+    if (ownerKey && ownerKey !== UNKNOWN_OWNER_KEY && !plainOwnerKeys.has(ownerKey)) return true;
     const spell = resolveSpellName(known.name, activeBooks, compendium);
     if (!spell || stays(known, spell)) return true;
     released.add(key);

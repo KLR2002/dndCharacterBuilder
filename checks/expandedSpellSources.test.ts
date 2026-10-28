@@ -491,3 +491,63 @@ test("a catalog that does not hold the feat's record at all keeps the spell, as 
   assert.deepEqual(kept.knownSpells?.map((k) => k.name), ["Sample Warding"], "the record is not loaded, so nothing is judged");
   assert.equal(kept.needsReview, undefined);
 });
+
+// A known copy under a Spell Owner key other than the plain class key (Pact of the Tome, the Blessed Warrior cantrips, the Giant
+// Power cantrips) is drawn from its own list, not the class list, so no expanded list can have stranded it.
+const tomeCopy = (name: string) => ({ name, source: "TST", ownerKey: "Sample Pact__Tome", className: "Sample Pact" });
+
+test("a Pact of the Tome cantrip that a switched-off feat's list also gives stays, with no notice, whichever way the book is set", () => {
+  const character = makeChar({
+    classes: [cls("Sample Pact", 5)],
+    asiSelections: [{ ...onAlt(), className: "Sample Pact" }],
+    knownSpells: [tomeCopy("Sample Ember")],
+  });
+  const kept = reconcileForActiveBooks(character, offBookCompendium, ALT_OFF);
+  assert.deepEqual(kept.knownSpells, character.knownSpells, "the tome copy is not judged against the class list");
+  assert.equal(kept.needsReview, undefined, "so no notice is made");
+  assert.deepEqual(reconcileForActiveBooks(kept, offBookCompendium, ALT_ON).knownSpells, character.knownSpells, "switching the book back on changes nothing");
+});
+
+test("a Blessed Warrior style cantrip copy stays when a switched-off feat's list gives the spell", () => {
+  const character = makeChar({
+    classes: [cls("Sample Mage", 5), cls("Sample Warrior", 2)],
+    asiSelections: [onAlt()],
+    knownSpells: [{ name: "Sample Ember", source: "TST", ownerKey: "Sample Warrior__TCE", className: "Sample Warrior" }],
+  });
+  const kept = reconcileForActiveBooks(character, offBookCompendium, ALT_OFF);
+  assert.deepEqual(kept.knownSpells, character.knownSpells, "the copy is drawn from its own owner, not the class list");
+  assert.equal(kept.needsReview, undefined);
+});
+
+test("a switched-off feat releases its plain class copy and keeps the Pact of the Tome copy of the same spell", () => {
+  const character = makeChar({
+    classes: [cls("Sample Mage", 5), cls("Sample Pact", 5)],
+    asiSelections: [onAlt()],
+    knownSpells: [tomeCopy("Sample Ember"), known("Sample Warding")],
+  });
+  const released = reconcileForActiveBooks(character, offBookCompendium, ALT_OFF);
+  assert.deepEqual(released.knownSpells?.map((k) => k.name), ["Sample Ember"], "only the plain copy that the feat alone listed leaves");
+  assert.deepEqual(released.needsReview, ["Sample Warding removed: only on the Sample Rune Mark feat's spell list"]);
+});
+
+test("removing the feat keeps a Pact of the Tome copy that no class list gives", () => {
+  const character = makeChar({
+    classes: [cls("Sample Mage", 3), cls("Sample Pact", 2)],
+    asiSelections: [takenMark()],
+    knownSpells: [tomeCopy("Sample Ember")],
+  });
+  const released = removeAsiSelection(character, "Sample Mage", 4, compendium);
+  assert.deepEqual(released.knownSpells, character.knownSpells, "the tome copy is not released with the feat");
+  assert.equal(released.needsReview, undefined, "so no notice is made");
+});
+
+test("removing the feat keeps a Blessed Warrior style cantrip copy", () => {
+  const character = makeChar({
+    classes: [cls("Sample Mage", 3), cls("Sample Warrior", 2)],
+    asiSelections: [takenMark()],
+    knownSpells: [{ name: "Sample Ember", source: "TST", ownerKey: "Sample Warrior__TCE", className: "Sample Warrior" }],
+  });
+  const released = removeAsiSelection(character, "Sample Mage", 4, compendium);
+  assert.deepEqual(released.knownSpells, character.knownSpells, "the copy is not released with the feat");
+  assert.equal(released.needsReview, undefined, "so no notice is made");
+});

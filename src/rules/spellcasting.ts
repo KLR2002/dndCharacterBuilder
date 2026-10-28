@@ -75,7 +75,7 @@ export function isGiantBarbarian(c: CharacterClass): boolean {
  * The Spell Owner key for a class's spellcasting. Giant Barbarians own their granted cantrips
  * under the Path of the Giant key, so the key is never derived from the class name alone.
  */
-function spellOwnerKey(c: CharacterClass): string {
+export function spellOwnerKey(c: CharacterClass): string {
   return isGiantBarbarian(c) ? GIANT_BARBARIAN_OWNER_KEY : `${c.className}__${c.source || "PHB"}`;
 }
 
