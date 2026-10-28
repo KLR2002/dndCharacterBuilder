@@ -2,7 +2,7 @@ import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { dismissNotices } from "../src/rules/needsReview.ts";
 import { migrateCharacter } from "../src/rules/migrateCharacter.ts";
-import { makeChar } from "./testUtils.ts";
+import { loadTestCatalog, makeChar } from "./testUtils.ts";
 
 const EMBER = "Sample Ember removed from Sample Initiate: feat no longer held";
 const PULSE = "Sample Pulse removed from Sample Initiate: spell list changed";
@@ -35,6 +35,43 @@ describe("dismissNotices", () => {
     dismissNotices(notices, EMBER);
 
     assert.deepEqual(notices, [EMBER, PULSE]);
+  });
+});
+
+describe("migration notices read as player text", () => {
+  it("flags an ancestry choice that was never recorded in plain words", () => {
+    const legacy = JSON.parse(
+      JSON.stringify(
+        makeChar({
+          race: { name: "Half-Elf", source: "PHB", subraceName: "Drow Descent", subraceSource: "SCAG" },
+          classes: [{ className: "Wizard", source: "PHB", level: 1 }],
+        }),
+      ),
+    );
+    delete legacy.ruleChoices;
+
+    assert.deepEqual(migrateCharacter(legacy, loadTestCatalog("races")).needsReview, [
+      "Your ancestry has a choice to make in the Builder.",
+    ]);
+  });
+
+  it("flags skill picks whose source is ambiguous in plain words", () => {
+    const legacy = JSON.parse(
+      JSON.stringify(
+        makeChar({
+          classes: [
+            { className: "Rogue", source: "PHB", level: 1 },
+            { className: "Fighter", source: "PHB", level: 1 },
+          ],
+          chosenSkills: ["Stealth"],
+        }),
+      ),
+    );
+    delete legacy.skillChoices;
+
+    assert.deepEqual(migrateCharacter(legacy).needsReview, [
+      "Some skill picks could not be matched to a class or background. Check them in the Builder.",
+    ]);
   });
 });
 

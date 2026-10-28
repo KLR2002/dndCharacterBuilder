@@ -13,6 +13,7 @@ import { makeChar, loadTestCatalog } from "./testUtils.ts";
 
 const races = loadTestCatalog("races");
 const catalog = { races };
+const ANCESTRY_NOTICE = "Your ancestry has a choice to make in the Builder.";
 
 const raceChar = (name: string, source: string, subrace?: { name: string; source: string }): Character =>
   makeChar({ race: { name, source, subraceName: subrace?.name, subraceSource: subrace?.source } });
@@ -83,7 +84,7 @@ test("a variant half-elf with no recorded choice is flagged for review", () => {
   delete legacy.ruleChoices;
   const migrated = migrateCharacter(legacy, races);
   assert.ok(
-    (migrated.needsReview ?? []).some((m) => m.includes("ruleChoices")),
+    (migrated.needsReview ?? []).some((m) => m === ANCESTRY_NOTICE),
     `expected a ruleChoices review flag, got ${JSON.stringify(migrated.needsReview)}`
   );
 });
@@ -100,7 +101,7 @@ test("a character whose only choice is not yet unlocked is not flagged", () => {
   delete legacy.ruleChoices;
   const migrated = migrateCharacter(legacy, races);
   assert.equal(
-    (migrated.needsReview ?? []).some((m) => m.includes("ruleChoices")),
+    (migrated.needsReview ?? []).some((m) => m === ANCESTRY_NOTICE),
     false,
     "a locked choice is not a missing one"
   );
@@ -115,14 +116,14 @@ test("an unlocked aasimar revelation with no pick is flagged", () => {
   );
   delete legacy.ruleChoices;
   const migrated = migrateCharacter(legacy, races);
-  assert.ok((migrated.needsReview ?? []).some((m) => m.includes("ruleChoices")));
+  assert.ok((migrated.needsReview ?? []).some((m) => m === ANCESTRY_NOTICE));
 });
 
 test("a character with no ancestry rule choice is not flagged", () => {
   const legacy = JSON.parse(JSON.stringify(raceChar("Goliath", "VGM")));
   delete legacy.ruleChoices;
   const migrated = migrateCharacter(legacy, races);
-  assert.equal((migrated.needsReview ?? []).some((m) => m.includes("ruleChoices")), false);
+  assert.equal((migrated.needsReview ?? []).some((m) => m === ANCESTRY_NOTICE), false);
 });
 
 test("an aasimar who already chose a revelation is not flagged", () => {
@@ -133,7 +134,7 @@ test("an aasimar who already chose a revelation is not flagged", () => {
   legacy.ruleChoices = chosen.ruleChoices;
   const migrated = migrateCharacter(legacy, races);
   assert.equal(migrated.ruleChoices?.length, 1);
-  assert.equal((migrated.needsReview ?? []).some((m) => m.includes("ruleChoices")), false);
+  assert.equal((migrated.needsReview ?? []).some((m) => m === ANCESTRY_NOTICE), false);
 });
 
 test("a malformed rule choice entry is rejected rather than silently dropped", () => {

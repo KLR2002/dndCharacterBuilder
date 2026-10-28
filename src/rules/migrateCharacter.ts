@@ -109,7 +109,7 @@ export function migrateCharacter(
       const entry: SkillChoiceEntry = { id: `${source.origin}__${source.name}__${source.source}__skills`, origin: source.origin,
         choose: chosenSkills.length, from: [...chosenSkills], picked: [...chosenSkills] };
       skillChoices = [entry];
-    } else needsReview.add("skillChoices: legacy chosenSkills ownership is ambiguous");
+    } else needsReview.add("Some skill picks could not be matched to a class or background. Check them in the Builder.");
   }
   const ruleChoices = c.ruleChoices ?? [];
   // A character saved before Rule Choices existed has no recorded pick for an
@@ -124,7 +124,7 @@ export function migrateCharacter(
       (choice) => !recorded.has(choice.id)
     );
     if (missing.length > 0) {
-      needsReview.add("ruleChoices: this ancestry offers a choice that was never recorded");
+      needsReview.add("Your ancestry has a choice to make in the Builder.");
     }
   }
 

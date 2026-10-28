@@ -446,7 +446,7 @@ test("ambiguous legacy skills are preserved and flagged, not assigned an invente
     const migrated = migrateCharacter({ ...makeChar(), ...source, chosenSkills: ["Arcana"], needsReview: ["existing warning"] });
     assert.deepEqual(migrated.chosenSkills, ["Arcana"]);
     assert.deepEqual(migrated.skillChoices, []);
-    assert.ok(migrated.needsReview?.includes("skillChoices: legacy chosenSkills ownership is ambiguous"));
+    assert.ok(migrated.needsReview?.includes("Some skill picks could not be matched to a class or background. Check them in the Builder."));
     assert.ok(migrated.needsReview?.includes("existing warning"));
     assert.deepEqual(migrateCharacter(migrated), migrated);
   }
