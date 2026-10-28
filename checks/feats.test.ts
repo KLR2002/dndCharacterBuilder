@@ -1,6 +1,6 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import type { Character, RuleChoiceEntry } from "../src/types/character.ts";
+import type { AsiSelection, Character, RuleChoiceEntry } from "../src/types/character.ts";
 import { inMemoryCompendium } from "./testUtils.ts";
 import {
   validateFeatPrerequisites,
@@ -10,6 +10,9 @@ import {
 } from "../src/rules/feats.ts";
 import { effectiveScores, hasFeat } from "../src/rules/abilities.ts";
 import { FIGHTING_INITIATE_CHOICE_ID } from "../src/rules/choices/fightingStyles.ts";
+import { featCounterId } from "../src/rules/choices/featSpells.ts";
+import { migrateCharacter } from "../src/rules/migrateCharacter.ts";
+import { BACKGROUND_FEAT_SOURCE } from "../src/constants/rules.ts";
 
 function makeChar(overrides: Partial<Character> = {}): Character {
   return {
@@ -353,5 +356,44 @@ describe("Removing an origin feat reconciles the choices that depended on it", (
 
     assert.deepEqual(updated.ruleChoices, [fighterStyle, initiateStyle]);
     assert.deepEqual(updated.needsReview ?? [], []);
+  });
+});
+
+describe("Legacy duplicate origin feat entries on load", () => {
+  const raceEntry: AsiSelection = { level: 1, type: "feat", featName: "Sample Initiate", featSource: "TST" };
+  const backgroundEntry: AsiSelection = { level: 1, type: "feat", featName: "Sample Initiate", featSource: BACKGROUND_FEAT_SOURCE };
+  const otherEntry: AsiSelection = { level: 1, type: "feat", featName: "Sample Mark", featSource: "TST" };
+  const initiateStyle: RuleChoiceEntry = {
+    id: "TST__Feat__Sample Initiate__Style",
+    trait: "Sample Initiate Style",
+    origin: "class",
+    choose: 1,
+    from: ["Sample Style A", "Sample Style B"],
+    picked: ["Sample Style A"],
+  };
+  const counterId = featCounterId("Sample Initiate", undefined, "Sample Spell");
+  const counters: Character["resourceCounters"] = {
+    [counterId]: { id: counterId, name: "Sample Spell", current: 1, max: 1, resetOn: "long" },
+  };
+  const saved = (originFeats: AsiSelection[]) => makeChar({ originFeats, ruleChoices: [initiateStyle], resourceCounters: counters });
+
+  it("keeps the Background entry, with the picks and counters of the feat, when a race entry of the same feat is saved too", () => {
+    const loaded = migrateCharacter(JSON.parse(JSON.stringify(saved([raceEntry, backgroundEntry]))));
+
+    assert.deepEqual(loaded.originFeats, [backgroundEntry]);
+    assert.deepEqual(loaded.ruleChoices, [initiateStyle]);
+    assert.deepEqual(loaded.resourceCounters, counters);
+  });
+
+  it("leaves a save whose origin feats are distinct unchanged", () => {
+    const loaded = migrateCharacter(JSON.parse(JSON.stringify(saved([raceEntry, otherEntry]))));
+
+    assert.deepEqual(loaded.originFeats, [raceEntry, otherEntry]);
+  });
+
+  it("loads an already normalised save without change", () => {
+    const once = migrateCharacter(JSON.parse(JSON.stringify(saved([raceEntry, backgroundEntry]))));
+
+    assert.deepEqual(migrateCharacter(once), once);
   });
 });

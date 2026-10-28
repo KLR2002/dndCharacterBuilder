@@ -1,14 +1,39 @@
-import type { Character, KnownSpell, SkillChoiceEntry } from "../types/character.ts";
+import type { AsiSelection, Character, KnownSpell, SkillChoiceEntry } from "../types/character.ts";
 import type { ClassData, RaceData } from "../types/dnd5e.ts";
 import { spellAbilityOf } from "./classData.ts";
 import { totalLevel } from "./proficiencies.ts";
 import { availableRuleChoices } from "./ruleChoices.ts";
 import { migrateLegacyRacialCantrip, moveLegacyRacePickIds } from "./choices/featSpells.ts";
 import { heldRaceListed } from "./raceLookup.ts";
-import { UNKNOWN_OWNER_KEY } from "../constants/rules.ts";
+import { BACKGROUND_FEAT_SOURCE, UNKNOWN_OWNER_KEY } from "../constants/rules.ts";
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return value !== null && typeof value === "object" && !Array.isArray(value);
+}
+
+/**
+ * One entry per feat name. A save made before a feat was held once can carry the race's copy and the background's; the
+ * background's is kept because the builder cannot remove it. A feat's picks and counters are keyed by the feat, so they
+ * stay with the kept entry.
+ */
+function oneEntryPerFeat(entries: AsiSelection[]): AsiSelection[] {
+  const kept: AsiSelection[] = [];
+  const indexByName = new Map<string, number>();
+  for (const entry of entries) {
+    const name = entry.featName?.toLowerCase();
+    if (!name) {
+      kept.push(entry);
+      continue;
+    }
+    const index = indexByName.get(name);
+    if (index === undefined) {
+      indexByName.set(name, kept.length);
+      kept.push(entry);
+    } else if (kept[index].featSource !== BACKGROUND_FEAT_SOURCE && entry.featSource === BACKGROUND_FEAT_SOURCE) {
+      kept[index] = entry;
+    }
+  }
+  return kept.length === entries.length ? entries : kept;
 }
 
 /**
@@ -114,6 +139,7 @@ export function migrateCharacter(
     knownSpells,
     preparedSpells: prepared.map(key => key.split("__").length < 4 ? `${key}__${ownerKey}` : key),
     pactSlotsUsed: c.pactSlotsUsed ?? c.usedPactSlots ?? 0,
+    ...(Array.isArray(c.originFeats) ? { originFeats: oneEntryPerFeat(c.originFeats) } : {}),
   };
   // A saved legacy racial cantrip moves to the race's own pick once the catalog says what the race grants. A race the catalog
   // does not hold is not loaded, so the cantrip is kept as saved, with no notice.
