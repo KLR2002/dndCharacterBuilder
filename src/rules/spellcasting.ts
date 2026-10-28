@@ -8,6 +8,7 @@ import {
   GIANT_BARBARIAN_OWNER_KEY,
   GIANT_POWER_CANTRIPS,
   MULTICLASS_SPELL_SLOTS,
+  UNKNOWN_OWNER_KEY,
   WARLOCK_PACT_SLOTS,
 } from "../constants/rules.ts";
 import { GIANT_POWER_CHOICE_ID } from "./choices/types.ts";
@@ -236,7 +237,7 @@ export function getClassSpellProfiles(
       .map(k => ({
         name: k.name,
         source: k.source,
-        ownerKey: k.ownerKey && k.ownerKey !== "unknown__unknown" ? k.ownerKey : classOwnerKey,
+        ownerKey: k.ownerKey && k.ownerKey !== UNKNOWN_OWNER_KEY ? k.ownerKey : classOwnerKey,
         ...(k.className ? { className: k.className } : {}),
         ...(k.ability ? { ability: k.ability } : isGiant ? { ability: "wis" as AbilityKey } : {}),
       }));

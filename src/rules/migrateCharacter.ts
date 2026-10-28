@@ -5,6 +5,7 @@ import { totalLevel } from "./proficiencies.ts";
 import { availableRuleChoices } from "./ruleChoices.ts";
 import { migrateLegacyRacialCantrip, moveLegacyRacePickIds } from "./choices/featSpells.ts";
 import { heldRaceListed } from "./raceLookup.ts";
+import { UNKNOWN_OWNER_KEY } from "../constants/rules.ts";
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return value !== null && typeof value === "object" && !Array.isArray(value);
@@ -59,7 +60,7 @@ export function migrateCharacter(
   // Match the legacy SpellsTab mapping, including its non-PHB class-name entries.
   const owner = classes.find(entry => spellAbilityOf(entry, classCatalog) ||
     ["Artificer", "Arcane Trickster", "Eldritch Knight"].includes(entry.className));
-  const ownerKey = owner ? `${owner.className}__${owner.source}` : "unknown__unknown";
+  const ownerKey = owner ? `${owner.className}__${owner.source}` : UNKNOWN_OWNER_KEY;
   const knownSpells: KnownSpell[] = known.map(spell => ({ ...spell, ownerKey: spell.ownerKey ?? ownerKey }));
   const chosenSkills = c.chosenSkills ?? [];
   if (!chosenSkills.every(skill => typeof skill === "string") || !(c.needsReview ?? []).every(message => typeof message === "string")) {

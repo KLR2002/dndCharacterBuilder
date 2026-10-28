@@ -6,6 +6,9 @@ import type { AbilityKey } from "../types/character.ts";
  */
 export const BACKGROUND_FEAT_SOURCE = "Background";
 
+/** The Spell Owner key a known spell takes when no class owned it on migration (see migrateCharacter). */
+export const UNKNOWN_OWNER_KEY = "unknown__unknown";
+
 /** The Spell Owner key for a Path of the Giant Barbarian's granted cantrips (Druidcraft, Thaumaturgy). */
 export const GIANT_BARBARIAN_OWNER_KEY = "Barbarian__BGG";
 

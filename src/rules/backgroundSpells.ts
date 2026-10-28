@@ -7,6 +7,7 @@ import { isCastingClass, isGiantBarbarian, isSpellAvailableForClass, spellOwnerK
 import { normalizeKey, resolveSpellName } from "./subclassSpells.ts";
 import { findHeldRecord } from "./raceLookup.ts";
 import { isCustomBackground } from "./customBackground.ts";
+import { UNKNOWN_OWNER_KEY } from "../constants/rules.ts";
 
 /**
  * The spell names a list of spell grants adds to the list of each spellcasting class the character has (ADR 0017). The
@@ -24,9 +25,6 @@ function expandedSpellNamesOf(grants: readonly AdditionalSpells[] | undefined): 
   }
   return names;
 }
-
-/** The owner key a known copy takes when no class owned it on migration (see migrateCharacter). */
-const UNKNOWN_OWNER_KEY = "unknown__unknown";
 
 /** A source the character holds whose expanded lists add spells to its classes' lists, and the names those lists give. */
 export interface ExpandedSpellSource {
