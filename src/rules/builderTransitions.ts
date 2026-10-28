@@ -264,6 +264,21 @@ export function releaseRaceSkillPicks(character: Character): Character {
 }
 
 /**
+ * Settles a change of the race or lineage held: releases the race picks `before` held that `after` no longer grants, each with
+ * a notice that names the race as `before` held it, then reconciles, and releases the spells only the old expanded lists gave
+ * (ADR 0017).
+ */
+export function settleAncestryChange(
+  before: Character,
+  after: Character,
+  compendium: Compendium,
+  activeBooks?: string[]
+): Character {
+  const reconciled = reconcile(releaseSupersededRacePicks(before, after), compendium, { activeBooks });
+  return releaseExpandedOnlySpells(before, reconciled, compendium, activeBooks);
+}
+
+/**
  * Changes the character's race: drops the race, its ability bonuses, and its race-origin Rule
  * Choices and skill picks, then reconciles. Class-origin choices are kept.
  */
@@ -285,9 +300,7 @@ export function changeRace(
     racialChoiceBonus: [],
     ruleChoices: (leaving.ruleChoices || []).filter((rc) => rc.origin !== "race" || isGrantSpellChoiceId(rc.id)),
   };
-  const reconciled = reconcile(releaseSupersededRacePicks(leaving, cleared), compendium, { activeBooks });
-  // The spells only the old race's expanded lists gave are released, with a notice (ADR 0017).
-  return releaseExpandedOnlySpells(leaving, reconciled, compendium, activeBooks);
+  return settleAncestryChange(leaving, cleared, compendium, activeBooks);
 }
 
 /** The lineage a character takes in place of its race: none, the Custom Lineage, or a named lineage. */
@@ -318,10 +331,7 @@ export function changeLineage(
           customLineage: false,
           lineageReplacement: lineage.kind === "lineage" ? lineage.name : null,
         };
-  // The picks the new state no longer grants are released from the character before the change, which titles them;
-  // the reconcile then judges the rest, as changeRace does.
-  const reconciled = reconcile(releaseSupersededRacePicks(base, changed), compendium, { activeBooks });
-  return releaseExpandedOnlySpells(base, reconciled, compendium, activeBooks);
+  return settleAncestryChange(base, changed, compendium, activeBooks);
 }
 
 /**

@@ -6,13 +6,12 @@ import {
   type AvailableRuleChoice,
 } from "./ruleChoices.ts";
 import { catalogListings, type CharacterCatalogs } from "./characterEvaluation.ts";
-import { releaseRaceSkillPicks, setChoiceRacialBonus } from "./builderTransitions.ts";
+import { releaseRaceSkillPicks, setChoiceRacialBonus, settleAncestryChange } from "./builderTransitions.ts";
 import { reconcile } from "./characterReconciler.ts";
 import { currentCompendium } from "../services/compendium.ts";
 import { BACKGROUND_FEAT_SOURCE } from "../constants/rules.ts";
-import { isGrantSpellChoiceId, releaseSupersededRacePicks } from "./choices/featSpells.ts";
+import { isGrantSpellChoiceId } from "./choices/featSpells.ts";
 import { moveLegacySkillPicks } from "./proficiencyPicks.ts";
-import { releaseExpandedOnlySpells } from "./backgroundSpells.ts";
 import { raceOriginFeatTitle, releaseRaceOriginFeat } from "./feats.ts";
 import { findHeldRace } from "./raceLookup.ts";
 
@@ -205,10 +204,12 @@ export function applyAncestrySelection(
   const skilled = character.race?.name === race.name ? migrated : releaseRaceSkillPicks(migrated);
 
   // A race's pick of spells is kept here: the reconciler releases it, with a notice, once the race no longer grants it.
+  // The Custom Lineage record takes the place of a held lineage, which is given up with its picks, as changeLineage does.
   const cleaned: Character = {
     ...skilled,
     race: updatedRace,
     customLineage: isCustom,
+    lineageReplacement: isCustom ? null : character.lineageReplacement,
     racialAbilityBonuses: bonuses,
     racialChoiceBonus: [],
     chosenLanguages: nextChosenLanguages,
@@ -216,13 +217,7 @@ export function applyAncestrySelection(
     ruleChoices: (leaving.ruleChoices || []).filter((rc) => rc.origin !== "race" || isGrantSpellChoiceId(rc.id)),
   };
 
-  // The spells only the old race's or subrace's expanded lists gave are released, with a notice (ADR 0017).
-  return releaseExpandedOnlySpells(
-    leaving,
-    reconcile(releaseSupersededRacePicks(leaving, cleaned), compendium, { activeBooks }),
-    compendium,
-    activeBooks
-  );
+  return settleAncestryChange(leaving, cleaned, compendium, activeBooks);
 }
 
 export function applyAncestryChoice(

@@ -449,3 +449,18 @@ test("replacing the race's origin feat leaves the background's entry of the same
     "the race's entry is the one replaced",
   );
 });
+
+test("choosing Custom Lineage in the race picker gives up a held lineage and releases its pick, as the lineage control does", () => {
+  const lineageOnly: Character = { ...picked(holding(ALPHA), "Sample Shot"), race: null };
+  assert.deepEqual(pickedNames(lineageOnly), ["Sample Shot"], "the held lineage's pick is recorded before the choice");
+
+  const applied = applyAncestrySelection(lineageOnly, race("Custom Lineage", { source: "TCE" }), undefined, {
+    compendium,
+    activeBooks: ACTIVE,
+  });
+
+  assert.equal(applied.customLineage, true);
+  assert.equal(applied.lineageReplacement, null, "the lineage gives way to the custom race, so only one of the two is set");
+  assert.deepEqual(pickedNames(applied), [], "the old lineage's pick is released");
+  assert.deepEqual(applied.needsReview, ["Sample Shot removed from Sample Lineage Alpha: ancestry no longer grants it"]);
+});
