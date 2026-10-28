@@ -266,7 +266,15 @@ export function changeRace(
   };
   const reconciled = reconcile(releaseSupersededRacePicks(leaving, cleared), compendium, { activeBooks });
   // The spells only the old race's expanded lists gave are released, with a notice (ADR 0017).
-  return releaseExpandedOnlySpells(leaving, reconciled, compendium, activeBooks);
+  const released = releaseExpandedOnlySpells(leaving, reconciled, compendium, activeBooks);
+  // A skill pick the race gave goes with it, and is noticed as a spell pick is.
+  const heldRace = character.race?.name;
+  const skillNotices = heldRace
+    ? (migrated.chosenSkills || [])
+        .filter((s) => oldRacePicks.has(normalizeSkillName(s)))
+        .map((s) => `${s} removed from ${heldRace}: ancestry no longer grants it`)
+    : [];
+  return withNotices(released, skillNotices);
 }
 
 /** The lineage a character takes in place of its race: none, the Custom Lineage, or a named lineage. */
@@ -276,6 +284,7 @@ export type LineageChoice = { kind: "none" } | { kind: "custom" } | { kind: "lin
  * Replaces the character's lineage with the one chosen, or with none, and reconciles in the same step. The race picks of the
  * old lineage are released with a notice, and so are the spells only its expanded list gave (ADR 0017). Leaving Custom Lineage
  * clears the custom race as changeRace does, so the character picks a race again and nothing of the custom race stays granted.
+ * Choosing Custom Lineage from a catalog race clears that race the same way, then holds the custom race.
  */
 export function changeLineage(
   character: Character,
@@ -283,7 +292,11 @@ export function changeLineage(
   compendium: Compendium = currentCompendium(),
   activeBooks?: string[]
 ): Character {
-  const base = character.customLineage && lineage.kind !== "custom" ? changeRace(character, compendium, activeBooks) : character;
+  const leavesRace =
+    lineage.kind === "custom"
+      ? character.race != null && !character.customLineage
+      : character.customLineage;
+  const base = leavesRace ? changeRace(character, compendium, activeBooks) : character;
   const changed: Character =
     lineage.kind === "custom"
       ? { ...base, customLineage: true, lineageReplacement: null, race: { name: "Custom Lineage", source: "TCE" } }

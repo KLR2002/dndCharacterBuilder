@@ -32,7 +32,10 @@ const CUSTOM = { name: "Custom Lineage", source: "TCE" };
 const ALPHA = "Sample Lineage Alpha";
 const BETA = "Sample Lineage Beta";
 const BASE = "Sample Folk";
+const HILL = "Sample Hillfolk";
 const cantripPick = { ability: "int" as const, known: { "1": { _: [{ choose: "level=0|class=Sample Mage" }] } } };
+// A race with a fixed ability bonus, a spell pick and a skill pick, as a dwarf-shaped race gives.
+const hillRecord = race(HILL, { abilityScoreIncrease: [{ con: 2 }], additionalSpells: [cantripPick] });
 
 const compendium = inMemoryCompendium({
   classes: grantedSpellClasses(),
@@ -41,6 +44,7 @@ const compendium = inMemoryCompendium({
     race(BASE, {}),
     race(ALPHA, { additionalSpells: [cantripPick] }),
     race(BETA, { additionalSpells: [cantripPick] }),
+    hillRecord,
   ],
 });
 const ACTIVE = ["TST"];
@@ -314,4 +318,44 @@ test("changing subrace within the race that gives the origin feat keeps the feat
   assert.deepEqual(changed.originFeats?.map((feat) => feat.featName), ["Sample Initiate"], "the origin feat stays");
   assert.ok(pickedNames(changed).includes("Sample Ember"), "its spell pick stays");
   assert.ok(changed.resourceCounters?.[pulseCounter], "its counter stays");
+});
+
+// A character of the catalog race with its fixed bonus applied, its spell pick made, and a skill pick of the race's in place.
+// The skill pick is invented: Sample Versatility lets the character take one of two skills.
+const hillFolk = (): Character => {
+  const applied = applyAncestrySelection(makeChar({ classes: [mage] }), hillRecord, undefined, { compendium, activeBooks: ACTIVE });
+  return {
+    ...picked(applied, "Sample Shot"),
+    skillChoices: [{ id: "Race: Sample Versatility", origin: "race", choose: 1, from: ["Survival", "Stealth"], picked: ["Survival"] }],
+    chosenSkills: ["Survival"],
+  };
+};
+
+test("choosing Custom Lineage from a catalog race clears its fixed bonus, spell pick and skill pick, with notices", () => {
+  const before = hillFolk();
+  assert.deepEqual(before.racialAbilityBonuses, { con: 2 }, "the fixed bonus is recorded before the change");
+  assert.deepEqual(pickedNames(before), ["Sample Shot"], "the race's spell pick is recorded before the change");
+
+  const custom = changeLineage(before, { kind: "custom" }, compendium, ACTIVE);
+
+  assert.deepEqual(custom.racialAbilityBonuses, {}, "the fixed bonus is gone");
+  assert.deepEqual(pickedNames(custom), [], "the race's spell pick is released");
+  assert.equal(custom.skillChoices?.some((sc) => sc.origin === "race"), false, "the race's skill choice is cleared");
+  assert.deepEqual(custom.chosenSkills, [], "the race's skill pick is cleared");
+  assert.ok(
+    custom.needsReview?.some((notice) => /Sample Shot removed from Sample Hillfolk/.test(notice)),
+    `the spell pick's release is noticed: ${JSON.stringify(custom.needsReview)}`,
+  );
+  assert.ok(
+    custom.needsReview?.some((notice) => /Survival removed from Sample Hillfolk/.test(notice)),
+    `the skill pick's release is noticed: ${JSON.stringify(custom.needsReview)}`,
+  );
+});
+
+test("choosing Custom Lineage from a catalog race holds the custom race with its flag", () => {
+  const custom = changeLineage(hillFolk(), { kind: "custom" }, compendium, ACTIVE);
+
+  assert.deepEqual(custom.race, CUSTOM, "the custom race is held");
+  assert.equal(custom.customLineage, true, "the custom flag is set");
+  assert.equal(custom.lineageReplacement, null);
 });
