@@ -874,6 +874,14 @@ function ownerBookLoaded(id: string, listings: CompendiumListings, character: Ch
 const BOOK_SWITCHED_OFF = "book switched off";
 
 /**
+ * Whether a feat record the catalog holds is switched off: its book is one the active books leave out, so the feat is switched
+ * off rather than removed. Without active books nothing is switched off, and an absent record (undefined) is not.
+ */
+function featSwitchedOff(feat: { source: string } | undefined, activeBooks?: readonly string[]): boolean {
+  return feat !== undefined && activeBooks !== undefined && !activeBooks.includes(feat.source);
+}
+
+/**
  * Releases the granted spell picks that no longer hold, with a review notice for each release. A pick is released when its
  * owner is no longer held, when its list is no longer the one picked, or (with the active books given) when the spell is no
  * longer offered. An owner whose record the loaded catalog holds but whose book is switched off is released with the reason
@@ -983,10 +991,8 @@ export function pruneReleasedFeatCounters(character: Character, compendium: Comp
       const book = bookOf.get(featSlug);
       if (book !== undefined && !bookLoadedFor(book, listings)) continue;
       const catalogName = listings.feats().find((feat) => slugOf(feat.name) === featSlug)?.name;
-      // The feat's record is in its book, which the active books no longer include: the feat is switched off, not removed.
-      const switchedOff = book !== undefined && activeBooks !== undefined && !activeBooks.includes(book)
-        && listings.feats().some((feat) => slugOf(feat.name) === featSlug && feat.source === book);
-      const reason = switchedOff ? BOOK_SWITCHED_OFF : "feat no longer held";
+      const bookFeat = book === undefined ? undefined : listings.feats().find((feat) => slugOf(feat.name) === featSlug && feat.source === book);
+      const reason = featSwitchedOff(bookFeat, activeBooks) ? BOOK_SWITCHED_OFF : "feat no longer held";
       notices.push(catalogName
         ? `${counterName} removed from ${catalogName}: ${reason}`
         : `${counterName} removed: ${reason}`);
