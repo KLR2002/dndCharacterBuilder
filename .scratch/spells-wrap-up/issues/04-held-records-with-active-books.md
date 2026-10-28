@@ -1,6 +1,8 @@
 # 04: Held records resolved with the active books
 
-**Status:** ready-for-agent
+**Status:** done
+
+**Landed:** a custom background never resolves to a catalog record or its feature; the Journal race lookup takes the held subrace; the legacy cantrip migration is scoped by the active books; Fighting Style ids take the class source (saved ids move on reconcile). check:all and check:live (135/135) green. Open (not spells, product decisions): scoped class lists feed held-class lookups, so a class from a switched-off book resolves to nothing in the proficiency sheet; fixed PHB ids remain in Battle Master maneuvers and Warlock choices.
 
 Spec: `.scratch/spells-wrap-up/spec.md`.
 
@@ -14,11 +16,11 @@ The remaining readers that resolve a held record where the active books are know
 
 ## Acceptance Criteria
 
-- [ ] The Journal tab, the legacy cantrip migration and `resolveCharacterBackground` scope the held record by the active books (AC-7).
-- [ ] A custom background named like a catalog background does not resolve to the catalog record (AC-7).
-- [ ] The Fighting Style choice id takes its source from the class record, so an active-book set without the PHB still offers the choice for a class from another book (AC-7).
-- [ ] The re-grep finds no remaining unscoped call with the books available, and the report lists each fix.
-- [ ] `npm run check:all` and `npm run check:live` pass.
+- [x] The Journal tab, the legacy cantrip migration and `resolveCharacterBackground` scope the held record by the active books (AC-7).
+- [x] A custom background named like a catalog background does not resolve to the catalog record (AC-7).
+- [x] The Fighting Style choice id takes its source from the class record, so an active-book set without the PHB still offers the choice for a class from another book (AC-7).
+- [x] The re-grep finds no remaining unscoped call with the books available, and the report lists each fix.
+- [x] `npm run check:all` and `npm run check:live` pass.
 
 ## Verification
 
