@@ -860,12 +860,14 @@ function bookLoadedFor(source: string | undefined, listings: CompendiumListings)
 
 /**
  * Whether the book of the owner of a Rule Choice id is loaded (see bookLoadedFor). A feat's book is the id's source. A race's
- * id names no book, so the race is loaded when the catalog holds the race the character holds (see heldRaceListed).
+ * id names no book: its owner is the lineage when the character has one, held by name, and otherwise the race (see
+ * heldRaceListed), so the race is loaded when the catalog holds that record.
  */
 function ownerBookLoaded(id: string, listings: CompendiumListings, character: Character): boolean {
   const [source, mark] = id.split("__");
-  if (mark === OWNER_MARK.race) return heldRaceListed(character.race, listings.races());
-  return bookLoadedFor(source, listings);
+  if (mark !== OWNER_MARK.race) return bookLoadedFor(source, listings);
+  if (character.lineageReplacement) return listings.races().some((race) => race.name === character.lineageReplacement);
+  return heldRaceListed(character.race, listings.races());
 }
 
 /** The reason a pick or counter is released when its owner's book is switched off. */

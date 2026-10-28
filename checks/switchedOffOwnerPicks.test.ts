@@ -201,6 +201,23 @@ for (const owner of OWNERS) {
   });
 }
 
+test("a lineage held without a base race releases its pick when its book is switched off, and keeps it while the book is on", () => {
+  const lineage = OWNERS.find((owner) => owner.kind === "lineage");
+  if (!lineage) throw new Error("no lineage case");
+  const noBaseRace = makeChar({ classes: [mage(4)], race: null, lineageReplacement: "Sample Lineage" });
+  const picked = lineage.pickEmber(noBaseRace, BOTH);
+  const released = reconcileForActiveBooks(picked, lineageCompendium, ALT_OFF);
+  assert.equal(
+    (released.ruleChoices ?? []).some((entry) => entry.picked.includes("Sample Ember")),
+    false,
+    "the pick is released",
+  );
+  assert.deepEqual(released.needsReview, ["Sample Ember removed from Sample Lineage: book switched off"]);
+  assert.deepEqual(reconcileForActiveBooks(picked, lineageCompendium, BOTH).ruleChoices, picked.ruleChoices, "the book on keeps it");
+  const lacking = inMemoryCompendium({ classes: grantedSpellClasses(), spells: grantedSpellSpells() }, { integrated: true });
+  assert.deepEqual(reconcileForActiveBooks(picked, lacking, ALT_OFF).ruleChoices, picked.ruleChoices, "a catalog without the lineage keeps it");
+});
+
 test("switching a feat's book off releases the Long Rest counter of its spell list, with a notice naming the feat", () => {
   const featCase = OWNERS.find((owner) => owner.kind === "feat");
   assert.ok(featCase);

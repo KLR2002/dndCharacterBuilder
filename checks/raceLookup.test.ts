@@ -356,7 +356,7 @@ test("a held lineage whose book is switched off releases its recorded pick, with
   );
 });
 
-test("a catalog that holds the lineage's book but not the lineage releases the lineage's pick, with a notice", () => {
+test("a catalog that holds the lineage's book but not the lineage keeps the lineage's pick, as the lineage is not loaded", () => {
   const spellsAndClasses = { classes: grantedSpellClasses(), spells: grantedSpellSpells() };
   const full = inMemoryCompendium(
     { ...spellsAndClasses, races: [race("Sample Folk", "TST"), lineageUnder("ALT")] },
@@ -371,12 +371,9 @@ test("a catalog that holds the lineage's book but not the lineage releases the l
   const choice = raceSpellRuleChoices(character, full, both).find((c) => c.options.some((o) => o.name === "Sample Ember"));
   assert.ok(choice, "the lineage offers Sample Ember");
   const picked = pickRuleChoice(character, choice, "Sample Ember", full, both);
-  const released = pruneInvalidFeatSpellPicks(picked, withoutLineage, both);
-  assert.equal(released.ruleChoices?.some((entry) => entry.picked.includes("Sample Ember")), false, "the pick is released");
-  assert.ok(
-    released.needsReview?.includes("Sample Ember removed from Sample Lineage: ancestry no longer grants it"),
-    `the release is noticed: ${JSON.stringify(released.needsReview)}`,
-  );
+  const kept = pruneInvalidFeatSpellPicks(picked, withoutLineage, both);
+  assert.deepEqual(kept.ruleChoices, picked.ruleChoices, "the pick is kept");
+  assert.equal(kept.needsReview, undefined, "no notice is made");
 });
 
 // Invented subclass, background and feat under one source, for the saved-source oracles below.
