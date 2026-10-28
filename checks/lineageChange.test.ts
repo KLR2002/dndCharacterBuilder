@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { changeLineage, changeRace } from "../src/rules/builderTransitions.ts";
 import { applyAncestrySelection } from "../src/rules/ancestryEngine.ts";
+import { migrateCharacter } from "../src/rules/migrateCharacter.ts";
 import { featCounterId, featSpellRuleChoices, raceSpellRuleChoices } from "../src/rules/choices/featSpells.ts";
 import { pickRuleChoice } from "../src/rules/ruleChoices.ts";
 import type { Character, CharacterClass } from "../src/types/character.ts";
@@ -233,4 +234,18 @@ test("applying the Custom Lineage record makes the character a Custom Lineage, a
   });
   assert.equal(applied.race?.name, "Custom Lineage");
   assert.equal(applied.customLineage, true, "the race picker reaches the same state as the lineage control");
+});
+
+test("a save that names the Custom Lineage race without the custom flag loads with the flag set and the race kept", () => {
+  const saved = makeChar({ classes: [mage], race: CUSTOM, customLineage: false });
+  const loaded = migrateCharacter(JSON.parse(JSON.stringify(saved)), undefined, grantedSpellClasses());
+  assert.equal(loaded.customLineage, true, "the flag follows the race");
+  assert.deepEqual(loaded.race, CUSTOM, "the race stays");
+
+  const oldSave = JSON.parse(JSON.stringify(saved)) as Record<string, unknown>;
+  delete oldSave.customLineage;
+  assert.equal(migrateCharacter(oldSave, undefined, grantedSpellClasses()).customLineage, true, "a save with no flag too");
+
+  const plain = migrateCharacter(JSON.parse(JSON.stringify(holding(ALPHA))), undefined, grantedSpellClasses());
+  assert.equal(plain.customLineage, false, "a character that is not a Custom Lineage stays so");
 });

@@ -101,6 +101,8 @@ export function migrateCharacter(
   const migrated: Character = {
     ...c,
     ...(needsReview.size ? { needsReview: [...needsReview] } : {}),
+    // A save that holds the Custom Lineage race is a Custom Lineage, whether or not its flag was written.
+    customLineage: c.customLineage === true || c.race?.name === "Custom Lineage",
     ruleChoices,
     classes,
     chosenSkills: c.chosenSkills ?? [],
