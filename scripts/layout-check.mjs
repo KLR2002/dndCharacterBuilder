@@ -191,6 +191,31 @@ function longNameCharacter() {
   });
 }
 
+// A level 3 Rogue with four review notices, long enough to wrap, so the notice row starts collapsed and expands to a list.
+const NOTICES_ID = "char_notices";
+const REVIEW_NOTICES = [
+  "Marrowthread Ward removed from Brindlewood Circle: the spell list it belonged to is not offered in your active books",
+  "Glimmerveil Chime removed from Hollow Library of Vennmoor: its source book was switched off",
+  "Sigil of the Quiet Tide released from Stormcarved Initiate: the feat is no longer held by this character",
+  "Skyfall Lattice counter released from Pact of the Veil: the Warlock level no longer meets its prerequisite",
+];
+function noticesCharacter() {
+  return makeChar({
+    id: NOTICES_ID,
+    name: "Quill",
+    createdAt: 9,
+    updatedAt: 9,
+    startingOption: "equipment",
+    race: { name: "Human", source: catalogSource("races", "Human") },
+    background: { name: "Acolyte", source: catalogSource("backgrounds", "Acolyte") },
+    classes: [{ className: "Rogue", source: catalogSource("classes", "Rogue"), level: 3 }],
+    currentHp: 20,
+    startingGrantsApplied: true,
+    backgroundGrantsApplied: true,
+    needsReview: REVIEW_NOTICES,
+  });
+}
+
 // A level 3 Way of the Kensei monk, integrated mode only (the Kensei is not in the SRD). Its Path of the Kensei
 // choices are Proficiency Choices: the brush and the ranged kensei weapon are unmade ("Picked 0 / 1"), and the
 // melee kensei weapon is picked (Rapier), which the Stats tab shows under Weapon Proficiencies.
@@ -786,6 +811,7 @@ function buildSeed() {
       halfElfCharacter(),
       rangerCharacter(),
       longNameCharacter(),
+      noticesCharacter(),
       ...(INTEGRATED ? [kenseiCharacter()] : []),
       ...(INTEGRATED ? [initiativeCharacter()] : []),
       bardCharacter(),
@@ -824,6 +850,7 @@ const ARTIFICER_ROUTE = `/character/${ARTIFICER_ID}`;
 const HALF_ELF_ROUTE = `/character/${HALF_ELF_ID}`;
 const RANGER_ROUTE = `/character/${RANGER_ID}`;
 const LONG_NAME_ROUTE = `/character/${LONG_NAME_ID}`;
+const NOTICES_ROUTE = `/character/${NOTICES_ID}`;
 const KENSEI_ROUTE = `/character/${KENSEI_ID}`;
 const INITIATIVE_ROUTE = `/character/${INITIATIVE_ID}`;
 const BARD_ROUTE = `/character/${BARD_ID}`;
@@ -1070,6 +1097,9 @@ const SCREENS = [
   { name: "Features", route: RENDAR_ROUTE, tabs: ["Features"], ready: /resource trackers/i },
   { name: "Journal", route: RENDAR_ROUTE, tabs: ["Journal"], ready: /character name/i },
   { name: "Actions", route: RENDAR_ROUTE, tabs: ["Actions"], ready: /attack action/i },
+  { name: "Review notices collapsed", route: NOTICES_ROUTE, tabs: ["Stats"], ready: "4 to review", expect: { texts: ["4 to review"], absent: [REVIEW_NOTICES[0]], fitsWidth: true } },
+  { name: "Review notices expanded", route: NOTICES_ROUTE, tabs: ["Journal"], open: (page) => page.getByText("4 to review", { exact: true }).first().click(), ready: "Dismiss all", scrollTo: "Dismiss all", expect: { texts: [...REVIEW_NOTICES, "Dismiss all"], fitsWidth: true } },
+  { name: "Review notices none", route: RENDAR_ROUTE, tabs: ["Stats"], ready: /hit points/i, expect: { absentMatching: [/ to review$/], fitsWidth: true } },
   { name: "Stats battle master superiority dice", route: BATTLE_MASTER_ROUTE, tabs: ["Stats"], ready: /hit points/i, scrollTo: "Superiority Dice: 4d8 + 2d6", expect: { texts: ["Superiority Dice: 4d8 + 2d6"], fitsWidth: true } },
   { name: "Features battle master superiority counters", route: BATTLE_MASTER_ROUTE, tabs: ["Features"], ready: /resource trackers/i, scrollTo: "Superiority Dice [d6]", expect: { texts: ["Superiority Dice [d8]", "Superiority Dice [d6]"], fitsWidth: true } },
   { name: "Actions battle master maneuver dice", route: BATTLE_MASTER_ROUTE, tabs: ["Actions"], ready: /battle master maneuvers/i, scrollTo: "BATTLE MASTER MANEUVERS", expect: { texts: ["Die: d8 / d6", "+d8 / d6"], fitsWidth: true } },
@@ -1392,6 +1422,9 @@ async function checkExpected(page, expect) {
   }
   for (const text of expect.absent ?? []) {
     if (await page.getByText(text, { exact: true }).first().isVisible()) out.push(`"${text}" is shown but should not be`);
+  }
+  for (const pattern of expect.absentMatching ?? []) {
+    if (await page.getByText(pattern).first().isVisible()) out.push(`text matching ${pattern} is shown but should not be`);
   }
   for (const text of expect.disabled ?? []) {
     const { disabled, state } = await page.evaluate(buttonDisabled, text);
