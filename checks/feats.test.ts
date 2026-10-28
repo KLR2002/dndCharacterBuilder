@@ -7,6 +7,7 @@ import {
   applyOriginFeat,
   removeOriginFeat,
   getBackgroundFeatGrant,
+  grantBackgroundFeat,
 } from "../src/rules/feats.ts";
 import { effectiveScores, hasFeat } from "../src/rules/abilities.ts";
 import { FIGHTING_INITIATE_CHOICE_ID } from "../src/rules/choices/fightingStyles.ts";
@@ -355,6 +356,32 @@ describe("Removing an origin feat reconciles the choices that depended on it", (
     const updated = removeOriginFeat(char, { featName: "Alert", featSource: "PHB" }, inMemoryCompendium({}));
 
     assert.deepEqual(updated.ruleChoices, [fighterStyle, initiateStyle]);
+    assert.deepEqual(updated.needsReview ?? [], []);
+  });
+});
+
+describe("Claiming a background feat the race already holds", () => {
+  const raceFeat: AsiSelection = { level: 1, type: "feat", featName: "Sample Warding", featSource: "TST" };
+  const customLineage = makeChar({
+    race: { name: "Custom Lineage", source: "TST" },
+    customLineage: true,
+    originFeats: [raceFeat],
+  });
+
+  it("keeps the race's entry and records a notice naming the feat and the race", () => {
+    const updated = grantBackgroundFeat(customLineage, "Sample Warding", undefined, inMemoryCompendium({}));
+
+    assert.deepEqual(updated.originFeats, [raceFeat]);
+    assert.deepEqual(updated.needsReview, ["Sample Warding from the background is already held from Custom Lineage Feat"]);
+  });
+
+  it("adds the background's entry when the race does not hold the feat", () => {
+    const updated = grantBackgroundFeat(customLineage, "Sample Mark", undefined, inMemoryCompendium({}));
+
+    assert.deepEqual(updated.originFeats, [
+      raceFeat,
+      { level: 1, type: "feat", featName: "Sample Mark", featSource: BACKGROUND_FEAT_SOURCE, featAbility: undefined },
+    ]);
     assert.deepEqual(updated.needsReview ?? [], []);
   });
 });

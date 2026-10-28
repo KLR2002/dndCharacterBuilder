@@ -9,6 +9,7 @@ import type { CharacterCatalogs } from "./catalogs.ts";
 import { reconcile } from "./characterReconciler.ts";
 import { currentCompendium, type Compendium } from "../services/compendium.ts";
 import { BACKGROUND_FEAT_SOURCE } from "../constants/rules.ts";
+import { withNotices } from "./needsReview.ts";
 
 export interface FeatPrerequisiteResult {
   met: boolean;
@@ -189,6 +190,7 @@ export function applyOriginFeat(
 /**
  * Adds the feat a background grants, or the one of its choices the player takes. It carries the Background source, so
  * clearing the background removes it with its picks and counters. Its picks are made on its card, as for any origin feat.
+ * A feat the race already holds stays the race's entry, and the claim leaves a notice.
  */
 export function grantBackgroundFeat(
   character: Character,
@@ -197,6 +199,13 @@ export function grantBackgroundFeat(
   compendium: Compendium = currentCompendium(),
   activeBooks?: string[]
 ): Character {
+  const heldByRace = (character.originFeats ?? []).some(
+    (entry) => entry.featSource !== BACKGROUND_FEAT_SOURCE && entry.featName?.toLowerCase() === featName.toLowerCase()
+  );
+  if (heldByRace) {
+    const raceTitle = raceOriginFeatTitle(character.race);
+    return withNotices(character, [`${featName} from the background is already held${raceTitle ? ` from ${raceTitle}` : ""}`]);
+  }
   return applyOriginFeat(
     character,
     { level: 1, type: "feat", featName, featSource: BACKGROUND_FEAT_SOURCE, featAbility },
