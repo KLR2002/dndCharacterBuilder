@@ -141,22 +141,37 @@ export function validateFeatPrerequisites(
   return { met: true };
 }
 
+/** An origin feat entry, named by the feat's name and the source it carries (a background's copy carries the Background marker). */
+export type OriginFeatEntry = Pick<AsiSelection, "featName" | "featSource">;
+
+/** Whether two origin feat entries are the same entry: the same feat name, carrying the same source. */
+function isSameEntry(entry: OriginFeatEntry, other: OriginFeatEntry): boolean {
+  return entry.featName?.toLowerCase() === other.featName?.toLowerCase() && entry.featSource === other.featSource;
+}
+
 /**
- * Adds an origin feat, or replaces the one named by `oldFeatName`, then reconciles so that the
+ * Adds an origin feat, or replaces the entry `replacing` names, then reconciles so that the
  * choices the replaced feat granted (e.g. Fighting Initiate's style) are pruned with a review notice.
  * The spells only the replaced feat's expanded list gave are released too (ADR 0017). `activeBooks` scopes the reconcile and the
  * release to the books now active; omitted, they are unscoped.
+ *
+ * A feat is held once. When another entry already holds the selection's feat name (a background's copy, for one), the
+ * character is returned unchanged.
  */
 export function applyOriginFeat(
   character: Character,
   selection: AsiSelection,
-  oldFeatName?: string,
+  replacing?: OriginFeatEntry,
   compendium: Compendium = currentCompendium(),
   activeBooks?: string[]
 ): Character {
   const current = character.originFeats || [];
-  const targetName = (oldFeatName || selection.featName)?.toLowerCase();
-  const existingIdx = current.findIndex(s => s.featName?.toLowerCase() === targetName);
+  const target = replacing ?? selection;
+  const heldByOtherEntry = current.some(
+    (entry) => !isSameEntry(entry, target) && entry.featName?.toLowerCase() === selection.featName?.toLowerCase()
+  );
+  if (heldByOtherEntry) return character;
+  const existingIdx = current.findIndex((entry) => isSameEntry(entry, target));
   const updated = [...current];
   if (existingIdx >= 0) {
     updated[existingIdx] = selection;
@@ -191,15 +206,18 @@ export function grantBackgroundFeat(
   );
 }
 
-/** Removes an origin feat by name, then reconciles the choices that feat granted. */
+/**
+ * Removes one origin feat entry, the one with the entry's name and source, then reconciles the choices that feat granted. A
+ * copy of the same feat from another source (a background's) stays.
+ */
 export function removeOriginFeat(
   character: Character,
-  featName: string,
+  entry: OriginFeatEntry,
   compendium: Compendium = currentCompendium(),
   activeBooks?: string[]
 ): Character {
   const current = character.originFeats || [];
-  const updated = current.filter(s => s.featName?.toLowerCase() !== featName.toLowerCase());
+  const updated = current.filter((held) => !isSameEntry(held, entry));
   // The spells only the feat's expanded list gave are released, with a notice (ADR 0017).
   return releaseExpandedOnlySpells(
     character,
@@ -237,7 +255,7 @@ export function releaseRaceOriginFeat(
   let released = character;
   for (const feat of character.originFeats ?? []) {
     if (feat.featSource === BACKGROUND_FEAT_SOURCE || !feat.featName) continue;
-    released = removeOriginFeat(released, feat.featName, compendium, activeBooks);
+    released = removeOriginFeat(released, feat, compendium, activeBooks);
   }
   return { ...released, customLineage: false };
 }

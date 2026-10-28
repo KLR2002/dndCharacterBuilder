@@ -303,7 +303,7 @@ export const BackgroundSection: React.FC<BackgroundSectionProps> = ({
                                 size="sm"
                                 onPress={() => {
                                   onUpdate((cur) =>
-                                    removeOriginFeat(cur, bgOriginFeat.featName || "", catalogs.compendium ?? currentCompendium(), catalogs.activeBooks)
+                                    removeOriginFeat(cur, bgOriginFeat, catalogs.compendium ?? currentCompendium(), catalogs.activeBooks)
                                   );
                                 }}
                               />

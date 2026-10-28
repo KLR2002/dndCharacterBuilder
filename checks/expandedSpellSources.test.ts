@@ -156,7 +156,7 @@ test("removing a background feat releases the spell its list gave", () => {
     originFeats: [{ level: 0, type: "feat", featName: "Sample Rune Mark", featSource: "TST" }],
     knownSpells: [known("Sample Warding")],
   });
-  const released = removeOriginFeat(character, "Sample Rune Mark", compendium);
+  const released = removeOriginFeat(character, { featName: "Sample Rune Mark", featSource: "TST" }, compendium);
   assert.deepEqual(released.knownSpells, []);
   assert.ok(released.needsReview?.some((notice) => /Sample Warding removed/.test(notice)), "the release is noticed");
 });
@@ -231,7 +231,7 @@ test("swapping an origin feat for another releases the spell only the replaced f
   const swapped = applyOriginFeat(
     character,
     { level: 0, type: "feat", featName: "Sample Rune Sign", featSource: "TST" },
-    "Sample Rune Mark",
+    { featName: "Sample Rune Mark", featSource: "TST" },
     compendium,
   );
   assert.deepEqual(swapped.knownSpells, [], "the spell only the replaced feat listed leaves the known spells");

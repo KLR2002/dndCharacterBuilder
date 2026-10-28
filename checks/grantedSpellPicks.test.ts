@@ -10,6 +10,7 @@ import { toggleInnateSpellUse } from "../src/rules/characterSpells.ts";
 import type { AbilityScores, AsiSelection, Character, CharacterClass } from "../src/types/character.ts";
 import type { AvailableRuleChoice } from "../src/rules/choices/types.ts";
 import type { InnateSpellProfile } from "../src/rules/innateMagic.ts";
+import { BACKGROUND_FEAT_SOURCE } from "../src/constants/rules.ts";
 import { inMemoryCompendium, makeChar } from "./testUtils.ts";
 import { grantedSpellBackgrounds, grantedSpellClasses, grantedSpellFeats, grantedSpellSpells } from "./grantedSpellsFixture.ts";
 
@@ -188,7 +189,7 @@ test("removing the feat releases its picks, and raises a review notice", () => {
   character = pickOption(character, "Sample Pulse", "Sample Initiate");
   assert.ok((character.ruleChoices ?? []).length > 0, "the picks are saved");
 
-  const removed = removeOriginFeat(character, "Sample Initiate", compendium);
+  const removed = removeOriginFeat(character, { featName: "Sample Initiate", featSource: "TST" }, compendium);
   assert.deepEqual(removed.ruleChoices ?? [], [], "every pick of the feat is released");
   assert.ok(removed.needsReview?.some((notice) => /Sample Initiate/.test(notice)), "the release is recorded for review");
   assert.equal(evaluateCharacter(removed, catalogs).grantedSpellSources.length, 0, "and its card is gone");
@@ -198,7 +199,7 @@ test("swapping the feat releases the old feat's picks, and the new feat starts w
   let character = makeChar({ classes: [mage(4)], originFeats: [takenFeat("Sample Initiate")] });
   character = pickOption(character, "Sample Mage Spells", "Sample Initiate");
   character = pickOption(character, "Sample Ember", "Sample Initiate");
-  const swapped = applyOriginFeat(character, takenFeat("Sample Initiate Alt"), "Sample Initiate", compendium);
+  const swapped = applyOriginFeat(character, takenFeat("Sample Initiate Alt"), { featName: "Sample Initiate", featSource: "TST" }, compendium);
   assert.ok(!(swapped.ruleChoices ?? []).some((rc) => rc.id.includes("Sample Initiate__") && !rc.id.includes("Alt")), "the old feat's picks are gone");
   assert.ok(swapped.needsReview?.some((notice) => /Sample Initiate/.test(notice)));
   assert.ok(!evaluateCharacter(swapped, catalogs).grantedSpellSources.some((source) => source.title.startsWith("Sample Initiate (")));
@@ -225,7 +226,7 @@ test("two sources that both hold picks never collide: each keeps its own cards a
   assert.notEqual(counters[0], counters[1], "the two counters are different");
   assert.ok(counters.every(Boolean));
 
-  const releasedOne = removeOriginFeat(character, "Sample Initiate", compendium);
+  const releasedOne = removeOriginFeat(character, { featName: "Sample Initiate", featSource: "TST" }, compendium);
   const kept = cardTitled(evaluateCharacter(releasedOne, catalogs).grantedSpellSources, "Sample Initiate Alt (Sample Mage)");
   assert.ok(kept?.spells.some((s) => s.name === "Sample Glimmer"), "the other feat keeps its picks");
   assert.ok(!releasedOne.needsReview?.some((notice) => /Sample Initiate Alt/.test(notice)), "and gets no notice for it");
@@ -289,7 +290,7 @@ test("the casting ability is chosen once for the feat: the card has none until i
   assert.equal(card?.spellAttackBonus, 2 + 3);
   assert.ok(!card?.notices?.some((notice) => /casting ability/i.test(notice)), "the notice clears once it is chosen");
 
-  const removed = removeOriginFeat(character, "Sample Lorekeeper", compendium);
+  const removed = removeOriginFeat(character, { featName: "Sample Lorekeeper", featSource: "TST" }, compendium);
   assert.deepEqual(removed.ruleChoices ?? [], [], "removing the feat releases the ability and the college with it");
 });
 
@@ -423,7 +424,7 @@ test("when a background offers a choice of feats, the picks follow the feat the 
   assert.ok(!offeredChoices(character).some((c) => featOf(c) === "Sample Initiate"), "no pick of an unclaimed option is offered");
   assert.ok(cardTitled(evaluateCharacter(character, catalogs).grantedSpellSources, "Sample Warding"), "the claimed option gives its card");
 
-  character = claimFeat(removeOriginFeat(character, "Sample Warding", compendium), "Sample Initiate");
+  character = claimFeat(removeOriginFeat(character, { featName: "Sample Warding", featSource: BACKGROUND_FEAT_SOURCE }, compendium), "Sample Initiate");
   assert.ok(offeredChoices(character).some((c) => featOf(c) === "Sample Initiate"), "the other option's picks are offered once it is claimed");
   assert.equal(cardTitled(evaluateCharacter(character, catalogs).grantedSpellSources, "Sample Warding"), undefined, "and the first option's card is gone");
 });

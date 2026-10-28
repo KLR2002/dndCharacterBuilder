@@ -214,7 +214,7 @@ describe("Origin Feat Application and Half-Feat Ability Increases", () => {
     });
     assert.equal(effectiveScores(char).scores.dex, 16);
 
-    char = removeOriginFeat(char, "Athlete");
+    char = removeOriginFeat(char, { featName: "Athlete", featSource: "PHB" });
     assert.equal(char.originFeats?.length, 0);
     assert.equal(hasFeat(char, "Athlete"), false);
     assert.equal(effectiveScores(char).scores.dex, 15);
@@ -241,7 +241,7 @@ describe("Origin Feat Application and Half-Feat Ability Increases", () => {
         featName: "Alert",
         featSource: "PHB",
       },
-      "Athlete"
+      { featName: "Athlete", featSource: "PHB" }
     );
     assert.equal(char.originFeats?.length, 1);
     assert.equal(hasFeat(char, "Alert"), true);
@@ -274,7 +274,7 @@ describe("Origin Feat Application and Half-Feat Ability Increases", () => {
     char = applyOriginFeat(
       char,
       { level: 1, type: "feat", featName: "Alert", featSource: "PHB" },
-      "Fighting Initiate"
+      { featName: "Fighting Initiate", featSource: "TCE" }
     );
 
     assert.equal(char.ruleChoices?.some((rc) => rc.id === FIGHTING_INITIATE_CHOICE_ID), false, "the replaced feat's style pick is gone");
@@ -331,7 +331,7 @@ describe("Removing an origin feat reconciles the choices that depended on it", (
       ruleChoices: [fighterStyle, initiateStyle],
     });
 
-    const updated = removeOriginFeat(char, "Fighting Initiate", inMemoryCompendium({}));
+    const updated = removeOriginFeat(char, { featName: "Fighting Initiate", featSource: "PHB" }, inMemoryCompendium({}));
 
     assert.deepEqual(updated.ruleChoices, [fighterStyle]);
     assert.deepEqual(updated.needsReview, [
@@ -349,7 +349,7 @@ describe("Removing an origin feat reconciles the choices that depended on it", (
       ruleChoices: [fighterStyle, initiateStyle],
     });
 
-    const updated = removeOriginFeat(char, "Alert", inMemoryCompendium({}));
+    const updated = removeOriginFeat(char, { featName: "Alert", featSource: "PHB" }, inMemoryCompendium({}));
 
     assert.deepEqual(updated.ruleChoices, [fighterStyle, initiateStyle]);
     assert.deepEqual(updated.needsReview ?? [], []);

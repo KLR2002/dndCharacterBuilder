@@ -28,6 +28,7 @@ import { useCharacters } from "../../context/CharacterContext";
 import { getFeats } from "../../services/dataService";
 import { validateFeatPrerequisites, applyOriginFeat, removeOriginFeat } from "../../rules/feats";
 import { getFeatAbilityBonusOptions } from "../../rules/leveling";
+import { BACKGROUND_FEAT_SOURCE } from "../../constants/rules";
 
 function formatRaceASI(abilityScoreIncrease: Record<string, number>[]): string {
   const totals: Record<string, number> = {};
@@ -431,7 +432,7 @@ export const AncestrySection: React.FC<AncestrySectionProps> = ({
                   size="sm"
                   onPress={() => {
                     if (currentOriginFeat.featName) {
-                      onUpdate((cur) => removeOriginFeat(cur, currentOriginFeat.featName!, currentCompendium(), activeBooks));
+                      onUpdate((cur) => removeOriginFeat(cur, currentOriginFeat, currentCompendium(), activeBooks));
                     }
                   }}
                 />
@@ -456,7 +457,7 @@ export const AncestrySection: React.FC<AncestrySectionProps> = ({
                                 applyOriginFeat(
                                   cur,
                                   { ...currentOriginFeat, featAbility: ab },
-                                  currentOriginFeat.featName,
+                                  currentOriginFeat,
                                   currentCompendium(),
                                   activeBooks
                                 )
@@ -710,11 +711,16 @@ export const AncestrySection: React.FC<AncestrySectionProps> = ({
                 const prereqCheck = validateFeatPrerequisites(character, f);
                 const bonusOptions = getFeatAbilityBonusOptions(f.name);
                 const isSelected = currentOriginFeat?.featName?.toLowerCase() === f.name.toLowerCase();
+                // A feat the background already gives is held once, so the race cannot take it (applyOriginFeat).
+                const heldByBackground = (character.originFeats ?? []).some(
+                  (entry) => entry.featSource === BACKGROUND_FEAT_SOURCE && entry.featName?.toLowerCase() === f.name.toLowerCase()
+                );
 
                 return (
                   <TouchableOpacity
                     key={`${f.name}__${f.source}`}
                     activeOpacity={0.7}
+                    disabled={heldByBackground}
                     onPress={() => {
                       const initialAbility =
                         bonusOptions.abilities.length === 1 ? bonusOptions.abilities[0] : undefined;
@@ -728,7 +734,7 @@ export const AncestrySection: React.FC<AncestrySectionProps> = ({
                             featSource: f.source,
                             featAbility: initialAbility,
                           },
-                          currentOriginFeat?.featName,
+                          currentOriginFeat,
                           currentCompendium(),
                           activeBooks
                         )
@@ -765,7 +771,7 @@ export const AncestrySection: React.FC<AncestrySectionProps> = ({
                       title={isSelected ? "Selected" : "Select"}
                       variant={isSelected ? "secondary" : "primary"}
                       size="sm"
-                      disabled={isSelected}
+                      disabled={isSelected || heldByBackground}
                       onPress={() => {
                         const initialAbility =
                           bonusOptions.abilities.length === 1 ? bonusOptions.abilities[0] : undefined;
@@ -779,7 +785,7 @@ export const AncestrySection: React.FC<AncestrySectionProps> = ({
                               featSource: f.source,
                               featAbility: initialAbility,
                             },
-                            currentOriginFeat?.featName,
+                            currentOriginFeat,
                             currentCompendium(),
                             activeBooks
                           )

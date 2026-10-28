@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { changeLineage, changeRace } from "../src/rules/builderTransitions.ts";
 import { applyAncestrySelection } from "../src/rules/ancestryEngine.ts";
+import { applyOriginFeat } from "../src/rules/feats.ts";
 import { migrateCharacter } from "../src/rules/migrateCharacter.ts";
 import { featCounterId, featSpellRuleChoices, raceSpellRuleChoices } from "../src/rules/choices/featSpells.ts";
 import { pickRuleChoice } from "../src/rules/ruleChoices.ts";
@@ -394,4 +395,57 @@ test("choosing Custom Lineage from a catalog race holds the custom race with its
   assert.deepEqual(custom.race, CUSTOM, "the custom race is held");
   assert.equal(custom.customLineage, true, "the custom flag is set");
   assert.equal(custom.lineageReplacement, null);
+});
+
+// A background that grants a feat the race's origin feat also names holds a second entry of that feat. The picks and counters
+// are keyed by the feat, so the two entries share them; releasing the race's entry must leave the background's entry whole.
+const BACKGROUND_COPY = { level: 1, type: "feat" as const, featName: "Sample Initiate", featSource: BACKGROUND_FEAT_SOURCE };
+
+const withBackgroundCopy = (character: Character): Character => ({
+  ...character,
+  originFeats: [...(character.originFeats ?? []), BACKGROUND_COPY],
+});
+
+test("changing race from Custom Lineage releases only the race's entry of a feat the background also grants", () => {
+  const changed = changeRace(withBackgroundCopy(customWithOriginFeat()), featCompendium, ACTIVE);
+
+  assert.deepEqual(changed.originFeats, [BACKGROUND_COPY], "the background's entry stays and the race's entry goes");
+  assert.ok(pickedNames(changed).includes("Sample Ember"), "the feat is still held, so its pick stays");
+  assert.ok(changed.resourceCounters?.[pulseCounter], "and so does its counter");
+  assert.equal(changed.needsReview, undefined, "nothing is released, so nothing is noticed");
+});
+
+test("applying an origin feat the background already gives adds no second entry of it", () => {
+  const held = withBackgroundCopy(makeChar({ classes: [mage], race: CUSTOM, customLineage: true }));
+
+  const applied = applyOriginFeat(
+    held,
+    { level: 1, type: "feat", featName: "Sample Initiate", featSource: "TST" },
+    undefined,
+    featCompendium,
+    ACTIVE,
+  );
+
+  assert.deepEqual(applied.originFeats, [BACKGROUND_COPY], "the feat is held once, as the background gives it");
+});
+
+test("replacing the race's origin feat leaves the background's entry of the same feat in place, wherever it sits", () => {
+  const backgroundFirst: Character = {
+    ...customWithOriginFeat(),
+    originFeats: [BACKGROUND_COPY, { level: 1, type: "feat", featName: "Sample Initiate", featSource: "TST" }],
+  };
+
+  const replaced = applyOriginFeat(
+    backgroundFirst,
+    { level: 1, type: "feat", featName: "Sample Initiate Alt", featSource: "TST" },
+    { featName: "Sample Initiate", featSource: "TST" },
+    featCompendium,
+    ACTIVE,
+  );
+
+  assert.deepEqual(
+    replaced.originFeats,
+    [BACKGROUND_COPY, { level: 1, type: "feat", featName: "Sample Initiate Alt", featSource: "TST" }],
+    "the race's entry is the one replaced",
+  );
 });

@@ -189,7 +189,7 @@ test("removing a feat notices each released spell, its list and its counter, eac
   assert.ok(pulse?.resourceCounterId);
   character = toggleInnateSpellUse(character, pulse);
 
-  const removed = removeOriginFeat(character, "Sample Initiate", compendium);
+  const removed = removeOriginFeat(character, { featName: "Sample Initiate", featSource: "TST" }, compendium);
   const expected = [
     "Sample Mage Spells removed from Sample Initiate: feat no longer held",
     "Sample Ember removed from Sample Initiate: feat no longer held",
@@ -218,7 +218,7 @@ test("removing a feat notices its released casting ability by name, and the feat
   character = pickOption(character, "Sample Hall 1", "Sample Lorekeeper");
   character = pickOption(character, "int", "Sample Lorekeeper");
 
-  const removed = removeOriginFeat(character, "Sample Lorekeeper", compendium);
+  const removed = removeOriginFeat(character, { featName: "Sample Lorekeeper", featSource: "TST" }, compendium);
   assert.ok(
     removed.needsReview?.includes("Intelligence casting ability removed from Sample Lorekeeper: feat no longer held"),
     `got ${JSON.stringify(removed.needsReview)}`,
@@ -306,7 +306,7 @@ test("removing a background-claimed feat whose book the catalog lacks keeps its 
   });
   const character = backgroundClaimedPulseUsed();
 
-  const removed = removeOriginFeat(character, "Sample Initiate", unloaded);
+  const removed = removeOriginFeat(character, { featName: "Sample Initiate", featSource: BACKGROUND_FEAT_SOURCE }, unloaded);
   assert.deepEqual(removed.ruleChoices, character.ruleChoices, "the pick is kept while its book is absent");
   assert.deepEqual(removed.resourceCounters, character.resourceCounters, "the counter is kept with its pick");
 
