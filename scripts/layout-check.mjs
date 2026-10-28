@@ -1129,6 +1129,7 @@ const SCREENS = [
   { name: "Review notices collapsed", route: NOTICES_ROUTE, tabs: ["Stats"], ready: "4 to review", expect: { texts: ["4 to review"], absent: [REVIEW_NOTICES[0]], fitsWidth: true } },
   { name: "Review notices expanded", route: NOTICES_ROUTE, tabs: ["Journal"], open: (page) => page.getByText("4 to review", { exact: true }).first().click(), ready: "Dismiss all", scrollTo: "Dismiss all", expect: { texts: [...REVIEW_NOTICES, "Dismiss all"], fitsWidth: true } },
   { name: "Review notices two collapsed", route: NOTICES_FEW_ROUTE, tabs: ["Stats"], ready: "2 to review", expect: { texts: ["2 to review"], absent: [NOTICES_FEW[0]], fitsWidth: true } },
+  { name: "Review notices dismiss rows apart", route: NOTICES_FEW_ROUTE, tabs: ["Stats"], open: (page) => page.getByText("2 to review", { exact: true }).first().click(), ready: "Dismiss all", expect: { texts: [...NOTICES_FEW, "Dismiss all"], dismissGapMin: 8, fitsWidth: true } },
   { name: "Review notices many expanded", route: NOTICES_MANY_ROUTE, tabs: ["Journal"], open: (page) => page.getByText("10 to review", { exact: true }).first().click(), ready: "Dismiss all", expect: { texts: ["10 to review", "Dismiss all"], tabContentBelowNotices: { count: "10 to review", minHeight: 120 }, fitsWidth: true } },
   { name: "Review notices none", route: RENDAR_ROUTE, tabs: ["Stats"], ready: /hit points/i, expect: { absentMatching: [/ to review$/], fitsWidth: true } },
   { name: "Stats battle master superiority dice", route: BATTLE_MASTER_ROUTE, tabs: ["Stats"], ready: /hit points/i, scrollTo: "Superiority Dice: 4d8 + 2d6", expect: { texts: ["Superiority Dice: 4d8 + 2d6"], fitsWidth: true } },
@@ -1444,6 +1445,15 @@ function findTabContentBelowNotices(count) {
   return { height: r.height, bottom: r.bottom, viewport: window.innerHeight };
 }
 
+// Runs in the browser. The vertical gaps between neighbouring review Dismiss buttons, top to bottom.
+function findDismissGaps() {
+  const boxes = [...document.querySelectorAll('[aria-label^="Dismiss "]')]
+    .map((el) => el.getBoundingClientRect())
+    .filter((r) => r.height > 0)
+    .sort((a, b) => a.top - b.top);
+  return boxes.slice(1).map((r, i) => r.top - boxes[i].bottom);
+}
+
 // Checks what a picker screen must show that the layout rules cannot see: texts and input placeholders on the page,
 // and (`plainRaceRow`) the plain race row. Returns one message per missing control.
 async function checkExpected(page, expect) {
@@ -1484,6 +1494,11 @@ async function checkExpected(page, expect) {
       if (box.height < minHeight) out.push(`tab content below the notices is ${Math.round(box.height)}px tall, under ${minHeight}px`);
       if (box.bottom > box.viewport + 1) out.push(`tab content below the notices ends ${Math.round(box.bottom - box.viewport)}px below the window`);
     }
+  }
+  if (expect.dismissGapMin !== undefined) {
+    const gaps = await page.evaluate(findDismissGaps);
+    if (gaps.length === 0) out.push("no two Dismiss rows to compare");
+    else if (Math.min(...gaps) < expect.dismissGapMin) out.push(`Dismiss buttons are ${Math.round(Math.min(...gaps))}px apart, under ${expect.dismissGapMin}px`);
   }
   if (expect.fitsWidth) {
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);

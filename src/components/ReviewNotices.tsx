@@ -7,6 +7,9 @@ import { Button } from "./ui/Button";
 /** The expanded notices scroll inside this share of the window height, so the tab content below keeps room. */
 const LIST_MAX_WINDOW_SHARE = 0.4;
 
+/** Dismissing is irreversible, so neighbouring buttons must not share touch area. */
+const NO_HIT_SLOP = { top: 0, bottom: 0, left: 0, right: 0 };
+
 interface ReviewNoticesProps {
   notices: readonly string[];
   onDismiss: (notice: string) => void;
@@ -46,6 +49,7 @@ export function ReviewNotices({ notices, onDismiss, onDismissAll }: ReviewNotice
                       title="Dismiss"
                       variant="ghost"
                       size="sm"
+                      hitSlop={NO_HIT_SLOP}
                       onPress={() => onDismiss(notice)}
                       accessibilityLabel={`Dismiss ${notice}`}
                     />
@@ -55,7 +59,7 @@ export function ReviewNotices({ notices, onDismiss, onDismissAll }: ReviewNotice
             </ScrollView>
             {notices.length > 1 && (
               <View style={styles.footer}>
-                <Button title="Dismiss all" variant="outline" size="sm" onPress={onDismissAll} />
+                <Button title="Dismiss all" variant="outline" size="sm" hitSlop={NO_HIT_SLOP} onPress={onDismissAll} />
               </View>
             )}
           </>
@@ -95,7 +99,7 @@ const styles = StyleSheet.create({
     flexGrow: 0,
   },
   list: {
-    gap: 4,
+    gap: 8,
     paddingBottom: 8,
   },
   item: {
