@@ -44,11 +44,6 @@ const FIXED_STYLE_OWNERS = new Map<string, ChoiceOwner>([
   ["TCE__Ranger__Druidic Warrior Cantrips", { className: "Ranger" }],
 ]);
 
-/** The id of a class's fighting style choice: the class's source, the class name and the choice's title. */
-function fightingStyleIdOf(classSource: string, className: string, title: string): string {
-  return `${classSource}__${className}__${title}`;
-}
-
 /**
  * The source a class's fighting style ids carry: the source the class was saved under, else its held record's (heldSourceOf). A
  * class saved under a source keeps its ids on every catalog that holds it.
@@ -57,9 +52,9 @@ function classSourceOf(entry: CharacterClass, classes: readonly ClassData[]): st
   return heldSourceOf(entry.source, heldClass(entry, classes) ?? { source: SRD_SOURCE });
 }
 
-/** The id of a class's style choice under the class's source. */
+/** The id of a class's style choice under the class's source: the source, the class name and the choice's title. */
 function heldStyleId(entry: CharacterClass, className: string, title: string, classes: readonly ClassData[]): string {
-  return fightingStyleIdOf(classSourceOf(entry, classes), className, title);
+  return `${classSourceOf(entry, classes)}__${className}__${title}`;
 }
 
 /**
