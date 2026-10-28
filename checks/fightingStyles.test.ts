@@ -2,12 +2,14 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { reconcile } from "../src/rules/characterReconciler.ts";
 import { currentCompendium } from "../src/services/compendium.ts";
-import { makeChar } from "./testUtils.ts";
+import { inMemoryCompendium, makeChar } from "./testUtils.ts";
 import {
+  availableSubclassRuleChoices,
   hasFightingStyle,
   fightingStyleRuleChoices,
   pickFightingStyleChoice,
 } from "../src/rules/ruleChoices.ts";
+import type { ClassData, OptionFeatureData } from "../src/types/dnd5e.ts";
 import { getWeaponAttacks, checkDualWielding } from "../src/rules/attacks.ts";
 import { armorClass } from "../src/rules/ac.ts";
 import type { InventoryItem } from "../src/types/character.ts";
@@ -541,4 +543,49 @@ test("reconcile cleans up invalid styles and cantrips on de-leveling", () => {
   const pruned = reconcile(char, currentCompendium());
   assert.equal(pruned.ruleChoices?.length, 0);
   assert.equal(pruned.knownSpells?.length, 0);
+});
+
+// A Fighter from an invented book other than the PHB, with one style option from that book. Every name here is invented.
+const otherBookFighter = (): ClassData => ({
+  name: "Fighter",
+  source: "ALT",
+  hitDie: "1d10",
+  primaryAbility: [],
+  savingThrows: [],
+  armorProficiencies: [],
+  weaponProficiencies: [],
+  toolProficiencies: [],
+  skillProficiencies: { choose: 0, from: [] },
+  features: [],
+  subclasses: [],
+  description: "Placeholder description for the class.",
+});
+
+const sampleStyle = (name: string): OptionFeatureData => ({
+  name,
+  source: "ALT",
+  category: "Fighting Style",
+  featureType: ["FS:F"],
+  prerequisite: null,
+  description: "Placeholder description for the style.",
+});
+
+test("a Fighter from a book without the PHB is offered its style choice under that book's source", () => {
+  const compendium = inMemoryCompendium({ classes: [otherBookFighter()], optionsAndFeatures: [sampleStyle("Sample Guard")] });
+  const fighter = makeChar({ classes: [{ className: "Fighter", source: "ALT", level: 1 }] });
+  const offered = availableSubclassRuleChoices(fighter, ["ALT"], compendium);
+  assert.ok(offered.some((choice) => choice.id === "ALT__Fighter__Fighting Style"), "the choice is offered with the class record's source");
+});
+
+test("a Fighting Style pick saved under the old fixed id is kept under the class record's id", () => {
+  const compendium = inMemoryCompendium({ classes: [otherBookFighter()], optionsAndFeatures: [sampleStyle("Sample Guard")] });
+  const saved = makeChar({
+    classes: [{ className: "Fighter", source: "ALT", level: 1 }],
+    ruleChoices: [
+      { id: "PHB__Fighter__Fighting Style", trait: "Fighting Style", origin: "class", choose: 1, from: ["Sample Guard"], picked: ["Sample Guard"] },
+    ],
+  });
+  const loaded = reconcile(saved, compendium, { activeBooks: ["ALT"] });
+  assert.deepEqual(loaded.ruleChoices?.map((entry) => [entry.id, entry.picked]), [["ALT__Fighter__Fighting Style", ["Sample Guard"]]]);
+  assert.equal(hasFightingStyle(loaded, "Sample Guard"), true, "the saved pick still counts");
 });

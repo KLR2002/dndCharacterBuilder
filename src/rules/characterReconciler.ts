@@ -2,7 +2,7 @@ import type { Character, KnownSpell } from "../types/character.ts";
 import { currentCompendium, type Compendium } from "../services/compendium.ts";
 import { GIANT_BARBARIAN_OWNER_KEY, GIANT_POWER_CANTRIPS } from "../constants/rules.ts";
 import { pruneInvalidExpertise } from "./expertise.ts";
-import { fightingStyleOwnerOf, pruneInvalidFightingStyles } from "./choices/fightingStyles.ts";
+import { fightingStyleOwnerOf, moveLegacyFightingStyleIds, pruneInvalidFightingStyles } from "./choices/fightingStyles.ts";
 import { maneuverOwnerOf, pruneInvalidManeuvers } from "./choices/maneuvers.ts";
 import { infusionOwnerOf, pruneInvalidInfusions } from "./choices/artificerInfusions.ts";
 import { type ChoiceOwner, GIANT_POWER_CHOICE_ID } from "./choices/types.ts";
@@ -41,7 +41,8 @@ import { pruneStartingEquipmentPicks } from "./startingEquipmentPicks.ts";
  *   - Mystic Arcanum runs after those two sync passes. It reads only Warlock level and its own
  *     choices, so it is independent of them, but it keeps the order the former invocation-prune
  *     chain used.
- * Fighting styles run before maneuvers because Superior Technique is gated on a fighting style.
+ * Fighting styles run before maneuvers because Superior Technique is gated on a fighting style. A fighting style pick saved under
+ * an id with another source moves to the id its class now gives first, so the style passes read the current ids.
  * The Giant Power cantrip sync reads only its own choice and the Barbarian's known spells, so
  * its position is free; it sits with the other known-spell syncs.
  * Picks saved under a grant's former id move to the grant's id first, so every later pass reads the current ids.
@@ -63,9 +64,11 @@ export function reconcile(
   compendium: Compendium,
   options: { activeBooks?: string[] } = {},
 ): Character {
+  const classes = compendium.for().classes();
   let updated = pruneStartingEquipmentPicks(character);
 
-  updated = pruneInvalidFightingStyles(updated);
+  updated = moveLegacyFightingStyleIds(updated, classes);
+  updated = pruneInvalidFightingStyles(updated, classes);
   updated = pruneInvalidManeuvers(updated);
   updated = pruneInvalidInvocations(updated, compendium);
   updated = syncWarlockTomeCantrips(updated, compendium);

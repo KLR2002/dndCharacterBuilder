@@ -1,5 +1,9 @@
-import type { Character, KnownSpell } from "../../types/character.ts";
+import type { CharacterClass, Character, KnownSpell, RuleChoiceEntry } from "../../types/character.ts";
+import type { ClassData } from "../../types/dnd5e.ts";
+import { SRD_SOURCE } from "../../constants/books.ts";
 import { currentCompendium, type Compendium } from "../../services/compendium.ts";
+import { heldClass } from "../classData.ts";
+import { heldSourceOf } from "../raceLookup.ts";
 import {
   type AvailableRuleChoice,
   type ChoiceOwner,
@@ -11,20 +15,90 @@ import {
 /** The Fighting Initiate feat choice. Its id is frozen. Callers look it up by this exact id. */
 export const FIGHTING_INITIATE_CHOICE_ID = "TCE__Feat__Fighting Initiate__Style";
 
-/** Who owns each fighting style choice id this module issues. Feat-granted ids have no class owner. */
-const FIGHTING_STYLE_OWNERS = new Map<string, ChoiceOwner>([
-  ["PHB__Fighter__Fighting Style", { className: "Fighter" }],
-  ["PHB__Fighter__Additional Fighting Style 10", { className: "Fighter", subclass: "Champion" }],
-  ["PHB__Paladin__Fighting Style", { className: "Paladin" }],
-  ["PHB__Ranger__Fighting Style", { className: "Ranger" }],
-  ["XGE__Bard__College of Swords__Fighting Style", { className: "Bard", subclass: "College of Swords" }],
+const STYLE_TITLE = "Fighting Style";
+const CHAMPION_STYLE_TITLE = "Additional Fighting Style 10";
+const COLLEGE_OF_SWORDS_STYLE_ID = "XGE__Bard__College of Swords__Fighting Style";
+
+/** A class-owned fighting style choice: the class and the title its id carries after the source. */
+interface ClassStyle {
+  className: string;
+  title: string;
+  owner: ChoiceOwner;
+}
+
+/**
+ * The class-owned fighting style choices. Each id is `<source>__<class>__<title>`, and its source is the class's own (see
+ * classSourceOf), so a class from any book offers the choice under that book.
+ */
+const CLASS_STYLES: readonly ClassStyle[] = [
+  { className: "Fighter", title: STYLE_TITLE, owner: { className: "Fighter" } },
+  { className: "Fighter", title: CHAMPION_STYLE_TITLE, owner: { className: "Fighter", subclass: "Champion" } },
+  { className: "Paladin", title: STYLE_TITLE, owner: { className: "Paladin" } },
+  { className: "Ranger", title: STYLE_TITLE, owner: { className: "Ranger" } },
+];
+
+/** The fighting style choices whose id keeps its own fixed source: a subclass's book, or the book of a cantrip's options. */
+const FIXED_STYLE_OWNERS = new Map<string, ChoiceOwner>([
+  [COLLEGE_OF_SWORDS_STYLE_ID, { className: "Bard", subclass: "College of Swords" }],
   ["TCE__Paladin__Blessed Warrior Cantrips", { className: "Paladin" }],
   ["TCE__Ranger__Druidic Warrior Cantrips", { className: "Ranger" }],
 ]);
 
+/** The id of a class's fighting style choice: the class's source, the class name and the choice's title. */
+function fightingStyleIdOf(classSource: string, className: string, title: string): string {
+  return `${classSource}__${className}__${title}`;
+}
+
+/**
+ * The source a class's fighting style ids carry: the source the class was saved under, else its held record's (heldSourceOf). A
+ * class saved under a source keeps its ids on every catalog that holds it.
+ */
+function classSourceOf(entry: CharacterClass, classes: readonly ClassData[]): string {
+  return heldSourceOf(entry.source, heldClass(entry, classes) ?? { source: SRD_SOURCE });
+}
+
+/** The id of a class's style choice under the class's source. */
+function heldStyleId(entry: CharacterClass, className: string, title: string, classes: readonly ClassData[]): string {
+  return fightingStyleIdOf(classSourceOf(entry, classes), className, title);
+}
+
+/**
+ * The class-owned style a choice id names, whatever its source. Undefined for a fixed-source id and for an id no class owns.
+ */
+function classStyleOf(id: string): ClassStyle | undefined {
+  if (FIXED_STYLE_OWNERS.has(id)) return undefined;
+  const [, className, ...title] = id.split("__");
+  return CLASS_STYLES.find((style) => style.className === className && style.title === title.join("__"));
+}
+
 /** The owner of a fighting style choice id, or undefined when this module does not issue the id. */
 export function fightingStyleOwnerOf(id: string): ChoiceOwner | undefined {
-  return FIGHTING_STYLE_OWNERS.get(id);
+  return FIXED_STYLE_OWNERS.get(id) ?? classStyleOf(id)?.owner;
+}
+
+/**
+ * Moves a fighting style pick saved under an id with another source to the id its class now gives. A pick moves only
+ * when no entry holds the new id, so an entry left under its old id is released by the pruning pass.
+ */
+export function moveLegacyFightingStyleIds(character: Character, classes: readonly ClassData[]): Character {
+  const entries = character.ruleChoices ?? [];
+  const held = new Set(entries.map((entry) => entry.id));
+  let moved = false;
+  const ruleChoices = entries.map((entry): RuleChoiceEntry => {
+    const target = currentStyleIdOf(character, classes, entry.id);
+    if (!target || target === entry.id || held.has(target)) return entry;
+    held.add(target);
+    moved = true;
+    return { ...entry, id: target };
+  });
+  return moved ? { ...character, ruleChoices } : character;
+}
+
+/** The id a class-owned style id takes under the character's class, or undefined when the id is not class-owned or the class is not held. */
+function currentStyleIdOf(character: Character, classes: readonly ClassData[], id: string): string | undefined {
+  const style = classStyleOf(id);
+  const entry = style ? (character.classes ?? []).find((candidate) => candidate.className === style.className) : undefined;
+  return style && entry ? heldStyleId(entry, style.className, style.title, classes) : undefined;
 }
 
 /**
@@ -50,6 +124,8 @@ export function fightingStyleRuleChoices(
   const out: Omit<AvailableRuleChoice, "origin" | "pick">[] = [];
   const upperBooks = activeBooks ? activeBooks.map((b) => b.toUpperCase()) : undefined;
   const allOptions = compendium.for(upperBooks).optionsAndFeatures();
+  // A held class resolves whatever the active books, so its record's source is read from the unscoped listing.
+  const classes = compendium.for().classes();
 
   const getStyleOptions = (featureTag: string): { name: string; description: string }[] => {
     return allOptions
@@ -82,7 +158,7 @@ export function fightingStyleRuleChoices(
 
     // Fighter level >= 1
     if (clsLower === "fighter" && c.level >= 1) {
-      const id = "PHB__Fighter__Fighting Style";
+      const id = heldStyleId(c, "Fighter", STYLE_TITLE, classes);
       const otherPicked = getPickedInOtherChoices(id);
       out.push({
         id,
@@ -95,7 +171,7 @@ export function fightingStyleRuleChoices(
 
       // Fighter Champion level >= 10
       if (c.level >= 10 && sub.includes("champion")) {
-        const champId = "PHB__Fighter__Additional Fighting Style 10";
+        const champId = heldStyleId(c, "Fighter", CHAMPION_STYLE_TITLE, classes);
         const champOtherPicked = getPickedInOtherChoices(champId);
         out.push({
           id: champId,
@@ -110,7 +186,7 @@ export function fightingStyleRuleChoices(
 
     // Paladin level >= 2
     if (clsLower === "paladin" && c.level >= 2) {
-      const id = "PHB__Paladin__Fighting Style";
+      const id = heldStyleId(c, "Paladin", STYLE_TITLE, classes);
       const otherPicked = getPickedInOtherChoices(id);
       out.push({
         id,
@@ -124,7 +200,7 @@ export function fightingStyleRuleChoices(
 
     // Ranger level >= 2
     if (clsLower === "ranger" && c.level >= 2) {
-      const id = "PHB__Ranger__Fighting Style";
+      const id = heldStyleId(c, "Ranger", STYLE_TITLE, classes);
       const otherPicked = getPickedInOtherChoices(id);
       out.push({
         id,
@@ -138,7 +214,7 @@ export function fightingStyleRuleChoices(
 
     // Bard College of Swords level >= 3
     if (clsLower === "bard" && c.level >= 3 && (sub.includes("swords") || sub.includes("college of swords"))) {
-      const id = "XGE__Bard__College of Swords__Fighting Style";
+      const id = COLLEGE_OF_SWORDS_STYLE_ID;
       const otherPicked = getPickedInOtherChoices(id);
       out.push({
         id,
@@ -302,7 +378,7 @@ export function pickFightingStyleChoice(
 /**
  * Prunes invalid fighting style choices and cantrips when classes, levels, or feats change.
  */
-export function pruneInvalidFightingStyles(character: Character): Character {
+export function pruneInvalidFightingStyles(character: Character, catalog: readonly ClassData[]): Character {
   const classes = character.classes || [];
   const fighter = classes.find((c) => c.className.toLowerCase() === "fighter");
   const paladin = classes.find((c) => c.className.toLowerCase() === "paladin");
@@ -317,14 +393,14 @@ export function pruneInvalidFightingStyles(character: Character): Character {
   ].some((s) => s.type === "feat" && s.featName?.toLowerCase() === "fighting initiate");
 
   const validIds = new Set<string>();
-  if (fighter && fighter.level >= 1) validIds.add("PHB__Fighter__Fighting Style");
+  if (fighter && fighter.level >= 1) validIds.add(heldStyleId(fighter, "Fighter", STYLE_TITLE, catalog));
   if (fighter && fighter.level >= 10 && subFighter.includes("champion")) {
-    validIds.add("PHB__Fighter__Additional Fighting Style 10");
+    validIds.add(heldStyleId(fighter, "Fighter", CHAMPION_STYLE_TITLE, catalog));
   }
-  if (paladin && paladin.level >= 2) validIds.add("PHB__Paladin__Fighting Style");
-  if (ranger && ranger.level >= 2) validIds.add("PHB__Ranger__Fighting Style");
+  if (paladin && paladin.level >= 2) validIds.add(heldStyleId(paladin, "Paladin", STYLE_TITLE, catalog));
+  if (ranger && ranger.level >= 2) validIds.add(heldStyleId(ranger, "Ranger", STYLE_TITLE, catalog));
   if (bard && bard.level >= 3 && (subBard.includes("swords") || subBard.includes("college of swords"))) {
-    validIds.add("XGE__Bard__College of Swords__Fighting Style");
+    validIds.add(COLLEGE_OF_SWORDS_STYLE_ID);
   }
   if (hasFightingInitiate) validIds.add(FIGHTING_INITIATE_CHOICE_ID);
 
@@ -339,7 +415,7 @@ export function pruneInvalidFightingStyles(character: Character): Character {
 
   // Paladin Blessed Warrior check
   const paladinHasBlessedWarrior = nextChoices.some(
-    (rc) => rc.id === "PHB__Paladin__Fighting Style" && rc.picked.some((p) => p.toLowerCase() === "blessed warrior")
+    (rc) => classStyleOf(rc.id)?.className === "Paladin" && rc.picked.some((p) => p.toLowerCase() === "blessed warrior")
   );
   if (!paladinHasBlessedWarrior) {
     nextChoices = nextChoices.filter((rc) => rc.id !== "TCE__Paladin__Blessed Warrior Cantrips");
@@ -348,7 +424,7 @@ export function pruneInvalidFightingStyles(character: Character): Character {
 
   // Ranger Druidic Warrior check
   const rangerHasDruidicWarrior = nextChoices.some(
-    (rc) => rc.id === "PHB__Ranger__Fighting Style" && rc.picked.some((p) => p.toLowerCase() === "druidic warrior")
+    (rc) => classStyleOf(rc.id)?.className === "Ranger" && rc.picked.some((p) => p.toLowerCase() === "druidic warrior")
   );
   if (!rangerHasDruidicWarrior) {
     nextChoices = nextChoices.filter((rc) => rc.id !== "TCE__Ranger__Druidic Warrior Cantrips");
