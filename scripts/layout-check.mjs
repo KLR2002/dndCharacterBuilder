@@ -234,6 +234,13 @@ function noticesManyCharacter() {
   return { ...noticesCharacter(), id: NOTICES_MANY_ID, name: "Thistle", createdAt: 13, updatedAt: 13, needsReview: NOTICES_MANY };
 }
 
+// Two short notices, each on one line, so the Dismiss rows sit as close together as they can.
+const NOTICES_FEW_ID = "char_notices_few";
+const NOTICES_FEW = ["Ember Ward: feat lost", "Pulse Sigil: list changed"];
+function noticesFewCharacter() {
+  return { ...noticesCharacter(), id: NOTICES_FEW_ID, name: "Wren", createdAt: 14, updatedAt: 14, needsReview: NOTICES_FEW };
+}
+
 // A level 3 Way of the Kensei monk, integrated mode only (the Kensei is not in the SRD). Its Path of the Kensei
 // choices are Proficiency Choices: the brush and the ranged kensei weapon are unmade ("Picked 0 / 1"), and the
 // melee kensei weapon is picked (Rapier), which the Stats tab shows under Weapon Proficiencies.
@@ -831,6 +838,7 @@ function buildSeed() {
       longNameCharacter(),
       noticesCharacter(),
       noticesManyCharacter(),
+      noticesFewCharacter(),
       ...(INTEGRATED ? [kenseiCharacter()] : []),
       ...(INTEGRATED ? [initiativeCharacter()] : []),
       bardCharacter(),
@@ -871,6 +879,7 @@ const RANGER_ROUTE = `/character/${RANGER_ID}`;
 const LONG_NAME_ROUTE = `/character/${LONG_NAME_ID}`;
 const NOTICES_ROUTE = `/character/${NOTICES_ID}`;
 const NOTICES_MANY_ROUTE = `/character/${NOTICES_MANY_ID}`;
+const NOTICES_FEW_ROUTE = `/character/${NOTICES_FEW_ID}`;
 const KENSEI_ROUTE = `/character/${KENSEI_ID}`;
 const INITIATIVE_ROUTE = `/character/${INITIATIVE_ID}`;
 const BARD_ROUTE = `/character/${BARD_ID}`;
@@ -1119,6 +1128,7 @@ const SCREENS = [
   { name: "Actions", route: RENDAR_ROUTE, tabs: ["Actions"], ready: /attack action/i },
   { name: "Review notices collapsed", route: NOTICES_ROUTE, tabs: ["Stats"], ready: "4 to review", expect: { texts: ["4 to review"], absent: [REVIEW_NOTICES[0]], fitsWidth: true } },
   { name: "Review notices expanded", route: NOTICES_ROUTE, tabs: ["Journal"], open: (page) => page.getByText("4 to review", { exact: true }).first().click(), ready: "Dismiss all", scrollTo: "Dismiss all", expect: { texts: [...REVIEW_NOTICES, "Dismiss all"], fitsWidth: true } },
+  { name: "Review notices two collapsed", route: NOTICES_FEW_ROUTE, tabs: ["Stats"], ready: "2 to review", expect: { texts: ["2 to review"], absent: [NOTICES_FEW[0]], fitsWidth: true } },
   { name: "Review notices many expanded", route: NOTICES_MANY_ROUTE, tabs: ["Journal"], open: (page) => page.getByText("10 to review", { exact: true }).first().click(), ready: "Dismiss all", expect: { texts: ["10 to review", "Dismiss all"], tabContentBelowNotices: { count: "10 to review", minHeight: 120 }, fitsWidth: true } },
   { name: "Review notices none", route: RENDAR_ROUTE, tabs: ["Stats"], ready: /hit points/i, expect: { absentMatching: [/ to review$/], fitsWidth: true } },
   { name: "Stats battle master superiority dice", route: BATTLE_MASTER_ROUTE, tabs: ["Stats"], ready: /hit points/i, scrollTo: "Superiority Dice: 4d8 + 2d6", expect: { texts: ["Superiority Dice: 4d8 + 2d6"], fitsWidth: true } },

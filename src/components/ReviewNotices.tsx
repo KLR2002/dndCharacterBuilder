@@ -4,9 +4,6 @@ import { Ionicons } from "@expo/vector-icons";
 import { useAppTheme } from "../context/ThemeContext";
 import { Button } from "./ui/Button";
 
-/** Lists of up to this many notices start expanded. */
-const EXPANDED_UP_TO = 3;
-
 /** The expanded notices scroll inside this share of the window height, so the tab content below keeps room. */
 const LIST_MAX_WINDOW_SHARE = 0.4;
 
@@ -20,7 +17,7 @@ interface ReviewNoticesProps {
 export function ReviewNotices({ notices, onDismiss, onDismissAll }: ReviewNoticesProps) {
   const { theme } = useAppTheme();
   const { height: windowHeight } = useWindowDimensions();
-  const [expanded, setExpanded] = useState(notices.length <= EXPANDED_UP_TO);
+  const [expanded, setExpanded] = useState(false);
 
   if (notices.length === 0) return null;
 

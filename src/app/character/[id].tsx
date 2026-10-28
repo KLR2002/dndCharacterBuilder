@@ -271,15 +271,18 @@ export default function CharacterSheetScreen() {
         </View>
       </View>
 
-      <ReviewNotices
-        notices={currentCharacter.needsReview ?? []}
-        onDismiss={(notice) =>
-          updateCharacter(currentCharacter.id, (c) => ({ ...c, needsReview: dismissNotices(c.needsReview, notice) }))
-        }
-        onDismissAll={() =>
-          updateCharacter(currentCharacter.id, (c) => ({ ...c, needsReview: dismissNotices(c.needsReview) }))
-        }
-      />
+      {(currentCharacter.needsReview?.length ?? 0) > 0 && (
+        <ReviewNotices
+          key={currentCharacter.id}
+          notices={currentCharacter.needsReview ?? []}
+          onDismiss={(notice) =>
+            updateCharacter(currentCharacter.id, (c) => ({ ...c, needsReview: dismissNotices(c.needsReview, notice) }))
+          }
+          onDismissAll={() =>
+            updateCharacter(currentCharacter.id, (c) => ({ ...c, needsReview: dismissNotices(c.needsReview) }))
+          }
+        />
+      )}
 
       {/* Tab Content Display */}
       <View style={styles.tabContentWrapper}>
