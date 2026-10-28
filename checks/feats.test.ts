@@ -423,4 +423,27 @@ describe("Legacy duplicate origin feat entries on load", () => {
 
     assert.deepEqual(migrateCharacter(once), once);
   });
+
+  it("gives the kept entry the ability increase of the dropped entry when the kept entry has none", () => {
+    const raceIncrease: AsiSelection = { ...raceEntry, featAbility: "dex" };
+    const legacy = makeChar({ originFeats: [raceIncrease, backgroundEntry] });
+
+    const loaded = migrateCharacter(JSON.parse(JSON.stringify(legacy)));
+
+    assert.deepEqual(loaded.originFeats, [{ ...backgroundEntry, featAbility: "dex" }]);
+    assert.equal(effectiveScores(loaded).scores.dex, effectiveScores(legacy).scores.dex);
+    assert.equal(effectiveScores(loaded).scores.dex, 11);
+  });
+
+  it("removes only the double count when both entries carry the same ability increase", () => {
+    const raceIncrease: AsiSelection = { ...raceEntry, featAbility: "dex" };
+    const backgroundIncrease: AsiSelection = { ...backgroundEntry, featAbility: "dex" };
+    const legacy = makeChar({ originFeats: [raceIncrease, backgroundIncrease] });
+
+    const loaded = migrateCharacter(JSON.parse(JSON.stringify(legacy)));
+
+    assert.deepEqual(loaded.originFeats, [backgroundIncrease]);
+    assert.equal(effectiveScores(legacy).scores.dex, 12);
+    assert.equal(effectiveScores(loaded).scores.dex, 11);
+  });
 });

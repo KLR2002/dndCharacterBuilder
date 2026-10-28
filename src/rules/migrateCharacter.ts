@@ -14,7 +14,8 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 /**
  * One entry per feat name. A save made before a feat was held once can carry the race's copy and the background's; the
  * background's is kept because the builder cannot remove it. A feat's picks and counters are keyed by the feat, so they
- * stay with the kept entry.
+ * stay with the kept entry. The ability increase is taken from the dropped entry when the kept one has none, so the
+ * scores lose only the double count.
  */
 function oneEntryPerFeat(entries: AsiSelection[]): AsiSelection[] {
   const kept: AsiSelection[] = [];
@@ -29,9 +30,12 @@ function oneEntryPerFeat(entries: AsiSelection[]): AsiSelection[] {
     if (index === undefined) {
       indexByName.set(name, kept.length);
       kept.push(entry);
-    } else if (kept[index].featSource !== BACKGROUND_FEAT_SOURCE && entry.featSource === BACKGROUND_FEAT_SOURCE) {
-      kept[index] = entry;
+      continue;
     }
+    const current = kept[index];
+    const preferred = current.featSource !== BACKGROUND_FEAT_SOURCE && entry.featSource === BACKGROUND_FEAT_SOURCE ? entry : current;
+    const dropped = preferred === entry ? current : entry;
+    kept[index] = !preferred.featAbility && dropped.featAbility ? { ...preferred, featAbility: dropped.featAbility } : preferred;
   }
   return kept.length === entries.length ? entries : kept;
 }
