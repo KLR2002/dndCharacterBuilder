@@ -6,7 +6,7 @@ import { migrateCharacter } from "../src/rules/migrateCharacter.ts";
 import { featCounterId, featSpellRuleChoices, raceSpellRuleChoices } from "../src/rules/choices/featSpells.ts";
 import { pickRuleChoice } from "../src/rules/ruleChoices.ts";
 import type { Character, CharacterClass } from "../src/types/character.ts";
-import type { RaceData } from "../src/types/dnd5e.ts";
+import type { RaceData, SubraceData } from "../src/types/dnd5e.ts";
 import { BACKGROUND_FEAT_SOURCE } from "../src/constants/rules.ts";
 import { inMemoryCompendium, makeChar } from "./testUtils.ts";
 import { grantedSpellClasses, grantedSpellFeats, grantedSpellSpells } from "./grantedSpellsFixture.ts";
@@ -350,6 +350,42 @@ test("choosing Custom Lineage from a catalog race clears its fixed bonus, spell 
     custom.needsReview?.some((notice) => /Survival removed from Sample Hillfolk/.test(notice)),
     `the skill pick's release is noticed: ${JSON.stringify(custom.needsReview)}`,
   );
+});
+
+test("applyAncestrySelection to another race releases the race's skill pick, with a notice naming the skill and the old race", () => {
+  const before = hillFolk();
+  assert.deepEqual(before.chosenSkills, ["Survival"], "the skill pick is recorded before the change");
+
+  const other = applyAncestrySelection(before, race(ALPHA, {}), undefined, { compendium, activeBooks: ACTIVE });
+
+  assert.equal(other.chosenSkills?.includes("Survival"), false, "the skill pick is gone");
+  assert.equal(other.skillChoices?.some((sc) => sc.origin === "race"), false, "the race's skill choice is cleared");
+  assert.ok(
+    other.needsReview?.includes("Survival removed from Sample Hillfolk: ancestry no longer grants it"),
+    `the skill pick's release is noticed: ${JSON.stringify(other.needsReview)}`,
+  );
+});
+
+test("applyAncestrySelection to another subrace of the same race keeps the race's skill pick", () => {
+  const before = hillFolk();
+  const upland: SubraceData = {
+    name: "Sample Upland",
+    source: "TST",
+    raceName: HILL,
+    raceSource: "TST",
+    abilityScoreIncrease: [],
+    darkvision: null,
+    traits: [],
+    description: "Placeholder description for the subrace.",
+  };
+
+  const changed = applyAncestrySelection(before, hillRecord, upland, { compendium, activeBooks: ACTIVE });
+
+  assert.equal(changed.race?.name, HILL, "the race is held");
+  assert.equal(changed.race?.subraceName, "Sample Upland", "the subrace changed");
+  assert.deepEqual(changed.chosenSkills, ["Survival"], "the skill pick is kept");
+  assert.equal(changed.skillChoices?.some((sc) => sc.origin === "race"), true, "the race's skill choice is kept");
+  assert.equal(changed.needsReview, undefined, "no notice for a pick the character still holds");
 });
 
 test("choosing Custom Lineage from a catalog race holds the custom race with its flag", () => {

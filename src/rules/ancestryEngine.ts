@@ -6,11 +6,10 @@ import {
   type AvailableRuleChoice,
 } from "./ruleChoices.ts";
 import { catalogListings, type CharacterCatalogs } from "./characterEvaluation.ts";
-import { setChoiceRacialBonus } from "./builderTransitions.ts";
+import { releaseRaceSkillPicks, setChoiceRacialBonus } from "./builderTransitions.ts";
 import { reconcile } from "./characterReconciler.ts";
 import { currentCompendium } from "../services/compendium.ts";
 import { BACKGROUND_FEAT_SOURCE } from "../constants/rules.ts";
-import { normalizeSkillName } from "./skills.ts";
 import { isGrantSpellChoiceId, releaseSupersededRacePicks } from "./choices/featSpells.ts";
 import { moveLegacySkillPicks } from "./proficiencyPicks.ts";
 import { releaseExpandedOnlySpells } from "./backgroundSpells.ts";
@@ -201,16 +200,13 @@ export function applyAncestrySelection(
   const isCustom = race.name === "Custom Lineage";
   const leaving = releaseRaceOriginFeat(character, { name: race.name, subraceName: subrace?.name }, compendium, activeBooks);
   // A skill pick saved in the old bucket moves into its choice while the old race is still held; a pick no choice
-  // takes is the old race's legacy entry, and it goes with the race.
+  // takes is the old race's legacy entry, and it goes with the race. A subrace change within the same race keeps them.
   const migrated = moveLegacySkillPicks(leaving, compendium, activeBooks);
-  const oldRaceChoices = (migrated.skillChoices || []).filter((sc) => sc.origin === "race");
-  const oldRacePicks = new Set(oldRaceChoices.flatMap((sc) => sc.picked.map(normalizeSkillName)));
-  const nextSkillChoices = (migrated.skillChoices || []).filter((sc) => sc.origin !== "race");
-  const nextChosenSkills = (migrated.chosenSkills || []).filter((s) => !oldRacePicks.has(normalizeSkillName(s)));
+  const skilled = character.race?.name === race.name ? migrated : releaseRaceSkillPicks(migrated);
 
   // A race's pick of spells is kept here: the reconciler releases it, with a notice, once the race no longer grants it.
   const cleaned: Character = {
-    ...migrated,
+    ...skilled,
     race: updatedRace,
     customLineage: isCustom,
     racialAbilityBonuses: bonuses,
@@ -218,8 +214,6 @@ export function applyAncestrySelection(
     chosenLanguages: nextChosenLanguages,
     chosenTools: nextChosenTools,
     ruleChoices: (leaving.ruleChoices || []).filter((rc) => rc.origin !== "race" || isGrantSpellChoiceId(rc.id)),
-    skillChoices: nextSkillChoices,
-    chosenSkills: nextChosenSkills,
   };
 
   // The spells only the old race's or subrace's expanded lists gave are released, with a notice (ADR 0017).

@@ -239,6 +239,31 @@ export function clearRuleChoices(character: Character): Character {
 }
 
 /**
+ * Drops the race skill picks of the held race, the legacy race skill choices and the skill names they hold, and notices each
+ * released skill with the race it came from. Call it once the race is leaving or changing; a pick a later choice holds was
+ * moved by moveLegacySkillPicks first.
+ */
+export function releaseRaceSkillPicks(character: Character): Character {
+  const oldRacePicks = new Set(
+    (character.skillChoices || []).filter((sc) => sc.origin === "race").flatMap((sc) => sc.picked.map(normalizeSkillName))
+  );
+  const heldRace = character.race?.name;
+  const notices = heldRace
+    ? (character.chosenSkills || [])
+        .filter((s) => oldRacePicks.has(normalizeSkillName(s)))
+        .map((s) => `${s} removed from ${heldRace}: ancestry no longer grants it`)
+    : [];
+  return withNotices(
+    {
+      ...character,
+      skillChoices: (character.skillChoices || []).filter((sc) => sc.origin !== "race"),
+      chosenSkills: (character.chosenSkills || []).filter((s) => !oldRacePicks.has(normalizeSkillName(s))),
+    },
+    notices
+  );
+}
+
+/**
  * Changes the character's race: drops the race, its ability bonuses, and its race-origin Rule
  * Choices and skill picks, then reconciles. Class-origin choices are kept.
  */
@@ -251,30 +276,18 @@ export function changeRace(
   const leaving = releaseRaceOriginFeat(character, null, compendium, activeBooks);
   // Skill picks saved in the old bucket move into their choices while the race is still held. A pick no choice
   // takes is the race's legacy entry, and it goes with the race.
-  const migrated = moveLegacySkillPicks(leaving, compendium, activeBooks);
-  const oldRaceChoices = (migrated.skillChoices || []).filter((sc) => sc.origin === "race");
-  const oldRacePicks = new Set(oldRaceChoices.flatMap((sc) => sc.picked.map(normalizeSkillName)));
+  const skilled = releaseRaceSkillPicks(moveLegacySkillPicks(leaving, compendium, activeBooks));
   // The race's spell picks stay until releaseSupersededRacePicks names and drops them, as the ancestry transition does.
   const cleared: Character = {
-    ...migrated,
+    ...skilled,
     race: null,
     racialAbilityBonuses: {},
     racialChoiceBonus: [],
     ruleChoices: (leaving.ruleChoices || []).filter((rc) => rc.origin !== "race" || isGrantSpellChoiceId(rc.id)),
-    skillChoices: (migrated.skillChoices || []).filter((sc) => sc.origin !== "race"),
-    chosenSkills: (migrated.chosenSkills || []).filter((s) => !oldRacePicks.has(normalizeSkillName(s))),
   };
   const reconciled = reconcile(releaseSupersededRacePicks(leaving, cleared), compendium, { activeBooks });
   // The spells only the old race's expanded lists gave are released, with a notice (ADR 0017).
-  const released = releaseExpandedOnlySpells(leaving, reconciled, compendium, activeBooks);
-  // A skill pick the race gave goes with it, and is noticed as a spell pick is.
-  const heldRace = character.race?.name;
-  const skillNotices = heldRace
-    ? (migrated.chosenSkills || [])
-        .filter((s) => oldRacePicks.has(normalizeSkillName(s)))
-        .map((s) => `${s} removed from ${heldRace}: ancestry no longer grants it`)
-    : [];
-  return withNotices(released, skillNotices);
+  return releaseExpandedOnlySpells(leaving, reconciled, compendium, activeBooks);
 }
 
 /** The lineage a character takes in place of its race: none, the Custom Lineage, or a named lineage. */
