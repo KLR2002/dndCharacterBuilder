@@ -175,8 +175,8 @@ test("dual-mode: SRD and integrated Compendiums sit side by side and leave the p
 
   assert.equal(srd.integrated, false);
   assert.equal(integrated.integrated, true);
-  assert.equal(srd.findRace("Dhampir"), undefined, "SRD must not offer expansion lineages");
-  assert.ok(integrated.findRace("Dhampir"), "integrated catalog must offer expansion lineages");
+  assert.equal(srd.findRace({ name: "Dhampir" }), undefined, "SRD must not offer expansion lineages");
+  assert.ok(integrated.findRace({ name: "Dhampir" }), "integrated catalog must offer expansion lineages");
   assert.equal(currentCompendium(), before, "building explicit Compendiums must not change the process default");
 });
 

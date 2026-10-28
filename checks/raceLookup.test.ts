@@ -260,12 +260,20 @@ test("an offered rule choice keeps its id across catalogs, so a pick saved on on
   assert.equal(feature?.chosenOption, "Option B");
 });
 
+test("the Compendium's race finder takes the held subrace, so the record that lists it wins among active books", () => {
+  const compendium = inMemoryCompendium({
+    races: [race("Sample Folk", "TST"), race("Sample Folk", "ALT", { subraces: [subrace("Brook", "ALT")] })],
+  }, { integrated: true });
+  const held = { name: "Sample Folk", subraceName: "Brook", subraceSource: "SRD" };
+  assert.equal(compendium.findRace(held, ["TST", "ALT"])?.source, "ALT", "the record that lists the held subrace, not the first active book's");
+});
+
 test("the Compendium's race finder takes the saved source first, then an active book's record, then catalog order", () => {
   const compendium = inMemoryCompendium({ races: [folkUnder("TST"), folkUnder("ALT")] }, { integrated: true });
-  assert.equal(compendium.findRace("Sample Folk", "ALT")?.source, "ALT");
-  assert.equal(compendium.findRace("Sample Folk", "OLD", ["ALT"])?.source, "ALT");
-  assert.equal(compendium.findRace("Sample Folk", "OLD")?.source, "TST");
-  assert.equal(compendium.findRace("Sample Other", "SRD"), undefined);
+  assert.equal(compendium.findRace({ name: "Sample Folk", source: "ALT" })?.source, "ALT");
+  assert.equal(compendium.findRace({ name: "Sample Folk", source: "OLD" }, ["ALT"])?.source, "ALT");
+  assert.equal(compendium.findRace({ name: "Sample Folk", source: "OLD" })?.source, "TST");
+  assert.equal(compendium.findRace({ name: "Sample Other", source: "SRD" }), undefined);
 });
 
 test("a subrace name held twice in one race resolves to the subrace of an active book", () => {

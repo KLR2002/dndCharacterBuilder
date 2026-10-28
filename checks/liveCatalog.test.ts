@@ -1287,9 +1287,9 @@ test("live catalog: Hill Dwarf Cleric keeps 10 hit points on the integrated cata
 test("live catalog: a race finds its integrated record by name, scoped to the active books, and by its saved source first", { skip: SKIP }, () => {
   const compendium = live!.compendium;
   for (const name of ["Elf", "Dwarf", "Human"]) {
-    assert.equal(compendium.findRace(name, "SRD", [...DEFAULT_ACTIVE_BOOK_CODES])?.source, "PHB", `${name} resolves to its PHB record`);
+    assert.equal(compendium.findRace({ name, source: "SRD" }, [...DEFAULT_ACTIVE_BOOK_CODES])?.source, "PHB", `${name} resolves to its PHB record`);
   }
-  assert.equal(compendium.findRace("Elf", "PHB")?.source, "PHB", "the saved source is found first");
+  assert.equal(compendium.findRace({ name: "Elf", source: "PHB" })?.source, "PHB", "the saved source is found first");
 });
 
 // Records of the other kinds a character saves with a source (class, subclass, background, feat) and the picks kept on them,

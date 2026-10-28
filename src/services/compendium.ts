@@ -20,7 +20,7 @@ import type {
   BeastData,
 } from "../types/dnd5e.ts";
 import { isCatalogStale, type CompendiumCollections } from "./compendiumStorage.ts";
-import { findHeldRace } from "../rules/raceLookup.ts";
+import { findHeldRace, type HeldRace } from "../rules/raceLookup.ts";
 import { SRD_SOURCE } from "../constants/books.ts";
 
 /** Read-only, synchronous view over one catalog bundle (SRD Baseline or Integrated Catalog). */
@@ -43,8 +43,8 @@ export interface Compendium {
   readonly stale: boolean;
   /** Listings scoped to active books. Unscoped when no books are given or the bundle is not integrated. */
   for(activeBooks?: readonly string[]): CompendiumListings;
-  /** The race of this name: its saved source's record, else an active book's record, else the first listed (see findHeldRace). */
-  findRace(name: string, source?: string, activeBooks?: readonly string[]): RaceData | undefined;
+  /** The race a held race resolves to, subrace included: the saved source's record, else an active book's (see findHeldRace). */
+  findRace(held: HeldRace, activeBooks?: readonly string[]): RaceData | undefined;
   /** The other name lookups are never scoped, so existing character picks always resolve. */
   findClass(name: string, source?: string): ClassData | undefined;
   findSpell(name: string, source?: string): SpellData | undefined;
@@ -143,7 +143,7 @@ export function createCompendium(
     integrated,
     stale: isCatalogStale(bundle),
     for: (activeBooks) => (!activeBooks || !integrated ? unscoped : scoped(activeBooks)),
-    findRace: (name, source, activeBooks) => findHeldRace(races.records, { name, source }, activeBooks).race,
+    findRace: (held, activeBooks) => findHeldRace(races.records, held, activeBooks).race,
     findClass: (name, source) => findIn(classes.records, name, source),
     findSpell: (name, source) => findIn(spells.records, name, source),
     findItem: (name, source) => findIn(items.records, name, source),

@@ -110,7 +110,7 @@ export const FeaturesTab: React.FC = () => {
 
     // 1. Race / Lineage Features
     if (currentCharacter.lineageReplacement) {
-      const lineageData = findRace(currentCharacter.lineageReplacement, undefined, activeBooks);
+      const lineageData = findRace({ name: currentCharacter.lineageReplacement }, activeBooks);
       if (lineageData?.traits) {
         for (const trait of lineageData.traits) {
           list.push({
