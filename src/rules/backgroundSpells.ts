@@ -6,6 +6,7 @@ import { heldFeatsOf, raceGrantsOf, raceTitleOf } from "./choices/featSpells.ts"
 import { isCastingClass, isSpellAvailableForClass } from "./spellcasting.ts";
 import { normalizeKey, resolveSpellName } from "./subclassSpells.ts";
 import { findHeldRecord } from "./raceLookup.ts";
+import { isCustomBackground } from "./customBackground.ts";
 
 /**
  * The spell names a list of spell grants adds to the list of each spellcasting class the character has (ADR 0017). The
@@ -31,13 +32,16 @@ export interface ExpandedSpellSource {
   names: string[];
 }
 
-/** The background the character holds, found by the shared record lookup (see findHeldRecord). */
+/**
+ * The background the character holds, found by the shared record lookup (see findHeldRecord). A custom background is never a
+ * catalog record, even when it takes a catalog background's name.
+ */
 export function resolveCharacterBackground(
   character: Character,
   backgroundCatalog?: BackgroundData[],
   activeBooks?: readonly string[]
 ): BackgroundData | undefined {
-  if (!character.background || !backgroundCatalog) return undefined;
+  if (!character.background || isCustomBackground(character.background) || !backgroundCatalog) return undefined;
   return findHeldRecord(backgroundCatalog, character.background, activeBooks);
 }
 

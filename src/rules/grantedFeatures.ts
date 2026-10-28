@@ -57,7 +57,7 @@ export function grantedFeatures(character: Character, catalog: FeatureCatalog): 
     }
   }
   const background = character.background;
-  const bg = findHeldRecord(catalog.backgrounds, background, catalog.activeBooks);
+  const bg = isCustomBackground(background) ? undefined : findHeldRecord(catalog.backgrounds, background, catalog.activeBooks);
   if (isCustomBackground(background) && background?.customFeatureName) {
     add({ name: background.customFeatureName, description: background.customFeatureDesc || "", source: background.source, origin: "Background" }, background.name);
   } else if (bg?.feature) add({ ...bg.feature, source: bg.source, origin: "Background" }, bg.name);

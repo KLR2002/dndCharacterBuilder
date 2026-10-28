@@ -166,3 +166,13 @@ test("a background held in two books resolves to the record of the active book w
   assert.equal(resolveCharacterBackground(character, [record("OLD"), record("ALT")], ["ALT"])?.source, "ALT");
   assert.equal(resolveCharacterBackground(character, [record("OLD"), record("ALT")])?.source, "OLD", "without active books, the first listed");
 });
+
+test("a custom background named like a catalog background never resolves to the catalog record", () => {
+  const backgrounds = backgroundSpellBackgrounds();
+  const builtIn = makeChar({ background: { name: "Sample Scholar", source: "TST" } });
+  const builderCustom = makeChar({ background: { name: "Sample Scholar", source: "Custom" } });
+  const flaggedCustom = makeChar({ background: { name: "Sample Scholar", source: "TST", isCustom: true } });
+  assert.ok(resolveCharacterBackground(builtIn, backgrounds), "a catalog background still resolves for a built-in pick");
+  assert.equal(resolveCharacterBackground(builderCustom, backgrounds), undefined, "a Builder custom background resolves to nothing");
+  assert.equal(resolveCharacterBackground(flaggedCustom, backgrounds), undefined, "a flagged custom background resolves to nothing");
+});
