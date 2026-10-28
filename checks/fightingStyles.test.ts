@@ -589,3 +589,17 @@ test("a Fighting Style pick saved under the old fixed id is kept under the class
   assert.deepEqual(loaded.ruleChoices?.map((entry) => [entry.id, entry.picked]), [["ALT__Fighter__Fighting Style", ["Sample Guard"]]]);
   assert.equal(hasFightingStyle(loaded, "Sample Guard"), true, "the saved pick still counts");
 });
+
+test("a Fighting Style pick saved under the old id fills the empty entry already under the class record's id, with no notice", () => {
+  const compendium = inMemoryCompendium({ classes: [otherBookFighter()], optionsAndFeatures: [sampleStyle("Sample Guard")] });
+  const saved = makeChar({
+    classes: [{ className: "Fighter", source: "ALT", level: 1 }],
+    ruleChoices: [
+      { id: "PHB__Fighter__Fighting Style", trait: "Fighting Style", origin: "class", choose: 1, from: ["Sample Guard"], picked: ["Sample Guard"] },
+      { id: "ALT__Fighter__Fighting Style", trait: "Fighting Style", origin: "class", choose: 1, from: ["Sample Guard"], picked: [] },
+    ],
+  });
+  const loaded = reconcile(saved, compendium, { activeBooks: ["ALT"] });
+  assert.deepEqual(loaded.ruleChoices?.map((entry) => [entry.id, entry.picked]), [["ALT__Fighter__Fighting Style", ["Sample Guard"]]]);
+  assert.equal(loaded.needsReview, undefined, "the pick is kept, so no notice is made");
+});

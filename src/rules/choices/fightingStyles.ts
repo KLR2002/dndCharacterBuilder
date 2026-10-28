@@ -78,20 +78,36 @@ export function fightingStyleOwnerOf(id: string): ChoiceOwner | undefined {
 
 /**
  * Moves a fighting style pick saved under an id with another source to the id its class now gives. A pick moves only
- * when no entry holds the new id, so an entry left under its old id is released by the pruning pass.
+ * when no entry holds a pick under the new id. An empty entry already under the new id is filled by the pick, as
+ * moveLegacyRacePickIds fills one. Otherwise the entry stays under its old id, and the pruning pass releases it.
  */
 export function moveLegacyFightingStyleIds(character: Character, classes: readonly ClassData[]): Character {
   const entries = character.ruleChoices ?? [];
-  const held = new Set(entries.map((entry) => entry.id));
-  let moved = false;
-  const ruleChoices = entries.map((entry): RuleChoiceEntry => {
+  const pickedIds = new Set(entries.filter((entry) => entry.picked.length > 0).map((entry) => entry.id));
+  const emptyIds = new Set(entries.filter((entry) => entry.picked.length === 0).map((entry) => entry.id));
+  // The first legacy entry that moves onto each new id claims it.
+  const targetOf = new Map<RuleChoiceEntry, string>();
+  const claimantOf = new Map<string, RuleChoiceEntry>();
+  for (const entry of entries) {
     const target = currentStyleIdOf(character, classes, entry.id);
-    if (!target || target === entry.id || held.has(target)) return entry;
-    held.add(target);
-    moved = true;
-    return { ...entry, id: target };
-  });
-  return moved ? { ...character, ruleChoices } : character;
+    if (!target || target === entry.id || pickedIds.has(target) || claimantOf.has(target)) continue;
+    claimantOf.set(target, entry);
+    targetOf.set(entry, target);
+  }
+  if (targetOf.size === 0) return character;
+
+  const ruleChoices: RuleChoiceEntry[] = [];
+  for (const entry of entries) {
+    const target = targetOf.get(entry);
+    if (target !== undefined) {
+      // A claimant whose new id already has an empty entry takes that entry's place when the entry is reached.
+      if (!emptyIds.has(target)) ruleChoices.push({ ...entry, id: target });
+      continue;
+    }
+    const claimant = entry.picked.length === 0 ? claimantOf.get(entry.id) : undefined;
+    ruleChoices.push(claimant ? { ...claimant, id: entry.id } : entry);
+  }
+  return { ...character, ruleChoices };
 }
 
 /** The id a class-owned style id takes under the character's class, or undefined when the id is not class-owned or the class is not held. */
