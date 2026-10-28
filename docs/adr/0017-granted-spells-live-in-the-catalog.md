@@ -20,3 +20,9 @@ Keeping the race table and adding a feat table was rejected for the reason in AD
 - A feat's or race's `expanded` lists work like a background's: they join every spellcasting class's list once the character has Spellcasting or Pact Magic, and are released with a review notice when the source goes.
 - A grant that names no casting ability still gets a card, without an ability, save DC or attack row.
 - A `prepared` group that names its own casting ability or gives at-will or daily casts is Innate Magic: it has its own card with that ability and Long Rest counters, and its spells are not in the class list.
+
+## Amendment: switched-off books and notes
+- A sourcebook the player switches off releases, with a notice, the picks that belong to it: the spell picks, race and lineage choices and feat choices of a held record from that book, and the Long Rest counters of those picks. A spell known only from an expanded list of that book is released the same way. Its choice is not offered while the book is off, and switching the book back on restores nothing.
+- A catalog that lacks the record entirely is not loaded, so the picks and counters that record gave are kept with no notice.
+- A grant may carry reviewed per-spell `notes`, keyed by the lower-case spell name. A note is shown after the spell's name on its Innate Magic card, as in "Nondetection (self only)"; the always-prepared list carries it without showing it. It comes from reviewed catalog data, never from app code. A copy of a spell that a class list gives, or that is drawn from a Pact of the Tome, Blessed Warrior or Giant Power list, is not released by a switched-off expanded list.
+- The Catalog Format is 11: a catalog saved at format 10 carries no notes and is stale.
