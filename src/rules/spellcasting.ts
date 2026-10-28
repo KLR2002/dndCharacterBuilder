@@ -26,6 +26,8 @@ export interface GrantedPreparedSpell {
   minCharacterLevel: number;
   /** Set for a prepared entry under an `sN` key: the spell slot level the character needs to have. */
   minSpellLevel?: number;
+  /** The reviewed note of the spell the grant gives (see noteOf). */
+  note?: string;
 }
 
 export interface ClassSpellProfile {

@@ -78,6 +78,24 @@ test("a reviewed correction's notes are carried on the race's spell grant, and a
   assert.equal("notes" in (line ?? {}), false, "the subrace's grant keeps no note");
 });
 
+/** The keys of a correction's notes that name no spell the grant gives. A spell is named by its lower-case name in the grant. */
+function unnamedNoteKeys(notes: Record<string, string>, grant: AdditionalSpells): string[] {
+  const named = new Set<string>();
+  const collect = (value: unknown): void => {
+    if (typeof value === "string") named.add(value.toLowerCase());
+    else if (Array.isArray(value)) value.forEach(collect);
+    else if (value && typeof value === "object") Object.values(value).forEach(collect);
+  };
+  for (const [field, value] of Object.entries(grant)) if (field !== "notes") collect(value);
+  return Object.keys(notes).filter((key) => !named.has(key.toLowerCase()));
+}
+
+test("a note key that names no spell of its grant is reported", () => {
+  const grant: AdditionalSpells = { ability: "int", known: { "1": ["sample ember"] }, innate: { "1": ["sample spark"] } };
+  assert.deepEqual(unnamedNoteKeys({ "Sample Spark": "self only" }, grant), [], "a key naming a spell in any letter case is named");
+  assert.deepEqual(unnamedNoteKeys({ "sample haze": "self only" }, grant), ["sample haze"], "a key naming no spell is reported");
+});
+
 test("every reviewed correction names a tracked record whose spell grant carries the sections it gives, so a stale correction fails", () => {
   const races = JSON.parse(readFileSync(new URL("../data/races.json", import.meta.url), "utf8")) as TrackedRaceGrants[];
   for (const correction of SPELL_GRANT_CORRECTIONS) {
@@ -89,6 +107,9 @@ test("every reviewed correction names a tracked record whose spell grant carries
     assert.ok(grant, `${correction.race} (${correction.subrace ?? "race"}) gives spells in the tracked races`);
     if (correction.known) assert.deepEqual(grant.known, correction.known, `${correction.race}'s known spells follow the correction`);
     if (correction.innate) assert.deepEqual(grant.innate, correction.innate, `${correction.race}'s innate spells follow the correction`);
-    if (correction.notes) assert.deepEqual(grant.notes, correction.notes, `${correction.race}'s spell notes follow the correction`);
+    if (correction.notes) {
+      assert.deepEqual(grant.notes, correction.notes, `${correction.race}'s spell notes follow the correction`);
+      assert.deepEqual(unnamedNoteKeys(correction.notes, grant), [], `${correction.race}'s spell notes name spells the grant gives`);
+    }
   }
 });

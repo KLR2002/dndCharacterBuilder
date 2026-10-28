@@ -124,17 +124,20 @@ export function grantedPreparedSpells(character: Character, catalogs?: Character
       if (entry.kind !== "spell") continue;
       const data = resolveSpellName(entry.name, activeBooks, compendium, { activeOnly: true });
       if (!data) continue;
+      const note = noteOf(grant, data.name);
       out.push({
         spell: data,
         source,
         minCharacterLevel: entry.minCharacterLevel,
         ...(entry.minSpellLevel !== undefined ? { minSpellLevel: entry.minSpellLevel } : {}),
+        ...(note !== undefined ? { note } : {}),
       });
     }
     for (const slot of pickSlotsOf(grant)) {
       if (!slot.prepared) continue;
       for (const data of chosenSpellsOf(character, owner, grant, slot, compendium, activeBooks)) {
-        out.push({ spell: data, source, minCharacterLevel: slot.minCharacterLevel });
+        const note = noteOf(grant, data.name);
+        out.push({ spell: data, source, minCharacterLevel: slot.minCharacterLevel, ...(note !== undefined ? { note } : {}) });
       }
     }
   };
@@ -181,7 +184,7 @@ function grantSource(
     const chosen = chosenSpellsOf(ctx.character, owner, grant, slot, ctx.compendium, ctx.activeBooks);
     for (const data of chosen) {
       if (seen.has(data.name.toLowerCase())) continue;
-      spells.push(innateEntry(data, owner, entryName, usesOfEntry(slot, data.level), slot.minCharacterLevel));
+      spells.push(innateEntry(data, owner, entryName, usesOfEntry(slot, data.level), slot.minCharacterLevel, undefined, noteOf(grant, data.name)));
       seen.add(data.name.toLowerCase());
     }
     const owed = slot.count - chosen.length;
@@ -238,10 +241,17 @@ function grantedSpells(input: { owner: GrantOwner; grant: AdditionalSpells; seen
     const data = resolveSpellName(entry.name, ctx.activeBooks, ctx.compendium, { activeOnly: true });
     if (!data) continue;
     seen.add(key);
-    const note = grant.notes?.[key];
-    spells.push(innateEntry(data, owner, entryName, usesOfEntry(entry, data.level), entry.minCharacterLevel, grant.castLevels?.[key], note));
+    spells.push(
+      innateEntry(data, owner, entryName, usesOfEntry(entry, data.level), entry.minCharacterLevel, grant.castLevels?.[key], noteOf(grant, data.name)),
+    );
   }
   return spells;
+}
+
+/** The reviewed note the grant gives a spell, found by the spell's name in any letter case. */
+function noteOf(grant: AdditionalSpells, spellName: string): string | undefined {
+  const key = spellName.toLowerCase();
+  return Object.entries(grant.notes ?? {}).find(([name]) => name.toLowerCase() === key)?.[1];
 }
 
 /**
