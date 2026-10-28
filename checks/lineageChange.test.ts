@@ -7,6 +7,7 @@ import { featCounterId, featSpellRuleChoices, raceSpellRuleChoices } from "../sr
 import { pickRuleChoice } from "../src/rules/ruleChoices.ts";
 import type { Character, CharacterClass } from "../src/types/character.ts";
 import type { RaceData } from "../src/types/dnd5e.ts";
+import { BACKGROUND_FEAT_SOURCE } from "../src/constants/rules.ts";
 import { inMemoryCompendium, makeChar } from "./testUtils.ts";
 import { grantedSpellClasses, grantedSpellFeats, grantedSpellSpells } from "./grantedSpellsFixture.ts";
 
@@ -175,12 +176,12 @@ const pickIn = (character: Character, option: string): Character => {
   return pickRuleChoice(character, choice, option, featCompendium);
 };
 
-/** A Custom Lineage character whose origin feat has its Mage list picked, with the cantrip and the daily counter in place. */
-const customWithOriginFeat = (): Character => {
+/** A character of the race holding the origin feat, with its Mage list picked and the cantrip and daily counter in place. */
+const withOriginFeat = (race: Character["race"], customLineage: boolean): Character => {
   const origin = makeChar({
     classes: [mage],
-    race: CUSTOM,
-    customLineage: true,
+    race,
+    customLineage,
     originFeats: [{ level: 1, type: "feat", featName: "Sample Initiate", featSource: "TST" }],
   });
   const picked = pickIn(pickIn(origin, "Sample Mage Spells"), "Sample Ember");
@@ -189,6 +190,9 @@ const customWithOriginFeat = (): Character => {
     resourceCounters: { [pulseCounter]: { id: pulseCounter, name: "Innate: Sample Pulse", current: 1, max: 1, resetOn: "long" } },
   };
 };
+
+/** A Custom Lineage character whose origin feat has its Mage list picked, with the cantrip and the daily counter in place. */
+const customWithOriginFeat = (): Character => withOriginFeat(CUSTOM, true);
 
 test("choosing None from Custom Lineage clears its origin feat, the spell pick and counter it granted, with notices", () => {
   const custom = customWithOriginFeat();
@@ -248,4 +252,66 @@ test("a save that names the Custom Lineage race without the custom flag loads wi
 
   const plain = migrateCharacter(JSON.parse(JSON.stringify(holding(ALPHA))), undefined, grantedSpellClasses());
   assert.equal(plain.customLineage, false, "a character that is not a Custom Lineage stays so");
+});
+
+// A Variant subrace gives an origin feat as Custom Lineage does, so leaving the race releases the feat the same way.
+const VARIANT = { name: BASE, source: "TST", subraceName: "Variant", subraceSource: "TST" };
+
+test("changing race away from a Variant subrace clears the origin feat it gave, its spell pick and counter, with notices", () => {
+  const changed = changeRace(withOriginFeat(VARIANT, false), featCompendium, ACTIVE);
+  assert.deepEqual(changed.originFeats ?? [], [], "the origin feat is gone");
+  assert.deepEqual(pickedNames(changed), [], "its spell pick is released");
+  assert.equal(changed.resourceCounters?.[pulseCounter], undefined, "its counter is released");
+  assert.ok(
+    changed.needsReview?.some((notice) => /Sample Ember removed from Sample Initiate: feat no longer held/.test(notice)),
+    `the pick's release is noticed: ${JSON.stringify(changed.needsReview)}`,
+  );
+  assert.ok(
+    changed.needsReview?.some((notice) => /Innate: Sample Pulse removed from Sample Initiate: feat no longer held/.test(notice)),
+    `the counter's release is noticed: ${JSON.stringify(changed.needsReview)}`,
+  );
+});
+
+test("applying a catalog race to a Variant subrace character clears its origin feat and what it granted", () => {
+  const applied = applyAncestrySelection(withOriginFeat(VARIANT, false), race(BASE, {}), undefined, {
+    compendium: featCompendium,
+    activeBooks: ACTIVE,
+  });
+  assert.deepEqual(applied.originFeats ?? [], [], "the origin feat is gone");
+  assert.deepEqual(pickedNames(applied), [], "its spell pick is released");
+  assert.equal(applied.resourceCounters?.[pulseCounter], undefined, "its counter is released");
+});
+
+test("a background feat stays when the race changes away from the race that gave the origin feat", () => {
+  const withBackground: Character = {
+    ...withOriginFeat(VARIANT, false),
+    originFeats: [
+      { level: 1, type: "feat", featName: "Sample Initiate", featSource: "TST" },
+      { level: 1, type: "feat", featName: "Sample Warding", featSource: BACKGROUND_FEAT_SOURCE },
+    ],
+  };
+  const changed = changeRace(withBackground, featCompendium, ACTIVE);
+  assert.deepEqual(changed.originFeats?.map((feat) => feat.featName), ["Sample Warding"], "only the background feat stays");
+});
+
+test("changing subrace within the race that gives the origin feat keeps the feat, its pick and counter", () => {
+  const subrace = {
+    name: "Sample Sub",
+    source: "TST",
+    raceName: "Variant Human",
+    raceSource: "TST",
+    abilityScoreIncrease: [],
+    darkvision: null,
+    traits: [],
+    description: "Placeholder description for the subrace.",
+  };
+  const variantHuman = withOriginFeat({ name: "Variant Human", source: "TST" }, false);
+  const changed = applyAncestrySelection(variantHuman, race("Variant Human", {}), subrace, {
+    compendium: featCompendium,
+    activeBooks: ACTIVE,
+  });
+  assert.equal(changed.race?.subraceName, "Sample Sub");
+  assert.deepEqual(changed.originFeats?.map((feat) => feat.featName), ["Sample Initiate"], "the origin feat stays");
+  assert.ok(pickedNames(changed).includes("Sample Ember"), "its spell pick stays");
+  assert.ok(changed.resourceCounters?.[pulseCounter], "its counter stays");
 });

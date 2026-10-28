@@ -14,7 +14,7 @@ import { normalizeSkillName } from "./skills.ts";
 import { isGrantSpellChoiceId, releaseSupersededRacePicks } from "./choices/featSpells.ts";
 import { moveLegacySkillPicks } from "./proficiencyPicks.ts";
 import { releaseExpandedOnlySpells } from "./backgroundSpells.ts";
-import { leaveCustomLineage } from "./feats.ts";
+import { raceOriginFeatTitle, releaseRaceOriginFeat } from "./feats.ts";
 import { findHeldRace } from "./raceLookup.ts";
 
 export interface AncestryTraitView {
@@ -118,11 +118,6 @@ export function resolveAncestryState(
     };
   });
 
-  // Origin Feat resolution (Variant Human, Custom Lineage)
-  let hasOriginFeat = false;
-  let originFeatTitle: string | undefined;
-  let currentOriginFeat: AsiSelection | undefined;
-
   const lineageRace = character.lineageReplacement
     ? findHeldRace(allRaces, { name: character.lineageReplacement }, catalogs?.activeBooks).race
     : undefined;
@@ -151,20 +146,12 @@ export function resolveAncestryState(
         ...(selectedSubrace?.traits ?? []).map((t) => ({ name: t.name, description: t.description, source: selectedSubrace?.source })),
       ];
 
-  if (character.race) {
-    if (character.race.name === "Custom Lineage") {
-      hasOriginFeat = true;
-      originFeatTitle = "Custom Lineage Feat";
-    } else if (character.race.subraceName === "Variant" || character.race.name === "Variant Human") {
-      hasOriginFeat = true;
-      originFeatTitle = "Variant Human Origin Feat";
-    }
-
-    if (hasOriginFeat) {
-      // The feat a background grants carries the Background source, so the origin feat is the one the player chose.
-      currentOriginFeat = (character.originFeats || []).find((f) => f.featSource !== BACKGROUND_FEAT_SOURCE);
-    }
-  }
+  const originFeatTitle = raceOriginFeatTitle(character.race);
+  const hasOriginFeat = originFeatTitle !== undefined;
+  // The feat a background grants carries the Background source, so the origin feat is the one the player chose.
+  const currentOriginFeat: AsiSelection | undefined = hasOriginFeat
+    ? (character.originFeats || []).find((f) => f.featSource !== BACKGROUND_FEAT_SOURCE)
+    : undefined;
 
   return {
     selectedRace,
@@ -209,10 +196,10 @@ export function applyAncestrySelection(
 
   const compendium = catalogs?.compendium ?? currentCompendium();
   const activeBooks = catalogs?.activeBooks;
-  // The Custom Lineage record sets the custom flag, so the race picker reaches the state the lineage control does. Leaving
-  // Custom Lineage for another race releases its origin feat first, while the Custom Lineage race is still held.
+  // The Custom Lineage record sets the custom flag, so the race picker reaches the state the lineage control does. The origin
+  // feat of the race held is released first, while that race is still held.
   const isCustom = race.name === "Custom Lineage";
-  const leaving = isCustom ? character : leaveCustomLineage(character, compendium, activeBooks);
+  const leaving = releaseRaceOriginFeat(character, { name: race.name, subraceName: subrace?.name }, compendium, activeBooks);
   // A skill pick saved in the old bucket moves into its choice while the old race is still held; a pick no choice
   // takes is the old race's legacy entry, and it goes with the race.
   const migrated = moveLegacySkillPicks(leaving, compendium, activeBooks);

@@ -18,7 +18,7 @@ import { CUSTOM_BACKGROUND_SKILLS_ID, CUSTOM_BACKGROUND_TOOLS_OR_LANGUAGES_ID, i
 import { findHeldRecord } from "./raceLookup.ts";
 import { ABILITY_NAMES } from "./abilities.ts";
 import { releaseExpandedOnlySpells } from "./backgroundSpells.ts";
-import { leaveCustomLineage } from "./feats.ts";
+import { releaseRaceOriginFeat } from "./feats.ts";
 import { isGrantSpellChoiceId, releaseSupersededRacePicks } from "./choices/featSpells.ts";
 import { withNotices } from "./needsReview.ts";
 import {
@@ -247,8 +247,8 @@ export function changeRace(
   compendium: Compendium = currentCompendium(),
   activeBooks?: string[]
 ): Character {
-  // Leaving Custom Lineage releases its origin feat first, so the pick and counter it granted are not read back below.
-  const leaving = leaveCustomLineage(character, compendium, activeBooks);
+  // Leaving the race releases the origin feat it gave first, so the pick and counter it granted are not read back below.
+  const leaving = releaseRaceOriginFeat(character, null, compendium, activeBooks);
   // Skill picks saved in the old bucket move into their choices while the race is still held. A pick no choice
   // takes is the race's legacy entry, and it goes with the race.
   const migrated = moveLegacySkillPicks(leaving, compendium, activeBooks);

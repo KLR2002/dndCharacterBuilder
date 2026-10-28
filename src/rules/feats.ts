@@ -209,18 +209,37 @@ export function removeOriginFeat(
   );
 }
 
+/** The race fields the origin feat rule reads: the race's name and the name of its subrace. */
+export type RaceIdentity = { name: string; subraceName?: string };
+
+/** The origin feat card's title for a race, or undefined when the race gives no origin feat (Variant Human, Custom Lineage). */
+export function raceOriginFeatTitle(race: RaceIdentity | null | undefined): string | undefined {
+  if (!race) return undefined;
+  if (race.name === "Custom Lineage") return "Custom Lineage Feat";
+  if (race.subraceName === "Variant" || race.name === "Variant Human") return "Variant Human Origin Feat";
+  return undefined;
+}
+
 /**
- * Leaves Custom Lineage: each origin feat it gave is removed as removeOriginFeat removes one, with what the feat granted, and the
- * custom flag clears. Background feats stay. A character that is not a Custom Lineage comes back unchanged.
+ * Releases the origin feat the held race gave when the character leaves that race for `next` (null when the race is cleared).
+ * Each non-background origin feat is removed as removeOriginFeat removes one, with what the feat granted. A change that stays on
+ * the same race and keeps its origin feat (a change of subrace) keeps it. The custom flag clears with the race.
  */
-export function leaveCustomLineage(character: Character, compendium: Compendium = currentCompendium(), activeBooks?: string[]): Character {
-  if (!character.customLineage) return character;
-  let next = character;
+export function releaseRaceOriginFeat(
+  character: Character,
+  next: RaceIdentity | null,
+  compendium: Compendium = currentCompendium(),
+  activeBooks?: string[]
+): Character {
+  const held = raceOriginFeatTitle(character.race);
+  if (!held) return character;
+  if (next && next.name === character.race?.name && raceOriginFeatTitle(next) === held) return character;
+  let released = character;
   for (const feat of character.originFeats ?? []) {
     if (feat.featSource === BACKGROUND_FEAT_SOURCE || !feat.featName) continue;
-    next = removeOriginFeat(next, feat.featName, compendium, activeBooks);
+    released = removeOriginFeat(released, feat.featName, compendium, activeBooks);
   }
-  return { ...next, customLineage: false };
+  return { ...released, customLineage: false };
 }
 
 /** Known background feat grants mapping. */
