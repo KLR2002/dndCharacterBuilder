@@ -5,7 +5,7 @@ import { migrateCharacter } from "../src/rules/migrateCharacter.ts";
 import { reconcile, reconcileForActiveBooks } from "../src/rules/characterReconciler.ts";
 import type { Character, CharacterClass } from "../src/types/character.ts";
 import type { InnateSpellProfile } from "../src/rules/innateMagic.ts";
-import type { RaceData } from "../src/types/dnd5e.ts";
+import type { AdditionalSpells, RaceData } from "../src/types/dnd5e.ts";
 import { raceSpellRuleChoices } from "../src/rules/choices/featSpells.ts";
 import { inMemoryCompendium, loadTestCatalogs, makeChar } from "./testUtils.ts";
 import { grantedSpellClasses, grantedSpellRaces, grantedSpellSpells } from "./grantedSpellsFixture.ts";
@@ -204,4 +204,35 @@ test("a legacy High Elf cantrip takes the empty entry under the race's key, and 
   const emptyEntry = { id: offered.id, trait: offered.traitName, origin: "race" as const, choose: 1, from: [], picked: [] };
   const loaded = migrateCharacter(highElf({ ruleChoices: [legacyPick("Fire Bolt"), emptyEntry] }), races, tracked.classes);
   assert.deepEqual(loaded.ruleChoices?.map((entry) => [entry.id, entry.picked]), [[offered.id, ["Fire Bolt"]]], "one entry, holding the pick");
+});
+
+// Two books list the same invented race. Only the first grants a cantrip, so which record the migration reads decides the outcome.
+const giftedUnder = (source: string, additionalSpells: AdditionalSpells[] = []): RaceData => ({
+  name: "Sample Gifted",
+  source,
+  size: ["Medium"],
+  speed: { walk: 30 },
+  abilityScoreIncrease: [],
+  darkvision: null,
+  traits: [],
+  languages: ["Common"],
+  subraces: [],
+  description: "Placeholder description for the race.",
+  additionalSpells,
+});
+const cantripPick: AdditionalSpells[] = [{ ability: "int", known: { "1": { _: [{ choose: "level=0|class=Sample Mage" }] } } }];
+
+test("a legacy cantrip is checked against the active book's record of its race, and against the first listed when no books are given", () => {
+  const races = [giftedUnder("TST", cantripPick), giftedUnder("ALT")];
+  const saved = makeChar({
+    classes: [wizard],
+    race: { name: "Sample Gifted", source: "OLD" },
+    ruleChoices: [legacyPick("Sample Shot")],
+  });
+  const scoped = migrateCharacter(saved, races, tracked.classes, ["ALT"]);
+  assert.equal(scoped.ruleChoices?.some((entry) => entry.picked.includes("Sample Shot")), false, "the active book's record grants no cantrip, so none moves");
+  assert.ok(scoped.needsReview?.some((notice) => notice.startsWith("Sample Shot removed")), "the cantrip is released with a notice");
+
+  const unscoped = migrateCharacter(saved, races, tracked.classes);
+  assert.ok(unscoped.ruleChoices?.some((entry) => entry.picked.includes("Sample Shot")), "without books, the first record listed decides, as before");
 });

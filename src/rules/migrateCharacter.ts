@@ -17,9 +17,15 @@ function isRecord(value: unknown): value is Record<string, unknown> {
  * supplied it lets the migration notice an ancestry choice that was never
  * recorded, which only the catalog can say is missing. `classCatalog` works the
  * same way for the class that owns a legacy spell list; without it the SRD
- * Baseline's classes stand in.
+ * Baseline's classes stand in. `activeBooks` picks, among the records of the
+ * character's race, the one a legacy racial cantrip is checked against.
  */
-export function migrateCharacter(raw: unknown, raceCatalog?: RaceData[], classCatalog: readonly ClassData[] = []): Character {
+export function migrateCharacter(
+  raw: unknown,
+  raceCatalog?: RaceData[],
+  classCatalog: readonly ClassData[] = [],
+  activeBooks?: readonly string[],
+): Character {
   if (!isRecord(raw) || typeof raw.id !== "string" || typeof raw.name !== "string" ||
       typeof raw.createdAt !== "number" || !Number.isFinite(raw.createdAt)) {
     throw new Error("Invalid character: expected an identified character record");
@@ -109,6 +115,6 @@ export function migrateCharacter(raw: unknown, raceCatalog?: RaceData[], classCa
   // A saved legacy racial cantrip moves to the race's own pick once the catalog says what the race grants. A race the catalog
   // does not hold is not loaded, so the cantrip is kept as saved, with no notice.
   const rekeyed = moveLegacyRacePickIds(migrated);
-  return raceCatalog && heldRaceListed(c.race, raceCatalog) ? migrateLegacyRacialCantrip(rekeyed, raceCatalog) : rekeyed;
+  return raceCatalog && heldRaceListed(c.race, raceCatalog) ? migrateLegacyRacialCantrip(rekeyed, raceCatalog, activeBooks) : rekeyed;
 }
 

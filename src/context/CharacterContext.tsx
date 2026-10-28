@@ -150,8 +150,9 @@ export function CharacterProvider({ children }: { children: React.ReactNode }) {
         setCatalogStale(currentCompendium().stale);
         const raceCatalog = getRaces();
         const classCatalog = getClasses();
-        const migratedCharacters = loadedChars.map((c) => migrateCharacter(c, raceCatalog, classCatalog));
-        setActiveBooksState(loadedSettings.activeResourceBooks || DEFAULT_ACTIVE_BOOK_CODES);
+        const loadedActiveBooks = loadedSettings.activeResourceBooks || DEFAULT_ACTIVE_BOOK_CODES;
+        const migratedCharacters = loadedChars.map((c) => migrateCharacter(c, raceCatalog, classCatalog, loadedActiveBooks));
+        setActiveBooksState(loadedActiveBooks);
         setFullHealOnLevelUpState(loadedSettings.fullHealOnLevelUp);
         setHasCompletedFirstRun(Boolean(loadedSettings.hasCompletedFirstRun));
         setCharacters(migratedCharacters);

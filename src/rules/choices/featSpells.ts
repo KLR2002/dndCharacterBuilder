@@ -1050,9 +1050,9 @@ function isLegacyHighElfCantripId(id: string): boolean {
  * Choice id, or as a known spell under the legacy `racial__innate` owner key. Both are released. The cantrip moves to the race's
  * first cantrip slot that takes its spell from a class list, whatever the class, when the character's race still grants one.
  * Otherwise it is released with a review notice. A cantrip the offered spells no longer include is released by the reconciler,
- * on the next open of the character.
+ * on the next open of the character. The race's record is found by the shared lookup, scoped to `activeBooks` when given.
  */
-export function migrateLegacyRacialCantrip(character: Character, races: RaceData[]): Character {
+export function migrateLegacyRacialCantrip(character: Character, races: RaceData[], activeBooks?: readonly string[]): Character {
   const legacyEntries = (character.ruleChoices ?? []).filter((entry) => isLegacyHighElfCantripId(entry.id));
   const legacyKnown = (character.knownSpells ?? []).filter((spell) => spell.ownerKey === "racial__innate");
   if (legacyEntries.length === 0 && legacyKnown.length === 0) return character;
@@ -1065,7 +1065,7 @@ export function migrateLegacyRacialCantrip(character: Character, races: RaceData
   const picked = legacyEntries.flatMap((entry) => entry.picked)[0] ?? legacyKnown[0]?.name;
   if (!picked) return cleaned;
 
-  const race = raceGrantsOf(cleaned, races);
+  const race = raceGrantsOf(cleaned, races, activeBooks);
   const slot = race ? cantripSlotOf(race.grants) : undefined;
   if (!race || !slot) {
     const held = character.race ? raceTitleOf(character, character.race.subraceName ?? character.race.name) : "ancestry";
