@@ -209,6 +209,20 @@ export function removeOriginFeat(
   );
 }
 
+/**
+ * Leaves Custom Lineage: each origin feat it gave is removed as removeOriginFeat removes one, with what the feat granted, and the
+ * custom flag clears. Background feats stay. A character that is not a Custom Lineage comes back unchanged.
+ */
+export function leaveCustomLineage(character: Character, compendium: Compendium = currentCompendium(), activeBooks?: string[]): Character {
+  if (!character.customLineage) return character;
+  let next = character;
+  for (const feat of character.originFeats ?? []) {
+    if (feat.featSource === BACKGROUND_FEAT_SOURCE || !feat.featName) continue;
+    next = removeOriginFeat(next, feat.featName, compendium, activeBooks);
+  }
+  return { ...next, customLineage: false };
+}
+
 /** Known background feat grants mapping. */
 export const BACKGROUND_FEATS: Record<string, { featName: string; isChoice?: boolean; choiceOptions?: string[] }> = {
   "Giant Foundling": { featName: "Strike of the Giants" },

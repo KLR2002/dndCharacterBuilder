@@ -18,6 +18,7 @@ import { CUSTOM_BACKGROUND_SKILLS_ID, CUSTOM_BACKGROUND_TOOLS_OR_LANGUAGES_ID, i
 import { findHeldRecord } from "./raceLookup.ts";
 import { ABILITY_NAMES } from "./abilities.ts";
 import { releaseExpandedOnlySpells } from "./backgroundSpells.ts";
+import { leaveCustomLineage } from "./feats.ts";
 import { isGrantSpellChoiceId, releaseSupersededRacePicks } from "./choices/featSpells.ts";
 import { withNotices } from "./needsReview.ts";
 import {
@@ -246,9 +247,11 @@ export function changeRace(
   compendium: Compendium = currentCompendium(),
   activeBooks?: string[]
 ): Character {
+  // Leaving Custom Lineage releases its origin feat first, so the pick and counter it granted are not read back below.
+  const leaving = leaveCustomLineage(character, compendium, activeBooks);
   // Skill picks saved in the old bucket move into their choices while the race is still held. A pick no choice
   // takes is the race's legacy entry, and it goes with the race.
-  const migrated = moveLegacySkillPicks(character, compendium, activeBooks);
+  const migrated = moveLegacySkillPicks(leaving, compendium, activeBooks);
   const oldRaceChoices = (migrated.skillChoices || []).filter((sc) => sc.origin === "race");
   const oldRacePicks = new Set(oldRaceChoices.flatMap((sc) => sc.picked.map(normalizeSkillName)));
   // The race's spell picks stay until releaseSupersededRacePicks names and drops them, as the ancestry transition does.
@@ -257,13 +260,13 @@ export function changeRace(
     race: null,
     racialAbilityBonuses: {},
     racialChoiceBonus: [],
-    ruleChoices: (character.ruleChoices || []).filter((rc) => rc.origin !== "race" || isGrantSpellChoiceId(rc.id)),
+    ruleChoices: (leaving.ruleChoices || []).filter((rc) => rc.origin !== "race" || isGrantSpellChoiceId(rc.id)),
     skillChoices: (migrated.skillChoices || []).filter((sc) => sc.origin !== "race"),
     chosenSkills: (migrated.chosenSkills || []).filter((s) => !oldRacePicks.has(normalizeSkillName(s))),
   };
-  const reconciled = reconcile(releaseSupersededRacePicks(character, cleared), compendium, { activeBooks });
+  const reconciled = reconcile(releaseSupersededRacePicks(leaving, cleared), compendium, { activeBooks });
   // The spells only the old race's expanded lists gave are released, with a notice (ADR 0017).
-  return releaseExpandedOnlySpells(character, reconciled, compendium, activeBooks);
+  return releaseExpandedOnlySpells(leaving, reconciled, compendium, activeBooks);
 }
 
 /** The lineage a character takes in place of its race: none, the Custom Lineage, or a named lineage. */

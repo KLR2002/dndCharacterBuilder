@@ -14,6 +14,7 @@ import { normalizeSkillName } from "./skills.ts";
 import { isGrantSpellChoiceId, releaseSupersededRacePicks } from "./choices/featSpells.ts";
 import { moveLegacySkillPicks } from "./proficiencyPicks.ts";
 import { releaseExpandedOnlySpells } from "./backgroundSpells.ts";
+import { leaveCustomLineage } from "./feats.ts";
 import { findHeldRace } from "./raceLookup.ts";
 
 export interface AncestryTraitView {
@@ -207,9 +208,14 @@ export function applyAncestrySelection(
   const nextChosenTools = { ...character.chosenTools, race: [] };
 
   const compendium = catalogs?.compendium ?? currentCompendium();
+  const activeBooks = catalogs?.activeBooks;
+  // The Custom Lineage record sets the custom flag, so the race picker reaches the state the lineage control does. Leaving
+  // Custom Lineage for another race releases its origin feat first, while the Custom Lineage race is still held.
+  const isCustom = race.name === "Custom Lineage";
+  const leaving = isCustom ? character : leaveCustomLineage(character, compendium, activeBooks);
   // A skill pick saved in the old bucket moves into its choice while the old race is still held; a pick no choice
   // takes is the old race's legacy entry, and it goes with the race.
-  const migrated = moveLegacySkillPicks(character, compendium, catalogs?.activeBooks);
+  const migrated = moveLegacySkillPicks(leaving, compendium, activeBooks);
   const oldRaceChoices = (migrated.skillChoices || []).filter((sc) => sc.origin === "race");
   const oldRacePicks = new Set(oldRaceChoices.flatMap((sc) => sc.picked.map(normalizeSkillName)));
   const nextSkillChoices = (migrated.skillChoices || []).filter((sc) => sc.origin !== "race");
@@ -219,20 +225,20 @@ export function applyAncestrySelection(
   const cleaned: Character = {
     ...migrated,
     race: updatedRace,
+    customLineage: isCustom,
     racialAbilityBonuses: bonuses,
     racialChoiceBonus: [],
     chosenLanguages: nextChosenLanguages,
     chosenTools: nextChosenTools,
-    ruleChoices: (character.ruleChoices || []).filter((rc) => rc.origin !== "race" || isGrantSpellChoiceId(rc.id)),
+    ruleChoices: (leaving.ruleChoices || []).filter((rc) => rc.origin !== "race" || isGrantSpellChoiceId(rc.id)),
     skillChoices: nextSkillChoices,
     chosenSkills: nextChosenSkills,
   };
 
   // The spells only the old race's or subrace's expanded lists gave are released, with a notice (ADR 0017).
-  const activeBooks = catalogs?.activeBooks;
   return releaseExpandedOnlySpells(
-    character,
-    reconcile(releaseSupersededRacePicks(character, cleaned), compendium, { activeBooks }),
+    leaving,
+    reconcile(releaseSupersededRacePicks(leaving, cleaned), compendium, { activeBooks }),
     compendium,
     activeBooks
   );

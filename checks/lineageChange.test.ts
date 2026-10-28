@@ -1,12 +1,13 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { changeLineage, changeRace } from "../src/rules/builderTransitions.ts";
-import { raceSpellRuleChoices } from "../src/rules/choices/featSpells.ts";
+import { applyAncestrySelection } from "../src/rules/ancestryEngine.ts";
+import { featCounterId, featSpellRuleChoices, raceSpellRuleChoices } from "../src/rules/choices/featSpells.ts";
 import { pickRuleChoice } from "../src/rules/ruleChoices.ts";
 import type { Character, CharacterClass } from "../src/types/character.ts";
 import type { RaceData } from "../src/types/dnd5e.ts";
 import { inMemoryCompendium, makeChar } from "./testUtils.ts";
-import { grantedSpellClasses, grantedSpellSpells } from "./grantedSpellsFixture.ts";
+import { grantedSpellClasses, grantedSpellFeats, grantedSpellSpells } from "./grantedSpellsFixture.ts";
 
 // A lineage swap reconciles in the same step: the old lineage's race picks are released with a notice, and the picks of the
 // lineage swapped to are kept. Every name is invented. The lineages give a cantrip pick each, as a race does.
@@ -157,4 +158,79 @@ test("changing race keeps the picks of the lineage the character still holds", (
   assert.equal(changed.lineageReplacement, ALPHA);
   assert.deepEqual(pickedNames(changed), ["Sample Shot"], "the held lineage still grants its pick");
   assert.equal(changed.needsReview, undefined, "no notice for a pick the character still holds");
+});
+
+// A Custom Lineage character holds an origin feat, and the feat's spell pick and Long Rest counter (ADR 0017). The feat is
+// invented: Sample Initiate offers a Mage list with a cantrip and a daily spell.
+const featCompendium = inMemoryCompendium(
+  { classes: grantedSpellClasses(), spells: grantedSpellSpells(), feats: grantedSpellFeats() },
+  { integrated: true },
+);
+const pulseCounter = featCounterId("Sample Initiate", "Sample Mage Spells", "Sample Pulse");
+
+const pickIn = (character: Character, option: string): Character => {
+  const choice = featSpellRuleChoices(character, featCompendium).find((c) => c.options.some((o) => o.name === option));
+  assert.ok(choice, `${option} is offered by the origin feat`);
+  return pickRuleChoice(character, choice, option, featCompendium);
+};
+
+/** A Custom Lineage character whose origin feat has its Mage list picked, with the cantrip and the daily counter in place. */
+const customWithOriginFeat = (): Character => {
+  const origin = makeChar({
+    classes: [mage],
+    race: CUSTOM,
+    customLineage: true,
+    originFeats: [{ level: 1, type: "feat", featName: "Sample Initiate", featSource: "TST" }],
+  });
+  const picked = pickIn(pickIn(origin, "Sample Mage Spells"), "Sample Ember");
+  return {
+    ...picked,
+    resourceCounters: { [pulseCounter]: { id: pulseCounter, name: "Innate: Sample Pulse", current: 1, max: 1, resetOn: "long" } },
+  };
+};
+
+test("choosing None from Custom Lineage clears its origin feat, the spell pick and counter it granted, with notices", () => {
+  const custom = customWithOriginFeat();
+  assert.ok(pickedNames(custom).includes("Sample Ember"), "the origin feat's pick is recorded before the change");
+
+  const dropped = changeLineage(custom, { kind: "none" }, featCompendium, ACTIVE);
+
+  assert.deepEqual(dropped.originFeats ?? [], [], "the origin feat is gone");
+  assert.deepEqual(pickedNames(dropped), [], "its spell pick is released");
+  assert.equal(dropped.resourceCounters?.[pulseCounter], undefined, "its counter is released");
+  assert.ok(
+    dropped.needsReview?.some((notice) => /Sample Ember removed from Sample Initiate: feat no longer held/.test(notice)),
+    `the pick's release is noticed: ${JSON.stringify(dropped.needsReview)}`,
+  );
+  assert.ok(
+    dropped.needsReview?.some((notice) => /Innate: Sample Pulse removed from Sample Initiate: feat no longer held/.test(notice)),
+    `the counter's release is noticed: ${JSON.stringify(dropped.needsReview)}`,
+  );
+});
+
+test("changing race away from Custom Lineage clears its origin feat and what it granted, as choosing None does", () => {
+  const changed = changeRace(customWithOriginFeat(), featCompendium, ACTIVE);
+  assert.deepEqual(changed.originFeats ?? [], [], "the origin feat is gone");
+  assert.equal(changed.customLineage, false, "the custom flag clears with the race");
+  assert.deepEqual(pickedNames(changed), [], "the origin feat's pick is released");
+});
+
+test("applying a catalog race to a Custom Lineage character clears its origin feat and the custom flag", () => {
+  const applied = applyAncestrySelection(customWithOriginFeat(), race(BASE, {}), undefined, {
+    compendium: featCompendium,
+    activeBooks: ACTIVE,
+  });
+  assert.equal(applied.race?.name, BASE);
+  assert.equal(applied.customLineage, false);
+  assert.deepEqual(applied.originFeats ?? [], [], "the origin feat is gone");
+  assert.deepEqual(pickedNames(applied), [], "its spell pick is released");
+});
+
+test("applying the Custom Lineage record makes the character a Custom Lineage, as changeLineage does", () => {
+  const applied = applyAncestrySelection(makeChar({ classes: [mage] }), race("Custom Lineage", { source: "TCE" }), undefined, {
+    compendium,
+    activeBooks: ACTIVE,
+  });
+  assert.equal(applied.race?.name, "Custom Lineage");
+  assert.equal(applied.customLineage, true, "the race picker reaches the same state as the lineage control");
 });
