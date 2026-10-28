@@ -69,6 +69,18 @@ Closing the spell work. A pick whose sourcebook the player switched off must go,
 **When** the player chooses "None"
 **Then** the character is left in a consistent state: the custom race is cleared (the player picks a race again) and nothing of the custom race remains granted.
 
+### AC-10: Review notices are visible
+
+**Given** a character whose `needsReview` list holds notices (a released pick, a removed spell, a counter released)
+**When** the player opens the character
+**Then** the character screen shows the notices (a count and the list) above the tab content, and each notice, or all of them, can be dismissed; a character with no notices shows nothing. The surface is responsive at 320, 360, 393 and 412 px.
+
+### AC-11: Migration keeps the feat ability
+
+**Given** a legacy save with the same origin feat held twice, the dropped entry carrying a feat ability increase and the kept entry carrying none
+**When** it loads
+**Then** the kept entry carries the ability increase, so the character's score does not change by the dedupe.
+
 ## Architecture Constraints
 
 - ADR 0017 stands. No non-SRD name in app code: the "(self only)" note is reviewed scraper data carried on the spell entry. Catalog Format rises to 11 if the scraped record shape changes (format 10 is already pushed).
