@@ -2,7 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { liftSpellChoice } from "../src/parser/spell-choice.ts";
 import { scrapeClasses } from "../src/scrapers/classes.ts";
-import type { SubclassAdditionalSpells } from "../src/types/models.ts";
+import type { AdditionalSpells } from "../src/types/models.ts";
 import type { ToolsClient } from "../src/types/models.ts";
 
 // Placeholder shapes in the form parseAdditionalSpells emits. The structure is real; the spell
@@ -10,7 +10,7 @@ import type { ToolsClient } from "../src/types/models.ts";
 
 // Land-style: one named entry per option, granting spells through `prepared` by spell level, with
 // a `choose` filter alongside them that must not reach the description.
-const LAND_STYLE: SubclassAdditionalSpells[] = [
+const LAND_STYLE: AdditionalSpells[] = [
   {
     name: "Arctic",
     known: { "1": { _: [{ choose: "level=0|class=Druid" }] } } as any,
@@ -24,7 +24,7 @@ const LAND_STYLE: SubclassAdditionalSpells[] = [
 ];
 
 // Affinity-style: named entries granting a `known` list, and an `expanded` list of `all` filters.
-const AFFINITY_STYLE: SubclassAdditionalSpells[] = [
+const AFFINITY_STYLE: AdditionalSpells[] = [
   {
     name: "Good",
     known: { "1": ["placeholder spell six"] },
@@ -38,7 +38,7 @@ const AFFINITY_STYLE: SubclassAdditionalSpells[] = [
 
 // Genie-style: named entries granting `expanded` lists keyed by spell level, the top-level key
 // being a plain number and the others `s`-prefixed.
-const GENIE_STYLE: SubclassAdditionalSpells[] = [
+const GENIE_STYLE: AdditionalSpells[] = [
   {
     name: "Dao",
     expanded: { "9": ["placeholder spell eight"], s1: ["placeholder spell nine", "placeholder spell ten"] } as any,
@@ -50,7 +50,7 @@ const GENIE_STYLE: SubclassAdditionalSpells[] = [
 ];
 
 // Giant-style: two unnamed entries, each granting exactly one cantrip through `innate`.
-const GIANT_STYLE: SubclassAdditionalSpells[] = [
+const GIANT_STYLE: AdditionalSpells[] = [
   { innate: { "3": ["placeholder cantrip alpha"] } as any },
   { innate: { "3": ["placeholder cantrip bravo"] } as any },
 ];
@@ -157,14 +157,14 @@ test("the scraper sets spellChoice on a subclass whose additionalSpells lift to 
 
 // Cantrip-list style: one unnamed entry whose `known` grants a `choose` filter at the first level.
 // The count rides on the filter object when the choice is more than one cantrip.
-const CANTRIP_LIST_STYLE: SubclassAdditionalSpells[] = [
+const CANTRIP_LIST_STYLE: AdditionalSpells[] = [
   {
     known: { "1": { _: [{ choose: "level=0|class=Druid" }] } } as any,
     prepared: { "1": ["placeholder spell thirteen"] },
   },
 ];
 
-const TWO_CANTRIP_STYLE: SubclassAdditionalSpells[] = [
+const TWO_CANTRIP_STYLE: AdditionalSpells[] = [
   {
     known: { "1": { _: [{ choose: "level=0|class=Wizard", count: 2 }] } } as any,
     prepared: {
@@ -209,7 +209,7 @@ test("two different known filters do not name one list, so they lift to nothing"
 });
 
 test("named alternatives still win over a known filter on the same subclass", () => {
-  const named: SubclassAdditionalSpells[] = [
+  const named: AdditionalSpells[] = [
     ...LAND_STYLE,
     { known: { "1": { _: [{ choose: "level=0|school=N" }] } } as any },
   ];

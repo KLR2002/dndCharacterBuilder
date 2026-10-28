@@ -19,9 +19,9 @@ import {
   isSpellAvailableForClass,
   profileSpellContext,
   type ClassSpellProfile,
+  type LockedPreparedCard,
 } from "../../rules/spellcasting";
 import {
-  getInnateSpellProfile,
   type InnateSpellProfile,
   type InnateSpellEntry,
 } from "../../rules/innateMagic";
@@ -143,6 +143,18 @@ function getSubclassPreparedBadgeLabel(className: string): string {
   }
 }
 
+/** The copy of a race's Innate Magic card: its subtitle, and whether its rows show the Min Level. */
+const RACE_INNATE_COPY = {
+  subtitle: "Innate racial magic from your ancestry (Long Rest reset)",
+  showMinLevel: true,
+};
+
+/** The copy of a feat's Innate Magic card: its subtitle, and whether its rows show the Min Level. */
+const FEAT_INNATE_COPY = {
+  subtitle: "Spells from this feat (Long Rest reset)",
+  showMinLevel: false,
+};
+
 function getSubclassPreparedCounterSuffix(className: string): string {
   switch (className) {
     case "Cleric":
@@ -238,10 +250,11 @@ export const SpellsTab: React.FC = () => {
     return currentCharacter ? calculateMulticlassSpellSlots(currentCharacter) : { slots: [] as number[] };
   }, [currentCharacter]);
 
-  // 4. Innate & Racial Spells profile
-  const innateProfile: InnateSpellProfile | null = useMemo(() => {
-    return currentCharacter ? getInnateSpellProfile(currentCharacter) : null;
-  }, [currentCharacter]);
+  const grantedProfiles: InnateSpellProfile[] = useMemo(() => {
+    return evaluated?.grantedSpellSources ?? [];
+  }, [evaluated]);
+
+  const lockedCards: LockedPreparedCard[] = evaluated?.lockedPreparedCards ?? [];
 
   // Library spells
   const allSpells = useMemo(() => getSpells(activeBooks), [activeBooks]);
@@ -262,6 +275,8 @@ export const SpellsTab: React.FC = () => {
         className?: string;
         details?: SpellData;
         isAlwaysPrepared?: boolean;
+        /** The feat or race an always-prepared spell comes from, which its badge names. */
+        grantedSource?: string;
         isSubclassGrant?: boolean;
         isReplaced?: boolean;
         originalName?: string;
@@ -286,7 +301,12 @@ export const SpellsTab: React.FC = () => {
       const isAlwaysPrep = alwaysPrepMap.has(item.name.toLowerCase());
       seenNames.add(item.name.toLowerCase());
       if (map[lvl]) {
-        map[lvl].push({ ...item, details, isAlwaysPrepared: isAlwaysPrep });
+        map[lvl].push({
+          ...item,
+          details,
+          isAlwaysPrepared: isAlwaysPrep,
+          grantedSource: isAlwaysPrep ? activeProfile.grantedPreparedSources?.[item.name.toLowerCase()] : undefined,
+        });
       }
     }
 
@@ -304,6 +324,7 @@ export const SpellsTab: React.FC = () => {
             className: activeProfile.className,
             details: spell,
             isAlwaysPrepared: true,
+            grantedSource: activeProfile.grantedPreparedSources?.[norm],
           });
         }
       }
@@ -367,9 +388,11 @@ export const SpellsTab: React.FC = () => {
     return countPrepared(currentCharacter, activeProfile, currentCompendium());
   }, [activeProfile, currentCharacter]);
 
+  // The header's "+ N" names the subclass's free spells, so a feat's or race's are not counted here.
   const alwaysPreparedCount = useMemo(() => {
     if (!activeProfile || !activeProfile.alwaysPreparedSpells) return 0;
-    return activeProfile.alwaysPreparedSpells.filter((s) => s.level > 0).length;
+    const granted = activeProfile.grantedPreparedSources ?? {};
+    return activeProfile.alwaysPreparedSpells.filter((s) => s.level > 0 && granted[s.name.toLowerCase()] === undefined).length;
   }, [activeProfile]);
 
   const hasAgonizingBlast = useMemo(() => {
@@ -523,58 +546,72 @@ export const SpellsTab: React.FC = () => {
     updateCharacter(currentCharacter.id, toggleInnateSpellUseRule(currentCharacter, spell));
   };
 
-  const renderInnateCard = () => {
-    if (!innateProfile || innateProfile.spells.length === 0 || !currentCharacter) return null;
+  const renderInnateCard = (
+    profile: InnateSpellProfile,
+    copy: { subtitle: string; showMinLevel: boolean; key?: string }
+  ) => {
+    if ((profile.spells.length === 0 && !profile.notices?.length) || !currentCharacter) return null;
 
-    const sign = innateProfile.spellAttackBonus >= 0 ? "+" : "";
+    const sign = (profile.spellAttackBonus ?? 0) >= 0 ? "+" : "";
+    const ability = profile.ability;
 
     return (
-      <Card style={[styles.innateCard, { borderColor: theme.accent, backgroundColor: theme.surface }]}>
-        <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
-          <View style={{ flex: 1, paddingRight: 8 }}>
+      <Card key={copy.key} style={[styles.innateCard, { borderColor: theme.accent, backgroundColor: theme.surface }]}>
+        <View style={{ flexDirection: "row", flexWrap: "wrap", justifyContent: "space-between", alignItems: "center", gap: 8, marginBottom: 8 }}>
+          <View style={{ flex: 1, minWidth: 0, paddingRight: 8 }}>
             <Text style={[styles.sectionTitle, { color: theme.accent }]}>
-              {innateProfile.title.toUpperCase()}
+              {profile.title.toUpperCase()}
             </Text>
             <Text style={{ color: theme.textSecondary, fontSize: 12, marginTop: 2 }}>
-              Innate racial magic from your ancestry (Long Rest reset)
+              {copy.subtitle}
             </Text>
           </View>
-          <Badge
-            label={`${innateProfile.ability.toUpperCase()} (DC ${innateProfile.spellSaveDc} / ${sign}${innateProfile.spellAttackBonus})`}
-            variant="accent"
-            size="sm"
-          />
+          {ability && (
+            <Badge
+              label={`${ability.toUpperCase()} (DC ${profile.spellSaveDc} / ${sign}${profile.spellAttackBonus})`}
+              variant="accent"
+              size="sm"
+            />
+          )}
         </View>
 
-        {/* Racial Spellcasting Stats */}
-        <View style={[styles.innateStatsRow, { backgroundColor: theme.surfaceHighlight, borderColor: theme.border }]}>
-          <View style={styles.innateStatCol}>
-            <Text style={[styles.statLabel, { color: theme.textMuted }]}>ABILITY</Text>
-            <Text style={[styles.innateStatVal, { color: theme.accent }]}>
-              {innateProfile.ability.toUpperCase()}
-            </Text>
+        {profile.notices?.map((notice) => (
+          <Text key={notice} style={{ color: theme.warning, fontSize: 12, marginBottom: 6 }}>
+            {notice}
+          </Text>
+        ))}
+
+        {ability && (
+          <View style={[styles.innateStatsRow, { backgroundColor: theme.surfaceHighlight, borderColor: theme.border }]}>
+            <View style={styles.innateStatCol}>
+              <Text style={[styles.statLabel, { color: theme.textMuted }]}>ABILITY</Text>
+              <Text style={[styles.innateStatVal, { color: theme.accent }]}>
+                {ability.toUpperCase()}
+              </Text>
+            </View>
+            <View style={styles.innateStatCol}>
+              <Text style={[styles.statLabel, { color: theme.textMuted }]}>SAVE DC</Text>
+              <Text style={[styles.innateStatVal, { color: theme.text }]}>
+                {profile.spellSaveDc ?? "—"}
+              </Text>
+            </View>
+            <View style={styles.innateStatCol}>
+              <Text style={[styles.statLabel, { color: theme.textMuted }]}>ATTACK BONUS</Text>
+              <Text style={[styles.innateStatVal, { color: theme.text }]}>
+                {profile.spellAttackBonus === undefined ? "—" : formatModifier(profile.spellAttackBonus)}
+              </Text>
+            </View>
           </View>
-          <View style={styles.innateStatCol}>
-            <Text style={[styles.statLabel, { color: theme.textMuted }]}>SAVE DC</Text>
-            <Text style={[styles.innateStatVal, { color: theme.text }]}>
-              {innateProfile.spellSaveDc}
-            </Text>
-          </View>
-          <View style={styles.innateStatCol}>
-            <Text style={[styles.statLabel, { color: theme.textMuted }]}>ATTACK BONUS</Text>
-            <Text style={[styles.innateStatVal, { color: theme.text }]}>
-              {formatModifier(innateProfile.spellAttackBonus)}
-            </Text>
-          </View>
-        </View>
+        )}
 
         {/* Spells List */}
         <View style={{ marginTop: 8, gap: 6 }}>
-          {innateProfile.spells.map((spell) => {
+          {profile.spells.map((spell) => {
+            const max = spell.maxUses ?? 1;
             const counter = spell.resourceCounterId
               ? currentCharacter.resourceCounters?.[spell.resourceCounterId]
               : undefined;
-            const remaining = counter !== undefined ? counter.current : 1;
+            const remaining = counter !== undefined ? counter.current : max;
             const isUsed = remaining === 0;
 
             return (
@@ -598,9 +635,13 @@ export const SpellsTab: React.FC = () => {
                         {
                           color: isUsed ? theme.textMuted : theme.text,
                           textDecorationLine: isUsed ? "line-through" : "none",
+                          flexShrink: 1,
                         },
                       ]}>
                       {spell.name}
+                      {spell.note !== undefined && (
+                        <Text style={{ fontWeight: "400", color: theme.textSecondary }}>{` (${spell.note.replace(/ /g, "\u00A0")})`}</Text>
+                      )}
                     </Text>
                     {spell.isCantrip ? (
                       <Badge label="Cantrip" variant="surface" size="sm" />
@@ -621,19 +662,20 @@ export const SpellsTab: React.FC = () => {
                     <Ionicons name="information-circle-outline" size={14} color={theme.textMuted} />
                   </View>
                   <Text style={{ color: theme.textSecondary, fontSize: 11 }}>
-                    {spell.castingTime} • Min Level {spell.minCharacterLevel}
+                    {spell.castingTime}
+                    {copy.showMinLevel ? ` • Min Level ${spell.minCharacterLevel}` : ""}
                     {spell.name.toLowerCase() === "eldritch blast" && hasAgonizingBlast
                       ? ` • 1d10 + ${chaModifier} force`
                       : ""}
                   </Text>
                 </TouchableOpacity>
 
-                {spell.isCantrip ? (
+                {spell.resourceCounterId === undefined ? (
                   <Badge label="At Will" variant="secondary" size="sm" />
                 ) : (
                   <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
                     <Text style={{ color: theme.textSecondary, fontSize: 11 }}>
-                      {isUsed ? "0/1 (Used)" : "1/1"}
+                      {isUsed ? `0/${max} (Used)` : `${max}/${max}`}
                     </Text>
                     <TouchableOpacity
                       onPress={() => toggleInnateSpellUse(spell)}
@@ -656,6 +698,44 @@ export const SpellsTab: React.FC = () => {
       </Card>
     );
   };
+
+  const renderGrantedCards = () =>
+    grantedProfiles.map((profile, index) =>
+      renderInnateCard(profile, {
+        ...(profile.origin === "race" ? RACE_INNATE_COPY : FEAT_INNATE_COPY),
+        key: `granted_${index}`,
+      })
+    );
+
+  /** The locked card of a source's plain prepared spells: each spell carries the lock, with no counter and no ability row. */
+  const renderLockedCards = () =>
+    lockedCards.map((card, index) => (
+      <Card key={`locked_${index}`} style={[styles.innateCard, { borderColor: theme.accent, backgroundColor: theme.surface }]}>
+        <Text style={[styles.sectionTitle, { color: theme.accent }]}>{card.title.toUpperCase()}</Text>
+        <View style={{ marginTop: 8, gap: 6 }}>
+          {card.spells.map((spell) => (
+            <View key={`locked_${card.title}_${spell.name}`} style={[styles.innateSpellRow, { borderBottomColor: theme.border }]}>
+              <Ionicons name="lock-closed" size={16} color={theme.accent} />
+              <TouchableOpacity
+                activeOpacity={0.7}
+                onPress={() => showSpellDetail({ name: spell.name, source: spell.source, details: spell })}
+                style={{ flex: 1, gap: 2 }}>
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+                  <Text style={[styles.spellTitle, { color: theme.text }]}>{spell.name}</Text>
+                  <Badge
+                    label={spell.level === 0 ? "Cantrip" : `${formatOrdinal(spell.level)} Level`}
+                    variant="surface"
+                    size="sm"
+                  />
+                  <Ionicons name="information-circle-outline" size={14} color={theme.textMuted} />
+                </View>
+                <Text style={{ color: theme.textSecondary, fontSize: 11 }}>{spell.castingTime}</Text>
+              </TouchableOpacity>
+            </View>
+          ))}
+        </View>
+      </Card>
+    ));
 
   const atWillInvocations = useMemo(() => {
     return currentCharacter ? getAtWillInvocationSpells(currentCharacter) : [];
@@ -722,10 +802,11 @@ export const SpellsTab: React.FC = () => {
   }
 
   if (spellProfiles.length === 0) {
-    if ((innateProfile && innateProfile.spells.length > 0) || atWillInvocations.length > 0) {
+    if (grantedProfiles.length > 0 || lockedCards.length > 0 || atWillInvocations.length > 0) {
       return (
         <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-          {renderInnateCard()}
+          {renderGrantedCards()}
+          {renderLockedCards()}
           {renderAtWillInvocationsCard()}
           <Card style={[styles.emptyCard, { backgroundColor: theme.surface, borderColor: theme.border, marginTop: 16 }]}>
             <Ionicons name="sparkles-outline" size={32} color={theme.textMuted} style={{ marginBottom: 8 }} />
@@ -829,7 +910,7 @@ export const SpellsTab: React.FC = () => {
   };
 
   const removeSpellFromCharacter = (name: string, source: string, ownerKey?: string) => {
-    const next = forgetSpellRule(currentCharacter, currentProfile, { name, source, ownerKey }, currentCompendium());
+    const next = forgetSpellRule(currentCharacter, currentProfile, { name, source, ownerKey }, currentCompendium(), activeBooks);
     updateCharacter(currentCharacter.id, next);
   };
 
@@ -1271,8 +1352,7 @@ export const SpellsTab: React.FC = () => {
         </Card>
       )}
 
-      {/* Innate & Racial Spells (if ancestry has innate magic) */}
-      {renderInnateCard()}
+      {renderGrantedCards()}
 
       {/* Ritual Book (Book of Ancient Secrets) */}
       {Boolean(hasAncientSecrets) && (
@@ -1467,7 +1547,7 @@ export const SpellsTab: React.FC = () => {
                         </Text>
                         {item.isAlwaysPrepared && (
                           <Badge
-                            label={getSubclassPreparedBadgeLabel(currentProfile.className)}
+                            label={item.grantedSource ?? getSubclassPreparedBadgeLabel(currentProfile.className)}
                             variant="secondary"
                             size="sm"
                           />

@@ -23,12 +23,13 @@ export function hitDieOf(entry: CharacterClass, classes?: readonly ClassData[]):
 }
 
 /** The caster kinds the class-level rules tell apart. A progression with no kind here casts by its own rule, or not at all. */
-export type CasterKind = "full" | "half" | "pact";
+export type CasterKind = "full" | "half" | "artificer" | "pact";
 
-/** The caster kind of a Catalog spellcasting progression. Artificer's progression and anything else has no kind here. */
+/** The caster kind of a Catalog spellcasting progression. Anything else has no kind here. */
 export function casterKindOfProgression(progression: string | undefined): CasterKind | undefined {
   if (progression === "full") return "full";
   if (progression === "1/2") return "half";
+  if (progression === "artificer") return "artificer";
   if (progression === "pact") return "pact";
   return undefined;
 }
@@ -59,6 +60,8 @@ export const PHB_HALF_CASTER_SLOTS: Record<number, number[]> = {
   15: [4, 3, 3, 2], 16: [4, 3, 3, 2], 17: [4, 3, 3, 3, 1], 18: [4, 3, 3, 3, 1],
   19: [4, 3, 3, 3, 2], 20: [4, 3, 3, 3, 2],
 };
+/** The Artificer's own table: the half-caster table, with two 1st-level slots from level 1. */
+export const ARTIFICER_SLOTS: Record<number, number[]> = { ...PHB_HALF_CASTER_SLOTS, 1: [2] };
 export const PHB_THIRD_CASTER_SLOTS: Record<number, number[]> = {
   3: [2], 4: [3], 5: [3], 6: [3], 7: [4, 2], 8: [4, 2], 9: [4, 2],
   10: [4, 3], 11: [4, 3], 12: [4, 3], 13: [4, 3, 2], 14: [4, 3, 2], 15: [4, 3, 2],

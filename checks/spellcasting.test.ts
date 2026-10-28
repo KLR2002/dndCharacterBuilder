@@ -1,16 +1,20 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { makeChar, loadTestCatalog } from "./testUtils.ts";
+import { makeChar, loadTestCatalog, inMemoryCompendium } from "./testUtils.ts";
+import { evaluateCharacter } from "../src/rules/characterEvaluation.ts";
+import { grantedSpellClasses, grantedSpellSpells } from "./grantedSpellsFixture.ts";
 import { findSpell } from "../src/services/dataService.ts";
 import {
   getClassSpellProfiles,
   calculateWarlockPactSlots,
+  getMaxSpellLevel,
   isSpellAvailableForClass,
   getAvailableSpellsForClass,
   type ClassSpellProfile,
 } from "../src/rules/spellcasting.ts";
+import { ARTIFICER_SLOTS } from "../src/rules/classData.ts";
 import type { CharacterClass } from "../src/types/character.ts";
-import type { SpellData } from "../src/types/dnd5e.ts";
+import type { ClassData, SpellData } from "../src/types/dnd5e.ts";
 
 const cl = (className: string, level: number, subclassName?: string, source = "PHB"): CharacterClass => ({
   className,
@@ -862,4 +866,56 @@ test("ClassSpellProfile carries its Spell Owner key, including the Giant Barbari
   // A non-Giant Barbarian is not a casting class, so the owner key falls back to the class key.
   const berserker = makeChar({ classes: [cl("Barbarian", 3, "Path of the Berserker")] });
   assert.deepEqual(getClassSpellProfiles(berserker), []);
+});
+
+test("a class's subclass spells are read from the Compendium the evaluation was given, not the process-wide one", () => {
+  const order = {
+    name: "Sample Order",
+    shortName: "Order",
+    source: "TST",
+    className: "Sample Mage",
+    classSource: "TST",
+    features: [],
+    additionalSpells: [{ known: { "3": ["sample ward"] } }],
+    description: "Placeholder description for the subclass.",
+  };
+  const classes = grantedSpellClasses().map((cls) => (cls.name === "Sample Mage" ? { ...cls, subclasses: [order] } : cls));
+  const compendium = inMemoryCompendium({ classes, spells: grantedSpellSpells() });
+  const character = makeChar({ classes: [{ className: "Sample Mage", source: "TST", level: 3, subclassName: "Sample Order" }] });
+  const [profile] = evaluateCharacter(character, { compendium }).spellProfiles;
+  assert.deepEqual(profile.subclassKnownSpells?.map((spell) => spell.name), ["Sample Ward"]);
+});
+
+test("an Artificer's highest spell level is the top of its own table, with or without its Catalog class", () => {
+  const catalogClasses = loadTestCatalog<ClassData[]>("classes");
+  for (let level = 1; level <= 20; level++) {
+    const artificer = cl("Artificer", level, undefined, "TCE");
+    assert.equal(getMaxSpellLevel(artificer, catalogClasses), ARTIFICER_SLOTS[level].length, `level ${level} from the Catalog`);
+    assert.equal(getMaxSpellLevel(artificer, []), ARTIFICER_SLOTS[level].length, `level ${level} without it`);
+  }
+});
+
+test("a spell's alternative class list defined in the SRD Baseline counts whatever books are switched on", () => {
+  const variantSpell = (definedInSource: string): SpellData => ({
+    name: "Sample Variant",
+    source: "PHB",
+    level: 1,
+    school: "Evocation",
+    castingTime: "1 action",
+    range: "Self",
+    components: { verbal: true, somatic: false, material: false },
+    componentsString: "V",
+    duration: "Instantaneous",
+    concentration: false,
+    ritual: false,
+    classes: [],
+    classVariants: [{ name: "Sample Mage", source: "PHB", definedInSource }],
+    subclasses: [],
+    damageTypes: [],
+    savingThrows: [],
+    description: "Placeholder description for the spell.",
+    higherLevels: null,
+  });
+  assert.equal(isSpellAvailableForClass(variantSpell("SRD"), "Sample Mage", ["PHB"]), true);
+  assert.equal(isSpellAvailableForClass(variantSpell("OLD"), "Sample Mage", ["PHB"]), false, "a switched-off book's variant does not count");
 });

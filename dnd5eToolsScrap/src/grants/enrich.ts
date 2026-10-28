@@ -6,6 +6,11 @@ import {
   type GrantOverride,
 } from "../parser/proficiency-grants.ts";
 import { resolveInitiativeBonuses, type InitiativeBonusOverride } from "../parser/initiative-bonuses.ts";
+import { featKey } from "../scrapers/feats.ts";
+import { spellKey } from "../scrapers/spells.ts";
+import { raceKey, subraceKey } from "../scrapers/races.ts";
+import { backgroundKey } from "../scrapers/backgrounds.ts";
+import type { AdditionalSpells } from "../types/models.ts";
 import {
   allRefs,
   classFeatureOnlyRefs,
@@ -13,6 +18,7 @@ import {
   featRefs,
   traitRefs,
   type GrantRef,
+  type TrackedBackground,
   type TrackedClass,
   type TrackedData,
   type TrackedFeat,
@@ -34,15 +40,24 @@ export interface TrackedFiles {
   classes: string;
   feats: string;
   races?: string;
+  backgrounds?: string;
 }
 
 /**
  * Adds, replaces or removes the `grants` field on every tracked class feature,
  * subclass feature and feat, and the `initiativeBonus` field on every class
  * feature, subclass feature, feat and race or subrace trait, using the same
- * extractors and overrides as the scraper. Nothing else on the data is touched.
+ * extractors and overrides as the scraper. When the raw feats' spell grants are
+ * given, it also sets or removes each feat's `additionalSpells` (ADR 0017).
+ * Nothing else on the data is touched.
  */
-export function enrichTrackedData(data: TrackedData, overrides: GrantOverrides): void {
+function enrichTrackedData(
+  data: TrackedData,
+  overrides: GrantOverrides,
+  featSpells?: Map<string, AdditionalSpells[]>,
+  backgroundSpells?: Map<string, AdditionalSpells[]>,
+  raceSpells?: Map<string, AdditionalSpells[]>,
+): void {
   const classes = classFeatureRefs(data.classes);
   const feats = featRefs(data.feats);
   const features = classFeatureOnlyRefs(data.classes);
@@ -57,6 +72,41 @@ export function enrichTrackedData(data: TrackedData, overrides: GrantOverrides):
   applyGrants(feats, overrides.feats);
   applyInitiativeBonuses(initiativeRefs, initiativeBonuses);
   applyStartingToolGrants(data.classes);
+  if (featSpells) applyFeatSpells(data.feats, featSpells);
+  if (backgroundSpells && data.backgrounds) applyBackgroundSpells(data.backgrounds, backgroundSpells);
+  if (raceSpells && data.races) applyRaceSpells(data.races, raceSpells);
+}
+
+/** Writes each feat's spell grants from the raw feats file, or removes a stale one. */
+function applyFeatSpells(feats: TrackedFeat[], featSpells: Map<string, AdditionalSpells[]>): void {
+  for (const feat of feats) {
+    const spells = featSpells.get(featKey(feat.name, feat.source));
+    if (spells) feat.additionalSpells = spells;
+    else delete feat.additionalSpells;
+  }
+}
+
+/** Writes each race's and subrace's spell grants from the raw races file, or removes a stale one (ADR 0017). */
+function applyRaceSpells(races: TrackedRace[], raceSpells: Map<string, AdditionalSpells[]>): void {
+  for (const race of races) {
+    const spells = raceSpells.get(raceKey(race.name, race.source));
+    if (spells) race.additionalSpells = spells;
+    else delete race.additionalSpells;
+    for (const sub of race.subraces) {
+      const subSpells = raceSpells.get(subraceKey(race.name, race.source, sub.name, sub.source));
+      if (subSpells) sub.additionalSpells = subSpells;
+      else delete sub.additionalSpells;
+    }
+  }
+}
+
+/** Writes each background's expanded spell lists from the raw backgrounds file, or removes a stale one. */
+function applyBackgroundSpells(backgrounds: TrackedBackground[], spellsByBackground: Map<string, AdditionalSpells[]>): void {
+  for (const background of backgrounds) {
+    const spells = spellsByBackground.get(backgroundKey(background.name, background.source));
+    if (spells) background.additionalSpells = spells;
+    else delete background.additionalSpells;
+  }
 }
 
 function requireEveryInitiativeOverridePlaced(refs: GrantRef[], overrides: InitiativeBonusOverride[]): void {
@@ -99,9 +149,15 @@ function requireEveryOverridePlaced(refs: GrantRef[], overrides: GrantOverride[]
  * tracked format, so that writing it back reproduces every byte that the
  * enrichment did not change.
  */
-export function enrichGrantFiles(files: TrackedFiles, overrides: GrantOverrides): TrackedFiles {
+export function enrichGrantFiles(
+  files: TrackedFiles,
+  overrides: GrantOverrides,
+  featSpells?: Map<string, AdditionalSpells[]>,
+  backgroundSpells?: Map<string, AdditionalSpells[]>,
+  raceSpells?: Map<string, AdditionalSpells[]>,
+): TrackedFiles {
   const data = readTracked(files);
-  enrichTrackedData(data, overrides);
+  enrichTrackedData(data, overrides, featSpells, backgroundSpells, raceSpells);
   return writeTracked(data);
 }
 
@@ -116,6 +172,12 @@ export function stripGrantFiles(files: TrackedFiles): TrackedFiles {
     delete ref.holder.initiativeBonus;
   }
   for (const cls of data.classes) delete cls.grants;
+  for (const feat of data.feats) delete feat.additionalSpells;
+  for (const race of data.races ?? []) {
+    delete race.additionalSpells;
+    for (const sub of race.subraces) delete sub.additionalSpells;
+  }
+  for (const background of data.backgrounds ?? []) delete background.additionalSpells;
   for (const ref of traitRefs(data.races ?? [])) delete ref.holder.initiativeBonus;
   return writeTracked(data);
 }
@@ -139,6 +201,9 @@ function readTracked(files: TrackedFiles): TrackedData {
     classes: parseCanonical(files.classes, "classes.json") as TrackedClass[],
     feats: parseCanonical(files.feats, "feats.json") as TrackedFeat[],
     ...(files.races !== undefined ? { races: parseCanonical(files.races, "races.json") as TrackedRace[] } : {}),
+    ...(files.backgrounds !== undefined
+      ? { backgrounds: parseCanonical(files.backgrounds, "backgrounds.json") as TrackedBackground[] }
+      : {}),
   };
 }
 
@@ -147,7 +212,22 @@ function writeTracked(data: TrackedData): TrackedFiles {
     classes: canonical(data.classes),
     feats: canonical(data.feats),
     ...(data.races !== undefined ? { races: canonical(data.races) } : {}),
+    ...(data.backgrounds !== undefined ? { backgrounds: canonical(data.backgrounds) } : {}),
   };
+}
+
+/**
+ * Writes each tracked spell's attack-roll kinds from the raw spells (the scraper's `spellAttackMap`), or removes a stale one.
+ * The field sits before the spell's raw entries, where the scraper puts it. Returns the text unchanged when nothing changes.
+ */
+export function enrichSpellAttacks(spellsText: string, attacks: Map<string, string[]>): string {
+  const spells = parseCanonical(spellsText, "spells.json") as Array<Record<string, unknown>>;
+  const enriched = spells.map((spell) => {
+    const { spellAttack: _stale, rawEntries, ...rest } = spell;
+    const kinds = attacks.get(spellKey(String(spell.name), String(spell.source)));
+    return { ...rest, ...(kinds ? { spellAttack: kinds } : {}), ...(rawEntries !== undefined ? { rawEntries } : {}) };
+  });
+  return canonical(enriched);
 }
 
 function parseCanonical(text: string, name: string): unknown {

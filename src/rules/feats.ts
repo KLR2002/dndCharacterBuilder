@@ -2,11 +2,14 @@ import type { AbilityKey, AbilityScores, AsiSelection, Character } from "../type
 import { effectiveScores, hasFeat } from "./abilities.ts";
 import { totalLevel } from "./proficiencies.ts";
 import { isCastingClass } from "./spellcasting.ts";
-import { getInnateSpellProfile } from "./innateMagic.ts";
+import { grantedSpellSources } from "./grantedSpells.ts";
+import { releaseExpandedOnlySpells } from "./backgroundSpells.ts";
 import { proficiencySheet } from "./proficiencySheet.ts";
 import type { CharacterCatalogs } from "./catalogs.ts";
 import { reconcile } from "./characterReconciler.ts";
 import { currentCompendium, type Compendium } from "../services/compendium.ts";
+import { BACKGROUND_FEAT_SOURCE } from "../constants/rules.ts";
+import { withNotices } from "./needsReview.ts";
 
 export interface FeatPrerequisiteResult {
   met: boolean;
@@ -75,7 +78,8 @@ export function validateFeatPrerequisites(
   if (/ability to cast at least one spell/i.test(prereq)) {
     const canCastClass = (character.classes || []).some((c) => isCastingClass(c));
     const hasKnown = (character.knownSpells || []).length > 0;
-    const hasInnate = getInnateSpellProfile(character) != null;
+    // A source that holds no spell yet (a pick still owed) does not count: only a spell the character can cast does.
+    const hasInnate = grantedSpellSources(character, options.catalogs).some((source) => source.spells.length > 0);
     if (!canCastClass && !hasKnown && !hasInnate) {
       return { met: false, reason: "Requires the ability to cast at least one spell" };
     }
@@ -138,49 +142,131 @@ export function validateFeatPrerequisites(
   return { met: true };
 }
 
+/** An origin feat entry, named by the feat's name and the source it carries (a background's copy carries the Background marker). */
+export type OriginFeatEntry = Pick<AsiSelection, "featName" | "featSource">;
+
+/** Whether two origin feat entries are the same entry: the same feat name, carrying the same source. */
+function isSameEntry(entry: OriginFeatEntry, other: OriginFeatEntry): boolean {
+  return entry.featName?.toLowerCase() === other.featName?.toLowerCase() && entry.featSource === other.featSource;
+}
+
 /**
- * Adds an origin feat, or replaces the one named by `oldFeatName`, then reconciles so that the
+ * Adds an origin feat, or replaces the entry `replacing` names, then reconciles so that the
  * choices the replaced feat granted (e.g. Fighting Initiate's style) are pruned with a review notice.
+ * The spells only the replaced feat's expanded list gave are released too (ADR 0017). `activeBooks` scopes the reconcile and the
+ * release to the books now active; omitted, they are unscoped.
+ *
+ * A feat is held once. When another entry already holds the selection's feat name (a background's copy, for one), the
+ * character is returned unchanged.
  */
 export function applyOriginFeat(
   character: Character,
   selection: AsiSelection,
-  oldFeatName?: string,
-  compendium: Compendium = currentCompendium()
+  replacing?: OriginFeatEntry,
+  compendium: Compendium = currentCompendium(),
+  activeBooks?: string[]
 ): Character {
   const current = character.originFeats || [];
-  const targetName = (oldFeatName || selection.featName)?.toLowerCase();
-  const existingIdx = current.findIndex(s => s.featName?.toLowerCase() === targetName);
+  const target = replacing ?? selection;
+  const heldByOtherEntry = current.some(
+    (entry) => !isSameEntry(entry, target) && entry.featName?.toLowerCase() === selection.featName?.toLowerCase()
+  );
+  if (heldByOtherEntry) return character;
+  const existingIdx = current.findIndex((entry) => isSameEntry(entry, target));
   const updated = [...current];
   if (existingIdx >= 0) {
     updated[existingIdx] = selection;
   } else {
     updated.push(selection);
   }
-  return reconcile(
-    {
-      ...character,
-      originFeats: updated,
-    },
-    compendium
+  return releaseExpandedOnlySpells(
+    character,
+    reconcile({ ...character, originFeats: updated }, compendium, { activeBooks }),
+    compendium,
+    activeBooks
   );
 }
 
-/** Removes an origin feat by name, then reconciles the choices that feat granted. */
-export function removeOriginFeat(
+/**
+ * Adds the feat a background grants, or the one of its choices the player takes. It carries the Background source, so
+ * clearing the background removes it with its picks and counters. Its picks are made on its card, as for any origin feat.
+ * A feat the race already holds stays the race's entry, and the claim leaves a notice.
+ */
+export function grantBackgroundFeat(
   character: Character,
   featName: string,
-  compendium: Compendium = currentCompendium()
+  featAbility?: AbilityKey,
+  compendium: Compendium = currentCompendium(),
+  activeBooks?: string[]
+): Character {
+  const heldByRace = (character.originFeats ?? []).some(
+    (entry) => entry.featSource !== BACKGROUND_FEAT_SOURCE && entry.featName?.toLowerCase() === featName.toLowerCase()
+  );
+  if (heldByRace) {
+    const raceTitle = raceOriginFeatTitle(character.race);
+    return withNotices(character, [`${featName} from the background is already held${raceTitle ? ` from ${raceTitle}` : ""}`]);
+  }
+  return applyOriginFeat(
+    character,
+    { level: 1, type: "feat", featName, featSource: BACKGROUND_FEAT_SOURCE, featAbility },
+    undefined,
+    compendium,
+    activeBooks
+  );
+}
+
+/**
+ * Removes one origin feat entry, the one with the entry's name and source, then reconciles the choices that feat granted. A
+ * copy of the same feat from another source (a background's) stays.
+ */
+export function removeOriginFeat(
+  character: Character,
+  entry: OriginFeatEntry,
+  compendium: Compendium = currentCompendium(),
+  activeBooks?: string[]
 ): Character {
   const current = character.originFeats || [];
-  const updated = current.filter(s => s.featName?.toLowerCase() !== featName.toLowerCase());
-  return reconcile(
-    {
-      ...character,
-      originFeats: updated,
-    },
-    compendium
+  const updated = current.filter((held) => !isSameEntry(held, entry));
+  // The spells only the feat's expanded list gave are released, with a notice (ADR 0017).
+  return releaseExpandedOnlySpells(
+    character,
+    reconcile({ ...character, originFeats: updated }, compendium, { activeBooks }),
+    compendium,
+    activeBooks
   );
+}
+
+/** The race fields the origin feat rule reads: the race's name and the name of its subrace. */
+export type RaceIdentity = { name: string; subraceName?: string };
+
+/** The origin feat card's title for a race, or undefined when the race gives no origin feat (Variant Human, Custom Lineage). */
+export function raceOriginFeatTitle(race: RaceIdentity | null | undefined): string | undefined {
+  if (!race) return undefined;
+  if (race.name === "Custom Lineage") return "Custom Lineage Feat";
+  if (race.subraceName === "Variant" || race.name === "Variant Human") return "Variant Human Origin Feat";
+  return undefined;
+}
+
+/**
+ * Releases the origin feat the held race gave when the character leaves that race for `next` (null when the race is cleared).
+ * Each non-background origin feat is removed as removeOriginFeat removes one, with what the feat granted. A change that stays on
+ * the same race and keeps its origin feat (a change of subrace) keeps it. The custom flag clears with the race.
+ */
+export function releaseRaceOriginFeat(
+  character: Character,
+  next: RaceIdentity | null,
+  compendium: Compendium = currentCompendium(),
+  activeBooks?: string[]
+): Character {
+  const held = raceOriginFeatTitle(character.race);
+  if (!held) return character;
+  if (next && next.name === character.race?.name && raceOriginFeatTitle(next) === held) return character;
+  let released = character;
+  for (const feat of character.originFeats ?? []) {
+    if (feat.featSource === BACKGROUND_FEAT_SOURCE || !feat.featName) continue;
+    released = removeOriginFeat(released, feat, compendium, activeBooks);
+  }
+  return { ...released, customLineage: false };
 }
 
 /** Known background feat grants mapping. */

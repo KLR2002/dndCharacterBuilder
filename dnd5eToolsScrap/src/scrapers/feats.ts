@@ -8,6 +8,8 @@ import { newProficiencyReport, resolveFeatureGrants, type GrantSubject } from ".
 import { PROFICIENCY_GRANT_OVERRIDES } from "../overrides/proficiency-grants.ts";
 import { resolveInitiativeBonuses } from "../parser/initiative-bonuses.ts";
 import { INITIATIVE_BONUS_OVERRIDES } from "../overrides/initiative-bonuses.ts";
+import { parseAdditionalSpells } from "../parser/additional-spells.ts";
+import type { AdditionalSpells } from "../types/models.ts";
 
 const STAT_NAMES: Record<string, string> = {
   str: "Strength",
@@ -30,6 +32,7 @@ export async function scrapeFeats(
 
   for (const raw of resolvedFeats) {
     const prerequisite = formatPrerequisites(raw.prerequisite);
+    const additionalSpells = parseAdditionalSpells(raw.additionalSpells);
 
     feats.push({
       name: cleanTags(raw.name, "plain"),
@@ -38,6 +41,7 @@ export async function scrapeFeats(
       abilityScoreIncrease: parseAbilityScores(raw.ability),
       description: renderEntries(raw.entries, "markdown"),
       rawEntries: raw.entries,
+      ...(additionalSpells ? { additionalSpells } : {}),
     });
   }
 
@@ -59,6 +63,21 @@ export async function scrapeFeats(
   });
 
   return feats;
+}
+
+/** The key a feat's spell grants are looked up by: its cleaned name and its source. */
+export function featKey(name: string, source: string): string {
+  return `${name}|${source}`;
+}
+
+/** The spell grants of each feat in a raw feats file, keyed by featKey. A feat without grants is absent. */
+export function additionalSpellsByFeat(rawData: { feat?: any[] }): Map<string, AdditionalSpells[]> {
+  const grants = new Map<string, AdditionalSpells[]>();
+  for (const raw of resolveAllCopies(rawData.feat || [])) {
+    const spells = parseAdditionalSpells(raw.additionalSpells);
+    if (spells) grants.set(featKey(cleanTags(raw.name, "plain"), raw.source), spells);
+  }
+  return grants;
 }
 
 function parseAbilityScores(ability: any): Array<Record<string, number>> | null {

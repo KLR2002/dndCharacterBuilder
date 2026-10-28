@@ -5,17 +5,10 @@ import { cleanTags } from "../parser/tag-cleaner.ts";
 import type { SpellModel } from "../types/models.ts";
 import { SCHOOL_MAP } from "../parser/spell-schools.ts";
 
-export async function scrapeSpells(client: ToolsClient): Promise<SpellModel[]> {
+/** The spell records of every source in the 5e.tools index, copies resolved, as the raw file gives them. */
+export async function fetchResolvedSpells(client: ToolsClient): Promise<any[]> {
   console.log("  → Fetching spell index from data/spells/index.json...");
   const spellIndex = await client.fetchJson<Record<string, string>>("data/spells/index.json");
-
-  console.log("  → Fetching spell class sources from data/spells/sources.json...");
-  let spellSources: Record<string, Record<string, any>> = {};
-  try {
-    spellSources = await client.fetchJson<Record<string, Record<string, any>>>("data/spells/sources.json");
-  } catch (err: any) {
-    console.warn(`[WARN] Could not fetch spell sources: ${err.message}`);
-  }
 
   const allRawSpells: any[] = [];
 
@@ -31,7 +24,20 @@ export async function scrapeSpells(client: ToolsClient): Promise<SpellModel[]> {
     }
   }
 
-  const resolved = resolveAllCopies(allRawSpells);
+  return resolveAllCopies(allRawSpells);
+}
+
+export async function scrapeSpells(client: ToolsClient): Promise<SpellModel[]> {
+  const resolved = await fetchResolvedSpells(client);
+
+  console.log("  → Fetching spell class sources from data/spells/sources.json...");
+  let spellSources: Record<string, Record<string, any>> = {};
+  try {
+    spellSources = await client.fetchJson<Record<string, Record<string, any>>>("data/spells/sources.json");
+  } catch (err: any) {
+    console.warn(`[WARN] Could not fetch spell sources: ${err.message}`);
+  }
+
   const spells: SpellModel[] = [];
   const seen = new Set<string>();
 
@@ -110,6 +116,8 @@ export async function scrapeSpells(client: ToolsClient): Promise<SpellModel[]> {
       }
     }
 
+    const spellAttack = spellAttackOf(raw);
+
     // Higher Levels description
     let higherLevels: string | null = null;
     if (Array.isArray(raw.entriesHigherLevel)) {
@@ -135,6 +143,7 @@ export async function scrapeSpells(client: ToolsClient): Promise<SpellModel[]> {
       savingThrows: Array.isArray(raw.savingThrow) ? raw.savingThrow : [],
       description: renderEntries(raw.entries, "markdown"),
       higherLevels,
+      ...(spellAttack ? { spellAttack } : {}),
       rawEntries: raw.entries,
     });
   }
@@ -146,6 +155,27 @@ export async function scrapeSpells(client: ToolsClient): Promise<SpellModel[]> {
   });
 
   return spells;
+}
+
+/** The kinds of attack roll a spell needs as the source names them ("M" melee, "R" ranged, "O" other), or undefined. */
+export function spellAttackOf(raw: any): string[] | undefined {
+  return Array.isArray(raw.spellAttack) && raw.spellAttack.length > 0 ? raw.spellAttack.map(String) : undefined;
+}
+
+/** The key a spell is looked up by: its cleaned name and its source. */
+export function spellKey(name: string, source: string): string {
+  return `${name}|${source}`;
+}
+
+/** The attack-roll kinds of each spell in a raw spells list, keyed by spellKey. A spell that needs no attack roll is absent. */
+export function spellAttackMap(rawSpells: any[]): Map<string, string[]> {
+  const attacks = new Map<string, string[]>();
+  for (const raw of rawSpells) {
+    const key = spellKey(cleanTags(raw.name, "plain"), raw.source);
+    const kinds = spellAttackOf(raw);
+    if (kinds && !attacks.has(key)) attacks.set(key, kinds);
+  }
+  return attacks;
 }
 
 function formatCastingTime(time: any[] | null | undefined): string {

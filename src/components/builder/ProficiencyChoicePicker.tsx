@@ -12,7 +12,8 @@ export const ProficiencyChoicePicker: React.FC<{
   character: Character;
   onUpdate: (patchOrUpdater: Partial<Character> | ((prev: Character) => Character)) => void;
   theme: any;
-}> = ({ choice, character, onUpdate, theme }) => {
+  activeBooks?: string[];
+}> = ({ choice, character, onUpdate, theme, activeBooks }) => {
   const options = choice.options.map((option) => option.name);
   return (
     <RuleChoicePicker
@@ -20,7 +21,7 @@ export const ProficiencyChoicePicker: React.FC<{
       choose={choice.choose}
       from={options}
       chosen={pickedOptionNames(character.proficiencyPicks?.[choice.id] ?? [], options)}
-      onToggle={(option) => onUpdate((cur) => pickRuleChoice(cur, choice, option))}
+      onToggle={(option) => onUpdate((cur) => pickRuleChoice(cur, choice, option, undefined, activeBooks))}
       onClear={() => onUpdate((cur) => clearProficiencyPick(cur, choice.id))}
       theme={theme}
     />

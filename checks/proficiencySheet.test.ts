@@ -1,9 +1,9 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { proficiencySheet, type SheetEntry } from "../src/rules/proficiencySheet.ts";
+import { proficiencySheet, sourceGrants, type SheetEntry } from "../src/rules/proficiencySheet.ts";
 import { validateFeatPrerequisites } from "../src/rules/feats.ts";
 import { inMemoryCompendium, makeChar, srdBaselineCompendium } from "./testUtils.ts";
-import type { ProficiencyGrant, SubclassData } from "../src/types/dnd5e.ts";
+import type { ProficiencyGrant, SubclassData, SubraceData } from "../src/types/dnd5e.ts";
 import type { Character } from "../src/types/character.ts";
 import {
   anyLanguageChoice,
@@ -18,6 +18,26 @@ const names = (entries: SheetEntry[]) => entries.map((entry) => entry.name);
 
 const fixtureCompendium = () =>
   inMemoryCompendium({ races: [vellariRace()], backgrounds: [lamplighterBackground()] });
+
+test("a race and its subrace that both grant a language list each language once in the race's grants", () => {
+  const subrace: SubraceData = {
+    name: "Vellari Hill",
+    source: "PHB",
+    raceName: "Vellari",
+    raceSource: "PHB",
+    isVariant: false,
+    abilityScoreIncrease: [],
+    darkvision: null,
+    traits: [],
+    description: "Placeholder description for the subrace.",
+    grants: [fixedGrant("Vellari Hill languages", "languages", ["Common", "Quoral"])],
+  };
+  const character = makeChar({ race: { name: "Vellari", source: "PHB", subraceName: "Vellari Hill", subraceSource: "PHB" } });
+  const compendium = inMemoryCompendium({ races: [vellariRace({ subraces: [subrace] })] });
+  assert.deepEqual(sourceGrants(character, { compendium }).race.languages, ["Common", "Quoral"]);
+  const languages = proficiencySheet(character, { compendium }).languages.map((language) => language.name);
+  assert.deepEqual(languages, [...new Set(languages)], "and the sheet lists each language once");
+});
 
 test("race fixed languages and picked race languages appear on the sheet as rule-granted", () => {
   const sheet = proficiencySheet(

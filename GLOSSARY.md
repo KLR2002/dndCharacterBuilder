@@ -53,7 +53,7 @@ A feat granted at 1st level by a character's race (Variant Human, Custom Lineage
 _Avoid_: Bonus feat, starting feat, level 1 perk
 
 **Innate Magic**:
-Spells or cantrips granted directly by a character's race or lineage (e.g., High Elf cantrip, Drow magic, Gith psionics, Tiefling legacy) that scale with total character level rather than class levels, use racial spellcasting abilities, and reset on a Long Rest.
+Spells or cantrips granted directly by a character's race, lineage or feat (e.g., High Elf cantrip, Drow magic, Gith psionics, Tiefling legacy, Magic Initiate, Strixhaven Initiate, Fey Touched) rather than by a class. They are read from the Catalog, are gated by total character level rather than class levels, use the source's own spellcasting ability (fixed, chosen by the player, or the one the feat's ability increase raised), and reset on a Long Rest. Each source is shown on its own, and none counts against a class's spells known or prepared.
 _Avoid_: Racial casting, bonus cantrip, innate slots
 
 **Feat Prerequisite**:
@@ -95,11 +95,11 @@ The 10th-level Circle of the Moon feature allowing the expenditure of two Wild S
 _Avoid_: Elemental form, circle elementals
 
 **Always-Prepared Spells**:
-Spells granted automatically by a character's subclass (e.g. Cleric Domain Spells, Druid Circle Spells, Paladin Oath Spells, Artificer Specialist Spells) that are permanently prepared, do not count against the character's prepared spell limit, and count as spells of that class.
+Spells granted automatically by a character's subclass (e.g. Cleric Domain Spells, Druid Circle Spells, Paladin Oath Spells, Artificer Specialist Spells), or by a feat or race through a plain prepared grant (e.g. Adept feats), one that names no ability of its own and gives no uses, that are permanently prepared and do not count against the character's prepared spell limit. A subclass's count as spells of that class; a feat's or race's are shown in the list of every spellcasting class the character has, use that class's ability, and are never stored in the class's known or prepared spells.
 _Avoid_: Auto spells, free prepared spells, bonus domain slots
 
 **Expanded Spell List**:
-Spells added by a subclass (such as an Otherworldly Patron) to the pool of spells a character can choose from when learning spells, without automatically being prepared or counting as free spells known.
+Spells added by a subclass (such as an Otherworldly Patron), a background (such as a Strixhaven college or a Ravnica guild), or a feat or race (such as a Mark) to the pool of spells a character can choose from when learning spells, without automatically being prepared or counting as free spells known. A background's, feat's or race's list is added to every spellcasting class the character has, once the character has Spellcasting or Pact Magic.
 _Avoid_: Patron spells, extra spells, bonus known spells
 
 **Subclass Spells Known**:

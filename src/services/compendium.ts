@@ -20,6 +20,8 @@ import type {
   BeastData,
 } from "../types/dnd5e.ts";
 import { isCatalogStale, type CompendiumCollections } from "./compendiumStorage.ts";
+import { findHeldRace, type HeldRace } from "../rules/raceLookup.ts";
+import { SRD_SOURCE } from "../constants/books.ts";
 
 /** Read-only, synchronous view over one catalog bundle (SRD Baseline or Integrated Catalog). */
 export interface CompendiumListings {
@@ -41,8 +43,9 @@ export interface Compendium {
   readonly stale: boolean;
   /** Listings scoped to active books. Unscoped when no books are given or the bundle is not integrated. */
   for(activeBooks?: readonly string[]): CompendiumListings;
-  /** Name lookups are never scoped, so existing character picks always resolve. */
-  findRace(name: string, source?: string): RaceData | undefined;
+  /** The race a held race resolves to, subrace included: the saved source's record, else an active book's (see findHeldRace). */
+  findRace(held: HeldRace, activeBooks?: readonly string[]): RaceData | undefined;
+  /** The other name lookups are never scoped, so existing character picks always resolve. */
   findClass(name: string, source?: string): ClassData | undefined;
   findSpell(name: string, source?: string): SpellData | undefined;
   findItem(name: string, source?: string): ItemData | undefined;
@@ -66,7 +69,7 @@ function resolve<T extends Sourced>(
   baselineRecords: readonly T[],
 ): Resolved<T> {
   if (!integrated) return { records: [...(own ?? [])], fromBaseline: false };
-  if (own?.length) return { records: own.filter((r) => r.source !== "SRD"), fromBaseline: false };
+  if (own?.length) return { records: own.filter((r) => r.source !== SRD_SOURCE), fromBaseline: false };
   return { records: [...baselineRecords], fromBaseline: true };
 }
 
@@ -74,7 +77,7 @@ function resolve<T extends Sourced>(
 // records that came from the baseline fallback.
 function admitter(activeBooks: readonly string[], fromBaseline: boolean): (source: string) => boolean {
   const books = new Set(activeBooks);
-  return (source) => books.has(source) || (fromBaseline && source === "SRD");
+  return (source) => books.has(source) || (fromBaseline && source === SRD_SOURCE);
 }
 
 function findIn<T extends { name: string; source: string }>(records: T[], name: string, source?: string): T | undefined {
@@ -140,7 +143,7 @@ export function createCompendium(
     integrated,
     stale: isCatalogStale(bundle),
     for: (activeBooks) => (!activeBooks || !integrated ? unscoped : scoped(activeBooks)),
-    findRace: (name, source) => findIn(races.records, name, source),
+    findRace: (held, activeBooks) => findHeldRace(races.records, held, activeBooks).race,
     findClass: (name, source) => findIn(classes.records, name, source),
     findSpell: (name, source) => findIn(spells.records, name, source),
     findItem: (name, source) => findIn(items.records, name, source),

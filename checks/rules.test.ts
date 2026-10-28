@@ -172,6 +172,22 @@ test("individual half caster table vs multiclass contributions rounded per class
   assert.deepEqual(multiclassSlots(makeChar({ classes: [cl("Paladin", 1)] })).slots, []);
   assert.deepEqual(multiclassSlots(makeChar({ classes: [cl("Ranger", 3)] })).slots, [3]);
 });
+test("Artificer casts from level 1 on its own table, and rounds its levels up in a multiclass sum", () => {
+  const artificer = (level: number): CharacterClass => ({ className: "Artificer", source: "TCE", level });
+  const slotsOf = (...classes: CharacterClass[]) => multiclassSlots(makeChar({ classes }), catalog.classes);
+  assert.deepEqual(slotsOf(artificer(1)).slots, [2]);
+  assert.deepEqual(slotsOf(artificer(2)).slots, [2]);
+  assert.deepEqual(slotsOf(artificer(5)).slots, [4, 2]);
+  assert.deepEqual(slotsOf(artificer(9)).slots, [4, 3, 2]);
+  assert.deepEqual(slotsOf(artificer(17)).slots, [4, 3, 3, 3, 1]);
+  assert.equal(slotsOf(artificer(1)).isSpellcaster, true);
+  assert.equal(slotsOf(cl("Wizard", 3), artificer(3)).casterLevel, 5);
+  assert.deepEqual(slotsOf(cl("Wizard", 3), artificer(3)).slots, [4, 3, 2]);
+  assert.equal(slotsOf(cl("Wizard", 1), artificer(1)).casterLevel, 2);
+  assert.deepEqual(slotsOf(cl("Wizard", 1), artificer(1)).slots, [3]);
+  assert.equal(slotsOf(artificer(3), cl("Paladin", 3)).casterLevel, 3);
+  assert.deepEqual(slotsOf(artificer(3), cl("Paladin", 3)).slots, [4, 2]);
+});
 test("third caster individual table differs from multiclass; correct subclass ability", () => {
   assert.deepEqual(multiclassSlots(makeChar({ classes: [cl("Fighter", 3, "Eldritch Knight")] })).slots, [2]);
   assert.deepEqual(multiclassSlots(makeChar({ classes: [cl("Fighter", 4, "Eldritch Knight")] })).slots, [3]);

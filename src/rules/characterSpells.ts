@@ -191,9 +191,10 @@ export function toggleInnateSpellUse(
 ): Character {
   if (!spell.resourceCounterId) return character;
   const counterId = spell.resourceCounterId;
+  const max = spell.maxUses ?? 1;
   const counter = character.resourceCounters?.[counterId];
-  const currentlyRemaining = counter !== undefined ? counter.current : 1;
-  const newRemaining = currentlyRemaining > 0 ? 0 : 1;
+  const currentlyRemaining = counter !== undefined ? counter.current : max;
+  const newRemaining = currentlyRemaining > 0 ? 0 : max;
 
   return {
     ...character,
@@ -203,7 +204,7 @@ export function toggleInnateSpellUse(
         id: counterId,
         name: `Innate: ${spell.name}`,
         current: newRemaining,
-        max: 1,
+        max,
         resetOn: "long",
       },
     },
@@ -394,14 +395,15 @@ export function togglePrepared(
   if (isPrepared(character, profile, spell)) {
     return reconcile(
       { ...character, preparedSpells: current.filter((k) => k !== canonical && k !== legacy) },
-      compendium
+      compendium,
+      { activeBooks }
     );
   }
 
   const data = compendium.findSpell(spell.name, spell.source);
   if (data && !withinOwnerGate(profile, data, activeBooks)) return character;
 
-  return reconcile({ ...character, preparedSpells: [...current, canonical] }, compendium);
+  return reconcile({ ...character, preparedSpells: [...current, canonical] }, compendium, { activeBooks });
 }
 
 /**
@@ -427,7 +429,7 @@ export function learnSpell(
     ownerKey: profile.ownerKey,
     className: profile.className,
   };
-  return reconcile({ ...character, knownSpells: [...(character.knownSpells || []), learned] }, compendium);
+  return reconcile({ ...character, knownSpells: [...(character.knownSpells || []), learned] }, compendium, { activeBooks });
 }
 
 /**
@@ -439,7 +441,8 @@ export function forgetSpell(
   character: Character,
   profile: ClassSpellProfile,
   spell: SpellIdentity,
-  compendium: Compendium
+  compendium: Compendium,
+  activeBooks?: string[]
 ): Character {
   const owner = ownerOf(spell, profile);
   const knownSpells = (character.knownSpells || []).filter(
@@ -457,5 +460,5 @@ export function forgetSpell(
     (k) => k !== canonical && !(k === legacy && !stillKnown)
   );
 
-  return reconcile({ ...character, knownSpells, preparedSpells }, compendium);
+  return reconcile({ ...character, knownSpells, preparedSpells }, compendium, { activeBooks });
 }

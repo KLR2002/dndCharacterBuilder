@@ -191,6 +191,56 @@ function longNameCharacter() {
   });
 }
 
+// A level 3 Rogue with four review notices, long enough to wrap, so the notice row starts collapsed and expands to a list.
+const NOTICES_ID = "char_notices";
+const REVIEW_NOTICES = [
+  "Marrowthread Ward removed from Brindlewood Circle: the spell list it belonged to is not offered in your active books",
+  "Glimmerveil Chime removed from Hollow Library of Vennmoor: its source book was switched off",
+  "Sigil of the Quiet Tide released from Stormcarved Initiate: the feat is no longer held by this character",
+  "Skyfall Lattice counter released from Pact of the Veil: the Warlock level no longer meets its prerequisite",
+];
+function noticesCharacter() {
+  return makeChar({
+    id: NOTICES_ID,
+    name: "Quill",
+    createdAt: 9,
+    updatedAt: 9,
+    startingOption: "equipment",
+    race: { name: "Human", source: catalogSource("races", "Human") },
+    background: { name: "Acolyte", source: catalogSource("backgrounds", "Acolyte") },
+    classes: [{ className: "Rogue", source: catalogSource("classes", "Rogue"), level: 3 }],
+    currentHp: 20,
+    startingGrantsApplied: true,
+    backgroundGrantsApplied: true,
+    needsReview: REVIEW_NOTICES,
+  });
+}
+
+// The same Rogue with ten long notices, so the expanded list is taller than the window at a phone width.
+const NOTICES_MANY_ID = "char_notices_many";
+const NOTICES_MANY = [
+  "Thornwick Veil removed from Ashgrove Coven: the spell list it belonged to is not offered in your active books",
+  "Lanternmoss Charm removed from Quiet Archive of Halmere: its source book was switched off",
+  "Cinder Hook released from Duskmantle Initiate: the feat is no longer held by this character",
+  "Gloamfern Tithe released from Pact of the Hollow Crown: the Warlock level no longer meets its prerequisite",
+  "Mirrorfall Rune removed from Stonebell Cantrips: the class that granted it is no longer on the sheet",
+  "Ivorywind Sigil released from Vesper Lodge Initiate: the feat is no longer held by this character",
+  "Hushwater Glyph removed from Emberlark Circle: the spell list it belonged to is not offered in your active books",
+  "Saltglass Lantern released from Tidewhisper Pact: the Warlock level no longer meets its prerequisite",
+  "Quillbrook Spark removed from Northreach Tome: its source book was switched off",
+  "Ravenhollow Knot released from Greywind Initiate: the feat is no longer held by this character",
+];
+function noticesManyCharacter() {
+  return { ...noticesCharacter(), id: NOTICES_MANY_ID, name: "Thistle", createdAt: 13, updatedAt: 13, needsReview: NOTICES_MANY };
+}
+
+// Two short notices, each on one line, so the Dismiss rows sit as close together as they can.
+const NOTICES_FEW_ID = "char_notices_few";
+const NOTICES_FEW = ["Ember Ward: feat lost", "Pulse Sigil: list changed"];
+function noticesFewCharacter() {
+  return { ...noticesCharacter(), id: NOTICES_FEW_ID, name: "Wren", createdAt: 14, updatedAt: 14, needsReview: NOTICES_FEW };
+}
+
 // A level 3 Way of the Kensei monk, integrated mode only (the Kensei is not in the SRD). Its Path of the Kensei
 // choices are Proficiency Choices: the brush and the ranged kensei weapon are unmade ("Picked 0 / 1"), and the
 // melee kensei weapon is picked (Rapier), which the Stats tab shows under Weapon Proficiencies.
@@ -345,6 +395,283 @@ function battleMasterCharacter() {
   });
 }
 
+// A level 1 High Elf Wizard with no cantrip picked yet. The race card shows the wizard cantrip pick the High Elf's
+// subrace grants, with the Intelligence casting ability.
+const HIGH_ELF_ID = "char_highelf";
+const HIGH_ELF_ROUTE = `/character/${HIGH_ELF_ID}`;
+function highElfCharacter() {
+  const elfSource = catalogSource("races", "Elf");
+  return makeChar({
+    id: HIGH_ELF_ID,
+    name: "Aelindra",
+    createdAt: 11,
+    updatedAt: 11,
+    startingOption: "equipment",
+    race: { name: "Elf", source: elfSource, subraceName: "High", subraceSource: elfSource },
+    background: { name: "Acolyte", source: catalogSource("backgrounds", "Acolyte") },
+    classes: [{ className: "Wizard", source: catalogSource("classes", "Wizard"), level: 1 }],
+    currentHp: 8,
+    startingGrantsApplied: true,
+    backgroundGrantsApplied: true,
+  });
+}
+
+// A level 4 Wizard who took Magic Initiate and chose its Wizard list, so the feat's own pick controls show the list's
+// cantrip and spell choices. Integrated mode only (Magic Initiate is not in the SRD Baseline).
+const MAGIC_INITIATE_ID = "char_magicinitiate";
+const MAGIC_INITIATE_ROUTE = `/character/${MAGIC_INITIATE_ID}`;
+function magicInitiateCharacter() {
+  const featSource = catalogSource("feats", "Magic Initiate");
+  return makeChar({
+    id: MAGIC_INITIATE_ID,
+    name: "Ilse",
+    createdAt: 10,
+    updatedAt: 10,
+    startingOption: "equipment",
+    race: { name: "Human", source: catalogSource("races", "Human") },
+    background: { name: "Acolyte", source: catalogSource("backgrounds", "Acolyte") },
+    classes: [{ className: "Wizard", source: catalogSource("classes", "Wizard"), level: 4 }],
+    currentHp: 20,
+    startingGrantsApplied: true,
+    backgroundGrantsApplied: true,
+    asiSelections: [{ level: 4, className: "Wizard", classLevel: 4, type: "feat", featName: "Magic Initiate", featSource }],
+    ruleChoices: [
+      {
+        id: `${featSource}__Feat Spells__Magic Initiate__Spell List`,
+        trait: "Magic Initiate Spell List",
+        origin: "feat",
+        choose: 1,
+        from: ["Bard Spells", "Cleric Spells", "Druid Spells", "Sorcerer Spells", "Warlock Spells", "Wizard Spells"],
+        picked: ["Wizard Spells"],
+      },
+    ],
+  });
+}
+
+// A level 4 Wizard whose background grants Magic Initiate: the feat is claimed in the background section and its list is
+// picked there. Integrated mode only (the background and the feat are not in the SRD Baseline).
+const BACKGROUND_FEAT_ID = "char_backgroundfeat";
+const BACKGROUND_FEAT_ROUTE = `/character/${BACKGROUND_FEAT_ID}`;
+function backgroundFeatCharacter() {
+  const featSource = catalogSource("feats", "Magic Initiate");
+  return makeChar({
+    id: BACKGROUND_FEAT_ID,
+    name: "Tamsin",
+    createdAt: 11,
+    updatedAt: 11,
+    startingOption: "equipment",
+    race: { name: "Human", source: catalogSource("races", "Human") },
+    background: { name: "Astral Drifter", source: catalogSource("backgrounds", "Astral Drifter") },
+    classes: [{ className: "Wizard", source: catalogSource("classes", "Wizard"), level: 4 }],
+    currentHp: 20,
+    startingGrantsApplied: true,
+    backgroundGrantsApplied: true,
+    originFeats: [{ level: 1, type: "feat", featName: "Magic Initiate", featSource: "Background" }],
+    ruleChoices: [
+      {
+        id: `${featSource}__Feat Spells__Magic Initiate__Spell List`,
+        trait: "Magic Initiate Spell List",
+        origin: "feat",
+        choose: 1,
+        from: ["Bard Spells", "Cleric Spells", "Druid Spells", "Sorcerer Spells", "Warlock Spells", "Wizard Spells"],
+        picked: ["Wizard Spells"],
+      },
+    ],
+  });
+}
+
+// A level 8 Wizard whose sources grant spells, so the Spells tab shows one card per source. The SRD Baseline has the race
+// only (a Tiefling, cast with Charisma). The integrated catalog adds: a Githyanki with its casting ability picked (Intelligence);
+// Magic Initiate from an origin feat, with its Wizard list picked; a Strixhaven Initiate (Silverquill) with long spell names
+// and Wisdom picked; and Fey Touched with no ability increase recorded, which shows the needs-review notices.
+const GRANTED_ID = "char_granted";
+const GRANTED_ROUTE = `/character/${GRANTED_ID}`;
+function grantedSpellsCharacter() {
+  const base = {
+    id: GRANTED_ID,
+    name: "Vesper",
+    createdAt: 12,
+    updatedAt: 12,
+    startingOption: "equipment",
+    background: { name: "Acolyte", source: catalogSource("backgrounds", "Acolyte") },
+    classes: [{ className: "Wizard", source: catalogSource("classes", "Wizard"), level: 8 }],
+    currentHp: 40,
+    startingGrantsApplied: true,
+    backgroundGrantsApplied: true,
+  };
+  if (!INTEGRATED) {
+    return makeChar({ ...base, race: { name: "Tiefling", source: catalogSource("races", "Tiefling") } });
+  }
+  const magicInitiate = catalogSource("feats", "Magic Initiate");
+  const strixhaven = catalogSource("feats", "Strixhaven Initiate");
+  const feyTouched = catalogSource("feats", "Fey Touched");
+  const githyanki = catalogSource("races", "Githyanki");
+  return makeChar({
+    ...base,
+    race: { name: "Githyanki", source: githyanki },
+    originFeats: [{ level: 1, type: "feat", featName: "Magic Initiate", featSource: magicInitiate }],
+    asiSelections: [
+      { level: 4, className: "Wizard", classLevel: 4, type: "feat", featName: "Strixhaven Initiate", featSource: strixhaven },
+      { level: 8, className: "Wizard", classLevel: 8, type: "feat", featName: "Fey Touched", featSource: feyTouched },
+    ],
+    ruleChoices: [
+      {
+        id: `${githyanki}__Race Spells__Githyanki__Casting Ability`,
+        trait: "Githyanki Casting Ability",
+        origin: "race",
+        choose: 1,
+        from: ["int", "wis", "cha"],
+        picked: ["int"],
+      },
+      {
+        id: `${magicInitiate}__Feat Spells__Magic Initiate__Spell List`,
+        trait: "Magic Initiate Spell List",
+        origin: "feat",
+        choose: 1,
+        from: ["Bard Spells", "Cleric Spells", "Druid Spells", "Sorcerer Spells", "Warlock Spells", "Wizard Spells"],
+        picked: ["Wizard Spells"],
+      },
+      {
+        id: `${magicInitiate}__Feat Spells__Magic Initiate__Wizard Spells__0`,
+        trait: "Magic Initiate Cantrip",
+        origin: "feat",
+        choose: 2,
+        from: ["Fire Bolt", "Light", "Mage Hand", "Minor Illusion", "Prestidigitation", "Ray of Frost"],
+        picked: ["Fire Bolt", "Mage Hand"],
+      },
+      {
+        id: `${magicInitiate}__Feat Spells__Magic Initiate__Wizard Spells__1`,
+        trait: "Magic Initiate Spell",
+        origin: "feat",
+        choose: 1,
+        from: ["Find Familiar", "Magic Missile", "Tenser's Floating Disk"],
+        picked: ["Tenser's Floating Disk"],
+      },
+      {
+        id: `${strixhaven}__Feat Spells__Strixhaven Initiate__Spell List`,
+        trait: "Strixhaven Initiate Spell List",
+        origin: "feat",
+        choose: 1,
+        from: ["Silverquill 2"],
+        picked: ["Silverquill 2"],
+      },
+      {
+        id: `${strixhaven}__Feat Spells__Strixhaven Initiate__Casting Ability`,
+        trait: "Strixhaven Initiate Casting Ability",
+        origin: "feat",
+        choose: 1,
+        from: ["int", "wis", "cha"],
+        picked: ["wis"],
+      },
+      {
+        id: `${strixhaven}__Feat Spells__Strixhaven Initiate__Silverquill 2__0`,
+        trait: "Strixhaven Initiate Spell",
+        origin: "feat",
+        choose: 1,
+        from: ["Protection from Evil and Good", "Guiding Bolt", "Sanctuary"],
+        picked: ["Protection from Evil and Good"],
+      },
+    ],
+  });
+}
+
+// A level 8 Wizard holding two invented feats with prepared groups, in integrated mode only: withPreparedGrantFeat adds them to the
+// seeded catalog. The first group is plain: its spells are in the class list with the lock and the feat's badge. The second names
+// a casting ability and gives daily casts, so it is Innate Magic with its own card.
+const PREPARED_ID = "char_prepared";
+const PREPARED_ROUTE = `/character/${PREPARED_ID}`;
+const PREPARED_FEAT = "Wardwright Mark of Lasting Layout";
+const PREPARED_CARD_FEAT = "Wardwright Mark of Ember";
+const PREPARED_PLAIN_CARD_FEAT = "Wardwright Charter";
+function preparedGrantCharacter() {
+  return makeChar({
+    id: PREPARED_ID,
+    name: "Oriel",
+    createdAt: 13,
+    updatedAt: 13,
+    startingOption: "equipment",
+    race: { name: "Human", source: catalogSource("races", "Human") },
+    background: { name: "Acolyte", source: catalogSource("backgrounds", "Acolyte") },
+    classes: [{ className: "Wizard", source: catalogSource("classes", "Wizard"), level: 8 }],
+    currentHp: 40,
+    startingGrantsApplied: true,
+    backgroundGrantsApplied: true,
+    asiSelections: [
+      { level: 4, className: "Wizard", classLevel: 4, type: "feat", featName: PREPARED_FEAT, featSource: "PHB" },
+      { level: 8, className: "Wizard", classLevel: 8, type: "feat", featName: PREPARED_CARD_FEAT, featSource: "PHB" },
+    ],
+    originFeats: [{ level: 4, type: "feat", featName: PREPARED_PLAIN_CARD_FEAT, featSource: "PHB" }],
+    ruleChoices: [
+      {
+        id: `PHB__Feat Spells__${PREPARED_CARD_FEAT}__Casting Ability`,
+        trait: `${PREPARED_CARD_FEAT} Casting Ability`,
+        origin: "feat",
+        choose: 1,
+        from: ["int", "wis", "cha"],
+        picked: ["int"],
+      },
+    ],
+  });
+}
+
+// A level 4 Fighter, who has no spellcasting class, holding the plain-group feat. The Spells tab shows its spells on one locked
+// card: the lock icon on each spell, no ability, save DC or attack row.
+const PREPARED_FIGHTER_ID = "char_prepared_fighter";
+const PREPARED_FIGHTER_ROUTE = `/character/${PREPARED_FIGHTER_ID}`;
+function preparedFighterCharacter() {
+  return makeChar({
+    id: PREPARED_FIGHTER_ID,
+    name: "Tobin",
+    createdAt: 14,
+    updatedAt: 14,
+    startingOption: "equipment",
+    race: { name: "Human", source: catalogSource("races", "Human") },
+    background: { name: "Acolyte", source: catalogSource("backgrounds", "Acolyte") },
+    classes: [{ className: "Fighter", source: catalogSource("classes", "Fighter"), level: 4 }],
+    currentHp: 30,
+    startingGrantsApplied: true,
+    backgroundGrantsApplied: true,
+    asiSelections: [{ level: 4, className: "Fighter", classLevel: 4, type: "feat", featName: PREPARED_FEAT, featSource: "PHB" }],
+  });
+}
+
+// The integrated catalog with the invented prepared-group feats added. Their books are the default-active PHB, so they need no
+// book switched on. The spells they name are in the tracked snapshot.
+function withPreparedGrantFeat(collections) {
+  const plain = {
+    name: PREPARED_FEAT,
+    source: "PHB",
+    prerequisite: null,
+    abilityScoreIncrease: null,
+    description: "Placeholder description for the feat.",
+    additionalSpells: [{ prepared: { _: ["Shield", "Detect Magic"], 3: ["Misty Step"] } }],
+  };
+  const withCard = {
+    name: PREPARED_CARD_FEAT,
+    source: "PHB",
+    prerequisite: null,
+    abilityScoreIncrease: null,
+    description: "Placeholder description for the feat.",
+    additionalSpells: [
+      {
+        ability: { choose: ["int", "wis", "cha"] },
+        prepared: { _: { will: ["Thunderwave"], daily: { "1": ["Tenser's Floating Disk"] } } },
+        notes: { "tenser's floating disk": "self only" },
+      },
+    ],
+  };
+  // A feat that names spells and no ability: its cantrip is at will and its daily spell is on a counter, with no DC row.
+  const plainCard = {
+    name: PREPARED_PLAIN_CARD_FEAT,
+    source: "PHB",
+    prerequisite: null,
+    abilityScoreIncrease: null,
+    description: "Placeholder description for the feat.",
+    additionalSpells: [{ known: { _: ["Mage Hand"] }, innate: { _: { daily: { "1e": ["Fog Cloud"] } } } }],
+  };
+  return { ...collections, feats: [...collections.feats, plain, withCard, plainCard] };
+}
+
 // Level 1 Fighters for the equipment card. The unpicked one has no picks, so Claim Starting Equipment is disabled. The
 // picked one has a pick in every slot (chain mail, a martial weapon and a shield, a light crossbow, a dungeoneer's pack),
 // so Claim is enabled, and its martial weapon picker is the one a screen opens.
@@ -399,6 +726,25 @@ function clericCharacter({ id, name, domain }) {
       },
     ],
     currentHp: 9,
+    backgroundGrantsApplied: true,
+  });
+}
+
+// A level 5 Artificer (TCE, so integrated mode only). Its own table gives four first-level and two second-level slots.
+const ARTIFICER_ID = "char_artificer";
+function artificerCharacter() {
+  return makeChar({
+    id: ARTIFICER_ID,
+    name: "Tinnet",
+    createdAt: 6,
+    updatedAt: 6,
+    race: { name: "Human", source: catalogSource("races", "Human") },
+    background: { name: "Acolyte", source: catalogSource("backgrounds", "Acolyte") },
+    startingOption: "equipment",
+    baseAbilityScores: { str: 8, dex: 12, con: 12, int: 16, wis: 12, cha: 10 },
+    classes: [{ className: "Artificer", source: catalogSource("classes", "Artificer"), level: 5 }],
+    currentHp: 30,
+    startingGrantsApplied: true,
     backgroundGrantsApplied: true,
   });
 }
@@ -486,9 +832,13 @@ function buildSeed() {
         activeWildShape: { name: "Black Bear", source: "SRD", ac: 11, currentHp: 12, maxHp: 19, tempHp: 4 },
       }),
       wizardCharacter(),
+      ...(INTEGRATED ? [artificerCharacter()] : []),
       halfElfCharacter(),
       rangerCharacter(),
       longNameCharacter(),
+      noticesCharacter(),
+      noticesManyCharacter(),
+      noticesFewCharacter(),
       ...(INTEGRATED ? [kenseiCharacter()] : []),
       ...(INTEGRATED ? [initiativeCharacter()] : []),
       bardCharacter(),
@@ -497,6 +847,11 @@ function buildSeed() {
       fighterCharacter({ id: FIGHTER_ID, name: "Tavish", picked: false }),
       fighterCharacter({ id: FIGHTER_PICKED_ID, name: "Brannoc", picked: true }),
       battleMasterCharacter(),
+      ...(INTEGRATED ? [magicInitiateCharacter()] : []),
+      highElfCharacter(),
+      ...(INTEGRATED ? [backgroundFeatCharacter()] : []),
+      grantedSpellsCharacter(),
+      ...(INTEGRATED ? [preparedGrantCharacter(), preparedFighterCharacter()] : []),
       ...(INTEGRATED ? [clericCharacter({ id: CLERIC_ID, name: "Corwin", domain: false })] : []),
       clericCharacter({ id: CLERIC_DOMAIN_ID, name: "Ysolde", domain: true }),
       INTEGRATED ? knowledgeClericCharacter() : multiclassSkillCharacter(),
@@ -505,9 +860,11 @@ function buildSeed() {
     settings: {
       ...defaults,
       hasCompletedFirstRun: true,
-      activeResourceBooks: INTEGRATED ? [...new Set([...defaults.activeResourceBooks, "MM"])] : defaults.activeResourceBooks,
+      // AAG is switched on for the Astral Drifter background, which grants Magic Initiate (the background section lists its feat only when the book is on).
+      // SCC is switched on for Strixhaven Initiate, which the Spells tab scenario holds.
+      activeResourceBooks: INTEGRATED ? [...new Set([...defaults.activeResourceBooks, "MM", "AAG", "SCC"])] : defaults.activeResourceBooks,
     },
-    integrated: INTEGRATED ? integratedCollections(ROOT) : null,
+    integrated: INTEGRATED ? withPreparedGrantFeat(integratedCollections(ROOT)) : null,
   };
 }
 
@@ -516,9 +873,13 @@ function buildSeed() {
 // title. `ready` (a string or regex) is text the screen shows once it is ready. `scrollTo` scrolls a needle into view.
 const RENDAR_ROUTE = `/character/${CHARACTER_ID}`;
 const WIZARD_ROUTE = `/character/${WIZARD_ID}`;
+const ARTIFICER_ROUTE = `/character/${ARTIFICER_ID}`;
 const HALF_ELF_ROUTE = `/character/${HALF_ELF_ID}`;
 const RANGER_ROUTE = `/character/${RANGER_ID}`;
 const LONG_NAME_ROUTE = `/character/${LONG_NAME_ID}`;
+const NOTICES_ROUTE = `/character/${NOTICES_ID}`;
+const NOTICES_MANY_ROUTE = `/character/${NOTICES_MANY_ID}`;
+const NOTICES_FEW_ROUTE = `/character/${NOTICES_FEW_ID}`;
 const KENSEI_ROUTE = `/character/${KENSEI_ID}`;
 const INITIATIVE_ROUTE = `/character/${INITIATIVE_ID}`;
 const BARD_ROUTE = `/character/${BARD_ID}`;
@@ -567,6 +928,36 @@ const SCREENS = [
     ? [
         { name: "Builder Class kensei weapon choices", route: KENSEI_ROUTE, tabs: ["Builder", "Class"], ready: /total level/i, scrollTo: "Path of the Kensei" },
         { name: "Stats kensei weapon proficiencies", route: KENSEI_ROUTE, tabs: ["Stats"], ready: /hit points/i, scrollTo: "Weapon Proficiencies" },
+      ]
+    : []),
+  // Magic Initiate's own picks (integrated mode only): its spell list, then the cantrips and spell of the list chosen.
+  ...(INTEGRATED
+    ? [
+        {
+          name: "Builder Class feat spell picks",
+          route: MAGIC_INITIATE_ROUTE,
+          tabs: ["Builder", "Class"],
+          ready: /Selected Ability Improvements/i,
+          scrollTo: "Magic Initiate Spell List (choose 1)",
+          expect: { texts: ["Magic Initiate Spell List (choose 1)", "Magic Initiate Cantrip (choose 2)", "Magic Initiate Spell (choose 1)"], fitsWidth: true },
+        },
+        {
+          name: "Builder Race spell picks",
+          route: HIGH_ELF_ROUTE,
+          tabs: ["Builder", "Race"],
+          ready: /traits:/i,
+          scrollTo: "Racial Spells",
+          expect: { texts: ["Racial Spells", "High Elf Cantrip (choose 1)"], fitsWidth: true },
+        },
+        // A background that grants Magic Initiate: its pick controls sit under the feat the background section shows.
+        {
+          name: "Builder Background feat spell picks",
+          route: BACKGROUND_FEAT_ROUTE,
+          tabs: ["Builder", "Background"],
+          ready: /background feat/i,
+          scrollTo: "Magic Initiate Spell List (choose 1)",
+          expect: { texts: ["Feat Added to Character", "Magic Initiate Spell List (choose 1)", "Magic Initiate Cantrip (choose 2)", "Magic Initiate Spell (choose 1)"], fitsWidth: true },
+        },
       ]
     : []),
   // The equipment card: one option per slot, the picker of a generic entry, Claim disabled until every slot is picked.
@@ -630,10 +1021,117 @@ const SCREENS = [
       ]
     : []),
   { name: "Spells", route: WIZARD_ROUTE, tabs: ["Spells"], ready: /add spells/i },
+  // A level 5 Artificer's slots come from its own table: four first-level and two second-level, and no third-level row.
+  ...(INTEGRATED
+    ? [
+        {
+          name: "Spells artificer slots",
+          route: ARTIFICER_ROUTE,
+          tabs: ["Spells"],
+          ready: /add spells/i,
+          scrollTo: "SPELL SLOTS",
+          expect: { texts: ["SPELL SLOTS", "1st Level", "2nd Level"], absent: ["3rd Level"], fitsWidth: true },
+        },
+      ]
+    : []),
+  // One card per granting source (ADR 0017): the race card in both catalogs, and in integrated mode the Magic Initiate card,
+  // the Strixhaven Initiate card with long spell names and a chosen ability, the race card's chosen ability, and the needs-review card.
+  {
+    name: "Spells granted cards",
+    route: GRANTED_ROUTE,
+    tabs: ["Spells"],
+    ready: /Innate racial magic from your ancestry/,
+    scrollTo: "STRIXHAVEN INITIATE",
+    expect: {
+      texts: INTEGRATED
+        ? [
+            "GITHYANKI",
+            "MAGIC INITIATE (WIZARD)",
+            "STRIXHAVEN INITIATE (SILVERQUILL)",
+            "FEY TOUCHED",
+            "Protection from Evil and Good",
+            "Tenser's Floating Disk",
+            "Needs review: the ability increase is not recorded",
+            "Needs review: pick 1 more spell",
+          ]
+        : ["TIEFLING", "Thaumaturgy", "Hellish Rebuke", "Darkness"],
+      fitsWidth: true,
+    },
+  },
+  // The race card is titled with the subrace and its race, in both catalogs.
+  {
+    name: "Spells race card title",
+    route: HIGH_ELF_ROUTE,
+    tabs: ["Spells"],
+    ready: /Innate racial magic from your ancestry/,
+    scrollTo: "HIGH ELF",
+    expect: { texts: ["HIGH ELF"], fitsWidth: true },
+  },
+  // A feat's prepared spells in the Wizard's class list: the lock icon, and the feat's name as the badge (integrated mode only).
+  ...(INTEGRATED
+    ? [
+        {
+          name: "Spells prepared grant class list",
+          route: PREPARED_ROUTE,
+          tabs: ["Spells"],
+          ready: /add spells/i,
+          scrollTo: "Misty Step",
+          expect: { texts: ["Shield", "Detect Magic", "Misty Step", PREPARED_FEAT], absent: ["Needs review"], fitsWidth: true },
+        },
+        // A Fighter with no spellcasting class: the feat's plain prepared spells on one locked card, with no stats row.
+        {
+          name: "Spells locked prepared card",
+          route: PREPARED_FIGHTER_ROUTE,
+          tabs: ["Spells"],
+          ready: /No Class Spellcasting/,
+          scrollTo: PREPARED_FEAT.toUpperCase(),
+          expect: {
+            texts: [PREPARED_FEAT.toUpperCase(), "Shield", "Detect Magic", "Misty Step", "No Class Spellcasting"],
+            absent: ["Needs review", "SAVE DC", "ATTACK BONUS"],
+            fitsWidth: true,
+          },
+        },
+        // A prepared group that names its own ability: an Innate Magic card with the picked ability's stats, its at-will spell and
+        // its daily spell (the long name wraps in the card).
+        {
+          name: "Spells prepared grant card",
+          route: PREPARED_ROUTE,
+          tabs: ["Spells"],
+          ready: /add spells/i,
+          scrollTo: PREPARED_CARD_FEAT.toUpperCase(),
+          expect: {
+            texts: [PREPARED_CARD_FEAT.toUpperCase(), "INT (DC 11 / +3)", "SAVE DC", "ATTACK BONUS", "Thunderwave", "Tenser's Floating Disk (self only)"],
+            absent: ["Needs review"],
+            fitsWidth: true,
+          },
+        },
+        // A feat that names no ability: its card has the cantrip and the daily spell, and no ability, save DC or attack row. The
+        // class header of the Wizard shows those labels too, so the row is checked inside the card alone.
+        {
+          name: "Spells card without ability",
+          route: PREPARED_ROUTE,
+          tabs: ["Spells"],
+          ready: /add spells/i,
+          scrollTo: PREPARED_PLAIN_CARD_FEAT.toUpperCase(),
+          expect: {
+            texts: [PREPARED_PLAIN_CARD_FEAT.toUpperCase(), "Mage Hand", "Fog Cloud"],
+            absent: ["Needs review"],
+            cardWithout: { title: PREPARED_PLAIN_CARD_FEAT.toUpperCase(), spell: "Fog Cloud", rows: ["ABILITY", "SAVE DC", "ATTACK BONUS", "(DC"] },
+            fitsWidth: true,
+          },
+        },
+      ]
+    : []),
   { name: "Inventory", route: WIZARD_ROUTE, tabs: ["Inventory"], ready: /total wealth/i },
   { name: "Features", route: RENDAR_ROUTE, tabs: ["Features"], ready: /resource trackers/i },
   { name: "Journal", route: RENDAR_ROUTE, tabs: ["Journal"], ready: /character name/i },
   { name: "Actions", route: RENDAR_ROUTE, tabs: ["Actions"], ready: /attack action/i },
+  { name: "Review notices collapsed", route: NOTICES_ROUTE, tabs: ["Stats"], ready: "4 to review", expect: { texts: ["4 to review"], absent: [REVIEW_NOTICES[0]], fitsWidth: true } },
+  { name: "Review notices expanded", route: NOTICES_ROUTE, tabs: ["Journal"], open: (page) => page.getByText("4 to review", { exact: true }).first().click(), ready: "Dismiss all", scrollTo: "Dismiss all", expect: { texts: [...REVIEW_NOTICES, "Dismiss all"], fitsWidth: true } },
+  { name: "Review notices two collapsed", route: NOTICES_FEW_ROUTE, tabs: ["Stats"], ready: "2 to review", expect: { texts: ["2 to review"], absent: [NOTICES_FEW[0]], fitsWidth: true } },
+  { name: "Review notices dismiss rows apart", route: NOTICES_FEW_ROUTE, tabs: ["Stats"], open: (page) => page.getByText("2 to review", { exact: true }).first().click(), ready: "Dismiss all", expect: { texts: [...NOTICES_FEW, "Dismiss all"], dismissGapMin: 8, fitsWidth: true } },
+  { name: "Review notices many expanded", route: NOTICES_MANY_ROUTE, tabs: ["Journal"], open: (page) => page.getByText("10 to review", { exact: true }).first().click(), ready: "Dismiss all", expect: { texts: ["10 to review", "Dismiss all"], tabContentBelowNotices: { count: "10 to review", minHeight: 120 }, fitsWidth: true } },
+  { name: "Review notices none", route: RENDAR_ROUTE, tabs: ["Stats"], ready: /hit points/i, expect: { absentMatching: [/ to review$/], fitsWidth: true } },
   { name: "Stats battle master superiority dice", route: BATTLE_MASTER_ROUTE, tabs: ["Stats"], ready: /hit points/i, scrollTo: "Superiority Dice: 4d8 + 2d6", expect: { texts: ["Superiority Dice: 4d8 + 2d6"], fitsWidth: true } },
   { name: "Features battle master superiority counters", route: BATTLE_MASTER_ROUTE, tabs: ["Features"], ready: /resource trackers/i, scrollTo: "Superiority Dice [d6]", expect: { texts: ["Superiority Dice [d8]", "Superiority Dice [d6]"], fitsWidth: true } },
   { name: "Actions battle master maneuver dice", route: BATTLE_MASTER_ROUTE, tabs: ["Actions"], ready: /battle master maneuvers/i, scrollTo: "BATTLE MASTER MANEUVERS", expect: { texts: ["Die: d8 / d6", "+d8 / d6"], fitsWidth: true } },
@@ -926,10 +1424,48 @@ async function checkWildShapeFeatures(ctx, width) {
   return failures;
 }
 
+// The text of the smallest element that holds both needles: the card that shows a title and one of its spells.
+function smallestTextWith([first, second]) {
+  let best = "";
+  for (const element of document.querySelectorAll("*")) {
+    const text = element.innerText ?? "";
+    if (text.includes(first) && text.includes(second) && (best === "" || text.length < best.length)) best = text;
+  }
+  return best;
+}
+
+// Runs in the browser. The tab content under the review notices box whose count row reads `count`: the element after the
+// notices box, or null when that box is not on the screen. Its height and bottom edge are what the tab content gets.
+function findTabContentBelowNotices(count) {
+  const leaf = [...document.querySelectorAll("*")].find((e) => e.children.length === 0 && e.textContent.trim() === count);
+  const header = leaf?.closest('button, [role="button"]');
+  const content = header?.parentElement?.parentElement?.nextElementSibling;
+  if (!content) return null;
+  const r = content.getBoundingClientRect();
+  return { height: r.height, bottom: r.bottom, viewport: window.innerHeight };
+}
+
+// Runs in the browser. The vertical gaps between neighbouring review Dismiss buttons, top to bottom.
+function findDismissGaps() {
+  const boxes = [...document.querySelectorAll('[aria-label^="Dismiss "]')]
+    .map((el) => el.getBoundingClientRect())
+    .filter((r) => r.height > 0)
+    .sort((a, b) => a.top - b.top);
+  return boxes.slice(1).map((r, i) => r.top - boxes[i].bottom);
+}
+
 // Checks what a picker screen must show that the layout rules cannot see: texts and input placeholders on the page,
 // and (`plainRaceRow`) the plain race row. Returns one message per missing control.
 async function checkExpected(page, expect) {
   const out = [];
+  if (expect.cardWithout) {
+    const { title, spell, rows } = expect.cardWithout;
+    const card = await page.evaluate(smallestTextWith, [title, spell]);
+    if (card === "") out.push(`no "${title}" card shows "${spell}"`);
+    for (const row of rows) {
+      if (card.includes(row)) out.push(`the "${title}" card shows "${row}"`);
+    }
+  }
   for (const text of expect.texts ?? []) {
     if (!(await page.getByText(text, { exact: true }).first().isVisible())) out.push(`missing "${text}"`);
   }
@@ -939,6 +1475,9 @@ async function checkExpected(page, expect) {
   for (const text of expect.absent ?? []) {
     if (await page.getByText(text, { exact: true }).first().isVisible()) out.push(`"${text}" is shown but should not be`);
   }
+  for (const pattern of expect.absentMatching ?? []) {
+    if (await page.getByText(pattern).first().isVisible()) out.push(`text matching ${pattern} is shown but should not be`);
+  }
   for (const text of expect.disabled ?? []) {
     const { disabled, state } = await page.evaluate(buttonDisabled, text);
     if (disabled !== true) out.push(`"${text}" is not disabled (${state})`);
@@ -946,6 +1485,20 @@ async function checkExpected(page, expect) {
   for (const text of expect.enabled ?? []) {
     const { disabled, state } = await page.evaluate(buttonDisabled, text);
     if (disabled !== false) out.push(`"${text}" is not enabled (${state})`);
+  }
+  if (expect.tabContentBelowNotices) {
+    const { count, minHeight } = expect.tabContentBelowNotices;
+    const box = await page.evaluate(findTabContentBelowNotices, count);
+    if (!box) out.push(`no tab content found below the "${count}" notices box`);
+    else {
+      if (box.height < minHeight) out.push(`tab content below the notices is ${Math.round(box.height)}px tall, under ${minHeight}px`);
+      if (box.bottom > box.viewport + 1) out.push(`tab content below the notices ends ${Math.round(box.bottom - box.viewport)}px below the window`);
+    }
+  }
+  if (expect.dismissGapMin !== undefined) {
+    const gaps = await page.evaluate(findDismissGaps);
+    if (gaps.length === 0) out.push("no two Dismiss rows to compare");
+    else if (Math.min(...gaps) < expect.dismissGapMin) out.push(`Dismiss buttons are ${Math.round(Math.min(...gaps))}px apart, under ${expect.dismissGapMin}px`);
   }
   if (expect.fitsWidth) {
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);

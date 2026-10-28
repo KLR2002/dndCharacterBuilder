@@ -84,6 +84,9 @@ export const ALL_RESOURCE_BOOKS: ResourceBook[] = [
   { code: "PSX", name: "Plane Shift: Ixalan", category: "other", isDefaultActive: false },
 ];
 
+/** The source of the SRD Baseline's records. They count as active whatever books are switched on. */
+export const SRD_SOURCE = "SRD";
+
 export const DEFAULT_ACTIVE_BOOK_CODES = ALL_RESOURCE_BOOKS
   .filter((b) => b.isDefaultActive)
   .map((b) => b.code);

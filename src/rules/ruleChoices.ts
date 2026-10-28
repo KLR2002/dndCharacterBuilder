@@ -44,6 +44,7 @@ export * from "./choices/maneuvers.ts";
 export * from "./choices/warlockChoices.ts";
 export * from "./choices/artificerInfusions.ts";
 export { LINEAGE_NAMES, ancestryRuleChoices, applyRuleChoice, lineageInheritsElements, replacedTraitNames } from "./raceRuleChoices.ts";
+export { featSpellChoicesOf, featSpellRuleChoices, raceSpellRuleChoices } from "./choices/featSpells.ts";
 
 /**
  * A Rule Choice is a selection from a fixed set of options granted by a single
@@ -67,10 +68,10 @@ export function availableRuleChoices(
   const currentLevel = level ?? totalLevel(character);
   const books = activeBooks ? new Set(activeBooks.map((b) => b.toUpperCase())) : null;
 
-  return ancestryRuleChoices(character, raceCatalog).filter((choice) => {
+  return ancestryRuleChoices(character, raceCatalog, activeBooks).filter((choice) => {
     if (choice.level > currentLevel) return false;
     if (books) {
-      const source = choice.id.split("__")[0]?.toUpperCase();
+      const source = (choice.source ?? choice.id.split("__")[0])?.toUpperCase();
       if (source && !books.has(source)) return false;
     }
     return true;
@@ -221,7 +222,8 @@ export function pickRuleChoice(
   character: Character,
   choice: AvailableRuleChoice,
   option: string,
-  compendium: Compendium = currentCompendium()
+  compendium: Compendium = currentCompendium(),
+  activeBooks?: string[]
 ): Character {
   const recorded =
     choice.pick === "fightingStyle"
@@ -239,5 +241,5 @@ export function pickRuleChoice(
           choice.choose,
           choice.origin
         );
-  return reconcile(recorded, compendium);
+  return reconcile(recorded, compendium, { activeBooks });
 }

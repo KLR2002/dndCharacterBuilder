@@ -1,8 +1,9 @@
 import { currentCompendium, type Compendium } from "../services/compendium.ts";
 import type { Character, RuleChoiceEntry } from "../types/character.ts";
-import type { SpellData, SubclassData, SubclassAdditionalSpells } from "../types/dnd5e.ts";
+import type { SpellData, SubclassData, AdditionalSpells } from "../types/dnd5e.ts";
 import { resolveOptionName } from "./choices/types.ts";
 import { findClassData } from "./catalogs.ts";
+import { SRD_SOURCE } from "../constants/books.ts";
 
 export interface SubclassSpellsResult {
   prepared: SpellData[];
@@ -48,19 +49,35 @@ function getSpellCatalog(compendium: Compendium): Map<string, SpellData[]> {
   return map;
 }
 
-// Prefers the copy from an active book; otherwise falls back to the first copy.
-function pickSpell(copies: SpellData[] | undefined, activeBooks?: string[]): SpellData | undefined {
+// Prefers the copy from an active book; otherwise falls back to the first copy, unless only active copies are wanted.
+// With `activeOnly`, the SRD Baseline is always on, as it is for class spell lists (isSpellAvailableForClass).
+function pickSpell(copies: SpellData[] | undefined, activeBooks?: string[], activeOnly = false): SpellData | undefined {
   if (!copies || copies.length === 0) return undefined;
   if (activeBooks && activeBooks.length > 0) {
     const books = new Set(activeBooks.map((b) => b.toUpperCase()));
-    const active = copies.find((s) => books.has((s.source || "").toUpperCase()));
+    const source = (s: SpellData) => (s.source || "").toUpperCase();
+    const active = copies.find((s) => books.has(source(s)));
     if (active) return active;
+    if (activeOnly) return copies.find((s) => source(s) === SRD_SOURCE);
   }
   return copies[0];
 }
 
 export function resetSpellCatalogCache(): void {
   spellCatalogs = new WeakMap<Compendium, Map<string, SpellData[]>>();
+}
+
+/**
+ * The catalog spell a name resolves to, a name as the scraper normalises it, preferring a copy from an active book. `activeOnly`
+ * drops a name whose only copies are in books that are switched off, instead of falling back to the first copy.
+ */
+export function resolveSpellName(
+  name: string,
+  activeBooks: string[] | undefined,
+  compendium: Compendium = currentCompendium(),
+  options: { activeOnly?: boolean } = {}
+): SpellData | undefined {
+  return pickSpell(getSpellCatalog(compendium).get(normalizeKey(name)), activeBooks, options.activeOnly);
 }
 
 /**
@@ -161,10 +178,10 @@ function matchesSubclass(sc: SubclassData, subName: string): boolean {
 }
 
 function selectAdditionalSpellsEntries(
-  additionalSpells: SubclassAdditionalSpells[],
+  additionalSpells: AdditionalSpells[],
   subclassName: string,
   options?: SubclassSpellOptions
-): SubclassAdditionalSpells[] {
+): AdditionalSpells[] {
   if (additionalSpells.length === 0) return [];
 
   const hasNamedVariants = additionalSpells.some((entry) => Boolean(entry.name));
@@ -258,11 +275,11 @@ export function getSubclassSpells(
     return emptyResult;
   }
 
-  // Subclass source check under activeBooks
+  // Subclass source check under activeBooks. The SRD Baseline is always on, as it is for class spell lists.
   if (options?.activeBooks && options.activeBooks.length > 0) {
-    const isSubclassSourceActive = options.activeBooks.some(
-      (b) => b.toUpperCase() === (subclass.source || "").toUpperCase()
-    );
+    const subclassSource = (subclass.source || "").toUpperCase();
+    const isSubclassSourceActive =
+      subclassSource === SRD_SOURCE || options.activeBooks.some((b) => b.toUpperCase() === subclassSource);
     if (!isSubclassSourceActive) {
       return emptyResult;
     }
@@ -678,9 +695,9 @@ export function validateSubclassSpellSwap(
   }
 
   if (activeBooks && activeBooks.length > 0) {
-    const isSourceActive = activeBooks.some(
-      (b) => b.toUpperCase() === (replSpell.source || "").toUpperCase()
-    );
+    const isSourceActive =
+      (replSpell.source || "").toUpperCase() === SRD_SOURCE ||
+      activeBooks.some((b) => b.toUpperCase() === (replSpell.source || "").toUpperCase());
     if (!isSourceActive) {
       return {
         valid: false,
@@ -704,11 +721,11 @@ export function getEligibleSubclassSpellSwaps(
 
   const catalog = getSpellCatalog(compendium);
   const allowedClasses = ["sorcerer", "warlock", "wizard"];
-  const activeBooksSet = activeBooks ? new Set(activeBooks.map((b) => b.toUpperCase())) : null;
+  const activeBooksSet = activeBooks ? new Set([SRD_SOURCE, ...activeBooks.map((b) => b.toUpperCase())]) : null;
 
   const eligible: SpellData[] = [];
   for (const copies of catalog.values()) {
-    const spell = pickSpell(copies, activeBooks);
+    const spell = pickSpell(copies, activeBooks, true);
     if (!spell) continue;
     if (spell.level !== originalSpell.level) continue;
     if (!allowedSchools.includes((spell.school || "").toLowerCase())) continue;

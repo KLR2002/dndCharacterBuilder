@@ -21,12 +21,14 @@ import { StatsTab } from "../../components/tabs/StatsTab";
 import { Badge } from "../../components/ui/Badge";
 import { Button } from "../../components/ui/Button";
 import { HpQuickEditModal } from "../../components/HpQuickEditModal";
+import { ReviewNotices } from "../../components/ReviewNotices";
 import { useCharacters } from "../../context/CharacterContext";
 import { useAppTheme } from "../../context/ThemeContext";
 import { useHpQuickEdit } from "../../hooks/useHpQuickEdit";
 import { useResponsiveLayout } from "../../hooks/useResponsiveLayout";
 import { evaluateCharacter } from "../../rules/characterEvaluation";
 import { commitCharacterName } from "../../rules/characterName";
+import { dismissNotices } from "../../rules/needsReview";
 
 type TabKey = "builder" | "stats" | "spells" | "inventory" | "features" | "journal" | "actions";
 
@@ -268,6 +270,19 @@ export default function CharacterSheetScreen() {
           )}
         </View>
       </View>
+
+      {(currentCharacter.needsReview?.length ?? 0) > 0 && (
+        <ReviewNotices
+          key={currentCharacter.id}
+          notices={currentCharacter.needsReview ?? []}
+          onDismiss={(notice) =>
+            updateCharacter(currentCharacter.id, (c) => ({ ...c, needsReview: dismissNotices(c.needsReview, notice) }))
+          }
+          onDismissAll={() =>
+            updateCharacter(currentCharacter.id, (c) => ({ ...c, needsReview: dismissNotices(c.needsReview) }))
+          }
+        />
+      )}
 
       {/* Tab Content Display */}
       <View style={styles.tabContentWrapper}>

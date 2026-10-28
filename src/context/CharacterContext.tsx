@@ -1,5 +1,5 @@
 import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
-import { DEFAULT_ACTIVE_BOOK_CODES } from "../constants/books";
+import { DEFAULT_ACTIVE_BOOK_CODES, SRD_SOURCE } from "../constants/books";
 import {
   DEFAULT_SETTINGS,
   loadAll,
@@ -150,8 +150,9 @@ export function CharacterProvider({ children }: { children: React.ReactNode }) {
         setCatalogStale(currentCompendium().stale);
         const raceCatalog = getRaces();
         const classCatalog = getClasses();
-        const migratedCharacters = loadedChars.map((c) => migrateCharacter(c, raceCatalog, classCatalog));
-        setActiveBooksState(loadedSettings.activeResourceBooks || DEFAULT_ACTIVE_BOOK_CODES);
+        const loadedActiveBooks = loadedSettings.activeResourceBooks || DEFAULT_ACTIVE_BOOK_CODES;
+        const migratedCharacters = loadedChars.map((c) => migrateCharacter(c, raceCatalog, classCatalog, loadedActiveBooks));
+        setActiveBooksState(loadedActiveBooks);
         setFullHealOnLevelUpState(loadedSettings.fullHealOnLevelUp);
         setHasCompletedFirstRun(Boolean(loadedSettings.hasCompletedFirstRun));
         setCharacters(migratedCharacters);
@@ -343,7 +344,7 @@ export function CharacterProvider({ children }: { children: React.ReactNode }) {
     setIsIntegrated(false);
     setIntegratedAt(null);
     setCatalogStale(false);
-    await setActiveBooks(["SRD"]);
+    await setActiveBooks([SRD_SOURCE]);
   };
 
   const getCharacter = (id: string) => {

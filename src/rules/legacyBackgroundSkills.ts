@@ -2,6 +2,7 @@ import type { Character } from "../types/character.ts";
 import type { Compendium } from "../services/compendium.ts";
 import { isCustomBackground } from "./customBackground.ts";
 import { normalizeSkillName } from "./skills.ts";
+import { findHeldRecord } from "./raceLookup.ts";
 
 /**
  * Background skills that an earlier version wrote into the chosen skills bucket. A catalog background's
@@ -11,9 +12,12 @@ import { normalizeSkillName } from "./skills.ts";
  * A leaf module: the reconciler is its only caller.
  */
 
-/** The fixed skills of a catalog background's grants, in lower case. */
-function grantedSkillKeys(compendium: Compendium, name: string, source: string): Set<string> {
-  const record = compendium.findBackground(name, source);
+/**
+ * The fixed skills of a catalog background's grants, in lower case. The record is found as the shared lookup finds it, unscoped
+ * by books so that a background whose book is off still gives its skills, with an active book's record preferred.
+ */
+function grantedSkillKeys(compendium: Compendium, held: { name: string; source: string }, activeBooks?: string[]): Set<string> {
+  const record = findHeldRecord(compendium.for().backgrounds(), held, activeBooks);
   const keys = new Set<string>();
   for (const grant of record?.grants ?? []) {
     if (grant.kind !== "fixed" || grant.category !== "skills") continue;
@@ -43,7 +47,7 @@ export function dropLegacyBackgroundSkills(
     .some((record) => record.name.toLowerCase() === wanted);
   if (stillActive) return character;
 
-  const backgroundSkills = grantedSkillKeys(compendium, bg.name, bg.source);
+  const backgroundSkills = grantedSkillKeys(compendium, bg, activeBooks);
   if (backgroundSkills.size === 0) return character;
 
   const pickedInChoices = new Set(

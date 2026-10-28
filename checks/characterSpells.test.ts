@@ -1,6 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { makeChar, inMemoryCompendium } from "./testUtils.ts";
+import { makeChar, inMemoryCompendium, resetTestCompendium } from "./testUtils.ts";
+import { revertToSrd } from "../src/services/compendium.ts";
 import { getClassSpellProfiles } from "../src/rules/spellcasting.ts";
 import {
   getSpellSlotLedger,
@@ -66,6 +67,26 @@ test("getSpellSlotLedger computes standard slots, pact slots, and sorcery points
   assert.equal(ledger.sorceryPoints.max, 2);
   assert.equal(ledger.sorceryPoints.used, 1);
   assert.equal(ledger.sorceryPoints.remaining, 1);
+});
+
+test("getSpellSlotLedger lists an Artificer's slots alone and pooled with a Wizard", () => {
+  // The ledger reads the process-wide Compendium, so the integrated test catalog is put in place for this test only.
+  resetTestCompendium();
+  try {
+    const lone = (level: number) => getSpellSlotLedger(makeChar({ classes: [{ className: "Artificer", source: "TCE", level }] }));
+    assert.deepEqual(lone(1).standardSlots.map((s) => [s.level, s.total]), [[1, 2]]);
+    assert.deepEqual(lone(5).standardSlots.map((s) => [s.level, s.total]), [[1, 4], [2, 2]]);
+
+    const pooled = getSpellSlotLedger(makeChar({
+      classes: [
+        { className: "Wizard", source: "PHB", level: 3 },
+        { className: "Artificer", source: "TCE", level: 3 },
+      ],
+    }));
+    assert.deepEqual(pooled.standardSlots.map((s) => [s.level, s.total]), [[1, 4], [2, 3], [3, 2]]);
+  } finally {
+    revertToSrd();
+  }
 });
 
 test("toggleSpellSlot updates used count incrementally and resets on earlier slot taps", () => {

@@ -11,7 +11,7 @@ import {
   withSpellChoiceFixtures,
 } from "./testUtils.ts";
 import { cantripCatalogSpells, choiceCatalogBundle, choiceCatalogClasses } from "./choiceCatalogFixture.ts";
-import type { SubclassAdditionalSpells } from "../src/types/dnd5e.ts";
+import type { AdditionalSpells } from "../src/types/dnd5e.ts";
 import { liftSpellChoice } from "../dnd5eToolsScrap/src/parser/spell-choice.ts";
 import { infusionCatalog } from "./infusionFixture.ts";
 import {
@@ -314,7 +314,7 @@ const druidOnLand = () =>
  * The fixture bundle with the spell data of one class's subclasses replaced. Each subclass keeps the
  * given additional spells and loses its spell choice, as a catalog synced before lifting holds it.
  */
-function bundleWithSpellData(className: string, additionalSpells: SubclassAdditionalSpells[] | undefined) {
+function bundleWithSpellData(className: string, additionalSpells: AdditionalSpells[] | undefined) {
   const bundle = choiceCatalogBundle();
   return {
     ...bundle,
@@ -426,7 +426,7 @@ const cantripCatalog = () => createCompendium(choiceCatalogBundle({ spells: cant
  * The cantrip fixture catalog with one domain's additional spells replaced. Its spell choice is
  * lifted from them, as the scraper lifts it, so the catalog holds what a fresh sync would.
  */
-function catalogWithDomain(subclassName: string, additionalSpells: SubclassAdditionalSpells[] | undefined): Compendium {
+function catalogWithDomain(subclassName: string, additionalSpells: AdditionalSpells[] | undefined): Compendium {
   const bundle = choiceCatalogBundle({ spells: cantripCatalogSpells() });
   return createCompendium({
     ...bundle,
@@ -448,7 +448,7 @@ function catalogWithDomain(subclassName: string, additionalSpells: SubclassAddit
 const cantripRow = (subclassName: string, id: string, compendium: Compendium, books?: string[]) =>
   subclassRuleChoices(clericIn(subclassName), books, compendium).find((c) => c.id === id);
 
-const knownFilter = (choose: string, count?: number): SubclassAdditionalSpells[] => [
+const knownFilter = (choose: string, count?: number): AdditionalSpells[] => [
   { known: { "1": { _: [count === undefined ? { choose } : { choose, count }] } } },
 ];
 

@@ -1,6 +1,7 @@
 import type { Character, AsiSelection, AbilityKey } from "../types/character.ts";
 import { asiLevels } from "./classData.ts";
 import { reconcile } from "./characterReconciler.ts";
+import { releaseExpandedOnlySpells } from "./backgroundSpells.ts";
 import { currentCompendium, type Compendium } from "../services/compendium.ts";
 
 export { asiLevels } from "./classData.ts";
@@ -195,7 +196,8 @@ export function getPendingLevelChoices(
 export function applyAsiSelection(
   character: Character,
   selection: AsiSelection,
-  compendium: Compendium = currentCompendium()
+  compendium: Compendium = currentCompendium(),
+  activeBooks?: string[]
 ): Character {
   const targetClass =
     selection.className ??
@@ -230,12 +232,12 @@ export function applyAsiSelection(
     selections.push(normalizedSelection);
   }
 
-  return reconcile(
-    {
-      ...character,
-      asiSelections: selections,
-    },
-    compendium
+  // A feat this replaces releases the spells only its expanded list gave, with a notice (ADR 0017).
+  return releaseExpandedOnlySpells(
+    character,
+    reconcile({ ...character, asiSelections: selections }, compendium, { activeBooks }),
+    compendium,
+    activeBooks
   );
 }
 
@@ -247,7 +249,8 @@ export function removeAsiSelection(
   character: Character,
   className: string,
   classLevel: number,
-  compendium: Compendium = currentCompendium()
+  compendium: Compendium = currentCompendium(),
+  activeBooks?: string[]
 ): Character {
   const selections = character.asiSelections ?? [];
   const filtered = selections.filter((s) => {
@@ -267,5 +270,6 @@ export function removeAsiSelection(
     asiSelections: filtered,
   };
 
-  return reconcile(updatedChar, compendium);
+  // A feat removed releases the spells only its expanded list gave, with a notice (ADR 0017).
+  return releaseExpandedOnlySpells(character, reconcile(updatedChar, compendium, { activeBooks }), compendium, activeBooks);
 }

@@ -22,8 +22,13 @@ import type {
  * Format 7 adds the expertise marks on skill grants, which a catalog saved at format 6 does not carry.
  * Format 8 adds Initiative Bonuses on class and subclass features, feats and ancestry traits, which a catalog saved at
  * format 7 does not carry.
+ * Format 9 adds the spell grants of feats, races and subraces (with the gate on a subrace's grant) and the expanded spell lists
+ * of backgrounds (ADR 0017), which a catalog saved at format 8 does not carry.
+ * Format 10 adds the Drow Descent's spell gate and the corrected spell grants of two races, which a catalog saved at format 9
+ * does not carry.
+ * Format 11 adds the reviewed notes on a race's spell grants, which a catalog saved at format 10 does not carry.
  */
-export const REQUIRED_CATALOG_FORMAT = 8;
+export const REQUIRED_CATALOG_FORMAT = 11;
 
 /** True for an Integrated Catalog saved below the required format (or with none). The SRD Baseline is never stale. */
 export function isCatalogStale(collections: Pick<CompendiumCollections, "hasIntegratedCatalog" | "catalogFormat">): boolean {

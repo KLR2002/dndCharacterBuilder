@@ -10,6 +10,7 @@ import type {
   BeastData,
 } from "../types/dnd5e.ts";
 import { currentCompendium } from "./compendium.ts";
+import type { HeldRace } from "../rules/raceLookup.ts";
 
 // Read facade over the Compendium owner in ./compendium.ts. Use `integrate` and `revertToSrd` from
 // that module to change the active catalog, and take a Compendium (currentCompendium()) in new code.
@@ -54,8 +55,8 @@ export function getOptionsAndFeatures(activeBooks?: string[]): OptionFeatureData
   return currentCompendium().for(activeBooks).optionsAndFeatures();
 }
 
-export function findRace(name: string, source?: string): RaceData | undefined {
-  return currentCompendium().findRace(name, source);
+export function findRace(held: HeldRace, activeBooks?: readonly string[]): RaceData | undefined {
+  return currentCompendium().findRace(held, activeBooks);
 }
 
 export function findClass(name: string, source?: string): ClassData | undefined {

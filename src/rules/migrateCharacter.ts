@@ -1,11 +1,45 @@
-import type { Character, KnownSpell, SkillChoiceEntry } from "../types/character.ts";
+import type { AsiSelection, Character, KnownSpell, SkillChoiceEntry } from "../types/character.ts";
 import type { ClassData, RaceData } from "../types/dnd5e.ts";
 import { spellAbilityOf } from "./classData.ts";
 import { totalLevel } from "./proficiencies.ts";
 import { availableRuleChoices } from "./ruleChoices.ts";
+import { migrateLegacyRacialCantrip, moveLegacyRacePickIds } from "./choices/featSpells.ts";
+import { heldRaceListed } from "./raceLookup.ts";
+import { BACKGROUND_FEAT_SOURCE, UNKNOWN_OWNER_KEY } from "../constants/rules.ts";
+
+const ANCESTRY_CHOICE_NOTICE = "Your ancestry has a choice to make in the Builder.";
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return value !== null && typeof value === "object" && !Array.isArray(value);
+}
+
+/**
+ * One entry per feat name. A save made before a feat was held once can carry the race's copy and the background's; the
+ * background's is kept because the builder cannot remove it. A feat's picks and counters are keyed by the feat, so they
+ * stay with the kept entry. The ability increase is taken from the dropped entry when the kept one has none, so the
+ * scores lose only the double count.
+ */
+function oneEntryPerFeat(entries: AsiSelection[]): AsiSelection[] {
+  const kept: AsiSelection[] = [];
+  const indexByName = new Map<string, number>();
+  for (const entry of entries) {
+    const name = entry.featName?.toLowerCase();
+    if (!name) {
+      kept.push(entry);
+      continue;
+    }
+    const index = indexByName.get(name);
+    if (index === undefined) {
+      indexByName.set(name, kept.length);
+      kept.push(entry);
+      continue;
+    }
+    const current = kept[index];
+    const preferred = current.featSource !== BACKGROUND_FEAT_SOURCE && entry.featSource === BACKGROUND_FEAT_SOURCE ? entry : current;
+    const dropped = preferred === entry ? current : entry;
+    kept[index] = !preferred.featAbility && dropped.featAbility ? { ...preferred, featAbility: dropped.featAbility } : preferred;
+  }
+  return kept.length === entries.length ? entries : kept;
 }
 
 /**
@@ -15,9 +49,15 @@ function isRecord(value: unknown): value is Record<string, unknown> {
  * supplied it lets the migration notice an ancestry choice that was never
  * recorded, which only the catalog can say is missing. `classCatalog` works the
  * same way for the class that owns a legacy spell list; without it the SRD
- * Baseline's classes stand in.
+ * Baseline's classes stand in. `activeBooks` picks, among the records of the
+ * character's race, the one a legacy racial cantrip is checked against.
  */
-export function migrateCharacter(raw: unknown, raceCatalog?: RaceData[], classCatalog: readonly ClassData[] = []): Character {
+export function migrateCharacter(
+  raw: unknown,
+  raceCatalog?: RaceData[],
+  classCatalog: readonly ClassData[] = [],
+  activeBooks?: readonly string[],
+): Character {
   if (!isRecord(raw) || typeof raw.id !== "string" || typeof raw.name !== "string" ||
       typeof raw.createdAt !== "number" || !Number.isFinite(raw.createdAt)) {
     throw new Error("Invalid character: expected an identified character record");
@@ -51,7 +91,7 @@ export function migrateCharacter(raw: unknown, raceCatalog?: RaceData[], classCa
   // Match the legacy SpellsTab mapping, including its non-PHB class-name entries.
   const owner = classes.find(entry => spellAbilityOf(entry, classCatalog) ||
     ["Artificer", "Arcane Trickster", "Eldritch Knight"].includes(entry.className));
-  const ownerKey = owner ? `${owner.className}__${owner.source}` : "unknown__unknown";
+  const ownerKey = owner ? `${owner.className}__${owner.source}` : UNKNOWN_OWNER_KEY;
   const knownSpells: KnownSpell[] = known.map(spell => ({ ...spell, ownerKey: spell.ownerKey ?? ownerKey }));
   const chosenSkills = c.chosenSkills ?? [];
   if (!chosenSkills.every(skill => typeof skill === "string") || !(c.needsReview ?? []).every(message => typeof message === "string")) {
@@ -71,7 +111,7 @@ export function migrateCharacter(raw: unknown, raceCatalog?: RaceData[], classCa
       const entry: SkillChoiceEntry = { id: `${source.origin}__${source.name}__${source.source}__skills`, origin: source.origin,
         choose: chosenSkills.length, from: [...chosenSkills], picked: [...chosenSkills] };
       skillChoices = [entry];
-    } else needsReview.add("skillChoices: legacy chosenSkills ownership is ambiguous");
+    } else needsReview.add("Some skill picks could not be matched to a class or background. Check them in the Builder.");
   }
   const ruleChoices = c.ruleChoices ?? [];
   // A character saved before Rule Choices existed has no recorded pick for an
@@ -85,14 +125,18 @@ export function migrateCharacter(raw: unknown, raceCatalog?: RaceData[], classCa
     const missing = availableRuleChoices(c, raceCatalog, totalLevel(c)).filter(
       (choice) => !recorded.has(choice.id)
     );
-    if (missing.length > 0) {
-      needsReview.add("ruleChoices: this ancestry offers a choice that was never recorded");
-    }
+    if (missing.length > 0) needsReview.add(ANCESTRY_CHOICE_NOTICE);
+    else needsReview.delete(ANCESTRY_CHOICE_NOTICE);
+  } else if (raceCatalog || !c.race) {
+    // A recorded choice, or no ancestry at all, leaves the notice nothing to ask for.
+    needsReview.delete(ANCESTRY_CHOICE_NOTICE);
   }
 
-  return {
+  const migrated: Character = {
     ...c,
     ...(needsReview.size ? { needsReview: [...needsReview] } : {}),
+    // A save that holds the Custom Lineage race is a Custom Lineage, whether or not its flag was written.
+    customLineage: c.customLineage === true || c.race?.name === "Custom Lineage",
     ruleChoices,
     classes,
     chosenSkills: c.chosenSkills ?? [],
@@ -103,5 +147,13 @@ export function migrateCharacter(raw: unknown, raceCatalog?: RaceData[], classCa
     knownSpells,
     preparedSpells: prepared.map(key => key.split("__").length < 4 ? `${key}__${ownerKey}` : key),
     pactSlotsUsed: c.pactSlotsUsed ?? c.usedPactSlots ?? 0,
+    ...(Array.isArray(c.originFeats) ? { originFeats: oneEntryPerFeat(c.originFeats) } : {}),
   };
+  // The stored list is spread above; when every notice in it was removed, the character holds no list.
+  if (needsReview.size === 0 && c.needsReview?.length) delete migrated.needsReview;
+  // A saved legacy racial cantrip moves to the race's own pick once the catalog says what the race grants. A race the catalog
+  // does not hold is not loaded, so the cantrip is kept as saved, with no notice.
+  const rekeyed = moveLegacyRacePickIds(migrated);
+  return raceCatalog && heldRaceListed(c.race, raceCatalog) ? migrateLegacyRacialCantrip(rekeyed, raceCatalog, activeBooks) : rekeyed;
 }
+

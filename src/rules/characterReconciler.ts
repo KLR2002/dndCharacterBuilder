@@ -2,10 +2,14 @@ import type { Character, KnownSpell } from "../types/character.ts";
 import { currentCompendium, type Compendium } from "../services/compendium.ts";
 import { GIANT_BARBARIAN_OWNER_KEY, GIANT_POWER_CANTRIPS } from "../constants/rules.ts";
 import { pruneInvalidExpertise } from "./expertise.ts";
-import { fightingStyleOwnerOf, pruneInvalidFightingStyles } from "./choices/fightingStyles.ts";
+import { fightingStyleOwnerOf, moveLegacyFightingStyleIds, pruneInvalidFightingStyles } from "./choices/fightingStyles.ts";
 import { maneuverOwnerOf, pruneInvalidManeuvers } from "./choices/maneuvers.ts";
 import { infusionOwnerOf, pruneInvalidInfusions } from "./choices/artificerInfusions.ts";
 import { type ChoiceOwner, GIANT_POWER_CHOICE_ID } from "./choices/types.ts";
+import { pruneInvalidFeatSpellPicks, pruneReleasedFeatCounters } from "./choices/featSpells.ts";
+import { moveLegacyInnateCounters } from "./grantedSpells.ts";
+import { releaseStrandedExpandedSpells } from "./backgroundSpells.ts";
+import { withNotices } from "./needsReview.ts";
 import {
   pruneInvalidInvocations,
   pruneInvalidMysticArcanum,
@@ -38,7 +42,8 @@ import { pruneStartingEquipmentPicks } from "./startingEquipmentPicks.ts";
  *   - Mystic Arcanum runs after those two sync passes. It reads only Warlock level and its own
  *     choices, so it is independent of them, but it keeps the order the former invocation-prune
  *     chain used.
- * Fighting styles run before maneuvers because Superior Technique is gated on a fighting style.
+ * Fighting styles run before maneuvers because Superior Technique is gated on a fighting style. A fighting style pick saved under
+ * an id with another source moves to the id its class now gives first, so the style passes read the current ids.
  * The Giant Power cantrip sync reads only its own choice and the Barbarian's known spells, so
  * its position is free; it sits with the other known-spell syncs.
  * Picks saved under a grant's former id move to the grant's id first, so every later pass reads the current ids.
@@ -60,9 +65,11 @@ export function reconcile(
   compendium: Compendium,
   options: { activeBooks?: string[] } = {},
 ): Character {
+  const classes = compendium.for().classes();
   let updated = pruneStartingEquipmentPicks(character);
 
-  updated = pruneInvalidFightingStyles(updated);
+  updated = moveLegacyFightingStyleIds(updated, classes);
+  updated = pruneInvalidFightingStyles(updated, classes);
   updated = pruneInvalidManeuvers(updated);
   updated = pruneInvalidInvocations(updated, compendium);
   updated = syncWarlockTomeCantrips(updated, compendium);
@@ -72,12 +79,15 @@ export function reconcile(
   updated = pruneInvalidInfusions(updated, compendium);
   updated = moveAliasedProficiencyPicks(updated, compendium);
   updated = moveLegacyClassToolPicks(updated, compendium);
-  updated = moveLegacySourcePicks(updated, compendium);
-  updated = moveLegacySkillPicks(updated, compendium);
-  updated = moveExpertisePicksToGrants(updated, compendium);
+  updated = moveLegacySourcePicks(updated, compendium, options.activeBooks);
+  updated = moveLegacySkillPicks(updated, compendium, options.activeBooks);
+  updated = moveExpertisePicksToGrants(updated, compendium, options.activeBooks);
   updated = dropLegacyMulticlassSkillEntries(updated);
   updated = dropLegacyBackgroundSkills(updated, compendium, options.activeBooks);
-  updated = pruneInvalidProficiencyPicks(updated, compendium);
+  updated = pruneInvalidProficiencyPicks(updated, compendium, options.activeBooks);
+  updated = pruneInvalidFeatSpellPicks(updated, compendium, options.activeBooks);
+  updated = pruneReleasedFeatCounters(updated, compendium, options.activeBooks);
+  updated = moveLegacyInnateCounters(updated, compendium, options.activeBooks);
   updated = pruneInvalidExpertise(updated, { compendium, activeBooks: options.activeBooks });
 
   return updated;
@@ -96,17 +106,8 @@ export function reconcileForActiveBooks(
   compendium: Compendium,
   activeBooks: string[],
 ): Character {
-  const reconciled = reconcile(character, compendium, { activeBooks });
+  const reconciled = releaseStrandedExpandedSpells(reconcile(character, compendium, { activeBooks }), compendium, activeBooks);
   return JSON.stringify(reconciled) === JSON.stringify(character) ? character : reconciled;
-}
-
-/** Appends review notices to `needsReview`, skipping any already present. Unchanged when there are none. */
-function withNotices(character: Character, notices: string[]): Character {
-  if (notices.length === 0) return character;
-  return {
-    ...character,
-    needsReview: Array.from(new Set([...(character.needsReview || []), ...notices])),
-  };
 }
 
 /**
@@ -160,13 +161,14 @@ const SUBCLASS_NO_LONGER_HELD = "subclass no longer held";
  * 2. Clears subclassSpellSwaps when a Sorcerer's Clockwork Soul or Aberrant Mind is torn down
  * 3. Removes old subclass-specific resource counters
  * 4. Removes the Path of the Giant cantrips when a Giant Barbarian's subclass is torn down
- * Every removal appends a review notice.
+ * Every removal appends a review notice. `activeBooks` scopes the reconcile that ends the teardown, as in `reconcile`.
  */
 export function teardownSubclass(
   character: Character,
   className: string,
   previousSubclassName?: string,
-  compendium: Compendium = currentCompendium()
+  compendium: Compendium = currentCompendium(),
+  activeBooks?: string[]
 ): Character {
   const clsLower = className.toLowerCase();
   const prevLower = previousSubclassName?.toLowerCase() ?? "";
@@ -235,5 +237,5 @@ export function teardownSubclass(
     knownSpells: nextKnownSpells,
   };
 
-  return reconcile(withNotices(cleaned, notices), compendium);
+  return reconcile(withNotices(cleaned, notices), compendium, { activeBooks });
 }

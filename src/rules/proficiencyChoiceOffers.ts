@@ -119,7 +119,7 @@ function choiceOfferEntries(character: Character, query: ProficiencyChoiceQuery)
   const active = activeBooks ? new Set(activeBooks.map((book) => book.toUpperCase())) : undefined;
   const listings = catalogListings({ compendium, activeBooks });
   const items = listings.items();
-  const features = featuresOf(character, listings);
+  const features = featuresOf(character, listings, activeBooks);
 
   const offered = features.flatMap((feature) => {
     const origin = ORIGIN_OF[feature.origin];

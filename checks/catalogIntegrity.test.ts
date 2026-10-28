@@ -8,6 +8,7 @@ import {
   DEFAULT_ACTIVE_BOOK_CODES,
 } from "../src/constants/books.ts";
 import { checkActiveBooksIntegrity } from "../src/rules/builderTransitions.ts";
+import { BACKGROUND_FEAT_SOURCE } from "../src/constants/rules.ts";
 import type { SpellData, RaceData, ClassData } from "../src/types/dnd5e.ts";
 
 test("catalog integrity: spells.json conforms to source isolation and variant schema", () => {
@@ -303,6 +304,38 @@ test("books: checkActiveBooksIntegrity warns when character feature is from disa
   assert.ok(
     warningsDisabled.some((w) => w.includes("Gift of the Metallic Dragon") && w.includes("FTD")),
     "Should warn about feat from FTD"
+  );
+});
+
+test("books: a feat a background grants is not from a disabled sourcebook, while a feat of a disabled book still is", () => {
+  const backgroundFeat = makeChar({
+    originFeats: [{ level: 1, type: "feat", featName: "Sample Feat", featSource: BACKGROUND_FEAT_SOURCE }],
+  });
+  assert.deepEqual(checkActiveBooksIntegrity(backgroundFeat, ["PHB"]), []);
+
+  const bookFeat = makeChar({
+    originFeats: [{ level: 1, type: "feat", featName: "Sample Feat", featSource: "TST" }],
+  });
+  assert.ok(
+    checkActiveBooksIntegrity(bookFeat, ["PHB"]).some((w) => w.includes("Sample Feat") && w.includes("TST")),
+    "a feat of a disabled book still warns"
+  );
+});
+
+test("books: SRD records are never warned under DEFAULT_ACTIVE_BOOK_CODES, while a disabled book still warns", () => {
+  const srdHero = makeChar({
+    race: { name: "Dwarf", source: "SRD" },
+    classes: [{ className: "Barbarian", source: "SRD", level: 3 }],
+    background: { name: "Acolyte", source: "SRD" },
+    originFeats: [{ level: 1, type: "feat", featName: "Grappler", featSource: "SRD" }],
+    knownSpells: [{ name: "Detect Magic", source: "SRD", ownerKey: "Cleric__SRD" }],
+  });
+  assert.deepEqual(checkActiveBooksIntegrity(srdHero, DEFAULT_ACTIVE_BOOK_CODES), []);
+
+  const disabledRace = makeChar({ race: { name: "Sample Folk", source: "MM" } });
+  assert.ok(
+    checkActiveBooksIntegrity(disabledRace, DEFAULT_ACTIVE_BOOK_CODES).some((w) => w.includes("Sample Folk") && w.includes("MM")),
+    "a race of a book that is switched off still warns"
   );
 });
 

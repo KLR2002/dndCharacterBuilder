@@ -6,9 +6,13 @@ import * as storage from "../src/services/storage.ts";
 const { transpileModule, ModuleKind, JsxEmit } = createRequire(import.meta.url)("typescript");
 import assert from "node:assert/strict";
 import { inMemoryCompendium, loadTestCatalog, makeChar } from "./testUtils.ts";
-import type { BackgroundData, ClassData } from "../src/types/dnd5e.ts";
+import type { AdditionalSpells, BackgroundData, ClassData, FeatData, RaceData } from "../src/types/dnd5e.ts";
 import type { Character } from "../src/types/character.ts";
+import type { Compendium } from "../src/services/compendium.ts";
 import { migrateCharacter } from "../src/rules/migrateCharacter.ts";
+import { featSpellRuleChoices } from "../src/rules/choices/featSpells.ts";
+import { pickRuleChoice } from "../src/rules/ruleChoices.ts";
+import { grantedSpellClasses, grantedSpellFeats, grantedSpellSpells } from "./grantedSpellsFixture.ts";
 import { reconcileForActiveBooks } from "../src/rules/characterReconciler.ts";
 import { applyCharacterUpdate } from "../src/context/characterUpdates.ts";
 import { __setKvForTests, loadCharacters, saveCharacters } from "../src/services/storage.ts";
@@ -21,6 +25,7 @@ async function providerHarness(initial: unknown = [makeChar()], options: {
   loadAll?: typeof storage.loadAll;
   waitForInit?: boolean;
   races?: any[];
+  classes?: any[];
   compendium?: any;
   /** The Compendium the app reads as current (for the open-character reconcile). Defaults to a stub. */
   catalog?: any;
@@ -84,7 +89,7 @@ async function providerHarness(initial: unknown = [makeChar()], options: {
     if (name.includes("characterReconciler")) return { reconcileForActiveBooks };
     if (name.includes("dataService")) return {
       getRaces: () => options.races ?? [],
-      getClasses: () => [],
+      getClasses: () => options.classes ?? [],
     };
     if (name.endsWith("services/compendium")) return {
       integrate: (bundle: any) => { integrated = bundle; },
@@ -441,7 +446,7 @@ test("ambiguous legacy skills are preserved and flagged, not assigned an invente
     const migrated = migrateCharacter({ ...makeChar(), ...source, chosenSkills: ["Arcana"], needsReview: ["existing warning"] });
     assert.deepEqual(migrated.chosenSkills, ["Arcana"]);
     assert.deepEqual(migrated.skillChoices, []);
-    assert.ok(migrated.needsReview?.includes("skillChoices: legacy chosenSkills ownership is ambiguous"));
+    assert.ok(migrated.needsReview?.includes("Some skill picks could not be matched to a class or background. Check them in the Builder."));
     assert.ok(migrated.needsReview?.includes("existing warning"));
     assert.deepEqual(migrateCharacter(migrated), migrated);
   }
@@ -544,4 +549,78 @@ test("changing the active books reconciles only the open character; a restored b
   await settle(h);
   assert.deepEqual(h.value.characters[0].chosenExpertise, ["Stealth"], "re-enabling the book does not restore the mark");
   assert.deepEqual(h.value.characters[1].chosenExpertise, ["Stealth"], "re-enabling the book does not restore the mark");
+});
+
+// --- The books the app opens with decide the records the load and the open character read (CharacterContext) ---
+
+const SETTINGS_ALT_ONLY = { schemaVersion: 2, hasCompletedFirstRun: true, activeResourceBooks: ["ALT"] };
+const SETTINGS_TST_ONLY = { schemaVersion: 2, hasCompletedFirstRun: true, activeResourceBooks: ["TST"] };
+
+const giftedRace = (source: string, additionalSpells?: AdditionalSpells[]): RaceData => ({
+  name: "Sample Gifted",
+  source,
+  size: ["Medium"],
+  speed: { walk: 30 },
+  abilityScoreIncrease: [],
+  darkvision: null,
+  traits: [],
+  languages: ["Common"],
+  subraces: [],
+  description: "Placeholder description for the race.",
+  ...(additionalSpells ? { additionalSpells } : {}),
+});
+
+test("the books the app opens with decide the record a legacy racial cantrip is checked against, on load", { timeout: 3000 }, async () => {
+  const cantrip: AdditionalSpells[] = [{ ability: "int", known: { "1": { _: [{ choose: "level=0|class=Sample Mage" }] } } }];
+  const saved = makeChar({
+    classes: [{ className: "Wizard", source: "PHB", level: 1 }],
+    race: { name: "Sample Gifted", source: "OLD" },
+    ruleChoices: [
+      { id: "PHB__Elf__PHB__High Elf__Cantrip", trait: "Cantrip", origin: "race", choose: 1, from: ["Sample Shot"], picked: ["Sample Shot"] },
+    ],
+  });
+  const h = await providerHarness([saved], {
+    settings: SETTINGS_ALT_ONLY,
+    races: [giftedRace("TST", cantrip), giftedRace("ALT")],
+    classes,
+  });
+  const loaded: Character = h.value.characters[0];
+  assert.equal(loaded.ruleChoices?.some((entry) => entry.picked.includes("Sample Shot")), false, "the active book's record grants no cantrip, so none is kept");
+  assert.ok(loaded.needsReview?.some((notice) => notice.startsWith("Sample Shot removed")), "the cantrip is released with a notice");
+});
+
+/** The character with Sample Ember picked from Sample Initiate's Mage list, with the books given on. */
+function pickEmberFromInitiate(character: Character, compendium: Compendium, books: string[]): Character {
+  const offer = (current: Character, option: string): Character => {
+    const choice = featSpellRuleChoices(current, compendium, books).find((candidate) => candidate.options.some((o) => o.name === option));
+    assert.ok(choice, `${option} is offered by the origin feat`);
+    return pickRuleChoice(current, choice, option, compendium, books);
+  };
+  return offer(offer(character, "Sample Mage Spells"), "Sample Ember");
+}
+
+test("opening a character whose switched-off book held a feat's spell pick releases the pick, with a notice, through the provider", { timeout: 3000 }, async () => {
+  const initiate: FeatData = { ...(grantedSpellFeats().find((feat) => feat.name === "Sample Initiate") as FeatData), source: "ALT" };
+  const compendium = inMemoryCompendium({ classes: grantedSpellClasses(), spells: grantedSpellSpells(), feats: [initiate] }, { integrated: true });
+  const saved = pickEmberFromInitiate(
+    makeChar({
+      classes: [{ className: "Sample Mage", source: "TST", level: 4 }],
+      originFeats: [{ level: 1, type: "feat", featName: "Sample Initiate", featSource: "ALT" }],
+    }),
+    compendium,
+    ["TST", "ALT"],
+  );
+  const h = await providerHarness([saved], { settings: SETTINGS_TST_ONLY, catalog: compendium });
+  const stored: Character = h.value.characters[0];
+  assert.ok(stored.ruleChoices?.some((entry) => entry.picked.includes("Sample Ember")), "saved with the pick");
+
+  h.value.selectCharacter("char_test");
+  h.render();
+  await settle(h);
+  const opened: Character = h.value.characters[0];
+  assert.equal(opened.ruleChoices?.some((entry) => entry.picked.includes("Sample Ember")), false, "the pick is released on opening");
+  assert.ok(
+    opened.needsReview?.includes("Sample Ember removed from Sample Initiate: book switched off"),
+    `the release is noticed: ${JSON.stringify(opened.needsReview)}`,
+  );
 });

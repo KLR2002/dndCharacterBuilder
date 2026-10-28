@@ -1,4 +1,4 @@
-import type { AbilityKey, AsiSelection, Character, RuleChoiceEntry } from "../types/character.ts";
+import type { AbilityKey, AsiSelection, Character } from "../types/character.ts";
 import type { RaceData, SubraceData } from "../types/dnd5e.ts";
 import {
   offeredRuleChoices,
@@ -6,12 +6,14 @@ import {
   type AvailableRuleChoice,
 } from "./ruleChoices.ts";
 import { catalogListings, type CharacterCatalogs } from "./characterEvaluation.ts";
-import { setChoiceRacialBonus } from "./builderTransitions.ts";
+import { releaseRaceSkillPicks, setChoiceRacialBonus, settleAncestryChange } from "./builderTransitions.ts";
 import { reconcile } from "./characterReconciler.ts";
 import { currentCompendium } from "../services/compendium.ts";
-import { getBackgroundFeatGrant } from "./feats.ts";
-import { normalizeSkillName } from "./skills.ts";
+import { BACKGROUND_FEAT_SOURCE } from "../constants/rules.ts";
+import { isGrantSpellChoiceId } from "./choices/featSpells.ts";
 import { moveLegacySkillPicks } from "./proficiencyPicks.ts";
+import { raceOriginFeatTitle, releaseRaceOriginFeat } from "./feats.ts";
+import { findHeldRace } from "./raceLookup.ts";
 
 export interface AncestryTraitView {
   name: string;
@@ -36,13 +38,9 @@ export interface AncestryState {
   hasOriginFeat: boolean;
   originFeatTitle?: string;
   currentOriginFeat?: AsiSelection;
-  hasRacialCantrip: boolean;
-  racialCantripTitle?: string;
-  currentRacialCantrip?: string;
 }
 
 const CHOICE_ASI_RACES = new Set(["Half-Elf", "Custom Lineage"]);
-export const HIGH_ELF_CANTRIP_CHOICE_ID = "PHB__Elf__PHB__High Elf__Cantrip";
 
 export function collectFixedBonuses(
   raceASI?: Record<string, number>[],
@@ -79,18 +77,7 @@ export function resolveAncestryState(
   catalogs?: CharacterCatalogs
 ): AncestryState {
   const allRaces = catalogListings(catalogs).races();
-  const selectedRace = character.race
-    ? allRaces.find(
-        (r) =>
-          r.name === character.race?.name &&
-          (!character.race.source || r.source === character.race.source)
-      ) || allRaces.find((r) => r.name === character.race?.name)
-    : undefined;
-  const selectedSubrace = selectedRace?.subraces?.find(
-    (sr) =>
-      sr.name === character.race?.subraceName &&
-      (!character.race?.subraceSource || sr.source === character.race.subraceSource)
-  ) || selectedRace?.subraces?.find((sr) => sr.name === character.race?.subraceName);
+  const { race: selectedRace, subrace: selectedSubrace } = findHeldRace(allRaces, character.race, catalogs?.activeBooks);
 
   const fixedBonuses = character.race
     ? collectFixedBonuses(selectedRace?.abilityScoreIncrease, selectedSubrace?.abilityScoreIncrease)
@@ -129,13 +116,8 @@ export function resolveAncestryState(
     };
   });
 
-  // Origin Feat resolution (Variant Human, Custom Lineage)
-  let hasOriginFeat = false;
-  let originFeatTitle: string | undefined;
-  let currentOriginFeat: AsiSelection | undefined;
-
   const lineageRace = character.lineageReplacement
-    ? allRaces.find((r) => r.name === character.lineageReplacement)
+    ? findHeldRace(allRaces, { name: character.lineageReplacement }, catalogs?.activeBooks).race
     : undefined;
 
   const speed =
@@ -162,67 +144,12 @@ export function resolveAncestryState(
         ...(selectedSubrace?.traits ?? []).map((t) => ({ name: t.name, description: t.description, source: selectedSubrace?.source })),
       ];
 
-  if (character.race) {
-    if (character.race.name === "Custom Lineage") {
-      hasOriginFeat = true;
-      originFeatTitle = "Custom Lineage Feat";
-    } else if (character.race.subraceName === "Variant" || character.race.name === "Variant Human") {
-      hasOriginFeat = true;
-      originFeatTitle = "Variant Human Origin Feat";
-    }
-
-    if (hasOriginFeat) {
-      const bgGrant = character.background ? getBackgroundFeatGrant(character.background.name) : null;
-      currentOriginFeat = (character.originFeats || []).find(
-        (f) => !bgGrant || f.featName?.toLowerCase() !== bgGrant.featName.toLowerCase()
-      );
-    }
-  }
-
-  // Racial Cantrip resolution (High Elf, Half-Elf High descent)
-  let hasRacialCantrip = false;
-  let racialCantripTitle: string | undefined;
-  let currentRacialCantrip: string | undefined;
-
-  if (character.race) {
-    const raceLower = character.race.name.toLowerCase();
-    const subraceLower = (character.race.subraceName || "").toLowerCase();
-
-    const isElfHigh =
-      raceLower === "elf" &&
-      (subraceLower === "high" ||
-        subraceLower === "high elf" ||
-        subraceLower.includes("high") ||
-        subraceLower.includes("sun") ||
-        subraceLower.includes("moon"));
-
-    const isHalfElfHigh =
-      raceLower.includes("half-elf") &&
-      (subraceLower.includes("high") || subraceLower.includes("sun") || subraceLower.includes("moon"));
-
-    const halfElfHasCantrip =
-      isHalfElfHigh &&
-      Boolean(
-        character.ruleChoices?.some(
-          (r) => r.from?.includes("Cantrip") && r.picked?.includes("Cantrip")
-        )
-      );
-
-    if (isElfHigh) {
-      hasRacialCantrip = true;
-      racialCantripTitle = "High Elf Cantrip";
-    } else if (halfElfHasCantrip) {
-      hasRacialCantrip = true;
-      racialCantripTitle = "Half-Elf Cantrip";
-    }
-
-    if (hasRacialCantrip) {
-      const highElfPick = character.ruleChoices?.find(
-        (r) => r.id === HIGH_ELF_CANTRIP_CHOICE_ID || r.id.includes("High Elf")
-      )?.picked?.[0];
-      currentRacialCantrip = highElfPick || character.knownSpells?.find((k) => k.ownerKey === "racial__innate")?.name;
-    }
-  }
+  const originFeatTitle = raceOriginFeatTitle(character.race);
+  const hasOriginFeat = originFeatTitle !== undefined;
+  // The feat a background grants carries the Background source, so the origin feat is the one the player chose.
+  const currentOriginFeat: AsiSelection | undefined = hasOriginFeat
+    ? (character.originFeats || []).find((f) => f.featSource !== BACKGROUND_FEAT_SOURCE)
+    : undefined;
 
   return {
     selectedRace,
@@ -241,9 +168,6 @@ export function resolveAncestryState(
     hasOriginFeat,
     originFeatTitle,
     currentOriginFeat,
-    hasRacialCantrip,
-    racialCantripTitle,
-    currentRacialCantrip,
   };
 }
 
@@ -269,27 +193,31 @@ export function applyAncestrySelection(
   const nextChosenTools = { ...character.chosenTools, race: [] };
 
   const compendium = catalogs?.compendium ?? currentCompendium();
+  const activeBooks = catalogs?.activeBooks;
+  // The Custom Lineage record sets the custom flag, so the race picker reaches the state the lineage control does. The origin
+  // feat of the race held is released first, while that race is still held.
+  const isCustom = race.name === "Custom Lineage";
+  const leaving = releaseRaceOriginFeat(character, { name: race.name, subraceName: subrace?.name }, compendium, activeBooks);
   // A skill pick saved in the old bucket moves into its choice while the old race is still held; a pick no choice
-  // takes is the old race's legacy entry, and it goes with the race.
-  const migrated = moveLegacySkillPicks(character, compendium);
-  const oldRaceChoices = (migrated.skillChoices || []).filter((sc) => sc.origin === "race");
-  const oldRacePicks = new Set(oldRaceChoices.flatMap((sc) => sc.picked.map(normalizeSkillName)));
-  const nextSkillChoices = (migrated.skillChoices || []).filter((sc) => sc.origin !== "race");
-  const nextChosenSkills = (migrated.chosenSkills || []).filter((s) => !oldRacePicks.has(normalizeSkillName(s)));
+  // takes is the old race's legacy entry, and it goes with the race. A subrace change within the same race keeps them.
+  const migrated = moveLegacySkillPicks(leaving, compendium, activeBooks);
+  const skilled = character.race?.name === race.name ? migrated : releaseRaceSkillPicks(migrated);
 
+  // A race's pick of spells is kept here: the reconciler releases it, with a notice, once the race no longer grants it.
+  // The Custom Lineage record takes the place of a held lineage, which is given up with its picks, as changeLineage does.
   const cleaned: Character = {
-    ...migrated,
+    ...skilled,
     race: updatedRace,
+    customLineage: isCustom,
+    lineageReplacement: isCustom ? null : character.lineageReplacement,
     racialAbilityBonuses: bonuses,
     racialChoiceBonus: [],
     chosenLanguages: nextChosenLanguages,
     chosenTools: nextChosenTools,
-    ruleChoices: (character.ruleChoices || []).filter((rc) => rc.origin !== "race"),
-    skillChoices: nextSkillChoices,
-    chosenSkills: nextChosenSkills,
+    ruleChoices: (leaving.ruleChoices || []).filter((rc) => rc.origin !== "race" || isGrantSpellChoiceId(rc.id)),
   };
 
-  return reconcile(cleaned, compendium);
+  return settleAncestryChange(leaving, cleaned, compendium, activeBooks);
 }
 
 export function applyAncestryChoice(
@@ -307,72 +235,15 @@ export function applyAncestryChoice(
   const choice = choices.find((c) => c.id === choiceId);
   if (!choice) return character;
 
-  const updated = pickRuleChoice(character, choice, option, catalogs?.compendium);
-
-  // Cascading invalidation: if this choice has a "Cantrip" option, and "Cantrip" is NOT picked in updated state
-  // (either because user picked another option OR toggled Cantrip off), purge any cantrip choice!
-  const hasCantripOption = choice.options.some((o) => o.name === "Cantrip");
-  const isCantripStillPicked = (updated.ruleChoices || [])
-    .find((rc) => rc.id === choice.id)
-    ?.picked.includes("Cantrip");
-
-  if (hasCantripOption && !isCantripStillPicked) {
-    return {
-      ...updated,
-      ruleChoices: (updated.ruleChoices || []).filter(
-        (rc) => rc.id !== HIGH_ELF_CANTRIP_CHOICE_ID && !rc.id.includes("High Elf")
-      ),
-    };
-  }
-
-  return updated;
+  return pickRuleChoice(character, choice, option, catalogs?.compendium, catalogs?.activeBooks);
 }
 
-export function clearAncestryChoice(
-  character: Character,
-  choiceId: string
-): Character {
-  return {
+export function clearAncestryChoice(character: Character, choiceId: string, catalogs?: CharacterCatalogs): Character {
+  const cleared: Character = {
     ...character,
-    ruleChoices: (character.ruleChoices || []).filter(
-      (rc) => rc.id !== choiceId && (rc.id !== HIGH_ELF_CANTRIP_CHOICE_ID && !rc.id.includes("High Elf"))
-    ),
+    ruleChoices: (character.ruleChoices || []).filter((rc) => rc.id !== choiceId),
   };
-}
-
-export function setRacialCantrip(
-  character: Character,
-  cantripName: string | null
-): Character {
-  if (!cantripName) {
-    return {
-      ...character,
-      ruleChoices: (character.ruleChoices || []).filter(
-        (rc) => rc.id !== HIGH_ELF_CANTRIP_CHOICE_ID && !rc.id.includes("High Elf")
-      ),
-      knownSpells: (character.knownSpells || []).filter(
-        (k) => k.ownerKey !== "racial__innate"
-      ),
-    };
-  }
-
-  const existingChoices = (character.ruleChoices || []).filter(
-    (rc) => rc.id !== HIGH_ELF_CANTRIP_CHOICE_ID && !rc.id.includes("High Elf")
-  );
-
-  const cantripEntry: RuleChoiceEntry = {
-    id: HIGH_ELF_CANTRIP_CHOICE_ID,
-    trait: "Cantrip",
-    origin: "race",
-    choose: 1,
-    from: [cantripName],
-    picked: [cantripName],
-  };
-
-  return {
-    ...character,
-    ruleChoices: [...existingChoices, cantripEntry],
-  };
+  return reconcile(cleared, catalogs?.compendium ?? currentCompendium(), { activeBooks: catalogs?.activeBooks });
 }
 
 export function setAncestryChoiceASI(

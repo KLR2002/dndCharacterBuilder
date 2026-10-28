@@ -1,5 +1,6 @@
 import type { GrantSubject } from "../parser/proficiency-grants.ts";
 import type { InitiativeBonus, ProficiencyGrant } from "../types/proficiency.ts";
+import type { AdditionalSpells } from "../types/models.ts";
 
 /** The fields the enrichment tooling writes on a tracked feature or feat: its Proficiency Grants and Initiative Bonus. */
 export interface GrantHolder {
@@ -41,6 +42,8 @@ export interface TrackedFeat extends GrantHolder {
   name: string;
   source: string;
   description: string;
+  /** The spells the feat grants, from the raw feats file (ADR 0017). Absent when it grants none. */
+  additionalSpells?: AdditionalSpells[];
 }
 
 /** A tracked race or subrace trait. Only its Initiative Bonus is written by the enrichment tooling (ADR 0016). */
@@ -54,6 +57,8 @@ export interface TrackedSubrace {
   name: string;
   source: string;
   traits: TrackedTrait[];
+  /** The spells the subrace grants, from the raw races file (ADR 0017). Absent when it grants none. */
+  additionalSpells?: AdditionalSpells[];
 }
 
 export interface TrackedRace {
@@ -61,6 +66,8 @@ export interface TrackedRace {
   source: string;
   traits: TrackedTrait[];
   subraces: TrackedSubrace[];
+  /** The spells the race grants, from the raw races file (ADR 0017). Absent when it grants none. */
+  additionalSpells?: AdditionalSpells[];
 }
 
 /** An Options and Features record outside the classes, such as a maneuver. Only the live catalog carries these; the tracked files do not. */
@@ -75,8 +82,18 @@ export interface TrackedData {
   feats: TrackedFeat[];
   /** The tracked races. Absent when the caller enriches only classes and feats. */
   races?: TrackedRace[];
+  /** The tracked backgrounds. Absent when the caller enriches only classes and feats. */
+  backgrounds?: TrackedBackground[];
   /** The Options and Features records. Absent unless the caller reads the live catalog. */
   optionsAndFeatures?: TrackedOptionRecord[];
+}
+
+/** One tracked background. Only its expanded spell lists are written by the enrichment tooling (ADR 0017). */
+export interface TrackedBackground {
+  name: string;
+  source: string;
+  /** The expanded spell lists the background adds to a class's list, from the raw backgrounds file. Absent when none. */
+  additionalSpells?: AdditionalSpells[];
 }
 
 /**

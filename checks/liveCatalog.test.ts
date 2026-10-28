@@ -1,22 +1,33 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { existsSync, readFileSync } from "node:fs";
-import type { Character } from "../src/types/character.ts";
-import type { ClassData, ProficiencyGrant, SubclassData } from "../src/types/dnd5e.ts";
+import type { AbilityKey, Character, RuleChoiceEntry } from "../src/types/character.ts";
+import type { AdditionalSpells, ClassData, FeatData, ProficiencyGrant, SpellData, SubclassData } from "../src/types/dnd5e.ts";
 import { createCompendium, type Compendium } from "../src/services/compendium.ts";
 import { isCatalogStale, REQUIRED_CATALOG_FORMAT, type CompendiumCollections } from "../src/services/compendiumStorage.ts";
 import { proficiencyChoiceOffers } from "../src/rules/proficiencyChoiceOffers.ts";
 import { poolNames, type ChoiceProficiencyGrant } from "../src/rules/proficiencyPools.ts";
-import { pickRuleChoice } from "../src/rules/ruleChoices.ts";
-import { STARTING_EQUIPMENT_TYPES } from "../src/rules/startingEquipmentTypes.ts";
+import { featSpellChoicesOf, featSpellRuleChoices, offeredRuleChoices, pickRuleChoice, raceSpellRuleChoices, ruleChoiceId } from "../src/rules/ruleChoices.ts";
+import { resolveAncestryState } from "../src/rules/ancestryEngine.ts";
+import { grantedFeatures } from "../src/rules/grantedFeatures.ts";
+import { proficiencySheet } from "../src/rules/proficiencySheet.ts";
+import { DEFAULT_ACTIVE_BOOK_CODES } from "../src/constants/books.ts";
+import type { InnateSpellEntry, InnateSpellProfile } from "../src/rules/innateMagic.ts";
+import { parseSpellFilter, pruneInvalidFeatSpellPicks } from "../src/rules/choices/featSpells.ts";import { STARTING_EQUIPMENT_TYPES } from "../src/rules/startingEquipmentTypes.ts";
 import { reconcile } from "../src/rules/characterReconciler.ts";
 import type { AvailableRuleChoice } from "../src/rules/choices/types.ts";
-import { makeChar } from "./testUtils.ts";
+import { makeChar, srdBaselineCompendium } from "./testUtils.ts";
 import { evaluateCharacter } from "../src/rules/characterEvaluation.ts";
+import { isSpellAvailableForClass, profileSpellContext } from "../src/rules/spellcasting.ts";
+import { resolveSpellName } from "../src/rules/subclassSpells.ts";
+import { removeAsiSelection } from "../src/rules/leveling.ts";
 import { initiativeCoverageGaps } from "../dnd5eToolsScrap/src/grants/initiative-coverage.ts";
 import { gapName } from "../dnd5eToolsScrap/src/grants/coverage.ts";
 import type { TrackedData } from "../dnd5eToolsScrap/src/grants/subjects.ts";
 import { REVIEWED_NO_INITIATIVE_BONUS, REVIEWED_NO_INITIATIVE_BONUS_LIVE_ONLY } from "../dnd5eToolsScrap/src/overrides/initiative-bonuses.ts";
+import { spellCoverageGaps } from "../dnd5eToolsScrap/src/grants/spell-coverage.ts";
+import { readsSpellGrants } from "../dnd5eToolsScrap/src/parser/spell-grant-prose.ts";
+import { REVIEWED_NO_SPELL_GRANTS, REVIEWED_NO_SPELL_GRANTS_LIVE_ONLY } from "../dnd5eToolsScrap/src/overrides/granted-spells.ts";
 
 // Checks against the Integrated Catalog the in-app sync builds, read from the cache that
 // `npm run catalog:live` writes. Without the cache every test here is skipped. The live check runs only
@@ -398,4 +409,1084 @@ test("live catalog: every feature whose prose adds to initiative has an Initiati
     [],
     "features whose prose adds to initiative, with no Initiative Bonus and no reviewed mark, in the live catalog"
   );
+});
+
+// Granted spells (ADR 0017): the feats' spell grants are carried by the catalog the in-app sync builds, and the engine reads them.
+
+/** Every spell name a feat's grants name, in any group (known, innate at-will, daily, per rest). */
+function grantedSpellNames(feat: Pick<FeatData, "additionalSpells">): string[] {
+  const namesIn = (value: unknown): string[] => {
+    if (typeof value === "string") return [value];
+    if (Array.isArray(value)) return value.flatMap(namesIn);
+    if (value && typeof value === "object") return Object.values(value).flatMap(namesIn);
+    return [];
+  };
+  return (feat.additionalSpells ?? []).flatMap((grant) =>
+    Object.entries(grant)
+      .filter(([key]) => key !== "ability" && key !== "name")
+      .flatMap(([, group]) => namesIn(group)),
+  );
+}
+
+test("live catalog: Telekinetic carries Mage Hand, and Telepathic carries Detect Thoughts", { skip: SKIP }, () => {
+  const telekinetic = live!.collections.feats.find((feat) => feat.name === "Telekinetic" && feat.source === "TCE");
+  const telepathic = live!.collections.feats.find((feat) => feat.name === "Telepathic" && feat.source === "TCE");
+  assert.ok(telekinetic, "no Telekinetic feat in the catalog");
+  assert.ok(telepathic, "no Telepathic feat in the catalog");
+  assert.ok(grantedSpellNames(telekinetic).includes("mage hand"), `Telekinetic grants: ${JSON.stringify(telekinetic.additionalSpells)}`);
+  assert.ok(grantedSpellNames(telepathic).includes("detect thoughts"), `Telepathic grants: ${JSON.stringify(telepathic.additionalSpells)}`);
+});
+
+test("live catalog: a Wizard with Telekinetic (INT) has Mage Hand at will, and with Telepathic has Detect Thoughts once per Long Rest", { skip: SKIP }, () => {
+  const wizard = live!.compendium.for().classes().find((cls) => cls.name === "Wizard");
+  assert.ok(wizard, "no Wizard class in the catalog");
+  const character = makeChar({
+    classes: [{ className: wizard.name, source: wizard.source, level: 5 }],
+    baseAbilityScores: { str: 10, dex: 10, con: 10, int: 16, wis: 10, cha: 10 },
+    asiSelections: [
+      { level: 4, type: "feat", featName: "Telekinetic", featSource: "TCE", featAbility: "int" },
+      { level: 4, type: "feat", featName: "Telepathic", featSource: "TCE", featAbility: "cha" },
+    ],
+  });
+  const evaluated = evaluateCharacter(character, { compendium: live!.compendium });
+  const telekinetic = evaluated.grantedSpellSources.find((source) => source.title === "Telekinetic");
+  const telepathic = evaluated.grantedSpellSources.find((source) => source.title === "Telepathic");
+  const mageHand = telekinetic?.spells.find((spell) => spell.name === "Mage Hand");
+  const detectThoughts = telepathic?.spells.find((spell) => spell.name === "Detect Thoughts");
+  assert.equal(mageHand?.resourceCounterId, undefined, "Mage Hand is at will");
+  assert.ok(detectThoughts?.resourceCounterId, "Detect Thoughts has a Long Rest counter");
+  assert.equal(telekinetic?.ability, "int");
+  assert.equal(telekinetic?.spellSaveDc, 8 + 3 + 3, "level 5 (+3) and INT 16 raised to 17 (+3)");
+});
+
+/** Every `choose` filter string a feat's known and innate groups carry: the groups the reader reads. */
+function chooseFiltersOf(feat: Pick<FeatData, "additionalSpells">): string[] {
+  const found: string[] = [];
+  const walk = (value: unknown) => {
+    if (Array.isArray(value)) value.forEach(walk);
+    else if (value && typeof value === "object") {
+      const choose = (value as { choose?: unknown }).choose;
+      if (typeof choose === "string") found.push(choose);
+      Object.values(value).forEach(walk);
+    }
+  };
+  for (const grant of feat.additionalSpells ?? []) {
+    walk(grant.known);
+    walk(grant.innate);
+  }
+  return found;
+}
+
+test("live catalog: Strixhaven Initiate, Fey Touched, Shadow Touched and Spell Sniper carry grants of the expected shape", { skip: SKIP }, () => {
+  const feat = (name: string): FeatData => {
+    const found = live!.collections.feats.find((candidate) => candidate.name === name);
+    assert.ok(found, `no ${name} feat in the catalog`);
+    return found;
+  };
+  const strixhaven = feat("Strixhaven Initiate");
+  const lorehold = strixhaven.additionalSpells?.find((grant) => grant.name === "Lorehold 1");
+  assert.ok(lorehold, `Strixhaven Initiate has no Lorehold 1 entry: ${JSON.stringify(strixhaven.additionalSpells)}`);
+  assert.deepEqual(lorehold.ability, { choose: ["int", "wis", "cha"] }, "the college's entry leaves the ability to the player");
+  assert.ok(chooseFiltersOf(strixhaven).includes("level=1|class=cleric;wizard"), "its first-level pick names two classes");
+
+  const feyTouched = feat("Fey Touched");
+  assert.equal(feyTouched.additionalSpells?.[0]?.ability, "inherit", "Fey Touched takes the ability its increase raised");
+  assert.ok(JSON.stringify(feyTouched.additionalSpells).includes("misty step"), "Fey Touched grants Misty Step");
+  assert.ok(chooseFiltersOf(feyTouched).includes("level=1|school=E;D"), "Fey Touched's pick names two schools");
+
+  const shadowTouched = feat("Shadow Touched");
+  assert.equal(shadowTouched.additionalSpells?.[0]?.ability, "inherit");
+  assert.ok(JSON.stringify(shadowTouched.additionalSpells).includes("invisibility"), "Shadow Touched grants Invisibility");
+  assert.ok(chooseFiltersOf(shadowTouched).includes("level=1|school=I;N"));
+
+  const sniper = feat("Spell Sniper");
+  const wizardList = sniper.additionalSpells?.find((grant) => grant.name === "Wizard Spells");
+  assert.ok(wizardList, `Spell Sniper has no Wizard Spells list: ${JSON.stringify(sniper.additionalSpells)}`);
+  assert.equal(wizardList.ability, "int");
+  assert.ok(chooseFiltersOf(sniper).includes("level=0|class=Wizard|spell attack=m;r;o"), "Spell Sniper's pick names the attack-roll cantrips");
+});
+
+test("live catalog: a Strixhaven college is offered under the cantrips it gives, and its card names the college", { skip: SKIP }, () => {
+  const wizard = live!.compendium.for().classes().find((cls) => cls.name === "Wizard");
+  assert.ok(wizard, "no Wizard class in the catalog");
+  let character = makeChar({
+    classes: [{ className: wizard.name, source: wizard.source, level: 5 }],
+    asiSelections: [{ level: 4, type: "feat", featName: "Strixhaven Initiate", featSource: "SCC" }],
+  });
+  const list = featSpellRuleChoices(character, live!.compendium).find((choice) => choice.id.includes("Strixhaven Initiate") && choice.id.endsWith("__Spell List"));
+  assert.ok(list, "Strixhaven Initiate offers its colleges");
+  const lorehold = list.options.find((option) => option.name === "Lorehold 1");
+  assert.equal(lorehold?.label, "Lorehold: Light, Sacred Flame", "the college is labelled by its fixed cantrips");
+  character = pickRuleChoice(character, list, "Lorehold 1", live!.compendium);
+  const ability = featSpellRuleChoices(character, live!.compendium).find((choice) => choice.id.includes("Strixhaven Initiate") && choice.id.endsWith("__Casting Ability"));
+  assert.ok(ability, "the casting ability is offered once for the feat");
+  character = pickRuleChoice(character, ability, "int", live!.compendium);
+  const card = evaluateCharacter(character, { compendium: live!.compendium }).grantedSpellSources.find((source) => source.title === "Strixhaven Initiate (Lorehold)");
+  assert.ok(card, "the card is titled by the feat and the college");
+  assert.equal(card.ability, "int");
+  assert.deepEqual(card.spells.filter((spell) => spell.isCantrip).map((spell) => spell.name).sort(), ["Light", "Sacred Flame"], "its cantrips are at will");
+  assert.ok(card.notices?.some((notice) => /1 more spell/.test(notice)), "its first-level spell is still to be picked");
+});
+
+test("live catalog: some cantrips carry their attack-roll kind and others carry none", { skip: SKIP }, () => {
+  const cantrips = live!.compendium.for().spells().filter((spell) => spell.level === 0);
+  assert.ok(cantrips.some((spell) => spell.spellAttack?.length), "a cantrip that needs an attack roll carries its kind");
+  assert.ok(cantrips.some((spell) => !spell.spellAttack), "a cantrip that needs no attack roll carries none");
+  assert.deepEqual(cantrips.find((spell) => spell.name === "Fire Bolt")?.spellAttack, ["R"], "Fire Bolt is a ranged attack");
+  assert.equal(cantrips.find((spell) => spell.name === "Light")?.spellAttack, undefined, "Light needs no attack roll");
+});
+
+test("live catalog: a Wizard with Spell Sniper (Wizard spells) is offered only the Wizard cantrips that need an attack roll", { skip: SKIP }, () => {
+  const wizard = live!.compendium.for().classes().find((cls) => cls.name === "Wizard");
+  assert.ok(wizard, "no Wizard class in the catalog");
+  let character = makeChar({
+    classes: [{ className: wizard.name, source: wizard.source, level: 5 }],
+    asiSelections: [{ level: 4, type: "feat", featName: "Spell Sniper", featSource: "PHB" }],
+  });
+  const list = featSpellRuleChoices(character, live!.compendium).find((choice) => choice.id.endsWith("__Spell List") && choice.id.includes("Spell Sniper"));
+  assert.ok(list, "Spell Sniper offers its lists");
+  character = pickRuleChoice(character, list, "Wizard Spells", live!.compendium);
+  const cantrip = featSpellChoicesOf(character, { name: "Spell Sniper", source: "PHB" }, live!.compendium).find((choice) => choice.traitName.endsWith("Cantrip"));
+  assert.ok(cantrip, "the Wizard cantrip pick is offered");
+  // Every copy of a cantrip in every book counts: the expected names are the Wizard cantrips with an attack roll in any copy.
+  const wizardAttackCantrips = [
+    ...new Set(
+      live!.compendium
+        .for()
+        .spells()
+        .filter((spell) => spell.level === 0 && spell.spellAttack?.length && isSpellAvailableForClass(spell, "Wizard"))
+        .map((spell) => spell.name),
+    ),
+  ].sort();
+  assert.ok(wizardAttackCantrips.length > 0, "the catalog has Wizard cantrips that need an attack roll");
+  assert.deepEqual(
+    cantrip.options.map((option) => option.name).sort(),
+    wizardAttackCantrips,
+    "the pick offers exactly the Wizard cantrips that need an attack roll",
+  );
+});
+
+test("live catalog: every filter a feat's known and innate groups carry uses a key the reader models, or is a ritual filter it leaves out", { skip: SKIP }, () => {
+  const unknown = live!.collections.feats.flatMap((feat) =>
+    chooseFiltersOf(feat).flatMap((filter) => parseSpellFilter(filter).unknownKeys.map((key) => `${feat.name}: ${key}`)),
+  );
+  assert.deepEqual(unknown, [], "filter keys the reader does not model, which would match nothing");
+});
+
+test("live catalog: every feat whose spell grants the reader does not read has a reviewed mark", { skip: SKIP }, () => {
+  // The same gate as the tracked data, over the live catalog. A grant with no casting ability, a ritual pick and a feat with no
+  // spell grant in the catalog are not read by the reader, so each of their feats needs a mark (ADR 0017).
+  const catalog = { classes: [], feats: live!.collections.feats } as unknown as TrackedData;
+  const gaps = spellCoverageGaps(catalog, [...REVIEWED_NO_SPELL_GRANTS, ...REVIEWED_NO_SPELL_GRANTS_LIVE_ONLY]);
+  assert.deepEqual(
+    gaps.map((gap) => `${gapName(gap)}: ${gap.sentences.join(" | ")}`),
+    [],
+    "feats whose spell grants the reader does not read, with no reviewed mark, in the live catalog",
+  );
+});
+
+test("live catalog: every feat the gate counts as covered gives the reader a source", { skip: SKIP }, () => {
+  // The gate counts a feat as covered when its grant is one the reader reads. This checks that on the real catalog: the
+  // reader gives such a feat a card, a listed prepared spell, or a pick it offers (a named list not yet picked). A Wizard
+  // holds the feat, so a prepared spell gated on a spell slot level or a character level from 5 is listed.
+  const covered = live!.collections.feats.filter((feat) => readsSpellGrants(feat.additionalSpells));
+  assert.ok(covered.length > 0, "no feat in the catalog has spell grants the reader reads");
+  const silent = covered.filter((feat) => {
+    const character = makeChar({
+      classes: [{ className: "Wizard", source: "PHB", level: 5 }],
+      asiSelections: [{ level: 4, type: "feat", featName: feat.name, featSource: feat.source }],
+    });
+    const evaluated = evaluateCharacter(character, { compendium: live!.compendium });
+    const hasCard = evaluated.grantedSpellSources.some((source) => source.title.startsWith(feat.name));
+    const listsPrepared = evaluated.spellProfiles.some((profile) =>
+      Object.values(profile.grantedPreparedSources ?? {}).some((source) => source.startsWith(feat.name)),
+    );
+    const offersPick = featSpellChoicesOf(character, feat, live!.compendium).length > 0;
+    return !hasCard && !listsPrepared && !offersPick;
+  });
+  assert.deepEqual(
+    silent.map((feat) => `${feat.name} (${feat.source})`),
+    [],
+    "feats the gate counts as covered that the reader gives no source",
+  );
+});
+
+test("live catalog: every spell a prepared group names is a spell of the catalog", { skip: SKIP }, () => {
+  // A prepared group names spells by name (or picks them). A name the catalog does not hold would be listed nowhere, silently.
+  const names = new Set(live!.collections.spells.map((spell) => spell.name.toLowerCase()));
+  const named: { owner: string; spell: string }[] = [];
+  for (const record of [...live!.collections.feats, ...live!.collections.races]) {
+    const subraceGrants = "subraces" in record ? (record.subraces ?? []).flatMap((sub) => sub.additionalSpells ?? []) : [];
+    for (const grant of [...(record.additionalSpells ?? []), ...subraceGrants]) {
+      for (const spell of preparedNamesOf(grant.prepared)) named.push({ owner: record.name, spell });
+    }
+  }
+  assert.ok(named.length > 0, "the catalog has prepared groups that name spells");
+  const missing = named.filter((entry) => !names.has(entry.spell.toLowerCase())).map((entry) => `${entry.owner}: ${entry.spell}`);
+  assert.deepEqual(missing, [], "prepared spell names the catalog does not hold");
+});
+
+/** The spell names a prepared group names outright: strings at any depth, not the names inside a `choose` filter. */
+function preparedNamesOf(value: unknown): string[] {
+  if (typeof value === "string") return [value];
+  if (Array.isArray(value)) return value.flatMap(preparedNamesOf);
+  if (!value || typeof value !== "object" || "choose" in value) return [];
+  return Object.values(value).flatMap(preparedNamesOf);
+}
+
+test("live catalog: Magic Initiate carries its Cleric list, and a Wizard with it (Cleric) has a card with Wisdom as its ability", { skip: SKIP }, () => {
+  const magicInitiate = live!.collections.feats.find((feat) => feat.name === "Magic Initiate" && feat.source === "PHB");
+  assert.ok(magicInitiate, "no Magic Initiate feat in the catalog");
+  const cleric = magicInitiate.additionalSpells?.find((grant) => grant.name === "Cleric Spells");
+  assert.ok(cleric, `Magic Initiate has no Cleric Spells list: ${JSON.stringify(magicInitiate.additionalSpells)}`);
+  assert.equal(cleric.ability, "wis", "the Cleric list casts with Wisdom");
+
+  const wizard = live!.compendium.for().classes().find((cls) => cls.name === "Wizard");
+  assert.ok(wizard, "no Wizard class in the catalog");
+  let character = makeChar({
+    classes: [{ className: wizard.name, source: wizard.source, level: 5 }],
+    asiSelections: [{ level: 4, type: "feat", featName: "Magic Initiate", featSource: "PHB" }],
+  });
+  const list = featSpellRuleChoices(character, live!.compendium).find((choice) => choice.id.includes("Magic Initiate") && choice.id.endsWith("__Spell List"));
+  assert.ok(list, "Magic Initiate offers its spell lists");
+  character = pickRuleChoice(character, list, "Cleric Spells", live!.compendium);
+  const card = evaluateCharacter(character, { compendium: live!.compendium }).grantedSpellSources.find((source) => source.title.startsWith("Magic Initiate"));
+  assert.ok(card, `no Magic Initiate card; sources: ${evaluateCharacter(character, { compendium: live!.compendium }).grantedSpellSources.map((source) => source.title).join(", ")}`);
+  assert.equal(card.ability, "wis");
+});
+
+/** A level 5 Wizard that took the feat at level 4, with the feat's ability increase when one is given. */
+function wizardHolding(featName: string, featSource: string, featAbility?: AbilityKey): Character {
+  return makeChar({
+    classes: [{ className: "Wizard", source: "PHB", level: 5 }],
+    asiSelections: [{ level: 4, type: "feat", featName, featSource, ...(featAbility ? { featAbility } : {}) }],
+  });
+}
+
+const innateCardOf = (character: Character, title: string): InnateSpellProfile | undefined =>
+  evaluateCharacter(character, { compendium: live!.compendium }).grantedSpellSources.find((source) => source.title === title);
+
+const wizardListedNames = (character: Character): string[] =>
+  (evaluateCharacter(character, { compendium: live!.compendium }).spellProfiles.find((profile) => profile.className === "Wizard")?.alwaysPreparedSpells ?? []).map(
+    (spell) => spell.name,
+  );
+
+test("live catalog: Mark of Detection's prepared group is a card with the ability picked, daily spells on counters, and no class list spell", { skip: SKIP }, () => {
+  let character = wizardHolding("Mark of Detection", "EFA");
+  const ability = featSpellRuleChoices(character, live!.compendium).find((choice) => choice.id === "EFA__Feat Spells__Mark of Detection__Casting Ability");
+  assert.ok(ability, "Mark of Detection offers its casting ability");
+  character = pickRuleChoice(character, ability, "int", live!.compendium);
+
+  const card = innateCardOf(character, "Mark of Detection");
+  assert.ok(card, "no Mark of Detection card");
+  assert.equal(card.ability, "int");
+  assert.ok(card.spellSaveDc !== undefined, "the card has its save DC");
+  for (const name of ["Detect Magic", "See Invisibility"]) {
+    const spell: InnateSpellEntry | undefined = card.spells.find((entry) => entry.name === name);
+    assert.equal(spell?.maxUses, 1, `${name} is cast once per Long Rest, as the group gives it (${card.spells.map((entry) => entry.name).join(", ")})`);
+    assert.ok(spell?.resourceCounterId, `${name} has a Long Rest counter`);
+  }
+  assert.ok(!wizardListedNames(character).some((name) => name === "Detect Magic" || name === "See Invisibility"), "neither spell is in the class list");
+});
+
+test("live catalog: Boon of Siberys's named list is a card once picked, with the ability picked for the feat", { skip: SKIP }, () => {
+  let character = wizardHolding("Boon of Siberys", "EFA");
+  const list = featSpellRuleChoices(character, live!.compendium).find((choice) => choice.id === "EFA__Feat Spells__Boon of Siberys__Spell List");
+  assert.ok(list, "Boon of Siberys offers its spell lists");
+  character = pickRuleChoice(character, list, "Mark of Detection", live!.compendium);
+  const ability = featSpellRuleChoices(character, live!.compendium).find((choice) => choice.id === "EFA__Feat Spells__Boon of Siberys__Casting Ability");
+  assert.ok(ability, "the picked list's casting ability is offered");
+  character = pickRuleChoice(character, ability, "wis", live!.compendium);
+
+  const card = innateCardOf(character, "Boon of Siberys (Mark of Detection)");
+  assert.ok(card, `no card for the picked list; sources: ${evaluateCharacter(character, { compendium: live!.compendium }).grantedSpellSources.map((s) => s.title).join(", ")}`);
+  assert.equal(card.ability, "wis");
+  assert.equal(card.spells.find((spell) => spell.name === "True Seeing")?.maxUses, 1);
+});
+
+test("live catalog: Vampire Touched's record names no ability and no uses, so its spells stay in the class list", { skip: SKIP }, () => {
+  // The record gives its spells as plain prepared names. Until the scraper's record names an ability or uses, the rule reads it as
+  // a plain group. This test fails when that changes, so the rule is looked at again.
+  const feat = live!.collections.feats.find((entry) => entry.name === "Vampire Touched" && entry.source === "ABH");
+  assert.ok(feat, "no Vampire Touched feat in the catalog");
+  assert.ok(
+    feat.additionalSpells?.every((grant) => grant.ability === undefined && JSON.stringify(grant.prepared ?? {}).indexOf('"daily"') < 0),
+    `Vampire Touched's record now names an ability or uses: ${JSON.stringify(feat.additionalSpells)}`,
+  );
+  const character = wizardHolding("Vampire Touched", "ABH");
+  assert.ok(wizardListedNames(character).includes("Spider Climb"), "Spider Climb is in the Wizard's class list");
+  assert.equal(innateCardOf(character, "Vampire Touched"), undefined, "and there is no card");
+});
+
+test("live catalog: Cloying Mists's daily spell is a card with no ability row, on a counter, and not in the class list", { skip: SKIP }, () => {
+  const character = wizardHolding("Cloying Mists", "ABH");
+  const card = innateCardOf(character, "Cloying Mists");
+  assert.ok(card, "no Cloying Mists card");
+  assert.equal(card.ability, undefined);
+  assert.equal(card.spellSaveDc, undefined);
+  assert.equal(card.notices, undefined, "no ability is named, so there is none to choose");
+  assert.equal(card.spells.find((spell) => spell.name === "Fog Cloud")?.maxUses, 1);
+  assert.ok(!wizardListedNames(character).includes("Fog Cloud"));
+});
+
+test("live catalog: a feat that names spells and no ability is a card with no ability row, its cantrips at will and its daily spells on counters", { skip: SKIP }, () => {
+  const cartomancer = innateCardOf(wizardHolding("Cartomancer", "BMT"), "Cartomancer");
+  assert.ok(cartomancer, "no Cartomancer card");
+  assert.equal(cartomancer.ability, undefined);
+  assert.equal(cartomancer.spellSaveDc, undefined);
+  assert.equal(cartomancer.spellAttackBonus, undefined);
+  assert.equal(cartomancer.notices, undefined, "no ability is named, so there is none to choose");
+  assert.equal(cartomancer.spells.find((spell) => spell.name === "Prestidigitation")?.resourceCounterId, undefined, "a cantrip is at will");
+
+  const envoy = innateCardOf(wizardHolding("Outlands Envoy", "SatO"), "Outlands Envoy");
+  assert.ok(envoy, "no Outlands Envoy card");
+  assert.equal(envoy.ability, undefined);
+  for (const name of ["Misty Step", "Tongues"]) {
+    const spell: InnateSpellEntry | undefined = envoy.spells.find((entry) => entry.name === name);
+    assert.equal(spell?.maxUses, 1, `${name} is cast once per Long Rest`);
+    assert.ok(spell?.resourceCounterId, `${name} has a Long Rest counter`);
+  }
+});
+
+test("live catalog: Light Bringer's list is a card with no ability once picked", { skip: SKIP }, () => {
+  let character = wizardHolding("Light Bringer", "ABH");
+  const list = featSpellRuleChoices(character, live!.compendium).find((choice) => choice.id === "ABH__Feat Spells__Light Bringer__Spell List");
+  assert.ok(list, "Light Bringer offers its spell lists");
+  character = pickRuleChoice(character, list, "Light", live!.compendium);
+  const card = evaluateCharacter(character, { compendium: live!.compendium }).grantedSpellSources.find((source) => source.title.startsWith("Light Bringer"));
+  assert.ok(card, "no card for the picked list");
+  assert.equal(card.ability, undefined, "the grant names no ability, so the card has none");
+  assert.equal(card.spellSaveDc, undefined);
+});
+
+test("live catalog: Servo Crafting and Strixhaven Mascot, whose grants are ritual spells only, give no card", { skip: SKIP }, () => {
+  assert.equal(innateCardOf(wizardHolding("Servo Crafting", "PSK"), "Servo Crafting"), undefined);
+  assert.equal(innateCardOf(wizardHolding("Strixhaven Mascot", "SCC"), "Strixhaven Mascot"), undefined);
+});
+
+test("live catalog: Magic Connoisseur's list casts with the ability its feat's increase raised", { skip: SKIP }, () => {
+  let character = wizardHolding("Magic Connoisseur", "AU", "int");
+  const list = featSpellRuleChoices(character, live!.compendium).find((choice) => choice.id === "AU__Feat Spells__Magic Connoisseur__Spell List");
+  assert.ok(list, "Magic Connoisseur offers its spell lists");
+  character = pickRuleChoice(character, list, "Wizard Spells", live!.compendium);
+  const card = innateCardOf(character, "Magic Connoisseur (Wizard)");
+  assert.ok(card, "no Magic Connoisseur card for the Wizard list");
+  assert.equal(card.ability, "int", "the ability is the one the increase raised");
+});
+
+test("live catalog: Boon of Magic School Mastery's school list is a card with no ability row once picked", { skip: SKIP }, () => {
+  let character = wizardHolding("Boon of Magic School Mastery", "AU");
+  const list = featSpellRuleChoices(character, live!.compendium).find((choice) => choice.id === "AU__Feat Spells__Boon of Magic School Mastery__Spell List");
+  assert.ok(list, "Boon of Magic School Mastery offers its school lists");
+  character = pickRuleChoice(character, list, "Evocation", live!.compendium);
+  const card = innateCardOf(character, "Boon of Magic School Mastery (Evocation)");
+  assert.ok(card, "no card for the Evocation list");
+  assert.equal(card.ability, undefined, "the record names no ability, so the card has none");
+});
+
+test("live catalog: a plain prepared group, an Adept feat's slot lists or Treacherous Allure, stays in the class list with no card", { skip: SKIP }, () => {
+  const adept = wizardHolding("Abjuration Adept", "AU");
+  assert.ok(wizardListedNames(adept).includes("Shield"), "the Adept's first-level spell is in the Wizard's list");
+  assert.equal(innateCardOf(adept, "Abjuration Adept"), undefined);
+  const allure = wizardHolding("Treacherous Allure", "ABH");
+  assert.ok(wizardListedNames(allure).includes("Charm Person"), "Treacherous Allure's spell is in the Wizard's list");
+  assert.equal(innateCardOf(allure, "Treacherous Allure"), undefined);
+});
+
+test("live catalog: Drow, Tiefling and Firbolg carry their spell grants on the race or subrace", { skip: SKIP }, () => {
+  const races = live!.collections.races;
+  const drow = races.find((race) => race.name === "Elf" && race.source === "PHB")?.subraces.find((sub) => sub.name === "Drow");
+  const tiefling = races.find((race) => race.name === "Tiefling" && race.source === "PHB");
+  const firbolg = races.find((race) => race.name === "Firbolg" && race.source === "VGM");
+  assert.ok(drow, "no Drow subrace of the PHB Elf in the catalog");
+  assert.ok(tiefling, "no PHB Tiefling in the catalog");
+  assert.ok(firbolg, "no VGM Firbolg in the catalog");
+  assert.ok(grantedSpellNames(drow).includes("dancing lights"), `Drow grants: ${JSON.stringify(drow.additionalSpells)}`);
+  assert.ok(grantedSpellNames(tiefling).includes("hellish rebuke"), `Tiefling grants: ${JSON.stringify(tiefling.additionalSpells)}`);
+  assert.ok(grantedSpellNames(firbolg).includes("detect magic"), `Firbolg grants: ${JSON.stringify(firbolg.additionalSpells)}`);
+});
+
+test("live catalog: a level-5 Drow has Dancing Lights, Faerie Fire and Darkness from the catalog", { skip: SKIP }, () => {
+  const character = makeChar({
+    classes: [{ className: "Fighter", source: "PHB", level: 5 }],
+    race: { name: "Elf", source: "PHB", subraceName: "Drow", subraceSource: "PHB" },
+    baseAbilityScores: { str: 10, dex: 10, con: 10, int: 10, wis: 10, cha: 16 },
+  });
+  const evaluated = evaluateCharacter(character, { compendium: live!.compendium });
+  const drow = evaluated.grantedSpellSources.find((source) => source.title === "Drow Elf");
+  assert.ok(drow, `no Drow card; sources: ${evaluated.grantedSpellSources.map((source) => source.title).join(", ")}`);
+  assert.equal(drow.ability, "cha");
+  const names = drow.spells.map((spell) => spell.name);
+  for (const name of ["Dancing Lights", "Faerie Fire", "Darkness"]) assert.ok(names.includes(name), `${name} is on the Drow card: ${names.join(", ")}`);
+});
+
+test("live catalog: a Half-Elf of the Drow Descent has no Drow spell until its Drow Magic option is picked, then has all three", { skip: SKIP }, () => {
+  const character = makeChar({
+    classes: [{ className: "Fighter", source: "PHB", level: 5 }],
+    race: { name: "Half-Elf", source: "PHB", subraceName: "Drow Descent", subraceSource: "SCAG" },
+    baseAbilityScores: { str: 10, dex: 10, con: 10, int: 10, wis: 10, cha: 16 },
+  });
+  const sourceWithCantrip = (candidate: Character) =>
+    evaluateCharacter(candidate, { compendium: live!.compendium }).grantedSpellSources.find((source) =>
+      source.spells.some((spell) => spell.name === "Dancing Lights"),
+    );
+  assert.equal(sourceWithCantrip(character), undefined, "the option is not picked, so the descent's spells are not read");
+
+  const picked: Character = {
+    ...character,
+    ruleChoices: [
+      {
+        id: ruleChoiceId({ source: "SCAG", race: "Half-Elf", subrace: { name: "Drow Descent" }, trait: "Variant Feature (Choose 1)" }),
+        trait: "Variant Feature (Choose 1)",
+        origin: "race",
+        choose: 1,
+        from: ["Skill Versatility", "Drow Magic"],
+        picked: ["Drow Magic"],
+      },
+    ],
+  };
+  const descent = sourceWithCantrip(picked);
+  assert.ok(descent, "picked, the descent's spells are read");
+  const names = descent.spells.map((spell) => spell.name);
+  for (const name of ["Dancing Lights", "Faerie Fire", "Darkness"]) assert.ok(names.includes(name), `${name} is listed: ${names.join(", ")}`);
+});
+
+test("live catalog: a Water Genasi of level 3 has its Create or Destroy Water counter under the spell's id, and a use saved under an older id moves there", { skip: SKIP }, () => {
+  const character = makeChar({
+    classes: [{ className: "Fighter", source: "PHB", level: 3 }],
+    race: { name: "Genasi", source: "EEPC", subraceName: "Water", subraceSource: "EEPC" },
+    baseAbilityScores: { str: 10, dex: 10, con: 10, int: 10, wis: 10, cha: 10 },
+  });
+  const evaluated = evaluateCharacter(character, { compendium: live!.compendium });
+  const water = evaluated.grantedSpellSources.find((source) => source.title === "Water Genasi");
+  const spell = water?.spells.find((entry) => entry.name === "Create or Destroy Water");
+  assert.ok(spell, `no Create or Destroy Water on the Water card: ${JSON.stringify(water?.spells.map((entry) => entry.name))}`);
+  assert.equal(spell.resourceCounterId, "innate_spell_create_or_destroy_water");
+
+  const savedUnderOldId = {
+    ...character,
+    resourceCounters: {
+      innate_spell_create_water: { id: "innate_spell_create_water", name: "Innate: Create or Destroy Water", current: 0, max: 1, resetOn: "long" as const },
+    },
+  };
+  const moved = reconcile(savedUnderOldId, live!.compendium);
+  assert.equal(moved.resourceCounters?.innate_spell_create_water, undefined, "the counter under the older id is gone");
+  assert.equal(moved.resourceCounters?.innate_spell_create_or_destroy_water?.current, 0, "the saved use is kept under the spell's id");
+});
+
+test("live catalog: a level-3 Tiefling's Hellish Rebuke is cast at 2nd level, and its counter is the one the old table saved", { skip: SKIP }, () => {
+  const character = makeChar({
+    classes: [{ className: "Fighter", source: "PHB", level: 3 }],
+    race: { name: "Tiefling", source: "PHB" },
+    baseAbilityScores: { str: 10, dex: 10, con: 10, int: 10, wis: 10, cha: 16 },
+  });
+  const evaluated = evaluateCharacter(character, { compendium: live!.compendium });
+  const tiefling = evaluated.grantedSpellSources.find((source) => source.title === "Tiefling");
+  const rebuke = tiefling?.spells.find((entry) => entry.name === "Hellish Rebuke");
+  assert.ok(rebuke, `no Hellish Rebuke on the Tiefling card: ${JSON.stringify(tiefling?.spells.map((entry) => entry.name))}`);
+  assert.equal(rebuke.level, 2, "the grant says the spell is cast at level 2");
+  assert.equal(rebuke.resourceCounterId, "innate_spell_hellish_rebuke");
+});
+
+// The nine race and subrace grants with leveled known spells (ADR 0017). Each spell is `[name, uses, level gate]`: a spell the
+// trait lets the player cast once per Long Rest has 1 uses, one it casts at will is "at will", and the gate is the character level
+// the trait unlocks it at. Each grant is read at every level from 1 to 3: a spell is listed from its gate and not before.
+const LEVELED_KNOWN_GRANTS: Array<{
+  label: string;
+  race: string;
+  subrace?: string;
+  subraceSource?: string;
+  source?: string;
+  spells: Array<[string, 1 | "at will", number]>;
+}> = [
+  {
+    label: "Dwarf Mark of Warding",
+    race: "Dwarf",
+    subrace: "Mark of Warding",
+    subraceSource: "ERLW",
+    spells: [
+      ["Alarm", 1, 1],
+      ["Arcane Lock", 1, 3],
+      ["Mage Armor", 1, 1],
+    ],
+  },
+  { label: "Genasi Air", race: "Genasi", subrace: "Air", subraceSource: "EEPC", spells: [["Levitate", 1, 1]] },
+  { label: "Genasi Earth", race: "Genasi", subrace: "Earth", subraceSource: "EEPC", spells: [["Pass without Trace", 1, 1]] },
+  {
+    label: "Gnome (Deep)",
+    race: "Gnome (Deep)",
+    source: "DMG",
+    spells: [
+      ["Blindness/Deafness", 1, 1],
+      ["Blur", 1, 1],
+      ["Disguise Self", 1, 1],
+      ["Nondetection", "at will", 1],
+    ],
+  },
+  {
+    label: "Halfling Mark of Hospitality",
+    race: "Halfling",
+    subrace: "Mark of Hospitality",
+    subraceSource: "ERLW",
+    spells: [
+      ["Prestidigitation", "at will", 1],
+      ["Purify Food and Drink", 1, 1],
+      ["Unseen Servant", 1, 1],
+    ],
+  },
+  {
+    label: "Hexblood",
+    race: "Hexblood",
+    source: "VRGR",
+    spells: [
+      ["Disguise Self", 1, 1],
+      ["Hex", 1, 1],
+    ],
+  },
+  {
+    label: "Human Mark of Making",
+    race: "Human",
+    subrace: "Mark of Making",
+    subraceSource: "ERLW",
+    spells: [
+      ["Magic Weapon", 1, 1],
+      ["Mending", "at will", 1],
+    ],
+  },
+  { label: "Human Mark of Passage", race: "Human", subrace: "Mark of Passage", subraceSource: "ERLW", spells: [["Misty Step", 1, 1]] },
+  { label: "Human Mark of Sentinel", race: "Human", subrace: "Mark of Sentinel", subraceSource: "ERLW", spells: [["Shield", 1, 1]] },
+];
+
+/** A character of the grant's race, found in the live catalog by the name of the record that holds the grant. */
+function characterOfGrant(grant: (typeof LEVELED_KNOWN_GRANTS)[number], level: number): Character {
+  const records = grant.subrace
+    ? live!.collections.races.filter((race) => race.name === grant.race && race.subraces.some((sub) => sub.name === grant.subrace && sub.source === grant.subraceSource))
+    : live!.collections.races.filter((race) => race.name === grant.race && race.source === grant.source);
+  const record = records[0];
+  assert.ok(record, `no ${grant.race} record holds the ${grant.label} grant`);
+  return makeChar({
+    classes: [{ className: "Fighter", source: "PHB", level }],
+    race: {
+      name: record.name,
+      source: record.source,
+      ...(grant.subrace ? { subraceName: grant.subrace, subraceSource: grant.subraceSource } : {}),
+    },
+    baseAbilityScores: { str: 10, dex: 10, con: 10, int: 10, wis: 10, cha: 16 },
+  });
+}
+
+/** The spells a character's race grants at its level, each with its uses (1 once per Long Rest, or "at will"), sorted by name. */
+function raceSpellsAt(character: Character): Array<[string, 1 | "at will"]> {
+  const sources = evaluateCharacter(character, { compendium: live!.compendium }).grantedSpellSources;
+  assert.equal(sources.length, 1, `one race grant is read: ${sources.map((source) => source.title).join(", ")}`);
+  return sources[0].spells
+    .map((spell): [string, 1 | "at will"] => [spell.name, spell.maxUses === undefined ? "at will" : (spell.maxUses as 1)])
+    .sort((a, b) => a[0].localeCompare(b[0]));
+}
+
+for (const grant of LEVELED_KNOWN_GRANTS) {
+  test(`live catalog: the ${grant.label} grant lists each spell from its trait's level, with its uses`, { skip: SKIP }, () => {
+    for (const level of [1, 2, 3]) {
+      const expected = grant.spells
+        .filter(([, , gate]) => gate <= level)
+        .map(([name, uses]): [string, 1 | "at will"] => [name, uses])
+        .sort((a, b) => a[0].localeCompare(b[0]));
+      assert.deepEqual(raceSpellsAt(characterOfGrant(grant, level)), expected, `at character level ${level}`);
+    }
+  });
+}
+
+test("live catalog: the Deep Gnome's Nondetection carries the note self only, and its other spells carry none", { skip: SKIP }, () => {
+  const grant = LEVELED_KNOWN_GRANTS.find((candidate) => candidate.label === "Gnome (Deep)")!;
+  const card = evaluateCharacter(characterOfGrant(grant, 1), { compendium: live!.compendium }).grantedSpellSources[0];
+  const nondetection = card?.spells.find((spell) => spell.name === "Nondetection");
+  assert.ok(nondetection, `no Nondetection on the Deep Gnome card: ${JSON.stringify(card?.spells.map((spell) => spell.name))}`);
+  assert.equal(nondetection.note, "self only");
+  assert.deepEqual(
+    card.spells.filter((spell) => spell.name !== "Nondetection" && spell.note !== undefined).map((spell) => spell.name),
+    [],
+    "only Nondetection is noted"
+  );
+});
+
+test("live catalog: the Dwarf Mark of Warding's Arcane Lock is read from 3rd level, not before", { skip: SKIP }, () => {
+  const grant = LEVELED_KNOWN_GRANTS[0];
+  const names = (level: number) => raceSpellsAt(characterOfGrant(grant, level)).map(([name]) => name);
+  assert.ok(names(2).includes("Alarm") && names(2).includes("Mage Armor"), "alarm and mage armor are read from level 1");
+  assert.equal(names(2).includes("Arcane Lock"), false, "the trait adds arcane lock at 3rd level");
+  assert.ok(names(3).includes("Arcane Lock"), "arcane lock is read at 3rd level");
+});
+
+// Background expanded spell lists (ADR 0017): a background's lists join the list of each spellcasting class the character has.
+
+test("live catalog: a Strixhaven college background and a Ravnica guild background carry expanded spell lists", { skip: SKIP }, () => {
+  const backgrounds = [
+    live!.collections.backgrounds.find((background) => background.name === "Lorehold Student" && background.source === "SCC"),
+    live!.collections.backgrounds.find((background) => background.name === "Izzet Engineer" && background.source === "GGR"),
+  ];
+  for (const background of backgrounds) {
+    assert.ok(background, "a Strixhaven college or Ravnica guild background is missing from the catalog");
+    const lists = (background.additionalSpells ?? []).flatMap((grant) => Object.values(grant.expanded ?? {}));
+    assert.ok(
+      lists.some((list) => Array.isArray(list) && list.length > 0),
+      `${background.name} carries no expanded spells: ${JSON.stringify(background.additionalSpells)}`,
+    );
+  }
+});
+
+test("live catalog: a Wizard with the Lorehold Student background can learn Spirit Guardians, and a Fighter with it has no spell list", { skip: SKIP }, () => {
+  const spiritGuardians = live!.compendium.for().spells().find((spell) => spell.name === "Spirit Guardians");
+  assert.ok(spiritGuardians, "no Spirit Guardians spell in the catalog");
+  const holding = (className: string) => {
+    const cls = live!.compendium.for().classes().find((candidate) => candidate.name === className);
+    assert.ok(cls, `no ${className} class in the catalog`);
+    return makeChar({
+      classes: [{ className: cls.name, source: cls.source, level: 5 }],
+      background: { name: "Lorehold Student", source: "SCC" },
+    });
+  };
+
+  const wizard = evaluateCharacter(holding("Wizard"), { compendium: live!.compendium }).spellProfiles.find(
+    (profile) => profile.className === "Wizard",
+  );
+  assert.ok(wizard, "a Wizard of level 5 has a spell profile");
+  assert.equal(isSpellAvailableForClass(spiritGuardians, "Wizard", undefined, profileSpellContext(wizard)), true);
+
+  const fighter = evaluateCharacter(holding("Fighter"), { compendium: live!.compendium });
+  assert.deepEqual(fighter.spellProfiles, [], "a Fighter with no casting class gets no spell profile");
+});
+
+test("live catalog: a High Elf offers the wizard cantrip filter, a Vahadar Elf the druid one, and an MPMM race its casting ability", { skip: SKIP }, () => {
+  const compendium = live!.compendium;
+  const offered = (race: Character["race"]) => raceSpellRuleChoices(makeChar({ classes: [{ className: "Fighter", source: "PHB", level: 1 }], race }), compendium);
+
+  const highElf = offered({ name: "Elf", source: "PHB", subraceName: "High", subraceSource: "PHB" });
+  const wizard = highElf.find((choice) => choice.traitName === "High Elf Cantrip");
+  assert.ok(wizard, `the High Elf offers its cantrip pick: ${highElf.map((choice) => choice.traitName).join(", ")}`);
+  assert.equal(wizard.choose, 1);
+  assert.ok(wizard.options.some((option) => option.name === "Fire Bolt"), "the wizard cantrips are offered");
+  assert.ok(wizard.options.every((option) => option.description.startsWith("Cantrip")), "every option is a cantrip");
+
+  // The tracked Wood Elf carries no spell grant, so the Vahadar Elf of Elf (Kaladesh) stands in for a druid cantrip filter.
+  const vahadar = offered({ name: "Elf (Kaladesh)", source: "PSK", subraceName: "Vahadar", subraceSource: "PSK" });
+  const druid = vahadar.find((choice) => choice.traitName === "Vahadar Elf (Kaladesh) Cantrip");
+  assert.ok(druid, `the Vahadar Elf offers a cantrip pick: ${vahadar.map((choice) => choice.traitName).join(", ")}`);
+  assert.ok(druid.options.some((option) => option.name === "Druidcraft"), "the druid cantrips are offered");
+
+  const aarakocra = offered({ name: "Aarakocra", source: "MPMM" });
+  const ability = aarakocra.find((choice) => choice.id.endsWith("__Casting Ability"));
+  assert.ok(ability, `the MPMM Aarakocra offers an ability choice: ${aarakocra.map((choice) => choice.id).join(", ")}`);
+  assert.deepEqual(ability.options.map((option) => option.name), ["int", "wis", "cha"]);
+});
+
+// Expanded lists of held feats and races (ADR 0017): a Mark's lists join every spellcasting class's list, and are released with a
+// notice when the Mark goes. Only names and ids are read from the catalog.
+
+const expandedNamesOf = (grants: AdditionalSpells[] = []): string[] =>
+  grants.flatMap((grant) => Object.values(grant.expanded ?? {})).flatMap((list) =>
+    Array.isArray(list) ? list.filter((name): name is string => typeof name === "string") : [],
+  );
+
+/** A spell of a Mark's expanded lists the Cleric's own list does not give, so only the Mark can put it on the Cleric's list. */
+function markOnlySpell(names: string[]): SpellData | undefined {
+  for (const name of names) {
+    const spell = resolveSpellName(name, undefined, live!.compendium);
+    if (spell && !isSpellAvailableForClass(spell, "Cleric")) return spell;
+  }
+  return undefined;
+}
+
+test("live catalog: every spell a Mark feat's expanded list names is a spell of the catalog", { skip: SKIP }, () => {
+  const marks = live!.compendium.for().feats().filter((feat) => feat.additionalSpells?.some((grant) => grant.expanded));
+  assert.ok(marks.length > 0, "the catalog carries Mark feats with expanded lists");
+  const unresolved = marks.flatMap((feat) =>
+    expandedNamesOf(feat.additionalSpells).filter((name) => !resolveSpellName(name, undefined, live!.compendium)).map((name) => `${feat.name}: ${name}`),
+  );
+  assert.deepEqual(unresolved, [], "every named spell of a Mark's expanded list is in the catalog");
+});
+
+test("live catalog: a Mark of Detection feat puts its expanded spell on a Cleric's list, and a Cleric without it does not have that spell", { skip: SKIP }, () => {
+  const mark = live!.compendium.for().feats().find((feat) => feat.name === "Mark of Detection" && feat.source === "EFA");
+  assert.ok(mark, "the Mark of Detection feat is missing from the catalog");
+  const cleric = live!.compendium.for().classes().find((cls) => cls.name === "Cleric");
+  assert.ok(cleric, "no Cleric class in the catalog");
+  const spell = markOnlySpell(expandedNamesOf(mark.additionalSpells));
+  assert.ok(spell, "a Mark of Detection spell the Cleric's own list does not give is missing");
+
+  const clericAt = (asiSelections: Character["asiSelections"]) =>
+    evaluateCharacter(
+      makeChar({
+        classes: [{ className: cleric.name, source: cleric.source, level: 5 }],
+        asiSelections,
+      }),
+      { compendium: live!.compendium },
+    ).spellProfiles.find((profile) => profile.className === "Cleric");
+
+  const withMark = clericAt([{ level: 4, className: "Cleric", classLevel: 4, type: "feat", featName: mark.name, featSource: mark.source }]);
+  assert.ok(withMark, "a Cleric of level 5 has a spell profile");
+  assert.equal(isSpellAvailableForClass(spell, "Cleric", undefined, profileSpellContext(withMark)), true, `${spell.name} is on the Cleric's list with the Mark`);
+  const withoutMark = clericAt([]);
+  assert.ok(withoutMark);
+  assert.equal(isSpellAvailableForClass(spell, "Cleric", undefined, profileSpellContext(withoutMark)), false, `${spell.name} is not on the Cleric's list without it`);
+});
+
+test("live catalog: a Half-Elf of the Mark of Detection subrace puts its expanded spell on a Cleric's list", { skip: SKIP }, () => {
+  const race = live!.collections.races.find((candidate) =>
+    (candidate.subraces ?? []).some((sub) => sub.name === "Mark of Detection" && sub.source === "ERLW"),
+  );
+  assert.ok(race, "no race carries the ERLW Mark of Detection subrace");
+  const subrace = (race.subraces ?? []).find((sub) => sub.name === "Mark of Detection" && sub.source === "ERLW");
+  assert.ok(subrace);
+  const spell = markOnlySpell(expandedNamesOf(subrace.additionalSpells));
+  assert.ok(spell, "a Mark of Detection subrace spell the Cleric's own list does not give is missing");
+  const cleric = live!.compendium.for().classes().find((cls) => cls.name === "Cleric");
+  assert.ok(cleric);
+
+  const profile = evaluateCharacter(
+    makeChar({
+      classes: [{ className: cleric.name, source: cleric.source, level: 5 }],
+      race: { name: race.name, source: race.source, subraceName: subrace.name, subraceSource: subrace.source },
+    }),
+    { compendium: live!.compendium },
+  ).spellProfiles.find((candidate) => candidate.className === "Cleric");
+  assert.ok(profile, "a Cleric of level 5 has a spell profile");
+  assert.equal(isSpellAvailableForClass(spell, "Cleric", undefined, profileSpellContext(profile)), true, `${spell.name} is on the Cleric's list with the subrace`);
+});
+
+test("live catalog: removing a Mark of Detection feat releases the spell its expanded list gave, with a notice that names the feat", { skip: SKIP }, () => {
+  const mark = live!.compendium.for().feats().find((feat) => feat.name === "Mark of Detection" && feat.source === "EFA");
+  assert.ok(mark);
+  const cleric = live!.compendium.for().classes().find((cls) => cls.name === "Cleric");
+  assert.ok(cleric);
+  const spell = markOnlySpell(expandedNamesOf(mark.additionalSpells));
+  assert.ok(spell);
+  const character = makeChar({
+    classes: [{ className: cleric.name, source: cleric.source, level: 5 }],
+    asiSelections: [{ level: 4, className: "Cleric", classLevel: 4, type: "feat", featName: mark.name, featSource: mark.source }],
+    knownSpells: [{ name: spell.name, source: spell.source, ownerKey: `${cleric.name}__${cleric.source}`, className: cleric.name }],
+  });
+  const released = removeAsiSelection(character, "Cleric", 4, live!.compendium);
+  assert.deepEqual(released.knownSpells, [], `${spell.name} leaves the known spells`);
+  assert.ok(
+    released.needsReview?.some((notice) => notice.includes(`${spell.name} removed: only on the Mark of Detection feat's spell list`)),
+    `the release is noticed: ${JSON.stringify(released.needsReview)}`,
+  );
+});
+
+// A race saved under the SRD Baseline's source is found by name on the integrated catalog, and the reverse. Each side is
+// read through the same evaluation, so the comparison is between the two catalogs' results for the same saved character.
+const RACE_SRD_BOOKS = ["SRD"];
+
+/** The three characters of the race lookup cases, saved with the given race and class source. */
+function savedRaceCharacters(raceSource: string, classSource: string): Record<string, Character> {
+  const scores = { str: 10, dex: 10, con: 10, int: 10, wis: 10, cha: 10 };
+  return {
+    "High Elf Wizard": makeChar({
+      classes: [{ className: "Wizard", source: classSource, level: 1 }],
+      race: { name: "Elf", source: raceSource, subraceName: "High", subraceSource: raceSource },
+      baseAbilityScores: scores,
+    }),
+    "Hill Dwarf Cleric": makeChar({
+      classes: [{ className: "Cleric", source: classSource, level: 1 }],
+      race: { name: "Dwarf", source: raceSource, subraceName: "Hill", subraceSource: raceSource },
+      baseAbilityScores: scores,
+    }),
+    "Human Fighter": makeChar({
+      classes: [{ className: "Fighter", source: classSource, level: 1 }],
+      race: { name: "Human", source: raceSource },
+      baseAbilityScores: scores,
+    }),
+  };
+}
+
+/** What a character shows for its race: names, numbers, granted traits, offered race choices and the proficiency sheet's languages. */
+function raceSnapshot(character: Character, compendium: Compendium, activeBooks: string[]) {
+  const catalogs = { compendium, activeBooks };
+  const listings = compendium.for(activeBooks);
+  const evaluated = evaluateCharacter(character, catalogs);
+  const panel = resolveAncestryState(character, catalogs);
+  return {
+    panelRace: panel.selectedRace?.name,
+    ancestry: [evaluated.resolvedAncestry.race?.name, evaluated.resolvedAncestry.subrace?.name ?? ""],
+    scores: evaluated.effectiveScores.scores,
+    size: panel.size,
+    darkvision: panel.darkvision,
+    speed: evaluated.speed,
+    speedSources: evaluated.speeds.details.map((detail) => detail.source),
+    raceTraits: grantedFeatures(character, {
+      races: listings.races(),
+      classes: listings.classes(),
+      backgrounds: listings.backgrounds(),
+      feats: listings.feats(),
+      activeBooks,
+    })
+      .filter((feature) => feature.origin === "Race" || feature.origin === "Subrace")
+      .map((feature) => feature.name)
+      .sort(),
+    raceChoices: offeredRuleChoices(character, { raceCatalog: listings.races(), activeBooks, origins: ["race"] }).map((choice) => ({
+      id: choice.id,
+      trait: choice.traitName,
+      choose: choice.choose,
+      options: choice.options.map((option) => option.name),
+    })),
+    // The cantrip options are not compared here: the integrated catalog lists more cantrips than the SRD Baseline does.
+    spellChoices: raceSpellRuleChoices(character, compendium, activeBooks).map((choice) => ({
+      id: choice.id,
+      trait: choice.traitName,
+      choose: choice.choose,
+    })),
+    hp: evaluated.hp.max,
+    languages: proficiencySheet(character, catalogs).languages.map((language) => language.name).sort(),
+  };
+}
+
+const srdBaseline = srdBaselineCompendium();
+const SAVED_ON_SRD = savedRaceCharacters("SRD", "SRD");
+const SAVED_ON_INTEGRATED = savedRaceCharacters("PHB", "PHB");
+
+for (const name of Object.keys(SAVED_ON_SRD)) {
+  test(`live catalog: ${name} saved on the SRD Baseline evaluates the same on the integrated catalog`, { skip: SKIP }, () => {
+    const character = SAVED_ON_SRD[name];
+    const onSrd = raceSnapshot(character, srdBaseline, RACE_SRD_BOOKS);
+    const onLive = raceSnapshot(character, live!.compendium, [...DEFAULT_ACTIVE_BOOK_CODES]);
+    assert.ok(onSrd.raceTraits.length > 0 || onSrd.raceChoices.length > 0, "the SRD side reads the race's traits or choices");
+    assert.deepEqual(onLive, onSrd);
+  });
+
+  test(`live catalog: ${name} saved on the integrated catalog evaluates the same on the SRD Baseline alone`, { skip: SKIP }, () => {
+    const character = SAVED_ON_INTEGRATED[name];
+    const onLive = raceSnapshot(character, live!.compendium, [...DEFAULT_ACTIVE_BOOK_CODES]);
+    const onSrd = raceSnapshot(character, srdBaseline, RACE_SRD_BOOKS);
+    assert.deepEqual(onSrd, onLive);
+  });
+
+  test(`live catalog: ${name} keeps its saved race and class sources through loading and evaluating`, { skip: SKIP }, () => {
+    const character = SAVED_ON_SRD[name];
+    const before = structuredClone(character);
+    raceSnapshot(character, live!.compendium, [...DEFAULT_ACTIVE_BOOK_CODES]);
+    raceSnapshot(character, srdBaseline, RACE_SRD_BOOKS);
+    assert.deepEqual(character, before);
+  });
+}
+
+test("live catalog: the High Elf's cantrip choice keeps its id, and every cantrip the SRD Baseline offers is offered on the integrated catalog", { skip: SKIP }, () => {
+  const character = SAVED_ON_SRD["High Elf Wizard"];
+  const onSrd = raceSpellRuleChoices(character, srdBaseline, RACE_SRD_BOOKS).find((choice) => choice.traitName === "High Elf Cantrip");
+  const onLive = raceSpellRuleChoices(character, live!.compendium, [...DEFAULT_ACTIVE_BOOK_CODES]).find((choice) => choice.traitName === "High Elf Cantrip");
+  assert.ok(onSrd, "the SRD Baseline offers the High Elf's cantrip choice");
+  assert.equal(onLive?.id, onSrd.id);
+  const liveOptions = new Set(onLive?.options.map((option) => option.name));
+  const missing = onSrd.options.map((option) => option.name).filter((name) => !liveOptions.has(name));
+  assert.deepEqual(missing, [], "no SRD cantrip is missing from the integrated catalog's options");
+});
+
+test("live catalog: a High Elf saved on the SRD Baseline keeps its High subrace, Common and Elvish when another book also lists Elf", { skip: SKIP }, () => {
+  const character = SAVED_ON_SRD["High Elf Wizard"];
+  const withOther = raceSnapshot(character, live!.compendium, [...DEFAULT_ACTIVE_BOOK_CODES, "LFL"]);
+  assert.deepEqual(withOther.ancestry, ["Elf", "High"]);
+  assert.ok(withOther.languages.includes("Common") && withOther.languages.includes("Elvish"), `languages: ${withOther.languages.join(", ")}`);
+  const withDefault = raceSnapshot(character, live!.compendium, [...DEFAULT_ACTIVE_BOOK_CODES]);
+  assert.deepEqual(withOther.raceTraits, withDefault.raceTraits);
+  assert.deepEqual(withOther.scores, withDefault.scores);
+  assert.equal(withOther.speed, withDefault.speed);
+  assert.deepEqual(withOther.spellChoices, withDefault.spellChoices, "the race's spell picks are offered from the same records");
+});
+
+test("live catalog: Hill Dwarf Cleric keeps 10 hit points on the integrated catalog", { skip: SKIP }, () => {
+  const onLive = raceSnapshot(SAVED_ON_SRD["Hill Dwarf Cleric"], live!.compendium, [...DEFAULT_ACTIVE_BOOK_CODES]);
+  assert.equal(onLive.hp, 10);
+});
+
+test("live catalog: a race finds its integrated record by name, scoped to the active books, and by its saved source first", { skip: SKIP }, () => {
+  const compendium = live!.compendium;
+  for (const name of ["Elf", "Dwarf", "Human"]) {
+    assert.equal(compendium.findRace({ name, source: "SRD" }, [...DEFAULT_ACTIVE_BOOK_CODES])?.source, "PHB", `${name} resolves to its PHB record`);
+  }
+  assert.equal(compendium.findRace({ name: "Elf", source: "PHB" })?.source, "PHB", "the saved source is found first");
+});
+
+// Records of the other kinds a character saves with a source (class, subclass, background, feat) and the picks kept on them,
+// saved on the SRD Baseline and on the integrated catalog, read on both catalogs. Spell lists are not compared here.
+const RECORD_KIND_SCORES = { str: 15, dex: 14, con: 13, int: 12, wis: 10, cha: 8 };
+const RECORD_KIND_BOOKS = [...DEFAULT_ACTIVE_BOOK_CODES];
+
+/** One character per record kind, all saved with the given source. */
+function savedRecordKindCharacters(src: string): Record<string, Character> {
+  const race = { name: "Human", source: src };
+  return {
+    "Fighter 5 Champion with Grappler": makeChar({
+      classes: [{ className: "Fighter", source: src, level: 5, subclassName: "Champion", subclassSource: src }],
+      race,
+      baseAbilityScores: RECORD_KIND_SCORES,
+      asiSelections: [{ level: 4, type: "feat", className: "Fighter", classLevel: 4, featName: "Grappler", featSource: src, featAbility: "str" }],
+    }),
+    "Wizard 3 Evocation": makeChar({
+      classes: [{ className: "Wizard", source: src, level: 3, subclassName: "School of Evocation", subclassSource: src }],
+      race,
+      baseAbilityScores: RECORD_KIND_SCORES,
+    }),
+    "Cleric 1 Life with Acolyte": makeChar({
+      classes: [{ className: "Cleric", source: src, level: 1, subclassName: "Life Domain", subclassSource: src }],
+      race,
+      baseAbilityScores: RECORD_KIND_SCORES,
+      background: { name: "Acolyte", source: src },
+    }),
+    "Fighter 1 with Grappler as an origin feat": makeChar({
+      classes: [{ className: "Fighter", source: src, level: 1 }],
+      race,
+      baseAbilityScores: RECORD_KIND_SCORES,
+      originFeats: [{ level: 0, type: "feat", featName: "Grappler", featSource: src, featAbility: "str" }],
+    }),
+  };
+}
+
+/** The names of the features a character gets from the given origins, as the features pass lists them, on one catalog. */
+function featureNamesOf(character: Character, compendium: Compendium, origins: string[]): string[] {
+  const listings = compendium.for(RECORD_KIND_BOOKS);
+  return grantedFeatures(character, {
+    races: listings.races(),
+    classes: listings.classes(),
+    backgrounds: listings.backgrounds(),
+    feats: listings.feats(),
+    activeBooks: RECORD_KIND_BOOKS,
+  })
+    .filter((feature) => origins.includes(feature.origin))
+    .map((feature) => `${feature.origin}:${feature.name}`)
+    .sort();
+}
+
+const RECORD_KIND_SRD = savedRecordKindCharacters("SRD");
+const RECORD_KIND_PHB = savedRecordKindCharacters("PHB");
+
+test("live catalog: record kind: a Fighter 5 and a Wizard 3 saved on the SRD Baseline have the same class features and hit points on the integrated catalog", { skip: SKIP }, () => {
+  for (const name of ["Fighter 5 Champion with Grappler", "Wizard 3 Evocation"]) {
+    const onSrd = evaluateCharacter(RECORD_KIND_SRD[name], { compendium: srdBaseline, activeBooks: RECORD_KIND_BOOKS });
+    const onLive = evaluateCharacter(RECORD_KIND_SRD[name], { compendium: live!.compendium, activeBooks: RECORD_KIND_BOOKS });
+    assert.deepEqual(featureNamesOf(RECORD_KIND_SRD[name], live!.compendium, ["Class"]), featureNamesOf(RECORD_KIND_SRD[name], srdBaseline, ["Class"]), `${name}: class features`);
+    assert.equal(onLive.hp.max, onSrd.hp.max, `${name}: hit points`);
+  }
+});
+
+test("live catalog: record kind: a Fighter 5 saved on the SRD Baseline is offered the same Fighting Style choice on the integrated catalog, with every SRD option", { skip: SKIP }, () => {
+  const character = RECORD_KIND_SRD["Fighter 5 Champion with Grappler"];
+  const fightingStyle = (compendium: Compendium) =>
+    offeredRuleChoices(character, { compendium, activeBooks: RECORD_KIND_BOOKS }).find((choice) => choice.traitName === "Fighting Style");
+  const onSrd = fightingStyle(srdBaseline);
+  const onLive = fightingStyle(live!.compendium);
+  assert.ok(onSrd, "the SRD Baseline offers the Fighting Style choice");
+  assert.equal(onLive?.id, onSrd.id);
+  const liveOptions = new Set(onLive?.options.map((option) => option.name));
+  assert.deepEqual(onSrd.options.map((option) => option.name).filter((name) => !liveOptions.has(name)), [], "no SRD option is missing");
+});
+
+test("live catalog: record kind: a Fighter 5 and a Wizard 3 saved on the integrated catalog have the same class features on the SRD Baseline", { skip: SKIP }, () => {
+  for (const name of ["Fighter 5 Champion with Grappler", "Wizard 3 Evocation"]) {
+    assert.deepEqual(featureNamesOf(RECORD_KIND_PHB[name], srdBaseline, ["Class"]), featureNamesOf(RECORD_KIND_PHB[name], live!.compendium, ["Class"]), `${name}: class features`);
+  }
+});
+
+// The integrated School of Evocation print lists its own name twice (at levels 2 and 3); the SRD record lists it once. Each feature
+// name is compared once, so the subclass test reads the same features on both catalogs.
+const uniqueNames = (names: string[]): string[] => [...new Set(names)];
+
+test("live catalog: record kind: a Champion and an Evocation subclass saved on the SRD Baseline give their subclass features on the integrated catalog", { skip: SKIP }, () => {
+  for (const name of ["Fighter 5 Champion with Grappler", "Wizard 3 Evocation"]) {
+    assert.deepEqual(uniqueNames(featureNamesOf(RECORD_KIND_SRD[name], live!.compendium, ["Subclass"])), uniqueNames(featureNamesOf(RECORD_KIND_SRD[name], srdBaseline, ["Subclass"])), `${name}: subclass features`);
+  }
+});
+
+test("live catalog: record kind: a Champion and an Evocation subclass saved on the integrated catalog give their subclass features on the SRD Baseline", { skip: SKIP }, () => {
+  for (const name of ["Fighter 5 Champion with Grappler", "Wizard 3 Evocation"]) {
+    assert.deepEqual(uniqueNames(featureNamesOf(RECORD_KIND_PHB[name], srdBaseline, ["Subclass"])), uniqueNames(featureNamesOf(RECORD_KIND_PHB[name], live!.compendium, ["Subclass"])), `${name}: subclass features`);
+  }
+});
+
+test("live catalog: record kind: an Acolyte saved on the SRD Baseline gives its background and background feature on the integrated catalog", { skip: SKIP }, () => {
+  const character = RECORD_KIND_SRD["Cleric 1 Life with Acolyte"];
+  const onSrd = evaluateCharacter(character, { compendium: srdBaseline, activeBooks: RECORD_KIND_BOOKS });
+  const onLive = evaluateCharacter(character, { compendium: live!.compendium, activeBooks: RECORD_KIND_BOOKS });
+  assert.equal(onLive.resolvedBackground?.name, onSrd.resolvedBackground?.name, "the background resolves to the same record name");
+  assert.deepEqual(featureNamesOf(character, live!.compendium, ["Background"]), featureNamesOf(character, srdBaseline, ["Background"]));
+  assert.deepEqual(onLive.proficiencies, onSrd.proficiencies, "the Life Domain's armor and the background's proficiencies are the same");
+});
+
+test("live catalog: record kind: an Acolyte saved on the integrated catalog gives its background feature on the SRD Baseline", { skip: SKIP }, () => {
+  const character = RECORD_KIND_PHB["Cleric 1 Life with Acolyte"];
+  const onSrd = evaluateCharacter(character, { compendium: srdBaseline, activeBooks: RECORD_KIND_BOOKS });
+  const onLive = evaluateCharacter(character, { compendium: live!.compendium, activeBooks: RECORD_KIND_BOOKS });
+  assert.equal(onSrd.resolvedBackground?.name, onLive.resolvedBackground?.name);
+  assert.deepEqual(featureNamesOf(character, srdBaseline, ["Background"]), featureNamesOf(character, live!.compendium, ["Background"]));
+});
+
+test("live catalog: record kind: a Grappler saved on the SRD Baseline, as an ability score feat or an origin feat, gives its feat feature on the integrated catalog", { skip: SKIP }, () => {
+  for (const name of ["Fighter 5 Champion with Grappler", "Fighter 1 with Grappler as an origin feat"]) {
+    assert.deepEqual(featureNamesOf(RECORD_KIND_SRD[name], live!.compendium, ["Feat"]), featureNamesOf(RECORD_KIND_SRD[name], srdBaseline, ["Feat"]), `${name}: feat features`);
+  }
+  assert.ok(featureNamesOf(RECORD_KIND_SRD["Fighter 1 with Grappler as an origin feat"], live!.compendium, ["Feat"]).includes("Feat:Grappler"));
+});
+
+test("live catalog: record kind: a Grappler saved on the integrated catalog gives its feat feature on the SRD Baseline", { skip: SKIP }, () => {
+  for (const name of ["Fighter 5 Champion with Grappler", "Fighter 1 with Grappler as an origin feat"]) {
+    assert.deepEqual(featureNamesOf(RECORD_KIND_PHB[name], srdBaseline, ["Feat"]), featureNamesOf(RECORD_KIND_PHB[name], live!.compendium, ["Feat"]), `${name}: feat features`);
+  }
+});
+
+test("live catalog: record kind: a race's skill pick and a background's language pick saved on the SRD Baseline are kept by a reconcile on the integrated catalog", { skip: SKIP }, () => {
+  const halfElf = makeChar({
+    classes: [{ className: "Fighter", source: "SRD", level: 1 }],
+    race: { name: "Half-Elf", source: "SRD" },
+    baseAbilityScores: RECORD_KIND_SCORES,
+    proficiencyPicks: { "PHB/Race/Half-Elf@0#skills:choice:any": ["Insight", "Stealth"] },
+  });
+  const acolyte = RECORD_KIND_SRD["Cleric 1 Life with Acolyte"];
+  const withLanguages = { ...acolyte, proficiencyPicks: { "PHB/Background/Acolyte@0#languages:choice:any": ["Dwarvish", "Elvish"] } };
+  for (const [character, id, names] of [
+    [halfElf, "PHB/Race/Half-Elf@0#skills:choice:any", ["Insight", "Stealth"]],
+    [withLanguages, "PHB/Background/Acolyte@0#languages:choice:any", ["Dwarvish", "Elvish"]],
+  ] as const) {
+    const reconciled = reconcile(character, live!.compendium, { activeBooks: RECORD_KIND_BOOKS });
+    assert.deepEqual(reconciled.proficiencyPicks?.[id], [...names], `${id} is kept`);
+    assert.deepEqual(reconciled.needsReview ?? [], [], `${id} is not released for review`);
+  }
+});
+
+test("live catalog: record kind: a race's skill pick and a background's language pick saved on the integrated catalog are kept by a reconcile on the SRD Baseline", { skip: SKIP }, () => {
+  const halfElf = makeChar({
+    classes: [{ className: "Fighter", source: "PHB", level: 1 }],
+    race: { name: "Half-Elf", source: "PHB" },
+    baseAbilityScores: RECORD_KIND_SCORES,
+    proficiencyPicks: { "PHB/Race/Half-Elf@0#skills:choice:any": ["Insight", "Stealth"] },
+  });
+  const reconciled = reconcile(halfElf, srdBaseline, { activeBooks: RECORD_KIND_BOOKS });
+  assert.deepEqual(reconciled.proficiencyPicks?.["PHB/Race/Half-Elf@0#skills:choice:any"], ["Insight", "Stealth"]);
+  assert.deepEqual(reconciled.needsReview ?? [], []);
+});
+
+test("live catalog: record kind: a High Elf's race spell pick that is not offered is released on both catalogs when saved on the SRD Baseline", { skip: SKIP }, () => {
+  const releasedOn = (src: string, compendium: Compendium): string[] => {
+    const base = makeChar({
+      classes: [{ className: "Wizard", source: src, level: 3 }],
+      race: { name: "Elf", source: src, subraceName: "High", subraceSource: src },
+      baseAbilityScores: RECORD_KIND_SCORES,
+    });
+    const offer = raceSpellRuleChoices(base, compendium, RECORD_KIND_BOOKS)[0];
+    const entry: RuleChoiceEntry = { id: offer.id, trait: offer.traitName, origin: "race", choose: 1, from: [], picked: ["Druidcraft"] };
+    const pruned = pruneInvalidFeatSpellPicks({ ...base, ruleChoices: [entry] }, compendium, RECORD_KIND_BOOKS);
+    return [JSON.stringify(pruned.ruleChoices ?? []), ...(pruned.needsReview ?? [])];
+  };
+  const reference = releasedOn("PHB", live!.compendium);
+  assert.deepEqual(reference[1], "Druidcraft removed from High Elf: no longer offered", "the reference release is noticed");
+  assert.deepEqual(releasedOn("SRD", live!.compendium), reference, "saved on the SRD Baseline, on the integrated catalog");
+  assert.deepEqual(releasedOn("SRD", srdBaseline), releasedOn("PHB", srdBaseline), "saved on the SRD Baseline, on the SRD Baseline");
+});
+
+test("live catalog: record kind: a character saved on the SRD Baseline keeps its saved sources through every record kind's reads", { skip: SKIP }, () => {
+  for (const name of Object.keys(RECORD_KIND_SRD)) {
+    const character = RECORD_KIND_SRD[name];
+    const before = structuredClone(character);
+    evaluateCharacter(character, { compendium: live!.compendium, activeBooks: RECORD_KIND_BOOKS });
+    featureNamesOf(character, live!.compendium, ["Class", "Subclass", "Background", "Feat"]);
+    reconcile(character, live!.compendium, { activeBooks: RECORD_KIND_BOOKS });
+    assert.deepEqual(character, before, name);
+  }
 });

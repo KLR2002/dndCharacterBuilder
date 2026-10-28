@@ -1,10 +1,10 @@
 import type { InventoryItem } from "../types/character.ts";
-import type { RaceData, ClassData, BackgroundData, FeatData, InitiativeBonus, ProficiencyGrant } from "../types/dnd5e.ts";
+import type { RaceData, ClassData, BackgroundData, FeatData, InitiativeBonus, ProficiencyGrant, AdditionalSpells } from "../types/dnd5e.ts";
 import type { Compendium } from "../services/compendium.ts";
 
 export interface ResolvedAncestry {
-  race?: { name?: string; abilityScoreIncrease?: Record<string, number>[]; speed?: { walk?: number; swim?: number; climb?: number; fly?: number }; traits?: { name: string; description?: string; text?: any }[] };
-  subrace?: { name?: string; abilityScoreIncrease?: Record<string, number>[]; speed?: { walk?: number; swim?: number; climb?: number; fly?: number }; traits?: { name: string; description?: string; text?: any }[] };
+  race?: { name?: string; abilityScoreIncrease?: Record<string, number>[]; speed?: { walk?: number; swim?: number; climb?: number; fly?: number }; traits?: { name: string; description?: string; text?: any }[]; additionalSpells?: AdditionalSpells[] };
+  subrace?: { name?: string; abilityScoreIncrease?: Record<string, number>[]; speed?: { walk?: number; swim?: number; climb?: number; fly?: number }; traits?: { name: string; description?: string; text?: any }[]; additionalSpells?: AdditionalSpells[] };
 }
 // Structural extension until Task 3 persists normalized equipment mechanics.
 export type ArmorItem = InventoryItem & { armorCategory?: string };
@@ -13,12 +13,16 @@ export interface RulesOptions extends ResolvedAncestry {
   races?: RaceData[];
   /** Resolves races by name when no race is given. Defaults to the process-wide current Compendium. */
   compendium?: Compendium;
+  /** The books a race resolves within, when the race is found by name (see findHeldRace). */
+  activeBooks?: readonly string[];
 }
 export interface FeatureCatalog {
   races: RaceData[];
   classes: ClassData[];
   backgrounds: BackgroundData[];
   feats: FeatData[];
+  /** The books a race resolves within, when the race is found by name (see findHeldRace). */
+  activeBooks?: readonly string[];
 }
 export interface FeatureInstance {
   id: string;

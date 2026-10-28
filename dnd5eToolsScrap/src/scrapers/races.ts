@@ -3,8 +3,10 @@ import { resolveAllCopies } from "../parser/copy-resolver.ts";
 import { renderEntries } from "../parser/entry-renderer.ts";
 import { cleanTags } from "../parser/tag-cleaner.ts";
 import { extractRuleChoices, RULE_CHOICE_LEVELS, ruleChoiceKey, type ExtractedRuleChoice } from "./rule-choices.ts";
-import type { RaceModel, SubraceModel, TraitModel } from "../types/models.ts";
+import type { AdditionalSpells, RaceModel, SubraceModel, TraitModel } from "../types/models.ts";
 import type { ProficiencyReport } from "../types/proficiency.ts";
+import { parseAdditionalSpells } from "../parser/additional-spells.ts";
+import { SPELL_GRANT_CORRECTIONS, SPELL_GRANT_GATES, type SpellGrantCorrection, type SpellGrantGate } from "../overrides/granted-spells.ts";
 import {
   newProficiencyReport,
   structuredGrants,
@@ -162,8 +164,15 @@ export async function scrapeRaces(
       report.unparsed.push({ owner: "Subrace", feature: `${parentName} (${normalized.name})`, level: 0, unparsed: proficiencies.unparsed });
     }
 
+    const parsedSubraceSpells = correctSpellGrants(
+      parseAdditionalSpells(rawSub.additionalSpells),
+      { raceName: parentName, raceSource: parentSource || "", subraceName: normalized.name, subraceSource: rawSub.source },
+      SPELL_GRANT_CORRECTIONS
+    );
+    const subraceSpells = parsedSubraceSpells && gateSubraceSpells(parsedSubraceSpells, parentName, normalized.name, rawSub.source, SPELL_GRANT_GATES);
     const subraceModel: SubraceModel = {
       ...(proficiencies.grants.length > 0 ? { grants: proficiencies.grants } : {}),
+      ...(subraceSpells ? { additionalSpells: subraceSpells } : {}),
       name: normalized.name,
       isVariant: normalized.isVariant,
       source: rawSub.source,
@@ -251,8 +260,10 @@ export async function scrapeRaces(
       report.unparsed.push({ owner: "Race", feature: raw.name, level: 0, unparsed: proficiencies.unparsed });
     }
 
+    const raceSpells = correctSpellGrants(parseAdditionalSpells(raw.additionalSpells), { raceName: raw.name, raceSource: raw.source }, SPELL_GRANT_CORRECTIONS);
     races.push({
       ...(proficiencies.grants.length > 0 ? { grants: proficiencies.grants } : {}),
+      ...(raceSpells ? { additionalSpells: raceSpells } : {}),
       name: raw.name,
       source: raw.source,
       size: sizes,
@@ -268,6 +279,95 @@ export async function scrapeRaces(
   }
 
   return races;
+}
+
+/** The key a race's spell grants are looked up by: its name and source. */
+export function raceKey(name: string, source: string): string {
+  return `${name}|${source}`;
+}
+
+/** The key a subrace's spell grants are looked up by: its parent race's key, then its own normalised name and source. */
+export function subraceKey(raceName: string, raceSource: string, name: string, source: string): string {
+  return `${raceKey(raceName, raceSource)}/${name}|${source}`;
+}
+
+/**
+ * The spell grants of each race and subrace in a raw races file, keyed by raceKey and subraceKey. A record without grants is
+ * absent. A subrace that copies another keeps the copied grants, as the scraper resolves the copy first.
+ */
+export function additionalSpellsByRace(
+  rawData: { race?: any[]; subrace?: any[] },
+  gates: readonly SpellGrantGate[] = SPELL_GRANT_GATES,
+  corrections: readonly SpellGrantCorrection[] = SPELL_GRANT_CORRECTIONS
+): Map<string, AdditionalSpells[]> {
+  const grants = new Map<string, AdditionalSpells[]>();
+  for (const raw of resolveAllCopies(rawData.race || [])) {
+    const spells = correctSpellGrants(parseAdditionalSpells(raw.additionalSpells), { raceName: raw.name, raceSource: raw.source }, corrections);
+    if (spells) grants.set(raceKey(raw.name, raw.source), spells);
+  }
+  for (const raw of resolveAllCopies(rawData.subrace || [])) {
+    const parsed = parseAdditionalSpells(raw.additionalSpells);
+    const parentName = raw.raceName || raw._copy?.raceName;
+    if (!parsed || !parentName) continue;
+    const parentSource = raw.raceSource || raw._copy?.raceSource || "";
+    const { name } = normalizeSubraceName(raw.name);
+    const spells = correctSpellGrants(parsed, { raceName: parentName, raceSource: parentSource, subraceName: name, subraceSource: raw.source }, corrections);
+    grants.set(subraceKey(parentName, parentSource, name, raw.source), gateSubraceSpells(spells ?? parsed, parentName, name, raw.source, gates));
+  }
+  return grants;
+}
+
+/** The record a spell grant belongs to: its race, and its subrace when the grant is a subrace's. */
+interface GrantRecord {
+  raceName: string;
+  raceSource: string;
+  subraceName?: string;
+  subraceSource?: string;
+}
+
+/**
+ * The spell grants with the reviewed correction of their record applied (ADR 0017): each section the correction gives replaces
+ * the grant's section of that name, and the other sections, the ability and the expanded lists stay as the source gives them.
+ * A correction's notes replace the grant's notes the same way.
+ * Returns the grants unchanged when no correction names the record.
+ */
+export function correctSpellGrants(
+  spells: AdditionalSpells[] | undefined,
+  record: GrantRecord,
+  corrections: readonly SpellGrantCorrection[]
+): AdditionalSpells[] | undefined {
+  if (!spells) return spells;
+  const correction = corrections.find(
+    (c) =>
+      c.race === record.raceName &&
+      c.raceSource === record.raceSource &&
+      c.subrace === record.subraceName &&
+      c.subraceSource === record.subraceSource
+  );
+  if (!correction) return spells;
+  return spells.map((grant) => ({
+    ...grant,
+    ...(correction.known !== undefined ? { known: correction.known } : {}),
+    ...(correction.innate !== undefined ? { innate: correction.innate } : {}),
+    ...(correction.notes !== undefined ? { notes: correction.notes } : {}),
+  }));
+}
+
+/**
+ * The subrace's spell grants, each carrying the Rule Choice id and option that gate it when a reviewed gate names the subrace
+ * (ADR 0017). The id is the one the app builds for the subrace's trait: source, race, subrace and trait, joined by "__".
+ */
+export function gateSubraceSpells(
+  spells: AdditionalSpells[],
+  raceName: string,
+  subraceName: string,
+  subraceSource: string,
+  gates: readonly SpellGrantGate[]
+): AdditionalSpells[] {
+  const gate = gates.find((g) => g.race === raceName && g.subrace === subraceName && g.subraceSource === subraceSource);
+  if (!gate) return spells;
+  const gatedBy = { choiceId: [subraceSource, raceName, subraceName, gate.trait].join("__"), option: gate.option };
+  return spells.map((grant) => ({ ...grant, gatedBy }));
 }
 
 function parseAbilityScores(ability: any): Array<Record<string, number>> {

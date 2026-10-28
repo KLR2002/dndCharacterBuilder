@@ -7,6 +7,17 @@ const catalogs = { compendium: inMemoryCompendium(loadTestCatalogs()) };
 const cl = (className: string, level: number) => ({ className, source: "PHB", level });
 const scores = (overrides: Record<string, number>) => ({ str: 10, dex: 10, con: 10, int: 10, wis: 10, cha: 10, ...overrides });
 
+test("evaluateCharacter lists an Artificer as a caster, alone and with a Wizard", () => {
+  const artificer = (level: number) => ({ className: "Artificer", source: "TCE", level });
+  const [lone] = evaluateCharacter(makeChar({ classes: [artificer(5)] }), catalogs).spellProfiles;
+  assert.equal(lone.className, "Artificer");
+  assert.equal(lone.ability, "int");
+  assert.equal(lone.maxSpellLevel, 2);
+
+  const pooled = evaluateCharacter(makeChar({ classes: [cl("Wizard", 3), artificer(3)] }), catalogs).spellProfiles;
+  assert.deepEqual(pooled.map((p) => p.className).sort(), ["Artificer", "Wizard"]);
+});
+
 test("evaluateCharacter evaluates single-class Fighter 1", () => {
   const char = makeChar({
     classes: [cl("Fighter", 1)],

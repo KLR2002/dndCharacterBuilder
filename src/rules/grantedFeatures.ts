@@ -9,6 +9,7 @@ import { recordGrantSources } from "./recordProficiencyGrants.ts";
 import { grantRequirementMet, type SubclassOwner } from "./optionFeatureGrants.ts";
 import { findClassData } from "./catalogs.ts";
 import { isCustomBackground } from "./customBackground.ts";
+import { findHeldRace, findHeldRecord, heldSourceOf } from "./raceLookup.ts";
 
 export function grantedFeatures(character: Character, catalog: FeatureCatalog): FeatureInstance[] {
   const out: FeatureInstance[] = [];
@@ -23,7 +24,7 @@ export function grantedFeatures(character: Character, catalog: FeatureCatalog): 
     add({ name: record.name, description: "", source: record.source, origin: record.origin, grants: record.grants }, record.owner);
   }
   if (character.lineageReplacement) {
-    const lineage = catalog.races.find(r => r.name === character.lineageReplacement);
+    const lineage = findHeldRace(catalog.races, { name: character.lineageReplacement }, catalog.activeBooks).race;
     if (lineage) {
       for (const trait of lineage.traits || []) {
         add({ ...trait, source: lineage.source, origin: "Race" }, lineage.name);
@@ -31,8 +32,7 @@ export function grantedFeatures(character: Character, catalog: FeatureCatalog): 
     }
   } else {
     const choice = character.race;
-    const race = catalog.races.find(r => r.name === choice?.name && r.source === choice.source);
-    const subrace = race?.subraces?.find(s => s.name === choice?.subraceName && (!choice.subraceSource || s.source === choice.subraceSource));
+    const { race, subrace } = findHeldRace(catalog.races, choice, catalog.activeBooks);
     const idFor = (source: string, trait: string) =>
       ruleChoiceId({
         source,
@@ -40,24 +40,24 @@ export function grantedFeatures(character: Character, catalog: FeatureCatalog): 
         subrace: choice!.subraceName ? { name: choice!.subraceName } : null,
         trait,
       });
-    const suppressed = replacedTraitNames(character, catalog.races);
+    const suppressed = replacedTraitNames(character, catalog.races, catalog.activeBooks);
     for (const trait of race?.traits || []) {
       if (suppressed.has(trait.name)) continue;
       add(
-        applyRuleChoice(character, { ...trait, source: race!.source, origin: "Race" }, trait.choice, idFor(race!.source, trait.name)),
+        applyRuleChoice(character, { ...trait, source: race!.source, origin: "Race" }, trait.choice, idFor(heldSourceOf(choice?.source, race!), trait.name)),
         race!.name
       );
     }
     for (const trait of subrace?.traits || []) {
       if (suppressed.has(trait.name)) continue;
       add(
-        applyRuleChoice(character, { ...trait, source: subrace!.source, origin: "Subrace" }, trait.choice, idFor(subrace!.source, trait.name)),
+        applyRuleChoice(character, { ...trait, source: subrace!.source, origin: "Subrace" }, trait.choice, idFor(heldSourceOf(choice?.subraceSource, subrace!), trait.name)),
         subrace!.name
       );
     }
   }
   const background = character.background;
-  const bg = catalog.backgrounds.find(b => b.name === background?.name && b.source === background.source);
+  const bg = isCustomBackground(background) ? undefined : findHeldRecord(catalog.backgrounds, background, catalog.activeBooks);
   if (isCustomBackground(background) && background?.customFeatureName) {
     add({ name: background.customFeatureName, description: background.customFeatureDesc || "", source: background.source, origin: "Background" }, background.name);
   } else if (bg?.feature) add({ ...bg.feature, source: bg.source, origin: "Background" }, bg.name);
@@ -137,14 +137,14 @@ export function grantedFeatures(character: Character, catalog: FeatureCatalog): 
       }
     }
     for (const f of cls?.features || []) addClassFeature(f, "Class", c.source, c.className);
-    const subclass = cls?.subclasses.find(s => s.name === c.subclassName && (!c.subclassSource || s.source === c.subclassSource));
+    const subclass = cls && c.subclassName ? findHeldRecord(cls.subclasses, { name: c.subclassName, source: c.subclassSource }, catalog.activeBooks) : undefined;
     for (const f of subclass?.features || []) addClassFeature(f, "Subclass", subclass!.source, `${c.className}/${subclass!.name}`, subclass!.name);
   }
   // Feats from the ability score list and from the origin-feat list (a background's feat) both count. A feat held both
   // ways is one feature instance, so its Initiative Bonus counts once.
   for (const selection of [...character.asiSelections, ...(character.originFeats ?? [])]) {
     if (selection.type !== "feat") continue;
-    const feat = catalog.feats.find(x => x.name === selection.featName && (!selection.featSource || x.source === selection.featSource));
+    const feat = selection.featName ? findHeldRecord(catalog.feats, { name: selection.featName, source: selection.featSource }, catalog.activeBooks) : undefined;
     if (feat) {
       const grants = raisedAbilityGrants(feat.grants ?? [], selection.featAbility);
       add(

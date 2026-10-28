@@ -1,6 +1,7 @@
 import type { Character, KnownSpell, RitualBookEntry, RuleChoiceEntry } from "../../types/character.ts";
 import type { OptionFeatureData, SpellData } from "../../types/dnd5e.ts";
 import { currentCompendium, type Compendium } from "../../services/compendium.ts";
+import { SRD_SOURCE } from "../../constants/books.ts";
 import { isSpellAvailableForClass } from "../spellcasting.ts";
 import { type AvailableRuleChoice, type ChoiceOwner, formatCantripOptions } from "./types.ts";
 
@@ -193,7 +194,7 @@ export function isSpellEligibleForRitualBook(
   if (spell.level < 1) return false;
   if (spell.level > getMaxRitualBookLevel(warlockLevel)) return false;
   if (activeBooks && activeBooks.length > 0) {
-    const upperBooks = new Set(activeBooks.map((b) => b.toUpperCase()));
+    const upperBooks = new Set([SRD_SOURCE, ...activeBooks.map((b) => b.toUpperCase())]);
     if (!upperBooks.has(spell.source.toUpperCase())) {
       return false;
     }

@@ -539,6 +539,20 @@
               "You can speak, read, and write one extra language of your choosing."
             ]
           }
+        ],
+        "additionalSpells": [
+          {
+            "ability": "int",
+            "known": {
+              "1": {
+                "_": [
+                  {
+                    "choose": "level=0|class=Wizard"
+                  }
+                ]
+              }
+            }
+          }
         ]
       }
     ],
@@ -1356,6 +1370,35 @@
         "entries": [
           "You can speak, read, and write Common and Infernal."
         ]
+      }
+    ],
+    "additionalSpells": [
+      {
+        "ability": "cha",
+        "known": {
+          "1": [
+            "thaumaturgy"
+          ]
+        },
+        "innate": {
+          "3": {
+            "daily": {
+              "1": [
+                "hellish rebuke"
+              ]
+            }
+          },
+          "5": {
+            "daily": {
+              "1": [
+                "darkness"
+              ]
+            }
+          }
+        },
+        "castLevels": {
+          "hellish rebuke": 2
+        }
       }
     ]
   }

@@ -58,6 +58,23 @@ test("a custom background with no borrowed feature grants no background feature"
   assert.deepEqual(borrowedFeatures(custom), []);
 });
 
+test("a custom background named like a catalog background grants none of that catalog background's feature", () => {
+  const catalogBackground: BackgroundData = {
+    name: "Gladiator",
+    source: "TST",
+    skillProficiencies: [],
+    toolProficiencies: [],
+    languages: [],
+    startingEquipment: [],
+    feature: { name: "Sample Feature", description: "Placeholder description for the feature." },
+    characteristics: {},
+    description: "Placeholder description for the background.",
+  };
+  const custom = makeChar({ background: { name: "Gladiator", source: "Custom" } });
+  const features = grantedFeatures(custom, { races: [], classes: [], backgrounds: [catalogBackground], feats: [], activeBooks: ["TST"] });
+  assert.equal(features.some((feature) => feature.name === "Sample Feature"), false);
+});
+
 test("clearing a custom background drops its borrowed feature and releases its tool-or-language picks", () => {
   const compendium = inMemoryCompendium({});
   const custom = setCustomBackground(
@@ -112,6 +129,24 @@ test("the legacy skill cleanup keeps a custom background's chosen skill, flagged
   const bySource = makeChar({ background: { name: "Acolyte", source: "Custom" }, chosenSkills: ["Insight"] });
   assert.equal(dropLegacyBackgroundSkills(flagged, compendium, activeBooks), flagged);
   assert.equal(dropLegacyBackgroundSkills(bySource, compendium, activeBooks), bySource);
+});
+
+test("the legacy skill cleanup finds a background saved on the SRD Baseline in the catalog, and drops its copy once the book is off", () => {
+  const scholar: BackgroundData = {
+    name: "Sample Scholar",
+    source: "TST",
+    skillProficiencies: ["Insight"],
+    toolProficiencies: [],
+    languages: [],
+    grants: [{ id: "TST/Background/Sample Scholar@0#0", kind: "fixed", category: "skills", names: ["Insight"] }],
+    startingEquipment: [],
+    feature: null,
+    characteristics: {},
+    description: "",
+  };
+  const compendium = inMemoryCompendium({ backgrounds: [scholar] }, { integrated: true });
+  const character = makeChar({ background: { name: "Sample Scholar", source: "SRD" }, chosenSkills: ["Insight"] });
+  assert.deepEqual(dropLegacyBackgroundSkills(character, compendium, ["ALT"]).chosenSkills, []);
 });
 
 test("grantedFeatures reads the borrowed feature of a custom background by its source, and of a flagged one", () => {

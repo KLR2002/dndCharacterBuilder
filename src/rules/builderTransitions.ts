@@ -15,11 +15,18 @@ import { currentCompendium, type Compendium } from "../services/compendium.ts";
 import { normalizeSkillName } from "./skills.ts";
 import { moveLegacySkillPicks } from "./proficiencyPicks.ts";
 import { CUSTOM_BACKGROUND_SKILLS_ID, CUSTOM_BACKGROUND_TOOLS_OR_LANGUAGES_ID, isCustomBackground } from "./customBackground.ts";
+import { findHeldRecord } from "./raceLookup.ts";
 import { ABILITY_NAMES } from "./abilities.ts";
+import { releaseExpandedOnlySpells } from "./backgroundSpells.ts";
+import { releaseRaceOriginFeat } from "./feats.ts";
+import { isGrantSpellChoiceId, releaseSupersededRacePicks } from "./choices/featSpells.ts";
+import { withNotices } from "./needsReview.ts";
 import {
+  BACKGROUND_FEAT_SOURCE,
   STANDARD_ARRAY,
   MULTICLASS_PREREQUISITES,
 } from "../constants/rules.ts";
+import { SRD_SOURCE } from "../constants/books.ts";
 import { allCatalogClasses, findClassData, type CharacterCatalogs } from "./catalogs.ts";
 import { multiclassGrantsOf } from "./proficiencySheet.ts";
 import { resolveStartingEquipment, type StartingEquipmentKit } from "./startingEquipment.ts";
@@ -213,9 +220,10 @@ export function applyAsiWithHitPoints(
   character: Character,
   selection: AsiSelection,
   fullHealOnLevelUp: boolean,
-  compendium: Compendium = currentCompendium()
+  compendium: Compendium = currentCompendium(),
+  activeBooks?: string[]
 ): Character {
-  const picked = applyAsiSelection(character, selection, compendium);
+  const picked = applyAsiSelection(character, selection, compendium, activeBooks);
   if (!fullHealOnLevelUp) return picked;
   const followed = followRaisedMaxHp(
     { currentHp: picked.currentHp, tempHp: picked.tempHp },
@@ -231,27 +239,99 @@ export function clearRuleChoices(character: Character): Character {
 }
 
 /**
+ * Drops the race skill picks of the held race, the legacy race skill choices and the skill names they hold, and notices each
+ * released skill with the race it came from. Call it once the race is leaving or changing; a pick a later choice holds was
+ * moved by moveLegacySkillPicks first.
+ */
+export function releaseRaceSkillPicks(character: Character): Character {
+  const oldRacePicks = new Set(
+    (character.skillChoices || []).filter((sc) => sc.origin === "race").flatMap((sc) => sc.picked.map(normalizeSkillName))
+  );
+  const heldRace = character.race?.name;
+  const notices = heldRace
+    ? (character.chosenSkills || [])
+        .filter((s) => oldRacePicks.has(normalizeSkillName(s)))
+        .map((s) => `${s} removed from ${heldRace}: ancestry no longer grants it`)
+    : [];
+  return withNotices(
+    {
+      ...character,
+      skillChoices: (character.skillChoices || []).filter((sc) => sc.origin !== "race"),
+      chosenSkills: (character.chosenSkills || []).filter((s) => !oldRacePicks.has(normalizeSkillName(s))),
+    },
+    notices
+  );
+}
+
+/**
+ * Settles a change of the race or lineage held: releases the race picks `before` held that `after` no longer grants, each with
+ * a notice that names the race as `before` held it, then reconciles, and releases the spells only the old expanded lists gave
+ * (ADR 0017).
+ */
+export function settleAncestryChange(
+  before: Character,
+  after: Character,
+  compendium: Compendium,
+  activeBooks?: string[]
+): Character {
+  const reconciled = reconcile(releaseSupersededRacePicks(before, after), compendium, { activeBooks });
+  return releaseExpandedOnlySpells(before, reconciled, compendium, activeBooks);
+}
+
+/**
  * Changes the character's race: drops the race, its ability bonuses, and its race-origin Rule
  * Choices and skill picks, then reconciles. Class-origin choices are kept.
  */
-export function changeRace(character: Character, compendium: Compendium = currentCompendium()): Character {
+export function changeRace(
+  character: Character,
+  compendium: Compendium = currentCompendium(),
+  activeBooks?: string[]
+): Character {
+  // Leaving the race releases the origin feat it gave first, so the pick and counter it granted are not read back below.
+  const leaving = releaseRaceOriginFeat(character, null, compendium, activeBooks);
   // Skill picks saved in the old bucket move into their choices while the race is still held. A pick no choice
   // takes is the race's legacy entry, and it goes with the race.
-  const migrated = moveLegacySkillPicks(character, compendium);
-  const oldRaceChoices = (migrated.skillChoices || []).filter((sc) => sc.origin === "race");
-  const oldRacePicks = new Set(oldRaceChoices.flatMap((sc) => sc.picked.map(normalizeSkillName)));
-  return reconcile(
-    {
-      ...migrated,
-      race: null,
-      racialAbilityBonuses: {},
-      racialChoiceBonus: [],
-      ruleChoices: (character.ruleChoices || []).filter((rc) => rc.origin !== "race"),
-      skillChoices: (migrated.skillChoices || []).filter((sc) => sc.origin !== "race"),
-      chosenSkills: (migrated.chosenSkills || []).filter((s) => !oldRacePicks.has(normalizeSkillName(s))),
-    },
-    compendium
-  );
+  const skilled = releaseRaceSkillPicks(moveLegacySkillPicks(leaving, compendium, activeBooks));
+  // The race's spell picks stay until releaseSupersededRacePicks names and drops them, as the ancestry transition does.
+  const cleared: Character = {
+    ...skilled,
+    race: null,
+    racialAbilityBonuses: {},
+    racialChoiceBonus: [],
+    ruleChoices: (leaving.ruleChoices || []).filter((rc) => rc.origin !== "race" || isGrantSpellChoiceId(rc.id)),
+  };
+  return settleAncestryChange(leaving, cleared, compendium, activeBooks);
+}
+
+/** The lineage a character takes in place of its race: none, the Custom Lineage, or a named lineage. */
+export type LineageChoice = { kind: "none" } | { kind: "custom" } | { kind: "lineage"; name: string };
+
+/**
+ * Replaces the character's lineage with the one chosen, or with none, and reconciles in the same step. The race picks of the
+ * old lineage are released with a notice, and so are the spells only its expanded list gave (ADR 0017). Leaving Custom Lineage
+ * clears the custom race as changeRace does, so the character picks a race again and nothing of the custom race stays granted.
+ * Choosing Custom Lineage from a catalog race clears that race the same way, then holds the custom race.
+ */
+export function changeLineage(
+  character: Character,
+  lineage: LineageChoice,
+  compendium: Compendium = currentCompendium(),
+  activeBooks?: string[]
+): Character {
+  const leavesRace =
+    lineage.kind === "custom"
+      ? character.race != null && !character.customLineage
+      : character.customLineage;
+  const base = leavesRace ? changeRace(character, compendium, activeBooks) : character;
+  const changed: Character =
+    lineage.kind === "custom"
+      ? { ...base, customLineage: true, lineageReplacement: null, race: { name: "Custom Lineage", source: "TCE" } }
+      : {
+          ...base,
+          customLineage: false,
+          lineageReplacement: lineage.kind === "lineage" ? lineage.name : null,
+        };
+  return settleAncestryChange(base, changed, compendium, activeBooks);
 }
 
 /**
@@ -264,14 +344,15 @@ export function changeSubclass(
   newSubclassName: string,
   subclassSource: string,
   unlearnOrphaned: string[] = [],
-  compendium: Compendium = currentCompendium()
+  compendium: Compendium = currentCompendium(),
+  activeBooks?: string[]
 ): Character {
   const existing = character.classes.find((c) => c.className === className);
   const oldSubclass = existing?.subclassName || existing?.subclass;
 
   let updated = character;
   if (oldSubclass && oldSubclass !== newSubclassName) {
-    updated = teardownSubclass(updated, className, oldSubclass, compendium);
+    updated = teardownSubclass(updated, className, oldSubclass, compendium, activeBooks);
   }
 
   if (unlearnOrphaned.length > 0) {
@@ -288,7 +369,7 @@ export function changeSubclass(
       : c
   );
 
-  return reconcile({ ...updated, classes: updatedClasses }, compendium);
+  return reconcile({ ...updated, classes: updatedClasses }, compendium, { activeBooks });
 }
 
 /**
@@ -296,7 +377,11 @@ export function changeSubclass(
  * reaches its subclass level without one, that subclass is applied through `changeSubclass`. Classes
  * with several subclasses are left alone, and an integrated compendium is never changed.
  */
-export function applySoleSubclasses(character: Character, compendium: Compendium = currentCompendium()): Character {
+export function applySoleSubclasses(
+  character: Character,
+  compendium: Compendium = currentCompendium(),
+  activeBooks?: string[]
+): Character {
   if (compendium.integrated) return character;
 
   let updated = character;
@@ -305,7 +390,7 @@ export function applySoleSubclasses(character: Character, compendium: Compendium
     const subclasses = findClassData(compendium.for().classes(), entry)?.subclasses ?? [];
     if (subclasses.length !== 1) continue;
     const [sole] = subclasses;
-    updated = changeSubclass(updated, entry.className, sole.name, sole.source, [], compendium);
+    updated = changeSubclass(updated, entry.className, sole.name, sole.source, [], compendium, activeBooks);
   }
   return updated;
 }
@@ -319,7 +404,8 @@ export function applySoleSubclasses(character: Character, compendium: Compendium
 export function removeClassLevel(
   character: Character,
   className: string,
-  compendium: Compendium = currentCompendium()
+  compendium: Compendium = currentCompendium(),
+  activeBooks?: string[]
 ): Character {
   const existing = character.classes.find((c) => c.className === className);
   if (!existing) return character;
@@ -329,7 +415,7 @@ export function removeClassLevel(
   let updatedClasses: CharacterClass[];
 
   if (existing.level <= 1) {
-    updated = teardownSubclass(updated, className, oldSubclass || "", compendium);
+    updated = teardownSubclass(updated, className, oldSubclass || "", compendium, activeBooks);
     updatedClasses = updated.classes.filter((c) => c.className !== className);
 
     const classSourceKey = `Class: ${className}`;
@@ -347,7 +433,7 @@ export function removeClassLevel(
     const newLevel = existing.level - 1;
     const losesSubclass = newLevel < subclassLevel(className) && Boolean(oldSubclass);
     if (losesSubclass && oldSubclass) {
-      updated = teardownSubclass(updated, className, oldSubclass, compendium);
+      updated = teardownSubclass(updated, className, oldSubclass, compendium, activeBooks);
     }
     updatedClasses = updated.classes.map((c) =>
       c.className === className
@@ -362,7 +448,9 @@ export function removeClassLevel(
     );
   }
 
-  return reconcile({ ...updated, classes: updatedClasses }, compendium);
+  // The spells only a held expanded list gave a class that no longer casts are released, with a notice (ADR 0017).
+  const reconciled = reconcile({ ...updated, classes: updatedClasses }, compendium, { activeBooks });
+  return releaseExpandedOnlySpells(character, reconciled, compendium, activeBooks);
 }
 
 export const STARTING_GOLD_BY_CLASS: Record<string, number> = {
@@ -538,7 +626,8 @@ export function setCustomBackground(
   name: string,
   skills: string[],
   details: CustomBackgroundDetails = {},
-  compendium: Compendium = currentCompendium()
+  compendium: Compendium = currentCompendium(),
+  activeBooks?: string[]
 ): Character {
   const legacyBackground = (character.skillChoices ?? []).filter((sc) => sc.origin === "background");
   const droppedSkills = new Set(legacyBackground.flatMap((sc) => sc.picked.map((s) => normalizeSkillName(s).toLowerCase())));
@@ -567,7 +656,8 @@ export function setCustomBackground(
       skillChoices: (character.skillChoices ?? []).filter((sc) => sc.origin !== "background"),
       proficiencyPicks: Object.keys(proficiencyPicks).length > 0 ? proficiencyPicks : undefined,
     },
-    compendium
+    compendium,
+    { activeBooks }
   );
 }
 
@@ -580,16 +670,18 @@ function storePicks(picks: Record<string, string[]>, id: string, values: string[
 /**
  * Clears the character's background and the grants that came from it: the background's skill
  * proficiencies (kept when another source also grants the skill), its language and tool picks,
- * and any origin feat it granted. Ends in the Character Reconciler, which prunes the choices that
- * depended on a removed feat. Records a review notice for each background grant removed.
+ * any origin feat it granted, and the known spells that only its expanded spell list gave. Ends in
+ * the Character Reconciler, which prunes the choices that depended on a removed feat. Records a
+ * review notice for each background grant removed.
  */
 export function clearBackground(character: Character, catalogs: CharacterCatalogs = {}): Character {
   const compendium = catalogs.compendium ?? currentCompendium();
   // Skill picks saved in the old bucket move into their choices while the background is still held.
-  const current = moveLegacySkillPicks(character, compendium);
+  const current = moveLegacySkillPicks(character, compendium, catalogs.activeBooks);
   const bg = current.background;
   const bgName = bg?.name ?? "previous";
-  const bgData = bg ? compendium.findBackground(bg.name, bg.source) : undefined;
+  // Unscoped by books, so a background whose book is switched off still gives the skills it granted.
+  const bgData = bg && !isCustomBackground(bg) ? findHeldRecord(compendium.for().backgrounds(), bg, catalogs.activeBooks) : undefined;
 
   const normalize = (s: string) => s.trim().toLowerCase();
   const bgSkillChoice = current.skillChoices?.find((sc) => sc.origin === "background");
@@ -607,8 +699,8 @@ export function clearBackground(character: Character, catalogs: CharacterCatalog
   );
   const chosenSkills = current.chosenSkills.filter((s) => !removedSkills.includes(s));
 
-  const grantedFeats = (character.originFeats ?? []).filter((f) => f.featSource === "Background");
-  const keptFeats = (character.originFeats ?? []).filter((f) => f.featSource !== "Background");
+  const grantedFeats = (character.originFeats ?? []).filter((f) => f.featSource === BACKGROUND_FEAT_SOURCE);
+  const keptFeats = (character.originFeats ?? []).filter((f) => f.featSource !== BACKGROUND_FEAT_SOURCE);
 
   const hadLanguagesOrTools =
     (character.chosenLanguages?.background ?? []).length > 0 ||
@@ -629,12 +721,15 @@ export function clearBackground(character: Character, catalogs: CharacterCatalog
     chosenLanguages: { ...character.chosenLanguages, background: [] },
     chosenTools: { ...character.chosenTools, background: [] },
     originFeats: keptFeats,
-    ...(notices.length > 0
-      ? { needsReview: Array.from(new Set([...(character.needsReview ?? []), ...notices])) }
-      : {}),
   };
 
-  return reconcile(cleared, compendium);
+  // The spells only the background's expanded list gave are released, with a notice (ADR 0017).
+  return releaseExpandedOnlySpells(
+    current,
+    reconcile(withNotices(cleared, notices), compendium, { activeBooks: catalogs.activeBooks }),
+    compendium,
+    catalogs.activeBooks
+  );
 }
 
 /**
@@ -749,7 +844,7 @@ export function checkActiveBooksIntegrity(
   character: Character,
   activeBooks: string[]
 ): string[] {
-  const activeSet = new Set((activeBooks || []).map((b) => b.toUpperCase()));
+  const activeSet = new Set([SRD_SOURCE, ...(activeBooks || []).map((b) => b.toUpperCase())]);
   const warnings: string[] = [];
 
   // 1. Race & Subrace
@@ -782,12 +877,12 @@ export function checkActiveBooksIntegrity(
 
   // 4. Feats (ASIs & Origin Feats)
   for (const asi of character.asiSelections || []) {
-    if (asi.type === "feat" && asi.featSource && !activeSet.has(asi.featSource.toUpperCase())) {
+    if (asi.type === "feat" && asi.featSource && asi.featSource !== BACKGROUND_FEAT_SOURCE && !activeSet.has(asi.featSource.toUpperCase())) {
       warnings.push(`Feat "${asi.featName}" is from disabled sourcebook "${asi.featSource}".`);
     }
   }
   for (const feat of character.originFeats || []) {
-    if (feat.featSource && !activeSet.has(feat.featSource.toUpperCase())) {
+    if (feat.featSource && feat.featSource !== BACKGROUND_FEAT_SOURCE && !activeSet.has(feat.featSource.toUpperCase())) {
       warnings.push(`Feat "${feat.featName}" is from disabled sourcebook "${feat.featSource}".`);
     }
   }

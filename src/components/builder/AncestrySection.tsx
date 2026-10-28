@@ -3,20 +3,20 @@ import { ScrollView, Text, TouchableOpacity, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { AbilityKey, Character } from "../../types/character";
 import type { RaceData } from "../../types/dnd5e";
-import { type AvailableRuleChoice } from "../../rules/ruleChoices";
-import { changeRace, setChoiceRacialBonus } from "../../rules/builderTransitions";
+import { featSpellChoicesOf, raceSpellRuleChoices, type AvailableRuleChoice } from "../../rules/ruleChoices";
+import { changeLineage, changeRace, setChoiceRacialBonus, type LineageChoice } from "../../rules/builderTransitions";
 import { currentCompendium, srdBaselineRaces } from "../../services/compendium";
 import {
   resolveAncestryState,
   applyAncestrySelection,
   applyAncestryChoice,
-  setRacialCantrip,
   collectFixedBonuses,
   offersPlainRaceForm,
 } from "../../rules/ancestryEngine";
 import type { SourceFixedGrants } from "../../rules/proficiencySheet";
 import { picksOnlyLanguages } from "../../rules/proficiencyChoiceOffers";
 import { ProficiencyChoicePicker } from "./ProficiencyChoicePicker";
+import { GrantedSpellPicks } from "./GrantedSpellPicks";
 import { Badge } from "../ui/Badge";
 import { Button } from "../ui/Button";
 import { Card } from "../ui/Card";
@@ -25,10 +25,10 @@ import { Modal } from "../ui/Modal";
 import { SearchBar } from "../ui/SearchBar";
 import { ABILITY_KEYS, ABILITY_LABELS, builderStyles as styles, RuleChoicePicker } from "./builderStyles";
 import { useCharacters } from "../../context/CharacterContext";
-import { getFeats, getSpells } from "../../services/dataService";
+import { getFeats } from "../../services/dataService";
 import { validateFeatPrerequisites, applyOriginFeat, removeOriginFeat } from "../../rules/feats";
 import { getFeatAbilityBonusOptions } from "../../rules/leveling";
-import { isSpellAvailableForClass } from "../../rules/spellcasting";
+import { BACKGROUND_FEAT_SOURCE } from "../../constants/rules";
 
 function formatRaceASI(abilityScoreIncrease: Record<string, number>[]): string {
   const totals: Record<string, number> = {};
@@ -85,8 +85,6 @@ export const AncestrySection: React.FC<AncestrySectionProps> = ({
 
   const [featModalVisible, setFeatModalVisible] = useState(false);
   const [featSearch, setFeatSearch] = useState("");
-  const [cantripModalVisible, setCantripModalVisible] = useState(false);
-  const [cantripSearch, setCantripSearch] = useState("");
 
   const { activeBooks, isIntegrated } = useCharacters();
 
@@ -110,11 +108,9 @@ export const AncestrySection: React.FC<AncestrySectionProps> = ({
     return "Custom Lineage (TCoE)";
   }, [activeBooks]);
   const allFeats = useMemo(() => getFeats(activeBooks), [activeBooks]);
-  const wizardCantrips = useMemo(() => {
-    return getSpells(activeBooks).filter(
-      (s) => s.level === 0 && isSpellAvailableForClass(s, "Wizard", activeBooks)
-    );
-  }, [activeBooks]);
+  const raceSpellChoices = useMemo(() => {
+    return character.race ? raceSpellRuleChoices(character, currentCompendium(), activeBooks) : [];
+  }, [character, activeBooks]);
 
   const ancestryState = useMemo(() => {
     return resolveAncestryState(character, { activeBooks });
@@ -127,9 +123,6 @@ export const AncestrySection: React.FC<AncestrySectionProps> = ({
     hasOriginFeat,
     originFeatTitle,
     currentOriginFeat,
-    hasRacialCantrip,
-    racialCantripTitle,
-    currentRacialCantrip,
   } = ancestryState;
 
   const handleChoiceASITap = (key: AbilityKey) => {
@@ -228,7 +221,7 @@ export const AncestrySection: React.FC<AncestrySectionProps> = ({
             size="sm"
             onPress={() => {
               setUserSelectedMode(null);
-              onUpdate((cur) => changeRace(cur, currentCompendium()));
+              onUpdate((cur) => changeRace(cur, currentCompendium(), activeBooks));
             }}
           />
         </Card>
@@ -387,9 +380,17 @@ export const AncestrySection: React.FC<AncestrySectionProps> = ({
             </View>
           )}
           {proficiencyChoices.map((choice) => (
-            <ProficiencyChoicePicker key={choice.id} choice={choice} character={character} onUpdate={onUpdate} theme={theme} />
+            <ProficiencyChoicePicker key={choice.id} choice={choice} character={character} onUpdate={onUpdate} theme={theme} activeBooks={activeBooks} />
           ))}
         </CollapsibleCard>
+      )}
+
+      {/* The race's spell picks: its casting ability when the race lets the player choose one, then its cantrip or spell picks */}
+      {character.race && raceSpellChoices.length > 0 && (
+        <Card style={{ gap: 10 }}>
+          <Text style={[styles.heading, { color: theme.text }]}>Racial Spells</Text>
+          <GrantedSpellPicks character={character} choices={raceSpellChoices} onUpdate={onUpdate} theme={theme} activeBooks={activeBooks} />
+        </Card>
       )}
 
       {/* Origin Feat for Variant Human and Custom Lineage */}
@@ -431,7 +432,7 @@ export const AncestrySection: React.FC<AncestrySectionProps> = ({
                   size="sm"
                   onPress={() => {
                     if (currentOriginFeat.featName) {
-                      onUpdate((cur) => removeOriginFeat(cur, currentOriginFeat.featName!));
+                      onUpdate((cur) => removeOriginFeat(cur, currentOriginFeat, currentCompendium(), activeBooks));
                     }
                   }}
                 />
@@ -456,7 +457,9 @@ export const AncestrySection: React.FC<AncestrySectionProps> = ({
                                 applyOriginFeat(
                                   cur,
                                   { ...currentOriginFeat, featAbility: ab },
-                                  currentOriginFeat.featName
+                                  currentOriginFeat,
+                                  currentCompendium(),
+                                  activeBooks
                                 )
                               );
                             }}
@@ -482,6 +485,14 @@ export const AncestrySection: React.FC<AncestrySectionProps> = ({
                   </View>
                 );
               })()}
+
+              <GrantedSpellPicks
+                character={character}
+                choices={featSpellChoicesOf(character, { name: currentOriginFeat.featName || "", source: currentOriginFeat.featSource || "PHB" }, currentCompendium(), activeBooks)}
+                onUpdate={onUpdate}
+                theme={theme}
+                activeBooks={activeBooks}
+              />
             </View>
           ) : (
             <Button
@@ -490,51 +501,6 @@ export const AncestrySection: React.FC<AncestrySectionProps> = ({
               variant="primary"
               size="sm"
               onPress={() => setFeatModalVisible(true)}
-            />
-          )}
-        </Card>
-      )}
-
-      {/* High Elf / Half-Elf Descent Wizard Cantrip Choice */}
-      {character.race && hasRacialCantrip && (
-        <Card style={{ gap: 10, borderColor: theme.accent }}>
-          <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
-            <View style={{ flex: 1 }}>
-              <Text style={[styles.heading, { color: theme.accent }]}>
-                {racialCantripTitle}
-              </Text>
-              <Text style={{ color: theme.textSecondary, fontSize: 12 }}>
-                You know one cantrip of your choice from the wizard spell list (INT)
-              </Text>
-            </View>
-            {currentRacialCantrip && (
-              <Button
-                title="Change"
-                variant="outline"
-                size="sm"
-                onPress={() => setCantripModalVisible(true)}
-              />
-            )}
-          </View>
-
-          {currentRacialCantrip ? (
-            <View style={[styles.featureRow, { borderColor: theme.border }]}>
-              <View style={{ flex: 1 }}>
-                <Text style={{ color: theme.text, fontWeight: "700", fontSize: 14 }}>
-                  {currentRacialCantrip}
-                </Text>
-                <Text style={{ color: theme.textMuted, fontSize: 12 }}>
-                  Wizard Cantrip • Uses Intelligence
-                </Text>
-              </View>
-            </View>
-          ) : (
-            <Button
-              title="Choose Wizard Cantrip"
-              icon="sparkles-outline"
-              variant="primary"
-              size="sm"
-              onPress={() => setCantripModalVisible(true)}
             />
           )}
         </Card>
@@ -582,17 +548,9 @@ export const AncestrySection: React.FC<AncestrySectionProps> = ({
                 <TouchableOpacity
                   key={opt}
                   onPress={() => {
-                    if (opt === "None") {
-                      onUpdate({ lineageReplacement: null, customLineage: false });
-                    } else if (opt === "Custom Lineage") {
-                      onUpdate({
-                        customLineage: true,
-                        lineageReplacement: null,
-                        race: { name: "Custom Lineage", source: "TCE" },
-                      });
-                    } else {
-                      onUpdate({ lineageReplacement: opt, customLineage: false });
-                    }
+                    const choice: LineageChoice =
+                      opt === "None" ? { kind: "none" } : opt === "Custom Lineage" ? { kind: "custom" } : { kind: "lineage", name: opt };
+                    onUpdate((prev) => changeLineage(prev, choice, currentCompendium(), activeBooks));
                   }}
                   style={[
                     styles.lineageChip,
@@ -753,11 +711,16 @@ export const AncestrySection: React.FC<AncestrySectionProps> = ({
                 const prereqCheck = validateFeatPrerequisites(character, f);
                 const bonusOptions = getFeatAbilityBonusOptions(f.name);
                 const isSelected = currentOriginFeat?.featName?.toLowerCase() === f.name.toLowerCase();
+                // A feat the background already gives is held once, so the race cannot take it (applyOriginFeat).
+                const heldByBackground = (character.originFeats ?? []).some(
+                  (entry) => entry.featSource === BACKGROUND_FEAT_SOURCE && entry.featName?.toLowerCase() === f.name.toLowerCase()
+                );
 
                 return (
                   <TouchableOpacity
                     key={`${f.name}__${f.source}`}
                     activeOpacity={0.7}
+                    disabled={heldByBackground}
                     onPress={() => {
                       const initialAbility =
                         bonusOptions.abilities.length === 1 ? bonusOptions.abilities[0] : undefined;
@@ -771,7 +734,9 @@ export const AncestrySection: React.FC<AncestrySectionProps> = ({
                             featSource: f.source,
                             featAbility: initialAbility,
                           },
-                          currentOriginFeat?.featName
+                          currentOriginFeat,
+                          currentCompendium(),
+                          activeBooks
                         )
                       );
                       setFeatModalVisible(false);
@@ -806,7 +771,7 @@ export const AncestrySection: React.FC<AncestrySectionProps> = ({
                       title={isSelected ? "Selected" : "Select"}
                       variant={isSelected ? "secondary" : "primary"}
                       size="sm"
-                      disabled={isSelected}
+                      disabled={isSelected || heldByBackground}
                       onPress={() => {
                         const initialAbility =
                           bonusOptions.abilities.length === 1 ? bonusOptions.abilities[0] : undefined;
@@ -820,7 +785,9 @@ export const AncestrySection: React.FC<AncestrySectionProps> = ({
                               featSource: f.source,
                               featAbility: initialAbility,
                             },
-                            currentOriginFeat?.featName
+                            currentOriginFeat,
+                            currentCompendium(),
+                            activeBooks
                           )
                         );
                         setFeatModalVisible(false);
@@ -833,67 +800,6 @@ export const AncestrySection: React.FC<AncestrySectionProps> = ({
         </ScrollView>
       </Modal>
 
-      {/* Racial Wizard Cantrip Modal */}
-      <Modal
-        visible={cantripModalVisible}
-        onClose={() => setCantripModalVisible(false)}
-        title="Choose Wizard Cantrip"
-        subtitle={racialCantripTitle || "Racial Trait (Uses Intelligence)"}
-        maxHeightPercent={90}>
-        <SearchBar
-          value={cantripSearch}
-          onChangeText={setCantripSearch}
-          placeholder="Search wizard cantrips..."
-        />
-        <ScrollView style={{ marginTop: 10, maxHeight: 450 }} nestedScrollEnabled>
-          <View style={{ gap: 8 }}>
-            {wizardCantrips
-              .filter((s) => s.name.toLowerCase().includes(cantripSearch.toLowerCase()))
-              .map((s) => {
-                const isSelected = currentRacialCantrip?.toLowerCase() === s.name.toLowerCase();
-
-                return (
-                  <TouchableOpacity
-                    key={`${s.name}__${s.source}`}
-                    activeOpacity={0.7}
-                    onPress={() => {
-                      onUpdate((cur) => setRacialCantrip(cur, s.name));
-                      setCantripModalVisible(false);
-                    }}
-                    style={[
-                      styles.featureRow,
-                      {
-                        borderColor: isSelected ? theme.accent : theme.border,
-                        backgroundColor: isSelected ? theme.surfaceHighlight : theme.surface,
-                        padding: 10,
-                        borderRadius: 8,
-                      },
-                    ]}>
-                    <View style={{ flex: 1, gap: 2 }}>
-                      <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-                        <Text style={{ color: theme.text, fontSize: 14, fontWeight: "700" }}>{s.name}</Text>
-                        <Badge label={s.school || "Evocation"} variant="surface" size="sm" />
-                      </View>
-                      <Text style={{ color: theme.textSecondary, fontSize: 12 }} numberOfLines={2}>
-                        {s.description?.slice(0, 120)}...
-                      </Text>
-                    </View>
-                    <Button
-                      title={isSelected ? "Selected" : "Select"}
-                      variant={isSelected ? "secondary" : "primary"}
-                      size="sm"
-                      disabled={isSelected}
-                      onPress={() => {
-                        onUpdate((cur) => setRacialCantrip(cur, s.name));
-                        setCantripModalVisible(false);
-                      }}
-                    />
-                  </TouchableOpacity>
-                );
-              })}
-          </View>
-        </ScrollView>
-      </Modal>
     </View>
   );
 };

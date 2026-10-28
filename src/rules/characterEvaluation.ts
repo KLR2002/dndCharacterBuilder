@@ -23,7 +23,9 @@ import {
 import {
   getClassSpellProfiles,
   calculateWarlockPactSlots,
+  lockedPreparedCards,
   type ClassSpellProfile,
+  type LockedPreparedCard,
 } from "./spellcasting.ts";
 import {
   getClassDice,
@@ -34,6 +36,9 @@ import {
   calculateAutoResourceCounters,
   getMergedResourceCounters,
 } from "./resourceCounters.ts";
+import { grantedPreparedSpells, grantedSpellSources } from "./grantedSpells.ts";
+import { heldExpandedSpellNames, resolveCharacterBackground } from "./backgroundSpells.ts";
+import type { InnateSpellProfile } from "./innateMagic.ts";
 
 export { catalogListings, type CharacterCatalogs } from "./catalogs.ts";
 
@@ -71,6 +76,10 @@ export interface EvaluatedCharacter {
   resolvedAncestry: ResolvedAncestry;
   resolvedBackground?: BackgroundData;
   spellProfiles: ClassSpellProfile[];
+  /** The Innate Magic sources the character's feats, races and subraces grant (ADR 0017), one card each. Not class spells. */
+  grantedSpellSources: InnateSpellProfile[];
+  /** The plain prepared spells of the character's feats and race, on one locked card per source, when it has no spellcasting class. */
+  lockedPreparedCards: LockedPreparedCard[];
   pactMagic: { count: number; level: number } | null;
   combatDice: ClassDiceSummary;
   combatDcs: {
@@ -78,13 +87,6 @@ export interface EvaluatedCharacter {
     spellSaveDc?: number;
   };
   featureCounters: Record<string, ResourceCounter>;
-}
-
-export function resolveCharacterBackground(character: Character, backgroundCatalog?: BackgroundData[]): BackgroundData | undefined {
-  if (!character.background || !backgroundCatalog) return undefined;
-  return backgroundCatalog.find(
-    (b) => b.name === character.background?.name && (!character.background?.source || b.source === character.background?.source)
-  );
 }
 
 /**
@@ -96,8 +98,8 @@ export function evaluateCharacter(
   catalogs?: CharacterCatalogs
 ): EvaluatedCharacter {
   const listings = catalogListings(catalogs);
-  const ancestry = resolveCharacterAncestry(character, listings.races());
-  const background = resolveCharacterBackground(character, listings.backgrounds());
+  const ancestry = resolveCharacterAncestry(character, listings.races(), catalogs?.activeBooks);
+  const background = resolveCharacterBackground(character, listings.backgrounds(), catalogs?.activeBooks);
   const classes = allCatalogClasses(catalogs);
 
   const lvl = totalLevel(character);
@@ -106,7 +108,7 @@ export function evaluateCharacter(
   const maxHitPoints = maxHp(character, ancestry, classes);
   const hitDice = getHitDicePools(character, classes);
   const acResult = armorClass(character, ancestry);
-  const speedsResult = characterSpeeds(character, { ...ancestry, compendium: catalogs?.compendium });
+  const speedsResult = characterSpeeds(character, { ...ancestry, compendium: catalogs?.compendium, activeBooks: catalogs?.activeBooks });
   const speedResult = speedsResult.walk;
   const sheet = proficiencySheet(character, catalogs ?? {});
   const initiativeResult = initiativeOf(
@@ -115,6 +117,7 @@ export function evaluateCharacter(
       classes: listings.classes(),
       backgrounds: listings.backgrounds(),
       feats: listings.feats(),
+      activeBooks: catalogs?.activeBooks,
     }),
     effScores.modifiers,
     pb,
@@ -143,9 +146,19 @@ export function evaluateCharacter(
 
   const attacksList = getWeaponAttacks(character, { catalogs });
 
+  const grantedPrepared = grantedPreparedSpells(character, catalogs);
   const spellProfiles = getClassSpellProfiles(character, {
     ...ancestry,
     activeBooks: catalogs?.activeBooks,
+    classes,
+    compendium: catalogs?.compendium,
+    expandedSpells: heldExpandedSpellNames(character, catalogs?.compendium, catalogs?.activeBooks),
+    grantedPrepared,
+  });
+  const lockedCards = spellProfiles.length === 0 ? lockedPreparedCards(grantedPrepared, lvl) : [];
+  const grantedSources = grantedSpellSources(character, catalogs, {
+    modifiers: effScores.modifiers,
+    proficiencyBonus: pb,
   });
   const pactMagic = calculateWarlockPactSlots(character);
   const combatDice = getClassDice(character);
@@ -191,6 +204,8 @@ export function evaluateCharacter(
     resolvedAncestry: ancestry,
     resolvedBackground: background,
     spellProfiles,
+    grantedSpellSources: grantedSources,
+    lockedPreparedCards: lockedCards,
     pactMagic,
     combatDice,
     combatDcs,

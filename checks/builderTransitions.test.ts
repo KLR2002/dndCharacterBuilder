@@ -3,7 +3,8 @@ import assert from "node:assert/strict";
 import { teardownSubclass } from "../src/rules/characterReconciler.ts";
 import { reconcile } from "../src/rules/characterReconciler.ts";
 import { currentCompendium } from "../src/services/compendium.ts";
-import { makeChar, inMemoryCompendium } from "./testUtils.ts";
+import { makeChar, inMemoryCompendium, integratedTestCompendium } from "./testUtils.ts";
+import { DEFAULT_ACTIVE_BOOK_CODES } from "../src/constants/books.ts";
 import { CUSTOM_BACKGROUND_SKILLS_ID } from "../src/rules/customBackground.ts";
 import { effectiveScores } from "../src/rules/abilities.ts";
 import {
@@ -29,7 +30,8 @@ import type {
   RuleChoiceEntry,
   SkillChoiceEntry,
 } from "../src/types/character.ts";
-import type { BackgroundData, ClassData } from "../src/types/dnd5e.ts";
+import type { BackgroundData, ClassData, RaceData } from "../src/types/dnd5e.ts";
+import { applyAncestrySelection } from "../src/rules/ancestryEngine.ts";
 
 test("setChoiceRacialBonus updates racialChoiceBonus and racialAbilityBonuses while preserving fixed racial bonuses", () => {
   // Half-Elf style: +2 Charisma fixed, plus 2 choice bonuses of +1
@@ -808,6 +810,112 @@ test("clearing a background removes its skill, language and tool grants and keep
   assert.deepEqual(updated.needsReview, [
     "Soldier background removed: granted skills, languages and tools cleared",
   ]);
+});
+
+// Invented background records, in the sources the two catalogs hold them under.
+const SCHOLAR: BackgroundData = {
+  name: "Sample Scholar",
+  source: "TST",
+  skillProficiencies: ["Insight", "Religion"],
+  toolProficiencies: [],
+  languages: [],
+  startingEquipment: [],
+  feature: null,
+  characteristics: {},
+  description: "",
+};
+const SCHOLAR_NOTICE = "Sample Scholar background removed: granted skills, languages and tools cleared";
+
+test("clearing a background saved on the SRD Baseline clears its legacy skills on the integrated catalog, which holds it under another source", () => {
+  const integrated = inMemoryCompendium({ backgrounds: [SCHOLAR] }, { integrated: true });
+  const char = makeChar({ background: { name: "Sample Scholar", source: "SRD" }, chosenSkills: ["Insight", "Religion"] });
+  const updated = clearBackground(char, { compendium: integrated, activeBooks: ["TST"] });
+  assert.deepEqual(updated.chosenSkills, []);
+  assert.deepEqual(updated.needsReview, [SCHOLAR_NOTICE]);
+});
+
+test("clearing a background saved on the integrated catalog clears its legacy skills on the SRD Baseline alone, which holds it under SRD", () => {
+  const srdOnly = inMemoryCompendium({ backgrounds: [{ ...SCHOLAR, source: "SRD" }] });
+  const char = makeChar({ background: { name: "Sample Scholar", source: "TST" }, chosenSkills: ["Insight", "Religion"] });
+  const updated = clearBackground(char, { compendium: srdOnly, activeBooks: ["SRD"] });
+  assert.deepEqual(updated.chosenSkills, []);
+  assert.deepEqual(updated.needsReview, [SCHOLAR_NOTICE]);
+});
+
+test("clearing the Acolyte saved on the SRD Baseline clears its legacy skills on the real integrated catalog", () => {
+  const char = makeChar({ background: { name: "Acolyte", source: "SRD" }, chosenSkills: ["Insight"] });
+  const updated = clearBackground(char, { compendium: integratedTestCompendium(), activeBooks: [...DEFAULT_ACTIVE_BOOK_CODES] });
+  assert.deepEqual(updated.chosenSkills, []);
+  assert.deepEqual(updated.needsReview, ["Acolyte background removed: granted skills, languages and tools cleared"]);
+});
+
+// Invented records of one name in two books, each with a skill choice of its own. The saved source is in neither book.
+const skillChoiceRecord = <T extends { name: string; source: string }>(record: T, skills: string[]): T => ({
+  ...record,
+  grants: [{ id: `${record.source}/${record.name}@0#skills:choice:from`, kind: "choice", category: "skills", count: 1, pool: { kind: "names", names: skills } }],
+});
+const scholarBooks = inMemoryCompendium(
+  {
+    backgrounds: [
+      skillChoiceRecord({ ...SCHOLAR, source: "OLD" }, ["Insight", "Religion"]),
+      skillChoiceRecord({ ...SCHOLAR, source: "ALT" }, ["Survival", "Perception"]),
+    ],
+  },
+  { integrated: true },
+);
+const legacyBackgroundPick: SkillChoiceEntry = { id: "legacy_background", origin: "background", choose: 1, from: [], picked: ["Survival"] };
+
+/** An invented race, held in the given book, with a skill choice of its own: the first book's pool lacks Survival. */
+const folkIn = (source: string): RaceData => ({
+  name: "Sample Folk",
+  source,
+  size: ["Medium"],
+  speed: { walk: 30 },
+  abilityScoreIncrease: [],
+  darkvision: null,
+  traits: [],
+  languages: ["Common"],
+  subraces: [],
+  description: "",
+  grants: [
+    {
+      id: `${source}/Sample Folk@0#skills:choice:from`,
+      kind: "choice",
+      category: "skills",
+      count: 1,
+      pool: { kind: "names", names: source === "OLD" ? ["Insight", "Religion"] : ["Survival", "Perception"] },
+    },
+  ],
+});
+
+test("clearing a background judges a legacy skill pick against the active book's record, not the first listed", () => {
+  const char = makeChar({ background: { name: "Sample Scholar", source: "GONE" }, skillChoices: [legacyBackgroundPick] });
+  const updated = clearBackground(char, { compendium: scholarBooks, activeBooks: ["ALT"] });
+  assert.ok(updated.needsReview?.some((notice) => notice.startsWith("Survival removed")), `needsReview: ${updated.needsReview}`);
+});
+
+test("changing race judges a legacy skill pick against the active book's record, not the first listed", () => {
+  const compendium = inMemoryCompendium({ races: [folkIn("OLD"), folkIn("ALT")] }, { integrated: true });
+  const char = makeChar({
+    race: { name: "Sample Folk", source: "GONE" },
+    skillChoices: [{ id: "legacy_race", origin: "race", choose: 1, from: [], picked: ["Survival"] }],
+  });
+  const updated = changeRace(char, compendium, ["ALT"]);
+  assert.ok(updated.needsReview?.some((notice) => notice.startsWith("Survival removed")), `needsReview: ${updated.needsReview}`);
+});
+
+test("applying an ancestry keeps a legacy skill pick judged against the active book's record, not the first listed", () => {
+  const compendium = inMemoryCompendium({ races: [folkIn("OLD"), folkIn("ALT")] }, { integrated: true });
+  const char = makeChar({
+    race: { name: "Sample Folk", source: "GONE" },
+    skillChoices: [{ id: "legacy_race", origin: "race", choose: 1, from: [], picked: ["Survival"] }],
+  });
+  const updated = applyAncestrySelection(char, folkIn("ALT"), undefined, { compendium, activeBooks: ["ALT"] });
+  assert.ok(
+    Object.values(updated.proficiencyPicks ?? {}).some((picks) => picks.includes("Survival")),
+    `the pick moves into the active book's choice: ${JSON.stringify(updated.proficiencyPicks)}`,
+  );
+  assert.ok(!updated.needsReview?.some((notice) => notice.includes("Survival")), "and is not released");
 });
 
 test("clearing a custom background removes the skills it chose and keeps class skills", () => {

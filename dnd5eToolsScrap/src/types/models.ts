@@ -42,11 +42,15 @@ export interface RaceModel {
   rawEntries?: any[];
   /** Proficiency Grants from the race's structured proficiency fields. */
   grants?: ProficiencyGrant[];
+  /** The spells the race grants, as the source gives them (ADR 0017). Absent when it grants none. */
+  additionalSpells?: AdditionalSpells[];
 }
 
 export interface SubraceModel {
   /** Proficiency Grants the subrace's structured proficiency entries give. Absent when it gives none. */
   grants?: ProficiencyGrant[];
+  /** The spells the subrace grants, as the source gives them (ADR 0017). Absent when it grants none. */
+  additionalSpells?: AdditionalSpells[];
   name: string;
   /** True when this subrace is a rules variant of its ancestry. */
   isVariant: boolean;
@@ -93,13 +97,25 @@ export interface ClassFeatureModel {
   initiativeBonus?: InitiativeBonus;
 }
 
-export interface SubclassAdditionalSpells {
-  prepared?: Record<string, string[]>;
+/**
+ * One spell grant of a subclass, feat, race or background, as the source gives it. `ability` is the casting ability: a fixed
+ * key, `inherit` (the ability the feat's increase raised) or a `choose` list. A `choose` object inside a spell list is a pick.
+ */
+export interface AdditionalSpells {
+  name?: string;
+  ability?: string | { choose: string[] };
+  /** Always-prepared spells, keyed by character level, `_`, or `sN` (a spell slot level). Each key holds names, `daily` or `will` groups, or picks. */
+  prepared?: Record<string, any>;
   /** Per spell level: a list of spell names, or a `_` list of `choose` filters (cantrip lists). */
   known?: Record<string, any>;
   expanded?: Record<string, any>;
   innate?: Record<string, any>;
-  name?: string;
+  /** The Rule Choice option this grant waits on: the grant is read only while the player picked it. Set by a reviewed gate. */
+  gatedBy?: { choiceId: string; option: string };
+  /** The level each named spell is cast at where the source's `#N` suffix gives one, keyed by the lower-case spell name. */
+  castLevels?: Record<string, number>;
+  /** A short note the reviewed corrections give a named spell, keyed by the lower-case spell name (for example "self only"). */
+  notes?: Record<string, string>;
 }
 
 export interface SubclassModel {
@@ -110,7 +126,7 @@ export interface SubclassModel {
   classSource: string;
   spellcastingAbility?: string;
   features: ClassFeatureModel[];
-  additionalSpells?: SubclassAdditionalSpells[];
+  additionalSpells?: AdditionalSpells[];
   /** Present when the additional spells grant a pick between named options, lifted from them. */
   spellChoice?: FeatureChoice;
   description: string;
@@ -163,6 +179,8 @@ export interface FeatModel {
   grants?: ProficiencyGrant[];
   /** The Initiative Bonus the feat's prose gives, or from its override (ADR 0016). */
   initiativeBonus?: InitiativeBonus;
+  /** The spells the feat grants, as the source gives them (ADR 0017). Absent when it grants none. */
+  additionalSpells?: AdditionalSpells[];
 }
 
 export interface OptionFeatureModel {
@@ -198,6 +216,8 @@ export interface BackgroundModel {
   };
   description: string;
   rawEntries?: any[];
+  /** The expanded spell lists the background adds to a class's list, as the source gives them (ADR 0017). Absent when none. */
+  additionalSpells?: AdditionalSpells[];
 }
 
 export interface ItemModel {
@@ -253,6 +273,8 @@ export interface SpellModel {
   savingThrows: string[];
   description: string;
   higherLevels: string | null;
+  /** The kinds of attack roll the spell needs, as the source names them: "M" melee, "R" ranged, "O" other. Absent when none. */
+  spellAttack?: string[];
   rawEntries?: any[];
 }
 
