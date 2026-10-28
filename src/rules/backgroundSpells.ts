@@ -1,5 +1,5 @@
 import type { AdditionalSpells, BackgroundData, ClassData, SpellData } from "../types/dnd5e.ts";
-import type { Character } from "../types/character.ts";
+import type { Character, KnownSpell, LegacyKnownSpell } from "../types/character.ts";
 import { currentCompendium, type Compendium } from "../services/compendium.ts";
 import { withNotices } from "./needsReview.ts";
 import { heldFeatsOf, raceGrantsOf, raceTitleOf } from "./choices/featSpells.ts";
@@ -117,40 +117,87 @@ export function releaseExpandedOnlySpells(
   activeBooks?: string[]
 ): Character {
   const classes = compendium.for(activeBooks).classes();
-  const stillListed = new Set(heldExpandedSources(after, compendium, activeBooks).flatMap((source) => source.names.map(normalizeKey)));
-  const sourceOf = new Map<string, string>();
-  for (const source of heldExpandedSources(before, compendium, activeBooks)) {
+  const stillListed = listedNamesOf(heldExpandedSources(after, compendium, activeBooks));
+  const sourceOf = sourceTitlesOf(heldExpandedSources(before, compendium, activeBooks));
+  return releaseExpandedKnownSpells(after, sourceOf, (known, spell) => {
+    const key = normalizeKey(known.name);
+    const ownerName = known.ownerKey?.split("__")[0] ?? known.className ?? "";
+    const ownerLost = classNamed(before, ownerName) && !castsIn(after, ownerName, classes);
+    return ownerLost
+      ? listedByOwnClass(before, known, spell)
+      : stillListed.has(key) || listedByOwnClass(after, known, spell);
+  }, compendium, activeBooks);
+}
+
+/**
+ * Releases the known spells that a switched-off book's expanded list gave (ADR 0017). A spell is stranded when it is on the
+ * expanded list of a source the character holds whose book is not active, and no active source's list gives it and its owning
+ * class does not list it. A source the catalog does not hold at all is not judged, so its spells stay. Switching the book back
+ * on restores nothing. Run with the active books when they change and when a character is opened.
+ */
+export function releaseStrandedExpandedSpells(
+  character: Character,
+  compendium: Compendium = currentCompendium(),
+  activeBooks: string[]
+): Character {
+  const stillListed = listedNamesOf(heldExpandedSources(character, compendium, activeBooks));
+  const loaded = sourceTitlesOf(heldExpandedSources(character, compendium));
+  return releaseExpandedKnownSpells(
+    character,
+    loaded,
+    (known, spell) => stillListed.has(normalizeKey(known.name)) || listedByOwnClass(character, known, spell),
+    compendium,
+    activeBooks
+  );
+}
+
+/** The normalised names the expanded lists of the given sources give. */
+function listedNamesOf(sources: readonly ExpandedSpellSource[]): Set<string> {
+  return new Set(sources.flatMap((source) => source.names.map(normalizeKey)));
+}
+
+/** The title of the first source that gives each name, keyed by the normalised name. */
+function sourceTitlesOf(sources: readonly ExpandedSpellSource[]): Map<string, string> {
+  const titles = new Map<string, string>();
+  for (const source of sources) {
     for (const name of source.names) {
       const key = normalizeKey(name);
-      if (!sourceOf.has(key)) sourceOf.set(key, source.title);
+      if (!titles.has(key)) titles.set(key, source.title);
     }
   }
-  if (sourceOf.size === 0) return after;
+  return titles;
+}
 
+/**
+ * Removes the known spells of `sourceOf` that `stays` does not keep, each with a review notice naming the spell and its source,
+ * and drops their prepared keys. A name the catalog does not hold is kept. Returns `character` itself when nothing is released.
+ */
+function releaseExpandedKnownSpells(
+  character: Character,
+  sourceOf: ReadonlyMap<string, string>,
+  stays: (known: KnownSpell | LegacyKnownSpell, spell: SpellData) => boolean,
+  compendium: Compendium,
+  activeBooks?: string[]
+): Character {
+  if (sourceOf.size === 0) return character;
   const notices: string[] = [];
   const released = new Set<string>();
-  const knownSpells = (after.knownSpells ?? []).filter((known) => {
+  const knownSpells = (character.knownSpells ?? []).filter((known) => {
     const key = normalizeKey(known.name);
     const title = sourceOf.get(key);
     if (!title) return true;
     const spell = resolveSpellName(known.name, activeBooks, compendium);
-    if (!spell) return true;
-    const ownerName = known.ownerKey?.split("__")[0] ?? known.className ?? "";
-    const ownerLost = classNamed(before, ownerName) && !castsIn(after, ownerName, classes);
-    const stays = ownerLost
-      ? listedByOwnClass(before, known, spell)
-      : stillListed.has(key) || listedByOwnClass(after, known, spell);
-    if (stays) return true;
+    if (!spell || stays(known, spell)) return true;
     released.add(key);
     notices.push(`${known.name} removed: only on the ${title}'s spell list`);
     return false;
   });
-  if (released.size === 0) return after;
+  if (released.size === 0) return character;
 
   const keptNames = new Set(knownSpells.map((known) => normalizeKey(known.name)));
-  const preparedSpells = (after.preparedSpells ?? []).filter((prepared) => {
+  const preparedSpells = (character.preparedSpells ?? []).filter((prepared) => {
     const key = normalizeKey(prepared.split("__")[0]);
     return !released.has(key) || keptNames.has(key);
   });
-  return withNotices({ ...after, knownSpells, preparedSpells }, notices);
+  return withNotices({ ...character, knownSpells, preparedSpells }, notices);
 }

@@ -9,6 +9,8 @@ export interface InnateSpellEntry {
   isCantrip: boolean;
   resourceCounterId?: string;
   maxUses?: number;
+  /** The short note the reviewed catalog data gives the spell on its grant, shown after its name. */
+  note?: string;
 }
 
 /** One Innate Magic source: a race, subrace or feat's spells, with the casting ability they use (ADR 0017). */

@@ -69,6 +69,7 @@ test("swapping lineages releases the old lineage's race pick in the same call, w
   const swapped = changeLineage(before, { kind: "lineage", name: BETA }, compendium, ACTIVE);
 
   assert.equal(swapped.lineageReplacement, BETA);
+  assert.deepEqual(swapped.race, { name: BASE, source: "TST" }, "moving between lineages leaves the race alone");
   assert.deepEqual(pickedNames(swapped), [], "the old lineage's pick is released without a reconcile call");
   assert.deepEqual(swapped.needsReview, ["Sample Shot removed from Sample Lineage Alpha: ancestry no longer grants it"]);
 });
@@ -109,6 +110,32 @@ test("swapping from Custom Lineage to none clears the custom flag and releases n
   assert.equal(dropped.customLineage, false);
   assert.equal(dropped.lineageReplacement, null);
   assert.equal(dropped.needsReview, undefined, "no pick is released by the swap");
+});
+
+test("choosing None from Custom Lineage clears the custom race, so the character holds no race and nothing of it stays granted", () => {
+  const custom = changeLineage(
+    { ...holding(ALPHA), racialAbilityBonuses: { int: 2 } },
+    { kind: "custom" },
+    compendium,
+    ACTIVE,
+  );
+
+  const dropped = changeLineage(custom, { kind: "none" }, compendium, ACTIVE);
+
+  assert.equal(dropped.race, null, "the custom race is cleared, so the player picks a race again");
+  assert.equal(dropped.customLineage, false);
+  assert.equal(dropped.lineageReplacement, null);
+  assert.deepEqual(dropped.racialAbilityBonuses, {}, "the custom race's ability bonus is cleared with it");
+});
+
+test("swapping from Custom Lineage to a catalog lineage clears the custom race too", () => {
+  const custom = changeLineage(holding(ALPHA), { kind: "custom" }, compendium, ACTIVE);
+
+  const swapped = changeLineage(custom, { kind: "lineage", name: BETA }, compendium, ACTIVE);
+
+  assert.equal(swapped.race, null, "the custom race is cleared");
+  assert.equal(swapped.customLineage, false);
+  assert.equal(swapped.lineageReplacement, BETA);
 });
 
 test("a pick of the lineage swapped to is kept, and only the old lineage's pick is released", () => {

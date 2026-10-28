@@ -328,6 +328,7 @@ interface GrantRecord {
 /**
  * The spell grants with the reviewed correction of their record applied (ADR 0017): each section the correction gives replaces
  * the grant's section of that name, and the other sections, the ability and the expanded lists stay as the source gives them.
+ * A correction's notes replace the grant's notes the same way.
  * Returns the grants unchanged when no correction names the record.
  */
 export function correctSpellGrants(
@@ -348,6 +349,7 @@ export function correctSpellGrants(
     ...grant,
     ...(correction.known !== undefined ? { known: correction.known } : {}),
     ...(correction.innate !== undefined ? { innate: correction.innate } : {}),
+    ...(correction.notes !== undefined ? { notes: correction.notes } : {}),
   }));
 }
 

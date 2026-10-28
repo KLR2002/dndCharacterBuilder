@@ -996,6 +996,19 @@ for (const grant of LEVELED_KNOWN_GRANTS) {
   });
 }
 
+test("live catalog: the Deep Gnome's Nondetection carries the note self only, and its other spells carry none", { skip: SKIP }, () => {
+  const grant = LEVELED_KNOWN_GRANTS.find((candidate) => candidate.label === "Gnome (Deep)")!;
+  const card = evaluateCharacter(characterOfGrant(grant, 1), { compendium: live!.compendium }).grantedSpellSources[0];
+  const nondetection = card?.spells.find((spell) => spell.name === "Nondetection");
+  assert.ok(nondetection, `no Nondetection on the Deep Gnome card: ${JSON.stringify(card?.spells.map((spell) => spell.name))}`);
+  assert.equal(nondetection.note, "self only");
+  assert.deepEqual(
+    card.spells.filter((spell) => spell.name !== "Nondetection" && spell.note !== undefined).map((spell) => spell.name),
+    [],
+    "only Nondetection is noted"
+  );
+});
+
 test("live catalog: the Dwarf Mark of Warding's Arcane Lock is read from 3rd level, not before", { skip: SKIP }, () => {
   const grant = LEVELED_KNOWN_GRANTS[0];
   const names = (level: number) => raceSpellsAt(characterOfGrant(grant, level)).map(([name]) => name);

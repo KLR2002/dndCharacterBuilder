@@ -271,7 +271,8 @@ export type LineageChoice = { kind: "none" } | { kind: "custom" } | { kind: "lin
 
 /**
  * Replaces the character's lineage with the one chosen, or with none, and reconciles in the same step. The race picks of the
- * old lineage are released with a notice, and so are the spells only its expanded list gave (ADR 0017).
+ * old lineage are released with a notice, and so are the spells only its expanded list gave (ADR 0017). Leaving Custom Lineage
+ * clears the custom race as changeRace does, so the character picks a race again and nothing of the custom race stays granted.
  */
 export function changeLineage(
   character: Character,
@@ -279,18 +280,19 @@ export function changeLineage(
   compendium: Compendium = currentCompendium(),
   activeBooks?: string[]
 ): Character {
+  const base = character.customLineage && lineage.kind !== "custom" ? changeRace(character, compendium, activeBooks) : character;
   const changed: Character =
     lineage.kind === "custom"
-      ? { ...character, customLineage: true, lineageReplacement: null, race: { name: "Custom Lineage", source: "TCE" } }
+      ? { ...base, customLineage: true, lineageReplacement: null, race: { name: "Custom Lineage", source: "TCE" } }
       : {
-          ...character,
+          ...base,
           customLineage: false,
           lineageReplacement: lineage.kind === "lineage" ? lineage.name : null,
         };
   // The picks the new state no longer grants are released from the character before the change, which titles them;
   // the reconcile then judges the rest, as changeRace does.
-  const reconciled = reconcile(releaseSupersededRacePicks(character, changed), compendium, { activeBooks });
-  return releaseExpandedOnlySpells(character, reconciled, compendium, activeBooks);
+  const reconciled = reconcile(releaseSupersededRacePicks(base, changed), compendium, { activeBooks });
+  return releaseExpandedOnlySpells(base, reconciled, compendium, activeBooks);
 }
 
 /**

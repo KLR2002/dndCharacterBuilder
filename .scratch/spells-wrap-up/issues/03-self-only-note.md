@@ -1,6 +1,8 @@
 # 03: "(self only)" next to Nondetection
 
-**Status:** ready-for-agent
+**Status:** done
+
+**Landed:** a generic reviewed `notes` map on a grant (set only in the scraper's reviewed corrections) is carried to the spell entry and shown as a lighter "(self only)" suffix after the name on the innate card; set for Gnome (Deep) Nondetection; Catalog Format 11; tracked races data regenerated; check:all, check:live (135/135) and the integrated four-width layout run green. Open: at 320 px the suffix breaks inside the parenthetical (fixed in the final repair).
 
 Spec: `.scratch/spells-wrap-up/spec.md`.
 
@@ -14,10 +16,10 @@ The Gnome (Deep) grant's Nondetection works only on the caster, and the card sho
 
 ## Acceptance Criteria
 
-- [ ] The Gnome (Deep) card reads "Nondetection (self only)" in the integrated catalog, from reviewed data (AC-6).
-- [ ] A grant without a note shows no suffix; the note field is generic (any spell entry can carry one).
-- [ ] A layout scenario with the card passes at four widths, integrated, and the screenshots were viewed.
-- [ ] `npm run check:all` and `npm run check:live` pass.
+- [x] The Gnome (Deep) card reads "Nondetection (self only)" in the integrated catalog, from reviewed data (AC-6).
+- [x] A grant without a note shows no suffix; the note field is generic (any spell entry can carry one).
+- [x] A layout scenario with the card passes at four widths, integrated, and the screenshots were viewed.
+- [x] `npm run check:all` and `npm run check:live` pass.
 
 ## Verification
 

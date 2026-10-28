@@ -603,7 +603,11 @@ function withPreparedGrantFeat(collections) {
     abilityScoreIncrease: null,
     description: "Placeholder description for the feat.",
     additionalSpells: [
-      { ability: { choose: ["int", "wis", "cha"] }, prepared: { _: { will: ["Thunderwave"], daily: { "1": ["Tenser's Floating Disk"] } } } },
+      {
+        ability: { choose: ["int", "wis", "cha"] },
+        prepared: { _: { will: ["Thunderwave"], daily: { "1": ["Tenser's Floating Disk"] } } },
+        notes: { "tenser's floating disk": "self only" },
+      },
     ],
   };
   // A feat that names spells and no ability: its cantrip is at will and its daily spell is on a counter, with no DC row.
@@ -1040,7 +1044,7 @@ const SCREENS = [
           ready: /add spells/i,
           scrollTo: PREPARED_CARD_FEAT.toUpperCase(),
           expect: {
-            texts: [PREPARED_CARD_FEAT.toUpperCase(), "INT (DC 11 / +3)", "SAVE DC", "ATTACK BONUS", "Thunderwave", "Tenser's Floating Disk"],
+            texts: [PREPARED_CARD_FEAT.toUpperCase(), "INT (DC 11 / +3)", "SAVE DC", "ATTACK BONUS", "Thunderwave", "Tenser's Floating Disk (self only)"],
             absent: ["Needs review"],
             fitsWidth: true,
           },

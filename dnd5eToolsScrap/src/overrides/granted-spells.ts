@@ -26,6 +26,7 @@ export const SPELL_GRANT_GATES: SpellGrantGate[] = [
  * them, corrected to the trait text (ADR 0017). Each section the correction gives (`known`, `innate`) replaces that section of
  * the grant; a section it leaves out stays as the source gives it, and so do the ability and the expanded lists. A subrace
  * names its own record with `subrace` and `subraceSource`; a race's own grant leaves both out. The reason is for the reviewer.
+ * `notes` gives the short note of each named spell, keyed by the lower-case spell name, and replaces the grant's notes.
  */
 export interface SpellGrantCorrection {
   race: string;
@@ -35,6 +36,7 @@ export interface SpellGrantCorrection {
   reason: string;
   known?: Record<string, unknown>;
   innate?: Record<string, unknown>;
+  notes?: Record<string, string>;
 }
 
 /** The reviewed spell grant corrections. A correction that names no grant fails the tracked-data check. */
@@ -50,9 +52,10 @@ export const SPELL_GRANT_CORRECTIONS: SpellGrantCorrection[] = [
   {
     race: "Gnome (Deep)",
     raceSource: "DMG",
-    reason: "the trait gives nondetection at will and the other three once per Long Rest; the grant gives all four once per Long Rest",
+    reason: "the trait gives nondetection at will, on the caster only, and the other three once per Long Rest; the grant gives all four once per Long Rest",
     known: { "1": ["blindness/deafness", "blur", "disguise self"] },
     innate: { "1": ["nondetection"] },
+    notes: { nondetection: "self only" },
   },
 ];
 
