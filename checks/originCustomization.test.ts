@@ -284,6 +284,55 @@ test("a slot moves back to its own default when another slot holds that default 
   assert.deepEqual(back.racialAbilityBonuses, { cha: 3 });
 });
 
+test("a slot may not return to its default while another slot has swapped onto that ability", () => {
+  const dwarf = holding(DWARF, HILL);
+  const conSlot = slotDefaulting(dwarf, "con");
+  const wisSlot = slotDefaulting(dwarf, "wis");
+  const moved = setOriginAbilitySwap(dwarf, conSlot.id, "cha", catalogs);
+  const both = setOriginAbilitySwap(moved, wisSlot.id, "con", catalogs);
+  assert.deepEqual(both.originAbilitySwaps, { [conSlot.id]: "cha", [wisSlot.id]: "con" });
+
+  const conView = slotDefaulting(both, "con");
+  assert.ok(conView.blocked.includes("con"), "the view blocks the CON slot's return while the WIS slot holds CON");
+
+  const back = setOriginAbilitySwap(both, conSlot.id, "con", catalogs);
+  assert.equal(back, both, "the transition leaves the character unchanged");
+  assert.deepEqual(back.originAbilitySwaps, { [conSlot.id]: "cha", [wisSlot.id]: "con" });
+  assert.equal(back.needsReview, undefined, "no notice is added");
+});
+
+test("two saved swaps sharing one target are both dropped, each with a notice, and reconcile terminates", () => {
+  const dwarf = holding(DWARF, HILL);
+  const conSlot = slotDefaulting(dwarf, "con");
+  const wisSlot = slotDefaulting(dwarf, "wis");
+  const edited: Character = { ...dwarf, originAbilitySwaps: { [conSlot.id]: "dex", [wisSlot.id]: "dex" } };
+
+  const reconciled = reconcile(edited, compendium, { activeBooks: ACTIVE });
+  assert.equal(reconciled.originAbilitySwaps, undefined);
+  assert.deepEqual(reconciled.needsReview, ["Ability swap to Dexterity removed: another increase already uses it"]);
+  assert.equal(reconciled.racialAbilityBonuses?.dex, undefined);
+  assert.deepEqual(reconciled.racialAbilityBonuses, { con: 2, wis: 1 });
+});
+
+test("a swap dropped by collision returns its slot's default, which then collides with a later swap, and reconcile terminates", () => {
+  const dwarf = holding(DWARF, HILL);
+  const conSlot = slotDefaulting(dwarf, "con");
+  const wisSlot = slotDefaulting(dwarf, "wis");
+  const edited: Character = {
+    ...dwarf,
+    racialChoiceBonus: [{ key: "dex", amount: 1 }],
+    originAbilitySwaps: { [conSlot.id]: "dex", [wisSlot.id]: "con" },
+  };
+
+  const reconciled = reconcile(edited, compendium, { activeBooks: ACTIVE });
+  assert.equal(reconciled.originAbilitySwaps, undefined);
+  assert.deepEqual(reconciled.needsReview, [
+    "Ability swap to Dexterity removed: another increase already uses it",
+    "Ability swap to Constitution removed: another increase already uses it",
+  ]);
+  assert.deepEqual(reconciled.racialAbilityBonuses, { con: 2, wis: 1, dex: 1 });
+});
+
 test("a slot whose base score is 19 or more moves away and back to its own default", () => {
   const capped = holding(DWARF, undefined, { baseAbilityScores: { str: 10, dex: 10, con: 19, int: 10, wis: 10, cha: 10 } });
   const away = setOriginAbilitySwap(capped, slotDefaulting(capped, "con").id, "dex", catalogs);
