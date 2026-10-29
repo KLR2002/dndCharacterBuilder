@@ -22,6 +22,7 @@ import { SearchBar } from "../components/ui/SearchBar";
 import { useCharacters } from "../context/CharacterContext";
 import { useAppTheme } from "../context/ThemeContext";
 import { evaluateCharacter } from "../rules/characterEvaluation";
+import { currentCompendium } from "../services/compendium";
 import { Character, Folder } from "../types/character";
 
 export default function HomeScreen() {
@@ -32,6 +33,7 @@ export default function HomeScreen() {
     folders,
     isFirstRun,
     completeFirstRun,
+    activeBooks,
     setActiveBooks,
     createFolder,
     deleteFolder,
@@ -163,7 +165,7 @@ export default function HomeScreen() {
   }, [folders, filteredCharacters]);
 
   const renderCharacterCard = (char: Character) => {
-    const evaluated = evaluateCharacter(char);
+    const evaluated = evaluateCharacter(char, { compendium: currentCompendium(), activeBooks });
     const totalLevel = evaluated.totalLevel;
     const maxHp = evaluated.hp.max;
     const primaryClass = char.classes[0]?.className || "Class Unset";

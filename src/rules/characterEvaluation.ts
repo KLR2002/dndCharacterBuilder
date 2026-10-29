@@ -1,4 +1,3 @@
-import { ALL_BOOKS } from "../constants/books.ts";
 import type { Character, ResourceCounter } from "../types/character.ts";
 import type { BackgroundData } from "../types/dnd5e.ts";
 import type { ResolvedAncestry } from "./types.ts";
@@ -96,7 +95,7 @@ export interface EvaluatedCharacter {
  */
 export function evaluateCharacter(
   character: Character,
-  catalogs?: CharacterCatalogs
+  catalogs: CharacterCatalogs
 ): EvaluatedCharacter {
   const listings = catalogListings(catalogs);
   const ancestry = resolveCharacterAncestry(character, listings.races(), catalogs?.activeBooks);
@@ -111,7 +110,7 @@ export function evaluateCharacter(
   const acResult = armorClass(character, { ...ancestry, activeBooks: catalogs?.activeBooks });
   const speedsResult = characterSpeeds(character, { ...ancestry, compendium: catalogs?.compendium, activeBooks: catalogs?.activeBooks });
   const speedResult = speedsResult.walk;
-  const sheet = proficiencySheet(character, catalogs ?? { activeBooks: ALL_BOOKS });
+  const sheet = proficiencySheet(character, catalogs);
   const initiativeResult = initiativeOf(
     grantedFeatures(character, {
       races: listings.races(),
@@ -201,7 +200,7 @@ export function evaluateCharacter(
       tools: toolList,
       languages: langList,
     },
-    tools: evaluateCharacterTools(character, catalogs ?? { activeBooks: ALL_BOOKS }),
+    tools: evaluateCharacterTools(character, catalogs),
     resolvedAncestry: ancestry,
     resolvedBackground: background,
     spellProfiles,

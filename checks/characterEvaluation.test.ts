@@ -173,7 +173,7 @@ test("evaluateCharacter finds no race the Compendium does not contain", () => {
   const char = makeChar({ classes: [cl("Fighter", 1)], race: { name: "Testfolk", source: "TEST" } });
 
   assert.equal(evaluateCharacter(char, { compendium: inMemoryCompendium({ races: [] }), activeBooks: ALL_BOOKS }).resolvedAncestry.race, undefined);
-  assert.equal(evaluateCharacter(char).resolvedAncestry.race, undefined, "the SRD default does not contain Testfolk");
+  assert.equal(evaluateCharacter(char, { activeBooks: ALL_BOOKS }).resolvedAncestry.race, undefined, "the SRD default does not contain Testfolk");
 });
 
 test("evaluateCharacter scopes an integrated Compendium's races to activeBooks", () => {

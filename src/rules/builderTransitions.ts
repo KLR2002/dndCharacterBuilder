@@ -1,4 +1,4 @@
-import { ALL_BOOKS, type ActiveBooks } from "../constants/books.ts";
+import type { ActiveBooks } from "../constants/books.ts";
 import type {
   AbilityKey,
   AsiSelection,
@@ -494,13 +494,13 @@ function withUniqueIds(items: InventoryItem[], existing: InventoryItem[]): Inven
 export interface StartingGrantOptions {
   goldAmount?: number;
   equipmentItems?: InventoryItem[];
-  catalogs?: CharacterCatalogs;
+  catalogs: CharacterCatalogs;
 }
 
 /** The equipment a claim grants: the items the caller gives, or else the kit the picks resolve to. */
-function equipmentKitFor(character: Character, options?: StartingGrantOptions): StartingEquipmentKit {
-  const resolved = resolveStartingEquipment(character, options?.catalogs ?? { activeBooks: ALL_BOOKS });
-  return options?.equipmentItems ? { ...resolved, complete: true, items: options.equipmentItems } : resolved;
+function equipmentKitFor(character: Character, options: StartingGrantOptions): StartingEquipmentKit {
+  const resolved = resolveStartingEquipment(character, options.catalogs);
+  return options.equipmentItems ? { ...resolved, complete: true, items: options.equipmentItems } : resolved;
 }
 
 /**
@@ -520,7 +520,7 @@ function kitInstalled(items: InventoryItem[], kit: InventoryItem[]): boolean {
 export function applyStartingGrants(
   character: Character,
   mode: "gold" | "equipment",
-  options?: StartingGrantOptions
+  options: StartingGrantOptions
 ): Character {
   const kit = mode === "equipment" ? equipmentKitFor(character, options) : undefined;
   if (kit && !kit.complete) return character;
@@ -533,7 +533,7 @@ export function applyStartingGrants(
   }
 
   const defaultGold = startingGoldOf(character);
-  const gold = options?.goldAmount ?? defaultGold;
+  const gold = options.goldAmount ?? defaultGold;
 
   // Clean up any previously granted starting items (items with id starting with "start_")
   const cleanedItems = (character.items ?? []).filter((item) => !item.id.startsWith("start_"));
@@ -583,10 +583,10 @@ export function applyStartingGrants(
 export function reclaimStartingGrants(
   character: Character,
   mode: "gold" | "equipment",
-  options?: StartingGrantOptions
+  options: StartingGrantOptions
 ): Character {
   if (mode === "gold") {
-    const gold = options?.goldAmount ?? startingGoldOf(character);
+    const gold = options.goldAmount ?? startingGoldOf(character);
     const pouch = character.pouch ?? { cp: 0, sp: 0, ep: 0, gp: 0, pp: 0 };
     return {
       ...character,

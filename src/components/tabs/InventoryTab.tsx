@@ -15,6 +15,7 @@ import { useAppTheme } from "../../context/ThemeContext";
 import { useResponsiveLayout } from "../../hooks/useResponsiveLayout";
 import { getItems } from "../../services/dataService";
 import { evaluateCharacter } from "../../rules/characterEvaluation";
+import { currentCompendium } from "../../services/compendium";
 import { InventoryItem } from "../../types/character";
 import { Badge } from "../ui/Badge";
 import { Button } from "../ui/Button";
@@ -85,8 +86,8 @@ export const InventoryTab: React.FC = () => {
 
   const evaluated = useMemo(() => {
     if (!currentCharacter) return null;
-    return evaluateCharacter(currentCharacter);
-  }, [currentCharacter]);
+    return evaluateCharacter(currentCharacter, { compendium: currentCompendium(), activeBooks });
+  }, [currentCharacter, activeBooks]);
 
   if (!currentCharacter || !evaluated) return null;
 

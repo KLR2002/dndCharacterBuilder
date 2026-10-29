@@ -355,7 +355,7 @@ test("Enhanced Weapon grants +1 to attack/damage at levels 2-9 and +2 at level 1
     activeInfusions: [{ infusionName: "Enhanced Weapon", targetItemId: "sword_1" }],
   });
 
-  const attacks2 = getWeaponAttacks(art2);
+  const attacks2 = getWeaponAttacks(art2, { catalogs: { activeBooks: ALL_BOOKS } });
   assert.equal(attacks2.length, 1);
   // Str +3, Enhanced Weapon +1 -> attack bonus without prof = 4, with prof = 6
   // (Artificer is proficient with simple weapons; if proficient with longsword or test checks toHit):
@@ -371,7 +371,7 @@ test("Enhanced Weapon grants +1 to attack/damage at levels 2-9 and +2 at level 1
     activeInfusions: [{ infusionName: "Enhanced Weapon", targetItemId: "sword_1" }],
   });
 
-  const attacks10 = getWeaponAttacks(art10);
+  const attacks10 = getWeaponAttacks(art10, { catalogs: { activeBooks: ALL_BOOKS } });
   assert.equal(attacks10.length, 1);
   assert.equal(attacks10[0].damageString, "1d8 + 5"); // 3 (Str) + 2 (Enhanced Weapon lvl 10) = 5
   assert.deepEqual(attacks10[0].calculationBadges, ["Infused +2"]);
@@ -398,7 +398,7 @@ test("Repeating Shot and Radiant Weapon grant +1 to attack and damage", () => {
     activeInfusions: [{ infusionName: "Repeating Shot", targetItemId: "xbow_1" }],
   });
 
-  const attacksRep = getWeaponAttacks(artRepeating);
+  const attacksRep = getWeaponAttacks(artRepeating, { catalogs: { activeBooks: ALL_BOOKS } });
   assert.equal(attacksRep.length, 1);
   assert.equal(attacksRep[0].damageString, "1d10 + 4"); // Dex +3 + 1
 
@@ -420,7 +420,7 @@ test("Repeating Shot and Radiant Weapon grant +1 to attack and damage", () => {
     activeInfusions: [{ infusionName: "Radiant Weapon", targetItemId: "mace_1" }],
   });
 
-  const attacksRad = getWeaponAttacks(artRadiant);
+  const attacksRad = getWeaponAttacks(artRadiant, { catalogs: { activeBooks: ALL_BOOKS } });
   assert.equal(attacksRad.length, 1);
   assert.equal(attacksRad[0].damageString, "1d6 + 3"); // Str +2 + 1
 });
@@ -454,7 +454,7 @@ test("Dual wielding with an infused off-hand weapon", () => {
     activeInfusions: [{ infusionName: "Enhanced Weapon", targetItemId: "sw_2" }],
   });
 
-  const dual = checkDualWielding(char);
+  const dual = checkDualWielding(char, getWeaponAttacks(char, { catalogs: { activeBooks: ALL_BOOKS } }));
   assert.ok(dual.isDualWielding);
   assert.ok(dual.offHand);
   // Off-hand has ability penalty (no TWF style), but gets +1 from Enhanced Weapon

@@ -371,7 +371,7 @@ export const AsiFeatSection: React.FC<AsiFeatSectionProps> = ({
                         .filter((f) => f.name.toLowerCase().includes(asiFeatSearch.toLowerCase()))
                         .map((f) => {
                           const isSelected = asiSelectedFeat?.name === f.name;
-                          const prereqCheck = validateFeatPrerequisites(character, f);
+                          const prereqCheck = validateFeatPrerequisites(character, f, { catalogs: { compendium: currentCompendium(), activeBooks } });
                           return (
                             <TouchableOpacity
                               key={`${f.name}_${f.source}`}

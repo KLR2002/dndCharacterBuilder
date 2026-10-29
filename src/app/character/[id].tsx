@@ -27,6 +27,7 @@ import { useAppTheme } from "../../context/ThemeContext";
 import { useHpQuickEdit } from "../../hooks/useHpQuickEdit";
 import { useResponsiveLayout } from "../../hooks/useResponsiveLayout";
 import { evaluateCharacter } from "../../rules/characterEvaluation";
+import { currentCompendium } from "../../services/compendium";
 import { commitCharacterName } from "../../rules/characterName";
 import { dismissNotices } from "../../rules/needsReview";
 
@@ -51,7 +52,7 @@ const TABS: TabDefinition[] = [
 export default function CharacterSheetScreen() {
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { characters, currentCharacter, selectCharacter, updateCharacter } = useCharacters();
+  const { characters, currentCharacter, selectCharacter, updateCharacter, activeBooks } = useCharacters();
   const { theme } = useAppTheme();
   const { isCompact } = useResponsiveLayout();
 
@@ -70,8 +71,8 @@ export default function CharacterSheetScreen() {
   }, [id, characters, selectCharacter]);
 
   const evaluated = useMemo(
-    () => (currentCharacter ? evaluateCharacter(currentCharacter) : null),
-    [currentCharacter]
+    () => (currentCharacter ? evaluateCharacter(currentCharacter, { compendium: currentCompendium(), activeBooks }) : null),
+    [currentCharacter, activeBooks]
   );
   // While a wild shape is active the header badge shows the form's HP and opens its HP box.
   const hpQuickEdit = useHpQuickEdit(

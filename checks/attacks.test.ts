@@ -57,7 +57,7 @@ test("getWeaponAttacks detects equipped weapons and ignores unequipped or non-we
     ],
   });
 
-  const attacks = getWeaponAttacks(char);
+  const attacks = getWeaponAttacks(char, { catalogs: { activeBooks: ALL_BOOKS } });
   assert.equal(attacks.length, 1);
   assert.equal(attacks[0].name, "Longsword");
   assert.equal(attacks[0].item.id, "w1");
@@ -72,7 +72,7 @@ test("finesse weapons use higher of STR or DEX modifier", () => {
       weaponItem("w1", "Rapier", { damage: "1d8", damageType: "piercing" }),
     ],
   });
-  const dexAttacks = getWeaponAttacks(dexChar);
+  const dexAttacks = getWeaponAttacks(dexChar, { catalogs: { activeBooks: ALL_BOOKS } });
   assert.equal(dexAttacks.length, 1);
   assert.equal(dexAttacks[0].statUsed, "dex");
   assert.equal(dexAttacks[0].attackBonus, 5); // +3 DEX + 2 PB
@@ -87,7 +87,7 @@ test("finesse weapons use higher of STR or DEX modifier", () => {
       weaponItem("w2", "Dagger", { damage: "1d4", damageType: "piercing" }),
     ],
   });
-  const strAttacks = getWeaponAttacks(strChar);
+  const strAttacks = getWeaponAttacks(strChar, { catalogs: { activeBooks: ALL_BOOKS } });
   assert.equal(strAttacks.length, 1);
   assert.equal(strAttacks[0].statUsed, "str");
   assert.equal(strAttacks[0].attackBonus, 5); // +3 STR + 2 PB
@@ -101,7 +101,7 @@ test("finesse weapons use higher of STR or DEX modifier", () => {
       weaponItem("w3", "Scimitar", { damage: "1d6", damageType: "slashing" }),
     ],
   });
-  const scimitarAttacks = getWeaponAttacks(scimitarChar);
+  const scimitarAttacks = getWeaponAttacks(scimitarChar, { catalogs: { activeBooks: ALL_BOOKS } });
   assert.equal(scimitarAttacks[0].statUsed, "dex");
   assert.equal(scimitarAttacks[0].damageString, "1d6 + 4");
 });
@@ -115,7 +115,7 @@ test("ranged weapons use DEX modifier even if STR is higher", () => {
       weaponItem("w1", "Longbow", { damage: "1d8", damageType: "piercing", range: "150/600" }),
     ],
   });
-  const rangerAttacks = getWeaponAttacks(ranger);
+  const rangerAttacks = getWeaponAttacks(ranger, { catalogs: { activeBooks: ALL_BOOKS } });
   assert.equal(rangerAttacks.length, 1);
   assert.equal(rangerAttacks[0].statUsed, "dex");
   assert.equal(rangerAttacks[0].attackBonus, 4); // +2 DEX + 2 PB
@@ -129,7 +129,7 @@ test("ranged weapons use DEX modifier even if STR is higher", () => {
       weaponItem("w2", "Light Crossbow", { damage: "1d8", damageType: "piercing", range: "80/320" }),
     ],
   });
-  const rogueAttacks = getWeaponAttacks(rogue);
+  const rogueAttacks = getWeaponAttacks(rogue, { catalogs: { activeBooks: ALL_BOOKS } });
   assert.equal(rogueAttacks[0].statUsed, "dex");
   assert.equal(rogueAttacks[0].damageString, "1d8 + 3");
 });
@@ -143,7 +143,7 @@ test("melee weapons without finesse use STR modifier even if DEX is higher", () 
       weaponItem("w1", "Greatsword", { damage: "2d6", damageType: "slashing" }),
     ],
   });
-  const attacks = getWeaponAttacks(char);
+  const attacks = getWeaponAttacks(char, { catalogs: { activeBooks: ALL_BOOKS } });
   assert.equal(attacks.length, 1);
   assert.equal(attacks[0].statUsed, "str");
   assert.equal(attacks[0].attackBonus, 2); // +0 STR + 2 PB
@@ -159,7 +159,7 @@ test("adds proficiency bonus to attack roll if character is proficient by catego
       weaponItem("w1", "Longsword", { damage: "1d8", damageType: "slashing" }),
     ],
   });
-  const fighterAttacks = getWeaponAttacks(fighter);
+  const fighterAttacks = getWeaponAttacks(fighter, { catalogs: { activeBooks: ALL_BOOKS } });
   assert.equal(fighterAttacks[0].isProficient, true);
   assert.equal(fighterAttacks[0].attackBonus, 5); // 3 (STR) + 2 (PB)
 
@@ -172,7 +172,7 @@ test("adds proficiency bonus to attack roll if character is proficient by catego
       weaponItem("w3", "Greatsword", { damage: "2d6", damageType: "slashing" }), // Martial
     ],
   });
-  const clericAttacks = getWeaponAttacks(cleric);
+  const clericAttacks = getWeaponAttacks(cleric, { catalogs: { activeBooks: ALL_BOOKS } });
   const maceAttack = clericAttacks.find((a) => a.name === "Mace")!;
   const greatswordAttack = clericAttacks.find((a) => a.name === "Greatsword")!;
 
@@ -191,7 +191,7 @@ test("adds proficiency bonus to attack roll if character is proficient by catego
       weaponItem("w5", "Longbow", { damage: "1d8", damageType: "piercing", range: "150/600" }), // Martial, Rogue not proficient
     ],
   });
-  const rogueAttacks = getWeaponAttacks(rogue);
+  const rogueAttacks = getWeaponAttacks(rogue, { catalogs: { activeBooks: ALL_BOOKS } });
   const rapierAttack = rogueAttacks.find((a) => a.name === "Rapier")!;
   const longbowAttack = rogueAttacks.find((a) => a.name === "Longbow")!;
 
@@ -209,7 +209,7 @@ test("damage string formats positive, negative, and zero ability modifiers corre
     baseAbilityScores: { str: 16, dex: 10, con: 10, int: 10, wis: 10, cha: 10 },
     items: [weaponItem("w1", "Longsword", { damage: "1d8" })],
   });
-  assert.equal(getWeaponAttacks(charPos)[0].damageString, "1d8 + 3");
+  assert.equal(getWeaponAttacks(charPos, { catalogs: { activeBooks: ALL_BOOKS } })[0].damageString, "1d8 + 3");
 
   // Negative modifier (-1) -> "1d8 - 1"
   const charNeg = makeChar({
@@ -217,7 +217,7 @@ test("damage string formats positive, negative, and zero ability modifiers corre
     baseAbilityScores: { str: 8, dex: 10, con: 10, int: 10, wis: 10, cha: 10 },
     items: [weaponItem("w2", "Longsword", { damage: "1d8" })],
   });
-  assert.equal(getWeaponAttacks(charNeg)[0].damageString, "1d8 - 1");
+  assert.equal(getWeaponAttacks(charNeg, { catalogs: { activeBooks: ALL_BOOKS } })[0].damageString, "1d8 - 1");
 
   // Zero modifier (+0) -> "1d8"
   const charZero = makeChar({
@@ -225,7 +225,7 @@ test("damage string formats positive, negative, and zero ability modifiers corre
     baseAbilityScores: { str: 10, dex: 10, con: 10, int: 10, wis: 10, cha: 10 },
     items: [weaponItem("w3", "Longsword", { damage: "1d8" })],
   });
-  assert.equal(getWeaponAttacks(charZero)[0].damageString, "1d8");
+  assert.equal(getWeaponAttacks(charZero, { catalogs: { activeBooks: ALL_BOOKS } })[0].damageString, "1d8");
 });
 
 test("checkDualWielding detects two equipped light melee weapons", () => {
@@ -239,7 +239,7 @@ test("checkDualWielding detects two equipped light melee weapons", () => {
     ],
   });
 
-  const result = checkDualWielding(dualChar);
+  const result = checkDualWielding(dualChar, getWeaponAttacks(dualChar, { catalogs: { activeBooks: ALL_BOOKS } }));
   assert.equal(result.isDualWielding, true);
   assert.ok(result.mainHand);
   assert.ok(result.offHand);
@@ -256,7 +256,7 @@ test("checkDualWielding returns false if weapons are not both light melee", () =
       weaponItem("w2", "Dagger", { damage: "1d4" }),
     ],
   });
-  assert.equal(checkDualWielding(notBothLight).isDualWielding, false);
+  assert.equal(checkDualWielding(notBothLight, getWeaponAttacks(notBothLight, { catalogs: { activeBooks: ALL_BOOKS } })).isDualWielding, false);
 
   // Shortsword (light melee) + Hand Crossbow (light ranged) -> false (dual wielding requires melee)
   const rangedLight = makeChar({
@@ -266,14 +266,14 @@ test("checkDualWielding returns false if weapons are not both light melee", () =
       weaponItem("w2", "Hand Crossbow", { damage: "1d6", range: "30/120" }),
     ],
   });
-  assert.equal(checkDualWielding(rangedLight).isDualWielding, false);
+  assert.equal(checkDualWielding(rangedLight, getWeaponAttacks(rangedLight, { catalogs: { activeBooks: ALL_BOOKS } })).isDualWielding, false);
 
   // Only one light melee weapon -> false
   const singleWeapon = makeChar({
     classes: [cl("Fighter", 1)],
     items: [weaponItem("w1", "Dagger", { damage: "1d4" })],
   });
-  assert.equal(checkDualWielding(singleWeapon).isDualWielding, false);
+  assert.equal(checkDualWielding(singleWeapon, getWeaponAttacks(singleWeapon, { catalogs: { activeBooks: ALL_BOOKS } })).isDualWielding, false);
 });
 
 test("checkDualWielding offHand attack does NOT add ability modifier to damage unless negative", () => {
@@ -287,7 +287,7 @@ test("checkDualWielding offHand attack does NOT add ability modifier to damage u
     ],
   });
 
-  const attacks = getWeaponAttacks(dexChar);
+  const attacks = getWeaponAttacks(dexChar, { catalogs: { activeBooks: ALL_BOOKS } });
   const result = checkDualWielding(dexChar, attacks);
 
   assert.equal(result.isDualWielding, true);
@@ -306,7 +306,7 @@ test("checkDualWielding offHand attack does NOT add ability modifier to damage u
     ],
   });
 
-  const weakResult = checkDualWielding(weakChar);
+  const weakResult = checkDualWielding(weakChar, getWeaponAttacks(weakChar, { catalogs: { activeBooks: ALL_BOOKS } }));
   assert.equal(weakResult.isDualWielding, true);
   assert.equal(weakResult.mainHand?.damageString, "1d4 - 1");
   assert.equal(weakResult.offHand?.damageString, "1d4 - 1"); // Negative modifier is retained!

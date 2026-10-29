@@ -260,7 +260,7 @@ describe("First-Class Attunement Ledger & 3-Slot Limit", () => {
     });
 
     // 1. Off-hand unattuned: bonus is 0, has Unattuned badge
-    const dualUnattuned = checkDualWielding(fighter);
+    const dualUnattuned = checkDualWielding(fighter, getWeaponAttacks(fighter, { catalogs: { activeBooks: ALL_BOOKS } }));
     assert.ok(dualUnattuned.isDualWielding);
     assert.ok(dualUnattuned.offHand);
     assert.equal(dualUnattuned.offHand.toHit, 5, "Dex 3 + PB 2 = 5");
@@ -275,7 +275,7 @@ describe("First-Class Attunement Ledger & 3-Slot Limit", () => {
         { ...fighter.items[1], isAttuned: true },
       ],
     };
-    const dualAttuned = checkDualWielding(fighterAttuned);
+    const dualAttuned = checkDualWielding(fighterAttuned, getWeaponAttacks(fighterAttuned, { catalogs: { activeBooks: ALL_BOOKS } }));
     assert.ok(dualAttuned.isDualWielding);
     assert.ok(dualAttuned.offHand);
     assert.equal(dualAttuned.offHand.toHit, 6, "Dex 3 + PB 2 + Item 1 = 6");

@@ -67,7 +67,7 @@ function makeChar(overrides: Partial<Character> = {}): Character {
 describe("Feat Prerequisite Validation", () => {
   it("passes when feat has no prerequisite", () => {
     const char = makeChar();
-    const result = validateFeatPrerequisites(char, { name: "Alert" });
+    const result = validateFeatPrerequisites(char, { name: "Alert" }, { catalogs: { activeBooks: ALL_BOOKS } });
     assert.equal(result.met, true);
     assert.equal(result.reason, undefined);
   });
@@ -77,17 +77,17 @@ describe("Feat Prerequisite Validation", () => {
       const lowStr = makeChar({ baseAbilityScores: { str: 12, dex: 10, con: 10, int: 10, wis: 10, cha: 10 } });
       const highStr = makeChar({ baseAbilityScores: { str: 13, dex: 10, con: 10, int: 10, wis: 10, cha: 10 } });
 
-      const fail = validateFeatPrerequisites(lowStr, { name: "Heavy Armor Master", prerequisite: "Strength 13 or higher" });
+      const fail = validateFeatPrerequisites(lowStr, { name: "Heavy Armor Master", prerequisite: "Strength 13 or higher" }, { catalogs: { activeBooks: ALL_BOOKS } });
       assert.equal(fail.met, false);
       assert.match(fail.reason!, /Strength 13/i);
 
-      const pass = validateFeatPrerequisites(highStr, { name: "Heavy Armor Master", prerequisite: "Strength 13 or higher" });
+      const pass = validateFeatPrerequisites(highStr, { name: "Heavy Armor Master", prerequisite: "Strength 13 or higher" }, { catalogs: { activeBooks: ALL_BOOKS } });
       assert.equal(pass.met, true);
     });
 
     it("validates Dexterity 13 or higher", () => {
       const char = makeChar({ baseAbilityScores: { str: 10, dex: 14, con: 10, int: 10, wis: 10, cha: 10 } });
-      const pass = validateFeatPrerequisites(char, { name: "Defensive Duelist", prerequisite: "Dexterity 13 or higher" });
+      const pass = validateFeatPrerequisites(char, { name: "Defensive Duelist", prerequisite: "Dexterity 13 or higher" }, { catalogs: { activeBooks: ALL_BOOKS } });
       assert.equal(pass.met, true);
     });
 
@@ -98,13 +98,13 @@ describe("Feat Prerequisite Validation", () => {
       const resFail = validateFeatPrerequisites(fail, {
         name: "Ritual Caster",
         prerequisite: "Intelligence 13 or higher or Wisdom 13 or higher",
-      });
+      }, { catalogs: { activeBooks: ALL_BOOKS } });
       assert.equal(resFail.met, false);
 
       const resPass = validateFeatPrerequisites(pass, {
         name: "Ritual Caster",
         prerequisite: "Intelligence 13 or higher or Wisdom 13 or higher",
-      });
+      }, { catalogs: { activeBooks: ALL_BOOKS } });
       assert.equal(resPass.met, true);
     });
   });
@@ -114,17 +114,17 @@ describe("Feat Prerequisite Validation", () => {
       const wizard = makeChar({ classes: [{ className: "Wizard", level: 1, source: "PHB" }] });
       const fighter = makeChar({ classes: [{ className: "Fighter", level: 1, source: "PHB" }] });
 
-      const fail = validateFeatPrerequisites(wizard, { name: "Heavily Armored", prerequisite: "Proficiency with medium armor" });
+      const fail = validateFeatPrerequisites(wizard, { name: "Heavily Armored", prerequisite: "Proficiency with medium armor" }, { catalogs: { activeBooks: ALL_BOOKS } });
       assert.equal(fail.met, false);
       assert.match(fail.reason!, /medium armor/i);
 
-      const pass = validateFeatPrerequisites(fighter, { name: "Heavily Armored", prerequisite: "Proficiency with medium armor" });
+      const pass = validateFeatPrerequisites(fighter, { name: "Heavily Armored", prerequisite: "Proficiency with medium armor" }, { catalogs: { activeBooks: ALL_BOOKS } });
       assert.equal(pass.met, true);
     });
 
     it("validates Proficiency with light armor", () => {
       const rogue = makeChar({ classes: [{ className: "Rogue", level: 1, source: "PHB" }] });
-      const pass = validateFeatPrerequisites(rogue, { name: "Moderately Armored", prerequisite: "Proficiency with light armor" });
+      const pass = validateFeatPrerequisites(rogue, { name: "Moderately Armored", prerequisite: "Proficiency with light armor" }, { catalogs: { activeBooks: ALL_BOOKS } });
       assert.equal(pass.met, true);
     });
   });
@@ -134,11 +134,11 @@ describe("Feat Prerequisite Validation", () => {
       const fighter = makeChar({ classes: [{ className: "Fighter", level: 1, source: "PHB" }] });
       const wizard = makeChar({ classes: [{ className: "Wizard", level: 1, source: "PHB" }] });
 
-      const fail = validateFeatPrerequisites(fighter, { name: "War Caster", prerequisite: "The ability to cast at least one spell" });
+      const fail = validateFeatPrerequisites(fighter, { name: "War Caster", prerequisite: "The ability to cast at least one spell" }, { catalogs: { activeBooks: ALL_BOOKS } });
       assert.equal(fail.met, false);
       assert.match(fail.reason!, /cast at least one spell/i);
 
-      const pass = validateFeatPrerequisites(wizard, { name: "War Caster", prerequisite: "The ability to cast at least one spell" });
+      const pass = validateFeatPrerequisites(wizard, { name: "War Caster", prerequisite: "The ability to cast at least one spell" }, { catalogs: { activeBooks: ALL_BOOKS } });
       assert.equal(pass.met, true);
     });
   });
@@ -148,12 +148,12 @@ describe("Feat Prerequisite Validation", () => {
       const lvl1 = makeChar({ classes: [{ className: "Fighter", level: 1, source: "PHB" }] });
       const lvl4 = makeChar({ classes: [{ className: "Fighter", level: 4, source: "PHB" }] });
 
-      const fail = validateFeatPrerequisites(lvl1, { name: "Ember of the Fire Giant", prerequisite: "Level 4; strike of the giants" });
+      const fail = validateFeatPrerequisites(lvl1, { name: "Ember of the Fire Giant", prerequisite: "Level 4; strike of the giants" }, { catalogs: { activeBooks: ALL_BOOKS } });
       assert.equal(fail.met, false);
       assert.match(fail.reason!, /Level 4/i);
 
       lvl4.originFeats = [{ level: 1, type: "feat", featName: "Strike of the Giants" }];
-      const pass = validateFeatPrerequisites(lvl4, { name: "Ember of the Fire Giant", prerequisite: "Level 4; strike of the giants" });
+      const pass = validateFeatPrerequisites(lvl4, { name: "Ember of the Fire Giant", prerequisite: "Level 4; strike of the giants" }, { catalogs: { activeBooks: ALL_BOOKS } });
       assert.equal(pass.met, true);
     });
   });
@@ -164,14 +164,14 @@ describe("Feat Prerequisite Validation", () => {
       const elf = makeChar({ race: { name: "Elf", subraceName: "High Elf", source: "PHB" } });
       const halfElf = makeChar({ race: { name: "Half-Elf", source: "PHB" } });
 
-      const fail = validateFeatPrerequisites(human, { name: "Elven Accuracy", prerequisite: "elf or half-elf" });
+      const fail = validateFeatPrerequisites(human, { name: "Elven Accuracy", prerequisite: "elf or half-elf" }, { catalogs: { activeBooks: ALL_BOOKS } });
       assert.equal(fail.met, false);
       assert.match(fail.reason!, /elf or half-elf/i);
 
-      const passElf = validateFeatPrerequisites(elf, { name: "Elven Accuracy", prerequisite: "elf or half-elf" });
+      const passElf = validateFeatPrerequisites(elf, { name: "Elven Accuracy", prerequisite: "elf or half-elf" }, { catalogs: { activeBooks: ALL_BOOKS } });
       assert.equal(passElf.met, true);
 
-      const passHalfElf = validateFeatPrerequisites(halfElf, { name: "Elven Accuracy", prerequisite: "elf or half-elf" });
+      const passHalfElf = validateFeatPrerequisites(halfElf, { name: "Elven Accuracy", prerequisite: "elf or half-elf" }, { catalogs: { activeBooks: ALL_BOOKS } });
       assert.equal(passHalfElf.met, true);
     });
 
@@ -179,10 +179,10 @@ describe("Feat Prerequisite Validation", () => {
       const human = makeChar({ race: { name: "Human", source: "PHB" } });
       const dwarf = makeChar({ race: { name: "Dwarf", subraceName: "Hill Dwarf", source: "PHB" } });
 
-      const fail = validateFeatPrerequisites(human, { name: "Dwarven Fortitude", prerequisite: "dwarf" });
+      const fail = validateFeatPrerequisites(human, { name: "Dwarven Fortitude", prerequisite: "dwarf" }, { catalogs: { activeBooks: ALL_BOOKS } });
       assert.equal(fail.met, false);
 
-      const pass = validateFeatPrerequisites(dwarf, { name: "Dwarven Fortitude", prerequisite: "dwarf" });
+      const pass = validateFeatPrerequisites(dwarf, { name: "Dwarven Fortitude", prerequisite: "dwarf" }, { catalogs: { activeBooks: ALL_BOOKS } });
       assert.equal(pass.met, true);
     });
   });

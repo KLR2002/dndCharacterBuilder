@@ -307,13 +307,13 @@ test("applyStartingGrants grants gold or equipment and is idempotent", () => {
   });
 
   // Grant gold mode
-  const withGold = applyStartingGrants(char, "gold", { goldAmount: 125 });
+  const withGold = applyStartingGrants(char, "gold", { goldAmount: 125, catalogs: { activeBooks: ALL_BOOKS } });
   assert.equal(withGold.startingGrantsApplied, true);
   assert.equal(withGold.startingOption, "gold");
   assert.equal(withGold.pouch.gp, 135);
 
   // Idempotent: calling again does not add more gold
-  const withGoldAgain = applyStartingGrants(withGold, "gold", { goldAmount: 125 });
+  const withGoldAgain = applyStartingGrants(withGold, "gold", { goldAmount: 125, catalogs: { activeBooks: ALL_BOOKS } });
   assert.equal(withGoldAgain.pouch.gp, 135);
 
   // Grant equipment mode
@@ -326,14 +326,14 @@ test("applyStartingGrants grants gold or equipment and is idempotent", () => {
     section: "equipped",
   };
 
-  const withGear = applyStartingGrants(char, "equipment", { equipmentItems: [gearItem] });
+  const withGear = applyStartingGrants(char, "equipment", { equipmentItems: [gearItem], catalogs: { activeBooks: ALL_BOOKS } });
   assert.equal(withGear.startingGrantsApplied, true);
   assert.equal(withGear.startingOption, "equipment");
   assert.equal(withGear.items.length, 1);
   assert.equal(withGear.items[0].name, "Longsword");
 
   // Idempotent: calling again does not duplicate items
-  const withGearAgain = applyStartingGrants(withGear, "equipment", { equipmentItems: [gearItem] });
+  const withGearAgain = applyStartingGrants(withGear, "equipment", { equipmentItems: [gearItem], catalogs: { activeBooks: ALL_BOOKS } });
   assert.equal(withGearAgain.items.length, 1);
 });
 
@@ -356,20 +356,20 @@ test("applyStartingGrants reconciles cleanly when switching between gold and equ
   };
 
   // 1. Claim equipment
-  const withGear = applyStartingGrants(initial, "equipment", { equipmentItems: [startingSword] });
+  const withGear = applyStartingGrants(initial, "equipment", { equipmentItems: [startingSword], catalogs: { activeBooks: ALL_BOOKS } });
   assert.equal(withGear.startingOption, "equipment");
   assert.equal(withGear.items.length, 2);
   assert.equal(withGear.pouch.gp, 10);
 
   // 2. Switch to gold mode
-  const switchedToGold = applyStartingGrants(withGear, "gold", { goldAmount: 125 });
+  const switchedToGold = applyStartingGrants(withGear, "gold", { goldAmount: 125, catalogs: { activeBooks: ALL_BOOKS } });
   assert.equal(switchedToGold.startingOption, "gold");
   assert.equal(switchedToGold.pouch.gp, 135); // 10 initial + 125
   assert.equal(switchedToGold.items.length, 1); // starting sword removed, custom torch preserved
   assert.equal(switchedToGold.items[0].id, "custom_torch");
 
   // 3. Switch back to equipment mode
-  const switchedBackToGear = applyStartingGrants(switchedToGold, "equipment", { equipmentItems: [startingSword] });
+  const switchedBackToGear = applyStartingGrants(switchedToGold, "equipment", { equipmentItems: [startingSword], catalogs: { activeBooks: ALL_BOOKS } });
   assert.equal(switchedBackToGear.startingOption, "equipment");
   assert.equal(switchedBackToGear.pouch.gp, 10); // 125 gold grant cleanly revoked
   assert.equal(switchedBackToGear.items.length, 2); // starting sword restored, custom torch preserved
@@ -444,7 +444,7 @@ test("reclaimStartingGrants adds equipment on top of an earlier claim and keeps 
     items: [longsword],
   });
 
-  const reclaimed = reclaimStartingGrants(claimed, "equipment", { equipmentItems: [longsword, shield] });
+  const reclaimed = reclaimStartingGrants(claimed, "equipment", { equipmentItems: [longsword, shield], catalogs: { activeBooks: ALL_BOOKS } });
   assert.equal(reclaimed.startingGrantsApplied, true);
   assert.equal(reclaimed.startingOption, "equipment");
   assert.deepEqual(reclaimed.items.map((it) => it.id), ["start_fighter_0", "start_fighter_0_2", "start_fighter_1"]);
@@ -457,17 +457,17 @@ test("reclaimStartingGrants adds gold each time and the granted sum is removed w
     pouch: { cp: 0, sp: 0, ep: 0, gp: 10, pp: 0 },
   });
 
-  const firstClaim = applyStartingGrants(initial, "gold", { goldAmount: 125 });
-  const secondClaim = reclaimStartingGrants(firstClaim, "gold", { goldAmount: 125 });
+  const firstClaim = applyStartingGrants(initial, "gold", { goldAmount: 125, catalogs: { activeBooks: ALL_BOOKS } });
+  const secondClaim = reclaimStartingGrants(firstClaim, "gold", { goldAmount: 125, catalogs: { activeBooks: ALL_BOOKS } });
   assert.equal(secondClaim.pouch.gp, 260, "gold is added on top of the earlier claim");
   assert.equal(secondClaim.startingGrantedGold, 250, "granted gold accumulates");
   assert.equal(secondClaim.startingOption, "gold");
 
-  const twiceFromScratch = reclaimStartingGrants(reclaimStartingGrants(initial, "gold", { goldAmount: 125 }), "gold", { goldAmount: 125 });
+  const twiceFromScratch = reclaimStartingGrants(reclaimStartingGrants(initial, "gold", { goldAmount: 125, catalogs: { activeBooks: ALL_BOOKS } }), "gold", { goldAmount: 125, catalogs: { activeBooks: ALL_BOOKS } });
   assert.equal(twiceFromScratch.pouch.gp, 260);
   assert.equal(twiceFromScratch.startingGrantedGold, 250);
 
-  const switched = applyStartingGrants(secondClaim, "equipment", { equipmentItems: [] });
+  const switched = applyStartingGrants(secondClaim, "equipment", { equipmentItems: [], catalogs: { activeBooks: ALL_BOOKS } });
   assert.equal(switched.pouch.gp, 10, "the whole granted sum is removed from the pouch");
 });
 
@@ -475,11 +475,11 @@ test("reclaimStartingGrants from gold to equipment is a plain add that keeps the
   const goldClaim = applyStartingGrants(
     makeChar({ classes: [{ className: "Fighter", source: "PHB", level: 1 }], pouch: { cp: 0, sp: 0, ep: 0, gp: 0, pp: 0 } }),
     "gold",
-    { goldAmount: 125 },
+    { goldAmount: 125, catalogs: { activeBooks: ALL_BOOKS } },
   );
   const gear: InventoryItem = { id: "start_fighter_0", name: "Longsword", source: "PHB", quantity: 1, isEquipped: true, section: "equipped" };
 
-  const reclaimed = reclaimStartingGrants(goldClaim, "equipment", { equipmentItems: [gear] });
+  const reclaimed = reclaimStartingGrants(goldClaim, "equipment", { equipmentItems: [gear], catalogs: { activeBooks: ALL_BOOKS } });
   assert.equal(reclaimed.pouch.gp, 125);
   assert.equal(reclaimed.items.length, 1);
   assert.equal(reclaimed.startingOption, "equipment");
@@ -492,18 +492,18 @@ test("starting gold reclaimed as equipment and then claimed as gold again replac
     items: [],
   });
 
-  const goldClaim = applyStartingGrants(initial, "gold", { goldAmount: 100 });
-  const asEquipment = reclaimStartingGrants(goldClaim, "equipment", { equipmentItems: [] });
+  const goldClaim = applyStartingGrants(initial, "gold", { goldAmount: 100, catalogs: { activeBooks: ALL_BOOKS } });
+  const asEquipment = reclaimStartingGrants(goldClaim, "equipment", { equipmentItems: [], catalogs: { activeBooks: ALL_BOOKS } });
   assert.equal(asEquipment.pouch.gp, 100, "reclaiming as equipment keeps the gold in the pouch");
   assert.equal(asEquipment.startingGrantedGold, 100);
   assert.equal(asEquipment.startingOption, "equipment");
 
-  const goldAgain = applyStartingGrants(asEquipment, "gold", { goldAmount: 100 });
+  const goldAgain = applyStartingGrants(asEquipment, "gold", { goldAmount: 100, catalogs: { activeBooks: ALL_BOOKS } });
   assert.equal(goldAgain.pouch.gp, 100, "the earlier 100 is removed before the new 100 is added");
   assert.equal(goldAgain.startingGrantedGold, 100);
   assert.equal(goldAgain.startingOption, "gold");
 
-  const backToEquipment = applyStartingGrants(goldAgain, "equipment", { equipmentItems: [] });
+  const backToEquipment = applyStartingGrants(goldAgain, "equipment", { equipmentItems: [], catalogs: { activeBooks: ALL_BOOKS } });
   assert.equal(backToEquipment.pouch.gp, 0, "all of the starting gold is removed");
   assert.equal(backToEquipment.startingGrantedGold, undefined);
 });
@@ -516,13 +516,13 @@ test("equipment, then gold, then equipment leaves the pouch as it was and swaps 
   });
   const longsword: InventoryItem = { id: "start_fighter_0", name: "Longsword", source: "PHB", quantity: 1, isEquipped: true, section: "equipped" };
 
-  const equipmentFirst = applyStartingGrants(initial, "equipment", { equipmentItems: [longsword] });
-  const goldSecond = applyStartingGrants(equipmentFirst, "gold", { goldAmount: 125 });
+  const equipmentFirst = applyStartingGrants(initial, "equipment", { equipmentItems: [longsword], catalogs: { activeBooks: ALL_BOOKS } });
+  const goldSecond = applyStartingGrants(equipmentFirst, "gold", { goldAmount: 125, catalogs: { activeBooks: ALL_BOOKS } });
   assert.equal(goldSecond.pouch.gp, 135);
   assert.equal(goldSecond.startingGrantedGold, 125);
   assert.deepEqual(goldSecond.items, []);
 
-  const equipmentThird = applyStartingGrants(goldSecond, "equipment", { equipmentItems: [longsword] });
+  const equipmentThird = applyStartingGrants(goldSecond, "equipment", { equipmentItems: [longsword], catalogs: { activeBooks: ALL_BOOKS } });
   assert.equal(equipmentThird.pouch.gp, 10, "the 125 gold grant is removed");
   assert.equal(equipmentThird.startingGrantedGold, undefined);
   assert.deepEqual(equipmentThird.items, [longsword]);
@@ -582,7 +582,7 @@ test("applyStartingGrants and applyBackgroundGrants return the same reference on
     startingOption: "equipment",
     startingGrantsApplied: true,
   });
-  assert.equal(applyStartingGrants(claimedGear, "equipment", { equipmentItems: [] }), claimedGear);
+  assert.equal(applyStartingGrants(claimedGear, "equipment", { equipmentItems: [], catalogs: { activeBooks: ALL_BOOKS } }), claimedGear);
 
   const claimedBackground = makeChar({ backgroundGrantsApplied: true });
   assert.equal(applyBackgroundGrants(claimedBackground, undefined), claimedBackground);

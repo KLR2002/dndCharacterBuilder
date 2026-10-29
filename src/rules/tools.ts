@@ -1,5 +1,4 @@
 import type { AbilityKey, Character } from "../types/character.ts";
-import { ALL_BOOKS } from "../constants/books.ts";
 import type { CharacterCatalogs } from "./catalogs.ts";
 import { effectiveScores } from "./abilities.ts";
 import { proficiencyBonus, totalLevel } from "./proficiencies.ts";
@@ -51,9 +50,9 @@ export function getToolAbility(toolName: string): AbilityKey | undefined {
 
 export function evaluateCharacterTools(
   character: Character,
-  catalogs?: CharacterCatalogs
+  catalogs: CharacterCatalogs
 ): EvaluatedTool[] {
-  const toolNames = proficiencySheet(character, catalogs ?? { activeBooks: ALL_BOOKS }).tools.map((t) => t.name);
+  const toolNames = proficiencySheet(character, catalogs).tools.map((t) => t.name);
   const pb = proficiencyBonus(totalLevel(character));
   const { modifiers } = effectiveScores(character);
 

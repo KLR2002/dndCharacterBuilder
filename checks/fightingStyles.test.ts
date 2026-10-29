@@ -288,7 +288,7 @@ test("Archery grants +2 attack roll bonus to ranged weapon attacks", () => {
     ],
   });
 
-  const withoutArchery = getWeaponAttacks(baseArcher);
+  const withoutArchery = getWeaponAttacks(baseArcher, { catalogs: { activeBooks: ALL_BOOKS } });
   const bowWithout = withoutArchery.find((a) => a.name === "Longbow")!;
   assert.equal(bowWithout.attackBonus, 5);
   assert.equal(bowWithout.toHit, 5);
@@ -307,7 +307,7 @@ test("Archery grants +2 attack roll bonus to ranged weapon attacks", () => {
     ],
   });
 
-  const withArchery = getWeaponAttacks(archerChar);
+  const withArchery = getWeaponAttacks(archerChar, { catalogs: { activeBooks: ALL_BOOKS } });
   const bowWith = withArchery.find((a) => a.name === "Longbow")!;
   const swordWith = withArchery.find((a) => a.name === "Longsword")!;
 
@@ -379,7 +379,7 @@ test("Dueling grants +2 damage to single one-handed melee weapon attack", () => 
     ],
   });
 
-  const attacks = getWeaponAttacks(duelist);
+  const attacks = getWeaponAttacks(duelist, { catalogs: { activeBooks: ALL_BOOKS } });
   assert.equal(attacks.length, 1);
   assert.equal(attacks[0].name, "Longsword");
   assert.equal(attacks[0].damageString, "1d8 + 5"); // 1d8 + 3 (Str) + 2 (Dueling) = 1d8 + 5
@@ -394,7 +394,7 @@ test("Dueling grants +2 damage to single one-handed melee weapon attack", () => 
       weapon("w2", "Dagger", { damage: "1d4", damageType: "piercing" }),
     ],
   });
-  const dualAttacks = getWeaponAttacks(dualWieldChar);
+  const dualAttacks = getWeaponAttacks(dualWieldChar, { catalogs: { activeBooks: ALL_BOOKS } });
   const swordAttack = dualAttacks.find((a) => a.name === "Longsword")!;
   assert.equal(swordAttack.damageString, "1d8 + 3"); // No Dueling bonus!
 
@@ -405,7 +405,7 @@ test("Dueling grants +2 damage to single one-handed melee weapon attack", () => 
       weapon("w1", "Greatsword", { damage: "2d6", damageType: "slashing", properties: ["Heavy", "Two-Handed"] }),
     ],
   });
-  const twoHandedAttacks = getWeaponAttacks(twoHandedChar);
+  const twoHandedAttacks = getWeaponAttacks(twoHandedChar, { catalogs: { activeBooks: ALL_BOOKS } });
   assert.equal(twoHandedAttacks[0].damageString, "2d6 + 3"); // No Dueling bonus!
 });
 
@@ -429,7 +429,7 @@ test("Two-Weapon Fighting style adds ability modifier to off-hand damage in chec
     ],
   });
 
-  const result = checkDualWielding(twfChar);
+  const result = checkDualWielding(twfChar, getWeaponAttacks(twfChar, { catalogs: { activeBooks: ALL_BOOKS } }));
   assert.equal(result.isDualWielding, true);
   assert.equal(result.mainHand?.damageString, "1d6 + 3");
   assert.equal(result.offHand?.damageString, "1d4 + 3"); // TWF adds +3 to off-hand!
@@ -439,7 +439,7 @@ test("Two-Weapon Fighting style adds ability modifier to off-hand damage in chec
     ...twfChar,
     ruleChoices: [],
   });
-  const noTwfResult = checkDualWielding(noTwfChar);
+  const noTwfResult = checkDualWielding(noTwfChar, getWeaponAttacks(noTwfChar, { catalogs: { activeBooks: ALL_BOOKS } }));
   assert.equal(noTwfResult.offHand?.damageString, "1d4");
 });
 
@@ -463,7 +463,7 @@ test("Thrown Weapon Fighting adds +2 to damage of thrown weapons", () => {
     ],
   });
 
-  const attacks = getWeaponAttacks(thrownChar);
+  const attacks = getWeaponAttacks(thrownChar, { catalogs: { activeBooks: ALL_BOOKS } });
   const javelin = attacks.find((a) => a.name === "Javelin")!;
   const greatsword = attacks.find((a) => a.name === "Greatsword")!;
 

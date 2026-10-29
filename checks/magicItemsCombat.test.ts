@@ -236,7 +236,7 @@ describe("Combat Economy Engine: Passive Weapon & Armor Enhancement Bonuses", ()
       ],
     });
 
-    const dualResult = checkDualWielding(rogue);
+    const dualResult = checkDualWielding(rogue, getWeaponAttacks(rogue, { catalogs: { activeBooks: ALL_BOOKS } }));
     assert.ok(dualResult.isDualWielding);
     assert.ok(dualResult.mainHand);
     assert.ok(dualResult.offHand);

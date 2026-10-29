@@ -1,4 +1,4 @@
-import { ALL_BOOKS, type ActiveBooks } from "../constants/books.ts";
+import type { ActiveBooks } from "../constants/books.ts";
 import type { AbilityKey, AbilityScores, AsiSelection, Character } from "../types/character.ts";
 import { effectiveScores, hasFeat } from "./abilities.ts";
 import { totalLevel } from "./proficiencies.ts";
@@ -18,8 +18,8 @@ export interface FeatPrerequisiteResult {
 }
 
 export interface FeatPrerequisiteOptions {
-  /** The Compendium the armor prerequisite reads from the Proficiency Sheet. Defaults to the current one. */
-  catalogs?: CharacterCatalogs;
+  /** The Compendium and active books the armor prerequisite reads its Proficiency Sheet from. */
+  catalogs: CharacterCatalogs;
   effectiveScores?: AbilityScores;
   armorProficiencies?: string[];
   weaponProficiencies?: string[];
@@ -33,14 +33,14 @@ export interface FeatPrerequisiteOptions {
 export function validateFeatPrerequisites(
   character: Character,
   feat: { name: string; prerequisite?: string | null },
-  options: FeatPrerequisiteOptions = {},
+  options: FeatPrerequisiteOptions,
 ): FeatPrerequisiteResult {
   const prereq = feat.prerequisite?.trim();
   if (!prereq) return { met: true };
 
   const scores = options.effectiveScores || effectiveScores(character).scores;
   const lvl = options.totalLevel ?? totalLevel(character);
-  const armors = options.armorProficiencies ?? proficiencySheet(character, options.catalogs ?? { activeBooks: ALL_BOOKS }).armor.map((armor) => armor.name);
+  const armors = options.armorProficiencies ?? proficiencySheet(character, options.catalogs).armor.map((armor) => armor.name);
   const raceName = (character.race?.name || "").toLowerCase();
   const subraceName = (character.race?.subraceName || "").toLowerCase();
 
