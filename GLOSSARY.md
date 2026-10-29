@@ -36,6 +36,18 @@ _Avoid_: variant, option, mode, toggle
 An Ancestry that **replaces** a named feature of its base ancestry rather than adding to it. A Variant Half-Elf has no Skill Versatility of its own; it takes exactly one feature from its descent's offered set, which may include Skill Versatility.
 _Avoid_: subrace, upgrade, alternate ancestry
 
+**Origin Customization**:
+The Tasha's Cauldron of Everything rule that lets a player replace what a race's Ability Score Increase, Languages and proficiencies give with choices of their own. It is available whenever TCE is an active book, to a race or subrace that has an ability score increase, and only for the ancestry: a background, class, subclass or feat grant is never swapped. The rule's tables come from the Integrated Catalog, so without it, or while TCE is inactive, no Origin Swap is offered and saved ones are kept but not applied. Distinct from *Custom Lineage*, which replaces the whole race, and from the custom background.
+_Avoid_: Custom origin, race tweak, racial override
+
+**Origin Swap**:
+One replacement made under Origin Customization: an ability score increase moved to another score, a language replaced by another language, or a skill, tool, weapon or armor proficiency replaced by one the rule's Proficiency Swaps table allows. Every swap starts as the race's own value, so nothing is changed until the player changes it, and the options for customizing are hidden until the player opens them. Swapped increases must land on different scores and may not take a score above 20.
+_Avoid_: Override, respec, racial swap
+
+**Size Choice**:
+The size a character takes when its race lists more than one (such as Small or Medium). It defaults to the first size the race lists and is released when the race stops offering it.
+_Avoid_: Size override, size toggle
+
 **Season**:
 The Eladrin's chosen season (Autumn, Winter, Spring, Summer), which determines the additional effect its Fey Step gains at 3rd level. Changeable by the player whenever a Long Rest is taken.
 _Avoid_: alignment, element, stance
