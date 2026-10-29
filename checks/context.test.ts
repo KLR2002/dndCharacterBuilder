@@ -17,6 +17,7 @@ import { reconcileForActiveBooks } from "../src/rules/characterReconciler.ts";
 import { applyCharacterUpdate } from "../src/context/characterUpdates.ts";
 import { __setKvForTests, loadCharacters, saveCharacters } from "../src/services/storage.ts";
 import * as compendiumStorage from "../src/services/compendiumStorage.ts";
+import * as catalogUpdateNotice from "../src/services/catalogUpdateNotice.ts";
 const { transpileModule, ModuleKind, JsxEmit } = createRequire(import.meta.url)("typescript");
 
 // Execute the real provider without RN/a renderer dependency. State updates are
@@ -99,6 +100,7 @@ async function providerHarness(initial: unknown = [makeChar()], options: {
     };
     if (name.includes("constants/books")) return { DEFAULT_ACTIVE_BOOK_CODES: [] };
     if (name.includes("builderTransitions")) return { checkActiveBooksIntegrity: () => [] };
+    if (name.includes("catalogUpdateNotice")) return catalogUpdateNotice;
     throw new Error(`Unexpected provider import: ${name}`);
   } });
   function commit() {
@@ -526,7 +528,24 @@ test("opening a character that already fits the active books saves nothing", { t
   assert.strictEqual(h.value.characters[0], before);
 });
 
-test("changing the active books reconciles only the open character; a restored book does not bring the mark back", { timeout: 3000 }, async () => {
+test("a stale Integrated Catalog shows the update notice; dismissing it saves the informed format and it stays hidden after a reload", { timeout: 3000 }, async () => {
+  const stale = { hasIntegratedCatalog: true, catalogFormat: compendiumStorage.REQUIRED_CATALOG_FORMAT - 1, races: [], classes: [] };
+  const h = await providerHarness([], { settings: BOOKS_PHB, compendium: stale });
+  await settle(h);
+  assert.equal(h.value.catalogUpdateNoticeDue, true);
+  await h.value.dismissCatalogUpdateNotice();
+  h.render();
+  assert.equal(h.value.catalogUpdateNoticeDue, false);
+  assert.equal((await storage.loadSettings()).catalogFormatInformed, compendiumStorage.REQUIRED_CATALOG_FORMAT);
+  const reloaded = await providerHarness([], {
+    settings: { ...BOOKS_PHB, catalogFormatInformed: compendiumStorage.REQUIRED_CATALOG_FORMAT },
+    compendium: stale,
+  });
+  await settle(reloaded);
+  assert.equal(reloaded.value.catalogUpdateNoticeDue, false);
+});
+
+test("changing the active books reconciles only the open character; a restored book does not bring the mark back",{ timeout: 3000 }, async () => {
   const h = await providerHarness([
     rogueWithSmugglerMark("char_a", ["Investigation", "Stealth"]),
     rogueWithSmugglerMark("char_b", ["Investigation", "Stealth"]),

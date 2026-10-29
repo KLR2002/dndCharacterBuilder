@@ -13,6 +13,7 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { CatalogUpdateModal } from "../components/CatalogUpdateModal";
 import { FirstRunModal } from "../components/FirstRunModal";
 import { NewCharacterModal } from "../components/NewCharacterModal";
 import { Badge } from "../components/ui/Badge";
@@ -33,6 +34,8 @@ export default function HomeScreen() {
     folders,
     isFirstRun,
     completeFirstRun,
+    catalogUpdateNoticeDue,
+    dismissCatalogUpdateNotice,
     activeBooks,
     setActiveBooks,
     createFolder,
@@ -63,6 +66,15 @@ export default function HomeScreen() {
       setActiveBooks(books);
     }
     completeFirstRun();
+  };
+
+  const handleCatalogUpdateLater = () => {
+    dismissCatalogUpdateNotice();
+  };
+
+  const handleCatalogUpdateOpenSettings = () => {
+    dismissCatalogUpdateNotice();
+    router.push("/options" as any);
   };
 
   const handleCharacterCreated = (characterId: string) => {
@@ -501,6 +513,12 @@ export default function HomeScreen() {
 
       {/* First Run Resource Selection Wizard */}
       <FirstRunModal visible={isFirstRun} onComplete={handleFirstRunComplete} />
+
+      <CatalogUpdateModal
+        visible={catalogUpdateNoticeDue}
+        onOpenSettings={handleCatalogUpdateOpenSettings}
+        onLater={handleCatalogUpdateLater}
+      />
 
       {/* New Character Creation Modal */}
       <NewCharacterModal
