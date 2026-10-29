@@ -338,3 +338,16 @@ test("a Choice ASI pick may not take an ability an Origin Customization increase
   assert.deepEqual(originAbilityTargets(half, { compendium, activeBooks: WITHOUT_TCE }), []);
   assert.deepEqual(originAbilityTargets(holding(PLAIN), catalogs), []);
 });
+
+test("a held race missing from the catalog keeps its saved ability swap until the race is found again", () => {
+  const dwarf = holding(DWARF);
+  const moved = setOriginAbilitySwap(dwarf, slotDefaulting(dwarf, "con").id, "dex", catalogs);
+  const withoutDwarf = inMemoryCompendium({ races: records.filter((r) => r.name !== DWARF), originRules: [rule] }, { integrated: true });
+
+  const absent = reconcile(moved, withoutDwarf, { activeBooks: ACTIVE });
+  assert.deepEqual(absent, moved);
+
+  const back = reconcile(absent, compendium, { activeBooks: ACTIVE });
+  assert.deepEqual(back.originAbilitySwaps, moved.originAbilitySwaps);
+  assert.deepEqual(back.racialAbilityBonuses, { dex: 2 });
+});

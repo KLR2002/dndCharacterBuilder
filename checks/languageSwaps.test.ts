@@ -321,3 +321,16 @@ test("Reset returns the ability and the language swaps to their defaults togethe
   assert.deepEqual(reset.racialAbilityBonuses, { con: 2 });
   assert.deepEqual(reconcile(reset, compendium, { activeBooks: ACTIVE }), reset);
 });
+
+test("a held race missing from the catalog keeps its saved language swap until the race is found again", () => {
+  const folk = holding(FOLK);
+  const swapped = setLanguageSwap(folk, rowOf(folk, "Elvish").id, "Dwarvish", catalogs);
+  const withoutFolk = inMemoryCompendium({ races: records.filter((r) => r.name !== FOLK), backgrounds, originRules: [rule] }, { integrated: true });
+
+  const absent = reconcile(swapped, withoutFolk, { activeBooks: ACTIVE });
+  assert.deepEqual(absent.proficiencyPicks, swapped.proficiencyPicks);
+  assert.deepEqual(absent.needsReview, undefined);
+
+  const back = reconcile(absent, compendium, { activeBooks: ACTIVE });
+  assert.deepEqual(back.proficiencyPicks, swapped.proficiencyPicks);
+});

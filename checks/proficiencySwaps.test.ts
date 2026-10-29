@@ -304,3 +304,16 @@ test("a swap's pick is saved under its grant id, the swap mark, and the original
   assert.deepEqual(Object.keys(swapped.proficiencyPicks ?? {}), [row.id]);
   assert.deepEqual(swapped.proficiencyPicks?.[row.id], ["Insight"]);
 });
+
+test("a held race missing from the catalog keeps its saved skill swap until the race is found again", () => {
+  const scout = holding(SCOUT);
+  const swapped = setProficiencySwap(scout, rowOf(scout, "Perception").id, "Insight", catalogs);
+  const withoutScout = inMemoryCompendium({ races: records.filter((r) => r.name !== SCOUT), backgrounds, items: ITEMS, originRules: [rule] }, { integrated: true });
+
+  const absent = reconcile(swapped, withoutScout, { activeBooks: ACTIVE });
+  assert.deepEqual(absent.proficiencyPicks, swapped.proficiencyPicks);
+  assert.deepEqual(absent.needsReview, undefined);
+
+  const back = reconcile(absent, compendium, { activeBooks: ACTIVE });
+  assert.deepEqual(back.proficiencyPicks, swapped.proficiencyPicks);
+});
