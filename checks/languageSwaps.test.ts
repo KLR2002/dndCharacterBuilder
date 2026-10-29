@@ -1,13 +1,13 @@
-import { ORIGIN_CUSTOMIZATION_BOOK } from "../src/constants/books.ts";
+import { ORIGIN_CUSTOMIZATION_BOOK , ALL_BOOKS } from "../src/constants/books.ts";
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { makeChar, inMemoryCompendium } from "./testUtils.ts";
+import { makeChar, inMemoryCompendium, loadSrdCatalog, srdBaselineCompendium } from "./testUtils.ts";
 import { applyAncestrySelection } from "../src/rules/ancestryEngine.ts";
 import { changeRace, resetOriginSwaps, setLanguageSwap, setOriginAbilitySwap } from "../src/rules/builderTransitions.ts";
 import { reconcile, reconcileForActiveBooks } from "../src/rules/characterReconciler.ts";
 import { proficiencyChoiceOffers } from "../src/rules/proficiencyChoiceOffers.ts";
 import { originCustomizationView } from "../src/rules/originCustomization.ts";
-import { languageSwapViews, proficiencySheet , sourceGrants } from "../src/rules/proficiencySheet.ts";
+import { languageSwapViews, proficiencySheet, proficiencySwapViews, sourceGrants } from "../src/rules/proficiencySheet.ts";
 import type { Character } from "../src/types/character.ts";
 import type { FeatureInstance } from "../src/rules/types.ts";
 import { languageSwapSlots } from "../src/rules/proficiencySources/languageSwaps.ts";
@@ -346,4 +346,23 @@ test("only the race's own language grant has a swap slot: a Class feature naming
 
   const slots = languageSwapSlots(features, ["Common"], undefined, true);
   assert.deepEqual(slots.filter((slot) => slot.original === "Elvish").map((slot) => slot.id), [`${FOLK_GRANT}#swap:Elvish`]);
+});
+
+test("the SRD Baseline offers no language or proficiency swap, and a saved swap leaves its sheet unchanged", () => {
+  const srdRaces = loadSrdCatalog<RaceData[]>("races");
+  const srdCatalogs = { compendium: srdBaselineCompendium(), activeBooks: ALL_BOOKS };
+
+  for (const srdRace of srdRaces) {
+    const held = makeChar({ race: { name: srdRace.name, source: srdRace.source } });
+    assert.deepEqual(languageSwapViews(held, srdCatalogs), [], `${srdRace.name} offers no language swap`);
+    assert.deepEqual(proficiencySwapViews(held, srdCatalogs), [], `${srdRace.name} offers no proficiency swap`);
+  }
+
+  const first = srdRaces[0];
+  const held = makeChar({ race: { name: first.name, source: first.source } });
+  const withPick = makeChar({
+    race: { name: first.name, source: first.source },
+    proficiencyPicks: { [`${first.source}/Race/${first.name}@0#languages:fixed:Common#swap:Common`]: ["Dwarvish"] },
+  });
+  assert.deepEqual(proficiencySheet(withPick, srdCatalogs), proficiencySheet(held, srdCatalogs));
 });
