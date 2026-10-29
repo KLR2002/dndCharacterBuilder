@@ -17,7 +17,7 @@ interface CollapsibleCardProps {
 }
 
 /**
- * A Card whose title row shows or hides its body. It opens by default, and its open state is kept by the card alone.
+ * A Card whose title row shows or hides its body. It opens by default unless `defaultExpanded` is false, and its open state is kept by the card alone.
  */
 export const CollapsibleCard: React.FC<CollapsibleCardProps> = ({ title, subtitle, badge, style, defaultExpanded = true, children }) => {
   const { theme } = useAppTheme();
