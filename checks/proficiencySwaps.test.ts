@@ -11,6 +11,7 @@ import type { Character } from "../src/types/character.ts";
 import type { BackgroundData, ItemData, OriginRuleRecord, ProficiencyGrant, RaceData } from "../src/types/dnd5e.ts";
 import type { FeatureInstance } from "../src/rules/types.ts";
 import { proficiencySwapSlots, withProficiencySwaps } from "../src/rules/proficiencySources/proficiencySwaps.ts";
+import { recordProficiencyPick } from "../src/rules/proficiencyPools.ts";
 import { swapId } from "../src/rules/proficiencySources/swapIds.ts";
 
 // Proficiency swaps: a Race or Subrace fixed skill, tool, weapon or armor grant, or the pick of a narrower choice, is replaced
@@ -366,4 +367,18 @@ test("only the race's own grant is swapped: a Class or Feat feature of the same 
   assert.deepEqual(namesOn("class"), ["Perception"]);
   assert.deepEqual(namesOn("feat"), ["Perception"]);
   assert.deepEqual(namesOn("race"), ["Arcana"]);
+});
+
+test("re-picking the narrower choice to another value releases its swap with a notice, and the original does not bring it back", () => {
+  const grant = `${SOURCE}/Race/${ARTISAN}@0#tools:choice:names`;
+  const artisan = holding(ARTISAN, { proficiencyPicks: { [grant]: ["Sample Kit"] } });
+  const swapped = setProficiencySwap(artisan, rowOf(artisan, "Sample Kit").id, "Smith's Tools", catalogs);
+
+  const repicked = reconcile(recordProficiencyPick(swapped, { id: grant, choose: 1 }, "Sample Tool B"), compendium, { activeBooks: ACTIVE });
+  assert.deepEqual(repicked.proficiencyPicks, { [grant]: ["Sample Tool B"] });
+  assert.deepEqual(repicked.needsReview, ["Tool swap to Smith's Tools removed: ancestry no longer grants Sample Kit"]);
+  assert.ok(!namesIn(repicked, "tools").includes("Smith's Tools"));
+
+  const originalAgain = reconcile(recordProficiencyPick(repicked, { id: grant, choose: 1 }, "Sample Kit"), compendium, { activeBooks: ACTIVE });
+  assert.equal(originalAgain.proficiencyPicks?.[`${grant}#swap:Sample Kit`], undefined);
 });
