@@ -1,3 +1,4 @@
+import { ALL_BOOKS } from "../src/constants/books.ts";
 import test from "node:test";
 import assert from "node:assert/strict";
 import { evaluateCharacter } from "../src/rules/characterEvaluation.ts";
@@ -11,7 +12,7 @@ import { initiativeClasses } from "./initiativeFixture.ts";
 // for them except where an Initiative Bonus is needed to show the line order.
 
 const compendium = inMemoryCompendium({ classes: initiativeClasses() });
-const catalogs = { compendium };
+const catalogs = { compendium, activeBooks: ALL_BOOKS };
 
 const scores = (overrides: Partial<AbilityScores>): AbilityScores => ({
   str: 10,

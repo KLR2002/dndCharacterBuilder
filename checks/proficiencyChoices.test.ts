@@ -1,3 +1,4 @@
+import { ALL_BOOKS } from "../src/constants/books.ts";
 import test from "node:test";
 import assert from "node:assert/strict";
 import type { Character } from "../src/types/character.ts";
@@ -84,7 +85,7 @@ const lampWarden = (level: number, extra: Partial<Character> = {}) =>
   });
 
 const offerFor = (character: Character, id: string, compendium = lampCompendium()) =>
-  proficiencyChoiceOffers(character, { compendium }).find((offer) => offer.id === id);
+  proficiencyChoiceOffers(character, { compendium, activeBooks: ALL_BOOKS }).find((offer) => offer.id === id);
 
 test("a names-pool tool choice held by a subclass feature is offered with its pool, minus what is already held", () => {
   const offer = offerFor(lampWarden(3, { chosenTools: { background: ["Signal Mirror"] } }), LAMP_ID);
@@ -116,26 +117,26 @@ test("the offer is absent below the feature's level and when its book is not act
 
 test("a saved pick reaches the sheet as rule-granted, and a name outside the pool does not", () => {
   const compendium = lampCompendium();
-  const sheet = proficiencySheet(lampWarden(3, { proficiencyPicks: { [LAMP_ID]: ["Signal Mirror"] } }), { compendium });
+  const sheet = proficiencySheet(lampWarden(3, { proficiencyPicks: { [LAMP_ID]: ["Signal Mirror"] } }), { compendium, activeBooks: ALL_BOOKS });
   assert.deepEqual(sheet.tools, [{ name: "Signal Mirror", ruleGranted: true }]);
 
-  const outside = proficiencySheet(lampWarden(3, { proficiencyPicks: { [LAMP_ID]: ["Dragon Dice"] } }), { compendium });
+  const outside = proficiencySheet(lampWarden(3, { proficiencyPicks: { [LAMP_ID]: ["Dragon Dice"] } }), { compendium, activeBooks: ALL_BOOKS });
   assert.deepEqual(outside.tools, [], "a name the pool does not offer is not on the sheet");
 });
 
 test("a pick for a feature the character does not hold adds nothing to the sheet", () => {
   const sheet = proficiencySheet(lampWarden(2, { proficiencyPicks: { [LAMP_ID]: ["Signal Mirror"] } }), {
-    compendium: lampCompendium(),
+    compendium: lampCompendium(), activeBooks: ALL_BOOKS,
   });
   assert.deepEqual(sheet.tools, []);
 });
 
 test("an any-pool language pick is accepted only for a known language", () => {
   const compendium = lampCompendium();
-  const accepted = proficiencySheet(lampWarden(3, { proficiencyPicks: { [LAMP_TONGUE_ID]: ["elvish"] } }), { compendium });
+  const accepted = proficiencySheet(lampWarden(3, { proficiencyPicks: { [LAMP_TONGUE_ID]: ["elvish"] } }), { compendium, activeBooks: ALL_BOOKS });
   assert.deepEqual(names(accepted.languages), ["Common", "Elvish"], "a known language is matched to its own spelling");
 
-  const rejected = proficiencySheet(lampWarden(3, { proficiencyPicks: { [LAMP_TONGUE_ID]: ["Zorvish"] } }), { compendium });
+  const rejected = proficiencySheet(lampWarden(3, { proficiencyPicks: { [LAMP_TONGUE_ID]: ["Zorvish"] } }), { compendium, activeBooks: ALL_BOOKS });
   assert.deepEqual(names(rejected.languages), ["Common"], "an unknown language is not accepted; Common stays");
 });
 
@@ -148,16 +149,16 @@ test("picking records under the grant id, toggles off, replaces at a count of on
   const offer = offerFor(before, LAMP_ID, compendium);
   assert.ok(offer);
 
-  const picked = pickRuleChoice(before, offer, "Lantern Kit", compendium);
+  const picked = pickRuleChoice(before, offer, "Lantern Kit", compendium, ALL_BOOKS);
   assert.deepEqual(picked.proficiencyPicks, { [LAMP_ID]: ["Lantern Kit"] });
   assert.deepEqual(picked.chosenTools, before.chosenTools, "the old tool bucket is never rewritten");
   assert.deepEqual(picked.chosenLanguages, before.chosenLanguages, "the old language bucket is never rewritten");
   assert.deepEqual(picked.ruleChoices ?? [], [], "no ruleChoices entry is written for a proficiency pick");
 
-  const replaced = pickRuleChoice(picked, offer, "Signal Mirror", compendium);
+  const replaced = pickRuleChoice(picked, offer, "Signal Mirror", compendium, ALL_BOOKS);
   assert.deepEqual(replaced.proficiencyPicks, { [LAMP_ID]: ["Signal Mirror"] });
 
-  const cleared = pickRuleChoice(replaced, offer, "Signal Mirror", compendium);
+  const cleared = pickRuleChoice(replaced, offer, "Signal Mirror", compendium, ALL_BOOKS);
   assert.equal(cleared.proficiencyPicks?.[LAMP_ID], undefined, "picking the same name again deselects it");
 });
 
@@ -171,11 +172,11 @@ test("a feat's language choice is offered from the feat and picked onto the shee
     ],
   });
   const scholar = makeChar({ asiSelections: [{ level: 4, type: "feat", featName: "Lantern Scholar", featSource: "PHB" }] });
-  const offer = proficiencyChoiceOffers(scholar, { compendium }).find((o) => o.id === SCHOLAR_ID);
+  const offer = proficiencyChoiceOffers(scholar, { compendium, activeBooks: ALL_BOOKS }).find((o) => o.id === SCHOLAR_ID);
   assert.equal(offer?.origin, "feat");
 
-  const picked = pickRuleChoice(scholar, offer!, "Elvish", compendium);
-  assert.deepEqual(names(proficiencySheet(picked, { compendium }).languages), ["Common", "Elvish"]);
+  const picked = pickRuleChoice(scholar, offer!, "Elvish", compendium, ALL_BOOKS);
+  assert.deepEqual(names(proficiencySheet(picked, { compendium, activeBooks: ALL_BOOKS }).languages), ["Common", "Elvish"]);
 });
 
 // Kensei brush, end to end against the integrated test compendium.
@@ -188,7 +189,7 @@ const monk3 = (extra: Partial<Character> = {}) =>
 
 test("a Way of the Kensei monk is offered calligrapher's or painter's supplies at 3rd level", () => {
   const compendium = integratedTestCompendium();
-  const offer = proficiencyChoiceOffers(monk3(), { compendium }).find((o) => o.id === KENSEI_ID);
+  const offer = proficiencyChoiceOffers(monk3(), { compendium, activeBooks: ALL_BOOKS }).find((o) => o.id === KENSEI_ID);
   assert.ok(offer, "the Path of the Kensei choice is offered");
   assert.equal(offer.choose, 1);
   assert.equal(offer.traitName, "Path of the Kensei: Tool");
@@ -197,7 +198,7 @@ test("a Way of the Kensei monk is offered calligrapher's or painter's supplies a
 
 test("the three Kensei choices at 3rd level get three distinct picker titles", () => {
   const compendium = integratedTestCompendium();
-  const titles = proficiencyChoiceOffers(monk3(), { compendium })
+  const titles = proficiencyChoiceOffers(monk3(), { compendium, activeBooks: ALL_BOOKS })
     .filter((o) => o.id.startsWith("XGE/Monk/Way of the Kensei/Path of the Kensei@3"))
     .map((o) => o.traitName);
   assert.deepEqual(titles, ["Path of the Kensei: Tool", "Path of the Kensei: Melee weapon", "Path of the Kensei: Ranged weapon"]);
@@ -231,14 +232,14 @@ test("picker titles name each grant's category, and number grants that still sha
 test("the Kensei brush pick shows on the sheet, and a monk below 3rd level is offered nothing", () => {
   const compendium = integratedTestCompendium();
   const character = monk3();
-  const offer = proficiencyChoiceOffers(character, { compendium }).find((o) => o.id === KENSEI_ID);
-  const picked = pickRuleChoice(character, offer!, "Painter's Supplies", compendium);
-  assert.ok(names(proficiencySheet(picked, { compendium }).tools).includes("Painter's Supplies"));
+  const offer = proficiencyChoiceOffers(character, { compendium, activeBooks: ALL_BOOKS }).find((o) => o.id === KENSEI_ID);
+  const picked = pickRuleChoice(character, offer!, "Painter's Supplies", compendium, ALL_BOOKS);
+  assert.ok(names(proficiencySheet(picked, { compendium, activeBooks: ALL_BOOKS }).tools).includes("Painter's Supplies"));
 
   const monk2 = makeChar({
     classes: [{ className: "Monk", source: "PHB", level: 2, subclassName: "Way of the Kensei", subclassSource: "XGE" }],
   });
-  assert.equal(proficiencyChoiceOffers(monk2, { compendium }).find((o) => o.id === KENSEI_ID), undefined);
+  assert.equal(proficiencyChoiceOffers(monk2, { compendium, activeBooks: ALL_BOOKS }).find((o) => o.id === KENSEI_ID), undefined);
 });
 
 test("the Kensei choice is offered only while the Xanathar's book is active", () => {
@@ -249,11 +250,11 @@ test("the Kensei choice is offered only while the Xanathar's book is active", ()
 
 test("with no catalog that holds the Kensei, the pick is kept and takes effect when the catalog returns", () => {
   const picked = monk3({ proficiencyPicks: { [KENSEI_ID]: ["Calligrapher's Supplies"] } });
-  const withoutCatalog = reconcile(picked, srdBaselineCompendium());
+  const withoutCatalog = reconcile(picked, srdBaselineCompendium(), { activeBooks: ALL_BOOKS });
   assert.deepEqual(withoutCatalog.proficiencyPicks, picked.proficiencyPicks);
   assert.deepEqual(withoutCatalog.needsReview ?? [], []);
 
-  const back = proficiencySheet(withoutCatalog, { compendium: integratedTestCompendium() });
+  const back = proficiencySheet(withoutCatalog, { compendium: integratedTestCompendium(), activeBooks: ALL_BOOKS });
   assert.ok(names(back.tools).includes("Calligrapher's Supplies"));
 });
 
@@ -266,7 +267,7 @@ test("changing the subclass releases the Kensei pick through reconcile() with a 
     ...picked,
     classes: [{ ...picked.classes[0], subclassName: "Way of the Four Elements", subclassSource: "PHB" }],
   };
-  const out = reconcile(changed, compendium);
+  const out = reconcile(changed, compendium, { activeBooks: ALL_BOOKS });
   assert.equal(out.proficiencyPicks?.[KENSEI_ID], undefined);
   assert.ok(
     out.needsReview?.some((note) => note.includes("Calligrapher's Supplies")),
@@ -277,10 +278,10 @@ test("changing the subclass releases the Kensei pick through reconcile() with a 
 test("reconciling a valid character with a proficiency pick returns it unchanged", () => {
   const compendium = integratedTestCompendium();
   const picked = monk3({ proficiencyPicks: { [KENSEI_ID]: ["Calligrapher's Supplies"] } });
-  const once = reconcile(picked, compendium);
+  const once = reconcile(picked, compendium, { activeBooks: ALL_BOOKS });
   assert.deepEqual(once.proficiencyPicks, picked.proficiencyPicks, "the pick is kept as saved");
   assert.deepEqual(once.needsReview ?? [], [], "no notice is added");
-  assert.deepEqual(reconcile(once, compendium), once, "idempotent");
+  assert.deepEqual(reconcile(once, compendium, { activeBooks: ALL_BOOKS }), once, "idempotent");
 });
 
 test("removing the feat that grants a language choice releases its pick with a notice", () => {
@@ -291,10 +292,10 @@ test("removing the feat that grants a language choice releases its pick with a n
     asiSelections: [{ level: 4, type: "feat", featName: "Lantern Scholar", featSource: "PHB" }],
     proficiencyPicks: { [SCHOLAR_ID]: ["Elvish"] },
   });
-  assert.deepEqual(reconcile(scholar, compendium).proficiencyPicks, { [SCHOLAR_ID]: ["Elvish"] }, "held feat keeps its pick");
+  assert.deepEqual(reconcile(scholar, compendium, { activeBooks: ALL_BOOKS }).proficiencyPicks, { [SCHOLAR_ID]: ["Elvish"] }, "held feat keeps its pick");
 
   const dropped: Character = { ...scholar, asiSelections: [] };
-  const out = reconcile(dropped, compendium);
+  const out = reconcile(dropped, compendium, { activeBooks: ALL_BOOKS });
   assert.equal(out.proficiencyPicks?.[SCHOLAR_ID], undefined);
   assert.ok(out.needsReview?.some((note) => note.includes("Elvish")));
 });
@@ -309,9 +310,9 @@ const shutteredOff = (extra: Partial<Character> = {}) =>
 test("turning an optional feature off releases the pick stored for its grant, with a notice", () => {
   const compendium = lampCompendium();
   const saved = { [SHUTTER_ID]: ["Perception"] };
-  assert.deepEqual(reconcile(shutteredOn({ proficiencyPicks: saved }), compendium).proficiencyPicks, saved, "a feature that is on keeps its pick");
+  assert.deepEqual(reconcile(shutteredOn({ proficiencyPicks: saved }), compendium, { activeBooks: ALL_BOOKS }).proficiencyPicks, saved, "a feature that is on keeps its pick");
 
-  const released = reconcile(shutteredOff({ proficiencyPicks: saved }), compendium);
+  const released = reconcile(shutteredOff({ proficiencyPicks: saved }), compendium, { activeBooks: ALL_BOOKS });
   assert.equal(released.proficiencyPicks, undefined, "the pick is released");
   assert.ok(
     released.needsReview?.some((note) => note.includes("Perception") && note.includes("Shuttered Lantern")),
@@ -320,14 +321,14 @@ test("turning an optional feature off releases the pick stored for its grant, wi
 });
 
 test("an optional feature that was never switched on releases a pick stored for it", () => {
-  const released = reconcile(lampWarden(3, { proficiencyPicks: { [SHUTTER_ID]: ["Insight"] } }), lampCompendium());
+  const released = reconcile(lampWarden(3, { proficiencyPicks: { [SHUTTER_ID]: ["Insight"] } }), lampCompendium(), { activeBooks: ALL_BOOKS });
   assert.equal(released.proficiencyPicks, undefined);
   assert.ok(released.needsReview?.some((note) => note.includes("Insight")));
 });
 
 test("turning the optional feature back on asks for the pick again; the old pick is not restored", () => {
   const compendium = lampCompendium();
-  const released = reconcile(shutteredOff({ proficiencyPicks: { [SHUTTER_ID]: ["Perception"] } }), compendium);
+  const released = reconcile(shutteredOff({ proficiencyPicks: { [SHUTTER_ID]: ["Perception"] } }), compendium, { activeBooks: ALL_BOOKS });
   const back: Character = { ...released, optionalFeatureReplacements: { "Shuttered Lantern": true } };
 
   const offer = offerFor(back, SHUTTER_ID, compendium);
@@ -335,7 +336,7 @@ test("turning the optional feature back on asks for the pick again; the old pick
   assert.equal(offer.choose, 1);
   assert.deepEqual(back.proficiencyPicks?.[SHUTTER_ID] ?? [], [], "Picked 0 / 1: no pick is restored");
   assert.equal(
-    names(proficiencySheet(reconcile(back, compendium), { compendium }).skills).includes("Perception"),
+    names(proficiencySheet(reconcile(back, compendium, { activeBooks: ALL_BOOKS }), { compendium, activeBooks: ALL_BOOKS }).skills).includes("Perception"),
     false,
     "the released pick is not on the sheet",
   );
@@ -349,23 +350,23 @@ test("releasing the pick also releases the Expertise that depended on it, in the
     proficiencyPicks: { [SHUTTER_ID]: ["Perception"] },
     chosenExpertise: ["Perception"],
   });
-  assert.deepEqual(reconcile(character, compendium).chosenExpertise, ["Perception"], "with the feature on, the Expertise is kept");
+  assert.deepEqual(reconcile(character, compendium, { activeBooks: ALL_BOOKS }).chosenExpertise, ["Perception"], "with the feature on, the Expertise is kept");
 
-  const off = reconcile({ ...character, optionalFeatureReplacements: { "Shuttered Lantern": false } }, compendium);
+  const off = reconcile({ ...character, optionalFeatureReplacements: { "Shuttered Lantern": false } }, compendium, { activeBooks: ALL_BOOKS });
   assert.deepEqual(off.chosenExpertise, [], "the Expertise that rested on the released pick is released");
   assert.ok(off.needsReview?.some((note) => note.includes("Perception Expertise removed")));
 });
 
 test("releasing an optional feature's pick is idempotent", () => {
   const compendium = lampCompendium();
-  const once = reconcile(shutteredOff({ proficiencyPicks: { [SHUTTER_ID]: ["Perception"] } }), compendium);
-  assert.deepEqual(reconcile(once, compendium), once, "a second reconcile changes nothing and adds no notice");
+  const once = reconcile(shutteredOff({ proficiencyPicks: { [SHUTTER_ID]: ["Perception"] } }), compendium, { activeBooks: ALL_BOOKS });
+  assert.deepEqual(reconcile(once, compendium, { activeBooks: ALL_BOOKS }), once, "a second reconcile changes nothing and adds no notice");
 });
 
 test("with no catalog that holds the optional feature, its pick is kept", () => {
   const saved = shutteredOff({ proficiencyPicks: { [SHUTTER_ID]: ["Perception"] } });
   for (const compendium of [srdBaselineCompendium(), inMemoryCompendium()]) {
-    const out = reconcile(saved, compendium);
+    const out = reconcile(saved, compendium, { activeBooks: ALL_BOOKS });
     assert.deepEqual(out.proficiencyPicks, saved.proficiencyPicks, "the pick is kept when the grant cannot be seen");
     assert.deepEqual(out.needsReview ?? [], [], "no notice is added");
   }
@@ -375,11 +376,11 @@ test("the builder transition turns the feature off with its pick released, and o
   const compendium = lampCompendium();
   const on = shutteredOn({ proficiencyPicks: { [SHUTTER_ID]: ["Perception"] } });
 
-  const off = setOptionalFeatureEnabled(on, "Shuttered Lantern", false, compendium);
+  const off = setOptionalFeatureEnabled(on, "Shuttered Lantern", false, compendium, { activeBooks: ALL_BOOKS });
   assert.equal(off.optionalFeatureReplacements?.["Shuttered Lantern"], false);
   assert.equal(off.proficiencyPicks, undefined);
 
-  const backOn = setOptionalFeatureEnabled(off, "Shuttered Lantern", true, compendium);
+  const backOn = setOptionalFeatureEnabled(off, "Shuttered Lantern", true, compendium, { activeBooks: ALL_BOOKS });
   assert.equal(backOn.optionalFeatureReplacements?.["Shuttered Lantern"], true);
   assert.equal(backOn.proficiencyPicks, undefined, "the old pick is not restored");
 });

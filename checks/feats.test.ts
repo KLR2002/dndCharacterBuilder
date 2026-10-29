@@ -1,3 +1,4 @@
+import { ALL_BOOKS } from "../src/constants/books.ts";
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import type { AsiSelection, Character, RuleChoiceEntry } from "../src/types/character.ts";
@@ -198,7 +199,7 @@ describe("Origin Feat Application and Half-Feat Ability Increases", () => {
       featName: "Athlete",
       featSource: "PHB",
       featAbility: "dex",
-    });
+    }, undefined, undefined, ALL_BOOKS);
 
     assert.equal(char.originFeats?.length, 1);
     assert.equal(hasFeat(char, "Athlete"), true);
@@ -215,10 +216,10 @@ describe("Origin Feat Application and Half-Feat Ability Increases", () => {
       featName: "Athlete",
       featSource: "PHB",
       featAbility: "dex",
-    });
+    }, undefined, undefined, ALL_BOOKS);
     assert.equal(effectiveScores(char).scores.dex, 16);
 
-    char = removeOriginFeat(char, { featName: "Athlete", featSource: "PHB" });
+    char = removeOriginFeat(char, { featName: "Athlete", featSource: "PHB" }, undefined, ALL_BOOKS);
     assert.equal(char.originFeats?.length, 0);
     assert.equal(hasFeat(char, "Athlete"), false);
     assert.equal(effectiveScores(char).scores.dex, 15);
@@ -232,7 +233,7 @@ describe("Origin Feat Application and Half-Feat Ability Increases", () => {
       featName: "Athlete",
       featSource: "PHB",
       featAbility: "dex",
-    });
+    }, undefined, undefined, ALL_BOOKS);
     assert.equal(char.originFeats?.length, 1);
     assert.equal(hasFeat(char, "Athlete"), true);
 
@@ -245,7 +246,7 @@ describe("Origin Feat Application and Half-Feat Ability Increases", () => {
         featName: "Alert",
         featSource: "PHB",
       },
-      { featName: "Athlete", featSource: "PHB" }
+      { featName: "Athlete", featSource: "PHB" }, undefined, ALL_BOOKS
     );
     assert.equal(char.originFeats?.length, 1);
     assert.equal(hasFeat(char, "Alert"), true);
@@ -272,13 +273,13 @@ describe("Origin Feat Application and Half-Feat Ability Increases", () => {
       type: "feat",
       featName: "Fighting Initiate",
       featSource: "TCE",
-    });
+    }, undefined, undefined, ALL_BOOKS);
     assert.equal(char.ruleChoices?.some((rc) => rc.id === FIGHTING_INITIATE_CHOICE_ID), true, "the style pick survives while the feat is held");
 
     char = applyOriginFeat(
       char,
       { level: 1, type: "feat", featName: "Alert", featSource: "PHB" },
-      { featName: "Fighting Initiate", featSource: "TCE" }
+      { featName: "Fighting Initiate", featSource: "TCE" }, undefined, ALL_BOOKS
     );
 
     assert.equal(char.ruleChoices?.some((rc) => rc.id === FIGHTING_INITIATE_CHOICE_ID), false, "the replaced feat's style pick is gone");
@@ -335,7 +336,7 @@ describe("Removing an origin feat reconciles the choices that depended on it", (
       ruleChoices: [fighterStyle, initiateStyle],
     });
 
-    const updated = removeOriginFeat(char, { featName: "Fighting Initiate", featSource: "PHB" }, inMemoryCompendium({}));
+    const updated = removeOriginFeat(char, { featName: "Fighting Initiate", featSource: "PHB" }, inMemoryCompendium({}), ALL_BOOKS);
 
     assert.deepEqual(updated.ruleChoices, [fighterStyle]);
     assert.deepEqual(updated.needsReview, [
@@ -353,7 +354,7 @@ describe("Removing an origin feat reconciles the choices that depended on it", (
       ruleChoices: [fighterStyle, initiateStyle],
     });
 
-    const updated = removeOriginFeat(char, { featName: "Alert", featSource: "PHB" }, inMemoryCompendium({}));
+    const updated = removeOriginFeat(char, { featName: "Alert", featSource: "PHB" }, inMemoryCompendium({}), ALL_BOOKS);
 
     assert.deepEqual(updated.ruleChoices, [fighterStyle, initiateStyle]);
     assert.deepEqual(updated.needsReview ?? [], []);
@@ -369,14 +370,14 @@ describe("Claiming a background feat the race already holds", () => {
   });
 
   it("keeps the race's entry and records a notice naming the feat and the race", () => {
-    const updated = grantBackgroundFeat(customLineage, "Sample Warding", undefined, inMemoryCompendium({}));
+    const updated = grantBackgroundFeat(customLineage, "Sample Warding", undefined, inMemoryCompendium({}), ALL_BOOKS);
 
     assert.deepEqual(updated.originFeats, [raceFeat]);
     assert.deepEqual(updated.needsReview, ["Sample Warding from the background is already held from Custom Lineage Feat"]);
   });
 
   it("adds the background's entry when the race does not hold the feat", () => {
-    const updated = grantBackgroundFeat(customLineage, "Sample Mark", undefined, inMemoryCompendium({}));
+    const updated = grantBackgroundFeat(customLineage, "Sample Mark", undefined, inMemoryCompendium({}), ALL_BOOKS);
 
     assert.deepEqual(updated.originFeats, [
       raceFeat,
@@ -405,7 +406,7 @@ describe("Legacy duplicate origin feat entries on load", () => {
   const saved = (originFeats: AsiSelection[]) => makeChar({ originFeats, ruleChoices: [initiateStyle], resourceCounters: counters });
 
   it("keeps the Background entry, with the picks and counters of the feat, when a race entry of the same feat is saved too", () => {
-    const loaded = migrateCharacter(JSON.parse(JSON.stringify(saved([raceEntry, backgroundEntry]))));
+    const loaded = migrateCharacter(JSON.parse(JSON.stringify(saved([raceEntry, backgroundEntry]))), undefined, undefined, ALL_BOOKS);
 
     assert.deepEqual(loaded.originFeats, [backgroundEntry]);
     assert.deepEqual(loaded.ruleChoices, [initiateStyle]);
@@ -413,22 +414,22 @@ describe("Legacy duplicate origin feat entries on load", () => {
   });
 
   it("leaves a save whose origin feats are distinct unchanged", () => {
-    const loaded = migrateCharacter(JSON.parse(JSON.stringify(saved([raceEntry, otherEntry]))));
+    const loaded = migrateCharacter(JSON.parse(JSON.stringify(saved([raceEntry, otherEntry]))), undefined, undefined, ALL_BOOKS);
 
     assert.deepEqual(loaded.originFeats, [raceEntry, otherEntry]);
   });
 
   it("loads an already normalised save without change", () => {
-    const once = migrateCharacter(JSON.parse(JSON.stringify(saved([raceEntry, backgroundEntry]))));
+    const once = migrateCharacter(JSON.parse(JSON.stringify(saved([raceEntry, backgroundEntry]))), undefined, undefined, ALL_BOOKS);
 
-    assert.deepEqual(migrateCharacter(once), once);
+    assert.deepEqual(migrateCharacter(once, undefined, undefined, ALL_BOOKS), once);
   });
 
   it("gives the kept entry the ability increase of the dropped entry when the kept entry has none", () => {
     const raceIncrease: AsiSelection = { ...raceEntry, featAbility: "dex" };
     const legacy = makeChar({ originFeats: [raceIncrease, backgroundEntry] });
 
-    const loaded = migrateCharacter(JSON.parse(JSON.stringify(legacy)));
+    const loaded = migrateCharacter(JSON.parse(JSON.stringify(legacy)), undefined, undefined, ALL_BOOKS);
 
     assert.deepEqual(loaded.originFeats, [{ ...backgroundEntry, featAbility: "dex" }]);
     assert.equal(effectiveScores(loaded).scores.dex, effectiveScores(legacy).scores.dex);
@@ -440,7 +441,7 @@ describe("Legacy duplicate origin feat entries on load", () => {
     const backgroundIncrease: AsiSelection = { ...backgroundEntry, featAbility: "dex" };
     const legacy = makeChar({ originFeats: [raceIncrease, backgroundIncrease] });
 
-    const loaded = migrateCharacter(JSON.parse(JSON.stringify(legacy)));
+    const loaded = migrateCharacter(JSON.parse(JSON.stringify(legacy)), undefined, undefined, ALL_BOOKS);
 
     assert.deepEqual(loaded.originFeats, [backgroundIncrease]);
     assert.equal(effectiveScores(legacy).scores.dex, 12);

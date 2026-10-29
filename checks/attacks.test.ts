@@ -1,3 +1,4 @@
+import { ALL_BOOKS } from "../src/constants/books.ts";
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { inMemoryCompendium, makeChar } from "./testUtils.ts";
@@ -322,9 +323,9 @@ test("a weapon proficiency granted by a class feature makes the attack proficien
     classes: [{ className: "Warden", source: "PHB", level: 1 }],
     items: [weaponItem("w1", "Greatsword", { damage: "2d6", damageType: "slashing" })],
   });
-  const withDrill = getWeaponAttacks(char, { catalogs: { compendium: inMemoryCompendium({ classes: [wardenClass({ features: [drill] })] }) } });
+  const withDrill = getWeaponAttacks(char, { catalogs: { compendium: inMemoryCompendium({ classes: [wardenClass({ features: [drill] })] }), activeBooks: ALL_BOOKS } });
   assert.equal(withDrill[0].isProficient, true);
-  const withoutDrill = getWeaponAttacks(char, { catalogs: { compendium: inMemoryCompendium({ classes: [wardenClass()] }) } });
+  const withoutDrill = getWeaponAttacks(char, { catalogs: { compendium: inMemoryCompendium({ classes: [wardenClass()] }), activeBooks: ALL_BOOKS } });
   assert.equal(withoutDrill[0].isProficient, false);
 });
 
@@ -352,7 +353,7 @@ test("isProficientWithWeapon recognizes 'simple' and 'martial' from class weapon
     },
   ];
 
-  const attacks = getWeaponAttacks(char, { catalogs: { compendium: inMemoryCompendium({ classes: classDataCatalog as any }) } });
+  const attacks = getWeaponAttacks(char, { catalogs: { compendium: inMemoryCompendium({ classes: classDataCatalog as any }), activeBooks: ALL_BOOKS } });
   assert.equal(attacks.length, 2);
 
   const greatsword = attacks.find((a) => a.name === "Greatsword");

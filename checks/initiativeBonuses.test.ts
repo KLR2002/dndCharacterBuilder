@@ -1,3 +1,4 @@
+import { ALL_BOOKS } from "../src/constants/books.ts";
 import test from "node:test";
 import assert from "node:assert/strict";
 import { evaluateCharacter } from "../src/rules/characterEvaluation.ts";
@@ -11,7 +12,7 @@ import { initiativeClasses, initiativeFeats, initiativeRaces, optionalClasses, r
 // classes, feats and races are invented (checks/initiativeFixture.ts); the engine reads their bonuses the same way for every rule.
 
 const catalogs = {
-  compendium: inMemoryCompendium({ classes: initiativeClasses(), feats: initiativeFeats(), races: initiativeRaces() }),
+  compendium: inMemoryCompendium({ classes: initiativeClasses(), feats: initiativeFeats(), races: initiativeRaces() }), activeBooks: ALL_BOOKS,
 };
 
 const scores = (overrides: Partial<AbilityScores>): AbilityScores => ({
@@ -286,7 +287,7 @@ test("a lineage replacement drops the original race's trait bonus, and the linea
 
 // Optional features and replacements
 
-const tinkerCatalogs = { compendium: inMemoryCompendium({ classes: optionalClasses() }) };
+const tinkerCatalogs = { compendium: inMemoryCompendium({ classes: optionalClasses() }), activeBooks: ALL_BOOKS };
 const tinker = (optionalFeatureReplacements: Record<string, boolean>) =>
   makeChar({
     classes: [{ className: "Sample Tinker", source: "PHB", level: 2 }],
@@ -316,7 +317,7 @@ test("an optional feature's Initiative Bonus drops out when the feature is switc
 // replacing feature and the base feature it replaces.
 const [[replacer, replacedNames]] = Object.entries(KNOWN_FEATURE_REPLACEMENTS);
 const replaced = replacedNames[0];
-const charmerCatalogs = { compendium: inMemoryCompendium({ classes: replacementClasses(replaced, replacer) }) };
+const charmerCatalogs = { compendium: inMemoryCompendium({ classes: replacementClasses(replaced, replacer) }), activeBooks: ALL_BOOKS };
 const charmer = (optionalFeatureReplacements: Record<string, boolean>) =>
   makeChar({
     classes: [{ className: "Sample Charmer", source: "PHB", level: 2 }],

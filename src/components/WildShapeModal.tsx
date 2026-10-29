@@ -32,7 +32,7 @@ export interface WildShapeModalProps {
   character: Character;
   onAdoptShape: (beast: BeastData) => void;
   onToggleFavorite: (beastKey: string) => void;
-  activeBooks?: string[];
+  activeBooks: string[] | undefined;
   onEnableMonsterManual?: () => void;
 }
 

@@ -1,9 +1,10 @@
+import { ALL_BOOKS } from "../src/constants/books.ts";
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { makeChar, loadTestCatalogs, inMemoryCompendium } from "./testUtils.ts";
 import { evaluateCharacter } from "../src/rules/characterEvaluation.ts";
 
-const catalogs = { compendium: inMemoryCompendium(loadTestCatalogs()) };
+const catalogs = { compendium: inMemoryCompendium(loadTestCatalogs()), activeBooks: ALL_BOOKS };
 const cl = (className: string, level: number) => ({ className, source: "PHB", level });
 const scores = (overrides: Record<string, number>) => ({ str: 10, dex: 10, con: 10, int: 10, wis: 10, cha: 10, ...overrides });
 
@@ -165,13 +166,13 @@ test("evaluateCharacter resolves the race from the Compendium it is given", () =
   const char = makeChar({ classes: [cl("Fighter", 1)], race: { name: "Testfolk", source: "TEST" } });
   const compendium = inMemoryCompendium({ races: [testfolk] });
 
-  assert.equal(evaluateCharacter(char, { compendium }).resolvedAncestry.race?.name, "Testfolk");
+  assert.equal(evaluateCharacter(char, { compendium, activeBooks: ALL_BOOKS }).resolvedAncestry.race?.name, "Testfolk");
 });
 
 test("evaluateCharacter finds no race the Compendium does not contain", () => {
   const char = makeChar({ classes: [cl("Fighter", 1)], race: { name: "Testfolk", source: "TEST" } });
 
-  assert.equal(evaluateCharacter(char, { compendium: inMemoryCompendium({ races: [] }) }).resolvedAncestry.race, undefined);
+  assert.equal(evaluateCharacter(char, { compendium: inMemoryCompendium({ races: [] }), activeBooks: ALL_BOOKS }).resolvedAncestry.race, undefined);
   assert.equal(evaluateCharacter(char).resolvedAncestry.race, undefined, "the SRD default does not contain Testfolk");
 });
 

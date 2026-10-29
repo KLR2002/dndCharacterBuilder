@@ -1,3 +1,4 @@
+import { ALL_BOOKS } from "../src/constants/books.ts";
 import test from "node:test";
 import assert from "node:assert/strict";
 import { inMemoryCompendium, makeChar } from "./testUtils.ts";
@@ -24,7 +25,7 @@ test("Primal Knowledge (TCoE): level gating and optional feature activation", ()
     classes: [{ className: "Barbarian", level: 2 }],
     optionalFeatureReplacements: { "Primal Knowledge": true },
   });
-  const choicesLvl2 = subclassRuleChoices(barbLvl2);
+  const choicesLvl2 = subclassRuleChoices(barbLvl2, ALL_BOOKS);
   assert.equal(
     choicesLvl2.some((c) => c.traitName.includes("Primal Knowledge")),
     false,
@@ -35,7 +36,7 @@ test("Primal Knowledge (TCoE): level gating and optional feature activation", ()
   const barbLvl3NoOpt = makeChar({
     classes: [{ className: "Barbarian", level: 3 }],
   });
-  const choicesNoOpt = subclassRuleChoices(barbLvl3NoOpt);
+  const choicesNoOpt = subclassRuleChoices(barbLvl3NoOpt, ALL_BOOKS);
   assert.equal(
     choicesNoOpt.some((c) => c.traitName.includes("Primal Knowledge")),
     false,
@@ -47,7 +48,7 @@ test("Primal Knowledge (TCoE): level gating and optional feature activation", ()
     classes: [{ className: "Barbarian", level: 3 }],
     optionalFeatureReplacements: { "Primal Knowledge": true },
   });
-  const choicesLvl3 = subclassRuleChoices(barbLvl3);
+  const choicesLvl3 = subclassRuleChoices(barbLvl3, ALL_BOOKS);
   const pkLvl3 = choicesLvl3.find((c) => c.id === "TCE__Barbarian__Primal Knowledge 3");
   assert.ok(pkLvl3, "Level 3 barbarian must receive 3rd-level Primal Knowledge choice");
   assert.equal(pkLvl3.choose, 1);
@@ -63,7 +64,7 @@ test("Primal Knowledge (TCoE): level gating and optional feature activation", ()
     classes: [{ className: "Barbarian", level: 10 }],
     optionalFeatureReplacements: { "Primal Knowledge": true },
   });
-  const choicesLvl10 = subclassRuleChoices(barbLvl10);
+  const choicesLvl10 = subclassRuleChoices(barbLvl10, ALL_BOOKS);
   assert.ok(
     choicesLvl10.some((c) => c.id === "TCE__Barbarian__Primal Knowledge 3"),
     "Level 10 barbarian must have 3rd-level Primal Knowledge choice"
@@ -82,7 +83,7 @@ test("Primal Knowledge: excludes already proficient Barbarian skills and grants 
     optionalFeatureReplacements: { "Primal Knowledge": true },
   });
 
-  const choices = subclassRuleChoices(char);
+  const choices = subclassRuleChoices(char, ALL_BOOKS);
   const pk3 = choices.find((c) => c.id === "TCE__Barbarian__Primal Knowledge 3")!;
   const offeredNames = pk3.options.map((o) => o.name);
 
@@ -92,7 +93,7 @@ test("Primal Knowledge: excludes already proficient Barbarian skills and grants 
   assert.deepEqual(offeredNames.sort(), ["Animal Handling", "Intimidation", "Nature", "Survival"].sort());
 
   // Pick "Survival" using pickRuleChoice
-  const updatedChar = pickRuleChoice(char, pk3, "Survival");
+  const updatedChar = pickRuleChoice(char, pk3, "Survival", undefined, ALL_BOOKS);
   assert.ok(
     updatedChar.ruleChoices?.some(
       (rc) => rc.id === "TCE__Barbarian__Primal Knowledge 3" && rc.picked.includes("Survival")
@@ -100,7 +101,7 @@ test("Primal Knowledge: excludes already proficient Barbarian skills and grants 
   );
 
   // Survival should now evaluate as proficient
-  const evalSkills = skills(updatedChar, proficiencySheet(updatedChar, { compendium: inMemoryCompendium() }).skills);
+  const evalSkills = skills(updatedChar, proficiencySheet(updatedChar, { compendium: inMemoryCompendium(), activeBooks: ALL_BOOKS }).skills);
   const survivalSkill = evalSkills.find((s) => s.name === "Survival");
   assert.equal(survivalSkill?.isProficient, true, "Survival should be proficient after picking Primal Knowledge");
 
@@ -109,7 +110,7 @@ test("Primal Knowledge: excludes already proficient Barbarian skills and grants 
     ...updatedChar,
     classes: [{ className: "Barbarian", level: 10 }],
   };
-  const choicesLvl10 = subclassRuleChoices(updatedLvl10Char);
+  const choicesLvl10 = subclassRuleChoices(updatedLvl10Char, ALL_BOOKS);
   const pk10 = choicesLvl10.find((c) => c.id === "TCE__Barbarian__Primal Knowledge 10")!;
   const offeredNames10 = pk10.options.map((o) => o.name);
   assert.equal(offeredNames10.includes("Survival"), false, "Survival picked at level 3 must not be offered at level 10");
@@ -138,7 +139,7 @@ test("Path of the Giant: level gating, cantrip choice, and Wisdom spellcasting p
   });
   assert.equal(isGiantBarbarian(giantLvl2.classes[0]), false);
   assert.equal(isCastingClass(giantLvl2.classes[0]), false);
-  assert.equal(subclassRuleChoices(giantLvl2).length, 0);
+  assert.equal(subclassRuleChoices(giantLvl2, ALL_BOOKS).length, 0);
 
   // Level 3 Path of the Giant Barbarian -> offers Giant Power Cantrip
   const giantLvl3 = makeChar({
@@ -148,7 +149,7 @@ test("Path of the Giant: level gating, cantrip choice, and Wisdom spellcasting p
   assert.equal(isGiantBarbarian(giantLvl3.classes[0]), true);
   assert.equal(isCastingClass(giantLvl3.classes[0]), true);
 
-  const choices = subclassRuleChoices(giantLvl3);
+  const choices = subclassRuleChoices(giantLvl3, ALL_BOOKS);
   const giantChoice = choices.find((c) => c.id === "BGG__Barbarian__Path of the Giant__Giant Power")!;
   assert.ok(giantChoice, "Giant Power choice must be offered at level 3");
   assert.equal(giantChoice.choose, 1);
@@ -158,14 +159,14 @@ test("Path of the Giant: level gating, cantrip choice, and Wisdom spellcasting p
   );
 
   // Pick "Druidcraft"
-  const charWithCantrip = pickRuleChoice(giantLvl3, giantChoice, "Druidcraft");
+  const charWithCantrip = pickRuleChoice(giantLvl3, giantChoice, "Druidcraft", undefined, ALL_BOOKS);
   const known = charWithCantrip.knownSpells?.find((k) => k.name === "Druidcraft");
   assert.ok(known, "Druidcraft must be added to character knownSpells");
   assert.equal(known.ownerKey, "Barbarian__BGG");
   assert.equal(known.ability, "wis");
 
   // Inspect getClassSpellProfiles
-  const profiles = getClassSpellProfiles(charWithCantrip);
+  const profiles = getClassSpellProfiles(charWithCantrip, { activeBooks: ALL_BOOKS });
   assert.equal(profiles.length, 1);
   const prof = profiles[0];
   assert.equal(prof.className, "Barbarian");
@@ -193,7 +194,7 @@ test("Path of the Totem Warrior: 3 distinct milestones with choose: 1", () => {
   const totemLvl2 = makeChar({
     classes: [{ className: "Barbarian", level: 2, subclassName: "Path of the Totem Warrior" }],
   });
-  assert.equal(subclassRuleChoices(totemLvl2).length, 0);
+  assert.equal(subclassRuleChoices(totemLvl2, ALL_BOOKS).length, 0);
 
   // Level 3 Totem Warrior Barbarian with PHB only -> Elk and Tiger excluded from Totem Spirit
   const totemLvl3Phb = makeChar({
@@ -222,7 +223,7 @@ test("Path of the Totem Warrior: 3 distinct milestones with choose: 1", () => {
   const totemLvl6 = makeChar({
     classes: [{ className: "Barbarian", level: 6, subclassName: "Path of the Totem Warrior" }],
   });
-  const lvl6Choices = subclassRuleChoices(totemLvl6);
+  const lvl6Choices = subclassRuleChoices(totemLvl6, ALL_BOOKS);
   assert.equal(lvl6Choices.length, 2);
   assert.ok(lvl6Choices.some((c) => c.id === "PHB__Barbarian__Path of the Totem Warrior__Totem Spirit 3"));
   assert.ok(lvl6Choices.some((c) => c.id === "PHB__Barbarian__Path of the Totem Warrior__Aspect of the Beast 6"));
@@ -236,7 +237,7 @@ test("Path of the Totem Warrior: 3 distinct milestones with choose: 1", () => {
   const totemLvl14 = makeChar({
     classes: [{ className: "Barbarian", level: 14, subclassName: "Path of the Totem Warrior" }],
   });
-  const lvl14Choices = subclassRuleChoices(totemLvl14);
+  const lvl14Choices = subclassRuleChoices(totemLvl14, ALL_BOOKS);
   assert.equal(lvl14Choices.length, 3);
   assert.ok(lvl14Choices.some((c) => c.id === "PHB__Barbarian__Path of the Totem Warrior__Totem Spirit 3"));
   assert.ok(lvl14Choices.some((c) => c.id === "PHB__Barbarian__Path of the Totem Warrior__Aspect of the Beast 6"));
@@ -247,15 +248,15 @@ test("Path of the Totem Warrior: independent animal picks across milestones", ()
   const totemChar = makeChar({
     classes: [{ className: "Barbarian", level: 14, subclassName: "Path of the Totem Warrior" }],
   });
-  const choices = subclassRuleChoices(totemChar);
+  const choices = subclassRuleChoices(totemChar, ALL_BOOKS);
   const ch3 = choices.find((c) => c.id === "PHB__Barbarian__Path of the Totem Warrior__Totem Spirit 3")!;
   const ch6 = choices.find((c) => c.id === "PHB__Barbarian__Path of the Totem Warrior__Aspect of the Beast 6")!;
   const ch14 = choices.find((c) => c.id === "PHB__Barbarian__Path of the Totem Warrior__Totemic Attunement 14")!;
 
   // Pick Bear at 3, Eagle at 6, Wolf at 14
-  let updated = pickRuleChoice(totemChar, ch3, "Bear");
-  updated = pickRuleChoice(updated, ch6, "Eagle");
-  updated = pickRuleChoice(updated, ch14, "Wolf");
+  let updated = pickRuleChoice(totemChar, ch3, "Bear", undefined, ALL_BOOKS);
+  updated = pickRuleChoice(updated, ch6, "Eagle", undefined, ALL_BOOKS);
+  updated = pickRuleChoice(updated, ch14, "Wolf", undefined, ALL_BOOKS);
 
   assert.equal(updated.ruleChoices?.length, 3);
   const pick3 = updated.ruleChoices?.find((rc) => rc.id === ch3.id)?.picked;

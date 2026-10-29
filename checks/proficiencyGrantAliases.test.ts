@@ -1,3 +1,4 @@
+import { ALL_BOOKS } from "../src/constants/books.ts";
 import test from "node:test";
 import assert from "node:assert/strict";
 import type { Character } from "../src/types/character.ts";
@@ -38,20 +39,20 @@ const languageNames = (entries: SheetEntry[]) => entries.map((entry) => entry.na
 
 test("a pick saved under a grant's former id moves to the grant's id on reconcile, and the sheet shows it", () => {
   const saved = held({ proficiencyPicks: { [FORMER]: ["Elvish"] } });
-  const migrated = reconcile(saved, compendium());
+  const migrated = reconcile(saved, compendium(), { activeBooks: ALL_BOOKS });
   assert.deepEqual(migrated.proficiencyPicks, { [NEW]: ["Elvish"] });
-  assert.ok(languageNames(proficiencySheet(migrated, { compendium: compendium() }).languages).includes("Elvish"), "the sheet shows the pick");
+  assert.ok(languageNames(proficiencySheet(migrated, { compendium: compendium(), activeBooks: ALL_BOOKS }).languages).includes("Elvish"), "the sheet shows the pick");
 });
 
 test("reconciling a migrated character again changes nothing, and the same object comes back", () => {
-  const migrated = reconcile(held({ proficiencyPicks: { [FORMER]: ["Elvish"] } }), compendium());
-  assert.deepEqual(reconcile(migrated, compendium()), migrated);
+  const migrated = reconcile(held({ proficiencyPicks: { [FORMER]: ["Elvish"] } }), compendium(), { activeBooks: ALL_BOOKS });
+  assert.deepEqual(reconcile(migrated, compendium(), { activeBooks: ALL_BOOKS }), migrated);
   assert.equal(reconcileForActiveBooks(migrated, compendium(), []), migrated);
 });
 
 test("a former id and the grant's id holding the same pick merge into one pick under the grant's id", () => {
   const both = held({ proficiencyPicks: { [FORMER]: ["Elvish"], [NEW]: ["Elvish"] } });
-  assert.deepEqual(reconcile(both, compendium()).proficiencyPicks, { [NEW]: ["Elvish"] });
+  assert.deepEqual(reconcile(both, compendium(), { activeBooks: ALL_BOOKS }).proficiencyPicks, { [NEW]: ["Elvish"] });
 });
 
 test("an old Integrated Catalog with only position ids still resolves a pick saved under them", () => {
@@ -59,9 +60,9 @@ test("an old Integrated Catalog with only position ids still resolves a pick sav
     classes: [wardenClass({ features: [featureWith({ ...loreGrant, id: FORMER, aliases: undefined })] })],
   });
   const saved = held({ proficiencyPicks: { [FORMER]: ["Elvish"] } });
-  const reconciled = reconcile(saved, oldCatalog);
+  const reconciled = reconcile(saved, oldCatalog, { activeBooks: ALL_BOOKS });
   assert.deepEqual(reconciled.proficiencyPicks, { [FORMER]: ["Elvish"] }, "the old id stays valid");
-  assert.ok(languageNames(proficiencySheet(reconciled, { compendium: oldCatalog }).languages).includes("Elvish"), "the sheet shows the pick");
+  assert.ok(languageNames(proficiencySheet(reconciled, { compendium: oldCatalog, activeBooks: ALL_BOOKS }).languages).includes("Elvish"), "the sheet shows the pick");
 });
 
 test("a pick saved under a new id is kept by a catalog that still has position ids, and counts again with the new catalog", () => {
@@ -69,14 +70,14 @@ test("a pick saved under a new id is kept by a catalog that still has position i
     classes: [wardenClass({ features: [featureWith({ ...loreGrant, id: FORMER, aliases: undefined })] })],
   });
   const saved = held({ proficiencyPicks: { [NEW]: ["Elvish"] } });
-  const kept = reconcile(saved, oldCatalog);
+  const kept = reconcile(saved, oldCatalog, { activeBooks: ALL_BOOKS });
   assert.deepEqual(kept.proficiencyPicks, { [NEW]: ["Elvish"] }, "the old catalog does not hold the new id, so the pick is kept");
-  assert.deepEqual(reconcile(kept, compendium()).proficiencyPicks, { [NEW]: ["Elvish"] }, "the new catalog holds it again");
+  assert.deepEqual(reconcile(kept, compendium(), { activeBooks: ALL_BOOKS }).proficiencyPicks, { [NEW]: ["Elvish"] }, "the new catalog holds it again");
 });
 
 test("a former id that no grant in the Compendium carries is kept as saved, not released", () => {
   const saved = held({ proficiencyPicks: { "FIX/Warden/Gone Lore@3#0": ["Elvish"] } });
-  assert.deepEqual(reconcile(saved, compendium()).proficiencyPicks, { "FIX/Warden/Gone Lore@3#0": ["Elvish"] });
+  assert.deepEqual(reconcile(saved, compendium(), { activeBooks: ALL_BOOKS }).proficiencyPicks, { "FIX/Warden/Gone Lore@3#0": ["Elvish"] });
 });
 
 test("a former id on a race's grant moves to the race grant's id too", () => {
@@ -97,7 +98,7 @@ test("a former id on a race's grant moves to the race grant's id too", () => {
     ],
   });
   const saved = makeChar({ race: { name: "Vellari", source: "PHB" }, proficiencyPicks: { [RACE_FORMER]: ["Elvish"] } });
-  assert.deepEqual(reconcile(saved, raceCompendium).proficiencyPicks, { [RACE_NEW]: ["Elvish"] });
+  assert.deepEqual(reconcile(saved, raceCompendium, { activeBooks: ALL_BOOKS }).proficiencyPicks, { [RACE_NEW]: ["Elvish"] });
 });
 
 test("a former id of an optional feature that is turned off moves first, then its pick is released with a notice", () => {
@@ -105,7 +106,7 @@ test("a former id of an optional feature that is turned off moves first, then it
     classes: [wardenClass({ features: [featureWith(loreGrant, { isOptional: true })] })],
   });
   const saved = held({ proficiencyPicks: { [FORMER]: ["Elvish"] } });
-  const released = reconcile(saved, optionalCompendium);
+  const released = reconcile(saved, optionalCompendium, { activeBooks: ALL_BOOKS });
   assert.equal(released.proficiencyPicks, undefined, "the pick is released, not left under the former id");
   assert.deepEqual(released.needsReview, ["Elvish removed from Lantern Lore: feature is turned off"]);
 });
@@ -139,10 +140,10 @@ const scriptCompendium = (names: string[]) =>
 test("a choice's pool changes, an option added or removed, and a saved pick still resolves under the same id", () => {
   for (const pool of [["Tidal", "Vellari"], ["Tidal", "Vellari", "Ember Tongue"], ["Tidal"]]) {
     const catalog = scriptCompendium(pool);
-    const reconciled = reconcile(held({ proficiencyPicks: { [SCRIPT_ID]: ["Tidal"] } }), catalog);
+    const reconciled = reconcile(held({ proficiencyPicks: { [SCRIPT_ID]: ["Tidal"] } }), catalog, { activeBooks: ALL_BOOKS });
     assert.deepEqual(reconciled.proficiencyPicks, { [SCRIPT_ID]: ["Tidal"] }, `pool of ${pool.join(", ")} keeps the pick`);
     assert.ok(
-      languageNames(proficiencySheet(reconciled, { compendium: catalog }).languages).includes("Tidal"),
+      languageNames(proficiencySheet(reconciled, { compendium: catalog, activeBooks: ALL_BOOKS }).languages).includes("Tidal"),
       `pool of ${pool.join(", ")} shows the pick`,
     );
   }
@@ -150,10 +151,10 @@ test("a choice's pool changes, an option added or removed, and a saved pick stil
 
 test("a pick saved under the choice's first-release id loads under the choice's id", () => {
   const catalog = scriptCompendium(["Tidal", "Vellari"]);
-  const migrated = reconcile(held({ proficiencyPicks: { [SCRIPT_FIRST_RELEASE]: ["Vellari"] } }), catalog);
+  const migrated = reconcile(held({ proficiencyPicks: { [SCRIPT_FIRST_RELEASE]: ["Vellari"] } }), catalog, { activeBooks: ALL_BOOKS });
   assert.deepEqual(migrated.proficiencyPicks, { [SCRIPT_ID]: ["Vellari"] });
-  assert.ok(languageNames(proficiencySheet(migrated, { compendium: catalog }).languages).includes("Vellari"), "the sheet shows the pick");
-  assert.deepEqual(reconcile(migrated, catalog), migrated, "migrating again changes nothing");
+  assert.ok(languageNames(proficiencySheet(migrated, { compendium: catalog, activeBooks: ALL_BOOKS }).languages).includes("Vellari"), "the sheet shows the pick");
+  assert.deepEqual(reconcile(migrated, catalog, { activeBooks: ALL_BOOKS }), migrated, "migrating again changes nothing");
 });
 
 const KENSEI_FIRST_RELEASE = "XGE/Monk/Way of the Kensei/Path of the Kensei@3#tools:choice:from=calligrapher's supplies,painter's supplies";
@@ -165,10 +166,10 @@ test("on the integrated catalog, a Kensei pick saved under its first-release id 
     classes: [{ className: "Monk", source: "PHB", level: 3, subclassName: "Way of the Kensei", subclassSource: "XGE" }],
     proficiencyPicks: { [KENSEI_FIRST_RELEASE]: ["Calligrapher's Supplies"] },
   });
-  const migrated = reconcile(saved, catalog);
+  const migrated = reconcile(saved, catalog, { activeBooks: ALL_BOOKS });
   assert.deepEqual(migrated.proficiencyPicks, { [KENSEI_ID]: ["Calligrapher's Supplies"] });
   assert.ok(
-    proficiencySheet(migrated, { compendium: catalog }).tools.some((entry) => entry.name === "Calligrapher's Supplies"),
+    proficiencySheet(migrated, { compendium: catalog, activeBooks: ALL_BOOKS }).tools.some((entry) => entry.name === "Calligrapher's Supplies"),
     "the sheet shows the pick",
   );
 });

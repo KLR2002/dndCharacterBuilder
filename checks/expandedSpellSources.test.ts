@@ -1,3 +1,4 @@
+import { ALL_BOOKS } from "../src/constants/books.ts";
 import test from "node:test";
 import assert from "node:assert/strict";
 import { evaluateCharacter } from "../src/rules/characterEvaluation.ts";
@@ -26,7 +27,7 @@ const compendium = inMemoryCompendium({
   feats: expandedSpellFeats(),
   races: [...expandedSpellRaces(), ...expandedSpellLineages()],
 });
-const catalogs = { compendium };
+const catalogs = { compendium, activeBooks: ALL_BOOKS };
 
 // The invented half caster loses Spellcasting when it drops from its second level to its first.
 const halfCaster: ClassData = {
@@ -117,7 +118,7 @@ test("a spell a held feat lists can be learned by the class that lists it", () =
   const character = makeChar({ classes: [cls("Sample Mage", 5)], asiSelections: [takenMark()] });
   const mage = profileOf(evaluateCharacter(character, catalogs).spellProfiles, "Sample Mage");
   const warding = { name: "Sample Warding", source: "TST" };
-  const learned = learnSpell(character, mage, warding, compendium);
+  const learned = learnSpell(character, mage, warding, compendium, ALL_BOOKS);
   assert.equal(isKnown(learned, mage, warding), true, "the spell is learned from the feat's list");
 });
 
@@ -127,7 +128,7 @@ test("removing the feat releases the spell only its list gave, with a notice tha
     asiSelections: [takenMark()],
     knownSpells: [known("Sample Warding")],
   });
-  const released = removeAsiSelection(character, "Sample Mage", 4, compendium);
+  const released = removeAsiSelection(character, "Sample Mage", 4, compendium, ALL_BOOKS);
   assert.deepEqual(released.knownSpells, [], "the spell only the feat listed leaves the known spells");
   assert.ok(
     released.needsReview?.some((notice) => /Sample Warding removed: only on the Sample Rune Mark feat's spell list/.test(notice)),
@@ -144,7 +145,7 @@ test("replacing the feat with an ability increase releases the spell its list ga
   const replaced = applyAsiSelection(
     character,
     { className: "Sample Mage", classLevel: 4, level: 4, type: "asi", asi: { int: 2 } },
-    compendium,
+    compendium, ALL_BOOKS,
   );
   assert.deepEqual(replaced.knownSpells?.map((k) => k.name), ["Sample Ember"], "the feat's own spell is released; the cantrip the mage's list gives stays");
   assert.ok(!replaced.needsReview?.some((notice) => /Sample Ember/.test(notice)), "and no notice is made for the cantrip");
@@ -156,7 +157,7 @@ test("removing a background feat releases the spell its list gave", () => {
     originFeats: [{ level: 0, type: "feat", featName: "Sample Rune Mark", featSource: "TST" }],
     knownSpells: [known("Sample Warding")],
   });
-  const released = removeOriginFeat(character, { featName: "Sample Rune Mark", featSource: "TST" }, compendium);
+  const released = removeOriginFeat(character, { featName: "Sample Rune Mark", featSource: "TST" }, compendium, ALL_BOOKS);
   assert.deepEqual(released.knownSpells, []);
   assert.ok(released.needsReview?.some((notice) => /Sample Warding removed/.test(notice)), "the release is noticed");
 });
@@ -167,7 +168,7 @@ test("changing the race releases the spell only its subrace's list gave, with a 
     race: sampleRunekin,
     knownSpells: [known("Sample Spirit")],
   });
-  const changed = changeRace(character, compendium);
+  const changed = changeRace(character, compendium, ALL_BOOKS);
   assert.deepEqual(changed.knownSpells, [], "the spell only the subrace listed leaves the known spells");
   assert.ok(
     changed.needsReview?.some((notice) => /Sample Spirit removed: only on the Sample Rune Line race's spell list/.test(notice)),
@@ -182,7 +183,7 @@ test("a spell a second held source still lists stays known when one source goes"
     background: { name: "Sample Scholar", source: "TST" },
     knownSpells: [known("Sample Ward")],
   });
-  const released = removeAsiSelection(character, "Sample Mage", 4, compendium);
+  const released = removeAsiSelection(character, "Sample Mage", 4, compendium, ALL_BOOKS);
   assert.deepEqual(released.knownSpells?.map((k) => k.name), ["Sample Ward"], "the background's list still gives it");
   assert.ok(!released.needsReview?.some((notice) => /Sample Ward/.test(notice)), "so no notice is made");
 });
@@ -193,7 +194,7 @@ test("a spell is judged by the class that owns it: a Pact copy goes when only th
     asiSelections: [takenMark()],
     knownSpells: [known("Sample Ember", "Sample Pact"), known("Sample Ember", "Sample Mage")],
   });
-  const released = removeAsiSelection(character, "Sample Mage", 4, compendium);
+  const released = removeAsiSelection(character, "Sample Mage", 4, compendium, ALL_BOOKS);
   assert.deepEqual(
     released.knownSpells?.map((k) => k.ownerKey),
     ["Sample Mage__TST"],
@@ -232,7 +233,7 @@ test("swapping an origin feat for another releases the spell only the replaced f
     character,
     { level: 0, type: "feat", featName: "Sample Rune Sign", featSource: "TST" },
     { featName: "Sample Rune Mark", featSource: "TST" },
-    compendium,
+    compendium, ALL_BOOKS,
   );
   assert.deepEqual(swapped.knownSpells, [], "the spell only the replaced feat listed leaves the known spells");
   assert.ok(
@@ -291,7 +292,7 @@ test("removing the only spellcasting class releases a spell only its background'
     background: { name: "Sample Scholar", source: "TST" },
     knownSpells: [known("Sample Ward")],
   });
-  const removed = removeClassLevel(character, "Sample Mage", compendium);
+  const removed = removeClassLevel(character, "Sample Mage", compendium, ALL_BOOKS);
   assert.deepEqual(removed.knownSpells, [], "the spell only the background listed leaves the known spells");
   assert.ok(
     removed.needsReview?.some((notice) => /Sample Ward removed: only on the Sample Scholar background's spell list/.test(notice)),
@@ -305,7 +306,7 @@ test("losing Spellcasting by dropping a level releases a spell only its backgrou
     background: { name: "Sample Scholar", source: "TST" },
     knownSpells: [known("Sample Ward", "Sample Half")],
   });
-  const dropped = removeClassLevel(character, "Sample Half", halfCompendium);
+  const dropped = removeClassLevel(character, "Sample Half", halfCompendium, ALL_BOOKS);
   assert.deepEqual(dropped.knownSpells, [], "the spell only the background listed leaves the known spells");
   assert.ok(
     dropped.needsReview?.some((notice) => /Sample Ward removed: only on the Sample Scholar background's spell list/.test(notice)),
@@ -319,7 +320,7 @@ test("removing a class keeps a spell that class lists itself, though a backgroun
     background: { name: "Sample Scribe", source: "TST" },
     knownSpells: [known("Sample Ember")],
   });
-  const removed = removeClassLevel(character, "Sample Mage", compendium);
+  const removed = removeClassLevel(character, "Sample Mage", compendium, ALL_BOOKS);
   assert.deepEqual(removed.knownSpells?.map((k) => k.name), ["Sample Ember"], "the cantrip the mage's own list gives stays");
   assert.ok(!removed.needsReview?.some((notice) => /Sample Ember/.test(notice)), "and no notice is made for it");
 });
@@ -330,7 +331,7 @@ test("removing a pact class releases the copy only that class's list gave, and k
     background: { name: "Sample Scholar", source: "TST" },
     knownSpells: [known("Sample Ward", "Sample Pact"), known("Sample Ward", "Sample Mage")],
   });
-  const removed = removeClassLevel(character, "Sample Pact", compendium);
+  const removed = removeClassLevel(character, "Sample Pact", compendium, ALL_BOOKS);
   assert.deepEqual(
     removed.knownSpells?.map((k) => k.ownerKey),
     ["Sample Mage__TST"],
@@ -349,7 +350,7 @@ test("swapping one lineage for another releases the spell only the old lineage's
     lineageReplacement: "Sample Lineage A",
     knownSpells: [known("Sample Warding"), known("Sample Ward")],
   });
-  const swapped = changeLineage(character, { kind: "lineage", name: "Sample Lineage B" }, compendium);
+  const swapped = changeLineage(character, { kind: "lineage", name: "Sample Lineage B" }, compendium, ALL_BOOKS);
   assert.equal(swapped.lineageReplacement, "Sample Lineage B");
   assert.deepEqual(swapped.knownSpells?.map((k) => k.name), ["Sample Ward"], "the new lineage's list still gives the other spell");
   assert.ok(
@@ -365,7 +366,7 @@ test("dropping a lineage for no lineage releases the spell its list alone gave",
     lineageReplacement: "Sample Lineage A",
     knownSpells: [known("Sample Warding")],
   });
-  const dropped = changeLineage(character, { kind: "none" }, compendium);
+  const dropped = changeLineage(character, { kind: "none" }, compendium, ALL_BOOKS);
   assert.equal(dropped.lineageReplacement, null);
   assert.deepEqual(dropped.knownSpells, [], "the spell only the dropped lineage listed leaves the known spells");
   assert.ok(dropped.needsReview?.some((notice) => /Sample Warding removed: only on the Sample Lineage A race's spell list/.test(notice)));
@@ -536,7 +537,7 @@ test("removing the feat keeps a Pact of the Tome copy that no class list gives",
     asiSelections: [takenMark()],
     knownSpells: [tomeCopy("Sample Ember")],
   });
-  const released = removeAsiSelection(character, "Sample Mage", 4, compendium);
+  const released = removeAsiSelection(character, "Sample Mage", 4, compendium, ALL_BOOKS);
   assert.deepEqual(released.knownSpells, character.knownSpells, "the tome copy is not released with the feat");
   assert.equal(released.needsReview, undefined, "so no notice is made");
 });
@@ -547,7 +548,7 @@ test("removing the feat keeps a Blessed Warrior style cantrip copy", () => {
     asiSelections: [takenMark()],
     knownSpells: [{ name: "Sample Ember", source: "TST", ownerKey: "Sample Warrior__TCE", className: "Sample Warrior" }],
   });
-  const released = removeAsiSelection(character, "Sample Mage", 4, compendium);
+  const released = removeAsiSelection(character, "Sample Mage", 4, compendium, ALL_BOOKS);
   assert.deepEqual(released.knownSpells, character.knownSpells, "the copy is not released with the feat");
   assert.equal(released.needsReview, undefined, "so no notice is made");
 });

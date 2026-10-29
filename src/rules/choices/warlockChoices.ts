@@ -1,3 +1,4 @@
+import type { ActiveBooks } from "../../constants/books.ts";
 import type { Character, KnownSpell, RitualBookEntry, RuleChoiceEntry } from "../../types/character.ts";
 import type { OptionFeatureData, SpellData } from "../../types/dnd5e.ts";
 import { currentCompendium, type Compendium } from "../../services/compendium.ts";
@@ -83,7 +84,7 @@ export function getChosenPactBoon(character: Character): string | null {
  */
 export function warlockPactBoonChoices(
   character: Character,
-  activeBooks?: string[],
+  activeBooks: ActiveBooks,
   compendium: Compendium = currentCompendium()
 ): AvailableRuleChoice[] {
   const classes = character.classes || [];
@@ -126,7 +127,7 @@ export function warlockPactBoonChoices(
  */
 export function warlockTomeCantripChoices(
   character: Character,
-  activeBooks?: string[],
+  activeBooks: ActiveBooks,
   compendium: Compendium = currentCompendium()
 ): AvailableRuleChoice[] {
   const classes = character.classes || [];
@@ -158,7 +159,7 @@ export function warlockTomeCantripChoices(
  * Returns a Map of lowercase spell names to SpellData objects, optionally filtered by active sourcebooks.
  */
 export function getSpellLookupMap(
-  activeBooks?: string[],
+  activeBooks: ActiveBooks,
   compendium: Compendium = currentCompendium()
 ): Map<string, SpellData> {
   const upperBooks = activeBooks ? activeBooks.map((b) => b.toUpperCase()) : undefined;
@@ -188,7 +189,7 @@ export function getMaxRitualBookLevel(warlockLevel: number): number {
 export function isSpellEligibleForRitualBook(
   spell: SpellData,
   warlockLevel: number,
-  activeBooks?: string[]
+  activeBooks: ActiveBooks
 ): boolean {
   if (spell.ritual !== true) return false;
   if (spell.level < 1) return false;
@@ -291,7 +292,7 @@ export function syncWarlockTomeCantrips(
  */
 export function warlockAncientSecretsStartingRituals(
   character: Character,
-  activeBooks?: string[],
+  activeBooks: ActiveBooks,
   compendium: Compendium = currentCompendium()
 ): AvailableRuleChoice[] {
   const classes = character.classes || [];
@@ -423,7 +424,7 @@ export function isMysticArcanumChoiceId(id: string): boolean {
  */
 export function warlockMysticArcanumChoices(
   character: Character,
-  activeBooks?: string[],
+  activeBooks: ActiveBooks,
   compendium: Compendium = currentCompendium()
 ): AvailableRuleChoice[] {
   const classes = character.classes || [];
@@ -720,7 +721,7 @@ function formatInvocationDescription(opt: OptionFeatureData): string {
  */
 export function warlockInvocationChoices(
   character: Character,
-  activeBooks?: string[],
+  activeBooks: ActiveBooks,
   compendium: Compendium = currentCompendium()
 ): AvailableRuleChoice[] {
   const out: AvailableRuleChoice[] = [];

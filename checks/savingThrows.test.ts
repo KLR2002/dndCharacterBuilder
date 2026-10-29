@@ -1,3 +1,4 @@
+import { ALL_BOOKS } from "../src/constants/books.ts";
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { evaluateCharacter } from "../src/rules/characterEvaluation.ts";
@@ -12,7 +13,7 @@ const proficientAbilities = (saves: Record<AbilityKey, { proficient: boolean }>)
 
 test("a monk at Diamond Soul level shows every saving throw with the proficiency bonus added", () => {
   const evaluated = evaluateCharacter(makeChar({ classes: [{ className: "Monk", source: "SRD", level: 14 }] }), {
-    compendium: srdBaselineCompendium(),
+    compendium: srdBaselineCompendium(), activeBooks: ALL_BOOKS,
   });
   assert.deepEqual(proficientAbilities(evaluated.saves), ["cha", "con", "dex", "int", "str", "wis"]);
   for (const key of Object.keys(evaluated.saves) as AbilityKey[]) {
@@ -22,7 +23,7 @@ test("a monk at Diamond Soul level shows every saving throw with the proficiency
 
 test("a monk below Diamond Soul level keeps only the monk's own saves", () => {
   const evaluated = evaluateCharacter(makeChar({ classes: [{ className: "Monk", source: "SRD", level: 13 }] }), {
-    compendium: srdBaselineCompendium(),
+    compendium: srdBaselineCompendium(), activeBooks: ALL_BOOKS,
   });
   assert.deepEqual(proficientAbilities(evaluated.saves), ["dex", "str"]);
 });
@@ -46,10 +47,10 @@ test("a feat's raised ability is a proficient save, and removing the feat takes 
     classes: [{ className: "Fighter", source: "PHB", level: 4 }],
     asiSelections: [{ level: 4, type: "feat", featName: "Steadfast Training", featSource: "PHB", featAbility: "wis" }],
   });
-  assert.deepEqual(proficientAbilities(evaluateCharacter(withFeat, { compendium }).saves), ["con", "str", "wis"]);
+  assert.deepEqual(proficientAbilities(evaluateCharacter(withFeat, { compendium, activeBooks: ALL_BOOKS }).saves), ["con", "str", "wis"]);
 
   const withoutFeat = makeChar({ classes: [{ className: "Fighter", source: "PHB", level: 4 }] });
-  assert.deepEqual(proficientAbilities(evaluateCharacter(withoutFeat, { compendium }).saves), ["con", "str"]);
+  assert.deepEqual(proficientAbilities(evaluateCharacter(withoutFeat, { compendium, activeBooks: ALL_BOOKS }).saves), ["con", "str"]);
 });
 
 test("a multiclass character shows the first class's saves only", () => {
@@ -60,7 +61,7 @@ test("a multiclass character shows the first class's saves only", () => {
         { className: "Wizard", source: "PHB", level: 1 },
       ],
     }),
-    { compendium: inMemoryCompendium() },
+    { compendium: inMemoryCompendium(), activeBooks: ALL_BOOKS },
   );
   assert.deepEqual(proficientAbilities(evaluated.saves), ["con", "str"]);
 });
@@ -71,7 +72,7 @@ test("the integrated Resilient feat makes the ability it raised a proficient sav
       classes: [{ className: "Fighter", source: "PHB", level: 4 }],
       asiSelections: [{ level: 4, type: "feat", featName: "Resilient", featSource: "PHB", featAbility: "wis" }],
     }),
-    { compendium: integratedTestCompendium() },
+    { compendium: integratedTestCompendium(), activeBooks: ALL_BOOKS },
   );
   assert.deepEqual(proficientAbilities(evaluated.saves), ["con", "str", "wis"]);
 });

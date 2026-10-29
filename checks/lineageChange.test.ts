@@ -1,3 +1,4 @@
+import { ALL_BOOKS } from "../src/constants/books.ts";
 import test from "node:test";
 import assert from "node:assert/strict";
 import { changeLineage, changeRace } from "../src/rules/builderTransitions.ts";
@@ -63,9 +64,9 @@ const holding = (lineage: string | null): Character =>
 
 /** The character with the named cantrip picked from the lineage it holds. */
 function picked(character: Character, option: string): Character {
-  const choice = raceSpellRuleChoices(character, compendium).find((c) => c.options.some((o) => o.name === option));
+  const choice = raceSpellRuleChoices(character, compendium, ALL_BOOKS).find((c) => c.options.some((o) => o.name === option));
   assert.ok(choice, `${option} is offered by the held lineage`);
-  return pickRuleChoice(character, choice, option, compendium);
+  return pickRuleChoice(character, choice, option, compendium, ALL_BOOKS);
 }
 
 const pickedNames = (character: Character): string[] => (character.ruleChoices ?? []).flatMap((entry) => entry.picked);
@@ -176,9 +177,9 @@ const featCompendium = inMemoryCompendium(
 const pulseCounter = featCounterId("Sample Initiate", "Sample Mage Spells", "Sample Pulse");
 
 const pickIn = (character: Character, option: string): Character => {
-  const choice = featSpellRuleChoices(character, featCompendium).find((c) => c.options.some((o) => o.name === option));
+  const choice = featSpellRuleChoices(character, featCompendium, ALL_BOOKS).find((c) => c.options.some((o) => o.name === option));
   assert.ok(choice, `${option} is offered by the origin feat`);
-  return pickRuleChoice(character, choice, option, featCompendium);
+  return pickRuleChoice(character, choice, option, featCompendium, ALL_BOOKS);
 };
 
 /** A character of the race holding the origin feat, with its Mage list picked and the cantrip and daily counter in place. */
@@ -247,15 +248,15 @@ test("applying the Custom Lineage record makes the character a Custom Lineage, a
 
 test("a save that names the Custom Lineage race without the custom flag loads with the flag set and the race kept", () => {
   const saved = makeChar({ classes: [mage], race: CUSTOM, customLineage: false });
-  const loaded = migrateCharacter(JSON.parse(JSON.stringify(saved)), undefined, grantedSpellClasses());
+  const loaded = migrateCharacter(JSON.parse(JSON.stringify(saved)), undefined, grantedSpellClasses(), ALL_BOOKS);
   assert.equal(loaded.customLineage, true, "the flag follows the race");
   assert.deepEqual(loaded.race, CUSTOM, "the race stays");
 
   const oldSave = JSON.parse(JSON.stringify(saved)) as Record<string, unknown>;
   delete oldSave.customLineage;
-  assert.equal(migrateCharacter(oldSave, undefined, grantedSpellClasses()).customLineage, true, "a save with no flag too");
+  assert.equal(migrateCharacter(oldSave, undefined, grantedSpellClasses(), ALL_BOOKS).customLineage, true, "a save with no flag too");
 
-  const plain = migrateCharacter(JSON.parse(JSON.stringify(holding(ALPHA))), undefined, grantedSpellClasses());
+  const plain = migrateCharacter(JSON.parse(JSON.stringify(holding(ALPHA))), undefined, grantedSpellClasses(), ALL_BOOKS);
   assert.equal(plain.customLineage, false, "a character that is not a Custom Lineage stays so");
 });
 

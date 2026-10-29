@@ -1,3 +1,4 @@
+import { ALL_BOOKS } from "../src/constants/books.ts";
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { makeChar, loadTestCatalog, inMemoryCompendium, integratedTestCompendium } from "./testUtils.ts";
@@ -18,7 +19,7 @@ import { hitDieOf, PHB_HALF_CASTER_SLOTS, PHB_THIRD_CASTER_SLOTS, spellcastingAb
 
 // Use the test catalog fixture; production rules receive only resolved plain data.
 const readCatalog = (name: string) => loadTestCatalog(name);
-const catalog = { classes: readCatalog("classes"), races: readCatalog("races"), backgrounds: readCatalog("backgrounds"), feats: readCatalog("feats") };
+const catalog = { classes: readCatalog("classes"), races: readCatalog("races"), backgrounds: readCatalog("backgrounds"), feats: readCatalog("feats"), activeBooks: ALL_BOOKS };
 const cl = (className: string, level: number, subclassName?: string): CharacterClass => ({ className, source: "PHB", level, subclassName });
 const scores = (values = {}) => ({ str: 10, dex: 10, con: 10, int: 10, wis: 10, cha: 10, ...values });
 const item = (armorCategory: string, ac?: number) => ({ id: armorCategory, name: "Unnamed gear", source: "PHB", quantity: 1, isEquipped: true, section: "equipped" as const, ac, armorCategory });
@@ -55,8 +56,8 @@ test("extra attack does not stack fighter 5 / barbarian 5", () => {
 test("unarmored defense: first class in acquisition order wins", () => {
   const barbFirst = makeChar({ classes: [cl("Barbarian", 1), cl("Monk", 1)] });
   const monkFirst = makeChar({ classes: [cl("Monk", 1), cl("Barbarian", 1)] });
-  assert.match(armorClass(barbFirst, {items:[]}).breakdown, /Con/);
-  assert.match(armorClass(monkFirst, {items:[]}).breakdown, /Wis/);
+  assert.match(armorClass(barbFirst, {items:[], activeBooks: ALL_BOOKS}).breakdown, /Con/);
+  assert.match(armorClass(monkFirst, {items:[], activeBooks: ALL_BOOKS}).breakdown, /Wis/);
 });
 
 test("ability scores use configured racial bonuses and ASIs without mutating choices", () => {
@@ -102,32 +103,32 @@ test("multiclass Barbarian 1 / Bard 1 has separate 1d12 and 1d8 hit dice pools",
 });
 test("armorCategory overrides misleading names, caps medium Dex, and recognizes unnamed shields", () => {
   const c = makeChar({ baseAbilityScores: scores({ dex: 16 }) });
-  assert.equal(armorClass({ ...c, items: [item("light", 11)] }).ac, 14);
-  assert.equal(armorClass({ ...c, items: [item("medium", 14)] }).ac, 16);
-  assert.equal(armorClass({ ...c, items: [item("heavy", 16)] }).ac, 16);
-  assert.equal(armorClass({ ...c, items: [item("light", 11), item("shield", 2)] }).ac, 16);
-  assert.equal(armorClass({ ...c, items: [{ ...item("light", 11), name: "Plate" }] }).ac, 14);
-  assert.equal(armorClass({ ...c, baseAbilityScores: scores({ dex: 8 }), items: [item("medium", 14)] }).ac, 13);
+  assert.equal(armorClass({ ...c, items: [item("light", 11)] }, { activeBooks: ALL_BOOKS }).ac, 14);
+  assert.equal(armorClass({ ...c, items: [item("medium", 14)] }, { activeBooks: ALL_BOOKS }).ac, 16);
+  assert.equal(armorClass({ ...c, items: [item("heavy", 16)] }, { activeBooks: ALL_BOOKS }).ac, 16);
+  assert.equal(armorClass({ ...c, items: [item("light", 11), item("shield", 2)] }, { activeBooks: ALL_BOOKS }).ac, 16);
+  assert.equal(armorClass({ ...c, items: [{ ...item("light", 11), name: "Plate" }] }, { activeBooks: ALL_BOOKS }).ac, 14);
+  assert.equal(armorClass({ ...c, baseAbilityScores: scores({ dex: 8 }), items: [item("medium", 14)] }, { activeBooks: ALL_BOOKS }).ac, 13);
 });
 test("legacy half plate is medium; no armor uses 10+Dex", () => {
   const c = makeChar({ baseAbilityScores: scores({ dex: 16 }) });
-  assert.equal(armorClass(c).ac, 13);
-  assert.equal(armorClass({ ...c, items: [{ ...item("", 15), name: "Half Plate" }] }).ac, 17);
+  assert.equal(armorClass(c, { activeBooks: ALL_BOOKS }).ac, 13);
+  assert.equal(armorClass({ ...c, items: [{ ...item("", 15), name: "Half Plate" }] }, { activeBooks: ALL_BOOKS }).ac, 17);
 });
 test("Unarmored Defense order also works when neither granting class is initial", () => {
   const c = makeChar({ classes: [cl("Fighter", 1), cl("Monk", 1), cl("Barbarian", 1)], baseAbilityScores: scores({ dex: 14, wis: 16, con: 18 }) });
-  assert.equal(armorClass(c).ac, 15);
-  assert.equal(armorClass({ ...c, items: [item("shield", 2)] }).ac, 14);
+  assert.equal(armorClass(c, { activeBooks: ALL_BOOKS }).ac, 15);
+  assert.equal(armorClass({ ...c, items: [item("shield", 2)] }, { activeBooks: ALL_BOOKS }).ac, 14);
   const ud = grantedFeatures(c, catalog).filter(x => x.name === "Unarmored Defense");
   assert.equal(ud.length, 1);
   assert.equal(ud[0].className, "Monk");
 });
 test("speed uses resolved race and equipment restrictions on monk/barbarian movement", () => {
   const c = makeChar({ classes: [cl("Monk", 6)] });
-  assert.equal(speed(c, { race: { speed: { walk: 35 } } }), 50);
-  assert.equal(speed({ ...c, items: [item("shield")] }), 30);
-  assert.equal(speed(makeChar({ classes: [cl("Barbarian", 5)], items: [item("heavy", 18)] })), 30);
-  assert.equal(speed(makeChar({ classes: [cl("Barbarian", 5)], items: [item("medium", 14)] })), 40);
+  assert.equal(speed(c, { race: { speed: { walk: 35 } }, activeBooks: ALL_BOOKS }), 50);
+  assert.equal(speed({ ...c, items: [item("shield")] }, { activeBooks: ALL_BOOKS }), 30);
+  assert.equal(speed(makeChar({ classes: [cl("Barbarian", 5)], items: [item("heavy", 18)] }), { activeBooks: ALL_BOOKS }), 30);
+  assert.equal(speed(makeChar({ classes: [cl("Barbarian", 5)], items: [item("medium", 14)] }), { activeBooks: ALL_BOOKS }), 40);
 });
 test("carrying weight includes quantity and coins, with STR capacity", () => {
   const c = makeChar({ items: [{ ...item(""), quantity: 2, weight: 30 }], pouch: { cp: 0, sp: 0, ep: 0, gp: 50, pp: 0 } });
@@ -135,7 +136,7 @@ test("carrying weight includes quantity and coins, with STR capacity", () => {
 });
 test("saves use first class only and total-level proficiency", () => {
   const c = makeChar({ classes: [cl("Fighter", 1), cl("Wizard", 4)] });
-  const saves = savingThrows(c, proficiencySheet(c, { compendium: inMemoryCompendium() }).savingThrows);
+  const saves = savingThrows(c, proficiencySheet(c, { compendium: inMemoryCompendium(), activeBooks: ALL_BOOKS }).savingThrows);
   assert.equal(saves.str.proficient, true);
   assert.equal(saves.con.isProficient, true);
   assert.equal(saves.int.proficient, false);
@@ -152,7 +153,7 @@ test("initial armor proficiencies differ from multiclass grants", () => {
 });
 test("skills distinguish expertise and Jack of All Trades; passive trio and Observant", () => {
   const c = makeChar({ classes: [cl("Bard", 5)], baseAbilityScores: scores({ wis: 16, int: 14 }), chosenSkills: ["Perception", "Insight"], chosenExpertise: ["Perception"] });
-  const row = (name: string, char = c) => skills(char, proficiencySheet(char, { compendium: inMemoryCompendium() }).skills).find(x => x.name === name)!;
+  const row = (name: string, char = c) => skills(char, proficiencySheet(char, { compendium: inMemoryCompendium(), activeBooks: ALL_BOOKS }).skills).find(x => x.name === name)!;
   assert.equal(row("Perception").bonus, 9);
   assert.equal(row("Perception").isExpertise, true);
   assert.equal(row("Perception").halfProficiency === "Jack of All Trades", false);
@@ -236,7 +237,7 @@ test("skills includes racial and background proficiencies and matches case-insen
     chosenSkills: ["animal handling", "sleight of hand"], // Lowercase input!
   });
 
-  const skillList = skills(bugbearAcolyte, proficiencySheet(bugbearAcolyte, { compendium: integratedTestCompendium() }).skills);
+  const skillList = skills(bugbearAcolyte, proficiencySheet(bugbearAcolyte, { compendium: integratedTestCompendium(), activeBooks: ALL_BOOKS }).skills);
   const byName = (n: string) => skillList.find(s => s.name === n);
 
   // Bugbear trait
@@ -280,7 +281,7 @@ test("grantedFeatures respects optional feature replacements (e.g., TCoE Ranger)
 test("race skill picks are Proficiency Choices from the Catalog's choice grants, in any book, and trait text offers none", () => {
   const compendium = integratedTestCompendium();
   const skillOffer = (race: { name: string; source: string }) =>
-    proficiencyChoiceOffers(makeChar({ race }), { compendium }).filter((offer) => offer.id.includes("#skills:"));
+    proficiencyChoiceOffers(makeChar({ race }), { compendium, activeBooks: ALL_BOOKS }).filter((offer) => offer.id.includes("#skills:"));
 
   // Lizardfolk (Volo's Guide): 2 from its five-skill list.
   const liz = skillOffer({ name: "Lizardfolk", source: "VGM" });
@@ -297,7 +298,7 @@ test("race skill picks are Proficiency Choices from the Catalog's choice grants,
   // Mark of Detection Half-Elf has no Skill Versatility.
   const mark = proficiencyChoiceOffers(
     makeChar({ race: { name: "Half-Elf", source: "PHB", subraceName: "Mark of Detection", subraceSource: "ERLW" } }),
-    { compendium },
+    { compendium, activeBooks: ALL_BOOKS },
   ).filter((offer) => offer.id.includes("#skills:"));
   assert.equal(mark.length, 0);
 
@@ -323,7 +324,7 @@ test("race skill picks are Proficiency Choices from the Catalog's choice grants,
       },
     ],
   });
-  assert.deepEqual(proficiencyChoiceOffers(makeChar({ race: { name: "Custom Beastfolk", source: "Homebrew" } }), { compendium: textOnly }).filter((offer) => offer.id.includes("#skills:")), []);
+  assert.deepEqual(proficiencyChoiceOffers(makeChar({ race: { name: "Custom Beastfolk", source: "Homebrew" } }), { compendium: textOnly, activeBooks: ALL_BOOKS }).filter((offer) => offer.id.includes("#skills:")), []);
 });
 
 test("grantedFeatures includes both base race traits and subrace traits", () => {

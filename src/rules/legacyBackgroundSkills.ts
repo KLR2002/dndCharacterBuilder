@@ -1,3 +1,4 @@
+import type { ActiveBooks } from "../constants/books.ts";
 import type { Character } from "../types/character.ts";
 import type { Compendium } from "../services/compendium.ts";
 import { isCustomBackground } from "./customBackground.ts";
@@ -16,7 +17,7 @@ import { findHeldRecord } from "./raceLookup.ts";
  * The fixed skills of a catalog background's grants, in lower case. The record is found as the shared lookup finds it, unscoped
  * by books so that a background whose book is off still gives its skills, with an active book's record preferred.
  */
-function grantedSkillKeys(compendium: Compendium, held: { name: string; source: string }, activeBooks?: string[]): Set<string> {
+function grantedSkillKeys(compendium: Compendium, held: { name: string; source: string }, activeBooks: ActiveBooks): Set<string> {
   const record = findHeldRecord(compendium.for().backgrounds(), held, activeBooks);
   const keys = new Set<string>();
   for (const grant of record?.grants ?? []) {
@@ -34,7 +35,7 @@ function grantedSkillKeys(compendium: Compendium, held: { name: string; source: 
 export function dropLegacyBackgroundSkills(
   character: Character,
   compendium: Compendium,
-  activeBooks?: string[],
+  activeBooks: ActiveBooks,
 ): Character {
   const bg = character.background;
   const bucket = character.chosenSkills ?? [];

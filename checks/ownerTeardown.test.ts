@@ -1,3 +1,4 @@
+import { ALL_BOOKS } from "../src/constants/books.ts";
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { reconcile, teardownSubclass } from "../src/rules/characterReconciler.ts";
@@ -47,7 +48,7 @@ test("teardown never removes an id that no table or module recognises, even when
     ],
   });
 
-  const tornDown = teardownSubclass(initial, "Druid", "Circle of the Land", currentCompendium());
+  const tornDown = teardownSubclass(initial, "Druid", "Circle of the Land", currentCompendium(), ALL_BOOKS);
 
   assert.deepEqual(
     tornDown.ruleChoices?.map((rc) => rc.id),
@@ -66,7 +67,7 @@ test("Druid teardown removes the Circle of the Land biome and keeps a race choic
     ruleChoices: [BIOME_CHOICE, RACE_CHOICE],
   });
 
-  const tornDown = teardownSubclass(initial, "Druid", "Circle of the Land", currentCompendium());
+  const tornDown = teardownSubclass(initial, "Druid", "Circle of the Land", currentCompendium(), ALL_BOOKS);
 
   assert.deepEqual(tornDown.ruleChoices?.map((rc) => rc.id), [RACE_CHOICE.id]);
   assert.deepEqual(tornDown.needsReview, ["Circle of the Land: Biome removed: subclass no longer held"]);
@@ -78,7 +79,7 @@ test("Sorcerer teardown removes the Divine Soul affinity and keeps a Druid-owned
     ruleChoices: [AFFINITY_CHOICE, BIOME_CHOICE],
   });
 
-  const tornDown = teardownSubclass(initial, "Sorcerer", "Divine Soul", currentCompendium());
+  const tornDown = teardownSubclass(initial, "Sorcerer", "Divine Soul", currentCompendium(), ALL_BOOKS);
 
   assert.deepEqual(tornDown.ruleChoices?.map((rc) => rc.id), [BIOME_CHOICE.id]);
   assert.deepEqual(tornDown.needsReview, ["Divine Soul: Divine Affinity removed: subclass no longer held"]);
@@ -114,7 +115,7 @@ test("Cleric teardown removes domain cantrips for the old domain and keeps a War
     ruleChoices: [acolyte, reaper, genieKind],
   });
 
-  const tornDown = teardownSubclass(initial, "Cleric", "Nature", currentCompendium());
+  const tornDown = teardownSubclass(initial, "Cleric", "Nature", currentCompendium(), ALL_BOOKS);
 
   // Both domain cantrips are Cleric subclass choices, so both go; the Warlock-owned kind stays.
   assert.deepEqual(tornDown.ruleChoices?.map((rc) => rc.id), [genieKind.id]);
@@ -146,7 +147,7 @@ test("Fighter teardown removes the Champion additional style and keeps the class
     ruleChoices: [championStyle, classStyle],
   });
 
-  const tornDown = teardownSubclass(initial, "Fighter", "Champion", currentCompendium());
+  const tornDown = teardownSubclass(initial, "Fighter", "Champion", currentCompendium(), ALL_BOOKS);
 
   assert.deepEqual(tornDown.ruleChoices?.map((rc) => rc.id), [classStyle.id]);
   assert.deepEqual(tornDown.needsReview, ["Additional Fighting Style removed: subclass no longer held"]);
@@ -174,7 +175,7 @@ test("Fighter teardown removes Battle Master maneuvers and keeps the class Fight
     ruleChoices: [maneuvers, classStyle],
   });
 
-  const tornDown = teardownSubclass(initial, "Fighter", "Battle Master", currentCompendium());
+  const tornDown = teardownSubclass(initial, "Fighter", "Battle Master", currentCompendium(), ALL_BOOKS);
 
   assert.deepEqual(tornDown.ruleChoices?.map((rc) => rc.id), [classStyle.id]);
   assert.deepEqual(tornDown.needsReview, ["Combat Superiority (3rd Level) removed: subclass no longer held"]);
@@ -214,7 +215,7 @@ test("Warlock teardown removes the Genie kind and keeps the Pact of the Tome can
     ],
   });
 
-  const tornDown = teardownSubclass(initial, "Warlock", "The Genie", currentCompendium());
+  const tornDown = teardownSubclass(initial, "Warlock", "The Genie", currentCompendium(), ALL_BOOKS);
 
   assert.deepEqual(
     tornDown.ruleChoices?.map((rc) => rc.id),
@@ -239,14 +240,14 @@ test("Artificer subclass teardown keeps class-owned infusion picks and removes t
     ruleChoices: [infusion, druid],
     activeInfusions: [{ infusionName: "Enhanced Defense" }],
   });
-  const swapped = teardownSubclass(changed, "Artificer", "Armorer", currentCompendium());
+  const swapped = teardownSubclass(changed, "Artificer", "Armorer", currentCompendium(), ALL_BOOKS);
   assert.deepEqual(swapped.ruleChoices?.map((rc) => rc.id), [infusion.id, druid.id]);
 
   const delevelled = teardownSubclass(
     { ...changed, classes: [{ className: "Artificer", source: "TCE", level: 1, subclassName: "Armorer" }] },
     "Artificer",
     "Armorer",
-    currentCompendium(),
+    currentCompendium(), ALL_BOOKS,
   );
   assert.deepEqual(delevelled.ruleChoices?.map((rc) => rc.id), [druid.id]);
   assert.deepEqual(delevelled.needsReview, [
@@ -277,7 +278,7 @@ test("Barbarian teardown removes the Totem Spirit and keeps class-owned Primal K
     optionalFeatureReplacements: { "Primal Knowledge": true },
   });
 
-  const tornDown = teardownSubclass(initial, "Barbarian", "Totem Warrior", currentCompendium());
+  const tornDown = teardownSubclass(initial, "Barbarian", "Totem Warrior", currentCompendium(), ALL_BOOKS);
 
   assert.deepEqual(tornDown.ruleChoices?.map((rc) => rc.id), [primalKnowledge.id]);
   assert.deepEqual(tornDown.needsReview, ["Totem Spirit (3rd Level) removed: subclass no longer held"]);
@@ -299,7 +300,7 @@ test("subclass teardown records a review notice when it clears subclass spell sw
     subclassSpellSwaps: { Alarm: "Shield" },
   });
 
-  const tornDown = teardownSubclass(initial, "Sorcerer", "Clockwork Soul", currentCompendium());
+  const tornDown = teardownSubclass(initial, "Sorcerer", "Clockwork Soul", currentCompendium(), ALL_BOOKS);
 
   assert.equal(tornDown.subclassSpellSwaps, undefined);
   assert.deepEqual(tornDown.needsReview, ["Subclass spell swaps removed: subclass no longer held"]);
@@ -314,7 +315,7 @@ test("subclass teardown records a review notice for each resource counter it rem
     },
   });
 
-  const tornDown = teardownSubclass(initial, "Wizard", "Bladesinging", currentCompendium());
+  const tornDown = teardownSubclass(initial, "Wizard", "Bladesinging", currentCompendium(), ALL_BOOKS);
 
   assert.deepEqual(Object.keys(tornDown.resourceCounters), ["arcane_recovery"]);
   assert.deepEqual(tornDown.needsReview, ["Bladesong removed: subclass no longer held"]);
@@ -326,7 +327,7 @@ test("subclass teardown records a review notice for each Giant Power cantrip it 
     knownSpells: [giantCantrip("Druidcraft")],
   });
 
-  const tornDown = teardownSubclass(initial, "Barbarian", "Path of the Giant", currentCompendium());
+  const tornDown = teardownSubclass(initial, "Barbarian", "Path of the Giant", currentCompendium(), ALL_BOOKS);
 
   assert.deepEqual(tornDown.knownSpells, []);
   assert.deepEqual(tornDown.needsReview, ["Giant Power cantrip Druidcraft removed: subclass no longer held"]);
@@ -348,13 +349,13 @@ test("the Giant Power cantrip sync records a review notice when the pick changes
     knownSpells: [giantCantrip("Druidcraft")],
   });
 
-  const synced = reconcile(changed, currentCompendium());
+  const synced = reconcile(changed, currentCompendium(), { activeBooks: ALL_BOOKS });
 
   assert.deepEqual(synced.knownSpells?.map((k) => k.name), ["Thaumaturgy"]);
   assert.deepEqual(synced.needsReview, [
     "Giant Power cantrip Druidcraft removed: Giant Power pick is now Thaumaturgy",
   ]);
-  assert.deepEqual(reconcile(synced, currentCompendium()), synced, "reconciling again records nothing new");
+  assert.deepEqual(reconcile(synced, currentCompendium(), { activeBooks: ALL_BOOKS }), synced, "reconciling again records nothing new");
 });
 
 test("the Giant Power cantrip sync records a review notice when the pick is cleared", () => {
@@ -363,7 +364,7 @@ test("the Giant Power cantrip sync records a review notice when the pick is clea
     knownSpells: [giantCantrip("Thaumaturgy")],
   });
 
-  const synced = reconcile(cleared, currentCompendium());
+  const synced = reconcile(cleared, currentCompendium(), { activeBooks: ALL_BOOKS });
 
   assert.deepEqual(synced.knownSpells, []);
   assert.deepEqual(synced.needsReview, [
@@ -391,14 +392,14 @@ test("a saved Giant Barbarian holding both cantrips keeps only the picked one, a
     ],
   });
 
-  const synced = reconcile(saved, currentCompendium());
+  const synced = reconcile(saved, currentCompendium(), { activeBooks: ALL_BOOKS });
 
   assert.deepEqual(synced.knownSpells?.map((k) => k.name), ["Shield", "Druidcraft"]);
   assert.deepEqual(synced.knownSpells?.find((k) => k.name === "Shield"), saved.knownSpells?.[2]);
   assert.deepEqual(synced.needsReview, [
     "Giant Power cantrip Thaumaturgy removed: Giant Power pick is now Druidcraft",
   ]);
-  assert.deepEqual(reconcile(synced, currentCompendium()), synced, "reconciling again records nothing new");
+  assert.deepEqual(reconcile(synced, currentCompendium(), { activeBooks: ALL_BOOKS }), synced, "reconciling again records nothing new");
 });
 
 // Conjunctive predicates: a class name or a subclass name alone never tears down another class's state.
@@ -408,7 +409,7 @@ test("a subclass name alone does not clear swaps, and a class name alone does no
     classes: [{ className: "Druid", source: "PHB", level: 3, subclassName: "Circle of the Land" }],
     subclassSpellSwaps: { Alarm: "Shield" },
   });
-  const swapsKept = teardownSubclass(druid, "Druid", "Clockwork Soul", currentCompendium());
+  const swapsKept = teardownSubclass(druid, "Druid", "Clockwork Soul", currentCompendium(), ALL_BOOKS);
   assert.deepEqual(swapsKept.subclassSpellSwaps, { Alarm: "Shield" });
 
   const giant = makeChar({
@@ -425,7 +426,7 @@ test("a subclass name alone does not clear swaps, and a class name alone does no
     ],
     knownSpells: [giantCantrip("Druidcraft")],
   });
-  const fighterTorn = teardownSubclass(giant, "Fighter", "Path of the Giant", currentCompendium());
+  const fighterTorn = teardownSubclass(giant, "Fighter", "Path of the Giant", currentCompendium(), ALL_BOOKS);
   assert.deepEqual(fighterTorn.knownSpells?.map((k) => k.name), ["Druidcraft"]);
   assert.deepEqual(fighterTorn.needsReview ?? [], []);
 });

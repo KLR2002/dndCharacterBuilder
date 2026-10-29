@@ -1,3 +1,4 @@
+import { ALL_BOOKS } from "../constants/books.ts";
 import type { Character, InventoryItem, StartingEquipmentPicks } from "../types/character.ts";
 import type {
   ClassData,
@@ -104,7 +105,7 @@ function slotsOf(character: Character, catalogs: CharacterCatalogs): StartingEqu
 /** The catalog item with this name, preferring the printed source. Name lookups are never scoped by active books. */
 function catalogItem(name: string, source: string, catalogs: CharacterCatalogs): ItemData | undefined {
   const lower = name.toLowerCase();
-  const named = catalogListings({ compendium: catalogs.compendium }).items().filter((i) => i.name.toLowerCase() === lower);
+  const named = catalogListings({ compendium: catalogs.compendium, activeBooks: ALL_BOOKS }).items().filter((i) => i.name.toLowerCase() === lower);
   return named.find((i) => i.source.toLowerCase() === source.toLowerCase()) ?? named[0];
 }
 
@@ -148,12 +149,12 @@ function optionOffered(option: StartingEquipmentOption, sheet: ProficiencySheet,
 }
 
 /** True when the first class has starting equipment slots, so the equipment claim applies. A class with none takes gold only. */
-export function hasStartingEquipmentChoices(character: Character, catalogs: CharacterCatalogs = {}): boolean {
+export function hasStartingEquipmentChoices(character: Character, catalogs: CharacterCatalogs): boolean {
   return slotsOf(character, catalogs).length > 0;
 }
 
 /** The choice slots, by slot index, with the option letters offered to the character now. Fixed slots are not listed. */
-export function startingEquipmentOffers(character: Character, catalogs: CharacterCatalogs = {}): StartingEquipmentOffer[] {
+export function startingEquipmentOffers(character: Character, catalogs: CharacterCatalogs): StartingEquipmentOffer[] {
   const slots = slotsOf(character, catalogs);
   if (slots.length === 0) return [];
   const sheet = proficiencySheet(character, catalogs);
@@ -165,7 +166,7 @@ export function startingEquipmentOffers(character: Character, catalogs: Characte
 }
 
 /** The names a generic type can be resolved to: each catalog item of the type once, in the active books, sorted. */
-export function startingEquipmentPool(equipmentType: string, catalogs: CharacterCatalogs = {}): string[] {
+export function startingEquipmentPool(equipmentType: string, catalogs: CharacterCatalogs): string[] {
   const filter = genericFilter(equipmentType);
   if (!filter) return [];
   const names = new Map<string, string>();
@@ -210,7 +211,7 @@ export interface StartingEquipmentCard {
 }
 
 /** The equipment card the Builder shows: every slot, the offered options flagged by the pick, and the pickers' state. */
-export function startingEquipmentCard(character: Character, catalogs: CharacterCatalogs = {}): StartingEquipmentCard {
+export function startingEquipmentCard(character: Character, catalogs: CharacterCatalogs): StartingEquipmentCard {
   const slots = slotsOf(character, catalogs);
   const picks = picksOfFirstClass(character);
   const offered = new Map(startingEquipmentOffers(character, catalogs).map((o) => [o.slot, new Set(o.options)]));
@@ -270,7 +271,7 @@ export function setStartingEquipmentOption(
   character: Character,
   slot: number,
   letter: string,
-  catalogs: CharacterCatalogs = {},
+  catalogs: CharacterCatalogs,
 ): Character {
   const target = slotsOf(character, catalogs)[slot];
   if (target?.kind !== "choice") return character;
@@ -296,7 +297,7 @@ export function setStartingEquipmentItems(
   character: Character,
   address: StartingEquipmentAddress,
   names: string[],
-  catalogs: CharacterCatalogs = {},
+  catalogs: CharacterCatalogs,
 ): Character {
   const slot = slotsOf(character, catalogs)[address.slot];
   if (!slot || slot.kind === "unrecognised") return character;
@@ -365,7 +366,7 @@ interface Grant {
  * offered option, and each generic entry in the taken entries needs its quantity of names. Incomplete picks give no
  * items. Fixed and picked entries become items with ids `start_<class>_<n>`, equipped by the equip rule.
  */
-export function resolveStartingEquipment(character: Character, catalogs: CharacterCatalogs = {}): StartingEquipmentKit {
+export function resolveStartingEquipment(character: Character, catalogs: CharacterCatalogs): StartingEquipmentKit {
   const slots = slotsOf(character, catalogs);
   const incomplete: StartingEquipmentKit = { hasSlots: slots.length > 0, complete: false, items: [] };
   if (slots.length === 0) return incomplete;

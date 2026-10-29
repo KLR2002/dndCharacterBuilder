@@ -11,11 +11,10 @@ import {
 import { isSpellAvailableForClass } from "../src/rules/spellcasting.ts";
 import { findSpell } from "../src/services/dataService.ts";
 import { createCompendium, type Compendium } from "../src/services/compendium.ts";
-import { DEFAULT_ACTIVE_BOOK_CODES } from "../src/constants/books.ts";
-import { srdBaselineCompendium } from "./testUtils.ts";
+import { DEFAULT_ACTIVE_BOOK_CODES, ALL_BOOKS } from "../src/constants/books.ts";
+import { srdBaselineCompendium , makeChar } from "./testUtils.ts";
 import type { CompendiumCollections } from "../src/services/compendiumStorage.ts";
 import type { ClassData, SpellData } from "../src/types/dnd5e.ts";
-import { makeChar } from "./testUtils.ts";
 
 test("Cleric Life Domain progression across levels 1, 3, 5, 7, 9", () => {
   // Level 1: Bless, Cure Wounds
@@ -147,17 +146,17 @@ test("Artificer Battle Smith progression", () => {
 
 test("Druid Circle of the Land (Coast biome) and Circle of Spores", () => {
   // Circle of the Land - Coast at level 3
-  const coast3 = getSubclassSpells("Druid", "Circle of the Land", 3, { biome: "Coast" });
+  const coast3 = getSubclassSpells("Druid", "Circle of the Land", 3, { biome: "Coast", activeBooks: ALL_BOOKS });
   const coastNames3 = coast3.prepared.map((s) => s.name).sort();
   assert.deepEqual(coastNames3, ["Mirror Image", "Misty Step"]);
 
   // Circle of the Land - Coast at level 5
-  const coast5 = getSubclassSpells("Druid", "Circle of the Land", 5, { biome: "Coast" });
+  const coast5 = getSubclassSpells("Druid", "Circle of the Land", 5, { biome: "Coast", activeBooks: ALL_BOOKS });
   const coastNames5 = coast5.prepared.map((s) => s.name).sort();
   assert.deepEqual(coastNames5, ["Mirror Image", "Misty Step", "Water Breathing", "Water Walk"]);
 
   // Circle of the Land - Mountain comparison at level 3
-  const mountain3 = getSubclassSpells("Druid", "Circle of the Land", 3, { biome: "Mountain" });
+  const mountain3 = getSubclassSpells("Druid", "Circle of the Land", 3, { biome: "Mountain", activeBooks: ALL_BOOKS });
   const mountainNames3 = mountain3.prepared.map((s) => s.name).sort();
   assert.deepEqual(mountainNames3, ["Spider Climb", "Spike Growth"]);
 
@@ -280,16 +279,16 @@ test("Clockwork Soul swap validation: Abjuration/Transmutation same level from S
   assert.deepEqual(getSubclassAllowedSwapSchools("Clockwork Soul"), ["Abjuration", "Transmutation"]);
 
   // Swapping "Alarm" (1st level) with "Shield" (1st level Abjuration, Wizard) is valid
-  const validSwap = validateSubclassSpellSwap("Sorcerer", "Clockwork Soul", "Alarm", "Shield");
+  const validSwap = validateSubclassSpellSwap("Sorcerer", "Clockwork Soul", "Alarm", "Shield", ALL_BOOKS);
   assert.equal(validSwap.valid, true);
 
   // Swapping with "Magic Missile" (Evocation) is invalid
-  const invalidSchool = validateSubclassSpellSwap("Sorcerer", "Clockwork Soul", "Alarm", "Magic Missile");
+  const invalidSchool = validateSubclassSpellSwap("Sorcerer", "Clockwork Soul", "Alarm", "Magic Missile", ALL_BOOKS);
   assert.equal(invalidSchool.valid, false);
   assert.ok(invalidSchool.reason?.includes("school") || invalidSchool.reason?.includes("Abjuration"));
 
   // Swapping with 2nd level spell ("Aid") is invalid
-  const invalidLevel = validateSubclassSpellSwap("Sorcerer", "Clockwork Soul", "Alarm", "Aid");
+  const invalidLevel = validateSubclassSpellSwap("Sorcerer", "Clockwork Soul", "Alarm", "Aid", ALL_BOOKS);
   assert.equal(invalidLevel.valid, false);
   assert.ok(invalidLevel.reason?.includes("level"));
 });
@@ -299,16 +298,16 @@ test("Aberrant Mind swap validation: Divination/Enchantment same level from Sorc
   assert.deepEqual(getSubclassAllowedSwapSchools("Aberrant Mind"), ["Divination", "Enchantment"]);
 
   // Swapping "Arms of Hadar" (1st level) with "Hex" (1st level Enchantment, Warlock) is valid
-  const validSwap = validateSubclassSpellSwap("Sorcerer", "Aberrant Mind", "Arms of Hadar", "Hex");
+  const validSwap = validateSubclassSpellSwap("Sorcerer", "Aberrant Mind", "Arms of Hadar", "Hex", ALL_BOOKS);
   assert.equal(validSwap.valid, true);
 
   // Swapping with "Shield" (Abjuration) is invalid
-  const invalidSchool = validateSubclassSpellSwap("Sorcerer", "Aberrant Mind", "Arms of Hadar", "Shield");
+  const invalidSchool = validateSubclassSpellSwap("Sorcerer", "Aberrant Mind", "Arms of Hadar", "Shield", ALL_BOOKS);
   assert.equal(invalidSchool.valid, false);
   assert.ok(invalidSchool.reason?.includes("school") || invalidSchool.reason?.includes("Divination"));
 
   // Swapping cantrip "Mind Sliver" is invalid (TCoE restricts to 1st level or higher)
-  const invalidCantrip = validateSubclassSpellSwap("Sorcerer", "Aberrant Mind", "Mind Sliver", "Friends");
+  const invalidCantrip = validateSubclassSpellSwap("Sorcerer", "Aberrant Mind", "Mind Sliver", "Friends", ALL_BOOKS);
   assert.equal(invalidCantrip.valid, false);
   assert.ok(invalidCantrip.reason?.includes("cantrip") || invalidCantrip.reason?.includes("1st level"));
 
@@ -317,7 +316,7 @@ test("Aberrant Mind swap validation: Divination/Enchantment same level from Sorc
 
 test("getSubclassSpells with active swaps replaces the spell in known and tracks metadata", () => {
   const swapped = getSubclassSpells("Sorcerer", "Clockwork Soul", 1, {
-    swaps: { Alarm: "Shield" },
+    swaps: { Alarm: "Shield" }, activeBooks: ALL_BOOKS,
   });
 
   const names = swapped.known.map((s) => s.name).sort();
@@ -365,7 +364,7 @@ test("RuleChoices integration: Circle of Land biomes, Divine Soul affinity, Cler
         from: ["Coast"],
         picked: ["Coast"],
       },
-    ],
+    ], activeBooks: ALL_BOOKS,
   });
   assert.ok(landCoast.prepared.some((s) => s.name === "Mirror Image"));
   assert.ok(landCoast.prepared.some((s) => s.name === "Misty Step"));
@@ -381,7 +380,7 @@ test("RuleChoices integration: Circle of Land biomes, Divine Soul affinity, Cler
         from: ["Good"],
         picked: ["Good"],
       },
-    ],
+    ], activeBooks: ALL_BOOKS,
   });
   assert.ok(divineGood.known.some((s) => s.name === "Cure Wounds"));
 
@@ -396,7 +395,7 @@ test("RuleChoices integration: Circle of Land biomes, Divine Soul affinity, Cler
         from: ["Shillelagh"],
         picked: ["Shillelagh"],
       },
-    ],
+    ], activeBooks: ALL_BOOKS,
   });
   assert.ok(nature.cantrips.some((c) => c.name === "Shillelagh"));
 
@@ -411,7 +410,7 @@ test("RuleChoices integration: Circle of Land biomes, Divine Soul affinity, Cler
         from: ["Fire Bolt", "Mage Hand"],
         picked: ["Fire Bolt", "Mage Hand"],
       },
-    ],
+    ], activeBooks: ALL_BOOKS,
   });
   assert.ok(arcana.cantrips.some((c) => c.name === "Fire Bolt"));
   assert.ok(arcana.cantrips.some((c) => c.name === "Mage Hand"));
@@ -434,7 +433,7 @@ test("getOrphanedSubclassSpells detects illegal spells when changing Warlock pat
     fiendWarlock,
     "Warlock",
     "The Fiend",
-    "The Archfey"
+    "The Archfey", ALL_BOOKS
   );
   assert.deepEqual(orphanedArchfey, ["Fireball"]);
 
@@ -443,7 +442,7 @@ test("getOrphanedSubclassSpells detects illegal spells when changing Warlock pat
     fiendWarlock,
     "Warlock",
     "The Fiend",
-    undefined
+    undefined, ALL_BOOKS
   );
   assert.deepEqual(orphanedClear, ["Fireball"]);
 
@@ -452,7 +451,7 @@ test("getOrphanedSubclassSpells detects illegal spells when changing Warlock pat
     classes: [{ className: "Cleric", source: "PHB", level: 5, subclassName: "Life Domain" }],
     knownSpells: [{ name: "Bless", source: "PHB" }],
   });
-  assert.deepEqual(getOrphanedSubclassSpells(cleric, "Cleric", "Life Domain", "Light Domain"), []);
+  assert.deepEqual(getOrphanedSubclassSpells(cleric, "Cleric", "Life Domain", "Light Domain", ALL_BOOKS), []);
 });
 
 test("Third casters access Wizard spells when subclass is active", () => {
@@ -477,7 +476,7 @@ test("getEligibleSubclassSpellSwaps disallows cantrips", () => {
   assert.ok(mindSliver);
   assert.equal(mindSliver.level, 0);
 
-  const swaps = getEligibleSubclassSpellSwaps("Aberrant Mind", mindSliver);
+  const swaps = getEligibleSubclassSpellSwaps("Aberrant Mind", mindSliver, ALL_BOOKS);
   assert.deepEqual(swaps, []);
 });
 

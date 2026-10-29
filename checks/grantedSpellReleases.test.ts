@@ -1,3 +1,4 @@
+import { ALL_BOOKS } from "../src/constants/books.ts";
 import test from "node:test";
 import assert from "node:assert/strict";
 import { evaluateCharacter } from "../src/rules/characterEvaluation.ts";
@@ -35,7 +36,7 @@ const compendium = inMemoryCompendium({
 });
 
 const ACTIVE = ["TST"];
-const ALL_BOOKS = ["TST", "TST2"];
+const TEST_BOOKS = ["TST", "TST2"];
 const catalogs = { compendium, activeBooks: ACTIVE };
 
 const mage = (level: number): CharacterClass => ({ className: "Sample Mage", source: "TST", level });
@@ -53,7 +54,7 @@ function pickOption(character: Character, option: string, featName: string, acti
     (c) => c.id.split("__")[2] === featName && c.options.some((o) => o.name === option),
   );
   assert.ok(choice, `${option} is offered for ${featName}`);
-  return pickRuleChoice(character, choice, option, compendium);
+  return pickRuleChoice(character, choice, option, compendium, ALL_BOOKS);
 }
 
 const initiateCard = (character: Character): InnateSpellProfile | undefined =>
@@ -109,7 +110,7 @@ test("reconciling a feat that holds another list releases the old list's counter
     },
   });
 
-  const reconciled = reconcile(character, compendium);
+  const reconciled = reconcile(character, compendium, { activeBooks: ALL_BOOKS });
   assert.equal(reconciled.resourceCounters?.[oldCounter], undefined, "the counter of the list no longer held is released");
   assert.ok(reconciled.resourceCounters?.[newCounter], "the counter of the list held is kept");
   assert.ok(
@@ -127,7 +128,7 @@ test("reconciling against a catalog that does not hold the feat keeps its picks,
     backgrounds: grantedSpellBackgrounds(),
   });
 
-  const reconciled = reconcile(character, unloaded);
+  const reconciled = reconcile(character, unloaded, { activeBooks: ALL_BOOKS });
   assert.deepEqual(reconciled.ruleChoices, character.ruleChoices, "every pick is kept");
   assert.deepEqual(reconciled.resourceCounters, character.resourceCounters, "every counter is kept");
   assert.deepEqual(reconciled.needsReview ?? [], character.needsReview ?? [], "no notice is raised");
@@ -144,7 +145,7 @@ test("reconciling against a catalog that holds other books but not the feat's bo
     backgrounds: grantedSpellBackgrounds(),
   });
 
-  const reconciled = reconcile(character, baselineOnly);
+  const reconciled = reconcile(character, baselineOnly, { activeBooks: ALL_BOOKS });
   assert.deepEqual(reconciled.ruleChoices, character.ruleChoices, "every pick is kept");
   assert.deepEqual(reconciled.resourceCounters, character.resourceCounters, "every counter is kept");
   assert.deepEqual(reconciled.needsReview ?? [], character.needsReview ?? [], "no notice is raised");
@@ -160,7 +161,7 @@ test("reconciling against a loaded catalog that no longer holds the feat still r
     backgrounds: grantedSpellBackgrounds(),
   });
 
-  const reconciled = reconcile(character, withoutFeat);
+  const reconciled = reconcile(character, withoutFeat, { activeBooks: ALL_BOOKS });
   assert.deepEqual(reconciled.ruleChoices ?? [], [], "the picks are released");
   assert.deepEqual(reconciled.resourceCounters ?? {}, {}, "the counter is released");
   assert.ok(reconciled.needsReview?.includes("Sample Ember removed from Sample Initiate: feat no longer held"));
@@ -175,7 +176,7 @@ test("migrating against an empty race catalog keeps a saved racial spell, with n
     knownSpells: [{ name: "Sample Ember", source: "TST", ownerKey: "racial__innate" }],
   });
 
-  const migrated = migrateCharacter(saved, [], grantedSpellClasses());
+  const migrated = migrateCharacter(saved, [], grantedSpellClasses(), ALL_BOOKS);
   assert.ok(
     migrated.knownSpells?.some((spell) => spell.name === "Sample Ember" && spell.ownerKey === "racial__innate"),
     "the saved racial spell is kept",
@@ -189,7 +190,7 @@ test("removing a feat notices each released spell, its list and its counter, eac
   assert.ok(pulse?.resourceCounterId);
   character = toggleInnateSpellUse(character, pulse);
 
-  const removed = removeOriginFeat(character, { featName: "Sample Initiate", featSource: "TST" }, compendium);
+  const removed = removeOriginFeat(character, { featName: "Sample Initiate", featSource: "TST" }, compendium, ALL_BOOKS);
   const expected = [
     "Sample Mage Spells removed from Sample Initiate: feat no longer held",
     "Sample Ember removed from Sample Initiate: feat no longer held",
@@ -202,8 +203,8 @@ test("removing a feat notices each released spell, its list and its counter, eac
 });
 
 test("a spell whose book is switched off is released with a notice that names the spell and the feat", () => {
-  let character = pickOption(makeChar({ classes: [mage(4)], originFeats: [takenFeat("Sample Initiate")] }), "Sample Cleric Spells", "Sample Initiate", ALL_BOOKS);
-  character = pickOption(character, "Sample Spark", "Sample Initiate", ALL_BOOKS);
+  let character = pickOption(makeChar({ classes: [mage(4)], originFeats: [takenFeat("Sample Initiate")] }), "Sample Cleric Spells", "Sample Initiate", TEST_BOOKS);
+  character = pickOption(character, "Sample Spark", "Sample Initiate", TEST_BOOKS);
 
   const reconciled = reconcileForActiveBooks(character, compendium, ACTIVE);
   assert.ok(!(reconciled.ruleChoices ?? []).some((entry) => entry.picked.includes("Sample Spark")), "the pick is released");
@@ -218,7 +219,7 @@ test("removing a feat notices its released casting ability by name, and the feat
   character = pickOption(character, "Sample Hall 1", "Sample Lorekeeper");
   character = pickOption(character, "int", "Sample Lorekeeper");
 
-  const removed = removeOriginFeat(character, { featName: "Sample Lorekeeper", featSource: "TST" }, compendium);
+  const removed = removeOriginFeat(character, { featName: "Sample Lorekeeper", featSource: "TST" }, compendium, ALL_BOOKS);
   assert.ok(
     removed.needsReview?.includes("Intelligence casting ability removed from Sample Lorekeeper: feat no longer held"),
     `got ${JSON.stringify(removed.needsReview)}`,
@@ -290,7 +291,7 @@ test("a background-claimed feat whose book the catalog lacks keeps its picks and
   });
   const character = backgroundClaimedPulseUsed();
 
-  const reconciled = reconcile(character, unloaded);
+  const reconciled = reconcile(character, unloaded, { activeBooks: ALL_BOOKS });
   assert.deepEqual(reconciled.ruleChoices, character.ruleChoices, "the pick is kept");
   assert.deepEqual(reconciled.resourceCounters, character.resourceCounters, "the counter is kept with its pick");
   assert.deepEqual(reconciled.needsReview ?? [], character.needsReview ?? [], "no notice is raised");
@@ -306,11 +307,11 @@ test("removing a background-claimed feat whose book the catalog lacks keeps its 
   });
   const character = backgroundClaimedPulseUsed();
 
-  const removed = removeOriginFeat(character, { featName: "Sample Initiate", featSource: BACKGROUND_FEAT_SOURCE }, unloaded);
+  const removed = removeOriginFeat(character, { featName: "Sample Initiate", featSource: BACKGROUND_FEAT_SOURCE }, unloaded, ALL_BOOKS);
   assert.deepEqual(removed.ruleChoices, character.ruleChoices, "the pick is kept while its book is absent");
   assert.deepEqual(removed.resourceCounters, character.resourceCounters, "the counter is kept with its pick");
 
-  const loaded = reconcile(removed, compendium);
+  const loaded = reconcile(removed, compendium, { activeBooks: ALL_BOOKS });
   assert.deepEqual(loaded.ruleChoices ?? [], [], "the pick is released once the book is loaded");
   assert.deepEqual(loaded.resourceCounters ?? {}, {}, "the counter is released with it");
   assert.ok(loaded.needsReview?.includes("Innate: Sample Pulse removed from Sample Initiate: feat no longer held"));

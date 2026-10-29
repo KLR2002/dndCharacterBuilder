@@ -1,3 +1,4 @@
+import { ALL_BOOKS } from "../src/constants/books.ts";
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { reconcile } from "../src/rules/characterReconciler.ts";
@@ -53,7 +54,7 @@ test("a catalog with no Pact Boon records leaves a saved Pact Boon pick untouche
       },
     ],
   });
-  const reconciled = reconcile(character, inMemoryCompendium({}));
+  const reconciled = reconcile(character, inMemoryCompendium({}), { activeBooks: ALL_BOOKS });
   assert.equal(getChosenPactBoon(reconciled), "Pact of the Blade");
   assert.deepEqual(reconciled.ruleChoices, character.ruleChoices);
 });

@@ -1,3 +1,4 @@
+import { ALL_BOOKS } from "../src/constants/books.ts";
 import test from "node:test";
 import assert from "node:assert/strict";
 import { makeChar, loadTestCatalogs, inMemoryCompendium } from "./testUtils.ts";
@@ -22,7 +23,7 @@ test("Ancestral Legacy: adopts Lineage over Sea Elf, retaining swim speed and Pe
   });
 
   // Evaluated speeds should have Dhampir's walk 35, climb 35 (Spider climb), and retain Sea Elf's swim 30
-  const evaluated = evaluateCharacter(char, { compendium: inMemoryCompendium(catalogs) });
+  const evaluated = evaluateCharacter(char, { compendium: inMemoryCompendium(catalogs), activeBooks: ALL_BOOKS });
   assert.equal(evaluated.speeds.walk, 35);
   assert.equal(evaluated.speeds.climb, 35);
   assert.equal(evaluated.speeds.swim, 30);
@@ -66,7 +67,7 @@ test("Ancestral Legacy: adopts Lineage over Human (no speeds/skills), grants 2-s
     ],
   };
 
-  const evalResult = evaluateCharacter(withPicks, { compendium: inMemoryCompendium(catalogs) });
+  const evalResult = evaluateCharacter(withPicks, { compendium: inMemoryCompendium(catalogs), activeBooks: ALL_BOOKS });
   const athletics = evalResult.skills.find(s => s.name === "Athletics");
   const stealth = evalResult.skills.find(s => s.name === "Stealth");
   assert.equal(athletics?.isProficient, true);

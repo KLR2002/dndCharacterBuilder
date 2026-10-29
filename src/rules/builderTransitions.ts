@@ -1,3 +1,4 @@
+import { ALL_BOOKS, type ActiveBooks } from "../constants/books.ts";
 import type {
   AbilityKey,
   AsiSelection,
@@ -221,7 +222,7 @@ export function applyAsiWithHitPoints(
   selection: AsiSelection,
   fullHealOnLevelUp: boolean,
   compendium: Compendium = currentCompendium(),
-  activeBooks?: string[]
+  activeBooks: ActiveBooks
 ): Character {
   const picked = applyAsiSelection(character, selection, compendium, activeBooks);
   if (!fullHealOnLevelUp) return picked;
@@ -272,7 +273,7 @@ export function settleAncestryChange(
   before: Character,
   after: Character,
   compendium: Compendium,
-  activeBooks?: string[]
+  activeBooks: ActiveBooks
 ): Character {
   const reconciled = reconcile(releaseSupersededRacePicks(before, after), compendium, { activeBooks });
   return releaseExpandedOnlySpells(before, reconciled, compendium, activeBooks);
@@ -285,7 +286,7 @@ export function settleAncestryChange(
 export function changeRace(
   character: Character,
   compendium: Compendium = currentCompendium(),
-  activeBooks?: string[]
+  activeBooks: ActiveBooks
 ): Character {
   // Leaving the race releases the origin feat it gave first, so the pick and counter it granted are not read back below.
   const leaving = releaseRaceOriginFeat(character, null, compendium, activeBooks);
@@ -316,7 +317,7 @@ export function changeLineage(
   character: Character,
   lineage: LineageChoice,
   compendium: Compendium = currentCompendium(),
-  activeBooks?: string[]
+  activeBooks: ActiveBooks
 ): Character {
   const leavesRace =
     lineage.kind === "custom"
@@ -345,7 +346,7 @@ export function changeSubclass(
   subclassSource: string,
   unlearnOrphaned: string[] = [],
   compendium: Compendium = currentCompendium(),
-  activeBooks?: string[]
+  activeBooks: ActiveBooks
 ): Character {
   const existing = character.classes.find((c) => c.className === className);
   const oldSubclass = existing?.subclassName || existing?.subclass;
@@ -380,7 +381,7 @@ export function changeSubclass(
 export function applySoleSubclasses(
   character: Character,
   compendium: Compendium = currentCompendium(),
-  activeBooks?: string[]
+  activeBooks: ActiveBooks
 ): Character {
   if (compendium.integrated) return character;
 
@@ -405,7 +406,7 @@ export function removeClassLevel(
   character: Character,
   className: string,
   compendium: Compendium = currentCompendium(),
-  activeBooks?: string[]
+  activeBooks: ActiveBooks
 ): Character {
   const existing = character.classes.find((c) => c.className === className);
   if (!existing) return character;
@@ -498,7 +499,7 @@ export interface StartingGrantOptions {
 
 /** The equipment a claim grants: the items the caller gives, or else the kit the picks resolve to. */
 function equipmentKitFor(character: Character, options?: StartingGrantOptions): StartingEquipmentKit {
-  const resolved = resolveStartingEquipment(character, options?.catalogs ?? {});
+  const resolved = resolveStartingEquipment(character, options?.catalogs ?? { activeBooks: ALL_BOOKS });
   return options?.equipmentItems ? { ...resolved, complete: true, items: options.equipmentItems } : resolved;
 }
 
@@ -627,7 +628,7 @@ export function setCustomBackground(
   skills: string[],
   details: CustomBackgroundDetails = {},
   compendium: Compendium = currentCompendium(),
-  activeBooks?: string[]
+  activeBooks: ActiveBooks
 ): Character {
   const legacyBackground = (character.skillChoices ?? []).filter((sc) => sc.origin === "background");
   const droppedSkills = new Set(legacyBackground.flatMap((sc) => sc.picked.map((s) => normalizeSkillName(s).toLowerCase())));
@@ -674,7 +675,7 @@ function storePicks(picks: Record<string, string[]>, id: string, values: string[
  * the Character Reconciler, which prunes the choices that depended on a removed feat. Records a
  * review notice for each background grant removed.
  */
-export function clearBackground(character: Character, catalogs: CharacterCatalogs = {}): Character {
+export function clearBackground(character: Character, catalogs: CharacterCatalogs): Character {
   const compendium = catalogs.compendium ?? currentCompendium();
   // Skill picks saved in the old bucket move into their choices while the background is still held.
   const current = moveLegacySkillPicks(character, compendium, catalogs.activeBooks);
@@ -741,7 +742,7 @@ export function setOptionalFeatureEnabled(
   featureName: string,
   enabled: boolean,
   compendium: Compendium,
-  options: { activeBooks?: string[] } = {},
+  options: { activeBooks: ActiveBooks },
 ): Character {
   const optionalFeatureReplacements = { ...(character.optionalFeatureReplacements ?? {}), [featureName]: enabled };
   return reconcile({ ...character, optionalFeatureReplacements }, compendium, options);

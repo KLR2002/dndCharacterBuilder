@@ -1,3 +1,4 @@
+import { ALL_BOOKS } from "../src/constants/books.ts";
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
@@ -37,7 +38,7 @@ const totemChar = (ruleChoices: RuleChoiceEntry[] = [], extra: Partial<Character
   });
 
 const tigerOffers = (character: Character, compendium = createCompendium(choiceCatalogBundle())) =>
-  proficiencyChoiceOffers(character, { compendium }).filter((offer) => offer.id === TIGER);
+  proficiencyChoiceOffers(character, { compendium, activeBooks: ALL_BOOKS }).filter((offer) => offer.id === TIGER);
 
 test("the Tiger skill choice is offered as Tiger only while the Aspect of the Beast pick is Tiger", () => {
   assert.deepEqual(tigerOffers(totemChar()), [], "no Aspect pick yet, so no Tiger choice");
@@ -72,14 +73,14 @@ test("the Tiger skill pick is listed on the sheet only with the Aspect of the Be
     proficiencyPicks: { [TIGER]: ["Athletics", "Stealth"] },
   });
   assert.deepEqual(
-    proficiencySheet(picked, { compendium }).skills.map((skill) => skill.name).filter((name) => name === "Stealth"),
+    proficiencySheet(picked, { compendium, activeBooks: ALL_BOOKS }).skills.map((skill) => skill.name).filter((name) => name === "Stealth"),
     ["Stealth"],
   );
   const switched = totemChar([aspectPick(["Bear"])], {
     proficiencyPicks: { [TIGER]: ["Athletics", "Stealth"] },
   });
   assert.deepEqual(
-    proficiencySheet(switched, { compendium }).skills.map((skill) => skill.name).filter((name) => name === "Stealth"),
+    proficiencySheet(switched, { compendium, activeBooks: ALL_BOOKS }).skills.map((skill) => skill.name).filter((name) => name === "Stealth"),
     [],
     "the Tiger pick does not reach the sheet while another animal is the pick",
   );
@@ -92,11 +93,11 @@ test("the Tiger skill pick is released with a notice when the Aspect of the Beas
   });
   const moved = reconcile(
     { ...tigerChar, ruleChoices: [aspectPick(["Bear"])] },
-    compendium,
+    compendium, { activeBooks: ALL_BOOKS },
   );
   assert.equal(moved.proficiencyPicks, undefined, "the pick is gone");
   assert.deepEqual(moved.needsReview, ["Athletics, Stealth removed from Tiger: no longer granted"]);
-  assert.deepEqual(reconcile(moved, compendium), moved, "reconciling again changes nothing");
+  assert.deepEqual(reconcile(moved, compendium, { activeBooks: ALL_BOOKS }), moved, "reconciling again changes nothing");
 });
 
 // An invented subclass whose feature is one option of an invented choice, the option's grant a standalone
@@ -172,7 +173,7 @@ const inventedPick = (picked: string[]) => aspectPick(picked, INVENTED_ROW, `${I
 test("an invented subclass's grant that requires another feature's pick is offered only with that pick", () => {
   const compendium = inventedCompendium();
   const offersOf = (character: Character) =>
-    proficiencyChoiceOffers(character, { compendium }).filter((offer) => offer.id === INVENTED_GRANT);
+    proficiencyChoiceOffers(character, { compendium, activeBooks: ALL_BOOKS }).filter((offer) => offer.id === INVENTED_GRANT);
 
   assert.deepEqual(offersOf(inventedChar([])), [], "no pick, no offer");
   assert.deepEqual(offersOf(inventedChar([inventedPick(["Some Other Option"])])), [], "another option, no offer");
@@ -187,7 +188,7 @@ test("an invented subclass's required pick is released with a notice when the pa
   const held = inventedChar([inventedPick([INVENTED_OPTION])], {
     proficiencyPicks: { [INVENTED_GRANT]: ["Arcana"] },
   });
-  const moved = reconcile({ ...held, ruleChoices: [inventedPick(["Some Other Option"])] }, compendium);
+  const moved = reconcile({ ...held, ruleChoices: [inventedPick(["Some Other Option"])] }, compendium, { activeBooks: ALL_BOOKS });
   assert.equal(moved.proficiencyPicks, undefined);
   assert.deepEqual(moved.needsReview, [`Arcana removed from ${INVENTED_OPTION}: no longer granted`]);
 });

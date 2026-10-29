@@ -1,3 +1,4 @@
+import { ALL_BOOKS } from "../src/constants/books.ts";
 import test from "node:test";
 import assert from "node:assert/strict";
 import { proficiencySheet, type SheetEntry } from "../src/rules/proficiencySheet.ts";
@@ -42,7 +43,7 @@ const catalogs = {
         ],
       }),
     ],
-  }),
+  }), activeBooks: ALL_BOOKS,
 };
 
 test("a race's fixed tools and languages appear on the sheet as rule-granted entries", () => {

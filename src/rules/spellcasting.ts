@@ -1,3 +1,4 @@
+import type { ActiveBooks } from "../constants/books.ts";
 import type { AbilityKey, AbilityScores, Character, CharacterClass, KnownSpell, RuleChoiceEntry } from "../types/character.ts";
 import type { ClassData, SpellData } from "../types/dnd5e.ts";
 import type { ResolvedAncestry } from "./types.ts";
@@ -161,7 +162,7 @@ export function calculateWarlockPactSlots(character: Character): { count: number
 export function getClassSpellProfiles(
   character: Character,
   opts: ResolvedAncestry & {
-    activeBooks?: string[];
+    activeBooks: ActiveBooks;
     biome?: string;
     affinity?: string;
     swaps?: Record<string, string>;
@@ -173,7 +174,7 @@ export function getClassSpellProfiles(
     compendium?: Compendium;
     /** The prepared spells the character's feats and race give, each with its gates. */
     grantedPrepared?: GrantedPreparedSpell[];
-  } = {}
+  }
 ): ClassSpellProfile[] {
   const classes = opts.classes ?? allCatalogClasses();
   const castingClasses = (character.classes || []).filter((c) => isCastingClass(c, classes));
@@ -367,7 +368,7 @@ export function profileSpellContext(profile: ClassSpellProfile): SpellAvailabili
 export function isSpellAvailableForClass(
   spell: SpellData,
   className: string,
-  activeBooks?: string[],
+  activeBooks: ActiveBooks,
   context?: SpellAvailabilityContext | string
 ): boolean {
   if (!spell || !className) return false;
@@ -457,7 +458,7 @@ export function isSpellAvailableForClass(
 export function getAvailableSpellsForClass(
   spells: SpellData[],
   className: string,
-  activeBooks?: string[],
+  activeBooks: ActiveBooks,
   context?: SpellAvailabilityContext | string
 ): SpellData[] {
   if (!Array.isArray(spells)) return [];

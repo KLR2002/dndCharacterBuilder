@@ -1,3 +1,4 @@
+import { ALL_BOOKS } from "../src/constants/books.ts";
 import test from "node:test";
 import assert from "node:assert/strict";
 import { makeChar, inMemoryCompendium } from "./testUtils.ts";
@@ -58,12 +59,12 @@ test("getAutoGrantedSkills collects trait-text and rule choice skills; a backgro
     ],
   });
 
-  const granted = getAutoGrantedSkills(char, { races });
+  const granted = getAutoGrantedSkills(char, { races, activeBooks: ALL_BOOKS });
   assert.ok(granted.includes("Perception"), "Must include race skill Perception named in trait text");
   assert.ok(granted.includes("Survival"), "Must include ancestral legacy pick Survival");
   assert.equal(granted.includes("Athletics"), false, "a background's skills are its grants, read by the sheet");
 
-  const sheet = proficiencySheet(char, { compendium: inMemoryCompendium({ races, backgrounds }) });
+  const sheet = proficiencySheet(char, { compendium: inMemoryCompendium({ races, backgrounds }), activeBooks: ALL_BOOKS });
   assert.deepEqual(sheet.skills.map((skill) => skill.name).sort(), ["Athletics", "Intimidation", "Perception", "Survival"]);
 });
 
@@ -96,7 +97,7 @@ test("the sheet resolves race and background from a catalog bundle", () => {
     race: { name: "Testfolk", source: "TEST" },
   });
 
-  const sheet = proficiencySheet(char, { compendium: inMemoryCompendium({ races: [testfolk], backgrounds: [scholar] }) });
+  const sheet = proficiencySheet(char, { compendium: inMemoryCompendium({ races: [testfolk], backgrounds: [scholar] }), activeBooks: ALL_BOOKS });
   assert.deepEqual(sheet.skills.map((skill) => skill.name).sort(), ["Arcana", "Nature", "Survival"]);
 });
 
@@ -173,7 +174,7 @@ test("Race skill choices do not consume class skill choices and lock already gra
     ],
   });
 
-  const allSheetSkills = skills(char, proficiencySheet(char, { compendium: inMemoryCompendium({ backgrounds: [soldierBackground()] }) }).skills);
+  const allSheetSkills = skills(char, proficiencySheet(char, { compendium: inMemoryCompendium({ backgrounds: [soldierBackground()] }), activeBooks: ALL_BOOKS }).skills);
   const proficient = allSheetSkills.filter((s) => s.isProficient).map((s) => s.name);
 
   // All 6 skills must be proficient

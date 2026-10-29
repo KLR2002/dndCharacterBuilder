@@ -1,3 +1,4 @@
+import type { ActiveBooks } from "../constants/books.ts";
 import type { Character } from "../types/character.ts";
 import type { RaceData } from "../types/dnd5e.ts";
 import type { ResolvedAncestry } from "./types.ts";
@@ -9,8 +10,8 @@ import { findHeldRace } from "./raceLookup.ts";
  */
 export function resolveCharacterAncestry(
   character: Character,
-  raceCatalog?: RaceData[],
-  activeBooks?: readonly string[],
+  raceCatalog: RaceData[] | undefined,
+  activeBooks: ActiveBooks,
 ): ResolvedAncestry {
   if (character.lineageReplacement && raceCatalog) {
     const lineage = findHeldRace(raceCatalog, { name: character.lineageReplacement }, activeBooks).race;

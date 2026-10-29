@@ -1,3 +1,4 @@
+import { ALL_BOOKS } from "../src/constants/books.ts";
 import test from "node:test";
 import assert from "node:assert/strict";
 import type { AvailableRuleChoice } from "../src/rules/choices/types.ts";
@@ -55,7 +56,7 @@ const fighterMonk = (monkLevel: number, extra: Partial<Character> = {}) =>
 /** Built once for every offer lookup: building a Compendium costs most of a lookup. */
 const kenseiCompendium = integratedTestCompendium();
 const kenseiOffers = (character: Character): AvailableRuleChoice[] =>
-  proficiencyChoiceOffers(character, { compendium: kenseiCompendium }).filter((offer) =>
+  proficiencyChoiceOffers(character, { compendium: kenseiCompendium, activeBooks: ALL_BOOKS }).filter((offer) =>
     offer.id.startsWith("XGE/Monk/Way of the Kensei/"),
   );
 
@@ -131,7 +132,7 @@ test("a Fighter 1 / Way of the Kensei Monk 3 is offered every kensei weapon, inc
   const compendium = integratedTestCompendium();
   // The precondition: the Fighter holds both weapon categories, so every pool candidate counts as held.
   assert.deepEqual(
-    names(proficiencySheet(character, { compendium }).weapons).sort(),
+    names(proficiencySheet(character, { compendium, activeBooks: ALL_BOOKS }).weapons).sort(),
     ["Martial weapons", "Simple weapons"],
   );
 
@@ -153,12 +154,12 @@ test("picking a held kensei weapon records it, keeps it a Monk Weapon, and adds 
   assert.ok(offer, "the melee kensei choice is offered");
   assert.ok(offer.options.some((option) => option.name === "Rapier"), "Rapier is on the list the player picks from");
 
-  const picked = pickRuleChoice(character, offer, "Rapier", compendium);
+  const picked = pickRuleChoice(character, offer, "Rapier", compendium, ALL_BOOKS);
   assert.deepEqual(picked.proficiencyPicks?.[MELEE_3], ["Rapier"], "the pick is recorded under the grant id");
-  assert.deepEqual(kenseiWeaponNames(picked, { compendium }), ["Rapier"], "the pick is a kensei weapon");
+  assert.deepEqual(kenseiWeaponNames(picked, { compendium, activeBooks: ALL_BOOKS }), ["Rapier"], "the pick is a kensei weapon");
 
   // The Fighter's Martial weapons already cover Rapier, so the sheet shows no row of its own for it.
-  const sheetNames = names(proficiencySheet(picked, { compendium }).weapons);
+  const sheetNames = names(proficiencySheet(picked, { compendium, activeBooks: ALL_BOOKS }).weapons);
   assert.equal(sheetNames.filter((name) => /rapier/i.test(name)).length, 0, "no Rapier row on the sheet");
   assert.equal(sheetNames.filter((name) => name === "Martial weapons").length, 1, "one Martial weapons row");
 
@@ -170,7 +171,7 @@ test("picking a held kensei weapon records it, keeps it a Monk Weapon, and adds 
     isEquipped: true,
     section: "equipped",
   };
-  const attacks = getWeaponAttacks({ ...picked, items: [equipped] }, { catalogs: { compendium } });
+  const attacks = getWeaponAttacks({ ...picked, items: [equipped] }, { catalogs: { compendium, activeBooks: ALL_BOOKS } });
   assert.equal(attacks.find((attack) => attack.name === "Rapier")?.isMonkWeapon, true, "a held kensei weapon is a Monk Weapon");
 });
 
@@ -201,7 +202,7 @@ test("a feat's weapon choice still hides the weapons the sheet already holds", (
       { level: 8, type: "feat", featName: "Club Drill", featSource: "PHB" },
     ],
   });
-  const offer = proficiencyChoiceOffers(character, { compendium }).find((o) => o.id === CLUB_CHOICE);
+  const offer = proficiencyChoiceOffers(character, { compendium, activeBooks: ALL_BOOKS }).find((o) => o.id === CLUB_CHOICE);
   assert.ok(offer, "the feat's weapon choice is offered");
   const options = offer.options.map((option) => option.name);
   assert.ok(options.includes("Club"), "an unheld simple melee weapon is offered");
@@ -212,12 +213,12 @@ test("a picked kensei weapon is proficient on the sheet, and a pick outside the 
   const compendium = integratedTestCompendium();
   const base = monk(3);
   const offer = kenseiOffers(base).find((o) => o.id === MELEE_3);
-  const picked = pickRuleChoice(base, offer!, "Rapier", compendium);
+  const picked = pickRuleChoice(base, offer!, "Rapier", compendium, ALL_BOOKS);
   // The sheet spells a weapon the way its weapon normalization does: Rapier is "Rapiers" there.
-  assert.ok(names(proficiencySheet(picked, { compendium }).weapons).includes("Rapiers"));
+  assert.ok(names(proficiencySheet(picked, { compendium, activeBooks: ALL_BOOKS }).weapons).includes("Rapiers"));
 
   const outside = monk(3, { proficiencyPicks: { [MELEE_3]: ["Glaive"] } });
-  assert.equal(names(proficiencySheet(outside, { compendium }).weapons).some((n) => /glaive/i.test(n)), false, "Glaive is heavy");
+  assert.equal(names(proficiencySheet(outside, { compendium, activeBooks: ALL_BOOKS }).weapons).some((n) => /glaive/i.test(n)), false, "Glaive is heavy");
 });
 
 test("a picked kensei weapon counts as a Monk Weapon, and an unpicked heavy weapon does not", () => {
@@ -234,7 +235,7 @@ test("a picked kensei weapon counts as a Monk Weapon, and an unpicked heavy weap
     proficiencyPicks: { [MELEE_3]: ["Rapier"], [RANGED_3]: ["Longbow"] },
     items: [equipped("Rapier"), equipped("Longbow"), equipped("Greataxe")],
   });
-  const attacks = getWeaponAttacks(character, { catalogs: { compendium } });
+  const attacks = getWeaponAttacks(character, { catalogs: { compendium, activeBooks: ALL_BOOKS } });
   const monkWeapon = (name: string) => attacks.find((attack) => attack.name === name)?.isMonkWeapon;
   assert.equal(monkWeapon("Rapier"), true, "a chosen melee kensei weapon is a Monk Weapon");
   assert.equal(monkWeapon("Longbow"), true, "a chosen ranged kensei weapon is a Monk Weapon");
@@ -248,7 +249,7 @@ test("changing the subclass releases a kensei weapon pick through reconcile() wi
     ...picked,
     classes: [{ ...picked.classes[0], subclassName: "Way of the Four Elements", subclassSource: "PHB" }],
   };
-  const out = reconcile(changed, compendium);
+  const out = reconcile(changed, compendium, { activeBooks: ALL_BOOKS });
   assert.equal(out.proficiencyPicks?.[MELEE_3], undefined);
   assert.ok(out.needsReview?.some((note) => note.includes("Rapier")), "the release is recorded in needsReview");
 });
@@ -257,7 +258,7 @@ test("leveling down below 6th level releases the 6th-level kensei weapon pick wi
   const compendium = integratedTestCompendium();
   const picked = monk(6, { proficiencyPicks: { [BLADE_6]: ["Longbow"], [MELEE_3]: ["Rapier"] } });
   const lowered: Character = { ...picked, classes: [{ ...picked.classes[0], level: 5 }] };
-  const out = reconcile(lowered, compendium);
+  const out = reconcile(lowered, compendium, { activeBooks: ALL_BOOKS });
   assert.equal(out.proficiencyPicks?.[BLADE_6], undefined, "the 6th-level pick no longer applies");
   assert.deepEqual(out.proficiencyPicks?.[MELEE_3], ["Rapier"], "the 3rd-level pick still applies");
   assert.ok(out.needsReview?.some((note) => note.includes("Longbow")), "the release is recorded in needsReview");
@@ -303,7 +304,7 @@ const inventedWeapon = (overrides: Partial<ItemData>): ItemData => ({
 
 /** The option names of one Kensei choice, over an invented item list in place of the Compendium's items. */
 const kenseiOptionsWith = (items: ItemData[], id: string): string[] => {
-  const offer = proficiencyChoiceOffers(monk(3), { compendium: integratedTestCompendiumWithItems(items) }).find((o) => o.id === id);
+  const offer = proficiencyChoiceOffers(monk(3), { compendium: integratedTestCompendiumWithItems(items), activeBooks: ALL_BOOKS }).find((o) => o.id === id);
   assert.ok(offer, `${id} is offered`);
   return offer.options.map((option) => option.name);
 };

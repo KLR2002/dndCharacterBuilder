@@ -1,3 +1,4 @@
+import type { ActiveBooks } from "../../constants/books.ts";
 import type { CharacterClass, Character, KnownSpell, RuleChoiceEntry } from "../../types/character.ts";
 import type { ClassData } from "../../types/dnd5e.ts";
 import { SRD_SOURCE } from "../../constants/books.ts";
@@ -129,7 +130,7 @@ export function hasFightingStyle(character: Character, styleName: string): boole
  */
 export function fightingStyleRuleChoices(
   character: Character,
-  activeBooks?: string[],
+  activeBooks: ActiveBooks,
   compendium: Compendium = currentCompendium()
 ): AvailableRuleChoice[] {
   const out: Omit<AvailableRuleChoice, "origin" | "pick">[] = [];

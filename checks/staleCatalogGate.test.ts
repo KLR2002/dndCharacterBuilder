@@ -1,3 +1,4 @@
+import { ALL_BOOKS } from "../src/constants/books.ts";
 import test from "node:test";
 import assert from "node:assert/strict";
 import { makeChar, srdBaselineCompendium } from "./testUtils.ts";
@@ -92,7 +93,7 @@ test("a stale catalog hides the Totem rows even though it holds their option rec
   const char = makeChar({ ...totemChar(), ruleChoices: [savedTotemPick()] });
 
   assert.deepEqual(totemIds(char, stale), []);
-  assert.deepEqual(reconcile(char, stale).ruleChoices, char.ruleChoices, "the saved Totem pick is untouched");
+  assert.deepEqual(reconcile(char, stale, { activeBooks: ALL_BOOKS }).ruleChoices, char.ruleChoices, "the saved Totem pick is untouched");
 });
 
 test("a stale catalog hides the Infusions Known choice even though old infusion records exist, and prunes nothing", () => {
@@ -104,7 +105,7 @@ test("a stale catalog hides the Infusions Known choice even though old infusion 
 
   assert.deepEqual(infusionIds(char, stale), []);
 
-  const reconciled = reconcile(char, stale);
+  const reconciled = reconcile(char, stale, { activeBooks: ALL_BOOKS });
   assert.deepEqual(reconciled.ruleChoices, char.ruleChoices, "every saved infusion pick is kept, unrenamed");
   assert.deepEqual(reconciled.activeInfusions, char.activeInfusions);
   assert.equal(reconciled.needsReview, undefined, "nothing is pruned, so nothing is flagged for review");
@@ -117,9 +118,9 @@ test("a current catalog offers the Totem rows and the Infusions Known choice, an
   assert.ok(infusionIds(artificerChar(), current).includes(INFUSIONS_6));
 
   const withTotemPick = makeChar({ ...totemChar(), ruleChoices: [savedTotemPick()] });
-  assert.deepEqual(reconcile(withTotemPick, current).ruleChoices, withTotemPick.ruleChoices, "a saved Totem pick is kept");
+  assert.deepEqual(reconcile(withTotemPick, current, { activeBooks: ALL_BOOKS }).ruleChoices, withTotemPick.ruleChoices, "a saved Totem pick is kept");
 
-  const reconciled = reconcile(artificerChar([savedInfusionPicks()]), current);
+  const reconciled = reconcile(artificerChar([savedInfusionPicks()]), current, { activeBooks: ALL_BOOKS });
   const picked = reconciled.ruleChoices?.find((rc) => rc.id === INFUSIONS_2)?.picked;
   assert.deepEqual(picked, ["Placeholder Alpha", "Replicate Magic Item: Placeholder Jug"], "a current catalog prunes what it no longer offers and keeps the rest exactly as saved");
 });
@@ -129,8 +130,8 @@ test("a stale catalog still offers the spell-choice rows exactly as a current ca
   const sorcerer = makeChar({ classes: [{ className: "Sorcerer", source: "XGE", level: 1, subclassName: "Divine Soul" }] });
 
   for (const [char, id] of [[druid, BIOME_ID], [sorcerer, AFFINITY_ID]] as const) {
-    const current = offeredRuleChoices(char, { compendium: currentCatalog() }).find((c) => c.id === id);
-    const stale = offeredRuleChoices(char, { compendium: staleCatalog() }).find((c) => c.id === id);
+    const current = offeredRuleChoices(char, { compendium: currentCatalog(), activeBooks: ALL_BOOKS }).find((c) => c.id === id);
+    const stale = offeredRuleChoices(char, { compendium: staleCatalog(), activeBooks: ALL_BOOKS }).find((c) => c.id === id);
     assert.ok(current, `${id} is offered on a current catalog`);
     assert.deepEqual(stale, current, `${id} is offered the same on a stale catalog`);
   }
@@ -143,5 +144,5 @@ test("the SRD Baseline is never stale: it offers neither the Totem rows nor the 
   assert.deepEqual(infusionIds(artificerChar(), srd), []);
 
   const char = artificerChar([savedInfusionPicks()]);
-  assert.deepEqual(reconcile(char, srd).ruleChoices, char.ruleChoices);
+  assert.deepEqual(reconcile(char, srd, { activeBooks: ALL_BOOKS }).ruleChoices, char.ruleChoices);
 });

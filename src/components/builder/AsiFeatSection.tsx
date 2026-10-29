@@ -1,3 +1,4 @@
+import type { ActiveBooks } from "../../constants/books";
 import React, { useState } from "react";
 import { ScrollView, Text, TouchableOpacity, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
@@ -6,6 +7,7 @@ import { FeatData } from "../../types/dnd5e";
 import { getFeatAbilityBonusOptions, removeAsiSelection } from "../../rules/leveling";
 import { applyAsiWithHitPoints } from "../../rules/builderTransitions";
 import { validateFeatPrerequisites } from "../../rules/feats";
+import { findHeldRecord } from "../../rules/raceLookup";
 import {
   battleMasterManeuverChoices,
   ELDRITCH_ADEPT_CHOICE_ID,
@@ -37,7 +39,7 @@ export interface AsiFeatSectionProps {
   primaryClass?: string;
   onViewDetail: (item: { title: string; subtitle?: string; source?: string; description?: string; tags?: string[] }) => void;
   theme: any;
-  activeBooks?: string[];
+  activeBooks: ActiveBooks;
   fullHealOnLevelUp: boolean;
 }
 
@@ -110,14 +112,14 @@ export const AsiFeatSection: React.FC<AsiFeatSectionProps> = ({
           asi: featAbility ? { [featAbility]: 1 } : undefined,
         }, fullHealOnLevelUp, currentCompendium(), activeBooks);
         if (asiSelectedFeat.name.toLowerCase() === "fighting initiate" && asiSelectedFightingStyle) {
-          const fsChoices = fightingStyleRuleChoices(updated);
+          const fsChoices = fightingStyleRuleChoices(updated, activeBooks);
           const fiChoice = fsChoices.find((c) => c.id === FIGHTING_INITIATE_CHOICE_ID);
           if (fiChoice) {
             updated = pickRuleChoice(updated, fiChoice, asiSelectedFightingStyle, currentCompendium(), activeBooks);
           }
         }
         if (asiSelectedFeat.name.toLowerCase() === "martial adept" && asiSelectedManeuvers.length > 0) {
-          const mChoices = battleMasterManeuverChoices(updated);
+          const mChoices = battleMasterManeuverChoices(updated, activeBooks);
           const maChoice = mChoices.find((c) => c.id === MARTIAL_ADEPT_CHOICE_ID);
           if (maChoice) {
             for (const m of asiSelectedManeuvers) {
@@ -509,7 +511,7 @@ export const AsiFeatSection: React.FC<AsiFeatSectionProps> = ({
                           { type: "feat", featName: "Fighting Initiate", level: 1 },
                         ],
                       };
-                      const fsChoice = fightingStyleRuleChoices(tempChar).find((c) => c.id === FIGHTING_INITIATE_CHOICE_ID);
+                      const fsChoice = fightingStyleRuleChoices(tempChar, activeBooks).find((c) => c.id === FIGHTING_INITIATE_CHOICE_ID);
                       const options = fsChoice?.options ?? [];
                       return (
                         <View
@@ -574,7 +576,7 @@ export const AsiFeatSection: React.FC<AsiFeatSectionProps> = ({
                           { type: "feat", featName: "Martial Adept", level: 1 },
                         ],
                       };
-                      const maChoice = battleMasterManeuverChoices(tempChar).find((c) => c.id === MARTIAL_ADEPT_CHOICE_ID);
+                      const maChoice = battleMasterManeuverChoices(tempChar, activeBooks).find((c) => c.id === MARTIAL_ADEPT_CHOICE_ID);
                       const options = maChoice?.options ?? [];
                       return (
                         <View
@@ -772,7 +774,7 @@ export const AsiFeatSection: React.FC<AsiFeatSectionProps> = ({
                         variant="ghost"
                         size="sm"
                         onPress={() => {
-                          const f = allFeats.find((feat) => feat.name.toLowerCase() === sel.featName?.toLowerCase());
+                          const f = findHeldRecord(allFeats, sel.featName ? { name: sel.featName, source: sel.featSource } : undefined, activeBooks);
                           if (f) {
                             onViewDetail({ title: f.name, source: f.source, description: f.description });
                           }
@@ -800,7 +802,7 @@ export const AsiFeatSection: React.FC<AsiFeatSectionProps> = ({
                 </View>
 
                 {sel.featName?.toLowerCase() === "fighting initiate" && (() => {
-                  const fsChoice = fightingStyleRuleChoices(character).find((c) => c.id === FIGHTING_INITIATE_CHOICE_ID);
+                  const fsChoice = fightingStyleRuleChoices(character, activeBooks).find((c) => c.id === FIGHTING_INITIATE_CHOICE_ID);
                   const currentPick = character.ruleChoices?.find((rc) => rc.id === FIGHTING_INITIATE_CHOICE_ID)?.picked?.[0];
                   if (!fsChoice) return null;
                   return (
@@ -862,7 +864,7 @@ export const AsiFeatSection: React.FC<AsiFeatSectionProps> = ({
                 )}
 
                 {sel.featName?.toLowerCase() === "martial adept" && (() => {
-                  const maChoice = battleMasterManeuverChoices(character).find((c) => c.id === MARTIAL_ADEPT_CHOICE_ID);
+                  const maChoice = battleMasterManeuverChoices(character, activeBooks).find((c) => c.id === MARTIAL_ADEPT_CHOICE_ID);
                   const currentPicks = character.ruleChoices?.find((rc) => rc.id === MARTIAL_ADEPT_CHOICE_ID)?.picked || [];
                   if (!maChoice) return null;
                   return (

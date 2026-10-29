@@ -1,3 +1,4 @@
+import type { ActiveBooks } from "../constants/books.ts";
 import type { RaceData, SubraceData } from "../types/dnd5e.ts";
 
 /** A race and subrace as a character holds them: the names and the books they were saved from. */
@@ -23,7 +24,7 @@ export interface ResolvedRace {
 export function findHeldRace(
   races: readonly RaceData[],
   held: HeldRace | null | undefined,
-  activeBooks?: readonly string[],
+  activeBooks: ActiveBooks,
 ): ResolvedRace {
   if (!held) return { race: undefined, subrace: undefined };
   const subraceName = held.subraceName ?? "";
@@ -51,7 +52,7 @@ export function heldRaceListed(held: { name: string; source: string } | null | u
 export function findHeldRecord<T extends { name: string; source: string }>(
   records: readonly T[],
   held: { name: string; source?: string } | null | undefined,
-  activeBooks?: readonly string[],
+  activeBooks: ActiveBooks,
 ): T | undefined {
   if (!held) return undefined;
   return pickRecord(records, held.name, held.source, activeBooks);

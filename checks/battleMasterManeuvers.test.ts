@@ -1,6 +1,7 @@
+import { ALL_BOOKS } from "../src/constants/books.ts";
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { reconcile } from "../src/rules/characterReconciler.ts";
+import { reconcile , teardownSubclass } from "../src/rules/characterReconciler.ts";
 import { currentCompendium } from "../src/services/compendium.ts";
 import { makeChar } from "./testUtils.ts";
 import {
@@ -20,7 +21,6 @@ import {
   calculateAutoResourceCounters,
   getMergedResourceCounters,
 } from "../src/rules/resourceCounters.ts";
-import { teardownSubclass } from "../src/rules/characterReconciler.ts";
 
 test("Battle Master level 3 offers 3 maneuvers and 4d8 superiority dice", () => {
   const bm3 = makeChar({
@@ -40,7 +40,7 @@ test("Battle Master level 3 offers 3 maneuvers and 4d8 superiority dice", () => 
   const classDice = getClassDice(bm3);
   assert.deepEqual(classDice.superiorityDice, { battleMaster: { count: 4, die: "d8" }, bonus: null });
 
-  const choices = battleMasterManeuverChoices(bm3);
+  const choices = battleMasterManeuverChoices(bm3, ALL_BOOKS);
   assert.equal(choices.length, 1);
   assert.equal(choices[0].id, "PHB__Fighter__Battle Master__Maneuvers 3");
   assert.equal(choices[0].traitName, "Combat Superiority (3rd Level)");
@@ -49,7 +49,7 @@ test("Battle Master level 3 offers 3 maneuvers and 4d8 superiority dice", () => 
   assert.ok(choices[0].options.length > 0);
 
   // Wired into subclassRuleChoices
-  const subChoices = subclassRuleChoices(bm3);
+  const subChoices = subclassRuleChoices(bm3, ALL_BOOKS);
   assert.ok(subChoices.some((c) => c.id === "PHB__Fighter__Battle Master__Maneuvers 3"));
 });
 
@@ -68,7 +68,7 @@ test("Battle Master level 7 offers +2 maneuvers and 5d8 superiority dice", () =>
   const dice = getSuperiorityDice(bm7);
   assert.deepEqual(dice, { battleMaster: { count: 5, die: "d8" }, bonus: null });
 
-  const choices = battleMasterManeuverChoices(bm7);
+  const choices = battleMasterManeuverChoices(bm7, ALL_BOOKS);
   assert.equal(choices.length, 2);
   assert.equal(choices[0].id, "PHB__Fighter__Battle Master__Maneuvers 3");
   assert.equal(choices[0].choose, 3);
@@ -94,7 +94,7 @@ test("Battle Master level 10 scales dice to d10 and offers +2 maneuvers", () => 
   const dice = getSuperiorityDice(bm10);
   assert.deepEqual(dice, { battleMaster: { count: 5, die: "d10" }, bonus: null });
 
-  const choices = battleMasterManeuverChoices(bm10);
+  const choices = battleMasterManeuverChoices(bm10, ALL_BOOKS);
   assert.equal(choices.length, 3);
   assert.equal(choices[2].id, "PHB__Fighter__Battle Master__Maneuvers 10");
   assert.equal(choices[2].traitName, "Additional Maneuvers (10th Level)");
@@ -117,7 +117,7 @@ test("Battle Master level 15 offers 6d10 dice and +2 maneuvers", () => {
   const dice = getSuperiorityDice(bm15);
   assert.deepEqual(dice, { battleMaster: { count: 6, die: "d10" }, bonus: null });
 
-  const choices = battleMasterManeuverChoices(bm15);
+  const choices = battleMasterManeuverChoices(bm15, ALL_BOOKS);
   assert.equal(choices.length, 4);
   assert.equal(choices[3].id, "PHB__Fighter__Battle Master__Maneuvers 15");
   assert.equal(choices[3].traitName, "Additional Maneuvers (15th Level)");
@@ -153,19 +153,19 @@ test("Deduplication: maneuver chosen at 3 is not offered at 7", () => {
     ],
   });
 
-  const choices = battleMasterManeuverChoices(char);
+  const choices = battleMasterManeuverChoices(char, ALL_BOOKS);
   const choice3 = choices.find((c) => c.id === "PHB__Fighter__Battle Master__Maneuvers 3")!;
 
   // Pick 3 maneuvers at level 3
-  char = pickRuleChoice(char, choice3, "Trip Attack");
-  char = pickRuleChoice(char, choice3, "Riposte");
-  char = pickRuleChoice(char, choice3, "Disarming Attack");
+  char = pickRuleChoice(char, choice3, "Trip Attack", undefined, ALL_BOOKS);
+  char = pickRuleChoice(char, choice3, "Riposte", undefined, ALL_BOOKS);
+  char = pickRuleChoice(char, choice3, "Disarming Attack", undefined, ALL_BOOKS);
 
   const chosen = getChosenManeuvers(char);
   assert.deepEqual(chosen.sort(), ["Disarming Attack", "Riposte", "Trip Attack"].sort());
 
   // Check choices at level 7: none of the 3 picked should be offered in choice 7
-  const updatedChoices = battleMasterManeuverChoices(char);
+  const updatedChoices = battleMasterManeuverChoices(char, ALL_BOOKS);
   const choice7 = updatedChoices.find((c) => c.id === "PHB__Fighter__Battle Master__Maneuvers 7")!;
   const choice7OptionNames = choice7.options.map((o) => o.name);
 
@@ -201,7 +201,7 @@ test("Superior Technique is a separate d6 pool and offers 1 maneuver", () => {
   const paladinDice = getSuperiorityDice(paladinWithStyle);
   assert.deepEqual(paladinDice, { battleMaster: null, bonus: { count: 1, die: "d6" } });
 
-  const paladinChoices = battleMasterManeuverChoices(paladinWithStyle);
+  const paladinChoices = battleMasterManeuverChoices(paladinWithStyle, ALL_BOOKS);
   assert.equal(paladinChoices.length, 1);
   assert.equal(paladinChoices[0].id, "TCE__Fighter__Superior Technique__Maneuver");
   assert.equal(paladinChoices[0].choose, 1);
@@ -275,7 +275,7 @@ test("Martial Adept is a separate d6 pool and offers 2 maneuvers", () => {
   const rogueDice = getSuperiorityDice(rogueWithFeat);
   assert.deepEqual(rogueDice, { battleMaster: null, bonus: { count: 1, die: "d6" } });
 
-  const rogueChoices = battleMasterManeuverChoices(rogueWithFeat);
+  const rogueChoices = battleMasterManeuverChoices(rogueWithFeat, ALL_BOOKS);
   assert.equal(rogueChoices.length, 1);
   assert.equal(rogueChoices[0].id, "PHB__Feat__Martial Adept__Maneuvers");
   assert.equal(rogueChoices[0].choose, 2);
@@ -537,19 +537,19 @@ test("Negative boundaries: Level gating and non-Battle Master classes", () => {
   // Fighter level 2 (before subclass milestone)
   const f2 = makeChar({ classes: [{ className: "Fighter", level: 2, hitDiceType: "d10" }] });
   assert.equal(getSuperiorityDice(f2), null);
-  assert.equal(battleMasterManeuverChoices(f2).length, 0);
+  assert.equal(battleMasterManeuverChoices(f2, ALL_BOOKS).length, 0);
 
   // Fighter level 3 Champion (different subclass)
   const champ3 = makeChar({
     classes: [{ className: "Fighter", level: 3, hitDiceType: "d10", subclassName: "Champion" }],
   });
   assert.equal(getSuperiorityDice(champ3), null);
-  assert.equal(battleMasterManeuverChoices(champ3).length, 0);
+  assert.equal(battleMasterManeuverChoices(champ3, ALL_BOOKS).length, 0);
 
   // Wizard level 5 with no feats or styles
   const wiz = makeChar({ classes: [{ className: "Wizard", level: 5, hitDiceType: "d6" }] });
   assert.equal(getSuperiorityDice(wiz), null);
-  assert.equal(battleMasterManeuverChoices(wiz).length, 0);
+  assert.equal(battleMasterManeuverChoices(wiz, ALL_BOOKS).length, 0);
 });
 
 test("reconcile: trims choices and picks upon de-leveling or subclass change", () => {
@@ -580,7 +580,7 @@ test("reconcile: trims choices and picks upon de-leveling or subclass change", (
   const deLeveled = reconcile({
     ...bm7,
     classes: [{ className: "Fighter", level: 6, hitDiceType: "d10", subclassName: "Battle Master" }],
-  }, currentCompendium());
+  }, currentCompendium(), { activeBooks: ALL_BOOKS });
 
   assert.equal(deLeveled.ruleChoices?.length, 1);
   assert.equal(deLeveled.ruleChoices?.[0].id, "PHB__Fighter__Battle Master__Maneuvers 3");
@@ -590,11 +590,11 @@ test("reconcile: trims choices and picks upon de-leveling or subclass change", (
   const lvl2 = reconcile({
     ...bm7,
     classes: [{ className: "Fighter", level: 2, hitDiceType: "d10" }],
-  }, currentCompendium());
+  }, currentCompendium(), { activeBooks: ALL_BOOKS });
   assert.equal(lvl2.ruleChoices?.length, 0);
 
   // Subclass teardown: changing Battle Master to Champion
-  const toreDown = teardownSubclass(bm7, "Fighter", "Battle Master");
+  const toreDown = teardownSubclass(bm7, "Fighter", "Battle Master", undefined, ALL_BOOKS);
   assert.equal(
     toreDown.ruleChoices?.filter((rc) => isManeuverChoiceId(rc.id)).length,
     0,
@@ -626,7 +626,7 @@ test("removeAsiSelection clears Martial Adept rule choices when feat is removed"
     ],
   });
 
-  const updated = removeAsiSelection(charWithFeat, "Fighter", 4);
+  const updated = removeAsiSelection(charWithFeat, "Fighter", 4, undefined, ALL_BOOKS);
   assert.equal(updated.asiSelections?.length, 0);
   assert.equal(
     updated.ruleChoices?.filter((rc) => rc.id.includes("Martial Adept")).length,

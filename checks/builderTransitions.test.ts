@@ -1,10 +1,9 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { teardownSubclass } from "../src/rules/characterReconciler.ts";
-import { reconcile } from "../src/rules/characterReconciler.ts";
+import { teardownSubclass , reconcile } from "../src/rules/characterReconciler.ts";
 import { currentCompendium } from "../src/services/compendium.ts";
 import { makeChar, inMemoryCompendium, integratedTestCompendium } from "./testUtils.ts";
-import { DEFAULT_ACTIVE_BOOK_CODES } from "../src/constants/books.ts";
+import { DEFAULT_ACTIVE_BOOK_CODES, ALL_BOOKS } from "../src/constants/books.ts";
 import { CUSTOM_BACKGROUND_SKILLS_ID } from "../src/rules/customBackground.ts";
 import { effectiveScores } from "../src/rules/abilities.ts";
 import {
@@ -256,7 +255,7 @@ test("applyAsiWithHitPoints: a Constitution raise at full HP lifts current HP to
     fighter,
     { className: "Fighter", classLevel: 4, level: 4, type: "asi", asi: { con: 2 } },
     true,
-    inMemoryCompendium()
+    inMemoryCompendium(), ALL_BOOKS
   );
   assert.equal(effectiveScores(picked).modifiers.con, 3);
   assert.equal(picked.currentHp, 40);
@@ -272,7 +271,7 @@ test("applyAsiWithHitPoints: a Tough feat at full HP lifts current HP by 2 per l
     fighter,
     { className: "Fighter", classLevel: 4, level: 4, type: "feat", featName: "Tough", featSource: "PHB" },
     true,
-    inMemoryCompendium()
+    inMemoryCompendium(), ALL_BOOKS
   );
   assert.equal(picked.currentHp, 44);
 });
@@ -283,7 +282,7 @@ test("applyAsiWithHitPoints: below full HP, a raised max leaves current HP where
     fighter,
     { className: "Fighter", classLevel: 4, level: 4, type: "asi", asi: { con: 2 } },
     true,
-    inMemoryCompendium()
+    inMemoryCompendium(), ALL_BOOKS
   );
   assert.equal(picked.currentHp, 20);
 });
@@ -294,7 +293,7 @@ test("applyAsiWithHitPoints: with full heal off, a raised max leaves current HP 
     fighter,
     { className: "Fighter", classLevel: 4, level: 4, type: "asi", asi: { con: 2 } },
     false,
-    inMemoryCompendium()
+    inMemoryCompendium(), ALL_BOOKS
   );
   assert.equal(effectiveScores(picked).modifiers.con, 3);
   assert.equal(picked.currentHp, 36);
@@ -381,7 +380,7 @@ test("setCustomBackground sets background to Custom and records its skill picks 
     chosenSkills: ["Athletics"],
   });
 
-  const custom = setCustomBackground(initial, "Gladiator", ["Acrobatics", "Performance"]);
+  const custom = setCustomBackground(initial, "Gladiator", ["Acrobatics", "Performance"], undefined, undefined, ALL_BOOKS);
   assert.deepEqual(custom.background, {
     name: "Gladiator",
     source: "Custom",
@@ -390,7 +389,7 @@ test("setCustomBackground sets background to Custom and records its skill picks 
   assert.deepEqual(custom.chosenSkills, ["Athletics"], "the old skill bucket is not written; other skills stay");
 
   // Replacing the custom background replaces its picks.
-  const changed = setCustomBackground(custom, "Sage", ["Arcana", "History"]);
+  const changed = setCustomBackground(custom, "Sage", ["Arcana", "History"], undefined, undefined, ALL_BOOKS);
   assert.equal(changed.background?.name, "Sage");
   assert.deepEqual(changed.proficiencyPicks?.[CUSTOM_BACKGROUND_SKILLS_ID], ["Arcana", "History"]);
   assert.deepEqual(changed.chosenSkills, ["Athletics"]);
@@ -618,7 +617,7 @@ test("teardownSubclass cleans up ruleChoices, swaps, and counters", () => {
   });
 
   // Teardown Circle of the Land
-  const tornDown = teardownSubclass(initial, "Druid", "Circle of the Land");
+  const tornDown = teardownSubclass(initial, "Druid", "Circle of the Land", undefined, ALL_BOOKS);
   assert.equal(tornDown.ruleChoices?.length, 1);
   assert.equal(tornDown.ruleChoices[0].id, "MPMM__Aasimar__null__Celestial Revelation");
   // Druid does not wipe sorcerer swaps
@@ -630,7 +629,7 @@ test("teardownSubclass cleans up ruleChoices, swaps, and counters", () => {
     classes: [{ className: "Sorcerer", source: "TCE", level: 3, subclassName: "Clockwork Soul" }],
     subclassSpellSwaps: { Alarm: "Shield" },
   });
-  const tornDownSorc = teardownSubclass(sorcInitial, "Sorcerer", "Clockwork Soul");
+  const tornDownSorc = teardownSubclass(sorcInitial, "Sorcerer", "Clockwork Soul", undefined, ALL_BOOKS);
   assert.equal(tornDownSorc.subclassSpellSwaps, undefined);
 
   // Teardown Wizard with Bladesong counter
@@ -641,10 +640,10 @@ test("teardownSubclass cleans up ruleChoices, swaps, and counters", () => {
       arcane_recovery: { id: "arcane_recovery", name: "Arcane Recovery", current: 1, max: 1, resetOn: "long" },
     },
   });
-  const tornDownWiz = teardownSubclass(wizInitial, "Wizard", "Bladesinging");
+  const tornDownWiz = teardownSubclass(wizInitial, "Wizard", "Bladesinging", undefined, ALL_BOOKS);
   assert.equal(tornDownWiz.resourceCounters.bladesong, undefined);
   // Teardown without new subclass (e.g. on deleveling below requirement)
-  const delevelDruid = teardownSubclass(initial, "Druid", "Circle of the Land");
+  const delevelDruid = teardownSubclass(initial, "Druid", "Circle of the Land", undefined, ALL_BOOKS);
   assert.equal(delevelDruid.ruleChoices?.length, 1);
   assert.equal(delevelDruid.ruleChoices[0].id, "MPMM__Aasimar__null__Celestial Revelation");
 });
@@ -665,7 +664,7 @@ test("teardownSubclass keeps a class-owned Fighting Style even when previousSubc
   });
 
   // The Fighting Style is owned by the Fighter class, not by a subclass, so subclass teardown keeps it.
-  const tornDown = teardownSubclass(initial, "Fighter", "");
+  const tornDown = teardownSubclass(initial, "Fighter", "", undefined, ALL_BOOKS);
   assert.deepEqual(tornDown.ruleChoices?.map((rc) => rc.id), ["PHB__Fighter__Fighting Style"]);
 });
 
@@ -694,7 +693,7 @@ test("reconcile cleanses orphaned fighting styles, maneuvers, invocations, infus
   });
 
   // 1. Idempotency check: running reconcile on valid character changes nothing
-  const unchanged = reconcile(initial, currentCompendium());
+  const unchanged = reconcile(initial, currentCompendium(), { activeBooks: ALL_BOOKS });
   assert.equal(unchanged.ruleChoices?.length, 7);
   assert.equal(unchanged.knownSpells?.length, 3);
 
@@ -706,7 +705,7 @@ test("reconcile cleanses orphaned fighting styles, maneuvers, invocations, infus
     ],
   };
 
-  const reconciled = reconcile(delevelled, currentCompendium());
+  const reconciled = reconcile(delevelled, currentCompendium(), { activeBooks: ALL_BOOKS });
 
   // Fighter styles and Battle Master maneuvers must be removed
   assert.ok(!reconciled.ruleChoices?.some((rc) => rc.id.includes("Fighter")));
@@ -770,7 +769,7 @@ test("clearing a background removes the feat it granted and the choices that dep
     ruleChoices: [fighterStyle, initiateStyle],
   });
 
-  const updated = clearBackground(char, { compendium: soldierCompendium });
+  const updated = clearBackground(char, { compendium: soldierCompendium, activeBooks: ALL_BOOKS });
 
   assert.equal(updated.background, null);
   assert.deepEqual(updated.originFeats, [
@@ -799,7 +798,7 @@ test("clearing a background removes its skill, language and tool grants and keep
     chosenTools: { background: ["Gaming set"] },
   });
 
-  const updated = clearBackground(char, { compendium: soldierCompendium });
+  const updated = clearBackground(char, { compendium: soldierCompendium, activeBooks: ALL_BOOKS });
 
   assert.equal(updated.background, null);
   assert.deepEqual(updated.chosenSkills, ["Athletics"]);
@@ -929,10 +928,10 @@ test("clearing a custom background removes the skills it chose and keeps class s
   const custom = setCustomBackground(
     makeChar({ chosenSkills: ["Athletics"], skillChoices: [classSkills] }),
     "Sage",
-    ["Arcana", "History"]
+    ["Arcana", "History"], undefined, undefined, ALL_BOOKS
   );
 
-  const updated = clearBackground(custom, { compendium: inMemoryCompendium({}) });
+  const updated = clearBackground(custom, { compendium: inMemoryCompendium({}), activeBooks: ALL_BOOKS });
 
   assert.equal(updated.background, null);
   assert.deepEqual(updated.chosenSkills, ["Athletics"]);
@@ -950,7 +949,7 @@ test("clearing a background with no recorded grants keeps unrelated choices and 
     ruleChoices: [fighterStyle],
   });
 
-  const updated = clearBackground(char, { compendium: inMemoryCompendium({}) });
+  const updated = clearBackground(char, { compendium: inMemoryCompendium({}), activeBooks: ALL_BOOKS });
 
   assert.equal(updated.background, null);
   assert.deepEqual(updated.chosenSkills, ["Athletics"]);
@@ -975,7 +974,7 @@ test("changeRace clears race-origin rule choices and skill picks but keeps class
     ],
   });
 
-  const changed = changeRace(initial, inMemoryCompendium());
+  const changed = changeRace(initial, inMemoryCompendium(), ALL_BOOKS);
 
   assert.equal(changed.race, null);
   assert.deepEqual(changed.racialAbilityBonuses, {});
@@ -1005,7 +1004,7 @@ test("changeSubclass tears down the old subclass, sets the new one, and unlearns
     ],
   });
 
-  const changed = changeSubclass(initial, "Druid", "Circle of the Moon", "PHB", ["Moonbeam"], inMemoryCompendium());
+  const changed = changeSubclass(initial, "Druid", "Circle of the Moon", "PHB", ["Moonbeam"], inMemoryCompendium(), ALL_BOOKS);
 
   assert.equal(changed.classes[0].subclassName, "Circle of the Moon");
   assert.equal(changed.classes[0].subclass, "Circle of the Moon");
@@ -1028,7 +1027,7 @@ test("removeClassLevel on a class's last level removes the class and prunes its 
     ],
   });
 
-  const removed = removeClassLevel(initial, "Fighter", inMemoryCompendium());
+  const removed = removeClassLevel(initial, "Fighter", inMemoryCompendium(), ALL_BOOKS);
 
   assert.deepEqual(removed.classes.map((c) => c.className), ["Rogue"]);
   assert.deepEqual(removed.skillChoices?.map((sc) => sc.id), ["Class: Rogue"]);
@@ -1044,7 +1043,7 @@ test("removeClassLevel above level 1 keeps the class and drops the subclass only
   });
 
   // Level 3 -> 2: below the subclass requirement, so the class stays but loses its subclass
-  const droppedToTwo = removeClassLevel(fighter3, "Fighter", inMemoryCompendium());
+  const droppedToTwo = removeClassLevel(fighter3, "Fighter", inMemoryCompendium(), ALL_BOOKS);
   assert.equal(droppedToTwo.classes.length, 1);
   assert.equal(droppedToTwo.classes[0].className, "Fighter");
   assert.equal(droppedToTwo.classes[0].level, 2);
@@ -1056,7 +1055,7 @@ test("removeClassLevel above level 1 keeps the class and drops the subclass only
       { className: "Fighter", source: "PHB", level: 4, subclassName: "Battle Master", subclass: "Battle Master", subclassSource: "PHB" },
     ],
   });
-  const droppedToThree = removeClassLevel(fighter4, "Fighter", inMemoryCompendium());
+  const droppedToThree = removeClassLevel(fighter4, "Fighter", inMemoryCompendium(), ALL_BOOKS);
   assert.equal(droppedToThree.classes[0].level, 3);
   assert.equal(droppedToThree.classes[0].subclassName, "Battle Master");
 });
@@ -1069,11 +1068,11 @@ test("removeClassLevel from level 4 to 2 keeps the subclass at 3 and clears it o
     ],
   });
 
-  const atThree = removeClassLevel(fighter4, "fighter", inMemoryCompendium());
+  const atThree = removeClassLevel(fighter4, "fighter", inMemoryCompendium(), ALL_BOOKS);
   assert.equal(atThree.classes[0].level, 3);
   assert.equal(atThree.classes[0].subclassName, "Battle Master");
 
-  const atTwo = removeClassLevel(atThree, "fighter", inMemoryCompendium());
+  const atTwo = removeClassLevel(atThree, "fighter", inMemoryCompendium(), ALL_BOOKS);
   assert.equal(atTwo.classes[0].className, "fighter");
   assert.equal(atTwo.classes[0].level, 2);
   assert.equal(atTwo.classes[0].subclassName, undefined);
@@ -1094,19 +1093,19 @@ test("applySoleSubclasses applies the lone SRD subclass once the class reaches i
   });
 
   const fighter3 = makeChar({ classes: [{ className: "Fighter", source: "SRD", level: 3 }] });
-  const appliedFighter = applySoleSubclasses(fighter3, srd);
+  const appliedFighter = applySoleSubclasses(fighter3, srd, ALL_BOOKS);
   assert.equal(appliedFighter.classes[0].subclassName, "Champion");
   assert.equal(appliedFighter.classes[0].subclassSource, "SRD");
 
   const cleric1 = makeChar({ classes: [{ className: "Cleric", source: "SRD", level: 1 }] });
-  assert.equal(applySoleSubclasses(cleric1, srd).classes[0].subclassName, "Life Domain");
+  assert.equal(applySoleSubclasses(cleric1, srd, ALL_BOOKS).classes[0].subclassName, "Life Domain");
 });
 
 test("applySoleSubclasses leaves a class below its subclass level unchanged", () => {
   const srd = inMemoryCompendium({ classes: [classWithSubclasses("Fighter", "SRD", ["Champion"])] });
   const fighter2 = makeChar({ classes: [{ className: "Fighter", source: "SRD", level: 2 }] });
 
-  assert.equal(applySoleSubclasses(fighter2, srd), fighter2);
+  assert.equal(applySoleSubclasses(fighter2, srd, ALL_BOOKS), fighter2);
 });
 
 test("applySoleSubclasses keeps a subclass the character already has and never picks between several", () => {
@@ -1121,8 +1120,8 @@ test("applySoleSubclasses keeps a subclass the character already has and never p
   });
   const rogueChoice = makeChar({ classes: [{ className: "Rogue", source: "SRD", level: 3 }] });
 
-  assert.equal(applySoleSubclasses(fighterWithSub, srd), fighterWithSub);
-  assert.equal(applySoleSubclasses(rogueChoice, srd), rogueChoice);
+  assert.equal(applySoleSubclasses(fighterWithSub, srd, ALL_BOOKS), fighterWithSub);
+  assert.equal(applySoleSubclasses(rogueChoice, srd, ALL_BOOKS), rogueChoice);
 });
 
 test("applySoleSubclasses never changes a character in an integrated compendium", () => {
@@ -1132,5 +1131,5 @@ test("applySoleSubclasses never changes a character in an integrated compendium"
   );
   const fighter3 = makeChar({ classes: [{ className: "Fighter", source: "PHB", level: 3 }] });
 
-  assert.equal(applySoleSubclasses(fighter3, integrated), fighter3);
+  assert.equal(applySoleSubclasses(fighter3, integrated, ALL_BOOKS), fighter3);
 });

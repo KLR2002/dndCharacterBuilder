@@ -1,3 +1,4 @@
+import { ALL_BOOKS } from "../src/constants/books.ts";
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { dismissNotices } from "../src/rules/needsReview.ts";
@@ -52,7 +53,7 @@ describe("migration notices read as player text", () => {
     );
     delete legacy.ruleChoices;
 
-    assert.deepEqual(migrateCharacter(legacy, loadTestCatalog("races")).needsReview, [
+    assert.deepEqual(migrateCharacter(legacy, loadTestCatalog("races"), undefined, ALL_BOOKS).needsReview, [
       "Your ancestry has a choice to make in the Builder.",
     ]);
   });
@@ -71,7 +72,7 @@ describe("migration notices read as player text", () => {
     );
     delete legacy.skillChoices;
 
-    assert.deepEqual(migrateCharacter(legacy).needsReview, [
+    assert.deepEqual(migrateCharacter(legacy, undefined, undefined, ALL_BOOKS).needsReview, [
       "Some skill picks could not be matched to a class or background. Check them in the Builder.",
     ]);
   });
@@ -84,8 +85,8 @@ describe("the ancestry choice notice follows the choice", () => {
     race: { name: "Half-Elf", source: "PHB", subraceName: "Drow Descent", subraceSource: "SCAG" },
     classes: [{ className: "Wizard", source: "PHB", level: 1 }],
   }) as Character;
-  const [choice] = ancestryRuleChoices(variant, races);
-  const reloaded = (saved: object, catalog?: typeof races) => migrateCharacter(JSON.parse(JSON.stringify(saved)), catalog);
+  const [choice] = ancestryRuleChoices(variant, races, ALL_BOOKS);
+  const reloaded = (saved: object, catalog?: typeof races) => migrateCharacter(JSON.parse(JSON.stringify(saved)), catalog, undefined, ALL_BOOKS);
 
   it("is removed on load once the choice is recorded, and the other notices stay", () => {
     if (!choice) throw new Error("expected a descent choice");
@@ -122,7 +123,7 @@ describe("dismissed notices on reload", () => {
     const saved = makeChar({ needsReview: [EMBER, PULSE] });
     const dismissed = { ...saved, needsReview: dismissNotices(saved.needsReview, EMBER) };
 
-    const loaded = migrateCharacter(JSON.parse(JSON.stringify(dismissed)));
+    const loaded = migrateCharacter(JSON.parse(JSON.stringify(dismissed)), undefined, undefined, ALL_BOOKS);
 
     assert.deepEqual(loaded.needsReview, [PULSE]);
   });

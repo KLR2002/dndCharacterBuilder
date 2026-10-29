@@ -1,3 +1,4 @@
+import type { ActiveBooks } from "../constants/books.ts";
 import racesRaw from "../data/races.json" with { type: "json" };
 import classesRaw from "../data/classes.json" with { type: "json" };
 import featsRaw from "../data/feats.json" with { type: "json" };
@@ -44,7 +45,7 @@ export interface Compendium {
   /** Listings scoped to active books. Unscoped when no books are given or the bundle is not integrated. */
   for(activeBooks?: readonly string[]): CompendiumListings;
   /** The race a held race resolves to, subrace included: the saved source's record, else an active book's (see findHeldRace). */
-  findRace(held: HeldRace, activeBooks?: readonly string[]): RaceData | undefined;
+  findRace(held: HeldRace, activeBooks: ActiveBooks): RaceData | undefined;
   /** The other name lookups are never scoped, so existing character picks always resolve. */
   findClass(name: string, source?: string): ClassData | undefined;
   findSpell(name: string, source?: string): SpellData | undefined;

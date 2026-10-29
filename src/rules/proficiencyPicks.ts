@@ -1,3 +1,4 @@
+import type { ActiveBooks } from "../constants/books.ts";
 import type { Character } from "../types/character.ts";
 import type { BackgroundData, ClassData, GrantRequirement, ProficiencyGrant, RaceData } from "../types/dnd5e.ts";
 import type { Compendium } from "../services/compendium.ts";
@@ -53,7 +54,7 @@ const BUCKET_OF = { Race: "race", Subrace: "race", Background: "background" } as
  * no choice takes more names than its count. A name no choice takes stays in its bucket, where the sheet keeps
  * reading it. Returns the character unchanged when nothing moves.
  */
-export function moveLegacySourcePicks(character: Character, compendium: Compendium, activeBooks?: readonly string[]): Character {
+export function moveLegacySourcePicks(character: Character, compendium: Compendium, activeBooks: ActiveBooks): Character {
   const listings = compendium.for();
   const sources = recordGrantSources(character, { races: listings.races(), backgrounds: listings.backgrounds(), activeBooks });
   const picks: Record<string, string[]> = { ...(character.proficiencyPicks ?? {}) };
@@ -116,11 +117,11 @@ export function moveLegacySourcePicks(character: Character, compendium: Compendi
  * so an Integrated Catalog that still has position ids resolves its own picks. Returns the character
  * unchanged when no pick moves, so running it again changes nothing.
  */
-export function moveAliasedProficiencyPicks(character: Character, compendium: Compendium): Character {
+export function moveAliasedProficiencyPicks(character: Character, compendium: Compendium, activeBooks: ActiveBooks): Character {
   const picks = character.proficiencyPicks;
   if (!picks || Object.keys(picks).length === 0) return character;
 
-  const sources = grantSourcesIn(compendium);
+  const sources = grantSourcesIn(compendium, activeBooks);
   const idOfAlias = new Map<string, string>();
   for (const [id, owners] of sources) {
     for (const owner of owners) {
@@ -190,7 +191,7 @@ interface GrantSource {
  * held subrace a race's skill pick is gated on resolves within `activeBooks` when given. An id keeps all its owners: a pick
  * is released only when none of them is held.
  */
-function grantSourcesIn(compendium: Compendium, activeBooks?: readonly string[]): Map<string, GrantSource[]> {
+function grantSourcesIn(compendium: Compendium, activeBooks: ActiveBooks): Map<string, GrantSource[]> {
   const listings = compendium.for();
   const sources = new Map<string, GrantSource[]>();
   const add = (
@@ -382,7 +383,7 @@ function releaseReason(owners: readonly GrantSource[], character: Character, cla
  * A pick is kept when the Compendium does not hold its grant (a missing or stale catalog), so a saved
  * pick is never lost for want of data. Returns the character unchanged when nothing is released.
  */
-export function pruneInvalidProficiencyPicks(character: Character, compendium: Compendium, activeBooks?: readonly string[]): Character {
+export function pruneInvalidProficiencyPicks(character: Character, compendium: Compendium, activeBooks: ActiveBooks): Character {
   const picks = character.proficiencyPicks;
   if (!picks || Object.keys(picks).length === 0) return character;
 
@@ -412,7 +413,7 @@ export function pruneInvalidProficiencyPicks(character: Character, compendium: C
  * in the old skill bucket, where the sheet keeps reading it. A legacy entry is dropped once every name it held has
  * moved. Class skill choices are left alone. Returns the character unchanged when nothing moves or changes.
  */
-export function moveLegacySkillPicks(character: Character, compendium: Compendium, activeBooks?: readonly string[]): Character {
+export function moveLegacySkillPicks(character: Character, compendium: Compendium, activeBooks: ActiveBooks): Character {
   const legacy = (character.skillChoices ?? []).filter((entry) => entry.origin === "race" || entry.origin === "background");
   if (legacy.length === 0) return character;
 
@@ -476,7 +477,7 @@ export function moveLegacySkillPicks(character: Character, compendium: Compendiu
  * releases it with its review notice. Before this, a Knowledge Domain Cleric's Blessings Expertise was a separate
  * milestone. Returns the character unchanged when nothing moves.
  */
-export function moveExpertisePicksToGrants(character: Character, compendium: Compendium, activeBooks?: readonly string[]): Character {
+export function moveExpertisePicksToGrants(character: Character, compendium: Compendium, activeBooks: ActiveBooks): Character {
   const expertise = character.chosenExpertise ?? [];
   if (expertise.length === 0) return character;
 
@@ -493,7 +494,7 @@ export function moveExpertisePicksToGrants(character: Character, compendium: Com
   if (offered.length === 0) return character;
 
   const milestoneHeld = new Set(
-    getMilestonePicks(getAvailableExpertiseMilestones(character, { compendium }), expertise).flatMap((pick) =>
+    getMilestonePicks(getAvailableExpertiseMilestones(character, { compendium, activeBooks }), expertise).flatMap((pick) =>
       pick.chosen.map((name) => name.trim().toLowerCase()),
     ),
   );

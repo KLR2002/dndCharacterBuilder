@@ -1,3 +1,4 @@
+import { ALL_BOOKS } from "../src/constants/books.ts";
 import test from "node:test";
 import assert from "node:assert/strict";
 import { findHeldRace } from "../src/rules/raceLookup.ts";
@@ -121,11 +122,11 @@ test("the subrace follows the same order within the resolved race", () => {
   const races = [
     race("Sample Folk", "TST", { subraces: [subrace("Brook", "TST"), subrace("Brook", "ALT")] }),
   ];
-  const saved = findHeldRace(races, { name: "Sample Folk", source: "TST", subraceName: "Brook", subraceSource: "ALT" }).subrace;
+  const saved = findHeldRace(races, { name: "Sample Folk", source: "TST", subraceName: "Brook", subraceSource: "ALT" }, ALL_BOOKS).subrace;
   assert.equal(saved?.source, "ALT", "the saved subrace source wins");
   const active = findHeldRace(races, { name: "Sample Folk", source: "TST", subraceName: "Brook", subraceSource: "OLD" }, ["ALT"]).subrace;
   assert.equal(active?.source, "ALT", "an active book's subrace is next");
-  const listed = findHeldRace(races, { name: "Sample Folk", source: "TST", subraceName: "Brook", subraceSource: "OLD" }).subrace;
+  const listed = findHeldRace(races, { name: "Sample Folk", source: "TST", subraceName: "Brook", subraceSource: "OLD" }, ALL_BOOKS).subrace;
   assert.equal(listed?.source, "TST", "catalog order is the last resort");
 });
 
@@ -147,14 +148,14 @@ test("a race held with no subrace takes its unnamed subrace, the plain form, and
   const plain = race("Sample Folk", "TST", {
     subraces: [subrace("", "TST", { abilityScoreIncrease: [{ str: 1 }] }), subrace("Brook", "TST")],
   });
-  assert.equal(findHeldRace([plain], { name: "Sample Folk", source: "SRD" }).subrace?.name, "");
+  assert.equal(findHeldRace([plain], { name: "Sample Folk", source: "SRD" }, ALL_BOOKS).subrace?.name, "");
   const named = race("Sample Folk", "TST", { subraces: [subrace("Brook", "TST")] });
-  assert.equal(findHeldRace([named], { name: "Sample Folk", source: "SRD" }).subrace, undefined);
+  assert.equal(findHeldRace([named], { name: "Sample Folk", source: "SRD" }, ALL_BOOKS).subrace, undefined);
 });
 
 test("a name no record holds resolves to nothing", () => {
-  assert.deepEqual(findHeldRace([folkUnder("TST")], { name: "Sample Other", source: "SRD" }), { race: undefined, subrace: undefined });
-  assert.deepEqual(findHeldRace([folkUnder("TST")], null), { race: undefined, subrace: undefined });
+  assert.deepEqual(findHeldRace([folkUnder("TST")], { name: "Sample Other", source: "SRD" }, ALL_BOOKS), { race: undefined, subrace: undefined });
+  assert.deepEqual(findHeldRace([folkUnder("TST")], null, ALL_BOOKS), { race: undefined, subrace: undefined });
 });
 
 test("evaluation uses the saved source's record, and leaves the saved character unchanged", () => {
@@ -270,17 +271,17 @@ test("the Compendium's race finder takes the held subrace, so the record that li
 
 test("the Compendium's race finder takes the saved source first, then an active book's record, then catalog order", () => {
   const compendium = inMemoryCompendium({ races: [folkUnder("TST"), folkUnder("ALT")] }, { integrated: true });
-  assert.equal(compendium.findRace({ name: "Sample Folk", source: "ALT" })?.source, "ALT");
+  assert.equal(compendium.findRace({ name: "Sample Folk", source: "ALT" }, ALL_BOOKS)?.source, "ALT");
   assert.equal(compendium.findRace({ name: "Sample Folk", source: "OLD" }, ["ALT"])?.source, "ALT");
-  assert.equal(compendium.findRace({ name: "Sample Folk", source: "OLD" })?.source, "TST");
-  assert.equal(compendium.findRace({ name: "Sample Other", source: "SRD" }), undefined);
+  assert.equal(compendium.findRace({ name: "Sample Folk", source: "OLD" }, ALL_BOOKS)?.source, "TST");
+  assert.equal(compendium.findRace({ name: "Sample Other", source: "SRD" }, ALL_BOOKS), undefined);
 });
 
 test("a subrace name held twice in one race resolves to the subrace of an active book", () => {
   const folk = race("Sample Folk", "ALT", { subraces: [subrace("Brook", "TST"), subrace("Brook", "ALT")] });
   const held = makeChar({ race: { name: "Sample Folk", source: "OLD", subraceName: "Brook", subraceSource: "OLD" } });
   assert.equal(heldSubraceOf(folk, held, ["ALT"])?.source, "ALT");
-  assert.equal(heldSubraceOf(folk, held)?.source, "TST", "without active books, catalog order decides");
+  assert.equal(heldSubraceOf(folk, held, ALL_BOOKS)?.source, "TST", "without active books, catalog order decides");
 });
 
 test("a lineage held in two books is read from the record of the active book, not the first listed", () => {

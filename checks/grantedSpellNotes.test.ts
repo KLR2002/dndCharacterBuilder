@@ -1,3 +1,4 @@
+import { ALL_BOOKS } from "../src/constants/books.ts";
 import test from "node:test";
 import assert from "node:assert/strict";
 import { evaluateCharacter } from "../src/rules/characterEvaluation.ts";
@@ -58,7 +59,7 @@ const compendium = inMemoryCompendium({
     }),
   ],
 });
-const catalogs = { compendium };
+const catalogs = { compendium, activeBooks: ALL_BOOKS };
 
 test("a plain prepared spell of a held feat carries its reviewed note, whatever the letter case of the key", () => {
   const character = makeChar({
@@ -90,9 +91,9 @@ test("a prepared pick of a held feat carries its reviewed note once the player h
 
 test("a picked cantrip of a race's Innate Magic card carries its reviewed note, whatever the letter case of the key", () => {
   const character: Character = makeChar({ classes: [mage(4)], race: { name: "Sample Noted", source: "TST" } });
-  const choice = raceSpellRuleChoices(character, compendium).find((c) => c.options.some((o) => o.name === "Sample Ember"));
+  const choice = raceSpellRuleChoices(character, compendium, ALL_BOOKS).find((c) => c.options.some((o) => o.name === "Sample Ember"));
   assert.ok(choice, "the race offers Sample Ember");
-  const picked = pickRuleChoice(character, choice, "Sample Ember", compendium);
+  const picked = pickRuleChoice(character, choice, "Sample Ember", compendium, ALL_BOOKS);
   const card = evaluateCharacter(picked, catalogs).grantedSpellSources.find((source) => source.title === "Sample Noted");
   assert.equal(card?.spells.find((spell) => spell.name === "Sample Ember")?.note, "self only");
 });

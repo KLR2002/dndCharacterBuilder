@@ -1,3 +1,4 @@
+import { ALL_BOOKS } from "../src/constants/books.ts";
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { makeChar, loadTestCatalogs, loadSrdCatalog, inMemoryCompendium } from "./testUtils.ts";
@@ -13,12 +14,12 @@ import { setChoiceRacialBonus } from "../src/rules/builderTransitions.ts";
 import type { RaceData } from "../src/types/dnd5e.ts";
 
 const testCollections = loadTestCatalogs();
-const catalogs = { compendium: inMemoryCompendium(testCollections) };
+const catalogs = { compendium: inMemoryCompendium(testCollections), activeBooks: ALL_BOOKS };
 const races = testCollections.races as RaceData[];
 
 /** The race spell pick offering the option, for the character as it is. */
 const racePickOffering = (character: ReturnType<typeof makeChar>, option: string) =>
-  raceSpellRuleChoices(character, catalogs.compendium).find((choice) => choice.options.some((o) => o.name === option));
+  raceSpellRuleChoices(character, catalogs.compendium, ALL_BOOKS).find((choice) => choice.options.some((o) => o.name === option));
 
 
 test("resolveAncestryState detects High Elf, and its wizard cantrip is the race's pick", () => {
@@ -34,7 +35,7 @@ test("resolveAncestryState detects High Elf, and its wizard cantrip is the race'
 
   const offer = racePickOffering(char, "Fire Bolt");
   assert.ok(offer, "the wizard cantrips are offered as the race's pick");
-  const picked = pickRuleChoice(char, offer, "Fire Bolt", catalogs.compendium);
+  const picked = pickRuleChoice(char, offer, "Fire Bolt", catalogs.compendium, ALL_BOOKS);
   assert.deepEqual(picked.ruleChoices?.map((entry) => entry.picked), [["Fire Bolt"]]);
 });
 
@@ -72,7 +73,7 @@ test("Half-Elf High descent offers the wizard cantrip once Cantrip is picked, an
   const charWithDescent = applyAncestryChoice(halfElf, descentChoice.id, "Cantrip", catalogs);
   const offer = racePickOffering(charWithDescent, "Mage Hand");
   assert.ok(offer, "Cantrip offers the wizard cantrip pick");
-  const charWithCantrip = pickRuleChoice(charWithDescent, offer, "Mage Hand", catalogs.compendium);
+  const charWithCantrip = pickRuleChoice(charWithDescent, offer, "Mage Hand", catalogs.compendium, ALL_BOOKS);
   assert.ok(charWithCantrip.ruleChoices?.some((r) => r.picked.includes("Mage Hand")));
 
   // Change descent from "Cantrip" to "Elf Weapon Training": the cantrip is released with a notice
@@ -92,7 +93,7 @@ test("applyAncestrySelection resets old picks and assigns fixed bonuses", () => 
   char = applyAncestrySelection(char, elfRace, highElfSubrace, catalogs);
   const offer = racePickOffering(char, "Prestidigitation");
   assert.ok(offer);
-  char = pickRuleChoice(char, offer, "Prestidigitation", catalogs.compendium);
+  char = pickRuleChoice(char, offer, "Prestidigitation", catalogs.compendium, ALL_BOOKS);
   assert.equal(char.ruleChoices?.length, 1);
 
   // Switch to Mountain Dwarf: the High Elf's pick goes, with a notice
@@ -113,7 +114,7 @@ test("Half-Elf High descent releases its cantrip when the Cantrip option is togg
 
   const charWithDescent = applyAncestryChoice(halfElf, choiceId, "Cantrip", catalogs);
   const offer = racePickOffering(charWithDescent, "Fire Bolt");
-  const charWithCantrip = pickRuleChoice(charWithDescent, offer!, "Fire Bolt", catalogs.compendium);
+  const charWithCantrip = pickRuleChoice(charWithDescent, offer!, "Fire Bolt", catalogs.compendium, ALL_BOOKS);
   assert.ok(charWithCantrip.ruleChoices?.some((r) => r.picked.includes("Fire Bolt")));
 
   // Toggle "Cantrip" off by picking it again
@@ -143,7 +144,7 @@ test("clearAncestryChoice deselects the descent and releases the cantrip it gave
 
   const picked = applyAncestryChoice(halfElf, choiceId, "Cantrip", catalogs);
   const offer = racePickOffering(picked, "Ray of Frost");
-  const withCantrip = pickRuleChoice(picked, offer!, "Ray of Frost", catalogs.compendium);
+  const withCantrip = pickRuleChoice(picked, offer!, "Ray of Frost", catalogs.compendium, ALL_BOOKS);
 
   const cleared = clearAncestryChoice(withCantrip, choiceId);
   assert.equal(cleared.ruleChoices?.find((r) => r.id === choiceId), undefined);
@@ -184,8 +185,8 @@ test("resolveAncestryState reads the selected race from the Compendium it is giv
   const testfolk = { ...human, name: "Testfolk", source: "TEST", subraces: [] };
   const char = makeChar({ race: { name: "Testfolk", source: "TEST" } });
 
-  assert.equal(resolveAncestryState(char, { compendium: inMemoryCompendium({ races: [testfolk] }) }).selectedRace?.name, "Testfolk");
-  assert.equal(resolveAncestryState(char, { compendium: inMemoryCompendium({ races: [] }) }).selectedRace, undefined);
+  assert.equal(resolveAncestryState(char, { compendium: inMemoryCompendium({ races: [testfolk] }), activeBooks: ALL_BOOKS }).selectedRace?.name, "Testfolk");
+  assert.equal(resolveAncestryState(char, { compendium: inMemoryCompendium({ races: [] }), activeBooks: ALL_BOOKS }).selectedRace, undefined);
 });
 
 test("offersPlainRaceForm offers a plain form to integrated races the SRD holds without a subrace", () => {

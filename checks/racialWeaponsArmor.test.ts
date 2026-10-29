@@ -1,3 +1,4 @@
+import { ALL_BOOKS } from "../src/constants/books.ts";
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import type { Character, InventoryItem } from "../src/types/character.ts";
@@ -9,7 +10,7 @@ import { integratedTestCompendium, makeChar } from "./testUtils.ts";
 // Githyanki and Drow cases use the real race and subrace names, and the integrated Catalog they come from.
 
 const compendium = integratedTestCompendium();
-const sheetOf = (character: Character) => proficiencySheet(character, { compendium });
+const sheetOf = (character: Character) => proficiencySheet(character, { compendium, activeBooks: ALL_BOOKS });
 const namesOf = (entries: { name: string }[]) => entries.map((entry) => entry.name);
 
 /** A wizard, whose own weapons never include a sword or a bow, so only the race's weapons show as swords and bows. */
@@ -64,7 +65,7 @@ test("attacks read the sheet: an equipped sword is proficient for a Githyanki, a
   const proficient = (character: Character, weapon: string) => {
     const evaluated = evaluateCharacter(
       { ...character, items: [...character.items, equip(weapon)] },
-      { compendium },
+      { compendium, activeBooks: ALL_BOOKS },
     );
     const attack = evaluated.weaponAttacks.find((option) => option.name === weapon);
     assert.ok(attack, `${weapon} is offered as an attack`);

@@ -1,3 +1,4 @@
+import { ALL_BOOKS } from "../src/constants/books.ts";
 import test from "node:test";
 import assert from "node:assert/strict";
 import type { Character } from "../src/types/character.ts";
@@ -27,10 +28,10 @@ const HALF_ELF_ID = "PHB/Race/Half-Elf@0#skills:choice:any";
 const DROW_SKILLS_ID = "SCAG/Subrace/Half-Elf (Drow Descent)@0#skills:choice:any";
 
 const skillOffers = (character: Character, compendium = integratedTestCompendium()) =>
-  proficiencyChoiceOffers(character, { compendium }).filter((offer) => offer.id.includes("#skills:"));
+  proficiencyChoiceOffers(character, { compendium, activeBooks: ALL_BOOKS }).filter((offer) => offer.id.includes("#skills:"));
 
 const sheetSkills = (character: Character, compendium = integratedTestCompendium()) =>
-  names(proficiencySheet(character, { compendium }).skills);
+  names(proficiencySheet(character, { compendium, activeBooks: ALL_BOOKS }).skills);
 
 test("Investigator offers its two-skill pool of Insight, Investigation and Perception", () => {
   const offers = skillOffers(makeChar({ background: { name: "Investigator", source: "VRGR" } }));
@@ -62,7 +63,7 @@ test("Cloistered Scholar keeps History and offers one pick from Arcana, Nature a
   assert.equal(offers[0].id, SCHOLAR_ID);
   assert.equal(offers[0].choose, 1);
   assert.deepEqual(offers[0].options.map((option) => option.name), ["Arcana", "Nature", "Religion"]);
-  assert.ok(proficiencyChoiceOffers(scholar, { compendium: integratedTestCompendium() }).some((offer) => offer.traitName === "Cloistered Scholar: Skill"));
+  assert.ok(proficiencyChoiceOffers(scholar, { compendium: integratedTestCompendium(), activeBooks: ALL_BOOKS }).some((offer) => offer.traitName === "Cloistered Scholar: Skill"));
 });
 
 test("Cloistered Scholar's pick is on the sheet beside History", () => {
@@ -75,8 +76,8 @@ test("Cloistered Scholar's pick is on the sheet beside History", () => {
 
 test("a custom background offers two skill picks and two language picks, and the sheet is the same with none made", () => {
   const compendium = srdBaselineCompendium();
-  const custom = setCustomBackground(makeChar({ classes: [{ className: "Fighter", source: "PHB", level: 1 }] }), "Lamp Warden", []);
-  const offers = proficiencyChoiceOffers(custom, { compendium });
+  const custom = setCustomBackground(makeChar({ classes: [{ className: "Fighter", source: "PHB", level: 1 }] }), "Lamp Warden", [], undefined, undefined, ALL_BOOKS);
+  const offers = proficiencyChoiceOffers(custom, { compendium, activeBooks: ALL_BOOKS });
   const skillOffer = offers.find((offer) => offer.id === CUSTOM_SKILLS_ID);
   const languageOffer = offers.find((offer) => offer.id === CUSTOM_LANGUAGES_ID);
   assert.ok(skillOffer, "the custom background offers its skill picks");
@@ -89,21 +90,21 @@ test("a custom background offers two skill picks and two language picks, and the
 
 test("the custom background's two skill picks are its skill pick on the sheet, and are not written to the old skill buckets", () => {
   const compendium = srdBaselineCompendium();
-  const custom = setCustomBackground(makeChar(), "Lamp Warden", ["Arcana", "Nature"]);
+  const custom = setCustomBackground(makeChar(), "Lamp Warden", ["Arcana", "Nature"], undefined, undefined, ALL_BOOKS);
   assert.deepEqual(custom.proficiencyPicks?.[CUSTOM_SKILLS_ID], ["Arcana", "Nature"]);
   assert.equal(custom.skillChoices?.some((entry) => entry.origin === "background"), false);
   assert.deepEqual(custom.chosenSkills, []);
-  assert.deepEqual(names(proficiencySheet(custom, { compendium }).skills), ["Arcana", "Nature"]);
+  assert.deepEqual(names(proficiencySheet(custom, { compendium, activeBooks: ALL_BOOKS }).skills), ["Arcana", "Nature"]);
 });
 
 test("a custom background's picks survive reconciling, and clearing the background releases them with a notice", () => {
   const compendium = srdBaselineCompendium();
-  const custom = setCustomBackground(makeChar(), "Lamp Warden", ["Arcana", "Nature"]);
-  assert.deepEqual(reconcile(custom, compendium).proficiencyPicks, custom.proficiencyPicks);
-  const cleared = clearBackground(custom, { compendium });
+  const custom = setCustomBackground(makeChar(), "Lamp Warden", ["Arcana", "Nature"], undefined, undefined, ALL_BOOKS);
+  assert.deepEqual(reconcile(custom, compendium, { activeBooks: ALL_BOOKS }).proficiencyPicks, custom.proficiencyPicks);
+  const cleared = clearBackground(custom, { compendium, activeBooks: ALL_BOOKS });
   assert.equal(cleared.proficiencyPicks?.[CUSTOM_SKILLS_ID], undefined);
   assert.ok(cleared.needsReview?.some((notice) => notice.includes("Arcana") && notice.includes("Custom Background")));
-  assert.equal(names(proficiencySheet(cleared, { compendium }).skills).includes("Arcana"), false);
+  assert.equal(names(proficiencySheet(cleared, { compendium, activeBooks: ALL_BOOKS }).skills).includes("Arcana"), false);
 });
 
 test("a custom background saved with the old skill bucket moves its picks into its pick on reconcile, and the sheet does not change", () => {
@@ -113,11 +114,11 @@ test("a custom background saved with the old skill bucket moves its picks into i
     chosenSkills: ["Arcana", "Nature", "Athletics"],
     skillChoices: [{ id: "background_skills", origin: "background", choose: 2, from: ["Arcana", "Nature"], picked: ["Arcana", "Nature"] }],
   });
-  const after = reconcile(before, compendium);
+  const after = reconcile(before, compendium, { activeBooks: ALL_BOOKS });
   assert.deepEqual(after.proficiencyPicks?.[CUSTOM_SKILLS_ID], ["Arcana", "Nature"]);
   assert.equal(after.skillChoices?.some((entry) => entry.origin === "background"), false);
   assert.deepEqual(after.chosenSkills, ["Athletics"], "only the unattributed skill stays in the old bucket");
-  assert.deepEqual(names(proficiencySheet(after, { compendium }).skills), names(proficiencySheet(before, { compendium }).skills));
+  assert.deepEqual(names(proficiencySheet(after, { compendium, activeBooks: ALL_BOOKS }).skills), names(proficiencySheet(before, { compendium, activeBooks: ALL_BOOKS }).skills));
 });
 
 // The custom background's second Proficiency Choice draws from tools and languages together: one pick of two.
@@ -130,7 +131,7 @@ const customWith = (picks: string[], extra: Partial<Character> = {}) =>
   });
 
 const toolOrLanguageOffer = (character: Character) =>
-  proficiencyChoiceOffers(character, { compendium: srdBaselineCompendium() }).find((offer) => offer.id === CUSTOM_LANGUAGES_ID);
+  proficiencyChoiceOffers(character, { compendium: srdBaselineCompendium(), activeBooks: ALL_BOOKS }).find((offer) => offer.id === CUSTOM_LANGUAGES_ID);
 
 test("a custom background's second choice offers two picks from tools and languages together, titled Tool or language", () => {
   const offer = toolOrLanguageOffer(makeChar({ background: { name: "Lamp Warden", source: "Custom" } }));
@@ -143,7 +144,7 @@ test("a custom background's second choice offers two picks from tools and langua
 });
 
 test("a custom background's skill choice keeps its two skill picks of any", () => {
-  const offers = proficiencyChoiceOffers(makeChar({ background: { name: "Lamp Warden", source: "Custom" } }), { compendium: srdBaselineCompendium() });
+  const offers = proficiencyChoiceOffers(makeChar({ background: { name: "Lamp Warden", source: "Custom" } }), { compendium: srdBaselineCompendium(), activeBooks: ALL_BOOKS });
   const skillOffer = offers.find((offer) => offer.id === CUSTOM_SKILLS_ID);
   assert.equal(skillOffer?.choose, 2);
   assert.equal(skillOffer?.traitName, "Custom Background: Skill");
@@ -153,17 +154,17 @@ test("a pick on the custom background's tool or language choice moves its counte
   const base = makeChar({ background: { name: "Lamp Warden", source: "Custom" } });
   const offer = toolOrLanguageOffer(base);
   if (!offer) throw new Error("expected the tool or language offer");
-  const first = pickRuleChoice(base, offer, "Smith's Tools");
+  const first = pickRuleChoice(base, offer, "Smith's Tools", undefined, ALL_BOOKS);
   assert.deepEqual(first.proficiencyPicks?.[CUSTOM_LANGUAGES_ID], ["Smith's Tools"]);
-  const second = pickRuleChoice(first, offer, "Elvish");
+  const second = pickRuleChoice(first, offer, "Elvish", undefined, ALL_BOOKS);
   assert.deepEqual(second.proficiencyPicks?.[CUSTOM_LANGUAGES_ID], ["Smith's Tools", "Elvish"]);
-  const third = pickRuleChoice(second, offer, "Thieves' tools");
+  const third = pickRuleChoice(second, offer, "Thieves' tools", undefined, ALL_BOOKS);
   assert.deepEqual(third.proficiencyPicks?.[CUSTOM_LANGUAGES_ID], ["Elvish", "Thieves' tools"]);
 });
 
 test("a tool pick on the custom background is among the sheet's tools, and a language pick among its languages", () => {
   const compendium = srdBaselineCompendium();
-  const sheet = proficiencySheet(customWith(["Smith's Tools", "Elvish"]), { compendium });
+  const sheet = proficiencySheet(customWith(["Smith's Tools", "Elvish"]), { compendium, activeBooks: ALL_BOOKS });
   assert.ok(names(sheet.tools).includes("Smith's Tools"), "the tool pick is a tool");
   assert.equal(names(sheet.tools).includes("Elvish"), false, "a language is not a tool");
   assert.ok(names(sheet.languages).includes("Elvish"), "the language pick is a language");
@@ -187,7 +188,7 @@ test("a tool or language the character holds from another source is not offered 
 test("a saved language pick under the old id stays valid, and is still a language on the sheet", () => {
   const compendium = srdBaselineCompendium();
   const saved = customWith(["Elvish"]);
-  assert.deepEqual(names(proficiencySheet(saved, { compendium }).languages).filter((language) => language === "Elvish"), ["Elvish"]);
+  assert.deepEqual(names(proficiencySheet(saved, { compendium, activeBooks: ALL_BOOKS }).languages).filter((language) => language === "Elvish"), ["Elvish"]);
   const offer = toolOrLanguageOffer(saved);
   assert.equal(offer?.options.some((option) => option.name === "Elvish"), true, "the saved pick stays selectable");
 });
@@ -201,7 +202,7 @@ const halfElf = (subraceName?: string) =>
 /** The variant descent's Variant Feature choice, with the option picked. */
 function variantPicking(subraceName: string, option: string): Character {
   const character = halfElf(subraceName);
-  const choice = ancestryRuleChoices(character, integratedTestCompendium().for().races())[0];
+  const choice = ancestryRuleChoices(character, integratedTestCompendium().for().races(), ALL_BOOKS)[0];
   if (!choice) throw new Error("expected a descent choice");
   return { ...character, ruleChoices: [{ id: choice.id, trait: choice.traitName, origin: "race", choose: 1, from: choice.options.map((o) => o.name), picked: [option] }] };
 }
@@ -272,7 +273,7 @@ test("the Builder's race skill offers come from choice grants, not from the text
     ],
   });
   const character = makeChar({ race: { name: "Sample Folk", source: "TST" } });
-  assert.deepEqual(skillChoiceOffers(character, { compendium: textOnly }).filter((offer) => offer.source.startsWith("Race")), []);
+  assert.deepEqual(skillChoiceOffers(character, { compendium: textOnly, activeBooks: ALL_BOOKS }).filter((offer) => offer.source.startsWith("Race")), []);
 });
 
 test("a race skill pick saved in the old skill bucket moves into its Proficiency Choice on reconcile, and the sheet does not change", () => {
@@ -282,7 +283,7 @@ test("a race skill pick saved in the old skill bucket moves into its Proficiency
     chosenSkills: ["Insight", "Stealth"],
     skillChoices: [{ id: "Race: Skill Versatility", origin: "race", choose: 2, from: SKILLS, picked: ["Insight", "Stealth"] }],
   });
-  const after = reconcile(before, compendium);
+  const after = reconcile(before, compendium, { activeBooks: ALL_BOOKS });
   assert.deepEqual(after.proficiencyPicks?.[HALF_ELF_ID], ["Insight", "Stealth"]);
   assert.equal(after.skillChoices?.some((entry) => entry.origin === "race"), false);
   assert.deepEqual(after.chosenSkills, []);
@@ -296,7 +297,7 @@ test("a background skill pick saved in the old bucket moves into its pick up to 
     chosenSkills: ["History", "Arcana", "Nature"],
     skillChoices: [{ id: "Background: Cloistered Scholar", origin: "background", choose: 1, from: ["Arcana", "Nature", "Religion"], picked: ["Arcana", "Nature"] }],
   });
-  const after = reconcile(before, compendium);
+  const after = reconcile(before, compendium, { activeBooks: ALL_BOOKS });
   assert.deepEqual(after.proficiencyPicks?.[SCHOLAR_ID], ["Arcana"]);
   assert.deepEqual(after.chosenSkills, ["History", "Nature"]);
   assert.deepEqual(after.skillChoices, [{ id: "Background: Cloistered Scholar", origin: "background", choose: 1, from: ["Arcana", "Nature", "Religion"], picked: ["Nature"] }], "the pick no choice took stays in its entry");
@@ -310,7 +311,7 @@ test("a saved background pick outside the pool stays in the old bucket, and the 
     chosenSkills: ["Stealth"],
     skillChoices: [{ id: "Background: Cloistered Scholar", origin: "background", choose: 1, from: ["Stealth"], picked: ["Stealth"] }],
   });
-  const after = reconcile(before, compendium);
+  const after = reconcile(before, compendium, { activeBooks: ALL_BOOKS });
   assert.equal(after.proficiencyPicks?.[SCHOLAR_ID], undefined);
   assert.deepEqual(after.chosenSkills, ["Stealth"]);
   assert.ok(sheetSkills(after, compendium).includes("Stealth"));
@@ -327,14 +328,14 @@ test("migrating a race or background pick twice changes nothing, and a class ski
       { id: "Class: Rogue", origin: "class", choose: 1, from: ["Athletics"], picked: ["Athletics"] },
     ],
   });
-  const once = reconcile(before, compendium);
+  const once = reconcile(before, compendium, { activeBooks: ALL_BOOKS });
   assert.deepEqual(once.skillChoices, [{ id: "Class: Rogue", origin: "class", choose: 1, from: ["Athletics"], picked: ["Athletics"] }]);
-  assert.deepEqual(reconcile(once, compendium), once);
+  assert.deepEqual(reconcile(once, compendium, { activeBooks: ALL_BOOKS }), once);
 });
 
 // The Race tab shows a race's and its subrace's picks together, so each is titled by what it picks.
 const raceOfferTitles = (character: Character, compendium = integratedTestCompendium()) =>
-  proficiencyChoiceOffers(character, { compendium })
+  proficiencyChoiceOffers(character, { compendium, activeBooks: ALL_BOOKS })
     .filter((offer) => offer.origin === "race")
     .map((offer) => offer.traitName);
 
@@ -367,13 +368,13 @@ test("race and subrace picks that share a descriptor are numbered across the rac
 
 test("a card of picks that are all languages is told apart from one holding a skill, a tool or a tool-or-language pick", () => {
   const compendium = integratedTestCompendium();
-  const raceOffers = (character: Character) => proficiencyChoiceOffers(character, { compendium }).filter((offer) => offer.origin === "race");
+  const raceOffers = (character: Character) => proficiencyChoiceOffers(character, { compendium, activeBooks: ALL_BOOKS }).filter((offer) => offer.origin === "race");
   assert.equal(picksOnlyLanguages(raceOffers(makeChar({ race: { name: "Human", source: "PHB" } }))), true, "Human's language pick");
   const variant = makeChar({ race: { name: "Human", source: "PHB", subraceName: "Variant", subraceSource: "PHB" } });
   assert.equal(picksOnlyLanguages(raceOffers(variant)), false, "Variant Human's skill pick");
-  const custom = setCustomBackground(makeChar(), "Lamp Warden", []);
-  const customOffers = proficiencyChoiceOffers(custom, { compendium: srdBaselineCompendium() }).filter((offer) => offer.origin === "background");
+  const custom = setCustomBackground(makeChar(), "Lamp Warden", [], undefined, undefined, ALL_BOOKS);
+  const customOffers = proficiencyChoiceOffers(custom, { compendium: srdBaselineCompendium(), activeBooks: ALL_BOOKS }).filter((offer) => offer.origin === "background");
   assert.equal(picksOnlyLanguages(customOffers.filter((offer) => offer.id === CUSTOM_LANGUAGES_ID)), false, "a tool or language pick");
-  const acolyte = proficiencyChoiceOffers(makeChar({ background: { name: "Acolyte", source: "PHB" } }), { compendium }).filter((offer) => offer.origin === "background");
+  const acolyte = proficiencyChoiceOffers(makeChar({ background: { name: "Acolyte", source: "PHB" } }), { compendium, activeBooks: ALL_BOOKS }).filter((offer) => offer.origin === "background");
   assert.equal(picksOnlyLanguages(acolyte), true, "Acolyte's language picks");
 });

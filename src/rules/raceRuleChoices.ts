@@ -1,3 +1,4 @@
+import type { ActiveBooks } from "../constants/books.ts";
 import type { Character } from "../types/character.ts";
 import type { RaceData, TraitChoiceData, TraitData } from "../types/dnd5e.ts";
 import { DND_SKILLS } from "../constants/rules.ts";
@@ -16,7 +17,7 @@ export const LINEAGE_NAMES = new Set(["Dhampir", "Hexblood", "Reborn"]);
 export function lineageInheritsElements(
   character: Character,
   raceCatalog: RaceData[],
-  activeBooks?: readonly string[],
+  activeBooks: ActiveBooks,
 ): boolean {
   if (!character.lineageReplacement || !character.race?.name) return false;
   if (LINEAGE_NAMES.has(character.race.name)) return false;
@@ -64,7 +65,7 @@ export function lineageInheritsElements(
 export function ancestryRuleChoices(
   character: Character,
   raceCatalog: RaceData[],
-  activeBooks?: readonly string[],
+  activeBooks: ActiveBooks,
 ): AvailableRuleChoice[] {
   const choice = character.race;
   const lineageName = character.lineageReplacement || (choice && LINEAGE_NAMES.has(choice.name) ? choice.name : null);
@@ -182,7 +183,7 @@ function withoutOptionList(description: string, data: TraitChoiceData): string {
 export function replacedTraitNames(
   character: Character,
   raceCatalog: RaceData[],
-  activeBooks?: readonly string[],
+  activeBooks: ActiveBooks,
 ): Set<string> {
   const suppressed = new Set<string>();
   for (const choice of ancestryRuleChoices(character, raceCatalog, activeBooks)) {

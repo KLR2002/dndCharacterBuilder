@@ -1,3 +1,4 @@
+import type { ActiveBooks } from "../../constants/books";
 import { Ionicons } from "@expo/vector-icons";
 import React, { useEffect, useState } from "react";
 import { Text, TouchableOpacity, View } from "react-native";
@@ -94,7 +95,7 @@ export interface ClassProgressionSectionProps {
     tags?: string[];
   }) => void;
   theme: any;
-  activeBooks?: string[];
+  activeBooks: ActiveBooks;
 }
 
 export const ClassProgressionSection: React.FC<

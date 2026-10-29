@@ -21,7 +21,7 @@ import {
   getOptionsAndFeatures,
 } from "../../services/dataService";
 import { evaluateCharacter } from "../../rules/characterEvaluation";
-import { findHeldRace, heldSourceOf } from "../../rules/raceLookup";
+import { findHeldRace, findHeldRecord, heldSourceOf } from "../../rules/raceLookup";
 import { setOptionalFeatureEnabled } from "../../rules/builderTransitions";
 import { currentCompendium } from "../../services/compendium";
 import { findClassData } from "../../rules/catalogs";
@@ -330,7 +330,7 @@ export const FeaturesTab: React.FC = () => {
       const allFeats = getFeats(activeBooks);
       for (const asi of currentCharacter.asiSelections) {
         if (asi.type === "feat" && asi.featName) {
-          const fData = allFeats.find((f) => f.name === asi.featName);
+          const fData = findHeldRecord(allFeats, { name: asi.featName, source: asi.featSource }, activeBooks);
           list.push({
             id: `feat_${asi.featName}_${asi.level}`,
             name: `${asi.featName} (Feat, Lvl ${asi.level})`,

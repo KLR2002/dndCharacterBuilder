@@ -1,3 +1,4 @@
+import { ALL_BOOKS } from "../src/constants/books.ts";
 import test from "node:test";
 import assert from "node:assert/strict";
 import { evaluateCharacter } from "../src/rules/characterEvaluation.ts";
@@ -20,7 +21,7 @@ const compendium = inMemoryCompendium({
   races: preparedGrantRaces(),
   spells: preparedGrantSpells(),
 });
-const catalogs = { compendium };
+const catalogs = { compendium, activeBooks: ALL_BOOKS };
 
 const scores = (overrides: Partial<AbilityScores>): AbilityScores => ({
   str: 10,
@@ -143,14 +144,14 @@ test("a prepared-only feat offers no casting ability and gives no card", () => {
   const evaluated = evaluateCharacter(character, catalogs);
 
   assert.deepEqual(evaluated.grantedSpellSources, [], "no Innate Magic card and no notice-only card");
-  const choices = featSpellRuleChoices(character, compendium);
+  const choices = featSpellRuleChoices(character, compendium, ALL_BOOKS);
   assert.ok(!choices.some((choice) => choice.id.endsWith("__Casting Ability")), "no ability pick is offered");
 });
 
 test("a named prepared list is offered as a list choice, and lists nothing until one is picked", () => {
   const unpicked = makeChar({ classes: [mage(4)], asiSelections: [takenFeat("Sample Boon")] });
   assert.deepEqual(listedNames(profileFor(evaluateCharacter(unpicked, catalogs).spellProfiles, "Sample Mage")), []);
-  const offered = featSpellRuleChoices(unpicked, compendium);
+  const offered = featSpellRuleChoices(unpicked, compendium, ALL_BOOKS);
   assert.ok(offered.some((choice) => choice.id === "TST__Feat Spells__Sample Boon__Spell List"), "the list is offered");
   assert.ok(
     offered.some((choice) => choice.id === "TST__Feat Spells__Sample Boon__Casting Ability"),
@@ -200,7 +201,7 @@ test("a race's plain prepared spell is listed, and offers no ability pick and no
   const profile = profileFor(evaluateCharacter(character, catalogs).spellProfiles, "Sample Mage");
   assert.ok(listedNames(profile).includes("Sample Anchor"));
   assert.equal(profile.grantedPreparedSources?.["sample anchor"], "Sample Late Blood");
-  assert.deepEqual(raceSpellRuleChoices(character, compendium), [], "no ability pick and no pick for the race");
+  assert.deepEqual(raceSpellRuleChoices(character, compendium, ALL_BOOKS), [], "no ability pick and no pick for the race");
   assert.deepEqual(evaluateCharacter(character, catalogs).grantedSpellSources, [], "no race card");
 });
 

@@ -1,3 +1,4 @@
+import { ALL_BOOKS } from "../src/constants/books.ts";
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { makeChar, inMemoryCompendium, srdBaselineCompendium } from "./testUtils.ts";
@@ -105,7 +106,7 @@ const chartmaker = invented("Chartmaker", [fixed(pick("Sea Chart", 1), pick("Tal
 const drifter = invented("Drifter", undefined);
 
 const compendium = inMemoryCompendium({ classes: [ferryClass, chartmaker, drifter], items: ITEMS });
-const catalogs = { compendium };
+const catalogs = { compendium, activeBooks: ALL_BOOKS };
 
 const ferry = (overrides: Partial<Character> = {}): Character =>
   makeChar({ classes: [{ className: FERRY, source: SRC, level: 1 }], ...overrides });
@@ -254,14 +255,14 @@ test("a class change clears the picks", () => {
   assert.deepEqual(resolveStartingEquipment(changed, catalogs).items.map((i) => i.name), ["Sea Chart", "Tallow Lamp"],
     "the Ferryman's picks are not read for the Chartmaker");
   assert.equal(pruneStartingEquipmentPicks(changed).startingEquipmentPicks, undefined);
-  assert.equal(reconcile(changed, compendium).startingEquipmentPicks, undefined, "the reconciler drops them");
+  assert.equal(reconcile(changed, compendium, { activeBooks: ALL_BOOKS }).startingEquipmentPicks, undefined, "the reconciler drops them");
 });
 
 test("an old save without the picks field loads, and equipment cannot be claimed until picks are made", () => {
   // A saved record with every field but the picks, which an older build never wrote.
   const raw = ferry({ startingOption: "equipment", startingGrantsApplied: true });
   delete raw.startingEquipmentPicks;
-  const migrated = migrateCharacter(raw, undefined, [ferryClass]);
+  const migrated = migrateCharacter(raw, undefined, [ferryClass], ALL_BOOKS);
   assert.equal(migrated.startingEquipmentPicks, undefined);
   assert.equal(resolveStartingEquipment(migrated, catalogs).complete, false);
   assert.equal(applyStartingGrants(migrated, "equipment", { catalogs }), migrated);
@@ -280,7 +281,7 @@ test("a class with no slots cannot claim equipment and can still take gold", () 
 test("the print the class entry names is used, otherwise the first print with slots", () => {
   const plainPrint = invented(FERRY, undefined, "ALT");
   const both = inMemoryCompendium({ classes: [ferryClass, plainPrint], items: ITEMS });
-  const bothCatalogs = { compendium: both };
+  const bothCatalogs = { compendium: both, activeBooks: ALL_BOOKS };
   assert.equal(hasStartingEquipmentChoices(makeChar({ classes: [{ className: FERRY, source: "ALT", level: 1 }] }), bothCatalogs), false);
   assert.equal(hasStartingEquipmentChoices(makeChar({ classes: [{ className: FERRY, source: SRC, level: 1 }] }), bothCatalogs), true);
   assert.equal(hasStartingEquipmentChoices(makeChar({ classes: [{ className: FERRY, source: "NONE", level: 1 }] }), bothCatalogs), true);
@@ -288,7 +289,7 @@ test("the print the class entry names is used, otherwise the first print with sl
 
 test("the SRD Baseline Fighter prints chain mail or leather armor, longbow and arrows, never both", () => {
   const srd = srdBaselineCompendium();
-  const srdCatalogs = { compendium: srd };
+  const srdCatalogs = { compendium: srd, activeBooks: ALL_BOOKS };
   const fighter = srd.for().classes().find((c) => c.name === "Fighter");
   if (!fighter?.startingEquipment) throw new Error("the Fighter carries no starting equipment slots");
   const fighterChar = makeChar({ classes: [{ className: "Fighter", source: fighter.source, level: 1 }] });
@@ -318,7 +319,7 @@ test("the SRD Baseline Fighter prints chain mail or leather armor, longbow and a
 
 test("the SRD Baseline Cleric is offered chain mail and the warhammer only with the domain or martial weapons that grant them", () => {
   const srd = srdBaselineCompendium();
-  const srdCatalogs = { compendium: srd };
+  const srdCatalogs = { compendium: srd, activeBooks: ALL_BOOKS };
   const cleric = (subclassName?: string) =>
     makeChar({
       classes: [{ className: "Cleric", source: "SRD", level: 1, ...(subclassName ? { subclassName, subclassSource: "SRD" } : {}) }],
@@ -337,12 +338,12 @@ test("the SRD Baseline Cleric is offered chain mail and the warhammer only with 
 test("the SRD Baseline Druid is offered the shield, whose sheet name carries the printed druid restriction", () => {
   const srd = srdBaselineCompendium();
   const druid = makeChar({ classes: [{ className: "Druid", source: "SRD", level: 1 }] });
-  assert.deepEqual(startingEquipmentOffers(druid, { compendium: srd })[0], { slot: 0, options: ["a", "b"] });
+  assert.deepEqual(startingEquipmentOffers(druid, { compendium: srd, activeBooks: ALL_BOOKS })[0], { slot: 0, options: ["a", "b"] });
 });
 
 test("across the SRD Baseline classes with only their own proficiencies, the hidden options are the Cleric's warhammer and chain mail", () => {
   const srd = srdBaselineCompendium();
-  const srdCatalogs = { compendium: srd };
+  const srdCatalogs = { compendium: srd, activeBooks: ALL_BOOKS };
   const hidden: string[] = [];
   const withSlots = srd.for().classes().filter((c) => (c.startingEquipment?.length ?? 0) > 0);
   assert.equal(withSlots.length, 12, "the twelve PHB classes carry slots");
@@ -367,7 +368,7 @@ test("across the SRD Baseline classes with only their own proficiencies, the hid
 
 test("the SRD Baseline focus types each offer only their kind's focus items, and the three pools share no name", () => {
   const srd = srdBaselineCompendium();
-  const srdCatalogs = { compendium: srd };
+  const srdCatalogs = { compendium: srd, activeBooks: ALL_BOOKS };
   const arcane = ["Crystal", "Orb", "Rod", "Staff", "Wand"];
   const holy = ["Amulet", "Emblem", "Reliquary"];
   const druidic = ["Sprig of Mistletoe", "Totem", "Wooden Staff", "Yew Wand"];
@@ -437,7 +438,7 @@ test("the card of a class with no slots has no slots and is never complete", () 
 
 test("the SRD Baseline Fighter card offers the two-name martial slot as one generic entry of quantity 2", () => {
   const srd = srdBaselineCompendium();
-  const srdCatalogs = { compendium: srd };
+  const srdCatalogs = { compendium: srd, activeBooks: ALL_BOOKS };
   const fighter = srd.for().classes().find((c) => c.name === "Fighter");
   if (!fighter) throw new Error("the Fighter is missing from the SRD Baseline");
   const card = startingEquipmentCard(makeChar({ classes: [{ className: "Fighter", source: fighter.source, level: 1 }] }), srdCatalogs);
@@ -458,7 +459,7 @@ test("the card names each item as the catalog does, not as the class entry print
   const cleric = srd.for().classes().find((c) => c.name === "Cleric");
   if (!cleric) throw new Error("the Cleric is missing from the SRD Baseline");
   const clericChar = makeChar({ classes: [{ className: "Cleric", source: cleric.source, level: 1 }] });
-  const card = startingEquipmentCard(clericChar, { compendium: srd });
+  const card = startingEquipmentCard(clericChar, { compendium: srd, activeBooks: ALL_BOOKS });
   const slot0 = card.slots[0];
   assert.equal(slot0.kind, "choice");
   if (slot0.kind !== "choice") return;

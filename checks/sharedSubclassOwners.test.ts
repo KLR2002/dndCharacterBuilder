@@ -1,3 +1,4 @@
+import { ALL_BOOKS } from "../src/constants/books.ts";
 import test from "node:test";
 import assert from "node:assert/strict";
 import type { Character } from "../src/types/character.ts";
@@ -46,21 +47,21 @@ const holding = (source: string, extra: Partial<Character> = {}) =>
 test("a character holding the first class keeps a pick on the shared subclass's choice, through a pick and a reconcile", () => {
   const compendium = bothPrints();
   const before = holding(FIRST);
-  const offer = proficiencyChoiceOffers(before, { compendium }).find((choice) => choice.id === TONGUE_ID);
+  const offer = proficiencyChoiceOffers(before, { compendium, activeBooks: ALL_BOOKS }).find((choice) => choice.id === TONGUE_ID);
   assert.ok(offer, "the shared subclass's choice is offered");
 
-  const picked = pickRuleChoice(before, offer, "Elvish", compendium);
+  const picked = pickRuleChoice(before, offer, "Elvish", compendium, ALL_BOOKS);
   assert.deepEqual(picked.proficiencyPicks, { [TONGUE_ID]: ["Elvish"] }, "the pick is recorded");
   assert.deepEqual(picked.needsReview ?? [], [], "the pick is not released for review");
 
-  assert.deepEqual(reconcile(picked, compendium).proficiencyPicks, { [TONGUE_ID]: ["Elvish"] }, "the pick survives a reconcile");
+  assert.deepEqual(reconcile(picked, compendium, { activeBooks: ALL_BOOKS }).proficiencyPicks, { [TONGUE_ID]: ["Elvish"] }, "the pick survives a reconcile");
 });
 
 test("a character holding the second class keeps a pick on the shared subclass's choice", () => {
   const compendium = bothPrints();
   const second = holding(SECOND, { proficiencyPicks: { [TONGUE_ID]: ["Elvish"] } });
-  assert.deepEqual(pruneInvalidProficiencyPicks(second, compendium).proficiencyPicks, { [TONGUE_ID]: ["Elvish"] });
-  assert.deepEqual(reconcile(second, compendium).proficiencyPicks, { [TONGUE_ID]: ["Elvish"] });
+  assert.deepEqual(pruneInvalidProficiencyPicks(second, compendium, ALL_BOOKS).proficiencyPicks, { [TONGUE_ID]: ["Elvish"] });
+  assert.deepEqual(reconcile(second, compendium, { activeBooks: ALL_BOOKS }).proficiencyPicks, { [TONGUE_ID]: ["Elvish"] });
 });
 
 test("a character holding neither class still has the pick released, with a review notice", () => {
@@ -69,7 +70,7 @@ test("a character holding neither class still has the pick released, with a revi
     classes: [{ className: "Cinderwright", source: "DELTA", level: 3, subclassName: "Circle of Foam", subclassSource: SUBCLASS_SOURCE }],
     proficiencyPicks: { [TONGUE_ID]: ["Elvish"] },
   });
-  const pruned = pruneInvalidProficiencyPicks(stranger, compendium);
+  const pruned = pruneInvalidProficiencyPicks(stranger, compendium, ALL_BOOKS);
   assert.equal(pruned.proficiencyPicks, undefined);
   assert.deepEqual(pruned.needsReview, ["Elvish removed from Foam Step: no longer granted"]);
 });
@@ -77,7 +78,7 @@ test("a character holding neither class still has the pick released, with a revi
 test("a pick saved under an alias migrates when the id has several owners, even if only one owner carries the alias", () => {
   const compendium = bothPrints([FORMER_TONGUE_ID]);
   const saved = holding(SECOND, { proficiencyPicks: { [FORMER_TONGUE_ID]: ["Elvish"] } });
-  const migrated = moveAliasedProficiencyPicks(saved, compendium);
+  const migrated = moveAliasedProficiencyPicks(saved, compendium, ALL_BOOKS);
   assert.deepEqual(migrated.proficiencyPicks, { [TONGUE_ID]: ["Elvish"] });
-  assert.deepEqual(pruneInvalidProficiencyPicks(migrated, compendium).proficiencyPicks, { [TONGUE_ID]: ["Elvish"] });
+  assert.deepEqual(pruneInvalidProficiencyPicks(migrated, compendium, ALL_BOOKS).proficiencyPicks, { [TONGUE_ID]: ["Elvish"] });
 });

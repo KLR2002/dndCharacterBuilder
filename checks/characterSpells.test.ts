@@ -1,3 +1,4 @@
+import { ALL_BOOKS } from "../src/constants/books.ts";
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { makeChar, inMemoryCompendium, resetTestCompendium } from "./testUtils.ts";
@@ -258,7 +259,7 @@ function cls(className: string, level: number, subclassName?: string, source = "
 }
 
 function profileFor(char: Character, className: string) {
-  const profile = getClassSpellProfiles(char).find((p) => p.className === className);
+  const profile = getClassSpellProfiles(char, { activeBooks: ALL_BOOKS }).find((p) => p.className === className);
   assert.ok(profile, `expected a ${className} profile`);
   return profile;
 }
@@ -523,7 +524,7 @@ for (const [mode, compendium] of MODES) {
     char = togglePrepared(char, profileFor(char, "Druid"), target, compendium, PHB);
     assert.deepEqual(char.preparedSpells, ["Cure Wounds__PHB__Cleric__PHB", "Cure Wounds__PHB__Druid__PHB"]);
 
-    const forgotten = forgetSpell(char, profileFor(char, "Cleric"), target, compendium);
+    const forgotten = forgetSpell(char, profileFor(char, "Cleric"), target, compendium, ALL_BOOKS);
     const cleric = profileFor(forgotten, "Cleric");
     const druid = profileFor(forgotten, "Druid");
     assert.equal(isKnown(forgotten, cleric, target), false);
@@ -545,7 +546,7 @@ for (const [mode, compendium] of MODES) {
       preparedSpells: ["Cure Wounds__PHB"],
     });
 
-    const forgotten = forgetSpell(char, profileFor(char, "Cleric"), target, compendium);
+    const forgotten = forgetSpell(char, profileFor(char, "Cleric"), target, compendium, ALL_BOOKS);
     assert.equal(isPrepared(forgotten, profileFor(forgotten, "Druid"), target), true);
   });
 
@@ -557,7 +558,7 @@ for (const [mode, compendium] of MODES) {
       preparedSpells: ["Cure Wounds__PHB"],
     });
 
-    const forgotten = forgetSpell(char, profileFor(char, "Cleric"), target, compendium);
+    const forgotten = forgetSpell(char, profileFor(char, "Cleric"), target, compendium, ALL_BOOKS);
     assert.deepEqual(forgotten.knownSpells, []);
     assert.deepEqual(forgotten.preparedSpells, []);
   });

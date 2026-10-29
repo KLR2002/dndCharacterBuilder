@@ -1,3 +1,4 @@
+import { ALL_BOOKS } from "../src/constants/books.ts";
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { makeChar, loadTestCatalogs, integratedTestCompendium } from "./testUtils.ts";
@@ -123,14 +124,14 @@ describe("First-Class Attunement Ledger & 3-Slot Limit", () => {
 
     // 1. Unattuned weapon without numeric bonus still shows Unattuned badge
     const charUnattuned = { ...fighter, items: [warningSword] };
-    const attacksUnattuned = getWeaponAttacks(charUnattuned, { catalogs: { compendium } });
+    const attacksUnattuned = getWeaponAttacks(charUnattuned, { catalogs: { compendium, activeBooks: ALL_BOOKS } });
     assert.equal(attacksUnattuned[0].toHit, 5);
     assert.equal(attacksUnattuned[0].damage, "1d8 + 3");
     assert.deepEqual(attacksUnattuned[0].calculationBadges, ["Unattuned"]);
 
     // 2. Attuned weapon without numeric bonus removes Unattuned badge
     const charAttuned = { ...fighter, items: [{ ...warningSword, isAttuned: true }] };
-    const attacksAttuned = getWeaponAttacks(charAttuned, { catalogs: { compendium } });
+    const attacksAttuned = getWeaponAttacks(charAttuned, { catalogs: { compendium, activeBooks: ALL_BOOKS } });
     assert.equal(attacksAttuned[0].toHit, 5);
     assert.equal(attacksAttuned[0].damage, "1d8 + 3");
     assert.equal(attacksAttuned[0].calculationBadges, undefined);
@@ -152,7 +153,7 @@ describe("First-Class Attunement Ledger & 3-Slot Limit", () => {
 
     // Unattuned: no +3 bonus, shows Unattuned
     const charHolyUnattuned = { ...fighter, items: [holyAvenger] };
-    const attacksHolyUnattuned = getWeaponAttacks(charHolyUnattuned, { catalogs: { compendium } });
+    const attacksHolyUnattuned = getWeaponAttacks(charHolyUnattuned, { catalogs: { compendium, activeBooks: ALL_BOOKS } });
     assert.equal(attacksHolyUnattuned[0].toHit, 5);
     assert.equal(attacksHolyUnattuned[0].damage, "1d8 + 3");
     assert.equal(attacksHolyUnattuned[0].itemBonus, undefined);
@@ -160,7 +161,7 @@ describe("First-Class Attunement Ledger & 3-Slot Limit", () => {
 
     // Attuned: grants +3 bonus, shows Item +3
     const charHolyAttuned = { ...fighter, items: [{ ...holyAvenger, isAttuned: true }] };
-    const attacksHolyAttuned = getWeaponAttacks(charHolyAttuned, { catalogs: { compendium } });
+    const attacksHolyAttuned = getWeaponAttacks(charHolyAttuned, { catalogs: { compendium, activeBooks: ALL_BOOKS } });
     assert.equal(attacksHolyAttuned[0].toHit, 8, "Str 3 + PB 2 + Item 3 = 8");
     assert.equal(attacksHolyAttuned[0].damage, "1d8 + 6", "Str 3 + Item 3 = 6");
     assert.equal(attacksHolyAttuned[0].itemBonus, 3);
@@ -201,7 +202,7 @@ describe("First-Class Attunement Ledger & 3-Slot Limit", () => {
 
     // 1. Both equipped but both unattuned: only base 14 (Armor) and 2 (Shield) apply
     const charBothUnattuned = { ...paladin, items: [dragonArmor, arrowShield] };
-    const acBothUnattuned = armorClass(charBothUnattuned);
+    const acBothUnattuned = armorClass(charBothUnattuned, { activeBooks: ALL_BOOKS });
     assert.equal(acBothUnattuned.ac, 16, "14 (Armor) + 2 (Shield) = 16 AC");
     assert.equal(acBothUnattuned.breakdown, "14 (Armor) + 0 (Dex max 2) + 2 (Shield)");
 
@@ -210,7 +211,7 @@ describe("First-Class Attunement Ledger & 3-Slot Limit", () => {
       ...paladin,
       items: [{ ...dragonArmor, isAttuned: true }, arrowShield],
     };
-    const acArmorAttuned = armorClass(charArmorAttuned);
+    const acArmorAttuned = armorClass(charArmorAttuned, { activeBooks: ALL_BOOKS });
     assert.equal(acArmorAttuned.ac, 17, "14 (Armor) + 2 (Shield) + 1 (Magic Item) = 17 AC");
     assert.equal(acArmorAttuned.breakdown, "14 (Armor) + 0 (Dex max 2) + 2 (Shield) + 1 (Magic Item)");
 
@@ -222,7 +223,7 @@ describe("First-Class Attunement Ledger & 3-Slot Limit", () => {
         { ...arrowShield, isAttuned: true },
       ],
     };
-    const acBothAttuned = armorClass(charBothAttuned);
+    const acBothAttuned = armorClass(charBothAttuned, { activeBooks: ALL_BOOKS });
     assert.equal(acBothAttuned.ac, 19, "14 (Armor) + 2 (Shield) + 3 (Magic Item) = 19 AC");
     assert.equal(acBothAttuned.breakdown, "14 (Armor) + 0 (Dex max 2) + 2 (Shield) + 3 (Magic Item)");
   });

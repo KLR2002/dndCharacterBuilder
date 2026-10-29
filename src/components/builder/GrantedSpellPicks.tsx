@@ -1,3 +1,4 @@
+import type { ActiveBooks } from "../../constants/books";
 import React from "react";
 import { Text, TouchableOpacity, View } from "react-native";
 import type { Character } from "../../types/character";
@@ -11,7 +12,7 @@ export interface GrantedSpellPicksProps {
   choices: AvailableRuleChoice[];
   onUpdate: (updater: (cur: Character) => Character) => void;
   theme: any;
-  activeBooks?: string[];
+  activeBooks: ActiveBooks;
 }
 
 /**

@@ -1,3 +1,4 @@
+import { ALL_BOOKS } from "../src/constants/books.ts";
 import test from "node:test";
 import assert from "node:assert/strict";
 import { reconcile, reconcileForActiveBooks } from "../src/rules/characterReconciler.ts";
@@ -51,7 +52,7 @@ test("a skill whose book is still enabled keeps its Expertise mark", () => {
 });
 
 test("without activeBooks the mark is kept, as before the books were scoped", () => {
-  const kept = reconcile(smugglerRogue(), catalog());
+  const kept = reconcile(smugglerRogue(), catalog(), { activeBooks: ALL_BOOKS });
   assert.deepEqual(kept.chosenExpertise, ["Investigation", "Stealth"]);
   assert.equal(kept.needsReview, undefined);
 });

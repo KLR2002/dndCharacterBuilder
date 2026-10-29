@@ -1,3 +1,4 @@
+import type { ActiveBooks } from "../../constants/books";
 import React from "react";
 import type { Character } from "../../types/character";
 import type { AvailableRuleChoice } from "../../rules/ruleChoices";
@@ -12,7 +13,7 @@ export const ProficiencyChoicePicker: React.FC<{
   character: Character;
   onUpdate: (patchOrUpdater: Partial<Character> | ((prev: Character) => Character)) => void;
   theme: any;
-  activeBooks?: string[];
+  activeBooks: ActiveBooks;
 }> = ({ choice, character, onUpdate, theme, activeBooks }) => {
   const options = choice.options.map((option) => option.name);
   return (

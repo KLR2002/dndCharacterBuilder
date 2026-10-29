@@ -1,3 +1,4 @@
+import { ALL_BOOKS } from "../constants/books.ts";
 import type { AbilityKey, Character, InventoryItem } from "../types/character.ts";
 import type { ResolvedAncestry } from "./types.ts";
 import type { CharacterCatalogs } from "./catalogs.ts";
@@ -318,8 +319,8 @@ export function getWeaponAttacks(
 ): WeaponAttackOption[] {
   const { modifiers } = effectiveScores(character, opts.ancestry);
   const pb = proficiencyBonus(totalLevel(character));
-  const sheetWeapons = proficiencySheet(character, opts.catalogs ?? {}).weapons.map((weapon) => weapon.name);
-  const kenseiWeapons = new Set(kenseiWeaponNames(character, opts.catalogs).map((name) => name.toLowerCase()));
+  const sheetWeapons = proficiencySheet(character, opts.catalogs ?? { activeBooks: ALL_BOOKS }).weapons.map((weapon) => weapon.name);
+  const kenseiWeapons = new Set(kenseiWeaponNames(character, opts.catalogs ?? { activeBooks: ALL_BOOKS }).map((name) => name.toLowerCase()));
 
   const monk = (character.classes || []).find((c) => c.className === "Monk");
   const rogue = (character.classes || []).find((c) => c.className === "Rogue");

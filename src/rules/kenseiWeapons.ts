@@ -21,7 +21,7 @@ export function weaponPickMarksMonkWeapon(feature: FeatureInstance): boolean {
  * subclass features the character holds at its level. Each one is a Monk Weapon whatever its properties. Read
  * from the Catalog's grants, so without the Catalog there are none (the picks themselves are kept).
  */
-export function kenseiWeaponNames(character: Character, catalogs: CharacterCatalogs = {}): string[] {
+export function kenseiWeaponNames(character: Character, catalogs: CharacterCatalogs): string[] {
   const monk = character.classes.find((c) => c.className === "Monk" && c.subclassName);
   if (!monk?.subclassName) return [];
   const listings = catalogListings(catalogs);

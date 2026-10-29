@@ -1,9 +1,9 @@
+import { ALL_BOOKS } from "../src/constants/books.ts";
 import { test } from "node:test";
 import { readFileSync } from "node:fs";
 import { createRequire } from "node:module";
 import { runInNewContext } from "node:vm";
 import * as storage from "../src/services/storage.ts";
-const { transpileModule, ModuleKind, JsxEmit } = createRequire(import.meta.url)("typescript");
 import assert from "node:assert/strict";
 import { inMemoryCompendium, loadTestCatalog, makeChar } from "./testUtils.ts";
 import type { AdditionalSpells, BackgroundData, ClassData, FeatData, RaceData } from "../src/types/dnd5e.ts";
@@ -17,6 +17,7 @@ import { reconcileForActiveBooks } from "../src/rules/characterReconciler.ts";
 import { applyCharacterUpdate } from "../src/context/characterUpdates.ts";
 import { __setKvForTests, loadCharacters, saveCharacters } from "../src/services/storage.ts";
 import * as compendiumStorage from "../src/services/compendiumStorage.ts";
+const { transpileModule, ModuleKind, JsxEmit } = createRequire(import.meta.url)("typescript");
 
 // Execute the real provider without RN/a renderer dependency. State updates are
 // deferred until render, as in React batching; effects run only after commit.
@@ -402,7 +403,7 @@ test("legacy spells gain the first spellcasting owner without losing legacy or u
     preparedSpells: ["Shield__PHB", "Bless__PHB__Cleric__PHB"], usedPactSlots: 2,
   }), customField: { retained: true } };
   const before = structuredClone(raw);
-  const migrated = migrateCharacter(raw);
+  const migrated = migrateCharacter(raw, undefined, undefined, ALL_BOOKS);
   assert.equal(migrated.knownSpells?.[0].ownerKey, "Wizard__PHB");
   assert.equal(migrated.knownSpells?.[0].className, "Wizard");
   assert.deepEqual(migrated.preparedSpells, ["Shield__PHB__Wizard__PHB", "Bless__PHB__Cleric__PHB"]);
@@ -413,19 +414,19 @@ test("legacy spells gain the first spellcasting owner without losing legacy or u
   assert.deepEqual(migrated.racialChoiceBonus, []);
   assert.deepEqual(migrated.classChoices, []);
   assert.deepEqual(raw, before);
-  assert.deepEqual(migrateCharacter(migrated), migrated);
+  assert.deepEqual(migrateCharacter(migrated, undefined, undefined, ALL_BOOKS), migrated);
 });
 
 test("spell migration preserves explicit owners and pact usage; no caster uses unknown owner", () => {
   const migrated = migrateCharacter(makeChar({
     knownSpells: [{ name: "Light", source: "PHB", ownerKey: "Cleric__PHB" }, { name: "Shield", source: "PHB", className: "" }],
     preparedSpells: ["Shield__PHB"], pactSlotsUsed: 0, usedPactSlots: 2,
-  }));
+  }), undefined, undefined, ALL_BOOKS);
   assert.equal(migrated.knownSpells?.[0].ownerKey, "Cleric__PHB");
   assert.equal(migrated.knownSpells?.[1].ownerKey, "unknown__unknown");
   assert.deepEqual(migrated.preparedSpells, ["Shield__PHB__unknown__unknown"]);
   assert.equal(migrated.pactSlotsUsed, 0);
-  assert.deepEqual(migrateCharacter(makeChar({ knownSpells: undefined, preparedSpells: undefined })).knownSpells, []);
+  assert.deepEqual(migrateCharacter(makeChar({ knownSpells: undefined, preparedSpells: undefined }), undefined, undefined, ALL_BOOKS).knownSpells, []);
 });
 
 test("single-source legacy skill choices gain stable ownership", () => {
@@ -433,36 +434,36 @@ test("single-source legacy skill choices gain stable ownership", () => {
     [{ classes: [{ className: "Wizard", source: "PHB", level: 1 }] }, "class", "class__Wizard__PHB__skills"],
     [{ background: { name: "Custom", source: "PHB" } }, "background", "background__Custom__PHB__skills"],
   ] as const) {
-    const migrated = migrateCharacter({ ...makeChar(), ...source, chosenSkills: ["Arcana", "History"] });
+    const migrated = migrateCharacter({ ...makeChar(), ...source, chosenSkills: ["Arcana", "History"] }, undefined, undefined, ALL_BOOKS);
     assert.deepEqual(migrated.skillChoices, [{ id, origin, choose: 2, from: ["Arcana", "History"], picked: ["Arcana", "History"] }]);
     assert.deepEqual(migrated.chosenSkills, ["Arcana", "History"]);
-    assert.deepEqual(migrateCharacter(migrated), migrated);
+    assert.deepEqual(migrateCharacter(migrated, undefined, undefined, ALL_BOOKS), migrated);
   }
 });
 
 test("ambiguous legacy skills are preserved and flagged, not assigned an invented owner", () => {
   const classes = [{ className: "Wizard", source: "PHB", level: 1 }, { className: "Rogue", source: "PHB", level: 1 }];
   for (const source of [{ classes }, { classes: classes.slice(0, 1), background: { name: "Sage", source: "PHB" } }, {}]) {
-    const migrated = migrateCharacter({ ...makeChar(), ...source, chosenSkills: ["Arcana"], needsReview: ["existing warning"] });
+    const migrated = migrateCharacter({ ...makeChar(), ...source, chosenSkills: ["Arcana"], needsReview: ["existing warning"] }, undefined, undefined, ALL_BOOKS);
     assert.deepEqual(migrated.chosenSkills, ["Arcana"]);
     assert.deepEqual(migrated.skillChoices, []);
     assert.ok(migrated.needsReview?.includes("Some skill picks could not be matched to a class or background. Check them in the Builder."));
     assert.ok(migrated.needsReview?.includes("existing warning"));
-    assert.deepEqual(migrateCharacter(migrated), migrated);
+    assert.deepEqual(migrateCharacter(migrated, undefined, undefined, ALL_BOOKS), migrated);
   }
 });
 
 test("explicit v2 choices are preserved instead of re-inferred", () => {
   const skillChoices = [{ id: "existing", origin: "race", choose: 1, from: ["Arcana"], picked: ["Arcana"] }];
   const raw = { ...makeChar(), chosenSkills: ["Arcana"], skillChoices, standardArrayPicks: { str: 15 }, racialChoiceBonus: [{ key: "con", amount: 1 }], classChoices: [{ id: "feat", classId: "Wizard__PHB", classLevel: 4, kind: "asi", asi: { int: 2 } }] };
-  const migrated = migrateCharacter(raw);
+  const migrated = migrateCharacter(raw, undefined, undefined, ALL_BOOKS);
   for (const key of ["skillChoices", "standardArrayPicks", "racialChoiceBonus", "classChoices"] as const) assert.deepEqual(migrated[key], raw[key]);
   assert.equal(migrated.needsReview, undefined);
 });
 
 test("malformed character records are rejected, not silently replaced", () => {
   for (const raw of [null, [], "broken", { ...makeChar(), knownSpells: "bad" }, { ...makeChar(), preparedSpells: [3] }, { ...makeChar(), classes: null }]) {
-    assert.throws(() => migrateCharacter(raw), /Invalid character/);
+    assert.throws(() => migrateCharacter(raw, undefined, undefined, ALL_BOOKS), /Invalid character/);
   }
 });
 

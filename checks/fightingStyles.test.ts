@@ -1,3 +1,4 @@
+import { ALL_BOOKS } from "../src/constants/books.ts";
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { reconcile } from "../src/rules/characterReconciler.ts";
@@ -81,18 +82,18 @@ test("Fighter 1, Paladin 2, Ranger 2 style option lists match 2014 RAW (PHB only
 
   // Level gating
   const f0 = makeChar({ classes: [{ className: "Fighter", level: 0, hitDiceType: "d10" }] });
-  assert.equal(fightingStyleRuleChoices(f0).length, 0);
+  assert.equal(fightingStyleRuleChoices(f0, ALL_BOOKS).length, 0);
 
   const pal1 = makeChar({ classes: [{ className: "Paladin", level: 1, hitDiceType: "d10" }] });
-  assert.equal(fightingStyleRuleChoices(pal1).length, 0);
+  assert.equal(fightingStyleRuleChoices(pal1, ALL_BOOKS).length, 0);
 
   const r1 = makeChar({ classes: [{ className: "Ranger", level: 1, hitDiceType: "d10" }] });
-  assert.equal(fightingStyleRuleChoices(r1).length, 0);
+  assert.equal(fightingStyleRuleChoices(r1, ALL_BOOKS).length, 0);
 
   const b2 = makeChar({
     classes: [{ className: "Bard", level: 2, hitDiceType: "d8", subclassName: "College of Swords" }],
   });
-  assert.equal(fightingStyleRuleChoices(b2).length, 0);
+  assert.equal(fightingStyleRuleChoices(b2, ALL_BOOKS).length, 0);
 });
 
 test("Fighter, Paladin, Ranger style options with TCoE enabled include expanded styles", () => {
@@ -202,7 +203,7 @@ test("Blessed Warrior grants 2 cantrips and synchronizes into knownSpells with C
     ],
   });
 
-  const choices = fightingStyleRuleChoices(char);
+  const choices = fightingStyleRuleChoices(char, ALL_BOOKS);
   const bwCantripsChoice = choices.find((c) => c.id === "TCE__Paladin__Blessed Warrior Cantrips");
   assert.ok(bwCantripsChoice);
   assert.equal(bwCantripsChoice.choose, 2);
@@ -247,7 +248,7 @@ test("Druidic Warrior grants 2 cantrips and synchronizes into knownSpells with W
     ],
   });
 
-  const choices = fightingStyleRuleChoices(char);
+  const choices = fightingStyleRuleChoices(char, ALL_BOOKS);
   const dwCantripsChoice = choices.find((c) => c.id === "TCE__Ranger__Druidic Warrior Cantrips");
   assert.ok(dwCantripsChoice);
   assert.equal(dwCantripsChoice.choose, 2);
@@ -335,7 +336,7 @@ test("Defense grants +1 AC while armored and includes breakdown badge", () => {
     ],
   });
 
-  const acArmored = armorClass(armoredDefender);
+  const acArmored = armorClass(armoredDefender, { activeBooks: ALL_BOOKS });
   assert.equal(acArmored.ac, 17); // 16 (Chain Mail) + 1 (Defense) = 17
   assert.ok(acArmored.breakdown.includes("+ 1 (Defense)"));
 
@@ -344,7 +345,7 @@ test("Defense grants +1 AC while armored and includes breakdown badge", () => {
     ...armoredDefender,
     items: [],
   });
-  const acUnarmored = armorClass(unarmoredDefender);
+  const acUnarmored = armorClass(unarmoredDefender, { activeBooks: ALL_BOOKS });
   assert.equal(acUnarmored.ac, 10);
   assert.ok(!acUnarmored.breakdown.includes("Defense"));
 
@@ -353,7 +354,7 @@ test("Defense grants +1 AC while armored and includes breakdown badge", () => {
     ...armoredDefender,
     items: [armor("s1", "Shield", 2, { armorCategory: "shield" })],
   });
-  const acShield = armorClass(shieldDefender);
+  const acShield = armorClass(shieldDefender, { activeBooks: ALL_BOOKS });
   assert.equal(acShield.ac, 12); // 10 + 2 (Shield)
   assert.ok(!acShield.breakdown.includes("Defense"));
 });
@@ -483,7 +484,7 @@ test("Fighting Initiate feat offers Fighter styles", () => {
     ],
   });
 
-  const choices = fightingStyleRuleChoices(featChar);
+  const choices = fightingStyleRuleChoices(featChar, ALL_BOOKS);
   assert.equal(choices.length, 1);
   assert.equal(choices[0].id, "TCE__Feat__Fighting Initiate__Style");
   assert.equal(choices[0].traitName, "Fighting Initiate Style");
@@ -504,13 +505,13 @@ test("Fighting Initiate feat offers Fighter styles", () => {
       },
     ],
   });
-  const originChoices = fightingStyleRuleChoices(originFeatChar);
+  const originChoices = fightingStyleRuleChoices(originFeatChar, ALL_BOOKS);
   assert.equal(originChoices.length, 1);
   assert.equal(originChoices[0].id, "TCE__Feat__Fighting Initiate__Style");
 
   // Character without feat does not receive the choice
   const plainChar = makeChar({ classes: [{ className: "Wizard", level: 1, hitDiceType: "d6" }] });
-  assert.equal(fightingStyleRuleChoices(plainChar).length, 0);
+  assert.equal(fightingStyleRuleChoices(plainChar, ALL_BOOKS).length, 0);
 });
 
 test("reconcile cleans up invalid styles and cantrips on de-leveling", () => {
@@ -540,7 +541,7 @@ test("reconcile cleans up invalid styles and cantrips on de-leveling", () => {
     ],
   });
 
-  const pruned = reconcile(char, currentCompendium());
+  const pruned = reconcile(char, currentCompendium(), { activeBooks: ALL_BOOKS });
   assert.equal(pruned.ruleChoices?.length, 0);
   assert.equal(pruned.knownSpells?.length, 0);
 });

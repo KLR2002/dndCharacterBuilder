@@ -23,6 +23,7 @@ import { poolNames } from "../../rules/proficiencyPools";
 import { featSpellChoicesOf, type AvailableRuleChoice } from "../../rules/ruleChoices";
 import { currentCompendium } from "../../services/compendium";
 import { catalogListings, type CharacterCatalogs } from "../../rules/catalogs";
+import { findHeldRecord } from "../../rules/raceLookup";
 import { featOfSelection } from "../../rules/choices/featSpells";
 import { GrantedSpellPicks } from "./GrantedSpellPicks";
 import { Badge } from "../ui/Badge";
@@ -159,7 +160,7 @@ export const BackgroundSection: React.FC<BackgroundSectionProps> = ({
           {/* Auto-granted background skills & equipment (official) */}
           {character.background.source !== "Custom" &&
             (() => {
-              const bgData = allBackgrounds.find((b) => b.name === character.background!.name);
+              const bgData = findHeldRecord(allBackgrounds, character.background, catalogs.activeBooks);
               if (!bgData) return null;
               const startingEq = parseBackgroundEquipment(bgData.startingEquipment || []);
               return (

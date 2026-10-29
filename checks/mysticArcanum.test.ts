@@ -1,3 +1,4 @@
+import { ALL_BOOKS } from "../src/constants/books.ts";
 import test from "node:test";
 import assert from "node:assert/strict";
 import { reconcile } from "../src/rules/characterReconciler.ts";
@@ -66,11 +67,11 @@ function createHighLevelWarlock(level: number, subclass: string = "The Fiend"): 
 test("Mystic Arcanum: milestone choices unlock at levels 11, 13, 15, and 17", () => {
   // Level 10: no Arcanum
   const lvl10 = createHighLevelWarlock(10);
-  assert.equal(warlockMysticArcanumChoices(lvl10).length, 0);
+  assert.equal(warlockMysticArcanumChoices(lvl10, ALL_BOOKS).length, 0);
 
   // Level 11: 6th-level Arcanum
   const lvl11 = createHighLevelWarlock(11);
-  const choices11 = warlockMysticArcanumChoices(lvl11);
+  const choices11 = warlockMysticArcanumChoices(lvl11, ALL_BOOKS);
   assert.equal(choices11.length, 1);
   assert.equal(choices11[0].id, "Warlock__Mystic Arcanum 11");
   assert.equal(choices11[0].choose, 1);
@@ -82,7 +83,7 @@ test("Mystic Arcanum: milestone choices unlock at levels 11, 13, 15, and 17", ()
 
   // Level 13: 6th and 7th
   const lvl13 = createHighLevelWarlock(13);
-  const choices13 = warlockMysticArcanumChoices(lvl13);
+  const choices13 = warlockMysticArcanumChoices(lvl13, ALL_BOOKS);
   assert.equal(choices13.length, 2);
   assert.equal(choices13[1].id, "Warlock__Mystic Arcanum 13");
   const spells7 = choices13[1].options.map((o) => o.name);
@@ -92,7 +93,7 @@ test("Mystic Arcanum: milestone choices unlock at levels 11, 13, 15, and 17", ()
 
   // Level 15: 6th, 7th, 8th
   const lvl15 = createHighLevelWarlock(15);
-  const choices15 = warlockMysticArcanumChoices(lvl15);
+  const choices15 = warlockMysticArcanumChoices(lvl15, ALL_BOOKS);
   assert.equal(choices15.length, 3);
   assert.equal(choices15[2].id, "Warlock__Mystic Arcanum 15");
   const spells8 = choices15[2].options.map((o) => o.name);
@@ -103,7 +104,7 @@ test("Mystic Arcanum: milestone choices unlock at levels 11, 13, 15, and 17", ()
 
   // Level 17: 6th, 7th, 8th, 9th
   const lvl17 = createHighLevelWarlock(17);
-  const choices17 = warlockMysticArcanumChoices(lvl17);
+  const choices17 = warlockMysticArcanumChoices(lvl17, ALL_BOOKS);
   assert.equal(choices17.length, 4);
   assert.equal(choices17[3].id, "Warlock__Mystic Arcanum 17");
   const spells9 = choices17[3].options.map((o) => o.name);
@@ -130,12 +131,12 @@ test("Mystic Arcanum: Genie Warlock gets Wish in 9th-level Arcanum options", () 
 
 test("Mystic Arcanum: selection, getMysticArcanumTiers, and daily tracking", () => {
   let char = createHighLevelWarlock(17);
-  const choices = warlockMysticArcanumChoices(char);
+  const choices = warlockMysticArcanumChoices(char, ALL_BOOKS);
 
-  char = pickRuleChoice(char, choices[0], "Mass Suggestion"); // 6th
-  char = pickRuleChoice(char, choices[1], "Finger of Death"); // 7th
-  char = pickRuleChoice(char, choices[2], "Demiplane"); // 8th
-  char = pickRuleChoice(char, choices[3], "True Polymorph"); // 9th
+  char = pickRuleChoice(char, choices[0], "Mass Suggestion", undefined, ALL_BOOKS); // 6th
+  char = pickRuleChoice(char, choices[1], "Finger of Death", undefined, ALL_BOOKS); // 7th
+  char = pickRuleChoice(char, choices[2], "Demiplane", undefined, ALL_BOOKS); // 8th
+  char = pickRuleChoice(char, choices[3], "True Polymorph", undefined, ALL_BOOKS); // 9th
 
   const tiers = getMysticArcanumTiers(char);
   assert.equal(tiers.length, 4);
@@ -187,12 +188,12 @@ test("Mystic Arcanum: Short Rest preserves spent status, Long Rest recovers all 
 
 test("Mystic Arcanum: deleveling prunes invalid tiers and cleans up spent tracking", () => {
   let char = createHighLevelWarlock(17);
-  const choices = warlockMysticArcanumChoices(char);
+  const choices = warlockMysticArcanumChoices(char, ALL_BOOKS);
 
-  char = pickRuleChoice(char, choices[0], "Mass Suggestion"); // 6th (lvl 11)
-  char = pickRuleChoice(char, choices[1], "Finger of Death"); // 7th (lvl 13)
-  char = pickRuleChoice(char, choices[2], "Demiplane"); // 8th (lvl 15)
-  char = pickRuleChoice(char, choices[3], "True Polymorph"); // 9th (lvl 17)
+  char = pickRuleChoice(char, choices[0], "Mass Suggestion", undefined, ALL_BOOKS); // 6th (lvl 11)
+  char = pickRuleChoice(char, choices[1], "Finger of Death", undefined, ALL_BOOKS); // 7th (lvl 13)
+  char = pickRuleChoice(char, choices[2], "Demiplane", undefined, ALL_BOOKS); // 8th (lvl 15)
+  char = pickRuleChoice(char, choices[3], "True Polymorph", undefined, ALL_BOOKS); // 9th (lvl 17)
 
   char = {
     ...char,
@@ -205,7 +206,7 @@ test("Mystic Arcanum: deleveling prunes invalid tiers and cleans up spent tracki
     classes: [{ className: "Warlock", level: 14, hitDiceSpent: 0 }],
   };
 
-  const pruned = reconcile(deleveled, currentCompendium());
+  const pruned = reconcile(deleveled, currentCompendium(), { activeBooks: ALL_BOOKS });
 
   // Verify only 11 and 13 choices remain
   assert.equal(pruned.ruleChoices?.length, 2);

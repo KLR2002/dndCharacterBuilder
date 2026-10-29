@@ -1,3 +1,4 @@
+import type { ActiveBooks } from "../constants/books.ts";
 import type { AsiSelection, Character, KnownSpell, SkillChoiceEntry } from "../types/character.ts";
 import type { ClassData, RaceData } from "../types/dnd5e.ts";
 import { spellAbilityOf } from "./classData.ts";
@@ -54,9 +55,9 @@ function oneEntryPerFeat(entries: AsiSelection[]): AsiSelection[] {
  */
 export function migrateCharacter(
   raw: unknown,
-  raceCatalog?: RaceData[],
+  raceCatalog: RaceData[] | undefined,
   classCatalog: readonly ClassData[] = [],
-  activeBooks?: readonly string[],
+  activeBooks: ActiveBooks,
 ): Character {
   if (!isRecord(raw) || typeof raw.id !== "string" || typeof raw.name !== "string" ||
       typeof raw.createdAt !== "number" || !Number.isFinite(raw.createdAt)) {
@@ -122,7 +123,7 @@ export function migrateCharacter(
   // leave a permanent, meaningless review notice.
   if (c.race && raceCatalog && ruleChoices.length === 0) {
     const recorded = new Set(ruleChoices.map((entry) => entry.id));
-    const missing = availableRuleChoices(c, raceCatalog, totalLevel(c)).filter(
+    const missing = availableRuleChoices(c, raceCatalog, totalLevel(c), activeBooks).filter(
       (choice) => !recorded.has(choice.id)
     );
     if (missing.length > 0) needsReview.add(ANCESTRY_CHOICE_NOTICE);

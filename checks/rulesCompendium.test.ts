@@ -1,3 +1,4 @@
+import { ALL_BOOKS } from "../src/constants/books.ts";
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { reconcile } from "../src/rules/characterReconciler.ts";
@@ -69,7 +70,7 @@ test("reconcile takes a granted Tome cantrip's source from the given Compendium"
   });
   const synced = reconcile(warlock3, inMemoryCompendium({
     spells: [spell("Eldritch Blast", 0, ["Warlock"], "XGE")],
-  }));
+  }), { activeBooks: ALL_BOOKS });
   const tome = synced.knownSpells?.find((k) => k.name === "Eldritch Blast");
   assert.equal(tome?.source, "XGE");
 });
@@ -121,7 +122,7 @@ test("Cleric Nature Domain cantrip offers Druid cantrips from the given Compendi
 test("characterSpeeds resolves the race from the given Compendium", () => {
   const elf = makeChar({ race: { name: "Elf", source: "PHB" } });
   const race = { name: "Elf", source: "PHB", speed: { walk: 35 }, traits: [], abilityScoreIncrease: [] } as unknown as RaceData;
-  const speeds = characterSpeeds(elf, { compendium: inMemoryCompendium({ races: [race] }) });
+  const speeds = characterSpeeds(elf, { compendium: inMemoryCompendium({ races: [race] }), activeBooks: ALL_BOOKS });
   assert.equal(speeds.walk, 35);
 });
 
@@ -143,9 +144,9 @@ test("tactical maneuver descriptions come from the given Compendium", () => {
       choose: 3, from: [], picked: ["Trip Attack"],
     }],
   });
-  const evaluated = evaluateCharacter(bm3, { compendium: inMemoryCompendium({ optionsAndFeatures: [maneuver("Trip Attack")] }) });
+  const evaluated = evaluateCharacter(bm3, { compendium: inMemoryCompendium({ optionsAndFeatures: [maneuver("Trip Attack")] }), activeBooks: ALL_BOOKS });
   const ledger = getTacticalActionLedger(bm3, evaluated, {
-    compendium: inMemoryCompendium({ optionsAndFeatures: [maneuver("Trip Attack")] }),
+    compendium: inMemoryCompendium({ optionsAndFeatures: [maneuver("Trip Attack")] }), activeBooks: ALL_BOOKS,
   });
   assert.equal(ledger.maneuvers.find((m) => m.name === "Trip Attack")?.description, "Trip Attack description");
 });

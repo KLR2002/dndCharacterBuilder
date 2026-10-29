@@ -1,3 +1,4 @@
+import { ALL_BOOKS } from "../src/constants/books.ts";
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import type { Character } from "../src/types/character.ts";
@@ -88,7 +89,7 @@ const SHIPPED_RULE_CHOICE_IDS = [
   "XGE__Sorcerer__Divine Soul__Affinity",
 ];
 
-const ALL_BOOKS = ["PHB", "XGE", "TCE", "SCAG", "MPMM", "BGG", "DMG", "EGW", "VRGR", "GGR", "MTF"];
+const TEST_BOOKS = ["PHB", "XGE", "TCE", "SCAG", "MPMM", "BGG", "DMG", "EGW", "VRGR", "GGR", "MTF"];
 const races = loadTestCatalog("races");
 
 const pick = (id: string, trait: string, picked: string[]) => ({
@@ -178,19 +179,19 @@ function issuedRuleChoiceIds(): Set<string> {
   const add = (choices: { id: string }[]) => choices.forEach((choice) => issued.add(choice.id));
 
   for (const character of scenarioCharacters()) {
-    add(offeredRuleChoices(character, { raceCatalog: races, level: 20, activeBooks: ALL_BOOKS, compendium }));
-    add(fightingStyleRuleChoices(character, ALL_BOOKS, compendium));
-    add(battleMasterManeuverChoices(character, ALL_BOOKS, compendium));
-    add(warlockPactBoonChoices(character, ALL_BOOKS, compendium));
-    add(warlockTomeCantripChoices(character, ALL_BOOKS, compendium));
-    add(warlockAncientSecretsStartingRituals(character, ALL_BOOKS, compendium));
-    add(warlockMysticArcanumChoices(character, ALL_BOOKS, compendium));
-    add(warlockInvocationChoices(character, ALL_BOOKS, compendium));
-    add(artificerInfusionChoices(character, ALL_BOOKS, compendium));
-    add(artificerInfusionChoices(character, ALL_BOOKS, compendium, true));
+    add(offeredRuleChoices(character, { raceCatalog: races, level: 20, activeBooks: TEST_BOOKS, compendium }));
+    add(fightingStyleRuleChoices(character, TEST_BOOKS, compendium));
+    add(battleMasterManeuverChoices(character, TEST_BOOKS, compendium));
+    add(warlockPactBoonChoices(character, TEST_BOOKS, compendium));
+    add(warlockTomeCantripChoices(character, TEST_BOOKS, compendium));
+    add(warlockAncientSecretsStartingRituals(character, TEST_BOOKS, compendium));
+    add(warlockMysticArcanumChoices(character, TEST_BOOKS, compendium));
+    add(warlockInvocationChoices(character, TEST_BOOKS, compendium));
+    add(artificerInfusionChoices(character, TEST_BOOKS, compendium));
+    add(artificerInfusionChoices(character, TEST_BOOKS, compendium, true));
   }
   for (const character of ancestryCharacters()) {
-    add(ancestryRuleChoices(character, races));
+    add(ancestryRuleChoices(character, races, ALL_BOOKS));
   }
   return issued;
 }
