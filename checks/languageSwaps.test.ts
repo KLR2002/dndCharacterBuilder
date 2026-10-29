@@ -3,9 +3,10 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { makeChar, inMemoryCompendium } from "./testUtils.ts";
 import { applyAncestrySelection } from "../src/rules/ancestryEngine.ts";
-import { changeRace, setLanguageSwap } from "../src/rules/builderTransitions.ts";
+import { changeRace, resetOriginSwaps, setLanguageSwap, setOriginAbilitySwap } from "../src/rules/builderTransitions.ts";
 import { reconcile, reconcileForActiveBooks } from "../src/rules/characterReconciler.ts";
 import { proficiencyChoiceOffers } from "../src/rules/proficiencyChoiceOffers.ts";
+import { originCustomizationView } from "../src/rules/originCustomization.ts";
 import { languageSwapViews, proficiencySheet , sourceGrants } from "../src/rules/proficiencySheet.ts";
 import type { Character } from "../src/types/character.ts";
 import type { BackgroundData, OriginRuleRecord, ProficiencyGrant, RaceData } from "../src/types/dnd5e.ts";
@@ -305,4 +306,18 @@ test("a saved swap on a subrace-only language is released with a notice when the
   const withoutSubrace = applyAncestrySelection(swapped, repeatedRecords.find((r) => r.name === STOUT)!, undefined, repeatedCatalogs);
   assert.equal(withoutSubrace.proficiencyPicks, undefined);
   assert.deepEqual(withoutSubrace.needsReview, ["Language swap to Elvish removed: ancestry no longer grants Undercommon"]);
+});
+
+test("Reset returns the ability and the language swaps to their defaults together", () => {
+  const folk = holding(FOLK);
+  const increase = originCustomizationView(folk, catalogs)!.abilitySlots[0];
+  const moved = setOriginAbilitySwap(folk, increase.id, "dex", catalogs);
+  const swapped = setLanguageSwap(moved, rowOf(moved, "Elvish").id, "Dwarvish", catalogs);
+  assert.ok(swapped.originAbilitySwaps && swapped.proficiencyPicks, "both swaps are saved before Reset");
+
+  const reset = resetOriginSwaps(swapped, catalogs);
+  assert.equal(reset.originAbilitySwaps, undefined);
+  assert.equal(reset.proficiencyPicks, undefined);
+  assert.deepEqual(reset.racialAbilityBonuses, { con: 2 });
+  assert.deepEqual(reconcile(reset, compendium, { activeBooks: ACTIVE }), reset);
 });
