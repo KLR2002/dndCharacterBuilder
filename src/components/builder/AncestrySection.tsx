@@ -16,6 +16,7 @@ import {
 import type { SourceFixedGrants } from "../../rules/proficiencySheet";
 import { picksOnlyLanguages } from "../../rules/proficiencyChoiceOffers";
 import { ProficiencyChoicePicker } from "./ProficiencyChoicePicker";
+import { CustomizeOriginCard } from "./CustomizeOriginCard";
 import { GrantedSpellPicks } from "./GrantedSpellPicks";
 import { Badge } from "../ui/Badge";
 import { Button } from "../ui/Button";
@@ -358,6 +359,8 @@ export const AncestrySection: React.FC<AncestrySectionProps> = ({
           </View>
         </Card>
       )}
+
+      {character.race && <CustomizeOriginCard character={character} activeBooks={activeBooks} onUpdate={onUpdate} />}
 
       {/* Ancestry Rule Choices: one pick from a fixed set, gated by level */}
       {(character.race || character.lineageReplacement) && ancestryState.availableRuleChoices.length > 0 && (
