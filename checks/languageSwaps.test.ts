@@ -210,3 +210,99 @@ test("with TCE off no swap is applied, and the transition leaves the character a
   const folk = holding(FOLK);
   assert.equal(setLanguageSwap(folk, rowOf(folk, "Elvish").id, "Dwarvish", { compendium, activeBooks: WITHOUT_TCE }), folk);
 });
+
+// A subrace that repeats its race's fixed languages (High-Elf-like), and one that repeats some and adds one (Duergar-like).
+const ELF = "Sample Elf";
+const HIGH = "Sample High";
+const STOUT = "Sample Stout";
+const DEEP = "Sample Deep";
+
+const subrace = (name: string, raceName: string, grants: ProficiencyGrant[]) => ({
+  name,
+  source: SOURCE,
+  raceName,
+  raceSource: SOURCE,
+  abilityScoreIncrease: [],
+  darkvision: null,
+  traits: [],
+  grants,
+  description: "Placeholder description for the subrace.",
+});
+
+const ELF_GRANT = `${SOURCE}/Race/${ELF}@0#languages:fixed:Common,Elvish`;
+const HIGH_GRANT = `${SOURCE}/Subrace/${HIGH}@0#languages:fixed:Common,Elvish`;
+const STOUT_GRANT = `${SOURCE}/Race/${STOUT}@0#languages:fixed:Common,Dwarvish`;
+const DEEP_GRANT = `${SOURCE}/Subrace/${DEEP}@0#languages:fixed:Common,Dwarvish,Undercommon`;
+
+const repeatedRecords: RaceData[] = [
+  { ...race(ELF, [{ dex: 2 }], [fixed(ELF_GRANT, ["Common", "Elvish"])]), subraces: [subrace(HIGH, ELF, [fixed(HIGH_GRANT, ["Common", "Elvish"])])] },
+  { ...race(STOUT, [{ con: 2 }], [fixed(STOUT_GRANT, ["Common", "Dwarvish"])]), subraces: [subrace(DEEP, STOUT, [fixed(DEEP_GRANT, ["Common", "Dwarvish", "Undercommon"])])] },
+];
+const repeatedCompendium = inMemoryCompendium({ races: repeatedRecords, backgrounds: [], originRules: [rule] }, { integrated: true });
+const repeatedCatalogs = { compendium: repeatedCompendium, activeBooks: ACTIVE };
+
+/** A character holding a race and one of its subraces, with the ancestry transition applied. */
+function holdingSubrace(raceName: string, subraceName: string): Character {
+  const raceRecord = repeatedRecords.find((r) => r.name === raceName)!;
+  const subraceRecord = raceRecord.subraces.find((s) => s.name === subraceName)!;
+  return applyAncestrySelection(makeChar(), raceRecord, subraceRecord, repeatedCatalogs);
+}
+
+/** The swap rows of a character on the repeated-language catalog. */
+function repeatedRows(character: Character) {
+  return languageSwapViews(character, repeatedCatalogs);
+}
+
+test("a subrace that repeats its race's languages gives one row per distinct language", () => {
+  const high = holdingSubrace(ELF, HIGH);
+  const rows = repeatedRows(high);
+  assert.deepEqual(rows.map((row) => row.original), ["Common", "Elvish"]);
+  assert.equal(rows.find((row) => row.original === "Common")!.id, `${ELF_GRANT}#swap:Common`, "the first grant names the swap");
+});
+
+test("swapping a repeated language removes it from the sheet entirely, and sourceGrants shows the replacement once", () => {
+  const high = holdingSubrace(ELF, HIGH);
+  const swapped = setLanguageSwap(high, repeatedRows(high).find((row) => row.original === "Common")!.id, "Dwarvish", repeatedCatalogs);
+
+  const names = proficiencySheet(swapped, repeatedCatalogs).languages.map((entry) => entry.name);
+  assert.equal(names.filter((name) => name === "Common").length, 0, "Common leaves the sheet");
+  assert.equal(names.filter((name) => name === "Dwarvish").length, 1, "Dwarvish is on the sheet once");
+  assert.ok(names.includes("Elvish"));
+
+  const granted = sourceGrants(swapped, repeatedCatalogs).race.languages;
+  assert.equal(granted.filter((name) => name === "Dwarvish").length, 1);
+  assert.ok(!granted.includes("Common"));
+});
+
+test("swapping back to the original restores the language, and reconciling again changes nothing", () => {
+  const high = holdingSubrace(ELF, HIGH);
+  const common = repeatedRows(high).find((row) => row.original === "Common")!.id;
+  const swapped = setLanguageSwap(high, common, "Dwarvish", repeatedCatalogs);
+  const restored = setLanguageSwap(swapped, common, "Common", repeatedCatalogs);
+
+  assert.equal(restored.proficiencyPicks, undefined);
+  assert.ok(proficiencySheet(restored, repeatedCatalogs).languages.map((entry) => entry.name).includes("Common"));
+  const once = reconcile(swapped, repeatedCompendium, { activeBooks: ACTIVE });
+  assert.deepEqual(reconcile(once, repeatedCompendium, { activeBooks: ACTIVE }), once);
+});
+
+test("a Duergar-like subrace that repeats and adds one gives one row per distinct language, and swapping the added one leaves the others", () => {
+  const deep = holdingSubrace(STOUT, DEEP);
+  assert.deepEqual(repeatedRows(deep).map((row) => row.original), ["Common", "Dwarvish", "Undercommon"]);
+
+  const undercommon = repeatedRows(deep).find((row) => row.original === "Undercommon")!.id;
+  const swapped = setLanguageSwap(deep, undercommon, "Elvish", repeatedCatalogs);
+  const names = proficiencySheet(swapped, repeatedCatalogs).languages.map((entry) => entry.name);
+  assert.ok(!names.includes("Undercommon"));
+  assert.ok(names.includes("Common") && names.includes("Dwarvish") && names.includes("Elvish"));
+});
+
+test("a saved swap on a subrace-only language is released with a notice when the subrace changes", () => {
+  const deep = holdingSubrace(STOUT, DEEP);
+  const undercommon = repeatedRows(deep).find((row) => row.original === "Undercommon")!.id;
+  const swapped = setLanguageSwap(deep, undercommon, "Elvish", repeatedCatalogs);
+
+  const withoutSubrace = applyAncestrySelection(swapped, repeatedRecords.find((r) => r.name === STOUT)!, undefined, repeatedCatalogs);
+  assert.equal(withoutSubrace.proficiencyPicks, undefined);
+  assert.deepEqual(withoutSubrace.needsReview, ["Language swap to Elvish removed: ancestry no longer grants Undercommon"]);
+});

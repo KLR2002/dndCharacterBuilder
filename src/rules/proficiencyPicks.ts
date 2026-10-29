@@ -386,11 +386,6 @@ function releaseReason(owners: readonly GrantSource[], character: Character, cla
 }
 
 /**
- * Releases saved Proficiency Choice picks whose grant no longer applies, each with a review notice.
- * A pick is kept when the Compendium does not hold its grant (a missing or stale catalog), so a saved
- * pick is never lost for want of data. Returns the character unchanged when nothing is released.
- */
-/**
  * The notice that releases a language swap's pick, or undefined when the swap is kept. A swap is released when the held race
  * no longer grants its original, and its replacement is dropped when it is no longer an open replacement. Both checks run
  * only while the rule is in effect: with TCE off a saved swap is kept and ignored.
@@ -404,6 +399,11 @@ function languageSwapNotice(id: string, pick: string, state: LanguageSwapState):
   return `Language swap to ${pick} removed: ${pick} is not an open replacement`;
 }
 
+/**
+ * Releases saved Proficiency Choice picks whose grant no longer applies, each with a review notice.
+ * A pick is kept when the Compendium does not hold its grant (a missing or stale catalog), so a saved
+ * pick is never lost for want of data. Returns the character unchanged when nothing is released.
+ */
 export function pruneInvalidProficiencyPicks(character: Character, compendium: Compendium, activeBooks: ActiveBooks): Character {
   const picks = character.proficiencyPicks;
   if (!picks || Object.keys(picks).length === 0) return character;

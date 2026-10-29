@@ -35,9 +35,11 @@ export interface LanguageSwapSlot {
 const lower = (text: string) => text.trim().toLowerCase();
 
 /**
- * The swap slots of the Race and Subrace features, in feature order. `held` is every language the character holds from
- * the features as they are before any swap. A slot's pool leaves out `held` and the replacements of earlier valid swaps,
- * so when two swaps pick the same language the earlier one keeps it. Without `available` no pick is in effect.
+ * The swap slots of the Race and Subrace features, one per distinct language, in feature order. A language that several
+ * grants name (a subrace repeating its race's languages) has one slot, whose id uses the first grant that names it.
+ * `held` is every language the character holds from the features as they are before any swap. A slot's pool leaves out
+ * `held` and the replacements of earlier valid swaps, so when two swaps pick the same language the earlier one keeps it.
+ * Without `available` no pick is in effect.
  */
 export function languageSwapSlots(
   features: readonly FeatureInstance[],
@@ -55,9 +57,9 @@ export function languageSwapSlots(
       if (grant.kind !== "fixed" || grant.category !== "languages") continue;
       for (const raw of grant.names) {
         const original = normalizeLanguageName(raw);
+        if (seen.has(lower(original))) continue;
+        seen.add(lower(original));
         const id = languageSwapId(grant.id, original);
-        if (seen.has(id)) continue;
-        seen.add(id);
         const pool = ALL_LANGUAGE_NAMES.filter((name) => !heldKeys.has(lower(name)) && !taken.has(lower(name)));
         const pick = picks?.[id]?.[0];
         const replacement = available && pick !== undefined ? pool.find((name) => lower(name) === lower(pick)) : undefined;
@@ -70,26 +72,29 @@ export function languageSwapSlots(
 }
 
 /**
- * The features with each applied swap in effect: its original leaves its fixed grant, and the swap's own Proficiency Choice
- * is added beside it, over the swap's pool. Only Race and Subrace fixed languages carry swaps, so no other feature changes.
+ * The features with each applied swap in effect. Its original leaves every Race and Subrace fixed grant that names it, and
+ * the swap's own Proficiency Choice is added beside the grant its id carries, over the swap's pool. Other features keep
+ * their grants, so a background that names the same language still grants it.
  */
 export function withLanguageSwaps(features: readonly FeatureInstance[], slots: readonly LanguageSwapSlot[]): FeatureInstance[] {
   if (slots.length === 0) return [...features];
+  const replaced = new Set(slots.filter((slot) => slot.replacement !== undefined).map((slot) => lower(slot.original)));
   return features.map((feature) => {
     if (!feature.grants?.length) return feature;
+    const isRaceSource = feature.origin === "Race" || feature.origin === "Subrace";
     const grants = feature.grants.flatMap((grant): ProficiencyGrant[] => {
       if (grant.kind !== "fixed" || grant.category !== "languages") return [grant];
-      const mine = slots.filter((slot) => slot.id.startsWith(`${grant.id}${LANGUAGE_SWAP_MARK}`));
-      if (mine.length === 0) return [grant];
-      const replaced = new Set(mine.filter((slot) => slot.replacement !== undefined).map((slot) => slot.original));
-      const names = grant.names.filter((name) => !replaced.has(normalizeLanguageName(name)));
-      const choices: ChoiceProficiencyGrant[] = mine.map((slot) => ({
-        id: slot.id,
-        kind: "choice",
-        category: "languages",
-        count: 1,
-        pool: { kind: "names", names: slot.pool },
-      }));
+      const names = isRaceSource ? grant.names.filter((name) => !replaced.has(lower(normalizeLanguageName(name)))) : grant.names;
+      const choices: ChoiceProficiencyGrant[] = slots
+        .filter((slot) => slot.id.startsWith(`${grant.id}${LANGUAGE_SWAP_MARK}`))
+        .map((slot) => ({
+          id: slot.id,
+          kind: "choice",
+          category: "languages",
+          count: 1,
+          pool: { kind: "names", names: slot.pool },
+        }));
+      if (names.length === grant.names.length && choices.length === 0) return [grant];
       return [...(names.length > 0 ? [{ ...grant, names }] : []), ...choices];
     });
     return { ...feature, grants };
