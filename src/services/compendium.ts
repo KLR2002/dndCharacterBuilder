@@ -19,6 +19,7 @@ import type {
   ConditionData,
   OptionFeatureData,
   BeastData,
+  OriginRuleRecord,
 } from "../types/dnd5e.ts";
 import { isCatalogStale, type CompendiumCollections } from "./compendiumStorage.ts";
 import { findHeldRace, type HeldRace } from "../rules/raceLookup.ts";
@@ -36,6 +37,7 @@ export interface CompendiumListings {
   /** Conditions are never scoped by active books. */
   conditions(): ConditionData[];
   optionsAndFeatures(): OptionFeatureData[];
+  originRules(): OriginRuleRecord[];
 }
 
 export interface Compendium {
@@ -99,6 +101,7 @@ export function createCompendium(
   const beasts = resolve(integrated, bundle.beasts, baseline.beasts);
   const conditions = resolve(integrated, bundle.conditions, baseline.conditions);
   const optionsAndFeatures = resolve(integrated, bundle.optionsAndFeatures, baseline.optionsAndFeatures);
+  const originRules = resolve(integrated, bundle.originRules, baseline.originRules ?? []);
 
   const unscoped: CompendiumListings = {
     races: () => races.records,
@@ -110,6 +113,7 @@ export function createCompendium(
     beasts: () => beasts.records,
     conditions: () => conditions.records,
     optionsAndFeatures: () => optionsAndFeatures.records,
+    originRules: () => originRules.records,
   };
 
   function scoped(activeBooks: readonly string[]): CompendiumListings {
@@ -121,6 +125,7 @@ export function createCompendium(
     const admitSpell = admitter(activeBooks, spells.fromBaseline);
     const admitBeast = admitter(activeBooks, beasts.fromBaseline);
     const admitOption = admitter(activeBooks, optionsAndFeatures.fromBaseline);
+    const admitOrigin = admitter(activeBooks, originRules.fromBaseline);
     return {
       ...unscoped,
       races: () =>
@@ -137,6 +142,7 @@ export function createCompendium(
       spells: () => spells.records.filter((s) => admitSpell(s.source)),
       beasts: () => beasts.records.filter((b) => admitBeast(b.source)),
       optionsAndFeatures: () => optionsAndFeatures.records.filter((o) => admitOption(o.source)),
+      originRules: () => originRules.records.filter((o) => admitOrigin(o.source)),
     };
   }
 
@@ -165,6 +171,7 @@ const SRD_BASELINE: CompendiumCollections = {
   conditions: conditionsRaw as unknown as ConditionData[],
   optionsAndFeatures: optionsRaw as unknown as OptionFeatureData[],
   books: [],
+  originRules: [],
 };
 
 /** The SRD Baseline's classes, the fallback for a held class the active catalog lacks. */

@@ -8,6 +8,7 @@ import type {
   ConditionData,
   OptionFeatureData,
   BeastData,
+  OriginRuleRecord,
 } from "../types/dnd5e.ts";
 
 /**
@@ -27,8 +28,9 @@ import type {
  * Format 10 adds the Drow Descent's spell gate and the corrected spell grants of two races, which a catalog saved at format 9
  * does not carry.
  * Format 11 adds the reviewed notes on a race's spell grants, which a catalog saved at format 10 does not carry.
+ * Format 12 adds the Customizing Your Origin swap table (`originRules`), which a catalog saved at format 11 does not carry.
  */
-export const REQUIRED_CATALOG_FORMAT = 11;
+export const REQUIRED_CATALOG_FORMAT = 12;
 
 /** True for an Integrated Catalog saved below the required format (or with none). The SRD Baseline is never stale. */
 export function isCatalogStale(collections: Pick<CompendiumCollections, "hasIntegratedCatalog" | "catalogFormat">): boolean {
@@ -50,6 +52,8 @@ export interface CompendiumCollections {
   conditions: ConditionData[];
   optionsAndFeatures: OptionFeatureData[];
   books: any[];
+  /** Absent on catalogs saved before format 12. The Compendium reads an absent collection as empty. */
+  originRules?: OriginRuleRecord[];
 }
 
 const DB_NAME = "dnd5e_compendium_db";

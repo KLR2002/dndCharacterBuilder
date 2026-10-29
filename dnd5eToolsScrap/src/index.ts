@@ -12,6 +12,7 @@ import { scrapeRaces } from "./scrapers/races.ts";
 import { scrapeSpells } from "./scrapers/spells.ts";
 import { scrapeBooks } from "./scrapers/books.ts";
 import { scrapeConditions } from "./scrapers/conditions.ts";
+import { scrapeOriginRules } from "./scrapers/origin-rules.ts";
 import { newProficiencyReport } from "./parser/proficiency-grants.ts";
 import { newStartingEquipmentReport } from "./parser/starting-equipment.ts";
 
@@ -58,7 +59,7 @@ Usage:
 
 Options:
   --only <list>       Comma-separated list of categories to scrape:
-                      races, classes, feats, options, backgrounds, items, spells, beasts, books, conditions
+                      races, classes, feats, options, backgrounds, items, spells, beasts, books, conditions, originrules
                       Default: all
   --no-cache          Bypass local .cache directory and re-fetch from network
   --output <path>     Directory where formatted JSON files will be written
@@ -94,7 +95,7 @@ async function main(): Promise<void> {
   console.log(`Output:     ${opts.outputDir}`);
   console.log(`Cache:      ${opts.noCache ? "Disabled" : "Enabled (.cache/)"}`);
   console.log(
-    `Categories: ${opts.only.length > 0 ? opts.only.join(", ") : "All (Races, Classes, Feats, Options, Backgrounds, Items, Spells, Beasts, Books, Conditions)"}`
+    `Categories: ${opts.only.length > 0 ? opts.only.join(", ") : "All (Races, Classes, Feats, Options, Backgrounds, Items, Spells, Beasts, Books, Conditions, Origin Rules)"}`
   );
   console.log("--------------------------------------------------");
 
@@ -298,6 +299,20 @@ async function main(): Promise<void> {
           break;
         }
       }
+    }
+
+    // 11. Origin Rules: written to the data dir only. The SRD Baseline carries none, so nothing is synced to src/data.
+    if (shouldRun("originrules")) {
+      console.log("\n[11/11] Scraping Origin Rules (Customizing Your Origin)...");
+      const originRules = await scrapeOriginRules(client);
+      const file = path.join(opts.outputDir, "origin_rules.json");
+      const { count, bytes } = saveJson(file, originRules);
+      summary["Origin Rules"] = {
+        count,
+        size: formatBytes(bytes),
+        file: path.relative(process.cwd(), file),
+      };
+      console.log(`  ✓ Saved ${count} origin rule records -> ${file} (${formatBytes(bytes)})`);
     }
 
     // Proficiency Grants: how many features carry grants, and which ones matched the vocabulary but did not parse.

@@ -244,6 +244,25 @@ test("compendiumStorage: saving stamps the required catalog format and loading r
   }
 });
 
+test("compendiumStorage: origin rules round-trip through storage, and a catalog saved without them loads with none", async () => {
+  const { createCompendium } = await import("../src/services/compendium.ts");
+  const kv = new Map<string, string>();
+  __setCompendiumKvForTests(kv);
+  try {
+    const originRules = [{ name: "Invented Origin Rule", source: "TCE", proficiencySwaps: [{ from: "tool" as const, to: ["skill" as const] }] }];
+    await saveCompendiumData({ hasIntegratedCatalog: true, races: [], classes: [], originRules } as any);
+    const saved = await loadCompendiumData();
+    assert.deepEqual(saved?.originRules, originRules);
+
+    kv.set("@dnd5e_integrated_compendium", JSON.stringify({ hasIntegratedCatalog: true, catalogFormat: 11, races: [], classes: [] }));
+    const older = await loadCompendiumData();
+    assert.equal(older?.originRules, undefined, "a catalog saved at format 11 has no origin rules");
+    assert.deepEqual(createCompendium(older!).for(["TCE"]).originRules(), []);
+  } finally {
+    __setCompendiumKvForTests(undefined);
+  }
+});
+
 test("compendiumStorage: a catalog saved without a format or below the required one loads intact and is stale", async () => {
   const { isCatalogStale } = await import("../src/services/compendiumStorage.ts");
   const kv = new Map<string, string>();
