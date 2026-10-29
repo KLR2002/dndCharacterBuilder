@@ -6,7 +6,7 @@ import { applyAncestrySelection } from "../src/rules/ancestryEngine.ts";
 import { changeRace, setChoiceRacialBonus, setOriginAbilitySwap } from "../src/rules/builderTransitions.ts";
 import { effectiveScores } from "../src/rules/abilities.ts";
 import { reconcile, reconcileForActiveBooks } from "../src/rules/characterReconciler.ts";
-import { originCustomizationAvailable, originCustomizationView } from "../src/rules/originCustomization.ts";
+import { originAbilityTargets, originCustomizationAvailable, originCustomizationView } from "../src/rules/originCustomization.ts";
 import { migrateCharacter } from "../src/rules/migrateCharacter.ts";
 import type { Character } from "../src/types/character.ts";
 import type { OriginRuleRecord , RaceData, SubraceData } from "../src/types/dnd5e.ts";
@@ -327,4 +327,14 @@ test("a subrace increase is swapped like a race increase, and changing the subra
   assert.equal(unsubraced.originAbilitySwaps, undefined);
   assert.deepEqual(unsubraced.racialAbilityBonuses, { con: 2 });
   assert.deepEqual(unsubraced.needsReview, ["Ability swap to Dexterity removed: ancestry no longer grants it"]);
+});
+
+test("a Choice ASI pick may not take an ability an Origin Customization increase lands on, while the rule is available", () => {
+  const half = holding(HALF);
+  assert.deepEqual(originAbilityTargets(half, catalogs), ["cha"]);
+
+  const moved = setOriginAbilitySwap(half, slotDefaulting(half, "cha").id, "str", catalogs);
+  assert.deepEqual(originAbilityTargets(moved, catalogs), ["str"]);
+  assert.deepEqual(originAbilityTargets(half, { compendium, activeBooks: WITHOUT_TCE }), []);
+  assert.deepEqual(originAbilityTargets(holding(PLAIN), catalogs), []);
 });

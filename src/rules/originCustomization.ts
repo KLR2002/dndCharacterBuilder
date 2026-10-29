@@ -165,6 +165,17 @@ function sameBonuses(a: Record<string, number>, b: Record<string, number>): bool
   return [...keys].every((key) => (a[key] ?? 0) === (b[key] ?? 0));
 }
 
+/**
+ * The abilities the Origin Customization increases land on, each at its target, while the rule is available. A Choice ASI
+ * pick may not take one of them, so that every increase lands on a different score. Empty when the rule is not available.
+ */
+export function originAbilityTargets(character: Character, catalogs?: CharacterCatalogs): AbilityKey[] {
+  const { slots, available } = originAbilityState(character, catalogs);
+  if (!available) return [];
+  const swaps = character.originAbilitySwaps ?? {};
+  return slots.map((slot) => targetOf(slot, swaps));
+}
+
 /** Whether the card is offered: TCE active, the Catalog holds the swap table, and the held race or subrace has an increase. */
 export function originCustomizationAvailable(character: Character, catalogs?: CharacterCatalogs): boolean {
   return originAbilityState(character, catalogs).available;

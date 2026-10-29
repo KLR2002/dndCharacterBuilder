@@ -5,6 +5,7 @@ import { AbilityKey, Character } from "../../types/character";
 import type { RaceData } from "../../types/dnd5e";
 import { featSpellChoicesOf, raceSpellRuleChoices, type AvailableRuleChoice } from "../../rules/ruleChoices";
 import { changeLineage, changeRace, setChoiceRacialBonus, setSizeChoice, type LineageChoice } from "../../rules/builderTransitions";
+import { originAbilityTargets } from "../../rules/originCustomization";
 import { currentCompendium, srdBaselineRaces } from "../../services/compendium";
 import {
   resolveAncestryState,
@@ -88,6 +89,8 @@ export const AncestrySection: React.FC<AncestrySectionProps> = ({
   const [featSearch, setFeatSearch] = useState("");
 
   const { activeBooks, isIntegrated } = useCharacters();
+
+  const originTargets = useMemo(() => originAbilityTargets(character, { activeBooks }), [character, activeBooks]);
 
   const availableLineages = useMemo(() => {
     if (!isIntegrated) return [];
@@ -330,11 +333,13 @@ export const AncestrySection: React.FC<AncestrySectionProps> = ({
             {ABILITY_KEYS.map((k) => {
               const chosenAmount = choiceASI[k];
               const chosen = chosenAmount != null;
-              const canPick = isFlexibleMPMM
-                ? flexibleMode === "2_1"
-                  ? !chosen && (!Object.values(choiceASI).includes(2) || !Object.values(choiceASI).includes(1))
-                  : !chosen && Object.keys(choiceASI).length < 3
-                : !chosen && Object.keys(choiceASI).length < choiceASIConfig.count;
+              const canPick =
+                !originTargets.includes(k) &&
+                (isFlexibleMPMM
+                  ? flexibleMode === "2_1"
+                    ? !chosen && (!Object.values(choiceASI).includes(2) || !Object.values(choiceASI).includes(1))
+                    : !chosen && Object.keys(choiceASI).length < 3
+                  : !chosen && Object.keys(choiceASI).length < choiceASIConfig.count);
 
               return (
                 <TouchableOpacity
