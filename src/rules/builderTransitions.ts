@@ -31,7 +31,8 @@ import {
 } from "../constants/rules.ts";
 import { SRD_SOURCE } from "../constants/books.ts";
 import { allCatalogClasses, findClassData, type CharacterCatalogs } from "./catalogs.ts";
-import { multiclassGrantsOf } from "./proficiencySheet.ts";
+import { languageSwapStateOf, multiclassGrantsOf } from "./proficiencySheet.ts";
+import { clearProficiencyPick, recordProficiencyPick } from "./proficiencyPools.ts";
 import { resolveStartingEquipment, type StartingEquipmentKit } from "./startingEquipment.ts";
 
 export function setStandardArrayPick(
@@ -103,6 +104,27 @@ export function setOriginAbilitySwap(
   return reconcile({ ...character, originAbilitySwaps: swaps }, catalogs.compendium ?? currentCompendium(), {
     activeBooks: catalogs.activeBooks,
   });
+}
+
+/**
+ * Records the player's choice for one fixed language of the held race or subrace. The original, or the replacement already
+ * picked, returns the swap to its default, which is never stored. A replacement outside the swap's pool, or any swap while the
+ * rule is unavailable, leaves the character unchanged.
+ */
+export function setLanguageSwap(character: Character, swapId: string, language: string, catalogs: CharacterCatalogs): Character {
+  const { available, slots } = languageSwapStateOf(character, catalogs);
+  const slot = slots.find((candidate) => candidate.id === swapId);
+  if (!available || !slot) return character;
+  const wanted = language.trim().toLowerCase();
+  let next: Character;
+  if (wanted === slot.original.toLowerCase()) {
+    next = clearProficiencyPick(character, swapId);
+  } else {
+    const option = slot.pool.find((name) => name.toLowerCase() === wanted);
+    if (!option) return character;
+    next = recordProficiencyPick(character, { id: swapId, choose: 1 }, option);
+  }
+  return reconcile(next, catalogs.compendium ?? currentCompendium(), { activeBooks: catalogs.activeBooks });
 }
 
 /**

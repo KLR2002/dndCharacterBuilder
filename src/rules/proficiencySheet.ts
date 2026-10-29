@@ -27,8 +27,16 @@ import { normalizeSkillName } from "./skills.ts";
 import { classSkillChoice, getAutoGrantedSkills } from "./proficiencySources/skillGrants.ts";
 import { resolveCharacterAncestry } from "./characterAncestry.ts";
 import { customBackgroundFeature } from "./customBackground.ts";
+import { originCustomizationAvailable } from "./originCustomization.ts";
+import { findHeldRace } from "./raceLookup.ts";
+import {
+  languageSwapSlots,
+  withLanguageSwaps,
+  type LanguageSwapSlot,
+} from "./proficiencySources/languageSwaps.ts";
 
 export { classSkillChoice } from "./proficiencySources/skillGrants.ts";
+export { isLanguageSwapId, languageOfSwapId } from "./proficiencySources/languageSwaps.ts";
 export {
   multiclassGrantsOf,
   multiclassSkillGrantOf,
@@ -268,6 +276,83 @@ export function ruleGrantedSkills(character: Character, catalogs?: CharacterCata
   ];
 }
 
+/**
+ * The language names the features and the saved buckets grant. `fallback` is the base language, decided by the caller
+ * from the features before any swap, so a swap that removes a race's only language brings no Common back.
+ */
+function grantedLanguageNames(
+  features: FeatureInstance[],
+  character: Character,
+  items: readonly ItemData[],
+  fallback: string[],
+): string[] {
+  return [
+    ...fallback,
+    ...fixedFeatureNames(features, "languages").map(normalizeLanguageName),
+    ...legacySourcePicks(character, "languages"),
+    ...choicePickNames(features, character, "languages", items),
+  ];
+}
+
+/** Every character speaks Common. A character whose race names no fixed language holds it alone (the fallback). */
+function baseLanguagesOf(character: Character, raw: FeatureInstance[]): string[] {
+  const raceNamesLanguage =
+    character.race && fixedFeatureNames(raw.filter((f) => f.origin === "Race" || f.origin === "Subrace"), "languages").length > 0;
+  return raceNamesLanguage ? [] : [BASE_LANGUAGE];
+}
+
+/** The swap state of a character's held race or subrace, with the features the swaps leave. */
+interface LanguageSwapResolution {
+  available: boolean;
+  slots: LanguageSwapSlot[];
+  /** Whether the held race resolves in the Catalog. An absent slot is a race that no longer grants the language only then. */
+  raceKnown: boolean;
+  features: FeatureInstance[];
+}
+
+function resolveLanguageSwaps(raw: FeatureInstance[], character: Character, catalogs: CharacterCatalogs): LanguageSwapResolution {
+  const listings = catalogListings(catalogs);
+  const held = [
+    ...grantedLanguageNames(raw, character, listings.items(), baseLanguagesOf(character, raw)),
+    ...(character.addedLanguages ?? []).map((name) => normalizeAddedName("languages", name)),
+  ];
+  const available = originCustomizationAvailable(character, catalogs);
+  const slots = languageSwapSlots(raw, held, character.proficiencyPicks, available);
+  const raceKnown = !character.race || findHeldRace(listings.races(), character.race, catalogs.activeBooks).race !== undefined;
+  return { available, slots, raceKnown, features: withLanguageSwaps(raw, available ? slots : []) };
+}
+
+/**
+ * Each fixed language of the held race or subrace that a swap may replace, with its pool and the replacement picked for it
+ * when that pick is valid. `available` says whether the swaps are in effect; slots are listed whether or not they are.
+ */
+export interface LanguageSwapState {
+  available: boolean;
+  slots: LanguageSwapSlot[];
+  raceKnown: boolean;
+}
+
+export function languageSwapStateOf(character: Character, catalogs: CharacterCatalogs): LanguageSwapState {
+  const raw = featuresOf(character, catalogListings(catalogs), catalogs.activeBooks);
+  const { available, slots, raceKnown } = resolveLanguageSwaps(raw, character, catalogs);
+  return { available, slots, raceKnown };
+}
+
+/** One row of the Origin Customization card's language section: the original, the pool, and the pick in effect. */
+export interface LanguageSwapView {
+  id: string;
+  original: string;
+  options: string[];
+  replacement?: string;
+}
+
+/** The language swap rows the card shows: one per fixed language of the held race or subrace. Empty while the rule is unavailable. */
+export function languageSwapViews(character: Character, catalogs: CharacterCatalogs): LanguageSwapView[] {
+  const { available, slots } = languageSwapStateOf(character, catalogs);
+  if (!available) return [];
+  return slots.map((slot) => ({ id: slot.id, original: slot.original, options: slot.pool, replacement: slot.replacement }));
+}
+
 /** The fixed languages and tools a race, its subrace or a background grants, as the Builder lists them. */
 export interface SourceFixedGrants {
   languages: string[];
@@ -287,18 +372,20 @@ export interface SourceGrants {
 
 export function sourceGrants(character: Character, catalogs: CharacterCatalogs): SourceGrants {
   const listings = catalogListings(catalogs);
-  const features = featuresOf(character, listings, catalogs?.activeBooks);
-  const fixedOf = (origins: FeatureInstance["origin"][]): SourceFixedGrants => {
+  const raw = featuresOf(character, listings, catalogs?.activeBooks);
+  const { features, slots } = resolveLanguageSwaps(raw, character, catalogs);
+  const fixedOf = (origins: FeatureInstance["origin"][], replacements: string[] = []): SourceFixedGrants => {
     const sourced = features.filter((feature) => origins.includes(feature.origin));
     // A race and its subrace may both grant the same language or tool; each is listed once.
     return {
-      languages: [...new Set(fixedFeatureNames(sourced, "languages").map(normalizeLanguageName))],
+      languages: [...new Set([...fixedFeatureNames(sourced, "languages").map(normalizeLanguageName), ...replacements])],
       tools: [...new Set(fixedFeatureNames(sourced, "tools").map(normalizeToolName))],
     };
   };
   const starting = startingFeatureOf(character, listings.classes());
+  const replacements = slots.flatMap((slot) => (slot.replacement !== undefined ? [slot.replacement] : []));
   return {
-    race: fixedOf(["Race", "Subrace"]),
+    race: fixedOf(["Race", "Subrace"], replacements),
     background: fixedOf(["Background"]),
     classTools: starting ? fixedFeatureNames([starting], "tools").map(normalizeToolName) : [],
   };
@@ -340,7 +427,8 @@ export function skillChoiceOffers(character: Character, catalogs: CharacterCatal
  */
 export function proficiencySheet(character: Character, catalogs: CharacterCatalogs): ProficiencySheet {
   const listings = catalogListings(catalogs);
-  const features = featuresOf(character, listings, catalogs?.activeBooks);
+  const raw = featuresOf(character, listings, catalogs?.activeBooks);
+  const { features } = resolveLanguageSwaps(raw, character, catalogs);
   const ancestry = resolveCharacterAncestry(character, listings.races(), catalogs.activeBooks);
 
   // Class base proficiencies (the first class's, and each later class's multiclass grants from the Catalog), then the
@@ -355,14 +443,7 @@ export function proficiencySheet(character: Character, catalogs: CharacterCatalo
     ...recordedMulticlass.flatMap((mp) => mp.tools ?? []).map(normalizeToolName),
     ...choicePickNames(features, character, "tools", items),
   ];
-  const languages = [
-    ...(character.race && fixedFeatureNames(features.filter((f) => f.origin === "Race" || f.origin === "Subrace"), "languages").length > 0
-      ? []
-      : [BASE_LANGUAGE]),
-    ...fixedFeatureNames(features, "languages").map(normalizeLanguageName),
-    ...legacySourcePicks(character, "languages"),
-    ...choicePickNames(features, character, "languages", items),
-  ];
+  const languages = grantedLanguageNames(features, character, items, baseLanguagesOf(character, raw));
   // The first class's saves are the base, from the Catalog class it holds. A later class adds none of its own.
   const baseSaves = classBaseSavingThrows(character.classes[0], allCatalogClasses(catalogs));
   const savingThrows = sheetEntries([
