@@ -53,7 +53,7 @@ export const OriginSwapPicker: React.FC<OriginSwapPickerProps> = ({ original, op
                 accessibilityRole="button"
                 accessibilityState={{ selected }}
                 onPress={() => {
-                  onChoose(name);
+                  if (!selected) onChoose(name);
                   close();
                 }}
                 style={[
