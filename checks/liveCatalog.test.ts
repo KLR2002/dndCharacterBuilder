@@ -147,6 +147,15 @@ test("live catalog: the cache is at the catalog format the app requires", { skip
   assert.equal(isCatalogStale(live!.collections), false, `catalog format ${live!.collections.catalogFormat} is below ${REQUIRED_CATALOG_FORMAT}`);
 });
 
+test("live catalog: the Customizing Your Origin Proficiency Swaps table is parsed into rows", { skip: SKIP }, () => {
+  const origin = (live!.collections.originRules ?? []).find((r) => r.name === "Customizing Your Origin" && r.source === "TCE");
+  assert.ok(origin, "the live catalog holds the Customizing Your Origin record");
+  assert.ok(origin.proficiencySwaps.length > 0, "the Proficiency Swaps table has rows");
+  for (const row of origin.proficiencySwaps) {
+    assert.ok(row.to.length > 0, `the swap for ${row.from} names at least one replacement kind`);
+  }
+});
+
 test("live catalog: every expertise mark is on a skills grant", { skip: SKIP }, () => {
   const misplaced: string[] = [];
   for (const [kind, record] of grantOwnerRecords(live!.collections)) {

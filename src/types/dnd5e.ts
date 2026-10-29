@@ -11,6 +11,12 @@ export type {
 } from "../../dnd5eToolsScrap/src/types/proficiency.ts";
 
 export type {
+  OriginProficiencyKind,
+  OriginRuleRecord,
+  ProficiencySwapRow,
+} from "../../dnd5eToolsScrap/src/types/originRules.ts";
+
+export type {
   StartingEquipmentEntry,
   StartingEquipmentItem,
   StartingEquipmentOption,

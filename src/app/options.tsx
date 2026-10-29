@@ -54,7 +54,7 @@ export default function OptionsScreen() {
   const [syncStep, setSyncStep] = useState({
     category: "Races",
     step: 1,
-    total: 10,
+    total: 11,
   });
   const [syncError, setSyncError] = useState<string | null>(null);
 
@@ -62,7 +62,7 @@ export default function OptionsScreen() {
     setConfirmDisclaimerVisible(false);
     setIsSyncing(true);
     setSyncError(null);
-    setSyncStep({ category: "Races", step: 1, total: 10 });
+    setSyncStep({ category: "Races", step: 1, total: 11 });
     try {
       await triggerIntegration((category, step, total) => {
         setSyncStep({ category, step, total });

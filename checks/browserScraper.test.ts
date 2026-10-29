@@ -62,7 +62,7 @@ test("BrowserToolsClient: throws descriptive error on HTTP failure", async () =>
   }
 });
 
-test("runInAppIntegration: orchestrates 10 scrapers, reports progress, and hydrates CompendiumStorage", async () => {
+test("runInAppIntegration: orchestrates 11 scrapers, reports progress, and hydrates CompendiumStorage", async () => {
   const testKv = new Map<string, string>();
   __setCompendiumKvForTests(testKv);
 
@@ -215,6 +215,24 @@ test("runInAppIntegration: orchestrates 10 scrapers, reports progress, and hydra
           }),
         } as any;
       }
+      if (urlStr.includes("data/variantrules.json")) {
+        return {
+          ok: true,
+          status: 200,
+          json: async () => ({
+            variantrule: [{
+              name: "Customizing Your Origin",
+              source: "TCE",
+              type: "section",
+              entries: [{
+                type: "entries",
+                name: "Proficiencies",
+                entries: [{ type: "table", caption: "Proficiency Swaps", colLabels: ["Proficiency", "Replacement"], rows: [["Skill", "Skill"]] }],
+              }],
+            }],
+          }),
+        } as any;
+      }
       if (urlStr.includes("data/books.json")) {
         return {
           ok: true,
@@ -237,9 +255,11 @@ test("runInAppIntegration: orchestrates 10 scrapers, reports progress, and hydra
       progressReports.push({ category, step, total });
     });
 
-    assert.equal(progressReports.length, 10);
+    assert.equal(progressReports.length, 11);
     assert.equal(progressReports[0].category, "Races");
     assert.equal(progressReports[9].category, "Books");
+    assert.equal(progressReports[10].category, "Origin Rules");
+    assert.equal(result.originRules?.[0].proficiencySwaps.length, 1, "the sync stores the parsed swap table");
     assert.equal(result.hasIntegratedCatalog, true);
     assert.ok(result.integratedAt);
     assert.equal(result.catalogFormat, REQUIRED_CATALOG_FORMAT, "the synced catalog is current, so the context clears the stale flag");

@@ -37,7 +37,7 @@ const tmpFile = `${outFile}.tmp`;
 writeFileSync(tmpFile, JSON.stringify(catalog));
 renameSync(tmpFile, outFile);
 
-const counts = ["races", "classes", "feats", "backgrounds", "optionsAndFeatures", "spells"]
+const counts = ["races", "classes", "feats", "backgrounds", "optionsAndFeatures", "spells", "originRules"]
   .map((key) => `${key} ${catalog[key]?.length ?? 0}`)
   .join(", ");
 console.log(`Wrote ${outFile}`);
