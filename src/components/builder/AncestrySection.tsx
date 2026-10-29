@@ -4,7 +4,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { AbilityKey, Character } from "../../types/character";
 import type { RaceData } from "../../types/dnd5e";
 import { featSpellChoicesOf, raceSpellRuleChoices, type AvailableRuleChoice } from "../../rules/ruleChoices";
-import { changeLineage, changeRace, setChoiceRacialBonus, type LineageChoice } from "../../rules/builderTransitions";
+import { changeLineage, changeRace, setChoiceRacialBonus, setSizeChoice, type LineageChoice } from "../../rules/builderTransitions";
 import { currentCompendium, srdBaselineRaces } from "../../services/compendium";
 import {
   resolveAncestryState,
@@ -226,6 +226,35 @@ export const AncestrySection: React.FC<AncestrySectionProps> = ({
           />
         </Card>
       ) : null}
+
+      {/* Size Choice: one of the sizes the held race or lineage lists */}
+      {ancestryState.sizeOptions.length > 0 && (
+        <Card style={{ gap: 8 }}>
+          <Text style={{ color: theme.text, fontWeight: "700", fontSize: 13 }}>Size</Text>
+          <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6 }}>
+            {ancestryState.sizeOptions.map((size) => {
+              const selected = ancestryState.size === size;
+              return (
+                <TouchableOpacity
+                  key={size}
+                  onPress={() => onUpdate((cur) => setSizeChoice(cur, size, { activeBooks }))}
+                  style={[
+                    styles.choiceChip,
+                    {
+                      backgroundColor: selected ? theme.accentGlow : theme.surfaceHighlight,
+                      borderColor: selected ? theme.accent : theme.border,
+                    },
+                  ]}
+                >
+                  <Text style={{ color: selected ? theme.accent : theme.textSecondary, fontWeight: "700", fontSize: 13 }}>
+                    {size}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        </Card>
+      )}
 
       {/* Choice ASI picker */}
       {character.race && isChoiceASIRace && (
