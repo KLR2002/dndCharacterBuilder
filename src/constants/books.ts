@@ -84,6 +84,10 @@ export const ALL_RESOURCE_BOOKS: ResourceBook[] = [
   { code: "PSX", name: "Plane Shift: Ixalan", category: "other", isDefaultActive: false },
 ];
 
+/** The books a read is scoped to. `ALL_BOOKS` reads every book, unscoped. */
+export type ActiveBooks = readonly string[] | undefined;
+export const ALL_BOOKS: ActiveBooks = undefined;
+
 /** The source of the SRD Baseline's records. They count as active whatever books are switched on. */
 export const SRD_SOURCE = "SRD";
 
