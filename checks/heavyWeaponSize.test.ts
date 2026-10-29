@@ -2,7 +2,7 @@ import { ALL_BOOKS } from "../src/constants/books.ts";
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { inMemoryCompendium, makeChar } from "./testUtils.ts";
-import { getWeaponAttacks } from "../src/rules/attacks.ts";
+import { checkDualWielding, getWeaponAttacks } from "../src/rules/attacks.ts";
 import type { RaceData } from "../src/types/dnd5e.ts";
 import type { InventoryItem } from "../src/types/character.ts";
 
@@ -101,4 +101,20 @@ test("a Small character shows no marker on a weapon without the Heavy property",
 
   assert.equal(attack.disadvantage, undefined);
   assert.equal(attack.calculationBadges, undefined);
+});
+
+test("a Small character's off-hand Heavy weapon shows the marker in the dual-wield result", () => {
+  // An invented pair that is both Light and Heavy, so both weapons are light melee attacks that a Small character attacks with disadvantage.
+  const lightHeavy = (name: string): InventoryItem =>
+    ({ ...weapon(name), damage: "1d6", damageType: "slashing", properties: ["Light", "Heavy"] }) as unknown as InventoryItem;
+  const char = makeChar({
+    race: { name: "Sample Little", source: "TST" },
+    items: [lightHeavy("Sample Cleaver"), lightHeavy("Sample Hatchet")],
+  });
+
+  const dual = checkDualWielding(char, getWeaponAttacks(char, { catalogs }));
+
+  assert.equal(dual.isDualWielding, true);
+  assert.equal(dual.offHand?.name, "Sample Hatchet");
+  assert.ok(dual.offHand?.calculationBadges?.includes(DISADVANTAGE));
 });

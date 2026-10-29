@@ -9,6 +9,10 @@ import { proficiencyChoiceOffers } from "../src/rules/proficiencyChoiceOffers.ts
 import { proficiencySheet, proficiencySwapViews } from "../src/rules/proficiencySheet.ts";
 import type { Character } from "../src/types/character.ts";
 import type { BackgroundData, ItemData, OriginRuleRecord, ProficiencyGrant, RaceData } from "../src/types/dnd5e.ts";
+import type { FeatureInstance } from "../src/rules/types.ts";
+import { proficiencySwapSlots, withProficiencySwaps } from "../src/rules/proficiencySources/proficiencySwaps.ts";
+import { recordProficiencyPick } from "../src/rules/proficiencyPools.ts";
+import { swapId } from "../src/rules/proficiencySources/swapIds.ts";
 
 // Proficiency swaps: a Race or Subrace fixed skill, tool, weapon or armor grant, or the pick of a narrower choice, is replaced
 // by what the swap table allows for its kind. Every race, background, item and grant name here is invented.
@@ -243,7 +247,7 @@ test("a replacement another source now grants is dropped with a notice", () => {
 
   const forged = reconcile({ ...swapped, background: { name: FORGE, source: SOURCE } }, compendium, { activeBooks: ACTIVE });
   assert.equal(forged.proficiencyPicks, undefined);
-  assert.deepEqual(forged.needsReview, ["Skill swap to Insight removed: Insight is not an open replacement"]);
+  assert.deepEqual(forged.needsReview, ["Skill swap to Insight removed: Insight is no longer available"]);
 });
 
 test("a swap equal to its default is not stored", () => {
@@ -281,4 +285,100 @@ test("one swap's replacement is excluded from another swap's pool", () => {
   assert.ok(stealth, "a swap row for Stealth");
   assert.ok(!stealth.options.includes("Athletics"), "Athletics is taken by the Perception swap");
   assert.ok(stealth.options.includes("Acrobatics"));
+});
+
+test("a swap of a race skill leaves a same-named Rule Choice skill pick on the sheet", () => {
+  const scout = holding(SCOUT, {
+    ruleChoices: [
+      { id: `${SOURCE}__Sample Barbarian__Primal Knowledge 3`, trait: "Primal Knowledge", origin: "class", choose: 1, from: [], picked: ["Perception"] },
+    ],
+  });
+  const swapped = setProficiencySwap(scout, rowOf(scout, "Perception").id, "Arcana", catalogs);
+
+  assert.ok(namesIn(swapped, "skills").includes("Arcana"), "the swap's replacement is held");
+  assert.ok(namesIn(swapped, "skills").includes("Perception"), "the Rule Choice pick still grants Perception");
+});
+
+test("a swap's pick is saved under its grant id, the swap mark, and the original name", () => {
+  const scout = holding(SCOUT);
+  const row = rowOf(scout, "Perception");
+  const swapped = setProficiencySwap(scout, row.id, "Insight", catalogs);
+
+  assert.equal(row.id, `${SOURCE}/Race/${SCOUT}@0#skills:fixed:Perception#swap:Perception`);
+  assert.deepEqual(Object.keys(swapped.proficiencyPicks ?? {}), [row.id]);
+  assert.deepEqual(swapped.proficiencyPicks?.[row.id], ["Insight"]);
+});
+
+test("a held race missing from the catalog keeps its saved skill swap until the race is found again", () => {
+  const scout = holding(SCOUT);
+  const swapped = setProficiencySwap(scout, rowOf(scout, "Perception").id, "Insight", catalogs);
+  const withoutScout = inMemoryCompendium({ races: records.filter((r) => r.name !== SCOUT), backgrounds, items: ITEMS, originRules: [rule] }, { integrated: true });
+
+  const absent = reconcile(swapped, withoutScout, { activeBooks: ACTIVE });
+  assert.deepEqual(absent.proficiencyPicks, swapped.proficiencyPicks);
+  assert.deepEqual(absent.needsReview, undefined);
+
+  const back = reconcile(absent, compendium, { activeBooks: ACTIVE });
+  assert.deepEqual(back.proficiencyPicks, swapped.proficiencyPicks);
+});
+
+const TWO_SKILLS = "Sample Two Skills";
+
+test("a multi-name background sharing the race's skill keeps it, and offers no swap on a skill only the background names", () => {
+  const twoSkills = { ...background(TWO_SKILLS, [fixed(`${SOURCE}/Background/${TWO_SKILLS}@0#skills:fixed:Perception,Insight`, "skills", ["Perception", "Insight"])]) };
+  const twoSkillCatalogs = {
+    compendium: inMemoryCompendium({ races: records, backgrounds: [...backgrounds, twoSkills], items: ITEMS, originRules: [rule] }, { integrated: true }),
+    activeBooks: ACTIVE,
+  };
+  const scout = applyAncestrySelection(makeChar({ background: { name: TWO_SKILLS, source: SOURCE } }), records.find((r) => r.name === SCOUT)!, undefined, twoSkillCatalogs);
+
+  assert.deepEqual(proficiencySwapViews(scout, twoSkillCatalogs).map((row) => row.original), ["Perception"], "Insight is not a race skill, so no row offers it");
+
+  const perception = proficiencySwapViews(scout, twoSkillCatalogs)[0];
+  const swapped = setProficiencySwap(scout, perception.id, "Arcana", twoSkillCatalogs);
+  const names = proficiencySheet(swapped, twoSkillCatalogs).skills.map((entry) => entry.name);
+  assert.ok(names.includes("Perception"), "the background's own Perception stays on the sheet");
+  assert.ok(names.includes("Insight"), "the background's other skill stays on the sheet");
+  assert.ok(names.includes("Arcana"), "the race's replacement is on the sheet");
+});
+
+const feature = (id: string, origin: FeatureInstance["origin"], grants: ProficiencyGrant[]): FeatureInstance =>
+  ({ id, name: id, source: SOURCE, description: "Placeholder description.", origin, grants }) as FeatureInstance;
+
+test("only the race's own grant is swapped: a Class or Feat feature of the same skill keeps it", () => {
+  // The Class and Feat features come first, so a candidate filter that admitted them would see the name first.
+  const features = [
+    feature("class", "Class", [fixed("class-grant", "skills", ["Perception"])]),
+    feature("feat", "Feat", [fixed("feat-grant", "skills", ["Perception"])]),
+    feature("race", "Race", [fixed("race-grant", "skills", ["Perception"])]),
+  ];
+  const slots = proficiencySwapSlots({
+    features,
+    items: ITEMS,
+    rows: [{ from: "skill", to: ["skill"] }],
+    held: () => false,
+    picks: { [swapId("race-grant", "Perception")]: ["Arcana"] },
+    available: true,
+  });
+  assert.deepEqual(slots.map((slot) => [slot.featureId, slot.grantId, slot.original]), [["race", "race-grant", "Perception"]]);
+
+  const swapped = withProficiencySwaps(features, slots);
+  const namesOn = (id: string) => swapped.find((f) => f.id === id)!.grants!.flatMap((grant) => (grant.kind === "fixed" ? grant.names : []));
+  assert.deepEqual(namesOn("class"), ["Perception"]);
+  assert.deepEqual(namesOn("feat"), ["Perception"]);
+  assert.deepEqual(namesOn("race"), ["Arcana"]);
+});
+
+test("re-picking the narrower choice to another value releases its swap with a notice, and the original does not bring it back", () => {
+  const grant = `${SOURCE}/Race/${ARTISAN}@0#tools:choice:names`;
+  const artisan = holding(ARTISAN, { proficiencyPicks: { [grant]: ["Sample Kit"] } });
+  const swapped = setProficiencySwap(artisan, rowOf(artisan, "Sample Kit").id, "Smith's Tools", catalogs);
+
+  const repicked = reconcile(recordProficiencyPick(swapped, { id: grant, choose: 1 }, "Sample Tool B"), compendium, { activeBooks: ACTIVE });
+  assert.deepEqual(repicked.proficiencyPicks, { [grant]: ["Sample Tool B"] });
+  assert.deepEqual(repicked.needsReview, ["Tool swap to Smith's Tools removed: ancestry no longer grants Sample Kit"]);
+  assert.ok(!namesIn(repicked, "tools").includes("Smith's Tools"));
+
+  const originalAgain = reconcile(recordProficiencyPick(repicked, { id: grant, choose: 1 }, "Sample Kit"), compendium, { activeBooks: ACTIVE });
+  assert.equal(originalAgain.proficiencyPicks?.[`${grant}#swap:Sample Kit`], undefined);
 });

@@ -6,8 +6,8 @@ import { grantRequirementMet } from "./optionFeatureGrants.ts";
 import { findClassData } from "./catalogs.ts";
 import {
   isSwapId,
-  languageOfSwapId,
   MULTICLASS_FEATURE,
+  originalOfSwapId,
   multiclassSkillGrantOf,
   originSwapStateOf,
   swapLabelOf,
@@ -388,17 +388,17 @@ function releaseReason(owners: readonly GrantSource[], character: Character, cla
 
 /**
  * The notice that releases a swap's pick, or undefined when the swap is kept. A swap is released when the held race
- * no longer grants its original, and its replacement is dropped when it is no longer an open replacement. Both checks run
+ * no longer grants its original, and its replacement is dropped when another source now grants it or it is no longer in the pool. Both checks run
  * only while the rule is in effect: with TCE off a saved swap is kept and ignored.
  */
 function originSwapNotice(id: string, pick: string, state: OriginSwapState): string | undefined {
   const label = swapLabelOf(id);
   const slot = state.slots.find((candidate) => candidate.id === id);
   if (!slot) {
-    return state.raceKnown ? `${label} swap to ${pick} removed: ancestry no longer grants ${languageOfSwapId(id)}` : undefined;
+    return state.raceKnown ? `${label} swap to ${pick} removed: ancestry no longer grants ${originalOfSwapId(id)}` : undefined;
   }
   if (!state.available || slot.replacement !== undefined) return undefined;
-  return `${label} swap to ${pick} removed: ${pick} is not an open replacement`;
+  return `${label} swap to ${pick} removed: ${pick} is no longer available`;
 }
 
 /**

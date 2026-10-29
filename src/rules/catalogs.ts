@@ -1,5 +1,5 @@
 import type { ActiveBooks } from "../constants/books.ts";
-import type { ClassData } from "../types/dnd5e.ts";
+import type { ClassData, RaceData } from "../types/dnd5e.ts";
 import { currentCompendium, type Compendium, type CompendiumListings } from "../services/compendium.ts";
 
 /** The one catalog bundle the rules take: names resolve against a Compendium, scoped to the active books. */
@@ -21,6 +21,14 @@ export function catalogListings(catalogs?: CharacterCatalogs): CompendiumListing
  */
 export function allCatalogClasses(catalogs?: CharacterCatalogs): readonly ClassData[] {
   return (catalogs?.compendium ?? currentCompendium()).for().classes();
+}
+
+/**
+ * Every race in the bundle's Compendium, unscoped, subraces included. A held race resolves by its name and source whatever the
+ * active books, so a character keeps the race it holds when a book is turned off.
+ */
+export function allCatalogRaces(catalogs?: CharacterCatalogs): readonly RaceData[] {
+  return (catalogs?.compendium ?? currentCompendium()).for().races();
 }
 
 /**

@@ -25,7 +25,7 @@ import {
   type ChoiceProficiencyGrant,
 } from "./proficiencyPools.ts";
 import { normalizeSkillName } from "./skills.ts";
-import { classSkillChoice, getAutoGrantedSkills } from "./proficiencySources/skillGrants.ts";
+import { classSkillChoice, ruleChoiceSkills, traitTextSkills } from "./proficiencySources/skillGrants.ts";
 import { resolveCharacterAncestry } from "./characterAncestry.ts";
 import { customBackgroundFeature } from "./customBackground.ts";
 import { originCustomizationAvailable } from "./originCustomization.ts";
@@ -44,8 +44,7 @@ import {
 } from "./proficiencySources/proficiencySwaps.ts";
 
 export { classSkillChoice } from "./proficiencySources/skillGrants.ts";
-export { isSwapId, languageOfSwapId } from "./proficiencySources/languageSwaps.ts";
-export { swapLabelOf } from "./proficiencySources/proficiencySwaps.ts";
+export { isSwapId, originalOfSwapId, swapLabelOf } from "./proficiencySources/swapIds.ts";
 export {
   multiclassGrantsOf,
   multiclassSkillGrantOf,
@@ -182,7 +181,7 @@ function legacySkillNames(
   activeBooks: readonly string[] | undefined,
   replacedSkills: ReadonlySet<string>,
 ): string[] {
-  const traitSkills = getAutoGrantedSkills(character, {
+  const traitSkills = traitTextSkills(character, {
     race: ancestry.race,
     subrace: ancestry.subrace,
     races: listings.races(),
@@ -190,6 +189,7 @@ function legacySkillNames(
   });
   return [
     ...traitSkills.filter((name) => !replacedSkills.has(swapNameKey(name))),
+    ...ruleChoiceSkills(character),
     ...fixedFeatureNames(features, "skills").map(normalizeSkillName),
   ];
 }

@@ -6,7 +6,7 @@ import { applyAncestrySelection } from "../src/rules/ancestryEngine.ts";
 import { changeRace, setChoiceRacialBonus, setOriginAbilitySwap } from "../src/rules/builderTransitions.ts";
 import { effectiveScores } from "../src/rules/abilities.ts";
 import { reconcile, reconcileForActiveBooks } from "../src/rules/characterReconciler.ts";
-import { originCustomizationAvailable, originCustomizationView } from "../src/rules/originCustomization.ts";
+import { originAbilityTargets, originCustomizationAvailable, originCustomizationView } from "../src/rules/originCustomization.ts";
 import { migrateCharacter } from "../src/rules/migrateCharacter.ts";
 import type { Character } from "../src/types/character.ts";
 import type { OriginRuleRecord , RaceData, SubraceData } from "../src/types/dnd5e.ts";
@@ -206,7 +206,7 @@ test("a race change releases the saved swaps with a notice", () => {
   const changed = changeRace(moved, compendium, ACTIVE);
 
   assert.equal(changed.originAbilitySwaps, undefined);
-  assert.deepEqual(changed.needsReview, ["Ability increase moved to Dexterity removed: ancestry no longer grants it"]);
+  assert.deepEqual(changed.needsReview, ["Ability swap to Dexterity removed: ancestry no longer grants it"]);
 });
 
 test("a change to another race with the same increase ability releases the swap too", () => {
@@ -249,4 +249,105 @@ test("no swap is applied without the rule, and the transition leaves the charact
   const dwarf = holding(DWARF);
   const slot = slotDefaulting(dwarf, "con");
   assert.equal(setOriginAbilitySwap(dwarf, slot.id, "dex", { compendium, activeBooks: WITHOUT_TCE }), dwarf);
+});
+
+test("a held race keeps its own increases when its book is off, though a same-named race of an active book exists", () => {
+  const TWIN = "Sample Twin";
+  const OTHER_BOOK = "TST2";
+  const twins: RaceData[] = [
+    { ...race(TWIN, [{ dex: 1 }]), source: SOURCE },
+    { ...race(TWIN, [{ cha: 2 }]), source: OTHER_BOOK },
+  ];
+  const twinCatalog = inMemoryCompendium({ races: twins }, { integrated: true });
+  const held = applyAncestrySelection(makeChar(), twins[1], undefined, { compendium: twinCatalog, activeBooks: ALL_BOOKS });
+  assert.deepEqual(held.racialAbilityBonuses, { cha: 2 });
+
+  const off = reconcileForActiveBooks(held, twinCatalog, [SOURCE]);
+  assert.deepEqual(off.racialAbilityBonuses, { cha: 2 });
+  assert.equal(off.needsReview, undefined);
+});
+
+test("a slot moves back to its own default when another slot holds that default too", () => {
+  const IMP = "Sample Imp";
+  const IMP_KIN = "Sample Imp Kin";
+  const imp = race(IMP, [{ cha: 2 }], [{ ...subrace(IMP_KIN, [{ cha: 1 }]), raceName: IMP }]);
+  const impCatalog = inMemoryCompendium({ races: [imp], originRules: [rule] }, { integrated: true });
+  const impCatalogs = { compendium: impCatalog, activeBooks: ACTIVE };
+  const held = applyAncestrySelection(makeChar(), imp, imp.subraces[0], impCatalogs);
+
+  const [raceSlot] = originCustomizationView(held, impCatalogs)!.abilitySlots;
+  const moved = setOriginAbilitySwap(held, raceSlot.id, "str", impCatalogs);
+  assert.deepEqual(moved.originAbilitySwaps, { [raceSlot.id]: "str" });
+
+  const back = setOriginAbilitySwap(moved, raceSlot.id, "cha", impCatalogs);
+  assert.equal(back.originAbilitySwaps, undefined);
+  assert.deepEqual(back.racialAbilityBonuses, { cha: 3 });
+});
+
+test("a slot whose base score is 19 or more moves away and back to its own default", () => {
+  const capped = holding(DWARF, undefined, { baseAbilityScores: { str: 10, dex: 10, con: 19, int: 10, wis: 10, cha: 10 } });
+  const away = setOriginAbilitySwap(capped, slotDefaulting(capped, "con").id, "dex", catalogs);
+  assert.equal(effectiveScores(away).scores.dex, 12);
+
+  const back = setOriginAbilitySwap(away, slotDefaulting(away, "con").id, "con", catalogs);
+  assert.equal(back.originAbilitySwaps, undefined);
+  assert.equal(effectiveScores(back).scores.con, 21);
+});
+
+test("a race increase swapped onto the score a new subrace increase lands on is dropped with a notice", () => {
+  const STRONG = "Sample Strong";
+  const STRONG_KIN = "Sample Strong Kin";
+  const strong = race(STRONG, [{ con: 2 }], [{ ...subrace(STRONG_KIN, [{ str: 2 }]), raceName: STRONG }]);
+  const strongCatalogs = { compendium: inMemoryCompendium({ races: [strong], originRules: [rule] }, { integrated: true }), activeBooks: ACTIVE };
+  const plain = applyAncestrySelection(makeChar(), strong, undefined, strongCatalogs);
+  const moved = setOriginAbilitySwap(plain, originCustomizationView(plain, strongCatalogs)!.abilitySlots[0].id, "str", strongCatalogs);
+  assert.deepEqual(moved.originAbilitySwaps && Object.values(moved.originAbilitySwaps), ["str"]);
+
+  const changed = applyAncestrySelection(moved, strong, strong.subraces[0], strongCatalogs);
+
+  assert.equal(changed.originAbilitySwaps, undefined);
+  assert.deepEqual(changed.racialAbilityBonuses, { con: 2, str: 2 });
+  assert.deepEqual(changed.needsReview, ["Ability swap to Strength removed: another increase already uses it"]);
+});
+
+test("a subrace increase is swapped like a race increase, and changing the subrace releases its swap with a notice", () => {
+  const STRONG = "Sample Strong";
+  const STRONG_KIN = "Sample Strong Kin";
+  const strong = race(STRONG, [{ con: 2 }], [{ ...subrace(STRONG_KIN, [{ str: 2 }]), raceName: STRONG }]);
+  const strongCatalogs = { compendium: inMemoryCompendium({ races: [strong], originRules: [rule] }, { integrated: true }), activeBooks: ACTIVE };
+  const held = applyAncestrySelection(makeChar(), strong, strong.subraces[0], strongCatalogs);
+  const subSlot = originCustomizationView(held, strongCatalogs)!.abilitySlots.find((slot) => slot.id.startsWith("subrace|"))!;
+  assert.equal(subSlot.defaultAbility, "str");
+
+  const moved = setOriginAbilitySwap(held, subSlot.id, "dex", strongCatalogs);
+  assert.deepEqual(moved.racialAbilityBonuses, { con: 2, dex: 2 });
+  assert.equal(setOriginAbilitySwap(held, subSlot.id, "con", strongCatalogs), held, "a race increase's ability is taken");
+
+  const unsubraced = applyAncestrySelection(moved, strong, undefined, strongCatalogs);
+  assert.equal(unsubraced.originAbilitySwaps, undefined);
+  assert.deepEqual(unsubraced.racialAbilityBonuses, { con: 2 });
+  assert.deepEqual(unsubraced.needsReview, ["Ability swap to Dexterity removed: ancestry no longer grants it"]);
+});
+
+test("a Choice ASI pick may not take an ability an Origin Customization increase lands on, while the rule is available", () => {
+  const half = holding(HALF);
+  assert.deepEqual(originAbilityTargets(half, catalogs), ["cha"]);
+
+  const moved = setOriginAbilitySwap(half, slotDefaulting(half, "cha").id, "str", catalogs);
+  assert.deepEqual(originAbilityTargets(moved, catalogs), ["str"]);
+  assert.deepEqual(originAbilityTargets(half, { compendium, activeBooks: WITHOUT_TCE }), []);
+  assert.deepEqual(originAbilityTargets(holding(PLAIN), catalogs), []);
+});
+
+test("a held race missing from the catalog keeps its saved ability swap until the race is found again", () => {
+  const dwarf = holding(DWARF);
+  const moved = setOriginAbilitySwap(dwarf, slotDefaulting(dwarf, "con").id, "dex", catalogs);
+  const withoutDwarf = inMemoryCompendium({ races: records.filter((r) => r.name !== DWARF), originRules: [rule] }, { integrated: true });
+
+  const absent = reconcile(moved, withoutDwarf, { activeBooks: ACTIVE });
+  assert.deepEqual(absent, moved);
+
+  const back = reconcile(absent, compendium, { activeBooks: ACTIVE });
+  assert.deepEqual(back.originAbilitySwaps, moved.originAbilitySwaps);
+  assert.deepEqual(back.racialAbilityBonuses, { dex: 2 });
 });

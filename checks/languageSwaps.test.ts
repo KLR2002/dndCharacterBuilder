@@ -1,13 +1,16 @@
-import { ORIGIN_CUSTOMIZATION_BOOK } from "../src/constants/books.ts";
+import { ORIGIN_CUSTOMIZATION_BOOK , ALL_BOOKS } from "../src/constants/books.ts";
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { makeChar, inMemoryCompendium } from "./testUtils.ts";
+import { makeChar, inMemoryCompendium, loadSrdCatalog, srdBaselineCompendium } from "./testUtils.ts";
 import { applyAncestrySelection } from "../src/rules/ancestryEngine.ts";
-import { changeRace, setLanguageSwap } from "../src/rules/builderTransitions.ts";
+import { changeRace, resetOriginSwaps, setLanguageSwap, setOriginAbilitySwap } from "../src/rules/builderTransitions.ts";
 import { reconcile, reconcileForActiveBooks } from "../src/rules/characterReconciler.ts";
 import { proficiencyChoiceOffers } from "../src/rules/proficiencyChoiceOffers.ts";
-import { languageSwapViews, proficiencySheet , sourceGrants } from "../src/rules/proficiencySheet.ts";
+import { originCustomizationView } from "../src/rules/originCustomization.ts";
+import { languageSwapViews, proficiencySheet, proficiencySwapViews, sourceGrants } from "../src/rules/proficiencySheet.ts";
 import type { Character } from "../src/types/character.ts";
+import type { FeatureInstance } from "../src/rules/types.ts";
+import { languageSwapSlots } from "../src/rules/proficiencySources/languageSwaps.ts";
 import type { BackgroundData, OriginRuleRecord, ProficiencyGrant, RaceData } from "../src/types/dnd5e.ts";
 
 // Language swaps: a Race or Subrace fixed language is replaced by another SRD language under Origin Customization.
@@ -170,7 +173,7 @@ test("a replacement another source now grants is dropped with a notice", () => {
 
   const forged = reconcile({ ...swapped, background: { name: FORGE, source: SOURCE } }, compendium, { activeBooks: ACTIVE });
   assert.equal(forged.proficiencyPicks, undefined);
-  assert.deepEqual(forged.needsReview, ["Language swap to Dwarvish removed: Dwarvish is not an open replacement"]);
+  assert.deepEqual(forged.needsReview, ["Language swap to Dwarvish removed: Dwarvish is no longer available"]);
   assert.ok(proficiencySheet(forged, catalogs).languages.map((entry) => entry.name).includes("Common"));
 });
 
@@ -305,4 +308,61 @@ test("a saved swap on a subrace-only language is released with a notice when the
   const withoutSubrace = applyAncestrySelection(swapped, repeatedRecords.find((r) => r.name === STOUT)!, undefined, repeatedCatalogs);
   assert.equal(withoutSubrace.proficiencyPicks, undefined);
   assert.deepEqual(withoutSubrace.needsReview, ["Language swap to Elvish removed: ancestry no longer grants Undercommon"]);
+});
+
+test("Reset returns the ability and the language swaps to their defaults together", () => {
+  const folk = holding(FOLK);
+  const increase = originCustomizationView(folk, catalogs)!.abilitySlots[0];
+  const moved = setOriginAbilitySwap(folk, increase.id, "dex", catalogs);
+  const swapped = setLanguageSwap(moved, rowOf(moved, "Elvish").id, "Dwarvish", catalogs);
+  assert.ok(swapped.originAbilitySwaps && swapped.proficiencyPicks, "both swaps are saved before Reset");
+
+  const reset = resetOriginSwaps(swapped, catalogs);
+  assert.equal(reset.originAbilitySwaps, undefined);
+  assert.equal(reset.proficiencyPicks, undefined);
+  assert.deepEqual(reset.racialAbilityBonuses, { con: 2 });
+  assert.deepEqual(reconcile(reset, compendium, { activeBooks: ACTIVE }), reset);
+});
+
+test("a held race missing from the catalog keeps its saved language swap until the race is found again", () => {
+  const folk = holding(FOLK);
+  const swapped = setLanguageSwap(folk, rowOf(folk, "Elvish").id, "Dwarvish", catalogs);
+  const withoutFolk = inMemoryCompendium({ races: records.filter((r) => r.name !== FOLK), backgrounds, originRules: [rule] }, { integrated: true });
+
+  const absent = reconcile(swapped, withoutFolk, { activeBooks: ACTIVE });
+  assert.deepEqual(absent.proficiencyPicks, swapped.proficiencyPicks);
+  assert.deepEqual(absent.needsReview, undefined);
+
+  const back = reconcile(absent, compendium, { activeBooks: ACTIVE });
+  assert.deepEqual(back.proficiencyPicks, swapped.proficiencyPicks);
+});
+
+test("only the race's own language grant has a swap slot: a Class feature naming the same language keeps it", () => {
+  // The Class feature comes first, so a candidate filter that admitted it would see the language first.
+  const features = [
+    { id: "class", name: "class", source: SOURCE, description: "Placeholder description.", origin: "Class", grants: [fixed(`${SOURCE}/Class/Sample Class@0#languages:fixed:Elvish`, ["Elvish"])] },
+    { id: "race", name: FOLK, source: SOURCE, description: "Placeholder description.", origin: "Race", grants: [fixed(FOLK_GRANT, ["Common", "Elvish"])] },
+  ] as FeatureInstance[];
+
+  const slots = languageSwapSlots(features, ["Common"], undefined, true);
+  assert.deepEqual(slots.filter((slot) => slot.original === "Elvish").map((slot) => slot.id), [`${FOLK_GRANT}#swap:Elvish`]);
+});
+
+test("the SRD Baseline offers no language or proficiency swap, and a saved swap leaves its sheet unchanged", () => {
+  const srdRaces = loadSrdCatalog<RaceData[]>("races");
+  const srdCatalogs = { compendium: srdBaselineCompendium(), activeBooks: ALL_BOOKS };
+
+  for (const srdRace of srdRaces) {
+    const held = makeChar({ race: { name: srdRace.name, source: srdRace.source } });
+    assert.deepEqual(languageSwapViews(held, srdCatalogs), [], `${srdRace.name} offers no language swap`);
+    assert.deepEqual(proficiencySwapViews(held, srdCatalogs), [], `${srdRace.name} offers no proficiency swap`);
+  }
+
+  const first = srdRaces[0];
+  const held = makeChar({ race: { name: first.name, source: first.source } });
+  const withPick = makeChar({
+    race: { name: first.name, source: first.source },
+    proficiencyPicks: { [`${first.source}/Race/${first.name}@0#languages:fixed:Common#swap:Common`]: ["Dwarvish"] },
+  });
+  assert.deepEqual(proficiencySheet(withPick, srdCatalogs), proficiencySheet(held, srdCatalogs));
 });

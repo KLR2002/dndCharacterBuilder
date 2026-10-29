@@ -79,7 +79,7 @@ test("scrapeOriginRules fails when the record is missing, including a same-name 
     variantrule: [ruleRecord(swapTable([["Skill", "Skill"]]), { source: "ZZZ" })],
   };
 
-  await assert.rejects(scrapeOriginRules(clientReturning(data)), /Customizing Your Origin/);
+  await assert.rejects(scrapeOriginRules(clientReturning(data)), /Could not find the "Customizing Your Origin" \(TCE\) record/);
 });
 
 test("scrapeOriginRules fails when the Proficiency Swaps table is missing", async () => {
@@ -89,7 +89,19 @@ test("scrapeOriginRules fails when the Proficiency Swaps table is missing", asyn
     ],
   };
 
-  await assert.rejects(scrapeOriginRules(clientReturning(data)), /Proficiency Swaps/);
+  await assert.rejects(scrapeOriginRules(clientReturning(data)), /Could not find the "Proficiency Swaps" table in the "Proficiencies" section/);
+});
+
+test("scrapeOriginRules fails when the Proficiency Swaps table has no rows", async () => {
+  const data = { variantrule: [ruleRecord(swapTable([]))] };
+
+  await assert.rejects(scrapeOriginRules(clientReturning(data)), /The "Proficiency Swaps" table has no rows/);
+});
+
+test("scrapeOriginRules fails when a row does not have two cells", async () => {
+  const data = { variantrule: [ruleRecord(swapTable([["Skill", "Skill"], ["Skill"]]))] };
+
+  await assert.rejects(scrapeOriginRules(clientReturning(data)), /A Proficiency Swaps row is not two cells/);
 });
 
 test("scrapeOriginRules fails when a cell is not a recognised proficiency kind", async () => {

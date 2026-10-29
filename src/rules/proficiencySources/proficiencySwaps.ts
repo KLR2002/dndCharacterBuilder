@@ -4,7 +4,7 @@ import type { FeatureInstance } from "../types.ts";
 import { ALL_TOOLS, normalizeToolName } from "../proficienciesAndLanguages.ts";
 import { poolNames, validPicks, type ChoiceProficiencyGrant } from "../proficiencyPools.ts";
 import { normalizeSkillName } from "../skills.ts";
-import { LANGUAGE_SWAP_MARK } from "./languageSwaps.ts";
+import { swapId } from "./swapIds.ts";
 
 /** The categories a Race or Subrace proficiency swap can replace. Languages have their own pool (languageSwaps.ts). */
 export type SwappableCategory = "skills" | "tools" | "weapons" | "armor";
@@ -56,21 +56,6 @@ const SWAPPABLE: ReadonlySet<string> = new Set<SwappableCategory>(["skills", "to
 /** The key two spellings of one name share: case-insensitive, and singular, so "Shortswords" matches "Shortsword". */
 export function swapNameKey(name: string): string {
   return name.trim().toLowerCase().replace(/s$/, "");
-}
-
-/** The mark between a swap's grant id and the name it replaces. */
-export const PROFICIENCY_SWAP_MARK = LANGUAGE_SWAP_MARK;
-
-export function proficiencySwapId(grantId: string, original: string): string {
-  return `${grantId}${PROFICIENCY_SWAP_MARK}${original}`;
-}
-
-const SWAP_LABELS: Record<string, string> = { languages: "Language", skills: "Skill", tools: "Tool", weapons: "Weapon", armor: "Armor" };
-
-/** The word a notice gives a swap, read from the category its grant id carries. */
-export function swapLabelOf(id: string): string {
-  const category = /#(\w+):/.exec(id)?.[1];
-  return (category && SWAP_LABELS[category]) || "Proficiency";
 }
 
 /** The Catalog weapon a name is, matched by name, with its simple or martial category. Undefined when it cannot be classified. */
@@ -164,7 +149,7 @@ export function proficiencySwapSlots(input: ProficiencySwapInput): ProficiencySw
         seen.add(key);
         return !input.held(entry.category, entry.name);
       });
-    const id = proficiencySwapId(candidate.grantId, candidate.original);
+    const id = swapId(candidate.grantId, candidate.original);
     const pick = input.available ? input.picks?.[id]?.[0] : undefined;
     const replacement = pick === undefined ? undefined : pool.find((entry) => swapNameKey(entry.name) === swapNameKey(pick));
     if (replacement) taken.add(`${replacement.category}|${swapNameKey(replacement.name)}`);

@@ -4,6 +4,7 @@ import assert from "node:assert/strict";
 import { makeChar, inMemoryCompendium, loadSrdCatalog } from "./testUtils.ts";
 import { applyAncestrySelection, resolveAncestryState } from "../src/rules/ancestryEngine.ts";
 import { changeLineage, changeRace, setSizeChoice } from "../src/rules/builderTransitions.ts";
+import { reconcileForActiveBooks } from "../src/rules/characterReconciler.ts";
 import { resolvedSize } from "../src/rules/sizeChoice.ts";
 import type { RaceData } from "../src/types/dnd5e.ts";
 
@@ -160,4 +161,45 @@ test("a character saved on the SRD Baseline resolves the same size once the inte
 
   assert.equal(onSrd, "Medium");
   assert.equal(onIntegrated, onSrd);
+});
+
+test("a held lineage with no race keeps a Size Choice it lists", () => {
+  const lineageOnly = makeChar({ race: null, lineageReplacement: LITTLE_LINEAGE });
+  const picked = setSizeChoice(lineageOnly, "Medium", integrated);
+  assert.equal(picked.sizeChoice, "Medium");
+
+  const reconciled = reconcileForActiveBooks(picked, integrated.compendium, ACTIVE);
+  assert.equal(reconciled.sizeChoice, "Medium");
+  assert.equal(resolvedSize(reconciled, integrated), "Medium");
+});
+
+test("changing the race keeps a Size Choice the held lineage still lists", () => {
+  const before = makeChar({
+    race: { name: TALL, source: "TST" },
+    lineageReplacement: LITTLE_LINEAGE,
+    sizeChoice: "Small",
+  });
+
+  const after = changeRace(before, integrated.compendium, ACTIVE);
+
+  assert.equal(after.lineageReplacement, LITTLE_LINEAGE);
+  assert.equal(after.sizeChoice, "Small");
+});
+
+test("a Size Choice removed because the held record does not list it leaves a notice naming that record", () => {
+  const before = holding(STOUT, { sizeChoice: "Small" });
+
+  const after = applyAncestrySelection(before, records[2], undefined, integrated);
+
+  assert.equal(after.sizeChoice, undefined);
+  assert.deepEqual(after.needsReview, ["Size choice Small removed: Sample Tall does not list it"]);
+});
+
+test("a Size Choice is kept while the held race is missing from the catalog", () => {
+  const withoutStout = inMemoryCompendium({ races: [records[2]] }, { integrated: true });
+  const character = holding(STOUT, { sizeChoice: "Medium" });
+
+  const reconciled = reconcileForActiveBooks(character, withoutStout, ACTIVE);
+
+  assert.equal(reconciled.sizeChoice, "Medium");
 });
