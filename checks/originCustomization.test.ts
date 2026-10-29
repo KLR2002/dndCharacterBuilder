@@ -250,3 +250,19 @@ test("no swap is applied without the rule, and the transition leaves the charact
   const slot = slotDefaulting(dwarf, "con");
   assert.equal(setOriginAbilitySwap(dwarf, slot.id, "dex", { compendium, activeBooks: WITHOUT_TCE }), dwarf);
 });
+
+test("a held race keeps its own increases when its book is off, though a same-named race of an active book exists", () => {
+  const TWIN = "Sample Twin";
+  const OTHER_BOOK = "TST2";
+  const twins: RaceData[] = [
+    { ...race(TWIN, [{ dex: 1 }]), source: SOURCE },
+    { ...race(TWIN, [{ cha: 2 }]), source: OTHER_BOOK },
+  ];
+  const twinCatalog = inMemoryCompendium({ races: twins }, { integrated: true });
+  const held = applyAncestrySelection(makeChar(), twins[1], undefined, { compendium: twinCatalog, activeBooks: ALL_BOOKS });
+  assert.deepEqual(held.racialAbilityBonuses, { cha: 2 });
+
+  const off = reconcileForActiveBooks(held, twinCatalog, [SOURCE]);
+  assert.deepEqual(off.racialAbilityBonuses, { cha: 2 });
+  assert.equal(off.needsReview, undefined);
+});

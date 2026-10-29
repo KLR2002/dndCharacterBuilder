@@ -4,7 +4,7 @@ import type { CompendiumListings, Compendium } from "../services/compendium.ts";
 import type { AbilityKey, Character } from "../types/character.ts";
 import type { RaceData, SubraceData } from "../types/dnd5e.ts";
 import { ABILITIES, ABILITY_NAMES, abilityKeyOf, baseAbilityScores } from "./abilities.ts";
-import { catalogListings, type CharacterCatalogs } from "./catalogs.ts";
+import { allCatalogRaces, catalogListings, type CharacterCatalogs } from "./catalogs.ts";
 import { withNotices } from "./needsReview.ts";
 import { findHeldRace } from "./raceLookup.ts";
 
@@ -72,13 +72,19 @@ function slotsOf(held: NonNullable<Character["race"]>, race: RaceData, subrace: 
 }
 
 /**
- * The slots and availability of a character in `listings`. Undefined when the held race or subrace is not in the
- * catalog, so its saved state is kept untouched.
+ * The slots and availability of a character. The held race resolves against `races`, the unscoped records, so a book that is
+ * turned off leaves it its increases; `listings` (scoped to the active books) decides only whether the rule is offered.
+ * Undefined when the held race or subrace is not in the catalog, so its saved state is kept untouched.
  */
-function stateIn(character: Character, listings: CompendiumListings, activeBooks: ActiveBooks): AbilityState | undefined {
+function stateIn(
+  character: Character,
+  races: readonly RaceData[],
+  listings: CompendiumListings,
+  activeBooks: ActiveBooks,
+): AbilityState | undefined {
   const held = character.race;
   if (!held) return { slots: [], available: false };
-  const found = findHeldRace(listings.races(), held, activeBooks);
+  const found = findHeldRace(races, held, activeBooks);
   if (!found.race || (held.subraceName && !found.subrace)) return undefined;
   const slots = slotsOf(held, found.race, found.subrace);
   const available =
@@ -88,7 +94,7 @@ function stateIn(character: Character, listings: CompendiumListings, activeBooks
 
 /** The slots and availability of a character, resolved against the catalogs. Nothing held means no slots. */
 export function originAbilityState(character: Character, catalogs?: CharacterCatalogs): AbilityState {
-  return stateIn(character, catalogListings(catalogs), catalogs?.activeBooks) ?? { slots: [], available: false };
+  return stateIn(character, allCatalogRaces(catalogs), catalogListings(catalogs), catalogs?.activeBooks) ?? { slots: [], available: false };
 }
 
 /** The ability an increase targets: its swap when one is saved, else the ability the race gives it. */
@@ -164,7 +170,7 @@ export function originCustomizationView(character: Character, catalogs?: Charact
  * picks. A held race missing from the catalog is left as it is. Deterministic, so a second pass changes nothing.
  */
 export function reconcileOriginAbilities(character: Character, compendium: Compendium, activeBooks: ActiveBooks): Character {
-  const state = stateIn(character, compendium.for(activeBooks), activeBooks);
+  const state = stateIn(character, compendium.for().races(), compendium.for(activeBooks), activeBooks);
   if (!state) return character;
 
   const ids = new Set(state.slots.map((slot) => slot.id));
