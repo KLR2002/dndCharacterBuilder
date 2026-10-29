@@ -279,7 +279,7 @@ The complete player compendium fetched from 5e.tools and persisted in client sto
 _Avoid_: Scraped dump, external database, download cache
 
 **Catalog Format**:
-The number an Integrated Catalog is saved with. The application bumps the required number when scraped data changes in a way a cached catalog cannot satisfy. A catalog saved below it, or with no number, is *stale*: it still loads, its affected choices are hidden, saved picks are kept, and Settings asks for a re-sync. The SRD Baseline is never stale.
+The number an Integrated Catalog is saved with. The application bumps the required number when scraped data changes in a way a cached catalog cannot satisfy. A catalog saved below it, or with no number, is *stale*: it still loads, its affected choices are hidden, saved picks are kept, and Settings asks for a re-sync. After an update that raises the required number, the player is told once that the app was updated and a re-sync is advisable. The SRD Baseline is never stale.
 _Avoid_: Version, schema version, cache key
 
 **Sourcebook Gating**:

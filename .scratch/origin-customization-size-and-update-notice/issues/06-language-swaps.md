@@ -1,6 +1,7 @@
 # 06: Language swaps
 
-**Status:** ready-for-agent
+**Status:** done
+**Landed:** a6a7d39, reviewer findings repaired in a9e256d and 8b8c4fc; gate passed on the final tree; open items: none
 
 Spec: `../spec.md` (decisions Q9, Q13, Q14, Q18, Q20).
 
@@ -15,9 +16,9 @@ On the open card, each fixed language a race or subrace grants (Standard Human's
 
 ## Acceptance Criteria
 
-- [ ] AC-12: replacement lands on the sheet and the original leaves it; pool excludes held languages; Standard Human is swappable; "any" choices offer none.
-- [ ] AC-13: TCE off keeps and ignores; race change releases with a notice; a conflicting replacement is dropped with a notice; a default-equal swap is not stored.
-- [ ] A background, class, subclass or feat language is never offered for a swap.
+- [x] AC-12: replacement lands on the sheet and the original leaves it; pool excludes held languages; Standard Human is swappable; "any" choices offer none.
+- [x] AC-13: TCE off keeps and ignores; race change releases with a notice; a conflicting replacement is dropped with a notice; a default-equal swap is not stored.
+- [x] A background, class, subclass or feat language is never offered for a swap.
 
 ## Verification
 

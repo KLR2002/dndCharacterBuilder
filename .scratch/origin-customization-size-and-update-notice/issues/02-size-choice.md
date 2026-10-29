@@ -1,6 +1,7 @@
 # 02: Size Choice
 
-**Status:** ready-for-agent
+**Status:** done
+**Landed:** 634d3cb, check:all, layout:check (both modes) and browser run passed on the final tree 8b8c4fc; open items: none
 
 Spec: `../spec.md` (decisions Q4, Q5; GLOSSARY *Size Choice*).
 
@@ -16,10 +17,10 @@ A race or lineage whose record lists two or more sizes offers those sizes in the
 
 ## Acceptance Criteria
 
-- [ ] AC-4: offered sizes equal the record's sizes; first selected by default; single-size race offers nothing.
-- [ ] AC-5: pick shown on the banner and the character header; released on a race change to a race not listing it.
-- [ ] AC-7: on the SRD Baseline no size picker appears and nothing regresses (a character saved on the SRD loads on the Integrated Catalog and back with the same size).
-- [ ] Size Choice is a plain optional character field, not a Rule Choice; no size name is written in code.
+- [x] AC-4: offered sizes equal the record's sizes; first selected by default; single-size race offers nothing.
+- [x] AC-5: pick shown on the banner and the character header; released on a race change to a race not listing it.
+- [x] AC-7: on the SRD Baseline no size picker appears and nothing regresses (a character saved on the SRD loads on the Integrated Catalog and back with the same size).
+- [x] Size Choice is a plain optional character field, not a Rule Choice; no size name is written in code.
 
 ## Verification
 

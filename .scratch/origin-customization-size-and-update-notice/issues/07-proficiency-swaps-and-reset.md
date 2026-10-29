@@ -1,6 +1,7 @@
 # 07: Proficiency swaps and Reset
 
-**Status:** ready-for-agent
+**Status:** done
+**Landed:** e8add7e, reviewer findings repaired in 5a3fb1d, a9e256d and 8b8c4fc; gate passed on the final tree; open items: none
 
 Spec: `../spec.md` (decisions Q6, Q13 to Q15, Q18, and the race-only rule).
 
@@ -16,9 +17,9 @@ On the open card, each fixed skill, tool, weapon or armor grant of the race or s
 
 ## Acceptance Criteria
 
-- [ ] AC-14: each table row limits the replacements as the Catalog states; the sheet holds the replacement instead of the original; unclassifiable weapons and "any" choices offer none.
-- [ ] AC-15: a same-named grant from a background, class, subclass or feat is untouched and offers no swap.
-- [ ] AC-16: TCE off keeps and ignores; race change releases with a notice; a conflicting replacement is dropped with a notice; a default-equal swap is not stored; "Reset" restores every default.
+- [x] AC-14: each table row limits the replacements as the Catalog states; the sheet holds the replacement instead of the original; unclassifiable weapons and "any" choices offer none.
+- [x] AC-15: a same-named grant from a background, class, subclass or feat is untouched and offers no swap.
+- [x] AC-16: TCE off keeps and ignores; race change releases with a notice; a conflicting replacement is dropped with a notice; a default-equal swap is not stored; "Reset" restores every default.
 
 ## Verification
 

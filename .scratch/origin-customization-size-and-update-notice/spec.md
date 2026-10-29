@@ -1,6 +1,6 @@
 # Spec: Update Notice, Size Choice and Origin Customization
 
-**Status:** ready-for-human
+**Status:** done
 **Tracker:** local markdown (`.scratch/origin-customization-size-and-update-notice/`).
 **Related:** ADR 0003, 0013, 0014, 0015, CODING_STANDARDS §7 and §8. GLOSSARY terms *Origin Customization*, *Origin Swap*, *Size Choice*, *Catalog Format*, *Integrated Catalog*, *Proficiency Choice*, *Proficiency Sheet*, *Rule Choice*.
 

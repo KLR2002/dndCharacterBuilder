@@ -1,6 +1,7 @@
 # 05: Customize origin card and ability swaps
 
-**Status:** ready-for-agent
+**Status:** done
+**Landed:** 3e86220, reviewer findings repaired in a9e256d and 8b8c4fc; check:all, check:live, layout:check (both modes) and browser run passed on the final tree; open items: none
 
 Spec: `../spec.md` (decisions Q7, Q8, Q10 to Q12, Q17, Q18; GLOSSARY *Origin Customization*, *Origin Swap*).
 
@@ -16,10 +17,10 @@ When TCE is active, the Catalog has `originRules`, and the held race or subrace 
 
 ## Acceptance Criteria
 
-- [ ] AC-9: card present and collapsed under the stated gating; absent without TCE, without `originRules`, or without a race ability increase.
-- [ ] AC-10: moves, distinctness, the 20 cap and the all-six exclusion behave as stated; amounts and slots come from race data; no race name or amount is written in code.
-- [ ] AC-11: TCE off keeps and ignores swaps; race change releases with a notice; default-equal swaps are not stored.
-- [ ] `CollapsibleCard` default behavior (open) is unchanged for existing callers.
+- [x] AC-9: card present and collapsed under the stated gating; absent without TCE, without `originRules`, or without a race ability increase.
+- [x] AC-10: moves, distinctness, the 20 cap and the all-six exclusion behave as stated; amounts and slots come from race data; no race name or amount is written in code.
+- [x] AC-11: TCE off keeps and ignores swaps; race change releases with a notice; default-equal swaps are not stored.
+- [x] `CollapsibleCard` default behavior (open) is unchanged for existing callers.
 
 ## Verification
 

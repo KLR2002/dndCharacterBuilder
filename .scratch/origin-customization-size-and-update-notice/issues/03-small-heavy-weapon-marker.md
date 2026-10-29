@@ -1,6 +1,7 @@
 # 03: Heavy-weapon marker for Small characters
 
-**Status:** ready-for-agent
+**Status:** done
+**Landed:** 111724d, check:all and check:live passed on the final tree 8b8c4fc; badge in the attacks list not screenshotted; open items: none
 
 Spec: `../spec.md` (decisions Q5, Q24).
 
@@ -14,7 +15,7 @@ An attack made with a Heavy-property weapon carries a short disadvantage marker 
 
 ## Acceptance Criteria
 
-- [ ] AC-6: Small (picked) with a Heavy weapon shows the marker; Small by a single-size race shows it; Medium and no race show none; a non-Heavy weapon shows none.
+- [x] AC-6: Small (picked) with a Heavy weapon shows the marker; Small by a single-size race shows it; Medium and no race show none; a non-Heavy weapon shows none.
 
 ## Verification
 

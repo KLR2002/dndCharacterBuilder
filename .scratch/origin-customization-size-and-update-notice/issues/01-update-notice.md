@@ -1,6 +1,7 @@
 # 01: Update notice
 
-**Status:** ready-for-agent
+**Status:** done
+**Landed:** 4a4934d, check:all, check:live, layout:check and browser run passed on the final tree 8b8c4fc; open items: none
 
 Spec: `../spec.md` (decisions Q3, Q19, Q22, Q23).
 
@@ -16,10 +17,10 @@ After the app is updated, a user with an Integrated Catalog that is stale (saved
 
 ## Acceptance Criteria
 
-- [ ] AC-1: stale catalog and an uninformed required format show the modal on app open, with "Open Settings" and "Later".
-- [ ] AC-2: the SRD Baseline only, a current catalog, or an already-informed format show no modal.
-- [ ] AC-3: either button saves the informed format; "Open Settings" navigates to Settings; the modal does not return until the required format is raised; Settings keeps its own re-sync hint.
-- [ ] Settings saved by an older build (no informed-format field) load unchanged.
+- [x] AC-1: stale catalog and an uninformed required format show the modal on app open, with "Open Settings" and "Later".
+- [x] AC-2: the SRD Baseline only, a current catalog, or an already-informed format show no modal.
+- [x] AC-3: either button saves the informed format; "Open Settings" navigates to Settings; the modal does not return until the required format is raised; Settings keeps its own re-sync hint.
+- [x] Settings saved by an older build (no informed-format field) load unchanged.
 
 ## Verification
 
