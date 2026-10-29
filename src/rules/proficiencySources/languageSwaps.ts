@@ -11,7 +11,8 @@ export function languageSwapId(grantId: string, language: string): string {
   return `${grantId}${LANGUAGE_SWAP_MARK}${language}`;
 }
 
-export function isLanguageSwapId(id: string): boolean {
+/** Whether an id is a swap's: a language, skill, tool, weapon or armor swap alike. */
+export function isSwapId(id: string): boolean {
   return id.includes(LANGUAGE_SWAP_MARK);
 }
 

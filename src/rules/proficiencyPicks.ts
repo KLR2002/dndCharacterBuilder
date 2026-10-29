@@ -5,12 +5,13 @@ import type { Compendium } from "../services/compendium.ts";
 import { grantRequirementMet } from "./optionFeatureGrants.ts";
 import { findClassData } from "./catalogs.ts";
 import {
-  isLanguageSwapId,
+  isSwapId,
   languageOfSwapId,
-  languageSwapStateOf,
   MULTICLASS_FEATURE,
   multiclassSkillGrantOf,
-  type LanguageSwapState,
+  originSwapStateOf,
+  swapLabelOf,
+  type OriginSwapState,
 } from "./proficiencySheet.ts";
 import { poolNames, sourceRecordGrants, STARTING_PROFICIENCIES, validPicks, type ChoiceProficiencyGrant } from "./proficiencyPools.ts";
 import { heldSubraceOf, raceSkillPickApplies, recordGrantSources, subracePickApplies } from "./recordProficiencyGrants.ts";
@@ -386,17 +387,18 @@ function releaseReason(owners: readonly GrantSource[], character: Character, cla
 }
 
 /**
- * The notice that releases a language swap's pick, or undefined when the swap is kept. A swap is released when the held race
+ * The notice that releases a swap's pick, or undefined when the swap is kept. A swap is released when the held race
  * no longer grants its original, and its replacement is dropped when it is no longer an open replacement. Both checks run
  * only while the rule is in effect: with TCE off a saved swap is kept and ignored.
  */
-function languageSwapNotice(id: string, pick: string, state: LanguageSwapState): string | undefined {
+function originSwapNotice(id: string, pick: string, state: OriginSwapState): string | undefined {
+  const label = swapLabelOf(id);
   const slot = state.slots.find((candidate) => candidate.id === id);
   if (!slot) {
-    return state.raceKnown ? `Language swap to ${pick} removed: ancestry no longer grants ${languageOfSwapId(id)}` : undefined;
+    return state.raceKnown ? `${label} swap to ${pick} removed: ancestry no longer grants ${languageOfSwapId(id)}` : undefined;
   }
   if (!state.available || slot.replacement !== undefined) return undefined;
-  return `Language swap to ${pick} removed: ${pick} is not an open replacement`;
+  return `${label} swap to ${pick} removed: ${pick} is not an open replacement`;
 }
 
 /**
@@ -413,11 +415,11 @@ export function pruneInvalidProficiencyPicks(character: Character, compendium: C
   const held = heldRecordIdsOf(character, listings.races(), listings.backgrounds(), activeBooks);
   const kept: Record<string, string[]> = {};
   const notices: string[] = [];
-  let swapState: LanguageSwapState | undefined;
+  let swapState: OriginSwapState | undefined;
   for (const [id, names] of Object.entries(picks)) {
-    if (isLanguageSwapId(id)) {
-      swapState ??= languageSwapStateOf(character, { compendium, activeBooks });
-      const notice = names.length > 0 ? languageSwapNotice(id, names[0], swapState) : undefined;
+    if (isSwapId(id)) {
+      swapState ??= originSwapStateOf(character, { compendium, activeBooks });
+      const notice = names.length > 0 ? originSwapNotice(id, names[0], swapState) : undefined;
       if (notice) notices.push(notice);
       else kept[id] = names;
       continue;
