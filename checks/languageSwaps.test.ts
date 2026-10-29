@@ -170,7 +170,7 @@ test("a replacement another source now grants is dropped with a notice", () => {
 
   const forged = reconcile({ ...swapped, background: { name: FORGE, source: SOURCE } }, compendium, { activeBooks: ACTIVE });
   assert.equal(forged.proficiencyPicks, undefined);
-  assert.deepEqual(forged.needsReview, ["Language swap to Dwarvish removed: Dwarvish is not an open replacement"]);
+  assert.deepEqual(forged.needsReview, ["Language swap to Dwarvish removed: Dwarvish is no longer available"]);
   assert.ok(proficiencySheet(forged, catalogs).languages.map((entry) => entry.name).includes("Common"));
 });
 

@@ -243,7 +243,7 @@ test("a replacement another source now grants is dropped with a notice", () => {
 
   const forged = reconcile({ ...swapped, background: { name: FORGE, source: SOURCE } }, compendium, { activeBooks: ACTIVE });
   assert.equal(forged.proficiencyPicks, undefined);
-  assert.deepEqual(forged.needsReview, ["Skill swap to Insight removed: Insight is not an open replacement"]);
+  assert.deepEqual(forged.needsReview, ["Skill swap to Insight removed: Insight is no longer available"]);
 });
 
 test("a swap equal to its default is not stored", () => {
