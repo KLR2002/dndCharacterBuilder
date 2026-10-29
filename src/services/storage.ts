@@ -12,6 +12,8 @@ export interface AppSettings {
   activeResourceBooks: string[];
   themeAccentId: string;
   fullHealOnLevelUp: boolean;
+  /** The Catalog Format the user was last told about. Absent until the update notice is shown. */
+  catalogFormatInformed?: number;
 }
 
 export const DEFAULT_SETTINGS: AppSettings = {
@@ -88,6 +90,9 @@ function normalizeSettings(value: unknown): AppSettings {
   }
   if (value.fullHealOnLevelUp !== undefined && typeof value.fullHealOnLevelUp !== "boolean") {
     throw new Error("Invalid settings: fullHealOnLevelUp must be boolean");
+  }
+  if (value.catalogFormatInformed !== undefined && typeof value.catalogFormatInformed !== "number") {
+    throw new Error("Invalid settings: catalogFormatInformed must be a number");
   }
   if (value.activeResourceBooks !== undefined && (!Array.isArray(value.activeResourceBooks) ||
     !value.activeResourceBooks.every(book => typeof book === "string"))) {
