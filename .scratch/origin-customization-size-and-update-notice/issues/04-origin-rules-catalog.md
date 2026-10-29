@@ -1,6 +1,7 @@
 # 04: originRules Catalog collection
 
-**Status:** ready-for-agent
+**Status:** done
+**Landed:** b521aab, scraper tests (292), checks (1594), check:live and check:all passed; open items: none
 
 Spec: `../spec.md` (decisions Q6, Q7, Q9, Q16; ADR 0013, 0014, 0015).
 
@@ -14,9 +15,9 @@ The scraper (the CLI and the in-app sync) reads `data/variantrules.json`, finds 
 
 ## Acceptance Criteria
 
-- [ ] AC-8: a fixture with an invented table of the same structure yields the expected rows; a missing record, a missing table and an unrecognized cell each fail the scrape.
-- [ ] The collection is saved, loaded and integrated like the others; a catalog saved at format 11 is stale; `REQUIRED_CATALOG_FORMAT` is 12 with its comment.
-- [ ] The live catalog contains the parsed table (five rows today).
+- [x] AC-8: a fixture with an invented table of the same structure yields the expected rows; a missing record, a missing table and an unrecognized cell each fail the scrape.
+- [x] The collection is saved, loaded and integrated like the others; a catalog saved at format 11 is stale; `REQUIRED_CATALOG_FORMAT` is 12 with its comment.
+- [x] The live catalog contains the parsed table (five rows today).
 
 ## Verification
 
