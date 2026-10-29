@@ -17,7 +17,9 @@ import { currentCompendium, integrate as integrateCompendium, revertToSrd as rev
 import {
   clearCompendiumData,
   loadCompendiumData,
+  REQUIRED_CATALOG_FORMAT,
 } from "../services/compendiumStorage";
+import { shouldShowCatalogUpdateNotice } from "../services/catalogUpdateNotice";
 import { runInAppIntegration } from "../services/scraper/runner";
 
 interface CharacterContextValue {
@@ -59,6 +61,8 @@ interface CharacterContextValue {
   integratedAt: string | null;
   /** The loaded Integrated Catalog is below the format the application requires. Always false for the SRD Baseline. */
   catalogStale: boolean;
+  catalogUpdateNoticeDue: boolean;
+  dismissCatalogUpdateNotice: () => Promise<void>;
   triggerIntegration: (onProgress?: (category: string, step: number, total: number) => void) => Promise<void>;
   revertToSrd: () => Promise<void>;
 }
@@ -116,6 +120,7 @@ export function CharacterProvider({ children }: { children: React.ReactNode }) {
   const [isIntegrated, setIsIntegrated] = useState<boolean>(false);
   const [integratedAt, setIntegratedAt] = useState<string | null>(null);
   const [catalogStale, setCatalogStale] = useState<boolean>(false);
+  const [catalogFormatInformed, setCatalogFormatInformed] = useState<number | undefined>(undefined);
   const [selectedCharacterId, setSelectedCharacterId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [initError, setInitError] = useState<string | null>(null);
@@ -155,6 +160,7 @@ export function CharacterProvider({ children }: { children: React.ReactNode }) {
         setActiveBooksState(loadedActiveBooks);
         setFullHealOnLevelUpState(loadedSettings.fullHealOnLevelUp);
         setHasCompletedFirstRun(Boolean(loadedSettings.hasCompletedFirstRun));
+        setCatalogFormatInformed(loadedSettings.catalogFormatInformed);
         setCharacters(migratedCharacters);
         setFolders(loadedFolds);
         ready.current = true;
@@ -327,6 +333,11 @@ export function CharacterProvider({ children }: { children: React.ReactNode }) {
     await setFirstRunCompleted(books || activeBooks);
   };
 
+  const dismissCatalogUpdateNotice = async () => {
+    setCatalogFormatInformed(REQUIRED_CATALOG_FORMAT);
+    await updateSettings({ catalogFormatInformed: REQUIRED_CATALOG_FORMAT });
+  };
+
   const triggerIntegration = async (
     onProgress?: (category: string, step: number, total: number) => void
   ) => {
@@ -406,6 +417,13 @@ export function CharacterProvider({ children }: { children: React.ReactNode }) {
         isIntegrated,
         integratedAt,
         catalogStale,
+        catalogUpdateNoticeDue: shouldShowCatalogUpdateNotice({
+          integrated: isIntegrated,
+          stale: catalogStale,
+          informedFormat: catalogFormatInformed,
+          isFirstRun: !hasCompletedFirstRun,
+        }),
+        dismissCatalogUpdateNotice,
         triggerIntegration,
         revertToSrd,
       }}>

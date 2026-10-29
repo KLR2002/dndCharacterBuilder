@@ -195,3 +195,17 @@ test("fullHealOnLevelUp keeps an explicit off and rejects a non-boolean value", 
   assert.equal(off.settings.fullHealOnLevelUp, false);
   assert.throws(() => migrateIfNeeded({ characters: [], folders: [], settings: { fullHealOnLevelUp: "yes" } }), /fullHealOnLevelUp/);
 });
+
+test("catalogFormatInformed is absent in settings saved before it existed and survives a reload", async () => {
+  const kv = new Map([[SETTINGS, JSON.stringify({ schemaVersion: 2, hasCompletedFirstRun: true })]]);
+  __setKvForTests(kv);
+  assert.equal((await loadSettings()).catalogFormatInformed, undefined);
+  await updateSettings({ catalogFormatInformed: 11 });
+  __setKvForTests(kv);
+  assert.equal((await loadSettings()).catalogFormatInformed, 11);
+  assert.equal((await loadSettings()).hasCompletedFirstRun, true);
+});
+
+test("catalogFormatInformed rejects a non-number value", () => {
+  assert.throws(() => migrateIfNeeded({ characters: [], folders: [], settings: { catalogFormatInformed: "11" } }), /catalogFormatInformed/);
+});
