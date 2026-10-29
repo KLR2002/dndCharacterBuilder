@@ -9,6 +9,9 @@ import { proficiencyChoiceOffers } from "../src/rules/proficiencyChoiceOffers.ts
 import { proficiencySheet, proficiencySwapViews } from "../src/rules/proficiencySheet.ts";
 import type { Character } from "../src/types/character.ts";
 import type { BackgroundData, ItemData, OriginRuleRecord, ProficiencyGrant, RaceData } from "../src/types/dnd5e.ts";
+import type { FeatureInstance } from "../src/rules/types.ts";
+import { proficiencySwapSlots, withProficiencySwaps } from "../src/rules/proficiencySources/proficiencySwaps.ts";
+import { swapId } from "../src/rules/proficiencySources/swapIds.ts";
 
 // Proficiency swaps: a Race or Subrace fixed skill, tool, weapon or armor grant, or the pick of a narrower choice, is replaced
 // by what the swap table allows for its kind. Every race, background, item and grant name here is invented.
@@ -316,4 +319,51 @@ test("a held race missing from the catalog keeps its saved skill swap until the 
 
   const back = reconcile(absent, compendium, { activeBooks: ACTIVE });
   assert.deepEqual(back.proficiencyPicks, swapped.proficiencyPicks);
+});
+
+const TWO_SKILLS = "Sample Two Skills";
+
+test("a multi-name background sharing the race's skill keeps it, and offers no swap on a skill only the background names", () => {
+  const twoSkills = { ...background(TWO_SKILLS, [fixed(`${SOURCE}/Background/${TWO_SKILLS}@0#skills:fixed:Perception,Insight`, "skills", ["Perception", "Insight"])]) };
+  const twoSkillCatalogs = {
+    compendium: inMemoryCompendium({ races: records, backgrounds: [...backgrounds, twoSkills], items: ITEMS, originRules: [rule] }, { integrated: true }),
+    activeBooks: ACTIVE,
+  };
+  const scout = applyAncestrySelection(makeChar({ background: { name: TWO_SKILLS, source: SOURCE } }), records.find((r) => r.name === SCOUT)!, undefined, twoSkillCatalogs);
+
+  assert.deepEqual(proficiencySwapViews(scout, twoSkillCatalogs).map((row) => row.original), ["Perception"], "Insight is not a race skill, so no row offers it");
+
+  const perception = proficiencySwapViews(scout, twoSkillCatalogs)[0];
+  const swapped = setProficiencySwap(scout, perception.id, "Arcana", twoSkillCatalogs);
+  const names = proficiencySheet(swapped, twoSkillCatalogs).skills.map((entry) => entry.name);
+  assert.ok(names.includes("Perception"), "the background's own Perception stays on the sheet");
+  assert.ok(names.includes("Insight"), "the background's other skill stays on the sheet");
+  assert.ok(names.includes("Arcana"), "the race's replacement is on the sheet");
+});
+
+const feature = (id: string, origin: FeatureInstance["origin"], grants: ProficiencyGrant[]): FeatureInstance =>
+  ({ id, name: id, source: SOURCE, description: "Placeholder description.", origin, grants }) as FeatureInstance;
+
+test("only the race's own grant is swapped: a Class or Feat feature of the same skill keeps it", () => {
+  // The Class and Feat features come first, so a candidate filter that admitted them would see the name first.
+  const features = [
+    feature("class", "Class", [fixed("class-grant", "skills", ["Perception"])]),
+    feature("feat", "Feat", [fixed("feat-grant", "skills", ["Perception"])]),
+    feature("race", "Race", [fixed("race-grant", "skills", ["Perception"])]),
+  ];
+  const slots = proficiencySwapSlots({
+    features,
+    items: ITEMS,
+    rows: [{ from: "skill", to: ["skill"] }],
+    held: () => false,
+    picks: { [swapId("race-grant", "Perception")]: ["Arcana"] },
+    available: true,
+  });
+  assert.deepEqual(slots.map((slot) => [slot.featureId, slot.grantId, slot.original]), [["race", "race-grant", "Perception"]]);
+
+  const swapped = withProficiencySwaps(features, slots);
+  const namesOn = (id: string) => swapped.find((f) => f.id === id)!.grants!.flatMap((grant) => (grant.kind === "fixed" ? grant.names : []));
+  assert.deepEqual(namesOn("class"), ["Perception"]);
+  assert.deepEqual(namesOn("feat"), ["Perception"]);
+  assert.deepEqual(namesOn("race"), ["Arcana"]);
 });

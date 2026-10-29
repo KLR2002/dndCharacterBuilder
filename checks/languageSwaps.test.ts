@@ -9,6 +9,8 @@ import { proficiencyChoiceOffers } from "../src/rules/proficiencyChoiceOffers.ts
 import { originCustomizationView } from "../src/rules/originCustomization.ts";
 import { languageSwapViews, proficiencySheet , sourceGrants } from "../src/rules/proficiencySheet.ts";
 import type { Character } from "../src/types/character.ts";
+import type { FeatureInstance } from "../src/rules/types.ts";
+import { languageSwapSlots } from "../src/rules/proficiencySources/languageSwaps.ts";
 import type { BackgroundData, OriginRuleRecord, ProficiencyGrant, RaceData } from "../src/types/dnd5e.ts";
 
 // Language swaps: a Race or Subrace fixed language is replaced by another SRD language under Origin Customization.
@@ -333,4 +335,15 @@ test("a held race missing from the catalog keeps its saved language swap until t
 
   const back = reconcile(absent, compendium, { activeBooks: ACTIVE });
   assert.deepEqual(back.proficiencyPicks, swapped.proficiencyPicks);
+});
+
+test("only the race's own language grant has a swap slot: a Class feature naming the same language keeps it", () => {
+  // The Class feature comes first, so a candidate filter that admitted it would see the language first.
+  const features = [
+    { id: "class", name: "class", source: SOURCE, description: "Placeholder description.", origin: "Class", grants: [fixed(`${SOURCE}/Class/Sample Class@0#languages:fixed:Elvish`, ["Elvish"])] },
+    { id: "race", name: FOLK, source: SOURCE, description: "Placeholder description.", origin: "Race", grants: [fixed(FOLK_GRANT, ["Common", "Elvish"])] },
+  ] as FeatureInstance[];
+
+  const slots = languageSwapSlots(features, ["Common"], undefined, true);
+  assert.deepEqual(slots.filter((slot) => slot.original === "Elvish").map((slot) => slot.id), [`${FOLK_GRANT}#swap:Elvish`]);
 });
