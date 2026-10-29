@@ -30,6 +30,7 @@ Specs and tickets are markdown files in the repo, under `.scratch/<feature-slug>
 - **List**: `grep -l '^\*\*Status:\*\* ready-for-agent' .scratch/*/issues/*.md`, with the status you need.
 - **Comment**: append under a `## Comments` heading at the bottom of the file. Add the heading on first use.
 - **Close**: set `**Status:** done`, tick the criteria that passed, and add `**Landed:** <merge sha>, <what passed, open items>` below the status line. Older tickets use `closed` or `completed` for the same state.
+- **Hand back a feature**: before reporting a feature branch as finished, `grep -L '^\*\*Status:\*\* done' .scratch/<feature>/issues/*.md` lists its tickets still open. It prints nothing when every ticket is closed.
 
 ## When a skill says "publish to the issue tracker"
 

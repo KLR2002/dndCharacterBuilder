@@ -26,6 +26,9 @@ Judgement calls and rules conventions enforced during code review.
     - `character.ritualBook` entries when *Book of Ancient Secrets* or *Pact of the Tome* is lost.
     - `character.activeInfusions` and temporary infused items when Artificer infusions are unlearned or de-leveled.
     - Obsolete resource counters and subclass spell swaps (`subclassSpellSwaps`).
+- **Releases Live in the Reconciler**:
+  - A release that follows from losing a source (a feat, race, lineage, background, class level or book) runs in the reconcile step every transition ends with (`reconcile` / `reconcileForActiveBooks` in `src/rules/characterReconciler.ts`), so a new transition gets it without wiring.
+  - Flag a transition that calls a release helper itself (e.g. `releaseExpandedOnlySpells`): each such call site is one more place a sibling transition can miss. A transition-local call is acceptable only when the release needs the state before the change, and the diff should say so.
 - **Descriptive Audit Logging in `needsReview`**:
   - Whenever secondary states are pruned or an option is automatically removed because prerequisites are no longer satisfied, a descriptive audit message must be appended to `character.needsReview` (e.g., `"Pact of the Tome Cantrips removed: character no longer possesses Pact of the Tome"`).
 
