@@ -282,3 +282,15 @@ test("one swap's replacement is excluded from another swap's pool", () => {
   assert.ok(!stealth.options.includes("Athletics"), "Athletics is taken by the Perception swap");
   assert.ok(stealth.options.includes("Acrobatics"));
 });
+
+test("a swap of a race skill leaves a same-named Rule Choice skill pick on the sheet", () => {
+  const scout = holding(SCOUT, {
+    ruleChoices: [
+      { id: `${SOURCE}__Sample Barbarian__Primal Knowledge 3`, trait: "Primal Knowledge", origin: "class", choose: 1, from: [], picked: ["Perception"] },
+    ],
+  });
+  const swapped = setProficiencySwap(scout, rowOf(scout, "Perception").id, "Arcana", catalogs);
+
+  assert.ok(namesIn(swapped, "skills").includes("Arcana"), "the swap's replacement is held");
+  assert.ok(namesIn(swapped, "skills").includes("Perception"), "the Rule Choice pick still grants Perception");
+});
