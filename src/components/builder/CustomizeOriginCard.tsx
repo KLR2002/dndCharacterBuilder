@@ -9,16 +9,14 @@ import { useAppTheme } from "../../context/ThemeContext";
 import type { Character } from "../../types/character";
 import { Button } from "../ui/Button";
 import { CollapsibleCard } from "../ui/CollapsibleCard";
-import { ABILITY_KEYS, ABILITY_LABELS, builderStyles as styles, RuleChoicePicker } from "./builderStyles";
+import { ABILITY_KEYS, ABILITY_LABELS, builderStyles as styles } from "./builderStyles";
+import { OriginSwapPicker } from "./OriginSwapPicker";
 
 interface CustomizeOriginCardProps {
   character: Character;
   activeBooks: ActiveBooks;
   onUpdate: (updater: (prev: Character) => Character) => void;
 }
-
-/** A proficiency row with at most this many names shows its chips inline; longer lists open the picker. */
-const INLINE_OPTION_LIMIT = 6;
 
 /** The Origin Customization card in the Ancestry section. Renders nothing when the rule is not available. */
 export const CustomizeOriginCard: React.FC<CustomizeOriginCardProps> = ({ character, activeBooks, onUpdate }) => {
@@ -35,76 +33,16 @@ export const CustomizeOriginCard: React.FC<CustomizeOriginCardProps> = ({ charac
 
   return (
     <CollapsibleCard title="Customize origin" defaultExpanded={false}>
-      {languageRows.map((row) => (
-        <View key={row.id} style={{ gap: 6 }}>
-          <Text style={{ color: theme.text, fontWeight: "600", fontSize: 13 }}>{row.original}</Text>
-          <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6 }}>
-            {[row.original, ...row.options].map((name) => {
-              const selected = name === row.original ? row.replacement === undefined : row.replacement === name;
-              return (
-                <TouchableOpacity
-                  key={name}
-                  accessibilityState={{ selected }}
-                  onPress={() => onUpdate((prev) => setLanguageSwap(prev, row.id, name, { activeBooks }))}
-                  style={[
-                    styles.choiceChip,
-                    {
-                      backgroundColor: selected ? theme.accentGlow : theme.surfaceHighlight,
-                      borderColor: selected ? theme.accent : theme.border,
-                    },
-                  ]}
-                >
-                  <Text style={{ color: selected ? theme.accent : theme.textSecondary, fontWeight: "700", fontSize: 13 }}>{name}</Text>
-                </TouchableOpacity>
-              );
-            })}
-          </View>
+      {swapped && (
+        <View style={{ alignItems: "flex-end" }}>
+          <Button
+            title="Reset"
+            variant="outline"
+            size="sm"
+            onPress={() => onUpdate((prev) => resetOriginSwaps(prev, { activeBooks }))}
+          />
         </View>
-      ))}
-      {proficiencyRows.map((row) => {
-        const from = [row.original, ...row.options];
-        const chosen = row.replacement ?? row.original;
-        const choose = (name: string) => onUpdate((prev) => setProficiencySwap(prev, row.id, name, { activeBooks }));
-        if (row.options.length > INLINE_OPTION_LIMIT) {
-          return (
-            <RuleChoicePicker
-              key={row.id}
-              label={row.original}
-              choose={1}
-              from={from}
-              chosen={[chosen]}
-              onToggle={choose}
-              theme={theme}
-            />
-          );
-        }
-        return (
-          <View key={row.id} style={{ gap: 6 }}>
-            <Text style={{ color: theme.text, fontWeight: "600", fontSize: 13 }}>{row.original}</Text>
-            <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6 }}>
-              {from.map((name) => {
-                const selected = name === chosen;
-                return (
-                  <TouchableOpacity
-                    key={name}
-                    accessibilityState={{ selected }}
-                    onPress={() => choose(name)}
-                    style={[
-                      styles.choiceChip,
-                      {
-                        backgroundColor: selected ? theme.accentGlow : theme.surfaceHighlight,
-                        borderColor: selected ? theme.accent : theme.border,
-                      },
-                    ]}
-                  >
-                    <Text style={{ color: selected ? theme.accent : theme.textSecondary, fontWeight: "700", fontSize: 13 }}>{name}</Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
-          </View>
-        );
-      })}
+      )}
       {view.abilitySlots.map((slot) => (
         <View key={slot.id} style={{ gap: 6 }}>
           <Text style={{ color: theme.text, fontWeight: "600", fontSize: 13 }}>
@@ -118,6 +56,8 @@ export const CustomizeOriginCard: React.FC<CustomizeOriginCardProps> = ({ charac
                 <TouchableOpacity
                   key={key}
                   disabled={blocked}
+                  accessibilityRole="button"
+                  accessibilityLabel={ABILITY_NAMES[key]}
                   accessibilityState={{ selected, disabled: blocked }}
                   onPress={() => onUpdate((prev) => setOriginAbilitySwap(prev, slot.id, key, { activeBooks }))}
                   style={[
@@ -138,14 +78,26 @@ export const CustomizeOriginCard: React.FC<CustomizeOriginCardProps> = ({ charac
           </View>
         </View>
       ))}
-      {swapped && (
-        <Button
-          title="Reset"
-          variant="outline"
-          size="sm"
-          onPress={() => onUpdate((prev) => resetOriginSwaps(prev, { activeBooks }))}
+      {languageRows.map((row) => (
+        <OriginSwapPicker
+          key={row.id}
+          original={row.original}
+          options={row.options}
+          replacement={row.replacement}
+          onChoose={(name) => onUpdate((prev) => setLanguageSwap(prev, row.id, name, { activeBooks }))}
+          theme={theme}
         />
-      )}
+      ))}
+      {proficiencyRows.map((row) => (
+        <OriginSwapPicker
+          key={row.id}
+          original={row.original}
+          options={row.options}
+          replacement={row.replacement}
+          onChoose={(name) => onUpdate((prev) => setProficiencySwap(prev, row.id, name, { activeBooks }))}
+          theme={theme}
+        />
+      ))}
     </CollapsibleCard>
   );
 };

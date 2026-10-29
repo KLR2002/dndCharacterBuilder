@@ -30,7 +30,7 @@ export const CatalogUpdateModal: React.FC<CatalogUpdateModalProps> = ({
       }
     >
       <Text style={[styles.body, { color: theme.textSecondary }]}>
-        Sync the catalog in Settings to get the latest data.
+        Sync the catalog in Settings.
       </Text>
     </Modal>
   );

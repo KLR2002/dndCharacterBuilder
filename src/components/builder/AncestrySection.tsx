@@ -238,6 +238,8 @@ export const AncestrySection: React.FC<AncestrySectionProps> = ({
               return (
                 <TouchableOpacity
                   key={size}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected }}
                   onPress={() => onUpdate((cur) => setSizeChoice(cur, size, { activeBooks }))}
                   style={[
                     styles.choiceChip,

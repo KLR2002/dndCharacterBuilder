@@ -102,9 +102,8 @@ export default function CharacterSheetScreen() {
   const classSummary = (currentCharacter.classes || [])
     .map((c) => `${c.className} ${c.level}`)
     .join(" / ") || "Lvl 1";
-  const raceSummary = currentCharacter.race
-    ? `${currentCharacter.race.name} • ${resolvedSize(currentCharacter, { activeBooks })}`
-    : "Race Unset";
+  const raceName = currentCharacter.race?.name ?? "Race Unset";
+  const sizeSummary = currentCharacter.race ? resolvedSize(currentCharacter, { activeBooks }) : undefined;
 
   const startNameEdit = () => {
     setNameDraft(currentCharacter.name);
@@ -169,7 +168,7 @@ export default function CharacterSheetScreen() {
               <Badge label={`Lvl ${totalLevel}`} variant="accent" size="sm" style={{ flexShrink: 0 }} />
             </View>
             <Text style={{ color: theme.textSecondary, fontSize: 11 }} numberOfLines={1}>
-              {raceSummary} • {classSummary}
+              {raceName} • {classSummary}{sizeSummary ? ` • ${sizeSummary}` : ""}
             </Text>
           </View>
 
