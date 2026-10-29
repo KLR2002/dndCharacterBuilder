@@ -1,4 +1,4 @@
-import type { ActiveBooks } from "../constants/books.ts";
+import { ALL_BOOKS, type ActiveBooks } from "../constants/books.ts";
 import type { Character } from "../types/character.ts";
 import type { BackgroundData, ClassData, GrantRequirement, ProficiencyGrant, RaceData } from "../types/dnd5e.ts";
 import type { Compendium } from "../services/compendium.ts";
@@ -493,8 +493,9 @@ export function moveExpertisePicksToGrants(character: Character, compendium: Com
   }
   if (offered.length === 0) return character;
 
+  // Unscoped on purpose: the move must see the milestones of switched-off books, so the scoped prune that follows releases them with a notice.
   const milestoneHeld = new Set(
-    getMilestonePicks(getAvailableExpertiseMilestones(character, { compendium, activeBooks }), expertise).flatMap((pick) =>
+    getMilestonePicks(getAvailableExpertiseMilestones(character, { compendium, activeBooks: ALL_BOOKS }), expertise).flatMap((pick) =>
       pick.chosen.map((name) => name.trim().toLowerCase()),
     ),
   );
