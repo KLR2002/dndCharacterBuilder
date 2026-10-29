@@ -545,7 +545,7 @@ test("a stale Integrated Catalog shows the update notice; dismissing it saves th
   assert.equal(reloaded.value.catalogUpdateNoticeDue, false);
 });
 
-test("changing the active books reconciles only the open character; a restored book does not bring the mark back",{ timeout: 3000 }, async () => {
+test("changing the active books reconciles only the open character; a restored book does not bring the mark back", { timeout: 3000 }, async () => {
   const h = await providerHarness([
     rogueWithSmugglerMark("char_a", ["Investigation", "Stealth"]),
     rogueWithSmugglerMark("char_b", ["Investigation", "Stealth"]),
