@@ -38,8 +38,8 @@ interface AbilityState {
   available: boolean;
 }
 
-const RELEASED_NOTICE = (ability: AbilityKey) =>
-  `Ability increase moved to ${ABILITY_NAMES[ability]} removed: ancestry no longer grants it`;
+const RELEASED_NOTICE = (ability: AbilityKey) => `Ability swap to ${ABILITY_NAMES[ability]} removed: ancestry no longer grants it`;
+const COLLIDING_NOTICE = (ability: AbilityKey) => `Ability swap to ${ABILITY_NAMES[ability]} removed: another increase already uses it`;
 
 /** TCE is active when the books are unscoped (every book counts) or TCE is one of them. */
 function ruleBookActive(activeBooks: ActiveBooks): boolean {
@@ -121,6 +121,29 @@ export function abilityTargetBlocked(
   return baseAbilityScores(character)[ability] + slot.amount > ABILITY_SCORE_CAP;
 }
 
+/**
+ * The swapped increases whose target another increase already lands on, or a chosen pick holds. A slot at its default is never
+ * listed. Repeats until none is left, since dropping one swap returns its increase to its default.
+ */
+function collidingSwapIds(
+  slots: readonly AbilitySlot[],
+  swaps: Record<string, AbilityKey>,
+  picks: readonly { key: AbilityKey }[],
+): string[] {
+  const colliding = slots
+    .filter((slot) => swaps[slot.id] !== undefined)
+    .filter((slot) => {
+      const target = swaps[slot.id];
+      return picks.some((pick) => pick.key === target) || slots.some((other) => other.id !== slot.id && targetOf(other, swaps) === target);
+    })
+    .map((slot) => slot.id);
+  return colliding.length === 0 ? colliding : [...colliding, ...collidingSwapIds(slots, withoutSwaps(swaps, colliding), picks)];
+}
+
+function withoutSwaps(swaps: Record<string, AbilityKey>, ids: readonly string[]): Record<string, AbilityKey> {
+  return Object.fromEntries(Object.entries(swaps).filter(([id]) => !ids.includes(id)));
+}
+
 /** The racial ability bonuses a character's increases give: each slot at its target, plus the chosen picks. */
 function racialBonusesOf(
   slots: readonly AbilitySlot[],
@@ -179,6 +202,13 @@ export function reconcileOriginAbilities(character: Character, compendium: Compe
   for (const [id, ability] of Object.entries(character.originAbilitySwaps ?? {})) {
     if (ids.has(id)) kept[id] = ability;
     else notices.push(RELEASED_NOTICE(ability));
+  }
+  if (state.available) {
+    const picks = character.racialChoiceBonus ?? [];
+    for (const id of collidingSwapIds(state.slots, kept, picks)) {
+      notices.push(COLLIDING_NOTICE(kept[id]));
+      delete kept[id];
+    }
   }
 
   const derived = character.race
