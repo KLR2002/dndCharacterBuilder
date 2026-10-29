@@ -161,6 +161,8 @@ export interface Character {
   skillChoices?: SkillChoiceEntry[];
   ruleChoices?: RuleChoiceEntry[];
   racialChoiceBonus?: { key: AbilityKey; amount: number }[];
+  /** The Size Choice: one of the sizes the held race or lineage lists. Absent until picked, and released when that record stops listing it. */
+  sizeChoice?: string;
   classChoices?: ClassChoice[];
   needsReview?: string[];
   customLineage: boolean;

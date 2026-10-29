@@ -14,6 +14,7 @@ import { isGrantSpellChoiceId } from "./choices/featSpells.ts";
 import { moveLegacySkillPicks } from "./proficiencyPicks.ts";
 import { raceOriginFeatTitle, releaseRaceOriginFeat } from "./feats.ts";
 import { findHeldRace } from "./raceLookup.ts";
+import { resolvedSize, sizeOptionsOf } from "./sizeChoice.ts";
 
 export interface AncestryTraitView {
   name: string;
@@ -26,6 +27,8 @@ export interface AncestryState {
   selectedSubrace?: SubraceData;
   speed: number;
   size: string;
+  /** The sizes the player may pick between; empty when the held race or lineage lists one. */
+  sizeOptions: string[];
   darkvision: number;
   traits: AncestryTraitView[];
   fixedBonuses: Record<string, number>;
@@ -126,11 +129,6 @@ export function resolveAncestryState(
     selectedRace?.speed?.walk ??
     30;
 
-  const size =
-    lineageRace?.size?.[0] ??
-    selectedRace?.size?.[0] ??
-    "Medium";
-
   const darkvision =
     lineageRace?.darkvision ??
     selectedSubrace?.darkvision ??
@@ -155,7 +153,8 @@ export function resolveAncestryState(
     selectedRace,
     selectedSubrace,
     speed,
-    size,
+    size: resolvedSize(character, catalogs),
+    sizeOptions: sizeOptionsOf(character, catalogs),
     darkvision,
     traits,
     fixedBonuses,
