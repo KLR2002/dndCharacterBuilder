@@ -11,15 +11,17 @@ interface CollapsibleCardProps {
   /** A badge shown to the left of the chevron, in both states. */
   badge?: React.ReactNode;
   style?: StyleProp<ViewStyle>;
+  /** Whether the body starts open. Defaults to open. */
+  defaultExpanded?: boolean;
   children: React.ReactNode;
 }
 
 /**
  * A Card whose title row shows or hides its body. It opens by default, and its open state is kept by the card alone.
  */
-export const CollapsibleCard: React.FC<CollapsibleCardProps> = ({ title, subtitle, badge, style, children }) => {
+export const CollapsibleCard: React.FC<CollapsibleCardProps> = ({ title, subtitle, badge, style, defaultExpanded = true, children }) => {
   const { theme } = useAppTheme();
-  const [expanded, setExpanded] = useState(true);
+  const [expanded, setExpanded] = useState(defaultExpanded);
   return (
     <Card style={[{ gap: 10 }, style]}>
       <TouchableOpacity

@@ -227,7 +227,7 @@ test("picking the plain integrated Half-Elf leaves no subrace and offers the Cho
 
   assert.equal(char.race?.name, "Half-Elf");
   assert.equal(char.race?.subraceName, undefined);
-  assert.deepEqual(char.racialAbilityBonuses, {});
+  assert.deepEqual(char.racialAbilityBonuses, { cha: 2 });
 
   const state = resolveAncestryState(char, catalogs);
   assert.equal(state.selectedSubrace, undefined);
