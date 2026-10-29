@@ -2,6 +2,7 @@ import type { Character } from "../../types/character.ts";
 import type { ClassData, RaceData } from "../../types/dnd5e.ts";
 import { DND_SKILLS } from "../../constants/rules.ts";
 import { catalogListings, type CharacterCatalogs } from "../catalogs.ts";
+import { findHeldRace } from "../raceLookup.ts";
 import { normalizeSkillName } from "../skills.ts";
 
 /**
@@ -19,6 +20,8 @@ export function getAutoGrantedSkills(
     catalogs?: CharacterCatalogs;
     /** Explicit lists take precedence over the catalog bundle. */
     races?: RaceData[];
+    /** The books the held race is read in. The saved source still wins. */
+    activeBooks?: readonly string[];
   } = {}
 ): string[] {
   const granted = new Set<string>();
@@ -26,13 +29,12 @@ export function getAutoGrantedSkills(
   const races = opts.races ?? listings?.races();
 
   // 1. Race traits description scanning if traits present
+  const held = races ? findHeldRace(races, character.race, opts.activeBooks) : undefined;
   const traits = [
     ...(opts.race?.traits || []),
     ...(opts.subrace?.traits || []),
-    ...(races?.find((r) => r.name.toLowerCase() === character.race?.name?.toLowerCase())?.traits || []),
-    ...(races
-      ?.find((r) => r.name.toLowerCase() === character.race?.name?.toLowerCase())
-      ?.subraces?.find((sr) => sr.name.toLowerCase() === character.race?.subraceName?.toLowerCase())?.traits || []),
+    ...(held?.race?.traits || []),
+    ...(held?.subrace?.traits || []),
   ];
   for (const t of traits) {
     // Stonecunning's text only conditions a History check; it does not make the character proficient.

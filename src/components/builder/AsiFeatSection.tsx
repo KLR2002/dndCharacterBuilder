@@ -6,6 +6,7 @@ import { FeatData } from "../../types/dnd5e";
 import { getFeatAbilityBonusOptions, removeAsiSelection } from "../../rules/leveling";
 import { applyAsiWithHitPoints } from "../../rules/builderTransitions";
 import { validateFeatPrerequisites } from "../../rules/feats";
+import { findHeldRecord } from "../../rules/raceLookup";
 import {
   battleMasterManeuverChoices,
   ELDRITCH_ADEPT_CHOICE_ID,
@@ -772,7 +773,7 @@ export const AsiFeatSection: React.FC<AsiFeatSectionProps> = ({
                         variant="ghost"
                         size="sm"
                         onPress={() => {
-                          const f = allFeats.find((feat) => feat.name.toLowerCase() === sel.featName?.toLowerCase());
+                          const f = findHeldRecord(allFeats, sel.featName ? { name: sel.featName, source: sel.featSource } : undefined, activeBooks);
                           if (f) {
                             onViewDetail({ title: f.name, source: f.source, description: f.description });
                           }
