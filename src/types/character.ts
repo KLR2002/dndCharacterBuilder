@@ -163,6 +163,11 @@ export interface Character {
   racialChoiceBonus?: { key: AbilityKey; amount: number }[];
   /** The Size Choice: one of the sizes the held race or lineage lists. Absent until picked, and released when that record stops listing it. */
   sizeChoice?: string;
+  /**
+   * Origin Customization ability swaps: each reassigned ability increase of the held race or subrace, keyed by its slot id,
+   * to the ability it moved to. A swap equal to the race's own is never stored. Kept, not applied, while the rule is unavailable.
+   */
+  originAbilitySwaps?: Record<string, AbilityKey>;
   classChoices?: ClassChoice[];
   needsReview?: string[];
   customLineage: boolean;

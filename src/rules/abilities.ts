@@ -20,9 +20,10 @@ export function abilityKeyOf(raw: string | undefined): AbilityKey | undefined {
 }
 export function getAbilityModifier(score: number): number { return Math.floor((score - 10) / 2); }
 export function formatModifier(mod: number): string { return mod >= 0 ? `+${mod}` : `${mod}`; }
-export function effectiveScores(character: Character, opts: ResolvedAncestry = {}): { scores: AbilityScores; modifiers: AbilityScores } {
+/** The scores a character starts from before any increase: its own, else the default for its ability method. */
+export function baseAbilityScores(character: Character): AbilityScores {
   const defaultBase = character.abilityMethod === "pointBuy" ? 8 : 10;
-  const scores = {
+  return {
     str: character.baseAbilityScores?.str ?? defaultBase,
     dex: character.baseAbilityScores?.dex ?? defaultBase,
     con: character.baseAbilityScores?.con ?? defaultBase,
@@ -30,6 +31,9 @@ export function effectiveScores(character: Character, opts: ResolvedAncestry = {
     wis: character.baseAbilityScores?.wis ?? defaultBase,
     cha: character.baseAbilityScores?.cha ?? defaultBase,
   };
+}
+export function effectiveScores(character: Character, opts: ResolvedAncestry = {}): { scores: AbilityScores; modifiers: AbilityScores } {
+  const scores = baseAbilityScores(character);
   const racial = character.racialAbilityBonuses || {};
   const increases = Object.keys(racial).length ? [racial] : [
     ...(opts.race?.abilityScoreIncrease || []), ...(opts.subrace?.abilityScoreIncrease || []),

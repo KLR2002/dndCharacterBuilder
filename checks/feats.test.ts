@@ -190,7 +190,7 @@ describe("Feat Prerequisite Validation", () => {
 
 describe("Origin Feat Application and Half-Feat Ability Increases", () => {
   it("applies an origin feat and includes half-feat +1 in effectiveScores", () => {
-    let char = makeChar({ baseAbilityScores: { str: 10, dex: 15, con: 14, int: 10, wis: 10, cha: 10 } });
+    let char = makeChar({ race: null, baseAbilityScores: { str: 10, dex: 15, con: 14, int: 10, wis: 10, cha: 10 } });
 
     // Athlete half-feat adding +1 to Dex
     char = applyOriginFeat(char, {
@@ -209,7 +209,7 @@ describe("Origin Feat Application and Half-Feat Ability Increases", () => {
   });
 
   it("removes an origin feat and reverts effectiveScores", () => {
-    let char = makeChar({ baseAbilityScores: { str: 10, dex: 15, con: 14, int: 10, wis: 10, cha: 10 } });
+    let char = makeChar({ race: null, baseAbilityScores: { str: 10, dex: 15, con: 14, int: 10, wis: 10, cha: 10 } });
     char = applyOriginFeat(char, {
       level: 1,
       type: "feat",
@@ -226,7 +226,7 @@ describe("Origin Feat Application and Half-Feat Ability Increases", () => {
   });
 
   it("replaces existing ancestry feat when oldFeatName is passed", () => {
-    let char = makeChar({ baseAbilityScores: { str: 10, dex: 15, con: 14, int: 10, wis: 10, cha: 10 } });
+    let char = makeChar({ race: null, baseAbilityScores: { str: 10, dex: 15, con: 14, int: 10, wis: 10, cha: 10 } });
     char = applyOriginFeat(char, {
       level: 1,
       type: "feat",
