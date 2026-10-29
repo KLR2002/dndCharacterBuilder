@@ -72,7 +72,23 @@ const background = (name: string, grants: ProficiencyGrant[]): BackgroundData =>
     description: "Placeholder description for the background.",
   }) as unknown as BackgroundData;
 
+const PAIR = "Sample Pair";
+const VARIANT = "Sample Variant";
+
 const records: RaceData[] = [
+  { ...race(PAIR, [{ dex: 2 }], [fixed(`${SOURCE}/Race/${PAIR}@0#skills:fixed:Perception,Stealth`, "skills", ["Perception", "Stealth"])]), subraces: [
+    {
+      name: VARIANT,
+      source: SOURCE,
+      raceName: PAIR,
+      raceSource: SOURCE,
+      darkvision: null,
+      description: "Placeholder description for the subrace.",
+      abilityScoreIncrease: [],
+      grants: [fixed(`${SOURCE}/Subrace/${VARIANT}@0#skills:fixed:Perception`, "skills", ["Perception"])],
+      traits: [],
+    },
+  ] } as RaceData,
   race(SCOUT, [{ dex: 2 }], [fixed(`${SOURCE}/Race/${SCOUT}@0#skills:fixed:Perception`, "skills", ["Perception"])], [
     { name: "Sample Eyes", description: "You are proficient in the Perception skill." },
   ]),
@@ -250,4 +266,19 @@ test("normal Proficiency Choice offers never list a swap", () => {
   const swapped = setProficiencySwap(artisan, rowOf(artisan, "Sample Kit").id, "Smith's Tools", catalogs);
   const offers = proficiencyChoiceOffers(swapped, { compendium, activeBooks: ACTIVE });
   assert.ok(!JSON.stringify(offers).includes("#swap:"));
+});
+
+test("a skill that the race and its subrace both name has one swap row", () => {
+  const pair = holding(PAIR, { race: { name: PAIR, source: SOURCE, subraceName: VARIANT, subraceSource: SOURCE } });
+  const rows = proficiencySwapViews(pair, catalogs).filter((row) => row.original === "Perception");
+  assert.equal(rows.length, 1);
+});
+
+test("one swap's replacement is excluded from another swap's pool", () => {
+  const pair = holding(PAIR);
+  const swapped = setProficiencySwap(pair, rowOf(pair, "Perception").id, "Athletics", catalogs);
+  const stealth = proficiencySwapViews(swapped, catalogs).find((row) => row.original === "Stealth");
+  assert.ok(stealth, "a swap row for Stealth");
+  assert.ok(!stealth.options.includes("Athletics"), "Athletics is taken by the Perception swap");
+  assert.ok(stealth.options.includes("Acrobatics"));
 });
