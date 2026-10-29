@@ -26,6 +26,26 @@ jobs:
       - name: Run verification suite
         run: npm run check:all
 
+  live:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run live catalog check
+        run: npm run check:live
+
   layout:
     runs-on: ubuntu-latest
 
@@ -44,6 +64,9 @@ jobs:
 
       - name: Install Playwright Chromium
         run: npx playwright install --with-deps chromium
+
+      - name: Run layout check (SRD Baseline)
+        run: npm run layout:check
 
       - name: Run layout check (integrated catalog)
         run: npm run layout:check -- --integrated
