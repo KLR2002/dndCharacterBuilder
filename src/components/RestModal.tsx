@@ -3,6 +3,7 @@ import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useAppTheme } from "../context/ThemeContext";
 import { evaluateCharacter } from "../rules/characterEvaluation";
+import { currentCompendium } from "../services/compendium";
 import { applyLongRest, applyShortRest } from "../rules/rest";
 import { spendHitDie } from "../rules/hitDice";
 import { CHANGEABLE_AT_LONG_REST, offeredRuleChoices, pickRuleChoice } from "../rules/ruleChoices";
@@ -51,7 +52,7 @@ export const RestModal: React.FC<RestModalProps> = ({
 
   if (!character) return null;
 
-  const evaluated = evaluateCharacter(character);
+  const evaluated = evaluateCharacter(character, { compendium: currentCompendium(), activeBooks });
   const maxHp = evaluated.hp.max;
   const totalLevel = evaluated.totalLevel;
 

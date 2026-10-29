@@ -1,3 +1,4 @@
+import { ALL_BOOKS, type ActiveBooks } from "../../constants/books.ts";
 import type { AbilityKey, AsiSelection, Character, RuleChoiceEntry } from "../../types/character.ts";
 import type { AdditionalSpells, FeatData, RaceData, SpellData } from "../../types/dnd5e.ts";
 import type { Compendium, CompendiumListings } from "../../services/compendium.ts";
@@ -203,7 +204,7 @@ function originOf(owner: GrantOwner): RuleChoiceOrigin {
 
 /** What a background-claimed feat's record is chosen by: the books active now, and the book of the character's background. */
 interface FeatResolution {
-  activeBooks?: readonly string[];
+  activeBooks: ActiveBooks;
   backgroundSource?: string;
 }
 
@@ -213,7 +214,7 @@ interface FeatResolution {
  * the record of the background's own book, then the first in catalog order. The order is the same on every load, so
  * the owner key of the picks made on it is too.
  */
-export function featOfSelection(selection: AsiSelection, feats: FeatData[], resolution: FeatResolution = {}): FeatData | undefined {
+export function featOfSelection(selection: AsiSelection, feats: FeatData[], resolution: FeatResolution): FeatData | undefined {
   const named = feats.filter((f) => f.name === selection.featName);
   if (selection.featSource && selection.featSource !== BACKGROUND_FEAT_SOURCE) {
     return named.find((f) => f.source === selection.featSource);
@@ -226,7 +227,7 @@ export function featOfSelection(selection: AsiSelection, feats: FeatData[], reso
 }
 
 /** Each feat the character holds once, in the order the character recorded them. */
-export function heldFeatsOf(character: Character, feats: FeatData[], activeBooks?: readonly string[]): HeldFeat[] {
+export function heldFeatsOf(character: Character, feats: FeatData[], activeBooks: ActiveBooks): HeldFeat[] {
   const resolution: FeatResolution = { activeBooks, backgroundSource: character.background?.source };
   const held: HeldFeat[] = [];
   for (const selection of [...(character.asiSelections ?? []), ...(character.originFeats ?? [])]) {
@@ -506,7 +507,7 @@ export function parseSpellFilter(filter: string): SpellFilter {
  * attack-roll kinds, in the active books (the same rule `isSpellAvailableForClass` applies, so the Alternative Spell Lists
  * count). Sorted by name. A filter with a key this module does not model, or a ritual filter, offers nothing.
  */
-function spellsMatching(filter: string, compendium: Compendium, activeBooks?: readonly string[]): SpellData[] {
+function spellsMatching(filter: string, compendium: Compendium, activeBooks: ActiveBooks): SpellData[] {
   const parsed = parseSpellFilter(filter);
   if (parsed.unknownKeys.length > 0 || parsed.ritual) return [];
   const seen = new Set<string>();
@@ -527,7 +528,7 @@ function spellsMatching(filter: string, compendium: Compendium, activeBooks?: re
  * The spells a pick slot offers: those its filter matches, or the named spells it chooses from that the active books hold.
  * A named spell that a switched-off book holds is not offered.
  */
-function offeredSpellsOf(slot: PickSlot, compendium: Compendium, activeBooks?: readonly string[]): SpellData[] {
+function offeredSpellsOf(slot: PickSlot, compendium: Compendium, activeBooks: ActiveBooks): SpellData[] {
   if (slot.filter !== undefined) return spellsMatching(slot.filter, compendium, activeBooks);
   const offered: SpellData[] = [];
   for (const name of slot.from ?? []) {
@@ -544,7 +545,7 @@ export function chosenSpellsOf(
   grant: AdditionalSpells,
   slot: PickSlot,
   compendium: Compendium,
-  activeBooks?: readonly string[]
+  activeBooks: ActiveBooks
 ): SpellData[] {
   const picked = character.ruleChoices?.find((entry) => entry.id === grantSlotChoiceId(owner, grant, slot))?.picked ?? [];
   if (picked.length === 0) return [];
@@ -573,7 +574,7 @@ function fixedKnownSpellNamesOf(grant: AdditionalSpells): string[] {
  * The label a named spell list is offered under: its spells that it gives outright, named (`Lorehold: Light, Sacred Flame`), or
  * the list's own name when it gives none outright.
  */
-function spellListOptionLabel(grant: AdditionalSpells, compendium: Compendium, activeBooks?: readonly string[]): string {
+function spellListOptionLabel(grant: AdditionalSpells, compendium: Compendium, activeBooks: ActiveBooks): string {
   const name = grant.name ?? "";
   const fixed = fixedKnownSpellNamesOf(grant);
   if (fixed.length === 0) return name;
@@ -670,7 +671,7 @@ export function isGrantSpellChoiceId(id: string): boolean {
  * grantGateOpen). Undefined when neither gives spells the character reads. The race, its subrace and a lineage replacement are
  * resolved by the shared lookup, scoped to `activeBooks` when given.
  */
-export function raceGrantsOf(character: Character, races: RaceData[], activeBooks?: readonly string[]): RaceGrants | undefined {
+export function raceGrantsOf(character: Character, races: RaceData[], activeBooks: ActiveBooks): RaceGrants | undefined {
   // A lineage replacement stands in for the race, as the catalog resolves it.
   const lineage = character.lineageReplacement ? findHeldRace(races, { name: character.lineageReplacement }, activeBooks).race : undefined;
   if (lineage) return openRaceGrants(character, raceOwner(lineage), lineage.additionalSpells);
@@ -700,7 +701,7 @@ export function grantGateOpen(character: Character, grant: AdditionalSpells): bo
 }
 
 /** Every owner of spell grants the character holds: the given feats (with their records) and its race or subrace. */
-function heldGrantsOf(character: Character, heldFeats: FeatData[], races: RaceData[], activeBooks?: readonly string[]): HeldGrants[] {
+function heldGrantsOf(character: Character, heldFeats: FeatData[], races: RaceData[], activeBooks: ActiveBooks): HeldGrants[] {
   const held: HeldGrants[] = [];
   for (const feat of heldFeats) {
     if (feat.additionalSpells) held.push({ owner: featOwner(feat), grants: feat.additionalSpells, feat });
@@ -711,7 +712,7 @@ function heldGrantsOf(character: Character, heldFeats: FeatData[], races: RaceDa
 }
 
 /** The feat-spell Rule Choices the character is offered now, for every feat it holds. Offered spells come from the active books. */
-export function featSpellRuleChoices(character: Character, compendium: Compendium, activeBooks?: readonly string[]): AvailableRuleChoice[] {
+export function featSpellRuleChoices(character: Character, compendium: Compendium, activeBooks: ActiveBooks): AvailableRuleChoice[] {
   const out: AvailableRuleChoice[] = [];
   for (const { feat } of heldFeatsOf(character, compendium.for(activeBooks).feats(), activeBooks)) {
     if (feat.additionalSpells) out.push(...grantChoicesOf(character, featOwner(feat), feat.additionalSpells, compendium, activeBooks));
@@ -723,7 +724,7 @@ export function featSpellRuleChoices(character: Character, compendium: Compendiu
  * The race spell Rule Choices the character is offered now: its casting ability when the race lets the player choose it, and
  * the picks of its grant (each from the level it unlocks at). Offered spells come from the active books.
  */
-export function raceSpellRuleChoices(character: Character, compendium: Compendium, activeBooks?: readonly string[]): AvailableRuleChoice[] {
+export function raceSpellRuleChoices(character: Character, compendium: Compendium, activeBooks: ActiveBooks): AvailableRuleChoice[] {
   const race = raceGrantsOf(character, compendium.for(activeBooks).races(), activeBooks);
   return race ? grantChoicesOf(character, race.owner, race.grants, compendium, activeBooks) : [];
 }
@@ -734,7 +735,7 @@ function grantChoicesOf(
   owner: GrantOwner,
   grants: AdditionalSpells[],
   compendium: Compendium,
-  activeBooks?: readonly string[]
+  activeBooks: ActiveBooks
 ): AvailableRuleChoice[] {
   const out: AvailableRuleChoice[] = [];
   const lists = offeredSpellLists(grants);
@@ -783,7 +784,7 @@ function grantChoicesOf(
 }
 
 /** The pick choices of one grant: one per slot the character has reached, offering the spells the slot chooses from. */
-function slotChoicesOf(character: Character, owner: GrantOwner, grant: AdditionalSpells, compendium: Compendium, activeBooks?: readonly string[]): AvailableRuleChoice[] {
+function slotChoicesOf(character: Character, owner: GrantOwner, grant: AdditionalSpells, compendium: Compendium, activeBooks: ActiveBooks): AvailableRuleChoice[] {
   const level = totalLevel(character);
   return pickSlotsOf(grant)
     .filter((slot) => slot.minCharacterLevel <= level)
@@ -877,7 +878,7 @@ const BOOK_SWITCHED_OFF = "book switched off";
  * Whether a feat record the catalog holds is switched off: its book is one the active books leave out, so the feat is switched
  * off rather than removed. Without active books nothing is switched off, and an absent record (undefined) is not.
  */
-function featSwitchedOff(feat: { source: string } | undefined, activeBooks?: readonly string[]): boolean {
+function featSwitchedOff(feat: { source: string } | undefined, activeBooks: ActiveBooks): boolean {
   return feat !== undefined && activeBooks !== undefined && !activeBooks.includes(feat.source);
 }
 
@@ -888,7 +889,7 @@ function featSwitchedOff(feat: { source: string } | undefined, activeBooks?: rea
  * BOOK_SWITCHED_OFF. Picks of other choices are untouched. A pick whose owner the catalog does not hold at all is not loaded,
  * so it is kept without a notice. Returns the character itself when nothing changes.
  */
-export function pruneInvalidFeatSpellPicks(character: Character, compendium: Compendium, activeBooks?: readonly string[]): Character {
+export function pruneInvalidFeatSpellPicks(character: Character, compendium: Compendium, activeBooks: ActiveBooks): Character {
   const entries = character.ruleChoices ?? [];
   if (!entries.some((entry) => isGrantSpellChoiceId(entry.id))) return character;
 
@@ -898,7 +899,7 @@ export function pruneInvalidFeatSpellPicks(character: Character, compendium: Com
   const held = heldGrantsOf(character, candidateFeatsOf(character, offered.feats()), offered.races(), activeBooks);
   const heldKeys = new Set(held.map(({ owner }) => ownerKey(owner)));
   const loadedKeys = new Set(
-    heldGrantsOf(character, candidateFeatsOf(character, listings.feats()), listings.races()).map(({ owner }) => ownerKey(owner))
+    heldGrantsOf(character, candidateFeatsOf(character, listings.feats()), listings.races(), ALL_BOOKS).map(({ owner }) => ownerKey(owner))
   );
   // The offered options of each pick the character's owners still make, keyed by the choice id.
   const valid = new Map<string, string[] | undefined>();
@@ -954,7 +955,7 @@ export function pruneInvalidFeatSpellPicks(character: Character, compendium: Com
  * untouched, and a catalog that holds no feat is not loaded, so none is released.
  * Returns the character itself when none is released.
  */
-export function pruneReleasedFeatCounters(character: Character, compendium: Compendium, activeBooks?: readonly string[]): Character {
+export function pruneReleasedFeatCounters(character: Character, compendium: Compendium, activeBooks: ActiveBooks): Character {
   const listings = compendium.for();
   const counters = character.resourceCounters ?? {};
   const featKeys = Object.keys(counters).filter((key) => key.startsWith(FEAT_COUNTER_PREFIX));
@@ -1016,7 +1017,7 @@ function addSlots(
   owner: GrantOwner,
   grant: AdditionalSpells,
   compendium: Compendium,
-  activeBooks?: readonly string[]
+  activeBooks: ActiveBooks
 ) {
   const level = totalLevel(character);
   for (const slot of pickSlotsOf(grant)) {
@@ -1033,7 +1034,7 @@ export function featSpellChoicesOf(
   character: Character,
   feat: { name: string; source: string },
   compendium: Compendium,
-  activeBooks?: readonly string[]
+  activeBooks: ActiveBooks
 ): AvailableRuleChoice[] {
   const prefix = `${ownerKey(featOwner(feat))}__`;
   return featSpellRuleChoices(character, compendium, activeBooks).filter((choice) => choice.id.startsWith(prefix));
@@ -1060,7 +1061,7 @@ function isLegacyHighElfCantripId(id: string): boolean {
  * Otherwise it is released with a review notice. A cantrip the offered spells no longer include is released by the reconciler,
  * on the next open of the character. The race's record is found by the shared lookup, scoped to `activeBooks` when given.
  */
-export function migrateLegacyRacialCantrip(character: Character, races: RaceData[], activeBooks?: readonly string[]): Character {
+export function migrateLegacyRacialCantrip(character: Character, races: RaceData[], activeBooks: ActiveBooks): Character {
   const legacyEntries = (character.ruleChoices ?? []).filter((entry) => isLegacyHighElfCantripId(entry.id));
   const legacyKnown = (character.knownSpells ?? []).filter((spell) => spell.ownerKey === "racial__innate");
   if (legacyEntries.length === 0 && legacyKnown.length === 0) return character;

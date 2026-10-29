@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { DEFAULT_ACTIVE_BOOK_CODES } from "../src/constants/books.ts";
+import { DEFAULT_ACTIVE_BOOK_CODES, ALL_BOOKS } from "../src/constants/books.ts";
 import { createCompendium, currentCompendium, type Compendium } from "../src/services/compendium.ts";
 import { isSpellAvailableForClass } from "../src/rules/spellcasting.ts";
 import { resolveAncestryState, applyAncestrySelection } from "../src/rules/ancestryEngine.ts";
@@ -67,13 +67,13 @@ test("srdBaseline: Human has +1 to all ability scores and no flexible ASI choice
   const humanChar = makeChar({
     race: { name: "Human", source: "SRD" },
   });
-  const state = resolveAncestryState(humanChar, { compendium: srd });
+  const state = resolveAncestryState(humanChar, { compendium: srd, activeBooks: ALL_BOOKS });
   assert.equal(state.hasFixedASI, true);
   assert.deepEqual(state.fixedBonuses, { str: 1, dex: 1, con: 1, int: 1, wis: 1, cha: 1 });
   assert.equal(state.isChoiceASIRace, false, "Standard Human must not be a choice ASI race");
   assert.equal(state.isFlexibleMPMM, false, "Standard Human must not have flexible MPMM ASI");
 
-  const applied = applyAncestrySelection(makeChar(), human, undefined, { compendium: srd });
+  const applied = applyAncestrySelection(makeChar(), human, undefined, { compendium: srd, activeBooks: ALL_BOOKS });
   assert.deepEqual(
     applied.racialAbilityBonuses,
     { str: 1, dex: 1, con: 1, int: 1, wis: 1, cha: 1 },
@@ -100,7 +100,7 @@ test("srdBaseline: Dwarf, Elf, Gnome, and Halfling have their single SRD subrace
   assert.deepEqual(dwarf.subraces?.[0].abilityScoreIncrease, [{ wis: 1 }]);
   assert.ok(dwarf.subraces?.[0].traits?.some((t) => t.name === "Dwarven Toughness"));
 
-  const appliedDwarf = applyAncestrySelection(makeChar(), dwarf, dwarf.subraces?.[0], { compendium: srd });
+  const appliedDwarf = applyAncestrySelection(makeChar(), dwarf, dwarf.subraces?.[0], { compendium: srd, activeBooks: ALL_BOOKS });
   assert.deepEqual(
     appliedDwarf.racialAbilityBonuses,
     { con: 2, wis: 1 },
@@ -124,14 +124,14 @@ test("srdBaseline: Dwarf, Elf, Gnome, and Halfling have their single SRD subrace
   assert.ok(elf.subraces?.[0].traits?.some((t) => t.name === "Elf Weapon Training"));
   assert.ok(elf.subraces?.[0].traits?.some((t) => t.name === "Cantrip"));
 
-  const appliedElf = applyAncestrySelection(makeChar(), elf, elf.subraces?.[0], { compendium: srd });
+  const appliedElf = applyAncestrySelection(makeChar(), elf, elf.subraces?.[0], { compendium: srd, activeBooks: ALL_BOOKS });
   assert.deepEqual(
     appliedElf.racialAbilityBonuses,
     { dex: 2, int: 1 },
     "High Elf in SRD must have +2 DEX and +1 INT"
   );
   assert.equal(appliedElf.race?.subraceName, "High");
-  const elfPick = raceSpellRuleChoices(appliedElf, srd).find((choice) => choice.traitName === "High Elf Cantrip");
+  const elfPick = raceSpellRuleChoices(appliedElf, srd, ALL_BOOKS).find((choice) => choice.traitName === "High Elf Cantrip");
   assert.ok(elfPick, "High Elf must offer its wizard cantrip as a race pick on the SRD Baseline");
   assert.equal(elfPick.choose, 1);
 
@@ -144,7 +144,7 @@ test("srdBaseline: Dwarf, Elf, Gnome, and Halfling have their single SRD subrace
   assert.ok(gnome.subraces?.[0].traits?.some((t) => t.name === "Artificer's Lore"));
   assert.ok(gnome.subraces?.[0].traits?.some((t) => t.name === "Tinker"));
 
-  const appliedGnome = applyAncestrySelection(makeChar(), gnome, gnome.subraces?.[0], { compendium: srd });
+  const appliedGnome = applyAncestrySelection(makeChar(), gnome, gnome.subraces?.[0], { compendium: srd, activeBooks: ALL_BOOKS });
   assert.deepEqual(
     appliedGnome.racialAbilityBonuses,
     { int: 2, con: 1 },
@@ -160,7 +160,7 @@ test("srdBaseline: Dwarf, Elf, Gnome, and Halfling have their single SRD subrace
   assert.deepEqual(halfling.subraces?.[0].abilityScoreIncrease, [{ cha: 1 }]);
   assert.ok(halfling.subraces?.[0].traits?.some((t) => t.name === "Naturally Stealthy"));
 
-  const appliedHalfling = applyAncestrySelection(makeChar(), halfling, halfling.subraces?.[0], { compendium: srd });
+  const appliedHalfling = applyAncestrySelection(makeChar(), halfling, halfling.subraces?.[0], { compendium: srd, activeBooks: ALL_BOOKS });
   assert.deepEqual(
     appliedHalfling.racialAbilityBonuses,
     { dex: 2, cha: 1 },
@@ -175,8 +175,8 @@ test("dual-mode: SRD and integrated Compendiums sit side by side and leave the p
 
   assert.equal(srd.integrated, false);
   assert.equal(integrated.integrated, true);
-  assert.equal(srd.findRace({ name: "Dhampir" }), undefined, "SRD must not offer expansion lineages");
-  assert.ok(integrated.findRace({ name: "Dhampir" }), "integrated catalog must offer expansion lineages");
+  assert.equal(srd.findRace({ name: "Dhampir" }, ALL_BOOKS), undefined, "SRD must not offer expansion lineages");
+  assert.ok(integrated.findRace({ name: "Dhampir" }, ALL_BOOKS), "integrated catalog must offer expansion lineages");
   assert.equal(currentCompendium(), before, "building explicit Compendiums must not change the process default");
 });
 

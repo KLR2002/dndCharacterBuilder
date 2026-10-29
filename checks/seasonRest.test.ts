@@ -1,3 +1,4 @@
+import { ALL_BOOKS } from "../src/constants/books.ts";
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { applyLongRest, applyShortRest } from "../src/rules/rest.ts";
@@ -13,7 +14,7 @@ const eladrin = (season: string): Character => {
     race: { name: "Eladrin", source: "MPMM" },
     classes: [{ className: "Wizard", source: "PHB", level: 3 }],
   }) as Character;
-  const [choice] = ancestryRuleChoices(base, races);
+  const [choice] = ancestryRuleChoices(base, races, ALL_BOOKS);
   if (!choice) throw new Error("expected a season choice");
   return {
     ...base,
@@ -34,7 +35,7 @@ test("a long rest makes a changeable season re-promptable", () => {
   const rested = applyLongRest(eladrin("Winter"));
   assert.deepEqual(rested.ruleChoices, [], "the season is offered again after a long rest");
   // The choice is still available, so the player can pick a new one.
-  assert.equal(availableRuleChoices(rested, races, 3).length, 1);
+  assert.equal(availableRuleChoices(rested, races, 3, ALL_BOOKS).length, 1);
 });
 
 test("a short rest leaves the season unchanged", () => {
@@ -53,7 +54,7 @@ test("a long rest leaves an unchangeable choice alone", () => {
     race: { name: "Aasimar", source: "MPMM" },
     classes: [{ className: "Cleric", source: "PHB", level: 3 }],
   }) as Character;
-  const [choice] = ancestryRuleChoices(aasimar, races);
+  const [choice] = ancestryRuleChoices(aasimar, races, ALL_BOOKS);
   const picked: Character = {
     ...aasimar,
     ruleChoices: [
@@ -75,7 +76,7 @@ test("a season chosen for this rest survives taking that rest", () => {
   // were computed against the pre-pick character it would wipe the choice the
   // player just made, making the feature unusable.
   const base = eladrin("Winter");
-  const [choice] = ancestryRuleChoices(base, races);
+  const [choice] = ancestryRuleChoices(base, races, ALL_BOOKS);
   const repicked = {
     ...base,
     ruleChoices: [
@@ -98,7 +99,7 @@ test("a season chosen for this rest survives taking that rest", () => {
 test("a season picked after the rest is recorded normally", () => {
   const rested = applyLongRest(eladrin("Winter"));
   assert.deepEqual(rested.ruleChoices, []);
-  const [choice] = ancestryRuleChoices(rested, races);
+  const [choice] = ancestryRuleChoices(rested, races, ALL_BOOKS);
   const repicked: Character = {
     ...rested,
     ruleChoices: [
@@ -114,7 +115,7 @@ test("a season picked after the rest is recorded normally", () => {
   };
   assert.deepEqual(repicked.ruleChoices?.[0].picked, ["Autumn"]);
   // And it still resolves on the sheet.
-  const feature = grantedFeatures(repicked, { races, classes: [], backgrounds: [], feats: [] }).find(
+  const feature = grantedFeatures(repicked, { races, classes: [], backgrounds: [], feats: [], activeBooks: ALL_BOOKS }).find(
     (f) => f.name === "Fey Step"
   );
   assert.equal(feature?.chosenOption, "Autumn");

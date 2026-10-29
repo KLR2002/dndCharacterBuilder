@@ -1,3 +1,4 @@
+import { ALL_BOOKS } from "../src/constants/books.ts";
 import test from "node:test";
 import assert from "node:assert/strict";
 import { makeChar, srdBaselineCompendium } from "./testUtils.ts";
@@ -76,7 +77,7 @@ test("a stale catalog hides the infusions choice and keeps saved picks untouched
   const picked = artificer(6, [savedInfusions(["Placeholder Alpha", "Replicate Magic Item: Placeholder jug"])]);
   assert.deepEqual(artificerInfusionChoices(picked, undefined, staleInfusionCatalog()), []);
 
-  const reconciled = reconcile(picked, staleInfusionCatalog());
+  const reconciled = reconcile(picked, staleInfusionCatalog(), { activeBooks: ALL_BOOKS });
   assert.deepEqual(reconciled.ruleChoices, picked.ruleChoices);
   assert.equal(reconciled.needsReview, undefined);
 });
@@ -86,14 +87,14 @@ test("reverting to the SRD Baseline leaves saved infusion picks and active infus
     ...artificer(6, [savedInfusions(["Placeholder Alpha", "Replicate Magic Item: Placeholder jug"])]),
     activeInfusions: [{ infusionName: "Placeholder Alpha" }],
   };
-  const reconciled = reconcile(saved, srdBaselineCompendium());
+  const reconciled = reconcile(saved, srdBaselineCompendium(), { activeBooks: ALL_BOOKS });
   assert.deepEqual(reconciled.ruleChoices, saved.ruleChoices);
   assert.deepEqual(reconciled.activeInfusions, saved.activeInfusions);
 });
 
 test("a saved title-cased pick is read through the catalog and kept exactly as saved", () => {
   const saved = artificer(2, [savedInfusions(["Replicate Magic Item: Placeholder Jug", "Placeholder Alpha"])]);
-  const reconciled = reconcile(saved, infusionCatalog());
+  const reconciled = reconcile(saved, infusionCatalog(), { activeBooks: ALL_BOOKS });
 
   const entry = reconciled.ruleChoices?.find((rc) => rc.id === INFUSIONS_KNOWN_2);
   assert.deepEqual(entry?.picked, ["Replicate Magic Item: Placeholder Jug", "Placeholder Alpha"]);
@@ -103,7 +104,7 @@ test("a saved title-cased pick is read through the catalog and kept exactly as s
 
 test("a pick saved in another casing is never rewritten, and it still counts toward the choice", () => {
   const saved = artificer(2, [savedInfusions(["replicate magic item: PLACEHOLDER JUG", "Placeholder Alpha"])]);
-  const reconciled = reconcile(saved, infusionCatalog());
+  const reconciled = reconcile(saved, infusionCatalog(), { activeBooks: ALL_BOOKS });
 
   const entry = reconciled.ruleChoices?.find((rc) => rc.id === INFUSIONS_KNOWN_2);
   assert.deepEqual(entry?.picked, ["replicate magic item: PLACEHOLDER JUG", "Placeholder Alpha"]);
@@ -113,7 +114,7 @@ test("a pick saved in another casing is never rewritten, and it still counts tow
 
 test("two saved picks that differ only in casing collapse to one, kept as the first was saved", () => {
   const saved = artificer(2, [savedInfusions(["placeholder alpha", "Placeholder Alpha"])]);
-  const reconciled = reconcile(saved, infusionCatalog());
+  const reconciled = reconcile(saved, infusionCatalog(), { activeBooks: ALL_BOOKS });
 
   const entry = reconciled.ruleChoices?.find((rc) => rc.id === INFUSIONS_KNOWN_2);
   assert.deepEqual(entry?.picked, ["placeholder alpha"]);
@@ -123,7 +124,7 @@ test("picking a new infusion leaves a saved pick in another casing exactly as st
   const saved = artificer(2, [savedInfusions(["Placeholder Alpha", "replicate magic item: PLACEHOLDER JUG"])]);
   const [choice] = artificerInfusionChoices(saved, undefined, infusionCatalog());
 
-  const picked = pickRuleChoice(saved, choice, "Placeholder Bravo", infusionCatalog());
+  const picked = pickRuleChoice(saved, choice, "Placeholder Bravo", infusionCatalog(), ALL_BOOKS);
   const entry = picked.ruleChoices?.find((rc) => rc.id === INFUSIONS_KNOWN_2);
   assert.deepEqual(entry?.picked, ["Placeholder Alpha", "replicate magic item: PLACEHOLDER JUG", "Placeholder Bravo"]);
 });
@@ -132,7 +133,7 @@ test("clicking the catalog-cased option removes the pick saved in another casing
   const saved = artificer(2, [savedInfusions(["Placeholder Alpha", "replicate magic item: PLACEHOLDER JUG"])]);
   const [choice] = artificerInfusionChoices(saved, undefined, infusionCatalog());
 
-  const toggled = pickRuleChoice(saved, choice, "Replicate Magic Item: placeholder jug", infusionCatalog());
+  const toggled = pickRuleChoice(saved, choice, "Replicate Magic Item: placeholder jug", infusionCatalog(), ALL_BOOKS);
   const entry = toggled.ruleChoices?.find((rc) => rc.id === INFUSIONS_KNOWN_2);
   assert.deepEqual(entry?.picked, ["Placeholder Alpha"]);
 });
@@ -165,7 +166,7 @@ test("active infusions and infused items match their picks whatever the casing",
     ],
     items: [boots, jug],
   };
-  const reconciled = reconcile(saved, infusionCatalog());
+  const reconciled = reconcile(saved, infusionCatalog(), { activeBooks: ALL_BOOKS });
 
   assert.deepEqual(reconciled.activeInfusions, saved.activeInfusions, "neither active infusion is pruned");
   assert.equal(reconciled.items?.find((i) => i.id === "boots_1")?.infusedWith, "placeholder alpha");
@@ -177,7 +178,7 @@ test("a saved title-cased pick toggles off when the player picks the catalog's n
   const saved = artificer(2, [savedInfusions(["Replicate Magic Item: Placeholder Jug"])]);
   const [choice] = artificerInfusionChoices(saved, undefined, infusionCatalog());
 
-  const toggled = pickRuleChoice(saved, choice, "Replicate Magic Item: placeholder jug", infusionCatalog());
+  const toggled = pickRuleChoice(saved, choice, "Replicate Magic Item: placeholder jug", infusionCatalog(), ALL_BOOKS);
   assert.deepEqual(getKnownInfusions(toggled), []);
 });
 
@@ -185,13 +186,13 @@ test("a new pick is stored under the catalog's name", () => {
   const fresh = artificer(2);
   const [choice] = artificerInfusionChoices(fresh, undefined, infusionCatalog());
 
-  const picked = pickRuleChoice(fresh, choice, "Replicate Magic Item: Placeholder Bag", infusionCatalog());
+  const picked = pickRuleChoice(fresh, choice, "Replicate Magic Item: Placeholder Bag", infusionCatalog(), ALL_BOOKS);
   assert.deepEqual(getKnownInfusions(picked), ["Replicate Magic Item: placeholder bag"]);
 });
 
 test("a saved pick above the character's level is pruned with a review notice", () => {
   const saved = artificer(2, [savedInfusions(["Placeholder Charlie", "Placeholder Alpha"])]);
-  const reconciled = reconcile(saved, infusionCatalog());
+  const reconciled = reconcile(saved, infusionCatalog(), { activeBooks: ALL_BOOKS });
 
   assert.deepEqual(getKnownInfusions(reconciled), ["Placeholder Alpha"]);
   assert.ok(reconciled.needsReview?.some((note) => note.includes("Placeholder Charlie")));
@@ -199,7 +200,7 @@ test("a saved pick above the character's level is pruned with a review notice", 
 
 test("a saved pick the catalog no longer offers is pruned when the catalog has infusions", () => {
   const saved = artificer(2, [savedInfusions(["Placeholder Vanished", "Placeholder Alpha"])]);
-  const reconciled = reconcile(saved, infusionCatalog());
+  const reconciled = reconcile(saved, infusionCatalog(), { activeBooks: ALL_BOOKS });
 
   assert.deepEqual(getKnownInfusions(reconciled), ["Placeholder Alpha"]);
 });

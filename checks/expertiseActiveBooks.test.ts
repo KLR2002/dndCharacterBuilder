@@ -1,3 +1,4 @@
+import { ALL_BOOKS } from "../src/constants/books.ts";
 import test from "node:test";
 import assert from "node:assert/strict";
 import { reconcile, reconcileForActiveBooks } from "../src/rules/characterReconciler.ts";
@@ -22,8 +23,16 @@ const SMUGGLER: BackgroundData = {
   description: "",
 };
 
-// The integrated bundle makes the books scope the listings. The Rogue is PHB, the background is TST.
-const catalog = () => inMemoryCompendium({ classes, backgrounds: [SMUGGLER] }, { integrated: true });
+// A second invented background from the same book. Its skill is also one a Knowledge Domain Cleric's Blessings offers.
+const SCHOLAR: BackgroundData = {
+  ...SMUGGLER,
+  name: "Test Scholar",
+  grants: [{ id: "TST/Background/Test Scholar@0#0", kind: "fixed", category: "skills", names: ["Religion"] }],
+  skillProficiencies: ["Religion"],
+};
+
+// The integrated bundle makes the books scope the listings. The Rogue and the Cleric are PHB, the backgrounds are TST.
+const catalog = () => inMemoryCompendium({ classes, backgrounds: [SMUGGLER, SCHOLAR] }, { integrated: true });
 const PHB_ONLY = ["PHB"];
 const PHB_AND_TST = ["PHB", TST_BOOK];
 
@@ -51,7 +60,7 @@ test("a skill whose book is still enabled keeps its Expertise mark", () => {
 });
 
 test("without activeBooks the mark is kept, as before the books were scoped", () => {
-  const kept = reconcile(smugglerRogue(), catalog());
+  const kept = reconcile(smugglerRogue(), catalog(), { activeBooks: ALL_BOOKS });
   assert.deepEqual(kept.chosenExpertise, ["Investigation", "Stealth"]);
   assert.equal(kept.needsReview, undefined);
 });
@@ -116,4 +125,22 @@ test("reconcileForActiveBooks removes the same mark as reconcile with activeBook
   const viaFunction = reconcileForActiveBooks(smugglerRogue(), catalog(), PHB_ONLY);
   assert.deepEqual(viaFunction, viaOption);
   assert.deepEqual(viaFunction.chosenExpertise, ["Stealth"]);
+});
+
+test("Expertise from a disabled background is released with a notice, not moved into a Blessings pick the player never made", () => {
+  const BLESSINGS_ID = "PHB/Cleric/Knowledge Domain/Blessings of Knowledge@1#skills:choice:from";
+  const char = makeChar({
+    background: { name: SCHOLAR.name, source: TST_BOOK },
+    classes: [
+      { className: "Rogue", source: "PHB", level: 6 },
+      { className: "Cleric", source: "PHB", level: 1, subclassName: "Knowledge Domain", subclassSource: "PHB" },
+    ],
+    chosenExpertise: ["Religion"],
+  });
+  const reconciled = reconcile(char, catalog(), { activeBooks: PHB_ONLY });
+  assert.deepEqual(reconciled.chosenExpertise, []);
+  assert.equal(reconciled.proficiencyPicks?.[BLESSINGS_ID], undefined, "Blessings gains no pick");
+  assert.deepEqual(reconciled.needsReview, [
+    "Religion Expertise removed: Religion is no longer a proficient skill or tool",
+  ]);
 });

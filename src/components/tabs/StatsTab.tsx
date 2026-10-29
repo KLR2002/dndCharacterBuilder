@@ -976,7 +976,7 @@ export const StatsTab: React.FC = () => {
               HP Configuration
             </Text>
             <Text style={{ color: theme.textSecondary, fontSize: 13, marginBottom: 8 }}>
-              Standard calculated Max HP: <Text style={{ color: theme.accent, fontWeight: "bold" }}>{evaluateCharacter({ ...currentCharacter, maxHpOverride: null }).hp.max}</Text>
+              Standard calculated Max HP: <Text style={{ color: theme.accent, fontWeight: "bold" }}>{evaluateCharacter({ ...currentCharacter, maxHpOverride: null }, { compendium: currentCompendium(), activeBooks }).hp.max}</Text>
             </Text>
             <Text style={{ color: theme.textSecondary, fontSize: 12, marginBottom: 8 }}>
               Leave blank to use automatic calculation. Enter a number to manually override maximum hit points.

@@ -1,3 +1,4 @@
+import type { ActiveBooks } from "../constants/books.ts";
 import type { Character } from "../types/character.ts";
 import { ALL_RESOURCE_BOOKS } from "../constants/books.ts";
 import { currentCompendium, type Compendium } from "../services/compendium.ts";
@@ -27,8 +28,8 @@ import {
 export interface ProficiencyChoiceQuery {
   /** Defaults to the process-wide current Compendium. */
   compendium?: Compendium;
-  /** Scopes the offers to these books. Omitted or empty means every book. */
-  activeBooks?: string[];
+  /** Scopes the offers to these books. An empty list means every book. */
+  activeBooks: ActiveBooks;
 }
 
 const ORIGIN_OF: Partial<Record<FeatureInstance["origin"], RuleChoiceOrigin>> = {
@@ -96,7 +97,7 @@ function pickableChoicesOf(feature: FeatureInstance): ChoiceProficiencyGrant[] {
 export function heldByOtherSources(
   character: Character,
   grant: ChoiceProficiencyGrant,
-  query: ProficiencyChoiceQuery = {},
+  query: ProficiencyChoiceQuery,
 ): (name: string) => boolean {
   const compendium = query.compendium ?? currentCompendium();
   const activeBooks = query.activeBooks?.length ? query.activeBooks : undefined;
@@ -172,7 +173,7 @@ function choiceOfferEntries(character: Character, query: ProficiencyChoiceQuery)
   return entries;
 }
 
-export function proficiencyChoiceOffers(character: Character, query: ProficiencyChoiceQuery = {}): AvailableRuleChoice[] {
+export function proficiencyChoiceOffers(character: Character, query: ProficiencyChoiceQuery): AvailableRuleChoice[] {
   return choiceOfferEntries(character, query).map((entry) => entry.offer);
 }
 
@@ -195,7 +196,7 @@ const SKILL_CARD_ORIGINS: ReadonlySet<RuleChoiceOrigin> = new Set<RuleChoiceOrig
  * later class's multiclass skill pick. Each is the offer `proficiencyChoiceOffers` gives it, titled for its source (the
  * feature's name, or "<Class> multiclass skill"), and marked when its grant gives Expertise.
  */
-export function skillPickOffers(character: Character, query: ProficiencyChoiceQuery = {}): SkillPickOffer[] {
+export function skillPickOffers(character: Character, query: ProficiencyChoiceQuery): SkillPickOffer[] {
   return choiceOfferEntries(character, query)
     .filter(({ grant, offer }) => grant.category === "skills" && SKILL_CARD_ORIGINS.has(offer.origin))
     .map(({ offer, feature, grant }) => ({

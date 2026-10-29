@@ -1,3 +1,4 @@
+import { ALL_BOOKS } from "../src/constants/books.ts";
 import { describe, test } from "node:test";
 import assert from "node:assert/strict";
 import { makeChar, inMemoryCompendium } from "./testUtils.ts";
@@ -179,7 +180,7 @@ test("applyAsiSelection adds a new ASI selection", () => {
     asi: { str: 2 },
   };
 
-  const updated = applyAsiSelection(initial, selection);
+  const updated = applyAsiSelection(initial, selection, undefined, ALL_BOOKS);
   assert.equal(updated.asiSelections.length, 1);
   assert.deepEqual(updated.asiSelections[0], selection);
   // Original is not mutated
@@ -204,7 +205,7 @@ test("applyAsiSelection replaces existing ASI selection for same class and level
     featSource: "PHB",
   };
 
-  const updated = applyAsiSelection(initial, featSelection);
+  const updated = applyAsiSelection(initial, featSelection, undefined, ALL_BOOKS);
   assert.equal(updated.asiSelections.length, 1);
   assert.equal(updated.asiSelections[0].type, "feat");
   assert.equal(updated.asiSelections[0].featName, "Great Weapon Master");
@@ -223,7 +224,7 @@ test("removeAsiSelection removes the specified ASI selection", () => {
   });
 
   // Remove Fighter level 4 ASI
-  const afterRemove = removeAsiSelection(initial, "Fighter", 4);
+  const afterRemove = removeAsiSelection(initial, "Fighter", 4, undefined, ALL_BOOKS);
   assert.equal(afterRemove.asiSelections.length, 2);
   assert.equal(
     afterRemove.asiSelections.some(
@@ -283,7 +284,7 @@ test("half-feats: effectiveScores includes ability increase from half-feat selec
     featSource: "PHB",
     featAbility: "cha",
     asi: { cha: 1 },
-  });
+  }, undefined, ALL_BOOKS);
   assert.equal(effectiveScores(withActor).scores.cha, 15);
   assert.equal(effectiveScores(withActor).modifiers.cha, 2);
 
@@ -297,11 +298,11 @@ test("half-feats: effectiveScores includes ability increase from half-feat selec
     featSource: "PHB",
     featAbility: "con",
     asi: { con: 1 },
-  });
+  }, undefined, ALL_BOOKS);
   assert.equal(effectiveScores(withResilientCon).scores.con, 11);
 
   // Removing selection removes the ability increase
-  const removed = removeAsiSelection(withActor, "Bard", 4);
+  const removed = removeAsiSelection(withActor, "Bard", 4, undefined, ALL_BOOKS);
   assert.equal(effectiveScores(removed).scores.cha, 14);
 });
 
@@ -346,7 +347,7 @@ describe("Replacing an ASI or feat selection reconciles the choices that depende
       classLevel: 4,
       type: "asi",
       asi: { str: 2 },
-    }, inMemoryCompendium({}));
+    }, inMemoryCompendium({}), ALL_BOOKS);
 
     assert.deepEqual(updated.ruleChoices, [fighterStyle]);
     assert.deepEqual(updated.needsReview, [
@@ -369,7 +370,7 @@ describe("Replacing an ASI or feat selection reconciles the choices that depende
       classLevel: 4,
       type: "asi",
       asi: { str: 2 },
-    }, inMemoryCompendium({}));
+    }, inMemoryCompendium({}), ALL_BOOKS);
 
     assert.deepEqual(updated.ruleChoices, [fighterStyle]);
     assert.deepEqual(updated.needsReview, [
@@ -394,7 +395,7 @@ describe("Replacing an ASI or feat selection reconciles the choices that depende
       type: "feat",
       featName: "Alert",
       featSource: "PHB",
-    }, inMemoryCompendium({}));
+    }, inMemoryCompendium({}), ALL_BOOKS);
 
     assert.deepEqual(updated.ruleChoices, [fighterStyle, initiateStyle]);
     assert.deepEqual(updated.needsReview ?? [], []);

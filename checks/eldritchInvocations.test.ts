@@ -1,6 +1,7 @@
+import { ALL_BOOKS } from "../src/constants/books.ts";
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { reconcile } from "../src/rules/characterReconciler.ts";
+import { reconcile , teardownSubclass } from "../src/rules/characterReconciler.ts";
 import { currentCompendium } from "../src/services/compendium.ts";
 import { makeChar } from "./testUtils.ts";
 import {
@@ -17,20 +18,19 @@ import {
 } from "../src/rules/ruleChoices.ts";
 import { getEldritchBlastDamage } from "../src/rules/attacks.ts";
 import { removeAsiSelection } from "../src/rules/leveling.ts";
-import { teardownSubclass } from "../src/rules/characterReconciler.ts";
 
 test("Warlock level milestones offer correct number of invocations (2 at lvl 2, up to 8 at lvl 18)", () => {
   // Level 1: 0 invocations
   const w1 = makeChar({
     classes: [{ className: "Warlock", level: 1, hitDiceType: "d8" }],
   });
-  assert.equal(warlockInvocationChoices(w1).length, 0);
+  assert.equal(warlockInvocationChoices(w1, ALL_BOOKS).length, 0);
 
   // Level 2: 1 slot (choose 2) -> total 2
   const w2 = makeChar({
     classes: [{ className: "Warlock", level: 2, hitDiceType: "d8" }],
   });
-  const c2 = warlockInvocationChoices(w2);
+  const c2 = warlockInvocationChoices(w2, ALL_BOOKS);
   assert.equal(c2.length, 1);
   assert.equal(c2[0].id, "PHB__Warlock__Invocations 2");
   assert.equal(c2[0].choose, 2);
@@ -40,13 +40,13 @@ test("Warlock level milestones offer correct number of invocations (2 at lvl 2, 
   const w3 = makeChar({
     classes: [{ className: "Warlock", level: 3, hitDiceType: "d8" }],
   });
-  assert.equal(warlockInvocationChoices(w3).length, 1);
+  assert.equal(warlockInvocationChoices(w3, ALL_BOOKS).length, 1);
 
   // Level 5: 2 slots (choose 2 + choose 1) -> total 3
   const w5 = makeChar({
     classes: [{ className: "Warlock", level: 5, hitDiceType: "d8" }],
   });
-  const c5 = warlockInvocationChoices(w5);
+  const c5 = warlockInvocationChoices(w5, ALL_BOOKS);
   assert.equal(c5.length, 2);
   const total5 = c5.reduce((sum, c) => sum + c.choose, 0);
   assert.equal(total5, 3);
@@ -55,7 +55,7 @@ test("Warlock level milestones offer correct number of invocations (2 at lvl 2, 
   const w7 = makeChar({
     classes: [{ className: "Warlock", level: 7, hitDiceType: "d8" }],
   });
-  const c7 = warlockInvocationChoices(w7);
+  const c7 = warlockInvocationChoices(w7, ALL_BOOKS);
   assert.equal(c7.length, 3);
   assert.equal(c7.reduce((sum, c) => sum + c.choose, 0), 4);
 
@@ -63,7 +63,7 @@ test("Warlock level milestones offer correct number of invocations (2 at lvl 2, 
   const w9 = makeChar({
     classes: [{ className: "Warlock", level: 9, hitDiceType: "d8" }],
   });
-  const c9 = warlockInvocationChoices(w9);
+  const c9 = warlockInvocationChoices(w9, ALL_BOOKS);
   assert.equal(c9.length, 4);
   assert.equal(c9.reduce((sum, c) => sum + c.choose, 0), 5);
 
@@ -71,7 +71,7 @@ test("Warlock level milestones offer correct number of invocations (2 at lvl 2, 
   const w12 = makeChar({
     classes: [{ className: "Warlock", level: 12, hitDiceType: "d8" }],
   });
-  const c12 = warlockInvocationChoices(w12);
+  const c12 = warlockInvocationChoices(w12, ALL_BOOKS);
   assert.equal(c12.length, 5);
   assert.equal(c12.reduce((sum, c) => sum + c.choose, 0), 6);
 
@@ -79,7 +79,7 @@ test("Warlock level milestones offer correct number of invocations (2 at lvl 2, 
   const w15 = makeChar({
     classes: [{ className: "Warlock", level: 15, hitDiceType: "d8" }],
   });
-  const c15 = warlockInvocationChoices(w15);
+  const c15 = warlockInvocationChoices(w15, ALL_BOOKS);
   assert.equal(c15.length, 6);
   assert.equal(c15.reduce((sum, c) => sum + c.choose, 0), 7);
 
@@ -87,7 +87,7 @@ test("Warlock level milestones offer correct number of invocations (2 at lvl 2, 
   const w18 = makeChar({
     classes: [{ className: "Warlock", level: 18, hitDiceType: "d8" }],
   });
-  const c18 = warlockInvocationChoices(w18);
+  const c18 = warlockInvocationChoices(w18, ALL_BOOKS);
   assert.equal(c18.length, 7);
   assert.equal(c18.reduce((sum, c) => sum + c.choose, 0), 8);
 
@@ -95,19 +95,19 @@ test("Warlock level milestones offer correct number of invocations (2 at lvl 2, 
   const w20 = makeChar({
     classes: [{ className: "Warlock", level: 20, hitDiceType: "d8" }],
   });
-  assert.equal(warlockInvocationChoices(w20).reduce((sum, c) => sum + c.choose, 0), 8);
+  assert.equal(warlockInvocationChoices(w20, ALL_BOOKS).reduce((sum, c) => sum + c.choose, 0), 8);
 });
 
 test("Pact Boon offered at Warlock level >= 3 and integrates into subclassRuleChoices", () => {
   const w2 = makeChar({
     classes: [{ className: "Warlock", level: 2, hitDiceType: "d8" }],
   });
-  assert.equal(warlockPactBoonChoices(w2).length, 0);
+  assert.equal(warlockPactBoonChoices(w2, ALL_BOOKS).length, 0);
 
   const w3 = makeChar({
     classes: [{ className: "Warlock", level: 3, hitDiceType: "d8" }],
   });
-  const boonChoices = warlockPactBoonChoices(w3);
+  const boonChoices = warlockPactBoonChoices(w3, ALL_BOOKS);
   assert.equal(boonChoices.length, 1);
   assert.equal(boonChoices[0].id, "PHB__Warlock__Pact Boon");
   assert.equal(boonChoices[0].choose, 1);
@@ -118,12 +118,12 @@ test("Pact Boon offered at Warlock level >= 3 and integrates into subclassRuleCh
   assert.ok(boonNames.includes("Pact of the Talisman"));
 
   // Subclass rule choices includes Pact Boon and Invocations
-  const subChoices = subclassRuleChoices(w3);
+  const subChoices = subclassRuleChoices(w3, ALL_BOOKS);
   assert.ok(subChoices.some((c) => c.id === "PHB__Warlock__Pact Boon"));
   assert.ok(subChoices.some((c) => c.id === "PHB__Warlock__Invocations 2"));
 
   // Selecting a Pact Boon
-  const chosen = pickRuleChoice(w3, boonChoices[0], "Pact of the Blade");
+  const chosen = pickRuleChoice(w3, boonChoices[0], "Pact of the Blade", undefined, ALL_BOOKS);
   assert.equal(getChosenPactBoon(chosen), "Pact of the Blade");
 });
 
@@ -133,7 +133,7 @@ test("Level prerequisite gating: Level 5 invocations (Thirsting Blade) not offer
     knownSpells: [{ name: "Eldritch Blast", source: "PHB", className: "Warlock" }],
   });
 
-  const choices2 = warlockInvocationChoices(w2);
+  const choices2 = warlockInvocationChoices(w2, ALL_BOOKS);
   const optNames2 = choices2[0].options.map((o) => o.name);
 
   // Level 5 invocations must NOT be present
@@ -155,7 +155,7 @@ test("Pact Boon prerequisite gating: Blade/Tome/Chain requirements enforced", ()
   const w5NoBoon = makeChar({
     classes: [{ className: "Warlock", level: 5, hitDiceType: "d8" }],
   });
-  const c5NoBoon = warlockInvocationChoices(w5NoBoon);
+  const c5NoBoon = warlockInvocationChoices(w5NoBoon, ALL_BOOKS);
   const allOptsNoBoon = c5NoBoon.flatMap((c) => c.options.map((o) => o.name));
   assert.ok(!allOptsNoBoon.includes("Thirsting Blade"));
   assert.ok(!allOptsNoBoon.includes("Book of Ancient Secrets"));
@@ -175,7 +175,7 @@ test("Pact Boon prerequisite gating: Blade/Tome/Chain requirements enforced", ()
       },
     ],
   });
-  const c5Blade = warlockInvocationChoices(w5Blade);
+  const c5Blade = warlockInvocationChoices(w5Blade, ALL_BOOKS);
   const allOptsBlade = c5Blade.flatMap((c) => c.options.map((o) => o.name));
   assert.ok(allOptsBlade.includes("Thirsting Blade"));
   assert.ok(!allOptsBlade.includes("Book of Ancient Secrets"));
@@ -197,7 +197,7 @@ test("Pact Boon prerequisite gating: Blade/Tome/Chain requirements enforced", ()
       },
     ],
   });
-  const c12Blade = warlockInvocationChoices(w12Blade);
+  const c12Blade = warlockInvocationChoices(w12Blade, ALL_BOOKS);
   const allOpts12Blade = c12Blade.flatMap((c) => c.options.map((o) => o.name));
   assert.ok(allOpts12Blade.includes("Lifedrinker"));
   assert.ok(allOpts12Blade.includes("Thirsting Blade"));
@@ -216,7 +216,7 @@ test("Pact Boon prerequisite gating: Blade/Tome/Chain requirements enforced", ()
       },
     ],
   });
-  const c5Tome = warlockInvocationChoices(w5Tome);
+  const c5Tome = warlockInvocationChoices(w5Tome, ALL_BOOKS);
   const allOptsTome = c5Tome.flatMap((c) => c.options.map((o) => o.name));
   assert.ok(allOptsTome.includes("Book of Ancient Secrets"));
   assert.ok(!allOptsTome.includes("Thirsting Blade"));
@@ -235,7 +235,7 @@ test("Pact Boon prerequisite gating: Blade/Tome/Chain requirements enforced", ()
       },
     ],
   });
-  const c5Chain = warlockInvocationChoices(w5Chain);
+  const c5Chain = warlockInvocationChoices(w5Chain, ALL_BOOKS);
   const allOptsChain = c5Chain.flatMap((c) => c.options.map((o) => o.name));
   assert.ok(allOptsChain.includes("Voice of the Chain Master"));
   assert.ok(!allOptsChain.includes("Thirsting Blade"));
@@ -247,7 +247,7 @@ test("Spell / Cantrip prerequisite gating: Eldritch Blast required for Agonizing
     classes: [{ className: "Warlock", level: 2, hitDiceType: "d8" }],
     knownSpells: [{ name: "Chill Touch", source: "PHB", className: "Warlock" }],
   });
-  const c2NoEb = warlockInvocationChoices(w2NoEb);
+  const c2NoEb = warlockInvocationChoices(w2NoEb, ALL_BOOKS);
   const optsNoEb = c2NoEb[0].options.map((o) => o.name);
   assert.ok(!optsNoEb.includes("Agonizing Blast"));
   assert.ok(!optsNoEb.includes("Repelling Blast"));
@@ -259,7 +259,7 @@ test("Spell / Cantrip prerequisite gating: Eldritch Blast required for Agonizing
     classes: [{ className: "Warlock", level: 2, hitDiceType: "d8" }],
     knownSpells: [{ name: "Eldritch Blast", source: "PHB", className: "Warlock" }],
   });
-  const c2Eb = warlockInvocationChoices(w2Eb);
+  const c2Eb = warlockInvocationChoices(w2Eb, ALL_BOOKS);
   const optsEb = c2Eb[0].options.map((o) => o.name);
   assert.ok(optsEb.includes("Agonizing Blast"));
   assert.ok(optsEb.includes("Repelling Blast"));
@@ -270,7 +270,7 @@ test("Spell / Cantrip prerequisite gating: Eldritch Blast required for Agonizing
   const w5NoHex = makeChar({
     classes: [{ className: "Warlock", level: 5, hitDiceType: "d8" }],
   });
-  const c5NoHex = warlockInvocationChoices(w5NoHex);
+  const c5NoHex = warlockInvocationChoices(w5NoHex, ALL_BOOKS);
   const opts5NoHex = c5NoHex.flatMap((c) => c.options.map((o) => o.name));
   assert.ok(!opts5NoHex.includes("Maddening Hex"));
 
@@ -278,7 +278,7 @@ test("Spell / Cantrip prerequisite gating: Eldritch Blast required for Agonizing
     classes: [{ className: "Warlock", level: 5, hitDiceType: "d8" }],
     knownSpells: [{ name: "Hex", source: "PHB", className: "Warlock" }],
   });
-  const c5Hex = warlockInvocationChoices(w5Hex);
+  const c5Hex = warlockInvocationChoices(w5Hex, ALL_BOOKS);
   const opts5Hex = c5Hex.flatMap((c) => c.options.map((o) => o.name));
   assert.ok(opts5Hex.includes("Maddening Hex"));
 });
@@ -291,7 +291,7 @@ test("Non-Warlock taking Eldritch Adept can only choose invocations without prer
     asiSelections: [{ type: "feat", featName: "Eldritch Adept", level: 4, classLevel: 4, className: "Fighter" }],
   });
 
-  const eaChoices = warlockInvocationChoices(fighterEa);
+  const eaChoices = warlockInvocationChoices(fighterEa, ALL_BOOKS);
   assert.equal(eaChoices.length, 1);
   assert.equal(eaChoices[0].id, "TCE__Feat__Eldritch Adept__Invocation");
   assert.equal(eaChoices[0].choose, 1);
@@ -344,7 +344,7 @@ test("Warlock taking Eldritch Adept can choose invocations with prerequisites if
     asiSelections: [{ type: "feat", featName: "Eldritch Adept", level: 4, classLevel: 4, className: "Warlock" }],
   });
 
-  const eaChoices = warlockInvocationChoices(warlockEa);
+  const eaChoices = warlockInvocationChoices(warlockEa, ALL_BOOKS);
   const featChoice = eaChoices.find((c) => c.id === "TCE__Feat__Eldritch Adept__Invocation");
   assert.ok(featChoice);
 
@@ -373,7 +373,7 @@ test("Dynamic cross-choice deduplication: invocations chosen in one slot cannot 
     ],
   });
 
-  const choices = warlockInvocationChoices(w5);
+  const choices = warlockInvocationChoices(w5, ALL_BOOKS);
   const lvl2Slot = choices.find((c) => c.id === "PHB__Warlock__Invocations 2");
   const lvl5Slot = choices.find((c) => c.id === "PHB__Warlock__Invocations 5");
 
@@ -430,8 +430,8 @@ test("Teardown and prerequisite pruning: de-leveling, changing Pact Boon, or rem
   assert.equal(hasInvocation(hero, "Armor of Shadows"), true);
 
   // 1. Changing Pact Boon to Pact of the Tome prunes Thirsting Blade
-  const pactChoice = warlockPactBoonChoices(hero)[0];
-  hero = pickRuleChoice(hero, pactChoice, "Pact of the Tome");
+  const pactChoice = warlockPactBoonChoices(hero, ALL_BOOKS)[0];
+  hero = pickRuleChoice(hero, pactChoice, "Pact of the Tome", undefined, ALL_BOOKS);
 
   assert.equal(hasInvocation(hero, "Thirsting Blade"), false);
   assert.equal(hasInvocation(hero, "Agonizing Blast"), true);
@@ -445,7 +445,7 @@ test("Teardown and prerequisite pruning: de-leveling, changing Pact Boon, or rem
     ...hero,
     knownSpells: [],
   };
-  hero = reconcile(hero, currentCompendium());
+  hero = reconcile(hero, currentCompendium(), { activeBooks: ALL_BOOKS });
 
   assert.equal(hasInvocation(hero, "Agonizing Blast"), false);
   assert.equal(hasInvocation(hero, "Armor of Shadows"), true);
@@ -458,7 +458,7 @@ test("Teardown and prerequisite pruning: de-leveling, changing Pact Boon, or rem
     ...hero,
     classes: [{ className: "Warlock", level: 1, hitDiceType: "d8" }],
   };
-  hero = reconcile(hero, currentCompendium());
+  hero = reconcile(hero, currentCompendium(), { activeBooks: ALL_BOOKS });
   assert.equal(getChosenInvocations(hero).length, 0);
   assert.ok(
     hero.needsReview?.some((n) => n.includes("Armor of Shadows removed: prerequisite no longer satisfied"))
@@ -557,7 +557,7 @@ test("Eldritch Adept feat removal via removeAsiSelection removes choice and prun
 
   assert.equal(hasInvocation(charWithFeat, "Devil's Sight"), true);
 
-  const updated = removeAsiSelection(charWithFeat, "Fighter", 4);
+  const updated = removeAsiSelection(charWithFeat, "Fighter", 4, undefined, ALL_BOOKS);
   assert.equal(hasInvocation(updated, "Devil's Sight"), false);
   assert.ok(!updated.ruleChoices?.some((rc) => rc.id.includes("Eldritch Adept")));
 });
@@ -577,7 +577,7 @@ test("Teardown subclass keeps still-valid Warlock invocations", () => {
     ],
   });
 
-  const torn = teardownSubclass(char, "Warlock", "The Fiend");
+  const torn = teardownSubclass(char, "Warlock", "The Fiend", undefined, ALL_BOOKS);
   assert.ok(torn);
   // Devil's Sight is still valid for level 2 Warlock
   assert.equal(hasInvocation(torn, "Devil's Sight"), true);
@@ -599,7 +599,7 @@ test("Invocation descriptions include their prerequisites clearly stated", () =>
     knownSpells: [{ name: "Eldritch Blast", source: "PHB", ability: "cha" }],
   });
 
-  const choices = warlockInvocationChoices(w5Blade);
+  const choices = warlockInvocationChoices(w5Blade, ALL_BOOKS);
   const choice5 = choices.find((c) => c.id === "PHB__Warlock__Invocations 5");
   assert.ok(choice5);
 
@@ -640,7 +640,7 @@ test("Hexblade check is conjunctive: non-Warlock with subclass hexblade does not
     ],
   });
 
-  const eaChoices = warlockInvocationChoices(fakeHexblade);
+  const eaChoices = warlockInvocationChoices(fakeHexblade, ALL_BOOKS);
   const eaOptionNames = eaChoices[0]?.options.map((o) => o.name) || [];
   assert.ok(!eaOptionNames.includes("Maddening Hex"));
 });

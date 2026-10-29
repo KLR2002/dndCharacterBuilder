@@ -1,3 +1,4 @@
+import { ALL_BOOKS } from "../src/constants/books.ts";
 import test from "node:test";
 import assert from "node:assert/strict";
 import { evaluateCharacter } from "../src/rules/characterEvaluation.ts";
@@ -19,7 +20,7 @@ const compendium = inMemoryCompendium({
   feats: grantedSpellFeats(),
   spells: grantedSpellSpells(),
 });
-const catalogs = { compendium };
+const catalogs = { compendium, activeBooks: ALL_BOOKS };
 
 const mage = (level: number): CharacterClass => ({ className: "Sample Mage", source: "TST", level });
 const scores = (overrides: Partial<AbilityScores>): AbilityScores => ({
@@ -49,7 +50,7 @@ const caller = (level: number, baseAbilityScores: Partial<AbilityScores> = {}) =
 
 /** The one offered race pick whose trait name contains `text`, with the option named `option` among its options. */
 function offeredPick(character: Character, option: string, activeCompendium = compendium) {
-  const choice = raceSpellRuleChoices(character, activeCompendium).find((c) => c.options.some((o) => o.name === option));
+  const choice = raceSpellRuleChoices(character, activeCompendium, ALL_BOOKS).find((c) => c.options.some((o) => o.name === option));
   assert.ok(choice, `${option} is offered as a race pick`);
   return choice;
 }
@@ -66,7 +67,7 @@ test("a race's cantrip pick is offered from its class list, and the picked cantr
   assert.equal(choice.choose, 1);
   assert.equal(choice.options.some((o) => o.name === "Sample Veil"), false, "a level 2 spell is not a cantrip choice");
 
-  const picked = pickRuleChoice(gifted(1), choice, "Sample Shot", compendium);
+  const picked = pickRuleChoice(gifted(1), choice, "Sample Shot", compendium, ALL_BOOKS);
   const card = sourceTitled(evaluateCharacter(picked, catalogs).grantedSpellSources, "Sample Gifted");
   const shot = card?.spells.find((spell) => spell.name === "Sample Shot");
   assert.ok(shot, "the picked cantrip is listed");
@@ -82,11 +83,11 @@ test("a race's casting ability is chosen once and the card uses it, with the spe
   assert.equal(unchosen.ability, undefined);
   assert.ok(unchosen.notices?.includes("Needs review: choose a casting ability"), "the card asks for the ability");
 
-  const abilityChoice = raceSpellRuleChoices(caller(3, { wis: 14 }), compendium).find((c) => c.id.endsWith("__Casting Ability"));
+  const abilityChoice = raceSpellRuleChoices(caller(3, { wis: 14 }), compendium, ALL_BOOKS).find((c) => c.id.endsWith("__Casting Ability"));
   assert.ok(abilityChoice, "the ability is offered as a choice");
   assert.deepEqual(abilityChoice.options.map((o) => o.name), ["int", "wis", "cha"]);
 
-  const chosen = pickRuleChoice(caller(3, { wis: 14 }), abilityChoice, "wis", compendium);
+  const chosen = pickRuleChoice(caller(3, { wis: 14 }), abilityChoice, "wis", compendium, ALL_BOOKS);
   const card = sourceTitled(evaluateCharacter(chosen, catalogs).grantedSpellSources, "Sample Caller");
   assert.equal(card?.ability, "wis");
   assert.equal(card?.spellSaveDc, 8 + 2 + 2, "8 + proficiency bonus + Wisdom modifier");
@@ -94,16 +95,16 @@ test("a race's casting ability is chosen once and the card uses it, with the spe
 });
 
 test("a race's pick that unlocks at a level is offered only from that level", () => {
-  const offeredAt = (level: number) => raceSpellRuleChoices(caller(level), compendium).some((c) => c.options.some((o) => o.name === "Sample Lure"));
+  const offeredAt = (level: number) => raceSpellRuleChoices(caller(level), compendium, ALL_BOOKS).some((c) => c.options.some((o) => o.name === "Sample Lure"));
   assert.equal(offeredAt(2), false, "the level 1 spell pick waits for level 3");
   assert.equal(offeredAt(3), true, "level 3 unlocks the first-level spell pick");
 
-  const cantripAt1 = raceSpellRuleChoices(caller(1), compendium).some((c) => c.options.some((o) => o.name === "Sample Shot"));
+  const cantripAt1 = raceSpellRuleChoices(caller(1), compendium, ALL_BOOKS).some((c) => c.options.some((o) => o.name === "Sample Shot"));
   assert.equal(cantripAt1, true, "the cantrip pick is offered at level 1");
 });
 
 test("changing race releases the race's spell picks and raises a review notice", () => {
-  const character = pickRuleChoice(gifted(1), offeredPick(gifted(1), "Sample Shot"), "Sample Shot", compendium);
+  const character = pickRuleChoice(gifted(1), offeredPick(gifted(1), "Sample Shot"), "Sample Shot", compendium, ALL_BOOKS);
   const kin = (grantedSpellRaces() as RaceData[]).find((race) => race.name === "Sample Kin")!;
   const switched = applyAncestrySelection(character, kin, undefined, catalogs);
 
@@ -120,16 +121,16 @@ test("on the SRD Baseline alone, a High Elf picks its wizard cantrip, and the ca
     race: { name: "Elf", source: "SRD", subraceName: "High", subraceSource: "SRD" },
     baseAbilityScores: scores({ int: 16 }),
   });
-  const srd = { compendium: srdBaselineCompendium() };
+  const srd = { compendium: srdBaselineCompendium(), activeBooks: ALL_BOOKS };
 
   const before = sourceTitled(evaluateCharacter(highElf, srd).grantedSpellSources, "High Elf");
   assert.ok(before, "the High Elf has a card before the pick");
   assert.equal(before.ability, "int");
   assert.deepEqual(before.notices, ["Needs review: pick 1 more spell"]);
 
-  const choice = raceSpellRuleChoices(highElf, srdBaselineCompendium()).find((c) => c.options.some((o) => o.name === "Fire Bolt"));
+  const choice = raceSpellRuleChoices(highElf, srdBaselineCompendium(), ALL_BOOKS).find((c) => c.options.some((o) => o.name === "Fire Bolt"));
   assert.ok(choice, "the wizard cantrips are offered on the SRD Baseline");
-  const picked = pickRuleChoice(highElf, choice, "Fire Bolt", srdBaselineCompendium());
+  const picked = pickRuleChoice(highElf, choice, "Fire Bolt", srdBaselineCompendium(), ALL_BOOKS);
   const card = sourceTitled(evaluateCharacter(picked, srd).grantedSpellSources, "High Elf");
   assert.ok(card?.spells.some((spell) => spell.name === "Fire Bolt" && spell.isCantrip));
 });
@@ -138,7 +139,7 @@ test("on the SRD Baseline alone, a High Elf picks its wizard cantrip, and the ca
 // cantrip on the subrace whatever the pick, so the grant is read only once the player picks Cantrip.
 test("a Half-Elf of high descent gets the wizard cantrip only once the descent choice is Cantrip", () => {
   const tracked = loadTestCatalogs();
-  const real = { compendium: inMemoryCompendium(tracked) };
+  const real = { compendium: inMemoryCompendium(tracked), activeBooks: ALL_BOOKS };
   const halfElf = makeChar({
     classes: [mage(1)],
     race: { name: "Half-Elf", source: "PHB", subraceName: "Moon Elf or Sun Elf Descent", subraceSource: "SCAG" },
@@ -146,19 +147,19 @@ test("a Half-Elf of high descent gets the wizard cantrip only once the descent c
   });
   assert.equal(sourceTitled(evaluateCharacter(halfElf, real).grantedSpellSources, "Moon Elf or Sun Elf Descent"), undefined, "no card before Cantrip is picked");
 
-  const descent = ancestryRuleChoices(halfElf, tracked.races as RaceData[]).find((c) => c.options.some((o) => o.name === "Cantrip"));
+  const descent = ancestryRuleChoices(halfElf, tracked.races as RaceData[], ALL_BOOKS).find((c) => c.options.some((o) => o.name === "Cantrip"));
   assert.ok(descent, "the descent choice offers Cantrip");
-  const withCantrip = pickRuleChoice(halfElf, descent, "Cantrip", real.compendium);
+  const withCantrip = pickRuleChoice(halfElf, descent, "Cantrip", real.compendium, ALL_BOOKS);
   const unpicked = sourceTitled(evaluateCharacter(withCantrip, real).grantedSpellSources, "Moon Elf or Sun Elf Descent");
   assert.equal(unpicked?.ability, "int");
   assert.deepEqual(unpicked?.notices, ["Needs review: pick 1 more spell"]);
 
-  const spellChoice = raceSpellRuleChoices(withCantrip, real.compendium).find((c) => c.options.some((o) => o.name === "Fire Bolt"));
+  const spellChoice = raceSpellRuleChoices(withCantrip, real.compendium, ALL_BOOKS).find((c) => c.options.some((o) => o.name === "Fire Bolt"));
   assert.ok(spellChoice, "the wizard cantrips are offered once Cantrip is picked");
-  const withSpell = pickRuleChoice(withCantrip, spellChoice, "Fire Bolt", real.compendium);
+  const withSpell = pickRuleChoice(withCantrip, spellChoice, "Fire Bolt", real.compendium, ALL_BOOKS);
   assert.ok(sourceTitled(evaluateCharacter(withSpell, real).grantedSpellSources, "Moon Elf or Sun Elf Descent")?.spells.some((spell) => spell.name === "Fire Bolt"));
 
-  const otherDescent = pickRuleChoice(withSpell, descent, "Skill Versatility", real.compendium);
+  const otherDescent = pickRuleChoice(withSpell, descent, "Skill Versatility", real.compendium, ALL_BOOKS);
   assert.equal(sourceTitled(evaluateCharacter(otherDescent, real).grantedSpellSources, "Moon Elf or Sun Elf Descent"), undefined, "the card goes when Cantrip is not picked");
   assert.equal(otherDescent.ruleChoices?.some((entry) => entry.picked.includes("Fire Bolt")), false, "and the wizard cantrip pick is released");
 });

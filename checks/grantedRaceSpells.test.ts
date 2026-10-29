@@ -1,3 +1,4 @@
+import { ALL_BOOKS } from "../src/constants/books.ts";
 import test from "node:test";
 import assert from "node:assert/strict";
 import { evaluateCharacter } from "../src/rules/characterEvaluation.ts";
@@ -19,7 +20,7 @@ const catalogs = {
     races: grantedSpellRaces(),
     feats: grantedSpellFeats(),
     spells: grantedSpellSpells(),
-  }),
+  }), activeBooks: ALL_BOOKS,
 };
 
 const mage = (level: number): CharacterClass => ({ className: "Sample Mage", source: "TST", level });
@@ -154,7 +155,7 @@ test("on the SRD Baseline alone, a Tiefling has Thaumaturgy at will, and Hellish
       race: { name: "Tiefling", source: "SRD" },
       baseAbilityScores: { str: 10, dex: 10, con: 10, int: 10, wis: 10, cha: 16 },
     });
-  const srd = { compendium: srdBaselineCompendium() };
+  const srd = { compendium: srdBaselineCompendium(), activeBooks: ALL_BOOKS };
 
   const level1 = sourceTitled(evaluateCharacter(tiefling(1), srd).grantedSpellSources, "Tiefling");
   assert.ok(level1?.spells.some((spell) => spell.name === "Thaumaturgy" && spell.resourceCounterId === undefined));
@@ -175,7 +176,7 @@ test("on the SRD Baseline, a High Elf's race card is titled with the subrace and
     race: { name: "Elf", source: "SRD", subraceName: "High", subraceSource: "SRD" },
     baseAbilityScores: { str: 10, dex: 10, con: 10, int: 16, wis: 10, cha: 10 },
   });
-  const card = evaluateCharacter(highElf, { compendium: srdBaselineCompendium() }).grantedSpellSources.find((source) => source.origin === "race");
+  const card = evaluateCharacter(highElf, { compendium: srdBaselineCompendium(), activeBooks: ALL_BOOKS }).grantedSpellSources.find((source) => source.origin === "race");
   assert.ok(card, "the High Elf's grant gives a race card");
   assert.equal(card.title, "High Elf");
 });
@@ -207,7 +208,7 @@ test("a race's spell with a note carries it on its entry, and a spell without on
 
 test("a race's spell list offered for the race words its casting ability as chosen for the race, not for a feat", () => {
   const character = makeChar({ classes: [mage(1)], race: { name: "Sample Listed", source: "TST" } });
-  const lists = raceSpellRuleChoices(character, catalogs.compendium).find((choice) => choice.options.some((o) => o.name === "Sample Listed Spells"));
+  const lists = raceSpellRuleChoices(character, catalogs.compendium, ALL_BOOKS).find((choice) => choice.options.some((o) => o.name === "Sample Listed Spells"));
   assert.ok(lists, "the race's list is offered");
   assert.equal(lists.options[0].description, "Casting ability: chosen for the race");
 });
@@ -235,7 +236,7 @@ test("a subrace's grant is read only while the option that gates it is picked in
 });
 
 test("the tracked catalog reads the Moon Elf or Sun Elf descent's wizard cantrip only once its Cantrip option is picked", () => {
-  const integrated = { compendium: integratedTestCompendium() };
+  const integrated = { compendium: integratedTestCompendium(), activeBooks: ALL_BOOKS };
   const descent = { name: "Half-Elf", source: "PHB", subraceName: "Moon Elf or Sun Elf Descent", subraceSource: "SCAG" };
   const wizard = { className: "Wizard", source: "PHB", level: 1 };
   const shut = evaluateCharacter(makeChar({ classes: [wizard], race: descent }), integrated).grantedSpellSources;
@@ -254,7 +255,7 @@ test("the tracked catalog reads the Moon Elf or Sun Elf descent's wizard cantrip
 });
 
 test("the tracked catalog reads Half-Elf Drow Descent's spells only once its Drow Magic option is picked", () => {
-  const integrated = { compendium: integratedTestCompendium() };
+  const integrated = { compendium: integratedTestCompendium(), activeBooks: ALL_BOOKS };
   const descent = { name: "Half-Elf", source: "PHB", subraceName: "Drow Descent", subraceSource: "SCAG" };
   const fighter = { className: "Fighter", source: "PHB", level: 5 };
   const shut = evaluateCharacter(makeChar({ classes: [fighter], race: descent }), integrated).grantedSpellSources;
@@ -275,7 +276,7 @@ test("the tracked catalog reads Half-Elf Drow Descent's spells only once its Dro
 });
 
 test("the tracked catalog gives Deep Gnome and Hexblood their leveled spells once per Long Rest from level 1, Deep Gnome's nondetection at will", () => {
-  const integrated = { compendium: integratedTestCompendium() };
+  const integrated = { compendium: integratedTestCompendium(), activeBooks: ALL_BOOKS };
   const cases = [
     { race: "Gnome (Deep)", source: "DMG", spells: ["Disguise Self"] },
     { race: "Hexblood", source: "VRGR", spells: ["Disguise Self", "Hex"] },

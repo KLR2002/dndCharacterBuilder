@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { reconcile } from "../src/rules/characterReconciler.ts";
 import { currentCompendium } from "../src/services/compendium.ts";
-import { DEFAULT_ACTIVE_BOOK_CODES } from "../src/constants/books.ts";
+import { DEFAULT_ACTIVE_BOOK_CODES, ALL_BOOKS } from "../src/constants/books.ts";
 import { srdBaselineCompendium } from "./testUtils.ts";
 import type { Character } from "../src/types/character.ts";
 import type { SpellData } from "../src/types/dnd5e.ts";
@@ -87,12 +87,12 @@ function createTestWarlock(level: number, pactBoon: string = "Pact of the Tome")
 test("Book of Ancient Secrets starting rituals: offering and eligibility", () => {
   // Level 1 Warlock cannot take invocations
   const lvl1 = createTestWarlock(1);
-  const choices1 = warlockAncientSecretsStartingRituals(lvl1);
+  const choices1 = warlockAncientSecretsStartingRituals(lvl1, ALL_BOOKS);
   assert.equal(choices1.length, 0);
 
   // Level 3 Warlock with Tome and Book of Ancient Secrets offers choice
   const lvl3 = createTestWarlock(3);
-  const choices3 = warlockAncientSecretsStartingRituals(lvl3);
+  const choices3 = warlockAncientSecretsStartingRituals(lvl3, ALL_BOOKS);
   assert.equal(choices3.length, 1);
   assert.equal(choices3[0].id, "Warlock__Book of Ancient Secrets__Starting Rituals");
   assert.equal(choices3[0].choose, 2);
@@ -131,16 +131,16 @@ test("Book of Ancient Secrets starting rituals: non-Tome or missing invocation p
       origin: "class",
     },
   ];
-  const choices = warlockAncientSecretsStartingRituals(bladeWarlock);
+  const choices = warlockAncientSecretsStartingRituals(bladeWarlock, ALL_BOOKS);
   assert.equal(choices.length, 0);
 });
 
 test("Book of Ancient Secrets: picking starting rituals synchronizes into character.ritualBook with isStarting: true", () => {
   const char = createTestWarlock(3);
-  const choice = warlockAncientSecretsStartingRituals(char)[0];
+  const choice = warlockAncientSecretsStartingRituals(char, ALL_BOOKS)[0];
 
-  const updated1 = pickRuleChoice(char, choice, "Find Familiar");
-  const updated2 = pickRuleChoice(updated1, choice, "Identify");
+  const updated1 = pickRuleChoice(char, choice, "Find Familiar", undefined, ALL_BOOKS);
+  const updated2 = pickRuleChoice(updated1, choice, "Identify", undefined, ALL_BOOKS);
 
   assert.ok(updated2.ritualBook);
   assert.equal(updated2.ritualBook.length, 2);
@@ -158,9 +158,9 @@ test("Book of Ancient Secrets: picking starting rituals synchronizes into charac
 
 test("Book of Ancient Secrets: ritual ledger isolation from known spells and prepared counts", () => {
   const char = createTestWarlock(3);
-  const choice = warlockAncientSecretsStartingRituals(char)[0];
-  let updated = pickRuleChoice(char, choice, "Find Familiar");
-  updated = pickRuleChoice(updated, choice, "Identify");
+  const choice = warlockAncientSecretsStartingRituals(char, ALL_BOOKS)[0];
+  let updated = pickRuleChoice(char, choice, "Find Familiar", undefined, ALL_BOOKS);
+  updated = pickRuleChoice(updated, choice, "Identify", undefined, ALL_BOOKS);
 
   // Inscribe an adventure ritual
   updated = {
@@ -177,7 +177,7 @@ test("Book of Ancient Secrets: ritual ledger isolation from known spells and pre
   assert.equal(updated.knownSpells?.length, 1);
 
   // Verify spellcasting profile doesn't count rituals in known or prepared
-  const profiles = getClassSpellProfiles(updated);
+  const profiles = getClassSpellProfiles(updated, { activeBooks: ALL_BOOKS });
   const warlockProfile = profiles.find((p) => p.className === "Warlock");
   assert.ok(warlockProfile);
   assert.equal(warlockProfile.knownSpells.length, 1);
@@ -186,9 +186,9 @@ test("Book of Ancient Secrets: ritual ledger isolation from known spells and pre
 
 test("Book of Ancient Secrets: adventure inscription preserves starting rituals and allows removal of inscribed only", () => {
   const char = createTestWarlock(5);
-  const choice = warlockAncientSecretsStartingRituals(char)[0];
-  let updated = pickRuleChoice(char, choice, "Find Familiar");
-  updated = pickRuleChoice(updated, choice, "Identify");
+  const choice = warlockAncientSecretsStartingRituals(char, ALL_BOOKS)[0];
+  let updated = pickRuleChoice(char, choice, "Find Familiar", undefined, ALL_BOOKS);
+  updated = pickRuleChoice(updated, choice, "Identify", undefined, ALL_BOOKS);
 
   // Add adventure inscribed rituals (Level <= Math.ceil(5/2) = 3)
   updated = {
@@ -203,7 +203,7 @@ test("Book of Ancient Secrets: adventure inscription preserves starting rituals 
   assert.equal(updated.ritualBook.length, 4);
 
   // Changing one starting ritual preserves inscribed rituals
-  const updatedStarting = pickRuleChoice(updated, choice, "Alarm");
+  const updatedStarting = pickRuleChoice(updated, choice, "Alarm", undefined, ALL_BOOKS);
   const names = (updatedStarting.ritualBook || []).map((r) => r.name);
   assert.ok(names.includes("Water Breathing"));
   assert.ok(names.includes("Leomund's Tiny Hut"));
@@ -212,9 +212,9 @@ test("Book of Ancient Secrets: adventure inscription preserves starting rituals 
 
 test("Book of Ancient Secrets: switching Pact Boon or losing invocation completely cleanses ritualBook and populates needsReview", () => {
   const char = createTestWarlock(3);
-  const choice = warlockAncientSecretsStartingRituals(char)[0];
-  let updated = pickRuleChoice(char, choice, "Find Familiar");
-  updated = pickRuleChoice(updated, choice, "Identify");
+  const choice = warlockAncientSecretsStartingRituals(char, ALL_BOOKS)[0];
+  let updated = pickRuleChoice(char, choice, "Find Familiar", undefined, ALL_BOOKS);
+  updated = pickRuleChoice(updated, choice, "Identify", undefined, ALL_BOOKS);
   // Also add an inscribed adventure ritual
   updated = {
     ...updated,
@@ -234,7 +234,7 @@ test("Book of Ancient Secrets: switching Pact Boon or losing invocation complete
   };
 
   // Pruning invocations will prune Book of Ancient Secrets (since it requires Tome)
-  const pruned = reconcile(bladeChar, currentCompendium());
+  const pruned = reconcile(bladeChar, currentCompendium(), { activeBooks: ALL_BOOKS });
   assert.ok(
     !pruned.ruleChoices?.some((rc) => rc.id.includes("Book of Ancient Secrets")),
     "Starting rituals ruleChoice should be pruned"
@@ -254,7 +254,7 @@ test("Book of Ancient Secrets: switching Pact Boon or losing invocation complete
       rc.id.includes("Invocations 2") ? { ...rc, picked: ["Agonizing Blast", "Armor of Shadows"] } : rc
     ),
   };
-  const syncedAfterLost = reconcile(lostInvocationChar, currentCompendium());
+  const syncedAfterLost = reconcile(lostInvocationChar, currentCompendium(), { activeBooks: ALL_BOOKS });
   assert.equal(syncedAfterLost.ritualBook, undefined, "ritualBook must be completely cleansed when invocation is lost");
   assert.ok(
     syncedAfterLost.needsReview?.includes(
@@ -316,18 +316,18 @@ test("isSpellEligibleForRitualBook: rejects non-ritual spells, cantrips, and ove
   };
 
   // 1. Rejects non-ritual spells regardless of level
-  assert.equal(isSpellEligibleForRitualBook(fireball, 10), false, "Fireball (non-ritual) must be rejected");
-  assert.equal(isSpellEligibleForRitualBook(shield, 10), false, "Shield (non-ritual) must be rejected");
+  assert.equal(isSpellEligibleForRitualBook(fireball, 10, ALL_BOOKS), false, "Fireball (non-ritual) must be rejected");
+  assert.equal(isSpellEligibleForRitualBook(shield, 10, ALL_BOOKS), false, "Shield (non-ritual) must be rejected");
 
   // 2. Rejects cantrips (level 0) even if somehow queried
-  assert.equal(isSpellEligibleForRitualBook(lightCantrip, 10), false, "Cantrip (level 0) must be rejected");
+  assert.equal(isSpellEligibleForRitualBook(lightCantrip, 10, ALL_BOOKS), false, "Cantrip (level 0) must be rejected");
 
   // 3. Level 3 Warlock: getMaxRitualBookLevel(3) is Math.ceil(3/2) = 2
   assert.equal(getMaxRitualBookLevel(3), 2);
-  assert.equal(isSpellEligibleForRitualBook(identify1stRitual, 3), true, "1st-level ritual is eligible at level 3");
-  assert.equal(isSpellEligibleForRitualBook(augury2ndRitual, 3), true, "2nd-level ritual is eligible at level 3");
+  assert.equal(isSpellEligibleForRitualBook(identify1stRitual, 3, ALL_BOOKS), true, "1st-level ritual is eligible at level 3");
+  assert.equal(isSpellEligibleForRitualBook(augury2ndRitual, 3, ALL_BOOKS), true, "2nd-level ritual is eligible at level 3");
   assert.equal(
-    isSpellEligibleForRitualBook(waterBreathing3rdRitual, 3),
+    isSpellEligibleForRitualBook(waterBreathing3rdRitual, 3, ALL_BOOKS),
     false,
     "3rd-level ritual must be rejected for level 3 Warlock (max ritual level 2)"
   );
@@ -335,7 +335,7 @@ test("isSpellEligibleForRitualBook: rejects non-ritual spells, cantrips, and ove
   // 4. Level 5 Warlock: getMaxRitualBookLevel(5) is Math.ceil(5/2) = 3
   assert.equal(getMaxRitualBookLevel(5), 3);
   assert.equal(
-    isSpellEligibleForRitualBook(waterBreathing3rdRitual, 5),
+    isSpellEligibleForRitualBook(waterBreathing3rdRitual, 5, ALL_BOOKS),
     true,
     "3rd-level ritual is eligible for level 5 Warlock"
   );

@@ -1,6 +1,7 @@
+import { ALL_BOOKS } from "../src/constants/books.ts";
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { reconcile } from "../src/rules/characterReconciler.ts";
+import { reconcile , teardownSubclass } from "../src/rules/characterReconciler.ts";
 import { makeChar } from "./testUtils.ts";
 import { infusionCatalog } from "./infusionFixture.ts";
 import {
@@ -15,7 +16,6 @@ import {
 } from "../src/rules/ruleChoices.ts";
 import { armorClass } from "../src/rules/ac.ts";
 import { getWeaponAttacks, checkDualWielding } from "../src/rules/attacks.ts";
-import { teardownSubclass } from "../src/rules/characterReconciler.ts";
 import type { InventoryItem } from "../src/types/character.ts";
 
 // The catalog-backed tests read their infusions from an invented fixture catalog.
@@ -133,11 +133,11 @@ test("Replicate Magic Item multi-instance selection (can pick two replicate item
 
   const choice = artificerInfusionChoices(char, undefined, catalog)[0];
   // Pick the replicate row for the bag
-  char = pickRuleChoice(char, choice, "Replicate Magic Item: placeholder bag", catalog);
+  char = pickRuleChoice(char, choice, "Replicate Magic Item: placeholder bag", catalog, ALL_BOOKS);
   // Pick the replicate row for the jug
-  char = pickRuleChoice(char, choice, "Replicate Magic Item: placeholder jug", catalog);
+  char = pickRuleChoice(char, choice, "Replicate Magic Item: placeholder jug", catalog, ALL_BOOKS);
   // Pick Placeholder Alpha
-  char = pickRuleChoice(char, choice, "Placeholder Alpha", catalog);
+  char = pickRuleChoice(char, choice, "Placeholder Alpha", catalog, ALL_BOOKS);
 
   const known = getKnownInfusions(char);
   assert.ok(known.includes("Replicate Magic Item: placeholder bag"));
@@ -244,7 +244,7 @@ test("Enhanced Defense grants +1 AC at levels 2-9 and +2 AC at level 10+", () =>
     activeInfusions: [{ infusionName: "Enhanced Defense", targetItemId: "armor_1" }],
   });
 
-  const ac2 = armorClass(art2);
+  const ac2 = armorClass(art2, { activeBooks: ALL_BOOKS });
   assert.equal(ac2.ac, 17); // 16 + 1
   assert.ok(ac2.breakdown.includes("+ 1 (Enhanced Defense)"));
 
@@ -255,7 +255,7 @@ test("Enhanced Defense grants +1 AC at levels 2-9 and +2 AC at level 10+", () =>
     activeInfusions: [{ infusionName: "Enhanced Defense", targetItemId: "armor_1" }],
   });
 
-  const ac10 = armorClass(art10);
+  const ac10 = armorClass(art10, { activeBooks: ALL_BOOKS });
   assert.equal(ac10.ac, 18); // 16 + 2
   assert.ok(ac10.breakdown.includes("+ 2 (Enhanced Defense)"));
 
@@ -264,7 +264,7 @@ test("Enhanced Defense grants +1 AC at levels 2-9 and +2 AC at level 10+", () =>
     classes: [{ className: "Artificer", level: 10 }],
     items: [{ ...chainMail, infusedWith: "Enhanced Defense" }],
   });
-  const acDirect = armorClass(artDirectItem);
+  const acDirect = armorClass(artDirectItem, { activeBooks: ALL_BOOKS });
   assert.equal(acDirect.ac, 18);
   assert.ok(acDirect.breakdown.includes("+ 2 (Enhanced Defense)"));
 });
@@ -289,7 +289,7 @@ test("Enhanced Defense and Repulsion Shield on shield", () => {
     activeInfusions: [{ infusionName: "Enhanced Defense", targetItemId: "shield_1" }],
   });
 
-  const ac2 = armorClass(art2);
+  const ac2 = armorClass(art2, { activeBooks: ALL_BOOKS });
   // Base 10 + Dex 2 + Shield 2 + Enhanced Defense 1 = 15
   assert.equal(ac2.ac, 15);
   assert.ok(ac2.breakdown.includes("+ 1 (Enhanced Defense)"));
@@ -302,7 +302,7 @@ test("Enhanced Defense and Repulsion Shield on shield", () => {
     activeInfusions: [{ infusionName: "Repulsion Shield", targetItemId: "shield_1" }],
   });
 
-  const acRep = armorClass(artRepulsion);
+  const acRep = armorClass(artRepulsion, { activeBooks: ALL_BOOKS });
   // Base 10 + Dex 2 + Shield 2 + Repulsion Shield 1 = 15
   assert.equal(acRep.ac, 15);
   assert.ok(acRep.breakdown.includes("+ 1 (Repulsion Shield)"));
@@ -328,7 +328,7 @@ test("Enhanced Defense and Repulsion Shield on shield", () => {
     ],
   });
 
-  const acBoth = armorClass(artBoth);
+  const acBoth = armorClass(artBoth, { activeBooks: ALL_BOOKS });
   // 16 (armor) + 2 (shield) + 2 (ED lvl 10) + 1 (Repulsion Shield) = 21
   assert.equal(acBoth.ac, 21);
   assert.ok(acBoth.breakdown.includes("+ 2 (Enhanced Defense)"));
@@ -355,7 +355,7 @@ test("Enhanced Weapon grants +1 to attack/damage at levels 2-9 and +2 at level 1
     activeInfusions: [{ infusionName: "Enhanced Weapon", targetItemId: "sword_1" }],
   });
 
-  const attacks2 = getWeaponAttacks(art2);
+  const attacks2 = getWeaponAttacks(art2, { catalogs: { activeBooks: ALL_BOOKS } });
   assert.equal(attacks2.length, 1);
   // Str +3, Enhanced Weapon +1 -> attack bonus without prof = 4, with prof = 6
   // (Artificer is proficient with simple weapons; if proficient with longsword or test checks toHit):
@@ -371,7 +371,7 @@ test("Enhanced Weapon grants +1 to attack/damage at levels 2-9 and +2 at level 1
     activeInfusions: [{ infusionName: "Enhanced Weapon", targetItemId: "sword_1" }],
   });
 
-  const attacks10 = getWeaponAttacks(art10);
+  const attacks10 = getWeaponAttacks(art10, { catalogs: { activeBooks: ALL_BOOKS } });
   assert.equal(attacks10.length, 1);
   assert.equal(attacks10[0].damageString, "1d8 + 5"); // 3 (Str) + 2 (Enhanced Weapon lvl 10) = 5
   assert.deepEqual(attacks10[0].calculationBadges, ["Infused +2"]);
@@ -398,7 +398,7 @@ test("Repeating Shot and Radiant Weapon grant +1 to attack and damage", () => {
     activeInfusions: [{ infusionName: "Repeating Shot", targetItemId: "xbow_1" }],
   });
 
-  const attacksRep = getWeaponAttacks(artRepeating);
+  const attacksRep = getWeaponAttacks(artRepeating, { catalogs: { activeBooks: ALL_BOOKS } });
   assert.equal(attacksRep.length, 1);
   assert.equal(attacksRep[0].damageString, "1d10 + 4"); // Dex +3 + 1
 
@@ -420,7 +420,7 @@ test("Repeating Shot and Radiant Weapon grant +1 to attack and damage", () => {
     activeInfusions: [{ infusionName: "Radiant Weapon", targetItemId: "mace_1" }],
   });
 
-  const attacksRad = getWeaponAttacks(artRadiant);
+  const attacksRad = getWeaponAttacks(artRadiant, { catalogs: { activeBooks: ALL_BOOKS } });
   assert.equal(attacksRad.length, 1);
   assert.equal(attacksRad[0].damageString, "1d6 + 3"); // Str +2 + 1
 });
@@ -454,7 +454,7 @@ test("Dual wielding with an infused off-hand weapon", () => {
     activeInfusions: [{ infusionName: "Enhanced Weapon", targetItemId: "sw_2" }],
   });
 
-  const dual = checkDualWielding(char);
+  const dual = checkDualWielding(char, getWeaponAttacks(char, { catalogs: { activeBooks: ALL_BOOKS } }));
   assert.ok(dual.isDualWielding);
   assert.ok(dual.offHand);
   // Off-hand has ability penalty (no TWF style), but gets +1 from Enhanced Weapon
@@ -521,7 +521,7 @@ test("Pruning on de-leveling cleans up invalid known and active infusions", () =
     classes: [{ className: "Artificer", level: 5 }],
   };
 
-  const pruned = reconcile(char, catalog);
+  const pruned = reconcile(char, catalog, { activeBooks: ALL_BOOKS });
 
   // Slots 6, 10, 14 are removed; only slot 2 remains
   const remainingIds = (pruned.ruleChoices || []).map((rc) => rc.id);
@@ -547,7 +547,7 @@ test("Pruning on de-leveling cleans up invalid known and active infusions", () =
   const zeroArt = reconcile({
     ...pruned,
     classes: [{ className: "Artificer", level: 1 }],
-  }, catalog);
+  }, catalog, { activeBooks: ALL_BOOKS });
   assert.equal((zeroArt.ruleChoices || []).filter((rc) => isInfusionChoiceId(rc.id)).length, 0);
   assert.equal(zeroArt.activeInfusions, undefined);
 });
@@ -595,7 +595,7 @@ test("teardownSubclass cleans up infusions when losing Artificer levels", () => 
     activeInfusions: [{ infusionName: "Placeholder Alpha" }],
   });
 
-  const tornDown = teardownSubclass(char, "Artificer", "Armorer", catalog);
+  const tornDown = teardownSubclass(char, "Artificer", "Armorer", catalog, ALL_BOOKS);
   assert.equal((tornDown.ruleChoices || []).filter((rc) => isInfusionChoiceId(rc.id)).length, 0);
   assert.equal(tornDown.activeInfusions, undefined);
 });
@@ -649,7 +649,7 @@ test("Canonical unified ID TCE__Artificer__Infusions Known capacity scaling and 
     ...charWithUnified,
     classes: [{ className: "Artificer", level: 2, hitDiceType: "d8" }],
   });
-  const pruned = reconcile(deleveled, catalog);
+  const pruned = reconcile(deleveled, catalog, { activeBooks: ALL_BOOKS });
   const entry = pruned.ruleChoices?.find((rc) => rc.id === "TCE__Artificer__Infusions Known");
   assert.ok(entry);
   assert.equal(entry.choose, 4);

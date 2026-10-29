@@ -1,3 +1,4 @@
+import type { ActiveBooks } from "../constants/books.ts";
 import type { AbilityKey, Character } from "../types/character.ts";
 import type { AdditionalSpells, SpellData } from "../types/dnd5e.ts";
 import type { InnateSpellEntry, InnateSpellProfile } from "./innateMagic.ts";
@@ -43,7 +44,7 @@ interface GrantedSpellScores {
 interface GrantContext {
   character: Character;
   compendium: Compendium;
-  activeBooks: string[] | undefined;
+  activeBooks: ActiveBooks;
   level: number;
   proficiencyBonus: number;
   modifiers: Record<AbilityKey, number>;
@@ -294,7 +295,7 @@ function counterId(owner: GrantOwner, spellName: string, entryName?: string): st
  * carries its spell's name ("Innate: <spell>"), so an id an older release saved under is found by name, not by a table of old
  * ids. A counter whose spell no current source gives, or whose current id is already taken, is left as it is.
  */
-export function moveLegacyInnateCounters(character: Character, compendium: Compendium, activeBooks?: string[]): Character {
+export function moveLegacyInnateCounters(character: Character, compendium: Compendium, activeBooks: ActiveBooks): Character {
   const counters = character.resourceCounters ?? {};
   const legacyKeys = Object.keys(counters).filter((key) => key.startsWith(INNATE_SPELL_COUNTER_PREFIX));
   if (legacyKeys.length === 0) return character;

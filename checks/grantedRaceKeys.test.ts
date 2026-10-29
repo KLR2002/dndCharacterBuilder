@@ -1,3 +1,4 @@
+import { ALL_BOOKS } from "../src/constants/books.ts";
 import test from "node:test";
 import assert from "node:assert/strict";
 import { evaluateCharacter } from "../src/rules/characterEvaluation.ts";
@@ -56,16 +57,16 @@ test("a cantrip picked for a race on the SRD-like catalog stands after the integ
     classes: [mage(1)],
     race: { name: "Sample Elf", source: "SRD", subraceName: "Sample High", subraceSource: "SRD" },
   });
-  const choice = raceSpellRuleChoices(saved, first).find((c) => c.options.some((o) => o.name === "Sample Shot"));
+  const choice = raceSpellRuleChoices(saved, first, ALL_BOOKS).find((c) => c.options.some((o) => o.name === "Sample Shot"));
   assert.ok(choice, "the cantrip pick is offered on the SRD-like catalog");
-  const picked = pickRuleChoice(saved, choice, "Sample Shot", first);
+  const picked = pickRuleChoice(saved, choice, "Sample Shot", first, ALL_BOOKS);
   assert.equal(picked.ruleChoices?.length, 1);
 
-  const loaded = migrateCharacter(picked, [sampleRace("TST")], grantedSpellClasses());
-  const opened = reconcile(loaded, integratedLike());
+  const loaded = migrateCharacter(picked, [sampleRace("TST")], grantedSpellClasses(), ALL_BOOKS);
+  const opened = reconcile(loaded, integratedLike(), { activeBooks: ALL_BOOKS });
   assert.deepEqual(opened.ruleChoices, picked.ruleChoices, "the pick is kept with its id");
   assert.deepEqual(opened.needsReview ?? [], [], "no notice is raised");
-  const card = evaluateCharacter(opened, { compendium: integratedLike() }).grantedSpellSources.find((source) => source.title === "Sample High");
+  const card = evaluateCharacter(opened, { compendium: integratedLike(), activeBooks: ALL_BOOKS }).grantedSpellSources.find((source) => source.title === "Sample High");
   assert.ok(card?.spells.some((spell) => spell.name === "Sample Shot" && spell.isCantrip), "the cantrip is still listed at will on the race's card");
 });
 
@@ -84,13 +85,13 @@ test("a save that keys a race pick by its source loads with the pick under the r
       },
     ],
   });
-  const loaded = migrateCharacter(legacy, [sampleRace("SRD")], grantedSpellClasses());
+  const loaded = migrateCharacter(legacy, [sampleRace("SRD")], grantedSpellClasses(), ALL_BOOKS);
   assert.deepEqual(
     loaded.ruleChoices?.map((entry) => [entry.id, entry.picked]),
     [["-__Race Spells__Sample High__-__0", ["Sample Shot"]]],
     "the pick is kept under the key the race now has",
   );
-  const card = evaluateCharacter(loaded, { compendium: srdLike() }).grantedSpellSources.find((source) => source.title === "Sample High");
+  const card = evaluateCharacter(loaded, { compendium: srdLike(), activeBooks: ALL_BOOKS }).grantedSpellSources.find((source) => source.title === "Sample High");
   assert.ok(card?.spells.some((spell) => spell.name === "Sample Shot" && spell.isCantrip), "the cantrip is listed on the race's card");
 });
 
@@ -100,11 +101,11 @@ test("a cantrip picked on the integrated catalog stands after the SRD-like catal
     classes: [mage(1)],
     race: { name: "Sample Elf", source: "TST", subraceName: "Sample High", subraceSource: "TST" },
   });
-  const choice = raceSpellRuleChoices(saved, integrated).find((c) => c.options.some((o) => o.name === "Sample Shot"));
+  const choice = raceSpellRuleChoices(saved, integrated, ALL_BOOKS).find((c) => c.options.some((o) => o.name === "Sample Shot"));
   assert.ok(choice, "the cantrip pick is offered on the integrated catalog");
-  const picked = pickRuleChoice(saved, choice, "Sample Shot", integrated);
+  const picked = pickRuleChoice(saved, choice, "Sample Shot", integrated, ALL_BOOKS);
 
-  const opened = reconcile(migrateCharacter(picked, [sampleRace("SRD")], grantedSpellClasses()), srdLike());
+  const opened = reconcile(migrateCharacter(picked, [sampleRace("SRD")], grantedSpellClasses(), ALL_BOOKS), srdLike(), { activeBooks: ALL_BOOKS });
   assert.deepEqual(opened.ruleChoices, picked.ruleChoices, "the pick is kept with its id");
   assert.deepEqual(opened.needsReview ?? [], [], "no notice is raised");
 });
@@ -124,7 +125,7 @@ test("a race pick is kept while the catalog lacks the race's book, and released 
     races: [{ ...sampleRace("TST"), name: "Sample Other" }],
     spells: grantedSpellSpells(),
   });
-  const kept = reconcile(saved, bookAbsent);
+  const kept = reconcile(saved, bookAbsent, { activeBooks: ALL_BOOKS });
   assert.deepEqual(kept.ruleChoices, saved.ruleChoices, "the pick is kept while its book is absent");
   assert.deepEqual(kept.needsReview ?? [], [], "no notice is raised while its book is absent");
 
@@ -134,7 +135,7 @@ test("a race pick is kept while the catalog lacks the race's book, and released 
     races: [{ ...sampleRace("SRD"), subraces: [] }],
     spells: grantedSpellSpells(),
   });
-  const released = reconcile(saved, bookWithoutSubrace);
+  const released = reconcile(saved, bookWithoutSubrace, { activeBooks: ALL_BOOKS });
   assert.deepEqual(released.ruleChoices ?? [], [], "the pick is released once the book is loaded without the subrace");
   assert.ok(
     released.needsReview?.includes("Sample Shot removed from Sample High: ancestry no longer grants it"),
@@ -153,11 +154,11 @@ const legacyGiftedCantrip = () =>
 
 test("a legacy racial cantrip moves into the race's pick although an empty entry already holds that key", () => {
   const races = grantedSpellRaces();
-  const racePick = migrateLegacyRacialCantrip(legacyGiftedCantrip(), races).ruleChoices?.find((entry) => entry.origin === "race");
+  const racePick = migrateLegacyRacialCantrip(legacyGiftedCantrip(), races, ALL_BOOKS).ruleChoices?.find((entry) => entry.origin === "race");
   assert.ok(racePick, "the legacy cantrip has a race pick to move into");
 
   const withEmptyEntry = { ...legacyGiftedCantrip(), ruleChoices: [{ ...racePick, picked: [] }] };
-  const loaded = migrateLegacyRacialCantrip(withEmptyEntry, races);
+  const loaded = migrateLegacyRacialCantrip(withEmptyEntry, races, ALL_BOOKS);
   assert.deepEqual(
     loaded.ruleChoices?.find((entry) => entry.id === racePick.id)?.picked,
     ["Sample Ember"],
@@ -168,11 +169,11 @@ test("a legacy racial cantrip moves into the race's pick although an empty entry
 
 test("a race pick that already holds a spell stands, and the legacy cantrip adds no second entry under its key", () => {
   const races = grantedSpellRaces();
-  const racePick = migrateLegacyRacialCantrip(legacyGiftedCantrip(), races).ruleChoices?.find((entry) => entry.origin === "race");
+  const racePick = migrateLegacyRacialCantrip(legacyGiftedCantrip(), races, ALL_BOOKS).ruleChoices?.find((entry) => entry.origin === "race");
   assert.ok(racePick, "the legacy cantrip has a race pick to move into");
 
   const withPick = { ...legacyGiftedCantrip(), ruleChoices: [{ ...racePick, picked: ["Sample Glimmer"] }] };
-  const loaded = migrateLegacyRacialCantrip(withPick, races);
+  const loaded = migrateLegacyRacialCantrip(withPick, races, ALL_BOOKS);
   const underKey = loaded.ruleChoices?.filter((entry) => entry.id === racePick.id) ?? [];
   assert.equal(underKey.length, 1, "one entry is held under the race's key");
   assert.deepEqual(underKey[0]?.picked, ["Sample Glimmer"], "the pick already made stands");

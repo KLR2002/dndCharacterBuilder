@@ -1,3 +1,4 @@
+import type { ActiveBooks } from "../constants/books.ts";
 import type { Character, KnownSpell } from "../types/character.ts";
 import { currentCompendium, type Compendium } from "../services/compendium.ts";
 import { GIANT_BARBARIAN_OWNER_KEY, GIANT_POWER_CANTRIPS } from "../constants/rules.ts";
@@ -58,12 +59,12 @@ import { pruneStartingEquipmentPicks } from "./startingEquipmentPicks.ts";
  * Starting equipment picks are dropped first when the first class is no longer the one they were made for.
  *
  * `options.activeBooks` scopes only the Expertise pass: an Expertise mark on a skill that no active book
- * grants is released. Omitted, the pass is unscoped, as it has always been.
+ * grants is released. With ALL_BOOKS, the pass is unscoped, as it has always been.
  */
 export function reconcile(
   character: Character,
   compendium: Compendium,
-  options: { activeBooks?: string[] } = {},
+  options: { activeBooks: ActiveBooks },
 ): Character {
   const classes = compendium.for().classes();
   let updated = pruneStartingEquipmentPicks(character);
@@ -77,7 +78,7 @@ export function reconcile(
   updated = syncGiantPowerCantrip(updated);
   updated = pruneInvalidMysticArcanum(updated);
   updated = pruneInvalidInfusions(updated, compendium);
-  updated = moveAliasedProficiencyPicks(updated, compendium);
+  updated = moveAliasedProficiencyPicks(updated, compendium, options.activeBooks);
   updated = moveLegacyClassToolPicks(updated, compendium);
   updated = moveLegacySourcePicks(updated, compendium, options.activeBooks);
   updated = moveLegacySkillPicks(updated, compendium, options.activeBooks);
@@ -166,9 +167,9 @@ const SUBCLASS_NO_LONGER_HELD = "subclass no longer held";
 export function teardownSubclass(
   character: Character,
   className: string,
-  previousSubclassName?: string,
+  previousSubclassName: string | undefined,
   compendium: Compendium = currentCompendium(),
-  activeBooks?: string[]
+  activeBooks: ActiveBooks
 ): Character {
   const clsLower = className.toLowerCase();
   const prevLower = previousSubclassName?.toLowerCase() ?? "";

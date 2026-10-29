@@ -1,3 +1,4 @@
+import { ALL_BOOKS } from "../src/constants/books.ts";
 import test from "node:test";
 import assert from "node:assert/strict";
 import { proficiencySheet, type SheetEntry } from "../src/rules/proficiencySheet.ts";
@@ -13,7 +14,7 @@ import { lamplighterBackground, vellariRace } from "./proficiencySheetFixture.ts
 const names = (entries: SheetEntry[]) => entries.map((entry) => entry.name);
 
 const fixtureCatalogs = () => ({
-  compendium: inMemoryCompendium({ races: [vellariRace()], backgrounds: [lamplighterBackground()] }),
+  compendium: inMemoryCompendium({ races: [vellariRace()], backgrounds: [lamplighterBackground()] }), activeBooks: ALL_BOOKS,
 });
 
 // Race Vellari gives Common and Quoral; background Lamplighter gives a Lantern Kit.
@@ -46,7 +47,7 @@ test("an added tool and an added language appear on the sheet, not rule-granted,
 test("known added names take their known spelling, custom names are kept as typed and trimmed", () => {
   const sheet = proficiencySheet(
     makeChar({ addedTools: ["  smith's tools "], addedLanguages: ["  Ancient Vellari Script "] }),
-    { compendium: inMemoryCompendium() },
+    { compendium: inMemoryCompendium(), activeBooks: ALL_BOOKS },
   );
   assert.deepEqual(names(sheet.tools), ["Smith's Tools"]);
   assert.deepEqual(names(sheet.languages), ["Common", "Ancient Vellari Script"]);

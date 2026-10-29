@@ -1,3 +1,4 @@
+import { ALL_BOOKS } from "../src/constants/books.ts";
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { grantedFeatures } from "../src/rules/grantedFeatures.ts";
@@ -9,7 +10,7 @@ const catalog = {
   races: readCatalog("races"),
   classes: readCatalog("classes"),
   backgrounds: readCatalog("backgrounds"),
-  feats: readCatalog("feats"),
+  feats: readCatalog("feats"), activeBooks: ALL_BOOKS,
 };
 
 const REVELATION_ID = ruleChoiceId({

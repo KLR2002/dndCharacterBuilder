@@ -1,3 +1,4 @@
+import { ALL_BOOKS } from "../src/constants/books.ts";
 import test from "node:test";
 import assert from "node:assert/strict";
 import {
@@ -138,7 +139,7 @@ test("getSpellcastingAbility returns Wisdom for Monks", () => {
 
 test("getClassSpellProfiles generates a valid Ki Spellcasting Profile for Way of Shadow", () => {
   const monk = createMonk(3, "Way of Shadow"); // PB = +2, Wis = 16 (+3)
-  const profiles = getClassSpellProfiles(monk);
+  const profiles = getClassSpellProfiles(monk, { activeBooks: ALL_BOOKS });
 
   assert.equal(profiles.length, 1);
   const p = profiles[0];
@@ -173,7 +174,7 @@ test("Way of the Sun Soul grants Burning Hands (2 Ki) at level 6", () => {
   assert.ok(bh, "Burning hands should be granted at level 6");
   assert.equal(bh?.kiCost, 2);
 
-  const profiles = getClassSpellProfiles(monkLvl6);
+  const profiles = getClassSpellProfiles(monkLvl6, { activeBooks: ALL_BOOKS });
   assert.equal(profiles.length, 1);
   assert.equal(profiles[0].spellSaveDc, 14); // level 6 PB = 3, Wis = 3 -> 8 + 3 + 3 = 14
 });
@@ -188,7 +189,7 @@ test("Way of the Four Elements: discipline choices and automatic Elemental Attun
   );
 
   // Offers discipline choices at level milestones
-  const choicesLvl3 = subclassRuleChoices(monk);
+  const choicesLvl3 = subclassRuleChoices(monk, ALL_BOOKS);
   assert.equal(choicesLvl3.length, 1);
   assert.equal(choicesLvl3[0].traitName, "Elemental Discipline (3rd Level)");
   assert.equal(choicesLvl3[0].options.length >= 7, true);
@@ -212,11 +213,11 @@ test("Way of the Four Elements: discipline choices and automatic Elemental Attun
 
   // Pre-subclass boundary check: level 2 Monk offers 0 subclass choices
   const monk2 = createMonk(2, "Way of the Four Elements");
-  assert.equal(subclassRuleChoices(monk2).length, 0, "Level 2 monk must not offer Four Elements choices");
+  assert.equal(subclassRuleChoices(monk2, ALL_BOOKS).length, 0, "Level 2 monk must not offer Four Elements choices");
 
   // Level 6 offers both 3rd and 6th level disciplines
   const monk6 = createMonk(6, "Way of the Four Elements");
-  const choicesLvl6 = subclassRuleChoices(monk6);
+  const choicesLvl6 = subclassRuleChoices(monk6, ALL_BOOKS);
   assert.equal(choicesLvl6.length, 2); // 3rd level and 6th level choices
   assert.ok(choicesLvl6[1].options.some((o) => o.name === "Clench of the North Wind"));
   assert.equal(
@@ -227,7 +228,7 @@ test("Way of the Four Elements: discipline choices and automatic Elemental Attun
 
   // Level 11 and 17 progression
   const monk17 = createMonk(17, "Way of the Four Elements");
-  const choicesLvl17 = subclassRuleChoices(monk17);
+  const choicesLvl17 = subclassRuleChoices(monk17, ALL_BOOKS);
   assert.equal(choicesLvl17.length, 4); // 3, 6, 11, 17
 
   // With choices selected in character.ruleChoices
@@ -252,7 +253,7 @@ test("Way of the Four Elements: discipline choices and automatic Elemental Attun
     ],
   });
 
-  const profiles = getClassSpellProfiles(monkWithPicks);
+  const profiles = getClassSpellProfiles(monkWithPicks, { activeBooks: ALL_BOOKS });
   assert.equal(profiles.length, 1);
   const spells = profiles[0].subclassKnownSpells || [];
 
@@ -285,7 +286,7 @@ test("Multiclass Monk 3 (Shadow) / Cleric 1 generates separate spell profiles", 
     ],
   });
 
-  const profiles = getClassSpellProfiles(multiclassChar);
+  const profiles = getClassSpellProfiles(multiclassChar, { activeBooks: ALL_BOOKS });
   assert.equal(profiles.length, 2);
 
   const monkProfile = profiles.find((p) => p.className === "Monk");

@@ -47,7 +47,7 @@ function isItemInfusedWith(
   return false;
 }
 
-export function armorClass(character: Character, opts: RulesOptions = {}): { ac: number; breakdown: string } {
+export function armorClass(character: Character, opts: RulesOptions): { ac: number; breakdown: string } {
   const { dex, con, wis } = effectiveScores(character, opts).modifiers;
   const equipped = (opts.items ?? character.items).filter(i => i.isEquipped);
   const armor = equipped.find(i => i.ac != null && armorCategory(i) !== "shield" && i.section === "equipped");

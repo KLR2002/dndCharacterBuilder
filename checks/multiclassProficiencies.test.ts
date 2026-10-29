@@ -1,3 +1,4 @@
+import { ALL_BOOKS } from "../src/constants/books.ts";
 import test from "node:test";
 import assert from "node:assert/strict";
 import { proficiencySheet, type SheetEntry } from "../src/rules/proficiencySheet.ts";
@@ -48,11 +49,11 @@ const names = (entries: SheetEntry[]) => entries.map((e) => e.name).sort();
 
 test("a later class's armor and weapons come from the Catalog class the entry names, not the first class of the same name", () => {
   const compendium = bothSources();
-  const alpha = proficiencySheet(makeChar({ classes: [fighter, wardcaller(ALPHA)] }), { compendium });
+  const alpha = proficiencySheet(makeChar({ classes: [fighter, wardcaller(ALPHA)] }), { compendium, activeBooks: ALL_BOOKS });
   assert.deepEqual(names(alpha.armor), ["Light armor"]);
   assert.deepEqual(names(alpha.weapons), ["Simple weapons"]);
 
-  const beta = proficiencySheet(makeChar({ classes: [fighter, wardcaller(BETA)] }), { compendium });
+  const beta = proficiencySheet(makeChar({ classes: [fighter, wardcaller(BETA)] }), { compendium, activeBooks: ALL_BOOKS });
   assert.deepEqual(names(beta.armor), ["Heavy armor", "Shields"]);
   assert.deepEqual(names(beta.weapons), ["Ember whip"]);
 });
@@ -77,13 +78,13 @@ test("adding a class records the multiclass grants of the Catalog class the entr
   const compendium = bothSources();
   const base = makeChar({ classes: [fighter] });
 
-  const beta = addMulticlassLevel(base, "Wardcaller", BETA, { compendium });
+  const beta = addMulticlassLevel(base, "Wardcaller", BETA, { compendium, activeBooks: ALL_BOOKS });
   assert.deepEqual(beta.multiclassProficiencies, [
     { className: "Wardcaller", armor: ["Heavy armor", "Shields"], weapons: ["Ember whip"], tools: ["Glass chisel"] },
   ]);
   assert.equal(beta.skillChoices, undefined);
 
-  const alpha = addMulticlassLevel(base, "Wardcaller", ALPHA, { compendium });
+  const alpha = addMulticlassLevel(base, "Wardcaller", ALPHA, { compendium, activeBooks: ALL_BOOKS });
   assert.deepEqual(alpha.multiclassProficiencies, [{ className: "Wardcaller", armor: ["Light armor"], weapons: ["Simple weapons"] }]);
   assert.equal(alpha.skillChoices, undefined);
 });
@@ -97,31 +98,31 @@ test("a class whose record has no multiclass grants records an empty entry, and 
     ],
   });
   const base = makeChar({ classes: [fighter] });
-  const gallows = addMulticlassLevel(base, "Gallowsmith", ALPHA, { compendium });
+  const gallows = addMulticlassLevel(base, "Gallowsmith", ALPHA, { compendium, activeBooks: ALL_BOOKS });
   assert.deepEqual(gallows.multiclassProficiencies, [{ className: "Gallowsmith" }]);
-  assert.deepEqual(names(proficiencySheet(gallows, { compendium }).armor), []);
-  assert.equal(addMulticlassLevel(base, "Mourner", ALPHA, { compendium }).multiclassProficiencies, undefined);
-  assert.equal(addMulticlassLevel(base, "Nobody", ALPHA, { compendium }).multiclassProficiencies, undefined);
+  assert.deepEqual(names(proficiencySheet(gallows, { compendium, activeBooks: ALL_BOOKS }).armor), []);
+  assert.equal(addMulticlassLevel(base, "Mourner", ALPHA, { compendium, activeBooks: ALL_BOOKS }).multiclassProficiencies, undefined);
+  assert.equal(addMulticlassLevel(base, "Nobody", ALPHA, { compendium, activeBooks: ALL_BOOKS }).multiclassProficiencies, undefined);
 });
 
 test("a later class the compendium lacks takes the SRD Baseline's multiclass proficiencies", () => {
   const compendium = inMemoryCompendium({});
-  const monk = addMulticlassLevel(makeChar({ classes: [fighter] }), "Monk", "PHB", { compendium });
+  const monk = addMulticlassLevel(makeChar({ classes: [fighter] }), "Monk", "PHB", { compendium, activeBooks: ALL_BOOKS });
   assert.deepEqual(monk.multiclassProficiencies?.find((p) => p.className === "Monk")?.weapons, ["Simple weapons", "Shortswords"]);
 });
 
 test("the integrated Monk, Rogue and Artificer add their multiclass proficiencies from the Catalog", () => {
   const compendium = integratedTestCompendium();
-  const adding = (className: string, source: string) => addMulticlassLevel(makeChar({ classes: [fighter] }), className, source, { compendium });
+  const adding = (className: string, source: string) => addMulticlassLevel(makeChar({ classes: [fighter] }), className, source, { compendium, activeBooks: ALL_BOOKS });
 
   const monk = adding("Monk", "PHB");
   assert.deepEqual(monk.multiclassProficiencies?.find((p) => p.className === "Monk")?.weapons, ["Simple weapons", "Shortswords"]);
 
   const rogue = adding("Rogue", "PHB");
   assert.equal(rogue.skillChoices, undefined);
-  assert.ok(names(proficiencySheet(rogue, { compendium }).tools).includes("Thieves' Tools"));
+  assert.ok(names(proficiencySheet(rogue, { compendium, activeBooks: ALL_BOOKS }).tools).includes("Thieves' Tools"));
 
-  const artificer = proficiencySheet(adding("Artificer", "TCE"), { compendium });
+  const artificer = proficiencySheet(adding("Artificer", "TCE"), { compendium, activeBooks: ALL_BOOKS });
   assert.ok(names(artificer.tools).includes("Thieves' Tools"));
   assert.ok(names(artificer.tools).includes("Tinker's Tools"));
 });
@@ -141,7 +142,7 @@ const sentinelCompendium = () =>
   });
 const sentinelEntry: CharacterClass = { className: SENTINEL, source: GAMMA, level: 1 };
 const sentinelOffers = (character: Character, compendium = sentinelCompendium()) =>
-  proficiencyChoiceOffers(character, { compendium }).filter((offer) => offer.traitName.endsWith("multiclass: Skill"));
+  proficiencyChoiceOffers(character, { compendium, activeBooks: ALL_BOOKS }).filter((offer) => offer.traitName.endsWith("multiclass: Skill"));
 
 test("a later class's multiclass skill pick is offered, lands on the sheet's skills, and is not offered a held skill", () => {
   const compendium = sentinelCompendium();
@@ -154,7 +155,7 @@ test("a later class's multiclass skill pick is offered, lands on the sheet's ski
   assert.deepEqual(offer.options.map((option) => option.name).sort(), ["Insight", "Medicine", "Stealth"]);
 
   const picked = { ...character, proficiencyPicks: { [offer.id]: ["Medicine"] } };
-  assert.deepEqual(names(proficiencySheet(picked, { compendium }).skills), ["Medicine"]);
+  assert.deepEqual(names(proficiencySheet(picked, { compendium, activeBooks: ALL_BOOKS }).skills), ["Medicine"]);
 
   const holding = makeChar({ classes: [fighter, sentinelEntry], chosenSkills: ["Stealth"] });
   const [heldOffer] = sentinelOffers(holding, compendium);
@@ -171,7 +172,7 @@ test("removing the later class releases its skill pick, with a review notice", (
   const [offer] = sentinelOffers(character, compendium);
   const picked = { ...character, proficiencyPicks: { [offer.id]: ["Stealth"] } };
 
-  const removed = removeClassLevel(picked, SENTINEL, compendium);
+  const removed = removeClassLevel(picked, SENTINEL, compendium, ALL_BOOKS);
   assert.equal(removed.proficiencyPicks, undefined);
   assert.match(removed.needsReview?.join("\n") ?? "", /Stealth removed from Multiclass Proficiencies/);
   assert.deepEqual(sentinelOffers(removed, compendium), []);
@@ -182,7 +183,7 @@ test("a later class that becomes the first class releases its skill pick", () =>
   const character = makeChar({ classes: [fighter, sentinelEntry] });
   const [offer] = sentinelOffers(character, compendium);
   const promoted = makeChar({ classes: [sentinelEntry], proficiencyPicks: { [offer.id]: ["Stealth"] } });
-  assert.equal(reconcile(promoted, compendium).proficiencyPicks, undefined);
+  assert.equal(reconcile(promoted, compendium, { activeBooks: ALL_BOOKS }).proficiencyPicks, undefined);
 });
 
 test("the SRD Baseline offers the multiclass skill pick to Bard, Ranger and Rogue as a later class, and to no other class", () => {
@@ -197,7 +198,7 @@ test("the SRD Baseline offers the multiclass skill pick to Bard, Ranger and Rogu
   assert.deepEqual(offered, { Bard: 1, Ranger: 1, Rogue: 1 });
 
   const ranger = makeChar({ classes: [fighter, { className: "Ranger", source: "PHB", level: 1 }] });
-  const [rangerOffer] = proficiencyChoiceOffers(ranger, { compendium }).filter((offer) => offer.traitName.endsWith("multiclass: Skill"));
+  const [rangerOffer] = proficiencyChoiceOffers(ranger, { compendium, activeBooks: ALL_BOOKS }).filter((offer) => offer.traitName.endsWith("multiclass: Skill"));
   assert.deepEqual(
     rangerOffer.options.map((option) => option.name),
     ["Animal Handling", "Athletics", "Insight", "Investigation", "Nature", "Perception", "Stealth", "Survival"],
@@ -209,5 +210,5 @@ test("an old save holding an empty multiclass skill entry loads without it", () 
     classes: [fighter, { className: "Rogue", source: "PHB", level: 1 }],
     skillChoices: [{ id: "multiclass_skill_rogue", origin: "class", choose: 1, from: ["Stealth"], picked: [] }],
   });
-  assert.equal(reconcile(old, srdBaselineCompendium()).skillChoices, undefined);
+  assert.equal(reconcile(old, srdBaselineCompendium(), { activeBooks: ALL_BOOKS }).skillChoices, undefined);
 });

@@ -1,3 +1,4 @@
+import type { ActiveBooks } from "../constants/books.ts";
 import type { Character } from "../types/character.ts";
 import type { Compendium } from "../services/compendium.ts";
 import { formatCantripOptions, GIANT_POWER_CHOICE_ID, type ChoiceOwner } from "./choices/types.ts";
@@ -21,7 +22,8 @@ function unchosenClassSkills(
   character: Character,
   choiceId: string,
   pool: readonly string[],
-  compendium: Compendium
+  compendium: Compendium,
+  activeBooks: ActiveBooks
 ): string[] {
   // Build a temporary character without this specific choice's picks so current pick isn't filtered out
   const tempChar: Character = {
@@ -30,7 +32,7 @@ function unchosenClassSkills(
   };
 
   const proficientFromOtherSources = new Set(
-    proficiencySheet(tempChar, { compendium }).skills.map((s) => s.name.toLowerCase())
+    proficiencySheet(tempChar, { compendium, activeBooks }).skills.map((s) => s.name.toLowerCase())
   );
 
   const currentPicked = new Set(
@@ -83,7 +85,7 @@ function parseSpellFilter(filter: string): SpellFilter | undefined {
 function resolveSpellFilter(
   filter: string,
   compendium: Compendium,
-  activeBooks?: readonly string[],
+  activeBooks: ActiveBooks,
 ): Pick<ChoiceOption, "name" | "description">[] | undefined {
   const parsed = parseSpellFilter(filter);
   if (!parsed) return undefined;
@@ -395,6 +397,7 @@ function readOptionRecordsRow(
 function readClassSkillsRow(
   row: SubclassChoiceRow,
   compendium: Compendium,
+  activeBooks: ActiveBooks,
   context: { character: Character; choiceId: string } | undefined
 ): PointerRowOffer | undefined {
   if (row.choose === undefined || !context) return undefined;
@@ -403,7 +406,7 @@ function readClassSkillsRow(
   const pool = (classSkillChoice(cls)?.from ?? []).map(normalizeSkillName);
   return {
     choose: row.choose,
-    options: unchosenClassSkills(context.character, context.choiceId, pool, compendium).map((name) => ({
+    options: unchosenClassSkills(context.character, context.choiceId, pool, compendium, activeBooks).map((name) => ({
       name,
       description: `Gain proficiency in ${name}`,
     })),
@@ -425,13 +428,13 @@ function readClassSkillsRow(
 export function readPointerRow(
   row: SubclassChoiceRow,
   compendium: Compendium,
-  activeBooks?: readonly string[],
+  activeBooks: ActiveBooks,
   context?: { character: Character; choiceId: string }
 ): PointerRowOffer | undefined {
   if ("optionRecords" in row.locator) {
     return readOptionRecordsRow(row, row.locator.optionRecords.featureType, compendium);
   }
-  if ("classSkills" in row.locator) return readClassSkillsRow(row, compendium, context);
+  if ("classSkills" in row.locator) return readClassSkillsRow(row, compendium, activeBooks, context);
   // A stale catalog's feature choices are hidden until re-sync; spell-choice rows stay, as an older catalog still holds what they derive from.
   if ("feature" in row.locator && compendium.stale) return undefined;
   const active = activeBooks?.map((b) => b.toUpperCase());

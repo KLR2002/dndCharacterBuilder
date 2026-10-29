@@ -1,3 +1,4 @@
+import { ALL_BOOKS } from "../src/constants/books.ts";
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { reconcile } from "../src/rules/characterReconciler.ts";
@@ -81,18 +82,18 @@ test("Fighter 1, Paladin 2, Ranger 2 style option lists match 2014 RAW (PHB only
 
   // Level gating
   const f0 = makeChar({ classes: [{ className: "Fighter", level: 0, hitDiceType: "d10" }] });
-  assert.equal(fightingStyleRuleChoices(f0).length, 0);
+  assert.equal(fightingStyleRuleChoices(f0, ALL_BOOKS).length, 0);
 
   const pal1 = makeChar({ classes: [{ className: "Paladin", level: 1, hitDiceType: "d10" }] });
-  assert.equal(fightingStyleRuleChoices(pal1).length, 0);
+  assert.equal(fightingStyleRuleChoices(pal1, ALL_BOOKS).length, 0);
 
   const r1 = makeChar({ classes: [{ className: "Ranger", level: 1, hitDiceType: "d10" }] });
-  assert.equal(fightingStyleRuleChoices(r1).length, 0);
+  assert.equal(fightingStyleRuleChoices(r1, ALL_BOOKS).length, 0);
 
   const b2 = makeChar({
     classes: [{ className: "Bard", level: 2, hitDiceType: "d8", subclassName: "College of Swords" }],
   });
-  assert.equal(fightingStyleRuleChoices(b2).length, 0);
+  assert.equal(fightingStyleRuleChoices(b2, ALL_BOOKS).length, 0);
 });
 
 test("Fighter, Paladin, Ranger style options with TCoE enabled include expanded styles", () => {
@@ -202,7 +203,7 @@ test("Blessed Warrior grants 2 cantrips and synchronizes into knownSpells with C
     ],
   });
 
-  const choices = fightingStyleRuleChoices(char);
+  const choices = fightingStyleRuleChoices(char, ALL_BOOKS);
   const bwCantripsChoice = choices.find((c) => c.id === "TCE__Paladin__Blessed Warrior Cantrips");
   assert.ok(bwCantripsChoice);
   assert.equal(bwCantripsChoice.choose, 2);
@@ -247,7 +248,7 @@ test("Druidic Warrior grants 2 cantrips and synchronizes into knownSpells with W
     ],
   });
 
-  const choices = fightingStyleRuleChoices(char);
+  const choices = fightingStyleRuleChoices(char, ALL_BOOKS);
   const dwCantripsChoice = choices.find((c) => c.id === "TCE__Ranger__Druidic Warrior Cantrips");
   assert.ok(dwCantripsChoice);
   assert.equal(dwCantripsChoice.choose, 2);
@@ -287,7 +288,7 @@ test("Archery grants +2 attack roll bonus to ranged weapon attacks", () => {
     ],
   });
 
-  const withoutArchery = getWeaponAttacks(baseArcher);
+  const withoutArchery = getWeaponAttacks(baseArcher, { catalogs: { activeBooks: ALL_BOOKS } });
   const bowWithout = withoutArchery.find((a) => a.name === "Longbow")!;
   assert.equal(bowWithout.attackBonus, 5);
   assert.equal(bowWithout.toHit, 5);
@@ -306,7 +307,7 @@ test("Archery grants +2 attack roll bonus to ranged weapon attacks", () => {
     ],
   });
 
-  const withArchery = getWeaponAttacks(archerChar);
+  const withArchery = getWeaponAttacks(archerChar, { catalogs: { activeBooks: ALL_BOOKS } });
   const bowWith = withArchery.find((a) => a.name === "Longbow")!;
   const swordWith = withArchery.find((a) => a.name === "Longsword")!;
 
@@ -335,7 +336,7 @@ test("Defense grants +1 AC while armored and includes breakdown badge", () => {
     ],
   });
 
-  const acArmored = armorClass(armoredDefender);
+  const acArmored = armorClass(armoredDefender, { activeBooks: ALL_BOOKS });
   assert.equal(acArmored.ac, 17); // 16 (Chain Mail) + 1 (Defense) = 17
   assert.ok(acArmored.breakdown.includes("+ 1 (Defense)"));
 
@@ -344,7 +345,7 @@ test("Defense grants +1 AC while armored and includes breakdown badge", () => {
     ...armoredDefender,
     items: [],
   });
-  const acUnarmored = armorClass(unarmoredDefender);
+  const acUnarmored = armorClass(unarmoredDefender, { activeBooks: ALL_BOOKS });
   assert.equal(acUnarmored.ac, 10);
   assert.ok(!acUnarmored.breakdown.includes("Defense"));
 
@@ -353,7 +354,7 @@ test("Defense grants +1 AC while armored and includes breakdown badge", () => {
     ...armoredDefender,
     items: [armor("s1", "Shield", 2, { armorCategory: "shield" })],
   });
-  const acShield = armorClass(shieldDefender);
+  const acShield = armorClass(shieldDefender, { activeBooks: ALL_BOOKS });
   assert.equal(acShield.ac, 12); // 10 + 2 (Shield)
   assert.ok(!acShield.breakdown.includes("Defense"));
 });
@@ -378,7 +379,7 @@ test("Dueling grants +2 damage to single one-handed melee weapon attack", () => 
     ],
   });
 
-  const attacks = getWeaponAttacks(duelist);
+  const attacks = getWeaponAttacks(duelist, { catalogs: { activeBooks: ALL_BOOKS } });
   assert.equal(attacks.length, 1);
   assert.equal(attacks[0].name, "Longsword");
   assert.equal(attacks[0].damageString, "1d8 + 5"); // 1d8 + 3 (Str) + 2 (Dueling) = 1d8 + 5
@@ -393,7 +394,7 @@ test("Dueling grants +2 damage to single one-handed melee weapon attack", () => 
       weapon("w2", "Dagger", { damage: "1d4", damageType: "piercing" }),
     ],
   });
-  const dualAttacks = getWeaponAttacks(dualWieldChar);
+  const dualAttacks = getWeaponAttacks(dualWieldChar, { catalogs: { activeBooks: ALL_BOOKS } });
   const swordAttack = dualAttacks.find((a) => a.name === "Longsword")!;
   assert.equal(swordAttack.damageString, "1d8 + 3"); // No Dueling bonus!
 
@@ -404,7 +405,7 @@ test("Dueling grants +2 damage to single one-handed melee weapon attack", () => 
       weapon("w1", "Greatsword", { damage: "2d6", damageType: "slashing", properties: ["Heavy", "Two-Handed"] }),
     ],
   });
-  const twoHandedAttacks = getWeaponAttacks(twoHandedChar);
+  const twoHandedAttacks = getWeaponAttacks(twoHandedChar, { catalogs: { activeBooks: ALL_BOOKS } });
   assert.equal(twoHandedAttacks[0].damageString, "2d6 + 3"); // No Dueling bonus!
 });
 
@@ -428,7 +429,7 @@ test("Two-Weapon Fighting style adds ability modifier to off-hand damage in chec
     ],
   });
 
-  const result = checkDualWielding(twfChar);
+  const result = checkDualWielding(twfChar, getWeaponAttacks(twfChar, { catalogs: { activeBooks: ALL_BOOKS } }));
   assert.equal(result.isDualWielding, true);
   assert.equal(result.mainHand?.damageString, "1d6 + 3");
   assert.equal(result.offHand?.damageString, "1d4 + 3"); // TWF adds +3 to off-hand!
@@ -438,7 +439,7 @@ test("Two-Weapon Fighting style adds ability modifier to off-hand damage in chec
     ...twfChar,
     ruleChoices: [],
   });
-  const noTwfResult = checkDualWielding(noTwfChar);
+  const noTwfResult = checkDualWielding(noTwfChar, getWeaponAttacks(noTwfChar, { catalogs: { activeBooks: ALL_BOOKS } }));
   assert.equal(noTwfResult.offHand?.damageString, "1d4");
 });
 
@@ -462,7 +463,7 @@ test("Thrown Weapon Fighting adds +2 to damage of thrown weapons", () => {
     ],
   });
 
-  const attacks = getWeaponAttacks(thrownChar);
+  const attacks = getWeaponAttacks(thrownChar, { catalogs: { activeBooks: ALL_BOOKS } });
   const javelin = attacks.find((a) => a.name === "Javelin")!;
   const greatsword = attacks.find((a) => a.name === "Greatsword")!;
 
@@ -483,7 +484,7 @@ test("Fighting Initiate feat offers Fighter styles", () => {
     ],
   });
 
-  const choices = fightingStyleRuleChoices(featChar);
+  const choices = fightingStyleRuleChoices(featChar, ALL_BOOKS);
   assert.equal(choices.length, 1);
   assert.equal(choices[0].id, "TCE__Feat__Fighting Initiate__Style");
   assert.equal(choices[0].traitName, "Fighting Initiate Style");
@@ -504,13 +505,13 @@ test("Fighting Initiate feat offers Fighter styles", () => {
       },
     ],
   });
-  const originChoices = fightingStyleRuleChoices(originFeatChar);
+  const originChoices = fightingStyleRuleChoices(originFeatChar, ALL_BOOKS);
   assert.equal(originChoices.length, 1);
   assert.equal(originChoices[0].id, "TCE__Feat__Fighting Initiate__Style");
 
   // Character without feat does not receive the choice
   const plainChar = makeChar({ classes: [{ className: "Wizard", level: 1, hitDiceType: "d6" }] });
-  assert.equal(fightingStyleRuleChoices(plainChar).length, 0);
+  assert.equal(fightingStyleRuleChoices(plainChar, ALL_BOOKS).length, 0);
 });
 
 test("reconcile cleans up invalid styles and cantrips on de-leveling", () => {
@@ -540,7 +541,7 @@ test("reconcile cleans up invalid styles and cantrips on de-leveling", () => {
     ],
   });
 
-  const pruned = reconcile(char, currentCompendium());
+  const pruned = reconcile(char, currentCompendium(), { activeBooks: ALL_BOOKS });
   assert.equal(pruned.ruleChoices?.length, 0);
   assert.equal(pruned.knownSpells?.length, 0);
 });

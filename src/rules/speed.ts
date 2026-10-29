@@ -22,7 +22,7 @@ export interface MovementSpeeds {
   details: MovementSpeedDetail[];
 }
 
-export function characterSpeeds(character: Character, opts: RulesOptions = {}): MovementSpeeds {
+export function characterSpeeds(character: Character, opts: RulesOptions): MovementSpeeds {
   let resolvedRace: any = opts.race;
   let resolvedSubrace: any = opts.subrace;
   const allRaces = (): RaceData[] => opts.races || (opts.compendium ?? currentCompendium()).for(opts.activeBooks).races();
@@ -215,7 +215,7 @@ export function characterSpeeds(character: Character, opts: RulesOptions = {}): 
   };
 }
 
-export function speed(character: Character, opts: RulesOptions = {}): number {
+export function speed(character: Character, opts: RulesOptions): number {
   return characterSpeeds(character, opts).walk;
 }
 

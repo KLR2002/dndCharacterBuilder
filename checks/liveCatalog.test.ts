@@ -11,7 +11,7 @@ import { featSpellChoicesOf, featSpellRuleChoices, offeredRuleChoices, pickRuleC
 import { resolveAncestryState } from "../src/rules/ancestryEngine.ts";
 import { grantedFeatures } from "../src/rules/grantedFeatures.ts";
 import { proficiencySheet } from "../src/rules/proficiencySheet.ts";
-import { DEFAULT_ACTIVE_BOOK_CODES } from "../src/constants/books.ts";
+import { DEFAULT_ACTIVE_BOOK_CODES, ALL_BOOKS } from "../src/constants/books.ts";
 import type { InnateSpellEntry, InnateSpellProfile } from "../src/rules/innateMagic.ts";
 import { parseSpellFilter, pruneInvalidFeatSpellPicks } from "../src/rules/choices/featSpells.ts";import { STARTING_EQUIPMENT_TYPES } from "../src/rules/startingEquipmentTypes.ts";
 import { reconcile } from "../src/rules/characterReconciler.ts";
@@ -86,7 +86,7 @@ function choiceOwners(live: LiveCatalog): ChoiceOwners {
       const holder = `${printKey(cls)}${subclass ? ` / ${subclass.name} (${subclass.source})` : ""}`;
       let offers;
       try {
-        offers = proficiencyChoiceOffers(character, { compendium: live.compendium });
+        offers = proficiencyChoiceOffers(character, { compendium: live.compendium, activeBooks: ALL_BOOKS });
       } catch (error) {
         unreadable.push(`${holder}: ${(error as Error).message}`);
         continue;
@@ -106,7 +106,7 @@ function pickInOrder(character: Character, offer: AvailableRuleChoice, live: Liv
   let picked = character;
   const counters: number[] = [];
   for (const option of offer.options.slice(0, Math.min(offer.choose, offer.options.length))) {
-    picked = pickRuleChoice(picked, offer, option.name, live.compendium);
+    picked = pickRuleChoice(picked, offer, option.name, live.compendium, ALL_BOOKS);
     counters.push(picked.proficiencyPicks?.[offer.id]?.length ?? 0);
   }
   return counters;
@@ -128,15 +128,15 @@ function grantsIn(value: unknown, into: ProficiencyGrant[] = []): ProficiencyGra
 }
 
 /** Every record that can carry grants, by kind, for the catalog-wide checks. */
-function grantOwnerRecords(collections: CompendiumCollections): Array<[string, { name?: string; source?: string }]> {
-  const groups: Array<[string, unknown[]]> = [
+function grantOwnerRecords(collections: CompendiumCollections): [string, { name?: string; source?: string }][] {
+  const groups: [string, unknown[]][] = [
     ["race", collections.races],
     ["class", collections.classes],
     ["background", collections.backgrounds],
     ["feat", collections.feats],
     ["option", collections.optionsAndFeatures],
   ];
-  return groups.flatMap(([kind, records]) => (records as Array<{ name?: string; source?: string }>).map((record) => [kind, record] as [string, { name?: string; source?: string }]));
+  return groups.flatMap(([kind, records]) => (records as { name?: string; source?: string }[]).map((record) => [kind, record] as [string, { name?: string; source?: string }]));
 }
 
 const live = SKIP ? undefined : loadLive();
@@ -227,15 +227,15 @@ for (const [id, byPrint] of collidingIds) {
   for (const [print, character] of byPrint) {
     test(`live catalog: ${id} keeps a recorded pick for a holder of ${print}`, { skip: SKIP }, () => {
       const compendium = live!.compendium;
-      const offer = proficiencyChoiceOffers(character, { compendium }).find((choice) => choice.id === id);
+      const offer = proficiencyChoiceOffers(character, { compendium, activeBooks: ALL_BOOKS }).find((choice) => choice.id === id);
       assert.ok(offer, `${print} is offered the choice`);
       const option = offer.options[0]?.name;
       assert.ok(option, "the choice has an option to pick");
 
-      const picked = pickRuleChoice(character, offer, option, compendium);
+      const picked = pickRuleChoice(character, offer, option, compendium, ALL_BOOKS);
       assert.deepEqual(picked.proficiencyPicks?.[id], [option], "the pick is recorded");
       assert.deepEqual(picked.needsReview ?? [], [], "the pick is not released for review");
-      assert.deepEqual(reconcile(picked, compendium).proficiencyPicks?.[id], [option], "the pick survives a reconcile");
+      assert.deepEqual(reconcile(picked, compendium, { activeBooks: ALL_BOOKS }).proficiencyPicks?.[id], [option], "the pick survives a reconcile");
     });
   }
 }
@@ -263,7 +263,7 @@ for (const fighter of samuraiFighters) {
           { className: monk.cls.name, source: monk.cls.source, level: LEVEL, subclassName: monk.sc.name, subclassSource: monk.sc.source },
         ],
       });
-      const offers = proficiencyChoiceOffers(character, { compendium });
+      const offers = proficiencyChoiceOffers(character, { compendium, activeBooks: ALL_BOOKS });
       assert.ok(offers.length > 0, "the multiclass character is offered Proficiency Choices");
       const failures: string[] = [];
       for (const offer of offers) {
@@ -283,7 +283,7 @@ for (const fighter of samuraiFighters) {
 }
 
 // Initiative Bonuses (ADR 0016): the rules that add an ability modifier to initiative carry it in the catalog the in-app sync builds.
-const LIVE_INITIATIVE_BONUSES: Array<[string, { kind: "ability"; ability: "cha" | "int" | "wis" }]> = [
+const LIVE_INITIATIVE_BONUSES: [string, { kind: "ability"; ability: "cha" | "int" | "wis" }][] = [
   ["Rakish Audacity", { kind: "ability", ability: "cha" }],
   ["Tactical Wit", { kind: "ability", ability: "int" }],
   ["Temporal Awareness", { kind: "ability", ability: "int" }],
@@ -309,7 +309,7 @@ test("live catalog: a Swashbuckler 3 with DEX 14 and CHA 16 has initiative +5, f
     classes: [{ className: rogue.name, source: rogue.source, level: 3, subclassName: swashbuckler.name, subclassSource: swashbuckler.source }],
     baseAbilityScores: { str: 10, dex: 14, con: 10, int: 10, wis: 10, cha: 16 },
   });
-  const evaluated = evaluateCharacter(character, { compendium: live!.compendium });
+  const evaluated = evaluateCharacter(character, { compendium: live!.compendium, activeBooks: ALL_BOOKS });
   assert.equal(evaluated.initiative, 5);
   assert.deepEqual(evaluated.initiativeBreakdown, [
     { label: "Dexterity", value: 2 },
@@ -353,7 +353,7 @@ test("live catalog: a Harengon of each print has initiative that includes the pr
       classes: [{ className: fighter.name, source: fighter.source, level: 5 }],
       baseAbilityScores: { str: 10, dex: 14, con: 10, int: 10, wis: 10, cha: 10 },
     });
-    const evaluated = evaluateCharacter(character, { compendium: live!.compendium });
+    const evaluated = evaluateCharacter(character, { compendium: live!.compendium, activeBooks: ALL_BOOKS });
     assert.deepEqual(
       evaluated.initiativeBreakdown,
       [
@@ -370,7 +370,7 @@ test("live catalog: a Paladin with the Aura of the Sentinel and the flat Alert h
   const alert = SKIP ? undefined : live!.collections.feats.find((feat) => feat.name === "Alert" && feat.initiativeBonus?.kind === "flat");
   assert.ok(alert, "no Alert feat with a flat Initiative Bonus in the catalog");
   // Every subclass print that gains the aura, at the level it is gained.
-  const holders: Array<{ cls: ClassData; sc: SubclassData; level: number }> = [];
+  const holders: { cls: ClassData; sc: SubclassData; level: number }[] = [];
   for (const cls of SKIP ? [] : live!.compendium.for().classes()) {
     for (const sc of cls.subclasses) {
       const aura = sc.features.find((feature) => feature.name === "Aura of the Sentinel");
@@ -385,7 +385,7 @@ test("live catalog: a Paladin with the Aura of the Sentinel and the flat Alert h
       asiSelections: [{ level: 4, type: "feat", featName: alert!.name, featSource: alert!.source }],
     });
     const proficiency = Math.floor((level - 1) / 4) + 2;
-    const evaluated = evaluateCharacter(character, { compendium: live!.compendium });
+    const evaluated = evaluateCharacter(character, { compendium: live!.compendium, activeBooks: ALL_BOOKS });
     assert.equal(evaluated.initiative, 2 + proficiency + 5, `${printKey(cls)} / ${sc.name} at level ${level}`);
     assert.deepEqual(evaluated.initiativeBreakdown, [
       { label: "Dexterity", value: 2 },
@@ -448,7 +448,7 @@ test("live catalog: a Wizard with Telekinetic (INT) has Mage Hand at will, and w
       { level: 4, type: "feat", featName: "Telepathic", featSource: "TCE", featAbility: "cha" },
     ],
   });
-  const evaluated = evaluateCharacter(character, { compendium: live!.compendium });
+  const evaluated = evaluateCharacter(character, { compendium: live!.compendium, activeBooks: ALL_BOOKS });
   const telekinetic = evaluated.grantedSpellSources.find((source) => source.title === "Telekinetic");
   const telepathic = evaluated.grantedSpellSources.find((source) => source.title === "Telepathic");
   const mageHand = telekinetic?.spells.find((spell) => spell.name === "Mage Hand");
@@ -513,15 +513,15 @@ test("live catalog: a Strixhaven college is offered under the cantrips it gives,
     classes: [{ className: wizard.name, source: wizard.source, level: 5 }],
     asiSelections: [{ level: 4, type: "feat", featName: "Strixhaven Initiate", featSource: "SCC" }],
   });
-  const list = featSpellRuleChoices(character, live!.compendium).find((choice) => choice.id.includes("Strixhaven Initiate") && choice.id.endsWith("__Spell List"));
+  const list = featSpellRuleChoices(character, live!.compendium, ALL_BOOKS).find((choice) => choice.id.includes("Strixhaven Initiate") && choice.id.endsWith("__Spell List"));
   assert.ok(list, "Strixhaven Initiate offers its colleges");
   const lorehold = list.options.find((option) => option.name === "Lorehold 1");
   assert.equal(lorehold?.label, "Lorehold: Light, Sacred Flame", "the college is labelled by its fixed cantrips");
-  character = pickRuleChoice(character, list, "Lorehold 1", live!.compendium);
-  const ability = featSpellRuleChoices(character, live!.compendium).find((choice) => choice.id.includes("Strixhaven Initiate") && choice.id.endsWith("__Casting Ability"));
+  character = pickRuleChoice(character, list, "Lorehold 1", live!.compendium, ALL_BOOKS);
+  const ability = featSpellRuleChoices(character, live!.compendium, ALL_BOOKS).find((choice) => choice.id.includes("Strixhaven Initiate") && choice.id.endsWith("__Casting Ability"));
   assert.ok(ability, "the casting ability is offered once for the feat");
-  character = pickRuleChoice(character, ability, "int", live!.compendium);
-  const card = evaluateCharacter(character, { compendium: live!.compendium }).grantedSpellSources.find((source) => source.title === "Strixhaven Initiate (Lorehold)");
+  character = pickRuleChoice(character, ability, "int", live!.compendium, ALL_BOOKS);
+  const card = evaluateCharacter(character, { compendium: live!.compendium, activeBooks: ALL_BOOKS }).grantedSpellSources.find((source) => source.title === "Strixhaven Initiate (Lorehold)");
   assert.ok(card, "the card is titled by the feat and the college");
   assert.equal(card.ability, "int");
   assert.deepEqual(card.spells.filter((spell) => spell.isCantrip).map((spell) => spell.name).sort(), ["Light", "Sacred Flame"], "its cantrips are at will");
@@ -543,10 +543,10 @@ test("live catalog: a Wizard with Spell Sniper (Wizard spells) is offered only t
     classes: [{ className: wizard.name, source: wizard.source, level: 5 }],
     asiSelections: [{ level: 4, type: "feat", featName: "Spell Sniper", featSource: "PHB" }],
   });
-  const list = featSpellRuleChoices(character, live!.compendium).find((choice) => choice.id.endsWith("__Spell List") && choice.id.includes("Spell Sniper"));
+  const list = featSpellRuleChoices(character, live!.compendium, ALL_BOOKS).find((choice) => choice.id.endsWith("__Spell List") && choice.id.includes("Spell Sniper"));
   assert.ok(list, "Spell Sniper offers its lists");
-  character = pickRuleChoice(character, list, "Wizard Spells", live!.compendium);
-  const cantrip = featSpellChoicesOf(character, { name: "Spell Sniper", source: "PHB" }, live!.compendium).find((choice) => choice.traitName.endsWith("Cantrip"));
+  character = pickRuleChoice(character, list, "Wizard Spells", live!.compendium, ALL_BOOKS);
+  const cantrip = featSpellChoicesOf(character, { name: "Spell Sniper", source: "PHB" }, live!.compendium, ALL_BOOKS).find((choice) => choice.traitName.endsWith("Cantrip"));
   assert.ok(cantrip, "the Wizard cantrip pick is offered");
   // Every copy of a cantrip in every book counts: the expected names are the Wizard cantrips with an attack roll in any copy.
   const wizardAttackCantrips = [
@@ -554,7 +554,7 @@ test("live catalog: a Wizard with Spell Sniper (Wizard spells) is offered only t
       live!.compendium
         .for()
         .spells()
-        .filter((spell) => spell.level === 0 && spell.spellAttack?.length && isSpellAvailableForClass(spell, "Wizard"))
+        .filter((spell) => spell.level === 0 && spell.spellAttack?.length && isSpellAvailableForClass(spell, "Wizard", ALL_BOOKS))
         .map((spell) => spell.name),
     ),
   ].sort();
@@ -596,12 +596,12 @@ test("live catalog: every feat the gate counts as covered gives the reader a sou
       classes: [{ className: "Wizard", source: "PHB", level: 5 }],
       asiSelections: [{ level: 4, type: "feat", featName: feat.name, featSource: feat.source }],
     });
-    const evaluated = evaluateCharacter(character, { compendium: live!.compendium });
+    const evaluated = evaluateCharacter(character, { compendium: live!.compendium, activeBooks: ALL_BOOKS });
     const hasCard = evaluated.grantedSpellSources.some((source) => source.title.startsWith(feat.name));
     const listsPrepared = evaluated.spellProfiles.some((profile) =>
       Object.values(profile.grantedPreparedSources ?? {}).some((source) => source.startsWith(feat.name)),
     );
-    const offersPick = featSpellChoicesOf(character, feat, live!.compendium).length > 0;
+    const offersPick = featSpellChoicesOf(character, feat, live!.compendium, ALL_BOOKS).length > 0;
     return !hasCard && !listsPrepared && !offersPick;
   });
   assert.deepEqual(
@@ -647,11 +647,11 @@ test("live catalog: Magic Initiate carries its Cleric list, and a Wizard with it
     classes: [{ className: wizard.name, source: wizard.source, level: 5 }],
     asiSelections: [{ level: 4, type: "feat", featName: "Magic Initiate", featSource: "PHB" }],
   });
-  const list = featSpellRuleChoices(character, live!.compendium).find((choice) => choice.id.includes("Magic Initiate") && choice.id.endsWith("__Spell List"));
+  const list = featSpellRuleChoices(character, live!.compendium, ALL_BOOKS).find((choice) => choice.id.includes("Magic Initiate") && choice.id.endsWith("__Spell List"));
   assert.ok(list, "Magic Initiate offers its spell lists");
-  character = pickRuleChoice(character, list, "Cleric Spells", live!.compendium);
-  const card = evaluateCharacter(character, { compendium: live!.compendium }).grantedSpellSources.find((source) => source.title.startsWith("Magic Initiate"));
-  assert.ok(card, `no Magic Initiate card; sources: ${evaluateCharacter(character, { compendium: live!.compendium }).grantedSpellSources.map((source) => source.title).join(", ")}`);
+  character = pickRuleChoice(character, list, "Cleric Spells", live!.compendium, ALL_BOOKS);
+  const card = evaluateCharacter(character, { compendium: live!.compendium, activeBooks: ALL_BOOKS }).grantedSpellSources.find((source) => source.title.startsWith("Magic Initiate"));
+  assert.ok(card, `no Magic Initiate card; sources: ${evaluateCharacter(character, { compendium: live!.compendium, activeBooks: ALL_BOOKS }).grantedSpellSources.map((source) => source.title).join(", ")}`);
   assert.equal(card.ability, "wis");
 });
 
@@ -664,18 +664,18 @@ function wizardHolding(featName: string, featSource: string, featAbility?: Abili
 }
 
 const innateCardOf = (character: Character, title: string): InnateSpellProfile | undefined =>
-  evaluateCharacter(character, { compendium: live!.compendium }).grantedSpellSources.find((source) => source.title === title);
+  evaluateCharacter(character, { compendium: live!.compendium, activeBooks: ALL_BOOKS }).grantedSpellSources.find((source) => source.title === title);
 
 const wizardListedNames = (character: Character): string[] =>
-  (evaluateCharacter(character, { compendium: live!.compendium }).spellProfiles.find((profile) => profile.className === "Wizard")?.alwaysPreparedSpells ?? []).map(
+  (evaluateCharacter(character, { compendium: live!.compendium, activeBooks: ALL_BOOKS }).spellProfiles.find((profile) => profile.className === "Wizard")?.alwaysPreparedSpells ?? []).map(
     (spell) => spell.name,
   );
 
 test("live catalog: Mark of Detection's prepared group is a card with the ability picked, daily spells on counters, and no class list spell", { skip: SKIP }, () => {
   let character = wizardHolding("Mark of Detection", "EFA");
-  const ability = featSpellRuleChoices(character, live!.compendium).find((choice) => choice.id === "EFA__Feat Spells__Mark of Detection__Casting Ability");
+  const ability = featSpellRuleChoices(character, live!.compendium, ALL_BOOKS).find((choice) => choice.id === "EFA__Feat Spells__Mark of Detection__Casting Ability");
   assert.ok(ability, "Mark of Detection offers its casting ability");
-  character = pickRuleChoice(character, ability, "int", live!.compendium);
+  character = pickRuleChoice(character, ability, "int", live!.compendium, ALL_BOOKS);
 
   const card = innateCardOf(character, "Mark of Detection");
   assert.ok(card, "no Mark of Detection card");
@@ -691,15 +691,15 @@ test("live catalog: Mark of Detection's prepared group is a card with the abilit
 
 test("live catalog: Boon of Siberys's named list is a card once picked, with the ability picked for the feat", { skip: SKIP }, () => {
   let character = wizardHolding("Boon of Siberys", "EFA");
-  const list = featSpellRuleChoices(character, live!.compendium).find((choice) => choice.id === "EFA__Feat Spells__Boon of Siberys__Spell List");
+  const list = featSpellRuleChoices(character, live!.compendium, ALL_BOOKS).find((choice) => choice.id === "EFA__Feat Spells__Boon of Siberys__Spell List");
   assert.ok(list, "Boon of Siberys offers its spell lists");
-  character = pickRuleChoice(character, list, "Mark of Detection", live!.compendium);
-  const ability = featSpellRuleChoices(character, live!.compendium).find((choice) => choice.id === "EFA__Feat Spells__Boon of Siberys__Casting Ability");
+  character = pickRuleChoice(character, list, "Mark of Detection", live!.compendium, ALL_BOOKS);
+  const ability = featSpellRuleChoices(character, live!.compendium, ALL_BOOKS).find((choice) => choice.id === "EFA__Feat Spells__Boon of Siberys__Casting Ability");
   assert.ok(ability, "the picked list's casting ability is offered");
-  character = pickRuleChoice(character, ability, "wis", live!.compendium);
+  character = pickRuleChoice(character, ability, "wis", live!.compendium, ALL_BOOKS);
 
   const card = innateCardOf(character, "Boon of Siberys (Mark of Detection)");
-  assert.ok(card, `no card for the picked list; sources: ${evaluateCharacter(character, { compendium: live!.compendium }).grantedSpellSources.map((s) => s.title).join(", ")}`);
+  assert.ok(card, `no card for the picked list; sources: ${evaluateCharacter(character, { compendium: live!.compendium, activeBooks: ALL_BOOKS }).grantedSpellSources.map((s) => s.title).join(", ")}`);
   assert.equal(card.ability, "wis");
   assert.equal(card.spells.find((spell) => spell.name === "True Seeing")?.maxUses, 1);
 });
@@ -750,10 +750,10 @@ test("live catalog: a feat that names spells and no ability is a card with no ab
 
 test("live catalog: Light Bringer's list is a card with no ability once picked", { skip: SKIP }, () => {
   let character = wizardHolding("Light Bringer", "ABH");
-  const list = featSpellRuleChoices(character, live!.compendium).find((choice) => choice.id === "ABH__Feat Spells__Light Bringer__Spell List");
+  const list = featSpellRuleChoices(character, live!.compendium, ALL_BOOKS).find((choice) => choice.id === "ABH__Feat Spells__Light Bringer__Spell List");
   assert.ok(list, "Light Bringer offers its spell lists");
-  character = pickRuleChoice(character, list, "Light", live!.compendium);
-  const card = evaluateCharacter(character, { compendium: live!.compendium }).grantedSpellSources.find((source) => source.title.startsWith("Light Bringer"));
+  character = pickRuleChoice(character, list, "Light", live!.compendium, ALL_BOOKS);
+  const card = evaluateCharacter(character, { compendium: live!.compendium, activeBooks: ALL_BOOKS }).grantedSpellSources.find((source) => source.title.startsWith("Light Bringer"));
   assert.ok(card, "no card for the picked list");
   assert.equal(card.ability, undefined, "the grant names no ability, so the card has none");
   assert.equal(card.spellSaveDc, undefined);
@@ -766,9 +766,9 @@ test("live catalog: Servo Crafting and Strixhaven Mascot, whose grants are ritua
 
 test("live catalog: Magic Connoisseur's list casts with the ability its feat's increase raised", { skip: SKIP }, () => {
   let character = wizardHolding("Magic Connoisseur", "AU", "int");
-  const list = featSpellRuleChoices(character, live!.compendium).find((choice) => choice.id === "AU__Feat Spells__Magic Connoisseur__Spell List");
+  const list = featSpellRuleChoices(character, live!.compendium, ALL_BOOKS).find((choice) => choice.id === "AU__Feat Spells__Magic Connoisseur__Spell List");
   assert.ok(list, "Magic Connoisseur offers its spell lists");
-  character = pickRuleChoice(character, list, "Wizard Spells", live!.compendium);
+  character = pickRuleChoice(character, list, "Wizard Spells", live!.compendium, ALL_BOOKS);
   const card = innateCardOf(character, "Magic Connoisseur (Wizard)");
   assert.ok(card, "no Magic Connoisseur card for the Wizard list");
   assert.equal(card.ability, "int", "the ability is the one the increase raised");
@@ -776,9 +776,9 @@ test("live catalog: Magic Connoisseur's list casts with the ability its feat's i
 
 test("live catalog: Boon of Magic School Mastery's school list is a card with no ability row once picked", { skip: SKIP }, () => {
   let character = wizardHolding("Boon of Magic School Mastery", "AU");
-  const list = featSpellRuleChoices(character, live!.compendium).find((choice) => choice.id === "AU__Feat Spells__Boon of Magic School Mastery__Spell List");
+  const list = featSpellRuleChoices(character, live!.compendium, ALL_BOOKS).find((choice) => choice.id === "AU__Feat Spells__Boon of Magic School Mastery__Spell List");
   assert.ok(list, "Boon of Magic School Mastery offers its school lists");
-  character = pickRuleChoice(character, list, "Evocation", live!.compendium);
+  character = pickRuleChoice(character, list, "Evocation", live!.compendium, ALL_BOOKS);
   const card = innateCardOf(character, "Boon of Magic School Mastery (Evocation)");
   assert.ok(card, "no card for the Evocation list");
   assert.equal(card.ability, undefined, "the record names no ability, so the card has none");
@@ -812,7 +812,7 @@ test("live catalog: a level-5 Drow has Dancing Lights, Faerie Fire and Darkness 
     race: { name: "Elf", source: "PHB", subraceName: "Drow", subraceSource: "PHB" },
     baseAbilityScores: { str: 10, dex: 10, con: 10, int: 10, wis: 10, cha: 16 },
   });
-  const evaluated = evaluateCharacter(character, { compendium: live!.compendium });
+  const evaluated = evaluateCharacter(character, { compendium: live!.compendium, activeBooks: ALL_BOOKS });
   const drow = evaluated.grantedSpellSources.find((source) => source.title === "Drow Elf");
   assert.ok(drow, `no Drow card; sources: ${evaluated.grantedSpellSources.map((source) => source.title).join(", ")}`);
   assert.equal(drow.ability, "cha");
@@ -827,7 +827,7 @@ test("live catalog: a Half-Elf of the Drow Descent has no Drow spell until its D
     baseAbilityScores: { str: 10, dex: 10, con: 10, int: 10, wis: 10, cha: 16 },
   });
   const sourceWithCantrip = (candidate: Character) =>
-    evaluateCharacter(candidate, { compendium: live!.compendium }).grantedSpellSources.find((source) =>
+    evaluateCharacter(candidate, { compendium: live!.compendium, activeBooks: ALL_BOOKS }).grantedSpellSources.find((source) =>
       source.spells.some((spell) => spell.name === "Dancing Lights"),
     );
   assert.equal(sourceWithCantrip(character), undefined, "the option is not picked, so the descent's spells are not read");
@@ -857,7 +857,7 @@ test("live catalog: a Water Genasi of level 3 has its Create or Destroy Water co
     race: { name: "Genasi", source: "EEPC", subraceName: "Water", subraceSource: "EEPC" },
     baseAbilityScores: { str: 10, dex: 10, con: 10, int: 10, wis: 10, cha: 10 },
   });
-  const evaluated = evaluateCharacter(character, { compendium: live!.compendium });
+  const evaluated = evaluateCharacter(character, { compendium: live!.compendium, activeBooks: ALL_BOOKS });
   const water = evaluated.grantedSpellSources.find((source) => source.title === "Water Genasi");
   const spell = water?.spells.find((entry) => entry.name === "Create or Destroy Water");
   assert.ok(spell, `no Create or Destroy Water on the Water card: ${JSON.stringify(water?.spells.map((entry) => entry.name))}`);
@@ -869,7 +869,7 @@ test("live catalog: a Water Genasi of level 3 has its Create or Destroy Water co
       innate_spell_create_water: { id: "innate_spell_create_water", name: "Innate: Create or Destroy Water", current: 0, max: 1, resetOn: "long" as const },
     },
   };
-  const moved = reconcile(savedUnderOldId, live!.compendium);
+  const moved = reconcile(savedUnderOldId, live!.compendium, { activeBooks: ALL_BOOKS });
   assert.equal(moved.resourceCounters?.innate_spell_create_water, undefined, "the counter under the older id is gone");
   assert.equal(moved.resourceCounters?.innate_spell_create_or_destroy_water?.current, 0, "the saved use is kept under the spell's id");
 });
@@ -880,7 +880,7 @@ test("live catalog: a level-3 Tiefling's Hellish Rebuke is cast at 2nd level, an
     race: { name: "Tiefling", source: "PHB" },
     baseAbilityScores: { str: 10, dex: 10, con: 10, int: 10, wis: 10, cha: 16 },
   });
-  const evaluated = evaluateCharacter(character, { compendium: live!.compendium });
+  const evaluated = evaluateCharacter(character, { compendium: live!.compendium, activeBooks: ALL_BOOKS });
   const tiefling = evaluated.grantedSpellSources.find((source) => source.title === "Tiefling");
   const rebuke = tiefling?.spells.find((entry) => entry.name === "Hellish Rebuke");
   assert.ok(rebuke, `no Hellish Rebuke on the Tiefling card: ${JSON.stringify(tiefling?.spells.map((entry) => entry.name))}`);
@@ -891,14 +891,14 @@ test("live catalog: a level-3 Tiefling's Hellish Rebuke is cast at 2nd level, an
 // The nine race and subrace grants with leveled known spells (ADR 0017). Each spell is `[name, uses, level gate]`: a spell the
 // trait lets the player cast once per Long Rest has 1 uses, one it casts at will is "at will", and the gate is the character level
 // the trait unlocks it at. Each grant is read at every level from 1 to 3: a spell is listed from its gate and not before.
-const LEVELED_KNOWN_GRANTS: Array<{
+const LEVELED_KNOWN_GRANTS: {
   label: string;
   race: string;
   subrace?: string;
   subraceSource?: string;
   source?: string;
-  spells: Array<[string, 1 | "at will", number]>;
-}> = [
+  spells: [string, 1 | "at will", number][];
+}[] = [
   {
     label: "Dwarf Mark of Warding",
     race: "Dwarf",
@@ -976,8 +976,8 @@ function characterOfGrant(grant: (typeof LEVELED_KNOWN_GRANTS)[number], level: n
 }
 
 /** The spells a character's race grants at its level, each with its uses (1 once per Long Rest, or "at will"), sorted by name. */
-function raceSpellsAt(character: Character): Array<[string, 1 | "at will"]> {
-  const sources = evaluateCharacter(character, { compendium: live!.compendium }).grantedSpellSources;
+function raceSpellsAt(character: Character): [string, 1 | "at will"][] {
+  const sources = evaluateCharacter(character, { compendium: live!.compendium, activeBooks: ALL_BOOKS }).grantedSpellSources;
   assert.equal(sources.length, 1, `one race grant is read: ${sources.map((source) => source.title).join(", ")}`);
   return sources[0].spells
     .map((spell): [string, 1 | "at will"] => [spell.name, spell.maxUses === undefined ? "at will" : (spell.maxUses as 1)])
@@ -998,7 +998,7 @@ for (const grant of LEVELED_KNOWN_GRANTS) {
 
 test("live catalog: the Deep Gnome's Nondetection carries the note self only, and its other spells carry none", { skip: SKIP }, () => {
   const grant = LEVELED_KNOWN_GRANTS.find((candidate) => candidate.label === "Gnome (Deep)")!;
-  const card = evaluateCharacter(characterOfGrant(grant, 1), { compendium: live!.compendium }).grantedSpellSources[0];
+  const card = evaluateCharacter(characterOfGrant(grant, 1), { compendium: live!.compendium, activeBooks: ALL_BOOKS }).grantedSpellSources[0];
   const nondetection = card?.spells.find((spell) => spell.name === "Nondetection");
   assert.ok(nondetection, `no Nondetection on the Deep Gnome card: ${JSON.stringify(card?.spells.map((spell) => spell.name))}`);
   assert.equal(nondetection.note, "self only");
@@ -1046,19 +1046,19 @@ test("live catalog: a Wizard with the Lorehold Student background can learn Spir
     });
   };
 
-  const wizard = evaluateCharacter(holding("Wizard"), { compendium: live!.compendium }).spellProfiles.find(
+  const wizard = evaluateCharacter(holding("Wizard"), { compendium: live!.compendium, activeBooks: ALL_BOOKS }).spellProfiles.find(
     (profile) => profile.className === "Wizard",
   );
   assert.ok(wizard, "a Wizard of level 5 has a spell profile");
   assert.equal(isSpellAvailableForClass(spiritGuardians, "Wizard", undefined, profileSpellContext(wizard)), true);
 
-  const fighter = evaluateCharacter(holding("Fighter"), { compendium: live!.compendium });
+  const fighter = evaluateCharacter(holding("Fighter"), { compendium: live!.compendium, activeBooks: ALL_BOOKS });
   assert.deepEqual(fighter.spellProfiles, [], "a Fighter with no casting class gets no spell profile");
 });
 
 test("live catalog: a High Elf offers the wizard cantrip filter, a Vahadar Elf the druid one, and an MPMM race its casting ability", { skip: SKIP }, () => {
   const compendium = live!.compendium;
-  const offered = (race: Character["race"]) => raceSpellRuleChoices(makeChar({ classes: [{ className: "Fighter", source: "PHB", level: 1 }], race }), compendium);
+  const offered = (race: Character["race"]) => raceSpellRuleChoices(makeChar({ classes: [{ className: "Fighter", source: "PHB", level: 1 }], race }), compendium, ALL_BOOKS);
 
   const highElf = offered({ name: "Elf", source: "PHB", subraceName: "High", subraceSource: "PHB" });
   const wizard = highElf.find((choice) => choice.traitName === "High Elf Cantrip");
@@ -1091,7 +1091,7 @@ const expandedNamesOf = (grants: AdditionalSpells[] = []): string[] =>
 function markOnlySpell(names: string[]): SpellData | undefined {
   for (const name of names) {
     const spell = resolveSpellName(name, undefined, live!.compendium);
-    if (spell && !isSpellAvailableForClass(spell, "Cleric")) return spell;
+    if (spell && !isSpellAvailableForClass(spell, "Cleric", ALL_BOOKS)) return spell;
   }
   return undefined;
 }
@@ -1119,7 +1119,7 @@ test("live catalog: a Mark of Detection feat puts its expanded spell on a Cleric
         classes: [{ className: cleric.name, source: cleric.source, level: 5 }],
         asiSelections,
       }),
-      { compendium: live!.compendium },
+      { compendium: live!.compendium, activeBooks: ALL_BOOKS },
     ).spellProfiles.find((profile) => profile.className === "Cleric");
 
   const withMark = clericAt([{ level: 4, className: "Cleric", classLevel: 4, type: "feat", featName: mark.name, featSource: mark.source }]);
@@ -1147,7 +1147,7 @@ test("live catalog: a Half-Elf of the Mark of Detection subrace puts its expande
       classes: [{ className: cleric.name, source: cleric.source, level: 5 }],
       race: { name: race.name, source: race.source, subraceName: subrace.name, subraceSource: subrace.source },
     }),
-    { compendium: live!.compendium },
+    { compendium: live!.compendium, activeBooks: ALL_BOOKS },
   ).spellProfiles.find((candidate) => candidate.className === "Cleric");
   assert.ok(profile, "a Cleric of level 5 has a spell profile");
   assert.equal(isSpellAvailableForClass(spell, "Cleric", undefined, profileSpellContext(profile)), true, `${spell.name} is on the Cleric's list with the subrace`);
@@ -1165,7 +1165,7 @@ test("live catalog: removing a Mark of Detection feat releases the spell its exp
     asiSelections: [{ level: 4, className: "Cleric", classLevel: 4, type: "feat", featName: mark.name, featSource: mark.source }],
     knownSpells: [{ name: spell.name, source: spell.source, ownerKey: `${cleric.name}__${cleric.source}`, className: cleric.name }],
   });
-  const released = removeAsiSelection(character, "Cleric", 4, live!.compendium);
+  const released = removeAsiSelection(character, "Cleric", 4, live!.compendium, ALL_BOOKS);
   assert.deepEqual(released.knownSpells, [], `${spell.name} leaves the known spells`);
   assert.ok(
     released.needsReview?.some((notice) => notice.includes(`${spell.name} removed: only on the Mark of Detection feat's spell list`)),
@@ -1302,7 +1302,7 @@ test("live catalog: a race finds its integrated record by name, scoped to the ac
   for (const name of ["Elf", "Dwarf", "Human"]) {
     assert.equal(compendium.findRace({ name, source: "SRD" }, [...DEFAULT_ACTIVE_BOOK_CODES])?.source, "PHB", `${name} resolves to its PHB record`);
   }
-  assert.equal(compendium.findRace({ name: "Elf", source: "PHB" })?.source, "PHB", "the saved source is found first");
+  assert.equal(compendium.findRace({ name: "Elf", source: "PHB" }, ALL_BOOKS)?.source, "PHB", "the saved source is found first");
 });
 
 // Records of the other kinds a character saves with a source (class, subclass, background, feat) and the picks kept on them,

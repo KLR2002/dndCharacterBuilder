@@ -1,3 +1,4 @@
+import { ALL_BOOKS } from "../src/constants/books.ts";
 import test from "node:test";
 import assert from "node:assert/strict";
 import { findClassData } from "../src/rules/catalogs.ts";
@@ -109,14 +110,14 @@ test("class base armor comes from the class the entry names, not the first class
 
 test("the proficiency sheet's class armor comes from the second source when the entry names it", () => {
   const compendium = bothSources();
-  const beta = proficiencySheet(makeChar({ classes: [entry(BETA, 1)] }), { compendium });
+  const beta = proficiencySheet(makeChar({ classes: [entry(BETA, 1)] }), { compendium, activeBooks: ALL_BOOKS });
   assert.deepEqual(names(beta.armor), ["Heavy armor"]);
-  const alpha = proficiencySheet(makeChar({ classes: [entry(ALPHA, 1)] }), { compendium });
+  const alpha = proficiencySheet(makeChar({ classes: [entry(ALPHA, 1)] }), { compendium, activeBooks: ALL_BOOKS });
   assert.deepEqual(names(alpha.armor), ["Light armor"]);
 });
 
 test("granted class features come from the entry's own source", () => {
-  const catalog = { races: [], backgrounds: [], feats: [], classes: [alphaWardcaller(), betaWardcaller()] };
+  const catalog = { races: [], backgrounds: [], feats: [], classes: [alphaWardcaller(), betaWardcaller()], activeBooks: ALL_BOOKS };
   const features = grantedFeatures(makeChar({ classes: [entry(BETA, 1)] }), catalog);
   assert.deepEqual(features.map((f) => f.name), ["Ember Veil"]);
   assert.equal(features[0].source, BETA);
@@ -125,7 +126,7 @@ test("granted class features come from the entry's own source", () => {
 });
 
 test("a class entry with an empty or unknown source takes the first class of its name for granted features", () => {
-  const catalog = { races: [], backgrounds: [], feats: [], classes: [alphaWardcaller(), betaWardcaller()] };
+  const catalog = { races: [], backgrounds: [], feats: [], classes: [alphaWardcaller(), betaWardcaller()], activeBooks: ALL_BOOKS };
   for (const source of ["", "GAMMA"]) {
     const features = grantedFeatures(makeChar({ classes: [entry(source, 1)] }), catalog);
     assert.deepEqual(features.map((f) => f.name), ["Ward Sight"], `source "${source}"`);
@@ -133,7 +134,7 @@ test("a class entry with an empty or unknown source takes the first class of its
 });
 
 test("granted subclass features come from the subclass of the resolved class, and only that class holds it", () => {
-  const catalog = { races: [], backgrounds: [], feats: [], classes: [alphaWardcaller(), betaWardcaller()] };
+  const catalog = { races: [], backgrounds: [], feats: [], classes: [alphaWardcaller(), betaWardcaller()], activeBooks: ALL_BOOKS };
   const beta = grantedFeatures(makeChar({ classes: [entry(BETA, 3, "Circle of Ash", BETA)] }), catalog);
   assert.deepEqual(beta.map((f) => f.name).sort(), ["Ashen Step", "Ember Veil"]);
   // ALPHA's subclass is not a subclass of the BETA class, so naming it on a BETA entry grants nothing.
@@ -147,7 +148,7 @@ test("a saved pick granted by the second source is released when the character h
     classes: [entry(ALPHA, 1)],
     proficiencyPicks: { wardcaller_beta_tongue: ["Elvish"] },
   });
-  const pruned = pruneInvalidProficiencyPicks(picked, compendium);
+  const pruned = pruneInvalidProficiencyPicks(picked, compendium, ALL_BOOKS);
   assert.equal(pruned.proficiencyPicks, undefined);
   assert.match(pruned.needsReview?.[0] ?? "", /Ember Veil/);
 
@@ -155,16 +156,16 @@ test("a saved pick granted by the second source is released when the character h
     classes: [entry(BETA, 1)],
     proficiencyPicks: { wardcaller_beta_tongue: ["Elvish"] },
   });
-  assert.deepEqual(pruneInvalidProficiencyPicks(held, compendium).proficiencyPicks, {
+  assert.deepEqual(pruneInvalidProficiencyPicks(held, compendium, ALL_BOOKS).proficiencyPicks, {
     wardcaller_beta_tongue: ["Elvish"],
   });
 });
 
 test("the subclass spells of a class are read from the source the caller names", () => {
   const compendium = bothSources();
-  const beta = getSubclassSpells("Wardcaller", "Circle of Ash", 3, { compendium, classSource: BETA });
+  const beta = getSubclassSpells("Wardcaller", "Circle of Ash", 3, { compendium, classSource: BETA, activeBooks: ALL_BOOKS });
   assert.ok(beta.expanded.includes("Ember Dart"));
-  const alpha = getSubclassSpells("Wardcaller", "Circle of Ash", 3, { compendium, classSource: ALPHA });
+  const alpha = getSubclassSpells("Wardcaller", "Circle of Ash", 3, { compendium, classSource: ALPHA, activeBooks: ALL_BOOKS });
   assert.deepEqual(alpha.expanded, []);
 });
 
@@ -193,21 +194,21 @@ test("a class the catalog lacks takes the SRD Baseline's hit die, and an empty s
 
 test("the proficiency sheet's base saving throws come from the class the entry names", () => {
   const compendium = bothSources();
-  assert.deepEqual(names(proficiencySheet(makeChar({ classes: [entry(BETA, 1)] }), { compendium }).savingThrows), ["Wisdom", "Charisma"]);
-  assert.deepEqual(names(proficiencySheet(makeChar({ classes: [entry(ALPHA, 1)] }), { compendium }).savingThrows), ["Strength", "Constitution"]);
+  assert.deepEqual(names(proficiencySheet(makeChar({ classes: [entry(BETA, 1)] }), { compendium, activeBooks: ALL_BOOKS }).savingThrows), ["Wisdom", "Charisma"]);
+  assert.deepEqual(names(proficiencySheet(makeChar({ classes: [entry(ALPHA, 1)] }), { compendium, activeBooks: ALL_BOOKS }).savingThrows), ["Strength", "Constitution"]);
 });
 
 test("a class the catalog lacks takes its SRD Baseline saving throws", () => {
   const fighter = { className: "Fighter", source: "PHB", level: 2 };
   assert.deepEqual(
-    names(proficiencySheet(makeChar({ classes: [fighter] }), { compendium: inMemoryCompendium() }).savingThrows),
+    names(proficiencySheet(makeChar({ classes: [fighter] }), { compendium: inMemoryCompendium(), activeBooks: ALL_BOOKS }).savingThrows),
     ["Strength", "Constitution"],
   );
 });
 
 test("the integrated Artificer's saving throws come from its catalog class", () => {
   const sheet = proficiencySheet(makeChar({ classes: [{ className: "Artificer", source: "TCE", level: 1 }] }), {
-    compendium: integratedTestCompendium(),
+    compendium: integratedTestCompendium(), activeBooks: ALL_BOOKS,
   });
   assert.deepEqual(names(sheet.savingThrows), ["Constitution", "Intelligence"]);
 });
@@ -232,5 +233,5 @@ test("a caster the catalog lacks takes the SRD Baseline's caster kind and spell 
 test("a legacy spell list is owned by the first class whose catalog entry casts, read from that class", () => {
   const classes = [alphaWardcaller(), betaWardcaller()];
   const legacy = { ...makeChar({ classes: [entry(ALPHA, 1), entry(BETA, 1)] }), knownSpells: [{ name: "Ember Dart", source: BETA }] };
-  assert.deepEqual(migrateCharacter(legacy, undefined, classes).knownSpells?.map((spell) => spell.ownerKey), [`Wardcaller__${BETA}`]);
+  assert.deepEqual(migrateCharacter(legacy, undefined, classes, ALL_BOOKS).knownSpells?.map((spell) => spell.ownerKey), [`Wardcaller__${BETA}`]);
 });

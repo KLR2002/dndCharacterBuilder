@@ -1,3 +1,4 @@
+import type { ActiveBooks } from "../../constants/books.ts";
 import type { Character } from "../../types/character.ts";
 import { currentCompendium, type Compendium } from "../../services/compendium.ts";
 import { type AvailableRuleChoice, type ChoiceOwner, getSubclassName, setRuleChoicePick } from "./types.ts";
@@ -57,7 +58,7 @@ export function getChosenManeuvers(character: Character): string[] {
  */
 export function battleMasterManeuverChoices(
   character: Character,
-  activeBooks?: string[],
+  activeBooks: ActiveBooks,
   compendium: Compendium = currentCompendium()
 ): AvailableRuleChoice[] {
   const out: AvailableRuleChoice[] = [];

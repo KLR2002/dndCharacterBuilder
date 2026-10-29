@@ -1,3 +1,4 @@
+import type { ActiveBooks } from "../constants/books.ts";
 import type { Character, KnownSpell } from "../types/character.ts";
 import type { SpellData } from "../types/dnd5e.ts";
 import type { EvaluatedCharacter } from "./characterEvaluation.ts";
@@ -359,7 +360,7 @@ function isAlwaysPrepared(profile: ClassSpellProfile, name: string): boolean {
  * Whether the spell is on the owner's class list under the active books. Fighter and Rogue gate
  * against the Wizard list.
  */
-function isOnOwnerList(profile: ClassSpellProfile, spell: SpellData, activeBooks?: string[]): boolean {
+function isOnOwnerList(profile: ClassSpellProfile, spell: SpellData, activeBooks: ActiveBooks): boolean {
   const gatingClass =
     profile.className === "Fighter" || profile.className === "Rogue" ? "Wizard" : profile.className;
   return isSpellAvailableForClass(spell, gatingClass, activeBooks, profileSpellContext(profile));
@@ -369,7 +370,7 @@ function isOnOwnerList(profile: ClassSpellProfile, spell: SpellData, activeBooks
  * Whether the owner may learn or prepare the spell: on its class list under the active books, and
  * within the owner's maximum spell level.
  */
-function withinOwnerGate(profile: ClassSpellProfile, spell: SpellData, activeBooks?: string[]): boolean {
+function withinOwnerGate(profile: ClassSpellProfile, spell: SpellData, activeBooks: ActiveBooks): boolean {
   return spell.level <= profile.maxSpellLevel && isOnOwnerList(profile, spell, activeBooks);
 }
 
@@ -384,7 +385,7 @@ export function togglePrepared(
   profile: ClassSpellProfile,
   spell: SpellIdentity,
   compendium: Compendium,
-  activeBooks?: string[]
+  activeBooks: ActiveBooks
 ): Character {
   if (isAlwaysPrepared(profile, spell.name)) return character;
 
@@ -417,7 +418,7 @@ export function learnSpell(
   profile: ClassSpellProfile,
   spell: { name: string; source: string },
   compendium: Compendium,
-  activeBooks?: string[]
+  activeBooks: ActiveBooks
 ): Character {
   const data = compendium.findSpell(spell.name, spell.source);
   if (data && !withinOwnerGate(profile, data, activeBooks)) return character;
@@ -442,7 +443,7 @@ export function forgetSpell(
   profile: ClassSpellProfile,
   spell: SpellIdentity,
   compendium: Compendium,
-  activeBooks?: string[]
+  activeBooks: ActiveBooks
 ): Character {
   const owner = ownerOf(spell, profile);
   const knownSpells = (character.knownSpells || []).filter(

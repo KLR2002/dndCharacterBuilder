@@ -1,3 +1,4 @@
+import { ALL_BOOKS } from "../src/constants/books.ts";
 import test from "node:test";
 import assert from "node:assert/strict";
 import { BACKGROUND_FEAT_SOURCE } from "../src/constants/rules.ts";
@@ -41,7 +42,7 @@ const claimed = (background: { name: string; source: string }): Character =>
   });
 
 test("a background-claimed feat held in two books resolves to the background's own book before catalog order", () => {
-  const held = heldFeatsOf(claimed({ name: "Sample Drifter", source: "TST2" }), catalogFeats("TST", "TST2"));
+  const held = heldFeatsOf(claimed({ name: "Sample Drifter", source: "TST2" }), catalogFeats("TST", "TST2"), ALL_BOOKS);
   assert.equal(held[0]?.feat.source, "TST2", "the book the background comes from is chosen before the first record listed");
 });
 
@@ -58,13 +59,13 @@ test("a pick made on a background-claimed feat is saved under the record it was 
     backgrounds: grantedSpellBackgrounds(),
   });
   const offered = (character: Character, option: string): AvailableRuleChoice => {
-    const choice = featSpellRuleChoices(character, compendium).find((c) => c.options.some((o) => o.name === option));
+    const choice = featSpellRuleChoices(character, compendium, ALL_BOOKS).find((c) => c.options.some((o) => o.name === option));
     assert.ok(choice, `${option} is offered`);
     return choice;
   };
   let character = claimed({ name: "Sample Drifter", source: "TST2" });
-  character = pickRuleChoice(character, offered(character, "Sample Mage Spells"), "Sample Mage Spells", compendium);
-  character = pickRuleChoice(character, offered(character, "Sample Ember"), "Sample Ember", compendium);
+  character = pickRuleChoice(character, offered(character, "Sample Mage Spells"), "Sample Mage Spells", compendium, ALL_BOOKS);
+  character = pickRuleChoice(character, offered(character, "Sample Ember"), "Sample Ember", compendium, ALL_BOOKS);
 
   const saved = character.ruleChoices ?? [];
   assert.ok(
@@ -73,7 +74,7 @@ test("a pick made on a background-claimed feat is saved under the record it was 
   );
 
   let loaded = character;
-  for (let load = 0; load < 2; load += 1) loaded = reconcile(migrateCharacter(loaded, [], grantedSpellClasses()), compendium);
+  for (let load = 0; load < 2; load += 1) loaded = reconcile(migrateCharacter(loaded, [], grantedSpellClasses(), ALL_BOOKS), compendium, { activeBooks: ALL_BOOKS });
   assert.deepEqual(loaded.ruleChoices, character.ruleChoices, "the picks are kept as saved, with the same ids, on every load");
   assert.deepEqual(loaded.needsReview ?? [], [], "no notice is raised on load");
 });
@@ -91,13 +92,13 @@ test("a background book switched off keeps the pick made on the record still off
   let character = claimed({ name: "Sample Drifter", source: "TST2" });
   const list = featSpellRuleChoices(character, compendium, ["TST"]).find((c) => c.options.some((o) => o.name === "Sample Mage Spells"));
   assert.ok(list, "the list is offered from the active book");
-  character = pickRuleChoice(character, list, "Sample Mage Spells", compendium);
+  character = pickRuleChoice(character, list, "Sample Mage Spells", compendium, ALL_BOOKS);
   assert.ok(
     character.ruleChoices?.some((entry) => entry.id.startsWith("TST__Feat Spells__Sample Initiate__")),
     "the pick is made on the record of the active book",
   );
 
-  const reconciled = reconcile(character, compendium);
+  const reconciled = reconcile(character, compendium, { activeBooks: ALL_BOOKS });
   assert.deepEqual(reconciled.ruleChoices, character.ruleChoices, "the pick is kept");
   assert.deepEqual(reconciled.needsReview ?? [], [], "no notice is raised");
 });

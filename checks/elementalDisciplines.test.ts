@@ -1,3 +1,4 @@
+import { ALL_BOOKS } from "../src/constants/books.ts";
 import test from "node:test";
 import assert from "node:assert/strict";
 import { makeChar, integratedTestCompendium, loadTestCatalog, srdBaselineCompendium } from "./testUtils.ts";
@@ -159,7 +160,7 @@ test("a catalog with no discipline records offers no Monk discipline row and lea
     ],
   });
   assert.deepEqual(disciplineOffers(saved, compendium, ["PHB"]), []);
-  assert.deepEqual(reconcile(saved, compendium).ruleChoices, saved.ruleChoices);
+  assert.deepEqual(reconcile(saved, compendium, { activeBooks: ALL_BOOKS }).ruleChoices, saved.ruleChoices);
 });
 
 test("SRD Baseline and integrated catalog offer a Four Elements Monk the same discipline counts by level", () => {
@@ -178,10 +179,10 @@ test("a picked discipline is recorded under its row's id and the result is alrea
   const row3 = disciplineOffers(char, compendium, ["PHB"]).find((c) => c.id === ROW_3);
   assert.ok(row3, "the 3rd-level discipline row is offered");
 
-  const picked = pickRuleChoice(char, row3, "Water Whip", compendium);
+  const picked = pickRuleChoice(char, row3, "Water Whip", compendium, ALL_BOOKS);
   const entry: RuleChoiceEntry | undefined = picked.ruleChoices?.find((rc) => rc.id === ROW_3);
   assert.deepEqual(entry?.picked, ["Water Whip"]);
-  assert.deepEqual(reconcile(picked, compendium), picked);
+  assert.deepEqual(reconcile(picked, compendium, { activeBooks: ALL_BOOKS }), picked);
 });
 
 test("resolveOptionName matches case-insensitively, then through the names-only alias table", () => {
@@ -207,11 +208,11 @@ test("a saved 'Fist of Unbroken Air' is shown as the picked 'Unbroken Air' and s
   assert.deepEqual(pickedOptionNames(entry?.picked ?? [], namesOf(offer)), ["Unbroken Air"]);
 
   // Choosing the discipline it already is deselects it, so the saved pick is the one that counts.
-  const cleared = pickRuleChoice(saved, offer, "Unbroken Air", compendium);
+  const cleared = pickRuleChoice(saved, offer, "Unbroken Air", compendium, ALL_BOOKS);
   assert.equal(cleared.ruleChoices?.find((rc) => rc.id === ROW_3), undefined);
 
   // Choosing another discipline replaces it, and the saved old name is no longer recorded.
-  const replaced = pickRuleChoice(saved, offer, "Water Whip", compendium);
+  const replaced = pickRuleChoice(saved, offer, "Water Whip", compendium, ALL_BOOKS);
   assert.deepEqual(replaced.ruleChoices?.find((rc) => rc.id === ROW_3)?.picked, ["Water Whip"]);
 });
 
@@ -241,7 +242,7 @@ test("a saved discipline pick gives its ki-cost spell whether saved under the ol
     const spells = getSubclassSpells("Monk", "Way of the Four Elements", 3, {
       ruleChoices: [
         { id: ROW_3, trait: "Elemental Discipline (3rd Level)", origin: "subclass", choose: 1, from: [], picked: [saved] },
-      ],
+      ], activeBooks: ALL_BOOKS,
     });
     const spell = spells.known.find((s) => s.name === "Fist of Unbroken Air");
     assert.equal(spell?.kiCost, 2, `a pick saved as "${saved}" gives Fist of Unbroken Air at 2 ki`);
@@ -310,5 +311,5 @@ test("a stale catalog keeps the Four Elements disciplines offered as a current o
       { id: ROW_3, trait: "Elemental Discipline (3rd Level)", origin: "subclass", choose: 1, from: [], picked: ["Fist of Unbroken Air"] },
     ],
   });
-  assert.deepEqual(reconcile(saved, stale).ruleChoices, saved.ruleChoices, "the saved discipline pick is untouched");
+  assert.deepEqual(reconcile(saved, stale, { activeBooks: ALL_BOOKS }).ruleChoices, saved.ruleChoices, "the saved discipline pick is untouched");
 });

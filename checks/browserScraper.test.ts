@@ -232,7 +232,7 @@ test("runInAppIntegration: orchestrates 10 scrapers, reports progress, and hydra
       } as any;
     }) as any;
 
-    const progressReports: Array<{ category: string; step: number; total: number }> = [];
+    const progressReports: { category: string; step: number; total: number }[] = [];
     const result = await runInAppIntegration((category, step, total) => {
       progressReports.push({ category, step, total });
     });

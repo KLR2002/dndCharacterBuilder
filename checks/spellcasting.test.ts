@@ -1,3 +1,4 @@
+import { ALL_BOOKS } from "../src/constants/books.ts";
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { makeChar, loadTestCatalog, inMemoryCompendium } from "./testUtils.ts";
@@ -33,7 +34,7 @@ test("getClassSpellProfiles detects casting classes and ignores non-casters", ()
       cl("Rogue", 3, "Thief"),
     ],
   });
-  assert.deepEqual(getClassSpellProfiles(martialChar), []);
+  assert.deepEqual(getClassSpellProfiles(martialChar, { activeBooks: ALL_BOOKS }), []);
 
   // Eldritch Knight and Arcane Trickster under level 3 should NOT be detected
   const lowLevelThirdCasters = makeChar({
@@ -42,19 +43,19 @@ test("getClassSpellProfiles detects casting classes and ignores non-casters", ()
       cl("Rogue", 2, "Arcane Trickster"),
     ],
   });
-  assert.deepEqual(getClassSpellProfiles(lowLevelThirdCasters), []);
+  assert.deepEqual(getClassSpellProfiles(lowLevelThirdCasters, { activeBooks: ALL_BOOKS }), []);
 
   // Fighter without subclass at level 3 should NOT be detected
   const noSubFighter = makeChar({
     classes: [cl("Fighter", 3)],
   });
-  assert.deepEqual(getClassSpellProfiles(noSubFighter), []);
+  assert.deepEqual(getClassSpellProfiles(noSubFighter, { activeBooks: ALL_BOOKS }), []);
 
   // 2014 rules: Paladin and Ranger do NOT gain spellcasting at level 1
   const lvl1HalfCasters = makeChar({
     classes: [cl("Paladin", 1), cl("Ranger", 1)],
   });
-  assert.deepEqual(getClassSpellProfiles(lvl1HalfCasters), []);
+  assert.deepEqual(getClassSpellProfiles(lvl1HalfCasters, { activeBooks: ALL_BOOKS }), []);
 
   // All 8 standard casting classes + 2 third casters (level >= 3)
   const fullCasters = makeChar({
@@ -71,7 +72,7 @@ test("getClassSpellProfiles detects casting classes and ignores non-casters", ()
       cl("Rogue", 3, "Arcane Trickster"),
     ],
   });
-  const profiles = getClassSpellProfiles(fullCasters);
+  const profiles = getClassSpellProfiles(fullCasters, { activeBooks: ALL_BOOKS });
   assert.equal(profiles.length, 10);
   assert.equal(profiles[0].className, "Bard");
   assert.equal(profiles[1].className, "Cleric");
@@ -100,7 +101,7 @@ test("getClassSpellProfiles assigns correct spellcasting ability to each class",
       cl("Warlock", 3),
     ],
   });
-  const profiles = getClassSpellProfiles(casters);
+  const profiles = getClassSpellProfiles(casters, { activeBooks: ALL_BOOKS });
   const abilityByClass = Object.fromEntries(profiles.map(p => [
     p.className === "Fighter" ? "EK" : p.className === "Rogue" ? "AT" : p.className,
     p.ability,
@@ -134,7 +135,7 @@ test("Wizard 3 / Ranger 4 generates two separate spell profiles with correct DCs
     ],
   });
 
-  const profiles = getClassSpellProfiles(char);
+  const profiles = getClassSpellProfiles(char, { activeBooks: ALL_BOOKS });
   assert.equal(profiles.length, 2);
 
   // Wizard profile:
@@ -167,35 +168,35 @@ test("Wizard 3 / Ranger 4 generates two separate spell profiles with correct DCs
 test("maxSpellLevel is computed based on individual class progression", () => {
   // Wizard 3 -> 2
   const wiz3 = makeChar({ classes: [cl("Wizard", 3)] });
-  assert.equal(getClassSpellProfiles(wiz3)[0].maxSpellLevel, 2);
+  assert.equal(getClassSpellProfiles(wiz3, { activeBooks: ALL_BOOKS })[0].maxSpellLevel, 2);
 
   // Ranger 4 -> 1
   const rgr4 = makeChar({ classes: [cl("Ranger", 4)] });
-  assert.equal(getClassSpellProfiles(rgr4)[0].maxSpellLevel, 1);
+  assert.equal(getClassSpellProfiles(rgr4, { activeBooks: ALL_BOOKS })[0].maxSpellLevel, 1);
 
   // Paladin 5 -> 2
   const pal5 = makeChar({ classes: [cl("Paladin", 5)] });
-  assert.equal(getClassSpellProfiles(pal5)[0].maxSpellLevel, 2);
+  assert.equal(getClassSpellProfiles(pal5, { activeBooks: ALL_BOOKS })[0].maxSpellLevel, 2);
 
   // Paladin 1 -> no spell profile under 2014 rules
   const pal1 = makeChar({ classes: [cl("Paladin", 1)] });
-  assert.equal(getClassSpellProfiles(pal1).length, 0);
+  assert.equal(getClassSpellProfiles(pal1, { activeBooks: ALL_BOOKS }).length, 0);
 
   // Paladin 2 -> 1
   const pal2 = makeChar({ classes: [cl("Paladin", 2)] });
-  assert.equal(getClassSpellProfiles(pal2)[0].maxSpellLevel, 1);
+  assert.equal(getClassSpellProfiles(pal2, { activeBooks: ALL_BOOKS })[0].maxSpellLevel, 1);
 
   // Warlock 5 -> 3
   const war5 = makeChar({ classes: [cl("Warlock", 5)] });
-  assert.equal(getClassSpellProfiles(war5)[0].maxSpellLevel, 3);
+  assert.equal(getClassSpellProfiles(war5, { activeBooks: ALL_BOOKS })[0].maxSpellLevel, 3);
 
   // Eldritch Knight Fighter 7 -> 2
   const ek7 = makeChar({ classes: [cl("Fighter", 7, "Eldritch Knight")] });
-  assert.equal(getClassSpellProfiles(ek7)[0].maxSpellLevel, 2);
+  assert.equal(getClassSpellProfiles(ek7, { activeBooks: ALL_BOOKS })[0].maxSpellLevel, 2);
 
   // Arcane Trickster Rogue 13 -> 3
   const at13 = makeChar({ classes: [cl("Rogue", 13, "Arcane Trickster")] });
-  assert.equal(getClassSpellProfiles(at13)[0].maxSpellLevel, 3);
+  assert.equal(getClassSpellProfiles(at13, { activeBooks: ALL_BOOKS })[0].maxSpellLevel, 3);
 });
 
 test("preparedLimit formula is accurate for Cleric, Druid, Wizard, Paladin and respects minimum of 1", () => {
@@ -204,41 +205,41 @@ test("preparedLimit formula is accurate for Cleric, Druid, Wizard, Paladin and r
     baseAbilityScores: { str: 10, dex: 10, con: 10, int: 10, wis: 16, cha: 10 },
     classes: [cl("Cleric", 5)],
   });
-  assert.equal(getClassSpellProfiles(cleric)[0].preparedLimit, 8);
+  assert.equal(getClassSpellProfiles(cleric, { activeBooks: ALL_BOOKS })[0].preparedLimit, 8);
 
   // Druid 3 with WIS 14 (+2) -> 3 + 2 = 5
   const druid = makeChar({
     baseAbilityScores: { str: 10, dex: 10, con: 10, int: 10, wis: 14, cha: 10 },
     classes: [cl("Druid", 3)],
   });
-  assert.equal(getClassSpellProfiles(druid)[0].preparedLimit, 5);
+  assert.equal(getClassSpellProfiles(druid, { activeBooks: ALL_BOOKS })[0].preparedLimit, 5);
 
   // Wizard 1 with INT 8 (-1) -> Math.max(1, 1 + (-1)) = 1 (minimum 1)
   const lowIntWizard = makeChar({
     baseAbilityScores: { str: 10, dex: 10, con: 10, int: 8, wis: 10, cha: 10 },
     classes: [cl("Wizard", 1)],
   });
-  assert.equal(getClassSpellProfiles(lowIntWizard)[0].preparedLimit, 1);
+  assert.equal(getClassSpellProfiles(lowIntWizard, { activeBooks: ALL_BOOKS })[0].preparedLimit, 1);
 
   // Paladin 5 with CHA 16 (+3) -> Math.max(1, Math.floor(5 / 2) + 3) = 2 + 3 = 5
   const paladin = makeChar({
     baseAbilityScores: { str: 10, dex: 10, con: 10, int: 10, wis: 10, cha: 16 },
     classes: [cl("Paladin", 5)],
   });
-  assert.equal(getClassSpellProfiles(paladin)[0].preparedLimit, 5);
+  assert.equal(getClassSpellProfiles(paladin, { activeBooks: ALL_BOOKS })[0].preparedLimit, 5);
 
   // Paladin 2 with CHA 8 (-1) -> Math.max(1, Math.floor(2 / 2) + (-1)) = Math.max(1, 0) = 1
   const lowChaPaladin2 = makeChar({
     baseAbilityScores: { str: 10, dex: 10, con: 10, int: 10, wis: 10, cha: 8 },
     classes: [cl("Paladin", 2)],
   });
-  assert.equal(getClassSpellProfiles(lowChaPaladin2)[0].preparedLimit, 1);
+  assert.equal(getClassSpellProfiles(lowChaPaladin2, { activeBooks: ALL_BOOKS })[0].preparedLimit, 1);
 
   // Known casters (Bard, Sorcerer, Warlock) do not have preparedLimit
   const knownCasters = makeChar({
     classes: [cl("Bard", 3), cl("Sorcerer", 3), cl("Warlock", 3)],
   });
-  const knownProfiles = getClassSpellProfiles(knownCasters);
+  const knownProfiles = getClassSpellProfiles(knownCasters, { activeBooks: ALL_BOOKS });
   for (const p of knownProfiles) {
     assert.equal(p.preparedLimit, undefined);
   }
@@ -256,7 +257,7 @@ test("getClassSpellProfiles uses effective ability scores (with racial bonuses a
     ],
     classes: [cl("Wizard", 4)],
   });
-  const profiles = getClassSpellProfiles(char);
+  const profiles = getClassSpellProfiles(char, { activeBooks: ALL_BOOKS });
   assert.equal(profiles[0].spellSaveDc, 13);
   assert.equal(profiles[0].spellAttackBonus, 5);
   assert.equal(profiles[0].preparedLimit, 7); // 4 + 3
@@ -277,7 +278,7 @@ test("getClassSpellProfiles filters knownSpells and preparedSpells by ownerKey i
     ],
   });
 
-  const profiles = getClassSpellProfiles(multiChar);
+  const profiles = getClassSpellProfiles(multiChar, { activeBooks: ALL_BOOKS });
   const wizard = profiles.find(p => p.className === "Wizard")!;
   const cleric = profiles.find(p => p.className === "Cleric")!;
 
@@ -303,7 +304,7 @@ test("getClassSpellProfiles uses single-class fallback for knownSpells and prepa
     ],
   });
 
-  const profiles = getClassSpellProfiles(singleChar);
+  const profiles = getClassSpellProfiles(singleChar, { activeBooks: ALL_BOOKS });
   assert.equal(profiles.length, 1);
   assert.equal(profiles[0].knownSpells.length, 2);
   assert.deepEqual(profiles[0].knownSpells.map(s => s.name), ["Mage Armor", "Magic Missile"]);
@@ -554,9 +555,9 @@ test("isSpellAvailableForClass: flexible across diverse books (FTD, SCC) using d
 
 test("isSpellAvailableForClass: defaults to all books when activeBooks is undefined, handles case-insensitivity", () => {
   // Undefined activeBooks allows any book & variant
-  assert.equal(isSpellAvailableForClass(controlFlamesMock, "druid"), true);
-  assert.equal(isSpellAvailableForClass(aidMock, "BARD"), true);
-  assert.equal(isSpellAvailableForClass(silveryBarbsMock, "wizard"), true);
+  assert.equal(isSpellAvailableForClass(controlFlamesMock, "druid", ALL_BOOKS), true);
+  assert.equal(isSpellAvailableForClass(aidMock, "BARD", ALL_BOOKS), true);
+  assert.equal(isSpellAvailableForClass(silveryBarbsMock, "wizard", ALL_BOOKS), true);
 
   // Case-insensitive activeBooks matching
   assert.equal(isSpellAvailableForClass(controlFlamesMock, "Druid", ["phb", "xge"]), true);
@@ -631,7 +632,7 @@ test("getClassSpellProfiles populates alwaysPreparedSpells and leaves preparedLi
     preparedSpells: ["Command__PHB__Cleric__PHB"],
   });
 
-  const profiles = getClassSpellProfiles(lifeCleric);
+  const profiles = getClassSpellProfiles(lifeCleric, { activeBooks: ALL_BOOKS });
   assert.equal(profiles.length, 1);
   const profile = profiles[0];
 
@@ -822,7 +823,7 @@ test("getClassSpellProfiles: Ranger and Sorcerer profiles include subclassKnownS
     knownSpells: [{ name: "Magic Missile", source: "PHB", ownerKey: "Sorcerer__PHB" }],
   });
 
-  const sorcProfiles = getClassSpellProfiles(sorcerer);
+  const sorcProfiles = getClassSpellProfiles(sorcerer, { activeBooks: ALL_BOOKS });
   assert.equal(sorcProfiles.length, 1);
   const sorcProfile = sorcProfiles[0];
   assert.equal(sorcProfile.className, "Sorcerer");
@@ -840,7 +841,7 @@ test("getClassSpellProfiles: Ranger and Sorcerer profiles include subclassKnownS
     knownSpells: [{ name: "Hunter's Mark", source: "PHB", ownerKey: "Ranger__PHB" }],
   });
 
-  const rangerProfiles = getClassSpellProfiles(ranger);
+  const rangerProfiles = getClassSpellProfiles(ranger, { activeBooks: ALL_BOOKS });
   assert.equal(rangerProfiles.length, 1);
   const rangerProfile = rangerProfiles[0];
   assert.equal(rangerProfile.className, "Ranger");
@@ -855,17 +856,17 @@ test("getClassSpellProfiles: Ranger and Sorcerer profiles include subclassKnownS
 
 test("ClassSpellProfile carries its Spell Owner key, including the Giant Barbarian owner", () => {
   const cleric = makeChar({ classes: [cl("Cleric", 3)] });
-  assert.equal(getClassSpellProfiles(cleric)[0].ownerKey, "Cleric__PHB");
+  assert.equal(getClassSpellProfiles(cleric, { activeBooks: ALL_BOOKS })[0].ownerKey, "Cleric__PHB");
 
   const wizardXge = makeChar({ classes: [cl("Wizard", 3, undefined, "XGE")] });
-  assert.equal(getClassSpellProfiles(wizardXge)[0].ownerKey, "Wizard__XGE");
+  assert.equal(getClassSpellProfiles(wizardXge, { activeBooks: ALL_BOOKS })[0].ownerKey, "Wizard__XGE");
 
   const giant = makeChar({ classes: [cl("Barbarian", 3, "Path of the Giant")] });
-  assert.equal(getClassSpellProfiles(giant)[0].ownerKey, "Barbarian__BGG");
+  assert.equal(getClassSpellProfiles(giant, { activeBooks: ALL_BOOKS })[0].ownerKey, "Barbarian__BGG");
 
   // A non-Giant Barbarian is not a casting class, so the owner key falls back to the class key.
   const berserker = makeChar({ classes: [cl("Barbarian", 3, "Path of the Berserker")] });
-  assert.deepEqual(getClassSpellProfiles(berserker), []);
+  assert.deepEqual(getClassSpellProfiles(berserker, { activeBooks: ALL_BOOKS }), []);
 });
 
 test("a class's subclass spells are read from the Compendium the evaluation was given, not the process-wide one", () => {
@@ -882,7 +883,7 @@ test("a class's subclass spells are read from the Compendium the evaluation was 
   const classes = grantedSpellClasses().map((cls) => (cls.name === "Sample Mage" ? { ...cls, subclasses: [order] } : cls));
   const compendium = inMemoryCompendium({ classes, spells: grantedSpellSpells() });
   const character = makeChar({ classes: [{ className: "Sample Mage", source: "TST", level: 3, subclassName: "Sample Order" }] });
-  const [profile] = evaluateCharacter(character, { compendium }).spellProfiles;
+  const [profile] = evaluateCharacter(character, { compendium, activeBooks: ALL_BOOKS }).spellProfiles;
   assert.deepEqual(profile.subclassKnownSpells?.map((spell) => spell.name), ["Sample Ward"]);
 });
 

@@ -1,3 +1,4 @@
+import { ALL_BOOKS, type ActiveBooks } from "../constants/books.ts";
 import type { AdditionalSpells, BackgroundData, ClassData, SpellData } from "../types/dnd5e.ts";
 import type { Character, CharacterClass, KnownSpell, LegacyKnownSpell } from "../types/character.ts";
 import { currentCompendium, type Compendium } from "../services/compendium.ts";
@@ -39,8 +40,8 @@ export interface ExpandedSpellSource {
  */
 export function resolveCharacterBackground(
   character: Character,
-  backgroundCatalog?: BackgroundData[],
-  activeBooks?: readonly string[]
+  backgroundCatalog: BackgroundData[] | undefined,
+  activeBooks: ActiveBooks
 ): BackgroundData | undefined {
   if (!character.background || isCustomBackground(character.background) || !backgroundCatalog) return undefined;
   return findHeldRecord(backgroundCatalog, character.background, activeBooks);
@@ -54,7 +55,7 @@ export function resolveCharacterBackground(
 function heldExpandedSources(
   character: Character,
   compendium: Compendium = currentCompendium(),
-  activeBooks?: readonly string[]
+  activeBooks: ActiveBooks
 ): ExpandedSpellSource[] {
   const listings = compendium.for(activeBooks);
   const sources: ExpandedSpellSource[] = [];
@@ -69,7 +70,7 @@ function heldExpandedSources(
 }
 
 /** The names every held expanded list adds to each spellcasting class's list: the input to a class profile's expanded spells. */
-export function heldExpandedSpellNames(character: Character, compendium?: Compendium, activeBooks?: readonly string[]): string[] {
+export function heldExpandedSpellNames(character: Character, compendium: Compendium | undefined, activeBooks: ActiveBooks): string[] {
   return heldExpandedSources(character, compendium, activeBooks).flatMap((source) => source.names);
 }
 
@@ -123,7 +124,7 @@ export function releaseExpandedOnlySpells(
   before: Character,
   after: Character,
   compendium: Compendium = currentCompendium(),
-  activeBooks?: string[]
+  activeBooks: ActiveBooks
 ): Character {
   const classes = compendium.for(activeBooks).classes();
   const stillListed = listedNamesOf(heldExpandedSources(after, compendium, activeBooks));
@@ -151,7 +152,7 @@ export function releaseStrandedExpandedSpells(
   activeBooks: string[]
 ): Character {
   const stillListed = listedNamesOf(heldExpandedSources(character, compendium, activeBooks));
-  const loaded = sourceTitlesOf(heldExpandedSources(character, compendium));
+  const loaded = sourceTitlesOf(heldExpandedSources(character, compendium, ALL_BOOKS));
   return releaseExpandedKnownSpells(
     character,
     loaded,
@@ -190,7 +191,7 @@ function releaseExpandedKnownSpells(
   stays: (known: KnownSpell | LegacyKnownSpell, spell: SpellData) => boolean,
   ownerClasses: readonly CharacterClass[],
   compendium: Compendium,
-  activeBooks?: string[]
+  activeBooks: ActiveBooks
 ): Character {
   if (sourceOf.size === 0) return character;
   const plainOwnerKeys = plainOwnerKeysOf(ownerClasses);

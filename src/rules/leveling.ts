@@ -1,3 +1,4 @@
+import type { ActiveBooks } from "../constants/books.ts";
 import type { Character, AsiSelection, AbilityKey } from "../types/character.ts";
 import { asiLevels } from "./classData.ts";
 import { reconcile } from "./characterReconciler.ts";
@@ -197,7 +198,7 @@ export function applyAsiSelection(
   character: Character,
   selection: AsiSelection,
   compendium: Compendium = currentCompendium(),
-  activeBooks?: string[]
+  activeBooks: ActiveBooks
 ): Character {
   const targetClass =
     selection.className ??
@@ -250,7 +251,7 @@ export function removeAsiSelection(
   className: string,
   classLevel: number,
   compendium: Compendium = currentCompendium(),
-  activeBooks?: string[]
+  activeBooks: ActiveBooks
 ): Character {
   const selections = character.asiSelections ?? [];
   const filtered = selections.filter((s) => {

@@ -1,3 +1,4 @@
+import { ALL_BOOKS } from "../src/constants/books.ts";
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { makeChar } from "./testUtils.ts";
@@ -8,7 +9,7 @@ test("getTacticalActionLedger derives Fighter 1 combat actions including Second 
   const char = makeChar({
     classes: [{ className: "Fighter", source: "PHB", level: 1 }],
   });
-  const evaluated = evaluateCharacter(char);
+  const evaluated = evaluateCharacter(char, { activeBooks: ALL_BOOKS });
   const ledger = getTacticalActionLedger(char, evaluated);
 
   assert.equal(ledger.extraAttackCount, 1);
@@ -26,7 +27,7 @@ test("getTacticalActionLedger derives Rogue 5 combat actions including Cunning A
   const char = makeChar({
     classes: [{ className: "Rogue", source: "PHB", level: 5 }],
   });
-  const evaluated = evaluateCharacter(char);
+  const evaluated = evaluateCharacter(char, { activeBooks: ALL_BOOKS });
   const ledger = getTacticalActionLedger(char, evaluated);
 
   assert.equal(ledger.sneakAttackDice, "3d6");
@@ -42,7 +43,7 @@ test("getTacticalActionLedger derives Monk 3 Ki actions and Deflect Missiles", (
   const char = makeChar({
     classes: [{ className: "Monk", source: "PHB", level: 3 }],
   });
-  const evaluated = evaluateCharacter(char);
+  const evaluated = evaluateCharacter(char, { activeBooks: ALL_BOOKS });
   const ledger = getTacticalActionLedger(char, evaluated);
 
   const martialArts = ledger.bonusActions.find((b) => b.name.includes("Martial Arts Strike"));
@@ -75,7 +76,7 @@ test("getTacticalActionLedger categorizes Battle Master maneuvers into tactical 
       },
     ],
   });
-  const evaluated = evaluateCharacter(char);
+  const evaluated = evaluateCharacter(char, { activeBooks: ALL_BOOKS });
   const ledger = getTacticalActionLedger(char, evaluated);
 
   assert.equal(ledger.maneuvers.length, 3);
@@ -123,7 +124,7 @@ test("getTacticalActionLedger names both superiority faces on maneuver cards whe
       },
     ],
   });
-  const withStyleLedger = getTacticalActionLedger(bmWithStyle, evaluateCharacter(bmWithStyle));
+  const withStyleLedger = getTacticalActionLedger(bmWithStyle, evaluateCharacter(bmWithStyle, { activeBooks: ALL_BOOKS }));
   assert.ok(withStyleLedger.maneuvers.length > 0);
   for (const m of withStyleLedger.maneuvers) {
     assert.equal(m.die, "d8 / d6");
@@ -133,7 +134,7 @@ test("getTacticalActionLedger names both superiority faces on maneuver cards whe
     classes: [{ className: "Fighter", source: "PHB", level: 3, subclassName: "Battle Master" }],
     ruleChoices: [maneuverChoice],
   });
-  const aloneLedger = getTacticalActionLedger(bmAlone, evaluateCharacter(bmAlone));
+  const aloneLedger = getTacticalActionLedger(bmAlone, evaluateCharacter(bmAlone, { activeBooks: ALL_BOOKS }));
   for (const m of aloneLedger.maneuvers) {
     assert.equal(m.die, "d8");
   }
@@ -147,7 +148,7 @@ test("getTacticalActionLedger detects dual wielding off-hand attack in bonus act
       { id: "w2", name: "Scimitar", source: "PHB", isEquipped: true, section: "equipped", quantity: 1 },
     ],
   });
-  const evaluated = evaluateCharacter(char);
+  const evaluated = evaluateCharacter(char, { activeBooks: ALL_BOOKS });
   const ledger = getTacticalActionLedger(char, evaluated);
 
   assert.equal(ledger.dualWield.isDualWielding, true);

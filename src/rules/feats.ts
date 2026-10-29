@@ -1,3 +1,4 @@
+import type { ActiveBooks } from "../constants/books.ts";
 import type { AbilityKey, AbilityScores, AsiSelection, Character } from "../types/character.ts";
 import { effectiveScores, hasFeat } from "./abilities.ts";
 import { totalLevel } from "./proficiencies.ts";
@@ -17,8 +18,8 @@ export interface FeatPrerequisiteResult {
 }
 
 export interface FeatPrerequisiteOptions {
-  /** The Compendium the armor prerequisite reads from the Proficiency Sheet. Defaults to the current one. */
-  catalogs?: CharacterCatalogs;
+  /** The Compendium and active books the armor prerequisite reads its Proficiency Sheet from. */
+  catalogs: CharacterCatalogs;
   effectiveScores?: AbilityScores;
   armorProficiencies?: string[];
   weaponProficiencies?: string[];
@@ -32,14 +33,14 @@ export interface FeatPrerequisiteOptions {
 export function validateFeatPrerequisites(
   character: Character,
   feat: { name: string; prerequisite?: string | null },
-  options: FeatPrerequisiteOptions = {},
+  options: FeatPrerequisiteOptions,
 ): FeatPrerequisiteResult {
   const prereq = feat.prerequisite?.trim();
   if (!prereq) return { met: true };
 
   const scores = options.effectiveScores || effectiveScores(character).scores;
   const lvl = options.totalLevel ?? totalLevel(character);
-  const armors = options.armorProficiencies ?? proficiencySheet(character, options.catalogs ?? {}).armor.map((armor) => armor.name);
+  const armors = options.armorProficiencies ?? proficiencySheet(character, options.catalogs).armor.map((armor) => armor.name);
   const raceName = (character.race?.name || "").toLowerCase();
   const subraceName = (character.race?.subraceName || "").toLowerCase();
 
@@ -154,7 +155,7 @@ function isSameEntry(entry: OriginFeatEntry, other: OriginFeatEntry): boolean {
  * Adds an origin feat, or replaces the entry `replacing` names, then reconciles so that the
  * choices the replaced feat granted (e.g. Fighting Initiate's style) are pruned with a review notice.
  * The spells only the replaced feat's expanded list gave are released too (ADR 0017). `activeBooks` scopes the reconcile and the
- * release to the books now active; omitted, they are unscoped.
+ * release to the books now active; ALL_BOOKS leaves them unscoped.
  *
  * A feat is held once. When another entry already holds the selection's feat name (a background's copy, for one), the
  * character is returned unchanged.
@@ -162,9 +163,9 @@ function isSameEntry(entry: OriginFeatEntry, other: OriginFeatEntry): boolean {
 export function applyOriginFeat(
   character: Character,
   selection: AsiSelection,
-  replacing?: OriginFeatEntry,
+  replacing: OriginFeatEntry | undefined,
   compendium: Compendium = currentCompendium(),
-  activeBooks?: string[]
+  activeBooks: ActiveBooks
 ): Character {
   const current = character.originFeats || [];
   const target = replacing ?? selection;
@@ -195,9 +196,9 @@ export function applyOriginFeat(
 export function grantBackgroundFeat(
   character: Character,
   featName: string,
-  featAbility?: AbilityKey,
+  featAbility: AbilityKey | undefined,
   compendium: Compendium = currentCompendium(),
-  activeBooks?: string[]
+  activeBooks: ActiveBooks
 ): Character {
   const heldByRace = (character.originFeats ?? []).some(
     (entry) => entry.featSource !== BACKGROUND_FEAT_SOURCE && entry.featName?.toLowerCase() === featName.toLowerCase()
@@ -223,7 +224,7 @@ export function removeOriginFeat(
   character: Character,
   entry: OriginFeatEntry,
   compendium: Compendium = currentCompendium(),
-  activeBooks?: string[]
+  activeBooks: ActiveBooks
 ): Character {
   const current = character.originFeats || [];
   const updated = current.filter((held) => !isSameEntry(held, entry));
@@ -256,7 +257,7 @@ export function releaseRaceOriginFeat(
   character: Character,
   next: RaceIdentity | null,
   compendium: Compendium = currentCompendium(),
-  activeBooks?: string[]
+  activeBooks: ActiveBooks
 ): Character {
   const held = raceOriginFeatTitle(character.race);
   if (!held) return character;

@@ -1,3 +1,4 @@
+import type { ActiveBooks } from "../constants/books.ts";
 import { currentCompendium, type Compendium } from "../services/compendium.ts";
 import type { Character, RuleChoiceEntry } from "../types/character.ts";
 import type { SpellData, SubclassData, AdditionalSpells } from "../types/dnd5e.ts";
@@ -17,7 +18,7 @@ export interface SubclassSpellOptions {
   affinity?: string;
   kind?: string;
   swaps?: Record<string, string>;
-  activeBooks?: string[];
+  activeBooks: ActiveBooks;
   chosenCantrips?: string[];
   ruleChoices?: RuleChoiceEntry[];
   /** The source of the class entry's catalog class. Omitted or unmatched, the first class of the name is read. */
@@ -51,7 +52,7 @@ function getSpellCatalog(compendium: Compendium): Map<string, SpellData[]> {
 
 // Prefers the copy from an active book; otherwise falls back to the first copy, unless only active copies are wanted.
 // With `activeOnly`, the SRD Baseline is always on, as it is for class spell lists (isSpellAvailableForClass).
-function pickSpell(copies: SpellData[] | undefined, activeBooks?: string[], activeOnly = false): SpellData | undefined {
+function pickSpell(copies: SpellData[] | undefined, activeBooks: ActiveBooks, activeOnly = false): SpellData | undefined {
   if (!copies || copies.length === 0) return undefined;
   if (activeBooks && activeBooks.length > 0) {
     const books = new Set(activeBooks.map((b) => b.toUpperCase()));
@@ -73,7 +74,7 @@ export function resetSpellCatalogCache(): void {
  */
 export function resolveSpellName(
   name: string,
-  activeBooks: string[] | undefined,
+  activeBooks: ActiveBooks,
   compendium: Compendium = currentCompendium(),
   options: { activeOnly?: boolean } = {}
 ): SpellData | undefined {
@@ -625,7 +626,7 @@ export function validateSubclassSpellSwap(
   subclassName: string,
   originalSpellName: string,
   replacementSpellName: string,
-  activeBooks?: string[],
+  activeBooks: ActiveBooks,
   compendium: Compendium = currentCompendium()
 ): { valid: boolean; reason?: string } {
   if (!className || !subclassName) {
@@ -712,7 +713,7 @@ export function validateSubclassSpellSwap(
 export function getEligibleSubclassSpellSwaps(
   subclassName: string,
   originalSpell: SpellData,
-  activeBooks?: string[],
+  activeBooks: ActiveBooks,
   compendium: Compendium = currentCompendium()
 ): SpellData[] {
   if (!subclassName || !originalSpell || originalSpell.level === 0) return [];
@@ -747,8 +748,8 @@ export function getOrphanedSubclassSpells(
   character: Character,
   className: string,
   oldSubclassName: string,
-  newSubclassName?: string,
-  activeBooks?: string[],
+  newSubclassName: string | undefined,
+  activeBooks: ActiveBooks,
   compendium: Compendium = currentCompendium()
 ): string[] {
   if (!oldSubclassName) return [];

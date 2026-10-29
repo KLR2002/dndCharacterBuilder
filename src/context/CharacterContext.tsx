@@ -240,7 +240,7 @@ export function CharacterProvider({ children }: { children: React.ReactNode }) {
       bonds: "",
       flaws: "",
       notes: "",
-    });
+    }, undefined, [], activeBooks);
 
     await changeCharacters(previous => [...previous, newChar]);
     return newChar;

@@ -1,3 +1,4 @@
+import { ALL_BOOKS } from "../src/constants/books.ts";
 import test from "node:test";
 import assert from "node:assert/strict";
 import type { Character } from "../src/types/character.ts";
@@ -66,7 +67,7 @@ const stanceChar = (picks: Record<string, string[]>): Character =>
   });
 
 test("a weapon pick on a Monk subclass's feature is a kensei weapon, whatever the subclass is called", () => {
-  assert.deepEqual(kenseiWeaponNames(stanceChar({ [GRANT]: [WEAPON] }), { compendium: compendium() }), [WEAPON]);
+  assert.deepEqual(kenseiWeaponNames(stanceChar({ [GRANT]: [WEAPON] }), { compendium: compendium(), activeBooks: ALL_BOOKS }), [WEAPON]);
 });
 
 test("a weapon pick on a feature of another class is not a Monk Weapon", () => {
@@ -74,5 +75,5 @@ test("a weapon pick on a feature of another class is not a Monk Weapon", () => {
     classes: [{ className: "Wizard", source: "PHB", level: 3, subclassName: SUBCLASS, subclassSource: "TST" }],
     proficiencyPicks: { [GRANT]: [WEAPON] },
   });
-  assert.deepEqual(kenseiWeaponNames(wizardStance, { compendium: compendium() }), []);
+  assert.deepEqual(kenseiWeaponNames(wizardStance, { compendium: compendium(), activeBooks: ALL_BOOKS }), []);
 });

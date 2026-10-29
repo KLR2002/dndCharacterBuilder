@@ -80,7 +80,7 @@ export const BuilderTab: React.FC<BuilderTabProps> = ({
   const allBackgrounds = listings.backgrounds();
   const allFeats = getFeats(activeBooks);
 
-  const { scores: effectiveScores, modifiers } = evaluateCharacter(character).effectiveScores;
+  const { scores: effectiveScores, modifiers } = evaluateCharacter(character, catalogs).effectiveScores;
   const totalLevel = calculateTotalLevel(character);
   const primaryClass = character.classes[0]?.className;
 
@@ -166,7 +166,7 @@ export const BuilderTab: React.FC<BuilderTabProps> = ({
   const handleClaimGold = () => {
     if (!primaryClass) return;
     const goldAmount = startingGoldFor(primaryClass);
-    onUpdate((current) => applyStartingGrants(current, "gold", { goldAmount }));
+    onUpdate((current) => applyStartingGrants(current, "gold", { goldAmount, catalogs }));
   };
 
   const handleClaimEquipment = () => {
@@ -177,7 +177,7 @@ export const BuilderTab: React.FC<BuilderTabProps> = ({
   const handleClaimAgain = () => {
     if (!primaryClass) return;
     const mode = character.startingOption;
-    const options = mode === "gold" ? { goldAmount: startingGoldFor(primaryClass) } : { catalogs };
+    const options = { goldAmount: mode === "gold" ? startingGoldFor(primaryClass) : undefined, catalogs };
     onUpdate((current) => reclaimStartingGrants(current, mode, options));
   };
 

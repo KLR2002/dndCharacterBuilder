@@ -1,3 +1,4 @@
+import type { ActiveBooks } from "../constants/books.ts";
 import type { Character } from "../types/character.ts";
 import type { ClassData, ItemData, ProficiencyCategory } from "../types/dnd5e.ts";
 import { DND_SKILLS } from "../constants/rules.ts";
@@ -161,12 +162,14 @@ function legacySkillNames(
   ancestry: ResolvedAncestry,
   listings: CompendiumListings,
   features: FeatureInstance[],
+  activeBooks: readonly string[] | undefined,
 ): string[] {
   return [
     ...getAutoGrantedSkills(character, {
       race: ancestry.race,
       subrace: ancestry.subrace,
       races: listings.races(),
+      activeBooks,
     }),
     ...fixedFeatureNames(features, "skills").map(normalizeSkillName),
   ];
@@ -235,7 +238,7 @@ function multiclassFeaturesOf(character: Character, classes: readonly ClassData[
  * first class's starting proficiencies, the later classes' multiclass skill choices, and a custom background's
  * picks, are included as more features; they are not granted features.
  */
-export function featuresOf(character: Character, listings: CompendiumListings, activeBooks?: readonly string[]): FeatureInstance[] {
+export function featuresOf(character: Character, listings: CompendiumListings, activeBooks: ActiveBooks): FeatureInstance[] {
   const features = grantedFeatures(character, {
     races: listings.races(),
     classes: listings.classes(),
@@ -260,7 +263,7 @@ export function ruleGrantedSkills(character: Character, catalogs?: CharacterCata
   const ancestry = resolveCharacterAncestry(character, listings.races(), catalogs?.activeBooks);
   const features = featuresOf(character, listings, catalogs?.activeBooks);
   return [
-    ...legacySkillNames(character, ancestry, listings, features),
+    ...legacySkillNames(character, ancestry, listings, features, catalogs?.activeBooks),
     ...choicePickNames(features, character, "skills", listings.items()),
   ];
 }
@@ -381,7 +384,7 @@ export function proficiencySheet(character: Character, catalogs: CharacterCatalo
   ];
 
   const skillNames = [
-    ...legacySkillNames(character, ancestry, listings, features),
+    ...legacySkillNames(character, ancestry, listings, features, catalogs.activeBooks),
     ...(character.chosenSkills ?? []).map(normalizeSkillName),
     ...choicePickNames(features, character, "skills", items),
   ];

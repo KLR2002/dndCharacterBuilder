@@ -708,7 +708,7 @@ export const AncestrySection: React.FC<AncestrySectionProps> = ({
             {allFeats
               .filter((f) => f.name.toLowerCase().includes(featSearch.toLowerCase()))
               .map((f) => {
-                const prereqCheck = validateFeatPrerequisites(character, f);
+                const prereqCheck = validateFeatPrerequisites(character, f, { catalogs: { compendium: currentCompendium(), activeBooks } });
                 const bonusOptions = getFeatAbilityBonusOptions(f.name);
                 const isSelected = currentOriginFeat?.featName?.toLowerCase() === f.name.toLowerCase();
                 // A feat the background already gives is held once, so the race cannot take it (applyOriginFeat).

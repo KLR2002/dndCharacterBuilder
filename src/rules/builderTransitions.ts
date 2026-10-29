@@ -1,3 +1,4 @@
+import type { ActiveBooks } from "../constants/books.ts";
 import type {
   AbilityKey,
   AsiSelection,
@@ -221,7 +222,7 @@ export function applyAsiWithHitPoints(
   selection: AsiSelection,
   fullHealOnLevelUp: boolean,
   compendium: Compendium = currentCompendium(),
-  activeBooks?: string[]
+  activeBooks: ActiveBooks
 ): Character {
   const picked = applyAsiSelection(character, selection, compendium, activeBooks);
   if (!fullHealOnLevelUp) return picked;
@@ -272,7 +273,7 @@ export function settleAncestryChange(
   before: Character,
   after: Character,
   compendium: Compendium,
-  activeBooks?: string[]
+  activeBooks: ActiveBooks
 ): Character {
   const reconciled = reconcile(releaseSupersededRacePicks(before, after), compendium, { activeBooks });
   return releaseExpandedOnlySpells(before, reconciled, compendium, activeBooks);
@@ -285,7 +286,7 @@ export function settleAncestryChange(
 export function changeRace(
   character: Character,
   compendium: Compendium = currentCompendium(),
-  activeBooks?: string[]
+  activeBooks: ActiveBooks
 ): Character {
   // Leaving the race releases the origin feat it gave first, so the pick and counter it granted are not read back below.
   const leaving = releaseRaceOriginFeat(character, null, compendium, activeBooks);
@@ -316,7 +317,7 @@ export function changeLineage(
   character: Character,
   lineage: LineageChoice,
   compendium: Compendium = currentCompendium(),
-  activeBooks?: string[]
+  activeBooks: ActiveBooks
 ): Character {
   const leavesRace =
     lineage.kind === "custom"
@@ -345,7 +346,7 @@ export function changeSubclass(
   subclassSource: string,
   unlearnOrphaned: string[] = [],
   compendium: Compendium = currentCompendium(),
-  activeBooks?: string[]
+  activeBooks: ActiveBooks
 ): Character {
   const existing = character.classes.find((c) => c.className === className);
   const oldSubclass = existing?.subclassName || existing?.subclass;
@@ -380,7 +381,7 @@ export function changeSubclass(
 export function applySoleSubclasses(
   character: Character,
   compendium: Compendium = currentCompendium(),
-  activeBooks?: string[]
+  activeBooks: ActiveBooks
 ): Character {
   if (compendium.integrated) return character;
 
@@ -405,7 +406,7 @@ export function removeClassLevel(
   character: Character,
   className: string,
   compendium: Compendium = currentCompendium(),
-  activeBooks?: string[]
+  activeBooks: ActiveBooks
 ): Character {
   const existing = character.classes.find((c) => c.className === className);
   if (!existing) return character;
@@ -493,13 +494,13 @@ function withUniqueIds(items: InventoryItem[], existing: InventoryItem[]): Inven
 export interface StartingGrantOptions {
   goldAmount?: number;
   equipmentItems?: InventoryItem[];
-  catalogs?: CharacterCatalogs;
+  catalogs: CharacterCatalogs;
 }
 
 /** The equipment a claim grants: the items the caller gives, or else the kit the picks resolve to. */
-function equipmentKitFor(character: Character, options?: StartingGrantOptions): StartingEquipmentKit {
-  const resolved = resolveStartingEquipment(character, options?.catalogs ?? {});
-  return options?.equipmentItems ? { ...resolved, complete: true, items: options.equipmentItems } : resolved;
+function equipmentKitFor(character: Character, options: StartingGrantOptions): StartingEquipmentKit {
+  const resolved = resolveStartingEquipment(character, options.catalogs);
+  return options.equipmentItems ? { ...resolved, complete: true, items: options.equipmentItems } : resolved;
 }
 
 /**
@@ -519,7 +520,7 @@ function kitInstalled(items: InventoryItem[], kit: InventoryItem[]): boolean {
 export function applyStartingGrants(
   character: Character,
   mode: "gold" | "equipment",
-  options?: StartingGrantOptions
+  options: StartingGrantOptions
 ): Character {
   const kit = mode === "equipment" ? equipmentKitFor(character, options) : undefined;
   if (kit && !kit.complete) return character;
@@ -532,7 +533,7 @@ export function applyStartingGrants(
   }
 
   const defaultGold = startingGoldOf(character);
-  const gold = options?.goldAmount ?? defaultGold;
+  const gold = options.goldAmount ?? defaultGold;
 
   // Clean up any previously granted starting items (items with id starting with "start_")
   const cleanedItems = (character.items ?? []).filter((item) => !item.id.startsWith("start_"));
@@ -582,10 +583,10 @@ export function applyStartingGrants(
 export function reclaimStartingGrants(
   character: Character,
   mode: "gold" | "equipment",
-  options?: StartingGrantOptions
+  options: StartingGrantOptions
 ): Character {
   if (mode === "gold") {
-    const gold = options?.goldAmount ?? startingGoldOf(character);
+    const gold = options.goldAmount ?? startingGoldOf(character);
     const pouch = character.pouch ?? { cp: 0, sp: 0, ep: 0, gp: 0, pp: 0 };
     return {
       ...character,
@@ -627,7 +628,7 @@ export function setCustomBackground(
   skills: string[],
   details: CustomBackgroundDetails = {},
   compendium: Compendium = currentCompendium(),
-  activeBooks?: string[]
+  activeBooks: ActiveBooks
 ): Character {
   const legacyBackground = (character.skillChoices ?? []).filter((sc) => sc.origin === "background");
   const droppedSkills = new Set(legacyBackground.flatMap((sc) => sc.picked.map((s) => normalizeSkillName(s).toLowerCase())));
@@ -674,7 +675,7 @@ function storePicks(picks: Record<string, string[]>, id: string, values: string[
  * the Character Reconciler, which prunes the choices that depended on a removed feat. Records a
  * review notice for each background grant removed.
  */
-export function clearBackground(character: Character, catalogs: CharacterCatalogs = {}): Character {
+export function clearBackground(character: Character, catalogs: CharacterCatalogs): Character {
   const compendium = catalogs.compendium ?? currentCompendium();
   // Skill picks saved in the old bucket move into their choices while the background is still held.
   const current = moveLegacySkillPicks(character, compendium, catalogs.activeBooks);
@@ -741,7 +742,7 @@ export function setOptionalFeatureEnabled(
   featureName: string,
   enabled: boolean,
   compendium: Compendium,
-  options: { activeBooks?: string[] } = {},
+  options: { activeBooks: ActiveBooks },
 ): Character {
   const optionalFeatureReplacements = { ...(character.optionalFeatureReplacements ?? {}), [featureName]: enabled };
   return reconcile({ ...character, optionalFeatureReplacements }, compendium, options);

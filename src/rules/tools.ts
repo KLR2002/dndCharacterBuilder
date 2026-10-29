@@ -50,9 +50,9 @@ export function getToolAbility(toolName: string): AbilityKey | undefined {
 
 export function evaluateCharacterTools(
   character: Character,
-  catalogs?: CharacterCatalogs
+  catalogs: CharacterCatalogs
 ): EvaluatedTool[] {
-  const toolNames = proficiencySheet(character, catalogs ?? {}).tools.map((t) => t.name);
+  const toolNames = proficiencySheet(character, catalogs).tools.map((t) => t.name);
   const pb = proficiencyBonus(totalLevel(character));
   const { modifiers } = effectiveScores(character);
 

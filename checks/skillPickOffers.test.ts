@@ -1,3 +1,4 @@
+import { ALL_BOOKS } from "../src/constants/books.ts";
 import test from "node:test";
 import assert from "node:assert/strict";
 import { ruleGrantedSkills } from "../src/rules/proficiencySheet.ts";
@@ -67,7 +68,7 @@ const sentinelCompendium = () => compendiumWith(sentinel.record);
 const keeper = (extra: Partial<Character> = {}): Character => makeChar({ classes: [keeperEntry], ...extra });
 
 test("a subclass skill pick is a card pick named for its feature, and carries Expertise when its grant marks it", () => {
-  const offers = skillPickOffers(keeper(), { compendium: compendiumWith() });
+  const offers = skillPickOffers(keeper(), { compendium: compendiumWith(), activeBooks: ALL_BOOKS });
   assert.equal(offers.length, 1, "the language pick of the same feature is not a skill pick");
   const [pick] = offers;
   assert.equal(pick.traitName, "Keeper's Insight");
@@ -78,7 +79,7 @@ test("a subclass skill pick is a card pick named for its feature, and carries Ex
 });
 
 test("a later class's multiclass skill pick is named for its class, with no Expertise", () => {
-  const [pick] = skillPickOffers(makeChar({ classes: [fighter, sentinel.entry] }), { compendium: sentinelCompendium() });
+  const [pick] = skillPickOffers(makeChar({ classes: [fighter, sentinel.entry] }), { compendium: sentinelCompendium(), activeBooks: ALL_BOOKS });
   assert.equal(pick.traitName, "Sentinel multiclass skill");
   assert.equal(pick.origin, "class");
   assert.equal(pick.expertise, false);
@@ -86,32 +87,32 @@ test("a later class's multiclass skill pick is named for its class, with no Expe
 });
 
 test("a character holding neither feature has no skill pick to show", () => {
-  assert.deepEqual(skillPickOffers(makeChar({ classes: [fighter] }), { compendium: compendiumWith() }), []);
+  assert.deepEqual(skillPickOffers(makeChar({ classes: [fighter] }), { compendium: compendiumWith(), activeBooks: ALL_BOOKS }), []);
 });
 
 test("a skill taken as a subclass pick is held for the starting skill picker", () => {
   const character = keeper({ proficiencyPicks: { [insightId]: ["Arcana", "History"] } });
-  const held = ruleGrantedSkills(character, { compendium: compendiumWith() });
+  const held = ruleGrantedSkills(character, { compendium: compendiumWith(), activeBooks: ALL_BOOKS });
   assert.ok(held.includes("Arcana"));
   assert.ok(held.includes("History"));
 });
 
 test("a skill taken as a later class's multiclass pick is held for the starting skill picker", () => {
   const compendium = sentinelCompendium();
-  const [offer] = skillPickOffers(makeChar({ classes: [fighter, sentinel.entry] }), { compendium });
+  const [offer] = skillPickOffers(makeChar({ classes: [fighter, sentinel.entry] }), { compendium, activeBooks: ALL_BOOKS });
   const character = makeChar({ classes: [fighter, sentinel.entry], proficiencyPicks: { [offer.id]: ["Stealth"] } });
-  assert.ok(ruleGrantedSkills(character, { compendium }).includes("Stealth"));
+  assert.ok(ruleGrantedSkills(character, { compendium, activeBooks: ALL_BOOKS }).includes("Stealth"));
 });
 
 test("a skill the starting picker holds is not offered to the subclass pick", () => {
-  const [pick] = skillPickOffers(keeper({ chosenSkills: ["Nature"] }), { compendium: compendiumWith() });
+  const [pick] = skillPickOffers(keeper({ chosenSkills: ["Nature"] }), { compendium: compendiumWith(), activeBooks: ALL_BOOKS });
   assert.deepEqual(names(pick), ["Arcana", "History", "Religion"]);
 });
 
 test("a skill picked on either card pick is not offered on the other, in both directions", () => {
   const compendium = compendiumWith(sage.record);
   const pickOf = (character: Character, traitName: string) =>
-    skillPickOffers(character, { compendium }).find((offer) => offer.traitName === traitName);
+    skillPickOffers(character, { compendium, activeBooks: ALL_BOOKS }).find((offer) => offer.traitName === traitName);
 
   // The subclass pick holds Arcana, so the multiclass pick (which lists Arcana) does not offer it.
   const subclassFirst = makeChar({
@@ -152,7 +153,7 @@ test("a race, subrace or background skill pick is not a Skills card pick, and a 
     classes: [fighter],
     asiSelections: [{ level: 4, type: "feat", featName: "Sample Skilled", featSource: "PHB" }],
   });
-  const offers = skillPickOffers(character, { compendium });
+  const offers = skillPickOffers(character, { compendium, activeBooks: ALL_BOOKS });
   assert.deepEqual(offers.map((offer) => offer.id), [FEAT_SKILL_ID]);
   assert.equal(offers[0].origin, "feat");
 });
@@ -165,6 +166,6 @@ test("the Variant Human's skill pick is not on the Skills card, which keeps the 
       { className: "Rogue", source: "PHB", level: 1 },
     ],
   });
-  const titles = skillPickOffers(variantKnowledgeRogue, { compendium: integratedTestCompendium() }).map((offer) => offer.traitName);
+  const titles = skillPickOffers(variantKnowledgeRogue, { compendium: integratedTestCompendium(), activeBooks: ALL_BOOKS }).map((offer) => offer.traitName);
   assert.deepEqual(titles, ["Blessings of Knowledge", "Rogue multiclass skill"]);
 });

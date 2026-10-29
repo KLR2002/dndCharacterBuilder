@@ -1,3 +1,4 @@
+import { ALL_BOOKS } from "../src/constants/books.ts";
 import test from "node:test";
 import assert from "node:assert/strict";
 import { makeChar, srdBaselineCompendium } from "./testUtils.ts";
@@ -79,7 +80,7 @@ test("a stale catalog with no choices on the Totem features hides the rows and k
     offeredRuleChoices(saved, { activeBooks: ["PHB", "SCAG"], compendium }).filter((c) => TOTEM_IDS.includes(c.id)),
     [],
   );
-  assert.deepEqual(reconcile(saved, compendium).ruleChoices, saved.ruleChoices);
+  assert.deepEqual(reconcile(saved, compendium, { activeBooks: ALL_BOOKS }).ruleChoices, saved.ruleChoices);
 });
 
 test("a Totem row is not offered when the catalog's feature is at another level", () => {
@@ -110,7 +111,7 @@ test("picking a catalog Totem option records it under its id, and the result is 
   const spirit = totemOffers(char, ["PHB", "SCAG"], compendium).find((c) => c.id === SPIRIT_3);
   assert.ok(spirit, "the Totem Spirit choice is offered");
 
-  const picked = pickRuleChoice(char, spirit, "Elk", compendium);
+  const picked = pickRuleChoice(char, spirit, "Elk", compendium, ALL_BOOKS);
   assert.deepEqual(picked.ruleChoices?.find((rc) => rc.id === SPIRIT_3)?.picked, ["Elk"]);
-  assert.deepEqual(reconcile(picked, compendium), picked);
+  assert.deepEqual(reconcile(picked, compendium, { activeBooks: ALL_BOOKS }), picked);
 });

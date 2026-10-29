@@ -5,7 +5,7 @@ How to start the Expo web build, seed a character and a catalog into the browser
 ## Where to run it
 
 - Run browser work from a worktree under `.claude/worktrees/` or from the main checkout. Metro cannot resolve a symlinked `node_modules` from `/tmp`. Screenshot folders can still be under `/tmp`.
-- In a new worktree, run `scripts/worktree.sh` first.
+- In a new worktree, run `scripts/worktree.sh <integration-branch>` first.
 
 ## Start the web build
 

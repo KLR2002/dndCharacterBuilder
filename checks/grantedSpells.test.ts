@@ -1,3 +1,4 @@
+import { ALL_BOOKS } from "../src/constants/books.ts";
 import test from "node:test";
 import assert from "node:assert/strict";
 import { evaluateCharacter } from "../src/rules/characterEvaluation.ts";
@@ -18,7 +19,7 @@ const catalogs = {
     classes: grantedSpellClasses(),
     feats: grantedSpellFeats(),
     spells: grantedSpellSpells(),
-  }),
+  }), activeBooks: ALL_BOOKS,
 };
 
 const scores = (overrides: Partial<AbilityScores>): AbilityScores => ({
@@ -218,7 +219,7 @@ test("a granted spell from a book that is switched off resolves to nothing", () 
 test("granted spells are in no class's known or prepared list and leave its limits as they were", () => {
   // The class profiles read the SRD class list, so this one test holds the SRD Wizard, not the sample mage.
   const wizardCatalogs = {
-    compendium: inMemoryCompendium({ classes: loadSrdCatalog<ClassData[]>("classes").filter((c) => c.name === "Wizard"), feats: grantedSpellFeats(), spells: grantedSpellSpells() }),
+    compendium: inMemoryCompendium({ classes: loadSrdCatalog<ClassData[]>("classes").filter((c) => c.name === "Wizard"), feats: grantedSpellFeats(), spells: grantedSpellSpells() }), activeBooks: ALL_BOOKS,
   };
   const wizard = (level: number): CharacterClass => ({ className: "Wizard", source: "PHB", level });
   const base = evaluateCharacter(makeChar({ classes: [wizard(4)] }), wizardCatalogs);

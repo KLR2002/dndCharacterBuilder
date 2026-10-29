@@ -1,3 +1,4 @@
+import { ALL_BOOKS } from "../src/constants/books.ts";
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readdirSync, readFileSync, statSync } from "node:fs";
@@ -139,14 +140,14 @@ test("offeredRuleChoices filters by origin", () => {
 test("picking an offered choice records it under its origin, and the result is already reconciled", () => {
   const char = aasimarDruid();
   const [biome] = subclassRuleChoices(char, ACTIVE);
-  const afterBiome = pickRuleChoice(char, biome, "Coast");
+  const afterBiome = pickRuleChoice(char, biome, "Coast", undefined, ALL_BOOKS);
   const biomeEntry = afterBiome.ruleChoices?.find((rc) => rc.id === biome.id);
   assert.equal(biomeEntry?.origin, "subclass");
   assert.deepEqual(biomeEntry?.picked, ["Coast"]);
-  assert.deepEqual(reconcile(afterBiome, currentCompendium()), afterBiome);
+  assert.deepEqual(reconcile(afterBiome, currentCompendium(), { activeBooks: ALL_BOOKS }), afterBiome);
 
   const [revelation] = offeredRuleChoices(char, { raceCatalog: races, level: 3, activeBooks: ACTIVE, origins: ["race"] });
-  const afterRevelation = pickRuleChoice(char, revelation, "Radiant Soul");
+  const afterRevelation = pickRuleChoice(char, revelation, "Radiant Soul", undefined, ALL_BOOKS);
   const revelationEntry = afterRevelation.ruleChoices?.find((rc) => rc.id === revelation.id);
   assert.equal(revelationEntry?.origin, "race");
   assert.deepEqual(revelationEntry?.picked, ["Radiant Soul"]);
@@ -170,35 +171,35 @@ test("Giant Power: the Reconciler keeps the granted cantrip in step with the rec
     ],
   });
 
-  const once = reconcile(giant, currentCompendium());
+  const once = reconcile(giant, currentCompendium(), { activeBooks: ALL_BOOKS });
   assert.deepEqual(
     once.knownSpells?.map((k) => [k.name, k.ownerKey]),
     [["Thaumaturgy", "Barbarian__BGG"]],
   );
-  assert.deepEqual(reconcile(once, currentCompendium()), once, "reconciling again changes nothing");
+  assert.deepEqual(reconcile(once, currentCompendium(), { activeBooks: ALL_BOOKS }), once, "reconciling again changes nothing");
 });
 
 test("Giant Power: picking Druidcraft lands the cantrip in knownSpells and survives a re-pick", () => {
   const char = makeChar({
     classes: [{ className: "Barbarian", level: 3, subclassName: "Path of the Giant", source: "BGG" }],
   });
-  const giantChoice = subclassRuleChoices(char).find((c) => c.id === GIANT_POWER_CHOICE_ID);
+  const giantChoice = subclassRuleChoices(char, ALL_BOOKS).find((c) => c.id === GIANT_POWER_CHOICE_ID);
   assert.ok(giantChoice);
 
-  const picked = pickRuleChoice(char, giantChoice, "Druidcraft");
+  const picked = pickRuleChoice(char, giantChoice, "Druidcraft", undefined, ALL_BOOKS);
   assert.deepEqual(picked.knownSpells?.map((k) => k.name), ["Druidcraft"]);
 
-  const repicked = pickRuleChoice(picked, giantChoice, "Thaumaturgy");
+  const repicked = pickRuleChoice(picked, giantChoice, "Thaumaturgy", undefined, ALL_BOOKS);
   assert.deepEqual(repicked.knownSpells?.map((k) => k.name), ["Thaumaturgy"]);
 });
 
 test("fighting style picks keep their specialised recording", () => {
   const fighter = makeChar({ classes: [{ className: "Fighter", level: 1 }] });
-  const fightingStyle = fightingStyleRuleChoices(fighter).find((c) => c.id === "PHB__Fighter__Fighting Style");
+  const fightingStyle = fightingStyleRuleChoices(fighter, ALL_BOOKS).find((c) => c.id === "PHB__Fighter__Fighting Style");
   assert.ok(fightingStyle);
 
-  const viaInterface = pickRuleChoice(fighter, fightingStyle, "Defense");
-  const viaModule = reconcile(pickFightingStyleChoice(fighter, fightingStyle, "Defense"), currentCompendium());
+  const viaInterface = pickRuleChoice(fighter, fightingStyle, "Defense", undefined, ALL_BOOKS);
+  const viaModule = reconcile(pickFightingStyleChoice(fighter, fightingStyle, "Defense"), currentCompendium(), { activeBooks: ALL_BOOKS });
   assert.deepEqual(viaInterface, viaModule);
 });
 
@@ -209,8 +210,8 @@ test("artificer infusion picks keep their specialised recording", () => {
   assert.ok(infusion);
   assert.equal(infusion.pick, "artificerInfusion");
 
-  const viaInterface = pickRuleChoice(artificer, infusion, "Placeholder Alpha", catalog);
-  const viaModule = reconcile(pickInfusionChoice(artificer, infusion, "Placeholder Alpha"), catalog);
+  const viaInterface = pickRuleChoice(artificer, infusion, "Placeholder Alpha", catalog, ALL_BOOKS);
+  const viaModule = reconcile(pickInfusionChoice(artificer, infusion, "Placeholder Alpha"), catalog, { activeBooks: ALL_BOOKS });
   assert.deepEqual(viaInterface, viaModule);
 });
 
@@ -222,7 +223,7 @@ test("a rule choice id that no table recognises is left alone by a pick", () => 
     ],
   });
   const [biome] = subclassRuleChoices(char, ACTIVE);
-  const updated = pickRuleChoice(char, biome, "Coast");
+  const updated = pickRuleChoice(char, biome, "Coast", undefined, ALL_BOOKS);
   assert.ok(updated.ruleChoices?.some((rc) => rc.id === "FUTURE__Unknown__Choice" && rc.picked[0] === "A"));
 });
 
@@ -257,16 +258,16 @@ test("a catalog-derived pick is offered and recorded in both SRD and integrated 
   assert.ok(integratedNames.includes("Control Flames"), "an expansion cantrip is offered in integrated mode");
   assert.equal(srdNames.includes("Control Flames"), false, "an expansion cantrip is not offered in SRD mode");
 
-  const srdPicked = pickRuleChoice(cleric, srdChoice, "Guidance", srd);
+  const srdPicked = pickRuleChoice(cleric, srdChoice, "Guidance", srd, ALL_BOOKS);
   assert.deepEqual(srdPicked.ruleChoices?.find((rc) => rc.id === ACOLYTE_OF_NATURE_ID)?.picked, ["Guidance"]);
-  assert.deepEqual(reconcile(srdPicked, srd), srdPicked, "the SRD pick is already reconciled");
+  assert.deepEqual(reconcile(srdPicked, srd, { activeBooks: ALL_BOOKS }), srdPicked, "the SRD pick is already reconciled");
 
-  const integratedPicked = pickRuleChoice(cleric, integratedChoice, "Control Flames", integrated);
+  const integratedPicked = pickRuleChoice(cleric, integratedChoice, "Control Flames", integrated, ALL_BOOKS);
   assert.deepEqual(
     integratedPicked.ruleChoices?.find((rc) => rc.id === ACOLYTE_OF_NATURE_ID)?.picked,
     ["Control Flames"],
   );
-  assert.deepEqual(reconcile(integratedPicked, integrated), integratedPicked, "the integrated pick is already reconciled");
+  assert.deepEqual(reconcile(integratedPicked, integrated, { activeBooks: ALL_BOOKS }), integratedPicked, "the integrated pick is already reconciled");
 });
 
 test("a book-gated option is offered only while its book is active, and an existing pick survives a disabled book", () => {
@@ -290,11 +291,11 @@ test("a book-gated option is offered only while its book is active, and an exist
   assert.ok(withScag.options.some((o) => o.name === "Elk"), "Elk is offered while SCAG is active");
   assert.ok(withScag.options.some((o) => o.name === "Tiger"), "Tiger is offered while SCAG is active");
 
-  const picked = pickRuleChoice(totem, withScag, "Elk");
+  const picked = pickRuleChoice(totem, withScag, "Elk", undefined, ALL_BOOKS);
   assert.deepEqual(picked.ruleChoices?.find((rc) => rc.id === TOTEM_SPIRIT_3_ID)?.picked, ["Elk"]);
 
   // Disabling the book later gates new offers only; a pick already on the sheet still displays.
-  const afterDisable = reconcile(picked, currentCompendium());
+  const afterDisable = reconcile(picked, currentCompendium(), { activeBooks: ALL_BOOKS });
   assert.deepEqual(afterDisable.ruleChoices?.find((rc) => rc.id === TOTEM_SPIRIT_3_ID)?.picked, ["Elk"]);
 });
 
@@ -385,7 +386,7 @@ test("a catalog with no additional spells for the owner hides the row and keeps 
     false,
     "the biome is not offered without spell-choice data",
   );
-  assert.deepEqual(reconcile(picked, stale).ruleChoices, picked.ruleChoices, "the saved biome pick is untouched");
+  assert.deepEqual(reconcile(picked, stale, { activeBooks: ALL_BOOKS }).ruleChoices, picked.ruleChoices, "the saved biome pick is untouched");
 });
 
 test("a single named entry is not a biome choice, so the row is not offered", () => {
@@ -406,7 +407,7 @@ test("a catalog with no spell data for the Giant hides the Giant Power row and k
   });
 
   assert.equal(subclassRuleChoices(giant, undefined, stale).some((c) => c.id === GIANT_POWER_CHOICE_ID), false);
-  const kept = reconcile(giant, stale);
+  const kept = reconcile(giant, stale, { activeBooks: ALL_BOOKS });
   assert.deepEqual(kept.ruleChoices, giant.ruleChoices, "the saved pick is untouched");
   assert.deepEqual(kept.knownSpells?.map((k) => k.name), ["Thaumaturgy"], "the granted cantrip stays");
 });
@@ -492,8 +493,8 @@ test("Arcane Initiate takes its pick count from the catalog and records two cant
   assert.equal(choice.choose, 2);
 
   const cleric = clericIn("Arcana Domain");
-  const first = pickRuleChoice(cleric, choice, "Placeholder Wizard Cantrip", catalog);
-  const second = pickRuleChoice(first, choice, "Placeholder Wizard Cantrip Expanded", catalog);
+  const first = pickRuleChoice(cleric, choice, "Placeholder Wizard Cantrip", catalog, ALL_BOOKS);
+  const second = pickRuleChoice(first, choice, "Placeholder Wizard Cantrip Expanded", catalog, ALL_BOOKS);
   assert.deepEqual(
     second.ruleChoices?.find((rc) => rc.id === ARCANE_INITIATE_ID)?.picked,
     ["Placeholder Wizard Cantrip", "Placeholder Wizard Cantrip Expanded"],
@@ -516,7 +517,7 @@ test("a cantrip-list row with an unsupported or malformed filter is not offered,
         { id: REAPER_ID, trait: "Reaper Cantrip", origin: "subclass" as const, choose: 1, from: ["Chill Touch"], picked: ["Chill Touch"] },
       ],
     };
-    assert.deepEqual(reconcile(saved, catalog).ruleChoices, saved.ruleChoices, `${choose} keeps the saved pick`);
+    assert.deepEqual(reconcile(saved, catalog, { activeBooks: ALL_BOOKS }).ruleChoices, saved.ruleChoices, `${choose} keeps the saved pick`);
   }
 });
 
@@ -530,7 +531,7 @@ test("a cantrip-list row whose subclass holds no additional spells is not offere
       { id: REAPER_ID, trait: "Reaper Cantrip", origin: "subclass" as const, choose: 1, from: ["Chill Touch"], picked: ["Chill Touch"] },
     ],
   };
-  assert.deepEqual(reconcile(saved, stale).ruleChoices, saved.ruleChoices);
+  assert.deepEqual(reconcile(saved, stale, { activeBooks: ALL_BOOKS }).ruleChoices, saved.ruleChoices);
 });
 
 test("the SRD Baseline, which holds none of these domains, offers none of the three cantrip rows", () => {

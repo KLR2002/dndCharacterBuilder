@@ -1,3 +1,4 @@
+import type { ActiveBooks } from "../constants/books.ts";
 import type { ClassData } from "../types/dnd5e.ts";
 import { currentCompendium, type Compendium, type CompendiumListings } from "../services/compendium.ts";
 
@@ -5,8 +6,8 @@ import { currentCompendium, type Compendium, type CompendiumListings } from "../
 export interface CharacterCatalogs {
   /** Defaults to the process-wide current Compendium. */
   compendium?: Compendium;
-  /** Scopes listings to these books. Omitted means unscoped. */
-  activeBooks?: string[];
+  /** Scopes listings to these books. ALL_BOOKS means unscoped. */
+  activeBooks: ActiveBooks;
 }
 
 /** The listings a rules function reads from the bundle's Compendium, scoped to its active books. */

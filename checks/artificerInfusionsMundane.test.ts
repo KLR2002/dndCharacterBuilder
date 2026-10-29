@@ -1,3 +1,4 @@
+import { ALL_BOOKS } from "../src/constants/books.ts";
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { reconcile } from "../src/rules/characterReconciler.ts";
@@ -184,7 +185,7 @@ test("reconcile removes active infusions bound to magical items", () => {
     ],
   });
 
-  const pruned = reconcile(artChar, currentCompendium());
+  const pruned = reconcile(artChar, currentCompendium(), { activeBooks: ALL_BOOKS });
 
   // Mundane sword infusion should remain active
   assert.equal(

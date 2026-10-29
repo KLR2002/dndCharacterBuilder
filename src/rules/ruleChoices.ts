@@ -1,3 +1,4 @@
+import type { ActiveBooks } from "../constants/books.ts";
 import type { Character, RuleChoiceEntry } from "../types/character.ts";
 import type { RaceData } from "../types/dnd5e.ts";
 import { ALL_RESOURCE_BOOKS } from "../constants/books.ts";
@@ -62,8 +63,8 @@ export { featSpellChoicesOf, featSpellRuleChoices, raceSpellRuleChoices } from "
 export function availableRuleChoices(
   character: Character,
   raceCatalog: RaceData[],
-  level?: number,
-  activeBooks?: string[]
+  level: number | undefined,
+  activeBooks: ActiveBooks
 ): AvailableRuleChoice[] {
   const currentLevel = level ?? totalLevel(character);
   const books = activeBooks ? new Set(activeBooks.map((b) => b.toUpperCase())) : null;
@@ -120,7 +121,7 @@ const FEAT_GRANTED_CHOICE_IDS = new Set<string>([
  */
 export function subclassRuleChoices(
   character: Character,
-  activeBooks?: string[],
+  activeBooks: ActiveBooks,
   compendium: Compendium = currentCompendium()
 ): AvailableRuleChoice[] {
   const out: AvailableRuleChoice[] = [];
@@ -166,7 +167,7 @@ export function subclassRuleChoices(
  */
 export function availableSubclassRuleChoices(
   character: Character,
-  activeBooks?: string[],
+  activeBooks: ActiveBooks,
   compendium: Compendium = currentCompendium()
 ): AvailableRuleChoice[] {
   const choices = subclassRuleChoices(character, activeBooks, compendium);
@@ -192,7 +193,7 @@ export interface RuleChoiceQuery {
   raceCatalog?: RaceData[];
   /** Level for ancestry gating. Defaults to total level. */
   level?: number;
-  activeBooks?: string[];
+  activeBooks: ActiveBooks;
   compendium?: Compendium;
   /** Keep only choices from these sources. Every source when omitted. */
   origins?: RuleChoiceOrigin[];
@@ -200,7 +201,7 @@ export interface RuleChoiceQuery {
 
 export function offeredRuleChoices(
   character: Character,
-  query: RuleChoiceQuery = {}
+  query: RuleChoiceQuery
 ): AvailableRuleChoice[] {
   const race = query.raceCatalog
     ? availableRuleChoices(character, query.raceCatalog, query.level, query.activeBooks)
@@ -223,7 +224,7 @@ export function pickRuleChoice(
   choice: AvailableRuleChoice,
   option: string,
   compendium: Compendium = currentCompendium(),
-  activeBooks?: string[]
+  activeBooks: ActiveBooks
 ): Character {
   const recorded =
     choice.pick === "fightingStyle"

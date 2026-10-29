@@ -1,3 +1,4 @@
+import { ALL_BOOKS } from "../src/constants/books.ts";
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { makeChar } from "./testUtils.ts";
@@ -32,8 +33,8 @@ test("reconcile running twice on a valid character changes nothing", () => {
   const compendium = currentCompendium();
   const valid = validMulticlassCharacter();
 
-  const once = reconcile(valid, compendium);
-  const twice = reconcile(once, compendium);
+  const once = reconcile(valid, compendium, { activeBooks: ALL_BOOKS });
+  const twice = reconcile(once, compendium, { activeBooks: ALL_BOOKS });
 
   // A valid character is a fixed point: nothing is pruned, reordered or noticed.
   assert.deepEqual(once.ruleChoices, valid.ruleChoices);
@@ -57,7 +58,7 @@ test("reconcile records a review notice when de-levelling removes Pact of the To
 
   const delevelled = reconcile(
     { ...warlock3, classes: [{ className: "Warlock", source: "PHB", level: 2 }] },
-    compendium
+    compendium, { activeBooks: ALL_BOOKS }
   );
 
   assert.ok(!delevelled.ruleChoices?.some((rc) => rc.id === "Warlock__Pact of the Tome__Cantrips"));
@@ -81,7 +82,7 @@ test("reconcile records a review notice when de-levelling drops Pact Boon below 
     ],
   });
 
-  const updated = reconcile(delevelled, compendium);
+  const updated = reconcile(delevelled, compendium, { activeBooks: ALL_BOOKS });
 
   assert.deepEqual(updated.ruleChoices, [
     { id: "PHB__Fighter__Fighting Style", trait: "Fighting Style", origin: "class", choose: 1, from: [], picked: ["Dueling"] },

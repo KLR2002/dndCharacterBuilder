@@ -95,7 +95,7 @@ export interface EvaluatedCharacter {
  */
 export function evaluateCharacter(
   character: Character,
-  catalogs?: CharacterCatalogs
+  catalogs: CharacterCatalogs
 ): EvaluatedCharacter {
   const listings = catalogListings(catalogs);
   const ancestry = resolveCharacterAncestry(character, listings.races(), catalogs?.activeBooks);
@@ -107,10 +107,10 @@ export function evaluateCharacter(
   const effScores = effectiveScores(character, ancestry);
   const maxHitPoints = maxHp(character, ancestry, classes);
   const hitDice = getHitDicePools(character, classes);
-  const acResult = armorClass(character, ancestry);
+  const acResult = armorClass(character, { ...ancestry, activeBooks: catalogs?.activeBooks });
   const speedsResult = characterSpeeds(character, { ...ancestry, compendium: catalogs?.compendium, activeBooks: catalogs?.activeBooks });
   const speedResult = speedsResult.walk;
-  const sheet = proficiencySheet(character, catalogs ?? {});
+  const sheet = proficiencySheet(character, catalogs);
   const initiativeResult = initiativeOf(
     grantedFeatures(character, {
       races: listings.races(),
@@ -200,7 +200,7 @@ export function evaluateCharacter(
       tools: toolList,
       languages: langList,
     },
-    tools: evaluateCharacterTools(character, catalogs ?? {}),
+    tools: evaluateCharacterTools(character, catalogs),
     resolvedAncestry: ancestry,
     resolvedBackground: background,
     spellProfiles,

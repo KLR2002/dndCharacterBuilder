@@ -1,3 +1,4 @@
+import { ALL_BOOKS } from "../src/constants/books.ts";
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { grantedFeatures } from "../src/rules/grantedFeatures.ts";
@@ -10,7 +11,7 @@ const catalog = {
   races: readCatalog("races"),
   classes: readCatalog("classes"),
   backgrounds: readCatalog("backgrounds"),
-  feats: readCatalog("feats"),
+  feats: readCatalog("feats"), activeBooks: ALL_BOOKS,
 };
 
 const MPMM = makeChar({ race: { name: "Eladrin", source: "MPMM" } }) as Character;
@@ -22,7 +23,7 @@ const DMG = makeChar({
 }) as Character;
 
 const withSeason = (character: Character, season: string): Character => {
-  const [choice] = ancestryRuleChoices(character, catalog.races);
+  const [choice] = ancestryRuleChoices(character, catalog.races, ALL_BOOKS);
   if (!choice) throw new Error("expected a season choice");
   return {
     ...character,
@@ -44,7 +45,7 @@ const feyStep = (character: Character) =>
   grantedFeatures(character, catalog).find((f) => f.name === "Fey Step");
 
 test("all four seasons are offered, each with its own text", () => {
-  const [choice] = ancestryRuleChoices(MPMM, catalog.races);
+  const [choice] = ancestryRuleChoices(MPMM, catalog.races, ALL_BOOKS);
   assert.ok(choice);
   assert.deepEqual(choice.options.map((o) => o.name), ["Autumn", "Winter", "Spring", "Summer"]);
   for (const option of choice.options) {
@@ -53,7 +54,7 @@ test("all four seasons are offered, each with its own text", () => {
 });
 
 test("the season is recorded at first level but its effect waits until third", () => {
-  const atOne = availableRuleChoices(MPMM, catalog.races, 1);
+  const atOne = availableRuleChoices(MPMM, catalog.races, 1, ALL_BOOKS);
   assert.equal(atOne.length, 1);
   assert.equal(atOne[0].level, 1);
   assert.equal(atOne[0].effectLevel, 3);
@@ -84,13 +85,13 @@ test("the two eladrin entries resolve independently", () => {
 });
 
 test("their choice ids differ, so one cannot overwrite the other", () => {
-  const [mpmmChoice] = ancestryRuleChoices(MPMM, catalog.races);
-  const [mtfChoice] = ancestryRuleChoices(MTF, catalog.races);
+  const [mpmmChoice] = ancestryRuleChoices(MPMM, catalog.races, ALL_BOOKS);
+  const [mtfChoice] = ancestryRuleChoices(MTF, catalog.races, ALL_BOOKS);
   assert.notEqual(mpmmChoice.id, mtfChoice.id, "same subrace name, different source");
 });
 
 test("the DMG eladrin has no season and is unaffected", () => {
-  assert.deepEqual(ancestryRuleChoices(DMG, catalog.races), []);
+  assert.deepEqual(ancestryRuleChoices(DMG, catalog.races, ALL_BOOKS), []);
   const feature = feyStep(DMG);
   assert.ok(feature, "the DMG eladrin still has its own Fey Step");
   assert.equal(feature.chosenOption, undefined);

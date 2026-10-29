@@ -1,3 +1,4 @@
+import type { ActiveBooks } from "../constants/books.ts";
 import type { InventoryItem } from "../types/character.ts";
 import type { RaceData, ClassData, BackgroundData, FeatData, InitiativeBonus, ProficiencyGrant, AdditionalSpells } from "../types/dnd5e.ts";
 import type { Compendium } from "../services/compendium.ts";
@@ -14,7 +15,7 @@ export interface RulesOptions extends ResolvedAncestry {
   /** Resolves races by name when no race is given. Defaults to the process-wide current Compendium. */
   compendium?: Compendium;
   /** The books a race resolves within, when the race is found by name (see findHeldRace). */
-  activeBooks?: readonly string[];
+  activeBooks: ActiveBooks;
 }
 export interface FeatureCatalog {
   races: RaceData[];
@@ -22,7 +23,7 @@ export interface FeatureCatalog {
   backgrounds: BackgroundData[];
   feats: FeatData[];
   /** The books a race resolves within, when the race is found by name (see findHeldRace). */
-  activeBooks?: readonly string[];
+  activeBooks: ActiveBooks;
 }
 export interface FeatureInstance {
   id: string;

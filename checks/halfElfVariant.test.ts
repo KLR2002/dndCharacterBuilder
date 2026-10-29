@@ -1,3 +1,4 @@
+import { ALL_BOOKS } from "../src/constants/books.ts";
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { grantedFeatures } from "../src/rules/grantedFeatures.ts";
@@ -12,7 +13,7 @@ const catalog = {
   races: readCatalog("races"),
   classes: readCatalog("classes"),
   backgrounds: readCatalog("backgrounds"),
-  feats: readCatalog("feats"),
+  feats: readCatalog("feats"), activeBooks: ALL_BOOKS,
 };
 const races = catalog.races;
 
@@ -22,7 +23,7 @@ const halfElfVariant = (picked: string[]) => {
     race: { name: "Half-Elf", source: "PHB", subraceName: DESCENT, subraceSource: "SCAG" },
     classes: [{ className: "Wizard", source: "PHB", level: 1 }],
   }) as Character;
-  const choice = ancestryRuleChoices(character, races)[0];
+  const choice = ancestryRuleChoices(character, races, ALL_BOOKS)[0];
   if (!choice) throw new Error("expected a descent choice");
   return {
     ...character,
@@ -32,7 +33,7 @@ const halfElfVariant = (picked: string[]) => {
 
 /** The race's skill Proficiency Choices the character is offered: the grant ids carry the category. */
 const skillOffersOf = (character: Character) =>
-  proficiencyChoiceOffers(character, { compendium: integratedTestCompendium() }).filter((offer) => offer.id.includes("#skills:"));
+  proficiencyChoiceOffers(character, { compendium: integratedTestCompendium(), activeBooks: ALL_BOOKS }).filter((offer) => offer.id.includes("#skills:"));
 
 const choiceId = (subrace: string) =>
   ruleChoiceId({ source: "SCAG", race: "Half-Elf", subrace: { name: subrace }, trait: "Variant Feature (Choose 1)" });
@@ -46,7 +47,7 @@ test("each SCAG descent offers exactly its own option set", () => {
     const character = makeChar({
       race: { name: "Half-Elf", source: "PHB", subraceName: descent, subraceSource: "SCAG" },
     });
-    const [choice] = ancestryRuleChoices(character, races);
+    const [choice] = ancestryRuleChoices(character, races, ALL_BOOKS);
     assert.ok(choice, `${descent} should offer a choice`);
     assert.deepEqual(choice.options.map((o) => o.name), options, `${descent} option set`);
   }
@@ -95,7 +96,7 @@ test("choosing Skill Versatility keeps the trait rather than suppressing it", ()
 
 test("a base (non-variant) half-elf still gets Skill Versatility and no descent choice", () => {
   const base = makeChar({ race: { name: "Half-Elf", source: "PHB" } });
-  assert.deepEqual(ancestryRuleChoices(base, races), []);
+  assert.deepEqual(ancestryRuleChoices(base, races, ALL_BOOKS), []);
   const choices = skillOffersOf(base);
   assert.equal(choices.length, 1);
   assert.equal(choices[0].choose, 2);
@@ -109,12 +110,12 @@ test("a variant half-elf with no recorded choice shows no descent feature as cho
   const features = grantedFeatures(character, catalog);
   const variant = features.find((f) => f.name === "Variant Feature (Choose 1)");
   assert.equal(variant?.chosenOption, undefined);
-  assert.deepEqual(ancestryRuleChoices(character, races)[0].id, choiceId(DESCENT));
+  assert.deepEqual(ancestryRuleChoices(character, races, ALL_BOOKS)[0].id, choiceId(DESCENT));
 });
 
 test("the descent choice is offered from first level and has no separate effect level", () => {
   const character = makeChar({ race: { name: "Half-Elf", source: "PHB", subraceName: DESCENT, subraceSource: "SCAG" } });
-  const atOne = availableRuleChoices(character, races, 1);
+  const atOne = availableRuleChoices(character, races, 1, ALL_BOOKS);
   assert.equal(atOne.length, 1);
   assert.equal(atOne[0].level, 1);
   assert.equal(atOne[0].effectLevel, 1);

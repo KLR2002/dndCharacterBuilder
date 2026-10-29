@@ -1,9 +1,21 @@
 import type { Character } from "../src/types/character.ts";
-import { DEFAULT_ACTIVE_BOOK_CODES } from "../src/constants/books.ts";
+import { DEFAULT_ACTIVE_BOOK_CODES, ALL_BOOKS } from "../src/constants/books.ts";
 import { readFileSync, existsSync } from "node:fs";
 import { createCompendium, integrate, revertToSrd, type Compendium } from "../src/services/compendium.ts";
 import { loadCompendiumData, REQUIRED_CATALOG_FORMAT, type CompendiumCollections } from "../src/services/compendiumStorage.ts";
 import { choiceCatalogBundle } from "./choiceCatalogFixture.ts";
+
+import type {
+  ClassData,
+  RaceData,
+  BackgroundData,
+  FeatData,
+  SpellData,
+  ItemData,
+  BeastData,
+  ConditionData,
+  OptionFeatureData,
+} from "../src/types/dnd5e.ts";
 
 /**
  * In-memory Compendium over the given collections. Collections not given are empty. Unless
@@ -47,18 +59,6 @@ export function makeChar(overrides: Partial<Character> = {}): Character {
   };
 }
 
-import type {
-  ClassData,
-  RaceData,
-  BackgroundData,
-  FeatData,
-  SpellData,
-  ItemData,
-  BeastData,
-  ConditionData,
-  OptionFeatureData,
-} from "../src/types/dnd5e.ts";
-
 export function defaultSettings() {
   return {
     schemaVersion: 2,
@@ -89,7 +89,7 @@ export function loadTestCatalogs() {
     feats: loadTestCatalog<FeatData[]>("feats"),
     spells: loadTestCatalog<SpellData[]>("spells"),
     items: loadTestCatalog<ItemData[]>("items"),
-    beasts: loadTestCatalog<BeastData[]>("beasts"),
+    beasts: loadTestCatalog<BeastData[]>("beasts"), activeBooks: ALL_BOOKS,
   };
 }
 

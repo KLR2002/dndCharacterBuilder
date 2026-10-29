@@ -1,3 +1,4 @@
+import { ALL_BOOKS } from "../src/constants/books.ts";
 import test from "node:test";
 import assert from "node:assert/strict";
 import {
@@ -122,7 +123,7 @@ test("attacks: Monk upgrades unarmed strike and monk weapon damage to martial ar
     ],
   });
 
-  const attacks = getWeaponAttacks(monkChar, { catalogs: { compendium } });
+  const attacks = getWeaponAttacks(monkChar, { catalogs: { compendium, activeBooks: ALL_BOOKS } });
   const dagger = attacks.find((a) => a.name === "Dagger");
   assert.ok(dagger);
   assert.equal(dagger.statUsed, "dex");
@@ -147,7 +148,7 @@ test("attacks: Rogue weapons flag sneak attack eligibility with dice count", () 
     ],
   });
 
-  const attacks = getWeaponAttacks(rogueChar, { catalogs: { compendium } });
+  const attacks = getWeaponAttacks(rogueChar, { catalogs: { compendium, activeBooks: ALL_BOOKS } });
   const rapier = attacks.find((a) => a.name === "Rapier");
   assert.ok(rapier);
   assert.equal(rapier.isSneakAttackEligible, true);

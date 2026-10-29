@@ -1,3 +1,4 @@
+import { ALL_BOOKS } from "../src/constants/books.ts";
 import test from "node:test";
 import assert from "node:assert/strict";
 import { grantedFeatures } from "../src/rules/grantedFeatures.ts";
@@ -18,14 +19,14 @@ import { proficiencySheet } from "../src/rules/proficiencySheet.ts";
 import { dropLegacyBackgroundSkills } from "../src/rules/legacyBackgroundSkills.ts";
 import { makeChar, integratedTestCompendium, inMemoryCompendium, srdBaselineCompendium } from "./testUtils.ts";
 
-const EMPTY_CATALOG = { races: [], classes: [], backgrounds: [], feats: [] };
+const EMPTY_CATALOG = { races: [], classes: [], backgrounds: [], feats: [], activeBooks: ALL_BOOKS };
 const borrowedFeatures = (character: ReturnType<typeof makeChar>) =>
   grantedFeatures(character, EMPTY_CATALOG).filter((feature) => feature.origin === "Background");
 
 test("a custom background's tool-or-language picks are stored under their grant id, beside the skill picks", () => {
   const custom = setCustomBackground(makeChar(), "Gladiator", ["Acrobatics", "Performance"], {
     toolsOrLanguages: ["Smith's Tools", "Elvish"],
-  });
+  }, undefined, ALL_BOOKS);
   assert.equal(CUSTOM_BACKGROUND_TOOLS_OR_LANGUAGES_ID, "Custom/Background/Custom Background@0#languages:choice:any");
   assert.deepEqual(custom.proficiencyPicks?.[CUSTOM_BACKGROUND_TOOLS_OR_LANGUAGES_ID], ["Smith's Tools", "Elvish"]);
   assert.deepEqual(custom.proficiencyPicks?.[CUSTOM_BACKGROUND_SKILLS_ID], ["Acrobatics", "Performance"]);
@@ -33,14 +34,14 @@ test("a custom background's tool-or-language picks are stored under their grant 
 });
 
 test("a custom background with no tool-or-language picks stores none under their grant id", () => {
-  const custom = setCustomBackground(makeChar(), "Gladiator", ["Acrobatics", "Performance"]);
+  const custom = setCustomBackground(makeChar(), "Gladiator", ["Acrobatics", "Performance"], undefined, undefined, ALL_BOOKS);
   assert.equal(custom.proficiencyPicks?.[CUSTOM_BACKGROUND_TOOLS_OR_LANGUAGES_ID], undefined);
 });
 
 test("a borrowed feature is stored on the custom background and granted with origin Background", () => {
   const custom = setCustomBackground(makeChar(), "Gladiator", ["Acrobatics", "Performance"], {
     feature: { name: "Invented Favor", description: "Invented text for the favor." },
-  });
+  }, undefined, ALL_BOOKS);
   assert.deepEqual(custom.background, {
     name: "Gladiator",
     source: "Custom",
@@ -54,7 +55,7 @@ test("a borrowed feature is stored on the custom background and granted with ori
 });
 
 test("a custom background with no borrowed feature grants no background feature", () => {
-  const custom = setCustomBackground(makeChar(), "Gladiator", ["Acrobatics", "Performance"]);
+  const custom = setCustomBackground(makeChar(), "Gladiator", ["Acrobatics", "Performance"], undefined, undefined, ALL_BOOKS);
   assert.deepEqual(borrowedFeatures(custom), []);
 });
 
@@ -81,17 +82,17 @@ test("clearing a custom background drops its borrowed feature and releases its t
     makeChar(),
     "Gladiator",
     ["Acrobatics", "Performance"],
-    { toolsOrLanguages: ["Elvish", "Smith's Tools"], feature: { name: "Invented Favor", description: "Invented." } },
+    { toolsOrLanguages: ["Elvish", "Smith's Tools"], feature: { name: "Invented Favor", description: "Invented." } }, undefined, ALL_BOOKS,
   );
   assert.equal(borrowedFeatures(custom).length, 1);
-  assert.ok(proficiencySheet(custom, { compendium }).languages.some((entry) => entry.name === "Elvish"));
+  assert.ok(proficiencySheet(custom, { compendium, activeBooks: ALL_BOOKS }).languages.some((entry) => entry.name === "Elvish"));
 
-  const cleared = clearBackground(custom, { compendium });
+  const cleared = clearBackground(custom, { compendium, activeBooks: ALL_BOOKS });
   assert.equal(cleared.background, null);
   assert.deepEqual(borrowedFeatures(cleared), []);
   assert.equal(cleared.proficiencyPicks?.[CUSTOM_BACKGROUND_TOOLS_OR_LANGUAGES_ID], undefined);
   assert.equal(
-    proficiencySheet(cleared, { compendium }).languages.some((entry) => entry.name === "Elvish"),
+    proficiencySheet(cleared, { compendium, activeBooks: ALL_BOOKS }).languages.some((entry) => entry.name === "Elvish"),
     false,
   );
 });
@@ -170,7 +171,7 @@ test("the catalog's Custom Background entry is left out of the Builder's backgro
 });
 
 test("the integrated catalog lists the Custom Background entry, and the Builder's list leaves it out", () => {
-  const backgrounds = catalogListings({ compendium: integratedTestCompendium() }).backgrounds();
+  const backgrounds = catalogListings({ compendium: integratedTestCompendium(), activeBooks: ALL_BOOKS }).backgrounds();
   assert.ok(backgrounds.some((background) => background.name === "Custom Background"), "the catalog has the entry");
   assert.equal(
     withoutCatalogCustomBackground(backgrounds).some((background) => background.name === "Custom Background"),
@@ -197,7 +198,7 @@ test("the borrowable features are one row per background feature, labelled by fe
 });
 
 test("the integrated catalog's borrowable features are one per background that has a feature, and none is the placeholder", () => {
-  const backgrounds = catalogListings({ compendium: integratedTestCompendium() }).backgrounds();
+  const backgrounds = catalogListings({ compendium: integratedTestCompendium(), activeBooks: ALL_BOOKS }).backgrounds();
   const withFeature = withoutCatalogCustomBackground(backgrounds).filter((background) => background.feature);
   const rows = borrowableFeatures(backgrounds);
   assert.equal(rows.length, withFeature.length);
@@ -211,7 +212,7 @@ test("the custom background's tool-or-language grant is exported, and held-by-ot
   const held = heldByOtherSources(
     makeChar({ race: { name: "Dwarf", source: "PHB" }, addedTools: ["Smith's Tools"] }),
     CUSTOM_BACKGROUND_TOOLS_OR_LANGUAGES_GRANT,
-    { compendium },
+    { compendium, activeBooks: ALL_BOOKS },
   );
   assert.equal(held("Smith's Tools"), true, "a tool held by hand");
   assert.equal(held("Dwarvish"), true, "a language the race grants");
@@ -223,7 +224,7 @@ test("a pick on the choice does not hold its own name", () => {
   const picked = makeChar({
     proficiencyPicks: { [CUSTOM_BACKGROUND_TOOLS_OR_LANGUAGES_ID]: ["Elvish"] },
   });
-  assert.equal(heldByOtherSources(picked, CUSTOM_BACKGROUND_TOOLS_OR_LANGUAGES_GRANT, { compendium })("Elvish"), false);
+  assert.equal(heldByOtherSources(picked, CUSTOM_BACKGROUND_TOOLS_OR_LANGUAGES_GRANT, { compendium, activeBooks: ALL_BOOKS })("Elvish"), false);
 });
 
 test("a custom background built in the Builder is not warned as from a disabled sourcebook", () => {

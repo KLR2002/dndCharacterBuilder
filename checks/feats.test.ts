@@ -1,3 +1,4 @@
+import { ALL_BOOKS } from "../src/constants/books.ts";
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import type { AsiSelection, Character, RuleChoiceEntry } from "../src/types/character.ts";
@@ -66,7 +67,7 @@ function makeChar(overrides: Partial<Character> = {}): Character {
 describe("Feat Prerequisite Validation", () => {
   it("passes when feat has no prerequisite", () => {
     const char = makeChar();
-    const result = validateFeatPrerequisites(char, { name: "Alert" });
+    const result = validateFeatPrerequisites(char, { name: "Alert" }, { catalogs: { activeBooks: ALL_BOOKS } });
     assert.equal(result.met, true);
     assert.equal(result.reason, undefined);
   });
@@ -76,17 +77,17 @@ describe("Feat Prerequisite Validation", () => {
       const lowStr = makeChar({ baseAbilityScores: { str: 12, dex: 10, con: 10, int: 10, wis: 10, cha: 10 } });
       const highStr = makeChar({ baseAbilityScores: { str: 13, dex: 10, con: 10, int: 10, wis: 10, cha: 10 } });
 
-      const fail = validateFeatPrerequisites(lowStr, { name: "Heavy Armor Master", prerequisite: "Strength 13 or higher" });
+      const fail = validateFeatPrerequisites(lowStr, { name: "Heavy Armor Master", prerequisite: "Strength 13 or higher" }, { catalogs: { activeBooks: ALL_BOOKS } });
       assert.equal(fail.met, false);
       assert.match(fail.reason!, /Strength 13/i);
 
-      const pass = validateFeatPrerequisites(highStr, { name: "Heavy Armor Master", prerequisite: "Strength 13 or higher" });
+      const pass = validateFeatPrerequisites(highStr, { name: "Heavy Armor Master", prerequisite: "Strength 13 or higher" }, { catalogs: { activeBooks: ALL_BOOKS } });
       assert.equal(pass.met, true);
     });
 
     it("validates Dexterity 13 or higher", () => {
       const char = makeChar({ baseAbilityScores: { str: 10, dex: 14, con: 10, int: 10, wis: 10, cha: 10 } });
-      const pass = validateFeatPrerequisites(char, { name: "Defensive Duelist", prerequisite: "Dexterity 13 or higher" });
+      const pass = validateFeatPrerequisites(char, { name: "Defensive Duelist", prerequisite: "Dexterity 13 or higher" }, { catalogs: { activeBooks: ALL_BOOKS } });
       assert.equal(pass.met, true);
     });
 
@@ -97,13 +98,13 @@ describe("Feat Prerequisite Validation", () => {
       const resFail = validateFeatPrerequisites(fail, {
         name: "Ritual Caster",
         prerequisite: "Intelligence 13 or higher or Wisdom 13 or higher",
-      });
+      }, { catalogs: { activeBooks: ALL_BOOKS } });
       assert.equal(resFail.met, false);
 
       const resPass = validateFeatPrerequisites(pass, {
         name: "Ritual Caster",
         prerequisite: "Intelligence 13 or higher or Wisdom 13 or higher",
-      });
+      }, { catalogs: { activeBooks: ALL_BOOKS } });
       assert.equal(resPass.met, true);
     });
   });
@@ -113,17 +114,17 @@ describe("Feat Prerequisite Validation", () => {
       const wizard = makeChar({ classes: [{ className: "Wizard", level: 1, source: "PHB" }] });
       const fighter = makeChar({ classes: [{ className: "Fighter", level: 1, source: "PHB" }] });
 
-      const fail = validateFeatPrerequisites(wizard, { name: "Heavily Armored", prerequisite: "Proficiency with medium armor" });
+      const fail = validateFeatPrerequisites(wizard, { name: "Heavily Armored", prerequisite: "Proficiency with medium armor" }, { catalogs: { activeBooks: ALL_BOOKS } });
       assert.equal(fail.met, false);
       assert.match(fail.reason!, /medium armor/i);
 
-      const pass = validateFeatPrerequisites(fighter, { name: "Heavily Armored", prerequisite: "Proficiency with medium armor" });
+      const pass = validateFeatPrerequisites(fighter, { name: "Heavily Armored", prerequisite: "Proficiency with medium armor" }, { catalogs: { activeBooks: ALL_BOOKS } });
       assert.equal(pass.met, true);
     });
 
     it("validates Proficiency with light armor", () => {
       const rogue = makeChar({ classes: [{ className: "Rogue", level: 1, source: "PHB" }] });
-      const pass = validateFeatPrerequisites(rogue, { name: "Moderately Armored", prerequisite: "Proficiency with light armor" });
+      const pass = validateFeatPrerequisites(rogue, { name: "Moderately Armored", prerequisite: "Proficiency with light armor" }, { catalogs: { activeBooks: ALL_BOOKS } });
       assert.equal(pass.met, true);
     });
   });
@@ -133,11 +134,11 @@ describe("Feat Prerequisite Validation", () => {
       const fighter = makeChar({ classes: [{ className: "Fighter", level: 1, source: "PHB" }] });
       const wizard = makeChar({ classes: [{ className: "Wizard", level: 1, source: "PHB" }] });
 
-      const fail = validateFeatPrerequisites(fighter, { name: "War Caster", prerequisite: "The ability to cast at least one spell" });
+      const fail = validateFeatPrerequisites(fighter, { name: "War Caster", prerequisite: "The ability to cast at least one spell" }, { catalogs: { activeBooks: ALL_BOOKS } });
       assert.equal(fail.met, false);
       assert.match(fail.reason!, /cast at least one spell/i);
 
-      const pass = validateFeatPrerequisites(wizard, { name: "War Caster", prerequisite: "The ability to cast at least one spell" });
+      const pass = validateFeatPrerequisites(wizard, { name: "War Caster", prerequisite: "The ability to cast at least one spell" }, { catalogs: { activeBooks: ALL_BOOKS } });
       assert.equal(pass.met, true);
     });
   });
@@ -147,12 +148,12 @@ describe("Feat Prerequisite Validation", () => {
       const lvl1 = makeChar({ classes: [{ className: "Fighter", level: 1, source: "PHB" }] });
       const lvl4 = makeChar({ classes: [{ className: "Fighter", level: 4, source: "PHB" }] });
 
-      const fail = validateFeatPrerequisites(lvl1, { name: "Ember of the Fire Giant", prerequisite: "Level 4; strike of the giants" });
+      const fail = validateFeatPrerequisites(lvl1, { name: "Ember of the Fire Giant", prerequisite: "Level 4; strike of the giants" }, { catalogs: { activeBooks: ALL_BOOKS } });
       assert.equal(fail.met, false);
       assert.match(fail.reason!, /Level 4/i);
 
       lvl4.originFeats = [{ level: 1, type: "feat", featName: "Strike of the Giants" }];
-      const pass = validateFeatPrerequisites(lvl4, { name: "Ember of the Fire Giant", prerequisite: "Level 4; strike of the giants" });
+      const pass = validateFeatPrerequisites(lvl4, { name: "Ember of the Fire Giant", prerequisite: "Level 4; strike of the giants" }, { catalogs: { activeBooks: ALL_BOOKS } });
       assert.equal(pass.met, true);
     });
   });
@@ -163,14 +164,14 @@ describe("Feat Prerequisite Validation", () => {
       const elf = makeChar({ race: { name: "Elf", subraceName: "High Elf", source: "PHB" } });
       const halfElf = makeChar({ race: { name: "Half-Elf", source: "PHB" } });
 
-      const fail = validateFeatPrerequisites(human, { name: "Elven Accuracy", prerequisite: "elf or half-elf" });
+      const fail = validateFeatPrerequisites(human, { name: "Elven Accuracy", prerequisite: "elf or half-elf" }, { catalogs: { activeBooks: ALL_BOOKS } });
       assert.equal(fail.met, false);
       assert.match(fail.reason!, /elf or half-elf/i);
 
-      const passElf = validateFeatPrerequisites(elf, { name: "Elven Accuracy", prerequisite: "elf or half-elf" });
+      const passElf = validateFeatPrerequisites(elf, { name: "Elven Accuracy", prerequisite: "elf or half-elf" }, { catalogs: { activeBooks: ALL_BOOKS } });
       assert.equal(passElf.met, true);
 
-      const passHalfElf = validateFeatPrerequisites(halfElf, { name: "Elven Accuracy", prerequisite: "elf or half-elf" });
+      const passHalfElf = validateFeatPrerequisites(halfElf, { name: "Elven Accuracy", prerequisite: "elf or half-elf" }, { catalogs: { activeBooks: ALL_BOOKS } });
       assert.equal(passHalfElf.met, true);
     });
 
@@ -178,10 +179,10 @@ describe("Feat Prerequisite Validation", () => {
       const human = makeChar({ race: { name: "Human", source: "PHB" } });
       const dwarf = makeChar({ race: { name: "Dwarf", subraceName: "Hill Dwarf", source: "PHB" } });
 
-      const fail = validateFeatPrerequisites(human, { name: "Dwarven Fortitude", prerequisite: "dwarf" });
+      const fail = validateFeatPrerequisites(human, { name: "Dwarven Fortitude", prerequisite: "dwarf" }, { catalogs: { activeBooks: ALL_BOOKS } });
       assert.equal(fail.met, false);
 
-      const pass = validateFeatPrerequisites(dwarf, { name: "Dwarven Fortitude", prerequisite: "dwarf" });
+      const pass = validateFeatPrerequisites(dwarf, { name: "Dwarven Fortitude", prerequisite: "dwarf" }, { catalogs: { activeBooks: ALL_BOOKS } });
       assert.equal(pass.met, true);
     });
   });
@@ -198,7 +199,7 @@ describe("Origin Feat Application and Half-Feat Ability Increases", () => {
       featName: "Athlete",
       featSource: "PHB",
       featAbility: "dex",
-    });
+    }, undefined, undefined, ALL_BOOKS);
 
     assert.equal(char.originFeats?.length, 1);
     assert.equal(hasFeat(char, "Athlete"), true);
@@ -215,10 +216,10 @@ describe("Origin Feat Application and Half-Feat Ability Increases", () => {
       featName: "Athlete",
       featSource: "PHB",
       featAbility: "dex",
-    });
+    }, undefined, undefined, ALL_BOOKS);
     assert.equal(effectiveScores(char).scores.dex, 16);
 
-    char = removeOriginFeat(char, { featName: "Athlete", featSource: "PHB" });
+    char = removeOriginFeat(char, { featName: "Athlete", featSource: "PHB" }, undefined, ALL_BOOKS);
     assert.equal(char.originFeats?.length, 0);
     assert.equal(hasFeat(char, "Athlete"), false);
     assert.equal(effectiveScores(char).scores.dex, 15);
@@ -232,7 +233,7 @@ describe("Origin Feat Application and Half-Feat Ability Increases", () => {
       featName: "Athlete",
       featSource: "PHB",
       featAbility: "dex",
-    });
+    }, undefined, undefined, ALL_BOOKS);
     assert.equal(char.originFeats?.length, 1);
     assert.equal(hasFeat(char, "Athlete"), true);
 
@@ -245,7 +246,7 @@ describe("Origin Feat Application and Half-Feat Ability Increases", () => {
         featName: "Alert",
         featSource: "PHB",
       },
-      { featName: "Athlete", featSource: "PHB" }
+      { featName: "Athlete", featSource: "PHB" }, undefined, ALL_BOOKS
     );
     assert.equal(char.originFeats?.length, 1);
     assert.equal(hasFeat(char, "Alert"), true);
@@ -272,13 +273,13 @@ describe("Origin Feat Application and Half-Feat Ability Increases", () => {
       type: "feat",
       featName: "Fighting Initiate",
       featSource: "TCE",
-    });
+    }, undefined, undefined, ALL_BOOKS);
     assert.equal(char.ruleChoices?.some((rc) => rc.id === FIGHTING_INITIATE_CHOICE_ID), true, "the style pick survives while the feat is held");
 
     char = applyOriginFeat(
       char,
       { level: 1, type: "feat", featName: "Alert", featSource: "PHB" },
-      { featName: "Fighting Initiate", featSource: "TCE" }
+      { featName: "Fighting Initiate", featSource: "TCE" }, undefined, ALL_BOOKS
     );
 
     assert.equal(char.ruleChoices?.some((rc) => rc.id === FIGHTING_INITIATE_CHOICE_ID), false, "the replaced feat's style pick is gone");
@@ -335,7 +336,7 @@ describe("Removing an origin feat reconciles the choices that depended on it", (
       ruleChoices: [fighterStyle, initiateStyle],
     });
 
-    const updated = removeOriginFeat(char, { featName: "Fighting Initiate", featSource: "PHB" }, inMemoryCompendium({}));
+    const updated = removeOriginFeat(char, { featName: "Fighting Initiate", featSource: "PHB" }, inMemoryCompendium({}), ALL_BOOKS);
 
     assert.deepEqual(updated.ruleChoices, [fighterStyle]);
     assert.deepEqual(updated.needsReview, [
@@ -353,7 +354,7 @@ describe("Removing an origin feat reconciles the choices that depended on it", (
       ruleChoices: [fighterStyle, initiateStyle],
     });
 
-    const updated = removeOriginFeat(char, { featName: "Alert", featSource: "PHB" }, inMemoryCompendium({}));
+    const updated = removeOriginFeat(char, { featName: "Alert", featSource: "PHB" }, inMemoryCompendium({}), ALL_BOOKS);
 
     assert.deepEqual(updated.ruleChoices, [fighterStyle, initiateStyle]);
     assert.deepEqual(updated.needsReview ?? [], []);
@@ -369,14 +370,14 @@ describe("Claiming a background feat the race already holds", () => {
   });
 
   it("keeps the race's entry and records a notice naming the feat and the race", () => {
-    const updated = grantBackgroundFeat(customLineage, "Sample Warding", undefined, inMemoryCompendium({}));
+    const updated = grantBackgroundFeat(customLineage, "Sample Warding", undefined, inMemoryCompendium({}), ALL_BOOKS);
 
     assert.deepEqual(updated.originFeats, [raceFeat]);
     assert.deepEqual(updated.needsReview, ["Sample Warding from the background is already held from Custom Lineage Feat"]);
   });
 
   it("adds the background's entry when the race does not hold the feat", () => {
-    const updated = grantBackgroundFeat(customLineage, "Sample Mark", undefined, inMemoryCompendium({}));
+    const updated = grantBackgroundFeat(customLineage, "Sample Mark", undefined, inMemoryCompendium({}), ALL_BOOKS);
 
     assert.deepEqual(updated.originFeats, [
       raceFeat,
@@ -405,7 +406,7 @@ describe("Legacy duplicate origin feat entries on load", () => {
   const saved = (originFeats: AsiSelection[]) => makeChar({ originFeats, ruleChoices: [initiateStyle], resourceCounters: counters });
 
   it("keeps the Background entry, with the picks and counters of the feat, when a race entry of the same feat is saved too", () => {
-    const loaded = migrateCharacter(JSON.parse(JSON.stringify(saved([raceEntry, backgroundEntry]))));
+    const loaded = migrateCharacter(JSON.parse(JSON.stringify(saved([raceEntry, backgroundEntry]))), undefined, undefined, ALL_BOOKS);
 
     assert.deepEqual(loaded.originFeats, [backgroundEntry]);
     assert.deepEqual(loaded.ruleChoices, [initiateStyle]);
@@ -413,22 +414,22 @@ describe("Legacy duplicate origin feat entries on load", () => {
   });
 
   it("leaves a save whose origin feats are distinct unchanged", () => {
-    const loaded = migrateCharacter(JSON.parse(JSON.stringify(saved([raceEntry, otherEntry]))));
+    const loaded = migrateCharacter(JSON.parse(JSON.stringify(saved([raceEntry, otherEntry]))), undefined, undefined, ALL_BOOKS);
 
     assert.deepEqual(loaded.originFeats, [raceEntry, otherEntry]);
   });
 
   it("loads an already normalised save without change", () => {
-    const once = migrateCharacter(JSON.parse(JSON.stringify(saved([raceEntry, backgroundEntry]))));
+    const once = migrateCharacter(JSON.parse(JSON.stringify(saved([raceEntry, backgroundEntry]))), undefined, undefined, ALL_BOOKS);
 
-    assert.deepEqual(migrateCharacter(once), once);
+    assert.deepEqual(migrateCharacter(once, undefined, undefined, ALL_BOOKS), once);
   });
 
   it("gives the kept entry the ability increase of the dropped entry when the kept entry has none", () => {
     const raceIncrease: AsiSelection = { ...raceEntry, featAbility: "dex" };
     const legacy = makeChar({ originFeats: [raceIncrease, backgroundEntry] });
 
-    const loaded = migrateCharacter(JSON.parse(JSON.stringify(legacy)));
+    const loaded = migrateCharacter(JSON.parse(JSON.stringify(legacy)), undefined, undefined, ALL_BOOKS);
 
     assert.deepEqual(loaded.originFeats, [{ ...backgroundEntry, featAbility: "dex" }]);
     assert.equal(effectiveScores(loaded).scores.dex, effectiveScores(legacy).scores.dex);
@@ -440,7 +441,7 @@ describe("Legacy duplicate origin feat entries on load", () => {
     const backgroundIncrease: AsiSelection = { ...backgroundEntry, featAbility: "dex" };
     const legacy = makeChar({ originFeats: [raceIncrease, backgroundIncrease] });
 
-    const loaded = migrateCharacter(JSON.parse(JSON.stringify(legacy)));
+    const loaded = migrateCharacter(JSON.parse(JSON.stringify(legacy)), undefined, undefined, ALL_BOOKS);
 
     assert.deepEqual(loaded.originFeats, [backgroundIncrease]);
     assert.equal(effectiveScores(legacy).scores.dex, 12);

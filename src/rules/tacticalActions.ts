@@ -1,3 +1,4 @@
+import type { ActiveBooks } from "../constants/books.ts";
 import type { Character } from "../types/character.ts";
 import type { EvaluatedCharacter } from "./characterEvaluation.ts";
 import {
@@ -148,7 +149,7 @@ export function getTacticalActionLedger(
   character: Character,
   evaluated: EvaluatedCharacter,
   catalogs?: {
-    activeBooks?: string[];
+    activeBooks: ActiveBooks;
     /** Defaults to the process-wide current Compendium. */
     compendium?: Compendium;
   }

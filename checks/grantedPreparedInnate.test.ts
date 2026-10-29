@@ -1,3 +1,4 @@
+import { ALL_BOOKS } from "../src/constants/books.ts";
 import test from "node:test";
 import assert from "node:assert/strict";
 import { evaluateCharacter } from "../src/rules/characterEvaluation.ts";
@@ -20,7 +21,7 @@ const compendium = inMemoryCompendium({
   races: preparedGrantRaces(),
   spells: preparedGrantSpells(),
 });
-const catalogs = { compendium };
+const catalogs = { compendium, activeBooks: ALL_BOOKS };
 
 const scores = (overrides: Partial<AbilityScores>): AbilityScores => ({
   str: 10,
@@ -103,7 +104,7 @@ test("a chosen ability not yet picked keeps the card's spells, with no DC, and r
   assert.deepEqual(card.notices, ["Needs review: choose a casting ability"]);
   assert.ok(card.spells.some((spell) => spell.name === "Sample Bulwark"));
   assert.ok(
-    featSpellRuleChoices(character, compendium).some((choice) => choice.id === "TST__Feat Spells__Sample Ember Mark__Casting Ability"),
+    featSpellRuleChoices(character, compendium, ALL_BOOKS).some((choice) => choice.id === "TST__Feat Spells__Sample Ember Mark__Casting Ability"),
     "the ability pick is offered where the feat is held",
   );
 });

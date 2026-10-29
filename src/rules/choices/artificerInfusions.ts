@@ -1,3 +1,4 @@
+import type { ActiveBooks } from "../../constants/books.ts";
 import type { Character, RuleChoiceEntry } from "../../types/character.ts";
 import { currentCompendium, type Compendium } from "../../services/compendium.ts";
 import {
@@ -162,7 +163,7 @@ export function getArtificerInfusionCapacity(level: number): number {
  */
 export function artificerInfusionChoices(
   character: Character,
-  activeBooks?: string[],
+  activeBooks: ActiveBooks,
   compendium: Compendium = currentCompendium(),
   preferUnified = false
 ): AvailableRuleChoice[] {

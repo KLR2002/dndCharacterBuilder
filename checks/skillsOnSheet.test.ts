@@ -1,3 +1,4 @@
+import { ALL_BOOKS } from "../src/constants/books.ts";
 import test from "node:test";
 import assert from "node:assert/strict";
 import type { Character } from "../src/types/character.ts";
@@ -73,7 +74,7 @@ const lampWarden = (level: number, extra: Partial<Character> = {}) =>
   });
 
 const skillsOf = (character: Character, compendium = lampCompendium()) =>
-  names(proficiencySheet(character, { compendium }).skills);
+  names(proficiencySheet(character, { compendium, activeBooks: ALL_BOOKS }).skills);
 
 test("a subclass fixed skill grant is on the sheet from its level, and goes with the subclass", () => {
   assert.equal(skillsOf(lampWarden(2)).includes("Arcana"), false, "Lamp Lore is gained at 3rd level");
@@ -104,7 +105,7 @@ test("a skill choice grant is on the sheet once picked, and a name outside its p
 
 test("a skill choice grant is offered as a proficiency choice, with held skills hidden from its pool", () => {
   const compendium = lampCompendium();
-  const offer = proficiencyChoiceOffers(lampWarden(3, { chosenSkills: ["Survival"] }), { compendium }).find(
+  const offer = proficiencyChoiceOffers(lampWarden(3, { chosenSkills: ["Survival"] }), { compendium, activeBooks: ALL_BOOKS }).find(
     (o) => o.id === STUDY_ID,
   );
   assert.ok(offer, "the choice is offered at the feature's level");
@@ -121,18 +122,18 @@ test("the skills the buckets hold and Primal Knowledge picks are still on the sh
       { id: "TCE__Barbarian__Primal Knowledge 3", trait: "Primal Knowledge (3rd Level)", origin: "class", choose: 1, from: [], picked: ["Survival"] },
     ],
   });
-  assert.equal(names(proficiencySheet(primal, { compendium }).skills).includes("Survival"), true);
+  assert.equal(names(proficiencySheet(primal, { compendium, activeBooks: ALL_BOOKS }).skills).includes("Survival"), true);
 
   const bucket = makeChar({ chosenSkills: ["Stealth"] });
-  assert.equal(names(proficiencySheet(bucket, { compendium }).skills).includes("Stealth"), true);
+  assert.equal(names(proficiencySheet(bucket, { compendium, activeBooks: ALL_BOOKS }).skills).includes("Stealth"), true);
 });
 
 test("the Drunken Master's Performance is on the sheet from 3rd level in the integrated Compendium", () => {
   const compendium = integratedTestCompendium();
   const monk = (level: number) =>
     makeChar({ classes: [{ className: "Monk", source: "PHB", level, subclassName: "Way of the Drunken Master", subclassSource: "XGE" }] });
-  assert.equal(names(proficiencySheet(monk(2), { compendium }).skills).includes("Performance"), false);
-  assert.equal(names(proficiencySheet(monk(3), { compendium }).skills).includes("Performance"), true);
+  assert.equal(names(proficiencySheet(monk(2), { compendium, activeBooks: ALL_BOOKS }).skills).includes("Performance"), false);
+  assert.equal(names(proficiencySheet(monk(3), { compendium, activeBooks: ALL_BOOKS }).skills).includes("Performance"), true);
 });
 
 test("a skill granted by a Scout's Survivalist has its Expertise from the grant, so no Rogue milestone offers it", () => {
@@ -142,7 +143,7 @@ test("a skill granted by a Scout's Survivalist has its Expertise from the grant,
       { className: "Rogue", source: "PHB", level: 3, subclassName: "Scout", subclassSource: "XGE" },
     ],
   });
-  const rogue = getAvailableExpertiseMilestones(scout, { compendium }).find((m) => m.id === "rogue_1");
+  const rogue = getAvailableExpertiseMilestones(scout, { compendium, activeBooks: ALL_BOOKS }).find((m) => m.id === "rogue_1");
   assert.ok(rogue, "the Rogue milestone is still there");
   assert.ok(!rogue.options.includes("Nature"), "Survivalist gives Nature Expertise, so Nature is not offered");
   assert.ok(!rogue.options.includes("Survival"), "Survivalist gives Survival Expertise, so Survival is not offered");
@@ -154,9 +155,9 @@ test("the card's skill proficiencies are the sheet's, so the evaluated skill row
     classes: [{ className: "Monk", source: "PHB", level: 3, subclassName: "Way of the Drunken Master", subclassSource: "XGE" }],
     chosenSkills: ["Stealth"],
   });
-  const evaluated = evaluateCharacter(character, { compendium });
+  const evaluated = evaluateCharacter(character, { compendium, activeBooks: ALL_BOOKS });
   const proficient = evaluated.skills.filter((s) => s.isProficient).map((s) => s.name).sort();
-  assert.deepEqual(proficient, [...names(proficiencySheet(character, { compendium }).skills)].sort());
+  assert.deepEqual(proficient, [...names(proficiencySheet(character, { compendium, activeBooks: ALL_BOOKS }).skills)].sort());
   assert.ok(proficient.includes("Performance"));
 });
 
@@ -173,15 +174,15 @@ test("an Expertise pick on a skill a Prodigy pick gave is released with a notice
     asiSelections: [{ level: 4, type: "feat", featName: "Prodigy", featSource: "XGE" }],
     proficiencyPicks: { [PRODIGY_ID]: ["Nature"] },
   });
-  assert.deepEqual(reconcile(held, compendium).chosenExpertise, ["Nature"], "a valid pick is kept");
+  assert.deepEqual(reconcile(held, compendium, { activeBooks: ALL_BOOKS }).chosenExpertise, ["Nature"], "a valid pick is kept");
 
-  const released = reconcile(rogue({ proficiencyPicks: { [PRODIGY_ID]: ["Nature"] } }), compendium);
+  const released = reconcile(rogue({ proficiencyPicks: { [PRODIGY_ID]: ["Nature"] } }), compendium, { activeBooks: ALL_BOOKS });
   assert.deepEqual(released.chosenExpertise, [], "the Prodigy feat is not held, so the pick and its Expertise go");
   assert.ok(released.needsReview?.some((note) => note.includes("Nature") && note.includes("Expertise removed")));
 
   const back = reconcile(
     { ...released, asiSelections: [{ level: 4, type: "feat", featName: "Prodigy", featSource: "XGE" }], proficiencyPicks: { [PRODIGY_ID]: ["Nature"] } },
-    compendium,
+    compendium, { activeBooks: ALL_BOOKS },
   );
   assert.deepEqual(back.chosenExpertise, [], "nothing re-marks Expertise when the proficiency returns");
 });
@@ -206,18 +207,18 @@ const totemAt6 = (aspect: string[] | undefined, extra: Partial<Character> = {}) 
 test("the Tiger aspect's skills at 6th level are granted only while the Aspect of the Beast pick is Tiger", () => {
   const compendium = totemCompendium();
   const bear = totemAt6(["Bear"], { proficiencyPicks: { [TIGER_ID]: ["Stealth", "Survival"] } });
-  assert.deepEqual(names(proficiencySheet(bear, { compendium }).skills), [], "the Bear aspect grants no skills");
-  assert.equal(proficiencyChoiceOffers(bear, { compendium }).some((offer) => offer.id === TIGER_ID), false);
+  assert.deepEqual(names(proficiencySheet(bear, { compendium, activeBooks: ALL_BOOKS }).skills), [], "the Bear aspect grants no skills");
+  assert.equal(proficiencyChoiceOffers(bear, { compendium, activeBooks: ALL_BOOKS }).some((offer) => offer.id === TIGER_ID), false);
 
   const tiger = totemAt6(["Tiger"], { proficiencyPicks: { [TIGER_ID]: ["Stealth", "Survival"] } });
-  assert.deepEqual(names(proficiencySheet(tiger, { compendium }).skills).sort(), ["Stealth", "Survival"]);
-  assert.equal(proficiencyChoiceOffers(totemAt6(["Tiger"]), { compendium }).some((offer) => offer.id === TIGER_ID), true);
+  assert.deepEqual(names(proficiencySheet(tiger, { compendium, activeBooks: ALL_BOOKS }).skills).sort(), ["Stealth", "Survival"]);
+  assert.equal(proficiencyChoiceOffers(totemAt6(["Tiger"]), { compendium, activeBooks: ALL_BOOKS }).some((offer) => offer.id === TIGER_ID), true);
 });
 
 test("a Tiger pick is released with a notice when the aspect changes away from Tiger", () => {
   const compendium = totemCompendium();
   const tiger = totemAt6(["Tiger"], { proficiencyPicks: { [TIGER_ID]: ["Stealth", "Survival"] } });
-  const changed = reconcile({ ...tiger, ruleChoices: [{ ...tiger.ruleChoices![0], picked: ["Bear"] }] }, compendium);
+  const changed = reconcile({ ...tiger, ruleChoices: [{ ...tiger.ruleChoices![0], picked: ["Bear"] }] }, compendium, { activeBooks: ALL_BOOKS });
   assert.equal(changed.proficiencyPicks?.[TIGER_ID], undefined, "the Tiger skills are no longer granted, so the pick goes");
   assert.ok(changed.needsReview?.some((note) => note.includes("Stealth") && note.includes("no longer granted")));
 });
@@ -230,10 +231,10 @@ const quarryfolk = (traits: { name: string; description: string }[]) => vellariR
 
 test("a race trait named Stonecunning does not grant the skill its text names, and a trait of another name still does", () => {
   const character = makeChar({ race: { name: "Quarryfolk", source: "PHB" } });
-  assert.deepEqual(getAutoGrantedSkills(character, { race: { name: "Quarryfolk", traits: [STONE_TRAIT] } }), []);
-  assert.deepEqual(getAutoGrantedSkills(character, { race: { name: "Quarryfolk", traits: [LORE_TRAIT] } }), ["Arcana"]);
+  assert.deepEqual(getAutoGrantedSkills(character, { race: { name: "Quarryfolk", traits: [STONE_TRAIT] }, activeBooks: ALL_BOOKS }), []);
+  assert.deepEqual(getAutoGrantedSkills(character, { race: { name: "Quarryfolk", traits: [LORE_TRAIT] }, activeBooks: ALL_BOOKS }), ["Arcana"]);
   assert.deepEqual(
-    getAutoGrantedSkills(character, { race: { name: "Quarryfolk", traits: [STONE_TRAIT, LORE_TRAIT] } }),
+    getAutoGrantedSkills(character, { race: { name: "Quarryfolk", traits: [STONE_TRAIT, LORE_TRAIT] }, activeBooks: ALL_BOOKS }),
     ["Arcana"],
     "the Stonecunning text is skipped while the other trait still counts",
   );

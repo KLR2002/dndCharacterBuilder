@@ -1,3 +1,4 @@
+import { ALL_BOOKS } from "../src/constants/books.ts";
 import test from "node:test";
 import assert from "node:assert/strict";
 import { evaluateCharacter } from "../src/rules/characterEvaluation.ts";
@@ -22,7 +23,7 @@ const compendium = inMemoryCompendium({
   spells: backgroundSpellSpells(),
   backgrounds: backgroundSpellBackgrounds(),
 });
-const catalogs = { compendium };
+const catalogs = { compendium, activeBooks: ALL_BOOKS };
 
 const spellNamed = (name: string): SpellData => {
   const spell = backgroundSpellSpells().find((candidate) => candidate.name === name);
@@ -91,7 +92,7 @@ test("clearing the background, or taking one with no lists, removes its spells f
     withBackground("Sample Scholar", [cls("Sample Mage", 5)]),
     profileOf(withScholar.spellProfiles, "Sample Mage"),
     spirit,
-    compendium,
+    compendium, ALL_BOOKS,
   );
   assert.equal(isKnown(learned, profileOf(withScholar.spellProfiles, "Sample Mage"), spirit), true, "the spell is learnable while the background is held");
 
@@ -101,7 +102,7 @@ test("clearing the background, or taking one with no lists, removes its spells f
     const mage = profileOf(evaluated.spellProfiles, "Sample Mage");
     assert.equal(offers(mage, "Sample Spirit"), false, `${label}: the spell leaves the list`);
     assert.strictEqual(
-      learnSpell(character, mage, spirit, compendium),
+      learnSpell(character, mage, spirit, compendium, ALL_BOOKS),
       character,
       `${label}: the spell cannot be learned any more`,
     );
@@ -164,7 +165,7 @@ test("a background held in two books resolves to the record of the active book w
   });
   const character = makeChar({ background: { name: "Sample Scholar", source: "GONE" } });
   assert.equal(resolveCharacterBackground(character, [record("OLD"), record("ALT")], ["ALT"])?.source, "ALT");
-  assert.equal(resolveCharacterBackground(character, [record("OLD"), record("ALT")])?.source, "OLD", "without active books, the first listed");
+  assert.equal(resolveCharacterBackground(character, [record("OLD"), record("ALT")], ALL_BOOKS)?.source, "OLD", "without active books, the first listed");
 });
 
 test("a custom background named like a catalog background never resolves to the catalog record", () => {
@@ -172,7 +173,7 @@ test("a custom background named like a catalog background never resolves to the 
   const builtIn = makeChar({ background: { name: "Sample Scholar", source: "TST" } });
   const builderCustom = makeChar({ background: { name: "Sample Scholar", source: "Custom" } });
   const flaggedCustom = makeChar({ background: { name: "Sample Scholar", source: "TST", isCustom: true } });
-  assert.ok(resolveCharacterBackground(builtIn, backgrounds), "a catalog background still resolves for a built-in pick");
-  assert.equal(resolveCharacterBackground(builderCustom, backgrounds), undefined, "a Builder custom background resolves to nothing");
-  assert.equal(resolveCharacterBackground(flaggedCustom, backgrounds), undefined, "a flagged custom background resolves to nothing");
+  assert.ok(resolveCharacterBackground(builtIn, backgrounds, ALL_BOOKS), "a catalog background still resolves for a built-in pick");
+  assert.equal(resolveCharacterBackground(builderCustom, backgrounds, ALL_BOOKS), undefined, "a Builder custom background resolves to nothing");
+  assert.equal(resolveCharacterBackground(flaggedCustom, backgrounds, ALL_BOOKS), undefined, "a flagged custom background resolves to nothing");
 });

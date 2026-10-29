@@ -1,3 +1,4 @@
+import { ALL_BOOKS } from "../src/constants/books.ts";
 import test from "node:test";
 import assert from "node:assert/strict";
 import { evaluateCharacter } from "../src/rules/characterEvaluation.ts";
@@ -41,8 +42,8 @@ const cardTitled = (sources: InnateSpellProfile[], title: string) => sources.fin
 
 test("a saved High Elf cantrip pick gives the same cantrip on the race card after loading", () => {
   const saved = highElf({ ruleChoices: [legacyPick("Fire Bolt")] });
-  const loaded = migrateCharacter(saved, races, tracked.classes);
-  const card = cardTitled(evaluateCharacter(loaded, { compendium }).grantedSpellSources, "High Elf");
+  const loaded = migrateCharacter(saved, races, tracked.classes, ALL_BOOKS);
+  const card = cardTitled(evaluateCharacter(loaded, { compendium, activeBooks: ALL_BOOKS }).grantedSpellSources, "High Elf");
   assert.ok(card?.spells.some((spell) => spell.name === "Fire Bolt" && spell.isCantrip), "the migrated cantrip is listed at will");
   assert.equal(card?.ability, "int");
   assert.equal(loaded.ruleChoices?.some((entry) => entry.id === LEGACY_HIGH_ELF_ID), false, "the legacy entry is released");
@@ -50,9 +51,9 @@ test("a saved High Elf cantrip pick gives the same cantrip on the race card afte
 
 test("a legacy racial cantrip stored as a known spell is moved to the race's pick and released from known spells", () => {
   const saved = highElf({ knownSpells: [{ name: "Fire Bolt", source: "PHB", ownerKey: "racial__innate" }] });
-  const loaded = migrateCharacter(saved, races, tracked.classes);
+  const loaded = migrateCharacter(saved, races, tracked.classes, ALL_BOOKS);
   assert.equal(loaded.knownSpells?.some((spell) => spell.ownerKey === "racial__innate"), false, "the legacy known spell is gone");
-  const card = cardTitled(evaluateCharacter(loaded, { compendium }).grantedSpellSources, "High Elf");
+  const card = cardTitled(evaluateCharacter(loaded, { compendium, activeBooks: ALL_BOOKS }).grantedSpellSources, "High Elf");
   assert.ok(card?.spells.some((spell) => spell.name === "Fire Bolt"), "the cantrip moved to the race's card");
 });
 
@@ -73,8 +74,8 @@ test("a legacy Half-Elf descent cantrip moves to the subrace's pick, and its car
       legacyPick("Shocking Grasp"),
     ],
   });
-  const loaded = migrateCharacter(saved, races, tracked.classes);
-  const card = cardTitled(evaluateCharacter(loaded, { compendium }).grantedSpellSources, "Moon Elf or Sun Elf Descent");
+  const loaded = migrateCharacter(saved, races, tracked.classes, ALL_BOOKS);
+  const card = cardTitled(evaluateCharacter(loaded, { compendium, activeBooks: ALL_BOOKS }).grantedSpellSources, "Moon Elf or Sun Elf Descent");
   assert.ok(card?.spells.some((spell) => spell.name === "Shocking Grasp" && spell.isCantrip));
 });
 
@@ -86,15 +87,15 @@ test("a legacy cantrip moves to the race's cantrip pick whatever class that pick
     race: { name: "Sample Gifted", source: "TST" },
     ruleChoices: [legacyPick("Sample Ember")],
   });
-  const loaded = migrateCharacter(saved, sampleRaces, grantedSpellClasses());
-  const card = cardTitled(evaluateCharacter(loaded, { compendium: sampleCompendium }).grantedSpellSources, "Sample Gifted");
+  const loaded = migrateCharacter(saved, sampleRaces, grantedSpellClasses(), ALL_BOOKS);
+  const card = cardTitled(evaluateCharacter(loaded, { compendium: sampleCompendium, activeBooks: ALL_BOOKS }).grantedSpellSources, "Sample Gifted");
   assert.ok(card?.spells.some((spell) => spell.name === "Sample Ember" && spell.isCantrip), "the cantrip is listed at will on the race's card");
 });
 
 test("a legacy High Elf cantrip saved under another source's id moves to the race's pick too", () => {
   const saved = highElf({ ruleChoices: [{ ...legacyPick("Fire Bolt"), id: "XGE__Elf__XGE__High Elf__Cantrip" }] });
-  const loaded = migrateCharacter(saved, races, tracked.classes);
-  const card = cardTitled(evaluateCharacter(loaded, { compendium }).grantedSpellSources, "High Elf");
+  const loaded = migrateCharacter(saved, races, tracked.classes, ALL_BOOKS);
+  const card = cardTitled(evaluateCharacter(loaded, { compendium, activeBooks: ALL_BOOKS }).grantedSpellSources, "High Elf");
   assert.ok(card?.spells.some((spell) => spell.name === "Fire Bolt" && spell.isCantrip), "the cantrip is listed on the race's card");
   assert.equal(loaded.ruleChoices?.some((entry) => entry.id.includes("High Elf")), false, "the legacy entry is released");
 });
@@ -107,7 +108,7 @@ test("a saved use of a race's spell under the counter id an older release gave i
       innate_spell_create_water: { id: "innate_spell_create_water", name: "Innate: Create or Destroy Water", current: 0, max: 1, resetOn: "long" },
     },
   });
-  const opened = reconcile(waterGenasi, compendium);
+  const opened = reconcile(waterGenasi, compendium, { activeBooks: ALL_BOOKS });
   assert.equal(opened.resourceCounters?.innate_spell_create_water, undefined, "the counter under the old id is gone");
   assert.equal(opened.resourceCounters?.innate_spell_create_or_destroy_water?.current, 0, "the use is kept under the spell's own id");
 });
@@ -118,20 +119,20 @@ test("a legacy cantrip the character's race no longer grants raises a review not
     race: { name: "Dwarf", source: "PHB", subraceName: "Mountain", subraceSource: "PHB" },
     ruleChoices: [legacyPick("Fire Bolt")],
   });
-  const loaded = migrateCharacter(dwarf, races, tracked.classes);
+  const loaded = migrateCharacter(dwarf, races, tracked.classes, ALL_BOOKS);
   assert.equal(loaded.ruleChoices?.some((entry) => entry.id === LEGACY_HIGH_ELF_ID), false);
   assert.ok(loaded.needsReview?.some((message) => message.includes("Fire Bolt") && message.includes("removed from Mountain Dwarf")));
 });
 
 test("a legacy pick the offered spells no longer include raises a review notice when the character is opened", () => {
   const saved = highElf({ ruleChoices: [legacyPick("Eldritch Blast")] });
-  const loaded = migrateCharacter(saved, races, tracked.classes);
+  const loaded = migrateCharacter(saved, races, tracked.classes, ALL_BOOKS);
   const opened = reconcileForActiveBooks(loaded, compendium, ACTIVE);
   assert.ok(
     opened.needsReview?.some((message) => message.includes("Eldritch Blast") && message.includes("no longer offered")),
     `a notice names the pick: ${JSON.stringify(opened.needsReview)}`
   );
-  const card = cardTitled(evaluateCharacter(opened, { compendium }).grantedSpellSources, "High Elf");
+  const card = cardTitled(evaluateCharacter(opened, { compendium, activeBooks: ALL_BOOKS }).grantedSpellSources, "High Elf");
   assert.equal(card?.spells.some((spell) => spell.name === "Eldritch Blast"), false, "the unmatched cantrip is not listed");
 });
 
@@ -141,9 +142,9 @@ test("a saved SRD High Elf cantrip pick migrates against an integrated catalog t
     race: { name: "Elf", source: "SRD", subraceName: "High", subraceSource: "SRD" },
     ruleChoices: [{ ...legacyPick("Fire Bolt"), id: "SRD__Elf__SRD__High Elf__Cantrip" }],
   });
-  const loaded = migrateCharacter(srdHighElf, races, tracked.classes);
+  const loaded = migrateCharacter(srdHighElf, races, tracked.classes, ALL_BOOKS);
   assert.equal(loaded.ruleChoices?.some((entry) => entry.id === "SRD__Elf__SRD__High Elf__Cantrip"), false, "the legacy entry is released");
-  const card = cardTitled(evaluateCharacter(loaded, { compendium: integrated }).grantedSpellSources, "High Elf");
+  const card = cardTitled(evaluateCharacter(loaded, { compendium: integrated, activeBooks: ALL_BOOKS }).grantedSpellSources, "High Elf");
   assert.ok(card?.spells.some((spell) => spell.name === "Fire Bolt" && spell.isCantrip), "the cantrip is listed at will on the race's card");
 });
 
@@ -154,16 +155,16 @@ test("a saved race the catalog has no record of keeps its legacy cantrip as save
   });
   const withoutElf = races.filter((race) => race.name !== "Elf");
   assert.ok(withoutElf.length > 0, "the catalog is not empty");
-  const loaded = migrateCharacter(srdHighElf, withoutElf, tracked.classes);
+  const loaded = migrateCharacter(srdHighElf, withoutElf, tracked.classes, ALL_BOOKS);
   assert.deepEqual(loaded.ruleChoices, srdHighElf.ruleChoices, "the legacy entry is kept as saved");
   assert.deepEqual(loaded.needsReview ?? [], [], "no notice is raised");
 });
 
 test("a legacy High Elf cantrip never adds a second entry under the race key a pick already holds", () => {
-  const migrated = migrateCharacter(highElf({ ruleChoices: [legacyPick("Fire Bolt")] }), races, tracked.classes);
+  const migrated = migrateCharacter(highElf({ ruleChoices: [legacyPick("Fire Bolt")] }), races, tracked.classes, ALL_BOOKS);
   assert.equal(migrated.ruleChoices?.length, 1, "the legacy cantrip moved to one entry");
 
-  const again = migrateCharacter(highElf({ ruleChoices: [...(migrated.ruleChoices ?? []), legacyPick("Mage Hand")] }), races, tracked.classes);
+  const again = migrateCharacter(highElf({ ruleChoices: [...(migrated.ruleChoices ?? []), legacyPick("Mage Hand")] }), races, tracked.classes, ALL_BOOKS);
   assert.equal(again.ruleChoices?.length, 1, "no second entry is added");
   assert.deepEqual(again.ruleChoices?.[0].picked, ["Fire Bolt"], "the pick already under the key stands");
 });
@@ -178,7 +179,7 @@ test("a legacy race pick whose new key a pick already holds is dropped, and the 
       { id: newId, trait: "Cantrip", origin: "race", choose: 1, from: ["Mage Hand"], picked: ["Mage Hand"] },
     ],
   });
-  const loaded = migrateCharacter(saved);
+  const loaded = migrateCharacter(saved, undefined, undefined, ALL_BOOKS);
   assert.deepEqual(loaded.ruleChoices?.map((entry) => [entry.id, entry.picked]), [[newId, ["Mage Hand"]]]);
 });
 
@@ -192,7 +193,7 @@ test("a legacy race pick moves into an entry under its new key that holds no pic
       { id: newId, trait: "Cantrip", origin: "race", choose: 1, from: [], picked: [] },
     ],
   });
-  const loaded = migrateCharacter(saved);
+  const loaded = migrateCharacter(saved, undefined, undefined, ALL_BOOKS);
   assert.deepEqual(loaded.ruleChoices?.map((entry) => [entry.id, entry.picked]), [[newId, ["Fire Bolt"]]], "one entry, holding the pick");
 });
 
@@ -202,7 +203,7 @@ test("a legacy High Elf cantrip takes the empty entry under the race's key, and 
   );
   assert.ok(offered, "the High Elf offers a cantrip");
   const emptyEntry = { id: offered.id, trait: offered.traitName, origin: "race" as const, choose: 1, from: [], picked: [] };
-  const loaded = migrateCharacter(highElf({ ruleChoices: [legacyPick("Fire Bolt"), emptyEntry] }), races, tracked.classes);
+  const loaded = migrateCharacter(highElf({ ruleChoices: [legacyPick("Fire Bolt"), emptyEntry] }), races, tracked.classes, ALL_BOOKS);
   assert.deepEqual(loaded.ruleChoices?.map((entry) => [entry.id, entry.picked]), [[offered.id, ["Fire Bolt"]]], "one entry, holding the pick");
 });
 
@@ -233,6 +234,6 @@ test("a legacy cantrip is checked against the active book's record of its race, 
   assert.equal(scoped.ruleChoices?.some((entry) => entry.picked.includes("Sample Shot")), false, "the active book's record grants no cantrip, so none moves");
   assert.ok(scoped.needsReview?.some((notice) => notice.startsWith("Sample Shot removed")), "the cantrip is released with a notice");
 
-  const unscoped = migrateCharacter(saved, races, tracked.classes);
+  const unscoped = migrateCharacter(saved, races, tracked.classes, ALL_BOOKS);
   assert.ok(unscoped.ruleChoices?.some((entry) => entry.picked.includes("Sample Shot")), "without books, the first record listed decides, as before");
 });

@@ -1,3 +1,4 @@
+import { ALL_BOOKS } from "../src/constants/books.ts";
 import test from "node:test";
 import assert from "node:assert/strict";
 import { evaluateCharacter } from "../src/rules/characterEvaluation.ts";
@@ -16,7 +17,7 @@ const compendium = inMemoryCompendium({
   feats: grantedNoAbilityFeats(),
   spells: grantedSpellSpells(),
 });
-const catalogs = { compendium };
+const catalogs = { compendium, activeBooks: ALL_BOOKS };
 
 const mage = (level: number): CharacterClass => ({ className: "Sample Mage", source: "TST", level });
 

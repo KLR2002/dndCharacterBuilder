@@ -314,11 +314,11 @@ export function formatDamageString(
 
 export function getWeaponAttacks(
   character: Character,
-  opts: { catalogs?: CharacterCatalogs; ancestry?: ResolvedAncestry } = {}
+  opts: { catalogs: CharacterCatalogs; ancestry?: ResolvedAncestry }
 ): WeaponAttackOption[] {
   const { modifiers } = effectiveScores(character, opts.ancestry);
   const pb = proficiencyBonus(totalLevel(character));
-  const sheetWeapons = proficiencySheet(character, opts.catalogs ?? {}).weapons.map((weapon) => weapon.name);
+  const sheetWeapons = proficiencySheet(character, opts.catalogs).weapons.map((weapon) => weapon.name);
   const kenseiWeapons = new Set(kenseiWeaponNames(character, opts.catalogs).map((name) => name.toLowerCase()));
 
   const monk = (character.classes || []).find((c) => c.className === "Monk");
@@ -484,9 +484,8 @@ export function getWeaponAttacks(
 
 export function checkDualWielding(
   character: Character,
-  attacks?: WeaponAttackOption[]
+  weaponAttacks: WeaponAttackOption[]
 ): DualWieldResult {
-  const weaponAttacks = attacks ?? getWeaponAttacks(character);
   const lightMeleeAttacks = weaponAttacks.filter(
     (a) => a.isLight && !a.isRanged
   );

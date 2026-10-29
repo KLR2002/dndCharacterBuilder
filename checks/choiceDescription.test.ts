@@ -1,3 +1,4 @@
+import { ALL_BOOKS } from "../src/constants/books.ts";
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { grantedFeatures } from "../src/rules/grantedFeatures.ts";
@@ -10,7 +11,7 @@ const catalog = {
   races: readCatalog("races"),
   classes: readCatalog("classes"),
   backgrounds: readCatalog("backgrounds"),
-  feats: readCatalog("feats"),
+  feats: readCatalog("feats"), activeBooks: ALL_BOOKS,
 };
 
 const drowVariant = (picked: string): Character => {
@@ -18,7 +19,7 @@ const drowVariant = (picked: string): Character => {
     race: { name: "Half-Elf", source: "PHB", subraceName: "Drow Descent", subraceSource: "SCAG" },
     classes: [{ className: "Wizard", source: "PHB", level: 1 }],
   }) as Character;
-  const [choice] = ancestryRuleChoices(base, catalog.races);
+  const [choice] = ancestryRuleChoices(base, catalog.races, ALL_BOOKS);
   if (!choice) throw new Error("expected a descent choice");
   return {
     ...base,

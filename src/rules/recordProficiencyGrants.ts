@@ -1,3 +1,4 @@
+import type { ActiveBooks } from "../constants/books.ts";
 import type { Character } from "../types/character.ts";
 import type { BackgroundData, ProficiencyGrant, RaceData, SubraceData } from "../types/dnd5e.ts";
 import { sourceRecordGrants } from "./proficiencyPools.ts";
@@ -78,7 +79,7 @@ export function subracePickApplies(
  * The subrace of a race the character holds, resolved by the shared lookup within `activeBooks` when given. The race
  * is `race` itself: the lookup is given it alone, so only its own subraces are read.
  */
-export function heldSubraceOf(race: RaceData, character: Pick<Character, "race">, activeBooks?: readonly string[]): SubraceData | undefined {
+export function heldSubraceOf(race: RaceData, character: Pick<Character, "race">, activeBooks: ActiveBooks): SubraceData | undefined {
   return findHeldRace([race], character.race, activeBooks).subrace;
 }
 
@@ -89,7 +90,7 @@ export function heldSubraceOf(race: RaceData, character: Pick<Character, "race">
  */
 export function recordGrantSources(
   character: Character,
-  catalog: { races: readonly RaceData[]; backgrounds: readonly BackgroundData[]; activeBooks?: readonly string[] },
+  catalog: { races: readonly RaceData[]; backgrounds: readonly BackgroundData[]; activeBooks: ActiveBooks },
 ): RecordGrantSource[] {
   const out: RecordGrantSource[] = [];
   if (character.race) {
