@@ -199,7 +199,7 @@ export const FeaturesTab: React.FC = () => {
         });
       } else {
         const bgs = getBackgrounds(activeBooks);
-        const bgData = bgs.find((b) => b.name === currentCharacter.background?.name);
+        const bgData = findHeldRecord(bgs, currentCharacter.background, activeBooks);
         if (bgData?.feature) {
           list.push({
             id: `bg_${bgData.feature.name}`,

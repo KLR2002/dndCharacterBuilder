@@ -16,9 +16,9 @@ const HELPER_FILE = "rules/raceLookup.ts";
 const SERVICES_FOLDER = "services/";
 
 // The receiver is a race, background or feat list, case-insensitively: `races`, `allRaces`, `listings.races()`,
-// `allBackgrounds`, `allFeats`, `listings.feats()`. A subrace list (`subraces`) is left out: findHeldRace resolves
+// `allBackgrounds`, `bgs`, `allFeats`, `listings.feats()`. A subrace list (`subraces`) is left out: findHeldRace resolves
 // subraces within the race it resolves.
-const HELD_RECORD_FIND = /(?<!\w)(?!sub)[a-z]*(?:races|backgrounds|feats)(?:\(\))?\??\.find\(\s*\(?\s*(\w+)\s*\)?\s*=>.*\b\1\.name\b/i;
+const HELD_RECORD_FIND = /(?<!\w)(?!sub)[a-z]*(?:races|backgrounds|bgs|feats)(?:\(\))?\??\.find\(\s*\(?\s*(\w+)\s*\)?\s*=>.*\b\1\.name\b/i;
 
 interface Allowance {
   file: string;
