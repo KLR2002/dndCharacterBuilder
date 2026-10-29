@@ -266,3 +266,30 @@ test("a held race keeps its own increases when its book is off, though a same-na
   assert.deepEqual(off.racialAbilityBonuses, { cha: 2 });
   assert.equal(off.needsReview, undefined);
 });
+
+test("a slot moves back to its own default when another slot holds that default too", () => {
+  const IMP = "Sample Imp";
+  const IMP_KIN = "Sample Imp Kin";
+  const imp = race(IMP, [{ cha: 2 }], [{ ...subrace(IMP_KIN, [{ cha: 1 }]), raceName: IMP }]);
+  const impCatalog = inMemoryCompendium({ races: [imp], originRules: [rule] }, { integrated: true });
+  const impCatalogs = { compendium: impCatalog, activeBooks: ACTIVE };
+  const held = applyAncestrySelection(makeChar(), imp, imp.subraces[0], impCatalogs);
+
+  const [raceSlot] = originCustomizationView(held, impCatalogs)!.abilitySlots;
+  const moved = setOriginAbilitySwap(held, raceSlot.id, "str", impCatalogs);
+  assert.deepEqual(moved.originAbilitySwaps, { [raceSlot.id]: "str" });
+
+  const back = setOriginAbilitySwap(moved, raceSlot.id, "cha", impCatalogs);
+  assert.equal(back.originAbilitySwaps, undefined);
+  assert.deepEqual(back.racialAbilityBonuses, { cha: 3 });
+});
+
+test("a slot whose base score is 19 or more moves away and back to its own default", () => {
+  const capped = holding(DWARF, undefined, { baseAbilityScores: { str: 10, dex: 10, con: 19, int: 10, wis: 10, cha: 10 } });
+  const away = setOriginAbilitySwap(capped, slotDefaulting(capped, "con").id, "dex", catalogs);
+  assert.equal(effectiveScores(away).scores.dex, 12);
+
+  const back = setOriginAbilitySwap(away, slotDefaulting(away, "con").id, "con", catalogs);
+  assert.equal(back.originAbilitySwaps, undefined);
+  assert.equal(effectiveScores(back).scores.con, 21);
+});
