@@ -27,6 +27,7 @@ import { useAppTheme } from "../../context/ThemeContext";
 import { useHpQuickEdit } from "../../hooks/useHpQuickEdit";
 import { useResponsiveLayout } from "../../hooks/useResponsiveLayout";
 import { evaluateCharacter } from "../../rules/characterEvaluation";
+import { resolvedSize } from "../../rules/sizeChoice";
 import { currentCompendium } from "../../services/compendium";
 import { commitCharacterName } from "../../rules/characterName";
 import { dismissNotices } from "../../rules/needsReview";
@@ -101,7 +102,9 @@ export default function CharacterSheetScreen() {
   const classSummary = (currentCharacter.classes || [])
     .map((c) => `${c.className} ${c.level}`)
     .join(" / ") || "Lvl 1";
-  const raceSummary = currentCharacter.race?.name || "Race Unset";
+  const raceSummary = currentCharacter.race
+    ? `${currentCharacter.race.name} • ${resolvedSize(currentCharacter, { activeBooks })}`
+    : "Race Unset";
 
   const startNameEdit = () => {
     setNameDraft(currentCharacter.name);

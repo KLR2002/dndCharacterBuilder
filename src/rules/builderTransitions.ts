@@ -17,6 +17,7 @@ import { normalizeSkillName } from "./skills.ts";
 import { moveLegacySkillPicks } from "./proficiencyPicks.ts";
 import { CUSTOM_BACKGROUND_SKILLS_ID, CUSTOM_BACKGROUND_TOOLS_OR_LANGUAGES_ID, isCustomBackground } from "./customBackground.ts";
 import { findHeldRecord } from "./raceLookup.ts";
+import { sizeOptionsOf } from "./sizeChoice.ts";
 import { ABILITY_NAMES } from "./abilities.ts";
 import { releaseExpandedOnlySpells } from "./backgroundSpells.ts";
 import { releaseRaceOriginFeat } from "./feats.ts";
@@ -80,6 +81,19 @@ export function setChoiceRacialBonus(
     racialChoiceBonus: [...picks],
     racialAbilityBonuses: updatedBonuses,
   };
+}
+
+/**
+ * Records the player's Size Choice. A size the held race or lineage does not list, or any size of a race listing one size,
+ * leaves the character unchanged.
+ */
+export function setSizeChoice(
+  character: Character,
+  size: string,
+  catalogs: CharacterCatalogs,
+): Character {
+  if (!sizeOptionsOf(character, catalogs).includes(size)) return character;
+  return { ...character, sizeChoice: size };
 }
 
 function getPrereqForClass(className: string) {
