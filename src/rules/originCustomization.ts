@@ -105,7 +105,8 @@ function targetOf(slot: AbilitySlot, swaps: Record<string, AbilityKey>): Ability
 /**
  * Whether an increase may move to `ability`: no other increase or chosen pick lands there, and the base score plus the
  * increase stays at or under the cap. An increase's own default is the race's own, so another increase that defaults there
- * does not block it (the race's increases may share a score), and the cap does not apply to it either. A chosen pick still does.
+ * does not block it (the race's increases may share a score), and the cap does not apply to it either. A chosen pick still does,
+ * and so does another increase's saved swap onto that ability.
  */
 export function abilityTargetBlocked(
   character: Character,
@@ -114,8 +115,10 @@ export function abilityTargetBlocked(
   ability: AbilityKey,
 ): boolean {
   const picks = (character.racialChoiceBonus ?? []).map((pick) => pick.key);
-  if (ability === slot.defaultAbility) return picks.includes(ability);
   const swaps = character.originAbilitySwaps ?? {};
+  if (ability === slot.defaultAbility) {
+    return picks.includes(ability) || slots.some((other) => other.id !== slot.id && swaps[other.id] === ability);
+  }
   const taken = [...slots.filter((other) => other.id !== slot.id).map((other) => targetOf(other, swaps)), ...picks];
   if (taken.includes(ability)) return true;
   return baseAbilityScores(character)[ability] + slot.amount > ABILITY_SCORE_CAP;
