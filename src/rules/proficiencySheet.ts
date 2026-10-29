@@ -44,8 +44,7 @@ import {
 } from "./proficiencySources/proficiencySwaps.ts";
 
 export { classSkillChoice } from "./proficiencySources/skillGrants.ts";
-export { isSwapId, languageOfSwapId } from "./proficiencySources/languageSwaps.ts";
-export { swapLabelOf } from "./proficiencySources/proficiencySwaps.ts";
+export { isSwapId, originalOfSwapId, swapLabelOf } from "./proficiencySources/swapIds.ts";
 export {
   multiclassGrantsOf,
   multiclassSkillGrantOf,

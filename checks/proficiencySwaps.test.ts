@@ -294,3 +294,13 @@ test("a swap of a race skill leaves a same-named Rule Choice skill pick on the s
   assert.ok(namesIn(swapped, "skills").includes("Arcana"), "the swap's replacement is held");
   assert.ok(namesIn(swapped, "skills").includes("Perception"), "the Rule Choice pick still grants Perception");
 });
+
+test("a swap's pick is saved under its grant id, the swap mark, and the original name", () => {
+  const scout = holding(SCOUT);
+  const row = rowOf(scout, "Perception");
+  const swapped = setProficiencySwap(scout, row.id, "Insight", catalogs);
+
+  assert.equal(row.id, `${SOURCE}/Race/${SCOUT}@0#skills:fixed:Perception#swap:Perception`);
+  assert.deepEqual(Object.keys(swapped.proficiencyPicks ?? {}), [row.id]);
+  assert.deepEqual(swapped.proficiencyPicks?.[row.id], ["Insight"]);
+});

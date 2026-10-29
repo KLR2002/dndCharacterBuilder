@@ -6,8 +6,8 @@ import { grantRequirementMet } from "./optionFeatureGrants.ts";
 import { findClassData } from "./catalogs.ts";
 import {
   isSwapId,
-  languageOfSwapId,
   MULTICLASS_FEATURE,
+  originalOfSwapId,
   multiclassSkillGrantOf,
   originSwapStateOf,
   swapLabelOf,
@@ -395,7 +395,7 @@ function originSwapNotice(id: string, pick: string, state: OriginSwapState): str
   const label = swapLabelOf(id);
   const slot = state.slots.find((candidate) => candidate.id === id);
   if (!slot) {
-    return state.raceKnown ? `${label} swap to ${pick} removed: ancestry no longer grants ${languageOfSwapId(id)}` : undefined;
+    return state.raceKnown ? `${label} swap to ${pick} removed: ancestry no longer grants ${originalOfSwapId(id)}` : undefined;
   }
   if (!state.available || slot.replacement !== undefined) return undefined;
   return `${label} swap to ${pick} removed: ${pick} is no longer available`;
