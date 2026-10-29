@@ -1,0 +1,253 @@
+import { ORIGIN_CUSTOMIZATION_BOOK } from "../src/constants/books.ts";
+import { test } from "node:test";
+import assert from "node:assert/strict";
+import { makeChar, inMemoryCompendium } from "./testUtils.ts";
+import { applyAncestrySelection } from "../src/rules/ancestryEngine.ts";
+import { changeRace, resetOriginSwaps, setProficiencySwap } from "../src/rules/builderTransitions.ts";
+import { reconcile, reconcileForActiveBooks } from "../src/rules/characterReconciler.ts";
+import { proficiencyChoiceOffers } from "../src/rules/proficiencyChoiceOffers.ts";
+import { proficiencySheet, proficiencySwapViews } from "../src/rules/proficiencySheet.ts";
+import type { Character } from "../src/types/character.ts";
+import type { BackgroundData, ItemData, OriginRuleRecord, ProficiencyGrant, RaceData } from "../src/types/dnd5e.ts";
+
+// Proficiency swaps: a Race or Subrace fixed skill, tool, weapon or armor grant, or the pick of a narrower choice, is replaced
+// by what the swap table allows for its kind. Every race, background, item and grant name here is invented.
+
+const SOURCE = "TST";
+const ACTIVE = [SOURCE, ORIGIN_CUSTOMIZATION_BOOK];
+const WITHOUT_TCE = [SOURCE];
+
+const SCOUT = "Sample Scout";
+const BRAWLER = "Sample Brawler";
+const DUELIST = "Sample Duelist";
+const TINKER = "Sample Tinker";
+const PLATED = "Sample Plated";
+const ARTISAN = "Sample Artisan";
+const WANDERER = "Sample Wanderer";
+const BLADE = "Sample Blade";
+const SAGE = "Sample Sage";
+const FORGE = "Sample Forge";
+
+const ALL_SIX: Record<string, number>[] = [{ str: 1 }, { dex: 1 }, { con: 1 }, { int: 1 }, { wis: 1 }, { cha: 1 }];
+
+const ITEMS: ItemData[] = [
+  item("Sample Club", "simple"),
+  item("Sample Dagger", "simple"),
+  item("Sample Maul", "martial"),
+];
+
+function item(name: string, weaponCategory: "simple" | "martial"): ItemData {
+  return { name, source: SOURCE, itemCategory: "Weapon", weaponCategory, type: "Melee Weapon", properties: [] } as unknown as ItemData;
+}
+
+const fixed = (grantId: string, category: ProficiencyGrant["category"], names: string[]): ProficiencyGrant => ({
+  id: grantId,
+  kind: "fixed",
+  category,
+  names,
+});
+
+const race = (name: string, abilityScoreIncrease: Record<string, number>[], grants: ProficiencyGrant[], traits: { name: string; description: string }[] = []): RaceData => ({
+  name,
+  source: SOURCE,
+  size: ["Medium"],
+  speed: { walk: 30 },
+  abilityScoreIncrease,
+  darkvision: null,
+  traits,
+  languages: [],
+  subraces: [],
+  grants,
+  description: "Placeholder description for the race.",
+});
+
+const background = (name: string, grants: ProficiencyGrant[]): BackgroundData =>
+  ({
+    name,
+    source: SOURCE,
+    skillProficiencies: [],
+    languageProficiencies: [],
+    toolProficiencies: [],
+    grants,
+    description: "Placeholder description for the background.",
+  }) as unknown as BackgroundData;
+
+const records: RaceData[] = [
+  race(SCOUT, [{ dex: 2 }], [fixed(`${SOURCE}/Race/${SCOUT}@0#skills:fixed:Perception`, "skills", ["Perception"])], [
+    { name: "Sample Eyes", description: "You are proficient in the Perception skill." },
+  ]),
+  race(BRAWLER, [{ str: 2 }], [fixed(`${SOURCE}/Race/${BRAWLER}@0#weapons:fixed:Sample Club`, "weapons", ["Sample Club"])]),
+  race(DUELIST, [{ str: 2 }], [fixed(`${SOURCE}/Race/${DUELIST}@0#weapons:fixed:Sample Maul`, "weapons", ["Sample Maul"])]),
+  race(TINKER, [{ int: 2 }], [fixed(`${SOURCE}/Race/${TINKER}@0#tools:fixed:Sample Kit`, "tools", ["Sample Kit"])]),
+  race(PLATED, [{ con: 2 }], [fixed(`${SOURCE}/Race/${PLATED}@0#armor:fixed:Sample Mail`, "armor", ["Sample Mail"])]),
+  race(ARTISAN, [{ int: 2 }], [
+    { id: `${SOURCE}/Race/${ARTISAN}@0#tools:choice:names`, kind: "choice", category: "tools", count: 1, pool: { kind: "names", names: ["Sample Kit", "Sample Tool B", "Sample Tool C"] } },
+  ]),
+  race(WANDERER, ALL_SIX, [
+    { id: `${SOURCE}/Race/${WANDERER}@0#tools:choice:any`, kind: "choice", category: "tools", count: 1, pool: { kind: "any" } },
+  ]),
+  race(BLADE, [{ wis: 2 }], [fixed(`${SOURCE}/Race/${BLADE}@0#weapons:fixed:Sample Blade`, "weapons", ["Sample Blade"])]),
+];
+const backgrounds: BackgroundData[] = [
+  background(SAGE, [fixed(`${SOURCE}/Background/${SAGE}@0#skills:fixed:Perception`, "skills", ["Perception"])]),
+  background(FORGE, [fixed(`${SOURCE}/Background/${FORGE}@0#skills:fixed:Insight`, "skills", ["Insight"])]),
+];
+
+const rule: OriginRuleRecord = {
+  name: "Sample Origin Customization",
+  source: ORIGIN_CUSTOMIZATION_BOOK,
+  proficiencySwaps: [
+    { from: "skill", to: ["skill"] },
+    { from: "tool", to: ["tool", "simple weapon"] },
+    { from: "armor", to: ["simple weapon", "tool"] },
+    { from: "simple weapon", to: ["simple weapon", "tool"] },
+    { from: "martial weapon", to: ["simple weapon", "martial weapon", "tool"] },
+  ],
+};
+
+const compendium = inMemoryCompendium({ races: records, backgrounds, items: ITEMS, originRules: [rule] }, { integrated: true });
+const catalogs = { compendium, activeBooks: ACTIVE };
+
+/** A character holding the named race, with its ability increases applied by the ancestry transition. */
+function holding(name: string, overrides: Partial<Character> = {}): Character {
+  const raceRecord = records.find((r) => r.name === name)!;
+  return applyAncestrySelection(makeChar(overrides), raceRecord, undefined, catalogs);
+}
+
+/** The swap row of the held race whose original is the given name. */
+function rowOf(character: Character, original: string) {
+  const row = proficiencySwapViews(character, catalogs).find((view) => view.original === original);
+  assert.ok(row, `a swap row for ${original}`);
+  return row;
+}
+
+const namesIn = (character: Character, category: "skills" | "tools" | "weapons" | "armor") =>
+  proficiencySheet(character, catalogs)[category].map((entry) => entry.name);
+
+test("a fixed skill swap lands on the sheet and drops the trait's skill too", () => {
+  const scout = holding(SCOUT);
+  assert.ok(namesIn(scout, "skills").includes("Perception"));
+
+  const swapped = setProficiencySwap(scout, rowOf(scout, "Perception").id, "Insight", catalogs);
+  assert.ok(namesIn(swapped, "skills").includes("Insight"));
+  assert.ok(!namesIn(swapped, "skills").includes("Perception"), "neither the grant nor the trait text keeps Perception");
+});
+
+test("a simple weapon swap picks a simple weapon, and a martial weapon swap may pick a martial one", () => {
+  const brawler = holding(BRAWLER);
+  assert.ok(rowOf(brawler, "Sample Club").options.includes("Sample Dagger"));
+  assert.ok(!rowOf(brawler, "Sample Club").options.includes("Sample Club"));
+
+  const duelist = holding(DUELIST);
+  const options = rowOf(duelist, "Sample Maul").options;
+  assert.ok(options.includes("Sample Club") && options.includes("Sample Dagger"), "a simple weapon is offered");
+  assert.ok(!options.includes("Sample Maul"), "the original is not offered");
+  const swapped = setProficiencySwap(duelist, rowOf(duelist, "Sample Maul").id, "Sample Club", catalogs);
+  assert.ok(namesIn(swapped, "weapons").includes("Sample Club"));
+  assert.ok(!namesIn(swapped, "weapons").includes("Sample Maul"));
+});
+
+test("a tool grant swaps to a tool from the table's tool list", () => {
+  const tinker = holding(TINKER);
+  const swapped = setProficiencySwap(tinker, rowOf(tinker, "Sample Kit").id, "Smith's Tools", catalogs);
+  assert.ok(namesIn(swapped, "tools").includes("Smith's Tools"));
+  assert.ok(!namesIn(swapped, "tools").includes("Sample Kit"));
+});
+
+test("an armor grant swaps to a weapon of the allowed kind and lands in the weapon category", () => {
+  const plated = holding(PLATED);
+  const row = rowOf(plated, "Sample Mail");
+  assert.ok(row.options.includes("Sample Club") && row.options.includes("Sample Dagger"), "a simple weapon is offered");
+  assert.ok(row.options.includes("Smith's Tools"), "a tool is offered");
+  const swapped = setProficiencySwap(plated, row.id, "Sample Dagger", catalogs);
+  assert.ok(namesIn(swapped, "weapons").includes("Sample Dagger"));
+  assert.ok(!namesIn(swapped, "armor").includes("Sample Mail"));
+});
+
+test("a narrower choice's pick is swapped, and the sheet holds the replacement instead", () => {
+  const artisan = holding(ARTISAN, { proficiencyPicks: { [`${SOURCE}/Race/${ARTISAN}@0#tools:choice:names`]: ["Sample Kit"] } });
+  const row = rowOf(artisan, "Sample Kit");
+  assert.ok(row.options.includes("Smith's Tools"));
+  const swapped = setProficiencySwap(artisan, row.id, "Smith's Tools", catalogs);
+  assert.ok(namesIn(swapped, "tools").includes("Smith's Tools"));
+  assert.ok(!namesIn(swapped, "tools").includes("Sample Kit"));
+});
+
+test("an 'any' choice and a grant the Compendium cannot classify offer no swap", () => {
+  const wanderer = holding(WANDERER, { proficiencyPicks: { [`${SOURCE}/Race/${WANDERER}@0#tools:choice:any`]: ["Smith's Tools"] } });
+  assert.deepEqual(proficiencySwapViews(wanderer, catalogs).map((row) => row.original), []);
+
+  const blade = holding(BLADE);
+  assert.deepEqual(proficiencySwapViews(blade, catalogs).map((row) => row.original), []);
+});
+
+test("a kind with no table row offers no swap", () => {
+  const tinker = holding(TINKER);
+  const onlySkills = { ...rule, proficiencySwaps: [{ from: "skill" as const, to: ["skill" as const] }] };
+  const narrow = inMemoryCompendium({ races: records, backgrounds, items: ITEMS, originRules: [onlySkills] }, { integrated: true });
+  assert.deepEqual(proficiencySwapViews(tinker, { compendium: narrow, activeBooks: ACTIVE }), []);
+});
+
+test("a background that grants the same skill is untouched, and no swap is offered on it", () => {
+  const scout = holding(SCOUT, { background: { name: SAGE, source: SOURCE } });
+  const swapped = setProficiencySwap(scout, rowOf(scout, "Perception").id, "Insight", catalogs);
+
+  assert.ok(namesIn(swapped, "skills").includes("Perception"), "the background still grants Perception");
+  assert.deepEqual(proficiencySwapViews(scout, catalogs).map((row) => row.original), ["Perception"]);
+});
+
+test("the pool leaves out what another source holds and the replacements of other swaps", () => {
+  const scout = holding(SCOUT, { background: { name: FORGE, source: SOURCE } });
+  assert.ok(!rowOf(scout, "Perception").options.includes("Insight"), "a background skill is excluded");
+});
+
+test("with TCE off the saved swap is kept, and the sheet shows the original", () => {
+  const scout = holding(SCOUT);
+  const swapped = setProficiencySwap(scout, rowOf(scout, "Perception").id, "Insight", catalogs);
+
+  const off = reconcileForActiveBooks(swapped, compendium, WITHOUT_TCE);
+  assert.deepEqual(off.proficiencyPicks, swapped.proficiencyPicks);
+  assert.ok(proficiencySheet(off, { compendium, activeBooks: WITHOUT_TCE }).skills.map((entry) => entry.name).includes("Perception"));
+
+  assert.deepEqual(reconcileForActiveBooks(off, compendium, ACTIVE).proficiencyPicks, swapped.proficiencyPicks);
+});
+
+test("a race change releases the swap with a notice", () => {
+  const scout = holding(SCOUT);
+  const swapped = setProficiencySwap(scout, rowOf(scout, "Perception").id, "Insight", catalogs);
+
+  const changed = changeRace(swapped, compendium, ACTIVE);
+  assert.equal(changed.proficiencyPicks, undefined);
+  assert.deepEqual(changed.needsReview, ["Skill swap to Insight removed: ancestry no longer grants Perception"]);
+});
+
+test("a replacement another source now grants is dropped with a notice", () => {
+  const scout = holding(SCOUT);
+  const swapped = setProficiencySwap(scout, rowOf(scout, "Perception").id, "Insight", catalogs);
+
+  const forged = reconcile({ ...swapped, background: { name: FORGE, source: SOURCE } }, compendium, { activeBooks: ACTIVE });
+  assert.equal(forged.proficiencyPicks, undefined);
+  assert.deepEqual(forged.needsReview, ["Skill swap to Insight removed: Insight is not an open replacement"]);
+});
+
+test("a swap equal to its default is not stored", () => {
+  const scout = holding(SCOUT);
+  assert.equal(setProficiencySwap(scout, rowOf(scout, "Perception").id, "Perception", catalogs).proficiencyPicks, undefined);
+});
+
+test("Reset clears every swap on the card, and reconciling again changes nothing", () => {
+  const scout = holding(SCOUT);
+  const swapped = setProficiencySwap(scout, rowOf(scout, "Perception").id, "Insight", catalogs);
+  assert.ok(swapped.proficiencyPicks);
+
+  const reset = resetOriginSwaps(swapped, catalogs);
+  assert.equal(reset.proficiencyPicks, undefined);
+  assert.deepEqual(reconcile(reset, compendium, { activeBooks: ACTIVE }), reset);
+});
+
+test("normal Proficiency Choice offers never list a swap", () => {
+  const artisan = holding(ARTISAN, { proficiencyPicks: { [`${SOURCE}/Race/${ARTISAN}@0#tools:choice:names`]: ["Sample Kit"] } });
+  const swapped = setProficiencySwap(artisan, rowOf(artisan, "Sample Kit").id, "Smith's Tools", catalogs);
+  const offers = proficiencyChoiceOffers(swapped, { compendium, activeBooks: ACTIVE });
+  assert.ok(!JSON.stringify(offers).includes("#swap:"));
+});

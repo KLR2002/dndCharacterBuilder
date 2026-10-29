@@ -2,13 +2,14 @@ import React, { useMemo } from "react";
 import { Text, TouchableOpacity, View } from "react-native";
 import type { ActiveBooks } from "../../constants/books";
 import { ABILITY_NAMES } from "../../rules/abilities";
-import { setLanguageSwap, setOriginAbilitySwap } from "../../rules/builderTransitions";
+import { resetOriginSwaps, setLanguageSwap, setOriginAbilitySwap, setProficiencySwap } from "../../rules/builderTransitions";
 import { originCustomizationView } from "../../rules/originCustomization";
-import { languageSwapViews } from "../../rules/proficiencySheet";
+import { languageSwapViews, proficiencySwapViews } from "../../rules/proficiencySheet";
 import { useAppTheme } from "../../context/ThemeContext";
 import type { Character } from "../../types/character";
+import { Button } from "../ui/Button";
 import { CollapsibleCard } from "../ui/CollapsibleCard";
-import { ABILITY_KEYS, ABILITY_LABELS, builderStyles as styles } from "./builderStyles";
+import { ABILITY_KEYS, ABILITY_LABELS, builderStyles as styles, RuleChoicePicker } from "./builderStyles";
 
 interface CustomizeOriginCardProps {
   character: Character;
@@ -16,12 +17,21 @@ interface CustomizeOriginCardProps {
   onUpdate: (updater: (prev: Character) => Character) => void;
 }
 
+/** A proficiency row with at most this many names shows its chips inline; longer lists open the picker. */
+const INLINE_OPTION_LIMIT = 6;
+
 /** The Origin Customization card in the Ancestry section. Renders nothing when the rule is not available. */
 export const CustomizeOriginCard: React.FC<CustomizeOriginCardProps> = ({ character, activeBooks, onUpdate }) => {
   const { theme } = useAppTheme();
   const view = useMemo(() => originCustomizationView(character, { activeBooks }), [character, activeBooks]);
   const languageRows = useMemo(() => languageSwapViews(character, { activeBooks }), [character, activeBooks]);
+  const proficiencyRows = useMemo(() => proficiencySwapViews(character, { activeBooks }), [character, activeBooks]);
   if (!view) return null;
+
+  const swapped =
+    view.abilitySlots.some((slot) => slot.target !== slot.defaultAbility) ||
+    languageRows.some((row) => row.replacement !== undefined) ||
+    proficiencyRows.some((row) => row.replacement !== undefined);
 
   return (
     <CollapsibleCard title="Customize origin" defaultExpanded={false}>
@@ -51,6 +61,50 @@ export const CustomizeOriginCard: React.FC<CustomizeOriginCardProps> = ({ charac
           </View>
         </View>
       ))}
+      {proficiencyRows.map((row) => {
+        const from = [row.original, ...row.options];
+        const chosen = row.replacement ?? row.original;
+        const choose = (name: string) => onUpdate((prev) => setProficiencySwap(prev, row.id, name, { activeBooks }));
+        if (row.options.length > INLINE_OPTION_LIMIT) {
+          return (
+            <RuleChoicePicker
+              key={row.id}
+              label={row.original}
+              choose={1}
+              from={from}
+              chosen={[chosen]}
+              onToggle={choose}
+              theme={theme}
+            />
+          );
+        }
+        return (
+          <View key={row.id} style={{ gap: 6 }}>
+            <Text style={{ color: theme.text, fontWeight: "600", fontSize: 13 }}>{row.original}</Text>
+            <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6 }}>
+              {from.map((name) => {
+                const selected = name === chosen;
+                return (
+                  <TouchableOpacity
+                    key={name}
+                    accessibilityState={{ selected }}
+                    onPress={() => choose(name)}
+                    style={[
+                      styles.choiceChip,
+                      {
+                        backgroundColor: selected ? theme.accentGlow : theme.surfaceHighlight,
+                        borderColor: selected ? theme.accent : theme.border,
+                      },
+                    ]}
+                  >
+                    <Text style={{ color: selected ? theme.accent : theme.textSecondary, fontWeight: "700", fontSize: 13 }}>{name}</Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          </View>
+        );
+      })}
       {view.abilitySlots.map((slot) => (
         <View key={slot.id} style={{ gap: 6 }}>
           <Text style={{ color: theme.text, fontWeight: "600", fontSize: 13 }}>
@@ -84,6 +138,14 @@ export const CustomizeOriginCard: React.FC<CustomizeOriginCardProps> = ({ charac
           </View>
         </View>
       ))}
+      {swapped && (
+        <Button
+          title="Reset"
+          variant="outline"
+          size="sm"
+          onPress={() => onUpdate((prev) => resetOriginSwaps(prev, { activeBooks }))}
+        />
+      )}
     </CollapsibleCard>
   );
 };
