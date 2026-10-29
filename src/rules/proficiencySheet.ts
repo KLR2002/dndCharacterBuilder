@@ -161,12 +161,14 @@ function legacySkillNames(
   ancestry: ResolvedAncestry,
   listings: CompendiumListings,
   features: FeatureInstance[],
+  activeBooks: readonly string[] | undefined,
 ): string[] {
   return [
     ...getAutoGrantedSkills(character, {
       race: ancestry.race,
       subrace: ancestry.subrace,
       races: listings.races(),
+      activeBooks,
     }),
     ...fixedFeatureNames(features, "skills").map(normalizeSkillName),
   ];
@@ -260,7 +262,7 @@ export function ruleGrantedSkills(character: Character, catalogs?: CharacterCata
   const ancestry = resolveCharacterAncestry(character, listings.races(), catalogs?.activeBooks);
   const features = featuresOf(character, listings, catalogs?.activeBooks);
   return [
-    ...legacySkillNames(character, ancestry, listings, features),
+    ...legacySkillNames(character, ancestry, listings, features, catalogs?.activeBooks),
     ...choicePickNames(features, character, "skills", listings.items()),
   ];
 }
@@ -381,7 +383,7 @@ export function proficiencySheet(character: Character, catalogs: CharacterCatalo
   ];
 
   const skillNames = [
-    ...legacySkillNames(character, ancestry, listings, features),
+    ...legacySkillNames(character, ancestry, listings, features, catalogs.activeBooks),
     ...(character.chosenSkills ?? []).map(normalizeSkillName),
     ...choicePickNames(features, character, "skills", items),
   ];

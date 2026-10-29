@@ -426,3 +426,20 @@ test("the Heavily Armored prerequisite reads the armor the sheet grants", () => 
   const wizard = makeChar({ classes: [{ className: "Wizard", source: "SRD", level: 1 }] });
   assert.equal(validateFeatPrerequisites(wizard, prereq, { catalogs }).met, false);
 });
+
+test("a race that two books both name takes its trait skills from the record of the saved book", () => {
+  const otherBook = vellariRace({
+    name: "Quarry Folk",
+    source: "Atlas Tome",
+    traits: [{ name: "Keen Eyes", description: "Keen eyes: proficient in the Stealth skill." }],
+  });
+  const savedBook = vellariRace({
+    name: "Quarry Folk",
+    source: "Meridian Tome",
+    traits: [{ name: "Lore Keeping", description: "Lore keeping: proficient in the Arcana skill." }],
+  });
+  const character = makeChar({ race: { name: "Quarry Folk", source: "Meridian Tome" } });
+  const sheet = proficiencySheet(character, { compendium: inMemoryCompendium({ races: [otherBook, savedBook] }) });
+  assert.ok(names(sheet.skills).includes("Arcana"), "the saved book's trait skill is granted");
+  assert.ok(!names(sheet.skills).includes("Stealth"), "the other book's trait skill is not granted");
+});
