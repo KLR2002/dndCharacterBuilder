@@ -54,6 +54,9 @@ export const POINT_BUY_COST: Record<number, number> = {
 
 export const STANDARD_ARRAY = [15, 14, 13, 12, 10, 8];
 
+/** The highest an ability score may be raised to by an ability score increase or swap. */
+export const ABILITY_SCORE_CAP = 20;
+
 // Multiclassing Prerequisite Scores
 export const MULTICLASS_PREREQUISITES: Record<string, { ability: AbilityKey; minScore: number }[] | { or: { ability: AbilityKey; minScore: number }[] }> = {
   Barbarian: [{ ability: "str", minScore: 13 }],

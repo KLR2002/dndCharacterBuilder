@@ -4,8 +4,17 @@ import type { BackgroundData, ClassData, GrantRequirement, ProficiencyGrant, Rac
 import type { Compendium } from "../services/compendium.ts";
 import { grantRequirementMet } from "./optionFeatureGrants.ts";
 import { findClassData } from "./catalogs.ts";
-import { MULTICLASS_FEATURE, multiclassSkillGrantOf } from "./proficiencySheet.ts";
+import {
+  isSwapId,
+  MULTICLASS_FEATURE,
+  originalOfSwapId,
+  multiclassSkillGrantOf,
+  originSwapStateOf,
+  swapLabelOf,
+  type OriginSwapState,
+} from "./proficiencySheet.ts";
 import { poolNames, sourceRecordGrants, STARTING_PROFICIENCIES, validPicks, type ChoiceProficiencyGrant } from "./proficiencyPools.ts";
+import { grantGateOpen } from "./grantGate.ts";
 import { heldSubraceOf, raceSkillPickApplies, recordGrantSources, subracePickApplies } from "./recordProficiencyGrants.ts";
 import { findHeldRace, findHeldRecord } from "./raceLookup.ts";
 import { CUSTOM_BACKGROUND_GRANTS, isCustomBackground } from "./customBackground.ts";
@@ -254,7 +263,7 @@ function grantSourcesIn(compendium: Compendium, activeBooks: ActiveBooks): Map<s
     const raceOwner = { kind: "record" as const, origin: "Race" as const, name: race.name, source: race.source };
     // A race's skill pick depends on the descent the character holds, so each grant is gated on it (see raceSkillPickApplies).
     add(sourceRecordGrants(race.grants), { feature: race.name, level: 0, optional: false, owner: raceOwner }, (grant, character) =>
-      raceSkillPickApplies(race, heldSubraceOf(race, character, activeBooks), character, grant),
+      grantGateOpen(character, grant) && raceSkillPickApplies(race, heldSubraceOf(race, character, activeBooks), character, grant),
     );
     for (const sub of race.subraces ?? []) {
       add(
@@ -265,7 +274,7 @@ function grantSourcesIn(compendium: Compendium, activeBooks: ActiveBooks): Map<s
           optional: false,
           owner: { kind: "record", origin: "Subrace", name: sub.name, source: sub.source, raceName: race.name, raceSource: race.source },
         },
-        (grant, character) => subracePickApplies(race, sub, character, grant),
+        (grant, character) => grantGateOpen(character, grant) && subracePickApplies(race, sub, character, grant),
       );
     }
   }
@@ -379,6 +388,21 @@ function releaseReason(owners: readonly GrantSource[], character: Character, cla
 }
 
 /**
+ * The notice that releases a swap's pick, or undefined when the swap is kept. A swap is released when the held race
+ * no longer grants its original, and its replacement is dropped when another source now grants it or it is no longer in the pool. Both checks run
+ * only while the rule is in effect: with TCE off a saved swap is kept and ignored.
+ */
+function originSwapNotice(id: string, pick: string, state: OriginSwapState): string | undefined {
+  const label = swapLabelOf(id);
+  const slot = state.slots.find((candidate) => candidate.id === id);
+  if (!slot) {
+    return state.raceKnown ? `${label} swap to ${pick} removed: ancestry no longer grants ${originalOfSwapId(id)}` : undefined;
+  }
+  if (!state.available || slot.replacement !== undefined) return undefined;
+  return `${label} swap to ${pick} removed: ${pick} is no longer available`;
+}
+
+/**
  * Releases saved Proficiency Choice picks whose grant no longer applies, each with a review notice.
  * A pick is kept when the Compendium does not hold its grant (a missing or stale catalog), so a saved
  * pick is never lost for want of data. Returns the character unchanged when nothing is released.
@@ -392,7 +416,15 @@ export function pruneInvalidProficiencyPicks(character: Character, compendium: C
   const held = heldRecordIdsOf(character, listings.races(), listings.backgrounds(), activeBooks);
   const kept: Record<string, string[]> = {};
   const notices: string[] = [];
+  let swapState: OriginSwapState | undefined;
   for (const [id, names] of Object.entries(picks)) {
+    if (isSwapId(id)) {
+      swapState ??= originSwapStateOf(character, { compendium, activeBooks });
+      const notice = names.length > 0 ? originSwapNotice(id, names[0], swapState) : undefined;
+      if (notice) notices.push(notice);
+      else kept[id] = names;
+      continue;
+    }
     const owners = sources.get(id);
     const reason = owners && releaseReason(owners, character, listings.classes(), held);
     if (!owners || !reason) {

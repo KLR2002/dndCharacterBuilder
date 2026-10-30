@@ -7,8 +7,13 @@ import { proficiencySheet } from "./proficiencySheet.ts";
 import { getMartialArtsDie, getSneakAttackDice, getManeuverSaveDc } from "./combatDice.ts";
 import { hasFightingStyle, hasInvocation } from "./ruleChoices.ts";
 import { kenseiWeaponNames } from "./kenseiWeapons.ts";
+import { resolvedSize } from "./sizeChoice.ts";
 
 export { getManeuverSaveDc };
+
+/** Small creatures have disadvantage on attacks with Heavy weapons. */
+const SMALL_SIZE = "Small";
+const HEAVY_DISADVANTAGE_BADGE = "Disadvantage";
 
 export interface WeaponAttackOption {
   item: InventoryItem;
@@ -30,6 +35,8 @@ export interface WeaponAttackOption {
   isSneakAttackEligible?: boolean;
   sneakAttackDice?: string;
   calculationBadges?: string[];
+  /** The attack is made with disadvantage: a Heavy weapon used by a Small character. */
+  disadvantage?: boolean;
   archeryBonus?: number;
   duelingBonus?: number;
   infusionBonus?: number;
@@ -232,6 +239,16 @@ export function isTwoHandedWeapon(item: InventoryItem): boolean {
   return Boolean(std?.properties.some((p) => /two-handed/i.test(p)));
 }
 
+export function isHeavyWeapon(item: InventoryItem): boolean {
+  const raw = item as unknown as LooseInventoryItem;
+  if (Array.isArray(raw.properties) && raw.properties.some((p: unknown) => typeof p === "string" && /^heavy$/i.test(p))) {
+    return true;
+  }
+
+  const std = findStandardWeapon(item.name);
+  return Boolean(std?.properties.some((p) => /^heavy$/i.test(p)));
+}
+
 export function isItemInfusedWith(
   character: Character,
   item: InventoryItem,
@@ -325,6 +342,7 @@ export function getWeaponAttacks(
   const rogue = (character.classes || []).find((c) => c.className === "Rogue");
   const martialArtsDie = monk ? getMartialArtsDie(monk.level) : null;
   const sneakDice = rogue ? getSneakAttackDice(rogue.level) : null;
+  const isSmall = resolvedSize(character, opts.catalogs) === SMALL_SIZE;
 
   const hasArchery = hasFightingStyle(character, "Archery");
   const hasDueling = hasFightingStyle(character, "Dueling");
@@ -441,6 +459,10 @@ export function getWeaponAttacks(
     if (weaponInfusionBonus > 0) {
       calculationBadges.push(`Infused +${weaponInfusionBonus}`);
     }
+    const disadvantage = isSmall && isHeavyWeapon(item);
+    if (disadvantage) {
+      calculationBadges.push(HEAVY_DISADVANTAGE_BADGE);
+    }
 
     let damageDice = item.damage?.trim() || std?.damage || "1d4";
     if (monk && isMonk && martialArtsDie) {
@@ -474,6 +496,7 @@ export function getWeaponAttacks(
       isSneakAttackEligible,
       sneakAttackDice: isSneakAttackEligible && sneakDice ? sneakDice : undefined,
       calculationBadges: calculationBadges.length > 0 ? calculationBadges : undefined,
+      disadvantage: disadvantage || undefined,
       archeryBonus: archeryBonus || undefined,
       duelingBonus: duelingBonus || undefined,
       infusionBonus: weaponInfusionBonus || undefined,
@@ -543,6 +566,9 @@ export function checkDualWielding(
   }
   if (offHandInfusionBonus > 0) {
     offHandBadges.push(`Infused +${offHandInfusionBonus}`);
+  }
+  if (second.disadvantage) {
+    offHandBadges.push(HEAVY_DISADVANTAGE_BADGE);
   }
 
   const offHand: WeaponAttackOption = {

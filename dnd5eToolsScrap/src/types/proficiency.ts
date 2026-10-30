@@ -17,7 +17,7 @@ export type ProficiencyPool =
    * Any entry of the listed categories, for example any tool or any language. Type-only: the scraper never
    * emits it, and the app declares it for a custom background's choice.
    */
-  | { kind: "anyOf"; categories: Array<"tools" | "languages"> }
+  | { kind: "anyOf"; categories: ("tools" | "languages")[] }
   /**
    * A property rule over weapons: any of the listed base types that lack every
    * listed property, plus any weapons named explicitly. `attackType`, when set,
@@ -25,7 +25,7 @@ export type ProficiencyPool =
    */
   | {
       kind: "weapons";
-      base: Array<"simple" | "martial">;
+      base: ("simple" | "martial")[];
       withoutProperties: string[];
       plus: string[];
       attackType?: "melee" | "ranged";
@@ -48,6 +48,16 @@ export interface GrantRequirement {
  */
 export type ExpertiseMark = true;
 
+/**
+ * A pick on a Rule Choice of the race or subrace that holds a fixed grant: the grant is read only while the character's
+ * picked list on the choice `choiceId` includes `option`. Set by the scraper from a reviewed gate (ADR 0015), so a
+ * subrace's Elf Weapon Training weapons are held only while that option is picked. Absent on a grant no gate names.
+ */
+export interface GrantGate {
+  choiceId: string;
+  option: string;
+}
+
 export interface FixedProficiencyGrant {
   /** Built from the feature and what the grant names. Never changes once shipped. */
   id: string;
@@ -58,6 +68,7 @@ export interface FixedProficiencyGrant {
   names: string[];
   requires?: GrantRequirement;
   expertise?: ExpertiseMark;
+  gatedBy?: GrantGate;
 }
 
 export interface ChoiceProficiencyGrant {

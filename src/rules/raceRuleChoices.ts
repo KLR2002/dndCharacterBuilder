@@ -3,6 +3,7 @@ import type { Character } from "../types/character.ts";
 import type { RaceData, TraitChoiceData, TraitData } from "../types/dnd5e.ts";
 import { DND_SKILLS } from "../constants/rules.ts";
 import { totalLevel } from "./proficiencies.ts";
+import { grantGateOpen } from "./grantGate.ts";
 import { type AvailableRuleChoice, ruleChoiceId } from "./choices/types.ts";
 import { findHeldRace, heldSourceOf } from "./raceLookup.ts";
 
@@ -33,8 +34,8 @@ export function lineageInheritsElements(
     ((priorSubrace?.speed?.fly ?? 0) > 0)
   );
 
-  const grantsSkill = (record: { grants?: { category: string }[] } | undefined) =>
-    (record?.grants ?? []).some((grant) => grant.category === "skills");
+  const grantsSkill = (record: { grants?: { category: string; gatedBy?: { choiceId: string; option: string } }[] } | undefined) =>
+    (record?.grants ?? []).some((grant) => grant.category === "skills" && grantGateOpen(character, grant));
   let hasSkills = grantsSkill(priorRace) || grantsSkill(priorSubrace);
 
   if (!hasSkills) {

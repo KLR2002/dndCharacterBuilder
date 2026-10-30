@@ -9,6 +9,8 @@ import { proficiencyChoiceOffers } from "../src/rules/proficiencyChoiceOffers.ts
 import { poolNames, type ChoiceProficiencyGrant } from "../src/rules/proficiencyPools.ts";
 import { featSpellChoicesOf, featSpellRuleChoices, offeredRuleChoices, pickRuleChoice, raceSpellRuleChoices, ruleChoiceId } from "../src/rules/ruleChoices.ts";
 import { resolveAncestryState } from "../src/rules/ancestryEngine.ts";
+import { abilityKeyOf } from "../src/rules/abilities.ts";
+import { originCustomizationAvailable, originCustomizationView } from "../src/rules/originCustomization.ts";
 import { grantedFeatures } from "../src/rules/grantedFeatures.ts";
 import { proficiencySheet } from "../src/rules/proficiencySheet.ts";
 import { DEFAULT_ACTIVE_BOOK_CODES, ALL_BOOKS } from "../src/constants/books.ts";
@@ -145,6 +147,36 @@ const collidingIds = [...choices.owners].filter(([, byPrint]) => byPrint.size > 
 
 test("live catalog: the cache is at the catalog format the app requires", { skip: SKIP }, () => {
   assert.equal(isCatalogStale(live!.collections), false, `catalog format ${live!.collections.catalogFormat} is below ${REQUIRED_CATALOG_FORMAT}`);
+});
+
+test("live catalog: the Customizing Your Origin Proficiency Swaps table is parsed into rows", { skip: SKIP }, () => {
+  const origin = (live!.collections.originRules ?? []).find((r) => r.name === "Customizing Your Origin" && r.source === "TCE");
+  assert.ok(origin, "the live catalog holds the Customizing Your Origin record");
+  assert.ok(origin.proficiencySwaps.length > 0, "the Proficiency Swaps table has rows");
+  for (const row of origin.proficiencySwaps) {
+    assert.ok(row.to.length > 0, `the swap for ${row.from} names at least one replacement kind`);
+  }
+});
+
+test("live catalog: every race ability increase names an ability the Origin Customization slots read", { skip: SKIP }, () => {
+  const races = live!.compendium.for(ALL_BOOKS).races();
+  const unread: string[] = [];
+  for (const record of [...races, ...races.flatMap((race) => race.subraces ?? [])]) {
+    for (const entry of record.abilityScoreIncrease) {
+      for (const key of Object.keys(entry)) {
+        if (!abilityKeyOf(key)) unread.push(`${record.name}: ${key}`);
+      }
+    }
+  }
+  assert.deepEqual(unread, []);
+});
+
+test("live catalog: a held Half-Elf offers the Origin Customization card with its fixed increase movable", { skip: SKIP }, () => {
+  const character = makeChar({ race: { name: "Half-Elf", source: "PHB" } });
+  const catalogs = { compendium: live!.compendium, activeBooks: ALL_BOOKS };
+  assert.equal(originCustomizationAvailable(character, catalogs), true);
+  const view = originCustomizationView(character, catalogs);
+  assert.ok(view?.abilitySlots.some((slot) => slot.defaultAbility === "cha" && slot.amount === 2));
 });
 
 test("live catalog: every expertise mark is on a skills grant", { skip: SKIP }, () => {

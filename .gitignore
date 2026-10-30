@@ -2,7 +2,7 @@
 
 # dependencies (no trailing slash: scripts/worktree.sh links node_modules as a symlink)
 node_modules
-
+*.apk
 # Expo
 .expo/
 

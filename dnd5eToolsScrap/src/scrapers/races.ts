@@ -1,10 +1,9 @@
-import type { ToolsClient } from "../types/models.ts";
+import type { ToolsClient , AdditionalSpells, RaceModel, SubraceModel, TraitModel } from "../types/models.ts";
 import { resolveAllCopies } from "../parser/copy-resolver.ts";
 import { renderEntries } from "../parser/entry-renderer.ts";
 import { cleanTags } from "../parser/tag-cleaner.ts";
 import { extractRuleChoices, RULE_CHOICE_LEVELS, ruleChoiceKey, type ExtractedRuleChoice } from "./rule-choices.ts";
-import type { AdditionalSpells, RaceModel, SubraceModel, TraitModel } from "../types/models.ts";
-import type { ProficiencyReport } from "../types/proficiency.ts";
+import type { ProficiencyGrant, ProficiencyReport } from "../types/proficiency.ts";
 import { parseAdditionalSpells } from "../parser/additional-spells.ts";
 import { SPELL_GRANT_CORRECTIONS, SPELL_GRANT_GATES, type SpellGrantCorrection, type SpellGrantGate } from "../overrides/granted-spells.ts";
 import {
@@ -12,7 +11,7 @@ import {
   structuredGrants,
   type StructuredProficiencies,
 } from "../parser/proficiency-grants.ts";
-import { PROFICIENCY_GRANT_OVERRIDES } from "../overrides/proficiency-grants.ts";
+import { PROFICIENCY_GRANT_GATES, PROFICIENCY_GRANT_OVERRIDES, type ProficiencyGrantGate } from "../overrides/proficiency-grants.ts";
 import { INITIATIVE_BONUS_OVERRIDES } from "../overrides/initiative-bonuses.ts";
 import { resolveInitiativeBonuses } from "../parser/initiative-bonuses.ts";
 
@@ -160,6 +159,7 @@ export async function scrapeRaces(
       },
       PROFICIENCY_GRANT_OVERRIDES.subraces
     );
+    const gatedGrants = gateSubraceGrants(proficiencies.grants, parentName, normalized.name, rawSub.source, PROFICIENCY_GRANT_GATES);
     if (proficiencies.unparsed.length > 0) {
       report.unparsed.push({ owner: "Subrace", feature: `${parentName} (${normalized.name})`, level: 0, unparsed: proficiencies.unparsed });
     }
@@ -171,7 +171,7 @@ export async function scrapeRaces(
     );
     const subraceSpells = parsedSubraceSpells && gateSubraceSpells(parsedSubraceSpells, parentName, normalized.name, rawSub.source, SPELL_GRANT_GATES);
     const subraceModel: SubraceModel = {
-      ...(proficiencies.grants.length > 0 ? { grants: proficiencies.grants } : {}),
+      ...(gatedGrants.length > 0 ? { grants: gatedGrants } : {}),
       ...(subraceSpells ? { additionalSpells: subraceSpells } : {}),
       name: normalized.name,
       isVariant: normalized.isVariant,
@@ -370,10 +370,31 @@ export function gateSubraceSpells(
   return spells.map((grant) => ({ ...grant, gatedBy }));
 }
 
-function parseAbilityScores(ability: any): Array<Record<string, number>> {
+/**
+ * The subrace's proficiency grants, each fixed grant of a reviewed gate's category carrying the Rule Choice id and option
+ * that gate it (ADR 0015). The id is the one the app builds for the subrace's trait: source, race, subrace and trait, joined
+ * by "__". Choice grants, other categories and subraces no gate names are returned unchanged, ids and aliases included.
+ */
+export function gateSubraceGrants(
+  grants: ProficiencyGrant[],
+  raceName: string,
+  subraceName: string,
+  subraceSource: string,
+  gates: readonly ProficiencyGrantGate[],
+): ProficiencyGrant[] {
+  const named = gates.filter((gate) => gate.race === raceName && gate.subrace === subraceName && gate.subraceSource === subraceSource);
+  if (named.length === 0) return grants;
+  return grants.map((grant) => {
+    const gate = grant.kind === "fixed" ? named.find((candidate) => candidate.category === grant.category) : undefined;
+    if (!gate) return grant;
+    return { ...grant, gatedBy: { choiceId: [subraceSource, raceName, subraceName, gate.trait].join("__"), option: gate.option } };
+  });
+}
+
+function parseAbilityScores(ability: any): Record<string, number>[] {
   if (!ability) return [];
   const list = Array.isArray(ability) ? ability : [ability];
-  const result: Array<Record<string, number>> = [];
+  const result: Record<string, number>[] = [];
 
   for (const item of list) {
     if (!item || typeof item !== "object") continue;

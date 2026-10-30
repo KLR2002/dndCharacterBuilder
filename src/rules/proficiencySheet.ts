@@ -21,14 +21,30 @@ import {
   pickLandsIn,
   STARTING_PROFICIENCIES,
   validPicks,
+  weaponHeld,
   type ChoiceProficiencyGrant,
 } from "./proficiencyPools.ts";
 import { normalizeSkillName } from "./skills.ts";
-import { classSkillChoice, getAutoGrantedSkills } from "./proficiencySources/skillGrants.ts";
+import { classSkillChoice, ruleChoiceSkills, traitTextSkills } from "./proficiencySources/skillGrants.ts";
 import { resolveCharacterAncestry } from "./characterAncestry.ts";
 import { customBackgroundFeature } from "./customBackground.ts";
+import { originCustomizationAvailable, type OriginCustomizationView } from "./originCustomization.ts";
+import { findHeldRace } from "./raceLookup.ts";
+import {
+  languageSwapSlots,
+  withLanguageSwaps,
+  type LanguageSwapSlot,
+} from "./proficiencySources/languageSwaps.ts";
+import {
+  proficiencySwapSlots,
+  replacedSkillKeys,
+  swapNameKey,
+  withProficiencySwaps,
+  type ProficiencySwapSlot,
+} from "./proficiencySources/proficiencySwaps.ts";
 
 export { classSkillChoice } from "./proficiencySources/skillGrants.ts";
+export { isSwapId, originalOfSwapId, swapLabelOf } from "./proficiencySources/swapIds.ts";
 export {
   multiclassGrantsOf,
   multiclassSkillGrantOf,
@@ -163,14 +179,17 @@ function legacySkillNames(
   listings: CompendiumListings,
   features: FeatureInstance[],
   activeBooks: readonly string[] | undefined,
+  replacedSkills: ReadonlySet<string>,
 ): string[] {
+  const traitSkills = traitTextSkills(character, {
+    race: ancestry.race,
+    subrace: ancestry.subrace,
+    races: listings.races(),
+    activeBooks,
+  });
   return [
-    ...getAutoGrantedSkills(character, {
-      race: ancestry.race,
-      subrace: ancestry.subrace,
-      races: listings.races(),
-      activeBooks,
-    }),
+    ...traitSkills.filter((name) => !replacedSkills.has(swapNameKey(name))),
+    ...ruleChoiceSkills(character),
     ...fixedFeatureNames(features, "skills").map(normalizeSkillName),
   ];
 }
@@ -261,11 +280,181 @@ export function featuresOf(character: Character, listings: CompendiumListings, a
 export function ruleGrantedSkills(character: Character, catalogs?: CharacterCatalogs): string[] {
   const listings = catalogListings(catalogs);
   const ancestry = resolveCharacterAncestry(character, listings.races(), catalogs?.activeBooks);
-  const features = featuresOf(character, listings, catalogs?.activeBooks);
+  const raw = featuresOf(character, listings, catalogs?.activeBooks);
+  const { features, replacedSkills } = resolveSwaps(raw, character, catalogs ?? { activeBooks: undefined });
   return [
-    ...legacySkillNames(character, ancestry, listings, features, catalogs?.activeBooks),
+    ...legacySkillNames(character, ancestry, listings, features, catalogs?.activeBooks, replacedSkills),
     ...choicePickNames(features, character, "skills", listings.items()),
   ];
+}
+
+/**
+ * The language names the features and the saved buckets grant. `fallback` is the base language, decided by the caller
+ * from the features before any swap, so a swap that removes a race's only language brings no Common back.
+ */
+function grantedLanguageNames(
+  features: FeatureInstance[],
+  character: Character,
+  items: readonly ItemData[],
+  fallback: string[],
+): string[] {
+  return [
+    ...fallback,
+    ...fixedFeatureNames(features, "languages").map(normalizeLanguageName),
+    ...legacySourcePicks(character, "languages"),
+    ...choicePickNames(features, character, "languages", items),
+  ];
+}
+
+/** Every character speaks Common. A character whose race names no fixed language holds it alone (the fallback). */
+function baseLanguagesOf(character: Character, raw: FeatureInstance[]): string[] {
+  const raceNamesLanguage =
+    character.race && fixedFeatureNames(raw.filter((f) => f.origin === "Race" || f.origin === "Subrace"), "languages").length > 0;
+  return raceNamesLanguage ? [] : [BASE_LANGUAGE];
+}
+
+/**
+ * The swaps of a character's held race and subrace, resolved against the catalogs: every slot, the features the swaps in
+ * effect leave, and the skills whose trait text no longer grants them. A swap's pool is read from the features before any
+ * swap, so a replacement one swap takes is not offered by another.
+ */
+interface SwapResolution {
+  available: boolean;
+  languageSlots: LanguageSwapSlot[];
+  proficiencySlots: ProficiencySwapSlot[];
+  /** Whether the held race resolves in the Catalog. An absent slot is a race that no longer grants the original only then. */
+  raceKnown: boolean;
+  features: FeatureInstance[];
+  replacedSkills: Set<string>;
+}
+
+function resolveSwaps(raw: FeatureInstance[], character: Character, catalogs: CharacterCatalogs): SwapResolution {
+  const listings = catalogListings(catalogs);
+  const held = [
+    ...grantedLanguageNames(raw, character, listings.items(), baseLanguagesOf(character, raw)),
+    ...(character.addedLanguages ?? []).map((name) => normalizeAddedName("languages", name)),
+  ];
+  const available = originCustomizationAvailable(character, catalogs);
+  const languageSlots = languageSwapSlots(raw, held, character.proficiencyPicks, available);
+  const raceKnown = !character.race || findHeldRace(listings.races(), character.race, catalogs?.activeBooks).race !== undefined;
+
+  const heldSheet = sheetOver(character, catalogs, raw, raw, new Set());
+  const heldNow = (category: "skills" | "tools" | "weapons", name: string): boolean =>
+    category === "weapons"
+      ? weaponHeld(name, heldSheet.weapons.map((entry) => entry.name))
+      : heldSheet[category].some((entry) => entry.name.trim().toLowerCase() === name.trim().toLowerCase());
+  const proficiencySlots = proficiencySwapSlots({
+    features: raw,
+    items: listings.items(),
+    rows: listings.originRules().flatMap((rule) => rule.proficiencySwaps),
+    held: heldNow,
+    picks: character.proficiencyPicks,
+    available,
+  });
+  const languageFeatures = withLanguageSwaps(raw, available ? languageSlots : []);
+  return {
+    available,
+    languageSlots,
+    proficiencySlots,
+    raceKnown,
+    features: withProficiencySwaps(languageFeatures, proficiencySlots),
+    replacedSkills: replacedSkillKeys(proficiencySlots),
+  };
+}
+
+/**
+ * Each fixed language of the held race or subrace that a swap may replace, with its pool and the replacement picked for it
+ * when that pick is valid. `available` says whether the swaps are in effect; slots are listed whether or not they are.
+ */
+export interface LanguageSwapState {
+  available: boolean;
+  slots: LanguageSwapSlot[];
+  raceKnown: boolean;
+}
+
+export function languageSwapStateOf(character: Character, catalogs: CharacterCatalogs): LanguageSwapState {
+  const raw = featuresOf(character, catalogListings(catalogs), catalogs.activeBooks);
+  const { available, languageSlots, raceKnown } = resolveSwaps(raw, character, catalogs);
+  return { available, slots: languageSlots, raceKnown };
+}
+
+/** Each proficiency swap slot of the held race or subrace (skill, tool, weapon, armor, or a narrower choice's pick), with its pool. */
+export interface ProficiencySwapState {
+  available: boolean;
+  slots: ProficiencySwapSlot[];
+  raceKnown: boolean;
+}
+
+export function proficiencySwapStateOf(character: Character, catalogs: CharacterCatalogs): ProficiencySwapState {
+  const raw = featuresOf(character, catalogListings(catalogs), catalogs.activeBooks);
+  const { available, proficiencySlots, raceKnown } = resolveSwaps(raw, character, catalogs);
+  return { available, slots: proficiencySlots, raceKnown };
+}
+
+/** Every swap slot the prune reads, language and proficiency alike, with the replacement in effect by name. */
+export interface OriginSwapState {
+  available: boolean;
+  raceKnown: boolean;
+  slots: { id: string; original: string; replacement?: string }[];
+}
+
+export function originSwapStateOf(character: Character, catalogs: CharacterCatalogs): OriginSwapState {
+  const raw = featuresOf(character, catalogListings(catalogs), catalogs.activeBooks);
+  const { available, languageSlots, proficiencySlots, raceKnown } = resolveSwaps(raw, character, catalogs);
+  return {
+    available,
+    raceKnown,
+    slots: [
+      ...languageSlots.map((slot) => ({ id: slot.id, original: slot.original, replacement: slot.replacement })),
+      ...proficiencySlots.map((slot) => ({ id: slot.id, original: slot.original, replacement: slot.replacement?.name })),
+    ],
+  };
+}
+
+/** One row of the Origin Customization card's language section: the original, the pool, and the pick in effect. */
+export interface LanguageSwapView {
+  id: string;
+  original: string;
+  options: string[];
+  replacement?: string;
+}
+
+/** The language swap rows the card shows: one per fixed language of the held race or subrace. Empty while the rule is unavailable. */
+export function languageSwapViews(character: Character, catalogs: CharacterCatalogs): LanguageSwapView[] {
+  const { available, slots } = languageSwapStateOf(character, catalogs);
+  if (!available) return [];
+  return slots.map((slot) => ({ id: slot.id, original: slot.original, options: slot.pool, replacement: slot.replacement }));
+}
+
+/** One row of the Origin Customization card's proficiency section: the original, the names it may be replaced with, and the pick in effect. */
+export interface ProficiencySwapView {
+  id: string;
+  original: string;
+  options: string[];
+  replacement?: string;
+}
+
+/** The proficiency swap rows the card shows: one per swappable proficiency with a non-empty pool. Empty while the rule is unavailable. */
+export function proficiencySwapViews(character: Character, catalogs: CharacterCatalogs): ProficiencySwapView[] {
+  const { available, slots } = proficiencySwapStateOf(character, catalogs);
+  if (!available) return [];
+  return slots
+    .filter((slot) => slot.pool.length > 0)
+    .map((slot) => ({
+      id: slot.id,
+      original: slot.original,
+      options: slot.pool.map((entry) => entry.name),
+      replacement: slot.replacement?.name,
+    }));
+}
+
+/** Whether the Origin Customization card has anything to show: an ability slot, a language row or a proficiency row. */
+export function originCardHasRows(
+  view: OriginCustomizationView | undefined,
+  languageRows: readonly LanguageSwapView[],
+  proficiencyRows: readonly ProficiencySwapView[],
+): boolean {
+  return (view?.abilitySlots.length ?? 0) + languageRows.length + proficiencyRows.length > 0;
 }
 
 /** The fixed languages and tools a race, its subrace or a background grants, as the Builder lists them. */
@@ -287,18 +476,20 @@ export interface SourceGrants {
 
 export function sourceGrants(character: Character, catalogs: CharacterCatalogs): SourceGrants {
   const listings = catalogListings(catalogs);
-  const features = featuresOf(character, listings, catalogs?.activeBooks);
-  const fixedOf = (origins: FeatureInstance["origin"][]): SourceFixedGrants => {
+  const raw = featuresOf(character, listings, catalogs?.activeBooks);
+  const { features, languageSlots } = resolveSwaps(raw, character, catalogs);
+  const fixedOf = (origins: FeatureInstance["origin"][], replacements: string[] = []): SourceFixedGrants => {
     const sourced = features.filter((feature) => origins.includes(feature.origin));
     // A race and its subrace may both grant the same language or tool; each is listed once.
     return {
-      languages: [...new Set(fixedFeatureNames(sourced, "languages").map(normalizeLanguageName))],
+      languages: [...new Set([...fixedFeatureNames(sourced, "languages").map(normalizeLanguageName), ...replacements])],
       tools: [...new Set(fixedFeatureNames(sourced, "tools").map(normalizeToolName))],
     };
   };
   const starting = startingFeatureOf(character, listings.classes());
+  const replacements = languageSlots.flatMap((slot) => (slot.replacement !== undefined ? [slot.replacement] : []));
   return {
-    race: fixedOf(["Race", "Subrace"]),
+    race: fixedOf(["Race", "Subrace"], replacements),
     background: fixedOf(["Background"]),
     classTools: starting ? fixedFeatureNames([starting], "tools").map(normalizeToolName) : [],
   };
@@ -340,7 +531,23 @@ export function skillChoiceOffers(character: Character, catalogs: CharacterCatal
  */
 export function proficiencySheet(character: Character, catalogs: CharacterCatalogs): ProficiencySheet {
   const listings = catalogListings(catalogs);
-  const features = featuresOf(character, listings, catalogs?.activeBooks);
+  const raw = featuresOf(character, listings, catalogs?.activeBooks);
+  const { features, replacedSkills } = resolveSwaps(raw, character, catalogs);
+  return sheetOver(character, catalogs, raw, features, replacedSkills);
+}
+
+/**
+ * The sheet over `features`, the features the swaps in effect leave. `raw` is the held features before any swap: the
+ * languages a swap removes still decide the fallback Common, and the swaps' pools read it.
+ */
+function sheetOver(
+  character: Character,
+  catalogs: CharacterCatalogs,
+  raw: FeatureInstance[],
+  features: FeatureInstance[],
+  replacedSkills: ReadonlySet<string>,
+): ProficiencySheet {
+  const listings = catalogListings(catalogs);
   const ancestry = resolveCharacterAncestry(character, listings.races(), catalogs.activeBooks);
 
   // Class base proficiencies (the first class's, and each later class's multiclass grants from the Catalog), then the
@@ -355,14 +562,7 @@ export function proficiencySheet(character: Character, catalogs: CharacterCatalo
     ...recordedMulticlass.flatMap((mp) => mp.tools ?? []).map(normalizeToolName),
     ...choicePickNames(features, character, "tools", items),
   ];
-  const languages = [
-    ...(character.race && fixedFeatureNames(features.filter((f) => f.origin === "Race" || f.origin === "Subrace"), "languages").length > 0
-      ? []
-      : [BASE_LANGUAGE]),
-    ...fixedFeatureNames(features, "languages").map(normalizeLanguageName),
-    ...legacySourcePicks(character, "languages"),
-    ...choicePickNames(features, character, "languages", items),
-  ];
+  const languages = grantedLanguageNames(features, character, items, baseLanguagesOf(character, raw));
   // The first class's saves are the base, from the Catalog class it holds. A later class adds none of its own.
   const baseSaves = classBaseSavingThrows(character.classes[0], allCatalogClasses(catalogs));
   const savingThrows = sheetEntries([
@@ -384,7 +584,7 @@ export function proficiencySheet(character: Character, catalogs: CharacterCatalo
   ];
 
   const skillNames = [
-    ...legacySkillNames(character, ancestry, listings, features, catalogs.activeBooks),
+    ...legacySkillNames(character, ancestry, listings, features, catalogs.activeBooks, replacedSkills),
     ...(character.chosenSkills ?? []).map(normalizeSkillName),
     ...choicePickNames(features, character, "skills", items),
   ];

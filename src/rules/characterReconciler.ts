@@ -30,6 +30,8 @@ import {
 } from "./proficiencyPicks.ts";
 import { dropLegacyBackgroundSkills } from "./legacyBackgroundSkills.ts";
 import { pruneStartingEquipmentPicks } from "./startingEquipmentPicks.ts";
+import { releaseSizeChoice } from "./sizeChoice.ts";
+import { reconcileOriginAbilities } from "./originCustomization.ts";
 
 /**
  * The single seam every state-changing builder transition ends in. Idempotent: reconciling a
@@ -68,6 +70,8 @@ export function reconcile(
 ): Character {
   const classes = compendium.for().classes();
   let updated = pruneStartingEquipmentPicks(character);
+  updated = releaseSizeChoice(updated, compendium, options.activeBooks);
+  updated = reconcileOriginAbilities(updated, compendium, options.activeBooks);
 
   updated = moveLegacyFightingStyleIds(updated, classes);
   updated = pruneInvalidFightingStyles(updated, classes);

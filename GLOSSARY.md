@@ -36,6 +36,18 @@ _Avoid_: variant, option, mode, toggle
 An Ancestry that **replaces** a named feature of its base ancestry rather than adding to it. A Variant Half-Elf has no Skill Versatility of its own; it takes exactly one feature from its descent's offered set, which may include Skill Versatility.
 _Avoid_: subrace, upgrade, alternate ancestry
 
+**Origin Customization**:
+The Tasha's Cauldron of Everything rule that lets a player replace what a race's Ability Score Increase, Languages and proficiencies give with choices of their own. It is available whenever TCE is an active book and a race is held; only the ability part needs the race or subrace to have an ability score increase, and the language and proficiency parts are offered to any race. It applies only to the ancestry: a background, class, subclass or feat grant is never swapped. The rule's tables come from the Integrated Catalog, so without it, or while TCE is inactive, no Origin Swap is offered and saved ones are kept but not applied. Distinct from *Custom Lineage*, which replaces the whole race, and from the custom background.
+_Avoid_: Custom origin, race tweak, racial override
+
+**Origin Swap**:
+One replacement made under Origin Customization: an ability score increase moved to another score, a language replaced by another language, or a skill, tool, weapon or armor proficiency replaced by one the rule's Proficiency Swaps table allows. Every swap starts as the race's own value, so nothing is changed until the player changes it, and the options for customizing are hidden until the player opens them. Swapped increases must land on different scores and may not take a score above 20.
+_Avoid_: Override, respec, racial swap
+
+**Size Choice**:
+The size a character takes when its race lists more than one (such as Small or Medium). It defaults to the first size the race lists and is released when the race stops offering it.
+_Avoid_: Size override, size toggle
+
 **Season**:
 The Eladrin's chosen season (Autumn, Winter, Spring, Summer), which determines the additional effect its Fey Step gains at 3rd level. Changeable by the player whenever a Long Rest is taken.
 _Avoid_: alignment, element, stance
@@ -267,7 +279,7 @@ The complete player compendium fetched from 5e.tools and persisted in client sto
 _Avoid_: Scraped dump, external database, download cache
 
 **Catalog Format**:
-The number an Integrated Catalog is saved with. The application bumps the required number when scraped data changes in a way a cached catalog cannot satisfy. A catalog saved below it, or with no number, is *stale*: it still loads, its affected choices are hidden, saved picks are kept, and Settings asks for a re-sync. The SRD Baseline is never stale.
+The number an Integrated Catalog is saved with. The application bumps the required number when scraped data changes in a way a cached catalog cannot satisfy. A catalog saved below it, or with no number, is *stale*: it still loads, its affected choices are hidden, saved picks are kept, and Settings asks for a re-sync. After an update that raises the required number, the player is told once that the app was updated and a re-sync is advisable. The SRD Baseline is never stale.
 _Avoid_: Version, schema version, cache key
 
 **Sourcebook Gating**:

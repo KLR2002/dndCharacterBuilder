@@ -4,7 +4,8 @@ import { Ionicons } from "@expo/vector-icons";
 import { AbilityKey, Character } from "../../types/character";
 import type { RaceData } from "../../types/dnd5e";
 import { featSpellChoicesOf, raceSpellRuleChoices, type AvailableRuleChoice } from "../../rules/ruleChoices";
-import { changeLineage, changeRace, setChoiceRacialBonus, type LineageChoice } from "../../rules/builderTransitions";
+import { changeLineage, changeRace, setChoiceRacialBonus, setSizeChoice, type LineageChoice } from "../../rules/builderTransitions";
+import { originAbilityTargets } from "../../rules/originCustomization";
 import { currentCompendium, srdBaselineRaces } from "../../services/compendium";
 import {
   resolveAncestryState,
@@ -16,6 +17,7 @@ import {
 import type { SourceFixedGrants } from "../../rules/proficiencySheet";
 import { picksOnlyLanguages } from "../../rules/proficiencyChoiceOffers";
 import { ProficiencyChoicePicker } from "./ProficiencyChoicePicker";
+import { CustomizeOriginCard } from "./CustomizeOriginCard";
 import { GrantedSpellPicks } from "./GrantedSpellPicks";
 import { Badge } from "../ui/Badge";
 import { Button } from "../ui/Button";
@@ -87,6 +89,8 @@ export const AncestrySection: React.FC<AncestrySectionProps> = ({
   const [featSearch, setFeatSearch] = useState("");
 
   const { activeBooks, isIntegrated } = useCharacters();
+
+  const originTargets = useMemo(() => originAbilityTargets(character, { activeBooks }), [character, activeBooks]);
 
   const availableLineages = useMemo(() => {
     if (!isIntegrated) return [];
@@ -227,6 +231,37 @@ export const AncestrySection: React.FC<AncestrySectionProps> = ({
         </Card>
       ) : null}
 
+      {/* Size Choice: one of the sizes the held race or lineage lists */}
+      {ancestryState.sizeOptions.length > 0 && (
+        <Card style={{ gap: 8 }}>
+          <Text style={{ color: theme.text, fontWeight: "700", fontSize: 13 }}>Size</Text>
+          <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6 }}>
+            {ancestryState.sizeOptions.map((size) => {
+              const selected = ancestryState.size === size;
+              return (
+                <TouchableOpacity
+                  key={size}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected }}
+                  onPress={() => onUpdate((cur) => setSizeChoice(cur, size, { activeBooks }))}
+                  style={[
+                    styles.choiceChip,
+                    {
+                      backgroundColor: selected ? theme.accentGlow : theme.surfaceHighlight,
+                      borderColor: selected ? theme.accent : theme.border,
+                    },
+                  ]}
+                >
+                  <Text style={{ color: selected ? theme.accent : theme.textSecondary, fontWeight: "700", fontSize: 13 }}>
+                    {size}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        </Card>
+      )}
+
       {/* Choice ASI picker */}
       {character.race && isChoiceASIRace && (
         <Card style={{ gap: 8, borderColor: theme.accent }}>
@@ -300,11 +335,13 @@ export const AncestrySection: React.FC<AncestrySectionProps> = ({
             {ABILITY_KEYS.map((k) => {
               const chosenAmount = choiceASI[k];
               const chosen = chosenAmount != null;
-              const canPick = isFlexibleMPMM
-                ? flexibleMode === "2_1"
-                  ? !chosen && (!Object.values(choiceASI).includes(2) || !Object.values(choiceASI).includes(1))
-                  : !chosen && Object.keys(choiceASI).length < 3
-                : !chosen && Object.keys(choiceASI).length < choiceASIConfig.count;
+              const canPick =
+                !originTargets.includes(k) &&
+                (isFlexibleMPMM
+                  ? flexibleMode === "2_1"
+                    ? !chosen && (!Object.values(choiceASI).includes(2) || !Object.values(choiceASI).includes(1))
+                    : !chosen && Object.keys(choiceASI).length < 3
+                  : !chosen && Object.keys(choiceASI).length < choiceASIConfig.count);
 
               return (
                 <TouchableOpacity
@@ -329,6 +366,8 @@ export const AncestrySection: React.FC<AncestrySectionProps> = ({
           </View>
         </Card>
       )}
+
+      {character.race && <CustomizeOriginCard character={character} activeBooks={activeBooks} onUpdate={onUpdate} />}
 
       {/* Ancestry Rule Choices: one pick from a fixed set, gated by level */}
       {(character.race || character.lineageReplacement) && ancestryState.availableRuleChoices.length > 0 && (

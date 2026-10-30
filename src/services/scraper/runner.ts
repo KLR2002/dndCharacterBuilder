@@ -9,6 +9,7 @@ import { scrapeSpells } from "../../../dnd5eToolsScrap/src/scrapers/spells.ts";
 import { scrapeBeasts } from "../../../dnd5eToolsScrap/src/scrapers/beasts.ts";
 import { scrapeBooks } from "../../../dnd5eToolsScrap/src/scrapers/books.ts";
 import { scrapeConditions } from "../../../dnd5eToolsScrap/src/scrapers/conditions.ts";
+import { scrapeOriginRules } from "../../../dnd5eToolsScrap/src/scrapers/origin-rules.ts";
 import { REQUIRED_CATALOG_FORMAT, saveCompendiumData, type CompendiumCollections } from "../compendiumStorage.ts";
 import { integrate } from "../compendium.ts";
 
@@ -20,7 +21,7 @@ export async function collectIntegratedCatalog(
   client: BrowserToolsClient,
   onProgress?: ScraperProgressCallback,
 ): Promise<CompendiumCollections> {
-  const total = 10;
+  const total = 11;
 
   onProgress?.("Races", 1, total);
   const races = await scrapeRaces(client as any);
@@ -52,6 +53,9 @@ export async function collectIntegratedCatalog(
   onProgress?.("Books", 10, total);
   const books = await scrapeBooks(client as any);
 
+  onProgress?.("Origin Rules", 11, total);
+  const originRules = await scrapeOriginRules(client as any);
+
   const compendium: CompendiumCollections = {
     hasIntegratedCatalog: true,
     catalogFormat: REQUIRED_CATALOG_FORMAT,
@@ -66,6 +70,7 @@ export async function collectIntegratedCatalog(
     beasts: beasts as any,
     conditions: conditions as any,
     books: books as any,
+    originRules,
   };
   return compendium;
 }

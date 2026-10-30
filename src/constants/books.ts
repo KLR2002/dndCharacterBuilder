@@ -91,6 +91,9 @@ export const ALL_BOOKS: ActiveBooks = undefined;
 /** The source of the SRD Baseline's records. They count as active whatever books are switched on. */
 export const SRD_SOURCE = "SRD";
 
+/** The book whose Customizing Your Origin rule Origin Customization follows and whose swap table the Catalog carries. */
+export const ORIGIN_CUSTOMIZATION_BOOK = "TCE";
+
 export const DEFAULT_ACTIVE_BOOK_CODES = ALL_RESOURCE_BOOKS
   .filter((b) => b.isDefaultActive)
   .map((b) => b.code);
