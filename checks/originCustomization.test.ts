@@ -3,13 +3,14 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { makeChar, inMemoryCompendium, srdBaselineCompendium } from "./testUtils.ts";
 import { applyAncestrySelection } from "../src/rules/ancestryEngine.ts";
-import { changeRace, setChoiceRacialBonus, setOriginAbilitySwap } from "../src/rules/builderTransitions.ts";
+import { changeRace, setChoiceRacialBonus, setLanguageSwap, setOriginAbilitySwap, setProficiencySwap } from "../src/rules/builderTransitions.ts";
 import { effectiveScores } from "../src/rules/abilities.ts";
 import { reconcile, reconcileForActiveBooks } from "../src/rules/characterReconciler.ts";
 import { originAbilityTargets, originCustomizationAvailable, originCustomizationView } from "../src/rules/originCustomization.ts";
+import { languageSwapViews, originCardHasRows, proficiencySheet, proficiencySwapViews } from "../src/rules/proficiencySheet.ts";
 import { migrateCharacter } from "../src/rules/migrateCharacter.ts";
 import type { Character } from "../src/types/character.ts";
-import type { OriginRuleRecord , RaceData, SubraceData } from "../src/types/dnd5e.ts";
+import type { OriginRuleRecord , ProficiencyGrant, RaceData, SubraceData } from "../src/types/dnd5e.ts";
 
 // Origin Customization: the ability increases of a held race or subrace move, the Ability swap table
 // lives in the Catalog, and TCE gates the whole rule. Every race, subrace and rule row here is invented.
@@ -24,6 +25,7 @@ const TWO_SLOT = "Sample Two Slot";
 const HALF = "Sample Half";
 const EVEN = "Sample Even";
 const PLAIN = "Sample Plain";
+const UNLIFTED = "Sample Unlifted";
 
 const subrace = (name: string, abilityScoreIncrease: Record<string, number>[]): SubraceData => ({
   name,
@@ -55,6 +57,13 @@ const records: RaceData[] = [
   race(HALF, [{ cha: 2 }]),
   race(EVEN, [{ str: 1, dex: 1, con: 1, int: 1, wis: 1, cha: 1 }]),
   race(PLAIN, []),
+  {
+    ...race(UNLIFTED, []),
+    grants: [
+      { id: `${SOURCE}/Race/${UNLIFTED}@0#languages:fixed:Common`, kind: "fixed", category: "languages", names: ["Common"] },
+      { id: `${SOURCE}/Race/${UNLIFTED}@0#skills:fixed:Perception`, kind: "fixed", category: "skills", names: ["Perception"] },
+    ] satisfies ProficiencyGrant[],
+  },
 ];
 
 const rule: OriginRuleRecord = {
@@ -80,7 +89,7 @@ function slotDefaulting(character: Character, ability: string) {
   return slot;
 }
 
-test("the rule is offered only with TCE active, rule rows in the Catalog, and a held ability increase", () => {
+test("the rule is offered only with TCE active, rule rows in the Catalog, and a held race", () => {
   assert.equal(originCustomizationAvailable(holding(DWARF), catalogs), true);
   assert.equal(originCustomizationAvailable(holding(DWARF), { compendium, activeBooks: ALL_BOOKS }), true);
   assert.equal(originCustomizationAvailable(holding(DWARF), { compendium, activeBooks: WITHOUT_TCE }), false);
@@ -88,8 +97,50 @@ test("the rule is offered only with TCE active, rule rows in the Catalog, and a 
   const noRows = inMemoryCompendium({ races: records, originRules: [] }, { integrated: true });
   assert.equal(originCustomizationAvailable(holding(DWARF), { compendium: noRows, activeBooks: ACTIVE }), false);
 
-  assert.equal(originCustomizationAvailable(holding(PLAIN), catalogs), false);
+  assert.equal(originCustomizationAvailable(holding(PLAIN), catalogs), true);
   assert.equal(originCustomizationAvailable(makeChar(), catalogs), false);
+});
+
+test("a race with no ability increase still offers its language and skill swaps, and no ability slots", () => {
+  const unlifted = holding(UNLIFTED);
+  assert.equal(originCustomizationAvailable(unlifted, catalogs), true);
+  assert.deepEqual(originCustomizationView(unlifted, catalogs), { abilitySlots: [] });
+  assert.deepEqual(languageSwapViews(unlifted, catalogs).map((row) => row.original), ["Common"]);
+  assert.deepEqual(proficiencySwapViews(unlifted, catalogs).map((row) => row.original), ["Perception"]);
+
+  const [language] = languageSwapViews(unlifted, catalogs);
+  const withLanguage = setLanguageSwap(unlifted, language.id, "Dwarvish", catalogs);
+  assert.ok(proficiencySheet(withLanguage, catalogs).languages.map((entry) => entry.name).includes("Dwarvish"));
+
+  const [skill] = proficiencySwapViews(withLanguage, catalogs);
+  const withSkill = setProficiencySwap(withLanguage, skill.id, "Insight", catalogs);
+  assert.ok(proficiencySheet(withSkill, catalogs).skills.map((entry) => entry.name).includes("Insight"));
+
+  assert.equal(setOriginAbilitySwap(withSkill, "unknown-slot", "dex", catalogs), withSkill);
+  assert.deepEqual(withSkill.racialAbilityBonuses, unlifted.racialAbilityBonuses);
+});
+
+test("with TCE off or no race held, a race with no ability increase offers no swap of any kind", () => {
+  const unlifted = holding(UNLIFTED);
+  assert.equal(originCustomizationAvailable(unlifted, { compendium, activeBooks: WITHOUT_TCE }), false);
+  assert.deepEqual(languageSwapViews(unlifted, { compendium, activeBooks: WITHOUT_TCE }), []);
+  assert.deepEqual(proficiencySwapViews(unlifted, { compendium, activeBooks: WITHOUT_TCE }), []);
+  assert.equal(originCustomizationView(unlifted, { compendium, activeBooks: WITHOUT_TCE }), undefined);
+
+  assert.equal(originCustomizationAvailable(makeChar(), catalogs), false);
+  assert.equal(originCustomizationView(makeChar(), catalogs), undefined);
+  assert.deepEqual(languageSwapViews(makeChar(), catalogs), []);
+});
+
+test("the card has rows when it has an ability slot, a language row or a proficiency row, and none otherwise", () => {
+  const unlifted = holding(UNLIFTED);
+  assert.equal(
+    originCardHasRows(originCustomizationView(unlifted, catalogs), languageSwapViews(unlifted, catalogs), proficiencySwapViews(unlifted, catalogs)),
+    true,
+  );
+  assert.equal(originCardHasRows(undefined, [], []), false);
+  assert.equal(originCardHasRows({ abilitySlots: [] }, [], []), false);
+  assert.equal(originCardHasRows(originCustomizationView(holding(DWARF), catalogs), [], []), true);
 });
 
 test("the SRD Baseline never offers the rule", () => {

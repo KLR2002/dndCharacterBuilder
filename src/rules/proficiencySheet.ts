@@ -28,7 +28,7 @@ import { normalizeSkillName } from "./skills.ts";
 import { classSkillChoice, ruleChoiceSkills, traitTextSkills } from "./proficiencySources/skillGrants.ts";
 import { resolveCharacterAncestry } from "./characterAncestry.ts";
 import { customBackgroundFeature } from "./customBackground.ts";
-import { originCustomizationAvailable } from "./originCustomization.ts";
+import { originCustomizationAvailable, type OriginCustomizationView } from "./originCustomization.ts";
 import { findHeldRace } from "./raceLookup.ts";
 import {
   languageSwapSlots,
@@ -446,6 +446,15 @@ export function proficiencySwapViews(character: Character, catalogs: CharacterCa
       options: slot.pool.map((entry) => entry.name),
       replacement: slot.replacement?.name,
     }));
+}
+
+/** Whether the Origin Customization card has anything to show: an ability slot, a language row or a proficiency row. */
+export function originCardHasRows(
+  view: OriginCustomizationView | undefined,
+  languageRows: readonly LanguageSwapView[],
+  proficiencyRows: readonly ProficiencySwapView[],
+): boolean {
+  return (view?.abilitySlots.length ?? 0) + languageRows.length + proficiencyRows.length > 0;
 }
 
 /** The fixed languages and tools a race, its subrace or a background grants, as the Builder lists them. */

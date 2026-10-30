@@ -4,7 +4,7 @@ import type { ActiveBooks } from "../../constants/books";
 import { ABILITY_NAMES } from "../../rules/abilities";
 import { resetOriginSwaps, setLanguageSwap, setOriginAbilitySwap, setProficiencySwap } from "../../rules/builderTransitions";
 import { originCustomizationView } from "../../rules/originCustomization";
-import { languageSwapViews, proficiencySwapViews } from "../../rules/proficiencySheet";
+import { languageSwapViews, originCardHasRows, proficiencySwapViews } from "../../rules/proficiencySheet";
 import { useAppTheme } from "../../context/ThemeContext";
 import type { Character } from "../../types/character";
 import { Button } from "../ui/Button";
@@ -18,13 +18,13 @@ interface CustomizeOriginCardProps {
   onUpdate: (updater: (prev: Character) => Character) => void;
 }
 
-/** The Origin Customization card in the Ancestry section. Renders nothing when the rule is not available. */
+/** The Origin Customization card in the Ancestry section. Renders nothing when the rule offers no row. */
 export const CustomizeOriginCard: React.FC<CustomizeOriginCardProps> = ({ character, activeBooks, onUpdate }) => {
   const { theme } = useAppTheme();
   const view = useMemo(() => originCustomizationView(character, { activeBooks }), [character, activeBooks]);
   const languageRows = useMemo(() => languageSwapViews(character, { activeBooks }), [character, activeBooks]);
   const proficiencyRows = useMemo(() => proficiencySwapViews(character, { activeBooks }), [character, activeBooks]);
-  if (!view) return null;
+  if (!view || !originCardHasRows(view, languageRows, proficiencyRows)) return null;
 
   const swapped =
     view.abilitySlots.some((slot) => slot.target !== slot.defaultAbility) ||
