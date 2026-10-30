@@ -4,6 +4,7 @@ import type { AdditionalSpells, FeatData, RaceData, SpellData } from "../../type
 import type { Compendium, CompendiumListings } from "../../services/compendium.ts";
 import { BACKGROUND_FEAT_SOURCE } from "../../constants/rules.ts";
 import { ABILITIES, ABILITY_NAMES } from "../abilities.ts";
+import { grantGateOpen } from "../grantGate.ts";
 import { withNotices } from "../needsReview.ts";
 import { totalLevel } from "../proficiencies.ts";
 import { isSpellAvailableForClass } from "../spellcasting.ts";
@@ -687,17 +688,6 @@ export function raceGrantsOf(character: Character, races: RaceData[], activeBook
 function openRaceGrants(character: Character, owner: GrantOwner, grants: AdditionalSpells[] | undefined): RaceGrants | undefined {
   const open = (grants ?? []).filter((grant) => grantGateOpen(character, grant));
   return open.length > 0 ? { owner, grants: open } : undefined;
-}
-
-/**
- * Whether a grant's gate is open. A grant with no gate always is. A gated grant is read only while the player picked the
- * gate's option in the Rule Choice it names (ADR 0014): the gate is written into the Catalog by the scraper.
- */
-export function grantGateOpen(character: Character, grant: AdditionalSpells): boolean {
-  const gate = grant.gatedBy;
-  if (!gate) return true;
-  const picked = character.ruleChoices?.find((entry) => entry.id === gate.choiceId)?.picked ?? [];
-  return picked.includes(gate.option);
 }
 
 /** Every owner of spell grants the character holds: the given feats (with their records) and its race or subrace. */

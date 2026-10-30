@@ -14,6 +14,7 @@ import {
   type OriginSwapState,
 } from "./proficiencySheet.ts";
 import { poolNames, sourceRecordGrants, STARTING_PROFICIENCIES, validPicks, type ChoiceProficiencyGrant } from "./proficiencyPools.ts";
+import { grantGateOpen } from "./grantGate.ts";
 import { heldSubraceOf, raceSkillPickApplies, recordGrantSources, subracePickApplies } from "./recordProficiencyGrants.ts";
 import { findHeldRace, findHeldRecord } from "./raceLookup.ts";
 import { CUSTOM_BACKGROUND_GRANTS, isCustomBackground } from "./customBackground.ts";
@@ -262,7 +263,7 @@ function grantSourcesIn(compendium: Compendium, activeBooks: ActiveBooks): Map<s
     const raceOwner = { kind: "record" as const, origin: "Race" as const, name: race.name, source: race.source };
     // A race's skill pick depends on the descent the character holds, so each grant is gated on it (see raceSkillPickApplies).
     add(sourceRecordGrants(race.grants), { feature: race.name, level: 0, optional: false, owner: raceOwner }, (grant, character) =>
-      raceSkillPickApplies(race, heldSubraceOf(race, character, activeBooks), character, grant),
+      grantGateOpen(character, grant) && raceSkillPickApplies(race, heldSubraceOf(race, character, activeBooks), character, grant),
     );
     for (const sub of race.subraces ?? []) {
       add(
@@ -273,7 +274,7 @@ function grantSourcesIn(compendium: Compendium, activeBooks: ActiveBooks): Map<s
           optional: false,
           owner: { kind: "record", origin: "Subrace", name: sub.name, source: sub.source, raceName: race.name, raceSource: race.source },
         },
-        (grant, character) => subracePickApplies(race, sub, character, grant),
+        (grant, character) => grantGateOpen(character, grant) && subracePickApplies(race, sub, character, grant),
       );
     }
   }

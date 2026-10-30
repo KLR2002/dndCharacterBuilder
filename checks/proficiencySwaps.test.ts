@@ -125,7 +125,47 @@ const rule: OriginRuleRecord = {
   ],
 };
 
-const compendium = inMemoryCompendium({ races: records, backgrounds, items: ITEMS, originRules: [rule] }, { integrated: true });
+// A subrace whose weapon grant a Rule Choice option gates (ADR 0015): its swap is offered only while the option is picked.
+const GATED_KIN = "Sample Gated Kin";
+const GATED_LINE = "Sample Gated Line";
+const GATED_OPTION = "Sample Training";
+const GATED_CHOICE = `${SOURCE}__${GATED_KIN}__${GATED_LINE}__Sample Option (Choose 1)`;
+const gatedKin: RaceData = {
+  ...race(GATED_KIN, [{ dex: 2 }], []),
+  subraces: [
+    {
+      name: GATED_LINE,
+      source: SOURCE,
+      raceName: GATED_KIN,
+      raceSource: SOURCE,
+      darkvision: null,
+      description: "Placeholder description for the subrace.",
+      abilityScoreIncrease: [],
+      traits: [
+        {
+          name: "Sample Option (Choose 1)",
+          description: "Placeholder description for the choice.",
+          choice: {
+            pick: 1,
+            level: 1,
+            options: [
+              { name: GATED_OPTION, description: "Placeholder description." },
+              { name: "Sample Charm", description: "Placeholder description." },
+            ],
+          },
+        },
+      ],
+      grants: [
+        {
+          ...fixed(`${SOURCE}/Subrace/${GATED_KIN} (${GATED_LINE})@0#weapons:fixed:Sample Club`, "weapons", ["Sample Club"]),
+          gatedBy: { choiceId: GATED_CHOICE, option: GATED_OPTION },
+        },
+      ],
+    },
+  ],
+} as RaceData;
+
+const compendium = inMemoryCompendium({ races: [...records, gatedKin], backgrounds, items: ITEMS, originRules: [rule] }, { integrated: true });
 const catalogs = { compendium, activeBooks: ACTIVE };
 
 /** A character holding the named race, with its ability increases applied by the ancestry transition. */
@@ -381,4 +421,26 @@ test("re-picking the narrower choice to another value releases its swap with a n
 
   const originalAgain = reconcile(recordProficiencyPick(repicked, { id: grant, choose: 1 }, "Sample Kit"), compendium, { activeBooks: ACTIVE });
   assert.equal(originalAgain.proficiencyPicks?.[`${grant}#swap:Sample Kit`], undefined);
+});
+
+/** The held gated subrace, with the given picks on its Rule Choice; with no picks, the choice is unpicked. */
+function gatedLine(picked?: string[]): Character {
+  const character = applyAncestrySelection(makeChar(), gatedKin, gatedKin.subraces[0], catalogs);
+  if (!picked) return character;
+  return { ...character, ruleChoices: [{ id: GATED_CHOICE, trait: "Sample Option (Choose 1)", origin: "race", choose: 1, from: [GATED_OPTION, "Sample Charm"], picked }] };
+}
+
+test("a gated weapon's swap row is offered only while its option is picked", () => {
+  const offersClub = (character: Character) => proficiencySwapViews(character, catalogs).some((view) => view.original === "Sample Club");
+  assert.equal(offersClub(gatedLine()), false, "no row with no pick");
+  assert.equal(offersClub(gatedLine(["Sample Charm"])), false, "the other option gives no row");
+  assert.ok(rowOf(gatedLine([GATED_OPTION]), "Sample Club").options.includes("Sample Dagger"), "the gated option gives the row");
+});
+
+test("a saved swap of a gated weapon is released with a notice when the pick moves to another option", () => {
+  const picked = gatedLine([GATED_OPTION]);
+  const swapped = setProficiencySwap(picked, rowOf(picked, "Sample Club").id, "Sample Dagger", catalogs);
+  const moved = reconcile({ ...swapped, ruleChoices: gatedLine(["Sample Charm"]).ruleChoices }, compendium, { activeBooks: ACTIVE });
+  assert.equal(moved.proficiencyPicks, undefined);
+  assert.deepEqual(moved.needsReview, ["Weapon swap to Sample Dagger removed: ancestry no longer grants Sample Club"]);
 });

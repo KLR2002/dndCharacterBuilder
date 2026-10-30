@@ -1,6 +1,7 @@
 import type { ActiveBooks } from "../constants/books.ts";
 import type { Character } from "../types/character.ts";
 import type { BackgroundData, ProficiencyGrant, RaceData, SubraceData } from "../types/dnd5e.ts";
+import { grantGateOpen } from "./grantGate.ts";
 import { sourceRecordGrants } from "./proficiencyPools.ts";
 import { ruleChoiceId } from "./choices/types.ts";
 import { isCustomBackground } from "./customBackground.ts";
@@ -85,8 +86,9 @@ export function heldSubraceOf(race: RaceData, character: Pick<Character, "race">
 
 /**
  * The tool, language and skill grant sources of the race, subrace and background the character holds, in that
- * order. A lineage replacement does not change them: the race is still the one chosen. A custom background
- * has no record. The records resolve by the shared record lookup, scoped to `activeBooks` when given.
+ * order. A race or subrace grant is held only while its gate is open (grantGateOpen). A lineage replacement does not
+ * change them: the race is still the one chosen. A custom background has no record. The records resolve by the shared
+ * record lookup, scoped to `activeBooks` when given.
  */
 export function recordGrantSources(
   character: Character,
@@ -96,10 +98,12 @@ export function recordGrantSources(
   if (character.race) {
     const { race, subrace } = findHeldRace(catalog.races, character.race, catalog.activeBooks);
     const raceGrants = race
-      ? sourceRecordGrants(race.grants).filter((grant) => raceSkillPickApplies(race, subrace, character, grant))
+      ? sourceRecordGrants(race.grants).filter((grant) => grantGateOpen(character, grant) && raceSkillPickApplies(race, subrace, character, grant))
       : [];
     if (race && raceGrants.length > 0) out.push({ origin: "Race", name: race.name, source: race.source, owner: race.name, grants: raceGrants });
-    const subraceGrants = race && subrace ? sourceRecordGrants(subrace.grants).filter((grant) => subracePickApplies(race, subrace, character, grant)) : [];
+    const subraceGrants = race && subrace
+      ? sourceRecordGrants(subrace.grants).filter((grant) => grantGateOpen(character, grant) && subracePickApplies(race, subrace, character, grant))
+      : [];
     if (race && subrace && subraceGrants.length > 0) {
       out.push({ origin: "Subrace", name: subrace.name, source: subrace.source, owner: race.name, grants: subraceGrants });
     }
