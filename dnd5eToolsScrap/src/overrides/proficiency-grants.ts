@@ -1,4 +1,5 @@
 import type { GrantOverride } from "../parser/proficiency-grants.ts";
+import type { ProficiencyCategory } from "../types/proficiency.ts";
 
 /**
  * Reviewed Proficiency Grants for features the extractor cannot parse.
@@ -467,4 +468,25 @@ export const REVIEWED_GRANTS_NOTHING: ReviewedFeature[] = [
   { owner: "Feat", feature: "Rune Shaper", level: 0 },
   { owner: "Feat", feature: "Sharpshooter", level: 0 },
   { owner: "Feat", feature: "Telepathic", level: 0 },
+];
+
+/**
+ * A subrace's proficiency grant of one category that waits on an option the player picks in one of the subrace's Rule
+ * Choices (ADR 0015). The grant is read only while that option is picked. Names only: the race and subrace, the trait
+ * holding the choice, the option, and the category of the fixed grants it gates. A gate that names no subrace with a
+ * fixed grant of its category, or an option its trait's choice does not offer, fails the tracked-data check.
+ */
+export interface ProficiencyGrantGate {
+  race: string;
+  subrace: string;
+  subraceSource: string;
+  trait: string;
+  option: string;
+  category: ProficiencyCategory;
+}
+
+/** The reviewed proficiency grant gates. Each names one option of a descent's Variant Feature that carries the weapons. */
+export const PROFICIENCY_GRANT_GATES: ProficiencyGrantGate[] = [
+  { race: "Half-Elf", subrace: "Moon Elf or Sun Elf Descent", subraceSource: "SCAG", trait: "Variant Feature (Choose 1)", option: "Elf Weapon Training", category: "weapons" },
+  { race: "Half-Elf", subrace: "Wood Elf Descent", subraceSource: "SCAG", trait: "Variant Feature (Choose 1)", option: "Elf Weapon Training", category: "weapons" },
 ];

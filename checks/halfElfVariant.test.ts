@@ -4,6 +4,7 @@ import assert from "node:assert/strict";
 import { grantedFeatures } from "../src/rules/grantedFeatures.ts";
 import { availableRuleChoices, ruleChoiceId, ancestryRuleChoices } from "../src/rules/ruleChoices.ts";
 import { skills } from "../src/rules/skills.ts";
+import { proficiencySheet } from "../src/rules/proficiencySheet.ts";
 import { proficiencyChoiceOffers } from "../src/rules/proficiencyChoiceOffers.ts";
 import { integratedTestCompendium, makeChar, loadTestCatalog } from "./testUtils.ts";
 import type { Character } from "../src/types/character.ts";
@@ -120,3 +121,36 @@ test("the descent choice is offered from first level and has no separate effect 
   assert.equal(atOne[0].level, 1);
   assert.equal(atOne[0].effectLevel, 1);
 });
+// The descent weapons: a Moon Elf or Wood Elf descent holds them only while its Variant Feature picks Elf Weapon Training.
+const ELF_WEAPONS = ["longsword", "shortsword", "shortbow", "longbow"];
+const OTHER_OPTION: Record<string, string> = { "Moon Elf or Sun Elf Descent": "Cantrip", "Wood Elf Descent": "Mask of the Wild" };
+const weaponCompendium = integratedTestCompendium();
+
+function descentWith(descent: string, picked?: string[]): Character {
+  const character = makeChar({
+    race: { name: "Half-Elf", source: "PHB", subraceName: descent, subraceSource: "SCAG" },
+    classes: [{ className: "Wizard", source: "PHB", level: 1 }],
+  }) as Character;
+  if (!picked) return character;
+  const choice = ancestryRuleChoices(character, races, ALL_BOOKS)[0];
+  if (!choice) throw new Error(`expected a descent choice for ${descent}`);
+  return {
+    ...character,
+    ruleChoices: [{ id: choice.id, trait: choice.traitName, origin: "race" as const, choose: 1, from: choice.options.map((o) => o.name), picked }],
+  };
+}
+
+const elfWeaponsHeld = (character: Character) => {
+  // The sheet spells the weapons in the plural ("Longswords"), so both sides are compared in the singular.
+  const weapons = proficiencySheet(character, { compendium: weaponCompendium, activeBooks: ALL_BOOKS }).weapons.map((entry) => entry.name.toLowerCase().replace(/s$/, ""));
+  return ELF_WEAPONS.filter((weapon) => weapons.includes(weapon));
+};
+
+for (const descent of Object.keys(OTHER_OPTION)) {
+  test(`${descent} holds its weapons only while Elf Weapon Training is picked`, () => {
+    assert.deepEqual(elfWeaponsHeld(descentWith(descent)), [], "with no pick the weapons are not held");
+    assert.deepEqual(elfWeaponsHeld(descentWith(descent, ["Skill Versatility"])), [], "Skill Versatility does not give them");
+    assert.deepEqual(elfWeaponsHeld(descentWith(descent, [OTHER_OPTION[descent]])), [], "the other option does not give them");
+    assert.deepEqual(elfWeaponsHeld(descentWith(descent, ["Elf Weapon Training"])), ELF_WEAPONS, "Elf Weapon Training gives all four");
+  });
+}

@@ -29,8 +29,9 @@ import type {
  * does not carry.
  * Format 11 adds the reviewed notes on a race's spell grants, which a catalog saved at format 10 does not carry.
  * Format 12 adds the Customizing Your Origin swap table (`originRules`), which a catalog saved at format 11 does not carry.
+ * Format 13 adds the reviewed gates on a race or subrace proficiency grant (`gatedBy`), which a catalog saved at format 12 does not carry.
  */
-export const REQUIRED_CATALOG_FORMAT = 12;
+export const REQUIRED_CATALOG_FORMAT = 13;
 
 /** True for an Integrated Catalog saved below the required format (or with none). The SRD Baseline is never stale. */
 export function isCatalogStale(collections: Pick<CompendiumCollections, "hasIntegratedCatalog" | "catalogFormat">): boolean {
