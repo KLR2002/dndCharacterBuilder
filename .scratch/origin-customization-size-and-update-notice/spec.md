@@ -94,9 +94,9 @@ Reconciliation recorded at the checkpoint: Q22 (a build stamp) and Q23 (compare 
 **Then** it emits an `originRules` Catalog collection holding the Proficiency Swaps table as structured rows (what is replaced, what may replace it), with no prose. The scrape fails when the record or the table is missing or a cell is not recognized. The Catalog format becomes 12, and a catalog saved below it is stale.
 
 **AC-9: Card availability**
-**Given** TCE in the active books, an `originRules` collection, and a held race or subrace with an ability score increase
+**Given** TCE in the active books, an `originRules` collection, and a held race or subrace
 **When** the Ancestry section shows
-**Then** a "Customize origin" card appears, collapsed, with every swap at its default. Without TCE, without `originRules`, or without such a race, the card is absent. The card shows no count of active swaps.
+**Then** a "Customize origin" card appears, collapsed, with every swap at its default. The ability rows appear only for a race or subrace with an ability score increase; language and proficiency rows appear for any race that has them. Without TCE, without `originRules`, or without a held race, or when no row applies, the card is absent. The card shows no count of active swaps.
 
 **AC-10: Ability swaps**
 **Given** the open card

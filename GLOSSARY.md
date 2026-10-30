@@ -37,7 +37,7 @@ An Ancestry that **replaces** a named feature of its base ancestry rather than a
 _Avoid_: subrace, upgrade, alternate ancestry
 
 **Origin Customization**:
-The Tasha's Cauldron of Everything rule that lets a player replace what a race's Ability Score Increase, Languages and proficiencies give with choices of their own. It is available whenever TCE is an active book, to a race or subrace that has an ability score increase, and only for the ancestry: a background, class, subclass or feat grant is never swapped. The rule's tables come from the Integrated Catalog, so without it, or while TCE is inactive, no Origin Swap is offered and saved ones are kept but not applied. Distinct from *Custom Lineage*, which replaces the whole race, and from the custom background.
+The Tasha's Cauldron of Everything rule that lets a player replace what a race's Ability Score Increase, Languages and proficiencies give with choices of their own. It is available whenever TCE is an active book and a race is held; only the ability part needs the race or subrace to have an ability score increase, and the language and proficiency parts are offered to any race. It applies only to the ancestry: a background, class, subclass or feat grant is never swapped. The rule's tables come from the Integrated Catalog, so without it, or while TCE is inactive, no Origin Swap is offered and saved ones are kept but not applied. Distinct from *Custom Lineage*, which replaces the whole race, and from the custom background.
 _Avoid_: Custom origin, race tweak, racial override
 
 **Origin Swap**:
