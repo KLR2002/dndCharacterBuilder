@@ -219,6 +219,22 @@
         }
       }
     ],
+    "additionalSpells": [
+      {
+        "ability": {
+          "choose": [
+            "int",
+            "wis",
+            "cha"
+          ]
+        },
+        "innate": {
+          "3": [
+            "gust of wind"
+          ]
+        }
+      }
+    ],
     "name": "Aarakocra",
     "source": "MPMM",
     "size": [
@@ -270,22 +286,6 @@
           "Intelligence, Wisdom, or Charisma is your spellcasting ability for when you cast {@spell gust of wind} with this trait (choose when you select this race)."
         ]
       }
-    ],
-    "additionalSpells": [
-      {
-        "ability": {
-          "choose": [
-            "int",
-            "wis",
-            "cha"
-          ]
-        },
-        "innate": {
-          "3": [
-            "gust of wind"
-          ]
-        }
-      }
     ]
   },
   {
@@ -301,6 +301,32 @@
           "Common",
           "Celestial"
         ]
+      }
+    ],
+    "additionalSpells": [
+      {
+        "ability": "cha",
+        "known": {
+          "1": [
+            "light"
+          ]
+        },
+        "innate": {
+          "3": {
+            "daily": {
+              "1": [
+                "lesser restoration"
+              ]
+            }
+          },
+          "5": {
+            "daily": {
+              "1": [
+                "daylight"
+              ]
+            }
+          }
+        }
       }
     ],
     "name": "Aasimar",
@@ -393,32 +419,6 @@
           "You can speak, read, and write Common and Celestial."
         ]
       }
-    ],
-    "additionalSpells": [
-      {
-        "ability": "cha",
-        "known": {
-          "1": [
-            "light"
-          ]
-        },
-        "innate": {
-          "3": {
-            "daily": {
-              "1": [
-                "lesser restoration"
-              ]
-            }
-          },
-          "5": {
-            "daily": {
-              "1": [
-                "daylight"
-              ]
-            }
-          }
-        }
-      }
     ]
   },
   {
@@ -444,6 +444,22 @@
         "count": 1,
         "pool": {
           "kind": "any"
+        }
+      }
+    ],
+    "additionalSpells": [
+      {
+        "ability": {
+          "choose": [
+            "int",
+            "wis",
+            "cha"
+          ]
+        },
+        "known": {
+          "1": [
+            "light"
+          ]
         }
       }
     ],
@@ -570,22 +586,6 @@
           }
         ]
       }
-    ],
-    "additionalSpells": [
-      {
-        "ability": {
-          "choose": [
-            "int",
-            "wis",
-            "cha"
-          ]
-        },
-        "known": {
-          "1": [
-            "light"
-          ]
-        }
-      }
     ]
   },
   {
@@ -601,6 +601,16 @@
           "Common",
           "Celestial"
         ]
+      }
+    ],
+    "additionalSpells": [
+      {
+        "ability": "cha",
+        "known": {
+          "1": [
+            "light"
+          ]
+        }
       }
     ],
     "name": "Aasimar",
@@ -797,16 +807,6 @@
           "You can speak, read, and write Common and Celestial."
         ]
       }
-    ],
-    "additionalSpells": [
-      {
-        "ability": "cha",
-        "known": {
-          "1": [
-            "light"
-          ]
-        }
-      }
     ]
   },
   {
@@ -988,6 +988,50 @@
         ]
       }
     ],
+    "additionalSpells": [
+      {
+        "ability": {
+          "choose": [
+            "int",
+            "wis",
+            "cha"
+          ]
+        },
+        "known": {
+          "1": [
+            "dancing lights"
+          ]
+        }
+      },
+      {
+        "ability": {
+          "choose": [
+            "int",
+            "wis",
+            "cha"
+          ]
+        },
+        "known": {
+          "1": [
+            "light"
+          ]
+        }
+      },
+      {
+        "ability": {
+          "choose": [
+            "int",
+            "wis",
+            "cha"
+          ]
+        },
+        "known": {
+          "1": [
+            "sacred flame"
+          ]
+        }
+      }
+    ],
     "name": "Astral Elf",
     "source": "AAG",
     "size": [
@@ -1081,50 +1125,6 @@
           "You don't need to sleep, and magic can't put you to sleep. You can finish a long rest in 4 hours if you spend those hours in a trancelike meditation, during which you remain conscious.",
           "Whenever you finish this trance, you gain proficiency in one skill of your choice and with one weapon or tool of your choice, selected from the {@book Player's Handbook|PHB}. You mystically acquire these proficiencies by drawing them from shared elven memory and the experiences of entities on the Astral Plane, and you retain them until you finish your next long rest."
         ]
-      }
-    ],
-    "additionalSpells": [
-      {
-        "ability": {
-          "choose": [
-            "int",
-            "wis",
-            "cha"
-          ]
-        },
-        "known": {
-          "1": [
-            "dancing lights"
-          ]
-        }
-      },
-      {
-        "ability": {
-          "choose": [
-            "int",
-            "wis",
-            "cha"
-          ]
-        },
-        "known": {
-          "1": [
-            "light"
-          ]
-        }
-      },
-      {
-        "ability": {
-          "choose": [
-            "int",
-            "wis",
-            "cha"
-          ]
-        },
-        "known": {
-          "1": [
-            "sacred flame"
-          ]
-        }
       }
     ]
   },
@@ -2907,6 +2907,33 @@
         }
       }
     ],
+    "additionalSpells": [
+      {
+        "ability": {
+          "choose": [
+            "int",
+            "wis",
+            "cha"
+          ]
+        },
+        "innate": {
+          "3": {
+            "daily": {
+              "1": [
+                "disguise self"
+              ]
+            }
+          },
+          "5": {
+            "daily": {
+              "1": [
+                "nondetection"
+              ]
+            }
+          }
+        }
+      }
+    ],
     "name": "Deep Gnome",
     "source": "MPMM",
     "size": [
@@ -2978,33 +3005,6 @@
         "entries": [
           "When you make a Dexterity ({@skill Stealth}) check, you can make the check with advantage. You can use this trait a number of times equal to your proficiency bonus, and you regain all expended uses when you finish a long rest."
         ]
-      }
-    ],
-    "additionalSpells": [
-      {
-        "ability": {
-          "choose": [
-            "int",
-            "wis",
-            "cha"
-          ]
-        },
-        "innate": {
-          "3": {
-            "daily": {
-              "1": [
-                "disguise self"
-              ]
-            }
-          },
-          "5": {
-            "daily": {
-              "1": [
-                "nondetection"
-              ]
-            }
-          }
-        }
       }
     ]
   },
@@ -3933,6 +3933,33 @@
         }
       }
     ],
+    "additionalSpells": [
+      {
+        "ability": {
+          "choose": [
+            "int",
+            "wis",
+            "cha"
+          ]
+        },
+        "innate": {
+          "3": {
+            "daily": {
+              "1": [
+                "enlarge/reduce"
+              ]
+            }
+          },
+          "5": {
+            "daily": {
+              "1": [
+                "invisibility"
+              ]
+            }
+          }
+        }
+      }
+    ],
     "name": "Duergar",
     "source": "MPMM",
     "size": [
@@ -4004,33 +4031,6 @@
         "entries": [
           "You have advantage on saving throws you make to avoid or end the {@condition charmed} or {@condition stunned} condition on yourself."
         ]
-      }
-    ],
-    "additionalSpells": [
-      {
-        "ability": {
-          "choose": [
-            "int",
-            "wis",
-            "cha"
-          ]
-        },
-        "innate": {
-          "3": {
-            "daily": {
-              "1": [
-                "enlarge/reduce"
-              ]
-            }
-          },
-          "5": {
-            "daily": {
-              "1": [
-                "invisibility"
-              ]
-            }
-          }
-        }
       }
     ]
   },
@@ -4154,6 +4154,27 @@
             ]
           }
         ],
+        "additionalSpells": [
+          {
+            "ability": "int",
+            "innate": {
+              "3": {
+                "daily": {
+                  "1": [
+                    "enlarge/reduce"
+                  ]
+                }
+              },
+              "5": {
+                "daily": {
+                  "1": [
+                    "invisibility"
+                  ]
+                }
+              }
+            }
+          }
+        ],
         "name": "Duergar",
         "isVariant": false,
         "source": "MTF",
@@ -4233,27 +4254,6 @@
               "You have disadvantage on attack rolls and Wisdom ({@skill Perception}) checks that rely on sight when you, the target of your attack, or whatever you are trying to perceive is in direct sunlight."
             ]
           }
-        ],
-        "additionalSpells": [
-          {
-            "ability": "int",
-            "innate": {
-              "3": {
-                "daily": {
-                  "1": [
-                    "enlarge/reduce"
-                  ]
-                }
-              },
-              "5": {
-                "daily": {
-                  "1": [
-                    "invisibility"
-                  ]
-                }
-              }
-            }
-          }
         ]
       },
       {
@@ -4286,6 +4286,41 @@
         ]
       },
       {
+        "additionalSpells": [
+          {
+            "ability": "int",
+            "known": {
+              "1": [
+                "alarm",
+                "mage armor"
+              ],
+              "3": [
+                "arcane lock"
+              ]
+            },
+            "expanded": {
+              "s1": [
+                "alarm",
+                "armor of agathys"
+              ],
+              "s2": [
+                "arcane lock",
+                "knock"
+              ],
+              "s3": [
+                "glyph of warding",
+                "magic circle"
+              ],
+              "s4": [
+                "leomund's secret chest",
+                "mordenkainen's faithful hound"
+              ],
+              "s5": [
+                "antilife shell"
+              ]
+            }
+          }
+        ],
         "name": "Mark of Warding",
         "isVariant": false,
         "source": "ERLW",
@@ -4367,41 +4402,6 @@
                 ]
               }
             ]
-          }
-        ],
-        "additionalSpells": [
-          {
-            "ability": "int",
-            "known": {
-              "1": [
-                "alarm",
-                "mage armor"
-              ],
-              "3": [
-                "arcane lock"
-              ]
-            },
-            "expanded": {
-              "s1": [
-                "alarm",
-                "armor of agathys"
-              ],
-              "s2": [
-                "arcane lock",
-                "knock"
-              ],
-              "s3": [
-                "glyph of warding",
-                "magic circle"
-              ],
-              "s4": [
-                "leomund's secret chest",
-                "mordenkainen's faithful hound"
-              ],
-              "s5": [
-                "antilife shell"
-              ]
-            }
           }
         ]
       },
@@ -4952,6 +4952,32 @@
             ]
           }
         ],
+        "additionalSpells": [
+          {
+            "ability": "cha",
+            "known": {
+              "1": [
+                "dancing lights"
+              ]
+            },
+            "innate": {
+              "3": {
+                "daily": {
+                  "1": [
+                    "faerie fire"
+                  ]
+                }
+              },
+              "5": {
+                "daily": {
+                  "1": [
+                    "darkness"
+                  ]
+                }
+              }
+            }
+          }
+        ],
         "name": "Drow",
         "isVariant": false,
         "source": "PHB",
@@ -5014,32 +5040,6 @@
               "You have proficiency with {@item rapier|phb|rapiers}, {@item shortsword|phb|shortswords}, and {@item hand crossbow|phb|hand crossbows}."
             ]
           }
-        ],
-        "additionalSpells": [
-          {
-            "ability": "cha",
-            "known": {
-              "1": [
-                "dancing lights"
-              ]
-            },
-            "innate": {
-              "3": {
-                "daily": {
-                  "1": [
-                    "faerie fire"
-                  ]
-                }
-              },
-              "5": {
-                "daily": {
-                  "1": [
-                    "darkness"
-                  ]
-                }
-              }
-            }
-          }
         ]
       },
       {
@@ -5057,6 +5057,20 @@
               "shortbow",
               "longbow"
             ]
+          }
+        ],
+        "additionalSpells": [
+          {
+            "ability": "cha",
+            "known": {
+              "1": {
+                "rest": {
+                  "1": [
+                    "misty step"
+                  ]
+                }
+              }
+            }
           }
         ],
         "name": "Eladrin",
@@ -5095,20 +5109,6 @@
             "entries": [
               "You can cast the {@spell misty step} spell once using this trait. You regain the ability to do so when you finish a short or long rest."
             ]
-          }
-        ],
-        "additionalSpells": [
-          {
-            "ability": "cha",
-            "known": {
-              "1": {
-                "rest": {
-                  "1": [
-                    "misty step"
-                  ]
-                }
-              }
-            }
           }
         ]
       },
@@ -5233,6 +5233,20 @@
             ]
           }
         ],
+        "additionalSpells": [
+          {
+            "ability": "int",
+            "known": {
+              "1": {
+                "_": [
+                  {
+                    "choose": "level=0|class=Wizard"
+                  }
+                ]
+              }
+            }
+          }
+        ],
         "name": "High",
         "isVariant": false,
         "source": "PHB",
@@ -5281,23 +5295,49 @@
               "You can speak, read, and write one extra language of your choosing."
             ]
           }
-        ],
-        "additionalSpells": [
-          {
-            "ability": "int",
-            "known": {
-              "1": {
-                "_": [
-                  {
-                    "choose": "level=0|class=Wizard"
-                  }
-                ]
-              }
-            }
-          }
         ]
       },
       {
+        "additionalSpells": [
+          {
+            "ability": "cha",
+            "known": {
+              "1": [
+                "minor illusion"
+              ]
+            },
+            "expanded": {
+              "s1": [
+                "disguise self",
+                "silent image"
+              ],
+              "s2": [
+                "darkness",
+                "pass without trace"
+              ],
+              "s3": [
+                "clairvoyance",
+                "major image"
+              ],
+              "s4": [
+                "greater invisibility",
+                "hallucinatory terrain"
+              ],
+              "s5": [
+                "mislead"
+              ]
+            },
+            "innate": {
+              "3": {
+                "daily": {
+                  "1": [
+                    "invisibility"
+                  ]
+                }
+              }
+            }
+          }
+        ],
         "name": "Mark of Shadow",
         "isVariant": false,
         "source": "ERLW",
@@ -5380,38 +5420,26 @@
               }
             ]
           }
-        ],
+        ]
+      },
+      {
         "additionalSpells": [
           {
-            "ability": "cha",
+            "ability": "wis",
             "known": {
               "1": [
-                "minor illusion"
-              ]
-            },
-            "expanded": {
-              "s1": [
-                "disguise self",
-                "silent image"
-              ],
-              "s2": [
-                "darkness",
-                "pass without trace"
-              ],
-              "s3": [
-                "clairvoyance",
-                "major image"
-              ],
-              "s4": [
-                "greater invisibility",
-                "hallucinatory terrain"
-              ],
-              "s5": [
-                "mislead"
+                "light"
               ]
             },
             "innate": {
               "3": {
+                "daily": {
+                  "1": [
+                    "sleep"
+                  ]
+                }
+              },
+              "5": {
                 "daily": {
                   "1": [
                     "invisibility"
@@ -5420,9 +5448,7 @@
               }
             }
           }
-        ]
-      },
-      {
+        ],
         "name": "Pallid",
         "isVariant": false,
         "source": "EGW",
@@ -5459,32 +5485,6 @@
             "entries": [
               "You know the {@spell light} cantrip. When you reach 3rd level, you can cast the {@spell sleep} spell once with this trait and regain the ability to do so when you finish a long rest. When you reach 5th level, you can cast the {@spell invisibility} spell (targeting yourself only) once with this trait and regain the ability to do so when you finish a long rest. Casting these spells with this trait doesn't require material components. Wisdom is your spellcasting ability for these spells."
             ]
-          }
-        ],
-        "additionalSpells": [
-          {
-            "ability": "wis",
-            "known": {
-              "1": [
-                "light"
-              ]
-            },
-            "innate": {
-              "3": {
-                "daily": {
-                  "1": [
-                    "sleep"
-                  ]
-                }
-              },
-              "5": {
-                "daily": {
-                  "1": [
-                    "invisibility"
-                  ]
-                }
-              }
-            }
           }
         ]
       },
@@ -5910,6 +5910,20 @@
             }
           }
         ],
+        "additionalSpells": [
+          {
+            "ability": "wis",
+            "known": {
+              "1": {
+                "_": [
+                  {
+                    "choose": "level=0|class=Druid"
+                  }
+                ]
+              }
+            }
+          }
+        ],
         "name": "Vahadar",
         "isVariant": false,
         "source": "PSK",
@@ -5945,20 +5959,6 @@
             "entries": [
               "You can speak, read, and write one extra language of your choosing."
             ]
-          }
-        ],
-        "additionalSpells": [
-          {
-            "ability": "wis",
-            "known": {
-              "1": {
-                "_": [
-                  {
-                    "choose": "level=0|class=Druid"
-                  }
-                ]
-              }
-            }
           }
         ]
       }
@@ -6197,6 +6197,32 @@
             ]
           }
         ],
+        "additionalSpells": [
+          {
+            "ability": "wis",
+            "known": {
+              "1": [
+                "chill touch"
+              ]
+            },
+            "innate": {
+              "3": {
+                "daily": {
+                  "1": [
+                    "hex"
+                  ]
+                }
+              },
+              "5": {
+                "daily": {
+                  "1": [
+                    "darkness"
+                  ]
+                }
+              }
+            }
+          }
+        ],
         "name": "Mul Daya Nation",
         "isVariant": false,
         "source": "PSZ",
@@ -6258,32 +6284,6 @@
             "entries": [
               "You have proficiency with the {@item longsword|phb}, {@item shortsword|phb}, {@item shortbow|phb}, and {@item longbow|phb}."
             ]
-          }
-        ],
-        "additionalSpells": [
-          {
-            "ability": "wis",
-            "known": {
-              "1": [
-                "chill touch"
-              ]
-            },
-            "innate": {
-              "3": {
-                "daily": {
-                  "1": [
-                    "hex"
-                  ]
-                }
-              },
-              "5": {
-                "daily": {
-                  "1": [
-                    "darkness"
-                  ]
-                }
-              }
-            }
           }
         ]
       },
@@ -6396,6 +6396,38 @@
         }
       }
     ],
+    "additionalSpells": [
+      {
+        "ability": {
+          "choose": [
+            "int",
+            "wis",
+            "cha"
+          ]
+        },
+        "known": {
+          "1": [
+            "druidcraft"
+          ]
+        },
+        "innate": {
+          "3": {
+            "daily": {
+              "1": [
+                "faerie fire"
+              ]
+            }
+          },
+          "5": {
+            "daily": {
+              "1": [
+                "enlarge/reduce"
+              ]
+            }
+          }
+        }
+      }
+    ],
     "name": "Fairy",
     "source": "MPMM",
     "size": [
@@ -6447,6 +6479,21 @@
           "Because of your wings, you have a flying speed equal to your walking speed. You can't use this flying speed if you're wearing medium or heavy armor."
         ]
       }
+    ]
+  },
+  {
+    "grants": [
+      {
+        "id": "WBtW/Race/Fairy@0#languages:fixed:Common",
+        "aliases": [
+          "WBtW/Race/Fairy@0#0"
+        ],
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common"
+        ]
+      }
     ],
     "additionalSpells": [
       {
@@ -6478,21 +6525,6 @@
             }
           }
         }
-      }
-    ]
-  },
-  {
-    "grants": [
-      {
-        "id": "WBtW/Race/Fairy@0#languages:fixed:Common",
-        "aliases": [
-          "WBtW/Race/Fairy@0#0"
-        ],
-        "kind": "fixed",
-        "category": "languages",
-        "names": [
-          "Common"
-        ]
       }
     ],
     "name": "Fairy",
@@ -6547,38 +6579,6 @@
           "Intelligence, Wisdom, or Charisma is your spellcasting ability for these spells when you cast them with this trait (choose when you select this race)."
         ]
       }
-    ],
-    "additionalSpells": [
-      {
-        "ability": {
-          "choose": [
-            "int",
-            "wis",
-            "cha"
-          ]
-        },
-        "known": {
-          "1": [
-            "druidcraft"
-          ]
-        },
-        "innate": {
-          "3": {
-            "daily": {
-              "1": [
-                "faerie fire"
-              ]
-            }
-          },
-          "5": {
-            "daily": {
-              "1": [
-                "enlarge/reduce"
-              ]
-            }
-          }
-        }
-      }
     ]
   },
   {
@@ -6604,6 +6604,23 @@
         "count": 1,
         "pool": {
           "kind": "any"
+        }
+      }
+    ],
+    "additionalSpells": [
+      {
+        "ability": {
+          "choose": [
+            "int",
+            "wis",
+            "cha"
+          ]
+        },
+        "innate": {
+          "1": [
+            "detect magic",
+            "disguise self"
+          ]
         }
       }
     ],
@@ -6668,23 +6685,6 @@
           "You have the ability to communicate in a limited manner with Beasts, Plants, and vegetation. They can understand the meaning of your words, though you have no special ability to understand them in return. You have advantage on all Charisma checks you make to influence them."
         ]
       }
-    ],
-    "additionalSpells": [
-      {
-        "ability": {
-          "choose": [
-            "int",
-            "wis",
-            "cha"
-          ]
-        },
-        "innate": {
-          "1": [
-            "detect magic",
-            "disguise self"
-          ]
-        }
-      }
     ]
   },
   {
@@ -6701,6 +6701,21 @@
           "Elvish",
           "Giant"
         ]
+      }
+    ],
+    "additionalSpells": [
+      {
+        "ability": "wis",
+        "known": {
+          "1": {
+            "rest": {
+              "1": [
+                "detect magic",
+                "disguise self"
+              ]
+            }
+          }
+        }
       }
     ],
     "name": "Firbolg",
@@ -6805,21 +6820,6 @@
           "You can speak, read, and write Common, Elvish, and Giant."
         ]
       }
-    ],
-    "additionalSpells": [
-      {
-        "ability": "wis",
-        "known": {
-          "1": {
-            "rest": {
-              "1": [
-                "detect magic",
-                "disguise self"
-              ]
-            }
-          }
-        }
-      }
     ]
   },
   {
@@ -6875,6 +6875,16 @@
     ],
     "subraces": [
       {
+        "additionalSpells": [
+          {
+            "ability": "con",
+            "known": {
+              "1": [
+                "levitate"
+              ]
+            }
+          }
+        ],
         "name": "Air",
         "isVariant": false,
         "source": "EEPC",
@@ -6912,19 +6922,19 @@
               "You can cast the {@spell levitate} spell once with this trait, requiring no material components, and you regain the ability to cast it this way when you finish a long rest. Constitution is your spellcasting ability for this spell."
             ]
           }
-        ],
+        ]
+      },
+      {
         "additionalSpells": [
           {
             "ability": "con",
             "known": {
               "1": [
-                "levitate"
+                "pass without trace"
               ]
             }
           }
-        ]
-      },
-      {
+        ],
         "name": "Earth",
         "isVariant": false,
         "source": "EEPC",
@@ -6962,19 +6972,28 @@
               "You can cast the {@spell pass without trace} spell once with this trait, requiring no material components, and you regain the ability to cast it this way when you finish a long rest. Constitution is your spellcasting ability for this spell."
             ]
           }
-        ],
+        ]
+      },
+      {
         "additionalSpells": [
           {
             "ability": "con",
             "known": {
               "1": [
-                "pass without trace"
+                "produce flame"
               ]
+            },
+            "innate": {
+              "3": {
+                "daily": {
+                  "1": [
+                    "burning hands"
+                  ]
+                }
+              }
             }
           }
-        ]
-      },
-      {
+        ],
         "name": "Fire",
         "isVariant": false,
         "source": "EEPC",
@@ -7023,28 +7042,31 @@
               "You know the {@spell produce flame} cantrip. Once you reach 3rd level, you can cast the {@spell burning hands} spell once with this trait as a 1st-level spell, and you regain the ability to cast it this way when you finish a long rest. Constitution is your spellcasting ability for these spells."
             ]
           }
-        ],
+        ]
+      },
+      {
         "additionalSpells": [
           {
             "ability": "con",
             "known": {
               "1": [
-                "produce flame"
+                "shape water"
               ]
             },
             "innate": {
               "3": {
                 "daily": {
                   "1": [
-                    "burning hands"
+                    "create or destroy water"
                   ]
                 }
               }
+            },
+            "castLevels": {
+              "create or destroy water": 2
             }
           }
-        ]
-      },
-      {
+        ],
         "name": "Water",
         "isVariant": false,
         "source": "EEPC",
@@ -7103,28 +7125,6 @@
             "entries": [
               "You know the {@spell shape water|xge} cantrip. When you reach 3rd level, you can cast the {@spell create or destroy water} spell as a 2nd-level spell once with this trait, and you regain the ability to cast it this way when you finish a long rest. Constitution is your spellcasting ability for these spells."
             ]
-          }
-        ],
-        "additionalSpells": [
-          {
-            "ability": "con",
-            "known": {
-              "1": [
-                "shape water"
-              ]
-            },
-            "innate": {
-              "3": {
-                "daily": {
-                  "1": [
-                    "create or destroy water"
-                  ]
-                }
-              }
-            },
-            "castLevels": {
-              "create or destroy water": 2
-            }
           }
         ]
       }
@@ -7211,6 +7211,38 @@
     "languages": [],
     "subraces": [
       {
+        "additionalSpells": [
+          {
+            "ability": {
+              "choose": [
+                "int",
+                "wis",
+                "cha"
+              ]
+            },
+            "known": {
+              "1": [
+                "shocking grasp"
+              ]
+            },
+            "innate": {
+              "3": {
+                "daily": {
+                  "1": [
+                    "feather fall"
+                  ]
+                }
+              },
+              "5": {
+                "daily": {
+                  "1": [
+                    "levitate"
+                  ]
+                }
+              }
+            }
+          }
+        ],
         "name": "Air",
         "isVariant": false,
         "source": "MPMM",
@@ -7256,7 +7288,9 @@
               "Intelligence, Wisdom, or Charisma is your spellcasting ability for these spells when you cast them with this trait (choose when you select this race)."
             ]
           }
-        ],
+        ]
+      },
+      {
         "additionalSpells": [
           {
             "ability": {
@@ -7268,29 +7302,16 @@
             },
             "known": {
               "1": [
-                "shocking grasp"
+                "blade ward"
               ]
             },
             "innate": {
-              "3": {
-                "daily": {
-                  "1": [
-                    "feather fall"
-                  ]
-                }
-              },
-              "5": {
-                "daily": {
-                  "1": [
-                    "levitate"
-                  ]
-                }
-              }
+              "5": [
+                "pass without trace"
+              ]
             }
           }
-        ]
-      },
-      {
+        ],
         "name": "Earth",
         "isVariant": false,
         "source": "MPMM",
@@ -7326,7 +7347,9 @@
               "Intelligence, Wisdom, or Charisma is your spellcasting ability for these spells when you cast them with this trait (choose when you select this race)."
             ]
           }
-        ],
+        ]
+      },
+      {
         "additionalSpells": [
           {
             "ability": {
@@ -7338,18 +7361,27 @@
             },
             "known": {
               "1": [
-                "blade ward"
+                "produce flame"
               ]
             },
             "innate": {
-              "5": [
-                "pass without trace"
-              ]
+              "3": {
+                "daily": {
+                  "1": [
+                    "burning hands"
+                  ]
+                }
+              },
+              "5": {
+                "daily": {
+                  "1": [
+                    "flame blade"
+                  ]
+                }
+              }
             }
           }
-        ]
-      },
-      {
+        ],
         "name": "Fire",
         "isVariant": false,
         "source": "MPMM",
@@ -7384,7 +7416,9 @@
               "Intelligence, Wisdom, or Charisma is your spellcasting ability for these spells when you cast them with this trait (choose when you select this race)."
             ]
           }
-        ],
+        ]
+      },
+      {
         "additionalSpells": [
           {
             "ability": {
@@ -7396,29 +7430,27 @@
             },
             "known": {
               "1": [
-                "produce flame"
+                "acid splash"
               ]
             },
             "innate": {
               "3": {
                 "daily": {
                   "1": [
-                    "burning hands"
+                    "create or destroy water"
                   ]
                 }
               },
               "5": {
                 "daily": {
                   "1": [
-                    "flame blade"
+                    "water walk"
                   ]
                 }
               }
             }
           }
-        ]
-      },
-      {
+        ],
         "name": "Water",
         "isVariant": false,
         "source": "MPMM",
@@ -7474,38 +7506,6 @@
               "You know the {@spell acid splash} cantrip. Starting at 3rd level, you can cast the {@spell create or destroy water} spell with this trait. Starting at 5th level, you can also cast the {@spell water walk} spell with this trait, without requiring a material component. Once you cast {@spell create or destroy water} or {@spell water walk} with this trait, you can't cast that spell with it again until you finish a long rest. You can also cast either of those spells using any spell slots you have of the appropriate level.",
               "Intelligence, Wisdom, or Charisma is your spellcasting ability for these spells when you cast them with this trait (choose when you select this race)."
             ]
-          }
-        ],
-        "additionalSpells": [
-          {
-            "ability": {
-              "choose": [
-                "int",
-                "wis",
-                "cha"
-              ]
-            },
-            "known": {
-              "1": [
-                "acid splash"
-              ]
-            },
-            "innate": {
-              "3": {
-                "daily": {
-                  "1": [
-                    "create or destroy water"
-                  ]
-                }
-              },
-              "5": {
-                "daily": {
-                  "1": [
-                    "water walk"
-                  ]
-                }
-              }
-            }
           }
         ]
       }
@@ -7705,6 +7705,32 @@
             ]
           }
         ],
+        "additionalSpells": [
+          {
+            "ability": "int",
+            "known": {
+              "1": [
+                "mage hand"
+              ]
+            },
+            "innate": {
+              "3": {
+                "daily": {
+                  "1": [
+                    "jump"
+                  ]
+                }
+              },
+              "5": {
+                "daily": {
+                  "1": [
+                    "misty step"
+                  ]
+                }
+              }
+            }
+          }
+        ],
         "name": "Githyanki",
         "isVariant": false,
         "source": "MTF",
@@ -7766,10 +7792,12 @@
               "Intelligence is your spellcasting ability for these spells. When you cast them with this trait, they don't require components."
             ]
           }
-        ],
+        ]
+      },
+      {
         "additionalSpells": [
           {
-            "ability": "int",
+            "ability": "wis",
             "known": {
               "1": [
                 "mage hand"
@@ -7779,22 +7807,20 @@
               "3": {
                 "daily": {
                   "1": [
-                    "jump"
+                    "shield"
                   ]
                 }
               },
               "5": {
                 "daily": {
                   "1": [
-                    "misty step"
+                    "detect thoughts"
                   ]
                 }
               }
             }
           }
-        ]
-      },
-      {
+        ],
         "name": "Githzerai",
         "isVariant": false,
         "source": "MTF",
@@ -7844,32 +7870,6 @@
               "When you reach 3rd level, you can cast {@spell shield} once with this trait, and you regain the ability to do so when you finish a long rest. When you reach 5th level, you can cast the {@spell detect thoughts} spell once with this trait, and you regain the ability to do so when you finish a long rest.",
               "Wisdom is your spellcasting ability for these spells. When you cast them with this trait, they don't require components."
             ]
-          }
-        ],
-        "additionalSpells": [
-          {
-            "ability": "wis",
-            "known": {
-              "1": [
-                "mage hand"
-              ]
-            },
-            "innate": {
-              "3": {
-                "daily": {
-                  "1": [
-                    "shield"
-                  ]
-                }
-              },
-              "5": {
-                "daily": {
-                  "1": [
-                    "detect thoughts"
-                  ]
-                }
-              }
-            }
           }
         ]
       }
@@ -7925,6 +7925,38 @@
         }
       }
     ],
+    "additionalSpells": [
+      {
+        "ability": {
+          "choose": [
+            "int",
+            "wis",
+            "cha"
+          ]
+        },
+        "known": {
+          "1": [
+            "mage hand"
+          ]
+        },
+        "innate": {
+          "3": {
+            "daily": {
+              "1": [
+                "jump"
+              ]
+            }
+          },
+          "5": {
+            "daily": {
+              "1": [
+                "misty step"
+              ]
+            }
+          }
+        }
+      }
+    ],
     "name": "Githyanki",
     "source": "MPMM",
     "size": [
@@ -7976,38 +8008,6 @@
           "You have resistance to psychic damage."
         ]
       }
-    ],
-    "additionalSpells": [
-      {
-        "ability": {
-          "choose": [
-            "int",
-            "wis",
-            "cha"
-          ]
-        },
-        "known": {
-          "1": [
-            "mage hand"
-          ]
-        },
-        "innate": {
-          "3": {
-            "daily": {
-              "1": [
-                "jump"
-              ]
-            }
-          },
-          "5": {
-            "daily": {
-              "1": [
-                "misty step"
-              ]
-            }
-          }
-        }
-      }
     ]
   },
   {
@@ -8033,6 +8033,38 @@
         "count": 1,
         "pool": {
           "kind": "any"
+        }
+      }
+    ],
+    "additionalSpells": [
+      {
+        "ability": {
+          "choose": [
+            "int",
+            "wis",
+            "cha"
+          ]
+        },
+        "known": {
+          "1": [
+            "mage hand"
+          ]
+        },
+        "innate": {
+          "3": {
+            "daily": {
+              "1": [
+                "shield"
+              ]
+            }
+          },
+          "5": {
+            "daily": {
+              "1": [
+                "detect thoughts"
+              ]
+            }
+          }
         }
       }
     ],
@@ -8086,38 +8118,6 @@
         "entries": [
           "You have resistance to psychic damage."
         ]
-      }
-    ],
-    "additionalSpells": [
-      {
-        "ability": {
-          "choose": [
-            "int",
-            "wis",
-            "cha"
-          ]
-        },
-        "known": {
-          "1": [
-            "mage hand"
-          ]
-        },
-        "innate": {
-          "3": {
-            "daily": {
-              "1": [
-                "shield"
-              ]
-            }
-          },
-          "5": {
-            "daily": {
-              "1": [
-                "detect thoughts"
-              ]
-            }
-          }
-        }
       }
     ]
   },
@@ -8476,6 +8476,16 @@
         ]
       },
       {
+        "additionalSpells": [
+          {
+            "ability": "int",
+            "known": {
+              "1": [
+                "minor illusion"
+              ]
+            }
+          }
+        ],
         "name": "Forest",
         "isVariant": false,
         "source": "PHB",
@@ -8513,19 +8523,56 @@
               "Through sounds and gestures, you can communicate simple ideas with Small or smaller beasts. Forest gnomes love animals and often keep squirrels, badgers, rabbits, moles, woodpeckers, and other creatures as beloved pets."
             ]
           }
-        ],
+        ]
+      },
+      {
         "additionalSpells": [
           {
             "ability": "int",
             "known": {
               "1": [
-                "minor illusion"
+                "message"
               ]
+            },
+            "expanded": {
+              "s1": [
+                "comprehend languages",
+                "illusory script"
+              ],
+              "s2": [
+                "animal messenger",
+                "silence"
+              ],
+              "s3": [
+                "sending",
+                "tongues"
+              ],
+              "s4": [
+                "arcane eye",
+                "confusion"
+              ],
+              "s5": [
+                "dream"
+              ]
+            },
+            "innate": {
+              "1": {
+                "rest": {
+                  "1": [
+                    "comprehend languages"
+                  ]
+                }
+              },
+              "3": {
+                "daily": {
+                  "1": [
+                    "magic mouth"
+                  ]
+                }
+              }
             }
           }
-        ]
-      },
-      {
+        ],
         "name": "Mark of Scribing",
         "isVariant": false,
         "source": "ERLW",
@@ -8607,53 +8654,6 @@
                 ]
               }
             ]
-          }
-        ],
-        "additionalSpells": [
-          {
-            "ability": "int",
-            "known": {
-              "1": [
-                "message"
-              ]
-            },
-            "expanded": {
-              "s1": [
-                "comprehend languages",
-                "illusory script"
-              ],
-              "s2": [
-                "animal messenger",
-                "silence"
-              ],
-              "s3": [
-                "sending",
-                "tongues"
-              ],
-              "s4": [
-                "arcane eye",
-                "confusion"
-              ],
-              "s5": [
-                "dream"
-              ]
-            },
-            "innate": {
-              "1": {
-                "rest": {
-                  "1": [
-                    "comprehend languages"
-                  ]
-                }
-              },
-              "3": {
-                "daily": {
-                  "1": [
-                    "magic mouth"
-                  ]
-                }
-              }
-            }
           }
         ]
       },
@@ -8788,6 +8788,26 @@
         ]
       }
     ],
+    "additionalSpells": [
+      {
+        "ability": "int",
+        "known": {
+          "1": [
+            "blindness/deafness",
+            "blur",
+            "disguise self"
+          ]
+        },
+        "innate": {
+          "1": [
+            "nondetection"
+          ]
+        },
+        "notes": {
+          "nondetection": "self only"
+        }
+      }
+    ],
     "name": "Gnome (Deep)",
     "source": "DMG",
     "size": [
@@ -8887,26 +8907,6 @@
         "entries": [
           "You can speak, read, and write Gnomish, Terran, and Undercommon."
         ]
-      }
-    ],
-    "additionalSpells": [
-      {
-        "ability": "int",
-        "known": {
-          "1": [
-            "blindness/deafness",
-            "blur",
-            "disguise self"
-          ]
-        },
-        "innate": {
-          "1": [
-            "nondetection"
-          ]
-        },
-        "notes": {
-          "nondetection": "self only"
-        }
       }
     ]
   },
@@ -10517,6 +10517,36 @@
             }
           }
         ],
+        "additionalSpells": [
+          {
+            "ability": "cha",
+            "known": {
+              "1": [
+                "dancing lights"
+              ]
+            },
+            "innate": {
+              "3": {
+                "daily": {
+                  "1": [
+                    "faerie fire"
+                  ]
+                }
+              },
+              "5": {
+                "daily": {
+                  "1": [
+                    "darkness"
+                  ]
+                }
+              }
+            },
+            "gatedBy": {
+              "choiceId": "SCAG__Half-Elf__Drow Descent__Variant Feature (Choose 1)",
+              "option": "Drow Magic"
+            }
+          }
+        ],
         "name": "Drow Descent",
         "isVariant": true,
         "source": "SCAG",
@@ -10570,39 +10600,48 @@
               "overwrite": "Skill Versatility"
             }
           }
-        ],
-        "additionalSpells": [
-          {
-            "ability": "cha",
-            "known": {
-              "1": [
-                "dancing lights"
-              ]
-            },
-            "innate": {
-              "3": {
-                "daily": {
-                  "1": [
-                    "faerie fire"
-                  ]
-                }
-              },
-              "5": {
-                "daily": {
-                  "1": [
-                    "darkness"
-                  ]
-                }
-              }
-            },
-            "gatedBy": {
-              "choiceId": "SCAG__Half-Elf__Drow Descent__Variant Feature (Choose 1)",
-              "option": "Drow Magic"
-            }
-          }
         ]
       },
       {
+        "additionalSpells": [
+          {
+            "ability": "int",
+            "expanded": {
+              "s1": [
+                "detect evil and good",
+                "detect poison and disease"
+              ],
+              "s2": [
+                "detect thoughts",
+                "find traps"
+              ],
+              "s3": [
+                "clairvoyance",
+                "nondetection"
+              ],
+              "s4": [
+                "arcane eye",
+                "divination"
+              ],
+              "s5": [
+                "legend lore"
+              ]
+            },
+            "innate": {
+              "1": [
+                "detect magic",
+                "detect poison and disease"
+              ],
+              "3": {
+                "daily": {
+                  "1": [
+                    "see invisibility"
+                  ]
+                }
+              }
+            }
+          }
+        ],
         "name": "Mark of Detection",
         "isVariant": true,
         "source": "ERLW",
@@ -10688,48 +10727,40 @@
               }
             ]
           }
-        ],
-        "additionalSpells": [
-          {
-            "ability": "int",
-            "expanded": {
-              "s1": [
-                "detect evil and good",
-                "detect poison and disease"
-              ],
-              "s2": [
-                "detect thoughts",
-                "find traps"
-              ],
-              "s3": [
-                "clairvoyance",
-                "nondetection"
-              ],
-              "s4": [
-                "arcane eye",
-                "divination"
-              ],
-              "s5": [
-                "legend lore"
-              ]
-            },
-            "innate": {
-              "1": [
-                "detect magic",
-                "detect poison and disease"
-              ],
-              "3": {
-                "daily": {
-                  "1": [
-                    "see invisibility"
-                  ]
-                }
-              }
-            }
-          }
         ]
       },
       {
+        "additionalSpells": [
+          {
+            "ability": "cha",
+            "known": {
+              "1": [
+                "gust"
+              ]
+            },
+            "expanded": {
+              "s1": [
+                "feather fall",
+                "fog cloud"
+              ],
+              "s2": [
+                "gust of wind",
+                "levitate"
+              ],
+              "s3": [
+                "sleet storm",
+                "wind wall"
+              ],
+              "s4": [
+                "conjure minor elementals",
+                "control water"
+              ],
+              "s5": [
+                "conjure elemental"
+              ]
+            }
+          }
+        ],
         "name": "Mark of Storm",
         "isVariant": true,
         "source": "ERLW",
@@ -10827,37 +10858,6 @@
               }
             ]
           }
-        ],
-        "additionalSpells": [
-          {
-            "ability": "cha",
-            "known": {
-              "1": [
-                "gust"
-              ]
-            },
-            "expanded": {
-              "s1": [
-                "feather fall",
-                "fog cloud"
-              ],
-              "s2": [
-                "gust of wind",
-                "levitate"
-              ],
-              "s3": [
-                "sleet storm",
-                "wind wall"
-              ],
-              "s4": [
-                "conjure minor elementals",
-                "control water"
-              ],
-              "s5": [
-                "conjure elemental"
-              ]
-            }
-          }
         ]
       },
       {
@@ -10874,7 +10874,11 @@
               "shortsword",
               "shortbow",
               "longbow"
-            ]
+            ],
+            "gatedBy": {
+              "choiceId": "SCAG__Half-Elf__Moon Elf or Sun Elf Descent__Variant Feature (Choose 1)",
+              "option": "Elf Weapon Training"
+            }
           },
           {
             "id": "SCAG/Subrace/Half-Elf (Moon Elf or Sun Elf Descent)@0#skills:choice:any",
@@ -10886,6 +10890,24 @@
             "count": 2,
             "pool": {
               "kind": "any"
+            }
+          }
+        ],
+        "additionalSpells": [
+          {
+            "ability": "int",
+            "known": {
+              "1": {
+                "_": [
+                  {
+                    "choose": "level=0|class=Wizard"
+                  }
+                ]
+              }
+            },
+            "gatedBy": {
+              "choiceId": "SCAG__Half-Elf__Moon Elf or Sun Elf Descent__Variant Feature (Choose 1)",
+              "option": "Cantrip"
             }
           }
         ],
@@ -10953,24 +10975,6 @@
               "overwrite": "Skill Versatility"
             }
           }
-        ],
-        "additionalSpells": [
-          {
-            "ability": "int",
-            "known": {
-              "1": {
-                "_": [
-                  {
-                    "choose": "level=0|class=Wizard"
-                  }
-                ]
-              }
-            },
-            "gatedBy": {
-              "choiceId": "SCAG__Half-Elf__Moon Elf or Sun Elf Descent__Variant Feature (Choose 1)",
-              "option": "Cantrip"
-            }
-          }
         ]
       },
       {
@@ -10987,7 +10991,11 @@
               "shortsword",
               "shortbow",
               "longbow"
-            ]
+            ],
+            "gatedBy": {
+              "choiceId": "SCAG__Half-Elf__Wood Elf Descent__Variant Feature (Choose 1)",
+              "option": "Elf Weapon Training"
+            }
           },
           {
             "id": "SCAG/Subrace/Half-Elf (Wood Elf Descent)@0#skills:choice:any",
@@ -11217,6 +11225,44 @@
             ]
           }
         ],
+        "additionalSpells": [
+          {
+            "ability": "wis",
+            "expanded": {
+              "s1": [
+                "faerie fire",
+                "longstrider"
+              ],
+              "s2": [
+                "locate animals or plants",
+                "locate object"
+              ],
+              "s3": [
+                "clairvoyance",
+                "speak with plants"
+              ],
+              "s4": [
+                "divination",
+                "locate creature"
+              ],
+              "s5": [
+                "commune with nature"
+              ]
+            },
+            "innate": {
+              "1": [
+                "hunter's mark"
+              ],
+              "3": {
+                "daily": {
+                  "1": [
+                    "locate object"
+                  ]
+                }
+              }
+            }
+          }
+        ],
         "name": "Mark of Finding",
         "isVariant": true,
         "source": "ERLW",
@@ -11330,44 +11376,6 @@
             ],
             "data": {
               "overwrite": "Savage Attacks"
-            }
-          }
-        ],
-        "additionalSpells": [
-          {
-            "ability": "wis",
-            "expanded": {
-              "s1": [
-                "faerie fire",
-                "longstrider"
-              ],
-              "s2": [
-                "locate animals or plants",
-                "locate object"
-              ],
-              "s3": [
-                "clairvoyance",
-                "speak with plants"
-              ],
-              "s4": [
-                "divination",
-                "locate creature"
-              ],
-              "s5": [
-                "commune with nature"
-              ]
-            },
-            "innate": {
-              "1": [
-                "hunter's mark"
-              ],
-              "3": {
-                "daily": {
-                  "1": [
-                    "locate object"
-                  ]
-                }
-              }
             }
           }
         ]
@@ -11545,6 +11553,32 @@
         ]
       },
       {
+        "additionalSpells": [
+          {
+            "ability": "wis",
+            "known": {
+              "1": [
+                "druidcraft"
+              ]
+            },
+            "innate": {
+              "3": {
+                "daily": {
+                  "1": [
+                    "entangle"
+                  ]
+                }
+              },
+              "5": {
+                "daily": {
+                  "1": [
+                    "spike growth"
+                  ]
+                }
+              }
+            }
+          }
+        ],
         "name": "Lotusden",
         "isVariant": false,
         "source": "EGW",
@@ -11582,35 +11616,47 @@
               "Ability checks made to track you have disadvantage, and you can move across {@quickref difficult terrain||3} made of nonmagical plants and undergrowth without expending extra movement."
             ]
           }
-        ],
+        ]
+      },
+      {
         "additionalSpells": [
           {
             "ability": "wis",
-            "known": {
-              "1": [
-                "druidcraft"
+            "expanded": {
+              "s1": [
+                "cure wounds",
+                "healing word"
+              ],
+              "s2": [
+                "lesser restoration",
+                "prayer of healing"
+              ],
+              "s3": [
+                "aura of vitality",
+                "mass healing word"
+              ],
+              "s4": [
+                "aura of purity",
+                "aura of life"
+              ],
+              "s5": [
+                "greater restoration"
               ]
             },
             "innate": {
+              "1": [
+                "cure wounds"
+              ],
               "3": {
                 "daily": {
                   "1": [
-                    "entangle"
-                  ]
-                }
-              },
-              "5": {
-                "daily": {
-                  "1": [
-                    "spike growth"
+                    "lesser restoration"
                   ]
                 }
               }
             }
           }
-        ]
-      },
-      {
+        ],
         "name": "Mark of Healing",
         "isVariant": false,
         "source": "ERLW",
@@ -11693,47 +11739,42 @@
               }
             ]
           }
-        ],
-        "additionalSpells": [
-          {
-            "ability": "wis",
-            "expanded": {
-              "s1": [
-                "cure wounds",
-                "healing word"
-              ],
-              "s2": [
-                "lesser restoration",
-                "prayer of healing"
-              ],
-              "s3": [
-                "aura of vitality",
-                "mass healing word"
-              ],
-              "s4": [
-                "aura of purity",
-                "aura of life"
-              ],
-              "s5": [
-                "greater restoration"
-              ]
-            },
-            "innate": {
-              "1": [
-                "cure wounds"
-              ],
-              "3": {
-                "daily": {
-                  "1": [
-                    "lesser restoration"
-                  ]
-                }
-              }
-            }
-          }
         ]
       },
       {
+        "additionalSpells": [
+          {
+            "ability": "cha",
+            "known": {
+              "1": [
+                "prestidigitation",
+                "purify food and drink",
+                "unseen servant"
+              ]
+            },
+            "expanded": {
+              "s1": [
+                "goodberry",
+                "sleep"
+              ],
+              "s2": [
+                "aid",
+                "calm emotions"
+              ],
+              "s3": [
+                "create food and water",
+                "leomund's tiny hut"
+              ],
+              "s4": [
+                "aura of purity",
+                "mordenkainen's private sanctum"
+              ],
+              "s5": [
+                "hallow"
+              ]
+            }
+          }
+        ],
         "name": "Mark of Hospitality",
         "isVariant": false,
         "source": "ERLW",
@@ -11815,39 +11856,6 @@
                 ]
               }
             ]
-          }
-        ],
-        "additionalSpells": [
-          {
-            "ability": "cha",
-            "known": {
-              "1": [
-                "prestidigitation",
-                "purify food and drink",
-                "unseen servant"
-              ]
-            },
-            "expanded": {
-              "s1": [
-                "goodberry",
-                "sleep"
-              ],
-              "s2": [
-                "aid",
-                "calm emotions"
-              ],
-              "s3": [
-                "create food and water",
-                "leomund's tiny hut"
-              ],
-              "s4": [
-                "aura of purity",
-                "mordenkainen's private sanctum"
-              ],
-              "s5": [
-                "hallow"
-              ]
-            }
           }
         ]
       },
@@ -12169,6 +12177,23 @@
         }
       }
     ],
+    "additionalSpells": [
+      {
+        "ability": {
+          "choose": [
+            "int",
+            "wis",
+            "cha"
+          ]
+        },
+        "known": {
+          "1": [
+            "disguise self",
+            "hex"
+          ]
+        }
+      }
+    ],
     "name": "Hexblood",
     "source": "VRGR",
     "size": [
@@ -12277,23 +12302,6 @@
             ]
           }
         ]
-      }
-    ],
-    "additionalSpells": [
-      {
-        "ability": {
-          "choose": [
-            "int",
-            "wis",
-            "cha"
-          ]
-        },
-        "known": {
-          "1": [
-            "disguise self",
-            "hex"
-          ]
-        }
       }
     ]
   },
@@ -13010,6 +13018,42 @@
         ]
       },
       {
+        "additionalSpells": [
+          {
+            "ability": "wis",
+            "known": {
+              "1": {
+                "rest": {
+                  "1": [
+                    "animal friendship",
+                    "speak with animals"
+                  ]
+                }
+              }
+            },
+            "expanded": {
+              "s1": [
+                "animal friendship",
+                "speak with animals"
+              ],
+              "s2": [
+                "beast sense",
+                "calm emotions"
+              ],
+              "s3": [
+                "beacon of hope",
+                "conjure animals"
+              ],
+              "s4": [
+                "aura of life",
+                "dominate beast"
+              ],
+              "s5": [
+                "awaken"
+              ]
+            }
+          }
+        ],
         "name": "Mark of Handling",
         "isVariant": false,
         "source": "ERLW",
@@ -13103,42 +13147,6 @@
               }
             ]
           }
-        ],
-        "additionalSpells": [
-          {
-            "ability": "wis",
-            "known": {
-              "1": {
-                "rest": {
-                  "1": [
-                    "animal friendship",
-                    "speak with animals"
-                  ]
-                }
-              }
-            },
-            "expanded": {
-              "s1": [
-                "animal friendship",
-                "speak with animals"
-              ],
-              "s2": [
-                "beast sense",
-                "calm emotions"
-              ],
-              "s3": [
-                "beacon of hope",
-                "conjure animals"
-              ],
-              "s4": [
-                "aura of life",
-                "dominate beast"
-              ],
-              "s5": [
-                "awaken"
-              ]
-            }
-          }
         ]
       },
       {
@@ -13172,6 +13180,38 @@
                 "tinker's tools",
                 "weaver's tools",
                 "woodcarver's tools"
+              ]
+            }
+          }
+        ],
+        "additionalSpells": [
+          {
+            "ability": "int",
+            "known": {
+              "1": [
+                "mending",
+                "magic weapon"
+              ]
+            },
+            "expanded": {
+              "s1": [
+                "identify",
+                "tenser's floating disk"
+              ],
+              "s2": [
+                "continual flame",
+                "magic weapon"
+              ],
+              "s3": [
+                "conjure barrage",
+                "elemental weapon"
+              ],
+              "s4": [
+                "fabricate",
+                "stone shape"
+              ],
+              "s5": [
+                "creation"
               ]
             }
           }
@@ -13269,41 +13309,40 @@
               }
             ]
           }
-        ],
+        ]
+      },
+      {
         "additionalSpells": [
           {
-            "ability": "int",
+            "ability": "dex",
             "known": {
               "1": [
-                "mending",
-                "magic weapon"
+                "misty step"
               ]
             },
             "expanded": {
               "s1": [
-                "identify",
-                "tenser's floating disk"
+                "expeditious retreat",
+                "jump"
               ],
               "s2": [
-                "continual flame",
-                "magic weapon"
+                "misty step",
+                "pass without trace"
               ],
               "s3": [
-                "conjure barrage",
-                "elemental weapon"
+                "blink",
+                "phantom steed"
               ],
               "s4": [
-                "fabricate",
-                "stone shape"
+                "dimension door",
+                "freedom of movement"
               ],
               "s5": [
-                "creation"
+                "teleportation circle"
               ]
             }
           }
-        ]
-      },
-      {
+        ],
         "name": "Mark of Passage",
         "isVariant": false,
         "source": "ERLW",
@@ -13397,40 +13436,40 @@
               }
             ]
           }
-        ],
+        ]
+      },
+      {
         "additionalSpells": [
           {
-            "ability": "dex",
+            "ability": "wis",
             "known": {
               "1": [
-                "misty step"
+                "shield"
               ]
             },
             "expanded": {
               "s1": [
-                "expeditious retreat",
-                "jump"
+                "compelled duel",
+                "shield of faith"
               ],
               "s2": [
-                "misty step",
-                "pass without trace"
+                "warding bond",
+                "zone of truth"
               ],
               "s3": [
-                "blink",
-                "phantom steed"
+                "counterspell",
+                "protection from energy"
               ],
               "s4": [
-                "dimension door",
-                "freedom of movement"
+                "death ward",
+                "guardian of faith"
               ],
               "s5": [
-                "teleportation circle"
+                "bigby's hand"
               ]
             }
           }
-        ]
-      },
-      {
+        ],
         "name": "Mark of Sentinel",
         "isVariant": false,
         "source": "ERLW",
@@ -13525,37 +13564,6 @@
               }
             ]
           }
-        ],
-        "additionalSpells": [
-          {
-            "ability": "wis",
-            "known": {
-              "1": [
-                "shield"
-              ]
-            },
-            "expanded": {
-              "s1": [
-                "compelled duel",
-                "shield of faith"
-              ],
-              "s2": [
-                "warding bond",
-                "zone of truth"
-              ],
-              "s3": [
-                "counterspell",
-                "protection from energy"
-              ],
-              "s4": [
-                "death ward",
-                "guardian of faith"
-              ],
-              "s5": [
-                "bigby's hand"
-              ]
-            }
-          }
         ]
       },
       {
@@ -13621,6 +13629,44 @@
               "Common",
               "Goblin"
             ]
+          }
+        ],
+        "additionalSpells": [
+          {
+            "ability": "wis",
+            "expanded": {
+              "s1": [
+                "faerie fire",
+                "longstrider"
+              ],
+              "s2": [
+                "locate animals or plants",
+                "locate object"
+              ],
+              "s3": [
+                "clairvoyance",
+                "speak with plants"
+              ],
+              "s4": [
+                "divination",
+                "locate creature"
+              ],
+              "s5": [
+                "commune with nature"
+              ]
+            },
+            "innate": {
+              "1": [
+                "hunter's mark"
+              ],
+              "3": {
+                "daily": {
+                  "1": [
+                    "locate object"
+                  ]
+                }
+              }
+            }
           }
         ],
         "name": "Mark of Finding",
@@ -13730,44 +13776,6 @@
                 ]
               }
             ]
-          }
-        ],
-        "additionalSpells": [
-          {
-            "ability": "wis",
-            "expanded": {
-              "s1": [
-                "faerie fire",
-                "longstrider"
-              ],
-              "s2": [
-                "locate animals or plants",
-                "locate object"
-              ],
-              "s3": [
-                "clairvoyance",
-                "speak with plants"
-              ],
-              "s4": [
-                "divination",
-                "locate creature"
-              ],
-              "s5": [
-                "commune with nature"
-              ]
-            },
-            "innate": {
-              "1": [
-                "hunter's mark"
-              ],
-              "3": {
-                "daily": {
-                  "1": [
-                    "locate object"
-                  ]
-                }
-              }
-            }
           }
         ]
       }
@@ -15210,6 +15218,25 @@
         }
       }
     ],
+    "additionalSpells": [
+      {
+        "ability": {
+          "choose": [
+            "int",
+            "wis",
+            "cha"
+          ]
+        },
+        "known": {
+          "_": [
+            {
+              "choose": "level=0|class=Sorcerer",
+              "count": 1
+            }
+          ]
+        }
+      }
+    ],
     "name": "Kobold",
     "source": "MPMM",
     "size": [
@@ -15297,25 +15324,6 @@
             ]
           }
         ]
-      }
-    ],
-    "additionalSpells": [
-      {
-        "ability": {
-          "choose": [
-            "int",
-            "wis",
-            "cha"
-          ]
-        },
-        "known": {
-          "_": [
-            {
-              "choose": "level=0|class=Sorcerer",
-              "count": 1
-            }
-          ]
-        }
       }
     ]
   },
@@ -16686,6 +16694,20 @@
             ]
           }
         ],
+        "additionalSpells": [
+          {
+            "ability": "wis",
+            "known": {
+              "1": {
+                "_": [
+                  {
+                    "choose": "level=0|class=Wizard"
+                  }
+                ]
+              }
+            }
+          }
+        ],
         "name": "Ixalan; Blue",
         "isVariant": false,
         "source": "PSX",
@@ -16737,7 +16759,9 @@
               "overwrite": "Languages"
             }
           }
-        ],
+        ]
+      },
+      {
         "additionalSpells": [
           {
             "ability": "wis",
@@ -16745,15 +16769,13 @@
               "1": {
                 "_": [
                   {
-                    "choose": "level=0|class=Wizard"
+                    "choose": "level=0|class=Druid"
                   }
                 ]
               }
             }
           }
-        ]
-      },
-      {
+        ],
         "name": "Ixalan; Green",
         "isVariant": false,
         "source": "PSX",
@@ -16805,20 +16827,6 @@
               "overwrite": "Languages"
             }
           }
-        ],
-        "additionalSpells": [
-          {
-            "ability": "wis",
-            "known": {
-              "1": {
-                "_": [
-                  {
-                    "choose": "level=0|class=Druid"
-                  }
-                ]
-              }
-            }
-          }
         ]
       },
       {
@@ -16834,6 +16842,20 @@
               "Sleight of Hand",
               "Stealth"
             ]
+          }
+        ],
+        "additionalSpells": [
+          {
+            "ability": "cha",
+            "known": {
+              "1": {
+                "_": [
+                  {
+                    "choose": "level=0|class=Bard"
+                  }
+                ]
+              }
+            }
           }
         ],
         "name": "Zendikar; Cosi Creed",
@@ -16874,20 +16896,6 @@
               "You have proficiency in the {@skill Sleight of Hand} and {@skill Stealth} skills."
             ]
           }
-        ],
-        "additionalSpells": [
-          {
-            "ability": "cha",
-            "known": {
-              "1": {
-                "_": [
-                  {
-                    "choose": "level=0|class=Bard"
-                  }
-                ]
-              }
-            }
-          }
         ]
       },
       {
@@ -16903,6 +16911,20 @@
               "Deception",
               "Persuasion"
             ]
+          }
+        ],
+        "additionalSpells": [
+          {
+            "ability": "wis",
+            "known": {
+              "1": {
+                "_": [
+                  {
+                    "choose": "level=0|class=Druid"
+                  }
+                ]
+              }
+            }
           }
         ],
         "name": "Zendikar; Emeria Creed",
@@ -16942,20 +16964,6 @@
               "You have proficiency in the {@skill Deception} and {@skill Persuasion} skills."
             ]
           }
-        ],
-        "additionalSpells": [
-          {
-            "ability": "wis",
-            "known": {
-              "1": {
-                "_": [
-                  {
-                    "choose": "level=0|class=Druid"
-                  }
-                ]
-              }
-            }
-          }
         ]
       },
       {
@@ -16981,6 +16989,20 @@
             "names": [
               "Survival"
             ]
+          }
+        ],
+        "additionalSpells": [
+          {
+            "ability": "int",
+            "known": {
+              "1": {
+                "_": [
+                  {
+                    "choose": "level=0|class=Wizard"
+                  }
+                ]
+              }
+            }
           }
         ],
         "name": "Zendikar; Ula Creed",
@@ -17019,20 +17041,6 @@
             "entries": [
               "You have proficiency with {@item navigator's tools|phb} and in the {@skill Survival} skill."
             ]
-          }
-        ],
-        "additionalSpells": [
-          {
-            "ability": "int",
-            "known": {
-              "1": {
-                "_": [
-                  {
-                    "choose": "level=0|class=Wizard"
-                  }
-                ]
-              }
-            }
           }
         ]
       }
@@ -20103,6 +20111,15 @@
         }
       }
     ],
+    "additionalSpells": [
+      {
+        "known": {
+          "1": [
+            "friends"
+          ]
+        }
+      }
+    ],
     "name": "Siren",
     "source": "PSX",
     "size": [
@@ -20181,15 +20198,6 @@
         "entries": [
           "You can speak, read, and write {@language Common Trade Pidgin|PSX|Common} (if it exists in your campaign) and {@language Siren|PSX}."
         ]
-      }
-    ],
-    "additionalSpells": [
-      {
-        "known": {
-          "1": [
-            "friends"
-          ]
-        }
       }
     ]
   },
@@ -20678,6 +20686,35 @@
         ]
       }
     ],
+    "additionalSpells": [
+      {
+        "ability": "cha",
+        "known": {
+          "1": [
+            "thaumaturgy"
+          ]
+        },
+        "innate": {
+          "3": {
+            "daily": {
+              "1": [
+                "hellish rebuke"
+              ]
+            }
+          },
+          "5": {
+            "daily": {
+              "1": [
+                "darkness"
+              ]
+            }
+          }
+        },
+        "castLevels": {
+          "hellish rebuke": 2
+        }
+      }
+    ],
     "name": "Tiefling",
     "source": "PHB",
     "size": [
@@ -20736,32 +20773,6 @@
         "description": ""
       },
       {
-        "name": "Baalzebul",
-        "isVariant": false,
-        "source": "MTF",
-        "raceName": "Tiefling",
-        "raceSource": "PHB",
-        "abilityScoreIncrease": [],
-        "darkvision": null,
-        "traits": [
-          {
-            "name": "Legacy of Maladomini",
-            "description": "You know the thaumaturgy cantrip. When you reach 3rd level, you can cast the ray of sickness spell as a 2nd-level spell once with this trait and regain the ability to do so when you finish a long rest. When you reach 5th level, you can cast the crown of madness spell once with this trait and regain the ability to do so when you finish a long rest. Charisma is your spellcasting ability for these spells."
-          }
-        ],
-        "description": "### Legacy of Maladomini\n\n\nYou know the thaumaturgy cantrip. When you reach 3rd level, you can cast the ray of sickness spell as a 2nd-level spell once with this trait and regain the ability to do so when you finish a long rest. When you reach 5th level, you can cast the crown of madness spell once with this trait and regain the ability to do so when you finish a long rest. Charisma is your spellcasting ability for these spells.",
-        "rawEntries": [
-          {
-            "type": "entries",
-            "name": "Legacy of Maladomini",
-            "entries": [
-              "You know the {@spell thaumaturgy} cantrip. When you reach 3rd level, you can cast the {@spell ray of sickness} spell as a 2nd-level spell once with this trait and regain the ability to do so when you finish a long rest. When you reach 5th level, you can cast the {@spell crown of madness} spell once with this trait and regain the ability to do so when you finish a long rest. Charisma is your spellcasting ability for these spells."
-            ],
-            "data": {
-              "overwrite": "Infernal Legacy"
-            }
-          }
-        ],
         "additionalSpells": [
           {
             "ability": "cha",
@@ -20790,9 +20801,61 @@
               "ray of sickness": 2
             }
           }
+        ],
+        "name": "Baalzebul",
+        "isVariant": false,
+        "source": "MTF",
+        "raceName": "Tiefling",
+        "raceSource": "PHB",
+        "abilityScoreIncrease": [],
+        "darkvision": null,
+        "traits": [
+          {
+            "name": "Legacy of Maladomini",
+            "description": "You know the thaumaturgy cantrip. When you reach 3rd level, you can cast the ray of sickness spell as a 2nd-level spell once with this trait and regain the ability to do so when you finish a long rest. When you reach 5th level, you can cast the crown of madness spell once with this trait and regain the ability to do so when you finish a long rest. Charisma is your spellcasting ability for these spells."
+          }
+        ],
+        "description": "### Legacy of Maladomini\n\n\nYou know the thaumaturgy cantrip. When you reach 3rd level, you can cast the ray of sickness spell as a 2nd-level spell once with this trait and regain the ability to do so when you finish a long rest. When you reach 5th level, you can cast the crown of madness spell once with this trait and regain the ability to do so when you finish a long rest. Charisma is your spellcasting ability for these spells.",
+        "rawEntries": [
+          {
+            "type": "entries",
+            "name": "Legacy of Maladomini",
+            "entries": [
+              "You know the {@spell thaumaturgy} cantrip. When you reach 3rd level, you can cast the {@spell ray of sickness} spell as a 2nd-level spell once with this trait and regain the ability to do so when you finish a long rest. When you reach 5th level, you can cast the {@spell crown of madness} spell once with this trait and regain the ability to do so when you finish a long rest. Charisma is your spellcasting ability for these spells."
+            ],
+            "data": {
+              "overwrite": "Infernal Legacy"
+            }
+          }
         ]
       },
       {
+        "additionalSpells": [
+          {
+            "ability": "cha",
+            "known": {
+              "1": [
+                "thaumaturgy"
+              ]
+            },
+            "innate": {
+              "3": {
+                "daily": {
+                  "1": [
+                    "disguise self"
+                  ]
+                }
+              },
+              "5": {
+                "daily": {
+                  "1": [
+                    "detect thoughts"
+                  ]
+                }
+              }
+            }
+          }
+        ],
         "name": "Dispater",
         "isVariant": false,
         "source": "MTF",
@@ -20823,35 +20886,38 @@
               "overwrite": "Infernal Legacy"
             }
           }
-        ],
+        ]
+      },
+      {
         "additionalSpells": [
           {
             "ability": "cha",
             "known": {
               "1": [
-                "thaumaturgy"
+                "friends"
               ]
             },
             "innate": {
               "3": {
                 "daily": {
                   "1": [
-                    "disguise self"
+                    "charm person"
                   ]
                 }
               },
               "5": {
                 "daily": {
                   "1": [
-                    "detect thoughts"
+                    "suggestion"
                   ]
                 }
               }
+            },
+            "castLevels": {
+              "charm person": 2
             }
           }
-        ]
-      },
-      {
+        ],
         "name": "Fierna",
         "isVariant": false,
         "source": "MTF",
@@ -20882,38 +20948,35 @@
               "overwrite": "Infernal Legacy"
             }
           }
-        ],
+        ]
+      },
+      {
         "additionalSpells": [
           {
             "ability": "cha",
             "known": {
               "1": [
-                "friends"
+                "minor illusion"
               ]
             },
             "innate": {
               "3": {
                 "daily": {
                   "1": [
-                    "charm person"
+                    "disguise self"
                   ]
                 }
               },
               "5": {
                 "daily": {
                   "1": [
-                    "suggestion"
+                    "invisibility"
                   ]
                 }
               }
-            },
-            "castLevels": {
-              "charm person": 2
             }
           }
-        ]
-      },
-      {
+        ],
         "name": "Glasya",
         "isVariant": false,
         "source": "MTF",
@@ -20944,35 +21007,38 @@
               "overwrite": "Infernal Legacy"
             }
           }
-        ],
+        ]
+      },
+      {
         "additionalSpells": [
           {
             "ability": "cha",
             "known": {
               "1": [
-                "minor illusion"
+                "ray of frost"
               ]
             },
             "innate": {
               "3": {
                 "daily": {
                   "1": [
-                    "disguise self"
+                    "armor of agathys"
                   ]
                 }
               },
               "5": {
                 "daily": {
                   "1": [
-                    "invisibility"
+                    "darkness"
                   ]
                 }
               }
+            },
+            "castLevels": {
+              "armor of agathys": 2
             }
           }
-        ]
-      },
-      {
+        ],
         "name": "Levistus",
         "isVariant": false,
         "source": "MTF",
@@ -21003,64 +21069,9 @@
               "overwrite": "Infernal Legacy"
             }
           }
-        ],
-        "additionalSpells": [
-          {
-            "ability": "cha",
-            "known": {
-              "1": [
-                "ray of frost"
-              ]
-            },
-            "innate": {
-              "3": {
-                "daily": {
-                  "1": [
-                    "armor of agathys"
-                  ]
-                }
-              },
-              "5": {
-                "daily": {
-                  "1": [
-                    "darkness"
-                  ]
-                }
-              }
-            },
-            "castLevels": {
-              "armor of agathys": 2
-            }
-          }
         ]
       },
       {
-        "name": "Mammon",
-        "isVariant": false,
-        "source": "MTF",
-        "raceName": "Tiefling",
-        "raceSource": "PHB",
-        "abilityScoreIncrease": [],
-        "darkvision": null,
-        "traits": [
-          {
-            "name": "Legacy of Minauros",
-            "description": "You know the mage hand cantrip. When you reach 3rd level, you can cast the Tenser's floating disk spell once with this trait and regain the ability to do so when you finish a short or long rest. When you reach 5th level, you can cast the arcane lock spell once with this trait, requiring no material component, and regain the ability to do so when you finish a long rest. Charisma is your spellcasting ability for these spells."
-          }
-        ],
-        "description": "### Legacy of Minauros\n\n\nYou know the mage hand cantrip. When you reach 3rd level, you can cast the Tenser's floating disk spell once with this trait and regain the ability to do so when you finish a short or long rest. When you reach 5th level, you can cast the arcane lock spell once with this trait, requiring no material component, and regain the ability to do so when you finish a long rest. Charisma is your spellcasting ability for these spells.",
-        "rawEntries": [
-          {
-            "type": "entries",
-            "name": "Legacy of Minauros",
-            "entries": [
-              "You know the {@spell mage hand} cantrip. When you reach 3rd level, you can cast the {@spell Tenser's floating disk} spell once with this trait and regain the ability to do so when you finish a short or long rest. When you reach 5th level, you can cast the {@spell arcane lock} spell once with this trait, requiring no material component, and regain the ability to do so when you finish a long rest. Charisma is your spellcasting ability for these spells."
-            ],
-            "data": {
-              "overwrite": "Infernal Legacy"
-            }
-          }
-        ],
         "additionalSpells": [
           {
             "ability": "cha",
@@ -21086,10 +21097,8 @@
               }
             }
           }
-        ]
-      },
-      {
-        "name": "Mephistopheles",
+        ],
+        "name": "Mammon",
         "isVariant": false,
         "source": "MTF",
         "raceName": "Tiefling",
@@ -21098,23 +21107,25 @@
         "darkvision": null,
         "traits": [
           {
-            "name": "Legacy of Cania",
-            "description": "You know the mage hand cantrip. When you reach 3rd level, you can cast the burning hands spell as a 2nd-level spell once with this trait and regain the ability to do so when you finish a long rest. When you reach 5th level, you can cast the flame blade spell once with this trait and regain the ability to do so when you finish a long rest. Charisma is your spellcasting ability for these spells."
+            "name": "Legacy of Minauros",
+            "description": "You know the mage hand cantrip. When you reach 3rd level, you can cast the Tenser's floating disk spell once with this trait and regain the ability to do so when you finish a short or long rest. When you reach 5th level, you can cast the arcane lock spell once with this trait, requiring no material component, and regain the ability to do so when you finish a long rest. Charisma is your spellcasting ability for these spells."
           }
         ],
-        "description": "### Legacy of Cania\n\n\nYou know the mage hand cantrip. When you reach 3rd level, you can cast the burning hands spell as a 2nd-level spell once with this trait and regain the ability to do so when you finish a long rest. When you reach 5th level, you can cast the flame blade spell once with this trait and regain the ability to do so when you finish a long rest. Charisma is your spellcasting ability for these spells.",
+        "description": "### Legacy of Minauros\n\n\nYou know the mage hand cantrip. When you reach 3rd level, you can cast the Tenser's floating disk spell once with this trait and regain the ability to do so when you finish a short or long rest. When you reach 5th level, you can cast the arcane lock spell once with this trait, requiring no material component, and regain the ability to do so when you finish a long rest. Charisma is your spellcasting ability for these spells.",
         "rawEntries": [
           {
             "type": "entries",
-            "name": "Legacy of Cania",
+            "name": "Legacy of Minauros",
             "entries": [
-              "You know the {@spell mage hand} cantrip. When you reach 3rd level, you can cast the {@spell burning hands} spell as a 2nd-level spell once with this trait and regain the ability to do so when you finish a long rest. When you reach 5th level, you can cast the {@spell flame blade} spell once with this trait and regain the ability to do so when you finish a long rest. Charisma is your spellcasting ability for these spells."
+              "You know the {@spell mage hand} cantrip. When you reach 3rd level, you can cast the {@spell Tenser's floating disk} spell once with this trait and regain the ability to do so when you finish a short or long rest. When you reach 5th level, you can cast the {@spell arcane lock} spell once with this trait, requiring no material component, and regain the ability to do so when you finish a long rest. Charisma is your spellcasting ability for these spells."
             ],
             "data": {
               "overwrite": "Infernal Legacy"
             }
           }
-        ],
+        ]
+      },
+      {
         "additionalSpells": [
           {
             "ability": "cha",
@@ -21143,9 +21154,64 @@
               "burning hands": 2
             }
           }
+        ],
+        "name": "Mephistopheles",
+        "isVariant": false,
+        "source": "MTF",
+        "raceName": "Tiefling",
+        "raceSource": "PHB",
+        "abilityScoreIncrease": [],
+        "darkvision": null,
+        "traits": [
+          {
+            "name": "Legacy of Cania",
+            "description": "You know the mage hand cantrip. When you reach 3rd level, you can cast the burning hands spell as a 2nd-level spell once with this trait and regain the ability to do so when you finish a long rest. When you reach 5th level, you can cast the flame blade spell once with this trait and regain the ability to do so when you finish a long rest. Charisma is your spellcasting ability for these spells."
+          }
+        ],
+        "description": "### Legacy of Cania\n\n\nYou know the mage hand cantrip. When you reach 3rd level, you can cast the burning hands spell as a 2nd-level spell once with this trait and regain the ability to do so when you finish a long rest. When you reach 5th level, you can cast the flame blade spell once with this trait and regain the ability to do so when you finish a long rest. Charisma is your spellcasting ability for these spells.",
+        "rawEntries": [
+          {
+            "type": "entries",
+            "name": "Legacy of Cania",
+            "entries": [
+              "You know the {@spell mage hand} cantrip. When you reach 3rd level, you can cast the {@spell burning hands} spell as a 2nd-level spell once with this trait and regain the ability to do so when you finish a long rest. When you reach 5th level, you can cast the {@spell flame blade} spell once with this trait and regain the ability to do so when you finish a long rest. Charisma is your spellcasting ability for these spells."
+            ],
+            "data": {
+              "overwrite": "Infernal Legacy"
+            }
+          }
         ]
       },
       {
+        "additionalSpells": [
+          {
+            "ability": "cha",
+            "known": {
+              "1": [
+                "vicious mockery"
+              ]
+            },
+            "innate": {
+              "3": {
+                "daily": {
+                  "1": [
+                    "charm person"
+                  ]
+                }
+              },
+              "5": {
+                "daily": {
+                  "1": [
+                    "enthrall"
+                  ]
+                }
+              }
+            },
+            "castLevels": {
+              "charm person": 2
+            }
+          }
+        ],
         "name": "Devil's Tongue",
         "isVariant": true,
         "source": "SCAG",
@@ -21186,38 +21252,38 @@
               "overwrite": "Infernal Legacy"
             }
           }
-        ],
+        ]
+      },
+      {
         "additionalSpells": [
           {
             "ability": "cha",
             "known": {
               "1": [
-                "vicious mockery"
+                "thaumaturgy"
               ]
             },
             "innate": {
               "3": {
                 "daily": {
                   "1": [
-                    "charm person"
+                    "burning hands"
                   ]
                 }
               },
               "5": {
                 "daily": {
                   "1": [
-                    "enthrall"
+                    "darkness"
                   ]
                 }
               }
             },
             "castLevels": {
-              "charm person": 2
+              "burning hands": 2
             }
           }
-        ]
-      },
-      {
+        ],
         "name": "Hellfire",
         "isVariant": true,
         "source": "SCAG",
@@ -21258,7 +21324,9 @@
               "overwrite": "Infernal Legacy"
             }
           }
-        ],
+        ]
+      },
+      {
         "additionalSpells": [
           {
             "ability": "cha",
@@ -21271,7 +21339,7 @@
               "3": {
                 "daily": {
                   "1": [
-                    "burning hands"
+                    "hellish rebuke"
                   ]
                 }
               },
@@ -21282,14 +21350,9 @@
                   ]
                 }
               }
-            },
-            "castLevels": {
-              "burning hands": 2
             }
           }
-        ]
-      },
-      {
+        ],
         "name": "Infernal Legacy",
         "isVariant": true,
         "source": "SCAG",
@@ -21315,32 +21378,6 @@
             "entries": [
               "Your tiefling might not look like other tieflings. Rather than having the physical characteristics described in the Player's Handbook, choose {@dice 1d4+1} of the following features: small horns; fangs or sharp teeth; a forked tongue; catlike eyes; six fingers on each hand; goatlike legs; cloven hoofs; a forked tail; leathery or scaly skin; red or dark blue skin; cast no shadow or reflection; exude a smell of brimstone."
             ]
-          }
-        ],
-        "additionalSpells": [
-          {
-            "ability": "cha",
-            "known": {
-              "1": [
-                "thaumaturgy"
-              ]
-            },
-            "innate": {
-              "3": {
-                "daily": {
-                  "1": [
-                    "hellish rebuke"
-                  ]
-                }
-              },
-              "5": {
-                "daily": {
-                  "1": [
-                    "darkness"
-                  ]
-                }
-              }
-            }
           }
         ]
       },
@@ -21388,6 +21425,35 @@
         ]
       },
       {
+        "additionalSpells": [
+          {
+            "ability": "cha",
+            "known": {
+              "1": [
+                "thaumaturgy"
+              ]
+            },
+            "innate": {
+              "3": {
+                "daily": {
+                  "1": [
+                    "searing smite"
+                  ]
+                }
+              },
+              "5": {
+                "daily": {
+                  "1": [
+                    "branding smite"
+                  ]
+                }
+              }
+            },
+            "castLevels": {
+              "searing smite": 2
+            }
+          }
+        ],
         "name": "Zariel",
         "isVariant": false,
         "source": "MTF",
@@ -21416,35 +21482,6 @@
             ],
             "data": {
               "overwrite": "Infernal Legacy"
-            }
-          }
-        ],
-        "additionalSpells": [
-          {
-            "ability": "cha",
-            "known": {
-              "1": [
-                "thaumaturgy"
-              ]
-            },
-            "innate": {
-              "3": {
-                "daily": {
-                  "1": [
-                    "searing smite"
-                  ]
-                }
-              },
-              "5": {
-                "daily": {
-                  "1": [
-                    "branding smite"
-                  ]
-                }
-              }
-            },
-            "castLevels": {
-              "searing smite": 2
             }
           }
         ]
@@ -21493,35 +21530,6 @@
         "entries": [
           "You can speak, read, and write Common and Infernal."
         ]
-      }
-    ],
-    "additionalSpells": [
-      {
-        "ability": "cha",
-        "known": {
-          "1": [
-            "thaumaturgy"
-          ]
-        },
-        "innate": {
-          "3": {
-            "daily": {
-              "1": [
-                "hellish rebuke"
-              ]
-            }
-          },
-          "5": {
-            "daily": {
-              "1": [
-                "darkness"
-              ]
-            }
-          }
-        },
-        "castLevels": {
-          "hellish rebuke": 2
-        }
       }
     ]
   },
@@ -21829,6 +21837,34 @@
         ]
       }
     ],
+    "additionalSpells": [
+      {
+        "ability": "cha",
+        "innate": {
+          "1": {
+            "daily": {
+              "1": [
+                "fog cloud"
+              ]
+            }
+          },
+          "3": {
+            "daily": {
+              "1": [
+                "gust of wind"
+              ]
+            }
+          },
+          "5": {
+            "daily": {
+              "1": [
+                "wall of water"
+              ]
+            }
+          }
+        }
+      }
+    ],
     "name": "Triton",
     "source": "MOT",
     "size": [
@@ -21965,34 +22001,6 @@
           "Tritons tend toward neutrality. Their culture encourages them to be mindful of life's currents, knowing when to harness fate's tides and when to flow along with them."
         ]
       }
-    ],
-    "additionalSpells": [
-      {
-        "ability": "cha",
-        "innate": {
-          "1": {
-            "daily": {
-              "1": [
-                "fog cloud"
-              ]
-            }
-          },
-          "3": {
-            "daily": {
-              "1": [
-                "gust of wind"
-              ]
-            }
-          },
-          "5": {
-            "daily": {
-              "1": [
-                "wall of water"
-              ]
-            }
-          }
-        }
-      }
     ]
   },
   {
@@ -22018,6 +22026,40 @@
         "count": 1,
         "pool": {
           "kind": "any"
+        }
+      }
+    ],
+    "additionalSpells": [
+      {
+        "ability": {
+          "choose": [
+            "int",
+            "wis",
+            "cha"
+          ]
+        },
+        "innate": {
+          "1": {
+            "daily": {
+              "1": [
+                "fog cloud"
+              ]
+            }
+          },
+          "3": {
+            "daily": {
+              "1": [
+                "gust of wind"
+              ]
+            }
+          },
+          "5": {
+            "daily": {
+              "1": [
+                "water walk"
+              ]
+            }
+          }
         }
       }
     ],
@@ -22105,16 +22147,26 @@
           "Adapted to the frigid ocean depths, you have resistance to cold damage."
         ]
       }
+    ]
+  },
+  {
+    "grants": [
+      {
+        "id": "VGM/Race/Triton@0#languages:fixed:Common,Primordial",
+        "aliases": [
+          "VGM/Race/Triton@0#0"
+        ],
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common",
+          "Primordial"
+        ]
+      }
     ],
     "additionalSpells": [
       {
-        "ability": {
-          "choose": [
-            "int",
-            "wis",
-            "cha"
-          ]
-        },
+        "ability": "cha",
         "innate": {
           "1": {
             "daily": {
@@ -22133,27 +22185,11 @@
           "5": {
             "daily": {
               "1": [
-                "water walk"
+                "wall of water"
               ]
             }
           }
         }
-      }
-    ]
-  },
-  {
-    "grants": [
-      {
-        "id": "VGM/Race/Triton@0#languages:fixed:Common,Primordial",
-        "aliases": [
-          "VGM/Race/Triton@0#0"
-        ],
-        "kind": "fixed",
-        "category": "languages",
-        "names": [
-          "Common",
-          "Primordial"
-        ]
       }
     ],
     "name": "Triton",
@@ -22280,34 +22316,6 @@
         "entries": [
           "You can speak, read, and write Common and Primordial."
         ]
-      }
-    ],
-    "additionalSpells": [
-      {
-        "ability": "cha",
-        "innate": {
-          "1": {
-            "daily": {
-              "1": [
-                "fog cloud"
-              ]
-            }
-          },
-          "3": {
-            "daily": {
-              "1": [
-                "gust of wind"
-              ]
-            }
-          },
-          "5": {
-            "daily": {
-              "1": [
-                "wall of water"
-              ]
-            }
-          }
-        }
       }
     ]
   },
@@ -23315,6 +23323,34 @@
         }
       }
     ],
+    "additionalSpells": [
+      {
+        "ability": {
+          "choose": [
+            "int",
+            "wis",
+            "cha"
+          ]
+        },
+        "known": {
+          "1": [
+            "poison spray"
+          ]
+        },
+        "innate": {
+          "1": [
+            "animal friendship"
+          ],
+          "3": {
+            "daily": {
+              "1": [
+                "suggestion"
+              ]
+            }
+          }
+        }
+      }
+    ],
     "name": "Yuan-Ti",
     "source": "MPMM",
     "size": [
@@ -23388,16 +23424,27 @@
           "Intelligence, Wisdom, or Charisma is your spellcasting ability for these spells when you cast them with this trait (choose when you select this race)."
         ]
       }
+    ]
+  },
+  {
+    "grants": [
+      {
+        "id": "VGM/Race/Yuan-ti Pureblood@0#languages:fixed:Abyssal,Common,Draconic",
+        "aliases": [
+          "VGM/Race/Yuan-ti Pureblood@0#0"
+        ],
+        "kind": "fixed",
+        "category": "languages",
+        "names": [
+          "Common",
+          "Abyssal",
+          "Draconic"
+        ]
+      }
     ],
     "additionalSpells": [
       {
-        "ability": {
-          "choose": [
-            "int",
-            "wis",
-            "cha"
-          ]
-        },
+        "ability": "cha",
         "known": {
           "1": [
             "poison spray"
@@ -23415,23 +23462,6 @@
             }
           }
         }
-      }
-    ]
-  },
-  {
-    "grants": [
-      {
-        "id": "VGM/Race/Yuan-ti Pureblood@0#languages:fixed:Abyssal,Common,Draconic",
-        "aliases": [
-          "VGM/Race/Yuan-ti Pureblood@0#0"
-        ],
-        "kind": "fixed",
-        "category": "languages",
-        "names": [
-          "Common",
-          "Abyssal",
-          "Draconic"
-        ]
       }
     ],
     "name": "Yuan-ti Pureblood",
@@ -23535,28 +23565,6 @@
         "entries": [
           "You can speak, read, and write Common, Abyssal, and Draconic."
         ]
-      }
-    ],
-    "additionalSpells": [
-      {
-        "ability": "cha",
-        "known": {
-          "1": [
-            "poison spray"
-          ]
-        },
-        "innate": {
-          "1": [
-            "animal friendship"
-          ],
-          "3": {
-            "daily": {
-              "1": [
-                "suggestion"
-              ]
-            }
-          }
-        }
       }
     ]
   },
