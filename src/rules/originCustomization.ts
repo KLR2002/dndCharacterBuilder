@@ -29,7 +29,7 @@ export interface OriginAbilitySlotView {
 
 /** What the Origin Customization card shows. Absent when the rule is not available. */
 export interface OriginCustomizationView {
-  /** Empty when the race's increases already cover all six abilities, so there is nothing to move. */
+  /** Empty when the held race or subrace has no increase, or its increases already cover all six abilities: nothing to move. */
   abilitySlots: OriginAbilitySlotView[];
 }
 
@@ -87,8 +87,7 @@ function stateIn(
   const found = findHeldRace(races, held, activeBooks);
   if (!found.race || (held.subraceName && !found.subrace)) return undefined;
   const slots = slotsOf(held, found.race, found.subrace);
-  const available =
-    ruleBookActive(activeBooks) && listings.originRules().length > 0 && slots.length > 0;
+  const available = ruleBookActive(activeBooks) && listings.originRules().length > 0;
   return { slots, available };
 }
 
@@ -179,7 +178,10 @@ export function originAbilityTargets(character: Character, catalogs?: CharacterC
   return slots.map((slot) => targetOf(slot, swaps));
 }
 
-/** Whether the card is offered: TCE active, the Catalog holds the swap table, and the held race or subrace has an increase. */
+/**
+ * Whether the card is offered: TCE active, the Catalog holds the swap table, and a race is held. Only the ability part needs
+ * the held race or subrace to have increases; the language and proficiency swaps are offered without them.
+ */
 export function originCustomizationAvailable(character: Character, catalogs?: CharacterCatalogs): boolean {
   return originAbilityState(character, catalogs).available;
 }
