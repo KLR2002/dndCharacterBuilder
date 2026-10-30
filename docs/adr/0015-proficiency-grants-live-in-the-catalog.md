@@ -19,3 +19,8 @@ None remain.
 
 ## Considered Options
 A hand-written grants table inside `src/` was rejected: it would bundle non-SRD rule content in the app, and nothing would reveal gaps. Parsing prose at runtime was rejected as unreviewable and slow.
+
+## Amendment: gated race and subrace grants
+- A race's or subrace's fixed proficiency grant may carry a reviewed `gatedBy` (a Rule Choice id and an option). The scraper writes it from `PROFICIENCY_GRANT_GATES`, a reviewed list of subrace, trait and option that names the category of fixed grants it gates, and a tracked-data check fails a gate that names no such grant or an option its trait does not offer. The Half-Elf descents' weapons are the first: they are held only while the Variant Feature picks Elf Weapon Training.
+- A gated grant is read only while the character's pick on the named choice includes the option. The gate test is one leaf module, `src/rules/grantGate.ts`, shared with the spell reader of ADR 0017. The Proficiency Sheet, the Proficiency Picks and the lineage check read a race's or subrace's grants through it, so the Origin Customization swap rows and any saved swap of a gated grant follow the pick; a swap whose grant leaves the character is released with the usual notice.
+- The Catalog Format is 13: a catalog saved at format 12 carries no `gatedBy` and is stale.
