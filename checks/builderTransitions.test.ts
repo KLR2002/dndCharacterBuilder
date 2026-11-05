@@ -32,7 +32,7 @@ import type {
 import type { BackgroundData, ClassData, RaceData } from "../src/types/dnd5e.ts";
 import { applyAncestrySelection } from "../src/rules/ancestryEngine.ts";
 
-test("setChoiceRacialBonus updates racialChoiceBonus and racialAbilityBonuses while preserving fixed racial bonuses", () => {
+test("setChoiceRacialBonus updates racialChoiceBonus and racialAbilityBonuses while preserving its Fixed Increases", () => {
   // Half-Elf style: +2 Charisma fixed, plus 2 choice bonuses of +1
   const initial = makeChar({
     racialAbilityBonuses: { cha: 2 },
