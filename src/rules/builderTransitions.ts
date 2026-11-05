@@ -18,7 +18,7 @@ import { moveLegacySkillPicks } from "./proficiencyPicks.ts";
 import { CUSTOM_BACKGROUND_SKILLS_ID, CUSTOM_BACKGROUND_TOOLS_OR_LANGUAGES_ID, isCustomBackground } from "./customBackground.ts";
 import { findHeldRecord } from "./raceLookup.ts";
 import { sizeOptionsOf } from "./sizeChoice.ts";
-import { abilityTargetBlocked, originAbilityState } from "./originCustomization.ts";
+import { abilityTargetBlocked, increaseOffersOf, increasePoolOf, originAbilityState } from "./originCustomization.ts";
 import { ABILITY_NAMES } from "./abilities.ts";
 import { releaseExpandedOnlySpells } from "./backgroundSpells.ts";
 import { releaseRaceOriginFeat } from "./feats.ts";
@@ -59,9 +59,14 @@ export function setStandardArrayPick(
   };
 }
 
+type RacialPick = NonNullable<Character["racialChoiceBonus"]>[number];
+
+/** The most picks the Flexible Increases take: three +1s, or a +2 and a +1. */
+const FLEXIBLE_PICK_LIMIT = 3;
+
 export function setChoiceRacialBonus(
   character: Character,
-  picks: { key: AbilityKey; amount: number }[]
+  picks: RacialPick[]
 ): Character {
   const fixed: Record<string, number> = { ...(character.racialAbilityBonuses ?? {}) };
   for (const oldPick of character.racialChoiceBonus ?? []) {
@@ -83,6 +88,33 @@ export function setChoiceRacialBonus(
     racialChoiceBonus: [...picks],
     racialAbilityBonuses: updatedBonuses,
   };
+}
+
+/**
+ * Places a pick of an Increase Choice (`choiceId`) or of the Flexible Increases (no `choiceId`), or removes the pick already on
+ * that score. A new pick over the choice's count, or on a score its offer does not include, leaves the character unchanged.
+ */
+export function toggleRacialPick(
+  character: Character,
+  pick: { choiceId?: string; key: AbilityKey; amount: number },
+  catalogs: CharacterCatalogs,
+): Character {
+  const picks = character.racialChoiceBonus ?? [];
+  const sameSource = (entry: RacialPick) => entry.choiceId === pick.choiceId;
+  const held = picks.find((entry) => entry.key === pick.key && sameSource(entry));
+  if (held) return setChoiceRacialBonus(character, picks.filter((entry) => entry !== held));
+
+  const offers = increaseOffersOf(character, catalogs);
+  if (pick.choiceId === undefined) {
+    const flexiblePicks = picks.filter(sameSource).length;
+    const pool = increasePoolOf(character, catalogs, undefined, pick.amount);
+    if (!offers.flexible || flexiblePicks >= FLEXIBLE_PICK_LIMIT || !pool.includes(pick.key)) return character;
+    return setChoiceRacialBonus(character, [...picks, { key: pick.key, amount: pick.amount }]);
+  }
+
+  const offer = offers.choices.find((choice) => choice.id === pick.choiceId);
+  if (!offer || offer.picked.length >= offer.count || !offer.pool.includes(pick.key)) return character;
+  return setChoiceRacialBonus(character, [...picks, { key: pick.key, amount: offer.amount, choiceId: offer.id }]);
 }
 
 /**

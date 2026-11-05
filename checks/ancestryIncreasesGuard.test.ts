@@ -5,8 +5,9 @@ import { join, relative, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 
 // The one combining module (src/rules/ancestryIncreases.ts) is the only code under src/ that reads a race's or
-// subrace's `abilityScoreIncrease`. A subrace that replaces its race's increases must give only its own, and a
-// reader that sums the two itself would stack them again. Feat records are not race data and are exempt.
+// subrace's `abilityScoreIncrease`, `abilityScoreChoices` or `replacesRaceAbilityScores`. A subrace that replaces its
+// race's increases must give only its own, and a reader that sums the two itself would stack them again. Feat records
+// are not race data and are exempt.
 
 const SRC = fileURLToPath(new URL("../src/", import.meta.url));
 const MODULE = "rules/ancestryIncreases.ts";
@@ -20,10 +21,12 @@ const ALLOWANCES: { file: string; reason: string }[] = [
 ];
 
 /** A read of the field: a property access, a quoted key, or a destructuring of it. */
+const RACE_INCREASE_FIELDS = "abilityScoreIncrease|abilityScoreChoices|replacesRaceAbilityScores";
+
 const READ_PATTERNS: RegExp[] = [
-  /\.abilityScoreIncrease\b/,
-  /["']abilityScoreIncrease["']/,
-  /\{[^{}]*\babilityScoreIncrease\b[^{}]*\}\s*=/,
+  new RegExp(`\\.(${RACE_INCREASE_FIELDS})\\b`),
+  new RegExp(`["'](${RACE_INCREASE_FIELDS})["']`),
+  new RegExp(`\\{[^{}]*\\b(${RACE_INCREASE_FIELDS})\\b[^{}]*\\}\\s*=`),
 ];
 
 function sourceFiles(dir: string): string[] {
@@ -44,7 +47,7 @@ function readsIn(source: string): number[] {
   return lines.flatMap((line, index) => (READ_PATTERNS.some((pattern) => pattern.test(line)) ? [index + 1] : []));
 }
 
-test("only the combining module reads a race's or subrace's abilityScoreIncrease under src/", () => {
+test("only the combining module reads a race's or subrace's increase fields under src/", () => {
   const readers = new Map<string, number[]>();
   for (const path of sourceFiles(SRC)) {
     const file = relative(SRC, path).split(sep).join("/");
@@ -57,7 +60,7 @@ test("only the combining module reads a race's or subrace's abilityScoreIncrease
   assert.deepEqual(
     unlisted.map(([file, lines]) => `${file}:${lines.join(",")}`),
     [],
-    "these files read a race's or subrace's abilityScoreIncrease outside rules/ancestryIncreases.ts",
+    "these files read a race's or subrace's increase fields outside rules/ancestryIncreases.ts",
   );
 
   const stale = ALLOWANCES.filter((allowed) => !readers.has(allowed.file)).map((allowed) => allowed.file);

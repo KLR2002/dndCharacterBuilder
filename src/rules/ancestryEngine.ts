@@ -16,6 +16,7 @@ import { raceOriginFeatTitle, releaseRaceOriginFeat } from "./feats.ts";
 import { findHeldRace } from "./raceLookup.ts";
 import { resolvedSize, sizeOptionsOf } from "./sizeChoice.ts";
 import { heldFixedBonuses } from "./ancestryIncreases.ts";
+import { increaseOffersOf, type IncreaseChoiceOffer } from "./originCustomization.ts";
 
 export interface AncestryTraitView {
   name: string;
@@ -34,17 +35,16 @@ export interface AncestryState {
   traits: AncestryTraitView[];
   fixedBonuses: Record<string, number>;
   hasFixedASI: boolean;
-  isChoiceASIRace: boolean;
-  isFlexibleMPMM: boolean;
-  choiceASIConfig: { count: number; amount: number };
+  /** The Increase Choices the held ancestry offers, each with its pool and the scores already picked for it. */
+  increaseChoices: IncreaseChoiceOffer[];
+  /** Whether the held ancestry gets Flexible Increases: neither Fixed Increases nor an Increase Choice. */
+  hasFlexibleIncreases: boolean;
   availableRuleChoices: AvailableRuleChoice[];
   ruleChoicesWithPicks: { choice: AvailableRuleChoice; picked: string[] }[];
   hasOriginFeat: boolean;
   originFeatTitle?: string;
   currentOriginFeat?: AsiSelection;
 }
-
-const CHOICE_ASI_RACES = new Set(["Half-Elf", "Custom Lineage"]);
 
 /**
  * Whether a race's card in the race picker offers a plain form: the race with no subrace. Only a race the
@@ -70,26 +70,7 @@ export function resolveAncestryState(
 
   const fixedBonuses = character.race ? heldFixedBonuses(selectedRace, selectedSubrace) : {};
   const hasFixedASI = Object.keys(fixedBonuses).length > 0;
-
-  const isChoiceASIRace =
-    character.race != null &&
-    (!hasFixedASI ||
-      CHOICE_ASI_RACES.has(character.race.name) ||
-      character.race.subraceName === "Variant" ||
-      character.race.subraceName === "Custom Lineage");
-
-  const isFlexibleMPMM =
-    character.race != null &&
-    !hasFixedASI &&
-    character.race.name !== "Custom Lineage" &&
-    character.race.subraceName !== "Variant";
-
-  const choiceASIConfig = (() => {
-    if (!character.race) return { count: 2, amount: 1 };
-    const name = character.race.subraceName || character.race.name;
-    if (name === "Custom Lineage") return { count: 1, amount: 2 };
-    return { count: 2, amount: 1 };
-  })();
+  const increases = increaseOffersOf(character, catalogs);
 
   const availChoices = (character.race || character.lineageReplacement)
     ? offeredRuleChoices(character, { raceCatalog: allRaces, activeBooks: catalogs?.activeBooks, origins: ["race"] })
@@ -143,9 +124,8 @@ export function resolveAncestryState(
     traits,
     fixedBonuses,
     hasFixedASI,
-    isChoiceASIRace,
-    isFlexibleMPMM,
-    choiceASIConfig,
+    increaseChoices: increases.choices,
+    hasFlexibleIncreases: increases.flexible,
     availableRuleChoices: availChoices,
     ruleChoicesWithPicks,
     hasOriginFeat,
@@ -160,10 +140,7 @@ export function applyAncestrySelection(
   subrace?: SubraceData,
   catalogs?: CharacterCatalogs
 ): Character {
-  const fixed = heldFixedBonuses(race, subrace);
-  const hasFixed = Object.keys(fixed).length > 0;
-  const isChoice = !hasFixed || CHOICE_ASI_RACES.has(race.name) || subrace?.name === "Variant" || subrace?.name === "Custom Lineage";
-  const bonuses = isChoice ? {} : fixed;
+  const bonuses = heldFixedBonuses(race, subrace);
 
   const updatedRace = {
     name: race.name,
