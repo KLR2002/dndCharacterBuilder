@@ -70,12 +70,11 @@ test("non-srd catalog distinguishes base human (+1 all) from variant human", () 
   assert.deepEqual(baseChar.racialAbilityBonuses, { str: 1, dex: 1, con: 1, int: 1, wis: 1, cha: 1 });
   const baseState = resolveAncestryState(baseChar, { compendium: inMemoryCompendium({ races }), activeBooks: ALL_BOOKS });
   assert.equal(baseState.hasOriginFeat, false);
-  assert.equal(baseState.isChoiceASIRace, false);
+  assert.deepEqual(baseState.increaseChoices, []);
 
   // Applying Variant Human grants Choice ASI and origin feat
   const variantChar = applyAncestrySelection(makeChar(), human, variantSub, { compendium: inMemoryCompendium({ races }), activeBooks: ALL_BOOKS });
   const variantState = resolveAncestryState(variantChar, { compendium: inMemoryCompendium({ races }), activeBooks: ALL_BOOKS });
   assert.equal(variantState.hasOriginFeat, true);
-  assert.equal(variantState.isChoiceASIRace, true);
-  assert.deepEqual(variantState.choiceASIConfig, { count: 2, amount: 1 });
+  assert.deepEqual(variantState.increaseChoices.map(({ count, amount }) => ({ count, amount })), [{ count: 2, amount: 1 }]);
 });

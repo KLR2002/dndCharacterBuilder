@@ -1,3 +1,5 @@
+import type { AbilityScoreChoiceData, RaceData, SubraceData } from "../types/dnd5e.ts";
+
 /** The ability increases a race record or subrace record states, read from its own `abilityScoreIncrease`. */
 export interface IncreaseSource {
   abilityScoreIncrease?: Record<string, number>[];
@@ -42,4 +44,32 @@ export function heldFixedBonuses(race: IncreaseSource | undefined, subrace?: Sub
     bonuses[key] = (bonuses[key] ?? 0) + amount;
   }
   return bonuses;
+}
+
+/** An Increase Choice the held race or subrace states, with the id its picks are saved under (ADR 0019). */
+export interface HeldIncreaseChoice extends AbilityScoreChoiceData {
+  id: string;
+}
+
+/**
+ * The Increase Choices of a held race and subrace. The id names the record that states the choice and its position in it, so
+ * a saved pick keeps its choice whatever else changes. A subrace that replaces its race's increases offers only its own.
+ */
+export function heldIncreaseChoices(race: RaceData | undefined, subrace?: SubraceData): HeldIncreaseChoice[] {
+  const raceOwned =
+    race && !subrace?.replacesRaceAbilityScores
+      ? (race.abilityScoreChoices ?? []).map((choice, index) => ({ ...choice, id: `choice|race|${race.name}|${race.source}|${index}` }))
+      : [];
+  const subraceOwned = subrace
+    ? (subrace.abilityScoreChoices ?? []).map((choice, index) => ({
+        ...choice,
+        id: `choice|subrace|${subrace.raceName}|${subrace.raceSource}|${subrace.name}|${subrace.source}|${index}`,
+      }))
+    : [];
+  return [...raceOwned, ...subraceOwned];
+}
+
+/** Whether the held race or subrace gives Flexible Increases: it has neither Fixed Increases nor an Increase Choice. */
+export function heldFlexibleIncreases(race: RaceData | undefined, subrace?: SubraceData): boolean {
+  return heldFixedIncreases(race, subrace).length === 0 && heldIncreaseChoices(race, subrace).length === 0;
 }

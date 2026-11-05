@@ -1,13 +1,13 @@
 import { ORIGIN_CUSTOMIZATION_BOOK, type ActiveBooks } from "../constants/books.ts";
 import { ABILITY_SCORE_CAP } from "../constants/rules.ts";
-import type { CompendiumListings, Compendium } from "../services/compendium.ts";
+import { currentCompendium, type CompendiumListings, type Compendium } from "../services/compendium.ts";
 import type { AbilityKey, Character } from "../types/character.ts";
 import type { RaceData, SubraceData } from "../types/dnd5e.ts";
 import { ABILITIES, ABILITY_NAMES, abilityKeyOf, baseAbilityScores } from "./abilities.ts";
 import { allCatalogRaces, catalogListings, type CharacterCatalogs } from "./catalogs.ts";
 import { withNotices } from "./needsReview.ts";
 import { findHeldRace } from "./raceLookup.ts";
-import { heldFixedIncreases, type FixedIncrease } from "./ancestryIncreases.ts";
+import { heldFixedIncreases, heldFlexibleIncreases, heldIncreaseChoices, type FixedIncrease } from "./ancestryIncreases.ts";
 
 /**
  * One ability increase of the held race or subrace: one (entry, ability) pair of its `abilityScoreIncrease`. Its id is
@@ -230,4 +230,70 @@ export function reconcileOriginAbilities(character: Character, compendium: Compe
   if (Object.keys(kept).length > 0) next.originAbilitySwaps = kept;
   else delete next.originAbilitySwaps;
   return withNotices(next, notices);
+}
+
+/**
+ * Whether an Increase Choice's or the Flexible Increases' pick of `amount` may not take `ability`: a Fixed Increase lands there
+ * (at its swap target while the rule is available), another pick already holds it, or the base score plus the amount goes above
+ * the cap.
+ */
+export function racialPickBlocked(
+  character: Character,
+  catalogs: CharacterCatalogs | undefined,
+  ability: AbilityKey,
+  amount: number,
+): boolean {
+  const { slots, available } = originAbilityState(character, catalogs);
+  const swaps = available ? (character.originAbilitySwaps ?? {}) : {};
+  if (slots.some((slot) => targetOf(slot, swaps) === ability)) return true;
+  if ((character.racialChoiceBonus ?? []).some((pick) => pick.key === ability)) return true;
+  return baseAbilityScores(character)[ability] + amount > ABILITY_SCORE_CAP;
+}
+
+/**
+ * The scores a pick of `amount` may go to: the Increase Choice's `from`, or every score while Origin Customization is available,
+ * less the ones `racialPickBlocked` refuses. Flexible Increases pass no `from`.
+ */
+export function increasePoolOf(
+  character: Character,
+  catalogs: CharacterCatalogs | undefined,
+  from: readonly AbilityKey[] | undefined,
+  amount: number,
+): AbilityKey[] {
+  const candidates = from === undefined || originCustomizationAvailable(character, catalogs) ? ABILITIES : from;
+  return candidates.filter((ability) => !racialPickBlocked(character, catalogs, ability, amount));
+}
+
+/** One Increase Choice the held ancestry offers: the scores a new pick may take, and the scores already picked for it. */
+export interface IncreaseChoiceOffer {
+  id: string;
+  pool: AbilityKey[];
+  picked: AbilityKey[];
+  count: number;
+  amount: number;
+}
+
+/**
+ * The Increase Choices the held ancestry offers, and whether it gets Flexible Increases. Nothing is offered when the held race is
+ * not in the Catalog, or while the Catalog is stale: saved picks then stay as they are.
+ */
+export function increaseOffersOf(
+  character: Character,
+  catalogs?: CharacterCatalogs,
+): { choices: IncreaseChoiceOffer[]; flexible: boolean } {
+  const compendium = catalogs?.compendium ?? currentCompendium();
+  if (!character.race || compendium.stale) return { choices: [], flexible: false };
+  const { race, subrace } = findHeldRace(catalogListings(catalogs).races(), character.race, catalogs?.activeBooks);
+  if (!race) return { choices: [], flexible: false };
+  const picks = character.racialChoiceBonus ?? [];
+  return {
+    choices: heldIncreaseChoices(race, subrace).map((choice) => ({
+      id: choice.id,
+      pool: increasePoolOf(character, catalogs, choice.from, choice.amount),
+      picked: picks.filter((pick) => pick.choiceId === choice.id).map((pick) => pick.key),
+      count: choice.count,
+      amount: choice.amount,
+    })),
+    flexible: heldFlexibleIncreases(race, subrace),
+  };
 }
