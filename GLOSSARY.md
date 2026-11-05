@@ -13,8 +13,20 @@ The six core physical and mental attributes (Strength, Dexterity, Constitution, 
 _Avoid_: Stats, attributes, raw scores
 
 **Effective Ability Scores**:
-The final ability scores after combining base scores, fixed racial bonuses, choice racial bonuses, class level ASIs, and feat bonuses.
+The final ability scores after combining base scores, the ancestry's *Fixed Increases* and *Increase Choice* picks (or its *Flexible Increases*), class level ASIs, and feat bonuses.
 _Avoid_: Total stats, final scores
+
+**Fixed Increase**:
+An ability score increase a race or subrace gives to a named score (a Tiefling's Intelligence +1). A subrace's increases add to its race's, unless the subrace **replaces** them, in which case only the subrace's apply.
+_Avoid_: Fixed racial bonus, static ASI
+
+**Increase Choice**:
+An ability score increase a race or subrace lets the player place: an amount, how many scores get it, and the scores it may go to (a Half-Elf's +1 to two scores other than Charisma). Under Origin Customization it may go to any score. Like every racial increase, it never lands on a score another racial increase already raises.
+_Avoid_: Choice racial bonus, chosen ASI, floating increase
+
+**Flexible Increases**:
+The +2 and +1, or three +1s, a player places on different scores when the ancestry gives neither a Fixed Increase nor an Increase Choice (the Mordenkainen's races).
+_Avoid_: MPMM bonus, free ASI
 
 **Spellcasting Profile**:
 A class-specific profile tracking spell save DC, spell attack bonus, spellcasting ability modifier, and prepared spell limits for a single casting class within a character's progression.
@@ -41,7 +53,7 @@ The Tasha's Cauldron of Everything rule that lets a player replace what a race's
 _Avoid_: Custom origin, race tweak, racial override
 
 **Origin Swap**:
-One replacement made under Origin Customization: an ability score increase moved to another score, a language replaced by another language, or a skill, tool, weapon or armor proficiency replaced by one the rule's Proficiency Swaps table allows. Every swap starts as the race's own value, so nothing is changed until the player changes it, and the options for customizing are hidden until the player opens them. Swapped increases must land on different scores and may not take a score above 20.
+One replacement made under Origin Customization: an ability score increase moved to another score, a language replaced by another language, or a skill, tool, weapon or armor proficiency replaced by one the rule's Proficiency Swaps table allows. Every swap starts as the race's own value, so nothing is changed until the player changes it, and the options for customizing are hidden until the player opens them. No two racial increases (fixed, chosen or swapped) land on the same score, and a swapped increase may not take a score above 20.
 _Avoid_: Override, respec, racial swap
 
 **Size Choice**:
