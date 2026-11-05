@@ -947,7 +947,7 @@ const SCREENS = [
   { name: "Builder Abilities", route: RENDAR_ROUTE, tabs: ["Builder", "Abilities"], ready: /points remaining/i },
   { name: "Builder Race", route: RENDAR_ROUTE, tabs: ["Builder", "Race"], ready: /traits:/i },
   { name: "Builder Race language choice", route: HALF_ELF_ROUTE, tabs: ["Builder", "Race"], ready: /Granted Languages:/, scrollTo: "Granted Languages:" },
-  // The SCAG Tiefling's one Increase Choice row (integrated mode only), before and after a tap on CHA.
+  // The SCAG Tiefling's one Increase Choice row (integrated mode only).
   ...(INTEGRATED
     ? [
         {

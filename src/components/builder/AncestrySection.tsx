@@ -229,7 +229,6 @@ export const AncestrySection: React.FC<AncestrySectionProps> = ({
         </Card>
       )}
 
-      {/* Increase Choice pickers: one row per choice the held ancestry offers */}
       {character.race && increaseChoices.map((choice) => (
         <Card key={choice.id} style={{ gap: 8, borderColor: theme.accent }}>
           <Text style={{ color: theme.accent, fontWeight: "700", fontSize: 13 }}>
