@@ -1,5 +1,13 @@
 import type { InitiativeBonus, ProficiencyGrant } from "../../dnd5eToolsScrap/src/types/proficiency.ts";
 import type { StartingEquipmentSlot } from "../../dnd5eToolsScrap/src/types/startingEquipment.ts";
+import type { AbilityKey } from "./character.ts";
+
+/** An Increase Choice: the player places `amount` on each of `count` scores taken from `from` (ADR 0019). */
+export interface AbilityScoreChoiceData {
+  from: AbilityKey[];
+  count: number;
+  amount: number;
+}
 
 export type {
   GrantRequirement,
@@ -57,7 +65,10 @@ export interface RaceData {
     climb?: number;
     burrow?: number;
   };
+  /** Fixed Increases only. The choice the record leaves to the player is in `abilityScoreChoices`. */
   abilityScoreIncrease: Record<string, number>[];
+  /** The Increase Choices the record states. Absent when it states none. */
+  abilityScoreChoices?: AbilityScoreChoiceData[];
   darkvision: number | null;
   traits: TraitData[];
   languages: string[];
@@ -77,7 +88,12 @@ export interface SubraceData {
   source: string;
   raceName: string;
   raceSource: string;
+  /** Fixed Increases only. The choice the record leaves to the player is in `abilityScoreChoices`. */
   abilityScoreIncrease: Record<string, number>[];
+  /** The Increase Choices the record states. Absent when it states none. */
+  abilityScoreChoices?: AbilityScoreChoiceData[];
+  /** Set when the record replaces its race's ability score increases rather than adding to them (ADR 0019). */
+  replacesRaceAbilityScores?: true;
   darkvision: number | null;
   speed?: { walk?: number; swim?: number; climb?: number; fly?: number };
   traits: TraitData[];

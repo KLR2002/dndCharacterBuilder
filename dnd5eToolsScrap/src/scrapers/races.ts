@@ -1,4 +1,4 @@
-import type { ToolsClient , AdditionalSpells, RaceModel, SubraceModel, TraitModel } from "../types/models.ts";
+import type { ToolsClient , AbilityScoreChoice, AdditionalSpells, RaceModel, SubraceModel, TraitModel } from "../types/models.ts";
 import { resolveAllCopies } from "../parser/copy-resolver.ts";
 import { renderEntries } from "../parser/entry-renderer.ts";
 import { cleanTags } from "../parser/tag-cleaner.ts";
@@ -164,6 +164,8 @@ export async function scrapeRaces(
       report.unparsed.push({ owner: "Subrace", feature: `${parentName} (${normalized.name})`, level: 0, unparsed: proficiencies.unparsed });
     }
 
+    const subraceChoices = scrapeAbilityChoices(rawSub.ability, { owner: "Subrace", feature: `${parentName} (${normalized.name})`, level: 0 }, report);
+
     const parsedSubraceSpells = correctSpellGrants(
       parseAdditionalSpells(rawSub.additionalSpells),
       { raceName: parentName, raceSource: parentSource || "", subraceName: normalized.name, subraceSource: rawSub.source },
@@ -179,6 +181,8 @@ export async function scrapeRaces(
       raceName: parentName,
       raceSource: parentSource || "",
       abilityScoreIncrease: parseAbilityScores(rawSub.ability),
+      ...subraceChoices,
+      ...(rawSub.overwrite?.ability ? { replacesRaceAbilityScores: true as const } : {}),
       darkvision: parseDarkvision(rawSub),
       traits: attachChoices(traits, extractRuleChoices(rawSub.entries, [renderEntries(rawSub.entries, "plain")]), {
         source: rawSub.source,
@@ -269,6 +273,7 @@ export async function scrapeRaces(
       size: sizes,
       speed,
       abilityScoreIncrease: parseAbilityScores(raw.ability),
+      ...scrapeAbilityChoices(raw.ability, { owner: "Race", feature: raw.name, level: 0 }, report),
       darkvision: parseDarkvision(raw),
       traits: traitsWithChoices,
       languages,
@@ -410,6 +415,36 @@ function parseAbilityScores(ability: any): Record<string, number>[] {
   }
 
   return result;
+}
+
+/** The choose keys the scraper states. Any other key makes the block unparsed (ADR 0019). */
+const KNOWN_CHOOSE_KEYS = new Set(["from", "count", "amount"]);
+
+/**
+ * The Increase Choices of an ability entry, as `abilityScoreChoices` (count and amount default to 1). A choose block with a
+ * key the scraper does not state, or with no `from` list, is reported as unparsed and writes no choice. Returns an object
+ * spreading the field, which is absent when the record states no choice.
+ */
+function scrapeAbilityChoices(
+  ability: any,
+  subject: { owner: string; feature: string; level: number },
+  report: ProficiencyReport
+): { abilityScoreChoices?: AbilityScoreChoice[] } {
+  const list = Array.isArray(ability) ? ability : [ability];
+  const choices: AbilityScoreChoice[] = [];
+  const unparsed: string[] = [];
+  for (const item of list) {
+    if (!item || typeof item !== "object" || item.choose === undefined) continue;
+    const choose = item.choose;
+    const unknownKeys = typeof choose === "object" && choose !== null ? Object.keys(choose).filter((key) => !KNOWN_CHOOSE_KEYS.has(key)) : ["*"];
+    if (unknownKeys.length > 0 || !Array.isArray(choose.from)) {
+      unparsed.push(`choose: ${JSON.stringify(choose)}`);
+      continue;
+    }
+    choices.push({ from: choose.from, count: choose.count ?? 1, amount: choose.amount ?? 1 });
+  }
+  if (unparsed.length > 0) report.unparsed.push({ ...subject, unparsed });
+  return choices.length > 0 ? { abilityScoreChoices: choices } : {};
 }
 
 function parseDarkvision(raw: any): number | null {
