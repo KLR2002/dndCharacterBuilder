@@ -15,7 +15,7 @@ import {
   type HeldIncreaseChoice,
 } from "./ancestryIncreases.ts";
 
-type RacialPick = NonNullable<Character["racialChoiceBonus"]>[number];
+export type RacialPick = NonNullable<Character["racialChoiceBonus"]>[number];
 
 /**
  * One ability increase of the held race or subrace: one (entry, ability) pair of its `abilityScoreIncrease`. Its id is
@@ -287,19 +287,17 @@ export function reconcileOriginAbilities(character: Character, compendium: Compe
     else notices.push(RELEASED_NOTICE(ability));
   }
 
+  const colliding = state.available ? collidingSwapIds(state.slots, kept, character.racialChoiceBonus ?? []) : [];
+  const collidingNotices = colliding.map((id) => COLLIDING_NOTICE(kept[id]));
+  for (const id of colliding) delete kept[id];
+
   let picks = character.racialChoiceBonus ?? [];
   if (character.race && !compendium.stale) {
     const reconciled = reconcileRacialPicks(character, { compendium, activeBooks }, state, kept);
     picks = reconciled.picks;
     notices.push(...reconciled.released.map(PICK_RELEASED_NOTICE));
   }
-
-  if (state.available) {
-    for (const id of collidingSwapIds(state.slots, kept, picks)) {
-      notices.push(COLLIDING_NOTICE(kept[id]));
-      delete kept[id];
-    }
-  }
+  notices.push(...collidingNotices);
 
   const derived = character.race
     ? racialBonusesOf(state.slots, state.available ? kept : {}, picks)
