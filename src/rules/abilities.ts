@@ -1,5 +1,6 @@
 import type { AbilityKey, AbilityScores, Character } from "../types/character.ts";
 import type { ResolvedAncestry } from "./types.ts";
+import { heldFixedBonuses } from "./ancestryIncreases.ts";
 export { POINT_BUY_COST, STANDARD_ARRAY } from "../constants/rules.ts";
 
 export const ABILITIES: AbilityKey[] = ["str", "dex", "con", "int", "wis", "cha"];
@@ -35,9 +36,7 @@ export function baseAbilityScores(character: Character): AbilityScores {
 export function effectiveScores(character: Character, opts: ResolvedAncestry = {}): { scores: AbilityScores; modifiers: AbilityScores } {
   const scores = baseAbilityScores(character);
   const racial = character.racialAbilityBonuses || {};
-  const increases = Object.keys(racial).length ? [racial] : [
-    ...(opts.race?.abilityScoreIncrease || []), ...(opts.subrace?.abilityScoreIncrease || []),
-  ];
+  const increases = Object.keys(racial).length ? [racial] : [heldFixedBonuses(opts.race, opts.subrace)];
   for (const selection of [...(character.asiSelections || []), ...(character.originFeats || [])]) {
     if (selection.asi) {
       increases.push(selection.asi);

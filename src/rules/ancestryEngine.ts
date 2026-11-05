@@ -15,6 +15,7 @@ import { moveLegacySkillPicks } from "./proficiencyPicks.ts";
 import { raceOriginFeatTitle, releaseRaceOriginFeat } from "./feats.ts";
 import { findHeldRace } from "./raceLookup.ts";
 import { resolvedSize, sizeOptionsOf } from "./sizeChoice.ts";
+import { heldFixedBonuses } from "./ancestryIncreases.ts";
 
 export interface AncestryTraitView {
   name: string;
@@ -45,21 +46,6 @@ export interface AncestryState {
 
 const CHOICE_ASI_RACES = new Set(["Half-Elf", "Custom Lineage"]);
 
-export function collectFixedBonuses(
-  raceASI?: Record<string, number>[],
-  subraceASI?: Record<string, number>[]
-): Record<string, number> {
-  const bonuses: Record<string, number> = {};
-  for (const item of [...(raceASI || []), ...(subraceASI || [])]) {
-    for (const [k, v] of Object.entries(item)) {
-      if (typeof v === "number") {
-        bonuses[k.toLowerCase()] = (bonuses[k.toLowerCase()] || 0) + v;
-      }
-    }
-  }
-  return bonuses;
-}
-
 /**
  * Whether a race's card in the race picker offers a plain form: the race with no subrace. Only a race the
  * integrated catalog splits into several named subraces qualifies, when the SRD Baseline holds a race of
@@ -82,9 +68,7 @@ export function resolveAncestryState(
   const allRaces = catalogListings(catalogs).races();
   const { race: selectedRace, subrace: selectedSubrace } = findHeldRace(allRaces, character.race, catalogs?.activeBooks);
 
-  const fixedBonuses = character.race
-    ? collectFixedBonuses(selectedRace?.abilityScoreIncrease, selectedSubrace?.abilityScoreIncrease)
-    : {};
+  const fixedBonuses = character.race ? heldFixedBonuses(selectedRace, selectedSubrace) : {};
   const hasFixedASI = Object.keys(fixedBonuses).length > 0;
 
   const isChoiceASIRace =
@@ -176,7 +160,7 @@ export function applyAncestrySelection(
   subrace?: SubraceData,
   catalogs?: CharacterCatalogs
 ): Character {
-  const fixed = collectFixedBonuses(race.abilityScoreIncrease, subrace?.abilityScoreIncrease);
+  const fixed = heldFixedBonuses(race, subrace);
   const hasFixed = Object.keys(fixed).length > 0;
   const isChoice = !hasFixed || CHOICE_ASI_RACES.has(race.name) || subrace?.name === "Variant" || subrace?.name === "Custom Lineage";
   const bonuses = isChoice ? {} : fixed;
