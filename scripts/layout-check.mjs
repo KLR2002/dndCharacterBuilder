@@ -151,6 +151,30 @@ function halfElfCharacter() {
   });
 }
 
+// A level 1 Fighter who is a Devil's Tongue Tiefling (SCAG), integrated mode only. Her variant replaces the Tiefling's
+// increases and offers one Increase Choice of +2 to DEX or CHA, so the Race tab shows one picker row.
+const TIEFLING_ID = "char_tiefling";
+function tieflingCharacter() {
+  return makeChar({
+    id: TIEFLING_ID,
+    name: "Vexa",
+    createdAt: 15,
+    updatedAt: 15,
+    startingOption: "equipment",
+    race: {
+      name: "Tiefling",
+      source: catalogSource("races", "Tiefling"),
+      subraceName: "Devil's Tongue",
+      subraceSource: "SCAG",
+    },
+    background: { name: "Acolyte", source: catalogSource("backgrounds", "Acolyte") },
+    classes: [{ className: "Fighter", source: catalogSource("classes", "Fighter"), level: 1 }],
+    currentHp: 12,
+    startingGrantsApplied: true,
+    backgroundGrantsApplied: true,
+  });
+}
+
 // A level 3 Ranger with no picks yet. Its Deft Explorer and Favored Enemy language choices are Proficiency
 // Choices in the Class & Subclass Choices card, shown as "Picked 0 / N" in both SRD and integrated modes.
 const RANGER_ID = "char_ranger";
@@ -860,6 +884,7 @@ function buildSeed() {
       sorcererWarlockCharacter(),
       ...(INTEGRATED ? [artificerCharacter()] : []),
       halfElfCharacter(),
+      ...(INTEGRATED ? [tieflingCharacter()] : []),
       rangerCharacter(),
       longNameCharacter(),
       noticesCharacter(),
@@ -922,6 +947,28 @@ const SCREENS = [
   { name: "Builder Abilities", route: RENDAR_ROUTE, tabs: ["Builder", "Abilities"], ready: /points remaining/i },
   { name: "Builder Race", route: RENDAR_ROUTE, tabs: ["Builder", "Race"], ready: /traits:/i },
   { name: "Builder Race language choice", route: HALF_ELF_ROUTE, tabs: ["Builder", "Race"], ready: /Granted Languages:/, scrollTo: "Granted Languages:" },
+  // The SCAG Tiefling's one Increase Choice row (integrated mode only), before and after a tap on CHA.
+  ...(INTEGRATED
+    ? [
+        {
+          name: "Builder Race Tiefling choice row",
+          route: `/character/${TIEFLING_ID}`,
+          tabs: ["Builder", "Race"],
+          ready: "Choose +2 to 1 ability score (0/1 chosen)",
+          scrollTo: "Choose +2 to 1 ability score",
+          expect: { texts: ["DEX", "CHA"], absent: ["STR", "INT", "WIS"], fitsWidth: true },
+        },
+        {
+          name: "Builder Race Tiefling choice row picked",
+          route: `/character/${TIEFLING_ID}`,
+          tabs: ["Builder", "Race"],
+          open: (page) => page.getByText("CHA", { exact: true }).first().click(),
+          ready: "Choose +2 to 1 ability score (1/1 chosen)",
+          scrollTo: "Choose +2 to 1 ability score",
+          expect: { texts: ["CHA +2", "DEX"], absent: ["STR", "INT", "WIS"], fitsWidth: true },
+        },
+      ]
+    : []),
   { name: "Builder Class feats", route: HALF_ELF_ROUTE, tabs: ["Builder", "Class"], ready: /Selected Ability Improvements/i, scrollTo: "Selected Ability Improvements" },
   { name: "Builder Background", route: RENDAR_ROUTE, tabs: ["Builder", "Background"], ready: /background benefits/i, scrollTo: "Claim again" },
   // Pickers for characters with no race (the race list) or no background (the background list, then the Custom Background creator).

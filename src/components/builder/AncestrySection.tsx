@@ -13,7 +13,7 @@ import {
   applyAncestryChoice,
   offersPlainRaceForm,
 } from "../../rules/ancestryEngine";
-import { heldFixedBonuses } from "../../rules/ancestryIncreases";
+import { heldIncreaseChoices, increaseSummary } from "../../rules/ancestryIncreases";
 import type { SourceFixedGrants } from "../../rules/proficiencySheet";
 import { picksOnlyLanguages } from "../../rules/proficiencyChoiceOffers";
 import { ProficiencyChoicePicker } from "./ProficiencyChoicePicker";
@@ -31,18 +31,6 @@ import { getFeats } from "../../services/dataService";
 import { validateFeatPrerequisites, applyOriginFeat, removeOriginFeat } from "../../rules/feats";
 import { getFeatAbilityBonusOptions } from "../../rules/leveling";
 import { BACKGROUND_FEAT_SOURCE } from "../../constants/rules";
-
-function formatRaceASI(abilityScoreIncrease: Record<string, number>[]): string {
-  const totals: Record<string, number> = {};
-  for (const item of abilityScoreIncrease || []) {
-    for (const [k, v] of Object.entries(item)) {
-      if (typeof v === "number") totals[k] = (totals[k] || 0) + v;
-    }
-  }
-  return Object.entries(totals)
-    .map(([k, v]) => `${k.toUpperCase()} +${v}`)
-    .join(", ");
-}
 
 export interface AncestrySectionProps {
   character: Character;
@@ -157,11 +145,9 @@ export const AncestrySection: React.FC<AncestrySectionProps> = ({
   const renderRaceFormRow = (
     key: string,
     label: string,
-    fixed: Record<string, number>,
-    isChoice: boolean,
+    summary: string,
     onPress: () => void
   ) => {
-    const fixedStr = formatRaceASI(Object.entries(fixed).map(([k, v]) => ({ [k]: v })));
     return (
       <TouchableOpacity
         key={key}
@@ -173,12 +159,10 @@ export const AncestrySection: React.FC<AncestrySectionProps> = ({
       >
         <View style={{ flex: 1 }}>
           <Text style={{ color: theme.text, fontWeight: "600", fontSize: 13 }}>{label}</Text>
-          {Boolean(fixedStr) && !isChoice ? (
+          {summary ? (
             <Text style={{ color: theme.accent, fontSize: 11, fontWeight: "600" }}>
-              {fixedStr}
+              {summary}
             </Text>
-          ) : isChoice ? (
-            <Text style={{ color: theme.accent, fontSize: 11, fontWeight: "600" }}>Choice ASI</Text>
           ) : null}
         </View>
         <Ionicons name="chevron-forward" size={16} color={theme.accent} />
@@ -249,9 +233,7 @@ export const AncestrySection: React.FC<AncestrySectionProps> = ({
       {character.race && increaseChoices.map((choice) => (
         <Card key={choice.id} style={{ gap: 8, borderColor: theme.accent }}>
           <Text style={{ color: theme.accent, fontWeight: "700", fontSize: 13 }}>
-            Choose +{choice.amount} to {choice.count} ability score
-            {choice.count > 1 ? "s" : ""}
-            {"  "}({choice.picked.length}/{choice.count} chosen)
+            {`Choose +${choice.amount} to ${choice.count} ability score${choice.count > 1 ? "s" : ""} (${choice.picked.length}/${choice.count} chosen)`}
           </Text>
           <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6 }}>
             {ABILITY_KEYS.filter((k) => choice.pool.includes(k) || choice.picked.includes(k)).map((k) => {
@@ -621,12 +603,10 @@ export const AncestrySection: React.FC<AncestrySectionProps> = ({
             {allRaces
               .filter((r) => r.name.toLowerCase().includes(raceSearch.toLowerCase()))
               .map((r) => {
-                const combinedFixed = r.subraces.length === 1
-                  ? heldFixedBonuses(r, r.subraces[0])
-                  : heldFixedBonuses(r);
-                const asiStr = formatRaceASI(Object.entries(combinedFixed).map(([k, v]) => ({ [k]: v })));
+                const cardSubrace = r.subraces.length === 1 ? r.subraces[0] : undefined;
+                const asiStr = increaseSummary(r, cardSubrace);
                 const isLineage = r.name === "Dhampir" || r.name === "Hexblood" || r.name === "Reborn";
-                const isChoice = r.name === "Half-Elf" || r.name === "Custom Lineage";
+                const hasIncreaseChoice = heldIncreaseChoices(r, cardSubrace).length > 0;
                 const singleSubrace =
                   r.subraces.length === 1 && r.subraces[0]?.name?.trim()
                     ? r.subraces[0]
@@ -635,7 +615,6 @@ export const AncestrySection: React.FC<AncestrySectionProps> = ({
                   ? [...r.traits, ...(singleSubrace.traits || [])]
                   : r.traits;
                 const showPlainRow = offersPlainRaceForm(r, srdBaselineRaces());
-                const raceFixed = heldFixedBonuses(r);
                 return (
                   <Card key={`${r.name}__${r.source}`}>
                     {/* Header */}
@@ -647,15 +626,11 @@ export const AncestrySection: React.FC<AncestrySectionProps> = ({
                             <Badge label={singleSubrace.name} variant="accent" size="sm" />
                           ) : null}
                           {isLineage ? <Badge label="Lineage" variant="warning" size="sm" /> : null}
-                          {isChoice ? <Badge label="Choice ASI" variant="secondary" size="sm" /> : null}
+                          {hasIncreaseChoice ? <Badge label="Choice ASI" variant="secondary" size="sm" /> : null}
                         </View>
                         {asiStr ? (
                           <Text style={{ color: theme.accent, fontSize: 12, marginTop: 1, fontWeight: "600" }}>
                             {asiStr}
-                          </Text>
-                        ) : isChoice ? (
-                          <Text style={{ color: theme.accent, fontSize: 12, marginTop: 1, fontWeight: "600" }}>
-                            {r.name === "Custom Lineage" ? "+2 any one ability" : "+1 to any two abilities"}
                           </Text>
                         ) : (
                           <Text style={{ color: theme.textMuted, fontSize: 11, marginTop: 1 }}>No fixed ASI</Text>
@@ -689,30 +664,16 @@ export const AncestrySection: React.FC<AncestrySectionProps> = ({
                       <View style={styles.subracesBox}>
                         <Text style={[styles.subLabel, { color: theme.textSecondary }]}>Subraces / Variants:</Text>
                         {showPlainRow
-                          ? renderRaceFormRow(
-                              "plain",
-                              r.name,
-                              raceFixed,
-                              r.name === "Half-Elf" || Object.keys(raceFixed).length === 0,
-                              () => selectRace(r)
-                            )
+                          ? renderRaceFormRow("plain", r.name, increaseSummary(r), () => selectRace(r))
                           : null}
-                        {r.subraces.map((sr, idx) => {
-                          const combined = heldFixedBonuses(r, sr);
-                          const combinedStr = formatRaceASI(Object.entries(combined).map(([k, v]) => ({ [k]: v })));
-                          const srIsChoice =
-                            (!sr.name && !combinedStr) ||
-                            sr.name === "Variant" ||
-                            sr.name === "Custom Lineage" ||
-                            r.name === "Half-Elf";
-                          return renderRaceFormRow(
+                        {r.subraces.map((sr, idx) =>
+                          renderRaceFormRow(
                             `${sr.name || "base"}_${idx}`,
                             sr.name || (r.name === "Human" ? "Standard Human" : r.name),
-                            combined,
-                            srIsChoice,
+                            increaseSummary(r, sr),
                             () => selectRace(r, idx)
-                          );
-                        })}
+                          )
+                        )}
                       </View>
                     ) : null}
 
