@@ -5504,21 +5504,9 @@
             ]
           },
           {
-            "id": "MTF/Subrace/Elf (Sea)@0#languages:choice:any",
-            "aliases": [
-              "MTF/Subrace/Elf (Sea)@0#1"
-            ],
-            "kind": "choice",
-            "category": "languages",
-            "count": 1,
-            "pool": {
-              "kind": "any"
-            }
-          },
-          {
             "id": "MTF/Subrace/Elf (Sea)@0#weapons:fixed:light crossbow,net,spear,trident",
             "aliases": [
-              "MTF/Subrace/Elf (Sea)@0#2"
+              "MTF/Subrace/Elf (Sea)@0#1"
             ],
             "kind": "fixed",
             "category": "weapons",
