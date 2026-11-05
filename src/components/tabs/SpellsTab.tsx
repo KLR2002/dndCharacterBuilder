@@ -1099,15 +1099,15 @@ export const SpellsTab: React.FC = () => {
       {/* Sorcerer Metamagic & Sorcery Points Section (Sorcerer Level >= 3) */}
       {hasMetamagicAccess && (
         <Card style={[styles.sorceryCard, { borderColor: theme.accent }]}>
-          <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
-            <View>
+          <View style={styles.sorceryHeaderRow}>
+            <View style={styles.sorceryTitleBlock}>
               <Text style={[styles.sectionTitle, { color: theme.accent }]}>SORCERY POINTS</Text>
               <Text style={{ color: theme.textSecondary, fontSize: 13, marginTop: 2 }}>
                 {currentSorceryPoints} / {maxSorceryPoints} Available (Long Rest reset)
               </Text>
             </View>
 
-            <View style={{ flexDirection: "row", gap: 6, alignItems: "center" }}>
+            <View style={styles.sorceryButtons}>
               <Button
                 title="-1"
                 size="sm"
@@ -2203,6 +2203,23 @@ const styles = StyleSheet.create({
   sorceryCard: {
     padding: 14,
     marginBottom: 16,
+  },
+  sorceryHeaderRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "space-between",
+    alignItems: "center",
+    gap: 8,
+  },
+  sorceryTitleBlock: {
+    flexShrink: 1,
+    minWidth: 0,
+  },
+  sorceryButtons: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 6,
+    alignItems: "center",
   },
   pactCard: {
     padding: 14,
