@@ -103,6 +103,12 @@ test("Origin Customization widens a choice's pool to all six scores, less the on
   assert.deepEqual(resolveAncestryState(held(FIXED_CHOICE), withoutTce).increaseChoices[0].pool, ["dex", "cha"]);
 });
 
+test("a Fixed Increase swapped from INT to WIS blocks WIS and frees INT for a choice's pool", () => {
+  const swapped = held(SHARED, { originAbilitySwaps: { [`race|${SHARED}|${SOURCE}|0|int`]: "wis" } });
+  const [offer] = resolveAncestryState(swapped, catalogs).increaseChoices;
+  assert.deepEqual(offer.pool, ["str", "dex", "con", "int", "cha"], "WIS is the swap target, INT is free again");
+});
+
 test("a score another racial increase already takes, or one past 20, is not offered", () => {
   const onDex = held(SHARED, {
     baseAbilityScores: { str: 10, dex: 10, con: 10, int: 10, wis: 20, cha: 10 },

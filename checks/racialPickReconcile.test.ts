@@ -5,7 +5,7 @@ import { REQUIRED_CATALOG_FORMAT } from "../src/services/compendiumStorage.ts";
 import { makeChar, inMemoryCompendium } from "./testUtils.ts";
 import { reconcile } from "../src/rules/characterReconciler.ts";
 import type { AbilityKey, Character } from "../src/types/character.ts";
-import type { AbilityScoreChoiceData, RaceData, SubraceData } from "../src/types/dnd5e.ts";
+import type { AbilityScoreChoiceData, OriginRuleRecord, RaceData, SubraceData } from "../src/types/dnd5e.ts";
 
 // The reconcile pass keeps saved Increase Choice picks in step with the held ancestry's choices (ADR 0019). Every race,
 // subrace and rule row here is invented.
@@ -21,6 +21,7 @@ const FIXED_ONLY = "Sample Fixed Only";
 const FLEX = "Sample Flexible";
 const WIDE_RACE = "Sample Wide Race";
 const REPLACER = "Sample Replacer";
+const SWAP_RACE = "Sample Swap Race";
 
 const choice = (from: AbilityKey[], count: number, amount: number): AbilityScoreChoiceData => ({ from, count, amount });
 
@@ -55,6 +56,7 @@ const records: RaceData[] = [
   race(NARROW, { abilityScoreChoices: [choice(["dex", "cha"], 1, 2)] }),
   race(FIXED_ONLY, { abilityScoreIncrease: [{ int: 1 }] }),
   race(FLEX, {}),
+  race(SWAP_RACE, { abilityScoreIncrease: [{ int: 1 }], abilityScoreChoices: [choice(["dex", "cha"], 1, 2)] }),
   race(WIDE_RACE, { abilityScoreIncrease: [{ con: 2 }] }, [
     subrace(REPLACER, WIDE_RACE, { replacesRaceAbilityScores: true, abilityScoreIncrease: [{ dex: 1 }, { cha: 2 }] }),
   ]),
@@ -62,6 +64,12 @@ const records: RaceData[] = [
 
 const compendium = inMemoryCompendium({ races: records, originRules: [], catalogFormat: REQUIRED_CATALOG_FORMAT }, { integrated: true });
 const stale = inMemoryCompendium({ races: records, originRules: [], catalogFormat: REQUIRED_CATALOG_FORMAT - 1 }, { integrated: true });
+const RULE: OriginRuleRecord = {
+  name: "Sample Origin Customization",
+  source: ORIGIN_CUSTOMIZATION_BOOK,
+  proficiencySwaps: [{ from: "skill", to: ["skill"] }],
+};
+const withRule = inMemoryCompendium({ races: records, originRules: [RULE], catalogFormat: REQUIRED_CATALOG_FORMAT }, { integrated: true });
 
 const choiceId = (name: string, index = 0) => `choice|race|${name}|${SOURCE}|${index}`;
 const held = (name: string, overrides: Partial<Character> = {}) => makeChar({ race: { name, source: SOURCE }, ...overrides });
@@ -174,4 +182,19 @@ test("a held race missing from the catalog leaves its saved picks untouched", ()
   const reconciled = reconcile(char, compendium, { activeBooks: ACTIVE });
   assert.deepEqual(reconciled.racialChoiceBonus, char.racialChoiceBonus);
   assert.equal(reconciled.needsReview, undefined);
+});
+
+test("a swap onto the score a saved pick holds is dropped with a notice, and the pick stays", () => {
+  const swapId = `race|${SWAP_RACE}|${SOURCE}|0|int`;
+  const char = held(SWAP_RACE, {
+    originAbilitySwaps: { [swapId]: "dex" },
+    racialChoiceBonus: [{ key: "dex", amount: 2, choiceId: choiceId(SWAP_RACE) }],
+    racialAbilityBonuses: { dex: 3 },
+  });
+  const reconciled = reconcile(char, withRule, { activeBooks: ACTIVE });
+  assert.deepEqual(reconciled.racialChoiceBonus, [{ key: "dex", amount: 2, choiceId: choiceId(SWAP_RACE) }]);
+  assert.equal(reconciled.originAbilitySwaps, undefined);
+  assert.deepEqual(reconciled.racialAbilityBonuses, { int: 1, dex: 2 });
+  assert.deepEqual(reconciled.needsReview, ["Ability swap to Dexterity removed: another increase already uses it"]);
+  assert.deepEqual(reconcile(reconciled, withRule, { activeBooks: ACTIVE }), reconciled, "a second pass changes nothing");
 });

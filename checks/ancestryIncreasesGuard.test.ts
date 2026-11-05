@@ -16,7 +16,7 @@ const MODULE = "rules/ancestryIncreases.ts";
 const ALLOWANCES: { file: string; reason: string }[] = [
   {
     file: "rules/leveling.ts",
-    reason: "a feat's ability increase, which is not race data (spec: feat records are exempt)",
+    reason: "a feat's ability increase: feat records are not race data",
   },
 ];
 
