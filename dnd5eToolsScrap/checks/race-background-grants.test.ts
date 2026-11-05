@@ -420,6 +420,36 @@ test("a null structured field is no entry: it gives no grants and nothing is rep
   assert.deepEqual(report.unparsed, []);
 });
 
+test("the Sea subrace's fixed languages and weapons come from its own record, and it grants no language of choice", async () => {
+  const elf = { name: "Elf", source: "TST", entries: [], languageProficiencies: [{ common: true, elvish: true }] };
+  const sea = {
+    name: "Sea",
+    source: "TST",
+    raceName: "Elf",
+    raceSource: "TST",
+    entries: [],
+    languageProficiencies: [{ common: true, elvish: true, aquan: true }],
+    weaponProficiencies: [{ "spear|phb": true, "trident|phb": true, "light crossbow|phb": true, "net|phb": true }],
+  };
+  const report = newProficiencyReport();
+  const [race] = await scrapeRaces(fakeClient({ "data/races.json": { race: [elf], subrace: [sea] } }), report);
+  const grants = shapes(race.subraces[0].grants);
+  assert.equal(
+    grants.some((grant) => grant.kind === "choice" && grant.category === "languages"),
+    false,
+    "the Sea subrace names its languages, so it grants no language of choice",
+  );
+  assert.deepEqual(
+    grants.filter((grant) => grant.category === "languages"),
+    [{ id: "TST/Subrace/Elf (Sea)@0#languages:fixed:Aquan,Common,Elvish", kind: "fixed", category: "languages", names: ["Common", "Elvish", "Aquan"] }],
+  );
+  assert.deepEqual(
+    grants.filter((grant) => grant.category === "weapons"),
+    [{ id: "TST/Subrace/Elf (Sea)@0#weapons:fixed:light crossbow,net,spear,trident", kind: "fixed", category: "weapons", names: ["spear", "trident", "light crossbow", "net"] }],
+  );
+  assert.deepEqual(report.unparsed, []);
+});
+
 test("a background's weapon and armor entries become grants, as a race's do", async () => {
   const background = {
     name: "Sample Trade",
