@@ -229,6 +229,15 @@ test("an item the catalog does not know is granted by its printed name and sourc
   assert.equal(kit.items[0].source, SRC);
 });
 
+test("starting armor carries the armor category of its catalog record", () => {
+  const tanner = invented("Tanner", [fixed(pick("Tanned Jerkin"))]);
+  const jerkin: ItemData = { ...item("Tanned Jerkin", "Light Armor"), ac: 11 };
+  const tannerCatalogs = { compendium: inMemoryCompendium({ classes: [tanner], items: [jerkin] }), activeBooks: ALL_BOOKS };
+  const kit = resolveStartingEquipment(makeChar({ classes: [{ className: "Tanner", source: SRC, level: 1 }] }), tannerCatalogs);
+  assert.equal(kit.items[0].name, "Tanned Jerkin");
+  assert.equal(kit.items[0].armorCategory, "light");
+});
+
 test("a claim, a changed pick and a re-claim leave no stale start_ items", () => {
   const claimed = applyStartingGrants(pickedFerry(), "equipment", { catalogs });
   assert.ok(claimed.items.some((i) => i.name === "Brass Fiddle"));

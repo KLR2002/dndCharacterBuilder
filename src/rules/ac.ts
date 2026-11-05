@@ -1,14 +1,26 @@
-import type { Character } from "../types/character.ts";
+import type { ArmorCategory, Character } from "../types/character.ts";
 import type { ArmorItem, RulesOptions } from "./types.ts";
 import { effectiveScores } from "./abilities.ts";
 import { hasFightingStyle } from "./ruleChoices.ts";
 
+const CATEGORY_BY_CATALOG_TYPE = new Map<string, ArmorCategory>([
+  ["light armor", "light"],
+  ["medium armor", "medium"],
+  ["heavy armor", "heavy"],
+  ["shield", "shield"],
+]);
+
+/** The armor category of a catalog item type such as "Light Armor"; undefined for any other type. */
+export function armorCategoryOfType(type: string | null | undefined): ArmorCategory | undefined {
+  return type ? CATEGORY_BY_CATALOG_TYPE.get(type.toLowerCase()) : undefined;
+}
+
 export function armorCategory(item: ArmorItem): string | undefined {
-  const raw = item as unknown as { armorCategory?: string; itemCategory?: string; type?: string };
-  if (raw.armorCategory) return raw.armorCategory.toLowerCase();
+  if (item.armorCategory) return item.armorCategory;
+  const raw = item as unknown as { itemCategory?: string; type?: string };
   if (raw.itemCategory?.toLowerCase() === "shield" || raw.type?.toLowerCase() === "shield") return "shield";
   // ponytail: legacy inventory lacks categories; remove name fallback after data migration.
-  const name = `${item.name} ${item.description || ""}`.toLowerCase();
+  const name = item.name.toLowerCase();
   if (name.includes("shield") || name.includes("buckler")) return "shield";
   if (item.ac == null) return undefined;
   if (/medium armor|breastplate|scale mail|half plate|hide|chain shirt/.test(name)) return "medium";

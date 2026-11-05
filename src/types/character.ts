@@ -83,6 +83,8 @@ export interface AsiSelection {
   featAbility?: AbilityKey;
 }
 
+export type ArmorCategory = "light" | "medium" | "heavy" | "shield";
+
 export interface InventoryItem {
   id: string;
   name: string;
@@ -106,6 +108,8 @@ export interface InventoryItem {
   bonusWeapon?: number;
   bonusAc?: number;
   itemCategory?: string;
+  /** Copied from the catalog record's type. Absent on legacy items and on items that are not armor or shields. */
+  armorCategory?: ArmorCategory;
 }
 
 /**
