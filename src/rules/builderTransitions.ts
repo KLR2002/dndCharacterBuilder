@@ -18,7 +18,7 @@ import { moveLegacySkillPicks } from "./proficiencyPicks.ts";
 import { CUSTOM_BACKGROUND_SKILLS_ID, CUSTOM_BACKGROUND_TOOLS_OR_LANGUAGES_ID, isCustomBackground } from "./customBackground.ts";
 import { findHeldRecord } from "./raceLookup.ts";
 import { sizeOptionsOf } from "./sizeChoice.ts";
-import { abilityTargetBlocked, increaseOffersOf, increasePoolOf, originAbilityState } from "./originCustomization.ts";
+import { abilityTargetBlocked, increaseOffersOf, increasePoolOf, originAbilityState, type RacialPick } from "./originCustomization.ts";
 import { ABILITY_NAMES } from "./abilities.ts";
 import { releaseExpandedOnlySpells } from "./backgroundSpells.ts";
 import { releaseRaceOriginFeat } from "./feats.ts";
@@ -58,8 +58,6 @@ export function setStandardArrayPick(
     baseAbilityScores: { ...character.baseAbilityScores, [ability]: value ?? 10 },
   };
 }
-
-type RacialPick = NonNullable<Character["racialChoiceBonus"]>[number];
 
 /** The most picks the Flexible Increases take: three +1s, or a +2 and a +1. */
 const FLEXIBLE_PICK_LIMIT = 3;
