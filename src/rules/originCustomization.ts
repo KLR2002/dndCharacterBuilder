@@ -7,7 +7,15 @@ import { ABILITIES, ABILITY_NAMES, abilityKeyOf, baseAbilityScores } from "./abi
 import { allCatalogRaces, catalogListings, type CharacterCatalogs } from "./catalogs.ts";
 import { withNotices } from "./needsReview.ts";
 import { findHeldRace } from "./raceLookup.ts";
-import { heldFixedIncreases, heldFlexibleIncreases, heldIncreaseChoices, type FixedIncrease } from "./ancestryIncreases.ts";
+import {
+  heldFixedIncreases,
+  heldFlexibleIncreases,
+  heldIncreaseChoices,
+  type FixedIncrease,
+  type HeldIncreaseChoice,
+} from "./ancestryIncreases.ts";
+
+type RacialPick = NonNullable<Character["racialChoiceBonus"]>[number];
 
 /**
  * One ability increase of the held race or subrace: one (entry, ability) pair of its `abilityScoreIncrease`. Its id is
@@ -37,6 +45,10 @@ export interface OriginCustomizationView {
 interface AbilityState {
   slots: AbilitySlot[];
   available: boolean;
+  /** The held race's and subrace's Increase Choices, with their ids. */
+  choices: HeldIncreaseChoice[];
+  /** Whether the held race or subrace gives Flexible Increases. */
+  flexible: boolean;
 }
 
 const RELEASED_NOTICE = (ability: AbilityKey) => `Ability swap to ${ABILITY_NAMES[ability]} removed: ancestry no longer grants it`;
@@ -75,17 +87,29 @@ function stateIn(
   activeBooks: ActiveBooks,
 ): AbilityState | undefined {
   const held = character.race;
-  if (!held) return { slots: [], available: false };
+  if (!held) return { slots: [], available: false, choices: [], flexible: false };
   const found = findHeldRace(races, held, activeBooks);
   if (!found.race || (held.subraceName && !found.subrace)) return undefined;
   const slots = slotsOf(held, found.race, found.subrace);
   const available = ruleBookActive(activeBooks) && listings.originRules().length > 0;
-  return { slots, available };
+  return {
+    slots,
+    available,
+    choices: heldIncreaseChoices(found.race, found.subrace),
+    flexible: heldFlexibleIncreases(found.race, found.subrace),
+  };
 }
 
 /** The slots and availability of a character, resolved against the catalogs. Nothing held means no slots. */
 export function originAbilityState(character: Character, catalogs?: CharacterCatalogs): AbilityState {
-  return stateIn(character, allCatalogRaces(catalogs), catalogListings(catalogs), catalogs?.activeBooks) ?? { slots: [], available: false };
+  return (
+    stateIn(character, allCatalogRaces(catalogs), catalogListings(catalogs), catalogs?.activeBooks) ?? {
+      slots: [],
+      available: false,
+      choices: [],
+      flexible: false,
+    }
+  );
 }
 
 /** The ability an increase targets: its swap when one is saved, else the ability the race gives it. */
@@ -195,10 +219,61 @@ export function originCustomizationView(character: Character, catalogs?: Charact
   };
 }
 
+const PICK_RELEASED_NOTICE = (ability: AbilityKey) => `Ability increase to ${ABILITY_NAMES[ability]} removed: ancestry no longer offers it`;
+
 /**
- * Releases the saved swaps whose increase the held race or subrace no longer has, with a notice each, and derives the
- * racial ability bonuses: each increase at its target while the rule is available (the default otherwise), plus the chosen
- * picks. A held race missing from the catalog is left as it is. Deterministic, so a second pass changes nothing.
+ * The saved racial picks the held ancestry still offers, in their saved order, and the scores of the picks released. A pick keeps
+ * its choice when the choice is held, has room under its count, and its score is in the choice's pool (every score while the rule
+ * is available) and not blocked. A pick with no choice id goes to the first choice it fits that has room; on an ancestry with
+ * Flexible Increases it stays a flexible pick. Each check sees only the picks kept before it, so a second pass changes nothing.
+ */
+function reconcileRacialPicks(
+  character: Character,
+  catalogs: CharacterCatalogs,
+  state: AbilityState,
+  swaps: Record<string, AbilityKey>,
+): { picks: RacialPick[]; released: AbilityKey[] } {
+  const picks: RacialPick[] = [];
+  const released: AbilityKey[] = [];
+  const keptFor = (choiceId: string) => picks.filter((pick) => pick.choiceId === choiceId).length;
+  const fits = (choice: HeldIncreaseChoice, pick: RacialPick): boolean => {
+    const pool = state.available ? ABILITIES : choice.from;
+    const kept = { ...character, originAbilitySwaps: swaps, racialChoiceBonus: picks };
+    return (
+      pick.amount === choice.amount &&
+      keptFor(choice.id) < choice.count &&
+      pool.includes(pick.key) &&
+      !racialPickBlocked(kept, catalogs, pick.key, pick.amount)
+    );
+  };
+
+  for (const pick of character.racialChoiceBonus ?? []) {
+    if (pick.choiceId === undefined) {
+      if (state.flexible) {
+        picks.push(pick);
+        continue;
+      }
+      const choice = state.choices.find((candidate) => fits(candidate, pick));
+      if (choice) picks.push({ ...pick, choiceId: choice.id });
+      else released.push(pick.key);
+      continue;
+    }
+    const choice = state.choices.find((candidate) => candidate.id === pick.choiceId);
+    if (choice && fits(choice, pick)) picks.push(pick);
+    else released.push(pick.key);
+  }
+  return { picks, released };
+}
+
+function samePicks(a: readonly RacialPick[], b: readonly RacialPick[]): boolean {
+  return a.length === b.length && a.every((pick, i) => pick.key === b[i].key && pick.amount === b[i].amount && pick.choiceId === b[i].choiceId);
+}
+
+/**
+ * Releases the saved swaps whose increase the held race or subrace no longer has, with a notice each, and the saved racial picks
+ * that the held ancestry no longer offers, with a notice each (none of the picks while the Catalog is stale). Derives the racial
+ * ability bonuses: each increase at its target while the rule is available (the default otherwise), plus the chosen picks. A held
+ * race missing from the catalog is left as it is. Deterministic, so a second pass changes nothing.
  */
 export function reconcileOriginAbilities(character: Character, compendium: Compendium, activeBooks: ActiveBooks): Character {
   const state = stateIn(character, compendium.for().races(), compendium.for(activeBooks), activeBooks);
@@ -211,8 +286,15 @@ export function reconcileOriginAbilities(character: Character, compendium: Compe
     if (ids.has(id)) kept[id] = ability;
     else notices.push(RELEASED_NOTICE(ability));
   }
+
+  let picks = character.racialChoiceBonus ?? [];
+  if (character.race && !compendium.stale) {
+    const reconciled = reconcileRacialPicks(character, { compendium, activeBooks }, state, kept);
+    picks = reconciled.picks;
+    notices.push(...reconciled.released.map(PICK_RELEASED_NOTICE));
+  }
+
   if (state.available) {
-    const picks = character.racialChoiceBonus ?? [];
     for (const id of collidingSwapIds(state.slots, kept, picks)) {
       notices.push(COLLIDING_NOTICE(kept[id]));
       delete kept[id];
@@ -220,13 +302,14 @@ export function reconcileOriginAbilities(character: Character, compendium: Compe
   }
 
   const derived = character.race
-    ? racialBonusesOf(state.slots, state.available ? kept : {}, character.racialChoiceBonus ?? [])
+    ? racialBonusesOf(state.slots, state.available ? kept : {}, picks)
     : character.racialAbilityBonuses;
   const racialAbilityBonuses = sameBonuses(derived, character.racialAbilityBonuses)
     ? character.racialAbilityBonuses
     : derived;
 
   const next: Character = { ...character, racialAbilityBonuses };
+  if (!samePicks(picks, character.racialChoiceBonus ?? [])) next.racialChoiceBonus = picks;
   if (Object.keys(kept).length > 0) next.originAbilitySwaps = kept;
   else delete next.originAbilitySwaps;
   return withNotices(next, notices);
