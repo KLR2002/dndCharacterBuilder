@@ -11,6 +11,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useCharacters } from "../context/CharacterContext";
 import { useAppTheme } from "../context/ThemeContext";
 import { getItems } from "../services/dataService";
+import { armorCategoryOfType } from "../rules/ac";
 import {
   findArtificerInfusion,
   getKnownInfusions,
@@ -102,6 +103,7 @@ export const ActiveInfusionsSection: React.FC = () => {
       damageType: libItem?.damageType,
       range: libItem?.range,
       ac: libItem?.ac,
+      armorCategory: armorCategoryOfType(libItem?.type),
       description: libItem?.description || `Replicated magic item created via ${infusionName}.`,
       isInfused: true,
       infusedWith: infusionName,

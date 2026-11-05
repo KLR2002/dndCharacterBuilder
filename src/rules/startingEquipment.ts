@@ -9,6 +9,7 @@ import type {
 } from "../types/dnd5e.ts";
 import { allCatalogClasses, catalogListings, type CharacterCatalogs } from "./catalogs.ts";
 import { isProficientWithWeapon } from "./attacks.ts";
+import { armorCategoryOfType } from "./ac.ts";
 import { proficiencySheet, type ProficiencySheet } from "./proficiencySheet.ts";
 import { STARTING_EQUIPMENT_TYPES } from "./startingEquipmentTypes.ts";
 import {
@@ -424,6 +425,7 @@ export function resolveStartingEquipment(character: Character, catalogs: Charact
       range: record?.range ?? null,
       ac: record?.ac ?? null,
       description: record?.description ?? "",
+      armorCategory: armorCategoryOfType(record?.type),
     };
   });
   return { hasSlots: true, complete: true, items };

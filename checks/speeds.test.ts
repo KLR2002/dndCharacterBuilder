@@ -18,6 +18,7 @@ function makeEquippedArmor(name: string, category: "light" | "medium" | "heavy",
   return {
     id: `item_${name.toLowerCase()}`,
     name,
+    source: "PHB",
     quantity: 1,
     weight: 20,
     cost: "50 gp",
