@@ -4,16 +4,16 @@ import { Ionicons } from "@expo/vector-icons";
 import { AbilityKey, Character } from "../../types/character";
 import type { RaceData } from "../../types/dnd5e";
 import { featSpellChoicesOf, raceSpellRuleChoices, type AvailableRuleChoice } from "../../rules/ruleChoices";
-import { changeLineage, changeRace, setChoiceRacialBonus, setSizeChoice, type LineageChoice } from "../../rules/builderTransitions";
-import { originAbilityTargets } from "../../rules/originCustomization";
+import { changeLineage, changeRace, setChoiceRacialBonus, setSizeChoice, toggleRacialPick, type LineageChoice } from "../../rules/builderTransitions";
+import { increasePoolOf, type IncreaseChoiceOffer } from "../../rules/originCustomization";
 import { currentCompendium, srdBaselineRaces } from "../../services/compendium";
 import {
   resolveAncestryState,
   applyAncestrySelection,
   applyAncestryChoice,
-  collectFixedBonuses,
   offersPlainRaceForm,
 } from "../../rules/ancestryEngine";
+import { heldIncreaseChoices, increaseSummary } from "../../rules/ancestryIncreases";
 import type { SourceFixedGrants } from "../../rules/proficiencySheet";
 import { picksOnlyLanguages } from "../../rules/proficiencyChoiceOffers";
 import { ProficiencyChoicePicker } from "./ProficiencyChoicePicker";
@@ -31,18 +31,6 @@ import { getFeats } from "../../services/dataService";
 import { validateFeatPrerequisites, applyOriginFeat, removeOriginFeat } from "../../rules/feats";
 import { getFeatAbilityBonusOptions } from "../../rules/leveling";
 import { BACKGROUND_FEAT_SOURCE } from "../../constants/rules";
-
-function formatRaceASI(abilityScoreIncrease: Record<string, number>[]): string {
-  const totals: Record<string, number> = {};
-  for (const item of abilityScoreIncrease || []) {
-    for (const [k, v] of Object.entries(item)) {
-      if (typeof v === "number") totals[k] = (totals[k] || 0) + v;
-    }
-  }
-  return Object.entries(totals)
-    .map(([k, v]) => `${k.toUpperCase()} +${v}`)
-    .join(", ");
-}
 
 export interface AncestrySectionProps {
   character: Character;
@@ -66,21 +54,26 @@ export const AncestrySection: React.FC<AncestrySectionProps> = ({
   theme,
 }) => {
   const [raceSearch, setRaceSearch] = useState("");
+  const flexiblePicks = useMemo(
+    () => (character.racialChoiceBonus || []).filter((b) => b.choiceId === undefined),
+    [character.racialChoiceBonus],
+  );
+
   const choiceASI: Partial<Record<AbilityKey, number>> = useMemo(() => {
     const map: Partial<Record<AbilityKey, number>> = {};
-    for (const b of character.racialChoiceBonus || []) {
+    for (const b of flexiblePicks) {
       map[b.key] = b.amount;
     }
     return map;
-  }, [character.racialChoiceBonus]);
+  }, [flexiblePicks]);
 
   const detectedMode = useMemo<"2_1" | "1_1_1" | null>(() => {
-    const bonuses = character.racialChoiceBonus || [];
+    const bonuses = flexiblePicks;
     if (bonuses.some((b) => b.amount === 2)) return "2_1";
     if (bonuses.length >= 2 && bonuses.every((b) => b.amount === 1)) return "1_1_1";
     if (bonuses.length === 3) return "1_1_1";
     return null;
-  }, [character.racialChoiceBonus]);
+  }, [flexiblePicks]);
 
   const [userSelectedMode, setUserSelectedMode] = useState<"2_1" | "1_1_1" | null>(null);
   const flexibleMode = userSelectedMode ?? detectedMode ?? "2_1";
@@ -90,7 +83,12 @@ export const AncestrySection: React.FC<AncestrySectionProps> = ({
 
   const { activeBooks, isIntegrated } = useCharacters();
 
-  const originTargets = useMemo(() => originAbilityTargets(character, { activeBooks }), [character, activeBooks]);
+  const flexibleLimit = flexibleMode === "2_1" ? 2 : 3;
+  const flexibleAmount = flexibleMode === "2_1" && !flexiblePicks.some((b) => b.amount === 2) ? 2 : 1;
+  const flexiblePool = useMemo(
+    () => increasePoolOf(character, { activeBooks }, undefined, flexibleAmount),
+    [character, activeBooks, flexibleAmount],
+  );
 
   const availableLineages = useMemo(() => {
     if (!isIntegrated) return [];
@@ -121,46 +119,19 @@ export const AncestrySection: React.FC<AncestrySectionProps> = ({
   }, [character, activeBooks]);
 
   const {
-    isChoiceASIRace,
-    isFlexibleMPMM,
-    choiceASIConfig,
+    increaseChoices,
+    hasFlexibleIncreases,
     hasOriginFeat,
     originFeatTitle,
     currentOriginFeat,
   } = ancestryState;
 
-  const handleChoiceASITap = (key: AbilityKey) => {
-    const current = { ...choiceASI };
+  const handleFlexibleTap = (key: AbilityKey) => {
+    onUpdate((cur) => toggleRacialPick(cur, { key, amount: flexibleAmount }, { activeBooks }));
+  };
 
-    if (isFlexibleMPMM) {
-      if (flexibleMode === "2_1") {
-        if (current[key] != null) {
-          delete current[key];
-        } else {
-          const vals = Object.values(current);
-          if (!vals.includes(2)) current[key] = 2;
-          else if (!vals.includes(1)) current[key] = 1;
-        }
-      } else {
-        if (current[key] != null) {
-          delete current[key];
-        } else if (Object.keys(current).length < 3) {
-          current[key] = 1;
-        }
-      }
-    } else {
-      if (current[key] != null) {
-        delete current[key];
-      } else if (Object.keys(current).length < choiceASIConfig.count) {
-        current[key] = choiceASIConfig.amount;
-      }
-    }
-
-    const picks = Object.entries(current).map(([k, amount]) => ({
-      key: k as AbilityKey,
-      amount: amount as number,
-    }));
-    onUpdate((cur) => setChoiceRacialBonus(cur, picks));
+  const handleChoiceTap = (choice: IncreaseChoiceOffer, key: AbilityKey) => {
+    onUpdate((cur) => toggleRacialPick(cur, { choiceId: choice.id, key, amount: choice.amount }, { activeBooks }));
   };
 
   const selectRace = (r: RaceData, subraceIdx?: number) => {
@@ -174,11 +145,9 @@ export const AncestrySection: React.FC<AncestrySectionProps> = ({
   const renderRaceFormRow = (
     key: string,
     label: string,
-    fixed: Record<string, number>,
-    isChoice: boolean,
+    summary: string,
     onPress: () => void
   ) => {
-    const fixedStr = formatRaceASI(Object.entries(fixed).map(([k, v]) => ({ [k]: v })));
     return (
       <TouchableOpacity
         key={key}
@@ -190,12 +159,10 @@ export const AncestrySection: React.FC<AncestrySectionProps> = ({
       >
         <View style={{ flex: 1 }}>
           <Text style={{ color: theme.text, fontWeight: "600", fontSize: 13 }}>{label}</Text>
-          {Boolean(fixedStr) && !isChoice ? (
+          {summary ? (
             <Text style={{ color: theme.accent, fontSize: 11, fontWeight: "600" }}>
-              {fixedStr}
+              {summary}
             </Text>
-          ) : isChoice ? (
-            <Text style={{ color: theme.accent, fontSize: 11, fontWeight: "600" }}>Choice ASI</Text>
           ) : null}
         </View>
         <Ionicons name="chevron-forward" size={16} color={theme.accent} />
@@ -262,103 +229,121 @@ export const AncestrySection: React.FC<AncestrySectionProps> = ({
         </Card>
       )}
 
-      {/* Choice ASI picker */}
-      {character.race && isChoiceASIRace && (
-        <Card style={{ gap: 8, borderColor: theme.accent }}>
-          {isFlexibleMPMM ? (
-            <>
-              <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
-                <Text style={{ color: theme.accent, fontWeight: "700", fontSize: 13 }}>
-                  {flexibleMode === "2_1"
-                    ? `Choose +2 and +1 to abilities (${Object.keys(choiceASI).length}/2 chosen)`
-                    : `Choose +1 to 3 abilities (${Object.keys(choiceASI).length}/3 chosen)`}
-                </Text>
-              </View>
-              <View style={{ flexDirection: "row", gap: 8, marginVertical: 2 }}>
-                <TouchableOpacity
-                  onPress={() => {
-                    setUserSelectedMode("2_1");
-                    onUpdate((cur) => setChoiceRacialBonus(cur, []));
-                  }}
-                  style={[
-                    styles.modeBtn,
-                    {
-                      backgroundColor: flexibleMode === "2_1" ? theme.accentGlow : theme.surfaceHighlight,
-                      borderColor: flexibleMode === "2_1" ? theme.accent : theme.border,
-                    },
-                  ]}
-                >
-                  <Text
-                    style={{
-                      color: flexibleMode === "2_1" ? theme.accent : theme.textSecondary,
-                      fontWeight: "700",
-                      fontSize: 12,
-                    }}
-                  >
-                    +2 / +1
-                  </Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  onPress={() => {
-                    setUserSelectedMode("1_1_1");
-                    onUpdate((cur) => setChoiceRacialBonus(cur, []));
-                  }}
-                  style={[
-                    styles.modeBtn,
-                    {
-                      backgroundColor: flexibleMode === "1_1_1" ? theme.accentGlow : theme.surfaceHighlight,
-                      borderColor: flexibleMode === "1_1_1" ? theme.accent : theme.border,
-                    },
-                  ]}
-                >
-                  <Text
-                    style={{
-                      color: flexibleMode === "1_1_1" ? theme.accent : theme.textSecondary,
-                      fontWeight: "700",
-                      fontSize: 12,
-                    }}
-                  >
-                    +1 / +1 / +1
-                  </Text>
-                </TouchableOpacity>
-              </View>
-            </>
-          ) : (
-            <Text style={{ color: theme.accent, fontWeight: "700", fontSize: 13 }}>
-              Choose +{choiceASIConfig.amount} to {choiceASIConfig.count} ability score
-              {choiceASIConfig.count > 1 ? "s" : ""}
-              {"  "}({Object.keys(choiceASI).length}/{choiceASIConfig.count} chosen)
-            </Text>
-          )}
-
+      {character.race && increaseChoices.map((choice) => (
+        <Card key={choice.id} style={{ gap: 8, borderColor: theme.accent }}>
+          <Text style={{ color: theme.accent, fontWeight: "700", fontSize: 13 }}>
+            {`Choose +${choice.amount} to ${choice.count} ability score${choice.count > 1 ? "s" : ""} (${choice.picked.length}/${choice.count} chosen)`}
+          </Text>
           <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6 }}>
-            {ABILITY_KEYS.map((k) => {
-              const chosenAmount = choiceASI[k];
-              const chosen = chosenAmount != null;
-              const canPick =
-                !originTargets.includes(k) &&
-                (isFlexibleMPMM
-                  ? flexibleMode === "2_1"
-                    ? !chosen && (!Object.values(choiceASI).includes(2) || !Object.values(choiceASI).includes(1))
-                    : !chosen && Object.keys(choiceASI).length < 3
-                  : !chosen && Object.keys(choiceASI).length < choiceASIConfig.count);
+            {ABILITY_KEYS.filter((k) => choice.pool.includes(k) || choice.picked.includes(k)).map((k) => {
+              const chosen = choice.picked.includes(k);
+              const canPick = chosen || choice.picked.length < choice.count;
 
               return (
                 <TouchableOpacity
                   key={k}
-                  onPress={() => (chosen || canPick ? handleChoiceASITap(k) : undefined)}
+                  onPress={() => (canPick ? handleChoiceTap(choice, k) : undefined)}
                   style={[
                     styles.choiceChip,
                     {
                       backgroundColor: chosen ? theme.accentGlow : theme.surfaceHighlight,
                       borderColor: chosen ? theme.accent : theme.border,
-                      opacity: !chosen && !canPick ? 0.35 : 1,
+                      opacity: canPick ? 1 : 0.35,
                     },
                   ]}
                 >
                   <Text style={{ color: chosen ? theme.accent : theme.textSecondary, fontWeight: "700", fontSize: 13 }}>
                     {ABILITY_LABELS[k]}
-                    {chosen ? ` +${chosenAmount ?? choiceASIConfig.amount}` : ""}
+                    {chosen ? ` +${choice.amount}` : ""}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        </Card>
+      ))}
+
+      {/* Flexible Increases picker */}
+      {character.race && hasFlexibleIncreases && (
+        <Card style={{ gap: 8, borderColor: theme.accent }}>
+          <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
+            <Text style={{ color: theme.accent, fontWeight: "700", fontSize: 13 }}>
+              {flexibleMode === "2_1"
+                ? `Choose +2 and +1 to abilities (${flexiblePicks.length}/2 chosen)`
+                : `Choose +1 to 3 abilities (${flexiblePicks.length}/3 chosen)`}
+            </Text>
+          </View>
+          <View style={{ flexDirection: "row", gap: 8, marginVertical: 2 }}>
+            <TouchableOpacity
+              onPress={() => {
+                setUserSelectedMode("2_1");
+                onUpdate((cur) => setChoiceRacialBonus(cur, []));
+              }}
+              style={[
+                styles.modeBtn,
+                {
+                  backgroundColor: flexibleMode === "2_1" ? theme.accentGlow : theme.surfaceHighlight,
+                  borderColor: flexibleMode === "2_1" ? theme.accent : theme.border,
+                },
+              ]}
+            >
+              <Text
+                style={{
+                  color: flexibleMode === "2_1" ? theme.accent : theme.textSecondary,
+                  fontWeight: "700",
+                  fontSize: 12,
+                }}
+              >
+                +2 / +1
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={() => {
+                setUserSelectedMode("1_1_1");
+                onUpdate((cur) => setChoiceRacialBonus(cur, []));
+              }}
+              style={[
+                styles.modeBtn,
+                {
+                  backgroundColor: flexibleMode === "1_1_1" ? theme.accentGlow : theme.surfaceHighlight,
+                  borderColor: flexibleMode === "1_1_1" ? theme.accent : theme.border,
+                },
+              ]}
+            >
+              <Text
+                style={{
+                  color: flexibleMode === "1_1_1" ? theme.accent : theme.textSecondary,
+                  fontWeight: "700",
+                  fontSize: 12,
+                }}
+              >
+                +1 / +1 / +1
+              </Text>
+            </TouchableOpacity>
+          </View>
+
+          <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6 }}>
+            {ABILITY_KEYS.filter((k) => flexiblePool.includes(k) || choiceASI[k] != null).map((k) => {
+              const chosenAmount = choiceASI[k];
+              const chosen = chosenAmount != null;
+              const canPick = chosen || (flexiblePicks.length < flexibleLimit && flexiblePool.includes(k));
+
+              return (
+                <TouchableOpacity
+                  key={k}
+                  onPress={() => (canPick ? handleFlexibleTap(k) : undefined)}
+                  style={[
+                    styles.choiceChip,
+                    {
+                      backgroundColor: chosen ? theme.accentGlow : theme.surfaceHighlight,
+                      borderColor: chosen ? theme.accent : theme.border,
+                      opacity: canPick ? 1 : 0.35,
+                    },
+                  ]}
+                >
+                  <Text style={{ color: chosen ? theme.accent : theme.textSecondary, fontWeight: "700", fontSize: 13 }}>
+                    {ABILITY_LABELS[k]}
+                    {chosen ? ` +${chosenAmount}` : ""}
                   </Text>
                 </TouchableOpacity>
               );
@@ -617,12 +602,10 @@ export const AncestrySection: React.FC<AncestrySectionProps> = ({
             {allRaces
               .filter((r) => r.name.toLowerCase().includes(raceSearch.toLowerCase()))
               .map((r) => {
-                const combinedFixed = r.subraces.length === 1
-                  ? collectFixedBonuses(r.abilityScoreIncrease, r.subraces[0].abilityScoreIncrease)
-                  : collectFixedBonuses(r.abilityScoreIncrease);
-                const asiStr = formatRaceASI(Object.entries(combinedFixed).map(([k, v]) => ({ [k]: v })));
+                const cardSubrace = r.subraces.length === 1 ? r.subraces[0] : undefined;
+                const asiStr = increaseSummary(r, cardSubrace);
                 const isLineage = r.name === "Dhampir" || r.name === "Hexblood" || r.name === "Reborn";
-                const isChoice = r.name === "Half-Elf" || r.name === "Custom Lineage";
+                const hasIncreaseChoice = heldIncreaseChoices(r, cardSubrace).length > 0;
                 const singleSubrace =
                   r.subraces.length === 1 && r.subraces[0]?.name?.trim()
                     ? r.subraces[0]
@@ -631,7 +614,6 @@ export const AncestrySection: React.FC<AncestrySectionProps> = ({
                   ? [...r.traits, ...(singleSubrace.traits || [])]
                   : r.traits;
                 const showPlainRow = offersPlainRaceForm(r, srdBaselineRaces());
-                const raceFixed = collectFixedBonuses(r.abilityScoreIncrease);
                 return (
                   <Card key={`${r.name}__${r.source}`}>
                     {/* Header */}
@@ -643,15 +625,11 @@ export const AncestrySection: React.FC<AncestrySectionProps> = ({
                             <Badge label={singleSubrace.name} variant="accent" size="sm" />
                           ) : null}
                           {isLineage ? <Badge label="Lineage" variant="warning" size="sm" /> : null}
-                          {isChoice ? <Badge label="Choice ASI" variant="secondary" size="sm" /> : null}
+                          {hasIncreaseChoice ? <Badge label="Choice ASI" variant="secondary" size="sm" /> : null}
                         </View>
                         {asiStr ? (
                           <Text style={{ color: theme.accent, fontSize: 12, marginTop: 1, fontWeight: "600" }}>
                             {asiStr}
-                          </Text>
-                        ) : isChoice ? (
-                          <Text style={{ color: theme.accent, fontSize: 12, marginTop: 1, fontWeight: "600" }}>
-                            {r.name === "Custom Lineage" ? "+2 any one ability" : "+1 to any two abilities"}
                           </Text>
                         ) : (
                           <Text style={{ color: theme.textMuted, fontSize: 11, marginTop: 1 }}>No fixed ASI</Text>
@@ -685,30 +663,16 @@ export const AncestrySection: React.FC<AncestrySectionProps> = ({
                       <View style={styles.subracesBox}>
                         <Text style={[styles.subLabel, { color: theme.textSecondary }]}>Subraces / Variants:</Text>
                         {showPlainRow
-                          ? renderRaceFormRow(
-                              "plain",
-                              r.name,
-                              raceFixed,
-                              r.name === "Half-Elf" || Object.keys(raceFixed).length === 0,
-                              () => selectRace(r)
-                            )
+                          ? renderRaceFormRow("plain", r.name, increaseSummary(r), () => selectRace(r))
                           : null}
-                        {r.subraces.map((sr, idx) => {
-                          const combined = collectFixedBonuses(r.abilityScoreIncrease, sr.abilityScoreIncrease);
-                          const combinedStr = formatRaceASI(Object.entries(combined).map(([k, v]) => ({ [k]: v })));
-                          const srIsChoice =
-                            (!sr.name && !combinedStr) ||
-                            sr.name === "Variant" ||
-                            sr.name === "Custom Lineage" ||
-                            r.name === "Half-Elf";
-                          return renderRaceFormRow(
+                        {r.subraces.map((sr, idx) =>
+                          renderRaceFormRow(
                             `${sr.name || "base"}_${idx}`,
                             sr.name || (r.name === "Human" ? "Standard Human" : r.name),
-                            combined,
-                            srIsChoice,
+                            increaseSummary(r, sr),
                             () => selectRace(r, idx)
-                          );
-                        })}
+                          )
+                        )}
                       </View>
                     ) : null}
 

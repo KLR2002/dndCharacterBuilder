@@ -15,6 +15,7 @@ import { useAppTheme } from "../../context/ThemeContext";
 import { useResponsiveLayout } from "../../hooks/useResponsiveLayout";
 import { getItems } from "../../services/dataService";
 import { evaluateCharacter } from "../../rules/characterEvaluation";
+import { armorCategoryOfType } from "../../rules/ac";
 import { currentCompendium } from "../../services/compendium";
 import { InventoryItem } from "../../types/character";
 import { Badge } from "../ui/Badge";
@@ -206,6 +207,7 @@ export const InventoryTab: React.FC = () => {
       bonusWeapon: itemData.bonusWeapon != null ? itemData.bonusWeapon : undefined,
       bonusAc: itemData.bonusAc != null ? itemData.bonusAc : undefined,
       itemCategory: itemData.itemCategory || undefined,
+      armorCategory: armorCategoryOfType(itemData.type),
       description: itemData.description || (Array.isArray(itemData.rawEntries) ? itemData.rawEntries.join("\n") : "") || "",
     };
     updateCharacter(currentCharacter.id, { items: [...items, newItem] });

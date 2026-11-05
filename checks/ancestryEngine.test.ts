@@ -46,9 +46,7 @@ test("resolveAncestryState detects Variant Human and Custom Lineage for origin f
   const vState = resolveAncestryState(vHuman, catalogs);
   assert.equal(vState.hasOriginFeat, true);
   assert.equal(vState.originFeatTitle, "Variant Human Origin Feat");
-  assert.equal(vState.isChoiceASIRace, true);
-  assert.equal(vState.choiceASIConfig.count, 2);
-  assert.equal(vState.choiceASIConfig.amount, 1);
+  assert.deepEqual(vState.increaseChoices.map(({ count, amount }) => ({ count, amount })), [{ count: 2, amount: 1 }]);
 
   const customLineage = makeChar({
     race: { name: "Custom Lineage", source: "TCoE" },
@@ -56,8 +54,7 @@ test("resolveAncestryState detects Variant Human and Custom Lineage for origin f
   const cState = resolveAncestryState(customLineage, catalogs);
   assert.equal(cState.hasOriginFeat, true);
   assert.equal(cState.originFeatTitle, "Custom Lineage Feat");
-  assert.equal(cState.choiceASIConfig.count, 1);
-  assert.equal(cState.choiceASIConfig.amount, 2);
+  assert.deepEqual(cState.increaseChoices.map(({ count, amount }) => ({ count, amount })), [{ count: 1, amount: 2 }]);
 });
 
 
@@ -157,8 +154,8 @@ test("resolveAncestryState distinguishes MPMM Genasi (flexible choice ASI) from 
   });
   const mpmmState = resolveAncestryState(mpmmGenasi, catalogs);
   assert.equal(mpmmState.hasFixedASI, false);
-  assert.equal(mpmmState.isFlexibleMPMM, true);
-  assert.equal(mpmmState.isChoiceASIRace, true);
+  assert.equal(mpmmState.hasFlexibleIncreases, true);
+  assert.deepEqual(mpmmState.increaseChoices, []);
 
   const eepcGenasi = makeChar({
     race: { name: "Genasi", subraceName: "Air", source: "EEPC" },
@@ -167,7 +164,7 @@ test("resolveAncestryState distinguishes MPMM Genasi (flexible choice ASI) from 
   assert.equal(eepcState.hasFixedASI, true);
   assert.equal(eepcState.fixedBonuses.con, 2);
   assert.equal(eepcState.fixedBonuses.dex, 1);
-  assert.equal(eepcState.isFlexibleMPMM, false);
+  assert.equal(eepcState.hasFlexibleIncreases, false);
 
   // User chooses +2 INT, +1 DEX on MPMM Genasi
   const withBonuses = setChoiceRacialBonus(mpmmGenasi, [
@@ -231,5 +228,5 @@ test("picking the plain integrated Half-Elf leaves no subrace and offers the Cho
 
   const state = resolveAncestryState(char, catalogs);
   assert.equal(state.selectedSubrace, undefined);
-  assert.equal(state.isChoiceASIRace, true);
+  assert.equal(state.increaseChoices.length, 1);
 });

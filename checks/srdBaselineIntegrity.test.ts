@@ -70,8 +70,8 @@ test("srdBaseline: Human has +1 to all ability scores and no flexible ASI choice
   const state = resolveAncestryState(humanChar, { compendium: srd, activeBooks: ALL_BOOKS });
   assert.equal(state.hasFixedASI, true);
   assert.deepEqual(state.fixedBonuses, { str: 1, dex: 1, con: 1, int: 1, wis: 1, cha: 1 });
-  assert.equal(state.isChoiceASIRace, false, "Standard Human must not be a choice ASI race");
-  assert.equal(state.isFlexibleMPMM, false, "Standard Human must not have flexible MPMM ASI");
+  assert.deepEqual(state.increaseChoices, [], "Standard Human must offer no Increase Choice");
+  assert.equal(state.hasFlexibleIncreases, false, "Standard Human must not have Flexible Increases");
 
   const applied = applyAncestrySelection(makeChar(), human, undefined, { compendium: srd, activeBooks: ALL_BOOKS });
   assert.deepEqual(

@@ -151,6 +151,30 @@ function halfElfCharacter() {
   });
 }
 
+// A level 1 Fighter who is a Devil's Tongue Tiefling (SCAG), integrated mode only. Her variant replaces the Tiefling's
+// increases and offers one Increase Choice of +2 to DEX or CHA, so the Race tab shows one picker row.
+const TIEFLING_ID = "char_tiefling";
+function tieflingCharacter() {
+  return makeChar({
+    id: TIEFLING_ID,
+    name: "Vexa",
+    createdAt: 15,
+    updatedAt: 15,
+    startingOption: "equipment",
+    race: {
+      name: "Tiefling",
+      source: catalogSource("races", "Tiefling"),
+      subraceName: "Devil's Tongue",
+      subraceSource: "SCAG",
+    },
+    background: { name: "Acolyte", source: catalogSource("backgrounds", "Acolyte") },
+    classes: [{ className: "Fighter", source: catalogSource("classes", "Fighter"), level: 1 }],
+    currentHp: 12,
+    startingGrantsApplied: true,
+    backgroundGrantsApplied: true,
+  });
+}
+
 // A level 3 Ranger with no picks yet. Its Deft Explorer and Favored Enemy language choices are Proficiency
 // Choices in the Class & Subclass Choices card, shown as "Picked 0 / N" in both SRD and integrated modes.
 const RANGER_ID = "char_ranger";
@@ -798,6 +822,31 @@ function multiclassSkillCharacter() {
   });
 }
 
+// A level 3 Sorcerer who is also a level 2 Warlock, with one Metamagic chosen, so the Sorcery Points card shows its
+// buttons and the chosen-option chip. The phone widths must fit the title block beside the three buttons.
+const SORCERER_ID = "char_sorcerer";
+const SORCERER_ROUTE = `/character/${SORCERER_ID}`;
+function sorcererWarlockCharacter() {
+  return makeChar({
+    id: SORCERER_ID,
+    name: "Seren",
+    createdAt: 15,
+    updatedAt: 15,
+    startingOption: "equipment",
+    race: { name: "Human", source: catalogSource("races", "Human") },
+    background: { name: "Acolyte", source: catalogSource("backgrounds", "Acolyte") },
+    classes: [
+      { className: "Sorcerer", source: catalogSource("classes", "Sorcerer"), level: 3 },
+      { className: "Warlock", source: catalogSource("classes", "Warlock"), level: 2 },
+    ],
+    currentHp: 18,
+    startingGrantsApplied: true,
+    backgroundGrantsApplied: true,
+    metamagicOptions: ["Careful Spell"],
+    chosenMetamagic: ["Careful Spell"],
+  });
+}
+
 // The seed the browser starts from: the characters, folders, settings, and (integrated mode) the catalog.
 function buildSeed() {
   const defaults = defaultSettings();
@@ -832,8 +881,10 @@ function buildSeed() {
         activeWildShape: { name: "Black Bear", source: "SRD", ac: 11, currentHp: 12, maxHp: 19, tempHp: 4 },
       }),
       wizardCharacter(),
+      sorcererWarlockCharacter(),
       ...(INTEGRATED ? [artificerCharacter()] : []),
       halfElfCharacter(),
+      ...(INTEGRATED ? [tieflingCharacter()] : []),
       rangerCharacter(),
       longNameCharacter(),
       noticesCharacter(),
@@ -896,6 +947,28 @@ const SCREENS = [
   { name: "Builder Abilities", route: RENDAR_ROUTE, tabs: ["Builder", "Abilities"], ready: /points remaining/i },
   { name: "Builder Race", route: RENDAR_ROUTE, tabs: ["Builder", "Race"], ready: /traits:/i },
   { name: "Builder Race language choice", route: HALF_ELF_ROUTE, tabs: ["Builder", "Race"], ready: /Granted Languages:/, scrollTo: "Granted Languages:" },
+  // The SCAG Tiefling's one Increase Choice row (integrated mode only).
+  ...(INTEGRATED
+    ? [
+        {
+          name: "Builder Race Tiefling choice row",
+          route: `/character/${TIEFLING_ID}`,
+          tabs: ["Builder", "Race"],
+          ready: "Choose +2 to 1 ability score (0/1 chosen)",
+          scrollTo: "Choose +2 to 1 ability score",
+          expect: { texts: ["DEX", "CHA"], absent: ["STR", "INT", "WIS"], fitsWidth: true },
+        },
+        {
+          name: "Builder Race Tiefling choice row picked",
+          route: `/character/${TIEFLING_ID}`,
+          tabs: ["Builder", "Race"],
+          open: (page) => page.getByText("CHA", { exact: true }).first().click(),
+          ready: "Choose +2 to 1 ability score (1/1 chosen)",
+          scrollTo: "Choose +2 to 1 ability score",
+          expect: { texts: ["CHA +2", "DEX"], absent: ["STR", "INT", "WIS"], fitsWidth: true },
+        },
+      ]
+    : []),
   { name: "Builder Class feats", route: HALF_ELF_ROUTE, tabs: ["Builder", "Class"], ready: /Selected Ability Improvements/i, scrollTo: "Selected Ability Improvements" },
   { name: "Builder Background", route: RENDAR_ROUTE, tabs: ["Builder", "Background"], ready: /background benefits/i, scrollTo: "Claim again" },
   // Pickers for characters with no race (the race list) or no background (the background list, then the Custom Background creator).
@@ -1021,6 +1094,15 @@ const SCREENS = [
       ]
     : []),
   { name: "Spells", route: WIZARD_ROUTE, tabs: ["Spells"], ready: /add spells/i },
+  // The Sorcery Points card at a Sorcerer level of 3 or more: its title block and three buttons share one row.
+  {
+    name: "Spells sorcery card",
+    route: SORCERER_ROUTE,
+    tabs: ["Spells"],
+    ready: /add spells/i,
+    scrollTo: "SORCERY POINTS",
+    expect: { texts: ["SORCERY POINTS", "Metamagic (1/2)", "Careful Spell"], fitsWidth: true },
+  },
   // A level 5 Artificer's slots come from its own table: four first-level and two second-level, and no third-level row.
   ...(INTEGRATED
     ? [

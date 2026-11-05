@@ -83,6 +83,8 @@ export interface AsiSelection {
   featAbility?: AbilityKey;
 }
 
+export type ArmorCategory = "light" | "medium" | "heavy" | "shield";
+
 export interface InventoryItem {
   id: string;
   name: string;
@@ -106,6 +108,8 @@ export interface InventoryItem {
   bonusWeapon?: number;
   bonusAc?: number;
   itemCategory?: string;
+  /** Copied from the catalog record's type. Absent on legacy items and on items that are not armor or shields. */
+  armorCategory?: ArmorCategory;
 }
 
 /**
@@ -160,7 +164,11 @@ export interface Character {
   standardArrayPicks?: Partial<Record<AbilityKey, number>>;
   skillChoices?: SkillChoiceEntry[];
   ruleChoices?: RuleChoiceEntry[];
-  racialChoiceBonus?: { key: AbilityKey; amount: number }[];
+  /**
+   * The player's picks of racial ability increases. A pick of an Increase Choice carries that choice's id; a pick of the
+   * Flexible Increases carries none. Derived into `racialAbilityBonuses` with the Fixed Increases.
+   */
+  racialChoiceBonus?: { key: AbilityKey; amount: number; choiceId?: string }[];
   /** The Size Choice: one of the sizes the held race or lineage lists. Absent until picked, and released when that record stops listing it. */
   sizeChoice?: string;
   /**

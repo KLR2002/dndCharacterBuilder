@@ -1,3 +1,6 @@
+import type { InitiativeBonus, ProficiencyGrant } from "./proficiency.ts";
+import type { StartingEquipmentSlot } from "./startingEquipment.ts";
+
 export interface RuleChoiceModel {
   /** How many options the player must pick. */
   pick: number;
@@ -7,11 +10,8 @@ export interface RuleChoiceModel {
   effectLevel?: number;
   /** The feature this choice replaces, when the source data marks one. */
   replaces?: string;
-  options: Array<{ name: string; description: string }>;
+  options: { name: string; description: string }[];
 }
-
-import type { InitiativeBonus, ProficiencyGrant } from "./proficiency.ts";
-import type { StartingEquipmentSlot } from "./startingEquipment.ts";
 
 export interface TraitModel {
   name: string;
@@ -20,6 +20,13 @@ export interface TraitModel {
   choice?: RuleChoiceModel;
   /** The Initiative Bonus the trait's prose gives, or from its override (ADR 0016). */
   initiativeBonus?: InitiativeBonus;
+}
+
+/** An Increase Choice: the player places `amount` on each of `count` scores taken from `from` (ADR 0019). */
+export interface AbilityScoreChoice {
+  from: string[];
+  count: number;
+  amount: number;
 }
 
 export interface RaceModel {
@@ -33,7 +40,10 @@ export interface RaceModel {
     climb?: number;
     burrow?: number;
   };
-  abilityScoreIncrease: Array<Record<string, number>>;
+  /** Fixed Increases only. The choice the record leaves to the player is in `abilityScoreChoices`. */
+  abilityScoreIncrease: Record<string, number>[];
+  /** The Increase Choices the record states. Absent when it states none. */
+  abilityScoreChoices?: AbilityScoreChoice[];
   darkvision: number | null;
   traits: TraitModel[];
   languages: string[];
@@ -57,7 +67,12 @@ export interface SubraceModel {
   source: string;
   raceName: string;
   raceSource: string;
-  abilityScoreIncrease: Array<Record<string, number>>;
+  /** Fixed Increases only. The choice the record leaves to the player is in `abilityScoreChoices`. */
+  abilityScoreIncrease: Record<string, number>[];
+  /** The Increase Choices the record states. Absent when it states none. */
+  abilityScoreChoices?: AbilityScoreChoice[];
+  /** Set when the record replaces its race's ability score increases rather than adding to them (ADR 0019). */
+  replacesRaceAbilityScores?: true;
   darkvision: number | null;
   traits: TraitModel[];
   description: string;
@@ -172,7 +187,7 @@ export interface FeatModel {
   name: string;
   source: string;
   prerequisite: string | null;
-  abilityScoreIncrease: Array<Record<string, number>> | null;
+  abilityScoreIncrease: Record<string, number>[] | null;
   description: string;
   rawEntries?: any[];
   /** Proficiency Grants extracted from the feat's prose, or from its override. */
@@ -209,10 +224,10 @@ export interface BackgroundModel {
     description: string;
   } | null;
   characteristics: {
-    personalityTraits?: Array<{ roll: string; text: string }>;
-    ideals?: Array<{ roll: string; text: string }>;
-    bonds?: Array<{ roll: string; text: string }>;
-    flaws?: Array<{ roll: string; text: string }>;
+    personalityTraits?: { roll: string; text: string }[];
+    ideals?: { roll: string; text: string }[];
+    bonds?: { roll: string; text: string }[];
+    flaws?: { roll: string; text: string }[];
   };
   description: string;
   rawEntries?: any[];

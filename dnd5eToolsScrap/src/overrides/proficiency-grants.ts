@@ -20,8 +20,7 @@ export const PROFICIENCY_GRANT_OVERRIDES: {
 } = {
   subraces: [
     // Each of these gives one language of choice by its trait text, which the subrace's own entries do not
-    // carry as a structured entry. An override replaces the whole block, so each keeps the weapon and armor
-    // entries its record states.
+    // carry as a structured entry. An override replaces the whole block, so it restates the entries the record does carry.
     {
       owner: "Subrace",
       feature: "Gith (Githyanki)",
@@ -30,16 +29,6 @@ export const PROFICIENCY_GRANT_OVERRIDES: {
         { kind: "choice", category: "languages", count: 1, pool: { kind: "any" } },
         { kind: "fixed", category: "weapons", names: ["shortsword", "longsword", "greatsword"] },
         { kind: "fixed", category: "armor", names: ["light armor", "medium armor"] },
-      ],
-    },
-    {
-      owner: "Subrace",
-      feature: "Elf (Sea)",
-      level: 0,
-      grants: [
-        { kind: "fixed", category: "languages", names: ["Common", "Elvish", "Aquan"] },
-        { kind: "choice", category: "languages", count: 1, pool: { kind: "any" } },
-        { kind: "fixed", category: "weapons", names: ["spear", "trident", "light crossbow", "net"] },
       ],
     },
     { owner: "Subrace", feature: "Elf (Kaladesh) (Vahadar)", level: 0, grants: [{ kind: "choice", category: "languages", count: 1, pool: { kind: "any" } }] },

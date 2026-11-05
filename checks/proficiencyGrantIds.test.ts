@@ -15,9 +15,17 @@ import { loadSrdCatalog, loadTestCatalog } from "./testUtils.ts";
  *     fails the guard, so a change to what a grant is needs a deliberate, recorded update.
  * Additions are allowed. The record is generated, never edited by hand:
  *   UPDATE_PROFICIENCY_GRANT_IDS=1 node --test checks/proficiencyGrantIds.test.ts
+ * An id leaves the record only through `RETIRED_GRANT_IDS`, which names it with a reason. A retired id must not resolve
+ * to any grant, so it is never silently reused.
  */
 
 const RECORD_PATH = new URL("./fixtures/proficiencyGrantIds.json", import.meta.url);
+
+/** Grant ids that a reviewed data change removed for good: each id names its reason. */
+export const RETIRED_GRANT_IDS: ReadonlyMap<string, string> = new Map<string, string>([
+  ["MTF/Subrace/Elf (Sea)@0#languages:choice:any", "the subrace grants no language choice; the override that added it was wrong"],
+  ["MTF/Subrace/Elf (Sea)@0#2", "the subrace grants no language choice; the override that added it was wrong"],
+]);
 
 interface PinRecord {
   ids: string[];
@@ -92,8 +100,14 @@ const POOLED_CHOICE_ID = /:choice:(from=|base=)/;
 
 test("every recorded grant id still resolves, as a grant's id or as one of its aliases", () => {
   if (process.env.UPDATE_PROFICIENCY_GRANT_IDS === "1") {
-    const ids = [...new Set([...readRecord().ids, ...resolutionsOf(trackedGrants()).keys()])].sort();
-    const resolved = Object.fromEntries([...resolutionsOf(trackedGrants())].sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0)));
+    const ids = [...new Set([...readRecord().ids, ...resolutionsOf(trackedGrants()).keys()])]
+      .filter((id) => !RETIRED_GRANT_IDS.has(id))
+      .sort();
+    const resolved = Object.fromEntries(
+      [...resolutionsOf(trackedGrants())]
+        .filter(([id]) => !RETIRED_GRANT_IDS.has(id))
+        .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0)),
+    );
     writeFileSync(RECORD_PATH, `${JSON.stringify({ ids, resolved }, null, 2)}\n`);
   }
   const { ids } = readRecord();
@@ -101,7 +115,7 @@ test("every recorded grant id still resolves, as a grant's id or as one of its a
 
   const grants = trackedGrants();
   const resolvable = new Set(grants.flatMap((grant) => [grant.id, ...grant.aliases]));
-  const missing = ids.filter((id) => !resolvable.has(id));
+  const missing = ids.filter((id) => !resolvable.has(id) && !RETIRED_GRANT_IDS.has(id));
   assert.deepEqual(missing, [], "a recorded grant id disappeared; saved picks depend on it");
 });
 
@@ -109,9 +123,15 @@ test("every recorded grant id still resolves to the grant it was recorded agains
   const { resolved } = readRecord();
   const now = resolutionsOf(trackedGrants());
   const moved = Object.entries(resolved)
-    .filter(([formerId, id]) => now.get(formerId) !== id)
+    .filter(([formerId, id]) => !RETIRED_GRANT_IDS.has(formerId) && now.get(formerId) !== id)
     .map(([formerId, id]) => ({ formerId, recorded: id, now: now.get(formerId) ?? null }));
   assert.deepEqual(moved, [], "a recorded grant id now resolves to another grant; saved picks would move");
+});
+
+test("a retired grant id resolves to no grant, so a pick saved under it is never read by another grant", () => {
+  const now = resolutionsOf(trackedGrants());
+  const reused = [...RETIRED_GRANT_IDS.keys()].filter((id) => now.has(id));
+  assert.deepEqual(reused, [], "a retired grant id resolves again; a pick saved under it would be read by another grant");
 });
 
 test("every tracked grant carries an alias", () => {
