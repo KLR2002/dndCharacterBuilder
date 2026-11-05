@@ -798,6 +798,31 @@ function multiclassSkillCharacter() {
   });
 }
 
+// A level 3 Sorcerer who is also a level 2 Warlock, with one Metamagic chosen, so the Sorcery Points card shows its
+// buttons and the chosen-option chip. The phone widths must fit the title block beside the three buttons.
+const SORCERER_ID = "char_sorcerer";
+const SORCERER_ROUTE = `/character/${SORCERER_ID}`;
+function sorcererWarlockCharacter() {
+  return makeChar({
+    id: SORCERER_ID,
+    name: "Seren",
+    createdAt: 15,
+    updatedAt: 15,
+    startingOption: "equipment",
+    race: { name: "Human", source: catalogSource("races", "Human") },
+    background: { name: "Acolyte", source: catalogSource("backgrounds", "Acolyte") },
+    classes: [
+      { className: "Sorcerer", source: catalogSource("classes", "Sorcerer"), level: 3 },
+      { className: "Warlock", source: catalogSource("classes", "Warlock"), level: 2 },
+    ],
+    currentHp: 18,
+    startingGrantsApplied: true,
+    backgroundGrantsApplied: true,
+    metamagicOptions: ["Careful Spell"],
+    chosenMetamagic: ["Careful Spell"],
+  });
+}
+
 // The seed the browser starts from: the characters, folders, settings, and (integrated mode) the catalog.
 function buildSeed() {
   const defaults = defaultSettings();
@@ -832,6 +857,7 @@ function buildSeed() {
         activeWildShape: { name: "Black Bear", source: "SRD", ac: 11, currentHp: 12, maxHp: 19, tempHp: 4 },
       }),
       wizardCharacter(),
+      sorcererWarlockCharacter(),
       ...(INTEGRATED ? [artificerCharacter()] : []),
       halfElfCharacter(),
       rangerCharacter(),
@@ -1021,6 +1047,15 @@ const SCREENS = [
       ]
     : []),
   { name: "Spells", route: WIZARD_ROUTE, tabs: ["Spells"], ready: /add spells/i },
+  // The Sorcery Points card at a Sorcerer level of 3 or more: its title block and three buttons share one row.
+  {
+    name: "Spells sorcery card",
+    route: SORCERER_ROUTE,
+    tabs: ["Spells"],
+    ready: /add spells/i,
+    scrollTo: "SORCERY POINTS",
+    expect: { texts: ["SORCERY POINTS", "Metamagic (1/2)", "Careful Spell"], fitsWidth: true },
+  },
   // A level 5 Artificer's slots come from its own table: four first-level and two second-level, and no third-level row.
   ...(INTEGRATED
     ? [
