@@ -1099,15 +1099,15 @@ export const SpellsTab: React.FC = () => {
       {/* Sorcerer Metamagic & Sorcery Points Section (Sorcerer Level >= 3) */}
       {hasMetamagicAccess && (
         <Card style={[styles.sorceryCard, { borderColor: theme.accent }]}>
-          <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
-            <View>
+          <View style={styles.cardHeaderRow}>
+            <View style={styles.cardTitleBlock}>
               <Text style={[styles.sectionTitle, { color: theme.accent }]}>SORCERY POINTS</Text>
               <Text style={{ color: theme.textSecondary, fontSize: 13, marginTop: 2 }}>
                 {currentSorceryPoints} / {maxSorceryPoints} Available (Long Rest reset)
               </Text>
             </View>
 
-            <View style={{ flexDirection: "row", gap: 6, alignItems: "center" }}>
+            <View style={styles.sorceryButtons}>
               <Button
                 title="-1"
                 size="sm"
@@ -1160,8 +1160,8 @@ export const SpellsTab: React.FC = () => {
       {/* Warlock Pact Slots (Strictly Separate from Multiclass Slots) */}
       {warlockPactSlots && (
         <Card style={[styles.pactCard, { borderColor: "#9333ea" }]}>
-          <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
-            <View>
+          <View style={styles.cardHeaderRow}>
+            <View style={styles.cardTitleBlock}>
               <Text style={[styles.sectionTitle, { color: "#c084fc" }]}>WARLOCK PACT MAGIC</Text>
               <Text style={{ color: theme.textSecondary, fontSize: 13, marginTop: 2 }}>
                 {warlockPactSlots.count} {warlockPactSlots.count === 1 ? "slot" : "slots"} of {formatOrdinal(warlockPactSlots.level)} level (Short Rest reset)
@@ -2203,6 +2203,23 @@ const styles = StyleSheet.create({
   sorceryCard: {
     padding: 14,
     marginBottom: 16,
+  },
+  cardHeaderRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "space-between",
+    alignItems: "center",
+    gap: 8,
+  },
+  cardTitleBlock: {
+    flexShrink: 1,
+    minWidth: 0,
+  },
+  sorceryButtons: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 6,
+    alignItems: "center",
   },
   pactCard: {
     padding: 14,
