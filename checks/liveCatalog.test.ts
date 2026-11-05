@@ -171,6 +171,40 @@ test("live catalog: every race ability increase names an ability the Origin Cust
   assert.deepEqual(unread, []);
 });
 
+test("live catalog: the records that state Increase Choices or replace their race's increases say so", { skip: SKIP }, () => {
+  const races = live!.compendium.for(ALL_BOOKS).races();
+  const find = (subraceName: string, subraceSource: string) =>
+    races.flatMap((race) => race.subraces ?? []).find((sub) => sub.name === subraceName && sub.source === subraceSource);
+  const devilsTongue = find("Devil's Tongue", "SCAG");
+  assert.ok(devilsTongue, "the live catalog holds the SCAG Tiefling variant Devil's Tongue");
+  assert.deepEqual(devilsTongue.abilityScoreIncrease, [{ int: 1 }]);
+  assert.deepEqual(devilsTongue.abilityScoreChoices, [{ from: ["dex", "cha"], count: 1, amount: 2 }]);
+  assert.equal(devilsTongue.replacesRaceAbilityScores, true);
+  const dispater = find("Dispater", "MTF");
+  assert.ok(dispater, "the live catalog holds the MTF Tiefling Dispater");
+  assert.equal(dispater.replacesRaceAbilityScores, true);
+  const halfElf = races.find((race) => race.name === "Half-Elf" && race.source === "PHB");
+  assert.ok(halfElf, "the live catalog holds the PHB Half-Elf");
+  assert.deepEqual(halfElf.abilityScoreIncrease, [{ cha: 2 }]);
+  assert.deepEqual(halfElf.abilityScoreChoices, [{ from: ["str", "dex", "con", "int", "wis"], count: 2, amount: 1 }]);
+  const variantHuman = find("Variant", "PHB");
+  assert.ok(variantHuman, "the live catalog holds the PHB Variant Human");
+  assert.deepEqual(variantHuman.abilityScoreChoices, [{ from: ["str", "dex", "con", "int", "wis", "cha"], count: 2, amount: 1 }]);
+});
+
+test("live catalog: every Increase Choice names only ability keys", { skip: SKIP }, () => {
+  const races = live!.compendium.for(ALL_BOOKS).races();
+  const unknown: string[] = [];
+  for (const record of [...races, ...races.flatMap((race) => race.subraces ?? [])]) {
+    for (const choice of record.abilityScoreChoices ?? []) {
+      for (const key of choice.from) {
+        if (!abilityKeyOf(key)) unknown.push(`${record.name}: ${key}`);
+      }
+    }
+  }
+  assert.deepEqual(unknown, []);
+});
+
 test("live catalog: a held Half-Elf offers the Origin Customization card with its fixed increase movable", { skip: SKIP }, () => {
   const character = makeChar({ race: { name: "Half-Elf", source: "PHB" } });
   const catalogs = { compendium: live!.compendium, activeBooks: ALL_BOOKS };
