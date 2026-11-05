@@ -5,7 +5,7 @@ import type { Compendium } from "../services/compendium.ts";
 
 export interface ResolvedAncestry {
   race?: { name?: string; abilityScoreIncrease?: Record<string, number>[]; speed?: { walk?: number; swim?: number; climb?: number; fly?: number }; traits?: { name: string; description?: string; text?: any }[]; additionalSpells?: AdditionalSpells[] };
-  subrace?: { name?: string; abilityScoreIncrease?: Record<string, number>[]; speed?: { walk?: number; swim?: number; climb?: number; fly?: number }; traits?: { name: string; description?: string; text?: any }[]; additionalSpells?: AdditionalSpells[] };
+  subrace?: { name?: string; abilityScoreIncrease?: Record<string, number>[]; replacesRaceAbilityScores?: true; speed?: { walk?: number; swim?: number; climb?: number; fly?: number }; traits?: { name: string; description?: string; text?: any }[]; additionalSpells?: AdditionalSpells[] };
 }
 export type ArmorItem = InventoryItem;
 export interface RulesOptions extends ResolvedAncestry {

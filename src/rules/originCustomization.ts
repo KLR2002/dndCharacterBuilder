@@ -7,6 +7,7 @@ import { ABILITIES, ABILITY_NAMES, abilityKeyOf, baseAbilityScores } from "./abi
 import { allCatalogRaces, catalogListings, type CharacterCatalogs } from "./catalogs.ts";
 import { withNotices } from "./needsReview.ts";
 import { findHeldRace } from "./raceLookup.ts";
+import { heldFixedIncreases, type FixedIncrease } from "./ancestryIncreases.ts";
 
 /**
  * One ability increase of the held race or subrace: one (entry, ability) pair of its `abilityScoreIncrease`. Its id is
@@ -46,29 +47,20 @@ function ruleBookActive(activeBooks: ActiveBooks): boolean {
   return activeBooks === undefined || activeBooks.includes(ORIGIN_CUSTOMIZATION_BOOK);
 }
 
-function incrementsOf(entries: Record<string, number>[] | undefined): { index: number; ability: AbilityKey; amount: number }[] {
-  return (entries ?? []).flatMap((entry, index) =>
-    Object.entries(entry).flatMap(([name, amount]) => {
-      const ability = abilityKeyOf(name);
-      return ability && Number.isFinite(amount) ? [{ index, ability, amount }] : [];
-    }),
-  );
+/** The id prefix of an increase's owner: the held race, or the held race with its subrace. Saved swaps are keyed by these ids. */
+function ownerPrefix(held: NonNullable<Character["race"]>, owner: FixedIncrease["owner"]): string[] {
+  return owner === "race"
+    ? ["race", held.name, held.source]
+    : ["subrace", held.name, held.source, held.subraceName ?? "", held.subraceSource ?? ""];
 }
 
-function slotsFrom(prefix: string[], entries: Record<string, number>[] | undefined): AbilitySlot[] {
-  return incrementsOf(entries).map(({ index, ability, amount }) => ({
-    id: [...prefix, String(index), ability].join("|"),
-    defaultAbility: ability,
-    amount,
-  }));
-}
-
+/** One slot per Fixed Increase on an ability the Catalog names, in the order the held race and subrace give them. */
 function slotsOf(held: NonNullable<Character["race"]>, race: RaceData, subrace: SubraceData | undefined): AbilitySlot[] {
-  const raceSlots = slotsFrom(["race", held.name, held.source], race.abilityScoreIncrease);
-  const subraceSlots = subrace
-    ? slotsFrom(["subrace", held.name, held.source, held.subraceName ?? "", held.subraceSource ?? ""], subrace.abilityScoreIncrease)
-    : [];
-  return [...raceSlots, ...subraceSlots];
+  return heldFixedIncreases(race, subrace).flatMap(({ owner, index, name, amount }) => {
+    const ability = abilityKeyOf(name);
+    if (!ability || !Number.isFinite(amount)) return [];
+    return [{ id: [...ownerPrefix(held, owner), String(index), ability].join("|"), defaultAbility: ability, amount }];
+  });
 }
 
 /**

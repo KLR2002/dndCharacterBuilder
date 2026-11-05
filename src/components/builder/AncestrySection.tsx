@@ -11,9 +11,9 @@ import {
   resolveAncestryState,
   applyAncestrySelection,
   applyAncestryChoice,
-  collectFixedBonuses,
   offersPlainRaceForm,
 } from "../../rules/ancestryEngine";
+import { heldFixedBonuses } from "../../rules/ancestryIncreases";
 import type { SourceFixedGrants } from "../../rules/proficiencySheet";
 import { picksOnlyLanguages } from "../../rules/proficiencyChoiceOffers";
 import { ProficiencyChoicePicker } from "./ProficiencyChoicePicker";
@@ -618,8 +618,8 @@ export const AncestrySection: React.FC<AncestrySectionProps> = ({
               .filter((r) => r.name.toLowerCase().includes(raceSearch.toLowerCase()))
               .map((r) => {
                 const combinedFixed = r.subraces.length === 1
-                  ? collectFixedBonuses(r.abilityScoreIncrease, r.subraces[0].abilityScoreIncrease)
-                  : collectFixedBonuses(r.abilityScoreIncrease);
+                  ? heldFixedBonuses(r, r.subraces[0])
+                  : heldFixedBonuses(r);
                 const asiStr = formatRaceASI(Object.entries(combinedFixed).map(([k, v]) => ({ [k]: v })));
                 const isLineage = r.name === "Dhampir" || r.name === "Hexblood" || r.name === "Reborn";
                 const isChoice = r.name === "Half-Elf" || r.name === "Custom Lineage";
@@ -631,7 +631,7 @@ export const AncestrySection: React.FC<AncestrySectionProps> = ({
                   ? [...r.traits, ...(singleSubrace.traits || [])]
                   : r.traits;
                 const showPlainRow = offersPlainRaceForm(r, srdBaselineRaces());
-                const raceFixed = collectFixedBonuses(r.abilityScoreIncrease);
+                const raceFixed = heldFixedBonuses(r);
                 return (
                   <Card key={`${r.name}__${r.source}`}>
                     {/* Header */}
@@ -694,7 +694,7 @@ export const AncestrySection: React.FC<AncestrySectionProps> = ({
                             )
                           : null}
                         {r.subraces.map((sr, idx) => {
-                          const combined = collectFixedBonuses(r.abilityScoreIncrease, sr.abilityScoreIncrease);
+                          const combined = heldFixedBonuses(r, sr);
                           const combinedStr = formatRaceASI(Object.entries(combined).map(([k, v]) => ({ [k]: v })));
                           const srIsChoice =
                             (!sr.name && !combinedStr) ||
