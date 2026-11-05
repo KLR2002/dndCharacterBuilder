@@ -21,8 +21,11 @@ import { loadSrdCatalog, loadTestCatalog } from "./testUtils.ts";
 
 const RECORD_PATH = new URL("./fixtures/proficiencyGrantIds.json", import.meta.url);
 
-/** Grant ids that a reviewed data change removed for good: each id names its reason. Empty until one is retired. */
-export const RETIRED_GRANT_IDS: ReadonlyMap<string, string> = new Map<string, string>();
+/** Grant ids that a reviewed data change removed for good: each id names its reason. */
+export const RETIRED_GRANT_IDS: ReadonlyMap<string, string> = new Map<string, string>([
+  ["MTF/Subrace/Elf (Sea)@0#languages:choice:any", "the subrace grants no language choice; the override that added it was wrong"],
+  ["MTF/Subrace/Elf (Sea)@0#2", "the subrace grants no language choice; the override that added it was wrong"],
+]);
 
 interface PinRecord {
   ids: string[];
