@@ -29,3 +29,7 @@ Every scenario's `open` and `modal` step becomes data (tap the text, with an opt
 ## Blocked by
 
 03
+
+## Comments
+
+AC-7 web-only counts: SRD Baseline mode 1 of 50 scenarios, integrated mode 1 of 67 scenarios — in both modes the only web-only scenario is `New Character modal`. Its single step is the named step `home-header-add` (the home header's round add button has no text or label, so only the web runner's coordinate tap can play it); every other `open` step is a `tap` by text, pattern or label that a native runner can play from the same data.
