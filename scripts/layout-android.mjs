@@ -1,18 +1,22 @@
 // The device side of the native screenshot run: `npm run layout:android`. It reuses a running
 // emulator or boots the Small_Phone AVD headless (windowed with `--window`) and stops only one it
 // started, refuses any device whose serial is not an emulator, builds the E2E APK incrementally
-// with `-Pe2e` (skipped with `--no-build`) and installs it with `adb install -r`, then sets each
-// width through the screen density and launches the app, restoring the original density at the end
-// (also after a failure). The runner core, with every device interaction behind one injectable
-// executor, is in scripts/lib/android-runner.mjs; the tests are in checks/androidRunner.test.ts.
+// with `-Pe2e` (skipped with `--no-build`) and installs it with `adb install -r`, then for each
+// width sets the screen density and runs every selected scenario: reset the app, copy the seed into
+// its private folder with run-as, launch the scenario's route by deep link, wait for its ready text
+// by polling uiautomator dumps, and pull the `<scenario>-<width>.png` screenshot into the shots
+// folder. The original density is restored at the end (also after a failure). The runner core, with
+// every device interaction behind one injectable executor, is in scripts/lib/android-runner.mjs; the
+// tests are in checks/androidRunner.test.ts.
 //
 // Usage: `npm run layout:android` (not part of check:all). Env: WIDTHS (default "393,360,320,412"),
 // ONLY (a comma-separated list of substrings: an unmatched term exits 2 and lists the scenario
 // names), SHOTS (default a layout-android folder under the OS temp dir). Flags: `--integrated`
 // (accepted; the scenario list is the shared one for the integrated catalog), `--no-build`,
 // `--window`, `--list` (prints the scenario names as JSON and exits). Exit: 0 success, 1 a build,
-// install or launch failed, 2 a refusal (an unmatched ONLY term, no adb, a non-emulator device, no
-// generated android/ project, no APK, an emulator that never booted).
+// install, seed copy, launch, ready wait or screenshot failed for at least one scenario, 2 a refusal
+// (an unmatched ONLY term, no adb, a non-emulator device, no generated android/ project, no APK, an
+// emulator that never booted).
 import { spawn, spawnSync } from "node:child_process";
 import fs from "node:fs";
 import { tmpdir } from "node:os";
@@ -56,6 +60,8 @@ const code = await runAndroid({
   sleep,
   startEmulator,
   fileExists: (path) => fs.existsSync(path),
+  writeFile: (path, content) => fs.writeFileSync(path, content),
+  readFile: (path) => fs.readFileSync(path),
   mkdir: (path) => fs.mkdirSync(path, { recursive: true }),
   tmpdir,
   homeDir: process.env.HOME ?? fs.realpathSync("~"),
