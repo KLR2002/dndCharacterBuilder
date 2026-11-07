@@ -15,7 +15,8 @@
 // list of substrings: only the scenarios whose name contains one of them, ignoring case, are visited in every
 // width; unset visits all), SHOTS (screenshot dir, default a layout-check folder under the OS temp dir). Exit:
 // 0 green, 1 violations, 2 no browser or no server (the server log path is printed then), or an ONLY term that
-// matches no scenario (the scenario names are printed then).
+// matches no scenario (the scenario names are printed then). `--list` prints the run's scenario names as JSON
+// and exits without starting anything.
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -1745,6 +1746,10 @@ async function shutdown(code) {
 }
 
 async function main() {
+  if (process.argv.includes("--list")) {
+    console.log(JSON.stringify(scenarioNames(), null, 2));
+    return 0;
+  }
   const unmatched = unmatchedOnlyTerms();
   if (unmatched.length > 0) {
     console.error(`ONLY matches no scenario: ${unmatched.map((term) => `"${term}"`).join(", ")}. Scenarios in this run: ${scenarioNames().join(", ")}`);
