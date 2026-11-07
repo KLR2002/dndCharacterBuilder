@@ -5,13 +5,16 @@ import { fileURLToPath } from "node:url";
 import { describeStep } from "../scripts/lib/steps.mjs";
 import {
   MAX_SWIPES,
+  REVEAL_MARGIN_PX,
+  REVEAL_STEP_PX,
+  REVEAL_SWIPE_MS,
   findMatches,
   findTarget,
   isVisible,
   playScreen,
   swipeUpArgs,
 } from "../scripts/lib/native-steps.mjs";
-import { centerOf, parseDump } from "../scripts/lib/uiautomator.mjs";
+import { centerOf, hasPositiveArea, parseDump } from "../scripts/lib/uiautomator.mjs";
 
 // The native step player (scripts/lib/native-steps.mjs): it plays a scenario's `tabs`, `open`, `modal` and
 // `scrollTo` fields on a uiautomator dump, through the injected dump/tap/swipe, in the order the web check
@@ -28,30 +31,45 @@ const statsLang = parseDump(readFileSync(fileURLToPath(new URL("./fixtures/uiaut
 // fold ("Starting Equipment & Gold:", "Claimed") are listed with bounds whose top is below their bottom,
 // i.e. clipped out under the gesture bar.
 const classOffscreen = parseDump(readFileSync(fileURLToPath(new URL("./fixtures/uiautomator-class-offscreen.xml", import.meta.url)), "utf8"));
+// More real dumps captured on the emulator, all on the Builder screens at 720x1280: the Class tab scrolled
+// so "Martial weapon" is only a clipped node below the gesture bar, the same page scrolled a bit further
+// so it is on screen, the Class tab with "Fighting Styles" only clipped, and the Background tab's first
+// page (with "Languages" below the fold) plus the same page scrolled so "Languages" is only clipped.
+const martialClipped = parseDump(readFileSync(fileURLToPath(new URL("./fixtures/uiautomator-class-martial-clipped.xml", import.meta.url)), "utf8"));
+const martialOnscreen = parseDump(readFileSync(fileURLToPath(new URL("./fixtures/uiautomator-class-martial-onscreen.xml", import.meta.url)), "utf8"));
+const fightingClipped = parseDump(readFileSync(fileURLToPath(new URL("./fixtures/uiautomator-class-fightingstyles-clipped.xml", import.meta.url)), "utf8"));
+const backgroundFirst = parseDump(readFileSync(fileURLToPath(new URL("./fixtures/uiautomator-background-firstpage.xml", import.meta.url)), "utf8"));
+const backgroundClipped = parseDump(readFileSync(fileURLToPath(new URL("./fixtures/uiautomator-background-languages-clipped.xml", import.meta.url)), "utf8"));
 
 // The screen of the AVD: 720x1280 px, with the 48 px status bar on top and the 48 px gesture bar at the
 // bottom (both read from the device; they stay 48 px under a density override).
 const VIEW = { width: 720, height: 1280, topBar: 48, bottomBar: 48 };
 
 // A scripted world for playScreen: dump() serves the dumps in order (the last one repeats), tap/swipe/sleep
-// record what the player did, and now() is the recorded clock.
-function playerWorld(dumpSequence: DumpNode[][]) {
+// record what the player did, and now() is the recorded clock. With `frozen` the clock never advances, and
+// `maxDumps` makes dump() throw once it is exceeded, so a loop that only ends on the clock fails instead of
+// hanging.
+function playerWorld(dumpSequence: DumpNode[][], options: { frozen?: boolean; maxDumps?: number } = {}) {
   const taps: { x: number; y: number }[] = [];
   const swipes: string[][] = [];
   const sleeps: number[] = [];
   let clock = 0;
   let dumpIndex = 0;
+  const maxDumps = options.maxDumps ?? Number.POSITIVE_INFINITY;
   return {
     taps,
     swipes,
     sleeps,
     view: VIEW,
-    dump: () => dumpSequence[Math.min(dumpIndex++, dumpSequence.length - 1)],
+    dump: () => {
+      if (dumpIndex >= maxDumps) throw new Error(`dump budget of ${maxDumps} exceeded`);
+      return dumpSequence[Math.min(dumpIndex++, dumpSequence.length - 1)];
+    },
     tap: (point: { x: number; y: number }) => void taps.push(point),
     swipe: (args: number[]) => void swipes.push(args.map(String)),
     sleep: async (ms: number) => {
       sleeps.push(ms);
-      clock += ms;
+      if (!options.frozen) clock += ms;
     },
     now: () => clock,
   };
@@ -169,7 +187,7 @@ test("a partially visible node with positive area is a tap target at the centre 
 test("tabs are tapped in order, each followed by a 500 ms wait, then the 300 ms settle", async () => {
   const world = playerWorld([charTabs]);
   const result = await play(world, { name: "t", route: "/x", tabs: ["Builder", "Stats"], ready: /points remaining/i });
-  assert.equal(result, null);
+  assert.deepEqual(result, { error: null, warnings: [] });
   assert.deepEqual(world.taps, [
     { x: 119, y: 204 },
     { x: 269, y: 204 },
@@ -182,7 +200,8 @@ test("a tab whose text never shows fails with a message naming the tab", async (
   const noTabs = parseDump(`<hierarchy><node text="Total Level: 1" bounds="[0,100][200,140]" /></hierarchy>`);
   const world = playerWorld([noTabs]);
   const result = await play(world, { name: "t", route: "/x", tabs: ["Stats"], ready: /total level/i });
-  assert.match(String(result), /tab "Stats" did not show/);
+  assert.match(result.error ?? "", /tab "Stats" did not show/);
+  assert.deepEqual(result.warnings, []);
   assert.deepEqual(world.taps, []);
 });
 
@@ -198,7 +217,7 @@ const scrollScreen = { name: "t", route: "/x", ready: /total level/i, scrollTo: 
 test("scrollTo does not swipe when the needle is already visible", async () => {
   const world = playerWorld([withNeedle]);
   const result = await play(world, scrollScreen);
-  assert.equal(result, null);
+  assert.deepEqual(result, { error: null, warnings: [] });
   assert.deepEqual(world.swipes, []);
 });
 
@@ -207,16 +226,25 @@ test("scrollTo swipes until a dump shows the needle visible, then stops", async 
   // second has it only clipped under the gesture bar) before one with it visible.
   const world = playerWorld([noNeedle, clippedNeedle, noNeedle, withNeedle]);
   const result = await play(world, scrollScreen);
-  assert.equal(result, null);
+  assert.equal(result.error, null);
+  assert.deepEqual(result.warnings, []);
   assert.equal(world.swipes.length, 2);
   assert.deepEqual(world.swipes[0], ["360", "896", "360", "384", "300"]);
 });
 
-test("scrollTo gives up after the swipe bound and fails naming the needle", async () => {
+test("an absent scrollTo needle warns (naming scenario and needle) and does not fail, and the page is scrolled back to the top", async () => {
+  // No dump ever shows the needle: after the bounded search the player warns instead of failing, and
+  // swipes back to the top, where the web check's scrollIntoView leaves the page for an absent element.
   const world = playerWorld([noNeedle]);
   const result = await play(world, scrollScreen);
-  assert.equal(world.swipes.length, MAX_SWIPES);
-  assert.match(String(result), /scrollTo "Starting Equipment" did not become visible/);
+  assert.equal(result.error, null);
+  assert.equal(result.warnings.length, 1);
+  assert.match(result.warnings[0], /scrollTo "Starting Equipment"/);
+  assert.match(result.warnings[0], /scenario "t"/);
+  assert.match(result.warnings[0], new RegExp(`${MAX_SWIPES} swipes`));
+  // The search swipes plus the scroll back to the top; the last swipe is a mid-screen finger-down.
+  assert.equal(world.swipes.length, MAX_SWIPES + 1);
+  assert.deepEqual(world.swipes.at(-1), ["360", "384", "360", "896", "300"]);
 });
 
 test("scrollTo flips direction when a swipe moves nothing, so a needle above is reached", async () => {
@@ -228,7 +256,7 @@ test("scrollTo flips direction when a swipe moves nothing, so a needle above is 
   );
   const world = playerWorld([bottom, bottom, bottom, top]);
   const result = await play(world, scrollScreen);
-  assert.equal(result, null);
+  assert.equal(result.error, null);
   assert.deepEqual(world.swipes, [
     ["360", "896", "360", "384", "300"],
     ["360", "384", "360", "896", "300"],
@@ -246,7 +274,7 @@ test("scrollTo swipes past a needle that is only clipped, and stops once its bou
   // clipped) before the revealed one.
   const world = playerWorld([classOffscreen, classOffscreen, classRevealed]);
   const result = await play(world, { name: "t", route: "/x", ready: /total level/i, scrollTo: "Starting Equipment" });
-  assert.equal(result, null);
+  assert.equal(result.error, null);
   assert.equal(world.swipes.length, 1);
   assert.deepEqual(world.swipes[0], ["360", "896", "360", "384", "300"]);
 });
@@ -259,7 +287,7 @@ test("an open step whose target is only clipped swipes to reveal it, then taps t
     open: [{ tap: { text: "Starting Equipment & Gold:", exact: true } }],
     ready: /total level/i,
   });
-  assert.equal(result, null);
+  assert.equal(result.error, null);
   assert.ok(world.swipes.length > 0, "the reveal swipes run before the tap");
   // The tap lands on the revealed node's centre (237,920), not on the gesture bar.
   assert.deepEqual(world.taps, [{ x: 237, y: 920 }]);
@@ -271,7 +299,7 @@ test("a modal is waited for as the ready text and is not tapped", async () => {
   );
   const world = playerWorld([statsRest, modalDump]);
   const result = await play(world, { name: "t", route: "/x", open: [{ tap: { pattern: "^Take Rest" } }], modal: "Rest & Recovery" });
-  assert.equal(result, null);
+  assert.equal(result.error, null);
   // Only the Take Rest row is tapped (its centre is 213,331); the dialog title at [100,400][620,450] (centre
   // 360,425) is waited for, never tapped. The settle wait is the modal's 500 ms.
   assert.deepEqual(world.taps, [{ x: 213, y: 331 }]);
@@ -281,14 +309,15 @@ test("a modal is waited for as the ready text and is not tapped", async () => {
 test("a modal that never shows fails the scenario as the ready text", async () => {
   const world = playerWorld([statsRest]);
   const result = await play(world, { name: "t", route: "/x", open: [{ tap: { pattern: "^Take Rest" } }], modal: "Rest & Recovery" });
-  assert.match(String(result), /ready text "Rest & Recovery" did not show/);
+  assert.match(result.error ?? "", /ready text "Rest & Recovery" did not show/);
   assert.deepEqual(world.taps, [{ x: 213, y: 331 }]);
 });
 
 test("an open step whose target never shows fails with a message naming the step", async () => {
   const world = playerWorld([statsRest]);
   const result = await play(world, { name: "t", route: "/x", open: [{ tap: { text: "No Such Button", exact: true } }], ready: /take rest/i });
-  assert.match(String(result), /open step \{"text":"No Such Button","exact":true\} did not show/);
+  assert.match(result.error ?? "", /open step \{"text":"No Such Button","exact":true\} did not show/);
+  assert.deepEqual(result.warnings, []);
   assert.deepEqual(world.taps, []);
 });
 
@@ -298,7 +327,7 @@ test("expect is not evaluated: a screen that would fail it still plays", async (
   );
   const world = playerWorld([withNotice]);
   const result = await play(world, { name: "t", route: "/x", ready: /hit points/i, expect: { absentMatching: [/ to review$/] } });
-  assert.equal(result, null);
+  assert.deepEqual(result, { error: null, warnings: [] });
 });
 
 // --- Revealing off-screen targets: the dump names its scrollers, and a swipe inside one scrolls it ---
@@ -308,19 +337,16 @@ test("expect is not evaluated: a screen that would fail it still plays", async (
 const HBAR = `<node text="" class="android.widget.HorizontalScrollView" scrollable="true" bounds="[32,284][688,392]" />`;
 const CONTENT = `<node text="" class="android.widget.ScrollView" scrollable="true" bounds="[0,252][720,1232]" />`;
 
-test("a tab clipped off the tab bar is revealed by horizontal swipes on the tab bars only", async () => {
+test("a tab clipped off the tab bar is revealed by a horizontal swipe on the tab bars only", async () => {
   const before = parseDump(`<hierarchy>${HBAR}${CONTENT}<node text="Builder" bounds="[80,187][157,220]" /><node text="Ready Here" bounds="[0,400][100,440]" /></hierarchy>`);
   const after = parseDump(`<hierarchy>${HBAR}${CONTENT}<node text="Builder" bounds="[80,187][157,220]" /><node text="Class" bounds="[585,320][650,356]" /><node text="Ready Here" bounds="[0,400][100,440]" /></hierarchy>`);
   const world = playerWorld([before, after]);
   const result = await play(world, { name: "t", route: "/x", tabs: ["Class"], ready: "Ready Here" });
-  assert.equal(result, null);
-  // The Class subtab at [585,320][650,356] is tapped once revealed; the swipes went left inside the tab
-  // bar (y fixed at 338, x from 590 to 130), twice per poll, never in the vertical content scroller.
+  assert.equal(result.error, null);
+  // The Class subtab at [585,320][650,356] is tapped once revealed; the swipe went left inside the tab
+  // bar (y fixed at 338, x from 680 to 80 over the slow REVEAL_SWIPE_MS), never in the content scroller.
   assert.deepEqual(world.taps, [{ x: 618, y: 338 }]);
-  assert.deepEqual(world.swipes, [
-    ["590", "338", "130", "338", "300"],
-    ["590", "338", "130", "338", "300"],
-  ]);
+  assert.deepEqual(world.swipes, [["680", "338", "80", "338", String(REVEAL_SWIPE_MS)]]);
 });
 
 test("the reveal direction flips when a swipe moves nothing, so a tab on the other side is found", async () => {
@@ -329,30 +355,24 @@ test("the reveal direction flips when a swipe moves nothing, so a tab on the oth
   // The first dump scrolls nowhere (the bar is at its left end), so the second swipe goes right.
   const world = playerWorld([a, a, b]);
   const result = await play(world, { name: "t", route: "/x", tabs: ["Class"], ready: "Ready Here" });
-  assert.equal(result, null);
+  assert.equal(result.error, null);
   assert.deepEqual(world.taps, [{ x: 618, y: 338 }]);
   assert.deepEqual(world.swipes, [
-    ["590", "338", "130", "338", "300"],
-    ["590", "338", "130", "338", "300"],
-    ["130", "338", "590", "338", "300"],
-    ["130", "338", "590", "338", "300"],
+    ["680", "338", "80", "338", String(REVEAL_SWIPE_MS)],
+    ["40", "338", "640", "338", String(REVEAL_SWIPE_MS)],
   ]);
 });
 
-test("an open step below the fold is revealed by swiping the scrollers, then tapped", async () => {
+test("an open step below the fold is revealed by swiping the vertical scroller, then tapped", async () => {
   const top = parseDump(`<hierarchy>${HBAR}${CONTENT}<node text="Hit Points" bounds="[0,100][200,140]" /></hierarchy>`);
   const bottom = parseDump(`<hierarchy>${HBAR}${CONTENT}<node text="Hit Points" bounds="[0,100][200,140]" /><node text="" content-desc="Add language" bounds="[624,1120][688,1184]" /></hierarchy>`);
   const world = playerWorld([top, bottom]);
   const result = await play(world, { name: "t", route: "/x", open: [{ tap: { label: "Add language" } }], ready: "Hit Points" });
-  assert.equal(result, null);
+  assert.equal(result.error, null);
   assert.deepEqual(world.taps, [{ x: 656, y: 1152 }]);
-  // One reveal round swiped both scrollers twice: the tab bar horizontally and the content vertically
-  // (x fixed at 360, y from 1085 to 399 inside [0,252][720,1232]).
-  const vertical = world.swipes.filter((s) => s[0] === s[2]);
-  assert.deepEqual(vertical, [
-    ["360", "1085", "360", "399", "300"],
-    ["360", "1085", "360", "399", "300"],
-  ]);
+  // One reveal round swiped the content scroller once, a fixed slow step up inside [0,252][720,1232]
+  // (x fixed at 360, y from 1224 to 624 over REVEAL_SWIPE_MS); the horizontal tab bar is not swiped.
+  assert.deepEqual(world.swipes, [["360", "1224", "360", String(1224 - REVEAL_STEP_PX), String(REVEAL_SWIPE_MS)]]);
 });
 
 test("the ready text scrolled off is revealed by swiping the scrollers too", async () => {
@@ -360,15 +380,122 @@ test("the ready text scrolled off is revealed by swiping the scrollers too", asy
   const scrolled = parseDump(`<hierarchy>${CONTENT}<node text="Deep Ready" bounds="[0,900][200,940]" /></hierarchy>`);
   const world = playerWorld([top, scrolled]);
   const result = await play(world, { name: "t", route: "/x", ready: "Deep Ready" });
-  assert.equal(result, null);
+  assert.equal(result.error, null);
   assert.ok(world.swipes.length >= 1);
 });
 
-test("a target that never appears fails after the ready timeout, swipes included", async () => {
+test("a target that never appears fails at the swipe bound, not the clock", async () => {
   const withScrollers = parseDump(`<hierarchy>${HBAR}${CONTENT}<node text="Ready Here" bounds="[0,400][100,440]" /></hierarchy>`);
   const world = playerWorld([withScrollers]);
   const result = await play(world, { name: "t", route: "/x", tabs: ["Nope"], ready: "Ready Here" });
-  assert.match(String(result), /tab "Nope" did not show/);
-  assert.ok(world.swipes.length > 0);
+  assert.match(result.error ?? "", /tab "Nope" did not show/);
+  assert.match(result.error ?? "", new RegExp(`${MAX_SWIPES} swipes`));
+  assert.equal(world.swipes.length, MAX_SWIPES);
   assert.equal(world.taps.length, 0);
+});
+
+test("a screen that has not rendered yet (no scrollers in the dump) is waited on the clock only, with no swipes", async () => {
+  const loading = parseDump(`<hierarchy><node text="Loading" bounds="[0,100][100,140]" /></hierarchy>`);
+  const world = playerWorld([loading]);
+  const result = await play(world, { name: "t", route: "/x", ready: "Never There" });
+  assert.match(result.error ?? "", /ready text "Never There" did not show within 1 s/);
+  assert.deepEqual(world.swipes, []);
+});
+
+// --- The widened reveal: what the dump says steers the swipe, and the bound is a swipe count ---
+
+test("on the real Class-tab fixtures \"Martial weapon\" is only a clipped node in one and on screen in the other", () => {
+  const call = { method: "getByText", arg: "Martial weapon", options: { exact: true }, index: 0 } as const;
+  // Real dump: "Martial weapon" at [166,1249][346,1232] — clipped under the gesture bar, inverted bounds.
+  const clippedNode = findMatches(martialClipped, call)[0];
+  assert.deepEqual(clippedNode.bounds, { x1: 166, y1: 1249, x2: 346, y2: 1232 });
+  assert.equal(hasPositiveArea(clippedNode.bounds), false);
+  assert.equal(isVisible(clippedNode, VIEW), false);
+  assert.equal(findTarget(martialClipped, call, VIEW), null);
+  // The same page scrolled a little further: "Martial weapon" at [166,1084][346,1120], fully on screen.
+  const onNode = findTarget(martialOnscreen, call, VIEW);
+  assert.ok(onNode);
+  assert.deepEqual(onNode.bounds, { x1: 166, y1: 1084, x2: 346, y2: 1120 });
+  assert.deepEqual(centerOf(onNode, VIEW), { x: 256, y: 1102 });
+});
+
+test("on the real fixtures \"Fighting Styles\" is clipped below the fold, and \"Languages\" is below the fold on the Background first page", () => {
+  const fsCall = { method: "getByText", arg: "Fighting Styles", options: { exact: true }, index: 0 } as const;
+  const fsNode = findMatches(fightingClipped, fsCall)[0];
+  assert.deepEqual(fsNode.bounds, { x1: 66, y1: 1264, x2: 430, y2: 1232 });
+  assert.equal(hasPositiveArea(fsNode.bounds), false);
+  assert.equal(findTarget(fightingClipped, fsCall, VIEW), null);
+  // The Background tab's first page does not even list "Languages" (it is below the fold), and scrolled
+  // a little it is a clipped node at [66,1276][610,1232].
+  const langCall = { method: "getByText", arg: "Languages", options: { exact: true }, index: 0 } as const;
+  assert.equal(findMatches(backgroundFirst, langCall).length, 0);
+  assert.equal(findTarget(backgroundFirst, langCall, VIEW), null);
+  const langNode = findMatches(backgroundClipped, langCall)[0];
+  assert.deepEqual(langNode.bounds, { x1: 66, y1: 1276, x2: 610, y2: 1232 });
+  assert.equal(hasPositiveArea(langNode.bounds), false);
+});
+
+test("a clipped target steers the reveal swipe: below the fold means finger up, by the gap plus a margin, slowly", async () => {
+  // Real dumps: "Martial weapon" clipped at [166,1249][346,1232] (visible bottom 1232), then on screen.
+  const world = playerWorld([martialClipped, martialOnscreen]);
+  const result = await play(world, {
+    name: "t",
+    route: "/x",
+    open: [{ tap: { text: "Martial weapon", exact: true } }],
+    ready: "Starting Equipment & Gold:",
+  });
+  assert.deepEqual(result, { error: null, warnings: [] });
+  // One guided swipe inside the content ScrollView [0,252][720,1232]: the gap is 1249-1232=17 px, plus the
+  // margin, so the finger goes from y 1224 up by 17+margin over REVEAL_SWIPE_MS.
+  const distance = 1249 - 1232 + REVEAL_MARGIN_PX;
+  assert.deepEqual(world.swipes, [["360", "1224", "360", String(1224 - distance), String(REVEAL_SWIPE_MS)]]);
+  // Then the tap lands on the on-screen node's centre.
+  assert.deepEqual(world.taps, [{ x: 256, y: 1102 }]);
+});
+
+test("a clipped \"Languages\" on the real Background fixture steers the same guided swipe", async () => {
+  const revealed = backgroundClipped.map((node) =>
+    node.text === "Languages" ? { ...node, bounds: { x1: 66, y1: 800, x2: 610, y2: 838 } } : node,
+  );
+  const world = playerWorld([backgroundClipped, revealed]);
+  const result = await play(world, {
+    name: "t",
+    route: "/x",
+    open: [{ tap: { text: "Languages", exact: true } }],
+    ready: "Background Benefits:",
+  });
+  assert.deepEqual(result, { error: null, warnings: [] });
+  const distance = 1276 - 1232 + REVEAL_MARGIN_PX;
+  assert.deepEqual(world.swipes, [["360", "1224", "360", String(1224 - distance), String(REVEAL_SWIPE_MS)]]);
+  assert.deepEqual(world.taps, [{ x: 338, y: 819 }]);
+});
+
+test("the reveal ends at the swipe bound even when the clock never advances", async () => {
+  // A frozen clock: a loop bounded by the clock would never end (the dump budget makes it fail instead of
+  // hanging); the swipe bound ends it after MAX_SWIPES swipes.
+  const withScrollers = parseDump(`<hierarchy>${CONTENT}<node text="Ready Here" bounds="[0,400][100,440]" /></hierarchy>`);
+  const world = playerWorld([withScrollers], { frozen: true, maxDumps: 200 });
+  const result = await play(world, {
+    name: "t",
+    route: "/x",
+    open: [{ tap: { text: "Never There", exact: true } }],
+    ready: "Ready Here",
+  });
+  assert.match(result.error ?? "", /open step \{"text":"Never There","exact":true\} did not show/);
+  assert.match(result.error ?? "", new RegExp(`${MAX_SWIPES} swipes`));
+  assert.equal(world.swipes.length, MAX_SWIPES);
+});
+
+test("the ready text absent from the dump is searched by swiping in both directions", async () => {
+  // The page is mid-page (the ready text at the top is not in the dump); three identical dumps flip the
+  // direction up -> down -> up, and the fourth shows the ready text. The ready timeout (1 s here) would
+  // have cut the search after two polls.
+  const mid = parseDump(`<hierarchy>${CONTENT}<node text="Mid Page" bounds="[0,400][100,440]" /></hierarchy>`);
+  const top = parseDump(`<hierarchy>${CONTENT}<node text="Deep Ready" bounds="[0,100][200,140]" /></hierarchy>`);
+  const world = playerWorld([mid, mid, mid, top]);
+  const result = await play(world, { name: "t", route: "/x", ready: "Deep Ready" });
+  assert.deepEqual(result, { error: null, warnings: [] });
+  const up = ["360", "1224", "360", String(1224 - REVEAL_STEP_PX), String(REVEAL_SWIPE_MS)];
+  const down = ["360", "260", "360", String(260 + REVEAL_STEP_PX), String(REVEAL_SWIPE_MS)];
+  assert.deepEqual(world.swipes, [up, down, up]);
 });

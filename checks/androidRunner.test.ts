@@ -768,3 +768,23 @@ test("expect is not evaluated: a scenario whose expect cannot hold still produce
   assert.equal(world.callsTo("screencap").length, 1);
   assert.ok(world.logs.join("\n").includes("Review-notices-none-360.png"));
 });
+
+test("an absent scrollTo needle logs a warning naming the scenario and the needle, and the screenshot is still taken", async () => {
+  const shots = mkdtempSync(join(osTmpdir(), "android-runner-test-"));
+  // No dump ever shows the needle "Superiority Dice: 4d8 + 2d6".
+  const world = makeWorld({
+    ...emulatorWorld,
+    env: { ONLY: "Stats battle master superiority dice", WIDTHS: "360", SHOTS: shots },
+    dumpXml: BM_DUMP,
+  });
+  const code = await world.runRun();
+  assert.equal(code, 0);
+  const warnings = world.logs.filter((m) => m.includes("warning"));
+  assert.equal(warnings.length, 1);
+  assert.ok(warnings[0].includes("[360dp] Stats battle master superiority dice"));
+  assert.ok(warnings[0].includes('scrollTo "Superiority Dice: 4d8 + 2d6"'));
+  assert.equal(world.errors.length, 0);
+  assert.equal(world.callsTo("screencap").length, 1);
+  assert.equal(world.callsTo("pull").length, 1);
+  assert.ok(world.logs.join("\n").includes("Stats-battle-master-superiority-dice-360.png"));
+});
