@@ -12,7 +12,7 @@ The runner plays a scenario's `tabs`, `open`, `modal` and `scrollTo` fields on t
 
 ## Acceptance Criteria
 
-- [ ] AC-13: `tabs` and the `open` steps are carried out as taps on the text, pattern or label found in the dump, `modal` is the text waited for before the screenshot, `scrollTo` is carried out as swipes until the text shows, `expect` is not evaluated, and web-only scenarios are skipped and listed in the run's output.
+- [ ] AC-13: `tabs` and the `open` steps are carried out as taps on the text, pattern or label found in the dump, reaching a target that starts off the screen by swiping within a bounded number of swipes that does not depend on how long a dump takes; `modal` is the text waited for before the screenshot and the ready text counts as shown when it is on the screen at any scroll position; `scrollTo` is carried out as swipes until the text shows, and when no scroll position shows it the runner says so and takes the screenshot where it is; `expect` is not evaluated, and web-only scenarios are skipped and listed in the run's output.
 
 ## Verification
 

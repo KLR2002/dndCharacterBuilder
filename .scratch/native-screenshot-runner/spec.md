@@ -125,7 +125,7 @@ One point was filled in while writing this spec and is not a quoted decision: a 
 
 **Given** a scenario with `tabs`, `open`, `modal` or `scrollTo`
 **When** the runner runs it natively
-**Then** `tabs` and the `open` steps are carried out as taps on the text, pattern or label found in the dump, `modal` (the dialog's title) is the text waited for before the screenshot, `scrollTo` is carried out as swipes until the text shows, and `expect` is not evaluated.
+**Then** `tabs` and the `open` steps are carried out as taps on the text, pattern or label found in the dump, reaching a target that starts off the screen by swiping, within a bounded number of swipes that does not depend on how long a dump takes; `modal` (the dialog's title) is the text waited for before the screenshot, and the ready text counts as shown when it is on the screen at any scroll position; `scrollTo` is carried out as swipes until the text shows, and when no scroll position shows it the runner says so and takes the screenshot where it is, as the web check's `scrollTo` does nothing when its text is absent; and `expect` is not evaluated.
 
 ### AC-14: A stuck scenario is reported and does not stop the run
 
@@ -140,6 +140,12 @@ One point was filled in while writing this spec and is not a quoted decision: a 
 **Then** the app's data is cleared and the seed copied in again.
 **And Given** a scenario marked `modal`, **Then** the app is force-stopped and relaunched by deep link without clearing its data.
 **And Given** any other scenario, **Then** the runner only jumps to its route by deep link.
+
+### AC-18: A lost emulator is survived or reported
+
+**Given** the emulator the run uses goes offline or disappears during a run
+**When** the next scenario's first device call fails because of it
+**Then** if this run started the emulator, the runner boots it again (at most twice per run), installs the APK, sets the width's density again and repeats the scenario that was running; if the emulator was not started by this run, it stops with a message naming the scenario at which the device was lost and exits non-zero without running the remaining scenarios.
 
 ### AC-16: A term that matches nothing is an error
 
@@ -179,6 +185,7 @@ One point was filled in while writing this spec and is not a quoted decision: a 
 | AC-13 | Dump parser and step player | Test on fixture dump XML; a real run of one scenario with `tabs`, `open` and `scrollTo` |
 | AC-14 | Full run with a deliberately wrong `ready` | Run exits non-zero; `-FAILED.png` exists; later scenarios still produced PNGs |
 | AC-15 | Runner scenario loop | Test with a fake `adb` recording its calls; mutation check: delete each `pm clear`, `force-stop` and reseed line and see a test fail |
+| AC-18 | Runner scenario loop, with a fake `adb` that drops the device | `npm test`: the fake goes offline at a chosen scenario; with a runner-started emulator the sequence boots, installs, restores the density and repeats that scenario; with a reused emulator the run stops at that scenario with the message and a non-zero exit. Mutation check: delete the retry limit and the offline check and see a test fail. One real run in which the emulator is killed mid-run. |
 | AC-17 | The three docs | `grep -n 'layout:android' AGENTS.md CODING_STANDARDS.md docs/agents/driving-the-android-emulator.md` |
 
 ## Out of Scope
