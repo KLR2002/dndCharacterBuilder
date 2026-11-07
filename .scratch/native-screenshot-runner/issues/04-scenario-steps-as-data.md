@@ -1,6 +1,7 @@
 # 04: Scenario steps as data
 
-**Status:** ready-for-agent
+**Status:** done
+**Landed:** 04b7500. `checks/scenarioSteps.test.ts` 6/6 and `checks/scenariosModule.test.ts` 3/3, red-green (implementer). Main session on the merged tree: `layout-check.mjs --list` equals both fixtures (50 SRD, 67 integrated); full `npm run layout:check` GREEN in SRD mode (224 screenshots) and with `--integrated` (292 screenshots); `npm run check:all` exit 0 (1772 app tests, 305 scraper tests). Web-only scenarios: 1 of 50 (SRD) and 1 of 67 (integrated), `New Character modal`. Open: the native reading of `index` and `pattern` is ticket 07's seam.
 
 ## What to build
 
@@ -12,7 +13,7 @@ Every scenario's `open` and `modal` step becomes data (tap the text, with an opt
 
 ## Acceptance Criteria
 
-- [ ] AC-7: Each `open` and `modal` step in the shared module is data, the web runner plays it with the same outcome as today, a step with no native form marks its scenario web-only, and the number of web-only scenarios is reported under `## Comments` at the bottom of this ticket.
+- [x] AC-7: Each `open` and `modal` step in the shared module is data, the web runner plays it with the same outcome as today, a step with no native form marks its scenario web-only, and the number of web-only scenarios is reported under `## Comments` at the bottom of this ticket.
 
 ## Verification
 
