@@ -31,7 +31,7 @@ The app reads these keys when it launches:
 ## Open a character
 
 - `await page.goto(`${base}/character/${id}`, { waitUntil: "networkidle", timeout: 120000 })`, then wait about 1.5 s for the first render.
-- Tabs and subtabs are text: `page.getByText("Builder", { exact: true }).first().click()`, then `"Race"` and so on. Wait for a text the screen shows once it is ready (`ready` in `SCREENS` of layout-check).
+- Tabs and subtabs are text: `page.getByText("Builder", { exact: true }).first().click()`, then `"Race"` and so on. Wait for a text the screen shows once it is ready (`ready` in the shared scenario list, `scripts/lib/scenarios.mjs`).
 - Home is `/`, settings are `/options`.
 
 ## Gotchas
