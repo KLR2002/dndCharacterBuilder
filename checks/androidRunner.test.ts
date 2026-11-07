@@ -161,7 +161,7 @@ test("sdkPaths honors ANDROID_HOME, then ANDROID_SDK_ROOT, then the default ~/An
 
 test("emulatorArgs boots the AVD detached, headless unless --window", () => {
   const headless = emulatorArgs({ windowed: false });
-  assert.deepEqual(headless, ["-avd", AVD_NAME, "-no-snapshot-save", "-no-audio", "-no-window"]);
+  assert.deepEqual(headless, ["-avd", AVD_NAME, "-no-snapshot-save", "-no-audio", "-no-window", "-gpu", "host"]);
   const windowed = emulatorArgs({ windowed: true });
   assert.deepEqual(windowed, ["-avd", AVD_NAME, "-no-snapshot-save", "-no-audio"]);
 });
@@ -260,7 +260,7 @@ test("with no device the runner boots Small_Phone headless, waits for boot and s
   assert.equal(code, 0);
   assert.equal(world.starts.length, 1);
   assert.equal(world.starts[0].bin, join(SDK, "emulator", "emulator"));
-  assert.deepEqual(world.starts[0].args, ["-avd", "Small_Phone", "-no-snapshot-save", "-no-audio", "-no-window"]);
+  assert.deepEqual(world.starts[0].args, ["-avd", "Small_Phone", "-no-snapshot-save", "-no-audio", "-no-window", "-gpu", "host"]);
   assert.ok(world.callsTo("getprop sys.boot_completed").length >= 1);
   assert.equal(world.callsTo("-s emulator-5554 emu kill").length, 1);
 });

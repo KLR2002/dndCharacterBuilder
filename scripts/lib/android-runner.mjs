@@ -83,9 +83,11 @@ export function sdkPaths({ env, homeDir }) {
   return { sdk, adb: join(sdk, "platform-tools", "adb"), emulator: join(sdk, "emulator", "emulator") };
 }
 
-// The detached emulator start: headless, windowed with `--window`.
+// The detached emulator start: headless, windowed with `--window`. Headless runs on the host GPU:
+// the emulator's software renderer (its default without a window) segfaults during a cold boot of
+// this AVD, while `-gpu host` boots it.
 export function emulatorArgs({ windowed = false } = {}) {
-  return ["-avd", AVD_NAME, "-no-snapshot-save", "-no-audio", ...(windowed ? [] : ["-no-window"])];
+  return ["-avd", AVD_NAME, "-no-snapshot-save", "-no-audio", ...(windowed ? [] : ["-no-window", "-gpu", "host"])];
 }
 
 // The incremental E2E release build, run from android/.
