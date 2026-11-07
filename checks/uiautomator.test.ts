@@ -24,7 +24,7 @@ test("parseDump reads every node of a real dump, with decoded text and parsed bo
 test("parseDump handles a small synthetic dump: attributes, entities and clickable", () => {
   const xml =
     `<?xml version='1.0' encoding='UTF-8' standalone='yes' ?><hierarchy rotation="0">` +
-    `<node text="A &amp; B" content-desc="Quoted &quot;x&quot;" bounds="[0,0][10,20]" clickable="true" class="android.widget.Button" resource-id="id/one" />` +
+    `<node text="A &amp; B" content-desc="Quoted &quot;x&quot;" bounds="[0,0][10,20]" clickable="true" scrollable="true" class="android.widget.Button" resource-id="id/one" />` +
     `<node text="" content-desc="" bounds="[10,20][30,40]" clickable="false" class="android.widget.FrameLayout" resource-id="" />` +
     `</hierarchy>`;
   const nodes = parseDump(xml);
@@ -32,8 +32,10 @@ test("parseDump handles a small synthetic dump: attributes, entities and clickab
   assert.equal(nodes[0].text, "A & B");
   assert.equal(nodes[0].contentDesc, 'Quoted "x"');
   assert.equal(nodes[0].clickable, true);
+  assert.equal(nodes[0].scrollable, true);
   assert.equal(nodes[0].resourceId, "id/one");
   assert.deepEqual(nodes[0].bounds, { x1: 0, y1: 0, x2: 10, y2: 20 });
+  assert.equal(nodes[1].scrollable, false);
   assert.deepEqual(nodes[1].bounds, { x1: 10, y1: 20, x2: 30, y2: 40 });
 });
 
@@ -65,6 +67,6 @@ test("centerOf is the centre point of a node's bounds", () => {
   const node = findNode(nodes, /settings & compendium/i);
   assert.ok(node);
   assert.deepEqual(centerOf(node), { x: 360, y: 108 });
-  assert.deepEqual(centerOf({ text: "x", contentDesc: "", resourceId: "", className: "", clickable: false, bounds: { x1: 0, y1: 0, x2: 11, y2: 21 } }), { x: 6, y: 11 });
-  assert.equal(centerOf({ text: "x", contentDesc: "", resourceId: "", className: "", clickable: false, bounds: null }), null);
+  assert.deepEqual(centerOf({ text: "x", contentDesc: "", resourceId: "", className: "", clickable: false, scrollable: false, bounds: { x1: 0, y1: 0, x2: 11, y2: 21 } }), { x: 6, y: 11 });
+  assert.equal(centerOf({ text: "x", contentDesc: "", resourceId: "", className: "", clickable: false, scrollable: false, bounds: null }), null);
 });

@@ -18,11 +18,12 @@ import {
   gradleArgs,
   isEmulatorSerial,
   metroCacheRoot,
-  needsNativeSteps,
   parseAdbDevices,
   parseOnly,
+  parseSystemBarHeights,
   parseWidths,
   parseWmDensity,
+  parseWmSize,
   restoreDensityArgs,
   runAndroid,
   screenshotName,
@@ -38,7 +39,9 @@ import { buildScreens } from "../scripts/lib/scenarios.mjs";
 // (AC-8), the width-to-density mapping and the density restore (AC-9), the reuse/boot/stop lifecycle
 // (AC-10), the build step and its Metro cache separation (AC-11), the ONLY validation (AC-16) and the
 // seeded scenario execution (AC-12): reset, seed copy with run-as, deep-link launch, ready polling on
-// uiautomator dumps, and the pulled PNG screenshot.
+// uiautomator dumps, and the pulled PNG screenshot. It also pins the step player (AC-13): tabs and open
+// steps as taps on the matching dump node, the modal title waited for as the ready text, scrollTo as
+// swipes until the needle is visible, expect ignored, and web-only scenarios listed and skipped.
 
 const ROOT = "/repo";
 const HOME = "/home/test";
@@ -56,6 +59,13 @@ const PNG_BYTES = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0
 const DEFAULT_DUMP =
   `<hierarchy><node text="5e Character Builder" content-desc="" bounds="[0,0][300,60]" clickable="false" />` +
   `<node text="Settings &amp; Compendium" content-desc="" bounds="[185,86][534,129]" clickable="false" /></hierarchy>`;
+
+// The `dumpsys window windows` output the step player reads the bar heights from: both system bars are
+// `fillx48`; the NAVIGATION_BAR_PANEL line must not count as the bar.
+const DEFAULT_BARS =
+  `    mAttrs={(0,0)(fillx48) gr=TOP CENTER_VERTICAL ty=STATUS_BAR fmt=TRANSLUCENT\n` +
+  `    mAttrs={(0,0)(210x536) ty=NAVIGATION_BAR_PANEL fmt=TRANSLUCENT\n` +
+  `    mAttrs={(0,0)(fillx48) gr=BOTTOM CENTER_VERTICAL ty=NAVIGATION_BAR fmt=TRANSLUCENT\n`;
 
 const FAKE_SEED = JSON.stringify({
   characters: [{ id: "char_rendar", name: "Rendar" }],
@@ -78,6 +88,8 @@ function makeWorld(options: {
   seedCopyCode?: number;
   pullCode?: number;
   dumpXml?: string | ((poll: number) => string);
+  wmSize?: string;
+  bars?: string;
   pullBytes?: Buffer;
   gradleCode?: number;
   gradleStdout?: string;
@@ -94,6 +106,7 @@ function makeWorld(options: {
   const logs: string[] = [];
   const errors: string[] = [];
   const writes: { path: string; content: string }[] = [];
+  const sleeps: number[] = [];
   let seedCalls = 0;
   let emulatorStarted = false;
   let amStarts = 0;
@@ -112,6 +125,8 @@ function makeWorld(options: {
     if (joined.includes("wm density") && !/wm density \d+|wm density reset/.test(joined)) {
       return reply(0, options.wmDensity ?? "Physical density: 320\n");
     }
+    if (joined.includes("wm size")) return reply(0, options.wmSize ?? "Physical size: 720x1280\n");
+    if (joined.includes("dumpsys window windows")) return reply(0, options.bars ?? DEFAULT_BARS);
     if (args.includes("install")) {
       const code = options.installCode ?? 0;
       return code === 0 ? reply(0, "Success\n") : reply(code, "", "INSTALL_FAILED_OLDER_SDK\n");
@@ -158,10 +173,13 @@ function makeWorld(options: {
   const runRun = async () =>
     runAndroid({
       root: ROOT,
-      env: options.env ?? {},
+      // Without an explicit ONLY the world visits the two step-free scenarios (Home, Settings), the ones
+      // the scripted dumps satisfy.
+      env: { ONLY: "Home,Settings", ...(options.env ?? {}) },
       argv: options.argv ?? ["--no-build"],
       run,
       sleep: (ms: number) => {
+        sleeps.push(ms);
         clock += ms;
       },
       now: () => clock,
@@ -190,7 +208,7 @@ function makeWorld(options: {
       bootTimeoutMs: 60,
     });
   const callsTo = (needle: string) => calls.filter((c) => `${c.command} ${c.args.join(" ")}`.includes(needle));
-  return { calls, starts, handlers, logs, errors, writes, runRun, callsTo, get seedCalls() { return seedCalls; }, get dumps() { return dumps; } };
+  return { calls, starts, handlers, logs, errors, writes, sleeps, runRun, callsTo, get seedCalls() { return seedCalls; }, get dumps() { return dumps; } };
 }
 
 const emulatorWorld = { devices: "emulator-5554\tdevice\n" };
@@ -277,16 +295,15 @@ test("deepLinkForRoute maps a scenario route to the app's link scheme", () => {
   assert.equal(deepLinkForRoute("/character/char_rendar"), "dnd5e2014characterbuilder://character/char_rendar");
 });
 
-test("needsNativeSteps flags scenarios with tabs, open, modal or scrollTo", () => {
-  const screens: any[] = buildScreens({ integrated: false });
-  const byName = (name: string) => screens.find((screen) => screen.name === name);
-  assert.equal(needsNativeSteps(byName("Home")), false);
-  assert.equal(needsNativeSteps(byName("Settings")), false);
-  assert.equal(needsNativeSteps(byName("Stats")), true);
-  assert.equal(needsNativeSteps(byName("New Character modal")), true);
-  assert.equal(needsNativeSteps({ name: "x", route: "/", ready: "r", scrollTo: "y" }), true);
-  assert.equal(needsNativeSteps({ name: "x", route: "/", ready: "r", tabs: ["Stats"] }), true);
-  assert.equal(needsNativeSteps({ name: "x", route: "/", ready: "r" }), false);
+test("parseWmSize reads the physical screen size", () => {
+  assert.deepEqual(parseWmSize("Physical size: 720x1280\n"), { width: 720, height: 1280 });
+  assert.deepEqual(parseWmSize("Override size: 720x1280\nPhysical size: 720x1280\n"), { width: 720, height: 1280 });
+  assert.equal(parseWmSize("Override size: 1080x2400\n"), null);
+});
+
+test("parseSystemBarHeights reads the status and gesture bar heights, ignoring the nav bar panel", () => {
+  assert.deepEqual(parseSystemBarHeights(DEFAULT_BARS), { topBar: 48, bottomBar: 48 });
+  assert.deepEqual(parseSystemBarHeights(""), { topBar: 0, bottomBar: 0 });
 });
 
 test("the runner's seed file name matches the app's E2E_SEED_FILE_NAME", () => {
@@ -338,7 +355,18 @@ test("--list prints the scenario names as JSON and touches nothing", async () =>
 test("--integrated switches the scenario list the ONLY terms match against", async () => {
   const srd = makeWorld({ ...emulatorWorld, env: { ONLY: "tiefling" }, argv: ["--no-build"] });
   assert.equal(await srd.runRun(), 2);
-  const integrated = makeWorld({ ...emulatorWorld, env: { ONLY: "tiefling" }, argv: ["--no-build", "--integrated"] });
+  // The integrated list holds the two Tiefling scenarios; their dumps carry the tabs, the choice row and
+  // the CHA pick, so both play through.
+  const tiefling0 =
+    `<hierarchy><node text="Builder" bounds="[80,187][157,220]" /><node text="Race" bounds="[316,320][375,356]" />` +
+    `<node text="CHA" bounds="[10,500][60,540]" /><node text="Choose +2 to 1 ability score (0/1 chosen)" bounds="[52,600][600,650]" /></hierarchy>`;
+  const tiefling1 = tiefling0.replace("(0/1 chosen)", "(1/1 chosen)");
+  const integrated = makeWorld({
+    ...emulatorWorld,
+    env: { ONLY: "tiefling", WIDTHS: "360" },
+    argv: ["--no-build", "--integrated"],
+    dumpXml: (poll) => (poll <= 4 ? tiefling0 : tiefling1),
+  });
   assert.equal(await integrated.runRun(), 0);
 });
 
@@ -624,15 +652,15 @@ test("a scenario whose ready text never shows is reported failed and the run exi
   assert.equal(world.callsTo("wm density reset").length, 1);
 });
 
-test("a selected scenario with tabs, open, modal or scrollTo is listed as needing native steps and skipped", async () => {
+test("a web-only scenario is listed as skipped and never run", async () => {
   const shots = mkdtempSync(join(osTmpdir(), "android-runner-test-"));
-  const world = makeWorld({ ...emulatorWorld, env: { ONLY: "Stats", WIDTHS: "360", SHOTS: shots } });
+  const world = makeWorld({ ...emulatorWorld, env: { ONLY: "New Character modal", WIDTHS: "360", SHOTS: shots } });
   const code = await world.runRun();
   assert.equal(code, 0);
-  assert.ok(world.logs.join("\n").includes("needs native steps"));
-  assert.ok(world.logs.join("\n").includes("Stats"));
+  assert.ok(world.logs.join("\n").includes("Skipping New Character modal: web-only"));
   assert.equal(world.callsTo("am start").length, 0);
   assert.equal(world.callsTo("pm clear").length, 0);
+  assert.equal(world.callsTo("input tap").length, 0);
   assert.equal(world.seedCalls, 0);
 });
 
@@ -659,4 +687,84 @@ test("a pulled file that is not a PNG fails the scenario", async () => {
   assert.ok(world.errors.join("\n").includes("PNG"));
   assert.ok(world.errors.join("\n").includes("Home"));
   assert.equal(world.callsTo("wm density reset").length, 1);
+});
+
+// --- AC-13: the step fields play on the dumps ---
+
+// Dumps for the step scenarios: the tab bar with "Stats", the Stats screen with the Take Rest row, the same
+// with the Rest modal's title, and the Builder Class screen with and without the scrollTo needle.
+const STATS_DUMP =
+  `<hierarchy><node text="Stats" bounds="[241,187][297,220]" />` +
+  `<node text="Take Rest (Short / Long)" bounds="[80,298][346,364]" /></hierarchy>`;
+const MODAL_DUMP = STATS_DUMP.replace("</hierarchy>", `<node text="Rest &amp; Recovery" bounds="[100,400][620,450]" /></hierarchy>`);
+const BM_DUMP =
+  `<hierarchy><node text="Stats" bounds="[241,187][297,220]" />` +
+  `<node text="Hit Points" bounds="[0,100][200,140]" /></hierarchy>`;
+const NEEDLE_DUMP = BM_DUMP.replace("</hierarchy>", `<node text="Superiority Dice: 4d8 + 2d6" bounds="[52,900][500,950]" /></hierarchy>`);
+
+test("a scenario with tabs, an open step and a modal plays them as taps and a ready wait, then screenshots", async () => {
+  const shots = mkdtempSync(join(osTmpdir(), "android-runner-test-"));
+  const world = makeWorld({
+    ...emulatorWorld,
+    env: { ONLY: "Rest modal", WIDTHS: "360", SHOTS: shots },
+    dumpXml: (poll) => (poll === 1 ? STATS_DUMP : MODAL_DUMP),
+  });
+  const code = await world.runRun();
+  assert.equal(code, 0);
+  // The Stats tab at [241,187][297,220] and the Take Rest row at [80,298][346,364] are tapped; the modal
+  // title at [100,400][620,450] (centre 360,425) is waited for as the ready text, never tapped.
+  const taps = world.callsTo("input tap").map((c) => c.args.slice(-2));
+  assert.deepEqual(taps, [
+    ["269", "204"],
+    ["213", "331"],
+  ]);
+  assert.ok(!taps.some((t) => t.join(",") === "360,425"));
+  // The tab wait (500 ms) and the modal settle wait (500 ms); the ready text showed on the first poll.
+  assert.deepEqual(world.sleeps, [500, 500]);
+  assert.equal(world.callsTo("screencap").length, 1);
+  assert.equal(world.callsTo("pull").length, 1);
+  assert.ok(world.logs.join("\n").includes("Rest-modal-360.png"));
+});
+
+test("scrollTo swipes once until a dump shows the needle visible, after tapping the tab", async () => {
+  const shots = mkdtempSync(join(osTmpdir(), "android-runner-test-"));
+  const world = makeWorld({
+    ...emulatorWorld,
+    env: { ONLY: "Stats battle master superiority dice", WIDTHS: "360", SHOTS: shots },
+    dumpXml: (poll) => (poll <= 3 ? BM_DUMP : NEEDLE_DUMP),
+  });
+  const code = await world.runRun();
+  assert.equal(code, 0);
+  const taps = world.callsTo("input tap").map((c) => c.args.slice(-2));
+  assert.deepEqual(taps, [["269", "204"]]);
+  const swipes = world.callsTo("input swipe");
+  assert.equal(swipes.length, 1);
+  assert.deepEqual(swipes[0].args.slice(swipes[0].args.indexOf("swipe")), ["swipe", "360", "896", "360", "384", "300"]);
+  assert.equal(world.callsTo("screencap").length, 1);
+  assert.ok(world.logs.join("\n").includes("Stats-battle-master-superiority-dice-360.png"));
+});
+
+test("a tab whose target never shows fails the scenario with a message naming it and the run exits non-zero", async () => {
+  const shots = mkdtempSync(join(osTmpdir(), "android-runner-test-"));
+  const world = makeWorld({ ...emulatorWorld, env: { ONLY: "Stats", WIDTHS: "360", SHOTS: shots }, dumpXml: DEFAULT_DUMP });
+  const code = await world.runRun();
+  assert.equal(code, 1);
+  assert.ok(world.errors.join("\n").includes('tab "Stats" did not show'));
+  assert.ok(world.errors.join("\n").includes("[360dp] Stats"));
+  assert.equal(world.callsTo("input tap").length, 0);
+  assert.equal(world.callsTo("screencap").length, 0);
+  assert.equal(world.callsTo("wm density reset").length, 1);
+});
+
+test("expect is not evaluated: a scenario whose expect cannot hold still produces its screenshot", async () => {
+  const shots = mkdtempSync(join(osTmpdir(), "android-runner-test-"));
+  // "4 to review" is on screen, which the scenario's absentMatching would flag on web.
+  const dump =
+    `<hierarchy><node text="Stats" bounds="[241,187][297,220]" />` +
+    `<node text="Hit Points" bounds="[0,100][200,140]" /><node text="4 to review" bounds="[10,600][200,650]" /></hierarchy>`;
+  const world = makeWorld({ ...emulatorWorld, env: { ONLY: "Review notices none", WIDTHS: "360", SHOTS: shots }, dumpXml: dump });
+  const code = await world.runRun();
+  assert.equal(code, 0);
+  assert.equal(world.callsTo("screencap").length, 1);
+  assert.ok(world.logs.join("\n").includes("Review-notices-none-360.png"));
 });
