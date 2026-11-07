@@ -48,6 +48,7 @@ export function parseDump(xml) {
       resourceId: attrs["resource-id"] ?? "",
       className: attrs.class ?? "",
       clickable: attrs.clickable === "true",
+      scrollable: attrs.scrollable === "true",
       bounds: parseBounds(attrs.bounds),
     });
   }

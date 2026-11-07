@@ -115,7 +115,7 @@ test("visible means fully inside the screen and clear of the status and gesture 
   // app content clears the 48 px status bar, and the "Add language" button ends at y=1184, above the
   // gesture bar's 1280-48=1232.
   for (const node of charTabs) if (node.text) assert.ok(node.bounds && node.bounds.y1 >= VIEW.topBar, `"${node.text.slice(0, 20)}" starts at y=${node.bounds?.y1}`);
-  const node = (bounds: DumpNode["bounds"]) => ({ text: "x", contentDesc: "", resourceId: "", className: "", clickable: false, bounds });
+  const node = (bounds: DumpNode["bounds"]) => ({ text: "x", contentDesc: "", resourceId: "", className: "", clickable: false, scrollable: false, bounds });
   assert.equal(isVisible(node({ x1: 0, y1: 0, x2: 720, y2: 1280 }), VIEW), false); // the root container spans the screen
   assert.equal(isVisible(node({ x1: 80, y1: 187, x2: 157, y2: 220 }), VIEW), true); // a tab
   assert.equal(isVisible(node({ x1: 624, y1: 1120, x2: 688, y2: 1184 }), VIEW), true); // "Add language" in the fixture
@@ -184,6 +184,23 @@ test("scrollTo gives up after the swipe bound and fails naming the needle", asyn
   assert.match(String(result), /scrollTo "Starting Equipment" did not become visible/);
 });
 
+test("scrollTo flips direction when a swipe moves nothing, so a needle above is reached", async () => {
+  // The needle is visible only at the top of the content; the first two dumps show the bottom (the same
+  // geometry, so the second swipe goes down) and the third shows the needle.
+  const bottom = noNeedle;
+  const top = parseDump(
+    `<hierarchy><node text="Total Level: 1" bounds="[0,100][200,140]" /><node text="Starting Equipment" bounds="[52,300][400,350]" /></hierarchy>`,
+  );
+  const world = playerWorld([bottom, bottom, bottom, top]);
+  const result = await play(world, scrollScreen);
+  assert.equal(result, null);
+  assert.deepEqual(world.swipes, [
+    ["360", "896", "360", "384", "300"],
+    ["360", "384", "360", "896", "300"],
+  ]);
+  assert.deepEqual(world.taps, []);
+});
+
 test("a modal is waited for as the ready text and is not tapped", async () => {
   const modalDump = parseDump(
     `<hierarchy><node text="Take Rest (Short / Long)" bounds="[80,298][346,364]" /><node text="Rest &amp; Recovery" bounds="[100,400][620,450]" /></hierarchy>`,
@@ -218,4 +235,68 @@ test("expect is not evaluated: a screen that would fail it still plays", async (
   const world = playerWorld([withNotice]);
   const result = await play(world, { name: "t", route: "/x", ready: /hit points/i, expect: { absentMatching: [/ to review$/] } });
   assert.equal(result, null);
+});
+
+// --- Revealing off-screen targets: the dump names its scrollers, and a swipe inside one scrolls it ---
+
+// The scrollers of the character screen, as the dump reports them: the subtab bar (a HorizontalScrollView
+// at [32,284][688,392]) and the content (a ScrollView at [0,252][720,1232], ending at the gesture bar).
+const HBAR = `<node text="" class="android.widget.HorizontalScrollView" scrollable="true" bounds="[32,284][688,392]" />`;
+const CONTENT = `<node text="" class="android.widget.ScrollView" scrollable="true" bounds="[0,252][720,1232]" />`;
+
+test("a tab clipped off the tab bar is revealed by horizontal swipes on the tab bars only", async () => {
+  const before = parseDump(`<hierarchy>${HBAR}${CONTENT}<node text="Builder" bounds="[80,187][157,220]" /><node text="Ready Here" bounds="[0,400][100,440]" /></hierarchy>`);
+  const after = parseDump(`<hierarchy>${HBAR}${CONTENT}<node text="Builder" bounds="[80,187][157,220]" /><node text="Class" bounds="[585,320][650,356]" /><node text="Ready Here" bounds="[0,400][100,440]" /></hierarchy>`);
+  const world = playerWorld([before, after]);
+  const result = await play(world, { name: "t", route: "/x", tabs: ["Class"], ready: "Ready Here" });
+  assert.equal(result, null);
+  // The Class subtab at [585,320][650,356] is tapped once revealed; the swipe went left inside the tab
+  // bar (y fixed at 338, x from 590 to 130), never in the vertical content scroller.
+  assert.deepEqual(world.taps, [{ x: 618, y: 338 }]);
+  assert.deepEqual(world.swipes, [["590", "338", "130", "338", "300"]]);
+});
+
+test("the reveal direction flips when a swipe moves nothing, so a tab on the other side is found", async () => {
+  const a = parseDump(`<hierarchy>${HBAR}${CONTENT}<node text="Builder" bounds="[80,187][157,220]" /><node text="Ready Here" bounds="[0,400][100,440]" /></hierarchy>`);
+  const b = parseDump(`<hierarchy>${HBAR}${CONTENT}<node text="Builder" bounds="[80,187][157,220]" /><node text="Class" bounds="[585,320][650,356]" /><node text="Ready Here" bounds="[0,400][100,440]" /></hierarchy>`);
+  // The first dump scrolls nowhere (the bar is at its left end), so the second swipe goes right.
+  const world = playerWorld([a, a, b]);
+  const result = await play(world, { name: "t", route: "/x", tabs: ["Class"], ready: "Ready Here" });
+  assert.equal(result, null);
+  assert.deepEqual(world.taps, [{ x: 618, y: 338 }]);
+  assert.deepEqual(world.swipes, [
+    ["590", "338", "130", "338", "300"],
+    ["130", "338", "590", "338", "300"],
+  ]);
+});
+
+test("an open step below the fold is revealed by swiping the scrollers, then tapped", async () => {
+  const top = parseDump(`<hierarchy>${HBAR}${CONTENT}<node text="Hit Points" bounds="[0,100][200,140]" /></hierarchy>`);
+  const bottom = parseDump(`<hierarchy>${HBAR}${CONTENT}<node text="Hit Points" bounds="[0,100][200,140]" /><node text="" content-desc="Add language" bounds="[624,1120][688,1184]" /></hierarchy>`);
+  const world = playerWorld([top, bottom]);
+  const result = await play(world, { name: "t", route: "/x", open: [{ tap: { label: "Add language" } }], ready: "Hit Points" });
+  assert.equal(result, null);
+  assert.deepEqual(world.taps, [{ x: 656, y: 1152 }]);
+  // One reveal round swiped both scrollers: the tab bar horizontally and the content vertically
+  // (x fixed at 360, y from 1085 to 399 inside [0,252][720,1232]).
+  const vertical = world.swipes.filter((s) => s[0] === s[2]);
+  assert.deepEqual(vertical, [["360", "1085", "360", "399", "300"]]);
+});
+
+test("the ready text scrolled off is revealed by swiping the scrollers too", async () => {
+  const top = parseDump(`<hierarchy>${CONTENT}<node text="Top" bounds="[0,100][100,140]" /></hierarchy>`);
+  const scrolled = parseDump(`<hierarchy>${CONTENT}<node text="Deep Ready" bounds="[0,900][200,940]" /></hierarchy>`);
+  const world = playerWorld([top, scrolled]);
+  const result = await play(world, { name: "t", route: "/x", ready: "Deep Ready" });
+  assert.equal(result, null);
+  assert.ok(world.swipes.length >= 1);
+});
+
+test("a target that never appears fails after the ready timeout, swipes included", async () => {
+  const withScrollers = parseDump(`<hierarchy>${HBAR}${CONTENT}<node text="Ready Here" bounds="[0,400][100,440]" /></hierarchy>`);
+  const world = playerWorld([withScrollers]);
+  const result = await play(world, { name: "t", route: "/x", tabs: ["Nope"], ready: "Ready Here" });
+  assert.match(String(result), /tab "Nope" did not show/);
+  assert.ok(world.swipes.length > 0);
+  assert.equal(world.taps.length, 0);
 });

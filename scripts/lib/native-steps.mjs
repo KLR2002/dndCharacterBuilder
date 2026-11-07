@@ -54,20 +54,62 @@ export function isVisible(node, view) {
 }
 
 // The swipe that scrolls content up (the finger moves up), as `input swipe` arguments: mid-screen, from 70%
-// to 30% of the height, kept clear of the bottom gesture bar.
+// to 30% of the height, kept clear of the bottom gesture bar. Down is its mirror.
 export function swipeUpArgs(view) {
   const x = Math.round(view.width / 2);
   return [x, Math.round(view.height * 0.7), x, Math.round(view.height * 0.3), SWIPE_MS];
 }
 
-// Polls the dump until the call's target shows, as long as the ready wait polls. Returns the node, or null
-// when the timeout passes.
-async function waitForTarget({ dump, call, sleep, now, timeoutMs, pollMs }) {
-  const deadline = now() + timeoutMs;
+export function swipeDownArgs(view) {
+  const x = Math.round(view.width / 2);
+  return [x, Math.round(view.height * 0.3), x, Math.round(view.height * 0.7), SWIPE_MS];
+}
+
+// The swipe inside one of the dump's scrollers, along its orientation and the given direction: for a
+// vertical ScrollView up (the finger moves from 85% to 15% of it, content moves up) or down; for a
+// HorizontalScrollView left (items clipped at the right edge come into view) or right. The scroller's
+// bounds already end at the gesture bar, so the swipe stays inside it.
+export function scrollerSwipeArgs(node, direction) {
+  const b = node.bounds;
+  if (node.className.includes("HorizontalScrollView")) {
+    const y = Math.round((b.y1 + b.y2) / 2);
+    const [from, to] = direction.horizontal === "left" ? [0.85, 0.15] : [0.15, 0.85];
+    return [Math.round(b.x1 + (b.x2 - b.x1) * from), y, Math.round(b.x1 + (b.x2 - b.x1) * to), y, SWIPE_MS];
+  }
+  const x = Math.round((b.x1 + b.x2) / 2);
+  const [from, to] = direction.vertical === "up" ? [0.85, 0.15] : [0.15, 0.85];
+  return [x, Math.round(b.y1 + (b.y2 - b.y1) * from), x, Math.round(b.y1 + (b.y2 - b.y1) * to), SWIPE_MS];
+}
+
+// The geometry of a dump (the bounds of its nodes): two dumps with the same geometry did not scroll.
+function geometryOf(nodes) {
+  return nodes.map((n) => (n.bounds ? `${n.bounds.x1},${n.bounds.y1},${n.bounds.x2},${n.bounds.y2}` : "")).join(";");
+}
+
+// Polls the dump until `find` matches, as long as the ready wait polls. The dump lists only what is on
+// screen, while the web click scrolls its target into view, so a target missing from the dump is revealed
+// by swiping inside the dump's scrollers first (tabs only in the horizontal tab bars, other steps in every
+// scroller). The direction flips when a swipe moves nothing, i.e. the scroller is at that end, so a target
+// above the current position is found too. Returns the match, or null when the timeout passes.
+async function pollRevealing({ dump, swipe, find, sleep, now, deadline, pollMs, horizontalOnly = false }) {
+  let direction = { vertical: "up", horizontal: "left" };
+  let previous = null;
   for (;;) {
-    const node = findTarget(dump(), call);
-    if (node) return node;
+    const nodes = dump();
+    const found = find(nodes);
+    if (found) return found;
     if (now() >= deadline) return null;
+    let scrollers = nodes.filter((n) => n.scrollable && n.bounds);
+    if (horizontalOnly) scrollers = scrollers.filter((n) => n.className.includes("HorizontalScrollView"));
+    const geometry = geometryOf(nodes);
+    if (previous === geometry) {
+      direction = {
+        vertical: direction.vertical === "up" ? "down" : "up",
+        horizontal: direction.horizontal === "left" ? "right" : "left",
+      };
+    }
+    previous = geometry;
+    for (const scroller of scrollers) swipe(scrollerSwipeArgs(scroller, direction));
     await sleep(pollMs);
   }
 }
@@ -79,10 +121,21 @@ async function waitForTarget({ dump, call, sleep, now, timeoutMs, pollMs }) {
 // screen is ready for its screenshot, or a message naming the step that failed.
 export async function playScreen({ screen, dump, tap, swipe, view, sleep, now, timeoutMs, pollMs }) {
   const seconds = Math.round(timeoutMs / 1000);
+  const deadlineFor = () => now() + timeoutMs;
   for (const tab of screen.tabs ?? []) {
     // A tab is the web check's getByText(tab, { exact: true }).first(): the exact text, the first match.
+    // Tabs sit in the horizontal tab bars, so the reveal swipes there stay horizontal.
     const call = { method: "getByText", arg: tab, options: { exact: true }, index: 0 };
-    const node = await waitForTarget({ dump, call, sleep, now, timeoutMs, pollMs });
+    const node = await pollRevealing({
+      dump,
+      swipe,
+      find: (nodes) => findTarget(nodes, call),
+      sleep,
+      now,
+      deadline: deadlineFor(),
+      pollMs,
+      horizontalOnly: true,
+    });
     if (!node) return `tab "${tab}" did not show within ${seconds} s`;
     const point = centerOf(node);
     if (!point) return `tab "${tab}" matched a node with no bounds`;
@@ -93,7 +146,15 @@ export async function playScreen({ screen, dump, tap, swipe, view, sleep, now, t
     const call = describeStep(step);
     if (call.name !== undefined) return `open step "${call.name}" has no native form`;
     const what = `open step ${JSON.stringify(step.tap)}`;
-    const node = await waitForTarget({ dump, call, sleep, now, timeoutMs, pollMs });
+    const node = await pollRevealing({
+      dump,
+      swipe,
+      find: (nodes) => findTarget(nodes, call),
+      sleep,
+      now,
+      deadline: deadlineFor(),
+      pollMs,
+    });
     if (!node) return `${what} did not show within ${seconds} s`;
     const point = centerOf(node);
     if (!point) return `${what} matched a node with no bounds`;
@@ -101,22 +162,34 @@ export async function playScreen({ screen, dump, tap, swipe, view, sleep, now, t
   }
   // The ready text: a modal scenario waits for the dialog's title string; it is never tapped.
   const ready = screen.modal ?? screen.ready;
-  const deadline = now() + timeoutMs;
-  for (;;) {
-    if (findNode(dump(), ready)) break;
-    if (now() >= deadline) return `ready text ${typeof ready === "string" ? `"${ready}"` : ready} did not show within ${seconds} s`;
-    await sleep(pollMs);
-  }
+  const readyNode = await pollRevealing({
+    dump,
+    swipe,
+    find: (nodes) => findNode(nodes, ready),
+    sleep,
+    now,
+    deadline: deadlineFor(),
+    pollMs,
+  });
+  if (!readyNode) return `ready text ${typeof ready === "string" ? `"${ready}"` : ready} did not show within ${seconds} s`;
   if (screen.scrollTo) {
     const needle = screen.scrollTo;
-    const visible = () => dump().some((node) => node.text.includes(needle) && isVisible(node, view));
+    // scrollTo swipes mid-screen until the needle is visible; the direction flips when a swipe moves
+    // nothing, so a needle above the current position is reached too. Bounded by MAX_SWIPES swipes.
     let swipes = 0;
-    while (!visible() && swipes < MAX_SWIPES) {
-      swipe(swipeUpArgs(view));
+    let direction = "up";
+    let previous = null;
+    for (;;) {
+      const nodes = dump();
+      if (nodes.some((node) => node.text.includes(needle) && isVisible(node, view))) break;
+      if (swipes >= MAX_SWIPES) return `scrollTo "${needle}" did not become visible within ${MAX_SWIPES} swipes`;
+      const geometry = geometryOf(nodes);
+      if (previous === geometry) direction = direction === "up" ? "down" : "up";
+      previous = geometry;
+      swipe(direction === "up" ? swipeUpArgs(view) : swipeDownArgs(view));
       swipes += 1;
       await sleep(pollMs);
     }
-    if (!visible()) return `scrollTo "${needle}" did not become visible within ${MAX_SWIPES} swipes`;
   }
   await sleep(screen.modal ? MODAL_SETTLE_WAIT_MS : SETTLE_WAIT_MS);
   return null;
