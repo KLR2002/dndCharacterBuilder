@@ -32,6 +32,7 @@ import {
   waitForExpoWeb,
 } from "./lib/app-driver.mjs";
 import { buildScreens, buildSeed, CHARACTER_ID, DRUID_ID } from "./lib/scenarios.mjs";
+import { playSteps } from "./lib/web-steps.mjs";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const BASE = process.env.BASE ?? "http://localhost:8099";
@@ -434,7 +435,7 @@ async function visitScreen(page, width, screen, state) {
       await page.getByText(tab, { exact: true }).first().click();
       await page.waitForTimeout(500);
     }
-    if (screen.open) await screen.open(page);
+    if (screen.open) await playSteps(page, screen.open);
     await readyLocator.first().waitFor({ state: "visible", timeout: 10000 });
   } catch {
     console.log(`${prefix} did not show ${typeof ready === "string" ? `"${ready}"` : ready} in time`);

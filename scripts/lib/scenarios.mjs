@@ -871,24 +871,15 @@ export function buildSeed({ root, integrated }) {
   };
 }
 
-// Taps the round add button at the right end of the home header. It has no text or label, so it is found by place.
-async function tapHeaderAdd(page) {
-  const point = await page.evaluate(() => {
-    const buttons = [...document.querySelectorAll('div[tabindex="0"]')]
-      .map((el) => el.getBoundingClientRect())
-      .filter((r) => r.width === 36 && r.height === 36 && r.top < 80)
-      .sort((a, b) => b.left - a.left);
-    return buttons[0] ? { x: buttons[0].left + 18, y: buttons[0].top + 18 } : null;
-  });
-  if (!point) throw new Error("home header add button not found");
-  await page.mouse.click(point.x, point.y);
-}
-
 export function buildScreens({ integrated }) {
   INTEGRATED = integrated;
   // The screens each width visits, in order. `route` is opened first (a modal always reopens its route).
-  // `tabs` are tapped in order. `open` taps the control that opens a modal, and `modal` is that modal's
-  // title. `ready` (a string or regex) is text the screen shows once it is ready. `scrollTo` scrolls a needle into view.
+  // `tabs` are tapped in order. `open` is the list of steps played in order (for example the one that opens a
+  // modal), and `modal` is that modal's title. Each step is one tap, as data: `{ tap: { text, exact } }` taps by
+  // text, `{ tap: { pattern } }` by a text pattern, `{ tap: { label, exact } }` by accessibility label, and
+  // `index` picks which match to tap (the first by default). A step with `name` instead of a locator has no
+  // native form; the scenario carrying one is flagged web-only below. `ready` (a string or regex) is text the
+  // screen shows once it is ready. `scrollTo` scrolls a needle into view.
   const RENDAR_ROUTE = `/character/${CHARACTER_ID}`;
   const WIZARD_ROUTE = `/character/${WIZARD_ID}`;
   const ARTIFICER_ROUTE = `/character/${ARTIFICER_ID}`;
@@ -910,7 +901,7 @@ export function buildScreens({ integrated }) {
   const CLERIC_DOMAIN_ROUTE = `/character/${CLERIC_DOMAIN_ID}`;
   const KNOWLEDGE_ROUTE = `/character/${KNOWLEDGE_ID}`;
   const MULTICLASS_SKILLS_ROUTE = `/character/${MULTICLASS_SKILLS_ID}`;
-      return [
+  const screens = [
       { name: "Builder Abilities", route: RENDAR_ROUTE, tabs: ["Builder", "Abilities"], ready: /points remaining/i },
       { name: "Builder Race", route: RENDAR_ROUTE, tabs: ["Builder", "Race"], ready: /traits:/i },
       { name: "Builder Race language choice", route: HALF_ELF_ROUTE, tabs: ["Builder", "Race"], ready: /Granted Languages:/, scrollTo: "Granted Languages:" },
@@ -929,7 +920,7 @@ export function buildScreens({ integrated }) {
               name: "Builder Race Tiefling choice row picked",
               route: `/character/${TIEFLING_ID}`,
               tabs: ["Builder", "Race"],
-              open: (page) => page.getByText("CHA", { exact: true }).first().click(),
+              open: [{ tap: { text: "CHA", exact: true } }],
               ready: "Choose +2 to 1 ability score (1/1 chosen)",
               scrollTo: "Choose +2 to 1 ability score",
               expect: { texts: ["CHA +2", "DEX"], absent: ["STR", "INT", "WIS"], fitsWidth: true },
@@ -946,7 +937,7 @@ export function buildScreens({ integrated }) {
         name: "Builder Background custom form",
         route: NO_BG_ROUTE,
         tabs: ["Builder", "Background"],
-        open: (page) => page.getByText("Create Custom", { exact: true }).first().click(),
+        open: [{ tap: { text: "Create Custom", exact: true } }],
         ready: "Apply Custom Background",
         scrollTo: "Feature from Another Background (optional):",
         expect: {
@@ -1003,7 +994,7 @@ export function buildScreens({ integrated }) {
       // The equipment card: one option per slot, the picker of a generic entry, Claim disabled until every slot is picked.
       { name: "Builder Class equipment choices", route: FIGHTER_ROUTE, tabs: ["Builder", "Class"], ready: "Starting Equipment & Gold:", scrollTo: "Starting Equipment & Gold:", expect: { texts: ["Chain Mail", "Choice 1 of 4"], disabled: ["Claim Starting Equipment"], fitsWidth: true } },
       { name: "Builder Class equipment picked", route: FIGHTER_PICKED_ROUTE, tabs: ["Builder", "Class"], ready: "Starting Equipment & Gold:", scrollTo: "Starting Equipment & Gold:", expect: { enabled: ["Claim Starting Equipment"], fitsWidth: true } },
-      { name: "Builder Class equipment picker open", route: FIGHTER_PICKED_ROUTE, tabs: ["Builder", "Class"], open: (page) => page.getByText("Martial weapon", { exact: true }).first().click(), ready: "Greatsword", scrollTo: "Martial weapon", expect: { placeholders: ["Search…"] } },
+      { name: "Builder Class equipment picker open", route: FIGHTER_PICKED_ROUTE, tabs: ["Builder", "Class"], open: [{ tap: { text: "Martial weapon", exact: true } }], ready: "Greatsword", scrollTo: "Martial weapon", expect: { placeholders: ["Search…"] } },
       { name: "Builder Class equipment cleric domain", route: CLERIC_DOMAIN_ROUTE, tabs: ["Builder", "Class"], ready: "Starting Equipment & Gold:", scrollTo: "Starting Equipment & Gold:", expect: { texts: ["Chain Mail", "Included"], absent: ["Warhammer"], fitsWidth: true } },
       // The SRD Baseline has one Cleric domain, which the app applies at once, so a Cleric without a domain exists in integrated mode only.
       ...(INTEGRATED
@@ -1024,29 +1015,29 @@ export function buildScreens({ integrated }) {
       // again (`fresh`), so the cards start open whatever the scenario before it left collapsed.
       ...(INTEGRATED
         ? [
-            { name: "Builder Class skills card collapsed", route: KNOWLEDGE_ROUTE, fresh: true, tabs: ["Builder", "Class"], ready: /total level/i, open: async (page) => { for (const title of ["Skills", "Class & Subclass Choices", "Expertise"]) await page.getByText(title, { exact: true }).first().click(); }, scrollTo: "Class & Subclass Choices", expect: { texts: ["Skills", "Class & Subclass Choices", "Expertise"], absent: ["Blessings of Knowledge", "Cleric starting skills", "Blessings of Knowledge: Language", "Rogue Expertise (Level 1)"], fitsWidth: true } },
-            { name: "Builder Class skills card reopened", route: KNOWLEDGE_ROUTE, fresh: true, tabs: ["Builder", "Class"], ready: /total level/i, open: async (page) => { const title = page.getByText("Class & Subclass Choices", { exact: true }).first(); await title.click(); await title.click(); }, scrollTo: "Class & Subclass Choices", expect: { texts: ["Class & Subclass Choices", "Blessings of Knowledge: Language"], fitsWidth: true } },
+            { name: "Builder Class skills card collapsed", route: KNOWLEDGE_ROUTE, fresh: true, tabs: ["Builder", "Class"], ready: /total level/i, open: [{ tap: { text: "Skills", exact: true } }, { tap: { text: "Class & Subclass Choices", exact: true } }, { tap: { text: "Expertise", exact: true } }], scrollTo: "Class & Subclass Choices", expect: { texts: ["Skills", "Class & Subclass Choices", "Expertise"], absent: ["Blessings of Knowledge", "Cleric starting skills", "Blessings of Knowledge: Language", "Rogue Expertise (Level 1)"], fitsWidth: true } },
+            { name: "Builder Class skills card reopened", route: KNOWLEDGE_ROUTE, fresh: true, tabs: ["Builder", "Class"], ready: /total level/i, open: [{ tap: { text: "Class & Subclass Choices", exact: true } }, { tap: { text: "Class & Subclass Choices", exact: true } }], scrollTo: "Class & Subclass Choices", expect: { texts: ["Class & Subclass Choices", "Blessings of Knowledge: Language"], fitsWidth: true } },
           ]
-        : [{ name: "Builder Class skills card collapsed", route: MULTICLASS_SKILLS_ROUTE, tabs: ["Builder", "Class"], ready: /total level/i, open: (page) => page.getByText("Skills", { exact: true }).first().click(), scrollTo: "Class & Subclass Choices", expect: { texts: ["Skills"], absent: ["Fighter starting skills"], fitsWidth: true } }]),
+        : [{ name: "Builder Class skills card collapsed", route: MULTICLASS_SKILLS_ROUTE, tabs: ["Builder", "Class"], ready: /total level/i, open: [{ tap: { text: "Skills", exact: true } }], scrollTo: "Class & Subclass Choices", expect: { texts: ["Skills"], absent: ["Fighter starting skills"], fitsWidth: true } }]),
       { name: "Builder Class optional features card", route: RANGER_ROUTE, tabs: ["Builder", "Class"], ready: /total level/i, scrollTo: "Optional & Replacement Class Features:", expect: { texts: ["Optional & Replacement Class Features:", "Deft Explorer", "Favored Foe"], fitsWidth: true } },
-      { name: "Builder Class optional features card collapsed", route: RANGER_ROUTE, fresh: true, tabs: ["Builder", "Class"], ready: /total level/i, open: (page) => page.getByText("Optional & Replacement Class Features:", { exact: true }).first().click(), scrollTo: "Optional & Replacement Class Features:", expect: { texts: ["Optional & Replacement Class Features:", "Tasha's Cauldron optional features and replacements for your classes."], absent: ["Deft Explorer", "Favored Foe"], fitsWidth: true } },
+      { name: "Builder Class optional features card collapsed", route: RANGER_ROUTE, fresh: true, tabs: ["Builder", "Class"], ready: /total level/i, open: [{ tap: { text: "Optional & Replacement Class Features:", exact: true } }], scrollTo: "Optional & Replacement Class Features:", expect: { texts: ["Optional & Replacement Class Features:", "Tasha's Cauldron optional features and replacements for your classes."], absent: ["Deft Explorer", "Favored Foe"], fitsWidth: true } },
       // A choice card with a badge: the Fighting Style badge sits in the title row beside the chevron, in both states.
       { name: "Builder Class fighting styles card", route: FIGHTER_ROUTE, fresh: true, tabs: ["Builder", "Class"], ready: /total level/i, scrollTo: "Fighting Styles", expect: { texts: ["Fighting Styles", "Fighting Style", "Martial specialization granting passive combat bonuses or additional cantrips."], fitsWidth: true } },
-      { name: "Builder Class fighting styles card collapsed", route: FIGHTER_ROUTE, fresh: true, tabs: ["Builder", "Class"], ready: /total level/i, open: (page) => page.getByText("Fighting Styles", { exact: true }).first().click(), scrollTo: "Fighting Styles", expect: { texts: ["Fighting Styles", "Fighting Style", "Martial specialization granting passive combat bonuses or additional cantrips."], absent: ["Archery", "Blind Fighting", "Defense"], fitsWidth: true } },
+      { name: "Builder Class fighting styles card collapsed", route: FIGHTER_ROUTE, fresh: true, tabs: ["Builder", "Class"], ready: /total level/i, open: [{ tap: { text: "Fighting Styles", exact: true } }], scrollTo: "Fighting Styles", expect: { texts: ["Fighting Styles", "Fighting Style", "Martial specialization granting passive combat bonuses or additional cantrips."], absent: ["Archery", "Blind Fighting", "Defense"], fitsWidth: true } },
       // The Race card: the Variant Human's language and skill picks, named by what they pick, then collapsed to its title.
       ...(INTEGRATED
         ? [
             { name: "Builder Race skill picks", route: KNOWLEDGE_ROUTE, tabs: ["Builder", "Race"], ready: /traits:/i, scrollTo: "Languages & Proficiencies", expect: { texts: ["Languages & Proficiencies", "Language", "Skill"], fitsWidth: true } },
-            { name: "Builder Race skill picks collapsed", route: KNOWLEDGE_ROUTE, tabs: ["Builder", "Race"], ready: "Languages & Proficiencies", open: (page) => page.getByText("Languages & Proficiencies", { exact: true }).first().click(), scrollTo: "Languages & Proficiencies", expect: { absent: ["Granted Languages:", "Language", "Skill"], fitsWidth: true } },
+            { name: "Builder Race skill picks collapsed", route: KNOWLEDGE_ROUTE, tabs: ["Builder", "Race"], ready: "Languages & Proficiencies", open: [{ tap: { text: "Languages & Proficiencies", exact: true } }], scrollTo: "Languages & Proficiencies", expect: { absent: ["Granted Languages:", "Language", "Skill"], fitsWidth: true } },
           ]
-        : [{ name: "Builder Race skill picks collapsed", route: HALF_ELF_ROUTE, tabs: ["Builder", "Race"], ready: "Languages & Proficiencies", open: (page) => page.getByText("Languages & Proficiencies", { exact: true }).first().click(), scrollTo: "Languages & Proficiencies", expect: { absent: ["Granted Languages:"], fitsWidth: true } }]),
+        : [{ name: "Builder Race skill picks collapsed", route: HALF_ELF_ROUTE, tabs: ["Builder", "Race"], ready: "Languages & Proficiencies", open: [{ tap: { text: "Languages & Proficiencies", exact: true } }], scrollTo: "Languages & Proficiencies", expect: { absent: ["Granted Languages:"], fitsWidth: true } }]),
       // The picks card's options are listed under its title when open, and the title row alone when collapsed.
       { name: "Builder Background picks card", route: RENDAR_ROUTE, tabs: ["Builder", "Background"], ready: /background benefits/i, scrollTo: "Languages", expect: { texts: ["Languages", "Dwarvish"], fitsWidth: true } },
-      { name: "Builder Background picks card collapsed", route: RENDAR_ROUTE, tabs: ["Builder", "Background"], ready: "Languages", open: (page) => page.getByText("Languages", { exact: true }).first().click(), scrollTo: "Languages", expect: { texts: ["Languages"], absent: ["Dwarvish"], fitsWidth: true } },
+      { name: "Builder Background picks card collapsed", route: RENDAR_ROUTE, tabs: ["Builder", "Background"], ready: "Languages", open: [{ tap: { text: "Languages", exact: true } }], scrollTo: "Languages", expect: { texts: ["Languages"], absent: ["Dwarvish"], fitsWidth: true } },
       { name: "Stats", route: RENDAR_ROUTE, tabs: ["Stats"], ready: /hit points/i },
       { name: "Stats long header name", route: LONG_NAME_ROUTE, tabs: ["Stats"], ready: /hit points/i, headerName: LONG_NAME },
-      { name: "Stats add tool modal", route: RENDAR_ROUTE, tabs: ["Stats"], open: (page) => page.getByLabel("Add tool proficiency").first().click(), modal: "Add Tool Proficiency" },
-      { name: "Stats add language modal", route: RENDAR_ROUTE, tabs: ["Stats"], open: (page) => page.getByLabel("Add language").first().click(), modal: "Add Language" },
+      { name: "Stats add tool modal", route: RENDAR_ROUTE, tabs: ["Stats"], open: [{ tap: { label: "Add tool proficiency" } }], modal: "Add Tool Proficiency" },
+      { name: "Stats add language modal", route: RENDAR_ROUTE, tabs: ["Stats"], open: [{ tap: { label: "Add language" } }], modal: "Add Language" },
       // The Initiative box opens its breakdown (integrated mode only, where the Rogue's and the Wizard's Initiative Bonuses exist).
       ...(INTEGRATED
         ? [
@@ -1054,7 +1045,7 @@ export function buildScreens({ integrated }) {
               name: "Stats initiative breakdown modal",
               route: INITIATIVE_ROUTE,
               tabs: ["Stats"],
-              open: (page) => page.getByLabel("Initiative breakdown", { exact: true }).first().click(),
+              open: [{ tap: { label: "Initiative breakdown", exact: true } }],
               modal: "Initiative",
               expect: { texts: ["Dexterity", "+2", "Rakish Audacity", "+3", "Tactical Wit", "+3", "Total", "+8"], fitsWidth: true },
             },
@@ -1176,18 +1167,21 @@ export function buildScreens({ integrated }) {
       { name: "Journal", route: RENDAR_ROUTE, tabs: ["Journal"], ready: /character name/i },
       { name: "Actions", route: RENDAR_ROUTE, tabs: ["Actions"], ready: /attack action/i },
       { name: "Review notices collapsed", route: NOTICES_ROUTE, tabs: ["Stats"], ready: "4 to review", expect: { texts: ["4 to review"], absent: [REVIEW_NOTICES[0]], fitsWidth: true } },
-      { name: "Review notices expanded", route: NOTICES_ROUTE, tabs: ["Journal"], open: (page) => page.getByText("4 to review", { exact: true }).first().click(), ready: "Dismiss all", scrollTo: "Dismiss all", expect: { texts: [...REVIEW_NOTICES, "Dismiss all"], fitsWidth: true } },
+      { name: "Review notices expanded", route: NOTICES_ROUTE, tabs: ["Journal"], open: [{ tap: { text: "4 to review", exact: true } }], ready: "Dismiss all", scrollTo: "Dismiss all", expect: { texts: [...REVIEW_NOTICES, "Dismiss all"], fitsWidth: true } },
       { name: "Review notices two collapsed", route: NOTICES_FEW_ROUTE, tabs: ["Stats"], ready: "2 to review", expect: { texts: ["2 to review"], absent: [NOTICES_FEW[0]], fitsWidth: true } },
-      { name: "Review notices dismiss rows apart", route: NOTICES_FEW_ROUTE, tabs: ["Stats"], open: (page) => page.getByText("2 to review", { exact: true }).first().click(), ready: "Dismiss all", expect: { texts: [...NOTICES_FEW, "Dismiss all"], dismissGapMin: 8, fitsWidth: true } },
-      { name: "Review notices many expanded", route: NOTICES_MANY_ROUTE, tabs: ["Journal"], open: (page) => page.getByText("10 to review", { exact: true }).first().click(), ready: "Dismiss all", expect: { texts: ["10 to review", "Dismiss all"], tabContentBelowNotices: { count: "10 to review", minHeight: 120 }, fitsWidth: true } },
+      { name: "Review notices dismiss rows apart", route: NOTICES_FEW_ROUTE, tabs: ["Stats"], open: [{ tap: { text: "2 to review", exact: true } }], ready: "Dismiss all", expect: { texts: [...NOTICES_FEW, "Dismiss all"], dismissGapMin: 8, fitsWidth: true } },
+      { name: "Review notices many expanded", route: NOTICES_MANY_ROUTE, tabs: ["Journal"], open: [{ tap: { text: "10 to review", exact: true } }], ready: "Dismiss all", expect: { texts: ["10 to review", "Dismiss all"], tabContentBelowNotices: { count: "10 to review", minHeight: 120 }, fitsWidth: true } },
       { name: "Review notices none", route: RENDAR_ROUTE, tabs: ["Stats"], ready: /hit points/i, expect: { absentMatching: [/ to review$/], fitsWidth: true } },
       { name: "Stats battle master superiority dice", route: BATTLE_MASTER_ROUTE, tabs: ["Stats"], ready: /hit points/i, scrollTo: "Superiority Dice: 4d8 + 2d6", expect: { texts: ["Superiority Dice: 4d8 + 2d6"], fitsWidth: true } },
       { name: "Features battle master superiority counters", route: BATTLE_MASTER_ROUTE, tabs: ["Features"], ready: /resource trackers/i, scrollTo: "Superiority Dice [d6]", expect: { texts: ["Superiority Dice [d8]", "Superiority Dice [d6]"], fitsWidth: true } },
       { name: "Actions battle master maneuver dice", route: BATTLE_MASTER_ROUTE, tabs: ["Actions"], ready: /battle master maneuvers/i, scrollTo: "BATTLE MASTER MANEUVERS", expect: { texts: ["Die: d8 / d6", "+d8 / d6"], fitsWidth: true } },
-      { name: "Rest modal", route: RENDAR_ROUTE, tabs: ["Stats"], open: (page) => page.getByText(/^Take Rest/).first().click(), modal: "Rest & Recovery" },
-      { name: "Conditions modal", route: RENDAR_ROUTE, tabs: ["Stats"], open: (page) => page.getByText(/^Conditions \(/).first().click(), modal: "Toggle Conditions" },
+      { name: "Rest modal", route: RENDAR_ROUTE, tabs: ["Stats"], open: [{ tap: { pattern: "^Take Rest" } }], modal: "Rest & Recovery" },
+      { name: "Conditions modal", route: RENDAR_ROUTE, tabs: ["Stats"], open: [{ tap: { pattern: "^Conditions \\(" } }], modal: "Toggle Conditions" },
       { name: "Home", route: "/", ready: /5e Character Builder/ },
-      { name: "New Character modal", route: "/", open: tapHeaderAdd, modal: "Create New Character" },
+      { name: "New Character modal", route: "/", open: [{ tap: { name: "home-header-add" } }], modal: "Create New Character" },
       { name: "Settings", route: "/options", ready: /settings & compendium/i },
   ];
+  // A named step has no text, pattern or label a runner can tap, so the scenario carrying one can only be
+  // played by the web runner: flag it web-only.
+  return screens.map((screen) => (screen.open?.some((step) => step.tap.name !== undefined) ? { ...screen, webOnly: true } : screen));
 }
