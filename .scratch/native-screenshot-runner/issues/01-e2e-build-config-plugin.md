@@ -32,3 +32,11 @@ A Gradle build run with `-Pe2e` produces an Android APK that is debuggable and h
 ## Blocked by
 
 None
+
+## Comments
+
+**Spike result: yes, a Gradle property can drive the Expo Updates flag.** Established from source and confirmed by a prebuild in this worktree:
+
+- expo-updates' config plugin writes the flag as manifest meta-data (`addMetaDataItemToMainApplication` in `node_modules/@expo/config-plugins/build/android/Updates.js`, value from `getUpdatesEnabled`), and at runtime `UpdatesConfiguration.getIsEnabled` reads exactly that meta-data from the merged manifest (`context.getMetadataValue("expo.modules.updates.ENABLED")` in `expo-updates/android/src/main/java/expo/modules/updates/UpdatesConfiguration.kt`). Whatever the merged manifest carries at build time is what the app reads.
+- The bridge is an Android manifest placeholder: AGP substitutes `manifestPlaceholders` from `app/build.gradle` `defaultConfig` into `${...}` references anywhere in the manifest, meta-data values included. The tracked plugin (`plugins/e2e-build.mjs`) points the flag at `${expoUpdatesEnabled}` and defines the placeholder as `findProperty('e2e') != null ? 'false' : 'true'`; the release `debuggable` line reads the same property.
+- `npx expo prebuild --platform android --no-install --clean` with the plugin registered in `app.json` generated `android/app/src/main/AndroidManifest.xml` with `android:value="${expoUpdatesEnabled}"` and `android/app/build.gradle` with both Gradle lines, so a `-Pe2e` build resolves the flag to `false` (updates off, debuggable) and a build without the property to `true` (updates on, not debuggable). The plugin runs in the android `finalized` mod so it lands after expo-updates' manifest mod, which would otherwise overwrite the value; re-prebuild without `--clean` is idempotent.
