@@ -24,6 +24,10 @@ type DumpNode = ReturnType<typeof parseDump>[number];
 const charTabs = parseDump(readFileSync(fileURLToPath(new URL("./fixtures/uiautomator-character-tabs.xml", import.meta.url)), "utf8"));
 const statsRest = parseDump(readFileSync(fileURLToPath(new URL("./fixtures/uiautomator-stats-rest.xml", import.meta.url)), "utf8"));
 const statsLang = parseDump(readFileSync(fileURLToPath(new URL("./fixtures/uiautomator-stats-languages.xml", import.meta.url)), "utf8"));
+// The Builder > Class screen of the seeded character, dumped at the top of the page: the nodes below the
+// fold ("Starting Equipment & Gold:", "Claimed") are listed with bounds whose top is below their bottom,
+// i.e. clipped out under the gesture bar.
+const classOffscreen = parseDump(readFileSync(fileURLToPath(new URL("./fixtures/uiautomator-class-offscreen.xml", import.meta.url)), "utf8"));
 
 // The screen of the AVD: 720x1280 px, with the 48 px status bar on top and the 48 px gesture bar at the
 // bottom (both read from the device; they stay 48 px under a density override).
@@ -129,6 +133,37 @@ test("the swipe up runs mid-screen from 70% to 30% of the height over 300 ms", (
   assert.deepEqual(swipeUpArgs(VIEW), [360, 896, 360, 384, 300]);
 });
 
+// --- Clipped bounds: a node scrolled out of the viewport is listed with an inverted box ---
+
+const clippedEquipment = classOffscreen.find((node) => node.text === "Starting Equipment & Gold:");
+
+test("on the off-screen fixture the clipped node has no positive area: not visible, not a tap target", () => {
+  // Real dump: "Starting Equipment & Gold:" at [66,1271][408,1232] — the top is below the bottom.
+  assert.ok(clippedEquipment);
+  assert.deepEqual(clippedEquipment.bounds, { x1: 66, y1: 1271, x2: 408, y2: 1232 });
+  assert.equal(isVisible(clippedEquipment, VIEW), false);
+  assert.equal(
+    findTarget(classOffscreen, { method: "getByText", arg: "Starting Equipment & Gold:", options: { exact: true }, index: 0 }, VIEW),
+    null,
+  );
+  assert.equal(centerOf(clippedEquipment, VIEW), null);
+  // The same for a horizontal clip (x2 <= x1).
+  const node = (bounds: DumpNode["bounds"]) => ({ text: "x", contentDesc: "", resourceId: "", className: "", clickable: false, scrollable: false, bounds });
+  const hClipped = node({ x1: 700, y1: 100, x2: 690, y2: 140 });
+  assert.equal(isVisible(hClipped, VIEW), false);
+  assert.equal(centerOf(hClipped, VIEW), null);
+});
+
+test("a partially visible node with positive area is a tap target at the centre of its visible part", () => {
+  const node = (bounds: DumpNode["bounds"]) => ({ text: "x", contentDesc: "", resourceId: "", className: "", clickable: false, scrollable: false, bounds });
+  // Crosses the gesture bar: [66,1200][408,1280], so its visible part ends at 1280-48=1232.
+  const partial = node({ x1: 66, y1: 1200, x2: 408, y2: 1280 });
+  assert.equal(isVisible(partial, VIEW), false); // not fully inside the screen
+  assert.deepEqual(centerOf(partial, VIEW), { x: 237, y: 1216 }); // centre of the visible part only
+  // Fully under the gesture bar: positive area but no visible part, so not a tap target.
+  assert.equal(centerOf(node({ x1: 0, y1: 1240, x2: 720, y2: 1280 }), VIEW), null);
+});
+
 // --- playScreen ---
 
 test("tabs are tapped in order, each followed by a 500 ms wait, then the 300 ms settle", async () => {
@@ -199,6 +234,35 @@ test("scrollTo flips direction when a swipe moves nothing, so a needle above is 
     ["360", "384", "360", "896", "300"],
   ]);
   assert.deepEqual(world.taps, []);
+});
+
+// The same fixture with the needle revealed: "Starting Equipment & Gold:" has real bounds inside the screen.
+const classRevealed = classOffscreen.map((node) =>
+  node.text === "Starting Equipment & Gold:" ? { ...node, bounds: { x1: 66, y1: 900, x2: 408, y2: 940 } } : node,
+);
+
+test("scrollTo swipes past a needle that is only clipped, and stops once its bounds are real and on screen", async () => {
+  // The ready wait takes the first dump; the scroll then sees the off-screen fixture (needle only
+  // clipped) before the revealed one.
+  const world = playerWorld([classOffscreen, classOffscreen, classRevealed]);
+  const result = await play(world, { name: "t", route: "/x", ready: /total level/i, scrollTo: "Starting Equipment" });
+  assert.equal(result, null);
+  assert.equal(world.swipes.length, 1);
+  assert.deepEqual(world.swipes[0], ["360", "896", "360", "384", "300"]);
+});
+
+test("an open step whose target is only clipped swipes to reveal it, then taps the real centre", async () => {
+  const world = playerWorld([classOffscreen, classOffscreen, classRevealed]);
+  const result = await play(world, {
+    name: "t",
+    route: "/x",
+    open: [{ tap: { text: "Starting Equipment & Gold:", exact: true } }],
+    ready: /total level/i,
+  });
+  assert.equal(result, null);
+  assert.ok(world.swipes.length > 0, "the reveal swipes run before the tap");
+  // The tap lands on the revealed node's centre (237,920), not on the gesture bar.
+  assert.deepEqual(world.taps, [{ x: 237, y: 920 }]);
 });
 
 test("a modal is waited for as the ready text and is not tapped", async () => {

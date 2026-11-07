@@ -5,7 +5,7 @@
 // briefly before the screenshot. `expect` is not evaluated. Every device interaction goes through the
 // injected `dump`, `tap` and `swipe`, so the tests drive it with scripted dumps and a recording fake.
 import { describeStep } from "./steps.mjs";
-import { centerOf, findNode } from "./uiautomator.mjs";
+import { centerOf, findNode, hasPositiveArea } from "./uiautomator.mjs";
 
 // The waits, as in the web check: half a second after each tab tap, and a short settle before the
 // screenshot, longer for a modal whose open animation needs it.
@@ -39,20 +39,23 @@ export function findMatches(nodes, call) {
   return nodes.filter((node) => matchesCall(node, call));
 }
 
-// The match a step taps: the `index`th of the matches (the first by default). The dump lists only what is
-// on screen, so `index` counts the visible matches; the web counts every match in the DOM, including the
-// ones scrolled off screen.
-export function findTarget(nodes, call) {
-  return findMatches(nodes, call)[call.index ?? 0] ?? null;
+// The match a step taps: the `index`th of the on-screen matches (the first by default). The dump also
+// lists nodes scrolled out of the viewport, with clipped bounds of no positive area, so a match counts
+// as a tap target only when its visible part is on the screen (with a view; without one, any box of
+// positive area); the web counts every match in the DOM, including the ones scrolled off screen.
+export function findTarget(nodes, call, view) {
+  const matches = findMatches(nodes, call).filter((node) => centerOf(node, view) !== null);
+  return matches[call.index ?? 0] ?? null;
 }
 
-// A node counts as visible when its bounds lie fully inside the screen and clear of the status bar (top) and
-// the gesture bar (bottom); view is { width, height, topBar, bottomBar } in px, the bars read from the
-// device. The dump also lists nodes clipped by a screen edge, and the root containers span the whole screen,
-// so a match in the dump is not by itself visible.
+// A node counts as visible when its bounds have positive area and lie fully inside the screen and clear
+// of the status bar (top) and the gesture bar (bottom); view is { width, height, topBar, bottomBar } in
+// px, the bars read from the device. The dump also lists nodes clipped out of the viewport — their
+// bounds come back inverted, with no positive area — and the root containers span the whole screen, so
+// a match in the dump is not by itself visible.
 export function isVisible(node, view) {
   const b = node.bounds;
-  if (!b) return false;
+  if (!hasPositiveArea(b)) return false;
   return b.x1 >= 0 && b.y1 >= view.topBar && b.x2 <= view.width && b.y2 <= view.height - view.bottomBar;
 }
 
@@ -134,7 +137,7 @@ export async function playScreen({ screen, dump, tap, swipe, view, sleep, now, t
     const node = await pollRevealing({
       dump,
       swipe,
-      find: (nodes) => findTarget(nodes, call),
+      find: (nodes) => findTarget(nodes, call, view),
       sleep,
       now,
       deadline: deadlineFor(),
@@ -142,8 +145,8 @@ export async function playScreen({ screen, dump, tap, swipe, view, sleep, now, t
       horizontalOnly: true,
     });
     if (!node) return `tab "${tab}" did not show within ${seconds} s`;
-    const point = centerOf(node);
-    if (!point) return `tab "${tab}" matched a node with no bounds`;
+    const point = centerOf(node, view);
+    if (!point) return `tab "${tab}" matched a node with no on-screen bounds`;
     tap(point);
     await sleep(TAB_WAIT_MS);
   }
@@ -154,18 +157,21 @@ export async function playScreen({ screen, dump, tap, swipe, view, sleep, now, t
     const node = await pollRevealing({
       dump,
       swipe,
-      find: (nodes) => findTarget(nodes, call),
+      find: (nodes) => findTarget(nodes, call, view),
       sleep,
       now,
       deadline: deadlineFor(),
       pollMs,
     });
     if (!node) return `${what} did not show within ${seconds} s`;
-    const point = centerOf(node);
-    if (!point) return `${what} matched a node with no bounds`;
+    const point = centerOf(node, view);
+    if (!point) return `${what} matched a node with no on-screen bounds`;
     tap(point);
   }
-  // The ready text: a modal scenario waits for the dialog's title string; it is never tapped.
+  // The ready text: a modal scenario waits for the dialog's title string; it is never tapped. Ready means
+  // present in the dump, as on the web, where waitFor({ state: "visible" }) needs a bounding box, not a
+  // viewport intersection — so a ready text that is only clipped out of the viewport still counts, and
+  // the scrollTo step afterwards is what brings the needle on screen for the screenshot.
   const ready = screen.modal ?? screen.ready;
   const readyNode = await pollRevealing({
     dump,
