@@ -1,6 +1,7 @@
 # 05: Runner core
 
-**Status:** ready-for-agent
+**Status:** done
+**Landed:** 6ffb19b, 687ac8c. `checks/androidRunner.test.ts` 29/29, red-green and three mutation checks by the implementer (serial guard, density restore, stop-only-if-started). Main session on the merged tree: `npm run check:all` exit 0 (1801 app tests, 305 scraper tests). AC-11 bundle oracle with the runner's own build environment and no manual `--clear`: plain, then E2E, then plain exports hold the stub, the live, then the stub hook. Real run with no emulator running: `ONLY=Home WIDTHS=360 npm run layout:android` booted headless, ran the Gradle E2E build, installed, set density 320, launched, stopped its emulator, exit 0, no emulator process left; the APK has `expo.modules.updates.ENABLED=false` and is `application-debuggable`. Real reuse run against a running emulator with `--no-build`, widths 360 and 412: density set to 320 and 280, restored (no override afterwards), emulator still online. Fix found by the real run: headless boot segfaults on the emulator's default software renderer, so headless now passes `-gpu host` (687ac8c). Open (advisory): when an emulator process stays alive but never appears in `adb devices`, the boot-failure branch has no serial to stop and would leave that process running.
 
 ## What to build
 
@@ -16,11 +17,11 @@
 
 ## Acceptance Criteria
 
-- [ ] AC-8: A device whose serial does not start with `emulator-` makes the runner exit non-zero before it clears, installs or launches anything.
-- [ ] AC-9: Widths 320, 360, 393 and 412 use density 360, 320, 293 and 280, and the original density is restored at the end of the run, also after a failure.
-- [ ] AC-10: A running emulator is reused and never stopped. With none running, the runner boots `Small_Phone` headless, waits until `sys.boot_completed` is `1`, and stops that emulator when the run ends.
-- [ ] AC-11: Without `--no-build` the runner calls the incremental Gradle release build with `-Pe2e` and installs with `adb install -r`, and the JavaScript bundle in that APK carries the live seed hook whichever flag value the previous build used (Metro's cache is not keyed on `EXPO_PUBLIC_E2E`, so the bundle step must not reuse a cache transformed under another value); with `--no-build` it skips Gradle and installs the APK already built.
-- [ ] AC-16: An `ONLY` term that no scenario name contains exits with 2 and lists the scenario names of the run.
+- [x] AC-8: A device whose serial does not start with `emulator-` makes the runner exit non-zero before it clears, installs or launches anything.
+- [x] AC-9: Widths 320, 360, 393 and 412 use density 360, 320, 293 and 280, and the original density is restored at the end of the run, also after a failure.
+- [x] AC-10: A running emulator is reused and never stopped. With none running, the runner boots `Small_Phone` headless, waits until `sys.boot_completed` is `1`, and stops that emulator when the run ends.
+- [x] AC-11: Without `--no-build` the runner calls the incremental Gradle release build with `-Pe2e` and installs with `adb install -r`, and the JavaScript bundle in that APK carries the live seed hook whichever flag value the previous build used (Metro's cache is not keyed on `EXPO_PUBLIC_E2E`, so the bundle step must not reuse a cache transformed under another value); with `--no-build` it skips Gradle and installs the APK already built.
+- [x] AC-16: An `ONLY` term that no scenario name contains exits with 2 and lists the scenario names of the run.
 
 ## Verification
 
