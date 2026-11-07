@@ -1,22 +1,12 @@
 // The web player for the scenario `open` steps. The shared module (scripts/lib/scenarios.mjs) holds the
-// steps as data only; this module is the web runner's side of the seam (scripts/layout-check.mjs imports it)
-// and owns every page call. describeStep states the locator call one step maps to as plain data, so the
-// mapping can be checked without a browser; playStep runs it. The native runner plays the same step data its
-// own way; a named step (one with no locator) is web-only, and only this module knows what it does there.
+// steps as data only; the locator call one step maps to is described as plain data in the shared
+// scripts/lib/steps.mjs (describeStep, re-exported here), so the mapping can be checked without a browser.
+// This module is the web runner's side of the seam (scripts/layout-check.mjs imports it) and owns every page
+// call: playStep runs the described locator call. The native runner plays the same step data its own way; a
+// named step (one with no locator) is web-only, and only this module knows what it does there.
+import { describeStep } from "./steps.mjs";
 
-// The locator call one step maps to, as plain data: the page method ("getByText" or "getByLabel"), its
-// argument (the text, the pattern as a RegExp, or the label), the options the call passes (from `exact`),
-// and the match to tap (`index`, the first by default). A step with `name` instead of a locator carries
-// `name` and no method: it is a web-only named step.
-export function describeStep(step) {
-  const tap = step.tap;
-  if (tap.name !== undefined) return { name: tap.name };
-  const options = tap.exact ? { exact: true } : undefined;
-  const index = tap.index ?? 0;
-  if (tap.pattern !== undefined) return { method: "getByText", arg: new RegExp(tap.pattern), options, index };
-  if (tap.text !== undefined) return { method: "getByText", arg: tap.text, options, index };
-  return { method: "getByLabel", arg: tap.label, options, index };
-}
+export { describeStep };
 
 // Taps the round add button at the right end of the home header. It has no text or label, so it is found by place.
 async function tapHeaderAdd(page) {

@@ -5,7 +5,8 @@
 // ~/Android/Sdk, because neither adb nor emulator is on PATH.
 import { join } from "node:path";
 import { buildScreens, buildSeed } from "./scenarios.mjs";
-import { findNode, parseDump } from "./uiautomator.mjs";
+import { playScreen } from "./native-steps.mjs";
+import { parseDump } from "./uiautomator.mjs";
 
 // The app id of the (E2E) build, and the AVD the runner boots when no emulator is running.
 export const APP_ID = "com.anonymous.dnd5e2014CharacterBuilder";
@@ -56,10 +57,25 @@ export function screenshotName(name, width) {
   return `${name.replace(/\W+/g, "-")}-${width}.png`;
 }
 
-// Whether a scenario carries steps (tabs, open, modal, scrollTo) that have no native form yet: such a
-// scenario is listed as needing native steps and skipped.
-export function needsNativeSteps(screen) {
-  return Boolean(screen.tabs?.length || screen.open?.length || screen.modal || screen.scrollTo);
+// `adb shell wm size` output: the physical screen size in px (a density override does not change it).
+export function parseWmSize(stdout) {
+  const match = /Physical size:\s*(\d+)x(\d+)/.exec(stdout);
+  return match ? { width: Number(match[1]), height: Number(match[2]) } : null;
+}
+
+// The status bar and gesture bar heights in px, from `dumpsys window windows`: the STATUS_BAR and
+// NAVIGATION_BAR windows are `fillx<N>` (full width, N px tall) at the top and the bottom of the screen,
+// and stay that size under a density override. 0 when the device reports neither.
+export function parseSystemBarHeights(stdout) {
+  let topBar = 0;
+  let bottomBar = 0;
+  for (const line of stdout.split("\n")) {
+    const bar = /\(fillx(\d+)\)/.exec(line);
+    if (!bar) continue;
+    if (!topBar && /\bty=STATUS_BAR\b/.test(line)) topBar = Number(bar[1]);
+    if (!bottomBar && /\bty=NAVIGATION_BAR\b/.test(line)) bottomBar = Number(bar[1]);
+  }
+  return { topBar, bottomBar };
 }
 
 // Whether ONLY visits the scenario `name` (every scenario when ONLY is empty).
@@ -172,25 +188,12 @@ async function waitForBoot({ run, adb, sleep, timeoutMs, pollMs = 2_000 }) {
   }
 }
 
-// Polls `uiautomator dump` until the ready condition (an exact string or a RegExp matched against an
-// element's text) shows in the dump. Returns the matching node, or null when the timeout passes.
-async function waitForReady({ run, adbArgs, adb, ready, timeoutMs, pollMs, sleep, now }) {
-  const deadline = now() + timeoutMs;
-  for (;;) {
-    run(adb, adbArgs(["shell", "uiautomator", "dump", DUMP_REMOTE]));
-    const xml = run(adb, adbArgs(["exec-out", "cat", DUMP_REMOTE])).stdout;
-    const node = findNode(parseDump(xml), ready);
-    if (node) return node;
-    if (now() >= deadline) return null;
-    await sleep(pollMs);
-  }
-}
-
 // One scenario at one width: force-stop and clear the app, copy the seed into its private folder with
 // run-as (through /data/local/tmp, so no megabytes go through the executor's stdio), launch the
-// scenario's route by deep link, wait for its ready text, then screencap on the device and pull the
-// PNG into the shots folder. Returns whether the scenario produced its screenshot.
-async function runScenario({ run, adb, adbArgs, screen, width, shots, seedPath, sleep, now, log, errorLog, fileExists, readFile, readyTimeoutMs, readyPollMs }) {
+// scenario's route by deep link, play the scenario's step fields (tabs, open, the ready text, scrollTo)
+// on uiautomator dumps, then screencap on the device and pull the PNG into the shots folder. Returns
+// whether the scenario produced its screenshot.
+async function runScenario({ run, adb, adbArgs, screen, width, shots, seedPath, sleep, now, log, errorLog, fileExists, readFile, readyTimeoutMs, readyPollMs, view }) {
   const file = screenshotName(screen.name, width);
   const label = `[${width}dp] ${screen.name}`;
   run(adb, adbArgs(["shell", "am", "force-stop", APP_ID]));
@@ -216,10 +219,17 @@ async function runScenario({ run, adb, adbArgs, screen, width, shots, seedPath, 
     errorLog(`${label}: deep link launch failed (exit ${launch.code}): ${tail(launch.stderr || launch.stdout)}`);
     return false;
   }
-  const ready = String(screen.ready);
-  const node = await waitForReady({ run, adb, adbArgs, ready: screen.ready, timeoutMs: readyTimeoutMs, pollMs: readyPollMs, sleep, now });
-  if (!node) {
-    errorLog(`${label}: ready text ${ready} did not show within ${Math.round(readyTimeoutMs / 1000)} s`);
+  // The step fields are played on fresh dumps: a tap lands at the matched node's centre, a swipe is an
+  // `input swipe` mid-screen. A step whose target never shows fails the scenario with a message naming it.
+  const dump = () => {
+    run(adb, adbArgs(["shell", "uiautomator", "dump", DUMP_REMOTE]));
+    return parseDump(run(adb, adbArgs(["exec-out", "cat", DUMP_REMOTE])).stdout);
+  };
+  const tap = (point) => run(adb, adbArgs(["shell", "input", "tap", String(point.x), String(point.y)]));
+  const swipe = (args) => run(adb, adbArgs(["shell", "input", "swipe", ...args.map(String)]));
+  const failure = await playScreen({ screen, dump, tap, swipe, view, sleep, now, timeoutMs: readyTimeoutMs, pollMs: readyPollMs });
+  if (failure) {
+    errorLog(`${label}: ${failure}`);
     return false;
   }
   // The screenshot is binary, so it is taken on the device and pulled as a file, never through the
@@ -244,9 +254,10 @@ async function runScenario({ run, adb, adbArgs, screen, width, shots, seedPath, 
 // One run of the device side: parse and validate the arguments (an unmatched ONLY term exits 2
 // before any device is touched), find or start the emulator, refuse a non-emulator serial, build
 // unless --no-build, install, then for each width set the density and run every selected scenario
-// (reset, seed, deep link, ready wait, screenshot), restoring the original density at the end (also
-// after a failure, and from the signal handler) and stopping the emulator only when this run started
-// it. Returns the exit code: non-zero when any scenario failed.
+// (reset, seed, deep link, the step fields played on uiautomator dumps, screenshot), restoring the
+// original density at the end (also after a failure, and from the signal handler) and stopping the
+// emulator only when this run started it. A scenario marked web-only is listed and skipped. Returns
+// the exit code: non-zero when any scenario failed.
 export async function runAndroid(options) {
   const {
     root,
@@ -363,12 +374,22 @@ export async function runAndroid(options) {
     }
     log(`Installed ${apk} on ${serial}`);
 
-    // The selected scenarios: those with native steps are listed and skipped, the rest run at every width.
+    // The screen and the system bars, for the step player's taps and swipes: the physical size (a density
+    // override does not change it) and the status/gesture bar heights.
+    const size = parseWmSize(run(adb, adbArgs(["shell", "wm", "size"])).stdout);
+    if (!size) {
+      errorLog(`could not read the screen size from "adb shell wm size"`);
+      return 2;
+    }
+    const view = { ...size, ...parseSystemBarHeights(run(adb, adbArgs(["shell", "dumpsys", "window", "windows"])).stdout) };
+
+    // The selected scenarios: a web-only scenario (one whose open steps have no native form) is listed and
+    // skipped, the rest run at every width.
     const screens = buildScreens({ integrated });
     const runnable = [];
     for (const screen of screens) {
       if (!selected(screen.name, only)) continue;
-      if (needsNativeSteps(screen)) log(`Skipping ${screen.name}: needs native steps (tabs, open, modal or scrollTo)`);
+      if (screen.webOnly) log(`Skipping ${screen.name}: web-only`);
       else runnable.push(screen);
     }
     // The seed is built once per run and staged locally; each scenario copies it into the app.
@@ -397,6 +418,7 @@ export async function runAndroid(options) {
           readFile,
           readyTimeoutMs,
           readyPollMs,
+          view,
         });
         if (!ok) failures += 1;
       }
