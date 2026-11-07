@@ -250,10 +250,13 @@ test("a tab clipped off the tab bar is revealed by horizontal swipes on the tab 
   const world = playerWorld([before, after]);
   const result = await play(world, { name: "t", route: "/x", tabs: ["Class"], ready: "Ready Here" });
   assert.equal(result, null);
-  // The Class subtab at [585,320][650,356] is tapped once revealed; the swipe went left inside the tab
-  // bar (y fixed at 338, x from 590 to 130), never in the vertical content scroller.
+  // The Class subtab at [585,320][650,356] is tapped once revealed; the swipes went left inside the tab
+  // bar (y fixed at 338, x from 590 to 130), twice per poll, never in the vertical content scroller.
   assert.deepEqual(world.taps, [{ x: 618, y: 338 }]);
-  assert.deepEqual(world.swipes, [["590", "338", "130", "338", "300"]]);
+  assert.deepEqual(world.swipes, [
+    ["590", "338", "130", "338", "300"],
+    ["590", "338", "130", "338", "300"],
+  ]);
 });
 
 test("the reveal direction flips when a swipe moves nothing, so a tab on the other side is found", async () => {
@@ -266,6 +269,8 @@ test("the reveal direction flips when a swipe moves nothing, so a tab on the oth
   assert.deepEqual(world.taps, [{ x: 618, y: 338 }]);
   assert.deepEqual(world.swipes, [
     ["590", "338", "130", "338", "300"],
+    ["590", "338", "130", "338", "300"],
+    ["130", "338", "590", "338", "300"],
     ["130", "338", "590", "338", "300"],
   ]);
 });
@@ -277,10 +282,13 @@ test("an open step below the fold is revealed by swiping the scrollers, then tap
   const result = await play(world, { name: "t", route: "/x", open: [{ tap: { label: "Add language" } }], ready: "Hit Points" });
   assert.equal(result, null);
   assert.deepEqual(world.taps, [{ x: 656, y: 1152 }]);
-  // One reveal round swiped both scrollers: the tab bar horizontally and the content vertically
+  // One reveal round swiped both scrollers twice: the tab bar horizontally and the content vertically
   // (x fixed at 360, y from 1085 to 399 inside [0,252][720,1232]).
   const vertical = world.swipes.filter((s) => s[0] === s[2]);
-  assert.deepEqual(vertical, [["360", "1085", "360", "399", "300"]]);
+  assert.deepEqual(vertical, [
+    ["360", "1085", "360", "399", "300"],
+    ["360", "1085", "360", "399", "300"],
+  ]);
 });
 
 test("the ready text scrolled off is revealed by swiping the scrollers too", async () => {

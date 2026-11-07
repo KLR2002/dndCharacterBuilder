@@ -14,8 +14,11 @@ export const SETTLE_WAIT_MS = 300;
 export const MODAL_SETTLE_WAIT_MS = 500;
 // scrollTo gives up after this many swipes.
 export const MAX_SWIPES = 25;
-// One swipe up takes this long.
+// One swipe takes this long.
 export const SWIPE_MS = 300;
+// Swipes per scroller between two dumps while revealing a step target: a dump takes about two seconds on
+// the emulator, so only a few fit in the ready timeout, and each must cover real ground.
+export const REVEAL_SWIPES_PER_POLL = 2;
 
 // The value a locator call matches against: the element's text, or its accessibility label, which on Android
 // is the node's content-desc attribute in the dump.
@@ -109,7 +112,9 @@ async function pollRevealing({ dump, swipe, find, sleep, now, deadline, pollMs, 
       };
     }
     previous = geometry;
-    for (const scroller of scrollers) swipe(scrollerSwipeArgs(scroller, direction));
+    for (let repeat = 0; repeat < REVEAL_SWIPES_PER_POLL; repeat++) {
+      for (const scroller of scrollers) swipe(scrollerSwipeArgs(scroller, direction));
+    }
     await sleep(pollMs);
   }
 }
