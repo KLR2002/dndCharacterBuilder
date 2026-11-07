@@ -19,6 +19,7 @@ import {
   loadCompendiumData,
   REQUIRED_CATALOG_FORMAT,
 } from "../services/compendiumStorage";
+import { runE2eSeedHook } from "../services/e2eSeedHook";
 import { shouldShowCatalogUpdateNotice } from "../services/catalogUpdateNotice";
 import { runInAppIntegration } from "../services/scraper/runner";
 
@@ -134,6 +135,7 @@ export function CharacterProvider({ children }: { children: React.ReactNode }) {
     setInitError(null);
     initialization.current = (async () => {
       try {
+        await runE2eSeedHook();
         const result = await loadAll();
         if (!result.ok) throw new Error(result.error);
         const { characters: loadedChars, folders: loadedFolds, settings: loadedSettings } = result.data;
