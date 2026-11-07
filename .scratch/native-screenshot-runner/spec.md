@@ -112,7 +112,7 @@ One point was filled in while writing this spec and is not a quoted decision: a 
 
 **Given** a run without `--no-build`
 **When** the runner prepares the app
-**Then** it calls the incremental Gradle release build with `-Pe2e` and installs the APK with `adb install -r`.
+**Then** it calls the incremental Gradle release build with `-Pe2e` and installs the APK with `adb install -r`, and the JavaScript bundle in that APK carries the live seed hook, whichever flag value the previous build used.
 **And Given** `--no-build`, **Then** it skips Gradle and installs the APK already built.
 
 ### AC-12: A seeded scenario produces a screenshot
@@ -156,7 +156,8 @@ One point was filled in while writing this spec and is not a quoted decision: a 
 ## Architecture Constraints
 
 - The scenario module lives in `scripts/lib/`. Both runners depend on it and it depends on neither.
-- The seed hook reads the flag as `process.env.EXPO_PUBLIC_E2E`, which Metro inlines at bundle time, so a bundle built without the flag contains no hook.
+- The seed hook reads the flag as `process.env.EXPO_PUBLIC_E2E`, which Metro inlines at bundle time, so in a bundle built without the flag the hook returns at once and the importer never runs. The importer module is still in that bundle, unreachable.
+- Metro's transform cache is not keyed on `EXPO_PUBLIC_E2E`: an export built after one with the other flag value reused the stale transform. The runner never builds the bundle from a cache transformed under another flag value.
 - The hook writes only through `storage.ts` and `compendiumStorage.ts`, never straight to AsyncStorage or the catalog file (ADR 0020).
 - The E2E build keeps the app id `com.anonymous.dnd5e2014CharacterBuilder`.
 - `android/` stays gitignored. Everything native comes from tracked config: a config plugin and `app.config.js`.
@@ -173,7 +174,7 @@ One point was filled in while writing this spec and is not a quoted decision: a 
 | AC-6 | Scenario module exports | `npm run layout:check` scenario list equals the list captured from master before the move |
 | AC-7 | Scenario module plus the web runner | `layout:check` run, full, is green with the same scenarios visited |
 | AC-8, AC-9, AC-16 | Pure functions of the runner | `npm test` |
-| AC-10, AC-11 | Runner lifecycle and build step | `npm test` against a fake `adb` and `emulator`; one real boot and one real `--no-build` run |
+| AC-10, AC-11 | Runner lifecycle and build step | `npm test` against a fake `adb` and `emulator`; one real boot and one real `--no-build` run; the bundle check below, run after a plain build and then an E2E build with no manual cache clearing |
 | AC-12 | Full run on the emulator | `npm run layout:android -- --no-build` with `ONLY=Settings`: the PNG exists and shows Settings |
 | AC-13 | Dump parser and step player | Test on fixture dump XML; a real run of one scenario with `tabs`, `open` and `scrollTo` |
 | AC-14 | Full run with a deliberately wrong `ready` | Run exits non-zero; `-FAILED.png` exists; later scenarios still produced PNGs |

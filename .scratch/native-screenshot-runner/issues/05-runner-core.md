@@ -19,7 +19,7 @@
 - [ ] AC-8: A device whose serial does not start with `emulator-` makes the runner exit non-zero before it clears, installs or launches anything.
 - [ ] AC-9: Widths 320, 360, 393 and 412 use density 360, 320, 293 and 280, and the original density is restored at the end of the run, also after a failure.
 - [ ] AC-10: A running emulator is reused and never stopped. With none running, the runner boots `Small_Phone` headless, waits until `sys.boot_completed` is `1`, and stops that emulator when the run ends.
-- [ ] AC-11: Without `--no-build` the runner calls the incremental Gradle release build with `-Pe2e` and installs with `adb install -r`; with `--no-build` it skips Gradle and installs the APK already built.
+- [ ] AC-11: Without `--no-build` the runner calls the incremental Gradle release build with `-Pe2e` and installs with `adb install -r`, and the JavaScript bundle in that APK carries the live seed hook whichever flag value the previous build used (Metro's cache is not keyed on `EXPO_PUBLIC_E2E`, so the bundle step must not reuse a cache transformed under another value); with `--no-build` it skips Gradle and installs the APK already built.
 - [ ] AC-16: An `ONLY` term that no scenario name contains exits with 2 and lists the scenario names of the run.
 
 ## Verification
@@ -28,6 +28,7 @@
 | --- | --- | --- |
 | AC-8, AC-9, AC-16 | Pure functions of the runner | Red-green tests in `checks/`. Mutation check: delete the serial check, and the density restore, and see a test fail each time. |
 | AC-10, AC-11 | Runner lifecycle and build step | Red-green tests against a fake `adb` and `emulator` that record their calls. Mutation check: delete the stop-only-if-started condition and see a test fail. One real run: boot, `--no-build` install, launch, stop. |
+| AC-11 | Bundle for an E2E build, built right after a plain build | `EXPO_PUBLIC_E2E=1 npx expo export --platform android --no-bytecode --output-dir <dir>` right after the same export without the flag, using the cache handling the runner uses (no manual `--clear` by the tester): the bundle holds the hook body that imports the seed importer, `grep -o 'runE2eSeedHook=[^}]\{0,260\}'` on the bundle shows `importE2eSeed`; a plain export right after an E2E one shows `async function(){return}`. Red-green: the check fails when the runner's cache handling is removed. |
 
 ## Constraints
 

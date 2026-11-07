@@ -1,6 +1,7 @@
 # 02: Seed hook in the app
 
-**Status:** ready-for-agent
+**Status:** done
+**Landed:** ae08167. `checks/e2eSeed.test.ts` and `checks/e2eSeedHookGuard.test.ts` 10/10 (red-green and three mutation checks by the implementer); `npm run check:all` exit 0 (1763 app tests, 303 scraper tests); `context.test.ts` 25/25 in six repeat runs. Bundle check with `expo export`: a plain bundle holds the hook as `async function(){return}`; an E2E bundle (cache cleared) holds the importing hook. The importer module ships in the plain bundle, unreachable, and the spec and the source comment say so. Open: Metro's cache is not keyed on the flag, which ticket 05 now covers under AC-11.
 
 ## What to build
 
@@ -15,10 +16,10 @@ In the E2E build only (`EXPO_PUBLIC_E2E=1`), the app reads a seed file from its 
 
 ## Acceptance Criteria
 
-- [ ] AC-2: With `EXPO_PUBLIC_E2E` unset and a seed file present, nothing is imported and the file is untouched.
-- [ ] AC-3: With `EXPO_PUBLIC_E2E=1` and a valid seed, characters, folders and settings are saved through `storage.ts`, the catalog (when `integrated` is not null) through `saveCompendiumData`, and the seed file is deleted. Loading afterwards returns the seeded values.
-- [ ] AC-4: With `EXPO_PUBLIC_E2E=1` and a seed that is not valid JSON or lacks a required key, nothing from it is written, the app starts with empty state, and the file is deleted.
-- [ ] AC-5: A guard test fails and names the importer when any module in `src/` imports the seed importer outside the one entry guarded by the flag.
+- [x] AC-2: With `EXPO_PUBLIC_E2E` unset and a seed file present, nothing is imported and the file is untouched.
+- [x] AC-3: With `EXPO_PUBLIC_E2E=1` and a valid seed, characters, folders and settings are saved through `storage.ts`, the catalog (when `integrated` is not null) through `saveCompendiumData`, and the seed file is deleted. Loading afterwards returns the seeded values.
+- [x] AC-4: With `EXPO_PUBLIC_E2E=1` and a seed that is not valid JSON or lacks a required key, nothing from it is written, the app starts with empty state, and the file is deleted.
+- [x] AC-5: A guard test fails and names the importer when any module in `src/` imports the seed importer outside the one entry guarded by the flag.
 
 ## Verification
 
@@ -30,7 +31,7 @@ In the E2E build only (`EXPO_PUBLIC_E2E=1`), the app reads a seed file from its 
 ## Constraints
 
 - Spec: `.scratch/native-screenshot-runner/spec.md`. Decision record: `docs/adr/0020-native-e2e-build-seeds-through-the-apps-own-storage.md`.
-- The hook reads the flag as `process.env.EXPO_PUBLIC_E2E`, which Metro inlines at bundle time, so a bundle built without the flag has no hook.
+- The hook reads the flag as `process.env.EXPO_PUBLIC_E2E`, which Metro inlines at bundle time, so in a bundle built without the flag the hook returns at once and the importer never runs.
 - The hook writes only through `storage.ts` and `compendiumStorage.ts`, never straight to AsyncStorage or the catalog file.
 - Shared storage code must not use browser globals without a platform check (`CODING_STANDARDS.md` section 6).
 - Out of scope: pushing the seed with `run-as` (ticket 06), the config plugin (ticket 01).

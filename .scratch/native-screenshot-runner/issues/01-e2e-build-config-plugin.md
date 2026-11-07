@@ -1,6 +1,7 @@
 # 01: E2E build through a config plugin (spike)
 
-**Status:** ready-for-agent
+**Status:** done
+**Landed:** 82a3e5c. Unit tests 5/5 (red-green and mutation checks by the implementer), `npm run check:all` exit 0. APK evidence from the merged tree: the `-Pe2e` APK has `expo.modules.updates.ENABLED=false`, is `application-debuggable`, and `run-as <app id> ls files` lists the app's files; the plain APK has `ENABLED=true`, is not debuggable, and `run-as` answers "package not debuggable". Open: none.
 
 ## What to build
 
@@ -12,8 +13,8 @@ A Gradle build run with `-Pe2e` produces an Android APK that is debuggable and h
 
 ## Acceptance Criteria
 
-- [ ] AC-1: With the plugin applied, the generated Android project builds a debuggable APK with Expo Updates disabled when Gradle runs with `-Pe2e`, and the same project without `-Pe2e` differs from today's release build in neither setting.
-- [ ] The result of the spike (can a Gradle property set the Updates flag, and how) is appended under `## Comments` at the bottom of this ticket. If it cannot, stop and report instead of choosing another approach.
+- [x] AC-1: With the plugin applied, the generated Android project builds a debuggable APK with Expo Updates disabled when Gradle runs with `-Pe2e`, and the same project without `-Pe2e` differs from today's release build in neither setting.
+- [x] The result of the spike (can a Gradle property set the Updates flag, and how) is appended under `## Comments` at the bottom of this ticket. If it cannot, stop and report instead of choosing another approach.
 
 ## Verification
 
