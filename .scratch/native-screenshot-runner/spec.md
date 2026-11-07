@@ -125,7 +125,7 @@ One point was filled in while writing this spec and is not a quoted decision: a 
 
 **Given** a scenario with `tabs`, `open`, `modal` or `scrollTo`
 **When** the runner runs it natively
-**Then** `tabs`, `open` and `modal` are carried out as taps on the text found in the dump, `scrollTo` as swipes until the text shows, and `expect` is not evaluated.
+**Then** `tabs` and the `open` steps are carried out as taps on the text, pattern or label found in the dump, `modal` (the dialog's title) is the text waited for before the screenshot, `scrollTo` is carried out as swipes until the text shows, and `expect` is not evaluated.
 
 ### AC-14: A stuck scenario is reported and does not stop the run
 

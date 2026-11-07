@@ -4,7 +4,7 @@
 
 ## What to build
 
-The runner plays a scenario's `tabs`, `open`, `modal` and `scrollTo` fields on the emulator: the first three as taps on the text found in the dump, `scrollTo` as swipes until the text shows. `expect` is not evaluated. Scenarios marked web-only are skipped and listed.
+The runner plays a scenario's `tabs`, `open`, `modal` and `scrollTo` fields on the emulator: `tabs` and the `open` steps as taps on the text, pattern or label found in the dump, `modal` (the dialog's title) as the text waited for before the screenshot, `scrollTo` as swipes until the text shows. `expect` is not evaluated. Scenarios marked web-only are skipped and listed.
 
 ## Owns
 
@@ -12,7 +12,7 @@ The runner plays a scenario's `tabs`, `open`, `modal` and `scrollTo` fields on t
 
 ## Acceptance Criteria
 
-- [ ] AC-13: `tabs`, `open` and `modal` are carried out as taps on the text found in the dump, `scrollTo` as swipes until the text shows, `expect` is not evaluated, and web-only scenarios are skipped and listed in the run's output.
+- [ ] AC-13: `tabs` and the `open` steps are carried out as taps on the text, pattern or label found in the dump, `modal` is the text waited for before the screenshot, `scrollTo` is carried out as swipes until the text shows, `expect` is not evaluated, and web-only scenarios are skipped and listed in the run's output.
 
 ## Verification
 
