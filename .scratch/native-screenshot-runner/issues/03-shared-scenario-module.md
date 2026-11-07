@@ -1,6 +1,7 @@
 # 03: Move scenarios into a shared module
 
-**Status:** ready-for-agent
+**Status:** done
+**Landed:** 29c568a. `checks/scenariosModule.test.ts` 3/3, red-green with a swapped pair (implementer). Independent oracle (main session): the original script at `4d29c3f`, run in both modes, gives the same 50 (SRD) and 67 (integrated) names in the same order as the committed fixtures. `npm run check:all` exit 0 (1766 app tests, 305 scraper tests). `ONLY="Builder Abilities,Home" WIDTHS=393 npm run layout:check` in the main checkout: GREEN, both screenshots written. The implementer's full runs failed only because Metro cannot resolve a symlinked `node_modules` in a worktree. Open: the full-width run in the main checkout comes with ticket 04's evidence. `EXTRA_CHECKS` stays in `layout-check.mjs`, so the fixtures hold the SCREENS lists only.
 
 ## What to build
 
@@ -12,7 +13,7 @@ The scenario list and the seed builder move out of the web layout check into a m
 
 ## Acceptance Criteria
 
-- [ ] AC-6: With `SCREENS` and `buildSeed()` moved to `scripts/lib/scenarios.mjs`, `layout:check` lists the same scenario names in the same order as before the move, with and without `--integrated`, and `buildSeed()` returns `{ characters, folders, settings, integrated }`.
+- [x] AC-6: With `SCREENS` and `buildSeed()` moved to `scripts/lib/scenarios.mjs`, `layout:check` lists the same scenario names in the same order as before the move, with and without `--integrated`, and `buildSeed()` returns `{ characters, folders, settings, integrated }`.
 
 ## Verification
 
