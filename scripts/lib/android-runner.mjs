@@ -4,19 +4,31 @@
 // that record their calls. The SDK is resolved from ANDROID_HOME / ANDROID_SDK_ROOT, defaulting to
 // ~/Android/Sdk, because neither adb nor emulator is on PATH.
 import { join } from "node:path";
-import { buildScreens } from "./scenarios.mjs";
+import { buildScreens, buildSeed } from "./scenarios.mjs";
+import { findNode, parseDump } from "./uiautomator.mjs";
 
 // The app id of the (E2E) build, and the AVD the runner boots when no emulator is running.
 export const APP_ID = "com.anonymous.dnd5e2014CharacterBuilder";
 export const AVD_NAME = "Small_Phone";
+// The deep link scheme the app registers, so a route opens by `am start -d <scheme>://<route>`.
+export const LINK_SCHEME = "dnd5e2014characterbuilder";
+// The seed file the app reads from its private folder on launch (the app deletes it after importing).
+// Kept in sync with E2E_SEED_FILE_NAME in src/services/e2eSeedImport.ts; a test fails when they drift.
+export const SEED_FILE_NAME = "dnd5e_e2e_seed.json";
+// The 8 bytes every PNG starts with, checked on the pulled screenshot.
+export const PNG_SIGNATURE = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
 // The AVD's screen is 720 px wide, so dp = 720 / (density / 160).
 export const SCREEN_WIDTH_PX = 720;
 // A cold Gradle release build takes about six minutes; the runner gives it a long timeout of its own
 // and streams nothing from it when it passes.
 export const BUILD_TIMEOUT_MS = 900_000;
 export const BOOT_TIMEOUT_MS = 180_000;
-// About five seconds for the first render after a launch.
-export const RENDER_WAIT_MS = 5_000;
+// The ready wait: poll a uiautomator dump until the scenario's ready text shows, as long as the web
+// check waits for its ready condition.
+export const READY_TIMEOUT_MS = 10_000;
+export const READY_POLL_MS = 500;
+// Where the device writes the dump that is polled and the screenshots that are pulled.
+export const DUMP_REMOTE = "/sdcard/e2e-dump.xml";
 
 // The density a width is set through: density = round(720 * 160 / width).
 export function densityForWidth(width) {
@@ -31,6 +43,23 @@ export function parseOnly(raw) {
 // The widths of the run, as in layout-check.
 export function parseWidths(raw) {
   return (raw ?? "393,360,320,412").split(",").map(Number);
+}
+
+// A scenario route as a deep link URI: "/" is the scheme alone, "/options" adds the path.
+export function deepLinkForRoute(route) {
+  return `${LINK_SCHEME}://${route.replace(/^\//, "")}`;
+}
+
+// The screenshot file name, exactly as scripts/layout-check.mjs names its screenshots, so web and
+// native shots of one scenario pair up.
+export function screenshotName(name, width) {
+  return `${name.replace(/\W+/g, "-")}-${width}.png`;
+}
+
+// Whether a scenario carries steps (tabs, open, modal, scrollTo) that have no native form yet: such a
+// scenario is listed as needing native steps and skipped.
+export function needsNativeSteps(screen) {
+  return Boolean(screen.tabs?.length || screen.open?.length || screen.modal || screen.scrollTo);
 }
 
 // Whether ONLY visits the scenario `name` (every scenario when ONLY is empty).
@@ -143,11 +172,81 @@ async function waitForBoot({ run, adb, sleep, timeoutMs, pollMs = 2_000 }) {
   }
 }
 
+// Polls `uiautomator dump` until the ready condition (an exact string or a RegExp matched against an
+// element's text) shows in the dump. Returns the matching node, or null when the timeout passes.
+async function waitForReady({ run, adbArgs, adb, ready, timeoutMs, pollMs, sleep, now }) {
+  const deadline = now() + timeoutMs;
+  for (;;) {
+    run(adb, adbArgs(["shell", "uiautomator", "dump", DUMP_REMOTE]));
+    const xml = run(adb, adbArgs(["exec-out", "cat", DUMP_REMOTE])).stdout;
+    const node = findNode(parseDump(xml), ready);
+    if (node) return node;
+    if (now() >= deadline) return null;
+    await sleep(pollMs);
+  }
+}
+
+// One scenario at one width: force-stop and clear the app, copy the seed into its private folder with
+// run-as (through /data/local/tmp, so no megabytes go through the executor's stdio), launch the
+// scenario's route by deep link, wait for its ready text, then screencap on the device and pull the
+// PNG into the shots folder. Returns whether the scenario produced its screenshot.
+async function runScenario({ run, adb, adbArgs, screen, width, shots, seedPath, sleep, now, log, errorLog, fileExists, readFile, readyTimeoutMs, readyPollMs }) {
+  const file = screenshotName(screen.name, width);
+  const label = `[${width}dp] ${screen.name}`;
+  run(adb, adbArgs(["shell", "am", "force-stop", APP_ID]));
+  const clear = run(adb, adbArgs(["shell", "pm", "clear", APP_ID]));
+  if (clear.code !== 0) {
+    errorLog(`${label}: pm clear failed (exit ${clear.code}): ${tail(clear.stderr || clear.stdout)}`);
+    return false;
+  }
+  // The app's files/ folder may not exist after a clear, so create it before the copy.
+  const tmpRemote = `/data/local/tmp/${SEED_FILE_NAME}`;
+  const push = run(adb, adbArgs(["push", seedPath, tmpRemote]));
+  run(adb, adbArgs(["shell", "run-as", APP_ID, "mkdir", "-p", "files"]));
+  const copy = run(adb, adbArgs(["shell", "run-as", APP_ID, "cp", tmpRemote, `files/${SEED_FILE_NAME}`]));
+  run(adb, adbArgs(["shell", "rm", "-f", tmpRemote]));
+  if (push.code !== 0 || copy.code !== 0) {
+    errorLog(`${label}: copying the seed into the app failed (push exit ${push.code}, run-as cp exit ${copy.code}): ${tail(copy.stderr || copy.stdout)}`);
+    return false;
+  }
+  // The URI is quoted so the device shell does not split it.
+  const uri = deepLinkForRoute(screen.route);
+  const launch = run(adb, adbArgs(["shell", "am", "start", "-a", "android.intent.action.VIEW", "-d", `"${uri}"`, APP_ID]));
+  if (launch.code !== 0) {
+    errorLog(`${label}: deep link launch failed (exit ${launch.code}): ${tail(launch.stderr || launch.stdout)}`);
+    return false;
+  }
+  const ready = String(screen.ready);
+  const node = await waitForReady({ run, adb, adbArgs, ready: screen.ready, timeoutMs: readyTimeoutMs, pollMs: readyPollMs, sleep, now });
+  if (!node) {
+    errorLog(`${label}: ready text ${ready} did not show within ${Math.round(readyTimeoutMs / 1000)} s`);
+    return false;
+  }
+  // The screenshot is binary, so it is taken on the device and pulled as a file, never through the
+  // executor's UTF-8 stdout.
+  const remote = `/sdcard/${file}`;
+  run(adb, adbArgs(["shell", "screencap", "-p", remote]));
+  const target = join(shots, file);
+  const pull = run(adb, adbArgs(["pull", remote, target]));
+  if (pull.code !== 0 || !fileExists(target)) {
+    errorLog(`${label}: pulling the screenshot failed (exit ${pull.code}): ${tail(pull.stderr || pull.stdout)}`);
+    return false;
+  }
+  const head = readFile(target).subarray(0, PNG_SIGNATURE.length);
+  if (head.length !== PNG_SIGNATURE.length || !head.every((byte, i) => byte === PNG_SIGNATURE[i])) {
+    errorLog(`${label}: ${target} is not a PNG (bad file signature)`);
+    return false;
+  }
+  log(`${label}: wrote ${target}`);
+  return true;
+}
+
 // One run of the device side: parse and validate the arguments (an unmatched ONLY term exits 2
 // before any device is touched), find or start the emulator, refuse a non-emulator serial, build
-// unless --no-build, install, then for each width set the density and launch the app, restoring the
-// original density at the end (also after a failure, and from the signal handler) and stopping the
-// emulator only when this run started it. Returns the exit code.
+// unless --no-build, install, then for each width set the density and run every selected scenario
+// (reset, seed, deep link, ready wait, screenshot), restoring the original density at the end (also
+// after a failure, and from the signal handler) and stopping the emulator only when this run started
+// it. Returns the exit code: non-zero when any scenario failed.
 export async function runAndroid(options) {
   const {
     root,
@@ -155,8 +254,12 @@ export async function runAndroid(options) {
     argv,
     run,
     sleep,
+    now = () => Date.now(),
     startEmulator,
     fileExists,
+    writeFile,
+    readFile,
+    makeSeed = ({ root: r, integrated: i }) => JSON.stringify(buildSeed({ root: r, integrated: i })),
     mkdir,
     tmpdir,
     homeDir,
@@ -165,7 +268,8 @@ export async function runAndroid(options) {
     errorLog,
     buildTimeoutMs = BUILD_TIMEOUT_MS,
     bootTimeoutMs = BOOT_TIMEOUT_MS,
-    renderWaitMs = RENDER_WAIT_MS,
+    readyTimeoutMs = READY_TIMEOUT_MS,
+    readyPollMs = READY_POLL_MS,
   } = options;
   const integrated = argv.includes("--integrated");
   const noBuild = argv.includes("--no-build");
@@ -258,16 +362,48 @@ export async function runAndroid(options) {
       return 1;
     }
     log(`Installed ${apk} on ${serial}`);
+
+    // The selected scenarios: those with native steps are listed and skipped, the rest run at every width.
+    const screens = buildScreens({ integrated });
+    const runnable = [];
+    for (const screen of screens) {
+      if (!selected(screen.name, only)) continue;
+      if (needsNativeSteps(screen)) log(`Skipping ${screen.name}: needs native steps (tabs, open, modal or scrollTo)`);
+      else runnable.push(screen);
+    }
+    // The seed is built once per run and staged locally; each scenario copies it into the app.
+    const seedPath = join(tmpdir(), `dnd5e-android-seed-${SEED_FILE_NAME}`);
+    if (runnable.length > 0) writeFile(seedPath, makeSeed({ root, integrated }));
+
+    let failures = 0;
     for (const width of widths) {
       const density = densityForWidth(width);
       run(adb, adbArgs(["shell", "wm", "density", String(density)]));
-      const launch = run(adb, adbArgs(["shell", "monkey", "-p", APP_ID, "-c", "android.intent.category.LAUNCHER", "1"]));
-      if (launch.code !== 0) {
-        errorLog(`Launching ${APP_ID} at ${width}dp failed (exit ${launch.code}): ${tail(launch.stderr || launch.stdout)}`);
-        return 1;
+      log(`[${width}dp] density ${density}`);
+      for (const screen of runnable) {
+        const ok = await runScenario({
+          run,
+          adb,
+          adbArgs,
+          screen,
+          width,
+          shots,
+          seedPath,
+          sleep,
+          now,
+          log,
+          errorLog,
+          fileExists,
+          readFile,
+          readyTimeoutMs,
+          readyPollMs,
+        });
+        if (!ok) failures += 1;
       }
-      log(`[${width}dp] density ${density}; launched ${APP_ID}`);
-      await sleep(renderWaitMs);
+    }
+    if (failures > 0) {
+      errorLog(`Run finished with ${failures} failed scenario(s)`);
+      return 1;
     }
     log("Run finished");
     return 0;
