@@ -30,6 +30,9 @@ export const READY_TIMEOUT_MS = 10_000;
 export const READY_POLL_MS = 500;
 // Where the device writes the dump that is polled and the screenshots that are pulled.
 export const DUMP_REMOTE = "/sdcard/e2e-dump.xml";
+// A deep-link launch that exits non-zero is retried once after about this long (a real run saw one
+// transient exit 255 that passed on its own).
+export const LAUNCH_RETRY_DELAY_MS = 1_000;
 
 // The density a width is set through: density = round(720 * 160 / width).
 export function densityForWidth(width) {
@@ -189,14 +192,11 @@ async function waitForBoot({ run, adb, sleep, timeoutMs, pollMs = 2_000 }) {
   }
 }
 
-// One scenario at one width: force-stop and clear the app, copy the seed into its private folder with
-// run-as (through /data/local/tmp, so no megabytes go through the executor's stdio), launch the
-// scenario's route by deep link, play the scenario's step fields (tabs, open, the ready text, scrollTo)
-// on uiautomator dumps, then screencap on the device and pull the PNG into the shots folder. Returns
-// whether the scenario produced its screenshot.
-async function runScenario({ run, adb, adbArgs, screen, width, shots, seedPath, sleep, now, log, errorLog, fileExists, readFile, readyTimeoutMs, readyPollMs, view }) {
-  const file = screenshotName(screen.name, width);
-  const label = `[${width}dp] ${screen.name}`;
+// The reset: force-stop the app and clear its data, then copy the seed into its private folder with
+// run-as (through /data/local/tmp, so no megabytes go through the executor's stdio). The seed is only
+// imported on a cold start, so this is only useful right before a launch. Returns false when the clear
+// or the copy failed.
+function resetAndSeed({ run, adb, adbArgs, seedPath, label, errorLog }) {
   run(adb, adbArgs(["shell", "am", "force-stop", APP_ID]));
   const clear = run(adb, adbArgs(["shell", "pm", "clear", APP_ID]));
   if (clear.code !== 0) {
@@ -213,12 +213,86 @@ async function runScenario({ run, adb, adbArgs, screen, width, shots, seedPath, 
     errorLog(`${label}: copying the seed into the app failed (push exit ${push.code}, run-as cp exit ${copy.code}): ${tail(copy.stderr || copy.stdout)}`);
     return false;
   }
-  // The URI is quoted so the device shell does not split it.
-  const uri = deepLinkForRoute(screen.route);
-  const launch = run(adb, adbArgs(["shell", "am", "start", "-a", "android.intent.action.VIEW", "-d", `"${uri}"`, APP_ID]));
-  if (launch.code !== 0) {
-    errorLog(`${label}: deep link launch failed (exit ${launch.code}): ${tail(launch.stderr || launch.stdout)}`);
-    return false;
+  return true;
+}
+
+// The launch by deep link, retried once after about a second when it exits non-zero. The URI is quoted
+// so the device shell does not split it. Returns false when both attempts failed.
+function launchRoute({ run, adb, adbArgs, route, label, errorLog, sleep }) {
+  const uri = deepLinkForRoute(route);
+  let launch = null;
+  for (let attempt = 0; attempt < 2; attempt++) {
+    if (attempt > 0) sleep(LAUNCH_RETRY_DELAY_MS);
+    launch = run(adb, adbArgs(["shell", "am", "start", "-a", "android.intent.action.VIEW", "-d", `"${uri}"`, APP_ID]));
+    if (launch.code === 0) return true;
+  }
+  errorLog(`${label}: deep link launch failed (exit ${launch.code}): ${tail(launch.stderr || launch.stdout)}`);
+  return false;
+}
+
+// The isolation mode of a scenario, mirroring how the web check reloads its page: the first scenario of
+// a width and every `fresh` scenario reset the app and copy the seed in (`reset+seed`); a `modal`
+// scenario force-stops and relaunches by deep link without clearing (`relaunch`, as the web check
+// reloads the page); any other scenario only jumps to its route by deep link (`deep link`), and when
+// that is the route the previous scenario left the app on, not even that (`same route`: the UI state
+// carries over, as the web check re-taps the tabs on the page it is already on).
+function modeForScenario(screen, state, firstOfWidth) {
+  if (firstOfWidth || screen.fresh) return "reset+seed";
+  if (screen.modal) return "relaunch";
+  if (state.route !== screen.route) return "deep link";
+  return "same route";
+}
+
+// The stuck screen of a scenario that failed after the app was launched, saved as
+// `<scenario>-<width>-FAILED.png` with the same on-device screencap and pull as a normal screenshot.
+// Best effort: when the device does not answer, say so and carry on without a file.
+function saveFailedScreenshot({ run, adb, adbArgs, file, shots, label, log, errorLog, fileExists }) {
+  const remote = `/sdcard/${file}`;
+  run(adb, adbArgs(["shell", "screencap", "-p", remote]));
+  const target = join(shots, file);
+  const pull = run(adb, adbArgs(["pull", remote, target]));
+  if (pull.code !== 0 || !fileExists(target)) {
+    errorLog(`${label}: could not save the stuck screen as ${file} (pull exit ${pull.code}); carrying on without it`);
+    return;
+  }
+  log(`${label}: wrote ${target}`);
+}
+
+// One scenario at one width, in its isolation mode (see modeForScenario): reset+seed or relaunch or a
+// bare deep-link jump, or no launch at all on the previous scenario's route; then the scenario's step
+// fields (tabs, open, the ready text, scrollTo) are played on uiautomator dumps, and the screen is
+// screencapped on the device and pulled as a PNG into the shots folder. A scenario that fails after
+// the launch also saves the stuck screen as `<scenario>-<width>-FAILED.png`; a failure before the
+// launch (the reset, the seed copy, the launch itself) does not. `state.route` tracks the route the app
+// was last left on, as the web check's per-width page state: unknown (null) after a modal scenario and
+// after a failed scenario, so the next scenario relaunches by deep link. Returns whether the scenario
+// produced its screenshot.
+async function runScenario({ run, adb, adbArgs, screen, width, shots, seedPath, state, firstOfWidth, sleep, now, log, errorLog, fileExists, readFile, readyTimeoutMs, readyPollMs, view }) {
+  const file = screenshotName(screen.name, width);
+  const failedFile = file.replace(/\.png$/, "-FAILED.png");
+  const label = `[${width}dp] ${screen.name}`;
+  const mode = modeForScenario(screen, state, firstOfWidth);
+  log(`${label}: ${mode}`);
+  if (mode === "reset+seed") {
+    if (!resetAndSeed({ run, adb, adbArgs, seedPath, label, errorLog })) {
+      state.route = null;
+      return false;
+    }
+    if (!launchRoute({ run, adb, adbArgs, route: screen.route, label, errorLog, sleep })) {
+      state.route = null;
+      return false;
+    }
+  } else if (mode === "relaunch") {
+    run(adb, adbArgs(["shell", "am", "force-stop", APP_ID]));
+    if (!launchRoute({ run, adb, adbArgs, route: screen.route, label, errorLog, sleep })) {
+      state.route = null;
+      return false;
+    }
+  } else if (mode === "deep link") {
+    if (!launchRoute({ run, adb, adbArgs, route: screen.route, label, errorLog, sleep })) {
+      state.route = null;
+      return false;
+    }
   }
   // The step fields are played on fresh dumps: a tap lands at the matched node's centre, a swipe is an
   // `input swipe` mid-screen. A step whose target never shows fails the scenario with a message naming it;
@@ -233,6 +307,8 @@ async function runScenario({ run, adb, adbArgs, screen, width, shots, seedPath, 
   for (const warning of warnings) log(`${label}: warning: ${warning}`);
   if (error) {
     errorLog(`${label}: ${error}`);
+    saveFailedScreenshot({ run, adb, adbArgs, file: failedFile, shots, label, log, errorLog, fileExists });
+    state.route = null;
     return false;
   }
   // The screenshot is binary, so it is taken on the device and pulled as a file, never through the
@@ -243,24 +319,29 @@ async function runScenario({ run, adb, adbArgs, screen, width, shots, seedPath, 
   const pull = run(adb, adbArgs(["pull", remote, target]));
   if (pull.code !== 0 || !fileExists(target)) {
     errorLog(`${label}: pulling the screenshot failed (exit ${pull.code}): ${tail(pull.stderr || pull.stdout)}`);
+    state.route = null;
     return false;
   }
   const head = readFile(target).subarray(0, PNG_SIGNATURE.length);
   if (head.length !== PNG_SIGNATURE.length || !head.every((byte, i) => byte === PNG_SIGNATURE[i])) {
     errorLog(`${label}: ${target} is not a PNG (bad file signature)`);
+    state.route = null;
     return false;
   }
   log(`${label}: wrote ${target}`);
+  state.route = screen.modal ? null : screen.route;
   return true;
 }
 
 // One run of the device side: parse and validate the arguments (an unmatched ONLY term exits 2
 // before any device is touched), find or start the emulator, refuse a non-emulator serial, build
-// unless --no-build, install, then for each width set the density and run every selected scenario
-// (reset, seed, deep link, the step fields played on uiautomator dumps, screenshot), restoring the
-// original density at the end (also after a failure, and from the signal handler) and stopping the
-// emulator only when this run started it. A scenario marked web-only is listed and skipped. Returns
-// the exit code: non-zero when any scenario failed.
+// unless --no-build, install, then for each width set the density and run every selected scenario in
+// its isolation mode (the first of the width and `fresh` reset and reseed, `modal` force-stops and
+// relaunches without clearing, the rest only jump by deep link — see modeForScenario), playing the
+// step fields on uiautomator dumps and pulling the screenshot, restoring the original density at the
+// end (also after a failure, and from the signal handler) and stopping the emulator only when this
+// run started it. A scenario marked web-only is listed and skipped. Returns the exit code: non-zero
+// when any scenario failed.
 export async function runAndroid(options) {
   const {
     root,
@@ -395,7 +476,8 @@ export async function runAndroid(options) {
       if (screen.webOnly) log(`Skipping ${screen.name}: web-only`);
       else runnable.push(screen);
     }
-    // The seed is built once per run and staged locally; each scenario copies it into the app.
+    // The seed is built once per run and staged locally; only the reset+seed scenarios copy it into
+    // the app (the app imports it on the cold start that follows the clear).
     const seedPath = join(tmpdir(), `dnd5e-android-seed-${SEED_FILE_NAME}`);
     if (runnable.length > 0) writeFile(seedPath, makeSeed({ root, integrated }));
 
@@ -404,7 +486,10 @@ export async function runAndroid(options) {
       const density = densityForWidth(width);
       run(adb, adbArgs(["shell", "wm", "density", String(density)]));
       log(`[${width}dp] density ${density}`);
-      for (const screen of runnable) {
+      // The route the app was last left on at this width, as the web check's per-width page state:
+      // unknown at the start of the width, after a modal scenario and after a failed scenario.
+      const state = { route: null };
+      for (const [index, screen] of runnable.entries()) {
         const ok = await runScenario({
           run,
           adb,
@@ -413,6 +498,8 @@ export async function runAndroid(options) {
           width,
           shots,
           seedPath,
+          state,
+          firstOfWidth: index === 0,
           sleep,
           now,
           log,
