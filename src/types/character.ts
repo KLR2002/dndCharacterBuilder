@@ -21,6 +21,11 @@ export type CreationStepId =
  */
 export interface CreationProgress {
   currentStep: CreationStepId;
+  /**
+   * The steps an earlier step's change released picks from, marked as needing attention until each is
+   * finished again. Absent on saves made before it existed.
+   */
+  needsAttention?: CreationStepId[];
 }
 
 export interface AbilityScores {
