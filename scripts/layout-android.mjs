@@ -12,7 +12,11 @@
 // and the `<scenario>-<width>.png` screenshot is pulled into the shots folder; a scenario that
 // fails after the launch also saves the stuck screen as `<scenario>-<width>-FAILED.png` and the run
 // continues, exiting non-zero. The original density is restored at the end (also after a failure).
-// The runner core, with every device interaction behind one injectable executor, is in
+// The device is checked alive before each scenario and at every scenario failure point; when it is
+// lost, an emulator this run started is booted again (at most twice), reinstalled, re-densitied and
+// the running scenario repeated in reset+seed mode, while a reused emulator stops the run at that
+// scenario with a message and a non-zero exit. The runner core, with every device interaction behind
+// one injectable executor, is in
 // scripts/lib/android-runner.mjs; the tests are in checks/androidRunner.test.ts and
 // checks/nativeSteps.test.ts.
 //

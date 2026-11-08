@@ -33,6 +33,9 @@ export const DUMP_REMOTE = "/sdcard/e2e-dump.xml";
 // A deep-link launch that exits non-zero is retried once after about this long (a real run saw one
 // transient exit 255 that passed on its own).
 export const LAUNCH_RETRY_DELAY_MS = 1_000;
+// How many times one run reboots an emulator it started after losing it (a host GPU context loss
+// killed the emulator mid-run). A further loss ends the run.
+export const MAX_EMULATOR_RECOVERIES = 2;
 
 // The density a width is set through: density = round(720 * 160 / width).
 export function densityForWidth(width) {
@@ -265,9 +268,11 @@ function saveFailedScreenshot({ run, adb, adbArgs, file, shots, label, log, erro
 // the launch also saves the stuck screen as `<scenario>-<width>-FAILED.png`; a failure before the
 // launch (the reset, the seed copy, the launch itself) does not. `state.route` tracks the route the app
 // was last left on, as the web check's per-width page state: unknown (null) after a modal scenario and
-// after a failed scenario, so the next scenario relaunches by deep link. Returns whether the scenario
-// produced its screenshot.
-async function runScenario({ run, adb, adbArgs, screen, width, shots, seedPath, state, firstOfWidth, sleep, now, log, errorLog, fileExists, readFile, readyTimeoutMs, readyPollMs, view }) {
+// after a failed scenario, so the next scenario relaunches by deep link. Returns "ok" when the scenario
+// produced its screenshot, "failed" when it failed on a live device, and "lost" when the device was
+// gone at the failure point (checked with `deviceAlive`), in which case no FAILED screenshot is saved:
+// a lost device is not a failed scenario.
+async function runScenario({ run, adb, adbArgs, screen, width, shots, seedPath, state, firstOfWidth, sleep, now, log, errorLog, fileExists, readFile, readyTimeoutMs, readyPollMs, view, deviceAlive }) {
   const file = screenshotName(screen.name, width);
   const failedFile = file.replace(/\.png$/, "-FAILED.png");
   const label = `[${width}dp] ${screen.name}`;
@@ -276,22 +281,22 @@ async function runScenario({ run, adb, adbArgs, screen, width, shots, seedPath, 
   if (mode === "reset+seed") {
     if (!resetAndSeed({ run, adb, adbArgs, seedPath, label, errorLog })) {
       state.route = null;
-      return false;
+      return deviceAlive() ? "failed" : "lost";
     }
     if (!launchRoute({ run, adb, adbArgs, route: screen.route, label, errorLog, sleep })) {
       state.route = null;
-      return false;
+      return deviceAlive() ? "failed" : "lost";
     }
   } else if (mode === "relaunch") {
     run(adb, adbArgs(["shell", "am", "force-stop", APP_ID]));
     if (!launchRoute({ run, adb, adbArgs, route: screen.route, label, errorLog, sleep })) {
       state.route = null;
-      return false;
+      return deviceAlive() ? "failed" : "lost";
     }
   } else if (mode === "deep link") {
     if (!launchRoute({ run, adb, adbArgs, route: screen.route, label, errorLog, sleep })) {
       state.route = null;
-      return false;
+      return deviceAlive() ? "failed" : "lost";
     }
   }
   // The step fields are played on fresh dumps: a tap lands at the matched node's centre, a swipe is an
@@ -306,10 +311,15 @@ async function runScenario({ run, adb, adbArgs, screen, width, shots, seedPath, 
   const { error, warnings } = await playScreen({ screen, dump, tap, swipe, view, sleep, now, timeoutMs: readyTimeoutMs, pollMs: readyPollMs });
   for (const warning of warnings) log(`${label}: warning: ${warning}`);
   if (error) {
+    // A failure caused by a lost device is not a failed scenario: no stuck screen is saved for it.
+    if (!deviceAlive()) {
+      state.route = null;
+      return "lost";
+    }
     errorLog(`${label}: ${error}`);
     saveFailedScreenshot({ run, adb, adbArgs, file: failedFile, shots, label, log, errorLog, fileExists });
     state.route = null;
-    return false;
+    return "failed";
   }
   // The screenshot is binary, so it is taken on the device and pulled as a file, never through the
   // executor's UTF-8 stdout.
@@ -318,19 +328,23 @@ async function runScenario({ run, adb, adbArgs, screen, width, shots, seedPath, 
   const target = join(shots, file);
   const pull = run(adb, adbArgs(["pull", remote, target]));
   if (pull.code !== 0 || !fileExists(target)) {
+    if (!deviceAlive()) {
+      state.route = null;
+      return "lost";
+    }
     errorLog(`${label}: pulling the screenshot failed (exit ${pull.code}): ${tail(pull.stderr || pull.stdout)}`);
     state.route = null;
-    return false;
+    return "failed";
   }
   const head = readFile(target).subarray(0, PNG_SIGNATURE.length);
   if (head.length !== PNG_SIGNATURE.length || !head.every((byte, i) => byte === PNG_SIGNATURE[i])) {
     errorLog(`${label}: ${target} is not a PNG (bad file signature)`);
     state.route = null;
-    return false;
+    return "failed";
   }
   log(`${label}: wrote ${target}`);
   state.route = screen.modal ? null : screen.route;
-  return true;
+  return "ok";
 }
 
 // One run of the device side: parse and validate the arguments (an unmatched ONLY term exits 2
@@ -340,8 +354,14 @@ async function runScenario({ run, adb, adbArgs, screen, width, shots, seedPath, 
 // relaunches without clearing, the rest only jump by deep link — see modeForScenario), playing the
 // step fields on uiautomator dumps and pulling the screenshot, restoring the original density at the
 // end (also after a failure, and from the signal handler) and stopping the emulator only when this
-// run started it. A scenario marked web-only is listed and skipped. Returns the exit code: non-zero
-// when any scenario failed.
+// run started it. The device is checked alive before each scenario and at every scenario failure
+// point (`adb -s <serial> get-state` must print `device`); when it is lost, an emulator this run
+// started is booted again (at most MAX_EMULATOR_RECOVERIES times per run), the APK installed and the
+// width's density set again, and the scenario that was running is repeated in reset+seed mode, while a
+// reused emulator stops the run at that scenario with a message and a non-zero exit. A scenario that
+// failed because the device was lost writes no FAILED screenshot. A scenario marked web-only is
+// listed and skipped. Returns the exit code: non-zero when any scenario failed or the device was
+// lost unrecoverably.
 export async function runAndroid(options) {
   const {
     root,
@@ -418,13 +438,30 @@ export async function runAndroid(options) {
   }
 
   const adbArgs = (args) => ["-s", serial, ...args];
+  // Whether the device is still alive: `adb -s <serial> get-state` must print `device` and exit 0.
+  // Anything else (offline, no devices, serial not found, a non-zero exit) means the device is lost.
+  const deviceAlive = () => {
+    const state = run(adb, ["-s", serial, "get-state"]);
+    return state.code === 0 && state.stdout.trim() === "device";
+  };
   const originalDensity = parseWmDensity(run(adb, adbArgs(["shell", "wm", "density"])).stdout);
   let cleanedUp = false;
   const cleanup = () => {
     if (cleanedUp) return;
     cleanedUp = true;
-    run(adb, adbArgs(restoreDensityArgs(originalDensity)));
-    if (started) run(adb, adbArgs(["emu", "kill"]));
+    // Best effort: a dead device answers adb quickly with an error, so neither call hangs or throws.
+    try {
+      run(adb, adbArgs(restoreDensityArgs(originalDensity)));
+    } catch {
+      // The device is gone; there is no density to restore.
+    }
+    if (started) {
+      try {
+        run(adb, adbArgs(["emu", "kill"]));
+      } catch {
+        // The emulator is gone; there is nothing left to stop.
+      }
+    }
   };
   installSignalHandlers(cleanup);
   try {
@@ -481,38 +518,98 @@ export async function runAndroid(options) {
     const seedPath = join(tmpdir(), `dnd5e-android-seed-${SEED_FILE_NAME}`);
     if (runnable.length > 0) writeFile(seedPath, makeSeed({ root, integrated }));
 
+    // When the device is lost mid-run: if this run started the emulator, boot it again (at most
+    // MAX_EMULATOR_RECOVERIES times), wait for boot, install the APK, set the width's density again
+    // and let the caller repeat the scenario in reset+seed mode; a reused emulator is not restarted,
+    // so the run stops at that scenario. Returns whether the scenario can be repeated.
+    let recoveries = 0;
+    const recoverLostDevice = async ({ screen, width, density, state }) => {
+      if (!started) {
+        errorLog(
+          `[${width}dp] ${screen.name}: device ${serial} is gone (adb -s ${serial} get-state does not report "device"); ` +
+            `this run did not start the emulator, so it is not restarted: stopping without running the remaining scenarios`,
+        );
+        return false;
+      }
+      if (recoveries >= MAX_EMULATOR_RECOVERIES) {
+        errorLog(`[${width}dp] ${screen.name}: emulator lost again; this run has already rebooted it ${recoveries} of ${MAX_EMULATOR_RECOVERIES} times, ending the run`);
+        return false;
+      }
+      recoveries += 1;
+      log(`[${width}dp] ${screen.name}: emulator lost, rebooting (${recoveries} of ${MAX_EMULATOR_RECOVERIES})`);
+      startEmulator(emulatorBin, emulatorArgs({ windowed }), join(shots, "emulator.log"));
+      const boot = await waitForBoot({ run, adb, sleep, timeoutMs: bootTimeoutMs });
+      if (!boot.booted) {
+        if (boot.serial) run(adb, ["-s", boot.serial, "emu", "kill"]);
+        errorLog(`rebooting ${AVD_NAME} after the emulator was lost did not report sys.boot_completed=1 within ${Math.round(bootTimeoutMs / 1000)} s; ending the run`);
+        return false;
+      }
+      // The rebooted emulator is normally the same serial again, but read it from the boot wait.
+      serial = boot.serial;
+      log(`Emulator ${serial} booted again`);
+      const install = run(adb, adbArgs(["install", "-r", apk]));
+      if (install.code !== 0) {
+        errorLog(`adb install -r on the rebooted ${serial} failed (exit ${install.code}): ${tail(install.stderr || install.stdout)}; ending the run`);
+        return false;
+      }
+      // The reboot may have kept a density override, so set this width's density again.
+      run(adb, adbArgs(["shell", "wm", "density", String(density)]));
+      state.route = null;
+      return true;
+    };
+
     let failures = 0;
+    let aborted = false;
     for (const width of widths) {
+      if (aborted) break;
       const density = densityForWidth(width);
       run(adb, adbArgs(["shell", "wm", "density", String(density)]));
       log(`[${width}dp] density ${density}`);
       // The route the app was last left on at this width, as the web check's per-width page state:
       // unknown at the start of the width, after a modal scenario and after a failed scenario.
       const state = { route: null };
-      for (const [index, screen] of runnable.entries()) {
-        const ok = await runScenario({
-          run,
-          adb,
-          adbArgs,
-          screen,
-          width,
-          shots,
-          seedPath,
-          state,
-          firstOfWidth: index === 0,
-          sleep,
-          now,
-          log,
-          errorLog,
-          fileExists,
-          readFile,
-          readyTimeoutMs,
-          readyPollMs,
-          view,
-        });
-        if (!ok) failures += 1;
+      let index = 0;
+      while (index < runnable.length && !aborted) {
+        const screen = runnable[index];
+        const runScreen = (firstOfWidth) =>
+          runScenario({
+            run,
+            adb,
+            adbArgs,
+            screen,
+            width,
+            shots,
+            seedPath,
+            state,
+            firstOfWidth,
+            sleep,
+            now,
+            log,
+            errorLog,
+            fileExists,
+            readFile,
+            readyTimeoutMs,
+            readyPollMs,
+            view,
+            deviceAlive,
+          });
+        // The device is checked before each scenario, and runScenario checks it again at every
+        // failure point, so a loss is caught either here or as a "lost" result.
+        let result = deviceAlive() ? await runScreen(index === 0) : "lost";
+        if (result === "lost") {
+          if (!(await recoverLostDevice({ screen, width, density, state }))) {
+            aborted = true;
+            break;
+          }
+          // Repeat the scenario that was running, in reset+seed mode, so the app is seeded again.
+          result = await runScreen(true);
+          if (result === "lost") continue;
+        }
+        if (result === "failed") failures += 1;
+        index += 1;
       }
     }
+    if (aborted) return 1;
     if (failures > 0) {
       errorLog(`Run finished with ${failures} failed scenario(s)`);
       return 1;

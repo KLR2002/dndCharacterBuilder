@@ -8,6 +8,7 @@ import {
   APP_ID,
   AVD_NAME,
   BUILD_TIMEOUT_MS,
+  MAX_EMULATOR_RECOVERIES,
   PNG_SIGNATURE,
   SEED_FILE_NAME,
   apkPath,
@@ -44,7 +45,11 @@ import { buildScreens } from "../scripts/lib/scenarios.mjs";
 // scenario force-stops and relaunches without clearing, any other scenario only jumps by deep link,
 // and a scenario on the previous scenario's route does not even launch; the launch is retried once;
 // and the stuck screen of a scenario that fails after launch is saved as `<scenario>-<width>-FAILED.png`
-// while the run continues and exits non-zero (AC-14). It also pins the step player (AC-13): tabs and
+// while the run continues and exits non-zero (AC-14). It also pins a lost emulator (AC-18): the fake
+// device goes offline at a chosen get-state or dump poll and comes back after an emulator start, so
+// with a runner-started emulator the run reboots it (at most twice), reinstalls the APK, sets the
+// width's density again and repeats the scenario in reset+seed mode, and with a reused emulator the
+// run stops at that scenario with a message and a non-zero exit. It also pins the step player (AC-13): tabs and
 // open steps as taps on the matching dump node, the modal title waited for as the ready text, scrollTo
 // as swipes until the needle is visible, expect ignored, and web-only scenarios listed and skipped.
 
@@ -105,6 +110,15 @@ function makeWorld(options: {
   argv?: string[];
   readyTimeoutMs?: number;
   readyPollMs?: number;
+  // The device goes offline when the Nth get-state call (or the Nth dump poll) happens, and comes
+  // back when startEmulator runs again (a reboot). While offline, `adb devices` lists nothing and
+  // every `-s <serial>` command fails the way a dead device does.
+  offlineAtGetStates?: number[];
+  offlineAtDumps?: number[];
+  // The `adb devices` output and the sys.boot_completed value after the Nth emulator start, so a
+  // reboot can come back on another serial or never finish booting.
+  bootDevicesFor?: (start: number) => string;
+  bootCompletedFor?: (start: number) => string;
 }) {
   const calls: Call[] = [];
   const starts: { bin: string; args: string[]; logPath: string }[] = [];
@@ -115,6 +129,9 @@ function makeWorld(options: {
   const sleeps: number[] = [];
   let seedCalls = 0;
   let emulatorStarted = false;
+  let startCount = 0;
+  let offline = false;
+  let getStateCalls = 0;
   let amStarts = 0;
   let pulls = 0;
   let dumps = 0;
@@ -125,10 +142,24 @@ function makeWorld(options: {
     const joined = args.join(" ");
     const reply = (code: number, stdout = "", stderr = "") => ({ code, stdout, stderr });
     if (args[0] === "devices") {
-      const body = emulatorStarted ? (options.bootDevices ?? "") : (options.devices ?? "");
+      const body = offline
+        ? ""
+        : emulatorStarted
+          ? (options.bootDevicesFor ? options.bootDevicesFor(startCount) : (options.bootDevices ?? ""))
+          : (options.devices ?? "");
       return reply(0, `List of devices attached\n${body}\n`);
     }
-    if (joined.includes("getprop sys.boot_completed")) return reply(0, `${options.bootCompleted ?? "1"}\n`);
+    if (args.includes("get-state")) {
+      getStateCalls += 1;
+      if (options.offlineAtGetStates?.includes(getStateCalls)) offline = true;
+      return offline ? reply(1, "", "adb: device offline\n") : reply(0, "device\n");
+    }
+    // A dead device answers every `-s <serial>` command quickly with an error.
+    if (offline && args[0] === "-s") return reply(1, "", `adb: device '${args[1]}' not found\n`);
+    if (joined.includes("getprop sys.boot_completed")) {
+      const completed = options.bootCompletedFor ? options.bootCompletedFor(startCount) : (options.bootCompleted ?? "1");
+      return reply(0, `${completed}\n`);
+    }
     if (joined.includes("wm density") && !/wm density \d+|wm density reset/.test(joined)) {
       return reply(0, options.wmDensity ?? "Physical density: 320\n");
     }
@@ -161,6 +192,8 @@ function makeWorld(options: {
     if (args.includes("uiautomator")) return reply(0, "UI hierchary dumped to: /sdcard/e2e-dump.xml\n");
     if (args.includes("exec-out")) {
       dumps += 1;
+      if (options.offlineAtDumps?.includes(dumps)) offline = true;
+      if (offline) return reply(1, "", "adb: device offline\n");
       const xml = typeof options.dumpXml === "function" ? options.dumpXml(dumps) : (options.dumpXml ?? DEFAULT_DUMP);
       return reply(0, xml);
     }
@@ -193,8 +226,11 @@ function makeWorld(options: {
       },
       now: () => clock,
       startEmulator: (bin: string, args: string[], logPath: string) => {
+        startCount += 1;
         starts.push({ bin, args: [...args], logPath });
         emulatorStarted = true;
+        // A fresh emulator process brings the device back.
+        offline = false;
         return 4321;
       },
       fileExists: (p: string) => !missing.some((m) => p.includes(m)),
@@ -1017,4 +1053,152 @@ test("a non-zero am start is retried once after about a second and the scenario 
   assert.ok(world.sleeps.includes(1000));
   assert.ok(existsSync(join(shots, "Home-360.png")));
   assert.equal(world.callsTo("screencap").length, 1);
+});
+
+// --- AC-18: a lost emulator is survived or reported ---
+
+test("a runner-started emulator lost before a scenario is rebooted, reinstalled, re-densitied and the scenario repeated in reset+seed mode", async () => {
+  const shots = mkdtempSync(join(osTmpdir(), "android-runner-test-"));
+  const world = makeWorld({
+    // The runner boots its own emulator; the reboot comes back on another serial, to prove the
+    // serial is read from the boot wait and not assumed.
+    devices: "",
+    bootDevicesFor: (n) => `emulator-${5553 + n}\tdevice\n`,
+    // The second get-state call (before Settings) finds the device gone.
+    offlineAtGetStates: [2],
+    env: { ONLY: "Home,Settings", WIDTHS: "360", SHOTS: shots },
+  });
+  const code = await world.runRun();
+  assert.equal(code, 0);
+  // The recovery line, once.
+  assert.deepEqual(world.logs.filter((m) => m.includes("emulator lost, rebooting")), ["[360dp] Settings: emulator lost, rebooting (1 of 2)"]);
+  // Booted twice, the second time with the same arguments; the boot wait read the new serial.
+  assert.equal(world.starts.length, 2);
+  assert.deepEqual(world.starts[1].args, world.starts[0].args);
+  assert.ok(world.callsTo("-s emulator-5555 shell getprop").length >= 1);
+  // The APK is installed again on the new serial, and the width's density set again after the reboot.
+  assert.equal(world.callsTo("install -r").length, 2);
+  assert.equal(world.callsTo("-s emulator-5555 install -r").length, 1);
+  assert.equal(world.callsTo("wm density").filter((c) => c.args.at(-1) === "320").length, 2);
+  // The original density is restored once at the end of the recovered run.
+  assert.equal(world.callsTo("wm density reset").length, 1);
+  // The lost scenario was repeated in reset+seed mode: cleared and seeded again, then launched.
+  assert.equal(world.callsTo("pm clear").length, 2);
+  assert.equal(world.callsTo("push").length, 2);
+  assert.equal(world.callsTo("am start").length, 2);
+  // Every scenario of the set has its screenshot, and the lost one wrote no FAILED screenshot.
+  assert.ok(existsSync(join(shots, "Home-360.png")));
+  assert.ok(existsSync(join(shots, "Settings-360.png")));
+  assert.ok(!existsSync(join(shots, "Settings-360-FAILED.png")));
+  // The emulator the run started is stopped exactly once at the end, on the new serial.
+  const kills = world.callsTo("emu kill");
+  assert.equal(kills.length, 1);
+  assert.ok(kills[0].args.includes("emulator-5555"));
+});
+
+test("a scenario that fails because the device died mid-scenario is a lost device, not a failed scenario: no FAILED screenshot, the run recovers and repeats it", async () => {
+  const shots = mkdtempSync(join(osTmpdir(), "android-runner-test-"));
+  const world = makeWorld({
+    devices: "",
+    bootDevices: "emulator-5554\tdevice\n",
+    // Home's ready poll is dump 1; the device dies on Settings' first dump poll (dump 2).
+    offlineAtDumps: [2],
+    env: { ONLY: "Home,Settings", WIDTHS: "360", SHOTS: shots },
+  });
+  const code = await world.runRun();
+  assert.equal(code, 0);
+  assert.deepEqual(world.logs.filter((m) => m.includes("emulator lost, rebooting")), ["[360dp] Settings: emulator lost, rebooting (1 of 2)"]);
+  // No FAILED screenshot anywhere: the mid-scenario failure was the lost device.
+  assert.equal(world.callsTo("screencap").filter((c) => (c.args.at(-1) as string).includes("FAILED")).length, 0);
+  assert.ok(!existsSync(join(shots, "Settings-360-FAILED.png")));
+  // The repeat produced the screenshot.
+  assert.ok(existsSync(join(shots, "Home-360.png")));
+  assert.ok(existsSync(join(shots, "Settings-360.png")));
+  assert.equal(world.starts.length, 2);
+  assert.equal(world.callsTo("install -r").length, 2);
+});
+
+test("a reused emulator lost at a scenario stops the run there: message naming scenario, width and serial, no remaining scenarios, non-zero exit, no FAILED screenshot", async () => {
+  const shots = mkdtempSync(join(osTmpdir(), "android-runner-test-"));
+  const world = makeWorld({
+    ...emulatorWorld,
+    offlineAtGetStates: [2],
+    env: { ONLY: "Home,Settings", WIDTHS: "360", SHOTS: shots },
+  });
+  const code = await world.runRun();
+  assert.notEqual(code, 0);
+  const err = world.errors.join("\n");
+  assert.ok(err.includes("[360dp] Settings"), err);
+  assert.ok(err.includes("emulator-5554"), err);
+  assert.ok(err.includes("did not start"), err);
+  // Home ran and produced its screenshot; Settings and everything after it did not run.
+  assert.ok(existsSync(join(shots, "Home-360.png")));
+  assert.ok(!existsSync(join(shots, "Settings-360.png")));
+  assert.ok(!existsSync(join(shots, "Settings-360-FAILED.png")));
+  assert.equal(world.callsTo("am start").length, 1);
+  assert.equal(world.callsTo("screencap").length, 1);
+  // No emulator was started, so none is stopped; the density restore is still attempted once (best
+  // effort on the dead device, it does not throw or hang).
+  assert.equal(world.starts.length, 0);
+  assert.equal(world.callsTo("emu kill").length, 0);
+  assert.equal(world.callsTo("wm density reset").length, 1);
+});
+
+test("a third loss ends the run with a message and a non-zero exit", async () => {
+  const shots = mkdtempSync(join(osTmpdir(), "android-runner-test-"));
+  const world = makeWorld({
+    devices: "",
+    bootDevices: "emulator-5554\tdevice\n",
+    // Lost before Settings@360 (get-state 2), before Home@320 (3) and before Settings@320 (4).
+    offlineAtGetStates: [2, 3, 4],
+    env: { ONLY: "Home,Settings", WIDTHS: "360,320", SHOTS: shots },
+  });
+  const code = await world.runRun();
+  assert.equal(code, 1);
+  assert.deepEqual(world.logs.filter((m) => m.includes("emulator lost, rebooting")), [
+    "[360dp] Settings: emulator lost, rebooting (1 of 2)",
+    "[320dp] Home: emulator lost, rebooting (2 of 2)",
+  ]);
+  const err = world.errors.join("\n");
+  assert.ok(err.includes("[320dp] Settings"), err);
+  assert.ok(err.includes("ending the run"), err);
+  // Two recoveries happened (three boots); the scenarios up to the third loss have screenshots,
+  // the ones after it did not run.
+  assert.equal(world.starts.length, 3);
+  assert.ok(existsSync(join(shots, "Home-360.png")));
+  assert.ok(existsSync(join(shots, "Settings-360.png")));
+  assert.ok(existsSync(join(shots, "Home-320.png")));
+  assert.ok(!existsSync(join(shots, "Settings-320.png")));
+  // The started emulator is still stopped once at the end, best effort on the dead device.
+  assert.equal(world.callsTo("emu kill").length, 1);
+  assert.equal(world.callsTo("wm density reset").length, 1);
+});
+
+test("a recovery whose reboot never finishes booting ends the run with a message and a non-zero exit", async () => {
+  const shots = mkdtempSync(join(osTmpdir(), "android-runner-test-"));
+  const world = makeWorld({
+    devices: "",
+    bootDevicesFor: (n) => `emulator-${5553 + n}\tdevice\n`,
+    // The first boot completes; the reboot never reports sys.boot_completed=1.
+    bootCompletedFor: (n) => (n === 1 ? "1" : "0"),
+    offlineAtGetStates: [2],
+    env: { ONLY: "Home,Settings", WIDTHS: "360", SHOTS: shots },
+  });
+  const code = await world.runRun();
+  assert.equal(code, 1);
+  const err = world.errors.join("\n");
+  assert.ok(err.includes("sys.boot_completed"), err);
+  assert.ok(err.includes("ending the run"), err);
+  assert.deepEqual(world.logs.filter((m) => m.includes("emulator lost, rebooting")), ["[360dp] Settings: emulator lost, rebooting (1 of 2)"]);
+  // The reboot was started and then killed; the APK was installed only once (the initial install).
+  assert.equal(world.starts.length, 2);
+  assert.equal(world.callsTo("install -r").length, 1);
+  assert.ok(existsSync(join(shots, "Home-360.png")));
+  assert.ok(!existsSync(join(shots, "Settings-360.png")));
+  // Cleanup on the dead device did not throw; the started emulator's stop was attempted once.
+  assert.equal(world.callsTo("wm density reset").length, 1);
+});
+
+test("the recovery limit is two per run", () => {
+  assert.equal(MAX_EMULATOR_RECOVERIES, 2);
 });
