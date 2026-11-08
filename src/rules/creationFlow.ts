@@ -1,12 +1,12 @@
-import type { ActiveBooks } from "../constants/books.ts";
-import type { Character, CharacterClass, CreationStepId } from "../types/character.ts";
-import type { ClassData, RaceData } from "../types/dnd5e.ts";
+import { DEFAULT_ACTIVE_BOOK_CODES, type ActiveBooks } from "../constants/books.ts";
+import type { AsiSelection, Character, CharacterClass, CreationProgress, CreationStepId } from "../types/character.ts";
+import type { ClassData, RaceData, SubraceData } from "../types/dnd5e.ts";
 import { POINT_BUY_COST } from "../constants/rules.ts";
 import { currentCompendium, type Compendium } from "../services/compendium.ts";
 import { allCatalogClasses, allCatalogRaces, type CharacterCatalogs } from "./catalogs.ts";
 import { heldClass } from "./classData.ts";
 import { ABILITIES } from "./abilities.ts";
-import { asiLevels, getPendingLevelChoices, subclassLevel } from "./leveling.ts";
+import { applyAsiSelection, asiLevels, getPendingLevelChoices, removeAsiSelection, subclassLevel } from "./leveling.ts";
 import { availableSubclassRuleChoices, getSubclassName } from "./ruleChoices.ts";
 import type { AvailableRuleChoice } from "./choices/types.ts";
 import { proficiencyChoiceOffers } from "./proficiencyChoiceOffers.ts";
@@ -15,6 +15,14 @@ import { findHeldRace } from "./raceLookup.ts";
 import { isCastingClass } from "./spellcasting.ts";
 import { hasStartingEquipmentChoices } from "./startingEquipment.ts";
 import { picksOfFirstClass } from "./startingEquipmentPicks.ts";
+import {
+  addMulticlassLevel,
+  changeSubclass,
+  clearBackground,
+  removeClassLevel,
+} from "./builderTransitions.ts";
+import { applyAncestrySelection } from "./ancestryEngine.ts";
+import { reconcile } from "./characterReconciler.ts";
 
 /**
  * The Creation Flow's steps, in the order the flow walks them: identity first (class, subclass, ancestry),
@@ -64,6 +72,8 @@ export interface CreationStep {
   status: CreationStepStatus;
   /** Whether the step's own requirement is met. A later step stays locked until the current one is valid. */
   valid: boolean;
+  /** An earlier step's change released this step's picks; it must be finished again. */
+  needsAttention: boolean;
 }
 
 /**
@@ -106,8 +116,16 @@ export function creationSteps(character: Character, opts: CreationFlowOptions = 
     if (current === null || index < currentIndex) status = "finished";
     else if (index === currentIndex) status = "current";
     else status = "locked";
-    return { id, status, valid: isCreationStepValid(character, id, opts) };
+    return { id, status, valid: isCreationStepValid(character, id, opts), needsAttention: creationStepNeedsAttention(character, id) };
   });
+}
+
+/**
+ * Whether a Creation Step is marked as needing attention: a change on an earlier step released picks the step
+ * held, and the mark stays until the step is finished again.
+ */
+export function creationStepNeedsAttention(character: Character, step: CreationStepId): boolean {
+  return character.creationProgress?.needsAttention?.includes(step) ?? false;
 }
 
 /** The point-buy budget a creation's base scores may spend (2014 rules). */
@@ -286,4 +304,231 @@ export function applicableCreationSteps(character: Character, opts: CreationFlow
   if (offersSpells(entry, classes)) steps.push("spells");
   steps.push("equipment", "details", "review");
   return steps;
+}
+
+/**
+ * A pick on an earlier Creation Step changing: the class above all, also the subclass, the ancestry and the
+ * background. Each change is applied through the builder's own transitions (`removeClassLevel`,
+ * `addMulticlassLevel`, `changeSubclass`, `applyAncestrySelection`, `clearBackground`, `removeAsiSelection`,
+ * `applyAsiSelection`), which all end in the Character Reconciler, so there is no second release path.
+ */
+export type CreationStepChange =
+  | { step: "class"; className: string; source: string; level?: number }
+  | { step: "subclass"; subclassName: string; subclassSource: string }
+  | { step: "race"; race: RaceData; subrace?: SubraceData }
+  | { step: "subrace"; race: RaceData; subrace: SubraceData }
+  | { step: "background"; background: { name: string; source: string } | null };
+
+/**
+ * Releases a starting-grant claim the old first class's kit or gold was granted under: the `start_` items leave
+ * the inventory, the granted gold leaves the pouch, and the claim markers reset to the unequipped option, so
+ * the Equipment step has to be finished again. Unchanged when no claim was made.
+ */
+function releaseStartingGrantClaim(character: Character): Character {
+  if (!character.startingGrantsApplied && character.startingEquipmentPicks === undefined) return character;
+  const items = (character.items ?? []).filter((item) => !item.id.startsWith("start_"));
+  const grantedGold = character.startingGrantedGold ?? 0;
+  const pouch = { ...(character.pouch ?? { cp: 0, sp: 0, ep: 0, gp: 0, pp: 0 }) };
+  if (grantedGold > 0) pouch.gp = Math.max(0, (pouch.gp ?? 0) - grantedGold);
+  return {
+    ...character,
+    items,
+    pouch,
+    startingOption: "equipment",
+    startingGrantsApplied: false,
+    startingGrantedGold: undefined,
+  };
+}
+
+/**
+ * Changes the character's one creation class to `className` at `level` (the current level unless given). The
+ * old class is removed level by level through `removeClassLevel` — its last level drops the class with its
+ * skill picks and tears its subclass down — and the new one is added level by level through
+ * `addMulticlassLevel`. ASI/Feat picks beyond the new class's levels are released through `removeAsiSelection`;
+ * the ones still in range are re-recorded under the new class through `applyAsiSelection`. A starting-grant
+ * claim made for the old class is released. Ends reconciled.
+ */
+function changeCreationClass(
+  character: Character,
+  change: { className: string; source: string; level?: number },
+  compendium: Compendium,
+  activeBooks: ActiveBooks,
+  catalogs: CharacterCatalogs,
+): Character {
+  const old = classEntryOf(character);
+  const newLevel = change.level ?? old?.level ?? classStepOffer().startingLevel.default;
+  const sameClass = Boolean(old && old.className.toLowerCase() === change.className.toLowerCase());
+  let next = character;
+
+  if (old && !sameClass) {
+    let remaining = old.level;
+    while (next.classes.some((c) => c.className === old.className) && remaining-- > 0) {
+      next = removeClassLevel(next, old.className, compendium, activeBooks);
+    }
+  }
+  if (!sameClass) {
+    for (let level = 1; level <= newLevel; level++) {
+      next = addMulticlassLevel(next, change.className, change.source, catalogs);
+    }
+  } else if (old) {
+    let current = old.level;
+    while (current > newLevel) {
+      next = removeClassLevel(next, old.className, compendium, activeBooks);
+      current--;
+    }
+    while (current < newLevel) {
+      next = addMulticlassLevel(next, old.className, old.source, catalogs);
+      current++;
+    }
+  }
+
+  // The ASI/Feat picks of the old class: each is dropped through removeAsiSelection, and the ones still within
+  // the new class's levels are re-recorded under its name, so they keep counting for it.
+  const selections = [...(next.asiSelections ?? [])];
+  for (const selection of selections) {
+    const level = selection.classLevel ?? selection.level;
+    const owner = selection.className ?? next.classes[0]?.className ?? change.className;
+    next = removeAsiSelection(next, owner, level, compendium, activeBooks);
+  }
+  for (const selection of selections) {
+    const level = selection.classLevel ?? selection.level;
+    if (asiLevels(change.className).includes(level) && level <= newLevel) {
+      const reOwned: AsiSelection = { ...selection, className: change.className, classLevel: level, level };
+      next = applyAsiSelection(next, reOwned, compendium, activeBooks);
+    }
+  }
+
+  if (old && !sameClass) {
+    next = releaseStartingGrantClaim(next);
+  }
+  return reconcile(next, compendium, { activeBooks });
+}
+
+/** The class-origin picks the Class Choices step holds: its skill choices and its class/subclass rule choices. */
+function classChoiceSignature(character: Character): string {
+  return JSON.stringify([
+    (character.skillChoices ?? []).filter((sc) => sc.origin === "class"),
+    (character.ruleChoices ?? []).filter((rc) => rc.origin === "class" || rc.origin === "subclass"),
+  ]);
+}
+
+function spellsSignature(character: Character): string {
+  return JSON.stringify([character.knownSpells ?? [], character.preparedSpells ?? []]);
+}
+
+/** The picks the Equipment step holds: its option, its stored picks, the claim markers and the granted items. */
+function equipmentSignature(character: Character): string {
+  return JSON.stringify([
+    character.startingOption,
+    character.startingEquipmentPicks ?? null,
+    character.startingGrantsApplied ?? null,
+    character.startingGrantedGold ?? null,
+    (character.items ?? []).filter((item) => item.id.startsWith("start_")),
+  ]);
+}
+
+/**
+ * The later steps a change at `changedStep` leaves needing attention: every applicable later step that is no
+ * longer valid, plus the ones whose stored picks the change released (class choices dropped, ASI/Feat picks
+ * removed, spells or the starting-equipment claim gone with the old pick).
+ */
+function computeNeedsAttention(
+  before: Character,
+  after: Character,
+  changedStep: CreationStepId,
+  opts: CreationFlowOptions,
+): CreationStepId[] {
+  const changedIndex = CREATION_STEP_ORDER.indexOf(changedStep);
+  const applicable = new Set(applicableCreationSteps(after, opts));
+  const flagged: CreationStepId[] = [];
+  for (const id of CREATION_STEP_ORDER) {
+    if (CREATION_STEP_ORDER.indexOf(id) <= changedIndex || !applicable.has(id)) continue;
+    const invalid = !isCreationStepValid(after, id, opts);
+    const released =
+      (id === "classChoices" && classChoiceSignature(before) !== classChoiceSignature(after)) ||
+      (id === "asiFeats" && (after.asiSelections?.length ?? 0) < (before.asiSelections?.length ?? 0)) ||
+      (id === "spells" && spellsSignature(before) !== spellsSignature(after)) ||
+      (id === "equipment" && equipmentSignature(before) !== equipmentSignature(after));
+    if (invalid || released) flagged.push(id);
+  }
+  return flagged;
+}
+
+/**
+ * Applies a change of a pick on an earlier Creation Step. The step's own transition releases the picks it
+ * invalidates through `builderTransitions` and the Character Reconciler; the later steps that lost picks or
+ * turned invalid are recorded as needing attention in the creation progress, and the draft sits on the
+ * changed step again, so the later steps stay locked until it is finished. Picks the change does not affect
+ * (the ancestry, the background, the abilities when the class changes) are kept. The given Character is never
+ * mutated.
+ */
+export function applyCreationStepChange(
+  character: Character,
+  change: CreationStepChange,
+  opts: CreationFlowOptions = {},
+): Character {
+  const compendium = opts.compendium ?? currentCompendium();
+  const activeBooks = opts.activeBooks ?? DEFAULT_ACTIVE_BOOK_CODES;
+  const catalogs: CharacterCatalogs = { compendium, activeBooks };
+
+  let next: Character;
+  switch (change.step) {
+    case "class":
+      next = changeCreationClass(character, change, compendium, activeBooks, catalogs);
+      break;
+    case "subclass": {
+      const entry = classEntryOf(character);
+      if (!entry) return character;
+      next = changeSubclass(character, entry.className, change.subclassName, change.subclassSource, [], compendium, activeBooks);
+      break;
+    }
+    case "race":
+    case "subrace":
+      next = applyAncestrySelection(character, change.race, change.subrace, catalogs);
+      break;
+    case "background": {
+      // clearBackground releases the old background's grants and clears its saved tool and language buckets.
+      const base = character.background ? clearBackground(character, catalogs) : character;
+      next =
+        change.background === null
+          ? base
+          : reconcile(
+              { ...base, background: { name: change.background.name, source: change.background.source } },
+              compendium,
+              { activeBooks },
+            );
+      break;
+    }
+  }
+
+  const needsAttention = computeNeedsAttention(character, next, change.step, opts);
+  const progress: CreationProgress = {
+    currentStep: change.step,
+    ...(needsAttention.length > 0 ? { needsAttention } : {}),
+  };
+  return { ...next, creationProgress: progress };
+}
+
+/**
+ * Finishes a Creation Step: only a valid, applicable step of a draft can be finished. Its attention mark, if
+ * any, clears, and the draft moves to the next applicable step; finishing Review leaves no creation progress,
+ * so the character is finished. The given Character is never mutated.
+ */
+export function finishCreationStep(
+  character: Character,
+  step: CreationStepId,
+  opts: CreationFlowOptions = {},
+): Character {
+  if (isCreationFinished(character)) return character;
+  if (!isCreationStepValid(character, step, opts)) return character;
+  const applicable = applicableCreationSteps(character, opts);
+  const index = applicable.indexOf(step);
+  if (index === -1) return character;
+  const needsAttention = (character.creationProgress?.needsAttention ?? []).filter((id) => id !== step);
+  const nextStep = applicable[index + 1];
+  if (!nextStep) return { ...character, creationProgress: undefined };
+  return {
+    ...character,
+    creationProgress: { currentStep: nextStep, ...(needsAttention.length > 0 ? { needsAttention } : {}) },
+  };
 }

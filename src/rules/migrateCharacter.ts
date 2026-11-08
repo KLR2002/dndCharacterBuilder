@@ -83,6 +83,12 @@ export function migrateCharacter(
         !CREATION_STEP_ORDER.includes(c.creationProgress.currentStep as CreationStepId)) {
       throw new Error("Invalid character: malformed creationProgress");
     }
+    const needsAttention = c.creationProgress.needsAttention;
+    if (needsAttention !== undefined &&
+        (!Array.isArray(needsAttention) ||
+          !needsAttention.every((id) => typeof id === "string" && CREATION_STEP_ORDER.includes(id as CreationStepId)))) {
+      throw new Error("Invalid character: malformed creationProgress");
+    }
   }
   const classes = c.classes ?? [];
   if (!classes.every(entry => isRecord(entry) && typeof entry.className === "string" && typeof entry.source === "string")) {
