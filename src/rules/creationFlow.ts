@@ -8,6 +8,9 @@ import { heldClass } from "./classData.ts";
 import { ABILITIES } from "./abilities.ts";
 import { asiLevels, getPendingLevelChoices, subclassLevel } from "./leveling.ts";
 import { availableSubclassRuleChoices, getSubclassName } from "./ruleChoices.ts";
+import type { AvailableRuleChoice } from "./choices/types.ts";
+import { proficiencyChoiceOffers } from "./proficiencyChoiceOffers.ts";
+import { skillChoiceOffers } from "./proficiencySheet.ts";
 import { findHeldRace } from "./raceLookup.ts";
 import { isCastingClass } from "./spellcasting.ts";
 import { hasStartingEquipmentChoices } from "./startingEquipment.ts";
@@ -161,10 +164,7 @@ export function isCreationStepValid(
       return abilitiesValid(character);
     case "classChoices": {
       if (!offersClassChoices(character, activeBooks, compendium)) return true;
-      return availableSubclassRuleChoices(character, activeBooks, compendium).every((choice) => {
-        const picked = character.ruleChoices?.find((rc) => rc.id === choice.id)?.picked ?? [];
-        return picked.length >= choice.choose;
-      });
+      return classChoicesComplete(character, activeBooks, compendium);
     }
     case "asiFeats":
       return !offersAsiFeats(entry) || getPendingLevelChoices(character, [...classes]).pendingAsi.length === 0;
@@ -208,9 +208,52 @@ function offersSubrace(character: Character, races: readonly RaceData[], activeB
   return Boolean(race && (race.subraces?.length ?? 0) > 1);
 }
 
-/** Whether the Class Choices step applies: the class or subclass offers a rule choice at the character's level. */
+/**
+ * The class's and subclass's Proficiency Choices at the character's level: the grant-based picks (skills,
+ * tools, instruments, ...) the held class features offer. Ancestry, background and feat picks belong to
+ * their own steps, so they are left out.
+ */
+function classProficiencyChoiceOffers(
+  character: Character,
+  activeBooks: ActiveBooks,
+  compendium: Compendium,
+): AvailableRuleChoice[] {
+  return proficiencyChoiceOffers(character, { compendium, activeBooks }).filter(
+    (offer) => offer.origin === "class" || offer.origin === "subclass",
+  );
+}
+
+/**
+ * Whether the Class Choices step applies: the class at the character's level offers any choice — its
+ * starting skill pick, another class or subclass Proficiency Choice (tools, instruments, ...), or a
+ * class/subclass rule choice (Fighting Style, Maneuvers, Invocations, ...). Every class offers skill picks
+ * at level 1, so the step applies to every new character.
+ */
 function offersClassChoices(character: Character, activeBooks: ActiveBooks, compendium: Compendium): boolean {
-  return availableSubclassRuleChoices(character, activeBooks, compendium).length > 0;
+  return (
+    skillChoiceOffers(character, { compendium, activeBooks }).length > 0 ||
+    classProficiencyChoiceOffers(character, activeBooks, compendium).length > 0 ||
+    availableSubclassRuleChoices(character, activeBooks, compendium).length > 0
+  );
+}
+
+/**
+ * Whether every choice the Class Choices step covers is fully picked: all class skills chosen, every
+ * class/subclass Proficiency Choice filled, every class/subclass rule choice made.
+ */
+function classChoicesComplete(character: Character, activeBooks: ActiveBooks, compendium: Compendium): boolean {
+  const skillPicksComplete = skillChoiceOffers(character, { compendium, activeBooks }).every((offer) => {
+    const picked = character.skillChoices?.find((entry) => entry.id === offer.source && entry.origin === "class")?.picked ?? [];
+    return picked.length >= offer.choose;
+  });
+  const proficiencyPicksComplete = classProficiencyChoiceOffers(character, activeBooks, compendium).every((offer) => {
+    return (character.proficiencyPicks?.[offer.id] ?? []).length >= offer.choose;
+  });
+  const rulePicksComplete = availableSubclassRuleChoices(character, activeBooks, compendium).every((choice) => {
+    const picked = character.ruleChoices?.find((rc) => rc.id === choice.id)?.picked ?? [];
+    return picked.length >= choice.choose;
+  });
+  return skillPicksComplete && proficiencyPicksComplete && rulePicksComplete;
 }
 
 /** Whether the ASI/Feats step applies: the class's level has reached one of its ASI levels. */

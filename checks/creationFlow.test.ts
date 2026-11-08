@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { ALL_BOOKS } from "../src/constants/books.ts";
 import { makeChar, loadTestCatalog } from "./testUtils.ts";
 import { migrateCharacter } from "../src/rules/migrateCharacter.ts";
+import { skillChoiceOffers } from "../src/rules/proficiencySheet.ts";
 import type { ClassData, RaceData } from "../src/types/dnd5e.ts";
 import {
   applicableCreationSteps,
@@ -22,13 +23,14 @@ const cl = (className: string, level: number, subclassName?: string): CharacterC
 });
 
 describe("Creation Steps follow the order and skip what does not apply", () => {
-  test("Wizard 1 lists Class, Race, Background, Abilities, Spells, Equipment, Details, Review", () => {
+  test("Wizard 1 lists Class, Race, Background, Abilities, Class Choices, Spells, Equipment, Details, Review", () => {
     const wizard1 = makeChar({ classes: [cl("Wizard", 1)] });
     assert.deepEqual(applicableCreationSteps(wizard1), [
       "class",
       "race",
       "background",
       "abilities",
+      "classChoices",
       "spells",
       "equipment",
       "details",
@@ -36,7 +38,7 @@ describe("Creation Steps follow the order and skip what does not apply", () => {
     ]);
   });
 
-  test("Cleric 1 adds Subclass right after Class", () => {
+  test("Cleric 1 adds Subclass right after Class, and Class Choices after Abilities", () => {
     const cleric1 = makeChar({ classes: [cl("Cleric", 1)] });
     assert.deepEqual(applicableCreationSteps(cleric1), [
       "class",
@@ -44,6 +46,7 @@ describe("Creation Steps follow the order and skip what does not apply", () => {
       "race",
       "background",
       "abilities",
+      "classChoices",
       "spells",
       "equipment",
       "details",
@@ -106,9 +109,33 @@ describe("Later steps stay locked until the current step is valid", () => {
     const byId = new Map(creationSteps(draft).map((step) => [step.id, step]));
     assert.equal(byId.get("class")?.status, "finished");
     assert.equal(byId.get("race")?.status, "current");
-    for (const id of ["background", "abilities", "spells", "equipment", "details", "review"] as const) {
+    for (const id of ["background", "abilities", "classChoices", "spells", "equipment", "details", "review"] as const) {
       assert.equal(byId.get(id)?.status, "locked", `${id} should report locked`);
     }
+  });
+});
+
+describe("Class Choices holds the class's skill and proficiency picks", () => {
+  test("a Wizard 1 with no skills picked reports Class Choices invalid; with both picked, valid", () => {
+    const wizard1 = makeChar({ classes: [cl("Wizard", 1)] });
+    const skillOffer = skillChoiceOffers(wizard1, { activeBooks: ALL_BOOKS }).find((offer) => offer.source.startsWith("Class:"));
+    assert.ok(skillOffer, "the class offers a starting skill pick at level 1");
+
+    assert.equal(isCreationStepValid(wizard1, "classChoices"), false);
+
+    const bothPicked = makeChar({
+      classes: [cl("Wizard", 1)],
+      skillChoices: [
+        {
+          id: skillOffer.source,
+          origin: "class",
+          choose: skillOffer.choose,
+          from: skillOffer.from,
+          picked: skillOffer.from.slice(0, skillOffer.choose),
+        },
+      ],
+    });
+    assert.equal(isCreationStepValid(bothPicked, "classChoices"), true);
   });
 });
 
