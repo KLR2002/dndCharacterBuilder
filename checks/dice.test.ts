@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { parseDicePool, rollDicePool, type RandomSource } from "../src/rules/dice.ts";
+import { parseDicePool, rollDicePool, rollD20, type RandomSource } from "../src/rules/dice.ts";
 
 /** A random source with fixed faces, cycling: the die with `sides` lands on the next queued face. */
 function fixedFaces(faces: number[]): RandomSource {
@@ -27,4 +27,31 @@ test("pool text parses with whitespace, a bare die and a negative modifier; junk
   for (const junk of ["", "  ", "2d6+", "+3", "abc", "2x6", "0d6", "2d0", "1d6++2", "-2d6"]) {
     assert.equal(parseDicePool(junk), null, `expected null for ${JSON.stringify(junk)}`);
   }
+});
+
+test("advantage keeps the higher d20 and disadvantage the lower; both d20s are reported", () => {
+  const advantage = rollD20(5, "advantage", fixedFaces([17, 9]));
+  assert.equal(advantage.dice.length, 2);
+  assert.deepEqual(advantage.dice.map((die) => die.face), [17, 9]);
+  assert.ok(advantage.dice.every((die) => die.sides === 20));
+  assert.equal(advantage.dice[0].dropped, false);
+  assert.equal(advantage.dice[1].dropped, true);
+  assert.equal(advantage.modifier, 5);
+  assert.equal(advantage.total, 17 + 5);
+
+  const disadvantage = rollD20(5, "disadvantage", fixedFaces([17, 9]));
+  assert.equal(disadvantage.dice.length, 2);
+  assert.deepEqual(disadvantage.dice.map((die) => die.face), [17, 9]);
+  assert.equal(disadvantage.dice[0].dropped, true);
+  assert.equal(disadvantage.dice[1].dropped, false);
+  assert.equal(disadvantage.total, 9 + 5);
+
+  const plain = rollD20(2, "none", fixedFaces([11]));
+  assert.equal(plain.dice.length, 1);
+  assert.equal(plain.dice[0].dropped, false);
+  assert.equal(plain.total, 13);
+
+  const tie = rollD20(0, "advantage", fixedFaces([12, 12]));
+  assert.equal(tie.total, 12);
+  assert.equal(tie.dice.filter((die) => !die.dropped).length, 1);
 });

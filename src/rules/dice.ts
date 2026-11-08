@@ -85,3 +85,27 @@ export function rollDicePool(pool: string, random: RandomSource = appRandom): Ro
   if (!parsed) throw new Error(`Not a dice pool: "${pool}"`);
   return rollParsed(parsed, random);
 }
+
+export type D20Mode = "none" | "advantage" | "disadvantage";
+
+/**
+ * Rolls a d20 with a flat modifier. With advantage or disadvantage two d20s are rolled and the
+ * higher (or lower) one is kept; both faces are reported, the unkept die marked dropped.
+ */
+export function rollD20(modifier: number, mode: D20Mode = "none", random: RandomSource = appRandom): Roll {
+  if (mode === "none") {
+    const face = rollDie(20, random);
+    return { dice: [{ sides: 20, face, dropped: false }], modifier, total: face + modifier };
+  }
+  const first = rollDie(20, random);
+  const second = rollDie(20, random);
+  const keepFirst = mode === "advantage" ? first >= second : first <= second;
+  return {
+    dice: [
+      { sides: 20, face: first, dropped: !keepFirst },
+      { sides: 20, face: second, dropped: keepFirst },
+    ],
+    modifier,
+    total: (keepFirst ? first : second) + modifier,
+  };
+}
