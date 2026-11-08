@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
-import { centerOf, findNode, hasPositiveArea, parseDump } from "../scripts/lib/uiautomator.mjs";
+import { centerOf, findNode, hasPositiveArea, parseDump, parseDumpOutput } from "../scripts/lib/uiautomator.mjs";
 
 // The uiautomator dump parser (scripts/lib/uiautomator.mjs), which the native runner polls to wait for
 // a scenario's ready text. The fixture is a real dump captured on the emulator with the Settings screen
@@ -77,4 +77,30 @@ test("centerOf is the centre point of a node's bounds", () => {
   assert.deepEqual(centerOf(node), { x: 360, y: 108 });
   assert.deepEqual(centerOf({ text: "x", contentDesc: "", resourceId: "", className: "", clickable: false, scrollable: false, bounds: { x1: 0, y1: 0, x2: 11, y2: 21 } }), { x: 6, y: 11 });
   assert.equal(centerOf({ text: "x", contentDesc: "", resourceId: "", className: "", clickable: false, scrollable: false, bounds: null }), null);
+});
+
+// --- The one-call dump: the XML and the "dumped to" line share stdout ---
+
+const DUMPED_LINE = "UI hierchary dumped to: /dev/tty";
+
+test("parseDumpOutput reads the nodes of a one-call dump, without the trailing dumped-to line", () => {
+  const nodes = parseDumpOutput(`${fixtureXml}\n${DUMPED_LINE}\n`);
+  assert.ok(nodes);
+  assert.equal(nodes.length, 47);
+  assert.ok(findNode(nodes, "Settings & Compendium"));
+});
+
+test("parseDumpOutput reads a dump whose dumped-to line follows the closing tag on the same line", () => {
+  // The device writes the XML without a trailing newline, so the line follows </hierarchy> directly.
+  const nodes = parseDumpOutput(`${fixtureXml.trimEnd()}${DUMPED_LINE}\n`);
+  assert.ok(nodes);
+  assert.equal(nodes.length, 47);
+});
+
+test("parseDumpOutput reports a failed dump as null: no XML root, an ERROR line, or only the dumped-to line", () => {
+  assert.equal(parseDumpOutput(""), null);
+  assert.equal(parseDumpOutput(`${DUMPED_LINE}\n`), null, "the dumped-to line alone has no hierarchy");
+  assert.equal(parseDumpOutput("ERROR: could not obtain idle state\n"), null);
+  // An ERROR line is a failure even next to a hierarchy: the dump did not complete.
+  assert.equal(parseDumpOutput(`ERROR: could not obtain idle state\n${fixtureXml}\n${DUMPED_LINE}\n`), null);
 });
