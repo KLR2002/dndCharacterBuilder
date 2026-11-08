@@ -1,0 +1,289 @@
+import type { ActiveBooks } from "../constants/books.ts";
+import type { Character, CharacterClass, CreationStepId } from "../types/character.ts";
+import type { ClassData, RaceData } from "../types/dnd5e.ts";
+import { POINT_BUY_COST } from "../constants/rules.ts";
+import { currentCompendium, type Compendium } from "../services/compendium.ts";
+import { allCatalogClasses, allCatalogRaces, type CharacterCatalogs } from "./catalogs.ts";
+import { heldClass } from "./classData.ts";
+import { ABILITIES } from "./abilities.ts";
+import { asiLevels, getPendingLevelChoices, subclassLevel } from "./leveling.ts";
+import { availableSubclassRuleChoices, getSubclassName } from "./ruleChoices.ts";
+import type { AvailableRuleChoice } from "./choices/types.ts";
+import { proficiencyChoiceOffers } from "./proficiencyChoiceOffers.ts";
+import { skillChoiceOffers } from "./proficiencySheet.ts";
+import { findHeldRace } from "./raceLookup.ts";
+import { isCastingClass } from "./spellcasting.ts";
+import { hasStartingEquipmentChoices } from "./startingEquipment.ts";
+import { picksOfFirstClass } from "./startingEquipmentPicks.ts";
+
+/**
+ * The Creation Flow's steps, in the order the flow walks them: identity first (class, subclass, ancestry),
+ * then the rest, name last. A step the character does not qualify for is skipped, so it never appears in
+ * `applicableCreationSteps`. Creation builds a single class; Multiclassing enters only through the Level-Up
+ * Flow.
+ */
+export const CREATION_STEP_ORDER: readonly CreationStepId[] = [
+  "class",
+  "subclass",
+  "race",
+  "subrace",
+  "background",
+  "abilities",
+  "classChoices",
+  "asiFeats",
+  "spells",
+  "equipment",
+  "details",
+  "review",
+];
+
+/** The catalogs the flow reads: defaults to the process-wide Compendium, unscoped. */
+export interface CreationFlowOptions {
+  compendium?: Compendium;
+  activeBooks?: ActiveBooks;
+}
+
+/**
+ * The Class step's offer: one class with a starting level from 1 to 20 defaulting to 1. Creation builds a
+ * single class, so the offer carries no add-class action; Multiclassing enters only through the Level-Up
+ * Flow.
+ */
+export interface ClassStepOffer {
+  startingLevel: { min: number; max: number; default: number };
+  canAddClass: false;
+}
+
+export function classStepOffer(): ClassStepOffer {
+  return { startingLevel: { min: 1, max: 20, default: 1 }, canAddClass: false };
+}
+
+export type CreationStepStatus = "finished" | "current" | "locked";
+
+export interface CreationStep {
+  id: CreationStepId;
+  status: CreationStepStatus;
+  /** Whether the step's own requirement is met. A later step stays locked until the current one is valid. */
+  valid: boolean;
+}
+
+/**
+ * A draft is a character whose creation progress is recorded. Absent means the character is finished, so a
+ * save from the old builder counts as finished without a rewrite.
+ */
+export function isCreationFinished(character: Character): boolean {
+  return character.creationProgress === undefined;
+}
+
+/**
+ * The step a draft is on: the recorded one while it still applies, else the first applicable step from its
+ * position in the flow (an earlier pick can have removed the recorded step).
+ */
+function resolveCurrentStep(character: Character, applicable: readonly CreationStepId[]): CreationStepId {
+  const recorded = character.creationProgress?.currentStep;
+  if (recorded && applicable.includes(recorded)) return recorded;
+  const recordedIndex = CREATION_STEP_ORDER.indexOf(recorded ?? "class");
+  return applicable.find((id) => CREATION_STEP_ORDER.indexOf(id) >= recordedIndex) ?? applicable[applicable.length - 1];
+}
+
+/**
+ * The step a draft resumes at, or null when the character is finished (no creation progress recorded).
+ */
+export function currentCreationStep(character: Character, opts: CreationFlowOptions = {}): CreationStepId | null {
+  if (isCreationFinished(character)) return null;
+  return resolveCurrentStep(character, applicableCreationSteps(character, opts));
+}
+
+/**
+ * The applicable Creation Steps with their status: finished before the current step (revisitable), the
+ * current step itself, locked after it. A finished character reports every applicable step as finished.
+ */
+export function creationSteps(character: Character, opts: CreationFlowOptions = {}): CreationStep[] {
+  const applicable = applicableCreationSteps(character, opts);
+  const current = isCreationFinished(character) ? null : resolveCurrentStep(character, applicable);
+  const currentIndex = current === null ? -1 : applicable.indexOf(current);
+  return applicable.map((id, index) => {
+    let status: CreationStepStatus;
+    if (current === null || index < currentIndex) status = "finished";
+    else if (index === currentIndex) status = "current";
+    else status = "locked";
+    return { id, status, valid: isCreationStepValid(character, id, opts) };
+  });
+}
+
+/** The point-buy budget a creation's base scores may spend (2014 rules). */
+const POINT_BUY_BUDGET = 27;
+
+/** Whether the Abilities step's method is fully picked: the whole standard array, or scores within point buy. */
+function abilitiesValid(character: Character): boolean {
+  if (character.abilityMethod === "standardArray") {
+    const picks = character.standardArrayPicks ?? {};
+    return ABILITIES.every((ability) => typeof picks[ability] === "number");
+  }
+  if (character.abilityMethod === "pointBuy") {
+    let spent = 0;
+    for (const ability of ABILITIES) {
+      const score = character.baseAbilityScores?.[ability] ?? 8;
+      if (score < 8 || score > 15) return false;
+      spent += POINT_BUY_COST[score] ?? 0;
+    }
+    return spent <= POINT_BUY_BUDGET;
+  }
+  return true;
+}
+
+/**
+ * Whether a Creation Step's own requirement is met, so the flow can advance past it. A step the character
+ * does not qualify for is valid by vacuity. Details asks only for a name: gender and alignment may stay
+ * empty. Review is valid when every step before it is.
+ */
+export function isCreationStepValid(
+  character: Character,
+  step: CreationStepId,
+  opts: CreationFlowOptions = {},
+): boolean {
+  const compendium = opts.compendium ?? currentCompendium();
+  const activeBooks = opts.activeBooks;
+  const catalogs: CharacterCatalogs = { compendium, activeBooks };
+  const classes = allCatalogClasses(catalogs);
+  const races = allCatalogRaces(catalogs);
+  const entry = classEntryOf(character);
+  switch (step) {
+    case "class":
+      return character.classes.length === 1 && Boolean(entry && entry.level >= 1 && entry.level <= 20);
+    case "subclass":
+      return !offersSubclass(entry, classes) || (entry ? getSubclassName(entry).length > 0 : false);
+    case "race":
+      return character.race != null;
+    case "subrace": {
+      if (!offersSubrace(character, races, activeBooks)) return true;
+      return findHeldRace(races, character.race, activeBooks).subrace != null;
+    }
+    case "background":
+      return character.background != null;
+    case "abilities":
+      return abilitiesValid(character);
+    case "classChoices": {
+      if (!offersClassChoices(character, activeBooks, compendium)) return true;
+      return classChoicesComplete(character, activeBooks, compendium);
+    }
+    case "asiFeats":
+      return !offersAsiFeats(entry) || getPendingLevelChoices(character, [...classes]).pendingAsi.length === 0;
+    case "spells":
+      return true;
+    case "equipment":
+      return character.startingOption === "gold" || !hasStartingEquipmentChoices(character, catalogs) ||
+        picksOfFirstClass(character) !== undefined;
+    case "details":
+      return character.name.trim().length > 0;
+    case "review":
+      return applicableCreationSteps(character, opts)
+        .filter((id) => id !== "review")
+        .every((id) => isCreationStepValid(character, id, opts));
+  }
+}
+
+/** The one class a creation builds: the first entry, while the character holds at most one. */
+function classEntryOf(character: Character): CharacterClass | undefined {
+  return character.classes?.[0];
+}
+
+/**
+ * Whether the Subclass step applies: the class's level has reached its subclass level and the catalog does
+ * not hold the class with an empty subclass list (the same check `getPendingLevelChoices` makes).
+ */
+function offersSubclass(entry: CharacterClass | undefined, classes: readonly ClassData[]): boolean {
+  if (!entry) return false;
+  if (entry.level < subclassLevel(entry.className)) return false;
+  const held = heldClass(entry, classes);
+  if (held && Array.isArray(held.subclasses) && held.subclasses.length === 0) return false;
+  return true;
+}
+
+/**
+ * Whether the Subrace step applies: the held race resolves to a catalog record that lists more than one
+ * subrace, the same threshold the ancestry section uses to offer a subrace picker.
+ */
+function offersSubrace(character: Character, races: readonly RaceData[], activeBooks: ActiveBooks): boolean {
+  const { race } = findHeldRace(races, character.race, activeBooks);
+  return Boolean(race && (race.subraces?.length ?? 0) > 1);
+}
+
+/**
+ * The class's and subclass's Proficiency Choices at the character's level: the grant-based picks (skills,
+ * tools, instruments, ...) the held class features offer. Ancestry, background and feat picks belong to
+ * their own steps, so they are left out.
+ */
+function classProficiencyChoiceOffers(
+  character: Character,
+  activeBooks: ActiveBooks,
+  compendium: Compendium,
+): AvailableRuleChoice[] {
+  return proficiencyChoiceOffers(character, { compendium, activeBooks }).filter(
+    (offer) => offer.origin === "class" || offer.origin === "subclass",
+  );
+}
+
+/**
+ * Whether the Class Choices step applies: the class at the character's level offers any choice — its
+ * starting skill pick, another class or subclass Proficiency Choice (tools, instruments, ...), or a
+ * class/subclass rule choice (Fighting Style, Maneuvers, Invocations, ...). Every class offers skill picks
+ * at level 1, so the step applies to every new character.
+ */
+function offersClassChoices(character: Character, activeBooks: ActiveBooks, compendium: Compendium): boolean {
+  return (
+    skillChoiceOffers(character, { compendium, activeBooks }).length > 0 ||
+    classProficiencyChoiceOffers(character, activeBooks, compendium).length > 0 ||
+    availableSubclassRuleChoices(character, activeBooks, compendium).length > 0
+  );
+}
+
+/**
+ * Whether every choice the Class Choices step covers is fully picked: all class skills chosen, every
+ * class/subclass Proficiency Choice filled, every class/subclass rule choice made.
+ */
+function classChoicesComplete(character: Character, activeBooks: ActiveBooks, compendium: Compendium): boolean {
+  const skillPicksComplete = skillChoiceOffers(character, { compendium, activeBooks }).every((offer) => {
+    const picked = character.skillChoices?.find((entry) => entry.id === offer.source && entry.origin === "class")?.picked ?? [];
+    return picked.length >= offer.choose;
+  });
+  const proficiencyPicksComplete = classProficiencyChoiceOffers(character, activeBooks, compendium).every((offer) => {
+    return (character.proficiencyPicks?.[offer.id] ?? []).length >= offer.choose;
+  });
+  const rulePicksComplete = availableSubclassRuleChoices(character, activeBooks, compendium).every((choice) => {
+    const picked = character.ruleChoices?.find((rc) => rc.id === choice.id)?.picked ?? [];
+    return picked.length >= choice.choose;
+  });
+  return skillPicksComplete && proficiencyPicksComplete && rulePicksComplete;
+}
+
+/** Whether the ASI/Feats step applies: the class's level has reached one of its ASI levels. */
+function offersAsiFeats(entry: CharacterClass | undefined): boolean {
+  return Boolean(entry && asiLevels(entry.className).some((level) => entry.level >= level));
+}
+
+/** Whether the Spells step applies: the class holds a Spellcasting Profile at its level, a subclass's included. */
+function offersSpells(entry: CharacterClass | undefined, classes: readonly ClassData[]): boolean {
+  return Boolean(entry && isCastingClass(entry, classes));
+}
+
+/**
+ * The Creation Steps that apply to the character, in flow order, skipping the ones it does not qualify for.
+ * Step order and skipping are decided here only; components read this list and never decide it.
+ */
+export function applicableCreationSteps(character: Character, opts: CreationFlowOptions = {}): CreationStepId[] {
+  const compendium = opts.compendium ?? currentCompendium();
+  const activeBooks = opts.activeBooks;
+  const classes = allCatalogClasses({ compendium, activeBooks });
+  const races = allCatalogRaces({ compendium, activeBooks });
+  const entry = classEntryOf(character);
+  const steps: CreationStepId[] = ["class"];
+  if (offersSubclass(entry, classes)) steps.push("subclass");
+  steps.push("race");
+  if (offersSubrace(character, races, activeBooks)) steps.push("subrace");
+  steps.push("background", "abilities");
+  if (offersClassChoices(character, activeBooks, compendium)) steps.push("classChoices");
+  if (offersAsiFeats(entry)) steps.push("asiFeats");
+  if (offersSpells(entry, classes)) steps.push("spells");
+  steps.push("equipment", "details", "review");
+  return steps;
+}

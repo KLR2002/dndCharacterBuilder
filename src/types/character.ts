@@ -1,5 +1,28 @@
 export type AbilityKey = "str" | "dex" | "con" | "int" | "wis" | "cha";
 
+/** The Creation Steps of the Creation Flow, by id. The order lives in `src/rules/creationFlow.ts`. */
+export type CreationStepId =
+  | "class"
+  | "subclass"
+  | "race"
+  | "subrace"
+  | "background"
+  | "abilities"
+  | "classChoices"
+  | "asiFeats"
+  | "spells"
+  | "equipment"
+  | "details"
+  | "review";
+
+/**
+ * Where a draft sits in the Creation Flow. Absent means the character is finished, so a save from the
+ * old builder carries no record and counts as finished without a rewrite.
+ */
+export interface CreationProgress {
+  currentStep: CreationStepId;
+}
+
 export interface AbilityScores {
   str: number;
   dex: number;
@@ -164,6 +187,12 @@ export interface Character {
   avatarUri: string | null;
   createdAt: number;
   updatedAt: number;
+
+  /**
+   * Creation Flow progress of a draft. Absent means the character is finished: old saves need no
+   * rewrite, and `migrateCharacter` keeps that true.
+   */
+  creationProgress?: CreationProgress;
 
   // Builder settings
   abilityMethod: "pointBuy" | "standardArray" | "manual" | "rolled";
