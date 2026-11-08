@@ -11,7 +11,6 @@ import {
   getMaxSpellLevel,
   isSpellAvailableForClass,
   getAvailableSpellsForClass,
-  type ClassSpellProfile,
 } from "../src/rules/spellcasting.ts";
 import { ARTIFICER_SLOTS } from "../src/rules/classData.ts";
 import type { CharacterClass } from "../src/types/character.ts";

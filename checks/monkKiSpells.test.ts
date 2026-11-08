@@ -9,7 +9,6 @@ import {
 import { getSubclassSpells } from "../src/rules/subclassSpells.ts";
 import {
   subclassRuleChoices,
-  availableSubclassRuleChoices,
 } from "../src/rules/ruleChoices.ts";
 import type { Character } from "../src/types/character.ts";
 
@@ -164,7 +163,6 @@ test("getClassSpellProfiles generates a valid Ki Spellcasting Profile for Way of
 });
 
 test("Way of the Sun Soul grants Burning Hands (2 Ki) at level 6", () => {
-  const monkLvl3 = createMonk(3, "Way of the Sun Soul");
   const subLvl3 = getSubclassSpells("Monk", "Way of the Sun Soul", 3);
   assert.equal(subLvl3.known.some((s) => s.name.toLowerCase() === "burning hands"), false);
 

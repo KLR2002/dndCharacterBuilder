@@ -7,12 +7,10 @@ import {
   getMartialArtsDie,
   getClassDice,
 } from "../src/rules/combatDice.ts";
-import { evaluateCharacter } from "../src/rules/characterEvaluation.ts";
 import { isMonkWeapon, getWeaponAttacks } from "../src/rules/attacks.ts";
 import type { Character } from "../src/types/character.ts";
-import { integratedTestCompendium, loadTestCatalog } from "./testUtils.ts";
+import { integratedTestCompendium } from "./testUtils.ts";
 
-const classes = loadTestCatalog("classes");
 const compendium = integratedTestCompendium();
 
 function makeTestChar(overrides: Partial<Character> = {}): Character {

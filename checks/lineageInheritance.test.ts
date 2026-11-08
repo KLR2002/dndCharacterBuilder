@@ -2,18 +2,11 @@ import { ALL_BOOKS } from "../src/constants/books.ts";
 import test from "node:test";
 import assert from "node:assert/strict";
 import { makeChar, loadTestCatalogs, inMemoryCompendium } from "./testUtils.ts";
-import { characterSpeeds } from "../src/rules/speed.ts";
-import { skills } from "../src/rules/skills.ts";
 import { evaluateCharacter } from "../src/rules/characterEvaluation.ts";
 import { availableRuleChoices } from "../src/rules/ruleChoices.ts";
 import { grantedFeatures } from "../src/rules/grantedFeatures.ts";
 
 const catalogs = loadTestCatalogs();
-const seaElfRace = catalogs.races.find(r => r.name === "Sea Elf" && r.source === "MPMM")!;
-const humanRace = catalogs.races.find(r => r.name === "Human" && r.source === "PHB")!;
-const elfRace = catalogs.races.find(r => r.name === "Elf" && r.source === "PHB")!;
-const dhampirRace = catalogs.races.find(r => r.name === "Dhampir" && r.source === "VRGR")!;
-const rebornRace = catalogs.races.find(r => r.name === "Reborn" && r.source === "VRGR")!;
 
 test("Ancestral Legacy: adopts Lineage over Sea Elf, retaining swim speed and Perception proficiency", () => {
   // Character with prior race Sea Elf (walk 30, swim 30, Perception skill), adopting Dhampir lineage

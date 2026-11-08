@@ -4,7 +4,7 @@ import assert from "node:assert/strict";
 import { evaluateCharacter } from "../src/rules/characterEvaluation.ts";
 import { grantedSpellSources } from "../src/rules/grantedSpells.ts";
 import { featCounterId, featSpellRuleChoices } from "../src/rules/choices/featSpells.ts";
-import type { AbilityKey, AbilityScores, AsiSelection, Character, CharacterClass, RuleChoiceEntry } from "../src/types/character.ts";
+import type { AbilityKey, AbilityScores, AsiSelection, CharacterClass, RuleChoiceEntry } from "../src/types/character.ts";
 import type { ClassSpellProfile } from "../src/rules/spellcasting.ts";
 import type { InnateSpellProfile } from "../src/rules/innateMagic.ts";
 import { inMemoryCompendium, makeChar } from "./testUtils.ts";

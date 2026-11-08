@@ -3,7 +3,6 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { grantedFeatures } from "../src/rules/grantedFeatures.ts";
 import { availableRuleChoices, ruleChoiceId, ancestryRuleChoices } from "../src/rules/ruleChoices.ts";
-import { skills } from "../src/rules/skills.ts";
 import { proficiencySheet } from "../src/rules/proficiencySheet.ts";
 import { proficiencyChoiceOffers } from "../src/rules/proficiencyChoiceOffers.ts";
 import { integratedTestCompendium, makeChar, loadTestCatalog } from "./testUtils.ts";

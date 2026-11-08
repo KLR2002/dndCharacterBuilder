@@ -13,7 +13,6 @@ import {
 import { makeChar, loadTestCatalog } from "./testUtils.ts";
 
 const races = loadTestCatalog("races");
-const catalog = { races };
 const ANCESTRY_NOTICE = "Your ancestry has a choice to make in the Builder.";
 
 const raceChar = (name: string, source: string, subrace?: { name: string; source: string }): Character =>

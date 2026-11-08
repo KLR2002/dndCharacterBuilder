@@ -11,7 +11,6 @@ import {
   startingEquipmentCard,
   startingEquipmentOffers,
   startingEquipmentPool,
-  type StartingEquipmentAddress,
 } from "../src/rules/startingEquipment.ts";
 import { applyStartingGrants, reclaimStartingGrants } from "../src/rules/builderTransitions.ts";
 import { reconcile } from "../src/rules/characterReconciler.ts";
