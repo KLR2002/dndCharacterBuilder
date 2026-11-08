@@ -1564,9 +1564,6 @@ test("every adb call carries a timeout: 60 s default, 180 s install, 30 s dump, 
 
 // --- The one-call dump: one adb call per poll, and a failed dump is an empty node list ---
 
-// A dump's stdout as the device writes it: the hierarchy, then the line naming the file it went to.
-const oneCall = (xml) => `${xml}\nUI hierchary dumped to: /dev/tty\n`;
-
 test("a poll is one call, exec-out uiautomator dump /dev/tty, and the ready text is read from its stdout", async () => {
   const shots = mkdtempSync(join(osTmpdir(), "android-runner-test-"));
   const world = makeWorld({ ...emulatorWorld, env: { ONLY: "Home", WIDTHS: "360", SHOTS: shots }, dumpXml: DEFAULT_DUMP });

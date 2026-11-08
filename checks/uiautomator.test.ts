@@ -90,6 +90,13 @@ test("parseDumpOutput reads the nodes of a one-call dump, without the trailing d
   assert.ok(findNode(nodes, "Settings & Compendium"));
 });
 
+test("parseDumpOutput reads a dump whose dumped-to line follows the closing tag on the same line", () => {
+  // The device writes the XML without a trailing newline, so the line follows </hierarchy> directly.
+  const nodes = parseDumpOutput(`${fixtureXml.trimEnd()}${DUMPED_LINE}\n`);
+  assert.ok(nodes);
+  assert.equal(nodes.length, 47);
+});
+
 test("parseDumpOutput reports a failed dump as null: no XML root, an ERROR line, or only the dumped-to line", () => {
   assert.equal(parseDumpOutput(""), null);
   assert.equal(parseDumpOutput(`${DUMPED_LINE}\n`), null, "the dumped-to line alone has no hierarchy");
