@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { isNatural20, parseDicePool, rollDamage, rollDicePool, rollD20, type RandomSource } from "../src/rules/dice.ts";
+import { isNatural20, parseDicePool, rollAbilityScores, rollDamage, rollDicePool, rollD20, type RandomSource } from "../src/rules/dice.ts";
 
 /** A random source with fixed faces, cycling: the die with `sides` lands on the next queued face. */
 function fixedFaces(faces: number[]): RandomSource {
@@ -76,4 +76,36 @@ test("a kept natural 20 doubles the damage dice, not the flat modifier", () => {
 
   const unkeptTwenty = rollD20(0, "disadvantage", fixedFaces([20, 4]));
   assert.equal(isNatural20(unkeptTwenty), false);
+});
+
+test("Rolled Abilities rolls six results of 4d6 dropping the lowest, every die reported", () => {
+  const faces = [
+    6, 2, 5, 4,
+    1, 1, 3, 3,
+    6, 6, 6, 5,
+    2, 4, 4, 2,
+    3, 5, 1, 6,
+    4, 4, 4, 4,
+  ];
+  const expected = [
+    { total: 15, droppedIndex: 1 },
+    { total: 7, droppedIndex: 0 },
+    { total: 18, droppedIndex: 3 },
+    { total: 10, droppedIndex: 0 },
+    { total: 14, droppedIndex: 2 },
+    { total: 12, droppedIndex: 0 },
+  ];
+  const results = rollAbilityScores(fixedFaces(faces));
+  assert.equal(results.length, 6);
+  results.forEach((result, i) => {
+    assert.equal(result.dice.length, 4);
+    assert.ok(result.dice.every((die) => die.sides === 6));
+    assert.deepEqual(result.dice.map((die) => die.face), faces.slice(i * 4, i * 4 + 4));
+    assert.equal(result.droppedIndex, expected[i].droppedIndex);
+    assert.equal(result.dice.filter((die) => die.dropped).length, 1);
+    assert.equal(result.dice[result.droppedIndex].dropped, true);
+    assert.equal(result.dice[result.droppedIndex].face, Math.min(...result.dice.map((die) => die.face)));
+    assert.equal(result.total, expected[i].total);
+    assert.ok(result.total >= 3 && result.total <= 18);
+  });
 });

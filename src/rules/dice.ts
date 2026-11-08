@@ -1,3 +1,5 @@
+import type { RolledAbilityResult } from "../types/character.ts";
+
 /**
  * A source of die faces: given a die's sides, it returns the face that lands, in [1, sides].
  * Tests inject a fixed sequence of faces; the app rolls with `appRandom`.
@@ -121,4 +123,25 @@ export function rollDamage(pool: string, options: { critical?: boolean } = {}, r
   if (!parsed) throw new Error(`Not a dice pool: "${pool}"`);
   const dice = options.critical ? parsed.dice.map((term) => ({ ...term, count: term.count * 2 })) : parsed.dice;
   return rollParsed({ dice, modifier: parsed.modifier }, random);
+}
+
+/** Rolls one Rolled Abilities result: four d6, the lowest marked dropped, the total of the other three. */
+export function rollAbilityScore(random: RandomSource = appRandom): RolledAbilityResult {
+  const faces = [rollDie(6, random), rollDie(6, random), rollDie(6, random), rollDie(6, random)];
+  let droppedIndex = 0;
+  for (let i = 1; i < faces.length; i += 1) {
+    if (faces[i] < faces[droppedIndex]) droppedIndex = i;
+  }
+  let total = 0;
+  const dice = faces.map((face, i) => {
+    const dropped = i === droppedIndex;
+    if (!dropped) total += face;
+    return { sides: 6, face, dropped };
+  });
+  return { dice, droppedIndex, total };
+}
+
+/** The six Rolled Abilities results, in roll order. */
+export function rollAbilityScores(random: RandomSource = appRandom): RolledAbilityResult[] {
+  return Array.from({ length: 6 }, () => rollAbilityScore(random));
 }
