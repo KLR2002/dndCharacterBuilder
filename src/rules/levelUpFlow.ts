@@ -13,6 +13,7 @@ import {
 } from "./builderTransitions.ts";
 import { learnSpell } from "./characterSpells.ts";
 import { getClassSpellProfiles } from "./spellcasting.ts";
+import { recordRolledHitPoints } from "./hp.ts";
 
 /**
  * Pure Level-Up Flow rules: plan one level for a chosen class and apply a confirmed plan in one
@@ -171,7 +172,14 @@ export function applyLevelUpPlan(
     if (!check.ok) return character;
   }
 
-  let next = confirmLevelUp(character, plan.className, plan.source, fullHeal);
+  // A rolled level records the Hit Points it adds before the level is confirmed, so the full heal
+  // on level-up fills to the rolled max. The record is read only once the level exists.
+  let next = character;
+  if (plan.hitPoints.mode === "roll") {
+    const held = character.classes.find((c) => sameName(c.className, plan.className));
+    next = recordRolledHitPoints(next, held?.className ?? plan.className, plan.toLevel, plan.hitPoints.amount);
+  }
+  next = confirmLevelUp(next, plan.className, plan.source, fullHeal);
   if (plan.picks.subclass) {
     next = changeSubclass(
       next,

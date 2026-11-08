@@ -238,6 +238,11 @@ export interface Character {
   // Combat & Stats
   currentHp: number;
   maxHpOverride: number | null;
+  /**
+   * The Hit Points a rolled class level added, keyed by `className__level`. A level without a
+   * record uses the fixed average, so saves made before this field existed keep their HP.
+   */
+  rolledHitPoints?: Record<string, number>;
   tempHp: number;
   conditions: string[];
   usedHitDice: Record<string, number>;
