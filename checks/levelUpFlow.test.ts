@@ -238,6 +238,27 @@ test("applying a rolled Fighter 3->4 plan raises maxHp by the die face plus the 
   assert.equal(maxHp(appliedLow), maxHp(lowCon) + 1);
 });
 
+test("applying a rolled plan records the die face, so a later Constitution change moves that level's HP", () => {
+  const fresh = makeChar({
+    baseAbilityScores: { str: 15, dex: 14, con: 14, int: 10, wis: 10, cha: 10 },
+  });
+  const rolled = planLevelUp(fresh, {
+    className: "Fighter",
+    source: "PHB",
+    hitPoints: { mode: "roll" },
+    random: () => 0.6,
+  });
+  if (!rolled.ok) assert.fail(rolled.reason);
+  assert.equal(rolled.plan.hitPoints.roll, 7); // 1 + floor(0.6 * 10)
+  const applied = applyLevelUpPlan(fresh, rolled.plan, { fullHealOnLevelUp: false });
+  assert.equal(applied.classes[0].level, 1);
+  // The record holds the face, not the rolled amount face + Con.
+  assert.deepEqual(applied.rolledHitPoints, { "Fighter__1": 7 });
+  assert.equal(maxHp(applied), 9); // face 7 + Con 2
+  const raisedCon = { ...applied, baseAbilityScores: { ...applied.baseAbilityScores, con: 16 } };
+  assert.equal(maxHp(raisedCon), 10); // face 7 + Con 3
+});
+
 test("applying an averaged Fighter 3->4 plan raises maxHp by the fixed average", () => {
   const before = maxHp(FIGHTER_3);
   const averaged = planLevelUp(FIGHTER_3, { className: "Fighter", hitPoints: { mode: "average" } });

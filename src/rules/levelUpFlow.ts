@@ -184,12 +184,13 @@ export function applyLevelUpPlan(
     if (!check.ok) return character;
   }
 
-  // A rolled level records the Hit Points it adds before the level is confirmed, so the full heal
-  // on level-up fills to the rolled max. The record is read only once the level exists.
+  // A rolled level records the die face it rolled before the level is confirmed, so the full heal
+  // on level-up fills to the rolled max; `maxHp` adds the current Constitution modifier to the face
+  // once the level exists.
   let next = character;
-  if (plan.hitPoints.mode === "roll") {
+  if (plan.hitPoints.mode === "roll" && plan.hitPoints.roll !== undefined) {
     const held = character.classes.find((c) => sameName(c.className, plan.className));
-    next = recordRolledHitPoints(next, held?.className ?? plan.className, plan.toLevel, plan.hitPoints.amount);
+    next = recordRolledHitPoints(next, held?.className ?? plan.className, plan.toLevel, plan.hitPoints.roll);
   }
   next = confirmLevelUp(next, plan.className, plan.source, fullHeal);
   if (plan.picks.subclass) {
