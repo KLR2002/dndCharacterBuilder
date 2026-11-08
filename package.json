@@ -50,6 +50,7 @@
     "typecheck": "tsc --noEmit",
     "typecheck:checks": "node scripts/typecheck-ratchet.mjs",
     "layout:check": "node --experimental-strip-types scripts/layout-check.mjs",
+    "layout:android": "node --experimental-strip-types scripts/layout-android.mjs",
     "catalog:live": "node --experimental-strip-types scripts/build-live-catalog.mjs",
     "check:live": "npm run catalog:live && LIVE_CATALOG_CHECK=1 node --experimental-strip-types --test checks/liveCatalog.test.ts",
     "test": "node --experimental-strip-types --test checks/ && npm --prefix dnd5eToolsScrap test",

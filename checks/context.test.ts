@@ -32,6 +32,9 @@ async function providerHarness(initial: unknown = [makeChar()], options: {
   /** The Compendium the app reads as current (for the open-character reconcile). Defaults to a stub. */
   catalog?: any;
 } = {}) {
+  // Writes still queued from an earlier harness must land in its KV before this one installs a fresh
+  // one: loadAll enqueues a read behind them on the storage write queue, so awaiting it drains the queue.
+  await storage.loadAll();
   const kv = new Map([["@dnd5e_characters", typeof initial === "string" ? initial : JSON.stringify(initial)]]);
   if (options.settings) kv.set("@dnd5e_app_settings", JSON.stringify(options.settings));
   storage.__setKvForTests(kv);
@@ -101,6 +104,7 @@ async function providerHarness(initial: unknown = [makeChar()], options: {
     if (name.includes("constants/books")) return { DEFAULT_ACTIVE_BOOK_CODES: [] };
     if (name.includes("builderTransitions")) return { checkActiveBooksIntegrity: () => [] };
     if (name.includes("catalogUpdateNotice")) return catalogUpdateNotice;
+    if (name.includes("e2eSeedHook")) return { runE2eSeedHook: async () => {} };
     throw new Error(`Unexpected provider import: ${name}`);
   } });
   function commit() {
@@ -115,8 +119,12 @@ async function providerHarness(initial: unknown = [makeChar()], options: {
   const mountEffects = [...effects];
   flushEffects();
   if (options.waitForInit !== false) {
-    await storage.loadAll(); // Wait for initialization's queued read.
     render();
+    // The load path awaits the seed hook before queueing its read; render until initialization settles.
+    for (let i = 0; i < 100 && value.isLoading; i++) {
+      await new Promise(resolve => setImmediate(resolve));
+      render();
+    }
   }
   return { get value() { return value; }, render, commit, flushEffects, kv,
     replayMountEffects: () => mountEffects.forEach(effect => effect()) };
