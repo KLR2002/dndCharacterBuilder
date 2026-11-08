@@ -2,14 +2,19 @@
 // emulator or boots the Small_Phone AVD headless (windowed with `--window`) and stops only one it
 // started, refuses any device whose serial is not an emulator, builds the E2E APK incrementally
 // with `-Pe2e` (skipped with `--no-build`) and installs it with `adb install -r`, then for each
-// width sets the screen density and runs every selected scenario: reset the app, copy the seed into
-// its private folder with run-as, launch the scenario's route by deep link, play its step fields
-// (`tabs` and `open` as taps on the matching dump node, the ready text or modal title waited for,
-// `scrollTo` as swipes until the text is visible; a web-only scenario is listed and skipped), and
-// pull the `<scenario>-<width>.png` screenshot into the shots folder. The original density is
-// restored at the end (also after a failure). The runner core, with every device interaction behind
-// one injectable executor, is in scripts/lib/android-runner.mjs; the tests are in
-// checks/androidRunner.test.ts and checks/nativeSteps.test.ts.
+// width sets the screen density and runs every selected scenario in its isolation mode: the first
+// scenario of the width and every `fresh` scenario clear the app's data and copy the seed into its
+// private folder with run-as, a `modal` scenario force-stops and relaunches without clearing, any
+// other scenario only jumps to its route by deep link (not even that when it is the previous
+// scenario's route), and the launch is retried once when it exits non-zero. The step fields play as
+// before (`tabs` and `open` as taps on the matching dump node, the ready text or modal title waited
+// for, `scrollTo` as swipes until the text is visible; a web-only scenario is listed and skipped),
+// and the `<scenario>-<width>.png` screenshot is pulled into the shots folder; a scenario that
+// fails after the launch also saves the stuck screen as `<scenario>-<width>-FAILED.png` and the run
+// continues, exiting non-zero. The original density is restored at the end (also after a failure).
+// The runner core, with every device interaction behind one injectable executor, is in
+// scripts/lib/android-runner.mjs; the tests are in checks/androidRunner.test.ts and
+// checks/nativeSteps.test.ts.
 //
 // Usage: `npm run layout:android` (not part of check:all). Env: WIDTHS (default "393,360,320,412"),
 // ONLY (a comma-separated list of substrings: an unmatched term exits 2 and lists the scenario

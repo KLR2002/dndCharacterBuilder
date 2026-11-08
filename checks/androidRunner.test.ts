@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { mkdtempSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir as osTmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -39,9 +39,14 @@ import { buildScreens } from "../scripts/lib/scenarios.mjs";
 // (AC-8), the width-to-density mapping and the density restore (AC-9), the reuse/boot/stop lifecycle
 // (AC-10), the build step and its Metro cache separation (AC-11), the ONLY validation (AC-16) and the
 // seeded scenario execution (AC-12): reset, seed copy with run-as, deep-link launch, ready polling on
-// uiautomator dumps, and the pulled PNG screenshot. It also pins the step player (AC-13): tabs and open
-// steps as taps on the matching dump node, the modal title waited for as the ready text, scrollTo as
-// swipes until the needle is visible, expect ignored, and web-only scenarios listed and skipped.
+// uiautomator dumps, and the pulled PNG screenshot. It also pins the isolation between scenarios
+// (AC-15): the first scenario of a width and every `fresh` scenario reset and reseed, a `modal`
+// scenario force-stops and relaunches without clearing, any other scenario only jumps by deep link,
+// and a scenario on the previous scenario's route does not even launch; the launch is retried once;
+// and the stuck screen of a scenario that fails after launch is saved as `<scenario>-<width>-FAILED.png`
+// while the run continues and exits non-zero (AC-14). It also pins the step player (AC-13): tabs and
+// open steps as taps on the matching dump node, the modal title waited for as the ready text, scrollTo
+// as swipes until the needle is visible, expect ignored, and web-only scenarios listed and skipped.
 
 const ROOT = "/repo";
 const HOME = "/home/test";
@@ -87,6 +92,7 @@ function makeWorld(options: {
   pushCode?: number;
   seedCopyCode?: number;
   pullCode?: number;
+  pullCodeFor?: (remote: string, n: number) => number;
   dumpXml?: string | ((poll: number) => string);
   wmSize?: string;
   bars?: string;
@@ -110,6 +116,7 @@ function makeWorld(options: {
   let seedCalls = 0;
   let emulatorStarted = false;
   let amStarts = 0;
+  let pulls = 0;
   let dumps = 0;
   let clock = 0;
   const missing = options.missing ?? [];
@@ -159,7 +166,9 @@ function makeWorld(options: {
     }
     if (args.includes("screencap")) return reply(0);
     if (args.includes("pull")) {
-      const code = options.pullCode ?? 0;
+      pulls += 1;
+      const remote = args[args.indexOf("pull") + 1];
+      const code = options.pullCodeFor ? options.pullCodeFor(remote, pulls) : (options.pullCode ?? 0);
       if (code === 0) writeFileSync(args.at(-1) as string, options.pullBytes ?? PNG_BYTES);
       return code === 0 ? reply(0, "1 file pulled\n") : reply(code, "", "adb: error: remote file does not exist\n");
     }
@@ -208,7 +217,7 @@ function makeWorld(options: {
       bootTimeoutMs: 60,
     });
   const callsTo = (needle: string) => calls.filter((c) => `${c.command} ${c.args.join(" ")}`.includes(needle));
-  return { calls, starts, handlers, logs, errors, writes, sleeps, runRun, callsTo, get seedCalls() { return seedCalls; }, get dumps() { return dumps; } };
+  return { calls, starts, handlers, logs, errors, writes, sleeps, runRun, callsTo, get seedCalls() { return seedCalls; }, get dumps() { return dumps; }, get pulls() { return pulls; } };
 }
 
 const emulatorWorld = { devices: "emulator-5554\tdevice\n" };
@@ -451,12 +460,22 @@ test("a pre-existing override density is put back instead of reset", async () =>
 
 test("a scenario launch failure still restores the density and exits non-zero", async () => {
   const shots = mkdtempSync(join(osTmpdir(), "android-runner-test-"));
-  const world = makeWorld({ ...emulatorWorld, env: { WIDTHS: "320,360", SHOTS: shots }, amStartCodeFor: (n) => (n === 2 ? 1 : 0) });
+  // Every launch from the second on fails both its attempts, so Settings fails at 320 and both
+  // scenarios fail at 360 (Home is the first of the width and resets+seeds first).
+  const world = makeWorld({ ...emulatorWorld, env: { WIDTHS: "320,360", SHOTS: shots }, amStartCodeFor: (n) => (n > 1 ? 1 : 0) });
   const code = await world.runRun();
   assert.equal(code, 1);
   assert.equal(world.callsTo("wm density reset").length, 1);
-  // The failing scenario does not stop the run: every scenario at both widths is attempted.
-  assert.equal(world.callsTo("am start").length, 4);
+  // The failing scenario does not stop the run: every scenario at both widths is attempted, and each
+  // failed launch was retried once (7 launches = 1 + 2 + 2 + 2).
+  assert.equal(world.callsTo("am start").length, 7);
+  assert.equal(world.callsTo("pm clear").length, 2);
+  // Home at 320 passed (its launch was the first), the other three scenarios failed on their launches.
+  assert.ok(existsSync(join(shots, "Home-320.png")));
+  // A launch failure is a failure before the app was launched: no FAILED screenshot is saved for them.
+  const remotes = world.callsTo("screencap").map((c) => c.args.at(-1) as string);
+  assert.deepEqual(remotes, ["/sdcard/Home-320.png"]);
+  assert.ok(world.callsTo("pull").every((c) => !c.args.join(" ").includes("FAILED")));
 });
 
 test("the signal-handler cleanup is idempotent with the finally cleanup", async () => {
@@ -533,6 +552,28 @@ test("a failing install exits non-zero and restores the density", async () => {
 
 // --- AC-12: one scenario end to end with the fake adb ---
 
+// A dump that satisfies every scenario of the isolation test below at once: the tab names, the
+// open-step targets (text, pattern and label), the ready texts, the modal titles and the scrollTo
+// needles, all with on-screen bounds.
+const ISOLATION_DUMP =
+  `<hierarchy>` +
+  `<node text="Builder" bounds="[80,187][157,220]" />` +
+  `<node text="Abilities" bounds="[180,187][260,220]" />` +
+  `<node text="Race" bounds="[316,320][375,356]" />` +
+  `<node text="Class" bounds="[400,320][460,356]" />` +
+  `<node text="Stats" bounds="[241,187][297,220]" />` +
+  `<node text="5 points remaining" bounds="[10,500][200,540]" />` +
+  `<node text="Granted Languages:" bounds="[10,620][300,660]" />` +
+  `<node text="Selected Ability Improvements" bounds="[10,680][400,720]" />` +
+  `<node text="Total Level 1" bounds="[10,740][300,780]" />` +
+  `<node text="Fighting Styles" bounds="[10,800][300,840]" />` +
+  `<node text="Take Rest (Short / Long)" bounds="[80,298][346,364]" />` +
+  `<node text="Add Language" bounds="[100,400][620,450]" />` +
+  `<node text="Rest &amp; Recovery" bounds="[100,900][620,950]" />` +
+  `<node text="" content-desc="Add language" bounds="[500,1000][600,1040]" />` +
+  `<node text="5e Character Builder" bounds="[0,0][300,60]" />` +
+  `</hierarchy>`;
+
 // Maps each recorded call to a marker, so a test can assert the exact order of the device interactions.
 function markersOf(world: { calls: Call[] }) {
   return world.calls
@@ -557,6 +598,12 @@ function markersOf(world: { calls: Call[] }) {
       return null;
     })
     .filter((m) => m !== null);
+}
+
+// The markers of the scenario isolation calls only (no device lifecycle, no dump polls), in order.
+function structuralMarkersOf(world: { calls: Call[] }) {
+  const structural = new Set(["force-stop", "pm-clear", "push-seed", "mkdir-files", "seed-copy", "rm-tmp", "am-start", "screencap", "pull"]);
+  return markersOf(world).filter((m) => structural.has(m));
 }
 
 test("one scenario runs end to end: reset, seed copy, deep link, ready poll, screenshot pull", async () => {
@@ -633,7 +680,7 @@ test("the ready text is polled until it shows", async () => {
   assert.equal(world.callsTo("screencap").length, 1);
 });
 
-test("a scenario whose ready text never shows is reported failed and the run exits non-zero", async () => {
+test("a scenario whose ready text never shows saves its stuck screen as -FAILED.png and exits non-zero", async () => {
   const shots = mkdtempSync(join(osTmpdir(), "android-runner-test-"));
   const world = makeWorld({
     ...emulatorWorld,
@@ -646,9 +693,20 @@ test("a scenario whose ready text never shows is reported failed and the run exi
   assert.equal(code, 1);
   assert.ok(world.errors.join("\n").includes("ready"));
   assert.ok(world.errors.join("\n").includes("Settings"));
-  // No screenshot is taken for a failed scenario, and the density is still restored.
-  assert.equal(world.callsTo("screencap").length, 0);
-  assert.equal(world.callsTo("pull").length, 0);
+  // The app was launched, so the stuck screen is saved as <scenario>-<width>-FAILED.png (same screencap
+  // and pull as a normal screenshot), its path is logged, and no normal screenshot is taken.
+  const failed = join(shots, "Settings-360-FAILED.png");
+  assert.equal(world.callsTo("screencap").length, 1);
+  assert.equal(world.callsTo("pull").length, 1);
+  const screencap = world.callsTo("screencap")[0];
+  assert.deepEqual(screencap.args.slice(-2), ["-p", "/sdcard/Settings-360-FAILED.png"]);
+  const pull = world.callsTo("pull")[0];
+  assert.deepEqual(pull.args.slice(-2), ["/sdcard/Settings-360-FAILED.png", failed]);
+  assert.ok(world.logs.join("\n").includes(failed));
+  assert.ok(existsSync(failed));
+  assert.deepEqual([...readFileSync(failed).subarray(0, 8)], [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
+  assert.ok(!existsSync(join(shots, "Settings-360.png")));
+  // The density is still restored.
   assert.equal(world.callsTo("wm density reset").length, 1);
 });
 
@@ -670,8 +728,23 @@ test("a failing seed copy stops the scenario with a non-zero exit and no launch"
   const code = await world.runRun();
   assert.equal(code, 1);
   assert.ok(world.errors.join("\n").includes("seed"));
+  // A failure before the launch (the reset or the seed copy) writes no FAILED screenshot.
   assert.equal(world.callsTo("am start").length, 0);
   assert.equal(world.callsTo("screencap").length, 0);
+  assert.equal(world.callsTo("pull").length, 0);
+  assert.equal(world.callsTo("wm density reset").length, 1);
+});
+
+test("a failing pm clear stops the scenario before launch with no FAILED screenshot", async () => {
+  const shots = mkdtempSync(join(osTmpdir(), "android-runner-test-"));
+  const world = makeWorld({ ...emulatorWorld, env: { ONLY: "Home", WIDTHS: "360", SHOTS: shots }, clearCode: 1 });
+  const code = await world.runRun();
+  assert.equal(code, 1);
+  assert.ok(world.errors.join("\n").includes("pm clear"));
+  assert.equal(world.callsTo("am start").length, 0);
+  assert.equal(world.callsTo("screencap").length, 0);
+  assert.equal(world.callsTo("pull").length, 0);
+  assert.ok(!existsSync(join(shots, "Home-360-FAILED.png")));
   assert.equal(world.callsTo("wm density reset").length, 1);
 });
 
@@ -744,7 +817,7 @@ test("scrollTo swipes once until a dump shows the needle visible, after tapping 
   assert.ok(world.logs.join("\n").includes("Stats-battle-master-superiority-dice-360.png"));
 });
 
-test("a tab whose target never shows fails the scenario with a message naming it and the run exits non-zero", async () => {
+test("a tab whose target never shows fails the scenario, saves the -FAILED.png stuck screen and exits non-zero", async () => {
   const shots = mkdtempSync(join(osTmpdir(), "android-runner-test-"));
   const world = makeWorld({ ...emulatorWorld, env: { ONLY: "Stats", WIDTHS: "360", SHOTS: shots }, dumpXml: DEFAULT_DUMP });
   const code = await world.runRun();
@@ -752,7 +825,16 @@ test("a tab whose target never shows fails the scenario with a message naming it
   assert.ok(world.errors.join("\n").includes('tab "Stats" did not show'));
   assert.ok(world.errors.join("\n").includes("[360dp] Stats"));
   assert.equal(world.callsTo("input tap").length, 0);
-  assert.equal(world.callsTo("screencap").length, 0);
+  // The failed step target is a failure after launch: every selected scenario (ONLY "Stats" matches
+  // five) saves its stuck screen as -FAILED.png, and no normal screenshot is taken.
+  const failed = join(shots, "Stats-360-FAILED.png");
+  assert.equal(world.callsTo("screencap").length, 5);
+  assert.equal(world.callsTo("pull").length, 5);
+  assert.ok(world.callsTo("screencap").every((c) => (c.args.at(-1) as string).includes("-FAILED.png")));
+  assert.ok(existsSync(failed));
+  assert.deepEqual([...readFileSync(failed).subarray(0, 8)], [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
+  assert.ok(!existsSync(join(shots, "Stats-360.png")));
+  assert.ok(world.logs.join("\n").includes(failed));
   assert.equal(world.callsTo("wm density reset").length, 1);
 });
 
@@ -787,4 +869,152 @@ test("an absent scrollTo needle logs a warning naming the scenario and the needl
   assert.equal(world.callsTo("screencap").length, 1);
   assert.equal(world.callsTo("pull").length, 1);
   assert.ok(world.logs.join("\n").includes("Stats-battle-master-superiority-dice-360.png"));
+});
+
+// --- AC-15: the isolation between scenarios follows fresh, modal and route ---
+
+// The scenarios in list order: Builder Abilities (Rendar), Builder Race language choice (Half-Elf),
+// Builder Class feats (Half-Elf), Builder Class fighting styles card collapsed (Fighter, fresh),
+// Stats add language modal (Rendar, modal), Rest modal (Rendar, modal), Home (/).
+test("each scenario runs in its isolation mode and logs it: reset+seed, deep link, same route, relaunch", async () => {
+  const shots = mkdtempSync(join(osTmpdir(), "android-runner-test-"));
+  const world = makeWorld({
+    ...emulatorWorld,
+    env: {
+      ONLY: "Builder Abilities,Builder Race language choice,Builder Class feats,fighting styles card collapsed,Stats add language modal,Rest modal,Home",
+      WIDTHS: "360",
+      SHOTS: shots,
+    },
+    dumpXml: ISOLATION_DUMP,
+  });
+  const code = await world.runRun();
+  assert.equal(code, 0);
+  // One log line per scenario naming the mode it used.
+  assert.deepEqual(
+    world.logs.filter((m) => /: (reset\+seed|relaunch|deep link|same route)$/.test(m)),
+    [
+      "[360dp] Builder Abilities: reset+seed",
+      "[360dp] Builder Race language choice: deep link",
+      "[360dp] Builder Class feats: same route",
+      "[360dp] Builder Class fighting styles card collapsed: reset+seed",
+      "[360dp] Stats add language modal: relaunch",
+      "[360dp] Rest modal: relaunch",
+      "[360dp] Home: deep link",
+    ],
+  );
+  assert.deepEqual(structuralMarkersOf(world), [
+    // The first scenario of the width: force-stop, clear, seed in, deep-link launch.
+    "force-stop", "pm-clear", "push-seed", "mkdir-files", "seed-copy", "rm-tmp", "am-start", "screencap", "pull",
+    // A different route: only the deep-link launch.
+    "am-start", "screencap", "pull",
+    // The same route as the previous scenario: not even a launch, the UI state carries over.
+    "screencap", "pull",
+    // fresh: clear and seed in again, then launch.
+    "force-stop", "pm-clear", "push-seed", "mkdir-files", "seed-copy", "rm-tmp", "am-start", "screencap", "pull",
+    // modal: force-stop and relaunch by deep link, without clearing or reseeding.
+    "force-stop", "am-start", "screencap", "pull",
+    "force-stop", "am-start", "screencap", "pull",
+    // After a modal the route is unknown: deep link again, no clear.
+    "am-start", "screencap", "pull",
+  ]);
+  assert.equal(world.callsTo("pm clear").length, 2);
+  assert.equal(world.callsTo("am force-stop").length, 4);
+  assert.equal(world.callsTo("push").length, 2);
+  assert.equal(world.callsTo("am start").length, 6);
+  for (const name of ["Builder-Abilities-360.png", "Builder-Race-language-choice-360.png", "Builder-Class-feats-360.png", "Builder-Class-fighting-styles-card-collapsed-360.png", "Stats-add-language-modal-360.png", "Rest-modal-360.png", "Home-360.png"]) {
+    assert.ok(existsSync(join(shots, name)), name);
+  }
+});
+
+test("the first scenario of the second width resets and reseeds again", async () => {
+  const shots = mkdtempSync(join(osTmpdir(), "android-runner-test-"));
+  const world = makeWorld({ ...emulatorWorld, env: { ONLY: "Home,Settings", WIDTHS: "320,360", SHOTS: shots } });
+  const code = await world.runRun();
+  assert.equal(code, 0);
+  // Each width's first scenario does the full reset+seed; the second scenario of each width only jumps
+  // by deep link (Home "/" then Settings "/options" differ).
+  assert.deepEqual(
+    world.logs.filter((m) => /: (reset\+seed|relaunch|deep link|same route)$/.test(m)),
+    [
+      "[320dp] Home: reset+seed",
+      "[320dp] Settings: deep link",
+      "[360dp] Home: reset+seed",
+      "[360dp] Settings: deep link",
+    ],
+  );
+  assert.equal(world.callsTo("pm clear").length, 2);
+  assert.equal(world.callsTo("push").length, 2);
+  assert.equal(world.callsTo("am start").length, 4);
+});
+
+// --- AC-14: a stuck scenario is saved, reported and does not stop the run ---
+
+test("a stuck scenario saves -FAILED.png, the next scenario relaunches by deep link without clearing, and the run exits non-zero", async () => {
+  const shots = mkdtempSync(join(osTmpdir(), "android-runner-test-"));
+  // The dump shows Settings' ready text but never Home's, so Home (first of the width) gets stuck.
+  const world = makeWorld({
+    ...emulatorWorld,
+    env: { ONLY: "Home,Settings", WIDTHS: "360", SHOTS: shots },
+    dumpXml: `<hierarchy><node text="Settings &amp; Compendium" bounds="[185,86][534,129]" /></hierarchy>`,
+    readyTimeoutMs: 1000,
+    readyPollMs: 500,
+  });
+  const code = await world.runRun();
+  assert.equal(code, 1);
+  assert.ok(world.errors.join("\n").includes("ready"));
+  // Home's stuck screen was saved as Home-360-FAILED.png and its path logged; no normal Home shot.
+  const failed = join(shots, "Home-360-FAILED.png");
+  assert.ok(existsSync(failed));
+  assert.deepEqual([...readFileSync(failed).subarray(0, 8)], [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
+  assert.ok(world.logs.join("\n").includes(failed));
+  assert.ok(!existsSync(join(shots, "Home-360.png")));
+  // The run continued: Settings still produced its screenshot, relaunching by deep link (the route is
+  // unknown after a failed scenario) without clearing or reseeding.
+  assert.ok(existsSync(join(shots, "Settings-360.png")));
+  assert.deepEqual(structuralMarkersOf(world), [
+    "force-stop", "pm-clear", "push-seed", "mkdir-files", "seed-copy", "rm-tmp", "am-start", "screencap", "pull",
+    "am-start", "screencap", "pull",
+  ]);
+  assert.equal(world.callsTo("pm clear").length, 1);
+  assert.equal(world.callsTo("am start").length, 2);
+  assert.equal(world.callsTo("wm density reset").length, 1);
+});
+
+test("the -FAILED.png save is best effort: when the device does not answer it is logged and the run carries on", async () => {
+  const shots = mkdtempSync(join(osTmpdir(), "android-runner-test-"));
+  const world = makeWorld({
+    ...emulatorWorld,
+    env: { ONLY: "Home,Settings", WIDTHS: "360", SHOTS: shots },
+    dumpXml: `<hierarchy><node text="Settings &amp; Compendium" bounds="[185,86][534,129]" /></hierarchy>`,
+    readyTimeoutMs: 1000,
+    readyPollMs: 500,
+    // The pull of the FAILED screenshot fails; the normal pull still works.
+    pullCodeFor: (remote) => (remote.includes("FAILED") ? 1 : 0),
+  });
+  const code = await world.runRun();
+  assert.equal(code, 1);
+  assert.ok(world.errors.join("\n").includes("could not save"));
+  assert.ok(world.errors.join("\n").includes("Home-360-FAILED.png"));
+  assert.equal(world.callsTo("screencap").length, 2);
+  assert.equal(world.pulls, 2);
+  assert.ok(!existsSync(join(shots, "Home-360-FAILED.png")));
+  // The run carried on regardless: Settings still produced its screenshot.
+  assert.ok(existsSync(join(shots, "Settings-360.png")));
+});
+
+// --- the launch retry ---
+
+test("a non-zero am start is retried once after about a second and the scenario then passes", async () => {
+  const shots = mkdtempSync(join(osTmpdir(), "android-runner-test-"));
+  const world = makeWorld({
+    ...emulatorWorld,
+    env: { ONLY: "Home", WIDTHS: "360", SHOTS: shots },
+    amStartCodeFor: (n) => (n === 1 ? 255 : 0),
+  });
+  const code = await world.runRun();
+  assert.equal(code, 0);
+  assert.equal(world.callsTo("am start").length, 2);
+  assert.ok(world.sleeps.includes(1000));
+  assert.ok(existsSync(join(shots, "Home-360.png")));
+  assert.equal(world.callsTo("screencap").length, 1);
 });
