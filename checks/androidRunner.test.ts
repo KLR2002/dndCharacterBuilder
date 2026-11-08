@@ -141,6 +141,11 @@ function makeWorld(options: {
   bootCompletedBySerial?: (serial: string) => string;
   // The exit code of the `wm density` read, to script a failing density read.
   wmDensityCode?: number;
+  // The stderr of the Nth `adb start-server` call: the start notice when this call starts the server,
+  // empty when a server was already running. Defaults to the start notice.
+  startServerStderr?: (call: number) => string;
+  // The exit code of `adb kill-server`, to script a server that cannot be stopped.
+  killServerCode?: number;
   // The exit code of every `emu kill`, to script an emulator the console cannot stop.
   emuKillCode?: number;
   // The one-call dump's exit code / stdout (the XML and the "dumped to" line) of the Nth poll, so a
@@ -184,6 +189,7 @@ function makeWorld(options: {
   let pulls = 0;
   let dumps = 0;
   let devicesCalls = 0;
+  let startServerCalls = 0;
   let clock = options.startClock ?? 0;
   const tmpRoot = options.tmpRoot ?? "/tmp";
   const missing = options.missing ?? [];
@@ -204,7 +210,15 @@ function makeWorld(options: {
             : (options.devices ?? "");
       return reply(0, `List of devices attached\n${body}\n`);
     }
-    if (args[0] === "start-server") return reply(0, "* daemon started successfully\n");
+    // The real adb prints the start notice on stderr, and nothing when a server was already running.
+    if (args[0] === "start-server") {
+      startServerCalls += 1;
+      return reply(0, "", options.startServerStderr ? options.startServerStderr(startServerCalls) : "* daemon started successfully\n");
+    }
+    if (args[0] === "kill-server") {
+      const code = options.killServerCode ?? 0;
+      return reply(code, "", code === 0 ? "" : "adb: error: could not kill the server\n");
+    }
     if (args.includes("get-state")) {
       getStateCalls += 1;
       if (options.offlineAtGetStates?.includes(getStateCalls)) offline = true;
@@ -423,8 +437,9 @@ test("emulatorArgs boots the AVD detached, headless unless --window", () => {
   assert.deepEqual(windowed, ["-avd", AVD_NAME, "-no-snapshot-save", "-no-audio", "-gpu", "angle_indirect"]);
 });
 
-test("gradleArgs is the incremental E2E release build", () => {
-  assert.deepEqual(gradleArgs(), [":app:assembleRelease", "-PreactNativeArchitectures=x86_64", "-Pe2e", "--console=plain"]);
+test("gradleArgs is the incremental E2E release build, without a Gradle daemon left running", () => {
+  assert.deepEqual(gradleArgs(), [":app:assembleRelease", "-PreactNativeArchitectures=x86_64", "-Pe2e", "--no-daemon", "--console=plain"]);
+  assert.ok(gradleArgs().includes("--no-daemon"));
 });
 
 test("parseOnly and parseWidths match layout-check's handling", () => {
@@ -1532,7 +1547,8 @@ test("across a whole fake run every adb call except `devices` carries -s <serial
   const adbCalls = world.calls.filter((c) => c.command === ADB);
   assert.ok(adbCalls.length > 0);
   for (const c of adbCalls) {
-    if (c.args[0] === "devices") continue;
+    // `devices`, `start-server` and `kill-server` address the server, not a device.
+    if (["devices", "start-server", "kill-server"].includes(c.args[0])) continue;
     assert.equal(c.args[0], "-s", `${c.command} ${c.args.join(" ")}`);
     assert.equal(c.args[1], "emulator-5554", `${c.command} ${c.args.join(" ")}`);
   }
@@ -1879,7 +1895,7 @@ test("an adb devices failure is retried once after adb start-server; still faili
   const code = await world.runRun();
   assert.equal(code, 2);
   assert.ok(world.errors.join("\n").includes("adb devices"));
-  assert.equal(world.callsTo("start-server").length, 1);
+  assert.equal(world.callsTo("start-server").length, 2, "the upfront start-server and the retry");
   assert.equal(world.callsTo("devices").length, 2);
   assert.equal(world.starts.length, 0, "nothing is spawned on an unreadable device list");
   assert.equal(world.callsTo("getprop").length, 0);
@@ -1890,9 +1906,138 @@ test("an adb devices failure that clears after adb start-server runs normally", 
   const world = makeWorld({ ...emulatorWorld, devicesCodeFor: (n) => (n === 1 ? 1 : 0), env: { ONLY: "Home", WIDTHS: "360", SHOTS: shots } });
   const code = await world.runRun();
   assert.equal(code, 0);
-  assert.equal(world.callsTo("start-server").length, 1);
+  assert.equal(world.callsTo("start-server").length, 2, "the upfront start-server and the retry");
   assert.equal(world.callsTo("-s emulator-5554 install -r").length, 1);
   assert.ok(existsSync(join(shots, "Home-360.png")));
+});
+
+// --- The adb server: stopped at the end only when this run started it ---
+
+// The two lines `adb start-server` prints (on stderr) when it starts the server, verified on the
+// real adb; a server that is already running prints nothing.
+const ADB_SERVER_STARTED = "* daemon not running; starting now at tcp:5037\n* daemon started successfully\n";
+
+// The index of the first recorded call whose command line contains `needle`, or -1.
+function indexOfCall(calls: Call[], needle: string) {
+  return calls.findIndex((c) => `${c.command} ${c.args.join(" ")}`.includes(needle));
+}
+
+test("the first adb call of a run is start-server, before any device call", async () => {
+  const shots = mkdtempSync(join(osTmpdir(), "android-runner-test-"));
+  const world = makeWorld({ ...emulatorWorld, env: { ONLY: "Home", WIDTHS: "360", SHOTS: shots } });
+  assert.equal(await world.runRun(), 0);
+  const adbCalls = world.calls.filter((c) => c.command === ADB);
+  assert.deepEqual(adbCalls[0].args, ["start-server"]);
+  assert.equal(adbCalls[1].args[0], "devices");
+});
+
+test("a run that starts the adb server stops it exactly once, after the emulator it booted is stopped", async () => {
+  const shots = mkdtempSync(join(osTmpdir(), "android-runner-test-"));
+  const world = makeWorld({
+    devices: "",
+    bootDevices: "emulator-5554\tdevice\n",
+    startServerStderr: () => ADB_SERVER_STARTED,
+    env: { ONLY: "Home", WIDTHS: "360", SHOTS: shots },
+  });
+  assert.equal(await world.runRun(), 0);
+  const kills = world.callsTo("kill-server");
+  assert.equal(kills.length, 1);
+  assert.equal(kills[0].command, ADB);
+  assert.deepEqual(kills[0].args, ["kill-server"]);
+  assert.equal(world.callsTo("emu kill").length, 1);
+  assert.ok(indexOfCall(world.calls, "emu kill") < indexOfCall(world.calls, "kill-server"), "kill-server comes after emu kill");
+});
+
+test("a run that finds the adb server already running never stops it", async () => {
+  const shots = mkdtempSync(join(osTmpdir(), "android-runner-test-"));
+  const world = makeWorld({ ...emulatorWorld, startServerStderr: () => "", env: { ONLY: "Home", WIDTHS: "360", SHOTS: shots } });
+  assert.equal(await world.runRun(), 0);
+  assert.equal(world.callsTo("start-server").length, 1);
+  assert.equal(world.callsTo("kill-server").length, 0);
+});
+
+test("a SIGINT mid-run stops an adb server this run started, from the handler's own cleanup, after emu kill", async () => {
+  const shots = mkdtempSync(join(osTmpdir(), "android-runner-test-"));
+  const world = makeWorld({
+    devices: "",
+    bootDevices: "emulator-5554\tdevice\n",
+    startServerStderr: () => ADB_SERVER_STARTED,
+    env: { ONLY: "Home,Settings", WIDTHS: "360", SHOTS: shots },
+    signalAtSleep: 1,
+  });
+  assert.equal(await world.runRun(), 130);
+  assert.equal(world.callsTo("kill-server").length, 1);
+  assert.equal(world.signalSnapshots.length, 1);
+  const snapshot = world.signalSnapshots[0];
+  assert.equal(snapshot.calls.filter((c) => c.args.join(" ") === "kill-server").length, 1, "kill-server already in the handler's own cleanup");
+  assert.ok(indexOfCall(snapshot.calls, "emu kill") < indexOfCall(snapshot.calls, "kill-server"));
+});
+
+test("a SIGTERM mid-run with a server that was already running leaves it alone", async () => {
+  const shots = mkdtempSync(join(osTmpdir(), "android-runner-test-"));
+  const world = makeWorld({
+    ...emulatorWorld,
+    startServerStderr: () => "",
+    env: { ONLY: "Home,Settings", WIDTHS: "360", SHOTS: shots },
+    signalAtSleep: 1,
+    signalName: "SIGTERM",
+  });
+  assert.equal(await world.runRun(), 143);
+  assert.equal(world.callsTo("kill-server").length, 0);
+  assert.equal(world.signalSnapshots.length, 1);
+  assert.equal(world.signalSnapshots[0].calls.filter((c) => c.args.join(" ") === "kill-server").length, 0);
+});
+
+test("a refusal of a non-emulator device after this run started the adb server stops the server", async () => {
+  const world = makeWorld({ devices: "HTC123\tdevice\n", startServerStderr: () => ADB_SERVER_STARTED });
+  assert.equal(await world.runRun(), 2);
+  assert.equal(world.callsTo("kill-server").length, 1);
+  const adbCalls = world.calls.filter((c) => c.command === ADB);
+  assert.deepEqual(adbCalls[adbCalls.length - 1].args, ["kill-server"], "the server is stopped last");
+});
+
+test("a refusal of a non-emulator device with the adb server already running leaves it alone", async () => {
+  const world = makeWorld({ devices: "HTC123\tdevice\n", startServerStderr: () => "" });
+  assert.equal(await world.runRun(), 2);
+  assert.equal(world.callsTo("kill-server").length, 0);
+});
+
+test("an unreadable wm density after this run started the adb server stops the server, exit 2", async () => {
+  const world = makeWorld({ ...emulatorWorld, wmDensityCode: 1, startServerStderr: () => ADB_SERVER_STARTED, env: { ONLY: "Home", WIDTHS: "360" } });
+  assert.equal(await world.runRun(), 2);
+  assert.equal(world.callsTo("kill-server").length, 1);
+});
+
+test("an unreadable wm density with the adb server already running leaves it alone, exit 2", async () => {
+  const world = makeWorld({ ...emulatorWorld, wmDensityCode: 1, startServerStderr: () => "", env: { ONLY: "Home", WIDTHS: "360" } });
+  assert.equal(await world.runRun(), 2);
+  assert.equal(world.callsTo("kill-server").length, 0);
+});
+
+test("a server started by the adb devices retry is stopped at the end; the upfront call found it running", async () => {
+  const shots = mkdtempSync(join(osTmpdir(), "android-runner-test-"));
+  const world = makeWorld({
+    ...emulatorWorld,
+    devicesCodeFor: (n) => (n === 1 ? 1 : 0),
+    startServerStderr: (n) => (n === 2 ? ADB_SERVER_STARTED : ""),
+    env: { ONLY: "Home", WIDTHS: "360", SHOTS: shots },
+  });
+  assert.equal(await world.runRun(), 0);
+  assert.equal(world.callsTo("start-server").length, 2);
+  assert.equal(world.callsTo("kill-server").length, 1);
+});
+
+test("a kill-server that fails is logged, never thrown, and the run keeps its exit code", async () => {
+  const shots = mkdtempSync(join(osTmpdir(), "android-runner-test-"));
+  const world = makeWorld({
+    ...emulatorWorld,
+    startServerStderr: () => ADB_SERVER_STARTED,
+    killServerCode: 1,
+    env: { ONLY: "Home", WIDTHS: "360", SHOTS: shots },
+  });
+  assert.equal(await world.runRun(), 0);
+  assert.equal(world.callsTo("kill-server").length, 1);
+  assert.ok(world.errors.join("\n").includes("kill-server"), world.errors.join("\n"));
 });
 
 // --- A reused emulator waits for sys.boot_completed before anything else touches it ---
@@ -1904,8 +2049,9 @@ test("a reused emulator that never reports sys.boot_completed=1 exits 2 before c
   assert.equal(code, 2);
   assert.ok(world.errors.join("\n").includes("sys.boot_completed"));
   assert.ok(world.callsTo("getprop").length >= 1);
-  // The boot check is the first device interaction after the listing.
-  assert.equal(world.calls[1].args.join(" "), "-s emulator-5554 shell getprop sys.boot_completed");
+  // The boot check is the first device interaction after the listing (the upfront start-server comes before it).
+  const listing = world.calls.findIndex((c) => c.args[0] === "devices");
+  assert.equal(world.calls[listing + 1].args.join(" "), "-s emulator-5554 shell getprop sys.boot_completed");
   assert.equal(world.callsTo("install").length, 0);
   assert.equal(world.callsTo("am start").length, 0);
   assert.equal(world.callsTo("wm density").filter((c) => /wm density \d+|wm density reset/.test(c.args.join(" "))).length, 0);
