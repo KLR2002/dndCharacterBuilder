@@ -556,10 +556,10 @@ export const SpellsTab: React.FC = () => {
     const ability = profile.ability;
 
     return (
-      <Card key={copy.key} style={[styles.innateCard, { borderColor: theme.accent, backgroundColor: theme.surface }]}>
+      <Card key={copy.key} style={[styles.innateCard, { borderColor: theme.accentHover, backgroundColor: theme.surface }]}>
         <View style={{ flexDirection: "row", flexWrap: "wrap", justifyContent: "space-between", alignItems: "center", gap: 8, marginBottom: 8 }}>
           <View style={{ flex: 1, minWidth: 0, paddingRight: 8 }}>
-            <Text style={[styles.sectionTitle, { color: theme.accent }]}>
+            <Text style={[styles.sectionTitle, { color: theme.accentHover }]}>
               {profile.title.toUpperCase()}
             </Text>
             <Text style={{ color: theme.textSecondary, fontSize: 12, marginTop: 2 }}>
@@ -585,7 +585,7 @@ export const SpellsTab: React.FC = () => {
           <View style={[styles.innateStatsRow, { backgroundColor: theme.surfaceHighlight, borderColor: theme.border }]}>
             <View style={styles.innateStatCol}>
               <Text style={[styles.statLabel, { color: theme.textMuted }]}>ABILITY</Text>
-              <Text style={[styles.innateStatVal, { color: theme.accent }]}>
+              <Text style={[styles.innateStatVal, { color: theme.accentHover }]}>
                 {ability.toUpperCase()}
               </Text>
             </View>
@@ -683,11 +683,11 @@ export const SpellsTab: React.FC = () => {
                       style={[
                         styles.slotCheckbox,
                         {
-                          borderColor: theme.accent,
+                          borderColor: theme.accentHover,
                           backgroundColor: isUsed ? theme.accent : "transparent",
                         },
                       ]}>
-                      {isUsed && <Ionicons name="checkmark" size={14} color="#fff" />}
+                      {isUsed && <Ionicons name="checkmark" size={14} color={theme.accentText} />}
                     </TouchableOpacity>
                   </View>
                 )}
@@ -710,12 +710,12 @@ export const SpellsTab: React.FC = () => {
   /** The locked card of a source's plain prepared spells: each spell carries the lock, with no counter and no ability row. */
   const renderLockedCards = () =>
     lockedCards.map((card, index) => (
-      <Card key={`locked_${index}`} style={[styles.innateCard, { borderColor: theme.accent, backgroundColor: theme.surface }]}>
-        <Text style={[styles.sectionTitle, { color: theme.accent }]}>{card.title.toUpperCase()}</Text>
+      <Card key={`locked_${index}`} style={[styles.innateCard, { borderColor: theme.accentHover, backgroundColor: theme.surface }]}>
+        <Text style={[styles.sectionTitle, { color: theme.accentHover }]}>{card.title.toUpperCase()}</Text>
         <View style={{ marginTop: 8, gap: 6 }}>
           {card.spells.map((spell) => (
             <View key={`locked_${card.title}_${spell.name}`} style={[styles.innateSpellRow, { borderBottomColor: theme.border }]}>
-              <Ionicons name="lock-closed" size={16} color={theme.accent} />
+              <Ionicons name="lock-closed" size={16} color={theme.accentHover} />
               <TouchableOpacity
                 activeOpacity={0.7}
                 onPress={() => showSpellDetail({ name: spell.name, source: spell.source, details: spell })}
@@ -744,10 +744,10 @@ export const SpellsTab: React.FC = () => {
   const renderAtWillInvocationsCard = () => {
     if (atWillInvocations.length === 0) return null;
     return (
-      <Card style={[styles.innateCard, { borderColor: theme.accent, backgroundColor: theme.surface, marginBottom: 16 }]}>
+      <Card style={[styles.innateCard, { borderColor: theme.accentHover, backgroundColor: theme.surface, marginBottom: 16 }]}>
         <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
           <View style={{ flex: 1, paddingRight: 8 }}>
-            <Text style={[styles.sectionTitle, { color: theme.accent }]}>
+            <Text style={[styles.sectionTitle, { color: theme.accentHover }]}>
               AT-WILL MAGIC (ELDRITCH INVOCATIONS)
             </Text>
             <Text style={{ color: theme.textSecondary, fontSize: 12, marginTop: 2 }}>
@@ -986,14 +986,14 @@ export const SpellsTab: React.FC = () => {
                   styles.profilePill,
                   {
                     backgroundColor: isSelected ? theme.accent : theme.surface,
-                    borderColor: isSelected ? theme.accent : theme.border,
+                    borderColor: isSelected ? theme.accentHover : theme.border,
                   },
                 ]}>
                 <Text
                   style={[
                     styles.profilePillText,
                     {
-                      color: isSelected ? "#fff" : theme.text,
+                      color: isSelected ? theme.accentText : theme.text,
                       fontWeight: isSelected ? "700" : "500",
                     },
                   ]}>
@@ -1009,7 +1009,7 @@ export const SpellsTab: React.FC = () => {
       <View style={styles.statsHeaderRow}>
         <View style={[styles.statBox, { backgroundColor: theme.surface, borderColor: theme.border }]}>
           <Text style={[styles.statLabel, { color: theme.textMuted }]}>SPELLCASTING</Text>
-          <Text style={[styles.statValue, { color: theme.accent }]}>{currentProfile.ability.toUpperCase()}</Text>
+          <Text style={[styles.statValue, { color: theme.accentHover }]}>{currentProfile.ability.toUpperCase()}</Text>
           <Text style={[styles.statSub, { color: theme.textSecondary }]}>{currentProfile.className}</Text>
         </View>
 
@@ -1028,10 +1028,10 @@ export const SpellsTab: React.FC = () => {
 
       {/* Eldritch Knight Rules Guidance Banner */}
       {isEldritchKnight && (
-        <Card style={{ borderColor: theme.accent, backgroundColor: theme.surfaceHighlight, gap: 4, marginBottom: 12 }}>
+        <Card style={{ borderColor: theme.accentHover, backgroundColor: theme.surfaceHighlight, gap: 4, marginBottom: 12 }}>
           <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-            <Ionicons name="information-circle-outline" size={18} color={theme.accent} />
-            <Text style={{ color: theme.accent, fontWeight: "700", fontSize: 13 }}>
+            <Ionicons name="information-circle-outline" size={18} color={theme.accentHover} />
+            <Text style={{ color: theme.accentHover, fontWeight: "700", fontSize: 13 }}>
               Eldritch Knight Spellcasting (PHB)
             </Text>
           </View>
@@ -1043,10 +1043,10 @@ export const SpellsTab: React.FC = () => {
 
       {/* Arcane Trickster Rules Guidance Banner */}
       {isArcaneTrickster && (
-        <Card style={{ borderColor: theme.accent, backgroundColor: theme.surfaceHighlight, gap: 4, marginBottom: 12 }}>
+        <Card style={{ borderColor: theme.accentHover, backgroundColor: theme.surfaceHighlight, gap: 4, marginBottom: 12 }}>
           <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-            <Ionicons name="information-circle-outline" size={18} color={theme.accent} />
-            <Text style={{ color: theme.accent, fontWeight: "700", fontSize: 13 }}>
+            <Ionicons name="information-circle-outline" size={18} color={theme.accentHover} />
+            <Text style={{ color: theme.accentHover, fontWeight: "700", fontSize: 13 }}>
               Arcane Trickster Spellcasting (PHB)
             </Text>
           </View>
@@ -1058,10 +1058,10 @@ export const SpellsTab: React.FC = () => {
 
       {/* Monk Ki Spellcasting Guidance Banner */}
       {currentProfile.className === "Monk" && (
-        <Card style={{ borderColor: theme.accent, backgroundColor: theme.surfaceHighlight, gap: 4, marginBottom: 12 }}>
+        <Card style={{ borderColor: theme.accentHover, backgroundColor: theme.surfaceHighlight, gap: 4, marginBottom: 12 }}>
           <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-            <Ionicons name="sparkles" size={18} color={theme.accent} />
-            <Text style={{ color: theme.accent, fontWeight: "700", fontSize: 13 }}>
+            <Ionicons name="sparkles" size={18} color={theme.accentHover} />
+            <Text style={{ color: theme.accentHover, fontWeight: "700", fontSize: 13 }}>
               Monk Ki Spellcasting ({currentProfile.subclass || "Monastic Tradition"})
             </Text>
           </View>
@@ -1098,10 +1098,10 @@ export const SpellsTab: React.FC = () => {
 
       {/* Sorcerer Metamagic & Sorcery Points Section (Sorcerer Level >= 3) */}
       {hasMetamagicAccess && (
-        <Card style={[styles.sorceryCard, { borderColor: theme.accent }]}>
+        <Card style={[styles.sorceryCard, { borderColor: theme.accentHover }]}>
           <View style={styles.cardHeaderRow}>
             <View style={styles.cardTitleBlock}>
-              <Text style={[styles.sectionTitle, { color: theme.accent }]}>SORCERY POINTS</Text>
+              <Text style={[styles.sectionTitle, { color: theme.accentHover }]}>SORCERY POINTS</Text>
               <Text style={{ color: theme.textSecondary, fontSize: 13, marginTop: 2 }}>
                 {currentSorceryPoints} / {maxSorceryPoints} Available (Long Rest reset)
               </Text>
@@ -1147,8 +1147,8 @@ export const SpellsTab: React.FC = () => {
                         content: opt?.desc || "",
                       })
                     }
-                    style={[styles.metaChip, { backgroundColor: theme.surfaceHighlight, borderColor: theme.accent }]}>
-                    <Text style={{ color: theme.accent, fontSize: 12, fontWeight: "600" }}>{m}</Text>
+                    style={[styles.metaChip, { backgroundColor: theme.surfaceHighlight, borderColor: theme.accentHover }]}>
+                    <Text style={{ color: theme.accentHover, fontSize: 12, fontWeight: "600" }}>{m}</Text>
                   </TouchableOpacity>
                 );
               })}
@@ -1185,7 +1185,7 @@ export const SpellsTab: React.FC = () => {
                       backgroundColor: isUsed ? "#9333ea" : "transparent",
                     },
                   ]}>
-                  {isUsed && <Ionicons name="checkmark" size={14} color="#fff" />}
+                  {isUsed && <Ionicons name="checkmark" size={14} color={theme.accentText} />}
                 </TouchableOpacity>
               );
             })}
@@ -1332,11 +1332,11 @@ export const SpellsTab: React.FC = () => {
                           style={[
                             styles.slotCheckbox,
                             {
-                              borderColor: theme.accent,
+                              borderColor: theme.accentHover,
                               backgroundColor: isUsed ? theme.accent : "transparent",
                             },
                           ]}>
-                          {isUsed && <Ionicons name="checkmark" size={14} color="#fff" />}
+                          {isUsed && <Ionicons name="checkmark" size={14} color={theme.accentText} />}
                         </TouchableOpacity>
                       );
                     })}
@@ -1519,7 +1519,7 @@ export const SpellsTab: React.FC = () => {
                           <Ionicons
                             name="lock-closed"
                             size={16}
-                            color={theme.accent}
+                            color={theme.accentHover}
                           />
                         </View>
                       ) : (
@@ -1529,7 +1529,7 @@ export const SpellsTab: React.FC = () => {
                           <Ionicons
                             name={isPrepared ? "radio-button-on" : "radio-button-off"}
                             size={18}
-                            color={isPrepared ? theme.accent : theme.textMuted}
+                            color={isPrepared ? theme.accentHover : theme.textMuted}
                           />
                         </TouchableOpacity>
                       )
@@ -1707,8 +1707,8 @@ export const SpellsTab: React.FC = () => {
 
             {/* Third-Casters Guidance & Quick School Filters */}
             {(isEldritchKnight || isArcaneTrickster) && (
-              <View style={{ backgroundColor: theme.surfaceHighlight, padding: 8, borderRadius: 6, marginVertical: 6, borderLeftWidth: 3, borderLeftColor: theme.accent }}>
-                <Text style={{ color: theme.accent, fontSize: 11, fontWeight: "700" }}>
+              <View style={{ backgroundColor: theme.surfaceHighlight, padding: 8, borderRadius: 6, marginVertical: 6, borderLeftWidth: 3, borderLeftColor: theme.accentHover }}>
+                <Text style={{ color: theme.accentHover, fontSize: 11, fontWeight: "700" }}>
                   {isEldritchKnight ? "Eldritch Knight Spell Restrictions" : "Arcane Trickster Spell Restrictions"}
                 </Text>
                 <Text style={{ color: theme.textSecondary, fontSize: 11, marginTop: 2, lineHeight: 15 }}>
@@ -1729,7 +1729,7 @@ export const SpellsTab: React.FC = () => {
                       backgroundColor: pickerSchoolFilter === null ? theme.accent : theme.surfaceHighlight,
                     },
                   ]}>
-                  <Text style={{ color: "#fff", fontSize: 11, fontWeight: "600" }}>All Schools</Text>
+                  <Text style={{ color: pickerSchoolFilter === null ? theme.accentText : "#fff", fontSize: 11, fontWeight: "600" }}>All Schools</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   onPress={() => setPickerSchoolFilter("restricted")}
@@ -1739,7 +1739,7 @@ export const SpellsTab: React.FC = () => {
                       backgroundColor: pickerSchoolFilter === "restricted" ? theme.accent : theme.surfaceHighlight,
                     },
                   ]}>
-                  <Text style={{ color: "#fff", fontSize: 11, fontWeight: "600" }}>Abjuration &amp; Evocation</Text>
+                  <Text style={{ color: pickerSchoolFilter === "restricted" ? theme.accentText : "#fff", fontSize: 11, fontWeight: "600" }}>Abjuration &amp; Evocation</Text>
                 </TouchableOpacity>
               </View>
             )}
@@ -1754,7 +1754,7 @@ export const SpellsTab: React.FC = () => {
                       backgroundColor: pickerSchoolFilter === null ? theme.accent : theme.surfaceHighlight,
                     },
                   ]}>
-                  <Text style={{ color: "#fff", fontSize: 11, fontWeight: "600" }}>All Schools</Text>
+                  <Text style={{ color: pickerSchoolFilter === null ? theme.accentText : "#fff", fontSize: 11, fontWeight: "600" }}>All Schools</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   onPress={() => setPickerSchoolFilter("restricted")}
@@ -1764,7 +1764,7 @@ export const SpellsTab: React.FC = () => {
                       backgroundColor: pickerSchoolFilter === "restricted" ? theme.accent : theme.surfaceHighlight,
                     },
                   ]}>
-                  <Text style={{ color: "#fff", fontSize: 11, fontWeight: "600" }}>Enchantment &amp; Illusion</Text>
+                  <Text style={{ color: pickerSchoolFilter === "restricted" ? theme.accentText : "#fff", fontSize: 11, fontWeight: "600" }}>Enchantment &amp; Illusion</Text>
                 </TouchableOpacity>
               </View>
             )}
@@ -1783,7 +1783,7 @@ export const SpellsTab: React.FC = () => {
                     backgroundColor: selectedSpellLevel === null ? theme.accent : theme.surfaceHighlight,
                   },
                 ]}>
-                <Text style={{ color: "#fff", fontSize: 12, fontWeight: "600" }}>All Levels</Text>
+                <Text style={{ color: selectedSpellLevel === null ? theme.accentText : "#fff", fontSize: 12, fontWeight: "600" }}>All Levels</Text>
               </TouchableOpacity>
               {LEVEL_NAMES.slice(0, currentProfile.maxSpellLevel + 1).map((name, idx) => (
                 <TouchableOpacity
@@ -1795,7 +1795,7 @@ export const SpellsTab: React.FC = () => {
                       backgroundColor: selectedSpellLevel === idx ? theme.accent : theme.surfaceHighlight,
                     },
                   ]}>
-                  <Text style={{ color: "#fff", fontSize: 12, fontWeight: "600" }}>{name}</Text>
+                  <Text style={{ color: selectedSpellLevel === idx ? theme.accentText : "#fff", fontSize: 12, fontWeight: "600" }}>{name}</Text>
                 </TouchableOpacity>
               ))}
             </ScrollView>
@@ -1975,14 +1975,14 @@ export const SpellsTab: React.FC = () => {
                     style={[
                       styles.metaOptionCard,
                       {
-                        backgroundColor: isChosen ? theme.accent + "20" : theme.surfaceHighlight,
-                        borderColor: isChosen ? theme.accent : theme.border,
+                        backgroundColor: isChosen ? theme.accentGlow : theme.surfaceHighlight,
+                        borderColor: isChosen ? theme.accentHover : theme.border,
                         opacity: isMaxReached ? 0.5 : 1,
                       },
                     ]}>
                     <View style={{ flex: 1 }}>
                       <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-                        <Text style={{ color: isChosen ? theme.accent : theme.text, fontWeight: "700" }}>
+                        <Text style={{ color: isChosen ? theme.accentHover : theme.text, fontWeight: "700" }}>
                           {opt.name}
                         </Text>
                         <Badge label={opt.cost} size="sm" variant="secondary" />
@@ -1994,7 +1994,7 @@ export const SpellsTab: React.FC = () => {
                     <Ionicons
                       name={isChosen ? "checkbox" : "square-outline"}
                       size={20}
-                      color={isChosen ? theme.accent : theme.textMuted}
+                      color={isChosen ? theme.accentHover : theme.textMuted}
                     />
                   </TouchableOpacity>
                 );
@@ -2045,7 +2045,7 @@ export const SpellsTab: React.FC = () => {
                     backgroundColor: inscribeLevelFilter === null ? theme.accent : theme.surfaceHighlight,
                   },
                 ]}>
-                <Text style={{ color: "#fff", fontSize: 12, fontWeight: "600" }}>All Levels (1-{maxRitualLevel})</Text>
+                <Text style={{ color: inscribeLevelFilter === null ? theme.accentText : "#fff", fontSize: 12, fontWeight: "600" }}>All Levels (1-{maxRitualLevel})</Text>
               </TouchableOpacity>
               {Array.from({ length: maxRitualLevel }).map((_, idx) => {
                 const lvl = idx + 1;
@@ -2060,7 +2060,7 @@ export const SpellsTab: React.FC = () => {
                         backgroundColor: inscribeLevelFilter === lvl ? theme.accent : theme.surfaceHighlight,
                       },
                     ]}>
-                    <Text style={{ color: "#fff", fontSize: 12, fontWeight: "600" }}>Level {lvl}</Text>
+                    <Text style={{ color: inscribeLevelFilter === lvl ? theme.accentText : "#fff", fontSize: 12, fontWeight: "600" }}>Level {lvl}</Text>
                   </TouchableOpacity>
                 );
               })}

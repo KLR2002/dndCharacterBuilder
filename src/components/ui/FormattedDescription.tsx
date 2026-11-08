@@ -154,7 +154,7 @@ export const FormattedDescription: React.FC<FormattedDescriptionProps> = ({ cont
         if (block.type === "paragraph") {
           return (
             <Text key={idx} style={[styles.paragraph, { color: theme.textSecondary }]}>
-              {renderInlineFormattedText(block.text, theme.text, theme.accent)}
+              {renderInlineFormattedText(block.text, theme.text, theme.accentHover)}
             </Text>
           );
         }
@@ -186,7 +186,7 @@ export const FormattedDescription: React.FC<FormattedDescriptionProps> = ({ cont
                     >
                       {block.headers.map((h, hIdx) => (
                         <View key={hIdx} style={[styles.tableCell, { borderRightColor: theme.borderLight }]}>
-                          <Text style={[styles.tableHeaderText, { color: theme.accent }]}>{h}</Text>
+                          <Text style={[styles.tableHeaderText, { color: theme.accentHover }]}>{h}</Text>
                         </View>
                       ))}
                     </View>

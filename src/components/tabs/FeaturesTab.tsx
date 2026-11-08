@@ -486,7 +486,7 @@ export const FeaturesTab: React.FC = () => {
                     </TouchableOpacity>
 
                     <View style={styles.counterCountBox}>
-                      <Text style={[styles.counterCurrent, { color: c.current > 0 ? theme.accent : theme.danger }]}>
+                      <Text style={[styles.counterCurrent, { color: c.current > 0 ? theme.accentHover : theme.danger }]}>
                         {isUnlimited ? "∞" : c.current}
                       </Text>
                       <Text style={{ color: theme.textSecondary, fontSize: 13 }}>
@@ -738,7 +738,7 @@ export const FeaturesTab: React.FC = () => {
                     borderColor: theme.border,
                   },
                 ]}>
-                <Text style={{ color: "#fff", fontSize: 13, fontWeight: "600" }}>Short Rest</Text>
+                <Text style={{ color: newCounterReset === "short" ? theme.accentText : "#fff", fontSize: 13, fontWeight: "600" }}>Short Rest</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 onPress={() => setNewCounterReset("long")}
@@ -749,7 +749,7 @@ export const FeaturesTab: React.FC = () => {
                     borderColor: theme.border,
                   },
                 ]}>
-                <Text style={{ color: "#fff", fontSize: 13, fontWeight: "600" }}>Long Rest</Text>
+                <Text style={{ color: newCounterReset === "long" ? theme.accentText : "#fff", fontSize: 13, fontWeight: "600" }}>Long Rest</Text>
               </TouchableOpacity>
             </View>
 

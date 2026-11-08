@@ -64,12 +64,12 @@ export const CustomizeOriginCard: React.FC<CustomizeOriginCardProps> = ({ charac
                     styles.choiceChip,
                     {
                       backgroundColor: selected ? theme.accentGlow : theme.surfaceHighlight,
-                      borderColor: selected ? theme.accent : theme.border,
+                      borderColor: selected ? theme.accentHover : theme.border,
                       opacity: blocked ? 0.35 : 1,
                     },
                   ]}
                 >
-                  <Text style={{ color: selected ? theme.accent : theme.textSecondary, fontWeight: "700", fontSize: 13 }}>
+                  <Text style={{ color: selected ? theme.accentHover : theme.textSecondary, fontWeight: "700", fontSize: 13 }}>
                     {ABILITY_LABELS[key]}
                   </Text>
                 </TouchableOpacity>

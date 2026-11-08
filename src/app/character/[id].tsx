@@ -148,7 +148,7 @@ export default function CharacterSheetScreen() {
                   returnKeyType="done"
                   maxLength={60}
                   accessibilityLabel="Character name"
-                  style={[styles.charName, styles.charNameInput, { color: theme.text, borderBottomColor: theme.accent }, isCompact && { fontSize: 14 }]}
+                  style={[styles.charName, styles.charNameInput, { color: theme.text, borderBottomColor: theme.accentHover }, isCompact && { fontSize: 14 }]}
                 />
               ) : (
                 <TouchableOpacity
@@ -192,7 +192,7 @@ export default function CharacterSheetScreen() {
             </TouchableOpacity>
 
             <View style={[styles.quickHpBadge, { borderColor: theme.border, backgroundColor: theme.surfaceHighlight }]}>
-              <Ionicons name="shield-outline" size={13} color={theme.accent} />
+              <Ionicons name="shield-outline" size={13} color={theme.accentHover} />
               <Text style={[styles.quickHpText, { color: theme.text }]}>
                 {evaluated.armorClass.ac}
               </Text>
@@ -206,7 +206,7 @@ export default function CharacterSheetScreen() {
                 { backgroundColor: theme.surfaceHighlight, borderColor: theme.border },
                 isCompact && { width: 32, height: 32 }
               ]}>
-              <Ionicons name="bed-outline" size={18} color={theme.accent} />
+              <Ionicons name="bed-outline" size={18} color={theme.accentHover} />
             </TouchableOpacity>
           </View>
         </View>
@@ -232,17 +232,17 @@ export default function CharacterSheetScreen() {
                   style={[
                     styles.tabItem,
                     isCompact && { paddingHorizontal: 10 },
-                    isActive && [styles.activeTabItem, { borderBottomColor: theme.accent }],
+                    isActive && [styles.activeTabItem, { borderBottomColor: theme.accentHover }],
                   ]}>
                   <Ionicons
                     name={tab.icon}
                     size={16}
-                    color={isActive ? theme.accent : theme.textSecondary}
+                    color={isActive ? theme.accentHover : theme.textSecondary}
                   />
                   <Text
                     style={[
                       styles.tabLabel,
-                      { color: isActive ? theme.accent : theme.textSecondary, fontWeight: isActive ? "700" : "500" },
+                      { color: isActive ? theme.accentHover : theme.textSecondary, fontWeight: isActive ? "700" : "500" },
                       isCompact && { fontSize: 12 }
                     ]}>
                     {tab.label}
