@@ -292,6 +292,44 @@ describe("Changing the ancestry or the background", () => {
   });
 });
 
+describe("Finishing a step moves the current step only forward", () => {
+  test("finishing an earlier step the player went back to keeps the later current step", () => {
+    const fighter = finishedFighter();
+    assert.equal(currentCreationStep(fighter, flowOpts), "equipment");
+
+    const finished = finishCreationStep(fighter, "class", flowOpts);
+    assert.equal(currentCreationStep(finished, flowOpts), "equipment", "finishing Class must not move the draft back from Equipment");
+
+    const byId = new Map(creationSteps(finished, flowOpts).map((step) => [step.id, step]));
+    assert.equal(byId.get("race")?.status, "finished", "steps before the current step stay finished, not locked again");
+    assert.equal(byId.get("background")?.status, "finished");
+    assert.equal(byId.get("details")?.status, "locked", "steps after the current step stay locked");
+  });
+
+  test("a step needing attention stays the current step's blocker when an earlier step is finished", () => {
+    const fighter = finishedFighter();
+    const flagged: Character = {
+      ...fighter,
+      creationProgress: { currentStep: "classChoices", needsAttention: ["equipment"] },
+    };
+    const finished = finishCreationStep(flagged, "race", flowOpts);
+    assert.equal(currentCreationStep(finished, flowOpts), "classChoices", "the flagged current step stays until it is finished");
+    assert.equal(creationStepNeedsAttention(finished, "equipment"), true);
+  });
+
+  test("finishing the current step walks forward to Review and finishing Review finishes the character", () => {
+    let draft = finishedFighter();
+    assert.equal(currentCreationStep(draft, flowOpts), "equipment");
+    draft = finishCreationStep(draft, "equipment", flowOpts);
+    assert.equal(currentCreationStep(draft, flowOpts), "details");
+    draft = finishCreationStep(draft, "details", flowOpts);
+    assert.equal(currentCreationStep(draft, flowOpts), "review");
+    assert.equal(isCreationStepValid(draft, "review", flowOpts), true);
+    draft = finishCreationStep(draft, "review", flowOpts);
+    assert.equal(draft.creationProgress, undefined, "finishing Review leaves no creation progress");
+  });
+});
+
 describe("The attention marks survive a save round-trip", () => {
   const roundTrip = (raw: object) =>
     migrateCharacter(
