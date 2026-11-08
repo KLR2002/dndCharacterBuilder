@@ -8,7 +8,7 @@ import { applyAncestrySelection } from "../src/rules/ancestryEngine.ts";
 import { applyAsiSelection, removeAsiSelection } from "../src/rules/leveling.ts";
 import { applyOriginFeat, removeOriginFeat } from "../src/rules/feats.ts";
 import { isKnown, learnSpell } from "../src/rules/characterSpells.ts";
-import type { AsiSelection, Character, CharacterClass } from "../src/types/character.ts";
+import type { AsiSelection, CharacterClass } from "../src/types/character.ts";
 import type { ClassData, FeatData, SpellData } from "../src/types/dnd5e.ts";
 import { BACKGROUND_FEAT_SOURCE } from "../src/constants/rules.ts";
 import { inMemoryCompendium, makeChar } from "./testUtils.ts";

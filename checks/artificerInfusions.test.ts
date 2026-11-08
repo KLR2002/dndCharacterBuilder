@@ -8,7 +8,6 @@ import {
   artificerInfusionChoices,
   getKnownInfusions,
   getMaxActiveInfusions,
-  hasInfusion,
   isInfusionChoiceId,
   pickRuleChoice,
   subclassRuleChoices,

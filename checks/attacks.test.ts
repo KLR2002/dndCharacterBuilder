@@ -6,7 +6,6 @@ import { fixedGrant, wardenClass } from "./proficiencySheetFixture.ts";
 import {
   getWeaponAttacks,
   checkDualWielding,
-  type WeaponAttackOption,
 } from "../src/rules/attacks.ts";
 import type { CharacterClass, InventoryItem } from "../src/types/character.ts";
 

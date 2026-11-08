@@ -13,7 +13,6 @@ import {
   isCompendiumIntegrated,
   getRaces,
   getClasses,
-  getSpells,
   findClass,
 } from "../src/services/dataService.ts";
 import { revertToSrd } from "../src/services/compendium.ts";
