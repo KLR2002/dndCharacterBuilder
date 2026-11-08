@@ -832,7 +832,7 @@ export const SpellsTab: React.FC = () => {
           <Ionicons name="sparkles-outline" size={48} color={theme.textMuted} style={{ marginBottom: 12 }} />
           <Text style={[styles.emptyTitle, { color: theme.text }]}>No Spellcasting Features</Text>
           <Text style={[styles.emptyText, { color: theme.textSecondary }]}>
-            This character does not currently have any spellcasting classes or features. Add levels in a spellcasting class (such as Wizard, Cleric, Sorcerer, Bard, Druid, Warlock, Paladin, Ranger, or a spellcasting archetype like Eldritch Knight or Arcane Trickster) in the Builder tab to view and manage spells.
+            This character does not currently have any spellcasting classes or features. Add levels in a spellcasting class (such as Wizard, Cleric, Sorcerer, Bard, Druid, Warlock, Paladin, Ranger, or a spellcasting archetype like Eldritch Knight or Arcane Trickster) in the Builder to view and manage spells.
           </Text>
         </Card>
       </ScrollView>
@@ -1278,7 +1278,7 @@ export const SpellsTab: React.FC = () => {
                       </TouchableOpacity>
                     ) : (
                       <Text style={{ color: theme.textMuted, fontSize: 12, fontStyle: "italic" }}>
-                        No spell selected. Choose in the Builder tab.
+                        No spell selected. Choose in the Builder.
                       </Text>
                     )}
                   </View>
