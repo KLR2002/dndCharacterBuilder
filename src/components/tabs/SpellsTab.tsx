@@ -1448,7 +1448,7 @@ export const SpellsTab: React.FC = () => {
       )}
 
       {/* Known / Prepared Spells Header */}
-      <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+      <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 12, gap: 8 }}>
         <View style={{ flex: 1, minWidth: 0 }}>
           <Text style={[styles.sectionTitle, { color: theme.text }]}>
             {currentProfile.className === "Monk"
