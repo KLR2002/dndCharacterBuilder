@@ -169,7 +169,7 @@ export const ActiveInfusionsSection: React.FC = () => {
     <Card style={styles.card}>
       <View style={styles.header}>
         <View style={styles.titleRow}>
-          <Ionicons name="flash" size={18} color={theme.accent} />
+          <Ionicons name="flash" size={18} color={theme.accentHover} />
           <Text style={[styles.title, { color: theme.text }]}>Active Infusions</Text>
         </View>
         <Badge
@@ -205,7 +205,7 @@ export const ActiveInfusionsSection: React.FC = () => {
                   styles.infusionRow,
                   {
                     backgroundColor: isActive ? theme.surfaceRaised : theme.surfaceHighlight,
-                    borderColor: isActive ? theme.accent : theme.border,
+                    borderColor: isActive ? theme.accentHover : theme.border,
                     flexDirection: isCompact ? "column" : "row",
                     alignItems: isCompact ? "flex-start" : "center",
                   },
@@ -219,7 +219,7 @@ export const ActiveInfusionsSection: React.FC = () => {
                     )}
                   </View>
                   {activeEntry?.targetItemName && !isReplicated && (
-                    <Text style={[styles.targetLabel, { color: theme.accent }]}>
+                    <Text style={[styles.targetLabel, { color: theme.accentHover }]}>
                       Infused: {activeEntry.targetItemName}
                     </Text>
                   )}
@@ -312,7 +312,7 @@ export const ActiveInfusionsSection: React.FC = () => {
                         styles.itemOption,
                         {
                           backgroundColor: theme.surfaceHighlight,
-                          borderColor: item.isInfused ? theme.accent : theme.border,
+                          borderColor: item.isInfused ? theme.accentHover : theme.border,
                           minHeight: 44,
                           opacity: isMundane ? 1 : 0.6,
                         },

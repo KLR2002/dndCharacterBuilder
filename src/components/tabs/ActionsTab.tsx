@@ -81,17 +81,17 @@ export const ActionsTab: React.FC = () => {
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       {/* Attack Count Banner */}
-      <Card style={[styles.bannerCard, { borderColor: theme.accent }]}>
+      <Card style={[styles.bannerCard, { borderColor: theme.accentHover }]}>
         <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
           <View style={{ flex: 1, minWidth: 0 }}>
-            <Text style={[styles.bannerTitle, { color: theme.accent }]}>
+            <Text style={[styles.bannerTitle, { color: theme.accentHover }]}>
               ATTACK ACTION ({extraAttackCount} {extraAttackCount === 1 ? "Attack" : "Attacks"} per Action)
             </Text>
             <Text style={{ color: theme.textSecondary, fontSize: 12 }}>
               Proficiency Bonus +{profBonus} • Str Mod {formatModifier(modifiers.str)} • Dex Mod {formatModifier(modifiers.dex)}
             </Text>
           </View>
-          <Ionicons name="flash" size={24} color={theme.accent} />
+          <Ionicons name="flash" size={24} color={theme.accentHover} />
         </View>
       </Card>
 
@@ -209,7 +209,7 @@ export const ActionsTab: React.FC = () => {
 
       {/* Sneak Attack Action Card */}
       {sneakAttackDice && (
-        <Card style={[styles.sneakAttackCard, { borderColor: theme.accent, borderWidth: 1, backgroundColor: theme.surface }]}>
+        <Card style={[styles.sneakAttackCard, { borderColor: theme.accentHover, borderWidth: 1, backgroundColor: theme.surface }]}>
           <TouchableOpacity
             onPress={() =>
               setDetailModal({
@@ -222,7 +222,7 @@ export const ActionsTab: React.FC = () => {
             style={{ padding: 12 }}>
             <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
               <View style={{ flexDirection: "row", alignItems: "center", gap: 10, flex: 1 }}>
-                <Ionicons name="skull-outline" size={22} color={theme.accent} />
+                <Ionicons name="skull-outline" size={22} color={theme.accentHover} />
                 <View style={{ flex: 1 }}>
                   <Text style={{ color: theme.text, fontWeight: "700", fontSize: 14 }}>
                     Sneak Attack ({sneakAttackDice})
@@ -283,11 +283,11 @@ export const ActionsTab: React.FC = () => {
           <Text style={[styles.sectionHeading, { color: theme.textSecondary }]}>
             KI SPELLCASTING PROFILE
           </Text>
-          <Card style={{ padding: 12, borderColor: theme.accent, backgroundColor: theme.surfaceHighlight, gap: 4 }}>
+          <Card style={{ padding: 12, borderColor: theme.accentHover, backgroundColor: theme.surfaceHighlight, gap: 4 }}>
             <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
               <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-                <Ionicons name="sparkles" size={16} color={theme.accent} />
-                <Text style={{ color: theme.accent, fontWeight: "700", fontSize: 13 }}>
+                <Ionicons name="sparkles" size={16} color={theme.accentHover} />
+                <Text style={{ color: theme.accentHover, fontWeight: "700", fontSize: 13 }}>
                   Monk Ki Spellcasting ({kiProfile.subclass || "Monastic Tradition"})
                 </Text>
               </View>
@@ -306,11 +306,11 @@ export const ActionsTab: React.FC = () => {
           <Text style={[styles.sectionHeading, { color: theme.textSecondary }]}>
             GIANT SPELLCASTING PROFILE
           </Text>
-          <Card style={{ padding: 12, borderColor: theme.accent, backgroundColor: theme.surfaceHighlight, gap: 4 }}>
+          <Card style={{ padding: 12, borderColor: theme.accentHover, backgroundColor: theme.surfaceHighlight, gap: 4 }}>
             <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
               <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-                <Ionicons name="sparkles" size={16} color={theme.accent} />
-                <Text style={{ color: theme.accent, fontWeight: "700", fontSize: 13 }}>
+                <Ionicons name="sparkles" size={16} color={theme.accentHover} />
+                <Text style={{ color: theme.accentHover, fontWeight: "700", fontSize: 13 }}>
                   Giant Power ({giantProfile.subclass || "Path of the Giant"})
                 </Text>
               </View>

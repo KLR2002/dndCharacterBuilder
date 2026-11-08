@@ -255,7 +255,7 @@ export const ClassProgressionSection: React.FC<
             style={[styles.bannerTitle, { color: theme.text, flexShrink: 1 }]}
           >
             Total Level:{" "}
-            <Text style={{ color: theme.accent }}>{totalLevel}</Text>
+            <Text style={{ color: theme.accentHover }}>{totalLevel}</Text>
           </Text>
           <Badge
             label={`Prof +${Math.floor((totalLevel - 1) / 4) + 2}`}
@@ -335,7 +335,7 @@ export const ClassProgressionSection: React.FC<
                   isSrd ? (
                     <Text
                       style={{
-                        color: theme.accent,
+                        color: theme.accentHover,
                         fontSize: 12,
                         flexWrap: "wrap",
                         fontWeight: "600",
@@ -363,7 +363,7 @@ export const ClassProgressionSection: React.FC<
                     >
                       <Text
                         style={{
-                          color: theme.accent,
+                          color: theme.accentHover,
                           fontSize: 12,
                           flexWrap: "wrap",
                           fontWeight: "600",
@@ -374,14 +374,14 @@ export const ClassProgressionSection: React.FC<
                       <Ionicons
                         name="pencil-outline"
                         size={13}
-                        color={theme.accent}
+                        color={theme.accentHover}
                       />
                     </TouchableOpacity>
                   )
                 ) : (
                   <Text
                     style={{
-                      color: theme.accent,
+                      color: theme.accentHover,
                       fontSize: 12,
                       marginTop: isPhone ? 0 : 2,
                       flexWrap: "wrap",
@@ -441,7 +441,7 @@ export const ClassProgressionSection: React.FC<
               key={`sub_${c.className}`}
               style={{
                 gap: 8,
-                borderColor: isChanging ? theme.accent : theme.warning,
+                borderColor: isChanging ? theme.accentHover : theme.warning,
               }}
             >
               <View
@@ -455,7 +455,7 @@ export const ClassProgressionSection: React.FC<
               >
                 <Text
                   style={{
-                    color: isChanging ? theme.accent : theme.warning,
+                    color: isChanging ? theme.accentHover : theme.warning,
                     fontWeight: "700",
                     fontSize: 14,
                     flexShrink: 1,
@@ -499,14 +499,14 @@ export const ClassProgressionSection: React.FC<
                               ? theme.accentGlow
                               : theme.surfaceHighlight,
                             borderColor: isCurrent
-                              ? theme.accent
+                              ? theme.accentHover
                               : theme.border,
                           },
                         ]}
                       >
                         <Text
                           style={{
-                            color: isCurrent ? theme.accent : theme.text,
+                            color: isCurrent ? theme.accentHover : theme.text,
                             fontSize: 12,
                             fontWeight: "600",
                           }}
@@ -634,7 +634,7 @@ export const ClassProgressionSection: React.FC<
                         style={{ color: theme.textMuted, fontSize: 11 }}
                       >
                         <Text
-                          style={{ color: theme.accent, fontWeight: "600" }}
+                          style={{ color: theme.accentHover, fontWeight: "600" }}
                         >
                           {opt.name}:{" "}
                         </Text>
@@ -807,7 +807,7 @@ export const ClassProgressionSection: React.FC<
                 >
                   <Text
                     style={{
-                      color: theme.accent,
+                      color: theme.accentHover,
                       fontSize: 11,
                       fontWeight: "700",
                     }}
@@ -904,7 +904,7 @@ export const ClassProgressionSection: React.FC<
                     styles.classRow,
                     {
                       backgroundColor: theme.surfaceHighlight,
-                      borderColor: isEnabled ? theme.accent : theme.border,
+                      borderColor: isEnabled ? theme.accentHover : theme.border,
                       gap: 8,
                     },
                   ]}
@@ -948,7 +948,7 @@ export const ClassProgressionSection: React.FC<
                     ) : (
                       <Text
                         style={{
-                          color: theme.accent,
+                          color: theme.accentHover,
                           fontSize: 11,
                           marginTop: 2,
                           fontWeight: "600",

@@ -43,13 +43,13 @@ export const GrantedSpellPicks: React.FC<GrantedSpellPicksProps> = ({ character,
                       styles.choiceChip,
                       {
                         backgroundColor: isSelected ? theme.accentGlow : theme.surfaceHighlight,
-                        borderColor: isSelected ? theme.accent : theme.border,
+                        borderColor: isSelected ? theme.accentHover : theme.border,
                       },
                     ]}
                   >
                     <Text
                       style={{
-                        color: isSelected ? theme.accent : theme.textSecondary,
+                        color: isSelected ? theme.accentHover : theme.textSecondary,
                         fontSize: 11,
                         fontWeight: isSelected ? "700" : "500",
                         flexShrink: 1,

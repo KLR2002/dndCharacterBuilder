@@ -32,7 +32,7 @@ export const InitiativeBreakdownModal: React.FC<InitiativeBreakdownModalProps> =
       ))}
       <View style={[styles.row, { borderBottomColor: theme.border }]}>
         <Text style={[styles.label, styles.totalLabel, { color: theme.text }]}>Total</Text>
-        <Text style={[styles.value, styles.totalValue, { color: theme.accent }]}>{formatModifier(total)}</Text>
+        <Text style={[styles.value, styles.totalValue, { color: theme.accentHover }]}>{formatModifier(total)}</Text>
       </View>
     </Modal>
   );

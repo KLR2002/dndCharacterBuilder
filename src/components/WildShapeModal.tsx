@@ -178,7 +178,7 @@ export const WildShapeModal: React.FC<WildShapeModalProps> = ({
                       <Text style={{ fontSize: 13, color: theme.text }}>Walk {inspectedBeast.speed.walk}ft</Text>
                     )}
                     {inspectedBeast.speed?.swim !== undefined && (
-                      <Text style={{ fontSize: 13, color: theme.accent, fontWeight: "600" }}>
+                      <Text style={{ fontSize: 13, color: theme.accentHover, fontWeight: "600" }}>
                         Swim {inspectedBeast.speed.swim}ft
                       </Text>
                     )}
@@ -211,7 +211,7 @@ export const WildShapeModal: React.FC<WildShapeModalProps> = ({
                       <Text style={{ fontSize: 15, color: theme.text, fontWeight: "700", marginTop: 2 }}>
                         {score}
                       </Text>
-                      <Text style={{ fontSize: 11, color: theme.accent }}>{formatMod(score)}</Text>
+                      <Text style={{ fontSize: 11, color: theme.accentHover }}>{formatMod(score)}</Text>
                     </View>
                   );
                 })}
@@ -402,9 +402,9 @@ export const WildShapeModal: React.FC<WildShapeModalProps> = ({
                 <Ionicons
                   name={favoritesOnly ? "star" : "star-outline"}
                   size={14}
-                  color={favoritesOnly ? "#fff" : theme.accent}
+                  color={favoritesOnly ? theme.accentText : theme.accentHover}
                 />
-                <Text style={{ fontSize: 12, fontWeight: "600", color: favoritesOnly ? "#fff" : theme.text }}>
+                <Text style={{ fontSize: 12, fontWeight: "600", color: favoritesOnly ? theme.accentText : theme.text }}>
                   Favorites
                 </Text>
               </TouchableOpacity>
@@ -446,7 +446,7 @@ export const WildShapeModal: React.FC<WildShapeModalProps> = ({
                     style={{
                       fontSize: 11,
                       fontWeight: "600",
-                      color: speedFilter === sp ? "#fff" : theme.textSecondary,
+                      color: speedFilter === sp ? theme.accentText : theme.textSecondary,
                     }}>
                     {sp === "all" ? "All" : sp.toUpperCase()}
                   </Text>
@@ -473,7 +473,7 @@ export const WildShapeModal: React.FC<WildShapeModalProps> = ({
                     style={{
                       fontSize: 12,
                       fontWeight: "700",
-                      color: crFilter === cr ? "#fff" : theme.text,
+                      color: crFilter === cr ? theme.accentText : theme.text,
                     }}>
                     {cr === "all" ? "All CR" : `CR ${cr}`}
                   </Text>
@@ -488,7 +488,7 @@ export const WildShapeModal: React.FC<WildShapeModalProps> = ({
               Found {filteredBeasts.length} forms
             </Text>
             {limits.hasWildShape && (
-              <Text style={{ fontSize: 12, color: theme.accent, fontWeight: "600" }}>
+              <Text style={{ fontSize: 12, color: theme.accentHover, fontWeight: "600" }}>
                 Allowed: CR {limits.maxCrDisplay}
                 {limits.canSwim ? " • Swim" : ""}
                 {limits.canFly ? " • Fly" : ""}
@@ -552,7 +552,7 @@ export const WildShapeModal: React.FC<WildShapeModalProps> = ({
                               <Text style={{ fontSize: 12, color: theme.textMuted }}>{beast.speed.walk}ft</Text>
                             )}
                             {beast.speed.swim !== undefined && (
-                              <Text style={{ fontSize: 12, color: theme.accent }}>Swim {beast.speed.swim}ft</Text>
+                              <Text style={{ fontSize: 12, color: theme.accentHover }}>Swim {beast.speed.swim}ft</Text>
                             )}
                             {beast.speed.fly !== undefined && (
                               <Text style={{ fontSize: 12, color: theme.warning }}>Fly {beast.speed.fly}ft</Text>
@@ -609,7 +609,7 @@ export const WildShapeModal: React.FC<WildShapeModalProps> = ({
                               style={{
                                 fontSize: 12,
                                 fontWeight: "700",
-                                color: isEligible && hasCharges ? "#fff" : theme.textMuted,
+                                color: isEligible && hasCharges ? theme.accentText : theme.textMuted,
                               }}>
                               Adopt
                             </Text>

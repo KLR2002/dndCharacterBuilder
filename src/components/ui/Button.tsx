@@ -31,7 +31,7 @@ export const Button: React.FC<ButtonProps> = ({
     border = theme.border;
   } else if (variant === "outline") {
     bg = "transparent";
-    text = theme.accent;
+    text = theme.accentHover;
     border = theme.accentBorder;
   } else if (variant === "danger") {
     bg = "rgba(239, 68, 68, 0.2)";

@@ -111,12 +111,12 @@ export const RestModal: React.FC<RestModalProps> = ({
             hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
             style={[
               styles.tabBtn,
-              mode === "short" && { backgroundColor: theme.accentGlow, borderColor: theme.accent },
+              mode === "short" && { backgroundColor: theme.accentGlow, borderColor: theme.accentHover },
             ]}>
             <Text
               style={[
                 styles.tabText,
-                { color: mode === "short" ? theme.accent : theme.textSecondary },
+                { color: mode === "short" ? theme.accentHover : theme.textSecondary },
               ]}>
               Short Rest (1 Hour)
             </Text>
@@ -126,12 +126,12 @@ export const RestModal: React.FC<RestModalProps> = ({
             hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
             style={[
               styles.tabBtn,
-              mode === "long" && { backgroundColor: theme.accentGlow, borderColor: theme.accent },
+              mode === "long" && { backgroundColor: theme.accentGlow, borderColor: theme.accentHover },
             ]}>
             <Text
               style={[
                 styles.tabText,
-                { color: mode === "long" ? theme.accent : theme.textSecondary },
+                { color: mode === "long" ? theme.accentHover : theme.textSecondary },
               ]}>
               Long Rest (8 Hours)
             </Text>
@@ -161,11 +161,11 @@ export const RestModal: React.FC<RestModalProps> = ({
                       styles.dieCard,
                       {
                         backgroundColor: canSpend ? theme.surfaceRaised : theme.surfaceHighlight,
-                        borderColor: canSpend ? theme.accent : theme.border,
+                        borderColor: canSpend ? theme.accentHover : theme.border,
                         opacity: canSpend ? 1 : 0.4,
                       },
                     ]}>
-                    <Text style={[styles.dieName, { color: theme.accent }]}>{die}</Text>
+                    <Text style={[styles.dieName, { color: theme.accentHover }]}>{die}</Text>
                     <Text style={[styles.dieCount, { color: theme.text }]}>
                       {remaining} / {info.total} left
                     </Text>
@@ -194,8 +194,8 @@ export const RestModal: React.FC<RestModalProps> = ({
             {/* Attunement Reminder */}
             <Card style={{ marginTop: 12, backgroundColor: theme.surfaceRaised, borderColor: theme.border, padding: 12, gap: 4 }}>
               <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-                <Ionicons name="sparkles" size={16} color={theme.accent} />
-                <Text style={{ fontSize: 13, fontWeight: "600", color: theme.accent }}>
+                <Ionicons name="sparkles" size={16} color={theme.accentHover} />
+                <Text style={{ fontSize: 13, fontWeight: "600", color: theme.accentHover }}>
                   Magic Item Attunement
                 </Text>
               </View>
@@ -221,7 +221,7 @@ export const RestModal: React.FC<RestModalProps> = ({
                 💚 Restores <Text style={{ color: theme.success, fontWeight: "700" }}>HP to Maximum</Text> ({maxHp} HP)
               </Text>
               <Text style={{ color: theme.text, fontSize: 14 }}>
-                🎲 Recovers up to <Text style={{ color: theme.accent, fontWeight: "700" }}>{Math.max(1, Math.floor(totalLevel / 2))} Hit Dice</Text>
+                🎲 Recovers up to <Text style={{ color: theme.accentHover, fontWeight: "700" }}>{Math.max(1, Math.floor(totalLevel / 2))} Hit Dice</Text>
               </Text>
               <Text style={{ color: theme.text, fontSize: 14 }}>
                 ✨ Resets all <Text style={{ color: theme.info, fontWeight: "700" }}>Spell Slots</Text> (Standard & Pact)
@@ -261,12 +261,12 @@ export const RestModal: React.FC<RestModalProps> = ({
                                 justifyContent: "center",
                                 borderRadius: 6,
                                 borderWidth: 1,
-                                borderColor: chosen ? theme.accent : theme.border,
+                                borderColor: chosen ? theme.accentHover : theme.border,
                                 backgroundColor: chosen ? theme.accentGlow : "transparent",
                               }}>
                               <Text
                                 style={{
-                                  color: chosen ? theme.accent : theme.textSecondary,
+                                  color: chosen ? theme.accentHover : theme.textSecondary,
                                   fontSize: 12,
                                   fontWeight: "600",
                                 }}>

@@ -107,7 +107,7 @@ export const BackgroundSection: React.FC<BackgroundSectionProps> = ({
   const pickCounter = (label: string, count: number) => (
     <View style={{ flexDirection: "row", flexWrap: "wrap", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
       <Text style={{ color: theme.textSecondary, fontSize: 12, fontWeight: "600", flexShrink: 1 }}>{label}</Text>
-      <Text style={{ color: count === 2 ? theme.accent : theme.warning, fontSize: 12, fontWeight: "700" }}>{count}/2</Text>
+      <Text style={{ color: count === 2 ? theme.accentHover : theme.warning, fontSize: 12, fontWeight: "700" }}>{count}/2</Text>
     </View>
   );
 
@@ -130,12 +130,12 @@ export const BackgroundSection: React.FC<BackgroundSectionProps> = ({
             pkStyles.chip,
             {
               backgroundColor: isPicked ? theme.accentGlow : theme.surfaceHighlight,
-              borderColor: isPicked ? theme.accent : theme.border,
+              borderColor: isPicked ? theme.accentHover : theme.border,
               opacity: !isPicked && !canPick ? 0.4 : 1,
             },
           ]}
         >
-          <Text style={{ color: isPicked ? theme.accent : theme.textSecondary, fontSize: 12, fontWeight: "600" }}>
+          <Text style={{ color: isPicked ? theme.accentHover : theme.textSecondary, fontSize: 12, fontWeight: "600" }}>
             {name}
           </Text>
         </TouchableOpacity>
@@ -280,7 +280,7 @@ export const BackgroundSection: React.FC<BackgroundSectionProps> = ({
                       <View style={{ gap: 8, marginTop: 6, paddingTop: 8, borderTopWidth: 1, borderTopColor: theme.border }}>
                         <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
                           <View style={{ flex: 1 }}>
-                            <Text style={{ color: theme.accent, fontSize: 13, fontWeight: "700" }}>
+                            <Text style={{ color: theme.accentHover, fontSize: 13, fontWeight: "700" }}>
                               Background Feat: {bgOriginFeat ? bgOriginFeat.featName : bgFeatGrant.isChoice ? "choose one" : bgFeatGrant.featName}
                             </Text>
                             <Text style={{ color: theme.textSecondary, fontSize: 11 }}>
@@ -340,12 +340,12 @@ export const BackgroundSection: React.FC<BackgroundSectionProps> = ({
                                             styles.choiceChip,
                                             {
                                               backgroundColor: isSelected ? theme.accent : theme.surfaceHighlight,
-                                              borderColor: isSelected ? theme.accent : theme.border,
+                                              borderColor: isSelected ? theme.accentHover : theme.border,
                                             },
                                           ]}>
                                           <Text
                                             style={{
-                                              color: isSelected ? "#fff" : theme.text,
+                                              color: isSelected ? theme.accentText : theme.text,
                                               fontSize: 12,
                                               fontWeight: isSelected ? "700" : "500",
                                             }}>
@@ -415,7 +415,7 @@ export const BackgroundSection: React.FC<BackgroundSectionProps> = ({
       ) : (
         <>
           {/* Custom Background creator card */}
-          <Card style={{ gap: 10, borderColor: isCustomBg ? theme.accent : theme.border }}>
+          <Card style={{ gap: 10, borderColor: isCustomBg ? theme.accentHover : theme.border }}>
             <View style={{ flexDirection: "row", flexWrap: "wrap", justifyContent: "space-between", alignItems: "center", gap: 10 }}>
               <View style={{ flexGrow: 1, flexShrink: 1, flexBasis: 180 }}>
                 <Text style={[styles.itemTitle, { color: theme.text }]}>Custom Background</Text>
@@ -462,7 +462,7 @@ export const BackgroundSection: React.FC<BackgroundSectionProps> = ({
                 </Text>
                 {customBgFeature && (
                   <View style={{ flexDirection: "row", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
-                    <Text style={{ color: theme.accent, fontSize: 12, fontWeight: "600", flexShrink: 1 }}>
+                    <Text style={{ color: theme.accentHover, fontSize: 12, fontWeight: "600", flexShrink: 1 }}>
                       {customBgFeature.label}
                     </Text>
                     <Button title="Clear" variant="ghost" size="sm" onPress={() => setCustomBgFeature(null)} />
@@ -480,13 +480,13 @@ export const BackgroundSection: React.FC<BackgroundSectionProps> = ({
                           pkStyles.chip,
                           {
                             backgroundColor: isPicked ? theme.accentGlow : theme.surfaceHighlight,
-                            borderColor: isPicked ? theme.accent : theme.border,
+                            borderColor: isPicked ? theme.accentHover : theme.border,
                           },
                         ]}
                       >
                         <Text
                           style={{
-                            color: isPicked ? theme.accent : theme.textSecondary,
+                            color: isPicked ? theme.accentHover : theme.textSecondary,
                             fontSize: 12,
                             fontWeight: "600",
                             flexShrink: 1,
@@ -521,7 +521,7 @@ export const BackgroundSection: React.FC<BackgroundSectionProps> = ({
                   <View style={styles.row}>
                     <View style={{ flex: 1 }}>
                       <Text style={[styles.itemTitle, { color: theme.text }]}>{b.name}</Text>
-                      <Text style={{ color: theme.accent, fontSize: 12, fontWeight: "600" }}>
+                      <Text style={{ color: theme.accentHover, fontSize: 12, fontWeight: "600" }}>
                         {b.skillProficiencies.join(", ") || "—"}
                       </Text>
                       <Text style={{ color: theme.textMuted, fontSize: 11 }}>{b.source}</Text>
