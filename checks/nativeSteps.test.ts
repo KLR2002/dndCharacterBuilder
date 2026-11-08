@@ -503,6 +503,17 @@ test("the reveal ends at the swipe bound even when the clock never advances", as
   assert.equal(world.swipes.length, MAX_SWIPES);
 });
 
+test("a ready text that exists only as a clipped node counts as ready (AC-13: at any scroll position)", async () => {
+  // The dump lists the ready text only with inverted (clipped) bounds, scrolled out of the viewport:
+  // it is in the hierarchy, so it counts as shown, and nothing is swiped or tapped.
+  const clippedOnly = parseDump(`<hierarchy><node text="Deep Ready" bounds="[0,1300][200,1250]" /></hierarchy>`);
+  const world = playerWorld([clippedOnly]);
+  const result = await play(world, { name: "t", route: "/x", ready: "Deep Ready" });
+  assert.deepEqual(result, { error: null, warnings: [] });
+  assert.deepEqual(world.swipes, []);
+  assert.deepEqual(world.taps, []);
+});
+
 test("the ready text absent from the dump is searched by swiping in both directions", async () => {
   // The page is mid-page (the ready text at the top is not in the dump); three identical dumps flip the
   // direction up -> down -> up, and the fourth shows the ready text. The ready timeout (1 s here) would
