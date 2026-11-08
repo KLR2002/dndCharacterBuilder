@@ -96,7 +96,7 @@ export const NewCharacterModal: React.FC<NewCharacterModalProps> = ({
         {/* Name Field (Required) */}
         <View style={styles.formGroup}>
           <Text style={[styles.label, { color: theme.text }]}>
-            Character Name <Text style={{ color: theme.accent }}>*</Text>
+            Character Name <Text style={{ color: theme.accentHover }}>*</Text>
           </Text>
           <TextInput
             style={[
@@ -163,7 +163,7 @@ export const NewCharacterModal: React.FC<NewCharacterModalProps> = ({
                       backgroundColor: isSelected
                         ? theme.accentGlow
                         : theme.surfaceRaised,
-                      borderColor: isSelected ? theme.accent : theme.border,
+                      borderColor: isSelected ? theme.accentHover : theme.border,
                     },
                   ]}
                 >
@@ -171,7 +171,7 @@ export const NewCharacterModal: React.FC<NewCharacterModalProps> = ({
                     style={[
                       styles.alignmentText,
                       {
-                        color: isSelected ? theme.accent : theme.textSecondary,
+                        color: isSelected ? theme.accentHover : theme.textSecondary,
                       },
                     ]}
                   >
@@ -241,14 +241,14 @@ export const NewCharacterModal: React.FC<NewCharacterModalProps> = ({
                         ? theme.accentGlow
                         : theme.surfaceRaised,
                     borderColor:
-                      folderId === null ? theme.accent : theme.border,
+                      folderId === null ? theme.accentHover : theme.border,
                   },
                 ]}
               >
                 <Text
                   style={{
                     color:
-                      folderId === null ? theme.accent : theme.textSecondary,
+                      folderId === null ? theme.accentHover : theme.textSecondary,
                     fontSize: 13,
                   }}
                 >
@@ -267,14 +267,14 @@ export const NewCharacterModal: React.FC<NewCharacterModalProps> = ({
                           ? theme.accentGlow
                           : theme.surfaceRaised,
                       borderColor:
-                        folderId === f.id ? theme.accent : theme.border,
+                        folderId === f.id ? theme.accentHover : theme.border,
                     },
                   ]}
                 >
                   <Text
                     style={{
                       color:
-                        folderId === f.id ? theme.accent : theme.textSecondary,
+                        folderId === f.id ? theme.accentHover : theme.textSecondary,
                       fontSize: 13,
                     }}
                   >

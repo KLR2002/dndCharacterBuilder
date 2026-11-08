@@ -354,12 +354,12 @@ export const BuilderTab: React.FC<BuilderTabProps> = ({
                 styles.tabBtn,
                 {
                   backgroundColor: active ? theme.accentGlow : "transparent",
-                  borderColor: active ? theme.accent : "transparent",
+                  borderColor: active ? theme.accentHover : "transparent",
                 },
               ]}
             >
-              <Ionicons name={icon} size={15} color={active ? theme.accent : theme.textSecondary} />
-              <Text style={[styles.tabText, { color: active ? theme.accent : theme.textSecondary }]}>{label}</Text>
+              <Ionicons name={icon} size={15} color={active ? theme.accentHover : theme.textSecondary} />
+              <Text style={[styles.tabText, { color: active ? theme.accentHover : theme.textSecondary }]}>{label}</Text>
             </TouchableOpacity>
           );
         })}

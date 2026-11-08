@@ -186,7 +186,7 @@ export const AsiFeatSection: React.FC<AsiFeatSectionProps> = ({
                       styles.methodBtn,
                       {
                         backgroundColor: asiTab === "asi" ? theme.accentGlow : theme.surface,
-                        borderColor: asiTab === "asi" ? theme.accent : theme.border,
+                        borderColor: asiTab === "asi" ? theme.accentHover : theme.border,
                       },
                     ]}
                   >
@@ -194,7 +194,7 @@ export const AsiFeatSection: React.FC<AsiFeatSectionProps> = ({
                       style={[
                         styles.methodText,
                         {
-                          color: asiTab === "asi" ? theme.accent : theme.textSecondary,
+                          color: asiTab === "asi" ? theme.accentHover : theme.textSecondary,
                           fontWeight: asiTab === "asi" ? "700" : "500",
                         },
                       ]}
@@ -208,7 +208,7 @@ export const AsiFeatSection: React.FC<AsiFeatSectionProps> = ({
                       styles.methodBtn,
                       {
                         backgroundColor: asiTab === "feat" ? theme.accentGlow : theme.surface,
-                        borderColor: asiTab === "feat" ? theme.accent : theme.border,
+                        borderColor: asiTab === "feat" ? theme.accentHover : theme.border,
                       },
                     ]}
                   >
@@ -216,7 +216,7 @@ export const AsiFeatSection: React.FC<AsiFeatSectionProps> = ({
                       style={[
                         styles.methodText,
                         {
-                          color: asiTab === "feat" ? theme.accent : theme.textSecondary,
+                          color: asiTab === "feat" ? theme.accentHover : theme.textSecondary,
                           fontWeight: asiTab === "feat" ? "700" : "500",
                         },
                       ]}
@@ -236,13 +236,13 @@ export const AsiFeatSection: React.FC<AsiFeatSectionProps> = ({
                           styles.lineageChip,
                           {
                             backgroundColor: asiMode === "plus2" ? theme.accentGlow : theme.surfaceHighlight,
-                            borderColor: asiMode === "plus2" ? theme.accent : theme.border,
+                            borderColor: asiMode === "plus2" ? theme.accentHover : theme.border,
                           },
                         ]}
                       >
                         <Text
                           style={{
-                            color: asiMode === "plus2" ? theme.accent : theme.textSecondary,
+                            color: asiMode === "plus2" ? theme.accentHover : theme.textSecondary,
                             fontSize: 12,
                             fontWeight: "600",
                           }}
@@ -256,13 +256,13 @@ export const AsiFeatSection: React.FC<AsiFeatSectionProps> = ({
                           styles.lineageChip,
                           {
                             backgroundColor: asiMode === "plus1plus1" ? theme.accentGlow : theme.surfaceHighlight,
-                            borderColor: asiMode === "plus1plus1" ? theme.accent : theme.border,
+                            borderColor: asiMode === "plus1plus1" ? theme.accentHover : theme.border,
                           },
                         ]}
                       >
                         <Text
                           style={{
-                            color: asiMode === "plus1plus1" ? theme.accent : theme.textSecondary,
+                            color: asiMode === "plus1plus1" ? theme.accentHover : theme.textSecondary,
                             fontSize: 12,
                             fontWeight: "600",
                           }}
@@ -286,13 +286,13 @@ export const AsiFeatSection: React.FC<AsiFeatSectionProps> = ({
                                   styles.choiceChip,
                                   {
                                     backgroundColor: selected ? theme.accentGlow : theme.surfaceHighlight,
-                                    borderColor: selected ? theme.accent : theme.border,
+                                    borderColor: selected ? theme.accentHover : theme.border,
                                   },
                                 ]}
                               >
                                 <Text
                                   style={{
-                                    color: selected ? theme.accent : theme.textSecondary,
+                                    color: selected ? theme.accentHover : theme.textSecondary,
                                     fontWeight: "700",
                                     fontSize: 13,
                                   }}
@@ -327,14 +327,14 @@ export const AsiFeatSection: React.FC<AsiFeatSectionProps> = ({
                                   styles.choiceChip,
                                   {
                                     backgroundColor: selected ? theme.accentGlow : theme.surfaceHighlight,
-                                    borderColor: selected ? theme.accent : theme.border,
+                                    borderColor: selected ? theme.accentHover : theme.border,
                                     opacity: !selected && !canPick ? 0.4 : 1,
                                   },
                                 ]}
                               >
                                 <Text
                                   style={{
-                                    color: selected ? theme.accent : theme.textSecondary,
+                                    color: selected ? theme.accentHover : theme.textSecondary,
                                     fontWeight: "700",
                                     fontSize: 13,
                                   }}
@@ -387,7 +387,7 @@ export const AsiFeatSection: React.FC<AsiFeatSectionProps> = ({
                                 styles.featureRow,
                                 {
                                   backgroundColor: isSelected ? theme.accentGlow : theme.surfaceHighlight,
-                                  borderColor: isSelected ? theme.accent : theme.border,
+                                  borderColor: isSelected ? theme.accentHover : theme.border,
                                   padding: 8,
                                   borderRadius: 6,
                                 },
@@ -397,7 +397,7 @@ export const AsiFeatSection: React.FC<AsiFeatSectionProps> = ({
                                 <View style={{ flexDirection: "row", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
                                   <Text
                                     style={{
-                                      color: isSelected ? theme.accent : theme.text,
+                                      color: isSelected ? theme.accentHover : theme.text,
                                       fontWeight: "700",
                                       fontSize: 13,
                                     }}
@@ -443,7 +443,7 @@ export const AsiFeatSection: React.FC<AsiFeatSectionProps> = ({
                           borderRadius: 6,
                         }}
                       >
-                        <Ionicons name="checkmark-circle" size={18} color={theme.accent} />
+                        <Ionicons name="checkmark-circle" size={18} color={theme.accentHover} />
                         <Text style={{ color: theme.text, fontSize: 13, fontWeight: "600" }}>
                           Selected: {asiSelectedFeat.name} ({asiSelectedFeat.source})
                         </Text>
@@ -481,13 +481,13 @@ export const AsiFeatSection: React.FC<AsiFeatSectionProps> = ({
                                         styles.choiceChip,
                                         {
                                           backgroundColor: isPicked ? theme.accentGlow : theme.surfaceHighlight,
-                                          borderColor: isPicked ? theme.accent : theme.border,
+                                          borderColor: isPicked ? theme.accentHover : theme.border,
                                         },
                                       ]}
                                     >
                                       <Text
                                         style={{
-                                          color: isPicked ? theme.accent : theme.textSecondary,
+                                          color: isPicked ? theme.accentHover : theme.textSecondary,
                                           fontWeight: isPicked ? "700" : "500",
                                           fontSize: 12,
                                         }}
@@ -537,13 +537,13 @@ export const AsiFeatSection: React.FC<AsiFeatSectionProps> = ({
                                     styles.choiceChip,
                                     {
                                       backgroundColor: isPicked ? theme.accentGlow : theme.surfaceHighlight,
-                                      borderColor: isPicked ? theme.accent : theme.border,
+                                      borderColor: isPicked ? theme.accentHover : theme.border,
                                     },
                                   ]}
                                 >
                                   <Text
                                     style={{
-                                      color: isPicked ? theme.accent : theme.textSecondary,
+                                      color: isPicked ? theme.accentHover : theme.textSecondary,
                                       fontWeight: isPicked ? "700" : "500",
                                       fontSize: 12,
                                     }}
@@ -559,7 +559,7 @@ export const AsiFeatSection: React.FC<AsiFeatSectionProps> = ({
                             if (!selectedOpt?.description) return null;
                             return (
                               <Text style={{ color: theme.textMuted, fontSize: 11, marginTop: 4 }}>
-                                <Text style={{ color: theme.accent, fontWeight: "600" }}>{selectedOpt.name}: </Text>
+                                <Text style={{ color: theme.accentHover, fontWeight: "600" }}>{selectedOpt.name}: </Text>
                                 {selectedOpt.description}
                               </Text>
                             );
@@ -610,13 +610,13 @@ export const AsiFeatSection: React.FC<AsiFeatSectionProps> = ({
                                     styles.choiceChip,
                                     {
                                       backgroundColor: isPicked ? theme.accentGlow : theme.surfaceHighlight,
-                                      borderColor: isPicked ? theme.accent : theme.border,
+                                      borderColor: isPicked ? theme.accentHover : theme.border,
                                     },
                                   ]}
                                 >
                                   <Text
                                     style={{
-                                      color: isPicked ? theme.accent : theme.textSecondary,
+                                      color: isPicked ? theme.accentHover : theme.textSecondary,
                                       fontWeight: isPicked ? "700" : "500",
                                       fontSize: 12,
                                     }}
@@ -634,7 +634,7 @@ export const AsiFeatSection: React.FC<AsiFeatSectionProps> = ({
                                 if (!opt?.description) return null;
                                 return (
                                   <Text key={mName} style={{ color: theme.textMuted, fontSize: 11 }}>
-                                    <Text style={{ color: theme.accent, fontWeight: "600" }}>{opt.name}: </Text>
+                                    <Text style={{ color: theme.accentHover, fontWeight: "600" }}>{opt.name}: </Text>
                                     {opt.description}
                                   </Text>
                                 );
@@ -679,13 +679,13 @@ export const AsiFeatSection: React.FC<AsiFeatSectionProps> = ({
                                     styles.choiceChip,
                                     {
                                       backgroundColor: isPicked ? theme.accentGlow : theme.surfaceHighlight,
-                                      borderColor: isPicked ? theme.accent : theme.border,
+                                      borderColor: isPicked ? theme.accentHover : theme.border,
                                     },
                                   ]}
                                 >
                                   <Text
                                     style={{
-                                      color: isPicked ? theme.accent : theme.textSecondary,
+                                      color: isPicked ? theme.accentHover : theme.textSecondary,
                                       fontWeight: isPicked ? "700" : "500",
                                       fontSize: 12,
                                     }}
@@ -701,7 +701,7 @@ export const AsiFeatSection: React.FC<AsiFeatSectionProps> = ({
                             if (!selectedOpt?.description) return null;
                             return (
                               <Text style={{ color: theme.textMuted, fontSize: 11, marginTop: 4 }}>
-                                <Text style={{ color: theme.accent, fontWeight: "600" }}>{selectedOpt.name}: </Text>
+                                <Text style={{ color: theme.accentHover, fontWeight: "600" }}>{selectedOpt.name}: </Text>
                                 {selectedOpt.description}
                               </Text>
                             );
@@ -808,7 +808,7 @@ export const AsiFeatSection: React.FC<AsiFeatSectionProps> = ({
                   return (
                     <View style={{ marginTop: 4, gap: 6, paddingTop: 6, borderTopWidth: 1, borderTopColor: theme.border }}>
                       <Text style={{ color: theme.textSecondary, fontSize: 12, fontWeight: "600" }}>
-                        Fighting Style: {currentPick ? <Text style={{ color: theme.accent, fontWeight: "700" }}>{currentPick}</Text> : <Text style={{ color: theme.warning }}>(None selected)</Text>}
+                        Fighting Style: {currentPick ? <Text style={{ color: theme.accentHover, fontWeight: "700" }}>{currentPick}</Text> : <Text style={{ color: theme.warning }}>(None selected)</Text>}
                       </Text>
                       <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 5 }}>
                         {fsChoice.options.map((opt) => {
@@ -822,13 +822,13 @@ export const AsiFeatSection: React.FC<AsiFeatSectionProps> = ({
                                 styles.choiceChip,
                                 {
                                   backgroundColor: isSelected ? theme.accentGlow : theme.surfaceHighlight,
-                                  borderColor: isSelected ? theme.accent : theme.border,
+                                  borderColor: isSelected ? theme.accentHover : theme.border,
                                 },
                               ]}
                             >
                               <Text
                                 style={{
-                                  color: isSelected ? theme.accent : theme.textSecondary,
+                                  color: isSelected ? theme.accentHover : theme.textSecondary,
                                   fontSize: 11,
                                   fontWeight: isSelected ? "700" : "500",
                                 }}
@@ -844,7 +844,7 @@ export const AsiFeatSection: React.FC<AsiFeatSectionProps> = ({
                         if (!opt?.description) return null;
                         return (
                           <Text style={{ color: theme.textMuted, fontSize: 11, marginTop: 2 }}>
-                            <Text style={{ color: theme.accent, fontWeight: "600" }}>{opt.name}: </Text>
+                            <Text style={{ color: theme.accentHover, fontWeight: "600" }}>{opt.name}: </Text>
                             {opt.description}
                           </Text>
                         );
@@ -871,7 +871,7 @@ export const AsiFeatSection: React.FC<AsiFeatSectionProps> = ({
                     <View style={{ marginTop: 4, gap: 6, paddingTop: 6, borderTopWidth: 1, borderTopColor: theme.border }}>
                       <Text style={{ color: theme.textSecondary, fontSize: 12, fontWeight: "600" }}>
                         Maneuvers: {currentPicks.length > 0 ? (
-                          <Text style={{ color: theme.accent, fontWeight: "700" }}>{currentPicks.join(", ")}</Text>
+                          <Text style={{ color: theme.accentHover, fontWeight: "700" }}>{currentPicks.join(", ")}</Text>
                         ) : (
                           <Text style={{ color: theme.warning }}>(None selected - choose 2)</Text>
                         )}
@@ -888,13 +888,13 @@ export const AsiFeatSection: React.FC<AsiFeatSectionProps> = ({
                                 styles.choiceChip,
                                 {
                                   backgroundColor: isSelected ? theme.accentGlow : theme.surfaceHighlight,
-                                  borderColor: isSelected ? theme.accent : theme.border,
+                                  borderColor: isSelected ? theme.accentHover : theme.border,
                                 },
                               ]}
                             >
                               <Text
                                 style={{
-                                  color: isSelected ? theme.accent : theme.textSecondary,
+                                  color: isSelected ? theme.accentHover : theme.textSecondary,
                                   fontSize: 11,
                                   fontWeight: isSelected ? "700" : "500",
                                 }}
@@ -912,7 +912,7 @@ export const AsiFeatSection: React.FC<AsiFeatSectionProps> = ({
                             if (!opt?.description) return null;
                             return (
                               <Text key={mName} style={{ color: theme.textMuted, fontSize: 11 }}>
-                                <Text style={{ color: theme.accent, fontWeight: "600" }}>{opt.name}: </Text>
+                                <Text style={{ color: theme.accentHover, fontWeight: "600" }}>{opt.name}: </Text>
                                 {opt.description}
                               </Text>
                             );
@@ -930,7 +930,7 @@ export const AsiFeatSection: React.FC<AsiFeatSectionProps> = ({
                   return (
                     <View style={{ marginTop: 4, gap: 6, paddingTop: 6, borderTopWidth: 1, borderTopColor: theme.border }}>
                       <Text style={{ color: theme.textSecondary, fontSize: 12, fontWeight: "600" }}>
-                        Invocation: {currentPick ? <Text style={{ color: theme.accent, fontWeight: "700" }}>{currentPick}</Text> : <Text style={{ color: theme.warning }}>(None selected)</Text>}
+                        Invocation: {currentPick ? <Text style={{ color: theme.accentHover, fontWeight: "700" }}>{currentPick}</Text> : <Text style={{ color: theme.warning }}>(None selected)</Text>}
                       </Text>
                       <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 5 }}>
                         {eaChoice.options.map((opt) => {
@@ -944,13 +944,13 @@ export const AsiFeatSection: React.FC<AsiFeatSectionProps> = ({
                                 styles.choiceChip,
                                 {
                                   backgroundColor: isSelected ? theme.accentGlow : theme.surfaceHighlight,
-                                  borderColor: isSelected ? theme.accent : theme.border,
+                                  borderColor: isSelected ? theme.accentHover : theme.border,
                                 },
                               ]}
                             >
                               <Text
                                 style={{
-                                  color: isSelected ? theme.accent : theme.textSecondary,
+                                  color: isSelected ? theme.accentHover : theme.textSecondary,
                                   fontSize: 11,
                                   fontWeight: isSelected ? "700" : "500",
                                 }}
@@ -966,7 +966,7 @@ export const AsiFeatSection: React.FC<AsiFeatSectionProps> = ({
                         if (!opt?.description) return null;
                         return (
                           <Text style={{ color: theme.textMuted, fontSize: 11, marginTop: 2 }}>
-                            <Text style={{ color: theme.accent, fontWeight: "600" }}>{opt.name}: </Text>
+                            <Text style={{ color: theme.accentHover, fontWeight: "600" }}>{opt.name}: </Text>
                             {opt.description}
                           </Text>
                         );
