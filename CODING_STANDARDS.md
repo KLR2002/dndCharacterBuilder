@@ -67,7 +67,7 @@ Judgement calls and rules conventions enforced during code review.
   - On Android set `paddingVertical: 0`, `textAlignVertical: "center"` and `includeFontPadding: false` on inputs, or the text clips at the top.
 - **Verify at Phone Widths**:
   - Check UI changes at 320, 360, 393 and 412 px. Run `npm run layout:check`, which starts the Expo web server itself (`npx playwright install chromium` once; add `-- --integrated` for the integrated catalog). It fails on squeezed text and on elements that stick out of their parent.
-  - Some issues are native-only (such as Android text clipping) and cannot be caught by the web check. Back a claim about them with an emulator screenshot (`docs/agents/driving-the-android-emulator.md`), or say in the review that it was not checked on Android.
+  - Some issues are native-only (such as Android text clipping) and cannot be caught by the web check. Back a claim about them with `npm run layout:android` screenshots of the affected scenarios, attached or named in the review (`docs/agents/driving-the-android-emulator.md`), or say in the review that the change was not checked on Android.
 
 ## 8. UI Copy
 - **Essential Description Only**:

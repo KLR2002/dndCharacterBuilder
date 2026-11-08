@@ -1,5 +1,5 @@
 ## Verification
-Verify all changes: `npm run check:all`. Changes to grants, the scraper or anything that reads catalog records also need `npm run check:live`: it builds the catalog the in-app sync produces (network, about a minute) and checks the rules against it, which the tracked snapshot cannot do. UI changes also need `npm run layout:check` (it starts its own Expo web server and runs the four widths in parallel, about 3 minutes for the SRD Baseline and 3.3 minutes with `-- --integrated`; `ONLY=<name>` visits only the scenarios whose name contains it; first run needs `npx playwright install chromium`); layout rules are in `CODING_STANDARDS.md` section 7.
+Verify all changes: `npm run check:all`. Changes to grants, the scraper or anything that reads catalog records also need `npm run check:live`: it builds the catalog the in-app sync produces (network, about a minute) and checks the rules against it, which the tracked snapshot cannot do. UI changes also need `npm run layout:check` (it starts its own Expo web server and runs the four widths in parallel, about 3 minutes for the SRD Baseline and 3.3 minutes with `-- --integrated`; `ONLY=<name>` visits only the scenarios whose name contains it; first run needs `npx playwright install chromium`); layout rules are in `CODING_STANDARDS.md` section 7. A native-only change (inputs, `Platform.OS` branches, Android-only styles, text clipping) also needs `npm run layout:android` with `ONLY` set to the scenarios that show the change: it costs minutes, needs the generated `android/` project and the Android SDK, and is documented in `docs/agents/driving-the-android-emulator.md`.
 
 ## Subagents
 - Implementer rules (Git, worktree setup, data folders, baselines): `docs/agents/subagent-tiering.md`, section "Implementer Rules".
@@ -16,6 +16,6 @@ Verify all changes: `npm run check:all`. Changes to grants, the scraper or anyth
 - Proficiencies: `src/rules/proficiencySheet.ts` is the one reader; its private sources live in `src/rules/proficiencySources/`. `checks/proficiencyReadersGuard.test.ts` enforces it.
 - UI: character tabs in `src/components/tabs/`, builder sections in `src/components/builder/`, shared UI components in `src/components/ui/`, the character header in `src/app/character/[id].tsx`, and modals in `src/components/` (`*Modal.tsx`) with the shared shell `src/components/ui/Modal.tsx`.
 - Reproducing in a browser (start the web build, seed a character and a catalog, open it): `docs/agents/driving-the-app.md`.
-- Reproducing on Android (start the emulator, build and install the APK, screenshot, `androidMCP`): `docs/agents/driving-the-android-emulator.md`.
+- Reproducing on Android (`npm run layout:android`, or drive the emulator by hand): `docs/agents/driving-the-android-emulator.md`.
 - Character test fixtures: `makeChar()` in `checks/testUtils.ts`.
 - Architecture decisions: `docs/adr/`.
