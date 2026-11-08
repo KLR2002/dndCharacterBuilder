@@ -229,19 +229,45 @@ function tail(text, lines = 15) {
   return text.trim().split("\n").slice(-lines).join("\n");
 }
 
-// Polls until the booted emulator reports sys.boot_completed=1. Returns the serial seen (possibly
-// still booting) and whether it finished.
-async function waitForBoot({ run, adb, sleep, timeoutMs, pollMs = 2_000 }) {
+// Polls until the emulator with the given serial reports sys.boot_completed=1. Used when a listed
+// emulator is reused: adbd answers while the boot is still running, so even a reused emulator in
+// state `device` waits for the boot to finish before anything else touches it. Returns false on
+// timeout, or when `aborted()` turns true because a signal ended the run.
+async function waitForBootSerial({ run, adb, serial, sleep, timeoutMs, pollMs = 2_000, aborted = null }) {
   const deadline = Date.now() + timeoutMs;
+  for (;;) {
+    const prop = run(adb, ["-s", serial, "shell", "getprop", "sys.boot_completed"], { timeoutMs: ADB_TIMEOUT_MS });
+    if (prop.stdout.trim() === "1") return true;
+    if (aborted && aborted()) return false;
+    if (Date.now() >= deadline) return false;
+    await sleep(pollMs);
+  }
+}
+
+// Polls until a booted emulator reports sys.boot_completed=1. Returns the serial seen (possibly
+// still booting) and whether it finished. Among the listed emulators one in state `device` is
+// preferred over the first one in any state, so a stuck offline serial is not polled until the
+// timeout while another emulator is booting; when this run spawned the emulator, a serial that was
+// not listed before the spawn is preferred over the earlier ones.
+async function waitForBoot({ run, adb, sleep, timeoutMs, pollMs = 2_000, spawned = false, serialsBeforeSpawn = [], aborted = null }) {
+  const deadline = Date.now() + timeoutMs;
+  const known = new Set(serialsBeforeSpawn);
   let seen = null;
   for (;;) {
     const devices = parseAdbDevices(run(adb, ["devices"], { timeoutMs: ADB_TIMEOUT_MS }).stdout);
-    const emulator = devices.find((device) => isEmulatorSerial(device.serial));
+    const emulators = devices.filter((device) => isEmulatorSerial(device.serial));
+    let pool = emulators;
+    if (spawned) {
+      const fresh = emulators.filter((device) => !known.has(device.serial));
+      if (fresh.length > 0) pool = fresh;
+    }
+    const emulator = pool.find((device) => device.state === "device") ?? pool[0] ?? null;
     if (emulator) {
       seen = emulator.serial;
       const prop = run(adb, ["-s", emulator.serial, "shell", "getprop", "sys.boot_completed"], { timeoutMs: ADB_TIMEOUT_MS });
       if (prop.stdout.trim() === "1") return { booted: true, serial: emulator.serial };
     }
+    if (aborted && aborted()) return { booted: false, serial: seen, aborted: true };
     if (Date.now() >= deadline) return { booted: false, serial: seen };
     await sleep(pollMs);
   }
@@ -407,24 +433,42 @@ async function runScenario({ adbCall, screen, width, shots, seedPath, state, fir
 
 // One run of the device side: parse and validate the arguments (an unmatched ONLY term, an invalid
 // WIDTHS entry, or an ONLY that selects only web-only scenarios exits 2 before any device is
-// touched), then find or start the emulator — a ready emulator serial is reused, an emulator that is
-// listed but not ready yet is waited for and adopted (never started or stopped by this run), a ready
-// non-emulator device is refused, and only when no emulator is listed at all does the runner boot
-// one (and stop it at the end); refuse a non-emulator serial; build unless --no-build; install; then
+// touched), then the file-only refusals — no generated android/ project, one generated before the
+// E2E wiring, or no APK with --no-build — also before any device work, so a refusal costs no boot.
+// The signal handlers are then installed, before any device work or emulator spawn, with a cleanup
+// late-bound to what exists at signal time (the spawned emulator's pid, the serial once known, the
+// original density once read, the temp seed dir): the handler runs that cleanup at once and the run
+// returns the signal's exit code (130 SIGINT, 143 SIGTERM) at its next check, so no further scenario
+// runs; the same idempotent cleanup also runs from the finally block, and in the real entry the
+// process exits right after the handler, so there the handler's cleanup is the only one that runs.
+// The cleanup stops an emulator this run started by `adb -s <serial> emu kill` when the serial is
+// known and otherwise by killing the spawned process through the injectable `stopProcess` (a boot
+// timeout before the emulator ever appeared in `adb devices` has no serial, so the pid-kill covers
+// it), restores the density only when it was read, and removes the temp seed dir. Then find or start
+// the emulator — `adb devices` is checked for its exit code and retried once after
+// `adb start-server`, a still-failing call exits 2 before anything is spawned; a ready emulator
+// serial is reused, but only after it reports sys.boot_completed=1 (adbd answers early, so a
+// still-booting emulator would fail the device calls), a timeout there exits 2 and stops nothing;
+// an emulator that is listed but not ready yet is waited for and adopted (never started or stopped
+// by this run); a ready non-emulator device is refused; only when no emulator is listed at all does
+// the runner boot one (and stop it at the end), preferring in the boot wait a serial in state
+// `device` and, after a spawn, one not listed before the spawn. A failed or unparsable
+// `wm density` read exits 2 before anything is changed. Then build unless --no-build, install, and
 // for each width set the density and run every selected scenario in its isolation mode (the first
 // of the width and `fresh` reset and reseed, `modal` force-stops and relaunches without clearing, the
 // rest only jump by deep link — see modeForScenario), playing the step fields on uiautomator dumps
 // and pulling the screenshot into the run's folder (SHOTS, else a fresh per-run folder), restoring
-// the original density at the end (also after a failure, and from the signal handler, which also
-// stops the emulator when this run started it and ends the run with 130/143) and stopping the
-// emulator only when this run started it. The device is checked alive before each scenario and at
-// every scenario failure point (`adb -s <serial> get-state` must print `device`); when it is lost, an
-// emulator this run started is booted again (at most MAX_EMULATOR_RECOVERIES times per run), the APK
-// installed and the width's density set again, and the scenario that was running is repeated in
-// reset+seed mode, while a reused emulator stops the run at that scenario with a message and a
-// non-zero exit. A scenario that failed because the device was lost writes no FAILED screenshot. A
-// scenario marked web-only is listed and skipped. Returns the exit code: 0 success, 1 a scenario
-// failed or the device was lost unrecoverably, 2 a refusal, 130/143 a signal ended the run.
+// the original density at the end (also after a failure, and from the signal handler) and stopping
+// the emulator only when this run started it. The device is checked alive before each scenario and
+// at every scenario failure point (`adb -s <serial> get-state` must exit 0 and print `device`); when
+// it is lost, an emulator this run started is booted again (at most MAX_EMULATOR_RECOVERIES times
+// per run, with the same stripped environment), the APK installed and the width's density set again,
+// and the scenario that was running is repeated in reset+seed mode, while a reused emulator stops
+// the run at that scenario with a message and a non-zero exit. A scenario that failed because the
+// device was lost writes no FAILED screenshot. A scenario marked web-only is listed and skipped.
+// `cleanupRef`, when given, receives the late-bound cleanup, so the entry can run it when the run
+// itself throws. Returns the exit code: 0 success, 1 a scenario failed or the device was lost
+// unrecoverably, 2 a refusal, 130/143 a signal ended the run.
 export async function runAndroid(options) {
   const {
     root,
@@ -434,6 +478,8 @@ export async function runAndroid(options) {
     sleep,
     now = () => Date.now(),
     startEmulator,
+    stopProcess,
+    cleanupRef,
     fileExists,
     writeFile,
     readFile,
@@ -498,95 +544,71 @@ export async function runAndroid(options) {
     return 2;
   }
 
-  // Find or start the emulator. An emulator serial is always preferred over any other device: a
-  // ready one is reused; one that is listed but not ready yet (offline, mid-boot) is waited for and
-  // adopted, and never started or stopped by this run; only when no emulator is listed at all does
-  // the runner boot one. A ready non-emulator device is refused; a non-emulator device is ignored
-  // whenever an emulator is usable.
-  const devices = parseAdbDevices(run(adb, ["devices"], { timeoutMs: ADB_TIMEOUT_MS }).stdout);
-  const emulators = devices.filter((device) => isEmulatorSerial(device.serial));
-  const readyEmulator = emulators.find((device) => device.state === "device");
-  const listedEmulator = emulators.find((device) => device.state !== "device");
-  const readyOther = devices.find((device) => !isEmulatorSerial(device.serial) && device.state === "device");
-  let serial = null;
-  let started = false;
-  if (readyEmulator) {
-    serial = readyEmulator.serial;
-    log(`Reusing connected emulator ${serial}`);
-  } else if (listedEmulator) {
-    log(`Emulator ${listedEmulator.serial} is listed as ${listedEmulator.state}; waiting for it to boot`);
-    const boot = await waitForBoot({ run, adb, sleep, timeoutMs: bootTimeoutMs });
-    if (!boot.booted) {
-      errorLog(`Emulator ${listedEmulator.serial} did not report sys.boot_completed=1 within ${Math.round(bootTimeoutMs / 1000)} s.`);
+  // The file-only refusals, before any device work, so a refusal costs no boot.
+  const android = join(root, "android");
+  const apk = apkPath(root);
+  if (!noBuild) {
+    if (!fileExists(join(android, "gradlew"))) {
+      errorLog(`No generated Android project at ${android}. Generate it once with: npx expo prebuild --platform android --no-install`);
       return 2;
     }
-    serial = boot.serial;
-    log(`Emulator ${serial} booted`);
-  } else if (readyOther) {
-    errorLog(`Refusing device ${readyOther.serial}: only emulators (a serial starting with "emulator-") are accepted, because a run changes the device's screen density and installs an app on it.`);
-    return 2;
-  } else {
-    if (!fileExists(emulatorBin)) {
-      errorLog(`No emulator binary at ${emulatorBin}. Set ANDROID_HOME or ANDROID_SDK_ROOT, or install the SDK at ${join(homeDir, "Android", "Sdk")}.`);
+    // A project generated before the config plugin wired the E2E flag into Gradle's bundle task would
+    // reuse the bundle of an earlier build with the other flag value, so refuse to build on it.
+    const gradleFile = join(android, "app", "build.gradle");
+    if (!fileExists(gradleFile) || !readFile(gradleFile).toString("utf8").includes(E2E_BUNDLE_INPUTS_MARKER)) {
+      errorLog(
+        `${gradleFile} does not carry the E2E build wiring (no line "${E2E_BUNDLE_INPUTS_MARKER}"), so a build could keep a stale JavaScript bundle. ` +
+          "Regenerate the project with: npx expo prebuild --platform android --no-install",
+      );
       return 2;
     }
-    log(`No emulator connected; booting AVD ${AVD_NAME} (${windowed ? "windowed" : "headless"})`);
-    startEmulator(emulatorBin, emulatorArgs({ windowed }), join(shots, "emulator.log"), emulatorEnv(env));
-    started = true;
-    const boot = await waitForBoot({ run, adb, sleep, timeoutMs: bootTimeoutMs });
-    if (!boot.booted) {
-      if (boot.serial) run(adb, ["-s", boot.serial, "emu", "kill"], { timeoutMs: ADB_TIMEOUT_MS });
-      errorLog(`Emulator ${AVD_NAME} did not report sys.boot_completed=1 within ${Math.round(bootTimeoutMs / 1000)} s.`);
-      return 2;
-    }
-    serial = boot.serial;
-    log(`Emulator ${serial} booted`);
-  }
-
-  // Refuse anything that is not an emulator, before anything is cleared, installed or launched.
-  if (!isEmulatorSerial(serial)) {
-    errorLog(`Refusing device ${serial}: only emulators (a serial starting with "emulator-") are accepted, because a run changes the device's screen density and installs an app on it.`);
+  } else if (!fileExists(apk)) {
+    errorLog(`No APK at ${apk}. Build it once without --no-build.`);
     return 2;
   }
 
-  // One adb command against the chosen serial, with a timeout; `serial` is read at call time, so a
-  // recovery that lands on a new serial is picked up.
-  const adbArgs = (args) => ["-s", serial, ...args];
-  const adbCall = (args, timeoutMs = ADB_TIMEOUT_MS) => run(adb, adbArgs(args), { timeoutMs });
-  // Whether the device is still alive: `adb -s <serial> get-state` must print `device` and exit 0.
-  // Anything else (offline, no devices, serial not found, a non-zero exit) means the device is lost.
-  const deviceAlive = () => {
-    const state = adbCall(["get-state"]);
-    return state.code === 0 && state.stdout.trim() === "device";
-  };
-  const originalDensity = parseWmDensity(adbCall(["shell", "wm", "density"]).stdout);
-  // The seed is staged in a private temp dir (not a predictable path), removed at the end of the run.
-  let seedDir = null;
+  // The late-bound cleanup and the signal handlers, installed before any device work or emulator
+  // spawn, so a signal during the boot wait already reaches the handler.
+  const cleanupState = { pid: null, serial: null, started: false, densityRead: false, originalDensity: null, seedDir: null };
   let cleanedUp = false;
   const cleanup = () => {
     if (cleanedUp) return;
     cleanedUp = true;
-    // Best effort: a dead device answers adb quickly with an error, so neither call hangs or throws.
-    try {
-      adbCall(restoreDensityArgs(originalDensity));
-    } catch {
-      // The device is gone; there is no density to restore.
-    }
-    if (started) {
+    // Best effort throughout: a dead device answers adb quickly with an error, so neither call hangs
+    // or throws.
+    if (cleanupState.densityRead && cleanupState.serial) {
       try {
-        adbCall(["emu", "kill"]);
+        run(adb, ["-s", cleanupState.serial, ...restoreDensityArgs(cleanupState.originalDensity)], { timeoutMs: ADB_TIMEOUT_MS });
       } catch {
-        // The emulator is gone; there is nothing left to stop.
+        // The device is gone; there is no density to restore.
       }
     }
-    if (seedDir) {
+    if (cleanupState.started) {
+      if (cleanupState.serial) {
+        try {
+          run(adb, ["-s", cleanupState.serial, "emu", "kill"], { timeoutMs: ADB_TIMEOUT_MS });
+        } catch {
+          // The emulator is gone; there is nothing left to stop.
+        }
+      } else if (cleanupState.pid != null) {
+        // The spawned emulator never appeared in `adb devices` (a signal or boot timeout before its
+        // first listing), so stop the process this run spawned.
+        try {
+          stopProcess(cleanupState.pid);
+        } catch {
+          // The process is gone; there is nothing left to stop.
+        }
+      }
+    }
+    if (cleanupState.seedDir) {
       try {
-        removeDir(seedDir);
+        removeDir(cleanupState.seedDir);
       } catch {
         // The temp dir is gone; nothing to remove.
       }
     }
   };
+  if (cleanupRef) cleanupRef.current = cleanup;
   // A signal ends the run: the handler runs the cleanup at once and the scenario loop returns the
   // signal's exit code (130 SIGINT, 143 SIGTERM) at its next check, so no further scenario runs.
   let signalExitCode = null;
@@ -596,24 +618,116 @@ export async function runAndroid(options) {
       cleanup();
     }
   });
+  const aborted = () => signalExitCode !== null;
   try {
-    const android = join(root, "android");
-    const apk = apkPath(root);
+    // `adb devices` is checked for its exit code: a failed call (a cold or hung adb server) is
+    // retried once after `adb start-server`, and a still-failing call exits 2 before anything is
+    // spawned — an empty output would otherwise read as "no emulator" and boot a second emulator on
+    // the same AVD while the first one is being adopted by the boot wait.
+    const listDevices = () => {
+      let result = run(adb, ["devices"], { timeoutMs: ADB_TIMEOUT_MS });
+      if (result.code !== 0) {
+        run(adb, ["start-server"], { timeoutMs: ADB_TIMEOUT_MS });
+        result = run(adb, ["devices"], { timeoutMs: ADB_TIMEOUT_MS });
+      }
+      if (result.code !== 0) {
+        errorLog(`adb devices failed (exit ${result.code}) even after adb start-server: ${tail(result.stderr || result.stdout)}`);
+        return null;
+      }
+      return parseAdbDevices(result.stdout);
+    };
+
+    // Find or start the emulator. An emulator serial is always preferred over any other device: a
+    // ready one is reused (after the boot check below); one that is listed but not ready yet
+    // (offline, mid-boot) is waited for and adopted, and never started or stopped by this run; only
+    // when no emulator is listed at all does the runner boot one. A ready non-emulator device is
+    // refused; a non-emulator device is ignored whenever an emulator is usable.
+    const devices = listDevices();
+    if (!devices) return 2;
+    const emulators = devices.filter((device) => isEmulatorSerial(device.serial));
+    const readyEmulator = emulators.find((device) => device.state === "device");
+    const listedEmulator = emulators.find((device) => device.state !== "device");
+    const readyOther = devices.find((device) => !isEmulatorSerial(device.serial) && device.state === "device");
+    let serial = null;
+    if (readyEmulator) {
+      serial = readyEmulator.serial;
+      cleanupState.serial = serial;
+      log(`Reusing connected emulator ${serial}`);
+      // adbd answers before the boot finishes, so a reused emulator still waits for
+      // sys.boot_completed=1 before anything else touches it; a timeout exits 2 and stops nothing.
+      const booted = await waitForBootSerial({ run, adb, serial, sleep, timeoutMs: bootTimeoutMs, aborted });
+      if (!booted) {
+        if (signalExitCode !== null) return signalExitCode;
+        errorLog(`Reused emulator ${serial} did not report sys.boot_completed=1 within ${Math.round(bootTimeoutMs / 1000)} s.`);
+        return 2;
+      }
+    } else if (listedEmulator) {
+      log(`Emulator ${listedEmulator.serial} is listed as ${listedEmulator.state}; waiting for it to boot`);
+      const boot = await waitForBoot({ run, adb, sleep, timeoutMs: bootTimeoutMs, aborted });
+      if (!boot.booted) {
+        if (boot.serial) cleanupState.serial = boot.serial;
+        if (signalExitCode !== null) return signalExitCode;
+        errorLog(`Emulator ${listedEmulator.serial} did not report sys.boot_completed=1 within ${Math.round(bootTimeoutMs / 1000)} s.`);
+        return 2;
+      }
+      serial = boot.serial;
+      cleanupState.serial = serial;
+      log(`Emulator ${serial} booted`);
+    } else if (readyOther) {
+      errorLog(`Refusing device ${readyOther.serial}: only emulators (a serial starting with "emulator-") are accepted, because a run changes the device's screen density and installs an app on it.`);
+      return 2;
+    } else {
+      if (!fileExists(emulatorBin)) {
+        errorLog(`No emulator binary at ${emulatorBin}. Set ANDROID_HOME or ANDROID_SDK_ROOT, or install the SDK at ${join(homeDir, "Android", "Sdk")}.`);
+        return 2;
+      }
+      // A fresh listing right before the spawn: a serial already listed here is not this run's.
+      const beforeSpawn = listDevices();
+      if (!beforeSpawn) return 2;
+      log(`No emulator connected; booting AVD ${AVD_NAME} (${windowed ? "windowed" : "headless"})`);
+      cleanupState.pid = startEmulator(emulatorBin, emulatorArgs({ windowed }), join(shots, "emulator.log"), emulatorEnv(env));
+      cleanupState.started = true;
+      const boot = await waitForBoot({ run, adb, sleep, timeoutMs: bootTimeoutMs, spawned: true, serialsBeforeSpawn: beforeSpawn.map((device) => device.serial), aborted });
+      if (!boot.booted) {
+        if (boot.serial) cleanupState.serial = boot.serial;
+        if (signalExitCode !== null) return signalExitCode;
+        errorLog(`Emulator ${AVD_NAME} did not report sys.boot_completed=1 within ${Math.round(bootTimeoutMs / 1000)} s.`);
+        return 2;
+      }
+      serial = boot.serial;
+      cleanupState.serial = serial;
+      log(`Emulator ${serial} booted`);
+    }
+
+    // Refuse anything that is not an emulator, before anything is cleared, installed or launched.
+    if (!isEmulatorSerial(serial)) {
+      errorLog(`Refusing device ${serial}: only emulators (a serial starting with "emulator-") are accepted, because a run changes the device's screen density and installs an app on it.`);
+      return 2;
+    }
+
+    // One adb command against the chosen serial, with a timeout; `serial` is read at call time, so a
+    // recovery that lands on a new serial is picked up.
+    const adbArgs = (args) => ["-s", serial, ...args];
+    const adbCall = (args, timeoutMs = ADB_TIMEOUT_MS) => run(adb, adbArgs(args), { timeoutMs });
+    // Whether the device is still alive: `adb -s <serial> get-state` must exit 0 and print `device`.
+    // Anything else (offline, bootloader, no devices, serial not found, a non-zero exit) means the
+    // device is lost.
+    const deviceAlive = () => {
+      const state = adbCall(["get-state"]);
+      return state.code === 0 && state.stdout.trim() === "device";
+    };
+    // The original density is read before anything is changed; a failed or unparsable read ends the
+    // run with exit 2 (the cleanup then restores nothing, because it never set a density).
+    const densityOut = adbCall(["shell", "wm", "density"]);
+    const originalDensity = parseWmDensity(densityOut.stdout);
+    if (densityOut.code !== 0 || originalDensity.physical == null) {
+      errorLog(`could not read the original density from "adb -s ${serial} shell wm density" (exit ${densityOut.code}): ${tail(densityOut.stderr || densityOut.stdout)}`);
+      return 2;
+    }
+    cleanupState.originalDensity = originalDensity;
+    cleanupState.densityRead = true;
+
     if (!noBuild) {
-      if (!fileExists(join(android, "gradlew"))) {
-        errorLog(`No generated Android project at ${android}. Generate it once with: npx expo prebuild --platform android --no-install`);
-        return 2;
-      }
-      // A project generated before the config plugin wired the E2E flag into Gradle's bundle task would
-      // reuse the bundle of an earlier build with the other flag value, so refuse to build on it.
-      const gradleFile = join(android, "app", "build.gradle");
-      if (!fileExists(gradleFile) || !readFile(gradleFile).toString("utf8").includes(E2E_BUNDLE_INPUTS_MARKER)) {
-        errorLog(
-          `${gradleFile} does not carry the E2E build wiring (no line "${E2E_BUNDLE_INPUTS_MARKER}"), so a build could keep a stale JavaScript bundle. ` +
-            "Regenerate the project with: npx expo prebuild --platform android --no-install",
-        );
-        return 2;
-      }
       mkdir(metroCacheRoot({ e2e: true, tmpdir: tmpdir() }));
       const build = run(join(android, "gradlew"), gradleArgs(), {
         cwd: android,
@@ -625,10 +739,10 @@ export async function runAndroid(options) {
         return 1;
       }
       log("Gradle E2E release build finished (APK: android/app/build/outputs/apk/release/app-release.apk)");
-    }
-    if (!fileExists(apk)) {
-      errorLog(`No APK at ${apk}. Build it once without --no-build.`);
-      return 2;
+      if (!fileExists(apk)) {
+        errorLog(`No APK at ${apk} after the build.`);
+        return 2;
+      }
     }
     const install = adbCall(["install", "-r", apk], INSTALL_TIMEOUT_MS);
     if (install.code !== 0) {
@@ -651,18 +765,19 @@ export async function runAndroid(options) {
     // start that follows the clear).
     let seedPath = null;
     if (runnable.length > 0) {
-      seedDir = makeTempDir(join(tmpdir(), "dnd5e-android-seed-"));
-      seedPath = join(seedDir, SEED_FILE_NAME);
+      cleanupState.seedDir = makeTempDir(join(tmpdir(), "dnd5e-android-seed-"));
+      seedPath = join(cleanupState.seedDir, SEED_FILE_NAME);
       writeFile(seedPath, makeSeed({ root, integrated }));
     }
 
     // When the device is lost mid-run: if this run started the emulator, boot it again (at most
-    // MAX_EMULATOR_RECOVERIES times), wait for boot, install the APK, set the width's density again
-    // and let the caller repeat the scenario in reset+seed mode; a reused emulator is not restarted,
-    // so the run stops at that scenario. Returns whether the scenario can be repeated.
+    // MAX_EMULATOR_RECOVERIES times, with the same stripped environment), wait for boot, install the
+    // APK, set the width's density again and let the caller repeat the scenario in reset+seed mode;
+    // a reused emulator is not restarted, so the run stops at that scenario. Returns whether the
+    // scenario can be repeated.
     let recoveries = 0;
     const recoverLostDevice = async ({ screen, width, density, state }) => {
-      if (!started) {
+      if (!cleanupState.started) {
         errorLog(
           `[${width}dp] ${screen.name}: device ${serial} is gone (adb -s ${serial} get-state does not report "device"); ` +
             `this run did not start the emulator, so it is not restarted: stopping without running the remaining scenarios`,
@@ -675,15 +790,17 @@ export async function runAndroid(options) {
       }
       recoveries += 1;
       log(`[${width}dp] ${screen.name}: emulator lost, rebooting (${recoveries} of ${MAX_EMULATOR_RECOVERIES})`);
-      startEmulator(emulatorBin, emulatorArgs({ windowed }), join(shots, "emulator.log"), emulatorEnv(env));
-      const boot = await waitForBoot({ run, adb, sleep, timeoutMs: bootTimeoutMs });
+      cleanupState.pid = startEmulator(emulatorBin, emulatorArgs({ windowed }), join(shots, "emulator.log"), emulatorEnv(env));
+      const boot = await waitForBoot({ run, adb, sleep, timeoutMs: bootTimeoutMs, spawned: true, aborted });
       if (!boot.booted) {
-        if (boot.serial) run(adb, ["-s", boot.serial, "emu", "kill"], { timeoutMs: ADB_TIMEOUT_MS });
+        if (boot.serial) cleanupState.serial = boot.serial;
+        if (signalExitCode !== null) return false;
         errorLog(`rebooting ${AVD_NAME} after the emulator was lost did not report sys.boot_completed=1 within ${Math.round(bootTimeoutMs / 1000)} s; ending the run`);
         return false;
       }
       // The rebooted emulator is normally the same serial again, but read it from the boot wait.
       serial = boot.serial;
+      cleanupState.serial = serial;
       log(`Emulator ${serial} booted again`);
       const install = adbCall(["install", "-r", apk], INSTALL_TIMEOUT_MS);
       if (install.code !== 0) {
@@ -697,9 +814,9 @@ export async function runAndroid(options) {
     };
 
     let failures = 0;
-    let aborted = false;
+    let abortedRun = false;
     for (const width of widths) {
-      if (aborted || signalExitCode !== null) break;
+      if (abortedRun || signalExitCode !== null) break;
       const density = densityForWidth(width);
       adbCall(["shell", "wm", "density", String(density)]);
       log(`[${width}dp] density ${density}`);
@@ -707,7 +824,7 @@ export async function runAndroid(options) {
       // unknown at the start of the width, after a modal scenario and after a failed scenario.
       const state = { route: null };
       let index = 0;
-      while (index < runnable.length && !aborted) {
+      while (index < runnable.length && !abortedRun) {
         if (signalExitCode !== null) return signalExitCode;
         const screen = runnable[index];
         const runScreen = (firstOfWidth) =>
@@ -736,7 +853,7 @@ export async function runAndroid(options) {
         if (signalExitCode !== null) return signalExitCode;
         if (result === "lost") {
           if (!(await recoverLostDevice({ screen, width, density, state }))) {
-            aborted = true;
+            abortedRun = true;
             break;
           }
           if (signalExitCode !== null) return signalExitCode;
@@ -750,7 +867,7 @@ export async function runAndroid(options) {
       }
     }
     if (signalExitCode !== null) return signalExitCode;
-    if (aborted) return 1;
+    if (abortedRun) return 1;
     if (failures > 0) {
       errorLog(`Run finished with ${failures} failed scenario(s)`);
       return 1;

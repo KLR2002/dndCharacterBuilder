@@ -12,9 +12,16 @@
 // until the text is visible; a web-only scenario is listed and skipped), and the
 // `<scenario>-<width>.png` screenshot is pulled into the run's shots folder; a scenario that fails
 // after the launch also saves the stuck screen as `<scenario>-<width>-FAILED.png` and the run
-// continues, exiting non-zero. The original density is restored at the end (also after a failure,
-// and from the signal handler, which also stops an emulator this run started and exits 130/143).
-// Every adb call runs with a timeout, and the waits between polls are real asynchronous sleeps, so
+// continues, exiting non-zero. The signal handlers are installed before any device work, so a
+// signal during the boot wait already reaches them: the handler's cleanup stops an emulator this
+// run started (by `adb -s <serial> emu kill` once the serial is known, otherwise by killing the
+// spawned process group), restores the original density when it was read and removes the temp seed
+// dir, and this entry exits 130/143 right after the handler, so there the handler's cleanup is the
+// only one that runs; the same idempotent cleanup also runs on every other exit path. The original
+// density is restored at the end (also after a failure). An exception from the run (an unwritable
+// SHOTS folder, an unreadable build.gradle, a spawn error) runs that cleanup too, prints one line
+// `layout:android failed: <message>` and exits 2. Every adb call runs with a timeout, and the waits
+// between polls are real asynchronous sleeps, so
 // the event loop turns between device calls and a signal handler runs there. The device is checked
 // alive before each scenario and at every scenario failure point; when it is lost, an emulator this
 // run started is booted again (at most twice), reinstalled, re-densitied and the running scenario
@@ -63,37 +70,63 @@ function run(command, args, options = {}) {
 const sleep = (ms) => new Promise((resolvePromise) => setTimeout(resolvePromise, ms));
 
 // Starts the emulator detached with the given environment, logging to logPath, and returns its pid.
+// The spawn `error` event (a missing binary, say) is swallowed here: the pid then never exists, the
+// boot wait times out, and the cleanup's stop of that pid is a no-op; without the listener the event
+// would throw an unhandled error instead.
 function startEmulator(bin, args, logPath, env) {
   const out = fs.openSync(logPath, "a");
   const child = spawn(bin, args, { detached: true, stdio: ["ignore", out, out], env });
+  child.on("error", () => {});
   child.unref();
   return child.pid;
 }
 
-const code = await runAndroid({
-  root: ROOT,
-  env: process.env,
-  argv: process.argv.slice(2),
-  run,
-  sleep,
-  startEmulator,
-  fileExists: (path) => fs.existsSync(path),
-  writeFile: (path, content) => fs.writeFileSync(path, content),
-  readFile: (path) => fs.readFileSync(path),
-  mkdir: (path) => fs.mkdirSync(path, { recursive: true }),
-  makeTempDir: (prefix) => fs.mkdtempSync(prefix),
-  removeDir: (path) => fs.rmSync(path, { recursive: true, force: true }),
-  tmpdir,
-  homeDir: homedir(),
-  installSignalHandlers: (handler) => {
-    for (const [signal, exitCode] of [["SIGINT", 130], ["SIGTERM", 143]]) {
-      process.on(signal, () => {
-        handler(signal);
-        process.exit(exitCode);
-      });
-    }
-  },
-  log: (message) => console.log(message),
-  errorLog: (message) => console.error(message),
-});
+// Stops a spawned emulator process: the detached child leads its own process group, so kill the
+// group, falling back to the pid itself.
+function stopProcess(pid) {
+  try {
+    process.kill(-pid);
+  } catch {
+    process.kill(pid);
+  }
+}
+
+// The late-bound cleanup of the run, handed out through cleanupRef; when the run itself throws (an
+// unwritable SHOTS folder, an unreadable build.gradle, a spawn error), it still runs before exiting.
+const cleanupRef = { current: null };
+let code;
+try {
+  code = await runAndroid({
+    root: ROOT,
+    env: process.env,
+    argv: process.argv.slice(2),
+    run,
+    sleep,
+    startEmulator,
+    stopProcess,
+    cleanupRef,
+    fileExists: (path) => fs.existsSync(path),
+    writeFile: (path, content) => fs.writeFileSync(path, content),
+    readFile: (path) => fs.readFileSync(path),
+    mkdir: (path) => fs.mkdirSync(path, { recursive: true }),
+    makeTempDir: (prefix) => fs.mkdtempSync(prefix),
+    removeDir: (path) => fs.rmSync(path, { recursive: true, force: true }),
+    tmpdir,
+    homeDir: homedir(),
+    installSignalHandlers: (handler) => {
+      for (const [signal, exitCode] of [["SIGINT", 130], ["SIGTERM", 143]]) {
+        process.on(signal, () => {
+          handler(signal);
+          process.exit(exitCode);
+        });
+      }
+    },
+    log: (message) => console.log(message),
+    errorLog: (message) => console.error(message),
+  });
+} catch (error) {
+  cleanupRef.current?.();
+  console.error(`layout:android failed: ${error instanceof Error ? error.message : String(error)}`);
+  process.exit(2);
+}
 process.exit(code);

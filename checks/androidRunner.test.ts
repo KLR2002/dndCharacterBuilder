@@ -15,6 +15,7 @@ import {
   INSTALL_TIMEOUT_MS,
   MAX_EMULATOR_RECOVERIES,
   PNG_SIGNATURE,
+  PULL_TIMEOUT_MS,
   SCREENCAP_TIMEOUT_MS,
   SEED_FILE_NAME,
   apkPath,
@@ -132,6 +133,15 @@ function makeWorld(options: {
   // The `adb devices` output of the Nth devices call, to script a device that is offline on the
   // first call and ready later (an emulator listed but not ready yet, adopted without a boot).
   devicesFor?: (call: number) => string;
+  // The exit code of the Nth `adb devices` call, to script a cold or hung adb server.
+  devicesCodeFor?: (call: number) => number;
+  // The full result of the Nth `get-state` call, to script a device that exits 0 but reports a
+  // non-`device` state (offline, bootloader).
+  getStateFor?: (call: number) => { code: number; stdout: string; stderr?: string };
+  // The sys.boot_completed value per serial, so a stuck serial and a booting one can differ.
+  bootCompletedBySerial?: (serial: string) => string;
+  // The exit code of the `wm density` read, to script a failing density read.
+  wmDensityCode?: number;
   // The uiautomator dump command's exit code / stdout of the Nth dump, so a failed dump can be
   // scripted (a non-zero exit, or a zero exit whose output does not report the dump).
   dumpCodeFor?: (dump: number) => number;
@@ -152,6 +162,11 @@ function makeWorld(options: {
   const calls: Call[] = [];
   const starts: { bin: string; args: string[]; logPath: string; env?: Record<string, string> }[] = [];
   const handlers: ((signal?: string) => void)[] = [];
+  const stoppedPids: number[] = [];
+  // Snapshots taken in the same tick, right after a fired signal handler returns: the handler's own
+  // cleanup must already be visible in them.
+  const signalSnapshots: { calls: Call[]; stops: number[] }[] = [];
+  const cleanupRef: { current: (() => void) | null } = { current: null };
   const logs: string[] = [];
   const errors: string[] = [];
   const writes: { path: string; content: string }[] = [];
@@ -178,6 +193,8 @@ function makeWorld(options: {
     const reply = (code: number, stdout = "", stderr = "") => ({ code, stdout, stderr });
     if (args[0] === "devices") {
       devicesCalls += 1;
+      const devicesCode = options.devicesCodeFor ? options.devicesCodeFor(devicesCalls) : 0;
+      if (devicesCode !== 0) return reply(devicesCode, "", "adb: error: closed\n");
       const body = options.devicesFor
         ? options.devicesFor(devicesCalls)
         : offline
@@ -187,19 +204,26 @@ function makeWorld(options: {
             : (options.devices ?? "");
       return reply(0, `List of devices attached\n${body}\n`);
     }
+    if (args[0] === "start-server") return reply(0, "* daemon started successfully\n");
     if (args.includes("get-state")) {
       getStateCalls += 1;
       if (options.offlineAtGetStates?.includes(getStateCalls)) offline = true;
+      if (options.getStateFor) {
+        const r = options.getStateFor(getStateCalls);
+        return reply(r.code, r.stdout, r.stderr ?? "");
+      }
       return offline ? reply(1, "", "adb: device offline\n") : reply(0, "device\n");
     }
     // A dead device answers every `-s <serial>` command quickly with an error.
     if (offline && args[0] === "-s") return reply(1, "", `adb: device '${args[1]}' not found\n`);
     if (joined.includes("getprop sys.boot_completed")) {
-      const completed = options.bootCompletedFor ? options.bootCompletedFor(startCount) : (options.bootCompleted ?? "1");
+      let completed = options.bootCompletedFor ? options.bootCompletedFor(startCount) : (options.bootCompleted ?? "1");
+      if (options.bootCompletedBySerial && args[0] === "-s") completed = options.bootCompletedBySerial(args[1]);
       return reply(0, `${completed}\n`);
     }
     if (joined.includes("wm density") && !/wm density \d+|wm density reset/.test(joined)) {
-      return reply(0, options.wmDensity ?? "Physical density: 320\n");
+      const code = options.wmDensityCode ?? 0;
+      return code === 0 ? reply(0, options.wmDensity ?? "Physical density: 320\n") : reply(code, "", "Error: unknown command\n");
     }
     if (joined.includes("wm size")) return reply(0, options.wmSize ?? "Physical size: 720x1280\n");
     if (joined.includes("dumpsys window windows")) return reply(0, options.bars ?? DEFAULT_BARS);
@@ -270,7 +294,15 @@ function makeWorld(options: {
         sleeps.push(ms);
         clock += ms;
         await new Promise((resolvePromise) => setTimeout(resolvePromise, 0));
-        if (options.signalAtSleep === sleeps.length && handlers.length > 0) handlers[0](options.signalName ?? "SIGINT");
+        if (options.signalAtSleep === sleeps.length && handlers.length > 0) {
+          handlers[0](options.signalName ?? "SIGINT");
+          // Same tick, right after the handler returns: snapshot what the handler's own cleanup
+          // already did.
+          signalSnapshots.push({
+            calls: calls.map((c) => ({ command: c.command, args: [...c.args], options: c.options ? { ...c.options } : undefined })),
+            stops: [...stoppedPids],
+          });
+        }
       },
       now: () => clock,
       startEmulator: (bin: string, args: string[], logPath: string, emuEnv?: Record<string, string>) => {
@@ -281,6 +313,10 @@ function makeWorld(options: {
         offline = false;
         return 4321;
       },
+      stopProcess: (pid: number) => {
+        stoppedPids.push(pid);
+      },
+      cleanupRef,
       fileExists: (p: string) => {
         if (missing.some((m) => p.includes(m))) return false;
         // mkdir is real below, so the layout-android run folders and the pulled screenshots exist on
@@ -322,6 +358,9 @@ function makeWorld(options: {
     calls,
     starts,
     handlers,
+    stoppedPids,
+    signalSnapshots,
+    cleanupRef,
     logs,
     errors,
     writes,
@@ -641,15 +680,17 @@ test("--no-build skips Gradle and installs the APK already built", async () => {
   assert.equal(world.callsTo(`install -r ${APK}`).length, 1);
 });
 
-test("a missing android/ project stops with the prebuild hint", async () => {
+test("a missing android/ project stops with the prebuild hint, before any device work", async () => {
   const world = makeWorld({ ...emulatorWorld, argv: [], missing: ["gradlew"] });
   const code = await world.runRun();
   assert.equal(code, 2);
   assert.ok(world.errors.join("\n").includes("npx expo prebuild --platform android --no-install"));
   assert.equal(world.callsTo("gradlew").length, 0);
+  assert.equal(world.calls.length, 0, "a refusal costs no device call, let alone a boot");
+  assert.equal(world.starts.length, 0);
 });
 
-test("a generated android/ project without the bundle-input wiring stops with the prebuild hint", async () => {
+test("a generated android/ project without the bundle-input wiring stops with the prebuild hint, before any device work", async () => {
   const world = makeWorld({ ...emulatorWorld, argv: [], gradleText: "android { buildTypes { release { } } }" });
   const code = await world.runRun();
   assert.equal(code, 2);
@@ -657,14 +698,18 @@ test("a generated android/ project without the bundle-input wiring stops with th
   assert.ok(errors.includes("npx expo prebuild --platform android --no-install"));
   assert.ok(errors.includes(E2E_BUNDLE_INPUTS_MARKER));
   assert.equal(world.callsTo("gradlew").length, 0);
+  assert.equal(world.calls.length, 0);
+  assert.equal(world.starts.length, 0);
 });
 
-test("a missing APK stops the run before installing", async () => {
+test("a missing APK with --no-build stops the run before installing and before any device work", async () => {
   const world = makeWorld({ ...emulatorWorld, argv: ["--no-build"], missing: ["app-release.apk"] });
   const code = await world.runRun();
   assert.equal(code, 2);
   assert.ok(world.errors.join("\n").includes("app-release.apk"));
   assert.equal(world.callsTo("install").length, 0);
+  assert.equal(world.calls.length, 0, "a refusal costs no device call, let alone a boot");
+  assert.equal(world.starts.length, 0);
 });
 
 test("a failing install exits non-zero and restores the density", async () => {
@@ -740,6 +785,7 @@ test("one scenario runs end to end: reset, seed copy, deep link, ready poll, scr
   assert.equal(code, 0);
   assert.deepEqual(markersOf(world), [
     "devices",
+    "getprop",
     "read-density",
     "install",
     "set-density:320",
@@ -1168,9 +1214,12 @@ test("a runner-started emulator lost before a scenario is rebooted, reinstalled,
   assert.equal(code, 0);
   // The recovery line, once.
   assert.deepEqual(world.logs.filter((m) => m.includes("emulator lost, rebooting")), ["[360dp] Settings: emulator lost, rebooting (1 of 2)"]);
-  // Booted twice, the second time with the same arguments; the boot wait read the new serial.
+  // Booted twice, the second time with the same arguments and the same stripped environment (no
+  // LD_LIBRARY_PATH); the boot wait read the new serial.
   assert.equal(world.starts.length, 2);
   assert.deepEqual(world.starts[1].args, world.starts[0].args);
+  assert.deepEqual(world.starts[1].env, world.starts[0].env);
+  assert.ok(!("LD_LIBRARY_PATH" in world.starts[1].env!), "the reboot's environment is stripped too");
   assert.ok(world.callsTo("-s emulator-5555 shell getprop").length >= 1);
   // The APK is installed again on the new serial, and the width's density set again after the reboot.
   assert.equal(world.callsTo("install -r").length, 2);
@@ -1633,6 +1682,13 @@ test("a SIGINT delivered between two scenarios runs the cleanup (density restore
   assert.ok(!existsSync(join(shots, "Settings-360.png")), "no further scenario runs");
   assert.equal(world.callsTo("am start").length, 1);
   assert.equal(world.callsTo("screencap").length, 1);
+  // The handler's own cleanup already ran in the same tick it was fired: the snapshot taken right
+  // after the handler returned already holds the density restore and the emulator stop.
+  assert.equal(world.signalSnapshots.length, 1);
+  const snapshot = world.signalSnapshots[0];
+  assert.ok(snapshot.calls.some((c) => c.args.join(" ").includes("emu kill")), "emu kill already in the handler's own cleanup");
+  assert.ok(snapshot.calls.some((c) => c.args.join(" ").includes("wm density reset")), "density restore already in the handler's own cleanup");
+  assert.deepEqual(snapshot.stops, [], "the serial is known, so the emulator is stopped by emu kill, not by pid");
 });
 
 test("a SIGTERM between two scenarios ends the run with exit 143", async () => {
@@ -1648,6 +1704,13 @@ test("a SIGTERM between two scenarios ends the run with exit 143", async () => {
   assert.equal(world.callsTo("wm density reset").length, 1);
   assert.equal(world.callsTo("emu kill").length, 0, "a reused emulator is not stopped");
   assert.ok(!existsSync(join(shots, "Settings-360.png")));
+  // Same tick as the handler: the density restore is already in the snapshot, and nothing is
+  // stopped because this run did not start the emulator.
+  assert.equal(world.signalSnapshots.length, 1);
+  const snapshot = world.signalSnapshots[0];
+  assert.ok(snapshot.calls.some((c) => c.args.join(" ").includes("wm density reset")));
+  assert.equal(snapshot.calls.filter((c) => c.args.join(" ").includes("emu kill")).length, 0);
+  assert.deepEqual(snapshot.stops, []);
 });
 
 // --- The seed the runner stages parses with the app's own parseE2eSeed ---
@@ -1663,4 +1726,223 @@ test("buildSeed output, serialised, parses with the app's parseE2eSeed in SRD an
     assert.ok(Array.isArray(parsed.folders));
     assert.ok(parsed.settings && typeof parsed.settings === "object");
   }
+});
+
+
+// --- Signals during the waits: the handlers are installed before any device work, and the
+// handler's own cleanup runs in the same tick it is fired ---
+
+test("a SIGINT during the boot wait: the handlers are already installed and the spawned pid is killed through stopProcess, exit 130", async () => {
+  const shots = mkdtempSync(join(osTmpdir(), "android-runner-test-"));
+  const world = makeWorld({
+    devices: "",
+    bootDevices: "emulator-5554\toffline\n",
+    bootCompleted: "0",
+    env: { ONLY: "Home", WIDTHS: "360", SHOTS: shots },
+    signalAtSleep: 1, // the first sleep of the boot wait
+  });
+  const code = await world.runRun();
+  assert.equal(code, 130);
+  assert.equal(world.starts.length, 1);
+  assert.deepEqual(world.stoppedPids, [4321], "no serial is known yet, so the spawned process is killed");
+  assert.equal(world.callsTo("emu kill").length, 0);
+  assert.equal(world.callsTo("wm density reset").length, 0, "the density was never read");
+  assert.equal(world.callsTo("install").length, 0);
+  // The pid kill already happened inside the handler, in the same tick it was fired.
+  assert.equal(world.signalSnapshots.length, 1);
+  assert.deepEqual(world.signalSnapshots[0].stops, [4321]);
+  assert.equal(world.signalSnapshots[0].calls.filter((c) => c.args.join(" ").includes("emu kill")).length, 0);
+});
+
+test("a SIGINT during the recovery boot: the handler's own cleanup already stopped the started emulator and restored the density, exit 130", async () => {
+  const shots = mkdtempSync(join(osTmpdir(), "android-runner-test-"));
+  const world = makeWorld({
+    devices: "",
+    bootDevices: "emulator-5554\tdevice\n",
+    // The first boot completes; the recovery reboot never reports sys.boot_completed=1.
+    bootCompletedFor: (n) => (n === 1 ? "1" : "0"),
+    offlineAtGetStates: [2],
+    env: { ONLY: "Home,Settings", WIDTHS: "360", SHOTS: shots },
+    signalAtSleep: 2, // Home's settle sleep is 1; the recovery boot wait's sleep is 2
+  });
+  const code = await world.runRun();
+  assert.equal(code, 130);
+  assert.equal(world.starts.length, 2);
+  assert.equal(world.signalSnapshots.length, 1);
+  const snapshot = world.signalSnapshots[0];
+  assert.ok(snapshot.calls.some((c) => c.args.join(" ").includes("emu kill")), "emu kill already in the handler's own cleanup");
+  assert.ok(snapshot.calls.some((c) => c.args.join(" ").includes("wm density reset")), "density restore already in the handler's own cleanup");
+  assert.deepEqual(snapshot.stops, [], "the serial is known, so emu kill is used, not the pid kill");
+});
+
+test("a boot timeout where the spawned emulator never appeared in adb devices kills the spawned process", async () => {
+  const world = makeWorld({ devices: "", bootDevices: "", bootCompleted: "0", env: { ONLY: "Home", WIDTHS: "360" } });
+  const code = await world.runRun();
+  assert.equal(code, 2);
+  assert.ok(world.errors.join("\n").includes("sys.boot_completed"));
+  assert.equal(world.starts.length, 1);
+  assert.deepEqual(world.stoppedPids, [4321], "no serial was ever listed, so the pid is killed");
+  assert.equal(world.callsTo("emu kill").length, 0);
+  assert.equal(world.callsTo("getprop").length, 0);
+});
+
+test("the run hands its late-bound cleanup to the entry through cleanupRef, idempotently", async () => {
+  const shots = mkdtempSync(join(osTmpdir(), "android-runner-test-"));
+  const world = makeWorld({ ...emulatorWorld, env: { ONLY: "Home", WIDTHS: "360", SHOTS: shots } });
+  assert.equal(await world.runRun(), 0);
+  assert.equal(typeof world.cleanupRef.current, "function");
+  const callsAfterRun = world.calls.length;
+  world.cleanupRef.current!();
+  assert.equal(world.calls.length, callsAfterRun, "the run already cleaned up; the extra call is a no-op");
+});
+
+// --- adb devices exit code: start-server and one retry, else exit 2 before spawning ---
+
+test("an adb devices failure is retried once after adb start-server; still failing exits 2 before spawning anything", async () => {
+  const world = makeWorld({ devicesCodeFor: () => 1, env: { ONLY: "Home", WIDTHS: "360" } });
+  const code = await world.runRun();
+  assert.equal(code, 2);
+  assert.ok(world.errors.join("\n").includes("adb devices"));
+  assert.equal(world.callsTo("start-server").length, 1);
+  assert.equal(world.callsTo("devices").length, 2);
+  assert.equal(world.starts.length, 0, "nothing is spawned on an unreadable device list");
+  assert.equal(world.callsTo("getprop").length, 0);
+});
+
+test("an adb devices failure that clears after adb start-server runs normally", async () => {
+  const shots = mkdtempSync(join(osTmpdir(), "android-runner-test-"));
+  const world = makeWorld({ ...emulatorWorld, devicesCodeFor: (n) => (n === 1 ? 1 : 0), env: { ONLY: "Home", WIDTHS: "360", SHOTS: shots } });
+  const code = await world.runRun();
+  assert.equal(code, 0);
+  assert.equal(world.callsTo("start-server").length, 1);
+  assert.equal(world.callsTo("-s emulator-5554 install -r").length, 1);
+  assert.ok(existsSync(join(shots, "Home-360.png")));
+});
+
+// --- A reused emulator waits for sys.boot_completed before anything else touches it ---
+
+test("a reused emulator that never reports sys.boot_completed=1 exits 2 before changing anything and stops nothing", async () => {
+  const shots = mkdtempSync(join(osTmpdir(), "android-runner-test-"));
+  const world = makeWorld({ ...emulatorWorld, bootCompleted: "0", env: { ONLY: "Home", WIDTHS: "360", SHOTS: shots } });
+  const code = await world.runRun();
+  assert.equal(code, 2);
+  assert.ok(world.errors.join("\n").includes("sys.boot_completed"));
+  assert.ok(world.callsTo("getprop").length >= 1);
+  // The boot check is the first device interaction after the listing.
+  assert.equal(world.calls[1].args.join(" "), "-s emulator-5554 shell getprop sys.boot_completed");
+  assert.equal(world.callsTo("install").length, 0);
+  assert.equal(world.callsTo("am start").length, 0);
+  assert.equal(world.callsTo("wm density").filter((c) => /wm density \d+|wm density reset/.test(c.args.join(" "))).length, 0);
+  assert.equal(world.callsTo("wm density reset").length, 0, "the density was never read, so nothing is restored");
+  assert.equal(world.starts.length, 0);
+  assert.equal(world.callsTo("emu kill").length, 0);
+  assert.deepEqual(world.stoppedPids, []);
+});
+
+// --- The boot wait prefers a device-state serial not listed before the spawn over a stuck one ---
+
+test("the boot wait never polls a stuck offline serial when the spawned emulator appears", async () => {
+  const shots = mkdtempSync(join(osTmpdir(), "android-runner-test-"));
+  const world = makeWorld({
+    // call 1: nothing (the runner decides to spawn); call 2: the pre-spawn listing already has a
+    // stuck offline emulator; from call 3 on our spawned emulator appears, booting then booted.
+    devicesFor: (n) =>
+      n === 1 ? "" : n === 2 ? "emulator-5554\toffline\n" : n === 3 ? "emulator-5554\toffline\nemulator-5556\toffline\n" : "emulator-5554\toffline\nemulator-5556\tdevice\n",
+    bootCompletedBySerial: (serial) => (serial === "emulator-5556" ? "1" : "0"),
+    env: { ONLY: "Home", WIDTHS: "360", SHOTS: shots },
+  });
+  const code = await world.runRun();
+  assert.equal(code, 0);
+  assert.equal(world.callsTo("-s emulator-5554 shell getprop").length, 0, "the stuck serial is never polled");
+  assert.ok(world.callsTo("-s emulator-5556 shell getprop").length >= 1);
+  assert.equal(world.callsTo("-s emulator-5556 install -r").length, 1);
+  assert.ok(existsSync(join(shots, "Home-360.png")));
+});
+
+// --- A failed or unparsable density read exits 2 before anything is changed ---
+
+test("a wm density read that fails exits 2 before anything is changed and restores nothing", async () => {
+  const world = makeWorld({ ...emulatorWorld, wmDensityCode: 1, env: { ONLY: "Home", WIDTHS: "360" } });
+  const code = await world.runRun();
+  assert.equal(code, 2);
+  assert.ok(world.errors.join("\n").includes("wm density"));
+  assert.equal(world.callsTo("install").length, 0);
+  assert.equal(world.callsTo("am start").length, 0);
+  assert.equal(world.callsTo("wm density").filter((c) => /wm density \d+|wm density reset/.test(c.args.join(" "))).length, 0);
+  assert.equal(world.callsTo("wm density reset").length, 0, "a density that was never read is not restored");
+  assert.equal(world.callsTo("emu kill").length, 0);
+});
+
+test("a wm density read that cannot be parsed exits 2 the same way", async () => {
+  const world = makeWorld({ ...emulatorWorld, wmDensity: "garbage\n", env: { ONLY: "Home", WIDTHS: "360" } });
+  const code = await world.runRun();
+  assert.equal(code, 2);
+  assert.ok(world.errors.join("\n").includes("wm density"));
+  assert.equal(world.callsTo("install").length, 0);
+  assert.equal(world.callsTo("wm density reset").length, 0);
+});
+
+// --- A get-state that exits 0 but reports a non-device state counts as lost ---
+
+test("a get-state that exits 0 but prints offline or bootloader counts as a lost device", async () => {
+  for (const stateText of ["offline", "bootloader"]) {
+    const shots = mkdtempSync(join(osTmpdir(), "android-runner-test-"));
+    const world = makeWorld({
+      ...emulatorWorld,
+      getStateFor: (n) => (n === 2 ? { code: 0, stdout: `${stateText}\n` } : { code: 0, stdout: "device\n" }),
+      env: { ONLY: "Home,Settings", WIDTHS: "360", SHOTS: shots },
+    });
+    const code = await world.runRun();
+    assert.notEqual(code, 0, stateText);
+    const err = world.errors.join("\n");
+    assert.ok(err.includes("[360dp] Settings"), err);
+    assert.ok(err.includes("did not start"), err);
+    assert.ok(existsSync(join(shots, "Home-360.png")), stateText);
+    assert.ok(!existsSync(join(shots, "Settings-360.png")), stateText);
+  }
+});
+
+// --- A missing app/build.gradle (with gradlew present) refuses before any device work ---
+
+test("a generated project whose app/build.gradle is missing stops with the prebuild hint, before any device work", async () => {
+  const world = makeWorld({ ...emulatorWorld, argv: [], missing: ["app/build.gradle"] });
+  const code = await world.runRun();
+  assert.equal(code, 2);
+  assert.ok(world.errors.join("\n").includes("npx expo prebuild --platform android --no-install"));
+  assert.equal(world.calls.length, 0);
+  assert.equal(world.starts.length, 0);
+});
+
+// --- Every adb call of a started-emulator run carries its timeout, including boot wait and emu kill ---
+
+test("every adb call of a started-emulator run carries its timeout: boot wait and emu kill included", async () => {
+  const shots = mkdtempSync(join(osTmpdir(), "android-runner-test-"));
+  const world = makeWorld({ devices: "", bootDevices: "emulator-5554\tdevice\n", env: { ONLY: "Home", WIDTHS: "360", SHOTS: shots } });
+  assert.equal(await world.runRun(), 0);
+  const adbCalls = world.calls.filter((c) => c.command === ADB);
+  assert.ok(adbCalls.length > 0);
+  for (const c of adbCalls) {
+    const j = c.args.join(" ");
+    const expected = j.includes("install")
+      ? INSTALL_TIMEOUT_MS
+      : j.includes("uiautomator")
+        ? DUMP_TIMEOUT_MS
+        : j.includes("screencap")
+          ? SCREENCAP_TIMEOUT_MS
+          : j.includes("pull")
+            ? PULL_TIMEOUT_MS
+            : ADB_TIMEOUT_MS;
+    assert.equal(c.options?.timeoutMs, expected, j);
+  }
+  // Distinct values, so mixing the constants up fails above.
+  assert.notEqual(ADB_TIMEOUT_MS, INSTALL_TIMEOUT_MS);
+  assert.notEqual(ADB_TIMEOUT_MS, DUMP_TIMEOUT_MS);
+  assert.notEqual(INSTALL_TIMEOUT_MS, DUMP_TIMEOUT_MS);
+  // The boot wait calls and the emu kill are covered: they exist and carry the default timeout.
+  assert.ok(world.callsTo("getprop").length >= 1);
+  assert.ok(world.callsTo("getprop").every((c) => c.options?.timeoutMs === ADB_TIMEOUT_MS));
+  assert.ok(world.callsTo("devices").every((c) => c.options?.timeoutMs === ADB_TIMEOUT_MS));
+  assert.equal(world.callsTo("emu kill").length, 1);
+  assert.equal(world.callsTo("emu kill")[0].options?.timeoutMs, ADB_TIMEOUT_MS);
+  assert.equal(world.callsTo(`install -r ${APK}`)[0].options?.timeoutMs, INSTALL_TIMEOUT_MS);
 });
