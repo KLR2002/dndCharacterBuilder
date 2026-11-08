@@ -2,7 +2,7 @@ import { ALL_BOOKS } from "../src/constants/books.ts";
 import test from "node:test";
 import assert from "node:assert/strict";
 import { makeChar, inMemoryCompendium } from "./testUtils.ts";
-import { normalizeSkillName, skills } from "../src/rules/skills.ts";
+import { skills } from "../src/rules/skills.ts";
 import { getAutoGrantedSkills } from "../src/rules/proficiencySources/skillGrants.ts";
 import { setChoiceRacialBonus } from "../src/rules/builderTransitions.ts";
 import { proficiencySheet } from "../src/rules/proficiencySheet.ts";
@@ -106,7 +106,6 @@ test("Race skill choices do not consume class skill choices and lock already gra
   // Character has Soldier background (Athletics, Intimidation).
   // Race: Half-Elf granting 2 choices. Player picks Survival and Stealth.
   // Class: Fighter granting 2 choices from [Acrobatics, Animal Handling, Athletics, History, Insight, Intimidation, Perception, Survival].
-  const backgroundSkills = ["Athletics", "Intimidation"];
   const raceChoicePicks = ["Survival", "Stealth"];
 
   const autoGrantedBase = ["Athletics", "Intimidation"]; // From background
@@ -133,7 +132,6 @@ test("Race skill choices do not consume class skill choices and lock already gra
   // In Fighter's SkillPicker:
   // pickerChosen = normChosen.filter(s => normFrom.includes(s) && !normAuto.includes(s))
   // Even if character.chosenSkills has ["Survival", "Stealth"]:
-  const characterChosenSkills = ["Survival", "Stealth"];
   const fighterClassPicks: string[] = []; // Fighter has not chosen yet
 
   const pickerChosen = fighterClassPicks.filter(

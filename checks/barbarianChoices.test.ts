@@ -5,7 +5,6 @@ import { inMemoryCompendium, makeChar } from "./testUtils.ts";
 import { proficiencySheet } from "../src/rules/proficiencySheet.ts";
 import {
   subclassRuleChoices,
-  availableSubclassRuleChoices,
   pickRuleChoice,
 } from "../src/rules/ruleChoices.ts";
 import { createCompendium } from "../src/services/compendium.ts";

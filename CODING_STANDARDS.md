@@ -40,6 +40,9 @@ Judgement calls and rules conventions enforced during code review.
     - Level-gated milestones (e.g., Monk Elemental Disciplines, class archetype unlocks): must verify higher-tier choices are absent/rejected at lower levels, and pre-unlock levels offer zero choices.
 - **Dual-Mode SRD vs. Compendium Invariant**:
   - Mechanics or UI altering ancestry traits, race variants, or class progression must verify behavior across both SRD-only mode and integrated compendium mode to ensure changes for one mode do not regress choices in the other.
+- **Fakes That Can Fail**:
+  - A fake of an external process or service (adb, Gradle, the file system, a network call) can return each failure the code handles, and tells its instances apart (distinct pids, serials, paths). A failure path a test claims is driven by the fake returning that failure; a fake that answers success to every call cannot catch it.
+  - Expected values are written as literals or come from an independent source, not from the constants of the module under test.
 - **Live Catalog Invariant**:
   - The in-app sync builds a different catalog from the tracked snapshot (both prints of every class, items in the 2024 shapes). A change that reads grants, owners, items or class records must hold on that catalog: `npm run check:live` passes, and a new invariant about catalog shape goes into `checks/liveCatalog.test.ts`.
 

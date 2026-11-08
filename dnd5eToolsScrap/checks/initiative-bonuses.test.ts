@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { extractInitiativeBonus } from "../src/parser/initiative-bonuses.ts";
+import { candidateSentences, extractInitiativeBonus } from "../src/parser/initiative-bonuses.ts";
 
 // Every name and sentence in this file is invented. The extractor reads prose; it must not need real rule text.
 
@@ -24,7 +24,7 @@ test("a roll sentence under an Initiative Bonus heading is an ability Initiative
 });
 
 test("every ability name reads as its key", () => {
-  const abilities: Array<[string, string]> = [
+  const abilities: [string, string][] = [
     ["Strength", "str"],
     ["Dexterity", "dex"],
     ["Constitution", "con"],
@@ -138,4 +138,33 @@ test("a flat and a proficiency bonus in one feature are two different bonuses, r
   );
   assert.equal(result.bonus, undefined);
   assert.equal(result.unparsed.length, 2);
+});
+
+test("a bonus to the roll when you roll initiative, equal to an ability modifier, is an ability Initiative Bonus", () => {
+  const result = extractInitiativeBonus(
+    "Sample Gambit. When you roll Initiative, you can give yourself a bonus to the roll equal to your Charisma modifier.",
+  );
+  assert.deepEqual(result, { bonus: { kind: "ability", ability: "cha" }, unparsed: [] });
+});
+
+test("a bonus to the roll when you roll initiative, equal to the proficiency bonus, is a proficiency Initiative Bonus", () => {
+  const result = extractInitiativeBonus(
+    "Sample Snap. When you roll initiative, you can give yourself a bonus to the roll equal to your proficiency bonus.",
+  );
+  assert.deepEqual(result, { bonus: { kind: "proficiency" }, unparsed: [] });
+});
+
+test("a bonus to the roll on another roll is not a candidate when the sentence does not name initiative", () => {
+  const sentence =
+    "When you make a Dexterity saving throw, you can give yourself a bonus to the roll equal to your Charisma modifier";
+  const result = extractInitiativeBonus(`Sample Ward. ${sentence}.`);
+  assert.deepEqual(result, { bonus: undefined, unparsed: [] });
+  assert.deepEqual(candidateSentences(`Sample Ward. ${sentence}.`), []);
+});
+
+test("a bonus to the roll on another roll is not a candidate even when the sentence names initiative, so it is not reported", () => {
+  const description =
+    "Sample Edge. You have advantage on initiative, and when you make a Dexterity saving throw you can give yourself a bonus to the roll equal to your Charisma modifier.";
+  assert.deepEqual(extractInitiativeBonus(description), { bonus: undefined, unparsed: [] });
+  assert.deepEqual(candidateSentences(description), []);
 });

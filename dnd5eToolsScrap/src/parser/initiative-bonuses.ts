@@ -42,12 +42,19 @@ const GIVEN_ABILITY = new RegExp(`\\ba bonus to (?:your )?initiative(?: rolls)? 
 const ADDED_ABILITY = new RegExp(`\\badd your ${ABILITY} modifier to (?:your )?initiative(?: rolls)?$`, "i");
 /** "When you roll initiative, you can add your Wisdom modifier to the roll", as the rule text states it under its heading. */
 const ROLL_ABILITY = new RegExp(`\\bwhen you roll initiative, you can add your ${ABILITY} modifier to the roll$`, "i");
+/** "When you roll initiative, you can give yourself a bonus to the roll equal to your Charisma modifier", as the rule text gives it. */
+const ROLL_GIVEN_ABILITY = new RegExp(
+  `\\bwhen you roll initiative, you can give yourself a bonus to the roll equal to your ${ABILITY} modifier$`,
+  "i"
+);
 
 /** "... you all gain a bonus to initiative equal to your proficiency bonus", and "... add your proficiency bonus to your initiative rolls". */
 const GIVEN_PROFICIENCY = /\ba bonus to (?:your )?initiative(?: rolls)? equal to your proficiency bonus$/i;
 const ADDED_PROFICIENCY = /\badd your proficiency bonus to (?:your )?initiative(?: rolls)?$/i;
 /** "When you roll initiative, you can add your proficiency bonus to the roll", as the rule text states it under its heading. */
 const ROLL_PROFICIENCY = /\bwhen you roll initiative, you can add your proficiency bonus to the roll$/i;
+/** "When you roll initiative, you can give yourself a bonus to the roll equal to your proficiency bonus". */
+const ROLL_GIVEN_PROFICIENCY = /\bwhen you roll initiative, you can give yourself a bonus to the roll equal to your proficiency bonus$/i;
 /** "... you gain a +5 bonus to initiative", and "+5 bonus to initiative" with no article. */
 const FLAT = /\+(\d+) bonus to (?:your )?initiative(?: rolls)?$/i;
 
@@ -61,11 +68,14 @@ const HOLDER_GAINS = /\byou(?: all)?(?: can)? (?:gain|have|get)\b|\bgive yoursel
 
 /**
  * A sentence that names initiative and gives a bonus to it: "bonus to initiative", "bonus to your initiative rolls",
- * or an "add" to a roll. A bare "bonus" does not count, so "your Proficiency Bonus" in a roll trigger does not match.
- * Advantage and shared initiative counts do not match.
+ * an "add" to a roll, or a "bonus to the roll" of a sentence that begins "when you roll initiative". A bare "bonus"
+ * does not count, so "your Proficiency Bonus" in a roll trigger does not match. A "bonus to the roll" on any other
+ * roll does not match. Advantage and shared initiative counts do not match.
  */
 function isInitiativeBonusSentence(sentence: string): boolean {
-  return /\binitiative\b/i.test(sentence) && /\b(?:bonus (?:to )?(?:your )?initiative|add)\b/i.test(sentence);
+  if (!/\binitiative\b/i.test(sentence)) return false;
+  if (/\b(?:bonus (?:to )?(?:your )?initiative|add)\b/i.test(sentence)) return true;
+  return /\bwhen you roll initiative\b/i.test(sentence) && /\bbonus to the roll\b/i.test(sentence);
 }
 
 /**
@@ -82,13 +92,18 @@ export function candidateSentences(description: string): string[] {
 
 function parseSentence(sentence: string): InitiativeBonus | null {
   const holderGains = HOLDER_GAINS.test(sentence);
-  const abilityMatch = (holderGains ? GIVEN_ABILITY.exec(sentence) : null) ?? ADDED_ABILITY.exec(sentence) ?? ROLL_ABILITY.exec(sentence);
+  const abilityMatch =
+    (holderGains ? GIVEN_ABILITY.exec(sentence) : null) ??
+    ADDED_ABILITY.exec(sentence) ??
+    ROLL_ABILITY.exec(sentence) ??
+    ROLL_GIVEN_ABILITY.exec(sentence);
   if (abilityMatch) {
     const ability = ABILITY_KEYS.get((abilityMatch[1] ?? "").toLowerCase());
     return ability ? { kind: "ability", ability } : null;
   }
   const proficiencyAdded = ADDED_PROFICIENCY.test(sentence) || ROLL_PROFICIENCY.test(sentence);
-  if (proficiencyAdded || (holderGains && GIVEN_PROFICIENCY.test(sentence))) return { kind: "proficiency" };
+  const proficiencyGiven = (holderGains && GIVEN_PROFICIENCY.test(sentence)) || ROLL_GIVEN_PROFICIENCY.test(sentence);
+  if (proficiencyAdded || proficiencyGiven) return { kind: "proficiency" };
   const flat = holderGains ? FLAT.exec(sentence) : null;
   return flat ? { kind: "flat", value: Number(flat[1]) } : null;
 }
@@ -120,7 +135,7 @@ export function resolveInitiativeBonuses(
   subjects: GrantSubject[],
   overrides: InitiativeBonusOverride[],
   report: ProficiencyReport
-): Array<InitiativeBonus | undefined> {
+): (InitiativeBonus | undefined)[] {
   const overrideByKey = new Map(overrides.map((override) => [featureKey(override), override]));
   const reported = new Set<string>();
   return subjects.map((subject) => {

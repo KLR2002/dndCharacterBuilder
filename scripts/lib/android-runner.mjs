@@ -9,7 +9,7 @@
 import { join } from "node:path";
 import { buildScreens, buildSeed } from "./scenarios.mjs";
 import { playScreen } from "./native-steps.mjs";
-import { parseDump } from "./uiautomator.mjs";
+import { parseDumpOutput } from "./uiautomator.mjs";
 import { E2E_BUNDLE_INPUTS_MARKER } from "../../plugins/lib/e2e-build-transforms.mjs";
 
 // The app id of the (E2E) build, and the AVD the runner boots when no emulator is running.
@@ -46,8 +46,6 @@ export const WIDTH_MAX = 1000;
 // check waits for its ready condition.
 export const READY_TIMEOUT_MS = 10_000;
 export const READY_POLL_MS = 500;
-// Where the device writes the dump that is polled and the screenshots that are pulled.
-export const DUMP_REMOTE = "/sdcard/e2e-dump.xml";
 // A deep-link launch that exits non-zero is retried once after about this long (a real run saw one
 // transient exit 255 that passed on its own).
 export const LAUNCH_RETRY_DELAY_MS = 1_000;
@@ -194,10 +192,15 @@ export function emulatorArgs({ windowed = false } = {}) {
   return ["-avd", AVD_NAME, "-no-snapshot-save", "-no-audio", "-gpu", "angle_indirect", ...(windowed ? [] : ["-no-window"])];
 }
 
-// The incremental E2E release build, run from android/.
+// The incremental E2E release build, run from android/. `--no-daemon` makes the build's JVM exit with
+// the build, so the run leaves no Gradle daemon behind.
 export function gradleArgs() {
-  return [":app:assembleRelease", "-PreactNativeArchitectures=x86_64", "-Pe2e", "--console=plain"];
+  return [":app:assembleRelease", "-PreactNativeArchitectures=x86_64", "-Pe2e", "--no-daemon", "--console=plain"];
 }
+
+// What `adb start-server` prints on stderr when it starts the server (it prints nothing when a server
+// is already running).
+const ADB_SERVER_START_PATTERN = /daemon not running; starting now|daemon started successfully/;
 
 export function apkPath(root) {
   return join(root, "android", "app", "build", "outputs", "apk", "release", "app-release.apk");
@@ -381,14 +384,13 @@ async function runScenario({ adbCall, screen, width, shots, seedPath, state, fir
   // The step fields are played on fresh dumps: a tap lands at the matched node's centre, a swipe is an
   // `input swipe` mid-screen. A step whose target never shows fails the scenario with a message naming it;
   // a warning (an absent scrollTo needle, say) is logged and the scenario still screenshots.
+  // One call per poll: the hierarchy comes back on stdout, so no file is written on the device and no
+  // earlier hierarchy can be read. A dump that exits non-zero, or whose output is not a completed dump,
+  // is an empty node list for this poll.
   const dump = () => {
-    // The remote dump file is deleted before every dump, so a failed dump cannot read a stale
-    // hierarchy: a dump whose exit code is non-zero, or whose output does not report the dump, is an
-    // empty node list for this poll.
-    adbCall(["shell", "rm", "-f", DUMP_REMOTE]);
-    const dumped = adbCall(["shell", "uiautomator", "dump", DUMP_REMOTE], DUMP_TIMEOUT_MS);
-    if (dumped.code !== 0 || !/dumped to:/.test(dumped.stdout)) return [];
-    return parseDump(adbCall(["exec-out", "cat", DUMP_REMOTE]).stdout);
+    const dumped = adbCall(["exec-out", "uiautomator", "dump", "/dev/tty"], DUMP_TIMEOUT_MS);
+    if (dumped.code !== 0) return [];
+    return parseDumpOutput(dumped.stdout) ?? [];
   };
   const tap = (point) => adbCall(["shell", "input", "tap", String(point.x), String(point.y)]);
   const swipe = (args) => adbCall(["shell", "input", "swipe", ...args.map(String)]);
@@ -444,7 +446,8 @@ async function runScenario({ adbCall, screen, width, shots, seedPath, state, fir
 // The cleanup stops an emulator this run started by `adb -s <serial> emu kill` when the serial is
 // known and otherwise by killing the spawned process through the injectable `stopProcess` (a boot
 // timeout before the emulator ever appeared in `adb devices` has no serial, so the pid-kill covers
-// it), restores the density only when it was read, and removes the temp seed dir. Then find or start
+// it), restores the density only when it was read, stops the adb server only when this run started it
+// (`adb start-server` says so on its output), and removes the temp seed dir. Then find or start
 // the emulator — `adb devices` is checked for its exit code and retried once after
 // `adb start-server`, a still-failing call exits 2 before anything is spawned; a ready emulator
 // serial is reused, but only after it reports sys.boot_completed=1 (adbd answers early, so a
@@ -569,7 +572,7 @@ export async function runAndroid(options) {
 
   // The late-bound cleanup and the signal handlers, installed before any device work or emulator
   // spawn, so a signal during the boot wait already reaches the handler.
-  const cleanupState = { pid: null, serial: null, started: false, densityRead: false, originalDensity: null, seedDir: null };
+  const cleanupState = { pid: null, serial: null, started: false, densityRead: false, originalDensity: null, seedDir: null, adbServerStarted: false };
   let cleanedUp = false;
   const cleanup = () => {
     if (cleanedUp) return;
@@ -603,6 +606,15 @@ export async function runAndroid(options) {
         }
       }
     }
+    // The adb server is stopped only when this run started it; one that was already running is left alone.
+    if (cleanupState.adbServerStarted) {
+      try {
+        const killed = run(adb, ["kill-server"], { timeoutMs: ADB_TIMEOUT_MS });
+        if (killed.code !== 0) errorLog(`adb kill-server failed (exit ${killed.code}): ${tail(killed.stderr || killed.stdout)}`);
+      } catch (error) {
+        errorLog(`adb kill-server failed: ${error instanceof Error ? error.message : String(error)}`);
+      }
+    }
     if (cleanupState.seedDir) {
       try {
         removeDir(cleanupState.seedDir);
@@ -622,7 +634,14 @@ export async function runAndroid(options) {
     }
   });
   const aborted = () => signalExitCode !== null;
+  // `adb start-server`, recording that this run started the server when its output says so.
+  const startAdbServer = () => {
+    const result = run(adb, ["start-server"], { timeoutMs: ADB_TIMEOUT_MS });
+    if (ADB_SERVER_START_PATTERN.test(`${result.stdout}${result.stderr}`)) cleanupState.adbServerStarted = true;
+  };
   try {
+    // The adb server is started first, so the run knows whether it is the one that starts it.
+    startAdbServer();
     // `adb devices` is checked for its exit code: a failed call (a cold or hung adb server) is
     // retried once after `adb start-server`, and a still-failing call exits 2 before anything is
     // spawned — an empty output would otherwise read as "no emulator" and boot a second emulator on
@@ -630,7 +649,7 @@ export async function runAndroid(options) {
     const listDevices = () => {
       let result = run(adb, ["devices"], { timeoutMs: ADB_TIMEOUT_MS });
       if (result.code !== 0) {
-        run(adb, ["start-server"], { timeoutMs: ADB_TIMEOUT_MS });
+        startAdbServer();
         result = run(adb, ["devices"], { timeoutMs: ADB_TIMEOUT_MS });
       }
       if (result.code !== 0) {
