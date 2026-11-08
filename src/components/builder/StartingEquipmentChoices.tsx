@@ -65,7 +65,7 @@ const SlotGroup: React.FC<{ children: React.ReactNode; theme: any }> = ({ childr
 const SlotHeader: React.FC<{ label: string; complete?: boolean; theme: any }> = ({ label, complete, theme }) => (
   <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
     <Text style={{ color: theme.textSecondary, fontSize: 12, fontWeight: "700", flexShrink: 1, minWidth: 0 }}>{label}</Text>
-    {complete ? <Ionicons name="checkmark-circle" size={16} color={theme.accent} /> : null}
+    {complete ? <Ionicons name="checkmark-circle" size={16} color={theme.accentHover} /> : null}
   </View>
 );
 
@@ -135,20 +135,20 @@ export const StartingEquipmentChoices: React.FC<StartingEquipmentChoicesProps> =
                         borderRadius: 8,
                         borderWidth: 1,
                         backgroundColor: option.chosen ? theme.accentGlow : theme.surface,
-                        borderColor: option.chosen ? theme.accent : theme.border,
+                        borderColor: option.chosen ? theme.accentHover : theme.border,
                       }}
                     >
                       <Ionicons
                         name={option.chosen ? "radio-button-on" : "radio-button-off"}
                         size={18}
-                        color={option.chosen ? theme.accent : theme.textMuted}
+                        color={option.chosen ? theme.accentHover : theme.textMuted}
                       />
                       <Text
                         style={{
                           flex: 1,
                           minWidth: 0,
                           flexShrink: 1,
-                          color: option.chosen ? theme.accent : theme.textSecondary,
+                          color: option.chosen ? theme.accentHover : theme.textSecondary,
                           fontSize: 13,
                           fontWeight: option.chosen ? "700" : "500",
                         }}
@@ -223,7 +223,7 @@ const TypePicker: React.FC<TypePickerProps> = ({ entry, onPick, theme }) => {
                 paddingVertical: 6,
                 borderRadius: 8,
                 borderWidth: 1,
-                borderColor: open ? theme.accent : theme.border,
+                borderColor: open ? theme.accentHover : theme.border,
                 backgroundColor: theme.surfaceHighlight,
                 opacity: enabled ? 1 : 0.4,
               }}
@@ -232,7 +232,7 @@ const TypePicker: React.FC<TypePickerProps> = ({ entry, onPick, theme }) => {
               <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
                 <Text
                   style={{
-                    color: current ? theme.accent : theme.textMuted,
+                    color: current ? theme.accentHover : theme.textMuted,
                     fontSize: 13,
                     fontWeight: "700",
                     flexShrink: 0,
@@ -263,13 +263,13 @@ const TypePicker: React.FC<TypePickerProps> = ({ entry, onPick, theme }) => {
                           {
                             minHeight: 36,
                             backgroundColor: chosen ? theme.accentGlow : theme.surface,
-                            borderColor: chosen ? theme.accent : theme.border,
+                            borderColor: chosen ? theme.accentHover : theme.border,
                           },
                         ]}
                       >
                         <Text
                           style={{
-                            color: chosen ? theme.accent : theme.textSecondary,
+                            color: chosen ? theme.accentHover : theme.textSecondary,
                             fontSize: 12,
                             fontWeight: chosen ? "700" : "500",
                           }}

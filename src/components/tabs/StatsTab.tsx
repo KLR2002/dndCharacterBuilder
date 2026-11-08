@@ -411,7 +411,7 @@ export const StatsTab: React.FC = () => {
             })
           }
           style={[styles.statBox, { backgroundColor: theme.surface, borderColor: theme.border }]}>
-          <Ionicons name="shield" size={18} color={theme.accent} />
+          <Ionicons name="shield" size={18} color={theme.accentHover} />
           <Text style={[styles.statBoxValue, { color: theme.text }]}>{ac}</Text>
           <Text style={[styles.statBoxLabel, { color: theme.textMuted }]}>ARMOR CLASS</Text>
           {(hasDefenseAc || infusionBonusAc > 0) && (
@@ -427,7 +427,7 @@ export const StatsTab: React.FC = () => {
           hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
           onPress={() => setInitiativeModalVisible(true)}
           style={[styles.statBox, { backgroundColor: theme.surface, borderColor: theme.border }]}>
-          <Ionicons name="flash" size={18} color={theme.accent} />
+          <Ionicons name="flash" size={18} color={theme.accentHover} />
           <Text style={[styles.statBoxValue, { color: theme.text }]}>{formatModifier(initiative)}</Text>
           <Text style={[styles.statBoxLabel, { color: theme.textMuted }]}>INITIATIVE</Text>
         </TouchableOpacity>
@@ -463,7 +463,7 @@ export const StatsTab: React.FC = () => {
             });
           }}
           style={[styles.statBox, { backgroundColor: theme.surface, borderColor: theme.border }]}>
-          <Ionicons name="walk" size={18} color={theme.accent} />
+          <Ionicons name="walk" size={18} color={theme.accentHover} />
           <Text style={[styles.statBoxValue, { color: theme.text }]}>{speeds.walk} ft</Text>
           <Text style={[styles.statBoxLabel, { color: theme.textMuted }]}>SPEED</Text>
           {((speeds.swim != null && speeds.swim > 0) || (speeds.climb != null && speeds.climb > 0) || speeds.fly != null || speeds.flyRestricted) && (
@@ -485,7 +485,7 @@ export const StatsTab: React.FC = () => {
         </TouchableOpacity>
 
         <View style={[styles.statBox, { backgroundColor: theme.surface, borderColor: theme.border }]}>
-          <Ionicons name="ribbon" size={18} color={theme.accent} />
+          <Ionicons name="ribbon" size={18} color={theme.accentHover} />
           <Text style={[styles.statBoxValue, { color: theme.text }]}>+{profBonus}</Text>
           <Text style={[styles.statBoxLabel, { color: theme.textMuted }]}>PROFICIENCY</Text>
         </View>
@@ -607,7 +607,7 @@ export const StatsTab: React.FC = () => {
           return (
             <View key={key} style={[styles.abilityTile, { backgroundColor: theme.surface, borderColor: theme.border }, isCompact && { width: "48%" }]}>
               <Text style={[styles.abilityTileName, { color: theme.textMuted }]}>{key.toUpperCase()}</Text>
-              <Text style={[styles.abilityTileMod, { color: theme.accent }]}>{formatModifier(mod)}</Text>
+              <Text style={[styles.abilityTileMod, { color: theme.accentHover }]}>{formatModifier(mod)}</Text>
               <View style={[styles.abilityTileScoreBadge, { backgroundColor: theme.surfaceRaised }]}>
                 <Text style={[styles.abilityTileScoreText, { color: theme.textSecondary }]}>{score}</Text>
               </View>
@@ -628,13 +628,13 @@ export const StatsTab: React.FC = () => {
                   style={[
                     styles.profIndicator,
                     {
-                      borderColor: save.isProficient ? theme.accent : theme.border,
+                      borderColor: save.isProficient ? theme.accentHover : theme.border,
                       backgroundColor: save.isProficient ? theme.accent : "transparent",
                     },
                   ]}
                 />
                 <Text style={[styles.saveName, { color: theme.text }]}>{ABILITY_LABELS[key]}</Text>
-                <Text style={[styles.saveBonus, { color: save.isProficient ? theme.accent : theme.textSecondary }]}>
+                <Text style={[styles.saveBonus, { color: save.isProficient ? theme.accentHover : theme.textSecondary }]}>
                   {formatModifier(save.bonus)}
                 </Text>
               </View>
@@ -649,19 +649,19 @@ export const StatsTab: React.FC = () => {
       </Text>
       <View style={styles.combatRow}>
         <View style={[styles.statBox, { backgroundColor: theme.surface, borderColor: theme.border }]}>
-          <Ionicons name="eye" size={18} color={theme.accent} />
+          <Ionicons name="eye" size={18} color={theme.accentHover} />
           <Text style={[styles.statBoxValue, { color: theme.text }]}>{passivePerception}</Text>
           <Text style={[styles.statBoxLabel, { color: theme.textMuted }]}>PASSIVE PERCEPTION</Text>
         </View>
 
         <View style={[styles.statBox, { backgroundColor: theme.surface, borderColor: theme.border }]}>
-          <Ionicons name="search" size={18} color={theme.accent} />
+          <Ionicons name="search" size={18} color={theme.accentHover} />
           <Text style={[styles.statBoxValue, { color: theme.text }]}>{passiveInvestigation}</Text>
           <Text style={[styles.statBoxLabel, { color: theme.textMuted }]}>PASSIVE INVESTIGATION</Text>
         </View>
 
         <View style={[styles.statBox, { backgroundColor: theme.surface, borderColor: theme.border }]}>
-          <Ionicons name="bulb" size={18} color={theme.accent} />
+          <Ionicons name="bulb" size={18} color={theme.accentHover} />
           <Text style={[styles.statBoxValue, { color: theme.text }]}>{passiveInsight}</Text>
           <Text style={[styles.statBoxLabel, { color: theme.textMuted }]}>PASSIVE INSIGHT</Text>
         </View>
@@ -689,7 +689,7 @@ export const StatsTab: React.FC = () => {
                   borderRadius: 4,
                 }}
               >
-                <Text style={{ color: theme.accent, fontSize: 11, fontWeight: "700", letterSpacing: 0.5 }}>
+                <Text style={{ color: theme.accentHover, fontSize: 11, fontWeight: "700", letterSpacing: 0.5 }}>
                   {group.label} ({group.key.toUpperCase()})
                 </Text>
               </View>
@@ -726,7 +726,7 @@ export const StatsTab: React.FC = () => {
                           style={[
                             styles.profIndicator,
                             {
-                              borderColor: theme.accent,
+                              borderColor: theme.accentHover,
                               backgroundColor: theme.accent,
                             },
                           ]}
@@ -736,12 +736,12 @@ export const StatsTab: React.FC = () => {
                           style={[
                             styles.profIndicator,
                             {
-                              borderColor: theme.accent,
+                              borderColor: theme.accentHover,
                               backgroundColor: "transparent",
                             },
                           ]}
                         >
-                          <Text style={{ color: theme.accent, fontSize: 8, fontWeight: "800", lineHeight: 10 }}>½</Text>
+                          <Text style={{ color: theme.accentHover, fontSize: 8, fontWeight: "800", lineHeight: 10 }}>½</Text>
                         </View>
                       ) : (
                         <View
@@ -781,7 +781,7 @@ export const StatsTab: React.FC = () => {
                             color: skill.isExpertise
                               ? theme.warning
                               : skill.isProficient
-                              ? theme.accent
+                              ? theme.accentHover
                               : skill.halfProficiency
                               ? theme.text
                               : theme.textSecondary,
@@ -805,7 +805,7 @@ export const StatsTab: React.FC = () => {
       </Text>
       <Card style={{ gap: 10 }}>
         <View>
-          <Text style={[styles.profCatTitle, { color: theme.accent }]}>Armor Proficiencies</Text>
+          <Text style={[styles.profCatTitle, { color: theme.accentHover }]}>Armor Proficiencies</Text>
           <Text style={{ color: theme.text, fontSize: 13 }}>
             {derivedProficiencies.armor.length > 0
               ? derivedProficiencies.armor.join(", ")
@@ -814,7 +814,7 @@ export const StatsTab: React.FC = () => {
         </View>
 
         <View>
-          <Text style={[styles.profCatTitle, { color: theme.accent }]}>Weapon Proficiencies</Text>
+          <Text style={[styles.profCatTitle, { color: theme.accentHover }]}>Weapon Proficiencies</Text>
           <Text style={{ color: theme.text, fontSize: 13 }}>
             {derivedProficiencies.weapons.length > 0
               ? derivedProficiencies.weapons.join(", ")
@@ -824,7 +824,7 @@ export const StatsTab: React.FC = () => {
 
         <View>
           <View style={[styles.headingRow, { marginBottom: 4 }]}>
-            <Text style={[styles.profCatTitle, { color: theme.accent }]}>Tool Proficiencies</Text>
+            <Text style={[styles.profCatTitle, { color: theme.accentHover }]}>Tool Proficiencies</Text>
             <TouchableOpacity
               accessibilityRole="button"
               accessibilityLabel="Add tool proficiency"
@@ -832,7 +832,7 @@ export const StatsTab: React.FC = () => {
               hitSlop={8}
               style={styles.addBtn}
             >
-              <Ionicons name="add" size={20} color={theme.accent} />
+              <Ionicons name="add" size={20} color={theme.accentHover} />
             </TouchableOpacity>
           </View>
           {evaluated.tools && evaluated.tools.length > 0 ? (
@@ -866,7 +866,7 @@ export const StatsTab: React.FC = () => {
                           style={[
                             styles.profIndicator,
                             {
-                              borderColor: theme.accent,
+                              borderColor: theme.accentHover,
                               backgroundColor: theme.accent,
                             },
                           ]}
@@ -887,7 +887,7 @@ export const StatsTab: React.FC = () => {
                       style={{
                         fontSize: 13,
                         fontWeight: "bold",
-                        color: t.isExpertise ? theme.warning : theme.accent,
+                        color: t.isExpertise ? theme.warning : theme.accentHover,
                       }}
                     >
                       {t.ability
@@ -927,7 +927,7 @@ export const StatsTab: React.FC = () => {
           hitSlop={8}
           style={styles.addBtn}
         >
-          <Ionicons name="add" size={20} color={theme.accent} />
+          <Ionicons name="add" size={20} color={theme.accentHover} />
         </TouchableOpacity>
       </View>
       <Card style={{ gap: 6 }}>
@@ -976,7 +976,7 @@ export const StatsTab: React.FC = () => {
               HP Configuration
             </Text>
             <Text style={{ color: theme.textSecondary, fontSize: 13, marginBottom: 8 }}>
-              Standard calculated Max HP: <Text style={{ color: theme.accent, fontWeight: "bold" }}>{evaluateCharacter({ ...currentCharacter, maxHpOverride: null }, { compendium: currentCompendium(), activeBooks }).hp.max}</Text>
+              Standard calculated Max HP: <Text style={{ color: theme.accentHover, fontWeight: "bold" }}>{evaluateCharacter({ ...currentCharacter, maxHpOverride: null }, { compendium: currentCompendium(), activeBooks }).hp.max}</Text>
             </Text>
             <Text style={{ color: theme.textSecondary, fontSize: 12, marginBottom: 8 }}>
               Leave blank to use automatic calculation. Enter a number to manually override maximum hit points.

@@ -22,6 +22,7 @@ import { abilityTargetBlocked, increaseOffersOf, increasePoolOf, originAbilitySt
 import { ABILITY_NAMES } from "./abilities.ts";
 import { releaseExpandedOnlySpells } from "./backgroundSpells.ts";
 import { releaseRaceOriginFeat } from "./feats.ts";
+import { rollAbilityScores, type RandomSource } from "./dice.ts";
 import { isGrantSpellChoiceId, releaseSupersededRacePicks } from "./choices/featSpells.ts";
 import { withNotices } from "./needsReview.ts";
 import {
@@ -56,6 +57,54 @@ export function setStandardArrayPick(
     ...character,
     standardArrayPicks: picks,
     baseAbilityScores: { ...character.baseAbilityScores, [ability]: value ?? 10 },
+  };
+}
+
+/** Rolls the six Rolled Abilities results, replacing any earlier roll, and clears every placement. */
+export function rollRolledAbilities(character: Character, random: RandomSource): Character {
+  return {
+    ...character,
+    rolledAbilities: rollAbilityScores(random),
+    rolledAbilityPicks: {},
+    baseAbilityScores: { str: 10, dex: 10, con: 10, int: 10, wis: 10, cha: 10 },
+  };
+}
+
+/**
+ * Places the rolled result `index` on `ability`, or removes the placement with null. A result already
+ * placed on another ability, or an index outside the current roll, leaves the character unchanged.
+ */
+export function setRolledAbilityPick(
+  character: Character,
+  ability: AbilityKey,
+  index: number | null
+): Character {
+  const results = character.rolledAbilities ?? [];
+  if (
+    index !== null &&
+    (!Number.isInteger(index) || index < 0 || index >= results.length ||
+      Object.entries(character.rolledAbilityPicks ?? {}).some(
+        ([key, pick]) => key !== ability && pick === index
+      ))
+  ) {
+    return character;
+  }
+  const picks = { ...character.rolledAbilityPicks };
+  if (index === null) delete picks[ability];
+  else picks[ability] = index;
+  return {
+    ...character,
+    rolledAbilityPicks: picks,
+    baseAbilityScores: { ...character.baseAbilityScores, [ability]: index === null ? 10 : results[index].total },
+  };
+}
+
+/** Clears every Rolled Abilities placement, leaving the rolled results themselves in place. */
+export function clearRolledAbilityPicks(character: Character): Character {
+  return {
+    ...character,
+    rolledAbilityPicks: {},
+    baseAbilityScores: { str: 10, dex: 10, con: 10, int: 10, wis: 10, cha: 10 },
   };
 }
 

@@ -116,7 +116,7 @@ export const JournalTab: React.FC = () => {
             disabled={!currentCharacter.avatarUri}
             activeOpacity={0.8}
             onPress={() => setFullscreenImageVisible(true)}
-            style={[styles.avatarBox, { borderColor: theme.accent, backgroundColor: theme.surfaceHighlight }]}
+            style={[styles.avatarBox, { borderColor: theme.accentHover, backgroundColor: theme.surfaceHighlight }]}
           >
             {currentCharacter.avatarUri ? (
               <Image source={{ uri: currentCharacter.avatarUri }} style={styles.avatarImage} />
@@ -211,7 +211,7 @@ export const JournalTab: React.FC = () => {
                   backgroundColor: currentCharacter.alignment === al ? theme.accent : theme.surfaceHighlight,
                 },
               ]}>
-              <Text style={{ color: "#fff", fontSize: 11, fontWeight: "600" }}>{al}</Text>
+              <Text style={{ color: currentCharacter.alignment === al ? theme.accentText : "#fff", fontSize: 11, fontWeight: "600" }}>{al}</Text>
             </TouchableOpacity>
           ))}
         </ScrollView>
@@ -220,7 +220,7 @@ export const JournalTab: React.FC = () => {
       {/* Faction Card */}
       <Card style={{ marginBottom: 16 }}>
         <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 10 }}>
-          <Ionicons name="flag-outline" size={18} color={theme.accent} />
+          <Ionicons name="flag-outline" size={18} color={theme.accentHover} />
           <Text style={[styles.sectionTitle, { color: theme.text }]}>FACTION & ALLEGIANCES</Text>
         </View>
 
@@ -296,14 +296,14 @@ export const JournalTab: React.FC = () => {
         <Card style={{ marginBottom: 16, borderColor: theme.borderLight, gap: 10 }}>
           <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
             <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-              <Ionicons name="book-outline" size={18} color={theme.accent} />
+              <Ionicons name="book-outline" size={18} color={theme.accentHover} />
               <Text style={[styles.sectionTitle, { color: theme.text }]}>
                 {currentCharacter.race?.name} Lore & Biology
               </Text>
             </View>
             {loreSections.length > 3 && (
               <TouchableOpacity onPress={() => setLoreExpanded((prev) => !prev)}>
-                <Text style={{ color: theme.accent, fontSize: 12, fontWeight: "600" }}>
+                <Text style={{ color: theme.accentHover, fontSize: 12, fontWeight: "600" }}>
                   {loreExpanded ? "Collapse" : "Expand All"}
                 </Text>
               </TouchableOpacity>
@@ -335,7 +335,7 @@ export const JournalTab: React.FC = () => {
                             : "information-circle-outline"
                   }
                   size={14}
-                  color={theme.accent}
+                  color={theme.accentHover}
                 />
                 <Text style={{ color: theme.text, fontSize: 13, fontWeight: "700" }}>
                   {sec.title}
@@ -350,7 +350,7 @@ export const JournalTab: React.FC = () => {
             <TouchableOpacity
               onPress={() => setLoreExpanded(true)}
               style={{ alignSelf: "center", paddingVertical: 4 }}>
-              <Text style={{ color: theme.accent, fontSize: 12, fontWeight: "600" }}>
+              <Text style={{ color: theme.accentHover, fontSize: 12, fontWeight: "600" }}>
                 + {loreSections.length - 3} more sections...
               </Text>
             </TouchableOpacity>

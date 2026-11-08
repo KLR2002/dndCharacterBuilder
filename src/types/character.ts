@@ -9,6 +9,13 @@ export interface AbilityScores {
   cha: number;
 }
 
+/** One Rolled Abilities result: four d6 with the lowest marked dropped, and the total of the other three. */
+export interface RolledAbilityResult {
+  dice: { sides: number; face: number; dropped: boolean }[];
+  droppedIndex: number;
+  total: number;
+}
+
 export interface CharacterClass {
   className: string;
   source: string;
@@ -159,9 +166,13 @@ export interface Character {
   updatedAt: number;
 
   // Builder settings
-  abilityMethod: "pointBuy" | "standardArray" | "manual";
+  abilityMethod: "pointBuy" | "standardArray" | "manual" | "rolled";
   baseAbilityScores: AbilityScores;
   standardArrayPicks?: Partial<Record<AbilityKey, number>>;
+  /** The six Rolled Abilities results of the latest roll, in roll order. Absent until the player rolls. */
+  rolledAbilities?: RolledAbilityResult[];
+  /** Rolled Abilities placements: each ability's assigned index into `rolledAbilities`. */
+  rolledAbilityPicks?: Partial<Record<AbilityKey, number>>;
   skillChoices?: SkillChoiceEntry[];
   ruleChoices?: RuleChoiceEntry[];
   /**

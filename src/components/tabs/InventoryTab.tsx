@@ -295,7 +295,7 @@ export const InventoryTab: React.FC = () => {
               Total Wealth: ~{totalWealthInGp} gp
             </Text>
           </View>
-          <Ionicons name="wallet-outline" size={22} color={theme.accent} />
+          <Ionicons name="wallet-outline" size={22} color={theme.accentHover} />
         </View>
 
         <View style={styles.coinsRow}>
@@ -377,7 +377,7 @@ export const InventoryTab: React.FC = () => {
       <Card style={[styles.attunementCard, { backgroundColor: theme.surface, borderColor: theme.border, marginBottom: 16 }]}>
         <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
           <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-            <Ionicons name="sparkles" size={18} color={theme.accent} />
+            <Ionicons name="sparkles" size={18} color={theme.accentHover} />
             <Text style={[styles.sectionTitle, { color: theme.text }]}>ATTUNEMENT</Text>
           </View>
           <Badge
@@ -425,7 +425,7 @@ export const InventoryTab: React.FC = () => {
       {/* EQUIPPED SECTION */}
       <View style={{ marginBottom: 16 }}>
         <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 6 }}>
-          <Ionicons name="shield" size={16} color={theme.accent} />
+          <Ionicons name="shield" size={16} color={theme.accentHover} />
           <Text style={[styles.sectionTitle, { color: theme.text }]}>
             EQUIPPED GEAR ({equippedItems.length})
           </Text>
@@ -449,7 +449,7 @@ export const InventoryTab: React.FC = () => {
                 ]}>
                 {/* Equip Toggle */}
                 <TouchableOpacity onPress={() => toggleEquip(item)} style={styles.equipBtn}>
-                  <Ionicons name="checkmark-circle" size={20} color={theme.accent} />
+                  <Ionicons name="checkmark-circle" size={20} color={theme.accentHover} />
                 </TouchableOpacity>
 
                 {/* Item Info (click to view details) */}
@@ -489,7 +489,7 @@ export const InventoryTab: React.FC = () => {
                     ]}>
                     <Text
                       style={{
-                        color: item.isAttuned ? theme.accent : "#ffffff",
+                        color: item.isAttuned ? theme.accentHover : theme.accentText,
                         fontSize: 11,
                         fontWeight: "600",
                       }}>
@@ -586,7 +586,7 @@ export const InventoryTab: React.FC = () => {
                     ]}>
                     <Text
                       style={{
-                        color: item.isAttuned ? theme.accent : "#ffffff",
+                        color: item.isAttuned ? theme.accentHover : theme.accentText,
                         fontSize: 11,
                         fontWeight: "600",
                       }}>
@@ -668,7 +668,7 @@ export const InventoryTab: React.FC = () => {
                           : theme.surfaceHighlight,
                     },
                   ]}>
-                  <Text style={{ color: "#fff", fontSize: 12, fontWeight: "600" }}>{t}</Text>
+                  <Text style={{ color: (t === "All" && itemTypeFilter === null) || itemTypeFilter === t ? theme.accentText : "#fff", fontSize: 12, fontWeight: "600" }}>{t}</Text>
                 </TouchableOpacity>
               ))}
             </ScrollView>
@@ -826,7 +826,7 @@ export const InventoryTab: React.FC = () => {
                       borderColor: theme.border,
                     },
                   ]}>
-                  <Text style={{ color: "#fff", fontSize: 12, fontWeight: "600" }}>Backpack (Carried)</Text>
+                  <Text style={{ color: customSection === "carried" ? theme.accentText : "#fff", fontSize: 12, fontWeight: "600" }}>Backpack (Carried)</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   onPress={() => setCustomSection("equipped")}
@@ -837,7 +837,7 @@ export const InventoryTab: React.FC = () => {
                       borderColor: theme.border,
                     },
                   ]}>
-                  <Text style={{ color: "#fff", fontSize: 12, fontWeight: "600" }}>Equipped</Text>
+                  <Text style={{ color: customSection === "equipped" ? theme.accentText : "#fff", fontSize: 12, fontWeight: "600" }}>Equipped</Text>
                 </TouchableOpacity>
               </View>
 

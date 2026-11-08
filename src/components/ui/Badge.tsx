@@ -17,7 +17,7 @@ export const Badge: React.FC<BadgeProps> = ({ label, variant = "surface", size =
 
   if (variant === "accent") {
     bg = theme.accentGlow;
-    textColor = theme.accent;
+    textColor = theme.accentHover;
     borderColor = theme.accentBorder;
   } else if (variant === "secondary") {
     bg = theme.surfaceRaised;
