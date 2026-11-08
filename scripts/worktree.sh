@@ -6,9 +6,10 @@
 # merge commit for an implementer's branch that already has commits. A conflict stops the script
 # with the merge left in progress for the agent to resolve.
 #
-# node_modules for the app root and for dnd5eToolsScrap are linked to the main checkout's copies
-# when those exist, and installed with `npm ci` when they do not. A link that points elsewhere or
-# dangles is re-pointed. A real node_modules directory is left alone. Then the script confirms
+# node_modules for the app root and for dnd5eToolsScrap are copied from the main checkout's, as
+# hard links (`cp -al`), when those exist, and installed with `npm ci` when they do not. Metro cannot
+# resolve a symlinked node_modules, so a worktree never links it; a symlink left by an older run is
+# replaced by the copy. A real node_modules directory is left alone. Then the script confirms
 # that `npm run typecheck` starts and that the scraper's tsx binary is present.
 #
 # Usage (from inside the worktree): scripts/worktree.sh <integration-branch>
@@ -36,22 +37,18 @@ prepare_dir() {
   local source="$main_root${rel:+/$rel}/node_modules"
 
   if [ -L "$target" ]; then
-    local current
-    current="$(readlink "$target")"
-    if [ "$current" = "$source" ] && [ -d "$target" ]; then
-      echo "ok: $label/node_modules is linked to $source"
-      return
-    fi
+    echo "replacing: $label/node_modules was a symlink to '$(readlink "$target")' (Metro cannot resolve it)"
     rm "$target"
-    echo "relinking: $label/node_modules pointed to '$current' (dangling or wrong)"
   elif [ -d "$target" ]; then
     echo "note: $label/node_modules is a real directory, left in place"
     return
   fi
 
   if [ -d "$source" ]; then
-    ln -s "$source" "$target"
-    echo "linked: $label/node_modules -> $source"
+    # Metro resolves a symlinked node_modules through its real path outside the project root and
+    # fails on it. A hard-link copy keeps every file inside the worktree at no extra disk cost.
+    cp -al "$source" "$target"
+    echo "copied (hard links): $label/node_modules from $source"
   else
     echo "installing: no node_modules in the main checkout at $source, running npm ci in $label"
     (cd "$dir" && npm ci)
