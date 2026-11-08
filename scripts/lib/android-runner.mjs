@@ -220,16 +220,18 @@ async function runScenario({ run, adb, adbArgs, screen, width, shots, seedPath, 
     return false;
   }
   // The step fields are played on fresh dumps: a tap lands at the matched node's centre, a swipe is an
-  // `input swipe` mid-screen. A step whose target never shows fails the scenario with a message naming it.
+  // `input swipe` mid-screen. A step whose target never shows fails the scenario with a message naming it;
+  // a warning (an absent scrollTo needle, say) is logged and the scenario still screenshots.
   const dump = () => {
     run(adb, adbArgs(["shell", "uiautomator", "dump", DUMP_REMOTE]));
     return parseDump(run(adb, adbArgs(["exec-out", "cat", DUMP_REMOTE])).stdout);
   };
   const tap = (point) => run(adb, adbArgs(["shell", "input", "tap", String(point.x), String(point.y)]));
   const swipe = (args) => run(adb, adbArgs(["shell", "input", "swipe", ...args.map(String)]));
-  const failure = await playScreen({ screen, dump, tap, swipe, view, sleep, now, timeoutMs: readyTimeoutMs, pollMs: readyPollMs });
-  if (failure) {
-    errorLog(`${label}: ${failure}`);
+  const { error, warnings } = await playScreen({ screen, dump, tap, swipe, view, sleep, now, timeoutMs: readyTimeoutMs, pollMs: readyPollMs });
+  for (const warning of warnings) log(`${label}: warning: ${warning}`);
+  if (error) {
+    errorLog(`${label}: ${error}`);
     return false;
   }
   // The screenshot is binary, so it is taken on the device and pulled as a file, never through the
