@@ -16,6 +16,7 @@ import { useAppTheme } from "../../context/ThemeContext";
 import { useResponsiveLayout } from "../../hooks/useResponsiveLayout";
 import { useSerifFont } from "../../hooks/useSerifFont";
 import {
+  applyCreationStepChange,
   applyCreationStepEdit,
   creationSteps,
   currentCreationStep,
@@ -85,6 +86,15 @@ export default function BuildScreen() {
     updateCharacter(character.id, (cur) => {
       const next = typeof updates === "function" ? updates(cur) : { ...cur, ...updates };
       if (!cur.creationProgress) return next;
+      // Creation builds a single class: picking another class on the Class step replaces the held one
+      // through applyCreationStepChange, which releases what the old class granted.
+      if (openStep === "class") {
+        const before = new Set((cur.classes ?? []).map((c) => c.className));
+        const added = (next.classes ?? []).find((c) => !before.has(c.className));
+        if (added) {
+          return applyCreationStepChange(cur, { step: "class", className: added.className, source: added.source }, flowOpts);
+        }
+      }
       const signature = stepSignature[openStep];
       if (!signature || signature(cur) === signature(next)) return next;
       return applyCreationStepEdit(cur, openStep, () => next, flowOpts);
@@ -173,6 +183,8 @@ export default function BuildScreen() {
     );
   };
 
+  // The builder sections and the spells tab carry their own horizontal padding; only the flow's own
+  // title and the details/review scroll views pad here, so the content is never double-padded.
   const stepContent = () => {
     if (!openStep) return null;
     if (openStep === "spells") {
@@ -204,7 +216,7 @@ export default function BuildScreen() {
   };
 
   const stepTitle = (
-    <View style={styles.titleRow}>
+    <View style={[styles.titleRow, wide && styles.titleRowWide]}>
       <Text style={[styles.stepTitle, { color: theme.text, fontFamily: serif }]} numberOfLines={2}>
         {openStep ? STEP_TITLES[openStep] : ""}
       </Text>
@@ -269,6 +281,7 @@ export default function BuildScreen() {
           {stepContent()}
         </View>
       </View>
+
       <View style={[styles.bottomBar, { backgroundColor: theme.surface, borderTopColor: theme.border }]}>
         <TouchableOpacity
           accessibilityRole="button"
@@ -320,10 +333,10 @@ const styles = StyleSheet.create({
   phoneContent: {
     flex: 1,
     minHeight: 0,
-    paddingHorizontal: 16,
     paddingTop: 12,
   },
   stepScrollContent: {
+    paddingHorizontal: 16,
     paddingBottom: 24,
   },
   titleRow: {
@@ -331,6 +344,10 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 8,
     marginBottom: 10,
+    paddingHorizontal: 16,
+  },
+  titleRowWide: {
+    paddingHorizontal: 16,
   },
   stepTitle: {
     fontSize: 24,
@@ -394,7 +411,6 @@ const styles = StyleSheet.create({
     maxWidth: 640,
     flex: 1,
     minHeight: 0,
-    paddingHorizontal: 16,
     paddingTop: 16,
   },
   wideFooter: {

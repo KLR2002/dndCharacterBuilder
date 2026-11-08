@@ -8,8 +8,8 @@ import { describeStep } from "./steps.mjs";
 
 export { describeStep };
 
-// Taps the round header button `index` from the right end of the home header (0 is the add button, 1 the folder
-// button). They have no text or label, so they are found by place.
+// Taps the round header button `index` from the right end of the home header (0 is the add button, 1 settings,
+// 2 the folder button). They have no text or label, so they are found by place.
 async function tapHeaderButton(page, index) {
   const point = await page.evaluate((idx) => {
     const buttons = [...document.querySelectorAll('div[tabindex="0"]')]
@@ -25,7 +25,7 @@ async function tapHeaderButton(page, index) {
 // The web-only named steps, by name: the actions a scenario step names because no text, pattern or label taps them.
 const NAMED_STEPS = {
   "home-header-add": (page) => tapHeaderButton(page, 0),
-  "home-header-folder": (page) => tapHeaderButton(page, 1),
+  "home-header-folder": (page) => tapHeaderButton(page, 2),
 };
 
 // Plays one step on the page: the locator call describeStep names, tapped at its match (the first by
