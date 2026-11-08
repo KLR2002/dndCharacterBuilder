@@ -467,9 +467,26 @@ export function applyCreationStepChange(
     }
   }
 
-  const needsAttention = computeNeedsAttention(character, next, change.step, opts);
+  return applyCreationStepEdit(character, change.step, () => next, opts);
+}
+
+/**
+ * Applies an edit made on a Creation Step through the step's own transition (`edit` returns the character after
+ * it), then records the step's change the same way `applyCreationStepChange` does: the later steps that lost
+ * picks or turned invalid are marked as needing attention, and the draft sits on the changed step again, so the
+ * later steps stay locked until it is finished. The given Character is never mutated.
+ */
+export function applyCreationStepEdit(
+  character: Character,
+  step: CreationStepId,
+  edit: (current: Character) => Character,
+  opts: CreationFlowOptions = {},
+): Character {
+  const next = edit(character);
+  if (next === character) return character;
+  const needsAttention = computeNeedsAttention(character, next, step, opts);
   const progress: CreationProgress = {
-    currentStep: change.step,
+    currentStep: step,
     ...(needsAttention.length > 0 ? { needsAttention } : {}),
   };
   return { ...next, creationProgress: progress };

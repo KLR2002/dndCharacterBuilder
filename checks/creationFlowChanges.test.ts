@@ -16,6 +16,7 @@ import {
 import { migrateCharacter } from "../src/rules/migrateCharacter.ts";
 import {
   applyCreationStepChange,
+  applyCreationStepEdit,
   creationStepNeedsAttention,
   creationSteps,
   currentCreationStep,
@@ -327,6 +328,22 @@ describe("Finishing a step moves the current step only forward", () => {
     assert.equal(isCreationStepValid(draft, "review", flowOpts), true);
     draft = finishCreationStep(draft, "review", flowOpts);
     assert.equal(draft.creationProgress, undefined, "finishing Review leaves no creation progress");
+  });
+});
+
+describe("A generic edit on a step records the change like applyCreationStepChange", () => {
+  test("an edit on an earlier step re-anchors the draft on it and flags what it released", () => {
+    const fighter = finishedFighter();
+    const edited = applyCreationStepEdit(
+      fighter,
+      "race",
+      (cur) => ({ ...cur, race: { name: "Elf", source: "PHB" } }),
+      flowOpts,
+    );
+    assert.equal(currentCreationStep(edited, flowOpts), "race");
+    assert.equal(creationStepNeedsAttention(edited, "subrace"), true);
+    // An edit that changes nothing leaves the character untouched.
+    assert.equal(applyCreationStepEdit(fighter, "race", (cur) => cur, flowOpts), fighter);
   });
 });
 

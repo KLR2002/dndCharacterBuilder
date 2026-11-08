@@ -8,22 +8,24 @@ import { describeStep } from "./steps.mjs";
 
 export { describeStep };
 
-// Taps the round add button at the right end of the home header. It has no text or label, so it is found by place.
-async function tapHeaderAdd(page) {
-  const point = await page.evaluate(() => {
+// Taps the round header button `index` from the right end of the home header (0 is the add button, 1 the folder
+// button). They have no text or label, so they are found by place.
+async function tapHeaderButton(page, index) {
+  const point = await page.evaluate((idx) => {
     const buttons = [...document.querySelectorAll('div[tabindex="0"]')]
       .map((el) => el.getBoundingClientRect())
       .filter((r) => r.width === 36 && r.height === 36 && r.top < 80)
       .sort((a, b) => b.left - a.left);
-    return buttons[0] ? { x: buttons[0].left + 18, y: buttons[0].top + 18 } : null;
-  });
-  if (!point) throw new Error("home header add button not found");
+    return buttons[idx] ? { x: buttons[idx].left + 18, y: buttons[idx].top + 18 } : null;
+  }, index);
+  if (!point) throw new Error(`home header button ${index} not found`);
   await page.mouse.click(point.x, point.y);
 }
 
 // The web-only named steps, by name: the actions a scenario step names because no text, pattern or label taps them.
 const NAMED_STEPS = {
-  "home-header-add": tapHeaderAdd,
+  "home-header-add": (page) => tapHeaderButton(page, 0),
+  "home-header-folder": (page) => tapHeaderButton(page, 1),
 };
 
 // Plays one step on the page: the locator call describeStep names, tapped at its match (the first by

@@ -7,6 +7,7 @@ import { featSpellChoicesOf, raceSpellRuleChoices, type AvailableRuleChoice } fr
 import { changeLineage, changeRace, setChoiceRacialBonus, setSizeChoice, toggleRacialPick, type LineageChoice } from "../../rules/builderTransitions";
 import { increasePoolOf, type IncreaseChoiceOffer } from "../../rules/originCustomization";
 import { currentCompendium, srdBaselineRaces } from "../../services/compendium";
+import { findHeldRace } from "../../rules/raceLookup";
 import {
   resolveAncestryState,
   applyAncestrySelection,
@@ -42,6 +43,11 @@ export interface AncestrySectionProps {
   proficiencyChoices: AvailableRuleChoice[];
   onViewDetail: (item: { title: string; subtitle?: string; source?: string; description?: string }) => void;
   theme: any;
+  /**
+   * The Creation Step this section is hosted on: "race" shows the race and its cards, "subrace" shows only the
+   * subrace picker for the held race. Unset in the free-form builder, where everything renders at once.
+   */
+  step?: "race" | "subrace";
 }
 
 export const AncestrySection: React.FC<AncestrySectionProps> = ({
@@ -52,6 +58,7 @@ export const AncestrySection: React.FC<AncestrySectionProps> = ({
   proficiencyChoices,
   onViewDetail,
   theme,
+  step,
 }) => {
   const [raceSearch, setRaceSearch] = useState("");
   const flexiblePicks = useMemo(
@@ -170,6 +177,49 @@ export const AncestrySection: React.FC<AncestrySectionProps> = ({
     );
   };
 
+  // The Subrace step of the Creation Flow shows only the subrace picker for the held race.
+  if (step === "subrace") {
+    const { race: heldRace } = findHeldRace(allRaces, character.race, activeBooks);
+    const subraces = heldRace?.subraces ?? [];
+    return (
+      <View style={styles.section}>
+        {character.race ? (
+          <Card highlight style={styles.row}>
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.bannerTitle, { color: theme.text }]}>
+                {character.race.name}
+                {character.race.subraceName ? ` — ${character.race.subraceName}` : ""}
+              </Text>
+              <Text style={{ color: theme.textMuted, fontSize: 12 }}>
+                Size {ancestryState.size}
+                {ancestryState.darkvision > 0 ? ` • Darkvision ${ancestryState.darkvision} ft` : ""}
+                {" • "}{character.race.source}
+              </Text>
+            </View>
+          </Card>
+        ) : null}
+        {heldRace && subraces.length > 1 && (
+          <Card style={{ gap: 8 }}>
+            <Text style={{ color: theme.text, fontWeight: "700", fontSize: 13 }}>Subrace</Text>
+            <View style={{ gap: 8 }}>
+              {offersPlainRaceForm(heldRace, srdBaselineRaces()) ? (
+                renderRaceFormRow("plain", heldRace.name, increaseSummary(heldRace), () => selectRace(heldRace))
+              ) : null}
+              {subraces.map((sr, idx) =>
+                renderRaceFormRow(
+                  `${sr.name || "base"}_${idx}`,
+                  sr.name || (heldRace.name === "Human" ? "Standard Human" : heldRace.name),
+                  increaseSummary(heldRace, sr),
+                  () => selectRace(heldRace, idx),
+                ),
+              )}
+            </View>
+          </Card>
+        )}
+      </View>
+    );
+  }
+
   return (
     <View style={styles.section}>
       {/* Selected race banner */}
@@ -181,7 +231,7 @@ export const AncestrySection: React.FC<AncestrySectionProps> = ({
               {character.race.subraceName ? ` — ${character.race.subraceName}` : ""}
             </Text>
             <Text style={{ color: theme.textMuted, fontSize: 12 }}>
-              Speed {ancestryState.speed} ft • Size {ancestryState.size}
+              Size {ancestryState.size}
               {ancestryState.darkvision > 0 ? ` • Darkvision ${ancestryState.darkvision} ft` : ""}
               {" • "}{character.race.source}
             </Text>
@@ -635,7 +685,7 @@ export const AncestrySection: React.FC<AncestrySectionProps> = ({
                           <Text style={{ color: theme.textMuted, fontSize: 11, marginTop: 1 }}>No fixed ASI</Text>
                         )}
                         <Text style={{ color: theme.textMuted, fontSize: 11 }}>
-                          Speed {r.speed.walk} ft • {r.size.join("/")} • {r.source}
+                          {r.size.join("/")} • {r.source}
                         </Text>
                       </View>
                       <Button

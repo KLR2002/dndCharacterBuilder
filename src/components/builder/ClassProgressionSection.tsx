@@ -19,6 +19,8 @@ import {
   toggleExpertiseChoice,
 } from "../../rules/expertise";
 import { subclassLevel } from "../../rules/leveling";
+import { classStepOffer } from "../../rules/creationFlow";
+import type { CreationStepId } from "../../types/character";
 import {
   proficiencyChoiceOffers,
   skillPickOffers,
@@ -96,6 +98,11 @@ export interface ClassProgressionSectionProps {
   }) => void;
   theme: any;
   activeBooks: ActiveBooks;
+  /**
+   * The Creation Step this section is hosted on in the Creation Flow: only that step's part renders. Unset in
+   * the free-form builder, where every part renders.
+   */
+  step?: CreationStepId;
 }
 
 export const ClassProgressionSection: React.FC<
@@ -124,6 +131,7 @@ export const ClassProgressionSection: React.FC<
   onViewDetail,
   theme,
   activeBooks,
+  step,
 }) => {
   const { isPhone } = useResponsiveLayout();
   const [classSearch, setClassSearch] = useState("");
@@ -238,9 +246,15 @@ export const ClassProgressionSection: React.FC<
     );
   };
 
+  // In the Creation Flow the class list is the Class step's picker: it shows while no class is held, and for a
+  // draft (which can still change its one class). A finished character levels through the stepper controls only.
+  const showClassList = step === undefined || (step === "class" && (!hasAnyClass || character.creationProgress !== undefined));
+  const maxLevel = classStepOffer().startingLevel.max;
+
   return (
     <View style={styles.section}>
       {/* Total level card */}
+      {(!step || step === "class") && (
       <Card highlight style={{ gap: 12 }}>
         <View
           style={{
@@ -264,7 +278,6 @@ export const ClassProgressionSection: React.FC<
         </View>
         {character.classes.map((c) => {
           const cd = findClassData(currentCompendium().for().classes(), c);
-          const subReq = subclassLevel(c.className);
           return (
             <View
               key={c.className}
@@ -318,10 +331,11 @@ export const ClassProgressionSection: React.FC<
                     </Text>
                     <TouchableOpacity
                       onPress={() => handleAddClassLevel(c.className, c.source)}
+                      disabled={c.level >= maxLevel}
                       hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                       style={[
                         styles.stepperBtn,
-                        { backgroundColor: theme.surfaceRaised },
+                        { backgroundColor: theme.surfaceRaised, opacity: c.level >= maxLevel ? 0.4 : 1 },
                       ]}
                     >
                       <Ionicons name="add" size={20} color={theme.text} />
@@ -378,18 +392,7 @@ export const ClassProgressionSection: React.FC<
                       />
                     </TouchableOpacity>
                   )
-                ) : (
-                  <Text
-                    style={{
-                      color: theme.accentHover,
-                      fontSize: 12,
-                      marginTop: isPhone ? 0 : 2,
-                      flexWrap: "wrap",
-                    }}
-                  >
-                    Subclass at Lvl {subReq}
-                  </Text>
-                )}
+                ) : null}
               </View>
 
               {!isPhone && (
@@ -409,10 +412,11 @@ export const ClassProgressionSection: React.FC<
                   </Text>
                   <TouchableOpacity
                     onPress={() => handleAddClassLevel(c.className, c.source)}
+                    disabled={c.level >= maxLevel}
                     hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                     style={[
                       styles.stepperBtn,
-                      { backgroundColor: theme.surfaceRaised },
+                      { backgroundColor: theme.surfaceRaised, opacity: c.level >= maxLevel ? 0.4 : 1 },
                     ]}
                   >
                     <Ionicons name="add" size={20} color={theme.text} />
@@ -423,9 +427,10 @@ export const ClassProgressionSection: React.FC<
           );
         })}
       </Card>
+      )}
 
       {/* Subclass prompts & Change pickers */}
-      {character.classes.map((c) => {
+      {(!step || step === "subclass") && character.classes.map((c) => {
         const cd = findClassData(currentCompendium().for().classes(), c);
         const req = subclassLevel(c.className);
         const isChanging = changingSubclassFor === c.className;
@@ -524,7 +529,7 @@ export const ClassProgressionSection: React.FC<
       })}
 
       {/* Modular Progression & Class/Subclass Rule Choices */}
-      {(() => {
+      {(!step || step === "classChoices") && (() => {
         const allSubclassChoices = [
           ...offeredRuleChoices(character, {
             activeBooks,
@@ -751,7 +756,7 @@ export const ClassProgressionSection: React.FC<
       })()}
 
       {/* Expertise Choices (Rogue, Bard, Ranger Deft Explorer, Feats) */}
-      {(() => {
+      {(!step || step === "classChoices") && (() => {
         const catalogs: CharacterCatalogs = {
           compendium: currentCompendium(),
           activeBooks,
@@ -838,6 +843,7 @@ export const ClassProgressionSection: React.FC<
       })()}
 
       {/* ASI / Feat Section */}
+      {(!step || step === "asiFeats") && (
       <AsiFeatSection
         character={character}
         onUpdate={onUpdate}
@@ -849,8 +855,10 @@ export const ClassProgressionSection: React.FC<
         theme={theme}
         activeBooks={activeBooks}
       />
+      )}
 
       {/* Starting Grants Section */}
+      {(!step || step === "equipment") && (
       <StartingGrantsSection
         character={character}
         primaryClass={primaryClass}
@@ -863,9 +871,10 @@ export const ClassProgressionSection: React.FC<
         onUpdateOption={(opt) => onUpdate({ startingOption: opt })}
         theme={theme}
       />
+      )}
 
       {/* Starting tools the first class grants. Its tool choice is a Proficiency Choice in the choices below. */}
-      {hasAnyClass && classTools.length > 0 && (
+      {(!step || step === "equipment") && hasAnyClass && classTools.length > 0 && (
         <Card style={{ gap: 10 }}>
           <View style={{ gap: 4 }}>
             <Text
@@ -887,7 +896,7 @@ export const ClassProgressionSection: React.FC<
       )}
 
       {/* Optional & Replacement Class Features (Tasha's) */}
-      {hasAnyClass && availableOptionalFeatures.length > 0 && (
+      {(!step || step === "classChoices") && hasAnyClass && availableOptionalFeatures.length > 0 && (
         <CollapsibleCard
           title="Optional & Replacement Class Features:"
           subtitle="Tasha's Cauldron optional features and replacements for your classes."
@@ -1007,8 +1016,10 @@ export const ClassProgressionSection: React.FC<
       )}
 
       {/* Class list */}
+      {showClassList && (
+      <>
       <Text style={[styles.heading, { color: theme.text }]}>
-        {hasAnyClass ? "Add Class / Multiclass:" : "Choose Your Class:"}
+        {hasAnyClass ? "Change Class:" : "Choose Your Class:"}
       </Text>
       <SearchBar
         value={classSearch}
@@ -1036,7 +1047,7 @@ export const ClassProgressionSection: React.FC<
             const existing = Boolean(held) && !takenFrom;
             const prereq = takenFrom
               ? { ok: false, reason: `Already held from ${takenFrom}` }
-              : existing || !hasAnyClass
+              : existing || !hasAnyClass || character.creationProgress !== undefined
                 ? { ok: true }
                 : validateMulticlass(character, cl.name, effectiveScores);
 
@@ -1110,6 +1121,8 @@ export const ClassProgressionSection: React.FC<
             );
           })}
       </View>
+      </>
+      )}
 
       {/* Orphaned Expanded List Spells Warning Modal */}
       {orphanWarning && (

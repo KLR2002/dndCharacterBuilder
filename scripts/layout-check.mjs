@@ -1,8 +1,8 @@
 // Responsive layout check at phone widths. Visits every screen in the shared scenario list from
 // scripts/lib/scenarios.mjs (the character tabs and the
 // Builder subtabs, including the race picker for a character with no race, the background picker and the
-// Custom Background creator for one with no background, home, settings, and the Rest, Conditions and New
-// Character modals), the hit point modal (from the Stats HP number and the header HP badge), and the Active
+// Custom Background creator for one with no background, home, settings, and the Rest, Conditions and Create
+// New Folder modals), the hit point modal (from the Stats HP number and the header HP badge), and the Active
 // Wild Shape box (Stats tab, header badge, Features tab), and how modals close (backdrop tap, Escape, the
 // ✕ button, and the discard confirmation for a modal holding unsaved input). The helpers that start the
 // app and seed it are in scripts/lib/app-driver.mjs (see docs/agents/driving-the-app.md).
@@ -605,35 +605,35 @@ async function checkModalClosing(ctx, width) {
   }
   await closeRestIfOpen();
 
-  // The New Character modal with a typed name asks before closing, on backdrop tap and on Escape.
+  // The Create New Folder modal with a typed name asks before closing, on backdrop tap and on Escape.
   await page.goto(`${BASE}/`, { waitUntil: "networkidle", timeout: 120000 });
   await page.waitForTimeout(1500);
-  await playStep(page, { tap: { name: "home-header-add" } });
-  if (!(await waitDialog("Create New Character", true))) fail("the New Character modal did not open");
-  await page.getByPlaceholder("e.g. Rendar Engelhart, Dianain Drakecroft").fill("Unsaved Test Name");
-  if (!(await tapBackdrop(page))) fail("could not tap the backdrop of the edited New Character modal");
+  await playStep(page, { tap: { name: "home-header-folder" } });
+  if (!(await waitDialog("Create New Folder", true))) fail("the Create New Folder modal did not open");
+  await page.getByPlaceholder("e.g. Curse of Strahd, One-Shots").fill("Unsaved Test Folder");
+  if (!(await tapBackdrop(page))) fail("could not tap the backdrop of the edited folder modal");
   await page.waitForTimeout(400);
   await page.screenshot({ path: shot("confirm") });
   if (!(await dialogShown("Discard changes?"))) fail("tapping the backdrop of an edited modal did not ask \"Discard changes?\"");
-  if (!(await dialogShown("Create New Character"))) fail("the edited modal closed on backdrop tap instead of asking first");
+  if (!(await dialogShown("Create New Folder"))) fail("the edited modal closed on backdrop tap instead of asking first");
   if (await tapButton("Keep editing")) {
     if (await dialogShown("Discard changes?")) fail("\"Keep editing\" did not dismiss the confirmation");
-    if (!(await dialogShown("Create New Character"))) fail("\"Keep editing\" closed the modal");
+    if (!(await dialogShown("Create New Folder"))) fail("\"Keep editing\" closed the modal");
   }
   await page.keyboard.press("Escape");
   await page.waitForTimeout(400);
   if (!(await dialogShown("Discard changes?"))) fail("Escape on an edited modal did not ask \"Discard changes?\"");
   if (await tapButton("Discard")) {
-    if (!(await waitDialog("Create New Character", false))) fail("\"Discard\" did not close the edited modal");
+    if (!(await waitDialog("Create New Folder", false))) fail("\"Discard\" did not close the edited modal");
   }
 
   // The same modal with nothing typed closes on Escape without asking.
   await page.goto(`${BASE}/`, { waitUntil: "networkidle", timeout: 120000 });
   await page.waitForTimeout(1500);
-  await playStep(page, { tap: { name: "home-header-add" } });
-  if (!(await waitDialog("Create New Character", true))) fail("the New Character modal did not reopen");
+  await playStep(page, { tap: { name: "home-header-folder" } });
+  if (!(await waitDialog("Create New Folder", true))) fail("the Create New Folder modal did not reopen");
   await page.keyboard.press("Escape");
-  if (!(await waitDialog("Create New Character", false))) fail("Escape did not close the untouched New Character modal");
+  if (!(await waitDialog("Create New Folder", false))) fail("Escape did not close the untouched folder modal");
   if (await dialogShown("Discard changes?")) fail("the untouched modal was asked \"Discard changes?\"");
 
   await page.close();
