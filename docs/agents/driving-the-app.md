@@ -4,7 +4,7 @@ How to start the Expo web build, seed a character and a catalog into the browser
 
 ## Where to run it
 
-- Browser work runs from the main checkout or from any worktree, after `scripts/worktree.sh <integration-branch>`. The script gives a worktree a hard-link copy of `node_modules` (`cp -al`, a few seconds), not a symlink: Metro cannot resolve a symlinked `node_modules` and every character page shows "Character not found". A symlink left by an older run is replaced when the script runs again. Verified in a `~/.t3/worktrees/` worktree: `npm run layout:check` (SRD, all widths) and `npx expo export --platform android`. Not verified there: the integrated catalog and `npm run layout:android`. Screenshot folders can be under `/tmp`.
+- Browser work runs from the main checkout or from any worktree, after `scripts/worktree.sh <integration-branch>`. The script gives a worktree its own copy of `node_modules` (a reflink copy on btrfs, a few seconds), not a symlink: Metro cannot resolve a symlinked `node_modules` and every character page shows "Character not found". A symlink left by an older run is replaced when the script runs again. Verified in a `~/.t3/worktrees/` worktree: `npm run layout:check` (SRD, all widths) and `npx expo export --platform android`. Not verified there: the integrated catalog and `npm run layout:android`. Screenshot folders can be under `/tmp`.
 
 ## Start the web build
 

@@ -7,7 +7,7 @@
 # with the merge left in progress for the agent to resolve.
 #
 # node_modules for the app root and for dnd5eToolsScrap are copied from the main checkout's, as
-# hard links (`cp -al`), when those exist, and installed with `npm ci` when they do not. Metro cannot
+# copy-on-write reflinks (a plain copy where the filesystem has none), when those exist, and installed with `npm ci` when they do not. Metro cannot
 # resolve a symlinked node_modules, so a worktree never links it; a symlink left by an older run is
 # replaced by the copy. A real node_modules directory is left alone. Then the script confirms
 # that `npm run typecheck` starts and that the scraper's tsx binary is present.
@@ -46,9 +46,16 @@ prepare_dir() {
 
   if [ -d "$source" ]; then
     # Metro resolves a symlinked node_modules through its real path outside the project root and
-    # fails on it. A hard-link copy keeps every file inside the worktree at no extra disk cost.
-    cp -al "$source" "$target"
-    echo "copied (hard links): $label/node_modules from $source"
+    # fails on it, so the worktree gets its own copy. A reflink copy takes seconds on a copy-on-write
+    # filesystem (btrfs here) and shares no inode with the main checkout, so a tool that rewrites a
+    # file in the worktree cannot change the main checkout's copy, as a hard link would.
+    if cp -a --reflink=always "$source" "$target" 2>/dev/null; then
+      echo "copied (reflink): $label/node_modules from $source"
+    else
+      rm -rf "$target"
+      cp -a "$source" "$target"
+      echo "copied (no reflink support, full copy): $label/node_modules from $source"
+    fi
   else
     echo "installing: no node_modules in the main checkout at $source, running npm ci in $label"
     (cd "$dir" && npm ci)
