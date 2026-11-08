@@ -12,10 +12,14 @@ import { evaluateCharacter } from "../../rules/characterEvaluation";
 import { catalogListings, type CharacterCatalogs } from "../../rules/catalogs";
 import {
   applyStartingGrants,
+  clearRolledAbilityPicks,
   reclaimStartingGrants,
+  rollRolledAbilities,
+  setRolledAbilityPick,
   setStandardArrayPick,
   STARTING_GOLD_BY_CLASS,
 } from "../../rules/builderTransitions";
+import { appRandom } from "../../rules/dice";
 import {
   setStartingEquipmentItems,
   setStartingEquipmentOption,
@@ -55,6 +59,7 @@ export const BuilderTab: React.FC<BuilderTabProps> = ({
   const [localDetail, setLocalDetail] = useState<any>(null);
   const [activeSection, setActiveSection] = useState<"abilities" | "race" | "background" | "class">("abilities");
   const [pendingValue, setPendingValue] = useState<number | null>(null);
+  const [pendingRoll, setPendingRoll] = useState<number | null>(null);
 
   const character = propChar || currentCharacter;
   const onUpdate =
@@ -145,6 +150,32 @@ export const BuilderTab: React.FC<BuilderTabProps> = ({
 
   const unassignSlot = (key: AbilityKey) => {
     onUpdate((current) => setStandardArrayPick(current, key, null));
+  };
+
+  const rolledResults = character.rolledAbilities ?? [];
+  const rolledPicks = character.rolledAbilityPicks ?? {};
+
+  const handleRoll = () => {
+    setPendingRoll(null);
+    onUpdate((current) => rollRolledAbilities(current, appRandom));
+  };
+
+  const handleRollPoolTap = (index: number) => {
+    setPendingRoll(pendingRoll === index ? null : index);
+  };
+
+  const handleRollSlotTap = (key: AbilityKey) => {
+    onUpdate((current) => setRolledAbilityPick(current, key, pendingRoll));
+    setPendingRoll(null);
+  };
+
+  const unassignRollSlot = (key: AbilityKey) => {
+    onUpdate((current) => setRolledAbilityPick(current, key, null));
+  };
+
+  const resetRolled = () => {
+    setPendingRoll(null);
+    onUpdate((current) => clearRolledAbilityPicks(current));
   };
 
   // ─────────────────────────────────────────────────────────────────────────
@@ -350,6 +381,14 @@ export const BuilderTab: React.FC<BuilderTabProps> = ({
           onResetSA={resetSA}
           onUpdateBaseScore={updateBaseScore}
           onSetManualScore={setManualScore}
+          rolledResults={rolledResults}
+          rolledPicks={rolledPicks}
+          pendingRoll={pendingRoll}
+          onRoll={handleRoll}
+          onRollPoolTap={handleRollPoolTap}
+          onRollSlotTap={handleRollSlotTap}
+          onUnassignRollSlot={unassignRollSlot}
+          onResetRolled={resetRolled}
           theme={theme}
         />
       )}
