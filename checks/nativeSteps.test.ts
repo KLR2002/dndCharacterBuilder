@@ -13,6 +13,7 @@ import {
   isVisible,
   playScreen,
   revealSwipeArgs,
+  swipeDownArgs,
   swipeUpArgs,
 } from "../scripts/lib/native-steps.mjs";
 import { centerOf, hasPositiveArea, parseDump } from "../scripts/lib/uiautomator.mjs";
@@ -41,6 +42,13 @@ const martialOnscreen = parseDump(readFileSync(fileURLToPath(new URL("./fixtures
 const fightingClipped = parseDump(readFileSync(fileURLToPath(new URL("./fixtures/uiautomator-class-fightingstyles-clipped.xml", import.meta.url)), "utf8"));
 const backgroundFirst = parseDump(readFileSync(fileURLToPath(new URL("./fixtures/uiautomator-background-firstpage.xml", import.meta.url)), "utf8"));
 const backgroundClipped = parseDump(readFileSync(fileURLToPath(new URL("./fixtures/uiautomator-background-languages-clipped.xml", import.meta.url)), "utf8"));
+// Two more real dumps captured on the emulator, on the Builder > Class page of the fighter with picked
+// equipment at 720x1280: the page scrolled far down (the state the previous scenario's scrollTo leaves
+// behind — "Starting Equipment & Gold:" on screen, neither "Builder" nor "Class" in the dump at all,
+// the subtab bar scrolled above the viewport, only the main tab bar and the content scroller left in
+// the dump) and the same page swiped back to the top ("Class" on screen again).
+const classScrolledDown = parseDump(readFileSync(fileURLToPath(new URL("./fixtures/uiautomator-class-scrolled-down.xml", import.meta.url)), "utf8"));
+const classScrolledTop = parseDump(readFileSync(fileURLToPath(new URL("./fixtures/uiautomator-class-scrolled-top.xml", import.meta.url)), "utf8"));
 
 // The screen of the AVD: 720x1280 px, with the 48 px status bar on top and the 48 px gesture bar at the
 // bottom (both read from the device; they stay 48 px under a density override).
@@ -338,29 +346,36 @@ test("expect is not evaluated: a screen that would fail it still plays", async (
 const HBAR = `<node text="" class="android.widget.HorizontalScrollView" scrollable="true" bounds="[32,284][688,392]" />`;
 const CONTENT = `<node text="" class="android.widget.ScrollView" scrollable="true" bounds="[0,252][720,1232]" />`;
 
-test("a tab clipped off the tab bar is revealed by a horizontal swipe on the tab bars only", async () => {
+test("a tab the dump does not list at all is reached by a page swipe toward the top first, then a horizontal swipe in the tab bar", async () => {
   const before = parseDump(`<hierarchy>${HBAR}${CONTENT}<node text="Builder" bounds="[80,187][157,220]" /><node text="Ready Here" bounds="[0,400][100,440]" /></hierarchy>`);
   const after = parseDump(`<hierarchy>${HBAR}${CONTENT}<node text="Builder" bounds="[80,187][157,220]" /><node text="Class" bounds="[585,320][650,356]" /><node text="Ready Here" bounds="[0,400][100,440]" /></hierarchy>`);
   const world = playerWorld([before, after]);
   const result = await play(world, { name: "t", route: "/x", tabs: ["Class"], ready: "Ready Here" });
   assert.equal(result.error, null);
-  // The Class subtab at [585,320][650,356] is tapped once revealed; the swipe went left inside the tab
-  // bar (y fixed at 338, x from 624 to 96 over the slow REVEAL_SWIPE_MS, clear of the edge back-gesture
-  // zone), never in the content scroller.
+  // The Class subtab at [585,320][650,356] is tapped once revealed. The dump lists no "Class" node, so
+  // the page is swiped down first (vertical, toward the top, inside the content scroller, slow), and
+  // the horizontal swipe in the tab bar follows (y fixed at 338, x from 624 to 96 over the slow
+  // REVEAL_SWIPE_MS, clear of the edge back-gesture zone).
   assert.deepEqual(world.taps, [{ x: 618, y: 338 }]);
-  assert.deepEqual(world.swipes, [["624", "338", "96", "338", String(REVEAL_SWIPE_MS)]]);
+  assert.deepEqual(world.swipes, [
+    ["360", "260", "360", "860", String(REVEAL_SWIPE_MS)],
+    ["624", "338", "96", "338", String(REVEAL_SWIPE_MS)],
+  ]);
 });
 
 test("the reveal direction flips when a swipe moves nothing, so a tab on the other side is found", async () => {
   const a = parseDump(`<hierarchy>${HBAR}${CONTENT}<node text="Builder" bounds="[80,187][157,220]" /><node text="Ready Here" bounds="[0,400][100,440]" /></hierarchy>`);
   const b = parseDump(`<hierarchy>${HBAR}${CONTENT}<node text="Builder" bounds="[80,187][157,220]" /><node text="Class" bounds="[585,320][650,356]" /><node text="Ready Here" bounds="[0,400][100,440]" /></hierarchy>`);
-  // The first dump scrolls nowhere (the bar is at its left end), so the second swipe goes right.
+  // The first dump scrolls nowhere (the bar is at its left end), so the second round goes the other way
+  // on both axes: the page swipe flips to up and the bar swipe to right.
   const world = playerWorld([a, a, b]);
   const result = await play(world, { name: "t", route: "/x", tabs: ["Class"], ready: "Ready Here" });
   assert.equal(result.error, null);
   assert.deepEqual(world.taps, [{ x: 618, y: 338 }]);
   assert.deepEqual(world.swipes, [
+    ["360", "260", "360", "860", String(REVEAL_SWIPE_MS)],
     ["624", "338", "96", "338", String(REVEAL_SWIPE_MS)],
+    ["360", "1184", "360", "584", String(REVEAL_SWIPE_MS)],
     ["96", "338", "624", "338", String(REVEAL_SWIPE_MS)],
   ]);
 });
@@ -517,4 +532,98 @@ test("a reveal swipe on a full-screen scroller stays out of the edge back-gestur
     revealSwipeArgs(node({ x1: 0, y1: 162, x2: 720, y2: 250 }, "android.widget.HorizontalScrollView"), true, "right", 600, VIEW),
     [96, 206, 624, 206, 800],
   );
+});
+
+// --- Reaching a tab from any scroll position: the page is scrolled back toward the tab bars first ---
+
+const classCall = { method: "getByText", arg: "Class", options: { exact: true }, index: 0 } as const;
+const builderCall = { method: "getByText", arg: "Builder", options: { exact: true }, index: 0 } as const;
+// The content scroller and the main tab bar of the scrolled-down fixture.
+const scrolledContent = classScrolledDown.find((n) => n.scrollable && n.className === "android.widget.ScrollView");
+const scrolledBar = classScrolledDown.find((n) => n.scrollable && n.className === "android.widget.HorizontalScrollView");
+
+test("on the real scrolled-down fixture neither tab is in the dump and only the main tab bar remains; at the top \"Class\" is on screen", () => {
+  assert.equal(findMatches(classScrolledDown, classCall).length, 0);
+  assert.equal(findMatches(classScrolledDown, builderCall).length, 0);
+  assert.equal(findTarget(classScrolledDown, classCall, VIEW), null);
+  assert.equal(findTarget(classScrolledDown, builderCall, VIEW), null);
+  // "Starting Equipment & Gold:" is the visible needle the previous scenario scrolled to.
+  assert.ok(classScrolledDown.some((n) => n.text === "Starting Equipment & Gold:" && isVisible(n, VIEW)));
+  assert.deepEqual(
+    classScrolledDown.filter((n) => n.scrollable).map((n) => `${n.className} ${JSON.stringify(n.bounds)}`),
+    [
+      'android.widget.HorizontalScrollView {"x1":0,"y1":162,"x2":720,"y2":250}',
+      'android.widget.ScrollView {"x1":0,"y1":252,"x2":720,"y2":1232}',
+    ],
+  );
+  // Swiped back to the top, the subtab bar is in the dump again and "Class" is a tap target.
+  const topClass = findTarget(classScrolledTop, classCall, VIEW);
+  assert.deepEqual(topClass?.bounds, { x1: 587, y1: 320, x2: 652, y2: 356 });
+});
+
+test("a tab scrolled out of the page is reached by swiping the page down first, then the tab bar, and tapped", async () => {
+  const world = playerWorld([classScrolledDown, classScrolledTop]);
+  const result = await play(world, { name: "t", route: "/x", tabs: ["Class"], ready: "Total Level: 1" });
+  assert.deepEqual(result, { error: null, warnings: [] });
+  // The first swipe is vertical, toward the top of the page, inside the content scroller, slow ...
+  assert.deepEqual(world.swipes[0], revealSwipeArgs(scrolledContent, false, "down", REVEAL_STEP_PX, VIEW).map(String));
+  // ... and only then a horizontal swipe in the main tab bar.
+  assert.deepEqual(world.swipes[1], revealSwipeArgs(scrolledBar, true, "left", REVEAL_STEP_PX, VIEW).map(String));
+  // The dump after the page swipe shows the subtab bar with "Class" on screen, tapped at its centre.
+  assert.deepEqual(world.taps, [{ x: 620, y: 338 }]);
+});
+
+test("a main-bar tab absent from the scrolled-down dump is revealed horizontally once the page is back at the top", async () => {
+  // The top fixture still has the main bar scrolled past "Builder"; the dump with the tab back in the
+  // bar stands in for the bar's own horizontal scroll.
+  const builderAtTop = [
+    ...classScrolledTop,
+    { text: "Builder", contentDesc: "", resourceId: "", className: "android.widget.TextView", clickable: false, scrollable: false, bounds: { x1: 80, y1: 187, x2: 157, y2: 220 } },
+  ];
+  const world = playerWorld([classScrolledDown, classScrolledTop, builderAtTop]);
+  const result = await play(world, { name: "t", route: "/x", tabs: ["Builder"], ready: "Total Level: 1" });
+  assert.deepEqual(result, { error: null, warnings: [] });
+  // The page is swiped down (vertical, toward the top) before any horizontal swipe ...
+  assert.deepEqual(world.swipes[0], revealSwipeArgs(scrolledContent, false, "down", REVEAL_STEP_PX, VIEW).map(String));
+  // ... and the horizontal bar swipe follows in the same round.
+  assert.deepEqual(world.swipes[1], revealSwipeArgs(scrolledBar, true, "left", REVEAL_STEP_PX, VIEW).map(String));
+  assert.deepEqual(world.taps, [{ x: 119, y: 204 }]);
+});
+
+test("a tab already on screen is tapped at once, with no swipe", async () => {
+  const world = playerWorld([classScrolledTop]);
+  const result = await play(world, { name: "t", route: "/x", tabs: ["Class"], ready: "Total Level: 1" });
+  assert.deepEqual(result, { error: null, warnings: [] });
+  assert.deepEqual(world.taps, [{ x: 620, y: 338 }]);
+  assert.deepEqual(world.swipes, []);
+});
+
+test("the vertical page search ends at the swipe bound when the clock never advances", async () => {
+  // The scrolled-down fixture without the main tab bar: no horizontal scroller left to swipe, only
+  // the content scroller. A frozen clock would never end a clock-bounded wait (the dump budget makes
+  // that fail instead of hanging); the swipe bound ends the search.
+  const noBar = classScrolledDown.filter((n) => !n.className.includes("HorizontalScrollView"));
+  const world = playerWorld([noBar], { frozen: true, maxDumps: 200 });
+  const result = await play(world, { name: "t", route: "/x", tabs: ["Class"], ready: "Total Level: 1" });
+  assert.match(result.error ?? "", /tab "Class" did not show/);
+  assert.match(result.error ?? "", new RegExp(`${MAX_SWIPES} swipes`));
+  assert.equal(world.swipes.length, MAX_SWIPES);
+  // Every swipe is the vertical page swipe, down first, flipping when the dump does not move.
+  const content = noBar.find((n) => n.scrollable);
+  assert.deepEqual(world.swipes[0], revealSwipeArgs(content, false, "down", REVEAL_STEP_PX, VIEW).map(String));
+  assert.deepEqual(world.swipes[1], revealSwipeArgs(content, false, "up", REVEAL_STEP_PX, VIEW).map(String));
+  for (const s of world.swipes) assert.equal(s[0], s[2]);
+});
+
+test("an open step whose dump has no vertical scroller gets the same page fallback, bounded by swipes", async () => {
+  // Only the horizontal tab bar is scrollable: the vertical reveal has no scroller of its own, so the
+  // page itself is swiped mid-screen, finger down toward the top first.
+  const onlyBar = parseDump(`<hierarchy>${HBAR}<node text="Ready Here" bounds="[0,400][100,440]" /></hierarchy>`);
+  const world = playerWorld([onlyBar], { frozen: true, maxDumps: 200 });
+  const result = await play(world, { name: "t", route: "/x", open: [{ tap: { text: "Never There", exact: true } }], ready: "Ready Here" });
+  assert.match(result.error ?? "", /open step \{"text":"Never There","exact":true\} did not show/);
+  assert.match(result.error ?? "", new RegExp(`${MAX_SWIPES} swipes`));
+  assert.equal(world.swipes.length, MAX_SWIPES);
+  assert.deepEqual(world.swipes[0], swipeDownArgs(VIEW).map(String));
+  assert.deepEqual(world.swipes[1], swipeUpArgs(VIEW).map(String));
 });

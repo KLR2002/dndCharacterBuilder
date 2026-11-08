@@ -3,7 +3,9 @@
 // a uiautomator dump, waits for the ready text (`modal ?? ready` — a modal is the dialog's title string, so
 // it is waited for, never tapped), turns `scrollTo` into swipes until the needle is visible, and settles
 // briefly before the screenshot. A target that starts off the screen is revealed by swiping what the dump
-// says (a clipped match steers the swipe), bounded by a number of swipes rather than a clock reading; an
+// says (a clipped match steers the swipe), bounded by a number of swipes rather than a clock reading;
+// a target the dump does not point at on the step's axis is searched by scrolling the page vertically
+// toward the top first, so a tab bar scrolled above the viewport is reached from any scroll position. An
 // absent `scrollTo` needle warns instead of failing, as the web check's scrollIntoView does nothing when its
 // text is absent. `expect` is not evaluated. Every device interaction goes through the injected `dump`,
 // `tap` and `swipe`, so the tests drive it with scripted dumps and a recording fake.
@@ -144,36 +146,62 @@ const FLIP = { up: "down", down: "up", left: "right", right: "left" };
 // target lands on screen; without one, a fixed REVEAL_STEP_PX goes in the current direction. The direction
 // flips when a swipe moves nothing (two dumps with the same geometry), so a target on the other side is
 // found too. The search is bounded by MAX_SWIPES swipes — a count, not a clock reading, so it does not
-// depend on how long a dump takes; the deadline applies only while the dump has no scrollers, i.e. while
-// the screen has not rendered yet and there is nothing to scroll. Tabs swipe only the horizontal tab
-// bars, other steps only the vertical scrollers. Returns { found, bound }: the match with bound null, or
-// null with bound "swipes" or "timeout".
+// depend on how long a dump takes; the deadline applies only while the dump has no scroller at all, i.e.
+// while the screen has not rendered yet and there is nothing to scroll. Tabs swipe the horizontal tab
+// bars, other steps the vertical scrollers — and when the dump does not point at the target on that
+// axis (the target is absent entirely, or clipped across the page rather than inside a bar), the page
+// itself is scrolled vertically toward the top first (the tab bars sit there), because the bar's
+// scroller may be scrolled out of the dump altogether; that page swipe is a slow swipe inside the
+// dump's vertical scrollers (mid-screen when there is none) and counts against the same swipe bound.
+// Returns { found, bound }: the match with bound null, or null with bound "swipes" or "timeout".
 async function pollRevealing({ dump, swipe, find, findClipped, view, sleep, now, deadline, pollMs, horizontalOnly = false }) {
   let direction = horizontalOnly ? "left" : "up";
+  // The page fallback starts toward the top of the page, where the tab bars are.
+  let pageDirection = "down";
   let previous = null;
   let swipes = 0;
   for (;;) {
     const nodes = dump();
     const found = find(nodes);
     if (found) return { found, bound: null };
-    let scrollers = nodes.filter((n) => n.scrollable && n.bounds);
-    scrollers = scrollers.filter((n) =>
+    const scrollable = nodes.filter((n) => n.scrollable && n.bounds);
+    const scrollers = scrollable.filter((n) =>
       horizontalOnly ? n.className.includes("HorizontalScrollView") : !n.className.includes("HorizontalScrollView"),
     );
-    if (scrollers.length === 0) {
+    if (scrollable.length === 0) {
       if (now() >= deadline) return { found: null, bound: "timeout" };
       await sleep(pollMs);
       continue;
     }
     if (swipes >= MAX_SWIPES) return { found: null, bound: "swipes" };
     const geometry = geometryOf(nodes);
-    if (previous === geometry) direction = FLIP[direction];
+    if (previous === geometry) {
+      direction = FLIP[direction];
+      pageDirection = FLIP[pageDirection];
+    }
     previous = geometry;
     const clipped = findClipped ? findClipped(nodes) : null;
     const guidance = clipped ? clippedGuidance(clipped.bounds, view, horizontalOnly) : null;
-    for (const scroller of scrollers) {
-      swipe(revealSwipeArgs(scroller, horizontalOnly, guidance?.direction ?? direction, guidance?.distance ?? REVEAL_STEP_PX, view));
+    // One swipe, counted against the bound: never more than MAX_SWIPES in total.
+    const swipeBounded = (args) => {
+      if (swipes >= MAX_SWIPES) return;
+      swipe(args);
       swipes += 1;
+    };
+    // The page is searched vertically when the dump does not point at the target along the step's own
+    // axis: a tab absent from the dump may sit in a bar that is scrolled above the viewport, and a
+    // step target with no vertical scroller in the dump may sit below or above the page.
+    const pageSearch = horizontalOnly ? !clipped || guidance === null : scrollers.length === 0;
+    if (pageSearch) {
+      const vertical = scrollable.filter((n) => !n.className.includes("HorizontalScrollView"));
+      if (vertical.length > 0) {
+        for (const scroller of vertical) swipeBounded(revealSwipeArgs(scroller, false, pageDirection, REVEAL_STEP_PX, view));
+      } else {
+        swipeBounded(pageDirection === "down" ? swipeDownArgs(view) : swipeUpArgs(view));
+      }
+    }
+    for (const scroller of scrollers) {
+      swipeBounded(revealSwipeArgs(scroller, horizontalOnly, guidance?.direction ?? direction, guidance?.distance ?? REVEAL_STEP_PX, view));
     }
     await sleep(pollMs);
   }
@@ -196,7 +224,8 @@ export async function playScreen({ screen, dump, tap, swipe, view, sleep, now, t
   const clippedMatch = (call) => (nodes) => findMatches(nodes, call).find((n) => n.bounds && centerOf(n, view) === null) ?? null;
   for (const tab of screen.tabs ?? []) {
     // A tab is the web check's getByText(tab, { exact: true }).first(): the exact text, the first match.
-    // Tabs sit in the horizontal tab bars, so the reveal swipes there stay horizontal.
+    // Tabs sit in the horizontal tab bars, so the reveal swipes there stay horizontal — after the page
+    // fallback has scrolled the page back up to the bars when they are not in the dump.
     const call = { method: "getByText", arg: tab, options: { exact: true }, index: 0 };
     const { found, bound } = await pollRevealing({
       dump,
