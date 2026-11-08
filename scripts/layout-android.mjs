@@ -14,8 +14,8 @@
 // after the launch also saves the stuck screen as `<scenario>-<width>-FAILED.png` and the run
 // continues, exiting non-zero. The signal handlers are installed before any device work, so a
 // signal during the boot wait already reaches them: the handler's cleanup stops an emulator this
-// run started (by `adb -s <serial> emu kill` once the serial is known, otherwise by killing the
-// spawned process group), restores the original density when it was read and removes the temp seed
+// run started (by `adb -s <serial> emu kill` once the serial is known and the console answers,
+// otherwise by killing the spawned process group), restores the original density when it was read and removes the temp seed
 // dir, and this entry exits 130/143 right after the handler, so there the handler's cleanup is the
 // only one that runs; the same idempotent cleanup also runs on every other exit path. The original
 // density is restored at the end (also after a failure). An exception from the run (an unwritable

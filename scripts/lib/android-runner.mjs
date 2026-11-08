@@ -584,15 +584,18 @@ export async function runAndroid(options) {
       }
     }
     if (cleanupState.started) {
+      // The console kill goes through the serial of the emulator this run spawned. When no serial is
+      // known (a signal or boot timeout before the emulator's first listing) or the console cannot
+      // stop it, the process this run spawned is stopped by its pid.
+      let stopped = false;
       if (cleanupState.serial) {
         try {
-          run(adb, ["-s", cleanupState.serial, "emu", "kill"], { timeoutMs: ADB_TIMEOUT_MS });
+          stopped = run(adb, ["-s", cleanupState.serial, "emu", "kill"], { timeoutMs: ADB_TIMEOUT_MS }).code === 0;
         } catch {
-          // The emulator is gone; there is nothing left to stop.
+          // The emulator is gone or unreachable: fall back to the pid below.
         }
-      } else if (cleanupState.pid != null) {
-        // The spawned emulator never appeared in `adb devices` (a signal or boot timeout before its
-        // first listing), so stop the process this run spawned.
+      }
+      if (!stopped && cleanupState.pid != null) {
         try {
           stopProcess(cleanupState.pid);
         } catch {
@@ -790,6 +793,9 @@ export async function runAndroid(options) {
       }
       recoveries += 1;
       log(`[${width}dp] ${screen.name}: emulator lost, rebooting (${recoveries} of ${MAX_EMULATOR_RECOVERIES})`);
+      // The lost emulator's serial no longer names anything this run can stop: the cleanup must not
+      // target it, and falls back to the new process until the reboot's own serial is known.
+      cleanupState.serial = null;
       cleanupState.pid = startEmulator(emulatorBin, emulatorArgs({ windowed }), join(shots, "emulator.log"), emulatorEnv(env));
       const boot = await waitForBoot({ run, adb, sleep, timeoutMs: bootTimeoutMs, spawned: true, aborted });
       if (!boot.booted) {

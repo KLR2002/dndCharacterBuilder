@@ -142,6 +142,8 @@ function makeWorld(options: {
   bootCompletedBySerial?: (serial: string) => string;
   // The exit code of the `wm density` read, to script a failing density read.
   wmDensityCode?: number;
+  // The exit code of every `emu kill`, to script an emulator the console cannot stop.
+  emuKillCode?: number;
   // The uiautomator dump command's exit code / stdout of the Nth dump, so a failed dump can be
   // scripted (a non-zero exit, or a zero exit whose output does not report the dump).
   dumpCodeFor?: (dump: number) => number;
@@ -272,7 +274,7 @@ function makeWorld(options: {
       if (code === 0) writeFileSync(args.at(-1) as string, options.pullBytes ?? PNG_BYTES);
       return code === 0 ? reply(0, "1 file pulled\n") : reply(code, "", "adb: error: remote file does not exist\n");
     }
-    if (joined.includes("emu kill")) return reply(0);
+    if (joined.includes("emu kill")) return options.emuKillCode ? reply(options.emuKillCode, "", "error: could not connect to the emulator console\n") : reply(0);
     if (command.endsWith("gradlew")) {
       const code = options.gradleCode ?? 0;
       return reply(code, options.gradleStdout ?? "BUILD SUCCESSFUL\n", options.gradleStderr ?? "");
@@ -311,7 +313,7 @@ function makeWorld(options: {
         emulatorStarted = true;
         // A fresh emulator process brings the device back.
         offline = false;
-        return 4321;
+        return 4320 + startCount;
       },
       stopProcess: (pid: number) => {
         stoppedPids.push(pid);
@@ -1754,12 +1756,12 @@ test("a SIGINT during the boot wait: the handlers are already installed and the 
   assert.equal(world.signalSnapshots[0].calls.filter((c) => c.args.join(" ").includes("emu kill")).length, 0);
 });
 
-test("a SIGINT during the recovery boot: the handler's own cleanup already stopped the started emulator and restored the density, exit 130", async () => {
+test("a SIGINT during the recovery boot stops the new emulator by its pid, never through the dead emulator's serial, exit 130", async () => {
   const shots = mkdtempSync(join(osTmpdir(), "android-runner-test-"));
   const world = makeWorld({
     devices: "",
-    bootDevices: "emulator-5554\tdevice\n",
-    // The first boot completes; the recovery reboot never reports sys.boot_completed=1.
+    // The first boot lists the emulator; the recovery reboot has not registered with adb yet.
+    bootDevicesFor: (n) => (n === 1 ? "emulator-5554\tdevice\n" : ""),
     bootCompletedFor: (n) => (n === 1 ? "1" : "0"),
     offlineAtGetStates: [2],
     env: { ONLY: "Home,Settings", WIDTHS: "360", SHOTS: shots },
@@ -1770,9 +1772,63 @@ test("a SIGINT during the recovery boot: the handler's own cleanup already stopp
   assert.equal(world.starts.length, 2);
   assert.equal(world.signalSnapshots.length, 1);
   const snapshot = world.signalSnapshots[0];
-  assert.ok(snapshot.calls.some((c) => c.args.join(" ").includes("emu kill")), "emu kill already in the handler's own cleanup");
-  assert.ok(snapshot.calls.some((c) => c.args.join(" ").includes("wm density reset")), "density restore already in the handler's own cleanup");
-  assert.deepEqual(snapshot.stops, [], "the serial is known, so emu kill is used, not the pid kill");
+  assert.deepEqual(snapshot.stops, [4322], "the process the recovery spawned is stopped, not the first one");
+  assert.equal(snapshot.calls.filter((c) => c.args.join(" ").includes("emu kill")).length, 0, "the dead emulator's serial is not targeted");
+});
+
+test("a recovery boot that times out without the new emulator ever appearing stops the spawned process", async () => {
+  const shots = mkdtempSync(join(osTmpdir(), "android-runner-test-"));
+  const world = makeWorld({
+    devices: "",
+    bootDevicesFor: (n) => (n === 1 ? "emulator-5554\tdevice\n" : ""),
+    bootCompletedFor: (n) => (n === 1 ? "1" : "0"),
+    offlineAtGetStates: [2],
+    env: { ONLY: "Home,Settings", WIDTHS: "360", SHOTS: shots },
+  });
+  const code = await world.runRun();
+  assert.notEqual(code, 0);
+  assert.ok(world.errors.join("\n").includes("sys.boot_completed"));
+  assert.equal(world.starts.length, 2);
+  assert.deepEqual(world.stoppedPids, [4322], "the recovery's spawned process is stopped, and only that one");
+  assert.equal(world.callsTo("emu kill").length, 0, "no emu kill goes to the dead emulator's serial");
+});
+
+test("an emulator the console cannot stop (emu kill fails) is stopped by its pid", async () => {
+  const shots = mkdtempSync(join(osTmpdir(), "android-runner-test-"));
+  const world = makeWorld({
+    devices: "",
+    bootDevices: "emulator-5554\tdevice\n",
+    emuKillCode: 1,
+    env: { ONLY: "Home,Settings", WIDTHS: "360", SHOTS: shots },
+    signalAtSleep: 1,
+  });
+  const code = await world.runRun();
+  assert.equal(code, 130);
+  assert.equal(world.callsTo("emu kill").length, 1, "the console is tried first");
+  assert.deepEqual(world.stoppedPids, [4321], "the failed console kill falls back to the spawned pid");
+  assert.deepEqual(world.signalSnapshots[0].stops, [4321]);
+});
+
+test("the boot wait prefers an emulator in state device over a stuck offline one listed first", async () => {
+  const shots = mkdtempSync(join(osTmpdir(), "android-runner-test-"));
+  const world = makeWorld({
+    devices: "",
+    bootDevices: "emulator-5554\toffline\nemulator-5556\tdevice\n",
+    bootCompletedBySerial: (serial) => (serial === "emulator-5556" ? "1" : "0"),
+    env: { ONLY: "Home", WIDTHS: "360", SHOTS: shots },
+  });
+  const code = await world.runRun();
+  assert.equal(code, 0);
+  assert.ok(world.callsTo("-s emulator-5556 shell getprop sys.boot_completed").length >= 1);
+  assert.equal(world.callsTo("-s emulator-5554 shell getprop sys.boot_completed").length, 0, "the stuck serial is not polled");
+  assert.equal(world.callsTo("-s emulator-5556 install").length, 1);
+});
+
+test("a failing pre-spawn adb devices listing ends the run with exit 2 before any emulator is spawned", async () => {
+  const world = makeWorld({ devices: "", devicesCodeFor: (call) => (call === 1 ? 0 : 1), env: { ONLY: "Home", WIDTHS: "360" } });
+  const code = await world.runRun();
+  assert.equal(code, 2);
+  assert.equal(world.starts.length, 0);
 });
 
 test("a boot timeout where the spawned emulator never appeared in adb devices kills the spawned process", async () => {

@@ -131,6 +131,7 @@ test("guard, synthetic: the @/ alias and an /index path are caught like a relati
   }
   assert.equal(importsImporter("components/Synthetic.tsx", 'import { x } from "@/services/storage";\n'), false);
 });
+
 test("guard, synthetic: extensionless, require and re-export forms are caught like the .ts form", () => {
   const sources = [
     'import { importE2eSeed } from "../services/e2eSeedImport";\n',
