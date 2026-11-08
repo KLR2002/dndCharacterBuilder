@@ -32,12 +32,21 @@ function stripExtension(path: string): string {
   return path.replace(/\.(ts|tsx|js|mjs)$/, "");
 }
 
-/** A relative module specifier written in `file`, as a path relative to src/, extension stripped. */
-function moduleOf(file: string, spec: string): string {
-  return stripExtension(relative(SRC, resolve(SRC, dirname(file), spec)).split(sep).join("/"));
+/** A module path without a trailing `/index`: a directory import and its index file name the same module. */
+function stripIndex(path: string): string {
+  return path.replace(/\/index$/, "");
 }
 
-/** The relative specifiers imported in one file's code: static, side-effect, dynamic, require and re-exports. */
+/**
+ * A module specifier written in `file` (relative, or the `@/` alias that tsconfig maps to src/), as a path
+ * relative to src/, extension and trailing `/index` stripped.
+ */
+function moduleOf(file: string, spec: string): string {
+  const path = spec.startsWith("@/") ? spec.slice(2) : relative(SRC, resolve(SRC, dirname(file), spec)).split(sep).join("/");
+  return stripIndex(stripExtension(path));
+}
+
+/** The relative and `@/` specifiers imported in one file's code: static, side-effect, dynamic, require and re-exports. */
 function relativeImportsOf(file: string, source: string): string[] {
   const code = codeOnly(source);
   const specifiers: string[] = [];
@@ -47,7 +56,7 @@ function relativeImportsOf(file: string, source: string): string[] {
   const requireCall = /require\(\s*["']([^"']+)["']\s*\)/g;
   for (const re of [staticImport, sideEffectImport, dynamicImport, requireCall]) {
     for (const m of code.matchAll(re)) {
-      if (m[1].startsWith(".")) specifiers.push(m[1]);
+      if (m[1].startsWith(".") || m[1].startsWith("@/")) specifiers.push(m[1]);
     }
   }
   return specifiers;
@@ -55,7 +64,7 @@ function relativeImportsOf(file: string, source: string): string[] {
 
 /** Whether `file` imports the seed importer module, given its source. `file` is relative to src/. */
 function importsImporter(file: string, source: string): boolean {
-  return relativeImportsOf(file, source).some((spec) => moduleOf(join(SRC, file), spec) === stripExtension(IMPORTER_MODULE));
+  return relativeImportsOf(file, source).some((spec) => moduleOf(join(SRC, file), spec) === stripIndex(stripExtension(IMPORTER_MODULE)));
 }
 
 /** Every file under src/ that imports the seed importer, as paths relative to src/. */
@@ -108,6 +117,20 @@ test("guard, synthetic: any other module importing the importer is named, static
   assert.equal(importsImporter("services/Synthetic.ts", 'const s = "../services/e2eSeedImport.ts";\n'), false);
 });
 
+test("guard, synthetic: the @/ alias and an /index path are caught like a relative path", () => {
+  const sources = [
+    'import { importE2eSeed } from "@/services/e2eSeedImport";\n',
+    'import { importE2eSeed } from "@/services/e2eSeedImport.ts";\n',
+    'export async function go() { return import("@/services/e2eSeedImport"); }\n',
+    'const { importE2eSeed } = require("@/services/e2eSeedImport");\n',
+    'import { importE2eSeed } from "../services/e2eSeedImport/index";\n',
+    'export * from "../services/e2eSeedImport/index.ts";\n',
+  ];
+  for (const source of sources) {
+    assert.equal(importsImporter("components/Synthetic.tsx", source), true, source);
+  }
+  assert.equal(importsImporter("components/Synthetic.tsx", 'import { x } from "@/services/storage";\n'), false);
+});
 test("guard, synthetic: extensionless, require and re-export forms are caught like the .ts form", () => {
   const sources = [
     'import { importE2eSeed } from "../services/e2eSeedImport";\n',
