@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {
+  E2E_BUNDLE_INPUTS_MARKER,
   E2E_PRESENT_EXPRESSION,
   E2E_PROPERTY,
   UPDATES_ENABLED_META_NAME,
@@ -11,6 +12,7 @@ import {
   withE2eBuildSettings,
   withUpdatesEnabledPlaceholder,
 } from "../plugins/lib/e2e-build-transforms.mjs";
+import { gradleArgs } from "../scripts/lib/android-runner.mjs";
 
 // The config plugin (plugins/e2e-build.mjs) applies the pure transforms below to the generated
 // android/ files at prebuild time. The Gradle property `-Pe2e` is only known at build time, so
@@ -63,6 +65,32 @@ android {
 }
 `;
 
+// The usual shape once a real keystore is added: a signingConfigs block with its own release block
+// before buildTypes.
+const FIXTURE_GRADLE_SIGNED = `apply plugin: "com.android.application"
+
+android {
+    signingConfigs {
+        release {
+            storeFile file('release.keystore')
+            storePassword 'keystore'
+            keyAlias 'key'
+            keyPassword 'key'
+        }
+    }
+    defaultConfig {
+        applicationId 'com.anonymous.dnd5e2014CharacterBuilder'
+        minSdkVersion rootProject.ext.minSdkVersion
+    }
+    buildTypes {
+        release {
+            signingConfig signingConfigs.release
+            minifyEnabled enableMinifyInReleaseBuilds
+        }
+    }
+}
+`;
+
 /** The lines of `a` that differ from `b` at the same index, paired with their index. */
 function changedLines(a: string, b: string): { index: number; from: string; to: string }[] {
   const aLines = a.split("\n");
@@ -99,7 +127,9 @@ test("prebuild: app/build.gradle wires both settings to the -Pe2e property", () 
   assert.ok(releaseBlock.includes(expectedDebuggableLine));
   const debugBlock = out.slice(out.search(/^[ \t]*debug[ \t]*\{/m), out.search(/^[ \t]*release[ \t]*\{/m));
   assert.ok(!debugBlock.includes("debuggable"), "the debug build type is untouched");
-  const outLines = out.split("\n");
+  // The appended bundle-inputs block sits after the android block; the inserted-lines check runs on that part only.
+  const androidPart = out.slice(0, out.indexOf(E2E_BUNDLE_INPUTS_MARKER));
+  const outLines = androidPart.split("\n");
   const fixtureLines = FIXTURE_GRADLE.split("\n");
   let consumed = 0;
   for (const line of outLines) {
@@ -108,6 +138,40 @@ test("prebuild: app/build.gradle wires both settings to the -Pe2e property", () 
   assert.equal(consumed, fixtureLines.length, "every original line remains, in order: the transform only inserts");
   const inserted = outLines.filter((line) => !fixtureLines.includes(line));
   assert.deepEqual(inserted.map((line) => line.trim()), [expectedPlaceholderLine, expectedDebuggableLine]);
+  assert.equal(withE2eBuildSettings(out), out, "the transform is idempotent");
+});
+
+test("prebuild: the bundle task gets the e2e flag as an input, appended once at the end of the file", () => {
+  const out = withE2eBuildSettings(FIXTURE_GRADLE);
+  assert.ok(out.includes(E2E_BUNDLE_INPUTS_MARKER), "the marker line is present");
+  assert.equal(out.split(E2E_BUNDLE_INPUTS_MARKER).length - 1, 1, "the marker appears exactly once");
+  const appended = out.slice(out.indexOf(E2E_BUNDLE_INPUTS_MARKER));
+  assert.ok(appended.startsWith(`${E2E_BUNDLE_INPUTS_MARKER}\n`), "the marker is the first line of the appended block");
+  assert.equal(appended, `${E2E_BUNDLE_INPUTS_MARKER}
+tasks.configureEach { task ->
+    if (task.name == 'createBundleReleaseJsAndAssets') {
+        task.inputs.property('e2e', findProperty('e2e') != null)
+        task.inputs.property('expoPublicE2e', System.getenv('EXPO_PUBLIC_E2E') ?: '')
+    }
+}
+`, "the appended block wires both flag sources into the bundle task inputs");
+  assert.ok(out.indexOf(E2E_BUNDLE_INPUTS_MARKER) > out.search(/^[ \t]*buildTypes[ \t]*\{/m), "the block is appended after the android block");
+  assert.equal(withE2eBuildSettings(out), out, "the transform is idempotent: the block is added once");
+  const signed = withE2eBuildSettings(FIXTURE_GRADLE_SIGNED);
+  assert.equal(signed.split(E2E_BUNDLE_INPUTS_MARKER).length - 1, 1, "the signed-keystore shape gets the block too");
+});
+
+test("prebuild: with a signingConfigs.release before buildTypes, debuggable still lands in the build type's release", () => {
+  const out = withE2eBuildSettings(FIXTURE_GRADLE_SIGNED);
+  const expectedDebuggableLine = `debuggable ${E2E_PRESENT_EXPRESSION}`;
+  const signingRegion = out.slice(out.search(/^[ \t]*signingConfigs[ \t]*\{/m), out.search(/^[ \t]*buildTypes[ \t]*\{/m));
+  assert.ok(!signingRegion.includes("debuggable"), "signingConfigs.release must not gain a debuggable line");
+  const buildTypesRegion = out.slice(out.search(/^[ \t]*buildTypes[ \t]*\{/m));
+  assert.ok(buildTypesRegion.includes(expectedDebuggableLine), "the release build type must read debuggable from the e2e property");
+  const releaseInBuildTypes = buildTypesRegion.slice(buildTypesRegion.search(/^[ \t]*release[ \t]*\{/m));
+  assert.ok(releaseInBuildTypes.includes(expectedDebuggableLine), "the line sits inside buildTypes.release");
+  assert.ok(out.includes(`manifestPlaceholders = [${UPDATES_ENABLED_PLACEHOLDER}: ${E2E_PRESENT_EXPRESSION} ? '${updatesEnabledValue(true)}' : '${updatesEnabledValue(false)}']`),
+    "defaultConfig still gets the placeholder line");
   assert.equal(withE2eBuildSettings(out), out, "the transform is idempotent");
 });
 
@@ -129,4 +193,17 @@ test("build without -Pe2e: both settings equal today's release build", () => {
   assert.equal(releaseDebuggable(false), false);
   const releaseBlock = FIXTURE_GRADLE.slice(FIXTURE_GRADLE.search(/^[ \t]*release[ \t]*\{/m));
   assert.ok(!/^[ \t]*debuggable\b/m.test(releaseBlock), "today's release build has no debuggable line, i.e. false");
+});
+
+// Independent oracle: the property name and the Gradle expression are written out as literals here,
+// so a renamed constant in the transforms module fails this test instead of moving with the code.
+test("oracle: the runner passes -Pe2e and the generated Gradle carries the literal expressions", () => {
+  assert.ok(gradleArgs().includes("-Pe2e"), "the runner's Gradle arguments pass the e2e property as -Pe2e");
+  assert.ok(gradleArgs().includes(`-P${E2E_PROPERTY}`), "gradleArgs uses the transforms module's property name");
+  const out = withE2eBuildSettings(FIXTURE_GRADLE);
+  assert.ok(out.includes("debuggable findProperty('e2e') != null"), "literal: the release build type's debuggable expression");
+  assert.ok(
+    out.includes("manifestPlaceholders = [expoUpdatesEnabled: findProperty('e2e') != null ? 'false' : 'true']"),
+    "literal: the defaultConfig placeholder expression",
+  );
 });
