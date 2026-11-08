@@ -210,7 +210,7 @@ export const builderStyles = StyleSheet.create({
   section: { gap: 14 },
   banner: { padding: 10, borderRadius: 8, alignItems: "center" },
 
-  methodRow: { flexDirection: "row", gap: 8 },
+  methodRow: { flexDirection: "row", gap: 8, flexWrap: "wrap" },
   methodBtn: { flex: 1, paddingVertical: 10, borderRadius: 8, borderWidth: 1, alignItems: "center" },
   methodText: { fontSize: 11 },
 
@@ -221,6 +221,17 @@ export const builderStyles = StyleSheet.create({
     borderWidth: 2,
     alignItems: "center",
     justifyContent: "center",
+  },
+
+  rollChip: {
+    minWidth: 54,
+    minHeight: 54,
+    paddingHorizontal: 6,
+    borderRadius: 10,
+    borderWidth: 2,
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 2,
   },
 
   scoresGrid: { flexDirection: "row", flexWrap: "wrap", gap: 10 },

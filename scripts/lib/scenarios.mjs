@@ -903,6 +903,8 @@ export function buildScreens({ integrated }) {
   const MULTICLASS_SKILLS_ROUTE = `/character/${MULTICLASS_SKILLS_ID}`;
   const screens = [
       { name: "Builder Abilities", route: RENDAR_ROUTE, tabs: ["Builder", "Abilities"], ready: /points remaining/i },
+      // The Rolled Abilities method: switch to it and roll, so the six results with their dice are checked too.
+      { name: "Abilities rolled", route: RENDAR_ROUTE, tabs: ["Builder", "Abilities"], open: [{ tap: { text: "Rolled", exact: true } }, { tap: { text: "Roll", exact: true } }], ready: /reroll/i, scrollTo: "Reroll" },
       { name: "Builder Race", route: RENDAR_ROUTE, tabs: ["Builder", "Race"], ready: /traits:/i },
       { name: "Builder Race language choice", route: HALF_ELF_ROUTE, tabs: ["Builder", "Race"], ready: /Granted Languages:/, scrollTo: "Granted Languages:" },
       // The SCAG Tiefling's one Increase Choice row (integrated mode only).
