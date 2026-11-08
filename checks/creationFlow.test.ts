@@ -1,8 +1,14 @@
 import { describe, test } from "node:test";
 import assert from "node:assert/strict";
 import { makeChar } from "./testUtils.ts";
-import { applicableCreationSteps, classStepOffer, creationSteps, currentCreationStep } from "../src/rules/creationFlow.ts";
-import type { CharacterClass } from "../src/types/character.ts";
+import {
+  applicableCreationSteps,
+  classStepOffer,
+  creationSteps,
+  currentCreationStep,
+  isCreationStepValid,
+} from "../src/rules/creationFlow.ts";
+import type { Character, CharacterClass } from "../src/types/character.ts";
 
 const cl = (className: string, level: number, subclassName?: string): CharacterClass => ({
   className,
@@ -110,5 +116,22 @@ describe("A draft resumes at its step", () => {
       creationProgress: { currentStep: "background" },
     });
     assert.equal(currentCreationStep(draft), "background");
+  });
+});
+
+describe("Details asks only for name, gender and alignment", () => {
+  test("an empty name leaves Details invalid and Review locked, while empty gender and alignment do not", () => {
+    const base: Partial<Character> = { classes: [cl("Wizard", 1)], creationProgress: { currentStep: "details" } };
+
+    const unnamed = makeChar({ ...base, name: "" });
+    assert.equal(isCreationStepValid(unnamed, "details"), false);
+    const unnamedSteps = new Map(creationSteps(unnamed).map((step) => [step.id, step]));
+    assert.equal(unnamedSteps.get("details")?.valid, false);
+    assert.equal(unnamedSteps.get("review")?.status, "locked");
+
+    const named = makeChar({ ...base, name: "Kara", gender: "", alignment: "" });
+    assert.equal(isCreationStepValid(named, "details"), true);
+    const namedSteps = new Map(creationSteps(named).map((step) => [step.id, step]));
+    assert.equal(namedSteps.get("details")?.valid, true);
   });
 });

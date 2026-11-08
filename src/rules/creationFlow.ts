@@ -1,13 +1,17 @@
 import type { ActiveBooks } from "../constants/books.ts";
 import type { Character, CharacterClass, CreationStepId } from "../types/character.ts";
 import type { ClassData, RaceData } from "../types/dnd5e.ts";
+import { POINT_BUY_COST } from "../constants/rules.ts";
 import { currentCompendium, type Compendium } from "../services/compendium.ts";
-import { allCatalogClasses, allCatalogRaces } from "./catalogs.ts";
+import { allCatalogClasses, allCatalogRaces, type CharacterCatalogs } from "./catalogs.ts";
 import { heldClass } from "./classData.ts";
-import { asiLevels, subclassLevel } from "./leveling.ts";
-import { availableSubclassRuleChoices } from "./ruleChoices.ts";
+import { ABILITIES } from "./abilities.ts";
+import { asiLevels, getPendingLevelChoices, subclassLevel } from "./leveling.ts";
+import { availableSubclassRuleChoices, getSubclassName } from "./ruleChoices.ts";
 import { findHeldRace } from "./raceLookup.ts";
 import { isCastingClass } from "./spellcasting.ts";
+import { hasStartingEquipmentChoices } from "./startingEquipment.ts";
+import { picksOfFirstClass } from "./startingEquipmentPicks.ts";
 
 /**
  * The Creation Flow's steps, in the order the flow walks them: identity first (class, subclass, ancestry),
@@ -55,6 +59,8 @@ export type CreationStepStatus = "finished" | "current" | "locked";
 export interface CreationStep {
   id: CreationStepId;
   status: CreationStepStatus;
+  /** Whether the step's own requirement is met. A later step stays locked until the current one is valid. */
+  valid: boolean;
 }
 
 /**
@@ -97,8 +103,83 @@ export function creationSteps(character: Character, opts: CreationFlowOptions = 
     if (current === null || index < currentIndex) status = "finished";
     else if (index === currentIndex) status = "current";
     else status = "locked";
-    return { id, status };
+    return { id, status, valid: isCreationStepValid(character, id, opts) };
   });
+}
+
+/** The point-buy budget a creation's base scores may spend (2014 rules). */
+const POINT_BUY_BUDGET = 27;
+
+/** Whether the Abilities step's method is fully picked: the whole standard array, or scores within point buy. */
+function abilitiesValid(character: Character): boolean {
+  if (character.abilityMethod === "standardArray") {
+    const picks = character.standardArrayPicks ?? {};
+    return ABILITIES.every((ability) => typeof picks[ability] === "number");
+  }
+  if (character.abilityMethod === "pointBuy") {
+    let spent = 0;
+    for (const ability of ABILITIES) {
+      const score = character.baseAbilityScores?.[ability] ?? 8;
+      if (score < 8 || score > 15) return false;
+      spent += POINT_BUY_COST[score] ?? 0;
+    }
+    return spent <= POINT_BUY_BUDGET;
+  }
+  return true;
+}
+
+/**
+ * Whether a Creation Step's own requirement is met, so the flow can advance past it. A step the character
+ * does not qualify for is valid by vacuity. Details asks only for a name: gender and alignment may stay
+ * empty. Review is valid when every step before it is.
+ */
+export function isCreationStepValid(
+  character: Character,
+  step: CreationStepId,
+  opts: CreationFlowOptions = {},
+): boolean {
+  const compendium = opts.compendium ?? currentCompendium();
+  const activeBooks = opts.activeBooks;
+  const catalogs: CharacterCatalogs = { compendium, activeBooks };
+  const classes = allCatalogClasses(catalogs);
+  const races = allCatalogRaces(catalogs);
+  const entry = classEntryOf(character);
+  switch (step) {
+    case "class":
+      return character.classes.length === 1 && Boolean(entry && entry.level >= 1 && entry.level <= 20);
+    case "subclass":
+      return !offersSubclass(entry, classes) || (entry ? getSubclassName(entry).length > 0 : false);
+    case "race":
+      return character.race != null;
+    case "subrace": {
+      if (!offersSubrace(character, races, activeBooks)) return true;
+      return findHeldRace(races, character.race, activeBooks).subrace != null;
+    }
+    case "background":
+      return character.background != null;
+    case "abilities":
+      return abilitiesValid(character);
+    case "classChoices": {
+      if (!offersClassChoices(character, activeBooks, compendium)) return true;
+      return availableSubclassRuleChoices(character, activeBooks, compendium).every((choice) => {
+        const picked = character.ruleChoices?.find((rc) => rc.id === choice.id)?.picked ?? [];
+        return picked.length >= choice.choose;
+      });
+    }
+    case "asiFeats":
+      return !offersAsiFeats(entry) || getPendingLevelChoices(character, [...classes]).pendingAsi.length === 0;
+    case "spells":
+      return true;
+    case "equipment":
+      return character.startingOption === "gold" || !hasStartingEquipmentChoices(character, catalogs) ||
+        picksOfFirstClass(character) !== undefined;
+    case "details":
+      return character.name.trim().length > 0;
+    case "review":
+      return applicableCreationSteps(character, opts)
+        .filter((id) => id !== "review")
+        .every((id) => isCreationStepValid(character, id, opts));
+  }
 }
 
 /** The one class a creation builds: the first entry, while the character holds at most one. */
