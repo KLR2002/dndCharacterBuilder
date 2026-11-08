@@ -7,7 +7,6 @@ import { makeChar } from "./testUtils.ts";
 import {
   warlockTomeCantripChoices,
   warlockPactBoonChoices,
-  subclassRuleChoices,
   availableSubclassRuleChoices,
   pickRuleChoice,
 } from "../src/rules/ruleChoices.ts";

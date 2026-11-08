@@ -5,7 +5,7 @@ import { evaluateCharacter } from "../src/rules/characterEvaluation.ts";
 import { changeRace } from "../src/rules/builderTransitions.ts";
 import { raceSpellRuleChoices } from "../src/rules/choices/featSpells.ts";
 import type { CharacterClass } from "../src/types/character.ts";
-import type { RaceData, SpellData, SubraceData } from "../src/types/dnd5e.ts";
+import type { RaceData, SubraceData } from "../src/types/dnd5e.ts";
 import { inMemoryCompendium, loadSrdCatalog, makeChar } from "./testUtils.ts";
 import { backgroundSpellSpells } from "./backgroundSpellsFixture.ts";
 import { grantedSpellClasses, grantedSpellSpells } from "./grantedSpellsFixture.ts";

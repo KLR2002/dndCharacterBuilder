@@ -9,7 +9,6 @@ import {
   evaluateCharacterTools,
   isToolExpertise,
   hasArtificerToolExpertise,
-  type EvaluatedTool,
 } from "../src/rules/tools.ts";
 import {
   getAvailableExpertiseMilestones,

@@ -7,7 +7,6 @@ import { DEFAULT_ACTIVE_BOOK_CODES, ALL_BOOKS } from "../src/constants/books.ts"
 import { CUSTOM_BACKGROUND_SKILLS_ID } from "../src/rules/customBackground.ts";
 import { effectiveScores } from "../src/rules/abilities.ts";
 import {
-  setStandardArrayPick,
   setChoiceRacialBonus,
   validateMulticlass,
   addMulticlassLevel,

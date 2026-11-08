@@ -1,13 +1,12 @@
 import { ALL_BOOKS } from "../src/constants/books.ts";
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { makeChar, loadTestCatalogs, integratedTestCompendium } from "./testUtils.ts";
+import { makeChar, integratedTestCompendium } from "./testUtils.ts";
 import { getWeaponAttacks, checkDualWielding } from "../src/rules/attacks.ts";
 import { armorClass } from "../src/rules/ac.ts";
 import type { InventoryItem } from "../src/types/character.ts";
 
 describe("First-Class Attunement Ledger & 3-Slot Limit", () => {
-  const catalogs = loadTestCatalogs();
   const compendium = integratedTestCompendium();
 
   it("accurately counts attuned items and enforces 3-slot maximum capacity logic", () => {
