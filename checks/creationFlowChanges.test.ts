@@ -4,7 +4,7 @@ import { ALL_BOOKS } from "../src/constants/books.ts";
 import { makeChar, loadTestCatalog } from "./testUtils.ts";
 import { currentCompendium } from "../src/services/compendium.ts";
 import { skillChoiceOffers } from "../src/rules/proficiencySheet.ts";
-import { allCatalogRaces } from "../src/rules/catalogs.ts";
+import { allCatalogClasses, allCatalogRaces } from "../src/rules/catalogs.ts";
 import { applyStartingGrants } from "../src/rules/builderTransitions.ts";
 import {
   resolveStartingEquipment,
@@ -213,6 +213,82 @@ describe("Changing the ancestry or the background", () => {
     assert.equal(creationStepNeedsAttention(changed, "classChoices"), false);
     assert.equal(creationStepNeedsAttention(changed, "equipment"), false);
     assert.equal(currentCreationStep(changed, flowOpts), "background");
+  });
+
+  test("changing the subclass releases its rule choices and flags Class Choices even when it stays valid", () => {
+    const battleMaster = makeChar({
+      name: "Kara",
+      classes: [cl("Fighter", 6, "Battle Master")],
+      race: { name: "Human", source: "PHB", subraceName: "Variant", subraceSource: "PHB" },
+      background: { name: "Soldier", source: "PHB" },
+      abilityMethod: "standardArray",
+      standardArrayPicks: { str: 15, dex: 14, con: 13, int: 12, wis: 10, cha: 8 },
+      baseAbilityScores: { str: 15, dex: 14, con: 13, int: 12, wis: 10, cha: 8 },
+      skillChoices: [
+        { id: "Class: Fighter", origin: "class", choose: 2, from: ["Athletics", "Perception"], picked: ["Athletics", "Perception"] },
+      ],
+      chosenSkills: ["Athletics", "Perception"],
+      ruleChoices: [
+        { id: "PHB__Fighter__Fighting Style", trait: "Fighting Style", origin: "class", choose: 1, from: ["Defense"], picked: ["Defense"] },
+        { id: "PHB__Fighter__Battle Master__Maneuver", trait: "Maneuvers", origin: "subclass", choose: 3, from: ["Riposte", "Parry", "Brace"], picked: ["Riposte", "Parry", "Brace"] },
+      ],
+      creationProgress: { currentStep: "classChoices" },
+    });
+    const changed = applyCreationStepChange(
+      battleMaster,
+      { step: "subclass", subclassName: "Champion", subclassSource: "PHB" },
+      flowOpts,
+    );
+    assert.equal(changed.classes[0].subclassName, "Champion");
+    assert.deepEqual(
+      (changed.ruleChoices ?? []).map((rc) => rc.id),
+      ["PHB__Fighter__Fighting Style"],
+      "the Battle Master maneuvers are released, the class's own Fighting Style is kept",
+    );
+    assert.equal(isCreationStepValid(changed, "classChoices", flowOpts), true, "Class Choices stays valid on the new subclass");
+    assert.equal(creationStepNeedsAttention(changed, "classChoices"), true, "a step whose picks were released is flagged even when valid");
+    assert.equal(creationStepNeedsAttention(changed, "race"), false);
+    assert.equal(currentCreationStep(changed, flowOpts), "subclass");
+  });
+
+  test("changing the background releases the spells only its list gave and flags the Spells step", () => {
+    const cleric = makeChar({
+      name: "Ash",
+      classes: [cl("Cleric", 3, "Life Domain")],
+      race: { name: "Human", source: "PHB" },
+      background: { name: "Azorius Functionary", source: "GGR" },
+      abilityMethod: "standardArray",
+      standardArrayPicks: { str: 8, dex: 12, con: 13, int: 10, wis: 15, cha: 14 },
+      baseAbilityScores: { str: 8, dex: 12, con: 13, int: 10, wis: 15, cha: 14 },
+      knownSpells: [{ name: "Ensnaring Strike", source: "GGR", ownerKey: "Cleric__PHB" }],
+      creationProgress: { currentStep: "spells" },
+    });
+    const changed = applyCreationStepChange(
+      cleric,
+      { step: "background", background: { name: "Hermit", source: "PHB" } },
+      flowOpts,
+    );
+    assert.deepEqual(changed.knownSpells ?? [], [], "the spell only the old background's list gave is released");
+    assert.equal(isCreationStepValid(changed, "spells", flowOpts), true, "the Spells step stays valid");
+    assert.equal(creationStepNeedsAttention(changed, "spells"), true, "the Spells step is flagged because a pick of it was released");
+  });
+
+  test("changing the class releases a gold claim and flags Equipment even when the new class has no kit", () => {
+    const fighter = applyStartingGrants(finishedFighter(), "gold", { goldAmount: 125, catalogs: catalogs() });
+    assert.equal(fighter.startingOption, "gold");
+    assert.equal(fighter.pouch.gp, 125);
+    const sidekick = allCatalogClasses(catalogs()).find((c) => c.name === "Warrior Sidekick")!;
+    const changed = applyCreationStepChange(
+      fighter,
+      { step: "class", className: "Warrior Sidekick", source: sidekick.source },
+      flowOpts,
+    );
+    assert.deepEqual(changed.classes, [{ className: "Warrior Sidekick", source: sidekick.source, level: 6 }]);
+    assert.equal(changed.startingGrantedGold, undefined);
+    assert.equal(changed.startingGrantsApplied, false);
+    assert.equal(changed.pouch.gp, 0, "the granted gold is released");
+    assert.equal(isCreationStepValid(changed, "equipment", flowOpts), true, "the new class has no equipment kit to pick");
+    assert.equal(creationStepNeedsAttention(changed, "equipment"), true, "the Equipment step is flagged because its claim was released");
   });
 });
 

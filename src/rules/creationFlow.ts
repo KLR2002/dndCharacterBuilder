@@ -1,4 +1,4 @@
-import { DEFAULT_ACTIVE_BOOK_CODES, type ActiveBooks } from "../constants/books.ts";
+import type { ActiveBooks } from "../constants/books.ts";
 import type { AsiSelection, Character, CharacterClass, CreationProgress, CreationStepId } from "../types/character.ts";
 import type { ClassData, RaceData, SubraceData } from "../types/dnd5e.ts";
 import { POINT_BUY_COST } from "../constants/rules.ts";
@@ -468,7 +468,7 @@ export function applyCreationStepChange(
   opts: CreationFlowOptions = {},
 ): Character {
   const compendium = opts.compendium ?? currentCompendium();
-  const activeBooks = opts.activeBooks ?? DEFAULT_ACTIVE_BOOK_CODES;
+  const activeBooks = opts.activeBooks;
   const catalogs: CharacterCatalogs = { compendium, activeBooks };
 
   let next: Character;
