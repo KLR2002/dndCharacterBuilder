@@ -9,7 +9,7 @@
 import { join } from "node:path";
 import { buildScreens, buildSeed } from "./scenarios.mjs";
 import { playScreen } from "./native-steps.mjs";
-import { parseDump } from "./uiautomator.mjs";
+import { parseDumpOutput } from "./uiautomator.mjs";
 import { E2E_BUNDLE_INPUTS_MARKER } from "../../plugins/lib/e2e-build-transforms.mjs";
 
 // The app id of the (E2E) build, and the AVD the runner boots when no emulator is running.
@@ -46,8 +46,6 @@ export const WIDTH_MAX = 1000;
 // check waits for its ready condition.
 export const READY_TIMEOUT_MS = 10_000;
 export const READY_POLL_MS = 500;
-// Where the device writes the dump that is polled and the screenshots that are pulled.
-export const DUMP_REMOTE = "/sdcard/e2e-dump.xml";
 // A deep-link launch that exits non-zero is retried once after about this long (a real run saw one
 // transient exit 255 that passed on its own).
 export const LAUNCH_RETRY_DELAY_MS = 1_000;
@@ -381,14 +379,13 @@ async function runScenario({ adbCall, screen, width, shots, seedPath, state, fir
   // The step fields are played on fresh dumps: a tap lands at the matched node's centre, a swipe is an
   // `input swipe` mid-screen. A step whose target never shows fails the scenario with a message naming it;
   // a warning (an absent scrollTo needle, say) is logged and the scenario still screenshots.
+  // One call per poll: the hierarchy comes back on stdout, so no file is written on the device and no
+  // earlier hierarchy can be read. A dump that exits non-zero, or whose output is not a completed dump,
+  // is an empty node list for this poll.
   const dump = () => {
-    // The remote dump file is deleted before every dump, so a failed dump cannot read a stale
-    // hierarchy: a dump whose exit code is non-zero, or whose output does not report the dump, is an
-    // empty node list for this poll.
-    adbCall(["shell", "rm", "-f", DUMP_REMOTE]);
-    const dumped = adbCall(["shell", "uiautomator", "dump", DUMP_REMOTE], DUMP_TIMEOUT_MS);
-    if (dumped.code !== 0 || !/dumped to:/.test(dumped.stdout)) return [];
-    return parseDump(adbCall(["exec-out", "cat", DUMP_REMOTE]).stdout);
+    const dumped = adbCall(["exec-out", "uiautomator", "dump", "/dev/tty"], DUMP_TIMEOUT_MS);
+    if (dumped.code !== 0) return [];
+    return parseDumpOutput(dumped.stdout) ?? [];
   };
   const tap = (point) => adbCall(["shell", "input", "tap", String(point.x), String(point.y)]);
   const swipe = (args) => adbCall(["shell", "input", "swipe", ...args.map(String)]);
