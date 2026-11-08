@@ -74,14 +74,14 @@ export const AbilityScoresSection: React.FC<AbilityScoresSectionProps> = ({
                 styles.methodBtn,
                 {
                   backgroundColor: active ? theme.accentGlow : theme.surface,
-                  borderColor: active ? theme.accent : theme.border,
+                  borderColor: active ? theme.accentHover : theme.border,
                 },
               ]}
             >
               <Text
                 style={[
                   styles.methodText,
-                  { color: active ? theme.accent : theme.textSecondary, fontWeight: active ? "700" : "400" },
+                  { color: active ? theme.accentHover : theme.textSecondary, fontWeight: active ? "700" : "400" },
                 ]}
               >
                 {m === "pointBuy" ? "Point Buy" : m === "standardArray" ? "Std Array" : "Manual"}
@@ -110,7 +110,7 @@ export const AbilityScoresSection: React.FC<AbilityScoresSectionProps> = ({
             Points remaining:{" "}
             <Text
               style={{
-                color: pointBuyRemaining >= 0 ? theme.accent : theme.danger,
+                color: pointBuyRemaining >= 0 ? theme.accentHover : theme.danger,
                 fontWeight: "800",
                 fontSize: 16,
               }}
@@ -155,14 +155,14 @@ export const AbilityScoresSection: React.FC<AbilityScoresSectionProps> = ({
                     styles.poolChip,
                     {
                       backgroundColor: isPending ? theme.accent : available ? theme.surfaceRaised : theme.surfaceHighlight,
-                      borderColor: isPending ? theme.accent : theme.border,
+                      borderColor: isPending ? theme.accentHover : theme.border,
                       opacity: !available && !isPending ? 0.35 : 1,
                     },
                   ]}
                 >
                   <Text
                     style={{
-                      color: isPending ? theme.background : available ? theme.text : theme.textMuted,
+                      color: isPending ? theme.accentText : available ? theme.text : theme.textMuted,
                       fontWeight: "800",
                       fontSize: 20,
                     }}
@@ -174,7 +174,7 @@ export const AbilityScoresSection: React.FC<AbilityScoresSectionProps> = ({
             })}
           </View>
           {pendingValue != null && (
-            <Text style={{ color: theme.accent, fontSize: 12, textAlign: "center", fontWeight: "700" }}>
+            <Text style={{ color: theme.accentHover, fontSize: 12, textAlign: "center", fontWeight: "700" }}>
               → Now tap an ability slot to assign {pendingValue}
             </Text>
           )}
@@ -203,7 +203,7 @@ export const AbilityScoresSection: React.FC<AbilityScoresSectionProps> = ({
                   backgroundColor: theme.surface,
                   borderColor:
                     isSA && pendingValue != null
-                      ? theme.accent
+                      ? theme.accentHover
                       : isAssigned
                       ? theme.accentGlow
                       : theme.border,
@@ -220,7 +220,7 @@ export const AbilityScoresSection: React.FC<AbilityScoresSectionProps> = ({
                 )}
               </View>
 
-              <Text style={[styles.abilityMod, { color: theme.accent, marginRight: isCompact ? 12 : 0 }]}>{mod >= 0 ? `+${mod}` : mod}</Text>
+              <Text style={[styles.abilityMod, { color: theme.accentHover, marginRight: isCompact ? 12 : 0 }]}>{mod >= 0 ? `+${mod}` : mod}</Text>
 
               {character.abilityMethod === "manual" ? (
                 <TextInput
@@ -238,13 +238,13 @@ export const AbilityScoresSection: React.FC<AbilityScoresSectionProps> = ({
                     styles.saSlot,
                     {
                       backgroundColor: isAssigned ? theme.accentGlow : theme.surfaceHighlight,
-                      borderColor: isAssigned ? theme.accent : theme.border,
+                      borderColor: isAssigned ? theme.accentHover : theme.border,
                     },
                   ]}
                 >
                   <Text
                     style={{
-                      color: isAssigned ? theme.accent : theme.textMuted,
+                      color: isAssigned ? theme.accentHover : theme.textMuted,
                       fontWeight: "800",
                       fontSize: 20,
                     }}

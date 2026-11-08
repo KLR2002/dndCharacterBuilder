@@ -201,7 +201,7 @@ export default function HomeScreen() {
             styles.cardAvatarBox,
             {
               backgroundColor: theme.surfaceHighlight,
-              borderColor: theme.accent,
+              borderColor: theme.accentHover,
             },
           ]}
         >
@@ -212,7 +212,7 @@ export default function HomeScreen() {
               resizeMode="cover"
             />
           ) : (
-            <Ionicons name="person" size={24} color={theme.accent} />
+            <Ionicons name="person" size={24} color={theme.accentHover} />
           )}
         </View>
 
@@ -351,10 +351,10 @@ export default function HomeScreen() {
               onPress={() => setNewCharModalVisible(true)}
               style={[
                 styles.headerActionBtn,
-                { backgroundColor: theme.accent, borderColor: theme.accent },
+                { backgroundColor: theme.accent, borderColor: theme.accentHover },
               ]}
             >
-              <Ionicons name="add" size={22} color="#fff" />
+              <Ionicons name="add" size={22} color={theme.accentText} />
             </TouchableOpacity>
           </View>
         </View>
@@ -384,7 +384,7 @@ export default function HomeScreen() {
               <Ionicons
                 name="person-add-outline"
                 size={48}
-                color={theme.accent}
+                color={theme.accentHover}
               />
             </View>
             <Text style={[styles.emptyTitle, { color: theme.text }]}>
@@ -424,7 +424,7 @@ export default function HomeScreen() {
                 <Ionicons
                   name={isCollapsed ? "folder-outline" : "folder-open"}
                   size={20}
-                  color={theme.accent}
+                  color={theme.accentHover}
                 />
                 <Text style={[styles.folderTitle, { color: theme.text }]}>
                   {folder.name}
@@ -623,7 +623,7 @@ export default function HomeScreen() {
               { borderBottomColor: theme.border },
             ]}
           >
-            <Ionicons name="folder-outline" size={18} color={theme.accent} />
+            <Ionicons name="folder-outline" size={18} color={theme.accentHover} />
             <Text style={{ color: theme.text, fontSize: 14 }}>{f.name}</Text>
           </TouchableOpacity>
         ))}

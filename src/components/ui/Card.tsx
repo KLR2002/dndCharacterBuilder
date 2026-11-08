@@ -19,7 +19,7 @@ export const Card: React.FC<CardProps> = ({ children, style, highlight, bordered
           borderColor: highlight ? theme.accentBorder : bordered ? theme.border : "transparent",
         },
         highlight && {
-          shadowColor: theme.accent,
+          shadowColor: theme.accentGlow,
           shadowOffset: { width: 0, height: 2 },
           shadowOpacity: 0.15,
           shadowRadius: 8,

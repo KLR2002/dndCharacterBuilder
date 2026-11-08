@@ -38,7 +38,7 @@ export const OriginSwapPicker: React.FC<OriginSwapPickerProps> = ({ original, op
       >
         <Text style={[styles.original, { color: theme.text }]}>{original}</Text>
         <View style={styles.value}>
-          <Text style={[styles.current, { color: theme.accent }]}>{current}</Text>
+          <Text style={[styles.current, { color: theme.accentHover }]}>{current}</Text>
           <Ionicons name="chevron-forward" size={14} color={theme.textMuted} />
         </View>
       </TouchableOpacity>
@@ -60,11 +60,11 @@ export const OriginSwapPicker: React.FC<OriginSwapPickerProps> = ({ original, op
                   styles.option,
                   {
                     backgroundColor: selected ? theme.accentGlow : theme.surfaceHighlight,
-                    borderColor: selected ? theme.accent : theme.border,
+                    borderColor: selected ? theme.accentHover : theme.border,
                   },
                 ]}
               >
-                <Text style={{ color: selected ? theme.accent : theme.text, fontSize: 14, fontWeight: selected ? "700" : "500", flexShrink: 1 }}>
+                <Text style={{ color: selected ? theme.accentHover : theme.text, fontSize: 14, fontWeight: selected ? "700" : "500", flexShrink: 1 }}>
                   {name}
                 </Text>
               </TouchableOpacity>
