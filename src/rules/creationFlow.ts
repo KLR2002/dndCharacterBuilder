@@ -36,6 +36,20 @@ export interface CreationFlowOptions {
   activeBooks?: ActiveBooks;
 }
 
+/**
+ * The Class step's offer: one class with a starting level from 1 to 20 defaulting to 1. Creation builds a
+ * single class, so the offer carries no add-class action; Multiclassing enters only through the Level-Up
+ * Flow.
+ */
+export interface ClassStepOffer {
+  startingLevel: { min: number; max: number; default: number };
+  canAddClass: false;
+}
+
+export function classStepOffer(): ClassStepOffer {
+  return { startingLevel: { min: 1, max: 20, default: 1 }, canAddClass: false };
+}
+
 /** The one class a creation builds: the first entry, while the character holds at most one. */
 function classEntryOf(character: Character): CharacterClass | undefined {
   return character.classes?.[0];

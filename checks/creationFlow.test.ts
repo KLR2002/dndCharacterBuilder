@@ -1,7 +1,7 @@
 import { describe, test } from "node:test";
 import assert from "node:assert/strict";
 import { makeChar } from "./testUtils.ts";
-import { applicableCreationSteps } from "../src/rules/creationFlow.ts";
+import { applicableCreationSteps, classStepOffer } from "../src/rules/creationFlow.ts";
 import type { CharacterClass } from "../src/types/character.ts";
 
 const cl = (className: string, level: number, subclassName?: string): CharacterClass => ({
@@ -76,5 +76,13 @@ describe("Creation Steps follow the order and skip what does not apply", () => {
       "details",
       "review",
     ]);
+  });
+});
+
+describe("The Class step offers one class and a starting level", () => {
+  test("the offer sets the starting level from 1 to 20 defaulting to 1, with no add-class action", () => {
+    const offer = classStepOffer();
+    assert.deepEqual(offer.startingLevel, { min: 1, max: 20, default: 1 });
+    assert.equal(offer.canAddClass, false);
   });
 });
