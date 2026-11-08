@@ -1,11 +1,15 @@
 import { describe, test } from "node:test";
 import assert from "node:assert/strict";
-import { makeChar } from "./testUtils.ts";
+import { ALL_BOOKS } from "../src/constants/books.ts";
+import { makeChar, loadTestCatalog } from "./testUtils.ts";
+import { migrateCharacter } from "../src/rules/migrateCharacter.ts";
+import type { ClassData, RaceData } from "../src/types/dnd5e.ts";
 import {
   applicableCreationSteps,
   classStepOffer,
   creationSteps,
   currentCreationStep,
+  isCreationFinished,
   isCreationStepValid,
 } from "../src/rules/creationFlow.ts";
 import type { Character, CharacterClass } from "../src/types/character.ts";
@@ -133,5 +137,36 @@ describe("Details asks only for name, gender and alignment", () => {
     assert.equal(isCreationStepValid(named, "details"), true);
     const namedSteps = new Map(creationSteps(named).map((step) => [step.id, step]));
     assert.equal(namedSteps.get("details")?.valid, true);
+  });
+});
+
+describe("Characters from the old builder count as finished", () => {
+  const roundTrip = (raw: object) =>
+    migrateCharacter(JSON.parse(JSON.stringify(raw)), loadTestCatalog<RaceData[]>("races"), loadTestCatalog<ClassData[]>("classes"), ALL_BOOKS);
+
+  test("a save with no creation progress loads as finished, and the existing fixtures gain none", () => {
+    const fixtures = [
+      makeChar(),
+      makeChar({ classes: [cl("Fighter", 4, "Champion")], race: { name: "Human", source: "PHB" }, background: { name: "Soldier", source: "PHB" } }),
+      makeChar({ classes: [cl("Cleric", 1, "Life Domain")], knownSpells: [{ name: "Cure Wounds", source: "PHB" }] }),
+      makeChar({ classes: [cl("Rogue", 10)], asiSelections: [{ level: 4, type: "asi", asi: { dex: 2 } }] }),
+    ];
+    for (const fixture of fixtures) {
+      const migrated = roundTrip(fixture);
+      assert.equal(migrated.creationProgress, undefined);
+      assert.equal(isCreationFinished(migrated), true);
+      assert.equal(currentCreationStep(migrated), null);
+    }
+  });
+
+  test("a save that carries creation progress keeps it as a draft, and a malformed record is rejected", () => {
+    const draft = makeChar({ classes: [cl("Wizard", 1)], creationProgress: { currentStep: "background" } });
+    const migrated = roundTrip(draft);
+    assert.deepEqual(migrated.creationProgress, { currentStep: "background" });
+    assert.equal(isCreationFinished(migrated), false);
+    assert.equal(currentCreationStep(migrated), "background");
+
+    assert.throws(() => roundTrip({ ...draft, creationProgress: { currentStep: "not-a-step" } }), /creationProgress/);
+    assert.throws(() => roundTrip({ ...draft, creationProgress: { currentStep: 4 } }), /creationProgress/);
   });
 });
