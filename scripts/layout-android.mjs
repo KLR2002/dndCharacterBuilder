@@ -33,7 +33,7 @@
 // scenario names as JSON and exits). Exit: 0 success, 1 a build, install, seed copy, launch, ready
 // wait or screenshot failed for at least one scenario, 2 a refusal (an unmatched ONLY term, an
 // invalid WIDTHS entry, only web-only scenarios selected, no adb, a non-emulator device, no
-// emulator binary, no generated android/ project, no APK, an emulator that never booted), 130/143 a
+// emulator binary, no generated android/ project or one generated before the E2E wiring, no APK, an emulator that never booted), 130/143 a
 // signal ended the run.
 import { spawn, spawnSync } from "node:child_process";
 import fs from "node:fs";

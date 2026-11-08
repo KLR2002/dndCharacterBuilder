@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
+import { E2E_BUNDLE_INPUTS_MARKER } from "../plugins/lib/e2e-build-transforms.mjs";
 import { tmpdir as osTmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -143,6 +144,8 @@ function makeWorld(options: {
   startClock?: number;
   // Folders under <tmpRoot>/layout-android that already exist (for the taken-name suffix).
   existingLayoutDirs?: string[];
+  /** The text of android/app/build.gradle the fake returns; the default carries the E2E bundle-input marker. */
+  gradleText?: string;
   // The fake os.tmpdir() of the world, so tests can isolate their run folders.
   tmpRoot?: string;
 }) {
@@ -288,7 +291,7 @@ function makeWorld(options: {
       writeFile: (p: string, content: string) => {
         writes.push({ path: p, content });
       },
-      readFile: (p: string) => readFileSync(p),
+      readFile: (p: string) => (p.endsWith(join("app", "build.gradle")) ? Buffer.from(options.gradleText ?? E2E_BUNDLE_INPUTS_MARKER) : readFileSync(p)),
       makeSeed: () => {
         seedCalls += 1;
         return FAKE_SEED;
@@ -643,6 +646,16 @@ test("a missing android/ project stops with the prebuild hint", async () => {
   const code = await world.runRun();
   assert.equal(code, 2);
   assert.ok(world.errors.join("\n").includes("npx expo prebuild --platform android --no-install"));
+  assert.equal(world.callsTo("gradlew").length, 0);
+});
+
+test("a generated android/ project without the bundle-input wiring stops with the prebuild hint", async () => {
+  const world = makeWorld({ ...emulatorWorld, argv: [], gradleText: "android { buildTypes { release { } } }" });
+  const code = await world.runRun();
+  assert.equal(code, 2);
+  const errors = world.errors.join("\n");
+  assert.ok(errors.includes("npx expo prebuild --platform android --no-install"));
+  assert.ok(errors.includes(E2E_BUNDLE_INPUTS_MARKER));
   assert.equal(world.callsTo("gradlew").length, 0);
 });
 

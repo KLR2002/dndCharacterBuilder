@@ -10,6 +10,7 @@ import { join } from "node:path";
 import { buildScreens, buildSeed } from "./scenarios.mjs";
 import { playScreen } from "./native-steps.mjs";
 import { parseDump } from "./uiautomator.mjs";
+import { E2E_BUNDLE_INPUTS_MARKER } from "../../plugins/lib/e2e-build-transforms.mjs";
 
 // The app id of the (E2E) build, and the AVD the runner boots when no emulator is running.
 export const APP_ID = "com.anonymous.dnd5e2014CharacterBuilder";
@@ -601,6 +602,16 @@ export async function runAndroid(options) {
     if (!noBuild) {
       if (!fileExists(join(android, "gradlew"))) {
         errorLog(`No generated Android project at ${android}. Generate it once with: npx expo prebuild --platform android --no-install`);
+        return 2;
+      }
+      // A project generated before the config plugin wired the E2E flag into Gradle's bundle task would
+      // reuse the bundle of an earlier build with the other flag value, so refuse to build on it.
+      const gradleFile = join(android, "app", "build.gradle");
+      if (!fileExists(gradleFile) || !Buffer.from(readFile(gradleFile)).toString("utf8").includes(E2E_BUNDLE_INPUTS_MARKER)) {
+        errorLog(
+          `${gradleFile} does not carry the E2E build wiring (no line "${E2E_BUNDLE_INPUTS_MARKER}"), so a build could keep a stale JavaScript bundle. ` +
+            "Regenerate the project with: npx expo prebuild --platform android --no-install",
+        );
         return 2;
       }
       mkdir(metroCacheRoot({ e2e: true, tmpdir: tmpdir() }));
