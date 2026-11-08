@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { makeChar } from "./testUtils.ts";
-import { planLevelUp } from "../src/rules/levelUpFlow.ts";
+import { planLevelUp, applyLevelUpPlan } from "../src/rules/levelUpFlow.ts";
 
 const FIGHTER_3 = makeChar({
   baseAbilityScores: { str: 15, dex: 14, con: 14, int: 10, wis: 10, cha: 10 },
@@ -123,4 +123,61 @@ test("Hit Points by roll from a fixed random source: face plus 2, never less tha
   if (!minimum.ok) assert.fail(minimum.reason);
   assert.equal(minimum.plan.hitPoints.roll, 1);
   assert.equal(minimum.plan.hitPoints.amount, 1);
+});
+
+test("an unapplied plan leaves the Character deep-equal; applying sets the level and every pick", () => {
+  const before = makeChar({
+    baseAbilityScores: { str: 15, dex: 14, con: 14, int: 10, wis: 10, cha: 10 },
+    classes: [
+      {
+        className: "Fighter",
+        source: "PHB",
+        level: 3,
+        subclassName: "Champion",
+        subclass: "Champion",
+        subclassSource: "SRD",
+      },
+    ],
+    currentHp: 20,
+  });
+  const snapshot = structuredClone(before);
+  const result = planLevelUp(before, {
+    className: "Fighter",
+    hitPoints: { mode: "average" },
+    picks: { asi: { level: 4, type: "asi", asi: { con: 2 } } },
+  });
+  if (!result.ok) assert.fail(result.reason);
+  // Cancelled on Review: the plan was never applied, the Character is exactly as before.
+  assert.deepEqual(before, snapshot);
+
+  const applied = applyLevelUpPlan(before, result.plan, { fullHealOnLevelUp: false });
+  assert.equal(applied.classes[0].level, 4);
+  const asi = applied.asiSelections.find(
+    (s) => s.className === "Fighter" && (s.classLevel ?? s.level) === 4
+  );
+  assert.ok(asi);
+  assert.deepEqual(asi.asi, { con: 2 });
+  assert.equal(applied.currentHp, 20);
+  // Applying returns a new Character; the original is untouched.
+  assert.deepEqual(before, snapshot);
+});
+
+test("applying a Wizard 1->2 plan sets the level, the subclass pick and the learned spells together", () => {
+  const wizard = makeChar({
+    baseAbilityScores: { str: 8, dex: 14, con: 14, int: 16, wis: 12, cha: 10 },
+    classes: [{ className: "Wizard", source: "PHB", level: 1 }],
+    currentHp: 4,
+  });
+  const result = planLevelUp(wizard, {
+    className: "Wizard",
+    picks: {
+      subclass: { name: "School of Evocation", source: "SRD" },
+      learnedSpells: [{ name: "Magic Missile", source: "PHB" }],
+    },
+  });
+  if (!result.ok) assert.fail(result.reason);
+  const applied = applyLevelUpPlan(wizard, result.plan, { fullHealOnLevelUp: true });
+  assert.equal(applied.classes[0].level, 2);
+  assert.equal(applied.classes[0].subclassName, "School of Evocation");
+  assert.ok((applied.knownSpells ?? []).some((s) => s.name === "Magic Missile"));
 });

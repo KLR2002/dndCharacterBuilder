@@ -1,8 +1,18 @@
+import type { ActiveBooks } from "../constants/books.ts";
+import { DEFAULT_ACTIVE_BOOK_CODES } from "../constants/books.ts";
 import type { AsiSelection, Character, CharacterClass } from "../types/character.ts";
+import { currentCompendium, type Compendium } from "../services/compendium.ts";
 import { effectiveScores } from "./abilities.ts";
 import { asiLevels, casterKindOf, heldClass, hitDieOf, isThirdCaster } from "./classData.ts";
 import { subclassLevel } from "./leveling.ts";
-import { validateMulticlass } from "./builderTransitions.ts";
+import {
+  applyAsiWithHitPoints,
+  changeSubclass,
+  confirmLevelUp,
+  validateMulticlass,
+} from "./builderTransitions.ts";
+import { learnSpell } from "./characterSpells.ts";
+import { getClassSpellProfiles } from "./spellcasting.ts";
 
 /**
  * Pure Level-Up Flow rules: plan one level for a chosen class and apply a confirmed plan in one
@@ -131,4 +141,66 @@ export function planLevelUp(character: Character, options: PlanLevelUpOptions): 
       picks: options.picks ?? {},
     },
   };
+}
+
+export interface ApplyLevelUpOptions {
+  fullHealOnLevelUp?: boolean;
+  compendium?: Compendium;
+  activeBooks?: ActiveBooks;
+}
+
+/**
+ * Applies a confirmed plan in one Character update: the level (and the full heal when that
+ * setting is on) through `confirmLevelUp`, then the plan's picks through `changeSubclass`,
+ * `applyAsiWithHitPoints` and `learnSpell`. A class the Character does not hold is re-checked
+ * against the multiclass requirements first; a refusal returns the Character unchanged. The
+ * given Character is never mutated.
+ */
+export function applyLevelUpPlan(
+  character: Character,
+  plan: LevelUpPlan,
+  options: ApplyLevelUpOptions = {}
+): Character {
+  const fullHeal = options.fullHealOnLevelUp ?? true;
+  const compendium = options.compendium ?? currentCompendium();
+  const activeBooks = options.activeBooks ?? DEFAULT_ACTIVE_BOOK_CODES;
+
+  const holds = character.classes.some((c) => sameName(c.className, plan.className));
+  if (!holds) {
+    const check = validateMulticlass(character, plan.className, effectiveScores(character).scores);
+    if (!check.ok) return character;
+  }
+
+  let next = confirmLevelUp(character, plan.className, plan.source, fullHeal);
+  if (plan.picks.subclass) {
+    next = changeSubclass(
+      next,
+      plan.className,
+      plan.picks.subclass.name,
+      plan.picks.subclass.source,
+      [],
+      compendium,
+      activeBooks
+    );
+  }
+  if (plan.picks.asi) {
+    next = applyAsiWithHitPoints(
+      next,
+      { ...plan.picks.asi, className: plan.className, classLevel: plan.toLevel, level: plan.toLevel },
+      fullHeal,
+      compendium,
+      activeBooks
+    );
+  }
+  if (plan.picks.learnedSpells?.length) {
+    const profile = getClassSpellProfiles(next, { activeBooks, compendium }).find((p) =>
+      sameName(p.className, plan.className)
+    );
+    if (profile) {
+      for (const spell of plan.picks.learnedSpells) {
+        next = learnSpell(next, profile, spell, compendium, activeBooks);
+      }
+    }
+  }
+  return next;
 }
