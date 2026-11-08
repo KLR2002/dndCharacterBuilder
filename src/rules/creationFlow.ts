@@ -50,6 +50,49 @@ export function classStepOffer(): ClassStepOffer {
   return { startingLevel: { min: 1, max: 20, default: 1 }, canAddClass: false };
 }
 
+export type CreationStepStatus = "finished" | "current" | "locked";
+
+export interface CreationStep {
+  id: CreationStepId;
+  status: CreationStepStatus;
+}
+
+/**
+ * A draft is a character whose creation progress is recorded. Absent means the character is finished, so a
+ * save from the old builder counts as finished without a rewrite.
+ */
+export function isCreationFinished(character: Character): boolean {
+  return character.creationProgress === undefined;
+}
+
+/**
+ * The step a draft is on: the recorded one while it still applies, else the first applicable step from its
+ * position in the flow (an earlier pick can have removed the recorded step).
+ */
+function resolveCurrentStep(character: Character, applicable: readonly CreationStepId[]): CreationStepId {
+  const recorded = character.creationProgress?.currentStep;
+  if (recorded && applicable.includes(recorded)) return recorded;
+  const recordedIndex = CREATION_STEP_ORDER.indexOf(recorded ?? "class");
+  return applicable.find((id) => CREATION_STEP_ORDER.indexOf(id) >= recordedIndex) ?? applicable[applicable.length - 1];
+}
+
+/**
+ * The applicable Creation Steps with their status: finished before the current step (revisitable), the
+ * current step itself, locked after it. A finished character reports every applicable step as finished.
+ */
+export function creationSteps(character: Character, opts: CreationFlowOptions = {}): CreationStep[] {
+  const applicable = applicableCreationSteps(character, opts);
+  const current = isCreationFinished(character) ? null : resolveCurrentStep(character, applicable);
+  const currentIndex = current === null ? -1 : applicable.indexOf(current);
+  return applicable.map((id, index) => {
+    let status: CreationStepStatus;
+    if (current === null || index < currentIndex) status = "finished";
+    else if (index === currentIndex) status = "current";
+    else status = "locked";
+    return { id, status };
+  });
+}
+
 /** The one class a creation builds: the first entry, while the character holds at most one. */
 function classEntryOf(character: Character): CharacterClass | undefined {
   return character.classes?.[0];

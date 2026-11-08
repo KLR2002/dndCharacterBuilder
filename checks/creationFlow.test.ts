@@ -1,7 +1,7 @@
 import { describe, test } from "node:test";
 import assert from "node:assert/strict";
 import { makeChar } from "./testUtils.ts";
-import { applicableCreationSteps, classStepOffer } from "../src/rules/creationFlow.ts";
+import { applicableCreationSteps, classStepOffer, creationSteps } from "../src/rules/creationFlow.ts";
 import type { CharacterClass } from "../src/types/character.ts";
 
 const cl = (className: string, level: number, subclassName?: string): CharacterClass => ({
@@ -84,5 +84,20 @@ describe("The Class step offers one class and a starting level", () => {
     const offer = classStepOffer();
     assert.deepEqual(offer.startingLevel, { min: 1, max: 20, default: 1 });
     assert.equal(offer.canAddClass, false);
+  });
+});
+
+describe("Later steps stay locked until the current step is valid", () => {
+  test("with no race picked, Background and every later step report locked while earlier steps report finished", () => {
+    const draft = makeChar({
+      classes: [cl("Wizard", 1)],
+      creationProgress: { currentStep: "race" },
+    });
+    const byId = new Map(creationSteps(draft).map((step) => [step.id, step]));
+    assert.equal(byId.get("class")?.status, "finished");
+    assert.equal(byId.get("race")?.status, "current");
+    for (const id of ["background", "abilities", "spells", "equipment", "details", "review"] as const) {
+      assert.equal(byId.get(id)?.status, "locked", `${id} should report locked`);
+    }
   });
 });
