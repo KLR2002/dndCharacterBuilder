@@ -87,9 +87,10 @@ export function centerOf(node, view) {
 }
 
 // The nodes of a one-call dump (`adb exec-out uiautomator dump /dev/tty`), whose stdout is the XML
-// hierarchy followed by a line naming the file it was written to. Returns null when the output is not a
-// completed dump: no <hierarchy> root, or an ERROR line anywhere (the dump did not finish).
+// hierarchy followed by a line naming the file it was written to; parseDump reads only the <node> tags,
+// so that line is ignored. Returns null when the output is not a completed dump: no <hierarchy> root with
+// its closing tag, or an ERROR line anywhere (the dump did not finish).
 export function parseDumpOutput(stdout) {
-  if (/^ERROR:/m.test(stdout) || !stdout.includes("<hierarchy")) return null;
-  return parseDump(stdout.replace(/UI hierchary dumped to:[^\n]*/, ""));
+  if (/^ERROR:/m.test(stdout) || !/<hierarchy\b[\s\S]*<\/hierarchy>/.test(stdout)) return null;
+  return parseDump(stdout);
 }

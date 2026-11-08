@@ -83,7 +83,7 @@ test("centerOf is the centre point of a node's bounds", () => {
 
 const DUMPED_LINE = "UI hierchary dumped to: /dev/tty";
 
-test("parseDumpOutput reads the nodes of a one-call dump, without the trailing dumped-to line", () => {
+test("parseDumpOutput reads the nodes of a one-call dump, and the dumped-to line after it adds none", () => {
   const nodes = parseDumpOutput(`${fixtureXml}\n${DUMPED_LINE}\n`);
   assert.ok(nodes);
   assert.equal(nodes.length, 47);
@@ -103,4 +103,27 @@ test("parseDumpOutput reports a failed dump as null: no XML root, an ERROR line,
   assert.equal(parseDumpOutput("ERROR: could not obtain idle state\n"), null);
   // An ERROR line is a failure even next to a hierarchy: the dump did not complete.
   assert.equal(parseDumpOutput(`ERROR: could not obtain idle state\n${fixtureXml}\n${DUMPED_LINE}\n`), null);
+});
+
+test("parseDumpOutput reports a dump as null when an ERROR line follows the nodes", () => {
+  assert.equal(parseDumpOutput(`${fixtureXml}\n${DUMPED_LINE}\nERROR: could not obtain idle state\n`), null);
+});
+
+test("parseDumpOutput reports a truncated dump, with no closing hierarchy tag, as null", () => {
+  const closing = fixtureXml.indexOf("</hierarchy>");
+  assert.ok(closing > 0, "the fixture is a complete dump");
+  const truncated = fixtureXml.slice(0, closing);
+  assert.ok(parseDump(truncated).length > 0, "the truncated XML still holds nodes");
+  assert.equal(parseDumpOutput(`${truncated}\n${DUMPED_LINE}\n`), null);
+});
+
+test("parseDumpOutput keeps a node whose text holds an encoded 'ERROR:' line, which is not a failure", () => {
+  const xml =
+    `<?xml version='1.0' encoding='UTF-8' standalone='yes' ?><hierarchy rotation="0">` +
+    `<node text="ERROR:&#10;Sample" content-desc="" bounds="[0,0][10,20]" clickable="false" class="android.widget.TextView" resource-id="" />` +
+    `</hierarchy>`;
+  const nodes = parseDumpOutput(`${xml}\n${DUMPED_LINE}\n`);
+  assert.ok(nodes);
+  assert.equal(nodes.length, 1);
+  assert.equal(nodes[0].text, "ERROR:\nSample");
 });
