@@ -109,3 +109,16 @@ export function rollD20(modifier: number, mode: D20Mode = "none", random: Random
     total: (keepFirst ? first : second) + modifier,
   };
 }
+
+/** Whether a Roll's kept d20 landed on a natural 20. */
+export function isNatural20(roll: Roll): boolean {
+  return roll.dice.some((die) => die.sides === 20 && !die.dropped && die.face === 20);
+}
+
+/** Rolls damage for a pool like "1d8+3". On a critical the dice double; the flat modifier does not. */
+export function rollDamage(pool: string, options: { critical?: boolean } = {}, random: RandomSource = appRandom): Roll {
+  const parsed = parseDicePool(pool);
+  if (!parsed) throw new Error(`Not a dice pool: "${pool}"`);
+  const dice = options.critical ? parsed.dice.map((term) => ({ ...term, count: term.count * 2 })) : parsed.dice;
+  return rollParsed({ dice, modifier: parsed.modifier }, random);
+}

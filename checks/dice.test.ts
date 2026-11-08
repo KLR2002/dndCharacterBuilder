@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { parseDicePool, rollDicePool, rollD20, type RandomSource } from "../src/rules/dice.ts";
+import { isNatural20, parseDicePool, rollDamage, rollDicePool, rollD20, type RandomSource } from "../src/rules/dice.ts";
 
 /** A random source with fixed faces, cycling: the die with `sides` lands on the next queued face. */
 function fixedFaces(faces: number[]): RandomSource {
@@ -54,4 +54,26 @@ test("advantage keeps the higher d20 and disadvantage the lower; both d20s are r
   const tie = rollD20(0, "advantage", fixedFaces([12, 12]));
   assert.equal(tie.total, 12);
   assert.equal(tie.dice.filter((die) => !die.dropped).length, 1);
+});
+
+test("a kept natural 20 doubles the damage dice, not the flat modifier", () => {
+  const criticalAttack = rollD20(7, "advantage", fixedFaces([3, 20]));
+  assert.ok(isNatural20(criticalAttack));
+  assert.equal(criticalAttack.total, 20 + 7);
+
+  const damage = rollDamage("2d6+3", { critical: isNatural20(criticalAttack) }, fixedFaces([5, 2, 6, 1]));
+  assert.equal(damage.dice.length, 4);
+  assert.deepEqual(damage.dice.map((die) => die.face), [5, 2, 6, 1]);
+  assert.ok(damage.dice.every((die) => die.sides === 6));
+  assert.equal(damage.modifier, 3);
+  assert.equal(damage.total, 5 + 2 + 6 + 1 + 3);
+
+  const normalAttack = rollD20(7, "none", fixedFaces([19]));
+  assert.equal(isNatural20(normalAttack), false);
+  const normalDamage = rollDamage("2d6+3", { critical: isNatural20(normalAttack) }, fixedFaces([5, 2]));
+  assert.equal(normalDamage.dice.length, 2);
+  assert.equal(normalDamage.total, 5 + 2 + 3);
+
+  const unkeptTwenty = rollD20(0, "disadvantage", fixedFaces([20, 4]));
+  assert.equal(isNatural20(unkeptTwenty), false);
 });
