@@ -20,7 +20,8 @@
 // only one that runs; the same idempotent cleanup also runs on every other exit path. The original
 // density is restored at the end (also after a failure). An exception from the run (an unwritable
 // SHOTS folder, an unreadable build.gradle, a spawn error) runs that cleanup too, prints one line
-// `layout:android failed: <message>` and exits 2. Every adb call runs with a timeout, and the waits
+// `layout:android failed: <message>` and exits 2. The run stops the adb server and leaves no Gradle
+// daemon when it started them (the build runs with `--no-daemon`), and leaves any it found running. Every adb call runs with a timeout, and the waits
 // between polls are real asynchronous sleeps, so
 // the event loop turns between device calls and a signal handler runs there. The device is checked
 // alive before each scenario and at every scenario failure point; when it is lost, an emulator this
