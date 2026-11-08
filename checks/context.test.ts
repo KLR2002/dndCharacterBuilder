@@ -32,8 +32,9 @@ async function providerHarness(initial: unknown = [makeChar()], options: {
   /** The Compendium the app reads as current (for the open-character reconcile). Defaults to a stub. */
   catalog?: any;
 } = {}) {
-  // Writes still queued from an earlier harness must land in its KV before this one installs a fresh one.
-  for (let i = 0; i < 20; i++) await new Promise(resolve => setImmediate(resolve));
+  // Writes still queued from an earlier harness must land in its KV before this one installs a fresh
+  // one: loadAll enqueues a read behind them on the storage write queue, so awaiting it drains the queue.
+  await storage.loadAll();
   const kv = new Map([["@dnd5e_characters", typeof initial === "string" ? initial : JSON.stringify(initial)]]);
   if (options.settings) kv.set("@dnd5e_app_settings", JSON.stringify(options.settings));
   storage.__setKvForTests(kv);
