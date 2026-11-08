@@ -128,11 +128,12 @@ export function sdkPaths({ env, homeDir }) {
   return { sdk, adb: join(sdk, "platform-tools", "adb"), emulator: join(sdk, "emulator", "emulator") };
 }
 
-// The detached emulator start: headless, windowed with `--window`. Headless runs on the host GPU:
-// the emulator's software renderer (its default without a window) segfaults during a cold boot of
-// this AVD, while `-gpu host` boots it.
+// The detached emulator start: headless, windowed with `--window`. The renderer is ANGLE over the
+// host's Vulkan: the emulator's software renderer (its default without a window) segfaults during a
+// cold boot of this AVD, and its host GL renderer (`-gpu host`) lost its GL context and killed the
+// emulator after 8 and 29 scenarios in two full runs, while ANGLE ran all 50 SRD scenarios at 360 dp.
 export function emulatorArgs({ windowed = false } = {}) {
-  return ["-avd", AVD_NAME, "-no-snapshot-save", "-no-audio", ...(windowed ? [] : ["-no-window", "-gpu", "host"])];
+  return ["-avd", AVD_NAME, "-no-snapshot-save", "-no-audio", "-gpu", "angle_indirect", ...(windowed ? [] : ["-no-window"])];
 }
 
 // The incremental E2E release build, run from android/.
