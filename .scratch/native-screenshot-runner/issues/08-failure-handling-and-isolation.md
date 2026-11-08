@@ -1,6 +1,7 @@
 # 08: Failure handling and isolation
 
-**Status:** ready-for-agent
+**Status:** done
+**Landed:** a3d77de, with df37c76 (a tab is reached from any scroll position, which the isolation made necessary). `checks/androidRunner.test.ts` 52/52 and `checks/nativeSteps.test.ts` 40/40, red-green and mutation checks (the clear, the `modal` force-stop, the reseed push, the FAILED pull) by the implementers; `npm run check:all` exit 0 on each merge (1870 app tests, 305 scraper tests). Real runs by the implementer: a deliberately wrong ready text gave `Builder-Class-360-FAILED.png` (a valid PNG), the scenarios after it still wrote their screenshots, exit 1; the edit was reverted. Main session, full SRD list at 360 dp on the merged tree with a runner-booted ANGLE emulator: exit 0, 49 screenshots, 0 FAILED screenshots, 1 web-only skip, 2 expected `scrollTo` warnings, no lost device; the modes used were 4 `reset+seed`, 28 `deep link`, 13 `same route`, 4 `relaunch`; the runner stopped its emulator at the end. Screenshots checked by eye (Conditions modal, Review notices expanded, Spells). Finding: the isolation does not make the run faster. The full list took 19 min 21 s for 49 scenarios, against about 18 min for 48 with a full reset per scenario; playing the steps (a `uiautomator dump` takes about 2 s) dominates. Four widths of the whole list are therefore about 75 minutes, so `ONLY` is the usual way to run it. Open: a lost emulator is ticket 10.
 
 ## What to build
 
@@ -13,8 +14,8 @@ A scenario whose `ready` text never appears is reported and does not stop the ru
 
 ## Acceptance Criteria
 
-- [ ] AC-14: When a scenario's `ready` text does not appear within its timeout, the runner saves the stuck screen as `<scenario>-<width>-FAILED.png`, runs the remaining scenarios, and exits non-zero.
-- [ ] AC-15: The first scenario of a width clears the app's data and copies the seed in; a `fresh` scenario clears the app's data and copies the seed in again; a `modal` scenario force-stops and relaunches by deep link without clearing; any other scenario only jumps to its route by deep link.
+- [x] AC-14: When a scenario's `ready` text does not appear within its timeout, the runner saves the stuck screen as `<scenario>-<width>-FAILED.png`, runs the remaining scenarios, and exits non-zero.
+- [x] AC-15: The first scenario of a width clears the app's data and copies the seed in; a `fresh` scenario clears the app's data and copies the seed in again; a `modal` scenario force-stops and relaunches by deep link without clearing; any other scenario only jumps to its route by deep link.
 
 ## Verification
 
