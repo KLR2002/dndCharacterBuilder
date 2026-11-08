@@ -42,6 +42,40 @@ test("Wizard 1->2 plans only Class, Hit Points, Subclass, Spells, Review", () =>
   );
 });
 
+test("a Wizard 3 planning Fighter 1 (requirements met) includes Class Choices", () => {
+  const wizard3 = makeChar({
+    baseAbilityScores: { str: 14, dex: 10, con: 14, int: 16, wis: 12, cha: 10 },
+    classes: [{ className: "Wizard", source: "PHB", level: 3 }],
+  });
+  const result = planLevelUp(wizard3, { className: "Fighter", source: "PHB" });
+  if (!result.ok) assert.fail(result.reason);
+  assert.equal(result.plan.fromLevel, 0);
+  assert.equal(result.plan.toLevel, 1);
+  // Fighter 1 brings the Fighting Style, resolved through the feature's options.
+  assert.deepEqual(
+    result.plan.steps.map((s) => s.id),
+    ["class", "hitPoints", "classChoices", "review"]
+  );
+});
+
+test("a first Fighter 1 plan includes Class Choices", () => {
+  const fresh = makeChar({
+    baseAbilityScores: { str: 15, dex: 14, con: 14, int: 10, wis: 10, cha: 10 },
+  });
+  const result = planLevelUp(fresh, { className: "Fighter", source: "PHB" });
+  if (!result.ok) assert.fail(result.reason);
+  assert.deepEqual(
+    result.plan.steps.map((s) => s.id),
+    ["class", "hitPoints", "classChoices", "review"]
+  );
+});
+
+test("a Fighter 3->4 plan still does not include Class Choices", () => {
+  const result = planLevelUp(FIGHTER_3, { className: "Fighter" });
+  if (!result.ok) assert.fail(result.reason);
+  assert.ok(!result.plan.steps.some((s) => s.id === "classChoices"));
+});
+
 test("a new class with an unmet requirement is refused, naming the requirement", () => {
   const fighterInt12 = makeChar({
     baseAbilityScores: { str: 15, dex: 14, con: 14, int: 12, wis: 10, cha: 10 },

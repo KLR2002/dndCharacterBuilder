@@ -14,6 +14,7 @@ import {
 import { learnSpell } from "./characterSpells.ts";
 import { getClassSpellProfiles } from "./spellcasting.ts";
 import { recordRolledHitPoints } from "./hp.ts";
+import { availableSubclassRuleChoices } from "./ruleChoices.ts";
 
 /**
  * Pure Level-Up Flow rules: plan one level for a chosen class and apply a confirmed plan in one
@@ -66,6 +67,8 @@ export interface PlanLevelUpOptions {
   /** The random source a rolled Hit Points pick draws its die face from. Defaults to Math.random. */
   random?: () => number;
   picks?: LevelUpPicks;
+  compendium?: Compendium;
+  activeBooks?: ActiveBooks;
 }
 
 const STEP_ORDER: readonly LevelUpStepId[] = [
@@ -82,14 +85,21 @@ function sameName(a: string, b: string): boolean {
   return a.trim().toLowerCase() === b.trim().toLowerCase();
 }
 
-/** Whether the class record, or its subclass of that name, carries a pick at the given level. */
-function offersClassChoiceAtLevel(className: string, source: string, level: number, subclassName?: string): boolean {
-  const data = heldClass({ className, source });
-  if (!data) return false;
-  if (data.features.some((f) => f.level === level && Boolean(f.choices))) return true;
-  if (!subclassName) return false;
-  const sub = data.subclasses.find((s) => sameName(s.name, subclassName) || sameName(s.shortName, subclassName));
-  return Boolean(sub?.features.some((f) => f.level === level && Boolean(f.choices)));
+/**
+ * Whether the planned level brings a Class Choice, read from the same rule-choices source the
+ * builder offers from (`availableSubclassRuleChoices`, over `SUBCLASS_CHOICE_ROWS` and the
+ * specialised choice modules), evaluated on a Character holding the planned class at the new
+ * level. Choices resolved through a feature's options - a level 1 Fighting Style - are found
+ * here too, so the Level-Up Flow and the builder agree.
+ */
+function offersClassChoiceAtLevel(
+  character: Character,
+  atLevel: CharacterClass,
+  activeBooks: ActiveBooks,
+  compendium: Compendium
+): boolean {
+  const planned: Character = { ...character, classes: [atLevel] };
+  return availableSubclassRuleChoices(planned, activeBooks, compendium).some((choice) => choice.level === atLevel.level);
 }
 
 /**
@@ -108,12 +118,14 @@ export function planLevelUp(character: Character, options: PlanLevelUpOptions): 
   const fromLevel = existing?.level ?? 0;
   const toLevel = fromLevel + 1;
   const heldSubclass = existing?.subclassName ?? existing?.subclass;
+  const compendium = options.compendium ?? currentCompendium();
+  const activeBooks = options.activeBooks ?? DEFAULT_ACTIVE_BOOK_CODES;
 
+  const atLevel: CharacterClass = { className, source, level: toLevel, ...(heldSubclass ? { subclassName: heldSubclass } : {}) };
   const wanted = new Set<LevelUpStepId>(["class", "hitPoints", "review"]);
   if (toLevel >= subclassLevel(className) && !heldSubclass) wanted.add("subclass");
   if (asiLevels(className).includes(toLevel)) wanted.add("asiFeat");
-  if (offersClassChoiceAtLevel(className, source, toLevel, heldSubclass)) wanted.add("classChoices");
-  const atLevel: CharacterClass = { className, source, level: toLevel, ...(heldSubclass ? { subclassName: heldSubclass } : {}) };
+  if (offersClassChoiceAtLevel(character, atLevel, activeBooks, compendium)) wanted.add("classChoices");
   if (casterKindOf(atLevel) !== undefined || isThirdCaster(atLevel)) wanted.add("spells");
   const steps = STEP_ORDER.filter((id) => wanted.has(id)).map((id) => ({ id, className, classLevel: toLevel }));
 
