@@ -154,10 +154,17 @@ test("a bonus to the roll when you roll initiative, equal to the proficiency bon
   assert.deepEqual(result, { bonus: { kind: "proficiency" }, unparsed: [] });
 });
 
-test("a bonus to the roll on another roll is not a candidate, so it is neither an Initiative Bonus nor reported", () => {
+test("a bonus to the roll on another roll is not a candidate when the sentence does not name initiative", () => {
   const sentence =
     "When you make a Dexterity saving throw, you can give yourself a bonus to the roll equal to your Charisma modifier";
   const result = extractInitiativeBonus(`Sample Ward. ${sentence}.`);
   assert.deepEqual(result, { bonus: undefined, unparsed: [] });
   assert.deepEqual(candidateSentences(`Sample Ward. ${sentence}.`), []);
+});
+
+test("a bonus to the roll on another roll is not a candidate even when the sentence names initiative, so it is not reported", () => {
+  const description =
+    "Sample Edge. You have advantage on initiative, and when you make a Dexterity saving throw you can give yourself a bonus to the roll equal to your Charisma modifier.";
+  assert.deepEqual(extractInitiativeBonus(description), { bonus: undefined, unparsed: [] });
+  assert.deepEqual(candidateSentences(description), []);
 });

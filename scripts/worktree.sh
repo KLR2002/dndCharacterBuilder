@@ -7,10 +7,11 @@
 # with the merge left in progress for the agent to resolve.
 #
 # node_modules for the app root and for dnd5eToolsScrap are copied from the main checkout's, as
-# copy-on-write reflinks (a plain copy where the filesystem has none), when those exist, and installed with `npm ci` when they do not. Metro cannot
-# resolve a symlinked node_modules, so a worktree never links it; a symlink left by an older run is
-# replaced by the copy. A real node_modules directory is left alone. Then the script confirms
-# that `npm run typecheck` starts and that the scraper's tsx binary is present.
+# copy-on-write reflinks (a plain copy where the filesystem has none), when those exist, and
+# installed with `npm ci` when they do not. Metro cannot resolve a symlinked node_modules, so a
+# worktree never links it; a symlink left by an older run is replaced by the copy. A real
+# node_modules directory is left alone. Then the script confirms that `npm run typecheck` starts
+# and that the scraper's tsx binary is present.
 #
 # Usage (from inside the worktree): scripts/worktree.sh <integration-branch>
 set -euo pipefail
@@ -36,6 +37,9 @@ prepare_dir() {
   local target="$dir/node_modules"
   local source="$main_root${rel:+/$rel}/node_modules"
 
+  # A copy interrupted by an earlier run leaves its temporary sibling behind (see the copy below).
+  rm -rf -- "$dir"/node_modules.copying-*
+
   if [ -L "$target" ]; then
     echo "replacing: $label/node_modules was a symlink to '$(readlink "$target")' (Metro cannot resolve it)"
     rm "$target"
@@ -49,13 +53,17 @@ prepare_dir() {
     # fails on it, so the worktree gets its own copy. A reflink copy takes seconds on a copy-on-write
     # filesystem (btrfs here) and shares no inode with the main checkout, so a tool that rewrites a
     # file in the worktree cannot change the main checkout's copy, as a hard link would.
-    if cp -a --reflink=always "$source" "$target" 2>/dev/null; then
+    # The copy goes into a temporary sibling that is moved into place once complete, so an
+    # interrupted copy never leaves a partial node_modules.
+    local partial="$dir/node_modules.copying-$$"
+    if cp -a --reflink=always "$source" "$partial" 2>/dev/null; then
       echo "copied (reflink): $label/node_modules from $source"
     else
-      rm -rf "$target"
-      cp -a "$source" "$target"
+      rm -rf -- "$partial"
+      cp -a "$source" "$partial"
       echo "copied (no reflink support, full copy): $label/node_modules from $source"
     fi
+    mv "$partial" "$target"
   else
     echo "installing: no node_modules in the main checkout at $source, running npm ci in $label"
     (cd "$dir" && npm ci)

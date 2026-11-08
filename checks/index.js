@@ -1,8 +1,10 @@
-// Node 24 resolves an explicit directory argument through index.js.
-import { readdirSync } from "node:fs";
-import { join } from "node:path";
-import { fileURLToPath, pathToFileURL } from "node:url";
-const checksDir = fileURLToPath(new URL(".", import.meta.url));
-for (const file of readdirSync(checksDir).filter(file => file.endsWith(".test.ts")).sort()) {
-  await import(pathToFileURL(join(checksDir, file)).href);
-}
+// Node 24 resolves an explicit directory argument through index.js, so this file must keep its name.
+/* global __dirname */
+const { readdirSync } = require("node:fs");
+const { join } = require("node:path");
+const { pathToFileURL } = require("node:url");
+(async () => {
+  for (const file of readdirSync(__dirname).filter(file => file.endsWith(".test.ts")).sort()) {
+    await import(pathToFileURL(join(__dirname, file)).href);
+  }
+})();
