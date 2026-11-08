@@ -47,19 +47,19 @@ import { parseE2eSeed } from "../src/services/e2eSeedImport.ts";
 // The native screenshot runner core (scripts/lib/android-runner.mjs, driven by scripts/layout-android.mjs).
 // Every device interaction goes through one injectable executor `run(command, args, options)`, so these
 // tests use a fake adb/emulator that records its calls and returns scripted output: the serial guard
-// (AC-8), the width-to-density mapping and the density restore (AC-9), the reuse/boot/stop lifecycle
-// (AC-10), the build step and its Metro cache separation (AC-11), the ONLY validation (AC-16) and the
-// seeded scenario execution (AC-12): reset, seed copy with run-as, deep-link launch, ready polling on
-// uiautomator dumps, and the pulled PNG screenshot. It also pins the isolation between scenarios
-// (AC-15): the first scenario of a width and every `fresh` scenario reset and reseed, a `modal`
+// (only emulator-* serials are accepted), the width-to-density mapping and the density restore, the
+// reuse/boot/stop lifecycle, the build step and its Metro cache separation, the ONLY validation and the
+// seeded scenario execution: reset, seed copy with run-as, deep-link launch, ready polling on
+// uiautomator dumps, and the pulled PNG screenshot. It also pins the isolation between scenarios:
+// the first scenario of a width and every `fresh` scenario reset and reseed, a `modal`
 // scenario force-stops and relaunches without clearing, any other scenario only jumps by deep link,
 // and a scenario on the previous scenario's route does not even launch; the launch is retried once;
 // and the stuck screen of a scenario that fails after launch is saved as `<scenario>-<width>-FAILED.png`
-// while the run continues and exits non-zero (AC-14). It also pins a lost emulator (AC-18): the fake
+// while the run continues and exits non-zero. It also pins a lost emulator: the fake
 // device goes offline at a chosen get-state or dump poll and comes back after an emulator start, so
 // with a runner-started emulator the run reboots it (at most twice), reinstalls the APK, sets the
 // width's density again and repeats the scenario in reset+seed mode, and with a reused emulator the
-// run stops at that scenario with a message and a non-zero exit. It also pins the step player (AC-13): tabs and
+// run stops at that scenario with a message and a non-zero exit. It also pins the step player: tabs and
 // open steps as taps on the matching dump node, the modal title waited for as the ready text, scrollTo
 // as swipes until the needle is visible, expect ignored, and web-only scenarios listed and skipped.
 
@@ -406,7 +406,7 @@ test("unmatchedOnlyTerms and selected work on the scenario names", () => {
   assert.equal(selected("Home", []), true);
 });
 
-// --- AC-12 pure helpers: screenshot name, deep link, native-step detection, seed file name, PNG signature ---
+// --- Pure helpers: screenshot name, deep link, native-step detection, seed file name, PNG signature ---
 
 test("screenshotName names shots exactly as layout-check does", () => {
   assert.equal(screenshotName("Home", 360), "Home-360.png");
@@ -442,7 +442,7 @@ test("PNG_SIGNATURE is the 8-byte PNG file signature", () => {
   assert.deepEqual([...PNG_SIGNATURE], [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
 });
 
-// --- AC-11: the Metro cache is separated per flag value ---
+// --- The Metro cache is separated per flag value ---
 
 test("buildEnv gives each flag value its own Metro cache folder through TMPDIR", () => {
   const e2e = buildEnv({ sdk: SDK, e2e: true, env: {}, tmpdir: "/tmp" });
@@ -458,7 +458,7 @@ test("buildEnv gives each flag value its own Metro cache folder through TMPDIR",
   assert.ok(!metroCacheRoot({ e2e: false, tmpdir: "/tmp" }).includes("e2e"));
 });
 
-// --- AC-16: an ONLY term that matches nothing exits 2 before touching any device ---
+// --- An ONLY term that matches nothing exits 2 before touching any device ---
 
 test("an unmatched ONLY term exits 2, lists the scenario names and never calls adb", async () => {
   const world = makeWorld({ ...emulatorWorld, env: { ONLY: "home,zzz-no-such" } });
@@ -495,7 +495,7 @@ test("--integrated switches the scenario list the ONLY terms match against", asy
   assert.equal(await integrated.runRun(), 0);
 });
 
-// --- AC-8: the runner refuses anything that is not an emulator ---
+// --- The runner refuses anything that is not an emulator ---
 
 test("a non-emulator device exits non-zero before any clear, install, launch or density change", async () => {
   const world = makeWorld({ devices: "HTC123\tdevice\n" });
@@ -507,7 +507,7 @@ test("a non-emulator device exits non-zero before any clear, install, launch or 
   assert.equal(world.starts.length, 0);
 });
 
-// --- AC-10: reuse a running emulator, never stop it ---
+// --- Reuse a running emulator, never stop it ---
 
 test("a running emulator is reused and never stopped", async () => {
   const shots = mkdtempSync(join(osTmpdir(), "android-runner-test-"));
@@ -521,7 +521,7 @@ test("a running emulator is reused and never stopped", async () => {
   assert.equal(world.callsTo("am start").length, 2);
 });
 
-// --- AC-10: with none running, boot headless, wait for boot, stop it at the end ---
+// --- With none running, boot headless, wait for boot, stop it at the end ---
 
 test("with no device the runner boots Small_Phone headless, waits for boot and stops it at the end", async () => {
   const shots = mkdtempSync(join(osTmpdir(), "android-runner-test-"));
@@ -550,7 +550,7 @@ test("an emulator that never finishes booting is reported and killed", async () 
   assert.equal(world.callsTo("install").length, 0);
 });
 
-// --- AC-9: widths set densities, the original density is restored, also after a failure ---
+// --- Widths set densities, the original density is restored, also after a failure ---
 
 test("each width sets its density and the original density is restored once at the end", async () => {
   const shots = mkdtempSync(join(osTmpdir(), "android-runner-test-"));
@@ -604,7 +604,7 @@ test("the signal-handler cleanup is idempotent with the finally cleanup", async 
   assert.equal(world.callsTo("emu kill").length, 0);
 });
 
-// --- AC-11: build unless --no-build, install with adb install -r ---
+// --- Build unless --no-build, install with adb install -r ---
 
 test("without --no-build the runner runs the Gradle E2E build with the E2E environment and installs with -r", async () => {
   const shots = mkdtempSync(join(osTmpdir(), "android-runner-test-"));
@@ -676,7 +676,7 @@ test("a failing install exits non-zero and restores the density", async () => {
   assert.equal(world.callsTo("am start").length, 0);
 });
 
-// --- AC-12: one scenario end to end with the fake adb ---
+// --- One scenario end to end with the fake adb ---
 
 // A dump that satisfies every scenario of the isolation test below at once: the tab names, the
 // open-step targets (text, pattern and label), the ready texts, the modal titles and the scrollTo
@@ -894,7 +894,7 @@ test("a pulled file that is not a PNG fails the scenario", async () => {
   assert.equal(world.callsTo("wm density reset").length, 1);
 });
 
-// --- AC-13: the step fields play on the dumps ---
+// --- The step fields play on the dumps ---
 
 // Dumps for the step scenarios: the tab bar with "Stats", the Stats screen with the Take Rest row, the same
 // with the Rest modal's title, and the Builder Class screen with and without the scrollTo needle.
@@ -1003,7 +1003,7 @@ test("an absent scrollTo needle logs a warning naming the scenario and the needl
   assert.ok(world.logs.join("\n").includes("Stats-battle-master-superiority-dice-360.png"));
 });
 
-// --- AC-15: the isolation between scenarios follows fresh, modal and route ---
+// --- The isolation between scenarios follows fresh, modal and route ---
 
 // The scenarios in list order: Builder Abilities (Rendar), Builder Race language choice (Half-Elf),
 // Builder Class feats (Half-Elf), Builder Class fighting styles card collapsed (Fighter, fresh),
@@ -1079,7 +1079,7 @@ test("the first scenario of the second width resets and reseeds again", async ()
   assert.equal(world.callsTo("am start").length, 4);
 });
 
-// --- AC-14: a stuck scenario is saved, reported and does not stop the run ---
+// --- A stuck scenario is saved, reported and does not stop the run ---
 
 test("a stuck scenario saves -FAILED.png, the next scenario relaunches by deep link without clearing, and the run exits non-zero", async () => {
   const shots = mkdtempSync(join(osTmpdir(), "android-runner-test-"));
@@ -1151,7 +1151,7 @@ test("a non-zero am start is retried once after about a second and the scenario 
   assert.equal(world.callsTo("screencap").length, 1);
 });
 
-// --- AC-18: a lost emulator is survived or reported ---
+// --- A lost emulator is survived or reported ---
 
 test("a runner-started emulator lost before a scenario is rebooted, reinstalled, re-densitied and the scenario repeated in reset+seed mode", async () => {
   const shots = mkdtempSync(join(osTmpdir(), "android-runner-test-"));
@@ -1299,7 +1299,7 @@ test("the recovery limit is two per run", () => {
   assert.equal(MAX_EMULATOR_RECOVERIES, 2);
 });
 
-// --- A folder per run (Q6/AC-12): without SHOTS a fresh timestamped folder, printed once ---
+// --- A folder per run: without SHOTS a fresh timestamped folder, printed once ---
 
 test("runShotsDir names the folder YYYYMMDD-HHMMSS (UTC) under <tmp>/layout-android and suffixes a taken name", () => {
   const base = { tmpdir: () => "/tmp", now: () => Date.UTC(2026, 2, 4, 5, 6, 7) };

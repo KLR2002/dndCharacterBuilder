@@ -501,8 +501,8 @@ export async function runAndroid(options) {
   // Find or start the emulator. An emulator serial is always preferred over any other device: a
   // ready one is reused; one that is listed but not ready yet (offline, mid-boot) is waited for and
   // adopted, and never started or stopped by this run; only when no emulator is listed at all does
-  // the runner boot one. A ready non-emulator device is refused (AC-8); a non-emulator device is
-  // ignored whenever an emulator is usable.
+  // the runner boot one. A ready non-emulator device is refused; a non-emulator device is ignored
+  // whenever an emulator is usable.
   const devices = parseAdbDevices(run(adb, ["devices"], { timeoutMs: ADB_TIMEOUT_MS }).stdout);
   const emulators = devices.filter((device) => isEmulatorSerial(device.serial));
   const readyEmulator = emulators.find((device) => device.state === "device");
@@ -607,7 +607,7 @@ export async function runAndroid(options) {
       // A project generated before the config plugin wired the E2E flag into Gradle's bundle task would
       // reuse the bundle of an earlier build with the other flag value, so refuse to build on it.
       const gradleFile = join(android, "app", "build.gradle");
-      if (!fileExists(gradleFile) || !Buffer.from(readFile(gradleFile)).toString("utf8").includes(E2E_BUNDLE_INPUTS_MARKER)) {
+      if (!fileExists(gradleFile) || !readFile(gradleFile).toString("utf8").includes(E2E_BUNDLE_INPUTS_MARKER)) {
         errorLog(
           `${gradleFile} does not carry the E2E build wiring (no line "${E2E_BUNDLE_INPUTS_MARKER}"), so a build could keep a stale JavaScript bundle. ` +
             "Regenerate the project with: npx expo prebuild --platform android --no-install",

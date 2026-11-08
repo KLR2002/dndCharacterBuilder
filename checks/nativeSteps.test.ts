@@ -503,7 +503,7 @@ test("the reveal ends at the swipe bound even when the clock never advances", as
   assert.equal(world.swipes.length, MAX_SWIPES);
 });
 
-test("a ready text that exists only as a clipped node counts as ready (AC-13: at any scroll position)", async () => {
+test("a ready text that exists only as a clipped node counts as ready at any scroll position", async () => {
   // The dump lists the ready text only with inverted (clipped) bounds, scrolled out of the viewport:
   // it is in the hierarchy, so it counts as shown, and nothing is swiped or tapped.
   const clippedOnly = parseDump(`<hierarchy><node text="Deep Ready" bounds="[0,1300][200,1250]" /></hierarchy>`);
