@@ -1,6 +1,7 @@
 # 10: Survive a lost emulator
 
-**Status:** ready-for-agent
+**Status:** done
+**Landed:** 99d0fb5. `checks/androidRunner.test.ts` 58/58 with six new AC-18 tests against a fake adb that goes offline and comes back, red-green, and two mutation checks (the recovery limit, the offline check) by the implementer; `npm run check:all` exit 0 (1876 app tests, 305 scraper tests). Real runs by the implementer: a runner-started emulator killed from outside was rebooted and the run finished with every screenshot, exit 0; a reused emulator killed from outside stopped the run at that scenario with a message naming scenario, width and serial, exit 1, no later scenario ran. Main session, same test with its own killer helper (`ONLY="Builder Abilities,Builder Race,Builder Class,Stats" WIDTHS=360`, no emulator running beforehand): the emulator was killed at 04:35:18 after the first screenshot; the next scenario logged `emulator lost, rebooting (1 of 2)`, the emulator booted again, the scenario ran again in `reset+seed` mode, and the run finished with exit 0, 24 screenshots, 0 FAILED screenshots and no emulator left running. Open: the recovery reuses the cached screen size, which a reboot of the same AVD reproduces; a differently sized AVD would not be re-measured.
 
 ## What to build
 
@@ -12,7 +13,7 @@ A run that loses its emulator does not report every remaining scenario as failed
 
 ## Acceptance Criteria
 
-- [ ] AC-18: When the emulator goes offline or disappears during a run, a runner-started emulator is booted again (at most twice per run), the APK installed, the density set again, and the running scenario repeated; a reused emulator stops the run at that scenario with a message naming it and a non-zero exit, without running the remaining scenarios.
+- [x] AC-18: When the emulator goes offline or disappears during a run, a runner-started emulator is booted again (at most twice per run), the APK installed, the density set again, and the running scenario repeated; a reused emulator stops the run at that scenario with a message naming it and a non-zero exit, without running the remaining scenarios.
 
 ## Verification
 
