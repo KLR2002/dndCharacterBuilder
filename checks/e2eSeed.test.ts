@@ -79,7 +79,7 @@ async function emptyAppState() {
   return { ok: true as const, data: { characters: [], folders: [], settings: defaultSettings() } };
 }
 
-test("AC-2: without the flag the hook imports nothing and leaves the seed file untouched", async () => {
+test("without the flag the hook imports nothing and leaves the seed file untouched", async () => {
   const files = new Map([[SEED_URI, JSON.stringify(inventedSeed({ integrated: inventedIntegrated() }))]]);
   const { kv, compKv } = setup(files);
   delete process.env.EXPO_PUBLIC_E2E;
@@ -93,7 +93,7 @@ test("AC-2: without the flag the hook imports nothing and leaves the seed file u
   assert.equal(await loadCompendiumData(), null);
 });
 
-test("AC-3: with the flag, a valid seed is saved through the app's writers and the file is deleted", async () => {
+test("with the flag, a valid seed is saved through the app's writers and the file is deleted", async () => {
   const seed = inventedSeed({ integrated: inventedIntegrated() });
   const files = new Map([[SEED_URI, JSON.stringify(seed)]]);
   const { kv, compKv } = setup(files);
@@ -119,7 +119,7 @@ test("AC-3: with the flag, a valid seed is saved through the app's writers and t
   assert.deepEqual(comp?.races, inventedIntegrated().races);
 });
 
-test("AC-3: with the flag, a seed whose integrated is null leaves the catalog empty", async () => {
+test("with the flag, a seed whose integrated is null leaves the catalog empty", async () => {
   const seed = inventedSeed();
   const files = new Map([[SEED_URI, JSON.stringify(seed)]]);
   const { kv, compKv } = setup(files);
@@ -137,7 +137,7 @@ test("AC-3: with the flag, a seed whose integrated is null leaves the catalog em
   assert.ok(kv.has(CHARACTERS_KEY));
 });
 
-test("AC-4: broken seeds write nothing, start empty, and are still deleted", async () => {
+test("broken seeds write nothing, start empty, and are still deleted", async () => {
   const broken: [string, string][] = [
     ["not valid JSON", "{not json"],
     ["missing settings key", JSON.stringify((() => { const s = inventedSeed() as any; delete s.settings; return s; })())],
