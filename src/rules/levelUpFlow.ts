@@ -14,7 +14,7 @@ import {
 import { learnSpell } from "./characterSpells.ts";
 import { getClassSpellProfiles } from "./spellcasting.ts";
 import { recordRolledHitPoints } from "./hp.ts";
-import { availableSubclassRuleChoices } from "./ruleChoices.ts";
+import { classChoicesAtLevel, hasClassChoices } from "./classChoices.ts";
 
 /**
  * Pure Level-Up Flow rules: plan one level for a chosen class and apply a confirmed plan in one
@@ -86,23 +86,6 @@ function sameName(a: string, b: string): boolean {
 }
 
 /**
- * Whether the planned level brings a Class Choice, read from the same rule-choices source the
- * builder offers from (`availableSubclassRuleChoices`, over `SUBCLASS_CHOICE_ROWS` and the
- * specialised choice modules), evaluated on a Character holding the planned class at the new
- * level. Choices resolved through a feature's options - a level 1 Fighting Style - are found
- * here too, so the Level-Up Flow and the builder agree.
- */
-function offersClassChoiceAtLevel(
-  character: Character,
-  atLevel: CharacterClass,
-  activeBooks: ActiveBooks,
-  compendium: Compendium
-): boolean {
-  const planned: Character = { ...character, classes: [atLevel] };
-  return availableSubclassRuleChoices(planned, activeBooks, compendium).some((choice) => choice.level === atLevel.level);
-}
-
-/**
  * Plans one level of `className` for the Character: the steps that level brings, and its Hit
  * Points pick. A class the Character does not hold yet is checked against the multiclass
  * requirements; a refusal names the unmet requirement in `reason`.
@@ -125,7 +108,9 @@ export function planLevelUp(character: Character, options: PlanLevelUpOptions): 
   const wanted = new Set<LevelUpStepId>(["class", "hitPoints", "review"]);
   if (toLevel >= subclassLevel(className) && !heldSubclass) wanted.add("subclass");
   if (asiLevels(className).includes(toLevel)) wanted.add("asiFeat");
-  if (offersClassChoiceAtLevel(character, atLevel, activeBooks, compendium)) wanted.add("classChoices");
+  // The same shared reader the Creation Flow uses decides the Class Choices step, evaluated on the
+  // planned class at the new level; a multiclass entry's skill pick is found here too.
+  if (hasClassChoices(classChoicesAtLevel(character, atLevel, fromLevel, { compendium, activeBooks }))) wanted.add("classChoices");
   if (casterKindOf(atLevel) !== undefined || isThirdCaster(atLevel)) wanted.add("spells");
   const steps = STEP_ORDER.filter((id) => wanted.has(id)).map((id) => ({ id, className, classLevel: toLevel }));
 

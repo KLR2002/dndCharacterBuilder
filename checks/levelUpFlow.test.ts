@@ -58,6 +58,31 @@ test("a Wizard 3 planning Fighter 1 (requirements met) includes Class Choices", 
   );
 });
 
+test("a multiclass entry into a class whose entry grants a skill pick plans Class Choices", () => {
+  // Rogue's multiclassing record offers a skill pick, so its level 1 brings a Class Choice.
+  const fighter3 = makeChar({
+    baseAbilityScores: { str: 15, dex: 14, con: 14, int: 10, wis: 10, cha: 10 },
+    classes: [
+      {
+        className: "Fighter",
+        source: "PHB",
+        level: 3,
+        subclassName: "Champion",
+        subclass: "Champion",
+        subclassSource: "SRD",
+      },
+    ],
+  });
+  const result = planLevelUp(fighter3, { className: "Rogue", source: "PHB" });
+  if (!result.ok) assert.fail(result.reason);
+  assert.equal(result.plan.fromLevel, 0);
+  assert.equal(result.plan.toLevel, 1);
+  assert.deepEqual(
+    result.plan.steps.map((s) => s.id),
+    ["class", "hitPoints", "classChoices", "review"]
+  );
+});
+
 test("a first Fighter 1 plan includes Class Choices", () => {
   const fresh = makeChar({
     baseAbilityScores: { str: 15, dex: 14, con: 14, int: 10, wis: 10, cha: 10 },
