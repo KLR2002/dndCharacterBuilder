@@ -32,6 +32,11 @@ export const REVEAL_STEP_PX = 600;
 export const REVEAL_MARGIN_PX = 120;
 // The finger stays this far inside a scroller's bounds.
 const SWIPE_PAD_PX = 8;
+// ... and at least this far from every screen edge: a swipe that starts in an edge zone is a system
+// gesture, not an app swipe. Measured on the emulator (720x1280): a horizontal swipe starting 60 px from
+// a side edge fired the back gesture and left the app, 64 px did not; a vertical swipe starting 56-80 px
+// above the bottom fired home, 80 px did not. 96 px clears all of those zones with room to spare.
+const EDGE_GUARD_PX = 96;
 
 // The value a locator call matches against: the element's text, or its accessibility label, which on Android
 // is the node's content-desc attribute in the dump.
@@ -105,20 +110,25 @@ function clippedGuidance(bounds, view, horizontalOnly) {
 // The reveal swipe inside one of the dump's scrollers, along the given axis and direction, over `distance`
 // px of finger travel and REVEAL_SWIPE_MS ms: for a vertical ScrollView up (the finger moves up, the
 // content moves up, revealing what is below) or down; for a HorizontalScrollView left (items clipped at
-// the right edge come into view) or right. The finger stays SWIPE_PAD_PX inside the scroller's bounds, and
-// the travel is clamped to what fits inside it.
-export function revealSwipeArgs(scroller, horizontalOnly, direction, distance) {
+// the right edge come into view) or right. The finger stays SWIPE_PAD_PX inside the scroller's bounds and
+// EDGE_GUARD_PX away from the screen's edges, so the swipe is an app swipe, never a system gesture; the
+// travel is clamped to what fits inside that.
+export function revealSwipeArgs(scroller, horizontalOnly, direction, distance, view) {
   const b = scroller.bounds;
+  const xLow = Math.max(b.x1 + SWIPE_PAD_PX, EDGE_GUARD_PX);
+  const xHigh = Math.min(b.x2 - SWIPE_PAD_PX, view.width - EDGE_GUARD_PX);
+  const yLow = Math.max(b.y1 + SWIPE_PAD_PX, EDGE_GUARD_PX);
+  const yHigh = Math.min(b.y2 - SWIPE_PAD_PX, view.height - EDGE_GUARD_PX);
   if (horizontalOnly) {
-    const y = Math.round((b.y1 + b.y2) / 2);
-    const travel = Math.max(1, Math.min(distance, b.x2 - b.x1 - 2 * SWIPE_PAD_PX));
-    const from = direction === "left" ? Math.round(b.x2 - SWIPE_PAD_PX) : Math.round(b.x1 + SWIPE_PAD_PX);
-    return [from, y, direction === "left" ? from - travel : from + travel, y, REVEAL_SWIPE_MS];
+    const y = Math.round(Math.max(yLow, Math.min(yHigh, (b.y1 + b.y2) / 2)));
+    const travel = Math.max(1, Math.min(distance, xHigh - xLow));
+    const from = direction === "left" ? xHigh : xLow;
+    return [Math.round(from), y, Math.round(direction === "left" ? from - travel : from + travel), y, REVEAL_SWIPE_MS];
   }
-  const x = Math.round((b.x1 + b.x2) / 2);
-  const travel = Math.max(1, Math.min(distance, b.y2 - b.y1 - 2 * SWIPE_PAD_PX));
-  const from = direction === "up" ? Math.round(b.y2 - SWIPE_PAD_PX) : Math.round(b.y1 + SWIPE_PAD_PX);
-  return [x, from, x, direction === "up" ? from - travel : from + travel, REVEAL_SWIPE_MS];
+  const x = Math.round(Math.max(xLow, Math.min(xHigh, (b.x1 + b.x2) / 2)));
+  const travel = Math.max(1, Math.min(distance, yHigh - yLow));
+  const from = direction === "up" ? yHigh : yLow;
+  return [x, Math.round(from), x, Math.round(direction === "up" ? from - travel : from + travel), REVEAL_SWIPE_MS];
 }
 
 // The geometry of a dump (the bounds of its nodes): two dumps with the same geometry did not scroll.
@@ -162,7 +172,7 @@ async function pollRevealing({ dump, swipe, find, findClipped, view, sleep, now,
     const clipped = findClipped ? findClipped(nodes) : null;
     const guidance = clipped ? clippedGuidance(clipped.bounds, view, horizontalOnly) : null;
     for (const scroller of scrollers) {
-      swipe(revealSwipeArgs(scroller, horizontalOnly, guidance?.direction ?? direction, guidance?.distance ?? REVEAL_STEP_PX));
+      swipe(revealSwipeArgs(scroller, horizontalOnly, guidance?.direction ?? direction, guidance?.distance ?? REVEAL_STEP_PX, view));
       swipes += 1;
     }
     await sleep(pollMs);

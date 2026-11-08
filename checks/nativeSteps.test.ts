@@ -12,6 +12,7 @@ import {
   findTarget,
   isVisible,
   playScreen,
+  revealSwipeArgs,
   swipeUpArgs,
 } from "../scripts/lib/native-steps.mjs";
 import { centerOf, hasPositiveArea, parseDump } from "../scripts/lib/uiautomator.mjs";
@@ -344,9 +345,10 @@ test("a tab clipped off the tab bar is revealed by a horizontal swipe on the tab
   const result = await play(world, { name: "t", route: "/x", tabs: ["Class"], ready: "Ready Here" });
   assert.equal(result.error, null);
   // The Class subtab at [585,320][650,356] is tapped once revealed; the swipe went left inside the tab
-  // bar (y fixed at 338, x from 680 to 80 over the slow REVEAL_SWIPE_MS), never in the content scroller.
+  // bar (y fixed at 338, x from 624 to 96 over the slow REVEAL_SWIPE_MS, clear of the edge back-gesture
+  // zone), never in the content scroller.
   assert.deepEqual(world.taps, [{ x: 618, y: 338 }]);
-  assert.deepEqual(world.swipes, [["680", "338", "80", "338", String(REVEAL_SWIPE_MS)]]);
+  assert.deepEqual(world.swipes, [["624", "338", "96", "338", String(REVEAL_SWIPE_MS)]]);
 });
 
 test("the reveal direction flips when a swipe moves nothing, so a tab on the other side is found", async () => {
@@ -358,8 +360,8 @@ test("the reveal direction flips when a swipe moves nothing, so a tab on the oth
   assert.equal(result.error, null);
   assert.deepEqual(world.taps, [{ x: 618, y: 338 }]);
   assert.deepEqual(world.swipes, [
-    ["680", "338", "80", "338", String(REVEAL_SWIPE_MS)],
-    ["40", "338", "640", "338", String(REVEAL_SWIPE_MS)],
+    ["624", "338", "96", "338", String(REVEAL_SWIPE_MS)],
+    ["96", "338", "624", "338", String(REVEAL_SWIPE_MS)],
   ]);
 });
 
@@ -371,8 +373,8 @@ test("an open step below the fold is revealed by swiping the vertical scroller, 
   assert.equal(result.error, null);
   assert.deepEqual(world.taps, [{ x: 656, y: 1152 }]);
   // One reveal round swiped the content scroller once, a fixed slow step up inside [0,252][720,1232]
-  // (x fixed at 360, y from 1224 to 624 over REVEAL_SWIPE_MS); the horizontal tab bar is not swiped.
-  assert.deepEqual(world.swipes, [["360", "1224", "360", String(1224 - REVEAL_STEP_PX), String(REVEAL_SWIPE_MS)]]);
+  // (x fixed at 360, y from 1184 to 584 over REVEAL_SWIPE_MS); the horizontal tab bar is not swiped.
+  assert.deepEqual(world.swipes, [["360", "1184", "360", String(1184 - REVEAL_STEP_PX), String(REVEAL_SWIPE_MS)]]);
 });
 
 test("the ready text scrolled off is revealed by swiping the scrollers too", async () => {
@@ -446,9 +448,9 @@ test("a clipped target steers the reveal swipe: below the fold means finger up, 
   });
   assert.deepEqual(result, { error: null, warnings: [] });
   // One guided swipe inside the content ScrollView [0,252][720,1232]: the gap is 1249-1232=17 px, plus the
-  // margin, so the finger goes from y 1224 up by 17+margin over REVEAL_SWIPE_MS.
+  // margin, so the finger goes from y 1184 up by 17+margin over REVEAL_SWIPE_MS.
   const distance = 1249 - 1232 + REVEAL_MARGIN_PX;
-  assert.deepEqual(world.swipes, [["360", "1224", "360", String(1224 - distance), String(REVEAL_SWIPE_MS)]]);
+  assert.deepEqual(world.swipes, [["360", "1184", "360", String(1184 - distance), String(REVEAL_SWIPE_MS)]]);
   // Then the tap lands on the on-screen node's centre.
   assert.deepEqual(world.taps, [{ x: 256, y: 1102 }]);
 });
@@ -466,7 +468,7 @@ test("a clipped \"Languages\" on the real Background fixture steers the same gui
   });
   assert.deepEqual(result, { error: null, warnings: [] });
   const distance = 1276 - 1232 + REVEAL_MARGIN_PX;
-  assert.deepEqual(world.swipes, [["360", "1224", "360", String(1224 - distance), String(REVEAL_SWIPE_MS)]]);
+  assert.deepEqual(world.swipes, [["360", "1184", "360", String(1184 - distance), String(REVEAL_SWIPE_MS)]]);
   assert.deepEqual(world.taps, [{ x: 338, y: 819 }]);
 });
 
@@ -495,7 +497,24 @@ test("the ready text absent from the dump is searched by swiping in both directi
   const world = playerWorld([mid, mid, mid, top]);
   const result = await play(world, { name: "t", route: "/x", ready: "Deep Ready" });
   assert.deepEqual(result, { error: null, warnings: [] });
-  const up = ["360", "1224", "360", String(1224 - REVEAL_STEP_PX), String(REVEAL_SWIPE_MS)];
+  const up = ["360", "1184", "360", String(1184 - REVEAL_STEP_PX), String(REVEAL_SWIPE_MS)];
   const down = ["360", "260", "360", String(260 + REVEAL_STEP_PX), String(REVEAL_SWIPE_MS)];
   assert.deepEqual(world.swipes, [up, down, up]);
+});
+
+test("a reveal swipe on a full-screen scroller stays out of the edge back-gesture zone and the gesture bar", async () => {
+  const node = (bounds: DumpNode["bounds"], cls = "android.widget.ScrollView") =>
+    ({ text: "", contentDesc: "", resourceId: "", className: cls, clickable: false, scrollable: true, bounds });
+  // Vertical, full-screen scroller: the finger stays above the gesture bar (1280-48) ...
+  assert.deepEqual(revealSwipeArgs(node({ x1: 0, y1: 0, x2: 720, y2: 1280 }), false, "up", 600, VIEW), [360, 1184, 360, 584, 800]);
+  assert.deepEqual(revealSwipeArgs(node({ x1: 0, y1: 0, x2: 720, y2: 1280 }), false, "down", 600, VIEW), [360, 96, 360, 696, 800]);
+  // ... and horizontal swipes on a full-width bar stay 48 px clear of the side edges (back gesture).
+  assert.deepEqual(
+    revealSwipeArgs(node({ x1: 0, y1: 162, x2: 720, y2: 250 }, "android.widget.HorizontalScrollView"), true, "left", 600, VIEW),
+    [624, 206, 96, 206, 800],
+  );
+  assert.deepEqual(
+    revealSwipeArgs(node({ x1: 0, y1: 162, x2: 720, y2: 250 }, "android.widget.HorizontalScrollView"), true, "right", 600, VIEW),
+    [96, 206, 624, 206, 800],
+  );
 });
