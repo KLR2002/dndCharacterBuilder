@@ -3,8 +3,9 @@
 // Builder subtabs, including the race picker for a character with no race, the background picker and the
 // Custom Background creator for one with no background, home, settings, and the Rest, Conditions and New
 // Character modals), the hit point modal (from the Stats HP number and the header HP badge), and the Active
-// Wild Shape box (Stats tab, header badge, Features tab). The helpers that start the app and seed it are in
-// scripts/lib/app-driver.mjs (see docs/agents/driving-the-app.md).
+// Wild Shape box (Stats tab, header badge, Features tab), and how modals close (backdrop tap, Escape, the
+// ✕ button, and the discard confirmation for a modal holding unsaved input). The helpers that start the
+// app and seed it are in scripts/lib/app-driver.mjs (see docs/agents/driving-the-app.md).
 //
 // Usage: `npm run layout:check` (not part of check:all). The script starts the Expo web server itself
 // on the port in BASE, unless a server already answers there. `npm run layout:check -- --integrated`
@@ -32,7 +33,7 @@ import {
   waitForExpoWeb,
 } from "./lib/app-driver.mjs";
 import { buildScreens, buildSeed, CHARACTER_ID, DRUID_ID } from "./lib/scenarios.mjs";
-import { playSteps } from "./lib/web-steps.mjs";
+import { playStep, playSteps } from "./lib/web-steps.mjs";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const BASE = process.env.BASE ?? "http://localhost:8099";
@@ -521,11 +522,130 @@ async function checkHitPointModals(ctx, width) {
   return failures;
 }
 
+// Runs in the browser. A point on the visible backdrop of the open modal: a viewport corner that the
+// open dialog covers but its container does not, so the tap lands on the backdrop, not the modal.
+function backdropPoint() {
+  const dialog = document.querySelector('[role="dialog"]');
+  if (!dialog) return null;
+  for (const [x, y] of [[10, 10], [10, window.innerHeight - 10], [window.innerWidth - 10, 10], [window.innerWidth - 10, window.innerHeight - 10]]) {
+    const el = document.elementFromPoint(x, y);
+    if (el && dialog.contains(el)) {
+      const r = el.getBoundingClientRect();
+      if (r.width >= window.innerWidth - 32 && r.height >= window.innerHeight - 32) return { x, y };
+    }
+  }
+  return null;
+}
+
+// Taps the visible backdrop of the open modal at `page`. False when no backdrop point was found.
+async function tapBackdrop(page) {
+  // The dialog wrapper mounts a beat after the modal content, so wait for it before looking for the backdrop.
+  await page.waitForSelector('[role="dialog"]', { state: "attached", timeout: 10000 }).catch(() => {});
+  const point = await page.evaluate(backdropPoint);
+  if (!point) return false;
+  await page.mouse.click(point.x, point.y);
+  return true;
+}
+
+// How a modal closes: the backdrop and Escape close a modal with no unsaved work, the ✕ button too;
+// a modal holding unsaved input asks "Discard changes?" first, and only "Discard" closes it.
+async function checkModalClosing(ctx, width) {
+  const page = await ctx.newPage();
+  const prefix = `[${width}px modal closing]`;
+  let failures = 0;
+  const fail = (msg) => {
+    failures++;
+    console.log(`${prefix} ${msg}`);
+  };
+  const shot = (name) => join(SHOTS, `ModalClosing-${name}-${width}.png`);
+  // Waits until the modal titled `title` is visible (wantVisible true) or gone (false).
+  const waitDialog = async (title, wantVisible) => {
+    try {
+      await page.getByText(title, { exact: true }).first().waitFor({ state: wantVisible ? "visible" : "hidden", timeout: 10000 });
+      return true;
+    } catch {
+      return false;
+    }
+  };
+  const dialogShown = (title) => waitDialog(title, true);
+  // Taps the button labelled `text` when it is on the page; reports and returns false when it is not.
+  const tapButton = async (text) => {
+    const btn = page.getByText(text, { exact: true }).first();
+    if ((await btn.count()) === 0) {
+      fail(`no "${text}" button on the page`);
+      return false;
+    }
+    await btn.click({ timeout: 5000 }).catch(() => fail(`could not tap the "${text}" button`));
+    return true;
+  };
+  // Closes a still-open Rest modal so the next step can open it again.
+  const closeRestIfOpen = async () => {
+    if (await dialogShown("Rest & Recovery")) {
+      await tapBackdrop(page);
+      await waitDialog("Rest & Recovery", false);
+    }
+  };
+
+  // The Rest modal holds no unsaved input: backdrop tap, Escape and the ✕ button each close it.
+  await page.goto(`${BASE}/character/${CHARACTER_ID}`, { waitUntil: "networkidle", timeout: 120000 });
+  await page.waitForTimeout(1500);
+  await page.getByText("Stats", { exact: true }).first().click();
+  await page.waitForTimeout(500);
+  for (const [how, close] of [
+    ["backdrop", async () => (await tapBackdrop(page)) || fail("could not tap the backdrop of the open modal")],
+    ["Escape", () => page.keyboard.press("Escape")],
+    ["close button", () => page.getByText("✕", { exact: true }).first().click({ timeout: 5000 }).catch(() => fail("could not tap the ✕ button"))],
+  ]) {
+    await closeRestIfOpen();
+    await page.getByText(/^Take Rest/).first().click({ timeout: 5000 }).catch(() => fail(`could not open the Rest modal for the ${how} close`));
+    if (!(await waitDialog("Rest & Recovery", true))) fail(`the Rest modal did not open for the ${how} close`);
+    await close();
+    if (!(await waitDialog("Rest & Recovery", false))) fail(`${how} did not close the Rest modal`);
+    if (how === "backdrop") await page.screenshot({ path: shot("backdrop-closed") });
+  }
+  await closeRestIfOpen();
+
+  // The New Character modal with a typed name asks before closing, on backdrop tap and on Escape.
+  await page.goto(`${BASE}/`, { waitUntil: "networkidle", timeout: 120000 });
+  await page.waitForTimeout(1500);
+  await playStep(page, { tap: { name: "home-header-add" } });
+  if (!(await waitDialog("Create New Character", true))) fail("the New Character modal did not open");
+  await page.getByPlaceholder("e.g. Rendar Engelhart, Dianain Drakecroft").fill("Unsaved Test Name");
+  if (!(await tapBackdrop(page))) fail("could not tap the backdrop of the edited New Character modal");
+  await page.waitForTimeout(400);
+  await page.screenshot({ path: shot("confirm") });
+  if (!(await dialogShown("Discard changes?"))) fail("tapping the backdrop of an edited modal did not ask \"Discard changes?\"");
+  if (!(await dialogShown("Create New Character"))) fail("the edited modal closed on backdrop tap instead of asking first");
+  if (await tapButton("Keep editing")) {
+    if (await dialogShown("Discard changes?")) fail("\"Keep editing\" did not dismiss the confirmation");
+    if (!(await dialogShown("Create New Character"))) fail("\"Keep editing\" closed the modal");
+  }
+  await page.keyboard.press("Escape");
+  await page.waitForTimeout(400);
+  if (!(await dialogShown("Discard changes?"))) fail("Escape on an edited modal did not ask \"Discard changes?\"");
+  if (await tapButton("Discard")) {
+    if (!(await waitDialog("Create New Character", false))) fail("\"Discard\" did not close the edited modal");
+  }
+
+  // The same modal with nothing typed closes on Escape without asking.
+  await page.goto(`${BASE}/`, { waitUntil: "networkidle", timeout: 120000 });
+  await page.waitForTimeout(1500);
+  await playStep(page, { tap: { name: "home-header-add" } });
+  if (!(await waitDialog("Create New Character", true))) fail("the New Character modal did not reopen");
+  await page.keyboard.press("Escape");
+  if (!(await waitDialog("Create New Character", false))) fail("Escape did not close the untouched New Character modal");
+  if (await dialogShown("Discard changes?")) fail("the untouched modal was asked \"Discard changes?\"");
+
+  await page.close();
+  return failures;
+}
+
 // The checks that open their own page rather than a SCREENS entry. Each is a scenario, so ONLY selects it by name.
 const EXTRA_CHECKS = [
   { name: "HP modals", run: checkHitPointModals },
   { name: "Wild Shape Stats", run: checkWildShapeScreen },
   { name: "Wild Shape Features", run: checkWildShapeFeatures },
+  { name: "Modal closing", run: checkModalClosing },
 ];
 
 // Every scenario name of this run: the SCREENS entries of the active catalog, then the extra checks.

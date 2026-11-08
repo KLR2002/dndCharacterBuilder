@@ -83,13 +83,20 @@ test("first hit die is full only once; later class levels use fixed averages", (
   assert.equal(maxHp(makeChar({ classes: [cl("Wizard", 1)] })), 6);
   assert.equal(maxHp(makeChar({ classes: [cl("Monk", 2), cl("Paladin", 2)] })), 25);
 });
-test("a class level's recorded rolled Hit Points value replaces the fixed average for that level only", () => {
+test("a class level's recorded rolled die face replaces the fixed average for that level only", () => {
   const c = makeChar({ classes: [cl("Fighter", 3)], baseAbilityScores: scores({ con: 14 }) });
   assert.equal(maxHp(c), 28); // 12 + 8 + 8
   const rolledSecond: Character = { ...c, rolledHitPoints: { "Fighter__2": 9 } };
-  assert.equal(maxHp(rolledSecond), 29);
+  assert.equal(maxHp(rolledSecond), 31); // 12 + (9 + 2) + 8
   const rolledFirst: Character = { ...c, rolledHitPoints: { "Fighter__1": 11 } };
-  assert.equal(maxHp(rolledFirst), 27);
+  assert.equal(maxHp(rolledFirst), 29); // (11 + 2) + 8 + 8
+});
+test("a rolled level stores only the die face; maxHp adds the current Constitution modifier to it, minimum 1 per level", () => {
+  const face7 = makeChar({ classes: [cl("Fighter", 1)], baseAbilityScores: scores({ con: 14 }), rolledHitPoints: { "Fighter__1": 7 } });
+  assert.equal(maxHp(face7), 9); // face 7 + Con 2
+  assert.equal(maxHp({ ...face7, baseAbilityScores: scores({ con: 16 }) }), 10); // face 7 + Con 3
+  const face1 = makeChar({ classes: [cl("Fighter", 1)], baseAbilityScores: scores({ con: 6 }), rolledHitPoints: { "Fighter__1": 1 } });
+  assert.equal(maxHp(face1), 1); // face 1 - Con 2 floors at 1
 });
 test("Tough feat adds two HP per level, CON applies retroactively, override wins", () => {
   const c = makeChar({ classes: [cl("Fighter", 5)], asiSelections: [{ level: 4, type: "feat", featName: "Tough", featSource: "PHB" }] });

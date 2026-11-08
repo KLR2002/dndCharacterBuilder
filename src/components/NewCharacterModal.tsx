@@ -50,6 +50,11 @@ export const NewCharacterModal: React.FC<NewCharacterModalProps> = ({
   );
   const [error, setError] = useState<string | null>(null);
 
+  // Anything typed or picked here is lost when the modal closes without creating the character.
+  const hasUnsavedChanges =
+    [name, gender, alignment, factionName, factionRank].some((v) => v.trim() !== "") ||
+    folderId !== (initialFolderId || null);
+
   const handleCreate = async () => {
     if (!name.trim()) {
       setError("Character Name is required!");
@@ -83,6 +88,7 @@ export const NewCharacterModal: React.FC<NewCharacterModalProps> = ({
     <Modal
       visible={visible}
       onClose={onClose}
+      hasUnsavedChanges={hasUnsavedChanges}
       title="Create New Character"
       subtitle="Name your hero to begin your journey."
       footer={
