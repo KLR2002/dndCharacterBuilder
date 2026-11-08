@@ -10,7 +10,7 @@ import type {
 import type { BackgroundData } from "../types/dnd5e.ts";
 import { reconcile, teardownSubclass } from "./characterReconciler.ts";
 import { applyAsiSelection, subclassLevel } from "./leveling.ts";
-import { maxHp } from "./hp.ts";
+import { dropRolledHitPoints, maxHp } from "./hp.ts";
 import { fullHealAtLevelUp, followRaisedMaxHp } from "./hitPoints.ts";
 import { currentCompendium, type Compendium } from "../services/compendium.ts";
 import { normalizeSkillName } from "./skills.ts";
@@ -578,7 +578,8 @@ export function removeClassLevel(
   if (!existing) return character;
 
   const oldSubclass = existing.subclassName || existing.subclass;
-  let updated = character;
+  // The removed level's rolled Hit Points record goes with it.
+  let updated = dropRolledHitPoints(character, existing.className, existing.level);
   let updatedClasses: CharacterClass[];
 
   if (existing.level <= 1) {
