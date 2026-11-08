@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
-import { centerOf, findNode, parseDump } from "../scripts/lib/uiautomator.mjs";
+import { centerOf, findNode, hasPositiveArea, parseDump } from "../scripts/lib/uiautomator.mjs";
 
 // The uiautomator dump parser (scripts/lib/uiautomator.mjs), which the native runner polls to wait for
 // a scenario's ready text. The fixture is a real dump captured on the emulator with the Settings screen
@@ -60,6 +60,14 @@ test("findNode reports absence", () => {
   assert.equal(findNode(nodes, "No Such Text On This Screen"), null);
   assert.equal(findNode(nodes, /no such text either/i), null);
   assert.equal(findNode([], "Settings & Compendium"), null);
+});
+
+test("hasPositiveArea rejects a zero-width and a zero-height box: only strictly positive area counts", () => {
+  assert.equal(hasPositiveArea({ x1: 10, y1: 10, x2: 10, y2: 20 }), false); // zero width
+  assert.equal(hasPositiveArea({ x1: 10, y1: 10, x2: 20, y2: 10 }), false); // zero height
+  assert.equal(hasPositiveArea({ x1: 10, y1: 10, x2: 11, y2: 11 }), true);
+  assert.equal(hasPositiveArea({ x1: 5, y1: 5, x2: 4, y2: 9 }), false); // inverted
+  assert.equal(hasPositiveArea(null), false);
 });
 
 test("centerOf is the centre point of a node's bounds", () => {

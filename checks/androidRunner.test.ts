@@ -1,22 +1,29 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { existsSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir as osTmpdir } from "node:os";
-import { join } from "node:path";
+import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
+  ADB_TIMEOUT_MS,
   APP_ID,
   AVD_NAME,
   BUILD_TIMEOUT_MS,
+  DUMP_REMOTE,
+  DUMP_TIMEOUT_MS,
+  INSTALL_TIMEOUT_MS,
   MAX_EMULATOR_RECOVERIES,
   PNG_SIGNATURE,
+  SCREENCAP_TIMEOUT_MS,
   SEED_FILE_NAME,
   apkPath,
   buildEnv,
   deepLinkForRoute,
   densityForWidth,
   emulatorArgs,
+  emulatorEnv,
   gradleArgs,
+  invalidWidthEntries,
   isEmulatorSerial,
   metroCacheRoot,
   parseAdbDevices,
@@ -27,12 +34,14 @@ import {
   parseWmSize,
   restoreDensityArgs,
   runAndroid,
+  runShotsDir,
   screenshotName,
   sdkPaths,
   selected,
   unmatchedOnlyTerms,
 } from "../scripts/lib/android-runner.mjs";
-import { buildScreens } from "../scripts/lib/scenarios.mjs";
+import { buildScreens, buildSeed } from "../scripts/lib/scenarios.mjs";
+import { parseE2eSeed } from "../src/services/e2eSeedImport.ts";
 
 // The native screenshot runner core (scripts/lib/android-runner.mjs, driven by scripts/layout-android.mjs).
 // Every device interaction goes through one injectable executor `run(command, args, options)`, so these
@@ -106,7 +115,7 @@ function makeWorld(options: {
   gradleStdout?: string;
   gradleStderr?: string;
   missing?: string[];
-  env?: Record<string, string>;
+  env?: Record<string, string | undefined>;
   argv?: string[];
   readyTimeoutMs?: number;
   readyPollMs?: number;
@@ -119,14 +128,34 @@ function makeWorld(options: {
   // reboot can come back on another serial or never finish booting.
   bootDevicesFor?: (start: number) => string;
   bootCompletedFor?: (start: number) => string;
+  // The `adb devices` output of the Nth devices call, to script a device that is offline on the
+  // first call and ready later (an emulator listed but not ready yet, adopted without a boot).
+  devicesFor?: (call: number) => string;
+  // The uiautomator dump command's exit code / stdout of the Nth dump, so a failed dump can be
+  // scripted (a non-zero exit, or a zero exit whose output does not report the dump).
+  dumpCodeFor?: (dump: number) => number;
+  dumpStdoutFor?: (dump: number) => string;
+  // Fire the recorded signal handler during the Nth sleep call (an async sleep that yields to the
+  // event loop first, the way the real setTimeout sleep does), with this signal name.
+  signalAtSleep?: number;
+  signalName?: string;
+  // The fake clock's start, so two runs can get different screenshot-folder timestamps.
+  startClock?: number;
+  // Folders under <tmpRoot>/layout-android that already exist (for the taken-name suffix).
+  existingLayoutDirs?: string[];
+  // The fake os.tmpdir() of the world, so tests can isolate their run folders.
+  tmpRoot?: string;
 }) {
   const calls: Call[] = [];
-  const starts: { bin: string; args: string[]; logPath: string }[] = [];
-  const handlers: (() => void)[] = [];
+  const starts: { bin: string; args: string[]; logPath: string; env?: Record<string, string> }[] = [];
+  const handlers: ((signal?: string) => void)[] = [];
   const logs: string[] = [];
   const errors: string[] = [];
   const writes: { path: string; content: string }[] = [];
   const sleeps: number[] = [];
+  const createdDirs = new Set<string>();
+  const tempDirs: string[] = [];
+  const removedDirs: string[] = [];
   let seedCalls = 0;
   let emulatorStarted = false;
   let startCount = 0;
@@ -135,18 +164,24 @@ function makeWorld(options: {
   let amStarts = 0;
   let pulls = 0;
   let dumps = 0;
-  let clock = 0;
+  let devicesCalls = 0;
+  let dumpCalls = 0;
+  let clock = options.startClock ?? 0;
+  const tmpRoot = options.tmpRoot ?? "/tmp";
   const missing = options.missing ?? [];
   const run = (command: string, args: string[], opts?: Record<string, unknown>) => {
     calls.push({ command, args: [...args], options: opts });
     const joined = args.join(" ");
     const reply = (code: number, stdout = "", stderr = "") => ({ code, stdout, stderr });
     if (args[0] === "devices") {
-      const body = offline
-        ? ""
-        : emulatorStarted
-          ? (options.bootDevicesFor ? options.bootDevicesFor(startCount) : (options.bootDevices ?? ""))
-          : (options.devices ?? "");
+      devicesCalls += 1;
+      const body = options.devicesFor
+        ? options.devicesFor(devicesCalls)
+        : offline
+          ? ""
+          : emulatorStarted
+            ? (options.bootDevicesFor ? options.bootDevicesFor(startCount) : (options.bootDevices ?? ""))
+            : (options.devices ?? "");
       return reply(0, `List of devices attached\n${body}\n`);
     }
     if (args.includes("get-state")) {
@@ -189,7 +224,12 @@ function makeWorld(options: {
       const code = options.amStartCodeFor?.(amStarts) ?? 0;
       return code === 0 ? reply(0, "Starting: Intent\n") : reply(code, "", "Error: Activity not started\n");
     }
-    if (args.includes("uiautomator")) return reply(0, "UI hierchary dumped to: /sdcard/e2e-dump.xml\n");
+    if (args.includes("uiautomator")) {
+      dumpCalls += 1;
+      const code = options.dumpCodeFor ? options.dumpCodeFor(dumpCalls) : 0;
+      if (code !== 0) return reply(code, "", "ERROR: could not dump the hierarchy\n");
+      return reply(0, options.dumpStdoutFor ? options.dumpStdoutFor(dumpCalls) : "UI hierchary dumped to: /sdcard/e2e-dump.xml\n");
+    }
     if (args.includes("exec-out")) {
       dumps += 1;
       if (options.offlineAtDumps?.includes(dumps)) offline = true;
@@ -216,24 +256,35 @@ function makeWorld(options: {
     runAndroid({
       root: ROOT,
       // Without an explicit ONLY the world visits the two step-free scenarios (Home, Settings), the ones
-      // the scripted dumps satisfy.
-      env: { ONLY: "Home,Settings", ...(options.env ?? {}) },
+      // the scripted dumps satisfy. LD_LIBRARY_PATH is set so the tests can see it stripped from the
+      // spawned emulator's environment.
+      env: { ONLY: "Home,Settings", PATH: "/usr/bin", LD_LIBRARY_PATH: "/opt/broken/lib", ...(options.env ?? {}) },
       argv: options.argv ?? ["--no-build"],
       run,
-      sleep: (ms: number) => {
+      // A real asynchronous sleep: it yields to the event loop, so a signal handler fired from it
+      // runs while the runner is waiting.
+      sleep: async (ms: number) => {
         sleeps.push(ms);
         clock += ms;
+        await new Promise((resolvePromise) => setTimeout(resolvePromise, 0));
+        if (options.signalAtSleep === sleeps.length && handlers.length > 0) handlers[0](options.signalName ?? "SIGINT");
       },
       now: () => clock,
-      startEmulator: (bin: string, args: string[], logPath: string) => {
+      startEmulator: (bin: string, args: string[], logPath: string, emuEnv?: Record<string, string>) => {
         startCount += 1;
-        starts.push({ bin, args: [...args], logPath });
+        starts.push({ bin, args: [...args], logPath, env: emuEnv });
         emulatorStarted = true;
         // A fresh emulator process brings the device back.
         offline = false;
         return 4321;
       },
-      fileExists: (p: string) => !missing.some((m) => p.includes(m)),
+      fileExists: (p: string) => {
+        if (missing.some((m) => p.includes(m))) return false;
+        // mkdir is real below, so the layout-android run folders and the pulled screenshots exist on
+        // disk; the option pre-registers extra taken names.
+        if (p.startsWith(join(tmpRoot, "layout-android") + "/")) return existsSync(p) || (options.existingLayoutDirs?.includes(p) ?? false);
+        return true;
+      },
       writeFile: (p: string, content: string) => {
         writes.push({ path: p, content });
       },
@@ -242,10 +293,21 @@ function makeWorld(options: {
         seedCalls += 1;
         return FAKE_SEED;
       },
-      mkdir: () => {},
-      tmpdir: () => "/tmp",
+      mkdir: (p: string) => {
+        createdDirs.add(p);
+        mkdirSync(p, { recursive: true });
+      },
+      makeTempDir: (prefix: string) => {
+        const dir = `${prefix}q7x9k2`;
+        tempDirs.push(dir);
+        return dir;
+      },
+      removeDir: (p: string) => {
+        removedDirs.push(p);
+      },
+      tmpdir: () => tmpRoot,
       homeDir: HOME,
-      installSignalHandlers: (handler: () => void) => handlers.push(handler),
+      installSignalHandlers: (handler: (signal?: string) => void) => handlers.push(handler),
       log: (m: string) => logs.push(m),
       errorLog: (m: string) => errors.push(m),
       readyTimeoutMs: options.readyTimeoutMs ?? 1000,
@@ -253,7 +315,22 @@ function makeWorld(options: {
       bootTimeoutMs: 60,
     });
   const callsTo = (needle: string) => calls.filter((c) => `${c.command} ${c.args.join(" ")}`.includes(needle));
-  return { calls, starts, handlers, logs, errors, writes, sleeps, runRun, callsTo, get seedCalls() { return seedCalls; }, get dumps() { return dumps; }, get pulls() { return pulls; } };
+  return {
+    calls,
+    starts,
+    handlers,
+    logs,
+    errors,
+    writes,
+    sleeps,
+    tempDirs,
+    removedDirs,
+    runRun,
+    callsTo,
+    get seedCalls() { return seedCalls; },
+    get dumps() { return dumps; },
+    get pulls() { return pulls; },
+  };
 }
 
 const emulatorWorld = { devices: "emulator-5554\tdevice\n" };
@@ -519,7 +596,7 @@ test("the signal-handler cleanup is idempotent with the finally cleanup", async 
   const world = makeWorld({ ...emulatorWorld, env: { WIDTHS: "320", SHOTS: shots }, amStartCodeFor: () => 1 });
   assert.equal(await world.runRun(), 1);
   assert.equal(world.handlers.length, 1);
-  world.handlers[0]();
+  world.handlers[0]("SIGINT");
   assert.equal(world.callsTo("wm density reset").length, 1);
   assert.equal(world.callsTo("emu kill").length, 0);
 });
@@ -623,6 +700,7 @@ function markersOf(world: { calls: Call[] }) {
       if (j.includes("push")) return "push-seed";
       if (j.includes("run-as") && j.includes("mkdir")) return "mkdir-files";
       if (j.includes("run-as") && j.includes("cp")) return "seed-copy";
+      if (j.includes("rm -f") && j.includes(DUMP_REMOTE)) return "rm-dump";
       if (j.includes("rm -f")) return "rm-tmp";
       if (j.includes("am start")) return "am-start";
       if (j.includes("uiautomator")) return "dump";
@@ -659,6 +737,7 @@ test("one scenario runs end to end: reset, seed copy, deep link, ready poll, scr
     "seed-copy",
     "rm-tmp",
     "am-start",
+    "rm-dump",
     "dump",
     "cat-dump",
     "screencap",
@@ -678,7 +757,10 @@ test("one scenario runs end to end: reset, seed copy, deep link, ready poll, scr
   assert.ok(copy && mkdir);
   assert.deepEqual(copy.args.slice(copy.args.indexOf("shell")), ["shell", "run-as", APP_ID, "cp", `/data/local/tmp/${SEED_FILE_NAME}`, `files/${SEED_FILE_NAME}`]);
   assert.deepEqual(mkdir.args.slice(mkdir.args.indexOf("shell")), ["shell", "run-as", APP_ID, "mkdir", "-p", "files"]);
-  assert.equal(world.callsTo("rm -f").length, 1);
+  // The seed's temp remote file is removed, and the remote dump file is deleted before the dump.
+  const rmCalls = world.callsTo("rm -f");
+  assert.equal(rmCalls.length, 2);
+  assert.ok(rmCalls.some((c) => c.args.includes(DUMP_REMOTE)));
   // The launch is the scenario's route by deep link, with the URI quoted for the device shell.
   const start = world.callsTo("am start")[0];
   assert.deepEqual(start.args.slice(start.args.indexOf("shell")), [
@@ -746,16 +828,17 @@ test("a scenario whose ready text never shows saves its stuck screen as -FAILED.
   assert.equal(world.callsTo("wm density reset").length, 1);
 });
 
-test("a web-only scenario is listed as skipped and never run", async () => {
+test("a web-only scenario among the selected ones is listed as skipped and never run", async () => {
   const shots = mkdtempSync(join(osTmpdir(), "android-runner-test-"));
-  const world = makeWorld({ ...emulatorWorld, env: { ONLY: "New Character modal", WIDTHS: "360", SHOTS: shots } });
+  const world = makeWorld({ ...emulatorWorld, env: { ONLY: "New Character modal,Home", WIDTHS: "360", SHOTS: shots } });
   const code = await world.runRun();
   assert.equal(code, 0);
   assert.ok(world.logs.join("\n").includes("Skipping New Character modal: web-only"));
-  assert.equal(world.callsTo("am start").length, 0);
-  assert.equal(world.callsTo("pm clear").length, 0);
+  // Only Home ran: one launch, one screenshot, one reset+seed.
+  assert.equal(world.callsTo("am start").length, 1);
+  assert.equal(world.callsTo("pm clear").length, 1);
   assert.equal(world.callsTo("input tap").length, 0);
-  assert.equal(world.seedCalls, 0);
+  assert.ok(existsSync(join(shots, "Home-360.png")));
 });
 
 test("a failing seed copy stops the scenario with a non-zero exit and no launch", async () => {
@@ -1201,4 +1284,370 @@ test("a recovery whose reboot never finishes booting ends the run with a message
 
 test("the recovery limit is two per run", () => {
   assert.equal(MAX_EMULATOR_RECOVERIES, 2);
+});
+
+// --- A folder per run (Q6/AC-12): without SHOTS a fresh timestamped folder, printed once ---
+
+test("runShotsDir names the folder YYYYMMDD-HHMMSS (UTC) under <tmp>/layout-android and suffixes a taken name", () => {
+  const base = { tmpdir: () => "/tmp", now: () => Date.UTC(2026, 2, 4, 5, 6, 7) };
+  assert.equal(runShotsDir({ ...base, fileExists: () => false }), "/tmp/layout-android/20260304-050607");
+  assert.equal(
+    runShotsDir({ ...base, fileExists: (p: string) => p === "/tmp/layout-android/20260304-050607" }),
+    "/tmp/layout-android/20260304-050607-1",
+  );
+  assert.equal(
+    runShotsDir({ ...base, fileExists: (p: string) => p === "/tmp/layout-android/20260304-050607" || p === "/tmp/layout-android/20260304-050607-1" }),
+    "/tmp/layout-android/20260304-050607-2",
+  );
+});
+
+test("without SHOTS the run creates a fresh timestamped folder and prints it once; with SHOTS it prints SHOTS", async () => {
+  const tmpRoot = mkdtempSync(join(osTmpdir(), "android-runner-tmp-"));
+  const w1 = makeWorld({ ...emulatorWorld, tmpRoot, env: { ONLY: "Home", WIDTHS: "360" }, startClock: Date.UTC(2026, 2, 4, 5, 6, 7) });
+  assert.equal(await w1.runRun(), 0);
+  assert.ok(w1.logs.includes(`Screenshots: ${join(tmpRoot, "layout-android", "20260304-050607")}`));
+  const shots = mkdtempSync(join(osTmpdir(), "android-runner-test-"));
+  const w2 = makeWorld({ ...emulatorWorld, env: { ONLY: "Home", WIDTHS: "360", SHOTS: shots } });
+  assert.equal(await w2.runRun(), 0);
+  assert.ok(w2.logs.includes(`Screenshots: ${shots}`));
+});
+
+test("two runs without SHOTS get two different folders", async () => {
+  const tmpRoot = mkdtempSync(join(osTmpdir(), "android-runner-tmp-"));
+  const w1 = makeWorld({ ...emulatorWorld, tmpRoot, env: { ONLY: "Home", WIDTHS: "360" }, startClock: Date.UTC(2026, 2, 4, 5, 6, 7) });
+  const w2 = makeWorld({ ...emulatorWorld, tmpRoot, env: { ONLY: "Home", WIDTHS: "360" }, startClock: Date.UTC(2026, 2, 4, 5, 6, 8) });
+  await w1.runRun();
+  await w2.runRun();
+  const l1 = w1.logs.find((m) => m.startsWith("Screenshots: "));
+  const l2 = w2.logs.find((m) => m.startsWith("Screenshots: "));
+  assert.ok(l1 && l2, "both runs print their folder");
+  assert.notEqual(l1, l2);
+});
+
+test("a run whose timestamped folder is already taken gets a suffix", async () => {
+  const tmpRoot = mkdtempSync(join(osTmpdir(), "android-runner-tmp-"));
+  const taken = join(tmpRoot, "layout-android", "20260304-050607");
+  const world = makeWorld({
+    ...emulatorWorld,
+    tmpRoot,
+    env: { ONLY: "Home", WIDTHS: "360" },
+    startClock: Date.UTC(2026, 2, 4, 5, 6, 7),
+    existingLayoutDirs: [taken],
+  });
+  assert.equal(await world.runRun(), 0);
+  assert.ok(world.logs.includes(`Screenshots: ${taken}-1`));
+});
+
+// --- WIDTHS validation and LAYOUT_INTEGRATED ---
+
+test("invalidWidthEntries lists the entries that are not a positive integer in 240..1000", () => {
+  assert.deepEqual(invalidWidthEntries(undefined), []);
+  assert.deepEqual(invalidWidthEntries(""), []);
+  assert.deepEqual(invalidWidthEntries("   "), []);
+  assert.deepEqual(invalidWidthEntries("320,412"), []);
+  assert.deepEqual(invalidWidthEntries("240,1000"), []);
+  assert.deepEqual(invalidWidthEntries("0,abc,360"), ["0", "abc"]);
+  assert.deepEqual(invalidWidthEntries("100"), ["100"]);
+  assert.deepEqual(invalidWidthEntries("1001"), ["1001"]);
+  assert.deepEqual(invalidWidthEntries("360.5"), ["360.5"]);
+  assert.deepEqual(invalidWidthEntries("-5"), ["-5"]);
+});
+
+test("WIDTHS with a 0, NaN or out-of-range entry exits 2 naming the bad entry, before any device call", async () => {
+  for (const [raw, bad] of [["0,abc", '"0"'], ["abc", '"abc"'], ["100", '"100"'], ["1001", '"1001"'], ["360.5", '"360.5"'], ["-5", '"-5"']] as const) {
+    const world = makeWorld({ ...emulatorWorld, env: { WIDTHS: raw } });
+    const code = await world.runRun();
+    assert.equal(code, 2, raw);
+    assert.ok(world.errors.join("\n").includes(bad), `${raw} must be named: ${world.errors.join("\n")}`);
+    assert.equal(world.calls.length, 0, `no device call for WIDTHS=${raw}`);
+  }
+});
+
+test("unset or empty WIDTHS runs the default four widths", async () => {
+  for (const raw of [undefined, ""]) {
+    const shots = mkdtempSync(join(osTmpdir(), "android-runner-test-"));
+    const world = makeWorld({ ...emulatorWorld, env: { ONLY: "Home", WIDTHS: raw, SHOTS: shots } });
+    assert.equal(await world.runRun(), 0, `WIDTHS=${raw}`);
+    const set = world
+      .callsTo("wm density")
+      .filter((c) => /wm density \d+$/.test(c.args.join(" ")))
+      .map((c) => c.args.at(-1));
+    assert.deepEqual(set, ["293", "320", "360", "280"], `WIDTHS=${raw}`); // 393,360,320,412
+  }
+});
+
+test("ONLY that selects only web-only scenarios exits 2 listing them, before any device call", async () => {
+  const world = makeWorld({ ...emulatorWorld, env: { ONLY: "New Character modal" } });
+  const code = await world.runRun();
+  assert.equal(code, 2);
+  const err = world.errors.join("\n");
+  assert.ok(err.includes("New Character modal"), err);
+  assert.match(err, /web-only/i);
+  assert.equal(world.calls.length, 0);
+});
+
+test("LAYOUT_INTEGRATED=1 selects the integrated scenario list like --integrated", async () => {
+  const tiefling0 =
+    `<hierarchy><node text="Builder" bounds="[80,187][157,220]" /><node text="Race" bounds="[316,320][375,356]" />` +
+    `<node text="CHA" bounds="[10,500][60,540]" /><node text="Choose +2 to 1 ability score (0/1 chosen)" bounds="[52,600][600,650]" /></hierarchy>`;
+  const tiefling1 = tiefling0.replace("(0/1 chosen)", "(1/1 chosen)");
+  const world = makeWorld({
+    ...emulatorWorld,
+    env: { ONLY: "tiefling", WIDTHS: "360", LAYOUT_INTEGRATED: "1" },
+    argv: ["--no-build"],
+    dumpXml: (poll) => (poll <= 4 ? tiefling0 : tiefling1),
+  });
+  assert.equal(await world.runRun(), 0);
+});
+
+// --- Device selection: prefer emulator-* serials, adopt a not-ready one, refuse the rest ---
+
+test("isEmulatorSerial rejects a serial that merely contains \"emulator\"", () => {
+  assert.equal(isEmulatorSerial("my-emulator-phone"), false);
+  assert.equal(isEmulatorSerial("emulator-5554"), true);
+  assert.equal(isEmulatorSerial("emulator"), false);
+});
+
+test("a ready non-emulator serial that merely contains \"emulator\" is refused", async () => {
+  const world = makeWorld({ devices: "my-emulator-phone\tdevice\n" });
+  const code = await world.runRun();
+  assert.equal(code, 2);
+  assert.ok(world.errors.join("\n").includes("my-emulator-phone"));
+  assert.equal(world.starts.length, 0);
+  const mutating = world.calls.filter((c) => /install|am start|wm density|emu kill|pm clear|force-stop|run-as/.test(`${c.command} ${c.args.join(" ")}`));
+  assert.deepEqual(mutating, []);
+});
+
+test("a physical device listed before a running emulator is ignored and the emulator is reused", async () => {
+  const shots = mkdtempSync(join(osTmpdir(), "android-runner-test-"));
+  const world = makeWorld({ devices: "HTC123\tdevice\nemulator-5554\tdevice\n", env: { ONLY: "Home", WIDTHS: "360", SHOTS: shots } });
+  const code = await world.runRun();
+  assert.equal(code, 0);
+  assert.equal(world.starts.length, 0);
+  assert.equal(world.callsTo("emu kill").length, 0);
+  assert.ok(!world.calls.some((c) => c.args.includes("HTC123")), "the phone is never addressed");
+  assert.equal(world.callsTo("-s emulator-5554 install -r").length, 1);
+  assert.ok(existsSync(join(shots, "Home-360.png")));
+});
+
+test("an emulator listed but not ready yet is waited for and adopted: never started, never killed", async () => {
+  const shots = mkdtempSync(join(osTmpdir(), "android-runner-test-"));
+  const world = makeWorld({
+    devicesFor: (n) => (n === 1 ? "emulator-5554\toffline\n" : "emulator-5554\tdevice\n"),
+    env: { ONLY: "Home", WIDTHS: "360", SHOTS: shots },
+  });
+  const code = await world.runRun();
+  assert.equal(code, 0);
+  assert.equal(world.starts.length, 0, "no emulator process is spawned for an adopted emulator");
+  assert.ok(world.callsTo("getprop sys.boot_completed").length >= 1, "the boot wait ran");
+  assert.equal(world.callsTo("emu kill").length, 0, "an adopted emulator is never killed");
+  assert.equal(world.callsTo("-s emulator-5554 install -r").length, 1);
+  assert.ok(existsSync(join(shots, "Home-360.png")));
+});
+
+test("an offline emulator listed together with a ready physical device is waited for, not refused", async () => {
+  const shots = mkdtempSync(join(osTmpdir(), "android-runner-test-"));
+  const world = makeWorld({
+    devicesFor: (n) => (n === 1 ? "HTC123\tdevice\nemulator-5554\toffline\n" : "HTC123\tdevice\nemulator-5554\tdevice\n"),
+    env: { ONLY: "Home", WIDTHS: "360", SHOTS: shots },
+  });
+  const code = await world.runRun();
+  assert.equal(code, 0);
+  assert.equal(world.starts.length, 0);
+  assert.equal(world.callsTo("emu kill").length, 0);
+  assert.ok(!world.calls.some((c) => c.args.includes("HTC123")));
+  assert.equal(world.callsTo("-s emulator-5554 install -r").length, 1);
+});
+
+// --- Every adb call after the device is chosen carries -s <serial>, with a timeout ---
+
+test("across a whole fake run every adb call except `devices` carries -s <serial>, including tap, swipe, dump, screencap, pull, install", async () => {
+  const shots = mkdtempSync(join(osTmpdir(), "android-runner-test-"));
+  const content = `<node text="" class="android.widget.ScrollView" scrollable="true" bounds="[0,252][720,1232]" />`;
+  const withoutNeedle = `<hierarchy>${content}<node text="Builder" bounds="[80,187][157,220]" /><node text="Race" bounds="[316,320][375,356]" /></hierarchy>`;
+  const withNeedle = `<hierarchy>${content}<node text="Builder" bounds="[80,187][157,220]" /><node text="Race" bounds="[316,320][375,356]" /><node text="Granted Languages:" bounds="[10,620][300,660]" /></hierarchy>`;
+  const world = makeWorld({
+    ...emulatorWorld,
+    env: { ONLY: "Builder Race language choice", WIDTHS: "360", SHOTS: shots },
+    // The two tab polls consume dumps 1-2, the ready polls 3-4 (no needle yet, so swipes run), and
+    // from dump 5 on the needle is there.
+    dumpXml: (poll) => (poll <= 4 ? withoutNeedle : withNeedle),
+  });
+  const code = await world.runRun();
+  assert.equal(code, 0);
+  const adbCalls = world.calls.filter((c) => c.command === ADB);
+  assert.ok(adbCalls.length > 0);
+  for (const c of adbCalls) {
+    if (c.args[0] === "devices") continue;
+    assert.equal(c.args[0], "-s", `${c.command} ${c.args.join(" ")}`);
+    assert.equal(c.args[1], "emulator-5554", `${c.command} ${c.args.join(" ")}`);
+  }
+  for (const kind of ["wm density", "pm clear", "push", "run-as", "am start", "uiautomator dump", "exec-out", "input tap", "input swipe", "screencap", "pull", "install -r"]) {
+    const calls = world.callsTo(kind);
+    assert.ok(calls.length > 0, kind);
+    assert.ok(calls.every((c) => c.args[0] === "-s" && c.args[1] === "emulator-5554"), kind);
+  }
+});
+
+test("every adb call carries a timeout: 60 s default, 180 s install, 30 s dump, 60 s screencap and pull", async () => {
+  const shots = mkdtempSync(join(osTmpdir(), "android-runner-test-"));
+  const world = makeWorld({ ...emulatorWorld, env: { ONLY: "Home", WIDTHS: "360", SHOTS: shots } });
+  assert.equal(await world.runRun(), 0);
+  const adbCalls = world.calls.filter((c) => c.command === ADB);
+  assert.ok(adbCalls.length > 0);
+  for (const c of adbCalls) {
+    const j = c.args.join(" ");
+    const expected = j.includes("install") ? INSTALL_TIMEOUT_MS : j.includes("uiautomator") ? DUMP_TIMEOUT_MS : ADB_TIMEOUT_MS;
+    assert.equal(c.options?.timeoutMs, expected, j);
+  }
+  assert.equal(ADB_TIMEOUT_MS, 60_000);
+  assert.equal(INSTALL_TIMEOUT_MS, 180_000);
+  assert.equal(DUMP_TIMEOUT_MS, 30_000);
+  for (const c of world.callsTo("screencap").concat(world.callsTo("pull"))) {
+    assert.equal(c.options?.timeoutMs, SCREENCAP_TIMEOUT_MS, "screencap/pull timeout");
+  }
+});
+
+// --- A failed uiautomator dump never reads a stale hierarchy ---
+
+test("a dump that exits non-zero is an empty node list for that poll: the remote file is deleted first and never catted", async () => {
+  const shots = mkdtempSync(join(osTmpdir(), "android-runner-test-"));
+  // The scripted exec-out output WOULD satisfy the ready text; a runner that ignores the dump's
+  // exit code would read it and pass.
+  const world = makeWorld({
+    ...emulatorWorld,
+    env: { ONLY: "Home", WIDTHS: "360", SHOTS: shots },
+    dumpCodeFor: () => 1,
+    dumpXml: DEFAULT_DUMP,
+    readyTimeoutMs: 1000,
+    readyPollMs: 500,
+  });
+  const code = await world.runRun();
+  assert.equal(code, 1);
+  assert.ok(world.errors.join("\n").includes("ready"));
+  assert.equal(world.callsTo("exec-out").length, 0, "no cat after a failed dump");
+  assert.ok(world.callsTo("uiautomator").length > 0);
+  // Every dump attempt is preceded by rm -f of the remote dump file.
+  world.calls.forEach((c, i) => {
+    if (`${c.command} ${c.args.join(" ")}`.includes("uiautomator")) {
+      const prev = world.calls[i - 1];
+      assert.ok(prev && prev.args.join(" ").includes("rm -f") && prev.args.join(" ").includes(DUMP_REMOTE), `rm -f ${DUMP_REMOTE} before dump #${i}`);
+    }
+  });
+  assert.ok(existsSync(join(shots, "Home-360-FAILED.png")), "the stuck screen is still saved");
+});
+
+test("a dump that exits 0 but does not report the dump is a failure too", async () => {
+  const shots = mkdtempSync(join(osTmpdir(), "android-runner-test-"));
+  const world = makeWorld({
+    ...emulatorWorld,
+    env: { ONLY: "Home", WIDTHS: "360", SHOTS: shots },
+    dumpCodeFor: () => 0,
+    dumpStdoutFor: () => "ERROR: could not obtain idle state\n",
+    dumpXml: DEFAULT_DUMP,
+    readyTimeoutMs: 500,
+    readyPollMs: 200,
+  });
+  const code = await world.runRun();
+  assert.equal(code, 1);
+  assert.equal(world.callsTo("exec-out").length, 0);
+  assert.ok(world.errors.join("\n").includes("ready"));
+});
+
+// --- Startup hardening: emulator env, missing binary, private seed dir ---
+
+test("emulatorEnv strips LD_LIBRARY_PATH and keeps the rest", () => {
+  assert.deepEqual(emulatorEnv({ LD_LIBRARY_PATH: "/opt/x", PATH: "/usr/bin", HOME: "/h" }), { PATH: "/usr/bin", HOME: "/h" });
+  assert.deepEqual(emulatorEnv({ PATH: "/usr/bin" }), { PATH: "/usr/bin" });
+});
+
+test("the spawned emulator gets the environment without LD_LIBRARY_PATH", async () => {
+  const shots = mkdtempSync(join(osTmpdir(), "android-runner-test-"));
+  const world = makeWorld({ devices: "", bootDevices: "emulator-5554\tdevice\n", env: { ONLY: "Home", WIDTHS: "360", SHOTS: shots } });
+  assert.equal(await world.runRun(), 0);
+  assert.equal(world.starts.length, 1);
+  assert.ok(world.starts[0].env, "the runner passes an environment to startEmulator");
+  assert.ok(!("LD_LIBRARY_PATH" in world.starts[0].env!), "LD_LIBRARY_PATH is stripped");
+  assert.equal(world.starts[0].env!.PATH, "/usr/bin");
+});
+
+test("when a boot is needed and the emulator binary is missing, the run exits 2 naming the path instead of waiting", async () => {
+  const shots = mkdtempSync(join(osTmpdir(), "android-runner-test-"));
+  const world = makeWorld({ devices: "", missing: [join("emulator", "emulator")], env: { ONLY: "Home", WIDTHS: "360", SHOTS: shots } });
+  const code = await world.runRun();
+  assert.equal(code, 2);
+  assert.ok(world.errors.join("\n").includes(join(SDK, "emulator", "emulator")), world.errors.join("\n"));
+  assert.equal(world.starts.length, 0);
+  assert.equal(world.callsTo("getprop").length, 0, "no boot wait was started");
+});
+
+test("the seed is staged in a private temp dir that is removed at the end of the run", async () => {
+  const shots = mkdtempSync(join(osTmpdir(), "android-runner-test-"));
+  const world = makeWorld({ ...emulatorWorld, env: { ONLY: "Home", WIDTHS: "360", SHOTS: shots } });
+  assert.equal(await world.runRun(), 0);
+  assert.equal(world.writes.length, 1);
+  assert.equal(world.tempDirs.length, 1);
+  assert.ok(world.writes[0].path.startsWith(world.tempDirs[0] + "/"), world.writes[0].path);
+  assert.match(world.writes[0].path, /dnd5e_e2e_seed\.json$/);
+  assert.notEqual(world.writes[0].path, join("/tmp", `dnd5e-android-seed-${SEED_FILE_NAME}`), "not the predictable path");
+  assert.deepEqual(world.removedDirs, [world.tempDirs[0]]);
+});
+
+test("the seed temp dir is removed also after a failed run", async () => {
+  const shots = mkdtempSync(join(osTmpdir(), "android-runner-test-"));
+  const world = makeWorld({ ...emulatorWorld, env: { ONLY: "Home", WIDTHS: "360", SHOTS: shots }, clearCode: 1 });
+  assert.equal(await world.runRun(), 1);
+  assert.equal(world.tempDirs.length, 1);
+  assert.deepEqual(world.removedDirs, [world.tempDirs[0]]);
+});
+
+// --- Signals: delivered between two scenarios, the cleanup runs and the run ends 130/143 ---
+
+test("a SIGINT delivered between two scenarios runs the cleanup (density restore, emulator stop) and ends the run with exit 130, no further scenario runs", async () => {
+  const shots = mkdtempSync(join(osTmpdir(), "android-runner-test-"));
+  const world = makeWorld({
+    devices: "",
+    bootDevices: "emulator-5554\tdevice\n",
+    env: { ONLY: "Home,Settings", WIDTHS: "360", SHOTS: shots },
+    signalAtSleep: 1, // the first scenario's settle sleep
+  });
+  const code = await world.runRun();
+  assert.equal(code, 130);
+  assert.equal(world.starts.length, 1);
+  assert.equal(world.callsTo("emu kill").length, 1, "the emulator this run started is stopped");
+  assert.equal(world.callsTo("wm density reset").length, 1, "the density is restored");
+  assert.ok(existsSync(join(shots, "Home-360.png")));
+  assert.ok(!existsSync(join(shots, "Settings-360.png")), "no further scenario runs");
+  assert.equal(world.callsTo("am start").length, 1);
+  assert.equal(world.callsTo("screencap").length, 1);
+});
+
+test("a SIGTERM between two scenarios ends the run with exit 143", async () => {
+  const shots = mkdtempSync(join(osTmpdir(), "android-runner-test-"));
+  const world = makeWorld({
+    ...emulatorWorld,
+    env: { ONLY: "Home,Settings", WIDTHS: "360", SHOTS: shots },
+    signalAtSleep: 1,
+    signalName: "SIGTERM",
+  });
+  const code = await world.runRun();
+  assert.equal(code, 143);
+  assert.equal(world.callsTo("wm density reset").length, 1);
+  assert.equal(world.callsTo("emu kill").length, 0, "a reused emulator is not stopped");
+  assert.ok(!existsSync(join(shots, "Settings-360.png")));
+});
+
+// --- The seed the runner stages parses with the app's own parseE2eSeed ---
+
+test("buildSeed output, serialised, parses with the app's parseE2eSeed in SRD and integrated mode", () => {
+  const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
+  for (const integrated of [false, true]) {
+    const seed = buildSeed({ root, integrated });
+    const parsed = parseE2eSeed(JSON.stringify(seed));
+    assert.ok(parsed, `the ${integrated ? "integrated" : "SRD"} seed must parse with parseE2eSeed`);
+    assert.equal(parsed.integrated === null, !integrated);
+    assert.ok(parsed.characters.length > 0);
+    assert.ok(Array.isArray(parsed.folders));
+    assert.ok(parsed.settings && typeof parsed.settings === "object");
+  }
 });
