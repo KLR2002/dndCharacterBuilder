@@ -3,8 +3,11 @@
 // Builder subtabs, including the race picker for a character with no race, the background picker and the
 // Custom Background creator for one with no background, home, settings, and the Rest, Conditions and New
 // Character modals), the hit point modal (from the Stats HP number and the header HP badge), and the Active
-// Wild Shape box (Stats tab, header badge, Features tab), and how modals close (backdrop tap, Escape, the
-// ✕ button, and the discard confirmation for a modal holding unsaved input). The helpers that start the
+// Wild Shape box (Stats tab, header badge, Features tab), and how modals close. On phone widths every modal
+// is a bottom sheet: flush with the bottom edge with a strip of background above it, a drag handle labelled
+// "Close" instead of a ✕, closing on backdrop tap, Escape, the handle and a swipe down; on wide screens a
+// centred dialog of at most about 560px with a ✕. Closing paths of a modal holding unsaved input ask
+// "Discard changes?" first. The helpers that start the
 // app and seed it are in scripts/lib/app-driver.mjs (see docs/agents/driving-the-app.md).
 //
 // Usage: `npm run layout:check` (not part of check:all). The script starts the Expo web server itself
@@ -191,6 +194,81 @@ function findDialog(title) {
   return el?.closest('[role="dialog"]') ?? null;
 }
 
+// Checks the shape of the open modal against its width: on phones a bottom sheet flush with the bottom
+// edge and full width, a visible strip of background above it (at least about 10% of the screen), a handle
+// labelled "Close" at its top and no ✕; on wide screens a centred dialog of at most about 560px with a ✕
+// and no handle. Returns one message per violation.
+async function checkModalShape(page, width) {
+  const shape = await page.evaluate(() => {
+    const dialog = document.querySelector('[role="dialog"]');
+    const sheet = dialog?.querySelector('[data-testid="modal-sheet"]') ?? null;
+    if (!sheet) return null;
+    const r = sheet.getBoundingClientRect();
+    const handle = sheet.querySelector('[aria-label="Close"][role="button"]');
+    const hr = handle?.getBoundingClientRect();
+    const hasCloseX = [...dialog.querySelectorAll("*")].some(
+      (e) => e.children.length === 0 && e.textContent.trim() === "✕",
+    );
+    return {
+      rect: { top: r.top, bottom: r.bottom, left: r.left, right: r.right, width: r.width },
+      vw: window.innerWidth,
+      vh: window.innerHeight,
+      handle: hr ? { top: hr.top, bottom: hr.bottom } : null,
+      hasCloseX,
+    };
+  });
+  if (!shape) return ['no open modal sheet (data-testid="modal-sheet")'];
+  const { rect, vw, vh } = shape;
+  const out = [];
+  if (width < 600) {
+    if (rect.bottom < vh - 1)
+      out.push(`the sheet is not flush with the bottom edge (bottom ${Math.round(rect.bottom)}px of ${vh}px)`);
+    if (rect.left > 1 || rect.right < vw - 1)
+      out.push(`the sheet is not full width (${Math.round(rect.left)}..${Math.round(rect.right)}px of ${vw}px)`);
+    if (rect.top < vh * 0.09)
+      out.push(`the background strip above the sheet is only ${Math.round(rect.top)}px (${((rect.top / vh) * 100).toFixed(1)}% of ${vh}px), under about 10%`);
+    if (shape.hasCloseX) out.push("the phone sheet shows a ✕ button");
+    if (!shape.handle) out.push('the phone sheet has no handle labelled "Close"');
+    else if (shape.handle.bottom > rect.top + 48) out.push('the "Close" handle is not at the top of the sheet');
+  } else {
+    if (rect.width > 561) out.push(`the dialog is ${Math.round(rect.width)}px wide, over about 560px`);
+    if (rect.bottom >= vh - 1) out.push("the wide-screen dialog sits on the bottom edge instead of centred");
+    if (Math.abs(rect.top - (vh - rect.bottom)) > 2)
+      out.push(`the dialog is not centred (${Math.round(rect.top)}px above, ${Math.round(vh - rect.bottom)}px below)`);
+    if (!shape.hasCloseX) out.push("the wide-screen dialog has no ✕ button");
+    if (shape.handle) out.push("the wide-screen dialog shows a drag handle");
+  }
+  return out;
+}
+
+// Closes the open modal through the shell's own close control at the current width: the handle labelled
+// "Close" on phones, the ✕ button on wide screens.
+async function closeModalViaShell(page) {
+  const handle = page.locator('[aria-label="Close"][role="button"]').first();
+  if ((await handle.count()) > 0) await handle.click({ timeout: 5000 });
+  else await page.getByText("✕", { exact: true }).first().click({ timeout: 5000 });
+}
+
+// Drags the top of the sheet's content (just below the handle) downward with the mouse, the web form of
+// the phone's swipe-down: only the sheet's drag handler can close the modal from there, not a button press.
+// False when no sheet was found.
+async function swipeSheetDown(page) {
+  // The dialog wrapper mounts a beat after the modal content, so wait for it before looking for the sheet.
+  await page.waitForSelector('[role="dialog"] [data-testid="modal-sheet"]', { state: "attached", timeout: 10000 }).catch(() => {});
+  const pt = await page.evaluate(() => {
+    const sheet = document.querySelector('[role="dialog"] [data-testid="modal-sheet"]');
+    if (!sheet) return null;
+    const r = sheet.getBoundingClientRect();
+    return { x: r.left + r.width / 2, y: r.top + 44 };
+  });
+  if (!pt) return false;
+  await page.mouse.move(pt.x, pt.y);
+  await page.mouse.down();
+  for (let i = 1; i <= 10; i++) await page.mouse.move(pt.x, pt.y + i * 24, { steps: 2 });
+  await page.mouse.up();
+  return true;
+}
+
 // Runs in the browser. The open hit point modal (normal or wild shape): the smallest ancestor of its Amount field that holds the title and the buttons.
 function findHpModal() {
   for (let a = document.querySelector('[aria-label="Amount"]'); a; a = a.parentElement) {
@@ -257,7 +335,7 @@ async function checkWildShapeBox(page, index, prefix, shot) {
       console.log(`${prefix} ${v}`);
     }
   }
-  await page.getByText("✕", { exact: true }).first().click();
+  await closeModalViaShell(page);
   await page.getByText("Set to", { exact: true }).first().waitFor({ state: "hidden", timeout: 10000 });
   await page.waitForTimeout(400);
   return failures;
@@ -460,6 +538,7 @@ async function visitScreen(page, width, screen, state) {
       return 1;
     }
     violations = await page.evaluate(findLayoutViolations, root);
+    violations = [...violations, ...(await checkModalShape(page, width))];
   } else {
     violations = await page.evaluate(findLayoutViolations, null);
   }
@@ -514,7 +593,7 @@ async function checkHitPointModals(ctx, width) {
         console.log(`${prefix} ${v}`);
       }
     }
-    await page.getByText("✕", { exact: true }).first().click();
+    await closeModalViaShell(page);
     await page.getByText("Set to", { exact: true }).first().waitFor({ state: "hidden", timeout: 10000 });
     await page.waitForTimeout(400);
   }
@@ -547,11 +626,14 @@ async function tapBackdrop(page) {
   return true;
 }
 
-// How a modal closes: the backdrop and Escape close a modal with no unsaved work, the ✕ button too;
-// a modal holding unsaved input asks "Discard changes?" first, and only "Discard" closes it.
+// How a modal closes: on phones the sheet closes on a backdrop tap, Escape, a tap on its handle labelled
+// "Close" and a swipe down on that handle; on wide screens the dialog closes on a backdrop tap, Escape and
+// the ✕ button. A modal holding unsaved input asks "Discard changes?" first on every one of those paths,
+// and only "Discard" closes it. Every width also checks the open modal's shape (checkModalShape).
 async function checkModalClosing(ctx, width) {
   const page = await ctx.newPage();
   const prefix = `[${width}px modal closing]`;
+  const phone = width < 600;
   let failures = 0;
   const fail = (msg) => {
     failures++;
@@ -586,19 +668,47 @@ async function checkModalClosing(ctx, width) {
     }
   };
 
-  // The Rest modal holds no unsaved input: backdrop tap, Escape and the ✕ button each close it.
+  // The Rest modal holds no unsaved input: every close path of this width closes it.
   await page.goto(`${BASE}/character/${CHARACTER_ID}`, { waitUntil: "networkidle", timeout: 120000 });
   await page.waitForTimeout(1500);
   await page.getByText("Stats", { exact: true }).first().click();
   await page.waitForTimeout(500);
-  for (const [how, close] of [
-    ["backdrop", async () => (await tapBackdrop(page)) || fail("could not tap the backdrop of the open modal")],
-    ["Escape", () => page.keyboard.press("Escape")],
-    ["close button", () => page.getByText("✕", { exact: true }).first().click({ timeout: 5000 }).catch(() => fail("could not tap the ✕ button"))],
-  ]) {
+  const handleLocator = page.locator('[aria-label="Close"][role="button"]').first();
+  const methods = phone
+    ? [
+        ["backdrop", async () => (await tapBackdrop(page)) || fail("could not tap the backdrop of the open modal")],
+        ["Escape", () => page.keyboard.press("Escape")],
+        [
+          "handle",
+          async () => {
+            if ((await handleLocator.count()) === 0) {
+              fail('no handle labelled "Close" on the phone sheet');
+              return;
+            }
+            await handleLocator.click({ timeout: 5000 }).catch(() => fail('could not tap the "Close" handle'));
+          },
+        ],
+        ["swipe down", async () => (await swipeSheetDown(page)) || fail("could not swipe the sheet down from its handle")],
+      ]
+    : [
+        ["backdrop", async () => (await tapBackdrop(page)) || fail("could not tap the backdrop of the open modal")],
+        ["Escape", () => page.keyboard.press("Escape")],
+        ["close button", () => page.getByText("✕", { exact: true }).first().click({ timeout: 5000 }).catch(() => fail("could not tap the ✕ button"))],
+      ];
+  for (const [how, close] of methods) {
     await closeRestIfOpen();
     await page.getByText(/^Take Rest/).first().click({ timeout: 5000 }).catch(() => fail(`could not open the Rest modal for the ${how} close`));
-    if (!(await waitDialog("Rest & Recovery", true))) fail(`the Rest modal did not open for the ${how} close`);
+    if (!(await waitDialog("Rest & Recovery", true))) {
+      fail(`the Rest modal did not open for the ${how} close`);
+      continue;
+    }
+    if (how === methods[0][0]) {
+      // The dialog wrapper and its role mount a beat after the modal content, so wait for the sheet first.
+      await page.waitForSelector('[data-testid="modal-sheet"]', { state: "attached", timeout: 10000 }).catch(() => {});
+      await page.waitForTimeout(300);
+      for (const v of await checkModalShape(page, width)) fail(v);
+      await page.screenshot({ path: shot("open") });
+    }
     await close();
     if (!(await waitDialog("Rest & Recovery", false))) fail(`${how} did not close the Rest modal`);
     if (how === "backdrop") await page.screenshot({ path: shot("backdrop-closed") });
@@ -625,6 +735,30 @@ async function checkModalClosing(ctx, width) {
   if (!(await dialogShown("Discard changes?"))) fail("Escape on an edited modal did not ask \"Discard changes?\"");
   if (await tapButton("Discard")) {
     if (!(await waitDialog("Create New Character", false))) fail("\"Discard\" did not close the edited modal");
+  }
+
+  // On a phone the handle labelled "Close" asks first too, on a modal holding unsaved input, and so does
+  // a swipe down from the top of the sheet's content.
+  if (phone) {
+    await page.goto(`${BASE}/`, { waitUntil: "networkidle", timeout: 120000 });
+    await page.waitForTimeout(1500);
+    await playStep(page, { tap: { name: "home-header-add" } });
+    if (!(await waitDialog("Create New Character", true))) fail("the New Character modal did not reopen for the handle tap");
+    await page.getByPlaceholder("e.g. Rendar Engelhart, Dianain Drakecroft").fill("Unsaved Test Name");
+    if ((await handleLocator.count()) === 0) fail('the phone sheet has no handle labelled "Close"');
+    else {
+      await handleLocator.click({ timeout: 5000 }).catch(() => fail('could not tap the "Close" handle'));
+      await page.waitForTimeout(400);
+      if (!(await dialogShown("Discard changes?"))) fail('tapping the "Close" handle of an edited modal did not ask "Discard changes?"');
+      if (!(await dialogShown("Create New Character"))) fail("the edited modal closed on handle tap instead of asking first");
+      await tapButton("Keep editing");
+    }
+    if (await swipeSheetDown(page)) {
+      await page.waitForTimeout(400);
+      if (!(await dialogShown("Discard changes?"))) fail('swiping the sheet down on an edited modal did not ask "Discard changes?"');
+      if (!(await dialogShown("Create New Character"))) fail("the edited modal closed on swipe down instead of asking first");
+      await tapButton("Discard");
+    } else fail("could not swipe the sheet down on the edited modal");
   }
 
   // The same modal with nothing typed closes on Escape without asking.
