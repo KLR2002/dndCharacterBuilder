@@ -1,7 +1,7 @@
 import { describe, test } from "node:test";
 import assert from "node:assert/strict";
 import { makeChar } from "./testUtils.ts";
-import { applicableCreationSteps, classStepOffer, creationSteps } from "../src/rules/creationFlow.ts";
+import { applicableCreationSteps, classStepOffer, creationSteps, currentCreationStep } from "../src/rules/creationFlow.ts";
 import type { CharacterClass } from "../src/types/character.ts";
 
 const cl = (className: string, level: number, subclassName?: string): CharacterClass => ({
@@ -99,5 +99,16 @@ describe("Later steps stay locked until the current step is valid", () => {
     for (const id of ["background", "abilities", "spells", "equipment", "details", "review"] as const) {
       assert.equal(byId.get(id)?.status, "locked", `${id} should report locked`);
     }
+  });
+});
+
+describe("A draft resumes at its step", () => {
+  test("a draft left on the Background step reports Background as its current step", () => {
+    const draft = makeChar({
+      classes: [cl("Wizard", 1)],
+      race: { name: "Human", source: "PHB" },
+      creationProgress: { currentStep: "background" },
+    });
+    assert.equal(currentCreationStep(draft), "background");
   });
 });

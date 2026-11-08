@@ -77,6 +77,14 @@ function resolveCurrentStep(character: Character, applicable: readonly CreationS
 }
 
 /**
+ * The step a draft resumes at, or null when the character is finished (no creation progress recorded).
+ */
+export function currentCreationStep(character: Character, opts: CreationFlowOptions = {}): CreationStepId | null {
+  if (isCreationFinished(character)) return null;
+  return resolveCurrentStep(character, applicableCreationSteps(character, opts));
+}
+
+/**
  * The applicable Creation Steps with their status: finished before the current step (revisitable), the
  * current step itself, locked after it. A finished character reports every applicable step as finished.
  */
