@@ -83,3 +83,44 @@ test("a new class with the requirement met plans a level 1 of it", () => {
     ["class", "hitPoints", "spells", "review"]
   );
 });
+
+test("Hit Points by average: a d10 class with Constitution 14 adds 8", () => {
+  const result = planLevelUp(FIGHTER_3, { className: "Fighter", hitPoints: { mode: "average" } });
+  if (!result.ok) assert.fail(result.reason);
+  assert.equal(result.plan.hitPoints.mode, "average");
+  assert.equal(result.plan.hitPoints.amount, 8);
+});
+
+test("Hit Points by roll from a fixed random source: face plus 2, never less than 1", () => {
+  const rolled = planLevelUp(FIGHTER_3, {
+    className: "Fighter",
+    hitPoints: { mode: "roll" },
+    random: () => 0.95,
+  });
+  if (!rolled.ok) assert.fail(rolled.reason);
+  assert.equal(rolled.plan.hitPoints.mode, "roll");
+  assert.equal(rolled.plan.hitPoints.roll, 10);
+  assert.equal(rolled.plan.hitPoints.amount, 12);
+
+  const lowCon = makeChar({
+    baseAbilityScores: { str: 15, dex: 14, con: 6, int: 10, wis: 10, cha: 10 },
+    classes: [
+      {
+        className: "Fighter",
+        source: "PHB",
+        level: 3,
+        subclassName: "Champion",
+        subclass: "Champion",
+        subclassSource: "SRD",
+      },
+    ],
+  });
+  const minimum = planLevelUp(lowCon, {
+    className: "Fighter",
+    hitPoints: { mode: "roll" },
+    random: () => 0,
+  });
+  if (!minimum.ok) assert.fail(minimum.reason);
+  assert.equal(minimum.plan.hitPoints.roll, 1);
+  assert.equal(minimum.plan.hitPoints.amount, 1);
+});

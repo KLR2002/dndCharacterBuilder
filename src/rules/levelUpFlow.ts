@@ -51,7 +51,9 @@ export interface PlanLevelUpOptions {
   className: string;
   /** The source of a class the Character does not hold yet. */
   source?: string;
-  hitPoints?: { mode: "average" };
+  hitPoints?: { mode: "average" } | { mode: "roll" };
+  /** The random source a rolled Hit Points pick draws its die face from. Defaults to Math.random. */
+  random?: () => number;
   picks?: LevelUpPicks;
 }
 
@@ -107,10 +109,14 @@ export function planLevelUp(character: Character, options: PlanLevelUpOptions): 
   const conMod = effectiveScores(character).modifiers.con ?? 0;
   const die = hitDieOf({ className, source, level: toLevel });
   const firstLevel = character.classes.length === 0;
-  const hitPoints: HitPointsPlan = {
-    mode: "average",
-    amount: Math.max(1, (firstLevel ? die : Math.floor(die / 2) + 1) + conMod),
-  };
+  const mode = options.hitPoints?.mode ?? "average";
+  let hitPoints: HitPointsPlan;
+  if (mode === "roll") {
+    const roll = 1 + Math.floor((options.random ?? Math.random)() * die);
+    hitPoints = { mode, roll, amount: Math.max(1, roll + conMod) };
+  } else {
+    hitPoints = { mode, amount: Math.max(1, (firstLevel ? die : Math.floor(die / 2) + 1) + conMod) };
+  }
 
   return {
     ok: true,
