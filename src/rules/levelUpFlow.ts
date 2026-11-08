@@ -2,6 +2,7 @@ import type { AsiSelection, Character, CharacterClass } from "../types/character
 import { effectiveScores } from "./abilities.ts";
 import { asiLevels, casterKindOf, heldClass, hitDieOf, isThirdCaster } from "./classData.ts";
 import { subclassLevel } from "./leveling.ts";
+import { validateMulticlass } from "./builderTransitions.ts";
 
 /**
  * Pure Level-Up Flow rules: plan one level for a chosen class and apply a confirmed plan in one
@@ -86,6 +87,10 @@ function offersClassChoiceAtLevel(className: string, source: string, level: numb
 export function planLevelUp(character: Character, options: PlanLevelUpOptions): PlanLevelUpResult {
   const className = options.className;
   const existing = character.classes.find((c) => sameName(c.className, className));
+  if (!existing) {
+    const check = validateMulticlass(character, className, effectiveScores(character).scores);
+    if (!check.ok) return { ok: false, reason: check.reason ?? `${className} requirement not met` };
+  }
   const source = existing?.source ?? options.source ?? heldClass({ className })?.source ?? "PHB";
   const fromLevel = existing?.level ?? 0;
   const toLevel = fromLevel + 1;
