@@ -1,6 +1,7 @@
 # 07: Native step player
 
-**Status:** ready-for-agent
+**Status:** done
+**Landed:** e5b1c4e (player), fab8181 (clipped dump nodes are off-screen), 07167cf (reveal by swipe count, absent scrollTo warns), 5997174 (emulator on ANGLE). Tests: `checks/nativeSteps.test.ts`, `checks/androidRunner.test.ts` and `checks/uiautomator.test.ts` pass, red-green and mutation checks by the implementers; real dump fixtures from the emulator. `npm run check:all` exit 0 on each merge (1858 app tests, 305 scraper tests). Main session, real run of every SRD scenario at 360 dp on an `angle_indirect` emulator: 48 screenshots written, 2 warnings (a `scrollTo` needle absent from the page, as the web check's `scrollTo` does nothing then), 1 web-only skip (`New Character modal`), 1 failure (`Review notices dismiss rows apart`: a transient `am start` exit 255; it passes when run alone); the emulator stayed up for the whole 18 minutes. Screenshots checked by eye: `Builder Class` is scrolled to `Starting Equipment & Gold:`, `Builder Class equipment picker open` shows the picker with `Greatsword`, `Rest modal` shows the dialog. Findings: the emulator's host GL renderer (`-gpu host`) lost its GL context and died after 8 and 29 scenarios in two full runs (a null `glGetString` in its render thread); the default software renderer segfaults on a cold boot; `angle_indirect` finished the whole list. The runner now boots with `-gpu angle_indirect`. Open: a transient `am start` failure should be retried (ticket 08); a lost emulator is ticket 10.
 
 ## What to build
 
@@ -12,7 +13,7 @@ The runner plays a scenario's `tabs`, `open`, `modal` and `scrollTo` fields on t
 
 ## Acceptance Criteria
 
-- [ ] AC-13: `tabs` and the `open` steps are carried out as taps on the text, pattern or label found in the dump, reaching a target that starts off the screen by swiping within a bounded number of swipes that does not depend on how long a dump takes; `modal` is the text waited for before the screenshot and the ready text counts as shown when it is on the screen at any scroll position; `scrollTo` is carried out as swipes until the text shows, and when no scroll position shows it the runner says so and takes the screenshot where it is; `expect` is not evaluated, and web-only scenarios are skipped and listed in the run's output.
+- [x] AC-13: `tabs` and the `open` steps are carried out as taps on the text, pattern or label found in the dump, reaching a target that starts off the screen by swiping within a bounded number of swipes that does not depend on how long a dump takes; `modal` is the text waited for before the screenshot and the ready text counts as shown when it is on the screen at any scroll position; `scrollTo` is carried out as swipes until the text shows, and when no scroll position shows it the runner says so and takes the screenshot where it is; `expect` is not evaluated, and web-only scenarios are skipped and listed in the run's output.
 
 ## Verification
 

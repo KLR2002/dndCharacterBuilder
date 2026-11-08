@@ -138,6 +138,7 @@ One point was filled in while writing this spec and is not a quoted decision: a 
 **Given** a scenario marked `fresh`
 **When** it starts
 **Then** the app's data is cleared and the seed copied in again.
+**And Given** the first scenario of a width, **Then** the app's data is cleared and the seed copied in first, whatever flags the scenario has.
 **And Given** a scenario marked `modal`, **Then** the app is force-stopped and relaunched by deep link without clearing its data.
 **And Given** any other scenario, **Then** the runner only jumps to its route by deep link.
 

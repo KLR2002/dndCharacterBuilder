@@ -14,7 +14,7 @@ A scenario whose `ready` text never appears is reported and does not stop the ru
 ## Acceptance Criteria
 
 - [ ] AC-14: When a scenario's `ready` text does not appear within its timeout, the runner saves the stuck screen as `<scenario>-<width>-FAILED.png`, runs the remaining scenarios, and exits non-zero.
-- [ ] AC-15: A `fresh` scenario clears the app's data and copies the seed in again; a `modal` scenario force-stops and relaunches by deep link without clearing; any other scenario only jumps to its route by deep link.
+- [ ] AC-15: The first scenario of a width clears the app's data and copies the seed in; a `fresh` scenario clears the app's data and copies the seed in again; a `modal` scenario force-stops and relaunches by deep link without clearing; any other scenario only jumps to its route by deep link.
 
 ## Verification
 
