@@ -6,12 +6,12 @@ import { allCatalogClasses } from "./catalogs.ts";
 import { effectiveScores, hasFeat } from "./abilities.ts";
 import { totalLevel } from "./proficiencies.ts";
 
-/** The key a class level's rolled Hit Points value is recorded under on the Character. */
+/** The key a class level's rolled die face is recorded under on the Character. */
 export function rolledHitPointsKey(className: string, level: number): string {
   return `${className}__${level}`;
 }
 
-/** Records the Hit Points a rolled class level added. The record stays until the level is removed. */
+/** Records the die face a rolled class level rolled. The record stays until the level is removed. */
 export function recordRolledHitPoints(
   character: Character,
   className: string,
@@ -49,7 +49,8 @@ export function maxHp(character: Character, opts: ResolvedAncestry = {}, classes
     const die = hitDieOf(c, classes);
     for (let level = 1; level <= c.level; level++) {
       const rolled = character.rolledHitPoints?.[rolledHitPointsKey(c.className, level)];
-      hp += rolled ?? Math.max(1, (first ? die : Math.floor(die / 2) + 1) + con);
+      // A rolled level stores its die face; the current Constitution modifier is added on every read.
+      hp += Math.max(1, (rolled ?? (first ? die : Math.floor(die / 2) + 1)) + con);
       first = false;
     }
   }

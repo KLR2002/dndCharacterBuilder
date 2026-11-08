@@ -7,10 +7,8 @@ import { allCatalogClasses, allCatalogRaces, type CharacterCatalogs } from "./ca
 import { heldClass } from "./classData.ts";
 import { ABILITIES } from "./abilities.ts";
 import { asiLevels, getPendingLevelChoices, subclassLevel } from "./leveling.ts";
-import { availableSubclassRuleChoices, getSubclassName } from "./ruleChoices.ts";
-import type { AvailableRuleChoice } from "./choices/types.ts";
-import { proficiencyChoiceOffers } from "./proficiencyChoiceOffers.ts";
-import { skillChoiceOffers } from "./proficiencySheet.ts";
+import { getSubclassName } from "./ruleChoices.ts";
+import { classChoicesAtLevel, hasClassChoices, type ClassLevelChoices } from "./classChoices.ts";
 import { findHeldRace } from "./raceLookup.ts";
 import { isCastingClass } from "./spellcasting.ts";
 import { hasStartingEquipmentChoices } from "./startingEquipment.ts";
@@ -163,8 +161,9 @@ export function isCreationStepValid(
     case "abilities":
       return abilitiesValid(character);
     case "classChoices": {
-      if (!offersClassChoices(character, activeBooks, compendium)) return true;
-      return classChoicesComplete(character, activeBooks, compendium);
+      const choices = classChoicesOf(character, opts);
+      if (!hasClassChoices(choices)) return true;
+      return choices.allPicked;
     }
     case "asiFeats":
       return !offersAsiFeats(entry) || getPendingLevelChoices(character, [...classes]).pendingAsi.length === 0;
@@ -209,51 +208,18 @@ function offersSubrace(character: Character, races: readonly RaceData[], activeB
 }
 
 /**
- * The class's and subclass's Proficiency Choices at the character's level: the grant-based picks (skills,
- * tools, instruments, ...) the held class features offer. Ancestry, background and feat picks belong to
- * their own steps, so they are left out.
+ * The choices the held class brings at the character's level, read from the one shared module the
+ * Level-Up Flow reads too. Creation builds from level 0, so every choice the class brings up to the
+ * held level is listed; every class offers skill picks at level 1, so the step applies to every new
+ * character. Ancestry, background and feat picks belong to their own steps, so they are left out.
  */
-function classProficiencyChoiceOffers(
-  character: Character,
-  activeBooks: ActiveBooks,
-  compendium: Compendium,
-): AvailableRuleChoice[] {
-  return proficiencyChoiceOffers(character, { compendium, activeBooks }).filter(
-    (offer) => offer.origin === "class" || offer.origin === "subclass",
-  );
-}
-
-/**
- * Whether the Class Choices step applies: the class at the character's level offers any choice — its
- * starting skill pick, another class or subclass Proficiency Choice (tools, instruments, ...), or a
- * class/subclass rule choice (Fighting Style, Maneuvers, Invocations, ...). Every class offers skill picks
- * at level 1, so the step applies to every new character.
- */
-function offersClassChoices(character: Character, activeBooks: ActiveBooks, compendium: Compendium): boolean {
-  return (
-    skillChoiceOffers(character, { compendium, activeBooks }).length > 0 ||
-    classProficiencyChoiceOffers(character, activeBooks, compendium).length > 0 ||
-    availableSubclassRuleChoices(character, activeBooks, compendium).length > 0
-  );
-}
-
-/**
- * Whether every choice the Class Choices step covers is fully picked: all class skills chosen, every
- * class/subclass Proficiency Choice filled, every class/subclass rule choice made.
- */
-function classChoicesComplete(character: Character, activeBooks: ActiveBooks, compendium: Compendium): boolean {
-  const skillPicksComplete = skillChoiceOffers(character, { compendium, activeBooks }).every((offer) => {
-    const picked = character.skillChoices?.find((entry) => entry.id === offer.source && entry.origin === "class")?.picked ?? [];
-    return picked.length >= offer.choose;
+function classChoicesOf(character: Character, opts: CreationFlowOptions): ClassLevelChoices {
+  const entry = classEntryOf(character);
+  if (!entry) return { skillChoices: [], proficiencyChoices: [], ruleChoices: [], allPicked: true };
+  return classChoicesAtLevel(character, entry, 0, {
+    compendium: opts.compendium ?? currentCompendium(),
+    activeBooks: opts.activeBooks,
   });
-  const proficiencyPicksComplete = classProficiencyChoiceOffers(character, activeBooks, compendium).every((offer) => {
-    return (character.proficiencyPicks?.[offer.id] ?? []).length >= offer.choose;
-  });
-  const rulePicksComplete = availableSubclassRuleChoices(character, activeBooks, compendium).every((choice) => {
-    const picked = character.ruleChoices?.find((rc) => rc.id === choice.id)?.picked ?? [];
-    return picked.length >= choice.choose;
-  });
-  return skillPicksComplete && proficiencyPicksComplete && rulePicksComplete;
 }
 
 /** Whether the ASI/Feats step applies: the class's level has reached one of its ASI levels. */
@@ -281,7 +247,7 @@ export function applicableCreationSteps(character: Character, opts: CreationFlow
   steps.push("race");
   if (offersSubrace(character, races, activeBooks)) steps.push("subrace");
   steps.push("background", "abilities");
-  if (offersClassChoices(character, activeBooks, compendium)) steps.push("classChoices");
+  if (hasClassChoices(classChoicesOf(character, opts))) steps.push("classChoices");
   if (offersAsiFeats(entry)) steps.push("asiFeats");
   if (offersSpells(entry, classes)) steps.push("spells");
   steps.push("equipment", "details", "review");

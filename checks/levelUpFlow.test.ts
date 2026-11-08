@@ -58,6 +58,31 @@ test("a Wizard 3 planning Fighter 1 (requirements met) includes Class Choices", 
   );
 });
 
+test("a multiclass entry into a class whose entry grants a skill pick plans Class Choices", () => {
+  // Rogue's multiclassing record offers a skill pick, so its level 1 brings a Class Choice.
+  const fighter3 = makeChar({
+    baseAbilityScores: { str: 15, dex: 14, con: 14, int: 10, wis: 10, cha: 10 },
+    classes: [
+      {
+        className: "Fighter",
+        source: "PHB",
+        level: 3,
+        subclassName: "Champion",
+        subclass: "Champion",
+        subclassSource: "SRD",
+      },
+    ],
+  });
+  const result = planLevelUp(fighter3, { className: "Rogue", source: "PHB" });
+  if (!result.ok) assert.fail(result.reason);
+  assert.equal(result.plan.fromLevel, 0);
+  assert.equal(result.plan.toLevel, 1);
+  assert.deepEqual(
+    result.plan.steps.map((s) => s.id),
+    ["class", "hitPoints", "classChoices", "review"]
+  );
+});
+
 test("a first Fighter 1 plan includes Class Choices", () => {
   const fresh = makeChar({
     baseAbilityScores: { str: 15, dex: 14, con: 14, int: 10, wis: 10, cha: 10 },
@@ -236,6 +261,27 @@ test("applying a rolled Fighter 3->4 plan raises maxHp by the die face plus the 
   const appliedLow = applyLevelUpPlan(lowCon, lowRolled.plan, { fullHealOnLevelUp: false });
   // face 1 - Con 2 floors at 1.
   assert.equal(maxHp(appliedLow), maxHp(lowCon) + 1);
+});
+
+test("applying a rolled plan records the die face, so a later Constitution change moves that level's HP", () => {
+  const fresh = makeChar({
+    baseAbilityScores: { str: 15, dex: 14, con: 14, int: 10, wis: 10, cha: 10 },
+  });
+  const rolled = planLevelUp(fresh, {
+    className: "Fighter",
+    source: "PHB",
+    hitPoints: { mode: "roll" },
+    random: () => 0.6,
+  });
+  if (!rolled.ok) assert.fail(rolled.reason);
+  assert.equal(rolled.plan.hitPoints.roll, 7); // 1 + floor(0.6 * 10)
+  const applied = applyLevelUpPlan(fresh, rolled.plan, { fullHealOnLevelUp: false });
+  assert.equal(applied.classes[0].level, 1);
+  // The record holds the face, not the rolled amount face + Con.
+  assert.deepEqual(applied.rolledHitPoints, { "Fighter__1": 7 });
+  assert.equal(maxHp(applied), 9); // face 7 + Con 2
+  const raisedCon = { ...applied, baseAbilityScores: { ...applied.baseAbilityScores, con: 16 } };
+  assert.equal(maxHp(raisedCon), 10); // face 7 + Con 3
 });
 
 test("applying an averaged Fighter 3->4 plan raises maxHp by the fixed average", () => {
