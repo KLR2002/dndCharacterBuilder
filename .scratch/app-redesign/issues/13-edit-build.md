@@ -25,7 +25,7 @@ Edit Build reopens a finished Character's Creation Flow at a chosen step with ev
 
 ## Constraints
 
-Lower levels through `removeClassLevel` and the Reconciler.
+Lower levels through `removeClassLevel` and the Reconciler. Until the Level-Up Flow exists (ticket 18), the header's Level up keeps opening the build flow's Class step with the existing controls that add levels (the interim ticket 12 set up); Edit Build itself offers no way to add a level or a class. Levelling must never become impossible on the integration branch.
 
 Spec: `.scratch/app-redesign/spec.md` (Architecture Constraints apply in full). Implementer rules: `docs/agents/subagent-tiering.md`, "Implementer Rules". Terms: `GLOSSARY.md`, "Building and rolling". No non-SRD content in `src/` (ADR 0014); interface copy carries only essential mechanics (`CODING_STANDARDS.md` section 8).
 

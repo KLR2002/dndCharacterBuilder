@@ -21,6 +21,11 @@ export type CreationStepId =
  */
 export interface CreationProgress {
   currentStep: CreationStepId;
+  /**
+   * The steps an earlier step's change released picks from, marked as needing attention until each is
+   * finished again. Absent on saves made before it existed.
+   */
+  needsAttention?: CreationStepId[];
 }
 
 export interface AbilityScores {
@@ -279,8 +284,9 @@ export interface Character {
   currentHp: number;
   maxHpOverride: number | null;
   /**
-   * The Hit Points a rolled class level added, keyed by `className__level`. A level without a
-   * record uses the fixed average, so saves made before this field existed keep their HP.
+   * The die face a rolled class level rolled, keyed by `className__level`; `maxHp` adds the current
+   * Constitution modifier to it. A level without a record uses the fixed average, so saves made
+   * before this field existed keep their HP.
    */
   rolledHitPoints?: Record<string, number>;
   tempHp: number;
