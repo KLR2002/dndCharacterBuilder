@@ -101,6 +101,8 @@ export const RestModal: React.FC<RestModalProps> = ({
     <Modal
       visible={visible}
       onClose={onClose}
+      // Picks made in the changeable panel are held here until the long rest applies them.
+      hasUnsavedChanges={Object.keys(pendingChoices).length > 0}
       title="Rest & Recovery"
       subtitle="Take a breather or complete a full night's rest.">
       <View style={styles.container}>
