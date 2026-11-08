@@ -37,6 +37,7 @@ import { Card } from "../ui/Card";
 import { DetailModal } from "../DetailModal";
 import { InitiativeBreakdownModal } from "../InitiativeBreakdownModal";
 import { RestModal } from "../RestModal";
+import { Modal } from "../ui/Modal";
 import { HpQuickEditModal } from "../HpQuickEditModal";
 import { HitPointBlock } from "../HitPointBlock";
 import { ActiveWildShapeCard } from "../ActiveWildShapeCard";
@@ -1001,49 +1002,40 @@ export const StatsTab: React.FC = () => {
       <HpQuickEditModal {...hpQuickEdit.modalProps} />
 
       {/* Condition Picker Modal */}
-      <RNModal visible={conditionModalVisible} transparent animationType="slide">
-        <View style={styles.modalOverlay}>
-          <Card style={[styles.modalCard, { maxHeight: "80%", backgroundColor: theme.surface, borderColor: theme.border }]}>
-            <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-              <Text style={[styles.sectionTitle, { color: theme.text }]}>Toggle Conditions</Text>
-              <TouchableOpacity onPress={() => setConditionModalVisible(false)}>
-                <Ionicons name="close" size={24} color={theme.text} />
-              </TouchableOpacity>
-            </View>
-            <ScrollView>
-              {allConditions.map((cond) => {
-                const isActive = (currentCharacter.conditions || []).includes(cond.name);
-                return (
-                  <TouchableOpacity
-                    key={cond.name}
-                    onPress={() => toggleCondition(cond.name)}
-                    style={[
-                      styles.conditionSelectRow,
-                      {
-                        backgroundColor: isActive ? theme.danger + "20" : theme.surfaceHighlight,
-                        borderColor: isActive ? theme.danger : theme.border,
-                      },
-                    ]}>
-                    <View style={{ flex: 1 }}>
-                      <Text style={{ color: isActive ? theme.danger : theme.text, fontWeight: "600", fontSize: 14 }}>
-                        {cond.name}
-                      </Text>
-                      <Text style={{ color: theme.textMuted, fontSize: 12 }} numberOfLines={2}>
-                        {cond.description?.replace(/\n/g, " ") || ""}
-                      </Text>
-                    </View>
-                    <Ionicons
-                      name={isActive ? "checkbox" : "square-outline"}
-                      size={20}
-                      color={isActive ? theme.danger : theme.textSecondary}
-                    />
-                  </TouchableOpacity>
-                );
-              })}
-            </ScrollView>
-          </Card>
-        </View>
-      </RNModal>
+      <Modal
+        visible={conditionModalVisible}
+        onClose={() => setConditionModalVisible(false)}
+        title="Toggle Conditions">
+        {allConditions.map((cond) => {
+          const isActive = (currentCharacter.conditions || []).includes(cond.name);
+          return (
+            <TouchableOpacity
+              key={cond.name}
+              onPress={() => toggleCondition(cond.name)}
+              style={[
+                styles.conditionSelectRow,
+                {
+                  backgroundColor: isActive ? theme.danger + "20" : theme.surfaceHighlight,
+                  borderColor: isActive ? theme.danger : theme.border,
+                },
+              ]}>
+              <View style={{ flex: 1 }}>
+                <Text style={{ color: isActive ? theme.danger : theme.text, fontWeight: "600", fontSize: 14 }}>
+                  {cond.name}
+                </Text>
+                <Text style={{ color: theme.textMuted, fontSize: 12 }} numberOfLines={2}>
+                  {cond.description?.replace(/\n/g, " ") || ""}
+                </Text>
+              </View>
+              <Ionicons
+                name={isActive ? "checkbox" : "square-outline"}
+                size={20}
+                color={isActive ? theme.danger : theme.textSecondary}
+              />
+            </TouchableOpacity>
+          );
+        })}
+      </Modal>
 
       {/* Rest Modal */}
       <RestModal
