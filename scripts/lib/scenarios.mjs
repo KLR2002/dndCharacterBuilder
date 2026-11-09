@@ -132,7 +132,7 @@ function tieflingCharacter() {
 
 // A level 3 Ranger with no picks yet. Its Deft Explorer and Favored Enemy language choices are Proficiency
 // Choices in the Class & Subclass Choices card, shown as "Picked 0 / N" in both SRD and integrated modes.
-const RANGER_ID = "char_ranger";
+export const RANGER_ID = "char_ranger";
 function rangerCharacter() {
   return makeChar({
     id: RANGER_ID,
@@ -800,6 +800,34 @@ function sorcererWarlockCharacter() {
   });
 }
 
+// A level 1 Aberrant Mind Sorcerer (SCC, integrated mode only): its psionic spells are subclass grants,
+// so the Spells tab shows the Swap control on them, which the after-level-up Spells scenario plays.
+export const SORCERER_SWAP_ID = "char_sorcerer_swap";
+function aberrantSorcererCharacter() {
+  return makeChar({
+    id: SORCERER_SWAP_ID,
+    name: "Nyx",
+    createdAt: 22,
+    updatedAt: 22,
+    startingOption: "equipment",
+    race: { name: "Human", source: catalogSource("races", "Human") },
+    background: { name: "Acolyte", source: catalogSource("backgrounds", "Acolyte") },
+    baseAbilityScores: { str: 8, dex: 14, con: 12, int: 10, wis: 10, cha: 16 },
+    classes: [
+      {
+        className: "Sorcerer",
+        source: catalogSource("classes", "Sorcerer"),
+        level: 1,
+        subclassName: "Aberrant Mind",
+        subclassSource: "SCC",
+      },
+    ],
+    currentHp: 9,
+    startingGrantsApplied: true,
+    backgroundGrantsApplied: true,
+  });
+}
+
 // A level 11 Warlock with no Mystic Arcanum spell picked: the empty arcanum tier row shows no
 // "No spell selected" line.
 const ARCANUM_ID = "char_arcanum";
@@ -1100,6 +1128,7 @@ export function buildSeed({ root, integrated }) {
       rolledCharacter(ROLLED_PICKS_ID, "Ivo", { str: 0, dex: 1, con: 2, int: 3, wis: 4, cha: 5 }),
       arcanumCharacter(),
       actionsCharacter(),
+      ...(INTEGRATED ? [aberrantSorcererCharacter()] : []),
     ],
     // The one folder the home list shows. The draft-folder check expects "New character" to leave its
     // draft in the root, so this folder's count badge stays unchanged.
@@ -1453,6 +1482,28 @@ export function buildScreens({ integrated }) {
           fitsWidth: true,
         },
       },
+      // The Level-Up Flow (/levelup/<id>, opened by the header's Level up): the Class step lists the held
+      // class first with only its level change ("3 → 4"), the other classes with "1", and a class whose
+      // multiclass requirement is missed disabled with only the missing score ("Int 13"). These scenarios
+      // run before the Edit Build one below, which lowers this character's level.
+      {
+        name: "Level-Up Flow class step",
+        route: `/levelup/${EDIT_BUILD_ID}`,
+        ready: /Fighter/,
+        expect: {
+          texts: ["Fighter", "3 → 4", "Barbarian", "Rogue", "Cleric", "Monk", "1", "Int 13", "Cha 13"],
+          labels: ["Level up Fighter", "Level up Wizard"],
+          fitsWidth: true,
+        },
+      },
+      // Picking the held class plans the level: the step list gains the steps that level brings.
+      {
+        name: "Level-Up Flow planned steps",
+        route: `/levelup/${EDIT_BUILD_ID}`,
+        open: [{ tap: { label: "Level up Fighter" } }],
+        ready: "Hit Points",
+        expect: { texts: ["Class", "Hit Points", "ASI/Feat", "Review", "Fighter", "3 → 4"], fitsWidth: true },
+      },
       // Edit Build's Class step offers only lowering: lowering the Fighter releases the level-3 maneuvers and
       // flags their steps with the warning; no raise control is offered.
       {
@@ -1462,13 +1513,6 @@ export function buildScreens({ integrated }) {
         ready: /total level/i,
         expect: { labels: ["Needs attention"], absentLabels: ["Raise Fighter level"], texts: ["Back to sheet"], fitsWidth: true },
       },
-      // The interim Level up path keeps the add controls and the class list on the Class step.
-      {
-        name: "Builder Level up class step",
-        route: `/build/${EDIT_BUILD_ID}?step=class&mode=levelup`,
-        ready: /total level/i,
-        expect: { labels: ["Raise Fighter level", "Lower Fighter level"], texts: ["Change Class:"], fitsWidth: true },
-      },
       { name: "Settings", route: "/options", ready: /settings & compendium/i },
       // The floating dice button (label "Dice tray") is on every screen at every width: Home, Options, the
       // character sheet, and the Creation Flow in its draft, Edit Build and Level-Up modes.
@@ -1477,7 +1521,7 @@ export function buildScreens({ integrated }) {
       { name: "Dice button on sheet", route: RENDAR_ROUTE, tabs: ["Stats"], ready: /hit points/i, expect: { labels: ["Dice tray"], fitsWidth: true } },
       { name: "Dice button in Creation Flow", route: `/build/${DRAFT_ID}?step=background`, ready: "Create Custom", expect: { labels: ["Dice tray"], fitsWidth: true } },
       { name: "Dice button in Edit Build", route: `/build/${EDIT_BUILD_ID}?step=background`, ready: /background benefits/i, expect: { labels: ["Dice tray"], fitsWidth: true } },
-      { name: "Dice button in Level-Up Flow", route: `/build/${EDIT_BUILD_ID}?step=class&mode=levelup`, ready: /total level/i, expect: { labels: ["Dice tray"], fitsWidth: true } },
+      { name: "Dice button in Level-Up Flow", route: `/levelup/${EDIT_BUILD_ID}`, ready: /Fighter/, expect: { labels: ["Dice tray"], fitsWidth: true } },
   ];
   // A named step has no text, pattern or label a runner can tap, so the scenario carrying one can only be
   // played by the web runner: flag it web-only.

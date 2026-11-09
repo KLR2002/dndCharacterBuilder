@@ -401,14 +401,14 @@ describe("The build screen's step-update decision lives in the rules module", ()
   test("an update that changes no stored pick of the open step is kept as it is", () => {
     const fighter = finishedFighter();
     const next = { ...fighter, currentHp: 5 };
-    assert.equal(applyBuildStepUpdate(fighter, next, "race", "edit", flowOpts), next);
+    assert.equal(applyBuildStepUpdate(fighter, next, "race", flowOpts), next);
   });
 
   test("a pick change on a finished character in Edit Build is recorded with the editBuild marker", () => {
     const fighter: Character = { ...finishedFighter(), creationProgress: undefined };
     assert.equal(isCreationFinished(fighter), true);
     const next: Character = { ...fighter, race: { name: "Elf", source: "PHB" } };
-    const changed = applyBuildStepUpdate(fighter, next, "race", "edit", flowOpts);
+    const changed = applyBuildStepUpdate(fighter, next, "race", flowOpts);
     assert.equal(changed.race?.name, "Elf");
     assert.equal(isCreationFinished(changed), true, "the character stays finished");
     assert.equal(changed.creationProgress?.editBuild, true);
@@ -418,7 +418,7 @@ describe("The build screen's step-update decision lives in the rules module", ()
   test("a draft picking a second class replaces the held one instead of adding it", () => {
     const draft = makeChar({ classes: [cl("Fighter", 1)], creationProgress: { currentStep: "class" } });
     const next: Character = { ...draft, classes: [...draft.classes, cl("Rogue", 1)] };
-    const changed = applyBuildStepUpdate(draft, next, "class", "edit", flowOpts);
+    const changed = applyBuildStepUpdate(draft, next, "class", flowOpts);
     assert.deepEqual(changed.classes.map((c) => c.className), ["Rogue"], "the picked class replaces the first");
   });
 });
