@@ -32,7 +32,6 @@ import { getPendingLevelChoices } from "../../rules/leveling";
 import { normalizeSkillName } from "../../rules/skills";
 import { getAvailableOptionalFeatures } from "../../rules/optionalFeatures";
 import { AbilityKey, Character, CreationStepId, SkillChoiceEntry } from "../../types/character";
-import type { BuildFlowMode } from "../../rules/creationFlow";
 import { DetailModal } from "../DetailModal";
 import { AbilityScoresSection } from "../builder/AbilityScoresSection";
 import { AncestrySection } from "../builder/AncestrySection";
@@ -52,11 +51,6 @@ interface BuilderTabProps {
    * section nav is hidden. Unset in the free-form builder, where the nav switches sections.
    */
   step?: CreationStepId;
-  /**
-   * How the build flow was entered on a finished character: Edit Build (`edit`) or the Level up path
-   * (`levelup`). Unset for a draft and in the free-form builder, where the Class step keeps its full controls.
-   */
-  flowMode?: BuildFlowMode;
 }
 
 /** Which builder section hosts each Creation Step (spells, details and review are hosted by the flow itself). */
@@ -77,7 +71,6 @@ export const BuilderTab: React.FC<BuilderTabProps> = ({
   onUpdate: propUpdate,
   onViewDetail: propViewDetail,
   step,
-  flowMode,
 }) => {
   const { theme } = useAppTheme();
   const { currentCharacter, updateCharacter: contextUpdate, activeBooks, fullHealOnLevelUp } = useCharacters();
@@ -457,7 +450,6 @@ export const BuilderTab: React.FC<BuilderTabProps> = ({
           character={character}
           onUpdate={onUpdate}
           step={step}
-          flowMode={flowMode}
           fullHealOnLevelUp={fullHealOnLevelUp}
           allClasses={allClasses}
           allFeats={allFeats}

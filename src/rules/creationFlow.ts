@@ -47,36 +47,13 @@ export function classStepOffer(): ClassStepOffer {
 }
 
 /**
- * How the build flow at `/build/<id>` was entered: Edit Build reopens a finished Character's flow to change its
- * picks, while the Level up path keeps the controls that add levels and classes. The Class step reads its
- * offer from `classStepModeOffer`.
+ * The lowest level a held class can be lowered to in the build flow, by the class's index in `classes`:
+ * 0 means lowering below 1 removes the class through `removeClassLevel`. The first class stays at least 1;
+ * a later class can be lowered below 1, removing it. A draft or the free-form builder may lower any class
+ * to removal, which the Class step reads as its offer having no raise or add-class action either.
  */
-export type BuildFlowMode = "edit" | "levelup";
-
-/**
- * What the Class step offers in each build-flow mode. Edit Build lowers a held class's level (releasing that
- * level's picks) but offers no way to raise a level or add a class; only Level up adds.
- */
-export interface ClassStepModeOffer {
-  canLowerLevel: boolean;
-  canRaiseLevel: boolean;
-  canAddClass: boolean;
-}
-
-export function classStepModeOffer(mode: BuildFlowMode): ClassStepModeOffer {
-  if (mode === "levelup") return { canLowerLevel: true, canRaiseLevel: true, canAddClass: true };
-  return { canLowerLevel: true, canRaiseLevel: false, canAddClass: false };
-}
-
-/**
- * The lowest level a held class can be lowered to in the given build-flow mode, by the class's index in
- * `classes`: 0 means lowering below 1 removes the class through `removeClassLevel`. Edit Build lowers a
- * class that is not the first below 1, removing it; the first class stays at least 1. Outside Edit Build
- * (the Level up path, the free-form builder, a draft) any class may be lowered to removal.
- */
-export function classStepMinLevel(mode: BuildFlowMode | undefined, classIndex: number): number {
-  if (mode === "edit") return classIndex > 0 ? 0 : 1;
-  return 0;
+export function classStepMinLevel(classIndex: number): number {
+  return classIndex > 0 ? 0 : 1;
 }
 
 /** Options of the step-change functions: `editBuild` records the change on a finished Character in Edit Build. */
@@ -595,23 +572,21 @@ function raisesClassLevel(before: Character, after: Character): boolean {
 
 /**
  * Applies an update made on the open step of the build screen, deciding which transition records it:
- * a finished character on the Level up path keeps the plain update; Edit Build on a finished character
- * records the change through `applyCreationStepEdit` with the `editBuild` marker, refusing a class pick
- * added or a level raised there (the mode offers neither); a draft that picks a second class replaces its
- * held one through `applyCreationStepChange`; any other pick change on a step goes through
- * `applyCreationStepEdit`. An update that changes no stored pick of the step is kept as it is.
+ * Edit Build on a finished character records the change through `applyCreationStepEdit` with the
+ * `editBuild` marker, refusing a class pick added or a level raised there (the step offers neither; adding
+ * a level enters through the Level-Up Flow); a draft that picks a second class replaces its held one
+ * through `applyCreationStepChange`; any other pick change on a step goes through `applyCreationStepEdit`.
+ * An update that changes no stored pick of the step is kept as it is.
  * The given Character is never mutated.
  */
 export function applyBuildStepUpdate(
   current: Character,
   next: Character,
   step: CreationStepId,
-  mode: BuildFlowMode,
   opts: ApplyStepOptions = {},
 ): Character {
   if (next === current) return current;
   const draft = !isCreationFinished(current);
-  if (!draft && mode !== "edit") return next;
   if (step === "class") {
     const added = addedClassPick(current, next);
     if (added) {

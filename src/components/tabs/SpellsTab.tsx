@@ -1664,8 +1664,10 @@ export const SpellsTab: React.FC = () => {
                       !item.isAtWillInvocation &&
                       item.ownerKey !== "Warlock__Tome" && (
                       <TouchableOpacity
+                        accessibilityRole="button"
+                        accessibilityLabel={`Remove ${item.name}`}
                         onPress={() => removeSpellFromCharacter(item.name, item.source, item.ownerKey)}
-                        style={{ padding: 6 }}>
+                        style={{ padding: 6, minWidth: 48, minHeight: 48, alignItems: "center", justifyContent: "center" }}>
                         <Ionicons name="trash-outline" size={16} color={theme.textMuted} />
                       </TouchableOpacity>
                     )}

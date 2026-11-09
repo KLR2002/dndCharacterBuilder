@@ -19,7 +19,7 @@ import {
   toggleExpertiseChoice,
 } from "../../rules/expertise";
 import { subclassLevel } from "../../rules/leveling";
-import { classStepMinLevel, classStepOffer, classStepModeOffer, isCreationFinished, type BuildFlowMode } from "../../rules/creationFlow";
+import { classStepMinLevel, classStepOffer, isCreationFinished } from "../../rules/creationFlow";
 import type { CreationStepId } from "../../types/character";
 import {
   proficiencyChoiceOffers,
@@ -103,12 +103,6 @@ export interface ClassProgressionSectionProps {
    * the free-form builder, where every part renders.
    */
   step?: CreationStepId;
-  /**
-   * How the build flow was entered on a finished character: Edit Build (`edit`) or the Level up path
-   * (`levelup`). Unset for a draft and in the free-form builder. The Class step reads its offer from
-   * `classStepModeOffer`: Edit Build lowers a held class's level but never raises one or adds a class.
-   */
-  flowMode?: BuildFlowMode;
 }
 
 export const ClassProgressionSection: React.FC<
@@ -138,7 +132,6 @@ export const ClassProgressionSection: React.FC<
   theme,
   activeBooks,
   step,
-  flowMode,
 }) => {
   const { isPhone } = useResponsiveLayout();
   const [classSearch, setClassSearch] = useState("");
@@ -253,19 +246,18 @@ export const ClassProgressionSection: React.FC<
     );
   };
 
-  // What the Class step offers in this build-flow mode: Edit Build lowers a held class's level but offers no
-  // raise or add-class control; the Level up path keeps both. A draft or the free-form builder keeps
-  // the full controls.
-  const modeOffer = flowMode ? classStepModeOffer(flowMode) : null;
-  const canRaiseLevel = modeOffer ? modeOffer.canRaiseLevel : true;
-  // The lowest level each held class can be lowered to in this mode; lowering below 1 removes the class.
-  const canLowerTo = (level: number, classIndex: number) => level > classStepMinLevel(flowMode, classIndex);
-  // In the Creation Flow the class list is the Class step's picker: it shows while no class is held, for a
-  // draft (which can still change its one class), and on the Level up path of a finished character.
-  // Edit Build offers no add-class control, so the list stays hidden there.
+  // What the Class step offers here: Edit Build on a finished character lowers a held class's level but
+  // offers no raise or add-class control (a level up enters through the Level-Up Flow); a draft or the
+  // free-form builder keeps the full controls.
+  const canRaiseLevel = step === undefined || !isCreationFinished(character);
+  // The lowest level each held class can be lowered to; lowering below 1 removes the class.
+  const canLowerTo = (level: number, classIndex: number) => level > classStepMinLevel(classIndex);
+  // In the Creation Flow the class list is the Class step's picker: it shows while no class is held and
+  // for a draft (which can still change its one class). Edit Build offers no add-class control, so the
+  // list stays hidden there.
   const showClassList =
     step === undefined ||
-    (step === "class" && (flowMode === "levelup" || !hasAnyClass || !isCreationFinished(character)));
+    (step === "class" && (!hasAnyClass || !isCreationFinished(character)));
   const maxLevel = classStepOffer().startingLevel.max;
 
   return (

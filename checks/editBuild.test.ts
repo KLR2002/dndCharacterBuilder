@@ -262,19 +262,17 @@ describe("Lowering a class level in Edit Build releases that level's picks and n
     );
   });
 
-  test("Edit Build refuses a raised level and an added class; Level up allows both", () => {
+  test("Edit Build refuses a raised level and an added class (a level up enters through the Level-Up Flow)", () => {
     const fw = finishedFighterWizard();
     const raised: Character = { ...fw, classes: fw.classes.map((c, i) => (i === 0 ? { ...c, level: c.level + 1 } : c)) };
-    assert.equal(applyBuildStepUpdate(fw, raised, "class", "edit", flowOpts), fw, "Edit Build does not raise a level");
+    assert.equal(applyBuildStepUpdate(fw, raised, "class", flowOpts), fw, "Edit Build does not raise a level");
     const added: Character = { ...fw, classes: [...fw.classes, { className: "Rogue", source: "PHB", level: 1 }] };
-    assert.equal(applyBuildStepUpdate(fw, added, "class", "edit", flowOpts), fw, "Edit Build does not add a class");
-    assert.equal(applyBuildStepUpdate(fw, raised, "class", "levelup", flowOpts).classes[0].level, 4, "Level up raises the level");
-    assert.equal(applyBuildStepUpdate(fw, added, "class", "levelup", flowOpts).classes.length, 3, "Level up adds the class");
+    assert.equal(applyBuildStepUpdate(fw, added, "class", flowOpts), fw, "Edit Build does not add a class");
   });
 
   test("Edit Build lowers a non-first class below 1, removing it; the first class stays at least 1", () => {
-    assert.equal(classStepMinLevel("edit", 0), 1, "the first class stays at least level 1 in Edit Build");
-    assert.equal(classStepMinLevel("edit", 1), 0, "a later class can be lowered below 1, which removes it");
+    assert.equal(classStepMinLevel(0), 1, "the first class stays at least level 1 in Edit Build");
+    assert.equal(classStepMinLevel(1), 0, "a later class can be lowered below 1, which removes it");
     const fw = finishedFighterWizard();
     const withWizard1: Character = { ...fw, classes: [fw.classes[0], { className: "Wizard", source: "PHB", level: 1 }] };
     const lowered = applyCreationStepEdit(

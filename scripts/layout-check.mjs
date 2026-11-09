@@ -37,7 +37,7 @@ import {
   stopExpoWeb,
   waitForExpoWeb,
 } from "./lib/app-driver.mjs";
-import { buildScreens, buildSeed, ACTIONS_ID, CHARACTER_ID, DRUID_ID, EDIT_BUILD_ID, WIZARD_ID } from "./lib/scenarios.mjs";
+import { buildScreens, buildSeed, ACTIONS_ID, CHARACTER_ID, DRUID_ID, EDIT_BUILD_ID, RANGER_ID, SORCERER_SWAP_ID, WIZARD_ID } from "./lib/scenarios.mjs";
 import { playStep, playSteps } from "./lib/web-steps.mjs";
 import { ACCENT_PALETTES, BASE_DARK_THEME } from "../src/constants/theme.ts";
 
@@ -1015,11 +1015,11 @@ async function checkDiceTrayAndLog(ctx, width) {
   // On phones the button sits above the flow's bottom primary-action bar, never covering it.
   if (width < 600) {
     const flowPage = await ctx.newPage();
-    await flowPage.goto(`${BASE}/build/${EDIT_BUILD_ID}?step=class&mode=levelup`, { waitUntil: "networkidle", timeout: 120000 });
+    await flowPage.goto(`${BASE}/levelup/${EDIT_BUILD_ID}`, { waitUntil: "networkidle", timeout: 120000 });
     await flowPage.waitForTimeout(1500);
-    await flowPage.getByText(/total level/i).first().waitFor({ state: "visible", timeout: 10000 }).catch(() => fail("the Level-Up Flow did not load"));
+    await flowPage.getByText(/Fighter/).first().waitFor({ state: "visible", timeout: 10000 }).catch(() => fail("the Level-Up Flow did not load"));
     const geo = await flowPage.evaluate(() => {
-      const bar = document.querySelector('[data-testid="build-bottom-bar"]');
+      const bar = document.querySelector('[data-testid="levelup-bottom-bar"]');
       const button = document.querySelector('[data-testid="dice-button"]');
       if (!bar || !button) return null;
       const barRect = bar.getBoundingClientRect();
@@ -1436,6 +1436,247 @@ async function checkActionRolls(ctx, width) {
   return failures;
 }
 
+// The Level-Up Flow checks walk /levelup/<id> with the seeded Ranger (Tamsin), a character no screen
+// scenario mutates. `playLevelUp` picks the class, the given Hit Points mode and a CON +2 ASI where the
+// level brings one, and walks to Review through whatever steps the plan lists.
+const LU_ID = RANGER_ID;
+const LU_NAME = "Tamsin";
+
+// Waits until the flow's Continue is enabled (the open step's pick is complete), then taps it.
+async function continueFlow(page) {
+  await page
+    .waitForFunction(() => {
+      const el = [...document.querySelectorAll("*")].find((e) => e.children.length === 0 && e.textContent === "Continue");
+      const target = el?.closest("[tabindex]");
+      return target && target.getAttribute("aria-disabled") !== "true";
+    }, null, { timeout: 10000 })
+    .catch(() => {});
+  await page.getByText("Continue", { exact: true }).first().click();
+  await page.waitForTimeout(400);
+}
+
+// Opens the flow and picks the held class, landing on the Hit Points step.
+async function openLevelUp(page) {
+  await page.goto(`${BASE}/levelup/${LU_ID}`, { waitUntil: "networkidle", timeout: 120000 });
+  await page.waitForTimeout(1500);
+  await page.getByLabel("Level up Ranger").first().click();
+  await page.getByText("Continue", { exact: true }).first().click();
+  await page.getByLabel("Roll hit points").first().waitFor({ state: "visible", timeout: 10000 });
+}
+
+// Walks from the Hit Points step to Review: the given HP mode, then on every later step the first
+// Subclass option, a CON (+2) ASI and the first offered spell where those steps appear.
+async function walkToReview(page, hpMode) {
+  await page.getByLabel(hpMode === "roll" ? "Roll hit points" : "Average hit points").first().click();
+  await page.waitForTimeout(300);
+  for (let i = 0; i < 8; i++) {
+    if ((await page.getByText("Level up", { exact: true }).count()) > 0) return;
+    const sub = page.getByLabel(/^Subclass /).first();
+    if ((await sub.count()) > 0) {
+      await sub.click();
+      await page.waitForTimeout(300);
+    }
+    const con = page.getByLabel("CON (+2)").first();
+    if ((await con.count()) > 0) {
+      await con.click();
+      await page.waitForTimeout(300);
+    }
+    const learn = page.getByLabel(/^Learn /).first();
+    if ((await learn.count()) > 0) {
+      await learn.click();
+      await page.waitForTimeout(300);
+    }
+    await continueFlow(page);
+  }
+}
+
+// True when a visible leaf element shows exactly `text` (the stack can keep a hidden copy of the
+// previous screen, so a plain first() locator can wait on the hidden one).
+async function waitForVisibleText(page, text) {
+  return page
+    .waitForFunction(
+      (needle) =>
+        [...document.querySelectorAll("*")].some(
+          (e) => e.children.length === 0 && e.textContent.trim() === needle && e.getBoundingClientRect().height > 0
+        ),
+      text,
+      { timeout: 10000 }
+    )
+    .then(() => true)
+    .catch(() => false);
+}
+
+// The Level-Up Flow's Hit Points roll is logged: rolling on the Hit Points step adds a
+// "<character> · Hit Points" entry to the Roll Log.
+async function checkLevelUpHpRollLogged(ctx, width) {
+  const page = await ctx.newPage();
+  const prefix = `[${width}px level-up HP roll]`;
+  let failures = 0;
+  const fail = (msg) => {
+    failures++;
+    console.log(`${prefix} ${msg}`);
+  };
+  await openLevelUp(page);
+  await page.getByLabel("Roll hit points").first().click();
+  await page.waitForTimeout(500);
+  // The roll was published through the seam: open the tray on its Log segment and read the newest entries.
+  await page.getByLabel("Dice tray").first().click();
+  await page.waitForSelector('[role="dialog"]', { state: "visible", timeout: 10000 }).catch(() => fail("the dice tray did not open"));
+  await page.getByText("Log", { exact: true }).first().click();
+  await page.waitForTimeout(300);
+  const headings = await page.evaluate(() => [...document.querySelectorAll('[data-testid="log-entry-heading"]')].map((el) => el.textContent));
+  if (!headings.includes(`${LU_NAME} · Hit Points`)) fail(`the Roll Log has no "${LU_NAME} · Hit Points" entry: ${JSON.stringify(headings)}`);
+  await page.screenshot({ path: join(SHOTS, `LevelUp-HPRoll-${width}.png`) });
+  await page.keyboard.press("Escape");
+  await page.waitForSelector('[role="dialog"]', { state: "hidden", timeout: 10000 }).catch(() => {});
+  await page.close();
+  return failures;
+}
+
+// The Level-Up Flow's Cancel asks before discarding and leaves the Character unchanged, the system Back asks
+// too, and Review's "Level up" applies the plan in one update.
+async function checkLevelUpCancelAndReview(ctx, width) {
+  const page = await ctx.newPage();
+  const prefix = `[${width}px level-up cancel/review]`;
+  let failures = 0;
+  const fail = (msg) => {
+    failures++;
+    console.log(`${prefix} ${msg}`);
+  };
+
+  // The system Back asks before discarding the plan: enter the flow from the sheet's header Level up button
+  // (so Back pops inside the app), pick a class, then browser Back must ask and stay.
+  await page.goto(`${BASE}/character/${LU_ID}`, { waitUntil: "networkidle", timeout: 120000 });
+  await page.waitForTimeout(1500);
+  await page.getByLabel("Level up").first().click();
+  await page.waitForTimeout(1500);
+  if (!page.url().includes(`/levelup/${LU_ID}`)) fail(`the header's Level up did not open the flow: ${page.url()}`);
+  await page.getByLabel("Level up Ranger").first().click();
+  await page.waitForTimeout(400);
+  await page.goBack();
+  await page.waitForTimeout(600);
+  if (!(await page.getByText("Discard changes?", { exact: true }).first().isVisible().catch(() => false)))
+    fail("system Back did not ask \"Discard changes?\" before leaving the Level-Up Flow");
+  // The route is prevented even though the browser URL already popped, so the flow must still be on screen.
+  if (!(await page.getByLabel("Cancel level up").first().isVisible().catch(() => false)))
+    fail("system Back left the Level-Up Flow instead of asking first");
+  await page.getByText("Keep editing", { exact: true }).first().click();
+  await page.waitForTimeout(400);
+  // Back on the Class step after the prevented Back: Continue to the Hit Points step.
+  await page.getByText("Continue", { exact: true }).first().click();
+  await page.getByLabel("Roll hit points").first().waitFor({ state: "visible", timeout: 10000 });
+
+  // Cancel path: a rolled Hit Points pick is made, then Cancel → Discard returns to the sheet at the old level.
+  await page.getByLabel("Roll hit points").first().click();
+  await page.waitForTimeout(300);
+  await page.getByLabel("Cancel level up").first().click();
+  await page.getByText("Discard changes?", { exact: true }).first().waitFor({ state: "visible", timeout: 10000 }).catch(() => fail("Cancel did not ask \"Discard changes?\" before discarding the plan"));
+  await page.getByText("Discard", { exact: true }).first().click();
+  await page.waitForTimeout(1500);
+  if (!page.url().includes(`/character/${LU_ID}`)) fail(`discard did not return to the sheet: ${page.url()}`);
+  if (!(await waitForVisibleText(page, "Lvl 3")))
+    fail("after discarding, the sheet does not show \"Lvl 3\": the plan was applied instead of discarded");
+  await page.screenshot({ path: join(SHOTS, `LevelUp-Cancelled-${width}.png`) });
+
+  // Review path: average HP and a CON +2 ASI, then "Level up" applies the level and the picks together.
+  await openLevelUp(page);
+  await walkToReview(page, "average");
+  for (const needle of ["Ranger 3 → 4", "3 → 4", "CON +2"]) {
+    if (!(await page.getByText(needle, { exact: true }).first().isVisible().catch(() => false))) fail(`Review does not list "${needle}"`);
+  }
+  if (!(await page.getByText(/\d+ → \d+/, { exact: false }).first().isVisible().catch(() => false))) fail("Review does not list the hit points before → after");
+  if (!(await page.getByText(/Average \+\d+/).first().isVisible().catch(() => false))) fail("Review does not list the hit points method");
+  await page.screenshot({ path: join(SHOTS, `LevelUp-Review-${width}.png`) });
+  await page.getByText("Level up", { exact: true }).first().click();
+  await page.waitForTimeout(1500);
+  if (!page.url().includes(`/character/${LU_ID}`)) fail(`"Level up" did not return to the sheet: ${page.url()}`);
+  if (!(await waitForVisibleText(page, "Lvl 4")))
+    fail("after Review the sheet does not show \"Lvl 4\": the plan was not applied");
+  await page.screenshot({ path: join(SHOTS, `LevelUp-Applied-${width}.png`) });
+  await page.close();
+  return failures;
+}
+
+// After a level-up through the flow, the Spells tab still learns, forgets and swaps spells. In the
+// integrated catalog the Aberrant Mind Sorcerer's subclass-granted spells carry the Swap control; the SRD
+// Baseline has no swappable subclass, so there the Wizard plays learn and forget.
+async function checkSpellsAfterLevelUp(ctx, width) {
+  const page = await ctx.newPage();
+  const prefix = `[${width}px spells after level-up]`;
+  let failures = 0;
+  const fail = (msg) => {
+    failures++;
+    console.log(`${prefix} ${msg}`);
+  };
+
+  if (INTEGRATED) {
+    await page.goto(`${BASE}/levelup/${SORCERER_SWAP_ID}`, { waitUntil: "networkidle", timeout: 120000 });
+    await page.waitForTimeout(1500);
+    await page.getByLabel("Level up Sorcerer").first().click();
+    await page.getByText("Continue", { exact: true }).first().click();
+    await page.getByLabel("Roll hit points").first().waitFor({ state: "visible", timeout: 10000 });
+    await walkToReview(page, "average");
+    await page.getByText("Level up", { exact: true }).first().click();
+    await page.waitForTimeout(1500);
+    if (!(await page.getByText("Lvl 2", { exact: true }).first().isVisible().catch(() => false)))
+      fail("the sorcerer's level-up did not apply (the sheet does not show \"Lvl 2\")");
+    // Spells tab: learn a spell through Add Spells.
+    await page.getByText("Spells", { exact: true }).first().click();
+    await page.waitForTimeout(500);
+    await page.getByText("Add Spells", { exact: true }).first().click();
+    await page.waitForSelector('[role="dialog"]', { state: "visible", timeout: 10000 }).catch(() => fail("the Add Spells modal did not open"));
+    await page.getByPlaceholder("Search Sorcerer spells...").fill("Sleep");
+    await page.getByText("Add", { exact: true }).first().click();
+    await page.waitForTimeout(400);
+    if (!(await page.getByText("Added", { exact: true }).first().isVisible().catch(() => false))) fail("learning a spell did not mark its row \"Added\"");
+    await page.keyboard.press("Escape");
+    await page.waitForSelector('[role="dialog"]', { state: "hidden", timeout: 10000 }).catch(() => fail("Escape did not close the Add Spells modal"));
+    // Swap a subclass-granted spell.
+    const swap = page.getByText("Swap", { exact: true }).first();
+    if ((await swap.count()) === 0) fail("no Swap control on a subclass-granted spell after the level-up");
+    else {
+      await swap.click();
+      await page.getByText("Swap Subclass Spell", { exact: true }).first().waitFor({ state: "visible", timeout: 10000 }).catch(() => fail("the swap modal did not open"));
+      await page.getByText("Select", { exact: true }).first().click();
+      await page.waitForTimeout(500);
+      if (!(await page.getByText("Reset to Default", { exact: true }).first().isVisible().catch(() => false)))
+        fail("swapping did not replace the subclass spell (no \"Reset to Default\")");
+    }
+    await page.screenshot({ path: join(SHOTS, `SpellsAfterLevelUp-swap-${width}.png`) });
+  } else {
+    await page.goto(`${BASE}/levelup/${WIZARD_ID}`, { waitUntil: "networkidle", timeout: 120000 });
+    await page.waitForTimeout(1500);
+    await page.getByLabel("Level up Wizard").first().click();
+    await page.getByText("Continue", { exact: true }).first().click();
+    await page.getByLabel("Roll hit points").first().waitFor({ state: "visible", timeout: 10000 });
+    await walkToReview(page, "average");
+    await page.getByText("Level up", { exact: true }).first().click();
+    await page.waitForTimeout(1500);
+    if (!(await page.getByText("Lvl 4", { exact: true }).first().isVisible().catch(() => false)))
+      fail("the wizard's level-up did not apply (the sheet does not show \"Lvl 4\")");
+    // Spells tab: learn, then forget, a spell.
+    await page.getByText("Spells", { exact: true }).first().click();
+    await page.waitForTimeout(500);
+    await page.getByText("Add Spells", { exact: true }).first().click();
+    await page.waitForSelector('[role="dialog"]', { state: "visible", timeout: 10000 }).catch(() => fail("the Add Spells modal did not open"));
+    await page.getByPlaceholder("Search Wizard spells...").fill("Burning Hands");
+    await page.getByText("Add", { exact: true }).first().click();
+    await page.waitForTimeout(400);
+    await page.keyboard.press("Escape");
+    await page.waitForSelector('[role="dialog"]', { state: "hidden", timeout: 10000 }).catch(() => fail("Escape did not close the Add Spells modal"));
+    if (!(await page.getByLabel("Remove Burning Hands").first().isVisible().catch(() => false)))
+      fail("the learned spell \"Burning Hands\" has no Remove control after the level-up");
+    else {
+      await page.getByLabel("Remove Burning Hands").first().click();
+      await page.waitForTimeout(400);
+      if ((await page.getByLabel("Remove Burning Hands").count()) > 0) fail("forgetting did not remove \"Burning Hands\"");
+    }
+    await page.screenshot({ path: join(SHOTS, `SpellsAfterLevelUp-learn-${width}.png`) });
+  }
+  await page.close();
+  return failures;
+}
+
 // The checks that open their own page rather than a SCREENS entry. Each is a scenario, so ONLY selects it by name.
 const EXTRA_CHECKS = [
   { name: "HP modals", run: checkHitPointModals },
@@ -1444,6 +1685,9 @@ const EXTRA_CHECKS = [
   { name: "Modal closing", run: checkModalClosing },
   { name: "New character draft folder", run: checkDraftFolder },
   { name: "Dice tray and Roll Log", run: checkDiceTrayAndLog },
+  { name: "Level-Up Flow HP roll logged", run: checkLevelUpHpRollLogged },
+  { name: "Level-Up Flow cancel and review", run: checkLevelUpCancelAndReview },
+  { name: "Spells after level-up", run: checkSpellsAfterLevelUp },
   { name: "Dice animation", run: checkDiceAnimation },
   { name: "Actions rolls", run: checkActionRolls },
 ];

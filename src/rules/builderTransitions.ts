@@ -280,6 +280,48 @@ function checkClassPrereq(
   return { met: true };
 }
 
+const SHORT_ABILITY_NAMES: Record<AbilityKey, string> = {
+  str: "Str",
+  dex: "Dex",
+  con: "Con",
+  int: "Int",
+  wis: "Wis",
+  cha: "Cha",
+};
+
+/** The unmet prerequisites of `className` as short scores ("Int 13"), when the class cannot be entered. */
+function unmetPrereqShort(className: string, scores: Record<AbilityKey, number>): string | undefined {
+  const req = getPrereqForClass(className);
+  if (!req) return undefined;
+  if ("or" in req) {
+    if (req.or.every((r) => (scores[r.ability] ?? 0) < r.minScore)) {
+      return req.or.map((r) => `${SHORT_ABILITY_NAMES[r.ability]} ${r.minScore}`).join(" or ");
+    }
+    return undefined;
+  }
+  const missing = req.filter((r) => (scores[r.ability] ?? 0) < r.minScore);
+  if (missing.length === 0) return undefined;
+  return missing.map((r) => `${SHORT_ABILITY_NAMES[r.ability]} ${r.minScore}`).join(" and ");
+}
+
+/**
+ * The unmet multiclass requirement of entering `targetClassName` as a short score list ("Int 13"), or
+ * undefined when the Character meets it (a class it already holds always qualifies). Mirrors the two
+ * checks `validateMulticlass` makes: leaving the held classes, then entering the target.
+ */
+export function missingMulticlassRequirement(
+  character: Character,
+  targetClassName: string,
+  scores: Record<AbilityKey, number>
+): string | undefined {
+  if (character.classes.some((c) => c.className.toLowerCase() === targetClassName.toLowerCase())) return undefined;
+  for (const existing of character.classes) {
+    const unmet = unmetPrereqShort(existing.className, scores);
+    if (unmet) return unmet;
+  }
+  return unmetPrereqShort(targetClassName, scores);
+}
+
 export function validateMulticlass(
   character: Character,
   targetClassName: string,

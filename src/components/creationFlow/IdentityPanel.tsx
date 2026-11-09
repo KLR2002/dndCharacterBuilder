@@ -33,9 +33,18 @@ function DetailRow({ label, value }: { label: string; value: string }) {
 
 /**
  * The full identity panel: class and level in the serif, then race, subrace, background, subclass and the six
- * ability scores. Shown in the shared Modal on phones and always visible on the right at wide widths.
+ * ability scores. Shown in the shared Modal on phones and always visible on the right at wide widths. The
+ * Level-Up Flow passes `levelHp`, its level and hit points before → after, above the race rows.
  */
-export function IdentityPanel({ character, activeBooks }: { character: Character; activeBooks: string[] }) {
+export function IdentityPanel({
+  character,
+  activeBooks,
+  levelHp,
+}: {
+  character: Character;
+  activeBooks: string[];
+  levelHp?: { level: string; hitPoints: string };
+}) {
   const { theme } = useAppTheme();
   const serif = useSerifFont();
   const entry = character.classes?.[0];
@@ -52,6 +61,12 @@ export function IdentityPanel({ character, activeBooks }: { character: Character
         </Text>
       ) : null}
       <View style={[styles.detailBlock, { borderTopColor: theme.border }]}>
+        {levelHp ? (
+          <>
+            <DetailRow label="Level" value={levelHp.level} />
+            <DetailRow label="Hit points" value={levelHp.hitPoints} />
+          </>
+        ) : null}
         <DetailRow label="Race" value={character.race?.name ?? ""} />
         <DetailRow label="Subrace" value={character.race?.subraceName ?? ""} />
         <DetailRow label="Background" value={character.background?.name ?? ""} />
