@@ -63,5 +63,11 @@
   "Builder Edit Build background step",
   "Builder Edit Build class change flags steps",
   "Builder Level up class step",
-  "Settings"
+  "Settings",
+  "Dice button on the character list",
+  "Dice button on Options",
+  "Dice button on sheet",
+  "Dice button in Creation Flow",
+  "Dice button in Edit Build",
+  "Dice button in Level-Up Flow"
 ]
