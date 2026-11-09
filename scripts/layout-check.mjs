@@ -1436,6 +1436,155 @@ async function checkActionRolls(ctx, width) {
   return failures;
 }
 
+// The Stats tab's roll badges: a check, a save, a skill and initiative roll d20 + their bonus; the keyboard
+// path to the roll sheet rolls with advantage (two d20s, one struck through); the initiative box still opens
+// its breakdown modal when tapped outside the badge.
+async function checkStatsRolls(ctx, width) {
+  const page = await ctx.newPage();
+  const prefix = `[${width}px stats rolls]`;
+  let failures = 0;
+  const fail = (msg) => {
+    failures++;
+    console.log(`${prefix} ${msg}`);
+  };
+  const shot = (name) => join(SHOTS, `StatsRolls-${name}-${width}.png`);
+  const dialogSel = '[role="dialog"]';
+  const cardSel = '[data-testid="result-card"]';
+  const badgeText = (locator) => locator.textContent().then((t) => (t ?? "").replace(/[\uE000-\uF8FF]/g, "").trim());
+  const readCard = () =>
+    page.evaluate(() => {
+      const card = document.querySelector('[data-testid="result-card"]');
+      if (!card) return null;
+      const chips = [...card.querySelectorAll('[data-testid="die-chip"]')].map((chip) => ({
+        text: (chip.textContent ?? "").replace(/\s+/g, ""),
+        struck: [...chip.querySelectorAll("*")].some((el) => getComputedStyle(el).textDecorationLine.includes("line-through")),
+      }));
+      const leaf = (re) => [...card.querySelectorAll("*")].find((e) => e.children.length === 0 && re.test((e.textContent ?? "").trim()))?.textContent.trim() ?? null;
+      return {
+        chips,
+        modifier: card.querySelector('[data-testid="result-modifier"]')?.textContent ?? "",
+        total: card.querySelector('[data-testid="result-total"]')?.textContent ?? "",
+        source: card.querySelector('[data-testid="result-source"]')?.textContent ?? "",
+        markers: ["Natural 20", "Natural 1", "Critical"].filter((m) => leaf(new RegExp(`^${m}$`))),
+        followUp: leaf(/^Roll (critical )?damage$/),
+      };
+    });
+  const setFaces = (faces) => page.evaluate((f) => (window.__setRandomSource ? window.__setRandomSource(f) : "no hook"), faces);
+  const dismissCard = async () => {
+    await page.getByLabel("Dismiss result").click({ timeout: 3000 }).catch(() => {});
+    await page.waitForSelector(cardSel, { state: "hidden", timeout: 3000 }).catch(() => {});
+  };
+
+  await page.goto(`${BASE}/character/${CHARACTER_ID}`, { waitUntil: "networkidle", timeout: 120000 });
+  await page.waitForTimeout(1500);
+  await page.getByText("Stats", { exact: true }).first().click();
+  await page.getByText(/ability scores/i).first().waitFor({ state: "visible", timeout: 10000 }).catch(() => fail("the Stats tab did not load"));
+
+  // Every ability check, the proficient save, a skill and initiative are roll badges with the engine's bonus.
+  const badges = [
+    ["str check", '[data-testid="roll-badge-check-str"]', "+1"],
+    ["dex check", '[data-testid="roll-badge-check-dex"]', "+0"],
+    ["con check", '[data-testid="roll-badge-check-con"]', "+0"],
+    ["int check", '[data-testid="roll-badge-check-int"]', "+0"],
+    ["wis check", '[data-testid="roll-badge-check-wis"]', "+0"],
+    ["cha check", '[data-testid="roll-badge-check-cha"]', "+0"],
+    ["wis save", '[data-testid="roll-badge-save-wis"]', "+2"],
+    ["athletics", '[data-testid="roll-badge-skill-athletics"]', "+1"],
+    ["initiative", '[data-testid="roll-badge-initiative"]', "+0"],
+  ];
+  for (const [name, sel, label] of badges) {
+    const loc = page.locator(sel);
+    if (!(await loc.isVisible().catch(() => false))) fail(`the Stats tab has no ${name} roll badge`);
+    else if ((await badgeText(loc)) !== label) fail(`the ${name} badge reads "${await badgeText(loc)}", expected "${label}"`);
+  }
+  for (const v of await page.evaluate(findLayoutViolations, null)) fail(v);
+  await page.screenshot({ path: shot("tab") });
+
+  if ((await setFaces([12])) === "no hook") fail("the test-only random-source hook (window.__setRandomSource) is not exposed on a seeded web build");
+
+  // Tap the Strength check badge: d20 + 1, fixed to 12, so total 13, logged as "Rendar · Strength check".
+  await page.locator('[data-testid="roll-badge-check-str"]').click();
+  await page.waitForSelector(cardSel, { state: "visible", timeout: 10000 }).catch(() => fail("no result card after tapping the Strength check badge"));
+  if ((await page.locator(dialogSel).count()) > 0) fail("tapping the check badge opened a modal");
+  let card = await readCard();
+  if (!card) fail("the check card disappeared before it could be read");
+  else {
+    if (card.source !== "Rendar · Strength check") fail(`the check card's source is "${card.source}", expected "Rendar · Strength check"`);
+    if (card.chips.length !== 1 || card.chips[0].text !== "12d20" || card.chips[0].struck) fail(`the check card's faces are ${JSON.stringify(card.chips)}, expected one unstruck 12d20`);
+    if (card.modifier !== "+1" || card.total !== "13") fail(`the check card reads ${card.modifier} / ${card.total}, expected +1 / 13`);
+    if (card.followUp !== null) fail(`the check card offers a follow-up "${card.followUp}", expected none`);
+  }
+  await page.screenshot({ path: shot("check") });
+  await dismissCard();
+
+  // The Wisdom save: d20 + 2, fixed to 5, so total 7.
+  await setFaces([5]);
+  await page.locator('[data-testid="roll-badge-save-wis"]').click();
+  await page.waitForSelector(cardSel, { state: "visible", timeout: 10000 }).catch(() => fail("no result card after tapping the Wisdom save badge"));
+  card = await readCard();
+  if (!card) fail("the save card disappeared before it could be read");
+  else {
+    if (card.source !== "Rendar · Wisdom save") fail(`the save card's source is "${card.source}", expected "Rendar · Wisdom save"`);
+    if (card.chips.length !== 1 || card.chips[0].text !== "5d20" || card.chips[0].struck) fail(`the save card's faces are ${JSON.stringify(card.chips)}, expected one unstruck 5d20`);
+    if (card.modifier !== "+2" || card.total !== "7") fail(`the save card reads ${card.modifier} / ${card.total}, expected +2 / 7`);
+  }
+  await page.screenshot({ path: shot("save") });
+  await dismissCard();
+
+  // The Athletics skill: d20 + 1, fixed to 18, so total 19.
+  await setFaces([18]);
+  await page.locator('[data-testid="roll-badge-skill-athletics"]').click();
+  await page.waitForSelector(cardSel, { state: "visible", timeout: 10000 }).catch(() => fail("no result card after tapping the Athletics badge"));
+  card = await readCard();
+  if (!card) fail("the skill card disappeared before it could be read");
+  else {
+    if (card.source !== "Rendar · Athletics") fail(`the skill card's source is "${card.source}", expected "Rendar · Athletics"`);
+    if (card.chips.length !== 1 || card.chips[0].text !== "18d20" || card.chips[0].struck) fail(`the skill card's faces are ${JSON.stringify(card.chips)}, expected one unstruck 18d20`);
+    if (card.modifier !== "+1" || card.total !== "19") fail(`the skill card reads ${card.modifier} / ${card.total}, expected +1 / 19`);
+  }
+  await page.screenshot({ path: shot("skill") });
+  await dismissCard();
+
+  // The keyboard path to the roll sheet on the initiative badge: the context-menu key opens it, Advantage
+  // rolls two d20s (17 and 3) with the lower struck through, total 17 with the +0 initiative.
+  await setFaces([17, 3]);
+  const initiativeBadge = page.locator('[data-testid="roll-badge-initiative"]');
+  await initiativeBadge.focus();
+  // The badge subscribes its key listener when React processes the focus event.
+  await page.waitForTimeout(200);
+  await page.keyboard.press("ContextMenu");
+  await page.waitForSelector(dialogSel, { state: "visible", timeout: 10000 }).catch(() => fail("the context-menu key on the focused initiative badge did not open the roll sheet"));
+  for (const label of ["Disadvantage", "Roll", "Advantage"]) {
+    if (!(await page.getByText(label, { exact: true }).first().isVisible().catch(() => false))) fail(`the roll sheet does not show "${label}"`);
+  }
+  await page.screenshot({ path: shot("sheet") });
+  await page.getByText("Advantage", { exact: true }).first().click();
+  await page.waitForSelector(dialogSel, { state: "hidden", timeout: 10000 }).catch(() => fail("the roll sheet did not close after choosing Advantage"));
+  await page.waitForFunction(() => document.querySelector('[data-testid="result-card"] [data-testid="die-chip"]') !== null, null, { timeout: 10000 }).catch(() => fail("no result card after the sheet's Advantage"));
+  card = await readCard();
+  if (!card) fail("the advantage card disappeared before it could be read");
+  else {
+    if (card.source !== "Rendar · Initiative") fail(`the initiative card's source is "${card.source}", expected "Rendar · Initiative"`);
+    if (card.chips.length !== 2 || card.chips.some((c) => !c.text.endsWith("d20"))) fail(`advantage shows ${JSON.stringify(card.chips)}, expected two d20s`);
+    else if (card.chips.filter((c) => c.struck).length !== 1) fail(`advantage shows ${JSON.stringify(card.chips)}, expected exactly one struck through`);
+    else if (card.chips.map((c) => Number(/(\d+)d20/.exec(c.text)?.[1])).join(",") !== "17,3") fail(`advantage faces are ${JSON.stringify(card.chips)}, expected 17 and 3`);
+    else if (!card.chips[1].struck) fail(`the dropped d20 is ${JSON.stringify(card.chips)}, expected the 3 struck through`);
+    if (card.modifier !== "+0" || card.total !== "17") fail(`the advantage card reads ${card.modifier} / ${card.total}, expected +0 / 17 (17 kept)`);
+  }
+  await page.screenshot({ path: shot("advantage") });
+  await setFaces(null);
+  await dismissCard();
+
+  // Tapping the initiative box outside the badge still opens its breakdown modal.
+  await page.getByText("INITIATIVE", { exact: true }).first().click();
+  await page.waitForSelector(dialogSel, { state: "visible", timeout: 10000 }).catch(() => fail("tapping the initiative box did not open its breakdown modal"));
+  await page.keyboard.press("Escape");
+  await page.waitForSelector(dialogSel, { state: "hidden", timeout: 10000 }).catch(() => fail("Escape did not close the breakdown modal"));
+
+  await page.close();
+  return failures;
+}
+
 // The checks that open their own page rather than a SCREENS entry. Each is a scenario, so ONLY selects it by name.
 const EXTRA_CHECKS = [
   { name: "HP modals", run: checkHitPointModals },
@@ -1446,6 +1595,7 @@ const EXTRA_CHECKS = [
   { name: "Dice tray and Roll Log", run: checkDiceTrayAndLog },
   { name: "Dice animation", run: checkDiceAnimation },
   { name: "Actions rolls", run: checkActionRolls },
+  { name: "Stats rolls", run: checkStatsRolls },
 ];
 
 // Every scenario name of this run: the SCREENS entries of the active catalog, then the extra checks.
