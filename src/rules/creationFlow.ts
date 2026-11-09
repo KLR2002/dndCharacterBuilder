@@ -63,6 +63,37 @@ export function classStepOffer(): ClassStepOffer {
   return { startingLevel: { min: 1, max: 20, default: 1 }, canAddClass: false };
 }
 
+/**
+ * How the build flow at `/build/<id>` was entered: Edit Build reopens a finished Character's flow to change its
+ * picks, while the interim Level up path (until the Level-Up Flow exists) keeps the controls that add levels and
+ * classes. The Class step reads its offer from `classStepModeOffer`.
+ */
+export type BuildFlowMode = "edit" | "levelup";
+
+/**
+ * What the Class step offers in each build-flow mode. Edit Build lowers a held class's level (releasing that
+ * level's picks) but offers no way to raise a level or add a class; only Level up adds.
+ */
+export interface ClassStepModeOffer {
+  canLowerLevel: boolean;
+  canRaiseLevel: boolean;
+  canAddClass: boolean;
+}
+
+export function classStepModeOffer(mode: BuildFlowMode): ClassStepModeOffer {
+  if (mode === "levelup") return { canLowerLevel: true, canRaiseLevel: true, canAddClass: true };
+  return { canLowerLevel: true, canRaiseLevel: false, canAddClass: false };
+}
+
+/** Options of the step-change functions: `editBuild` records the change on a finished Character in Edit Build. */
+export interface ApplyStepOptions extends CreationFlowOptions {
+  /**
+   * Edit Build: the Character is finished and stays finished; the released later steps are flagged in its
+   * creation-progress record with the `editBuild` marker instead of re-anchoring it as a draft.
+   */
+  editBuild?: boolean;
+}
+
 export type CreationStepStatus = "finished" | "current" | "locked";
 
 export interface CreationStep {
@@ -76,10 +107,12 @@ export interface CreationStep {
 
 /**
  * A draft is a character whose creation progress is recorded. Absent means the character is finished, so a
- * save from the old builder counts as finished without a rewrite.
+ * save from the old builder counts as finished without a rewrite. A record marked `editBuild` is a finished
+ * Character reopened in Edit Build: its attention marks ride along, but the character stays finished.
  */
 export function isCreationFinished(character: Character): boolean {
-  return character.creationProgress === undefined;
+  const progress = character.creationProgress;
+  return progress === undefined || progress.editBuild === true;
 }
 
 /**
@@ -431,7 +464,7 @@ function computeNeedsAttention(
 export function applyCreationStepChange(
   character: Character,
   change: CreationStepChange,
-  opts: CreationFlowOptions = {},
+  opts: ApplyStepOptions = {},
 ): Character {
   const compendium = opts.compendium ?? currentCompendium();
   const activeBooks = opts.activeBooks;
@@ -480,11 +513,21 @@ export function applyCreationStepEdit(
   character: Character,
   step: CreationStepId,
   edit: (current: Character) => Character,
-  opts: CreationFlowOptions = {},
+  opts: ApplyStepOptions = {},
 ): Character {
   const next = edit(character);
   if (next === character) return character;
   const needsAttention = computeNeedsAttention(character, next, step, opts);
+  if (opts.editBuild && isCreationFinished(character)) {
+    // Edit Build on a finished character: the marks ride in the progress record with the editBuild marker, so
+    // the character stays finished and every step stays reachable.
+    const progress: CreationProgress = {
+      currentStep: step,
+      editBuild: true,
+      ...(needsAttention.length > 0 ? { needsAttention } : {}),
+    };
+    return { ...next, creationProgress: progress };
+  }
   const progress: CreationProgress = {
     currentStep: step,
     ...(needsAttention.length > 0 ? { needsAttention } : {}),
@@ -505,7 +548,17 @@ export function finishCreationStep(
   step: CreationStepId,
   opts: CreationFlowOptions = {},
 ): Character {
-  if (isCreationFinished(character)) return character;
+  const progress = character.creationProgress;
+  if (isCreationFinished(character)) {
+    // Edit Build on a finished character: finishing a flagged step clears its mark and keeps the character
+    // finished; when no mark is left the progress record is dropped entirely.
+    if (!progress?.editBuild) return character;
+    if (!creationStepNeedsAttention(character, step)) return character;
+    if (!isCreationStepValid(character, step, opts)) return character;
+    if (!applicableCreationSteps(character, opts).includes(step)) return character;
+    const needsAttention = (progress.needsAttention ?? []).filter((id) => id !== step);
+    return { ...character, creationProgress: needsAttention.length > 0 ? { ...progress, needsAttention } : undefined };
+  }
   if (!isCreationStepValid(character, step, opts)) return character;
   const applicable = applicableCreationSteps(character, opts);
   const index = applicable.indexOf(step);

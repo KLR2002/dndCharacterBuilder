@@ -26,6 +26,11 @@ export interface CreationProgress {
    * finished again. Absent on saves made before it existed.
    */
   needsAttention?: CreationStepId[];
+  /**
+   * True while a finished Character is reopened in Edit Build: the attention marks ride in this record, but the
+   * Character stays finished (its sheet stays reachable and the flow shows every step as reachable).
+   */
+  editBuild?: boolean;
 }
 
 export interface AbilityScores {

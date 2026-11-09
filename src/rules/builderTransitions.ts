@@ -21,6 +21,7 @@ import { sizeOptionsOf } from "./sizeChoice.ts";
 import { abilityTargetBlocked, increaseOffersOf, increasePoolOf, originAbilityState, type RacialPick } from "./originCustomization.ts";
 import { ABILITY_NAMES } from "./abilities.ts";
 import { releaseExpandedOnlySpells } from "./backgroundSpells.ts";
+import { getMaxSpellLevel } from "./spellcasting.ts";
 import { releaseRaceOriginFeat } from "./feats.ts";
 import { rollAbilityScores, type RandomSource } from "./dice.ts";
 import { isGrantSpellChoiceId, releaseSupersededRacePicks } from "./choices/featSpells.ts";
@@ -618,7 +619,51 @@ export function removeClassLevel(
 
   // The spells only a held expanded list gave a class that no longer casts are released, with a notice (ADR 0017).
   const reconciled = reconcile({ ...updated, classes: updatedClasses }, compendium, { activeBooks });
-  return releaseExpandedOnlySpells(character, reconciled, compendium, activeBooks);
+  let result = releaseExpandedOnlySpells(character, reconciled, compendium, activeBooks);
+  // While the class remains held, a spell it can no longer cast at the new level (one learned at the removed
+  // level) is released too, with a notice. Removing the last level keeps the class's own-list spells, as before.
+  if (existing.level > 1) {
+    result = releaseOverLevelSpells(result, existing.className, existing.source, existing.level - 1, compendium, activeBooks);
+  }
+  return result;
+}
+
+/**
+ * Releases the known spells owned by `className` whose spell level is above the maximum the class casts at
+ * `newLevel`, each with a review notice, and drops their prepared keys. A name the catalog does not hold is kept.
+ * Only called while the class remains held and still casts at `newLevel`.
+ */
+function releaseOverLevelSpells(
+  character: Character,
+  className: string,
+  source: string,
+  newLevel: number,
+  compendium: Compendium,
+  activeBooks: ActiveBooks,
+): Character {
+  const maxSpellLevel = getMaxSpellLevel({ className, source, level: newLevel }, compendium.for(activeBooks).classes());
+  if (maxSpellLevel <= 0) return character;
+  const ownerPrefix = `${className}__`.toLowerCase();
+  const classLower = className.toLowerCase();
+  const ownedByClass = (k: { name: string; source: string; ownerKey?: string; className?: string }) =>
+    k.ownerKey?.toLowerCase().startsWith(ownerPrefix) ?? (!k.ownerKey && k.className?.toLowerCase() === classLower);
+  const notices: string[] = [];
+  const released = new Set<string>();
+  const knownSpells = (character.knownSpells ?? []).filter((known) => {
+    if (!ownedByClass(known)) return true;
+    const spell = compendium.findSpell(known.name, known.source);
+    if (!spell || spell.level <= maxSpellLevel) return true;
+    released.add(known.name.toLowerCase());
+    notices.push(`${known.name} removed: spell level above ${className} ${newLevel}`);
+    return false;
+  });
+  if (released.size === 0) return character;
+  const keptNames = new Set(knownSpells.map((known) => known.name.toLowerCase()));
+  const preparedSpells = (character.preparedSpells ?? []).filter((prepared) => {
+    const key = prepared.split("__")[0].toLowerCase();
+    return !released.has(key) || keptNames.has(key);
+  });
+  return withNotices({ ...character, knownSpells, preparedSpells }, notices);
 }
 
 export const STARTING_GOLD_BY_CLASS: Record<string, number> = {
