@@ -1,5 +1,6 @@
 import type { ActiveBooks } from "../constants/books.ts";
 import type { AsiSelection, Character, CharacterClass, CreationProgress, CreationStepId } from "../types/character.ts";
+import { CREATION_STEP_ORDER } from "../types/character.ts";
 import type { ClassData, RaceData, SubraceData } from "../types/dnd5e.ts";
 import { POINT_BUY_COST } from "../constants/rules.ts";
 import { currentCompendium, type Compendium } from "../services/compendium.ts";
@@ -23,27 +24,6 @@ import { applyAncestrySelection } from "./ancestryEngine.ts";
 import { reconcile } from "./characterReconciler.ts";
 import { maxHp } from "./hp.ts";
 import { followRaisedMaxHp, fullHealAtLevelUp } from "./hitPoints.ts";
-
-/**
- * The Creation Flow's steps, in the order the flow walks them: identity first (class, subclass, ancestry),
- * then the rest, name last. A step the character does not qualify for is skipped, so it never appears in
- * `applicableCreationSteps`. Creation builds a single class; Multiclassing enters only through the Level-Up
- * Flow.
- */
-export const CREATION_STEP_ORDER: readonly CreationStepId[] = [
-  "class",
-  "subclass",
-  "race",
-  "subrace",
-  "background",
-  "abilities",
-  "classChoices",
-  "asiFeats",
-  "spells",
-  "equipment",
-  "details",
-  "review",
-];
 
 /** The catalogs the flow reads: defaults to the process-wide Compendium, unscoped. */
 export interface CreationFlowOptions {

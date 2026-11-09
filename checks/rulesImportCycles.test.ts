@@ -89,3 +89,16 @@ test("import graph: the Character Reconciler, transitions and choice modules for
   const cycles = findCycles(graph).map((cycle) => cycle.map((file) => relative(RULES_DIR, file)).join(" -> "));
   assert.deepEqual(cycles, [], "the rules import graph must be acyclic");
 });
+
+test("import graph: save loading (migrateCharacter) does not import the Creation Flow", () => {
+  const graph = rulesImportGraph();
+  const seen = new Set<string>();
+  const walk = (node: string): void => {
+    if (seen.has(node)) return;
+    seen.add(node);
+    for (const dep of graph.get(node) ?? []) walk(dep);
+  };
+  walk(resolve(RULES_DIR, "migrateCharacter.ts"));
+  const reached = [...seen].map((file) => relative(RULES_DIR, file));
+  assert.ok(!reached.includes("creationFlow.ts"), "migrateCharacter must not import creationFlow.ts");
+});
