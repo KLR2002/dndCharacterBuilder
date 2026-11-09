@@ -563,7 +563,7 @@ export function applyCreationStepEdit(
  * pick on that step, so an update that changes it is a pick change. Undefined for the steps that hold no
  * single pick of their own (abilities, classChoices, asiFeats, spells, equipment, details, review).
  */
-export function creationStepSignature(step: CreationStepId): ((character: Character) => string) | undefined {
+function creationStepSignature(step: CreationStepId): ((character: Character) => string) | undefined {
   switch (step) {
     case "class":
       return (c) => JSON.stringify(c.classes ?? []);
@@ -580,7 +580,7 @@ export function creationStepSignature(step: CreationStepId): ((character: Charac
 }
 
 /** The class an update added to the character's held classes, when it added one. */
-export function addedClassPick(before: Character, after: Character): { className: string; source: string } | undefined {
+function addedClassPick(before: Character, after: Character): { className: string; source: string } | undefined {
   const beforeNames = new Set((before.classes ?? []).map((c) => c.className));
   return (after.classes ?? []).find((c) => !beforeNames.has(c.className));
 }
