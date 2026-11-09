@@ -1569,7 +1569,8 @@ async function checkStatsRolls(ctx, width) {
     else if (card.chips.filter((c) => c.struck).length !== 1) fail(`advantage shows ${JSON.stringify(card.chips)}, expected exactly one struck through`);
     else if (card.chips.map((c) => Number(/(\d+)d20/.exec(c.text)?.[1])).join(",") !== "17,3") fail(`advantage faces are ${JSON.stringify(card.chips)}, expected 17 and 3`);
     else if (!card.chips[1].struck) fail(`the dropped d20 is ${JSON.stringify(card.chips)}, expected the 3 struck through`);
-    if (card.modifier !== "+0" || card.total !== "17") fail(`the advantage card reads ${card.modifier} / ${card.total}, expected +0 / 17 (17 kept)`);
+    // A zero modifier renders no modifier chip on the card, so the modifier element is absent.
+    if (card.modifier !== "" || card.total !== "17") fail(`the advantage card reads ${card.modifier} / ${card.total}, expected no modifier / 17 (17 kept)`);
   }
   await page.screenshot({ path: shot("advantage") });
   await setFaces(null);

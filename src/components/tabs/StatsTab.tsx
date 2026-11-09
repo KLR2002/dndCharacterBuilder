@@ -1239,6 +1239,7 @@ const styles = StyleSheet.create({
   saveItem: {
     width: "50%",
     flexDirection: "row",
+    flexWrap: "wrap",
     alignItems: "center",
     paddingHorizontal: 8,
     paddingVertical: 4,
