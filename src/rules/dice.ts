@@ -33,7 +33,8 @@ export interface Roll {
   total: number;
 }
 
-function rollDie(sides: number, random: RandomSource): number {
+/** Rolls one die of `sides` sides with the given random source, clamped to a face in [1, sides]. */
+export function rollDie(sides: number, random: RandomSource): number {
   return Math.min(sides, Math.max(1, Math.floor(random(sides))));
 }
 

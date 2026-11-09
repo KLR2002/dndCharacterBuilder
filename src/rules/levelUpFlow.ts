@@ -15,6 +15,11 @@ import { learnSpell } from "./characterSpells.ts";
 import { getClassSpellProfiles } from "./spellcasting.ts";
 import { recordRolledHitPoints } from "./hp.ts";
 import { classChoicesAtLevel, hasClassChoices } from "./classChoices.ts";
+import { appRandom, rollDie, type RandomSource } from "./dice.ts";
+import { totalLevel } from "./proficiencies.ts";
+
+/** The highest class level and total character level the 2014 rules allow. */
+const MAX_LEVEL = 20;
 
 /**
  * Pure Level-Up Flow rules: plan one level for a chosen class and apply a confirmed plan in one
@@ -64,8 +69,8 @@ export interface PlanLevelUpOptions {
   /** The source of a class the Character does not hold yet. */
   source?: string;
   hitPoints?: { mode: "average" } | { mode: "roll" };
-  /** The random source a rolled Hit Points pick draws its die face from. Defaults to Math.random. */
-  random?: () => number;
+  /** The random source a rolled Hit Points pick draws its die face from. Defaults to the app's source. */
+  random?: RandomSource;
   picks?: LevelUpPicks;
   compendium?: Compendium;
   activeBooks?: ActiveBooks;
@@ -93,6 +98,12 @@ function sameName(a: string, b: string): boolean {
 export function planLevelUp(character: Character, options: PlanLevelUpOptions): PlanLevelUpResult {
   const className = options.className;
   const existing = character.classes.find((c) => sameName(c.className, className));
+  if (existing && existing.level >= MAX_LEVEL) {
+    return { ok: false, reason: `${className} is already at level ${MAX_LEVEL}` };
+  }
+  if (totalLevel(character) >= MAX_LEVEL) {
+    return { ok: false, reason: `a character cannot go beyond level ${MAX_LEVEL}` };
+  }
   if (!existing) {
     const check = validateMulticlass(character, className, effectiveScores(character).scores);
     if (!check.ok) return { ok: false, reason: check.reason ?? `${className} requirement not met` };
@@ -120,7 +131,7 @@ export function planLevelUp(character: Character, options: PlanLevelUpOptions): 
   const mode = options.hitPoints?.mode ?? "average";
   let hitPoints: HitPointsPlan;
   if (mode === "roll") {
-    const roll = 1 + Math.floor((options.random ?? Math.random)() * die);
+    const roll = rollDie(die, options.random ?? appRandom);
     hitPoints = { mode, roll, amount: Math.max(1, roll + conMod) };
   } else {
     hitPoints = { mode, amount: Math.max(1, (firstLevel ? die : Math.floor(die / 2) + 1) + conMod) };
@@ -168,6 +179,11 @@ export function applyLevelUpPlan(
     const check = validateMulticlass(character, plan.className, effectiveScores(character).scores);
     if (!check.ok) return character;
   }
+  // A stale plan is refused when it would take the class or the character beyond the level cap.
+  if (plan.toLevel > MAX_LEVEL) return character;
+  const held = character.classes.find((c) => sameName(c.className, plan.className));
+  const otherLevels = totalLevel(character) - (held?.level ?? 0);
+  if (otherLevels + plan.toLevel > MAX_LEVEL) return character;
 
   // A rolled level records the die face it rolled before the level is confirmed, so the full heal
   // on level-up fills to the rolled max; `maxHp` adds the current Constitution modifier to the face

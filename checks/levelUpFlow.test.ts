@@ -2,7 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { makeChar, inMemoryCompendium } from "./testUtils.ts";
 import { ALL_BOOKS } from "../src/constants/books.ts";
-import { planLevelUp, applyLevelUpPlan } from "../src/rules/levelUpFlow.ts";
+import { planLevelUp, applyLevelUpPlan, type LevelUpPlan } from "../src/rules/levelUpFlow.ts";
 import { maxHp } from "../src/rules/hp.ts";
 import { removeClassLevel } from "../src/rules/builderTransitions.ts";
 
@@ -153,11 +153,11 @@ test("Hit Points by average: a d10 class with Constitution 14 adds 8", () => {
   assert.equal(result.plan.hitPoints.amount, 8);
 });
 
-test("Hit Points by roll from a fixed random source: face plus 2, never less than 1", () => {
+test("Hit Points by roll from a fixed random source (a die face per call): face plus 2, never less than 1", () => {
   const rolled = planLevelUp(FIGHTER_3, {
     className: "Fighter",
     hitPoints: { mode: "roll" },
-    random: () => 0.95,
+    random: () => 10,
   });
   if (!rolled.ok) assert.fail(rolled.reason);
   assert.equal(rolled.plan.hitPoints.mode, "roll");
@@ -229,7 +229,7 @@ test("applying a rolled Fighter 3->4 plan raises maxHp by the die face plus the 
   const rolled = planLevelUp(FIGHTER_3, {
     className: "Fighter",
     hitPoints: { mode: "roll" },
-    random: () => 0.95,
+    random: () => 10,
   });
   if (!rolled.ok) assert.fail(rolled.reason);
   assert.equal(rolled.plan.hitPoints.roll, 10);
@@ -271,10 +271,10 @@ test("applying a rolled plan records the die face, so a later Constitution chang
     className: "Fighter",
     source: "PHB",
     hitPoints: { mode: "roll" },
-    random: () => 0.6,
+    random: () => 7,
   });
   if (!rolled.ok) assert.fail(rolled.reason);
-  assert.equal(rolled.plan.hitPoints.roll, 7); // 1 + floor(0.6 * 10)
+  assert.equal(rolled.plan.hitPoints.roll, 7); // the source returns the face 7
   const applied = applyLevelUpPlan(fresh, rolled.plan, { fullHealOnLevelUp: false });
   assert.equal(applied.classes[0].level, 1);
   // The record holds the face, not the rolled amount face + Con.
@@ -299,7 +299,7 @@ test("removing the level restores the previous maxHp", () => {
   const rolled = planLevelUp(FIGHTER_3, {
     className: "Fighter",
     hitPoints: { mode: "roll" },
-    random: () => 0.95,
+    random: () => 10,
   });
   if (!rolled.ok) assert.fail(rolled.reason);
   const applied = applyLevelUpPlan(FIGHTER_3, rolled.plan, { fullHealOnLevelUp: false });
@@ -327,4 +327,42 @@ test("applying a Wizard 1->2 plan sets the level, the subclass pick and the lear
   assert.equal(applied.classes[0].level, 2);
   assert.equal(applied.classes[0].subclassName, "School of Evocation");
   assert.ok((applied.knownSpells ?? []).some((s) => s.name === "Magic Missile"));
+});
+
+test("a plan refuses a class already at level 20 and a character already at total level 20", () => {
+  const scores = { str: 15, dex: 14, con: 14, int: 16, wis: 12, cha: 10 };
+  const capped = makeChar({ baseAbilityScores: scores, classes: [{ className: "Fighter", source: "PHB", level: 20 }] });
+  const inClass = planLevelUp(capped, { className: "Fighter" });
+  assert.equal(inClass.ok, false, "a class beyond level 20 is refused");
+  if (!inClass.ok) assert.match(inClass.reason, /20/);
+  const multiclass = planLevelUp(capped, { className: "Wizard", source: "PHB" });
+  assert.equal(multiclass.ok, false, "a total character level beyond 20 is refused");
+  if (!multiclass.ok) assert.match(multiclass.reason, /20/);
+
+  const split = makeChar({
+    baseAbilityScores: scores,
+    classes: [
+      { className: "Fighter", source: "PHB", level: 19 },
+      { className: "Wizard", source: "PHB", level: 1 },
+    ],
+  });
+  assert.equal(planLevelUp(split, { className: "Fighter" }).ok, false, "total level 20 refuses another level");
+});
+
+test("applyLevelUpPlan refuses a stale plan that would take a class or the character beyond level 20", () => {
+  const capped = makeChar({
+    baseAbilityScores: { str: 15, dex: 14, con: 14, int: 10, wis: 10, cha: 10 },
+    classes: [{ className: "Fighter", source: "PHB", level: 20 }],
+  });
+  const stale: LevelUpPlan = {
+    characterId: capped.id,
+    className: "Fighter",
+    source: "PHB",
+    fromLevel: 20,
+    toLevel: 21,
+    steps: [],
+    hitPoints: { mode: "average", amount: 8 },
+    picks: {},
+  };
+  assert.equal(applyLevelUpPlan(capped, stale), capped, "a plan to level 21 is refused");
 });
