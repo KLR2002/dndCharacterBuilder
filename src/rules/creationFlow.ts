@@ -158,7 +158,7 @@ const POINT_BUY_BUDGET = 27;
 
 /**
  * Whether the Abilities step's method is fully picked: the whole standard array, scores within point buy,
- * or — for rolled — six rolled results with every one placed on an ability. Manual asks for nothing.
+ * or — for rolled — six rolled results with every one placed on exactly one ability. Manual asks for nothing.
  */
 function abilitiesValid(character: Character): boolean {
   if (character.abilityMethod === "standardArray") {
@@ -177,12 +177,13 @@ function abilitiesValid(character: Character): boolean {
   if (character.abilityMethod === "rolled") {
     const results = character.rolledAbilities ?? [];
     const picks = character.rolledAbilityPicks ?? {};
+    const indexes = ABILITIES.map((ability) => picks[ability]);
     return (
       results.length === 6 &&
-      ABILITIES.every((ability) => {
-        const index = picks[ability];
-        return typeof index === "number" && Number.isInteger(index) && index >= 0 && index < results.length;
-      })
+      indexes.every(
+        (index) => typeof index === "number" && Number.isInteger(index) && index >= 0 && index < results.length,
+      ) &&
+      new Set(indexes).size === ABILITIES.length
     );
   }
   return true;
