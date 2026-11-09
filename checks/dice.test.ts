@@ -165,3 +165,10 @@ test("each rolled result is placed on exactly one ability; a reroll replaces all
   assert.equal(oldSave.rolledAbilities, undefined);
   assert.equal(oldSave.rolledAbilityPicks, undefined);
 });
+
+test("a dice term's count is capped at 100 per term; larger counts are rejected", () => {
+  assert.deepEqual(parseDicePool("100d6"), { dice: [{ count: 100, sides: 6 }], modifier: 0 });
+  assert.deepEqual(parseDicePool("2d6+100d8+3"), { dice: [{ count: 2, sides: 6 }, { count: 100, sides: 8 }], modifier: 3 });
+  assert.equal(parseDicePool("101d6"), null);
+  assert.equal(parseDicePool("99999999999d6"), null);
+});
