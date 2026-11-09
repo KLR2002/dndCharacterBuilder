@@ -189,6 +189,18 @@ describe("Changing an earlier step releases what it invalidates", () => {
   });
 });
 
+describe("Only steps whose picks a change released are flagged", () => {
+  test("a blank draft picking a class for the first time flags no step", () => {
+    const blank = makeChar({ creationProgress: { currentStep: "class" } });
+    const picked = applyCreationStepChange(blank, { step: "class", className: "Fighter", source: "PHB" }, flowOpts);
+    assert.equal(picked.classes[0]?.className, "Fighter");
+    assert.deepEqual(picked.creationProgress?.needsAttention ?? [], []);
+    for (const step of creationSteps(picked, flowOpts)) {
+      assert.equal(step.needsAttention, false, `${step.id} should not be flagged: no pick of it was released`);
+    }
+  });
+});
+
 describe("Changing the ancestry or the background", () => {
   test("changing the race flags the Subrace step the new race leaves unpicked and keeps the rest", () => {
     const fighter = finishedFighter();

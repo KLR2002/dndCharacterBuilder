@@ -436,10 +436,17 @@ function equipmentSignature(character: Character): string {
   ]);
 }
 
+/** The held subclass picks of a character: a change that drops one released it. */
+function heldSubclassCount(character: Character): number {
+  return (character.classes ?? []).filter((c) => (c.subclassName ?? c.subclass ?? "").length > 0).length;
+}
+
 /**
- * The later steps a change at `changedStep` leaves needing attention: every applicable later step that is no
- * longer valid, plus the ones whose stored picks the change released (class choices dropped, ASI/Feat picks
- * removed, spells or the starting-equipment claim gone with the old pick).
+ * The later steps a change at `changedStep` leaves needing attention: only the applicable later steps whose
+ * stored picks the change released — a held subclass dropped, the ancestry record the subrace pick lives on
+ * replaced, class choices dropped, ASI/Feat picks removed, spells or the starting-equipment claim gone with
+ * the old pick. A step that is merely invalid is not flagged. Review is flagged when a release also left it
+ * invalid, since it then has to be confirmed again.
  */
 function computeNeedsAttention(
   before: Character,
@@ -449,16 +456,26 @@ function computeNeedsAttention(
 ): CreationStepId[] {
   const changedIndex = CREATION_STEP_ORDER.indexOf(changedStep);
   const applicable = new Set(applicableCreationSteps(after, opts));
+  const released: Partial<Record<CreationStepId, boolean>> = {
+    subclass: heldSubclassCount(before) > heldSubclassCount(after),
+    subrace: JSON.stringify(before.race ?? null) !== JSON.stringify(after.race ?? null),
+    classChoices: classChoiceSignature(before) !== classChoiceSignature(after),
+    asiFeats: JSON.stringify(before.asiSelections ?? []) !== JSON.stringify(after.asiSelections ?? []),
+    spells: spellsSignature(before) !== spellsSignature(after),
+    equipment: equipmentSignature(before) !== equipmentSignature(after),
+  };
   const flagged: CreationStepId[] = [];
   for (const id of CREATION_STEP_ORDER) {
     if (CREATION_STEP_ORDER.indexOf(id) <= changedIndex || !applicable.has(id)) continue;
-    const invalid = !isCreationStepValid(after, id, opts);
-    const released =
-      (id === "classChoices" && classChoiceSignature(before) !== classChoiceSignature(after)) ||
-      (id === "asiFeats" && (after.asiSelections?.length ?? 0) < (before.asiSelections?.length ?? 0)) ||
-      (id === "spells" && spellsSignature(before) !== spellsSignature(after)) ||
-      (id === "equipment" && equipmentSignature(before) !== equipmentSignature(after));
-    if (invalid || released) flagged.push(id);
+    if (released[id]) flagged.push(id);
+  }
+  if (
+    flagged.length > 0 &&
+    applicable.has("review") &&
+    CREATION_STEP_ORDER.indexOf("review") > changedIndex &&
+    !isCreationStepValid(after, "review", opts)
+  ) {
+    flagged.push("review");
   }
   return flagged;
 }
