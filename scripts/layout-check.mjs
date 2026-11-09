@@ -444,8 +444,9 @@ function findDismissGaps() {
   return boxes.slice(1).map((r, i) => r.top - boxes[i].bottom);
 }
 
-// Checks what a picker screen must show that the layout rules cannot see: texts and input placeholders on the page,
-// and (`plainRaceRow`) the plain race row. Returns one message per missing control.
+// Checks what a picker screen must show that the layout rules cannot see: texts, input placeholders and
+// accessibility labels on the page (`labels` present, `absentLabels` gone), and (`plainRaceRow`) the plain race
+// row. Returns one message per missing control.
 async function checkExpected(page, expect) {
   const out = [];
   if (expect.cardWithout) {
@@ -467,6 +468,12 @@ async function checkExpected(page, expect) {
   }
   for (const pattern of expect.absentMatching ?? []) {
     if (await page.getByText(pattern).first().isVisible()) out.push(`text matching ${pattern} is shown but should not be`);
+  }
+  for (const label of expect.labels ?? []) {
+    if (!(await page.getByLabel(label).first().isVisible())) out.push(`missing the control labelled "${label}"`);
+  }
+  for (const label of expect.absentLabels ?? []) {
+    if ((await page.getByLabel(label).count()) > 0) out.push(`the control labelled "${label}" is present but should not be`);
   }
   for (const text of expect.disabled ?? []) {
     const { disabled, state } = await page.evaluate(buttonDisabled, text);

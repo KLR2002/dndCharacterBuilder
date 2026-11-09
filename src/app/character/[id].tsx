@@ -228,7 +228,7 @@ export default function CharacterSheetScreen() {
       <View style={[styles.headerActionsRow, { borderBottomColor: theme.border, backgroundColor: theme.surface }]}>
         <View style={[styles.headerActionsInner, isCompact && { paddingHorizontal: 8 }]}>
           <TouchableOpacity
-            onPress={() => router.push(`/build/${currentCharacter.id}?step=class` as any)}
+            onPress={() => router.push(`/build/${currentCharacter.id}?step=class&mode=levelup` as any)}
             accessibilityRole="button"
             accessibilityLabel="Level up"
             style={[styles.headerTextBtn, { backgroundColor: theme.surfaceHighlight, borderColor: theme.border }]}>
