@@ -15,6 +15,7 @@ import {
 } from "../src/rules/startingEquipment.ts";
 import { migrateCharacter } from "../src/rules/migrateCharacter.ts";
 import {
+  applicableCreationSteps,
   applyCreationStepChange,
   applyCreationStepEdit,
   creationStepNeedsAttention,
@@ -172,20 +173,55 @@ describe("Changing an earlier step releases what it invalidates", () => {
     assert.equal(finishCreationStep(rogue, "classChoices", flowOpts), rogue);
     assert.equal(creationStepNeedsAttention(rogue, "classChoices"), true);
 
-    // Re-pick the Rogue's class skills, then finish the step.
+    // Re-pick the Rogue's subclass and class skills, then walk the flow forward to Class Choices.
     const offer = skillChoiceOffers(rogue, flowOpts).find((o) => o.source === "Class: Rogue")!;
     const rePicked: Character = {
       ...rogue,
+      classes: [{ ...rogue.classes[0], subclassName: "Thief", subclass: "Thief", subclassSource: "PHB" }],
       skillChoices: [
         { id: offer.source, origin: "class", choose: offer.choose, from: offer.from, picked: offer.from.slice(0, offer.choose) },
       ],
       chosenSkills: offer.from.slice(0, offer.choose),
     };
-    assert.equal(isCreationStepValid(rePicked, "classChoices", flowOpts), true);
-    const finished = finishCreationStep(rePicked, "classChoices", flowOpts);
+    let walked = rePicked;
+    for (const id of applicableCreationSteps(rePicked, flowOpts)) {
+      if (id === "classChoices") break;
+      assert.equal(isCreationStepValid(walked, id, flowOpts), true, `${id} should be valid before finishing it`);
+      walked = finishCreationStep(walked, id, flowOpts);
+    }
+    assert.equal(currentCreationStep(walked, flowOpts), "classChoices");
+    assert.equal(isCreationStepValid(walked, "classChoices", flowOpts), true);
+    const finished = finishCreationStep(walked, "classChoices", flowOpts);
     assert.equal(creationStepNeedsAttention(finished, "classChoices"), false);
     assert.equal(creationStepNeedsAttention(finished, "asiFeats"), true, "the other marks stay");
     assert.equal(currentCreationStep(finished, flowOpts), "asiFeats");
+  });
+});
+
+describe("Finishing a step that is not reachable changes nothing", () => {
+  test("finishing a locked step after the current step is a no-op", () => {
+    const scores = { str: 15, dex: 14, con: 13, int: 12, wis: 10, cha: 8 };
+    const draft = makeChar({
+      classes: [cl("Wizard", 1)],
+      abilityMethod: "standardArray",
+      standardArrayPicks: { ...scores },
+      baseAbilityScores: { ...scores },
+      creationProgress: { currentStep: "class" },
+    });
+    assert.equal(currentCreationStep(draft, flowOpts), "class");
+    assert.equal(isCreationStepValid(draft, "abilities", flowOpts), true, "Abilities is valid, only the lock can block it");
+    assert.equal(finishCreationStep(draft, "abilities", flowOpts), draft, "a locked step cannot be finished");
+    assert.equal(currentCreationStep(draft, flowOpts), "class");
+  });
+
+  test("an invalid current step does not advance when finished", () => {
+    const draft = makeChar({
+      classes: [cl("Wizard", 1)],
+      creationProgress: { currentStep: "classChoices" },
+    });
+    assert.equal(isCreationStepValid(draft, "classChoices", flowOpts), false);
+    assert.equal(finishCreationStep(draft, "classChoices", flowOpts), draft);
+    assert.equal(currentCreationStep(draft, flowOpts), "classChoices");
   });
 });
 

@@ -584,11 +584,12 @@ export function applyCreationStepEdit(
 }
 
 /**
- * Finishes a Creation Step: only a valid, applicable step of a draft can be finished. Its attention mark, if
- * any, clears, and the draft's current step moves to the later of the old current step and the next applicable
- * step after the finished one, so finishing an earlier step the player went back to never moves the draft
- * backwards and re-locks finished steps; a step marked as needing attention therefore stays the current step's
- * blocker until it is finished. Finishing Review leaves no creation progress, so the character is finished.
+ * Finishes a Creation Step: only a valid, applicable step of a draft can be finished, and a step after the
+ * current one is locked, so finishing it is a no-op. The finished step's attention mark, if any, clears, and
+ * the draft's current step moves to the later of the old current step and the next applicable step after the
+ * finished one, so finishing an earlier step the player went back to never moves the draft backwards and
+ * re-locks finished steps; a step marked as needing attention therefore stays the current step's blocker
+ * until it is finished. Finishing Review leaves no creation progress, so the character is finished.
  * The given Character is never mutated.
  */
 export function finishCreationStep(
@@ -612,6 +613,8 @@ export function finishCreationStep(
   const index = applicable.indexOf(step);
   if (index === -1) return character;
   const currentIndex = applicable.indexOf(resolveCurrentStep(character, applicable));
+  // A step after the current one is locked: finishing it is a no-op.
+  if (index > currentIndex) return character;
   const needsAttention = (character.creationProgress?.needsAttention ?? []).filter((id) => id !== step);
   const nextStep = applicable[Math.max(index + 1, currentIndex)];
   if (!nextStep) {
