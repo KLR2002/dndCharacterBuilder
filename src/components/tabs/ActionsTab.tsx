@@ -118,7 +118,7 @@ export const ActionsTab: React.FC = () => {
               <View style={{ flexDirection: "row", gap: 8, marginTop: isCompact ? 6 : 0 }}>
                 <RollBadge
                   testID="roll-badge-unarmed-tohit"
-                  label={`+${profBonus + modifiers.str} to hit`}
+                  label={`${formatModifier(profBonus + modifiers.str)} to hit`}
                   modifier={profBonus + modifiers.str}
                   source="Unarmed Strike attack"
                   characterName={currentCharacter.name}
@@ -431,7 +431,6 @@ export const ActionsTab: React.FC = () => {
                   ) : (
                     <Badge label={sp.damage} variant="outline" />
                   )}
-                  <Ionicons name="chevron-forward" size={16} color={theme.textMuted} />
                 </View>
               </TouchableOpacity>
             ))}

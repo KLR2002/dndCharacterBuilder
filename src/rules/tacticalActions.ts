@@ -1,4 +1,5 @@
 import type { ActiveBooks } from "../constants/books.ts";
+import { UNKNOWN_OWNER_KEY } from "../constants/rules.ts";
 import type { Character } from "../types/character.ts";
 import type { EvaluatedCharacter } from "./characterEvaluation.ts";
 import {
@@ -169,13 +170,24 @@ export function getTacticalActionLedger(
   const spellAttacks: TacticalSpellAttack[] = [];
   const seenSpellNames = new Set<string>();
   const spellProfiles = evaluated.spellProfiles || [];
-  // A known spell belongs to the profile whose owner key stored it (the first profile for a single caster).
-  const profileForOwner = (ownerKey?: string) =>
-    spellProfiles.find((p) => p.ownerKey === ownerKey) ?? spellProfiles[0];
+  // The casting profile a known spell belongs to: by the owner key it is stored under (a Warlock's tome
+  // key counts as the Warlock), else by its legacy class hint, else the only profile of a single caster.
+  // A spell no profile owns gets no attack bonus, so its row shows no roll badge.
+  const profileForSpell = (k: { ownerKey?: string; className?: string }) => {
+    if (k.ownerKey && k.ownerKey !== UNKNOWN_OWNER_KEY) {
+      return (
+        spellProfiles.find((p) => p.ownerKey === k.ownerKey) ??
+        (k.ownerKey.startsWith("Warlock__") ? spellProfiles.find((p) => p.className === "Warlock") : undefined)
+      );
+    }
+    return (
+      spellProfiles.find((p) => p.className === k.className) ?? (spellProfiles.length === 1 ? spellProfiles[0] : undefined)
+    );
+  };
 
   const candidateSpells: { name: string; source: string; kiCost?: number; spellObj?: any; attackBonus?: number }[] = [
     ...(character.knownSpells || []).map((k) => {
-      const profile = profileForOwner(k.ownerKey);
+      const profile = profileForSpell(k);
       return { name: k.name, source: k.source, attackBonus: profile?.spellAttackBonus };
     }),
   ];

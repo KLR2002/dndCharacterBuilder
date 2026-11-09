@@ -141,6 +141,33 @@ test("the ledger gives spell attack rows the casting profile's attack bonus", ()
   assert.equal(fireBolt.attackBonus, 5);
 });
 
+test("a multiclass caster's spell rows get the owning profile's bonus; an unowned spell gets none", () => {
+  const char = makeChar({
+    id: "char_multi_caster",
+    name: "Ivo",
+    classes: [
+      { className: "Cleric", source: "PHB", level: 1 },
+      { className: "Wizard", source: "PHB", level: 1 },
+    ],
+    baseAbilityScores: { str: 8, dex: 10, con: 12, int: 14, wis: 16, cha: 10 },
+    knownSpells: [
+      { name: "Sacred Flame", source: "PHB", ownerKey: "Cleric__PHB" },
+      { name: "Fire Bolt", source: "PHB", ownerKey: "Wizard__PHB" },
+      { name: "Light", source: "PHB", ownerKey: "unknown__unknown" },
+    ],
+  });
+  const evaluated = evaluateCharacter(char, { activeBooks: ALL_BOOKS });
+  const ledger = getTacticalActionLedger(char, evaluated, { activeBooks: ALL_BOOKS });
+  // Cleric casts with Wis (+3), Wizard with Int (+2); proficiency +2 at total level 2.
+  const sacredFlame = ledger.spellAttacks.find((s) => s.name === "Sacred Flame");
+  const fireBolt = ledger.spellAttacks.find((s) => s.name === "Fire Bolt");
+  const light = ledger.spellAttacks.find((s) => s.name === "Light");
+  assert.ok(sacredFlame && fireBolt && light);
+  assert.equal(sacredFlame.attackBonus, 5);
+  assert.equal(fireBolt.attackBonus, 4);
+  assert.equal(light.attackBonus, undefined);
+});
+
 test("damagePoolOf reads the leading pool of a damage string and rejects flat or non-pool text", () => {
   assert.equal(damagePoolOf("1d8 + 3"), "1d8 + 3");
   assert.equal(damagePoolOf("1d8+3"), "1d8+3");

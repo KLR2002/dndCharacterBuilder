@@ -6,10 +6,9 @@ import { useRollLog } from "../../context/RollLogContext";
 import { formatModifier } from "../../rules/abilities.ts";
 import { rollActionAttack, rollActionDamage } from "../../rules/actionRolls.ts";
 import type { D20Mode } from "../../rules/dice.ts";
+import { badgeVariantColors, type BadgeVariant } from "../ui/Badge";
 import { Button } from "../ui/Button";
 import { Modal } from "../ui/Modal";
-
-type BadgeVariant = "accent" | "surface" | "warning" | "success" | "muted" | "secondary" | "danger" | "outline";
 
 export interface RollBadgeProps {
   /** The badge text, e.g. "+5 to hit" or "1d8 + 3 slashing". */
@@ -104,38 +103,7 @@ export function RollBadge({
     return () => document.removeEventListener("keydown", onKeyDown);
   }, [focused, isD20]);
 
-  let bg = theme.surfaceHighlight;
-  let textColor = theme.textSecondary;
-  let borderColor = theme.border;
-  if (variant === "accent") {
-    bg = theme.accentGlow;
-    textColor = theme.accentHover;
-    borderColor = theme.accentBorder;
-  } else if (variant === "secondary") {
-    bg = theme.surfaceRaised;
-    textColor = theme.textSecondary;
-    borderColor = theme.border;
-  } else if (variant === "danger") {
-    bg = "rgba(239, 68, 68, 0.15)";
-    textColor = theme.danger;
-    borderColor = "rgba(239, 68, 68, 0.4)";
-  } else if (variant === "outline") {
-    bg = "transparent";
-    textColor = theme.textSecondary;
-    borderColor = theme.border;
-  } else if (variant === "warning") {
-    bg = "rgba(245, 158, 11, 0.15)";
-    textColor = theme.warning;
-    borderColor = "rgba(245, 158, 11, 0.4)";
-  } else if (variant === "success") {
-    bg = "rgba(34, 197, 94, 0.15)";
-    textColor = theme.success;
-    borderColor = "rgba(34, 197, 94, 0.4)";
-  } else if (variant === "muted") {
-    bg = "rgba(100, 116, 139, 0.15)";
-    textColor = theme.textMuted;
-    borderColor = theme.border;
-  }
+  const { backgroundColor: bg, textColor, borderColor } = badgeVariantColors(theme, variant);
 
   const isSmall = size === "sm";
 

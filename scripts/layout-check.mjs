@@ -1125,6 +1125,8 @@ async function checkActionRolls(ctx, width) {
   // The keyboard path to the roll sheet: context-menu key on the focused badge, then Advantage with fixed faces 17 and 9.
   await setFaces([17, 9]);
   await toHit.focus();
+  // The badge subscribes its key listener when React processes the focus event.
+  await page.waitForTimeout(200);
   await page.keyboard.press("ContextMenu");
   await page.waitForSelector(dialogSel, { state: "visible", timeout: 10000 }).catch(() => fail("the context-menu key on the focused badge did not open the roll sheet"));
   for (const label of ["Disadvantage", "Roll", "Advantage"]) {
