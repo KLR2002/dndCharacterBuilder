@@ -15,13 +15,14 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { CatalogUpdateModal } from "../components/CatalogUpdateModal";
 import { FirstRunModal } from "../components/FirstRunModal";
-import { NewCharacterModal } from "../components/NewCharacterModal";
+import { STEP_TITLES } from "../components/creationFlow/stepTitles";
 import { Badge } from "../components/ui/Badge";
 import { Button } from "../components/ui/Button";
 import { Modal } from "../components/ui/Modal";
 import { SearchBar } from "../components/ui/SearchBar";
 import { useCharacters } from "../context/CharacterContext";
 import { useAppTheme } from "../context/ThemeContext";
+import { currentCreationStep, isCreationFinished } from "../rules/creationFlow";
 import { evaluateCharacter } from "../rules/characterEvaluation";
 import { currentCompendium } from "../services/compendium";
 import { Character, Folder } from "../types/character";
@@ -42,10 +43,10 @@ export default function HomeScreen() {
     deleteFolder,
     deleteCharacter,
     updateCharacter,
+    createCharacter,
   } = useCharacters();
 
   const [searchQuery, setSearchQuery] = useState("");
-  const [newCharModalVisible, setNewCharModalVisible] = useState(false);
   const [newFolderModalVisible, setNewFolderModalVisible] = useState(false);
   const [newFolderName, setNewFolderName] = useState("");
   const [collapsedFolders, setCollapsedFolders] = useState<
@@ -77,8 +78,10 @@ export default function HomeScreen() {
     router.push("/options" as any);
   };
 
-  const handleCharacterCreated = (characterId: string) => {
-    router.push(`/character/${characterId}` as any);
+  // "New character" creates a draft on the Class step in the current folder and opens the Creation Flow.
+  const handleNewCharacter = async () => {
+    const created = await createCharacter({ name: "", creationProgress: { currentStep: "class" } });
+    router.push(`/build/${created.id}` as any);
   };
 
   const handleCreateFolder = () => {
@@ -182,11 +185,15 @@ export default function HomeScreen() {
     const maxHp = evaluated.hp.max;
     const primaryClass = char.classes[0]?.className || "Class Unset";
     const raceName = char.race?.name || "Race Unset";
+    // A draft opens into the Creation Flow on its step, never the sheet.
+    const draft = !isCreationFinished(char);
+    const draftStep = draft ? currentCreationStep(char, { activeBooks }) : null;
+    const cardTitle = draft ? `Draft · ${draftStep ? STEP_TITLES[draftStep] : ""}` : char.name || "Unnamed";
 
     return (
       <TouchableOpacity
         key={char.id}
-        onPress={() => router.push(`/character/${char.id}` as any)}
+        onPress={() => router.push((draft ? `/build/${char.id}` : `/character/${char.id}`) as any)}
         style={[
           styles.characterCard,
           {
@@ -223,7 +230,7 @@ export default function HomeScreen() {
               style={[styles.charCardName, { color: theme.text }]}
               numberOfLines={1}
             >
-              {char.name || "Unnamed"}
+              {cardTitle}
             </Text>
             <Badge label={`Lvl ${totalLevel}`} variant="accent" size="sm" />
           </View>
@@ -348,7 +355,7 @@ export default function HomeScreen() {
             </TouchableOpacity>
 
             <TouchableOpacity
-              onPress={() => setNewCharModalVisible(true)}
+              onPress={handleNewCharacter}
               style={[
                 styles.headerActionBtn,
                 { backgroundColor: theme.accent, borderColor: theme.accentHover },
@@ -400,7 +407,7 @@ export default function HomeScreen() {
               icon="add"
               variant="primary"
               size="lg"
-              onPress={() => setNewCharModalVisible(true)}
+              onPress={handleNewCharacter}
               style={{ marginTop: 16 }}
             />
           </View>
@@ -520,18 +527,12 @@ export default function HomeScreen() {
         onLater={handleCatalogUpdateLater}
       />
 
-      {/* New Character Creation Modal */}
-      <NewCharacterModal
-        visible={newCharModalVisible}
-        onClose={() => setNewCharModalVisible(false)}
-        onCreated={handleCharacterCreated}
-      />
-
       {/* New Folder Creation Modal */}
       <Modal
         visible={newFolderModalVisible}
         onClose={() => setNewFolderModalVisible(false)}
         title="Create New Folder"
+        hasUnsavedChanges={newFolderName.trim().length > 0}
         footer={
           <View
             style={{
@@ -773,10 +774,13 @@ const styles = StyleSheet.create({
     padding: 6,
   },
   input: {
-    height: 42,
+    minHeight: 44,
     borderRadius: 6,
     borderWidth: 1,
     paddingHorizontal: 12,
+    paddingVertical: Platform.OS === "android" ? 0 : 8,
+    textAlignVertical: "center",
+    includeFontPadding: false,
     fontSize: 14,
   },
   folderOptionRow: {

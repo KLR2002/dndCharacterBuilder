@@ -467,9 +467,26 @@ export function applyCreationStepChange(
     }
   }
 
-  const needsAttention = computeNeedsAttention(character, next, change.step, opts);
+  return applyCreationStepEdit(character, change.step, () => next, opts);
+}
+
+/**
+ * Applies an edit made on a Creation Step through the step's own transition (`edit` returns the character after
+ * it), then records the step's change the same way `applyCreationStepChange` does: the later steps that lost
+ * picks or turned invalid are marked as needing attention, and the draft sits on the changed step again, so the
+ * later steps stay locked until it is finished. The given Character is never mutated.
+ */
+export function applyCreationStepEdit(
+  character: Character,
+  step: CreationStepId,
+  edit: (current: Character) => Character,
+  opts: CreationFlowOptions = {},
+): Character {
+  const next = edit(character);
+  if (next === character) return character;
+  const needsAttention = computeNeedsAttention(character, next, step, opts);
   const progress: CreationProgress = {
-    currentStep: change.step,
+    currentStep: step,
     ...(needsAttention.length > 0 ? { needsAttention } : {}),
   };
   return { ...next, creationProgress: progress };
@@ -477,8 +494,11 @@ export function applyCreationStepChange(
 
 /**
  * Finishes a Creation Step: only a valid, applicable step of a draft can be finished. Its attention mark, if
- * any, clears, and the draft moves to the next applicable step; finishing Review leaves no creation progress,
- * so the character is finished. The given Character is never mutated.
+ * any, clears, and the draft's current step moves to the later of the old current step and the next applicable
+ * step after the finished one, so finishing an earlier step the player went back to never moves the draft
+ * backwards and re-locks finished steps; a step marked as needing attention therefore stays the current step's
+ * blocker until it is finished. Finishing Review leaves no creation progress, so the character is finished.
+ * The given Character is never mutated.
  */
 export function finishCreationStep(
   character: Character,
@@ -490,8 +510,9 @@ export function finishCreationStep(
   const applicable = applicableCreationSteps(character, opts);
   const index = applicable.indexOf(step);
   if (index === -1) return character;
+  const currentIndex = applicable.indexOf(resolveCurrentStep(character, applicable));
   const needsAttention = (character.creationProgress?.needsAttention ?? []).filter((id) => id !== step);
-  const nextStep = applicable[index + 1];
+  const nextStep = applicable[Math.max(index + 1, currentIndex)];
   if (!nextStep) return { ...character, creationProgress: undefined };
   return {
     ...character,

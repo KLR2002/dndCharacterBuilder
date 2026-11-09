@@ -31,7 +31,7 @@ import { proficiencyChoiceOffers } from "../../rules/proficiencyChoiceOffers";
 import { getPendingLevelChoices } from "../../rules/leveling";
 import { normalizeSkillName } from "../../rules/skills";
 import { getAvailableOptionalFeatures } from "../../rules/optionalFeatures";
-import { AbilityKey, Character, SkillChoiceEntry } from "../../types/character";
+import { AbilityKey, Character, CreationStepId, SkillChoiceEntry } from "../../types/character";
 import { DetailModal } from "../DetailModal";
 import { AbilityScoresSection } from "../builder/AbilityScoresSection";
 import { AncestrySection } from "../builder/AncestrySection";
@@ -46,12 +46,31 @@ interface BuilderTabProps {
   character?: Character;
   onUpdate?: (updates: Partial<Character> | ((character: Character) => Character)) => void;
   onViewDetail?: (item: any) => void;
+  /**
+   * The Creation Step this tab is hosted on in the Creation Flow: only that step's section renders and the
+   * section nav is hidden. Unset in the free-form builder, where the nav switches sections.
+   */
+  step?: CreationStepId;
 }
+
+/** Which builder section hosts each Creation Step (spells, details and review are hosted by the flow itself). */
+const STEP_SECTION: Partial<Record<CreationStepId, "abilities" | "race" | "background" | "class">> = {
+  abilities: "abilities",
+  race: "race",
+  subrace: "race",
+  background: "background",
+  class: "class",
+  subclass: "class",
+  classChoices: "class",
+  asiFeats: "class",
+  equipment: "class",
+};
 
 export const BuilderTab: React.FC<BuilderTabProps> = ({
   character: propChar,
   onUpdate: propUpdate,
   onViewDetail: propViewDetail,
+  step,
 }) => {
   const { theme } = useAppTheme();
   const { currentCharacter, updateCharacter: contextUpdate, activeBooks, fullHealOnLevelUp } = useCharacters();
@@ -335,9 +354,13 @@ export const BuilderTab: React.FC<BuilderTabProps> = ({
     { key: "class" as const, label: "Class", icon: "shield-outline" as const },
   ];
 
+  // Hosted on one Creation Step, the matching section renders alone; the nav is hidden.
+  const hostedSection = step ? STEP_SECTION[step] : undefined;
+
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       {/* ── Section Tab Nav ── */}
+      {!step && (
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
@@ -364,8 +387,9 @@ export const BuilderTab: React.FC<BuilderTabProps> = ({
           );
         })}
       </ScrollView>
+      )}
 
-      {activeSection === "abilities" && (
+      {(hostedSection ?? activeSection) === "abilities" && (
         <AbilityScoresSection
           character={character}
           onUpdate={onUpdate}
@@ -393,7 +417,7 @@ export const BuilderTab: React.FC<BuilderTabProps> = ({
         />
       )}
 
-      {activeSection === "race" && (
+      {(hostedSection ?? activeSection) === "race" && (
         <AncestrySection
           character={character}
           onUpdate={onUpdate}
@@ -402,10 +426,11 @@ export const BuilderTab: React.FC<BuilderTabProps> = ({
           proficiencyChoices={raceProficiencyChoices}
           onViewDetail={onViewDetail}
           theme={theme}
+          step={step === "subrace" ? "subrace" : step === "race" ? "race" : undefined}
         />
       )}
 
-      {activeSection === "background" && (
+      {(hostedSection ?? activeSection) === "background" && (
         <BackgroundSection
           character={character}
           onUpdate={onUpdate}
@@ -420,10 +445,11 @@ export const BuilderTab: React.FC<BuilderTabProps> = ({
         />
       )}
 
-      {activeSection === "class" && (
+      {(hostedSection ?? activeSection) === "class" && (
         <ClassProgressionSection
           character={character}
           onUpdate={onUpdate}
+          step={step}
           fullHealOnLevelUp={fullHealOnLevelUp}
           allClasses={allClasses}
           allFeats={allFeats}

@@ -12,7 +12,6 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { RestModal } from "../../components/RestModal";
 import { ActionsTab } from "../../components/tabs/ActionsTab";
-import { BuilderTab } from "../../components/tabs/BuilderTab";
 import { FeaturesTab } from "../../components/tabs/FeaturesTab";
 import { InventoryTab } from "../../components/tabs/InventoryTab";
 import { JournalTab } from "../../components/tabs/JournalTab";
@@ -26,13 +25,15 @@ import { useCharacters } from "../../context/CharacterContext";
 import { useAppTheme } from "../../context/ThemeContext";
 import { useHpQuickEdit } from "../../hooks/useHpQuickEdit";
 import { useResponsiveLayout } from "../../hooks/useResponsiveLayout";
+import { useSerifFont } from "../../hooks/useSerifFont";
 import { evaluateCharacter } from "../../rules/characterEvaluation";
+import { isCreationFinished } from "../../rules/creationFlow";
 import { resolvedSize } from "../../rules/sizeChoice";
 import { currentCompendium } from "../../services/compendium";
 import { commitCharacterName } from "../../rules/characterName";
 import { dismissNotices } from "../../rules/needsReview";
 
-type TabKey = "builder" | "stats" | "spells" | "inventory" | "features" | "journal" | "actions";
+type TabKey = "stats" | "spells" | "inventory" | "features" | "journal" | "actions";
 
 interface TabDefinition {
   key: TabKey;
@@ -41,7 +42,6 @@ interface TabDefinition {
 }
 
 const TABS: TabDefinition[] = [
-  { key: "builder", label: "Builder", icon: "construct-outline" },
   { key: "stats", label: "Stats", icon: "shield-outline" },
   { key: "spells", label: "Spells", icon: "sparkles-outline" },
   { key: "inventory", label: "Inventory", icon: "bag-outline" },
@@ -57,19 +57,28 @@ export default function CharacterSheetScreen() {
   const { theme } = useAppTheme();
   const { isCompact } = useResponsiveLayout();
 
-  const [activeTab, setActiveTab] = useState<TabKey>("builder");
+  const [activeTab, setActiveTab] = useState<TabKey>("stats");
   const [restModalVisible, setRestModalVisible] = useState(false);
   const [isEditingName, setIsEditingName] = useState(false);
   const [nameDraft, setNameDraft] = useState("");
   const [scrollX, setScrollX] = useState(0);
   const [scrollWidth, setScrollWidth] = useState(0);
   const [layoutWidth, setLayoutWidth] = useState(0);
+  const serif = useSerifFont();
 
   useEffect(() => {
     if (id) {
       selectCharacter(id);
     }
   }, [id, characters, selectCharacter]);
+
+  // A draft has no sheet: opening its route lands in the Creation Flow on its current step.
+  const isDraft = currentCharacter ? !isCreationFinished(currentCharacter) : false;
+  useEffect(() => {
+    if (isDraft && id) {
+      router.replace(`/build/${id}` as any);
+    }
+  }, [isDraft, id, router]);
 
   const evaluated = useMemo(
     () => (currentCharacter ? evaluateCharacter(currentCharacter, { compendium: currentCompendium(), activeBooks }) : null),
@@ -94,6 +103,9 @@ export default function CharacterSheetScreen() {
       </SafeAreaView>
     );
   }
+
+  // While the redirect to the Creation Flow runs, the sheet renders nothing.
+  if (isDraft) return null;
 
   const totalLevel = evaluated.totalLevel;
   const maxHp = evaluated.hp.max;
@@ -158,7 +170,7 @@ export default function CharacterSheetScreen() {
                   accessibilityLabel="Edit character name"
                   style={styles.charNameButton}>
                   <Text
-                    style={[styles.charName, { color: theme.text }, isCompact && { fontSize: 14 }]}
+                    style={[styles.charName, { color: theme.text, fontFamily: serif }, isCompact && { fontSize: 14 }]}
                     numberOfLines={1}
                     ellipsizeMode="tail">
                     {currentCharacter.name}
@@ -173,7 +185,7 @@ export default function CharacterSheetScreen() {
           </View>
 
           {/* Quick HP & Rest Buttons */}
-          <View style={{ flexDirection: "row", alignItems: "center", gap: 6, flexShrink: 0 }}>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 6, flexShrink: 0, flexWrap: "wrap", justifyContent: "flex-end" }}>
             <TouchableOpacity
               {...hpQuickEdit.triggerProps}
               style={[styles.quickHpBadge, { borderColor: theme.border, backgroundColor: theme.surfaceHighlight }]}>
@@ -209,6 +221,26 @@ export default function CharacterSheetScreen() {
               <Ionicons name="bed-outline" size={18} color={theme.accentHover} />
             </TouchableOpacity>
           </View>
+        </View>
+      </View>
+
+      {/* Header actions: Level up and Edit Build */}
+      <View style={[styles.headerActionsRow, { borderBottomColor: theme.border, backgroundColor: theme.surface }]}>
+        <View style={[styles.headerActionsInner, isCompact && { paddingHorizontal: 8 }]}>
+          <TouchableOpacity
+            onPress={() => router.push(`/build/${currentCharacter.id}?step=class` as any)}
+            accessibilityRole="button"
+            accessibilityLabel="Level up"
+            style={[styles.headerTextBtn, { backgroundColor: theme.surfaceHighlight, borderColor: theme.border }]}>
+            <Text style={[styles.headerTextBtnLabel, { color: theme.accentHover }]}>Level up</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={() => router.push(`/build/${currentCharacter.id}` as any)}
+            accessibilityRole="button"
+            accessibilityLabel="Edit Build"
+            style={[styles.headerTextBtn, { backgroundColor: theme.surfaceHighlight, borderColor: theme.border }]}>
+            <Text style={[styles.headerTextBtnLabel, { color: theme.accentHover }]}>Edit Build</Text>
+          </TouchableOpacity>
         </View>
       </View>
 
@@ -289,7 +321,6 @@ export default function CharacterSheetScreen() {
 
       {/* Tab Content Display */}
       <View style={styles.tabContentWrapper}>
-        {activeTab === "builder" && <BuilderTab />}
         {activeTab === "stats" && <StatsTab />}
         {activeTab === "spells" && <SpellsTab />}
         {activeTab === "inventory" && <InventoryTab />}
@@ -379,6 +410,32 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     alignItems: "center",
     justifyContent: "center",
+  },
+  headerActionsRow: {
+    width: "100%",
+    borderBottomWidth: 1,
+  },
+  headerActionsInner: {
+    width: "100%",
+    maxWidth: 1024,
+    alignSelf: "center",
+    flexDirection: "row",
+    gap: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+  },
+  headerTextBtn: {
+    flex: 1,
+    minHeight: 44,
+    borderRadius: 8,
+    borderWidth: 1,
+    paddingHorizontal: 10,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  headerTextBtnLabel: {
+    fontSize: 12,
+    fontWeight: "700",
   },
   tabsBarWrapper: {
     width: "100%",

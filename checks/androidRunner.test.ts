@@ -896,10 +896,10 @@ test("a scenario whose ready text never shows saves its stuck screen as -FAILED.
 
 test("a web-only scenario among the selected ones is listed as skipped and never run", async () => {
   const shots = mkdtempSync(join(osTmpdir(), "android-runner-test-"));
-  const world = makeWorld({ ...emulatorWorld, env: { ONLY: "New Character modal,Home", WIDTHS: "360", SHOTS: shots } });
+  const world = makeWorld({ ...emulatorWorld, env: { ONLY: "New character draft,Home", WIDTHS: "360", SHOTS: shots } });
   const code = await world.runRun();
   assert.equal(code, 0);
-  assert.ok(world.logs.join("\n").includes("Skipping New Character modal: web-only"));
+  assert.ok(world.logs.join("\n").includes("Skipping New character draft: web-only"));
   // Only Home ran: one launch, one screenshot, one reset+seed.
   assert.equal(world.callsTo("am start").length, 1);
   assert.equal(world.callsTo("pm clear").length, 1);
@@ -1080,7 +1080,7 @@ test("each scenario runs in its isolation mode and logs it: reset+seed, deep lin
     [
       "[360dp] Builder Abilities: reset+seed",
       "[360dp] Builder Race language choice: deep link",
-      "[360dp] Builder Class feats: same route",
+      "[360dp] Builder Class feats: deep link",
       "[360dp] Builder Class fighting styles card collapsed: reset+seed",
       "[360dp] Stats add language modal: relaunch",
       "[360dp] Rest modal: relaunch",
@@ -1092,8 +1092,8 @@ test("each scenario runs in its isolation mode and logs it: reset+seed, deep lin
     "force-stop", "pm-clear", "push-seed", "mkdir-files", "seed-copy", "rm-tmp", "am-start", "screencap", "pull",
     // A different route: only the deep-link launch.
     "am-start", "screencap", "pull",
-    // The same route as the previous scenario: not even a launch, the UI state carries over.
-    "screencap", "pull",
+    // A different step param on the same character: a deep-link launch too.
+    "am-start", "screencap", "pull",
     // fresh: clear and seed in again, then launch.
     "force-stop", "pm-clear", "push-seed", "mkdir-files", "seed-copy", "rm-tmp", "am-start", "screencap", "pull",
     // modal: force-stop and relaunch by deep link, without clearing or reseeding.
@@ -1105,7 +1105,7 @@ test("each scenario runs in its isolation mode and logs it: reset+seed, deep lin
   assert.equal(world.callsTo("pm clear").length, 2);
   assert.equal(world.callsTo("am force-stop").length, 4);
   assert.equal(world.callsTo("push").length, 2);
-  assert.equal(world.callsTo("am start").length, 6);
+  assert.equal(world.callsTo("am start").length, 7);
   for (const name of ["Builder-Abilities-360.png", "Builder-Race-language-choice-360.png", "Builder-Class-feats-360.png", "Builder-Class-fighting-styles-card-collapsed-360.png", "Stats-add-language-modal-360.png", "Rest-modal-360.png", "Home-360.png"]) {
     assert.ok(existsSync(join(shots, name)), name);
   }
@@ -1446,11 +1446,11 @@ test("unset or empty WIDTHS runs the default four widths", async () => {
 });
 
 test("ONLY that selects only web-only scenarios exits 2 listing them, before any device call", async () => {
-  const world = makeWorld({ ...emulatorWorld, env: { ONLY: "New Character modal" } });
+  const world = makeWorld({ ...emulatorWorld, env: { ONLY: "New character draft" } });
   const code = await world.runRun();
   assert.equal(code, 2);
   const err = world.errors.join("\n");
-  assert.ok(err.includes("New Character modal"), err);
+  assert.ok(err.includes("New character draft"), err);
   assert.match(err, /web-only/i);
   assert.equal(world.calls.length, 0);
 });
@@ -1533,13 +1533,14 @@ test("an offline emulator listed together with a ready physical device is waited
 test("across a whole fake run every adb call except `devices` carries -s <serial>, including tap, swipe, dump, screencap, pull, install", async () => {
   const shots = mkdtempSync(join(osTmpdir(), "android-runner-test-"));
   const content = `<node text="" class="android.widget.ScrollView" scrollable="true" bounds="[0,252][720,1232]" />`;
-  const withoutNeedle = `<hierarchy>${content}<node text="Builder" bounds="[80,187][157,220]" /><node text="Race" bounds="[316,320][375,356]" /></hierarchy>`;
-  const withNeedle = `<hierarchy>${content}<node text="Builder" bounds="[80,187][157,220]" /><node text="Race" bounds="[316,320][375,356]" /><node text="Granted Languages:" bounds="[10,620][300,660]" /></hierarchy>`;
+  const taps = `<node text="Rolled" bounds="[10,300][100,340]" /><node text="Roll" bounds="[10,350][80,390]" />`;
+  const withoutNeedle = `<hierarchy>${content}${taps}</hierarchy>`;
+  const withNeedle = `<hierarchy>${content}${taps}<node text="Reroll" bounds="[10,620][300,660]" /></hierarchy>`;
   const world = makeWorld({
     ...emulatorWorld,
-    env: { ONLY: "Builder Race language choice", WIDTHS: "360", SHOTS: shots },
-    // The two tab polls consume dumps 1-2, the ready polls 3-4 (no needle yet, so swipes run), and
-    // from dump 5 on the needle is there.
+    env: { ONLY: "Abilities rolled", WIDTHS: "360", SHOTS: shots },
+    // The two open-step taps consume dumps 1-2, the ready polls 3-4 run without the needle (so swipes
+    // run), and from dump 5 on the needle is there.
     dumpXml: (poll) => (poll <= 4 ? withoutNeedle : withNeedle),
   });
   const code = await world.runRun();

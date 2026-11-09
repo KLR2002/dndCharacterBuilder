@@ -16,6 +16,7 @@ import {
 import { migrateCharacter } from "../src/rules/migrateCharacter.ts";
 import {
   applyCreationStepChange,
+  applyCreationStepEdit,
   creationStepNeedsAttention,
   creationSteps,
   currentCreationStep,
@@ -289,6 +290,60 @@ describe("Changing the ancestry or the background", () => {
     assert.equal(changed.pouch.gp, 0, "the granted gold is released");
     assert.equal(isCreationStepValid(changed, "equipment", flowOpts), true, "the new class has no equipment kit to pick");
     assert.equal(creationStepNeedsAttention(changed, "equipment"), true, "the Equipment step is flagged because its claim was released");
+  });
+});
+
+describe("Finishing a step moves the current step only forward", () => {
+  test("finishing an earlier step the player went back to keeps the later current step", () => {
+    const fighter = finishedFighter();
+    assert.equal(currentCreationStep(fighter, flowOpts), "equipment");
+
+    const finished = finishCreationStep(fighter, "class", flowOpts);
+    assert.equal(currentCreationStep(finished, flowOpts), "equipment", "finishing Class must not move the draft back from Equipment");
+
+    const byId = new Map(creationSteps(finished, flowOpts).map((step) => [step.id, step]));
+    assert.equal(byId.get("race")?.status, "finished", "steps before the current step stay finished, not locked again");
+    assert.equal(byId.get("background")?.status, "finished");
+    assert.equal(byId.get("details")?.status, "locked", "steps after the current step stay locked");
+  });
+
+  test("a step needing attention stays the current step's blocker when an earlier step is finished", () => {
+    const fighter = finishedFighter();
+    const flagged: Character = {
+      ...fighter,
+      creationProgress: { currentStep: "classChoices", needsAttention: ["equipment"] },
+    };
+    const finished = finishCreationStep(flagged, "race", flowOpts);
+    assert.equal(currentCreationStep(finished, flowOpts), "classChoices", "the flagged current step stays until it is finished");
+    assert.equal(creationStepNeedsAttention(finished, "equipment"), true);
+  });
+
+  test("finishing the current step walks forward to Review and finishing Review finishes the character", () => {
+    let draft = finishedFighter();
+    assert.equal(currentCreationStep(draft, flowOpts), "equipment");
+    draft = finishCreationStep(draft, "equipment", flowOpts);
+    assert.equal(currentCreationStep(draft, flowOpts), "details");
+    draft = finishCreationStep(draft, "details", flowOpts);
+    assert.equal(currentCreationStep(draft, flowOpts), "review");
+    assert.equal(isCreationStepValid(draft, "review", flowOpts), true);
+    draft = finishCreationStep(draft, "review", flowOpts);
+    assert.equal(draft.creationProgress, undefined, "finishing Review leaves no creation progress");
+  });
+});
+
+describe("A generic edit on a step records the change like applyCreationStepChange", () => {
+  test("an edit on an earlier step re-anchors the draft on it and flags what it released", () => {
+    const fighter = finishedFighter();
+    const edited = applyCreationStepEdit(
+      fighter,
+      "race",
+      (cur) => ({ ...cur, race: { name: "Elf", source: "PHB" } }),
+      flowOpts,
+    );
+    assert.equal(currentCreationStep(edited, flowOpts), "race");
+    assert.equal(creationStepNeedsAttention(edited, "subrace"), true);
+    // An edit that changes nothing leaves the character untouched.
+    assert.equal(applyCreationStepEdit(fighter, "race", (cur) => cur, flowOpts), fighter);
   });
 });
 

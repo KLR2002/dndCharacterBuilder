@@ -7,7 +7,7 @@ import {
   saveFolders,
   updateSettings,
 } from "../services/storage";
-import type { Character, Folder } from "../types/character";
+import type { Character, CreationProgress, Folder } from "../types/character";
 import { applyCharacterUpdate } from "./characterUpdates";
 import { migrateCharacter } from "../rules/migrateCharacter";
 import { reconcileForActiveBooks } from "../rules/characterReconciler";
@@ -41,6 +41,8 @@ interface CharacterContextValue {
     alignment?: string;
     faction?: { name: string; rank: string; renown: string; notes: string };
     folderId?: string | null;
+    /** Set on creation to open the character as a draft in the Creation Flow instead of the sheet. */
+    creationProgress?: CreationProgress;
   }) => Promise<Character>;
   updateCharacter: {
     (id: string, updater: (c: Character) => Character): Promise<void>;
@@ -189,6 +191,7 @@ export function CharacterProvider({ children }: { children: React.ReactNode }) {
     alignment?: string;
     faction?: { name: string; rank: string; renown: string; notes: string };
     folderId?: string | null;
+    creationProgress?: CreationProgress;
   }): Promise<Character> => {
     requireReady();
     const newChar: Character = migrateCharacter({
@@ -248,6 +251,7 @@ export function CharacterProvider({ children }: { children: React.ReactNode }) {
       bonds: "",
       flaws: "",
       notes: "",
+      ...(initialData.creationProgress ? { creationProgress: initialData.creationProgress } : {}),
     }, undefined, [], activeBooks);
 
     await changeCharacters(previous => [...previous, newChar]);

@@ -116,7 +116,7 @@ test("playSteps plays every scenario's open steps of both modes, one click per s
   const integrated = screensOf(true);
   const collapsed = integrated.find((screen) => screen.name === "Builder Class skills card collapsed");
   const reopened = integrated.find((screen) => screen.name === "Builder Class skills card reopened");
-  const newCharacter = integrated.find((screen) => screen.name === "New Character modal");
+  const newCharacter = integrated.find((screen) => screen.name === "New character draft");
   for (const [screen, args] of [
     [collapsed, ["Skills", "Class & Subclass Choices", "Expertise"]],
     [reopened, ["Class & Subclass Choices", "Class & Subclass Choices"]],
