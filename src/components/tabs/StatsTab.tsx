@@ -22,6 +22,7 @@ import { formatModifier } from "../../services/dndRules";
 import { evaluateCharacter } from "../../rules/characterEvaluation";
 import { listSuperiorityPools } from "../../rules/combatDice";
 import { proficiencySheet } from "../../rules/proficiencySheet";
+import { checkSource, INITIATIVE_SOURCE, saveSource } from "../../rules/statRolls";
 import {
   addAddedProficiency,
   addedProficiencyOptions,
@@ -34,6 +35,7 @@ import { Badge } from "../ui/Badge";
 import { Button } from "../ui/Button";
 import { Card } from "../ui/Card";
 import { DetailModal } from "../DetailModal";
+import { RollBadge } from "../dice/RollBadge";
 import { InitiativeBreakdownModal } from "../InitiativeBreakdownModal";
 import { RestModal } from "../RestModal";
 import { Modal } from "../ui/Modal";
@@ -428,7 +430,15 @@ export const StatsTab: React.FC = () => {
           onPress={() => setInitiativeModalVisible(true)}
           style={[styles.statBox, { backgroundColor: theme.surface, borderColor: theme.border }]}>
           <Ionicons name="flash" size={18} color={theme.accentHover} />
-          <Text style={[styles.statBoxValue, { color: theme.text }]}>{formatModifier(initiative)}</Text>
+          <RollBadge
+            testID="roll-badge-initiative"
+            label={formatModifier(initiative)}
+            modifier={initiative}
+            source={INITIATIVE_SOURCE}
+            characterName={currentCharacter.name}
+            variant="accent"
+            size="sm"
+          />
           <Text style={[styles.statBoxLabel, { color: theme.textMuted }]}>INITIATIVE</Text>
         </TouchableOpacity>
 
@@ -607,7 +617,14 @@ export const StatsTab: React.FC = () => {
           return (
             <View key={key} style={[styles.abilityTile, { backgroundColor: theme.surface, borderColor: theme.border }, isCompact && { width: "48%" }]}>
               <Text style={[styles.abilityTileName, { color: theme.textMuted }]}>{key.toUpperCase()}</Text>
-              <Text style={[styles.abilityTileMod, { color: theme.accentHover }]}>{formatModifier(mod)}</Text>
+              <RollBadge
+                testID={`roll-badge-check-${key}`}
+                label={formatModifier(mod)}
+                modifier={mod}
+                source={checkSource(key)}
+                characterName={currentCharacter.name}
+                variant="accent"
+              />
               <View style={[styles.abilityTileScoreBadge, { backgroundColor: theme.surfaceRaised }]}>
                 <Text style={[styles.abilityTileScoreText, { color: theme.textSecondary }]}>{score}</Text>
               </View>
@@ -634,9 +651,15 @@ export const StatsTab: React.FC = () => {
                   ]}
                 />
                 <Text style={[styles.saveName, { color: theme.text }]}>{ABILITY_LABELS[key]}</Text>
-                <Text style={[styles.saveBonus, { color: save.isProficient ? theme.accentHover : theme.textSecondary }]}>
-                  {formatModifier(save.bonus)}
-                </Text>
+                <RollBadge
+                  testID={`roll-badge-save-${key}`}
+                  label={formatModifier(save.bonus)}
+                  modifier={save.bonus}
+                  source={saveSource(key)}
+                  characterName={currentCharacter.name}
+                  variant={save.isProficient ? "accent" : "surface"}
+                  size="sm"
+                />
               </View>
             );
           })}
@@ -773,24 +796,15 @@ export const StatsTab: React.FC = () => {
                     </View>
 
                     {/* Total Roll Modifier */}
-                    <View style={{ width: 45, alignItems: "flex-end" }}>
-                      <Text
-                        style={[
-                          styles.skillBonus,
-                          {
-                            color: skill.isExpertise
-                              ? theme.warning
-                              : skill.isProficient
-                              ? theme.accentHover
-                              : skill.halfProficiency
-                              ? theme.text
-                              : theme.textSecondary,
-                          },
-                        ]}
-                      >
-                        {formatModifier(skill.bonus)}
-                      </Text>
-                    </View>
+                    <RollBadge
+                      testID={`roll-badge-skill-${skill.name.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`}
+                      label={formatModifier(skill.bonus)}
+                      modifier={skill.bonus}
+                      source={skill.name}
+                      characterName={currentCharacter.name}
+                      variant={skill.isExpertise ? "warning" : skill.isProficient ? "accent" : "surface"}
+                      size="sm"
+                    />
                   </View>
                 );
               })}
@@ -1208,11 +1222,6 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: "700",
   },
-  abilityTileMod: {
-    fontSize: 22,
-    fontWeight: "bold",
-    marginVertical: 2,
-  },
   abilityTileScoreBadge: {
     paddingHorizontal: 8,
     paddingVertical: 2,
@@ -1230,6 +1239,7 @@ const styles = StyleSheet.create({
   saveItem: {
     width: "50%",
     flexDirection: "row",
+    flexWrap: "wrap",
     alignItems: "center",
     paddingHorizontal: 8,
     paddingVertical: 4,
@@ -1252,10 +1262,6 @@ const styles = StyleSheet.create({
     fontSize: 13,
     flex: 1,
   },
-  saveBonus: {
-    fontSize: 13,
-    fontWeight: "700",
-  },
   skillRow: {
     flexDirection: "row",
     alignItems: "center",
@@ -1273,10 +1279,6 @@ const styles = StyleSheet.create({
   passiveText: {
     fontSize: 12,
     fontWeight: "600",
-  },
-  skillBonus: {
-    fontSize: 13,
-    fontWeight: "700",
   },
   headingRow: {
     flexDirection: "row",

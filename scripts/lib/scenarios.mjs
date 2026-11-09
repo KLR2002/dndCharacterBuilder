@@ -1322,7 +1322,9 @@ export function buildScreens({ integrated }) {
               name: "Stats initiative breakdown modal",
               route: INITIATIVE_ROUTE,
               tabs: ["Stats"],
-              open: [{ tap: { label: "Initiative breakdown", exact: true } }],
+              // Taps the box's label text: the box's centre is now the initiative roll badge, whose own
+              // tap rolls instead of opening this modal.
+              open: [{ tap: { text: "INITIATIVE", exact: true } }],
               modal: "Initiative",
               expect: { texts: ["Dexterity", "+2", "Rakish Audacity", "+3", "Tactical Wit", "+3", "Total", "+8"], fitsWidth: true },
             },
