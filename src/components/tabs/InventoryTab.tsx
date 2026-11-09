@@ -665,11 +665,16 @@ export const InventoryTab: React.FC = () => {
                 {
                   backgroundColor:
                     (t === "All" && itemTypeFilter === null) || itemTypeFilter === t
-                      ? theme.accent
+                      ? theme.accentGlow
                       : theme.surfaceHighlight,
+                  borderColor:
+                    (t === "All" && itemTypeFilter === null) || itemTypeFilter === t
+                      ? theme.accentHover
+                      : theme.border,
+                  borderWidth: 1,
                 },
               ]}>
-              <Text style={{ color: (t === "All" && itemTypeFilter === null) || itemTypeFilter === t ? theme.accentText : "#fff", fontSize: 12, fontWeight: "600" }}>{t}</Text>
+              <Text style={{ color: (t === "All" && itemTypeFilter === null) || itemTypeFilter === t ? theme.text : theme.textSecondary, fontSize: 12, fontWeight: "600" }}>{t}</Text>
             </TouchableOpacity>
           ))}
         </ScrollView>
@@ -820,22 +825,22 @@ export const InventoryTab: React.FC = () => {
           style={[
             styles.placementBtn,
             {
-              backgroundColor: customSection === "carried" ? theme.accent : theme.surfaceHighlight,
-              borderColor: theme.border,
+              backgroundColor: customSection === "carried" ? theme.accentGlow : theme.surfaceHighlight,
+              borderColor: customSection === "carried" ? theme.accentHover : theme.border,
             },
           ]}>
-          <Text style={{ color: customSection === "carried" ? theme.accentText : "#fff", fontSize: 12, fontWeight: "600" }}>Backpack (Carried)</Text>
+          <Text style={{ color: customSection === "carried" ? theme.text : theme.textSecondary, fontSize: 12, fontWeight: "600" }}>Backpack (Carried)</Text>
         </TouchableOpacity>
         <TouchableOpacity
           onPress={() => setCustomSection("equipped")}
           style={[
             styles.placementBtn,
             {
-              backgroundColor: customSection === "equipped" ? theme.accent : theme.surfaceHighlight,
-              borderColor: theme.border,
+              backgroundColor: customSection === "equipped" ? theme.accentGlow : theme.surfaceHighlight,
+              borderColor: customSection === "equipped" ? theme.accentHover : theme.border,
             },
           ]}>
-          <Text style={{ color: customSection === "equipped" ? theme.accentText : "#fff", fontSize: 12, fontWeight: "600" }}>Equipped</Text>
+          <Text style={{ color: customSection === "equipped" ? theme.text : theme.textSecondary, fontSize: 12, fontWeight: "600" }}>Equipped</Text>
         </TouchableOpacity>
       </View>
 

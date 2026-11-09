@@ -979,15 +979,16 @@ export const SpellsTab: React.FC = () => {
                 style={[
                   styles.profilePill,
                   {
-                    backgroundColor: isSelected ? theme.accent : theme.surface,
+                    backgroundColor: isSelected ? theme.accentGlow : theme.surface,
                     borderColor: isSelected ? theme.accentHover : theme.border,
+                    borderWidth: 1,
                   },
                 ]}>
                 <Text
                   style={[
                     styles.profilePillText,
                     {
-                      color: isSelected ? theme.accentText : theme.text,
+                      color: theme.text,
                       fontWeight: isSelected ? "700" : "500",
                     },
                   ]}>
@@ -1709,20 +1710,24 @@ export const SpellsTab: React.FC = () => {
               style={[
                 styles.filterPill,
                 {
-                  backgroundColor: pickerSchoolFilter === null ? theme.accent : theme.surfaceHighlight,
+                  backgroundColor: pickerSchoolFilter === null ? theme.accentGlow : theme.surfaceHighlight,
+                  borderColor: pickerSchoolFilter === null ? theme.accentHover : theme.border,
+                  borderWidth: 1,
                 },
               ]}>
-              <Text style={{ color: pickerSchoolFilter === null ? theme.accentText : "#fff", fontSize: 11, fontWeight: "600" }}>All Schools</Text>
+              <Text style={{ color: pickerSchoolFilter === null ? theme.text : theme.textSecondary, fontSize: 11, fontWeight: "600" }}>All Schools</Text>
             </TouchableOpacity>
             <TouchableOpacity
               onPress={() => setPickerSchoolFilter("restricted")}
               style={[
                 styles.filterPill,
                 {
-                  backgroundColor: pickerSchoolFilter === "restricted" ? theme.accent : theme.surfaceHighlight,
+                  backgroundColor: pickerSchoolFilter === "restricted" ? theme.accentGlow : theme.surfaceHighlight,
+                  borderColor: pickerSchoolFilter === "restricted" ? theme.accentHover : theme.border,
+                  borderWidth: 1,
                 },
               ]}>
-              <Text style={{ color: pickerSchoolFilter === "restricted" ? theme.accentText : "#fff", fontSize: 11, fontWeight: "600" }}>Abjuration &amp; Evocation</Text>
+              <Text style={{ color: pickerSchoolFilter === "restricted" ? theme.text : theme.textSecondary, fontSize: 11, fontWeight: "600" }}>Abjuration &amp; Evocation</Text>
             </TouchableOpacity>
           </View>
         )}
@@ -1734,20 +1739,24 @@ export const SpellsTab: React.FC = () => {
               style={[
                 styles.filterPill,
                 {
-                  backgroundColor: pickerSchoolFilter === null ? theme.accent : theme.surfaceHighlight,
+                  backgroundColor: pickerSchoolFilter === null ? theme.accentGlow : theme.surfaceHighlight,
+                  borderColor: pickerSchoolFilter === null ? theme.accentHover : theme.border,
+                  borderWidth: 1,
                 },
               ]}>
-              <Text style={{ color: pickerSchoolFilter === null ? theme.accentText : "#fff", fontSize: 11, fontWeight: "600" }}>All Schools</Text>
+              <Text style={{ color: pickerSchoolFilter === null ? theme.text : theme.textSecondary, fontSize: 11, fontWeight: "600" }}>All Schools</Text>
             </TouchableOpacity>
             <TouchableOpacity
               onPress={() => setPickerSchoolFilter("restricted")}
               style={[
                 styles.filterPill,
                 {
-                  backgroundColor: pickerSchoolFilter === "restricted" ? theme.accent : theme.surfaceHighlight,
+                  backgroundColor: pickerSchoolFilter === "restricted" ? theme.accentGlow : theme.surfaceHighlight,
+                  borderColor: pickerSchoolFilter === "restricted" ? theme.accentHover : theme.border,
+                  borderWidth: 1,
                 },
               ]}>
-              <Text style={{ color: pickerSchoolFilter === "restricted" ? theme.accentText : "#fff", fontSize: 11, fontWeight: "600" }}>Enchantment &amp; Illusion</Text>
+              <Text style={{ color: pickerSchoolFilter === "restricted" ? theme.text : theme.textSecondary, fontSize: 11, fontWeight: "600" }}>Enchantment &amp; Illusion</Text>
             </TouchableOpacity>
           </View>
         )}
@@ -1763,10 +1772,12 @@ export const SpellsTab: React.FC = () => {
             style={[
               styles.filterPill,
               {
-                backgroundColor: selectedSpellLevel === null ? theme.accent : theme.surfaceHighlight,
+                backgroundColor: selectedSpellLevel === null ? theme.accentGlow : theme.surfaceHighlight,
+                borderColor: selectedSpellLevel === null ? theme.accentHover : theme.border,
+                borderWidth: 1,
               },
             ]}>
-            <Text style={{ color: selectedSpellLevel === null ? theme.accentText : "#fff", fontSize: 12, fontWeight: "600" }}>All Levels</Text>
+            <Text style={{ color: selectedSpellLevel === null ? theme.text : theme.textSecondary, fontSize: 12, fontWeight: "600" }}>All Levels</Text>
           </TouchableOpacity>
           {LEVEL_NAMES.slice(0, currentProfile.maxSpellLevel + 1).map((name, idx) => (
             <TouchableOpacity
@@ -1775,10 +1786,12 @@ export const SpellsTab: React.FC = () => {
               style={[
                 styles.filterPill,
                 {
-                  backgroundColor: selectedSpellLevel === idx ? theme.accent : theme.surfaceHighlight,
+                  backgroundColor: selectedSpellLevel === idx ? theme.accentGlow : theme.surfaceHighlight,
+                  borderColor: selectedSpellLevel === idx ? theme.accentHover : theme.border,
+                  borderWidth: 1,
                 },
               ]}>
-              <Text style={{ color: selectedSpellLevel === idx ? theme.accentText : "#fff", fontSize: 12, fontWeight: "600" }}>{name}</Text>
+              <Text style={{ color: selectedSpellLevel === idx ? theme.text : theme.textSecondary, fontSize: 12, fontWeight: "600" }}>{name}</Text>
             </TouchableOpacity>
           ))}
         </ScrollView>
@@ -1982,10 +1995,12 @@ export const SpellsTab: React.FC = () => {
             style={[
               styles.filterPill,
               {
-                backgroundColor: inscribeLevelFilter === null ? theme.accent : theme.surfaceHighlight,
+                backgroundColor: inscribeLevelFilter === null ? theme.accentGlow : theme.surfaceHighlight,
+                borderColor: inscribeLevelFilter === null ? theme.accentHover : theme.border,
+                borderWidth: 1,
               },
             ]}>
-            <Text style={{ color: inscribeLevelFilter === null ? theme.accentText : "#fff", fontSize: 12, fontWeight: "600" }}>All Levels (1-{maxRitualLevel})</Text>
+            <Text style={{ color: inscribeLevelFilter === null ? theme.text : theme.textSecondary, fontSize: 12, fontWeight: "600" }}>All Levels (1-{maxRitualLevel})</Text>
           </TouchableOpacity>
           {Array.from({ length: maxRitualLevel }).map((_, idx) => {
             const lvl = idx + 1;
@@ -1997,10 +2012,12 @@ export const SpellsTab: React.FC = () => {
                 style={[
                   styles.filterPill,
                   {
-                    backgroundColor: inscribeLevelFilter === lvl ? theme.accent : theme.surfaceHighlight,
+                    backgroundColor: inscribeLevelFilter === lvl ? theme.accentGlow : theme.surfaceHighlight,
+                    borderColor: inscribeLevelFilter === lvl ? theme.accentHover : theme.border,
+                    borderWidth: 1,
                   },
                 ]}>
-                <Text style={{ color: inscribeLevelFilter === lvl ? theme.accentText : "#fff", fontSize: 12, fontWeight: "600" }}>Level {lvl}</Text>
+                <Text style={{ color: inscribeLevelFilter === lvl ? theme.text : theme.textSecondary, fontSize: 12, fontWeight: "600" }}>Level {lvl}</Text>
               </TouchableOpacity>
             );
           })}
