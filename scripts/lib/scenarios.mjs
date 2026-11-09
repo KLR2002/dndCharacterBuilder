@@ -1165,6 +1165,7 @@ export function buildScreens({ integrated }) {
           ]
         : []),
       { name: "Inventory", route: WIZARD_ROUTE, tabs: ["Inventory"], ready: /total wealth/i },
+      { name: "Inventory item picker modal", route: WIZARD_ROUTE, tabs: ["Inventory"], open: [{ tap: { text: "Add from Compendium", exact: true } }], modal: "Add Item from Compendium" },
       { name: "Features", route: RENDAR_ROUTE, tabs: ["Features"], ready: /resource trackers/i },
       { name: "Journal", route: RENDAR_ROUTE, tabs: ["Journal"], ready: /character name/i },
       { name: "Actions", route: RENDAR_ROUTE, tabs: ["Actions"], ready: /attack action/i },
