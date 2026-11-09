@@ -794,8 +794,8 @@ function sorcererWarlockCharacter() {
   });
 }
 
-// A level 11 Warlock with no Mystic Arcanum spell picked: the arcanum tier row must not narrate where to
-// choose the spell.
+// A level 11 Warlock with no Mystic Arcanum spell picked: the empty arcanum tier row shows no
+// "No spell selected" line.
 const ARCANUM_ID = "char_arcanum";
 function arcanumCharacter() {
   return makeChar({
@@ -1093,7 +1093,7 @@ export function buildScreens({ integrated }) {
       { name: "Abilities standard array pending", route: buildRoute(CHARACTER_ID, "abilities"), open: [{ tap: { text: "Std Array", exact: true } }, { tap: { text: "15", exact: true } }], ready: "Reset", expect: { absentMatching: [/Now tap an ability slot/, /Tap a value from the pool/], fitsWidth: true } },
       // The Rolled Abilities method: switch to it and roll, so the six results with their dice are checked too.
       { name: "Abilities rolled", route: buildRoute(CHARACTER_ID, "abilities"), open: [{ tap: { text: "Rolled", exact: true } }, { tap: { text: "Roll", exact: true } }], ready: /reroll/i, scrollTo: "Reroll" },
-      // A pending rolled chip does not narrate the next tap either.
+      // A pending rolled chip shows no "Now tap an ability slot" hint.
       { name: "Rolled pending chip hint", route: buildRoute(ROLLED_ID, "abilities"), open: [{ tap: { text: "15", exact: true } }], ready: "Reroll", expect: { absentMatching: [/Now tap an ability slot/], fitsWidth: true } },
       // Re-tapping the already-active Rolled method does nothing: the placements stay on their slots.
       { name: "Rolled retap keeps placements", route: buildRoute(ROLLED_PICKS_ID, "abilities"), open: [{ tap: { text: "Rolled", exact: true } }], ready: /reroll/i, expect: { absentMatching: [/^—$/], fitsWidth: true } },
@@ -1101,8 +1101,8 @@ export function buildScreens({ integrated }) {
       { name: "Builder identity panel", route: buildRoute(LOW_SCORE_ID, "class"), open: [{ tap: { pattern: "^Fighter 1 · Acolyte$" } }], modal: "Character", expect: { texts: ["8 (-1)"], absent: ["8 (+-1)"], fitsWidth: true } },
       { name: "Builder Race", route: buildRoute(CHARACTER_ID, "race"), ready: /traits:/i },
       { name: "Builder Race language choice", route: buildRoute(HALF_ELF_ID, "race"), ready: /Granted Languages:/, scrollTo: "Granted Languages:" },
-      // The Subrace step (integrated mode only, where the held race offers several forms): its banner names the
-      // ancestry and carries no size / darkvision / source detail line.
+      // The Subrace step (integrated mode only, where the held race offers several forms): the banner names the
+      // ancestry and shows no Size or Darkvision line.
       ...(INTEGRATED
         ? [{ name: "Builder Subrace step", route: buildRoute(HIGH_ELF_ID, "subrace"), ready: "Subrace", expect: { texts: ["Subrace"], absentMatching: [/^Size /, /Darkvision/], fitsWidth: true } }]
         : []),
