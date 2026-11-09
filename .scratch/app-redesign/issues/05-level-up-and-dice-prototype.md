@@ -4,7 +4,7 @@
 
 **Blocked by:** 02, 04
 
-**Status:** open
+**Status:** resolved
 
 ## Question
 

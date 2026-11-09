@@ -325,5 +325,5 @@ Prototype review (map ticket 03):
 
 - The visual system: resolved by map ticket 04 (two-tone accents, base fixes, Source Serif 4 for names and titles, sheets and dialogs by width, wide layouts). `DESIGN.md` is written from the built result; until then ticket 04's answer holds the values.
 - The dice technique: resolved by map ticket 02 as 2.5D dice with Reanimated transforms (no WebGL). Still to measure: the real bundle delta (`npx expo export`) and Reanimated 4.5.1 against the SDK 57 library list.
-- How the Level-Up Flow, the dice tray and the roll triggers on Actions and Stats look and behave: map ticket 05.
-- How the visual system reaches the Home list, Options and the sheet's tabs (beyond ticket 04's wide-screen rules): map ticket 20. Where the Roll Log sits: map ticket 05.
+- How the Level-Up Flow, the dice tray and the roll triggers on Actions and Stats look and behave: resolved by map ticket 05 (pool-builder tray; tap a bonus to roll, hold for a Disadvantage / Roll / Advantage sheet; a result card above the dice button with the Roll Log as a tab in the tray; the Level-Up Flow in the Creation Flow's layout).
+- How the visual system reaches the Home list, Options and the sheet's tabs (beyond ticket 04's wide-screen rules): map ticket 20. The Roll Log sits in the dice tray (map ticket 05).

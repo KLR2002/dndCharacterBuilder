@@ -4,7 +4,7 @@
 
 ## What to build
 
-Level up on the character header opens the Level-Up Flow driven by the level-up plan: only the steps the level brings, Hit Points rolled (logged as "Hit Points") or averaged, Review confirming everything at once, Cancel discarding it. The Spells tab keeps learning, forgetting and swapping spells. Built as ticket 05 settles.
+Level up on the character header opens the Level-Up Flow driven by the level-up plan: only the steps the level brings, Hit Points rolled (logged as "Hit Points") or averaged, Review confirming everything at once, Cancel discarding it. The Spells tab keeps learning, forgetting and swapping spells. It uses the Creation Flow's layout: step chips on phones; at 768px and up a step list, the step, and an identity panel with level and hit points before → after. Class rows show only the level change ("4 → 5", "1") or the missing multiclass score ("Int 13"). Design: ticket 05, "Answer".
 
 ## Owns
 

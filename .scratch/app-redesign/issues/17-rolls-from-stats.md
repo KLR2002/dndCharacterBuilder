@@ -6,6 +6,8 @@
 
 On the Stats tab the player rolls each ability check, saving throw and skill with its bonus and the chosen advantage or disadvantage, each logged.
 
+Each bonus badge rolls on a tap with no advantage; holding it opens the roll sheet with Disadvantage, Roll and Advantage, with the same accessibility actions and keyboard path as ticket 16. Design: ticket 05, "Answer".
+
 ## Owns
 
 - AC-31: The Stats tab rolls checks, saves and skills

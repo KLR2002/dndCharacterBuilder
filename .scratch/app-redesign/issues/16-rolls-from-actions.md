@@ -6,6 +6,8 @@
 
 On the Actions tab the player rolls an attack (its bonus, with advantage or disadvantage) and its damage (its dice and modifier, dice doubled after a natural 20), each logged, and no roll spends a slot, use or ammunition.
 
+A tap on the "to hit" badge rolls at once with no advantage; holding it opens a roll sheet with Disadvantage, Roll and Advantage; no extra control sits beside the badge. A tap on the damage badge rolls the damage, and the result card offers critical damage after a natural 20. The badge also exposes "Roll with advantage" and "Roll with disadvantage" as accessibility actions and a keyboard path on web. Design: ticket 05, "Answer".
+
 ## Owns
 
 - AC-22: The Actions tab rolls attacks and damage
