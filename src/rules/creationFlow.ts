@@ -164,7 +164,10 @@ export function creationStepNeedsAttention(character: Character, step: CreationS
 /** The point-buy budget a creation's base scores may spend (2014 rules). */
 const POINT_BUY_BUDGET = 27;
 
-/** Whether the Abilities step's method is fully picked: the whole standard array, or scores within point buy. */
+/**
+ * Whether the Abilities step's method is fully picked: the whole standard array, scores within point buy,
+ * or — for rolled — six rolled results with every one placed on an ability. Manual asks for nothing.
+ */
 function abilitiesValid(character: Character): boolean {
   if (character.abilityMethod === "standardArray") {
     const picks = character.standardArrayPicks ?? {};
@@ -178,6 +181,17 @@ function abilitiesValid(character: Character): boolean {
       spent += POINT_BUY_COST[score] ?? 0;
     }
     return spent <= POINT_BUY_BUDGET;
+  }
+  if (character.abilityMethod === "rolled") {
+    const results = character.rolledAbilities ?? [];
+    const picks = character.rolledAbilityPicks ?? {};
+    return (
+      results.length === 6 &&
+      ABILITIES.every((ability) => {
+        const index = picks[ability];
+        return typeof index === "number" && Number.isInteger(index) && index >= 0 && index < results.length;
+      })
+    );
   }
   return true;
 }

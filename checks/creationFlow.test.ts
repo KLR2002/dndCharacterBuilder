@@ -180,6 +180,47 @@ describe("Details asks only for name, gender and alignment", () => {
   });
 });
 
+describe("Rolled Abilities is valid only when all six results are placed", () => {
+  const sixResults = Array.from({ length: 6 }, (_, i) => ({ dice: [], droppedIndex: 0, total: 10 + i }));
+  const base: Partial<Character> = { classes: [cl("Wizard", 1)], creationProgress: { currentStep: "abilities" } };
+
+  test("nothing rolled, partial placements and a full placement; manual stays valid", () => {
+    assert.equal(isCreationStepValid(makeChar({ ...base, abilityMethod: "rolled" }), "abilities"), false);
+    assert.equal(
+      isCreationStepValid(makeChar({ ...base, abilityMethod: "rolled", rolledAbilities: sixResults }), "abilities"),
+      false,
+      "six results with nothing placed is invalid",
+    );
+    assert.equal(
+      isCreationStepValid(
+        makeChar({
+          ...base,
+          abilityMethod: "rolled",
+          rolledAbilities: sixResults,
+          rolledAbilityPicks: { str: 0, dex: 1, con: 2, int: 3, wis: 4 },
+        }),
+        "abilities",
+      ),
+      false,
+      "five of six placed is invalid",
+    );
+    assert.equal(
+      isCreationStepValid(
+        makeChar({
+          ...base,
+          abilityMethod: "rolled",
+          rolledAbilities: sixResults,
+          rolledAbilityPicks: { str: 0, dex: 1, con: 2, int: 3, wis: 4, cha: 5 },
+        }),
+        "abilities",
+      ),
+      true,
+      "all six placed is valid",
+    );
+    assert.equal(isCreationStepValid(makeChar({ ...base, abilityMethod: "manual" }), "abilities"), true);
+  });
+});
+
 describe("A draft that starts above level 1 opens at full HP", () => {
   const flowOpts = { activeBooks: ALL_BOOKS };
   const catalogs = () => ({ compendium: currentCompendium(), activeBooks: ALL_BOOKS });
