@@ -158,7 +158,7 @@ const POINT_BUY_BUDGET = 27;
 
 /**
  * Whether the Abilities step's method is fully picked: the whole standard array, scores within point buy,
- * or — for rolled — six rolled results with every one placed on an ability. Manual asks for nothing.
+ * or — for rolled — six rolled results with every one placed on exactly one ability. Manual asks for nothing.
  */
 function abilitiesValid(character: Character): boolean {
   if (character.abilityMethod === "standardArray") {
@@ -177,12 +177,13 @@ function abilitiesValid(character: Character): boolean {
   if (character.abilityMethod === "rolled") {
     const results = character.rolledAbilities ?? [];
     const picks = character.rolledAbilityPicks ?? {};
+    const indexes = ABILITIES.map((ability) => picks[ability]);
     return (
       results.length === 6 &&
-      ABILITIES.every((ability) => {
-        const index = picks[ability];
-        return typeof index === "number" && Number.isInteger(index) && index >= 0 && index < results.length;
-      })
+      indexes.every(
+        (index) => typeof index === "number" && Number.isInteger(index) && index >= 0 && index < results.length,
+      ) &&
+      new Set(indexes).size === ABILITIES.length
     );
   }
   return true;
@@ -531,17 +532,22 @@ export function applyCreationStepEdit(
 ): Character {
   const next = edit(character);
   if (next === character) return character;
-  // The new marks add to the existing ones: a mark clears only through finishCreationStep on its step.
+  // The new marks add to the existing ones, but only steps that still apply to the new character keep their
+  // mark: a mark whose step no longer applies (the new race offers no subrace) could never be finished, so it
+  // is dropped here. A mark clears only through finishCreationStep on its step.
   const prior = character.creationProgress?.needsAttention ?? [];
   const computed = computeNeedsAttention(character, next, step, opts);
-  const needsAttention = [...new Set([...prior, ...computed])];
+  const applicable = new Set(applicableCreationSteps(next, opts));
+  const needsAttention = [...new Set([...prior, ...computed])].filter((id) => applicable.has(id));
   if (opts.editBuild && isCreationFinished(character)) {
     // Edit Build on a finished character: the marks ride in the progress record with the editBuild marker, so
-    // the character stays finished and every step stays reachable.
+    // the character stays finished and every step stays reachable. When no applicable mark remains the record
+    // is dropped entirely, leaving the character plain finished.
+    if (needsAttention.length === 0) return { ...next, creationProgress: undefined };
     const progress: CreationProgress = {
       currentStep: step,
       editBuild: true,
-      ...(needsAttention.length > 0 ? { needsAttention } : {}),
+      needsAttention,
     };
     return { ...next, creationProgress: progress };
   }
@@ -557,7 +563,7 @@ export function applyCreationStepEdit(
  * pick on that step, so an update that changes it is a pick change. Undefined for the steps that hold no
  * single pick of their own (abilities, classChoices, asiFeats, spells, equipment, details, review).
  */
-export function creationStepSignature(step: CreationStepId): ((character: Character) => string) | undefined {
+function creationStepSignature(step: CreationStepId): ((character: Character) => string) | undefined {
   switch (step) {
     case "class":
       return (c) => JSON.stringify(c.classes ?? []);
@@ -574,7 +580,7 @@ export function creationStepSignature(step: CreationStepId): ((character: Charac
 }
 
 /** The class an update added to the character's held classes, when it added one. */
-export function addedClassPick(before: Character, after: Character): { className: string; source: string } | undefined {
+function addedClassPick(before: Character, after: Character): { className: string; source: string } | undefined {
   const beforeNames = new Set((before.classes ?? []).map((c) => c.className));
   return (after.classes ?? []).find((c) => !beforeNames.has(c.className));
 }

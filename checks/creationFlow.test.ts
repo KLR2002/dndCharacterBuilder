@@ -230,6 +230,22 @@ describe("Rolled Abilities is valid only when all six results are placed", () =>
     );
     assert.equal(isCreationStepValid(makeChar({ ...base, abilityMethod: "manual" }), "abilities"), true);
   });
+
+  test("reusing one rolled result for several abilities is invalid", () => {
+    assert.equal(
+      isCreationStepValid(
+        makeChar({
+          ...base,
+          abilityMethod: "rolled",
+          rolledAbilities: sixResults,
+          rolledAbilityPicks: { str: 0, dex: 0, con: 1, int: 1, wis: 2, cha: 2 },
+        }),
+        "abilities",
+      ),
+      false,
+      "each of the six results goes to exactly one ability, so the six indexes must be distinct",
+    );
+  });
 });
 
 describe("A draft that starts above level 1 opens at full HP", () => {
