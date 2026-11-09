@@ -18,6 +18,7 @@ export default function RootLayout() {
               <Stack.Screen name="index" />
               <Stack.Screen name="character/[id]" />
               <Stack.Screen name="build/[id]" />
+              <Stack.Screen name="levelup/[id]" />
               <Stack.Screen name="options" />
             </Stack>
             <DiceOverlay />
