@@ -35,7 +35,7 @@ import {
   stopExpoWeb,
   waitForExpoWeb,
 } from "./lib/app-driver.mjs";
-import { buildScreens, buildSeed, CHARACTER_ID, DRUID_ID, WIZARD_ID } from "./lib/scenarios.mjs";
+import { buildScreens, buildSeed, CHARACTER_ID, DRUID_ID, EDIT_BUILD_ID, WIZARD_ID } from "./lib/scenarios.mjs";
 import { playStep, playSteps } from "./lib/web-steps.mjs";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
@@ -872,6 +872,169 @@ async function checkModalClosing(ctx, width) {
   return failures;
 }
 
+// The floating dice button, the tray's pool roll and the session Roll Log at one width: the button opens
+// the tray on the sheet; the tray builds a pool (die buttons add, chips remove, the modifier steps, the
+// Disadvantage / Normal / Advantage choice only for a lone d20, the primary action labelled with the pool
+// and disabled while the pool is empty), rolls it and the result card shows above the button with the
+// right total; a Roll seeded through the publishing seam reads "Kara · Longsword attack" and sits above
+// the "Dice tray" entry, newest first, when the card is tapped; a reload empties the log; on phones the
+// button sits above the flow's bottom primary-action bar, never covering it.
+async function checkDiceTrayAndLog(ctx, width) {
+  const page = await ctx.newPage();
+  const prefix = `[${width}px dice tray]`;
+  let failures = 0;
+  const fail = (msg) => {
+    failures++;
+    console.log(`${prefix} ${msg}`);
+  };
+  const shot = (name) => join(SHOTS, `DiceTray-${name}-${width}.png`);
+  const dialogSel = '[role="dialog"]';
+  const cardSel = '[data-testid="result-card"]';
+
+  await page.goto(`${BASE}/character/${CHARACTER_ID}`, { waitUntil: "networkidle", timeout: 120000 });
+  await page.waitForTimeout(1500);
+  const diceButton = page.getByLabel("Dice tray").first();
+  if (!(await diceButton.isVisible())) fail("the floating dice button is not visible on the sheet");
+  await diceButton.click();
+  await page.waitForSelector(dialogSel, { state: "visible", timeout: 10000 }).catch(() => fail("the tray did not open from the floating button"));
+  for (const v of await checkModalShape(page, width)) fail(v);
+  await page.screenshot({ path: shot("tray") });
+
+  // The pool builder: the primary action is disabled while the pool is empty, and the d20 mode choice
+  // appears only for a pool of exactly one d20.
+  const emptyRoll = await page.evaluate(buttonDisabled, "Roll");
+  if (emptyRoll.disabled !== true) fail(`"Roll" is not disabled while the pool is empty (${emptyRoll.state})`);
+  if ((await page.getByText("Advantage", { exact: true }).count()) > 0) fail('"Advantage" shows for an empty pool');
+  await page.getByLabel("Add d20", { exact: true }).click();
+  await page.waitForTimeout(200);
+  if (!(await page.getByText("Advantage", { exact: true }).first().isVisible())) fail('"Advantage" does not show for a lone d20');
+  await page.getByLabel("Remove 1d20", { exact: true }).click();
+  await page.getByLabel("Add d6", { exact: true }).click();
+  await page.getByLabel("Add d8", { exact: true }).click();
+  for (let i = 0; i < 3; i++) await page.getByLabel("Modifier increase", { exact: true }).click();
+  await page.waitForTimeout(200);
+  if ((await page.getByText("Advantage", { exact: true }).count()) > 0) fail('"Advantage" shows for a pool that is not a lone d20');
+  const rollLabel = "Roll 1d6 + 1d8 + 3";
+  const rollButton = page.getByText(rollLabel, { exact: true }).first();
+  if ((await rollButton.count()) === 0) fail(`the tray's primary action is not labelled "${rollLabel}"`);
+  else {
+    const enabled = await page.evaluate(buttonDisabled, rollLabel);
+    if (enabled.disabled !== false) fail(`"${rollLabel}" is not enabled (${enabled.state})`);
+    await rollButton.click();
+  }
+
+  // The tray rolled the pool and closed; the result card shows the Roll above the floating button.
+  await page.waitForSelector(cardSel, { state: "visible", timeout: 10000 }).catch(() => fail("no result card after the tray roll"));
+  const roll = await page.evaluate(() => {
+    const card = document.querySelector('[data-testid="result-card"]');
+    if (!card) return null;
+    const chips = [...card.querySelectorAll('[data-testid="die-chip"]')].map((chip) => chip.textContent ?? "");
+    const modifier = card.querySelector('[data-testid="result-modifier"]')?.textContent ?? "";
+    const total = card.querySelector('[data-testid="result-total"]')?.textContent ?? "";
+    const source = card.querySelector('[data-testid="result-source"]')?.textContent ?? "";
+    return { chips, modifier, total, source };
+  });
+  if (!roll) fail("the result card disappeared before it could be read");
+  else {
+    if (roll.source !== "Dice tray") fail(`the result card's source is "${roll.source}", expected "Dice tray"`);
+    const faces = roll.chips.map((chip) => Number(/(\d+)d\d+/.exec(chip)?.[1] ?? "NaN"));
+    const parsedModifier = Number(/([+-]\d+)/.exec(roll.modifier)?.[1] ?? "NaN");
+    const parsedTotal = Number(roll.total);
+    if (roll.chips.length !== 2 || faces.some(Number.isNaN) || Number.isNaN(parsedModifier) || Number.isNaN(parsedTotal))
+      fail(`the result card does not show two die chips, a modifier and a total: ${JSON.stringify(roll)}`);
+    else if (parsedTotal !== faces.reduce((sum, face) => sum + face, 0) + parsedModifier)
+      fail(`the result total ${parsedTotal} is not the faces ${faces.join("+")} ${roll.modifier}`);
+  }
+
+  // Seed a "Kara · Longsword attack" Roll through the publishing seam (no screen triggers it yet): the
+  // card is replaced by it.
+  const seeded = await page.evaluate(() => {
+    const hook = window.__publishRoll;
+    if (typeof hook !== "function") return false;
+    hook({
+      roll: { dice: [{ sides: 20, face: 15, dropped: false }], modifier: 5, total: 20 },
+      source: "Longsword attack",
+      characterName: "Kara",
+    });
+    return true;
+  });
+  if (!seeded) fail("the test-only publishing hook (window.__publishRoll) is not exposed on a seeded web build");
+  else {
+    await page
+      .waitForFunction(() => document.querySelector('[data-testid="result-source"]')?.textContent?.includes("Kara"), null, { timeout: 10000 })
+      .catch(() => fail('the result card was not replaced by the seeded "Kara · Longsword attack" entry'));
+    await page.screenshot({ path: shot("result") });
+    // The card's geometry: full width minus the 16px gutters on phones, at most 360px at the bottom-right
+    // at wide widths, just above the floating button.
+    const geo = await page.evaluate(() => {
+      const card = document.querySelector('[data-testid="result-card"]');
+      const button = document.querySelector('[data-testid="dice-button"]');
+      if (!card || !button) return null;
+      const r = card.getBoundingClientRect();
+      const b = button.getBoundingClientRect();
+      return { left: r.left, right: r.right, width: r.width, bottom: r.bottom, buttonTop: b.top, vw: window.innerWidth };
+    });
+    if (!geo) fail("no result card or dice button to measure");
+    else {
+      if (width < 600) {
+        if (Math.abs(geo.left - 16) > 1 || Math.abs(geo.right - (geo.vw - 16)) > 1)
+          fail(`the result card is not full width minus 16px gutters on a phone (left ${Math.round(geo.left)}, right ${Math.round(geo.right)} of ${geo.vw})`);
+      } else {
+        if (geo.width > 361) fail(`the result card is ${Math.round(geo.width)}px wide at a wide width, over 360px`);
+        if (Math.abs(geo.right - (geo.vw - 16)) > 1) fail("the result card is not at the bottom-right at a wide width");
+      }
+      if (geo.bottom > geo.buttonTop + 1) fail(`the result card overlaps the floating button (card bottom ${Math.round(geo.bottom)}, button top ${Math.round(geo.buttonTop)})`);
+    }
+    // Tapping the card opens the tray on the Log segment, newest first.
+    await page.click('[data-testid="result-card-body"]');
+    await page.waitForSelector(dialogSel, { state: "visible", timeout: 10000 }).catch(() => fail("tapping the result card did not open the tray"));
+    const headings = await page.evaluate(() => [...document.querySelectorAll('[data-testid="log-entry-heading"]')].map((el) => el.textContent));
+    if (headings.length < 2) fail(`the Roll Log shows ${headings.length} entries, expected 2: ${JSON.stringify(headings)}`);
+    else if (headings[0] !== "Kara · Longsword attack" || headings[1] !== "Dice tray")
+      fail(`the Roll Log is not newest first with character and source: ${JSON.stringify(headings)}`);
+    await page.screenshot({ path: shot("log") });
+    await page.keyboard.press("Escape");
+    await page.waitForSelector(dialogSel, { state: "hidden", timeout: 10000 }).catch(() => fail("Escape did not close the tray"));
+  }
+
+  // A reload empties the log: it is session app state, never stored.
+  await page.goto(`${BASE}/character/${CHARACTER_ID}`, { waitUntil: "networkidle", timeout: 120000 });
+  await page.waitForTimeout(1500);
+  await page.getByLabel("Dice tray").first().click();
+  await page.waitForSelector(dialogSel, { state: "visible", timeout: 10000 }).catch(() => fail("the tray did not reopen after the reload"));
+  await page.getByText("Log", { exact: true }).first().click();
+  await page.waitForTimeout(300);
+  if (!(await page.getByText("No rolls yet.", { exact: true }).first().isVisible().catch(() => false)))
+    fail("after a reload the Roll Log is not empty");
+  await page.screenshot({ path: shot("log-empty") });
+  await page.close();
+
+  // On phones the button sits above the flow's bottom primary-action bar, never covering it.
+  if (width < 600) {
+    const flowPage = await ctx.newPage();
+    await flowPage.goto(`${BASE}/build/${EDIT_BUILD_ID}?step=class&mode=levelup`, { waitUntil: "networkidle", timeout: 120000 });
+    await flowPage.waitForTimeout(1500);
+    await flowPage.getByText(/total level/i).first().waitFor({ state: "visible", timeout: 10000 }).catch(() => fail("the Level-Up Flow did not load"));
+    const geo = await flowPage.evaluate(() => {
+      const bar = document.querySelector('[data-testid="build-bottom-bar"]');
+      const button = document.querySelector('[data-testid="dice-button"]');
+      if (!bar || !button) return null;
+      const barRect = bar.getBoundingClientRect();
+      const buttonRect = button.getBoundingClientRect();
+      return { barTop: barRect.top, buttonBottom: buttonRect.bottom, buttonVisible: buttonRect.height > 0 && buttonRect.width > 0 };
+    });
+    if (!geo) fail("no bottom bar or dice button found in the Level-Up Flow");
+    else {
+      if (!geo.buttonVisible) fail("the dice button is not visible in the Level-Up Flow");
+      if (geo.buttonBottom > geo.barTop + 1)
+        fail(`the dice button covers the flow's bottom bar (button bottom ${Math.round(geo.buttonBottom)} over bar top ${Math.round(geo.barTop)})`);
+    }
+    await flowPage.screenshot({ path: join(SHOTS, `DiceTray-flow-${width}.png`) });
+    await flowPage.close();
+  }
+  return failures;
+}
+
 // The checks that open their own page rather than a SCREENS entry. Each is a scenario, so ONLY selects it by name.
 const EXTRA_CHECKS = [
   { name: "HP modals", run: checkHitPointModals },
@@ -879,6 +1042,7 @@ const EXTRA_CHECKS = [
   { name: "Wild Shape Features", run: checkWildShapeFeatures },
   { name: "Modal closing", run: checkModalClosing },
   { name: "New character draft folder", run: checkDraftFolder },
+  { name: "Dice tray and Roll Log", run: checkDiceTrayAndLog },
 ];
 
 // Every scenario name of this run: the SCREENS entries of the active catalog, then the extra checks.

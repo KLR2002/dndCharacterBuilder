@@ -12,6 +12,7 @@ import { SpellsTab } from "../../components/tabs/SpellsTab";
 import { Button } from "../../components/ui/Button";
 import { Modal } from "../../components/ui/Modal";
 import { useCharacters } from "../../context/CharacterContext";
+import { useRollLog } from "../../context/RollLogContext";
 import { useAppTheme } from "../../context/ThemeContext";
 import { useResponsiveLayout } from "../../hooks/useResponsiveLayout";
 import { useSerifFont } from "../../hooks/useSerifFont";
@@ -43,11 +44,20 @@ export default function BuildScreen() {
   const modeParam = Array.isArray(params.mode) ? params.mode[0] : params.mode;
   const buildMode: BuildFlowMode = modeParam === "levelup" ? "levelup" : "edit";
   const { characters, selectCharacter, updateCharacter, activeBooks } = useCharacters();
+  const { setBottomObstruction } = useRollLog();
   const { theme } = useAppTheme();
   const serif = useSerifFont();
   const { width } = useResponsiveLayout();
   const wide = width >= 768;
   const [identityOpen, setIdentityOpen] = useState(false);
+
+  // On phones the flow's bottom bar holds the primary action, and the floating dice button sits above
+  // it, never on its own row or over the action. At wide widths the button stays bottom-right of the
+  // viewport, so nothing is reported.
+  useEffect(() => {
+    if (wide) setBottomObstruction(0);
+    return () => setBottomObstruction(0);
+  }, [wide, setBottomObstruction]);
 
   useEffect(() => {
     if (id) selectCharacter(id);
@@ -289,7 +299,10 @@ export default function BuildScreen() {
         </View>
       </View>
 
-      <View style={[styles.bottomBar, { backgroundColor: theme.surface, borderTopColor: theme.border }]}>
+      <View
+        testID="build-bottom-bar"
+        onLayout={(event) => setBottomObstruction(event.nativeEvent.layout.height)}
+        style={[styles.bottomBar, { backgroundColor: theme.surface, borderTopColor: theme.border }]}>
         <TouchableOpacity
           accessibilityRole="button"
           onPress={() => setIdentityOpen(true)}

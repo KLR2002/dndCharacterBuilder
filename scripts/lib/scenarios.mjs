@@ -938,7 +938,7 @@ function reviewDraftCharacter() {
 
 // A finished level 3 Battle Master with its Fighting Style and three maneuvers picked and a claimed kit.
 // Edit Build reopens its Creation Flow; lowering the Fighter releases the level-3 maneuvers and flags their steps.
-const EDIT_BUILD_ID = "char_editbuild";
+export const EDIT_BUILD_ID = "char_editbuild";
 function editBuildCharacter() {
   return makeChar({
     id: EDIT_BUILD_ID,
@@ -1425,6 +1425,14 @@ export function buildScreens({ integrated }) {
         expect: { labels: ["Raise Fighter level", "Lower Fighter level"], texts: ["Change Class:"], fitsWidth: true },
       },
       { name: "Settings", route: "/options", ready: /settings & compendium/i },
+      // The floating dice button (label "Dice tray") is on every screen at every width: Home, Options, the
+      // character sheet, and the Creation Flow in its draft, Edit Build and Level-Up modes.
+      { name: "Dice button on the character list", route: "/", ready: /5e Character Builder/, expect: { labels: ["Dice tray"], fitsWidth: true } },
+      { name: "Dice button on Options", route: "/options", ready: /settings & compendium/i, expect: { labels: ["Dice tray"], fitsWidth: true } },
+      { name: "Dice button on sheet", route: RENDAR_ROUTE, tabs: ["Stats"], ready: /hit points/i, expect: { labels: ["Dice tray"], fitsWidth: true } },
+      { name: "Dice button in Creation Flow", route: `/build/${DRAFT_ID}?step=background`, ready: "Create Custom", expect: { labels: ["Dice tray"], fitsWidth: true } },
+      { name: "Dice button in Edit Build", route: `/build/${EDIT_BUILD_ID}?step=background`, ready: /background benefits/i, expect: { labels: ["Dice tray"], fitsWidth: true } },
+      { name: "Dice button in Level-Up Flow", route: `/build/${EDIT_BUILD_ID}?step=class&mode=levelup`, ready: /total level/i, expect: { labels: ["Dice tray"], fitsWidth: true } },
   ];
   // A named step has no text, pattern or label a runner can tap, so the scenario carrying one can only be
   // played by the web runner: flag it web-only.

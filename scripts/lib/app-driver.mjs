@@ -22,11 +22,13 @@ export async function httpStatus(url) {
 // Starts `npx expo start --web --clear` on `port` with CI set (no reload prompts, no telemetry), logging to `logPath`.
 // `--clear` drops Metro's cache, so a stale bundle cannot pass a check. The child runs in its own process group
 // (detached), so signalExpoGroup reaches its children too. Returns the child; `child.exited` turns true when it ends.
+// EXPO_PUBLIC_E2E=1 switches on the app's test-only web hooks (the native seed-file import is a no-op on web, where
+// there is no documentDirectory), so a browser scenario can call them.
 export function spawnExpoWeb({ root, port, logPath }) {
   const fd = fs.openSync(logPath, "w");
   const child = spawn("npx", ["expo", "start", "--web", "--port", String(port), "--clear"], {
     cwd: root,
-    env: { ...process.env, CI: "1", EXPO_NO_TELEMETRY: "1" },
+    env: { ...process.env, CI: "1", EXPO_NO_TELEMETRY: "1", EXPO_PUBLIC_E2E: "1" },
     detached: true,
     stdio: ["ignore", fd, fd],
   });
