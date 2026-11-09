@@ -621,7 +621,7 @@ export function removeClassLevel(
   const reconciled = reconcile({ ...updated, classes: updatedClasses }, compendium, { activeBooks });
   let result = releaseExpandedOnlySpells(character, reconciled, compendium, activeBooks);
   // While the class remains held, a spell it can no longer cast at the new level (one learned at the removed
-  // level) is released too, with a notice. Removing the last level keeps the class's own-list spells, as before.
+  // level) is released too, with a notice. Removing the last level keeps the class's own-list spells.
   if (existing.level > 1) {
     result = releaseOverLevelSpells(result, existing.className, existing.source, existing.level - 1, compendium, activeBooks);
   }

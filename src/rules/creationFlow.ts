@@ -67,8 +67,8 @@ export function classStepOffer(): ClassStepOffer {
 
 /**
  * How the build flow at `/build/<id>` was entered: Edit Build reopens a finished Character's flow to change its
- * picks, while the interim Level up path (until the Level-Up Flow exists) keeps the controls that add levels and
- * classes. The Class step reads its offer from `classStepModeOffer`.
+ * picks, while the Level up path keeps the controls that add levels and classes. The Class step reads its
+ * offer from `classStepModeOffer`.
  */
 export type BuildFlowMode = "edit" | "levelup";
 
@@ -85,6 +85,17 @@ export interface ClassStepModeOffer {
 export function classStepModeOffer(mode: BuildFlowMode): ClassStepModeOffer {
   if (mode === "levelup") return { canLowerLevel: true, canRaiseLevel: true, canAddClass: true };
   return { canLowerLevel: true, canRaiseLevel: false, canAddClass: false };
+}
+
+/**
+ * The lowest level a held class can be lowered to in the given build-flow mode, by the class's index in
+ * `classes`: 0 means lowering below 1 removes the class through `removeClassLevel`. Edit Build lowers a
+ * class that is not the first below 1, removing it; the first class stays at least 1. Outside Edit Build
+ * (the Level up path, the free-form builder, a draft) any class may be lowered to removal.
+ */
+export function classStepMinLevel(mode: BuildFlowMode | undefined, classIndex: number): number {
+  if (mode === "edit") return classIndex > 0 ? 0 : 1;
+  return 0;
 }
 
 /** Options of the step-change functions: `editBuild` records the change on a finished Character in Edit Build. */
@@ -581,6 +592,73 @@ export function applyCreationStepEdit(
     ...(needsAttention.length > 0 ? { needsAttention } : {}),
   };
   return { ...next, creationProgress: progress };
+}
+
+/**
+ * The stored pick a Creation Step holds, as a signature: two characters with the same signature hold the same
+ * pick on that step, so an update that changes it is a pick change. Undefined for the steps that hold no
+ * single pick of their own (abilities, classChoices, asiFeats, spells, equipment, details, review).
+ */
+export function creationStepSignature(step: CreationStepId): ((character: Character) => string) | undefined {
+  switch (step) {
+    case "class":
+      return (c) => JSON.stringify(c.classes ?? []);
+    case "subclass":
+      return (c) => JSON.stringify((c.classes ?? []).map((x) => [x.className, x.subclassName ?? null]));
+    case "race":
+    case "subrace":
+      return (c) => JSON.stringify(c.race ?? null);
+    case "background":
+      return (c) => JSON.stringify(c.background ?? null);
+    default:
+      return undefined;
+  }
+}
+
+/** The class an update added to the character's held classes, when it added one. */
+export function addedClassPick(before: Character, after: Character): { className: string; source: string } | undefined {
+  const beforeNames = new Set((before.classes ?? []).map((c) => c.className));
+  return (after.classes ?? []).find((c) => !beforeNames.has(c.className));
+}
+
+/** Whether the update raises any held class's level. */
+function raisesClassLevel(before: Character, after: Character): boolean {
+  return (after.classes ?? []).some((c) => {
+    const held = (before.classes ?? []).find((o) => o.className.toLowerCase() === c.className.toLowerCase());
+    return held !== undefined && c.level > held.level;
+  });
+}
+
+/**
+ * Applies an update made on the open step of the build screen, deciding which transition records it:
+ * a finished character on the Level up path keeps the plain update; Edit Build on a finished character
+ * records the change through `applyCreationStepEdit` with the `editBuild` marker, refusing a class pick
+ * added or a level raised there (the mode offers neither); a draft that picks a second class replaces its
+ * held one through `applyCreationStepChange`; any other pick change on a step goes through
+ * `applyCreationStepEdit`. An update that changes no stored pick of the step is kept as it is.
+ * The given Character is never mutated.
+ */
+export function applyBuildStepUpdate(
+  current: Character,
+  next: Character,
+  step: CreationStepId,
+  mode: BuildFlowMode,
+  opts: ApplyStepOptions = {},
+): Character {
+  if (next === current) return current;
+  const draft = !isCreationFinished(current);
+  if (!draft && mode !== "edit") return next;
+  if (step === "class") {
+    const added = addedClassPick(current, next);
+    if (added) {
+      if (!draft) return current;
+      return applyCreationStepChange(current, { step: "class", className: added.className, source: added.source }, opts);
+    }
+    if (!draft && raisesClassLevel(current, next)) return current;
+  }
+  const signature = creationStepSignature(step);
+  if (!signature || signature(current) === signature(next)) return next;
+  return applyCreationStepEdit(current, step, () => next, draft ? opts : { ...opts, editBuild: true });
 }
 
 /**

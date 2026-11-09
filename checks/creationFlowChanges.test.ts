@@ -16,12 +16,14 @@ import {
 import { migrateCharacter } from "../src/rules/migrateCharacter.ts";
 import {
   applicableCreationSteps,
+  applyBuildStepUpdate,
   applyCreationStepChange,
   applyCreationStepEdit,
   creationStepNeedsAttention,
   creationSteps,
   currentCreationStep,
   finishCreationStep,
+  isCreationFinished,
   isCreationStepValid,
 } from "../src/rules/creationFlow.ts";
 import type { Character, CharacterClass } from "../src/types/character.ts";
@@ -392,6 +394,32 @@ describe("A generic edit on a step records the change like applyCreationStepChan
     assert.equal(creationStepNeedsAttention(edited, "subrace"), true);
     // An edit that changes nothing leaves the character untouched.
     assert.equal(applyCreationStepEdit(fighter, "race", (cur) => cur, flowOpts), fighter);
+  });
+});
+
+describe("The build screen's step-update decision lives in the rules module", () => {
+  test("an update that changes no stored pick of the open step is kept as it is", () => {
+    const fighter = finishedFighter();
+    const next = { ...fighter, currentHp: 5 };
+    assert.equal(applyBuildStepUpdate(fighter, next, "race", "edit", flowOpts), next);
+  });
+
+  test("a pick change on a finished character in Edit Build is recorded with the editBuild marker", () => {
+    const fighter: Character = { ...finishedFighter(), creationProgress: undefined };
+    assert.equal(isCreationFinished(fighter), true);
+    const next: Character = { ...fighter, race: { name: "Elf", source: "PHB" } };
+    const changed = applyBuildStepUpdate(fighter, next, "race", "edit", flowOpts);
+    assert.equal(changed.race?.name, "Elf");
+    assert.equal(isCreationFinished(changed), true, "the character stays finished");
+    assert.equal(changed.creationProgress?.editBuild, true);
+    assert.equal(creationStepNeedsAttention(changed, "subrace"), true, "the released later step is flagged");
+  });
+
+  test("a draft picking a second class replaces the held one instead of adding it", () => {
+    const draft = makeChar({ classes: [cl("Fighter", 1)], creationProgress: { currentStep: "class" } });
+    const next: Character = { ...draft, classes: [...draft.classes, cl("Rogue", 1)] };
+    const changed = applyBuildStepUpdate(draft, next, "class", "edit", flowOpts);
+    assert.deepEqual(changed.classes.map((c) => c.className), ["Rogue"], "the picked class replaces the first");
   });
 });
 
