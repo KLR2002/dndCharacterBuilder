@@ -37,6 +37,7 @@ import {
 } from "./lib/app-driver.mjs";
 import { buildScreens, buildSeed, CHARACTER_ID, DRUID_ID, EDIT_BUILD_ID, WIZARD_ID } from "./lib/scenarios.mjs";
 import { playStep, playSteps } from "./lib/web-steps.mjs";
+import { ACCENT_PALETTES, BASE_DARK_THEME } from "../src/constants/theme.ts";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const BASE = process.env.BASE ?? "http://localhost:8099";
@@ -1035,6 +1036,210 @@ async function checkDiceTrayAndLog(ctx, width) {
   return failures;
 }
 
+// The seed of the current run, so a check can open an extra browser context (e.g. with reduced motion
+// emulated) seeded the same way as the width contexts.
+let ACTIVE_SEED = null;
+
+// "#rrggbb" as the CSS rgb() string getComputedStyle returns.
+function hexToRgbString(hex) {
+  const n = Number.parseInt(hex.slice(1), 16);
+  return `rgb(${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255})`;
+}
+
+// The 2.5D dice of a Roll in the result card: with the 3D dice setting on (no saved value, no reduced
+// motion) the text total is shown while the dice are still tumbling and lands on the Roll's faces in
+// the accent colour, a dropped d20 included but muted; with the setting switched off in Options (and
+// kept off across a reload), or with reduced motion emulated and no setting saved, no dice mount and
+// the text appears at once; the Options switch shows the effective state.
+async function checkDiceAnimation(ctx, width) {
+  const page = await ctx.newPage();
+  const prefix = `[${width}px dice animation]`;
+  let failures = 0;
+  const fail = (msg) => {
+    failures++;
+    console.log(`${prefix} ${msg}`);
+  };
+  const shot = (name) => join(SHOTS, `DiceAnimation-${name}-${width}.png`);
+  const dialogSel = '[role="dialog"]';
+  const cardSel = '[data-testid="result-card"]';
+  const diceSel = '[data-testid^="die-3d-"]';
+  const accentHex = ACCENT_PALETTES.crimson.primary;
+  const accentRgb = hexToRgbString(accentHex);
+  const accentHoverRgb = hexToRgbString(ACCENT_PALETTES.crimson.secondary);
+  const borderRgb = hexToRgbString(BASE_DARK_THEME.border);
+
+  // The "3D dice" switch row's rendered border: the accent border when on, the plain border when off
+  // (react-native-web does not map accessibilityState to aria-checked, so read the style).
+  const switchBorder = async (p) =>
+    p.evaluate(() => {
+      const el = document.querySelector('[data-testid="dice-3d-switch"]');
+      return el ? getComputedStyle(el).borderColor : null;
+    });
+
+  const rollTrayPool = async (p) => {
+    await p.getByLabel("Dice tray").first().click();
+    await p.waitForSelector(dialogSel, { state: "visible", timeout: 10000 }).catch(() => fail("the tray did not open"));
+    await p.getByLabel("Add d6", { exact: true }).click();
+    await p.getByLabel("Add d8", { exact: true }).click();
+    for (let i = 0; i < 3; i++) await p.getByLabel("Modifier increase", { exact: true }).click();
+    await p.waitForTimeout(200);
+    await p.getByText("Roll 1d6 + 1d8 + 3", { exact: true }).first().click();
+    await p.waitForSelector(cardSel, { state: "visible", timeout: 10000 }).catch(() => fail("no result card after the tray roll"));
+  };
+
+  await page.goto(`${BASE}/character/${CHARACTER_ID}`, { waitUntil: "networkidle", timeout: 120000 });
+  await page.waitForTimeout(1500);
+
+  // 3D dice on by default (no saved setting, no reduced motion): the total is there while the
+  // dice still tumble, the faces shown match the Roll's chips, the dice carry the accent colour.
+  await rollTrayPool(page);
+  const dieMounted = await page.waitForSelector('[data-testid="die-3d-0"]', { state: "visible", timeout: 10000 }).catch(() => null);
+  if (!dieMounted) fail("with 3D dice on, no animated die mounted in the result card");
+  else {
+    const early = await page.evaluate((sel) => {
+      const card = document.querySelector('[data-testid="result-card"]');
+      const die = card?.querySelector(sel);
+      return {
+        total: card?.querySelector('[data-testid="result-total"]')?.textContent ?? null,
+        transform: die ? getComputedStyle(die).transform : null,
+      };
+    }, '[data-testid="die-3d-0"]');
+    await page.waitForTimeout(120);
+    const mid = await page.evaluate((sel) => {
+      const die = document.querySelector(sel);
+      return die ? getComputedStyle(die).transform : null;
+    }, '[data-testid="die-3d-0"]');
+    if (early.total === null) fail("the text total was not shown while the dice animation was still running");
+    else if (early.transform === null || early.transform === mid) fail("the die pose did not change between samples 120ms apart: no animation ran with 3D dice on");
+
+    const faces = await page.evaluate((accent) => {
+      const card = document.querySelector('[data-testid="result-card"]');
+      if (!card) return null;
+      const chips = [...card.querySelectorAll('[data-testid="die-chip"]')].map((c) => c.textContent ?? "");
+      const dice = [...card.querySelectorAll('[data-testid^="die-3d-"]')].map((d) => d.getAttribute("aria-label") ?? "");
+      const total = card.querySelector('[data-testid="result-total"]')?.textContent ?? "";
+      const d6 = card.querySelector('[data-testid="die-3d-0"]');
+      const d8 = card.querySelector('[data-testid="die-3d-1"]');
+      const d6bg = d6?.firstElementChild ? getComputedStyle(d6.firstElementChild).backgroundColor : null;
+      const d8fill = d8?.querySelector("svg polygon")?.getAttribute("fill") ?? null;
+      return { chips, dice, total, d6bg, d8fill };
+    }, accentHex);
+    if (!faces) fail("the result card disappeared before its dice could be read");
+    else {
+      const chipFaces = faces.chips.map((chip) => Number(/(\d+)d\d+/.exec(chip)?.[1] ?? "NaN"));
+      const shownFaces = faces.dice.map((label) => Number(/showing (\d+)/.exec(label)?.[1] ?? "NaN"));
+      if (chipFaces.length !== 2 || shownFaces.length !== 2 || chipFaces.some(Number.isNaN) || shownFaces.some(Number.isNaN))
+        fail(`the card does not show two chips and two animated dice: ${JSON.stringify(faces)}`);
+      else if (chipFaces.join(",") !== shownFaces.join(","))
+        fail(`the animated faces ${shownFaces.join(",")} do not match the Roll's chips ${chipFaces.join(",")}`);
+      else if (Number(faces.total) !== chipFaces.reduce((sum, face) => sum + face, 0) + 3)
+        fail(`the total ${faces.total} is not the faces plus +3`);
+      if (faces.d6bg !== accentRgb) fail(`the d6 die is filled ${faces.d6bg}, expected the accent ${accentRgb}`);
+      if (faces.d8fill !== accentHex) fail(`the d8 die's SVG face is filled ${faces.d8fill}, expected the accent ${accentHex}`);
+    }
+    await page.screenshot({ path: shot("animated") });
+
+    // The tumble settles well under a second after the roll.
+    await page.waitForTimeout(1200);
+    const settledA = await page.evaluate(() => getComputedStyle(document.querySelector('[data-testid="die-3d-0"]')).transform);
+    await page.waitForTimeout(150);
+    const settledB = await page.evaluate(() => getComputedStyle(document.querySelector('[data-testid="die-3d-0"]')).transform);
+    if (settledA !== settledB) fail("the dice were still animating more than 1.2s after the roll");
+  }
+
+  // A dropped d20 of a seeded Roll animates too, but muted.
+  const seeded = await page.evaluate(() => {
+    const hook = window.__publishRoll;
+    if (typeof hook !== "function") return false;
+    hook({
+      roll: { dice: [{ sides: 20, face: 17, dropped: false }, { sides: 20, face: 9, dropped: true }], modifier: 5, total: 22 },
+      source: "Longsword attack",
+      characterName: "Kara",
+      d20Mode: "advantage",
+    });
+    return true;
+  });
+  if (!seeded) fail("the test-only publishing hook (window.__publishRoll) is not exposed on a seeded web build");
+  else {
+    await page.waitForSelector('[data-testid="die-3d-1"]', { state: "visible", timeout: 10000 }).catch(() => fail("the dropped d20 did not mount as an animated die"));
+    const muted = await page.evaluate(() => {
+      const dropped = document.querySelector('[data-testid="die-3d-1"]');
+      if (!dropped) return null;
+      return { label: dropped.getAttribute("aria-label") ?? "", opacity: getComputedStyle(dropped).opacity };
+    });
+    if (!muted) fail("no dropped die to read");
+    else {
+      if (!muted.label.includes("9") || !muted.label.toLowerCase().includes("dropped")) fail(`the dropped d20's label is "${muted.label}", expected its face 9 marked dropped`);
+      if (Number(muted.opacity) >= 1) fail(`the dropped d20 is not muted (opacity ${muted.opacity})`);
+    }
+    await page.screenshot({ path: shot("dropped") });
+  }
+
+  // The Options switch shows on with no saved value and no reduced motion, and toggling it off persists.
+  await page.goto(`${BASE}/options`, { waitUntil: "networkidle", timeout: 120000 });
+  await page.waitForTimeout(1200);
+  const diceSwitch = page.getByLabel("3D dice").first();
+  if (!(await diceSwitch.isVisible().catch(() => false))) fail('the Options screen has no "3D dice" switch');
+  else {
+    if ((await switchBorder(page)) !== accentHoverRgb) fail(`the "3D dice" switch is not on by default (border ${await switchBorder(page)}, expected ${accentHoverRgb})`);
+    await diceSwitch.click();
+    await page.waitForTimeout(300);
+    if ((await switchBorder(page)) !== borderRgb) fail(`tapping the "3D dice" switch did not turn it off (border ${await switchBorder(page)}, expected ${borderRgb})`);
+    await page.screenshot({ path: shot("options-off") });
+  }
+
+  // With the setting off (and kept off across a reload) no animation runs, the text is at once.
+  await page.goto(`${BASE}/character/${CHARACTER_ID}`, { waitUntil: "networkidle", timeout: 120000 });
+  await page.waitForTimeout(1500);
+  await rollTrayPool(page);
+  const offState = await page.evaluate(() => ({
+    total: document.querySelector('[data-testid="result-total"]')?.textContent ?? null,
+    dice: document.querySelectorAll('[data-testid^="die-3d-"]').length,
+  }));
+  if (offState.total === null) fail("with the setting off, the text total was not shown at once");
+  if (offState.dice !== 0) fail(`with the setting off, ${offState.dice} animated dice mounted`);
+  await page.waitForTimeout(900);
+  if ((await page.locator(diceSel).count()) !== 0) fail("with the setting off, animated dice mounted later");
+  await page.screenshot({ path: shot("off") });
+
+  // Reduced motion emulated and no saved setting (a fresh context) — no animation either.
+  const rctx = await ctx.browser().newContext({
+    viewport: { width, height: 851 },
+    deviceScaleFactor: 2,
+    hasTouch: true,
+    isMobile: true,
+    reducedMotion: "reduce",
+  });
+  try {
+    await rctx.addInitScript(seedBrowser, ACTIVE_SEED);
+    const rpage = await rctx.newPage();
+    await rpage.goto(`${BASE}/character/${CHARACTER_ID}`, { waitUntil: "networkidle", timeout: 120000 });
+    await rpage.waitForTimeout(1500);
+    await rollTrayPool(rpage);
+    const rmState = await rpage.evaluate(() => ({
+      total: document.querySelector('[data-testid="result-total"]')?.textContent ?? null,
+      dice: document.querySelectorAll('[data-testid^="die-3d-"]').length,
+    }));
+    if (rmState.total === null) fail("with reduced motion emulated and no saved setting, the text total was not shown at once");
+    if (rmState.dice !== 0) fail(`with reduced motion emulated and no saved setting, ${rmState.dice} animated dice mounted`);
+    await rpage.waitForTimeout(900);
+    if ((await rpage.locator(diceSel).count()) !== 0) fail("with reduced motion emulated, animated dice mounted later");
+    await rpage.goto(`${BASE}/options`, { waitUntil: "networkidle", timeout: 120000 });
+    await rpage.waitForTimeout(1200);
+    const rmSwitch = rpage.getByLabel("3D dice").first();
+    if (!(await rmSwitch.isVisible().catch(() => false))) fail('the Options screen has no "3D dice" switch under reduced motion');
+    else if ((await switchBorder(rpage)) !== borderRgb)
+      fail(`with reduced motion emulated and no saved setting, the "3D dice" switch is on (border ${await switchBorder(rpage)}, expected ${borderRgb})`);
+    await rpage.screenshot({ path: shot("reduced-motion") });
+    await rpage.close();
+  } finally {
+    await rctx.close();
+  }
+
+  await page.close();
+  return failures;
+}
+
 // The checks that open their own page rather than a SCREENS entry. Each is a scenario, so ONLY selects it by name.
 const EXTRA_CHECKS = [
   { name: "HP modals", run: checkHitPointModals },
@@ -1043,6 +1248,7 @@ const EXTRA_CHECKS = [
   { name: "Modal closing", run: checkModalClosing },
   { name: "New character draft folder", run: checkDraftFolder },
   { name: "Dice tray and Roll Log", run: checkDiceTrayAndLog },
+  { name: "Dice animation", run: checkDiceAnimation },
 ];
 
 // Every scenario name of this run: the SCREENS entries of the active catalog, then the extra checks.
@@ -1077,6 +1283,7 @@ async function checkWidth(browser, seed, width) {
 // Runs every check at every width, the widths at the same time. Returns the number of violations.
 async function runChecks(browser) {
   const seed = buildSeed({ root: ROOT, integrated: INTEGRATED });
+  ACTIVE_SEED = seed;
   const counts = await Promise.all(WIDTHS.map((width) => checkWidth(browser, seed, width)));
   return counts.reduce((total, count) => total + count, 0);
 }

@@ -319,6 +319,7 @@ export default function OptionsScreen() {
           </View>
           <Card style={{ padding: 14 }}>
             <TouchableOpacity
+              testID="dice-3d-switch"
               onPress={() => setDice3dEnabled(!diceAnimationEnabled)}
               accessibilityRole="checkbox"
               accessibilityLabel="3D dice"
