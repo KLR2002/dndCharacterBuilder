@@ -531,17 +531,22 @@ export function applyCreationStepEdit(
 ): Character {
   const next = edit(character);
   if (next === character) return character;
-  // The new marks add to the existing ones: a mark clears only through finishCreationStep on its step.
+  // The new marks add to the existing ones, but only steps that still apply to the new character keep their
+  // mark: a mark whose step no longer applies (the new race offers no subrace) could never be finished, so it
+  // is dropped here. A mark clears only through finishCreationStep on its step.
   const prior = character.creationProgress?.needsAttention ?? [];
   const computed = computeNeedsAttention(character, next, step, opts);
-  const needsAttention = [...new Set([...prior, ...computed])];
+  const applicable = new Set(applicableCreationSteps(next, opts));
+  const needsAttention = [...new Set([...prior, ...computed])].filter((id) => applicable.has(id));
   if (opts.editBuild && isCreationFinished(character)) {
     // Edit Build on a finished character: the marks ride in the progress record with the editBuild marker, so
-    // the character stays finished and every step stays reachable.
+    // the character stays finished and every step stays reachable. When no applicable mark remains the record
+    // is dropped entirely, leaving the character plain finished.
+    if (needsAttention.length === 0) return { ...next, creationProgress: undefined };
     const progress: CreationProgress = {
       currentStep: step,
       editBuild: true,
-      ...(needsAttention.length > 0 ? { needsAttention } : {}),
+      needsAttention,
     };
     return { ...next, creationProgress: progress };
   }

@@ -19,6 +19,7 @@ import { allCatalogRaces } from "../src/rules/catalogs.ts";
 import { migrateCharacter } from "../src/rules/migrateCharacter.ts";
 import { rolledHitPointsKey } from "../src/rules/hp.ts";
 import {
+  applicableCreationSteps,
   applyBuildStepUpdate,
   applyCreationStepChange,
   applyCreationStepEdit,
@@ -284,6 +285,86 @@ describe("Lowering a class level in Edit Build releases that level's picks and n
     );
     assert.deepEqual(lowered.classes.map((c) => c.className), ["Fighter"], "lowering the level-1 Wizard below 1 removes it");
     assert.equal(isCreationFinished(lowered), true);
+  });
+});
+
+/**
+ * A finished, fully valid Fighter 3 / Champion on Human: class skills, Fighting Style and the starting kit
+ * picked, so Review is valid and a race change flags only what the race itself releases.
+ */
+function finishedFighter(): Character {
+  const base = makeChar({
+    name: "Sera",
+    race: { name: "Human", source: "PHB" },
+    classes: [{ className: "Fighter", source: "PHB", level: 3, subclassName: "Champion", subclassSource: "PHB" }],
+    background: { name: "Acolyte", source: "PHB" },
+    abilityMethod: "standardArray",
+    standardArrayPicks: { str: 15, dex: 14, con: 13, int: 10, wis: 10, cha: 8 },
+    baseAbilityScores: { str: 15, dex: 14, con: 13, int: 10, wis: 10, cha: 8 },
+    ruleChoices: [
+      { id: "PHB__Fighter__Fighting Style", trait: "Fighting Style", origin: "class", choose: 1, from: ["Defense"], picked: ["Defense"] },
+    ],
+  });
+  const offer = skillChoiceOffers(base, flowOpts).find((o) => o.source === "Class: Fighter")!;
+  let equipped: Character = {
+    ...base,
+    skillChoices: [{ id: offer.source, origin: "class", choose: offer.choose, from: offer.from, picked: offer.from.slice(0, offer.choose) }],
+    chosenSkills: offer.from.slice(0, offer.choose),
+  };
+  for (const o of startingEquipmentOffers(equipped, catalogs())) {
+    equipped = setStartingEquipmentOption(equipped, o.slot, o.options[0], catalogs());
+  }
+  for (const slot of startingEquipmentCard(equipped, catalogs()).slots) {
+    if (slot.kind !== "choice") continue;
+    const letter = equipped.startingEquipmentPicks?.options[String(slot.slot)];
+    const option = slot.options.find((o) => o.letter === letter);
+    for (const entry of option?.entries ?? []) {
+      if (entry.kind === "type") {
+        equipped = setStartingEquipmentItems(equipped, entry.address, entry.pool.slice(0, entry.quantity), catalogs());
+      }
+    }
+  }
+  const granted = applyStartingGrants(equipped, "equipment", { catalogs: catalogs() });
+  assert.equal(isCreationStepValid(granted, "review", flowOpts), true, "the fixture is fully valid");
+  return granted;
+}
+
+describe("An attention mark whose step stops applying is dropped", () => {
+  const raceChange = (char: Character, name: string) =>
+    applyCreationStepChange(
+      char,
+      { step: "race", race: allCatalogRaces(catalogs()).find((r) => r.name === name)! },
+      { ...flowOpts, editBuild: true },
+    );
+
+  test("a two-step race change ending on a race without subraces leaves no subrace mark", () => {
+    const toElf = raceChange(finishedFighter(), "Elf");
+    assert.equal(creationStepNeedsAttention(toElf, "subrace"), true, "Elf offers a subrace, so the Subrace step is flagged");
+    assert.equal(creationStepNeedsAttention(toElf, "review"), true);
+
+    const toHalfOrc = raceChange(toElf, "Half-Orc");
+    assert.equal(toHalfOrc.race?.name, "Half-Orc");
+    assert.ok(
+      !applicableCreationSteps(toHalfOrc, flowOpts).includes("subrace"),
+      "Half-Orc offers no Subrace step",
+    );
+    assert.equal(
+      creationStepNeedsAttention(toHalfOrc, "subrace"),
+      false,
+      "a mark whose step no longer applies can never be finished and is dropped, not carried forward",
+    );
+    assert.deepEqual(toHalfOrc.creationProgress?.needsAttention ?? [], ["review"]);
+  });
+
+  test("finishing the last applicable mark clears the edit record", () => {
+    const toHalfOrc = raceChange(raceChange(finishedFighter(), "Elf"), "Half-Orc");
+    assert.equal(creationStepNeedsAttention(toHalfOrc, "review"), true, "Review is still flagged");
+    assert.equal(isCreationStepValid(toHalfOrc, "review", flowOpts), true);
+
+    const finished = finishCreationStep(toHalfOrc, "review", flowOpts);
+    assert.equal(creationStepNeedsAttention(finished, "review"), false);
+    assert.equal(finished.creationProgress, undefined, "no applicable mark remains, so the edit record is cleared");
+    assert.equal(isCreationFinished(finished), true);
   });
 });
 
