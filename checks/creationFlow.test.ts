@@ -106,10 +106,21 @@ describe("Creation Steps follow the order and skip what does not apply", () => {
 });
 
 describe("The Class step offers one class and a starting level", () => {
-  test("the offer sets the starting level from 1 to 20 defaulting to 1, with no add-class action", () => {
+  test("the offer's starting-level range drives the draft's class level", () => {
     const offer = classStepOffer();
-    assert.deepEqual(offer.startingLevel, { min: 1, max: 20, default: 1 });
-    assert.equal(offer.canAddClass, false);
+    const draft = makeChar({ creationProgress: { currentStep: "class" } });
+    const atMax = applyCreationStepChange(
+      draft,
+      { step: "class", className: "Fighter", source: "PHB", level: offer.startingLevel.max },
+      { activeBooks: ALL_BOOKS },
+    );
+    assert.equal(atMax.classes[0]?.level, 20, "the offer's maximum starting level applies");
+    const atDefault = applyCreationStepChange(
+      draft,
+      { step: "class", className: "Fighter", source: "PHB", level: offer.startingLevel.default },
+      { activeBooks: ALL_BOOKS },
+    );
+    assert.equal(atDefault.classes[0]?.level, 1, "the offer's default starting level applies");
   });
 });
 
