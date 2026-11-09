@@ -811,9 +811,6 @@ export const SpellsTab: React.FC = () => {
           <Card style={[styles.emptyCard, { backgroundColor: theme.surface, borderColor: theme.border, marginTop: 16 }]}>
             <Ionicons name="sparkles-outline" size={32} color={theme.textMuted} style={{ marginBottom: 8 }} />
             <Text style={[styles.emptyTitle, { color: theme.text, fontSize: 16 }]}>No Class Spellcasting</Text>
-            <Text style={[styles.emptyText, { color: theme.textSecondary, fontSize: 13 }]}>
-              This character does not currently have levels in any spellcasting classes. Class spell slots, prepared spells, and spellbook management will appear here if you take levels in a spellcasting class.
-            </Text>
           </Card>
           <DetailModal
             visible={detailModal.visible}
@@ -831,9 +828,6 @@ export const SpellsTab: React.FC = () => {
         <Card style={[styles.emptyCard, { backgroundColor: theme.surface, borderColor: theme.border }]}>
           <Ionicons name="sparkles-outline" size={48} color={theme.textMuted} style={{ marginBottom: 12 }} />
           <Text style={[styles.emptyTitle, { color: theme.text }]}>No Spellcasting Features</Text>
-          <Text style={[styles.emptyText, { color: theme.textSecondary }]}>
-            This character does not currently have any spellcasting classes or features. Add levels in a spellcasting class (such as Wizard, Cleric, Sorcerer, Bard, Druid, Warlock, Paladin, Ranger, or a spellcasting archetype like Eldritch Knight or Arcane Trickster) in Edit Build to view and manage spells.
-          </Text>
         </Card>
       </ScrollView>
     );
@@ -1276,11 +1270,7 @@ export const SpellsTab: React.FC = () => {
                           {spell?.castingTime || "1 action"} • {spell?.range || "Self"} • DC {warlockDc} • {formatModifier(warlockAtk)} Atk
                         </Text>
                       </TouchableOpacity>
-                    ) : (
-                      <Text style={{ color: theme.textMuted, fontSize: 12, fontStyle: "italic" }}>
-                        No spell selected. Choose in Edit Build.
-                      </Text>
-                    )}
+                    ) : null}
                   </View>
 
                   {tier.chosenSpellName && (

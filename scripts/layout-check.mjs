@@ -35,7 +35,7 @@ import {
   stopExpoWeb,
   waitForExpoWeb,
 } from "./lib/app-driver.mjs";
-import { buildScreens, buildSeed, CHARACTER_ID, DRUID_ID } from "./lib/scenarios.mjs";
+import { buildScreens, buildSeed, CHARACTER_ID, DRUID_ID, WIZARD_ID } from "./lib/scenarios.mjs";
 import { playStep, playSteps } from "./lib/web-steps.mjs";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
@@ -608,6 +608,60 @@ async function checkHitPointModals(ctx, width) {
   return failures;
 }
 
+// Runs in the browser. The count badge of the home folder section named `folder` (the digit beside the
+// folder's label), or null when no such section is on the page.
+function folderBadgeCount(folder) {
+  const label = [...document.querySelectorAll("*")].find((e) => e.children.length === 0 && e.textContent.trim() === folder);
+  for (let a = label?.parentElement; a; a = a.parentElement) {
+    const badge = [...a.querySelectorAll("*")].find((e) => e.children.length === 0 && /^\d+$/.test(e.textContent.trim()));
+    if (badge) return Number(badge.textContent.trim());
+  }
+  return null;
+}
+
+// "New character" on Home lands in the one folder the list is showing: after the tap the folder's count
+// badge grows by one and the new draft card lists.
+async function checkDraftFolder(ctx, width) {
+  const page = await ctx.newPage();
+  const prefix = `[${width}px draft folder]`;
+  let failures = 0;
+  await page.goto(`${BASE}/`, { waitUntil: "networkidle", timeout: 120000 });
+  await page.waitForTimeout(1500);
+  await page.getByText(/5e Character Builder/).first().waitFor({ state: "visible", timeout: 10000 });
+  const before = await page.evaluate(folderBadgeCount, "Camp");
+  if (before === null) {
+    console.log(`${prefix} the home list shows no "Camp" folder`);
+    failures++;
+  }
+  await playStep(page, { tap: { name: "home-header-add" } });
+  const opened = await page
+    .getByText("Choose Your Class:", { exact: true })
+    .first()
+    .waitFor({ state: "visible", timeout: 10000 })
+    .then(() => true)
+    .catch(() => false);
+  if (!opened) {
+    console.log(`${prefix} the new draft did not open the Creation Flow`);
+    failures++;
+  }
+  await page.goto(`${BASE}/`, { waitUntil: "networkidle", timeout: 120000 });
+  await page.waitForTimeout(1500);
+  await page.getByText(/5e Character Builder/).first().waitFor({ state: "visible", timeout: 10000 });
+  await page.waitForTimeout(300);
+  await page.screenshot({ path: join(SHOTS, `DraftFolder-${width}.png`) });
+  const after = await page.evaluate(folderBadgeCount, "Camp");
+  if (before !== null && after !== before + 1) {
+    console.log(`${prefix} the "Camp" folder lists ${after} character(s) after "New character", expected ${before + 1}: the draft did not land in the folder the list is showing`);
+    failures++;
+  }
+  if (!(await page.getByText("Draft · Class", { exact: true }).first().isVisible())) {
+    console.log(`${prefix} the new draft card "Draft · Class" is not listed on Home`);
+    failures++;
+  }
+  await page.close();
+  return failures;
+}
+
 // Runs in the browser. A point on the visible backdrop of the open modal: a viewport corner that the
 // open dialog covers but its container does not, so the tap lands on the backdrop, not the modal.
 function backdropPoint() {
@@ -777,6 +831,42 @@ async function checkModalClosing(ctx, width) {
   if (!(await waitDialog("Create New Folder", false))) fail("Escape did not close the untouched folder modal");
   if (await dialogShown("Discard changes?")) fail("the untouched modal was asked \"Discard changes?\"");
 
+  // A sheet that was scrolled must still close on a swipe down after it is reopened: the body's at-top
+  // state resets when the modal opens, so the reopened sheet's drag handler can claim the gesture.
+  if (phone) {
+    await page.goto(`${BASE}/character/${WIZARD_ID}`, { waitUntil: "networkidle", timeout: 120000 });
+    await page.waitForTimeout(1500);
+    await page.getByText("Spells", { exact: true }).first().click();
+    await page.waitForTimeout(500);
+    await page.getByText(/add spells/i).first().click({ timeout: 5000 }).catch(() => fail("could not open the Add Spells modal"));
+    const sheetSel = '[role="dialog"] [data-testid="modal-sheet"]';
+    if (!(await page.waitForSelector(sheetSel, { state: "visible", timeout: 10000 }).then(() => true).catch(() => false)))
+      fail("the Add Spells modal did not open");
+    // Scroll the sheet's body down, so its at-top state is false when the modal closes.
+    const scrolled = await page.evaluate(() => {
+      const sheet = document.querySelector('[data-testid="modal-sheet"]');
+      const el = [...(sheet?.querySelectorAll("*") ?? [])].find((n) => n.clientHeight > 0 && n.scrollHeight > n.clientHeight + 4);
+      if (!el) return false;
+      el.scrollTop = 240;
+      el.dispatchEvent(new Event("scroll"));
+      return true;
+    });
+    if (!scrolled) fail("the open Add Spells sheet had no scrollable body to scroll down");
+    await page.waitForTimeout(300);
+    await page.keyboard.press("Escape");
+    if (!(await page.waitForSelector(sheetSel, { state: "hidden", timeout: 10000 }).then(() => true).catch(() => false)))
+      fail("Escape did not close the scrolled Add Spells modal");
+    // Reopen and swipe the sheet down from its top: the reset must let the swipe close it.
+    await page.getByText(/add spells/i).first().click({ timeout: 5000 }).catch(() => fail("could not reopen the Add Spells modal"));
+    if (!(await page.waitForSelector(sheetSel, { state: "visible", timeout: 10000 }).then(() => true).catch(() => false)))
+      fail("the Add Spells modal did not reopen");
+    await page.waitForTimeout(400);
+    if (await swipeSheetDown(page)) {
+      if (!(await page.waitForSelector(sheetSel, { state: "hidden", timeout: 10000 }).then(() => true).catch(() => false)))
+        fail("a swipe down did not close the reopened sheet that had been scrolled before closing");
+    } else fail("could not swipe the reopened sheet down");
+  }
+
   await page.close();
   return failures;
 }
@@ -787,6 +877,7 @@ const EXTRA_CHECKS = [
   { name: "Wild Shape Stats", run: checkWildShapeScreen },
   { name: "Wild Shape Features", run: checkWildShapeFeatures },
   { name: "Modal closing", run: checkModalClosing },
+  { name: "New character draft folder", run: checkDraftFolder },
 ];
 
 // Every scenario name of this run: the SCREENS entries of the active catalog, then the extra checks.

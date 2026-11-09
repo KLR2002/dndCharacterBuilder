@@ -34,7 +34,8 @@ test("buildSeed returns { characters, folders, settings, integrated }", () => {
   const srd = buildSeed({ root: ROOT, integrated: false });
   assert.deepEqual(Object.keys(srd).sort(), ["characters", "folders", "integrated", "settings"]);
   assert.ok(Array.isArray(srd.characters));
-  assert.deepEqual(srd.folders, []);
+  // The one folder the home list shows, so the "New character" draft-folder check lands its draft in it.
+  assert.deepEqual(srd.folders, [{ id: "folder_camp", name: "Camp", createdAt: 1 }]);
   assert.equal(srd.settings.hasCompletedFirstRun, true);
   assert.equal(srd.integrated, null);
 
