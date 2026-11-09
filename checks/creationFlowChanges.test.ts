@@ -15,12 +15,15 @@ import {
 } from "../src/rules/startingEquipment.ts";
 import { migrateCharacter } from "../src/rules/migrateCharacter.ts";
 import {
+  applicableCreationSteps,
+  applyBuildStepUpdate,
   applyCreationStepChange,
   applyCreationStepEdit,
   creationStepNeedsAttention,
   creationSteps,
   currentCreationStep,
   finishCreationStep,
+  isCreationFinished,
   isCreationStepValid,
 } from "../src/rules/creationFlow.ts";
 import type { Character, CharacterClass } from "../src/types/character.ts";
@@ -172,20 +175,67 @@ describe("Changing an earlier step releases what it invalidates", () => {
     assert.equal(finishCreationStep(rogue, "classChoices", flowOpts), rogue);
     assert.equal(creationStepNeedsAttention(rogue, "classChoices"), true);
 
-    // Re-pick the Rogue's class skills, then finish the step.
+    // Re-pick the Rogue's subclass and class skills, then walk the flow forward to Class Choices.
     const offer = skillChoiceOffers(rogue, flowOpts).find((o) => o.source === "Class: Rogue")!;
     const rePicked: Character = {
       ...rogue,
+      classes: [{ ...rogue.classes[0], subclassName: "Thief", subclass: "Thief", subclassSource: "PHB" }],
       skillChoices: [
         { id: offer.source, origin: "class", choose: offer.choose, from: offer.from, picked: offer.from.slice(0, offer.choose) },
       ],
       chosenSkills: offer.from.slice(0, offer.choose),
     };
-    assert.equal(isCreationStepValid(rePicked, "classChoices", flowOpts), true);
-    const finished = finishCreationStep(rePicked, "classChoices", flowOpts);
+    let walked = rePicked;
+    for (const id of applicableCreationSteps(rePicked, flowOpts)) {
+      if (id === "classChoices") break;
+      assert.equal(isCreationStepValid(walked, id, flowOpts), true, `${id} should be valid before finishing it`);
+      walked = finishCreationStep(walked, id, flowOpts);
+    }
+    assert.equal(currentCreationStep(walked, flowOpts), "classChoices");
+    assert.equal(isCreationStepValid(walked, "classChoices", flowOpts), true);
+    const finished = finishCreationStep(walked, "classChoices", flowOpts);
     assert.equal(creationStepNeedsAttention(finished, "classChoices"), false);
     assert.equal(creationStepNeedsAttention(finished, "asiFeats"), true, "the other marks stay");
     assert.equal(currentCreationStep(finished, flowOpts), "asiFeats");
+  });
+});
+
+describe("Finishing a step that is not reachable changes nothing", () => {
+  test("finishing a locked step after the current step is a no-op", () => {
+    const scores = { str: 15, dex: 14, con: 13, int: 12, wis: 10, cha: 8 };
+    const draft = makeChar({
+      classes: [cl("Wizard", 1)],
+      abilityMethod: "standardArray",
+      standardArrayPicks: { ...scores },
+      baseAbilityScores: { ...scores },
+      creationProgress: { currentStep: "class" },
+    });
+    assert.equal(currentCreationStep(draft, flowOpts), "class");
+    assert.equal(isCreationStepValid(draft, "abilities", flowOpts), true, "Abilities is valid, only the lock can block it");
+    assert.equal(finishCreationStep(draft, "abilities", flowOpts), draft, "a locked step cannot be finished");
+    assert.equal(currentCreationStep(draft, flowOpts), "class");
+  });
+
+  test("an invalid current step does not advance when finished", () => {
+    const draft = makeChar({
+      classes: [cl("Wizard", 1)],
+      creationProgress: { currentStep: "classChoices" },
+    });
+    assert.equal(isCreationStepValid(draft, "classChoices", flowOpts), false);
+    assert.equal(finishCreationStep(draft, "classChoices", flowOpts), draft);
+    assert.equal(currentCreationStep(draft, flowOpts), "classChoices");
+  });
+});
+
+describe("Only steps whose picks a change released are flagged", () => {
+  test("a blank draft picking a class for the first time flags no step", () => {
+    const blank = makeChar({ creationProgress: { currentStep: "class" } });
+    const picked = applyCreationStepChange(blank, { step: "class", className: "Fighter", source: "PHB" }, flowOpts);
+    assert.equal(picked.classes[0]?.className, "Fighter");
+    assert.deepEqual(picked.creationProgress?.needsAttention ?? [], []);
+    for (const step of creationSteps(picked, flowOpts)) {
+      assert.equal(step.needsAttention, false, `${step.id} should not be flagged: no pick of it was released`);
+    }
   });
 });
 
@@ -344,6 +394,32 @@ describe("A generic edit on a step records the change like applyCreationStepChan
     assert.equal(creationStepNeedsAttention(edited, "subrace"), true);
     // An edit that changes nothing leaves the character untouched.
     assert.equal(applyCreationStepEdit(fighter, "race", (cur) => cur, flowOpts), fighter);
+  });
+});
+
+describe("The build screen's step-update decision lives in the rules module", () => {
+  test("an update that changes no stored pick of the open step is kept as it is", () => {
+    const fighter = finishedFighter();
+    const next = { ...fighter, currentHp: 5 };
+    assert.equal(applyBuildStepUpdate(fighter, next, "race", "edit", flowOpts), next);
+  });
+
+  test("a pick change on a finished character in Edit Build is recorded with the editBuild marker", () => {
+    const fighter: Character = { ...finishedFighter(), creationProgress: undefined };
+    assert.equal(isCreationFinished(fighter), true);
+    const next: Character = { ...fighter, race: { name: "Elf", source: "PHB" } };
+    const changed = applyBuildStepUpdate(fighter, next, "race", "edit", flowOpts);
+    assert.equal(changed.race?.name, "Elf");
+    assert.equal(isCreationFinished(changed), true, "the character stays finished");
+    assert.equal(changed.creationProgress?.editBuild, true);
+    assert.equal(creationStepNeedsAttention(changed, "subrace"), true, "the released later step is flagged");
+  });
+
+  test("a draft picking a second class replaces the held one instead of adding it", () => {
+    const draft = makeChar({ classes: [cl("Fighter", 1)], creationProgress: { currentStep: "class" } });
+    const next: Character = { ...draft, classes: [...draft.classes, cl("Rogue", 1)] };
+    const changed = applyBuildStepUpdate(draft, next, "class", "edit", flowOpts);
+    assert.deepEqual(changed.classes.map((c) => c.className), ["Rogue"], "the picked class replaces the first");
   });
 });
 

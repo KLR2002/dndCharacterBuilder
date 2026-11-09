@@ -53,7 +53,7 @@ interface BuilderTabProps {
    */
   step?: CreationStepId;
   /**
-   * How the build flow was entered on a finished character: Edit Build (`edit`) or the interim Level up path
+   * How the build flow was entered on a finished character: Edit Build (`edit`) or the Level up path
    * (`levelup`). Unset for a draft and in the free-form builder, where the Class step keeps its full controls.
    */
   flowMode?: BuildFlowMode;

@@ -16,8 +16,7 @@ import { useAppTheme } from "../../context/ThemeContext";
 import { useResponsiveLayout } from "../../hooks/useResponsiveLayout";
 import { useSerifFont } from "../../hooks/useSerifFont";
 import {
-  applyCreationStepChange,
-  applyCreationStepEdit,
+  applyBuildStepUpdate,
   creationSteps,
   currentCreationStep,
   finishCreationStep,
@@ -34,8 +33,7 @@ import type { Character, CreationStepId } from "../../types/character";
  * finished or the current step of a draft, or any step of a finished character (Edit Build); locked steps of a
  * draft are not reachable. The `mode` query param distinguishes the two entries on a finished character: Edit
  * Build (the default, `edit`) applies the release-and-flag rule to changes and lets the Class step only lower
- * levels, while the interim Level up path (`levelup`, until the Level-Up Flow exists) keeps the controls that
- * add levels and classes.
+ * levels, while the Level up path (`levelup`) keeps the controls that add levels and classes.
  */
 export default function BuildScreen() {
   const router = useRouter();
@@ -77,42 +75,13 @@ export default function BuildScreen() {
     return current ?? steps[steps.length - 1].id;
   }, [character, steps, stepParam, current]);
 
-  // A change to the open step's own pick (class, subclass, ancestry, background) goes through
-  // applyCreationStepEdit, so a draft re-anchors on the changed step and the released later steps are flagged.
-  const stepSignature: Partial<Record<CreationStepId, (c: Character) => string>> = {
-    class: (c) => JSON.stringify(c.classes ?? []),
-    subclass: (c) => JSON.stringify((c.classes ?? []).map((x) => [x.className, x.subclassName ?? null])),
-    race: (c) => JSON.stringify(c.race ?? null),
-    subrace: (c) => JSON.stringify(c.race ?? null),
-    background: (c) => JSON.stringify(c.background ?? null),
-  };
-
+  // Which transition records a change on the open step is decided by applyBuildStepUpdate in the rules
+  // module, not here.
   const handleUpdate = (updates: Partial<Character> | ((c: Character) => Character)) => {
     if (!character || !openStep) return;
     updateCharacter(character.id, (cur) => {
       const next = typeof updates === "function" ? updates(cur) : { ...cur, ...updates };
-      const draft = !isCreationFinished(cur);
-      // A finished character on the interim Level up path keeps the plain transitions, adding freely.
-      if (!draft && buildMode !== "edit") return next;
-      // Edit Build on a finished character: a change on the open step goes through the same release-and-flag
-      // path as a draft's, recorded with the editBuild marker so the character stays finished.
-      if (!draft) {
-        const signature = stepSignature[openStep];
-        if (!signature || signature(cur) === signature(next)) return next;
-        return applyCreationStepEdit(cur, openStep, () => next, { ...flowOpts, editBuild: true });
-      }
-      // Creation builds a single class: picking another class on the Class step replaces the held one
-      // through applyCreationStepChange, which releases what the old class granted.
-      if (openStep === "class") {
-        const before = new Set((cur.classes ?? []).map((c) => c.className));
-        const added = (next.classes ?? []).find((c) => !before.has(c.className));
-        if (added) {
-          return applyCreationStepChange(cur, { step: "class", className: added.className, source: added.source }, flowOpts);
-        }
-      }
-      const signature = stepSignature[openStep];
-      if (!signature || signature(cur) === signature(next)) return next;
-      return applyCreationStepEdit(cur, openStep, () => next, flowOpts);
+      return applyBuildStepUpdate(cur, next, openStep, buildMode, flowOpts);
     });
   };
 

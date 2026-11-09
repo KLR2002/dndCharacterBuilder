@@ -89,3 +89,20 @@ test("reconcile records a review notice when de-levelling drops Pact Boon below 
   ]);
   assert.deepEqual(updated.needsReview, ["Pact Boon removed: prerequisite no longer satisfied"]);
 });
+
+test("reconcile releases a held class's spells above its maximum spell level, including when that maximum is 0", () => {
+  const compendium = currentCompendium();
+  const wiz1 = makeChar({
+    classes: [{ className: "Wizard", source: "PHB", level: 1 }],
+    knownSpells: [
+      { name: "Fire Bolt", source: "PHB", ownerKey: "Wizard__PHB" },
+      { name: "Misty Step", source: "PHB", ownerKey: "Wizard__PHB" },
+    ],
+  });
+  const reconciled = reconcile(wiz1, compendium, { activeBooks: ALL_BOOKS });
+  assert.deepEqual(
+    (reconciled.knownSpells ?? []).map((k) => k.name),
+    ["Fire Bolt"],
+    "Misty Step (level 2) is above the Wizard 1 maximum of 1 and is released; the cantrip stays",
+  );
+});

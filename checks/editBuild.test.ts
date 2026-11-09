@@ -19,13 +19,15 @@ import { allCatalogRaces } from "../src/rules/catalogs.ts";
 import { migrateCharacter } from "../src/rules/migrateCharacter.ts";
 import { rolledHitPointsKey } from "../src/rules/hp.ts";
 import {
+  applyBuildStepUpdate,
   applyCreationStepChange,
   applyCreationStepEdit,
-  classStepModeOffer,
+  classStepMinLevel,
   creationStepNeedsAttention,
   creationSteps,
   finishCreationStep,
   isCreationFinished,
+  isCreationStepValid,
 } from "../src/rules/creationFlow.ts";
 import type { Character, CharacterClass } from "../src/types/character.ts";
 import type { RaceData } from "../src/types/dnd5e.ts";
@@ -190,9 +192,98 @@ describe("Lowering a class level in Edit Build releases that level's picks and n
     assert.equal(isCreationFinished(finished), true);
   });
 
-  test("the Class step's offer has no raise or add-class action in Edit Build mode and has them in Level up mode", () => {
-    assert.deepEqual(classStepModeOffer("edit"), { canLowerLevel: true, canRaiseLevel: false, canAddClass: false });
-    assert.deepEqual(classStepModeOffer("levelup"), { canLowerLevel: true, canRaiseLevel: true, canAddClass: true });
+  test("lowering a later class reads every held class: Class stays valid and only released steps are flagged", () => {
+    // A finished Fighter 3 / Wizard 2 whose every step is valid.
+    const fw: Character = makeChar({
+      name: "Sera",
+      classes: [
+        { className: "Fighter", source: "PHB", level: 3, subclassName: "Champion", subclassSource: "PHB" },
+        { className: "Wizard", source: "PHB", level: 2, subclassName: "Evocation", subclassSource: "PHB" },
+      ],
+      race: { name: "Human", source: "PHB" },
+      background: { name: "Acolyte", source: "PHB" },
+      abilityMethod: "standardArray",
+      standardArrayPicks: { str: 15, dex: 14, con: 13, int: 16, wis: 10, cha: 8 },
+      baseAbilityScores: { str: 15, dex: 14, con: 13, int: 16, wis: 10, cha: 8 },
+      startingOption: "gold",
+      knownSpells: [
+        { name: "Fire Bolt", source: "PHB", ownerKey: "Wizard__PHB" },
+        { name: "Magic Missile", source: "PHB", ownerKey: "Wizard__PHB" },
+        { name: "Misty Step", source: "PHB", ownerKey: "Wizard__PHB" },
+      ],
+      preparedSpells: ["Magic Missile__PHB__Wizard__PHB", "Misty Step__PHB__Wizard__PHB"],
+      ruleChoices: [
+        { id: "PHB__Fighter__Fighting Style", trait: "Fighting Style", origin: "class", choose: 1, from: ["Defense"], picked: ["Defense"] },
+      ],
+      skillChoices: [
+        { id: "Class: Fighter", origin: "class", choose: 2, from: ["Athletics", "Perception"], picked: ["Athletics", "Perception"] },
+      ],
+      chosenSkills: ["Athletics", "Perception"],
+    });
+    assert.equal(isCreationStepValid(fw, "class", flowOpts), true, "the Class step is valid for a multiclass character");
+    assert.equal(isCreationStepValid(fw, "review", flowOpts), true, "every step of the fixture is valid");
+
+    const lowered = applyCreationStepEdit(
+      fw,
+      "class",
+      (cur) => removeClassLevel(cur, "Wizard", currentCompendium(), ALL_BOOKS),
+      { ...flowOpts, editBuild: true },
+    );
+    assert.equal(isCreationStepValid(lowered, "class", flowOpts), true, "the Class step stays valid after the change");
+    assert.equal(isCreationStepValid(lowered, "review", flowOpts), true, "Review is not falsely flagged");
+    assert.deepEqual(
+      lowered.creationProgress?.needsAttention ?? [],
+      ["subclass", "spells"],
+      "only the steps whose picks were released are flagged: the torn-down subclass and the released spell",
+    );
+    assert.equal(creationStepNeedsAttention(lowered, "classChoices"), false, "the Fighter's picks were not released");
+  });
+
+  test("a mark from an earlier edit survives a later edit on another step", () => {
+    const fw = finishedFighterWizard();
+    const fighterOnly: Character = { ...fw, classes: [fw.classes[0]] };
+    const lowered = applyCreationStepEdit(
+      fighterOnly,
+      "class",
+      (cur) => removeClassLevel(cur, "Fighter", currentCompendium(), ALL_BOOKS),
+      { ...flowOpts, editBuild: true },
+    );
+    assert.equal(creationStepNeedsAttention(lowered, "classChoices"), true, "lowering Fighter 3->2 released the level-3 maneuvers");
+    const edited = applyCreationStepChange(
+      lowered,
+      { step: "background", background: { name: "Hermit", source: "PHB" } },
+      { ...flowOpts, editBuild: true },
+    );
+    assert.equal(
+      creationStepNeedsAttention(edited, "classChoices"),
+      true,
+      "the Class Choices mark persists until that step is finished again, not until the next edit",
+    );
+  });
+
+  test("Edit Build refuses a raised level and an added class; Level up allows both", () => {
+    const fw = finishedFighterWizard();
+    const raised: Character = { ...fw, classes: fw.classes.map((c, i) => (i === 0 ? { ...c, level: c.level + 1 } : c)) };
+    assert.equal(applyBuildStepUpdate(fw, raised, "class", "edit", flowOpts), fw, "Edit Build does not raise a level");
+    const added: Character = { ...fw, classes: [...fw.classes, { className: "Rogue", source: "PHB", level: 1 }] };
+    assert.equal(applyBuildStepUpdate(fw, added, "class", "edit", flowOpts), fw, "Edit Build does not add a class");
+    assert.equal(applyBuildStepUpdate(fw, raised, "class", "levelup", flowOpts).classes[0].level, 4, "Level up raises the level");
+    assert.equal(applyBuildStepUpdate(fw, added, "class", "levelup", flowOpts).classes.length, 3, "Level up adds the class");
+  });
+
+  test("Edit Build lowers a non-first class below 1, removing it; the first class stays at least 1", () => {
+    assert.equal(classStepMinLevel("edit", 0), 1, "the first class stays at least level 1 in Edit Build");
+    assert.equal(classStepMinLevel("edit", 1), 0, "a later class can be lowered below 1, which removes it");
+    const fw = finishedFighterWizard();
+    const withWizard1: Character = { ...fw, classes: [fw.classes[0], { className: "Wizard", source: "PHB", level: 1 }] };
+    const lowered = applyCreationStepEdit(
+      withWizard1,
+      "class",
+      (cur) => removeClassLevel(cur, "Wizard", currentCompendium(), ALL_BOOKS),
+      { ...flowOpts, editBuild: true },
+    );
+    assert.deepEqual(lowered.classes.map((c) => c.className), ["Fighter"], "lowering the level-1 Wizard below 1 removes it");
+    assert.equal(isCreationFinished(lowered), true);
   });
 });
 
