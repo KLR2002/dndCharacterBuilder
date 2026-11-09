@@ -123,8 +123,8 @@ export function reconcileForActiveBooks(
 /**
  * Releases the known spells each held class owns whose spell level is above the maximum that class casts at
  * its level — including when that maximum is 0, so a class that can no longer cast releases its leveled
- * class-owned spells (cantrips are level 0 and stay). Each release drops the prepared key too and gets a
- * review notice. A name the catalog does not hold is kept.
+ * class-owned spells (cantrips are level 0 and stay). Each release drops that class's own prepared keys
+ * too and gets a review notice. A name the catalog does not hold is kept.
  */
 function releaseOverLevelClassSpells(character: Character, compendium: Compendium, activeBooks: ActiveBooks): Character {
   const classes = compendium.for(activeBooks).classes();
@@ -160,8 +160,14 @@ function releaseOverLevelSpellsOf(
   if (released.size === 0) return character;
   const keptNames = new Set(knownSpells.map((known) => known.name.toLowerCase()));
   const preparedSpells = (character.preparedSpells ?? []).filter((prepared) => {
-    const key = prepared.split("__")[0].toLowerCase();
-    return !released.has(key) || keptNames.has(key);
+    const segments = prepared.split("__");
+    if (!released.has(segments[0].toLowerCase())) return true;
+    // A canonical key stores its owner after the second `__` (`name__source__owner`), so only the
+    // releasing class's own prepared keys go with its released known spells; another class's
+    // prepared entry of the same name stays. A legacy key names no owner, so it stays while any
+    // owner still knows the spell.
+    if (segments.length > 2) return !segments.slice(2).join("__").toLowerCase().startsWith(ownerPrefix);
+    return keptNames.has(segments[0].toLowerCase());
   });
   return withNotices({ ...character, knownSpells, preparedSpells }, notices);
 }

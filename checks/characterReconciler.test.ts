@@ -90,6 +90,34 @@ test("reconcile records a review notice when de-levelling drops Pact Boon below 
   assert.deepEqual(updated.needsReview, ["Pact Boon removed: prerequisite no longer satisfied"]);
 });
 
+test("reconcile releases an over-level spell's prepared key only for the releasing class, keeping another class's prepared entry of the same name", () => {
+  const compendium = currentCompendium();
+  const multiclass = makeChar({
+    classes: [
+      { className: "Wizard", source: "PHB", level: 3 },
+      { className: "Cleric", source: "PHB", level: 5 },
+    ],
+    knownSpells: [
+      { name: "Fire Bolt", source: "PHB", ownerKey: "Wizard__PHB" },
+      { name: "Dispel Magic", source: "PHB", ownerKey: "Wizard__PHB" },
+    ],
+    preparedSpells: ["Dispel Magic__PHB__Wizard__PHB", "Dispel Magic__PHB__Cleric__PHB"],
+  });
+
+  const reconciled = reconcile(multiclass, compendium, { activeBooks: ALL_BOOKS });
+
+  assert.deepEqual(
+    (reconciled.knownSpells ?? []).map((k) => k.name),
+    ["Fire Bolt"],
+    "Dispel Magic (level 3) is above the Wizard 3 maximum of 2 and is released; the cantrip stays",
+  );
+  assert.deepEqual(
+    reconciled.preparedSpells ?? [],
+    ["Dispel Magic__PHB__Cleric__PHB"],
+    "the Wizard-owned prepared key goes with the released known spell; the Cleric's prepared entry of the same name stays",
+  );
+});
+
 test("reconcile releases a held class's spells above its maximum spell level, including when that maximum is 0", () => {
   const compendium = currentCompendium();
   const wiz1 = makeChar({
