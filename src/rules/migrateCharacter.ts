@@ -1,8 +1,8 @@
 import type { ActiveBooks } from "../constants/books.ts";
 import type { AsiSelection, Character, CreationStepId, KnownSpell, SkillChoiceEntry } from "../types/character.ts";
+import { CREATION_STEP_ORDER } from "../types/character.ts";
 import type { ClassData, RaceData } from "../types/dnd5e.ts";
 import { spellAbilityOf } from "./classData.ts";
-import { CREATION_STEP_ORDER } from "./creationFlow.ts";
 import { totalLevel } from "./proficiencies.ts";
 import { availableRuleChoices } from "./ruleChoices.ts";
 import { migrateLegacyRacialCantrip, moveLegacyRacePickIds } from "./choices/featSpells.ts";

@@ -33,13 +33,17 @@ export interface Roll {
   total: number;
 }
 
-function rollDie(sides: number, random: RandomSource): number {
+/** Rolls one die of `sides` sides with the given random source, clamped to a face in [1, sides]. */
+export function rollDie(sides: number, random: RandomSource): number {
   return Math.min(sides, Math.max(1, Math.floor(random(sides))));
 }
 
+/** The most dice one term of a pool may carry. */
+const MAX_DICE_PER_TERM = 100;
+
 /**
  * Parses a pool written like "2d6+1d8+3" or "d20-2": dice terms plus a flat modifier, whitespace
- * tolerated. Returns null when the text is not such a pool.
+ * tolerated. A term may carry at most 100 dice. Returns null when the text is not such a pool.
  */
 export function parseDicePool(text: string): DicePool | null {
   const cleaned = text.toLowerCase().replace(/\s+/g, "");
@@ -56,7 +60,7 @@ export function parseDicePool(text: string): DicePool | null {
       if (negative) return null;
       const count = diceMatch[1] === "" ? 1 : Number.parseInt(diceMatch[1], 10);
       const sides = Number.parseInt(diceMatch[2], 10);
-      if (count < 1 || sides < 1) return null;
+      if (count < 1 || count > MAX_DICE_PER_TERM || sides < 1) return null;
       dice.push({ count, sides });
     } else if (/^\d+$/.test(term)) {
       const value = Number.parseInt(term, 10);

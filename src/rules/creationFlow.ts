@@ -1,5 +1,6 @@
 import type { ActiveBooks } from "../constants/books.ts";
 import type { AsiSelection, Character, CharacterClass, CreationProgress, CreationStepId } from "../types/character.ts";
+import { CREATION_STEP_ORDER } from "../types/character.ts";
 import type { ClassData, RaceData, SubraceData } from "../types/dnd5e.ts";
 import { POINT_BUY_COST } from "../constants/rules.ts";
 import { currentCompendium, type Compendium } from "../services/compendium.ts";
@@ -17,31 +18,13 @@ import {
   addMulticlassLevel,
   changeSubclass,
   clearBackground,
+  releaseStartingGrantClaim,
   removeClassLevel,
 } from "./builderTransitions.ts";
 import { applyAncestrySelection } from "./ancestryEngine.ts";
 import { reconcile } from "./characterReconciler.ts";
-
-/**
- * The Creation Flow's steps, in the order the flow walks them: identity first (class, subclass, ancestry),
- * then the rest, name last. A step the character does not qualify for is skipped, so it never appears in
- * `applicableCreationSteps`. Creation builds a single class; Multiclassing enters only through the Level-Up
- * Flow.
- */
-export const CREATION_STEP_ORDER: readonly CreationStepId[] = [
-  "class",
-  "subclass",
-  "race",
-  "subrace",
-  "background",
-  "abilities",
-  "classChoices",
-  "asiFeats",
-  "spells",
-  "equipment",
-  "details",
-  "review",
-];
+import { maxHp } from "./hp.ts";
+import { followRaisedMaxHp, fullHealAtLevelUp } from "./hitPoints.ts";
 
 /** The catalogs the flow reads: defaults to the process-wide Compendium, unscoped. */
 export interface CreationFlowOptions {
@@ -65,8 +48,8 @@ export function classStepOffer(): ClassStepOffer {
 
 /**
  * How the build flow at `/build/<id>` was entered: Edit Build reopens a finished Character's flow to change its
- * picks, while the interim Level up path (until the Level-Up Flow exists) keeps the controls that add levels and
- * classes. The Class step reads its offer from `classStepModeOffer`.
+ * picks, while the Level up path keeps the controls that add levels and classes. The Class step reads its
+ * offer from `classStepModeOffer`.
  */
 export type BuildFlowMode = "edit" | "levelup";
 
@@ -83,6 +66,17 @@ export interface ClassStepModeOffer {
 export function classStepModeOffer(mode: BuildFlowMode): ClassStepModeOffer {
   if (mode === "levelup") return { canLowerLevel: true, canRaiseLevel: true, canAddClass: true };
   return { canLowerLevel: true, canRaiseLevel: false, canAddClass: false };
+}
+
+/**
+ * The lowest level a held class can be lowered to in the given build-flow mode, by the class's index in
+ * `classes`: 0 means lowering below 1 removes the class through `removeClassLevel`. Edit Build lowers a
+ * class that is not the first below 1, removing it; the first class stays at least 1. Outside Edit Build
+ * (the Level up path, the free-form builder, a draft) any class may be lowered to removal.
+ */
+export function classStepMinLevel(mode: BuildFlowMode | undefined, classIndex: number): number {
+  if (mode === "edit") return classIndex > 0 ? 0 : 1;
+  return 0;
 }
 
 /** Options of the step-change functions: `editBuild` records the change on a finished Character in Edit Build. */
@@ -162,7 +156,10 @@ export function creationStepNeedsAttention(character: Character, step: CreationS
 /** The point-buy budget a creation's base scores may spend (2014 rules). */
 const POINT_BUY_BUDGET = 27;
 
-/** Whether the Abilities step's method is fully picked: the whole standard array, or scores within point buy. */
+/**
+ * Whether the Abilities step's method is fully picked: the whole standard array, scores within point buy,
+ * or — for rolled — six rolled results with every one placed on an ability. Manual asks for nothing.
+ */
 function abilitiesValid(character: Character): boolean {
   if (character.abilityMethod === "standardArray") {
     const picks = character.standardArrayPicks ?? {};
@@ -176,6 +173,17 @@ function abilitiesValid(character: Character): boolean {
       spent += POINT_BUY_COST[score] ?? 0;
     }
     return spent <= POINT_BUY_BUDGET;
+  }
+  if (character.abilityMethod === "rolled") {
+    const results = character.rolledAbilities ?? [];
+    const picks = character.rolledAbilityPicks ?? {};
+    return (
+      results.length === 6 &&
+      ABILITIES.every((ability) => {
+        const index = picks[ability];
+        return typeof index === "number" && Number.isInteger(index) && index >= 0 && index < results.length;
+      })
+    );
   }
   return true;
 }
@@ -195,12 +203,12 @@ export function isCreationStepValid(
   const catalogs: CharacterCatalogs = { compendium, activeBooks };
   const classes = allCatalogClasses(catalogs);
   const races = allCatalogRaces(catalogs);
-  const entry = classEntryOf(character);
+  const entries = character.classes ?? [];
   switch (step) {
     case "class":
-      return character.classes.length === 1 && Boolean(entry && entry.level >= 1 && entry.level <= 20);
+      return entries.length >= 1 && entries.every((entry) => entry.level >= 1 && entry.level <= 20);
     case "subclass":
-      return !offersSubclass(entry, classes) || (entry ? getSubclassName(entry).length > 0 : false);
+      return entries.every((entry) => !offersSubclass(entry, classes) || getSubclassName(entry).length > 0);
     case "race":
       return character.race != null;
     case "subrace": {
@@ -217,7 +225,7 @@ export function isCreationStepValid(
       return choices.allPicked;
     }
     case "asiFeats":
-      return !offersAsiFeats(entry) || getPendingLevelChoices(character, [...classes]).pendingAsi.length === 0;
+      return !offersAsiFeats(entries) || getPendingLevelChoices(character, [...classes]).pendingAsi.length === 0;
     case "spells":
       return true;
     case "equipment":
@@ -259,28 +267,32 @@ function offersSubrace(character: Character, races: readonly RaceData[], activeB
 }
 
 /**
- * The choices the held class brings at the character's level, read from the one shared module the
- * Level-Up Flow reads too. Creation builds from level 0, so every choice the class brings up to the
- * held level is listed; every class offers skill picks at level 1, so the step applies to every new
- * character. Ancestry, background and feat picks belong to their own steps, so they are left out.
+ * The choices every held class brings at its level, read from the one shared module the Level-Up Flow
+ * reads too. Creation builds from level 0, so every choice each class brings up to its held level is
+ * listed; every class offers skill picks at level 1, so the step applies to every new character.
+ * Ancestry, background and feat picks belong to their own steps, so they are left out.
  */
 function classChoicesOf(character: Character, opts: CreationFlowOptions): ClassLevelChoices {
-  const entry = classEntryOf(character);
-  if (!entry) return { skillChoices: [], proficiencyChoices: [], ruleChoices: [], allPicked: true };
-  return classChoicesAtLevel(character, entry, 0, {
-    compendium: opts.compendium ?? currentCompendium(),
-    activeBooks: opts.activeBooks,
-  });
+  const entries = character.classes ?? [];
+  if (entries.length === 0) return { skillChoices: [], proficiencyChoices: [], ruleChoices: [], allPicked: true };
+  const query = { compendium: opts.compendium ?? currentCompendium(), activeBooks: opts.activeBooks };
+  const combined = entries.map((entry) => classChoicesAtLevel(character, entry, 0, query));
+  return {
+    skillChoices: combined.flatMap((choices) => choices.skillChoices),
+    proficiencyChoices: combined.flatMap((choices) => choices.proficiencyChoices),
+    ruleChoices: combined.flatMap((choices) => choices.ruleChoices),
+    allPicked: combined.every((choices) => choices.allPicked),
+  };
 }
 
-/** Whether the ASI/Feats step applies: the class's level has reached one of its ASI levels. */
-function offersAsiFeats(entry: CharacterClass | undefined): boolean {
-  return Boolean(entry && asiLevels(entry.className).some((level) => entry.level >= level));
+/** Whether the ASI/Feats step applies: any held class's level has reached one of its ASI levels. */
+function offersAsiFeats(entries: readonly CharacterClass[]): boolean {
+  return entries.some((entry) => asiLevels(entry.className).some((level) => entry.level >= level));
 }
 
-/** Whether the Spells step applies: the class holds a Spellcasting Profile at its level, a subclass's included. */
-function offersSpells(entry: CharacterClass | undefined, classes: readonly ClassData[]): boolean {
-  return Boolean(entry && isCastingClass(entry, classes));
+/** Whether the Spells step applies: any held class holds a Spellcasting Profile at its level, a subclass's included. */
+function offersSpells(entries: readonly CharacterClass[], classes: readonly ClassData[]): boolean {
+  return entries.some((entry) => isCastingClass(entry, classes));
 }
 
 /**
@@ -292,15 +304,15 @@ export function applicableCreationSteps(character: Character, opts: CreationFlow
   const activeBooks = opts.activeBooks;
   const classes = allCatalogClasses({ compendium, activeBooks });
   const races = allCatalogRaces({ compendium, activeBooks });
-  const entry = classEntryOf(character);
+  const entries = character.classes ?? [];
   const steps: CreationStepId[] = ["class"];
-  if (offersSubclass(entry, classes)) steps.push("subclass");
+  if (entries.some((entry) => offersSubclass(entry, classes))) steps.push("subclass");
   steps.push("race");
   if (offersSubrace(character, races, activeBooks)) steps.push("subrace");
   steps.push("background", "abilities");
   if (hasClassChoices(classChoicesOf(character, opts))) steps.push("classChoices");
-  if (offersAsiFeats(entry)) steps.push("asiFeats");
-  if (offersSpells(entry, classes)) steps.push("spells");
+  if (offersAsiFeats(entries)) steps.push("asiFeats");
+  if (offersSpells(entries, classes)) steps.push("spells");
   steps.push("equipment", "details", "review");
   return steps;
 }
@@ -317,27 +329,6 @@ export type CreationStepChange =
   | { step: "race"; race: RaceData; subrace?: SubraceData }
   | { step: "subrace"; race: RaceData; subrace: SubraceData }
   | { step: "background"; background: { name: string; source: string } | null };
-
-/**
- * Releases a starting-grant claim the old first class's kit or gold was granted under: the `start_` items leave
- * the inventory, the granted gold leaves the pouch, and the claim markers reset to the unequipped option, so
- * the Equipment step has to be finished again. Unchanged when no claim was made.
- */
-function releaseStartingGrantClaim(character: Character): Character {
-  if (!character.startingGrantsApplied && character.startingEquipmentPicks === undefined) return character;
-  const items = (character.items ?? []).filter((item) => !item.id.startsWith("start_"));
-  const grantedGold = character.startingGrantedGold ?? 0;
-  const pouch = { ...(character.pouch ?? { cp: 0, sp: 0, ep: 0, gp: 0, pp: 0 }) };
-  if (grantedGold > 0) pouch.gp = Math.max(0, (pouch.gp ?? 0) - grantedGold);
-  return {
-    ...character,
-    items,
-    pouch,
-    startingOption: "equipment",
-    startingGrantsApplied: false,
-    startingGrantedGold: undefined,
-  };
-}
 
 /**
  * Changes the character's one creation class to `className` at `level` (the current level unless given). The
@@ -357,7 +348,8 @@ function changeCreationClass(
   const old = classEntryOf(character);
   const newLevel = change.level ?? old?.level ?? classStepOffer().startingLevel.default;
   const sameClass = Boolean(old && old.className.toLowerCase() === change.className.toLowerCase());
-  let next = character;
+  // A starting-grant claim made for the old class is released first, while the old class still names the default gold.
+  let next = old && !sameClass ? releaseStartingGrantClaim(character) : character;
 
   if (old && !sameClass) {
     let remaining = old.level;
@@ -397,10 +389,15 @@ function changeCreationClass(
     }
   }
 
-  if (old && !sameClass) {
-    next = releaseStartingGrantClaim(next);
-  }
-  return reconcile(next, compendium, { activeBooks });
+  const reconciled = reconcile(next, compendium, { activeBooks });
+  // A draft is at full HP, so a starting level above 1 lifts current HP with the raised max instead of
+  // leaving the draft wounded.
+  const followed = followRaisedMaxHp(
+    { currentHp: reconciled.currentHp, tempHp: reconciled.tempHp },
+    maxHp(character),
+    maxHp(reconciled),
+  );
+  return { ...reconciled, ...followed };
 }
 
 /** The class-origin picks the Class Choices step holds: its skill choices and its class/subclass rule choices. */
@@ -426,10 +423,17 @@ function equipmentSignature(character: Character): string {
   ]);
 }
 
+/** The held subclass picks of a character: a change that drops one released it. */
+function heldSubclassCount(character: Character): number {
+  return (character.classes ?? []).filter((c) => (c.subclassName ?? c.subclass ?? "").length > 0).length;
+}
+
 /**
- * The later steps a change at `changedStep` leaves needing attention: every applicable later step that is no
- * longer valid, plus the ones whose stored picks the change released (class choices dropped, ASI/Feat picks
- * removed, spells or the starting-equipment claim gone with the old pick).
+ * The later steps a change at `changedStep` leaves needing attention: only the applicable later steps whose
+ * stored picks the change released — a held subclass dropped, the ancestry record the subrace pick lives on
+ * replaced, class choices dropped, ASI/Feat picks removed, spells or the starting-equipment claim gone with
+ * the old pick. A step that is merely invalid is not flagged. Review is flagged when a release also left it
+ * invalid, since it then has to be confirmed again.
  */
 function computeNeedsAttention(
   before: Character,
@@ -439,16 +443,26 @@ function computeNeedsAttention(
 ): CreationStepId[] {
   const changedIndex = CREATION_STEP_ORDER.indexOf(changedStep);
   const applicable = new Set(applicableCreationSteps(after, opts));
+  const released: Partial<Record<CreationStepId, boolean>> = {
+    subclass: heldSubclassCount(before) > heldSubclassCount(after),
+    subrace: JSON.stringify(before.race ?? null) !== JSON.stringify(after.race ?? null),
+    classChoices: classChoiceSignature(before) !== classChoiceSignature(after),
+    asiFeats: JSON.stringify(before.asiSelections ?? []) !== JSON.stringify(after.asiSelections ?? []),
+    spells: spellsSignature(before) !== spellsSignature(after),
+    equipment: equipmentSignature(before) !== equipmentSignature(after),
+  };
   const flagged: CreationStepId[] = [];
   for (const id of CREATION_STEP_ORDER) {
     if (CREATION_STEP_ORDER.indexOf(id) <= changedIndex || !applicable.has(id)) continue;
-    const invalid = !isCreationStepValid(after, id, opts);
-    const released =
-      (id === "classChoices" && classChoiceSignature(before) !== classChoiceSignature(after)) ||
-      (id === "asiFeats" && (after.asiSelections?.length ?? 0) < (before.asiSelections?.length ?? 0)) ||
-      (id === "spells" && spellsSignature(before) !== spellsSignature(after)) ||
-      (id === "equipment" && equipmentSignature(before) !== equipmentSignature(after));
-    if (invalid || released) flagged.push(id);
+    if (released[id]) flagged.push(id);
+  }
+  if (
+    flagged.length > 0 &&
+    applicable.has("review") &&
+    CREATION_STEP_ORDER.indexOf("review") > changedIndex &&
+    !isCreationStepValid(after, "review", opts)
+  ) {
+    flagged.push("review");
   }
   return flagged;
 }
@@ -517,7 +531,10 @@ export function applyCreationStepEdit(
 ): Character {
   const next = edit(character);
   if (next === character) return character;
-  const needsAttention = computeNeedsAttention(character, next, step, opts);
+  // The new marks add to the existing ones: a mark clears only through finishCreationStep on its step.
+  const prior = character.creationProgress?.needsAttention ?? [];
+  const computed = computeNeedsAttention(character, next, step, opts);
+  const needsAttention = [...new Set([...prior, ...computed])];
   if (opts.editBuild && isCreationFinished(character)) {
     // Edit Build on a finished character: the marks ride in the progress record with the editBuild marker, so
     // the character stays finished and every step stays reachable.
@@ -536,11 +553,79 @@ export function applyCreationStepEdit(
 }
 
 /**
- * Finishes a Creation Step: only a valid, applicable step of a draft can be finished. Its attention mark, if
- * any, clears, and the draft's current step moves to the later of the old current step and the next applicable
- * step after the finished one, so finishing an earlier step the player went back to never moves the draft
- * backwards and re-locks finished steps; a step marked as needing attention therefore stays the current step's
- * blocker until it is finished. Finishing Review leaves no creation progress, so the character is finished.
+ * The stored pick a Creation Step holds, as a signature: two characters with the same signature hold the same
+ * pick on that step, so an update that changes it is a pick change. Undefined for the steps that hold no
+ * single pick of their own (abilities, classChoices, asiFeats, spells, equipment, details, review).
+ */
+export function creationStepSignature(step: CreationStepId): ((character: Character) => string) | undefined {
+  switch (step) {
+    case "class":
+      return (c) => JSON.stringify(c.classes ?? []);
+    case "subclass":
+      return (c) => JSON.stringify((c.classes ?? []).map((x) => [x.className, x.subclassName ?? null]));
+    case "race":
+    case "subrace":
+      return (c) => JSON.stringify(c.race ?? null);
+    case "background":
+      return (c) => JSON.stringify(c.background ?? null);
+    default:
+      return undefined;
+  }
+}
+
+/** The class an update added to the character's held classes, when it added one. */
+export function addedClassPick(before: Character, after: Character): { className: string; source: string } | undefined {
+  const beforeNames = new Set((before.classes ?? []).map((c) => c.className));
+  return (after.classes ?? []).find((c) => !beforeNames.has(c.className));
+}
+
+/** Whether the update raises any held class's level. */
+function raisesClassLevel(before: Character, after: Character): boolean {
+  return (after.classes ?? []).some((c) => {
+    const held = (before.classes ?? []).find((o) => o.className.toLowerCase() === c.className.toLowerCase());
+    return held !== undefined && c.level > held.level;
+  });
+}
+
+/**
+ * Applies an update made on the open step of the build screen, deciding which transition records it:
+ * a finished character on the Level up path keeps the plain update; Edit Build on a finished character
+ * records the change through `applyCreationStepEdit` with the `editBuild` marker, refusing a class pick
+ * added or a level raised there (the mode offers neither); a draft that picks a second class replaces its
+ * held one through `applyCreationStepChange`; any other pick change on a step goes through
+ * `applyCreationStepEdit`. An update that changes no stored pick of the step is kept as it is.
+ * The given Character is never mutated.
+ */
+export function applyBuildStepUpdate(
+  current: Character,
+  next: Character,
+  step: CreationStepId,
+  mode: BuildFlowMode,
+  opts: ApplyStepOptions = {},
+): Character {
+  if (next === current) return current;
+  const draft = !isCreationFinished(current);
+  if (!draft && mode !== "edit") return next;
+  if (step === "class") {
+    const added = addedClassPick(current, next);
+    if (added) {
+      if (!draft) return current;
+      return applyCreationStepChange(current, { step: "class", className: added.className, source: added.source }, opts);
+    }
+    if (!draft && raisesClassLevel(current, next)) return current;
+  }
+  const signature = creationStepSignature(step);
+  if (!signature || signature(current) === signature(next)) return next;
+  return applyCreationStepEdit(current, step, () => next, draft ? opts : { ...opts, editBuild: true });
+}
+
+/**
+ * Finishes a Creation Step: only a valid, applicable step of a draft can be finished, and a step after the
+ * current one is locked, so finishing it is a no-op. The finished step's attention mark, if any, clears, and
+ * the draft's current step moves to the later of the old current step and the next applicable step after the
+ * finished one, so finishing an earlier step the player went back to never moves the draft backwards and
+ * re-locks finished steps; a step marked as needing attention therefore stays the current step's blocker
+ * until it is finished. Finishing Review leaves no creation progress, so the character is finished.
  * The given Character is never mutated.
  */
 export function finishCreationStep(
@@ -564,9 +649,15 @@ export function finishCreationStep(
   const index = applicable.indexOf(step);
   if (index === -1) return character;
   const currentIndex = applicable.indexOf(resolveCurrentStep(character, applicable));
+  // A step after the current one is locked: finishing it is a no-op.
+  if (index > currentIndex) return character;
   const needsAttention = (character.creationProgress?.needsAttention ?? []).filter((id) => id !== step);
   const nextStep = applicable[Math.max(index + 1, currentIndex)];
-  if (!nextStep) return { ...character, creationProgress: undefined };
+  if (!nextStep) {
+    // Finishing Review finishes the character, and a finished new character opens at full HP.
+    const healed = fullHealAtLevelUp({ currentHp: character.currentHp, tempHp: character.tempHp }, maxHp(character));
+    return { ...character, creationProgress: undefined, ...healed };
+  }
   return {
     ...character,
     creationProgress: { currentStep: nextStep, ...(needsAttention.length > 0 ? { needsAttention } : {}) },

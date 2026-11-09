@@ -4,12 +4,25 @@ import { ALL_BOOKS } from "../src/constants/books.ts";
 import { makeChar, loadTestCatalog } from "./testUtils.ts";
 import { migrateCharacter } from "../src/rules/migrateCharacter.ts";
 import { skillChoiceOffers } from "../src/rules/proficiencySheet.ts";
+import { allCatalogRaces } from "../src/rules/catalogs.ts";
+import { currentCompendium } from "../src/services/compendium.ts";
+import { maxHp } from "../src/rules/hp.ts";
+import {
+  resolveStartingEquipment,
+  setStartingEquipmentItems,
+  setStartingEquipmentOption,
+  startingEquipmentCard,
+  startingEquipmentOffers,
+} from "../src/rules/startingEquipment.ts";
 import type { ClassData, RaceData } from "../src/types/dnd5e.ts";
 import {
   applicableCreationSteps,
+  applyCreationStepChange,
+  applyCreationStepEdit,
   classStepOffer,
   creationSteps,
   currentCreationStep,
+  finishCreationStep,
   isCreationFinished,
   isCreationStepValid,
 } from "../src/rules/creationFlow.ts";
@@ -93,10 +106,21 @@ describe("Creation Steps follow the order and skip what does not apply", () => {
 });
 
 describe("The Class step offers one class and a starting level", () => {
-  test("the offer sets the starting level from 1 to 20 defaulting to 1, with no add-class action", () => {
+  test("the offer's starting-level range drives the draft's class level", () => {
     const offer = classStepOffer();
-    assert.deepEqual(offer.startingLevel, { min: 1, max: 20, default: 1 });
-    assert.equal(offer.canAddClass, false);
+    const draft = makeChar({ creationProgress: { currentStep: "class" } });
+    const atMax = applyCreationStepChange(
+      draft,
+      { step: "class", className: "Fighter", source: "PHB", level: offer.startingLevel.max },
+      { activeBooks: ALL_BOOKS },
+    );
+    assert.equal(atMax.classes[0]?.level, 20, "the offer's maximum starting level applies");
+    const atDefault = applyCreationStepChange(
+      draft,
+      { step: "class", className: "Fighter", source: "PHB", level: offer.startingLevel.default },
+      { activeBooks: ALL_BOOKS },
+    );
+    assert.equal(atDefault.classes[0]?.level, 1, "the offer's default starting level applies");
   });
 });
 
@@ -164,6 +188,123 @@ describe("Details asks only for name, gender and alignment", () => {
     assert.equal(isCreationStepValid(named, "details"), true);
     const namedSteps = new Map(creationSteps(named).map((step) => [step.id, step]));
     assert.equal(namedSteps.get("details")?.valid, true);
+  });
+});
+
+describe("Rolled Abilities is valid only when all six results are placed", () => {
+  const sixResults = Array.from({ length: 6 }, (_, i) => ({ dice: [], droppedIndex: 0, total: 10 + i }));
+  const base: Partial<Character> = { classes: [cl("Wizard", 1)], creationProgress: { currentStep: "abilities" } };
+
+  test("nothing rolled, partial placements and a full placement; manual stays valid", () => {
+    assert.equal(isCreationStepValid(makeChar({ ...base, abilityMethod: "rolled" }), "abilities"), false);
+    assert.equal(
+      isCreationStepValid(makeChar({ ...base, abilityMethod: "rolled", rolledAbilities: sixResults }), "abilities"),
+      false,
+      "six results with nothing placed is invalid",
+    );
+    assert.equal(
+      isCreationStepValid(
+        makeChar({
+          ...base,
+          abilityMethod: "rolled",
+          rolledAbilities: sixResults,
+          rolledAbilityPicks: { str: 0, dex: 1, con: 2, int: 3, wis: 4 },
+        }),
+        "abilities",
+      ),
+      false,
+      "five of six placed is invalid",
+    );
+    assert.equal(
+      isCreationStepValid(
+        makeChar({
+          ...base,
+          abilityMethod: "rolled",
+          rolledAbilities: sixResults,
+          rolledAbilityPicks: { str: 0, dex: 1, con: 2, int: 3, wis: 4, cha: 5 },
+        }),
+        "abilities",
+      ),
+      true,
+      "all six placed is valid",
+    );
+    assert.equal(isCreationStepValid(makeChar({ ...base, abilityMethod: "manual" }), "abilities"), true);
+  });
+});
+
+describe("A draft that starts above level 1 opens at full HP", () => {
+  const flowOpts = { activeBooks: ALL_BOOKS };
+  const catalogs = () => ({ compendium: currentCompendium(), activeBooks: ALL_BOOKS });
+
+  test("choosing Fighter level 5 and finishing every step leaves currentHp === maxHp", () => {
+    const draft = makeChar({ creationProgress: { currentStep: "class" } });
+    const picked = applyCreationStepChange(
+      draft,
+      { step: "class", className: "Fighter", source: "PHB", level: 5 },
+      flowOpts,
+    );
+    assert.equal(picked.classes[0]?.level, 5);
+    assert.equal(picked.currentHp, maxHp(picked), "picking a starting level above 1 keeps the draft at full HP");
+
+    const human = allCatalogRaces(catalogs()).find((r) => r.name === "Human")!;
+    const variant = human.subraces?.find((s) => s.source === "PHB" && s.name.trim().length > 0);
+    let c = applyCreationStepChange(
+      picked,
+      { step: "subclass", subclassName: "Champion", subclassSource: "PHB" },
+      flowOpts,
+    );
+    c = applyCreationStepChange(c, { step: "race", race: human, ...(variant ? { subrace: variant } : {}) }, flowOpts);
+    c = applyCreationStepChange(c, { step: "background", background: { name: "Soldier", source: "PHB" } }, flowOpts);
+    const scores = { str: 15, dex: 14, con: 14, int: 12, wis: 10, cha: 8 };
+    c = applyCreationStepEdit(
+      c,
+      "abilities",
+      (cur) => ({ ...cur, abilityMethod: "standardArray", standardArrayPicks: { ...scores }, baseAbilityScores: { ...scores } }),
+      flowOpts,
+    );
+    const skillOffer = skillChoiceOffers(c, flowOpts).find((o) => o.source === "Class: Fighter")!;
+    c = applyCreationStepEdit(
+      c,
+      "classChoices",
+      (cur) => ({
+        ...cur,
+        skillChoices: [
+          { id: skillOffer.source, origin: "class", choose: skillOffer.choose, from: skillOffer.from, picked: skillOffer.from.slice(0, skillOffer.choose) },
+        ],
+        chosenSkills: skillOffer.from.slice(0, skillOffer.choose),
+        ruleChoices: [
+          { id: "PHB__Fighter__Fighting Style", trait: "Fighting Style", origin: "class", choose: 1, from: ["Defense"], picked: ["Defense"] },
+        ],
+      }),
+      flowOpts,
+    );
+    c = applyCreationStepEdit(
+      c,
+      "asiFeats",
+      (cur) => ({ ...cur, asiSelections: [{ level: 4, className: "Fighter", classLevel: 4, type: "asi", asi: { str: 2 } }] }),
+      flowOpts,
+    );
+    for (const offer of startingEquipmentOffers(c, catalogs())) {
+      c = setStartingEquipmentOption(c, offer.slot, offer.options[0], catalogs());
+    }
+    for (const slot of startingEquipmentCard(c, catalogs()).slots) {
+      if (slot.kind !== "choice") continue;
+      const letter = c.startingEquipmentPicks?.options[String(slot.slot)];
+      const option = slot.options.find((o) => o.letter === letter);
+      for (const entry of option?.entries ?? []) {
+        if (entry.kind === "type") {
+          c = setStartingEquipmentItems(c, entry.address, entry.pool.slice(0, entry.quantity), catalogs());
+        }
+      }
+    }
+    assert.equal(resolveStartingEquipment(c, catalogs()).complete, true, "the fixture's equipment picks are complete");
+
+    for (const id of applicableCreationSteps(c, flowOpts)) {
+      assert.equal(isCreationStepValid(c, id, flowOpts), true, `${id} should be valid before finishing`);
+      c = finishCreationStep(c, id, flowOpts);
+    }
+    assert.equal(c.creationProgress, undefined, "finishing Review finishes the character");
+    assert.equal(c.currentHp, maxHp(c), "a finished new character opens at full HP");
   });
 });
 

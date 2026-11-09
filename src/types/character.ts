@@ -1,6 +1,6 @@
 export type AbilityKey = "str" | "dex" | "con" | "int" | "wis" | "cha";
 
-/** The Creation Steps of the Creation Flow, by id. The order lives in `src/rules/creationFlow.ts`. */
+/** The Creation Steps of the Creation Flow, by id. */
 export type CreationStepId =
   | "class"
   | "subclass"
@@ -14,6 +14,25 @@ export type CreationStepId =
   | "equipment"
   | "details"
   | "review";
+
+/**
+ * The Creation Steps of the Creation Flow, in the order the flow walks them. Lives here, in a leaf module,
+ * so save loading (`migrateCharacter`) can validate a progress record without pulling in the rules modules.
+ */
+export const CREATION_STEP_ORDER: readonly CreationStepId[] = [
+  "class",
+  "subclass",
+  "race",
+  "subrace",
+  "background",
+  "abilities",
+  "classChoices",
+  "asiFeats",
+  "spells",
+  "equipment",
+  "details",
+  "review",
+];
 
 /**
  * Where a draft sits in the Creation Flow. Absent means the character is finished, so a save from the
