@@ -1,6 +1,6 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { Platform } from "react-native";
-import type { D20Mode, Roll } from "../rules/dice.ts";
+import { __setRandomSourceForTests, type D20Mode, type Roll } from "../rules/dice.ts";
 import { makeRollLogEntry, type RollFollowUp, type RollLogEntry } from "../rules/rollLog.ts";
 
 /** What one call of the publishing seam takes: a completed Roll, its source, and the optional extras. */
@@ -73,14 +73,28 @@ export function RollLogProvider({ children }: { children: React.ReactNode }) {
   const closeTray = useCallback(() => setTrayVisible(false), []);
   const selectTraySegment = useCallback((segment: TraySegment) => setTraySegment(segment), []);
 
-  // Test-only hook for the layout scenarios: on a web build flagged for E2E, expose the publishing seam
-  // so a scenario can log a Roll no screen triggers yet. A production bundle never sets the flag.
+  // Test-only hooks for the layout scenarios: on a web build flagged for E2E, expose the publishing seam
+  // so a scenario can log a Roll no screen triggers yet, and the dice random source so a scenario can force
+  // fixed faces (a natural 20). A production bundle never sets the flag.
   useEffect(() => {
     if (Platform.OS !== "web" || process.env.EXPO_PUBLIC_E2E !== "1") return;
-    const scope = window as unknown as { __publishRoll?: (input: PublishRollInput) => RollLogEntry };
+    const scope = window as unknown as {
+      __publishRoll?: (input: PublishRollInput) => RollLogEntry;
+      __setRandomSource?: (faces: number[] | null) => void;
+    };
     scope.__publishRoll = publishRoll;
+    scope.__setRandomSource = (faces) => {
+      if (faces === null) {
+        __setRandomSourceForTests(null);
+        return;
+      }
+      let index = 0;
+      __setRandomSourceForTests((sides) => Math.min(sides, Math.max(1, faces[index++ % faces.length])));
+    };
     return () => {
       delete scope.__publishRoll;
+      delete scope.__setRandomSource;
+      __setRandomSourceForTests(null);
     };
   }, [publishRoll]);
 

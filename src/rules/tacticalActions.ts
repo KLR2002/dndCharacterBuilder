@@ -28,6 +28,8 @@ export interface TacticalSpellAttack {
   name: string;
   level: number;
   damage: string;
+  /** The casting profile's spell attack bonus, so the row's "to hit" badge can roll it. */
+  attackBonus?: number;
   time: string;
   range: string;
   desc: string;
@@ -166,17 +168,24 @@ export function getTacticalActionLedger(
   // 2. Spell attacks & combat cantrips
   const spellAttacks: TacticalSpellAttack[] = [];
   const seenSpellNames = new Set<string>();
+  const spellProfiles = evaluated.spellProfiles || [];
+  // A known spell belongs to the profile whose owner key stored it (the first profile for a single caster).
+  const profileForOwner = (ownerKey?: string) =>
+    spellProfiles.find((p) => p.ownerKey === ownerKey) ?? spellProfiles[0];
 
-  const candidateSpells: { name: string; source: string; kiCost?: number; spellObj?: any }[] = [
-    ...(character.knownSpells || []),
+  const candidateSpells: { name: string; source: string; kiCost?: number; spellObj?: any; attackBonus?: number }[] = [
+    ...(character.knownSpells || []).map((k) => {
+      const profile = profileForOwner(k.ownerKey);
+      return { name: k.name, source: k.source, attackBonus: profile?.spellAttackBonus };
+    }),
   ];
 
-  for (const prof of evaluated.spellProfiles || []) {
+  for (const prof of spellProfiles) {
     for (const sp of prof.subclassKnownSpells || []) {
-      candidateSpells.push({ name: sp.name, source: sp.source, kiCost: sp.kiCost, spellObj: sp });
+      candidateSpells.push({ name: sp.name, source: sp.source, kiCost: sp.kiCost, spellObj: sp, attackBonus: prof.spellAttackBonus });
     }
     for (const sp of prof.alwaysPreparedSpells || []) {
-      candidateSpells.push({ name: sp.name, source: sp.source, kiCost: sp.kiCost, spellObj: sp });
+      candidateSpells.push({ name: sp.name, source: sp.source, kiCost: sp.kiCost, spellObj: sp, attackBonus: prof.spellAttackBonus });
     }
   }
 
@@ -203,6 +212,7 @@ export function getTacticalActionLedger(
         name: k.kiCost ? `${sp.name} (${k.kiCost} Ki)` : sp.name,
         level: sp.level,
         damage,
+        attackBonus: k.attackBonus,
         time: sp.castingTime || "1 action",
         range: sp.range || "60 ft",
         desc: sp.description || "",

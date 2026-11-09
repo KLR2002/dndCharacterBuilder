@@ -7,7 +7,9 @@
 // is a bottom sheet: flush with the bottom edge with a strip of background above it, a drag handle labelled
 // "Close" instead of a ✕, closing on backdrop tap, Escape, the handle and a swipe down; on wide screens a
 // centred dialog of at most about 560px with a ✕. Closing paths of a modal holding unsaved input ask
-// "Discard changes?" first. The helpers that start the
+// "Discard changes?" first. The Actions tab's roll badges roll attacks and damage from the ledger (the
+// advantage roll sheet through the keyboard path, critical damage after a forced natural 20) without
+// changing the stored character. The helpers that start the
 // app and seed it are in scripts/lib/app-driver.mjs (see docs/agents/driving-the-app.md).
 //
 // Usage: `npm run layout:check` (not part of check:all). The script starts the Expo web server itself
@@ -35,7 +37,7 @@ import {
   stopExpoWeb,
   waitForExpoWeb,
 } from "./lib/app-driver.mjs";
-import { buildScreens, buildSeed, CHARACTER_ID, DRUID_ID, EDIT_BUILD_ID, WIZARD_ID } from "./lib/scenarios.mjs";
+import { buildScreens, buildSeed, ACTIONS_ID, CHARACTER_ID, DRUID_ID, EDIT_BUILD_ID, WIZARD_ID } from "./lib/scenarios.mjs";
 import { playStep, playSteps } from "./lib/web-steps.mjs";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
@@ -1035,6 +1037,198 @@ async function checkDiceTrayAndLog(ctx, width) {
   return failures;
 }
 
+// The Actions tab's roll badges at one width: a weapon attack's "to hit" badge rolls a d20 with the
+// ledger's bonus and offers "Roll damage" on the result card; the damage badge rolls the ledger's pool;
+// the keyboard path (context-menu key on the focused badge) opens the roll sheet, and Advantage shows two
+// d20s with the dropped one struck through; a forced natural 20 offers "Roll critical damage" with doubled
+// dice and the modifier once; a spell attack row rolls its profile's bonus; flat or unparseable damage shows
+// plain; tapping a row still opens its details; and every roll leaves the stored character (slots, uses,
+// ammunition) unchanged.
+async function checkActionRolls(ctx, width) {
+  const page = await ctx.newPage();
+  const prefix = `[${width}px actions rolls]`;
+  let failures = 0;
+  const fail = (msg) => {
+    failures++;
+    console.log(`${prefix} ${msg}`);
+  };
+  const shot = (name) => join(SHOTS, `ActionRolls-${name}-${width}.png`);
+  const dialogSel = '[role="dialog"]';
+  const cardSel = '[data-testid="result-card"]';
+  const badgeText = (locator) => locator.textContent().then((t) => (t ?? "").replace(/[\uE000-\uF8FF]/g, "").trim());
+  const readCard = () =>
+    page.evaluate(() => {
+      const card = document.querySelector('[data-testid="result-card"]');
+      if (!card) return null;
+      const chips = [...card.querySelectorAll('[data-testid="die-chip"]')].map((chip) => ({
+        text: (chip.textContent ?? "").replace(/\s+/g, ""),
+        struck: [...chip.querySelectorAll("*")].some((el) => getComputedStyle(el).textDecorationLine.includes("line-through")),
+      }));
+      const leaf = (re) => [...card.querySelectorAll("*")].find((e) => e.children.length === 0 && re.test((e.textContent ?? "").trim()))?.textContent.trim() ?? null;
+      return {
+        chips,
+        modifier: card.querySelector('[data-testid="result-modifier"]')?.textContent ?? "",
+        total: card.querySelector('[data-testid="result-total"]')?.textContent ?? "",
+        source: card.querySelector('[data-testid="result-source"]')?.textContent ?? "",
+        markers: ["Natural 20", "Natural 1", "Critical"].filter((m) => leaf(new RegExp(`^${m}$`))),
+        followUp: leaf(/^Roll (critical )?damage$/),
+      };
+    });
+  const storedCharacter = (id) =>
+    page.evaluate((charId) => JSON.parse(localStorage.getItem("@dnd5e_characters") ?? "[]").find((c) => c.id === charId) ?? null, id);
+  const setFaces = (faces) => page.evaluate((f) => (window.__setRandomSource ? window.__setRandomSource(f) : "no hook"), faces);
+
+  // The weapon attack row: badges read from the ledger, a tap rolls the attack.
+  await page.goto(`${BASE}/character/${ACTIONS_ID}`, { waitUntil: "networkidle", timeout: 120000 });
+  await page.waitForTimeout(1500);
+  await page.getByText("Actions", { exact: true }).first().click();
+  await page.getByText(/equipped weapon attacks/i).first().waitFor({ state: "visible", timeout: 10000 }).catch(() => fail("the Actions tab did not show EQUIPPED WEAPON ATTACKS"));
+  const toHit = page.locator('[data-testid="roll-badge-attack-0-tohit"]');
+  const damageBadge = page.locator('[data-testid="roll-badge-attack-0-damage"]');
+  if (!(await toHit.isVisible().catch(() => false))) fail('no "to hit" roll badge on the weapon row');
+  else if ((await badgeText(toHit)) !== "+5 to hit") fail(`the "to hit" badge reads "${await badgeText(toHit)}", expected "+5 to hit"`);
+  if (!(await damageBadge.isVisible().catch(() => false))) fail("no damage roll badge on the weapon row");
+  else if ((await badgeText(damageBadge)) !== "1d8 + 3 slashing") fail(`the damage badge reads "${await badgeText(damageBadge)}", expected "1d8 + 3 slashing"`);
+  const before = await storedCharacter(ACTIONS_ID);
+  if (!before) fail("the seeded character is not in storage");
+  for (const v of await page.evaluate(findLayoutViolations, null)) fail(v);
+  await page.screenshot({ path: shot("tab") });
+
+  // Tap the "to hit" badge: a d20 +5, fixed to 15, so total 20, with "Roll damage" on the card and no details modal.
+  if ((await setFaces([15])) === "no hook") fail("the test-only random-source hook (window.__setRandomSource) is not exposed on a seeded web build");
+  await toHit.click();
+  await page.waitForSelector(cardSel, { state: "visible", timeout: 10000 }).catch(() => fail("no result card after tapping the to-hit badge"));
+  if ((await page.locator(dialogSel).count()) > 0) fail("tapping the badge opened the row's details modal");
+  let card = await readCard();
+  if (!card) fail("the result card disappeared before it could be read");
+  else {
+    if (card.source !== "Kara · Longsword attack") fail(`the attack card's source is "${card.source}", expected "Kara · Longsword attack"`);
+    if (card.chips.length !== 1 || card.chips[0].text !== "15d20" || card.chips[0].struck) fail(`the attack card's faces are ${JSON.stringify(card.chips)}, expected one unstruck 15d20`);
+    if (card.modifier !== "+5") fail(`the attack card's modifier is "${card.modifier}", expected "+5"`);
+    if (card.total !== "20") fail(`the attack card's total is "${card.total}", expected "20"`);
+    if (card.followUp !== "Roll damage") fail(`the attack card's follow-up is "${card.followUp}", expected "Roll damage"`);
+  }
+  await page.screenshot({ path: shot("attack") });
+
+  // The follow-up rolls the damage pool 1d8 + 3 (fixed face clamps to 8 on the d8).
+  await page.getByText("Roll damage", { exact: true }).first().click();
+  await page.waitForFunction(() => document.querySelector('[data-testid="result-source"]')?.textContent?.includes("damage"), null, { timeout: 10000 }).catch(() => fail("the damage follow-up did not replace the card"));
+  card = await readCard();
+  if (!card) fail("the damage card disappeared before it could be read");
+  else {
+    if (card.source !== "Kara · Longsword damage") fail(`the damage card's source is "${card.source}", expected "Kara · Longsword damage"`);
+    if (card.chips.length !== 1 || card.chips[0].text !== "8d8") fail(`the damage card's faces are ${JSON.stringify(card.chips)}, expected one 8d8`);
+    if (card.modifier !== "+3" || card.total !== "11") fail(`the damage card reads ${card.modifier} / ${card.total}, expected +3 / 11`);
+    if (card.followUp !== null) fail(`the damage card offers a follow-up "${card.followUp}", expected none`);
+  }
+
+  // The keyboard path to the roll sheet: context-menu key on the focused badge, then Advantage with fixed faces 17 and 9.
+  await setFaces([17, 9]);
+  await toHit.focus();
+  await page.keyboard.press("ContextMenu");
+  await page.waitForSelector(dialogSel, { state: "visible", timeout: 10000 }).catch(() => fail("the context-menu key on the focused badge did not open the roll sheet"));
+  for (const label of ["Disadvantage", "Roll", "Advantage"]) {
+    if (!(await page.getByText(label, { exact: true }).first().isVisible().catch(() => false))) fail(`the roll sheet does not show "${label}"`);
+  }
+  await page.screenshot({ path: shot("sheet") });
+  await page.getByText("Advantage", { exact: true }).first().click();
+  await page.waitForSelector(dialogSel, { state: "hidden", timeout: 10000 }).catch(() => fail("the roll sheet did not close after choosing Advantage"));
+  await page.waitForFunction(() => document.querySelector('[data-testid="result-card"] [data-testid="die-chip"]') !== null, null, { timeout: 10000 }).catch(() => fail("no result card after the sheet's Advantage"));
+  card = await readCard();
+  if (!card) fail("the advantage card disappeared before it could be read");
+  else {
+    if (card.chips.length !== 2 || card.chips.some((c) => !c.text.endsWith("d20"))) fail(`advantage shows ${JSON.stringify(card.chips)}, expected two d20s`);
+    else if (card.chips.filter((c) => c.struck).length !== 1) fail(`advantage shows ${JSON.stringify(card.chips)}, expected exactly one struck through`);
+    else if (card.chips.map((c) => Number(/(\d+)d20/.exec(c.text)?.[1])).join(",") !== "17,9") fail(`advantage faces are ${JSON.stringify(card.chips)}, expected 17 and 9`);
+    if (card.total !== "22") fail(`the advantage total is "${card.total}", expected "22" (17 + 5)`);
+    if (card.modifier !== "+5") fail(`the advantage card's modifier is "${card.modifier}", expected "+5"`);
+  }
+  await page.screenshot({ path: shot("advantage") });
+
+  // A forced natural 20: the card offers "Roll critical damage" and rolls doubled dice, modifier once.
+  await setFaces([20]);
+  await toHit.click();
+  await page.waitForFunction(() => /Roll critical damage/.test(document.querySelector('[data-testid="result-card"]')?.textContent ?? ""), null, { timeout: 10000 }).catch(() => fail("a natural 20 did not offer \"Roll critical damage\""));
+  card = await readCard();
+  if (card) {
+    if (!card.markers.includes("Natural 20")) fail(`the natural-20 card's markers are ${JSON.stringify(card.markers)}`);
+    if (card.followUp !== "Roll critical damage") fail(`the natural-20 card's follow-up is "${card.followUp}", expected "Roll critical damage"`);
+  }
+  await page.getByText("Roll critical damage", { exact: true }).first().click();
+  await page.waitForFunction(() => document.querySelector('[data-testid="result-source"]')?.textContent?.includes("damage"), null, { timeout: 10000 }).catch(() => fail("the critical damage follow-up did not roll"));
+  card = await readCard();
+  if (!card) fail("the critical damage card disappeared before it could be read");
+  else {
+    if (card.source !== "Kara · Longsword damage") fail(`the critical card's source is "${card.source}"`);
+    if (card.chips.length !== 2 || card.chips.some((c) => c.text !== "8d8")) fail(`critical damage shows ${JSON.stringify(card.chips)}, expected two doubled 8d8 (faces clamp to 8)`);
+    if (card.modifier !== "+3" || card.total !== "19") fail(`critical damage reads ${card.modifier} / ${card.total}, expected +3 / 19 (the modifier once)`);
+    if (!card.markers.includes("Critical")) fail(`the critical card's markers are ${JSON.stringify(card.markers)}, expected Critical`);
+  }
+  await page.screenshot({ path: shot("critical") });
+  await setFaces(null);
+
+  // Tapping the row (not the badge) still opens its details.
+  await page.getByText("Longsword", { exact: true }).first().click();
+  await page.waitForSelector(dialogSel, { state: "visible", timeout: 10000 }).catch(() => fail("tapping the weapon row did not open its details modal"));
+  await page.keyboard.press("Escape");
+  await page.waitForSelector(dialogSel, { state: "hidden", timeout: 10000 }).catch(() => fail("Escape did not close the details modal"));
+
+  // Nothing was spent: the stored character is unchanged by every roll.
+  const after = await storedCharacter(ACTIONS_ID);
+  if (!after) fail("the seeded character vanished from storage");
+  else if (JSON.stringify(after) !== JSON.stringify(before)) fail("the rolls changed the stored character (slots, uses or ammunition)");
+
+  // A spell attack row rolls its casting profile's bonus; its non-pool damage label stays plain.
+  await page.goto(`${BASE}/character/${WIZARD_ID}`, { waitUntil: "networkidle", timeout: 120000 });
+  await page.waitForTimeout(1500);
+  await page.getByText("Actions", { exact: true }).first().click();
+  await page.getByText(/spell attacks/i).first().waitFor({ state: "visible", timeout: 10000 }).catch(() => fail("the Actions tab did not show SPELL ATTACKS"));
+  const spellToHit = page.locator('[data-testid="roll-badge-spell-0-tohit"]');
+  if (!(await spellToHit.isVisible().catch(() => false))) fail("the Fire Bolt row has no to-hit roll badge");
+  else if ((await badgeText(spellToHit)) !== "+5 to hit") fail(`the spell badge reads "${await badgeText(spellToHit)}", expected "+5 to hit"`);
+  if ((await page.locator('[data-testid="roll-badge-spell-0-damage"]').count()) > 0) fail('the "Cantrip scaling" damage shows a roll badge');
+  const plainDamage = await page.evaluate(() => {
+    const el = [...document.querySelectorAll("*")].find((e) => e.children.length === 0 && e.textContent.trim() === "Cantrip scaling");
+    return el ? el.closest('[data-testid^="roll-badge"]') === null : false;
+  });
+  if (!plainDamage) fail('"Cantrip scaling" is inside a roll badge, expected plain text');
+  await setFaces([11]);
+  await spellToHit.click();
+  await page.waitForSelector(cardSel, { state: "visible", timeout: 10000 }).catch(() => fail("no result card after tapping the spell badge"));
+  card = await readCard();
+  if (!card) fail("the spell card disappeared before it could be read");
+  else {
+    if (card.source !== "Elowen · Fire Bolt attack") fail(`the spell card's source is "${card.source}", expected "Elowen · Fire Bolt attack"`);
+    if (card.chips.length !== 1 || card.chips[0].text !== "11d20") fail(`the spell card's faces are ${JSON.stringify(card.chips)}, expected one 11d20`);
+    if (card.modifier !== "+5" || card.total !== "16") fail(`the spell card reads ${card.modifier} / ${card.total}, expected +5 / 16`);
+    if (card.followUp !== null) fail(`the spell card offers a follow-up "${card.followUp}", expected none (no damage pool)`);
+  }
+  await setFaces(null);
+
+  // The unarmed fallback row: the to-hit badge rolls, the flat damage shows plain.
+  await page.goto(`${BASE}/character/${CHARACTER_ID}`, { waitUntil: "networkidle", timeout: 120000 });
+  await page.waitForTimeout(1500);
+  await page.getByText("Actions", { exact: true }).first().click();
+  await page.getByText(/attack action/i).first().waitFor({ state: "visible", timeout: 10000 }).catch(() => fail("the Actions tab did not load for the unarmed fallback"));
+  const unarmedToHit = page.locator('[data-testid="roll-badge-unarmed-tohit"]');
+  if (!(await unarmedToHit.isVisible().catch(() => false))) fail("the unarmed fallback row has no to-hit roll badge");
+  else if ((await badgeText(unarmedToHit)) !== "+3 to hit") fail(`the unarmed badge reads "${await badgeText(unarmedToHit)}", expected "+3 to hit"`);
+  if ((await page.locator('[data-testid="roll-badge-unarmed-damage"]').count()) > 0) fail("the flat unarmed damage shows a roll badge");
+  await setFaces([7]);
+  await unarmedToHit.click();
+  await page.waitForSelector(cardSel, { state: "visible", timeout: 10000 }).catch(() => fail("no result card after tapping the unarmed badge"));
+  card = await readCard();
+  if (!card) fail("the unarmed card disappeared before it could be read");
+  else {
+    if (card.source !== "Rendar · Unarmed Strike attack") fail(`the unarmed card's source is "${card.source}", expected "Rendar · Unarmed Strike attack"`);
+    if (card.modifier !== "+3" || card.total !== "10") fail(`the unarmed card reads ${card.modifier} / ${card.total}, expected +3 / 10`);
+    if (card.followUp !== null) fail(`the unarmed card offers a follow-up "${card.followUp}", expected none (flat damage)`);
+  }
+  await setFaces(null);
+  await page.close();
+  return failures;
+}
+
 // The checks that open their own page rather than a SCREENS entry. Each is a scenario, so ONLY selects it by name.
 const EXTRA_CHECKS = [
   { name: "HP modals", run: checkHitPointModals },
@@ -1043,6 +1237,7 @@ const EXTRA_CHECKS = [
   { name: "Modal closing", run: checkModalClosing },
   { name: "New character draft folder", run: checkDraftFolder },
   { name: "Dice tray and Roll Log", run: checkDiceTrayAndLog },
+  { name: "Actions rolls", run: checkActionRolls },
 ];
 
 // Every scenario name of this run: the SCREENS entries of the active catalog, then the extra checks.

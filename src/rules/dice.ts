@@ -9,6 +9,20 @@ export type RandomSource = (sides: number) => number;
 /** The app's random source. */
 export const appRandom: RandomSource = (sides) => 1 + Math.floor(Math.random() * sides);
 
+// The source the roll functions use when none is passed. Tests swap it through
+// `__setRandomSourceForTests`; app code always rolls with `appRandom`.
+let activeRandom: RandomSource = appRandom;
+
+/** The random source rolls use by default. */
+export function currentRandom(): RandomSource {
+  return activeRandom;
+}
+
+/** Test-only seam: replaces the default random source (null restores `appRandom`). Never called by app code. */
+export function __setRandomSourceForTests(source: RandomSource | null): void {
+  activeRandom = source ?? appRandom;
+}
+
 export interface DiceTerm {
   count: number;
   sides: number;
@@ -86,7 +100,7 @@ function rollParsed(pool: DicePool, random: RandomSource): Roll {
 }
 
 /** Rolls a pool like "2d6+1d8+3": every die's face, and a total of their sum plus the modifier. */
-export function rollDicePool(pool: string, random: RandomSource = appRandom): Roll {
+export function rollDicePool(pool: string, random: RandomSource = currentRandom()): Roll {
   const parsed = parseDicePool(pool);
   if (!parsed) throw new Error(`Not a dice pool: "${pool}"`);
   return rollParsed(parsed, random);
@@ -98,7 +112,7 @@ export type D20Mode = "none" | "advantage" | "disadvantage";
  * Rolls a d20 with a flat modifier. With advantage or disadvantage two d20s are rolled and the
  * higher (or lower) one is kept; both faces are reported, the unkept die marked dropped.
  */
-export function rollD20(modifier: number, mode: D20Mode = "none", random: RandomSource = appRandom): Roll {
+export function rollD20(modifier: number, mode: D20Mode = "none", random: RandomSource = currentRandom()): Roll {
   if (mode === "none") {
     const face = rollDie(20, random);
     return { dice: [{ sides: 20, face, dropped: false }], modifier, total: face + modifier };
@@ -122,7 +136,7 @@ export function isNatural20(roll: Roll): boolean {
 }
 
 /** Rolls damage for a pool like "1d8+3". On a critical the dice double; the flat modifier does not. */
-export function rollDamage(pool: string, options: { critical?: boolean } = {}, random: RandomSource = appRandom): Roll {
+export function rollDamage(pool: string, options: { critical?: boolean } = {}, random: RandomSource = currentRandom()): Roll {
   const parsed = parseDicePool(pool);
   if (!parsed) throw new Error(`Not a dice pool: "${pool}"`);
   const dice = options.critical ? parsed.dice.map((term) => ({ ...term, count: term.count * 2 })) : parsed.dice;
@@ -130,7 +144,7 @@ export function rollDamage(pool: string, options: { critical?: boolean } = {}, r
 }
 
 /** Rolls one Rolled Abilities result: four d6, the lowest marked dropped, the total of the other three. */
-export function rollAbilityScore(random: RandomSource = appRandom): RolledAbilityResult {
+export function rollAbilityScore(random: RandomSource = currentRandom()): RolledAbilityResult {
   const faces = [rollDie(6, random), rollDie(6, random), rollDie(6, random), rollDie(6, random)];
   let droppedIndex = 0;
   for (let i = 1; i < faces.length; i += 1) {
@@ -146,6 +160,6 @@ export function rollAbilityScore(random: RandomSource = appRandom): RolledAbilit
 }
 
 /** The six Rolled Abilities results, in roll order. */
-export function rollAbilityScores(random: RandomSource = appRandom): RolledAbilityResult[] {
+export function rollAbilityScores(random: RandomSource = currentRandom()): RolledAbilityResult[] {
   return Array.from({ length: 6 }, () => rollAbilityScore(random));
 }
