@@ -719,7 +719,7 @@ export const StatsTab: React.FC = () => {
                             },
                           ]}
                         >
-                          <View style={[styles.expertiseInnerDot, { backgroundColor: "#fff" }]} />
+                          <View style={[styles.expertiseInnerDot, { backgroundColor: theme.background }]} />
                         </View>
                       ) : skill.isProficient ? (
                         <View
@@ -859,7 +859,7 @@ export const StatsTab: React.FC = () => {
                             },
                           ]}
                         >
-                          <View style={[styles.expertiseInnerDot, { backgroundColor: "#fff" }]} />
+                          <View style={[styles.expertiseInnerDot, { backgroundColor: theme.background }]} />
                         </View>
                       ) : (
                         <View

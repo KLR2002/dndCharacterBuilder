@@ -684,10 +684,10 @@ export const SpellsTab: React.FC = () => {
                         styles.slotCheckbox,
                         {
                           borderColor: theme.accentHover,
-                          backgroundColor: isUsed ? theme.accent : "transparent",
+                          backgroundColor: isUsed ? theme.accentGlow : "transparent",
                         },
                       ]}>
-                      {isUsed && <Ionicons name="checkmark" size={14} color={theme.accentText} />}
+                      {isUsed && <Ionicons name="checkmark" size={14} color={theme.accentHover} />}
                     </TouchableOpacity>
                   </View>
                 )}
@@ -1154,10 +1154,10 @@ export const SpellsTab: React.FC = () => {
 
       {/* Warlock Pact Slots (Strictly Separate from Multiclass Slots) */}
       {warlockPactSlots && (
-        <Card style={[styles.pactCard, { borderColor: "#9333ea" }]}>
+        <Card style={[styles.pactCard, { borderColor: theme.accentHover }]}>
           <View style={styles.cardHeaderRow}>
             <View style={styles.cardTitleBlock}>
-              <Text style={[styles.sectionTitle, { color: "#c084fc" }]}>WARLOCK PACT MAGIC</Text>
+              <Text style={[styles.sectionTitle, { color: theme.accentHover }]}>WARLOCK PACT MAGIC</Text>
               <Text style={{ color: theme.textSecondary, fontSize: 13, marginTop: 2 }}>
                 {warlockPactSlots.count} {warlockPactSlots.count === 1 ? "slot" : "slots"} of {formatOrdinal(warlockPactSlots.level)} level (Short Rest reset)
               </Text>
@@ -1176,11 +1176,11 @@ export const SpellsTab: React.FC = () => {
                   style={[
                     styles.slotCheckbox,
                     {
-                      borderColor: "#9333ea",
-                      backgroundColor: isUsed ? "#9333ea" : "transparent",
+                      borderColor: theme.accentHover,
+                      backgroundColor: isUsed ? theme.accentGlow : "transparent",
                     },
                   ]}>
-                  {isUsed && <Ionicons name="checkmark" size={14} color={theme.accentText} />}
+                  {isUsed && <Ionicons name="checkmark" size={14} color={theme.accentHover} />}
                 </TouchableOpacity>
               );
             })}
@@ -1193,11 +1193,11 @@ export const SpellsTab: React.FC = () => {
 
       {/* Mystic Arcanum (Warlock Level >= 11) */}
       {mysticArcanumTiers.length > 0 && (
-        <Card style={{ marginBottom: 16, borderColor: "#9333ea" }}>
+        <Card style={{ marginBottom: 16, borderColor: theme.accentHover }}>
           <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 10 }}>
             <View style={{ flex: 1, marginRight: 8 }}>
               <View style={{ flexDirection: "row", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
-                <Text style={[styles.sectionTitle, { color: "#9333ea" }]}>
+                <Text style={[styles.sectionTitle, { color: theme.accentHover }]}>
                   MYSTIC ARCANUM
                 </Text>
                 <Badge label="1/Long Rest" variant="accent" size="sm" />
@@ -1324,10 +1324,10 @@ export const SpellsTab: React.FC = () => {
                             styles.slotCheckbox,
                             {
                               borderColor: theme.accentHover,
-                              backgroundColor: isUsed ? theme.accent : "transparent",
+                              backgroundColor: isUsed ? theme.accentGlow : "transparent",
                             },
                           ]}>
-                          {isUsed && <Ionicons name="checkmark" size={14} color={theme.accentText} />}
+                          {isUsed && <Ionicons name="checkmark" size={14} color={theme.accentHover} />}
                         </TouchableOpacity>
                       );
                     })}

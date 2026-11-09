@@ -454,8 +454,16 @@ export const InventoryTab: React.FC = () => {
                   },
                 ]}>
                 {/* Equip Toggle */}
-                <TouchableOpacity onPress={() => toggleEquip(item)} style={styles.equipBtn}>
-                  <Ionicons name="checkmark-circle" size={20} color={theme.accentHover} />
+                <TouchableOpacity
+                  onPress={() => toggleEquip(item)}
+                  style={[
+                    styles.equipCheck,
+                    {
+                      borderColor: item.isEquipped ? theme.accentHover : theme.border,
+                      backgroundColor: item.isEquipped ? theme.accentGlow : "transparent",
+                    },
+                  ]}>
+                  {item.isEquipped && <Ionicons name="checkmark" size={14} color={theme.accentHover} />}
                 </TouchableOpacity>
 
                 {/* Item Info (click to view details) */}
@@ -551,8 +559,16 @@ export const InventoryTab: React.FC = () => {
                   },
                 ]}>
                 {/* Equip Toggle */}
-                <TouchableOpacity onPress={() => toggleEquip(item)} style={styles.equipBtn}>
-                  <Ionicons name="ellipse-outline" size={20} color={theme.border} />
+                <TouchableOpacity
+                  onPress={() => toggleEquip(item)}
+                  style={[
+                    styles.equipCheck,
+                    {
+                      borderColor: item.isEquipped ? theme.accentHover : theme.border,
+                      backgroundColor: item.isEquipped ? theme.accentGlow : "transparent",
+                    },
+                  ]}>
+                  {item.isEquipped && <Ionicons name="checkmark" size={14} color={theme.accentHover} />}
                 </TouchableOpacity>
 
                 {/* Item Info */}
@@ -980,8 +996,13 @@ const styles = StyleSheet.create({
     gap: 8,
     flexWrap: "wrap",
   },
-  equipBtn: {
-    padding: 4,
+  equipCheck: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    borderWidth: 1.5,
+    justifyContent: "center",
+    alignItems: "center",
   },
   itemTitle: {
     fontSize: 14,
