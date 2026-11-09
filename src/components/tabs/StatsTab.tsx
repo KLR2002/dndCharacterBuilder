@@ -629,7 +629,7 @@ export const StatsTab: React.FC = () => {
                     styles.profIndicator,
                     {
                       borderColor: save.isProficient ? theme.accentHover : theme.border,
-                      backgroundColor: save.isProficient ? theme.accent : "transparent",
+                      backgroundColor: save.isProficient ? theme.accentGlow : "transparent",
                     },
                   ]}
                 />
@@ -727,7 +727,7 @@ export const StatsTab: React.FC = () => {
                             styles.profIndicator,
                             {
                               borderColor: theme.accentHover,
-                              backgroundColor: theme.accent,
+                              backgroundColor: theme.accentGlow,
                             },
                           ]}
                         />
@@ -867,7 +867,7 @@ export const StatsTab: React.FC = () => {
                             styles.profIndicator,
                             {
                               borderColor: theme.accentHover,
-                              backgroundColor: theme.accent,
+                              backgroundColor: theme.accentGlow,
                             },
                           ]}
                         />
