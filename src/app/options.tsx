@@ -9,6 +9,7 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useDiceAnimationEnabled } from "../components/dice/useDiceAnimationEnabled";
 import { Badge } from "../components/ui/Badge";
 import { Button } from "../components/ui/Button";
 import { Card } from "../components/ui/Card";
@@ -29,11 +30,14 @@ import { useAppTheme } from "../context/ThemeContext";
 export default function OptionsScreen() {
   const router = useRouter();
   const { theme, accentId, setAccentId } = useAppTheme();
+  // The switch shows the effective state: with no saved value it follows the system reduced-motion preference.
+  const diceAnimationEnabled = useDiceAnimationEnabled();
   const {
     activeBooks,
     setActiveBooks,
     fullHealOnLevelUp,
     setFullHealOnLevelUp,
+    setDice3dEnabled,
     isIntegrated,
     integratedAt,
     catalogStale,
@@ -289,6 +293,59 @@ export default function OptionsScreen() {
                 name={fullHealOnLevelUp ? "checkbox" : "square-outline"}
                 size={22}
                 color={fullHealOnLevelUp ? theme.accentHover : theme.textMuted}
+              />
+            </TouchableOpacity>
+          </Card>
+        </View>
+
+        {/* DICE */}
+        <View style={{ marginBottom: 20 }}>
+          <View
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              gap: 8,
+              marginBottom: 8,
+            }}
+          >
+            <Ionicons
+              name="dice-outline"
+              size={18}
+              color={theme.accentHover}
+            />
+            <Text style={[styles.sectionHeading, { color: theme.text }]}>
+              DICE
+            </Text>
+          </View>
+          <Card style={{ padding: 14 }}>
+            <TouchableOpacity
+              onPress={() => setDice3dEnabled(!diceAnimationEnabled)}
+              accessibilityRole="checkbox"
+              accessibilityLabel="3D dice"
+              accessibilityState={{ checked: diceAnimationEnabled }}
+              style={[
+                styles.bookRow,
+                {
+                  backgroundColor: diceAnimationEnabled ? theme.surface : "transparent",
+                  borderColor: diceAnimationEnabled ? theme.accentHover : theme.border,
+                },
+              ]}
+            >
+              <Text
+                style={{
+                  flex: 1,
+                  minWidth: 0,
+                  color: theme.text,
+                  fontSize: 14,
+                  fontWeight: "600",
+                }}
+              >
+                3D dice
+              </Text>
+              <Ionicons
+                name={diceAnimationEnabled ? "checkbox" : "square-outline"}
+                size={22}
+                color={diceAnimationEnabled ? theme.accentHover : theme.textMuted}
               />
             </TouchableOpacity>
           </Card>

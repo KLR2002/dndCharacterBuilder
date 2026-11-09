@@ -1,19 +1,29 @@
 import { Ionicons } from "@expo/vector-icons";
-import React from "react";
+import React, { Suspense } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { useAppTheme } from "../../context/ThemeContext";
 import { formatModifier } from "../../rules/abilities.ts";
 import type { Roll } from "../../rules/dice.ts";
 import { entryHeading, formatRollTime, rollMarkers, type RollLogEntry } from "../../rules/rollLog.ts";
+import { useDiceAnimationEnabled } from "./useDiceAnimationEnabled";
+
+// The 2.5D renderer (Reanimated + SVG) lives in its own chunk: React.lazy only fetches it when this
+// slot actually renders it, so while 3D dice are off nothing of it is loaded.
+const AnimatedDiceRoll = React.lazy(() => import("./AnimatedDiceRoll").then((module) => ({ default: module.AnimatedDiceRoll })));
 
 /**
  * The one place an animated dice renderer mounts for a Roll. It receives the completed Roll, faces
- * already decided, so the total never waits for it. Until a renderer is plugged in it renders nothing
- * and the faces show as the chips below.
+ * already decided, so the total never waits for it. Renders nothing while the 3D dice setting is off
+ * or the system asks for reduced motion; then the faces show as the chips below, at once.
  */
 export function DiceRenderer({ roll }: { roll: Roll }) {
-  void roll;
-  return null;
+  const enabled = useDiceAnimationEnabled();
+  if (!enabled) return null;
+  return (
+    <Suspense fallback={null}>
+      <AnimatedDiceRoll roll={roll} />
+    </Suspense>
+  );
 }
 
 /** One die's face as a small chip; a dropped die is struck through and muted. */
