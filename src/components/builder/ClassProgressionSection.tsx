@@ -19,7 +19,7 @@ import {
   toggleExpertiseChoice,
 } from "../../rules/expertise";
 import { subclassLevel } from "../../rules/leveling";
-import { classStepOffer, classStepModeOffer, isCreationFinished, type BuildFlowMode } from "../../rules/creationFlow";
+import { classStepMinLevel, classStepOffer, classStepModeOffer, isCreationFinished, type BuildFlowMode } from "../../rules/creationFlow";
 import type { CreationStepId } from "../../types/character";
 import {
   proficiencyChoiceOffers,
@@ -104,7 +104,7 @@ export interface ClassProgressionSectionProps {
    */
   step?: CreationStepId;
   /**
-   * How the build flow was entered on a finished character: Edit Build (`edit`) or the interim Level up path
+   * How the build flow was entered on a finished character: Edit Build (`edit`) or the Level up path
    * (`levelup`). Unset for a draft and in the free-form builder. The Class step reads its offer from
    * `classStepModeOffer`: Edit Build lowers a held class's level but never raises one or adds a class.
    */
@@ -254,14 +254,14 @@ export const ClassProgressionSection: React.FC<
   };
 
   // What the Class step offers in this build-flow mode: Edit Build lowers a held class's level but offers no
-  // raise or add-class control; the interim Level up path keeps both. A draft or the free-form builder keeps
+  // raise or add-class control; the Level up path keeps both. A draft or the free-form builder keeps
   // the full controls.
   const modeOffer = flowMode ? classStepModeOffer(flowMode) : null;
   const canRaiseLevel = modeOffer ? modeOffer.canRaiseLevel : true;
-  // In Edit Build a class cannot be lowered past level 1, so no held class is dropped entirely there.
-  const canLowerTo = (level: number) => !(flowMode === "edit" && level <= 1);
+  // The lowest level each held class can be lowered to in this mode; lowering below 1 removes the class.
+  const canLowerTo = (level: number, classIndex: number) => level > classStepMinLevel(flowMode, classIndex);
   // In the Creation Flow the class list is the Class step's picker: it shows while no class is held, for a
-  // draft (which can still change its one class), and on the interim Level up path of a finished character.
+  // draft (which can still change its one class), and on the Level up path of a finished character.
   // Edit Build offers no add-class control, so the list stays hidden there.
   const showClassList =
     step === undefined ||
@@ -293,7 +293,7 @@ export const ClassProgressionSection: React.FC<
             variant="accent"
           />
         </View>
-        {character.classes.map((c) => {
+        {character.classes.map((c, classIndex) => {
           const cd = findClassData(currentCompendium().for().classes(), c);
           return (
             <View
@@ -335,13 +335,13 @@ export const ClassProgressionSection: React.FC<
                   <View style={styles.stepperRow}>
                     <TouchableOpacity
                       onPress={() => removeClassLevel(c.className)}
-                      disabled={!canLowerTo(c.level)}
+                      disabled={!canLowerTo(c.level, classIndex)}
                       accessibilityRole="button"
                       accessibilityLabel={`Lower ${c.className} level`}
                       hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                       style={[
                         styles.stepperBtn,
-                        { backgroundColor: theme.surfaceRaised, opacity: !canLowerTo(c.level) ? 0.4 : 1 },
+                        { backgroundColor: theme.surfaceRaised, opacity: !canLowerTo(c.level, classIndex) ? 0.4 : 1 },
                       ]}
                     >
                       <Ionicons name="remove" size={20} color={theme.text} />
@@ -423,13 +423,13 @@ export const ClassProgressionSection: React.FC<
                 <View style={styles.stepperRow}>
                   <TouchableOpacity
                     onPress={() => removeClassLevel(c.className)}
-                    disabled={!canLowerTo(c.level)}
+                    disabled={!canLowerTo(c.level, classIndex)}
                     accessibilityRole="button"
                     accessibilityLabel={`Lower ${c.className} level`}
                     hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                     style={[
                       styles.stepperBtn,
-                      { backgroundColor: theme.surfaceRaised, opacity: !canLowerTo(c.level) ? 0.4 : 1 },
+                      { backgroundColor: theme.surfaceRaised, opacity: !canLowerTo(c.level, classIndex) ? 0.4 : 1 },
                     ]}
                   >
                     <Ionicons name="remove" size={20} color={theme.text} />

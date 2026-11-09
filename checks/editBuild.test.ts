@@ -19,9 +19,10 @@ import { allCatalogRaces } from "../src/rules/catalogs.ts";
 import { migrateCharacter } from "../src/rules/migrateCharacter.ts";
 import { rolledHitPointsKey } from "../src/rules/hp.ts";
 import {
+  applyBuildStepUpdate,
   applyCreationStepChange,
   applyCreationStepEdit,
-  classStepModeOffer,
+  classStepMinLevel,
   creationStepNeedsAttention,
   creationSteps,
   finishCreationStep,
@@ -260,9 +261,29 @@ describe("Lowering a class level in Edit Build releases that level's picks and n
     );
   });
 
-  test("the Class step's offer has no raise or add-class action in Edit Build mode and has them in Level up mode", () => {
-    assert.deepEqual(classStepModeOffer("edit"), { canLowerLevel: true, canRaiseLevel: false, canAddClass: false });
-    assert.deepEqual(classStepModeOffer("levelup"), { canLowerLevel: true, canRaiseLevel: true, canAddClass: true });
+  test("Edit Build refuses a raised level and an added class; Level up allows both", () => {
+    const fw = finishedFighterWizard();
+    const raised: Character = { ...fw, classes: fw.classes.map((c, i) => (i === 0 ? { ...c, level: c.level + 1 } : c)) };
+    assert.equal(applyBuildStepUpdate(fw, raised, "class", "edit", flowOpts), fw, "Edit Build does not raise a level");
+    const added: Character = { ...fw, classes: [...fw.classes, { className: "Rogue", source: "PHB", level: 1 }] };
+    assert.equal(applyBuildStepUpdate(fw, added, "class", "edit", flowOpts), fw, "Edit Build does not add a class");
+    assert.equal(applyBuildStepUpdate(fw, raised, "class", "levelup", flowOpts).classes[0].level, 4, "Level up raises the level");
+    assert.equal(applyBuildStepUpdate(fw, added, "class", "levelup", flowOpts).classes.length, 3, "Level up adds the class");
+  });
+
+  test("Edit Build lowers a non-first class below 1, removing it; the first class stays at least 1", () => {
+    assert.equal(classStepMinLevel("edit", 0), 1, "the first class stays at least level 1 in Edit Build");
+    assert.equal(classStepMinLevel("edit", 1), 0, "a later class can be lowered below 1, which removes it");
+    const fw = finishedFighterWizard();
+    const withWizard1: Character = { ...fw, classes: [fw.classes[0], { className: "Wizard", source: "PHB", level: 1 }] };
+    const lowered = applyCreationStepEdit(
+      withWizard1,
+      "class",
+      (cur) => removeClassLevel(cur, "Wizard", currentCompendium(), ALL_BOOKS),
+      { ...flowOpts, editBuild: true },
+    );
+    assert.deepEqual(lowered.classes.map((c) => c.className), ["Fighter"], "lowering the level-1 Wizard below 1 removes it");
+    assert.equal(isCreationFinished(lowered), true);
   });
 });
 
