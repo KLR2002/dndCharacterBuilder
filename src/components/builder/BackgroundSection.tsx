@@ -339,13 +339,13 @@ export const BackgroundSection: React.FC<BackgroundSectionProps> = ({
                                           style={[
                                             styles.choiceChip,
                                             {
-                                              backgroundColor: isSelected ? theme.accent : theme.surfaceHighlight,
+                                              backgroundColor: isSelected ? theme.accentGlow : theme.surfaceHighlight,
                                               borderColor: isSelected ? theme.accentHover : theme.border,
                                             },
                                           ]}>
                                           <Text
                                             style={{
-                                              color: isSelected ? theme.accentText : theme.text,
+                                              color: theme.text,
                                               fontSize: 12,
                                               fontWeight: isSelected ? "700" : "500",
                                             }}>
@@ -419,10 +419,6 @@ export const BackgroundSection: React.FC<BackgroundSectionProps> = ({
             <View style={{ flexDirection: "row", flexWrap: "wrap", justifyContent: "space-between", alignItems: "center", gap: 10 }}>
               <View style={{ flexGrow: 1, flexShrink: 1, flexBasis: 180 }}>
                 <Text style={[styles.itemTitle, { color: theme.text }]}>Custom Background</Text>
-                <Text style={{ color: theme.textMuted, fontSize: 12 }}>
-                  Create your own background with a custom name, 2 skill proficiencies and 2 tool or language
-                  proficiencies.
-                </Text>
               </View>
               <Button
                 title={isCustomBg ? "Cancel" : "Create Custom"}
@@ -541,6 +537,7 @@ export const BackgroundSection: React.FC<BackgroundSectionProps> = ({
                     />
                     <Button
                       title="Select"
+                      variant="outline"
                       size="sm"
                       onPress={() => {
                         onUpdate({
@@ -559,12 +556,7 @@ export const BackgroundSection: React.FC<BackgroundSectionProps> = ({
 
       {/* Known Languages Card */}
       <Card style={{ gap: 8 }}>
-        <View>
-          <Text style={[styles.heading, { color: theme.text }]}>Known Languages:</Text>
-          <Text style={{ color: theme.textMuted, fontSize: 11 }}>
-            Granted and chosen from race, background, and features
-          </Text>
-        </View>
+        <Text style={[styles.heading, { color: theme.text }]}>Known Languages:</Text>
         <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6 }}>
           {resolvedLanguages.map((lang) => (
             <Badge key={lang} label={lang} variant="accent" size="sm" />
@@ -574,10 +566,7 @@ export const BackgroundSection: React.FC<BackgroundSectionProps> = ({
 
       {/* Tool Proficiencies Card */}
       <Card style={{ gap: 8 }}>
-        <View>
-          <Text style={[styles.heading, { color: theme.text }]}>Tool Proficiencies:</Text>
-          <Text style={{ color: theme.textMuted, fontSize: 11 }}>Granted and chosen from race, background, and class</Text>
-        </View>
+        <Text style={[styles.heading, { color: theme.text }]}>Tool Proficiencies:</Text>
         <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6 }}>
           {resolvedTools.length > 0 ? (
             resolvedTools.map((tool) => <Badge key={tool} label={tool} variant="surface" size="sm" />)

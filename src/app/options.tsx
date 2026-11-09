@@ -809,7 +809,7 @@ export default function OptionsScreen() {
       >
         {syncError ? (
           <View style={{ gap: 10 }}>
-            <Text style={{ color: theme.accentHover || "#ff4d4f", fontSize: 14 }}>
+            <Text style={{ color: theme.accentHover, fontSize: 14 }}>
               Failed to complete integration: {syncError}
             </Text>
             <Text style={{ color: theme.textSecondary, fontSize: 13 }}>

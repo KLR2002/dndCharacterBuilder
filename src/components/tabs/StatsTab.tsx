@@ -805,7 +805,7 @@ export const StatsTab: React.FC = () => {
       </Text>
       <Card style={{ gap: 10 }}>
         <View>
-          <Text style={[styles.profCatTitle, { color: theme.accentHover }]}>Armor Proficiencies</Text>
+          <Text style={[styles.profCatTitle, { color: theme.text }]}>Armor Proficiencies</Text>
           <Text style={{ color: theme.text, fontSize: 13 }}>
             {derivedProficiencies.armor.length > 0
               ? derivedProficiencies.armor.join(", ")
@@ -814,7 +814,7 @@ export const StatsTab: React.FC = () => {
         </View>
 
         <View>
-          <Text style={[styles.profCatTitle, { color: theme.accentHover }]}>Weapon Proficiencies</Text>
+          <Text style={[styles.profCatTitle, { color: theme.text }]}>Weapon Proficiencies</Text>
           <Text style={{ color: theme.text, fontSize: 13 }}>
             {derivedProficiencies.weapons.length > 0
               ? derivedProficiencies.weapons.join(", ")
@@ -824,7 +824,7 @@ export const StatsTab: React.FC = () => {
 
         <View>
           <View style={[styles.headingRow, { marginBottom: 4 }]}>
-            <Text style={[styles.profCatTitle, { color: theme.accentHover }]}>Tool Proficiencies</Text>
+            <Text style={[styles.profCatTitle, { color: theme.text }]}>Tool Proficiencies</Text>
             <TouchableOpacity
               accessibilityRole="button"
               accessibilityLabel="Add tool proficiency"

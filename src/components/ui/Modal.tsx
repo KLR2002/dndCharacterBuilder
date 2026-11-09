@@ -38,6 +38,10 @@ const SWIPE_CLOSE_DISTANCE = 80;
 /** A phone sheet never covers more than this share of the screen, so a strip of background stays visible above it. */
 const SHEET_MAX_HEIGHT_PERCENT = 90;
 
+// The open web modals, in the order they opened: the last entry is the topmost modal. Only the topmost
+// answers Escape, so one key press closes one modal even when several are stacked.
+const openWebModals: symbol[] = [];
+
 export const Modal: React.FC<CustomModalProps> = ({
   visible,
   onClose,
@@ -53,12 +57,20 @@ export const Modal: React.FC<CustomModalProps> = ({
   const { isPhone } = useResponsiveLayout();
   const [asking, setAsking] = useState(false);
 
-  // A closed modal never keeps its question open. Adjusting state while rendering (not in an effect)
-  // keeps this to one render when `visible` turns false.
+  // The phone sheet follows a downward drag with its own offset and closes on release. The body's scroll
+  // offset decides whether a drag may claim the gesture: content that can still scroll up keeps scrolling,
+  // so only a drag starting at the top of the content (or on the handle) drags the sheet.
+  const [bodyAtTop, setBodyAtTop] = useState(true);
+  const [dragY] = useState(() => new Animated.Value(0));
+
+  // A closed modal never keeps its question open, and a reopened sheet starts at the top of its content,
+  // so a sheet that was scrolled can still be swiped closed. Adjusting state while rendering (not in an
+  // effect) keeps this to one render when `visible` changes.
   const [wasVisible, setWasVisible] = useState(visible);
   if (visible !== wasVisible) {
     setWasVisible(visible);
     if (!visible) setAsking(false);
+    if (visible) setBodyAtTop(true);
   }
 
   // Every close path (backdrop, ✕, handle, swipe down, Android Back, Escape) goes through here: an
@@ -81,26 +93,28 @@ export const Modal: React.FC<CustomModalProps> = ({
 
   // Escape closes the open modal on the web. The listener captures: a focused TextInput stops
   // keydown propagation, so a bubble-phase listener on document would never see Escape. It reads
-  // the latest close logic through a ref, so it subscribes only when `visible` changes.
+  // the latest close logic through a ref, so it subscribes only when `visible` changes. Only the
+  // topmost open modal handles the key, so with stacked modals one Escape closes just the top one.
   const requestCloseRef = useRef(requestClose);
   useEffect(() => {
     requestCloseRef.current = requestClose;
   }, [requestClose]);
 
+  // A stable identity for this modal in the open-web-modals stack below.
+  const [modalId] = useState(() => Symbol("modal"));
   useEffect(() => {
     if (Platform.OS !== "web" || !visible) return;
+    openWebModals.push(modalId);
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") requestCloseRef.current();
+      if (event.key === "Escape" && openWebModals[openWebModals.length - 1] === modalId) requestCloseRef.current();
     };
     document.addEventListener("keydown", onKeyDown, true);
-    return () => document.removeEventListener("keydown", onKeyDown, true);
-  }, [visible]);
-
-  // The phone sheet follows a downward drag with its own offset and closes on release. The body's scroll
-  // offset decides whether a drag may claim the gesture: content that can still scroll up keeps scrolling,
-  // so only a drag starting at the top of the content (or on the handle) drags the sheet.
-  const [bodyAtTop, setBodyAtTop] = useState(true);
-  const [dragY] = useState(() => new Animated.Value(0));
+    return () => {
+      document.removeEventListener("keydown", onKeyDown, true);
+      const at = openWebModals.indexOf(modalId);
+      if (at >= 0) openWebModals.splice(at, 1);
+    };
+  }, [visible, modalId]);
 
   const onBodyScroll = useCallback((event: NativeSyntheticEvent<NativeScrollEvent>) => {
     const atTop = event.nativeEvent.contentOffset.y <= 0;

@@ -2,7 +2,7 @@ import React from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { useAppTheme } from "../../context/ThemeContext";
 import { useSerifFont } from "../../hooks/useSerifFont";
-import { ABILITIES } from "../../rules/abilities";
+import { ABILITIES, formatModifier } from "../../rules/abilities";
 import { evaluateCharacter } from "../../rules/characterEvaluation";
 import { currentCompendium } from "../../services/compendium";
 import type { Character } from "../../types/character";
@@ -62,7 +62,7 @@ export function IdentityPanel({ character, activeBooks }: { character: Character
           <DetailRow
             key={ability}
             label={ABILITY_LABELS[ability]}
-            value={`${scores[ability]} (+${modifiers[ability]})`}
+            value={`${scores[ability]} (${formatModifier(modifiers[ability])})`}
           />
         ))}
       </View>

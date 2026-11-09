@@ -71,6 +71,8 @@ export const AbilityScoresSection: React.FC<AbilityScoresSectionProps> = ({
             <TouchableOpacity
               key={m}
               onPress={() => {
+                // Re-tapping the active method does nothing: it must not clear the placements it shows.
+                if (m === character.abilityMethod) return;
                 if (m === "pointBuy") {
                   const cur = character.baseAbilityScores || { str: 8, dex: 8, con: 8, int: 8, wis: 8, cha: 8 };
                   const newScores: Record<AbilityKey, number> = { str: 8, dex: 8, con: 8, int: 8, wis: 8, cha: 8 };
@@ -156,9 +158,6 @@ export const AbilityScoresSection: React.FC<AbilityScoresSectionProps> = ({
       {/* Standard Array pool */}
       {character.abilityMethod === "standardArray" && (
         <Card style={{ gap: 10 }}>
-          <Text style={{ color: theme.textSecondary, fontSize: 12, fontWeight: "600" }}>
-            1. Tap a value from the pool below{"\n"}2. Tap an ability slot to assign it
-          </Text>
           <View style={{ flexDirection: "row", justifyContent: "center", gap: 8, flexWrap: "wrap" }}>
             {STANDARD_ARRAY.map((v, idx) => {
               const timesInArray = STANDARD_ARRAY.filter((x) => x === v).length;
@@ -172,7 +171,7 @@ export const AbilityScoresSection: React.FC<AbilityScoresSectionProps> = ({
                   style={[
                     styles.poolChip,
                     {
-                      backgroundColor: isPending ? theme.accent : available ? theme.surfaceRaised : theme.surfaceHighlight,
+                      backgroundColor: isPending ? theme.accentGlow : available ? theme.surfaceRaised : theme.surfaceHighlight,
                       borderColor: isPending ? theme.accentHover : theme.border,
                       opacity: !available && !isPending ? 0.35 : 1,
                     },
@@ -180,7 +179,7 @@ export const AbilityScoresSection: React.FC<AbilityScoresSectionProps> = ({
                 >
                   <Text
                     style={{
-                      color: isPending ? theme.accentText : available ? theme.text : theme.textMuted,
+                      color: isPending ? theme.text : available ? theme.text : theme.textMuted,
                       fontWeight: "800",
                       fontSize: 20,
                     }}
@@ -191,11 +190,6 @@ export const AbilityScoresSection: React.FC<AbilityScoresSectionProps> = ({
               );
             })}
           </View>
-          {pendingValue != null && (
-            <Text style={{ color: theme.accentHover, fontSize: 12, textAlign: "center", fontWeight: "700" }}>
-              → Now tap an ability slot to assign {pendingValue}
-            </Text>
-          )}
           <Button title="Reset" variant="outline" size="sm" onPress={onResetSA} />
         </Card>
       )}
@@ -215,15 +209,15 @@ export const AbilityScoresSection: React.FC<AbilityScoresSectionProps> = ({
                     style={[
                       styles.rollChip,
                       {
-                        backgroundColor: isPending ? theme.accent : used ? theme.surfaceHighlight : theme.surfaceRaised,
-                        borderColor: isPending ? theme.accent : theme.border,
+                        backgroundColor: isPending ? theme.accentGlow : used ? theme.surfaceHighlight : theme.surfaceRaised,
+                        borderColor: isPending ? theme.accentHover : theme.border,
                         opacity: used ? 0.35 : 1,
                       },
                     ]}
                   >
                     <Text
                       style={{
-                        color: isPending ? theme.background : theme.text,
+                        color: theme.text,
                         fontWeight: "800",
                         fontSize: 18,
                       }}
@@ -237,7 +231,7 @@ export const AbilityScoresSection: React.FC<AbilityScoresSectionProps> = ({
                           <Text
                             key={dieIndex}
                             style={{
-                              color: isPending ? theme.background : theme.textSecondary,
+                              color: isPending ? theme.text : theme.textSecondary,
                               fontSize: 11,
                               fontWeight: "600",
                               opacity: dropped ? 0.4 : 1,
@@ -253,11 +247,6 @@ export const AbilityScoresSection: React.FC<AbilityScoresSectionProps> = ({
                 );
               })}
             </View>
-          )}
-          {pendingRoll != null && rolledResults[pendingRoll] != null && (
-            <Text style={{ color: theme.accent, fontSize: 12, textAlign: "center", fontWeight: "700", flexShrink: 1 }}>
-              → Now tap an ability slot to assign {rolledResults[pendingRoll].total}
-            </Text>
           )}
           <Button title={rolledResults.length > 0 ? "Reroll" : "Roll"} variant="outline" size="sm" onPress={onRoll} />
         </Card>

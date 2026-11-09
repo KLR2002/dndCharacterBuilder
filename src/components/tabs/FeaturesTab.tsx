@@ -742,22 +742,22 @@ export const FeaturesTab: React.FC = () => {
             style={[
               styles.resetOptionBtn,
               {
-                backgroundColor: newCounterReset === "short" ? theme.accent : theme.surfaceHighlight,
-                borderColor: theme.border,
+                backgroundColor: newCounterReset === "short" ? theme.accentGlow : theme.surfaceHighlight,
+                borderColor: newCounterReset === "short" ? theme.accentHover : theme.border,
               },
             ]}>
-            <Text style={{ color: newCounterReset === "short" ? theme.accentText : "#fff", fontSize: 13, fontWeight: "600" }}>Short Rest</Text>
+            <Text style={{ color: newCounterReset === "short" ? theme.text : theme.textSecondary, fontSize: 13, fontWeight: "600" }}>Short Rest</Text>
           </TouchableOpacity>
           <TouchableOpacity
             onPress={() => setNewCounterReset("long")}
             style={[
               styles.resetOptionBtn,
               {
-                backgroundColor: newCounterReset === "long" ? theme.accent : theme.surfaceHighlight,
-                borderColor: theme.border,
+                backgroundColor: newCounterReset === "long" ? theme.accentGlow : theme.surfaceHighlight,
+                borderColor: newCounterReset === "long" ? theme.accentHover : theme.border,
               },
             ]}>
-            <Text style={{ color: newCounterReset === "long" ? theme.accentText : "#fff", fontSize: 13, fontWeight: "600" }}>Long Rest</Text>
+            <Text style={{ color: newCounterReset === "long" ? theme.text : theme.textSecondary, fontSize: 13, fontWeight: "600" }}>Long Rest</Text>
           </TouchableOpacity>
         </View>
       </Modal>

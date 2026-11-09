@@ -190,11 +190,6 @@ export const AncestrySection: React.FC<AncestrySectionProps> = ({
                 {character.race.name}
                 {character.race.subraceName ? ` — ${character.race.subraceName}` : ""}
               </Text>
-              <Text style={{ color: theme.textMuted, fontSize: 12 }}>
-                Size {ancestryState.size}
-                {ancestryState.darkvision > 0 ? ` • Darkvision ${ancestryState.darkvision} ft` : ""}
-                {" • "}{character.race.source}
-              </Text>
             </View>
           </Card>
         ) : null}

@@ -208,10 +208,12 @@ export const JournalTab: React.FC = () => {
               style={[
                 styles.alignmentPill,
                 {
-                  backgroundColor: currentCharacter.alignment === al ? theme.accent : theme.surfaceHighlight,
+                  backgroundColor: currentCharacter.alignment === al ? theme.accentGlow : theme.surfaceHighlight,
+                  borderColor: currentCharacter.alignment === al ? theme.accentHover : theme.border,
+                  borderWidth: 1,
                 },
               ]}>
-              <Text style={{ color: currentCharacter.alignment === al ? theme.accentText : "#fff", fontSize: 11, fontWeight: "600" }}>{al}</Text>
+              <Text style={{ color: currentCharacter.alignment === al ? theme.text : theme.textSecondary, fontSize: 11, fontWeight: "600" }}>{al}</Text>
             </TouchableOpacity>
           ))}
         </ScrollView>
