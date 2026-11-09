@@ -18,6 +18,7 @@ import {
   addMulticlassLevel,
   changeSubclass,
   clearBackground,
+  releaseStartingGrantClaim,
   removeClassLevel,
 } from "./builderTransitions.ts";
 import { applyAncestrySelection } from "./ancestryEngine.ts";
@@ -330,27 +331,6 @@ export type CreationStepChange =
   | { step: "background"; background: { name: string; source: string } | null };
 
 /**
- * Releases a starting-grant claim the old first class's kit or gold was granted under: the `start_` items leave
- * the inventory, the granted gold leaves the pouch, and the claim markers reset to the unequipped option, so
- * the Equipment step has to be finished again. Unchanged when no claim was made.
- */
-function releaseStartingGrantClaim(character: Character): Character {
-  if (!character.startingGrantsApplied && character.startingEquipmentPicks === undefined) return character;
-  const items = (character.items ?? []).filter((item) => !item.id.startsWith("start_"));
-  const grantedGold = character.startingGrantedGold ?? 0;
-  const pouch = { ...(character.pouch ?? { cp: 0, sp: 0, ep: 0, gp: 0, pp: 0 }) };
-  if (grantedGold > 0) pouch.gp = Math.max(0, (pouch.gp ?? 0) - grantedGold);
-  return {
-    ...character,
-    items,
-    pouch,
-    startingOption: "equipment",
-    startingGrantsApplied: false,
-    startingGrantedGold: undefined,
-  };
-}
-
-/**
  * Changes the character's one creation class to `className` at `level` (the current level unless given). The
  * old class is removed level by level through `removeClassLevel` — its last level drops the class with its
  * skill picks and tears its subclass down — and the new one is added level by level through
@@ -368,7 +348,8 @@ function changeCreationClass(
   const old = classEntryOf(character);
   const newLevel = change.level ?? old?.level ?? classStepOffer().startingLevel.default;
   const sameClass = Boolean(old && old.className.toLowerCase() === change.className.toLowerCase());
-  let next = character;
+  // A starting-grant claim made for the old class is released first, while the old class still names the default gold.
+  let next = old && !sameClass ? releaseStartingGrantClaim(character) : character;
 
   if (old && !sameClass) {
     let remaining = old.level;
@@ -408,9 +389,6 @@ function changeCreationClass(
     }
   }
 
-  if (old && !sameClass) {
-    next = releaseStartingGrantClaim(next);
-  }
   const reconciled = reconcile(next, compendium, { activeBooks });
   // A draft is at full HP, so a starting level above 1 lifts current HP with the raised max instead of
   // leaving the draft wounded.

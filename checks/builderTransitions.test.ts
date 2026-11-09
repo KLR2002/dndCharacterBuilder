@@ -1132,3 +1132,22 @@ test("applySoleSubclasses never changes a character in an integrated compendium"
 
   assert.equal(applySoleSubclasses(fighter3, integrated, ALL_BOOKS), fighter3);
 });
+
+test("removeClassLevel: lowering a Paladin 2->1 releases its class-owned leveled spells, since the max spell level is 0", () => {
+  const paladin2 = makeChar({
+    classes: [{ className: "Paladin", source: "PHB", level: 2 }],
+    knownSpells: [
+      { name: "Cure Wounds", source: "PHB", ownerKey: "Paladin__PHB" },
+      { name: "Fire Bolt", source: "PHB", ownerKey: "Paladin__PHB" },
+    ],
+    preparedSpells: ["Cure Wounds__PHB__Paladin__PHB"],
+  });
+  const lowered = removeClassLevel(paladin2, "Paladin", currentCompendium(), ALL_BOOKS);
+  assert.equal(lowered.classes[0]?.level, 1);
+  assert.deepEqual(
+    (lowered.knownSpells ?? []).map((k) => k.name),
+    ["Fire Bolt"],
+    "the level-1 spell above the new maximum of 0 is released; the cantrip stays",
+  );
+  assert.deepEqual(lowered.preparedSpells ?? [], [], "the released spell's prepared key goes with it");
+});

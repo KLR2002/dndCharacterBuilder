@@ -21,7 +21,6 @@ import { sizeOptionsOf } from "./sizeChoice.ts";
 import { abilityTargetBlocked, increaseOffersOf, increasePoolOf, originAbilityState, type RacialPick } from "./originCustomization.ts";
 import { ABILITY_NAMES } from "./abilities.ts";
 import { releaseExpandedOnlySpells } from "./backgroundSpells.ts";
-import { getMaxSpellLevel } from "./spellcasting.ts";
 import { releaseRaceOriginFeat } from "./feats.ts";
 import { rollAbilityScores, type RandomSource } from "./dice.ts";
 import { isGrantSpellChoiceId, releaseSupersededRacePicks } from "./choices/featSpells.ts";
@@ -617,53 +616,12 @@ export function removeClassLevel(
     );
   }
 
-  // The spells only a held expanded list gave a class that no longer casts are released, with a notice (ADR 0017).
-  const reconciled = reconcile({ ...updated, classes: updatedClasses }, compendium, { activeBooks });
-  let result = releaseExpandedOnlySpells(character, reconciled, compendium, activeBooks);
-  // While the class remains held, a spell it can no longer cast at the new level (one learned at the removed
-  // level) is released too, with a notice. Removing the last level keeps the class's own-list spells.
-  if (existing.level > 1) {
-    result = releaseOverLevelSpells(result, existing.className, existing.source, existing.level - 1, compendium, activeBooks);
-  }
-  return result;
-}
-
-/**
- * Releases the known spells owned by `className` whose spell level is above the maximum the class casts at
- * `newLevel`, each with a review notice, and drops their prepared keys. A name the catalog does not hold is kept.
- * Only called while the class remains held and still casts at `newLevel`.
- */
-function releaseOverLevelSpells(
-  character: Character,
-  className: string,
-  source: string,
-  newLevel: number,
-  compendium: Compendium,
-  activeBooks: ActiveBooks,
-): Character {
-  const maxSpellLevel = getMaxSpellLevel({ className, source, level: newLevel }, compendium.for(activeBooks).classes());
-  if (maxSpellLevel <= 0) return character;
-  const ownerPrefix = `${className}__`.toLowerCase();
-  const classLower = className.toLowerCase();
-  const ownedByClass = (k: { name: string; source: string; ownerKey?: string; className?: string }) =>
-    k.ownerKey?.toLowerCase().startsWith(ownerPrefix) ?? (!k.ownerKey && k.className?.toLowerCase() === classLower);
-  const notices: string[] = [];
-  const released = new Set<string>();
-  const knownSpells = (character.knownSpells ?? []).filter((known) => {
-    if (!ownedByClass(known)) return true;
-    const spell = compendium.findSpell(known.name, known.source);
-    if (!spell || spell.level <= maxSpellLevel) return true;
-    released.add(known.name.toLowerCase());
-    notices.push(`${known.name} removed: spell level above ${className} ${newLevel}`);
-    return false;
-  });
-  if (released.size === 0) return character;
-  const keptNames = new Set(knownSpells.map((known) => known.name.toLowerCase()));
-  const preparedSpells = (character.preparedSpells ?? []).filter((prepared) => {
-    const key = prepared.split("__")[0].toLowerCase();
-    return !released.has(key) || keptNames.has(key);
-  });
-  return withNotices({ ...character, knownSpells, preparedSpells }, notices);
+  // The spells only a held expanded list gave a class that no longer casts are released first, with a
+  // notice (ADR 0017); the reconcile that ends the transition then releases any spell left above the
+  // class's new maximum spell level.
+  const stepped: Character = { ...updated, classes: updatedClasses };
+  const expandedReleased = releaseExpandedOnlySpells(character, stepped, compendium, activeBooks);
+  return reconcile(expandedReleased, compendium, { activeBooks });
 }
 
 export const STARTING_GOLD_BY_CLASS: Record<string, number> = {
@@ -726,6 +684,30 @@ function kitInstalled(items: InventoryItem[], kit: InventoryItem[]): boolean {
 }
 
 /**
+ * Releases a starting-grant claim: the `start_` items leave the inventory, the granted gold leaves the pouch
+ * (a gold claim with no recorded amount, from an older save, had the default amount granted), and the claim
+ * markers reset to the unequipped option, so the Equipment step has to be finished again. Unchanged when no
+ * claim was made.
+ */
+export function releaseStartingGrantClaim(character: Character): Character {
+  if (!character.startingGrantsApplied && character.startingEquipmentPicks === undefined) return character;
+  const items = (character.items ?? []).filter((item) => !item.id.startsWith("start_"));
+  const grantedGold =
+    character.startingGrantedGold ??
+    (character.startingGrantsApplied && character.startingOption === "gold" ? startingGoldOf(character) : 0);
+  const pouch = { ...(character.pouch ?? { cp: 0, sp: 0, ep: 0, gp: 0, pp: 0 }) };
+  if (grantedGold > 0) pouch.gp = Math.max(0, (pouch.gp ?? 0) - grantedGold);
+  return {
+    ...character,
+    items,
+    pouch,
+    startingOption: "equipment",
+    startingGrantsApplied: false,
+    startingGrantedGold: undefined,
+  };
+}
+
+/**
  * Claims starting gold or equipment, replacing an earlier claim of the same kind. Equipment is the kit the picks
  * resolve to; incomplete picks grant nothing and the character is returned unchanged.
  */
@@ -744,44 +726,29 @@ export function applyStartingGrants(
     return character;
   }
 
-  const defaultGold = startingGoldOf(character);
-  const gold = options.goldAmount ?? defaultGold;
-
-  // Clean up any previously granted starting items (items with id starting with "start_")
-  const cleanedItems = (character.items ?? []).filter((item) => !item.id.startsWith("start_"));
-
-  // Remove any starting gold recorded by an earlier claim, whichever mode made it. A gold claim with
-  // no recorded amount (older saves) had the default amount granted, so that is removed instead.
-  const currentPouch = { ...(character.pouch ?? { cp: 0, sp: 0, ep: 0, gp: 0, pp: 0 }) };
-  const grantedGold =
-    character.startingGrantedGold ??
-    (character.startingGrantsApplied && character.startingOption === "gold" ? defaultGold : 0);
-  if (grantedGold) {
-    currentPouch.gp = Math.max(0, (currentPouch.gp ?? 0) - grantedGold);
-  }
+  const base = releaseStartingGrantClaim(character);
+  const gold = options.goldAmount ?? startingGoldOf(character);
 
   if (mode === "gold") {
     return {
-      ...character,
+      ...base,
       startingOption: "gold",
       startingGrantsApplied: true,
       startingGrantedGold: gold,
-      items: cleanedItems,
       pouch: {
-        ...currentPouch,
-        gp: (currentPouch.gp ?? 0) + gold,
+        ...base.pouch,
+        gp: (base.pouch.gp ?? 0) + gold,
       },
     };
   }
 
   // mode === "equipment"
   return {
-    ...character,
+    ...base,
     startingOption: "equipment",
     startingGrantsApplied: true,
     startingGrantedGold: undefined,
-    items: [...cleanedItems, ...(kit?.items ?? [])],
-    pouch: currentPouch,
+    items: [...base.items, ...(kit?.items ?? [])],
   };
 }
 
