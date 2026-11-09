@@ -102,9 +102,11 @@ export const InventoryTab: React.FC = () => {
   const pouch = currentCharacter.pouch || { cp: 0, sp: 0, ep: 0, gp: 0, pp: 0 };
   const { currentWeight, maxCapacity, encumbered, heavilyEncumbered } = evaluated.carryingWeight;
 
-  // Separate equipped vs carried
-  const equippedItems = items.filter((i) => i.isEquipped || i.section === "equipped");
-  const carriedItems = items.filter((i) => !i.isEquipped && i.section !== "equipped");
+  // Separate equipped vs carried. An older save can hold section "equipped" without the isEquipped flag;
+  // either marks the item as equipped, so the Equipped list shows both.
+  const isShownEquipped = (item: InventoryItem) => item.isEquipped || item.section === "equipped";
+  const equippedItems = items.filter(isShownEquipped);
+  const carriedItems = items.filter((i) => !isShownEquipped(i));
 
   // Currency Handlers
   const updateCoin = (coin: "cp" | "sp" | "ep" | "gp" | "pp", delta: number) => {
@@ -456,18 +458,21 @@ export const InventoryTab: React.FC = () => {
                 {/* Equip Toggle */}
                 <TouchableOpacity
                   onPress={() => toggleEquip(item)}
+                  accessibilityRole="checkbox"
+                  accessibilityState={{ checked: isShownEquipped(item) }}
+                  accessibilityLabel={isShownEquipped(item) ? `Equipped: ${item.name}` : `Equip ${item.name}`}
                   style={[
                     styles.equipCheck,
                     {
-                      borderColor: item.isEquipped ? theme.accentHover : theme.border,
-                      backgroundColor: item.isEquipped ? theme.accentGlow : "transparent",
+                      borderColor: isShownEquipped(item) ? theme.accentHover : theme.border,
+                      backgroundColor: isShownEquipped(item) ? theme.accentGlow : "transparent",
                     },
                   ]}>
-                  {item.isEquipped && <Ionicons name="checkmark" size={14} color={theme.accentHover} />}
+                  {isShownEquipped(item) && <Ionicons name="checkmark" size={14} color={theme.accentHover} />}
                 </TouchableOpacity>
 
                 {/* Item Info (click to view details) */}
-                <TouchableOpacity onPress={() => showItemDetail(item)} style={{ flex: 1, paddingVertical: 4 }}>
+                <TouchableOpacity onPress={() => showItemDetail(item)} style={{ flex: 1, minWidth: 140, paddingVertical: 4 }}>
                   <View style={{ flexDirection: "row", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
                     <Text style={[styles.itemTitle, { color: theme.text }]} numberOfLines={isCompact ? 2 : 1}>{item.name}</Text>
                     {item.infusedWith && (
@@ -497,13 +502,13 @@ export const InventoryTab: React.FC = () => {
                     style={[
                       styles.attuneToggleBtn,
                       {
-                        backgroundColor: item.isAttuned ? theme.surfaceHighlight : theme.accent,
-                        borderColor: item.isAttuned ? theme.border : theme.accent,
+                        backgroundColor: item.isAttuned ? theme.accentGlow : theme.surfaceHighlight,
+                        borderColor: item.isAttuned ? theme.accentHover : theme.border,
                       },
                     ]}>
                     <Text
                       style={{
-                        color: item.isAttuned ? theme.accentHover : theme.accentText,
+                        color: item.isAttuned ? theme.accentHover : theme.textSecondary,
                         fontSize: 11,
                         fontWeight: "600",
                       }}>
@@ -561,18 +566,21 @@ export const InventoryTab: React.FC = () => {
                 {/* Equip Toggle */}
                 <TouchableOpacity
                   onPress={() => toggleEquip(item)}
+                  accessibilityRole="checkbox"
+                  accessibilityState={{ checked: isShownEquipped(item) }}
+                  accessibilityLabel={isShownEquipped(item) ? `Equipped: ${item.name}` : `Equip ${item.name}`}
                   style={[
                     styles.equipCheck,
                     {
-                      borderColor: item.isEquipped ? theme.accentHover : theme.border,
-                      backgroundColor: item.isEquipped ? theme.accentGlow : "transparent",
+                      borderColor: isShownEquipped(item) ? theme.accentHover : theme.border,
+                      backgroundColor: isShownEquipped(item) ? theme.accentGlow : "transparent",
                     },
                   ]}>
-                  {item.isEquipped && <Ionicons name="checkmark" size={14} color={theme.accentHover} />}
+                  {isShownEquipped(item) && <Ionicons name="checkmark" size={14} color={theme.accentHover} />}
                 </TouchableOpacity>
 
                 {/* Item Info */}
-                <TouchableOpacity onPress={() => showItemDetail(item)} style={{ flex: 1, paddingVertical: 4 }}>
+                <TouchableOpacity onPress={() => showItemDetail(item)} style={{ flex: 1, minWidth: 140, paddingVertical: 4 }}>
                   <View style={{ flexDirection: "row", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
                     <Text style={[styles.itemTitle, { color: theme.text }]} numberOfLines={isCompact ? 2 : 1}>{item.name}</Text>
                     {item.infusedWith && (
@@ -602,13 +610,13 @@ export const InventoryTab: React.FC = () => {
                     style={[
                       styles.attuneToggleBtn,
                       {
-                        backgroundColor: item.isAttuned ? theme.surfaceHighlight : theme.accent,
-                        borderColor: item.isAttuned ? theme.border : theme.accent,
+                        backgroundColor: item.isAttuned ? theme.accentGlow : theme.surfaceHighlight,
+                        borderColor: item.isAttuned ? theme.accentHover : theme.border,
                       },
                     ]}>
                     <Text
                       style={{
-                        color: item.isAttuned ? theme.accentHover : theme.accentText,
+                        color: item.isAttuned ? theme.accentHover : theme.textSecondary,
                         fontSize: 11,
                         fontWeight: "600",
                       }}>
@@ -1007,6 +1015,8 @@ const styles = StyleSheet.create({
   itemTitle: {
     fontSize: 14,
     fontWeight: "600",
+    flexShrink: 1,
+    minWidth: 0,
   },
   qtyControl: {
     flexDirection: "row",
