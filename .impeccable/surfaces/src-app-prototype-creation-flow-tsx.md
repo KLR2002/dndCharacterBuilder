@@ -33,6 +33,8 @@ FINISH: unreviewed and undocumented is unfinished; this build ends with the fini
 - Choice rows and opened details show only what tells the options apart (no subclass level on classes, no speed on races).
 - Wide screens get a designed layout, not a stretched phone column.
 
+- Level-Up Flow (map ticket 05): the same chrome; the identity panel shows level and hit points before → after. Dice: pool-builder tray, tap a bonus to roll and hold for Disadvantage / Roll / Advantage, a result card above the dice button, the Roll Log as a tab in the tray.
+
 ## Unresolved
 
 - How the chips, list and identity sheet adapt at tablet and desktop widths: map ticket 04.
