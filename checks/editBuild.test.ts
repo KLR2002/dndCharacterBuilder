@@ -26,6 +26,7 @@ import {
   creationSteps,
   finishCreationStep,
   isCreationFinished,
+  isCreationStepValid,
 } from "../src/rules/creationFlow.ts";
 import type { Character, CharacterClass } from "../src/types/character.ts";
 import type { RaceData } from "../src/types/dnd5e.ts";
@@ -188,6 +189,53 @@ describe("Lowering a class level in Edit Build releases that level's picks and n
     // Finishing the last flagged step drops the record entirely: plain finished again.
     assert.equal(finished.creationProgress, undefined);
     assert.equal(isCreationFinished(finished), true);
+  });
+
+  test("lowering a later class reads every held class: Class stays valid and only released steps are flagged", () => {
+    // A finished Fighter 3 / Wizard 2 whose every step is valid.
+    const fw: Character = makeChar({
+      name: "Sera",
+      classes: [
+        { className: "Fighter", source: "PHB", level: 3, subclassName: "Champion", subclassSource: "PHB" },
+        { className: "Wizard", source: "PHB", level: 2, subclassName: "Evocation", subclassSource: "PHB" },
+      ],
+      race: { name: "Human", source: "PHB" },
+      background: { name: "Acolyte", source: "PHB" },
+      abilityMethod: "standardArray",
+      standardArrayPicks: { str: 15, dex: 14, con: 13, int: 16, wis: 10, cha: 8 },
+      baseAbilityScores: { str: 15, dex: 14, con: 13, int: 16, wis: 10, cha: 8 },
+      startingOption: "gold",
+      knownSpells: [
+        { name: "Fire Bolt", source: "PHB", ownerKey: "Wizard__PHB" },
+        { name: "Magic Missile", source: "PHB", ownerKey: "Wizard__PHB" },
+        { name: "Misty Step", source: "PHB", ownerKey: "Wizard__PHB" },
+      ],
+      preparedSpells: ["Magic Missile__PHB__Wizard__PHB", "Misty Step__PHB__Wizard__PHB"],
+      ruleChoices: [
+        { id: "PHB__Fighter__Fighting Style", trait: "Fighting Style", origin: "class", choose: 1, from: ["Defense"], picked: ["Defense"] },
+      ],
+      skillChoices: [
+        { id: "Class: Fighter", origin: "class", choose: 2, from: ["Athletics", "Perception"], picked: ["Athletics", "Perception"] },
+      ],
+      chosenSkills: ["Athletics", "Perception"],
+    });
+    assert.equal(isCreationStepValid(fw, "class", flowOpts), true, "the Class step is valid for a multiclass character");
+    assert.equal(isCreationStepValid(fw, "review", flowOpts), true, "every step of the fixture is valid");
+
+    const lowered = applyCreationStepEdit(
+      fw,
+      "class",
+      (cur) => removeClassLevel(cur, "Wizard", currentCompendium(), ALL_BOOKS),
+      { ...flowOpts, editBuild: true },
+    );
+    assert.equal(isCreationStepValid(lowered, "class", flowOpts), true, "the Class step stays valid after the change");
+    assert.equal(isCreationStepValid(lowered, "review", flowOpts), true, "Review is not falsely flagged");
+    assert.deepEqual(
+      lowered.creationProgress?.needsAttention ?? [],
+      ["subclass", "spells"],
+      "only the steps whose picks were released are flagged: the torn-down subclass and the released spell",
+    );
+    assert.equal(creationStepNeedsAttention(lowered, "classChoices"), false, "the Fighter's picks were not released");
   });
 
   test("a mark from an earlier edit survives a later edit on another step", () => {

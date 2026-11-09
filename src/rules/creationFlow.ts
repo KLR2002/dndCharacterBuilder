@@ -211,12 +211,12 @@ export function isCreationStepValid(
   const catalogs: CharacterCatalogs = { compendium, activeBooks };
   const classes = allCatalogClasses(catalogs);
   const races = allCatalogRaces(catalogs);
-  const entry = classEntryOf(character);
+  const entries = character.classes ?? [];
   switch (step) {
     case "class":
-      return character.classes.length === 1 && Boolean(entry && entry.level >= 1 && entry.level <= 20);
+      return entries.length >= 1 && entries.every((entry) => entry.level >= 1 && entry.level <= 20);
     case "subclass":
-      return !offersSubclass(entry, classes) || (entry ? getSubclassName(entry).length > 0 : false);
+      return entries.every((entry) => !offersSubclass(entry, classes) || getSubclassName(entry).length > 0);
     case "race":
       return character.race != null;
     case "subrace": {
@@ -233,7 +233,7 @@ export function isCreationStepValid(
       return choices.allPicked;
     }
     case "asiFeats":
-      return !offersAsiFeats(entry) || getPendingLevelChoices(character, [...classes]).pendingAsi.length === 0;
+      return !offersAsiFeats(entries) || getPendingLevelChoices(character, [...classes]).pendingAsi.length === 0;
     case "spells":
       return true;
     case "equipment":
@@ -275,28 +275,32 @@ function offersSubrace(character: Character, races: readonly RaceData[], activeB
 }
 
 /**
- * The choices the held class brings at the character's level, read from the one shared module the
- * Level-Up Flow reads too. Creation builds from level 0, so every choice the class brings up to the
- * held level is listed; every class offers skill picks at level 1, so the step applies to every new
- * character. Ancestry, background and feat picks belong to their own steps, so they are left out.
+ * The choices every held class brings at its level, read from the one shared module the Level-Up Flow
+ * reads too. Creation builds from level 0, so every choice each class brings up to its held level is
+ * listed; every class offers skill picks at level 1, so the step applies to every new character.
+ * Ancestry, background and feat picks belong to their own steps, so they are left out.
  */
 function classChoicesOf(character: Character, opts: CreationFlowOptions): ClassLevelChoices {
-  const entry = classEntryOf(character);
-  if (!entry) return { skillChoices: [], proficiencyChoices: [], ruleChoices: [], allPicked: true };
-  return classChoicesAtLevel(character, entry, 0, {
-    compendium: opts.compendium ?? currentCompendium(),
-    activeBooks: opts.activeBooks,
-  });
+  const entries = character.classes ?? [];
+  if (entries.length === 0) return { skillChoices: [], proficiencyChoices: [], ruleChoices: [], allPicked: true };
+  const query = { compendium: opts.compendium ?? currentCompendium(), activeBooks: opts.activeBooks };
+  const combined = entries.map((entry) => classChoicesAtLevel(character, entry, 0, query));
+  return {
+    skillChoices: combined.flatMap((choices) => choices.skillChoices),
+    proficiencyChoices: combined.flatMap((choices) => choices.proficiencyChoices),
+    ruleChoices: combined.flatMap((choices) => choices.ruleChoices),
+    allPicked: combined.every((choices) => choices.allPicked),
+  };
 }
 
-/** Whether the ASI/Feats step applies: the class's level has reached one of its ASI levels. */
-function offersAsiFeats(entry: CharacterClass | undefined): boolean {
-  return Boolean(entry && asiLevels(entry.className).some((level) => entry.level >= level));
+/** Whether the ASI/Feats step applies: any held class's level has reached one of its ASI levels. */
+function offersAsiFeats(entries: readonly CharacterClass[]): boolean {
+  return entries.some((entry) => asiLevels(entry.className).some((level) => entry.level >= level));
 }
 
-/** Whether the Spells step applies: the class holds a Spellcasting Profile at its level, a subclass's included. */
-function offersSpells(entry: CharacterClass | undefined, classes: readonly ClassData[]): boolean {
-  return Boolean(entry && isCastingClass(entry, classes));
+/** Whether the Spells step applies: any held class holds a Spellcasting Profile at its level, a subclass's included. */
+function offersSpells(entries: readonly CharacterClass[], classes: readonly ClassData[]): boolean {
+  return entries.some((entry) => isCastingClass(entry, classes));
 }
 
 /**
@@ -308,15 +312,15 @@ export function applicableCreationSteps(character: Character, opts: CreationFlow
   const activeBooks = opts.activeBooks;
   const classes = allCatalogClasses({ compendium, activeBooks });
   const races = allCatalogRaces({ compendium, activeBooks });
-  const entry = classEntryOf(character);
+  const entries = character.classes ?? [];
   const steps: CreationStepId[] = ["class"];
-  if (offersSubclass(entry, classes)) steps.push("subclass");
+  if (entries.some((entry) => offersSubclass(entry, classes))) steps.push("subclass");
   steps.push("race");
   if (offersSubrace(character, races, activeBooks)) steps.push("subrace");
   steps.push("background", "abilities");
   if (hasClassChoices(classChoicesOf(character, opts))) steps.push("classChoices");
-  if (offersAsiFeats(entry)) steps.push("asiFeats");
-  if (offersSpells(entry, classes)) steps.push("spells");
+  if (offersAsiFeats(entries)) steps.push("asiFeats");
+  if (offersSpells(entries, classes)) steps.push("spells");
   steps.push("equipment", "details", "review");
   return steps;
 }
