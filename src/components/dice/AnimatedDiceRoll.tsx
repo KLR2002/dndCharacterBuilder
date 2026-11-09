@@ -76,14 +76,13 @@ function AnimatedDie({ die, index }: { die: RolledDie; index: number }) {
 
   const animatedStyle = useAnimatedStyle(() => ({
     transform: [{ rotate: `${rotate.value}deg` }, { scale: scale.value }, { translateY: lift.value }],
-    opacity: dropped ? 0.4 : 1,
   }));
 
   return (
     <Animated.View
       testID={`die-3d-${index}`}
       accessibilityLabel={`d${die.sides} showing ${die.face}${dropped ? ", dropped" : ""}`}
-      style={[styles.die, animatedStyle]}
+      style={[styles.die, { opacity: dropped ? 0.4 : 1 }, animatedStyle]}
     >
       {die.sides === 6 ? (
         <View style={[styles.face, { backgroundColor: fill, borderColor: ink }]}>
