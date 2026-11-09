@@ -1,6 +1,5 @@
 import React, { useMemo, useState } from "react";
 import {
-  Modal as RNModal,
   ScrollView,
   StyleSheet,
   Text,
@@ -970,33 +969,33 @@ export const StatsTab: React.FC = () => {
       />
 
       {/* HP Override Settings Modal */}
-      <RNModal visible={maxHpOverrideVisible} transparent animationType="fade">
-        <View style={styles.modalOverlay}>
-          <Card style={[styles.modalCard, { backgroundColor: theme.surface, borderColor: theme.border }]}>
-            <Text style={[styles.sectionTitle, { color: theme.text, marginBottom: 12 }]}>
-              HP Configuration
-            </Text>
-            <Text style={{ color: theme.textSecondary, fontSize: 13, marginBottom: 8 }}>
-              Standard calculated Max HP: <Text style={{ color: theme.accentHover, fontWeight: "bold" }}>{evaluateCharacter({ ...currentCharacter, maxHpOverride: null }, { compendium: currentCompendium(), activeBooks }).hp.max}</Text>
-            </Text>
-            <Text style={{ color: theme.textSecondary, fontSize: 12, marginBottom: 8 }}>
-              Leave blank to use automatic calculation. Enter a number to manually override maximum hit points.
-            </Text>
-            <TextInput
-              style={[styles.input, { color: theme.text, backgroundColor: theme.surfaceHighlight, borderColor: theme.border }]}
-              value={maxHpOverrideInput}
-              onChangeText={setMaxHpOverrideInput}
-              keyboardType="number-pad"
-              placeholder="Override Max HP"
-              placeholderTextColor={theme.textMuted}
-            />
-            <View style={{ flexDirection: "row", justifyContent: "flex-end", gap: 10, marginTop: 16 }}>
-              <Button title="Cancel" variant="secondary" size="sm" onPress={() => setMaxHpOverrideVisible(false)} />
-              <Button title="Save" variant="primary" size="sm" onPress={setMaxHpOverride} />
-            </View>
-          </Card>
-        </View>
-      </RNModal>
+      <Modal
+        visible={maxHpOverrideVisible}
+        onClose={() => setMaxHpOverrideVisible(false)}
+        title="HP Configuration"
+        hasUnsavedChanges={maxHpOverrideInput.trim() !== (currentCharacter.maxHpOverride ? String(currentCharacter.maxHpOverride) : "")}
+        footer={
+          <View style={{ flexDirection: "row", justifyContent: "flex-end", gap: 10 }}>
+            <Button title="Cancel" variant="secondary" size="sm" onPress={() => setMaxHpOverrideVisible(false)} />
+            <Button title="Save" variant="primary" size="sm" onPress={setMaxHpOverride} />
+          </View>
+        }
+      >
+        <Text style={{ color: theme.textSecondary, fontSize: 13, marginBottom: 8 }}>
+          Standard calculated Max HP: <Text style={{ color: theme.accentHover, fontWeight: "bold" }}>{evaluateCharacter({ ...currentCharacter, maxHpOverride: null }, { compendium: currentCompendium(), activeBooks }).hp.max}</Text>
+        </Text>
+        <Text style={{ color: theme.textSecondary, fontSize: 12, marginBottom: 8 }}>
+          Leave blank to use automatic calculation. Enter a number to manually override maximum hit points.
+        </Text>
+        <TextInput
+          style={[styles.input, { color: theme.text, backgroundColor: theme.surfaceHighlight, borderColor: theme.border }]}
+          value={maxHpOverrideInput}
+          onChangeText={setMaxHpOverrideInput}
+          keyboardType="number-pad"
+          placeholder="Override Max HP"
+          placeholderTextColor={theme.textMuted}
+        />
+      </Modal>
 
       {/* Hit Points Quick Edit Modal */}
       <HpQuickEditModal {...hpQuickEdit.modalProps} />
@@ -1326,18 +1325,6 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: "700",
     marginBottom: 2,
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: "rgba(0,0,0,0.75)",
-    justifyContent: "center",
-    alignItems: "center",
-    padding: 16,
-  },
-  modalCard: {
-    width: "100%",
-    maxWidth: 480,
-    padding: 16,
   },
   input: {
     height: 40,

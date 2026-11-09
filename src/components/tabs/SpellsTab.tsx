@@ -1,6 +1,5 @@
 import React, { useMemo, useState } from "react";
 import {
-  Modal as RNModal,
   ScrollView,
   StyleSheet,
   Text,
@@ -60,6 +59,7 @@ import type { SpellData } from "../../types/dnd5e";
 import { Badge } from "../ui/Badge";
 import { Button } from "../ui/Button";
 import { Card } from "../ui/Card";
+import { Modal } from "../ui/Modal";
 import { DetailModal } from "../DetailModal";
 import { SearchBar } from "../ui/SearchBar";
 
@@ -1687,433 +1687,379 @@ export const SpellsTab: React.FC = () => {
       })}
 
       {/* Spell Picker Modal */}
-      <RNModal visible={spellPickerVisible} transparent animationType="slide">
-        <View style={styles.modalOverlay}>
-          <Card style={[styles.pickerCard, { backgroundColor: theme.surface, borderColor: theme.border }]}>
-            <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-              <Text style={[styles.sectionTitle, { color: theme.text }]}>
-                Add Spells ({currentProfile.className})
-              </Text>
-              <TouchableOpacity onPress={() => setSpellPickerVisible(false)}>
-                <Ionicons name="close" size={24} color={theme.text} />
-              </TouchableOpacity>
-            </View>
+      <Modal
+        visible={spellPickerVisible}
+        onClose={() => setSpellPickerVisible(false)}
+        title={`Add Spells (${currentProfile.className})`}
+      >
+        <SearchBar
+          value={searchQuery}
+          onChangeText={setSearchQuery}
+          placeholder={`Search ${currentProfile.className} spells...`}
+        />
 
-            <SearchBar
-              value={searchQuery}
-              onChangeText={setSearchQuery}
-              placeholder={`Search ${currentProfile.className} spells...`}
-            />
+        {/* Third-Casters Guidance & Quick School Filters */}
+        {(isEldritchKnight || isArcaneTrickster) && (
+          <View style={{ backgroundColor: theme.surfaceHighlight, padding: 8, borderRadius: 6, marginVertical: 6, borderLeftWidth: 3, borderLeftColor: theme.accentHover }}>
+            <Text style={{ color: theme.accentHover, fontSize: 11, fontWeight: "700" }}>
+              {isEldritchKnight ? "Eldritch Knight Spell Restrictions" : "Arcane Trickster Spell Restrictions"}
+            </Text>
+            <Text style={{ color: theme.textSecondary, fontSize: 11, marginTop: 2, lineHeight: 15 }}>
+              {isEldritchKnight
+                ? "Most spells known must be Abjuration or Evocation. Spells learned at levels 3, 8, 14, and 20 can be from any school."
+                : "Most spells known must be Enchantment or Illusion. Spells learned at levels 3, 8, 14, and 20 can be from any school."}
+            </Text>
+          </View>
+        )}
 
-            {/* Third-Casters Guidance & Quick School Filters */}
-            {(isEldritchKnight || isArcaneTrickster) && (
-              <View style={{ backgroundColor: theme.surfaceHighlight, padding: 8, borderRadius: 6, marginVertical: 6, borderLeftWidth: 3, borderLeftColor: theme.accentHover }}>
-                <Text style={{ color: theme.accentHover, fontSize: 11, fontWeight: "700" }}>
-                  {isEldritchKnight ? "Eldritch Knight Spell Restrictions" : "Arcane Trickster Spell Restrictions"}
-                </Text>
-                <Text style={{ color: theme.textSecondary, fontSize: 11, marginTop: 2, lineHeight: 15 }}>
-                  {isEldritchKnight
-                    ? "Most spells known must be Abjuration or Evocation. Spells learned at levels 3, 8, 14, and 20 can be from any school."
-                    : "Most spells known must be Enchantment or Illusion. Spells learned at levels 3, 8, 14, and 20 can be from any school."}
-                </Text>
-              </View>
-            )}
+        {isEldritchKnight && (
+          <View style={{ flexDirection: "row", gap: 6, marginVertical: 4 }}>
+            <TouchableOpacity
+              onPress={() => setPickerSchoolFilter(null)}
+              style={[
+                styles.filterPill,
+                {
+                  backgroundColor: pickerSchoolFilter === null ? theme.accent : theme.surfaceHighlight,
+                },
+              ]}>
+              <Text style={{ color: pickerSchoolFilter === null ? theme.accentText : "#fff", fontSize: 11, fontWeight: "600" }}>All Schools</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={() => setPickerSchoolFilter("restricted")}
+              style={[
+                styles.filterPill,
+                {
+                  backgroundColor: pickerSchoolFilter === "restricted" ? theme.accent : theme.surfaceHighlight,
+                },
+              ]}>
+              <Text style={{ color: pickerSchoolFilter === "restricted" ? theme.accentText : "#fff", fontSize: 11, fontWeight: "600" }}>Abjuration &amp; Evocation</Text>
+            </TouchableOpacity>
+          </View>
+        )}
 
-            {isEldritchKnight && (
-              <View style={{ flexDirection: "row", gap: 6, marginVertical: 4 }}>
-                <TouchableOpacity
-                  onPress={() => setPickerSchoolFilter(null)}
-                  style={[
-                    styles.filterPill,
-                    {
-                      backgroundColor: pickerSchoolFilter === null ? theme.accent : theme.surfaceHighlight,
-                    },
-                  ]}>
-                  <Text style={{ color: pickerSchoolFilter === null ? theme.accentText : "#fff", fontSize: 11, fontWeight: "600" }}>All Schools</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  onPress={() => setPickerSchoolFilter("restricted")}
-                  style={[
-                    styles.filterPill,
-                    {
-                      backgroundColor: pickerSchoolFilter === "restricted" ? theme.accent : theme.surfaceHighlight,
-                    },
-                  ]}>
-                  <Text style={{ color: pickerSchoolFilter === "restricted" ? theme.accentText : "#fff", fontSize: 11, fontWeight: "600" }}>Abjuration &amp; Evocation</Text>
-                </TouchableOpacity>
-              </View>
-            )}
+        {isArcaneTrickster && (
+          <View style={{ flexDirection: "row", gap: 6, marginVertical: 4 }}>
+            <TouchableOpacity
+              onPress={() => setPickerSchoolFilter(null)}
+              style={[
+                styles.filterPill,
+                {
+                  backgroundColor: pickerSchoolFilter === null ? theme.accent : theme.surfaceHighlight,
+                },
+              ]}>
+              <Text style={{ color: pickerSchoolFilter === null ? theme.accentText : "#fff", fontSize: 11, fontWeight: "600" }}>All Schools</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={() => setPickerSchoolFilter("restricted")}
+              style={[
+                styles.filterPill,
+                {
+                  backgroundColor: pickerSchoolFilter === "restricted" ? theme.accent : theme.surfaceHighlight,
+                },
+              ]}>
+              <Text style={{ color: pickerSchoolFilter === "restricted" ? theme.accentText : "#fff", fontSize: 11, fontWeight: "600" }}>Enchantment &amp; Illusion</Text>
+            </TouchableOpacity>
+          </View>
+        )}
 
-            {isArcaneTrickster && (
-              <View style={{ flexDirection: "row", gap: 6, marginVertical: 4 }}>
-                <TouchableOpacity
-                  onPress={() => setPickerSchoolFilter(null)}
-                  style={[
-                    styles.filterPill,
-                    {
-                      backgroundColor: pickerSchoolFilter === null ? theme.accent : theme.surfaceHighlight,
-                    },
-                  ]}>
-                  <Text style={{ color: pickerSchoolFilter === null ? theme.accentText : "#fff", fontSize: 11, fontWeight: "600" }}>All Schools</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  onPress={() => setPickerSchoolFilter("restricted")}
-                  style={[
-                    styles.filterPill,
-                    {
-                      backgroundColor: pickerSchoolFilter === "restricted" ? theme.accent : theme.surfaceHighlight,
-                    },
-                  ]}>
-                  <Text style={{ color: pickerSchoolFilter === "restricted" ? theme.accentText : "#fff", fontSize: 11, fontWeight: "600" }}>Enchantment &amp; Illusion</Text>
-                </TouchableOpacity>
-              </View>
-            )}
+        {/* Level Filter Pills up to activeProfile.maxSpellLevel */}
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          style={{ flexGrow: 0, marginVertical: 8 }}
+          contentContainerStyle={{ alignItems: "center" }}>
+          <TouchableOpacity
+            onPress={() => setSelectedSpellLevel(null)}
+            style={[
+              styles.filterPill,
+              {
+                backgroundColor: selectedSpellLevel === null ? theme.accent : theme.surfaceHighlight,
+              },
+            ]}>
+            <Text style={{ color: selectedSpellLevel === null ? theme.accentText : "#fff", fontSize: 12, fontWeight: "600" }}>All Levels</Text>
+          </TouchableOpacity>
+          {LEVEL_NAMES.slice(0, currentProfile.maxSpellLevel + 1).map((name, idx) => (
+            <TouchableOpacity
+              key={`filter_lvl_${idx}`}
+              onPress={() => setSelectedSpellLevel(idx)}
+              style={[
+                styles.filterPill,
+                {
+                  backgroundColor: selectedSpellLevel === idx ? theme.accent : theme.surfaceHighlight,
+                },
+              ]}>
+              <Text style={{ color: selectedSpellLevel === idx ? theme.accentText : "#fff", fontSize: 12, fontWeight: "600" }}>{name}</Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
 
-            {/* Level Filter Pills up to activeProfile.maxSpellLevel */}
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              style={{ flexGrow: 0, marginVertical: 8 }}
-              contentContainerStyle={{ alignItems: "center" }}>
+          {filteredPickerSpells.slice(0, 100).map((s) => {
+          const alreadyHas = activeKnownSpells.some(
+            (k) => k.name === s.name && k.source === s.source && k.ownerKey === currentProfile.ownerKey
+          );
+
+          return (
+            <View
+              key={`${s.name}_${s.source}`}
+              style={[styles.pickerSpellRow, { borderBottomColor: theme.border }]}>
               <TouchableOpacity
-                onPress={() => setSelectedSpellLevel(null)}
-                style={[
-                  styles.filterPill,
-                  {
-                    backgroundColor: selectedSpellLevel === null ? theme.accent : theme.surfaceHighlight,
-                  },
-                ]}>
-                <Text style={{ color: selectedSpellLevel === null ? theme.accentText : "#fff", fontSize: 12, fontWeight: "600" }}>All Levels</Text>
-              </TouchableOpacity>
-              {LEVEL_NAMES.slice(0, currentProfile.maxSpellLevel + 1).map((name, idx) => (
-                <TouchableOpacity
-                  key={`filter_lvl_${idx}`}
-                  onPress={() => setSelectedSpellLevel(idx)}
-                  style={[
-                    styles.filterPill,
-                    {
-                      backgroundColor: selectedSpellLevel === idx ? theme.accent : theme.surfaceHighlight,
-                    },
-                  ]}>
-                  <Text style={{ color: selectedSpellLevel === idx ? theme.accentText : "#fff", fontSize: 12, fontWeight: "600" }}>{name}</Text>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
-
-            <ScrollView style={{ flex: 1 }}>
-              {filteredPickerSpells.slice(0, 100).map((s) => {
-                const alreadyHas = activeKnownSpells.some(
-                  (k) => k.name === s.name && k.source === s.source && k.ownerKey === currentProfile.ownerKey
-                );
-
-                return (
-                  <View
-                    key={`${s.name}_${s.source}`}
-                    style={[styles.pickerSpellRow, { borderBottomColor: theme.border }]}>
-                    <TouchableOpacity
-                      onPress={() =>
-                        setDetailModal({
-                          visible: true,
-                          title: s.name,
-                          subtitle: `${s.level === 0 ? "Cantrip" : `Level ${s.level}`} (${s.source})`,
-                          content: `${s.level === 0 ? "Cantrip" : `${s.level}th-level`} ${s.school || ""}\n\n• Casting Time: ${s.castingTime || "1 action"}\n• Range: ${s.range || "Self"}\n• Components: ${s.componentsString || "V, S"}\n• Duration: ${s.duration || "Instantaneous"}\n\n${s.description || ""}`,
-                        })
+                onPress={() =>
+                  setDetailModal({
+                    visible: true,
+                    title: s.name,
+                    subtitle: `${s.level === 0 ? "Cantrip" : `Level ${s.level}`} (${s.source})`,
+                    content: `${s.level === 0 ? "Cantrip" : `${s.level}th-level`} ${s.school || ""}\n\n• Casting Time: ${s.castingTime || "1 action"}\n• Range: ${s.range || "Self"}\n• Components: ${s.componentsString || "V, S"}\n• Duration: ${s.duration || "Instantaneous"}\n\n${s.description || ""}`,
+                  })
+                }
+                style={{ flex: 1 }}>
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+                  <Text style={{ color: theme.text, fontSize: 14, fontWeight: "600" }}>{s.name}</Text>
+                  {isEldritchKnight && s.level > 0 && (
+                    <Badge
+                      label={
+                        s.school === "Abjuration" || s.school === "Evocation"
+                          ? "In-School"
+                          : "Unrestricted Only"
                       }
-                      style={{ flex: 1 }}>
-                      <View style={{ flexDirection: "row", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
-                        <Text style={{ color: theme.text, fontSize: 14, fontWeight: "600" }}>{s.name}</Text>
-                        {isEldritchKnight && s.level > 0 && (
-                          <Badge
-                            label={
-                              s.school === "Abjuration" || s.school === "Evocation"
-                                ? "In-School"
-                                : "Unrestricted Only"
-                            }
-                            variant={
-                              s.school === "Abjuration" || s.school === "Evocation"
-                                ? "accent"
-                                : "secondary"
-                            }
-                            size="sm"
-                          />
-                        )}
-                        {isArcaneTrickster && s.level > 0 && (
-                          <Badge
-                            label={
-                              s.school === "Enchantment" || s.school === "Illusion"
-                                ? "In-School"
-                                : "Unrestricted Only"
-                            }
-                            variant={
-                              s.school === "Enchantment" || s.school === "Illusion"
-                                ? "accent"
-                                : "secondary"
-                            }
-                            size="sm"
-                          />
-                        )}
-                      </View>
-                      <Text style={{ color: theme.textMuted, fontSize: 12 }}>
-                        {s.level === 0 ? "Cantrip" : `Lvl ${s.level}`} • {s.school || ""} • {s.source}
-                      </Text>
-                    </TouchableOpacity>
-
-                    <Button
-                      title={alreadyHas ? "Added" : "Add"}
+                      variant={
+                        s.school === "Abjuration" || s.school === "Evocation"
+                          ? "accent"
+                          : "secondary"
+                      }
                       size="sm"
-                      variant={alreadyHas ? "secondary" : "primary"}
-                      disabled={alreadyHas}
-                      onPress={() => addSpellToCharacter(s.name, s.source)}
                     />
-                  </View>
-                );
-              })}
-            </ScrollView>
-          </Card>
-        </View>
-      </RNModal>
+                  )}
+                  {isArcaneTrickster && s.level > 0 && (
+                    <Badge
+                      label={
+                        s.school === "Enchantment" || s.school === "Illusion"
+                          ? "In-School"
+                          : "Unrestricted Only"
+                      }
+                      variant={
+                        s.school === "Enchantment" || s.school === "Illusion"
+                          ? "accent"
+                          : "secondary"
+                      }
+                      size="sm"
+                    />
+                  )}
+                </View>
+                <Text style={{ color: theme.textMuted, fontSize: 12 }}>
+                  {s.level === 0 ? "Cantrip" : `Lvl ${s.level}`} • {s.school || ""} • {s.source}
+                </Text>
+              </TouchableOpacity>
+
+              <Button
+                title={alreadyHas ? "Added" : "Add"}
+                size="sm"
+                variant={alreadyHas ? "secondary" : "primary"}
+                disabled={alreadyHas}
+                onPress={() => addSpellToCharacter(s.name, s.source)}
+              />
+            </View>
+          );
+        })}
+      </Modal>
 
       {/* Subclass Spell Swap Modal */}
-      <RNModal visible={swapModalVisible} transparent animationType="slide">
-        <View style={styles.modalOverlay}>
-          <Card style={[styles.pickerCard, { backgroundColor: theme.surface, borderColor: theme.border }]}>
-            <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-              <View style={{ flex: 1, paddingRight: 8 }}>
-                <Text style={[styles.sectionTitle, { color: theme.text }]}>
-                  Swap Subclass Spell
-                </Text>
-                {swapTargetSpell && (
-                  <Text style={{ color: theme.textSecondary, fontSize: 12, marginTop: 2 }}>
-                    Replacing: {swapTargetSpell.originalName} ({formatOrdinal(swapTargetSpell.spell.level || 1)} Level)
-                  </Text>
-                )}
-              </View>
-              <TouchableOpacity onPress={() => setSwapModalVisible(false)}>
-                <Ionicons name="close" size={24} color={theme.text} />
-              </TouchableOpacity>
-            </View>
+      <Modal
+        visible={swapModalVisible}
+        onClose={() => setSwapModalVisible(false)}
+        title="Swap Subclass Spell"
+        subtitle={swapTargetSpell ? `Replacing: ${swapTargetSpell.originalName} (${formatOrdinal(swapTargetSpell.spell.level || 1)} Level)` : undefined}
+      >
+        <SearchBar
+          value={swapSearchQuery}
+          onChangeText={setSwapSearchQuery}
+          placeholder="Search eligible replacement spells..."
+        />
 
-            <SearchBar
-              value={swapSearchQuery}
-              onChangeText={setSwapSearchQuery}
-              placeholder="Search eligible replacement spells..."
-            />
-
-            <View style={{ marginVertical: 6 }}>
-              <Text style={{ color: theme.textMuted, fontSize: 11 }}>
-                Allowed Schools: {swapAllowedSchools.join(", ")} • Sorcerer, Warlock, Wizard
-              </Text>
-            </View>
-
-            <ScrollView style={{ flex: 1, marginTop: 4 }}>
-              {filteredEligibleSwaps.length === 0 ? (
-                <View style={{ padding: 24, alignItems: "center" }}>
-                  <Text style={{ color: theme.textMuted, fontSize: 13 }}>
-                    No eligible replacement spells found.
-                  </Text>
-                </View>
-              ) : (
-                filteredEligibleSwaps.map((s) => (
-                  <View
-                    key={`${s.name}_${s.source}`}
-                    style={[styles.pickerSpellRow, { borderBottomColor: theme.border }]}>
-                    <TouchableOpacity
-                      onPress={() =>
-                        setDetailModal({
-                          visible: true,
-                          title: s.name,
-                          subtitle: `${s.level === 0 ? "Cantrip" : `Level ${s.level}`} (${s.source})`,
-                          content: `${s.level === 0 ? "Cantrip" : `${s.level}th-level`} ${s.school || ""}\n\n• Casting Time: ${s.castingTime || "1 action"}\n• Range: ${s.range || "Self"}\n• Components: ${s.componentsString || "V, S"}\n• Duration: ${s.duration || "Instantaneous"}\n\n${s.description || ""}`,
-                        })
-                      }
-                      style={{ flex: 1 }}>
-                      <Text style={{ color: theme.text, fontSize: 14, fontWeight: "600" }}>{s.name}</Text>
-                      <Text style={{ color: theme.textMuted, fontSize: 12 }}>
-                        {s.level === 0 ? "Cantrip" : `Lvl ${s.level}`} • {s.school || ""} • {s.source}
-                      </Text>
-                    </TouchableOpacity>
-
-                    <Button
-                      title="Select"
-                      size="sm"
-                      variant="primary"
-                      onPress={() => handleSelectSwap(s)}
-                    />
-                  </View>
-                ))
-              )}
-            </ScrollView>
-          </Card>
+        <View style={{ marginVertical: 6 }}>
+          <Text style={{ color: theme.textMuted, fontSize: 11 }}>
+            Allowed Schools: {swapAllowedSchools.join(", ")} • Sorcerer, Warlock, Wizard
+          </Text>
         </View>
-      </RNModal>
+
+          {filteredEligibleSwaps.length === 0 ? (
+          <View style={{ padding: 24, alignItems: "center" }}>
+            <Text style={{ color: theme.textMuted, fontSize: 13 }}>
+              No eligible replacement spells found.
+            </Text>
+          </View>
+        ) : (
+          filteredEligibleSwaps.map((s) => (
+            <View
+              key={`${s.name}_${s.source}`}
+              style={[styles.pickerSpellRow, { borderBottomColor: theme.border }]}>
+              <TouchableOpacity
+                onPress={() =>
+                  setDetailModal({
+                    visible: true,
+                    title: s.name,
+                    subtitle: `${s.level === 0 ? "Cantrip" : `Level ${s.level}`} (${s.source})`,
+                    content: `${s.level === 0 ? "Cantrip" : `${s.level}th-level`} ${s.school || ""}\n\n• Casting Time: ${s.castingTime || "1 action"}\n• Range: ${s.range || "Self"}\n• Components: ${s.componentsString || "V, S"}\n• Duration: ${s.duration || "Instantaneous"}\n\n${s.description || ""}`,
+                  })
+                }
+                style={{ flex: 1 }}>
+                <Text style={{ color: theme.text, fontSize: 14, fontWeight: "600" }}>{s.name}</Text>
+                <Text style={{ color: theme.textMuted, fontSize: 12 }}>
+                  {s.level === 0 ? "Cantrip" : `Lvl ${s.level}`} • {s.school || ""} • {s.source}
+                </Text>
+              </TouchableOpacity>
+
+              <Button
+                title="Select"
+                size="sm"
+                variant="primary"
+                onPress={() => handleSelectSwap(s)}
+              />
+            </View>
+          ))
+        )}
+      </Modal>
 
       {/* Metamagic Selection Modal */}
-      <RNModal visible={metamagicModalVisible} transparent animationType="fade">
-        <View style={styles.modalOverlay}>
-          <Card style={[styles.pickerCard, { backgroundColor: theme.surface, borderColor: theme.border }]}>
-            <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
-              <Text style={[styles.sectionTitle, { color: theme.text }]}>Choose Metamagic Options</Text>
-              <TouchableOpacity onPress={() => setMetamagicModalVisible(false)}>
-                <Ionicons name="close" size={24} color={theme.text} />
-              </TouchableOpacity>
-            </View>
+      <Modal
+        visible={metamagicModalVisible}
+        onClose={() => setMetamagicModalVisible(false)}
+        title="Choose Metamagic Options"
+      >
+        <Text style={{ color: theme.textSecondary, fontSize: 12, marginBottom: 12 }}>
+          Select up to {maxMetamagic} options (Level {sorcererLevel} Sorcerer). Selected: {selectedMetamagic.length}/{maxMetamagic}
+        </Text>
 
-            <Text style={{ color: theme.textSecondary, fontSize: 12, marginBottom: 12 }}>
-              Select up to {maxMetamagic} options (Level {sorcererLevel} Sorcerer). Selected: {selectedMetamagic.length}/{maxMetamagic}
-            </Text>
+          {METAMAGIC_OPTIONS.map((opt) => {
+          const isChosen = selectedMetamagic.includes(opt.name);
+          const isMaxReached = selectedMetamagic.length >= maxMetamagic && !isChosen;
 
-            <ScrollView>
-              {METAMAGIC_OPTIONS.map((opt) => {
-                const isChosen = selectedMetamagic.includes(opt.name);
-                const isMaxReached = selectedMetamagic.length >= maxMetamagic && !isChosen;
-
-                return (
-                  <TouchableOpacity
-                    key={opt.name}
-                    onPress={() => toggleMetamagic(opt.name)}
-                    disabled={isMaxReached}
-                    style={[
-                      styles.metaOptionCard,
-                      {
-                        backgroundColor: isChosen ? theme.accentGlow : theme.surfaceHighlight,
-                        borderColor: isChosen ? theme.accentHover : theme.border,
-                        opacity: isMaxReached ? 0.5 : 1,
-                      },
-                    ]}>
-                    <View style={{ flex: 1 }}>
-                      <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-                        <Text style={{ color: isChosen ? theme.accentHover : theme.text, fontWeight: "700" }}>
-                          {opt.name}
-                        </Text>
-                        <Badge label={opt.cost} size="sm" variant="secondary" />
-                      </View>
-                      <Text style={{ color: theme.textMuted, fontSize: 12, marginTop: 4 }}>
-                        {opt.desc}
-                      </Text>
-                    </View>
-                    <Ionicons
-                      name={isChosen ? "checkbox" : "square-outline"}
-                      size={20}
-                      color={isChosen ? theme.accentHover : theme.textMuted}
-                    />
-                  </TouchableOpacity>
-                );
-              })}
-            </ScrollView>
-          </Card>
-        </View>
-      </RNModal>
-
-      {/* Inscribe Ritual Modal */}
-      <RNModal visible={inscribeModalVisible} transparent animationType="slide">
-        <View style={styles.modalOverlay}>
-          <Card style={[styles.pickerCard, { backgroundColor: theme.surface, borderColor: theme.border }]}>
-            <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-              <View style={{ flex: 1, marginRight: 8 }}>
-                <Text style={[styles.sectionTitle, { color: theme.text }]}>
-                  Inscribe Ritual
-                </Text>
-                <Text style={{ color: theme.textSecondary, fontSize: 11, marginTop: 2 }}>
-                  Max level {maxRitualLevel} • Cost: 50 gp &amp; 2 hrs per spell level
+          return (
+            <TouchableOpacity
+              key={opt.name}
+              onPress={() => toggleMetamagic(opt.name)}
+              disabled={isMaxReached}
+              style={[
+                styles.metaOptionCard,
+                {
+                  backgroundColor: isChosen ? theme.accentGlow : theme.surfaceHighlight,
+                  borderColor: isChosen ? theme.accentHover : theme.border,
+                  opacity: isMaxReached ? 0.5 : 1,
+                },
+              ]}>
+              <View style={{ flex: 1 }}>
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+                  <Text style={{ color: isChosen ? theme.accentHover : theme.text, fontWeight: "700" }}>
+                    {opt.name}
+                  </Text>
+                  <Badge label={opt.cost} size="sm" variant="secondary" />
+                </View>
+                <Text style={{ color: theme.textMuted, fontSize: 12, marginTop: 4 }}>
+                  {opt.desc}
                 </Text>
               </View>
-              <TouchableOpacity
-                onPress={() => setInscribeModalVisible(false)}
-                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-                <Ionicons name="close" size={24} color={theme.text} />
-              </TouchableOpacity>
-            </View>
+              <Ionicons
+                name={isChosen ? "checkbox" : "square-outline"}
+                size={20}
+                color={isChosen ? theme.accentHover : theme.textMuted}
+              />
+            </TouchableOpacity>
+          );
+        })}
+      </Modal>
 
-            <SearchBar
-              value={inscribeSearchQuery}
-              onChangeText={setInscribeSearchQuery}
-              placeholder="Search rituals across classes..."
-            />
+      {/* Inscribe Ritual Modal */}
+      <Modal
+        visible={inscribeModalVisible}
+        onClose={() => setInscribeModalVisible(false)}
+        title="Inscribe Ritual"
+        subtitle={`Max level ${maxRitualLevel} • Cost: 50 gp & 2 hrs per spell level`}
+      >
+        <SearchBar
+          value={inscribeSearchQuery}
+          onChangeText={setInscribeSearchQuery}
+          placeholder="Search rituals across classes..."
+        />
 
-            {/* Level Filter Pills up to maxRitualLevel */}
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              style={{ flexGrow: 0, marginVertical: 8 }}
-              contentContainerStyle={{ alignItems: "center" }}>
+        {/* Level Filter Pills up to maxRitualLevel */}
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          style={{ flexGrow: 0, marginVertical: 8 }}
+          contentContainerStyle={{ alignItems: "center" }}>
+          <TouchableOpacity
+            onPress={() => setInscribeLevelFilter(null)}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            style={[
+              styles.filterPill,
+              {
+                backgroundColor: inscribeLevelFilter === null ? theme.accent : theme.surfaceHighlight,
+              },
+            ]}>
+            <Text style={{ color: inscribeLevelFilter === null ? theme.accentText : "#fff", fontSize: 12, fontWeight: "600" }}>All Levels (1-{maxRitualLevel})</Text>
+          </TouchableOpacity>
+          {Array.from({ length: maxRitualLevel }).map((_, idx) => {
+            const lvl = idx + 1;
+            return (
               <TouchableOpacity
-                onPress={() => setInscribeLevelFilter(null)}
+                key={`inscribe_lvl_${lvl}`}
+                onPress={() => setInscribeLevelFilter(lvl)}
                 hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                 style={[
                   styles.filterPill,
                   {
-                    backgroundColor: inscribeLevelFilter === null ? theme.accent : theme.surfaceHighlight,
+                    backgroundColor: inscribeLevelFilter === lvl ? theme.accent : theme.surfaceHighlight,
                   },
                 ]}>
-                <Text style={{ color: inscribeLevelFilter === null ? theme.accentText : "#fff", fontSize: 12, fontWeight: "600" }}>All Levels (1-{maxRitualLevel})</Text>
+                <Text style={{ color: inscribeLevelFilter === lvl ? theme.accentText : "#fff", fontSize: 12, fontWeight: "600" }}>Level {lvl}</Text>
               </TouchableOpacity>
-              {Array.from({ length: maxRitualLevel }).map((_, idx) => {
-                const lvl = idx + 1;
-                return (
-                  <TouchableOpacity
-                    key={`inscribe_lvl_${lvl}`}
-                    onPress={() => setInscribeLevelFilter(lvl)}
-                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                    style={[
-                      styles.filterPill,
-                      {
-                        backgroundColor: inscribeLevelFilter === lvl ? theme.accent : theme.surfaceHighlight,
-                      },
-                    ]}>
-                    <Text style={{ color: inscribeLevelFilter === lvl ? theme.accentText : "#fff", fontSize: 12, fontWeight: "600" }}>Level {lvl}</Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </ScrollView>
+            );
+          })}
+        </ScrollView>
 
-            <ScrollView style={{ flex: 1 }}>
-              {eligibleInscribeSpells.length === 0 ? (
-                <View style={{ padding: 16, alignItems: "center" }}>
-                  <Text style={{ color: theme.textMuted, fontSize: 13, textAlign: "center" }}>
-                    No eligible rituals found matching your filters.
-                  </Text>
+          {eligibleInscribeSpells.length === 0 ? (
+          <View style={{ padding: 16, alignItems: "center" }}>
+            <Text style={{ color: theme.textMuted, fontSize: 13, textAlign: "center" }}>
+              No eligible rituals found matching your filters.
+            </Text>
+          </View>
+        ) : (
+          eligibleInscribeSpells.map((s) => (
+            <View
+              key={`inscribe_row_${s.name}_${s.source}`}
+              style={[styles.pickerSpellRow, { borderBottomColor: theme.border }]}>
+              <TouchableOpacity
+                onPress={() =>
+                  setDetailModal({
+                    visible: true,
+                    title: s.name,
+                    subtitle: `Level ${s.level} Ritual (${s.source})`,
+                    content: `${s.level}th-level ${s.school || ""} (Ritual)\n\n• Casting Time: ${s.castingTime || "1 action"}\n• Range: ${s.range || "Self"}\n• Components: ${s.componentsString || "V, S"}\n• Duration: ${s.duration || "Instantaneous"}\n• Classes: ${s.classes?.join(", ") || "None"}\n\n${s.description || ""}`,
+                  })
+                }
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                style={{ flex: 1, paddingVertical: 4 }}>
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+                  <Text style={{ color: theme.text, fontSize: 14, fontWeight: "600" }}>{s.name}</Text>
+                  <Badge label={`Level ${s.level}`} variant="secondary" size="sm" />
+                  {s.school && <Badge label={s.school} variant="secondary" size="sm" />}
+                  <Badge label={s.source} variant="secondary" size="sm" />
                 </View>
-              ) : (
-                eligibleInscribeSpells.map((s) => (
-                  <View
-                    key={`inscribe_row_${s.name}_${s.source}`}
-                    style={[styles.pickerSpellRow, { borderBottomColor: theme.border }]}>
-                    <TouchableOpacity
-                      onPress={() =>
-                        setDetailModal({
-                          visible: true,
-                          title: s.name,
-                          subtitle: `Level ${s.level} Ritual (${s.source})`,
-                          content: `${s.level}th-level ${s.school || ""} (Ritual)\n\n• Casting Time: ${s.castingTime || "1 action"}\n• Range: ${s.range || "Self"}\n• Components: ${s.componentsString || "V, S"}\n• Duration: ${s.duration || "Instantaneous"}\n• Classes: ${s.classes?.join(", ") || "None"}\n\n${s.description || ""}`,
-                        })
-                      }
-                      hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                      style={{ flex: 1, paddingVertical: 4 }}>
-                      <View style={{ flexDirection: "row", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
-                        <Text style={{ color: theme.text, fontSize: 14, fontWeight: "600" }}>{s.name}</Text>
-                        <Badge label={`Level ${s.level}`} variant="secondary" size="sm" />
-                        {s.school && <Badge label={s.school} variant="secondary" size="sm" />}
-                        <Badge label={s.source} variant="secondary" size="sm" />
-                      </View>
-                      <Text style={{ color: theme.textMuted, fontSize: 11, marginTop: 2 }}>
-                        {s.classes?.join(", ") || "General"}
-                      </Text>
-                    </TouchableOpacity>
+                <Text style={{ color: theme.textMuted, fontSize: 11, marginTop: 2 }}>
+                  {s.classes?.join(", ") || "General"}
+                </Text>
+              </TouchableOpacity>
 
-                    <Button
-                      title="Inscribe"
-                      size="sm"
-                      variant="primary"
-                      hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                      onPress={() => inscribeRitual(s)}
-                    />
-                  </View>
-                ))
-              )}
-            </ScrollView>
-          </Card>
-        </View>
-      </RNModal>
+              <Button
+                title="Inscribe"
+                size="sm"
+                variant="primary"
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                onPress={() => inscribeRitual(s)}
+              />
+            </View>
+          ))
+        )}
+      </Modal>
 
       {/* Detail Modal */}
       <DetailModal
@@ -2279,19 +2225,6 @@ const styles = StyleSheet.create({
   spellTitle: {
     fontSize: 14,
     fontWeight: "600",
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: "rgba(0,0,0,0.75)",
-    justifyContent: "center",
-    alignItems: "center",
-    padding: 16,
-  },
-  pickerCard: {
-    width: "100%",
-    maxWidth: 620,
-    height: "85%",
-    padding: 16,
   },
   filterPill: {
     paddingHorizontal: 12,
