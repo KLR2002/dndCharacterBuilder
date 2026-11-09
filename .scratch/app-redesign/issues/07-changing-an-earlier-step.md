@@ -1,6 +1,8 @@
 # 07: Changing an earlier Creation Step
 
-**Status:** ready-for-agent
+**Status:** done
+
+**Landed:** feat/app-redesign at a7a1e85 (with review repairs R1-R4). Gate PASS: check:all, check:live, layout:check (SRD and integrated), layout:android modals. Evidence: `.scratch/app-redesign/evidence.md`. Open items: see its advisory dispositions.
 
 ## What to build
 
@@ -12,7 +14,7 @@ Changing an earlier step's pick (the class above all) releases every later pick 
 
 ## Acceptance Criteria
 
-- [ ] AC-4: Changing an earlier step releases what it invalidates (spec, AC-4)
+- [x] AC-4: Changing an earlier step releases what it invalidates (spec, AC-4)
 
 ## Verification
 

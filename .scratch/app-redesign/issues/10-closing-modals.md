@@ -1,6 +1,8 @@
 # 10: Closing modals
 
-**Status:** ready-for-agent
+**Status:** done
+
+**Landed:** feat/app-redesign at a7a1e85 (with review repairs R1-R4). Gate PASS: check:all, check:live, layout:check (SRD and integrated), layout:android modals. Evidence: `.scratch/app-redesign/evidence.md`. Open items: see its advisory dispositions.
 
 ## What to build
 
@@ -12,7 +14,7 @@ Every modal closes when the player taps the visible background outside it or pre
 
 ## Acceptance Criteria
 
-- [ ] AC-28: Tapping outside a modal closes it, and Escape closes it on web (spec, AC-28)
+- [x] AC-28: Tapping outside a modal closes it, and Escape closes it on web (spec, AC-28)
 
 ## Verification
 

@@ -1,6 +1,8 @@
 # 06: Creation Flow step model
 
-**Status:** ready-for-agent
+**Status:** done
+
+**Landed:** feat/app-redesign at a7a1e85 (with review repairs R1-R4). Gate PASS: check:all, check:live, layout:check (SRD and integrated), layout:android modals. Evidence: `.scratch/app-redesign/evidence.md`. Open items: see its advisory dispositions.
 
 ## What to build
 
@@ -17,12 +19,12 @@ A pure rules module that lists a Character's Creation Steps in the agreed order,
 
 ## Acceptance Criteria
 
-- [ ] AC-1: Steps follow the order and skip what does not apply (spec, AC-1)
-- [ ] AC-2: The Class step offers one class and a starting level (spec, AC-2)
-- [ ] AC-3: Later steps stay locked until the current step is valid (spec, AC-3)
-- [ ] AC-5: A draft resumes at its step (spec, AC-5)
-- [ ] AC-7: Details asks only for name, gender and alignment (spec, AC-7)
-- [ ] AC-9: Characters from the old builder count as finished (spec, AC-9)
+- [x] AC-1: Steps follow the order and skip what does not apply (spec, AC-1)
+- [x] AC-2: The Class step offers one class and a starting level (spec, AC-2)
+- [x] AC-3: Later steps stay locked until the current step is valid (spec, AC-3)
+- [x] AC-5: A draft resumes at its step (spec, AC-5)
+- [x] AC-7: Details asks only for name, gender and alignment (spec, AC-7)
+- [x] AC-9: Characters from the old builder count as finished (spec, AC-9)
 
 ## Verification
 

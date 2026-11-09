@@ -1,6 +1,8 @@
 # 12: Creation Flow screens
 
-**Status:** ready-for-agent
+**Status:** done
+
+**Landed:** feat/app-redesign at a7a1e85 (with review repairs R1-R4). Gate PASS: check:all, check:live, layout:check (SRD and integrated), layout:android modals. Evidence: `.scratch/app-redesign/evidence.md`. Open items: see its advisory dispositions.
 
 ## What to build
 
@@ -13,8 +15,8 @@ New characters are built through the Creation Flow on screen: a step rail driven
 
 ## Acceptance Criteria
 
-- [ ] AC-6: A draft opens into the flow, not the sheet (spec, AC-6)
-- [ ] AC-8: Review finishes the character (spec, AC-8)
+- [x] AC-6: A draft opens into the flow, not the sheet (spec, AC-6)
+- [x] AC-8: Review finishes the character (spec, AC-8)
 
 ## Verification
 

@@ -1,6 +1,8 @@
 # 08: Level-up plan
 
-**Status:** ready-for-agent
+**Status:** done
+
+**Landed:** feat/app-redesign at a7a1e85 (with review repairs R1-R4). Gate PASS: check:all, check:live, layout:check (SRD and integrated), layout:android modals. Evidence: `.scratch/app-redesign/evidence.md`. Open items: see its advisory dispositions.
 
 ## What to build
 
@@ -15,10 +17,10 @@ A pure rules module that plans one level-up for a chosen class: its steps (Class
 
 ## Acceptance Criteria
 
-- [ ] AC-12: Level-up asks only what the level brings (spec, AC-12)
-- [ ] AC-13: A new class must meet multiclass requirements (spec, AC-13)
-- [ ] AC-14: Hit Points are rolled or averaged (spec, AC-14)
-- [ ] AC-15: Nothing applies until Review is confirmed (spec, AC-15)
+- [x] AC-12: Level-up asks only what the level brings (spec, AC-12)
+- [x] AC-13: A new class must meet multiclass requirements (spec, AC-13)
+- [x] AC-14: Hit Points are rolled or averaged (spec, AC-14)
+- [x] AC-15: Nothing applies until Review is confirmed (spec, AC-15)
 
 ## Verification
 

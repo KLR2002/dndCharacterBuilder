@@ -1,6 +1,8 @@
 # 14: Phone bottom sheets
 
-**Status:** ready-for-agent
+**Status:** done
+
+**Landed:** feat/app-redesign at a7a1e85 (with review repairs R1-R4). Gate PASS: check:all, check:live, layout:check (SRD and integrated), layout:android modals. Evidence: `.scratch/app-redesign/evidence.md`. Open items: see its advisory dispositions.
 
 ## What to build
 
@@ -12,7 +14,7 @@ On phones every modal sits as a bottom sheet with a strip of background visible 
 
 ## Acceptance Criteria
 
-- [ ] AC-29: Phone modals sit as bottom sheets and close on swipe down (spec, AC-29)
+- [x] AC-29: Phone modals sit as bottom sheets and close on swipe down (spec, AC-29)
 
 ## Verification
 

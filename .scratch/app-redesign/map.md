@@ -36,6 +36,7 @@ One spec, `.scratch/app-redesign/spec.md`, covering the Creation Flow, the Level
 - Charting: modals become bottom sheets on phones (backdrop strip, swipe down to close) and close on Escape on web, as part of the visual system.
 - [03: Creation Flow and visual direction prototype](issues/03-creation-flow-prototype.md): variant B, step chips plus an identity bar that opens a bottom sheet; Character Select layout with the existing themes; no non-deciding facts on choice rows; wide screens get a designed layout.
 - [04: Visual system](issues/04-visual-system.md): existing themes kept and fixed for AA with two tones per accent (saturated fill, bright ink); Source Serif 4 for names and titles; sheets on phones, dialogs on wide; designed wide layouts; contrast check over every accent.
+- Build: tickets 06-14 landed on `feat/app-redesign` at `a7a1e85`, gate PASS (`evidence.md`). Tickets 15-19 wait on decision ticket 05; ticket 20 is open.
 
 ## Not yet specified
 

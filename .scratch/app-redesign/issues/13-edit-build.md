@@ -1,6 +1,8 @@
 # 13: Edit Build
 
-**Status:** ready-for-agent
+**Status:** done
+
+**Landed:** feat/app-redesign at a7a1e85 (with review repairs R1-R4). Gate PASS: check:all, check:live, layout:check (SRD and integrated), layout:android modals. Evidence: `.scratch/app-redesign/evidence.md`. Open items: see its advisory dispositions.
 
 ## What to build
 
@@ -13,8 +15,8 @@ Edit Build reopens a finished Character's Creation Flow at a chosen step with ev
 
 ## Acceptance Criteria
 
-- [ ] AC-10: Edit Build reopens the flow at a chosen step (spec, AC-10)
-- [ ] AC-11: Edit Build lowers levels but never adds them (spec, AC-11)
+- [x] AC-10: Edit Build reopens the flow at a chosen step (spec, AC-10)
+- [x] AC-11: Edit Build lowers levels but never adds them (spec, AC-11)
 
 ## Verification
 

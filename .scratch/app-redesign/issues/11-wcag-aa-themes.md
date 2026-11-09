@@ -1,6 +1,8 @@
 # 11: WCAG AA themes
 
-**Status:** ready-for-agent
+**Status:** done
+
+**Landed:** feat/app-redesign at a7a1e85 (with review repairs R1-R4). Gate PASS: check:all, check:live, layout:check (SRD and integrated), layout:android modals. Evidence: `.scratch/app-redesign/evidence.md`. Open items: see its advisory dispositions.
 
 ## What to build
 
@@ -12,7 +14,7 @@ An automated contrast check over every accent palette combined with the base the
 
 ## Acceptance Criteria
 
-- [ ] AC-27: Every accent meets WCAG AA (spec, AC-27)
+- [x] AC-27: Every accent meets WCAG AA (spec, AC-27)
 
 ## Verification
 
