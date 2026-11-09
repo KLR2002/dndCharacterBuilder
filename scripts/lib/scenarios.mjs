@@ -23,10 +23,15 @@ export const DRUID_ID = "char_druid";
 export const WIZARD_ID = "char_wizard";
 const WIZARD_SPELLS = ["Fire Bolt", "Light", "Mage Hand", "Magic Missile", "Shield", "Mage Armor", "Detect Magic", "Misty Step"];
 const WIZARD_PREPARED = ["Magic Missile", "Shield", "Mage Armor", "Detect Magic", "Misty Step"];
-// `equipped` items are worn or held. The custom item has a long name, so it exercises wrapping.
+// `equipped` items are worn or held. The custom item has a long name, so it exercises wrapping. The Shield is
+// an older save's record: its section says "equipped" but the isEquipped flag is missing, so its row in the
+// Equipped list must still show the equipped state. The cloak and the ring carry attunement, one attuned and
+// one not, so both attune button states show.
 const WIZARD_ITEMS = [
   { name: "Quarterstaff", section: "equipped" },
-  { name: "Cloak of Protection", section: "equipped" },
+  { name: "Cloak of Protection", section: "equipped", attunement: true, isAttuned: true },
+  { name: "Shield", section: "equipped", isEquipped: false },
+  { name: "Ring of Protection", section: "carried", attunement: true },
   { name: "Spellbook", section: "carried" },
   { name: "Component Pouch", section: "carried" },
   { name: "Dagger", section: "carried" },
@@ -42,8 +47,9 @@ function wizardCharacter() {
     name: item.name,
     source: catalogSource("items", item.name),
     quantity: item.quantity ?? 1,
-    isEquipped: item.section === "equipped",
+    isEquipped: item.isEquipped ?? item.section === "equipped",
     section: item.section,
+    ...(item.attunement !== undefined ? { attunement: item.attunement, isAttuned: item.isAttuned ?? false } : {}),
   }));
   items.push({
     id: "item_custom",
@@ -1364,7 +1370,8 @@ export function buildScreens({ integrated }) {
             },
           ]
         : []),
-      { name: "Inventory", route: WIZARD_ROUTE, tabs: ["Inventory"], ready: /total wealth/i },
+      // The legacy Shield row (section "equipped", isEquipped missing) shows the equipped circle in the Equipped list.
+      { name: "Inventory", route: WIZARD_ROUTE, tabs: ["Inventory"], ready: /total wealth/i, expect: { labels: ["Equipped: Shield"], absentLabels: ["Equip Shield"] } },
       { name: "Inventory item picker modal", route: WIZARD_ROUTE, tabs: ["Inventory"], open: [{ tap: { text: "Add from Compendium", exact: true } }], modal: "Add Item from Compendium" },
       { name: "Features", route: RENDAR_ROUTE, tabs: ["Features"], ready: /resource trackers/i },
       { name: "Journal", route: RENDAR_ROUTE, tabs: ["Journal"], ready: /character name/i },

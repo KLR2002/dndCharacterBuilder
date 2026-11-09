@@ -456,6 +456,9 @@ export const InventoryTab: React.FC = () => {
                 {/* Equip Toggle */}
                 <TouchableOpacity
                   onPress={() => toggleEquip(item)}
+                  accessibilityRole="checkbox"
+                  accessibilityState={{ checked: item.isEquipped }}
+                  accessibilityLabel={item.isEquipped ? `Equipped: ${item.name}` : `Equip ${item.name}`}
                   style={[
                     styles.equipCheck,
                     {
@@ -467,7 +470,7 @@ export const InventoryTab: React.FC = () => {
                 </TouchableOpacity>
 
                 {/* Item Info (click to view details) */}
-                <TouchableOpacity onPress={() => showItemDetail(item)} style={{ flex: 1, paddingVertical: 4 }}>
+                <TouchableOpacity onPress={() => showItemDetail(item)} style={{ flex: 1, minWidth: 140, paddingVertical: 4 }}>
                   <View style={{ flexDirection: "row", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
                     <Text style={[styles.itemTitle, { color: theme.text }]} numberOfLines={isCompact ? 2 : 1}>{item.name}</Text>
                     {item.infusedWith && (
@@ -561,6 +564,9 @@ export const InventoryTab: React.FC = () => {
                 {/* Equip Toggle */}
                 <TouchableOpacity
                   onPress={() => toggleEquip(item)}
+                  accessibilityRole="checkbox"
+                  accessibilityState={{ checked: item.isEquipped }}
+                  accessibilityLabel={item.isEquipped ? `Equipped: ${item.name}` : `Equip ${item.name}`}
                   style={[
                     styles.equipCheck,
                     {
@@ -572,7 +578,7 @@ export const InventoryTab: React.FC = () => {
                 </TouchableOpacity>
 
                 {/* Item Info */}
-                <TouchableOpacity onPress={() => showItemDetail(item)} style={{ flex: 1, paddingVertical: 4 }}>
+                <TouchableOpacity onPress={() => showItemDetail(item)} style={{ flex: 1, minWidth: 140, paddingVertical: 4 }}>
                   <View style={{ flexDirection: "row", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
                     <Text style={[styles.itemTitle, { color: theme.text }]} numberOfLines={isCompact ? 2 : 1}>{item.name}</Text>
                     {item.infusedWith && (
@@ -1007,6 +1013,8 @@ const styles = StyleSheet.create({
   itemTitle: {
     fontSize: 14,
     fontWeight: "600",
+    flexShrink: 1,
+    minWidth: 0,
   },
   qtyControl: {
     flexDirection: "row",
