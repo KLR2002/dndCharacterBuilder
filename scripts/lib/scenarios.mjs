@@ -819,6 +819,50 @@ function arcanumCharacter() {
   });
 }
 
+// A level 1 Fighter with a Longsword equipped and ammunition carried, so the Actions tab's weapon row has a
+// rollable to-hit badge (+5) and damage pool (1d8 + 3), and a roll scenario can assert nothing is spent.
+export const ACTIONS_ID = "char_actions";
+export const ACTIONS_ROUTE = `/character/${ACTIONS_ID}`;
+function actionsCharacter() {
+  return makeChar({
+    id: ACTIONS_ID,
+    name: "Kara",
+    createdAt: 22,
+    updatedAt: 22,
+    startingOption: "equipment",
+    race: { name: "Human", source: catalogSource("races", "Human") },
+    background: { name: "Acolyte", source: catalogSource("backgrounds", "Acolyte") },
+    baseAbilityScores: { str: 16, dex: 12, con: 14, int: 10, wis: 10, cha: 8 },
+    classes: [{ className: "Fighter", source: catalogSource("classes", "Fighter"), level: 1 }],
+    currentHp: 12,
+    startingGrantsApplied: true,
+    backgroundGrantsApplied: true,
+    items: [
+      {
+        id: "item_longsword",
+        name: "Longsword",
+        source: catalogSource("items", "Longsword"),
+        quantity: 1,
+        isEquipped: true,
+        section: "equipped",
+        damage: "1d8",
+        damageType: "slashing",
+      },
+      {
+        id: "item_arrows",
+        name: "Arrows (20)",
+        source: catalogSource("items", "Arrows (20)"),
+        quantity: 1,
+        isEquipped: false,
+        section: "carried",
+      },
+    ],
+    resourceCounters: {
+      second_wind: { id: "second_wind", name: "Second Wind", current: 1, max: 1, resetOn: "short" },
+    },
+  });
+}
+
 // A draft on the Background step: a level 1 Human Fighter with no background picked yet. The home list shows
 // it as "Draft · Background", and opening it lands on the Background step of the Creation Flow, not the sheet.
 const DRAFT_ID = "char_draft";
@@ -1055,6 +1099,7 @@ export function buildSeed({ root, integrated }) {
       rolledCharacter(ROLLED_ID, "Bram", null),
       rolledCharacter(ROLLED_PICKS_ID, "Ivo", { str: 0, dex: 1, con: 2, int: 3, wis: 4, cha: 5 }),
       arcanumCharacter(),
+      actionsCharacter(),
     ],
     // The one folder the home list shows. The draft-folder check expects "New character" to leave its
     // draft in the root, so this folder's count badge stays unchanged.

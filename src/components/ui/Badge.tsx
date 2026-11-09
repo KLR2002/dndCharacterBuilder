@@ -1,49 +1,49 @@
 import React from "react";
 import { StyleSheet, Text, View, ViewProps } from "react-native";
+import type { AppTheme } from "../../constants/theme";
 import { useAppTheme } from "../../context/ThemeContext";
+
+export type BadgeVariant = "accent" | "surface" | "warning" | "success" | "muted" | "secondary" | "danger" | "outline";
 
 interface BadgeProps extends ViewProps {
   label: string;
-  variant?: "accent" | "surface" | "warning" | "success" | "muted" | "secondary" | "danger" | "outline";
+  variant?: BadgeVariant;
   size?: "sm" | "md";
+}
+
+/** The fill, text and border colours of a badge variant. The roll badge reuses them so both badges look the same. */
+export function badgeVariantColors(
+  theme: AppTheme,
+  variant: BadgeVariant,
+): { backgroundColor: string; textColor: string; borderColor: string } {
+  if (variant === "accent") {
+    return { backgroundColor: theme.accentGlow, textColor: theme.accentHover, borderColor: theme.accentBorder };
+  }
+  if (variant === "secondary") {
+    return { backgroundColor: theme.surfaceRaised, textColor: theme.textSecondary, borderColor: theme.border };
+  }
+  if (variant === "danger") {
+    return { backgroundColor: "rgba(239, 68, 68, 0.15)", textColor: theme.danger, borderColor: "rgba(239, 68, 68, 0.4)" };
+  }
+  if (variant === "outline") {
+    return { backgroundColor: "transparent", textColor: theme.textSecondary, borderColor: theme.border };
+  }
+  if (variant === "warning") {
+    return { backgroundColor: "rgba(245, 158, 11, 0.15)", textColor: theme.warning, borderColor: "rgba(245, 158, 11, 0.4)" };
+  }
+  if (variant === "success") {
+    return { backgroundColor: "rgba(34, 197, 94, 0.15)", textColor: theme.success, borderColor: "rgba(34, 197, 94, 0.4)" };
+  }
+  if (variant === "muted") {
+    return { backgroundColor: "rgba(100, 116, 139, 0.15)", textColor: theme.textMuted, borderColor: theme.border };
+  }
+  return { backgroundColor: theme.surfaceHighlight, textColor: theme.textSecondary, borderColor: theme.border };
 }
 
 export const Badge: React.FC<BadgeProps> = ({ label, variant = "surface", size = "md", style, ...props }) => {
   const { theme } = useAppTheme();
 
-  let bg = theme.surfaceHighlight;
-  let textColor = theme.textSecondary;
-  let borderColor = theme.border;
-
-  if (variant === "accent") {
-    bg = theme.accentGlow;
-    textColor = theme.accentHover;
-    borderColor = theme.accentBorder;
-  } else if (variant === "secondary") {
-    bg = theme.surfaceRaised;
-    textColor = theme.textSecondary;
-    borderColor = theme.border;
-  } else if (variant === "danger") {
-    bg = "rgba(239, 68, 68, 0.15)";
-    textColor = theme.danger;
-    borderColor = "rgba(239, 68, 68, 0.4)";
-  } else if (variant === "outline") {
-    bg = "transparent";
-    textColor = theme.textSecondary;
-    borderColor = theme.border;
-  } else if (variant === "warning") {
-    bg = "rgba(245, 158, 11, 0.15)";
-    textColor = theme.warning;
-    borderColor = "rgba(245, 158, 11, 0.4)";
-  } else if (variant === "success") {
-    bg = "rgba(34, 197, 94, 0.15)";
-    textColor = theme.success;
-    borderColor = "rgba(34, 197, 94, 0.4)";
-  } else if (variant === "muted") {
-    bg = "rgba(100, 116, 139, 0.15)";
-    textColor = theme.textMuted;
-    borderColor = theme.border;
-  }
+  const { backgroundColor: bg, textColor, borderColor } = badgeVariantColors(theme, variant);
 
   const isSmall = size === "sm";
 
