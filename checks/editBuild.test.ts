@@ -190,6 +190,28 @@ describe("Lowering a class level in Edit Build releases that level's picks and n
     assert.equal(isCreationFinished(finished), true);
   });
 
+  test("a mark from an earlier edit survives a later edit on another step", () => {
+    const fw = finishedFighterWizard();
+    const fighterOnly: Character = { ...fw, classes: [fw.classes[0]] };
+    const lowered = applyCreationStepEdit(
+      fighterOnly,
+      "class",
+      (cur) => removeClassLevel(cur, "Fighter", currentCompendium(), ALL_BOOKS),
+      { ...flowOpts, editBuild: true },
+    );
+    assert.equal(creationStepNeedsAttention(lowered, "classChoices"), true, "lowering Fighter 3->2 released the level-3 maneuvers");
+    const edited = applyCreationStepChange(
+      lowered,
+      { step: "background", background: { name: "Hermit", source: "PHB" } },
+      { ...flowOpts, editBuild: true },
+    );
+    assert.equal(
+      creationStepNeedsAttention(edited, "classChoices"),
+      true,
+      "the Class Choices mark persists until that step is finished again, not until the next edit",
+    );
+  });
+
   test("the Class step's offer has no raise or add-class action in Edit Build mode and has them in Level up mode", () => {
     assert.deepEqual(classStepModeOffer("edit"), { canLowerLevel: true, canRaiseLevel: false, canAddClass: false });
     assert.deepEqual(classStepModeOffer("levelup"), { canLowerLevel: true, canRaiseLevel: true, canAddClass: true });

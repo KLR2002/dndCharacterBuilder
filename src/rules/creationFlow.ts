@@ -558,7 +558,10 @@ export function applyCreationStepEdit(
 ): Character {
   const next = edit(character);
   if (next === character) return character;
-  const needsAttention = computeNeedsAttention(character, next, step, opts);
+  // The new marks add to the existing ones: a mark clears only through finishCreationStep on its step.
+  const prior = character.creationProgress?.needsAttention ?? [];
+  const computed = computeNeedsAttention(character, next, step, opts);
+  const needsAttention = [...new Set([...prior, ...computed])];
   if (opts.editBuild && isCreationFinished(character)) {
     // Edit Build on a finished character: the marks ride in the progress record with the editBuild marker, so
     // the character stays finished and every step stays reachable.
