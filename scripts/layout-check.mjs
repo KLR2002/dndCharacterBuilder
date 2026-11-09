@@ -619,8 +619,9 @@ function folderBadgeCount(folder) {
   return null;
 }
 
-// "New character" on Home lands in the one folder the list is showing: after the tap the folder's count
-// badge grows by one and the new draft card lists.
+// "New character" on Home creates its draft in the root, outside any folder: after the tap the folder's
+// count badge is unchanged and the new draft card lists at the root. The player moves it with the card's
+// move-to-folder action.
 async function checkDraftFolder(ctx, width) {
   const page = await ctx.newPage();
   const prefix = `[${width}px draft folder]`;
@@ -650,8 +651,8 @@ async function checkDraftFolder(ctx, width) {
   await page.waitForTimeout(300);
   await page.screenshot({ path: join(SHOTS, `DraftFolder-${width}.png`) });
   const after = await page.evaluate(folderBadgeCount, "Camp");
-  if (before !== null && after !== before + 1) {
-    console.log(`${prefix} the "Camp" folder lists ${after} character(s) after "New character", expected ${before + 1}: the draft did not land in the folder the list is showing`);
+  if (before !== null && after !== before) {
+    console.log(`${prefix} the "Camp" folder lists ${after} character(s) after "New character", expected ${before}: the draft landed in a folder instead of the root`);
     failures++;
   }
   if (!(await page.getByText("Draft · Class", { exact: true }).first().isVisible())) {

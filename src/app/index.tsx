@@ -80,7 +80,8 @@ export default function HomeScreen() {
 
   // "New character" creates a draft on the Class step in the current folder and opens the Creation Flow.
   const handleNewCharacter = async () => {
-    const created = await createCharacter({ name: "", creationProgress: { currentStep: "class" }, folderId: currentFolderId });
+    // A new draft is created in the root (no folder); the player moves it with the card's move-to-folder action.
+    const created = await createCharacter({ name: "", creationProgress: { currentStep: "class" } });
     router.push(`/build/${created.id}` as any);
   };
 
@@ -178,16 +179,6 @@ export default function HomeScreen() {
 
     return { folderMap: map, uncategorized: uncat };
   }, [folders, filteredCharacters]);
-
-  // The one folder the list is showing, when it shows exactly one: the only folder, or the only folder the
-  // search leaves characters in. "New character" creates its draft there.
-  const shownFolderIds = new Set(
-    filteredCharacters
-      .map((c) => c.folderId)
-      .filter((id): id is string => Boolean(id) && folders.some((f) => f.id === id)),
-  );
-  const currentFolderId =
-    shownFolderIds.size === 1 ? [...shownFolderIds][0] : folders.length === 1 ? folders[0].id : null;
 
   const renderCharacterCard = (char: Character) => {
     const evaluated = evaluateCharacter(char, { compendium: currentCompendium(), activeBooks });

@@ -1050,7 +1050,8 @@ export function buildSeed({ root, integrated }) {
       rolledCharacter(ROLLED_PICKS_ID, "Ivo", { str: 0, dex: 1, con: 2, int: 3, wis: 4, cha: 5 }),
       arcanumCharacter(),
     ],
-    // The one folder the home list shows, so "New character" lands its draft in it.
+    // The one folder the home list shows. The draft-folder check expects "New character" to leave its
+    // draft in the root, so this folder's count badge stays unchanged.
     folders: [{ id: "folder_camp", name: "Camp", createdAt: 1 }],
     settings: {
       ...defaults,
