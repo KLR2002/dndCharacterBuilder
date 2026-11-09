@@ -23,6 +23,7 @@ import {
   finishCreationStep,
   isCreationFinished,
   isCreationStepValid,
+  type BuildFlowMode,
   type CreationStep,
 } from "../../rules/creationFlow";
 import type { Character, CreationStepId } from "../../types/character";
@@ -31,13 +32,18 @@ import type { Character, CreationStepId } from "../../types/character";
  * The Creation Flow screen. Step order, status, validity, the needs-attention marks and the current step are
  * read only from `src/rules/creationFlow.ts`; this screen never decides them. The `step` query param opens a
  * finished or the current step of a draft, or any step of a finished character (Edit Build); locked steps of a
- * draft are not reachable.
+ * draft are not reachable. The `mode` query param distinguishes the two entries on a finished character: Edit
+ * Build (the default, `edit`) applies the release-and-flag rule to changes and lets the Class step only lower
+ * levels, while the interim Level up path (`levelup`, until the Level-Up Flow exists) keeps the controls that
+ * add levels and classes.
  */
 export default function BuildScreen() {
   const router = useRouter();
-  const params = useLocalSearchParams<{ id: string; step?: string | string[] }>();
+  const params = useLocalSearchParams<{ id: string; step?: string | string[]; mode?: string | string[] }>();
   const id = Array.isArray(params.id) ? params.id[0] : params.id;
   const stepParam = Array.isArray(params.step) ? params.step[0] : params.step;
+  const modeParam = Array.isArray(params.mode) ? params.mode[0] : params.mode;
+  const buildMode: BuildFlowMode = modeParam === "levelup" ? "levelup" : "edit";
   const { characters, selectCharacter, updateCharacter, activeBooks } = useCharacters();
   const { theme } = useAppTheme();
   const serif = useSerifFont();
@@ -85,7 +91,16 @@ export default function BuildScreen() {
     if (!character || !openStep) return;
     updateCharacter(character.id, (cur) => {
       const next = typeof updates === "function" ? updates(cur) : { ...cur, ...updates };
-      if (!cur.creationProgress) return next;
+      const draft = !isCreationFinished(cur);
+      // A finished character on the interim Level up path keeps the plain transitions, adding freely.
+      if (!draft && buildMode !== "edit") return next;
+      // Edit Build on a finished character: a change on the open step goes through the same release-and-flag
+      // path as a draft's, recorded with the editBuild marker so the character stays finished.
+      if (!draft) {
+        const signature = stepSignature[openStep];
+        if (!signature || signature(cur) === signature(next)) return next;
+        return applyCreationStepEdit(cur, openStep, () => next, { ...flowOpts, editBuild: true });
+      }
       // Creation builds a single class: picking another class on the Class step replaces the held one
       // through applyCreationStepChange, which releases what the old class granted.
       if (openStep === "class") {
@@ -113,11 +128,16 @@ export default function BuildScreen() {
   }
 
   const draft = !isCreationFinished(character);
+  // Edit Build on a finished character: a flagged step can be finished again, which clears its warning.
+  const editBuild = !draft && buildMode === "edit";
   const openInfo = steps.find((s) => s.id === openStep) ?? null;
+  const finishable = editBuild && openInfo?.needsAttention === true;
   const valid = openStep ? isCreationStepValid(character, openStep, flowOpts) : false;
   const entry = character.classes?.[0];
   const primaryLabel = !draft
-    ? "Back to sheet"
+    ? finishable
+      ? "Finish step"
+      : "Back to sheet"
     : openStep === "review"
       ? "Create character"
       : openStep === "class" && entry
@@ -125,12 +145,20 @@ export default function BuildScreen() {
         : "Continue";
 
   const openStepById = (stepId: CreationStepId) => {
-    router.push(`/build/${character.id}?step=${stepId}` as any);
+    router.push(`/build/${character.id}?step=${stepId}${buildMode === "levelup" ? "&mode=levelup" : ""}` as any);
   };
 
   const onPrimary = () => {
     if (!openStep) return;
     if (!draft) {
+      if (finishable) {
+        const finished = finishCreationStep(character, openStep, flowOpts);
+        updateCharacter(character.id, () => finished);
+        const remaining = finished.creationProgress?.needsAttention ?? [];
+        if (remaining.length > 0) router.replace(`/build/${character.id}?step=${remaining[0]}` as any);
+        else router.replace(`/character/${character.id}` as any);
+        return;
+      }
       router.replace(`/character/${character.id}` as any);
       return;
     }
@@ -177,8 +205,16 @@ export default function BuildScreen() {
         {step.status === "finished" && !isCurrent ? (
           <Ionicons name="checkmark" size={14} color={theme.textSecondary} />
         ) : null}
-        {step.needsAttention ? <Ionicons name="alert-circle" size={14} color={theme.warning} /> : null}
-        {locked ? <Ionicons name="lock-closed" size={13} color={theme.textMuted} /> : null}
+        {step.needsAttention ? (
+          <View accessibilityRole="image" accessibilityLabel={`Needs attention: ${STEP_TITLES[step.id]}`}>
+            <Ionicons name="alert-circle" size={14} color={theme.warning} />
+          </View>
+        ) : null}
+        {locked ? (
+          <View accessibilityRole="image" accessibilityLabel={`Locked: ${STEP_TITLES[step.id]}`}>
+            <Ionicons name="lock-closed" size={13} color={theme.textMuted} />
+          </View>
+        ) : null}
       </TouchableOpacity>
     );
   };
@@ -210,7 +246,7 @@ export default function BuildScreen() {
     }
     return (
       <View style={{ flex: 1, minHeight: 0 }}>
-        <BuilderTab character={character} onUpdate={handleUpdate} step={openStep} />
+        <BuilderTab character={character} onUpdate={handleUpdate} step={openStep} flowMode={draft ? undefined : buildMode} />
       </View>
     );
   };
@@ -221,7 +257,9 @@ export default function BuildScreen() {
         {openStep ? STEP_TITLES[openStep] : ""}
       </Text>
       {openInfo?.needsAttention ? (
-        <Ionicons name="alert-circle" size={18} color={theme.warning} style={{ flexShrink: 0 }} />
+        <View accessibilityRole="image" accessibilityLabel={`Needs attention: ${openStep ? STEP_TITLES[openStep] : ""}`}>
+          <Ionicons name="alert-circle" size={18} color={theme.warning} style={{ flexShrink: 0 }} />
+        </View>
       ) : null}
     </View>
   );
@@ -231,7 +269,7 @@ export default function BuildScreen() {
       title={primaryLabel}
       variant="primary"
       size="lg"
-      disabled={draft && !valid}
+      disabled={(draft || finishable) && !valid}
       onPress={onPrimary}
       style={styles.primaryAction}
     />

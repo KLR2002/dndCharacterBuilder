@@ -860,6 +860,54 @@ function reviewDraftCharacter() {
   };
 }
 
+// A finished level 3 Battle Master with its Fighting Style and three maneuvers picked and a claimed kit.
+// Edit Build reopens its Creation Flow; lowering the Fighter releases the level-3 maneuvers and flags their steps.
+const EDIT_BUILD_ID = "char_editbuild";
+function editBuildCharacter() {
+  return makeChar({
+    id: EDIT_BUILD_ID,
+    name: "Haldane",
+    createdAt: 18,
+    updatedAt: 18,
+    startingOption: "equipment",
+    race: { name: "Human", source: catalogSource("races", "Human") },
+    background: { name: "Acolyte", source: catalogSource("backgrounds", "Acolyte") },
+    abilityMethod: "standardArray",
+    standardArrayPicks: { str: 15, dex: 14, con: 13, int: 10, wis: 12, cha: 8 },
+    baseAbilityScores: { str: 15, dex: 14, con: 13, int: 10, wis: 12, cha: 8 },
+    classes: [
+      {
+        className: "Fighter",
+        source: catalogSource("classes", "Fighter"),
+        level: 3,
+        subclassName: "Battle Master",
+        subclassSource: "PHB",
+      },
+    ],
+    currentHp: 28,
+    startingGrantsApplied: true,
+    backgroundGrantsApplied: true,
+    ruleChoices: [
+      {
+        id: "PHB__Fighter__Fighting Style",
+        trait: "Fighting Style",
+        origin: "class",
+        choose: 1,
+        from: ["Defense"],
+        picked: ["Defense"],
+      },
+      {
+        id: "PHB__Fighter__Battle Master__Maneuvers 3",
+        trait: "Combat Superiority (3rd Level)",
+        origin: "subclass",
+        choose: 3,
+        from: ["Riposte", "Rally", "Trip Attack"],
+        picked: ["Riposte", "Rally", "Trip Attack"],
+      },
+    ],
+  });
+}
+
 // The seed the app starts from: the characters, folders, settings, and (integrated mode) the catalog.
 export function buildSeed({ root, integrated }) {
   ROOT = root;
@@ -926,6 +974,7 @@ export function buildSeed({ root, integrated }) {
       INTEGRATED ? knowledgeClericCharacter() : multiclassSkillCharacter(),
       draftCharacter(),
       reviewDraftCharacter(),
+      editBuildCharacter(),
     ],
     folders: [],
     settings: {
@@ -1243,6 +1292,34 @@ export function buildScreens({ integrated }) {
       { name: "Draft sheet redirects to flow", route: `/character/${DRAFT_ID}`, ready: "Create Custom", expect: { texts: ["Background"], absent: ["Builder", "Stats", "Actions", "Inventory", "Features", "Journal", "Spells"], fitsWidth: true } },
       // Confirming Review finishes the character: the sheet opens with Level up and Edit Build and no Builder tab.
       { name: "Review finishes character", route: REVIEW_DRAFT_ROUTE, open: [{ tap: { text: "Create character", exact: true } }], ready: "Level up", expect: { texts: ["Level up", "Edit Build", "Wren"], absent: ["Builder"], fitsWidth: true } },
+      // Edit Build on a finished character: choosing the Background step opens the flow there with every step reachable.
+      {
+        name: "Builder Edit Build background step",
+        route: `/build/${EDIT_BUILD_ID}?step=background`,
+        ready: /background benefits/i,
+        expect: {
+          texts: ["Class", "Subclass", "Race", "Background", "Abilities", "Class Choices", "Equipment", "Details", "Review"],
+          absentLabels: ["Locked"],
+          enabled: ["Back to sheet"],
+          fitsWidth: true,
+        },
+      },
+      // Edit Build's Class step offers only lowering: lowering the Fighter releases the level-3 maneuvers and
+      // flags their steps with the warning; no raise control is offered.
+      {
+        name: "Builder Edit Build class change flags steps",
+        route: `/build/${EDIT_BUILD_ID}?step=class`,
+        open: [{ tap: { label: "Lower Fighter level" } }],
+        ready: /total level/i,
+        expect: { labels: ["Needs attention"], absentLabels: ["Raise Fighter level"], texts: ["Back to sheet"], fitsWidth: true },
+      },
+      // The interim Level up path keeps the add controls and the class list on the Class step.
+      {
+        name: "Builder Level up class step",
+        route: `/build/${EDIT_BUILD_ID}?step=class&mode=levelup`,
+        ready: /total level/i,
+        expect: { labels: ["Raise Fighter level", "Lower Fighter level"], texts: ["Change Class:"], fitsWidth: true },
+      },
       { name: "Settings", route: "/options", ready: /settings & compendium/i },
   ];
   // A named step has no text, pattern or label a runner can tap, so the scenario carrying one can only be

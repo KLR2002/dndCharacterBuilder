@@ -19,7 +19,7 @@ import {
   toggleExpertiseChoice,
 } from "../../rules/expertise";
 import { subclassLevel } from "../../rules/leveling";
-import { classStepOffer } from "../../rules/creationFlow";
+import { classStepOffer, classStepModeOffer, isCreationFinished, type BuildFlowMode } from "../../rules/creationFlow";
 import type { CreationStepId } from "../../types/character";
 import {
   proficiencyChoiceOffers,
@@ -103,6 +103,12 @@ export interface ClassProgressionSectionProps {
    * the free-form builder, where every part renders.
    */
   step?: CreationStepId;
+  /**
+   * How the build flow was entered on a finished character: Edit Build (`edit`) or the interim Level up path
+   * (`levelup`). Unset for a draft and in the free-form builder. The Class step reads its offer from
+   * `classStepModeOffer`: Edit Build lowers a held class's level but never raises one or adds a class.
+   */
+  flowMode?: BuildFlowMode;
 }
 
 export const ClassProgressionSection: React.FC<
@@ -132,6 +138,7 @@ export const ClassProgressionSection: React.FC<
   theme,
   activeBooks,
   step,
+  flowMode,
 }) => {
   const { isPhone } = useResponsiveLayout();
   const [classSearch, setClassSearch] = useState("");
@@ -246,9 +253,19 @@ export const ClassProgressionSection: React.FC<
     );
   };
 
-  // In the Creation Flow the class list is the Class step's picker: it shows while no class is held, and for a
-  // draft (which can still change its one class). A finished character levels through the stepper controls only.
-  const showClassList = step === undefined || (step === "class" && (!hasAnyClass || character.creationProgress !== undefined));
+  // What the Class step offers in this build-flow mode: Edit Build lowers a held class's level but offers no
+  // raise or add-class control; the interim Level up path keeps both. A draft or the free-form builder keeps
+  // the full controls.
+  const modeOffer = flowMode ? classStepModeOffer(flowMode) : null;
+  const canRaiseLevel = modeOffer ? modeOffer.canRaiseLevel : true;
+  // In Edit Build a class cannot be lowered past level 1, so no held class is dropped entirely there.
+  const canLowerTo = (level: number) => !(flowMode === "edit" && level <= 1);
+  // In the Creation Flow the class list is the Class step's picker: it shows while no class is held, for a
+  // draft (which can still change its one class), and on the interim Level up path of a finished character.
+  // Edit Build offers no add-class control, so the list stays hidden there.
+  const showClassList =
+    step === undefined ||
+    (step === "class" && (flowMode === "levelup" || !hasAnyClass || !isCreationFinished(character)));
   const maxLevel = classStepOffer().startingLevel.max;
 
   return (
@@ -318,10 +335,13 @@ export const ClassProgressionSection: React.FC<
                   <View style={styles.stepperRow}>
                     <TouchableOpacity
                       onPress={() => removeClassLevel(c.className)}
+                      disabled={!canLowerTo(c.level)}
+                      accessibilityRole="button"
+                      accessibilityLabel={`Lower ${c.className} level`}
                       hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                       style={[
                         styles.stepperBtn,
-                        { backgroundColor: theme.surfaceRaised },
+                        { backgroundColor: theme.surfaceRaised, opacity: !canLowerTo(c.level) ? 0.4 : 1 },
                       ]}
                     >
                       <Ionicons name="remove" size={20} color={theme.text} />
@@ -329,17 +349,21 @@ export const ClassProgressionSection: React.FC<
                     <Text style={[styles.levelNum, { color: theme.text }]}>
                       {c.level}
                     </Text>
-                    <TouchableOpacity
-                      onPress={() => handleAddClassLevel(c.className, c.source)}
-                      disabled={c.level >= maxLevel}
-                      hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                      style={[
-                        styles.stepperBtn,
-                        { backgroundColor: theme.surfaceRaised, opacity: c.level >= maxLevel ? 0.4 : 1 },
-                      ]}
-                    >
-                      <Ionicons name="add" size={20} color={theme.text} />
-                    </TouchableOpacity>
+                    {canRaiseLevel ? (
+                      <TouchableOpacity
+                        onPress={() => handleAddClassLevel(c.className, c.source)}
+                        disabled={c.level >= maxLevel}
+                        accessibilityRole="button"
+                        accessibilityLabel={`Raise ${c.className} level`}
+                        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                        style={[
+                          styles.stepperBtn,
+                          { backgroundColor: theme.surfaceRaised, opacity: c.level >= maxLevel ? 0.4 : 1 },
+                        ]}
+                      >
+                        <Ionicons name="add" size={20} color={theme.text} />
+                      </TouchableOpacity>
+                    ) : null}
                   </View>
                 )}
               </View>
@@ -399,10 +423,13 @@ export const ClassProgressionSection: React.FC<
                 <View style={styles.stepperRow}>
                   <TouchableOpacity
                     onPress={() => removeClassLevel(c.className)}
+                    disabled={!canLowerTo(c.level)}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Lower ${c.className} level`}
                     hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                     style={[
                       styles.stepperBtn,
-                      { backgroundColor: theme.surfaceRaised },
+                      { backgroundColor: theme.surfaceRaised, opacity: !canLowerTo(c.level) ? 0.4 : 1 },
                     ]}
                   >
                     <Ionicons name="remove" size={20} color={theme.text} />
@@ -410,17 +437,21 @@ export const ClassProgressionSection: React.FC<
                   <Text style={[styles.levelNum, { color: theme.text }]}>
                     {c.level}
                   </Text>
-                  <TouchableOpacity
-                    onPress={() => handleAddClassLevel(c.className, c.source)}
-                    disabled={c.level >= maxLevel}
-                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                    style={[
-                      styles.stepperBtn,
-                      { backgroundColor: theme.surfaceRaised, opacity: c.level >= maxLevel ? 0.4 : 1 },
-                    ]}
-                  >
-                    <Ionicons name="add" size={20} color={theme.text} />
-                  </TouchableOpacity>
+                  {canRaiseLevel ? (
+                    <TouchableOpacity
+                      onPress={() => handleAddClassLevel(c.className, c.source)}
+                      disabled={c.level >= maxLevel}
+                      accessibilityRole="button"
+                      accessibilityLabel={`Raise ${c.className} level`}
+                      hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                      style={[
+                        styles.stepperBtn,
+                        { backgroundColor: theme.surfaceRaised, opacity: c.level >= maxLevel ? 0.4 : 1 },
+                      ]}
+                    >
+                      <Ionicons name="add" size={20} color={theme.text} />
+                    </TouchableOpacity>
+                  ) : null}
                 </View>
               )}
             </View>
@@ -1047,7 +1078,7 @@ export const ClassProgressionSection: React.FC<
             const existing = Boolean(held) && !takenFrom;
             const prereq = takenFrom
               ? { ok: false, reason: `Already held from ${takenFrom}` }
-              : existing || !hasAnyClass || character.creationProgress !== undefined
+              : existing || !hasAnyClass || !isCreationFinished(character)
                 ? { ok: true }
                 : validateMulticlass(character, cl.name, effectiveScores);
 
