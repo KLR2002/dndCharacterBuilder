@@ -21,6 +21,8 @@ import {
 } from "./builderTransitions.ts";
 import { applyAncestrySelection } from "./ancestryEngine.ts";
 import { reconcile } from "./characterReconciler.ts";
+import { maxHp } from "./hp.ts";
+import { followRaisedMaxHp, fullHealAtLevelUp } from "./hitPoints.ts";
 
 /**
  * The Creation Flow's steps, in the order the flow walks them: identity first (class, subclass, ancestry),
@@ -400,7 +402,15 @@ function changeCreationClass(
   if (old && !sameClass) {
     next = releaseStartingGrantClaim(next);
   }
-  return reconcile(next, compendium, { activeBooks });
+  const reconciled = reconcile(next, compendium, { activeBooks });
+  // A draft is at full HP, so a starting level above 1 lifts current HP with the raised max instead of
+  // leaving the draft wounded.
+  const followed = followRaisedMaxHp(
+    { currentHp: reconciled.currentHp, tempHp: reconciled.tempHp },
+    maxHp(character),
+    maxHp(reconciled),
+  );
+  return { ...reconciled, ...followed };
 }
 
 /** The class-origin picks the Class Choices step holds: its skill choices and its class/subclass rule choices. */
@@ -566,7 +576,11 @@ export function finishCreationStep(
   const currentIndex = applicable.indexOf(resolveCurrentStep(character, applicable));
   const needsAttention = (character.creationProgress?.needsAttention ?? []).filter((id) => id !== step);
   const nextStep = applicable[Math.max(index + 1, currentIndex)];
-  if (!nextStep) return { ...character, creationProgress: undefined };
+  if (!nextStep) {
+    // Finishing Review finishes the character, and a finished new character opens at full HP.
+    const healed = fullHealAtLevelUp({ currentHp: character.currentHp, tempHp: character.tempHp }, maxHp(character));
+    return { ...character, creationProgress: undefined, ...healed };
+  }
   return {
     ...character,
     creationProgress: { currentStep: nextStep, ...(needsAttention.length > 0 ? { needsAttention } : {}) },
