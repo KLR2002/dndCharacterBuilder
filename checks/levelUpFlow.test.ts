@@ -3,8 +3,9 @@ import assert from "node:assert/strict";
 import { makeChar, inMemoryCompendium, srdBaselineCompendium } from "./testUtils.ts";
 import { wardenClass } from "./proficiencySheetFixture.ts";
 import { ALL_BOOKS } from "../src/constants/books.ts";
-import { planLevelUp, applyLevelUpPlan, subclassOptionsForPlan, type LevelUpPlan } from "../src/rules/levelUpFlow.ts";
+import { planLevelUp, applyLevelUpPlan, newSpellsForLevelUp, planAverageHitPoints, subclassOptionsForPlan, togglePlanSpell, type LevelUpPlan } from "../src/rules/levelUpFlow.ts";
 import { maxHp } from "../src/rules/hp.ts";
+import { totalLevel } from "../src/rules/proficiencies.ts";
 import { removeClassLevel } from "../src/rules/builderTransitions.ts";
 import type { SubclassData } from "../src/types/dnd5e.ts";
 
@@ -357,6 +358,39 @@ test("applying a Wizard 1->2 plan sets the level, the subclass pick and the lear
   assert.equal(applied.classes[0].level, 2);
   assert.equal(applied.classes[0].subclassName, "School of Evocation");
   assert.ok((applied.knownSpells ?? []).some((s) => s.name === "Magic Missile"));
+});
+
+test("raising an already-held second class in a multiclass level-up applies the level and its picks", () => {
+  // Fighter 3 / Wizard 2 leveling the held Wizard to 3.
+  const fw = makeChar({
+    baseAbilityScores: { str: 15, dex: 14, con: 13, int: 16, wis: 10, cha: 8 },
+    classes: [
+      { className: "Fighter", source: "PHB", level: 3, subclassName: "Battle Master", subclassSource: "PHB" },
+      { className: "Wizard", source: "PHB", level: 2, subclassName: "Evocation", subclassSource: "PHB" },
+    ],
+    knownSpells: [{ name: "Fire Bolt", source: "PHB", ownerKey: "Wizard__PHB" }],
+  });
+  const result = planLevelUp(fw, { className: "Wizard" });
+  if (!result.ok) assert.fail(result.reason);
+  assert.equal(result.plan.fromLevel, 2, "the held second class is raised, not re-entered");
+  assert.equal(result.plan.toLevel, 3);
+  assert.deepEqual(
+    result.plan.steps.map((s) => s.id),
+    ["class", "hitPoints", "spells", "review"],
+    "the held subclass stays held, so no Subclass step; the new spell level brings the Spells step"
+  );
+  const spell = newSpellsForLevelUp(fw, result.plan)[0];
+  assert.ok(spell, "the new level offers spells to learn");
+  const planned = togglePlanSpell(result.plan, spell);
+  const hpBefore = maxHp(fw);
+  const applied = applyLevelUpPlan(fw, planned, { fullHealOnLevelUp: false });
+  const wiz = applied.classes.find((c) => c.className === "Wizard");
+  assert.equal(wiz?.level, 3, "the held second class is raised to 3");
+  assert.equal(wiz?.subclassName, "Evocation", "the held subclass is untouched");
+  assert.equal(applied.classes.find((c) => c.className === "Fighter")?.level, 3, "the other class is untouched");
+  assert.equal(totalLevel(applied), 6);
+  assert.ok((applied.knownSpells ?? []).some((s) => s.name === spell.name), "the learned spell applies with the level");
+  assert.equal(maxHp(applied), hpBefore + planAverageHitPoints(result.plan, fw), "the level's hit points apply with it");
 });
 
 test("a plan refuses a class already at level 20 and a character already at total level 20", () => {

@@ -1388,8 +1388,7 @@ async function checkActionRolls(ctx, width) {
         followUp: leaf(/^Roll (critical )?damage$/),
       };
     });
-  const storedCharacter = (id) =>
-    page.evaluate((charId) => JSON.parse(localStorage.getItem("@dnd5e_characters") ?? "[]").find((c) => c.id === charId) ?? null, id);
+  const storedCharacter = (id) => readStoredCharacter(page, id);
   const setFaces = (faces) => page.evaluate((f) => (window.__setRandomSource ? window.__setRandomSource(f) : "no hook"), faces);
 
   // The weapon attack row: badges read from the ledger, a tap rolls the attack.
@@ -1602,15 +1601,26 @@ async function checkActionRolls(ctx, width) {
 const LU_ID = RANGER_ID;
 const LU_NAME = "Tamsin";
 
-// Waits until the flow's Continue is enabled (the open step's pick is complete), then taps it.
-async function continueFlow(page) {
-  await page
+// The stored Character by id, read from the browser's localStorage.
+function readStoredCharacter(page, id) {
+  return page.evaluate((charId) => JSON.parse(localStorage.getItem("@dnd5e_characters") ?? "[]").find((c) => c.id === charId) ?? null, id);
+}
+
+// Waits until the flow's Continue is enabled (the open step's pick is complete), then taps it. When
+// Continue never enables, `fail` reports it instead of the click landing on a disabled button.
+async function continueFlow(page, fail = () => {}) {
+  const enabled = await page
     .waitForFunction(() => {
       const el = [...document.querySelectorAll("*")].find((e) => e.children.length === 0 && e.textContent === "Continue");
       const target = el?.closest("[tabindex]");
       return target && target.getAttribute("aria-disabled") !== "true";
     }, null, { timeout: 10000 })
-    .catch(() => {});
+    .then(() => true)
+    .catch(() => false);
+  if (!enabled) {
+    fail("Continue never enabled on the open step (its pick is incomplete)");
+    return;
+  }
   await page.getByText("Continue", { exact: true }).first().click();
   await page.waitForTimeout(400);
 }
@@ -1649,8 +1659,9 @@ async function walkToReview(page, hpMode, fail = () => {}) {
       await learn.click();
       await page.waitForTimeout(300);
     }
-    await continueFlow(page);
+    await continueFlow(page, fail);
   }
+  fail('walkToReview never reached Review (no "Level up" button after 8 steps)');
 }
 
 // True when a visible leaf element shows exactly `text` (the stack can keep a hidden copy of the
@@ -1836,7 +1847,10 @@ async function checkLevelUpCancelAndReview(ctx, width) {
   await page.getByText("Continue", { exact: true }).first().click();
   await page.getByLabel("Roll hit points").first().waitFor({ state: "visible", timeout: 10000 });
 
-  // Cancel path: a rolled Hit Points pick is made, then Cancel → Discard returns to the sheet at the old level.
+  // Cancel path: a rolled Hit Points pick is made, then Cancel → Discard returns to the sheet with the
+  // stored Character deep-equal to before the flow — not only at the old level.
+  const beforeCancel = await readStoredCharacter(page, LU_ID);
+  if (!beforeCancel) fail("the seeded character is not in storage before Cancel");
   await page.getByLabel("Roll hit points").first().click();
   await page.waitForTimeout(300);
   await page.getByLabel("Cancel level up").first().click();
@@ -1846,6 +1860,10 @@ async function checkLevelUpCancelAndReview(ctx, width) {
   if (!page.url().includes(`/character/${LU_ID}`)) fail(`discard did not return to the sheet: ${page.url()}`);
   if (!(await waitForVisibleText(page, "Lvl 3")))
     fail("after discarding, the sheet does not show \"Lvl 3\": the plan was applied instead of discarded");
+  const afterCancel = await readStoredCharacter(page, LU_ID);
+  if (!afterCancel) fail("the seeded character vanished from storage after Cancel");
+  else if (JSON.stringify(afterCancel) !== JSON.stringify(beforeCancel))
+    fail("Cancel changed the stored character: the plan was not discarded whole (deep-equal comparison failed)");
   await page.screenshot({ path: join(SHOTS, `LevelUp-Cancelled-${width}.png`) });
 
   // Review path: average HP and a CON +2 ASI, then "Level up" applies the level and the picks together.
