@@ -18,7 +18,7 @@ export function currentRandom(): RandomSource {
   return activeRandom;
 }
 
-/** Test-only seam: replaces the default random source (null restores `appRandom`). Never called by app code. */
+/** Test-only seam: replaces the default random source (null restores `appRandom`). Called only under the E2E flag by the Roll Log provider's test hook, and by tests. */
 export function __setRandomSourceForTests(source: RandomSource | null): void {
   activeRandom = source ?? appRandom;
 }
