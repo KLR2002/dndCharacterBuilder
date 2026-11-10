@@ -74,8 +74,8 @@ export function AsiFeatStep({
     const opts = getFeatAbilityBonusOptions(feat.name, feat);
     const ability = opts.type === "fixed" ? opts.abilities[0] : null;
     setFeatAbility(ability);
-    // A feat offering +1 to one of several abilities is not picked until one is chosen below.
-    if (opts.type === "choice") return;
+    // Selecting a feat replaces the plan's pick at once. A feat offering +1 to one of several abilities
+    // stays pending (no featAbility) until one is chosen below, and the step rejects it until then.
     onPick({
       ...slot,
       type: "feat",

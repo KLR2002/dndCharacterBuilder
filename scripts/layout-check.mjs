@@ -1772,6 +1772,85 @@ async function checkLevelUpHpState(ctx, width) {
   return failures;
 }
 
+// Whether the flow's Continue is enabled, polling briefly for the re-render after a tap.
+async function continueEnabledSoon(page, timeoutMs = 4000) {
+  return page
+    .waitForFunction(
+      () => {
+        const el = [...document.querySelectorAll("*")].find((e) => e.children.length === 0 && e.textContent === "Continue");
+        const target = el?.closest("[tabindex]");
+        return target && target.getAttribute("aria-disabled") !== "true";
+      },
+      null,
+      { timeout: timeoutMs }
+    )
+    .then(() => true)
+    .catch(() => false);
+}
+
+// Selecting any feat replaces the plan's pick at once: a no-choice feat completes the ASI/Feat step, then
+// a feat with an ability choice leaves Continue disabled until the ability is chosen, and Review lists the
+// second feat. The choice feat needs the integrated catalog; the SRD Baseline offers only one feat.
+async function checkLevelUpFeatReplace(ctx, width) {
+  const page = await ctx.newPage();
+  const prefix = `[${width}px level-up feat replace]`;
+  let failures = 0;
+  const fail = (msg) => {
+    failures++;
+    console.log(`${prefix} ${msg}`);
+  };
+  await openLevelUp(page); // picks the held Ranger, lands on the Hit Points step
+  await page.getByLabel("Average hit points").first().click();
+  await page.waitForTimeout(300);
+  // Walk to the ASI/Feat step, picking the first offered subclass on the way.
+  for (let i = 0; i < 4; i++) {
+    const sub = page.getByLabel(/^Subclass /).first();
+    if ((await sub.count()) > 0) {
+      await sub.click();
+      await page.waitForTimeout(300);
+    }
+    await continueFlow(page, fail);
+    if ((await page.getByRole("button", { name: "Feat", exact: true }).count()) > 0) break;
+  }
+  await page.getByRole("button", { name: "Feat", exact: true }).first().click();
+  await page.waitForTimeout(400);
+  const noChoiceFeat = INTEGRATED ? "Alert" : "Grappler";
+  const choiceFeat = "Athlete";
+  await page.getByRole("button", { name: `Feat ${noChoiceFeat}`, exact: true }).first().click();
+  await page.waitForTimeout(500);
+  if (!(await continueEnabledSoon(page))) fail(`picking ${noChoiceFeat} (no ability choice) did not complete the ASI/Feat step`);
+  if (INTEGRATED) {
+    await page.getByRole("button", { name: `Feat ${choiceFeat}`, exact: true }).first().click();
+    await page.waitForTimeout(500);
+    if (await continueEnabledSoon(page))
+      fail(`tapping ${choiceFeat} left Continue enabled: the plan still holds the replaced pick ${noChoiceFeat}`);
+    const strChip = page.getByLabel("STR +1").first();
+    if ((await strChip.count()) === 0) fail(`tapping ${choiceFeat} did not show its ability chips`);
+    else {
+      await strChip.click();
+      await page.waitForTimeout(400);
+      if (!(await continueEnabledSoon(page))) fail(`choosing STR +1 did not complete the ASI/Feat step`);
+    }
+  }
+  // Walk to Review (the level may bring a Spells step after ASI/Feat).
+  for (let i = 0; i < 4; i++) {
+    if ((await page.getByText("Level up", { exact: true }).count()) > 0) break;
+    const learn = page.getByLabel(/^Learn /).first();
+    if ((await learn.count()) > 0) {
+      await learn.click();
+      await page.waitForTimeout(300);
+    }
+    await continueFlow(page, fail);
+  }
+  const listedFeat = INTEGRATED ? choiceFeat : noChoiceFeat;
+  if (!(await waitForVisibleText(page, listedFeat))) fail(`Review does not list "${listedFeat}"`);
+  if (INTEGRATED && (await page.getByText(noChoiceFeat, { exact: true }).first().isVisible().catch(() => false)))
+    fail(`Review still lists "${noChoiceFeat}": the replaced pick was applied`);
+  await page.screenshot({ path: join(SHOTS, `LevelUp-FeatReplace-${width}.png`) });
+  await page.close();
+  return failures;
+}
+
 // At total level 20 the sheet's header hides Level up (no level left to gain) and keeps Edit Build.
 async function checkLevelUpHiddenAtMaxLevel(ctx, width) {
   const page = await ctx.newPage();
@@ -2130,6 +2209,7 @@ const EXTRA_CHECKS = [
   { name: "Dice tray and Roll Log", run: checkDiceTrayAndLog },
   { name: "Level-Up Flow HP roll logged", run: checkLevelUpHpRollLogged },
   { name: "Level-Up Flow HP state", run: checkLevelUpHpState },
+  { name: "Level-Up Flow feat replace", run: checkLevelUpFeatReplace },
   { name: "Level-Up Flow HP modifier sign", run: checkLevelUpHpModifierSign },
   { name: "Level up hidden at level 20", run: checkLevelUpHiddenAtMaxLevel },
   { name: "Level-Up Flow cancel and review", run: checkLevelUpCancelAndReview },
