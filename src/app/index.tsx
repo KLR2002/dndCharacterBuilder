@@ -5,6 +5,7 @@ import {
   Alert,
   Image,
   Platform,
+  Pressable,
   ScrollView,
   StyleSheet,
   Text,
@@ -22,6 +23,8 @@ import { Modal } from "../components/ui/Modal";
 import { SearchBar } from "../components/ui/SearchBar";
 import { useCharacters } from "../context/CharacterContext";
 import { useAppTheme } from "../context/ThemeContext";
+import { useResponsiveLayout } from "../hooks/useResponsiveLayout";
+import { useSerifFont } from "../hooks/useSerifFont";
 import { currentCreationStep, isCreationFinished } from "../rules/creationFlow";
 import { evaluateCharacter } from "../rules/characterEvaluation";
 import { currentCompendium } from "../services/compendium";
@@ -30,6 +33,12 @@ import { Character, Folder } from "../types/character";
 export default function HomeScreen() {
   const router = useRouter();
   const { theme } = useAppTheme();
+  const { width, isTablet } = useResponsiveLayout();
+  const serif = useSerifFont();
+  // Home is a list on phones and a card grid at 768px and up.
+  const grid = isTablet;
+  const cols = width >= 1200 ? 3 : 2;
+  const cardBasis = cols === 3 ? "31%" : "48%";
   const {
     characters,
     folders,
@@ -160,10 +169,12 @@ export default function HomeScreen() {
     });
   }, [characters, searchQuery]);
 
-  // Group characters by folder
-  const { folderMap, uncategorized } = useMemo(() => {
+  // Group characters by folder; drafts are listed with the uncategorized on phones and get their own
+  // group in the wide grid.
+  const { folderMap, uncategorized, uncatDrafts } = useMemo(() => {
     const map: Record<string, Character[]> = {};
     const uncat: Character[] = [];
+    const drafts: Character[] = [];
 
     for (const f of folders) {
       map[f.id] = [];
@@ -172,18 +183,21 @@ export default function HomeScreen() {
     for (const char of filteredCharacters) {
       if (char.folderId && map[char.folderId]) {
         map[char.folderId].push(char);
+      } else if (!isCreationFinished(char)) {
+        drafts.push(char);
       } else {
         uncat.push(char);
       }
     }
 
-    return { folderMap: map, uncategorized: uncat };
+    return { folderMap: map, uncategorized: uncat, uncatDrafts: drafts };
   }, [folders, filteredCharacters]);
 
-  const renderCharacterCard = (char: Character) => {
+  // One home entry: a full-width row on phones, a card in the wide grid. It keeps the person icon, the
+  // row buttons and the Lvl badge; drafts read "Draft · <step>" and carry no level or sub-line.
+  const renderCharacterCard = (char: Character, card = false) => {
     const evaluated = evaluateCharacter(char, { compendium: currentCompendium(), activeBooks });
     const totalLevel = evaluated.totalLevel;
-    const maxHp = evaluated.hp.max;
     const primaryClass = char.classes[0]?.className || "Class Unset";
     const raceName = char.race?.name || "Race Unset";
     // A draft opens into the Creation Flow on its step, never the sheet.
@@ -191,106 +205,119 @@ export default function HomeScreen() {
     const draftStep = draft ? currentCreationStep(char, { activeBooks }) : null;
     const cardTitle = draft ? `Draft · ${draftStep ? STEP_TITLES[draftStep] : ""}` : char.name || "Unnamed";
 
+    // Pressable, not TouchableOpacity: on web a TouchableOpacity renders a <button>, and nesting one
+    // inside the row's <button> is invalid HTML.
+    const rowButtons = (
+      <View style={styles.cardActionsRow}>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={`Move ${cardTitle} to folder`}
+          hitSlop={{ top: 4, bottom: 4, left: 4, right: 4 }}
+          onPress={(e) => {
+            e.stopPropagation();
+            setMoveCharModal({ visible: true, char });
+          }}
+          style={styles.rowAction}>
+          <Ionicons name="folder-outline" size={18} color={theme.textSecondary} />
+        </Pressable>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={`Delete ${cardTitle}`}
+          hitSlop={{ top: 4, bottom: 4, left: 4, right: 4 }}
+          onPress={(e) => {
+            e.stopPropagation();
+            confirmDeleteCharacter(char);
+          }}
+          style={styles.rowAction}>
+          <Ionicons name="trash-outline" size={18} color={theme.danger} />
+        </Pressable>
+      </View>
+    );
+
+    const avatar = (
+      <View
+        style={[
+          styles.cardAvatarBox,
+          {
+            backgroundColor: theme.surfaceHighlight,
+            borderColor: draft ? theme.border : theme.accentBorder,
+          },
+        ]}>
+        {char.avatarUri ? (
+          <Image source={{ uri: char.avatarUri }} style={styles.cardAvatarImage} resizeMode="cover" />
+        ) : (
+          <Ionicons name="person" size={24} color={draft ? theme.textMuted : theme.accentHover} />
+        )}
+      </View>
+    );
+
     return (
       <TouchableOpacity
         key={char.id}
+        testID={`home-entry-${char.id}`}
+        accessibilityRole="button"
+        accessibilityLabel={cardTitle}
         onPress={() => router.push((draft ? `/build/${char.id}` : `/character/${char.id}`) as any)}
         style={[
           styles.characterCard,
-          {
-            backgroundColor: theme.surface,
-            borderColor: theme.border,
-          },
-        ]}
-      >
-        {/* Character Avatar / Placeholder */}
-        <View
-          style={[
-            styles.cardAvatarBox,
-            {
-              backgroundColor: theme.surfaceHighlight,
-              borderColor: theme.accentHover,
-            },
-          ]}
-        >
-          {char.avatarUri ? (
-            <Image
-              source={{ uri: char.avatarUri }}
-              style={styles.cardAvatarImage}
-              resizeMode="cover"
-            />
-          ) : (
-            <Ionicons name="person" size={24} color={theme.accentHover} />
-          )}
-        </View>
+          { backgroundColor: theme.surface, borderColor: theme.border },
+          draft && styles.cardDraft,
+          card && styles.characterCardGrid,
+        ]}>
+        {card ? (
+          <View style={styles.cardTopRow}>
+            {avatar}
+            {rowButtons}
+          </View>
+        ) : (
+          avatar
+        )}
 
-        {/* Info */}
-        <View style={{ flex: 1, minWidth: 0 }}>
-          <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+        <View style={{ flex: 1, minWidth: 0, marginTop: card ? 10 : 0 }}>
+          <View style={styles.cardNameRow}>
             <Text
-              style={[styles.charCardName, { color: theme.text }]}
-              numberOfLines={1}
-            >
+              style={[
+                styles.charCardName,
+                { color: draft ? theme.textSecondary : theme.text },
+                !draft && { fontFamily: serif },
+              ]}
+              numberOfLines={1}>
               {cardTitle}
             </Text>
-            <Badge label={`Lvl ${totalLevel}`} variant="accent" size="sm" />
+            {!draft && <Badge label={`Lvl ${totalLevel}`} variant="accent" size="sm" />}
           </View>
 
-          <Text
-            style={{ color: theme.textSecondary, fontSize: 12, marginTop: 2 }}
-            numberOfLines={1}
-          >
-            {raceName} • {primaryClass}
-          </Text>
+          {!draft && (
+            <Text style={{ color: theme.textSecondary, fontSize: 12, marginTop: 2 }} numberOfLines={1}>
+              {raceName} • {primaryClass}
+            </Text>
+          )}
 
-          <View
-            style={{
-              flexDirection: "row",
-              alignItems: "center",
-              gap: 6,
-              marginTop: 4,
-            }}
-          >
-            <Badge
-              label={`HP: ${char.currentHp}/${maxHp}`}
-              variant={char.currentHp > 0 ? "success" : "danger"}
-              size="sm"
-            />
-            {char.alignment ? (
+          {!draft && char.alignment ? (
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginTop: 4 }}>
               <Badge label={char.alignment} variant="secondary" size="sm" />
-            ) : null}
-          </View>
+            </View>
+          ) : null}
         </View>
 
-        {/* Quick Actions */}
-        <View style={styles.cardActionsCol}>
-          <TouchableOpacity
-            onPress={(e) => {
-              e.stopPropagation();
-              setMoveCharModal({ visible: true, char });
-            }}
-            style={styles.iconBtn}
-          >
-            <Ionicons
-              name="folder-outline"
-              size={18}
-              color={theme.textSecondary}
-            />
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            onPress={(e) => {
-              e.stopPropagation();
-              confirmDeleteCharacter(char);
-            }}
-            style={styles.iconBtn}
-          >
-            <Ionicons name="trash-outline" size={18} color={theme.danger} />
-          </TouchableOpacity>
-        </View>
+        {!card ? rowButtons : null}
       </TouchableOpacity>
     );
   };
+
+  const gridCards = (chars: Character[]) => (
+    <View style={styles.grid}>
+      {chars.map((char) => (
+        <View key={char.id} style={{ flexBasis: cardBasis, flexGrow: 1, maxWidth: "100%" }}>
+          {renderCharacterCard(char, true)}
+        </View>
+      ))}
+    </View>
+  );
+
+  const listRows = (chars: Character[]) => (
+    <View style={{ gap: 8 }}>{chars.map((char) => renderCharacterCard(char, false))}</View>
+  );
 
   return (
     <SafeAreaView
@@ -478,8 +505,10 @@ export default function HomeScreen() {
                     >
                       Folder is empty.
                     </Text>
+                  ) : grid ? (
+                    gridCards(charsInFolder)
                   ) : (
-                    charsInFolder.map(renderCharacterCard)
+                    listRows(charsInFolder)
                   )}
                 </View>
               )}
@@ -488,7 +517,7 @@ export default function HomeScreen() {
         })}
 
         {/* Uncategorized Characters */}
-        {uncategorized.length > 0 && (
+        {(uncategorized.length > 0 || (!grid && uncatDrafts.length > 0)) && (
           <View style={styles.folderSection}>
             {folders.length > 0 && (
               <View
@@ -507,14 +536,42 @@ export default function HomeScreen() {
                 <Text
                   style={[styles.sectionTitle, { color: theme.textSecondary }]}
                 >
-                  UNCATEGORIZED ({uncategorized.length})
+                  UNCATEGORIZED ({uncategorized.length + (grid ? 0 : uncatDrafts.length)})
                 </Text>
               </View>
             )}
 
-            <View style={{ gap: 8 }}>
-              {uncategorized.map(renderCharacterCard)}
+            {grid ? (
+              gridCards(uncategorized)
+            ) : (
+              listRows([...uncategorized, ...uncatDrafts])
+            )}
+          </View>
+        )}
+
+        {/* Drafts get their own group in the wide grid */}
+        {grid && uncatDrafts.length > 0 && (
+          <View style={styles.folderSection}>
+            <View
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                gap: 6,
+                marginBottom: 8,
+              }}
+            >
+              <Ionicons
+                name="document-outline"
+                size={16}
+                color={theme.textMuted}
+              />
+              <Text
+                style={[styles.sectionTitle, { color: theme.textSecondary }]}
+              >
+                DRAFTS ({uncatDrafts.length})
+              </Text>
             </View>
+            {gridCards(uncatDrafts)}
           </View>
         )}
       </ScrollView>
@@ -644,7 +701,7 @@ const styles = StyleSheet.create({
   },
   headerBarInner: {
     width: "100%",
-    maxWidth: 1024,
+    maxWidth: 1200,
     alignSelf: "center",
     flexDirection: "row",
     justifyContent: "space-between",
@@ -678,7 +735,7 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     width: "100%",
-    maxWidth: 1024,
+    maxWidth: 1200,
     alignSelf: "center",
     padding: 16,
     paddingBottom: 40,
@@ -750,6 +807,41 @@ const styles = StyleSheet.create({
     gap: 12,
     marginBottom: 8,
   },
+  characterCardGrid: {
+    flexDirection: "column",
+    alignItems: "stretch",
+    marginBottom: 0,
+    height: "100%",
+  },
+  cardDraft: {
+    borderStyle: "dashed",
+  },
+  cardTopRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+  },
+  cardNameRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+  cardActionsRow: {
+    flexDirection: "row",
+    flexShrink: 0,
+    marginLeft: "auto",
+  },
+  grid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 12,
+  },
+  rowAction: {
+    width: 44,
+    height: 44,
+    alignItems: "center",
+    justifyContent: "center",
+  },
   cardAvatarBox: {
     width: 48,
     height: 48,
@@ -767,13 +859,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "700",
   },
-  cardActionsCol: {
-    gap: 6,
-    paddingLeft: 4,
-  },
-  iconBtn: {
-    padding: 6,
-  },
+
   input: {
     minHeight: 44,
     borderRadius: 6,
