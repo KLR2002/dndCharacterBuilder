@@ -39,6 +39,7 @@ One spec, `.scratch/app-redesign/spec.md`, covering the Creation Flow, the Level
 - [05: Level-Up Flow and dice prototype](issues/05-level-up-and-dice-prototype.md): pool-builder tray; tap a bonus to roll, hold for a Disadvantage / Roll / Advantage sheet; a result card above the dice button, Roll Log as a tab in the tray; Level-Up Flow in the Creation Flow's layout.
 - [20: Character sheet and Home](issues/20-sheet-and-home-restyle.md): all six tabs in one bottom bar on phones; compact header with a menu on phones, header actions in the left rail at 768px and up; two columns on wide screens; Home a list on phones, a grid on wide screens.
 - [21: Character sheet and Home restyle](issues/21-sheet-and-home-build.md): build ticket for ticket 20's picks, ready-for-agent.
+- [22: Builder and flow overflows at wide widths](issues/22-wide-builder-overflows.md): 13 pre-existing violations at 768/1280; wide widths join the default layout run. ready-for-agent.
 - Build: tickets 06-14 landed on `feat/app-redesign` at `a7a1e85`, gate PASS (`evidence.md`). Tickets 15-19 landed at `cf714f8`, gate PASS (`evidence.md`, "Tickets 15-19"). Tickets 05 and 20 resolved; ticket 21 (sheet and Home restyle) is ready-for-agent.
 
 ## Not yet specified
