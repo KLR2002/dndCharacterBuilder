@@ -2085,11 +2085,19 @@ async function checkLevelUpCancelAndReview(ctx, width) {
   const storedBefore = await readStoredCharacter(page, LU_ID);
   const levelBefore = totalLevelOf(storedBefore);
   const levelUpBtn = page.getByText("Level up", { exact: true }).first();
-  // A real double-tap: two click events on the same button, before React re-renders it disabled.
-  await levelUpBtn.evaluate((el) => {
-    el.click();
-    el.click();
+  // A real double-tap, witnessed against the applying guard itself: both presses fire inside one
+  // synchronous handler, so the second runs before React re-renders the button (React batches the
+  // presses and flushes after the handler). The guard's own trace is read once that flush has run:
+  // the button must read disabled. The level check below cannot tell the guard from the stale-plan
+  // refusal behind it, so without this assertion the check passes even with the guard removed.
+  const guardEngaged = await levelUpBtn.evaluate(async (el) => {
+    const btn = el.closest("[tabindex]") ?? el;
+    btn.click();
+    btn.click();
+    await new Promise((resolve) => setTimeout(resolve, 120));
+    return btn.getAttribute("aria-disabled") === "true";
   });
+  if (!guardEngaged) fail('"Level up" never read disabled after the double-tap: the applying guard did not engage');
   await page.waitForTimeout(1500);
   if (!page.url().includes(`/character/${LU_ID}`)) fail(`"Level up" did not return to the sheet: ${page.url()}`);
   if (!(await waitForVisibleText(page, "Lvl 4")))
