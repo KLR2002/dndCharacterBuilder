@@ -1,6 +1,8 @@
 # 15: Dice tray, floating button and Roll Log
 
-**Status:** ready-for-agent
+**Status:** done
+
+**Landed:** feat/app-redesign at cf714f8 (with review repairs R5a, R5b, R6-R9). Gate PASS: check:all, check:live, layout:check (SRD and integrated), layout:android (dice, modal, Actions, Stats, Level-Up Flow scenarios). Evidence: `.scratch/app-redesign/evidence.md`, "Tickets 15-19". Open items: see its advisory dispositions.
 
 ## What to build
 
@@ -13,8 +15,8 @@ A floating dice button at the bottom-right of every screen (the sheet and both f
 
 ## Acceptance Criteria
 
-- [ ] AC-32: The floating dice button opens a tray on every screen (spec, AC-32)
-- [ ] AC-24: The Roll Log names character and source, for this session only (spec, AC-24)
+- [x] AC-32: The floating dice button opens a tray on every screen (spec, AC-32)
+- [x] AC-24: The Roll Log names character and source, for this session only (spec, AC-24)
 
 ## Verification
 

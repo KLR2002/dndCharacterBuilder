@@ -28,7 +28,7 @@ Required gate: PASS. The swipe-down close on Android was proven by hand on the e
 | AC-28 | 10 | layout "Modal closing" check (backdrop, Escape, handle, swipe; unsaved-input question; two mutations red); `checks/modalShellGuard.test.ts` |
 | AC-29 | 14 | layout modal-shape assertions per width; emulator swipe proof; `layout:android` |
 
-Not built: AC-16, 22-26, 30-32 (tickets 15-19, blocked by decision ticket 05).
+AC-16, 22-26, 30-32: tickets 15-19, below.
 
 ## Review
 
@@ -55,3 +55,58 @@ Earlier, ticket-level reviews sent back 06 (class skill picks in Class Choices),
 - Native: only the modal scenarios ran on Android; Creation Flow inputs follow the Android input rules but were not run on the emulator.
 - Wide screens: checked on web at 1280 by the implementers and by screenshot review; `layout:check` itself covers phone widths.
 - Level up uses the interim path (`/build/<id>?step=class&mode=levelup`) until ticket 18.
+
+# Evidence: tickets 15-19 on feat/app-redesign
+
+Tree: `cf714f8` (merge of review repair R9), clean. Run from a separate worktree on `feat/app-redesign`.
+
+## Required gate (AGENTS.md)
+
+| Check | Command | Result | Exit |
+| --- | --- | --- | --- |
+| lint, typecheck, tests | `npm run check:all` | pass: 2115 app tests (94 skipped live-only) + 307 scraper tests | 0 |
+| live catalog | `npm run check:live` | pass: 140 tests | 0 |
+| layout, SRD | `npm run layout:check` | GREEN: no layout violations (320/360/393/412) | 0 |
+| layout, integrated | `npm run layout:check -- --integrated` | GREEN: no layout violations (320/360/393/412) | 0 |
+| native | `ONLY="Settings,Rest modal,Conditions modal,Actions,Stats,Dice button,Level-Up Flow" npm run layout:android` | run finished, 72 screenshots, none failed (4 widths) | 0 |
+
+Required gate: PASS.
+
+## Acceptance criteria
+
+| AC | Owner | Verification |
+| --- | --- | --- |
+| AC-32 | 15 | layout scenarios "Dice button on the character list / on Options / on sheet / in Creation Flow / in Edit Build / in Level-Up Flow" (web and Android); `checkDiceTrayAndLog` (tray rolls a pool; button above the flow's bottom bar under 768px, step content padded) |
+| AC-24 | 15 | `checks/rollLog.test.ts`; `checkDiceTrayAndLog` (character and source, newest first, empty after a reload) |
+| AC-22 | 16 | `checks/actionRolls.test.ts`; `checkActionRolls` (attack, damage, crit follow-up, hold sheet) |
+| AC-23 | 16 | `checkActionRolls` browser oracle: the saved Character is unchanged after rolls (mutation red) |
+| AC-31 | 17 | `checks/statRolls.test.ts`; `checkStatsRolls` (check, save, skill with the expected bonus; advantage shows two d20s) |
+| AC-16, AC-30 | 18 | `checks/levelUpFlow.test.ts`, `checks/levelUpFlowPlan.test.ts`; `checkSpellsAfterLevelUp`, `checkLevelUpHpRollLogged`, `checkLevelUpHpState`, `checkLevelUpHpPerClass`, `checkLevelUpFeatReplace`, `checkLevelUpFeatSubChoiceChips`, `checkLevelUpCancelAndReview` (double-tap guard: red with the guard removed) |
+| AC-25, AC-26 | 19 | `checks/diceAnimation.test.ts`; `checkDiceAnimation` (result shown before the dice settle; Settings switch turns 3D dice off) |
+
+## Review
+
+Sonnet reviewers on each ticket, then on the integrated diff and on each repair. Blocking and should-fix findings and their repairs:
+
+- R5a/R5b: sole subclass applied early; feat sub-choices dropped; stale feat pick; double apply; Hit Points state and re-roll by switching class; `classStepMinLevel` regression; level 20 cap; empty subclass step; "+-1"; spell to-hit only for spell attacks; accessible names; AC-23 oracle; tray cap 100; result card auto-dismiss, Natural 20 only on d20 tests, announcements, 48dp targets; `matchMedia` SSR guard.
+- R6: a feat selection replaces the plan's pick at once; single offered subclass is the plan's pick; per-class plan cache; feat sub-choice cap; one announcement mechanism per platform.
+- R7: the flows' step padding follows the flow's own 768px breakpoint (R6 had moved it to 600, letting the dice button cover the last rows at 600-767).
+- R8: the ASI/Feat step reads its selection from the plan (it forgot a pending feat after a remount); a half-finished ASI replaces a feat; the double-tap witness tests the guard; Android announces explicitly, web keeps one always-mounted live region.
+- R9 (found by `layout:android`): the sheet's draft redirect read the selected character instead of the route's, so a deep link to a draft from a character's sheet opened that character's build (app bug); the Android runner left a modal open across a same-route deep link, swiped open sheets closed and tapped under the floating dice button (runner).
+
+## Advisory dispositions
+
+- Dice icon in roll badges, spell level on Spells step rows, the tray keeping the last pool: kept (seen in the prototype).
+- Spells step uncapped in the Level-Up Flow: the Spells tab enforces the limits (spec).
+- Glossary entries for the dice tray and the result card: deferred.
+- `SIDEKICK_CLASSES` is a non-SRD list in `src/`: a single copy now; moving it to catalog data is deferred (ADR 0014).
+- Stats row height, the sheet header and tab bar: ticket 21.
+- Plan cache in the Level-Up Flow is not invalidated by a catalog resync mid-flow: low likelihood, accepted.
+- E2E hooks are absent from production builds by `EXPO_PUBLIC_E2E`, not tested.
+- Champion Improved Critical and cantrip damage scaling are not rollable from the badge: out of scope.
+- The web live region is hidden with opacity 0: works with the screen readers checked by the layout run's ARIA assertions only.
+
+## Residual risk
+
+- Native: hold-to-roll and TalkBack announcements were not exercised on the emulator (the runner takes screenshots and does not long-press or listen).
+- Wide screens: the sheet and Home restyle is ticket 21; tickets 15-19 checked 768 and 1280 only in targeted runs (`WIDTHS=360,700,768,1280` for the dice and flow padding).

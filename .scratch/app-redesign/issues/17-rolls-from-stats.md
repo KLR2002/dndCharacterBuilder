@@ -1,6 +1,8 @@
 # 17: Rolls from the Stats tab
 
-**Status:** ready-for-agent
+**Status:** done
+
+**Landed:** feat/app-redesign at cf714f8 (with review repairs R5a, R5b, R6-R9). Gate PASS: check:all, check:live, layout:check (SRD and integrated), layout:android (dice, modal, Actions, Stats, Level-Up Flow scenarios). Evidence: `.scratch/app-redesign/evidence.md`, "Tickets 15-19". Open items: see its advisory dispositions.
 
 ## What to build
 
@@ -14,7 +16,7 @@ Each bonus badge rolls on a tap with no advantage; holding it opens the roll she
 
 ## Acceptance Criteria
 
-- [ ] AC-31: The Stats tab rolls checks, saves and skills (spec, AC-31)
+- [x] AC-31: The Stats tab rolls checks, saves and skills (spec, AC-31)
 
 ## Verification
 

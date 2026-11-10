@@ -1,6 +1,8 @@
 # 19: Dice animation
 
-**Status:** ready-for-agent
+**Status:** done
+
+**Landed:** feat/app-redesign at cf714f8 (with review repairs R5a, R5b, R6-R9). Gate PASS: check:all, check:live, layout:check (SRD and integrated), layout:android (dice, modal, Actions, Stats, Level-Up Flow scenarios). Evidence: `.scratch/app-redesign/evidence.md`, "Tickets 15-19". Open items: see its advisory dispositions.
 
 ## What to build
 
@@ -13,8 +15,8 @@ Rolls show 2.5D dice (Reanimated transforms over View and SVG faces) in the curr
 
 ## Acceptance Criteria
 
-- [ ] AC-25: The result never waits for the dice (spec, AC-25)
-- [ ] AC-26: 3D dice can be switched off (spec, AC-26)
+- [x] AC-25: The result never waits for the dice (spec, AC-25)
+- [x] AC-26: 3D dice can be switched off (spec, AC-26)
 
 ## Verification
 

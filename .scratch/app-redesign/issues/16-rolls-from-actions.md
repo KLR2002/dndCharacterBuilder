@@ -1,6 +1,8 @@
 # 16: Rolls from the Actions tab
 
-**Status:** ready-for-agent
+**Status:** done
+
+**Landed:** feat/app-redesign at cf714f8 (with review repairs R5a, R5b, R6-R9). Gate PASS: check:all, check:live, layout:check (SRD and integrated), layout:android (dice, modal, Actions, Stats, Level-Up Flow scenarios). Evidence: `.scratch/app-redesign/evidence.md`, "Tickets 15-19". Open items: see its advisory dispositions.
 
 ## What to build
 
@@ -15,8 +17,8 @@ A tap on the "to hit" badge rolls at once with no advantage; holding it opens a 
 
 ## Acceptance Criteria
 
-- [ ] AC-22: The Actions tab rolls attacks and damage (spec, AC-22)
-- [ ] AC-23: Rolls spend nothing (spec, AC-23)
+- [x] AC-22: The Actions tab rolls attacks and damage (spec, AC-22)
+- [x] AC-23: Rolls spend nothing (spec, AC-23)
 
 ## Verification
 

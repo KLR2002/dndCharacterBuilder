@@ -1,6 +1,8 @@
 # 18: Level-Up Flow screens
 
-**Status:** ready-for-agent
+**Status:** done
+
+**Landed:** feat/app-redesign at cf714f8 (with review repairs R5a, R5b, R6-R9). Gate PASS: check:all, check:live, layout:check (SRD and integrated), layout:android (dice, modal, Actions, Stats, Level-Up Flow scenarios). Evidence: `.scratch/app-redesign/evidence.md`, "Tickets 15-19". Open items: see its advisory dispositions.
 
 ## What to build
 
@@ -13,8 +15,8 @@ Level up on the character header opens the Level-Up Flow driven by the level-up 
 
 ## Acceptance Criteria
 
-- [ ] AC-16: The Spells tab still learns and swaps spells (spec, AC-16)
-- [ ] AC-30: A level-up Hit Points roll is logged (spec, AC-30)
+- [x] AC-16: The Spells tab still learns and swaps spells (spec, AC-16)
+- [x] AC-30: A level-up Hit Points roll is logged (spec, AC-30)
 
 ## Verification
 
