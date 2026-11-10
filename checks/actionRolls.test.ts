@@ -4,7 +4,7 @@ import { ALL_BOOKS } from "../src/constants/books.ts";
 import { makeChar } from "./testUtils.ts";
 import { evaluateCharacter } from "../src/rules/characterEvaluation.ts";
 import { getTacticalActionLedger } from "../src/rules/tacticalActions.ts";
-import { damagePoolOf, rollActionAttack, rollActionDamage } from "../src/rules/actionRolls.ts";
+import { damagePoolOf, pressRollBadge, rollActionAttack, rollActionDamage } from "../src/rules/actionRolls.ts";
 import type { RollLogEntryInput } from "../src/rules/rollLog.ts";
 import { appRandom, currentRandom, __setRandomSourceForTests, rollD20, type RandomSource } from "../src/rules/dice.ts";
 
@@ -17,7 +17,7 @@ function fixedFaces(faces: number[]): RandomSource {
   };
 }
 
-/** A spellcaster with spent slots, a used feature counter, a used hit die and ammunition in the pack. */
+/** A spellcaster with spell slots left, a limited-use feature with uses left and ammunition in the pack. */
 function spellcasterWithSpentResources() {
   return makeChar({
     id: "char_action_rolls",
@@ -29,25 +29,30 @@ function spellcasterWithSpentResources() {
     sorceryPointsUsed: 2,
     usedHitDice: { d6: 1 },
     resourceCounters: {
-      second_wind: { id: "second_wind", name: "Second Wind", current: 0, max: 1, resetOn: "short" },
+      second_wind: { id: "second_wind", name: "Second Wind", current: 1, max: 1, resetOn: "short" },
     },
     items: [
       { id: "w1", name: "Dagger", source: "PHB", quantity: 1, isEquipped: true, section: "equipped", damage: "1d4", damageType: "piercing" },
-      { id: "ammo", name: "Arrows (20)", source: "SRD", quantity: 1, isEquipped: false, section: "carried" },
+      { id: "ammo", name: "Arrows (20)", source: "SRD", quantity: 20, isEquipped: false, section: "carried" },
     ],
   });
 }
 
-test("rolling an attack and its damage through the tab's code path leaves slots, uses and ammunition unchanged", () => {
+test("rolling an attack, its damage and a spell attack through the badge path leaves slots, uses and ammunition unchanged", () => {
   const char = spellcasterWithSpentResources();
   const before = JSON.parse(JSON.stringify(char));
 
+  // The tab's code path: the character flows through the engine and the ledger, and each badge tap goes
+  // through pressRollBadge, the same handler RollBadge calls.
   const evaluated = evaluateCharacter(char, { activeBooks: ALL_BOOKS });
   const ledger = getTacticalActionLedger(char, evaluated, { activeBooks: ALL_BOOKS });
   const attack = ledger.weaponAttacks.find((a) => a.name === "Dagger");
   assert.ok(attack);
   assert.equal(attack.attackBonus, 4);
   assert.equal(attack.damage, "1d4 + 2");
+  const fireBolt = ledger.spellAttacks.find((s) => s.name === "Fire Bolt");
+  assert.ok(fireBolt);
+  assert.equal(fireBolt.attackBonus, 5);
 
   // The publish seam the Roll Log provider hands the badge: entries only, no Character write.
   const entries: RollLogEntryInput[] = [];
@@ -56,9 +61,19 @@ test("rolling an attack and its damage through the tab's code path leaves slots,
   };
 
   const fixed = fixedFaces([15, 4]);
-  const sources = { source: `${attack.name} attack`, damageSource: `${attack.name} damage`, characterName: char.name };
-  const roll = rollActionAttack(attack, sources, "none", publish, fixed);
-  assert.equal(roll.total, 15 + 4);
+  const roll = pressRollBadge(
+    {
+      modifier: attack.attackBonus,
+      pool: damagePoolOf(attack.damage) ?? undefined,
+      source: `${attack.name} attack`,
+      poolSource: `${attack.name} damage`,
+      characterName: char.name,
+    },
+    "none",
+    publish,
+    fixed,
+  );
+  assert.equal(roll?.total, 15 + 4);
   assert.equal(entries.length, 1);
   assert.equal(entries[0].source, "Dagger attack");
   assert.equal(entries[0].characterName, "Elowen");
@@ -78,7 +93,25 @@ test("rolling an attack and its damage through the tab's code path leaves slots,
   assert.equal(damage.roll.modifier, 2);
   assert.equal(damage.roll.total, 6);
 
-  // The roll spent nothing.
+  // The spell row's badge tap: a d20 with the profile's bonus, no damage pool on a cantrip.
+  const spellRoll = pressRollBadge(
+    {
+      modifier: fireBolt.attackBonus,
+      pool: damagePoolOf(fireBolt.damage) ?? undefined,
+      source: `${fireBolt.name} attack`,
+      poolSource: `${fireBolt.name} damage`,
+      characterName: char.name,
+    },
+    "none",
+    publish,
+    fixed,
+  );
+  assert.equal(spellRoll?.total, 15 + 5);
+  assert.equal(entries.length, 3);
+  assert.equal(entries[2].source, "Fire Bolt attack");
+  assert.equal(entries[2].followUp, undefined);
+
+  // The rolls spent nothing.
   assert.deepEqual(JSON.parse(JSON.stringify(char)), before);
 });
 
@@ -141,6 +174,31 @@ test("the ledger gives spell attack rows the casting profile's attack bonus", ()
   assert.equal(fireBolt.attackBonus, 5);
 });
 
+test("a spell row gets an attack bonus only when the spell makes a spell attack (SRD records)", () => {
+  const char = makeChar({
+    id: "char_spell_attack_rows",
+    name: "Bryn",
+    classes: [{ className: "Wizard", source: "PHB", level: 3 }],
+    baseAbilityScores: { str: 8, dex: 14, con: 12, int: 16, wis: 12, cha: 10 },
+    knownSpells: ["Fire Bolt", "Ray of Frost", "Sacred Flame", "Light", "Fireball"].map((name) => ({
+      name,
+      source: "PHB",
+      ownerKey: "Wizard__PHB",
+    })),
+  });
+  const evaluated = evaluateCharacter(char, { activeBooks: ALL_BOOKS });
+  const ledger = getTacticalActionLedger(char, evaluated, { activeBooks: ALL_BOOKS });
+  const byName = new Map(ledger.spellAttacks.map((s) => [s.name, s]));
+  // Ranged spell attack cantrips roll the profile's bonus, so their rows show a "to hit" badge.
+  assert.equal(byName.get("Fire Bolt")?.attackBonus, 5);
+  assert.equal(byName.get("Ray of Frost")?.attackBonus, 5);
+  // Save-based or utility spells keep their row (and any damage badge) but get no "to hit" badge.
+  for (const name of ["Sacred Flame", "Light", "Fireball"]) {
+    assert.ok(byName.has(name), `the ${name} row is missing from the ledger`);
+    assert.equal(byName.get(name)?.attackBonus, undefined, `${name} must not carry an attack bonus`);
+  }
+});
+
 test("a multiclass caster's spell rows get the owning profile's bonus; an unowned spell gets none", () => {
   const char = makeChar({
     id: "char_multi_caster",
@@ -158,12 +216,14 @@ test("a multiclass caster's spell rows get the owning profile's bonus; an unowne
   });
   const evaluated = evaluateCharacter(char, { activeBooks: ALL_BOOKS });
   const ledger = getTacticalActionLedger(char, evaluated, { activeBooks: ALL_BOOKS });
-  // Cleric casts with Wis (+3), Wizard with Int (+2); proficiency +2 at total level 2.
+  // Cleric casts with Wis (+3), Wizard with Int (+2); proficiency +2 at total level 2. Fire Bolt makes a
+  // ranged spell attack, so its row carries the owning Wizard profile's bonus; Sacred Flame is a save and
+  // Light is unowned, so neither row carries an attack bonus.
   const sacredFlame = ledger.spellAttacks.find((s) => s.name === "Sacred Flame");
   const fireBolt = ledger.spellAttacks.find((s) => s.name === "Fire Bolt");
   const light = ledger.spellAttacks.find((s) => s.name === "Light");
   assert.ok(sacredFlame && fireBolt && light);
-  assert.equal(sacredFlame.attackBonus, 5);
+  assert.equal(sacredFlame.attackBonus, undefined);
   assert.equal(fireBolt.attackBonus, 4);
   assert.equal(light.attackBonus, undefined);
 });

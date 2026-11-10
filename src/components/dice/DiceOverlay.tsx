@@ -1,10 +1,10 @@
 import { Ionicons } from "@expo/vector-icons";
 import React, { useEffect } from "react";
-import { Pressable, StyleSheet, View } from "react-native";
+import { AccessibilityInfo, Platform, Pressable, StyleSheet, View } from "react-native";
 import { useAppTheme } from "../../context/ThemeContext";
 import { useRollLog } from "../../context/RollLogContext";
 import { useResponsiveLayout } from "../../hooks/useResponsiveLayout";
-import type { RollLogEntry } from "../../rules/rollLog.ts";
+import { entryHeading, type RollLogEntry } from "../../rules/rollLog.ts";
 import { Button } from "../ui/Button";
 import { DiceTray } from "./DiceTray";
 import { RollResultView } from "./rollViews";
@@ -39,7 +39,9 @@ function FloatingDiceButton({ bottom, onPress }: { bottom: number; onPress: () =
  * The result card, just above the floating button: full width minus the 16px gutters on phones, at
  * most 360px at the bottom-right at wide widths. Tapping the card opens the tray on the Log segment;
  * the follow-up action is its own button, separate from the card's press target. It disappears when
- * dismissed, when replaced by a newer Roll, or after about 8 seconds.
+ * dismissed, when replaced by a newer Roll, or after about 8 seconds — never while it still offers a
+ * follow-up. The card is a polite live region (and announces itself on native), so a screen reader
+ * hears each result.
  */
 function ResultCard({
   entry,
@@ -58,6 +60,7 @@ function ResultCard({
   return (
     <View
       testID="result-card"
+      accessibilityLiveRegion="polite"
       style={[
         styles.card,
         {
@@ -68,7 +71,13 @@ function ResultCard({
           ...(fullWidth ? { left: 16 } : { maxWidth: 360 }),
         },
       ]}>
-      <Pressable testID="result-card-body" accessibilityRole="button" onPress={onOpenLog} style={styles.cardBody}>
+      <Pressable
+        testID="result-card-body"
+        accessibilityRole="button"
+        accessibilityLabel={`${entryHeading(entry)}, total ${entry.roll.total}`}
+        accessibilityHint="Opens the Roll Log"
+        onPress={onOpenLog}
+        style={styles.cardBody}>
         <RollResultView entry={entry} />
       </Pressable>
       {/* Sibling of the card body, not nested: press events bubble, and a nested button would also
@@ -76,7 +85,7 @@ function ResultCard({
       {entry.followUp ? (
         <Button
           title={entry.followUp.label}
-          variant="primary"
+          variant="secondary"
           size="md"
           icon="dice-outline"
           onPress={entry.followUp.onPress}
@@ -104,13 +113,21 @@ export function DiceOverlay() {
   const { insets, isPhone } = useResponsiveLayout();
   const { latest, dismissResult, openTray, bottomObstruction } = useRollLog();
 
-  // A newer Roll replaces the card and restarts its timeout; the timer never outlives the card.
+  // A newer Roll replaces the card and restarts its timeout; the timer never outlives the card, and a
+  // card that still offers a follow-up ("Roll damage") never auto-dismisses.
   const latestId = latest?.id ?? null;
+  const hasFollowUp = latest?.followUp != null;
   useEffect(() => {
-    if (latestId === null) return;
+    if (latestId === null || hasFollowUp) return;
     const timer = setTimeout(dismissResult, RESULT_CARD_TIMEOUT_MS);
     return () => clearTimeout(timer);
-  }, [latestId, dismissResult]);
+  }, [latestId, hasFollowUp, dismissResult]);
+
+  // On web the card's polite live region announces the result; native needs the explicit announcement.
+  useEffect(() => {
+    if (latest === null || Platform.OS === "web") return;
+    AccessibilityInfo.announceForAccessibility(`${entryHeading(latest)}, total ${latest.roll.total}`);
+  }, [latest]);
 
   const buttonBottom = insets.bottom + 16 + bottomObstruction;
 

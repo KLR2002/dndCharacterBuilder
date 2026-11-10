@@ -903,6 +903,40 @@ async function checkDiceTrayAndLog(ctx, width) {
   for (const v of await checkModalShape(page, width)) fail(v);
   await page.screenshot({ path: shot("tray") });
 
+  // 48dp touch targets: the Dice/Log segments, the mode segments and the removable pool chips.
+  const segHeights = await page.evaluate(() => {
+    const dialog = document.querySelector('[role="dialog"]');
+    if (!dialog) return null;
+    const pick = (text) => {
+      const el = [...dialog.querySelectorAll('[role="button"],button')].find((e) => e.textContent.trim() === text && e.getBoundingClientRect().height > 0);
+      return el ? el.getBoundingClientRect().height : null;
+    };
+    return { dice: pick("Dice"), log: pick("Log") };
+  });
+  if (!segHeights) fail("no tray dialog to measure the segment targets");
+  else {
+    if (segHeights.dice === null || segHeights.dice < 47.5) fail(`the "Dice" segment target is ${segHeights.dice}px tall, under 48dp`);
+    if (segHeights.log === null || segHeights.log < 47.5) fail(`the "Log" segment target is ${segHeights.log}px tall, under 48dp`);
+  }
+
+  // A die's count is capped at 100: tapping one die 100 times disables its add button, and rolling the
+  // capped pool works instead of throwing "Not a dice pool".
+  if (width === 360) {
+    const addD20 = page.getByLabel("Add d20", { exact: true });
+    for (let i = 0; i < 100; i++) await addD20.click({ timeout: 5000 }).catch(() => fail(`the "Add d20" tap ${i + 1} failed`));
+    const atCap = await page.evaluate(() => {
+      const el = [...document.querySelectorAll('[aria-label="Add d20"]')].find((e) => e.getBoundingClientRect().height > 0);
+      return el ? el.disabled === true || el.getAttribute("aria-disabled") === "true" : null;
+    });
+    if (atCap !== true) fail(`"Add d20" is not disabled at 100 dice (state ${atCap})`);
+    if (!(await page.getByLabel("Remove 100d20", { exact: true }).isVisible().catch(() => false))) fail('the pool chip does not read "100d20" at the cap');
+    await page.getByText("Roll 100d20", { exact: true }).first().click();
+    await page.waitForSelector(cardSel, { state: "visible", timeout: 10000 }).catch(() => fail("rolling the capped 100d20 pool did not show a result card (it threw)"));
+    await page.getByLabel("Dice tray").first().click();
+    await page.waitForSelector(dialogSel, { state: "visible", timeout: 10000 }).catch(() => fail("the tray did not reopen after the capped roll"));
+    await page.getByLabel("Remove 100d20", { exact: true }).click();
+  }
+
   // The pool builder: the primary action is disabled while the pool is empty, and the d20 mode choice
   // appears only for a pool of exactly one d20.
   const emptyRoll = await page.evaluate(buttonDisabled, "Roll");
@@ -911,8 +945,24 @@ async function checkDiceTrayAndLog(ctx, width) {
   await page.getByLabel("Add d20", { exact: true }).click();
   await page.waitForTimeout(200);
   if (!(await page.getByText("Advantage", { exact: true }).first().isVisible())) fail('"Advantage" does not show for a lone d20');
+  // The mode segments are 48dp targets too.
+  const modeHeights = await page.evaluate(() =>
+    ["Disadvantage", "Normal", "Advantage"].map((t) => {
+      const el = [...document.querySelectorAll('[role="dialog"] [role="button"], [role="dialog"] button')].find((e) => e.textContent.trim() === t && e.getBoundingClientRect().height > 0);
+      return el ? el.getBoundingClientRect().height : null;
+    }),
+  );
+  for (const [i, h] of modeHeights.entries()) {
+    if (h === null || h < 47.5) fail(`the "${["Disadvantage", "Normal", "Advantage"][i]}" mode segment is ${h}px tall, under 48dp`);
+  }
   await page.getByLabel("Remove 1d20", { exact: true }).click();
   await page.getByLabel("Add d6", { exact: true }).click();
+  // The removable pool chip is a 48dp target.
+  const chipHeight = await page.evaluate(() => {
+    const el = [...document.querySelectorAll('[aria-label="Remove 1d6"]')].find((e) => e.getBoundingClientRect().height > 0);
+    return el ? el.getBoundingClientRect().height : null;
+  });
+  if (chipHeight === null || chipHeight < 47.5) fail(`the pool chip "1d6" is ${chipHeight}px tall, under 48dp`);
   await page.getByLabel("Add d8", { exact: true }).click();
   for (let i = 0; i < 3; i++) await page.getByLabel("Modifier increase", { exact: true }).click();
   await page.waitForTimeout(200);
@@ -948,6 +998,40 @@ async function checkDiceTrayAndLog(ctx, width) {
     else if (parsedTotal !== faces.reduce((sum, face) => sum + face, 0) + parsedModifier)
       fail(`the result total ${parsedTotal} is not the faces ${faces.join("+")} ${roll.modifier}`);
   }
+
+  // A tray pool of 2d20 is not a d20 test: even with a kept 20 it shows no "Natural 20" marker; a
+  // lone-d20 tray roll does.
+  const setFaces = (faces) => page.evaluate((f) => (window.__setRandomSource ? window.__setRandomSource(f) : "no hook"), faces);
+  const cardMarkers = () =>
+    page.evaluate(() => {
+      const card = document.querySelector('[data-testid="result-card"]');
+      if (!card) return null;
+      return [...card.querySelectorAll("*")].filter((e) => e.children.length === 0 && /^(Natural 20|Natural 1|Critical)$/.test(e.textContent.trim())).map((e) => e.textContent.trim());
+    });
+  await page.getByLabel("Dice tray").first().click();
+  await page.waitForSelector(dialogSel, { state: "visible", timeout: 10000 }).catch(() => fail("the tray did not reopen for the 2d20 check"));
+  await page.getByLabel("Remove 1d6", { exact: true }).click();
+  await page.getByLabel("Remove 1d8", { exact: true }).click();
+  for (let i = 0; i < 3; i++) await page.getByLabel("Modifier decrease", { exact: true }).click();
+  await page.getByLabel("Add d20", { exact: true }).click();
+  await page.getByLabel("Add d20", { exact: true }).click();
+  await setFaces([20, 7]);
+  await page.getByText("Roll 2d20", { exact: true }).first().click();
+  await page.waitForSelector(cardSel, { state: "visible", timeout: 10000 }).catch(() => fail("no result card after the 2d20 tray roll"));
+  let markers = await cardMarkers();
+  if (markers === null) fail("the 2d20 card disappeared before its markers could be read");
+  else if (markers.length !== 0) fail(`a 2d20 tray pool shows the markers ${JSON.stringify(markers)}, expected none (not a d20 test)`);
+  await page.getByLabel("Dice tray").first().click();
+  await page.waitForSelector(dialogSel, { state: "visible", timeout: 10000 }).catch(() => fail("the tray did not reopen for the lone-d20 check"));
+  await page.getByLabel("Remove 2d20", { exact: true }).click();
+  await page.getByLabel("Add d20", { exact: true }).click();
+  await setFaces([20]);
+  await page.getByText("Roll 1d20", { exact: true }).first().click();
+  await page.waitForSelector(cardSel, { state: "visible", timeout: 10000 }).catch(() => fail("no result card after the lone-d20 tray roll"));
+  markers = await cardMarkers();
+  if (markers === null) fail("the lone-d20 card disappeared before its markers could be read");
+  else if (JSON.stringify(markers) !== JSON.stringify(["Natural 20"])) fail(`a lone-d20 tray roll shows ${JSON.stringify(markers)}, expected ["Natural 20"]`);
+  await setFaces(null);
 
   // Seed a "Kara · Longsword attack" Roll through the publishing seam (no screen triggers it yet): the
   // card is replaced by it.
@@ -988,6 +1072,11 @@ async function checkDiceTrayAndLog(ctx, width) {
       }
       if (geo.bottom > geo.buttonTop + 1) fail(`the result card overlaps the floating button (card bottom ${Math.round(geo.bottom)}, button top ${Math.round(geo.buttonTop)})`);
     }
+    // The card is a polite live region, and its body names the source and total for screen readers.
+    const cardLive = await page.evaluate(() => document.querySelector('[data-testid="result-card"]')?.getAttribute("aria-live") ?? null);
+    if (cardLive !== "polite") fail(`the result card's aria-live is ${cardLive}, expected "polite"`);
+    if (!(await page.getByLabel("Kara · Longsword attack, total 20", { exact: true }).first().isVisible().catch(() => false)))
+      fail('the result card body is not accessible-labelled "Kara · Longsword attack, total 20"');
     // Tapping the card opens the tray on the Log segment, newest first.
     await page.click('[data-testid="result-card-body"]');
     await page.waitForSelector(dialogSel, { state: "visible", timeout: 10000 }).catch(() => fail("tapping the result card did not open the tray"));
@@ -998,6 +1087,11 @@ async function checkDiceTrayAndLog(ctx, width) {
     await page.screenshot({ path: shot("log") });
     await page.keyboard.press("Escape");
     await page.waitForSelector(dialogSel, { state: "hidden", timeout: 10000 }).catch(() => fail("Escape did not close the tray"));
+    // A card without a follow-up still auto-dismisses after about 8s.
+    if (width === 360) {
+      await page.waitForTimeout(8500);
+      if ((await page.locator(cardSel).count()) > 0) fail("the result card without a follow-up did not auto-dismiss after ~8s");
+    }
   }
 
   // A reload empties the log: it is session app state, never stored.
@@ -1294,6 +1388,10 @@ async function checkActionRolls(ctx, width) {
   else if ((await badgeText(toHit)) !== "+5 to hit") fail(`the "to hit" badge reads "${await badgeText(toHit)}", expected "+5 to hit"`);
   if (!(await damageBadge.isVisible().catch(() => false))) fail("no damage roll badge on the weapon row");
   else if ((await badgeText(damageBadge)) !== "1d8 + 3 slashing") fail(`the damage badge reads "${await badgeText(damageBadge)}", expected "1d8 + 3 slashing"`);
+  // The badges' accessible names carry the roll's source and value, not just the badge text.
+  for (const name of ["Roll Longsword attack, +5", "Roll Longsword damage, 1d8 + 3"]) {
+    if (!(await page.getByLabel(name, { exact: true }).first().isVisible().catch(() => false))) fail(`no badge accessible-labelled "${name}"`);
+  }
   const before = await storedCharacter(ACTIONS_ID);
   if (!before) fail("the seeded character is not in storage");
   for (const v of await page.evaluate(findLayoutViolations, null)) fail(v);
@@ -1314,6 +1412,29 @@ async function checkActionRolls(ctx, width) {
     if (card.followUp !== "Roll damage") fail(`the attack card's follow-up is "${card.followUp}", expected "Roll damage"`);
   }
   await page.screenshot({ path: shot("attack") });
+
+  // The card body names the source and total for screen readers, and the follow-up button uses the
+  // secondary style, not the accent fill (the screen below has its own primary action).
+  if (!(await page.getByLabel("Kara · Longsword attack, total 20", { exact: true }).first().isVisible().catch(() => false)))
+    fail('the result card body is not accessible-labelled "Kara · Longsword attack, total 20"');
+  const cardLive = await page.evaluate(() => document.querySelector('[data-testid="result-card"]')?.getAttribute("aria-live") ?? null);
+  if (cardLive !== "polite") fail(`the result card's aria-live is ${cardLive}, expected "polite"`);
+  const accentFill = hexToRgbString(ACCENT_PALETTES.crimson.primary);
+  const secondaryFill = hexToRgbString(BASE_DARK_THEME.surfaceHighlight);
+  const followUpBg = await page.evaluate(() => {
+    const card = document.querySelector('[data-testid="result-card"]');
+    if (!card) return null;
+    const strip = (t) => (t ?? "").replace(/[\uE000-\uF8FF]/g, "").trim();
+    // The follow-up renders as a TouchableOpacity; walk up from its text leaf to the element
+    // that carries the background fill.
+    const leaf = [...card.querySelectorAll("*")].find((e) => e.children.length === 0 && strip(e.textContent) === "Roll damage");
+    let el = leaf ?? null;
+    while (el && getComputedStyle(el).backgroundColor === "rgba(0, 0, 0, 0)") el = el.parentElement;
+    return el ? getComputedStyle(el).backgroundColor : null;
+  });
+  if (followUpBg === null) fail('no "Roll damage" button on the attack card to measure');
+  else if (followUpBg === accentFill || followUpBg !== secondaryFill)
+    fail(`the "Roll damage" follow-up's background is ${followUpBg}, expected the secondary fill ${secondaryFill} (not the accent fill ${accentFill}) while the screen below has its own primary action`);
 
   // The follow-up rolls the damage pool 1d8 + 3 (fixed face clamps to 8 on the d8).
   await page.getByText("Roll damage", { exact: true }).first().click();
@@ -1361,6 +1482,11 @@ async function checkActionRolls(ctx, width) {
     if (!card.markers.includes("Natural 20")) fail(`the natural-20 card's markers are ${JSON.stringify(card.markers)}`);
     if (card.followUp !== "Roll critical damage") fail(`the natural-20 card's follow-up is "${card.followUp}", expected "Roll critical damage"`);
   }
+  // A card that still offers a follow-up never auto-dismisses, even after the usual ~8s.
+  if (width === 360) {
+    await page.waitForTimeout(8500);
+    if (!(await page.locator(cardSel).count())) fail('the natural-20 card with a pending "Roll critical damage" follow-up auto-dismissed');
+  }
   await page.getByText("Roll critical damage", { exact: true }).first().click();
   await page.waitForFunction(() => document.querySelector('[data-testid="result-source"]')?.textContent?.includes("damage"), null, { timeout: 10000 }).catch(() => fail("the critical damage follow-up did not roll"));
   card = await readCard();
@@ -1380,25 +1506,33 @@ async function checkActionRolls(ctx, width) {
   await page.keyboard.press("Escape");
   await page.waitForSelector(dialogSel, { state: "hidden", timeout: 10000 }).catch(() => fail("Escape did not close the details modal"));
 
-  // Nothing was spent: the stored character is unchanged by every roll.
-  const after = await storedCharacter(ACTIONS_ID);
-  if (!after) fail("the seeded character vanished from storage");
-  else if (JSON.stringify(after) !== JSON.stringify(before)) fail("the rolls changed the stored character (slots, uses or ammunition)");
-
   // A spell attack row rolls its casting profile's bonus; its non-pool damage label stays plain.
   await page.goto(`${BASE}/character/${WIZARD_ID}`, { waitUntil: "networkidle", timeout: 120000 });
   await page.waitForTimeout(1500);
   await page.getByText("Actions", { exact: true }).first().click();
   await page.getByText(/spell attacks/i).first().waitFor({ state: "visible", timeout: 10000 }).catch(() => fail("the Actions tab did not show SPELL ATTACKS"));
+  // The snapshot window covers both seeded characters: Kara (a limited-use feature with a use left and
+  // ammunition) and Elowen (spell slots left, a use left, ammunition). Loading a sheet normalizes the
+  // stored record once, so the wizard's "before" is read after her page has loaded, before any roll.
+  const beforeWizard = await storedCharacter(WIZARD_ID);
+  if (!beforeWizard) fail("the seeded wizard is not in storage");
   const spellToHit = page.locator('[data-testid="roll-badge-spell-0-tohit"]');
   if (!(await spellToHit.isVisible().catch(() => false))) fail("the Fire Bolt row has no to-hit roll badge");
   else if ((await badgeText(spellToHit)) !== "+5 to hit") fail(`the spell badge reads "${await badgeText(spellToHit)}", expected "+5 to hit"`);
+  if (!(await page.getByLabel("Roll Fire Bolt attack, +5", { exact: true }).first().isVisible().catch(() => false)))
+    fail('no spell badge accessible-labelled "Roll Fire Bolt attack, +5"');
   if ((await page.locator('[data-testid="roll-badge-spell-0-damage"]').count()) > 0) fail('the "Cantrip scaling" damage shows a roll badge');
   const plainDamage = await page.evaluate(() => {
     const el = [...document.querySelectorAll("*")].find((e) => e.children.length === 0 && e.textContent.trim() === "Cantrip scaling");
     return el ? el.closest('[data-testid^="roll-badge"]') === null : false;
   });
   if (!plainDamage) fail('"Cantrip scaling" is inside a roll badge, expected plain text');
+  // Only spells that make a spell attack get a "to hit" badge: Light and Mage Hand (rows 1 and 2) keep
+  // their rows and their plain damage label, but no to-hit roll badge.
+  for (const idx of [1, 2]) {
+    if ((await page.locator(`[data-testid="roll-badge-spell-${idx}-tohit"]`).count()) > 0)
+      fail(`spell row ${idx} (Light / Mage Hand, no spell attack) shows a "to hit" roll badge`);
+  }
   await setFaces([11]);
   await spellToHit.click();
   await page.waitForSelector(cardSel, { state: "visible", timeout: 10000 }).catch(() => fail("no result card after tapping the spell badge"));
@@ -1420,6 +1554,8 @@ async function checkActionRolls(ctx, width) {
   const unarmedToHit = page.locator('[data-testid="roll-badge-unarmed-tohit"]');
   if (!(await unarmedToHit.isVisible().catch(() => false))) fail("the unarmed fallback row has no to-hit roll badge");
   else if ((await badgeText(unarmedToHit)) !== "+3 to hit") fail(`the unarmed badge reads "${await badgeText(unarmedToHit)}", expected "+3 to hit"`);
+  if (!(await page.getByLabel("Roll Unarmed Strike attack, +3", { exact: true }).first().isVisible().catch(() => false)))
+    fail('no unarmed badge accessible-labelled "Roll Unarmed Strike attack, +3"');
   if ((await page.locator('[data-testid="roll-badge-unarmed-damage"]').count()) > 0) fail("the flat unarmed damage shows a roll badge");
   await setFaces([7]);
   await unarmedToHit.click();
@@ -1432,6 +1568,15 @@ async function checkActionRolls(ctx, width) {
     if (card.followUp !== null) fail(`the unarmed card offers a follow-up "${card.followUp}", expected none (flat damage)`);
   }
   await setFaces(null);
+
+  // Nothing was spent: every roll above — the weapon attack, its damage, the critical damage and the
+  // spell attack — left both stored characters byte-identical (slots, uses and ammunition included).
+  const after = await storedCharacter(ACTIONS_ID);
+  if (!after) fail("the seeded character vanished from storage");
+  else if (JSON.stringify(after) !== JSON.stringify(before)) fail("the rolls changed the stored character (slots, uses or ammunition)");
+  const afterWizard = await storedCharacter(WIZARD_ID);
+  if (!afterWizard) fail("the seeded wizard vanished from storage");
+  else if (JSON.stringify(afterWizard) !== JSON.stringify(beforeWizard)) fail("the spell attack changed the stored wizard (slots, uses or ammunition)");
   await page.close();
   return failures;
 }
@@ -1737,6 +1882,11 @@ async function checkStatsRolls(ctx, width) {
     const loc = page.locator(sel);
     if (!(await loc.isVisible().catch(() => false))) fail(`the Stats tab has no ${name} roll badge`);
     else if ((await badgeText(loc)) !== label) fail(`the ${name} badge reads "${await badgeText(loc)}", expected "${label}"`);
+  }
+  // The badges' accessible names carry the roll's source and value, so a screen reader can tell ~30
+  // badges apart ("Roll Strength check, +1", not "Roll +1").
+  for (const name of ["Roll Strength check, +1", "Roll Dexterity check, +0", "Roll Wisdom save, +2", "Roll Athletics, +1", "Roll Initiative, +0"]) {
+    if (!(await page.getByLabel(name, { exact: true }).first().isVisible().catch(() => false))) fail(`no badge accessible-labelled "${name}"`);
   }
   for (const v of await page.evaluate(findLayoutViolations, null)) fail(v);
   await page.screenshot({ path: shot("tab") });

@@ -55,11 +55,26 @@ export function entryHeading(entry: Pick<RollLogEntry, "characterName" | "source
 
 export type RollMarker = "natural20" | "natural1" | "critical";
 
-/** The markers a Roll shows on its result: a kept d20's natural 20 or 1, and Critical on critical damage. */
+/**
+ * Whether a Roll is a d20 test: only d20s were rolled and exactly one is kept — a badge's d20 roll
+ * (plain, or with advantage/disadvantage where the other die is dropped) or a lone-d20 tray roll.
+ * A tray pool of several d20s is not a d20 test.
+ */
+export function isD20Test(roll: Pick<Roll, "dice">): boolean {
+  return (
+    roll.dice.length > 0 &&
+    roll.dice.every((die) => die.sides === 20) &&
+    roll.dice.filter((die) => !die.dropped).length === 1
+  );
+}
+
+/** The markers a Roll shows on its result: Natural 20 / Natural 1 on a d20 test's kept die, and Critical on critical damage. */
 export function rollMarkers(entry: Pick<RollLogEntry, "roll" | "critical">): RollMarker[] {
   const markers: RollMarker[] = [];
-  if (isNatural20(entry.roll)) markers.push("natural20");
-  if (entry.roll.dice.some((die) => die.sides === 20 && !die.dropped && die.face === 1)) markers.push("natural1");
+  if (isD20Test(entry.roll)) {
+    if (isNatural20(entry.roll)) markers.push("natural20");
+    if (entry.roll.dice.some((die) => die.sides === 20 && !die.dropped && die.face === 1)) markers.push("natural1");
+  }
   if (entry.critical) markers.push("critical");
   return markers;
 }
@@ -80,10 +95,15 @@ export interface PoolTerm {
 /** The die buttons of the tray, in row order. */
 export const DIE_SIZES: readonly number[] = [4, 6, 8, 10, 12, 20, 100];
 
-/** Adds one die of `sides` to the pool, merging with an existing term of the same sides. */
+/** The most dice one term of the tray's pool may carry; matches the parser's cap. */
+export const MAX_DICE_PER_TERM = 100;
+
+/** Adds one die of `sides` to the pool, merging with an existing term of the same sides. A term's count is capped at 100, so the pool always parses. */
 export function addDieToPool(terms: readonly PoolTerm[], sides: number): PoolTerm[] {
   const existing = terms.find((term) => term.sides === sides);
-  if (existing) return terms.map((term) => (term.sides === sides ? { ...term, count: term.count + 1 } : term));
+  if (existing) {
+    return terms.map((term) => (term.sides === sides ? { ...term, count: Math.min(MAX_DICE_PER_TERM, term.count + 1) } : term));
+  }
   return [...terms, { count: 1, sides }];
 }
 
