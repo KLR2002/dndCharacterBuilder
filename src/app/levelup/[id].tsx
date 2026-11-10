@@ -63,6 +63,9 @@ export default function LevelUpScreen() {
   const [openStepId, setOpenStepId] = useState<LevelUpStepId>("class");
   const [askingDiscard, setAskingDiscard] = useState(false);
   const [leaving, setLeaving] = useState(false);
+  // Review's "Level up" applies the plan once: the button disables on the first press, and a stale
+  // plan is refused by applyLevelUpPlan anyway.
+  const [applying, setApplying] = useState(false);
   // The Hit Die is rolled once per flow: once rolled, the Roll row stays disabled even after switching back to Average.
   const [hpRolled, setHpRolled] = useState(false);
 
@@ -140,7 +143,8 @@ export default function LevelUpScreen() {
 
   const onPrimary = () => {
     if (openStep.id === "review") {
-      if (!plan) return;
+      if (!plan || applying) return;
+      setApplying(true);
       updateCharacter(character.id, (cur) => applyLevelUpPlan(cur, plan, { fullHealOnLevelUp, activeBooks }));
       // The plan is applied; lift the Back guard so the return to the sheet is not asked about.
       setLeaving(true);
@@ -280,7 +284,7 @@ export default function LevelUpScreen() {
             title={openStep.id === "review" ? "Level up" : "Continue"}
             variant="primary"
             size="lg"
-            disabled={!stepComplete(openStep.id)}
+            disabled={applying || !stepComplete(openStep.id)}
             onPress={onPrimary}
             style={styles.primaryAction}
           />

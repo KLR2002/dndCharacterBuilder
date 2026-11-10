@@ -396,6 +396,29 @@ test("applyLevelUpPlan applies a subclass only on a plan's Subclass step and nev
   assert.equal(applied4.classes[0].subclassName, "Champion", "a held subclass is never replaced");
 });
 
+test("applyLevelUpPlan refuses a plan whose class is no longer at plan.fromLevel (a double apply changes nothing)", () => {
+  const to4 = planLevelUp(FIGHTER_3, { className: "Fighter", hitPoints: { mode: "average" } });
+  if (!to4.ok) assert.fail(to4.reason);
+  const appliedOnce = applyLevelUpPlan(FIGHTER_3, to4.plan, { fullHealOnLevelUp: false });
+  assert.equal(appliedOnce.classes[0].level, 4);
+  // Applying the same plan to its own output (a double-tapped Review) returns the Character unchanged.
+  const appliedTwice = applyLevelUpPlan(appliedOnce, to4.plan, { fullHealOnLevelUp: false });
+  assert.equal(appliedTwice, appliedOnce, "a plan whose class moved on from fromLevel is refused");
+  assert.equal(appliedTwice.classes[0].level, 4);
+
+  // The same for a new multiclass class: the plan's fromLevel is 0, so once the class is held the plan is stale.
+  const wizard3 = makeChar({
+    baseAbilityScores: { str: 14, dex: 10, con: 14, int: 16, wis: 12, cha: 10 },
+    classes: [{ className: "Wizard", source: "PHB", level: 3 }],
+  });
+  const entry = planLevelUp(wizard3, { className: "Fighter", source: "PHB" });
+  if (!entry.ok) assert.fail(entry.reason);
+  assert.equal(entry.plan.fromLevel, 0);
+  const withFighter = applyLevelUpPlan(wizard3, entry.plan, { fullHealOnLevelUp: false });
+  assert.ok(withFighter.classes.some((c) => c.className === "Fighter" && c.level === 1));
+  assert.equal(applyLevelUpPlan(withFighter, entry.plan, { fullHealOnLevelUp: false }), withFighter);
+});
+
 test("applyLevelUpPlan refuses a stale plan that would take a class or the character beyond level 20", () => {
   const capped = makeChar({
     baseAbilityScores: { str: 15, dex: 14, con: 14, int: 10, wis: 10, cha: 10 },

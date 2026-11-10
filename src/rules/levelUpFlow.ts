@@ -203,6 +203,9 @@ export function applyLevelUpPlan(
   const held = character.classes.find((c) => sameName(c.className, plan.className));
   const otherLevels = totalLevel(character) - (held?.level ?? 0);
   if (otherLevels + plan.toLevel > MAX_LEVEL) return character;
+  // A stale plan is refused when its class is no longer at fromLevel: applying the same plan twice
+  // (a double-tapped Review) changes nothing.
+  if ((held?.level ?? 0) !== plan.fromLevel) return character;
 
   // A rolled level records the die face it rolled before the level is confirmed, so the full heal
   // on level-up fills to the rolled max; `maxHp` adds the current Constitution modifier to the face
