@@ -27,6 +27,7 @@ export function SubclassStep({
             key={`${option.name}__${option.source}`}
             accessibilityRole="button"
             accessibilityState={{ selected: isCurrent }}
+            aria-selected={isCurrent}
             accessibilityLabel={`Subclass ${option.name}`}
             onPress={() => onPick(option.name, option.source)}
             activeOpacity={0.7}
@@ -56,7 +57,7 @@ export function SubclassStep({
 
 const styles = StyleSheet.create({
   subclassChip: {
-    minHeight: 44,
+    minHeight: 48,
     borderRadius: 8,
     borderWidth: 1,
     paddingHorizontal: 12,

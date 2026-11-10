@@ -19,6 +19,7 @@ import {
   applicableCreationSteps,
   applyCreationStepChange,
   applyCreationStepEdit,
+  classStepMinLevel,
   classStepOffer,
   creationSteps,
   currentCreationStep,
@@ -121,6 +122,13 @@ describe("The Class step offers one class and a starting level", () => {
       { activeBooks: ALL_BOOKS },
     );
     assert.equal(atDefault.classes[0]?.level, 1, "the offer's default starting level applies");
+  });
+
+  test("classStepMinLevel keeps the first class at 1 only in Edit Build; a draft or the free-form builder may lower any class to removal", () => {
+    assert.equal(classStepMinLevel("edit", 0), 1, "Edit Build: the first class stays at least level 1");
+    assert.equal(classStepMinLevel("edit", 1), 0, "Edit Build: a later class can be lowered below 1, which removes it");
+    assert.equal(classStepMinLevel(undefined, 0), 0, "a draft or the free-form builder may lower even the first class below 1");
+    assert.equal(classStepMinLevel(undefined, 2), 0, "a draft or the free-form builder may lower any later class below 1");
   });
 });
 

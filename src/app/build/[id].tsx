@@ -3,7 +3,7 @@ import React, { useEffect, useMemo } from "react";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { DetailsStep } from "../../components/creationFlow/DetailsStep";
-import { FlowShell, FlowStepTitle, type FlowStepView } from "../../components/creationFlow/FlowShell";
+import { FlowShell, FlowStepTitle, useFlowStepScrollContentPadding, type FlowStepView } from "../../components/creationFlow/FlowShell";
 import { IdentityPanel, identitySummaryLine } from "../../components/creationFlow/IdentityPanel";
 import { ReviewStep } from "../../components/creationFlow/ReviewStep";
 import { STEP_TITLES } from "../../components/creationFlow/stepTitles";
@@ -47,6 +47,8 @@ export default function BuildScreen() {
 
   const character = characters.find((c) => c.id === id) ?? null;
   const flowOpts = useMemo(() => ({ activeBooks }), [activeBooks]);
+  // The step scroll content pads its bottom on phones so the floating dice button never covers the last rows.
+  const flowScrollPad = useFlowStepScrollContentPadding();
   const steps = useMemo(
     () => (character ? creationSteps(character, flowOpts) : []),
     [character, flowOpts],
@@ -153,14 +155,14 @@ export default function BuildScreen() {
     }
     if (openStep === "details") {
       return (
-        <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.stepScrollContent} keyboardShouldPersistTaps="handled">
+        <ScrollView style={{ flex: 1 }} contentContainerStyle={[styles.stepScrollContent, flowScrollPad]} keyboardShouldPersistTaps="handled">
           <DetailsStep character={character} onUpdate={handleUpdate} />
         </ScrollView>
       );
     }
     if (openStep === "review") {
       return (
-        <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.stepScrollContent} keyboardShouldPersistTaps="handled">
+        <ScrollView style={{ flex: 1 }} contentContainerStyle={[styles.stepScrollContent, flowScrollPad]} keyboardShouldPersistTaps="handled">
           <ReviewStep character={character} activeBooks={activeBooks} />
         </ScrollView>
       );

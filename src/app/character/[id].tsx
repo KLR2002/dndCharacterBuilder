@@ -28,6 +28,7 @@ import { useResponsiveLayout } from "../../hooks/useResponsiveLayout";
 import { useSerifFont } from "../../hooks/useSerifFont";
 import { evaluateCharacter } from "../../rules/characterEvaluation";
 import { isCreationFinished } from "../../rules/creationFlow";
+import { MAX_LEVEL } from "../../rules/levelUpFlow";
 import { resolvedSize } from "../../rules/sizeChoice";
 import { currentCompendium } from "../../services/compendium";
 import { commitCharacterName } from "../../rules/characterName";
@@ -224,9 +225,10 @@ export default function CharacterSheetScreen() {
         </View>
       </View>
 
-      {/* Header actions: Level up and Edit Build */}
+      {/* Header actions: Level up and Edit Build. At the level cap there is no level to gain, so Level up is hidden. */}
       <View style={[styles.headerActionsRow, { borderBottomColor: theme.border, backgroundColor: theme.surface }]}>
         <View style={[styles.headerActionsInner, isCompact && { paddingHorizontal: 8 }]}>
+          {totalLevel < MAX_LEVEL && (
           <TouchableOpacity
             onPress={() => router.push(`/levelup/${currentCharacter.id}` as any)}
             accessibilityRole="button"
@@ -234,6 +236,7 @@ export default function CharacterSheetScreen() {
             style={[styles.headerTextBtn, { backgroundColor: theme.surfaceHighlight, borderColor: theme.border }]}>
             <Text style={[styles.headerTextBtnLabel, { color: theme.accentHover }]}>Level up</Text>
           </TouchableOpacity>
+          )}
           <TouchableOpacity
             onPress={() => router.push(`/build/${currentCharacter.id}` as any)}
             accessibilityRole="button"

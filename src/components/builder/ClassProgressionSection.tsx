@@ -249,9 +249,10 @@ export const ClassProgressionSection: React.FC<
   // What the Class step offers here: Edit Build on a finished character lowers a held class's level but
   // offers no raise or add-class control (a level up enters through the Level-Up Flow); a draft or the
   // free-form builder keeps the full controls.
+  const editBuild = step !== undefined && isCreationFinished(character);
   const canRaiseLevel = step === undefined || !isCreationFinished(character);
   // The lowest level each held class can be lowered to; lowering below 1 removes the class.
-  const canLowerTo = (level: number, classIndex: number) => level > classStepMinLevel(classIndex);
+  const canLowerTo = (level: number, classIndex: number) => level > classStepMinLevel(editBuild ? "edit" : undefined, classIndex);
   // In the Creation Flow the class list is the Class step's picker: it shows while no class is held and
   // for a draft (which can still change its one class). Edit Build offers no add-class control, so the
   // list stays hidden there.

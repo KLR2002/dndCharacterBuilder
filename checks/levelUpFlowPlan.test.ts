@@ -4,6 +4,7 @@ import { makeChar } from "./testUtils.ts";
 import { ALL_BOOKS } from "../src/constants/books.ts";
 import {
   applyLevelUpPlan,
+  asiFeatSubChoices,
   chooseAverageHitPoints,
   classStepOptions,
   flowSteps,
@@ -14,12 +15,14 @@ import {
   rollPlanHitPoints,
   setPlanAsi,
   setPlanClassChoicePick,
+  setPlanFeatPick,
   setPlanSubclass,
   subclassOptionsForPlan,
   togglePlanSpell,
   type LevelUpPlan,
 } from "../src/rules/levelUpFlow.ts";
 import { maxHp } from "../src/rules/hp.ts";
+import { __setRandomSourceForTests } from "../src/rules/dice.ts";
 
 const FIGHTER_3 = makeChar({
   baseAbilityScores: { str: 15, dex: 14, con: 14, int: 10, wis: 10, cha: 10 },
@@ -89,6 +92,21 @@ test("rollPlanHitPoints rolls the Hit Die once through the dice module and retur
   assert.equal(low.plan.hitPoints.roll, 1, "the face is clamped to at least 1");
   assert.equal(low.plan.hitPoints.amount, 1, "face 1 + Con -2 floors at 1");
   assert.equal(low.roll.total, -1, "the logged Roll keeps the raw total face + Con");
+});
+
+test("planLevelUp and rollPlanHitPoints draw from currentRandom() when no source is passed", () => {
+  __setRandomSourceForTests(() => 9);
+  try {
+    const planned = planLevelUp(FIGHTER_3, { className: "Fighter", hitPoints: { mode: "roll" } });
+    if (!planned.ok) assert.fail(planned.reason);
+    assert.equal(planned.plan.hitPoints.roll, 9, "planLevelUp rolled the injected face, not the app's source");
+    assert.equal(planned.plan.hitPoints.amount, 11, "face 9 + Con 2");
+    const rolled = rollPlanHitPoints(fighterPlan({ mode: "average" }), FIGHTER_3);
+    assert.equal(rolled.roll.dice[0]?.face, 9, "rollPlanHitPoints rolled the injected face, not the app's source");
+    assert.equal(rolled.plan.hitPoints.roll, 9);
+  } finally {
+    __setRandomSourceForTests(null);
+  }
 });
 
 test("chooseAverageHitPoints switches a rolled plan back to the fixed average", () => {
@@ -186,6 +204,47 @@ test("levelUpStepComplete reads the plan: class needs a plan, asiFeat needs a pi
   assert.equal(levelUpStepComplete(allPicked, "classChoices"), true);
 });
 
+test("a feat offering +1 to one of several abilities keeps the ASI/Feat step incomplete until one is chosen", () => {
+  const plan = fighterPlan();
+  const opts = { character: FIGHTER_3, activeBooks: ALL_BOOKS };
+  const athlete = setPlanAsi(plan, { level: 4, className: "Fighter", classLevel: 4, type: "feat", featName: "Athlete", featSource: "PHB" });
+  assert.equal(levelUpStepComplete(athlete, "asiFeat", opts), false, "no ability chosen yet");
+  const withAbility = setPlanAsi(plan, { level: 4, className: "Fighter", classLevel: 4, type: "feat", featName: "Athlete", featSource: "PHB", featAbility: "str", asi: { str: 1 } });
+  assert.equal(levelUpStepComplete(withAbility, "asiFeat", opts), true, "Athlete grants no rule choice of its own");
+  assert.equal(levelUpStepComplete(withAbility, "review", opts), true);
+});
+
+test("a feat with its own rule choice (a fighting style) is incomplete until the pick is made, and applying records it", () => {
+  const plan = fighterPlan();
+  const opts = { character: FIGHTER_3, activeBooks: ALL_BOOKS };
+  const initiate = setPlanAsi(plan, { level: 4, className: "Fighter", classLevel: 4, type: "feat", featName: "Fighting Initiate", featSource: "TCE" });
+  assert.equal(levelUpStepComplete(initiate, "asiFeat", opts), false, "the style is not picked yet");
+  const choices = asiFeatSubChoices(initiate, FIGHTER_3, { activeBooks: ALL_BOOKS });
+  assert.equal(choices.length, 1, "Fighting Initiate grants exactly its style choice");
+  const choice = choices[0];
+  assert.ok(choice.id.includes("Fighting Initiate"));
+  assert.ok(choice.options.length > 0, "the style options come from the catalog");
+  const picked = setPlanFeatPick(initiate, choice.id, choice.options[0].name, choice.choose);
+  assert.deepEqual(picked.picks.featPicks?.[choice.id], [choice.options[0].name]);
+  assert.equal(levelUpStepComplete(picked, "asiFeat", opts), true);
+  assert.equal(levelUpStepComplete(picked, "review", opts), true);
+
+  const applied = applyLevelUpPlan(FIGHTER_3, picked, { fullHealOnLevelUp: false });
+  const ruleChoice = (applied.ruleChoices ?? []).find((rc) => rc.id === choice.id);
+  assert.deepEqual(ruleChoice?.picked, [choice.options[0].name], "the planned style pick is recorded on the applied Character");
+  assert.ok(applied.asiSelections.some((s) => s.featName === "Fighting Initiate"), "the feat itself is applied");
+});
+
+test("levelUpSummary lists the feat's own picks as rows", () => {
+  const plan = fighterPlan();
+  const initiate = setPlanAsi(plan, { level: 4, className: "Fighter", classLevel: 4, type: "feat", featName: "Fighting Initiate", featSource: "TCE" });
+  const choice = asiFeatSubChoices(initiate, FIGHTER_3, { activeBooks: ALL_BOOKS })[0];
+  const picked = setPlanFeatPick(initiate, choice.id, choice.options[0].name, choice.choose);
+  const rows = new Map(levelUpSummary(picked, FIGHTER_3, { fullHealOnLevelUp: false, activeBooks: ALL_BOOKS }).map((r) => [r.label, r.value]));
+  assert.equal(rows.get("ASI/Feat"), "Fighting Initiate");
+  assert.equal(rows.get(choice.traitName), choice.options[0].name);
+});
+
 test("levelUpSummary lists the level and hit points before → after, plus every pick", () => {
   const plan = fighterPlan();
   const rows = levelUpSummary(plan, FIGHTER_3, { fullHealOnLevelUp: false });
@@ -203,6 +262,20 @@ test("levelUpSummary lists the level and hit points before → after, plus every
   const withAsi = setPlanAsi(plan, { level: 4, type: "feat", featName: "Grappler", featSource: "PHB" });
   const asiRows = new Map(levelUpSummary(withAsi, FIGHTER_3, { fullHealOnLevelUp: false }).map((r) => [r.label, r.value]));
   assert.equal(asiRows.get("ASI/Feat"), "Grappler");
+});
+
+test("levelUpSummary writes the Constitution modifier with its sign, never \"+-\"", () => {
+  const lowCon = makeChar({
+    baseAbilityScores: { str: 15, dex: 14, con: 6, int: 10, wis: 10, cha: 10 },
+    classes: [{ className: "Fighter", source: "PHB", level: 3 }],
+  });
+  const planned = planLevelUp(lowCon, { className: "Fighter" });
+  if (!planned.ok) assert.fail(planned.reason);
+  const rolled = rollPlanHitPoints(planned.plan, lowCon, () => 10).plan;
+  const rows = new Map(levelUpSummary(rolled, lowCon, { fullHealOnLevelUp: false }).map((r) => [r.label, r.value]));
+  const method = rows.get("Hit points method") ?? "";
+  assert.equal(method, "Roll 1d10-2: 10 → +8", "a negative Constitution modifier keeps its sign in the roll detail");
+  assert.ok(!method.includes("+-"), "no \"+-\" in the hit points method");
 });
 
 test("subclassOptionsForPlan lists the planned class's subclasses in the active books", () => {

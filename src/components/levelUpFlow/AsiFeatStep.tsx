@@ -9,12 +9,14 @@ import { useAppTheme } from "../../context/ThemeContext";
 import { ABILITY_KEYS, ABILITY_LABELS, builderStyles as styles } from "../builder/builderStyles";
 import { Badge } from "../ui/Badge";
 import { SearchBar } from "../ui/SearchBar";
-import type { LevelUpPlan } from "../../rules/levelUpFlow";
+import { featSubChoicesForSelection, type LevelUpPlan } from "../../rules/levelUpFlow";
 
 /**
  * The ASI/Feat step: the level's Ability Score Improvement or Feat, held in the plan. The same choice
- * structure as the builder's ASI/Feat section (ASI +2 to one ability or +1 to two, or a feat with its
- * ability increase), but every completed selection writes the plan's `asi` pick instead of the Character.
+ * structure as the builder's ASI/Feat section (ASI +2 to one ability or +1 to two, a feat with its
+ * ability increase, and the feat's own rule choices such as a fighting style, maneuvers or an
+ * invocation), but every completed selection writes the plan's picks instead of the Character. The
+ * step stays incomplete until they are all made.
  */
 export function AsiFeatStep({
   plan,
@@ -22,12 +24,14 @@ export function AsiFeatStep({
   allFeats,
   activeBooks,
   onPick,
+  onFeatPick,
 }: {
   plan: LevelUpPlan;
   character: Character;
   allFeats: FeatData[];
   activeBooks: string[];
   onPick: (asi: AsiSelection) => void;
+  onFeatPick: (choiceId: string, option: string, choose: number) => void;
 }) {
   const { theme } = useAppTheme();
   const [tab, setTab] = useState<"asi" | "feat">("asi");
@@ -70,6 +74,8 @@ export function AsiFeatStep({
     const opts = getFeatAbilityBonusOptions(feat.name, feat);
     const ability = opts.type === "fixed" ? opts.abilities[0] : null;
     setFeatAbility(ability);
+    // A feat offering +1 to one of several abilities is not picked until one is chosen below.
+    if (opts.type === "choice") return;
     onPick({
       ...slot,
       type: "feat",
@@ -276,6 +282,38 @@ export function AsiFeatStep({
                 </View>
               );
             })()}
+          {selectedFeat &&
+            featSubChoicesForSelection(
+              character,
+              { ...slot, type: "feat", featName: selectedFeat.name, featSource: selectedFeat.source },
+              { activeBooks }
+            ).map((choice) => {
+              const picked = plan.picks.featPicks?.[choice.id] ?? [];
+              return (
+                <View key={choice.id} style={{ gap: 6 }}>
+                  <Text style={{ color: theme.text, fontSize: 12, fontWeight: "600" }}>
+                    {choice.traitName} ({picked.length}/{choice.choose}):
+                  </Text>
+                  <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6 }}>
+                    {choice.options.map((opt) => {
+                      const isPicked = picked.some((p) => p.toLowerCase() === opt.name.toLowerCase());
+                      return (
+                        <TouchableOpacity
+                          key={opt.name}
+                          accessibilityRole="button"
+                          accessibilityState={{ selected: isPicked }}
+                          accessibilityLabel={`${choice.traitName} ${opt.name}`}
+                          onPress={() => onFeatPick(choice.id, opt.name, choice.choose)}
+                          style={chipStyle(isPicked)}
+                        >
+                          <Text style={chipText(isPicked)}>{opt.name}</Text>
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </View>
+                </View>
+              );
+            })}
         </View>
       )}
     </View>

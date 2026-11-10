@@ -935,6 +935,53 @@ function lowScoreCharacter() {
   });
 }
 
+// A finished level 1 Fighter with Constitution 8, so the Level-Up Flow's Hit Points step shows the
+// Constitution modifier with its sign: "1d10-1", never "1d10+-1".
+export const LOW_CON_ID = "char_lowcon";
+function lowConCharacter() {
+  return makeChar({
+    id: LOW_CON_ID,
+    name: "Bramble",
+    createdAt: 21,
+    updatedAt: 21,
+    background: { name: "Acolyte", source: catalogSource("backgrounds", "Acolyte") },
+    startingOption: "equipment",
+    classes: [{ className: "Fighter", source: catalogSource("classes", "Fighter"), level: 1 }],
+    currentHp: 9,
+    baseAbilityScores: { str: 14, dex: 10, con: 8, int: 10, wis: 10, cha: 10 },
+    startingGrantsApplied: true,
+    backgroundGrantsApplied: true,
+  });
+}
+
+// A finished level 20 Fighter: at the level cap the sheet's header hides Level up (there is no level left
+// to gain) and keeps Edit Build.
+export const MAX_LEVEL_ID = "char_maxlevel";
+function maxLevelCharacter() {
+  return makeChar({
+    id: MAX_LEVEL_ID,
+    name: "Ulric",
+    createdAt: 22,
+    updatedAt: 22,
+    race: { name: "Human", source: catalogSource("races", "Human") },
+    background: { name: "Acolyte", source: catalogSource("backgrounds", "Acolyte") },
+    startingOption: "equipment",
+    baseAbilityScores: { str: 20, dex: 14, con: 16, int: 10, wis: 12, cha: 8 },
+    classes: [
+      {
+        className: "Fighter",
+        source: catalogSource("classes", "Fighter"),
+        level: 20,
+        subclassName: "Champion",
+        subclassSource: "SRD",
+      },
+    ],
+    currentHp: 120,
+    startingGrantsApplied: true,
+    backgroundGrantsApplied: true,
+  });
+}
+
 // Fixed Rolled Abilities results, so a scenario can tap a chip by its total without depending on the roll.
 const ROLLED_RESULTS = [
   { dice: [{ sides: 6, face: 6, dropped: false }, { sides: 6, face: 5, dropped: false }, { sides: 6, face: 5, dropped: false }, { sides: 6, face: 4, dropped: true }], droppedIndex: 3, total: 16 },
@@ -1129,6 +1176,8 @@ export function buildSeed({ root, integrated }) {
       reviewDraftCharacter(),
       editBuildCharacter(),
       lowScoreCharacter(),
+      lowConCharacter(),
+      maxLevelCharacter(),
       rolledCharacter(ROLLED_ID, "Bram", null),
       rolledCharacter(ROLLED_PICKS_ID, "Ivo", { str: 0, dex: 1, con: 2, int: 3, wis: 4, cha: 5 }),
       arcanumCharacter(),

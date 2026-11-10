@@ -27,12 +27,14 @@ import {
   type StartingEquipmentAddress,
 } from "../../rules/startingEquipment";
 import { reconcile } from "../../rules/characterReconciler";
+import { SIDEKICK_CLASSES } from "../../rules/levelUpFlow";
 import { proficiencyChoiceOffers } from "../../rules/proficiencyChoiceOffers";
 import { getPendingLevelChoices } from "../../rules/leveling";
 import { normalizeSkillName } from "../../rules/skills";
 import { getAvailableOptionalFeatures } from "../../rules/optionalFeatures";
 import { AbilityKey, Character, CreationStepId, SkillChoiceEntry } from "../../types/character";
 import { DetailModal } from "../DetailModal";
+import { useFlowStepScrollContentPadding } from "../creationFlow/FlowShell";
 import { AbilityScoresSection } from "../builder/AbilityScoresSection";
 import { AncestrySection } from "../builder/AncestrySection";
 import { BackgroundSection } from "../builder/BackgroundSection";
@@ -40,7 +42,6 @@ import { builderStyles as styles } from "../builder/builderStyles";
 import { ClassProgressionSection } from "../builder/ClassProgressionSection";
 
 const ABILITY_KEYS: AbilityKey[] = ["str", "dex", "con", "int", "wis", "cha"];
-const SIDEKICK_CLASSES = new Set(["Expert Sidekick", "Spellcaster Sidekick", "Warrior Sidekick"]);
 
 interface BuilderTabProps {
   character?: Character;
@@ -93,6 +94,9 @@ export const BuilderTab: React.FC<BuilderTabProps> = ({
 
   const saAssignments = character?.standardArrayPicks ?? {};
   const onViewDetail = propViewDetail || ((item: any) => setLocalDetail(item));
+  // In the Creation Flow the scroll content pads its bottom on phones so the floating dice button never
+  // covers the last rows.
+  const flowScrollPad = useFlowStepScrollContentPadding();
 
   if (!character) return null;
 
@@ -358,7 +362,7 @@ export const BuilderTab: React.FC<BuilderTabProps> = ({
   const hostedSection = step ? STEP_SECTION[step] : undefined;
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+    <ScrollView style={styles.container} contentContainerStyle={[styles.content, flowScrollPad]}>
       {/* ── Section Tab Nav ── */}
       {!step && (
       <ScrollView

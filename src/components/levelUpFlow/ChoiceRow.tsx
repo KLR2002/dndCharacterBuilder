@@ -27,6 +27,7 @@ export function ChoiceRow({
     <TouchableOpacity
       accessibilityRole="button"
       accessibilityState={{ disabled, selected }}
+      aria-selected={selected ?? false}
       accessibilityLabel={accessibilityLabel ?? label}
       disabled={disabled}
       onPress={onPress}

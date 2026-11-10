@@ -37,7 +37,7 @@ import {
   stopExpoWeb,
   waitForExpoWeb,
 } from "./lib/app-driver.mjs";
-import { buildScreens, buildSeed, ACTIONS_ID, CHARACTER_ID, DRUID_ID, EDIT_BUILD_ID, RANGER_ID, SORCERER_SWAP_ID, WIZARD_ID } from "./lib/scenarios.mjs";
+import { buildScreens, buildSeed, ACTIONS_ID, CHARACTER_ID, DRUID_ID, EDIT_BUILD_ID, LOW_CON_ID, MAX_LEVEL_ID, RANGER_ID, SORCERER_SWAP_ID, WIZARD_ID } from "./lib/scenarios.mjs";
 import { playStep, playSteps } from "./lib/web-steps.mjs";
 import { ACCENT_PALETTES, BASE_DARK_THEME } from "../src/constants/theme.ts";
 
@@ -1126,6 +1126,21 @@ async function checkDiceTrayAndLog(ctx, width) {
       if (geo.buttonBottom > geo.barTop + 1)
         fail(`the dice button covers the flow's bottom bar (button bottom ${Math.round(geo.buttonBottom)} over bar top ${Math.round(geo.barTop)})`);
     }
+    // The step scroll content pads its bottom by the button's 56dp plus its 16dp gap, so the button never
+    // covers the last rows.
+    const scrollPad = await flowPage.evaluate(() => {
+      const scroller = document.querySelector('[data-testid="levelup-step-scroll"]');
+      if (!scroller) return null;
+      let max = 0;
+      for (const el of [scroller, ...scroller.querySelectorAll("*")]) {
+        const p = parseFloat(getComputedStyle(el).paddingBottom) || 0;
+        if (p > max) max = p;
+      }
+      return max;
+    });
+    if (scrollPad === null) fail("no step scroll content found in the Level-Up Flow");
+    else if (scrollPad < 71)
+      fail(`the flow's step scroll content pads its bottom by ${Math.round(scrollPad)}px, under the 72dp the floating dice button needs (56dp button + 16dp gap)`);
     await flowPage.screenshot({ path: join(SHOTS, `DiceTray-flow-${width}.png`) });
     await flowPage.close();
   }
@@ -1373,8 +1388,7 @@ async function checkActionRolls(ctx, width) {
         followUp: leaf(/^Roll (critical )?damage$/),
       };
     });
-  const storedCharacter = (id) =>
-    page.evaluate((charId) => JSON.parse(localStorage.getItem("@dnd5e_characters") ?? "[]").find((c) => c.id === charId) ?? null, id);
+  const storedCharacter = (id) => readStoredCharacter(page, id);
   const setFaces = (faces) => page.evaluate((f) => (window.__setRandomSource ? window.__setRandomSource(f) : "no hook"), faces);
 
   // The weapon attack row: badges read from the ledger, a tap rolls the attack.
@@ -1587,15 +1601,26 @@ async function checkActionRolls(ctx, width) {
 const LU_ID = RANGER_ID;
 const LU_NAME = "Tamsin";
 
-// Waits until the flow's Continue is enabled (the open step's pick is complete), then taps it.
-async function continueFlow(page) {
-  await page
+// The stored Character by id, read from the browser's localStorage.
+function readStoredCharacter(page, id) {
+  return page.evaluate((charId) => JSON.parse(localStorage.getItem("@dnd5e_characters") ?? "[]").find((c) => c.id === charId) ?? null, id);
+}
+
+// Waits until the flow's Continue is enabled (the open step's pick is complete), then taps it. When
+// Continue never enables, `fail` reports it instead of the click landing on a disabled button.
+async function continueFlow(page, fail = () => {}) {
+  const enabled = await page
     .waitForFunction(() => {
       const el = [...document.querySelectorAll("*")].find((e) => e.children.length === 0 && e.textContent === "Continue");
       const target = el?.closest("[tabindex]");
       return target && target.getAttribute("aria-disabled") !== "true";
     }, null, { timeout: 10000 })
-    .catch(() => {});
+    .then(() => true)
+    .catch(() => false);
+  if (!enabled) {
+    fail("Continue never enabled on the open step (its pick is incomplete)");
+    return;
+  }
   await page.getByText("Continue", { exact: true }).first().click();
   await page.waitForTimeout(400);
 }
@@ -1610,8 +1635,9 @@ async function openLevelUp(page) {
 }
 
 // Walks from the Hit Points step to Review: the given HP mode, then on every later step the first
-// Subclass option, a CON (+2) ASI and the first offered spell where those steps appear.
-async function walkToReview(page, hpMode) {
+// Subclass option, a CON (+2) ASI and the first offered spell where those steps appear. `fail` reports
+// violations seen along the way (e.g. a Subclass chip under 48dp).
+async function walkToReview(page, hpMode, fail = () => {}) {
   await page.getByLabel(hpMode === "roll" ? "Roll hit points" : "Average hit points").first().click();
   await page.waitForTimeout(300);
   for (let i = 0; i < 8; i++) {
@@ -1620,6 +1646,8 @@ async function walkToReview(page, hpMode) {
     if ((await sub.count()) > 0) {
       await sub.click();
       await page.waitForTimeout(300);
+      const chipHeight = await sub.evaluate((el) => el.getBoundingClientRect().height).catch(() => 0);
+      if (chipHeight < 47.5) fail(`a Subclass chip is ${Math.round(chipHeight)}px tall, under 48dp`);
     }
     const con = page.getByLabel("CON (+2)").first();
     if ((await con.count()) > 0) {
@@ -1631,8 +1659,9 @@ async function walkToReview(page, hpMode) {
       await learn.click();
       await page.waitForTimeout(300);
     }
-    await continueFlow(page);
+    await continueFlow(page, fail);
   }
+  fail('walkToReview never reached Review (no "Level up" button after 8 steps)');
 }
 
 // True when a visible leaf element shows exactly `text` (the stack can keep a hidden copy of the
@@ -1678,6 +1707,113 @@ async function checkLevelUpHpRollLogged(ctx, width) {
   return failures;
 }
 
+// The Hit Points state rules: re-picking the picked class keeps the plan unchanged (the roll stays
+// selected, Average stays disabled); a different class starts a fresh plan whose HP may be rolled once.
+async function checkLevelUpHpState(ctx, width) {
+  const page = await ctx.newPage();
+  const prefix = `[${width}px level-up HP state]`;
+  let failures = 0;
+  const fail = (msg) => {
+    failures++;
+    console.log(`${prefix} ${msg}`);
+  };
+  const rollRow = page.getByLabel("Roll hit points").first();
+  const averageRow = page.getByLabel("Average hit points").first();
+  const rowState = (row) =>
+    row.evaluate((el) => ({
+      disabled: el.getAttribute("aria-disabled") === "true",
+      selected: el.getAttribute("aria-selected") === "true",
+      text: (el.textContent ?? "").replace(/\s+/g, " ").trim(),
+    }));
+  const classChip = page.getByRole("button", { name: "Class", exact: true }).first();
+
+  await openLevelUp(page); // picks the held Ranger, lands on the Hit Points step
+  await rollRow.click();
+  await page.waitForTimeout(400);
+  const rolled = await rowState(rollRow);
+  if (!rolled.selected) fail("the Roll row is not selected after rolling");
+  if (!rolled.disabled) fail("the Roll row is not disabled after rolling");
+  const rolledText = rolled.text;
+  const averageAfterRoll = await rowState(averageRow);
+  if (!averageAfterRoll.disabled) fail("the Average row is not disabled after the roll");
+
+  // Re-pick the same class: the plan is unchanged, the roll stays selected.
+  await classChip.click();
+  await page.waitForTimeout(400);
+  await page.getByLabel("Level up Ranger").first().click();
+  await page.waitForTimeout(300);
+  await page.getByText("Continue", { exact: true }).first().click();
+  await rollRow.waitFor({ state: "visible", timeout: 10000 });
+  const afterRepick = await rowState(rollRow);
+  if (!afterRepick.selected || afterRepick.text !== rolledText)
+    fail(`re-picking the same class reset the Hit Points pick: roll row now "${afterRepick.text}" selected=${afterRepick.selected}, expected the kept "${rolledText}"`);
+  // Tapping the disabled Average row changes nothing.
+  await averageRow.click({ force: true }).catch(() => {});
+  await page.waitForTimeout(300);
+  const afterAverageTap = await rowState(rollRow);
+  if (!afterAverageTap.selected || afterAverageTap.text !== rolledText)
+    fail(`tapping Average after the roll discarded it: roll row now "${afterAverageTap.text}" selected=${afterAverageTap.selected}`);
+  await page.screenshot({ path: join(SHOTS, `LevelUp-HPState-rolled-${width}.png`) });
+
+  // A different class starts a fresh plan: Average selected, Roll enabled, rollable once.
+  await classChip.click();
+  await page.waitForTimeout(400);
+  await page.getByLabel("Level up Fighter").first().click();
+  await page.waitForTimeout(300);
+  await page.getByText("Continue", { exact: true }).first().click();
+  await averageRow.waitFor({ state: "visible", timeout: 10000 });
+  const freshAverage = await rowState(averageRow);
+  const freshRoll = await rowState(rollRow);
+  if (!freshAverage.selected) fail(`a fresh plan for another class does not select Average (selected=${freshAverage.selected})`);
+  if (freshRoll.disabled) fail("the Roll row stays disabled for a freshly picked class");
+  if (freshRoll.selected) fail("the Roll row is selected on a fresh plan before any roll");
+  await page.screenshot({ path: join(SHOTS, `LevelUp-HPState-fresh-${width}.png`) });
+  await page.close();
+  return failures;
+}
+
+// At total level 20 the sheet's header hides Level up (no level left to gain) and keeps Edit Build.
+async function checkLevelUpHiddenAtMaxLevel(ctx, width) {
+  const page = await ctx.newPage();
+  const prefix = `[${width}px level-up hidden at 20]`;
+  let failures = 0;
+  const fail = (msg) => {
+    failures++;
+    console.log(`${prefix} ${msg}`);
+  };
+  await page.goto(`${BASE}/character/${MAX_LEVEL_ID}`, { waitUntil: "networkidle", timeout: 120000 });
+  await page.waitForTimeout(1500);
+  if (!(await waitForVisibleText(page, "Lvl 20"))) fail("the sheet does not show \"Lvl 20\" for the level-20 character");
+  if ((await page.getByLabel("Level up").count()) > 0) fail("the header still offers Level up at total level 20");
+  if (!(await page.getByLabel("Edit Build").first().isVisible().catch(() => false))) fail("Edit Build is gone at total level 20");
+  await page.screenshot({ path: join(SHOTS, `LevelUp-HiddenAt20-${width}.png`) });
+  await page.close();
+  return failures;
+}
+
+// A negative Constitution modifier is written with its sign in the Hit Points step's Roll row: "1d10-1", never "1d10+-1".
+async function checkLevelUpHpModifierSign(ctx, width) {
+  const page = await ctx.newPage();
+  const prefix = `[${width}px level-up HP sign]`;
+  let failures = 0;
+  const fail = (msg) => {
+    failures++;
+    console.log(`${prefix} ${msg}`);
+  };
+  await page.goto(`${BASE}/levelup/${LOW_CON_ID}`, { waitUntil: "networkidle", timeout: 120000 });
+  await page.waitForTimeout(1500);
+  await page.getByLabel("Level up Fighter").first().click();
+  await page.getByText("Continue", { exact: true }).first().click();
+  const rollRow = page.getByLabel("Roll hit points").first();
+  await rollRow.waitFor({ state: "visible", timeout: 10000 }).catch(() => fail("the Hit Points step did not open"));
+  const flat = ((await rollRow.textContent().catch(() => "")) ?? "").replace(/\s+/g, " ").trim();
+  if (!flat.includes("1d10-1")) fail(`the Roll row does not read "1d10-1" for Constitution 8: "${flat}"`);
+  if (flat.includes("+-")) fail(`the Roll row writes the modifier as "+-": "${flat}"`);
+  await page.screenshot({ path: join(SHOTS, `LevelUp-HPSign-${width}.png`) });
+  await page.close();
+  return failures;
+}
+
 // The Level-Up Flow's Cancel asks before discarding and leaves the Character unchanged, the system Back asks
 // too, and Review's "Level up" applies the plan in one update.
 async function checkLevelUpCancelAndReview(ctx, width) {
@@ -1711,7 +1847,10 @@ async function checkLevelUpCancelAndReview(ctx, width) {
   await page.getByText("Continue", { exact: true }).first().click();
   await page.getByLabel("Roll hit points").first().waitFor({ state: "visible", timeout: 10000 });
 
-  // Cancel path: a rolled Hit Points pick is made, then Cancel → Discard returns to the sheet at the old level.
+  // Cancel path: a rolled Hit Points pick is made, then Cancel → Discard returns to the sheet with the
+  // stored Character deep-equal to before the flow — not only at the old level.
+  const beforeCancel = await readStoredCharacter(page, LU_ID);
+  if (!beforeCancel) fail("the seeded character is not in storage before Cancel");
   await page.getByLabel("Roll hit points").first().click();
   await page.waitForTimeout(300);
   await page.getByLabel("Cancel level up").first().click();
@@ -1721,11 +1860,15 @@ async function checkLevelUpCancelAndReview(ctx, width) {
   if (!page.url().includes(`/character/${LU_ID}`)) fail(`discard did not return to the sheet: ${page.url()}`);
   if (!(await waitForVisibleText(page, "Lvl 3")))
     fail("after discarding, the sheet does not show \"Lvl 3\": the plan was applied instead of discarded");
+  const afterCancel = await readStoredCharacter(page, LU_ID);
+  if (!afterCancel) fail("the seeded character vanished from storage after Cancel");
+  else if (JSON.stringify(afterCancel) !== JSON.stringify(beforeCancel))
+    fail("Cancel changed the stored character: the plan was not discarded whole (deep-equal comparison failed)");
   await page.screenshot({ path: join(SHOTS, `LevelUp-Cancelled-${width}.png`) });
 
   // Review path: average HP and a CON +2 ASI, then "Level up" applies the level and the picks together.
   await openLevelUp(page);
-  await walkToReview(page, "average");
+  await walkToReview(page, "average", fail);
   for (const needle of ["Ranger 3 → 4", "3 → 4", "CON +2"]) {
     if (!(await page.getByText(needle, { exact: true }).first().isVisible().catch(() => false))) fail(`Review does not list "${needle}"`);
   }
@@ -1760,7 +1903,7 @@ async function checkSpellsAfterLevelUp(ctx, width) {
     await page.getByLabel("Level up Sorcerer").first().click();
     await page.getByText("Continue", { exact: true }).first().click();
     await page.getByLabel("Roll hit points").first().waitFor({ state: "visible", timeout: 10000 });
-    await walkToReview(page, "average");
+    await walkToReview(page, "average", fail);
     await page.getByText("Level up", { exact: true }).first().click();
     await page.waitForTimeout(1500);
     if (!(await page.getByText("Lvl 2", { exact: true }).first().isVisible().catch(() => false)))
@@ -1794,7 +1937,7 @@ async function checkSpellsAfterLevelUp(ctx, width) {
     await page.getByLabel("Level up Wizard").first().click();
     await page.getByText("Continue", { exact: true }).first().click();
     await page.getByLabel("Roll hit points").first().waitFor({ state: "visible", timeout: 10000 });
-    await walkToReview(page, "average");
+    await walkToReview(page, "average", fail);
     await page.getByText("Level up", { exact: true }).first().click();
     await page.waitForTimeout(1500);
     if (!(await page.getByText("Lvl 4", { exact: true }).first().isVisible().catch(() => false)))
@@ -1986,6 +2129,9 @@ const EXTRA_CHECKS = [
   { name: "New character draft folder", run: checkDraftFolder },
   { name: "Dice tray and Roll Log", run: checkDiceTrayAndLog },
   { name: "Level-Up Flow HP roll logged", run: checkLevelUpHpRollLogged },
+  { name: "Level-Up Flow HP state", run: checkLevelUpHpState },
+  { name: "Level-Up Flow HP modifier sign", run: checkLevelUpHpModifierSign },
+  { name: "Level up hidden at level 20", run: checkLevelUpHiddenAtMaxLevel },
   { name: "Level-Up Flow cancel and review", run: checkLevelUpCancelAndReview },
   { name: "Spells after level-up", run: checkSpellsAfterLevelUp },
   { name: "Dice animation", run: checkDiceAnimation },

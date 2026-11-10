@@ -3,7 +3,7 @@ import { useLocalSearchParams, useNavigation, useRouter } from "expo-router";
 import React, { useEffect, useMemo, useState } from "react";
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { FlowShell, FlowStepTitle, type FlowStepView } from "../../components/creationFlow/FlowShell";
+import { FlowShell, FlowStepTitle, useFlowStepScrollContentPadding, type FlowStepView } from "../../components/creationFlow/FlowShell";
 import { IdentityPanel, identitySummaryLine } from "../../components/creationFlow/IdentityPanel";
 import { AsiFeatStep } from "../../components/levelUpFlow/AsiFeatStep";
 import { ClassChoicesStep } from "../../components/levelUpFlow/ClassChoicesStep";
@@ -32,6 +32,7 @@ import {
   rollPlanHitPoints,
   setPlanAsi,
   setPlanClassChoicePick,
+  setPlanFeatPick,
   setPlanSubclass,
   subclassOptionsForPlan,
   togglePlanSpell,
@@ -63,8 +64,9 @@ export default function LevelUpScreen() {
   const [openStepId, setOpenStepId] = useState<LevelUpStepId>("class");
   const [askingDiscard, setAskingDiscard] = useState(false);
   const [leaving, setLeaving] = useState(false);
-  // The Hit Die is rolled once per flow: once rolled, the Roll row stays disabled even after switching back to Average.
-  const [hpRolled, setHpRolled] = useState(false);
+  // Review's "Level up" applies the plan once: the button disables on the first press, and a stale
+  // plan is refused by applyLevelUpPlan anyway.
+  const [applying, setApplying] = useState(false);
 
   useEffect(() => {
     if (id) selectCharacter(id);
@@ -95,8 +97,11 @@ export default function LevelUpScreen() {
   }, [leaving, id, router]);
 
   const flowOpts = useMemo(() => ({ activeBooks }), [activeBooks]);
+  // The step scroll content pads its bottom on phones so the floating dice button never covers the last rows.
+  const flowScrollPad = useFlowStepScrollContentPadding();
   const steps = useMemo(() => flowSteps(plan), [plan]);
-  const stepComplete = (stepId: LevelUpStepId) => levelUpStepComplete(plan, stepId, flowOpts);
+  const stepComplete = (stepId: LevelUpStepId) =>
+    levelUpStepComplete(plan, stepId, { ...flowOpts, character: character ?? undefined });
   const openStep = steps.find((s) => s.id === openStepId) ?? steps[0];
   const currentStepId = steps.find((s) => !stepComplete(s.id))?.id ?? steps[steps.length - 1]?.id;
 
@@ -119,28 +124,31 @@ export default function LevelUpScreen() {
 
   const pickClass = (option: LevelUpClassOption) => {
     if (option.missingRequirement) return;
+    // Re-picking the picked class keeps the plan unchanged: its Hit Points pick and every later pick stay.
+    if (plan && plan.className.trim().toLowerCase() === option.className.trim().toLowerCase()) return;
     const result = planLevelUp(character, { className: option.className, source: option.source, activeBooks });
     if (!result.ok) return;
-    // A different class re-plans from scratch: the later steps depend on it (hit die, subclass, spells).
+    // A different class starts a fresh plan for it: the later steps depend on it (hit die, subclass, spells).
     setPlan(result.plan);
     setOpenStepId("class");
   };
 
+  // Once the Hit Die is rolled for the plan's class the roll is final: Average no longer applies.
   const chooseAverage = () => {
-    if (plan) setPlan(chooseAverageHitPoints(plan, character));
+    if (plan && plan.hitPoints.mode !== "roll") setPlan(chooseAverageHitPoints(plan, character));
   };
 
   const rollHp = () => {
-    if (!plan || hpRolled) return; // one roll, no reroll
+    if (!plan || plan.hitPoints.mode === "roll") return; // one roll per class, no reroll
     const { plan: rolled, roll } = rollPlanHitPoints(plan, character);
     publishRoll({ roll, source: "Hit Points", characterName: character.name });
-    setHpRolled(true);
     setPlan(rolled);
   };
 
   const onPrimary = () => {
     if (openStep.id === "review") {
-      if (!plan) return;
+      if (!plan || applying) return;
+      setApplying(true);
       updateCharacter(character.id, (cur) => applyLevelUpPlan(cur, plan, { fullHealOnLevelUp, activeBooks }));
       // The plan is applied; lift the Back guard so the return to the sheet is not asked about.
       setLeaving(true);
@@ -167,72 +175,49 @@ export default function LevelUpScreen() {
 
   const stepContent = () => {
     if (!plan) {
-      return (
-        <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.stepScrollContent} keyboardShouldPersistTaps="handled">
-          <ClassStep options={classOptions} onPick={pickClass} />
-        </ScrollView>
-      );
+      return <ClassStep options={classOptions} onPick={pickClass} />;
     }
     switch (openStep.id) {
       case "class":
-        return (
-          <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.stepScrollContent} keyboardShouldPersistTaps="handled">
-            <ClassStep options={classOptions} selectedClassName={plan.className} onPick={pickClass} />
-          </ScrollView>
-        );
+        return <ClassStep options={classOptions} selectedClassName={plan.className} onPick={pickClass} />;
       case "hitPoints":
-        return (
-          <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.stepScrollContent} keyboardShouldPersistTaps="handled">
-            <HitPointsStep plan={plan} character={character} rolledOnce={hpRolled} onAverage={chooseAverage} onRoll={rollHp} />
-          </ScrollView>
-        );
+        return <HitPointsStep plan={plan} character={character} onAverage={chooseAverage} onRoll={rollHp} />;
       case "subclass":
         return (
-          <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.stepScrollContent} keyboardShouldPersistTaps="handled">
-            <SubclassStep
-              plan={plan}
-              options={subclassOptionsForPlan(plan, flowOpts)}
-              onPick={(name, source) => setPlan(setPlanSubclass(plan, name, source))}
-            />
-          </ScrollView>
+          <SubclassStep
+            plan={plan}
+            options={subclassOptionsForPlan(plan, flowOpts)}
+            onPick={(name, source) => setPlan(setPlanSubclass(plan, name, source))}
+          />
         );
       case "asiFeat":
         return (
-          <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.stepScrollContent} keyboardShouldPersistTaps="handled">
-            <AsiFeatStep
-              plan={plan}
-              character={character}
-              allFeats={allFeats}
-              activeBooks={activeBooks}
-              onPick={(asi) => setPlan(setPlanAsi(plan, asi))}
-            />
-          </ScrollView>
+          <AsiFeatStep
+            plan={plan}
+            character={character}
+            allFeats={allFeats}
+            activeBooks={activeBooks}
+            onPick={(asi) => setPlan(setPlanAsi(plan, asi))}
+            onFeatPick={(choiceId, option, choose) => setPlan(setPlanFeatPick(plan, choiceId, option, choose))}
+          />
         );
       case "classChoices":
         return (
-          <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.stepScrollContent} keyboardShouldPersistTaps="handled">
-            <ClassChoicesStep
-              plan={plan}
-              onToggle={(choiceId, option, choose) => setPlan(setPlanClassChoicePick(plan, choiceId, option, choose))}
-            />
-          </ScrollView>
+          <ClassChoicesStep
+            plan={plan}
+            onToggle={(choiceId, option, choose) => setPlan(setPlanClassChoicePick(plan, choiceId, option, choose))}
+          />
         );
       case "spells":
         return (
-          <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.stepScrollContent} keyboardShouldPersistTaps="handled">
-            <SpellsStep
-              plan={plan}
-              spells={newSpellsForLevelUp(character, plan, flowOpts)}
-              onToggle={(spell) => setPlan(togglePlanSpell(plan, spell))}
-            />
-          </ScrollView>
+          <SpellsStep
+            plan={plan}
+            spells={newSpellsForLevelUp(character, plan, flowOpts)}
+            onToggle={(spell) => setPlan(togglePlanSpell(plan, spell))}
+          />
         );
       case "review":
-        return (
-          <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.stepScrollContent} keyboardShouldPersistTaps="handled">
-            <ReviewStep rows={levelUpSummary(plan, character, { ...flowOpts, fullHealOnLevelUp })} />
-          </ScrollView>
-        );
+        return <ReviewStep rows={levelUpSummary(plan, character, { ...flowOpts, fullHealOnLevelUp })} />;
     }
   };
 
@@ -274,13 +259,22 @@ export default function LevelUpScreen() {
         onOpenStep={(stepId) => setOpenStepId(stepId as LevelUpStepId)}
         topRow={topRow}
         stepTitle={<FlowStepTitle title={LEVEL_UP_STEP_TITLES[openStep.id]} />}
-        content={stepContent()}
+        content={
+          <ScrollView
+            style={{ flex: 1 }}
+            testID="levelup-step-scroll"
+            contentContainerStyle={[styles.stepScrollContent, flowScrollPad]}
+            keyboardShouldPersistTaps="handled"
+          >
+            {stepContent()}
+          </ScrollView>
+        }
         primaryAction={
           <Button
             title={openStep.id === "review" ? "Level up" : "Continue"}
             variant="primary"
             size="lg"
-            disabled={!stepComplete(openStep.id)}
+            disabled={applying || !stepComplete(openStep.id)}
             onPress={onPrimary}
             style={styles.primaryAction}
           />

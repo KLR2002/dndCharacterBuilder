@@ -1,10 +1,13 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { makeChar, inMemoryCompendium } from "./testUtils.ts";
+import { makeChar, inMemoryCompendium, srdBaselineCompendium } from "./testUtils.ts";
+import { wardenClass } from "./proficiencySheetFixture.ts";
 import { ALL_BOOKS } from "../src/constants/books.ts";
-import { planLevelUp, applyLevelUpPlan, type LevelUpPlan } from "../src/rules/levelUpFlow.ts";
+import { planLevelUp, applyLevelUpPlan, newSpellsForLevelUp, planAverageHitPoints, subclassOptionsForPlan, togglePlanSpell, type LevelUpPlan } from "../src/rules/levelUpFlow.ts";
 import { maxHp } from "../src/rules/hp.ts";
+import { totalLevel } from "../src/rules/proficiencies.ts";
 import { removeClassLevel } from "../src/rules/builderTransitions.ts";
+import type { SubclassData } from "../src/types/dnd5e.ts";
 
 const FIGHTER_3 = makeChar({
   baseAbilityScores: { str: 15, dex: 14, con: 14, int: 10, wis: 10, cha: 10 },
@@ -99,6 +102,34 @@ test("a Fighter 3->4 plan still does not include Class Choices", () => {
   const result = planLevelUp(FIGHTER_3, { className: "Fighter" });
   if (!result.ok) assert.fail(result.reason);
   assert.ok(!result.plan.steps.some((s) => s.id === "classChoices"));
+});
+
+test("a level reaching the subclass level plans no Subclass step when the active books offer none", () => {
+  // The Warden's only subclass comes from XGE: with XGE switched off no subclass is offered, so the step
+  // is skipped the same way the builder's pending-subclass reader skips it.
+  const lampwright = {
+    name: "Lampwright",
+    shortName: "Lampwright",
+    source: "XGE",
+    className: "Warden",
+    classSource: "PHB",
+  } as unknown as SubclassData;
+  const compendium = inMemoryCompendium({ classes: [wardenClass({ subclasses: [lampwright] })] });
+  const warden = makeChar({
+    baseAbilityScores: { str: 10, dex: 10, con: 10, int: 10, wis: 10, cha: 10 },
+    classes: [{ className: "Warden", source: "PHB", level: 2 }],
+  });
+  const withoutBook = planLevelUp(warden, { className: "Warden", compendium, activeBooks: ["PHB"] });
+  if (!withoutBook.ok) assert.fail(withoutBook.reason);
+  assert.equal(subclassOptionsForPlan(withoutBook.plan, { compendium, activeBooks: ["PHB"] }).length, 0);
+  assert.deepEqual(
+    withoutBook.plan.steps.map((s) => s.id),
+    ["class", "hitPoints", "review"],
+    "no Subclass step when no subclass is offered in the active books"
+  );
+  const withBook = planLevelUp(warden, { className: "Warden", compendium, activeBooks: ["PHB", "XGE"] });
+  if (!withBook.ok) assert.fail(withBook.reason);
+  assert.ok(withBook.plan.steps.some((s) => s.id === "subclass"), "with the book on, the Subclass step is planned");
 });
 
 test("a new class with an unmet requirement is refused, naming the requirement", () => {
@@ -329,6 +360,39 @@ test("applying a Wizard 1->2 plan sets the level, the subclass pick and the lear
   assert.ok((applied.knownSpells ?? []).some((s) => s.name === "Magic Missile"));
 });
 
+test("raising an already-held second class in a multiclass level-up applies the level and its picks", () => {
+  // Fighter 3 / Wizard 2 leveling the held Wizard to 3.
+  const fw = makeChar({
+    baseAbilityScores: { str: 15, dex: 14, con: 13, int: 16, wis: 10, cha: 8 },
+    classes: [
+      { className: "Fighter", source: "PHB", level: 3, subclassName: "Battle Master", subclassSource: "PHB" },
+      { className: "Wizard", source: "PHB", level: 2, subclassName: "Evocation", subclassSource: "PHB" },
+    ],
+    knownSpells: [{ name: "Fire Bolt", source: "PHB", ownerKey: "Wizard__PHB" }],
+  });
+  const result = planLevelUp(fw, { className: "Wizard" });
+  if (!result.ok) assert.fail(result.reason);
+  assert.equal(result.plan.fromLevel, 2, "the held second class is raised, not re-entered");
+  assert.equal(result.plan.toLevel, 3);
+  assert.deepEqual(
+    result.plan.steps.map((s) => s.id),
+    ["class", "hitPoints", "spells", "review"],
+    "the held subclass stays held, so no Subclass step; the new spell level brings the Spells step"
+  );
+  const spell = newSpellsForLevelUp(fw, result.plan)[0];
+  assert.ok(spell, "the new level offers spells to learn");
+  const planned = togglePlanSpell(result.plan, spell);
+  const hpBefore = maxHp(fw);
+  const applied = applyLevelUpPlan(fw, planned, { fullHealOnLevelUp: false });
+  const wiz = applied.classes.find((c) => c.className === "Wizard");
+  assert.equal(wiz?.level, 3, "the held second class is raised to 3");
+  assert.equal(wiz?.subclassName, "Evocation", "the held subclass is untouched");
+  assert.equal(applied.classes.find((c) => c.className === "Fighter")?.level, 3, "the other class is untouched");
+  assert.equal(totalLevel(applied), 6);
+  assert.ok((applied.knownSpells ?? []).some((s) => s.name === spell.name), "the learned spell applies with the level");
+  assert.equal(maxHp(applied), hpBefore + planAverageHitPoints(result.plan, fw), "the level's hit points apply with it");
+});
+
 test("a plan refuses a class already at level 20 and a character already at total level 20", () => {
   const scores = { str: 15, dex: 14, con: 14, int: 16, wis: 12, cha: 10 };
   const capped = makeChar({ baseAbilityScores: scores, classes: [{ className: "Fighter", source: "PHB", level: 20 }] });
@@ -347,6 +411,76 @@ test("a plan refuses a class already at level 20 and a character already at tota
     ],
   });
   assert.equal(planLevelUp(split, { className: "Fighter" }).ok, false, "total level 20 refuses another level");
+});
+
+test("applyLevelUpPlan applies a subclass only on a plan's Subclass step and never replaces a held one", () => {
+  const srd = srdBaselineCompendium();
+  const scores = { str: 15, dex: 14, con: 14, int: 10, wis: 10, cha: 10 };
+  const fighterAt = (level: number, subclassName?: string) =>
+    makeChar({
+      baseAbilityScores: scores,
+      classes: [
+        {
+          className: "Fighter",
+          source: "PHB",
+          level,
+          ...(subclassName ? { subclassName, subclass: subclassName, subclassSource: "SRD" } : {}),
+        },
+      ],
+    });
+
+  // Level 2 is below the Fighter's subclass level: the plan has no Subclass step, so the sole
+  // offered subclass is not applied.
+  const to2 = planLevelUp(fighterAt(1), { className: "Fighter", compendium: srd, activeBooks: ALL_BOOKS });
+  if (!to2.ok) assert.fail(to2.reason);
+  assert.ok(!to2.plan.steps.some((s) => s.id === "subclass"));
+  const applied2 = applyLevelUpPlan(fighterAt(1), to2.plan, { compendium: srd, activeBooks: ALL_BOOKS, fullHealOnLevelUp: false });
+  assert.equal(applied2.classes[0].level, 2);
+  assert.equal(applied2.classes[0].subclassName, undefined, "no Subclass step, no subclass applied");
+
+  // Level 3 reaches the subclass level: the plan has the step and the sole offered subclass is taken.
+  const to3 = planLevelUp(fighterAt(2), { className: "Fighter", compendium: srd, activeBooks: ALL_BOOKS });
+  if (!to3.ok) assert.fail(to3.reason);
+  assert.ok(to3.plan.steps.some((s) => s.id === "subclass"));
+  const applied3 = applyLevelUpPlan(fighterAt(2), to3.plan, { compendium: srd, activeBooks: ALL_BOOKS, fullHealOnLevelUp: false });
+  assert.equal(applied3.classes[0].level, 3);
+  assert.equal(applied3.classes[0].subclassName, "Champion");
+
+  // A later level-up has no Subclass step and never touches the held subclass, even with a pick recorded.
+  const to4 = planLevelUp(applied3, {
+    className: "Fighter",
+    compendium: srd,
+    activeBooks: ALL_BOOKS,
+    picks: { subclass: { name: "Battle Master", source: "PHB" } },
+  });
+  if (!to4.ok) assert.fail(to4.reason);
+  assert.ok(!to4.plan.steps.some((s) => s.id === "subclass"), "a held subclass means no Subclass step");
+  const applied4 = applyLevelUpPlan(applied3, to4.plan, { compendium: srd, activeBooks: ALL_BOOKS, fullHealOnLevelUp: false });
+  assert.equal(applied4.classes[0].level, 4);
+  assert.equal(applied4.classes[0].subclassName, "Champion", "a held subclass is never replaced");
+});
+
+test("applyLevelUpPlan refuses a plan whose class is no longer at plan.fromLevel (a double apply changes nothing)", () => {
+  const to4 = planLevelUp(FIGHTER_3, { className: "Fighter", hitPoints: { mode: "average" } });
+  if (!to4.ok) assert.fail(to4.reason);
+  const appliedOnce = applyLevelUpPlan(FIGHTER_3, to4.plan, { fullHealOnLevelUp: false });
+  assert.equal(appliedOnce.classes[0].level, 4);
+  // Applying the same plan to its own output (a double-tapped Review) returns the Character unchanged.
+  const appliedTwice = applyLevelUpPlan(appliedOnce, to4.plan, { fullHealOnLevelUp: false });
+  assert.equal(appliedTwice, appliedOnce, "a plan whose class moved on from fromLevel is refused");
+  assert.equal(appliedTwice.classes[0].level, 4);
+
+  // The same for a new multiclass class: the plan's fromLevel is 0, so once the class is held the plan is stale.
+  const wizard3 = makeChar({
+    baseAbilityScores: { str: 14, dex: 10, con: 14, int: 16, wis: 12, cha: 10 },
+    classes: [{ className: "Wizard", source: "PHB", level: 3 }],
+  });
+  const entry = planLevelUp(wizard3, { className: "Fighter", source: "PHB" });
+  if (!entry.ok) assert.fail(entry.reason);
+  assert.equal(entry.plan.fromLevel, 0);
+  const withFighter = applyLevelUpPlan(wizard3, entry.plan, { fullHealOnLevelUp: false });
+  assert.ok(withFighter.classes.some((c) => c.className === "Fighter" && c.level === 1));
+  assert.equal(applyLevelUpPlan(withFighter, entry.plan, { fullHealOnLevelUp: false }), withFighter);
 });
 
 test("applyLevelUpPlan refuses a stale plan that would take a class or the character beyond level 20", () => {

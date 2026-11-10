@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import React, { useEffect, useState } from "react";
-import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { ScrollView, StyleSheet, Text, TouchableOpacity, View, type ViewStyle } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRollLog } from "../../context/RollLogContext";
 import { useAppTheme } from "../../context/ThemeContext";
@@ -75,6 +75,7 @@ export function FlowShell({
     <TouchableOpacity
       key={step.id}
       accessibilityRole="button"
+      accessibilityLabel={step.title}
       accessibilityState={{ disabled: step.locked }}
       disabled={step.locked}
       onPress={() => onOpenStep(step.id)}
@@ -180,6 +181,16 @@ export function FlowShell({
       </Modal>
     </SafeAreaView>
   );
+}
+
+/**
+ * Extra contentContainerStyle for a flow's step scroll content: on phones the floating dice button (56dp,
+ * sitting 16dp above the flow's bottom bar) must not cover the last rows, so the content pads its bottom by
+ * 56 + 16 there; at 768px and up the button sits at the viewport's bottom-right corner and nothing is added.
+ */
+export function useFlowStepScrollContentPadding(): ViewStyle {
+  const { width } = useResponsiveLayout();
+  return width >= 768 ? {} : { paddingBottom: 56 + 16 };
 }
 
 /** The serif title row of the open step, with its needs-attention mark. */
