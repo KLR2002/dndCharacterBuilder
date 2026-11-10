@@ -37,7 +37,8 @@ One spec, `.scratch/app-redesign/spec.md`, covering the Creation Flow, the Level
 - [03: Creation Flow and visual direction prototype](issues/03-creation-flow-prototype.md): variant B, step chips plus an identity bar that opens a bottom sheet; Character Select layout with the existing themes; no non-deciding facts on choice rows; wide screens get a designed layout.
 - [04: Visual system](issues/04-visual-system.md): existing themes kept and fixed for AA with two tones per accent (saturated fill, bright ink); Source Serif 4 for names and titles; sheets on phones, dialogs on wide; designed wide layouts; contrast check over every accent.
 - [05: Level-Up Flow and dice prototype](issues/05-level-up-and-dice-prototype.md): pool-builder tray; tap a bonus to roll, hold for a Disadvantage / Roll / Advantage sheet; a result card above the dice button, Roll Log as a tab in the tray; Level-Up Flow in the Creation Flow's layout.
-- Build: tickets 06-14 landed on `feat/app-redesign` at `a7a1e85`, gate PASS (`evidence.md`). Ticket 05 resolved, so tickets 15-19 are unblocked; ticket 20 is open.
+- [20: Character sheet and Home](issues/20-sheet-and-home-restyle.md): all six tabs in one bottom bar on phones; compact header with a menu on phones, header actions in the left rail at 768px and up; two columns on wide screens; Home a list on phones, a grid on wide screens.
+- Build: tickets 06-14 landed on `feat/app-redesign` at `a7a1e85`, gate PASS (`evidence.md`). Ticket 05 resolved, so tickets 15-19 are unblocked; ticket 20 resolved.
 
 ## Not yet specified
 
