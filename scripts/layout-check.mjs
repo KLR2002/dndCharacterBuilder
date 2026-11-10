@@ -1399,6 +1399,12 @@ async function checkActionRolls(ctx, width) {
     return el ? el.closest('[data-testid^="roll-badge"]') === null : false;
   });
   if (!plainDamage) fail('"Cantrip scaling" is inside a roll badge, expected plain text');
+  // Only spells that make a spell attack get a "to hit" badge: Light and Mage Hand (rows 1 and 2) keep
+  // their rows and their plain damage label, but no to-hit roll badge.
+  for (const idx of [1, 2]) {
+    if ((await page.locator(`[data-testid="roll-badge-spell-${idx}-tohit"]`).count()) > 0)
+      fail(`spell row ${idx} (Light / Mage Hand, no spell attack) shows a "to hit" roll badge`);
+  }
   await setFaces([11]);
   await spellToHit.click();
   await page.waitForSelector(cardSel, { state: "visible", timeout: 10000 }).catch(() => fail("no result card after tapping the spell badge"));

@@ -141,6 +141,31 @@ test("the ledger gives spell attack rows the casting profile's attack bonus", ()
   assert.equal(fireBolt.attackBonus, 5);
 });
 
+test("a spell row gets an attack bonus only when the spell makes a spell attack (SRD records)", () => {
+  const char = makeChar({
+    id: "char_spell_attack_rows",
+    name: "Bryn",
+    classes: [{ className: "Wizard", source: "PHB", level: 3 }],
+    baseAbilityScores: { str: 8, dex: 14, con: 12, int: 16, wis: 12, cha: 10 },
+    knownSpells: ["Fire Bolt", "Ray of Frost", "Sacred Flame", "Light", "Fireball"].map((name) => ({
+      name,
+      source: "PHB",
+      ownerKey: "Wizard__PHB",
+    })),
+  });
+  const evaluated = evaluateCharacter(char, { activeBooks: ALL_BOOKS });
+  const ledger = getTacticalActionLedger(char, evaluated, { activeBooks: ALL_BOOKS });
+  const byName = new Map(ledger.spellAttacks.map((s) => [s.name, s]));
+  // Ranged spell attack cantrips roll the profile's bonus, so their rows show a "to hit" badge.
+  assert.equal(byName.get("Fire Bolt")?.attackBonus, 5);
+  assert.equal(byName.get("Ray of Frost")?.attackBonus, 5);
+  // Save-based or utility spells keep their row (and any damage badge) but get no "to hit" badge.
+  for (const name of ["Sacred Flame", "Light", "Fireball"]) {
+    assert.ok(byName.has(name), `the ${name} row is missing from the ledger`);
+    assert.equal(byName.get(name)?.attackBonus, undefined, `${name} must not carry an attack bonus`);
+  }
+});
+
 test("a multiclass caster's spell rows get the owning profile's bonus; an unowned spell gets none", () => {
   const char = makeChar({
     id: "char_multi_caster",
@@ -158,12 +183,14 @@ test("a multiclass caster's spell rows get the owning profile's bonus; an unowne
   });
   const evaluated = evaluateCharacter(char, { activeBooks: ALL_BOOKS });
   const ledger = getTacticalActionLedger(char, evaluated, { activeBooks: ALL_BOOKS });
-  // Cleric casts with Wis (+3), Wizard with Int (+2); proficiency +2 at total level 2.
+  // Cleric casts with Wis (+3), Wizard with Int (+2); proficiency +2 at total level 2. Fire Bolt makes a
+  // ranged spell attack, so its row carries the owning Wizard profile's bonus; Sacred Flame is a save and
+  // Light is unowned, so neither row carries an attack bonus.
   const sacredFlame = ledger.spellAttacks.find((s) => s.name === "Sacred Flame");
   const fireBolt = ledger.spellAttacks.find((s) => s.name === "Fire Bolt");
   const light = ledger.spellAttacks.find((s) => s.name === "Light");
   assert.ok(sacredFlame && fireBolt && light);
-  assert.equal(sacredFlame.attackBonus, 5);
+  assert.equal(sacredFlame.attackBonus, undefined);
   assert.equal(fireBolt.attackBonus, 4);
   assert.equal(light.attackBonus, undefined);
 });
