@@ -2078,11 +2078,25 @@ async function checkLevelUpCancelAndReview(ctx, width) {
   if (!(await page.getByText(/\d+ → \d+/, { exact: false }).first().isVisible().catch(() => false))) fail("Review does not list the hit points before → after");
   if (!(await page.getByText(/Average \+\d+/).first().isVisible().catch(() => false))) fail("Review does not list the hit points method");
   await page.screenshot({ path: join(SHOTS, `LevelUp-Review-${width}.png`) });
-  await page.getByText("Level up", { exact: true }).first().click();
+  // Double-tap "Level up": the applying guard (and the stale-plan refusal behind it) must apply the plan
+  // exactly once, so the stored character's total level rises by exactly 1.
+  const totalLevelOf = (c) => (c?.classes ?? []).reduce((sum, cl) => sum + (cl.level ?? 0), 0);
+  const storedBefore = await readStoredCharacter(page, LU_ID);
+  const levelBefore = totalLevelOf(storedBefore);
+  const levelUpBtn = page.getByText("Level up", { exact: true }).first();
+  // A real double-tap: two click events on the same button, before React re-renders it disabled.
+  await levelUpBtn.evaluate((el) => {
+    el.click();
+    el.click();
+  });
   await page.waitForTimeout(1500);
   if (!page.url().includes(`/character/${LU_ID}`)) fail(`"Level up" did not return to the sheet: ${page.url()}`);
   if (!(await waitForVisibleText(page, "Lvl 4")))
     fail("after Review the sheet does not show \"Lvl 4\": the plan was not applied");
+  const storedAfter = await readStoredCharacter(page, LU_ID);
+  const levelAfter = totalLevelOf(storedAfter);
+  if (levelAfter !== levelBefore + 1)
+    fail(`a double-tapped "Level up" moved the stored level from ${levelBefore} to ${levelAfter}, expected exactly +1`);
   await page.screenshot({ path: join(SHOTS, `LevelUp-Applied-${width}.png`) });
   await page.close();
   return failures;
