@@ -47,13 +47,15 @@ export function classStepOffer(): ClassStepOffer {
 }
 
 /**
- * The lowest level a held class can be lowered to in the build flow, by the class's index in `classes`:
- * 0 means lowering below 1 removes the class through `removeClassLevel`. The first class stays at least 1;
- * a later class can be lowered below 1, removing it. A draft or the free-form builder may lower any class
- * to removal, which the Class step reads as its offer having no raise or add-class action either.
+ * The lowest level a held class can be lowered to in the given build-flow context, by the class's index in
+ * `classes`: 0 means lowering below 1 removes the class through `removeClassLevel`. Edit Build (`"edit"`, a
+ * finished Character reopened in the flow) keeps the first class at least 1 while a later class can be
+ * lowered below 1, removing it; outside Edit Build (`undefined`: a draft or the free-form builder) any class
+ * may be lowered to removal.
  */
-export function classStepMinLevel(classIndex: number): number {
-  return classIndex > 0 ? 0 : 1;
+export function classStepMinLevel(mode: "edit" | undefined, classIndex: number): number {
+  if (mode === "edit") return classIndex > 0 ? 0 : 1;
+  return 0;
 }
 
 /** Options of the step-change functions: `editBuild` records the change on a finished Character in Edit Build. */

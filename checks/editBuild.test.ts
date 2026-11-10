@@ -271,8 +271,8 @@ describe("Lowering a class level in Edit Build releases that level's picks and n
   });
 
   test("Edit Build lowers a non-first class below 1, removing it; the first class stays at least 1", () => {
-    assert.equal(classStepMinLevel(0), 1, "the first class stays at least level 1 in Edit Build");
-    assert.equal(classStepMinLevel(1), 0, "a later class can be lowered below 1, which removes it");
+    assert.equal(classStepMinLevel("edit", 0), 1, "the first class stays at least level 1 in Edit Build");
+    assert.equal(classStepMinLevel("edit", 1), 0, "a later class can be lowered below 1, which removes it");
     const fw = finishedFighterWizard();
     const withWizard1: Character = { ...fw, classes: [fw.classes[0], { className: "Wizard", source: "PHB", level: 1 }] };
     const lowered = applyCreationStepEdit(
