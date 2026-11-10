@@ -136,7 +136,10 @@ export function planLevelUp(character: Character, options: PlanLevelUpOptions): 
 
   const atLevel: CharacterClass = { className, source, level: toLevel, ...(heldSubclass ? { subclassName: heldSubclass } : {}) };
   const wanted = new Set<LevelUpStepId>(["class", "hitPoints", "review"]);
-  if (toLevel >= subclassLevel(className) && !heldSubclass) wanted.add("subclass");
+  // A level that reaches the subclass level brings a Subclass step only when the active books offer at
+  // least one; with none offered the step could never complete, so it is skipped like `leveling.ts` does.
+  if (toLevel >= subclassLevel(className) && !heldSubclass && subclassOptions(className, source, { compendium, activeBooks }).length > 0)
+    wanted.add("subclass");
   if (asiLevels(className).includes(toLevel)) wanted.add("asiFeat");
   // The same shared reader the Creation Flow uses decides the Class Choices step, evaluated on the
   // planned class at the new level; a multiclass entry's skill pick is found here too.
@@ -465,20 +468,29 @@ export function setPlanClassChoicePick(plan: LevelUpPlan, choiceId: string, opti
   return { ...plan, picks: { ...plan.picks, classChoicePicks: { ...plan.picks.classChoicePicks, [choiceId]: next } } };
 }
 
-/** The subclasses the planned class offers at the new level in the active books. */
-export function subclassOptionsForPlan(
-  plan: LevelUpPlan,
+/** The subclasses a class offers in the active books. */
+export function subclassOptions(
+  className: string,
+  source: string,
   opts: { compendium?: Compendium; activeBooks?: ActiveBooks } = {}
 ): { name: string; source: string }[] {
   const compendium = opts.compendium ?? currentCompendium();
   const activeBooks = opts.activeBooks ?? DEFAULT_ACTIVE_BOOK_CODES;
   const classes = allCatalogClasses({ compendium, activeBooks });
-  const cd = findClassData(classes, { className: plan.className, source: plan.source });
+  const cd = findClassData(classes, { className, source });
   const upper = activeBooks.map((b) => b.toUpperCase());
   return (cd?.subclasses ?? [])
     // The SRD Baseline's records count as active whatever books are switched on.
     .filter((sub) => !sub.source || sub.source.toUpperCase() === SRD_SOURCE || upper.includes(sub.source.toUpperCase()))
     .map((sub) => ({ name: sub.name, source: sub.source }));
+}
+
+/** The subclasses the planned class offers at the new level in the active books. */
+export function subclassOptionsForPlan(
+  plan: LevelUpPlan,
+  opts: { compendium?: Compendium; activeBooks?: ActiveBooks } = {}
+): { name: string; source: string }[] {
+  return subclassOptions(plan.className, plan.source, opts);
 }
 
 /**

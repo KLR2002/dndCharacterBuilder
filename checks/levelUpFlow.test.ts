@@ -1,10 +1,12 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { makeChar, inMemoryCompendium, srdBaselineCompendium } from "./testUtils.ts";
+import { wardenClass } from "./proficiencySheetFixture.ts";
 import { ALL_BOOKS } from "../src/constants/books.ts";
-import { planLevelUp, applyLevelUpPlan, type LevelUpPlan } from "../src/rules/levelUpFlow.ts";
+import { planLevelUp, applyLevelUpPlan, subclassOptionsForPlan, type LevelUpPlan } from "../src/rules/levelUpFlow.ts";
 import { maxHp } from "../src/rules/hp.ts";
 import { removeClassLevel } from "../src/rules/builderTransitions.ts";
+import type { SubclassData } from "../src/types/dnd5e.ts";
 
 const FIGHTER_3 = makeChar({
   baseAbilityScores: { str: 15, dex: 14, con: 14, int: 10, wis: 10, cha: 10 },
@@ -99,6 +101,34 @@ test("a Fighter 3->4 plan still does not include Class Choices", () => {
   const result = planLevelUp(FIGHTER_3, { className: "Fighter" });
   if (!result.ok) assert.fail(result.reason);
   assert.ok(!result.plan.steps.some((s) => s.id === "classChoices"));
+});
+
+test("a level reaching the subclass level plans no Subclass step when the active books offer none", () => {
+  // The Warden's only subclass comes from XGE: with XGE switched off no subclass is offered, so the step
+  // is skipped the same way the builder's pending-subclass reader skips it.
+  const lampwright = {
+    name: "Lampwright",
+    shortName: "Lampwright",
+    source: "XGE",
+    className: "Warden",
+    classSource: "PHB",
+  } as unknown as SubclassData;
+  const compendium = inMemoryCompendium({ classes: [wardenClass({ subclasses: [lampwright] })] });
+  const warden = makeChar({
+    baseAbilityScores: { str: 10, dex: 10, con: 10, int: 10, wis: 10, cha: 10 },
+    classes: [{ className: "Warden", source: "PHB", level: 2 }],
+  });
+  const withoutBook = planLevelUp(warden, { className: "Warden", compendium, activeBooks: ["PHB"] });
+  if (!withoutBook.ok) assert.fail(withoutBook.reason);
+  assert.equal(subclassOptionsForPlan(withoutBook.plan, { compendium, activeBooks: ["PHB"] }).length, 0);
+  assert.deepEqual(
+    withoutBook.plan.steps.map((s) => s.id),
+    ["class", "hitPoints", "review"],
+    "no Subclass step when no subclass is offered in the active books"
+  );
+  const withBook = planLevelUp(warden, { className: "Warden", compendium, activeBooks: ["PHB", "XGE"] });
+  if (!withBook.ok) assert.fail(withBook.reason);
+  assert.ok(withBook.plan.steps.some((s) => s.id === "subclass"), "with the book on, the Subclass step is planned");
 });
 
 test("a new class with an unmet requirement is refused, naming the requirement", () => {
