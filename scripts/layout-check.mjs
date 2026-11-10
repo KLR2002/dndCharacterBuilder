@@ -153,7 +153,7 @@ function findHeaderNameViolations({ name, width }) {
     const sr = sub.getBoundingClientRect();
     if (sub.scrollWidth > sub.clientWidth + 1)
       out.push(`the header race/class line is truncated (${sub.scrollWidth}px of text in ${sub.clientWidth}px): "${sub.textContent.trim()}"`);
-    if (!/• [^•]*\d+$/.test(sub.textContent.trim()))
+    if (!/• [^•]*\d+( • [^•]+)?$/.test(sub.textContent.trim()))
       out.push(`the header race/class line lost the class level: "${sub.textContent.trim()}"`);
     if (sr.right > window.innerWidth + 1) out.push(`the header race/class line sticks out of the screen by ${Math.round(sr.right - window.innerWidth)}px`);
   }
@@ -2617,6 +2617,75 @@ async function checkSheetChrome(ctx, width) {
     if (b.centerOff > 2) fail(`the ${b.name} roll badge is ${Math.round(b.centerOff * 10) / 10}px off its card's centre axis`);
     if (b.height > b.contentPlusPad + 1)
       fail(`the ${b.name} roll badge is ${Math.round(b.height)}px tall, over its content plus padding (${Math.round(b.contentPlusPad)}px)`);
+  }
+
+  // The header's race/class line: on phones race • class and level (no size), whole; at 768px and up the
+  // full line with the size. Neither may be truncated at any width.
+  const headerLine = await page.evaluate(() => {
+    const header = document.querySelector('[data-testid="sheet-header"]');
+    if (!header) return null;
+    const leaves = [...header.querySelectorAll("*")].filter((e) => e.children.length === 0 && e.getBoundingClientRect().height > 0);
+    const sub = leaves.find((e) => e.textContent.includes("•"));
+    if (!sub) return null;
+    return { text: sub.textContent.trim(), sw: sub.scrollWidth, cw: sub.clientWidth };
+  });
+  if (!headerLine) fail("the sheet header's race/class line is missing");
+  else {
+    if (width < 768) {
+      if (!/• Paladin 1$/.test(headerLine.text)) fail(`the phone header line is "${headerLine.text}", expected it to end with the class level ("• Paladin 1")`);
+      if (/Medium/.test(headerLine.text)) fail(`the phone header line still shows the size: "${headerLine.text}"`);
+    } else if (!/• Paladin 1 • Medium$/.test(headerLine.text)) fail(`the wide header line is "${headerLine.text}", expected the full line with the size`);
+    if (headerLine.sw > headerLine.cw + 1)
+      fail(`the header race/class line is truncated at ${width}px (${headerLine.sw}px of text in ${headerLine.cw}px): "${headerLine.text}"`);
+  }
+
+  // The four combat stat cards: four across, or 2x2 when the row is too narrow for four - never a 3+1 wrap -
+  // with every label on one line and unclipped.
+  const quads = await page.evaluate(() => {
+    const ids = ["stat-box-ac", "stat-box-initiative", "stat-box-speed", "stat-box-proficiency"];
+    return ids.map((id) => {
+      const el = document.querySelector(`[data-testid="${id}"]`);
+      if (!el) return { id, missing: true };
+      const r = el.getBoundingClientRect();
+      const label = [...el.querySelectorAll("*")].find((e) => e.children.length === 0 && /^[A-Z ]{4,}$/.test(e.textContent.trim()));
+      return {
+        id,
+        top: r.top,
+        width: r.width,
+        labelSW: label ? label.scrollWidth : null,
+        labelCW: label ? label.clientWidth : null,
+        labelH: label ? label.getBoundingClientRect().height : null,
+      };
+    });
+  });
+  if (quads.some((q) => q.missing)) fail("missing one of the four combat stat boxes (stat-box-ac / -initiative / -speed / -proficiency)");
+  else {
+    const rows = new Map();
+    for (const q of quads) {
+      const key = Math.round(q.top);
+      rows.set(key, (rows.get(key) ?? 0) + 1);
+    }
+    const pattern = [...rows.values()].sort((a, b) => b - a);
+    const ok = (pattern.length === 1 && pattern[0] === 4) || (pattern.length === 2 && pattern[0] === 2 && pattern[1] === 2);
+    if (!ok) fail(`the four stat cards lay out ${pattern.join("+")} at ${width}px, expected 4 across or 2x2, never 3+1`);
+    for (const q of quads) {
+      if (q.labelSW !== null && q.labelSW > q.labelCW + 1) fail(`the ${q.id} label is clipped (${q.labelSW}px of text in ${q.labelCW}px)`);
+      if (q.labelH !== null && q.labelH > 14) fail(`the ${q.id} label wraps to ${Math.round(q.labelH)}px, over one 9px line`);
+    }
+  }
+
+  // The rest button's label is "Take Rest" on one line (the short/long choice lives in the modal).
+  const rest = await page.evaluate(() => {
+    const leaves = [...document.querySelectorAll("*")].filter((e) => e.children.length === 0 && e.getBoundingClientRect().height > 0);
+    const restLabel = leaves.find((e) => /Take Rest/.test(e.textContent));
+    const condLabel = leaves.find((e) => /^Conditions \(/.test(e.textContent.trim()));
+    if (!restLabel) return null;
+    return { text: restLabel.textContent.trim(), h: restLabel.getBoundingClientRect().height, condH: condLabel ? condLabel.getBoundingClientRect().height : null };
+  });
+  if (!rest) fail("no Take Rest button on the Stats tab");
+  else {
+    if (rest.text !== "Take Rest") fail(`the rest button's label is "${rest.text}", expected "Take Rest"`);
+    if (rest.condH !== null && rest.h > rest.condH + 2) fail(`the rest button's label wraps to ${Math.round(rest.h)}px at ${width}px, over the one-line "Conditions" label (${Math.round(rest.condH)}px)`);
   }
 
   await page.screenshot({ path: join(SHOTS, `SheetChrome-${width}.png`) });

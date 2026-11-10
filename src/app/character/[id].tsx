@@ -130,6 +130,11 @@ export default function CharacterSheetScreen() {
     .join(" / ") || "Lvl 1";
   const raceName = currentCharacter.race?.name ?? "Race Unset";
   const sizeSummary = currentCharacter.race ? resolvedSize(currentCharacter, { activeBooks }) : undefined;
+  // On phones the line under the name is race • class and level; the size stays only at 768px and up,
+  // where the full line fits.
+  const subLineText = isTablet
+    ? `${raceName} • ${classSummary}${sizeSummary ? ` • ${sizeSummary}` : ""}`
+    : `${raceName} • ${classSummary}`;
   const canLevelUp = totalLevel < MAX_LEVEL;
 
   const startNameEdit = () => {
@@ -176,7 +181,7 @@ export default function CharacterSheetScreen() {
       testID="sheet-header"
       style={[styles.header, { backgroundColor: theme.surface, borderBottomColor: theme.border }]}
     >
-      <View style={styles.headerInner}>
+      <View style={[styles.headerInner, isCompact && styles.headerInnerCompact]}>
       <TouchableOpacity
         onPress={() => router.back()}
         accessibilityRole="button"
@@ -186,7 +191,7 @@ export default function CharacterSheetScreen() {
         <Ionicons name="arrow-back" size={20} color={theme.text} />
       </TouchableOpacity>
 
-      <View style={styles.nameBlock}>
+      <View style={[styles.nameBlock, isCompact && { marginHorizontal: 2 }]}>
         <View style={styles.nameRow}>
           {isEditingName ? (
             <TextInput
@@ -218,22 +223,25 @@ export default function CharacterSheetScreen() {
           )}
           <Badge label={`Lvl ${totalLevel}`} variant="accent" size="sm" style={{ flexShrink: 0 }} />
         </View>
-        <Text style={[styles.subLine, { color: theme.textSecondary }]} numberOfLines={1} ellipsizeMode="tail">
-          {raceName} • {classSummary}{sizeSummary ? ` • ${sizeSummary}` : ""}
+        <Text
+          style={[styles.subLine, { color: theme.textSecondary }, isCompact && { fontSize: 10 }]}
+          numberOfLines={1}
+          ellipsizeMode="tail">
+          {subLineText}
         </Text>
       </View>
 
-      <View style={styles.headerChips}>
+      <View style={[styles.headerChips, isCompact && { gap: 4 }]}>
         <TouchableOpacity
           {...hpQuickEdit.triggerProps}
-          style={[styles.chip, { borderColor: theme.border, backgroundColor: theme.surfaceHighlight }]}>
+          style={[styles.chip, isCompact && styles.chipCompact, { borderColor: theme.border, backgroundColor: theme.surfaceHighlight }]}>
           {activeWildShape ? (
             // The paw marks the number as beast HP, so it stays visible in compact layouts too.
             <Ionicons name="paw" size={14} color={activeWildShape.currentHp > 0 ? theme.hpGreen : theme.danger} />
           ) : (
             <Ionicons name="heart" size={14} color={currentCharacter.currentHp > 0 ? theme.hpGreen : theme.danger} />
           )}
-          <Text style={[styles.chipText, { color: theme.text }]}>
+          <Text style={[styles.chipText, { color: theme.text }, isCompact && { fontSize: 11 }]}>
             {activeWildShape
               ? `${activeWildShape.currentHp}/${activeWildShape.maxHp}`
               : `${currentCharacter.currentHp}/${maxHp}`}
@@ -241,9 +249,9 @@ export default function CharacterSheetScreen() {
           </Text>
         </TouchableOpacity>
 
-        <View style={[styles.chip, { borderColor: theme.border, backgroundColor: theme.surfaceHighlight }]}>
+        <View style={[styles.chip, isCompact && styles.chipCompact, { borderColor: theme.border, backgroundColor: theme.surfaceHighlight }]}>
           <Ionicons name="shield-outline" size={13} color={theme.accentHover} />
-          <Text style={[styles.chipText, { color: theme.text }]}>{evaluated.armorClass.ac}</Text>
+          <Text style={[styles.chipText, { color: theme.text }, isCompact && { fontSize: 11 }]}>{evaluated.armorClass.ac}</Text>
         </View>
 
         {!isTablet && (
@@ -354,6 +362,11 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     gap: 8,
   },
+  // At the tightest phone width the header gives the name block the room its race/class line needs.
+  headerInnerCompact: {
+    paddingHorizontal: 8,
+    gap: 6,
+  },
   headerIconBtn: {
     width: 40,
     height: 40,
@@ -407,6 +420,10 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     borderRadius: 6,
     borderWidth: 1,
+  },
+  chipCompact: {
+    paddingHorizontal: 4,
+    paddingVertical: 4,
   },
   chipText: {
     fontSize: 12,

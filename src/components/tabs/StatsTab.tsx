@@ -63,12 +63,19 @@ const SKILL_ABILITY_GROUPS: { key: AbilityKey; label: string }[] = [
   { key: "cha", label: "CHARISMA" },
 ];
 
+/** One combat stat card's minimum width: its label ("ARMOR CLASS", 67px at 9px bold) plus its border. */
+const STAT_BOX_MIN_WIDTH = 70;
+/** The gap between the combat stat cards. */
+const COMBAT_ROW_GAP = 8;
+
 export const StatsTab: React.FC = () => {
   const { currentCharacter, updateCharacter, activeBooks } = useCharacters();
   const { theme } = useAppTheme();
   const { isCompact, isTablet } = useResponsiveLayout();
 
   const [conditionModalVisible, setConditionModalVisible] = useState(false);
+  // The combat stat row's measured width: four cards across when it fits, otherwise 2x2 - never 3+1.
+  const [combatRowWidth, setCombatRowWidth] = useState(0);
   const [restModalVisible, setRestModalVisible] = useState(false);
   const [initiativeModalVisible, setInitiativeModalVisible] = useState(false);
   const [maxHpOverrideVisible, setMaxHpOverrideVisible] = useState(false);
@@ -256,7 +263,7 @@ export const StatsTab: React.FC = () => {
     <>
       <View style={styles.topActionsBar}>
         <Button
-          title="Take Rest (Short / Long)"
+          title="Take Rest"
           icon="bed"
           variant="outline"
           size="sm"
@@ -411,10 +418,18 @@ export const StatsTab: React.FC = () => {
     </>
   );
 
+  // Four across when the row is wide enough for four boxes whose labels stay on one line (the prototype's
+  // layout), otherwise 2x2 - never a 3+1 wrap.
+  const fourAcross = combatRowWidth >= 4 * STAT_BOX_MIN_WIDTH + 3 * COMBAT_ROW_GAP;
+  const combatBoxStyle = fourAcross ? styles.statBoxQuad : styles.statBoxHalf;
+
   const combatRowEl = (
     <>
-      <View style={styles.combatRow}>
+      <View
+        style={styles.combatRow}
+        onLayout={(e) => setCombatRowWidth(e.nativeEvent.layout.width)}>
         <TouchableOpacity
+          testID="stat-box-ac"
           hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
           onPress={() =>
             setDetailModal({
@@ -424,7 +439,7 @@ export const StatsTab: React.FC = () => {
               content: `Calculation Breakdown:\n${acBreakdown}\n\nBased on your equipped armor, shields, and class unarmored defense rules.`,
             })
           }
-          style={[styles.statBox, { backgroundColor: theme.surface, borderColor: theme.border }]}>
+          style={[styles.statBox, combatBoxStyle, { backgroundColor: theme.surface, borderColor: theme.border }]}>
           <Ionicons name="shield" size={18} color={theme.accentHover} />
           <Text style={[styles.statBoxValue, { color: theme.text }]}>{ac}</Text>
           <Text style={[styles.statBoxLabel, { color: theme.textMuted }]}>ARMOR CLASS</Text>
@@ -441,7 +456,7 @@ export const StatsTab: React.FC = () => {
           accessibilityLabel="Initiative breakdown"
           hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
           onPress={() => setInitiativeModalVisible(true)}
-          style={[styles.statBox, { backgroundColor: theme.surface, borderColor: theme.border }]}>
+          style={[styles.statBox, combatBoxStyle, { backgroundColor: theme.surface, borderColor: theme.border }]}>
           <Ionicons name="flash" size={18} color={theme.accentHover} />
           <RollBadge
             testID="roll-badge-initiative"
@@ -456,6 +471,7 @@ export const StatsTab: React.FC = () => {
         </TouchableOpacity>
 
         <TouchableOpacity
+          testID="stat-box-speed"
           onPress={() => {
             const speedContent = [
               `Walking Speed: ${speeds.walk} ft`,
@@ -485,7 +501,7 @@ export const StatsTab: React.FC = () => {
               content: speedContent,
             });
           }}
-          style={[styles.statBox, { backgroundColor: theme.surface, borderColor: theme.border }]}>
+          style={[styles.statBox, combatBoxStyle, { backgroundColor: theme.surface, borderColor: theme.border }]}>
           <Ionicons name="walk" size={18} color={theme.accentHover} />
           <Text style={[styles.statBoxValue, { color: theme.text }]}>{speeds.walk} ft</Text>
           <Text style={[styles.statBoxLabel, { color: theme.textMuted }]}>SPEED</Text>
@@ -507,7 +523,9 @@ export const StatsTab: React.FC = () => {
           )}
         </TouchableOpacity>
 
-        <View style={[styles.statBox, { backgroundColor: theme.surface, borderColor: theme.border }]}>
+        <View
+          testID="stat-box-proficiency"
+          style={[styles.statBox, combatBoxStyle, { backgroundColor: theme.surface, borderColor: theme.border }]}>
           <Ionicons name="ribbon" size={18} color={theme.accentHover} />
           <Text style={[styles.statBoxValue, { color: theme.text }]}>+{profBonus}</Text>
           <Text style={[styles.statBoxLabel, { color: theme.textMuted }]}>PROFICIENCY</Text>
@@ -1245,9 +1263,20 @@ const styles = StyleSheet.create({
   },
   combatRow: {
     flexDirection: "row",
-    gap: 8,
+    gap: COMBAT_ROW_GAP,
     marginBottom: 16,
     flexWrap: "wrap",
+  },
+  statBoxQuad: {
+    flexGrow: 1,
+    flexShrink: 1,
+    flexBasis: 0,
+    minWidth: 0,
+  },
+  statBoxHalf: {
+    flexGrow: 1,
+    flexBasis: "48%",
+    minWidth: 0,
   },
   classDiceStrip: {
     padding: 10,
