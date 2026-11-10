@@ -9,14 +9,17 @@ import { useAppTheme } from "../../context/ThemeContext";
 import { ABILITY_KEYS, ABILITY_LABELS, builderStyles as styles } from "../builder/builderStyles";
 import { Badge } from "../ui/Badge";
 import { SearchBar } from "../ui/SearchBar";
-import { featSubChoicesForSelection, type LevelUpPlan } from "../../rules/levelUpFlow";
+import { asiFeatStepView, type LevelUpPlan } from "../../rules/levelUpFlow";
 
 /**
  * The ASI/Feat step: the level's Ability Score Improvement or Feat, held in the plan. The same choice
  * structure as the builder's ASI/Feat section (ASI +2 to one ability or +1 to two, a feat with its
  * ability increase, and the feat's own rule choices such as a fighting style, maneuvers or an
- * invocation), but every completed selection writes the plan's picks instead of the Character. The
- * step stays incomplete until they are all made.
+ * invocation), but every selection writes the plan's picks instead of the Character. The step stays
+ * incomplete until they are all made. The step only renders while it is open, so it remounts when the
+ * player leaves it and returns: the whole selection (picked feat, its ability, its sub-choices, the
+ * ASI picks, the open tab) is derived from `plan.picks.asi` through `asiFeatStepView`, and only
+ * genuinely transient UI (the open tab, the ASI sub-mode, the search text) is local state.
  */
 export function AsiFeatStep({
   plan,
@@ -34,12 +37,9 @@ export function AsiFeatStep({
   onFeatPick: (choiceId: string, option: string, choose: number) => void;
 }) {
   const { theme } = useAppTheme();
-  const [tab, setTab] = useState<"asi" | "feat">("asi");
-  const [asiMode, setAsiMode] = useState<"plus2" | "plus1plus1">("plus2");
-  const [plus2Pick, setPlus2Pick] = useState<AbilityKey | null>(null);
-  const [plus1Picks, setPlus1Picks] = useState<AbilityKey[]>([]);
-  const [selectedFeat, setSelectedFeat] = useState<FeatData | null>(null);
-  const [featAbility, setFeatAbility] = useState<AbilityKey | null>(null);
+  const view = asiFeatStepView(plan, character, allFeats, { activeBooks });
+  const [tab, setTab] = useState<"asi" | "feat">(view.tab);
+  const [asiMode, setAsiMode] = useState<"plus2" | "plus1plus1">(view.asiMode);
   const [search, setSearch] = useState("");
 
   const slot: AsiSelection = {
@@ -55,25 +55,24 @@ export function AsiFeatStep({
   };
 
   const handlePlus2 = (ability: AbilityKey) => {
-    setPlus2Pick(ability);
     pickAsi({ [ability]: 2 });
   };
 
   const handlePlus1 = (ability: AbilityKey) => {
-    const next = plus1Picks.includes(ability)
-      ? plus1Picks.filter((p) => p !== ability)
-      : plus1Picks.length < 2
-        ? [...plus1Picks, ability]
-        : [plus1Picks[1], ability];
-    setPlus1Picks(next);
-    if (next.length === 2) pickAsi({ [next[0]]: 1, [next[1]]: 1 });
+    const current = view.plus1Picks;
+    const next = current.includes(ability)
+      ? current.filter((p) => p !== ability)
+      : current.length < 2
+        ? [...current, ability]
+        : [current[1], ability];
+    // Every tap writes the plan, half-finished picks included: starting an ASI pick replaces a feat
+    // in the plan at once, so the plan and the visible selection never disagree.
+    pickAsi(Object.fromEntries(next.map((key) => [key, 1])));
   };
 
   const handleFeat = (feat: FeatData) => {
-    setSelectedFeat(feat);
     const opts = getFeatAbilityBonusOptions(feat.name, feat);
     const ability = opts.type === "fixed" ? opts.abilities[0] : null;
-    setFeatAbility(ability);
     // Selecting a feat replaces the plan's pick at once. A feat offering +1 to one of several abilities
     // stays pending (no featAbility) until one is chosen below, and the step rejects it until then.
     onPick({
@@ -87,13 +86,13 @@ export function AsiFeatStep({
   };
 
   const handleFeatAbility = (ability: AbilityKey) => {
-    if (!selectedFeat) return;
-    setFeatAbility(ability);
+    const asi = plan.picks.asi;
+    if (asi?.type !== "feat" || !asi.featName) return;
     onPick({
       ...slot,
       type: "feat",
-      featName: selectedFeat.name,
-      featSource: selectedFeat.source,
+      featName: asi.featName,
+      featSource: asi.featSource,
       featAbility: ability,
       asi: { [ability]: 1 },
     });
@@ -189,7 +188,7 @@ export function AsiFeatStep({
           </View>
           <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6 }}>
             {ABILITY_KEYS.map((key) => {
-              const selected = asiMode === "plus2" ? plus2Pick === key : plus1Picks.includes(key);
+              const selected = asiMode === "plus2" ? view.plus2Pick === key : view.plus1Picks.includes(key);
               return (
                 <TouchableOpacity
                   key={key}
@@ -214,7 +213,7 @@ export function AsiFeatStep({
             {allFeats
               .filter((f) => f.name.toLowerCase().includes(search.toLowerCase()))
               .map((f) => {
-                const isSelected = selectedFeat?.name === f.name;
+                const isSelected = view.featName !== null && f.name.trim().toLowerCase() === view.featName.trim().toLowerCase();
                 const prereq = validateFeatPrerequisites(character, f, {
                   catalogs: { compendium: currentCompendium(), activeBooks },
                 });
@@ -251,9 +250,9 @@ export function AsiFeatStep({
                 );
               })}
           </ScrollView>
-          {selectedFeat &&
+          {view.featName !== null &&
             (() => {
-              const opts = getFeatAbilityBonusOptions(selectedFeat.name, selectedFeat);
+              const opts = view.featAbilityOptions;
               if (opts.type === "none") return null;
               return (
                 <View style={{ gap: 6 }}>
@@ -265,7 +264,7 @@ export function AsiFeatStep({
                   {opts.type === "choice" && (
                     <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6 }}>
                       {opts.abilities.map((ability) => {
-                        const isPicked = featAbility === ability;
+                        const isPicked = view.featAbility === ability;
                         return (
                           <TouchableOpacity
                             key={ability}
@@ -284,12 +283,7 @@ export function AsiFeatStep({
                 </View>
               );
             })()}
-          {selectedFeat &&
-            featSubChoicesForSelection(
-              character,
-              { ...slot, type: "feat", featName: selectedFeat.name, featSource: selectedFeat.source },
-              { activeBooks }
-            ).map((choice) => {
+          {view.subChoices.map((choice) => {
               const picked = plan.picks.featPicks?.[choice.id] ?? [];
               return (
                 <View key={choice.id} style={{ gap: 6 }}>
