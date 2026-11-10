@@ -1040,6 +1040,11 @@ async function checkDiceTrayAndLog(ctx, width) {
       }
       if (geo.bottom > geo.buttonTop + 1) fail(`the result card overlaps the floating button (card bottom ${Math.round(geo.bottom)}, button top ${Math.round(geo.buttonTop)})`);
     }
+    // The card is a polite live region, and its body names the source and total for screen readers.
+    const cardLive = await page.evaluate(() => document.querySelector('[data-testid="result-card"]')?.getAttribute("aria-live") ?? null);
+    if (cardLive !== "polite") fail(`the result card's aria-live is ${cardLive}, expected "polite"`);
+    if (!(await page.getByLabel("Kara · Longsword attack, total 20", { exact: true }).first().isVisible().catch(() => false)))
+      fail('the result card body is not accessible-labelled "Kara · Longsword attack, total 20"');
     // Tapping the card opens the tray on the Log segment, newest first.
     await page.click('[data-testid="result-card-body"]');
     await page.waitForSelector(dialogSel, { state: "visible", timeout: 10000 }).catch(() => fail("tapping the result card did not open the tray"));
@@ -1376,6 +1381,12 @@ async function checkActionRolls(ctx, width) {
   }
   await page.screenshot({ path: shot("attack") });
 
+  // The card body names the source and total for screen readers, and the follow-up button uses the
+  // secondary style, not the accent fill (the screen below has its own primary action).
+  if (!(await page.getByLabel("Kara · Longsword attack, total 20", { exact: true }).first().isVisible().catch(() => false)))
+    fail('the result card body is not accessible-labelled "Kara · Longsword attack, total 20"');
+  const cardLive = await page.evaluate(() => document.querySelector('[data-testid="result-card"]')?.getAttribute("aria-live") ?? null);
+  if (cardLive !== "polite") fail(`the result card's aria-live is ${cardLive}, expected "polite"`);
 
   // The follow-up rolls the damage pool 1d8 + 3 (fixed face clamps to 8 on the d8).
   await page.getByText("Roll damage", { exact: true }).first().click();

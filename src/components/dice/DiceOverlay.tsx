@@ -1,10 +1,10 @@
 import { Ionicons } from "@expo/vector-icons";
 import React, { useEffect } from "react";
-import { Pressable, StyleSheet, View } from "react-native";
+import { AccessibilityInfo, Platform, Pressable, StyleSheet, View } from "react-native";
 import { useAppTheme } from "../../context/ThemeContext";
 import { useRollLog } from "../../context/RollLogContext";
 import { useResponsiveLayout } from "../../hooks/useResponsiveLayout";
-import type { RollLogEntry } from "../../rules/rollLog.ts";
+import { entryHeading, type RollLogEntry } from "../../rules/rollLog.ts";
 import { Button } from "../ui/Button";
 import { DiceTray } from "./DiceTray";
 import { RollResultView } from "./rollViews";
@@ -60,6 +60,7 @@ function ResultCard({
   return (
     <View
       testID="result-card"
+      accessibilityLiveRegion="polite"
       style={[
         styles.card,
         {
@@ -70,7 +71,13 @@ function ResultCard({
           ...(fullWidth ? { left: 16 } : { maxWidth: 360 }),
         },
       ]}>
-      <Pressable testID="result-card-body" accessibilityRole="button" onPress={onOpenLog} style={styles.cardBody}>
+      <Pressable
+        testID="result-card-body"
+        accessibilityRole="button"
+        accessibilityLabel={`${entryHeading(entry)}, total ${entry.roll.total}`}
+        accessibilityHint="Opens the Roll Log"
+        onPress={onOpenLog}
+        style={styles.cardBody}>
         <RollResultView entry={entry} />
       </Pressable>
       {/* Sibling of the card body, not nested: press events bubble, and a nested button would also
@@ -116,6 +123,11 @@ export function DiceOverlay() {
     return () => clearTimeout(timer);
   }, [latestId, hasFollowUp, dismissResult]);
 
+  // On web the card's polite live region announces the result; native needs the explicit announcement.
+  useEffect(() => {
+    if (latest === null || Platform.OS === "web") return;
+    AccessibilityInfo.announceForAccessibility(`${entryHeading(latest)}, total ${latest.roll.total}`);
+  }, [latest]);
 
   const buttonBottom = insets.bottom + 16 + bottomObstruction;
 
