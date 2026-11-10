@@ -1300,6 +1300,10 @@ async function checkActionRolls(ctx, width) {
   }
   const before = await storedCharacter(ACTIONS_ID);
   if (!before) fail("the seeded character is not in storage");
+  // The snapshot window covers both seeded characters: Kara (a limited-use feature with a use left and
+  // ammunition) and Elowen (spell slots left, a use left, ammunition), compared again after every roll.
+  const beforeWizard = await storedCharacter(WIZARD_ID);
+  if (!beforeWizard) fail("the seeded wizard is not in storage");
   for (const v of await page.evaluate(findLayoutViolations, null)) fail(v);
   await page.screenshot({ path: shot("tab") });
 
@@ -1384,11 +1388,6 @@ async function checkActionRolls(ctx, width) {
   await page.keyboard.press("Escape");
   await page.waitForSelector(dialogSel, { state: "hidden", timeout: 10000 }).catch(() => fail("Escape did not close the details modal"));
 
-  // Nothing was spent: the stored character is unchanged by every roll.
-  const after = await storedCharacter(ACTIONS_ID);
-  if (!after) fail("the seeded character vanished from storage");
-  else if (JSON.stringify(after) !== JSON.stringify(before)) fail("the rolls changed the stored character (slots, uses or ammunition)");
-
   // A spell attack row rolls its casting profile's bonus; its non-pool damage label stays plain.
   await page.goto(`${BASE}/character/${WIZARD_ID}`, { waitUntil: "networkidle", timeout: 120000 });
   await page.waitForTimeout(1500);
@@ -1446,6 +1445,15 @@ async function checkActionRolls(ctx, width) {
     if (card.followUp !== null) fail(`the unarmed card offers a follow-up "${card.followUp}", expected none (flat damage)`);
   }
   await setFaces(null);
+
+  // Nothing was spent: every roll above — the weapon attack, its damage, the critical damage and the
+  // spell attack — left both stored characters byte-identical (slots, uses and ammunition included).
+  const after = await storedCharacter(ACTIONS_ID);
+  if (!after) fail("the seeded character vanished from storage");
+  else if (JSON.stringify(after) !== JSON.stringify(before)) fail("the rolls changed the stored character (slots, uses or ammunition)");
+  const afterWizard = await storedCharacter(WIZARD_ID);
+  if (!afterWizard) fail("the seeded wizard vanished from storage");
+  else if (JSON.stringify(afterWizard) !== JSON.stringify(beforeWizard)) fail("the spell attack changed the stored wizard (slots, uses or ammunition)");
   await page.close();
   return failures;
 }

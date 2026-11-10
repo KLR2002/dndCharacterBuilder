@@ -4,7 +4,7 @@ import { Platform, Pressable, StyleSheet, Text, View } from "react-native";
 import { useAppTheme } from "../../context/ThemeContext";
 import { useRollLog } from "../../context/RollLogContext";
 import { formatModifier } from "../../rules/abilities.ts";
-import { rollActionAttack, rollActionDamage } from "../../rules/actionRolls.ts";
+import { pressRollBadge } from "../../rules/actionRolls.ts";
 import type { D20Mode } from "../../rules/dice.ts";
 import { badgeVariantColors, type BadgeVariant } from "../ui/Badge";
 import { Button } from "../ui/Button";
@@ -68,20 +68,13 @@ export function RollBadge({
   const isD20 = modifier !== undefined;
 
   const rollWith = (mode: D20Mode) => {
-    if (!isD20) return;
-    rollActionAttack(
-      { attackBonus: modifier, damage: pool ?? "" },
-      { source, damageSource: poolSource ?? source, characterName },
-      mode,
-      publishRoll,
-    );
+    pressRollBadge({ modifier, pool, source, poolSource, characterName }, mode, publishRoll);
   };
 
   const onPress = (event?: { stopPropagation?: () => void }) => {
     // The badge sits inside a tappable row; the row's own tap must not also fire on web.
     event?.stopPropagation?.();
-    if (isD20) rollWith("none");
-    else if (pool) rollActionDamage(pool, { source, characterName }, publishRoll);
+    rollWith("none");
   };
 
   const onAccessibilityAction = (event: { nativeEvent: { actionName: string } }) => {
