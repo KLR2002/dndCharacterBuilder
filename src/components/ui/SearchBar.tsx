@@ -7,13 +7,14 @@ interface SearchBarProps {
   value: string;
   onChangeText: (text: string) => void;
   placeholder?: string;
+  testID?: string;
 }
 
-export const SearchBar: React.FC<SearchBarProps> = ({ value, onChangeText, placeholder = "Search..." }) => {
+export const SearchBar: React.FC<SearchBarProps> = ({ value, onChangeText, placeholder = "Search...", testID }) => {
   const { theme } = useAppTheme();
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.surfaceHighlight, borderColor: theme.border }]}>
+    <View testID={testID} style={[styles.container, { backgroundColor: theme.surfaceHighlight, borderColor: theme.border }]}>
       <Ionicons name="search" size={18} color={theme.textMuted} style={styles.icon} />
       <TextInput
         style={[styles.input, { color: theme.text }]}

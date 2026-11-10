@@ -4,7 +4,7 @@ import { ScrollView, StyleSheet, Text, TouchableOpacity, View, type ViewStyle } 
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRollLog } from "../../context/RollLogContext";
 import { useAppTheme } from "../../context/ThemeContext";
-import { useResponsiveLayout } from "../../hooks/useResponsiveLayout";
+import { BREAKPOINTS, useResponsiveLayout } from "../../hooks/useResponsiveLayout";
 import { useSerifFont } from "../../hooks/useSerifFont";
 
 import { Modal } from "../ui/Modal";
@@ -12,9 +12,10 @@ import { Modal } from "../ui/Modal";
 /**
  * The flow's wide breakpoint: at or above this width FlowShell shows the wide layout (step list, centre
  * step, identity side, footer); below it the phone layout with the bottom bar the floating dice button
- * sits above. The step scroll content's bottom padding switches at the same width.
+ * sits above. The step scroll content's bottom padding switches at the same width. It is BREAKPOINTS.tablet
+ * by reference, so the flows and the sheet always switch at the same width.
  */
-export const FLOW_WIDE_MIN_WIDTH = 768;
+export const FLOW_WIDE_MIN_WIDTH = BREAKPOINTS.tablet;
 
 /** One step as the flow chrome shows it: its title, and whether it is the open, current, done or locked one. */
 export interface FlowStepView {

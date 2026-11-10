@@ -63,12 +63,19 @@ const SKILL_ABILITY_GROUPS: { key: AbilityKey; label: string }[] = [
   { key: "cha", label: "CHARISMA" },
 ];
 
+/** One combat stat card's minimum width: its label ("ARMOR CLASS", 67px at 9px bold) plus its border. */
+const STAT_BOX_MIN_WIDTH = 70;
+/** The gap between the combat stat cards. */
+const COMBAT_ROW_GAP = 8;
+
 export const StatsTab: React.FC = () => {
   const { currentCharacter, updateCharacter, activeBooks } = useCharacters();
   const { theme } = useAppTheme();
-  const { isCompact } = useResponsiveLayout();
+  const { isCompact, isTablet } = useResponsiveLayout();
 
   const [conditionModalVisible, setConditionModalVisible] = useState(false);
+  // The combat stat row's measured width: four cards across when it fits, otherwise 2x2 - never 3+1.
+  const [combatRowWidth, setCombatRowWidth] = useState(0);
   const [restModalVisible, setRestModalVisible] = useState(false);
   const [initiativeModalVisible, setInitiativeModalVisible] = useState(false);
   const [maxHpOverrideVisible, setMaxHpOverrideVisible] = useState(false);
@@ -252,12 +259,11 @@ export const StatsTab: React.FC = () => {
     });
   };
 
-  return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      {/* Rest Buttons Bar */}
+  const restRow = (
+    <>
       <View style={styles.topActionsBar}>
         <Button
-          title="Take Rest (Short / Long)"
+          title="Take Rest"
           icon="bed"
           variant="outline"
           size="sm"
@@ -273,10 +279,17 @@ export const StatsTab: React.FC = () => {
           style={{ flex: 1 }}
         />
       </View>
+    </>
+  );
 
+  const wildShapeCard = (
+    <>
       <ActiveWildShapeCard character={currentCharacter} />
+    </>
+  );
 
-      {/* Active Conditions Display */}
+  const conditionsCard = (
+    <>
       {currentCharacter.conditions && currentCharacter.conditions.length > 0 && (
         <Card style={[styles.activeConditionsCard, { borderColor: theme.danger }]}>
           <Text style={[styles.sectionTitle, { color: theme.danger, fontSize: 13 }]}>
@@ -309,8 +322,11 @@ export const StatsTab: React.FC = () => {
           </View>
         </Card>
       )}
+    </>
+  );
 
-      {/* HP Section Card */}
+  const hpCard = (
+    <>
       <Card style={styles.hpCard}>
         <HitPointBlock
           label="HIT POINTS"
@@ -399,10 +415,21 @@ export const StatsTab: React.FC = () => {
           </View>
         )}
       </Card>
+    </>
+  );
 
-      {/* Combat Quick Badges (AC, Initiative, Speed, Prof Bonus) */}
-      <View style={styles.combatRow}>
+  // Four across when the row is wide enough for four boxes whose labels stay on one line (the prototype's
+  // layout), otherwise 2x2 - never a 3+1 wrap.
+  const fourAcross = combatRowWidth >= 4 * STAT_BOX_MIN_WIDTH + 3 * COMBAT_ROW_GAP;
+  const combatBoxStyle = fourAcross ? styles.statBoxQuad : styles.statBoxHalf;
+
+  const combatRowEl = (
+    <>
+      <View
+        style={styles.combatRow}
+        onLayout={(e) => setCombatRowWidth(e.nativeEvent.layout.width)}>
         <TouchableOpacity
+          testID="stat-box-ac"
           hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
           onPress={() =>
             setDetailModal({
@@ -412,7 +439,7 @@ export const StatsTab: React.FC = () => {
               content: `Calculation Breakdown:\n${acBreakdown}\n\nBased on your equipped armor, shields, and class unarmored defense rules.`,
             })
           }
-          style={[styles.statBox, { backgroundColor: theme.surface, borderColor: theme.border }]}>
+          style={[styles.statBox, combatBoxStyle, { backgroundColor: theme.surface, borderColor: theme.border }]}>
           <Ionicons name="shield" size={18} color={theme.accentHover} />
           <Text style={[styles.statBoxValue, { color: theme.text }]}>{ac}</Text>
           <Text style={[styles.statBoxLabel, { color: theme.textMuted }]}>ARMOR CLASS</Text>
@@ -425,10 +452,11 @@ export const StatsTab: React.FC = () => {
         </TouchableOpacity>
 
         <TouchableOpacity
+          testID="stat-box-initiative"
           accessibilityLabel="Initiative breakdown"
           hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
           onPress={() => setInitiativeModalVisible(true)}
-          style={[styles.statBox, { backgroundColor: theme.surface, borderColor: theme.border }]}>
+          style={[styles.statBox, combatBoxStyle, { backgroundColor: theme.surface, borderColor: theme.border }]}>
           <Ionicons name="flash" size={18} color={theme.accentHover} />
           <RollBadge
             testID="roll-badge-initiative"
@@ -443,6 +471,7 @@ export const StatsTab: React.FC = () => {
         </TouchableOpacity>
 
         <TouchableOpacity
+          testID="stat-box-speed"
           onPress={() => {
             const speedContent = [
               `Walking Speed: ${speeds.walk} ft`,
@@ -472,7 +501,7 @@ export const StatsTab: React.FC = () => {
               content: speedContent,
             });
           }}
-          style={[styles.statBox, { backgroundColor: theme.surface, borderColor: theme.border }]}>
+          style={[styles.statBox, combatBoxStyle, { backgroundColor: theme.surface, borderColor: theme.border }]}>
           <Ionicons name="walk" size={18} color={theme.accentHover} />
           <Text style={[styles.statBoxValue, { color: theme.text }]}>{speeds.walk} ft</Text>
           <Text style={[styles.statBoxLabel, { color: theme.textMuted }]}>SPEED</Text>
@@ -494,14 +523,19 @@ export const StatsTab: React.FC = () => {
           )}
         </TouchableOpacity>
 
-        <View style={[styles.statBox, { backgroundColor: theme.surface, borderColor: theme.border }]}>
+        <View
+          testID="stat-box-proficiency"
+          style={[styles.statBox, combatBoxStyle, { backgroundColor: theme.surface, borderColor: theme.border }]}>
           <Ionicons name="ribbon" size={18} color={theme.accentHover} />
           <Text style={[styles.statBoxValue, { color: theme.text }]}>+{profBonus}</Text>
           <Text style={[styles.statBoxLabel, { color: theme.textMuted }]}>PROFICIENCY</Text>
         </View>
       </View>
+    </>
+  );
 
-      {/* Active Class Dice Summary Strip */}
+  const classDiceStripEl = (
+    <>
       {(classDice.bardicInspiration || classDice.sneakAttack || classDice.martialArts || classDice.superiorityDice) && (
         <View style={[styles.classDiceStrip, { backgroundColor: theme.surface, borderColor: theme.border }]}>
           <Text style={[styles.classDiceStripLabel, { color: theme.textMuted }]}>CLASS COMBAT DICE</Text>
@@ -561,8 +595,11 @@ export const StatsTab: React.FC = () => {
           </View>
         </View>
       )}
+    </>
+  );
 
-      {/* Hit Dice Card */}
+  const hitDiceCardEl = (
+    <>
       <Card style={styles.hitDiceCard}>
         <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
           <View style={{ flex: 1 }}>
@@ -607,15 +644,18 @@ export const StatsTab: React.FC = () => {
           </View>
         )}
       </Card>
+    </>
+  );
 
-      {/* 6 Ability Scores Grid */}
+  const abilitiesSection = (
+    <>
       <Text style={[styles.blockTitle, { color: theme.textSecondary }]}>ABILITY SCORES & MODIFIERS</Text>
       <View style={styles.abilityGrid}>
         {ABILITY_ORDER.map((key) => {
           const score = scores[key];
           const mod = modifiers[key];
           return (
-            <View key={key} style={[styles.abilityTile, { backgroundColor: theme.surface, borderColor: theme.border }, isCompact && { width: "48%" }]}>
+            <View key={key} testID={`ability-tile-${key}`} style={[styles.abilityTile, { backgroundColor: theme.surface, borderColor: theme.border }, isCompact && { width: "48%" }]}>
               <Text style={[styles.abilityTileName, { color: theme.textMuted }]}>{key.toUpperCase()}</Text>
               <RollBadge
                 testID={`roll-badge-check-${key}`}
@@ -632,8 +672,11 @@ export const StatsTab: React.FC = () => {
           );
         })}
       </View>
+    </>
+  );
 
-      {/* Saving Throws */}
+  const savesSection = (
+    <>
       <Text style={[styles.blockTitle, { color: theme.textSecondary, marginTop: 20 }]}>SAVING THROWS</Text>
       <Card style={{ padding: 8 }}>
         <View style={styles.savesGrid}>
@@ -665,8 +708,11 @@ export const StatsTab: React.FC = () => {
           })}
         </View>
       </Card>
+    </>
+  );
 
-      {/* Passive Senses */}
+  const passivesRow = (
+    <>
       <Text style={[styles.blockTitle, { color: theme.textSecondary, marginTop: 20 }]}>
         PASSIVE SENSES
       </Text>
@@ -689,8 +735,11 @@ export const StatsTab: React.FC = () => {
           <Text style={[styles.statBoxLabel, { color: theme.textMuted }]}>PASSIVE INSIGHT</Text>
         </View>
       </View>
+    </>
+  );
 
-      {/* Skills Grouped by Ability */}
+  const skillsSection = (
+    <>
       <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: 20, marginBottom: 8 }}>
         <Text style={[styles.blockTitle, { color: theme.textSecondary, marginTop: 0, marginBottom: 0 }]}>
           SKILLS BY ABILITY (PASSIVES IN BRACKETS)
@@ -812,8 +861,11 @@ export const StatsTab: React.FC = () => {
           );
         })}
       </Card>
+    </>
+  );
 
-      {/* Proficiencies & Training Summary */}
+  const profsSection = (
+    <>
       <Text style={[styles.blockTitle, { color: theme.textSecondary, marginTop: 20 }]}>
         PROFICIENCIES & TRAINING
       </Text>
@@ -928,8 +980,11 @@ export const StatsTab: React.FC = () => {
           )}
         </View>
       </Card>
+    </>
+  );
 
-      {/* Languages Summary */}
+  const languagesSection = (
+    <>
       <View style={[styles.headingRow, { marginTop: 20, marginBottom: 8 }]}>
         <Text style={[styles.blockTitle, { color: theme.textSecondary, marginBottom: 0 }]}>
           LANGUAGES
@@ -981,6 +1036,48 @@ export const StatsTab: React.FC = () => {
         }}
         onClose={() => setAddModal(null)}
       />
+    </>
+  );
+
+  return (
+    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+      {isTablet ? (
+        <View style={styles.twoCol}>
+          <View testID="stats-col-side" style={styles.twoColChild}>
+            {restRow}
+            {wildShapeCard}
+            {conditionsCard}
+            {hpCard}
+            {combatRowEl}
+            {classDiceStripEl}
+            {hitDiceCardEl}
+            {passivesRow}
+          </View>
+          <View testID="stats-col-main" style={styles.twoColChild}>
+            {abilitiesSection}
+            {savesSection}
+            {skillsSection}
+            {profsSection}
+            {languagesSection}
+          </View>
+        </View>
+      ) : (
+        <>
+          {restRow}
+          {wildShapeCard}
+          {conditionsCard}
+          {hpCard}
+          {combatRowEl}
+          {classDiceStripEl}
+          {hitDiceCardEl}
+          {abilitiesSection}
+          {savesSection}
+          {passivesRow}
+          {skillsSection}
+          {profsSection}
+          {languagesSection}
+        </>
+      )}
 
       {/* HP Override Settings Modal */}
       <Modal
@@ -1085,6 +1182,16 @@ const styles = StyleSheet.create({
     padding: 16,
     paddingBottom: 40,
   },
+  twoCol: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 16,
+  },
+  twoColChild: {
+    flex: 1,
+    minWidth: 0,
+    gap: 0,
+  },
   topActionsBar: {
     flexDirection: "row",
     gap: 10,
@@ -1156,9 +1263,20 @@ const styles = StyleSheet.create({
   },
   combatRow: {
     flexDirection: "row",
-    gap: 8,
+    gap: COMBAT_ROW_GAP,
     marginBottom: 16,
     flexWrap: "wrap",
+  },
+  statBoxQuad: {
+    flexGrow: 1,
+    flexShrink: 1,
+    flexBasis: 0,
+    minWidth: 0,
+  },
+  statBoxHalf: {
+    flexGrow: 1,
+    flexBasis: "48%",
+    minWidth: 0,
   },
   classDiceStrip: {
     padding: 10,

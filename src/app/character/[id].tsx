@@ -1,6 +1,5 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
-  ScrollView,
   StyleSheet,
   Text,
   TextInput,
@@ -8,9 +7,8 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useLocalSearchParams, useRouter } from "expo-router";
+import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
-import { RestModal } from "../../components/RestModal";
 import { ActionsTab } from "../../components/tabs/ActionsTab";
 import { FeaturesTab } from "../../components/tabs/FeaturesTab";
 import { InventoryTab } from "../../components/tabs/InventoryTab";
@@ -19,9 +17,19 @@ import { SpellsTab } from "../../components/tabs/SpellsTab";
 import { StatsTab } from "../../components/tabs/StatsTab";
 import { Badge } from "../../components/ui/Badge";
 import { Button } from "../../components/ui/Button";
+import { Modal } from "../../components/ui/Modal";
 import { HpQuickEditModal } from "../../components/HpQuickEditModal";
 import { ReviewNotices } from "../../components/ReviewNotices";
+import {
+  SHEET_HEADER_CONTROL_HEIGHT,
+  SHEET_TAB_BAR_HEIGHT,
+  SheetMenuRow,
+  SheetTabBar,
+  SheetTabKey,
+  SheetTabRail,
+} from "../../components/sheet/sheetChrome";
 import { useCharacters } from "../../context/CharacterContext";
+import { useRollLog } from "../../context/RollLogContext";
 import { useAppTheme } from "../../context/ThemeContext";
 import { useHpQuickEdit } from "../../hooks/useHpQuickEdit";
 import { useResponsiveLayout } from "../../hooks/useResponsiveLayout";
@@ -34,37 +42,19 @@ import { currentCompendium } from "../../services/compendium";
 import { commitCharacterName } from "../../rules/characterName";
 import { dismissNotices } from "../../rules/needsReview";
 
-type TabKey = "stats" | "spells" | "inventory" | "features" | "journal" | "actions";
-
-interface TabDefinition {
-  key: TabKey;
-  label: string;
-  icon: keyof typeof Ionicons.glyphMap;
-}
-
-const TABS: TabDefinition[] = [
-  { key: "stats", label: "Stats", icon: "shield-outline" },
-  { key: "spells", label: "Spells", icon: "sparkles-outline" },
-  { key: "inventory", label: "Inventory", icon: "bag-outline" },
-  { key: "features", label: "Features", icon: "star-outline" },
-  { key: "journal", label: "Journal", icon: "book-outline" },
-  { key: "actions", label: "Actions", icon: "flash-outline" },
-];
-
 export default function CharacterSheetScreen() {
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
   const { characters, currentCharacter, selectCharacter, updateCharacter, activeBooks } = useCharacters();
   const { theme } = useAppTheme();
-  const { isCompact } = useResponsiveLayout();
+  const { isCompact, isTablet } = useResponsiveLayout();
+  const { setBottomObstruction } = useRollLog();
 
-  const [activeTab, setActiveTab] = useState<TabKey>("stats");
-  const [restModalVisible, setRestModalVisible] = useState(false);
+  const [activeTab, setActiveTab] = useState<SheetTabKey>("stats");
+  const [menuOpen, setMenuOpen] = useState(false);
   const [isEditingName, setIsEditingName] = useState(false);
   const [nameDraft, setNameDraft] = useState("");
-  const [scrollX, setScrollX] = useState(0);
-  const [scrollWidth, setScrollWidth] = useState(0);
-  const [layoutWidth, setLayoutWidth] = useState(0);
+  const [tabBarHeight, setTabBarHeight] = useState(SHEET_TAB_BAR_HEIGHT);
   const serif = useSerifFont();
 
   useEffect(() => {
@@ -83,6 +73,27 @@ export default function CharacterSheetScreen() {
       router.replace(`/build/${id}` as any);
     }
   }, [isDraft, id, router]);
+
+  // On phones the tab bar sits at the bottom edge, and the floating dice button reports its height so the
+  // button sits above the bar, never over a tab. The bar's measured height is reported on focus: a pushed
+  // screen (Level up, Edit Build) resets the obstruction to 0 when it pops, and the bar's own onLayout does
+  // not fire again on a phone, so the sheet re-reports on every focus and clears on blur and unmount. At
+  // wide widths the rail is on the left, so nothing is reported.
+  const reportBarObstruction = useCallback(() => {
+    if (!isTablet) setBottomObstruction(tabBarHeight);
+  }, [isTablet, tabBarHeight, setBottomObstruction]);
+
+  useFocusEffect(
+    useCallback(() => {
+      reportBarObstruction();
+      return () => setBottomObstruction(0);
+    }, [reportBarObstruction, setBottomObstruction])
+  );
+
+  useEffect(() => {
+    if (isTablet) setBottomObstruction(0);
+    return () => setBottomObstruction(0);
+  }, [isTablet, setBottomObstruction]);
 
   const evaluated = useMemo(
     () => (currentCharacter ? evaluateCharacter(currentCharacter, { compendium: currentCompendium(), activeBooks }) : null),
@@ -120,6 +131,12 @@ export default function CharacterSheetScreen() {
     .join(" / ") || "Lvl 1";
   const raceName = currentCharacter.race?.name ?? "Race Unset";
   const sizeSummary = currentCharacter.race ? resolvedSize(currentCharacter, { activeBooks }) : undefined;
+  // On phones the line under the name is race • class and level; the size stays only at 768px and up,
+  // where the full line fits.
+  const subLineText = isTablet
+    ? `${raceName} • ${classSummary}${sizeSummary ? ` • ${sizeSummary}` : ""}`
+    : `${raceName} • ${classSummary}`;
+  const canLevelUp = totalLevel < MAX_LEVEL;
 
   const startNameEdit = () => {
     setNameDraft(currentCharacter.name);
@@ -134,215 +151,199 @@ export default function CharacterSheetScreen() {
     }
   };
 
-  return (
-    <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
-      {/* Top Header Bar */}
-      <View style={[styles.topHeader, { borderBottomColor: theme.border, backgroundColor: theme.surface }]}>
-        <View style={[styles.headerInner, isCompact && { paddingHorizontal: 8 }]}>
-          <TouchableOpacity
-            onPress={() => router.back()}
-            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-            style={[
-              styles.backBtn,
-              { backgroundColor: theme.surfaceHighlight, borderColor: theme.border },
-              isCompact && { width: 32, height: 32 }
-            ]}>
-            <Ionicons name="arrow-back" size={20} color={theme.text} />
-          </TouchableOpacity>
+  // The wide content column's cap: Stats gets the wider two-column layout, the other tabs a narrower one.
+  // On wide screens the review notices take the same capped width instead of shrink-wrapping in the
+  // centred wideMain.
+  const wideContentMaxWidth = activeTab === "stats" ? 1080 : 960;
+  const notices = (currentCharacter.needsReview?.length ?? 0) > 0 ? (
+    <ReviewNotices
+      key={currentCharacter.id}
+      style={isTablet ? { maxWidth: wideContentMaxWidth } : undefined}
+      notices={currentCharacter.needsReview ?? []}
+      onDismiss={(notice) =>
+        updateCharacter(currentCharacter.id, (c) => ({ ...c, needsReview: dismissNotices(c.needsReview, notice) }))
+      }
+      onDismissAll={() =>
+        updateCharacter(currentCharacter.id, (c) => ({ ...c, needsReview: dismissNotices(c.needsReview) }))
+      }
+    />
+  ) : null;
 
-          {/* Character Title & Summary */}
-          <View style={{ flex: 1, minWidth: 0, marginHorizontal: 8 }}>
-            <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-              {isEditingName ? (
-                <TextInput
-                  value={nameDraft}
-                  onChangeText={setNameDraft}
-                  onSubmitEditing={finishNameEdit}
-                  onBlur={finishNameEdit}
-                  autoFocus
-                  selectTextOnFocus
-                  returnKeyType="done"
-                  maxLength={60}
-                  accessibilityLabel="Character name"
-                  style={[styles.charName, styles.charNameInput, { color: theme.text, borderBottomColor: theme.accentHover }, isCompact && { fontSize: 14 }]}
-                />
-              ) : (
-                <TouchableOpacity
-                  onPress={startNameEdit}
-                  hitSlop={{ top: 8, bottom: 8, left: 4, right: 4 }}
-                  accessibilityRole="button"
-                  accessibilityLabel="Edit character name"
-                  style={styles.charNameButton}>
-                  <Text
-                    style={[styles.charName, { color: theme.text, fontFamily: serif }, isCompact && { fontSize: 14 }]}
-                    numberOfLines={1}
-                    ellipsizeMode="tail">
-                    {currentCharacter.name}
-                  </Text>
-                </TouchableOpacity>
-              )}
-              <Badge label={`Lvl ${totalLevel}`} variant="accent" size="sm" style={{ flexShrink: 0 }} />
-            </View>
-            <Text style={{ color: theme.textSecondary, fontSize: 11 }} numberOfLines={1}>
-              {raceName} • {classSummary}{sizeSummary ? ` • ${sizeSummary}` : ""}
-            </Text>
-          </View>
+  const tabContent = (
+    <>
+      {activeTab === "stats" && <StatsTab />}
+      {activeTab === "actions" && <ActionsTab />}
+      {activeTab === "spells" && <SpellsTab />}
+      {activeTab === "inventory" && <InventoryTab />}
+      {activeTab === "features" && <FeaturesTab />}
+      {activeTab === "journal" && <JournalTab />}
+    </>
+  );
 
-          {/* Quick HP & Rest Buttons */}
-          <View style={{ flexDirection: "row", alignItems: "center", gap: 6, flexShrink: 0, flexWrap: "wrap", justifyContent: "flex-end" }}>
+  // One compact header bar: back, the name over the race and class line (with the level badge), the HP and
+  // AC chips. On phones a menu holds Level up and Edit Build; at 768px and up those two move into the rail.
+  const header = (
+    <View
+      testID="sheet-header"
+      style={[styles.header, { backgroundColor: theme.surface, borderBottomColor: theme.border }]}
+    >
+      <View style={[styles.headerInner, isCompact && styles.headerInnerCompact]}>
+      <TouchableOpacity
+        testID="sheet-header-back"
+        onPress={() => router.back()}
+        accessibilityRole="button"
+        accessibilityLabel="Back"
+        hitSlop={{ top: 4, bottom: 4, left: 4, right: 4 }}
+        style={[styles.headerIconBtn, { backgroundColor: theme.surfaceHighlight, borderColor: theme.border }]}>
+        <Ionicons name="arrow-back" size={20} color={theme.text} />
+      </TouchableOpacity>
+
+      <View style={[styles.nameBlock, isCompact && { marginHorizontal: 2 }]}>
+        <View style={styles.nameRow}>
+          {isEditingName ? (
+            <TextInput
+              value={nameDraft}
+              onChangeText={setNameDraft}
+              onSubmitEditing={finishNameEdit}
+              onBlur={finishNameEdit}
+              autoFocus
+              selectTextOnFocus
+              returnKeyType="done"
+              maxLength={60}
+              accessibilityLabel="Character name"
+              style={[styles.charName, styles.charNameInput, { color: theme.text, borderBottomColor: theme.accentHover }, isCompact && { fontSize: 14 }]}
+            />
+          ) : (
             <TouchableOpacity
-              {...hpQuickEdit.triggerProps}
-              style={[styles.quickHpBadge, { borderColor: theme.border, backgroundColor: theme.surfaceHighlight }]}>
-              {activeWildShape ? (
-                // The paw marks the number as beast HP, so it stays visible in compact layouts too.
-                <Ionicons name="paw" size={14} color={activeWildShape.currentHp > 0 ? theme.hpGreen : theme.danger} />
-              ) : (
-                !isCompact && <Ionicons name="heart" size={14} color={currentCharacter.currentHp > 0 ? theme.hpGreen : theme.danger} />
-              )}
-              <Text style={[styles.quickHpText, { color: theme.text }]}>
-                {activeWildShape
-                  ? `${activeWildShape.currentHp}/${activeWildShape.maxHp}`
-                  : `${currentCharacter.currentHp}/${maxHp}`}
-                {formTempHp > 0 && <Text style={{ color: theme.tempHpYellow }}> +{formTempHp}</Text>}
+              onPress={startNameEdit}
+              hitSlop={{ top: 8, bottom: 8, left: 4, right: 4 }}
+              accessibilityRole="button"
+              accessibilityLabel="Edit character name"
+              style={styles.charNameButton}>
+              <Text
+                style={[styles.charName, { color: theme.text, fontFamily: serif }, isCompact && { fontSize: 14 }]}
+                numberOfLines={1}
+                ellipsizeMode="tail">
+                {currentCharacter.name}
               </Text>
             </TouchableOpacity>
-
-            <View style={[styles.quickHpBadge, { borderColor: theme.border, backgroundColor: theme.surfaceHighlight }]}>
-              <Ionicons name="shield-outline" size={13} color={theme.accentHover} />
-              <Text style={[styles.quickHpText, { color: theme.text }]}>
-                {evaluated.armorClass.ac}
-              </Text>
-            </View>
-
-            <TouchableOpacity
-              onPress={() => setRestModalVisible(true)}
-              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-              style={[
-                styles.restBtn,
-                { backgroundColor: theme.surfaceHighlight, borderColor: theme.border },
-                isCompact && { width: 32, height: 32 }
-              ]}>
-              <Ionicons name="bed-outline" size={18} color={theme.accentHover} />
-            </TouchableOpacity>
-          </View>
+          )}
+          <Badge label={`Lvl ${totalLevel}`} variant="accent" size="sm" style={{ flexShrink: 0 }} />
         </View>
+        <Text
+          style={[styles.subLine, { color: theme.textSecondary }, isCompact && { fontSize: 10 }]}
+          numberOfLines={1}
+          ellipsizeMode="tail">
+          {subLineText}
+        </Text>
       </View>
 
-      {/* Header actions: Level up and Edit Build. At the level cap there is no level to gain, so Level up is hidden. */}
-      <View style={[styles.headerActionsRow, { borderBottomColor: theme.border, backgroundColor: theme.surface }]}>
-        <View style={[styles.headerActionsInner, isCompact && { paddingHorizontal: 8 }]}>
-          {totalLevel < MAX_LEVEL && (
+      <View style={[styles.headerChips, isCompact && { gap: 4 }]}>
+        <TouchableOpacity
+          {...hpQuickEdit.triggerProps}
+          testID="sheet-header-hp"
+          style={[styles.chip, isCompact && styles.chipCompact, { borderColor: theme.border, backgroundColor: theme.surfaceHighlight }]}>
+          {activeWildShape ? (
+            // The paw marks the number as beast HP, so it stays visible in compact layouts too.
+            <Ionicons name="paw" size={14} color={activeWildShape.currentHp > 0 ? theme.hpGreen : theme.danger} />
+          ) : (
+            <Ionicons name="heart" size={14} color={currentCharacter.currentHp > 0 ? theme.hpGreen : theme.danger} />
+          )}
+          <Text style={[styles.chipText, { color: theme.text }, isCompact && { fontSize: 11 }]}>
+            {activeWildShape
+              ? `${activeWildShape.currentHp}/${activeWildShape.maxHp}`
+              : `${currentCharacter.currentHp}/${maxHp}`}
+            {formTempHp > 0 && <Text style={{ color: theme.tempHpYellow }}> +{formTempHp}</Text>}
+          </Text>
+        </TouchableOpacity>
+
+        <View
+          testID="sheet-header-ac"
+          style={[styles.chip, isCompact && styles.chipCompact, { borderColor: theme.border, backgroundColor: theme.surfaceHighlight }]}>
+          <Ionicons name="shield-outline" size={13} color={theme.accentHover} />
+          <Text style={[styles.chipText, { color: theme.text }, isCompact && { fontSize: 11 }]}>{evaluated.armorClass.ac}</Text>
+        </View>
+
+        {!isTablet && (
           <TouchableOpacity
-            onPress={() => router.push(`/levelup/${currentCharacter.id}` as any)}
+            testID="sheet-header-menu"
+            onPress={() => setMenuOpen(true)}
             accessibilityRole="button"
-            accessibilityLabel="Level up"
-            style={[styles.headerTextBtn, { backgroundColor: theme.surfaceHighlight, borderColor: theme.border }]}>
-            <Text style={[styles.headerTextBtnLabel, { color: theme.accentHover }]}>Level up</Text>
+            accessibilityLabel="Sheet menu"
+            hitSlop={{ top: 4, bottom: 4, left: 4, right: 4 }}
+            style={[styles.headerIconBtn, { backgroundColor: theme.surfaceHighlight, borderColor: theme.border }]}>
+            <Ionicons name="ellipsis-vertical" size={20} color={theme.text} />
           </TouchableOpacity>
-          )}
-          <TouchableOpacity
-            onPress={() => router.push(`/build/${currentCharacter.id}` as any)}
-            accessibilityRole="button"
-            accessibilityLabel="Edit Build"
-            style={[styles.headerTextBtn, { backgroundColor: theme.surfaceHighlight, borderColor: theme.border }]}>
-            <Text style={[styles.headerTextBtnLabel, { color: theme.accentHover }]}>Edit Build</Text>
-          </TouchableOpacity>
-        </View>
+        )}
       </View>
-
-      {/* 7 Consecutive Horizontal Tabs Bar */}
-      <View style={[styles.tabsBarWrapper, { borderBottomColor: theme.border, backgroundColor: theme.surface }]}>
-        <View style={styles.tabsInner}>
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            scrollEventThrottle={16}
-            onScroll={(e) => setScrollX(e.nativeEvent.contentOffset.x)}
-            onContentSizeChange={(w) => setScrollWidth(w)}
-            onLayout={(e) => setLayoutWidth(e.nativeEvent.layout.width)}
-            contentContainerStyle={styles.tabsScrollContent}>
-            {TABS.map((tab) => {
-              const isActive = activeTab === tab.key;
-              return (
-                <TouchableOpacity
-                  key={tab.key}
-                  onPress={() => setActiveTab(tab.key)}
-                  style={[
-                    styles.tabItem,
-                    isCompact && { paddingHorizontal: 10 },
-                    isActive && [styles.activeTabItem, { borderBottomColor: theme.accentHover }],
-                  ]}>
-                  <Ionicons
-                    name={tab.icon}
-                    size={16}
-                    color={isActive ? theme.accentHover : theme.textSecondary}
-                  />
-                  <Text
-                    style={[
-                      styles.tabLabel,
-                      { color: isActive ? theme.accentHover : theme.textSecondary, fontWeight: isActive ? "700" : "500" },
-                      isCompact && { fontSize: 12 }
-                    ]}>
-                    {tab.label}
-                  </Text>
-                </TouchableOpacity>
-              );
-            })}
-          </ScrollView>
-
-          {/* Left Fade Indicator */}
-          {scrollX > 0 && (
-            <View style={[styles.fadeIndicator, styles.fadeLeft]} pointerEvents="none">
-              <View style={[styles.fadeStrip, { backgroundColor: theme.surface, opacity: 0.9 }]} />
-              <View style={[styles.fadeStrip, { backgroundColor: theme.surface, opacity: 0.6 }]} />
-              <View style={[styles.fadeStrip, { backgroundColor: theme.surface, opacity: 0.3 }]} />
-              <View style={[styles.fadeStrip, { backgroundColor: theme.surface, opacity: 0.1 }]} />
-            </View>
-          )}
-
-          {/* Right Fade Indicator */}
-          {scrollWidth > layoutWidth && scrollX < scrollWidth - layoutWidth - 5 && (
-            <View style={[styles.fadeIndicator, styles.fadeRight]} pointerEvents="none">
-              <View style={[styles.fadeStrip, { backgroundColor: theme.surface, opacity: 0.1 }]} />
-              <View style={[styles.fadeStrip, { backgroundColor: theme.surface, opacity: 0.3 }]} />
-              <View style={[styles.fadeStrip, { backgroundColor: theme.surface, opacity: 0.6 }]} />
-              <View style={[styles.fadeStrip, { backgroundColor: theme.surface, opacity: 0.9 }]} />
-            </View>
-          )}
-        </View>
       </View>
+    </View>
+  );
 
-      {(currentCharacter.needsReview?.length ?? 0) > 0 && (
-        <ReviewNotices
-          key={currentCharacter.id}
-          notices={currentCharacter.needsReview ?? []}
-          onDismiss={(notice) =>
-            updateCharacter(currentCharacter.id, (c) => ({ ...c, needsReview: dismissNotices(c.needsReview, notice) }))
-          }
-          onDismissAll={() =>
-            updateCharacter(currentCharacter.id, (c) => ({ ...c, needsReview: dismissNotices(c.needsReview) }))
-          }
+  const menuModal = (
+    <Modal visible={menuOpen} onClose={() => setMenuOpen(false)} title="Character">
+      {canLevelUp && (
+        <SheetMenuRow
+          icon="trending-up"
+          label="Level up"
+          onPress={() => {
+            setMenuOpen(false);
+            router.push(`/levelup/${currentCharacter.id}` as any);
+          }}
         />
       )}
-
-      {/* Tab Content Display */}
-      <View style={styles.tabContentWrapper}>
-        {activeTab === "stats" && <StatsTab />}
-        {activeTab === "spells" && <SpellsTab />}
-        {activeTab === "inventory" && <InventoryTab />}
-        {activeTab === "features" && <FeaturesTab />}
-        {activeTab === "journal" && <JournalTab />}
-        {activeTab === "actions" && <ActionsTab />}
-      </View>
-
-      {/* Rest Modal */}
-      <RestModal
-        visible={restModalVisible}
-        onClose={() => setRestModalVisible(false)}
-        onTakeRest={() => setRestModalVisible(false)}
+      <SheetMenuRow
+        icon="create-outline"
+        label="Edit Build"
+        last
+        onPress={() => {
+          setMenuOpen(false);
+          router.push(`/build/${currentCharacter.id}` as any);
+        }}
       />
+    </Modal>
+  );
 
-      {/* Hit Points Quick Edit Modal */}
+  if (isTablet) {
+    return (
+      <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
+        {header}
+        <View style={styles.wideOuter}>
+          <SheetTabRail
+            active={activeTab}
+            onSelect={setActiveTab}
+            onLevelUp={() => router.push(`/levelup/${currentCharacter.id}` as any)}
+            onEditBuild={() => router.push(`/build/${currentCharacter.id}` as any)}
+            canLevelUp={canLevelUp}
+          />
+          <View style={styles.wideMain}>
+            {notices}
+            <View style={[styles.tabContent, { maxWidth: wideContentMaxWidth }]}>
+              {tabContent}
+            </View>
+          </View>
+        </View>
+        {menuModal}
+        <HpQuickEditModal {...hpQuickEdit.modalProps} />
+      </SafeAreaView>
+    );
+  }
+
+  return (
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
+      {header}
+      {/* Rendered before the scrolling content, and absolutely positioned at the bottom edge. */}
+      <SheetTabBar
+        active={activeTab}
+        onSelect={setActiveTab}
+        onLayout={(height) => setTabBarHeight(height)}
+      />
+      {notices}
+      {/* The bar and the floating dice button (56dp + 16dp gap) sit in this bottom padding, never over content. */}
+      <View style={[styles.tabContent, { paddingBottom: tabBarHeight + 72 }]}>
+        {tabContent}
+      </View>
+      {menuModal}
       <HpQuickEditModal {...hpQuickEdit.modalProps} />
     </SafeAreaView>
   );
@@ -358,26 +359,43 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     padding: 24,
   },
-  topHeader: {
+  header: {
     width: "100%",
     borderBottomWidth: 1,
   },
   headerInner: {
     width: "100%",
-    maxWidth: 1024,
+    maxWidth: 1200,
     alignSelf: "center",
     flexDirection: "row",
     alignItems: "center",
     paddingHorizontal: 12,
-    paddingVertical: 10,
+    paddingVertical: 8,
+    gap: 8,
   },
-  backBtn: {
-    width: 36,
-    height: 36,
+  // At the tightest phone width the header gives the name block the room its race/class line needs.
+  headerInnerCompact: {
+    paddingHorizontal: 8,
+    gap: 6,
+  },
+  headerIconBtn: {
+    width: 40,
+    height: SHEET_HEADER_CONTROL_HEIGHT,
     borderRadius: 8,
     borderWidth: 1,
     alignItems: "center",
     justifyContent: "center",
+    flexShrink: 0,
+  },
+  nameBlock: {
+    flex: 1,
+    minWidth: 0,
+    marginHorizontal: 4,
+  },
+  nameRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
   },
   charName: {
     fontSize: 16,
@@ -396,102 +414,50 @@ const styles = StyleSheet.create({
     textAlignVertical: "center",
     borderBottomWidth: 1,
   },
-  quickHpBadge: {
+  subLine: {
+    fontSize: 11,
+  },
+  headerChips: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    flexShrink: 0,
+  },
+  chip: {
     flexDirection: "row",
     alignItems: "center",
     gap: 4,
     paddingHorizontal: 8,
-    paddingVertical: 4,
+    paddingVertical: 6,
+    minHeight: SHEET_HEADER_CONTROL_HEIGHT,
     borderRadius: 6,
     borderWidth: 1,
   },
-  quickHpText: {
+  chipCompact: {
+    paddingHorizontal: 4,
+    paddingVertical: 4,
+  },
+  chipText: {
     fontSize: 12,
     fontWeight: "700",
   },
-  restBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 8,
-    borderWidth: 1,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  headerActionsRow: {
-    width: "100%",
-    borderBottomWidth: 1,
-  },
-  headerActionsInner: {
-    width: "100%",
-    maxWidth: 1024,
-    alignSelf: "center",
-    flexDirection: "row",
-    gap: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-  },
-  headerTextBtn: {
-    flex: 1,
-    minHeight: 44,
-    borderRadius: 8,
-    borderWidth: 1,
-    paddingHorizontal: 10,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  headerTextBtnLabel: {
-    fontSize: 12,
-    fontWeight: "700",
-  },
-  tabsBarWrapper: {
-    width: "100%",
-    borderBottomWidth: 1,
-  },
-  tabsInner: {
-    width: "100%",
-    maxWidth: 1024,
-    alignSelf: "center",
-  },
-  tabsScrollContent: {
-    paddingHorizontal: 8,
-  },
-  tabContentWrapper: {
+  tabContent: {
     flex: 1,
     width: "100%",
-    maxWidth: 1024,
+    minHeight: 0,
+  },
+  wideOuter: {
+    flex: 1,
+    width: "100%",
+    maxWidth: 1200,
     alignSelf: "center",
-  },
-  tabItem: {
     flexDirection: "row",
+    minHeight: 0,
+  },
+  wideMain: {
+    flex: 1,
+    minWidth: 0,
+    minHeight: 0,
     alignItems: "center",
-    gap: 6,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    borderBottomWidth: 2,
-    borderBottomColor: "transparent",
-    minHeight: 44,
-  },
-  activeTabItem: {
-    borderBottomWidth: 2,
-  },
-  tabLabel: {
-    fontSize: 13,
-  },
-  fadeIndicator: {
-    position: "absolute",
-    top: 0,
-    bottom: 0,
-    width: 24,
-    flexDirection: "row",
-  },
-  fadeLeft: {
-    left: 0,
-  },
-  fadeRight: {
-    right: 0,
-  },
-  fadeStrip: {
-    width: 6,
-    height: "100%",
   },
 });

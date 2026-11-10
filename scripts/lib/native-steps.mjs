@@ -8,7 +8,8 @@
 // a target the dump does not point at on the step's axis is searched by scrolling the page vertically
 // toward the top first, so a tab bar scrolled above the viewport is reached from any scroll position. An
 // absent `scrollTo` needle warns instead of failing, as the web check's scrollIntoView does nothing when its
-// text is absent. `expect` is not evaluated. Every device interaction goes through the injected `dump`,
+// text is absent. `nativeTexts` is evaluated against the dump (each listed text must show once the screen
+// is ready); `expect` is not evaluated. Every device interaction goes through the injected `dump`,
 // `tap` and `swipe`, so the tests drive it with scripted dumps and a recording fake.
 import { describeStep } from "./steps.mjs";
 import { centerOf, findNode, hasPositiveArea, tapPoint } from "./uiautomator.mjs";
@@ -247,9 +248,10 @@ async function tapTarget({ dump, tap, call, view, sleep, now, deadline, pollMs, 
 
 // Plays one scenario's step fields in the order the web check plays them: each `tabs` entry as a tap on the
 // first node whose text equals the tab name, then TAB_WAIT_MS; each `open` step in order as a tap on its
-// described target; then the ready text (`screen.modal ?? screen.ready`); then `scrollTo` as swipes until
-// the needle is visible; then the settle wait (500 ms with a modal, 300 ms without). A step target or the
-// ready text that starts off the screen is revealed by swiping, bounded by MAX_SWIPES swipes, and tapped
+// described target; then the ready text (`screen.modal ?? screen.ready`); then each `nativeTexts` text
+// waited for in the dump; then `scrollTo` as swipes until the needle is visible; then the settle wait
+// (500 ms with a modal, 300 ms without). A step target or the ready text that starts off the screen is
+// revealed by swiping, bounded by MAX_SWIPES swipes, and tapped
 // once stable and uncovered (tapTarget). Returns
 // { error, warnings }: error is null when the screen is ready for its screenshot, else a message naming the
 // step that failed; warnings lists what the run should say without failing (an absent scrollTo needle).
@@ -263,8 +265,9 @@ export async function playScreen({ screen, dump, tap, swipe, view, sleep, now, t
   const clippedMatch = (call) => (nodes) => findMatches(nodes, call).find((n) => n.bounds && centerOf(n, view) === null) ?? null;
   for (const tab of screen.tabs ?? []) {
     // A tab is the web check's getByText(tab, { exact: true }).first(): the exact text, the first match.
-    // Tabs sit in the horizontal tab bars, so the reveal swipes there stay horizontal — after the page
-    // fallback has scrolled the page back up to the bars when they are not in the dump.
+    // The sheet renders its tab navigation before the scrolling content — the bottom bar on phones, the
+    // left rail at wide widths — so the first dump match is the tab, and the bar is always on screen, so
+    // no reveal swipe is needed; the horizontal reveal stays for the flows' horizontal step-chip bars.
     const call = { method: "getByText", arg: tab, options: { exact: true }, index: 0 };
     const { found, bound } = await pollRevealing({
       dump,
@@ -341,6 +344,19 @@ export async function playScreen({ screen, dump, tap, swipe, view, sleep, now, t
     }));
   }
   if (!readyNode) return { error: `ready text ${typeof ready === "string" ? `"${ready}"` : ready} did not show ${boundText(readyBound)}`, warnings };
+  // nativeTexts: texts the scenario asks the native player to wait for in the dump once the screen is ready
+  // (a modal scenario's rows, say), polled without swiping so an open bottom sheet is not closed by a stray
+  // swipe. The rest of `expect` stays web-only.
+  for (const text of screen.nativeTexts ?? []) {
+    const deadline = deadlineFor();
+    let textNode = null;
+    for (;;) {
+      textNode = findNode(dump(), text);
+      if (textNode || now() >= deadline) break;
+      await sleep(pollMs);
+    }
+    if (!textNode) return { error: `native text "${text}" did not show ${boundText("timeout")}`, warnings };
+  }
   if (screen.scrollTo) {
     const needle = screen.scrollTo;
     // scrollTo swipes mid-screen until the needle is visible; the direction flips when a swipe moves

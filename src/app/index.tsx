@@ -5,6 +5,7 @@ import {
   Alert,
   Image,
   Platform,
+  Pressable,
   ScrollView,
   StyleSheet,
   Text,
@@ -22,14 +23,29 @@ import { Modal } from "../components/ui/Modal";
 import { SearchBar } from "../components/ui/SearchBar";
 import { useCharacters } from "../context/CharacterContext";
 import { useAppTheme } from "../context/ThemeContext";
+import { useResponsiveLayout } from "../hooks/useResponsiveLayout";
+import { useSerifFont } from "../hooks/useSerifFont";
 import { currentCreationStep, isCreationFinished } from "../rules/creationFlow";
 import { evaluateCharacter } from "../rules/characterEvaluation";
 import { currentCompendium } from "../services/compendium";
 import { Character, Folder } from "../types/character";
 
+/** The gap between the Home grid's cards and rows; the card basis accounts for it. */
+const GRID_GAP = 12;
+
 export default function HomeScreen() {
   const router = useRouter();
   const { theme } = useAppTheme();
+  const { width, isTablet } = useResponsiveLayout();
+  const serif = useSerifFont();
+  // Home is a list on phones and a card grid at 768px and up.
+  const grid = isTablet;
+  const cols = width >= 1200 ? 3 : 2;
+  // The grid's measured width, reported by the grid itself on layout.
+  const [gridWidth, setGridWidth] = useState(0);
+  // The card basis comes from the measured grid width and the gap, so cols cards plus (cols - 1) gaps
+  // fill a row exactly and the grid's outer edges equal the search bar's at every width.
+  const cardBasis = gridWidth > 0 ? (gridWidth - (cols - 1) * GRID_GAP) / cols : undefined;
   const {
     characters,
     folders,
@@ -160,10 +176,12 @@ export default function HomeScreen() {
     });
   }, [characters, searchQuery]);
 
-  // Group characters by folder
-  const { folderMap, uncategorized } = useMemo(() => {
+  // Group characters by folder; drafts are listed with the uncategorized on phones and get their own
+  // group in the wide grid.
+  const { folderMap, uncategorized, uncatDrafts } = useMemo(() => {
     const map: Record<string, Character[]> = {};
     const uncat: Character[] = [];
+    const drafts: Character[] = [];
 
     for (const f of folders) {
       map[f.id] = [];
@@ -172,18 +190,21 @@ export default function HomeScreen() {
     for (const char of filteredCharacters) {
       if (char.folderId && map[char.folderId]) {
         map[char.folderId].push(char);
+      } else if (!isCreationFinished(char)) {
+        drafts.push(char);
       } else {
         uncat.push(char);
       }
     }
 
-    return { folderMap: map, uncategorized: uncat };
+    return { folderMap: map, uncategorized: uncat, uncatDrafts: drafts };
   }, [folders, filteredCharacters]);
 
-  const renderCharacterCard = (char: Character) => {
+  // One home entry: a full-width row on phones, a card in the wide grid. It keeps the person icon, the
+  // row buttons and the Lvl badge; drafts read "Draft · <step>" and carry no level or sub-line.
+  const renderCharacterCard = (char: Character, card = false) => {
     const evaluated = evaluateCharacter(char, { compendium: currentCompendium(), activeBooks });
     const totalLevel = evaluated.totalLevel;
-    const maxHp = evaluated.hp.max;
     const primaryClass = char.classes[0]?.className || "Class Unset";
     const raceName = char.race?.name || "Race Unset";
     // A draft opens into the Creation Flow on its step, never the sheet.
@@ -191,106 +212,121 @@ export default function HomeScreen() {
     const draftStep = draft ? currentCreationStep(char, { activeBooks }) : null;
     const cardTitle = draft ? `Draft · ${draftStep ? STEP_TITLES[draftStep] : ""}` : char.name || "Unnamed";
 
-    return (
-      <TouchableOpacity
-        key={char.id}
-        onPress={() => router.push((draft ? `/build/${char.id}` : `/character/${char.id}`) as any)}
+    // The row's action buttons: siblings of the entry's main pressable region, never children of it —
+    // on web a pressable with a button role renders a <button>, and a <button> may not contain another.
+    const rowButtons = (
+      <View style={styles.cardActionsRow}>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={`Move ${cardTitle} to folder`}
+          hitSlop={{ top: 4, bottom: 4, left: 4, right: 4 }}
+          onPress={() => setMoveCharModal({ visible: true, char })}
+          style={styles.rowAction}>
+          <Ionicons name="folder-outline" size={18} color={theme.textSecondary} />
+        </Pressable>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={`Delete ${cardTitle}`}
+          hitSlop={{ top: 4, bottom: 4, left: 4, right: 4 }}
+          onPress={() => confirmDeleteCharacter(char)}
+          style={styles.rowAction}>
+          <Ionicons name="trash-outline" size={18} color={theme.danger} />
+        </Pressable>
+      </View>
+    );
+
+    const avatar = (
+      <View
         style={[
-          styles.characterCard,
+          styles.cardAvatarBox,
           {
-            backgroundColor: theme.surface,
-            borderColor: theme.border,
+            backgroundColor: theme.surfaceHighlight,
+            borderColor: draft ? theme.border : theme.accentBorder,
           },
-        ]}
-      >
-        {/* Character Avatar / Placeholder */}
-        <View
-          style={[
-            styles.cardAvatarBox,
-            {
-              backgroundColor: theme.surfaceHighlight,
-              borderColor: theme.accentHover,
-            },
-          ]}
-        >
-          {char.avatarUri ? (
-            <Image
-              source={{ uri: char.avatarUri }}
-              style={styles.cardAvatarImage}
-              resizeMode="cover"
-            />
-          ) : (
-            <Ionicons name="person" size={24} color={theme.accentHover} />
-          )}
+        ]}>
+        {char.avatarUri ? (
+          <Image source={{ uri: char.avatarUri }} style={styles.cardAvatarImage} resizeMode="cover" />
+        ) : (
+          <Ionicons name="person" size={24} color={draft ? theme.textMuted : theme.accentHover} />
+        )}
+      </View>
+    );
+
+    // The card is a View holding a pressable main region (icon, name, line) with the action buttons as its
+    // sibling, so no button-role element contains another.
+    const entryText = (
+      <View style={{ flex: 1, minWidth: 0, marginTop: card ? 10 : 0 }}>
+        <View style={styles.cardNameRow}>
+          <Text
+            style={[
+              styles.charCardName,
+              { color: draft ? theme.textSecondary : theme.text },
+              !draft && { fontFamily: serif },
+            ]}
+            numberOfLines={1}>
+            {cardTitle}
+          </Text>
+          {!draft && <Badge label={`Lvl ${totalLevel}`} variant="accent" size="sm" />}
         </View>
 
-        {/* Info */}
-        <View style={{ flex: 1, minWidth: 0 }}>
-          <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-            <Text
-              style={[styles.charCardName, { color: theme.text }]}
-              numberOfLines={1}
-            >
-              {cardTitle}
-            </Text>
-            <Badge label={`Lvl ${totalLevel}`} variant="accent" size="sm" />
-          </View>
-
-          <Text
-            style={{ color: theme.textSecondary, fontSize: 12, marginTop: 2 }}
-            numberOfLines={1}
-          >
+        {!draft && (
+          <Text style={{ color: theme.textSecondary, fontSize: 12, marginTop: 2 }} numberOfLines={1}>
             {raceName} • {primaryClass}
           </Text>
+        )}
 
-          <View
-            style={{
-              flexDirection: "row",
-              alignItems: "center",
-              gap: 6,
-              marginTop: 4,
-            }}
-          >
-            <Badge
-              label={`HP: ${char.currentHp}/${maxHp}`}
-              variant={char.currentHp > 0 ? "success" : "danger"}
-              size="sm"
-            />
-            {char.alignment ? (
-              <Badge label={char.alignment} variant="secondary" size="sm" />
-            ) : null}
+        {!draft && char.alignment ? (
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginTop: 4 }}>
+            <Badge label={char.alignment} variant="secondary" size="sm" />
           </View>
-        </View>
+        ) : null}
+      </View>
+    );
 
-        {/* Quick Actions */}
-        <View style={styles.cardActionsCol}>
-          <TouchableOpacity
-            onPress={(e) => {
-              e.stopPropagation();
-              setMoveCharModal({ visible: true, char });
-            }}
-            style={styles.iconBtn}
-          >
-            <Ionicons
-              name="folder-outline"
-              size={18}
-              color={theme.textSecondary}
-            />
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            onPress={(e) => {
-              e.stopPropagation();
-              confirmDeleteCharacter(char);
-            }}
-            style={styles.iconBtn}
-          >
-            <Ionicons name="trash-outline" size={18} color={theme.danger} />
-          </TouchableOpacity>
-        </View>
-      </TouchableOpacity>
+    return (
+      <View
+        key={char.id}
+        testID={`home-entry-${char.id}`}
+        style={[
+          styles.characterCard,
+          { backgroundColor: theme.surface, borderColor: theme.border },
+          draft && styles.cardDraft,
+          card && styles.characterCardGrid,
+        ]}>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={cardTitle}
+          onPress={() => router.push((draft ? `/build/${char.id}` : `/character/${char.id}`) as any)}
+          style={[styles.entryMain, card && styles.entryMainCard]}>
+          {card ? (
+            <View style={styles.cardTopRow}>
+              {avatar}
+              <View style={{ flex: 1 }} />
+            </View>
+          ) : (
+            avatar
+          )}
+          {entryText}
+        </Pressable>
+        {card ? <View style={styles.cardActionsOverlay}>{rowButtons}</View> : rowButtons}
+      </View>
     );
   };
+
+  const gridCards = (chars: Character[]) => (
+    <View testID="home-grid" style={styles.grid} onLayout={(e) => setGridWidth(e.nativeEvent.layout.width)}>
+      {chars.map((char) => (
+        // flexGrow 0: every card keeps its column's basis, so a lone last card does not grow to full width.
+        <View key={char.id} style={{ flexBasis: cardBasis ?? (cols === 3 ? "31%" : "48%"), flexGrow: 0, maxWidth: "100%" }}>
+          {renderCharacterCard(char, true)}
+        </View>
+      ))}
+    </View>
+  );
+
+  const listRows = (chars: Character[]) => (
+    <View style={{ gap: 8 }}>{chars.map((char) => renderCharacterCard(char, false))}</View>
+  );
 
   return (
     <SafeAreaView
@@ -373,6 +409,7 @@ export default function HomeScreen() {
         {characters.length > 0 && (
           <View style={{ marginBottom: 14 }}>
             <SearchBar
+              testID="home-search-bar"
               value={searchQuery}
               onChangeText={setSearchQuery}
               placeholder="Search by name, race, or class..."
@@ -421,54 +458,60 @@ export default function HomeScreen() {
 
           return (
             <View key={folder.id} style={styles.folderSection}>
-              {/* Folder Accordion Header */}
-              <TouchableOpacity
-                onPress={() => toggleFolderCollapse(folder.id)}
+              {/* Folder Accordion Header: a pressable main region with the trash button as its sibling, so
+                  no touchable contains another; the trash is a 48dp target. */}
+              <View
                 style={[
                   styles.folderHeader,
                   { backgroundColor: theme.surface, borderColor: theme.border },
                 ]}
               >
-                <Ionicons
-                  name={isCollapsed ? "folder-outline" : "folder-open"}
-                  size={20}
-                  color={theme.accentHover}
-                />
-                <Text style={[styles.folderTitle, { color: theme.text }]}>
-                  {folder.name}
-                </Text>
-                <Badge
-                  label={`${charsInFolder.length}`}
-                  variant="secondary"
-                  size="sm"
-                />
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={`Toggle folder ${folder.name}`}
+                  onPress={() => toggleFolderCollapse(folder.id)}
+                  style={styles.folderHeaderMain}
+                >
+                  <Ionicons
+                    name={isCollapsed ? "folder-outline" : "folder-open"}
+                    size={20}
+                    color={theme.accentHover}
+                  />
+                  <Text style={[styles.folderTitle, { color: theme.text }]}>
+                    {folder.name}
+                  </Text>
+                  <Badge
+                    label={`${charsInFolder.length}`}
+                    variant="secondary"
+                    size="sm"
+                  />
 
-                <View style={{ flex: 1 }} />
+                  <View style={{ flex: 1 }} />
 
-                <TouchableOpacity
-                  onPress={(e) => {
-                    e.stopPropagation();
-                    confirmDeleteFolder(folder);
-                  }}
-                  style={{ padding: 4 }}
+                  <Ionicons
+                    name={isCollapsed ? "chevron-down" : "chevron-up"}
+                    size={18}
+                    color={theme.textSecondary}
+                  />
+                </Pressable>
+
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={`Delete folder ${folder.name}`}
+                  onPress={() => confirmDeleteFolder(folder)}
+                  style={styles.folderTrashBtn}
                 >
                   <Ionicons
                     name="trash-outline"
                     size={16}
                     color={theme.textMuted}
                   />
-                </TouchableOpacity>
-
-                <Ionicons
-                  name={isCollapsed ? "chevron-down" : "chevron-up"}
-                  size={18}
-                  color={theme.textSecondary}
-                />
-              </TouchableOpacity>
+                </Pressable>
+              </View>
 
               {/* Characters inside this folder */}
               {!isCollapsed && (
-                <View style={styles.folderContent}>
+                <View style={[styles.folderContent, grid && styles.folderContentGrid]}>
                   {charsInFolder.length === 0 ? (
                     <Text
                       style={[
@@ -478,8 +521,10 @@ export default function HomeScreen() {
                     >
                       Folder is empty.
                     </Text>
+                  ) : grid ? (
+                    gridCards(charsInFolder)
                   ) : (
-                    charsInFolder.map(renderCharacterCard)
+                    listRows(charsInFolder)
                   )}
                 </View>
               )}
@@ -488,7 +533,7 @@ export default function HomeScreen() {
         })}
 
         {/* Uncategorized Characters */}
-        {uncategorized.length > 0 && (
+        {(uncategorized.length > 0 || (!grid && uncatDrafts.length > 0)) && (
           <View style={styles.folderSection}>
             {folders.length > 0 && (
               <View
@@ -507,14 +552,42 @@ export default function HomeScreen() {
                 <Text
                   style={[styles.sectionTitle, { color: theme.textSecondary }]}
                 >
-                  UNCATEGORIZED ({uncategorized.length})
+                  UNCATEGORIZED ({uncategorized.length + (grid ? 0 : uncatDrafts.length)})
                 </Text>
               </View>
             )}
 
-            <View style={{ gap: 8 }}>
-              {uncategorized.map(renderCharacterCard)}
+            {grid ? (
+              gridCards(uncategorized)
+            ) : (
+              listRows([...uncategorized, ...uncatDrafts])
+            )}
+          </View>
+        )}
+
+        {/* Drafts get their own group in the wide grid */}
+        {grid && uncatDrafts.length > 0 && (
+          <View style={styles.folderSection}>
+            <View
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                gap: 6,
+                marginBottom: 8,
+              }}
+            >
+              <Ionicons
+                name="document-outline"
+                size={16}
+                color={theme.textMuted}
+              />
+              <Text
+                style={[styles.sectionTitle, { color: theme.textSecondary }]}
+              >
+                DRAFTS ({uncatDrafts.length})
+              </Text>
             </View>
+            {gridCards(uncatDrafts)}
           </View>
         )}
       </ScrollView>
@@ -644,7 +717,7 @@ const styles = StyleSheet.create({
   },
   headerBarInner: {
     width: "100%",
-    maxWidth: 1024,
+    maxWidth: 1200,
     alignSelf: "center",
     flexDirection: "row",
     justifyContent: "space-between",
@@ -678,7 +751,7 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     width: "100%",
-    maxWidth: 1024,
+    maxWidth: 1200,
     alignSelf: "center",
     padding: 16,
     paddingBottom: 40,
@@ -717,10 +790,24 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 8,
     paddingHorizontal: 12,
-    paddingVertical: 10,
+    paddingVertical: 6,
     borderRadius: 8,
     borderWidth: 1,
     marginBottom: 8,
+  },
+  folderHeaderMain: {
+    flex: 1,
+    minWidth: 0,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  folderTrashBtn: {
+    width: 48,
+    height: 48,
+    alignItems: "center",
+    justifyContent: "center",
+    flexShrink: 0,
   },
   folderTitle: {
     fontSize: 14,
@@ -729,6 +816,10 @@ const styles = StyleSheet.create({
   folderContent: {
     gap: 8,
     paddingLeft: 8,
+  },
+  // In the wide grid the cards start at the search bar's left edge, not indented under the folder header.
+  folderContentGrid: {
+    paddingLeft: 0,
   },
   folderEmptyText: {
     fontSize: 12,
@@ -750,6 +841,58 @@ const styles = StyleSheet.create({
     gap: 12,
     marginBottom: 8,
   },
+  characterCardGrid: {
+    flexDirection: "column",
+    alignItems: "stretch",
+    marginBottom: 0,
+    height: "100%",
+  },
+  entryMain: {
+    flex: 1,
+    minWidth: 0,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+  },
+  entryMainCard: {
+    flexDirection: "column",
+    alignItems: "stretch",
+    gap: 0,
+  },
+  cardActionsOverlay: {
+    position: "absolute",
+    top: 12,
+    right: 12,
+  },
+  cardDraft: {
+    borderStyle: "dashed",
+  },
+  cardTopRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+  },
+  cardNameRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+  cardActionsRow: {
+    flexDirection: "row",
+    flexShrink: 0,
+    marginLeft: "auto",
+  },
+  grid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: GRID_GAP,
+  },
+  rowAction: {
+    width: 44,
+    height: 44,
+    alignItems: "center",
+    justifyContent: "center",
+  },
   cardAvatarBox: {
     width: 48,
     height: 48,
@@ -767,13 +910,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "700",
   },
-  cardActionsCol: {
-    gap: 6,
-    paddingLeft: 4,
-  },
-  iconBtn: {
-    padding: 6,
-  },
+
   input: {
     minHeight: 44,
     borderRadius: 6,
