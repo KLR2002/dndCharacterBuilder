@@ -61,6 +61,7 @@ export function SheetTabBar({
             key={tab.key}
             accessibilityRole="button"
             accessibilityLabel={tab.label}
+            accessibilityState={{ selected: isActive }}
             onPress={() => onSelect(tab.key)}
             style={styles.tabBarItem}>
             <Ionicons name={tab.icon} size={20} color={isActive ? theme.accentHover : theme.textSecondary} />
@@ -109,6 +110,7 @@ export function SheetTabRail({
       key={key}
       accessibilityRole="button"
       accessibilityLabel={label}
+      accessibilityState={{ selected: isActive }}
       onPress={onPress}
       style={[
         styles.railRow,

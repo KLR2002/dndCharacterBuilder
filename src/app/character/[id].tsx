@@ -150,9 +150,14 @@ export default function CharacterSheetScreen() {
     }
   };
 
+  // The wide content column's cap: Stats gets the wider two-column layout, the other tabs a narrower one.
+  // On wide screens the review notices take the same capped width instead of shrink-wrapping in the
+  // centred wideMain.
+  const wideContentMaxWidth = activeTab === "stats" ? 1080 : 960;
   const notices = (currentCharacter.needsReview?.length ?? 0) > 0 ? (
     <ReviewNotices
       key={currentCharacter.id}
+      style={isTablet ? { maxWidth: wideContentMaxWidth } : undefined}
       notices={currentCharacter.needsReview ?? []}
       onDismiss={(notice) =>
         updateCharacter(currentCharacter.id, (c) => ({ ...c, needsReview: dismissNotices(c.needsReview, notice) }))
@@ -307,7 +312,7 @@ export default function CharacterSheetScreen() {
           />
           <View style={styles.wideMain}>
             {notices}
-            <View style={[styles.tabContent, { maxWidth: activeTab === "stats" ? 1080 : 960 }]}>
+            <View style={[styles.tabContent, { maxWidth: wideContentMaxWidth }]}>
               {tabContent}
             </View>
           </View>
@@ -418,6 +423,7 @@ const styles = StyleSheet.create({
     gap: 4,
     paddingHorizontal: 8,
     paddingVertical: 6,
+    minHeight: 48,
     borderRadius: 6,
     borderWidth: 1,
   },
