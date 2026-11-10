@@ -2747,6 +2747,10 @@ async function checkHomeLayout(ctx, width) {
       layout.entries.some((b, j) => j > i && Math.abs(a.top - b.top) <= 2 && Math.abs(a.left - b.left) > 20),
     );
     if (!gridPair) fail("no two home entries share a row: the wide Home is not a grid");
+    // Every card keeps its column width: a lone last card must not grow to full width.
+    const widths = [...new Set(layout.entries.map((e) => Math.round(e.width)))];
+    if (widths.length > 1 && Math.max(...widths) - Math.min(...widths) > 2)
+      fail(`the wide grid's entries have unequal widths (${widths.join(", ")}px): a lone last card grew past its column`);
   }
   await page.screenshot({ path: join(SHOTS, `HomeLayout-${width}.png`) });
   await page.close();

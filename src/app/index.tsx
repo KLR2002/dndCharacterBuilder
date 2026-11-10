@@ -309,7 +309,8 @@ export default function HomeScreen() {
   const gridCards = (chars: Character[]) => (
     <View style={styles.grid}>
       {chars.map((char) => (
-        <View key={char.id} style={{ flexBasis: cardBasis, flexGrow: 1, maxWidth: "100%" }}>
+        // flexGrow 0: every card keeps its column's basis, so a lone last card does not grow to full width.
+        <View key={char.id} style={{ flexBasis: cardBasis, flexGrow: 0, maxWidth: "100%" }}>
           {renderCharacterCard(char, true)}
         </View>
       ))}
