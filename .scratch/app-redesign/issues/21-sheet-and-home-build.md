@@ -10,6 +10,7 @@ The character sheet and the Home list in the visual system of ticket 04, as the 
 - Sheet at 768px and up: a slim header (back, name and line, HP and AC) and a left rail with the tabs and, below a divider, Level up and Edit Build; the tab content in two columns (Stats as the representative tab, split as in the prototype; every other tab at least centred and width-capped, never a stretched single column).
 - Home: a list on phones, a grid at wide widths. Each entry keeps the person icon, the row buttons and the Lvl badge; the HP badge goes. Drafts read "Draft · <step>".
 - The floating dice button and the result card sit above the phone bottom bar, never over a tab (as in the flows: `setBottomObstruction`).
+- Stats roll badges: on wide screens the bonus badge in each ability card and the Initiative card sits at the card's top-left, stretched taller than its content, instead of centred in the value's place like Armor Class, Speed and Proficiency (owner's screenshot, 2026-11-10). Every Stats card centres its icon or label, value and caption on one axis, the badge sized to its content, at every width.
 - Fold in the deferred advisories: the Level up / Edit Build strip height, the header sub-line truncation at 320px, the Stats row height, rule-restating captions in the older tabs ("Level + INT mod", "Str x 15"), the remaining accent fills on the switch track.
 
 ## Owns
@@ -22,6 +23,7 @@ No spec criterion of its own; it carries the spec's wide-screen rule ("sheet loo
 - [ ] At 768 and 1280px the sheet shows the left rail with the tabs and header actions, and Stats in two columns, with no horizontal scroll
 - [ ] Home shows a list on phones and a grid at 768px and up; entries carry no HP badge
 - [ ] The dice button never covers the bottom bar or a tab
+- [ ] Stats cards centre their roll badge like the other cards' values, at phone and wide widths
 - [ ] Every existing sheet, Home and modal scenario stays green on web and Android
 
 ## Verification
@@ -32,6 +34,7 @@ No spec criterion of its own; it carries the spec's wide-screen rule ("sheet loo
 | Wide sheet | `WIDTHS=768,1280 npm run layout:check` | rail present, two columns on Stats, no horizontal scroll; screenshots reviewed |
 | Home | `layout:check` | list at phone widths, grid at 768 and 1280, no HP badge |
 | Dice button | `layout:check` "Dice button on sheet" | button bottom above the bar top |
+| Stats badges | `layout:check` Stats at the four widths and `WIDTHS=768,1280` | each ability and Initiative badge centred in its card (centre within 2px), badge height at most its content plus padding |
 | Native | `layout:android` with `ONLY` set to the sheet tabs, Home and modal scenarios | green; the runner's tab-finding follows the new bar |
 
 ## Constraints
