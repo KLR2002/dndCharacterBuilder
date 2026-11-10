@@ -1527,9 +1527,10 @@ export function buildScreens({ integrated }) {
       { name: "Draft sheet redirects to flow", route: `/character/${DRAFT_ID}`, ready: "Create Custom", expect: { texts: ["Background"], absent: ["Builder", "Stats", "Actions", "Inventory", "Features", "Journal", "Spells"], fitsWidth: true } },
       // Confirming Review finishes the character: the sheet opens on Wren and its menu holds Level up and
       // Edit Build (at 768px and up the rail holds them; the "Sheet chrome" check asserts that per width).
-      // The menu is opened here so both runners see the two rows: the web check's expect, and natively
-      // nativeTexts, which the Android player waits for in the dump.
-      { name: "Review finishes character", route: REVIEW_DRAFT_ROUTE, open: [{ tap: { text: "Create character", exact: true } }, { tap: { label: "Sheet menu" } }], modal: "Character", nativeTexts: ["Level up", "Edit Build", "Wren"], expect: { texts: ["Level up", "Edit Build", "Wren"], absent: ["Builder"], fitsWidth: true } },
+      // The menu is opened here so both runners see the two rows: the web check's expect (which also sees
+      // the name under the open menu), and natively nativeTexts — the dump of an open dialog shows only the
+      // dialog's window, so the sheet's name is not in it.
+      { name: "Review finishes character", route: REVIEW_DRAFT_ROUTE, open: [{ tap: { text: "Create character", exact: true } }, { tap: { label: "Sheet menu" } }], modal: "Character", nativeTexts: ["Level up", "Edit Build"], expect: { texts: ["Level up", "Edit Build", "Wren"], absent: ["Builder"], fitsWidth: true } },
       // Edit Build on a finished character: choosing the Background step opens the flow there with every step reachable.
       {
         name: "Builder Edit Build background step",
