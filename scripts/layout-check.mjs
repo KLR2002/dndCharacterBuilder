@@ -1294,6 +1294,10 @@ async function checkActionRolls(ctx, width) {
   else if ((await badgeText(toHit)) !== "+5 to hit") fail(`the "to hit" badge reads "${await badgeText(toHit)}", expected "+5 to hit"`);
   if (!(await damageBadge.isVisible().catch(() => false))) fail("no damage roll badge on the weapon row");
   else if ((await badgeText(damageBadge)) !== "1d8 + 3 slashing") fail(`the damage badge reads "${await badgeText(damageBadge)}", expected "1d8 + 3 slashing"`);
+  // The badges' accessible names carry the roll's source and value, not just the badge text.
+  for (const name of ["Roll Longsword attack, +5", "Roll Longsword damage, 1d8 + 3"]) {
+    if (!(await page.getByLabel(name, { exact: true }).first().isVisible().catch(() => false))) fail(`no badge accessible-labelled "${name}"`);
+  }
   const before = await storedCharacter(ACTIONS_ID);
   if (!before) fail("the seeded character is not in storage");
   for (const v of await page.evaluate(findLayoutViolations, null)) fail(v);
@@ -1393,6 +1397,8 @@ async function checkActionRolls(ctx, width) {
   const spellToHit = page.locator('[data-testid="roll-badge-spell-0-tohit"]');
   if (!(await spellToHit.isVisible().catch(() => false))) fail("the Fire Bolt row has no to-hit roll badge");
   else if ((await badgeText(spellToHit)) !== "+5 to hit") fail(`the spell badge reads "${await badgeText(spellToHit)}", expected "+5 to hit"`);
+  if (!(await page.getByLabel("Roll Fire Bolt attack, +5", { exact: true }).first().isVisible().catch(() => false)))
+    fail('no spell badge accessible-labelled "Roll Fire Bolt attack, +5"');
   if ((await page.locator('[data-testid="roll-badge-spell-0-damage"]').count()) > 0) fail('the "Cantrip scaling" damage shows a roll badge');
   const plainDamage = await page.evaluate(() => {
     const el = [...document.querySelectorAll("*")].find((e) => e.children.length === 0 && e.textContent.trim() === "Cantrip scaling");
@@ -1426,6 +1432,8 @@ async function checkActionRolls(ctx, width) {
   const unarmedToHit = page.locator('[data-testid="roll-badge-unarmed-tohit"]');
   if (!(await unarmedToHit.isVisible().catch(() => false))) fail("the unarmed fallback row has no to-hit roll badge");
   else if ((await badgeText(unarmedToHit)) !== "+3 to hit") fail(`the unarmed badge reads "${await badgeText(unarmedToHit)}", expected "+3 to hit"`);
+  if (!(await page.getByLabel("Roll Unarmed Strike attack, +3", { exact: true }).first().isVisible().catch(() => false)))
+    fail('no unarmed badge accessible-labelled "Roll Unarmed Strike attack, +3"');
   if ((await page.locator('[data-testid="roll-badge-unarmed-damage"]').count()) > 0) fail("the flat unarmed damage shows a roll badge");
   await setFaces([7]);
   await unarmedToHit.click();
@@ -1743,6 +1751,11 @@ async function checkStatsRolls(ctx, width) {
     const loc = page.locator(sel);
     if (!(await loc.isVisible().catch(() => false))) fail(`the Stats tab has no ${name} roll badge`);
     else if ((await badgeText(loc)) !== label) fail(`the ${name} badge reads "${await badgeText(loc)}", expected "${label}"`);
+  }
+  // The badges' accessible names carry the roll's source and value, so a screen reader can tell ~30
+  // badges apart ("Roll Strength check, +1", not "Roll +1").
+  for (const name of ["Roll Strength check, +1", "Roll Dexterity check, +0", "Roll Wisdom save, +2", "Roll Athletics, +1", "Roll Initiative, +0"]) {
+    if (!(await page.getByLabel(name, { exact: true }).first().isVisible().catch(() => false))) fail(`no badge accessible-labelled "${name}"`);
   }
   for (const v of await page.evaluate(findLayoutViolations, null)) fail(v);
   await page.screenshot({ path: shot("tab") });

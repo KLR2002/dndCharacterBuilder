@@ -107,12 +107,18 @@ export function RollBadge({
 
   const isSmall = size === "sm";
 
+  // The accessible name carries the roll's source and value ("Roll Longsword attack, +5",
+  // "Roll Longsword damage, 1d8 + 3"), so badges on the same screen stay distinguishable.
+  const accessibleName = isD20
+    ? `Roll ${source}, ${formatModifier(modifier)}`
+    : `Roll ${poolSource ?? source}, ${pool ?? label}`;
+
   return (
     <>
       <Pressable
         testID={testID ?? "roll-badge"}
         accessibilityRole="button"
-        accessibilityLabel={`Roll ${label}`}
+        accessibilityLabel={accessibleName}
         accessibilityActions={
           isD20
             ? [
