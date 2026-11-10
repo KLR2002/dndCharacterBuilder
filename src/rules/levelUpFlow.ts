@@ -396,14 +396,15 @@ export function setPlanAsi(plan: LevelUpPlan, asi: AsiSelection): LevelUpPlan {
 
 /**
  * Sets the picked options of one of the picked feat's own rule choices (toggling `option` within
- * `choose`). The given plan is never mutated.
+ * `choose`). Once the cap is reached a new option is refused — the plan is returned unchanged — while the
+ * picked ones stay deselectable. The given plan is never mutated.
  */
 export function setPlanFeatPick(plan: LevelUpPlan, choiceId: string, option: string, choose: number): LevelUpPlan {
   const current = plan.picks.featPicks?.[choiceId] ?? [];
   const has = current.some((name) => name.toLowerCase() === option.toLowerCase());
-  let nextPicks: string[];
-  if (has) nextPicks = current.filter((name) => name.toLowerCase() !== option.toLowerCase());
-  else nextPicks = [...current, option].slice(0, Math.max(1, choose));
+  const cap = Math.max(1, choose);
+  if (!has && current.length >= cap) return plan;
+  const nextPicks = has ? current.filter((name) => name.toLowerCase() !== option.toLowerCase()) : [...current, option];
   return { ...plan, picks: { ...plan.picks, featPicks: { ...plan.picks.featPicks, [choiceId]: nextPicks } } };
 }
 

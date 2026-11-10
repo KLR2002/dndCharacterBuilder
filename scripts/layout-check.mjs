@@ -1788,21 +1788,12 @@ async function continueEnabledSoon(page, timeoutMs = 4000) {
     .catch(() => false);
 }
 
-// Selecting any feat replaces the plan's pick at once: a no-choice feat completes the ASI/Feat step, then
-// a feat with an ability choice leaves Continue disabled until the ability is chosen, and Review lists the
-// second feat. The choice feat needs the integrated catalog; the SRD Baseline offers only one feat.
-async function checkLevelUpFeatReplace(ctx, width) {
-  const page = await ctx.newPage();
-  const prefix = `[${width}px level-up feat replace]`;
-  let failures = 0;
-  const fail = (msg) => {
-    failures++;
-    console.log(`${prefix} ${msg}`);
-  };
+// Opens the Level-Up Flow for the seeded Ranger, picks the held class, takes the average Hit Points and
+// walks past any Subclass step to the ASI/Feat step, with the Feat tab open.
+async function openAsiFeatStep(page, fail = () => {}) {
   await openLevelUp(page); // picks the held Ranger, lands on the Hit Points step
   await page.getByLabel("Average hit points").first().click();
   await page.waitForTimeout(300);
-  // Walk to the ASI/Feat step, picking the first offered subclass on the way.
   for (let i = 0; i < 4; i++) {
     const sub = page.getByLabel(/^Subclass /).first();
     if ((await sub.count()) > 0) {
@@ -1814,6 +1805,20 @@ async function checkLevelUpFeatReplace(ctx, width) {
   }
   await page.getByRole("button", { name: "Feat", exact: true }).first().click();
   await page.waitForTimeout(400);
+}
+
+// Selecting any feat replaces the plan's pick at once: a no-choice feat completes the ASI/Feat step, then
+// a feat with an ability choice leaves Continue disabled until the ability is chosen, and Review lists the
+// second feat. The choice feat needs the integrated catalog; the SRD Baseline offers only one feat.
+async function checkLevelUpFeatReplace(ctx, width) {
+  const page = await ctx.newPage();
+  const prefix = `[${width}px level-up feat replace]`;
+  let failures = 0;
+  const fail = (msg) => {
+    failures++;
+    console.log(`${prefix} ${msg}`);
+  };
+  await openAsiFeatStep(page, fail);
   const noChoiceFeat = INTEGRATED ? "Alert" : "Grappler";
   const choiceFeat = "Athlete";
   await page.getByRole("button", { name: `Feat ${noChoiceFeat}`, exact: true }).first().click();
@@ -1847,6 +1852,54 @@ async function checkLevelUpFeatReplace(ctx, width) {
   if (INTEGRATED && (await page.getByText(noChoiceFeat, { exact: true }).first().isVisible().catch(() => false)))
     fail(`Review still lists "${noChoiceFeat}": the replaced pick was applied`);
   await page.screenshot({ path: join(SHOTS, `LevelUp-FeatReplace-${width}.png`) });
+  await page.close();
+  return failures;
+}
+
+// The feat sub-choice chips are at least 48dp tall, and once the choice's cap is reached a new option is
+// disabled while the picked ones stay deselectable. A feat with its own rule choice needs the integrated
+// catalog; the SRD Baseline offers none.
+async function checkLevelUpFeatSubChoiceChips(ctx, width) {
+  const page = await ctx.newPage();
+  const prefix = `[${width}px level-up feat sub-choice chips]`;
+  let failures = 0;
+  const fail = (msg) => {
+    failures++;
+    console.log(`${prefix} ${msg}`);
+  };
+  await openAsiFeatStep(page, fail);
+  if (!INTEGRATED) {
+    await page.getByRole("button", { name: "Feat Grappler", exact: true }).first().click();
+    await page.waitForTimeout(400);
+    if (!(await continueEnabledSoon(page))) fail("picking the SRD Baseline's only feat did not complete the ASI/Feat step");
+    await page.close();
+    return failures;
+  }
+  await page.getByRole("button", { name: "Feat Fighting Initiate", exact: true }).first().click();
+  await page.waitForTimeout(500);
+  if (await continueEnabledSoon(page)) fail("tapping Fighting Initiate left Continue enabled: its style choice is not picked yet");
+  const styleChip = (name) => page.getByRole("button", { name: `Fighting Initiate Style ${name}`, exact: true }).first();
+  const archery = styleChip("Archery");
+  if ((await archery.count()) === 0) fail("no fighting style chips under Fighting Initiate");
+  else {
+    const chipHeight = await archery.evaluate((el) => el.getBoundingClientRect().height).catch(() => 0);
+    if (chipHeight < 47.5) fail(`a feat sub-choice chip is ${Math.round(chipHeight)}px tall, under 48dp`);
+    await archery.click();
+    await page.waitForTimeout(400);
+    if (!(await continueEnabledSoon(page))) fail("picking Archery did not complete the ASI/Feat step");
+    if (!(await waitForVisibleText(page, "Fighting Initiate Style (1/1):"))) fail('the style counter does not read "(1/1)" after picking one');
+    const defense = styleChip("Defense");
+    const defenseDisabled = await defense.evaluate((el) => el.getAttribute("aria-disabled") === "true").catch(() => false);
+    if (!defenseDisabled) fail("at the cap (1/1) another style chip is not disabled");
+    await defense.click({ force: true }).catch(() => {});
+    await page.waitForTimeout(400);
+    if (!(await waitForVisibleText(page, "Fighting Initiate Style (1/1):"))) fail("force-tapping a disabled-at-cap style chip changed the pick");
+    await archery.click();
+    await page.waitForTimeout(400);
+    if (await continueEnabledSoon(page)) fail("deselecting the picked style left Continue enabled");
+    if (!(await waitForVisibleText(page, "Fighting Initiate Style (0/1):"))) fail('the style counter does not read "(0/1)" after deselecting');
+  }
+  await page.screenshot({ path: join(SHOTS, `LevelUp-FeatSubChoices-${width}.png`) });
   await page.close();
   return failures;
 }
@@ -2277,6 +2330,7 @@ const EXTRA_CHECKS = [
   { name: "Level-Up Flow HP state", run: checkLevelUpHpState },
   { name: "Level-Up Flow HP per class", run: checkLevelUpHpPerClass },
   { name: "Level-Up Flow feat replace", run: checkLevelUpFeatReplace },
+  { name: "Level-Up Flow feat sub-choice chips", run: checkLevelUpFeatSubChoiceChips },
   { name: "Level-Up Flow HP modifier sign", run: checkLevelUpHpModifierSign },
   { name: "Level up hidden at level 20", run: checkLevelUpHiddenAtMaxLevel },
   { name: "Level-Up Flow cancel and review", run: checkLevelUpCancelAndReview },

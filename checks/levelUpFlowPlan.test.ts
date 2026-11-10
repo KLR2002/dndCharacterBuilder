@@ -235,6 +235,29 @@ test("a feat with its own rule choice (a fighting style) is incomplete until the
   assert.ok(applied.asiSelections.some((s) => s.featName === "Fighting Initiate"), "the feat itself is applied");
 });
 
+test("setPlanFeatPick refuses a new option once the cap is reached; the picked ones stay deselectable", () => {
+  const plan = fighterPlan();
+  const initiate = setPlanAsi(plan, { level: 4, className: "Fighter", classLevel: 4, type: "feat", featName: "Fighting Initiate", featSource: "TCE" });
+  const choice = asiFeatSubChoices(initiate, FIGHTER_3, { activeBooks: ALL_BOOKS })[0];
+  assert.ok(choice, "Fighting Initiate grants its fighting style choice");
+  assert.ok(choice.options.length >= 2);
+  const picked = setPlanFeatPick(initiate, choice.id, choice.options[0].name, choice.choose);
+  assert.deepEqual(picked.picks.featPicks?.[choice.id], [choice.options[0].name]);
+  // At the cap (choose 1) a new option is refused outright: the plan comes back unchanged.
+  const refused = setPlanFeatPick(picked, choice.id, choice.options[1].name, choice.choose);
+  assert.equal(refused, picked, "at the cap a new option is refused, the plan is returned unchanged");
+  assert.deepEqual(refused.picks.featPicks?.[choice.id], [choice.options[0].name]);
+  // A picked option stays deselectable at the cap.
+  const deselected = setPlanFeatPick(picked, choice.id, choice.options[0].name, choice.choose);
+  assert.deepEqual(deselected.picks.featPicks?.[choice.id], []);
+  // The same at a cap of two: the third option is refused, not silently dropped by a slice.
+  const two = setPlanFeatPick(setPlanFeatPick(plan, "choice-1", "First Option", 2), "choice-1", "Second Option", 2);
+  const refusedThird = setPlanFeatPick(two, "choice-1", "Third Option", 2);
+  assert.equal(refusedThird, two);
+  assert.deepEqual(refusedThird.picks.featPicks?.["choice-1"], ["First Option", "Second Option"]);
+  assert.deepEqual(plan.picks, {}, "the original plan is not mutated");
+});
+
 test("levelUpSummary lists the feat's own picks as rows", () => {
   const plan = fighterPlan();
   const initiate = setPlanAsi(plan, { level: 4, className: "Fighter", classLevel: 4, type: "feat", featName: "Fighting Initiate", featSource: "TCE" });
