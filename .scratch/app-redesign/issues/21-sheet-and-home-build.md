@@ -1,6 +1,8 @@
 # 21: Character sheet and Home restyle
 
-**Status:** ready-for-agent
+**Status:** done
+
+**Landed:** feat/app-redesign at d12b101 (with repairs R1, R2). Gate PASS: check:all, check:live, layout:check (SRD and integrated), layout:check at 768/1280 for the sheet, Home, Stats and dice, layout:android (every sheet tab, Home, dice, Level-Up Flow, modals). Evidence: `.scratch/app-redesign/evidence.md`, "Ticket 21".
 
 ## What to build
 
@@ -19,12 +21,12 @@ No spec criterion of its own; it carries the spec's wide-screen rule ("sheet loo
 
 ## Acceptance Criteria
 
-- [ ] At 320, 360, 393 and 412px the six tabs fit one bottom bar with labels readable and 48dp targets, and the header is one bar
-- [ ] At 768 and 1280px the sheet shows the left rail with the tabs and header actions, and Stats in two columns, with no horizontal scroll
-- [ ] Home shows a list on phones and a grid at 768px and up; entries carry no HP badge
-- [ ] The dice button never covers the bottom bar or a tab
-- [ ] Stats cards centre their roll badge like the other cards' values, at phone and wide widths
-- [ ] Every existing sheet, Home and modal scenario stays green on web and Android
+- [x] At 320, 360, 393 and 412px the six tabs fit one bottom bar with labels readable and 48dp targets, and the header is one bar
+- [x] At 768 and 1280px the sheet shows the left rail with the tabs and header actions, and Stats in two columns, with no horizontal scroll
+- [x] Home shows a list on phones and a grid at 768px and up; entries carry no HP badge
+- [x] The dice button never covers the bottom bar or a tab
+- [x] Stats cards centre their roll badge like the other cards' values, at phone and wide widths
+- [x] Every existing sheet, Home and modal scenario stays green on web and Android
 
 ## Verification
 

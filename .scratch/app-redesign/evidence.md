@@ -110,3 +110,41 @@ Sonnet reviewers on each ticket, then on the integrated diff and on each repair.
 
 - Native: hold-to-roll and TalkBack announcements were not exercised on the emulator (the runner takes screenshots and does not long-press or listen).
 - Wide screens: the sheet and Home restyle is ticket 21; tickets 15-19 checked 768 and 1280 only in targeted runs (`WIDTHS=360,700,768,1280` for the dice and flow padding).
+
+# Evidence: ticket 21 on feat/app-redesign
+
+Tree: `d12b101` (merge of ticket 21 with repairs R1 and R2), clean worktree, dependencies from the committed lockfile (`npm ci`).
+
+| Check | Command | Result | Exit |
+| --- | --- | --- | --- |
+| lint, typecheck, tests | `npm run check:all` | pass: 2118 app tests (94 skipped live-only) + 307 scraper tests | 0 |
+| live catalog | `npm run check:live` | pass: 140 tests | 0 |
+| layout, SRD | `npm run layout:check` | GREEN (320/360/393/412) | 0 |
+| layout, integrated | `npm run layout:check -- --integrated` | GREEN | 0 |
+| layout, wide | `WIDTHS=768,1280 ONLY="Sheet chrome,Home layout,Stats,Dice" npm run layout:check` | GREEN | 0 |
+| native | `ONLY="Stats,Actions,Spells,Inventory,Features,Journal,Home,Dice button,Review finishes character,Level-Up Flow,Settings,Rest modal,Conditions modal" npm run layout:android` | run finished, 132 screenshots, none failed | 0 |
+
+Required gate: PASS.
+
+New checks: "Sheet chrome" (one bar of six 48dp tabs on phones, a compact header of four 48dp controls on one centre, the class level kept in the line under the name, the left rail at 768px and up, the dice button above the bar after returning from Level up), "Home layout" (list on phones, grid flush with the search bar at wide widths, no HP badge, no nested buttons), Stats badges centred within 2px.
+
+Review: a Sonnet review and the owner's screenshots sent back:
+- R1:
+  - a stale dice obstruction after returning from Level up or Edit Build
+  - nested buttons on Home
+  - the tab bar under the bottom inset
+  - two weakened assertions, now restored
+  - "Take Rest (Short / Long)" wrapping
+  - stat cards 3+1
+  - the header line losing the class level
+  - a lone grid card stretching
+  - the HP chip under 48dp
+  - selected state on tabs
+  - one 768 constant
+- R2:
+  - the grid short of the search bar's edge
+  - 40dp back and menu buttons next to 48dp chips
+
+Advisory: RollBadge keeps 48dp by `hitSlop` around a content-sized badge, which no check measures.
+
+Not covered: the 13 overflows already in the Builder and flows at 768/1280 (ticket 22).
