@@ -30,6 +30,9 @@ import { evaluateCharacter } from "../rules/characterEvaluation";
 import { currentCompendium } from "../services/compendium";
 import { Character, Folder } from "../types/character";
 
+/** The gap between the Home grid's cards and rows; the card basis accounts for it. */
+const GRID_GAP = 12;
+
 export default function HomeScreen() {
   const router = useRouter();
   const { theme } = useAppTheme();
@@ -38,7 +41,11 @@ export default function HomeScreen() {
   // Home is a list on phones and a card grid at 768px and up.
   const grid = isTablet;
   const cols = width >= 1200 ? 3 : 2;
-  const cardBasis = cols === 3 ? "31%" : "48%";
+  // The grid's measured width, reported by the grid itself on layout.
+  const [gridWidth, setGridWidth] = useState(0);
+  // The card basis comes from the measured grid width and the gap, so cols cards plus (cols - 1) gaps
+  // fill a row exactly and the grid's outer edges equal the search bar's at every width.
+  const cardBasis = gridWidth > 0 ? (gridWidth - (cols - 1) * GRID_GAP) / cols : undefined;
   const {
     characters,
     folders,
@@ -307,10 +314,10 @@ export default function HomeScreen() {
   };
 
   const gridCards = (chars: Character[]) => (
-    <View style={styles.grid}>
+    <View testID="home-grid" style={styles.grid} onLayout={(e) => setGridWidth(e.nativeEvent.layout.width)}>
       {chars.map((char) => (
         // flexGrow 0: every card keeps its column's basis, so a lone last card does not grow to full width.
-        <View key={char.id} style={{ flexBasis: cardBasis, flexGrow: 0, maxWidth: "100%" }}>
+        <View key={char.id} style={{ flexBasis: cardBasis ?? (cols === 3 ? "31%" : "48%"), flexGrow: 0, maxWidth: "100%" }}>
           {renderCharacterCard(char, true)}
         </View>
       ))}
@@ -402,6 +409,7 @@ export default function HomeScreen() {
         {characters.length > 0 && (
           <View style={{ marginBottom: 14 }}>
             <SearchBar
+              testID="home-search-bar"
               value={searchQuery}
               onChangeText={setSearchQuery}
               placeholder="Search by name, race, or class..."
@@ -503,7 +511,7 @@ export default function HomeScreen() {
 
               {/* Characters inside this folder */}
               {!isCollapsed && (
-                <View style={styles.folderContent}>
+                <View style={[styles.folderContent, grid && styles.folderContentGrid]}>
                   {charsInFolder.length === 0 ? (
                     <Text
                       style={[
@@ -809,6 +817,10 @@ const styles = StyleSheet.create({
     gap: 8,
     paddingLeft: 8,
   },
+  // In the wide grid the cards start at the search bar's left edge, not indented under the folder header.
+  folderContentGrid: {
+    paddingLeft: 0,
+  },
   folderEmptyText: {
     fontSize: 12,
     fontStyle: "italic",
@@ -873,7 +885,7 @@ const styles = StyleSheet.create({
   grid: {
     flexDirection: "row",
     flexWrap: "wrap",
-    gap: 12,
+    gap: GRID_GAP,
   },
   rowAction: {
     width: 44,

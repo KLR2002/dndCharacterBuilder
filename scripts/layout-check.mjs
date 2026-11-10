@@ -2751,6 +2751,51 @@ async function checkHomeLayout(ctx, width) {
     const widths = [...new Set(layout.entries.map((e) => Math.round(e.width)))];
     if (widths.length > 1 && Math.max(...widths) - Math.min(...widths) > 2)
       fail(`the wide grid's entries have unequal widths (${widths.join(", ")}px): a lone last card grew past its column`);
+    // The grid's outer edges are the search bar's: the first card of every row starts at the search
+    // bar's left edge, the last card of a full row ends at its right edge (±1px), and the cards have
+    // equal widths and equal gaps.
+    const edges = await page.evaluate(() => {
+      const search = document.querySelector('[data-testid="home-search-bar"]');
+      const sr = search ? search.getBoundingClientRect() : null;
+      const grids = [...document.querySelectorAll('[data-testid="home-grid"]')];
+      const entries = [...document.querySelectorAll('[data-testid^="home-entry-"]')].map((el) => {
+        const r = el.getBoundingClientRect();
+        const grid = el.closest('[data-testid="home-grid"]');
+        return { left: r.left, right: r.right, top: r.top, width: r.width, grid: grid ? grids.indexOf(grid) : -1 };
+      });
+      return { search: sr ? { left: sr.left, right: sr.right } : null, entries };
+    });
+    if (!edges.search) fail('no search bar (data-testid="home-search-bar") to align the grid against');
+    else {
+      const cols = width >= 1200 ? 3 : 2;
+      const cardWidths = edges.entries.map((e) => e.width);
+      if (cardWidths.length > 1 && Math.max(...cardWidths) - Math.min(...cardWidths) > 1)
+        fail(`the wide grid's cards have unequal widths (${Math.round(Math.min(...cardWidths))}..${Math.round(Math.max(...cardWidths))}px)`);
+      const grids = new Map();
+      for (const e of edges.entries) {
+        if (!grids.has(e.grid)) grids.set(e.grid, []);
+        grids.get(e.grid).push(e);
+      }
+      const gaps = [];
+      for (const entries of grids.values()) {
+        const rows = new Map();
+        for (const e of entries) {
+          const key = [...rows.keys()].find((k) => Math.abs(k - e.top) <= 2);
+          if (key === undefined) rows.set(e.top, [e]);
+          else rows.get(key).push(e);
+        }
+        for (const row of rows.values()) {
+          row.sort((a, b) => a.left - b.left);
+          if (Math.abs(row[0].left - edges.search.left) > 1)
+            fail(`a grid row's first card starts ${Math.round(row[0].left - edges.search.left)}px away from the search bar's left edge (${Math.round(row[0].left)} vs ${Math.round(edges.search.left)})`);
+          if (row.length === cols && Math.abs(row[row.length - 1].right - edges.search.right) > 1)
+            fail(`a full grid row's last card ends ${Math.round(row[row.length - 1].right - edges.search.right)}px away from the search bar's right edge (${Math.round(row[row.length - 1].right)} vs ${Math.round(edges.search.right)})`);
+          for (let i = 1; i < row.length; i++) gaps.push(row[i].left - row[i - 1].right);
+        }
+      }
+      if (gaps.length > 1 && Math.max(...gaps) - Math.min(...gaps) > 1)
+        fail(`the wide grid's gaps are unequal (${Math.round(Math.min(...gaps))}..${Math.round(Math.max(...gaps))}px)`);
+    }
   }
   await page.screenshot({ path: join(SHOTS, `HomeLayout-${width}.png`) });
   await page.close();
