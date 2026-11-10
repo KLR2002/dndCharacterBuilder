@@ -31,8 +31,8 @@ import type { AvailableRuleChoice } from "./choices/types.ts";
 /** The highest class level and total character level the 2014 rules allow. */
 const MAX_LEVEL = 20;
 
-/** The sidekick classes are not playable classes, so the Class step never offers them. */
-const SIDEKICK_CLASSES = new Set(["Expert Sidekick", "Spellcaster Sidekick", "Warrior Sidekick"]);
+/** The sidekick classes are not playable classes, so the Class step and the builder never offer them. */
+export const SIDEKICK_CLASSES = new Set(["Expert Sidekick", "Spellcaster Sidekick", "Warrior Sidekick"]);
 
 /**
  * Pure Level-Up Flow rules: plan one level for a chosen class and apply a confirmed plan in one

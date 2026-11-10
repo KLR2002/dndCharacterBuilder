@@ -27,6 +27,7 @@ import {
   type StartingEquipmentAddress,
 } from "../../rules/startingEquipment";
 import { reconcile } from "../../rules/characterReconciler";
+import { SIDEKICK_CLASSES } from "../../rules/levelUpFlow";
 import { proficiencyChoiceOffers } from "../../rules/proficiencyChoiceOffers";
 import { getPendingLevelChoices } from "../../rules/leveling";
 import { normalizeSkillName } from "../../rules/skills";
@@ -40,7 +41,6 @@ import { builderStyles as styles } from "../builder/builderStyles";
 import { ClassProgressionSection } from "../builder/ClassProgressionSection";
 
 const ABILITY_KEYS: AbilityKey[] = ["str", "dex", "con", "int", "wis", "cha"];
-const SIDEKICK_CLASSES = new Set(["Expert Sidekick", "Spellcaster Sidekick", "Warrior Sidekick"]);
 
 interface BuilderTabProps {
   character?: Character;
