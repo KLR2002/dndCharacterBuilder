@@ -320,10 +320,16 @@ async function launchRoute({ adbCall, route, label, errorLog, sleep }) {
 // scenario force-stops and relaunches by deep link without clearing (`relaunch`, as the web check
 // reloads the page); any other scenario only jumps to its route by deep link (`deep link`), and when
 // that is the route the previous scenario left the app on, not even that (`same route`: the UI state
-// carries over, as the web check re-taps the tabs on the page it is already on).
+// carries over, as the web check re-taps the tabs on the page it is already on). When the route the app
+// was left on is unknown (null, after a modal or a failed scenario), the next scenario also relaunches:
+// a bare deep link is delivered to the running app as an in-app navigation, and to the route it is
+// already on it is a no-op, so a modal the previous scenario left open would stay open over the next
+// scenario's screen — the web check's page.goto after those scenarios reloads, so the native mirror is
+// a force-stop and relaunch, not just a deep link.
 function modeForScenario(screen, state, firstOfWidth) {
   if (firstOfWidth || screen.fresh) return "reset+seed";
   if (screen.modal) return "relaunch";
+  if (state.route == null) return "relaunch";
   if (state.route !== screen.route) return "deep link";
   return "same route";
 }
@@ -350,7 +356,8 @@ function saveFailedScreenshot({ adbCall, file, shots, label, log, errorLog, file
 // the launch also saves the stuck screen as `<scenario>-<width>-FAILED.png`; a failure before the
 // launch (the reset, the seed copy, the launch itself) does not. `state.route` tracks the route the app
 // was last left on, as the web check's per-width page state: unknown (null) after a modal scenario and
-// after a failed scenario, so the next scenario relaunches by deep link. Returns "ok" when the scenario
+// after a failed scenario, so the next scenario force-stops and relaunches (a bare deep link to the
+// route the app is already on would be a no-op and leave a modal open). Returns "ok" when the scenario
 // produced its screenshot, "failed" when it failed on a live device, and "lost" when the device was
 // gone at the failure point (checked with `deviceAlive`), in which case no FAILED screenshot is saved:
 // a lost device is not a failed scenario.
@@ -458,8 +465,9 @@ async function runScenario({ adbCall, screen, width, shots, seedPath, state, fir
 // `device` and, after a spawn, one not listed before the spawn. A failed or unparsable
 // `wm density` read exits 2 before anything is changed. Then build unless --no-build, install, and
 // for each width set the density and run every selected scenario in its isolation mode (the first
-// of the width and `fresh` reset and reseed, `modal` force-stops and relaunches without clearing, the
-// rest only jump by deep link — see modeForScenario), playing the step fields on uiautomator dumps
+// of the width and `fresh` reset and reseed, `modal` force-stops and relaunches without clearing, one
+// after an unknown route (a modal or failed scenario) also force-stops and relaunches, the rest only
+// jump by deep link — see modeForScenario), playing the step fields on uiautomator dumps
 // and pulling the screenshot into the run's folder (SHOTS, else a fresh per-run folder), restoring
 // the original density at the end (also after a failure, and from the signal handler) and stopping
 // the emulator only when this run started it. The device is checked alive before each scenario and
@@ -846,7 +854,8 @@ export async function runAndroid(options) {
       adbCall(["shell", "wm", "density", String(density)]);
       log(`[${width}dp] density ${density}`);
       // The route the app was last left on at this width, as the web check's per-width page state:
-      // unknown at the start of the width, after a modal scenario and after a failed scenario.
+      // unknown at the start of the width, after a modal scenario and after a failed scenario, in
+      // which cases the next scenario relaunches (see modeForScenario).
       const state = { route: null };
       let index = 0;
       while (index < runnable.length && !abortedRun) {

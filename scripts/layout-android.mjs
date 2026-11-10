@@ -5,8 +5,9 @@
 // installs it with `adb install -r`, then for each width sets the screen density and runs every
 // selected scenario in its isolation mode: the first scenario of the width and every `fresh`
 // scenario clear the app's data and copy the seed into its private folder with run-as, a `modal`
-// scenario force-stops and relaunches without clearing, any other scenario only jumps to its route
-// by deep link (not even that when it is the previous scenario's route), and the launch is retried
+// scenario force-stops and relaunches without clearing, a scenario after one that left the route
+// unknown (a modal or a failed one) force-stops and relaunches too, any other scenario only jumps to
+// its route by deep link (not even that when it is the previous scenario's route), and the launch is retried
 // once when it exits non-zero. The step fields play natively (`tabs` and `open` as taps on the
 // matching dump node, the ready text or modal title waited for in the dump, `scrollTo` as swipes
 // until the text is visible; a web-only scenario is listed and skipped), and the
