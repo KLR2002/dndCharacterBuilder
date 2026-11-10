@@ -98,3 +98,38 @@ export function rollActionDamage(
   publish({ roll, source: origin.source, characterName: origin.characterName, critical });
   return roll;
 }
+
+/** What a RollBadge hands its press handler: the badge's own props. */
+export interface RollBadgePress {
+  modifier?: number;
+  pool?: string;
+  source: string;
+  poolSource?: string;
+  characterName?: string;
+}
+
+/**
+ * The badge's tap, in one place so tests drive the same path the component does: a d20 badge rolls the
+ * attack (with the damage follow-up when it has a pool), a damage-only badge rolls the pool. Rolls
+ * spend nothing: this only publishes.
+ */
+export function pressRollBadge(
+  badge: RollBadgePress,
+  mode: D20Mode,
+  publish: PublishRoll,
+  random: RandomSource = currentRandom(),
+): Roll | null {
+  if (badge.modifier !== undefined) {
+    return rollActionAttack(
+      { attackBonus: badge.modifier, damage: badge.pool ?? "" },
+      { source: badge.source, damageSource: badge.poolSource ?? badge.source, characterName: badge.characterName },
+      mode,
+      publish,
+      random,
+    );
+  }
+  if (badge.pool) {
+    return rollActionDamage(badge.pool, { source: badge.source, characterName: badge.characterName }, publish, false, random);
+  }
+  return null;
+}

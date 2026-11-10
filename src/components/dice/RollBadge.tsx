@@ -4,7 +4,7 @@ import { Platform, Pressable, StyleSheet, Text, View } from "react-native";
 import { useAppTheme } from "../../context/ThemeContext";
 import { useRollLog } from "../../context/RollLogContext";
 import { formatModifier } from "../../rules/abilities.ts";
-import { rollActionAttack, rollActionDamage } from "../../rules/actionRolls.ts";
+import { pressRollBadge } from "../../rules/actionRolls.ts";
 import type { D20Mode } from "../../rules/dice.ts";
 import { badgeVariantColors, type BadgeVariant } from "../ui/Badge";
 import { Button } from "../ui/Button";
@@ -68,20 +68,13 @@ export function RollBadge({
   const isD20 = modifier !== undefined;
 
   const rollWith = (mode: D20Mode) => {
-    if (!isD20) return;
-    rollActionAttack(
-      { attackBonus: modifier, damage: pool ?? "" },
-      { source, damageSource: poolSource ?? source, characterName },
-      mode,
-      publishRoll,
-    );
+    pressRollBadge({ modifier, pool, source, poolSource, characterName }, mode, publishRoll);
   };
 
   const onPress = (event?: { stopPropagation?: () => void }) => {
     // The badge sits inside a tappable row; the row's own tap must not also fire on web.
     event?.stopPropagation?.();
-    if (isD20) rollWith("none");
-    else if (pool) rollActionDamage(pool, { source, characterName }, publishRoll);
+    rollWith("none");
   };
 
   const onAccessibilityAction = (event: { nativeEvent: { actionName: string } }) => {
@@ -107,12 +100,18 @@ export function RollBadge({
 
   const isSmall = size === "sm";
 
+  // The accessible name carries the roll's source and value ("Roll Longsword attack, +5",
+  // "Roll Longsword damage, 1d8 + 3"), so badges on the same screen stay distinguishable.
+  const accessibleName = isD20
+    ? `Roll ${source}, ${formatModifier(modifier)}`
+    : `Roll ${poolSource ?? source}, ${pool ?? label}`;
+
   return (
     <>
       <Pressable
         testID={testID ?? "roll-badge"}
         accessibilityRole="button"
-        accessibilityLabel={`Roll ${label}`}
+        accessibilityLabel={accessibleName}
         accessibilityActions={
           isD20
             ? [

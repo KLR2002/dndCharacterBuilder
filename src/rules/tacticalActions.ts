@@ -145,6 +145,17 @@ function formatMod(val: number): string {
 }
 
 /**
+ * Whether a spell calls for a spell attack roll: its Catalog record's structured attack-type field
+ * ("M" melee, "R" ranged, "O" other) when present, else its text naming a melee or ranged spell attack.
+ * Save-based and utility spells make no attack, so their rows carry no attack bonus.
+ */
+function makesSpellAttack(sp: { spellAttack?: string[]; description?: string }): boolean {
+  if (sp.spellAttack && sp.spellAttack.length > 0) return true;
+  const text = (sp.description || "").toLowerCase();
+  return text.includes("melee spell attack") || text.includes("ranged spell attack");
+}
+
+/**
  * Derives the tactical combat action economy ledger for a character,
  * aggregating attacks, bonus actions, reactions, and maneuvers.
  */
@@ -224,7 +235,7 @@ export function getTacticalActionLedger(
         name: k.kiCost ? `${sp.name} (${k.kiCost} Ki)` : sp.name,
         level: sp.level,
         damage,
-        attackBonus: k.attackBonus,
+        attackBonus: makesSpellAttack(sp) ? k.attackBonus : undefined,
         time: sp.castingTime || "1 action",
         range: sp.range || "60 ft",
         desc: sp.description || "",

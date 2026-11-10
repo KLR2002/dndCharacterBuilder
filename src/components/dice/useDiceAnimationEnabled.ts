@@ -1,34 +1,43 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 import { AccessibilityInfo, Platform } from "react-native";
 import { useCharacters } from "../../context/CharacterContext";
 import { resolveDiceAnimationEnabled } from "../../rules/diceAnimation.ts";
+
+// The reduced-motion media query, subscribed the React way: the snapshot functions guard `window`,
+// so a statically exported page can prerender (no `window`) and hydrate without a mismatch, and the
+// query is never read during a render that has no `window`.
+function subscribeReduceMotion(callback: () => void): () => void {
+  if (typeof window === "undefined" || typeof window.matchMedia !== "function") return () => {};
+  const query = window.matchMedia("(prefers-reduced-motion: reduce)");
+  query.addEventListener("change", callback);
+  return () => query.removeEventListener("change", callback);
+}
+
+function getReduceMotionSnapshot(): boolean {
+  if (typeof window === "undefined" || typeof window.matchMedia !== "function") return false;
+  return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+}
 
 /**
  * The system's reduced-motion preference, live: `AccessibilityInfo` on native, `matchMedia` on web
  * (react-native-web's AccessibilityInfo does not report it reliably).
  */
 function useSystemReduceMotion(): boolean {
-  const [reduceMotion, setReduceMotion] = useState(() =>
-    Platform.OS === "web" ? window.matchMedia("(prefers-reduced-motion: reduce)").matches : false,
-  );
+  const [nativeReduceMotion, setNativeReduceMotion] = useState(false);
   useEffect(() => {
-    if (Platform.OS === "web") {
-      const query = window.matchMedia("(prefers-reduced-motion: reduce)");
-      const onChange = () => setReduceMotion(query.matches);
-      query.addEventListener("change", onChange);
-      return () => query.removeEventListener("change", onChange);
-    }
+    if (Platform.OS === "web") return;
     let mounted = true;
     void AccessibilityInfo.isReduceMotionEnabled().then((enabled) => {
-      if (mounted) setReduceMotion(enabled);
+      if (mounted) setNativeReduceMotion(enabled);
     });
-    const subscription = AccessibilityInfo.addEventListener("reduceMotionChanged", (enabled) => setReduceMotion(enabled));
+    const subscription = AccessibilityInfo.addEventListener("reduceMotionChanged", (enabled) => setNativeReduceMotion(enabled));
     return () => {
       mounted = false;
       subscription.remove();
     };
   }, []);
-  return reduceMotion;
+  const webReduceMotion = useSyncExternalStore(subscribeReduceMotion, getReduceMotionSnapshot, () => false);
+  return Platform.OS === "web" ? webReduceMotion : nativeReduceMotion;
 }
 
 /**

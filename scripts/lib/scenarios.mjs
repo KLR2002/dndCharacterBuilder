@@ -35,6 +35,7 @@ const WIZARD_ITEMS = [
   { name: "Spellbook", section: "carried" },
   { name: "Component Pouch", section: "carried" },
   { name: "Dagger", section: "carried" },
+  { name: "Arrows (20)", section: "carried", quantity: 20 },
   { name: "Potion of Healing", section: "carried", quantity: 2 },
 ];
 
@@ -76,6 +77,10 @@ function wizardCharacter() {
     knownSpells: WIZARD_SPELLS.map((name) => ({ name, source: spellSource(name), ownerKey })),
     preparedSpells: WIZARD_PREPARED.map((name) => `${name}__${spellSource(name)}__${ownerKey}`),
     usedSpellSlots: { 1: 1 },
+    // A limited-use feature with a use left, so a roll that spent anything would show in the stored character.
+    resourceCounters: {
+      arcane_recovery: { id: "arcane_recovery", name: "Arcane Recovery", current: 1, max: 1, resetOn: "short" },
+    },
     items,
   });
 }
@@ -880,7 +885,7 @@ function actionsCharacter() {
         id: "item_arrows",
         name: "Arrows (20)",
         source: catalogSource("items", "Arrows (20)"),
-        quantity: 1,
+        quantity: 20,
         isEquipped: false,
         section: "carried",
       },
