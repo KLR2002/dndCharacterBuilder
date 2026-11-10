@@ -1,7 +1,7 @@
 import React from "react";
 import { View } from "react-native";
 import type { Character } from "../../types/character";
-import { effectiveScores } from "../../rules/abilities";
+import { effectiveScores, formatModifier } from "../../rules/abilities";
 import { hitDieOf } from "../../rules/classData";
 import { planAverageHitPoints, type LevelUpPlan } from "../../rules/levelUpFlow";
 import { ChoiceRow } from "./ChoiceRow";
@@ -30,8 +30,8 @@ export function HitPointsStep({
   const average = planAverageHitPoints(plan, character);
   const rolled = plan.hitPoints.mode === "roll";
   const rollDetail = rolled
-    ? `1d${die}+${conMod} → +${plan.hitPoints.amount}`
-    : `1d${die}+${conMod}`;
+    ? `1d${die}${formatModifier(conMod)} → +${plan.hitPoints.amount}`
+    : `1d${die}${formatModifier(conMod)}`;
   return (
     <View style={{ gap: 8 }}>
       <ChoiceRow

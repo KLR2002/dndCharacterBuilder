@@ -3,7 +3,7 @@ import { DEFAULT_ACTIVE_BOOK_CODES, SRD_SOURCE } from "../constants/books.ts";
 import type { AsiSelection, Character, CharacterClass } from "../types/character.ts";
 import type { SpellData } from "../types/dnd5e.ts";
 import { currentCompendium, type Compendium } from "../services/compendium.ts";
-import { effectiveScores } from "./abilities.ts";
+import { effectiveScores, formatModifier } from "./abilities.ts";
 import { asiLevels, casterKindOf, heldClass, hitDieOf, isThirdCaster } from "./classData.ts";
 import { getFeatAbilityBonusOptions, subclassLevel } from "./leveling.ts";
 import {
@@ -568,7 +568,7 @@ export function levelUpSummary(
       label: "Hit points method",
       value:
         plan.hitPoints.mode === "roll" && plan.hitPoints.roll !== undefined
-          ? `Roll 1d${die}+${conMod}: ${plan.hitPoints.roll} → +${plan.hitPoints.amount}`
+          ? `Roll 1d${die}${formatModifier(conMod)}: ${plan.hitPoints.roll} → +${plan.hitPoints.amount}`
           : `Average +${plan.hitPoints.amount}`,
     },
   ];

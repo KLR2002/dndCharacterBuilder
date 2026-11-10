@@ -264,6 +264,20 @@ test("levelUpSummary lists the level and hit points before → after, plus every
   assert.equal(asiRows.get("ASI/Feat"), "Grappler");
 });
 
+test("levelUpSummary writes the Constitution modifier with its sign, never \"+-\"", () => {
+  const lowCon = makeChar({
+    baseAbilityScores: { str: 15, dex: 14, con: 6, int: 10, wis: 10, cha: 10 },
+    classes: [{ className: "Fighter", source: "PHB", level: 3 }],
+  });
+  const planned = planLevelUp(lowCon, { className: "Fighter" });
+  if (!planned.ok) assert.fail(planned.reason);
+  const rolled = rollPlanHitPoints(planned.plan, lowCon, () => 10).plan;
+  const rows = new Map(levelUpSummary(rolled, lowCon, { fullHealOnLevelUp: false }).map((r) => [r.label, r.value]));
+  const method = rows.get("Hit points method") ?? "";
+  assert.equal(method, "Roll 1d10-2: 10 → +8", "a negative Constitution modifier keeps its sign in the roll detail");
+  assert.ok(!method.includes("+-"), "no \"+-\" in the hit points method");
+});
+
 test("subclassOptionsForPlan lists the planned class's subclasses in the active books", () => {
   const wizard = makeChar({
     baseAbilityScores: { str: 8, dex: 14, con: 14, int: 16, wis: 12, cha: 10 },

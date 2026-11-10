@@ -37,7 +37,7 @@ import {
   stopExpoWeb,
   waitForExpoWeb,
 } from "./lib/app-driver.mjs";
-import { buildScreens, buildSeed, ACTIONS_ID, CHARACTER_ID, DRUID_ID, EDIT_BUILD_ID, RANGER_ID, SORCERER_SWAP_ID, WIZARD_ID } from "./lib/scenarios.mjs";
+import { buildScreens, buildSeed, ACTIONS_ID, CHARACTER_ID, DRUID_ID, EDIT_BUILD_ID, LOW_CON_ID, RANGER_ID, SORCERER_SWAP_ID, WIZARD_ID } from "./lib/scenarios.mjs";
 import { playStep, playSteps } from "./lib/web-steps.mjs";
 import { ACCENT_PALETTES, BASE_DARK_THEME } from "../src/constants/theme.ts";
 
@@ -1743,6 +1743,29 @@ async function checkLevelUpHpState(ctx, width) {
   return failures;
 }
 
+// A negative Constitution modifier is written with its sign in the Hit Points step's Roll row: "1d10-1", never "1d10+-1".
+async function checkLevelUpHpModifierSign(ctx, width) {
+  const page = await ctx.newPage();
+  const prefix = `[${width}px level-up HP sign]`;
+  let failures = 0;
+  const fail = (msg) => {
+    failures++;
+    console.log(`${prefix} ${msg}`);
+  };
+  await page.goto(`${BASE}/levelup/${LOW_CON_ID}`, { waitUntil: "networkidle", timeout: 120000 });
+  await page.waitForTimeout(1500);
+  await page.getByLabel("Level up Fighter").first().click();
+  await page.getByText("Continue", { exact: true }).first().click();
+  const rollRow = page.getByLabel("Roll hit points").first();
+  await rollRow.waitFor({ state: "visible", timeout: 10000 }).catch(() => fail("the Hit Points step did not open"));
+  const flat = ((await rollRow.textContent().catch(() => "")) ?? "").replace(/\s+/g, " ").trim();
+  if (!flat.includes("1d10-1")) fail(`the Roll row does not read "1d10-1" for Constitution 8: "${flat}"`);
+  if (flat.includes("+-")) fail(`the Roll row writes the modifier as "+-": "${flat}"`);
+  await page.screenshot({ path: join(SHOTS, `LevelUp-HPSign-${width}.png`) });
+  await page.close();
+  return failures;
+}
+
 // The Level-Up Flow's Cancel asks before discarding and leaves the Character unchanged, the system Back asks
 // too, and Review's "Level up" applies the plan in one update.
 async function checkLevelUpCancelAndReview(ctx, width) {
@@ -2052,6 +2075,7 @@ const EXTRA_CHECKS = [
   { name: "Dice tray and Roll Log", run: checkDiceTrayAndLog },
   { name: "Level-Up Flow HP roll logged", run: checkLevelUpHpRollLogged },
   { name: "Level-Up Flow HP state", run: checkLevelUpHpState },
+  { name: "Level-Up Flow HP modifier sign", run: checkLevelUpHpModifierSign },
   { name: "Level-Up Flow cancel and review", run: checkLevelUpCancelAndReview },
   { name: "Spells after level-up", run: checkSpellsAfterLevelUp },
   { name: "Dice animation", run: checkDiceAnimation },
