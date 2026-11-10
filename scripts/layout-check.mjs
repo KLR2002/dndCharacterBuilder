@@ -903,6 +903,24 @@ async function checkDiceTrayAndLog(ctx, width) {
   for (const v of await checkModalShape(page, width)) fail(v);
   await page.screenshot({ path: shot("tray") });
 
+  // A die's count is capped at 100: tapping one die 100 times disables its add button, and rolling the
+  // capped pool works instead of throwing "Not a dice pool".
+  if (width === 360) {
+    const addD20 = page.getByLabel("Add d20", { exact: true });
+    for (let i = 0; i < 100; i++) await addD20.click({ timeout: 5000 }).catch(() => fail(`the "Add d20" tap ${i + 1} failed`));
+    const atCap = await page.evaluate(() => {
+      const el = [...document.querySelectorAll('[aria-label="Add d20"]')].find((e) => e.getBoundingClientRect().height > 0);
+      return el ? el.disabled === true || el.getAttribute("aria-disabled") === "true" : null;
+    });
+    if (atCap !== true) fail(`"Add d20" is not disabled at 100 dice (state ${atCap})`);
+    if (!(await page.getByLabel("Remove 100d20", { exact: true }).isVisible().catch(() => false))) fail('the pool chip does not read "100d20" at the cap');
+    await page.getByText("Roll 100d20", { exact: true }).first().click();
+    await page.waitForSelector(cardSel, { state: "visible", timeout: 10000 }).catch(() => fail("rolling the capped 100d20 pool did not show a result card (it threw)"));
+    await page.getByLabel("Dice tray").first().click();
+    await page.waitForSelector(dialogSel, { state: "visible", timeout: 10000 }).catch(() => fail("the tray did not reopen after the capped roll"));
+    await page.getByLabel("Remove 100d20", { exact: true }).click();
+  }
+
   // The pool builder: the primary action is disabled while the pool is empty, and the d20 mode choice
   // appears only for a pool of exactly one d20.
   const emptyRoll = await page.evaluate(buttonDisabled, "Roll");
@@ -1300,10 +1318,6 @@ async function checkActionRolls(ctx, width) {
   }
   const before = await storedCharacter(ACTIONS_ID);
   if (!before) fail("the seeded character is not in storage");
-  // The snapshot window covers both seeded characters: Kara (a limited-use feature with a use left and
-  // ammunition) and Elowen (spell slots left, a use left, ammunition), compared again after every roll.
-  const beforeWizard = await storedCharacter(WIZARD_ID);
-  if (!beforeWizard) fail("the seeded wizard is not in storage");
   for (const v of await page.evaluate(findLayoutViolations, null)) fail(v);
   await page.screenshot({ path: shot("tab") });
 
@@ -1322,6 +1336,7 @@ async function checkActionRolls(ctx, width) {
     if (card.followUp !== "Roll damage") fail(`the attack card's follow-up is "${card.followUp}", expected "Roll damage"`);
   }
   await page.screenshot({ path: shot("attack") });
+
 
   // The follow-up rolls the damage pool 1d8 + 3 (fixed face clamps to 8 on the d8).
   await page.getByText("Roll damage", { exact: true }).first().click();
@@ -1393,6 +1408,11 @@ async function checkActionRolls(ctx, width) {
   await page.waitForTimeout(1500);
   await page.getByText("Actions", { exact: true }).first().click();
   await page.getByText(/spell attacks/i).first().waitFor({ state: "visible", timeout: 10000 }).catch(() => fail("the Actions tab did not show SPELL ATTACKS"));
+  // The snapshot window covers both seeded characters: Kara (a limited-use feature with a use left and
+  // ammunition) and Elowen (spell slots left, a use left, ammunition). Loading a sheet normalizes the
+  // stored record once, so the wizard's "before" is read after her page has loaded, before any roll.
+  const beforeWizard = await storedCharacter(WIZARD_ID);
+  if (!beforeWizard) fail("the seeded wizard is not in storage");
   const spellToHit = page.locator('[data-testid="roll-badge-spell-0-tohit"]');
   if (!(await spellToHit.isVisible().catch(() => false))) fail("the Fire Bolt row has no to-hit roll badge");
   else if ((await badgeText(spellToHit)) !== "+5 to hit") fail(`the spell badge reads "${await badgeText(spellToHit)}", expected "+5 to hit"`);

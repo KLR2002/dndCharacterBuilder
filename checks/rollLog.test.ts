@@ -11,6 +11,7 @@ import {
   poolLabel,
   removePoolTerm,
   rollMarkers,
+  type PoolTerm,
 } from "../src/rules/rollLog.ts";
 
 /** A random source with fixed faces, cycling: each die lands on the next queued face. */
@@ -60,6 +61,7 @@ test("markers: Natural 20 and Natural 1 on a kept d20, Critical on critical dama
   assert.deepEqual(rollMarkers(pool), []);
 });
 
+
 test("a follow-up action travels with the entry", () => {
   const followUp = { label: "Roll damage", onPress: () => {} };
   const entry = makeRollLogEntry({ roll: rollD20(5, "none", fixedFaces([15])), source: "Longsword attack", characterName: "Kara", followUp }, 1, 0);
@@ -84,6 +86,16 @@ test("the pool builder adds one die per tap, merging equal sides, and removes a 
   terms = removePoolTerm(terms, 6);
   assert.deepEqual(terms, [{ count: 1, sides: 8 }]);
   assert.deepEqual(removePoolTerm([], 20), []);
+});
+
+test("a die's count in the tray pool is capped at 100, so the pool still parses and rolls", () => {
+  let terms: PoolTerm[] = [];
+  for (let i = 0; i < 105; i++) terms = addDieToPool(terms, 6);
+  assert.deepEqual(terms, [{ count: 100, sides: 6 }]);
+  // The capped pool is still a parseable pool, so rolling it cannot throw "Not a dice pool".
+  assert.equal(poolExpression(terms, 0), "100d6");
+  assert.deepEqual(parseDicePool(poolExpression(terms, 0)), { dice: [{ count: 100, sides: 6 }], modifier: 0 });
+  assert.equal(rollDicePool(poolExpression(terms, 0), fixedFaces([3])).total, 300);
 });
 
 test("only a pool of exactly one d20 is a d20 roll", () => {

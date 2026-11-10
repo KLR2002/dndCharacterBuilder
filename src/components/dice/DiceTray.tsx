@@ -4,7 +4,7 @@ import { Pressable, StyleSheet, Text, View } from "react-native";
 import { useAppTheme } from "../../context/ThemeContext";
 import { useRollLog, type TraySegment } from "../../context/RollLogContext";
 import { rollD20, rollDicePool, type D20Mode } from "../../rules/dice.ts";
-import { DIE_SIZES, isSingleD20, poolExpression, poolLabel, addDieToPool, removePoolTerm, type PoolTerm } from "../../rules/rollLog.ts";
+import { DIE_SIZES, isSingleD20, MAX_DICE_PER_TERM, poolExpression, poolLabel, addDieToPool, removePoolTerm, type PoolTerm } from "../../rules/rollLog.ts";
 import { Button } from "../ui/Button";
 import { Modal } from "../ui/Modal";
 import { RollLogList } from "./rollViews";
@@ -100,19 +100,24 @@ export function DiceTray() {
       {traySegment === "dice" ? (
         <View style={{ gap: 14 }}>
           <View style={styles.dieButtonsRow}>
-            {DIE_SIZES.map((sides) => (
-              <Pressable
-                key={sides}
-                accessibilityRole="button"
-                accessibilityLabel={`Add d${sides}`}
-                onPress={() => setTerms((prev) => addDieToPool(prev, sides))}
-                style={({ pressed }) => [
-                  styles.dieBtn,
-                  { borderColor: theme.border, backgroundColor: pressed ? theme.accentGlow : theme.surfaceRaised },
-                ]}>
-                <Text style={[styles.dieBtnLabel, { color: theme.text }]}>d{sides}</Text>
-              </Pressable>
-            ))}
+            {DIE_SIZES.map((sides) => {
+              const atCap = (terms.find((term) => term.sides === sides)?.count ?? 0) >= MAX_DICE_PER_TERM;
+              return (
+                <Pressable
+                  key={sides}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Add d${sides}`}
+                  accessibilityState={{ disabled: atCap }}
+                  disabled={atCap}
+                  onPress={() => setTerms((prev) => addDieToPool(prev, sides))}
+                  style={({ pressed }) => [
+                    styles.dieBtn,
+                    { borderColor: theme.border, backgroundColor: pressed ? theme.accentGlow : theme.surfaceRaised, opacity: atCap ? 0.4 : 1 },
+                  ]}>
+                  <Text style={[styles.dieBtnLabel, { color: theme.text }]}>d{sides}</Text>
+                </Pressable>
+              );
+            })}
           </View>
           <View style={styles.chipsRow}>
             {terms.map((term) => (

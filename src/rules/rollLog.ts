@@ -80,10 +80,15 @@ export interface PoolTerm {
 /** The die buttons of the tray, in row order. */
 export const DIE_SIZES: readonly number[] = [4, 6, 8, 10, 12, 20, 100];
 
-/** Adds one die of `sides` to the pool, merging with an existing term of the same sides. */
+/** The most dice one term of the tray's pool may carry; matches the parser's cap. */
+export const MAX_DICE_PER_TERM = 100;
+
+/** Adds one die of `sides` to the pool, merging with an existing term of the same sides. A term's count is capped at 100, so the pool always parses. */
 export function addDieToPool(terms: readonly PoolTerm[], sides: number): PoolTerm[] {
   const existing = terms.find((term) => term.sides === sides);
-  if (existing) return terms.map((term) => (term.sides === sides ? { ...term, count: term.count + 1 } : term));
+  if (existing) {
+    return terms.map((term) => (term.sides === sides ? { ...term, count: Math.min(MAX_DICE_PER_TERM, term.count + 1) } : term));
+  }
   return [...terms, { count: 1, sides }];
 }
 
