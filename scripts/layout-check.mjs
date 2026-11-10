@@ -1016,6 +1016,11 @@ async function checkDiceTrayAndLog(ctx, width) {
     await page.screenshot({ path: shot("log") });
     await page.keyboard.press("Escape");
     await page.waitForSelector(dialogSel, { state: "hidden", timeout: 10000 }).catch(() => fail("Escape did not close the tray"));
+    // A card without a follow-up still auto-dismisses after about 8s.
+    if (width === 360) {
+      await page.waitForTimeout(8500);
+      if ((await page.locator(cardSel).count()) > 0) fail("the result card without a follow-up did not auto-dismiss after ~8s");
+    }
   }
 
   // A reload empties the log: it is session app state, never stored.
@@ -1383,6 +1388,11 @@ async function checkActionRolls(ctx, width) {
   if (card) {
     if (!card.markers.includes("Natural 20")) fail(`the natural-20 card's markers are ${JSON.stringify(card.markers)}`);
     if (card.followUp !== "Roll critical damage") fail(`the natural-20 card's follow-up is "${card.followUp}", expected "Roll critical damage"`);
+  }
+  // A card that still offers a follow-up never auto-dismisses, even after the usual ~8s.
+  if (width === 360) {
+    await page.waitForTimeout(8500);
+    if (!(await page.locator(cardSel).count())) fail('the natural-20 card with a pending "Roll critical damage" follow-up auto-dismissed');
   }
   await page.getByText("Roll critical damage", { exact: true }).first().click();
   await page.waitForFunction(() => document.querySelector('[data-testid="result-source"]')?.textContent?.includes("damage"), null, { timeout: 10000 }).catch(() => fail("the critical damage follow-up did not roll"));
