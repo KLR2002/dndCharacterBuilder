@@ -27,6 +27,7 @@ export function SubclassStep({
             key={`${option.name}__${option.source}`}
             accessibilityRole="button"
             accessibilityState={{ selected: isCurrent }}
+            aria-selected={isCurrent}
             accessibilityLabel={`Subclass ${option.name}`}
             onPress={() => onPick(option.name, option.source)}
             activeOpacity={0.7}

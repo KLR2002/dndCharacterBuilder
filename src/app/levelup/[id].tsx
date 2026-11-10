@@ -67,8 +67,6 @@ export default function LevelUpScreen() {
   // Review's "Level up" applies the plan once: the button disables on the first press, and a stale
   // plan is refused by applyLevelUpPlan anyway.
   const [applying, setApplying] = useState(false);
-  // The Hit Die is rolled once per flow: once rolled, the Roll row stays disabled even after switching back to Average.
-  const [hpRolled, setHpRolled] = useState(false);
 
   useEffect(() => {
     if (id) selectCharacter(id);
@@ -124,22 +122,24 @@ export default function LevelUpScreen() {
 
   const pickClass = (option: LevelUpClassOption) => {
     if (option.missingRequirement) return;
+    // Re-picking the picked class keeps the plan unchanged: its Hit Points pick and every later pick stay.
+    if (plan && plan.className.trim().toLowerCase() === option.className.trim().toLowerCase()) return;
     const result = planLevelUp(character, { className: option.className, source: option.source, activeBooks });
     if (!result.ok) return;
-    // A different class re-plans from scratch: the later steps depend on it (hit die, subclass, spells).
+    // A different class starts a fresh plan for it: the later steps depend on it (hit die, subclass, spells).
     setPlan(result.plan);
     setOpenStepId("class");
   };
 
+  // Once the Hit Die is rolled for the plan's class the roll is final: Average no longer applies.
   const chooseAverage = () => {
-    if (plan) setPlan(chooseAverageHitPoints(plan, character));
+    if (plan && plan.hitPoints.mode !== "roll") setPlan(chooseAverageHitPoints(plan, character));
   };
 
   const rollHp = () => {
-    if (!plan || hpRolled) return; // one roll, no reroll
+    if (!plan || plan.hitPoints.mode === "roll") return; // one roll per class, no reroll
     const { plan: rolled, roll } = rollPlanHitPoints(plan, character);
     publishRoll({ roll, source: "Hit Points", characterName: character.name });
-    setHpRolled(true);
     setPlan(rolled);
   };
 
@@ -189,7 +189,7 @@ export default function LevelUpScreen() {
       case "hitPoints":
         return (
           <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.stepScrollContent} keyboardShouldPersistTaps="handled">
-            <HitPointsStep plan={plan} character={character} rolledOnce={hpRolled} onAverage={chooseAverage} onRoll={rollHp} />
+            <HitPointsStep plan={plan} character={character} onAverage={chooseAverage} onRoll={rollHp} />
           </ScrollView>
         );
       case "subclass":

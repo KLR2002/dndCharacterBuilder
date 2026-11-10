@@ -75,6 +75,7 @@ export function FlowShell({
     <TouchableOpacity
       key={step.id}
       accessibilityRole="button"
+      accessibilityLabel={step.title}
       accessibilityState={{ disabled: step.locked }}
       disabled={step.locked}
       onPress={() => onOpenStep(step.id)}
