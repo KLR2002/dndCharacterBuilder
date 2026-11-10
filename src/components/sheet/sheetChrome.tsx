@@ -1,6 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import React from "react";
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAppTheme } from "../../context/ThemeContext";
 
 export type SheetTabKey = "stats" | "actions" | "spells" | "inventory" | "features" | "journal";
@@ -24,10 +25,15 @@ export const SHEET_TABS: SheetTabDefinition[] = [
 /** The phone bottom bar's height; the floating dice button and the scroll padding follow the measured layout. */
 export const SHEET_TAB_BAR_HEIGHT = 64;
 
+/** The tab bar's vertical padding above and below its tab items (the bottom one grows by the safe-area inset). */
+const TAB_BAR_VERTICAL_PADDING = 4;
+
 /**
  * The phone tab bar: one bottom bar with all six tabs, icon over a short label, every target 56dp tall.
  * It is absolutely positioned at the bottom of its parent, and the parent renders it before the scrolling
- * content so the tabs come first in the accessibility tree.
+ * content so the tabs come first in the accessibility tree. The bar pads its bottom by the safe-area
+ * inset, so the 56dp targets clear the gesture area; onLayout reports the full height (inset included),
+ * which is what the floating dice button lifts itself above.
  */
 export function SheetTabBar({
   active,
@@ -39,11 +45,15 @@ export function SheetTabBar({
   onLayout?: (height: number) => void;
 }) {
   const { theme } = useAppTheme();
+  const insets = useSafeAreaInsets();
   return (
     <View
       testID="sheet-tab-bar"
       onLayout={(e) => onLayout?.(e.nativeEvent.layout.height)}
-      style={[styles.tabBar, { backgroundColor: theme.surface, borderTopColor: theme.border }]}>
+      style={[
+        styles.tabBar,
+        { backgroundColor: theme.surface, borderTopColor: theme.border, paddingBottom: TAB_BAR_VERTICAL_PADDING + insets.bottom },
+      ]}>
       {SHEET_TABS.map((tab) => {
         const isActive = tab.key === active;
         return (
@@ -169,7 +179,8 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     borderTopWidth: 1,
     paddingHorizontal: 8,
-    paddingVertical: 4,
+    paddingTop: TAB_BAR_VERTICAL_PADDING,
+    paddingBottom: TAB_BAR_VERTICAL_PADDING,
     minHeight: SHEET_TAB_BAR_HEIGHT,
     // The bar is rendered before the scrolling content but positioned at the bottom edge, so it needs
     // its own layer to stay on top of (and tappable above) the content.
