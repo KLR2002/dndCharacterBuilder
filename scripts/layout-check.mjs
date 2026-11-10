@@ -1072,9 +1072,21 @@ async function checkDiceTrayAndLog(ctx, width) {
       }
       if (geo.bottom > geo.buttonTop + 1) fail(`the result card overlaps the floating button (card bottom ${Math.round(geo.bottom)}, button top ${Math.round(geo.buttonTop)})`);
     }
-    // The card is a polite live region, and its body names the source and total for screen readers.
+    // The announcement is web's always-mounted live region, whose text carries the roll's heading
+    // and total. The card itself is never a live region: it mounts already populated after a
+    // dismissal, which screen readers do not reliably announce.
+    const region = await page.evaluate(() => {
+      const el = document.querySelector('[data-testid="dice-announce-region"]');
+      return el ? { live: el.getAttribute("aria-live"), text: (el.textContent ?? "").trim() } : null;
+    });
+    if (!region) fail("the always-mounted announce live region is missing on web");
+    else {
+      if (region.live !== "polite") fail(`the announce region's aria-live is ${region.live}, expected "polite"`);
+      if (!region.text.includes("Kara") || !region.text.includes("total 20"))
+        fail(`the announce region's text is "${region.text}", expected the roll's heading and total`);
+    }
     const cardLive = await page.evaluate(() => document.querySelector('[data-testid="result-card"]')?.getAttribute("aria-live") ?? null);
-    if (cardLive !== "polite") fail(`the result card's aria-live is ${cardLive}, expected "polite"`);
+    if (cardLive !== null) fail(`the result card itself is a live region (aria-live ${cardLive}); the announce region is the only one on web`);
     if (!(await page.getByLabel("Kara · Longsword attack, total 20", { exact: true }).first().isVisible().catch(() => false)))
       fail('the result card body is not accessible-labelled "Kara · Longsword attack, total 20"');
     // Tapping the card opens the tray on the Log segment, newest first.
@@ -1087,10 +1099,18 @@ async function checkDiceTrayAndLog(ctx, width) {
     await page.screenshot({ path: shot("log") });
     await page.keyboard.press("Escape");
     await page.waitForSelector(dialogSel, { state: "hidden", timeout: 10000 }).catch(() => fail("Escape did not close the tray"));
-    // A card without a follow-up still auto-dismisses after about 8s.
+    // A card without a follow-up still auto-dismisses after about 8s — and the announce region
+    // stays mounted afterwards, so the next Roll changes its text instead of mounting a populated one.
     if (width === 360) {
       await page.waitForTimeout(8500);
       if ((await page.locator(cardSel).count()) > 0) fail("the result card without a follow-up did not auto-dismiss after ~8s");
+      const regionAfter = await page.evaluate(() => {
+        const el = document.querySelector('[data-testid="dice-announce-region"]');
+        return el ? { live: el.getAttribute("aria-live"), text: (el.textContent ?? "").trim() } : null;
+      });
+      if (!regionAfter) fail("after the card auto-dismissed the announce live region unmounted; it must stay mounted");
+      else if (regionAfter.live !== "polite" || regionAfter.text !== "")
+        fail(`after the auto-dismiss the announce region reads aria-live ${regionAfter.live} text "${regionAfter.text}", expected "polite" with cleared text`);
     }
   }
 
@@ -1437,8 +1457,20 @@ async function checkActionRolls(ctx, width) {
   // secondary style, not the accent fill (the screen below has its own primary action).
   if (!(await page.getByLabel("Kara · Longsword attack, total 20", { exact: true }).first().isVisible().catch(() => false)))
     fail('the result card body is not accessible-labelled "Kara · Longsword attack, total 20"');
+  // The announcement is web's always-mounted live region, not the card (a card that mounts already
+  // populated is not announced reliably); its text names the roll's source and total.
+  const region = await page.evaluate(() => {
+    const el = document.querySelector('[data-testid="dice-announce-region"]');
+    return el ? { live: el.getAttribute("aria-live"), text: (el.textContent ?? "").trim() } : null;
+  });
+  if (!region) fail("the always-mounted announce live region is missing on web");
+  else {
+    if (region.live !== "polite") fail(`the announce region's aria-live is ${region.live}, expected "polite"`);
+    if (!region.text.includes("Kara") || !region.text.includes("total 20"))
+      fail(`the announce region's text is "${region.text}", expected the roll's heading and total`);
+  }
   const cardLive = await page.evaluate(() => document.querySelector('[data-testid="result-card"]')?.getAttribute("aria-live") ?? null);
-  if (cardLive !== "polite") fail(`the result card's aria-live is ${cardLive}, expected "polite"`);
+  if (cardLive !== null) fail(`the result card itself is a live region (aria-live ${cardLive}); the announce region is the only one on web`);
   const accentFill = hexToRgbString(ACCENT_PALETTES.crimson.primary);
   const secondaryFill = hexToRgbString(BASE_DARK_THEME.surfaceHighlight);
   const followUpBg = await page.evaluate(() => {
