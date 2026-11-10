@@ -1533,6 +1533,71 @@ async function checkLevelUpHpRollLogged(ctx, width) {
   return failures;
 }
 
+// The Hit Points state rules: re-picking the picked class keeps the plan unchanged (the roll stays
+// selected, Average stays disabled); a different class starts a fresh plan whose HP may be rolled once.
+async function checkLevelUpHpState(ctx, width) {
+  const page = await ctx.newPage();
+  const prefix = `[${width}px level-up HP state]`;
+  let failures = 0;
+  const fail = (msg) => {
+    failures++;
+    console.log(`${prefix} ${msg}`);
+  };
+  const rollRow = page.getByLabel("Roll hit points").first();
+  const averageRow = page.getByLabel("Average hit points").first();
+  const rowState = (row) =>
+    row.evaluate((el) => ({
+      disabled: el.getAttribute("aria-disabled") === "true",
+      selected: el.getAttribute("aria-selected") === "true",
+      text: (el.textContent ?? "").replace(/\s+/g, " ").trim(),
+    }));
+  const classChip = page.getByRole("button", { name: "Class", exact: true }).first();
+
+  await openLevelUp(page); // picks the held Ranger, lands on the Hit Points step
+  await rollRow.click();
+  await page.waitForTimeout(400);
+  const rolled = await rowState(rollRow);
+  if (!rolled.selected) fail("the Roll row is not selected after rolling");
+  if (!rolled.disabled) fail("the Roll row is not disabled after rolling");
+  const rolledText = rolled.text;
+  const averageAfterRoll = await rowState(averageRow);
+  if (!averageAfterRoll.disabled) fail("the Average row is not disabled after the roll");
+
+  // Re-pick the same class: the plan is unchanged, the roll stays selected.
+  await classChip.click();
+  await page.waitForTimeout(400);
+  await page.getByLabel("Level up Ranger").first().click();
+  await page.waitForTimeout(300);
+  await page.getByText("Continue", { exact: true }).first().click();
+  await rollRow.waitFor({ state: "visible", timeout: 10000 });
+  const afterRepick = await rowState(rollRow);
+  if (!afterRepick.selected || afterRepick.text !== rolledText)
+    fail(`re-picking the same class reset the Hit Points pick: roll row now "${afterRepick.text}" selected=${afterRepick.selected}, expected the kept "${rolledText}"`);
+  // Tapping the disabled Average row changes nothing.
+  await averageRow.click({ force: true }).catch(() => {});
+  await page.waitForTimeout(300);
+  const afterAverageTap = await rowState(rollRow);
+  if (!afterAverageTap.selected || afterAverageTap.text !== rolledText)
+    fail(`tapping Average after the roll discarded it: roll row now "${afterAverageTap.text}" selected=${afterAverageTap.selected}`);
+  await page.screenshot({ path: join(SHOTS, `LevelUp-HPState-rolled-${width}.png`) });
+
+  // A different class starts a fresh plan: Average selected, Roll enabled, rollable once.
+  await classChip.click();
+  await page.waitForTimeout(400);
+  await page.getByLabel("Level up Fighter").first().click();
+  await page.waitForTimeout(300);
+  await page.getByText("Continue", { exact: true }).first().click();
+  await averageRow.waitFor({ state: "visible", timeout: 10000 });
+  const freshAverage = await rowState(averageRow);
+  const freshRoll = await rowState(rollRow);
+  if (!freshAverage.selected) fail(`a fresh plan for another class does not select Average (selected=${freshAverage.selected})`);
+  if (freshRoll.disabled) fail("the Roll row stays disabled for a freshly picked class");
+  if (freshRoll.selected) fail("the Roll row is selected on a fresh plan before any roll");
+  await page.screenshot({ path: join(SHOTS, `LevelUp-HPState-fresh-${width}.png`) });
+  await page.close();
+  return failures;
+}
+
 // The Level-Up Flow's Cancel asks before discarding and leaves the Character unchanged, the system Back asks
 // too, and Review's "Level up" applies the plan in one update.
 async function checkLevelUpCancelAndReview(ctx, width) {
@@ -1836,6 +1901,7 @@ const EXTRA_CHECKS = [
   { name: "New character draft folder", run: checkDraftFolder },
   { name: "Dice tray and Roll Log", run: checkDiceTrayAndLog },
   { name: "Level-Up Flow HP roll logged", run: checkLevelUpHpRollLogged },
+  { name: "Level-Up Flow HP state", run: checkLevelUpHpState },
   { name: "Level-Up Flow cancel and review", run: checkLevelUpCancelAndReview },
   { name: "Spells after level-up", run: checkSpellsAfterLevelUp },
   { name: "Dice animation", run: checkDiceAnimation },
