@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import React, { useEffect } from "react";
-import { AccessibilityInfo, Platform, Pressable, StyleSheet, View } from "react-native";
+import { AccessibilityInfo, Platform, Pressable, StyleSheet, Text, View } from "react-native";
 import { useAppTheme } from "../../context/ThemeContext";
 import { useRollLog } from "../../context/RollLogContext";
 import { useResponsiveLayout } from "../../hooks/useResponsiveLayout";
@@ -40,8 +40,9 @@ function FloatingDiceButton({ bottom, onPress }: { bottom: number; onPress: () =
  * most 360px at the bottom-right at wide widths. Tapping the card opens the tray on the Log segment;
  * the follow-up action is its own button, separate from the card's press target. It disappears when
  * dismissed, when replaced by a newer Roll, or after about 8 seconds — never while it still offers a
- * follow-up. It is a polite live region on Android and web and announces itself explicitly on iOS
- * (which has no live region), so a screen reader hears each result exactly once.
+ * follow-up. The card itself is never a live region: it mounts fresh on every Roll, and a region that
+ * appears already populated is not announced reliably, so each platform announces through exactly
+ * one other mechanism (see DiceOverlay).
  */
 function ResultCard({
   entry,
@@ -60,7 +61,6 @@ function ResultCard({
   return (
     <View
       testID="result-card"
-      accessibilityLiveRegion={Platform.OS === "ios" ? undefined : "polite"}
       style={[
         styles.card,
         {
@@ -123,10 +123,14 @@ export function DiceOverlay() {
     return () => clearTimeout(timer);
   }, [latestId, hasFollowUp, dismissResult]);
 
-  // Android and web announce through the card's polite live region; only iOS, which has no live region,
-  // needs the explicit announcement. One mechanism per platform, so TalkBack never speaks a result twice.
+  // One announcement mechanism per platform, so a screen reader hears each result exactly once.
+  // Android and iOS announce explicitly: the card mounts fresh on every Roll (after a dismissal or
+  // the 8 s timeout the next Roll's view appears with its announcement already in it), and TalkBack
+  // does not reliably announce a live region that appears already populated. Web keeps the live
+  // region instead — but always mounted below, so each Roll changes its text rather than mounting a
+  // populated region, which works after a dismissal too.
   useEffect(() => {
-    if (latest === null || Platform.OS !== "ios") return;
+    if (latest === null || Platform.OS === "web") return;
     AccessibilityInfo.announceForAccessibility(`${entryHeading(latest)}, total ${latest.roll.total}`);
   }, [latest]);
 
@@ -143,6 +147,13 @@ export function DiceOverlay() {
           onDismiss={dismissResult}
           onOpenLog={() => openTray("log")}
         />
+      ) : null}
+      {Platform.OS === "web" ? (
+        <View accessibilityLiveRegion="polite" testID="dice-announce-region" style={styles.liveRegion}>
+          <Text style={styles.liveRegionText}>
+            {latest === null ? "" : `${entryHeading(latest)}, total ${latest.roll.total}`}
+          </Text>
+        </View>
       ) : null}
       <DiceTray />
     </View>
@@ -191,5 +202,16 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     borderRadius: 22,
+  },
+  // Visually hidden but in the accessibility tree: the always-mounted web live region.
+  liveRegion: {
+    position: "absolute",
+    width: 1,
+    height: 1,
+    overflow: "hidden",
+    opacity: 0,
+  },
+  liveRegionText: {
+    fontSize: 1,
   },
 });

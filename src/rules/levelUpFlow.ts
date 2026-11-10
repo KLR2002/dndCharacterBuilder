@@ -1,11 +1,11 @@
 import type { ActiveBooks } from "../constants/books.ts";
 import { DEFAULT_ACTIVE_BOOK_CODES, SRD_SOURCE } from "../constants/books.ts";
-import type { AsiSelection, Character, CharacterClass } from "../types/character.ts";
-import type { SpellData } from "../types/dnd5e.ts";
+import type { AbilityKey, AsiSelection, Character, CharacterClass } from "../types/character.ts";
+import type { FeatData, SpellData } from "../types/dnd5e.ts";
 import { currentCompendium, type Compendium } from "../services/compendium.ts";
 import { effectiveScores, formatModifier } from "./abilities.ts";
 import { asiLevels, casterKindOf, heldClass, hitDieOf, isThirdCaster } from "./classData.ts";
-import { getFeatAbilityBonusOptions, subclassLevel } from "./leveling.ts";
+import { getFeatAbilityBonusOptions, subclassLevel, type FeatAbilityBonusOptions } from "./leveling.ts";
 import {
   applyAsiWithHitPoints,
   changeSubclass,
@@ -457,6 +457,70 @@ export function asiFeatAbilityPending(
   return bonus.type === "choice" && !asi.featAbility;
 }
 
+/** What the ASI/Feat step shows, derived from the plan's pick alone. */
+export interface AsiFeatStepView {
+  /** The tab the step opens on: the feat tab when the plan holds a feat, the ASI tab otherwise. */
+  tab: "asi" | "feat";
+  asiMode: "plus2" | "plus1plus1";
+  plus2Pick: AbilityKey | null;
+  plus1Picks: AbilityKey[];
+  featName: string | null;
+  selectedFeat: FeatData | null;
+  featAbility: AbilityKey | null;
+  featAbilityOptions: FeatAbilityBonusOptions;
+  subChoices: AvailableRuleChoice[];
+}
+
+/**
+ * The ASI/Feat step's whole selection, derived from `plan.picks.asi` alone. The step only renders
+ * while it is open, so it remounts when the player leaves it and returns (or switches class and
+ * comes back), and nothing of the selection may live in component state: the plan is the source of
+ * truth, so a remounted step shows the picked feat, its ability, its sub-choices and the ASI picks
+ * again exactly as the plan holds them — a half-finished ASI pick included, never a stale feat.
+ */
+export function asiFeatStepView(
+  plan: LevelUpPlan,
+  character: Character,
+  feats: FeatData[] = [],
+  opts: { compendium?: Compendium; activeBooks?: ActiveBooks } = {}
+): AsiFeatStepView {
+  const compendium = opts.compendium ?? currentCompendium();
+  const activeBooks = opts.activeBooks ?? DEFAULT_ACTIVE_BOOK_CODES;
+  const asi = plan.picks.asi;
+  if (asi?.type === "feat" && asi.featName) {
+    const featName = asi.featName;
+    const matches = (f: FeatData) => sameName(f.name, featName) && (!asi.featSource || f.source === asi.featSource);
+    const feat = feats.find(matches) ?? compendium.for(activeBooks).feats().find(matches) ?? null;
+    const featAbilityOptions = getFeatAbilityBonusOptions(featName, feat ?? undefined);
+    const featAbility = asi.featAbility ?? (featAbilityOptions.type === "fixed" ? featAbilityOptions.abilities[0] : null);
+    return {
+      tab: "feat",
+      asiMode: "plus2",
+      plus2Pick: null,
+      plus1Picks: [],
+      featName,
+      selectedFeat: feat,
+      featAbility,
+      featAbilityOptions,
+      subChoices: asiFeatSubChoices(plan, character, { compendium, activeBooks }),
+    };
+  }
+  const entries = Object.entries(asi?.asi ?? {}) as [string, number][];
+  const plus2Pick = (entries.find(([, value]) => value >= 2)?.[0] ?? null) as AbilityKey | null;
+  const plus1Picks = entries.filter(([, value]) => value === 1).map(([key]) => key as AbilityKey);
+  return {
+    tab: "asi",
+    asiMode: plus2Pick ? "plus2" : plus1Picks.length > 0 ? "plus1plus1" : "plus2",
+    plus2Pick,
+    plus1Picks,
+    featName: null,
+    selectedFeat: null,
+    featAbility: null,
+    featAbilityOptions: { type: "none", abilities: [], amount: 0 },
+    subChoices: [],
+  };
+}
+
 /** Adds or removes a learned spell on the plan. The given plan is never mutated. */
 export function togglePlanSpell(plan: LevelUpPlan, spell: { name: string; source: string }): LevelUpPlan {
   const current = plan.picks.learnedSpells ?? [];
@@ -534,8 +598,12 @@ export function levelUpStepComplete(
             (choice) => (plan.picks.featPicks?.[choice.id] ?? []).length >= choice.choose
           );
         }
+        return true;
       }
-      return true;
+      // A plain ASI is complete only once both improvement points are placed (+2 to one or +1 to
+      // two); a half-finished +1/+1 pick stays incomplete, like a feat missing its ability.
+      const placed = Object.values(asi.asi ?? {}).reduce((sum, value) => sum + value, 0);
+      return placed >= 2;
     }
     case "classChoices":
       return (plan.classChoices ?? []).every(
