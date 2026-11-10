@@ -4,6 +4,7 @@ import { makeChar } from "./testUtils.ts";
 import { ALL_BOOKS } from "../src/constants/books.ts";
 import {
   applyLevelUpPlan,
+  asiFeatSubChoices,
   chooseAverageHitPoints,
   classStepOptions,
   flowSteps,
@@ -14,6 +15,7 @@ import {
   rollPlanHitPoints,
   setPlanAsi,
   setPlanClassChoicePick,
+  setPlanFeatPick,
   setPlanSubclass,
   subclassOptionsForPlan,
   togglePlanSpell,
@@ -184,6 +186,47 @@ test("levelUpStepComplete reads the plan: class needs a plan, asiFeat needs a pi
     }
   }
   assert.equal(levelUpStepComplete(allPicked, "classChoices"), true);
+});
+
+test("a feat offering +1 to one of several abilities keeps the ASI/Feat step incomplete until one is chosen", () => {
+  const plan = fighterPlan();
+  const opts = { character: FIGHTER_3, activeBooks: ALL_BOOKS };
+  const athlete = setPlanAsi(plan, { level: 4, className: "Fighter", classLevel: 4, type: "feat", featName: "Athlete", featSource: "PHB" });
+  assert.equal(levelUpStepComplete(athlete, "asiFeat", opts), false, "no ability chosen yet");
+  const withAbility = setPlanAsi(plan, { level: 4, className: "Fighter", classLevel: 4, type: "feat", featName: "Athlete", featSource: "PHB", featAbility: "str", asi: { str: 1 } });
+  assert.equal(levelUpStepComplete(withAbility, "asiFeat", opts), true, "Athlete grants no rule choice of its own");
+  assert.equal(levelUpStepComplete(withAbility, "review", opts), true);
+});
+
+test("a feat with its own rule choice (a fighting style) is incomplete until the pick is made, and applying records it", () => {
+  const plan = fighterPlan();
+  const opts = { character: FIGHTER_3, activeBooks: ALL_BOOKS };
+  const initiate = setPlanAsi(plan, { level: 4, className: "Fighter", classLevel: 4, type: "feat", featName: "Fighting Initiate", featSource: "TCE" });
+  assert.equal(levelUpStepComplete(initiate, "asiFeat", opts), false, "the style is not picked yet");
+  const choices = asiFeatSubChoices(initiate, FIGHTER_3, { activeBooks: ALL_BOOKS });
+  assert.equal(choices.length, 1, "Fighting Initiate grants exactly its style choice");
+  const choice = choices[0];
+  assert.ok(choice.id.includes("Fighting Initiate"));
+  assert.ok(choice.options.length > 0, "the style options come from the catalog");
+  const picked = setPlanFeatPick(initiate, choice.id, choice.options[0].name, choice.choose);
+  assert.deepEqual(picked.picks.featPicks?.[choice.id], [choice.options[0].name]);
+  assert.equal(levelUpStepComplete(picked, "asiFeat", opts), true);
+  assert.equal(levelUpStepComplete(picked, "review", opts), true);
+
+  const applied = applyLevelUpPlan(FIGHTER_3, picked, { fullHealOnLevelUp: false });
+  const ruleChoice = (applied.ruleChoices ?? []).find((rc) => rc.id === choice.id);
+  assert.deepEqual(ruleChoice?.picked, [choice.options[0].name], "the planned style pick is recorded on the applied Character");
+  assert.ok(applied.asiSelections.some((s) => s.featName === "Fighting Initiate"), "the feat itself is applied");
+});
+
+test("levelUpSummary lists the feat's own picks as rows", () => {
+  const plan = fighterPlan();
+  const initiate = setPlanAsi(plan, { level: 4, className: "Fighter", classLevel: 4, type: "feat", featName: "Fighting Initiate", featSource: "TCE" });
+  const choice = asiFeatSubChoices(initiate, FIGHTER_3, { activeBooks: ALL_BOOKS })[0];
+  const picked = setPlanFeatPick(initiate, choice.id, choice.options[0].name, choice.choose);
+  const rows = new Map(levelUpSummary(picked, FIGHTER_3, { fullHealOnLevelUp: false, activeBooks: ALL_BOOKS }).map((r) => [r.label, r.value]));
+  assert.equal(rows.get("ASI/Feat"), "Fighting Initiate");
+  assert.equal(rows.get(choice.traitName), choice.options[0].name);
 });
 
 test("levelUpSummary lists the level and hit points before → after, plus every pick", () => {

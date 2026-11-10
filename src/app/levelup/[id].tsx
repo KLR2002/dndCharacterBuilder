@@ -32,6 +32,7 @@ import {
   rollPlanHitPoints,
   setPlanAsi,
   setPlanClassChoicePick,
+  setPlanFeatPick,
   setPlanSubclass,
   subclassOptionsForPlan,
   togglePlanSpell,
@@ -99,7 +100,8 @@ export default function LevelUpScreen() {
 
   const flowOpts = useMemo(() => ({ activeBooks }), [activeBooks]);
   const steps = useMemo(() => flowSteps(plan), [plan]);
-  const stepComplete = (stepId: LevelUpStepId) => levelUpStepComplete(plan, stepId, flowOpts);
+  const stepComplete = (stepId: LevelUpStepId) =>
+    levelUpStepComplete(plan, stepId, { ...flowOpts, character: character ?? undefined });
   const openStep = steps.find((s) => s.id === openStepId) ?? steps[0];
   const currentStepId = steps.find((s) => !stepComplete(s.id))?.id ?? steps[steps.length - 1]?.id;
 
@@ -209,6 +211,7 @@ export default function LevelUpScreen() {
               allFeats={allFeats}
               activeBooks={activeBooks}
               onPick={(asi) => setPlan(setPlanAsi(plan, asi))}
+              onFeatPick={(choiceId, option, choose) => setPlan(setPlanFeatPick(plan, choiceId, option, choose))}
             />
           </ScrollView>
         );

@@ -5,7 +5,7 @@ import type { SpellData } from "../types/dnd5e.ts";
 import { currentCompendium, type Compendium } from "../services/compendium.ts";
 import { effectiveScores } from "./abilities.ts";
 import { asiLevels, casterKindOf, heldClass, hitDieOf, isThirdCaster } from "./classData.ts";
-import { subclassLevel } from "./leveling.ts";
+import { getFeatAbilityBonusOptions, subclassLevel } from "./leveling.ts";
 import {
   applyAsiWithHitPoints,
   changeSubclass,
@@ -25,7 +25,7 @@ import { classChoicesAtLevel, hasClassChoices } from "./classChoices.ts";
 import { appRandom, rollDie, type RandomSource, type Roll } from "./dice.ts";
 import { totalLevel } from "./proficiencies.ts";
 import { allCatalogClasses, catalogListings, findClassData } from "./catalogs.ts";
-import { pickRuleChoice } from "./ruleChoices.ts";
+import { featGrantedRuleChoices, pickRuleChoice } from "./ruleChoices.ts";
 import type { AvailableRuleChoice } from "./choices/types.ts";
 
 /** The highest class level and total character level the 2014 rules allow. */
@@ -64,6 +64,8 @@ export interface LevelUpPicks {
   learnedSpells?: { name: string; source: string }[];
   /** The options picked on each of the level's class choices, by choice id. */
   classChoicePicks?: Record<string, string[]>;
+  /** The options picked on each of the picked feat's own rule choices (fighting style, maneuvers, invocation), by choice id. */
+  featPicks?: Record<string, string[]>;
 }
 
 export interface LevelUpPlan {
@@ -258,6 +260,13 @@ export function applyLevelUpPlan(
       compendium,
       activeBooks
     );
+    // The feat's own rule choices (a fighting style, maneuvers, an invocation), read on the updated
+    // Character now that it holds the feat, applied through the same rule-choice transition.
+    for (const choice of featGrantedRuleChoices(next, activeBooks, compendium)) {
+      for (const option of plan.picks.featPicks?.[choice.id] ?? []) {
+        next = pickRuleChoice(next, choice, option, compendium, activeBooks);
+      }
+    }
   }
   if (plan.picks.learnedSpells?.length) {
     const profile = getClassSpellProfiles(next, { activeBooks, compendium }).find((p) =>
@@ -373,6 +382,68 @@ export function setPlanAsi(plan: LevelUpPlan, asi: AsiSelection): LevelUpPlan {
   return { ...plan, picks: { ...plan.picks, asi } };
 }
 
+/**
+ * Sets the picked options of one of the picked feat's own rule choices (toggling `option` within
+ * `choose`). The given plan is never mutated.
+ */
+export function setPlanFeatPick(plan: LevelUpPlan, choiceId: string, option: string, choose: number): LevelUpPlan {
+  const current = plan.picks.featPicks?.[choiceId] ?? [];
+  const has = current.some((name) => name.toLowerCase() === option.toLowerCase());
+  let nextPicks: string[];
+  if (has) nextPicks = current.filter((name) => name.toLowerCase() !== option.toLowerCase());
+  else nextPicks = [...current, option].slice(0, Math.max(1, choose));
+  return { ...plan, picks: { ...plan.picks, featPicks: { ...plan.picks.featPicks, [choiceId]: nextPicks } } };
+}
+
+/**
+ * The rule choices a feat selection grants (a fighting style, maneuvers, an invocation), read on the
+ * Character with the selection added to its ASI picks, the same way the builder's ASI/Feat section
+ * offers them. Empty for an ASI pick or a feat that grants no rule choice.
+ */
+export function featSubChoicesForSelection(
+  character: Character,
+  selection: AsiSelection,
+  opts: { compendium?: Compendium; activeBooks?: ActiveBooks } = {}
+): AvailableRuleChoice[] {
+  if (selection.type !== "feat" || !selection.featName) return [];
+  const compendium = opts.compendium ?? currentCompendium();
+  const activeBooks = opts.activeBooks ?? DEFAULT_ACTIVE_BOOK_CODES;
+  const planned: Character = { ...character, asiSelections: [...(character.asiSelections ?? []), selection] };
+  return featGrantedRuleChoices(planned, activeBooks, compendium);
+}
+
+/** The feat sub-choices of the plan's ASI/Feat pick, read on the Character with the pick added. */
+export function asiFeatSubChoices(
+  plan: LevelUpPlan,
+  character: Character,
+  opts: { compendium?: Compendium; activeBooks?: ActiveBooks } = {}
+): AvailableRuleChoice[] {
+  const asi = plan.picks.asi;
+  if (!asi) return [];
+  return featSubChoicesForSelection(character, asi, opts);
+}
+
+/**
+ * Whether the plan's feat pick still misses its ability increase: a feat offering +1 to one of several
+ * abilities is incomplete until one is chosen.
+ */
+export function asiFeatAbilityPending(
+  asi: AsiSelection,
+  opts: { compendium?: Compendium; activeBooks?: ActiveBooks } = {}
+): boolean {
+  if (asi.type !== "feat" || !asi.featName) return false;
+  const featName = asi.featName;
+  const featSource = asi.featSource;
+  const compendium = opts.compendium ?? currentCompendium();
+  const activeBooks = opts.activeBooks ?? DEFAULT_ACTIVE_BOOK_CODES;
+  const feat = compendium
+    .for(activeBooks)
+    .feats()
+    .find((f) => sameName(f.name, featName) && (!featSource || f.source === featSource));
+  const bonus = getFeatAbilityBonusOptions(featName, feat);
+  return bonus.type === "choice" && !asi.featAbility;
+}
+
 /** Adds or removes a learned spell on the plan. The given plan is never mutated. */
 export function togglePlanSpell(plan: LevelUpPlan, spell: { name: string; source: string }): LevelUpPlan {
   const current = plan.picks.learnedSpells ?? [];
@@ -412,13 +483,15 @@ export function subclassOptionsForPlan(
 
 /**
  * Whether a plan step's own requirement is met, so the flow can advance past it: Class needs a picked
- * class (a plan), Subclass a pick or a single offered subclass, ASI/Feat a pick, Class Choices every
- * choice fully picked, Review every step before it. Hit Points and Spells are always complete.
+ * class (a plan), Subclass a pick or a single offered subclass, ASI/Feat a pick with its sub-choices
+ * made (the feat's ability increase when it offers a choice, and every rule choice the feat grants
+ * fully picked), Class Choices every choice fully picked, Review every step before it. Hit Points and
+ * Spells are always complete. The ASI/Feat sub-choices are read on `opts.character` with the pick added.
  */
 export function levelUpStepComplete(
   plan: LevelUpPlan | null,
   stepId: LevelUpStepId,
-  opts: { compendium?: Compendium; activeBooks?: ActiveBooks } = {}
+  opts: { compendium?: Compendium; activeBooks?: ActiveBooks; character?: Character } = {}
 ): boolean {
   if (!plan) return false;
   switch (stepId) {
@@ -428,8 +501,19 @@ export function levelUpStepComplete(
       return true;
     case "subclass":
       return plan.picks.subclass !== undefined || subclassOptionsForPlan(plan, opts).length === 1;
-    case "asiFeat":
-      return plan.picks.asi !== undefined;
+    case "asiFeat": {
+      const asi = plan.picks.asi;
+      if (!asi) return false;
+      if (asi.type === "feat") {
+        if (asiFeatAbilityPending(asi, opts)) return false;
+        if (opts.character) {
+          return asiFeatSubChoices(plan, opts.character, opts).every(
+            (choice) => (plan.picks.featPicks?.[choice.id] ?? []).length >= choice.choose
+          );
+        }
+      }
+      return true;
+    }
     case "classChoices":
       return (plan.classChoices ?? []).every(
         (choice) => (plan.picks.classChoicePicks?.[choice.id] ?? []).length >= choice.choose
@@ -488,6 +572,10 @@ export function levelUpSummary(
               .map(([key, value]) => `${key.toUpperCase()} +${value}`)
               .join(", "),
     });
+  }
+  for (const choice of asiFeatSubChoices(plan, character, opts)) {
+    const picked = plan.picks.featPicks?.[choice.id] ?? [];
+    if (picked.length > 0) rows.push({ label: choice.traitName, value: picked.join(", ") });
   }
   for (const choice of plan.classChoices ?? []) {
     const picked = plan.picks.classChoicePicks?.[choice.id] ?? [];
