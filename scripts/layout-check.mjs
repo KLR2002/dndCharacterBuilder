@@ -113,7 +113,11 @@ function findHeaderNameViolations(name) {
   const nr = nameEl.getBoundingClientRect();
   const cs = getComputedStyle(nameEl);
   if (cs.textOverflow !== "ellipsis" || cs.overflow !== "hidden") out.push(`header name has no ellipsis (text-overflow: ${cs.textOverflow}, overflow: ${cs.overflow})`);
-  if (nameEl.scrollWidth <= nameEl.clientWidth) out.push(`header name is not clipped (${nameEl.scrollWidth}px of text in ${nameEl.clientWidth}px)`);
+  // The name either fits its row or is clipped with an ellipsis inside it; at wide widths a long name can
+  // legitimately fit, so clipping is required only when the text would overflow the row it sits in.
+  const rowRight = (nameEl.parentElement ?? nameEl).getBoundingClientRect().right;
+  if (nameEl.scrollWidth > nameEl.clientWidth && nr.right > rowRight + 1)
+    out.push(`header name overflows its row unclipped (text ${nameEl.scrollWidth}px in ${nameEl.clientWidth}px, right edge ${Math.round(nr.right)} over row right ${Math.round(rowRight)})`);
   if (nr.right > window.innerWidth + 1) out.push(`header name sticks out of the screen by ${Math.round(nr.right - window.innerWidth)}px`);
   for (const badge of badgeText) {
     const br = (badge.parentElement ?? badge).getBoundingClientRect();
@@ -2020,6 +2024,11 @@ async function checkLevelUpHiddenAtMaxLevel(ctx, width) {
   await page.goto(`${BASE}/character/${MAX_LEVEL_ID}`, { waitUntil: "networkidle", timeout: 120000 });
   await page.waitForTimeout(1500);
   if (!(await waitForVisibleText(page, "Lvl 20"))) fail("the sheet does not show \"Lvl 20\" for the level-20 character");
+  // On phones the header's actions live in its menu; at 768px and up they sit in the left rail.
+  if (width < 768) {
+    await page.getByLabel("Sheet menu").first().click();
+    await page.getByText("Character", { exact: true }).first().waitFor({ state: "visible", timeout: 10000 }).catch(() => fail("the phone header menu did not open"));
+  }
   if ((await page.getByLabel("Level up").count()) > 0) fail("the header still offers Level up at total level 20");
   if (!(await page.getByLabel("Edit Build").first().isVisible().catch(() => false))) fail("Edit Build is gone at total level 20");
   await page.screenshot({ path: join(SHOTS, `LevelUp-HiddenAt20-${width}.png`) });
@@ -2065,6 +2074,11 @@ async function checkLevelUpCancelAndReview(ctx, width) {
   // (so Back pops inside the app), pick a class, then browser Back must ask and stay.
   await page.goto(`${BASE}/character/${LU_ID}`, { waitUntil: "networkidle", timeout: 120000 });
   await page.waitForTimeout(1500);
+  // On phones the header's Level up sits in its menu; at 768px and up in the left rail.
+  if (width < 768) {
+    await page.getByLabel("Sheet menu").first().click();
+    await page.waitForTimeout(400);
+  }
   await page.getByLabel("Level up").first().click();
   await page.waitForTimeout(1500);
   if (!page.url().includes(`/levelup/${LU_ID}`)) fail(`the header's Level up did not open the flow: ${page.url()}`);
@@ -2378,6 +2392,237 @@ async function checkStatsRolls(ctx, width) {
   return failures;
 }
 
+// The sheet's chrome at one width: on phones one bottom bar holding all six tabs (each a 48dp target with
+// an untruncated label), one compact header bar whose menu holds Level up and Edit Build, and the floating
+// dice button above the bar; at 768px and up a left rail with the six tabs and the header actions, Stats in
+// two columns, and no horizontal scroll. At every width the Stats roll badges must be centred in their card
+// (within 2px) and sized to their content (height at most content plus padding and border).
+async function checkSheetChrome(ctx, width) {
+  const page = await ctx.newPage();
+  const prefix = `[${width}px sheet chrome]`;
+  let failures = 0;
+  const fail = (msg) => {
+    failures++;
+    console.log(`${prefix} ${msg}`);
+  };
+  const TAB_LABELS = ["Stats", "Actions", "Spells", "Inventory", "Features", "Journal"];
+
+  await page.goto(`${BASE}/character/${CHARACTER_ID}`, { waitUntil: "networkidle", timeout: 120000 });
+  await page.waitForTimeout(1500);
+  await page.getByText("Stats", { exact: true }).first().click();
+  await page.getByText(/hit points/i).first().waitFor({ state: "visible", timeout: 10000 }).catch(() => fail("the Stats tab did not load"));
+
+  const chrome = await page.evaluate((labels) => {
+    const bar = document.querySelector('[data-testid="sheet-tab-bar"]');
+    const rail = document.querySelector('[data-testid="sheet-tab-rail"]');
+    const header = document.querySelector('[data-testid="sheet-header"]');
+    const button = document.querySelector('[data-testid="dice-button"]');
+    const rect = (el) => {
+      const r = el.getBoundingClientRect();
+      return { left: r.left, right: r.right, top: r.top, bottom: r.bottom, width: r.width, height: r.height };
+    };
+    const nav = bar ?? rail;
+    const tabs = labels.map((label) => {
+      const el = nav ? [...nav.querySelectorAll('[role="button"]')].find((b) => b.getAttribute("aria-label") === label) : null;
+      if (!el) return { label, missing: true };
+      const text = [...el.querySelectorAll("*")].find((e) => e.children.length === 0 && e.textContent.trim() === label);
+      return {
+        label,
+        rect: rect(el),
+        labelTruncated: text ? text.scrollWidth > text.clientWidth + 1 : null,
+      };
+    });
+    const actions = ["Level up", "Edit Build"].map((label) => {
+      const el = nav ? [...nav.querySelectorAll('[role="button"]')].find((b) => b.getAttribute("aria-label") === label) : null;
+      return { label, present: !!el, rect: el ? rect(el) : null, visibleNow: !!el && el.getBoundingClientRect().height > 0 };
+    });
+    return {
+      bar: bar ? rect(bar) : null,
+      rail: rail ? rect(rail) : null,
+      headerHeight: header ? rect(header).height : null,
+      button: button ? rect(button) : null,
+      tabs,
+      actions,
+      menuCount: document.querySelectorAll('[aria-label="Sheet menu"]').length,
+      vw: window.innerWidth,
+      vh: window.innerHeight,
+      scrollW: document.documentElement.scrollWidth,
+    };
+  }, TAB_LABELS);
+
+  if (width < 768) {
+    if (!chrome.bar) fail("no bottom tab bar (data-testid=\"sheet-tab-bar\") on the phone sheet");
+    else {
+      if (Math.abs(chrome.bar.bottom - chrome.vh) > 1) fail(`the tab bar is not flush with the bottom edge (bottom ${Math.round(chrome.bar.bottom)} of ${chrome.vh})`);
+      for (const tab of chrome.tabs) {
+        if (tab.missing) {
+          fail(`the tab bar has no "${tab.label}" tab`);
+          continue;
+        }
+        if (tab.rect.height < 47.5) fail(`the "${tab.label}" tab target is ${Math.round(tab.rect.height)}px tall, under 48dp`);
+        if (tab.labelTruncated) fail(`the "${tab.label}" tab label is truncated`);
+        if (tab.rect.left < chrome.bar.left - 1 || tab.rect.right > chrome.bar.right + 1 || tab.rect.top < chrome.bar.top - 1)
+          fail(`the "${tab.label}" tab sticks out of the bar`);
+      }
+      if (chrome.bar.height < 56) fail(`the tab bar is ${Math.round(chrome.bar.height)}px tall, under 56dp`);
+    }
+    if (chrome.headerHeight === null || chrome.headerHeight > 96) fail(`the header is ${chrome.headerHeight === null ? "missing" : Math.round(chrome.headerHeight) + "px tall"}, not one compact bar`);
+    if (chrome.menuCount !== 1) fail(`the phone header has ${chrome.menuCount} "Sheet menu" buttons, expected 1`);
+    for (const action of chrome.actions) if (action.visibleNow) fail(`"${action.label}" is visible in the phone header before the menu opens`);
+    if (chrome.button) {
+      if (!chrome.bar) fail("cannot check the dice button against a missing bar");
+      else if (chrome.button.bottom > chrome.bar.top + 1)
+        fail(`the dice button covers the tab bar (button bottom ${Math.round(chrome.button.bottom)} over bar top ${Math.round(chrome.bar.top)})`);
+    } else fail("no floating dice button on the sheet");
+    // The menu holds Level up and Edit Build as 48dp rows.
+    await page.getByLabel("Sheet menu").first().click();
+    await page.waitForSelector('[role="dialog"]', { state: "visible", timeout: 10000 }).catch(() => fail("the sheet menu did not open"));
+    const menuRows = await page.evaluate(() => {
+      const dialog = document.querySelector('[role="dialog"]');
+      if (!dialog) return [];
+      return ["Level up", "Edit Build"].map((label) => {
+        const el = [...dialog.querySelectorAll('[role="button"]')].find((b) => b.getAttribute("aria-label") === label);
+        return { label, height: el ? el.getBoundingClientRect().height : null };
+      });
+    });
+    for (const row of menuRows) {
+      if (row.height === null) fail(`the sheet menu has no "${row.label}" row`);
+      else if (row.height < 47.5) fail(`the menu's "${row.label}" row is ${Math.round(row.height)}px tall, under 48dp`);
+    }
+    await page.keyboard.press("Escape");
+    await page.waitForSelector('[role="dialog"]', { state: "hidden", timeout: 10000 }).catch(() => fail("Escape did not close the sheet menu"));
+  } else {
+    if (chrome.bar) fail("the wide sheet still shows the phone bottom tab bar");
+    if (!chrome.rail) fail("no left rail (data-testid=\"sheet-tab-rail\") at a wide width");
+    else {
+      for (const tab of chrome.tabs) {
+        if (tab.missing) fail(`the rail has no "${tab.label}" tab`);
+        else if (tab.rect.height < 47.5) fail(`the rail's "${tab.label}" tab is ${Math.round(tab.rect.height)}px tall, under 48dp`);
+      }
+      for (const action of chrome.actions) {
+        if (!action.present) fail(`the rail has no "${action.label}" action`);
+        else if (action.rect.height < 47.5) fail(`the rail's "${action.label}" action is ${Math.round(action.rect.height)}px tall, under 48dp`);
+      }
+    }
+    if (chrome.menuCount !== 0) fail("the wide header still shows the phone menu button");
+    if (chrome.headerHeight === null || chrome.headerHeight > 96) fail(`the wide header is ${chrome.headerHeight === null ? "missing" : Math.round(chrome.headerHeight) + "px tall"}, not one slim bar`);
+    // Stats in two columns.
+    const cols = await page.evaluate(() => {
+      const side = document.querySelector('[data-testid="stats-col-side"]');
+      const main = document.querySelector('[data-testid="stats-col-main"]');
+      if (!side || !main) return null;
+      const a = side.getBoundingClientRect();
+      const b = main.getBoundingClientRect();
+      return { side: { left: a.left, right: a.right, top: a.top, width: a.width }, main: { left: b.left, right: b.right, top: b.top, width: b.width } };
+    });
+    if (!cols) fail("the wide Stats tab is not split into its two columns (stats-col-side / stats-col-main)");
+    else {
+      if (cols.side.width <= 0 || cols.main.width <= 0) fail("one of the wide Stats columns has no width");
+      if (cols.side.right > cols.main.left + 1) fail(`the Stats columns overlap (side right ${Math.round(cols.side.right)} over main left ${Math.round(cols.main.left)})`);
+      if (Math.abs(cols.side.top - cols.main.top) > 2) fail(`the Stats columns do not start on the same row (tops ${Math.round(cols.side.top)} and ${Math.round(cols.main.top)})`);
+    }
+    if (chrome.scrollW > chrome.vw + 1) fail(`the wide sheet scrolls sideways by ${chrome.scrollW - chrome.vw}px`);
+  }
+
+  // The Stats roll badges: centred in their card and sized to their content, at every width.
+  const badges = await page.evaluate(() => {
+    const cards = ["str", "dex", "con", "int", "wis", "cha"].map((k) => ({
+      name: k,
+      card: document.querySelector(`[data-testid="ability-tile-${k}"]`),
+      badge: document.querySelector(`[data-testid="roll-badge-check-${k}"]`),
+    }));
+    cards.push({
+      name: "initiative",
+      card: document.querySelector('[data-testid="stat-box-initiative"]'),
+      badge: document.querySelector('[data-testid="roll-badge-initiative"]'),
+    });
+    return cards.map(({ name, card, badge }) => {
+      if (!card || !badge) return { name, missing: true };
+      const cr = card.getBoundingClientRect();
+      const br = badge.getBoundingClientRect();
+      const cs = getComputedStyle(badge);
+      const padY = (parseFloat(cs.paddingTop) || 0) + (parseFloat(cs.paddingBottom) || 0);
+      const borderY = (parseFloat(cs.borderTopWidth) || 0) + (parseFloat(cs.borderBottomWidth) || 0);
+      const contentH = Math.max(0, ...[...badge.children].map((c) => c.getBoundingClientRect().height));
+      return {
+        name,
+        centerOff: Math.abs((br.left + br.right) / 2 - (cr.left + cr.right) / 2),
+        height: br.height,
+        contentPlusPad: contentH + padY + borderY,
+      };
+    });
+  });
+  for (const b of badges) {
+    if (b.missing) {
+      fail(`no ${b.name} Stats card or roll badge to measure`);
+      continue;
+    }
+    if (b.centerOff > 2) fail(`the ${b.name} roll badge is ${Math.round(b.centerOff * 10) / 10}px off its card's centre axis`);
+    if (b.height > b.contentPlusPad + 1)
+      fail(`the ${b.name} roll badge is ${Math.round(b.height)}px tall, over its content plus padding (${Math.round(b.contentPlusPad)}px)`);
+  }
+
+  await page.screenshot({ path: join(SHOTS, `SheetChrome-${width}.png`) });
+  await page.close();
+  return failures;
+}
+
+// Home at one width: a single-column list on phones, a multi-column card grid at 768px and up, no HP badge on
+// any entry, and every finished entry carrying its Lvl badge (drafts read "Draft · <step>").
+async function checkHomeLayout(ctx, width) {
+  const page = await ctx.newPage();
+  const prefix = `[${width}px home layout]`;
+  let failures = 0;
+  const fail = (msg) => {
+    failures++;
+    console.log(`${prefix} ${msg}`);
+  };
+  await page.goto(`${BASE}/`, { waitUntil: "networkidle", timeout: 120000 });
+  await page.waitForTimeout(1500);
+  await page.getByText(/5e Character Builder/).first().waitFor({ state: "visible", timeout: 10000 });
+
+  const layout = await page.evaluate(() => {
+    const entries = [...document.querySelectorAll('[data-testid^="home-entry-"]')].map((el) => {
+      const r = el.getBoundingClientRect();
+      const leaves = [...el.querySelectorAll("*")].filter((e) => e.children.length === 0);
+      return {
+        left: r.left,
+        right: r.right,
+        top: r.top,
+        width: r.width,
+        hasLvl: leaves.some((e) => /^Lvl \d+$/.test(e.textContent.trim())),
+        isDraft: leaves.some((e) => /^Draft · /.test(e.textContent.trim())),
+      };
+    });
+    const hpBadge = [...document.querySelectorAll("*")].some(
+      (e) => e.children.length === 0 && /^HP: /.test(e.textContent.trim()) && e.getBoundingClientRect().height > 0,
+    );
+    return { entries, hpBadge, vw: window.innerWidth };
+  });
+
+  if (layout.entries.length < 2) fail(`only ${layout.entries.length} home entries found, expected several`);
+  if (layout.hpBadge) fail("a home entry still shows an HP badge");
+  for (const [i, entry] of layout.entries.entries()) {
+    if (!entry.isDraft && !entry.hasLvl) fail(`home entry ${i} is finished but carries no Lvl badge`);
+    if (entry.isDraft && entry.hasLvl) fail(`home entry ${i} is a draft but carries a Lvl badge`);
+  }
+  if (width < 768) {
+    const first = layout.entries[0];
+    for (const [i, entry] of layout.entries.entries()) {
+      if (Math.abs(entry.left - first.left) > 2) fail(`home entry ${i} is not in the single list column (left ${Math.round(entry.left)} vs ${Math.round(first.left)})`);
+      if (entry.width < (layout.vw - 32) * 0.75) fail(`home entry ${i} is only ${Math.round(entry.width)}px wide, not a full-width list row`);
+    }
+  } else {
+    const gridPair = layout.entries.some((a, i) =>
+      layout.entries.some((b, j) => j > i && Math.abs(a.top - b.top) <= 2 && Math.abs(a.left - b.left) > 20),
+    );
+    if (!gridPair) fail("no two home entries share a row: the wide Home is not a grid");
+  }
+  await page.screenshot({ path: join(SHOTS, `HomeLayout-${width}.png`) });
+  await page.close();
+  return failures;
+}
+
 // The checks that open their own page rather than a SCREENS entry. Each is a scenario, so ONLY selects it by name.
 const EXTRA_CHECKS = [
   { name: "HP modals", run: checkHitPointModals },
@@ -2396,6 +2641,8 @@ const EXTRA_CHECKS = [
   { name: "Level-Up Flow cancel and review", run: checkLevelUpCancelAndReview },
   { name: "Spells after level-up", run: checkSpellsAfterLevelUp },
   { name: "Dice animation", run: checkDiceAnimation },
+  { name: "Sheet chrome", run: checkSheetChrome },
+  { name: "Home layout", run: checkHomeLayout },
   { name: "Actions rolls", run: checkActionRolls },
   { name: "Stats rolls", run: checkStatsRolls },
 ];

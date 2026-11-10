@@ -1525,7 +1525,9 @@ export function buildScreens({ integrated }) {
       { name: "Draft opens in flow", route: "/", open: [{ tap: { text: "Draft · Background", exact: true } }], ready: "Create Custom", expect: { texts: ["Background"], absent: ["Builder", "Stats", "Actions", "Inventory", "Features", "Journal", "Spells"], fitsWidth: true } },
       { name: "Draft sheet redirects to flow", route: `/character/${DRAFT_ID}`, ready: "Create Custom", expect: { texts: ["Background"], absent: ["Builder", "Stats", "Actions", "Inventory", "Features", "Journal", "Spells"], fitsWidth: true } },
       // Confirming Review finishes the character: the sheet opens with Level up and Edit Build and no Builder tab.
-      { name: "Review finishes character", route: REVIEW_DRAFT_ROUTE, open: [{ tap: { text: "Create character", exact: true } }], ready: "Level up", expect: { texts: ["Level up", "Edit Build", "Wren"], absent: ["Builder"], fitsWidth: true } },
+      // The sheet opens on the finished character's name; the header's Level up / Edit Build are asserted
+      // per width by the "Sheet chrome" check (in the phone header's menu, in the wide rail).
+      { name: "Review finishes character", route: REVIEW_DRAFT_ROUTE, open: [{ tap: { text: "Create character", exact: true } }], ready: "Wren", expect: { texts: ["Wren"], absent: ["Builder"], fitsWidth: true } },
       // Edit Build on a finished character: choosing the Background step opens the flow there with every step reachable.
       {
         name: "Builder Edit Build background step",

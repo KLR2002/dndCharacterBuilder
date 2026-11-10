@@ -263,8 +263,9 @@ export async function playScreen({ screen, dump, tap, swipe, view, sleep, now, t
   const clippedMatch = (call) => (nodes) => findMatches(nodes, call).find((n) => n.bounds && centerOf(n, view) === null) ?? null;
   for (const tab of screen.tabs ?? []) {
     // A tab is the web check's getByText(tab, { exact: true }).first(): the exact text, the first match.
-    // Tabs sit in the horizontal tab bars, so the reveal swipes there stay horizontal — after the page
-    // fallback has scrolled the page back up to the bars when they are not in the dump.
+    // The sheet renders its tab navigation before the scrolling content — the bottom bar on phones, the
+    // left rail at wide widths — so the first dump match is the tab, and the bar is always on screen, so
+    // no reveal swipe is needed; the horizontal reveal stays for the flows' horizontal step-chip bars.
     const call = { method: "getByText", arg: tab, options: { exact: true }, index: 0 };
     const { found, bound } = await pollRevealing({
       dump,
