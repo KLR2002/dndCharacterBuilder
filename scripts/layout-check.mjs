@@ -37,7 +37,7 @@ import {
   stopExpoWeb,
   waitForExpoWeb,
 } from "./lib/app-driver.mjs";
-import { buildScreens, buildSeed, ACTIONS_ID, CHARACTER_ID, DRUID_ID, EDIT_BUILD_ID, LOW_CON_ID, RANGER_ID, SORCERER_SWAP_ID, WIZARD_ID } from "./lib/scenarios.mjs";
+import { buildScreens, buildSeed, ACTIONS_ID, CHARACTER_ID, DRUID_ID, EDIT_BUILD_ID, LOW_CON_ID, MAX_LEVEL_ID, RANGER_ID, SORCERER_SWAP_ID, WIZARD_ID } from "./lib/scenarios.mjs";
 import { playStep, playSteps } from "./lib/web-steps.mjs";
 import { ACCENT_PALETTES, BASE_DARK_THEME } from "../src/constants/theme.ts";
 
@@ -1743,6 +1743,25 @@ async function checkLevelUpHpState(ctx, width) {
   return failures;
 }
 
+// At total level 20 the sheet's header hides Level up (no level left to gain) and keeps Edit Build.
+async function checkLevelUpHiddenAtMaxLevel(ctx, width) {
+  const page = await ctx.newPage();
+  const prefix = `[${width}px level-up hidden at 20]`;
+  let failures = 0;
+  const fail = (msg) => {
+    failures++;
+    console.log(`${prefix} ${msg}`);
+  };
+  await page.goto(`${BASE}/character/${MAX_LEVEL_ID}`, { waitUntil: "networkidle", timeout: 120000 });
+  await page.waitForTimeout(1500);
+  if (!(await waitForVisibleText(page, "Lvl 20"))) fail("the sheet does not show \"Lvl 20\" for the level-20 character");
+  if ((await page.getByLabel("Level up").count()) > 0) fail("the header still offers Level up at total level 20");
+  if (!(await page.getByLabel("Edit Build").first().isVisible().catch(() => false))) fail("Edit Build is gone at total level 20");
+  await page.screenshot({ path: join(SHOTS, `LevelUp-HiddenAt20-${width}.png`) });
+  await page.close();
+  return failures;
+}
+
 // A negative Constitution modifier is written with its sign in the Hit Points step's Roll row: "1d10-1", never "1d10+-1".
 async function checkLevelUpHpModifierSign(ctx, width) {
   const page = await ctx.newPage();
@@ -2076,6 +2095,7 @@ const EXTRA_CHECKS = [
   { name: "Level-Up Flow HP roll logged", run: checkLevelUpHpRollLogged },
   { name: "Level-Up Flow HP state", run: checkLevelUpHpState },
   { name: "Level-Up Flow HP modifier sign", run: checkLevelUpHpModifierSign },
+  { name: "Level up hidden at level 20", run: checkLevelUpHiddenAtMaxLevel },
   { name: "Level-Up Flow cancel and review", run: checkLevelUpCancelAndReview },
   { name: "Spells after level-up", run: checkSpellsAfterLevelUp },
   { name: "Dice animation", run: checkDiceAnimation },
