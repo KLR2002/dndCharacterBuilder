@@ -119,9 +119,12 @@ function findNestedButtonViolations(scopeSelector) {
   return [...new Set(out)];
 }
 
-// Runs in the browser. Checks the header of a character sheet for a long name. The name must be clipped and end
-// with an ellipsis, and it must end before the level badge and the HP badge start. Returns one message per violation.
-function findHeaderNameViolations(name) {
+// Runs in the browser. Checks the header of a character sheet for a long name. At phone widths the name
+// cannot fit its row, so it must be clipped and end with an ellipsis; at wide widths a long name can
+// legitimately fit, so only an unclipped overflow is a violation there. The race/class line under the name
+// must show whole — class level included — at every width, and neither may stick out of the screen or
+// overflow its row. Returns one message per violation.
+function findHeaderNameViolations({ name, width }) {
   const leaves = [...document.querySelectorAll("*")].filter((e) => e.children.length === 0 && e.getBoundingClientRect().height > 0);
   const nameEl = leaves.find((e) => e.textContent.trim() === name);
   if (!nameEl) return [`header name "${name.slice(0, 40)}" is not on the screen`];
@@ -130,6 +133,8 @@ function findHeaderNameViolations(name) {
   const nr = nameEl.getBoundingClientRect();
   const cs = getComputedStyle(nameEl);
   if (cs.textOverflow !== "ellipsis" || cs.overflow !== "hidden") out.push(`header name has no ellipsis (text-overflow: ${cs.textOverflow}, overflow: ${cs.overflow})`);
+  if (width < 768 && nameEl.scrollWidth <= nameEl.clientWidth)
+    out.push(`header name is not clipped at ${width}px (${nameEl.scrollWidth}px of text in ${nameEl.clientWidth}px)`);
   // The name either fits its row or is clipped with an ellipsis inside it; at wide widths a long name can
   // legitimately fit, so clipping is required only when the text would overflow the row it sits in.
   const rowRight = (nameEl.parentElement ?? nameEl).getBoundingClientRect().right;
@@ -139,6 +144,18 @@ function findHeaderNameViolations(name) {
   for (const badge of badgeText) {
     const br = (badge.parentElement ?? badge).getBoundingClientRect();
     if (nr.right > br.left + 1 && nr.left < br.right - 1) out.push(`header name overlaps the badge "${badge.textContent.trim().slice(0, 20)}" by ${Math.round(nr.right - br.left)}px`);
+  }
+  // The race/class line under the name: fully visible (no truncation), ending in the class level.
+  const header = document.querySelector('[data-testid="sheet-header"]');
+  const sub = header ? leaves.filter((e) => header.contains(e)).find((e) => e.textContent.includes("•")) : null;
+  if (!sub) out.push("the header's race/class line is not on the screen");
+  else {
+    const sr = sub.getBoundingClientRect();
+    if (sub.scrollWidth > sub.clientWidth + 1)
+      out.push(`the header race/class line is truncated (${sub.scrollWidth}px of text in ${sub.clientWidth}px): "${sub.textContent.trim()}"`);
+    if (!/• [^•]*\d+$/.test(sub.textContent.trim()))
+      out.push(`the header race/class line lost the class level: "${sub.textContent.trim()}"`);
+    if (sr.right > window.innerWidth + 1) out.push(`the header race/class line sticks out of the screen by ${Math.round(sr.right - window.innerWidth)}px`);
   }
   return out;
 }
@@ -574,7 +591,7 @@ async function visitScreen(page, width, screen, state) {
     violations = await page.evaluate(findLayoutViolations, null);
   }
   violations = [...violations, ...(await checkNoShrinkRows(page, screen))];
-  if (screen.headerName) violations = [...violations, ...(await page.evaluate(findHeaderNameViolations, screen.headerName))];
+  if (screen.headerName) violations = [...violations, ...(await page.evaluate(findHeaderNameViolations, { name: screen.headerName, width }))];
   if (screen.expect) violations = [...violations, ...(await checkExpected(page, screen.expect))];
   for (const v of violations) console.log(`${prefix} ${v}`);
   return violations.length;

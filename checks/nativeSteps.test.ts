@@ -402,6 +402,25 @@ test("expect is not evaluated: a screen that would fail it still plays", async (
   assert.deepEqual(result, { error: null, warnings: [] });
 });
 
+test("nativeTexts is evaluated: every listed text must show in the dump once the screen is ready", async () => {
+  const menu = parseDump(
+    `<hierarchy><node text="Character" bounds="[0,100][200,140]" /><node text="Level up" bounds="[10,200][200,240]" /><node text="Edit Build" bounds="[10,250][200,290]" /><node text="Wren" bounds="[10,300][100,340]" /></hierarchy>`,
+  );
+  const world = playerWorld([menu]);
+  const result = await play(world, { name: "t", route: "/x", modal: "Character", nativeTexts: ["Level up", "Edit Build", "Wren"] });
+  assert.deepEqual(result, { error: null, warnings: [] });
+});
+
+test("a missing nativeTexts entry fails the screen with a message naming it", async () => {
+  const menu = parseDump(
+    `<hierarchy><node text="Character" bounds="[0,100][200,140]" /><node text="Edit Build" bounds="[10,250][200,290]" /></hierarchy>`,
+  );
+  const world = playerWorld([menu]);
+  const result = await play(world, { name: "t", route: "/x", modal: "Character", nativeTexts: ["Level up", "Edit Build"] });
+  assert.match(result.error ?? "", /native text "Level up" did not show/);
+  assert.deepEqual(result.warnings, []);
+});
+
 // --- Revealing off-screen targets: the dump names its scrollers, and a swipe inside one scrolls it ---
 
 // The scrollers of the character screen, as the dump reports them: the subtab bar (a HorizontalScrollView
