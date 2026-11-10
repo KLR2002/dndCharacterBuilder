@@ -1106,16 +1106,17 @@ async function checkDiceTrayAndLog(ctx, width) {
   await page.screenshot({ path: shot("log-empty") });
   await page.close();
 
-  // On phones the button sits above the flow's bottom primary-action bar, never covering it, and the step
-  // scroll content pads its bottom by the button's 56dp plus its 16dp gap so the button never covers the
-  // last rows. The padding switches at the same breakpoint as the dice overlay's phone check: at 600px and
-  // up the flow adds no extra bottom padding.
+  // The padding follows the flow's own layout, whose wide breakpoint is FLOW_WIDE_MIN_WIDTH (768) in
+  // src/components/creationFlow/FlowShell.tsx: below it the flow shows its bottom primary-action bar and
+  // the button sits above that bar, never covering it, while the step scroll content pads its bottom by
+  // the button's 56dp plus its 16dp gap so the button never covers the last rows; at 768px and up the flow
+  // is wide and adds no extra bottom padding.
   {
     const flowPage = await ctx.newPage();
     await flowPage.goto(`${BASE}/levelup/${EDIT_BUILD_ID}`, { waitUntil: "networkidle", timeout: 120000 });
     await flowPage.waitForTimeout(1500);
     await flowPage.getByText(/Fighter/).first().waitFor({ state: "visible", timeout: 10000 }).catch(() => fail("the Level-Up Flow did not load"));
-    if (width < 600) {
+    if (width < 768) {
       const geo = await flowPage.evaluate(() => {
         const bar = document.querySelector('[data-testid="levelup-bottom-bar"]');
         const button = document.querySelector('[data-testid="dice-button"]');
@@ -1142,10 +1143,10 @@ async function checkDiceTrayAndLog(ctx, width) {
       return max;
     });
     if (scrollPad === null) fail("no step scroll content found in the Level-Up Flow");
-    else if (width < 600 && scrollPad < 71)
+    else if (width < 768 && scrollPad < 71)
       fail(`the flow's step scroll content pads its bottom by ${Math.round(scrollPad)}px, under the 72dp the floating dice button needs (56dp button + 16dp gap)`);
-    else if (width >= 600 && scrollPad >= 71)
-      fail(`at ${width}px (not a phone by the dice overlay's breakpoint) the flow's step scroll content still pads its bottom by ${Math.round(scrollPad)}px for a corner button`);
+    else if (width >= 768 && scrollPad >= 71)
+      fail(`at ${width}px (wide flow layout) the flow's step scroll content still pads its bottom by ${Math.round(scrollPad)}px for a corner button`);
     await flowPage.screenshot({ path: join(SHOTS, `DiceTray-flow-${width}.png`) });
     await flowPage.close();
   }

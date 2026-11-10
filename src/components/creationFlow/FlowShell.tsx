@@ -9,6 +9,13 @@ import { useSerifFont } from "../../hooks/useSerifFont";
 
 import { Modal } from "../ui/Modal";
 
+/**
+ * The flow's wide breakpoint: at or above this width FlowShell shows the wide layout (step list, centre
+ * step, identity side, footer); below it the phone layout with the bottom bar the floating dice button
+ * sits above. The step scroll content's bottom padding switches at the same width.
+ */
+export const FLOW_WIDE_MIN_WIDTH = 768;
+
 /** One step as the flow chrome shows it: its title, and whether it is the open, current, done or locked one. */
 export interface FlowStepView {
   id: string;
@@ -41,10 +48,10 @@ export interface FlowShellProps {
 
 /**
  * The shared chrome of the Creation Flow and the Level-Up Flow: step chips on phones, a step list on the
- * left with the step in the centre and the identity panel on the right at 768px and up, and a bottom bar
- * holding the identity line and the primary action on phones. The floating dice button sits above that
- * bar, never on its own row. Both flows render their steps through this shell; the steps themselves come
- * from their rules modules.
+ * left with the step in the centre and the identity panel on the right at FLOW_WIDE_MIN_WIDTH and up, and
+ * a bottom bar holding the identity line and the primary action on phones. The floating dice button sits
+ * above that bar, never on its own row. Both flows render their steps through this shell; the steps
+ * themselves come from their rules modules.
  */
 export function FlowShell({
   steps,
@@ -59,7 +66,7 @@ export function FlowShell({
 }: FlowShellProps) {
   const { theme } = useAppTheme();
   const { width } = useResponsiveLayout();
-  const wide = width >= 768;
+  const wide = width >= FLOW_WIDE_MIN_WIDTH;
   const { setBottomObstruction } = useRollLog();
   const [identityOpen, setIdentityOpen] = useState(false);
 
@@ -184,13 +191,14 @@ export function FlowShell({
 }
 
 /**
- * Extra contentContainerStyle for a flow's step scroll content: on phones the floating dice button (56dp,
- * sitting 16dp above the flow's bottom bar) must not cover the last rows, so the content pads its bottom by
- * 56 + 16 there; wider screens add nothing. The breakpoint is the dice overlay's own `isPhone` (width < 600).
+ * Extra contentContainerStyle for a flow's step scroll content. The padding follows the flow's own bottom
+ * bar: while FlowShell shows that bar (width below FLOW_WIDE_MIN_WIDTH) the floating dice button (56dp,
+ * sitting 16dp above the bar) must not cover the last rows, so the content pads its bottom by 56 + 16
+ * there; at wide widths the button sits at the viewport's bottom-right corner and nothing is added.
  */
 export function useFlowStepScrollContentPadding(): ViewStyle {
-  const { isPhone } = useResponsiveLayout();
-  return isPhone ? { paddingBottom: 56 + 16 } : {};
+  const { width } = useResponsiveLayout();
+  return width < FLOW_WIDE_MIN_WIDTH ? { paddingBottom: 56 + 16 } : {};
 }
 
 /** The serif title row of the open step, with its needs-attention mark. */
