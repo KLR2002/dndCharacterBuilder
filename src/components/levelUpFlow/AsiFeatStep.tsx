@@ -74,8 +74,8 @@ export function AsiFeatStep({
     const opts = getFeatAbilityBonusOptions(feat.name, feat);
     const ability = opts.type === "fixed" ? opts.abilities[0] : null;
     setFeatAbility(ability);
-    // A feat offering +1 to one of several abilities is not picked until one is chosen below.
-    if (opts.type === "choice") return;
+    // Selecting a feat replaces the plan's pick at once. A feat offering +1 to one of several abilities
+    // stays pending (no featAbility) until one is chosen below, and the step rejects it until then.
     onPick({
       ...slot,
       type: "feat",
@@ -124,6 +124,8 @@ export function AsiFeatStep({
   ];
   const chipStyle = (active: boolean): StyleProp<ViewStyle> => [
     styles.choiceChip,
+    // 48dp touch target, like the level-up Subclass chips.
+    { minHeight: 48 },
     {
       backgroundColor: active ? theme.accentGlow : theme.surfaceHighlight,
       borderColor: active ? theme.accentHover : theme.border,
@@ -297,14 +299,17 @@ export function AsiFeatStep({
                   <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6 }}>
                     {choice.options.map((opt) => {
                       const isPicked = picked.some((p) => p.toLowerCase() === opt.name.toLowerCase());
+                      // At the cap a new option is disabled; the picked ones stay deselectable.
+                      const atCap = picked.length >= choice.choose && !isPicked;
                       return (
                         <TouchableOpacity
                           key={opt.name}
                           accessibilityRole="button"
-                          accessibilityState={{ selected: isPicked }}
+                          accessibilityState={{ selected: isPicked, disabled: atCap }}
                           accessibilityLabel={`${choice.traitName} ${opt.name}`}
+                          disabled={atCap}
                           onPress={() => onFeatPick(choice.id, opt.name, choice.choose)}
-                          style={chipStyle(isPicked)}
+                          style={[chipStyle(isPicked), atCap ? { opacity: 0.45 } : null]}
                         >
                           <Text style={chipText(isPicked)}>{opt.name}</Text>
                         </TouchableOpacity>

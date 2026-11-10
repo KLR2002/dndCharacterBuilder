@@ -1106,28 +1106,31 @@ async function checkDiceTrayAndLog(ctx, width) {
   await page.screenshot({ path: shot("log-empty") });
   await page.close();
 
-  // On phones the button sits above the flow's bottom primary-action bar, never covering it.
-  if (width < 600) {
+  // On phones the button sits above the flow's bottom primary-action bar, never covering it, and the step
+  // scroll content pads its bottom by the button's 56dp plus its 16dp gap so the button never covers the
+  // last rows. The padding switches at the same breakpoint as the dice overlay's phone check: at 600px and
+  // up the flow adds no extra bottom padding.
+  {
     const flowPage = await ctx.newPage();
     await flowPage.goto(`${BASE}/levelup/${EDIT_BUILD_ID}`, { waitUntil: "networkidle", timeout: 120000 });
     await flowPage.waitForTimeout(1500);
     await flowPage.getByText(/Fighter/).first().waitFor({ state: "visible", timeout: 10000 }).catch(() => fail("the Level-Up Flow did not load"));
-    const geo = await flowPage.evaluate(() => {
-      const bar = document.querySelector('[data-testid="levelup-bottom-bar"]');
-      const button = document.querySelector('[data-testid="dice-button"]');
-      if (!bar || !button) return null;
-      const barRect = bar.getBoundingClientRect();
-      const buttonRect = button.getBoundingClientRect();
-      return { barTop: barRect.top, buttonBottom: buttonRect.bottom, buttonVisible: buttonRect.height > 0 && buttonRect.width > 0 };
-    });
-    if (!geo) fail("no bottom bar or dice button found in the Level-Up Flow");
-    else {
-      if (!geo.buttonVisible) fail("the dice button is not visible in the Level-Up Flow");
-      if (geo.buttonBottom > geo.barTop + 1)
-        fail(`the dice button covers the flow's bottom bar (button bottom ${Math.round(geo.buttonBottom)} over bar top ${Math.round(geo.barTop)})`);
+    if (width < 600) {
+      const geo = await flowPage.evaluate(() => {
+        const bar = document.querySelector('[data-testid="levelup-bottom-bar"]');
+        const button = document.querySelector('[data-testid="dice-button"]');
+        if (!bar || !button) return null;
+        const barRect = bar.getBoundingClientRect();
+        const buttonRect = button.getBoundingClientRect();
+        return { barTop: barRect.top, buttonBottom: buttonRect.bottom, buttonVisible: buttonRect.height > 0 && buttonRect.width > 0 };
+      });
+      if (!geo) fail("no bottom bar or dice button found in the Level-Up Flow");
+      else {
+        if (!geo.buttonVisible) fail("the dice button is not visible in the Level-Up Flow");
+        if (geo.buttonBottom > geo.barTop + 1)
+          fail(`the dice button covers the flow's bottom bar (button bottom ${Math.round(geo.buttonBottom)} over bar top ${Math.round(geo.barTop)})`);
+      }
     }
-    // The step scroll content pads its bottom by the button's 56dp plus its 16dp gap, so the button never
-    // covers the last rows.
     const scrollPad = await flowPage.evaluate(() => {
       const scroller = document.querySelector('[data-testid="levelup-step-scroll"]');
       if (!scroller) return null;
@@ -1139,8 +1142,10 @@ async function checkDiceTrayAndLog(ctx, width) {
       return max;
     });
     if (scrollPad === null) fail("no step scroll content found in the Level-Up Flow");
-    else if (scrollPad < 71)
+    else if (width < 600 && scrollPad < 71)
       fail(`the flow's step scroll content pads its bottom by ${Math.round(scrollPad)}px, under the 72dp the floating dice button needs (56dp button + 16dp gap)`);
+    else if (width >= 600 && scrollPad >= 71)
+      fail(`at ${width}px (not a phone by the dice overlay's breakpoint) the flow's step scroll content still pads its bottom by ${Math.round(scrollPad)}px for a corner button`);
     await flowPage.screenshot({ path: join(SHOTS, `DiceTray-flow-${width}.png`) });
     await flowPage.close();
   }
@@ -1772,6 +1777,204 @@ async function checkLevelUpHpState(ctx, width) {
   return failures;
 }
 
+// Whether the flow's Continue is enabled, polling briefly for the re-render after a tap.
+async function continueEnabledSoon(page, timeoutMs = 4000) {
+  return page
+    .waitForFunction(
+      () => {
+        const el = [...document.querySelectorAll("*")].find((e) => e.children.length === 0 && e.textContent === "Continue");
+        const target = el?.closest("[tabindex]");
+        return target && target.getAttribute("aria-disabled") !== "true";
+      },
+      null,
+      { timeout: timeoutMs }
+    )
+    .then(() => true)
+    .catch(() => false);
+}
+
+// Opens the Level-Up Flow for the seeded Ranger, picks the held class, takes the average Hit Points and
+// walks past any Subclass step to the ASI/Feat step, with the Feat tab open.
+async function openAsiFeatStep(page, fail = () => {}) {
+  await openLevelUp(page); // picks the held Ranger, lands on the Hit Points step
+  await page.getByLabel("Average hit points").first().click();
+  await page.waitForTimeout(300);
+  for (let i = 0; i < 4; i++) {
+    const sub = page.getByLabel(/^Subclass /).first();
+    if ((await sub.count()) > 0) {
+      await sub.click();
+      await page.waitForTimeout(300);
+    }
+    await continueFlow(page, fail);
+    if ((await page.getByRole("button", { name: "Feat", exact: true }).count()) > 0) break;
+  }
+  await page.getByRole("button", { name: "Feat", exact: true }).first().click();
+  await page.waitForTimeout(400);
+}
+
+// Selecting any feat replaces the plan's pick at once: a no-choice feat completes the ASI/Feat step, then
+// a feat with an ability choice leaves Continue disabled until the ability is chosen, and Review lists the
+// second feat. The choice feat needs the integrated catalog; the SRD Baseline offers only one feat.
+async function checkLevelUpFeatReplace(ctx, width) {
+  const page = await ctx.newPage();
+  const prefix = `[${width}px level-up feat replace]`;
+  let failures = 0;
+  const fail = (msg) => {
+    failures++;
+    console.log(`${prefix} ${msg}`);
+  };
+  await openAsiFeatStep(page, fail);
+  const noChoiceFeat = INTEGRATED ? "Alert" : "Grappler";
+  const choiceFeat = "Athlete";
+  await page.getByRole("button", { name: `Feat ${noChoiceFeat}`, exact: true }).first().click();
+  await page.waitForTimeout(500);
+  if (!(await continueEnabledSoon(page))) fail(`picking ${noChoiceFeat} (no ability choice) did not complete the ASI/Feat step`);
+  if (INTEGRATED) {
+    await page.getByRole("button", { name: `Feat ${choiceFeat}`, exact: true }).first().click();
+    await page.waitForTimeout(500);
+    if (await continueEnabledSoon(page))
+      fail(`tapping ${choiceFeat} left Continue enabled: the plan still holds the replaced pick ${noChoiceFeat}`);
+    const strChip = page.getByLabel("STR +1").first();
+    if ((await strChip.count()) === 0) fail(`tapping ${choiceFeat} did not show its ability chips`);
+    else {
+      await strChip.click();
+      await page.waitForTimeout(400);
+      if (!(await continueEnabledSoon(page))) fail(`choosing STR +1 did not complete the ASI/Feat step`);
+    }
+  }
+  // Walk to Review (the level may bring a Spells step after ASI/Feat).
+  for (let i = 0; i < 4; i++) {
+    if ((await page.getByText("Level up", { exact: true }).count()) > 0) break;
+    const learn = page.getByLabel(/^Learn /).first();
+    if ((await learn.count()) > 0) {
+      await learn.click();
+      await page.waitForTimeout(300);
+    }
+    await continueFlow(page, fail);
+  }
+  const listedFeat = INTEGRATED ? choiceFeat : noChoiceFeat;
+  if (!(await waitForVisibleText(page, listedFeat))) fail(`Review does not list "${listedFeat}"`);
+  if (INTEGRATED && (await page.getByText(noChoiceFeat, { exact: true }).first().isVisible().catch(() => false)))
+    fail(`Review still lists "${noChoiceFeat}": the replaced pick was applied`);
+  await page.screenshot({ path: join(SHOTS, `LevelUp-FeatReplace-${width}.png`) });
+  await page.close();
+  return failures;
+}
+
+// The feat sub-choice chips are at least 48dp tall, and once the choice's cap is reached a new option is
+// disabled while the picked ones stay deselectable. A feat with its own rule choice needs the integrated
+// catalog; the SRD Baseline offers none.
+async function checkLevelUpFeatSubChoiceChips(ctx, width) {
+  const page = await ctx.newPage();
+  const prefix = `[${width}px level-up feat sub-choice chips]`;
+  let failures = 0;
+  const fail = (msg) => {
+    failures++;
+    console.log(`${prefix} ${msg}`);
+  };
+  await openAsiFeatStep(page, fail);
+  if (!INTEGRATED) {
+    await page.getByRole("button", { name: "Feat Grappler", exact: true }).first().click();
+    await page.waitForTimeout(400);
+    if (!(await continueEnabledSoon(page))) fail("picking the SRD Baseline's only feat did not complete the ASI/Feat step");
+    await page.close();
+    return failures;
+  }
+  await page.getByRole("button", { name: "Feat Fighting Initiate", exact: true }).first().click();
+  await page.waitForTimeout(500);
+  if (await continueEnabledSoon(page)) fail("tapping Fighting Initiate left Continue enabled: its style choice is not picked yet");
+  const styleChip = (name) => page.getByRole("button", { name: `Fighting Initiate Style ${name}`, exact: true }).first();
+  const archery = styleChip("Archery");
+  if ((await archery.count()) === 0) fail("no fighting style chips under Fighting Initiate");
+  else {
+    const chipHeight = await archery.evaluate((el) => el.getBoundingClientRect().height).catch(() => 0);
+    if (chipHeight < 47.5) fail(`a feat sub-choice chip is ${Math.round(chipHeight)}px tall, under 48dp`);
+    await archery.click();
+    await page.waitForTimeout(400);
+    if (!(await continueEnabledSoon(page))) fail("picking Archery did not complete the ASI/Feat step");
+    if (!(await waitForVisibleText(page, "Fighting Initiate Style (1/1):"))) fail('the style counter does not read "(1/1)" after picking one');
+    const defense = styleChip("Defense");
+    const defenseDisabled = await defense.evaluate((el) => el.getAttribute("aria-disabled") === "true").catch(() => false);
+    if (!defenseDisabled) fail("at the cap (1/1) another style chip is not disabled");
+    await defense.click({ force: true }).catch(() => {});
+    await page.waitForTimeout(400);
+    if (!(await waitForVisibleText(page, "Fighting Initiate Style (1/1):"))) fail("force-tapping a disabled-at-cap style chip changed the pick");
+    await archery.click();
+    await page.waitForTimeout(400);
+    if (await continueEnabledSoon(page)) fail("deselecting the picked style left Continue enabled");
+    if (!(await waitForVisibleText(page, "Fighting Initiate Style (0/1):"))) fail('the style counter does not read "(0/1)" after deselecting');
+  }
+  await page.screenshot({ path: join(SHOTS, `LevelUp-FeatSubChoices-${width}.png`) });
+  await page.close();
+  return failures;
+}
+
+// Each class's plan (including its rolled Hit Points) is kept for the life of the flow: roll for class A,
+// switch to class B, return to A — A's roll row is disabled and selected again with the same result, and
+// the Roll Log holds exactly one "Hit Points" entry for the round trip.
+async function checkLevelUpHpPerClass(ctx, width) {
+  const page = await ctx.newPage();
+  const prefix = `[${width}px level-up HP per class]`;
+  let failures = 0;
+  const fail = (msg) => {
+    failures++;
+    console.log(`${prefix} ${msg}`);
+  };
+  const rollRow = page.getByLabel("Roll hit points").first();
+  const rowState = (row) =>
+    row.evaluate((el) => ({
+      disabled: el.getAttribute("aria-disabled") === "true",
+      selected: el.getAttribute("aria-selected") === "true",
+      text: (el.textContent ?? "").replace(/\s+/g, " ").trim(),
+    }));
+  const classChip = page.getByRole("button", { name: "Class", exact: true }).first();
+  const goToHpStep = async (classLabel) => {
+    await classChip.click();
+    await page.waitForTimeout(400);
+    await page.getByLabel(classLabel).first().click();
+    await page.waitForTimeout(300);
+    await page.getByText("Continue", { exact: true }).first().click();
+    await rollRow.waitFor({ state: "visible", timeout: 10000 });
+    await page.waitForTimeout(300);
+  };
+
+  await openLevelUp(page); // picks the held Ranger, lands on the Hit Points step
+  await rollRow.click();
+  await page.waitForTimeout(400);
+  const rolledA = await rowState(rollRow);
+  if (!rolledA.selected || !rolledA.disabled) fail(`the Roll row is not final after rolling for the Ranger (selected=${rolledA.selected} disabled=${rolledA.disabled})`);
+
+  // A different class starts a fresh plan: its Roll row is enabled again.
+  await goToHpStep("Level up Fighter");
+  const freshB = await rowState(rollRow);
+  if (freshB.disabled || freshB.selected) fail(`a fresh plan for another class does not offer Roll again (selected=${freshB.selected} disabled=${freshB.disabled})`);
+
+  // Returning to the first class restores its plan: the roll is final again, with the same result.
+  await goToHpStep("Level up Ranger");
+  const backToA = await rowState(rollRow);
+  if (!backToA.disabled || !backToA.selected || backToA.text !== rolledA.text)
+    fail(
+      `returning to the Ranger did not restore its rolled plan: roll row "${backToA.text}" selected=${backToA.selected} disabled=${backToA.disabled}, expected the kept "${rolledA.text}" final`
+    );
+  // A re-roll on the restored plan must not be possible; if the row is enabled, tapping it must not log another roll.
+  if (!backToA.disabled) {
+    await rollRow.click({ force: true }).catch(() => {});
+    await page.waitForTimeout(400);
+  }
+  await page.getByLabel("Dice tray").first().click();
+  await page.waitForSelector('[role="dialog"]', { state: "visible", timeout: 10000 }).catch(() => fail("the dice tray did not open"));
+  await page.getByText("Log", { exact: true }).first().click();
+  await page.waitForTimeout(300);
+  const headings = await page.evaluate(() => [...document.querySelectorAll('[data-testid="log-entry-heading"]')].map((el) => el.textContent));
+  const hpEntries = headings.filter((h) => h === `${LU_NAME} · Hit Points`);
+  if (hpEntries.length !== 1) fail(`the Roll Log holds ${hpEntries.length} "${LU_NAME} · Hit Points" entries after the class round trip, expected exactly 1: ${JSON.stringify(headings)}`);
+  await page.screenshot({ path: join(SHOTS, `LevelUp-HPPerClass-${width}.png`) });
+  await page.keyboard.press("Escape");
+  await page.waitForSelector('[role="dialog"]', { state: "hidden", timeout: 10000 }).catch(() => {});
+  await page.close();
+  return failures;
+}
+
 // At total level 20 the sheet's header hides Level up (no level left to gain) and keeps Edit Build.
 async function checkLevelUpHiddenAtMaxLevel(ctx, width) {
   const page = await ctx.newPage();
@@ -1875,11 +2078,25 @@ async function checkLevelUpCancelAndReview(ctx, width) {
   if (!(await page.getByText(/\d+ → \d+/, { exact: false }).first().isVisible().catch(() => false))) fail("Review does not list the hit points before → after");
   if (!(await page.getByText(/Average \+\d+/).first().isVisible().catch(() => false))) fail("Review does not list the hit points method");
   await page.screenshot({ path: join(SHOTS, `LevelUp-Review-${width}.png`) });
-  await page.getByText("Level up", { exact: true }).first().click();
+  // Double-tap "Level up": the applying guard (and the stale-plan refusal behind it) must apply the plan
+  // exactly once, so the stored character's total level rises by exactly 1.
+  const totalLevelOf = (c) => (c?.classes ?? []).reduce((sum, cl) => sum + (cl.level ?? 0), 0);
+  const storedBefore = await readStoredCharacter(page, LU_ID);
+  const levelBefore = totalLevelOf(storedBefore);
+  const levelUpBtn = page.getByText("Level up", { exact: true }).first();
+  // A real double-tap: two click events on the same button, before React re-renders it disabled.
+  await levelUpBtn.evaluate((el) => {
+    el.click();
+    el.click();
+  });
   await page.waitForTimeout(1500);
   if (!page.url().includes(`/character/${LU_ID}`)) fail(`"Level up" did not return to the sheet: ${page.url()}`);
   if (!(await waitForVisibleText(page, "Lvl 4")))
     fail("after Review the sheet does not show \"Lvl 4\": the plan was not applied");
+  const storedAfter = await readStoredCharacter(page, LU_ID);
+  const levelAfter = totalLevelOf(storedAfter);
+  if (levelAfter !== levelBefore + 1)
+    fail(`a double-tapped "Level up" moved the stored level from ${levelBefore} to ${levelAfter}, expected exactly +1`);
   await page.screenshot({ path: join(SHOTS, `LevelUp-Applied-${width}.png`) });
   await page.close();
   return failures;
@@ -2130,6 +2347,9 @@ const EXTRA_CHECKS = [
   { name: "Dice tray and Roll Log", run: checkDiceTrayAndLog },
   { name: "Level-Up Flow HP roll logged", run: checkLevelUpHpRollLogged },
   { name: "Level-Up Flow HP state", run: checkLevelUpHpState },
+  { name: "Level-Up Flow HP per class", run: checkLevelUpHpPerClass },
+  { name: "Level-Up Flow feat replace", run: checkLevelUpFeatReplace },
+  { name: "Level-Up Flow feat sub-choice chips", run: checkLevelUpFeatSubChoiceChips },
   { name: "Level-Up Flow HP modifier sign", run: checkLevelUpHpModifierSign },
   { name: "Level up hidden at level 20", run: checkLevelUpHiddenAtMaxLevel },
   { name: "Level-Up Flow cancel and review", run: checkLevelUpCancelAndReview },

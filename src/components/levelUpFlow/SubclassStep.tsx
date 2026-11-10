@@ -5,7 +5,7 @@ import type { LevelUpPlan } from "../../rules/levelUpFlow";
 
 /**
  * The Subclass step: the subclasses the planned class offers at the new level, as chips. The pick lives in
- * the plan; a single offered subclass is taken automatically by the screen.
+ * the plan; `planLevelUp` pre-selects it when exactly one subclass is offered, so its chip starts selected.
  */
 export function SubclassStep({
   plan,

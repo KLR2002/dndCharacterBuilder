@@ -40,8 +40,8 @@ function FloatingDiceButton({ bottom, onPress }: { bottom: number; onPress: () =
  * most 360px at the bottom-right at wide widths. Tapping the card opens the tray on the Log segment;
  * the follow-up action is its own button, separate from the card's press target. It disappears when
  * dismissed, when replaced by a newer Roll, or after about 8 seconds — never while it still offers a
- * follow-up. The card is a polite live region (and announces itself on native), so a screen reader
- * hears each result.
+ * follow-up. It is a polite live region on Android and web and announces itself explicitly on iOS
+ * (which has no live region), so a screen reader hears each result exactly once.
  */
 function ResultCard({
   entry,
@@ -60,7 +60,7 @@ function ResultCard({
   return (
     <View
       testID="result-card"
-      accessibilityLiveRegion="polite"
+      accessibilityLiveRegion={Platform.OS === "ios" ? undefined : "polite"}
       style={[
         styles.card,
         {
@@ -123,9 +123,10 @@ export function DiceOverlay() {
     return () => clearTimeout(timer);
   }, [latestId, hasFollowUp, dismissResult]);
 
-  // On web the card's polite live region announces the result; native needs the explicit announcement.
+  // Android and web announce through the card's polite live region; only iOS, which has no live region,
+  // needs the explicit announcement. One mechanism per platform, so TalkBack never speaks a result twice.
   useEffect(() => {
-    if (latest === null || Platform.OS === "web") return;
+    if (latest === null || Platform.OS !== "ios") return;
     AccessibilityInfo.announceForAccessibility(`${entryHeading(latest)}, total ${latest.roll.total}`);
   }, [latest]);
 

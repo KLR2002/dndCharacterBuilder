@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useNavigation, useRouter } from "expo-router";
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { FlowShell, FlowStepTitle, useFlowStepScrollContentPadding, type FlowStepView } from "../../components/creationFlow/FlowShell";
@@ -67,6 +67,9 @@ export default function LevelUpScreen() {
   // Review's "Level up" applies the plan once: the button disables on the first press, and a stale
   // plan is refused by applyLevelUpPlan anyway.
   const [applying, setApplying] = useState(false);
+  // Each class's plan (including its rolled Hit Points) is kept for the life of the flow, so returning to
+  // a class restores its plan and its roll stays final instead of being re-rolled and logged again.
+  const plansByClass = useRef(new Map<string, LevelUpPlan>());
 
   useEffect(() => {
     if (id) selectCharacter(id);
@@ -122,27 +125,40 @@ export default function LevelUpScreen() {
   const classOptions = classStepOptions(character, flowOpts);
   const allFeats = getFeats(activeBooks);
 
+  const classKey = (name: string) => name.trim().toLowerCase();
+  const commitPlan = (next: LevelUpPlan | null) => {
+    if (next) plansByClass.current.set(classKey(next.className), next);
+    setPlan(next);
+  };
+
   const pickClass = (option: LevelUpClassOption) => {
     if (option.missingRequirement) return;
     // Re-picking the picked class keeps the plan unchanged: its Hit Points pick and every later pick stay.
-    if (plan && plan.className.trim().toLowerCase() === option.className.trim().toLowerCase()) return;
+    if (plan && classKey(plan.className) === classKey(option.className)) return;
+    // Returning to an earlier class restores the plan it already had.
+    const cached = plansByClass.current.get(classKey(option.className));
+    if (cached) {
+      setPlan(cached);
+      setOpenStepId("class");
+      return;
+    }
     const result = planLevelUp(character, { className: option.className, source: option.source, activeBooks });
     if (!result.ok) return;
     // A different class starts a fresh plan for it: the later steps depend on it (hit die, subclass, spells).
-    setPlan(result.plan);
+    commitPlan(result.plan);
     setOpenStepId("class");
   };
 
   // Once the Hit Die is rolled for the plan's class the roll is final: Average no longer applies.
   const chooseAverage = () => {
-    if (plan && plan.hitPoints.mode !== "roll") setPlan(chooseAverageHitPoints(plan, character));
+    if (plan && plan.hitPoints.mode !== "roll") commitPlan(chooseAverageHitPoints(plan, character));
   };
 
   const rollHp = () => {
     if (!plan || plan.hitPoints.mode === "roll") return; // one roll per class, no reroll
     const { plan: rolled, roll } = rollPlanHitPoints(plan, character);
     publishRoll({ roll, source: "Hit Points", characterName: character.name });
-    setPlan(rolled);
+    commitPlan(rolled);
   };
 
   const onPrimary = () => {
@@ -187,7 +203,7 @@ export default function LevelUpScreen() {
           <SubclassStep
             plan={plan}
             options={subclassOptionsForPlan(plan, flowOpts)}
-            onPick={(name, source) => setPlan(setPlanSubclass(plan, name, source))}
+            onPick={(name, source) => commitPlan(setPlanSubclass(plan, name, source))}
           />
         );
       case "asiFeat":
@@ -197,15 +213,15 @@ export default function LevelUpScreen() {
             character={character}
             allFeats={allFeats}
             activeBooks={activeBooks}
-            onPick={(asi) => setPlan(setPlanAsi(plan, asi))}
-            onFeatPick={(choiceId, option, choose) => setPlan(setPlanFeatPick(plan, choiceId, option, choose))}
+            onPick={(asi) => commitPlan(setPlanAsi(plan, asi))}
+            onFeatPick={(choiceId, option, choose) => commitPlan(setPlanFeatPick(plan, choiceId, option, choose))}
           />
         );
       case "classChoices":
         return (
           <ClassChoicesStep
             plan={plan}
-            onToggle={(choiceId, option, choose) => setPlan(setPlanClassChoicePick(plan, choiceId, option, choose))}
+            onToggle={(choiceId, option, choose) => commitPlan(setPlanClassChoicePick(plan, choiceId, option, choose))}
           />
         );
       case "spells":
@@ -213,7 +229,7 @@ export default function LevelUpScreen() {
           <SpellsStep
             plan={plan}
             spells={newSpellsForLevelUp(character, plan, flowOpts)}
-            onToggle={(spell) => setPlan(togglePlanSpell(plan, spell))}
+            onToggle={(spell) => commitPlan(togglePlanSpell(plan, spell))}
           />
         );
       case "review":

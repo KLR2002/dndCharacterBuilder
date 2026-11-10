@@ -138,8 +138,9 @@ export function planLevelUp(character: Character, options: PlanLevelUpOptions): 
   const wanted = new Set<LevelUpStepId>(["class", "hitPoints", "review"]);
   // A level that reaches the subclass level brings a Subclass step only when the active books offer at
   // least one; with none offered the step could never complete, so it is skipped like `leveling.ts` does.
-  if (toLevel >= subclassLevel(className) && !heldSubclass && subclassOptions(className, source, { compendium, activeBooks }).length > 0)
-    wanted.add("subclass");
+  const offeredSubclasses =
+    toLevel >= subclassLevel(className) && !heldSubclass ? subclassOptions(className, source, { compendium, activeBooks }) : [];
+  if (offeredSubclasses.length > 0) wanted.add("subclass");
   if (asiLevels(className).includes(toLevel)) wanted.add("asiFeat");
   // The same shared reader the Creation Flow uses decides the Class Choices step, evaluated on the
   // planned class at the new level; a multiclass entry's skill pick is found here too.
@@ -160,6 +161,14 @@ export function planLevelUp(character: Character, options: PlanLevelUpOptions): 
     hitPoints = { mode, amount: Math.max(1, (firstLevel ? die : Math.floor(die / 2) + 1) + conMod) };
   }
 
+  const picks: LevelUpPicks = { ...options.picks };
+  // A single offered subclass is the plan's pick from the start: the Subclass step shows it selected and
+  // the confirmed plan applies it, whatever catalog is active (applyLevelUpPlan never auto-applies on an
+  // integrated catalog, so the pick has to be here).
+  if (wanted.has("subclass") && !picks.subclass && offeredSubclasses.length === 1) {
+    picks.subclass = { name: offeredSubclasses[0].name, source: offeredSubclasses[0].source };
+  }
+
   return {
     ok: true,
     plan: {
@@ -170,7 +179,7 @@ export function planLevelUp(character: Character, options: PlanLevelUpOptions): 
       toLevel,
       steps,
       hitPoints,
-      picks: options.picks ?? {},
+      picks,
       classChoices: [...choices.proficiencyChoices, ...choices.ruleChoices],
     },
   };
@@ -387,14 +396,15 @@ export function setPlanAsi(plan: LevelUpPlan, asi: AsiSelection): LevelUpPlan {
 
 /**
  * Sets the picked options of one of the picked feat's own rule choices (toggling `option` within
- * `choose`). The given plan is never mutated.
+ * `choose`). Once the cap is reached a new option is refused — the plan is returned unchanged — while the
+ * picked ones stay deselectable. The given plan is never mutated.
  */
 export function setPlanFeatPick(plan: LevelUpPlan, choiceId: string, option: string, choose: number): LevelUpPlan {
   const current = plan.picks.featPicks?.[choiceId] ?? [];
   const has = current.some((name) => name.toLowerCase() === option.toLowerCase());
-  let nextPicks: string[];
-  if (has) nextPicks = current.filter((name) => name.toLowerCase() !== option.toLowerCase());
-  else nextPicks = [...current, option].slice(0, Math.max(1, choose));
+  const cap = Math.max(1, choose);
+  if (!has && current.length >= cap) return plan;
+  const nextPicks = has ? current.filter((name) => name.toLowerCase() !== option.toLowerCase()) : [...current, option];
   return { ...plan, picks: { ...plan.picks, featPicks: { ...plan.picks.featPicks, [choiceId]: nextPicks } } };
 }
 
@@ -495,10 +505,11 @@ export function subclassOptionsForPlan(
 
 /**
  * Whether a plan step's own requirement is met, so the flow can advance past it: Class needs a picked
- * class (a plan), Subclass a pick or a single offered subclass, ASI/Feat a pick with its sub-choices
- * made (the feat's ability increase when it offers a choice, and every rule choice the feat grants
- * fully picked), Class Choices every choice fully picked, Review every step before it. Hit Points and
- * Spells are always complete. The ASI/Feat sub-choices are read on `opts.character` with the pick added.
+ * class (a plan), Subclass a pick (a single offered subclass is pre-selected as the pick by `planLevelUp`),
+ * ASI/Feat a pick with its sub-choices made (the feat's ability increase when it offers a choice, and
+ * every rule choice the feat grants fully picked), Class Choices every choice fully picked, Review every
+ * step before it. Hit Points and Spells are always complete. The ASI/Feat sub-choices are read on
+ * `opts.character` with the pick added.
  */
 export function levelUpStepComplete(
   plan: LevelUpPlan | null,
@@ -512,7 +523,7 @@ export function levelUpStepComplete(
     case "hitPoints":
       return true;
     case "subclass":
-      return plan.picks.subclass !== undefined || subclassOptionsForPlan(plan, opts).length === 1;
+      return plan.picks.subclass !== undefined;
     case "asiFeat": {
       const asi = plan.picks.asi;
       if (!asi) return false;
