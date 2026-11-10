@@ -1851,6 +1851,72 @@ async function checkLevelUpFeatReplace(ctx, width) {
   return failures;
 }
 
+// Each class's plan (including its rolled Hit Points) is kept for the life of the flow: roll for class A,
+// switch to class B, return to A — A's roll row is disabled and selected again with the same result, and
+// the Roll Log holds exactly one "Hit Points" entry for the round trip.
+async function checkLevelUpHpPerClass(ctx, width) {
+  const page = await ctx.newPage();
+  const prefix = `[${width}px level-up HP per class]`;
+  let failures = 0;
+  const fail = (msg) => {
+    failures++;
+    console.log(`${prefix} ${msg}`);
+  };
+  const rollRow = page.getByLabel("Roll hit points").first();
+  const rowState = (row) =>
+    row.evaluate((el) => ({
+      disabled: el.getAttribute("aria-disabled") === "true",
+      selected: el.getAttribute("aria-selected") === "true",
+      text: (el.textContent ?? "").replace(/\s+/g, " ").trim(),
+    }));
+  const classChip = page.getByRole("button", { name: "Class", exact: true }).first();
+  const goToHpStep = async (classLabel) => {
+    await classChip.click();
+    await page.waitForTimeout(400);
+    await page.getByLabel(classLabel).first().click();
+    await page.waitForTimeout(300);
+    await page.getByText("Continue", { exact: true }).first().click();
+    await rollRow.waitFor({ state: "visible", timeout: 10000 });
+    await page.waitForTimeout(300);
+  };
+
+  await openLevelUp(page); // picks the held Ranger, lands on the Hit Points step
+  await rollRow.click();
+  await page.waitForTimeout(400);
+  const rolledA = await rowState(rollRow);
+  if (!rolledA.selected || !rolledA.disabled) fail(`the Roll row is not final after rolling for the Ranger (selected=${rolledA.selected} disabled=${rolledA.disabled})`);
+
+  // A different class starts a fresh plan: its Roll row is enabled again.
+  await goToHpStep("Level up Fighter");
+  const freshB = await rowState(rollRow);
+  if (freshB.disabled || freshB.selected) fail(`a fresh plan for another class does not offer Roll again (selected=${freshB.selected} disabled=${freshB.disabled})`);
+
+  // Returning to the first class restores its plan: the roll is final again, with the same result.
+  await goToHpStep("Level up Ranger");
+  const backToA = await rowState(rollRow);
+  if (!backToA.disabled || !backToA.selected || backToA.text !== rolledA.text)
+    fail(
+      `returning to the Ranger did not restore its rolled plan: roll row "${backToA.text}" selected=${backToA.selected} disabled=${backToA.disabled}, expected the kept "${rolledA.text}" final`
+    );
+  // A re-roll on the restored plan must not be possible; if the row is enabled, tapping it must not log another roll.
+  if (!backToA.disabled) {
+    await rollRow.click({ force: true }).catch(() => {});
+    await page.waitForTimeout(400);
+  }
+  await page.getByLabel("Dice tray").first().click();
+  await page.waitForSelector('[role="dialog"]', { state: "visible", timeout: 10000 }).catch(() => fail("the dice tray did not open"));
+  await page.getByText("Log", { exact: true }).first().click();
+  await page.waitForTimeout(300);
+  const headings = await page.evaluate(() => [...document.querySelectorAll('[data-testid="log-entry-heading"]')].map((el) => el.textContent));
+  const hpEntries = headings.filter((h) => h === `${LU_NAME} · Hit Points`);
+  if (hpEntries.length !== 1) fail(`the Roll Log holds ${hpEntries.length} "${LU_NAME} · Hit Points" entries after the class round trip, expected exactly 1: ${JSON.stringify(headings)}`);
+  await page.screenshot({ path: join(SHOTS, `LevelUp-HPPerClass-${width}.png`) });
+  await page.keyboard.press("Escape");
+  await page.waitForSelector('[role="dialog"]', { state: "hidden", timeout: 10000 }).catch(() => {});
+  await page.close();
+  return failures;
+}
+
 // At total level 20 the sheet's header hides Level up (no level left to gain) and keeps Edit Build.
 async function checkLevelUpHiddenAtMaxLevel(ctx, width) {
   const page = await ctx.newPage();
@@ -2209,6 +2275,7 @@ const EXTRA_CHECKS = [
   { name: "Dice tray and Roll Log", run: checkDiceTrayAndLog },
   { name: "Level-Up Flow HP roll logged", run: checkLevelUpHpRollLogged },
   { name: "Level-Up Flow HP state", run: checkLevelUpHpState },
+  { name: "Level-Up Flow HP per class", run: checkLevelUpHpPerClass },
   { name: "Level-Up Flow feat replace", run: checkLevelUpFeatReplace },
   { name: "Level-Up Flow HP modifier sign", run: checkLevelUpHpModifierSign },
   { name: "Level up hidden at level 20", run: checkLevelUpHiddenAtMaxLevel },
