@@ -903,6 +903,22 @@ async function checkDiceTrayAndLog(ctx, width) {
   for (const v of await checkModalShape(page, width)) fail(v);
   await page.screenshot({ path: shot("tray") });
 
+  // 48dp touch targets: the Dice/Log segments, the mode segments and the removable pool chips.
+  const segHeights = await page.evaluate(() => {
+    const dialog = document.querySelector('[role="dialog"]');
+    if (!dialog) return null;
+    const pick = (text) => {
+      const el = [...dialog.querySelectorAll('[role="button"],button')].find((e) => e.textContent.trim() === text && e.getBoundingClientRect().height > 0);
+      return el ? el.getBoundingClientRect().height : null;
+    };
+    return { dice: pick("Dice"), log: pick("Log") };
+  });
+  if (!segHeights) fail("no tray dialog to measure the segment targets");
+  else {
+    if (segHeights.dice === null || segHeights.dice < 47.5) fail(`the "Dice" segment target is ${segHeights.dice}px tall, under 48dp`);
+    if (segHeights.log === null || segHeights.log < 47.5) fail(`the "Log" segment target is ${segHeights.log}px tall, under 48dp`);
+  }
+
   // A die's count is capped at 100: tapping one die 100 times disables its add button, and rolling the
   // capped pool works instead of throwing "Not a dice pool".
   if (width === 360) {
@@ -929,8 +945,24 @@ async function checkDiceTrayAndLog(ctx, width) {
   await page.getByLabel("Add d20", { exact: true }).click();
   await page.waitForTimeout(200);
   if (!(await page.getByText("Advantage", { exact: true }).first().isVisible())) fail('"Advantage" does not show for a lone d20');
+  // The mode segments are 48dp targets too.
+  const modeHeights = await page.evaluate(() =>
+    ["Disadvantage", "Normal", "Advantage"].map((t) => {
+      const el = [...document.querySelectorAll('[role="dialog"] [role="button"], [role="dialog"] button')].find((e) => e.textContent.trim() === t && e.getBoundingClientRect().height > 0);
+      return el ? el.getBoundingClientRect().height : null;
+    }),
+  );
+  for (const [i, h] of modeHeights.entries()) {
+    if (h === null || h < 47.5) fail(`the "${["Disadvantage", "Normal", "Advantage"][i]}" mode segment is ${h}px tall, under 48dp`);
+  }
   await page.getByLabel("Remove 1d20", { exact: true }).click();
   await page.getByLabel("Add d6", { exact: true }).click();
+  // The removable pool chip is a 48dp target.
+  const chipHeight = await page.evaluate(() => {
+    const el = [...document.querySelectorAll('[aria-label="Remove 1d6"]')].find((e) => e.getBoundingClientRect().height > 0);
+    return el ? el.getBoundingClientRect().height : null;
+  });
+  if (chipHeight === null || chipHeight < 47.5) fail(`the pool chip "1d6" is ${chipHeight}px tall, under 48dp`);
   await page.getByLabel("Add d8", { exact: true }).click();
   for (let i = 0; i < 3; i++) await page.getByLabel("Modifier increase", { exact: true }).click();
   await page.waitForTimeout(200);

@@ -222,7 +222,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     flexWrap: "wrap",
     gap: 8,
-    minHeight: 36,
+    minHeight: 48,
     alignItems: "center",
   },
   termChip: {
@@ -232,7 +232,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderRadius: 6,
     paddingHorizontal: 10,
-    minHeight: 36,
+    minHeight: 48,
   },
   termChipLabel: {
     fontSize: 13,
@@ -270,7 +270,7 @@ const styles = StyleSheet.create({
   },
   modeSeg: {
     flex: 1,
-    minHeight: 40,
+    minHeight: 48,
     borderRadius: 8,
     borderWidth: 1,
     alignItems: "center",
@@ -285,7 +285,7 @@ const styles = StyleSheet.create({
   },
   segmentBtn: {
     flex: 1,
-    minHeight: 40,
+    minHeight: 48,
     borderRadius: 6,
     borderWidth: 1,
     alignItems: "center",
