@@ -1387,6 +1387,14 @@ async function checkActionRolls(ctx, width) {
     fail('the result card body is not accessible-labelled "Kara · Longsword attack, total 20"');
   const cardLive = await page.evaluate(() => document.querySelector('[data-testid="result-card"]')?.getAttribute("aria-live") ?? null);
   if (cardLive !== "polite") fail(`the result card's aria-live is ${cardLive}, expected "polite"`);
+  const accentFill = hexToRgbString(ACCENT_PALETTES.crimson.primary);
+  const followUpBg = await page.evaluate(() => {
+    const card = document.querySelector('[data-testid="result-card"]');
+    const btn = card ? [...card.querySelectorAll("button")].find((b) => b.textContent.trim() === "Roll damage") : null;
+    return btn ? getComputedStyle(btn).backgroundColor : null;
+  });
+  if (followUpBg === null) fail('no "Roll damage" button on the attack card to measure');
+  else if (followUpBg === accentFill) fail('the "Roll damage" follow-up uses the accent fill while the screen below has its own primary action');
 
   // The follow-up rolls the damage pool 1d8 + 3 (fixed face clamps to 8 on the d8).
   await page.getByText("Roll damage", { exact: true }).first().click();

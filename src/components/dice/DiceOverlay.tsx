@@ -85,7 +85,7 @@ function ResultCard({
       {entry.followUp ? (
         <Button
           title={entry.followUp.label}
-          variant="primary"
+          variant="secondary"
           size="md"
           icon="dice-outline"
           onPress={entry.followUp.onPress}
