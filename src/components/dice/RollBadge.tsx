@@ -46,8 +46,8 @@ const MODE_CHOICES: { mode: D20Mode; label: string; primary?: boolean }[] = [
  * screen reader, so the badge also exposes "Roll with advantage" and "Roll with disadvantage" as
  * accessibility actions (the default activate rolls), and on web the context-menu key on the focused badge
  * opens the same sheet (Enter already activates the badge's roll, so it is not the sheet's key). The badge
- * is a 48dp target with a dice icon and a pressed state. Rolls publish through the Roll Log seam only and
- * spend nothing.
+ * sizes to its content (a dice icon plus the label) and centres itself in its card; hitSlop keeps the
+ * touch target at 48dp. Rolls publish through the Roll Log seam only and spend nothing.
  */
 export function RollBadge({
   label,
@@ -126,12 +126,13 @@ export function RollBadge({
         delayLongPress={350}
         onFocus={() => setFocused(true)}
         onBlur={() => setFocused(false)}
+        // The badge sizes to its content; the hitSlop keeps the touch target at 48dp.
+        hitSlop={isSmall ? { top: 14, bottom: 14, left: 10, right: 10 } : { top: 10, bottom: 10, left: 10, right: 10 }}
         style={({ pressed }) => [
           styles.badge,
           {
             borderColor,
             backgroundColor: pressed ? theme.accentGlow : bg,
-            minHeight: 48,
             paddingVertical: isSmall ? 2 : 6,
             paddingHorizontal: isSmall ? 8 : 12,
           },
@@ -179,7 +180,9 @@ const styles = StyleSheet.create({
     gap: 6,
     borderRadius: 6,
     borderWidth: 1,
-    alignSelf: "flex-start",
+    // Centered in whatever holds it: a stat card (column) centers it like the card's other content, and
+    // in a row it stays vertically centered instead of hugging the top.
+    alignSelf: "center",
     justifyContent: "center",
     maxWidth: "100%",
   },

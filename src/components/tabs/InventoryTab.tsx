@@ -337,7 +337,7 @@ export const InventoryTab: React.FC = () => {
           <View style={{ flex: 1, minWidth: 0 }}>
             <Text style={[styles.sectionTitle, { color: theme.text }]}>CARRYING WEIGHT</Text>
             <Text style={{ color: theme.textSecondary, fontSize: 12 }}>
-              Str × 15 = {maxCapacity} lbs capacity
+              Max {maxCapacity} lbs
             </Text>
           </View>
           <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
@@ -345,7 +345,7 @@ export const InventoryTab: React.FC = () => {
             <Switch
               value={currentCharacter.useWeightLimit || false}
               onValueChange={(val) => updateCharacter(currentCharacter.id, { useWeightLimit: val })}
-              trackColor={{ false: theme.border, true: theme.accent }}
+              trackColor={{ false: theme.border, true: theme.accentHover }}
               thumbColor="#ffffff"
             />
           </View>

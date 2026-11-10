@@ -1075,7 +1075,7 @@ export const SpellsTab: React.FC = () => {
                 {currentProfile.className.toUpperCase()} PREPARED SPELLS
               </Text>
               <Text style={{ color: theme.textSecondary, fontSize: 12, marginTop: 2 }}>
-                Spells prepared for the day (Level + {currentProfile.ability.toUpperCase()} mod)
+                Spells prepared for the day
               </Text>
             </View>
             <Badge
