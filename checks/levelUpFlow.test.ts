@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { makeChar, inMemoryCompendium } from "./testUtils.ts";
+import { makeChar, inMemoryCompendium, srdBaselineCompendium } from "./testUtils.ts";
 import { ALL_BOOKS } from "../src/constants/books.ts";
 import { planLevelUp, applyLevelUpPlan, type LevelUpPlan } from "../src/rules/levelUpFlow.ts";
 import { maxHp } from "../src/rules/hp.ts";
@@ -347,6 +347,53 @@ test("a plan refuses a class already at level 20 and a character already at tota
     ],
   });
   assert.equal(planLevelUp(split, { className: "Fighter" }).ok, false, "total level 20 refuses another level");
+});
+
+test("applyLevelUpPlan applies a subclass only on a plan's Subclass step and never replaces a held one", () => {
+  const srd = srdBaselineCompendium();
+  const scores = { str: 15, dex: 14, con: 14, int: 10, wis: 10, cha: 10 };
+  const fighterAt = (level: number, subclassName?: string) =>
+    makeChar({
+      baseAbilityScores: scores,
+      classes: [
+        {
+          className: "Fighter",
+          source: "PHB",
+          level,
+          ...(subclassName ? { subclassName, subclass: subclassName, subclassSource: "SRD" } : {}),
+        },
+      ],
+    });
+
+  // Level 2 is below the Fighter's subclass level: the plan has no Subclass step, so the sole
+  // offered subclass is not applied.
+  const to2 = planLevelUp(fighterAt(1), { className: "Fighter", compendium: srd, activeBooks: ALL_BOOKS });
+  if (!to2.ok) assert.fail(to2.reason);
+  assert.ok(!to2.plan.steps.some((s) => s.id === "subclass"));
+  const applied2 = applyLevelUpPlan(fighterAt(1), to2.plan, { compendium: srd, activeBooks: ALL_BOOKS, fullHealOnLevelUp: false });
+  assert.equal(applied2.classes[0].level, 2);
+  assert.equal(applied2.classes[0].subclassName, undefined, "no Subclass step, no subclass applied");
+
+  // Level 3 reaches the subclass level: the plan has the step and the sole offered subclass is taken.
+  const to3 = planLevelUp(fighterAt(2), { className: "Fighter", compendium: srd, activeBooks: ALL_BOOKS });
+  if (!to3.ok) assert.fail(to3.reason);
+  assert.ok(to3.plan.steps.some((s) => s.id === "subclass"));
+  const applied3 = applyLevelUpPlan(fighterAt(2), to3.plan, { compendium: srd, activeBooks: ALL_BOOKS, fullHealOnLevelUp: false });
+  assert.equal(applied3.classes[0].level, 3);
+  assert.equal(applied3.classes[0].subclassName, "Champion");
+
+  // A later level-up has no Subclass step and never touches the held subclass, even with a pick recorded.
+  const to4 = planLevelUp(applied3, {
+    className: "Fighter",
+    compendium: srd,
+    activeBooks: ALL_BOOKS,
+    picks: { subclass: { name: "Battle Master", source: "PHB" } },
+  });
+  if (!to4.ok) assert.fail(to4.reason);
+  assert.ok(!to4.plan.steps.some((s) => s.id === "subclass"), "a held subclass means no Subclass step");
+  const applied4 = applyLevelUpPlan(applied3, to4.plan, { compendium: srd, activeBooks: ALL_BOOKS, fullHealOnLevelUp: false });
+  assert.equal(applied4.classes[0].level, 4);
+  assert.equal(applied4.classes[0].subclassName, "Champion", "a held subclass is never replaced");
 });
 
 test("applyLevelUpPlan refuses a stale plan that would take a class or the character beyond level 20", () => {

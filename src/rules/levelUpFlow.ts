@@ -213,14 +213,22 @@ export function applyLevelUpPlan(
     next = recordRolledHitPoints(next, held?.className ?? plan.className, plan.toLevel, plan.hitPoints.roll);
   }
   next = confirmLevelUp(next, plan.className, plan.source, fullHeal);
-  // A plan whose class offers exactly one subclass in the active books takes it, the same sole-subclass
-  // rule the builder applies.
+  // A subclass is applied only when the plan has a Subclass step (the class reaches its subclass
+  // level without one held) and the Character still holds no subclass, the same conditions the
+  // builder's sole-subclass pass applies — including its rule that an integrated catalog is never
+  // auto-changed. A plan whose class offers exactly one subclass in the active books takes it.
+  const hasSubclassStep = plan.steps.some((s) => s.id === "subclass");
+  const heldSubclass = held?.subclassName ?? held?.subclass;
   const subclassPick =
-    plan.picks.subclass ??
-    (() => {
-      const options = subclassOptionsForPlan(plan, { compendium, activeBooks });
-      return options.length === 1 ? { name: options[0].name, source: options[0].source } : undefined;
-    })();
+    hasSubclassStep && !heldSubclass
+      ? (plan.picks.subclass ??
+        (compendium.integrated
+          ? undefined
+          : (() => {
+              const options = subclassOptionsForPlan(plan, { compendium, activeBooks });
+              return options.length === 1 ? { name: options[0].name, source: options[0].source } : undefined;
+            })()))
+      : undefined;
   if (subclassPick) {
     next = changeSubclass(
       next,
