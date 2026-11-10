@@ -1422,7 +1422,7 @@ async function checkActionRolls(ctx, width) {
   const accentFill = hexToRgbString(ACCENT_PALETTES.crimson.primary);
   const followUpBg = await page.evaluate(() => {
     const card = document.querySelector('[data-testid="result-card"]');
-    const btn = card ? [...card.querySelectorAll("button")].find((b) => b.textContent.trim() === "Roll damage") : null;
+    const btn = card ? [...card.querySelectorAll("button")].find((b) => (b.textContent ?? "").replace(/[\uE000-\uF8FF]/g, "").trim() === "Roll damage") : null;
     return btn ? getComputedStyle(btn).backgroundColor : null;
   });
   if (followUpBg === null) fail('no "Roll damage" button on the attack card to measure');
