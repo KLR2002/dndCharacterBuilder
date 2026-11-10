@@ -171,6 +171,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 4,
     minHeight: SHEET_TAB_BAR_HEIGHT,
+    // The bar is rendered before the scrolling content but positioned at the bottom edge, so it needs
+    // its own layer to stay on top of (and tappable above) the content.
+    zIndex: 20,
+    elevation: 20,
   },
   tabBarItem: {
     flex: 1,

@@ -66,7 +66,7 @@ const SKILL_ABILITY_GROUPS: { key: AbilityKey; label: string }[] = [
 export const StatsTab: React.FC = () => {
   const { currentCharacter, updateCharacter, activeBooks } = useCharacters();
   const { theme } = useAppTheme();
-  const { isCompact } = useResponsiveLayout();
+  const { isCompact, isTablet } = useResponsiveLayout();
 
   const [conditionModalVisible, setConditionModalVisible] = useState(false);
   const [restModalVisible, setRestModalVisible] = useState(false);
@@ -252,9 +252,8 @@ export const StatsTab: React.FC = () => {
     });
   };
 
-  return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      {/* Rest Buttons Bar */}
+  const restRow = (
+    <>
       <View style={styles.topActionsBar}>
         <Button
           title="Take Rest (Short / Long)"
@@ -273,10 +272,17 @@ export const StatsTab: React.FC = () => {
           style={{ flex: 1 }}
         />
       </View>
+    </>
+  );
 
+  const wildShapeCard = (
+    <>
       <ActiveWildShapeCard character={currentCharacter} />
+    </>
+  );
 
-      {/* Active Conditions Display */}
+  const conditionsCard = (
+    <>
       {currentCharacter.conditions && currentCharacter.conditions.length > 0 && (
         <Card style={[styles.activeConditionsCard, { borderColor: theme.danger }]}>
           <Text style={[styles.sectionTitle, { color: theme.danger, fontSize: 13 }]}>
@@ -309,8 +315,11 @@ export const StatsTab: React.FC = () => {
           </View>
         </Card>
       )}
+    </>
+  );
 
-      {/* HP Section Card */}
+  const hpCard = (
+    <>
       <Card style={styles.hpCard}>
         <HitPointBlock
           label="HIT POINTS"
@@ -399,8 +408,11 @@ export const StatsTab: React.FC = () => {
           </View>
         )}
       </Card>
+    </>
+  );
 
-      {/* Combat Quick Badges (AC, Initiative, Speed, Prof Bonus) */}
+  const combatRowEl = (
+    <>
       <View style={styles.combatRow}>
         <TouchableOpacity
           hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
@@ -425,6 +437,7 @@ export const StatsTab: React.FC = () => {
         </TouchableOpacity>
 
         <TouchableOpacity
+          testID="stat-box-initiative"
           accessibilityLabel="Initiative breakdown"
           hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
           onPress={() => setInitiativeModalVisible(true)}
@@ -500,8 +513,11 @@ export const StatsTab: React.FC = () => {
           <Text style={[styles.statBoxLabel, { color: theme.textMuted }]}>PROFICIENCY</Text>
         </View>
       </View>
+    </>
+  );
 
-      {/* Active Class Dice Summary Strip */}
+  const classDiceStripEl = (
+    <>
       {(classDice.bardicInspiration || classDice.sneakAttack || classDice.martialArts || classDice.superiorityDice) && (
         <View style={[styles.classDiceStrip, { backgroundColor: theme.surface, borderColor: theme.border }]}>
           <Text style={[styles.classDiceStripLabel, { color: theme.textMuted }]}>CLASS COMBAT DICE</Text>
@@ -561,8 +577,11 @@ export const StatsTab: React.FC = () => {
           </View>
         </View>
       )}
+    </>
+  );
 
-      {/* Hit Dice Card */}
+  const hitDiceCardEl = (
+    <>
       <Card style={styles.hitDiceCard}>
         <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
           <View style={{ flex: 1 }}>
@@ -607,15 +626,18 @@ export const StatsTab: React.FC = () => {
           </View>
         )}
       </Card>
+    </>
+  );
 
-      {/* 6 Ability Scores Grid */}
+  const abilitiesSection = (
+    <>
       <Text style={[styles.blockTitle, { color: theme.textSecondary }]}>ABILITY SCORES & MODIFIERS</Text>
       <View style={styles.abilityGrid}>
         {ABILITY_ORDER.map((key) => {
           const score = scores[key];
           const mod = modifiers[key];
           return (
-            <View key={key} style={[styles.abilityTile, { backgroundColor: theme.surface, borderColor: theme.border }, isCompact && { width: "48%" }]}>
+            <View key={key} testID={`ability-tile-${key}`} style={[styles.abilityTile, { backgroundColor: theme.surface, borderColor: theme.border }, isCompact && { width: "48%" }]}>
               <Text style={[styles.abilityTileName, { color: theme.textMuted }]}>{key.toUpperCase()}</Text>
               <RollBadge
                 testID={`roll-badge-check-${key}`}
@@ -632,8 +654,11 @@ export const StatsTab: React.FC = () => {
           );
         })}
       </View>
+    </>
+  );
 
-      {/* Saving Throws */}
+  const savesSection = (
+    <>
       <Text style={[styles.blockTitle, { color: theme.textSecondary, marginTop: 20 }]}>SAVING THROWS</Text>
       <Card style={{ padding: 8 }}>
         <View style={styles.savesGrid}>
@@ -665,8 +690,11 @@ export const StatsTab: React.FC = () => {
           })}
         </View>
       </Card>
+    </>
+  );
 
-      {/* Passive Senses */}
+  const passivesRow = (
+    <>
       <Text style={[styles.blockTitle, { color: theme.textSecondary, marginTop: 20 }]}>
         PASSIVE SENSES
       </Text>
@@ -689,8 +717,11 @@ export const StatsTab: React.FC = () => {
           <Text style={[styles.statBoxLabel, { color: theme.textMuted }]}>PASSIVE INSIGHT</Text>
         </View>
       </View>
+    </>
+  );
 
-      {/* Skills Grouped by Ability */}
+  const skillsSection = (
+    <>
       <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: 20, marginBottom: 8 }}>
         <Text style={[styles.blockTitle, { color: theme.textSecondary, marginTop: 0, marginBottom: 0 }]}>
           SKILLS BY ABILITY (PASSIVES IN BRACKETS)
@@ -812,8 +843,11 @@ export const StatsTab: React.FC = () => {
           );
         })}
       </Card>
+    </>
+  );
 
-      {/* Proficiencies & Training Summary */}
+  const profsSection = (
+    <>
       <Text style={[styles.blockTitle, { color: theme.textSecondary, marginTop: 20 }]}>
         PROFICIENCIES & TRAINING
       </Text>
@@ -928,8 +962,11 @@ export const StatsTab: React.FC = () => {
           )}
         </View>
       </Card>
+    </>
+  );
 
-      {/* Languages Summary */}
+  const languagesSection = (
+    <>
       <View style={[styles.headingRow, { marginTop: 20, marginBottom: 8 }]}>
         <Text style={[styles.blockTitle, { color: theme.textSecondary, marginBottom: 0 }]}>
           LANGUAGES
@@ -981,6 +1018,48 @@ export const StatsTab: React.FC = () => {
         }}
         onClose={() => setAddModal(null)}
       />
+    </>
+  );
+
+  return (
+    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+      {isTablet ? (
+        <View style={styles.twoCol}>
+          <View testID="stats-col-side" style={styles.twoColChild}>
+            {restRow}
+            {wildShapeCard}
+            {conditionsCard}
+            {hpCard}
+            {combatRowEl}
+            {classDiceStripEl}
+            {hitDiceCardEl}
+            {passivesRow}
+          </View>
+          <View testID="stats-col-main" style={styles.twoColChild}>
+            {abilitiesSection}
+            {savesSection}
+            {skillsSection}
+            {profsSection}
+            {languagesSection}
+          </View>
+        </View>
+      ) : (
+        <>
+          {restRow}
+          {wildShapeCard}
+          {conditionsCard}
+          {hpCard}
+          {combatRowEl}
+          {classDiceStripEl}
+          {hitDiceCardEl}
+          {abilitiesSection}
+          {savesSection}
+          {passivesRow}
+          {skillsSection}
+          {profsSection}
+          {languagesSection}
+        </>
+      )}
 
       {/* HP Override Settings Modal */}
       <Modal
@@ -1084,6 +1163,16 @@ const styles = StyleSheet.create({
   content: {
     padding: 16,
     paddingBottom: 40,
+  },
+  twoCol: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 16,
+  },
+  twoColChild: {
+    flex: 1,
+    minWidth: 0,
+    gap: 0,
   },
   topActionsBar: {
     flexDirection: "row",

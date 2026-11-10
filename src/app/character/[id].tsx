@@ -162,6 +162,7 @@ export default function CharacterSheetScreen() {
       testID="sheet-header"
       style={[styles.header, { backgroundColor: theme.surface, borderBottomColor: theme.border }]}
     >
+      <View style={styles.headerInner}>
       <TouchableOpacity
         onPress={() => router.back()}
         accessibilityRole="button"
@@ -241,6 +242,7 @@ export default function CharacterSheetScreen() {
             <Ionicons name="ellipsis-vertical" size={20} color={theme.text} />
           </TouchableOpacity>
         )}
+      </View>
       </View>
     </View>
   );
@@ -329,12 +331,17 @@ const styles = StyleSheet.create({
   },
   header: {
     width: "100%",
+    borderBottomWidth: 1,
+  },
+  headerInner: {
+    width: "100%",
+    maxWidth: 1200,
+    alignSelf: "center",
     flexDirection: "row",
     alignItems: "center",
     paddingHorizontal: 12,
     paddingVertical: 8,
     gap: 8,
-    borderBottomWidth: 1,
   },
   headerIconBtn: {
     width: 40,
