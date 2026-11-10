@@ -193,7 +193,7 @@ test("a partially visible node with positive area is a tap target at the centre 
 
 // --- playScreen ---
 
-test("tabs are tapped in order, each followed by a 500 ms wait, then the 300 ms settle", async () => {
+test("tabs are tapped in order, each once its position is stable, then the 500 ms wait, then the 300 ms settle", async () => {
   const world = playerWorld([charTabs]);
   const result = await play(world, { name: "t", route: "/x", tabs: ["Builder", "Stats"], ready: /points remaining/i });
   assert.deepEqual(result, { error: null, warnings: [] });
@@ -201,7 +201,8 @@ test("tabs are tapped in order, each followed by a 500 ms wait, then the 300 ms 
     { x: 119, y: 204 },
     { x: 269, y: 204 },
   ]);
-  assert.deepEqual(world.sleeps, [500, 500, 300]);
+  // Per tab: one 500 ms poll for the tap point to repeat across two dumps, then the 500 ms tab wait.
+  assert.deepEqual(world.sleeps, [500, 500, 500, 500, 300]);
   assert.deepEqual(world.swipes, []);
 });
 
@@ -298,8 +299,10 @@ test("an open step whose target is only clipped swipes to reveal it, then taps t
   });
   assert.equal(result.error, null);
   assert.ok(world.swipes.length > 0, "the reveal swipes run before the tap");
-  // The tap lands on the revealed node's centre (237,920), not on the gesture bar.
-  assert.deepEqual(world.taps, [{ x: 237, y: 920 }]);
+  // The tap lands on the revealed node — near its centre (237,920), which in this fixture is covered by
+  // the overlapping "Skills" chip, so the nearest uncovered point (237,930) is taken — not on the
+  // gesture bar.
+  assert.deepEqual(world.taps, [{ x: 237, y: 930 }]);
 });
 
 test("a modal is waited for as the ready text and is not tapped", async () => {
@@ -312,14 +315,74 @@ test("a modal is waited for as the ready text and is not tapped", async () => {
   // Only the Take Rest row is tapped (its centre is 213,331); the dialog title at [100,400][620,450] (centre
   // 360,425) is waited for, never tapped. The settle wait is the modal's 500 ms.
   assert.deepEqual(world.taps, [{ x: 213, y: 331 }]);
-  assert.deepEqual(world.sleeps, [500]);
+  // One 500 ms poll for the tap point to repeat across two dumps, then the modal's 500 ms settle.
+  assert.deepEqual(world.sleeps, [500, 500]);
 });
 
-test("a modal that never shows fails the scenario as the ready text", async () => {
+test("a modal that never shows fails the scenario as the ready text, at the clock and with no swipe", async () => {
   const world = playerWorld([statsRest]);
   const result = await play(world, { name: "t", route: "/x", open: [{ tap: { pattern: "^Take Rest" } }], modal: "Rest & Recovery" });
-  assert.match(result.error ?? "", /ready text "Rest & Recovery" did not show/);
+  assert.match(result.error ?? "", /ready text "Rest & Recovery" did not show within 1 s/);
   assert.deepEqual(world.taps, [{ x: 213, y: 331 }]);
+  // The title wait polls the dumps only: a swipe on the open sheet could close it, so none is sent.
+  assert.deepEqual(world.swipes, []);
+});
+
+test("a modal title that arrives on a later dump is waited for by polling alone, with no swipe", async () => {
+  // The sheet is open (its dump is served) but its title is not in the dump yet; it shows on the fourth.
+  const sheetWithoutTitle = parseDump(
+    `<hierarchy><node text="Custom name" bounds="[100,900][400,950]" /><node class="android.widget.ScrollView" scrollable="true" bounds="[0,300][720,1232]" /></hierarchy>`,
+  );
+  const modalDump = parseDump(`<hierarchy><node text="Rest &amp; Recovery" bounds="[100,400][620,450]" /></hierarchy>`);
+  const world = playerWorld([statsRest, sheetWithoutTitle, sheetWithoutTitle, modalDump]);
+  const result = await play(world, { name: "t", route: "/x", open: [{ tap: { pattern: "^Take Rest" } }], modal: "Rest & Recovery" });
+  assert.equal(result.error, null);
+  assert.deepEqual(world.taps, [{ x: 213, y: 331 }]);
+  assert.deepEqual(world.swipes, []);
+});
+
+test("a tap waits for the target to stop moving and lands on a point the floating button over it does not cover", async () => {
+  // The "Add language" row button revealed to the bottom of the page: the first dump still has the page
+  // gliding (the button one row higher), and in the settled dump the floating dice button covers the
+  // button's centre.
+  const gliding = parseDump(
+    `<hierarchy><node text="" content-desc="Add language" bounds="[612,1000][684,1072]" clickable="true" />` +
+      `<node text="" content-desc="Dice tray" bounds="[558,1064][684,1190]" clickable="true" /></hierarchy>`,
+  );
+  const settled = parseDump(
+    `<hierarchy><node text="" content-desc="Add language" bounds="[612,1141][684,1213]" clickable="true" />` +
+      `<node text="" content-desc="Dice tray" bounds="[558,1064][684,1190]" clickable="true" />` +
+      `<node text="LANGUAGES" bounds="[10,1100][200,1140]" /></hierarchy>`,
+  );
+  const world = playerWorld([gliding, settled, settled]);
+  const result = await play(world, { name: "t", route: "/x", open: [{ tap: { label: "Add language" } }], ready: "LANGUAGES" });
+  assert.equal(result.error, null);
+  // The tap waited for the settled position (the point repeated across two dumps) and took the nearest
+  // point of the button the dice tray does not cover: (648,1195), not the covered centre (648,1177).
+  assert.deepEqual(world.taps, [{ x: 648, y: 1195 }]);
+  assert.deepEqual(world.swipes, []);
+});
+
+test("a target fully covered by a floating button is not tapped there; the reveal scrolls until a point of it is free", async () => {
+  // The "Add language" button as first revealed: entirely inside the dice tray's box, so no point of
+  // it is tappable. One scroll later it sits above the tray.
+  const covered = parseDump(
+    `<hierarchy><node text="" content-desc="Add language" bounds="[612,1082][684,1154]" clickable="true" />` +
+      `<node text="" content-desc="Dice tray" bounds="[558,1064][684,1190]" clickable="true" />` +
+      `<node class="android.widget.ScrollView" scrollable="true" bounds="[0,252][720,1232]" /></hierarchy>`,
+  );
+  const freed = parseDump(
+    `<hierarchy><node text="" content-desc="Add language" bounds="[612,940][684,1012]" clickable="true" />` +
+      `<node text="" content-desc="Dice tray" bounds="[558,1064][684,1190]" clickable="true" />` +
+      `<node text="LANGUAGES" bounds="[10,900][200,940]" />` +
+      `<node class="android.widget.ScrollView" scrollable="true" bounds="[0,252][720,1232]" /></hierarchy>`,
+  );
+  const world = playerWorld([covered, covered, freed, freed]);
+  const result = await play(world, { name: "t", route: "/x", open: [{ tap: { label: "Add language" } }], ready: "LANGUAGES" });
+  assert.equal(result.error, null);
+  assert.ok(world.swipes.length > 0, "the reveal kept scrolling while the target was fully covered");
+  // Freed, the button's centre (648,976) is above the dice tray: tapped there.
+  assert.deepEqual(world.taps, [{ x: 648, y: 976 }]);
 });
 
 test("an open step whose target never shows fails with a message naming the step", async () => {
@@ -585,13 +648,9 @@ test("a tab scrolled out of the page is reached by swiping the page down first, 
 });
 
 test("a main-bar tab absent from the scrolled-down dump is revealed horizontally once the page is back at the top", async () => {
-  // The top fixture still has the main bar scrolled past "Builder"; the dump with the tab back in the
-  // bar stands in for the bar's own horizontal scroll.
-  const builderAtTop = [
-    ...classScrolledTop,
-    { text: "Builder", contentDesc: "", resourceId: "", className: "android.widget.TextView", clickable: false, scrollable: false, bounds: { x1: 80, y1: 187, x2: 157, y2: 220 } },
-  ];
-  const world = playerWorld([classScrolledDown, classScrolledTop, builderAtTop]);
+  // The top fixture still has the main bar scrolled past "Builder"; the character-tabs fixture (the bar
+  // with "Builder" back in it) stands in for the bar's own horizontal scroll.
+  const world = playerWorld([classScrolledDown, classScrolledTop, charTabs, classScrolledTop]);
   const result = await play(world, { name: "t", route: "/x", tabs: ["Builder"], ready: "Total Level: 1" });
   assert.deepEqual(result, { error: null, warnings: [] });
   // The page is swiped down (vertical, toward the top) before any horizontal swipe ...
