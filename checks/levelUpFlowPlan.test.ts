@@ -22,6 +22,7 @@ import {
   type LevelUpPlan,
 } from "../src/rules/levelUpFlow.ts";
 import { maxHp } from "../src/rules/hp.ts";
+import { __setRandomSourceForTests } from "../src/rules/dice.ts";
 
 const FIGHTER_3 = makeChar({
   baseAbilityScores: { str: 15, dex: 14, con: 14, int: 10, wis: 10, cha: 10 },
@@ -91,6 +92,21 @@ test("rollPlanHitPoints rolls the Hit Die once through the dice module and retur
   assert.equal(low.plan.hitPoints.roll, 1, "the face is clamped to at least 1");
   assert.equal(low.plan.hitPoints.amount, 1, "face 1 + Con -2 floors at 1");
   assert.equal(low.roll.total, -1, "the logged Roll keeps the raw total face + Con");
+});
+
+test("planLevelUp and rollPlanHitPoints draw from currentRandom() when no source is passed", () => {
+  __setRandomSourceForTests(() => 9);
+  try {
+    const planned = planLevelUp(FIGHTER_3, { className: "Fighter", hitPoints: { mode: "roll" } });
+    if (!planned.ok) assert.fail(planned.reason);
+    assert.equal(planned.plan.hitPoints.roll, 9, "planLevelUp rolled the injected face, not the app's source");
+    assert.equal(planned.plan.hitPoints.amount, 11, "face 9 + Con 2");
+    const rolled = rollPlanHitPoints(fighterPlan({ mode: "average" }), FIGHTER_3);
+    assert.equal(rolled.roll.dice[0]?.face, 9, "rollPlanHitPoints rolled the injected face, not the app's source");
+    assert.equal(rolled.plan.hitPoints.roll, 9);
+  } finally {
+    __setRandomSourceForTests(null);
+  }
 });
 
 test("chooseAverageHitPoints switches a rolled plan back to the fixed average", () => {

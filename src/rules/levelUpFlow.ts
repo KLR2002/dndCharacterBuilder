@@ -22,7 +22,7 @@ import {
 } from "./spellcasting.ts";
 import { maxHp, recordRolledHitPoints } from "./hp.ts";
 import { classChoicesAtLevel, hasClassChoices } from "./classChoices.ts";
-import { appRandom, rollDie, type RandomSource, type Roll } from "./dice.ts";
+import { currentRandom, rollDie, type RandomSource, type Roll } from "./dice.ts";
 import { totalLevel } from "./proficiencies.ts";
 import { allCatalogClasses, catalogListings, findClassData } from "./catalogs.ts";
 import { featGrantedRuleChoices, pickRuleChoice } from "./ruleChoices.ts";
@@ -88,7 +88,7 @@ export interface PlanLevelUpOptions {
   /** The source of a class the Character does not hold yet. */
   source?: string;
   hitPoints?: { mode: "average" } | { mode: "roll" };
-  /** The random source a rolled Hit Points pick draws its die face from. Defaults to the app's source. */
+  /** The random source a rolled Hit Points pick draws its die face from. Defaults to the dice module's current source. */
   random?: RandomSource;
   picks?: LevelUpPicks;
   compendium?: Compendium;
@@ -151,7 +151,7 @@ export function planLevelUp(character: Character, options: PlanLevelUpOptions): 
   const mode = options.hitPoints?.mode ?? "average";
   let hitPoints: HitPointsPlan;
   if (mode === "roll") {
-    const roll = rollDie(die, options.random ?? appRandom);
+    const roll = rollDie(die, options.random ?? currentRandom());
     hitPoints = { mode, roll, amount: Math.max(1, roll + conMod) };
   } else {
     hitPoints = { mode, amount: Math.max(1, (firstLevel ? die : Math.floor(die / 2) + 1) + conMod) };
@@ -361,7 +361,7 @@ export function chooseAverageHitPoints(plan: LevelUpPlan, character: Character):
 export function rollPlanHitPoints(
   plan: LevelUpPlan,
   character: Character,
-  random: RandomSource = appRandom
+  random: RandomSource = currentRandom()
 ): { plan: LevelUpPlan; roll: Roll } {
   const { die, conMod } = hitPointsInputs(character, plan);
   const face = rollDie(die, random);
