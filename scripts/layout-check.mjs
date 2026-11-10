@@ -102,6 +102,23 @@ function findLayoutViolations(root) {
   return [...new Set(out)];
 }
 
+// Runs in the browser. No <button> or [role="button"] may contain another one: React logs "cannot contain
+// a nested <button>" for it and the inner control is not reliably tappable. `scopeSelector` is a CSS selector
+// to search inside, or null/"" for the whole document. Returns one message per offending outer button.
+function findNestedButtonViolations(scopeSelector) {
+  const root = scopeSelector ? document.querySelector(scopeSelector) : document;
+  const out = [];
+  if (!root) return out;
+  for (const b of root.querySelectorAll('button, [role="button"]')) {
+    const inner = b.querySelectorAll('button, [role="button"]');
+    if (inner.length > 0) {
+      const name = b.getAttribute("aria-label") || (b.textContent || "").trim().replace(/\s+/g, " ").slice(0, 30);
+      out.push(`the button "${name}" contains ${inner.length} nested button(s)`);
+    }
+  }
+  return [...new Set(out)];
+}
+
 // Runs in the browser. Checks the header of a character sheet for a long name. The name must be clipped and end
 // with an ellipsis, and it must end before the level badge and the HP badge start. Returns one message per violation.
 function findHeaderNameViolations(name) {
@@ -2489,6 +2506,9 @@ async function checkSheetChrome(ctx, width) {
       if (row.height === null) fail(`the sheet menu has no "${row.label}" row`);
       else if (row.height < 47.5) fail(`the menu's "${row.label}" row is ${Math.round(row.height)}px tall, under 48dp`);
     }
+    // No button in the sheet header, or in the open menu, may contain another button.
+    for (const v of await page.evaluate(findNestedButtonViolations, '[data-testid="sheet-header"]')) fail(`nested button in the sheet header: ${v}`);
+    for (const v of await page.evaluate(findNestedButtonViolations, '[role="dialog"]')) fail(`nested button in the sheet menu: ${v}`);
     await page.keyboard.press("Escape");
     await page.waitForSelector('[role="dialog"]', { state: "hidden", timeout: 10000 }).catch(() => fail("Escape did not close the sheet menu"));
 
@@ -2620,6 +2640,10 @@ async function checkHomeLayout(ctx, width) {
     return { entries, hpBadge, vw: window.innerWidth };
   });
 
+  // No button on Home may contain another button (the entry cards' action buttons must be siblings of the
+  // entry's main region, not children of it).
+  for (const v of await page.evaluate(findNestedButtonViolations, "")) fail(`nested button on Home: ${v}`);
+
   if (layout.entries.length < 2) fail(`only ${layout.entries.length} home entries found, expected several`);
   if (layout.hpBadge) fail("a home entry still shows an HP badge");
   for (const [i, entry] of layout.entries.entries()) {
@@ -2686,10 +2710,22 @@ function unmatchedOnlyTerms() {
 // Runs every check at one width, on that width's own browser context. Returns the number of violations.
 async function checkWidth(browser, seed, width) {
   const ctx = await browser.newContext({ viewport: { width, height: 851 }, deviceScaleFactor: 2, hasTouch: true, isMobile: true });
+  // React logs "<button> cannot contain a nested <button>" as a console error when a pressable with a
+  // button role wraps another one; collect those from every page of this width and fail the run on them.
+  const nestedConsoleErrors = [];
+  ctx.on("page", (page) => {
+    page.on("console", (msg) => {
+      if (msg.type() === "error" && /cannot contain a nested/i.test(msg.text())) nestedConsoleErrors.push(msg.text().slice(0, 120));
+    });
+  });
   try {
     await ctx.addInitScript(seedBrowser, seed);
     let failures = await checkScreens(ctx, width);
     for (const check of EXTRA_CHECKS) if (selected(check.name)) failures += await check.run(ctx, width);
+    for (const err of [...new Set(nestedConsoleErrors)]) {
+      failures++;
+      console.log(`[${width}px] console error: ${err}`);
+    }
     return failures;
   } finally {
     await ctx.close();

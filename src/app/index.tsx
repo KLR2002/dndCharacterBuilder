@@ -205,18 +205,15 @@ export default function HomeScreen() {
     const draftStep = draft ? currentCreationStep(char, { activeBooks }) : null;
     const cardTitle = draft ? `Draft · ${draftStep ? STEP_TITLES[draftStep] : ""}` : char.name || "Unnamed";
 
-    // Pressable, not TouchableOpacity: on web a TouchableOpacity renders a <button>, and nesting one
-    // inside the row's <button> is invalid HTML.
+    // The row's action buttons: siblings of the entry's main pressable region, never children of it —
+    // on web a pressable with a button role renders a <button>, and a <button> may not contain another.
     const rowButtons = (
       <View style={styles.cardActionsRow}>
         <Pressable
           accessibilityRole="button"
           accessibilityLabel={`Move ${cardTitle} to folder`}
           hitSlop={{ top: 4, bottom: 4, left: 4, right: 4 }}
-          onPress={(e) => {
-            e.stopPropagation();
-            setMoveCharModal({ visible: true, char });
-          }}
+          onPress={() => setMoveCharModal({ visible: true, char })}
           style={styles.rowAction}>
           <Ionicons name="folder-outline" size={18} color={theme.textSecondary} />
         </Pressable>
@@ -224,10 +221,7 @@ export default function HomeScreen() {
           accessibilityRole="button"
           accessibilityLabel={`Delete ${cardTitle}`}
           hitSlop={{ top: 4, bottom: 4, left: 4, right: 4 }}
-          onPress={(e) => {
-            e.stopPropagation();
-            confirmDeleteCharacter(char);
-          }}
+          onPress={() => confirmDeleteCharacter(char)}
           style={styles.rowAction}>
           <Ionicons name="trash-outline" size={18} color={theme.danger} />
         </Pressable>
@@ -251,57 +245,64 @@ export default function HomeScreen() {
       </View>
     );
 
+    // The card is a View holding a pressable main region (icon, name, line) with the action buttons as its
+    // sibling, so no button-role element contains another.
+    const entryText = (
+      <View style={{ flex: 1, minWidth: 0, marginTop: card ? 10 : 0 }}>
+        <View style={styles.cardNameRow}>
+          <Text
+            style={[
+              styles.charCardName,
+              { color: draft ? theme.textSecondary : theme.text },
+              !draft && { fontFamily: serif },
+            ]}
+            numberOfLines={1}>
+            {cardTitle}
+          </Text>
+          {!draft && <Badge label={`Lvl ${totalLevel}`} variant="accent" size="sm" />}
+        </View>
+
+        {!draft && (
+          <Text style={{ color: theme.textSecondary, fontSize: 12, marginTop: 2 }} numberOfLines={1}>
+            {raceName} • {primaryClass}
+          </Text>
+        )}
+
+        {!draft && char.alignment ? (
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginTop: 4 }}>
+            <Badge label={char.alignment} variant="secondary" size="sm" />
+          </View>
+        ) : null}
+      </View>
+    );
+
     return (
-      <TouchableOpacity
+      <View
         key={char.id}
         testID={`home-entry-${char.id}`}
-        accessibilityRole="button"
-        accessibilityLabel={cardTitle}
-        onPress={() => router.push((draft ? `/build/${char.id}` : `/character/${char.id}`) as any)}
         style={[
           styles.characterCard,
           { backgroundColor: theme.surface, borderColor: theme.border },
           draft && styles.cardDraft,
           card && styles.characterCardGrid,
         ]}>
-        {card ? (
-          <View style={styles.cardTopRow}>
-            {avatar}
-            {rowButtons}
-          </View>
-        ) : (
-          avatar
-        )}
-
-        <View style={{ flex: 1, minWidth: 0, marginTop: card ? 10 : 0 }}>
-          <View style={styles.cardNameRow}>
-            <Text
-              style={[
-                styles.charCardName,
-                { color: draft ? theme.textSecondary : theme.text },
-                !draft && { fontFamily: serif },
-              ]}
-              numberOfLines={1}>
-              {cardTitle}
-            </Text>
-            {!draft && <Badge label={`Lvl ${totalLevel}`} variant="accent" size="sm" />}
-          </View>
-
-          {!draft && (
-            <Text style={{ color: theme.textSecondary, fontSize: 12, marginTop: 2 }} numberOfLines={1}>
-              {raceName} • {primaryClass}
-            </Text>
-          )}
-
-          {!draft && char.alignment ? (
-            <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginTop: 4 }}>
-              <Badge label={char.alignment} variant="secondary" size="sm" />
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={cardTitle}
+          onPress={() => router.push((draft ? `/build/${char.id}` : `/character/${char.id}`) as any)}
+          style={[styles.entryMain, card && styles.entryMainCard]}>
+          {card ? (
+            <View style={styles.cardTopRow}>
+              {avatar}
+              <View style={{ flex: 1 }} />
             </View>
-          ) : null}
-        </View>
-
-        {!card ? rowButtons : null}
-      </TouchableOpacity>
+          ) : (
+            avatar
+          )}
+          {entryText}
+        </Pressable>
+        {card ? <View style={styles.cardActionsOverlay}>{rowButtons}</View> : rowButtons}
+      </View>
     );
   };
 
@@ -448,50 +449,56 @@ export default function HomeScreen() {
 
           return (
             <View key={folder.id} style={styles.folderSection}>
-              {/* Folder Accordion Header */}
-              <TouchableOpacity
-                onPress={() => toggleFolderCollapse(folder.id)}
+              {/* Folder Accordion Header: a pressable main region with the trash button as its sibling, so
+                  no touchable contains another; the trash is a 48dp target. */}
+              <View
                 style={[
                   styles.folderHeader,
                   { backgroundColor: theme.surface, borderColor: theme.border },
                 ]}
               >
-                <Ionicons
-                  name={isCollapsed ? "folder-outline" : "folder-open"}
-                  size={20}
-                  color={theme.accentHover}
-                />
-                <Text style={[styles.folderTitle, { color: theme.text }]}>
-                  {folder.name}
-                </Text>
-                <Badge
-                  label={`${charsInFolder.length}`}
-                  variant="secondary"
-                  size="sm"
-                />
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={`Toggle folder ${folder.name}`}
+                  onPress={() => toggleFolderCollapse(folder.id)}
+                  style={styles.folderHeaderMain}
+                >
+                  <Ionicons
+                    name={isCollapsed ? "folder-outline" : "folder-open"}
+                    size={20}
+                    color={theme.accentHover}
+                  />
+                  <Text style={[styles.folderTitle, { color: theme.text }]}>
+                    {folder.name}
+                  </Text>
+                  <Badge
+                    label={`${charsInFolder.length}`}
+                    variant="secondary"
+                    size="sm"
+                  />
 
-                <View style={{ flex: 1 }} />
+                  <View style={{ flex: 1 }} />
 
-                <TouchableOpacity
-                  onPress={(e) => {
-                    e.stopPropagation();
-                    confirmDeleteFolder(folder);
-                  }}
-                  style={{ padding: 4 }}
+                  <Ionicons
+                    name={isCollapsed ? "chevron-down" : "chevron-up"}
+                    size={18}
+                    color={theme.textSecondary}
+                  />
+                </Pressable>
+
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={`Delete folder ${folder.name}`}
+                  onPress={() => confirmDeleteFolder(folder)}
+                  style={styles.folderTrashBtn}
                 >
                   <Ionicons
                     name="trash-outline"
                     size={16}
                     color={theme.textMuted}
                   />
-                </TouchableOpacity>
-
-                <Ionicons
-                  name={isCollapsed ? "chevron-down" : "chevron-up"}
-                  size={18}
-                  color={theme.textSecondary}
-                />
-              </TouchableOpacity>
+                </Pressable>
+              </View>
 
               {/* Characters inside this folder */}
               {!isCollapsed && (
@@ -774,10 +781,24 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 8,
     paddingHorizontal: 12,
-    paddingVertical: 10,
+    paddingVertical: 6,
     borderRadius: 8,
     borderWidth: 1,
     marginBottom: 8,
+  },
+  folderHeaderMain: {
+    flex: 1,
+    minWidth: 0,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  folderTrashBtn: {
+    width: 48,
+    height: 48,
+    alignItems: "center",
+    justifyContent: "center",
+    flexShrink: 0,
   },
   folderTitle: {
     fontSize: 14,
@@ -812,6 +833,23 @@ const styles = StyleSheet.create({
     alignItems: "stretch",
     marginBottom: 0,
     height: "100%",
+  },
+  entryMain: {
+    flex: 1,
+    minWidth: 0,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+  },
+  entryMainCard: {
+    flexDirection: "column",
+    alignItems: "stretch",
+    gap: 0,
+  },
+  cardActionsOverlay: {
+    position: "absolute",
+    top: 12,
+    right: 12,
   },
   cardDraft: {
     borderStyle: "dashed",
