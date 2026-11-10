@@ -1126,6 +1126,21 @@ async function checkDiceTrayAndLog(ctx, width) {
       if (geo.buttonBottom > geo.barTop + 1)
         fail(`the dice button covers the flow's bottom bar (button bottom ${Math.round(geo.buttonBottom)} over bar top ${Math.round(geo.barTop)})`);
     }
+    // The step scroll content pads its bottom by the button's 56dp plus its 16dp gap, so the button never
+    // covers the last rows.
+    const scrollPad = await flowPage.evaluate(() => {
+      const scroller = document.querySelector('[data-testid="levelup-step-scroll"]');
+      if (!scroller) return null;
+      let max = 0;
+      for (const el of [scroller, ...scroller.querySelectorAll("*")]) {
+        const p = parseFloat(getComputedStyle(el).paddingBottom) || 0;
+        if (p > max) max = p;
+      }
+      return max;
+    });
+    if (scrollPad === null) fail("no step scroll content found in the Level-Up Flow");
+    else if (scrollPad < 71)
+      fail(`the flow's step scroll content pads its bottom by ${Math.round(scrollPad)}px, under the 72dp the floating dice button needs (56dp button + 16dp gap)`);
     await flowPage.screenshot({ path: join(SHOTS, `DiceTray-flow-${width}.png`) });
     await flowPage.close();
   }

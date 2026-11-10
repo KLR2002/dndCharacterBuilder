@@ -34,6 +34,7 @@ import { normalizeSkillName } from "../../rules/skills";
 import { getAvailableOptionalFeatures } from "../../rules/optionalFeatures";
 import { AbilityKey, Character, CreationStepId, SkillChoiceEntry } from "../../types/character";
 import { DetailModal } from "../DetailModal";
+import { useFlowStepScrollContentPadding } from "../creationFlow/FlowShell";
 import { AbilityScoresSection } from "../builder/AbilityScoresSection";
 import { AncestrySection } from "../builder/AncestrySection";
 import { BackgroundSection } from "../builder/BackgroundSection";
@@ -93,6 +94,9 @@ export const BuilderTab: React.FC<BuilderTabProps> = ({
 
   const saAssignments = character?.standardArrayPicks ?? {};
   const onViewDetail = propViewDetail || ((item: any) => setLocalDetail(item));
+  // In the Creation Flow the scroll content pads its bottom on phones so the floating dice button never
+  // covers the last rows.
+  const flowScrollPad = useFlowStepScrollContentPadding();
 
   if (!character) return null;
 
@@ -358,7 +362,7 @@ export const BuilderTab: React.FC<BuilderTabProps> = ({
   const hostedSection = step ? STEP_SECTION[step] : undefined;
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+    <ScrollView style={styles.container} contentContainerStyle={[styles.content, flowScrollPad]}>
       {/* ── Section Tab Nav ── */}
       {!step && (
       <ScrollView

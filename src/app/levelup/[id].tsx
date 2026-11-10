@@ -3,7 +3,7 @@ import { useLocalSearchParams, useNavigation, useRouter } from "expo-router";
 import React, { useEffect, useMemo, useState } from "react";
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { FlowShell, FlowStepTitle, type FlowStepView } from "../../components/creationFlow/FlowShell";
+import { FlowShell, FlowStepTitle, useFlowStepScrollContentPadding, type FlowStepView } from "../../components/creationFlow/FlowShell";
 import { IdentityPanel, identitySummaryLine } from "../../components/creationFlow/IdentityPanel";
 import { AsiFeatStep } from "../../components/levelUpFlow/AsiFeatStep";
 import { ClassChoicesStep } from "../../components/levelUpFlow/ClassChoicesStep";
@@ -97,6 +97,8 @@ export default function LevelUpScreen() {
   }, [leaving, id, router]);
 
   const flowOpts = useMemo(() => ({ activeBooks }), [activeBooks]);
+  // The step scroll content pads its bottom on phones so the floating dice button never covers the last rows.
+  const flowScrollPad = useFlowStepScrollContentPadding();
   const steps = useMemo(() => flowSteps(plan), [plan]);
   const stepComplete = (stepId: LevelUpStepId) =>
     levelUpStepComplete(plan, stepId, { ...flowOpts, character: character ?? undefined });
@@ -173,73 +175,49 @@ export default function LevelUpScreen() {
 
   const stepContent = () => {
     if (!plan) {
-      return (
-        <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.stepScrollContent} keyboardShouldPersistTaps="handled">
-          <ClassStep options={classOptions} onPick={pickClass} />
-        </ScrollView>
-      );
+      return <ClassStep options={classOptions} onPick={pickClass} />;
     }
     switch (openStep.id) {
       case "class":
-        return (
-          <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.stepScrollContent} keyboardShouldPersistTaps="handled">
-            <ClassStep options={classOptions} selectedClassName={plan.className} onPick={pickClass} />
-          </ScrollView>
-        );
+        return <ClassStep options={classOptions} selectedClassName={plan.className} onPick={pickClass} />;
       case "hitPoints":
-        return (
-          <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.stepScrollContent} keyboardShouldPersistTaps="handled">
-            <HitPointsStep plan={plan} character={character} onAverage={chooseAverage} onRoll={rollHp} />
-          </ScrollView>
-        );
+        return <HitPointsStep plan={plan} character={character} onAverage={chooseAverage} onRoll={rollHp} />;
       case "subclass":
         return (
-          <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.stepScrollContent} keyboardShouldPersistTaps="handled">
-            <SubclassStep
-              plan={plan}
-              options={subclassOptionsForPlan(plan, flowOpts)}
-              onPick={(name, source) => setPlan(setPlanSubclass(plan, name, source))}
-            />
-          </ScrollView>
+          <SubclassStep
+            plan={plan}
+            options={subclassOptionsForPlan(plan, flowOpts)}
+            onPick={(name, source) => setPlan(setPlanSubclass(plan, name, source))}
+          />
         );
       case "asiFeat":
         return (
-          <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.stepScrollContent} keyboardShouldPersistTaps="handled">
-            <AsiFeatStep
-              plan={plan}
-              character={character}
-              allFeats={allFeats}
-              activeBooks={activeBooks}
-              onPick={(asi) => setPlan(setPlanAsi(plan, asi))}
-              onFeatPick={(choiceId, option, choose) => setPlan(setPlanFeatPick(plan, choiceId, option, choose))}
-            />
-          </ScrollView>
+          <AsiFeatStep
+            plan={plan}
+            character={character}
+            allFeats={allFeats}
+            activeBooks={activeBooks}
+            onPick={(asi) => setPlan(setPlanAsi(plan, asi))}
+            onFeatPick={(choiceId, option, choose) => setPlan(setPlanFeatPick(plan, choiceId, option, choose))}
+          />
         );
       case "classChoices":
         return (
-          <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.stepScrollContent} keyboardShouldPersistTaps="handled">
-            <ClassChoicesStep
-              plan={plan}
-              onToggle={(choiceId, option, choose) => setPlan(setPlanClassChoicePick(plan, choiceId, option, choose))}
-            />
-          </ScrollView>
+          <ClassChoicesStep
+            plan={plan}
+            onToggle={(choiceId, option, choose) => setPlan(setPlanClassChoicePick(plan, choiceId, option, choose))}
+          />
         );
       case "spells":
         return (
-          <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.stepScrollContent} keyboardShouldPersistTaps="handled">
-            <SpellsStep
-              plan={plan}
-              spells={newSpellsForLevelUp(character, plan, flowOpts)}
-              onToggle={(spell) => setPlan(togglePlanSpell(plan, spell))}
-            />
-          </ScrollView>
+          <SpellsStep
+            plan={plan}
+            spells={newSpellsForLevelUp(character, plan, flowOpts)}
+            onToggle={(spell) => setPlan(togglePlanSpell(plan, spell))}
+          />
         );
       case "review":
-        return (
-          <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.stepScrollContent} keyboardShouldPersistTaps="handled">
-            <ReviewStep rows={levelUpSummary(plan, character, { ...flowOpts, fullHealOnLevelUp })} />
-          </ScrollView>
-        );
+        return <ReviewStep rows={levelUpSummary(plan, character, { ...flowOpts, fullHealOnLevelUp })} />;
     }
   };
 
@@ -281,7 +259,16 @@ export default function LevelUpScreen() {
         onOpenStep={(stepId) => setOpenStepId(stepId as LevelUpStepId)}
         topRow={topRow}
         stepTitle={<FlowStepTitle title={LEVEL_UP_STEP_TITLES[openStep.id]} />}
-        content={stepContent()}
+        content={
+          <ScrollView
+            style={{ flex: 1 }}
+            testID="levelup-step-scroll"
+            contentContainerStyle={[styles.stepScrollContent, flowScrollPad]}
+            keyboardShouldPersistTaps="handled"
+          >
+            {stepContent()}
+          </ScrollView>
+        }
         primaryAction={
           <Button
             title={openStep.id === "review" ? "Level up" : "Continue"}
