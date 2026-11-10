@@ -21,6 +21,7 @@ import { Modal } from "../../components/ui/Modal";
 import { HpQuickEditModal } from "../../components/HpQuickEditModal";
 import { ReviewNotices } from "../../components/ReviewNotices";
 import {
+  SHEET_HEADER_CONTROL_HEIGHT,
   SHEET_TAB_BAR_HEIGHT,
   SheetMenuRow,
   SheetTabBar,
@@ -188,6 +189,7 @@ export default function CharacterSheetScreen() {
     >
       <View style={[styles.headerInner, isCompact && styles.headerInnerCompact]}>
       <TouchableOpacity
+        testID="sheet-header-back"
         onPress={() => router.back()}
         accessibilityRole="button"
         accessibilityLabel="Back"
@@ -239,6 +241,7 @@ export default function CharacterSheetScreen() {
       <View style={[styles.headerChips, isCompact && { gap: 4 }]}>
         <TouchableOpacity
           {...hpQuickEdit.triggerProps}
+          testID="sheet-header-hp"
           style={[styles.chip, isCompact && styles.chipCompact, { borderColor: theme.border, backgroundColor: theme.surfaceHighlight }]}>
           {activeWildShape ? (
             // The paw marks the number as beast HP, so it stays visible in compact layouts too.
@@ -254,13 +257,16 @@ export default function CharacterSheetScreen() {
           </Text>
         </TouchableOpacity>
 
-        <View style={[styles.chip, isCompact && styles.chipCompact, { borderColor: theme.border, backgroundColor: theme.surfaceHighlight }]}>
+        <View
+          testID="sheet-header-ac"
+          style={[styles.chip, isCompact && styles.chipCompact, { borderColor: theme.border, backgroundColor: theme.surfaceHighlight }]}>
           <Ionicons name="shield-outline" size={13} color={theme.accentHover} />
           <Text style={[styles.chipText, { color: theme.text }, isCompact && { fontSize: 11 }]}>{evaluated.armorClass.ac}</Text>
         </View>
 
         {!isTablet && (
           <TouchableOpacity
+            testID="sheet-header-menu"
             onPress={() => setMenuOpen(true)}
             accessibilityRole="button"
             accessibilityLabel="Sheet menu"
@@ -374,7 +380,7 @@ const styles = StyleSheet.create({
   },
   headerIconBtn: {
     width: 40,
-    height: 40,
+    height: SHEET_HEADER_CONTROL_HEIGHT,
     borderRadius: 8,
     borderWidth: 1,
     alignItems: "center",
@@ -423,7 +429,7 @@ const styles = StyleSheet.create({
     gap: 4,
     paddingHorizontal: 8,
     paddingVertical: 6,
-    minHeight: 48,
+    minHeight: SHEET_HEADER_CONTROL_HEIGHT,
     borderRadius: 6,
     borderWidth: 1,
   },

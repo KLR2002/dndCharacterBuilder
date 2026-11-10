@@ -25,6 +25,12 @@ export const SHEET_TABS: SheetTabDefinition[] = [
 /** The phone bottom bar's height; the floating dice button and the scroll padding follow the measured layout. */
 export const SHEET_TAB_BAR_HEIGHT = 64;
 
+/**
+ * The sheet header's four controls — back, the HP chip, the AC chip, the menu button — share this height
+ * and one vertical centre (the header row centres its children).
+ */
+export const SHEET_HEADER_CONTROL_HEIGHT = 48;
+
 /** The tab bar's vertical padding above and below its tab items (the bottom one grows by the safe-area inset). */
 const TAB_BAR_VERTICAL_PADDING = 4;
 

@@ -2502,6 +2502,56 @@ async function checkSheetChrome(ctx, width) {
     }
     if (chrome.headerHeight === null || chrome.headerHeight > 96) fail(`the header is ${chrome.headerHeight === null ? "missing" : Math.round(chrome.headerHeight) + "px tall"}, not one compact bar`);
     if (chrome.menuCount !== 1) fail(`the phone header has ${chrome.menuCount} "Sheet menu" buttons, expected 1`);
+    // The four header controls — back, HP chip, AC chip, menu — share one 48dp height and one vertical
+    // centre; at 320 nothing overflows the row, and the name keeps its ellipsis clipping.
+    const controls = await page.evaluate(() => {
+      const header = document.querySelector('[data-testid="sheet-header"]');
+      const inner = header ? header.firstElementChild : null;
+      const rect = (el) => {
+        const r = el.getBoundingClientRect();
+        return { left: r.left, right: r.right, top: r.top, bottom: r.bottom, width: r.width, height: r.height, centreY: (r.top + r.bottom) / 2 };
+      };
+      const found = {};
+      for (const id of ["back", "hp", "ac", "menu"]) {
+        const el = document.querySelector(`[data-testid="sheet-header-${id}"]`);
+        found[id] = el ? rect(el) : null;
+      }
+      const nameBtn = document.querySelector('[aria-label="Edit character name"]');
+      const nameText = nameBtn ? [...nameBtn.querySelectorAll("*")].find((e) => e.children.length === 0 && e.textContent.trim().length > 0) : null;
+      const ncs = nameText ? getComputedStyle(nameText) : null;
+      return {
+        inner: inner ? { ...rect(inner), scrollWidth: inner.scrollWidth, clientWidth: inner.clientWidth } : null,
+        controls: found,
+        name: nameText && ncs ? { ...rect(nameText), textOverflow: ncs.textOverflow, overflow: ncs.overflow } : null,
+      };
+    });
+    const controlIds = ["back", "hp", "ac", "menu"];
+    for (const id of controlIds) if (!controls.controls[id]) fail(`the phone header has no ${id} control (data-testid="sheet-header-${id}")`);
+    if (controlIds.every((id) => controls.controls[id])) {
+      for (const id of controlIds) {
+        const c = controls.controls[id];
+        if (Math.abs(c.height - 48) > 1) fail(`the ${id} header control is ${Math.round(c.height * 10) / 10}px tall, not 48dp ±1`);
+      }
+      const centres = controlIds.map((id) => controls.controls[id].centreY);
+      if (Math.max(...centres) - Math.min(...centres) > 1)
+        fail(`the header controls' vertical centres span ${Math.round((Math.max(...centres) - Math.min(...centres)) * 10) / 10}px, not one shared centre ±1`);
+      if (width === 320 && controls.inner) {
+        for (const id of controlIds) {
+          const c = controls.controls[id];
+          if (c.left < controls.inner.left - 1 || c.right > controls.inner.right + 1)
+            fail(`at 320 the ${id} control overflows the header row (${Math.round(c.left)}..${Math.round(c.right)} of row ${Math.round(controls.inner.left)}..${Math.round(controls.inner.right)})`);
+        }
+        if (controls.inner.scrollWidth > controls.inner.clientWidth + 1)
+          fail(`at 320 the header row overflows by ${controls.inner.scrollWidth - controls.inner.clientWidth}px`);
+      }
+      if (!controls.name) fail("the header name is missing");
+      else {
+        if (controls.name.textOverflow !== "ellipsis" || controls.name.overflow !== "hidden")
+          fail(`the header name lost its ellipsis clipping (text-overflow: ${controls.name.textOverflow}, overflow: ${controls.name.overflow})`);
+        if (controls.inner && controls.name.right > controls.inner.right + 1)
+          fail(`the header name overflows the row (right ${Math.round(controls.name.right)} over row right ${Math.round(controls.inner.right)})`);
+      }
+    }
     for (const action of chrome.actions) if (action.visibleNow) fail(`"${action.label}" is visible in the phone header before the menu opens`);
     if (chrome.button) {
       if (!chrome.bar) fail("cannot check the dice button against a missing bar");
