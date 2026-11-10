@@ -186,11 +186,11 @@ export function FlowShell({
 /**
  * Extra contentContainerStyle for a flow's step scroll content: on phones the floating dice button (56dp,
  * sitting 16dp above the flow's bottom bar) must not cover the last rows, so the content pads its bottom by
- * 56 + 16 there; at 768px and up the button sits at the viewport's bottom-right corner and nothing is added.
+ * 56 + 16 there; wider screens add nothing. The breakpoint is the dice overlay's own `isPhone` (width < 600).
  */
 export function useFlowStepScrollContentPadding(): ViewStyle {
-  const { width } = useResponsiveLayout();
-  return width >= 768 ? {} : { paddingBottom: 56 + 16 };
+  const { isPhone } = useResponsiveLayout();
+  return isPhone ? { paddingBottom: 56 + 16 } : {};
 }
 
 /** The serif title row of the open step, with its needs-attention mark. */

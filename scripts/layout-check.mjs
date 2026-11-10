@@ -1106,28 +1106,31 @@ async function checkDiceTrayAndLog(ctx, width) {
   await page.screenshot({ path: shot("log-empty") });
   await page.close();
 
-  // On phones the button sits above the flow's bottom primary-action bar, never covering it.
-  if (width < 600) {
+  // On phones the button sits above the flow's bottom primary-action bar, never covering it, and the step
+  // scroll content pads its bottom by the button's 56dp plus its 16dp gap so the button never covers the
+  // last rows. The padding switches at the same breakpoint as the dice overlay's phone check: at 600px and
+  // up the flow adds no extra bottom padding.
+  {
     const flowPage = await ctx.newPage();
     await flowPage.goto(`${BASE}/levelup/${EDIT_BUILD_ID}`, { waitUntil: "networkidle", timeout: 120000 });
     await flowPage.waitForTimeout(1500);
     await flowPage.getByText(/Fighter/).first().waitFor({ state: "visible", timeout: 10000 }).catch(() => fail("the Level-Up Flow did not load"));
-    const geo = await flowPage.evaluate(() => {
-      const bar = document.querySelector('[data-testid="levelup-bottom-bar"]');
-      const button = document.querySelector('[data-testid="dice-button"]');
-      if (!bar || !button) return null;
-      const barRect = bar.getBoundingClientRect();
-      const buttonRect = button.getBoundingClientRect();
-      return { barTop: barRect.top, buttonBottom: buttonRect.bottom, buttonVisible: buttonRect.height > 0 && buttonRect.width > 0 };
-    });
-    if (!geo) fail("no bottom bar or dice button found in the Level-Up Flow");
-    else {
-      if (!geo.buttonVisible) fail("the dice button is not visible in the Level-Up Flow");
-      if (geo.buttonBottom > geo.barTop + 1)
-        fail(`the dice button covers the flow's bottom bar (button bottom ${Math.round(geo.buttonBottom)} over bar top ${Math.round(geo.barTop)})`);
+    if (width < 600) {
+      const geo = await flowPage.evaluate(() => {
+        const bar = document.querySelector('[data-testid="levelup-bottom-bar"]');
+        const button = document.querySelector('[data-testid="dice-button"]');
+        if (!bar || !button) return null;
+        const barRect = bar.getBoundingClientRect();
+        const buttonRect = button.getBoundingClientRect();
+        return { barTop: barRect.top, buttonBottom: buttonRect.bottom, buttonVisible: buttonRect.height > 0 && buttonRect.width > 0 };
+      });
+      if (!geo) fail("no bottom bar or dice button found in the Level-Up Flow");
+      else {
+        if (!geo.buttonVisible) fail("the dice button is not visible in the Level-Up Flow");
+        if (geo.buttonBottom > geo.barTop + 1)
+          fail(`the dice button covers the flow's bottom bar (button bottom ${Math.round(geo.buttonBottom)} over bar top ${Math.round(geo.barTop)})`);
+      }
     }
-    // The step scroll content pads its bottom by the button's 56dp plus its 16dp gap, so the button never
-    // covers the last rows.
     const scrollPad = await flowPage.evaluate(() => {
       const scroller = document.querySelector('[data-testid="levelup-step-scroll"]');
       if (!scroller) return null;
@@ -1139,8 +1142,10 @@ async function checkDiceTrayAndLog(ctx, width) {
       return max;
     });
     if (scrollPad === null) fail("no step scroll content found in the Level-Up Flow");
-    else if (scrollPad < 71)
+    else if (width < 600 && scrollPad < 71)
       fail(`the flow's step scroll content pads its bottom by ${Math.round(scrollPad)}px, under the 72dp the floating dice button needs (56dp button + 16dp gap)`);
+    else if (width >= 600 && scrollPad >= 71)
+      fail(`at ${width}px (not a phone by the dice overlay's breakpoint) the flow's step scroll content still pads its bottom by ${Math.round(scrollPad)}px for a corner button`);
     await flowPage.screenshot({ path: join(SHOTS, `DiceTray-flow-${width}.png`) });
     await flowPage.close();
   }
