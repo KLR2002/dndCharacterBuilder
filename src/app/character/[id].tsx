@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   StyleSheet,
   Text,
@@ -7,7 +7,7 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useLocalSearchParams, useRouter } from "expo-router";
+import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { ActionsTab } from "../../components/tabs/ActionsTab";
 import { FeaturesTab } from "../../components/tabs/FeaturesTab";
@@ -74,7 +74,21 @@ export default function CharacterSheetScreen() {
   }, [isDraft, id, router]);
 
   // On phones the tab bar sits at the bottom edge, and the floating dice button reports its height so the
-  // button sits above the bar, never over a tab. At wide widths the rail is on the left, so nothing is reported.
+  // button sits above the bar, never over a tab. The bar's measured height is reported on focus: a pushed
+  // screen (Level up, Edit Build) resets the obstruction to 0 when it pops, and the bar's own onLayout does
+  // not fire again on a phone, so the sheet re-reports on every focus and clears on blur and unmount. At
+  // wide widths the rail is on the left, so nothing is reported.
+  const reportBarObstruction = useCallback(() => {
+    if (!isTablet) setBottomObstruction(tabBarHeight);
+  }, [isTablet, tabBarHeight, setBottomObstruction]);
+
+  useFocusEffect(
+    useCallback(() => {
+      reportBarObstruction();
+      return () => setBottomObstruction(0);
+    }, [reportBarObstruction, setBottomObstruction])
+  );
+
   useEffect(() => {
     if (isTablet) setBottomObstruction(0);
     return () => setBottomObstruction(0);
@@ -303,10 +317,7 @@ export default function CharacterSheetScreen() {
       <SheetTabBar
         active={activeTab}
         onSelect={setActiveTab}
-        onLayout={(height) => {
-          setTabBarHeight(height);
-          setBottomObstruction(height);
-        }}
+        onLayout={(height) => setTabBarHeight(height)}
       />
       {notices}
       {/* The bar and the floating dice button (56dp + 16dp gap) sit in this bottom padding, never over content. */}

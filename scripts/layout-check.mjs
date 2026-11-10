@@ -2491,6 +2491,26 @@ async function checkSheetChrome(ctx, width) {
     }
     await page.keyboard.press("Escape");
     await page.waitForSelector('[role="dialog"]', { state: "hidden", timeout: 10000 }).catch(() => fail("Escape did not close the sheet menu"));
+
+    // The bar's height must be re-reported when the sheet regains focus: open Level up from the menu, go
+    // back, and the dice button must sit at or above the bar's top again (a pushed screen resets the
+    // obstruction to 0 when it pops).
+    await page.getByLabel("Sheet menu").first().click();
+    await page.getByLabel("Level up").first().click();
+    await page.waitForURL(/\/levelup\//, { timeout: 15000 }).catch(() => fail("Level up did not open the Level-Up Flow"));
+    await page.waitForTimeout(1000);
+    await page.goBack();
+    await page.getByText(/hit points/i).first().waitFor({ state: "visible", timeout: 15000 }).catch(() => fail("the sheet did not come back from Level up"));
+    await page.waitForTimeout(500);
+    const afterBack = await page.evaluate(() => {
+      const bar = document.querySelector('[data-testid="sheet-tab-bar"]');
+      const button = document.querySelector('[data-testid="dice-button"]');
+      if (!bar || !button) return null;
+      return { barTop: bar.getBoundingClientRect().top, buttonBottom: button.getBoundingClientRect().bottom };
+    });
+    if (!afterBack) fail("no tab bar or dice button on the sheet after returning from Level up");
+    else if (afterBack.buttonBottom > afterBack.barTop + 1)
+      fail(`after returning from Level up the dice button covers the tab bar (button bottom ${Math.round(afterBack.buttonBottom)} over bar top ${Math.round(afterBack.barTop)})`);
   } else {
     if (chrome.bar) fail("the wide sheet still shows the phone bottom tab bar");
     if (!chrome.rail) fail("no left rail (data-testid=\"sheet-tab-rail\") at a wide width");
