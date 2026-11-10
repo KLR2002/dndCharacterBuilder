@@ -967,6 +967,40 @@ async function checkDiceTrayAndLog(ctx, width) {
       fail(`the result total ${parsedTotal} is not the faces ${faces.join("+")} ${roll.modifier}`);
   }
 
+  // A tray pool of 2d20 is not a d20 test: even with a kept 20 it shows no "Natural 20" marker; a
+  // lone-d20 tray roll does.
+  const setFaces = (faces) => page.evaluate((f) => (window.__setRandomSource ? window.__setRandomSource(f) : "no hook"), faces);
+  const cardMarkers = () =>
+    page.evaluate(() => {
+      const card = document.querySelector('[data-testid="result-card"]');
+      if (!card) return null;
+      return [...card.querySelectorAll("*")].filter((e) => e.children.length === 0 && /^(Natural 20|Natural 1|Critical)$/.test(e.textContent.trim())).map((e) => e.textContent.trim());
+    });
+  await page.getByLabel("Dice tray").first().click();
+  await page.waitForSelector(dialogSel, { state: "visible", timeout: 10000 }).catch(() => fail("the tray did not reopen for the 2d20 check"));
+  await page.getByLabel("Remove 1d6", { exact: true }).click();
+  await page.getByLabel("Remove 1d8", { exact: true }).click();
+  for (let i = 0; i < 3; i++) await page.getByLabel("Modifier decrease", { exact: true }).click();
+  await page.getByLabel("Add d20", { exact: true }).click();
+  await page.getByLabel("Add d20", { exact: true }).click();
+  await setFaces([20, 7]);
+  await page.getByText("Roll 2d20", { exact: true }).first().click();
+  await page.waitForSelector(cardSel, { state: "visible", timeout: 10000 }).catch(() => fail("no result card after the 2d20 tray roll"));
+  let markers = await cardMarkers();
+  if (markers === null) fail("the 2d20 card disappeared before its markers could be read");
+  else if (markers.length !== 0) fail(`a 2d20 tray pool shows the markers ${JSON.stringify(markers)}, expected none (not a d20 test)`);
+  await page.getByLabel("Dice tray").first().click();
+  await page.waitForSelector(dialogSel, { state: "visible", timeout: 10000 }).catch(() => fail("the tray did not reopen for the lone-d20 check"));
+  await page.getByLabel("Remove 2d20", { exact: true }).click();
+  await page.getByLabel("Add d20", { exact: true }).click();
+  await setFaces([20]);
+  await page.getByText("Roll 1d20", { exact: true }).first().click();
+  await page.waitForSelector(cardSel, { state: "visible", timeout: 10000 }).catch(() => fail("no result card after the lone-d20 tray roll"));
+  markers = await cardMarkers();
+  if (markers === null) fail("the lone-d20 card disappeared before its markers could be read");
+  else if (JSON.stringify(markers) !== JSON.stringify(["Natural 20"])) fail(`a lone-d20 tray roll shows ${JSON.stringify(markers)}, expected ["Natural 20"]`);
+  await setFaces(null);
+
   // Seed a "Kara · Longsword attack" Roll through the publishing seam (no screen triggers it yet): the
   // card is replaced by it.
   const seeded = await page.evaluate(() => {
