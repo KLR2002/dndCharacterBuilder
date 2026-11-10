@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { makeChar, inMemoryCompendium, srdBaselineCompendium } from "./testUtils.ts";
 import { wardenClass } from "./proficiencySheetFixture.ts";
 import { ALL_BOOKS } from "../src/constants/books.ts";
-import { planLevelUp, applyLevelUpPlan, newSpellsForLevelUp, planAverageHitPoints, subclassOptionsForPlan, togglePlanSpell, type LevelUpPlan } from "../src/rules/levelUpFlow.ts";
+import { planLevelUp, applyLevelUpPlan, newSpellsForLevelUp, planAverageHitPoints, subclassOptionsForPlan, togglePlanSpell, levelUpStepComplete, type LevelUpPlan } from "../src/rules/levelUpFlow.ts";
 import { maxHp } from "../src/rules/hp.ts";
 import { totalLevel } from "../src/rules/proficiencies.ts";
 import { removeClassLevel } from "../src/rules/builderTransitions.ts";
@@ -130,6 +130,36 @@ test("a level reaching the subclass level plans no Subclass step when the active
   const withBook = planLevelUp(warden, { className: "Warden", compendium, activeBooks: ["PHB", "XGE"] });
   if (!withBook.ok) assert.fail(withBook.reason);
   assert.ok(withBook.plan.steps.some((s) => s.id === "subclass"), "with the book on, the Subclass step is planned");
+});
+
+test("an integrated catalog offering exactly one subclass carries it as the plan's pick, so the step completes and it applies", () => {
+  // The Warden's only subclass comes from XGE; with the compendium integrated (never auto-changed at
+  // apply time) the single offered subclass must still end up on the applied character.
+  const lampwright = {
+    name: "Lampwright",
+    shortName: "Lampwright",
+    source: "XGE",
+    className: "Warden",
+    classSource: "PHB",
+  } as unknown as SubclassData;
+  const compendium = inMemoryCompendium({ classes: [wardenClass({ subclasses: [lampwright] })] }, { integrated: true });
+  const activeBooks = ["PHB", "XGE"];
+  const warden = makeChar({
+    baseAbilityScores: { str: 10, dex: 10, con: 10, int: 10, wis: 10, cha: 10 },
+    classes: [{ className: "Warden", source: "PHB", level: 2 }],
+  });
+  const planned = planLevelUp(warden, { className: "Warden", compendium, activeBooks });
+  if (!planned.ok) assert.fail(planned.reason);
+  assert.ok(planned.plan.steps.some((s) => s.id === "subclass"));
+  assert.deepEqual(
+    planned.plan.picks.subclass,
+    { name: "Lampwright", source: "XGE" },
+    "the single offered subclass is the plan's pick from the start, so the Subclass step shows it selected"
+  );
+  assert.equal(levelUpStepComplete(planned.plan, "subclass", { compendium, activeBooks }), true);
+  const applied = applyLevelUpPlan(warden, planned.plan, { compendium, activeBooks, fullHealOnLevelUp: false });
+  assert.equal(applied.classes[0].level, 3);
+  assert.equal(applied.classes[0].subclassName, "Lampwright", "the applied character holds the subclass");
 });
 
 test("a new class with an unmet requirement is refused, naming the requirement", () => {
