@@ -73,8 +73,11 @@ export default function CharacterSheetScreen() {
     }
   }, [id, characters, selectCharacter]);
 
-  // A draft has no sheet: opening its route lands in the Creation Flow on its current step.
-  const isDraft = currentCharacter ? !isCreationFinished(currentCharacter) : false;
+  // A draft has no sheet: opening its route lands in the Creation Flow on its current step. The check
+  // reads the route's own character, not the context's selected one: this screen can stay mounted under
+  // another route (a deep link to /build/<draft> selects that draft), and must not redirect then.
+  const routeCharacter = characters.find((c) => c.id === id) ?? null;
+  const isDraft = routeCharacter ? !isCreationFinished(routeCharacter) : false;
   useEffect(() => {
     if (isDraft && id) {
       router.replace(`/build/${id}` as any);
