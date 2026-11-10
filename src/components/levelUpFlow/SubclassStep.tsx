@@ -57,7 +57,7 @@ export function SubclassStep({
 
 const styles = StyleSheet.create({
   subclassChip: {
-    minHeight: 44,
+    minHeight: 48,
     borderRadius: 8,
     borderWidth: 1,
     paddingHorizontal: 12,

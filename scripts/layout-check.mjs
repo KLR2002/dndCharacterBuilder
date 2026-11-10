@@ -1610,8 +1610,9 @@ async function openLevelUp(page) {
 }
 
 // Walks from the Hit Points step to Review: the given HP mode, then on every later step the first
-// Subclass option, a CON (+2) ASI and the first offered spell where those steps appear.
-async function walkToReview(page, hpMode) {
+// Subclass option, a CON (+2) ASI and the first offered spell where those steps appear. `fail` reports
+// violations seen along the way (e.g. a Subclass chip under 48dp).
+async function walkToReview(page, hpMode, fail = () => {}) {
   await page.getByLabel(hpMode === "roll" ? "Roll hit points" : "Average hit points").first().click();
   await page.waitForTimeout(300);
   for (let i = 0; i < 8; i++) {
@@ -1620,6 +1621,8 @@ async function walkToReview(page, hpMode) {
     if ((await sub.count()) > 0) {
       await sub.click();
       await page.waitForTimeout(300);
+      const chipHeight = await sub.evaluate((el) => el.getBoundingClientRect().height).catch(() => 0);
+      if (chipHeight < 47.5) fail(`a Subclass chip is ${Math.round(chipHeight)}px tall, under 48dp`);
     }
     const con = page.getByLabel("CON (+2)").first();
     if ((await con.count()) > 0) {
@@ -1832,7 +1835,7 @@ async function checkLevelUpCancelAndReview(ctx, width) {
 
   // Review path: average HP and a CON +2 ASI, then "Level up" applies the level and the picks together.
   await openLevelUp(page);
-  await walkToReview(page, "average");
+  await walkToReview(page, "average", fail);
   for (const needle of ["Ranger 3 → 4", "3 → 4", "CON +2"]) {
     if (!(await page.getByText(needle, { exact: true }).first().isVisible().catch(() => false))) fail(`Review does not list "${needle}"`);
   }
@@ -1867,7 +1870,7 @@ async function checkSpellsAfterLevelUp(ctx, width) {
     await page.getByLabel("Level up Sorcerer").first().click();
     await page.getByText("Continue", { exact: true }).first().click();
     await page.getByLabel("Roll hit points").first().waitFor({ state: "visible", timeout: 10000 });
-    await walkToReview(page, "average");
+    await walkToReview(page, "average", fail);
     await page.getByText("Level up", { exact: true }).first().click();
     await page.waitForTimeout(1500);
     if (!(await page.getByText("Lvl 2", { exact: true }).first().isVisible().catch(() => false)))
@@ -1901,7 +1904,7 @@ async function checkSpellsAfterLevelUp(ctx, width) {
     await page.getByLabel("Level up Wizard").first().click();
     await page.getByText("Continue", { exact: true }).first().click();
     await page.getByLabel("Roll hit points").first().waitFor({ state: "visible", timeout: 10000 });
-    await walkToReview(page, "average");
+    await walkToReview(page, "average", fail);
     await page.getByText("Level up", { exact: true }).first().click();
     await page.waitForTimeout(1500);
     if (!(await page.getByText("Lvl 4", { exact: true }).first().isVisible().catch(() => false)))
