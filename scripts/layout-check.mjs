@@ -1420,16 +1420,21 @@ async function checkActionRolls(ctx, width) {
   const cardLive = await page.evaluate(() => document.querySelector('[data-testid="result-card"]')?.getAttribute("aria-live") ?? null);
   if (cardLive !== "polite") fail(`the result card's aria-live is ${cardLive}, expected "polite"`);
   const accentFill = hexToRgbString(ACCENT_PALETTES.crimson.primary);
+  const secondaryFill = hexToRgbString(BASE_DARK_THEME.surfaceHighlight);
   const followUpBg = await page.evaluate(() => {
     const card = document.querySelector('[data-testid="result-card"]');
-    const leaf = card
-      ? [...card.querySelectorAll("*")].find((e) => e.children.length === 0 && (e.textContent ?? "").replace(/[\uE000-\uF8FF]/g, "").trim() === "Roll damage")
-      : null;
-    const btn = leaf ? leaf.closest('[role="button"],button') ?? leaf : null;
-    return btn ? getComputedStyle(btn).backgroundColor : null;
+    if (!card) return null;
+    const strip = (t) => (t ?? "").replace(/[\uE000-\uF8FF]/g, "").trim();
+    // The follow-up renders as a TouchableOpacity; walk up from its text leaf to the element
+    // that carries the background fill.
+    const leaf = [...card.querySelectorAll("*")].find((e) => e.children.length === 0 && strip(e.textContent) === "Roll damage");
+    let el = leaf ?? null;
+    while (el && getComputedStyle(el).backgroundColor === "rgba(0, 0, 0, 0)") el = el.parentElement;
+    return el ? getComputedStyle(el).backgroundColor : null;
   });
   if (followUpBg === null) fail('no "Roll damage" button on the attack card to measure');
-  else if (followUpBg === accentFill) fail('the "Roll damage" follow-up uses the accent fill while the screen below has its own primary action');
+  else if (followUpBg === accentFill || followUpBg !== secondaryFill)
+    fail(`the "Roll damage" follow-up's background is ${followUpBg}, expected the secondary fill ${secondaryFill} (not the accent fill ${accentFill}) while the screen below has its own primary action`);
 
   // The follow-up rolls the damage pool 1d8 + 3 (fixed face clamps to 8 on the d8).
   await page.getByText("Roll damage", { exact: true }).first().click();
