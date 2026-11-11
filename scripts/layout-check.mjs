@@ -13,8 +13,8 @@
 // app and seed it are in scripts/lib/app-driver.mjs (see docs/agents/driving-the-app.md).
 //
 // Usage: `npm run layout:check` (not part of check:all). The script starts its own server on the port in
-// BASE, unless one already answers there: by default a static server over a fresh `expo export -p web`
-// of the production bundle, with `--dev` the Expo web dev server instead. `npm run layout:check -- --integrated`
+// BASE, unless one already answers there: by default the Expo web dev server, with `--prod` a static
+// server over a fresh `expo export -p web` of the production bundle. `npm run layout:check -- --integrated`
 // (or LAYOUT_INTEGRATED=1) seeds the integrated catalog instead of the SRD Baseline and runs at 320 unless
 // WIDTHS is set. The first run
 // needs `npx playwright install chromium` once.
@@ -29,8 +29,8 @@
 // Exit:
 // 0 green, 1 violations, 2 no browser or no server (the server log path is printed then), or an ONLY term that
 // matches no scenario (the scenario names are printed then). `--list` prints the shared scenario list (the
-// SCREENS names) as JSON and exits without starting anything. `--dev` serves the app with the `expo start
-// --web` dev server instead of a static export of the production bundle.
+// SCREENS names) as JSON and exits without starting anything. `--prod` serves a static export of the
+// production bundle instead of the Expo web dev server.
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -56,9 +56,9 @@ const BASE = process.env.BASE ?? "http://localhost:8099";
 const PORT = new URL(BASE).port || "8099";
 const SHOTS = process.env.SHOTS ?? join(tmpdir(), "layout-check");
 const INTEGRATED = process.argv.includes("--integrated") || process.env.LAYOUT_INTEGRATED === "1";
-// `--dev` serves the app with the `expo start --web` dev server; by default the script exports the
-// production web bundle once and serves it statically (see startServer).
-const DEV = process.argv.includes("--dev");
+// `--prod` exports the production web bundle once and serves it statically (see startServer); by
+// default the script starts the `expo start --web` dev server.
+const DEV = !process.argv.includes("--prod");
 // The integrated run exists to catch long names and extra options, and those overflow at the narrowest
 // width, so it runs at 320 only unless WIDTHS is set explicitly.
 const WIDTHS = (process.env.WIDTHS ?? (INTEGRATED ? "320" : "320,393,768,1280")).split(",").map(Number);
@@ -166,10 +166,10 @@ async function stopServer() {
   server = null;
 }
 
-// Starts the server this run checks against, on PORT. By default it exports the production web bundle
-// once (`npx expo export -p web`, EXPO_PUBLIC_E2E=1 so the test hooks are in the bundle) into a temp
-// folder and serves it with scripts/lib/static-server.mjs; `--dev` starts the Expo web dev server
-// instead (see spawnExpoWeb). Resolves "up", "exited" or "timeout" (see waitForExpoWeb).
+// Starts the server this run checks against, on PORT. By default it is the Expo web dev server (see
+// spawnExpoWeb); `--prod` exports the production web bundle once (`npx expo export -p web`,
+// EXPO_PUBLIC_E2E=1 so the test hooks are in the bundle) into a temp folder and serves it with
+// scripts/lib/static-server.mjs. Resolves "up", "exited" or "timeout" (see waitForExpoWeb).
 async function startServer(logPath) {
   if (DEV) {
     server = spawnExpoWeb({ root: ROOT, port: PORT, logPath });
@@ -764,7 +764,7 @@ async function visitScreen(page, width, screen, state) {
   }
   violations = [...violations, ...(await checkNoShrinkRows(page, screen))];
   // The DOM nested-button check runs on every visited screen, so it covers the React dev-mode console
-  // error on its own when the run serves the production bundle (--dev collects that error instead).
+  // error on its own when the run serves the production bundle (--prod), which does not log it.
   violations = [...violations, ...(await page.evaluate(findNestedButtonViolations, ""))];
   if (screen.headerName) violations = [...violations, ...(await page.evaluate(findHeaderNameViolations, { name: screen.headerName, width }))];
   if (screen.expect) violations = [...violations, ...(await checkExpected(page, screen.expect))];
