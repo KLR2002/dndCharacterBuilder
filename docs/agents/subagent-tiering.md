@@ -44,3 +44,4 @@ Every implementation brief points here instead of restating these rules.
 - Interface copy carries only essential mechanic descriptions (`CODING_STANDARDS.md` section 8).
 - Source comments describe the code as it is. Do not write ticket numbers, slice numbers or `.scratch` references in them.
 - Do not widen scope beyond the ticket. Report adjacent problems instead of fixing them.
+- Timebox debugging: when a change breaks a check and two fix attempts have not made it pass, restore the previous behaviour at that site with a comment naming what you tried, list it in your report, and move on.
