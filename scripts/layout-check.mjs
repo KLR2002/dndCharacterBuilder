@@ -18,7 +18,7 @@
 // needs `npx playwright install chromium` once.
 //
 // Fails (one line per violation) on squeezed text and on elements that stick out of a non-scrolling
-// parent. Env: BASE (default http://localhost:8099), WIDTHS (default "393,360,320,412"), ONLY (a comma-separated
+// parent. Env: BASE (default http://localhost:8099), WIDTHS (default "393,360,320,412,768"), ONLY (a comma-separated
 // list of substrings: only the scenarios whose name contains one of them, ignoring case, are visited in every
 // width; unset visits all), SHOTS (screenshot dir, default a layout-check folder under the OS temp dir). Exit:
 // 0 green, 1 violations, 2 no browser or no server (the server log path is printed then), or an ONLY term that
@@ -37,7 +37,8 @@ import {
   stopExpoWeb,
   waitForExpoWeb,
 } from "./lib/app-driver.mjs";
-import { buildScreens, buildSeed, ACTIONS_ID, CHARACTER_ID, DRUID_ID, EDIT_BUILD_ID, LOW_CON_ID, MAX_LEVEL_ID, RANGER_ID, SORCERER_SWAP_ID, WIZARD_ID } from "./lib/scenarios.mjs";
+import { buildScreens, buildSeed, ACTIONS_ID, CHARACTER_ID, DRAFT_ID, DRUID_ID, EDIT_BUILD_ID, LOW_CON_ID, MAX_LEVEL_ID, RANGER_ID, SORCERER_SWAP_ID, WIZARD_ID } from "./lib/scenarios.mjs";
+import { applyWideOverride } from "./lib/scenario-override.mjs";
 import { playStep, playSteps } from "./lib/web-steps.mjs";
 import { ACCENT_PALETTES, BASE_DARK_THEME } from "../src/constants/theme.ts";
 
@@ -45,7 +46,7 @@ const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const BASE = process.env.BASE ?? "http://localhost:8099";
 const PORT = new URL(BASE).port || "8099";
 const SHOTS = process.env.SHOTS ?? join(tmpdir(), "layout-check");
-const WIDTHS = (process.env.WIDTHS ?? "393,360,320,412").split(",").map(Number);
+const WIDTHS = (process.env.WIDTHS ?? "393,360,320,412,768").split(",").map(Number);
 // Lowercase substrings from ONLY. Empty when ONLY is unset or blank, which visits every scenario.
 const ONLY = (process.env.ONLY ?? "").split(",").map((term) => term.trim().toLowerCase()).filter(Boolean);
 const INTEGRATED = process.argv.includes("--integrated") || process.env.LAYOUT_INTEGRATED === "1";
@@ -485,9 +486,32 @@ function findDismissGaps() {
   return boxes.slice(1).map((r, i) => r.top - boxes[i].bottom);
 }
 
+// Whether the first element the locator matches is visible, skipping matches inside the flow's identity
+// side column. At 1024px and up that column repeats the character's abilities, subrace and background, so a
+// step's own absence checks must not read its subtree; every other check (overflow, squeeze, fitsWidth,
+// texts) still covers the column.
+async function firstVisibleOutsideIdentitySide(locator) {
+  for (const handle of await locator.elementHandles()) {
+    const insideSide = await handle.evaluate((el) => document.querySelector('[data-testid="flow-identity-side"]')?.contains(el) ?? false);
+    if (insideSide) continue;
+    return await handle.isVisible();
+  }
+  return false;
+}
+
+// Runs in the browser. Whether the sheet's left rail (testID sheet-tab-rail) holds a visible button
+// (a <button> or [role="button"]) with the given aria-label.
+function findRailButton(label) {
+  const rail = document.querySelector('[data-testid="sheet-tab-rail"]');
+  if (!rail) return false;
+  return [...rail.querySelectorAll("button, [role=\"button\"]")].some(
+    (b) => b.getAttribute("aria-label") === label && b.getBoundingClientRect().height > 0,
+  );
+}
+
 // Checks what a picker screen must show that the layout rules cannot see: texts, input placeholders and
-// accessibility labels on the page (`labels` present, `absentLabels` gone), and (`plainRaceRow`) the plain race
-// row. Returns one message per missing control.
+// accessibility labels on the page (`labels` present, `absentLabels` gone), buttons inside the sheet's
+// left rail (`railLabels`), and (`plainRaceRow`) the plain race row. Returns one message per missing control.
 async function checkExpected(page, expect) {
   const out = [];
   if (expect.cardWithout) {
@@ -505,16 +529,19 @@ async function checkExpected(page, expect) {
     if (!(await page.getByPlaceholder(placeholder).first().isVisible())) out.push(`missing the input with placeholder "${placeholder}"`);
   }
   for (const text of expect.absent ?? []) {
-    if (await page.getByText(text, { exact: true }).first().isVisible()) out.push(`"${text}" is shown but should not be`);
+    if (await firstVisibleOutsideIdentitySide(page.getByText(text, { exact: true }))) out.push(`"${text}" is shown but should not be`);
   }
   for (const pattern of expect.absentMatching ?? []) {
-    if (await page.getByText(pattern).first().isVisible()) out.push(`text matching ${pattern} is shown but should not be`);
+    if (await firstVisibleOutsideIdentitySide(page.getByText(pattern))) out.push(`text matching ${pattern} is shown but should not be`);
   }
   for (const label of expect.labels ?? []) {
     if (!(await page.getByLabel(label).first().isVisible())) out.push(`missing the control labelled "${label}"`);
   }
   for (const label of expect.absentLabels ?? []) {
     if ((await page.getByLabel(label).count()) > 0) out.push(`the control labelled "${label}" is present but should not be`);
+  }
+  for (const label of expect.railLabels ?? []) {
+    if (!(await page.evaluate(findRailButton, label))) out.push(`the sheet tab rail has no visible button labelled "${label}"`);
   }
   for (const text of expect.disabled ?? []) {
     const { disabled, state } = await page.evaluate(buttonDisabled, text);
@@ -602,7 +629,7 @@ async function checkScreens(ctx, width) {
   const page = await ctx.newPage();
   const state = { route: null };
   let failures = 0;
-  for (const screen of SCREENS) if (selected(screen.name)) failures += await visitScreen(page, width, screen, state);
+  for (const screen of SCREENS) if (selected(screen.name)) failures += await visitScreen(page, width, applyWideOverride(screen, width), state);
   await page.close();
   return failures;
 }
@@ -913,6 +940,23 @@ async function checkModalClosing(ctx, width) {
   return failures;
 }
 
+// Runs in the browser. The rects of the floating dice button and of the flow footer's controls — the wide
+// footer (testID flow-wide-footer) holds the identity line (flow-identity-line) and the primary action
+// (flow-primary-action); at 1024px and up the identity side column replaces the footer's identity line.
+function findDiceButtonVsFlowFooter() {
+  const rect = (el) => {
+    if (!el) return null;
+    const r = el.getBoundingClientRect();
+    return { left: r.left, right: r.right, top: r.top, bottom: r.bottom, width: r.width, height: r.height };
+  };
+  return {
+    button: rect(document.querySelector('[data-testid="dice-button"]')),
+    footer: rect(document.querySelector('[data-testid="flow-wide-footer"]')),
+    primary: rect(document.querySelector('[data-testid="flow-primary-action"]')),
+    identity: rect(document.querySelector('[data-testid="flow-identity-line"]')),
+  };
+}
+
 // The floating dice button, the tray's pool roll and the session Roll Log at one width: the button opens
 // the tray on the sheet; the tray builds a pool (die buttons add, chips remove, the modifier steps, the
 // Disadvantage / Normal / Advantage choice only for a lone d20, the primary action labelled with the pool
@@ -1207,6 +1251,44 @@ async function checkDiceTrayAndLog(ctx, width) {
       fail(`at ${width}px (wide flow layout) the flow's step scroll content still pads its bottom by ${Math.round(scrollPad)}px for a corner button`);
     await flowPage.screenshot({ path: join(SHOTS, `DiceTray-flow-${width}.png`) });
     await flowPage.close();
+  }
+
+  // At 768px and up the flow shows its wide footer in the middle column while the floating dice button stays
+  // in the viewport's bottom-right corner, so the footer must reserve the button's footprint: the button's
+  // rect may intersect neither the footer's primary action nor its identity line — in the Creation Flow and
+  // in the Level-Up Flow alike. (Below 768 the bar check above already keeps the button off the bar.)
+  if (width >= 768) {
+    const flows = [
+      ["Creation Flow", `/build/${DRAFT_ID}?step=background`, "Create Custom"],
+      ["Level-Up Flow", `/levelup/${EDIT_BUILD_ID}`, /Fighter/],
+    ];
+    for (const [flowName, route, ready] of flows) {
+      const flowPage = await ctx.newPage();
+      await flowPage.goto(`${BASE}${route}`, { waitUntil: "networkidle", timeout: 120000 });
+      await flowPage.waitForTimeout(1500);
+      const readyLocator = typeof ready === "string" ? flowPage.getByText(ready, { exact: true }) : flowPage.getByText(ready);
+      if (!(await readyLocator.first().waitFor({ state: "visible", timeout: 10000 }).then(() => true).catch(() => false))) {
+        fail(`${flowName} did not load (${route})`);
+      } else {
+        const geo = await flowPage.evaluate(findDiceButtonVsFlowFooter);
+        if (!geo.button) fail(`no floating dice button in the ${flowName}`);
+        else {
+          for (const [what, rect] of [["primary action", geo.primary], ["identity line", geo.identity]]) {
+            if (!rect) continue;
+            const overX = Math.min(geo.button.right, rect.right) - Math.max(geo.button.left, rect.left);
+            const overY = Math.min(geo.button.bottom, rect.bottom) - Math.max(geo.button.top, rect.top);
+            if (overX > 1 && overY > 1)
+              fail(
+                `the dice button covers the ${flowName}'s footer ${what} by ${Math.round(overX)}x${Math.round(overY)}px ` +
+                  `(button ${Math.round(geo.button.left)},${Math.round(geo.button.top)}-${Math.round(geo.button.right)},${Math.round(geo.button.bottom)} ` +
+                  `over ${what} ${Math.round(rect.left)},${Math.round(rect.top)}-${Math.round(rect.right)},${Math.round(rect.bottom)})`,
+              );
+          }
+        }
+        await flowPage.screenshot({ path: join(SHOTS, `DiceTray-flow-footer-${flowName.replace(/\W+/g, "-")}-${width}.png`) });
+      }
+      await flowPage.close();
+    }
   }
   return failures;
 }
@@ -2894,6 +2976,7 @@ function unmatchedOnlyTerms() {
 
 // Runs every check at one width, on that width's own browser context. Returns the number of violations.
 async function checkWidth(browser, seed, width) {
+  const startedAt = Date.now();
   const ctx = await browser.newContext({ viewport: { width, height: 851 }, deviceScaleFactor: 2, hasTouch: true, isMobile: true });
   // React logs "<button> cannot contain a nested <button>" as a console error when a pressable with a
   // button role wraps another one; collect those from every page of this width and fail the run on them.
@@ -2914,6 +2997,7 @@ async function checkWidth(browser, seed, width) {
     return failures;
   } finally {
     await ctx.close();
+    console.log(`[${width}px] checks done in ${Math.round((Date.now() - startedAt) / 1000)}s`);
   }
 }
 

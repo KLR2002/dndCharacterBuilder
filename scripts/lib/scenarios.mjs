@@ -6,6 +6,7 @@
 import { join } from "node:path";
 import { makeChar, defaultSettings } from "../../checks/testUtils.ts";
 import { ALL_BOOKS } from "../../src/constants/books.ts";
+import { BREAKPOINTS } from "../../src/hooks/responsiveLayout.ts";
 import { skillChoiceOffers } from "../../src/rules/proficiencySheet.ts";
 import { integratedCollections, makeCatalogReader } from "./app-driver.mjs";
 
@@ -898,7 +899,7 @@ function actionsCharacter() {
 
 // A draft on the Background step: a level 1 Human Fighter with no background picked yet. The home list shows
 // it as "Draft · Background", and opening it lands on the Background step of the Creation Flow, not the sheet.
-const DRAFT_ID = "char_draft";
+export const DRAFT_ID = "char_draft";
 function draftCharacter() {
   return makeChar({
     id: DRAFT_ID,
@@ -1207,7 +1208,10 @@ export function buildScreens({ integrated }) {
   // `index` picks which match to tap (the first by default). A step with `name` instead of a locator has no
   // native form; the scenario carrying one is flagged web-only below. `ready` (a string or regex) is text the
   // screen shows once it is ready. `nativeTexts` lists further texts the Android player waits for in the dump
-  // once ready (the web check reads `expect` instead). `scrollTo` scrolls a needle into view.
+  // once ready (the web check reads `expect` instead). `scrollTo` scrolls a needle into view. A scenario may
+  // also carry `wide`: `{ minWidth, ...overrides }`, merged over the scenario by the web runner
+  // (scripts/lib/scenario-override.mjs, applyWideOverride) when the page width is at or above `minWidth`, so one
+  // scenario can assert a different path at wide widths (the Android runner never applies it).
   const RENDAR_ROUTE = `/character/${CHARACTER_ID}`;
   const WIZARD_ROUTE = `/character/${WIZARD_ID}`;
   const ARTIFICER_ROUTE = `/character/${ARTIFICER_ID}`;
@@ -1232,8 +1236,23 @@ export function buildScreens({ integrated }) {
       { name: "Rolled pending chip hint", route: buildRoute(ROLLED_ID, "abilities"), open: [{ tap: { text: "15", exact: true } }], ready: "Reroll", expect: { absentMatching: [/Now tap an ability slot/], fitsWidth: true } },
       // Re-tapping the already-active Rolled method does nothing: the placements stay on their slots.
       { name: "Rolled retap keeps placements", route: buildRoute(ROLLED_PICKS_ID, "abilities"), open: [{ tap: { text: "Rolled", exact: true } }], ready: /reroll/i, expect: { absentMatching: [/^—$/], fitsWidth: true } },
-      // The identity panel of a point-buy 8 score shows a signed modifier: "8 (-1)", never "8 (+-1)".
-      { name: "Builder identity panel", route: buildRoute(LOW_SCORE_ID, "class"), open: [{ tap: { pattern: "^Fighter 1 · Acolyte$" } }], modal: "Character", expect: { texts: ["8 (-1)"], absent: ["8 (+-1)"], fitsWidth: true } },
+      // The identity panel of a point-buy 8 score shows a signed modifier: "8 (-1)", never "8 (+-1)". On
+      // phones and at 768-1023px the panel opens from the identity line (phone bottom bar, wide footer) as
+      // the "Character" modal; from 1024px up it is the side column, on screen with no tap and no modal.
+      {
+        name: "Builder identity panel",
+        route: buildRoute(LOW_SCORE_ID, "class"),
+        open: [{ tap: { pattern: "^Fighter 1 · Acolyte$" } }],
+        modal: "Character",
+        expect: { texts: ["8 (-1)"], absent: ["8 (+-1)"], fitsWidth: true },
+        wide: {
+          minWidth: BREAKPOINTS.desktop,
+          open: [],
+          modal: null,
+          ready: "8 (-1)",
+          expect: { texts: ["8 (-1)"], absent: ["8 (+-1)"], fitsWidth: true },
+        },
+      },
       { name: "Builder Race", route: buildRoute(CHARACTER_ID, "race"), ready: /traits:/i },
       { name: "Builder Race language choice", route: buildRoute(HALF_ELF_ID, "race"), ready: /Granted Languages:/, scrollTo: "Granted Languages:" },
       // The Subrace step (integrated mode only, where the held race offers several forms): the banner names the
@@ -1328,6 +1347,8 @@ export function buildScreens({ integrated }) {
       { name: "Builder Class equipment picked", route: buildRoute(FIGHTER_PICKED_ID, "equipment"), ready: "Starting Equipment & Gold:", scrollTo: "Starting Equipment & Gold:", expect: { enabled: ["Claim Starting Equipment"], fitsWidth: true } },
       { name: "Builder Class equipment picker open", route: buildRoute(FIGHTER_PICKED_ID, "equipment"), open: [{ tap: { text: "Martial weapon", exact: true } }], ready: "Greatsword", scrollTo: "Martial weapon", expect: { placeholders: ["Search…"] } },
       { name: "Builder Class equipment cleric domain", route: buildRoute(CLERIC_DOMAIN_ID, "equipment"), ready: "Starting Equipment & Gold:", scrollTo: "Starting Equipment & Gold:", expect: { texts: ["Chain Mail", "Included"], absent: ["Warhammer"], fitsWidth: true } },
+      // The Creation Flow's Spells step (Edit Build on the finished wizard reaches it as well).
+      { name: "Builder Spells step", route: buildRoute(WIZARD_ID, "spells"), ready: /add spells/i, expect: { fitsWidth: true } },
       // The SRD Baseline has one Cleric domain, which the app applies at once, so a Cleric without a domain exists in integrated mode only.
       ...(INTEGRATED
         ? [{ name: "Builder Class equipment cleric", route: buildRoute(CLERIC_ID, "equipment"), ready: "Starting Equipment & Gold:", scrollTo: "Starting Equipment & Gold:", expect: { texts: ["Scale Mail"], absent: ["Warhammer", "Chain Mail"], fitsWidth: true } }]
@@ -1525,12 +1546,33 @@ export function buildScreens({ integrated }) {
       { name: "Draft listed with step", route: "/", fresh: true, ready: /5e Character Builder/, expect: { texts: ["Draft · Background"], fitsWidth: true } },
       { name: "Draft opens in flow", route: "/", open: [{ tap: { text: "Draft · Background", exact: true } }], ready: "Create Custom", expect: { texts: ["Background"], absent: ["Builder", "Stats", "Actions", "Inventory", "Features", "Journal", "Spells"], fitsWidth: true } },
       { name: "Draft sheet redirects to flow", route: `/character/${DRAFT_ID}`, ready: "Create Custom", expect: { texts: ["Background"], absent: ["Builder", "Stats", "Actions", "Inventory", "Features", "Journal", "Spells"], fitsWidth: true } },
-      // Confirming Review finishes the character: the sheet opens on Wren and its menu holds Level up and
-      // Edit Build (at 768px and up the rail holds them; the "Sheet chrome" check asserts that per width).
-      // The menu is opened here so both runners see the two rows: the web check's expect (which also sees
-      // the name under the open menu), and natively nativeTexts — the dump of an open dialog shows only the
-      // dialog's window, so the sheet's name is not in it.
-      { name: "Review finishes character", route: REVIEW_DRAFT_ROUTE, open: [{ tap: { text: "Create character", exact: true } }, { tap: { label: "Sheet menu" } }], modal: "Character", nativeTexts: ["Level up", "Edit Build"], expect: { texts: ["Level up", "Edit Build", "Wren"], absent: ["Builder"], fitsWidth: true } },
+      // Confirming Review finishes the character: the sheet opens on Wren holding Level up and Edit Build.
+      // On phones the header's Sheet menu is opened here so both runners see the two rows: the web check's
+      // expect (which also sees the name under the open menu), and natively nativeTexts — the dump of an open
+      // dialog shows only the dialog's window, so the sheet's name is not in it. At 768px and up the sheet has
+      // no menu button (absentLabels "Sheet menu"): the left rail holds Level up and Edit Build as buttons
+      // (railLabels), asserted with no modal.
+      {
+        name: "Review finishes character",
+        route: REVIEW_DRAFT_ROUTE,
+        open: [{ tap: { text: "Create character", exact: true } }, { tap: { label: "Sheet menu" } }],
+        modal: "Character",
+        nativeTexts: ["Level up", "Edit Build"],
+        expect: { texts: ["Level up", "Edit Build", "Wren"], absent: ["Builder"], fitsWidth: true },
+        wide: {
+          minWidth: BREAKPOINTS.tablet,
+          open: [{ tap: { text: "Create character", exact: true } }],
+          modal: null,
+          ready: "Wren",
+          expect: {
+            texts: ["Level up", "Edit Build", "Wren"],
+            railLabels: ["Level up", "Edit Build"],
+            absentLabels: ["Sheet menu"],
+            absent: ["Builder"],
+            fitsWidth: true,
+          },
+        },
+      },
       // Edit Build on a finished character: choosing the Background step opens the flow there with every step reachable.
       {
         name: "Builder Edit Build background step",
@@ -1564,6 +1606,24 @@ export function buildScreens({ integrated }) {
         open: [{ tap: { label: "Level up Fighter" } }],
         ready: "Hit Points",
         expect: { texts: ["Class", "Hit Points", "ASI/Feat", "Review", "Fighter", "3 → 4"], fitsWidth: true },
+      },
+      // The Level-Up Flow's identity line — phone bottom bar below 768px, wide footer from 768px up — opens
+      // the same "Character" modal as the Creation Flow's; from 1024px up the panel is the side column, on
+      // screen with no tap and no modal. So the default 768px width exercises the Level-Up Flow's wide
+      // footer and its identity modal.
+      {
+        name: "Level-Up Flow identity panel",
+        route: `/levelup/${EDIT_BUILD_ID}`,
+        open: [{ tap: { pattern: "^Fighter 3 · Human · Acolyte$" } }],
+        modal: "Character",
+        expect: { texts: ["9 (-1)", "Haldane", "Battle Master"], absent: ["9 (+-1)"], fitsWidth: true },
+        wide: {
+          minWidth: BREAKPOINTS.desktop,
+          open: [],
+          modal: null,
+          ready: "9 (-1)",
+          expect: { texts: ["9 (-1)", "Haldane", "Battle Master"], absent: ["9 (+-1)"], fitsWidth: true },
+        },
       },
       // Edit Build's Class step offers only lowering: lowering the Fighter releases the level-3 maneuvers and
       // flags their steps with the warning; no raise control is offered.

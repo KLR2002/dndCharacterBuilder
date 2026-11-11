@@ -12,6 +12,15 @@ import { RollResultView } from "./rollViews";
 /** How long the result card stays before it disappears on its own. */
 const RESULT_CARD_TIMEOUT_MS = 8000;
 
+/** The floating dice button's diameter in dp. */
+export const DICE_BUTTON_SIZE = 56;
+
+/** The button's gap from the screen's right edge, and from the phone bottom bar's top, in dp. */
+export const DICE_BUTTON_EDGE_MARGIN = 16;
+
+/** The horizontal space the floating button takes from the screen's right edge: its size plus its margin. */
+export const DICE_BUTTON_FOOTPRINT = DICE_BUTTON_SIZE + DICE_BUTTON_EDGE_MARGIN;
+
 /** The 56dp floating dice button, bottom-right of every screen. Only an open modal's overlay covers it. */
 function FloatingDiceButton({ bottom, onPress }: { bottom: number; onPress: () => void }) {
   const { theme } = useAppTheme();
@@ -142,7 +151,7 @@ export function DiceOverlay() {
       {latest ? (
         <ResultCard
           entry={latest}
-          bottom={buttonBottom + 56 + 8}
+          bottom={buttonBottom + DICE_BUTTON_SIZE + 8}
           fullWidth={isPhone}
           onDismiss={dismissResult}
           onOpenLog={() => openTray("log")}
@@ -166,10 +175,10 @@ const styles = StyleSheet.create({
   },
   button: {
     position: "absolute",
-    right: 16,
-    width: 56,
-    height: 56,
-    borderRadius: 28,
+    right: DICE_BUTTON_EDGE_MARGIN,
+    width: DICE_BUTTON_SIZE,
+    height: DICE_BUTTON_SIZE,
+    borderRadius: DICE_BUTTON_SIZE / 2,
     borderWidth: 1,
     alignItems: "center",
     justifyContent: "center",

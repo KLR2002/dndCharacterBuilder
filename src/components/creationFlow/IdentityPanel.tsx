@@ -25,7 +25,7 @@ function DetailRow({ label, value }: { label: string; value: string }) {
     <View style={styles.detailRow}>
       <Text style={[styles.detailLabel, { color: theme.textSecondary }]}>{label}</Text>
       <Text style={[styles.detailValue, { color: theme.text }]} numberOfLines={2}>
-        {value || "—"}
+        {value}
       </Text>
     </View>
   );
@@ -67,10 +67,18 @@ export function IdentityPanel({
             <DetailRow label="Hit points" value={levelHp.hitPoints} />
           </>
         ) : null}
-        <DetailRow label="Race" value={character.race?.name ?? ""} />
-        <DetailRow label="Subrace" value={character.race?.subraceName ?? ""} />
-        <DetailRow label="Background" value={character.background?.name ?? ""} />
-        <DetailRow label="Subclass" value={entry?.subclassName ?? ""} />
+        {(
+          [
+            ["Race", character.race?.name ?? ""],
+            ["Subrace", character.race?.subraceName ?? ""],
+            ["Background", character.background?.name ?? ""],
+            ["Subclass", entry?.subclassName ?? ""],
+          ] as const
+        )
+          .filter(([, value]) => value !== "")
+          .map(([label, value]) => (
+            <DetailRow key={label} label={label} value={value} />
+          ))}
       </View>
       <View style={[styles.detailBlock, { borderTopColor: theme.border }]}>
         {ABILITIES.map((ability) => (
