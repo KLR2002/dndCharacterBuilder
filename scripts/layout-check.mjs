@@ -22,7 +22,10 @@
 // parent. Env: BASE (default http://localhost:8099), WIDTHS (default "320,393,768,1280": compact, phone, tablet
 // and desktop, one width per layout; `-- --integrated` narrows it to 320 unless WIDTHS is set), ONLY (a comma-separated
 // list of substrings: only the scenarios whose name contains one of them, ignoring case, are visited in every
-// width; unset visits all), SHOTS (screenshot dir, default a layout-check folder under the OS temp dir). Exit:
+// width; unset visits all), SHOTS_ONLY (comma-separated substrings, like ONLY; "all" writes every screenshot;
+// unset writes a screenshot only for a failed scenario or check, or one marked shot: true), SHOTS (screenshot
+// dir, default a layout-check folder under the OS temp dir), DSF (deviceScaleFactor of the contexts, default 2).
+// Exit:
 // 0 green, 1 violations, 2 no browser or no server (the server log path is printed then), or an ONLY term that
 // matches no scenario (the scenario names are printed then). `--list` prints the shared scenario list (the
 // SCREENS names) as JSON and exits without starting anything. `--dev` serves the app with the `expo start
@@ -58,6 +61,30 @@ const WIDTHS = (process.env.WIDTHS ?? (INTEGRATED ? "320" : "320,393,768,1280"))
 const SINGLE_RUN_WIDTH = Math.min(...WIDTHS);
 // Lowercase substrings from ONLY. Empty when ONLY is unset or blank, which visits every scenario.
 const ONLY = (process.env.ONLY ?? "").split(",").map((term) => term.trim().toLowerCase()).filter(Boolean);
+// Lowercase substrings from SHOTS_ONLY ("all" writes every screenshot). Unset by default: a scenario or
+// extra check then writes its screenshot only when it fails or when it is marked shot: true.
+const SHOTS_ONLY = (process.env.SHOTS_ONLY ?? "").split(",").map((term) => term.trim().toLowerCase()).filter(Boolean);
+const SHOTS_ALL = SHOTS_ONLY.includes("all");
+// The deviceScaleFactor of the browser contexts (DSF env).
+const DSF = Number(process.env.DSF ?? 2);
+
+// Whether the scenario or check `meta` ({ name, shot }) writes its screenshots this run when it does not
+// fail: SHOTS_ALL, a SHOTS_ONLY substring match, or its own shot: true mark.
+function shotWanted(meta) {
+  return SHOTS_ALL || meta.shot === true || SHOTS_ONLY.some((term) => meta.name.toLowerCase().includes(term));
+}
+
+// Writes the screenshot at `file` when the scenario or check `meta` is selected (see shotWanted).
+async function maybeShot(page, file, meta) {
+  if (shotWanted(meta)) await page.screenshot({ path: file });
+}
+
+// A check's FAILED screenshot, written once at its first violation: failures always write a shot, even
+// when SHOTS_ONLY does not select the check.
+function shotFailed(page, meta, width) {
+  page.screenshot({ path: join(SHOTS, `${meta.name.replace(/\W+/g, "-")}-FAILED-${width}.png`) }).catch(() => {});
+}
+
 
 // Runs in the browser (handed to page.evaluate as one object): resolves once the web fonts are ready,
 // the element `probeSel` exists, and its layout signature — its rect and scroll size, the document's
@@ -416,32 +443,43 @@ function findWildShapeControls() {
 }
 
 // Opens the wild shape HP box from one control, checks it (no violations, shows the form's "+4 Temp" line), closes it.
-async function checkWildShapeBox(page, index, prefix, shot) {
+async function checkWildShapeBox(page, index, prefix, shot, meta, width) {
   if (index < 0) {
     console.log(`${prefix} no "Change wild shape hit points" control found`);
     return 1;
   }
   let failures = 0;
+  let failedShotTaken = false;
+  const shotFailedOnce = () => {
+    if (!failedShotTaken) {
+      failedShotTaken = true;
+      shotFailed(page, meta, width);
+    }
+  };
   await page.locator('[aria-label="Change wild shape hit points"]').nth(index).click();
   await page.getByText("Set to", { exact: true }).first().waitFor({ state: "visible", timeout: 10000 });
   await settle(page);
-  await page.screenshot({ path: join(SHOTS, shot) });
+  await maybeShot(page, join(SHOTS, shot), meta);
   const modal = await page.evaluateHandle(findHpModal);
   if (!modal.asElement()) {
     failures++;
+    shotFailedOnce();
     console.log(`${prefix} modal not found`);
   } else {
     const text = await page.evaluate((el) => el.textContent || "", modal);
     if (!text.includes("Wild Shape HP")) {
       failures++;
+      shotFailedOnce();
       console.log(`${prefix} modal is not the wild shape box`);
     }
     if (!text.includes("+4 Temp")) {
       failures++;
+      shotFailedOnce();
       console.log(`${prefix} modal does not show the form's "+4 Temp" line`);
     }
     for (const v of await page.evaluate(findLayoutViolations, modal)) {
       failures++;
+      shotFailedOnce();
       console.log(`${prefix} ${v}`);
     }
   }
@@ -452,7 +490,7 @@ async function checkWildShapeBox(page, index, prefix, shot) {
 }
 
 // Opens the Druid's Stats tab and checks the Active Wild Shape box and the header badge that opens the same box.
-async function checkWildShapeScreen(ctx, width) {
+async function checkWildShapeScreen(ctx, width, meta) {
   const page = await ctx.newPage();
   await gotoApp(page, `${BASE}/character/${DRUID_ID}`);
   await page.getByText("Stats", { exact: true }).first().click();
@@ -463,16 +501,24 @@ async function checkWildShapeScreen(ctx, width) {
     el?.scrollIntoView({ block: "center" });
   });
   await settle(page);
-  await page.screenshot({ path: join(SHOTS, `WildShape-Stats-${width}.png`) });
+  await maybeShot(page, join(SHOTS, `WildShape-Stats-${width}.png`), meta);
   let failures = 0;
+  let failedShotTaken = false;
+  const shotFailedOnce = () => {
+    if (!failedShotTaken) {
+      failedShotTaken = true;
+      shotFailed(page, meta, width);
+    }
+  };
   for (const v of await page.evaluate(findLayoutViolations, null)) {
     failures++;
+    shotFailedOnce();
     console.log(`[${width}px wild shape Stats] ${v}`);
   }
   failures += await checkWildShapeTempLine(page, `[${width}px wild shape Stats]`);
   const controls = await page.evaluate(findWildShapeControls);
-  failures += await checkWildShapeBox(page, controls.stats, `[${width}px wild shape box from Stats number]`, `WildShapeModal-${width}.png`);
-  failures += await checkWildShapeBox(page, controls.header, `[${width}px wild shape box from header badge]`, `WildShapeModal-header-${width}.png`);
+  failures += await checkWildShapeBox(page, controls.stats, `[${width}px wild shape box from Stats number]`, `WildShapeModal-${width}.png`, meta, width);
+  failures += await checkWildShapeBox(page, controls.header, `[${width}px wild shape box from header badge]`, `WildShapeModal-header-${width}.png`, meta, width);
   await page.close();
   return failures;
 }
@@ -495,7 +541,7 @@ function findWildShapeCard() {
 }
 
 // Opens the Druid's Features tab (same shared Active Wild Shape card as Stats) and checks the card for layout violations.
-async function checkWildShapeFeatures(ctx, width) {
+async function checkWildShapeFeatures(ctx, width, meta) {
   const page = await ctx.newPage();
   await gotoApp(page, `${BASE}/character/${DRUID_ID}`);
   await page.getByText("Features", { exact: true }).first().click();
@@ -506,15 +552,24 @@ async function checkWildShapeFeatures(ctx, width) {
     el?.scrollIntoView({ block: "center" });
   });
   await settle(page);
-  await page.screenshot({ path: join(SHOTS, `WildShape-Features-${width}.png`) });
+  await maybeShot(page, join(SHOTS, `WildShape-Features-${width}.png`), meta);
   let failures = await checkWildShapeTempLine(page, `[${width}px wild shape Features]`);
+  let failedShotTaken = false;
+  const shotFailedOnce = () => {
+    if (!failedShotTaken) {
+      failedShotTaken = true;
+      shotFailed(page, meta, width);
+    }
+  };
   const card = await page.evaluateHandle(findWildShapeCard);
   if (!card.asElement()) {
     failures++;
+    shotFailedOnce();
     console.log(`[${width}px wild shape Features] no Active Wild Shape card found`);
   } else {
     for (const v of await page.evaluate(findLayoutViolations, card)) {
       failures++;
+      shotFailedOnce();
       console.log(`[${width}px wild shape Features card] ${v}`);
     }
   }
@@ -644,6 +699,7 @@ async function checkExpected(page, expect) {
 // Visits one screen of SCREENS and checks it. Returns the number of violations (or 1 if it never became ready).
 async function visitScreen(page, width, screen, state) {
   const prefix = `[${width}px ${screen.name}]`;
+  const shotFile = join(SHOTS, `${screen.name.replace(/\W+/g, "-")}-${width}.png`);
   const ready = screen.modal ?? screen.ready;
   const readyLocator = typeof ready === "string" ? page.getByText(ready, { exact: true }) : page.getByText(ready);
   try {
@@ -658,6 +714,7 @@ async function visitScreen(page, width, screen, state) {
     await readyLocator.first().waitFor({ state: "visible", timeout: 10000 });
   } catch {
     console.log(`${prefix} did not show ${typeof ready === "string" ? `"${ready}"` : ready} in time`);
+    await page.screenshot({ path: shotFile }).catch(() => {});
     state.route = null;
     return 1;
   }
@@ -670,13 +727,13 @@ async function visitScreen(page, width, screen, state) {
   // A modal's dialog wrapper mounts a beat after its content, so wait for it before settling on it.
   if (screen.modal) await page.waitForSelector('[role="dialog"]', { state: "attached", timeout: 10000 }).catch(() => {});
   await settle(page, screen.modal ? '[role="dialog"]' : "body");
-  await page.screenshot({ path: join(SHOTS, `${screen.name.replace(/\W+/g, "-")}-${width}.png`) });
   state.route = screen.modal ? null : screen.route;
   let violations;
   if (screen.modal) {
     const root = await page.evaluateHandle(findDialog, screen.modal);
     if (!root.asElement()) {
       console.log(`${prefix} modal "${screen.modal}" not found`);
+      await page.screenshot({ path: shotFile }).catch(() => {});
       return 1;
     }
     violations = await page.evaluate(findLayoutViolations, root);
@@ -688,6 +745,8 @@ async function visitScreen(page, width, screen, state) {
   if (screen.headerName) violations = [...violations, ...(await page.evaluate(findHeaderNameViolations, { name: screen.headerName, width }))];
   if (screen.expect) violations = [...violations, ...(await checkExpected(page, screen.expect))];
   for (const v of violations) console.log(`${prefix} ${v}`);
+  // The scenario's screenshot is written only when it failed or SHOTS_ONLY / shot: true selects it.
+  if (violations.length > 0 || shotWanted(screen)) await page.screenshot({ path: shotFile });
   return violations.length;
 }
 
@@ -702,12 +761,19 @@ async function checkScreens(ctx, width) {
 }
 
 // Opens the Stats tab of the Rendar and checks the hit point modal from the Stats HP number and from the header badge.
-async function checkHitPointModals(ctx, width) {
+async function checkHitPointModals(ctx, width, meta) {
   const page = await ctx.newPage();
   await gotoApp(page, `${BASE}/character/${CHARACTER_ID}`);
   await page.getByText("Stats", { exact: true }).first().click();
   await settle(page);
   let failures = 0;
+  let failedShotTaken = false;
+  const shotFailedOnce = () => {
+    if (!failedShotTaken) {
+      failedShotTaken = true;
+      shotFailed(page, meta, width);
+    }
+  };
   const controls = await page.evaluate(findHpControls);
   const entries = [
     ["Stats number", controls.stats, `HpModal-${width}.png`],
@@ -717,20 +783,23 @@ async function checkHitPointModals(ctx, width) {
     const prefix = `[${width}px HP modal from ${entry}]`;
     if (index < 0) {
       failures++;
+      shotFailedOnce();
       console.log(`${prefix} no "Change hit points" control found`);
       continue;
     }
     await page.locator('[aria-label="Change hit points"]').nth(index).click();
     await page.getByText("Set to", { exact: true }).first().waitFor({ state: "visible", timeout: 10000 });
     await settle(page);
-    await page.screenshot({ path: join(SHOTS, shot) });
+    await maybeShot(page, join(SHOTS, shot), meta);
     const modal = await page.evaluateHandle(findHpModal);
     if (!modal.asElement()) {
       failures++;
+      shotFailedOnce();
       console.log(`${prefix} modal not found`);
     } else {
       for (const v of await page.evaluate(findLayoutViolations, modal)) {
         failures++;
+        shotFailedOnce();
         console.log(`${prefix} ${v}`);
       }
     }
@@ -756,16 +825,24 @@ function folderBadgeCount(folder) {
 // "New character" on Home creates its draft in the root, outside any folder: after the tap the folder's
 // count badge is unchanged and the new draft card lists at the root. The player moves it with the card's
 // move-to-folder action.
-async function checkDraftFolder(ctx, width) {
+async function checkDraftFolder(ctx, width, meta) {
   const page = await ctx.newPage();
   const prefix = `[${width}px draft folder]`;
   let failures = 0;
+  let failedShotTaken = false;
+  const shotFailedOnce = () => {
+    if (!failedShotTaken) {
+      failedShotTaken = true;
+      shotFailed(page, meta, width);
+    }
+  };
   await gotoApp(page, `${BASE}/`);
   await page.getByText(/5e Character Builder/).first().waitFor({ state: "visible", timeout: 10000 });
   const before = await page.evaluate(folderBadgeCount, "Camp");
   if (before === null) {
     console.log(`${prefix} the home list shows no "Camp" folder`);
     failures++;
+    shotFailedOnce();
   }
   await playStep(page, { tap: { name: "home-header-add" } });
   const opened = await page
@@ -777,19 +854,22 @@ async function checkDraftFolder(ctx, width) {
   if (!opened) {
     console.log(`${prefix} the new draft did not open the Creation Flow`);
     failures++;
+    shotFailedOnce();
   }
   await gotoApp(page, `${BASE}/`);
   await page.getByText(/5e Character Builder/).first().waitFor({ state: "visible", timeout: 10000 });
   await settle(page);
-  await page.screenshot({ path: join(SHOTS, `DraftFolder-${width}.png`) });
+  await maybeShot(page, join(SHOTS, `DraftFolder-${width}.png`), meta);
   const after = await page.evaluate(folderBadgeCount, "Camp");
   if (before !== null && after !== before) {
     console.log(`${prefix} the "Camp" folder lists ${after} character(s) after "New character", expected ${before}: the draft landed in a folder instead of the root`);
     failures++;
+    shotFailedOnce();
   }
   if (!(await page.getByText("Draft · Class", { exact: true }).first().isVisible())) {
     console.log(`${prefix} the new draft card "Draft · Class" is not listed on Home`);
     failures++;
+    shotFailedOnce();
   }
   await page.close();
   return failures;
@@ -824,14 +904,19 @@ async function tapBackdrop(page) {
 // "Close" and a swipe down on that handle; on wide screens the dialog closes on a backdrop tap, Escape and
 // the ✕ button. A modal holding unsaved input asks "Discard changes?" first on every one of those paths,
 // and only "Discard" closes it. Every width also checks the open modal's shape (checkModalShape).
-async function checkModalClosing(ctx, width) {
+async function checkModalClosing(ctx, width, meta) {
   const page = await ctx.newPage();
   const prefix = `[${width}px modal closing]`;
   const phone = width < 600;
   let failures = 0;
+  let failedShotTaken = false;
   const fail = (msg) => {
     failures++;
     console.log(`${prefix} ${msg}`);
+    if (!failedShotTaken) {
+      failedShotTaken = true;
+      shotFailed(page, meta, width);
+    }
   };
   const shot = (name) => join(SHOTS, `ModalClosing-${name}-${width}.png`);
   // Waits until the modal titled `title` is visible (wantVisible true) or gone (false).
@@ -899,11 +984,11 @@ async function checkModalClosing(ctx, width) {
       // The dialog wrapper and its role mount a beat after the modal content, so wait for the shell first.
       await settleDialog(page);
       for (const v of await checkModalShape(page, width)) fail(v);
-      await page.screenshot({ path: shot("open") });
+      await maybeShot(page, shot("open"), meta);
     }
     await close();
     if (!(await waitDialog("Rest & Recovery", false))) fail(`${how} did not close the Rest modal`);
-    if (how === "backdrop") await page.screenshot({ path: shot("backdrop-closed") });
+    if (how === "backdrop") await maybeShot(page, shot("backdrop-closed"), meta);
   }
   await closeRestIfOpen();
 
@@ -914,7 +999,7 @@ async function checkModalClosing(ctx, width) {
   await page.getByPlaceholder("e.g. Curse of Strahd, One-Shots").fill("Unsaved Test Folder");
   if (!(await tapBackdrop(page))) fail("could not tap the backdrop of the edited folder modal");
   await settleDialog(page);
-  await page.screenshot({ path: shot("confirm") });
+  await maybeShot(page, shot("confirm"), meta);
   if (!(await dialogShown("Discard changes?"))) fail("tapping the backdrop of an edited modal did not ask \"Discard changes?\"");
   if (!(await dialogShown("Create New Folder"))) fail("the edited modal closed on backdrop tap instead of asking first");
   if (await tapButton("Keep editing")) {
@@ -1039,7 +1124,7 @@ function findDiceButtonVsFlowFooter() {
 // right total; a Roll seeded through the publishing seam reads "Kara · Longsword attack" and sits above
 // the "Dice tray" entry, newest first, when the card is tapped; a reload empties the log; on phones the
 // button sits above the flow's bottom primary-action bar, never covering it.
-async function checkDiceTrayAndLog(ctx, width) {
+async function checkDiceTrayAndLog(ctx, width, meta) {
   const page = await ctx.newPage();
   // The result-card auto-dismiss below is a setTimeout: the clock lets the check fast-forward past the
   // 8s instead of sleeping through it (real time still flows while installed, so every other wait on
@@ -1047,9 +1132,14 @@ async function checkDiceTrayAndLog(ctx, width) {
   await page.clock.install();
   const prefix = `[${width}px dice tray]`;
   let failures = 0;
+  let failedShotTaken = false;
   const fail = (msg) => {
     failures++;
     console.log(`${prefix} ${msg}`);
+    if (!failedShotTaken) {
+      failedShotTaken = true;
+      shotFailed(page, meta, width);
+    }
   };
   const shot = (name) => join(SHOTS, `DiceTray-${name}-${width}.png`);
   const dialogSel = '[role="dialog"]';
@@ -1061,7 +1151,7 @@ async function checkDiceTrayAndLog(ctx, width) {
   await diceButton.click();
   await page.waitForSelector(dialogSel, { state: "visible", timeout: 10000 }).catch(() => fail("the tray did not open from the floating button"));
   for (const v of await checkModalShape(page, width)) fail(v);
-  await page.screenshot({ path: shot("tray") });
+  await maybeShot(page, shot("tray"), meta);
 
   // 48dp touch targets: the Dice/Log segments, the mode segments and the removable pool chips.
   const segHeights = await page.evaluate(() => {
@@ -1212,7 +1302,7 @@ async function checkDiceTrayAndLog(ctx, width) {
     await page
       .waitForFunction(() => document.querySelector('[data-testid="result-source"]')?.textContent?.includes("Kara"), null, { timeout: 10000, polling: 100 })
       .catch(() => fail('the result card was not replaced by the seeded "Kara · Longsword attack" entry'));
-    await page.screenshot({ path: shot("result") });
+    await maybeShot(page, shot("result"), meta);
     // The card's geometry: full width minus the 16px gutters on phones, at most 360px at the bottom-right
     // at wide widths, just above the floating button.
     const geo = await page.evaluate(() => {
@@ -1258,7 +1348,7 @@ async function checkDiceTrayAndLog(ctx, width) {
     if (headings.length < 2) fail(`the Roll Log shows ${headings.length} entries, expected 2: ${JSON.stringify(headings)}`);
     else if (headings[0] !== "Kara · Longsword attack" || headings[1] !== "Dice tray")
       fail(`the Roll Log is not newest first with character and source: ${JSON.stringify(headings)}`);
-    await page.screenshot({ path: shot("log") });
+    await maybeShot(page, shot("log"), meta);
     await page.keyboard.press("Escape");
     await page.waitForSelector(dialogSel, { state: "hidden", timeout: 10000 }).catch(() => fail("Escape did not close the tray"));
     // A card without a follow-up still auto-dismisses after about 8s — and the announce region
@@ -1291,7 +1381,7 @@ async function checkDiceTrayAndLog(ctx, width) {
   await settle(page);
   if (!(await page.getByText("No rolls yet.", { exact: true }).first().isVisible().catch(() => false)))
     fail("after a reload the Roll Log is not empty");
-  await page.screenshot({ path: shot("log-empty") });
+  await maybeShot(page, shot("log-empty"), meta);
   await page.close();
 
   // The padding follows the flow's own layout, whose wide breakpoint is FLOW_WIDE_MIN_WIDTH (768) in
@@ -1334,7 +1424,7 @@ async function checkDiceTrayAndLog(ctx, width) {
       fail(`the flow's step scroll content pads its bottom by ${Math.round(scrollPad)}px, under the 72dp the floating dice button needs (56dp button + 16dp gap)`);
     else if (width >= 768 && scrollPad >= 71)
       fail(`at ${width}px (wide flow layout) the flow's step scroll content still pads its bottom by ${Math.round(scrollPad)}px for a corner button`);
-    await flowPage.screenshot({ path: join(SHOTS, `DiceTray-flow-${width}.png`) });
+    await maybeShot(flowPage, join(SHOTS, `DiceTray-flow-${width}.png`), meta);
     await flowPage.close();
   }
 
@@ -1369,7 +1459,7 @@ async function checkDiceTrayAndLog(ctx, width) {
               );
           }
         }
-        await flowPage.screenshot({ path: join(SHOTS, `DiceTray-flow-footer-${flowName.replace(/\W+/g, "-")}-${width}.png`) });
+        await maybeShot(flowPage, join(SHOTS, `DiceTray-flow-footer-${flowName.replace(/\W+/g, "-")}-${width}.png`), meta);
       }
       await flowPage.close();
     }
@@ -1392,13 +1482,18 @@ function hexToRgbString(hex) {
 // the accent colour, a dropped d20 included but muted; with the setting switched off in Options (and
 // kept off across a reload), or with reduced motion emulated and no setting saved, no dice mount and
 // the text appears at once; the Options switch shows the effective state.
-async function checkDiceAnimation(ctx, width) {
+async function checkDiceAnimation(ctx, width, meta) {
   const page = await ctx.newPage();
   const prefix = `[${width}px dice animation]`;
   let failures = 0;
+  let failedShotTaken = false;
   const fail = (msg) => {
     failures++;
     console.log(`${prefix} ${msg}`);
+    if (!failedShotTaken) {
+      failedShotTaken = true;
+      shotFailed(page, meta, width);
+    }
   };
   const shot = (name) => join(SHOTS, `DiceAnimation-${name}-${width}.png`);
   const dialogSel = '[role="dialog"]';
@@ -1477,7 +1572,7 @@ async function checkDiceAnimation(ctx, width) {
       if (faces.d6bg !== accentRgb) fail(`the d6 die is filled ${faces.d6bg}, expected the accent ${accentRgb}`);
       if (faces.d8fill !== accentHex) fail(`the d8 die's SVG face is filled ${faces.d8fill}, expected the accent ${accentHex}`);
     }
-    await page.screenshot({ path: shot("animated") });
+    await maybeShot(page, shot("animated"), meta);
 
     // The tumble settles well under a second after the roll.
     await settle(page);
@@ -1512,7 +1607,7 @@ async function checkDiceAnimation(ctx, width) {
       if (!muted.label.includes("9") || !muted.label.toLowerCase().includes("dropped")) fail(`the dropped d20's label is "${muted.label}", expected its face 9 marked dropped`);
       if (Number(muted.opacity) >= 1) fail(`the dropped d20 is not muted (opacity ${muted.opacity})`);
     }
-    await page.screenshot({ path: shot("dropped") });
+    await maybeShot(page, shot("dropped"), meta);
   }
 
   // The Options switch shows on with no saved value and no reduced motion, and toggling it off persists.
@@ -1525,7 +1620,7 @@ async function checkDiceAnimation(ctx, width) {
     await diceSwitch.click();
     await settle(page);
     if ((await switchBorder(page)) !== borderRgb) fail(`tapping the "3D dice" switch did not turn it off (border ${await switchBorder(page)}, expected ${borderRgb})`);
-    await page.screenshot({ path: shot("options-off") });
+    await maybeShot(page, shot("options-off"), meta);
   }
 
   // With the setting off (and kept off across a reload) no animation runs, the text is at once.
@@ -1541,12 +1636,12 @@ async function checkDiceAnimation(ctx, width) {
   // within this window after the roll, which only the passing of time can prove.
   await page.waitForTimeout(900);
   if ((await page.locator(diceSel).count()) !== 0) fail("with the setting off, animated dice mounted later");
-  await page.screenshot({ path: shot("off") });
+  await maybeShot(page, shot("off"), meta);
 
   // Reduced motion emulated and no saved setting (a fresh context) — no animation either.
   const rctx = await ctx.browser().newContext({
     viewport: { width, height: 851 },
-    deviceScaleFactor: 2,
+    deviceScaleFactor: DSF,
     hasTouch: true,
     isMobile: true,
     reducedMotion: "reduce",
@@ -1571,7 +1666,7 @@ async function checkDiceAnimation(ctx, width) {
     if (!(await rmSwitch.isVisible().catch(() => false))) fail('the Options screen has no "3D dice" switch under reduced motion');
     else if ((await switchBorder(rpage)) !== borderRgb)
       fail(`with reduced motion emulated and no saved setting, the "3D dice" switch is on (border ${await switchBorder(rpage)}, expected ${borderRgb})`);
-    await rpage.screenshot({ path: shot("reduced-motion") });
+    await maybeShot(rpage, shot("reduced-motion"), meta);
     await rpage.close();
   } finally {
     await rctx.close();
@@ -1588,16 +1683,21 @@ async function checkDiceAnimation(ctx, width) {
 // dice and the modifier once; a spell attack row rolls its profile's bonus; flat or unparseable damage shows
 // plain; tapping a row still opens its details; and every roll leaves the stored character (slots, uses,
 // ammunition) unchanged.
-async function checkActionRolls(ctx, width) {
+async function checkActionRolls(ctx, width, meta) {
   const page = await ctx.newPage();
   // Same as in checkDiceTrayAndLog: the card-with-follow-up check fast-forwards the clock past the 8s
   // auto-dismiss timer instead of sleeping through it.
   await page.clock.install();
   const prefix = `[${width}px actions rolls]`;
   let failures = 0;
+  let failedShotTaken = false;
   const fail = (msg) => {
     failures++;
     console.log(`${prefix} ${msg}`);
+    if (!failedShotTaken) {
+      failedShotTaken = true;
+      shotFailed(page, meta, width);
+    }
   };
   const shot = (name) => join(SHOTS, `ActionRolls-${name}-${width}.png`);
   const dialogSel = '[role="dialog"]';
@@ -1641,7 +1741,7 @@ async function checkActionRolls(ctx, width) {
   const before = await storedCharacter(ACTIONS_ID);
   if (!before) fail("the seeded character is not in storage");
   for (const v of await page.evaluate(findLayoutViolations, null)) fail(v);
-  await page.screenshot({ path: shot("tab") });
+  await maybeShot(page, shot("tab"), meta);
 
   // Tap the "to hit" badge: a d20 +5, fixed to 15, so total 20, with "Roll damage" on the card and no details modal.
   if ((await setFaces([15])) === "no hook") fail("the test-only random-source hook (window.__setRandomSource) is not exposed on a seeded web build");
@@ -1657,7 +1757,7 @@ async function checkActionRolls(ctx, width) {
     if (card.total !== "20") fail(`the attack card's total is "${card.total}", expected "20"`);
     if (card.followUp !== "Roll damage") fail(`the attack card's follow-up is "${card.followUp}", expected "Roll damage"`);
   }
-  await page.screenshot({ path: shot("attack") });
+  await maybeShot(page, shot("attack"), meta);
 
   // The card body names the source and total for screen readers, and the follow-up button uses the
   // secondary style, not the accent fill (the screen below has its own primary action).
@@ -1716,7 +1816,7 @@ async function checkActionRolls(ctx, width) {
   for (const label of ["Disadvantage", "Roll", "Advantage"]) {
     if (!(await page.getByText(label, { exact: true }).first().isVisible().catch(() => false))) fail(`the roll sheet does not show "${label}"`);
   }
-  await page.screenshot({ path: shot("sheet") });
+  await maybeShot(page, shot("sheet"), meta);
   await page.getByText("Advantage", { exact: true }).first().click();
   await page.waitForSelector(dialogSel, { state: "hidden", timeout: 10000 }).catch(() => fail("the roll sheet did not close after choosing Advantage"));
   await page.waitForFunction(() => document.querySelector('[data-testid="result-card"] [data-testid="die-chip"]') !== null, null, { timeout: 10000, polling: 100 }).catch(() => fail("no result card after the sheet's Advantage"));
@@ -1729,7 +1829,7 @@ async function checkActionRolls(ctx, width) {
     if (card.total !== "22") fail(`the advantage total is "${card.total}", expected "22" (17 + 5)`);
     if (card.modifier !== "+5") fail(`the advantage card's modifier is "${card.modifier}", expected "+5"`);
   }
-  await page.screenshot({ path: shot("advantage") });
+  await maybeShot(page, shot("advantage"), meta);
 
   // A forced natural 20: the card offers "Roll critical damage" and rolls doubled dice, modifier once.
   await setFaces([20]);
@@ -1756,7 +1856,7 @@ async function checkActionRolls(ctx, width) {
     if (card.modifier !== "+3" || card.total !== "19") fail(`critical damage reads ${card.modifier} / ${card.total}, expected +3 / 19 (the modifier once)`);
     if (!card.markers.includes("Critical")) fail(`the critical card's markers are ${JSON.stringify(card.markers)}, expected Critical`);
   }
-  await page.screenshot({ path: shot("critical") });
+  await maybeShot(page, shot("critical"), meta);
   await setFaces(null);
 
   // Tapping the row (not the badge) still opens its details.
@@ -1924,13 +2024,18 @@ async function waitForVisibleText(page, text) {
 
 // The Level-Up Flow's Hit Points roll is logged: rolling on the Hit Points step adds a
 // "<character> · Hit Points" entry to the Roll Log.
-async function checkLevelUpHpRollLogged(ctx, width) {
+async function checkLevelUpHpRollLogged(ctx, width, meta) {
   const page = await ctx.newPage();
   const prefix = `[${width}px level-up HP roll]`;
   let failures = 0;
+  let failedShotTaken = false;
   const fail = (msg) => {
     failures++;
     console.log(`${prefix} ${msg}`);
+    if (!failedShotTaken) {
+      failedShotTaken = true;
+      shotFailed(page, meta, width);
+    }
   };
   await openLevelUp(page);
   await page.getByLabel("Roll hit points").first().click();
@@ -1942,7 +2047,7 @@ async function checkLevelUpHpRollLogged(ctx, width) {
   await settle(page);
   const headings = await page.evaluate(() => [...document.querySelectorAll('[data-testid="log-entry-heading"]')].map((el) => el.textContent));
   if (!headings.includes(`${LU_NAME} · Hit Points`)) fail(`the Roll Log has no "${LU_NAME} · Hit Points" entry: ${JSON.stringify(headings)}`);
-  await page.screenshot({ path: join(SHOTS, `LevelUp-HPRoll-${width}.png`) });
+  await maybeShot(page, join(SHOTS, `LevelUp-HPRoll-${width}.png`), meta);
   await page.keyboard.press("Escape");
   await page.waitForSelector('[role="dialog"]', { state: "hidden", timeout: 10000 }).catch(() => {});
   await page.close();
@@ -1951,13 +2056,18 @@ async function checkLevelUpHpRollLogged(ctx, width) {
 
 // The Hit Points state rules: re-picking the picked class keeps the plan unchanged (the roll stays
 // selected, Average stays disabled); a different class starts a fresh plan whose HP may be rolled once.
-async function checkLevelUpHpState(ctx, width) {
+async function checkLevelUpHpState(ctx, width, meta) {
   const page = await ctx.newPage();
   const prefix = `[${width}px level-up HP state]`;
   let failures = 0;
+  let failedShotTaken = false;
   const fail = (msg) => {
     failures++;
     console.log(`${prefix} ${msg}`);
+    if (!failedShotTaken) {
+      failedShotTaken = true;
+      shotFailed(page, meta, width);
+    }
   };
   const rollRow = page.getByLabel("Roll hit points").first();
   const averageRow = page.getByLabel("Average hit points").first();
@@ -1995,7 +2105,7 @@ async function checkLevelUpHpState(ctx, width) {
   const afterAverageTap = await rowState(rollRow);
   if (!afterAverageTap.selected || afterAverageTap.text !== rolledText)
     fail(`tapping Average after the roll discarded it: roll row now "${afterAverageTap.text}" selected=${afterAverageTap.selected}`);
-  await page.screenshot({ path: join(SHOTS, `LevelUp-HPState-rolled-${width}.png`) });
+  await maybeShot(page, join(SHOTS, `LevelUp-HPState-rolled-${width}.png`), meta);
 
   // A different class starts a fresh plan: Average selected, Roll enabled, rollable once.
   await classChip.click();
@@ -2009,7 +2119,7 @@ async function checkLevelUpHpState(ctx, width) {
   if (!freshAverage.selected) fail(`a fresh plan for another class does not select Average (selected=${freshAverage.selected})`);
   if (freshRoll.disabled) fail("the Roll row stays disabled for a freshly picked class");
   if (freshRoll.selected) fail("the Roll row is selected on a fresh plan before any roll");
-  await page.screenshot({ path: join(SHOTS, `LevelUp-HPState-fresh-${width}.png`) });
+  await maybeShot(page, join(SHOTS, `LevelUp-HPState-fresh-${width}.png`), meta);
   await page.close();
   return failures;
 }
@@ -2052,13 +2162,18 @@ async function openAsiFeatStep(page, fail = () => {}) {
 // Selecting any feat replaces the plan's pick at once: a no-choice feat completes the ASI/Feat step, then
 // a feat with an ability choice leaves Continue disabled until the ability is chosen, and Review lists the
 // second feat. The choice feat needs the integrated catalog; the SRD Baseline offers only one feat.
-async function checkLevelUpFeatReplace(ctx, width) {
+async function checkLevelUpFeatReplace(ctx, width, meta) {
   const page = await ctx.newPage();
   const prefix = `[${width}px level-up feat replace]`;
   let failures = 0;
+  let failedShotTaken = false;
   const fail = (msg) => {
     failures++;
     console.log(`${prefix} ${msg}`);
+    if (!failedShotTaken) {
+      failedShotTaken = true;
+      shotFailed(page, meta, width);
+    }
   };
   await openAsiFeatStep(page, fail);
   const noChoiceFeat = INTEGRATED ? "Alert" : "Grappler";
@@ -2093,7 +2208,7 @@ async function checkLevelUpFeatReplace(ctx, width) {
   if (!(await waitForVisibleText(page, listedFeat))) fail(`Review does not list "${listedFeat}"`);
   if (INTEGRATED && (await page.getByText(noChoiceFeat, { exact: true }).first().isVisible().catch(() => false)))
     fail(`Review still lists "${noChoiceFeat}": the replaced pick was applied`);
-  await page.screenshot({ path: join(SHOTS, `LevelUp-FeatReplace-${width}.png`) });
+  await maybeShot(page, join(SHOTS, `LevelUp-FeatReplace-${width}.png`), meta);
   await page.close();
   return failures;
 }
@@ -2101,13 +2216,18 @@ async function checkLevelUpFeatReplace(ctx, width) {
 // The feat sub-choice chips are at least 48dp tall, and once the choice's cap is reached a new option is
 // disabled while the picked ones stay deselectable. A feat with its own rule choice needs the integrated
 // catalog; the SRD Baseline offers none.
-async function checkLevelUpFeatSubChoiceChips(ctx, width) {
+async function checkLevelUpFeatSubChoiceChips(ctx, width, meta) {
   const page = await ctx.newPage();
   const prefix = `[${width}px level-up feat sub-choice chips]`;
   let failures = 0;
+  let failedShotTaken = false;
   const fail = (msg) => {
     failures++;
     console.log(`${prefix} ${msg}`);
+    if (!failedShotTaken) {
+      failedShotTaken = true;
+      shotFailed(page, meta, width);
+    }
   };
   await openAsiFeatStep(page, fail);
   if (!INTEGRATED) {
@@ -2141,7 +2261,7 @@ async function checkLevelUpFeatSubChoiceChips(ctx, width) {
     if (await continueEnabledSoon(page)) fail("deselecting the picked style left Continue enabled");
     if (!(await waitForVisibleText(page, "Fighting Initiate Style (0/1):"))) fail('the style counter does not read "(0/1)" after deselecting');
   }
-  await page.screenshot({ path: join(SHOTS, `LevelUp-FeatSubChoices-${width}.png`) });
+  await maybeShot(page, join(SHOTS, `LevelUp-FeatSubChoices-${width}.png`), meta);
   await page.close();
   return failures;
 }
@@ -2149,13 +2269,18 @@ async function checkLevelUpFeatSubChoiceChips(ctx, width) {
 // Each class's plan (including its rolled Hit Points) is kept for the life of the flow: roll for class A,
 // switch to class B, return to A — A's roll row is disabled and selected again with the same result, and
 // the Roll Log holds exactly one "Hit Points" entry for the round trip.
-async function checkLevelUpHpPerClass(ctx, width) {
+async function checkLevelUpHpPerClass(ctx, width, meta) {
   const page = await ctx.newPage();
   const prefix = `[${width}px level-up HP per class]`;
   let failures = 0;
+  let failedShotTaken = false;
   const fail = (msg) => {
     failures++;
     console.log(`${prefix} ${msg}`);
+    if (!failedShotTaken) {
+      failedShotTaken = true;
+      shotFailed(page, meta, width);
+    }
   };
   const rollRow = page.getByLabel("Roll hit points").first();
   const rowState = (row) =>
@@ -2205,7 +2330,7 @@ async function checkLevelUpHpPerClass(ctx, width) {
   const headings = await page.evaluate(() => [...document.querySelectorAll('[data-testid="log-entry-heading"]')].map((el) => el.textContent));
   const hpEntries = headings.filter((h) => h === `${LU_NAME} · Hit Points`);
   if (hpEntries.length !== 1) fail(`the Roll Log holds ${hpEntries.length} "${LU_NAME} · Hit Points" entries after the class round trip, expected exactly 1: ${JSON.stringify(headings)}`);
-  await page.screenshot({ path: join(SHOTS, `LevelUp-HPPerClass-${width}.png`) });
+  await maybeShot(page, join(SHOTS, `LevelUp-HPPerClass-${width}.png`), meta);
   await page.keyboard.press("Escape");
   await page.waitForSelector('[role="dialog"]', { state: "hidden", timeout: 10000 }).catch(() => {});
   await page.close();
@@ -2213,13 +2338,18 @@ async function checkLevelUpHpPerClass(ctx, width) {
 }
 
 // At total level 20 the sheet's header hides Level up (no level left to gain) and keeps Edit Build.
-async function checkLevelUpHiddenAtMaxLevel(ctx, width) {
+async function checkLevelUpHiddenAtMaxLevel(ctx, width, meta) {
   const page = await ctx.newPage();
   const prefix = `[${width}px level-up hidden at 20]`;
   let failures = 0;
+  let failedShotTaken = false;
   const fail = (msg) => {
     failures++;
     console.log(`${prefix} ${msg}`);
+    if (!failedShotTaken) {
+      failedShotTaken = true;
+      shotFailed(page, meta, width);
+    }
   };
   await gotoApp(page, `${BASE}/character/${MAX_LEVEL_ID}`);
   if (!(await waitForVisibleText(page, "Lvl 20"))) fail("the sheet does not show \"Lvl 20\" for the level-20 character");
@@ -2230,19 +2360,24 @@ async function checkLevelUpHiddenAtMaxLevel(ctx, width) {
   }
   if ((await page.getByLabel("Level up").count()) > 0) fail("the header still offers Level up at total level 20");
   if (!(await page.getByLabel("Edit Build").first().isVisible().catch(() => false))) fail("Edit Build is gone at total level 20");
-  await page.screenshot({ path: join(SHOTS, `LevelUp-HiddenAt20-${width}.png`) });
+  await maybeShot(page, join(SHOTS, `LevelUp-HiddenAt20-${width}.png`), meta);
   await page.close();
   return failures;
 }
 
 // A negative Constitution modifier is written with its sign in the Hit Points step's Roll row: "1d10-1", never "1d10+-1".
-async function checkLevelUpHpModifierSign(ctx, width) {
+async function checkLevelUpHpModifierSign(ctx, width, meta) {
   const page = await ctx.newPage();
   const prefix = `[${width}px level-up HP sign]`;
   let failures = 0;
+  let failedShotTaken = false;
   const fail = (msg) => {
     failures++;
     console.log(`${prefix} ${msg}`);
+    if (!failedShotTaken) {
+      failedShotTaken = true;
+      shotFailed(page, meta, width);
+    }
   };
   await gotoApp(page, `${BASE}/levelup/${LOW_CON_ID}`);
   await page.getByLabel("Level up Fighter").first().click();
@@ -2252,20 +2387,25 @@ async function checkLevelUpHpModifierSign(ctx, width) {
   const flat = ((await rollRow.textContent().catch(() => "")) ?? "").replace(/\s+/g, " ").trim();
   if (!flat.includes("1d10-1")) fail(`the Roll row does not read "1d10-1" for Constitution 8: "${flat}"`);
   if (flat.includes("+-")) fail(`the Roll row writes the modifier as "+-": "${flat}"`);
-  await page.screenshot({ path: join(SHOTS, `LevelUp-HPSign-${width}.png`) });
+  await maybeShot(page, join(SHOTS, `LevelUp-HPSign-${width}.png`), meta);
   await page.close();
   return failures;
 }
 
 // The Level-Up Flow's Cancel asks before discarding and leaves the Character unchanged, the system Back asks
 // too, and Review's "Level up" applies the plan in one update.
-async function checkLevelUpCancelAndReview(ctx, width) {
+async function checkLevelUpCancelAndReview(ctx, width, meta) {
   const page = await ctx.newPage();
   const prefix = `[${width}px level-up cancel/review]`;
   let failures = 0;
+  let failedShotTaken = false;
   const fail = (msg) => {
     failures++;
     console.log(`${prefix} ${msg}`);
+    if (!failedShotTaken) {
+      failedShotTaken = true;
+      shotFailed(page, meta, width);
+    }
   };
 
   // The system Back asks before discarding the plan: enter the flow from the sheet's header Level up button
@@ -2311,7 +2451,7 @@ async function checkLevelUpCancelAndReview(ctx, width) {
   if (!afterCancel) fail("the seeded character vanished from storage after Cancel");
   else if (JSON.stringify(afterCancel) !== JSON.stringify(beforeCancel))
     fail("Cancel changed the stored character: the plan was not discarded whole (deep-equal comparison failed)");
-  await page.screenshot({ path: join(SHOTS, `LevelUp-Cancelled-${width}.png`) });
+  await maybeShot(page, join(SHOTS, `LevelUp-Cancelled-${width}.png`), meta);
 
   // Review path: average HP and a CON +2 ASI, then "Level up" applies the level and the picks together.
   await openLevelUp(page);
@@ -2321,7 +2461,7 @@ async function checkLevelUpCancelAndReview(ctx, width) {
   }
   if (!(await page.getByText(/\d+ → \d+/, { exact: false }).first().isVisible().catch(() => false))) fail("Review does not list the hit points before → after");
   if (!(await page.getByText(/Average \+\d+/).first().isVisible().catch(() => false))) fail("Review does not list the hit points method");
-  await page.screenshot({ path: join(SHOTS, `LevelUp-Review-${width}.png`) });
+  await maybeShot(page, join(SHOTS, `LevelUp-Review-${width}.png`), meta);
   // Double-tap "Level up": the applying guard (and the stale-plan refusal behind it) must apply the plan
   // exactly once, so the stored character's total level rises by exactly 1.
   const totalLevelOf = (c) => (c?.classes ?? []).reduce((sum, cl) => sum + (cl.level ?? 0), 0);
@@ -2349,7 +2489,7 @@ async function checkLevelUpCancelAndReview(ctx, width) {
   const levelAfter = totalLevelOf(storedAfter);
   if (levelAfter !== levelBefore + 1)
     fail(`a double-tapped "Level up" moved the stored level from ${levelBefore} to ${levelAfter}, expected exactly +1`);
-  await page.screenshot({ path: join(SHOTS, `LevelUp-Applied-${width}.png`) });
+  await maybeShot(page, join(SHOTS, `LevelUp-Applied-${width}.png`), meta);
   await page.close();
   return failures;
 }
@@ -2357,13 +2497,18 @@ async function checkLevelUpCancelAndReview(ctx, width) {
 // After a level-up through the flow, the Spells tab still learns, forgets and swaps spells. In the
 // integrated catalog the Aberrant Mind Sorcerer's subclass-granted spells carry the Swap control; the SRD
 // Baseline has no swappable subclass, so there the Wizard plays learn and forget.
-async function checkSpellsAfterLevelUp(ctx, width) {
+async function checkSpellsAfterLevelUp(ctx, width, meta) {
   const page = await ctx.newPage();
   const prefix = `[${width}px spells after level-up]`;
   let failures = 0;
+  let failedShotTaken = false;
   const fail = (msg) => {
     failures++;
     console.log(`${prefix} ${msg}`);
+    if (!failedShotTaken) {
+      failedShotTaken = true;
+      shotFailed(page, meta, width);
+    }
   };
 
   if (INTEGRATED) {
@@ -2398,7 +2543,7 @@ async function checkSpellsAfterLevelUp(ctx, width) {
       if (!(await page.getByText("Reset to Default", { exact: true }).first().isVisible().catch(() => false)))
         fail("swapping did not replace the subclass spell (no \"Reset to Default\")");
     }
-    await page.screenshot({ path: join(SHOTS, `SpellsAfterLevelUp-swap-${width}.png`) });
+    await maybeShot(page, join(SHOTS, `SpellsAfterLevelUp-swap-${width}.png`), meta);
   } else {
     await gotoApp(page, `${BASE}/levelup/${WIZARD_ID}`);
     await page.getByLabel("Level up Wizard").first().click();
@@ -2426,7 +2571,7 @@ async function checkSpellsAfterLevelUp(ctx, width) {
       await settle(page);
       if ((await page.getByLabel("Remove Burning Hands").count()) > 0) fail("forgetting did not remove \"Burning Hands\"");
     }
-    await page.screenshot({ path: join(SHOTS, `SpellsAfterLevelUp-learn-${width}.png`) });
+    await maybeShot(page, join(SHOTS, `SpellsAfterLevelUp-learn-${width}.png`), meta);
   }
   await page.close();
   return failures;
@@ -2435,13 +2580,18 @@ async function checkSpellsAfterLevelUp(ctx, width) {
 // The Stats tab's roll badges: a check, a save, a skill and initiative roll d20 + their bonus; the keyboard
 // path to the roll sheet rolls with advantage (two d20s, one struck through); the initiative box still opens
 // its breakdown modal when tapped outside the badge.
-async function checkStatsRolls(ctx, width) {
+async function checkStatsRolls(ctx, width, meta) {
   const page = await ctx.newPage();
   const prefix = `[${width}px stats rolls]`;
   let failures = 0;
+  let failedShotTaken = false;
   const fail = (msg) => {
     failures++;
     console.log(`${prefix} ${msg}`);
+    if (!failedShotTaken) {
+      failedShotTaken = true;
+      shotFailed(page, meta, width);
+    }
   };
   const shot = (name) => join(SHOTS, `StatsRolls-${name}-${width}.png`);
   const dialogSel = '[role="dialog"]';
@@ -2498,7 +2648,7 @@ async function checkStatsRolls(ctx, width) {
     if (!(await page.getByLabel(name, { exact: true }).first().isVisible().catch(() => false))) fail(`no badge accessible-labelled "${name}"`);
   }
   for (const v of await page.evaluate(findLayoutViolations, null)) fail(v);
-  await page.screenshot({ path: shot("tab") });
+  await maybeShot(page, shot("tab"), meta);
 
   if ((await setFaces([12])) === "no hook") fail("the test-only random-source hook (window.__setRandomSource) is not exposed on a seeded web build");
 
@@ -2514,7 +2664,7 @@ async function checkStatsRolls(ctx, width) {
     if (card.modifier !== "+1" || card.total !== "13") fail(`the check card reads ${card.modifier} / ${card.total}, expected +1 / 13`);
     if (card.followUp !== null) fail(`the check card offers a follow-up "${card.followUp}", expected none`);
   }
-  await page.screenshot({ path: shot("check") });
+  await maybeShot(page, shot("check"), meta);
   await dismissCard();
 
   // The Wisdom save: d20 + 2, fixed to 5, so total 7.
@@ -2528,7 +2678,7 @@ async function checkStatsRolls(ctx, width) {
     if (card.chips.length !== 1 || card.chips[0].text !== "5d20" || card.chips[0].struck) fail(`the save card's faces are ${JSON.stringify(card.chips)}, expected one unstruck 5d20`);
     if (card.modifier !== "+2" || card.total !== "7") fail(`the save card reads ${card.modifier} / ${card.total}, expected +2 / 7`);
   }
-  await page.screenshot({ path: shot("save") });
+  await maybeShot(page, shot("save"), meta);
   await dismissCard();
 
   // The Athletics skill: d20 + 1, fixed to 18, so total 19.
@@ -2542,7 +2692,7 @@ async function checkStatsRolls(ctx, width) {
     if (card.chips.length !== 1 || card.chips[0].text !== "18d20" || card.chips[0].struck) fail(`the skill card's faces are ${JSON.stringify(card.chips)}, expected one unstruck 18d20`);
     if (card.modifier !== "+1" || card.total !== "19") fail(`the skill card reads ${card.modifier} / ${card.total}, expected +1 / 19`);
   }
-  await page.screenshot({ path: shot("skill") });
+  await maybeShot(page, shot("skill"), meta);
   await dismissCard();
 
   // The keyboard path to the roll sheet on the initiative badge: the context-menu key opens it, Advantage
@@ -2557,7 +2707,7 @@ async function checkStatsRolls(ctx, width) {
   for (const label of ["Disadvantage", "Roll", "Advantage"]) {
     if (!(await page.getByText(label, { exact: true }).first().isVisible().catch(() => false))) fail(`the roll sheet does not show "${label}"`);
   }
-  await page.screenshot({ path: shot("sheet") });
+  await maybeShot(page, shot("sheet"), meta);
   await page.getByText("Advantage", { exact: true }).first().click();
   await page.waitForSelector(dialogSel, { state: "hidden", timeout: 10000 }).catch(() => fail("the roll sheet did not close after choosing Advantage"));
   await page.waitForFunction(() => document.querySelector('[data-testid="result-card"] [data-testid="die-chip"]') !== null, null, { timeout: 10000, polling: 100 }).catch(() => fail("no result card after the sheet's Advantage"));
@@ -2572,7 +2722,7 @@ async function checkStatsRolls(ctx, width) {
     // A zero modifier renders no modifier chip on the card, so the modifier element is absent.
     if (card.modifier !== "" || card.total !== "17") fail(`the advantage card reads ${card.modifier} / ${card.total}, expected no modifier / 17 (17 kept)`);
   }
-  await page.screenshot({ path: shot("advantage") });
+  await maybeShot(page, shot("advantage"), meta);
   await setFaces(null);
   await dismissCard();
 
@@ -2591,13 +2741,18 @@ async function checkStatsRolls(ctx, width) {
 // dice button above the bar; at 768px and up a left rail with the six tabs and the header actions, Stats in
 // two columns, and no horizontal scroll. At every width the Stats roll badges must be centred in their card
 // (within 2px) and sized to their content (height at most content plus padding and border).
-async function checkSheetChrome(ctx, width) {
+async function checkSheetChrome(ctx, width, meta) {
   const page = await ctx.newPage();
   const prefix = `[${width}px sheet chrome]`;
   let failures = 0;
+  let failedShotTaken = false;
   const fail = (msg) => {
     failures++;
     console.log(`${prefix} ${msg}`);
+    if (!failedShotTaken) {
+      failedShotTaken = true;
+      shotFailed(page, meta, width);
+    }
   };
   const TAB_LABELS = ["Stats", "Actions", "Spells", "Inventory", "Features", "Journal"];
 
@@ -2897,20 +3052,25 @@ async function checkSheetChrome(ctx, width) {
     if (rest.condH !== null && rest.h > rest.condH + 2) fail(`the rest button's label wraps to ${Math.round(rest.h)}px at ${width}px, over the one-line "Conditions" label (${Math.round(rest.condH)}px)`);
   }
 
-  await page.screenshot({ path: join(SHOTS, `SheetChrome-${width}.png`) });
+  await maybeShot(page, join(SHOTS, `SheetChrome-${width}.png`), meta);
   await page.close();
   return failures;
 }
 
 // Home at one width: a single-column list on phones, a multi-column card grid at 768px and up, no HP badge on
 // any entry, and every finished entry carrying its Lvl badge (drafts read "Draft · <step>").
-async function checkHomeLayout(ctx, width) {
+async function checkHomeLayout(ctx, width, meta) {
   const page = await ctx.newPage();
   const prefix = `[${width}px home layout]`;
   let failures = 0;
+  let failedShotTaken = false;
   const fail = (msg) => {
     failures++;
     console.log(`${prefix} ${msg}`);
+    if (!failedShotTaken) {
+      failedShotTaken = true;
+      shotFailed(page, meta, width);
+    }
   };
   await gotoApp(page, `${BASE}/`);
   await page.getByText(/5e Character Builder/).first().waitFor({ state: "visible", timeout: 10000 });
@@ -3005,7 +3165,7 @@ async function checkHomeLayout(ctx, width) {
         fail(`the wide grid's gaps are unequal (${Math.round(Math.min(...gaps))}..${Math.round(Math.max(...gaps))}px)`);
     }
   }
-  await page.screenshot({ path: join(SHOTS, `HomeLayout-${width}.png`) });
+  await maybeShot(page, join(SHOTS, `HomeLayout-${width}.png`), meta);
   await page.close();
   return failures;
 }
@@ -3017,7 +3177,7 @@ const EXTRA_CHECKS = [
   { name: "Wild Shape Features", run: checkWildShapeFeatures },
   { name: "Modal closing", run: checkModalClosing },
   { name: "New character draft folder", run: checkDraftFolder },
-  { name: "Dice tray and Roll Log", run: checkDiceTrayAndLog },
+  { name: "Dice tray and Roll Log", run: checkDiceTrayAndLog, shot: true },
   { name: "Level-Up Flow HP roll logged", run: checkLevelUpHpRollLogged },
   { name: "Level-Up Flow HP state", run: checkLevelUpHpState },
   { name: "Level-Up Flow HP per class", run: checkLevelUpHpPerClass },
@@ -3053,22 +3213,27 @@ function unmatchedOnlyTerms() {
 // Runs every check at one width, on that width's own browser context. Returns the number of violations.
 async function checkWidth(browser, seed, width) {
   const startedAt = Date.now();
-  const ctx = await browser.newContext({ viewport: { width, height: 851 }, deviceScaleFactor: 2, hasTouch: true, isMobile: true });
+  const ctx = await browser.newContext({ viewport: { width, height: 851 }, deviceScaleFactor: DSF, hasTouch: true, isMobile: true });
   // React logs "<button> cannot contain a nested <button>" as a console error when a pressable with a
   // button role wraps another one; collect those from every page of this width and fail the run on them.
   const nestedConsoleErrors = [];
+  let nestedErrorPage = null;
   ctx.on("page", (page) => {
     page.on("console", (msg) => {
-      if (msg.type() === "error" && /cannot contain a nested/i.test(msg.text())) nestedConsoleErrors.push(msg.text().slice(0, 120));
+      if (msg.type() === "error" && /cannot contain a nested/i.test(msg.text())) {
+        nestedConsoleErrors.push(msg.text().slice(0, 120));
+        nestedErrorPage = nestedErrorPage ?? page;
+      }
     });
   });
   try {
     await ctx.addInitScript(seedBrowser, seed);
     let failures = await checkScreens(ctx, width);
-    for (const check of EXTRA_CHECKS) if (selected(check.name)) failures += await check.run(ctx, width);
+    for (const check of EXTRA_CHECKS) if (selected(check.name)) failures += await check.run(ctx, width, check);
     for (const err of [...new Set(nestedConsoleErrors)]) {
       failures++;
       console.log(`[${width}px] console error: ${err}`);
+      if (nestedErrorPage) shotFailed(nestedErrorPage, { name: "nested button console error" }, width);
     }
     return failures;
   } finally {
