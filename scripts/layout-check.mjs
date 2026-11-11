@@ -12,8 +12,9 @@
 // changing the stored character. The helpers that start the
 // app and seed it are in scripts/lib/app-driver.mjs (see docs/agents/driving-the-app.md).
 //
-// Usage: `npm run layout:check` (not part of check:all). The script starts the Expo web server itself
-// on the port in BASE, unless a server already answers there. `npm run layout:check -- --integrated`
+// Usage: `npm run layout:check` (not part of check:all). The script starts its own server on the port in
+// BASE, unless one already answers there: by default a static server over a fresh `expo export -p web`
+// of the production bundle, with `--dev` the Expo web dev server instead. `npm run layout:check -- --integrated`
 // (or LAYOUT_INTEGRATED=1) seeds the integrated catalog instead of the SRD Baseline and runs at 320 unless
 // WIDTHS is set. The first run
 // needs `npx playwright install chromium` once.
@@ -36,10 +37,12 @@ import { fileURLToPath } from "node:url";
 import fs from "node:fs";
 import { chromium } from "playwright";
 import {
+  exportWebStatic,
   httpStatus,
   seedBrowser,
   signalExpoGroup,
   spawnExpoWeb,
+  spawnStaticServer,
   stopExpoWeb,
   waitForExpoWeb,
 } from "./lib/app-driver.mjs";
@@ -53,6 +56,9 @@ const BASE = process.env.BASE ?? "http://localhost:8099";
 const PORT = new URL(BASE).port || "8099";
 const SHOTS = process.env.SHOTS ?? join(tmpdir(), "layout-check");
 const INTEGRATED = process.argv.includes("--integrated") || process.env.LAYOUT_INTEGRATED === "1";
+// `--dev` serves the app with the `expo start --web` dev server; by default the script exports the
+// production web bundle once and serves it statically (see startServer).
+const DEV = process.argv.includes("--dev");
 // The integrated run exists to catch long names and extra options, and those overflow at the narrowest
 // width, so it runs at 320 only unless WIDTHS is set explicitly.
 const WIDTHS = (process.env.WIDTHS ?? (INTEGRATED ? "320" : "320,393,768,1280")).split(",").map(Number);
@@ -160,9 +166,24 @@ async function stopServer() {
   server = null;
 }
 
-// Starts the Expo web server on PORT (see spawnExpoWeb). Resolves "up", "exited" or "timeout" (see waitForExpoWeb).
+// Starts the server this run checks against, on PORT. By default it exports the production web bundle
+// once (`npx expo export -p web`, EXPO_PUBLIC_E2E=1 so the test hooks are in the bundle) into a temp
+// folder and serves it with scripts/lib/static-server.mjs; `--dev` starts the Expo web dev server
+// instead (see spawnExpoWeb). Resolves "up", "exited" or "timeout" (see waitForExpoWeb).
 async function startServer(logPath) {
-  server = spawnExpoWeb({ root: ROOT, port: PORT, logPath });
+  if (DEV) {
+    server = spawnExpoWeb({ root: ROOT, port: PORT, logPath });
+    return waitForExpoWeb(server, BASE, SERVER_WAIT_MS);
+  }
+  const outDir = process.env.EXPORT_DIR ?? join(tmpdir(), "layout-check-web-export");
+  const exportedAt = Date.now();
+  const code = await exportWebStatic({ root: ROOT, outDir, logPath });
+  if (code !== 0) {
+    console.error(`expo export failed (exit ${code}). Server log: ${logPath}`);
+    return "exited";
+  }
+  console.log(`Exported the production web bundle to ${outDir} in ${Math.round((Date.now() - exportedAt) / 1000)}s.`);
+  server = spawnStaticServer({ dir: outDir, port: PORT, logPath });
   return waitForExpoWeb(server, BASE, SERVER_WAIT_MS);
 }
 
@@ -742,6 +763,9 @@ async function visitScreen(page, width, screen, state) {
     violations = await page.evaluate(findLayoutViolations, null);
   }
   violations = [...violations, ...(await checkNoShrinkRows(page, screen))];
+  // The DOM nested-button check runs on every visited screen, so it covers the React dev-mode console
+  // error on its own when the run serves the production bundle (--dev collects that error instead).
+  violations = [...violations, ...(await page.evaluate(findNestedButtonViolations, ""))];
   if (screen.headerName) violations = [...violations, ...(await page.evaluate(findHeaderNameViolations, { name: screen.headerName, width }))];
   if (screen.expect) violations = [...violations, ...(await checkExpected(page, screen.expect))];
   for (const v of violations) console.log(`${prefix} ${v}`);
@@ -3280,13 +3304,13 @@ async function main() {
   if ((await httpStatus(BASE)) > 0) {
     console.log(`Using the server already running at ${BASE}. If it started before your latest code change it may be stale; stop it and rerun to test fresh code.`);
   } else {
-    console.log(`Starting Expo web on port ${PORT} (log: ${logPath}).`);
+    console.log(`Starting ${DEV ? "the Expo web dev server" : "a static server over a fresh production export"} on port ${PORT} (log: ${logPath}).`);
     const state = await startServer(logPath);
     if (state !== "up") {
       console.error(
         state === "exited"
-          ? `Expo web stopped before it answered 200 at ${BASE}. Server log: ${logPath}`
-          : `No Expo web server answered 200 at ${BASE} within ${SERVER_WAIT_MS / 1000} s. Server log: ${logPath}`,
+          ? `The server stopped before it answered 200 at ${BASE}. Server log: ${logPath}`
+          : `No server answered 200 at ${BASE} within ${SERVER_WAIT_MS / 1000} s. Server log: ${logPath}`,
       );
       return 2;
     }

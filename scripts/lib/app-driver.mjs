@@ -2,7 +2,8 @@
 // characters and the catalog, and read catalog records by name. layout-check.mjs and debugging scripts import them.
 // See docs/agents/driving-the-app.md.
 import fs from "node:fs";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { spawn } from "node:child_process";
 import { REQUIRED_CATALOG_FORMAT } from "../../src/services/compendiumStorage.ts";
 
@@ -77,6 +78,45 @@ export async function stopExpoWeb(child) {
   signalExpoGroup(child, "SIGTERM");
   for (let i = 0; i < 25 && expoGroupAlive(child); i++) await sleep(200);
   if (expoGroupAlive(child)) signalExpoGroup(child, "SIGKILL");
+}
+
+// Runs `npx expo export -p web --output-dir outDir` once — a one-shot build of the production bundle, not
+// a server. EXPO_PUBLIC_E2E=1 is inlined at bundle time, so the exported build exposes the test-only web
+// hooks the layout scenarios call. Resolves the exit code; the build log is appended to `logPath`.
+export function exportWebStatic({ root, outDir, logPath }) {
+  return new Promise((resolvePromise) => {
+    const fd = fs.openSync(logPath, "a");
+    const child = spawn("npx", ["expo", "export", "-p", "web", "--output-dir", outDir], {
+      cwd: root,
+      env: { ...process.env, CI: "1", EXPO_NO_TELEMETRY: "1", EXPO_PUBLIC_E2E: "1" },
+      stdio: ["ignore", fd, fd],
+    });
+    fs.closeSync(fd);
+    child.on("exit", (code) => resolvePromise(code ?? 1));
+    child.on("error", () => resolvePromise(1));
+  });
+}
+
+// Serves the statically exported web build in `dir` on `port` with scripts/lib/static-server.mjs (a
+// fallback to the route's HTML, so client-side routes work). Like the Expo server, the child runs in its
+// own process group (detached), so signalExpoGroup/stopExpoWeb stop it and its children. Returns the child.
+export function spawnStaticServer({ dir, port, logPath }) {
+  const fd = fs.openSync(logPath, "a");
+  const child = spawn(process.execPath, [join(dirname(fileURLToPath(import.meta.url)), "static-server.mjs"), dir, String(port)], {
+    cwd: dir,
+    env: { ...process.env, CI: "1" },
+    detached: true,
+    stdio: ["ignore", fd, fd],
+  });
+  fs.closeSync(fd);
+  child.exited = false;
+  child.on("exit", () => {
+    child.exited = true;
+  });
+  child.on("error", () => {
+    child.exited = true;
+  });
+  return child;
 }
 
 // Runs in the browser before the app loads (pass it to context.addInitScript with the seed as the argument).
