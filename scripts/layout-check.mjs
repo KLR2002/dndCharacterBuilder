@@ -862,6 +862,8 @@ async function checkDraftFolder(ctx, width, meta) {
   };
   await gotoApp(page, `${BASE}/`);
   await page.getByText(/5e Character Builder/).first().waitFor({ state: "visible", timeout: 10000 });
+  // The folder list renders after the header: wait for the "Camp" folder itself before reading its badge.
+  await page.getByText("Camp", { exact: true }).first().waitFor({ state: "visible", timeout: 10000 }).catch(() => {});
   const before = await page.evaluate(folderBadgeCount, "Camp");
   if (before === null) {
     console.log(`${prefix} the home list shows no "Camp" folder`);
@@ -882,6 +884,7 @@ async function checkDraftFolder(ctx, width, meta) {
   }
   await gotoApp(page, `${BASE}/`);
   await page.getByText(/5e Character Builder/).first().waitFor({ state: "visible", timeout: 10000 });
+  await page.getByText("Camp", { exact: true }).first().waitFor({ state: "visible", timeout: 10000 }).catch(() => {});
   await settle(page);
   await maybeShot(page, join(SHOTS, `DraftFolder-${width}.png`), meta);
   const after = await page.evaluate(folderBadgeCount, "Camp");
@@ -3109,6 +3112,8 @@ async function checkHomeLayout(ctx, width, meta) {
   };
   await gotoApp(page, `${BASE}/`);
   await page.getByText(/5e Character Builder/).first().waitFor({ state: "visible", timeout: 10000 });
+  // The entry list renders after the header: wait for the first entry before measuring the layout.
+  await page.locator('[data-testid^="home-entry-"]').first().waitFor({ state: "visible", timeout: 10000 }).catch(() => {});
 
   const layout = await page.evaluate(() => {
     const entries = [...document.querySelectorAll('[data-testid^="home-entry-"]')].map((el) => {
