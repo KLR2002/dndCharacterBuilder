@@ -25,7 +25,7 @@
 // list of substrings: only the scenarios whose name contains one of them, ignoring case, are visited in every
 // width; unset visits all), SHOTS_ONLY (comma-separated substrings, like ONLY; "all" writes every screenshot;
 // unset writes a screenshot only for a failed scenario or check, or one marked shot: true), SHOTS (screenshot
-// dir, default a layout-check folder under the OS temp dir), DSF (deviceScaleFactor of the contexts, default 2).
+// dir, default a layout-check folder under the OS temp dir), DSF (deviceScaleFactor of the contexts, default 1).
 // Exit:
 // 0 green, 1 violations, 2 no browser or no server (the server log path is printed then), or an ONLY term that
 // matches no scenario (the scenario names are printed then). `--list` prints the shared scenario list (the
@@ -71,8 +71,9 @@ const ONLY = (process.env.ONLY ?? "").split(",").map((term) => term.trim().toLow
 // extra check then writes its screenshot only when it fails or when it is marked shot: true.
 const SHOTS_ONLY = (process.env.SHOTS_ONLY ?? "").split(",").map((term) => term.trim().toLowerCase()).filter(Boolean);
 const SHOTS_ALL = SHOTS_ONLY.includes("all");
-// The deviceScaleFactor of the browser contexts (DSF env).
-const DSF = Number(process.env.DSF ?? 2);
+// The deviceScaleFactor of the browser contexts (DSF env). 1 by default: a full run at 1 gives the
+// same results as at 2 (GREEN, no violations), a little faster and with less memory.
+const DSF = Number(process.env.DSF ?? 1);
 
 // Whether the scenario or check `meta` ({ name, shot }) writes its screenshots this run when it does not
 // fail: SHOTS_ALL, a SHOTS_ONLY substring match, or its own shot: true mark.
