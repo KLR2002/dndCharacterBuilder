@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { useSheetScrollContentPadding } from "../sheet/sheetChrome";
 import { Ionicons } from "@expo/vector-icons";
 import { useCharacters } from "../../context/CharacterContext";
 import { useAppTheme } from "../../context/ThemeContext";
@@ -27,6 +28,7 @@ import { DetailModal } from "../DetailModal";
 import { useResponsiveLayout } from "../../hooks/useResponsiveLayout";
 
 export const ActionsTab: React.FC = () => {
+  const sheetScrollPad = useSheetScrollContentPadding();
   const { currentCharacter, activeBooks } = useCharacters();
   const { theme } = useAppTheme();
   const { isCompact } = useResponsiveLayout();
@@ -81,7 +83,7 @@ export const ActionsTab: React.FC = () => {
   const { modifiers } = evaluated.effectiveScores;
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+    <ScrollView style={styles.container} contentContainerStyle={[styles.content, sheetScrollPad]}>
       {/* Attack Count Banner */}
       <Card style={[styles.bannerCard, { borderColor: theme.accentHover }]}>
         <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>

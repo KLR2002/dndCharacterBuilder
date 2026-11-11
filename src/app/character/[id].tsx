@@ -339,8 +339,8 @@ export default function CharacterSheetScreen() {
         onLayout={(height) => setTabBarHeight(height)}
       />
       {notices}
-      {/* The bar and the floating dice button (56dp + 16dp gap) sit in this bottom padding, never over content. */}
-      <View style={[styles.tabContent, { paddingBottom: tabBarHeight + 72 }]}>
+      {/* The content ends where the bar starts; each tab's scroll view pads its own bottom for the dice button. */}
+      <View testID="sheet-tab-content" style={[styles.tabContent, { paddingBottom: tabBarHeight }]}>
         {tabContent}
       </View>
       {menuModal}

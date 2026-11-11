@@ -3,6 +3,8 @@ import React from "react";
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAppTheme } from "../../context/ThemeContext";
+import { useResponsiveLayout } from "../../hooks/useResponsiveLayout";
+import { DICE_BUTTON_FOOTPRINT } from "../dice/DiceOverlay";
 
 export type SheetTabKey = "stats" | "actions" | "spells" | "inventory" | "features" | "journal";
 
@@ -38,8 +40,9 @@ const TAB_BAR_VERTICAL_PADDING = 4;
  * The phone tab bar: one bottom bar with all six tabs, icon over a short label, every target 56dp tall.
  * It is absolutely positioned at the bottom of its parent, and the parent renders it before the scrolling
  * content so the tabs come first in the accessibility tree. The bar pads its bottom by the safe-area
- * inset, so the 56dp targets clear the gesture area; onLayout reports the full height (inset included),
- * which is what the floating dice button lifts itself above.
+ * inset, so the 56dp targets clear the gesture area. onLayout reports the bar's height above that inset
+ * (the parent's bottom padding already clears the inset), which the floating dice button and the content
+ * padding are sized from.
  */
 export function SheetTabBar({
   active,
@@ -55,7 +58,7 @@ export function SheetTabBar({
   return (
     <View
       testID="sheet-tab-bar"
-      onLayout={(e) => onLayout?.(e.nativeEvent.layout.height)}
+      onLayout={(e) => onLayout?.(e.nativeEvent.layout.height - insets.bottom)}
       style={[
         styles.tabBar,
         { backgroundColor: theme.surface, borderTopColor: theme.border, paddingBottom: TAB_BAR_VERTICAL_PADDING + insets.bottom },
@@ -85,6 +88,15 @@ export function SheetTabBar({
       })}
     </View>
   );
+}
+
+/**
+ * The bottom padding a phone sheet tab's main scroll view adds, so its last row scrolls clear of the floating
+ * dice button. Empty at wide widths, where the rail sits on the left and the button has nothing to cover.
+ */
+export function useSheetScrollContentPadding(): { paddingBottom?: number } {
+  const { isTablet } = useResponsiveLayout();
+  return isTablet ? {} : { paddingBottom: DICE_BUTTON_FOOTPRINT };
 }
 
 /**

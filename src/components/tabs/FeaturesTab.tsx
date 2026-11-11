@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { useSheetScrollContentPadding } from "../sheet/sheetChrome";
 import { Ionicons } from "@expo/vector-icons";
 import { useCharacters } from "../../context/CharacterContext";
 import { useAppTheme } from "../../context/ThemeContext";
@@ -59,6 +60,7 @@ function makeCounterId(): string {
 }
 
 export const FeaturesTab: React.FC = () => {
+  const sheetScrollPad = useSheetScrollContentPadding();
   const { currentCharacter, updateCharacter, activeBooks, setActiveBooks } = useCharacters();
   const { theme } = useAppTheme();
   useResponsiveLayout();
@@ -425,7 +427,7 @@ export const FeaturesTab: React.FC = () => {
   };
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+    <ScrollView style={styles.container} contentContainerStyle={[styles.content, sheetScrollPad]}>
       {/* Interactive Resource Counters Card */}
       <Card style={styles.countersCard}>
         <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>

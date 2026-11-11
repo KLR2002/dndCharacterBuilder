@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { useSheetScrollContentPadding } from "../sheet/sheetChrome";
 import { Ionicons } from "@expo/vector-icons";
 import { useCharacters } from "../../context/CharacterContext";
 import { useAppTheme } from "../../context/ThemeContext";
@@ -69,6 +70,7 @@ const STAT_BOX_MIN_WIDTH = 70;
 const COMBAT_ROW_GAP = 8;
 
 export const StatsTab: React.FC = () => {
+  const sheetScrollPad = useSheetScrollContentPadding();
   const { currentCharacter, updateCharacter, activeBooks } = useCharacters();
   const { theme } = useAppTheme();
   const { isCompact, isTablet } = useResponsiveLayout();
@@ -1040,7 +1042,7 @@ export const StatsTab: React.FC = () => {
   );
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+    <ScrollView style={styles.container} contentContainerStyle={[styles.content, sheetScrollPad]}>
       {isTablet ? (
         <View style={styles.twoCol}>
           <View testID="stats-col-side" style={styles.twoColChild}>
