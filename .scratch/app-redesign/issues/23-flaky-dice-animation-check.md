@@ -1,6 +1,6 @@
 # 23: Flaky dice animation check under load
 
-**Status:** folded into ticket 24
+**Status:** done (in ticket 24, `9d2c35c`)
 
 ## What to build
 

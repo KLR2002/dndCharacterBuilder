@@ -40,9 +40,9 @@ One spec, `.scratch/app-redesign/spec.md`, covering the Creation Flow, the Level
 - [20: Character sheet and Home](issues/20-sheet-and-home-restyle.md): all six tabs in one bottom bar on phones; compact header with a menu on phones, header actions in the left rail at 768px and up; two columns on wide screens; Home a list on phones, a grid on wide screens.
 - [21: Character sheet and Home restyle](issues/21-sheet-and-home-build.md): build ticket for ticket 20's picks, landed at `d12b101`, gate PASS.
 - [22: Builder and flow overflows at wide widths](issues/22-wide-builder-overflows.md): done at `6f0ea1e`; 768 joins the default layout run, the identity side column moves to 1024px.
-- [23: Flaky dice animation check](issues/23-flaky-dice-animation-check.md): fails under the five-width integrated load. Folded into 24.
-- [24: A fast layout check](issues/24-fast-layout-check.md): four widths, integrated at 320, condition waits, screenshots on demand, maybe a production bundle. ready-for-agent.
-- Build: tickets 06-14 landed on `feat/app-redesign` at `a7a1e85`, gate PASS (`evidence.md`). Tickets 15-19 landed at `cf714f8`, gate PASS (`evidence.md`, "Tickets 15-19"). Tickets 05 and 20 resolved; ticket 21 (sheet and Home restyle) landed at `d12b101`; ticket 22 landed at `6f0ea1e`; ticket 24 (fast layout check, with 23 folded in) is ready-for-agent.
+- [23: Flaky dice animation check](issues/23-flaky-dice-animation-check.md): fails under the five-width integrated load. Done in 24.
+- [24: A fast layout check](issues/24-fast-layout-check.md): four widths, integrated at 320, condition waits, screenshots on demand, `--prod` optional. Done at `9d2c35c`.
+- Build: tickets 06-14 landed on `feat/app-redesign` at `a7a1e85`, gate PASS (`evidence.md`). Tickets 15-19 landed at `cf714f8`, gate PASS (`evidence.md`, "Tickets 15-19"). Tickets 05 and 20 resolved; ticket 21 (sheet and Home restyle) landed at `d12b101`; ticket 22 landed at `6f0ea1e`; ticket 24 (fast layout check, with 23) landed at `9d2c35c`.
 
 ## Not yet specified
 

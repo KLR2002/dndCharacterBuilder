@@ -182,3 +182,46 @@ Review:
   - Tests imported the playwright script.
   - The Level-Up Flow had no wide scenario.
 - R2: all fixed. A sixth default width (1024) peaked at about 11.1 GiB, so it stays a documented extra run.
+
+# Evidence: ticket 24 on feat/app-redesign
+
+Tree: `9d2c35c` (merge of ticket 24 with repairs R1a-R1c), clean worktree, dependencies from the committed lockfiles.
+
+| Check | Command | Result | Wall |
+| --- | --- | --- | --- |
+| lint, typecheck, tests | `npm run check:all` | pass: 2123 app + 307 scraper tests | 71s |
+| layout, SRD | `npm run layout:check` (320/393/768/1280) | GREEN | 432s |
+| layout, integrated | `npm run layout:check -- --integrated` (320) | GREEN | 337s |
+
+Required gate: PASS. The full layout gate now takes about 13 minutes. Ticket 22's took about 50, counting the five-width default, the integrated run and the separate 1024/1280 runs.
+
+What changed:
+- **Widths:** one per layout: 320, 393, 768 and 1280. The integrated catalog runs at 320.
+- **Waits:**
+  - condition waits replace `networkidle` and fixed sleeps: a hydration probe, plus a settle on layout and text;
+  - absence checks hold across a 400ms window;
+  - `page.clock` replaces the 8.5s result-card waits, and now bounds the card's dismissal on both sides (7000 to 8600ms).
+- **Screenshots:** written on failure (awaited before the page closes), for `SHOTS_ONLY`, or for 16 `shot: true` scenarios. Rendering is at `deviceScaleFactor` 1.
+- **Dice animation (ticket 23):** the check samples poses every frame. It needs 3 or more distinct poses changing across more than 100ms, a mount within 3s of the roll, and a tumble of at most 1200ms from the first pose change to the last.
+- **Production build:** `--prod` serves a static export, but the dev server stays the default. The Level-Up Flow's system-Back guard does not engage in the static export.
+- **`MAX_PARALLEL`:** lowers how many widths run at once. A pool of 1 took 933s against 432s and saved only 0.8 GB, so the default stays all widths.
+
+Not blinded. Each regression put back on a scratch commit failed the check:
+- the dice button over the flow footer;
+- stretched Stats roll badges;
+- a Builder overflow at 320;
+- a stubbed die animation;
+- a 2000ms tumble;
+- a 12s result-card timeout;
+- a follow-up card that auto-dismisses.
+
+Review:
+- A Sonnet review found five problems:
+  - a doubled fast-forward that let the result card stay until about 14s;
+  - failure screenshots that were not awaited;
+  - single-read absence checks;
+  - dice timing measured from the die's mount;
+  - stale docs.
+- R1a fixed the first four, R1b hardened the static server and `--prod` path and updated the docs, and R1c restored parallel widths and made the dice timing robust under load.
+
+Workflow: tickets 24's repair rounds R1a-R1c ran on Haiku and took 22, 92 and 16 minutes. The 92 was mostly full memory-measurement runs.

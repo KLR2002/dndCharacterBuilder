@@ -1,6 +1,8 @@
 # 24: A fast layout check
 
-**Status:** ready-for-agent
+**Status:** done
+
+**Landed:** `9d2c35c` on feat/app-redesign; gate in `evidence.md`, "Ticket 24".
 
 ## What to build
 
@@ -38,16 +40,16 @@ Then update the runtimes in `AGENTS.md`'s Verification paragraph and in `docs/ag
 
 ## Acceptance Criteria
 
-- [ ] The default `npm run layout:check` runs 320, 393, 768 and 1280, and is GREEN on the current `feat/app-redesign`
-- [ ] `npm run layout:check -- --integrated` runs at 320 by default and is GREEN
-- [ ] Before and after wall times and peak memory are reported for both commands: before is today's default, after is the new one
-- [ ] The checks are not blinded. Re-introduce three known regressions, one at a time on a scratch commit, and each still fails:
+- [x] The default `npm run layout:check` runs 320, 393, 768 and 1280, and is GREEN on the current `feat/app-redesign`
+- [x] `npm run layout:check -- --integrated` runs at 320 by default and is GREEN
+- [x] Before and after wall times and peak memory are reported for both commands: before is today's default, after is the new one
+- [x] The checks are not blinded. Re-introduce three known regressions, one at a time on a scratch commit, and each still fails:
   - the dice button over the flow footer at 768: revert the footer padding from ticket 22;
   - the stretched Stats roll badges at a wide width: from ticket 21;
   - one Builder overflow at 320 of your choice.
-- [ ] Screenshots are written only on failure, for `SHOTS_ONLY`, or for `shot: true` scenarios
-- [ ] The dice animation check fails with the animation stubbed out, and three full runs of the new default in a row are GREEN
-- [ ] `npm run layout:android` is unaffected: `checks/androidRunner.test.ts` and `checks/nativeSteps.test.ts` pass
+- [x] Screenshots are written only on failure, for `SHOTS_ONLY`, or for `shot: true` scenarios
+- [x] The dice animation check fails with the animation stubbed out, and three full runs of the new default in a row are GREEN
+- [x] `npm run layout:android` is unaffected: `checks/androidRunner.test.ts` and `checks/nativeSteps.test.ts` pass
 
 ## Constraints
 
