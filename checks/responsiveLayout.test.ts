@@ -9,6 +9,7 @@ describe("BREAKPOINTS", () => {
     assert.equal(BREAKPOINTS.compact, 380);
     assert.equal(BREAKPOINTS.phone, 600);
     assert.equal(BREAKPOINTS.tablet, 768);
+    assert.equal(BREAKPOINTS.desktop, 1024);
   });
 });
 

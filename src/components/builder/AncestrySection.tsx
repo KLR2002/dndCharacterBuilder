@@ -7,6 +7,7 @@ import { featSpellChoicesOf, raceSpellRuleChoices, type AvailableRuleChoice } fr
 import { changeLineage, changeRace, setChoiceRacialBonus, setSizeChoice, toggleRacialPick, type LineageChoice } from "../../rules/builderTransitions";
 import { increasePoolOf, type IncreaseChoiceOffer } from "../../rules/originCustomization";
 import { currentCompendium, srdBaselineRaces } from "../../services/compendium";
+import { findHeldRace } from "../../rules/raceLookup";
 import {
   resolveAncestryState,
   applyAncestrySelection,
@@ -42,6 +43,11 @@ export interface AncestrySectionProps {
   proficiencyChoices: AvailableRuleChoice[];
   onViewDetail: (item: { title: string; subtitle?: string; source?: string; description?: string }) => void;
   theme: any;
+  /**
+   * The Creation Step this section is hosted on: "race" shows the race and its cards, "subrace" shows only the
+   * subrace picker for the held race. Unset in the free-form builder, where everything renders at once.
+   */
+  step?: "race" | "subrace";
 }
 
 export const AncestrySection: React.FC<AncestrySectionProps> = ({
@@ -52,6 +58,7 @@ export const AncestrySection: React.FC<AncestrySectionProps> = ({
   proficiencyChoices,
   onViewDetail,
   theme,
+  step,
 }) => {
   const [raceSearch, setRaceSearch] = useState("");
   const flexiblePicks = useMemo(
@@ -160,15 +167,53 @@ export const AncestrySection: React.FC<AncestrySectionProps> = ({
         <View style={{ flex: 1 }}>
           <Text style={{ color: theme.text, fontWeight: "600", fontSize: 13 }}>{label}</Text>
           {summary ? (
-            <Text style={{ color: theme.accent, fontSize: 11, fontWeight: "600" }}>
+            <Text style={{ color: theme.accentHover, fontSize: 11, fontWeight: "600" }}>
               {summary}
             </Text>
           ) : null}
         </View>
-        <Ionicons name="chevron-forward" size={16} color={theme.accent} />
+        <Ionicons name="chevron-forward" size={16} color={theme.accentHover} />
       </TouchableOpacity>
     );
   };
+
+  // The Subrace step of the Creation Flow shows only the subrace picker for the held race.
+  if (step === "subrace") {
+    const { race: heldRace } = findHeldRace(allRaces, character.race, activeBooks);
+    const subraces = heldRace?.subraces ?? [];
+    return (
+      <View style={styles.section}>
+        {character.race ? (
+          <Card highlight style={styles.row}>
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.bannerTitle, { color: theme.text }]}>
+                {character.race.name}
+                {character.race.subraceName ? ` — ${character.race.subraceName}` : ""}
+              </Text>
+            </View>
+          </Card>
+        ) : null}
+        {heldRace && subraces.length > 1 && (
+          <Card style={{ gap: 8 }}>
+            <Text style={{ color: theme.text, fontWeight: "700", fontSize: 13 }}>Subrace</Text>
+            <View style={{ gap: 8 }}>
+              {offersPlainRaceForm(heldRace, srdBaselineRaces()) ? (
+                renderRaceFormRow("plain", heldRace.name, increaseSummary(heldRace), () => selectRace(heldRace))
+              ) : null}
+              {subraces.map((sr, idx) =>
+                renderRaceFormRow(
+                  `${sr.name || "base"}_${idx}`,
+                  sr.name || (heldRace.name === "Human" ? "Standard Human" : heldRace.name),
+                  increaseSummary(heldRace, sr),
+                  () => selectRace(heldRace, idx),
+                ),
+              )}
+            </View>
+          </Card>
+        )}
+      </View>
+    );
+  }
 
   return (
     <View style={styles.section}>
@@ -181,7 +226,7 @@ export const AncestrySection: React.FC<AncestrySectionProps> = ({
               {character.race.subraceName ? ` — ${character.race.subraceName}` : ""}
             </Text>
             <Text style={{ color: theme.textMuted, fontSize: 12 }}>
-              Speed {ancestryState.speed} ft • Size {ancestryState.size}
+              Size {ancestryState.size}
               {ancestryState.darkvision > 0 ? ` • Darkvision ${ancestryState.darkvision} ft` : ""}
               {" • "}{character.race.source}
             </Text>
@@ -215,11 +260,11 @@ export const AncestrySection: React.FC<AncestrySectionProps> = ({
                     styles.choiceChip,
                     {
                       backgroundColor: selected ? theme.accentGlow : theme.surfaceHighlight,
-                      borderColor: selected ? theme.accent : theme.border,
+                      borderColor: selected ? theme.accentHover : theme.border,
                     },
                   ]}
                 >
-                  <Text style={{ color: selected ? theme.accent : theme.textSecondary, fontWeight: "700", fontSize: 13 }}>
+                  <Text style={{ color: selected ? theme.accentHover : theme.textSecondary, fontWeight: "700", fontSize: 13 }}>
                     {size}
                   </Text>
                 </TouchableOpacity>
@@ -230,8 +275,8 @@ export const AncestrySection: React.FC<AncestrySectionProps> = ({
       )}
 
       {character.race && increaseChoices.map((choice) => (
-        <Card key={choice.id} style={{ gap: 8, borderColor: theme.accent }}>
-          <Text style={{ color: theme.accent, fontWeight: "700", fontSize: 13 }}>
+        <Card key={choice.id} style={{ gap: 8, borderColor: theme.accentHover }}>
+          <Text style={{ color: theme.accentHover, fontWeight: "700", fontSize: 13 }}>
             {`Choose +${choice.amount} to ${choice.count} ability score${choice.count > 1 ? "s" : ""} (${choice.picked.length}/${choice.count} chosen)`}
           </Text>
           <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6 }}>
@@ -247,12 +292,12 @@ export const AncestrySection: React.FC<AncestrySectionProps> = ({
                     styles.choiceChip,
                     {
                       backgroundColor: chosen ? theme.accentGlow : theme.surfaceHighlight,
-                      borderColor: chosen ? theme.accent : theme.border,
+                      borderColor: chosen ? theme.accentHover : theme.border,
                       opacity: canPick ? 1 : 0.35,
                     },
                   ]}
                 >
-                  <Text style={{ color: chosen ? theme.accent : theme.textSecondary, fontWeight: "700", fontSize: 13 }}>
+                  <Text style={{ color: chosen ? theme.accentHover : theme.textSecondary, fontWeight: "700", fontSize: 13 }}>
                     {ABILITY_LABELS[k]}
                     {chosen ? ` +${choice.amount}` : ""}
                   </Text>
@@ -265,9 +310,9 @@ export const AncestrySection: React.FC<AncestrySectionProps> = ({
 
       {/* Flexible Increases picker */}
       {character.race && hasFlexibleIncreases && (
-        <Card style={{ gap: 8, borderColor: theme.accent }}>
+        <Card style={{ gap: 8, borderColor: theme.accentHover }}>
           <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
-            <Text style={{ color: theme.accent, fontWeight: "700", fontSize: 13 }}>
+            <Text style={{ color: theme.accentHover, fontWeight: "700", fontSize: 13 }}>
               {flexibleMode === "2_1"
                 ? `Choose +2 and +1 to abilities (${flexiblePicks.length}/2 chosen)`
                 : `Choose +1 to 3 abilities (${flexiblePicks.length}/3 chosen)`}
@@ -283,13 +328,13 @@ export const AncestrySection: React.FC<AncestrySectionProps> = ({
                 styles.modeBtn,
                 {
                   backgroundColor: flexibleMode === "2_1" ? theme.accentGlow : theme.surfaceHighlight,
-                  borderColor: flexibleMode === "2_1" ? theme.accent : theme.border,
+                  borderColor: flexibleMode === "2_1" ? theme.accentHover : theme.border,
                 },
               ]}
             >
               <Text
                 style={{
-                  color: flexibleMode === "2_1" ? theme.accent : theme.textSecondary,
+                  color: flexibleMode === "2_1" ? theme.accentHover : theme.textSecondary,
                   fontWeight: "700",
                   fontSize: 12,
                 }}
@@ -306,13 +351,13 @@ export const AncestrySection: React.FC<AncestrySectionProps> = ({
                 styles.modeBtn,
                 {
                   backgroundColor: flexibleMode === "1_1_1" ? theme.accentGlow : theme.surfaceHighlight,
-                  borderColor: flexibleMode === "1_1_1" ? theme.accent : theme.border,
+                  borderColor: flexibleMode === "1_1_1" ? theme.accentHover : theme.border,
                 },
               ]}
             >
               <Text
                 style={{
-                  color: flexibleMode === "1_1_1" ? theme.accent : theme.textSecondary,
+                  color: flexibleMode === "1_1_1" ? theme.accentHover : theme.textSecondary,
                   fontWeight: "700",
                   fontSize: 12,
                 }}
@@ -336,12 +381,12 @@ export const AncestrySection: React.FC<AncestrySectionProps> = ({
                     styles.choiceChip,
                     {
                       backgroundColor: chosen ? theme.accentGlow : theme.surfaceHighlight,
-                      borderColor: chosen ? theme.accent : theme.border,
+                      borderColor: chosen ? theme.accentHover : theme.border,
                       opacity: canPick ? 1 : 0.35,
                     },
                   ]}
                 >
-                  <Text style={{ color: chosen ? theme.accent : theme.textSecondary, fontWeight: "700", fontSize: 13 }}>
+                  <Text style={{ color: chosen ? theme.accentHover : theme.textSecondary, fontWeight: "700", fontSize: 13 }}>
                     {ABILITY_LABELS[k]}
                     {chosen ? ` +${chosenAmount}` : ""}
                   </Text>
@@ -419,10 +464,10 @@ export const AncestrySection: React.FC<AncestrySectionProps> = ({
 
       {/* Origin Feat for Variant Human and Custom Lineage */}
       {character.race && hasOriginFeat && (
-        <Card style={{ gap: 10, borderColor: theme.accent }}>
+        <Card style={{ gap: 10, borderColor: theme.accentHover }}>
           <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
             <View style={{ flex: 1 }}>
-              <Text style={[styles.heading, { color: theme.accent }]}>
+              <Text style={[styles.heading, { color: theme.accentHover }]}>
                 {originFeatTitle}
               </Text>
               <Text style={{ color: theme.textSecondary, fontSize: 12 }}>
@@ -467,7 +512,7 @@ export const AncestrySection: React.FC<AncestrySectionProps> = ({
                 if (bonusOptions.abilities.length <= 1) return null;
                 return (
                   <View style={{ gap: 6, marginTop: 4 }}>
-                    <Text style={{ color: theme.accent, fontSize: 12, fontWeight: "600" }}>
+                    <Text style={{ color: theme.accentHover, fontSize: 12, fontWeight: "600" }}>
                       Choose +{bonusOptions.amount} Ability Score Increase:
                     </Text>
                     <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6 }}>
@@ -491,12 +536,12 @@ export const AncestrySection: React.FC<AncestrySectionProps> = ({
                               styles.choiceChip,
                               {
                                 backgroundColor: isSelected ? theme.accent : theme.surfaceHighlight,
-                                borderColor: isSelected ? theme.accent : theme.border,
+                                borderColor: isSelected ? theme.accentHover : theme.border,
                               },
                             ]}>
                             <Text
                               style={{
-                                color: isSelected ? "#fff" : theme.text,
+                                color: isSelected ? theme.accentText : theme.text,
                                 fontSize: 12,
                                 fontWeight: isSelected ? "700" : "500",
                               }}>
@@ -533,7 +578,7 @@ export const AncestrySection: React.FC<AncestrySectionProps> = ({
       {/* Race / Lineage Traits */}
       {character.race && ancestryState.traits.length > 0 && (
         <Card style={{ gap: 8 }}>
-          <Text style={[styles.heading, { color: character.lineageReplacement ? theme.accent : theme.text }]}>
+          <Text style={[styles.heading, { color: character.lineageReplacement ? theme.accentHover : theme.text }]}>
             {character.lineageReplacement ? `${character.lineageReplacement} Features (Lineage):` : `${character.race.name} Traits:`}
           </Text>
           {ancestryState.traits.map((t) => (
@@ -580,11 +625,11 @@ export const AncestrySection: React.FC<AncestrySectionProps> = ({
                     styles.lineageChip,
                     {
                       backgroundColor: active ? theme.accentGlow : theme.surfaceHighlight,
-                      borderColor: active ? theme.accent : theme.border,
+                      borderColor: active ? theme.accentHover : theme.border,
                     },
                   ]}
                 >
-                  <Text style={{ color: active ? theme.accent : theme.textSecondary, fontSize: 13, fontWeight: "600" }}>
+                  <Text style={{ color: active ? theme.accentHover : theme.textSecondary, fontSize: 13, fontWeight: "600" }}>
                     {opt}
                   </Text>
                 </TouchableOpacity>
@@ -628,14 +673,14 @@ export const AncestrySection: React.FC<AncestrySectionProps> = ({
                           {hasIncreaseChoice ? <Badge label="Choice ASI" variant="secondary" size="sm" /> : null}
                         </View>
                         {asiStr ? (
-                          <Text style={{ color: theme.accent, fontSize: 12, marginTop: 1, fontWeight: "600" }}>
+                          <Text style={{ color: theme.accentHover, fontSize: 12, marginTop: 1, fontWeight: "600" }}>
                             {asiStr}
                           </Text>
                         ) : (
                           <Text style={{ color: theme.textMuted, fontSize: 11, marginTop: 1 }}>No fixed ASI</Text>
                         )}
                         <Text style={{ color: theme.textMuted, fontSize: 11 }}>
-                          Speed {r.speed.walk} ft • {r.size.join("/")} • {r.source}
+                          {r.size.join("/")} • {r.source}
                         </Text>
                       </View>
                       <Button
@@ -747,7 +792,7 @@ export const AncestrySection: React.FC<AncestrySectionProps> = ({
                     style={[
                       styles.featureRow,
                       {
-                        borderColor: isSelected ? theme.accent : theme.border,
+                        borderColor: isSelected ? theme.accentHover : theme.border,
                         backgroundColor: isSelected ? theme.surfaceHighlight : theme.surface,
                         padding: 10,
                         borderRadius: 8,
@@ -762,7 +807,7 @@ export const AncestrySection: React.FC<AncestrySectionProps> = ({
                         )}
                       </View>
                       {bonusOptions.abilities.length > 0 && (
-                        <Text style={{ color: theme.accent, fontSize: 11, fontWeight: "600" }}>
+                        <Text style={{ color: theme.accentHover, fontSize: 11, fontWeight: "600" }}>
                           Half-Feat (+1 to {bonusOptions.abilities.map((a) => a.toUpperCase()).join("/")})
                         </Text>
                       )}

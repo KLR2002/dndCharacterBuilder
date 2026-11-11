@@ -16,18 +16,19 @@ interface AddedProficiencyModalProps {
   onClose: () => void;
 }
 
-/** The custom-name field. It mounts only while the modal is open, so closing it clears the typed text. */
-const CustomNameRow: React.FC<{ isAddable: (raw: string) => boolean; onAdd: (raw: string) => void }> = ({
-  isAddable,
-  onAdd,
-}) => {
+/** The custom-name field. It mounts only while the modal is open, and the parent clears the value on close. */
+const CustomNameRow: React.FC<{
+  custom: string;
+  onCustomChange: (raw: string) => void;
+  isAddable: (raw: string) => boolean;
+  onAdd: (raw: string) => void;
+}> = ({ custom, onCustomChange, isAddable, onAdd }) => {
   const { theme } = useAppTheme();
-  const [custom, setCustom] = useState("");
   return (
     <View style={styles.customRow}>
       <TextInput
         value={custom}
-        onChangeText={setCustom}
+        onChangeText={onCustomChange}
         placeholder="Custom name"
         placeholderTextColor={theme.textSecondary}
         style={[styles.input, { color: theme.text, backgroundColor: theme.surfaceHighlight, borderColor: theme.border }]}
@@ -47,9 +48,22 @@ export const AddedProficiencyModal: React.FC<AddedProficiencyModalProps> = ({
   onClose,
 }) => {
   const { theme } = useAppTheme();
+  const [custom, setCustom] = useState("");
+
+  // Closing the modal clears the typed text. Adjusting state while rendering (not in an effect) keeps
+  // this to one render when `visible` turns false.
+  const [wasVisible, setWasVisible] = useState(visible);
+  if (visible !== wasVisible) {
+    setWasVisible(visible);
+    if (!visible) setCustom("");
+  }
 
   return (
-    <Modal visible={visible} onClose={onClose} title={category === "tools" ? "Add Tool Proficiency" : "Add Language"}>
+    <Modal
+      visible={visible}
+      onClose={onClose}
+      hasUnsavedChanges={custom.trim() !== ""}
+      title={category === "tools" ? "Add Tool Proficiency" : "Add Language"}>
       <View style={{ gap: 8 }}>
         {options.map((name) => (
           <TouchableOpacity
@@ -62,7 +76,7 @@ export const AddedProficiencyModal: React.FC<AddedProficiencyModalProps> = ({
           </TouchableOpacity>
         ))}
       </View>
-      {visible ? <CustomNameRow isAddable={isAddable} onAdd={onAdd} /> : null}
+      {visible ? <CustomNameRow custom={custom} onCustomChange={setCustom} isAddable={isAddable} onAdd={onAdd} /> : null}
     </Modal>
   );
 };

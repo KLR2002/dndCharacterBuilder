@@ -1,7 +1,9 @@
 import type { ActiveBooks } from "../constants/books.ts";
-import type { Character, KnownSpell } from "../types/character.ts";
+import type { Character, CharacterClass, KnownSpell } from "../types/character.ts";
+import type { ClassData } from "../types/dnd5e.ts";
 import { currentCompendium, type Compendium } from "../services/compendium.ts";
 import { GIANT_BARBARIAN_OWNER_KEY, GIANT_POWER_CANTRIPS } from "../constants/rules.ts";
+import { getMaxSpellLevel } from "./spellcasting.ts";
 import { pruneInvalidExpertise } from "./expertise.ts";
 import { fightingStyleOwnerOf, moveLegacyFightingStyleIds, pruneInvalidFightingStyles } from "./choices/fightingStyles.ts";
 import { maneuverOwnerOf, pruneInvalidManeuvers } from "./choices/maneuvers.ts";
@@ -48,7 +50,9 @@ import { reconcileOriginAbilities } from "./originCustomization.ts";
  * Fighting styles run before maneuvers because Superior Technique is gated on a fighting style. A fighting style pick saved under
  * an id with another source moves to the id its class now gives first, so the style passes read the current ids.
  * The Giant Power cantrip sync reads only its own choice and the Barbarian's known spells, so
- * its position is free; it sits with the other known-spell syncs.
+ * its position is free; it sits with the other known-spell syncs. A held class's spells above its
+ * maximum spell level (0 included, so a class that can no longer cast loses its leveled spells)
+ * are released with them.
  * Picks saved under a grant's former id move to the grant's id first, so every later pass reads the current ids.
  * The class tool bucket is moved into its Proficiency Choice's pick next, so the pick check sees it, and the
  * race and background tool and language buckets follow it. The race and background skill picks saved in the
@@ -81,6 +85,7 @@ export function reconcile(
   updated = syncAncientSecretsRituals(updated, compendium);
   updated = syncGiantPowerCantrip(updated);
   updated = pruneInvalidMysticArcanum(updated);
+  updated = releaseOverLevelClassSpells(updated, compendium, options.activeBooks);
   updated = pruneInvalidInfusions(updated, compendium);
   updated = moveAliasedProficiencyPicks(updated, compendium, options.activeBooks);
   updated = moveLegacyClassToolPicks(updated, compendium);
@@ -113,6 +118,58 @@ export function reconcileForActiveBooks(
 ): Character {
   const reconciled = releaseStrandedExpandedSpells(reconcile(character, compendium, { activeBooks }), compendium, activeBooks);
   return JSON.stringify(reconciled) === JSON.stringify(character) ? character : reconciled;
+}
+
+/**
+ * Releases the known spells each held class owns whose spell level is above the maximum that class casts at
+ * its level — including when that maximum is 0, so a class that can no longer cast releases its leveled
+ * class-owned spells (cantrips are level 0 and stay). Each release drops that class's own prepared keys
+ * too and gets a review notice. A name the catalog does not hold is kept.
+ */
+function releaseOverLevelClassSpells(character: Character, compendium: Compendium, activeBooks: ActiveBooks): Character {
+  const classes = compendium.for(activeBooks).classes();
+  let updated = character;
+  for (const entry of character.classes ?? []) {
+    updated = releaseOverLevelSpellsOf(updated, entry, classes, compendium);
+  }
+  return updated;
+}
+
+/** Releases the spells `entry`'s class owns above its maximum spell level; see releaseOverLevelClassSpells. */
+function releaseOverLevelSpellsOf(
+  character: Character,
+  entry: CharacterClass,
+  classes: readonly ClassData[],
+  compendium: Compendium,
+): Character {
+  const maxSpellLevel = getMaxSpellLevel(entry, classes);
+  const ownerPrefix = `${entry.className}__`.toLowerCase();
+  const classLower = entry.className.toLowerCase();
+  const ownedByClass = (k: { name: string; source: string; ownerKey?: string; className?: string }) =>
+    k.ownerKey?.toLowerCase().startsWith(ownerPrefix) ?? (!k.ownerKey && k.className?.toLowerCase() === classLower);
+  const notices: string[] = [];
+  const released = new Set<string>();
+  const knownSpells = (character.knownSpells ?? []).filter((known) => {
+    if (!ownedByClass(known)) return true;
+    const spell = compendium.findSpell(known.name, known.source);
+    if (!spell || spell.level <= maxSpellLevel) return true;
+    released.add(known.name.toLowerCase());
+    notices.push(`${known.name} removed: spell level above ${entry.className} ${entry.level}`);
+    return false;
+  });
+  if (released.size === 0) return character;
+  const keptNames = new Set(knownSpells.map((known) => known.name.toLowerCase()));
+  const preparedSpells = (character.preparedSpells ?? []).filter((prepared) => {
+    const segments = prepared.split("__");
+    if (!released.has(segments[0].toLowerCase())) return true;
+    // A canonical key stores its owner after the second `__` (`name__source__owner`), so only the
+    // releasing class's own prepared keys go with its released known spells; another class's
+    // prepared entry of the same name stays. A legacy key names no owner, so it stays while any
+    // owner still knows the spell.
+    if (segments.length > 2) return !segments.slice(2).join("__").toLowerCase().startsWith(ownerPrefix);
+    return keptNames.has(segments[0].toLowerCase());
+  });
+  return withNotices({ ...character, knownSpells, preparedSpells }, notices);
 }
 
 /**

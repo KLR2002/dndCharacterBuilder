@@ -6,6 +6,36 @@ import { allCatalogClasses } from "./catalogs.ts";
 import { effectiveScores, hasFeat } from "./abilities.ts";
 import { totalLevel } from "./proficiencies.ts";
 
+/** The key a class level's rolled die face is recorded under on the Character. */
+export function rolledHitPointsKey(className: string, level: number): string {
+  return `${className}__${level}`;
+}
+
+/** Records the die face a rolled class level rolled. The record stays until the level is removed. */
+export function recordRolledHitPoints(
+  character: Character,
+  className: string,
+  level: number,
+  amount: number
+): Character {
+  return {
+    ...character,
+    rolledHitPoints: { ...character.rolledHitPoints, [rolledHitPointsKey(className, level)]: amount },
+  };
+}
+
+/** Drops one class level's rolled Hit Points record, when that level is removed. */
+export function dropRolledHitPoints(character: Character, className: string, level: number): Character {
+  const key = rolledHitPointsKey(className, level);
+  if (!character.rolledHitPoints || !(key in character.rolledHitPoints)) return character;
+  const rolledHitPoints = { ...character.rolledHitPoints };
+  delete rolledHitPoints[key];
+  return {
+    ...character,
+    rolledHitPoints: Object.keys(rolledHitPoints).length > 0 ? rolledHitPoints : undefined,
+  };
+}
+
 export function maxHp(character: Character, opts: ResolvedAncestry = {}, classes: readonly ClassData[] = allCatalogClasses()): number {
   if (character.maxHpOverride != null && character.maxHpOverride > 0) return character.maxHpOverride;
   const con = effectiveScores(character, opts).modifiers.con;
@@ -18,7 +48,9 @@ export function maxHp(character: Character, opts: ResolvedAncestry = {}, classes
   for (const c of character.classes) {
     const die = hitDieOf(c, classes);
     for (let level = 1; level <= c.level; level++) {
-      hp += Math.max(1, (first ? die : Math.floor(die / 2) + 1) + con);
+      const rolled = character.rolledHitPoints?.[rolledHitPointsKey(c.className, level)];
+      // A rolled level stores its die face; the current Constitution modifier is added on every read.
+      hp += Math.max(1, (rolled ?? (first ? die : Math.floor(die / 2) + 1)) + con);
       first = false;
     }
   }

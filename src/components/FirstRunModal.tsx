@@ -62,7 +62,7 @@ export const FirstRunModal: React.FC<FirstRunModalProps> = ({
                 { backgroundColor: theme.surfaceHighlight },
               ]}
             >
-              <Ionicons name="book-outline" size={22} color={theme.accent} />
+              <Ionicons name="book-outline" size={22} color={theme.accentHover} />
             </View>
             <View style={styles.headerText}>
               <Text style={[styles.cardTitle, { color: theme.text }]}>
@@ -111,7 +111,7 @@ export const FirstRunModal: React.FC<FirstRunModalProps> = ({
               <Ionicons
                 name="cloud-download-outline"
                 size={22}
-                color={theme.accent}
+                color={theme.accentHover}
               />
             </View>
             <View style={styles.headerText}>
@@ -144,7 +144,7 @@ export const FirstRunModal: React.FC<FirstRunModalProps> = ({
             <Ionicons
               name="information-circle-outline"
               size={18}
-              color={theme.accent}
+              color={theme.accentHover}
               style={{ marginTop: 2 }}
             />
             <Text style={[styles.noticeText, { color: theme.text }]}>

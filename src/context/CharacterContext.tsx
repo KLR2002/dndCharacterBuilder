@@ -7,7 +7,7 @@ import {
   saveFolders,
   updateSettings,
 } from "../services/storage";
-import type { Character, Folder } from "../types/character";
+import type { Character, CreationProgress, Folder } from "../types/character";
 import { applyCharacterUpdate } from "./characterUpdates";
 import { migrateCharacter } from "../rules/migrateCharacter";
 import { reconcileForActiveBooks } from "../rules/characterReconciler";
@@ -41,6 +41,8 @@ interface CharacterContextValue {
     alignment?: string;
     faction?: { name: string; rank: string; renown: string; notes: string };
     folderId?: string | null;
+    /** Set on creation to open the character as a draft in the Creation Flow instead of the sheet. */
+    creationProgress?: CreationProgress;
   }) => Promise<Character>;
   updateCharacter: {
     (id: string, updater: (c: Character) => Character): Promise<void>;
@@ -54,6 +56,9 @@ interface CharacterContextValue {
   setActiveBooks: (books: string[]) => Promise<void>;
   fullHealOnLevelUp: boolean;
   setFullHealOnLevelUp: (on: boolean) => Promise<void>;
+  /** The saved 3D dice switch; undefined when never toggled, so the system reduced-motion preference decides. */
+  dice3dEnabled: boolean | undefined;
+  setDice3dEnabled: (on: boolean) => Promise<void>;
   setFirstRunCompleted: (books: string[]) => Promise<void>;
   getCharacter: (id: string) => Character | undefined;
 
@@ -117,6 +122,8 @@ export function CharacterProvider({ children }: { children: React.ReactNode }) {
   };
   const [activeBooks, setActiveBooksState] = useState<string[]>(DEFAULT_ACTIVE_BOOK_CODES);
   const [fullHealOnLevelUp, setFullHealOnLevelUpState] = useState<boolean>(DEFAULT_SETTINGS.fullHealOnLevelUp);
+  // Undefined until the user toggles the switch: then the saved value decides, not the system preference.
+  const [dice3dEnabled, setDice3dEnabledState] = useState<boolean | undefined>(undefined);
   const [hasCompletedFirstRun, setHasCompletedFirstRun] = useState<boolean>(true); // default true to avoid flash
   const [isIntegrated, setIsIntegrated] = useState<boolean>(false);
   const [integratedAt, setIntegratedAt] = useState<string | null>(null);
@@ -161,6 +168,7 @@ export function CharacterProvider({ children }: { children: React.ReactNode }) {
         const migratedCharacters = loadedChars.map((c) => migrateCharacter(c, raceCatalog, classCatalog, loadedActiveBooks));
         setActiveBooksState(loadedActiveBooks);
         setFullHealOnLevelUpState(loadedSettings.fullHealOnLevelUp);
+        setDice3dEnabledState(loadedSettings.dice3dEnabled);
         setHasCompletedFirstRun(Boolean(loadedSettings.hasCompletedFirstRun));
         setCatalogFormatInformed(loadedSettings.catalogFormatInformed);
         setCharacters(migratedCharacters);
@@ -189,6 +197,7 @@ export function CharacterProvider({ children }: { children: React.ReactNode }) {
     alignment?: string;
     faction?: { name: string; rank: string; renown: string; notes: string };
     folderId?: string | null;
+    creationProgress?: CreationProgress;
   }): Promise<Character> => {
     requireReady();
     const newChar: Character = migrateCharacter({
@@ -248,6 +257,7 @@ export function CharacterProvider({ children }: { children: React.ReactNode }) {
       bonds: "",
       flaws: "",
       notes: "",
+      ...(initialData.creationProgress ? { creationProgress: initialData.creationProgress } : {}),
     }, undefined, [], activeBooks);
 
     await changeCharacters(previous => [...previous, newChar]);
@@ -323,6 +333,11 @@ export function CharacterProvider({ children }: { children: React.ReactNode }) {
   const setFullHealOnLevelUp = async (on: boolean) => {
     setFullHealOnLevelUpState(on);
     await updateSettings({ fullHealOnLevelUp: on });
+  };
+
+  const setDice3dEnabled = async (on: boolean) => {
+    setDice3dEnabledState(on);
+    await updateSettings({ dice3dEnabled: on });
   };
 
   const setFirstRunCompleted = async (books: string[]) => {
@@ -414,6 +429,8 @@ export function CharacterProvider({ children }: { children: React.ReactNode }) {
         setActiveBooks,
         fullHealOnLevelUp,
         setFullHealOnLevelUp,
+        dice3dEnabled,
+        setDice3dEnabled,
         setFirstRunCompleted,
         getCharacter,
         isIntegrated,

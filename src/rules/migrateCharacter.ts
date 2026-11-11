@@ -1,5 +1,6 @@
 import type { ActiveBooks } from "../constants/books.ts";
-import type { AsiSelection, Character, KnownSpell, SkillChoiceEntry } from "../types/character.ts";
+import type { AsiSelection, Character, CreationStepId, KnownSpell, SkillChoiceEntry } from "../types/character.ts";
+import { CREATION_STEP_ORDER } from "../types/character.ts";
 import type { ClassData, RaceData } from "../types/dnd5e.ts";
 import { spellAbilityOf } from "./classData.ts";
 import { totalLevel } from "./proficiencies.ts";
@@ -74,6 +75,23 @@ export function migrateCharacter(
       Array.isArray(entry.from) && entry.from.every((v) => typeof v === "string") &&
       Array.isArray(entry.picked) && entry.picked.every((v) => typeof v === "string")
     )) throw new Error("Invalid character: malformed ruleChoices");
+  }
+  // A save without creationProgress is a finished character; the field is carried through untouched, and a
+  // malformed one is rejected like the other malformed fields.
+  if (c.creationProgress !== undefined) {
+    if (!isRecord(c.creationProgress) || typeof c.creationProgress.currentStep !== "string" ||
+        !CREATION_STEP_ORDER.includes(c.creationProgress.currentStep as CreationStepId)) {
+      throw new Error("Invalid character: malformed creationProgress");
+    }
+    const needsAttention = c.creationProgress.needsAttention;
+    if (needsAttention !== undefined &&
+        (!Array.isArray(needsAttention) ||
+          !needsAttention.every((id) => typeof id === "string" && CREATION_STEP_ORDER.includes(id as CreationStepId)))) {
+      throw new Error("Invalid character: malformed creationProgress");
+    }
+    if (c.creationProgress.editBuild !== undefined && typeof c.creationProgress.editBuild !== "boolean") {
+      throw new Error("Invalid character: malformed creationProgress");
+    }
   }
   const classes = c.classes ?? [];
   if (!classes.every(entry => isRecord(entry) && typeof entry.className === "string" && typeof entry.source === "string")) {

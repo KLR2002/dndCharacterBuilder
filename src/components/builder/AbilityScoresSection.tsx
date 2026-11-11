@@ -1,7 +1,7 @@
 import React from "react";
 import { Text, TextInput, TouchableOpacity, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { Character, AbilityKey } from "../../types/character";
+import { Character, AbilityKey, RolledAbilityResult } from "../../types/character";
 import { STANDARD_ARRAY } from "../../constants/rules";
 import { Card } from "../ui/Card";
 import { Button } from "../ui/Button";
@@ -23,6 +23,14 @@ export interface AbilityScoresSectionProps {
   onResetSA: () => void;
   onUpdateBaseScore: (key: AbilityKey, delta: number) => void;
   onSetManualScore: (key: AbilityKey, val: string) => void;
+  rolledResults: RolledAbilityResult[];
+  rolledPicks: Partial<Record<AbilityKey, number>>;
+  pendingRoll: number | null;
+  onRoll: () => void;
+  onRollPoolTap: (index: number) => void;
+  onRollSlotTap: (key: AbilityKey) => void;
+  onUnassignRollSlot: (key: AbilityKey) => void;
+  onResetRolled: () => void;
   theme: any;
 }
 
@@ -41,6 +49,14 @@ export const AbilityScoresSection: React.FC<AbilityScoresSectionProps> = ({
   onResetSA,
   onUpdateBaseScore,
   onSetManualScore,
+  rolledResults,
+  rolledPicks,
+  pendingRoll,
+  onRoll,
+  onRollPoolTap,
+  onRollSlotTap,
+  onUnassignRollSlot,
+  onResetRolled,
   theme,
 }) => {
   const { isCompact } = useResponsiveLayout();
@@ -49,12 +65,14 @@ export const AbilityScoresSection: React.FC<AbilityScoresSectionProps> = ({
     <View style={styles.section}>
       {/* Method selector */}
       <View style={styles.methodRow}>
-        {(["pointBuy", "standardArray", "manual"] as const).map((m) => {
+        {(["pointBuy", "standardArray", "manual", "rolled"] as const).map((m) => {
           const active = character.abilityMethod === m;
           return (
             <TouchableOpacity
               key={m}
               onPress={() => {
+                // Re-tapping the active method does nothing: it must not clear the placements it shows.
+                if (m === character.abilityMethod) return;
                 if (m === "pointBuy") {
                   const cur = character.baseAbilityScores || { str: 8, dex: 8, con: 8, int: 8, wis: 8, cha: 8 };
                   const newScores: Record<AbilityKey, number> = { str: 8, dex: 8, con: 8, int: 8, wis: 8, cha: 8 };
@@ -69,22 +87,24 @@ export const AbilityScoresSection: React.FC<AbilityScoresSectionProps> = ({
                   onUpdate({ abilityMethod: m });
                 }
                 if (m === "standardArray") onResetSA();
+                if (m === "rolled") onResetRolled();
               }}
               style={[
                 styles.methodBtn,
+                { minHeight: 44 },
                 {
                   backgroundColor: active ? theme.accentGlow : theme.surface,
-                  borderColor: active ? theme.accent : theme.border,
+                  borderColor: active ? theme.accentHover : theme.border,
                 },
               ]}
             >
               <Text
                 style={[
                   styles.methodText,
-                  { color: active ? theme.accent : theme.textSecondary, fontWeight: active ? "700" : "400" },
+                  { color: active ? theme.accentHover : theme.textSecondary, fontWeight: active ? "700" : "400" },
                 ]}
               >
-                {m === "pointBuy" ? "Point Buy" : m === "standardArray" ? "Std Array" : "Manual"}
+                {m === "pointBuy" ? "Point Buy" : m === "standardArray" ? "Std Array" : m === "manual" ? "Manual" : "Rolled"}
               </Text>
             </TouchableOpacity>
           );
@@ -110,7 +130,7 @@ export const AbilityScoresSection: React.FC<AbilityScoresSectionProps> = ({
             Points remaining:{" "}
             <Text
               style={{
-                color: pointBuyRemaining >= 0 ? theme.accent : theme.danger,
+                color: pointBuyRemaining >= 0 ? theme.accentHover : theme.danger,
                 fontWeight: "800",
                 fontSize: 16,
               }}
@@ -138,9 +158,6 @@ export const AbilityScoresSection: React.FC<AbilityScoresSectionProps> = ({
       {/* Standard Array pool */}
       {character.abilityMethod === "standardArray" && (
         <Card style={{ gap: 10 }}>
-          <Text style={{ color: theme.textSecondary, fontSize: 12, fontWeight: "600" }}>
-            1. Tap a value from the pool below{"\n"}2. Tap an ability slot to assign it
-          </Text>
           <View style={{ flexDirection: "row", justifyContent: "center", gap: 8, flexWrap: "wrap" }}>
             {STANDARD_ARRAY.map((v, idx) => {
               const timesInArray = STANDARD_ARRAY.filter((x) => x === v).length;
@@ -154,15 +171,15 @@ export const AbilityScoresSection: React.FC<AbilityScoresSectionProps> = ({
                   style={[
                     styles.poolChip,
                     {
-                      backgroundColor: isPending ? theme.accent : available ? theme.surfaceRaised : theme.surfaceHighlight,
-                      borderColor: isPending ? theme.accent : theme.border,
+                      backgroundColor: isPending ? theme.accentGlow : available ? theme.surfaceRaised : theme.surfaceHighlight,
+                      borderColor: isPending ? theme.accentHover : theme.border,
                       opacity: !available && !isPending ? 0.35 : 1,
                     },
                   ]}
                 >
                   <Text
                     style={{
-                      color: isPending ? theme.background : available ? theme.text : theme.textMuted,
+                      color: isPending ? theme.text : available ? theme.text : theme.textMuted,
                       fontWeight: "800",
                       fontSize: 20,
                     }}
@@ -173,12 +190,65 @@ export const AbilityScoresSection: React.FC<AbilityScoresSectionProps> = ({
               );
             })}
           </View>
-          {pendingValue != null && (
-            <Text style={{ color: theme.accent, fontSize: 12, textAlign: "center", fontWeight: "700" }}>
-              → Now tap an ability slot to assign {pendingValue}
-            </Text>
-          )}
           <Button title="Reset" variant="outline" size="sm" onPress={onResetSA} />
+        </Card>
+      )}
+
+      {/* Rolled Abilities results */}
+      {character.abilityMethod === "rolled" && (
+        <Card style={{ gap: 10 }}>
+          {rolledResults.length > 0 && (
+            <View style={{ flexDirection: "row", justifyContent: "center", gap: 8, flexWrap: "wrap" }}>
+              {rolledResults.map((result, index) => {
+                const used = Object.values(rolledPicks).includes(index);
+                const isPending = pendingRoll === index;
+                return (
+                  <TouchableOpacity
+                    key={index}
+                    onPress={() => (used ? undefined : onRollPoolTap(index))}
+                    style={[
+                      styles.rollChip,
+                      {
+                        backgroundColor: isPending ? theme.accentGlow : used ? theme.surfaceHighlight : theme.surfaceRaised,
+                        borderColor: isPending ? theme.accentHover : theme.border,
+                        opacity: used ? 0.35 : 1,
+                      },
+                    ]}
+                  >
+                    <Text
+                      style={{
+                        color: theme.text,
+                        fontWeight: "800",
+                        fontSize: 18,
+                      }}
+                    >
+                      {result.total}
+                    </Text>
+                    <View style={{ flexDirection: "row", gap: 3 }}>
+                      {result.dice.map((die, dieIndex) => {
+                        const dropped = dieIndex === result.droppedIndex;
+                        return (
+                          <Text
+                            key={dieIndex}
+                            style={{
+                              color: isPending ? theme.text : theme.textSecondary,
+                              fontSize: 11,
+                              fontWeight: "600",
+                              opacity: dropped ? 0.4 : 1,
+                              textDecorationLine: dropped ? "line-through" : "none",
+                            }}
+                          >
+                            {die.face}
+                          </Text>
+                        );
+                      })}
+                    </View>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          )}
+          <Button title={rolledResults.length > 0 ? "Reroll" : "Roll"} variant="outline" size="sm" onPress={onRoll} />
         </Card>
       )}
 
@@ -189,25 +259,28 @@ export const AbilityScoresSection: React.FC<AbilityScoresSectionProps> = ({
           const racialBonus = character.racialAbilityBonuses[key] || 0;
           const total = effectiveScores[key];
           const mod = modifiers[key];
-          const isAssigned = saAssignments[key] != null;
           const isSA = character.abilityMethod === "standardArray";
+          const isRolled = character.abilityMethod === "rolled";
+          const isPlacement = isSA || isRolled;
+          const isAssigned = isSA ? saAssignments[key] != null : isRolled ? rolledPicks[key] != null : false;
+          const pending = isSA ? pendingValue : pendingRoll;
 
           return (
             <TouchableOpacity
               key={key}
-              onPress={() => (isSA ? onSlotTap(key) : undefined)}
-              activeOpacity={isSA ? 0.7 : 1}
+              onPress={() => (isSA ? onSlotTap(key) : isRolled ? onRollSlotTap(key) : undefined)}
+              activeOpacity={isPlacement ? 0.7 : 1}
               style={[
                 isCompact ? styles.scoreCardCompact : styles.scoreCard,
                 {
                   backgroundColor: theme.surface,
                   borderColor:
-                    isSA && pendingValue != null
-                      ? theme.accent
+                    isPlacement && pending != null
+                      ? theme.accentHover
                       : isAssigned
                       ? theme.accentGlow
                       : theme.border,
-                  borderWidth: isSA && pendingValue != null ? 2 : 1,
+                  borderWidth: isPlacement && pending != null ? 2 : 1,
                 },
               ]}
             >
@@ -220,7 +293,7 @@ export const AbilityScoresSection: React.FC<AbilityScoresSectionProps> = ({
                 )}
               </View>
 
-              <Text style={[styles.abilityMod, { color: theme.accent, marginRight: isCompact ? 12 : 0 }]}>{mod >= 0 ? `+${mod}` : mod}</Text>
+              <Text style={[styles.abilityMod, { color: theme.accentHover, marginRight: isCompact ? 12 : 0 }]}>{mod >= 0 ? `+${mod}` : mod}</Text>
 
               {character.abilityMethod === "manual" ? (
                 <TextInput
@@ -232,19 +305,19 @@ export const AbilityScoresSection: React.FC<AbilityScoresSectionProps> = ({
                   value={String(base)}
                   onChangeText={(t) => onSetManualScore(key, t)}
                 />
-              ) : isSA ? (
+              ) : isPlacement ? (
                 <View
                   style={[
                     styles.saSlot,
                     {
                       backgroundColor: isAssigned ? theme.accentGlow : theme.surfaceHighlight,
-                      borderColor: isAssigned ? theme.accent : theme.border,
+                      borderColor: isAssigned ? theme.accentHover : theme.border,
                     },
                   ]}
                 >
                   <Text
                     style={{
-                      color: isAssigned ? theme.accent : theme.textMuted,
+                      color: isAssigned ? theme.accentHover : theme.textMuted,
                       fontWeight: "800",
                       fontSize: 20,
                     }}
@@ -255,7 +328,8 @@ export const AbilityScoresSection: React.FC<AbilityScoresSectionProps> = ({
                     <TouchableOpacity
                       onPress={(e) => {
                          e.stopPropagation?.();
-                         onUnassignSlot(key);
+                         if (isSA) onUnassignSlot(key);
+                         else onUnassignRollSlot(key);
                       }}
                       style={styles.saX}
                     >

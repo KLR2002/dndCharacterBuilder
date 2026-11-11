@@ -1,7 +1,5 @@
 import React, { useMemo, useState } from "react";
 import {
-  Modal as RNModal,
-  ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -22,6 +20,7 @@ import { InventoryItem } from "../types/character";
 import { Badge } from "./ui/Badge";
 import { Button } from "./ui/Button";
 import { Card } from "./ui/Card";
+import { Modal } from "./ui/Modal";
 import { useResponsiveLayout } from "../hooks/useResponsiveLayout";
 
 export const ActiveInfusionsSection: React.FC = () => {
@@ -169,7 +168,7 @@ export const ActiveInfusionsSection: React.FC = () => {
     <Card style={styles.card}>
       <View style={styles.header}>
         <View style={styles.titleRow}>
-          <Ionicons name="flash" size={18} color={theme.accent} />
+          <Ionicons name="flash" size={18} color={theme.accentHover} />
           <Text style={[styles.title, { color: theme.text }]}>Active Infusions</Text>
         </View>
         <Badge
@@ -205,7 +204,7 @@ export const ActiveInfusionsSection: React.FC = () => {
                   styles.infusionRow,
                   {
                     backgroundColor: isActive ? theme.surfaceRaised : theme.surfaceHighlight,
-                    borderColor: isActive ? theme.accent : theme.border,
+                    borderColor: isActive ? theme.accentHover : theme.border,
                     flexDirection: isCompact ? "column" : "row",
                     alignItems: isCompact ? "flex-start" : "center",
                   },
@@ -219,7 +218,7 @@ export const ActiveInfusionsSection: React.FC = () => {
                     )}
                   </View>
                   {activeEntry?.targetItemName && !isReplicated && (
-                    <Text style={[styles.targetLabel, { color: theme.accent }]}>
+                    <Text style={[styles.targetLabel, { color: theme.accentHover }]}>
                       Infused: {activeEntry.targetItemName}
                     </Text>
                   )}
@@ -271,84 +270,58 @@ export const ActiveInfusionsSection: React.FC = () => {
       )}
 
       {/* Target Item Selection Modal for Infusions */}
-      <RNModal
+      <Modal
         visible={targetSelectModal.visible}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setTargetSelectModal({ visible: false, infusionName: "" })}
+        onClose={() => setTargetSelectModal({ visible: false, infusionName: "" })}
+        title="Select Item to Infuse"
+        subtitle={`Apply ${targetSelectModal.infusionName} to an item in your inventory:`}
+        footer={
+          <Button title="Cancel" variant="secondary" onPress={() => setTargetSelectModal({ visible: false, infusionName: "" })} />
+        }
       >
-        <View style={styles.modalOverlay}>
-          <View style={[styles.modalContent, { backgroundColor: theme.surface, borderColor: theme.border }]}>
-            <View style={styles.modalHeader}>
-              <Text style={[styles.modalTitle, { color: theme.text }]}>
-                Select Item to Infuse
-              </Text>
-              <TouchableOpacity
-                onPress={() => setTargetSelectModal({ visible: false, infusionName: "" })}
-                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-              >
-                <Ionicons name="close" size={20} color={theme.textMuted} />
-              </TouchableOpacity>
-            </View>
-
-            <Text style={[styles.modalSubtitle, { color: theme.textMuted }]}>
-              Apply {targetSelectModal.infusionName} to an item in your inventory:
-            </Text>
-
-            <ScrollView style={styles.modalScroll} nestedScrollEnabled>
-              {inventoryItems.length === 0 ? (
-                <Text style={[styles.modalEmpty, { color: theme.textMuted }]}>
-                  No items in inventory. Add an item in the Inventory tab first.
+        {inventoryItems.length === 0 ? (
+          <Text style={[styles.modalEmpty, { color: theme.textMuted }]}>
+          No items in inventory. Add an item in the Inventory tab first.
+        </Text>
+      ) : (
+        inventoryItems.map((item, idx) => {
+          const isMundane = isMundaneItem(item);
+          return (
+            <TouchableOpacity
+              key={item.id ?? `${item.name}_${idx}`}
+              disabled={!isMundane}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              style={[
+                styles.itemOption,
+                {
+                  backgroundColor: theme.surfaceHighlight,
+                  borderColor: item.isInfused ? theme.accentHover : theme.border,
+                  minHeight: 44,
+                  opacity: isMundane ? 1 : 0.6,
+                },
+              ]}
+              onPress={() => isMundane && handleBindToItem(item)}
+            >
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.itemOptionName, { color: isMundane ? theme.text : theme.textMuted }]}>
+                  {item.name}
                 </Text>
+                <Text style={[styles.itemOptionMeta, { color: theme.textMuted }]}>
+                  {item.isEquipped ? "Equipped" : "Carried"}
+                  {item.infusedWith ? ` • Currently: ${item.infusedWith}` : ""}
+                  {!isMundane ? " • Requires nonmagical object" : ""}
+                </Text>
+              </View>
+              {!isMundane ? (
+                <Badge label="Requires nonmagical object" variant="warning" size="sm" />
               ) : (
-                inventoryItems.map((item, idx) => {
-                  const isMundane = isMundaneItem(item);
-                  return (
-                    <TouchableOpacity
-                      key={item.id ?? `${item.name}_${idx}`}
-                      disabled={!isMundane}
-                      hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                      style={[
-                        styles.itemOption,
-                        {
-                          backgroundColor: theme.surfaceHighlight,
-                          borderColor: item.isInfused ? theme.accent : theme.border,
-                          minHeight: 44,
-                          opacity: isMundane ? 1 : 0.6,
-                        },
-                      ]}
-                      onPress={() => isMundane && handleBindToItem(item)}
-                    >
-                      <View style={{ flex: 1 }}>
-                        <Text style={[styles.itemOptionName, { color: isMundane ? theme.text : theme.textMuted }]}>
-                          {item.name}
-                        </Text>
-                        <Text style={[styles.itemOptionMeta, { color: theme.textMuted }]}>
-                          {item.isEquipped ? "Equipped" : "Carried"}
-                          {item.infusedWith ? ` • Currently: ${item.infusedWith}` : ""}
-                          {!isMundane ? " • Requires nonmagical object" : ""}
-                        </Text>
-                      </View>
-                      {!isMundane ? (
-                        <Badge label="Requires nonmagical object" variant="warning" size="sm" />
-                      ) : (
-                        <Ionicons name="chevron-forward" size={16} color={theme.textMuted} />
-                      )}
-                    </TouchableOpacity>
-                  );
-                })
+                <Ionicons name="chevron-forward" size={16} color={theme.textMuted} />
               )}
-            </ScrollView>
-
-            <Button
-              title="Cancel"
-              variant="secondary"
-              onPress={() => setTargetSelectModal({ visible: false, infusionName: "" })}
-              style={{ marginTop: 12 }}
-            />
-          </View>
-        </View>
-      </RNModal>
+            </TouchableOpacity>
+          );
+        })
+      )}
+      </Modal>
     </Card>
   );
 };
@@ -419,38 +392,6 @@ const styles = StyleSheet.create({
   },
   actionContainer: {
     marginLeft: 4,
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: "rgba(0, 0, 0, 0.6)",
-    justifyContent: "center",
-    alignItems: "center",
-    padding: 16,
-  },
-  modalContent: {
-    width: "100%",
-    maxWidth: 480,
-    maxHeight: "85%",
-    borderRadius: 12,
-    borderWidth: 1,
-    padding: 16,
-  },
-  modalHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    marginBottom: 6,
-  },
-  modalTitle: {
-    fontSize: 16,
-    fontWeight: "700",
-  },
-  modalSubtitle: {
-    fontSize: 12,
-    marginBottom: 12,
-  },
-  modalScroll: {
-    maxHeight: 340,
   },
   modalEmpty: {
     fontSize: 12,

@@ -7,6 +7,9 @@ import { Modal } from "./ui/Modal";
 
 export type HpActionKind = "damage" | "heal" | "set";
 
+/** The amount the field starts from on each opening. */
+const DEFAULT_AMOUNT = "1";
+
 /** One change the player asked for. The owner of the HP value decides what it does to the state. */
 export interface HpAction {
   kind: HpActionKind;
@@ -38,14 +41,14 @@ export const HpQuickEditModal: React.FC<HpQuickEditModalProps> = ({
   onAction,
 }) => {
   const { theme } = useAppTheme();
-  const [amountInput, setAmountInput] = useState("1");
+  const [amountInput, setAmountInput] = useState(DEFAULT_AMOUNT);
 
   // Each opening starts from the default amount rather than the last typed value. Adjusting state
   // while rendering (not in an effect) keeps this to one render when `visible` turns true.
   const [wasVisible, setWasVisible] = useState(visible);
   if (visible !== wasVisible) {
     setWasVisible(visible);
-    if (visible) setAmountInput("1");
+    if (visible) setAmountInput(DEFAULT_AMOUNT);
   }
 
   const amount = parseAmount(amountInput);
@@ -57,7 +60,8 @@ export const HpQuickEditModal: React.FC<HpQuickEditModalProps> = ({
   };
 
   return (
-    <Modal visible={visible} onClose={onClose} title={title}>
+    // An amount other than the default is typed but not applied yet, so closing asks first.
+    <Modal visible={visible} onClose={onClose} hasUnsavedChanges={amountInput !== DEFAULT_AMOUNT} title={title}>
       <View style={styles.summaryRow}>
         <Text style={[styles.summaryText, { color: theme.text }]}>
           {currentHp} / {maxHp}

@@ -1,5 +1,57 @@
 export type AbilityKey = "str" | "dex" | "con" | "int" | "wis" | "cha";
 
+/** The Creation Steps of the Creation Flow, by id. */
+export type CreationStepId =
+  | "class"
+  | "subclass"
+  | "race"
+  | "subrace"
+  | "background"
+  | "abilities"
+  | "classChoices"
+  | "asiFeats"
+  | "spells"
+  | "equipment"
+  | "details"
+  | "review";
+
+/**
+ * The Creation Steps of the Creation Flow, in the order the flow walks them. Lives here, in a leaf module,
+ * so save loading (`migrateCharacter`) can validate a progress record without pulling in the rules modules.
+ */
+export const CREATION_STEP_ORDER: readonly CreationStepId[] = [
+  "class",
+  "subclass",
+  "race",
+  "subrace",
+  "background",
+  "abilities",
+  "classChoices",
+  "asiFeats",
+  "spells",
+  "equipment",
+  "details",
+  "review",
+];
+
+/**
+ * Where a draft sits in the Creation Flow. Absent means the character is finished, so a save from the
+ * old builder carries no record and counts as finished without a rewrite.
+ */
+export interface CreationProgress {
+  currentStep: CreationStepId;
+  /**
+   * The steps an earlier step's change released picks from, marked as needing attention until each is
+   * finished again. Absent on saves made before it existed.
+   */
+  needsAttention?: CreationStepId[];
+  /**
+   * True while a finished Character is reopened in Edit Build: the attention marks ride in this record, but the
+   * Character stays finished (its sheet stays reachable and the flow shows every step as reachable).
+   */
+  editBuild?: boolean;
+}
+
 export interface AbilityScores {
   str: number;
   dex: number;
@@ -7,6 +59,13 @@ export interface AbilityScores {
   int: number;
   wis: number;
   cha: number;
+}
+
+/** One Rolled Abilities result: four d6 with the lowest marked dropped, and the total of the other three. */
+export interface RolledAbilityResult {
+  dice: { sides: number; face: number; dropped: boolean }[];
+  droppedIndex: number;
+  total: number;
 }
 
 export interface CharacterClass {
@@ -158,10 +217,20 @@ export interface Character {
   createdAt: number;
   updatedAt: number;
 
+  /**
+   * Creation Flow progress of a draft. Absent means the character is finished: old saves need no
+   * rewrite, and `migrateCharacter` keeps that true.
+   */
+  creationProgress?: CreationProgress;
+
   // Builder settings
-  abilityMethod: "pointBuy" | "standardArray" | "manual";
+  abilityMethod: "pointBuy" | "standardArray" | "manual" | "rolled";
   baseAbilityScores: AbilityScores;
   standardArrayPicks?: Partial<Record<AbilityKey, number>>;
+  /** The six Rolled Abilities results of the latest roll, in roll order. Absent until the player rolls. */
+  rolledAbilities?: RolledAbilityResult[];
+  /** Rolled Abilities placements: each ability's assigned index into `rolledAbilities`. */
+  rolledAbilityPicks?: Partial<Record<AbilityKey, number>>;
   skillChoices?: SkillChoiceEntry[];
   ruleChoices?: RuleChoiceEntry[];
   /**
@@ -238,6 +307,12 @@ export interface Character {
   // Combat & Stats
   currentHp: number;
   maxHpOverride: number | null;
+  /**
+   * The die face a rolled class level rolled, keyed by `className__level`; `maxHp` adds the current
+   * Constitution modifier to it. A level without a record uses the fixed average, so saves made
+   * before this field existed keep their HP.
+   */
+  rolledHitPoints?: Record<string, number>;
   tempHp: number;
   conditions: string[];
   usedHitDice: Record<string, number>;

@@ -305,3 +305,33 @@ _Avoid_: data service, catalog store, content provider
 **Dataset Swapping**:
 The runtime cutover mechanism that unloads the SRD Baseline from memory and exclusively queries the Integrated Catalog once integration is active, preventing duplicate entities or overlapping source confusion.
 _Avoid_: Source merging, database overriding, data overwrite
+
+## Building and rolling
+
+**Creation Flow**:
+The ordered sequence of Creation Steps a new Character is built through: Class (with its starting level), Subclass, Race, Subrace, Background, Abilities, Class Choices, ASI/Feats, Spells, Equipment, Details, Review. A step the character does not qualify for is skipped. Creation builds a single class; Multiclassing enters only through the Level-Up Flow.
+_Avoid_: Builder panels, wizard, setup screens
+
+**Creation Step**:
+One stage of the Creation Flow. A finished step can be revisited; a later step stays locked until the current one is valid. Changing an earlier step releases the later picks it invalidates and marks their steps as needing attention.
+_Avoid_: Section, panel, tab
+
+**Level-Up Flow**:
+The guided sequence that adds one level to a Character, presenting only the choices that level brings.
+_Avoid_: Level-up panel, progression editor
+
+**Edit Build**:
+Reopening a finished Character's Creation Flow at one of its steps to change a pick.
+_Avoid_: Builder tab, rebuild
+
+**Rolled Abilities**:
+The ability-score method that rolls 4d6 and drops the lowest die, six times, and lets the player place the six results on the Ability Scores. Rerolls are unlimited.
+_Avoid_: Random stats, dice method
+
+**Roll**:
+One throw of a dice pool with a flat modifier, producing each die's face and a total. A d20 Roll may be made with advantage or disadvantage (two d20s, the higher or the lower kept).
+_Avoid_: Dice event, throw result
+
+**Roll Log**:
+The list of Rolls made since the app was opened. It is not saved with the Character.
+_Avoid_: Roll history, dice journal

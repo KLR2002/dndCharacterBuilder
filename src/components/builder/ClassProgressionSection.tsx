@@ -19,6 +19,8 @@ import {
   toggleExpertiseChoice,
 } from "../../rules/expertise";
 import { subclassLevel } from "../../rules/leveling";
+import { classStepMinLevel, classStepOffer, isCreationFinished } from "../../rules/creationFlow";
+import type { CreationStepId } from "../../types/character";
 import {
   proficiencyChoiceOffers,
   skillPickOffers,
@@ -96,6 +98,11 @@ export interface ClassProgressionSectionProps {
   }) => void;
   theme: any;
   activeBooks: ActiveBooks;
+  /**
+   * The Creation Step this section is hosted on in the Creation Flow: only that step's part renders. Unset in
+   * the free-form builder, where every part renders.
+   */
+  step?: CreationStepId;
 }
 
 export const ClassProgressionSection: React.FC<
@@ -124,6 +131,7 @@ export const ClassProgressionSection: React.FC<
   onViewDetail,
   theme,
   activeBooks,
+  step,
 }) => {
   const { isPhone } = useResponsiveLayout();
   const [classSearch, setClassSearch] = useState("");
@@ -238,9 +246,25 @@ export const ClassProgressionSection: React.FC<
     );
   };
 
+  // What the Class step offers here: Edit Build on a finished character lowers a held class's level but
+  // offers no raise or add-class control (a level up enters through the Level-Up Flow); a draft or the
+  // free-form builder keeps the full controls.
+  const editBuild = step !== undefined && isCreationFinished(character);
+  const canRaiseLevel = step === undefined || !isCreationFinished(character);
+  // The lowest level each held class can be lowered to; lowering below 1 removes the class.
+  const canLowerTo = (level: number, classIndex: number) => level > classStepMinLevel(editBuild ? "edit" : undefined, classIndex);
+  // In the Creation Flow the class list is the Class step's picker: it shows while no class is held and
+  // for a draft (which can still change its one class). Edit Build offers no add-class control, so the
+  // list stays hidden there.
+  const showClassList =
+    step === undefined ||
+    (step === "class" && (!hasAnyClass || !isCreationFinished(character)));
+  const maxLevel = classStepOffer().startingLevel.max;
+
   return (
     <View style={styles.section}>
       {/* Total level card */}
+      {(!step || step === "class") && (
       <Card highlight style={{ gap: 12 }}>
         <View
           style={{
@@ -255,16 +279,15 @@ export const ClassProgressionSection: React.FC<
             style={[styles.bannerTitle, { color: theme.text, flexShrink: 1 }]}
           >
             Total Level:{" "}
-            <Text style={{ color: theme.accent }}>{totalLevel}</Text>
+            <Text style={{ color: theme.accentHover }}>{totalLevel}</Text>
           </Text>
           <Badge
             label={`Prof +${Math.floor((totalLevel - 1) / 4) + 2}`}
             variant="accent"
           />
         </View>
-        {character.classes.map((c) => {
+        {character.classes.map((c, classIndex) => {
           const cd = findClassData(currentCompendium().for().classes(), c);
-          const subReq = subclassLevel(c.className);
           return (
             <View
               key={c.className}
@@ -305,10 +328,13 @@ export const ClassProgressionSection: React.FC<
                   <View style={styles.stepperRow}>
                     <TouchableOpacity
                       onPress={() => removeClassLevel(c.className)}
+                      disabled={!canLowerTo(c.level, classIndex)}
+                      accessibilityRole="button"
+                      accessibilityLabel={`Lower ${c.className} level`}
                       hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                       style={[
                         styles.stepperBtn,
-                        { backgroundColor: theme.surfaceRaised },
+                        { backgroundColor: theme.surfaceRaised, opacity: !canLowerTo(c.level, classIndex) ? 0.4 : 1 },
                       ]}
                     >
                       <Ionicons name="remove" size={20} color={theme.text} />
@@ -316,16 +342,21 @@ export const ClassProgressionSection: React.FC<
                     <Text style={[styles.levelNum, { color: theme.text }]}>
                       {c.level}
                     </Text>
-                    <TouchableOpacity
-                      onPress={() => handleAddClassLevel(c.className, c.source)}
-                      hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                      style={[
-                        styles.stepperBtn,
-                        { backgroundColor: theme.surfaceRaised },
-                      ]}
-                    >
-                      <Ionicons name="add" size={20} color={theme.text} />
-                    </TouchableOpacity>
+                    {canRaiseLevel ? (
+                      <TouchableOpacity
+                        onPress={() => handleAddClassLevel(c.className, c.source)}
+                        disabled={c.level >= maxLevel}
+                        accessibilityRole="button"
+                        accessibilityLabel={`Raise ${c.className} level`}
+                        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                        style={[
+                          styles.stepperBtn,
+                          { backgroundColor: theme.surfaceRaised, opacity: c.level >= maxLevel ? 0.4 : 1 },
+                        ]}
+                      >
+                        <Ionicons name="add" size={20} color={theme.text} />
+                      </TouchableOpacity>
+                    ) : null}
                   </View>
                 )}
               </View>
@@ -335,7 +366,7 @@ export const ClassProgressionSection: React.FC<
                   isSrd ? (
                     <Text
                       style={{
-                        color: theme.accent,
+                        color: theme.accentHover,
                         fontSize: 12,
                         flexWrap: "wrap",
                         fontWeight: "600",
@@ -363,7 +394,7 @@ export const ClassProgressionSection: React.FC<
                     >
                       <Text
                         style={{
-                          color: theme.accent,
+                          color: theme.accentHover,
                           fontSize: 12,
                           flexWrap: "wrap",
                           fontWeight: "600",
@@ -374,32 +405,24 @@ export const ClassProgressionSection: React.FC<
                       <Ionicons
                         name="pencil-outline"
                         size={13}
-                        color={theme.accent}
+                        color={theme.accentHover}
                       />
                     </TouchableOpacity>
                   )
-                ) : (
-                  <Text
-                    style={{
-                      color: theme.accent,
-                      fontSize: 12,
-                      marginTop: isPhone ? 0 : 2,
-                      flexWrap: "wrap",
-                    }}
-                  >
-                    Subclass at Lvl {subReq}
-                  </Text>
-                )}
+                ) : null}
               </View>
 
               {!isPhone && (
                 <View style={styles.stepperRow}>
                   <TouchableOpacity
                     onPress={() => removeClassLevel(c.className)}
+                    disabled={!canLowerTo(c.level, classIndex)}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Lower ${c.className} level`}
                     hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                     style={[
                       styles.stepperBtn,
-                      { backgroundColor: theme.surfaceRaised },
+                      { backgroundColor: theme.surfaceRaised, opacity: !canLowerTo(c.level, classIndex) ? 0.4 : 1 },
                     ]}
                   >
                     <Ionicons name="remove" size={20} color={theme.text} />
@@ -407,25 +430,31 @@ export const ClassProgressionSection: React.FC<
                   <Text style={[styles.levelNum, { color: theme.text }]}>
                     {c.level}
                   </Text>
-                  <TouchableOpacity
-                    onPress={() => handleAddClassLevel(c.className, c.source)}
-                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                    style={[
-                      styles.stepperBtn,
-                      { backgroundColor: theme.surfaceRaised },
-                    ]}
-                  >
-                    <Ionicons name="add" size={20} color={theme.text} />
-                  </TouchableOpacity>
+                  {canRaiseLevel ? (
+                    <TouchableOpacity
+                      onPress={() => handleAddClassLevel(c.className, c.source)}
+                      disabled={c.level >= maxLevel}
+                      accessibilityRole="button"
+                      accessibilityLabel={`Raise ${c.className} level`}
+                      hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                      style={[
+                        styles.stepperBtn,
+                        { backgroundColor: theme.surfaceRaised, opacity: c.level >= maxLevel ? 0.4 : 1 },
+                      ]}
+                    >
+                      <Ionicons name="add" size={20} color={theme.text} />
+                    </TouchableOpacity>
+                  ) : null}
                 </View>
               )}
             </View>
           );
         })}
       </Card>
+      )}
 
       {/* Subclass prompts & Change pickers */}
-      {character.classes.map((c) => {
+      {(!step || step === "subclass") && character.classes.map((c) => {
         const cd = findClassData(currentCompendium().for().classes(), c);
         const req = subclassLevel(c.className);
         const isChanging = changingSubclassFor === c.className;
@@ -441,7 +470,7 @@ export const ClassProgressionSection: React.FC<
               key={`sub_${c.className}`}
               style={{
                 gap: 8,
-                borderColor: isChanging ? theme.accent : theme.warning,
+                borderColor: isChanging ? theme.accentHover : theme.warning,
               }}
             >
               <View
@@ -455,7 +484,7 @@ export const ClassProgressionSection: React.FC<
               >
                 <Text
                   style={{
-                    color: isChanging ? theme.accent : theme.warning,
+                    color: isChanging ? theme.accentHover : theme.warning,
                     fontWeight: "700",
                     fontSize: 14,
                     flexShrink: 1,
@@ -499,14 +528,14 @@ export const ClassProgressionSection: React.FC<
                               ? theme.accentGlow
                               : theme.surfaceHighlight,
                             borderColor: isCurrent
-                              ? theme.accent
+                              ? theme.accentHover
                               : theme.border,
                           },
                         ]}
                       >
                         <Text
                           style={{
-                            color: isCurrent ? theme.accent : theme.text,
+                            color: isCurrent ? theme.accentHover : theme.text,
                             fontSize: 12,
                             fontWeight: "600",
                           }}
@@ -524,7 +553,7 @@ export const ClassProgressionSection: React.FC<
       })}
 
       {/* Modular Progression & Class/Subclass Rule Choices */}
-      {(() => {
+      {(!step || step === "classChoices") && (() => {
         const allSubclassChoices = [
           ...offeredRuleChoices(character, {
             activeBooks,
@@ -634,7 +663,7 @@ export const ClassProgressionSection: React.FC<
                         style={{ color: theme.textMuted, fontSize: 11 }}
                       >
                         <Text
-                          style={{ color: theme.accent, fontWeight: "600" }}
+                          style={{ color: theme.accentHover, fontWeight: "600" }}
                         >
                           {opt.name}:{" "}
                         </Text>
@@ -751,7 +780,7 @@ export const ClassProgressionSection: React.FC<
       })()}
 
       {/* Expertise Choices (Rogue, Bard, Ranger Deft Explorer, Feats) */}
-      {(() => {
+      {(!step || step === "classChoices") && (() => {
         const catalogs: CharacterCatalogs = {
           compendium: currentCompendium(),
           activeBooks,
@@ -807,7 +836,7 @@ export const ClassProgressionSection: React.FC<
                 >
                   <Text
                     style={{
-                      color: theme.accent,
+                      color: theme.accentHover,
                       fontSize: 11,
                       fontWeight: "700",
                     }}
@@ -838,6 +867,7 @@ export const ClassProgressionSection: React.FC<
       })()}
 
       {/* ASI / Feat Section */}
+      {(!step || step === "asiFeats") && (
       <AsiFeatSection
         character={character}
         onUpdate={onUpdate}
@@ -849,8 +879,10 @@ export const ClassProgressionSection: React.FC<
         theme={theme}
         activeBooks={activeBooks}
       />
+      )}
 
       {/* Starting Grants Section */}
+      {(!step || step === "equipment") && (
       <StartingGrantsSection
         character={character}
         primaryClass={primaryClass}
@@ -863,9 +895,10 @@ export const ClassProgressionSection: React.FC<
         onUpdateOption={(opt) => onUpdate({ startingOption: opt })}
         theme={theme}
       />
+      )}
 
       {/* Starting tools the first class grants. Its tool choice is a Proficiency Choice in the choices below. */}
-      {hasAnyClass && classTools.length > 0 && (
+      {(!step || step === "equipment") && hasAnyClass && classTools.length > 0 && (
         <Card style={{ gap: 10 }}>
           <View style={{ gap: 4 }}>
             <Text
@@ -887,7 +920,7 @@ export const ClassProgressionSection: React.FC<
       )}
 
       {/* Optional & Replacement Class Features (Tasha's) */}
-      {hasAnyClass && availableOptionalFeatures.length > 0 && (
+      {(!step || step === "classChoices") && hasAnyClass && availableOptionalFeatures.length > 0 && (
         <CollapsibleCard
           title="Optional & Replacement Class Features:"
           subtitle="Tasha's Cauldron optional features and replacements for your classes."
@@ -904,7 +937,7 @@ export const ClassProgressionSection: React.FC<
                     styles.classRow,
                     {
                       backgroundColor: theme.surfaceHighlight,
-                      borderColor: isEnabled ? theme.accent : theme.border,
+                      borderColor: isEnabled ? theme.accentHover : theme.border,
                       gap: 8,
                     },
                   ]}
@@ -948,7 +981,7 @@ export const ClassProgressionSection: React.FC<
                     ) : (
                       <Text
                         style={{
-                          color: theme.accent,
+                          color: theme.accentHover,
                           fontSize: 11,
                           marginTop: 2,
                           fontWeight: "600",
@@ -1007,8 +1040,10 @@ export const ClassProgressionSection: React.FC<
       )}
 
       {/* Class list */}
+      {showClassList && (
+      <>
       <Text style={[styles.heading, { color: theme.text }]}>
-        {hasAnyClass ? "Add Class / Multiclass:" : "Choose Your Class:"}
+        {hasAnyClass ? "Change Class:" : "Choose Your Class:"}
       </Text>
       <SearchBar
         value={classSearch}
@@ -1036,7 +1071,7 @@ export const ClassProgressionSection: React.FC<
             const existing = Boolean(held) && !takenFrom;
             const prereq = takenFrom
               ? { ok: false, reason: `Already held from ${takenFrom}` }
-              : existing || !hasAnyClass
+              : existing || !hasAnyClass || !isCreationFinished(character)
                 ? { ok: true }
                 : validateMulticlass(character, cl.name, effectiveScores);
 
@@ -1110,6 +1145,8 @@ export const ClassProgressionSection: React.FC<
             );
           })}
       </View>
+      </>
+      )}
 
       {/* Orphaned Expanded List Spells Warning Modal */}
       {orphanWarning && (

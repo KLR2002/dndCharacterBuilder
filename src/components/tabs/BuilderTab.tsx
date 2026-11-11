@@ -12,10 +12,14 @@ import { evaluateCharacter } from "../../rules/characterEvaluation";
 import { catalogListings, type CharacterCatalogs } from "../../rules/catalogs";
 import {
   applyStartingGrants,
+  clearRolledAbilityPicks,
   reclaimStartingGrants,
+  rollRolledAbilities,
+  setRolledAbilityPick,
   setStandardArrayPick,
   STARTING_GOLD_BY_CLASS,
 } from "../../rules/builderTransitions";
+import { appRandom } from "../../rules/dice";
 import {
   setStartingEquipmentItems,
   setStartingEquipmentOption,
@@ -23,12 +27,14 @@ import {
   type StartingEquipmentAddress,
 } from "../../rules/startingEquipment";
 import { reconcile } from "../../rules/characterReconciler";
+import { SIDEKICK_CLASSES } from "../../rules/levelUpFlow";
 import { proficiencyChoiceOffers } from "../../rules/proficiencyChoiceOffers";
 import { getPendingLevelChoices } from "../../rules/leveling";
 import { normalizeSkillName } from "../../rules/skills";
 import { getAvailableOptionalFeatures } from "../../rules/optionalFeatures";
-import { AbilityKey, Character, SkillChoiceEntry } from "../../types/character";
+import { AbilityKey, Character, CreationStepId, SkillChoiceEntry } from "../../types/character";
 import { DetailModal } from "../DetailModal";
+import { useFlowStepScrollContentPadding } from "../creationFlow/FlowShell";
 import { AbilityScoresSection } from "../builder/AbilityScoresSection";
 import { AncestrySection } from "../builder/AncestrySection";
 import { BackgroundSection } from "../builder/BackgroundSection";
@@ -36,18 +42,36 @@ import { builderStyles as styles } from "../builder/builderStyles";
 import { ClassProgressionSection } from "../builder/ClassProgressionSection";
 
 const ABILITY_KEYS: AbilityKey[] = ["str", "dex", "con", "int", "wis", "cha"];
-const SIDEKICK_CLASSES = new Set(["Expert Sidekick", "Spellcaster Sidekick", "Warrior Sidekick"]);
 
 interface BuilderTabProps {
   character?: Character;
   onUpdate?: (updates: Partial<Character> | ((character: Character) => Character)) => void;
   onViewDetail?: (item: any) => void;
+  /**
+   * The Creation Step this tab is hosted on in the Creation Flow: only that step's section renders and the
+   * section nav is hidden. Unset in the free-form builder, where the nav switches sections.
+   */
+  step?: CreationStepId;
 }
+
+/** Which builder section hosts each Creation Step (spells, details and review are hosted by the flow itself). */
+const STEP_SECTION: Partial<Record<CreationStepId, "abilities" | "race" | "background" | "class">> = {
+  abilities: "abilities",
+  race: "race",
+  subrace: "race",
+  background: "background",
+  class: "class",
+  subclass: "class",
+  classChoices: "class",
+  asiFeats: "class",
+  equipment: "class",
+};
 
 export const BuilderTab: React.FC<BuilderTabProps> = ({
   character: propChar,
   onUpdate: propUpdate,
   onViewDetail: propViewDetail,
+  step,
 }) => {
   const { theme } = useAppTheme();
   const { currentCharacter, updateCharacter: contextUpdate, activeBooks, fullHealOnLevelUp } = useCharacters();
@@ -55,6 +79,7 @@ export const BuilderTab: React.FC<BuilderTabProps> = ({
   const [localDetail, setLocalDetail] = useState<any>(null);
   const [activeSection, setActiveSection] = useState<"abilities" | "race" | "background" | "class">("abilities");
   const [pendingValue, setPendingValue] = useState<number | null>(null);
+  const [pendingRoll, setPendingRoll] = useState<number | null>(null);
 
   const character = propChar || currentCharacter;
   const onUpdate =
@@ -69,6 +94,9 @@ export const BuilderTab: React.FC<BuilderTabProps> = ({
 
   const saAssignments = character?.standardArrayPicks ?? {};
   const onViewDetail = propViewDetail || ((item: any) => setLocalDetail(item));
+  // In the Creation Flow the scroll content pads its bottom on phones so the floating dice button never
+  // covers the last rows.
+  const flowScrollPad = useFlowStepScrollContentPadding();
 
   if (!character) return null;
 
@@ -145,6 +173,32 @@ export const BuilderTab: React.FC<BuilderTabProps> = ({
 
   const unassignSlot = (key: AbilityKey) => {
     onUpdate((current) => setStandardArrayPick(current, key, null));
+  };
+
+  const rolledResults = character.rolledAbilities ?? [];
+  const rolledPicks = character.rolledAbilityPicks ?? {};
+
+  const handleRoll = () => {
+    setPendingRoll(null);
+    onUpdate((current) => rollRolledAbilities(current, appRandom));
+  };
+
+  const handleRollPoolTap = (index: number) => {
+    setPendingRoll(pendingRoll === index ? null : index);
+  };
+
+  const handleRollSlotTap = (key: AbilityKey) => {
+    onUpdate((current) => setRolledAbilityPick(current, key, pendingRoll));
+    setPendingRoll(null);
+  };
+
+  const unassignRollSlot = (key: AbilityKey) => {
+    onUpdate((current) => setRolledAbilityPick(current, key, null));
+  };
+
+  const resetRolled = () => {
+    setPendingRoll(null);
+    onUpdate((current) => clearRolledAbilityPicks(current));
   };
 
   // ─────────────────────────────────────────────────────────────────────────
@@ -304,9 +358,13 @@ export const BuilderTab: React.FC<BuilderTabProps> = ({
     { key: "class" as const, label: "Class", icon: "shield-outline" as const },
   ];
 
+  // Hosted on one Creation Step, the matching section renders alone; the nav is hidden.
+  const hostedSection = step ? STEP_SECTION[step] : undefined;
+
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+    <ScrollView style={styles.container} contentContainerStyle={[styles.content, flowScrollPad]}>
       {/* ── Section Tab Nav ── */}
+      {!step && (
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
@@ -323,18 +381,19 @@ export const BuilderTab: React.FC<BuilderTabProps> = ({
                 styles.tabBtn,
                 {
                   backgroundColor: active ? theme.accentGlow : "transparent",
-                  borderColor: active ? theme.accent : "transparent",
+                  borderColor: active ? theme.accentHover : "transparent",
                 },
               ]}
             >
-              <Ionicons name={icon} size={15} color={active ? theme.accent : theme.textSecondary} />
-              <Text style={[styles.tabText, { color: active ? theme.accent : theme.textSecondary }]}>{label}</Text>
+              <Ionicons name={icon} size={15} color={active ? theme.accentHover : theme.textSecondary} />
+              <Text style={[styles.tabText, { color: active ? theme.accentHover : theme.textSecondary }]}>{label}</Text>
             </TouchableOpacity>
           );
         })}
       </ScrollView>
+      )}
 
-      {activeSection === "abilities" && (
+      {(hostedSection ?? activeSection) === "abilities" && (
         <AbilityScoresSection
           character={character}
           onUpdate={onUpdate}
@@ -350,11 +409,19 @@ export const BuilderTab: React.FC<BuilderTabProps> = ({
           onResetSA={resetSA}
           onUpdateBaseScore={updateBaseScore}
           onSetManualScore={setManualScore}
+          rolledResults={rolledResults}
+          rolledPicks={rolledPicks}
+          pendingRoll={pendingRoll}
+          onRoll={handleRoll}
+          onRollPoolTap={handleRollPoolTap}
+          onRollSlotTap={handleRollSlotTap}
+          onUnassignRollSlot={unassignRollSlot}
+          onResetRolled={resetRolled}
           theme={theme}
         />
       )}
 
-      {activeSection === "race" && (
+      {(hostedSection ?? activeSection) === "race" && (
         <AncestrySection
           character={character}
           onUpdate={onUpdate}
@@ -363,10 +430,11 @@ export const BuilderTab: React.FC<BuilderTabProps> = ({
           proficiencyChoices={raceProficiencyChoices}
           onViewDetail={onViewDetail}
           theme={theme}
+          step={step === "subrace" ? "subrace" : step === "race" ? "race" : undefined}
         />
       )}
 
-      {activeSection === "background" && (
+      {(hostedSection ?? activeSection) === "background" && (
         <BackgroundSection
           character={character}
           onUpdate={onUpdate}
@@ -381,10 +449,11 @@ export const BuilderTab: React.FC<BuilderTabProps> = ({
         />
       )}
 
-      {activeSection === "class" && (
+      {(hostedSection ?? activeSection) === "class" && (
         <ClassProgressionSection
           character={character}
           onUpdate={onUpdate}
+          step={step}
           fullHealOnLevelUp={fullHealOnLevelUp}
           allClasses={allClasses}
           allFeats={allFeats}

@@ -9,6 +9,7 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useDiceAnimationEnabled } from "../components/dice/useDiceAnimationEnabled";
 import { Badge } from "../components/ui/Badge";
 import { Button } from "../components/ui/Button";
 import { Card } from "../components/ui/Card";
@@ -29,11 +30,14 @@ import { useAppTheme } from "../context/ThemeContext";
 export default function OptionsScreen() {
   const router = useRouter();
   const { theme, accentId, setAccentId } = useAppTheme();
+  // The switch shows the effective state: with no saved value it follows the system reduced-motion preference.
+  const diceAnimationEnabled = useDiceAnimationEnabled();
   const {
     activeBooks,
     setActiveBooks,
     fullHealOnLevelUp,
     setFullHealOnLevelUp,
+    setDice3dEnabled,
     isIntegrated,
     integratedAt,
     catalogStale,
@@ -194,7 +198,7 @@ export default function OptionsScreen() {
             <Ionicons
               name="color-palette-outline"
               size={18}
-              color={theme.accent}
+              color={theme.accentHover}
             />
             <Text style={[styles.sectionHeading, { color: theme.text }]}>
               ACCENT COLOR THEME (MATCHED WITH BLACK)
@@ -270,7 +274,7 @@ export default function OptionsScreen() {
                 styles.bookRow,
                 {
                   backgroundColor: fullHealOnLevelUp ? theme.surface : "transparent",
-                  borderColor: fullHealOnLevelUp ? theme.accent : theme.border,
+                  borderColor: fullHealOnLevelUp ? theme.accentHover : theme.border,
                 },
               ]}
             >
@@ -288,7 +292,61 @@ export default function OptionsScreen() {
               <Ionicons
                 name={fullHealOnLevelUp ? "checkbox" : "square-outline"}
                 size={22}
-                color={fullHealOnLevelUp ? theme.accent : theme.textMuted}
+                color={fullHealOnLevelUp ? theme.accentHover : theme.textMuted}
+              />
+            </TouchableOpacity>
+          </Card>
+        </View>
+
+        {/* DICE */}
+        <View style={{ marginBottom: 20 }}>
+          <View
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              gap: 8,
+              marginBottom: 8,
+            }}
+          >
+            <Ionicons
+              name="dice-outline"
+              size={18}
+              color={theme.accentHover}
+            />
+            <Text style={[styles.sectionHeading, { color: theme.text }]}>
+              DICE
+            </Text>
+          </View>
+          <Card style={{ padding: 14 }}>
+            <TouchableOpacity
+              testID="dice-3d-switch"
+              onPress={() => setDice3dEnabled(!diceAnimationEnabled)}
+              accessibilityRole="checkbox"
+              accessibilityLabel="3D dice"
+              accessibilityState={{ checked: diceAnimationEnabled }}
+              style={[
+                styles.bookRow,
+                {
+                  backgroundColor: diceAnimationEnabled ? theme.surface : "transparent",
+                  borderColor: diceAnimationEnabled ? theme.accentHover : theme.border,
+                },
+              ]}
+            >
+              <Text
+                style={{
+                  flex: 1,
+                  minWidth: 0,
+                  color: theme.text,
+                  fontSize: 14,
+                  fontWeight: "600",
+                }}
+              >
+                3D dice
+              </Text>
+              <Ionicons
+                name={diceAnimationEnabled ? "checkbox" : "square-outline"}
+                size={22}
+                color={diceAnimationEnabled ? theme.accentHover : theme.textMuted}
               />
             </TouchableOpacity>
           </Card>
@@ -310,7 +368,7 @@ export default function OptionsScreen() {
               <Ionicons
                 name="cloud-download-outline"
                 size={18}
-                color={theme.accent}
+                color={theme.accentHover}
               />
               <Text style={[styles.sectionHeading, { color: theme.text, flexShrink: 1 }]}>
                 5ETOOLS SOURCEBOOK INTEGRATION
@@ -351,7 +409,7 @@ export default function OptionsScreen() {
                   <Ionicons
                     name="information-circle-outline"
                     size={18}
-                    color={theme.accent}
+                    color={theme.accentHover}
                     style={{ marginTop: 2 }}
                   />
                   <Text
@@ -446,7 +504,7 @@ export default function OptionsScreen() {
                 <Ionicons
                   name="library-outline"
                   size={18}
-                  color={theme.accent}
+                  color={theme.accentHover}
                 />
                 <Text style={[styles.sectionHeading, { color: theme.text }]}>
                   ACTIVE COMPENDIUM SOURCES ({activeBooks.length})
@@ -540,7 +598,7 @@ export default function OptionsScreen() {
                               isCollapsed ? "chevron-forward" : "chevron-down"
                             }
                             size={18}
-                            color={theme.accent}
+                            color={theme.accentHover}
                           />
                           <View style={{ flex: 1 }}>
                             <Text
@@ -603,7 +661,7 @@ export default function OptionsScreen() {
                                       ? theme.surface
                                       : "transparent",
                                     borderColor: isChecked
-                                      ? theme.accent
+                                      ? theme.accentHover
                                       : theme.border,
                                   },
                                 ]}
@@ -642,7 +700,7 @@ export default function OptionsScreen() {
                                   }
                                   size={22}
                                   color={
-                                    isChecked ? theme.accent : theme.textMuted
+                                    isChecked ? theme.accentHover : theme.textMuted
                                   }
                                 />
                               </TouchableOpacity>
@@ -730,7 +788,7 @@ export default function OptionsScreen() {
             <Ionicons
               name="shield-checkmark-outline"
               size={20}
-              color={theme.accent}
+              color={theme.accentHover}
               style={{ marginTop: 2 }}
             />
             <Text
@@ -759,7 +817,7 @@ export default function OptionsScreen() {
             <Ionicons
               name="warning-outline"
               size={20}
-              color={theme.accent}
+              color={theme.accentHover}
               style={{ marginTop: 2 }}
             />
             <Text
@@ -809,7 +867,7 @@ export default function OptionsScreen() {
       >
         {syncError ? (
           <View style={{ gap: 10 }}>
-            <Text style={{ color: theme.accent || "#ff4d4f", fontSize: 14 }}>
+            <Text style={{ color: theme.accentHover, fontSize: 14 }}>
               Failed to complete integration: {syncError}
             </Text>
             <Text style={{ color: theme.textSecondary, fontSize: 13 }}>

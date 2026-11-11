@@ -1,6 +1,5 @@
 import React, { useMemo, useState } from "react";
 import {
-  Modal as RNModal,
   ScrollView,
   StyleSheet,
   Switch,
@@ -21,6 +20,7 @@ import { InventoryItem } from "../../types/character";
 import { Badge } from "../ui/Badge";
 import { Button } from "../ui/Button";
 import { Card } from "../ui/Card";
+import { Modal } from "../ui/Modal";
 import { DetailModal } from "../DetailModal";
 import { SearchBar } from "../ui/SearchBar";
 import { ActiveInfusionsSection } from "../ActiveInfusionsSection";
@@ -51,6 +51,12 @@ export const InventoryTab: React.FC = () => {
   const [customBonusAc, setCustomBonusAc] = useState("");
   const [customDesc, setCustomDesc] = useState("");
   const [customSection, setCustomSection] = useState<"equipped" | "carried">("carried");
+
+  // Anything typed or picked in the custom item form is lost when the modal closes without saving.
+  const hasCustomItemChanges =
+    [customName, customWeight, customCost, customDamage, customAc, customBonusWeapon, customBonusAc, customDesc].some(
+      (v) => v.trim() !== "",
+    ) || customSection !== "carried";
 
   const [detailModal, setDetailModal] = useState<{
     visible: boolean;
@@ -96,9 +102,11 @@ export const InventoryTab: React.FC = () => {
   const pouch = currentCharacter.pouch || { cp: 0, sp: 0, ep: 0, gp: 0, pp: 0 };
   const { currentWeight, maxCapacity, encumbered, heavilyEncumbered } = evaluated.carryingWeight;
 
-  // Separate equipped vs carried
-  const equippedItems = items.filter((i) => i.isEquipped || i.section === "equipped");
-  const carriedItems = items.filter((i) => !i.isEquipped && i.section !== "equipped");
+  // Separate equipped vs carried. An older save can hold section "equipped" without the isEquipped flag;
+  // either marks the item as equipped, so the Equipped list shows both.
+  const isShownEquipped = (item: InventoryItem) => item.isEquipped || item.section === "equipped";
+  const equippedItems = items.filter(isShownEquipped);
+  const carriedItems = items.filter((i) => !isShownEquipped(i));
 
   // Currency Handlers
   const updateCoin = (coin: "cp" | "sp" | "ep" | "gp" | "pp", delta: number) => {
@@ -295,7 +303,7 @@ export const InventoryTab: React.FC = () => {
               Total Wealth: ~{totalWealthInGp} gp
             </Text>
           </View>
-          <Ionicons name="wallet-outline" size={22} color={theme.accent} />
+          <Ionicons name="wallet-outline" size={22} color={theme.accentHover} />
         </View>
 
         <View style={styles.coinsRow}>
@@ -329,7 +337,7 @@ export const InventoryTab: React.FC = () => {
           <View style={{ flex: 1, minWidth: 0 }}>
             <Text style={[styles.sectionTitle, { color: theme.text }]}>CARRYING WEIGHT</Text>
             <Text style={{ color: theme.textSecondary, fontSize: 12 }}>
-              Str × 15 = {maxCapacity} lbs capacity
+              Max {maxCapacity} lbs
             </Text>
           </View>
           <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
@@ -337,7 +345,7 @@ export const InventoryTab: React.FC = () => {
             <Switch
               value={currentCharacter.useWeightLimit || false}
               onValueChange={(val) => updateCharacter(currentCharacter.id, { useWeightLimit: val })}
-              trackColor={{ false: theme.border, true: theme.accent }}
+              trackColor={{ false: theme.border, true: theme.accentHover }}
               thumbColor="#ffffff"
             />
           </View>
@@ -377,7 +385,7 @@ export const InventoryTab: React.FC = () => {
       <Card style={[styles.attunementCard, { backgroundColor: theme.surface, borderColor: theme.border, marginBottom: 16 }]}>
         <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
           <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-            <Ionicons name="sparkles" size={18} color={theme.accent} />
+            <Ionicons name="sparkles" size={18} color={theme.accentHover} />
             <Text style={[styles.sectionTitle, { color: theme.text }]}>ATTUNEMENT</Text>
           </View>
           <Badge
@@ -425,7 +433,7 @@ export const InventoryTab: React.FC = () => {
       {/* EQUIPPED SECTION */}
       <View style={{ marginBottom: 16 }}>
         <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 6 }}>
-          <Ionicons name="shield" size={16} color={theme.accent} />
+          <Ionicons name="shield" size={16} color={theme.accentHover} />
           <Text style={[styles.sectionTitle, { color: theme.text }]}>
             EQUIPPED GEAR ({equippedItems.length})
           </Text>
@@ -448,12 +456,23 @@ export const InventoryTab: React.FC = () => {
                   },
                 ]}>
                 {/* Equip Toggle */}
-                <TouchableOpacity onPress={() => toggleEquip(item)} style={styles.equipBtn}>
-                  <Ionicons name="checkmark-circle" size={20} color={theme.accent} />
+                <TouchableOpacity
+                  onPress={() => toggleEquip(item)}
+                  accessibilityRole="checkbox"
+                  accessibilityState={{ checked: isShownEquipped(item) }}
+                  accessibilityLabel={isShownEquipped(item) ? `Equipped: ${item.name}` : `Equip ${item.name}`}
+                  style={[
+                    styles.equipCheck,
+                    {
+                      borderColor: isShownEquipped(item) ? theme.accentHover : theme.border,
+                      backgroundColor: isShownEquipped(item) ? theme.accentGlow : "transparent",
+                    },
+                  ]}>
+                  {isShownEquipped(item) && <Ionicons name="checkmark" size={14} color={theme.accentHover} />}
                 </TouchableOpacity>
 
                 {/* Item Info (click to view details) */}
-                <TouchableOpacity onPress={() => showItemDetail(item)} style={{ flex: 1, paddingVertical: 4 }}>
+                <TouchableOpacity onPress={() => showItemDetail(item)} style={{ flex: 1, minWidth: 140, paddingVertical: 4 }}>
                   <View style={{ flexDirection: "row", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
                     <Text style={[styles.itemTitle, { color: theme.text }]} numberOfLines={isCompact ? 2 : 1}>{item.name}</Text>
                     {item.infusedWith && (
@@ -483,13 +502,13 @@ export const InventoryTab: React.FC = () => {
                     style={[
                       styles.attuneToggleBtn,
                       {
-                        backgroundColor: item.isAttuned ? theme.surfaceHighlight : theme.accent,
-                        borderColor: item.isAttuned ? theme.border : theme.accent,
+                        backgroundColor: item.isAttuned ? theme.accentGlow : theme.surfaceHighlight,
+                        borderColor: item.isAttuned ? theme.accentHover : theme.border,
                       },
                     ]}>
                     <Text
                       style={{
-                        color: item.isAttuned ? theme.accent : "#ffffff",
+                        color: item.isAttuned ? theme.accentHover : theme.textSecondary,
                         fontSize: 11,
                         fontWeight: "600",
                       }}>
@@ -545,12 +564,23 @@ export const InventoryTab: React.FC = () => {
                   },
                 ]}>
                 {/* Equip Toggle */}
-                <TouchableOpacity onPress={() => toggleEquip(item)} style={styles.equipBtn}>
-                  <Ionicons name="ellipse-outline" size={20} color={theme.border} />
+                <TouchableOpacity
+                  onPress={() => toggleEquip(item)}
+                  accessibilityRole="checkbox"
+                  accessibilityState={{ checked: isShownEquipped(item) }}
+                  accessibilityLabel={isShownEquipped(item) ? `Equipped: ${item.name}` : `Equip ${item.name}`}
+                  style={[
+                    styles.equipCheck,
+                    {
+                      borderColor: isShownEquipped(item) ? theme.accentHover : theme.border,
+                      backgroundColor: isShownEquipped(item) ? theme.accentGlow : "transparent",
+                    },
+                  ]}>
+                  {isShownEquipped(item) && <Ionicons name="checkmark" size={14} color={theme.accentHover} />}
                 </TouchableOpacity>
 
                 {/* Item Info */}
-                <TouchableOpacity onPress={() => showItemDetail(item)} style={{ flex: 1, paddingVertical: 4 }}>
+                <TouchableOpacity onPress={() => showItemDetail(item)} style={{ flex: 1, minWidth: 140, paddingVertical: 4 }}>
                   <View style={{ flexDirection: "row", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
                     <Text style={[styles.itemTitle, { color: theme.text }]} numberOfLines={isCompact ? 2 : 1}>{item.name}</Text>
                     {item.infusedWith && (
@@ -580,13 +610,13 @@ export const InventoryTab: React.FC = () => {
                     style={[
                       styles.attuneToggleBtn,
                       {
-                        backgroundColor: item.isAttuned ? theme.surfaceHighlight : theme.accent,
-                        borderColor: item.isAttuned ? theme.border : theme.accent,
+                        backgroundColor: item.isAttuned ? theme.accentGlow : theme.surfaceHighlight,
+                        borderColor: item.isAttuned ? theme.accentHover : theme.border,
                       },
                     ]}>
                     <Text
                       style={{
-                        color: item.isAttuned ? theme.accent : "#ffffff",
+                        color: item.isAttuned ? theme.accentHover : theme.textSecondary,
                         fontSize: 11,
                         fontWeight: "600",
                       }}>
@@ -617,249 +647,238 @@ export const InventoryTab: React.FC = () => {
       </View>
 
       {/* Item Compendium Picker Modal */}
-      <RNModal visible={itemPickerVisible} transparent animationType="slide">
-        <View style={styles.modalOverlay}>
-          <Card style={[styles.pickerCard, { backgroundColor: theme.surface, borderColor: theme.border }]}>
-            <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-              <Text style={[styles.sectionTitle, { color: theme.text }]}>Add Item from Compendium</Text>
-              <TouchableOpacity onPress={() => setItemPickerVisible(false)}>
-                <Ionicons name="close" size={24} color={theme.text} />
-              </TouchableOpacity>
-            </View>
+      <Modal
+        visible={itemPickerVisible}
+        onClose={() => setItemPickerVisible(false)}
+        title="Add Item from Compendium"
+      >
+        <SearchBar
+          value={searchQuery}
+          onChangeText={setSearchQuery}
+          placeholder="Search weapons, armor, adventuring gear..."
+        />
 
-            <SearchBar
-              value={searchQuery}
-              onChangeText={setSearchQuery}
-              placeholder="Search weapons, armor, adventuring gear..."
+        {/* Filter Categories */}
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          style={{ flexGrow: 0, height: 38, marginVertical: 8 }}
+          contentContainerStyle={{ alignItems: "center" }}
+        >
+          {[
+            "All",
+            "Weapon",
+            "Armor",
+            "Shield",
+            "Potion",
+            "Ring",
+            "Rod",
+            "Wand",
+            "Scroll",
+            "Staff",
+            "Wondrous Item",
+            "Adventuring Gear",
+            "Tool",
+          ].map((t) => (
+            <TouchableOpacity
+              key={t}
+              hitSlop={{ top: 8, bottom: 8, left: 4, right: 4 }}
+              onPress={() => setItemTypeFilter(t === "All" ? null : t)}
+              style={[
+                styles.filterPill,
+                {
+                  backgroundColor:
+                    (t === "All" && itemTypeFilter === null) || itemTypeFilter === t
+                      ? theme.accentGlow
+                      : theme.surfaceHighlight,
+                  borderColor:
+                    (t === "All" && itemTypeFilter === null) || itemTypeFilter === t
+                      ? theme.accentHover
+                      : theme.border,
+                  borderWidth: 1,
+                },
+              ]}>
+              <Text style={{ color: (t === "All" && itemTypeFilter === null) || itemTypeFilter === t ? theme.text : theme.textSecondary, fontSize: 12, fontWeight: "600" }}>{t}</Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+
+          {filteredLibraryItems.slice(0, 100).map((it) => (
+          <View
+            key={`${it.name}_${it.source}`}
+            style={[styles.pickerItemRow, { borderBottomColor: theme.border }]}>
+            <TouchableOpacity
+              onPress={() =>
+                setDetailModal({
+                  visible: true,
+                  title: it.name,
+                  subtitle: `${it.type || "Item"} (${it.source})`,
+                  content: `• Value: ${it.cost || "N/A"}\n• Weight: ${it.weight != null ? `${it.weight} lb` : "N/A"}\n• Damage: ${it.damage || "N/A"}\n• AC: ${it.ac ?? "N/A"}\n\n${it.description || "No description."}`,
+                })
+              }
+              style={{ flex: 1 }}>
+              <Text style={{ color: theme.text, fontSize: 14, fontWeight: "600" }}>{it.name}</Text>
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 6, flexWrap: "wrap", marginTop: 2 }}>
+                <Text style={{ color: theme.textMuted, fontSize: 12 }}>
+                  {it.type || "Item"} • {it.weight != null ? `${it.weight} lb` : ""} • {it.source}
+                </Text>
+                {it.rarity && it.rarity !== "None" && (
+                  <Badge label={it.rarity} variant="surface" size="sm" />
+                )}
+                {Boolean(it.attunement) && (
+                  <Badge label="Attunement" variant="secondary" size="sm" />
+                )}
+                {it.bonusWeapon != null && (
+                  <Badge label={`+${it.bonusWeapon} Hit/Dmg`} variant="accent" size="sm" />
+                )}
+                {it.bonusAc != null && (
+                  <Badge label={`+${it.bonusAc} AC`} variant="accent" size="sm" />
+                )}
+              </View>
+            </TouchableOpacity>
+
+            <Button
+              title="Add"
+              size="sm"
+              variant="primary"
+              onPress={() => addItemFromLibrary(it)}
             />
-
-            {/* Filter Categories */}
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              style={{ flexGrow: 0, height: 38, marginVertical: 8 }}
-              contentContainerStyle={{ alignItems: "center" }}
-            >
-              {[
-                "All",
-                "Weapon",
-                "Armor",
-                "Shield",
-                "Potion",
-                "Ring",
-                "Rod",
-                "Wand",
-                "Scroll",
-                "Staff",
-                "Wondrous Item",
-                "Adventuring Gear",
-                "Tool",
-              ].map((t) => (
-                <TouchableOpacity
-                  key={t}
-                  hitSlop={{ top: 8, bottom: 8, left: 4, right: 4 }}
-                  onPress={() => setItemTypeFilter(t === "All" ? null : t)}
-                  style={[
-                    styles.filterPill,
-                    {
-                      backgroundColor:
-                        (t === "All" && itemTypeFilter === null) || itemTypeFilter === t
-                          ? theme.accent
-                          : theme.surfaceHighlight,
-                    },
-                  ]}>
-                  <Text style={{ color: "#fff", fontSize: 12, fontWeight: "600" }}>{t}</Text>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
-
-            <ScrollView style={{ flex: 1 }}>
-              {filteredLibraryItems.slice(0, 100).map((it) => (
-                <View
-                  key={`${it.name}_${it.source}`}
-                  style={[styles.pickerItemRow, { borderBottomColor: theme.border }]}>
-                  <TouchableOpacity
-                    onPress={() =>
-                      setDetailModal({
-                        visible: true,
-                        title: it.name,
-                        subtitle: `${it.type || "Item"} (${it.source})`,
-                        content: `• Value: ${it.cost || "N/A"}\n• Weight: ${it.weight != null ? `${it.weight} lb` : "N/A"}\n• Damage: ${it.damage || "N/A"}\n• AC: ${it.ac ?? "N/A"}\n\n${it.description || "No description."}`,
-                      })
-                    }
-                    style={{ flex: 1 }}>
-                    <Text style={{ color: theme.text, fontSize: 14, fontWeight: "600" }}>{it.name}</Text>
-                    <View style={{ flexDirection: "row", alignItems: "center", gap: 6, flexWrap: "wrap", marginTop: 2 }}>
-                      <Text style={{ color: theme.textMuted, fontSize: 12 }}>
-                        {it.type || "Item"} • {it.weight != null ? `${it.weight} lb` : ""} • {it.source}
-                      </Text>
-                      {it.rarity && it.rarity !== "None" && (
-                        <Badge label={it.rarity} variant="surface" size="sm" />
-                      )}
-                      {Boolean(it.attunement) && (
-                        <Badge label="Attunement" variant="secondary" size="sm" />
-                      )}
-                      {it.bonusWeapon != null && (
-                        <Badge label={`+${it.bonusWeapon} Hit/Dmg`} variant="accent" size="sm" />
-                      )}
-                      {it.bonusAc != null && (
-                        <Badge label={`+${it.bonusAc} AC`} variant="accent" size="sm" />
-                      )}
-                    </View>
-                  </TouchableOpacity>
-
-                  <Button
-                    title="Add"
-                    size="sm"
-                    variant="primary"
-                    onPress={() => addItemFromLibrary(it)}
-                  />
-                </View>
-              ))}
-            </ScrollView>
-          </Card>
-        </View>
-      </RNModal>
+          </View>
+        ))}
+      </Modal>
 
       {/* Custom Item Modal */}
-      <RNModal visible={customItemVisible} transparent animationType="fade">
-        <View style={styles.modalOverlay}>
-          <Card style={[styles.customItemCard, { backgroundColor: theme.surface, borderColor: theme.border }]}>
-            <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-              <Text style={[styles.sectionTitle, { color: theme.text }]}>Add Custom Item</Text>
-              <TouchableOpacity onPress={() => setCustomItemVisible(false)}>
-                <Ionicons name="close" size={24} color={theme.text} />
-              </TouchableOpacity>
-            </View>
+      <Modal
+        visible={customItemVisible}
+        onClose={() => setCustomItemVisible(false)}
+        title="Add Custom Item"
+        hasUnsavedChanges={hasCustomItemChanges}
+        footer={
+          <View style={{ flexDirection: "row", justifyContent: "flex-end", gap: 10 }}>
+            <Button title="Cancel" variant="secondary" size="sm" onPress={() => setCustomItemVisible(false)} />
+            <Button title="Save Item" variant="primary" size="sm" onPress={addCustomItem} />
+          </View>
+        }
+      >
+        <Text style={styles.fieldLabel}>Item Name *</Text>
+      <TextInput
+        style={[styles.input, { color: theme.text, backgroundColor: theme.surfaceHighlight, borderColor: theme.border }]}
+        value={customName}
+        onChangeText={setCustomName}
+        placeholder="e.g. Mithral Longsword"
+        placeholderTextColor={theme.textMuted}
+      />
 
-            <ScrollView style={{ maxHeight: 400 }} nestedScrollEnabled>
-              <Text style={styles.fieldLabel}>Item Name *</Text>
-              <TextInput
-                style={[styles.input, { color: theme.text, backgroundColor: theme.surfaceHighlight, borderColor: theme.border }]}
-                value={customName}
-                onChangeText={setCustomName}
-                placeholder="e.g. Mithral Longsword"
-                placeholderTextColor={theme.textMuted}
-              />
-
-              <View style={{ flexDirection: "row", gap: 8, marginTop: 8 }}>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.fieldLabel}>Weight (lbs)</Text>
-                  <TextInput
-                    style={[styles.input, { color: theme.text, backgroundColor: theme.surfaceHighlight, borderColor: theme.border }]}
-                    value={customWeight}
-                    onChangeText={setCustomWeight}
-                    keyboardType="numeric"
-                    placeholder="3"
-                    placeholderTextColor={theme.textMuted}
-                  />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.fieldLabel}>Cost / Value</Text>
-                  <TextInput
-                    style={[styles.input, { color: theme.text, backgroundColor: theme.surfaceHighlight, borderColor: theme.border }]}
-                    value={customCost}
-                    onChangeText={setCustomCost}
-                    placeholder="15 gp"
-                    placeholderTextColor={theme.textMuted}
-                  />
-                </View>
-              </View>
-
-              <View style={{ flexDirection: "row", gap: 8, marginTop: 8 }}>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.fieldLabel}>Damage (if weapon)</Text>
-                  <TextInput
-                    style={[styles.input, { color: theme.text, backgroundColor: theme.surfaceHighlight, borderColor: theme.border }]}
-                    value={customDamage}
-                    onChangeText={setCustomDamage}
-                    placeholder="1d8 slashing"
-                    placeholderTextColor={theme.textMuted}
-                  />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.fieldLabel}>AC (if armor)</Text>
-                  <TextInput
-                    style={[styles.input, { color: theme.text, backgroundColor: theme.surfaceHighlight, borderColor: theme.border }]}
-                    value={customAc}
-                    onChangeText={setCustomAc}
-                    keyboardType="number-pad"
-                    placeholder="16"
-                    placeholderTextColor={theme.textMuted}
-                  />
-                </View>
-              </View>
-
-              <View style={{ flexDirection: "row", gap: 8, marginTop: 8 }}>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.fieldLabel}>Weapon Bonus (+1, +2, +3)</Text>
-                  <TextInput
-                    style={[styles.input, { color: theme.text, backgroundColor: theme.surfaceHighlight, borderColor: theme.border }]}
-                    value={customBonusWeapon}
-                    onChangeText={setCustomBonusWeapon}
-                    keyboardType="number-pad"
-                    placeholder="e.g. 1"
-                    placeholderTextColor={theme.textMuted}
-                  />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.fieldLabel}>AC Bonus (+1, +2, +3)</Text>
-                  <TextInput
-                    style={[styles.input, { color: theme.text, backgroundColor: theme.surfaceHighlight, borderColor: theme.border }]}
-                    value={customBonusAc}
-                    onChangeText={setCustomBonusAc}
-                    keyboardType="number-pad"
-                    placeholder="e.g. 1"
-                    placeholderTextColor={theme.textMuted}
-                  />
-                </View>
-              </View>
-
-              <Text style={[styles.fieldLabel, { marginTop: 8 }]}>Initial Placement</Text>
-              <View style={{ flexDirection: "row", gap: 10, marginTop: 4 }}>
-                <TouchableOpacity
-                  onPress={() => setCustomSection("carried")}
-                  style={[
-                    styles.placementBtn,
-                    {
-                      backgroundColor: customSection === "carried" ? theme.accent : theme.surfaceHighlight,
-                      borderColor: theme.border,
-                    },
-                  ]}>
-                  <Text style={{ color: "#fff", fontSize: 12, fontWeight: "600" }}>Backpack (Carried)</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  onPress={() => setCustomSection("equipped")}
-                  style={[
-                    styles.placementBtn,
-                    {
-                      backgroundColor: customSection === "equipped" ? theme.accent : theme.surfaceHighlight,
-                      borderColor: theme.border,
-                    },
-                  ]}>
-                  <Text style={{ color: "#fff", fontSize: 12, fontWeight: "600" }}>Equipped</Text>
-                </TouchableOpacity>
-              </View>
-
-              <Text style={[styles.fieldLabel, { marginTop: 8 }]}>Description / Notes</Text>
-              <TextInput
-                style={[styles.textArea, { color: theme.text, backgroundColor: theme.surfaceHighlight, borderColor: theme.border }]}
-                value={customDesc}
-                onChangeText={setCustomDesc}
-                multiline
-                numberOfLines={3}
-                placeholder="Properties, magic effects, lore..."
-                placeholderTextColor={theme.textMuted}
-              />
-            </ScrollView>
-
-            <View style={{ flexDirection: "row", justifyContent: "flex-end", gap: 10, marginTop: 16 }}>
-              <Button title="Cancel" variant="secondary" size="sm" onPress={() => setCustomItemVisible(false)} />
-              <Button title="Save Item" variant="primary" size="sm" onPress={addCustomItem} />
-            </View>
-          </Card>
+      <View style={{ flexDirection: "row", gap: 8, marginTop: 8 }}>
+        <View style={{ flex: 1 }}>
+          <Text style={styles.fieldLabel}>Weight (lbs)</Text>
+          <TextInput
+            style={[styles.input, { color: theme.text, backgroundColor: theme.surfaceHighlight, borderColor: theme.border }]}
+            value={customWeight}
+            onChangeText={setCustomWeight}
+            keyboardType="numeric"
+            placeholder="3"
+            placeholderTextColor={theme.textMuted}
+          />
         </View>
-      </RNModal>
+        <View style={{ flex: 1 }}>
+          <Text style={styles.fieldLabel}>Cost / Value</Text>
+          <TextInput
+            style={[styles.input, { color: theme.text, backgroundColor: theme.surfaceHighlight, borderColor: theme.border }]}
+            value={customCost}
+            onChangeText={setCustomCost}
+            placeholder="15 gp"
+            placeholderTextColor={theme.textMuted}
+          />
+        </View>
+      </View>
+
+      <View style={{ flexDirection: "row", gap: 8, marginTop: 8 }}>
+        <View style={{ flex: 1 }}>
+          <Text style={styles.fieldLabel}>Damage (if weapon)</Text>
+          <TextInput
+            style={[styles.input, { color: theme.text, backgroundColor: theme.surfaceHighlight, borderColor: theme.border }]}
+            value={customDamage}
+            onChangeText={setCustomDamage}
+            placeholder="1d8 slashing"
+            placeholderTextColor={theme.textMuted}
+          />
+        </View>
+        <View style={{ flex: 1 }}>
+          <Text style={styles.fieldLabel}>AC (if armor)</Text>
+          <TextInput
+            style={[styles.input, { color: theme.text, backgroundColor: theme.surfaceHighlight, borderColor: theme.border }]}
+            value={customAc}
+            onChangeText={setCustomAc}
+            keyboardType="number-pad"
+            placeholder="16"
+            placeholderTextColor={theme.textMuted}
+          />
+        </View>
+      </View>
+
+      <View style={{ flexDirection: "row", gap: 8, marginTop: 8 }}>
+        <View style={{ flex: 1 }}>
+          <Text style={styles.fieldLabel}>Weapon Bonus (+1, +2, +3)</Text>
+          <TextInput
+            style={[styles.input, { color: theme.text, backgroundColor: theme.surfaceHighlight, borderColor: theme.border }]}
+            value={customBonusWeapon}
+            onChangeText={setCustomBonusWeapon}
+            keyboardType="number-pad"
+            placeholder="e.g. 1"
+            placeholderTextColor={theme.textMuted}
+          />
+        </View>
+        <View style={{ flex: 1 }}>
+          <Text style={styles.fieldLabel}>AC Bonus (+1, +2, +3)</Text>
+          <TextInput
+            style={[styles.input, { color: theme.text, backgroundColor: theme.surfaceHighlight, borderColor: theme.border }]}
+            value={customBonusAc}
+            onChangeText={setCustomBonusAc}
+            keyboardType="number-pad"
+            placeholder="e.g. 1"
+            placeholderTextColor={theme.textMuted}
+          />
+        </View>
+      </View>
+
+      <Text style={[styles.fieldLabel, { marginTop: 8 }]}>Initial Placement</Text>
+      <View style={{ flexDirection: "row", gap: 10, marginTop: 4 }}>
+        <TouchableOpacity
+          onPress={() => setCustomSection("carried")}
+          style={[
+            styles.placementBtn,
+            {
+              backgroundColor: customSection === "carried" ? theme.accentGlow : theme.surfaceHighlight,
+              borderColor: customSection === "carried" ? theme.accentHover : theme.border,
+            },
+          ]}>
+          <Text style={{ color: customSection === "carried" ? theme.text : theme.textSecondary, fontSize: 12, fontWeight: "600" }}>Backpack (Carried)</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          onPress={() => setCustomSection("equipped")}
+          style={[
+            styles.placementBtn,
+            {
+              backgroundColor: customSection === "equipped" ? theme.accentGlow : theme.surfaceHighlight,
+              borderColor: customSection === "equipped" ? theme.accentHover : theme.border,
+            },
+          ]}>
+          <Text style={{ color: customSection === "equipped" ? theme.text : theme.textSecondary, fontSize: 12, fontWeight: "600" }}>Equipped</Text>
+        </TouchableOpacity>
+      </View>
+
+      <Text style={[styles.fieldLabel, { marginTop: 8 }]}>Description / Notes</Text>
+      <TextInput
+        style={[styles.textArea, { color: theme.text, backgroundColor: theme.surfaceHighlight, borderColor: theme.border }]}
+        value={customDesc}
+        onChangeText={setCustomDesc}
+        multiline
+        numberOfLines={3}
+        placeholder="Properties, magic effects, lore..."
+        placeholderTextColor={theme.textMuted}
+      />
+      </Modal>
 
       {/* Detail Modal */}
       <DetailModal
@@ -871,59 +890,49 @@ export const InventoryTab: React.FC = () => {
       />
 
       {/* Attunement Swap Modal */}
-      <RNModal
+      <Modal
         visible={attunementSwapModal.visible}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setAttunementSwapModal({ visible: false, targetItem: undefined })}>
-        <View style={styles.modalOverlay}>
-          <Card style={[styles.customItemCard, { backgroundColor: theme.surface, borderColor: theme.border }]}>
-            <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-              <Text style={[styles.sectionTitle, { color: theme.text }]}>Attunement Limit Reached (3/3)</Text>
-              <TouchableOpacity
-                onPress={() => setAttunementSwapModal({ visible: false, targetItem: undefined })}
-                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-                <Ionicons name="close" size={24} color={theme.text} />
-              </TouchableOpacity>
+        onClose={() => setAttunementSwapModal({ visible: false, targetItem: undefined })}
+        title="Attunement Limit Reached (3/3)"
+        footer={
+          <View style={{ flexDirection: "row", justifyContent: "flex-end" }}>
+            <Button
+              title="Cancel"
+              variant="secondary"
+              size="sm"
+              onPress={() => setAttunementSwapModal({ visible: false, targetItem: undefined })}
+            />
+          </View>
+        }
+      >
+        <Text style={{ color: theme.textSecondary, fontSize: 13, marginBottom: 12 }}>
+          You can only attune to a maximum of 3 magic items at a time. To attune to{" "}
+          <Text style={{ color: theme.text, fontWeight: "700" }}>{attunementSwapModal.targetItem?.name}</Text>, select an item to unattune:
+        </Text>
+        {attunedItems.map((item) => (
+          <TouchableOpacity
+            key={item.id}
+            onPress={() => swapAttunement(item)}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            style={{
+              flexDirection: "row",
+              justifyContent: "space-between",
+              alignItems: "center",
+              padding: 12,
+              backgroundColor: theme.surfaceHighlight,
+              borderRadius: 8,
+              marginBottom: 8,
+              borderWidth: 1,
+              borderColor: theme.border,
+            }}>
+            <View>
+              <Text style={{ color: theme.text, fontWeight: "600" }}>{item.name}</Text>
+              <Text style={{ color: theme.textMuted, fontSize: 11 }}>{item.source}</Text>
             </View>
-            <Text style={{ color: theme.textSecondary, fontSize: 13, marginBottom: 12 }}>
-              You can only attune to a maximum of 3 magic items at a time. To attune to{" "}
-              <Text style={{ color: theme.text, fontWeight: "700" }}>{attunementSwapModal.targetItem?.name}</Text>, select an item to unattune:
-            </Text>
-            {attunedItems.map((item) => (
-              <TouchableOpacity
-                key={item.id}
-                onPress={() => swapAttunement(item)}
-                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                style={{
-                  flexDirection: "row",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                  padding: 12,
-                  backgroundColor: theme.surfaceHighlight,
-                  borderRadius: 8,
-                  marginBottom: 8,
-                  borderWidth: 1,
-                  borderColor: theme.border,
-                }}>
-                <View>
-                  <Text style={{ color: theme.text, fontWeight: "600" }}>{item.name}</Text>
-                  <Text style={{ color: theme.textMuted, fontSize: 11 }}>{item.source}</Text>
-                </View>
-                <Badge label="Swap" variant="outline" size="sm" />
-              </TouchableOpacity>
-            ))}
-            <View style={{ flexDirection: "row", justifyContent: "flex-end", marginTop: 12 }}>
-              <Button
-                title="Cancel"
-                variant="secondary"
-                size="sm"
-                onPress={() => setAttunementSwapModal({ visible: false, targetItem: undefined })}
-              />
-            </View>
-          </Card>
-        </View>
-      </RNModal>
+            <Badge label="Swap" variant="outline" size="sm" />
+          </TouchableOpacity>
+        ))}
+      </Modal>
     </ScrollView>
   );
 };
@@ -995,12 +1004,19 @@ const styles = StyleSheet.create({
     gap: 8,
     flexWrap: "wrap",
   },
-  equipBtn: {
-    padding: 4,
+  equipCheck: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    borderWidth: 1.5,
+    justifyContent: "center",
+    alignItems: "center",
   },
   itemTitle: {
     fontSize: 14,
     fontWeight: "600",
+    flexShrink: 1,
+    minWidth: 0,
   },
   qtyControl: {
     flexDirection: "row",
@@ -1015,24 +1031,6 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     minWidth: 18,
     textAlign: "center",
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: "rgba(0,0,0,0.75)",
-    justifyContent: "center",
-    alignItems: "center",
-    padding: 16,
-  },
-  pickerCard: {
-    width: "100%",
-    maxWidth: 620,
-    height: "85%",
-    padding: 16,
-  },
-  customItemCard: {
-    width: "100%",
-    maxWidth: 500,
-    padding: 16,
   },
   filterPill: {
     paddingHorizontal: 12,

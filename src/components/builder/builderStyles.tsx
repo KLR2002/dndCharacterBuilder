@@ -43,7 +43,7 @@ export const SkillPicker: React.FC<SkillPickerProps> = ({
     <View style={{ gap: 6 }}>
       <View style={pkStyles.headerRow}>
         <Text style={[pkStyles.headerLabel, { color: theme.text }]}>{label}</Text>
-        <Text style={{ color: remaining === 0 ? theme.accent : theme.warning, fontSize: 12, fontWeight: "600" }}>
+        <Text style={{ color: remaining === 0 ? theme.accentHover : theme.warning, fontSize: 12, fontWeight: "600" }}>
           Picked {pickerChosen.length} / {choose}
         </Text>
       </View>
@@ -61,13 +61,13 @@ export const SkillPicker: React.FC<SkillPickerProps> = ({
                 pkStyles.chip,
                 {
                   backgroundColor: isChosen ? theme.accentGlow : theme.surfaceHighlight,
-                  borderColor: isChosen ? theme.accent : theme.border,
+                  borderColor: isChosen ? theme.accentHover : theme.border,
                   opacity: !granted && !isChosen && !canPick ? 0.4 : 1,
                 },
               ]}
             >
               {granted && <Ionicons name="lock-closed" size={10} color={theme.textMuted} style={{ marginRight: 3 }} />}
-              <Text style={{ color: granted ? theme.textMuted : isChosen ? theme.accent : theme.textSecondary, fontSize: 12, fontWeight: isChosen ? "700" : "500" }}>
+              <Text style={{ color: granted ? theme.textMuted : isChosen ? theme.accentHover : theme.textSecondary, fontSize: 12, fontWeight: isChosen ? "700" : "500" }}>
                 {s}
               </Text>
             </TouchableOpacity>
@@ -118,7 +118,7 @@ export const RuleChoicePicker: React.FC<RuleChoicePickerProps> = ({
               </Text>
             </TouchableOpacity>
           )}
-          <Text style={{ color: remaining === 0 ? theme.accent : theme.warning, fontSize: 12, fontWeight: "600" }}>
+          <Text style={{ color: remaining === 0 ? theme.accentHover : theme.warning, fontSize: 12, fontWeight: "600" }}>
             Picked {pickerChosen.length} / {choose}
           </Text>
         </View>
@@ -137,7 +137,7 @@ export const RuleChoicePicker: React.FC<RuleChoicePickerProps> = ({
                 pkStyles.chip,
                 {
                   backgroundColor: isChosen ? theme.accentGlow : theme.surfaceHighlight,
-                  borderColor: isChosen ? theme.accent : theme.border,
+                  borderColor: isChosen ? theme.accentHover : theme.border,
                   opacity: !granted && !isChosen && !canPick ? 0.4 : 1,
                 },
               ]}
@@ -145,7 +145,7 @@ export const RuleChoicePicker: React.FC<RuleChoicePickerProps> = ({
               {granted && <Ionicons name="lock-closed" size={10} color={theme.textMuted} style={{ marginRight: 3 }} />}
               <Text
                 style={{
-                  color: granted ? theme.textMuted : isChosen ? theme.accent : theme.textSecondary,
+                  color: granted ? theme.textMuted : isChosen ? theme.accentHover : theme.textSecondary,
                   fontSize: 12,
                   fontWeight: isChosen ? "700" : "500",
                 }}
@@ -153,7 +153,7 @@ export const RuleChoicePicker: React.FC<RuleChoicePickerProps> = ({
                 {item}
               </Text>
               {isChosen && chipTag && (
-                <Text style={{ color: theme.accent, fontSize: 10, fontWeight: "700", marginLeft: 5 }}>{chipTag}</Text>
+                <Text style={{ color: theme.accentHover, fontSize: 10, fontWeight: "700", marginLeft: 5 }}>{chipTag}</Text>
               )}
             </TouchableOpacity>
           );
@@ -210,7 +210,7 @@ export const builderStyles = StyleSheet.create({
   section: { gap: 14 },
   banner: { padding: 10, borderRadius: 8, alignItems: "center" },
 
-  methodRow: { flexDirection: "row", gap: 8 },
+  methodRow: { flexDirection: "row", gap: 8, flexWrap: "wrap" },
   methodBtn: { flex: 1, paddingVertical: 10, borderRadius: 8, borderWidth: 1, alignItems: "center" },
   methodText: { fontSize: 11 },
 
@@ -221,6 +221,17 @@ export const builderStyles = StyleSheet.create({
     borderWidth: 2,
     alignItems: "center",
     justifyContent: "center",
+  },
+
+  rollChip: {
+    minWidth: 54,
+    minHeight: 54,
+    paddingHorizontal: 6,
+    borderRadius: 10,
+    borderWidth: 2,
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 2,
   },
 
   scoresGrid: { flexDirection: "row", flexWrap: "wrap", gap: 10 },

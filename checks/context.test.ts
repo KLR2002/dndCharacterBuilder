@@ -427,6 +427,15 @@ test("legacy spells gain the first spellcasting owner without losing legacy or u
   assert.deepEqual(migrateCharacter(migrated, undefined, undefined, ALL_BOOKS), migrated);
 });
 
+test("a save without rolled Hit Points records migrates with none, and one with them keeps them", () => {
+  const fighter3 = { className: "Fighter", source: "PHB", level: 3 } as const;
+  const without = migrateCharacter(makeChar({ classes: [{ ...fighter3 }] }), undefined, undefined, ALL_BOOKS);
+  assert.equal(without.rolledHitPoints, undefined);
+  assert.deepEqual(migrateCharacter(without, undefined, undefined, ALL_BOOKS), without);
+  const withRolls = makeChar({ classes: [{ ...fighter3 }], rolledHitPoints: { "Fighter__2": 9 } });
+  assert.deepEqual(migrateCharacter(withRolls, undefined, undefined, ALL_BOOKS).rolledHitPoints, { "Fighter__2": 9 });
+});
+
 test("spell migration preserves explicit owners and pact usage; no caster uses unknown owner", () => {
   const migrated = migrateCharacter(makeChar({
     knownSpells: [{ name: "Light", source: "PHB", ownerKey: "Cleric__PHB" }, { name: "Shield", source: "PHB", className: "" }],

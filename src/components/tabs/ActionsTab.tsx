@@ -18,8 +18,10 @@ import {
   STANDARD_ACTIONS,
 } from "../../rules/tacticalActions";
 import { findStandardWeapon } from "../../rules/attacks";
+import { damagePoolOf } from "../../rules/actionRolls";
 import { superiorityDieLabel } from "../../rules/combatDice";
 import { Badge } from "../ui/Badge";
+import { RollBadge } from "../dice/RollBadge";
 import { Card } from "../ui/Card";
 import { DetailModal } from "../DetailModal";
 import { useResponsiveLayout } from "../../hooks/useResponsiveLayout";
@@ -81,17 +83,17 @@ export const ActionsTab: React.FC = () => {
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       {/* Attack Count Banner */}
-      <Card style={[styles.bannerCard, { borderColor: theme.accent }]}>
+      <Card style={[styles.bannerCard, { borderColor: theme.accentHover }]}>
         <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
           <View style={{ flex: 1, minWidth: 0 }}>
-            <Text style={[styles.bannerTitle, { color: theme.accent }]}>
+            <Text style={[styles.bannerTitle, { color: theme.accentHover }]}>
               ATTACK ACTION ({extraAttackCount} {extraAttackCount === 1 ? "Attack" : "Attacks"} per Action)
             </Text>
             <Text style={{ color: theme.textSecondary, fontSize: 12 }}>
               Proficiency Bonus +{profBonus} • Str Mod {formatModifier(modifiers.str)} • Dex Mod {formatModifier(modifiers.dex)}
             </Text>
           </View>
-          <Ionicons name="flash" size={24} color={theme.accent} />
+          <Ionicons name="flash" size={24} color={theme.accentHover} />
         </View>
       </Card>
 
@@ -114,7 +116,14 @@ export const ActionsTab: React.FC = () => {
                 <Text style={{ color: theme.textMuted, fontSize: 12 }}>Melee • Bludgeoning</Text>
               </View>
               <View style={{ flexDirection: "row", gap: 8, marginTop: isCompact ? 6 : 0 }}>
-                <Badge label={`+${profBonus + modifiers.str} to hit`} variant="accent" />
+                <RollBadge
+                  testID="roll-badge-unarmed-tohit"
+                  label={`${formatModifier(profBonus + modifiers.str)} to hit`}
+                  modifier={profBonus + modifiers.str}
+                  source="Unarmed Strike attack"
+                  characterName={currentCharacter.name}
+                  variant="accent"
+                />
                 <Badge label={`${1 + modifiers.str} dmg`} variant="secondary" />
               </View>
             </View>
@@ -197,8 +206,28 @@ export const ActionsTab: React.FC = () => {
                   </View>
 
                   <View style={{ flexDirection: "row", gap: 8, marginTop: isCompact ? 6 : 0 }}>
-                    <Badge label={`${formatModifier(attack.attackBonus)} to hit`} variant="accent" />
-                    <Badge label={`${attack.damage}${attack.damageType ? ` ${attack.damageType}` : ""}`} variant="secondary" />
+                    <RollBadge
+                      testID={`roll-badge-attack-${idx}-tohit`}
+                      label={`${formatModifier(attack.attackBonus)} to hit`}
+                      modifier={attack.attackBonus}
+                      pool={damagePoolOf(attack.damage) ?? undefined}
+                      source={`${attack.name} attack`}
+                      poolSource={`${attack.name} damage`}
+                      characterName={currentCharacter.name}
+                      variant="accent"
+                    />
+                    {damagePoolOf(attack.damage) ? (
+                      <RollBadge
+                        testID={`roll-badge-attack-${idx}-damage`}
+                        label={`${attack.damage}${attack.damageType ? ` ${attack.damageType}` : ""}`}
+                        pool={damagePoolOf(attack.damage)!}
+                        source={`${attack.name} damage`}
+                        characterName={currentCharacter.name}
+                        variant="secondary"
+                      />
+                    ) : (
+                      <Badge label={`${attack.damage}${attack.damageType ? ` ${attack.damageType}` : ""}`} variant="secondary" />
+                    )}
                   </View>
                 </TouchableOpacity>
               );
@@ -209,7 +238,7 @@ export const ActionsTab: React.FC = () => {
 
       {/* Sneak Attack Action Card */}
       {sneakAttackDice && (
-        <Card style={[styles.sneakAttackCard, { borderColor: theme.accent, borderWidth: 1, backgroundColor: theme.surface }]}>
+        <Card style={[styles.sneakAttackCard, { borderColor: theme.accentHover, borderWidth: 1, backgroundColor: theme.surface }]}>
           <TouchableOpacity
             onPress={() =>
               setDetailModal({
@@ -222,7 +251,7 @@ export const ActionsTab: React.FC = () => {
             style={{ padding: 12 }}>
             <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
               <View style={{ flexDirection: "row", alignItems: "center", gap: 10, flex: 1 }}>
-                <Ionicons name="skull-outline" size={22} color={theme.accent} />
+                <Ionicons name="skull-outline" size={22} color={theme.accentHover} />
                 <View style={{ flex: 1 }}>
                   <Text style={{ color: theme.text, fontWeight: "700", fontSize: 14 }}>
                     Sneak Attack ({sneakAttackDice})
@@ -270,8 +299,28 @@ export const ActionsTab: React.FC = () => {
               )}
             </View>
             <View style={{ flexDirection: "row", gap: 8, marginTop: isCompact ? 6 : 0 }}>
-              <Badge label={`${formatModifier(dualWield.offHand.attackBonus)} to hit`} variant="warning" />
-              <Badge label={`${dualWield.offHand.damage}${dualWield.offHand.damageType ? ` ${dualWield.offHand.damageType}` : ""}`} variant="secondary" />
+              <RollBadge
+                testID="roll-badge-offhand-tohit"
+                label={`${formatModifier(dualWield.offHand.attackBonus)} to hit`}
+                modifier={dualWield.offHand.attackBonus}
+                pool={damagePoolOf(dualWield.offHand.damage) ?? undefined}
+                source={`${dualWield.offHand.name} attack`}
+                poolSource={`${dualWield.offHand.name} damage`}
+                characterName={currentCharacter.name}
+                variant="warning"
+              />
+              {damagePoolOf(dualWield.offHand.damage) ? (
+                <RollBadge
+                  testID="roll-badge-offhand-damage"
+                  label={`${dualWield.offHand.damage}${dualWield.offHand.damageType ? ` ${dualWield.offHand.damageType}` : ""}`}
+                  pool={damagePoolOf(dualWield.offHand.damage)!}
+                  source={`${dualWield.offHand.name} damage`}
+                  characterName={currentCharacter.name}
+                  variant="secondary"
+                />
+              ) : (
+                <Badge label={`${dualWield.offHand.damage}${dualWield.offHand.damageType ? ` ${dualWield.offHand.damageType}` : ""}`} variant="secondary" />
+              )}
             </View>
           </View>
         </Card>
@@ -283,11 +332,11 @@ export const ActionsTab: React.FC = () => {
           <Text style={[styles.sectionHeading, { color: theme.textSecondary }]}>
             KI SPELLCASTING PROFILE
           </Text>
-          <Card style={{ padding: 12, borderColor: theme.accent, backgroundColor: theme.surfaceHighlight, gap: 4 }}>
+          <Card style={{ padding: 12, borderColor: theme.accentHover, backgroundColor: theme.surfaceHighlight, gap: 4 }}>
             <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
               <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-                <Ionicons name="sparkles" size={16} color={theme.accent} />
-                <Text style={{ color: theme.accent, fontWeight: "700", fontSize: 13 }}>
+                <Ionicons name="sparkles" size={16} color={theme.accentHover} />
+                <Text style={{ color: theme.accentHover, fontWeight: "700", fontSize: 13 }}>
                   Monk Ki Spellcasting ({kiProfile.subclass || "Monastic Tradition"})
                 </Text>
               </View>
@@ -306,11 +355,11 @@ export const ActionsTab: React.FC = () => {
           <Text style={[styles.sectionHeading, { color: theme.textSecondary }]}>
             GIANT SPELLCASTING PROFILE
           </Text>
-          <Card style={{ padding: 12, borderColor: theme.accent, backgroundColor: theme.surfaceHighlight, gap: 4 }}>
+          <Card style={{ padding: 12, borderColor: theme.accentHover, backgroundColor: theme.surfaceHighlight, gap: 4 }}>
             <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
               <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-                <Ionicons name="sparkles" size={16} color={theme.accent} />
-                <Text style={{ color: theme.accent, fontWeight: "700", fontSize: 13 }}>
+                <Ionicons name="sparkles" size={16} color={theme.accentHover} />
+                <Text style={{ color: theme.accentHover, fontWeight: "700", fontSize: 13 }}>
                   Giant Power ({giantProfile.subclass || "Path of the Giant"})
                 </Text>
               </View>
@@ -358,8 +407,30 @@ export const ActionsTab: React.FC = () => {
                   </Text>
                 </View>
                 <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginTop: isCompact ? 6 : 0, width: isCompact ? "100%" : undefined, justifyContent: isCompact ? "space-between" : "flex-end" }}>
-                  <Badge label={sp.damage} variant="outline" />
-                  <Ionicons name="chevron-forward" size={16} color={theme.textMuted} />
+                  {sp.attackBonus !== undefined && (
+                    <RollBadge
+                      testID={`roll-badge-spell-${idx}-tohit`}
+                      label={`${formatModifier(sp.attackBonus)} to hit`}
+                      modifier={sp.attackBonus}
+                      pool={damagePoolOf(sp.damage) ?? undefined}
+                      source={`${sp.name} attack`}
+                      poolSource={`${sp.name} damage`}
+                      characterName={currentCharacter.name}
+                      variant="accent"
+                    />
+                  )}
+                  {damagePoolOf(sp.damage) ? (
+                    <RollBadge
+                      testID={`roll-badge-spell-${idx}-damage`}
+                      label={sp.damage}
+                      pool={damagePoolOf(sp.damage)!}
+                      source={`${sp.name} damage`}
+                      characterName={currentCharacter.name}
+                      variant="outline"
+                    />
+                  ) : (
+                    <Badge label={sp.damage} variant="outline" />
+                  )}
                 </View>
               </TouchableOpacity>
             ))}

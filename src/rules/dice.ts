@@ -1,0 +1,165 @@
+import type { RolledAbilityResult } from "../types/character.ts";
+
+/**
+ * A source of die faces: given a die's sides, it returns the face that lands, in [1, sides].
+ * Tests inject a fixed sequence of faces; the app rolls with `appRandom`.
+ */
+export type RandomSource = (sides: number) => number;
+
+/** The app's random source. */
+export const appRandom: RandomSource = (sides) => 1 + Math.floor(Math.random() * sides);
+
+// The source the roll functions use when none is passed. Tests swap it through
+// `__setRandomSourceForTests`; app code always rolls with `appRandom`.
+let activeRandom: RandomSource = appRandom;
+
+/** The random source rolls use by default. */
+export function currentRandom(): RandomSource {
+  return activeRandom;
+}
+
+/** Test-only seam: replaces the default random source (null restores `appRandom`). Called only under the E2E flag by the Roll Log provider's test hook, and by tests. */
+export function __setRandomSourceForTests(source: RandomSource | null): void {
+  activeRandom = source ?? appRandom;
+}
+
+export interface DiceTerm {
+  count: number;
+  sides: number;
+}
+
+export interface DicePool {
+  dice: DiceTerm[];
+  modifier: number;
+}
+
+/** One die of a Roll: its sides, the face it landed on, and whether it counts toward the total. */
+export interface RolledDie {
+  sides: number;
+  face: number;
+  dropped: boolean;
+}
+
+/** One throw of a dice pool with a flat modifier: each die's face and the total. */
+export interface Roll {
+  dice: RolledDie[];
+  modifier: number;
+  total: number;
+}
+
+/** Rolls one die of `sides` sides with the given random source, clamped to a face in [1, sides]. */
+export function rollDie(sides: number, random: RandomSource): number {
+  return Math.min(sides, Math.max(1, Math.floor(random(sides))));
+}
+
+/** The most dice one term of a pool may carry. */
+const MAX_DICE_PER_TERM = 100;
+
+/**
+ * Parses a pool written like "2d6+1d8+3" or "d20-2": dice terms plus a flat modifier, whitespace
+ * tolerated. A term may carry at most 100 dice. Returns null when the text is not such a pool.
+ */
+export function parseDicePool(text: string): DicePool | null {
+  const cleaned = text.toLowerCase().replace(/\s+/g, "");
+  if (!cleaned) return null;
+  const terms = cleaned.match(/[+-]?[^+-]+/g);
+  if (!terms || terms.join("") !== cleaned) return null;
+  const dice: DiceTerm[] = [];
+  let modifier = 0;
+  for (const rawTerm of terms) {
+    const negative = rawTerm.startsWith("-");
+    const term = rawTerm.replace(/^[+-]/, "");
+    const diceMatch = /^(\d*)d(\d+)$/.exec(term);
+    if (diceMatch) {
+      if (negative) return null;
+      const count = diceMatch[1] === "" ? 1 : Number.parseInt(diceMatch[1], 10);
+      const sides = Number.parseInt(diceMatch[2], 10);
+      if (count < 1 || count > MAX_DICE_PER_TERM || sides < 1) return null;
+      dice.push({ count, sides });
+    } else if (/^\d+$/.test(term)) {
+      const value = Number.parseInt(term, 10);
+      modifier += negative ? -value : value;
+    } else {
+      return null;
+    }
+  }
+  return dice.length > 0 ? { dice, modifier } : null;
+}
+
+function rollParsed(pool: DicePool, random: RandomSource): Roll {
+  const dice: RolledDie[] = [];
+  let sum = 0;
+  for (const term of pool.dice) {
+    for (let i = 0; i < term.count; i += 1) {
+      const face = rollDie(term.sides, random);
+      dice.push({ sides: term.sides, face, dropped: false });
+      sum += face;
+    }
+  }
+  return { dice, modifier: pool.modifier, total: sum + pool.modifier };
+}
+
+/** Rolls a pool like "2d6+1d8+3": every die's face, and a total of their sum plus the modifier. */
+export function rollDicePool(pool: string, random: RandomSource = currentRandom()): Roll {
+  const parsed = parseDicePool(pool);
+  if (!parsed) throw new Error(`Not a dice pool: "${pool}"`);
+  return rollParsed(parsed, random);
+}
+
+export type D20Mode = "none" | "advantage" | "disadvantage";
+
+/**
+ * Rolls a d20 with a flat modifier. With advantage or disadvantage two d20s are rolled and the
+ * higher (or lower) one is kept; both faces are reported, the unkept die marked dropped.
+ */
+export function rollD20(modifier: number, mode: D20Mode = "none", random: RandomSource = currentRandom()): Roll {
+  if (mode === "none") {
+    const face = rollDie(20, random);
+    return { dice: [{ sides: 20, face, dropped: false }], modifier, total: face + modifier };
+  }
+  const first = rollDie(20, random);
+  const second = rollDie(20, random);
+  const keepFirst = mode === "advantage" ? first >= second : first <= second;
+  return {
+    dice: [
+      { sides: 20, face: first, dropped: !keepFirst },
+      { sides: 20, face: second, dropped: keepFirst },
+    ],
+    modifier,
+    total: (keepFirst ? first : second) + modifier,
+  };
+}
+
+/** Whether a Roll's kept d20 landed on a natural 20. */
+export function isNatural20(roll: Roll): boolean {
+  return roll.dice.some((die) => die.sides === 20 && !die.dropped && die.face === 20);
+}
+
+/** Rolls damage for a pool like "1d8+3". On a critical the dice double; the flat modifier does not. */
+export function rollDamage(pool: string, options: { critical?: boolean } = {}, random: RandomSource = currentRandom()): Roll {
+  const parsed = parseDicePool(pool);
+  if (!parsed) throw new Error(`Not a dice pool: "${pool}"`);
+  const dice = options.critical ? parsed.dice.map((term) => ({ ...term, count: term.count * 2 })) : parsed.dice;
+  return rollParsed({ dice, modifier: parsed.modifier }, random);
+}
+
+/** Rolls one Rolled Abilities result: four d6, the lowest marked dropped, the total of the other three. */
+export function rollAbilityScore(random: RandomSource = currentRandom()): RolledAbilityResult {
+  const faces = [rollDie(6, random), rollDie(6, random), rollDie(6, random), rollDie(6, random)];
+  let droppedIndex = 0;
+  for (let i = 1; i < faces.length; i += 1) {
+    if (faces[i] < faces[droppedIndex]) droppedIndex = i;
+  }
+  let total = 0;
+  const dice = faces.map((face, i) => {
+    const dropped = i === droppedIndex;
+    if (!dropped) total += face;
+    return { sides: 6, face, dropped };
+  });
+  return { dice, droppedIndex, total };
+}
+
+/** The six Rolled Abilities results, in roll order. */
+export function rollAbilityScores(random: RandomSource = currentRandom()): RolledAbilityResult[] {
+  return Array.from({ length: 6 }, () => rollAbilityScore(random));
+}

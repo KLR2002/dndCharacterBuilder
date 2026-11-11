@@ -12,6 +12,8 @@ export interface AppSettings {
   activeResourceBooks: string[];
   themeAccentId: string;
   fullHealOnLevelUp: boolean;
+  /** The 3D dice animation switch. Absent until the user toggles it; then the saved value wins over the system reduced-motion preference. */
+  dice3dEnabled?: boolean;
   /** The Catalog Format the user was last told about. Absent until the update notice is shown. */
   catalogFormatInformed?: number;
 }
@@ -90,6 +92,9 @@ function normalizeSettings(value: unknown): AppSettings {
   }
   if (value.fullHealOnLevelUp !== undefined && typeof value.fullHealOnLevelUp !== "boolean") {
     throw new Error("Invalid settings: fullHealOnLevelUp must be boolean");
+  }
+  if (value.dice3dEnabled !== undefined && typeof value.dice3dEnabled !== "boolean") {
+    throw new Error("Invalid settings: dice3dEnabled must be boolean");
   }
   if (value.catalogFormatInformed !== undefined && typeof value.catalogFormatInformed !== "number") {
     throw new Error("Invalid settings: catalogFormatInformed must be a number");

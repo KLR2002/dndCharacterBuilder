@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
-import { centerOf, findNode, hasPositiveArea, parseDump, parseDumpOutput } from "../scripts/lib/uiautomator.mjs";
+import { centerOf, findNode, hasPositiveArea, parseDump, parseDumpOutput, tapPoint, visibleBounds } from "../scripts/lib/uiautomator.mjs";
 
 // The uiautomator dump parser (scripts/lib/uiautomator.mjs), which the native runner polls to wait for
 // a scenario's ready text. The fixture is a real dump captured on the emulator with the Settings screen
@@ -77,6 +77,72 @@ test("centerOf is the centre point of a node's bounds", () => {
   assert.deepEqual(centerOf(node), { x: 360, y: 108 });
   assert.deepEqual(centerOf({ text: "x", contentDesc: "", resourceId: "", className: "", clickable: false, scrollable: false, bounds: { x1: 0, y1: 0, x2: 11, y2: 21 } }), { x: 6, y: 11 });
   assert.equal(centerOf({ text: "x", contentDesc: "", resourceId: "", className: "", clickable: false, scrollable: false, bounds: null }), null);
+});
+
+// --- visibleBounds and tapPoint: the on-screen part, and the point a tap lands on ---
+
+const VIEW = { width: 720, height: 1280, topBar: 48, bottomBar: 48 };
+type Bounds = { x1: number; y1: number; x2: number; y2: number };
+const node = (bounds: Bounds | null, clickable = false, text = "") => ({ text, contentDesc: "", resourceId: "", className: "", clickable, scrollable: false, bounds });
+
+test("visibleBounds clips a node to the screen and clear of the two system bars", () => {
+  assert.deepEqual(visibleBounds(node({ x1: -10, y1: 20, x2: 730, y2: 1300 }), VIEW), { x1: 0, y1: 48, x2: 720, y2: 1232 });
+  assert.equal(visibleBounds(node({ x1: 0, y1: 1240, x2: 100, y2: 1300 }), VIEW), null, "entirely under the gesture bar");
+  assert.equal(visibleBounds(node(null), VIEW), null);
+  assert.deepEqual(visibleBounds(node({ x1: 0, y1: 0, x2: 10, y2: 10 })), { x1: 0, y1: 0, x2: 10, y2: 10 }, "without a view the raw box");
+});
+
+test("tapPoint is the centre when nothing clickable covers it", () => {
+  const target = node({ x1: 612, y1: 1141, x2: 684, y2: 1213 }, true);
+  const nodes = [target, node({ x1: 0, y1: 0, x2: 720, y2: 1280 }) /* not clickable: no cover */];
+  assert.deepEqual(tapPoint(target, VIEW, nodes), { x: 648, y: 1177 });
+});
+
+test("tapPoint avoids a floating clickable button overlapping the centre (the dice tray over a revealed row button)", () => {
+  // The row button revealed to the bottom of the page, its centre under the floating dice button.
+  const target = node({ x1: 612, y1: 1141, x2: 684, y2: 1213 }, true);
+  const dice = node({ x1: 558, y1: 1064, x2: 684, y2: 1190 }, true);
+  dice.contentDesc = "Dice tray";
+  const nodes = [node({ x1: 0, y1: 0, x2: 720, y2: 1280 }), target, dice];
+  const point = tapPoint(target, VIEW, nodes);
+  assert.ok(point, "an uncovered point of the button exists below the dice button");
+  assert.notDeepEqual(point, { x: 648, y: 1177 }, "the covered centre is not tapped");
+  assert.ok(point.x >= 612 && point.x <= 684 && point.y >= 1141 && point.y <= 1213, "inside the button");
+  assert.ok(point.y > 1190, "clear of the dice button");
+});
+
+test("tapPoint ignores a real ancestor: a clickable parent holding the node does not cover it", () => {
+  // Nested in the dump's tree: the clickable container is the target's parent.
+  const nodes = parseDump(
+    `<hierarchy><node text="" content-desc="" bounds="[0,0][720,1280]" clickable="true" class="android.view.ViewGroup">` +
+      `<node text="Row" content-desc="" bounds="[100,100][200,140]" clickable="true" class="android.widget.Button" />` +
+      `</node></hierarchy>`,
+  );
+  const target = nodes.find((n) => n.text === "Row");
+  assert.ok(target?.parent?.clickable, "the container is the target's parent");
+  assert.deepEqual(tapPoint(target, VIEW, nodes), { x: 150, y: 120 });
+});
+
+test("tapPoint is null when non-ancestor clickables cover every point of the node", () => {
+  const target = node({ x1: 100, y1: 100, x2: 140, y2: 140 }, true);
+  // Two sibling buttons covering the left and the right half: every grid point is covered, and neither
+  // is an ancestor of the target.
+  const left = node({ x1: 90, y1: 90, x2: 125, y2: 150 }, true);
+  const right = node({ x1: 115, y1: 90, x2: 150, y2: 150 }, true);
+  assert.equal(tapPoint(target, VIEW, [left, right, target]), null);
+});
+
+test("tapPoint moves off a partly covering clickable, and is null when the node has no visible part", () => {
+  const target = node({ x1: 100, y1: 100, x2: 140, y2: 140 }, true);
+  // A clickable that covers the centre but not the whole node box (so not an ancestor): the grid's edge
+  // points are uncovered.
+  const partial = node({ x1: 90, y1: 90, x2: 125, y2: 125 }, true);
+  const point = tapPoint(target, VIEW, [partial, target]);
+  assert.ok(point);
+  assert.notDeepEqual(point, { x: 120, y: 120 });
+  assert.ok(point.x >= 100 && point.x <= 140 && point.y >= 100 && point.y <= 140, "still inside the target");
+  assert.equal(tapPoint(node({ x1: 0, y1: 1240, x2: 100, y2: 1300 }, true), VIEW, []), null, "entirely under the gesture bar");
+  assert.equal(tapPoint(node(null), VIEW, []), null, "no bounds");
 });
 
 // --- The one-call dump: the XML and the "dumped to" line share stdout ---

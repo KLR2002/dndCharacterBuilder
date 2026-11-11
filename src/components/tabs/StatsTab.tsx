@@ -1,6 +1,5 @@
 import React, { useMemo, useState } from "react";
 import {
-  Modal as RNModal,
   ScrollView,
   StyleSheet,
   Text,
@@ -23,6 +22,7 @@ import { formatModifier } from "../../services/dndRules";
 import { evaluateCharacter } from "../../rules/characterEvaluation";
 import { listSuperiorityPools } from "../../rules/combatDice";
 import { proficiencySheet } from "../../rules/proficiencySheet";
+import { checkSource, INITIATIVE_SOURCE, saveSource } from "../../rules/statRolls";
 import {
   addAddedProficiency,
   addedProficiencyOptions,
@@ -35,8 +35,10 @@ import { Badge } from "../ui/Badge";
 import { Button } from "../ui/Button";
 import { Card } from "../ui/Card";
 import { DetailModal } from "../DetailModal";
+import { RollBadge } from "../dice/RollBadge";
 import { InitiativeBreakdownModal } from "../InitiativeBreakdownModal";
 import { RestModal } from "../RestModal";
+import { Modal } from "../ui/Modal";
 import { HpQuickEditModal } from "../HpQuickEditModal";
 import { HitPointBlock } from "../HitPointBlock";
 import { ActiveWildShapeCard } from "../ActiveWildShapeCard";
@@ -61,12 +63,19 @@ const SKILL_ABILITY_GROUPS: { key: AbilityKey; label: string }[] = [
   { key: "cha", label: "CHARISMA" },
 ];
 
+/** One combat stat card's minimum width: its label ("ARMOR CLASS", 67px at 9px bold) plus its border. */
+const STAT_BOX_MIN_WIDTH = 70;
+/** The gap between the combat stat cards. */
+const COMBAT_ROW_GAP = 8;
+
 export const StatsTab: React.FC = () => {
   const { currentCharacter, updateCharacter, activeBooks } = useCharacters();
   const { theme } = useAppTheme();
-  const { isCompact } = useResponsiveLayout();
+  const { isCompact, isTablet } = useResponsiveLayout();
 
   const [conditionModalVisible, setConditionModalVisible] = useState(false);
+  // The combat stat row's measured width: four cards across when it fits, otherwise 2x2 - never 3+1.
+  const [combatRowWidth, setCombatRowWidth] = useState(0);
   const [restModalVisible, setRestModalVisible] = useState(false);
   const [initiativeModalVisible, setInitiativeModalVisible] = useState(false);
   const [maxHpOverrideVisible, setMaxHpOverrideVisible] = useState(false);
@@ -250,12 +259,11 @@ export const StatsTab: React.FC = () => {
     });
   };
 
-  return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      {/* Rest Buttons Bar */}
+  const restRow = (
+    <>
       <View style={styles.topActionsBar}>
         <Button
-          title="Take Rest (Short / Long)"
+          title="Take Rest"
           icon="bed"
           variant="outline"
           size="sm"
@@ -271,10 +279,17 @@ export const StatsTab: React.FC = () => {
           style={{ flex: 1 }}
         />
       </View>
+    </>
+  );
 
+  const wildShapeCard = (
+    <>
       <ActiveWildShapeCard character={currentCharacter} />
+    </>
+  );
 
-      {/* Active Conditions Display */}
+  const conditionsCard = (
+    <>
       {currentCharacter.conditions && currentCharacter.conditions.length > 0 && (
         <Card style={[styles.activeConditionsCard, { borderColor: theme.danger }]}>
           <Text style={[styles.sectionTitle, { color: theme.danger, fontSize: 13 }]}>
@@ -307,8 +322,11 @@ export const StatsTab: React.FC = () => {
           </View>
         </Card>
       )}
+    </>
+  );
 
-      {/* HP Section Card */}
+  const hpCard = (
+    <>
       <Card style={styles.hpCard}>
         <HitPointBlock
           label="HIT POINTS"
@@ -397,10 +415,21 @@ export const StatsTab: React.FC = () => {
           </View>
         )}
       </Card>
+    </>
+  );
 
-      {/* Combat Quick Badges (AC, Initiative, Speed, Prof Bonus) */}
-      <View style={styles.combatRow}>
+  // Four across when the row is wide enough for four boxes whose labels stay on one line (the prototype's
+  // layout), otherwise 2x2 - never a 3+1 wrap.
+  const fourAcross = combatRowWidth >= 4 * STAT_BOX_MIN_WIDTH + 3 * COMBAT_ROW_GAP;
+  const combatBoxStyle = fourAcross ? styles.statBoxQuad : styles.statBoxHalf;
+
+  const combatRowEl = (
+    <>
+      <View
+        style={styles.combatRow}
+        onLayout={(e) => setCombatRowWidth(e.nativeEvent.layout.width)}>
         <TouchableOpacity
+          testID="stat-box-ac"
           hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
           onPress={() =>
             setDetailModal({
@@ -410,8 +439,8 @@ export const StatsTab: React.FC = () => {
               content: `Calculation Breakdown:\n${acBreakdown}\n\nBased on your equipped armor, shields, and class unarmored defense rules.`,
             })
           }
-          style={[styles.statBox, { backgroundColor: theme.surface, borderColor: theme.border }]}>
-          <Ionicons name="shield" size={18} color={theme.accent} />
+          style={[styles.statBox, combatBoxStyle, { backgroundColor: theme.surface, borderColor: theme.border }]}>
+          <Ionicons name="shield" size={18} color={theme.accentHover} />
           <Text style={[styles.statBoxValue, { color: theme.text }]}>{ac}</Text>
           <Text style={[styles.statBoxLabel, { color: theme.textMuted }]}>ARMOR CLASS</Text>
           {(hasDefenseAc || infusionBonusAc > 0) && (
@@ -423,16 +452,26 @@ export const StatsTab: React.FC = () => {
         </TouchableOpacity>
 
         <TouchableOpacity
+          testID="stat-box-initiative"
           accessibilityLabel="Initiative breakdown"
           hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
           onPress={() => setInitiativeModalVisible(true)}
-          style={[styles.statBox, { backgroundColor: theme.surface, borderColor: theme.border }]}>
-          <Ionicons name="flash" size={18} color={theme.accent} />
-          <Text style={[styles.statBoxValue, { color: theme.text }]}>{formatModifier(initiative)}</Text>
+          style={[styles.statBox, combatBoxStyle, { backgroundColor: theme.surface, borderColor: theme.border }]}>
+          <Ionicons name="flash" size={18} color={theme.accentHover} />
+          <RollBadge
+            testID="roll-badge-initiative"
+            label={formatModifier(initiative)}
+            modifier={initiative}
+            source={INITIATIVE_SOURCE}
+            characterName={currentCharacter.name}
+            variant="accent"
+            size="sm"
+          />
           <Text style={[styles.statBoxLabel, { color: theme.textMuted }]}>INITIATIVE</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
+          testID="stat-box-speed"
           onPress={() => {
             const speedContent = [
               `Walking Speed: ${speeds.walk} ft`,
@@ -462,8 +501,8 @@ export const StatsTab: React.FC = () => {
               content: speedContent,
             });
           }}
-          style={[styles.statBox, { backgroundColor: theme.surface, borderColor: theme.border }]}>
-          <Ionicons name="walk" size={18} color={theme.accent} />
+          style={[styles.statBox, combatBoxStyle, { backgroundColor: theme.surface, borderColor: theme.border }]}>
+          <Ionicons name="walk" size={18} color={theme.accentHover} />
           <Text style={[styles.statBoxValue, { color: theme.text }]}>{speeds.walk} ft</Text>
           <Text style={[styles.statBoxLabel, { color: theme.textMuted }]}>SPEED</Text>
           {((speeds.swim != null && speeds.swim > 0) || (speeds.climb != null && speeds.climb > 0) || speeds.fly != null || speeds.flyRestricted) && (
@@ -484,14 +523,19 @@ export const StatsTab: React.FC = () => {
           )}
         </TouchableOpacity>
 
-        <View style={[styles.statBox, { backgroundColor: theme.surface, borderColor: theme.border }]}>
-          <Ionicons name="ribbon" size={18} color={theme.accent} />
+        <View
+          testID="stat-box-proficiency"
+          style={[styles.statBox, combatBoxStyle, { backgroundColor: theme.surface, borderColor: theme.border }]}>
+          <Ionicons name="ribbon" size={18} color={theme.accentHover} />
           <Text style={[styles.statBoxValue, { color: theme.text }]}>+{profBonus}</Text>
           <Text style={[styles.statBoxLabel, { color: theme.textMuted }]}>PROFICIENCY</Text>
         </View>
       </View>
+    </>
+  );
 
-      {/* Active Class Dice Summary Strip */}
+  const classDiceStripEl = (
+    <>
       {(classDice.bardicInspiration || classDice.sneakAttack || classDice.martialArts || classDice.superiorityDice) && (
         <View style={[styles.classDiceStrip, { backgroundColor: theme.surface, borderColor: theme.border }]}>
           <Text style={[styles.classDiceStripLabel, { color: theme.textMuted }]}>CLASS COMBAT DICE</Text>
@@ -551,8 +595,11 @@ export const StatsTab: React.FC = () => {
           </View>
         </View>
       )}
+    </>
+  );
 
-      {/* Hit Dice Card */}
+  const hitDiceCardEl = (
+    <>
       <Card style={styles.hitDiceCard}>
         <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
           <View style={{ flex: 1 }}>
@@ -597,17 +644,27 @@ export const StatsTab: React.FC = () => {
           </View>
         )}
       </Card>
+    </>
+  );
 
-      {/* 6 Ability Scores Grid */}
+  const abilitiesSection = (
+    <>
       <Text style={[styles.blockTitle, { color: theme.textSecondary }]}>ABILITY SCORES & MODIFIERS</Text>
       <View style={styles.abilityGrid}>
         {ABILITY_ORDER.map((key) => {
           const score = scores[key];
           const mod = modifiers[key];
           return (
-            <View key={key} style={[styles.abilityTile, { backgroundColor: theme.surface, borderColor: theme.border }, isCompact && { width: "48%" }]}>
+            <View key={key} testID={`ability-tile-${key}`} style={[styles.abilityTile, { backgroundColor: theme.surface, borderColor: theme.border }, isCompact && { width: "48%" }]}>
               <Text style={[styles.abilityTileName, { color: theme.textMuted }]}>{key.toUpperCase()}</Text>
-              <Text style={[styles.abilityTileMod, { color: theme.accent }]}>{formatModifier(mod)}</Text>
+              <RollBadge
+                testID={`roll-badge-check-${key}`}
+                label={formatModifier(mod)}
+                modifier={mod}
+                source={checkSource(key)}
+                characterName={currentCharacter.name}
+                variant="accent"
+              />
               <View style={[styles.abilityTileScoreBadge, { backgroundColor: theme.surfaceRaised }]}>
                 <Text style={[styles.abilityTileScoreText, { color: theme.textSecondary }]}>{score}</Text>
               </View>
@@ -615,8 +672,11 @@ export const StatsTab: React.FC = () => {
           );
         })}
       </View>
+    </>
+  );
 
-      {/* Saving Throws */}
+  const savesSection = (
+    <>
       <Text style={[styles.blockTitle, { color: theme.textSecondary, marginTop: 20 }]}>SAVING THROWS</Text>
       <Card style={{ padding: 8 }}>
         <View style={styles.savesGrid}>
@@ -628,46 +688,58 @@ export const StatsTab: React.FC = () => {
                   style={[
                     styles.profIndicator,
                     {
-                      borderColor: save.isProficient ? theme.accent : theme.border,
-                      backgroundColor: save.isProficient ? theme.accent : "transparent",
+                      borderColor: save.isProficient ? theme.accentHover : theme.border,
+                      backgroundColor: save.isProficient ? theme.accentGlow : "transparent",
                     },
                   ]}
                 />
                 <Text style={[styles.saveName, { color: theme.text }]}>{ABILITY_LABELS[key]}</Text>
-                <Text style={[styles.saveBonus, { color: save.isProficient ? theme.accent : theme.textSecondary }]}>
-                  {formatModifier(save.bonus)}
-                </Text>
+                <RollBadge
+                  testID={`roll-badge-save-${key}`}
+                  label={formatModifier(save.bonus)}
+                  modifier={save.bonus}
+                  source={saveSource(key)}
+                  characterName={currentCharacter.name}
+                  variant={save.isProficient ? "accent" : "surface"}
+                  size="sm"
+                />
               </View>
             );
           })}
         </View>
       </Card>
+    </>
+  );
 
-      {/* Passive Senses */}
+  const passivesRow = (
+    <>
       <Text style={[styles.blockTitle, { color: theme.textSecondary, marginTop: 20 }]}>
         PASSIVE SENSES
       </Text>
       <View style={styles.combatRow}>
         <View style={[styles.statBox, { backgroundColor: theme.surface, borderColor: theme.border }]}>
-          <Ionicons name="eye" size={18} color={theme.accent} />
+          <Ionicons name="eye" size={18} color={theme.accentHover} />
           <Text style={[styles.statBoxValue, { color: theme.text }]}>{passivePerception}</Text>
           <Text style={[styles.statBoxLabel, { color: theme.textMuted }]}>PASSIVE PERCEPTION</Text>
         </View>
 
         <View style={[styles.statBox, { backgroundColor: theme.surface, borderColor: theme.border }]}>
-          <Ionicons name="search" size={18} color={theme.accent} />
+          <Ionicons name="search" size={18} color={theme.accentHover} />
           <Text style={[styles.statBoxValue, { color: theme.text }]}>{passiveInvestigation}</Text>
           <Text style={[styles.statBoxLabel, { color: theme.textMuted }]}>PASSIVE INVESTIGATION</Text>
         </View>
 
         <View style={[styles.statBox, { backgroundColor: theme.surface, borderColor: theme.border }]}>
-          <Ionicons name="bulb" size={18} color={theme.accent} />
+          <Ionicons name="bulb" size={18} color={theme.accentHover} />
           <Text style={[styles.statBoxValue, { color: theme.text }]}>{passiveInsight}</Text>
           <Text style={[styles.statBoxLabel, { color: theme.textMuted }]}>PASSIVE INSIGHT</Text>
         </View>
       </View>
+    </>
+  );
 
-      {/* Skills Grouped by Ability */}
+  const skillsSection = (
+    <>
       <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: 20, marginBottom: 8 }}>
         <Text style={[styles.blockTitle, { color: theme.textSecondary, marginTop: 0, marginBottom: 0 }]}>
           SKILLS BY ABILITY (PASSIVES IN BRACKETS)
@@ -689,7 +761,7 @@ export const StatsTab: React.FC = () => {
                   borderRadius: 4,
                 }}
               >
-                <Text style={{ color: theme.accent, fontSize: 11, fontWeight: "700", letterSpacing: 0.5 }}>
+                <Text style={{ color: theme.accentHover, fontSize: 11, fontWeight: "700", letterSpacing: 0.5 }}>
                   {group.label} ({group.key.toUpperCase()})
                 </Text>
               </View>
@@ -719,15 +791,15 @@ export const StatsTab: React.FC = () => {
                             },
                           ]}
                         >
-                          <View style={[styles.expertiseInnerDot, { backgroundColor: "#fff" }]} />
+                          <View style={[styles.expertiseInnerDot, { backgroundColor: theme.background }]} />
                         </View>
                       ) : skill.isProficient ? (
                         <View
                           style={[
                             styles.profIndicator,
                             {
-                              borderColor: theme.accent,
-                              backgroundColor: theme.accent,
+                              borderColor: theme.accentHover,
+                              backgroundColor: theme.accentGlow,
                             },
                           ]}
                         />
@@ -736,12 +808,12 @@ export const StatsTab: React.FC = () => {
                           style={[
                             styles.profIndicator,
                             {
-                              borderColor: theme.accent,
+                              borderColor: theme.accentHover,
                               backgroundColor: "transparent",
                             },
                           ]}
                         >
-                          <Text style={{ color: theme.accent, fontSize: 8, fontWeight: "800", lineHeight: 10 }}>½</Text>
+                          <Text style={{ color: theme.accentHover, fontSize: 8, fontWeight: "800", lineHeight: 10 }}>½</Text>
                         </View>
                       ) : (
                         <View
@@ -773,24 +845,15 @@ export const StatsTab: React.FC = () => {
                     </View>
 
                     {/* Total Roll Modifier */}
-                    <View style={{ width: 45, alignItems: "flex-end" }}>
-                      <Text
-                        style={[
-                          styles.skillBonus,
-                          {
-                            color: skill.isExpertise
-                              ? theme.warning
-                              : skill.isProficient
-                              ? theme.accent
-                              : skill.halfProficiency
-                              ? theme.text
-                              : theme.textSecondary,
-                          },
-                        ]}
-                      >
-                        {formatModifier(skill.bonus)}
-                      </Text>
-                    </View>
+                    <RollBadge
+                      testID={`roll-badge-skill-${skill.name.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`}
+                      label={formatModifier(skill.bonus)}
+                      modifier={skill.bonus}
+                      source={skill.name}
+                      characterName={currentCharacter.name}
+                      variant={skill.isExpertise ? "warning" : skill.isProficient ? "accent" : "surface"}
+                      size="sm"
+                    />
                   </View>
                 );
               })}
@@ -798,14 +861,17 @@ export const StatsTab: React.FC = () => {
           );
         })}
       </Card>
+    </>
+  );
 
-      {/* Proficiencies & Training Summary */}
+  const profsSection = (
+    <>
       <Text style={[styles.blockTitle, { color: theme.textSecondary, marginTop: 20 }]}>
         PROFICIENCIES & TRAINING
       </Text>
       <Card style={{ gap: 10 }}>
         <View>
-          <Text style={[styles.profCatTitle, { color: theme.accent }]}>Armor Proficiencies</Text>
+          <Text style={[styles.profCatTitle, { color: theme.text }]}>Armor Proficiencies</Text>
           <Text style={{ color: theme.text, fontSize: 13 }}>
             {derivedProficiencies.armor.length > 0
               ? derivedProficiencies.armor.join(", ")
@@ -814,7 +880,7 @@ export const StatsTab: React.FC = () => {
         </View>
 
         <View>
-          <Text style={[styles.profCatTitle, { color: theme.accent }]}>Weapon Proficiencies</Text>
+          <Text style={[styles.profCatTitle, { color: theme.text }]}>Weapon Proficiencies</Text>
           <Text style={{ color: theme.text, fontSize: 13 }}>
             {derivedProficiencies.weapons.length > 0
               ? derivedProficiencies.weapons.join(", ")
@@ -824,7 +890,7 @@ export const StatsTab: React.FC = () => {
 
         <View>
           <View style={[styles.headingRow, { marginBottom: 4 }]}>
-            <Text style={[styles.profCatTitle, { color: theme.accent }]}>Tool Proficiencies</Text>
+            <Text style={[styles.profCatTitle, { color: theme.text }]}>Tool Proficiencies</Text>
             <TouchableOpacity
               accessibilityRole="button"
               accessibilityLabel="Add tool proficiency"
@@ -832,7 +898,7 @@ export const StatsTab: React.FC = () => {
               hitSlop={8}
               style={styles.addBtn}
             >
-              <Ionicons name="add" size={20} color={theme.accent} />
+              <Ionicons name="add" size={20} color={theme.accentHover} />
             </TouchableOpacity>
           </View>
           {evaluated.tools && evaluated.tools.length > 0 ? (
@@ -859,15 +925,15 @@ export const StatsTab: React.FC = () => {
                             },
                           ]}
                         >
-                          <View style={[styles.expertiseInnerDot, { backgroundColor: "#fff" }]} />
+                          <View style={[styles.expertiseInnerDot, { backgroundColor: theme.background }]} />
                         </View>
                       ) : (
                         <View
                           style={[
                             styles.profIndicator,
                             {
-                              borderColor: theme.accent,
-                              backgroundColor: theme.accent,
+                              borderColor: theme.accentHover,
+                              backgroundColor: theme.accentGlow,
                             },
                           ]}
                         />
@@ -887,7 +953,7 @@ export const StatsTab: React.FC = () => {
                       style={{
                         fontSize: 13,
                         fontWeight: "bold",
-                        color: t.isExpertise ? theme.warning : theme.accent,
+                        color: t.isExpertise ? theme.warning : theme.accentHover,
                       }}
                     >
                       {t.ability
@@ -914,8 +980,11 @@ export const StatsTab: React.FC = () => {
           )}
         </View>
       </Card>
+    </>
+  );
 
-      {/* Languages Summary */}
+  const languagesSection = (
+    <>
       <View style={[styles.headingRow, { marginTop: 20, marginBottom: 8 }]}>
         <Text style={[styles.blockTitle, { color: theme.textSecondary, marginBottom: 0 }]}>
           LANGUAGES
@@ -927,7 +996,7 @@ export const StatsTab: React.FC = () => {
           hitSlop={8}
           style={styles.addBtn}
         >
-          <Ionicons name="add" size={20} color={theme.accent} />
+          <Ionicons name="add" size={20} color={theme.accentHover} />
         </TouchableOpacity>
       </View>
       <Card style={{ gap: 6 }}>
@@ -967,83 +1036,116 @@ export const StatsTab: React.FC = () => {
         }}
         onClose={() => setAddModal(null)}
       />
+    </>
+  );
+
+  return (
+    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+      {isTablet ? (
+        <View style={styles.twoCol}>
+          <View testID="stats-col-side" style={styles.twoColChild}>
+            {restRow}
+            {wildShapeCard}
+            {conditionsCard}
+            {hpCard}
+            {combatRowEl}
+            {classDiceStripEl}
+            {hitDiceCardEl}
+            {passivesRow}
+          </View>
+          <View testID="stats-col-main" style={styles.twoColChild}>
+            {abilitiesSection}
+            {savesSection}
+            {skillsSection}
+            {profsSection}
+            {languagesSection}
+          </View>
+        </View>
+      ) : (
+        <>
+          {restRow}
+          {wildShapeCard}
+          {conditionsCard}
+          {hpCard}
+          {combatRowEl}
+          {classDiceStripEl}
+          {hitDiceCardEl}
+          {abilitiesSection}
+          {savesSection}
+          {passivesRow}
+          {skillsSection}
+          {profsSection}
+          {languagesSection}
+        </>
+      )}
 
       {/* HP Override Settings Modal */}
-      <RNModal visible={maxHpOverrideVisible} transparent animationType="fade">
-        <View style={styles.modalOverlay}>
-          <Card style={[styles.modalCard, { backgroundColor: theme.surface, borderColor: theme.border }]}>
-            <Text style={[styles.sectionTitle, { color: theme.text, marginBottom: 12 }]}>
-              HP Configuration
-            </Text>
-            <Text style={{ color: theme.textSecondary, fontSize: 13, marginBottom: 8 }}>
-              Standard calculated Max HP: <Text style={{ color: theme.accent, fontWeight: "bold" }}>{evaluateCharacter({ ...currentCharacter, maxHpOverride: null }, { compendium: currentCompendium(), activeBooks }).hp.max}</Text>
-            </Text>
-            <Text style={{ color: theme.textSecondary, fontSize: 12, marginBottom: 8 }}>
-              Leave blank to use automatic calculation. Enter a number to manually override maximum hit points.
-            </Text>
-            <TextInput
-              style={[styles.input, { color: theme.text, backgroundColor: theme.surfaceHighlight, borderColor: theme.border }]}
-              value={maxHpOverrideInput}
-              onChangeText={setMaxHpOverrideInput}
-              keyboardType="number-pad"
-              placeholder="Override Max HP"
-              placeholderTextColor={theme.textMuted}
-            />
-            <View style={{ flexDirection: "row", justifyContent: "flex-end", gap: 10, marginTop: 16 }}>
-              <Button title="Cancel" variant="secondary" size="sm" onPress={() => setMaxHpOverrideVisible(false)} />
-              <Button title="Save" variant="primary" size="sm" onPress={setMaxHpOverride} />
-            </View>
-          </Card>
-        </View>
-      </RNModal>
+      <Modal
+        visible={maxHpOverrideVisible}
+        onClose={() => setMaxHpOverrideVisible(false)}
+        title="HP Configuration"
+        hasUnsavedChanges={maxHpOverrideInput.trim() !== (currentCharacter.maxHpOverride ? String(currentCharacter.maxHpOverride) : "")}
+        footer={
+          <View style={{ flexDirection: "row", justifyContent: "flex-end", gap: 10 }}>
+            <Button title="Cancel" variant="secondary" size="sm" onPress={() => setMaxHpOverrideVisible(false)} />
+            <Button title="Save" variant="primary" size="sm" onPress={setMaxHpOverride} />
+          </View>
+        }
+      >
+        <Text style={{ color: theme.textSecondary, fontSize: 13, marginBottom: 8 }}>
+          Standard calculated Max HP: <Text style={{ color: theme.accentHover, fontWeight: "bold" }}>{evaluateCharacter({ ...currentCharacter, maxHpOverride: null }, { compendium: currentCompendium(), activeBooks }).hp.max}</Text>
+        </Text>
+        <Text style={{ color: theme.textSecondary, fontSize: 12, marginBottom: 8 }}>
+          Leave blank to use automatic calculation. Enter a number to manually override maximum hit points.
+        </Text>
+        <TextInput
+          style={[styles.input, { color: theme.text, backgroundColor: theme.surfaceHighlight, borderColor: theme.border }]}
+          value={maxHpOverrideInput}
+          onChangeText={setMaxHpOverrideInput}
+          keyboardType="number-pad"
+          placeholder="Override Max HP"
+          placeholderTextColor={theme.textMuted}
+        />
+      </Modal>
 
       {/* Hit Points Quick Edit Modal */}
       <HpQuickEditModal {...hpQuickEdit.modalProps} />
 
       {/* Condition Picker Modal */}
-      <RNModal visible={conditionModalVisible} transparent animationType="slide">
-        <View style={styles.modalOverlay}>
-          <Card style={[styles.modalCard, { maxHeight: "80%", backgroundColor: theme.surface, borderColor: theme.border }]}>
-            <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-              <Text style={[styles.sectionTitle, { color: theme.text }]}>Toggle Conditions</Text>
-              <TouchableOpacity onPress={() => setConditionModalVisible(false)}>
-                <Ionicons name="close" size={24} color={theme.text} />
-              </TouchableOpacity>
-            </View>
-            <ScrollView>
-              {allConditions.map((cond) => {
-                const isActive = (currentCharacter.conditions || []).includes(cond.name);
-                return (
-                  <TouchableOpacity
-                    key={cond.name}
-                    onPress={() => toggleCondition(cond.name)}
-                    style={[
-                      styles.conditionSelectRow,
-                      {
-                        backgroundColor: isActive ? theme.danger + "20" : theme.surfaceHighlight,
-                        borderColor: isActive ? theme.danger : theme.border,
-                      },
-                    ]}>
-                    <View style={{ flex: 1 }}>
-                      <Text style={{ color: isActive ? theme.danger : theme.text, fontWeight: "600", fontSize: 14 }}>
-                        {cond.name}
-                      </Text>
-                      <Text style={{ color: theme.textMuted, fontSize: 12 }} numberOfLines={2}>
-                        {cond.description?.replace(/\n/g, " ") || ""}
-                      </Text>
-                    </View>
-                    <Ionicons
-                      name={isActive ? "checkbox" : "square-outline"}
-                      size={20}
-                      color={isActive ? theme.danger : theme.textSecondary}
-                    />
-                  </TouchableOpacity>
-                );
-              })}
-            </ScrollView>
-          </Card>
-        </View>
-      </RNModal>
+      <Modal
+        visible={conditionModalVisible}
+        onClose={() => setConditionModalVisible(false)}
+        title="Toggle Conditions">
+        {allConditions.map((cond) => {
+          const isActive = (currentCharacter.conditions || []).includes(cond.name);
+          return (
+            <TouchableOpacity
+              key={cond.name}
+              onPress={() => toggleCondition(cond.name)}
+              style={[
+                styles.conditionSelectRow,
+                {
+                  backgroundColor: isActive ? theme.danger + "20" : theme.surfaceHighlight,
+                  borderColor: isActive ? theme.danger : theme.border,
+                },
+              ]}>
+              <View style={{ flex: 1 }}>
+                <Text style={{ color: isActive ? theme.danger : theme.text, fontWeight: "600", fontSize: 14 }}>
+                  {cond.name}
+                </Text>
+                <Text style={{ color: theme.textMuted, fontSize: 12 }} numberOfLines={2}>
+                  {cond.description?.replace(/\n/g, " ") || ""}
+                </Text>
+              </View>
+              <Ionicons
+                name={isActive ? "checkbox" : "square-outline"}
+                size={20}
+                color={isActive ? theme.danger : theme.textSecondary}
+              />
+            </TouchableOpacity>
+          );
+        })}
+      </Modal>
 
       {/* Rest Modal */}
       <RestModal
@@ -1079,6 +1181,16 @@ const styles = StyleSheet.create({
   content: {
     padding: 16,
     paddingBottom: 40,
+  },
+  twoCol: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 16,
+  },
+  twoColChild: {
+    flex: 1,
+    minWidth: 0,
+    gap: 0,
   },
   topActionsBar: {
     flexDirection: "row",
@@ -1151,9 +1263,20 @@ const styles = StyleSheet.create({
   },
   combatRow: {
     flexDirection: "row",
-    gap: 8,
+    gap: COMBAT_ROW_GAP,
     marginBottom: 16,
     flexWrap: "wrap",
+  },
+  statBoxQuad: {
+    flexGrow: 1,
+    flexShrink: 1,
+    flexBasis: 0,
+    minWidth: 0,
+  },
+  statBoxHalf: {
+    flexGrow: 1,
+    flexBasis: "48%",
+    minWidth: 0,
   },
   classDiceStrip: {
     padding: 10,
@@ -1217,11 +1340,6 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: "700",
   },
-  abilityTileMod: {
-    fontSize: 22,
-    fontWeight: "bold",
-    marginVertical: 2,
-  },
   abilityTileScoreBadge: {
     paddingHorizontal: 8,
     paddingVertical: 2,
@@ -1239,6 +1357,7 @@ const styles = StyleSheet.create({
   saveItem: {
     width: "50%",
     flexDirection: "row",
+    flexWrap: "wrap",
     alignItems: "center",
     paddingHorizontal: 8,
     paddingVertical: 4,
@@ -1261,10 +1380,6 @@ const styles = StyleSheet.create({
     fontSize: 13,
     flex: 1,
   },
-  saveBonus: {
-    fontSize: 13,
-    fontWeight: "700",
-  },
   skillRow: {
     flexDirection: "row",
     alignItems: "center",
@@ -1282,10 +1397,6 @@ const styles = StyleSheet.create({
   passiveText: {
     fontSize: 12,
     fontWeight: "600",
-  },
-  skillBonus: {
-    fontSize: 13,
-    fontWeight: "700",
   },
   headingRow: {
     flexDirection: "row",
@@ -1334,18 +1445,6 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: "700",
     marginBottom: 2,
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: "rgba(0,0,0,0.75)",
-    justifyContent: "center",
-    alignItems: "center",
-    padding: 16,
-  },
-  modalCard: {
-    width: "100%",
-    maxWidth: 480,
-    padding: 16,
   },
   input: {
     height: 40,

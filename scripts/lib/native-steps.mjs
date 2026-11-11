@@ -1,16 +1,18 @@
 // The native player for the scenario step fields: the emulator side of the seam that scripts/lib/steps.mjs
 // describes. After a scenario's route is launched, it plays `tabs` and `open` as taps on the matching node of
 // a uiautomator dump, waits for the ready text (`modal ?? ready` — a modal is the dialog's title string, so
-// it is waited for, never tapped), turns `scrollTo` into swipes until the needle is visible, and settles
+// it is waited for, never tapped; that wait polls the dump without swiping, because a swipe on an open
+// bottom sheet can close it), turns `scrollTo` into swipes until the needle is visible, and settles
 // briefly before the screenshot. A target that starts off the screen is revealed by swiping what the dump
 // says (a clipped match steers the swipe), bounded by a number of swipes rather than a clock reading;
 // a target the dump does not point at on the step's axis is searched by scrolling the page vertically
 // toward the top first, so a tab bar scrolled above the viewport is reached from any scroll position. An
 // absent `scrollTo` needle warns instead of failing, as the web check's scrollIntoView does nothing when its
-// text is absent. `expect` is not evaluated. Every device interaction goes through the injected `dump`,
+// text is absent. `nativeTexts` is evaluated against the dump (each listed text must show once the screen
+// is ready); `expect` is not evaluated. Every device interaction goes through the injected `dump`,
 // `tap` and `swipe`, so the tests drive it with scripted dumps and a recording fake.
 import { describeStep } from "./steps.mjs";
-import { centerOf, findNode, hasPositiveArea } from "./uiautomator.mjs";
+import { centerOf, findNode, hasPositiveArea, tapPoint } from "./uiautomator.mjs";
 
 // The waits, as in the web check: half a second after each tab tap, and a short settle before the
 // screenshot, longer for a modal whose open animation needs it.
@@ -66,6 +68,15 @@ export function findMatches(nodes, call) {
 export function findTarget(nodes, call, view) {
   const matches = findMatches(nodes, call).filter((node) => centerOf(node, view) !== null);
   return matches[call.index ?? 0] ?? null;
+}
+
+// The match a step can actually tap: the on-screen match must also have an uncovered tap point. A target
+// fully covered by a floating button (the dice tray over a row button revealed to the bottom of the
+// page) would take the tap on the button instead, so the reveal keeps scrolling until some point of the
+// target is free.
+export function tappableTarget(nodes, call, view) {
+  const match = findTarget(nodes, call, view);
+  return match && tapPoint(match, view, nodes) ? match : null;
 }
 
 // A node counts as visible when its bounds have positive area and lie fully inside the screen and clear
@@ -207,11 +218,41 @@ async function pollRevealing({ dump, swipe, find, findClipped, view, sleep, now,
   }
 }
 
+// Taps one step's target the way the web check's click taps its element: the tap goes out only once the
+// target's tap point is unchanged across two dumps (Playwright waits for the element to stop moving —
+// the reveal swipes can leave the page gliding, and a tap at a stale point lands on whatever slid under
+// it), and the point itself is the target's first uncovered point (tapPoint), so a floating button
+// overlapping the target's centre does not take the tap. Bounded by the step's deadline; when it passes,
+// the last seen point is tapped anyway, and when the target is not in the dump again at all, the point
+// the reveal found (`fallback`). Returns the tapped point, or null when even that is gone.
+async function tapTarget({ dump, tap, call, view, sleep, now, deadline, pollMs, fallback }) {
+  let previous = null;
+  let latest = fallback;
+  for (;;) {
+    const nodes = dump();
+    const found = tappableTarget(nodes, call, view);
+    const point = found ? tapPoint(found, view, nodes) : null;
+    if (point) {
+      latest = point;
+      if (previous && previous.x === point.x && previous.y === point.y) break;
+      previous = point;
+    } else {
+      previous = null;
+    }
+    if (now() >= deadline) break;
+    await sleep(pollMs);
+  }
+  if (latest) tap(latest);
+  return latest;
+}
+
 // Plays one scenario's step fields in the order the web check plays them: each `tabs` entry as a tap on the
 // first node whose text equals the tab name, then TAB_WAIT_MS; each `open` step in order as a tap on its
-// described target; then the ready text (`screen.modal ?? screen.ready`); then `scrollTo` as swipes until
-// the needle is visible; then the settle wait (500 ms with a modal, 300 ms without). A step target or the
-// ready text that starts off the screen is revealed by swiping, bounded by MAX_SWIPES swipes. Returns
+// described target; then the ready text (`screen.modal ?? screen.ready`); then each `nativeTexts` text
+// waited for in the dump; then `scrollTo` as swipes until the needle is visible; then the settle wait
+// (500 ms with a modal, 300 ms without). A step target or the ready text that starts off the screen is
+// revealed by swiping, bounded by MAX_SWIPES swipes, and tapped
+// once stable and uncovered (tapTarget). Returns
 // { error, warnings }: error is null when the screen is ready for its screenshot, else a message naming the
 // step that failed; warnings lists what the run should say without failing (an absent scrollTo needle).
 export async function playScreen({ screen, dump, tap, swipe, view, sleep, now, timeoutMs, pollMs }) {
@@ -224,13 +265,14 @@ export async function playScreen({ screen, dump, tap, swipe, view, sleep, now, t
   const clippedMatch = (call) => (nodes) => findMatches(nodes, call).find((n) => n.bounds && centerOf(n, view) === null) ?? null;
   for (const tab of screen.tabs ?? []) {
     // A tab is the web check's getByText(tab, { exact: true }).first(): the exact text, the first match.
-    // Tabs sit in the horizontal tab bars, so the reveal swipes there stay horizontal — after the page
-    // fallback has scrolled the page back up to the bars when they are not in the dump.
+    // The sheet renders its tab navigation before the scrolling content — the bottom bar on phones, the
+    // left rail at wide widths — so the first dump match is the tab, and the bar is always on screen, so
+    // no reveal swipe is needed; the horizontal reveal stays for the flows' horizontal step-chip bars.
     const call = { method: "getByText", arg: tab, options: { exact: true }, index: 0 };
     const { found, bound } = await pollRevealing({
       dump,
       swipe,
-      find: (nodes) => findTarget(nodes, call, view),
+      find: (nodes) => tappableTarget(nodes, call, view),
       findClipped: clippedMatch(call),
       view,
       sleep,
@@ -240,9 +282,10 @@ export async function playScreen({ screen, dump, tap, swipe, view, sleep, now, t
       horizontalOnly: true,
     });
     if (!found) return { error: `tab "${tab}" did not show ${boundText(bound)}`, warnings };
-    const point = centerOf(found, view);
+    const fallback = centerOf(found, view);
+    if (!fallback) return { error: `tab "${tab}" matched a node with no on-screen bounds`, warnings };
+    const point = await tapTarget({ dump, tap, call, view, sleep, now, deadline: deadlineFor(), pollMs, fallback });
     if (!point) return { error: `tab "${tab}" matched a node with no on-screen bounds`, warnings };
-    tap(point);
     await sleep(TAB_WAIT_MS);
   }
   for (const step of screen.open ?? []) {
@@ -252,7 +295,7 @@ export async function playScreen({ screen, dump, tap, swipe, view, sleep, now, t
     const { found, bound } = await pollRevealing({
       dump,
       swipe,
-      find: (nodes) => findTarget(nodes, call, view),
+      find: (nodes) => tappableTarget(nodes, call, view),
       findClipped: clippedMatch(call),
       view,
       sleep,
@@ -261,27 +304,59 @@ export async function playScreen({ screen, dump, tap, swipe, view, sleep, now, t
       pollMs,
     });
     if (!found) return { error: `${what} did not show ${boundText(bound)}`, warnings };
-    const point = centerOf(found, view);
+    const fallback = centerOf(found, view);
+    if (!fallback) return { error: `${what} matched a node with no on-screen bounds`, warnings };
+    const point = await tapTarget({ dump, tap, call, view, sleep, now, deadline: deadlineFor(), pollMs, fallback });
     if (!point) return { error: `${what} matched a node with no on-screen bounds`, warnings };
-    tap(point);
   }
   // The ready text: a modal scenario waits for the dialog's title string; it is never tapped. Ready means
   // present in the dump at any scroll position, as on the web, where waitFor({ state: "visible" }) needs a
   // bounding box, not a viewport intersection — so a ready text that is only clipped out of the viewport
   // still counts. When it is not in the dump at all (the open steps may have left the page scrolled
-  // mid-page), it is looked for by swiping in both directions, bounded by MAX_SWIPES swipes.
+  // mid-page), it is looked for by swiping in both directions, bounded by MAX_SWIPES swipes. A modal's
+  // title is the exception: while the sheet is open the dump shows the sheet, not the page under it, so
+  // swiping can only hit the sheet — and a downward swipe closes it — so the title is waited for by
+  // polling the dump alone, until the same timeout the web check's waitFor uses.
   const ready = screen.modal ?? screen.ready;
-  const { found: readyNode, bound: readyBound } = await pollRevealing({
-    dump,
-    swipe,
-    find: (nodes) => findNode(nodes, ready),
-    view,
-    sleep,
-    now,
-    deadline: deadlineFor(),
-    pollMs,
-  });
+  let readyNode = null;
+  let readyBound = null;
+  if (screen.modal) {
+    const deadline = deadlineFor();
+    for (;;) {
+      readyNode = findNode(dump(), ready);
+      if (readyNode) break;
+      if (now() >= deadline) {
+        readyBound = "timeout";
+        break;
+      }
+      await sleep(pollMs);
+    }
+  } else {
+    ({ found: readyNode, bound: readyBound } = await pollRevealing({
+      dump,
+      swipe,
+      find: (nodes) => findNode(nodes, ready),
+      view,
+      sleep,
+      now,
+      deadline: deadlineFor(),
+      pollMs,
+    }));
+  }
   if (!readyNode) return { error: `ready text ${typeof ready === "string" ? `"${ready}"` : ready} did not show ${boundText(readyBound)}`, warnings };
+  // nativeTexts: texts the scenario asks the native player to wait for in the dump once the screen is ready
+  // (a modal scenario's rows, say), polled without swiping so an open bottom sheet is not closed by a stray
+  // swipe. The rest of `expect` stays web-only.
+  for (const text of screen.nativeTexts ?? []) {
+    const deadline = deadlineFor();
+    let textNode = null;
+    for (;;) {
+      textNode = findNode(dump(), text);
+      if (textNode || now() >= deadline) break;
+      await sleep(pollMs);
+    }
+    if (!textNode) return { error: `native text "${text}" did not show ${boundText("timeout")}`, warnings };
+  }
   if (screen.scrollTo) {
     const needle = screen.scrollTo;
     // scrollTo swipes mid-screen until the needle is visible; the direction flips when a swipe moves

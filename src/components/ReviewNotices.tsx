@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { ScrollView, StyleSheet, Text, TouchableOpacity, useWindowDimensions, View } from "react-native";
+import { ScrollView, StyleProp, StyleSheet, Text, TouchableOpacity, useWindowDimensions, View, ViewStyle } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useAppTheme } from "../context/ThemeContext";
 import { Button } from "./ui/Button";
@@ -14,10 +14,12 @@ interface ReviewNoticesProps {
   notices: readonly string[];
   onDismiss: (notice: string) => void;
   onDismissAll: () => void;
+  /** Extra style for the outer box, e.g. the wide content column's cap on wide screens. */
+  style?: StyleProp<ViewStyle>;
 }
 
 /** A character's review notices as a count row that expands to the list. */
-export function ReviewNotices({ notices, onDismiss, onDismissAll }: ReviewNoticesProps) {
+export function ReviewNotices({ notices, onDismiss, onDismissAll, style }: ReviewNoticesProps) {
   const { theme } = useAppTheme();
   const { height: windowHeight } = useWindowDimensions();
   const [expanded, setExpanded] = useState(false);
@@ -25,7 +27,7 @@ export function ReviewNotices({ notices, onDismiss, onDismissAll }: ReviewNotice
   if (notices.length === 0) return null;
 
   return (
-    <View style={styles.outer}>
+    <View style={[styles.outer, style]}>
       <View style={[styles.box, { backgroundColor: theme.warning + "15", borderColor: theme.warning + "60" }]}>
         <TouchableOpacity
           onPress={() => setExpanded((open) => !open)}

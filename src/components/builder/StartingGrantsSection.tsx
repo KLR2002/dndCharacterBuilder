@@ -79,14 +79,14 @@ export const StartingGrantsSection: React.FC<StartingGrantsSectionProps> = ({
                 styles.optionChip,
                 {
                   backgroundColor: active ? theme.accentGlow : theme.surface,
-                  borderColor: active ? theme.accent : theme.border,
+                  borderColor: active ? theme.accentHover : theme.border,
                   opacity: blocked ? 0.4 : 1,
                 },
               ]}
             >
               <Text
                 style={{
-                  color: active ? theme.accent : theme.textSecondary,
+                  color: active ? theme.accentHover : theme.textSecondary,
                   fontWeight: "600",
                   fontSize: 13,
                   flexShrink: 1,
@@ -151,7 +151,7 @@ export const StartingGrantsSection: React.FC<StartingGrantsSectionProps> = ({
         <View style={{ gap: 8 }}>
           <Text style={{ color: theme.textSecondary, fontSize: 12 }}>
             Average starting gold for {primaryClass || "Class"}:{" "}
-            <Text style={{ color: theme.accent, fontWeight: "700" }}>
+            <Text style={{ color: theme.accentHover, fontWeight: "700" }}>
               {STARTING_GOLD_BY_CLASS[primaryClass || "Fighter"] ?? 100} gp
             </Text>
           </Text>

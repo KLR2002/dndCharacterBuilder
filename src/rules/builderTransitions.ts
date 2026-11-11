@@ -10,7 +10,7 @@ import type {
 import type { BackgroundData } from "../types/dnd5e.ts";
 import { reconcile, teardownSubclass } from "./characterReconciler.ts";
 import { applyAsiSelection, subclassLevel } from "./leveling.ts";
-import { maxHp } from "./hp.ts";
+import { dropRolledHitPoints, maxHp } from "./hp.ts";
 import { fullHealAtLevelUp, followRaisedMaxHp } from "./hitPoints.ts";
 import { currentCompendium, type Compendium } from "../services/compendium.ts";
 import { normalizeSkillName } from "./skills.ts";
@@ -22,6 +22,7 @@ import { abilityTargetBlocked, increaseOffersOf, increasePoolOf, originAbilitySt
 import { ABILITY_NAMES } from "./abilities.ts";
 import { releaseExpandedOnlySpells } from "./backgroundSpells.ts";
 import { releaseRaceOriginFeat } from "./feats.ts";
+import { rollAbilityScores, type RandomSource } from "./dice.ts";
 import { isGrantSpellChoiceId, releaseSupersededRacePicks } from "./choices/featSpells.ts";
 import { withNotices } from "./needsReview.ts";
 import {
@@ -56,6 +57,54 @@ export function setStandardArrayPick(
     ...character,
     standardArrayPicks: picks,
     baseAbilityScores: { ...character.baseAbilityScores, [ability]: value ?? 10 },
+  };
+}
+
+/** Rolls the six Rolled Abilities results, replacing any earlier roll, and clears every placement. */
+export function rollRolledAbilities(character: Character, random: RandomSource): Character {
+  return {
+    ...character,
+    rolledAbilities: rollAbilityScores(random),
+    rolledAbilityPicks: {},
+    baseAbilityScores: { str: 10, dex: 10, con: 10, int: 10, wis: 10, cha: 10 },
+  };
+}
+
+/**
+ * Places the rolled result `index` on `ability`, or removes the placement with null. A result already
+ * placed on another ability, or an index outside the current roll, leaves the character unchanged.
+ */
+export function setRolledAbilityPick(
+  character: Character,
+  ability: AbilityKey,
+  index: number | null
+): Character {
+  const results = character.rolledAbilities ?? [];
+  if (
+    index !== null &&
+    (!Number.isInteger(index) || index < 0 || index >= results.length ||
+      Object.entries(character.rolledAbilityPicks ?? {}).some(
+        ([key, pick]) => key !== ability && pick === index
+      ))
+  ) {
+    return character;
+  }
+  const picks = { ...character.rolledAbilityPicks };
+  if (index === null) delete picks[ability];
+  else picks[ability] = index;
+  return {
+    ...character,
+    rolledAbilityPicks: picks,
+    baseAbilityScores: { ...character.baseAbilityScores, [ability]: index === null ? 10 : results[index].total },
+  };
+}
+
+/** Clears every Rolled Abilities placement, leaving the rolled results themselves in place. */
+export function clearRolledAbilityPicks(character: Character): Character {
+  return {
+    ...character,
+    rolledAbilityPicks: {},
+    baseAbilityScores: { str: 10, dex: 10, con: 10, int: 10, wis: 10, cha: 10 },
   };
 }
 
@@ -229,6 +278,48 @@ function checkClassPrereq(
   }
 
   return { met: true };
+}
+
+const SHORT_ABILITY_NAMES: Record<AbilityKey, string> = {
+  str: "Str",
+  dex: "Dex",
+  con: "Con",
+  int: "Int",
+  wis: "Wis",
+  cha: "Cha",
+};
+
+/** The unmet prerequisites of `className` as short scores ("Int 13"), when the class cannot be entered. */
+function unmetPrereqShort(className: string, scores: Record<AbilityKey, number>): string | undefined {
+  const req = getPrereqForClass(className);
+  if (!req) return undefined;
+  if ("or" in req) {
+    if (req.or.every((r) => (scores[r.ability] ?? 0) < r.minScore)) {
+      return req.or.map((r) => `${SHORT_ABILITY_NAMES[r.ability]} ${r.minScore}`).join(" or ");
+    }
+    return undefined;
+  }
+  const missing = req.filter((r) => (scores[r.ability] ?? 0) < r.minScore);
+  if (missing.length === 0) return undefined;
+  return missing.map((r) => `${SHORT_ABILITY_NAMES[r.ability]} ${r.minScore}`).join(" and ");
+}
+
+/**
+ * The unmet multiclass requirement of entering `targetClassName` as a short score list ("Int 13"), or
+ * undefined when the Character meets it (a class it already holds always qualifies). Mirrors the two
+ * checks `validateMulticlass` makes: leaving the held classes, then entering the target.
+ */
+export function missingMulticlassRequirement(
+  character: Character,
+  targetClassName: string,
+  scores: Record<AbilityKey, number>
+): string | undefined {
+  if (character.classes.some((c) => c.className.toLowerCase() === targetClassName.toLowerCase())) return undefined;
+  for (const existing of character.classes) {
+    const unmet = unmetPrereqShort(existing.className, scores);
+    if (unmet) return unmet;
+  }
+  return unmetPrereqShort(targetClassName, scores);
 }
 
 export function validateMulticlass(
@@ -529,7 +620,8 @@ export function removeClassLevel(
   if (!existing) return character;
 
   const oldSubclass = existing.subclassName || existing.subclass;
-  let updated = character;
+  // The removed level's rolled Hit Points record goes with it.
+  let updated = dropRolledHitPoints(character, existing.className, existing.level);
   let updatedClasses: CharacterClass[];
 
   if (existing.level <= 1) {
@@ -566,9 +658,12 @@ export function removeClassLevel(
     );
   }
 
-  // The spells only a held expanded list gave a class that no longer casts are released, with a notice (ADR 0017).
-  const reconciled = reconcile({ ...updated, classes: updatedClasses }, compendium, { activeBooks });
-  return releaseExpandedOnlySpells(character, reconciled, compendium, activeBooks);
+  // The spells only a held expanded list gave a class that no longer casts are released first, with a
+  // notice (ADR 0017); the reconcile that ends the transition then releases any spell left above the
+  // class's new maximum spell level.
+  const stepped: Character = { ...updated, classes: updatedClasses };
+  const expandedReleased = releaseExpandedOnlySpells(character, stepped, compendium, activeBooks);
+  return reconcile(expandedReleased, compendium, { activeBooks });
 }
 
 export const STARTING_GOLD_BY_CLASS: Record<string, number> = {
@@ -631,6 +726,30 @@ function kitInstalled(items: InventoryItem[], kit: InventoryItem[]): boolean {
 }
 
 /**
+ * Releases a starting-grant claim: the `start_` items leave the inventory, the granted gold leaves the pouch
+ * (a gold claim with no recorded amount, from an older save, had the default amount granted), and the claim
+ * markers reset to the unequipped option, so the Equipment step has to be finished again. Unchanged when no
+ * claim was made.
+ */
+export function releaseStartingGrantClaim(character: Character): Character {
+  if (!character.startingGrantsApplied && character.startingEquipmentPicks === undefined) return character;
+  const items = (character.items ?? []).filter((item) => !item.id.startsWith("start_"));
+  const grantedGold =
+    character.startingGrantedGold ??
+    (character.startingGrantsApplied && character.startingOption === "gold" ? startingGoldOf(character) : 0);
+  const pouch = { ...(character.pouch ?? { cp: 0, sp: 0, ep: 0, gp: 0, pp: 0 }) };
+  if (grantedGold > 0) pouch.gp = Math.max(0, (pouch.gp ?? 0) - grantedGold);
+  return {
+    ...character,
+    items,
+    pouch,
+    startingOption: "equipment",
+    startingGrantsApplied: false,
+    startingGrantedGold: undefined,
+  };
+}
+
+/**
  * Claims starting gold or equipment, replacing an earlier claim of the same kind. Equipment is the kit the picks
  * resolve to; incomplete picks grant nothing and the character is returned unchanged.
  */
@@ -649,44 +768,29 @@ export function applyStartingGrants(
     return character;
   }
 
-  const defaultGold = startingGoldOf(character);
-  const gold = options.goldAmount ?? defaultGold;
-
-  // Clean up any previously granted starting items (items with id starting with "start_")
-  const cleanedItems = (character.items ?? []).filter((item) => !item.id.startsWith("start_"));
-
-  // Remove any starting gold recorded by an earlier claim, whichever mode made it. A gold claim with
-  // no recorded amount (older saves) had the default amount granted, so that is removed instead.
-  const currentPouch = { ...(character.pouch ?? { cp: 0, sp: 0, ep: 0, gp: 0, pp: 0 }) };
-  const grantedGold =
-    character.startingGrantedGold ??
-    (character.startingGrantsApplied && character.startingOption === "gold" ? defaultGold : 0);
-  if (grantedGold) {
-    currentPouch.gp = Math.max(0, (currentPouch.gp ?? 0) - grantedGold);
-  }
+  const base = releaseStartingGrantClaim(character);
+  const gold = options.goldAmount ?? startingGoldOf(character);
 
   if (mode === "gold") {
     return {
-      ...character,
+      ...base,
       startingOption: "gold",
       startingGrantsApplied: true,
       startingGrantedGold: gold,
-      items: cleanedItems,
       pouch: {
-        ...currentPouch,
-        gp: (currentPouch.gp ?? 0) + gold,
+        ...base.pouch,
+        gp: (base.pouch.gp ?? 0) + gold,
       },
     };
   }
 
   // mode === "equipment"
   return {
-    ...character,
+    ...base,
     startingOption: "equipment",
     startingGrantsApplied: true,
     startingGrantedGold: undefined,
-    items: [...cleanedItems, ...(kit?.items ?? [])],
-    pouch: currentPouch,
+    items: [...base.items, ...(kit?.items ?? [])],
   };
 }
 

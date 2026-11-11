@@ -5,6 +5,9 @@
 // Baseline mode). See docs/agents/driving-the-app.md.
 import { join } from "node:path";
 import { makeChar, defaultSettings } from "../../checks/testUtils.ts";
+import { ALL_BOOKS } from "../../src/constants/books.ts";
+import { BREAKPOINTS } from "../../src/hooks/responsiveLayout.ts";
+import { skillChoiceOffers } from "../../src/rules/proficiencySheet.ts";
 import { integratedCollections, makeCatalogReader } from "./app-driver.mjs";
 
 // The inputs of the buildScreens/buildSeed call in progress. The character builders and the scenario entries
@@ -18,16 +21,22 @@ export const CHARACTER_ID = "char_rendar";
 // A level 4 Druid in a Black Bear (SRD: AC 11, 19 HP), with the bear at 12 of 19 HP and 4 temp HP.
 export const DRUID_ID = "char_druid";
 // A level 3 Wizard with known and prepared spells and inventory items, so the Spells and Inventory tabs have content.
-const WIZARD_ID = "char_wizard";
+export const WIZARD_ID = "char_wizard";
 const WIZARD_SPELLS = ["Fire Bolt", "Light", "Mage Hand", "Magic Missile", "Shield", "Mage Armor", "Detect Magic", "Misty Step"];
 const WIZARD_PREPARED = ["Magic Missile", "Shield", "Mage Armor", "Detect Magic", "Misty Step"];
-// `equipped` items are worn or held. The custom item has a long name, so it exercises wrapping.
+// `equipped` items are worn or held. The custom item has a long name, so it exercises wrapping. The Shield is
+// an older save's record: its section says "equipped" but the isEquipped flag is missing, so its row in the
+// Equipped list must still show the equipped state. The cloak and the ring carry attunement, one attuned and
+// one not, so both attune button states show.
 const WIZARD_ITEMS = [
   { name: "Quarterstaff", section: "equipped" },
-  { name: "Cloak of Protection", section: "equipped" },
+  { name: "Cloak of Protection", section: "equipped", attunement: true, isAttuned: true },
+  { name: "Shield", section: "equipped", isEquipped: false },
+  { name: "Ring of Protection", section: "carried", attunement: true },
   { name: "Spellbook", section: "carried" },
   { name: "Component Pouch", section: "carried" },
   { name: "Dagger", section: "carried" },
+  { name: "Arrows (20)", section: "carried", quantity: 20 },
   { name: "Potion of Healing", section: "carried", quantity: 2 },
 ];
 
@@ -40,8 +49,9 @@ function wizardCharacter() {
     name: item.name,
     source: catalogSource("items", item.name),
     quantity: item.quantity ?? 1,
-    isEquipped: item.section === "equipped",
+    isEquipped: item.isEquipped ?? item.section === "equipped",
     section: item.section,
+    ...(item.attunement !== undefined ? { attunement: item.attunement, isAttuned: item.isAttuned ?? false } : {}),
   }));
   items.push({
     id: "item_custom",
@@ -68,6 +78,10 @@ function wizardCharacter() {
     knownSpells: WIZARD_SPELLS.map((name) => ({ name, source: spellSource(name), ownerKey })),
     preparedSpells: WIZARD_PREPARED.map((name) => `${name}__${spellSource(name)}__${ownerKey}`),
     usedSpellSlots: { 1: 1 },
+    // A limited-use feature with a use left, so a roll that spent anything would show in the stored character.
+    resourceCounters: {
+      arcane_recovery: { id: "arcane_recovery", name: "Arcane Recovery", current: 1, max: 1, resetOn: "short" },
+    },
     items,
   });
 }
@@ -124,7 +138,7 @@ function tieflingCharacter() {
 
 // A level 3 Ranger with no picks yet. Its Deft Explorer and Favored Enemy language choices are Proficiency
 // Choices in the Class & Subclass Choices card, shown as "Picked 0 / N" in both SRD and integrated modes.
-const RANGER_ID = "char_ranger";
+export const RANGER_ID = "char_ranger";
 function rangerCharacter() {
   return makeChar({
     id: RANGER_ID,
@@ -390,7 +404,6 @@ function highElfCharacter() {
 // A level 4 Wizard who took Magic Initiate and chose its Wizard list, so the feat's own pick controls show the list's
 // cantrip and spell choices. Integrated mode only (Magic Initiate is not in the SRD Baseline).
 const MAGIC_INITIATE_ID = "char_magicinitiate";
-const MAGIC_INITIATE_ROUTE = `/character/${MAGIC_INITIATE_ID}`;
 function magicInitiateCharacter() {
   const featSource = catalogSource("feats", "Magic Initiate");
   return makeChar({
@@ -422,7 +435,6 @@ function magicInitiateCharacter() {
 // A level 4 Wizard whose background grants Magic Initiate: the feat is claimed in the background section and its list is
 // picked there. Integrated mode only (the background and the feat are not in the SRD Baseline).
 const BACKGROUND_FEAT_ID = "char_backgroundfeat";
-const BACKGROUND_FEAT_ROUTE = `/character/${BACKGROUND_FEAT_ID}`;
 function backgroundFeatCharacter() {
   const featSource = catalogSource("feats", "Magic Initiate");
   return makeChar({
@@ -794,6 +806,309 @@ function sorcererWarlockCharacter() {
   });
 }
 
+// A level 1 Aberrant Mind Sorcerer (SCC, integrated mode only): its psionic spells are subclass grants,
+// so the Spells tab shows the Swap control on them, which the after-level-up Spells scenario plays.
+export const SORCERER_SWAP_ID = "char_sorcerer_swap";
+function aberrantSorcererCharacter() {
+  return makeChar({
+    id: SORCERER_SWAP_ID,
+    name: "Nyx",
+    createdAt: 22,
+    updatedAt: 22,
+    startingOption: "equipment",
+    race: { name: "Human", source: catalogSource("races", "Human") },
+    background: { name: "Acolyte", source: catalogSource("backgrounds", "Acolyte") },
+    baseAbilityScores: { str: 8, dex: 14, con: 12, int: 10, wis: 10, cha: 16 },
+    classes: [
+      {
+        className: "Sorcerer",
+        source: catalogSource("classes", "Sorcerer"),
+        level: 1,
+        subclassName: "Aberrant Mind",
+        subclassSource: "SCC",
+      },
+    ],
+    currentHp: 9,
+    startingGrantsApplied: true,
+    backgroundGrantsApplied: true,
+  });
+}
+
+// A level 11 Warlock with no Mystic Arcanum spell picked: the empty arcanum tier row shows no
+// "No spell selected" line.
+const ARCANUM_ID = "char_arcanum";
+function arcanumCharacter() {
+  return makeChar({
+    id: ARCANUM_ID,
+    name: "Ves",
+    createdAt: 21,
+    updatedAt: 21,
+    startingOption: "equipment",
+    race: { name: "Human", source: catalogSource("races", "Human") },
+    background: { name: "Acolyte", source: catalogSource("backgrounds", "Acolyte") },
+    classes: [{ className: "Warlock", source: catalogSource("classes", "Warlock"), level: 11 }],
+    currentHp: 40,
+    startingGrantsApplied: true,
+    backgroundGrantsApplied: true,
+  });
+}
+
+// A level 1 Fighter with a Longsword equipped and ammunition carried, so the Actions tab's weapon row has a
+// rollable to-hit badge (+5) and damage pool (1d8 + 3), and a roll scenario can assert nothing is spent.
+export const ACTIONS_ID = "char_actions";
+export const ACTIONS_ROUTE = `/character/${ACTIONS_ID}`;
+function actionsCharacter() {
+  return makeChar({
+    id: ACTIONS_ID,
+    name: "Kara",
+    createdAt: 22,
+    updatedAt: 22,
+    startingOption: "equipment",
+    race: { name: "Human", source: catalogSource("races", "Human") },
+    background: { name: "Acolyte", source: catalogSource("backgrounds", "Acolyte") },
+    baseAbilityScores: { str: 16, dex: 12, con: 14, int: 10, wis: 10, cha: 8 },
+    classes: [{ className: "Fighter", source: catalogSource("classes", "Fighter"), level: 1 }],
+    currentHp: 12,
+    startingGrantsApplied: true,
+    backgroundGrantsApplied: true,
+    items: [
+      {
+        id: "item_longsword",
+        name: "Longsword",
+        source: catalogSource("items", "Longsword"),
+        quantity: 1,
+        isEquipped: true,
+        section: "equipped",
+        damage: "1d8",
+        damageType: "slashing",
+      },
+      {
+        id: "item_arrows",
+        name: "Arrows (20)",
+        source: catalogSource("items", "Arrows (20)"),
+        quantity: 20,
+        isEquipped: false,
+        section: "carried",
+      },
+    ],
+    resourceCounters: {
+      second_wind: { id: "second_wind", name: "Second Wind", current: 1, max: 1, resetOn: "short" },
+    },
+  });
+}
+
+// A draft on the Background step: a level 1 Human Fighter with no background picked yet. The home list shows
+// it as "Draft · Background", and opening it lands on the Background step of the Creation Flow, not the sheet.
+export const DRAFT_ID = "char_draft";
+function draftCharacter() {
+  return makeChar({
+    id: DRAFT_ID,
+    name: "Sable",
+    createdAt: 16,
+    updatedAt: 16,
+    startingOption: "equipment",
+    race: {
+      name: "Human",
+      source: catalogSource("races", "Human"),
+      ...(INTEGRATED ? { subraceName: "Variant", subraceSource: "PHB" } : {}),
+    },
+    classes: [{ className: "Fighter", source: catalogSource("classes", "Fighter"), level: 1 }],
+    currentHp: 12,
+    backgroundGrantsApplied: true,
+    creationProgress: { currentStep: "background" },
+  });
+}
+
+// A finished level 1 Fighter with a point-buy Strength of 8 and no ancestry, so the identity panel shows the
+// signed modifier of a score below 10: "8 (-1)", never "(+-1)".
+const LOW_SCORE_ID = "char_lowscore";
+function lowScoreCharacter() {
+  return makeChar({
+    id: LOW_SCORE_ID,
+    name: "Pip",
+    createdAt: 19,
+    updatedAt: 19,
+    background: { name: "Acolyte", source: catalogSource("backgrounds", "Acolyte") },
+    startingOption: "equipment",
+    classes: [{ className: "Fighter", source: catalogSource("classes", "Fighter"), level: 1 }],
+    currentHp: 10,
+    baseAbilityScores: { str: 8, dex: 10, con: 10, int: 10, wis: 10, cha: 10 },
+  });
+}
+
+// A finished level 1 Fighter with Constitution 8, so the Level-Up Flow's Hit Points step shows the
+// Constitution modifier with its sign: "1d10-1", never "1d10+-1".
+export const LOW_CON_ID = "char_lowcon";
+function lowConCharacter() {
+  return makeChar({
+    id: LOW_CON_ID,
+    name: "Bramble",
+    createdAt: 21,
+    updatedAt: 21,
+    background: { name: "Acolyte", source: catalogSource("backgrounds", "Acolyte") },
+    startingOption: "equipment",
+    classes: [{ className: "Fighter", source: catalogSource("classes", "Fighter"), level: 1 }],
+    currentHp: 9,
+    baseAbilityScores: { str: 14, dex: 10, con: 8, int: 10, wis: 10, cha: 10 },
+    startingGrantsApplied: true,
+    backgroundGrantsApplied: true,
+  });
+}
+
+// A finished level 20 Fighter: at the level cap the sheet's header hides Level up (there is no level left
+// to gain) and keeps Edit Build.
+export const MAX_LEVEL_ID = "char_maxlevel";
+function maxLevelCharacter() {
+  return makeChar({
+    id: MAX_LEVEL_ID,
+    name: "Ulric",
+    createdAt: 22,
+    updatedAt: 22,
+    race: { name: "Human", source: catalogSource("races", "Human") },
+    background: { name: "Acolyte", source: catalogSource("backgrounds", "Acolyte") },
+    startingOption: "equipment",
+    baseAbilityScores: { str: 20, dex: 14, con: 16, int: 10, wis: 12, cha: 8 },
+    classes: [
+      {
+        className: "Fighter",
+        source: catalogSource("classes", "Fighter"),
+        level: 20,
+        subclassName: "Champion",
+        subclassSource: "SRD",
+      },
+    ],
+    currentHp: 120,
+    startingGrantsApplied: true,
+    backgroundGrantsApplied: true,
+  });
+}
+
+// Fixed Rolled Abilities results, so a scenario can tap a chip by its total without depending on the roll.
+const ROLLED_RESULTS = [
+  { dice: [{ sides: 6, face: 6, dropped: false }, { sides: 6, face: 5, dropped: false }, { sides: 6, face: 5, dropped: false }, { sides: 6, face: 4, dropped: true }], droppedIndex: 3, total: 16 },
+  { dice: [{ sides: 6, face: 6, dropped: false }, { sides: 6, face: 5, dropped: false }, { sides: 6, face: 4, dropped: false }, { sides: 6, face: 4, dropped: true }], droppedIndex: 3, total: 15 },
+  { dice: [{ sides: 6, face: 6, dropped: false }, { sides: 6, face: 4, dropped: false }, { sides: 6, face: 4, dropped: false }, { sides: 6, face: 4, dropped: true }], droppedIndex: 3, total: 14 },
+  { dice: [{ sides: 6, face: 5, dropped: false }, { sides: 6, face: 4, dropped: false }, { sides: 6, face: 3, dropped: false }, { sides: 6, face: 3, dropped: true }], droppedIndex: 3, total: 12 },
+  { dice: [{ sides: 6, face: 4, dropped: false }, { sides: 6, face: 4, dropped: false }, { sides: 6, face: 3, dropped: false }, { sides: 6, face: 3, dropped: true }], droppedIndex: 3, total: 11 },
+  { dice: [{ sides: 6, face: 3, dropped: false }, { sides: 6, face: 3, dropped: false }, { sides: 6, face: 3, dropped: false }, { sides: 6, face: 3, dropped: true }], droppedIndex: 3, total: 9 },
+];
+
+// A finished Fighter whose abilities were rolled with the fixed results above: `picks` null leaves every slot
+// unplaced, the full map places one result on each ability.
+const ROLLED_ID = "char_rolled";
+const ROLLED_PICKS_ID = "char_rolledpicks";
+function rolledCharacter(id, name, picks) {
+  const totals = ROLLED_RESULTS.map((r) => r.total);
+  return makeChar({
+    id,
+    name,
+    createdAt: 20,
+    updatedAt: 20,
+    background: { name: "Acolyte", source: catalogSource("backgrounds", "Acolyte") },
+    startingOption: "equipment",
+    classes: [{ className: "Fighter", source: catalogSource("classes", "Fighter"), level: 1 }],
+    currentHp: 10,
+    abilityMethod: "rolled",
+    rolledAbilities: ROLLED_RESULTS,
+    rolledAbilityPicks: picks ?? {},
+    baseAbilityScores: picks
+      ? { str: totals[0], dex: totals[1], con: totals[2], int: totals[3], wis: totals[4], cha: totals[5] }
+      : { str: 10, dex: 10, con: 10, int: 10, wis: 10, cha: 10 },
+  });
+}
+
+// A draft on the Review step with every step valid: Fighter 1 with its class skills and Fighting Style picked,
+// Human (Variant in integrated mode), Acolyte, a full standard array, starting gold, and a name. Confirming
+// Review finishes the character and opens its sheet.
+const REVIEW_DRAFT_ID = "char_reviewdraft";
+function reviewDraftCharacter() {
+  const standardArray = { str: 15, dex: 14, con: 13, int: 12, wis: 10, cha: 8 };
+  const base = makeChar({
+    id: REVIEW_DRAFT_ID,
+    name: "Wren",
+    createdAt: 17,
+    updatedAt: 17,
+    startingOption: "gold",
+    race: {
+      name: "Human",
+      source: catalogSource("races", "Human"),
+      ...(INTEGRATED ? { subraceName: "Variant", subraceSource: "PHB" } : {}),
+    },
+    background: { name: "Acolyte", source: catalogSource("backgrounds", "Acolyte") },
+    classes: [{ className: "Fighter", source: catalogSource("classes", "Fighter"), level: 1 }],
+    currentHp: 12,
+    abilityMethod: "standardArray",
+    standardArrayPicks: standardArray,
+    baseAbilityScores: standardArray,
+    ruleChoices: [
+      {
+        id: "PHB__Fighter__Fighting Style",
+        trait: "Fighting Style",
+        origin: "class",
+        choose: 1,
+        from: ["Defense"],
+        picked: ["Defense"],
+      },
+    ],
+    creationProgress: { currentStep: "review" },
+  });
+  const offer = skillChoiceOffers(base, { activeBooks: ALL_BOOKS }).find((o) => o.source === "Class: Fighter");
+  const picked = offer.from.slice(0, offer.choose);
+  return {
+    ...base,
+    skillChoices: [{ id: offer.source, origin: "class", choose: offer.choose, from: offer.from, picked }],
+    chosenSkills: picked,
+  };
+}
+
+// A finished level 3 Battle Master with its Fighting Style and three maneuvers picked and a claimed kit.
+// Edit Build reopens its Creation Flow; lowering the Fighter releases the level-3 maneuvers and flags their steps.
+export const EDIT_BUILD_ID = "char_editbuild";
+function editBuildCharacter() {
+  return makeChar({
+    id: EDIT_BUILD_ID,
+    name: "Haldane",
+    createdAt: 18,
+    updatedAt: 18,
+    startingOption: "equipment",
+    race: { name: "Human", source: catalogSource("races", "Human") },
+    background: { name: "Acolyte", source: catalogSource("backgrounds", "Acolyte") },
+    abilityMethod: "standardArray",
+    standardArrayPicks: { str: 15, dex: 14, con: 13, int: 10, wis: 12, cha: 8 },
+    baseAbilityScores: { str: 15, dex: 14, con: 13, int: 10, wis: 12, cha: 8 },
+    classes: [
+      {
+        className: "Fighter",
+        source: catalogSource("classes", "Fighter"),
+        level: 3,
+        subclassName: "Battle Master",
+        subclassSource: "PHB",
+      },
+    ],
+    currentHp: 28,
+    startingGrantsApplied: true,
+    backgroundGrantsApplied: true,
+    ruleChoices: [
+      {
+        id: "PHB__Fighter__Fighting Style",
+        trait: "Fighting Style",
+        origin: "class",
+        choose: 1,
+        from: ["Defense"],
+        picked: ["Defense"],
+      },
+      {
+        id: "PHB__Fighter__Battle Master__Maneuvers 3",
+        trait: "Combat Superiority (3rd Level)",
+        origin: "subclass",
+        choose: 3,
+        from: ["Riposte", "Rally", "Trip Attack"],
+        picked: ["Riposte", "Rally", "Trip Attack"],
+      },
+    ],
+  });
+}
+
 // The seed the app starts from: the characters, folders, settings, and (integrated mode) the catalog.
 export function buildSeed({ root, integrated }) {
   ROOT = root;
@@ -858,8 +1173,21 @@ export function buildSeed({ root, integrated }) {
       ...(INTEGRATED ? [clericCharacter({ id: CLERIC_ID, name: "Corwin", domain: false })] : []),
       clericCharacter({ id: CLERIC_DOMAIN_ID, name: "Ysolde", domain: true }),
       INTEGRATED ? knowledgeClericCharacter() : multiclassSkillCharacter(),
+      draftCharacter(),
+      reviewDraftCharacter(),
+      editBuildCharacter(),
+      lowScoreCharacter(),
+      lowConCharacter(),
+      maxLevelCharacter(),
+      rolledCharacter(ROLLED_ID, "Bram", null),
+      rolledCharacter(ROLLED_PICKS_ID, "Ivo", { str: 0, dex: 1, con: 2, int: 3, wis: 4, cha: 5 }),
+      arcanumCharacter(),
+      actionsCharacter(),
+      ...(INTEGRATED ? [aberrantSorcererCharacter()] : []),
     ],
-    folders: [],
+    // The one folder the home list shows. The draft-folder check expects "New character" to leave its
+    // draft in the root, so this folder's count badge stays unchanged.
+    folders: [{ id: "folder_camp", name: "Camp", createdAt: 1 }],
     settings: {
       ...defaults,
       hasCompletedFirstRun: true,
@@ -879,47 +1207,72 @@ export function buildScreens({ integrated }) {
   // text, `{ tap: { pattern } }` by a text pattern, `{ tap: { label, exact } }` by accessibility label, and
   // `index` picks which match to tap (the first by default). A step with `name` instead of a locator has no
   // native form; the scenario carrying one is flagged web-only below. `ready` (a string or regex) is text the
-  // screen shows once it is ready. `scrollTo` scrolls a needle into view.
+  // screen shows once it is ready. `nativeTexts` lists further texts the Android player waits for in the dump
+  // once ready (the web check reads `expect` instead). `scrollTo` scrolls a needle into view. A scenario may
+  // also carry `wide`: `{ minWidth, ...overrides }`, merged over the scenario by the web runner
+  // (scripts/lib/scenario-override.mjs, applyWideOverride) when the page width is at or above `minWidth`, so one
+  // scenario can assert a different path at wide widths (the Android runner never applies it).
   const RENDAR_ROUTE = `/character/${CHARACTER_ID}`;
   const WIZARD_ROUTE = `/character/${WIZARD_ID}`;
   const ARTIFICER_ROUTE = `/character/${ARTIFICER_ID}`;
-  const HALF_ELF_ROUTE = `/character/${HALF_ELF_ID}`;
-  const RANGER_ROUTE = `/character/${RANGER_ID}`;
   const LONG_NAME_ROUTE = `/character/${LONG_NAME_ID}`;
   const NOTICES_ROUTE = `/character/${NOTICES_ID}`;
   const NOTICES_MANY_ROUTE = `/character/${NOTICES_MANY_ID}`;
   const NOTICES_FEW_ROUTE = `/character/${NOTICES_FEW_ID}`;
   const KENSEI_ROUTE = `/character/${KENSEI_ID}`;
   const INITIATIVE_ROUTE = `/character/${INITIATIVE_ID}`;
-  const BARD_ROUTE = `/character/${BARD_ID}`;
-  const NO_RACE_ROUTE = `/character/${NO_RACE_ID}`;
-  const NO_BG_ROUTE = `/character/${NO_BG_ID}`;
-  const FIGHTER_ROUTE = `/character/${FIGHTER_ID}`;
-  const FIGHTER_PICKED_ROUTE = `/character/${FIGHTER_PICKED_ID}`;
   const BATTLE_MASTER_ROUTE = `/character/${BATTLE_MASTER_ID}`;
-  const CLERIC_ROUTE = `/character/${CLERIC_ID}`;
-  const CLERIC_DOMAIN_ROUTE = `/character/${CLERIC_DOMAIN_ID}`;
-  const KNOWLEDGE_ROUTE = `/character/${KNOWLEDGE_ID}`;
-  const MULTICLASS_SKILLS_ROUTE = `/character/${MULTICLASS_SKILLS_ID}`;
+  // The Creation Flow routes: the same builder sections, reached through /build/<id>?step=<stepId>.
+  const buildRoute = (id, step) => `/build/${id}?step=${step}`;
+  const REVIEW_DRAFT_ROUTE = `/build/${REVIEW_DRAFT_ID}?step=review`;
   const screens = [
-      { name: "Builder Abilities", route: RENDAR_ROUTE, tabs: ["Builder", "Abilities"], ready: /points remaining/i },
-      { name: "Builder Race", route: RENDAR_ROUTE, tabs: ["Builder", "Race"], ready: /traits:/i },
-      { name: "Builder Race language choice", route: HALF_ELF_ROUTE, tabs: ["Builder", "Race"], ready: /Granted Languages:/, scrollTo: "Granted Languages:" },
+      { name: "Builder Abilities", route: buildRoute(CHARACTER_ID, "abilities"), ready: /points remaining/i },
+      // The Standard Array pool: tapping a value makes it pending without narrating the next tap, and the card
+      // does not carry the numbered how-to lines.
+      { name: "Abilities standard array pending", route: buildRoute(CHARACTER_ID, "abilities"), open: [{ tap: { text: "Std Array", exact: true } }, { tap: { text: "15", exact: true } }], ready: "Reset", expect: { absentMatching: [/Now tap an ability slot/, /Tap a value from the pool/], fitsWidth: true } },
+      // The Rolled Abilities method: switch to it and roll, so the six results with their dice are checked too.
+      { name: "Abilities rolled", route: buildRoute(CHARACTER_ID, "abilities"), open: [{ tap: { text: "Rolled", exact: true } }, { tap: { text: "Roll", exact: true } }], ready: /reroll/i, scrollTo: "Reroll" },
+      // A pending rolled chip shows no "Now tap an ability slot" hint.
+      { name: "Rolled pending chip hint", route: buildRoute(ROLLED_ID, "abilities"), open: [{ tap: { text: "15", exact: true } }], ready: "Reroll", expect: { absentMatching: [/Now tap an ability slot/], fitsWidth: true } },
+      // Re-tapping the already-active Rolled method does nothing: the placements stay on their slots.
+      { name: "Rolled retap keeps placements", route: buildRoute(ROLLED_PICKS_ID, "abilities"), open: [{ tap: { text: "Rolled", exact: true } }], ready: /reroll/i, expect: { absentMatching: [/^—$/], fitsWidth: true } },
+      // The identity panel of a point-buy 8 score shows a signed modifier: "8 (-1)", never "8 (+-1)". On
+      // phones and at 768-1023px the panel opens from the identity line (phone bottom bar, wide footer) as
+      // the "Character" modal; from 1024px up it is the side column, on screen with no tap and no modal.
+      {
+        name: "Builder identity panel",
+        route: buildRoute(LOW_SCORE_ID, "class"),
+        open: [{ tap: { pattern: "^Fighter 1 · Acolyte$" } }],
+        modal: "Character",
+        expect: { texts: ["8 (-1)"], absent: ["8 (+-1)"], fitsWidth: true },
+        wide: {
+          minWidth: BREAKPOINTS.desktop,
+          open: [],
+          modal: null,
+          ready: "8 (-1)",
+          expect: { texts: ["8 (-1)"], absent: ["8 (+-1)"], fitsWidth: true },
+        },
+      },
+      { name: "Builder Race", route: buildRoute(CHARACTER_ID, "race"), ready: /traits:/i },
+      { name: "Builder Race language choice", route: buildRoute(HALF_ELF_ID, "race"), ready: /Granted Languages:/, scrollTo: "Granted Languages:" },
+      // The Subrace step (integrated mode only, where the held race offers several forms): the banner names the
+      // ancestry and shows no Size or Darkvision line.
+      ...(INTEGRATED
+        ? [{ name: "Builder Subrace step", route: buildRoute(HIGH_ELF_ID, "subrace"), ready: "Subrace", expect: { texts: ["Subrace"], absentMatching: [/^Size /, /Darkvision/], fitsWidth: true } }]
+        : []),
       // The SCAG Tiefling's one Increase Choice row (integrated mode only).
       ...(INTEGRATED
         ? [
             {
               name: "Builder Race Tiefling choice row",
-              route: `/character/${TIEFLING_ID}`,
-              tabs: ["Builder", "Race"],
+              route: buildRoute(TIEFLING_ID, "race"),
               ready: "Choose +2 to 1 ability score (0/1 chosen)",
               scrollTo: "Choose +2 to 1 ability score",
               expect: { texts: ["DEX", "CHA"], absent: ["STR", "INT", "WIS"], fitsWidth: true },
             },
             {
               name: "Builder Race Tiefling choice row picked",
-              route: `/character/${TIEFLING_ID}`,
-              tabs: ["Builder", "Race"],
+              route: buildRoute(TIEFLING_ID, "race"),
               open: [{ tap: { text: "CHA", exact: true } }],
               ready: "Choose +2 to 1 ability score (1/1 chosen)",
               scrollTo: "Choose +2 to 1 ability score",
@@ -927,16 +1280,15 @@ export function buildScreens({ integrated }) {
             },
           ]
         : []),
-      { name: "Builder Class feats", route: HALF_ELF_ROUTE, tabs: ["Builder", "Class"], ready: /Selected Ability Improvements/i, scrollTo: "Selected Ability Improvements" },
-      { name: "Builder Background", route: RENDAR_ROUTE, tabs: ["Builder", "Background"], ready: /background benefits/i, scrollTo: "Claim again" },
+      { name: "Builder Class feats", route: buildRoute(HALF_ELF_ID, "asiFeats"), ready: /Selected Ability Improvements/i, scrollTo: "Selected Ability Improvements" },
+      { name: "Builder Background", route: buildRoute(CHARACTER_ID, "background"), ready: /background benefits/i, scrollTo: "Claim again", expect: { absentMatching: [/Granted and chosen from race, background/], fitsWidth: true } },
       // Pickers for characters with no race (the race list) or no background (the background list, then the Custom Background creator).
       // In integrated mode Half-Elf's card has the plain row, the race's own form with no subrace name, under "Subraces / Variants:".
-      { name: "Builder Race picker", route: NO_RACE_ROUTE, tabs: ["Builder", "Race"], ready: "Half-Elf", scrollTo: "Half-Elf", expect: { placeholders: ["Search races…"], plainRaceRow: INTEGRATED ? "Half-Elf" : undefined } },
-      { name: "Builder Background picker", route: NO_BG_ROUTE, tabs: ["Builder", "Background"], ready: "Create Custom", expect: { texts: ["Acolyte"], placeholders: ["Search backgrounds…"] } },
+      { name: "Builder Race picker", route: buildRoute(NO_RACE_ID, "race"), ready: "Half-Elf", scrollTo: "Half-Elf", expect: { placeholders: ["Search races…"], plainRaceRow: INTEGRATED ? "Half-Elf" : undefined } },
+      { name: "Builder Background picker", route: buildRoute(NO_BG_ID, "background"), ready: "Create Custom", expect: { texts: ["Acolyte"], placeholders: ["Search backgrounds…"], absentMatching: [/Create your own background with a custom name/], fitsWidth: true } },
       {
         name: "Builder Background custom form",
-        route: NO_BG_ROUTE,
-        tabs: ["Builder", "Background"],
+        route: buildRoute(NO_BG_ID, "background"),
         open: [{ tap: { text: "Create Custom", exact: true } }],
         ready: "Apply Custom Background",
         scrollTo: "Feature from Another Background (optional):",
@@ -950,32 +1302,32 @@ export function buildScreens({ integrated }) {
             "Feature from Another Background (optional):",
           ],
           placeholders: ["e.g. Bounty Hunter, Village Hero...", "Search features…"],
+          absentMatching: [/Create your own background with a custom name/],
         },
       },
-      { name: "Builder Class", route: RENDAR_ROUTE, tabs: ["Builder", "Class"], ready: /total level/i, scrollTo: "Starting Equipment" },
-      { name: "Builder Class proficiency choices", route: RANGER_ROUTE, tabs: ["Builder", "Class"], ready: /total level/i, scrollTo: "Class & Subclass Choices" },
+      { name: "Builder Class", route: buildRoute(CHARACTER_ID, "class"), ready: /total level/i, scrollTo: "Total Level:" },
+      { name: "Builder Class proficiency choices", route: buildRoute(RANGER_ID, "classChoices"), ready: "Class & Subclass Choices", scrollTo: "Class & Subclass Choices" },
       // Kensei weapons (integrated mode only): the Path of the Kensei choices, and the weapon rows they add to the sheet.
       ...(INTEGRATED
         ? [
-            { name: "Builder Class kensei weapon choices", route: KENSEI_ROUTE, tabs: ["Builder", "Class"], ready: /total level/i, scrollTo: "Path of the Kensei" },
+            { name: "Builder Class kensei weapon choices", route: buildRoute(KENSEI_ID, "classChoices"), ready: /Path of the Kensei/, scrollTo: "Path of the Kensei" },
             { name: "Stats kensei weapon proficiencies", route: KENSEI_ROUTE, tabs: ["Stats"], ready: /hit points/i, scrollTo: "Weapon Proficiencies" },
           ]
         : []),
-      // Magic Initiate's own picks (integrated mode only): its spell list, then the cantrips and spell of the list chosen.
+      // Magic Initiate's own picks (integrated mode only): its spell list, then the cantrips and spell of the list
+      // chosen. The feat is an ASI/Feat selection, so its pick controls render on the asiFeats step.
       ...(INTEGRATED
         ? [
             {
               name: "Builder Class feat spell picks",
-              route: MAGIC_INITIATE_ROUTE,
-              tabs: ["Builder", "Class"],
+              route: buildRoute(MAGIC_INITIATE_ID, "asiFeats"),
               ready: /Selected Ability Improvements/i,
               scrollTo: "Magic Initiate Spell List (choose 1)",
-              expect: { texts: ["Magic Initiate Spell List (choose 1)", "Magic Initiate Cantrip (choose 2)", "Magic Initiate Spell (choose 1)"], fitsWidth: true },
+              expect: { texts: ["Selected Ability Improvements & Feats:", "Magic Initiate", "Magic Initiate Spell List (choose 1)", "Magic Initiate Cantrip (choose 2)", "Magic Initiate Spell (choose 1)"], fitsWidth: true },
             },
             {
               name: "Builder Race spell picks",
-              route: HIGH_ELF_ROUTE,
-              tabs: ["Builder", "Race"],
+              route: buildRoute(HIGH_ELF_ID, "race"),
               ready: /traits:/i,
               scrollTo: "Racial Spells",
               expect: { texts: ["Racial Spells", "High Elf Cantrip (choose 1)"], fitsWidth: true },
@@ -983,8 +1335,7 @@ export function buildScreens({ integrated }) {
             // A background that grants Magic Initiate: its pick controls sit under the feat the background section shows.
             {
               name: "Builder Background feat spell picks",
-              route: BACKGROUND_FEAT_ROUTE,
-              tabs: ["Builder", "Background"],
+              route: buildRoute(BACKGROUND_FEAT_ID, "background"),
               ready: /background feat/i,
               scrollTo: "Magic Initiate Spell List (choose 1)",
               expect: { texts: ["Feat Added to Character", "Magic Initiate Spell List (choose 1)", "Magic Initiate Cantrip (choose 2)", "Magic Initiate Spell (choose 1)"], fitsWidth: true },
@@ -992,22 +1343,24 @@ export function buildScreens({ integrated }) {
           ]
         : []),
       // The equipment card: one option per slot, the picker of a generic entry, Claim disabled until every slot is picked.
-      { name: "Builder Class equipment choices", route: FIGHTER_ROUTE, tabs: ["Builder", "Class"], ready: "Starting Equipment & Gold:", scrollTo: "Starting Equipment & Gold:", expect: { texts: ["Chain Mail", "Choice 1 of 4"], disabled: ["Claim Starting Equipment"], fitsWidth: true } },
-      { name: "Builder Class equipment picked", route: FIGHTER_PICKED_ROUTE, tabs: ["Builder", "Class"], ready: "Starting Equipment & Gold:", scrollTo: "Starting Equipment & Gold:", expect: { enabled: ["Claim Starting Equipment"], fitsWidth: true } },
-      { name: "Builder Class equipment picker open", route: FIGHTER_PICKED_ROUTE, tabs: ["Builder", "Class"], open: [{ tap: { text: "Martial weapon", exact: true } }], ready: "Greatsword", scrollTo: "Martial weapon", expect: { placeholders: ["Search…"] } },
-      { name: "Builder Class equipment cleric domain", route: CLERIC_DOMAIN_ROUTE, tabs: ["Builder", "Class"], ready: "Starting Equipment & Gold:", scrollTo: "Starting Equipment & Gold:", expect: { texts: ["Chain Mail", "Included"], absent: ["Warhammer"], fitsWidth: true } },
+      { name: "Builder Class equipment choices", route: buildRoute(FIGHTER_ID, "equipment"), ready: "Starting Equipment & Gold:", scrollTo: "Starting Equipment & Gold:", expect: { texts: ["Chain Mail", "Choice 1 of 4"], disabled: ["Claim Starting Equipment"], fitsWidth: true } },
+      { name: "Builder Class equipment picked", route: buildRoute(FIGHTER_PICKED_ID, "equipment"), ready: "Starting Equipment & Gold:", scrollTo: "Starting Equipment & Gold:", expect: { enabled: ["Claim Starting Equipment"], fitsWidth: true } },
+      { name: "Builder Class equipment picker open", route: buildRoute(FIGHTER_PICKED_ID, "equipment"), open: [{ tap: { text: "Martial weapon", exact: true } }], ready: "Greatsword", scrollTo: "Martial weapon", expect: { placeholders: ["Search…"] } },
+      { name: "Builder Class equipment cleric domain", route: buildRoute(CLERIC_DOMAIN_ID, "equipment"), ready: "Starting Equipment & Gold:", scrollTo: "Starting Equipment & Gold:", expect: { texts: ["Chain Mail", "Included"], absent: ["Warhammer"], fitsWidth: true } },
+      // The Creation Flow's Spells step (Edit Build on the finished wizard reaches it as well).
+      { name: "Builder Spells step", route: buildRoute(WIZARD_ID, "spells"), ready: /add spells/i, expect: { fitsWidth: true } },
       // The SRD Baseline has one Cleric domain, which the app applies at once, so a Cleric without a domain exists in integrated mode only.
       ...(INTEGRATED
-        ? [{ name: "Builder Class equipment cleric", route: CLERIC_ROUTE, tabs: ["Builder", "Class"], ready: "Starting Equipment & Gold:", scrollTo: "Starting Equipment & Gold:", expect: { texts: ["Scale Mail"], absent: ["Warhammer", "Chain Mail"], fitsWidth: true } }]
+        ? [{ name: "Builder Class equipment cleric", route: buildRoute(CLERIC_ID, "equipment"), ready: "Starting Equipment & Gold:", scrollTo: "Starting Equipment & Gold:", expect: { texts: ["Scale Mail"], absent: ["Warhammer", "Chain Mail"], fitsWidth: true } }]
         : []),
-      { name: "Builder Class skill proficiency choices", route: BARD_ROUTE, tabs: ["Builder", "Class"], ready: /total level/i, scrollTo: "Class & Subclass Choices" },
+      { name: "Builder Class skill proficiency choices", route: buildRoute(BARD_ID, "classChoices"), ready: "Class & Subclass Choices", scrollTo: "Class & Subclass Choices" },
       // The Skills card above Class & Subclass Choices: each skill pick named by its source, with Expertise on the Blessings picks.
       ...(INTEGRATED
-        ? [{ name: "Builder Class skills card cleric", route: KNOWLEDGE_ROUTE, tabs: ["Builder", "Class"], ready: /total level/i, scrollTo: "starting skills", expect: { texts: ["Cleric starting skills", "Blessings of Knowledge", "Rogue multiclass skill", "Expertise"], absent: ["Variant"], fitsWidth: true } }]
-        : [{ name: "Builder Class skills card multiclass", route: MULTICLASS_SKILLS_ROUTE, tabs: ["Builder", "Class"], ready: /total level/i, scrollTo: "starting skills", expect: { texts: ["Fighter starting skills", "Rogue multiclass skill"], fitsWidth: true } }]),
+        ? [{ name: "Builder Class skills card cleric", route: buildRoute(KNOWLEDGE_ID, "classChoices"), ready: /starting skills/i, scrollTo: "starting skills", expect: { texts: ["Cleric starting skills", "Blessings of Knowledge", "Rogue multiclass skill", "Expertise"], absent: ["Variant"], fitsWidth: true } }]
+        : [{ name: "Builder Class skills card multiclass", route: buildRoute(MULTICLASS_SKILLS_ID, "classChoices"), ready: /starting skills/i, scrollTo: "starting skills", expect: { texts: ["Fighter starting skills", "Rogue multiclass skill"], fitsWidth: true } }]),
       // The Knowledge Cleric's Class & Subclass Choices and Expertise cards, open: the picker of each card is listed.
       ...(INTEGRATED
-        ? [{ name: "Builder Class skills card cleric choices", route: KNOWLEDGE_ROUTE, tabs: ["Builder", "Class"], ready: /total level/i, scrollTo: "Class & Subclass Choices", expect: { texts: ["Class & Subclass Choices", "Blessings of Knowledge: Language", "Expertise", "Rogue Expertise (Level 1)"], fitsWidth: true } }]
+        ? [{ name: "Builder Class skills card cleric choices", route: buildRoute(KNOWLEDGE_ID, "classChoices"), ready: "Class & Subclass Choices", scrollTo: "Class & Subclass Choices", expect: { texts: ["Class & Subclass Choices", "Blessings of Knowledge: Language", "Expertise", "Rogue Expertise (Level 1)"], fitsWidth: true } }]
         : []),
       // The picks cards collapse and expand: the Skills, Class & Subclass Choices and Expertise cards here, the Race and Background
       // picks cards below, and the Optional & Replacement Class Features card (Ranger, both modes). Collapsed, a card shows its
@@ -1015,25 +1368,25 @@ export function buildScreens({ integrated }) {
       // again (`fresh`), so the cards start open whatever the scenario before it left collapsed.
       ...(INTEGRATED
         ? [
-            { name: "Builder Class skills card collapsed", route: KNOWLEDGE_ROUTE, fresh: true, tabs: ["Builder", "Class"], ready: /total level/i, open: [{ tap: { text: "Skills", exact: true } }, { tap: { text: "Class & Subclass Choices", exact: true } }, { tap: { text: "Expertise", exact: true } }], scrollTo: "Class & Subclass Choices", expect: { texts: ["Skills", "Class & Subclass Choices", "Expertise"], absent: ["Blessings of Knowledge", "Cleric starting skills", "Blessings of Knowledge: Language", "Rogue Expertise (Level 1)"], fitsWidth: true } },
-            { name: "Builder Class skills card reopened", route: KNOWLEDGE_ROUTE, fresh: true, tabs: ["Builder", "Class"], ready: /total level/i, open: [{ tap: { text: "Class & Subclass Choices", exact: true } }, { tap: { text: "Class & Subclass Choices", exact: true } }], scrollTo: "Class & Subclass Choices", expect: { texts: ["Class & Subclass Choices", "Blessings of Knowledge: Language"], fitsWidth: true } },
+            { name: "Builder Class skills card collapsed", route: buildRoute(KNOWLEDGE_ID, "classChoices"), fresh: true, ready: "Class & Subclass Choices", open: [{ tap: { text: "Skills", exact: true } }, { tap: { text: "Class & Subclass Choices", exact: true } }, { tap: { text: "Expertise", exact: true } }], scrollTo: "Class & Subclass Choices", expect: { texts: ["Skills", "Class & Subclass Choices", "Expertise"], absent: ["Blessings of Knowledge", "Cleric starting skills", "Blessings of Knowledge: Language", "Rogue Expertise (Level 1)"], fitsWidth: true } },
+            { name: "Builder Class skills card reopened", route: buildRoute(KNOWLEDGE_ID, "classChoices"), fresh: true, ready: "Class & Subclass Choices", open: [{ tap: { text: "Class & Subclass Choices", exact: true } }, { tap: { text: "Class & Subclass Choices", exact: true } }], scrollTo: "Class & Subclass Choices", expect: { texts: ["Class & Subclass Choices", "Blessings of Knowledge: Language"], fitsWidth: true } },
           ]
-        : [{ name: "Builder Class skills card collapsed", route: MULTICLASS_SKILLS_ROUTE, tabs: ["Builder", "Class"], ready: /total level/i, open: [{ tap: { text: "Skills", exact: true } }], scrollTo: "Class & Subclass Choices", expect: { texts: ["Skills"], absent: ["Fighter starting skills"], fitsWidth: true } }]),
-      { name: "Builder Class optional features card", route: RANGER_ROUTE, tabs: ["Builder", "Class"], ready: /total level/i, scrollTo: "Optional & Replacement Class Features:", expect: { texts: ["Optional & Replacement Class Features:", "Deft Explorer", "Favored Foe"], fitsWidth: true } },
-      { name: "Builder Class optional features card collapsed", route: RANGER_ROUTE, fresh: true, tabs: ["Builder", "Class"], ready: /total level/i, open: [{ tap: { text: "Optional & Replacement Class Features:", exact: true } }], scrollTo: "Optional & Replacement Class Features:", expect: { texts: ["Optional & Replacement Class Features:", "Tasha's Cauldron optional features and replacements for your classes."], absent: ["Deft Explorer", "Favored Foe"], fitsWidth: true } },
+        : [{ name: "Builder Class skills card collapsed", route: buildRoute(MULTICLASS_SKILLS_ID, "classChoices"), fresh: true, ready: "Skills", open: [{ tap: { text: "Skills", exact: true } }], scrollTo: "Class & Subclass Choices", expect: { texts: ["Skills"], absent: ["Fighter starting skills"], fitsWidth: true } }]),
+      { name: "Builder Class optional features card", route: buildRoute(RANGER_ID, "classChoices"), ready: "Optional & Replacement Class Features:", scrollTo: "Optional & Replacement Class Features:", expect: { texts: ["Optional & Replacement Class Features:", "Deft Explorer", "Favored Foe"], fitsWidth: true } },
+      { name: "Builder Class optional features card collapsed", route: buildRoute(RANGER_ID, "classChoices"), fresh: true, ready: "Optional & Replacement Class Features:", open: [{ tap: { text: "Optional & Replacement Class Features:", exact: true } }], scrollTo: "Optional & Replacement Class Features:", expect: { texts: ["Optional & Replacement Class Features:", "Tasha's Cauldron optional features and replacements for your classes."], absent: ["Deft Explorer", "Favored Foe"], fitsWidth: true } },
       // A choice card with a badge: the Fighting Style badge sits in the title row beside the chevron, in both states.
-      { name: "Builder Class fighting styles card", route: FIGHTER_ROUTE, fresh: true, tabs: ["Builder", "Class"], ready: /total level/i, scrollTo: "Fighting Styles", expect: { texts: ["Fighting Styles", "Fighting Style", "Martial specialization granting passive combat bonuses or additional cantrips."], fitsWidth: true } },
-      { name: "Builder Class fighting styles card collapsed", route: FIGHTER_ROUTE, fresh: true, tabs: ["Builder", "Class"], ready: /total level/i, open: [{ tap: { text: "Fighting Styles", exact: true } }], scrollTo: "Fighting Styles", expect: { texts: ["Fighting Styles", "Fighting Style", "Martial specialization granting passive combat bonuses or additional cantrips."], absent: ["Archery", "Blind Fighting", "Defense"], fitsWidth: true } },
+      { name: "Builder Class fighting styles card", route: buildRoute(FIGHTER_ID, "classChoices"), fresh: true, ready: "Fighting Styles", scrollTo: "Fighting Styles", expect: { texts: ["Fighting Styles", "Fighting Style", "Martial specialization granting passive combat bonuses or additional cantrips."], fitsWidth: true } },
+      { name: "Builder Class fighting styles card collapsed", route: buildRoute(FIGHTER_ID, "classChoices"), fresh: true, ready: "Fighting Styles", open: [{ tap: { text: "Fighting Styles", exact: true } }], scrollTo: "Fighting Styles", expect: { texts: ["Fighting Styles", "Fighting Style", "Martial specialization granting passive combat bonuses or additional cantrips."], absent: ["Archery", "Blind Fighting", "Defense"], fitsWidth: true } },
       // The Race card: the Variant Human's language and skill picks, named by what they pick, then collapsed to its title.
       ...(INTEGRATED
         ? [
-            { name: "Builder Race skill picks", route: KNOWLEDGE_ROUTE, tabs: ["Builder", "Race"], ready: /traits:/i, scrollTo: "Languages & Proficiencies", expect: { texts: ["Languages & Proficiencies", "Language", "Skill"], fitsWidth: true } },
-            { name: "Builder Race skill picks collapsed", route: KNOWLEDGE_ROUTE, tabs: ["Builder", "Race"], ready: "Languages & Proficiencies", open: [{ tap: { text: "Languages & Proficiencies", exact: true } }], scrollTo: "Languages & Proficiencies", expect: { absent: ["Granted Languages:", "Language", "Skill"], fitsWidth: true } },
+            { name: "Builder Race skill picks", route: buildRoute(KNOWLEDGE_ID, "race"), ready: /traits:/i, scrollTo: "Languages & Proficiencies", expect: { texts: ["Languages & Proficiencies", "Language", "Skill"], fitsWidth: true } },
+            { name: "Builder Race skill picks collapsed", route: buildRoute(KNOWLEDGE_ID, "race"), ready: "Languages & Proficiencies", open: [{ tap: { text: "Languages & Proficiencies", exact: true } }], scrollTo: "Languages & Proficiencies", expect: { absent: ["Granted Languages:", "Language", "Skill"], fitsWidth: true } },
           ]
-        : [{ name: "Builder Race skill picks collapsed", route: HALF_ELF_ROUTE, tabs: ["Builder", "Race"], ready: "Languages & Proficiencies", open: [{ tap: { text: "Languages & Proficiencies", exact: true } }], scrollTo: "Languages & Proficiencies", expect: { absent: ["Granted Languages:"], fitsWidth: true } }]),
+        : [{ name: "Builder Race skill picks collapsed", route: buildRoute(HALF_ELF_ID, "race"), ready: "Languages & Proficiencies", open: [{ tap: { text: "Languages & Proficiencies", exact: true } }], scrollTo: "Languages & Proficiencies", expect: { absent: ["Granted Languages:"], fitsWidth: true } }]),
       // The picks card's options are listed under its title when open, and the title row alone when collapsed.
-      { name: "Builder Background picks card", route: RENDAR_ROUTE, tabs: ["Builder", "Background"], ready: /background benefits/i, scrollTo: "Languages", expect: { texts: ["Languages", "Dwarvish"], fitsWidth: true } },
-      { name: "Builder Background picks card collapsed", route: RENDAR_ROUTE, tabs: ["Builder", "Background"], ready: "Languages", open: [{ tap: { text: "Languages", exact: true } }], scrollTo: "Languages", expect: { texts: ["Languages"], absent: ["Dwarvish"], fitsWidth: true } },
+      { name: "Builder Background picks card", route: buildRoute(CHARACTER_ID, "background"), ready: /background benefits/i, scrollTo: "Languages", expect: { texts: ["Languages", "Dwarvish"], absentMatching: [/Granted and chosen from race, background/], fitsWidth: true } },
+      { name: "Builder Background picks card collapsed", route: buildRoute(CHARACTER_ID, "background"), ready: "Languages", open: [{ tap: { text: "Languages", exact: true } }], scrollTo: "Languages", expect: { texts: ["Languages"], absent: ["Dwarvish"], fitsWidth: true } },
       { name: "Stats", route: RENDAR_ROUTE, tabs: ["Stats"], ready: /hit points/i },
       { name: "Stats long header name", route: LONG_NAME_ROUTE, tabs: ["Stats"], ready: /hit points/i, headerName: LONG_NAME },
       { name: "Stats add tool modal", route: RENDAR_ROUTE, tabs: ["Stats"], open: [{ tap: { label: "Add tool proficiency" } }], modal: "Add Tool Proficiency" },
@@ -1045,13 +1398,19 @@ export function buildScreens({ integrated }) {
               name: "Stats initiative breakdown modal",
               route: INITIATIVE_ROUTE,
               tabs: ["Stats"],
-              open: [{ tap: { label: "Initiative breakdown", exact: true } }],
+              // Taps the box's label text: the box's centre is now the initiative roll badge, whose own
+              // tap rolls instead of opening this modal.
+              open: [{ tap: { text: "INITIATIVE", exact: true } }],
               modal: "Initiative",
               expect: { texts: ["Dexterity", "+2", "Rakish Audacity", "+3", "Tactical Wit", "+3", "Total", "+8"], fitsWidth: true },
             },
           ]
         : []),
       { name: "Spells", route: WIZARD_ROUTE, tabs: ["Spells"], ready: /add spells/i },
+      // A character with no spellcasting at all: the empty state is its label only, no class list, no rule restatement.
+      { name: "Spells no spellcasting empty", route: `/character/${FIGHTER_ID}`, tabs: ["Spells"], ready: "No Spellcasting Features", expect: { texts: ["No Spellcasting Features"], absentMatching: [/Add levels in a spellcasting class/, /does not currently have/], fitsWidth: true } },
+      // A level 11 Warlock's unchosen Mystic Arcanum tier row narrates nothing.
+      { name: "Spells mystic arcanum empty tier", route: `/character/${ARCANUM_ID}`, tabs: ["Spells"], ready: /MYSTIC ARCANUM/, scrollTo: "MYSTIC ARCANUM", expect: { absentMatching: [/No spell selected/], fitsWidth: true } },
       // The Sorcery Points card at a Sorcerer level of 3 or more: its title block and three buttons share one row.
       {
         name: "Spells sorcery card",
@@ -1128,6 +1487,7 @@ export function buildScreens({ integrated }) {
               expect: {
                 texts: [PREPARED_FEAT.toUpperCase(), "Shield", "Detect Magic", "Misty Step", "No Class Spellcasting"],
                 absent: ["Needs review", "SAVE DC", "ATTACK BONUS"],
+                absentMatching: [/does not currently have levels in any spellcasting classes/],
                 fitsWidth: true,
               },
             },
@@ -1162,7 +1522,9 @@ export function buildScreens({ integrated }) {
             },
           ]
         : []),
-      { name: "Inventory", route: WIZARD_ROUTE, tabs: ["Inventory"], ready: /total wealth/i },
+      // The legacy Shield row (section "equipped", isEquipped missing) shows the equipped circle in the Equipped list.
+      { name: "Inventory", route: WIZARD_ROUTE, tabs: ["Inventory"], ready: /total wealth/i, expect: { labels: ["Equipped: Shield"], absentLabels: ["Equip Shield"] } },
+      { name: "Inventory item picker modal", route: WIZARD_ROUTE, tabs: ["Inventory"], open: [{ tap: { text: "Add from Compendium", exact: true } }], modal: "Add Item from Compendium" },
       { name: "Features", route: RENDAR_ROUTE, tabs: ["Features"], ready: /resource trackers/i },
       { name: "Journal", route: RENDAR_ROUTE, tabs: ["Journal"], ready: /character name/i },
       { name: "Actions", route: RENDAR_ROUTE, tabs: ["Actions"], ready: /attack action/i },
@@ -1178,8 +1540,109 @@ export function buildScreens({ integrated }) {
       { name: "Rest modal", route: RENDAR_ROUTE, tabs: ["Stats"], open: [{ tap: { pattern: "^Take Rest" } }], modal: "Rest & Recovery" },
       { name: "Conditions modal", route: RENDAR_ROUTE, tabs: ["Stats"], open: [{ tap: { pattern: "^Conditions \\(" } }], modal: "Toggle Conditions" },
       { name: "Home", route: "/", ready: /5e Character Builder/ },
-      { name: "New Character modal", route: "/", open: [{ tap: { name: "home-header-add" } }], modal: "Create New Character" },
+      // "New character" creates a draft on the Class step and opens the Creation Flow at /build/<id> directly.
+      { name: "New character draft", route: "/", open: [{ tap: { name: "home-header-add" } }], ready: "Choose Your Class:", expect: { texts: ["Choose Your Class:"], placeholders: ["Search classes…"], fitsWidth: true } },
+      // A seeded draft shows in the list naming its step, opens into the flow on that step, and its sheet route redirects to the flow.
+      { name: "Draft listed with step", route: "/", fresh: true, ready: /5e Character Builder/, expect: { texts: ["Draft · Background"], fitsWidth: true } },
+      { name: "Draft opens in flow", route: "/", open: [{ tap: { text: "Draft · Background", exact: true } }], ready: "Create Custom", expect: { texts: ["Background"], absent: ["Builder", "Stats", "Actions", "Inventory", "Features", "Journal", "Spells"], fitsWidth: true } },
+      { name: "Draft sheet redirects to flow", route: `/character/${DRAFT_ID}`, ready: "Create Custom", expect: { texts: ["Background"], absent: ["Builder", "Stats", "Actions", "Inventory", "Features", "Journal", "Spells"], fitsWidth: true } },
+      // Confirming Review finishes the character: the sheet opens on Wren holding Level up and Edit Build.
+      // On phones the header's Sheet menu is opened here so both runners see the two rows: the web check's
+      // expect (which also sees the name under the open menu), and natively nativeTexts — the dump of an open
+      // dialog shows only the dialog's window, so the sheet's name is not in it. At 768px and up the sheet has
+      // no menu button (absentLabels "Sheet menu"): the left rail holds Level up and Edit Build as buttons
+      // (railLabels), asserted with no modal.
+      {
+        name: "Review finishes character",
+        route: REVIEW_DRAFT_ROUTE,
+        open: [{ tap: { text: "Create character", exact: true } }, { tap: { label: "Sheet menu" } }],
+        modal: "Character",
+        nativeTexts: ["Level up", "Edit Build"],
+        expect: { texts: ["Level up", "Edit Build", "Wren"], absent: ["Builder"], fitsWidth: true },
+        wide: {
+          minWidth: BREAKPOINTS.tablet,
+          open: [{ tap: { text: "Create character", exact: true } }],
+          modal: null,
+          ready: "Wren",
+          expect: {
+            texts: ["Level up", "Edit Build", "Wren"],
+            railLabels: ["Level up", "Edit Build"],
+            absentLabels: ["Sheet menu"],
+            absent: ["Builder"],
+            fitsWidth: true,
+          },
+        },
+      },
+      // Edit Build on a finished character: choosing the Background step opens the flow there with every step reachable.
+      {
+        name: "Builder Edit Build background step",
+        route: `/build/${EDIT_BUILD_ID}?step=background`,
+        ready: /background benefits/i,
+        expect: {
+          texts: ["Class", "Subclass", "Race", "Background", "Abilities", "Class Choices", "Equipment", "Details", "Review"],
+          absentLabels: ["Locked"],
+          enabled: ["Back to sheet"],
+          fitsWidth: true,
+        },
+      },
+      // The Level-Up Flow (/levelup/<id>, opened by the header's Level up): the Class step lists the held
+      // class first with only its level change ("3 → 4"), the other classes with "1", and a class whose
+      // multiclass requirement is missed disabled with only the missing score ("Int 13"). These scenarios
+      // run before the Edit Build one below, which lowers this character's level.
+      {
+        name: "Level-Up Flow class step",
+        route: `/levelup/${EDIT_BUILD_ID}`,
+        ready: /Fighter/,
+        expect: {
+          texts: ["Fighter", "3 → 4", "Barbarian", "Rogue", "Cleric", "Monk", "1", "Int 13", "Cha 13"],
+          labels: ["Level up Fighter", "Level up Wizard"],
+          fitsWidth: true,
+        },
+      },
+      // Picking the held class plans the level: the step list gains the steps that level brings.
+      {
+        name: "Level-Up Flow planned steps",
+        route: `/levelup/${EDIT_BUILD_ID}`,
+        open: [{ tap: { label: "Level up Fighter" } }],
+        ready: "Hit Points",
+        expect: { texts: ["Class", "Hit Points", "ASI/Feat", "Review", "Fighter", "3 → 4"], fitsWidth: true },
+      },
+      // The Level-Up Flow's identity line — phone bottom bar below 768px, wide footer from 768px up — opens
+      // the same "Character" modal as the Creation Flow's; from 1024px up the panel is the side column, on
+      // screen with no tap and no modal. So the default 768px width exercises the Level-Up Flow's wide
+      // footer and its identity modal.
+      {
+        name: "Level-Up Flow identity panel",
+        route: `/levelup/${EDIT_BUILD_ID}`,
+        open: [{ tap: { pattern: "^Fighter 3 · Human · Acolyte$" } }],
+        modal: "Character",
+        expect: { texts: ["9 (-1)", "Haldane", "Battle Master"], absent: ["9 (+-1)"], fitsWidth: true },
+        wide: {
+          minWidth: BREAKPOINTS.desktop,
+          open: [],
+          modal: null,
+          ready: "9 (-1)",
+          expect: { texts: ["9 (-1)", "Haldane", "Battle Master"], absent: ["9 (+-1)"], fitsWidth: true },
+        },
+      },
+      // Edit Build's Class step offers only lowering: lowering the Fighter releases the level-3 maneuvers and
+      // flags their steps with the warning; no raise control is offered.
+      {
+        name: "Builder Edit Build class change flags steps",
+        route: `/build/${EDIT_BUILD_ID}?step=class`,
+        open: [{ tap: { label: "Lower Fighter level" } }],
+        ready: /total level/i,
+        expect: { labels: ["Needs attention"], absentLabels: ["Raise Fighter level"], texts: ["Back to sheet"], fitsWidth: true },
+      },
       { name: "Settings", route: "/options", ready: /settings & compendium/i },
+      // The floating dice button (label "Dice tray") is on every screen at every width: Home, Options, the
+      // character sheet, and the Creation Flow in its draft, Edit Build and Level-Up modes.
+      { name: "Dice button on the character list", route: "/", ready: /5e Character Builder/, expect: { labels: ["Dice tray"], fitsWidth: true } },
+      { name: "Dice button on Options", route: "/options", ready: /settings & compendium/i, expect: { labels: ["Dice tray"], fitsWidth: true } },
+      { name: "Dice button on sheet", route: RENDAR_ROUTE, tabs: ["Stats"], ready: /hit points/i, expect: { labels: ["Dice tray"], fitsWidth: true } },
+      { name: "Dice button in Creation Flow", route: `/build/${DRAFT_ID}?step=background`, ready: "Create Custom", expect: { labels: ["Dice tray"], fitsWidth: true } },
+      { name: "Dice button in Edit Build", route: `/build/${EDIT_BUILD_ID}?step=background`, ready: /background benefits/i, expect: { labels: ["Dice tray"], fitsWidth: true } },
+      { name: "Dice button in Level-Up Flow", route: `/levelup/${EDIT_BUILD_ID}`, ready: /Fighter/, expect: { labels: ["Dice tray"], fitsWidth: true } },
   ];
   // A named step has no text, pattern or label a runner can tap, so the scenario carrying one can only be
   // played by the web runner: flag it web-only.

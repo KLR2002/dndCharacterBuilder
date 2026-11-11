@@ -1,6 +1,5 @@
 import React, { useMemo, useState } from "react";
 import {
-  Modal as RNModal,
   ScrollView,
   StyleSheet,
   Text,
@@ -37,6 +36,7 @@ import type { BeastData } from "../../types/dnd5e";
 import { Badge } from "../ui/Badge";
 import { Button } from "../ui/Button";
 import { Card } from "../ui/Card";
+import { Modal } from "../ui/Modal";
 import { DetailModal } from "../DetailModal";
 import { WildShapeModal } from "../WildShapeModal";
 import { ActiveWildShapeCard } from "../ActiveWildShapeCard";
@@ -67,6 +67,9 @@ export const FeaturesTab: React.FC = () => {
   const [newCounterName, setNewCounterName] = useState("");
   const [newCounterMax, setNewCounterMax] = useState("3");
   const [newCounterReset, setNewCounterReset] = useState<"short" | "long">("long");
+
+  // Anything typed or picked in the custom counter form is lost when the modal closes without saving.
+  const hasCounterChanges = newCounterName.trim() !== "" || newCounterMax !== "3" || newCounterReset !== "long";
 
   const [wildShapeModalVisible, setWildShapeModalVisible] = useState(false);
 
@@ -486,7 +489,7 @@ export const FeaturesTab: React.FC = () => {
                     </TouchableOpacity>
 
                     <View style={styles.counterCountBox}>
-                      <Text style={[styles.counterCurrent, { color: c.current > 0 ? theme.accent : theme.danger }]}>
+                      <Text style={[styles.counterCurrent, { color: c.current > 0 ? theme.accentHover : theme.danger }]}>
                         {isUnlimited ? "∞" : c.current}
                       </Text>
                       <Text style={{ color: theme.textSecondary, fontSize: 13 }}>
@@ -701,65 +704,63 @@ export const FeaturesTab: React.FC = () => {
       })}
 
       {/* Custom Counter Modal */}
-      <RNModal visible={customCounterModal} transparent animationType="fade">
-        <View style={styles.modalOverlay}>
-          <Card style={[styles.modalCard, { backgroundColor: theme.surface, borderColor: theme.border }]}>
-            <Text style={[styles.sectionTitle, { color: theme.text, marginBottom: 12 }]}>
-              Add Resource Counter
-            </Text>
+      <Modal
+        visible={customCounterModal}
+        onClose={() => setCustomCounterModal(false)}
+        title="Add Resource Counter"
+        hasUnsavedChanges={hasCounterChanges}
+        footer={
+          <View style={{ flexDirection: "row", justifyContent: "flex-end", gap: 10 }}>
+            <Button title="Cancel" variant="secondary" size="sm" onPress={() => setCustomCounterModal(false)} />
+            <Button title="Save Counter" variant="primary" size="sm" onPress={addCustomCounter} />
+          </View>
+        }
+      >
+        <Text style={styles.fieldLabel}>Counter Name *</Text>
+        <TextInput
+          style={[styles.input, { color: theme.text, backgroundColor: theme.surfaceHighlight, borderColor: theme.border }]}
+          value={newCounterName}
+          onChangeText={setNewCounterName}
+          placeholder="e.g. Superiority Dice, Favored Foe"
+          placeholderTextColor={theme.textMuted}
+        />
 
-            <Text style={styles.fieldLabel}>Counter Name *</Text>
-            <TextInput
-              style={[styles.input, { color: theme.text, backgroundColor: theme.surfaceHighlight, borderColor: theme.border }]}
-              value={newCounterName}
-              onChangeText={setNewCounterName}
-              placeholder="e.g. Superiority Dice, Favored Foe"
-              placeholderTextColor={theme.textMuted}
-            />
+        <Text style={[styles.fieldLabel, { marginTop: 10 }]}>Maximum Uses *</Text>
+        <TextInput
+          style={[styles.input, { color: theme.text, backgroundColor: theme.surfaceHighlight, borderColor: theme.border }]}
+          value={newCounterMax}
+          onChangeText={setNewCounterMax}
+          keyboardType="number-pad"
+          placeholder="4"
+          placeholderTextColor={theme.textMuted}
+        />
 
-            <Text style={[styles.fieldLabel, { marginTop: 10 }]}>Maximum Uses *</Text>
-            <TextInput
-              style={[styles.input, { color: theme.text, backgroundColor: theme.surfaceHighlight, borderColor: theme.border }]}
-              value={newCounterMax}
-              onChangeText={setNewCounterMax}
-              keyboardType="number-pad"
-              placeholder="4"
-              placeholderTextColor={theme.textMuted}
-            />
-
-            <Text style={[styles.fieldLabel, { marginTop: 10 }]}>Recharges On</Text>
-            <View style={{ flexDirection: "row", gap: 10, marginTop: 4 }}>
-              <TouchableOpacity
-                onPress={() => setNewCounterReset("short")}
-                style={[
-                  styles.resetOptionBtn,
-                  {
-                    backgroundColor: newCounterReset === "short" ? theme.accent : theme.surfaceHighlight,
-                    borderColor: theme.border,
-                  },
-                ]}>
-                <Text style={{ color: "#fff", fontSize: 13, fontWeight: "600" }}>Short Rest</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                onPress={() => setNewCounterReset("long")}
-                style={[
-                  styles.resetOptionBtn,
-                  {
-                    backgroundColor: newCounterReset === "long" ? theme.accent : theme.surfaceHighlight,
-                    borderColor: theme.border,
-                  },
-                ]}>
-                <Text style={{ color: "#fff", fontSize: 13, fontWeight: "600" }}>Long Rest</Text>
-              </TouchableOpacity>
-            </View>
-
-            <View style={{ flexDirection: "row", justifyContent: "flex-end", gap: 10, marginTop: 16 }}>
-              <Button title="Cancel" variant="secondary" size="sm" onPress={() => setCustomCounterModal(false)} />
-              <Button title="Save Counter" variant="primary" size="sm" onPress={addCustomCounter} />
-            </View>
-          </Card>
+        <Text style={[styles.fieldLabel, { marginTop: 10 }]}>Recharges On</Text>
+        <View style={{ flexDirection: "row", gap: 10, marginTop: 4 }}>
+          <TouchableOpacity
+            onPress={() => setNewCounterReset("short")}
+            style={[
+              styles.resetOptionBtn,
+              {
+                backgroundColor: newCounterReset === "short" ? theme.accentGlow : theme.surfaceHighlight,
+                borderColor: newCounterReset === "short" ? theme.accentHover : theme.border,
+              },
+            ]}>
+            <Text style={{ color: newCounterReset === "short" ? theme.text : theme.textSecondary, fontSize: 13, fontWeight: "600" }}>Short Rest</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={() => setNewCounterReset("long")}
+            style={[
+              styles.resetOptionBtn,
+              {
+                backgroundColor: newCounterReset === "long" ? theme.accentGlow : theme.surfaceHighlight,
+                borderColor: newCounterReset === "long" ? theme.accentHover : theme.border,
+              },
+            ]}>
+            <Text style={{ color: newCounterReset === "long" ? theme.text : theme.textSecondary, fontSize: 13, fontWeight: "600" }}>Long Rest</Text>
+          </TouchableOpacity>
         </View>
-      </RNModal>
+      </Modal>
 
       {/* Detail Modal */}
       <DetailModal
@@ -851,18 +852,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "600",
     marginBottom: 2,
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: "rgba(0,0,0,0.75)",
-    justifyContent: "center",
-    alignItems: "center",
-    padding: 16,
-  },
-  modalCard: {
-    width: "100%",
-    maxWidth: 480,
-    padding: 16,
   },
   fieldLabel: {
     fontSize: 12,

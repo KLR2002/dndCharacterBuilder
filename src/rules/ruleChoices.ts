@@ -163,6 +163,24 @@ export function subclassRuleChoices(
 
 
 /**
+ * The Rule Choices a held feat grants (Fighting Initiate's style, Martial Adept's maneuvers, Eldritch
+ * Adept's invocation): the feat-granted ids of the fighting style, maneuver and invocation lists,
+ * offered through the feat path, not the class and subclass list. A character holding the feat in
+ * `asiSelections` or `originFeats` gets them.
+ */
+export function featGrantedRuleChoices(
+  character: Character,
+  activeBooks: ActiveBooks,
+  compendium: Compendium = currentCompendium()
+): AvailableRuleChoice[] {
+  return [
+    ...fightingStyleRuleChoices(character, activeBooks, compendium),
+    ...battleMasterManeuverChoices(character, activeBooks, compendium),
+    ...warlockInvocationChoices(character, activeBooks, compendium),
+  ].filter((choice) => FEAT_GRANTED_CHOICE_IDS.has(choice.id));
+}
+
+/**
  * Returns subclass rule choices filtered by active books.
  */
 export function availableSubclassRuleChoices(

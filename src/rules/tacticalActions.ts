@@ -1,4 +1,5 @@
 import type { ActiveBooks } from "../constants/books.ts";
+import { UNKNOWN_OWNER_KEY } from "../constants/rules.ts";
 import type { Character } from "../types/character.ts";
 import type { EvaluatedCharacter } from "./characterEvaluation.ts";
 import {
@@ -28,6 +29,8 @@ export interface TacticalSpellAttack {
   name: string;
   level: number;
   damage: string;
+  /** The casting profile's spell attack bonus, so the row's "to hit" badge can roll it. */
+  attackBonus?: number;
   time: string;
   range: string;
   desc: string;
@@ -142,6 +145,17 @@ function formatMod(val: number): string {
 }
 
 /**
+ * Whether a spell calls for a spell attack roll: its Catalog record's structured attack-type field
+ * ("M" melee, "R" ranged, "O" other) when present, else its text naming a melee or ranged spell attack.
+ * Save-based and utility spells make no attack, so their rows carry no attack bonus.
+ */
+function makesSpellAttack(sp: { spellAttack?: string[]; description?: string }): boolean {
+  if (sp.spellAttack && sp.spellAttack.length > 0) return true;
+  const text = (sp.description || "").toLowerCase();
+  return text.includes("melee spell attack") || text.includes("ranged spell attack");
+}
+
+/**
  * Derives the tactical combat action economy ledger for a character,
  * aggregating attacks, bonus actions, reactions, and maneuvers.
  */
@@ -166,17 +180,35 @@ export function getTacticalActionLedger(
   // 2. Spell attacks & combat cantrips
   const spellAttacks: TacticalSpellAttack[] = [];
   const seenSpellNames = new Set<string>();
+  const spellProfiles = evaluated.spellProfiles || [];
+  // The casting profile a known spell belongs to: by the owner key it is stored under (a Warlock's tome
+  // key counts as the Warlock), else by its legacy class hint, else the only profile of a single caster.
+  // A spell no profile owns gets no attack bonus, so its row shows no roll badge.
+  const profileForSpell = (k: { ownerKey?: string; className?: string }) => {
+    if (k.ownerKey && k.ownerKey !== UNKNOWN_OWNER_KEY) {
+      return (
+        spellProfiles.find((p) => p.ownerKey === k.ownerKey) ??
+        (k.ownerKey.startsWith("Warlock__") ? spellProfiles.find((p) => p.className === "Warlock") : undefined)
+      );
+    }
+    return (
+      spellProfiles.find((p) => p.className === k.className) ?? (spellProfiles.length === 1 ? spellProfiles[0] : undefined)
+    );
+  };
 
-  const candidateSpells: { name: string; source: string; kiCost?: number; spellObj?: any }[] = [
-    ...(character.knownSpells || []),
+  const candidateSpells: { name: string; source: string; kiCost?: number; spellObj?: any; attackBonus?: number }[] = [
+    ...(character.knownSpells || []).map((k) => {
+      const profile = profileForSpell(k);
+      return { name: k.name, source: k.source, attackBonus: profile?.spellAttackBonus };
+    }),
   ];
 
-  for (const prof of evaluated.spellProfiles || []) {
+  for (const prof of spellProfiles) {
     for (const sp of prof.subclassKnownSpells || []) {
-      candidateSpells.push({ name: sp.name, source: sp.source, kiCost: sp.kiCost, spellObj: sp });
+      candidateSpells.push({ name: sp.name, source: sp.source, kiCost: sp.kiCost, spellObj: sp, attackBonus: prof.spellAttackBonus });
     }
     for (const sp of prof.alwaysPreparedSpells || []) {
-      candidateSpells.push({ name: sp.name, source: sp.source, kiCost: sp.kiCost, spellObj: sp });
+      candidateSpells.push({ name: sp.name, source: sp.source, kiCost: sp.kiCost, spellObj: sp, attackBonus: prof.spellAttackBonus });
     }
   }
 
@@ -203,6 +235,7 @@ export function getTacticalActionLedger(
         name: k.kiCost ? `${sp.name} (${k.kiCost} Ki)` : sp.name,
         level: sp.level,
         damage,
+        attackBonus: makesSpellAttack(sp) ? k.attackBonus : undefined,
         time: sp.castingTime || "1 action",
         range: sp.range || "60 ft",
         desc: sp.description || "",

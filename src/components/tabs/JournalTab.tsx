@@ -1,7 +1,6 @@
 import React, { useMemo, useState } from "react";
 import {
   Image,
-  Modal as RNModal,
   ScrollView,
   StyleSheet,
   Text,
@@ -16,6 +15,7 @@ import { useAppTheme } from "../../context/ThemeContext";
 import { findRace } from "../../services/dataService";
 import { Button } from "../ui/Button";
 import { Card } from "../ui/Card";
+import { Modal } from "../ui/Modal";
 
 const ALIGNMENT_OPTIONS = [
   "Lawful Good",
@@ -116,7 +116,7 @@ export const JournalTab: React.FC = () => {
             disabled={!currentCharacter.avatarUri}
             activeOpacity={0.8}
             onPress={() => setFullscreenImageVisible(true)}
-            style={[styles.avatarBox, { borderColor: theme.accent, backgroundColor: theme.surfaceHighlight }]}
+            style={[styles.avatarBox, { borderColor: theme.accentHover, backgroundColor: theme.surfaceHighlight }]}
           >
             {currentCharacter.avatarUri ? (
               <Image source={{ uri: currentCharacter.avatarUri }} style={styles.avatarImage} />
@@ -208,10 +208,12 @@ export const JournalTab: React.FC = () => {
               style={[
                 styles.alignmentPill,
                 {
-                  backgroundColor: currentCharacter.alignment === al ? theme.accent : theme.surfaceHighlight,
+                  backgroundColor: currentCharacter.alignment === al ? theme.accentGlow : theme.surfaceHighlight,
+                  borderColor: currentCharacter.alignment === al ? theme.accentHover : theme.border,
+                  borderWidth: 1,
                 },
               ]}>
-              <Text style={{ color: "#fff", fontSize: 11, fontWeight: "600" }}>{al}</Text>
+              <Text style={{ color: currentCharacter.alignment === al ? theme.text : theme.textSecondary, fontSize: 11, fontWeight: "600" }}>{al}</Text>
             </TouchableOpacity>
           ))}
         </ScrollView>
@@ -220,7 +222,7 @@ export const JournalTab: React.FC = () => {
       {/* Faction Card */}
       <Card style={{ marginBottom: 16 }}>
         <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 10 }}>
-          <Ionicons name="flag-outline" size={18} color={theme.accent} />
+          <Ionicons name="flag-outline" size={18} color={theme.accentHover} />
           <Text style={[styles.sectionTitle, { color: theme.text }]}>FACTION & ALLEGIANCES</Text>
         </View>
 
@@ -296,14 +298,14 @@ export const JournalTab: React.FC = () => {
         <Card style={{ marginBottom: 16, borderColor: theme.borderLight, gap: 10 }}>
           <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
             <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-              <Ionicons name="book-outline" size={18} color={theme.accent} />
+              <Ionicons name="book-outline" size={18} color={theme.accentHover} />
               <Text style={[styles.sectionTitle, { color: theme.text }]}>
                 {currentCharacter.race?.name} Lore & Biology
               </Text>
             </View>
             {loreSections.length > 3 && (
               <TouchableOpacity onPress={() => setLoreExpanded((prev) => !prev)}>
-                <Text style={{ color: theme.accent, fontSize: 12, fontWeight: "600" }}>
+                <Text style={{ color: theme.accentHover, fontSize: 12, fontWeight: "600" }}>
                   {loreExpanded ? "Collapse" : "Expand All"}
                 </Text>
               </TouchableOpacity>
@@ -335,7 +337,7 @@ export const JournalTab: React.FC = () => {
                             : "information-circle-outline"
                   }
                   size={14}
-                  color={theme.accent}
+                  color={theme.accentHover}
                 />
                 <Text style={{ color: theme.text, fontSize: 13, fontWeight: "700" }}>
                   {sec.title}
@@ -350,7 +352,7 @@ export const JournalTab: React.FC = () => {
             <TouchableOpacity
               onPress={() => setLoreExpanded(true)}
               style={{ alignSelf: "center", paddingVertical: 4 }}>
-              <Text style={{ color: theme.accent, fontSize: 12, fontWeight: "600" }}>
+              <Text style={{ color: theme.accentHover, fontSize: 12, fontWeight: "600" }}>
                 + {loreSections.length - 3} more sections...
               </Text>
             </TouchableOpacity>
@@ -461,53 +463,42 @@ export const JournalTab: React.FC = () => {
       </Card>
 
       {/* URL Image Modal */}
-      <RNModal visible={urlModalVisible} transparent animationType="fade">
-        <View style={styles.modalOverlay}>
-          <Card style={[styles.modalCard, { backgroundColor: theme.surface, borderColor: theme.border }]}>
-            <Text style={[styles.sectionTitle, { color: theme.text, marginBottom: 12 }]}>
-              Enter Character Art URL
-            </Text>
-            <TextInput
-              style={[styles.input, { color: theme.text, backgroundColor: theme.surfaceHighlight, borderColor: theme.border }]}
-              value={avatarUrlInput}
-              onChangeText={setAvatarUrlInput}
-              placeholder="https://example.com/portrait.jpg"
-              placeholderTextColor={theme.textMuted}
-              autoCapitalize="none"
-            />
-            <View style={{ flexDirection: "row", justifyContent: "flex-end", gap: 10, marginTop: 16 }}>
-              <Button title="Cancel" variant="secondary" size="sm" onPress={() => setUrlModalVisible(false)} />
-              <Button title="Save Art" variant="primary" size="sm" onPress={setAvatarFromUrl} />
-            </View>
-          </Card>
-        </View>
-      </RNModal>
+      <Modal
+        visible={urlModalVisible}
+        onClose={() => setUrlModalVisible(false)}
+        title="Enter Character Art URL"
+        hasUnsavedChanges={avatarUrlInput.trim() !== ""}
+        footer={
+          <View style={{ flexDirection: "row", justifyContent: "flex-end", gap: 10 }}>
+            <Button title="Cancel" variant="secondary" size="sm" onPress={() => setUrlModalVisible(false)} />
+            <Button title="Save Art" variant="primary" size="sm" onPress={setAvatarFromUrl} />
+          </View>
+        }
+      >
+        <TextInput
+          style={[styles.input, { color: theme.text, backgroundColor: theme.surfaceHighlight, borderColor: theme.border }]}
+          value={avatarUrlInput}
+          onChangeText={setAvatarUrlInput}
+          placeholder="https://example.com/portrait.jpg"
+          placeholderTextColor={theme.textMuted}
+          autoCapitalize="none"
+        />
+      </Modal>
 
       {/* Fullscreen Character Art Preview Modal */}
-      <RNModal
+      <Modal
         visible={fullscreenImageVisible}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setFullscreenImageVisible(false)}
+        onClose={() => setFullscreenImageVisible(false)}
+        title="Character Art"
       >
-        <View style={styles.fullscreenModalOverlay}>
-          <TouchableOpacity
-            style={styles.fullscreenCloseBtn}
-            onPress={() => setFullscreenImageVisible(false)}
-            accessibilityRole="button"
-            accessibilityLabel="Close image preview"
-          >
-            <Ionicons name="close-circle" size={40} color="#ffffff" />
-          </TouchableOpacity>
-          {currentCharacter.avatarUri && (
-            <Image
-              source={{ uri: currentCharacter.avatarUri }}
-              style={styles.fullscreenImage}
-              resizeMode="contain"
-            />
-          )}
-        </View>
-      </RNModal>
+        {currentCharacter.avatarUri && (
+          <Image
+            source={{ uri: currentCharacter.avatarUri }}
+            style={{ width: "100%", aspectRatio: 1 }}
+            resizeMode="contain"
+          />
+        )}
+      </Modal>
     </ScrollView>
   );
 };
@@ -585,34 +576,5 @@ const styles = StyleSheet.create({
     paddingVertical: 5,
     borderRadius: 14,
     marginRight: 6,
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: "rgba(0,0,0,0.75)",
-    justifyContent: "center",
-    alignItems: "center",
-    padding: 16,
-  },
-  modalCard: {
-    width: "100%",
-    maxWidth: 480,
-    padding: 16,
-  },
-  fullscreenModalOverlay: {
-    flex: 1,
-    backgroundColor: "rgba(0,0,0,0.92)",
-    justifyContent: "center",
-    alignItems: "center",
-    padding: 16,
-  },
-  fullscreenCloseBtn: {
-    position: "absolute",
-    top: 48,
-    right: 24,
-    zIndex: 20,
-  },
-  fullscreenImage: {
-    width: "100%",
-    height: "85%",
   },
 });
