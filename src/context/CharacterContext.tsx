@@ -22,6 +22,7 @@ import {
 import { runE2eSeedHook } from "../services/e2eSeedHook";
 import { shouldShowCatalogUpdateNotice } from "../services/catalogUpdateNotice";
 import { runInAppIntegration } from "../services/scraper/runner";
+import { unsetAbilityScores } from "../constants/rules";
 
 interface CharacterContextValue {
   characters: Character[];
@@ -213,7 +214,7 @@ export function CharacterProvider({ children }: { children: React.ReactNode }) {
 
       // Builder defaults
       abilityMethod: "pointBuy",
-      baseAbilityScores: { str: 10, dex: 10, con: 10, int: 10, wis: 10, cha: 10 },
+      baseAbilityScores: unsetAbilityScores(),
       customLineage: false,
       lineageReplacement: null,
       race: null,

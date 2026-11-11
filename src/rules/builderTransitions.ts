@@ -29,6 +29,8 @@ import {
   BACKGROUND_FEAT_SOURCE,
   STANDARD_ARRAY,
   MULTICLASS_PREREQUISITES,
+  UNSET_ABILITY_SCORE,
+  unsetAbilityScores,
 } from "../constants/rules.ts";
 import { SRD_SOURCE } from "../constants/books.ts";
 import { allCatalogClasses, findClassData, type CharacterCatalogs } from "./catalogs.ts";
@@ -56,7 +58,7 @@ export function setStandardArrayPick(
   return {
     ...character,
     standardArrayPicks: picks,
-    baseAbilityScores: { ...character.baseAbilityScores, [ability]: value ?? 10 },
+    baseAbilityScores: { ...character.baseAbilityScores, [ability]: value ?? UNSET_ABILITY_SCORE },
   };
 }
 
@@ -66,7 +68,7 @@ export function rollRolledAbilities(character: Character, random: RandomSource):
     ...character,
     rolledAbilities: rollAbilityScores(random),
     rolledAbilityPicks: {},
-    baseAbilityScores: { str: 10, dex: 10, con: 10, int: 10, wis: 10, cha: 10 },
+    baseAbilityScores: unsetAbilityScores(),
   };
 }
 
@@ -95,7 +97,10 @@ export function setRolledAbilityPick(
   return {
     ...character,
     rolledAbilityPicks: picks,
-    baseAbilityScores: { ...character.baseAbilityScores, [ability]: index === null ? 10 : results[index].total },
+    baseAbilityScores: {
+      ...character.baseAbilityScores,
+      [ability]: index === null ? UNSET_ABILITY_SCORE : results[index].total,
+    },
   };
 }
 
@@ -104,7 +109,7 @@ export function clearRolledAbilityPicks(character: Character): Character {
   return {
     ...character,
     rolledAbilityPicks: {},
-    baseAbilityScores: { str: 10, dex: 10, con: 10, int: 10, wis: 10, cha: 10 },
+    baseAbilityScores: unsetAbilityScores(),
   };
 }
 

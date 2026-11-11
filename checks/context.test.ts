@@ -10,6 +10,7 @@ import type { AdditionalSpells, BackgroundData, ClassData, FeatData, RaceData } 
 import type { Character } from "../src/types/character.ts";
 import type { Compendium } from "../src/services/compendium.ts";
 import { migrateCharacter } from "../src/rules/migrateCharacter.ts";
+import * as rules from "../src/constants/rules.ts";
 import { featSpellRuleChoices } from "../src/rules/choices/featSpells.ts";
 import { pickRuleChoice } from "../src/rules/ruleChoices.ts";
 import { grantedSpellClasses, grantedSpellFeats, grantedSpellSpells } from "./grantedSpellsFixture.ts";
@@ -101,6 +102,7 @@ async function providerHarness(initial: unknown = [makeChar()], options: {
       revertToSrd: () => { integrated = null; },
       currentCompendium: () => options.catalog ?? { stale: integrated ? compendiumStorage.isCatalogStale(integrated) : false },
     };
+    if (name.includes("constants/rules")) return rules;
     if (name.includes("constants/books")) return { DEFAULT_ACTIVE_BOOK_CODES: [] };
     if (name.includes("builderTransitions")) return { checkActiveBooksIntegrity: () => [] };
     if (name.includes("catalogUpdateNotice")) return catalogUpdateNotice;
@@ -660,4 +662,14 @@ test("opening a character whose switched-off book held a feat's spell pick relea
     opened.needsReview?.includes("Sample Ember removed from Sample Initiate: book switched off"),
     `the release is noticed: ${JSON.stringify(opened.needsReview)}`,
   );
+});
+
+test("a new character's base scores are 8 and its Point Buy has all 27 points left", async () => {
+  const h = await providerHarness();
+  const create = h.value.createCharacter({ name: "Point Buy Hero" });
+  h.render();
+  const created: Character = await create;
+  assert.deepEqual(created.baseAbilityScores, { str: 8, dex: 8, con: 8, int: 8, wis: 8, cha: 8 });
+  const spent = Object.values(created.baseAbilityScores).reduce((sum, score) => sum + rules.POINT_BUY_COST[score], 0);
+  assert.equal(27 - spent, 27);
 });

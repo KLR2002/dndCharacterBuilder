@@ -119,13 +119,13 @@ test("each rolled result is placed on exactly one ability; a reroll replaces all
   const totalsA = [15, 7, 18, 10, 14, 12];
   const facesB = [3, 3, 3, 6, 5, 5, 5, 5, 2, 2, 6, 6, 4, 1, 4, 4, 6, 2, 3, 3, 1, 2, 3, 4];
   const totalsB = [12, 15, 14, 12, 12, 9];
-  const allTens = { str: 10, dex: 10, con: 10, int: 10, wis: 10, cha: 10 };
+  const allEights = { str: 8, dex: 8, con: 8, int: 8, wis: 8, cha: 8 };
 
   let char = rollRolledAbilities(makeChar({ abilityMethod: "rolled" }), fixedFaces(facesA));
   assert.equal(char.rolledAbilities?.length, 6);
   assert.deepEqual(char.rolledAbilities?.map((result) => result.total), totalsA);
   assert.deepEqual(char.rolledAbilityPicks, {});
-  assert.deepEqual(char.baseAbilityScores, allTens);
+  assert.deepEqual(char.baseAbilityScores, allEights);
 
   char = setRolledAbilityPick(char, "str", 0);
   char = setRolledAbilityPick(char, "dex", 2);
@@ -140,13 +140,13 @@ test("each rolled result is placed on exactly one ability; a reroll replaces all
 
   const unassigned = setRolledAbilityPick(char, "str", null);
   assert.deepEqual(unassigned.rolledAbilityPicks, { dex: 2 });
-  assert.equal(unassigned.baseAbilityScores.str, 10);
+  assert.equal(unassigned.baseAbilityScores.str, 8);
   assert.equal(char.rolledAbilityPicks?.str, 0);
 
   const rerolled = rollRolledAbilities(char, fixedFaces(facesB));
   assert.deepEqual(rerolled.rolledAbilities?.map((result) => result.total), totalsB);
   assert.deepEqual(rerolled.rolledAbilityPicks, {});
-  assert.deepEqual(rerolled.baseAbilityScores, allTens);
+  assert.deepEqual(rerolled.baseAbilityScores, allEights);
 
   const again = rollRolledAbilities(rerolled, fixedFaces(facesA));
   assert.deepEqual(again.rolledAbilities?.map((result) => result.total), totalsA);
