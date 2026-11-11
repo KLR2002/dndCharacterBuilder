@@ -11,9 +11,11 @@ Saved characters keep the scores they have; no migration. Test fixtures (`makeCh
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] Tests at `src/rules/builderTransitions.ts` (in `checks/builderTransitions.test.ts`): removing a Standard Array pick, removing a Rolled Abilities pick, a new roll and clearing the Rolled picks each leave the affected scores at 8; the expected values are written as literals
-- [ ] A test through `createCharacter` (see `checks/context.test.ts`, which already drives it) shows a new character's six base scores are 8 and its Point Buy has all 27 points left
-- [ ] No `10` remains as an unset-score default in `src/` (`grep -rn "dex: 10" src` lists nothing outside `src/data`)
-- [ ] `npm run check:all` passes
+**Landed:** 6f13351 (with 6357679: the manual-entry and Point Buy fallbacks also use the constant). check:all passed (2127 app, 312 scraper tests).
+
+- [x] Tests at `src/rules/builderTransitions.ts` (in `checks/builderTransitions.test.ts`): removing a Standard Array pick, removing a Rolled Abilities pick, a new roll and clearing the Rolled picks each leave the affected scores at 8; the expected values are written as literals
+- [x] A test through `createCharacter` (see `checks/context.test.ts`, which already drives it) shows a new character's six base scores are 8 and its Point Buy has all 27 points left
+- [x] No `10` remains as an unset-score default in `src/` (`grep -rn "dex: 10" src` lists nothing outside `src/data`)
+- [x] `npm run check:all` passes
