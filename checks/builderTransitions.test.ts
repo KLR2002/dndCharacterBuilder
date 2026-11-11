@@ -22,7 +22,12 @@ import {
   applySoleSubclasses,
   reclaimStartingGrants,
   reclaimBackgroundGrants,
+  setStandardArrayPick,
+  rollRolledAbilities,
+  setRolledAbilityPick,
+  clearRolledAbilityPicks,
 } from "../src/rules/builderTransitions.ts";
+import type { RandomSource } from "../src/rules/dice.ts";
 import type {
   InventoryItem,
   RuleChoiceEntry,
@@ -1150,4 +1155,30 @@ test("removeClassLevel: lowering a Paladin 2->1 releases its class-owned leveled
     "the level-1 spell above the new maximum of 0 is released; the cantrip stays",
   );
   assert.deepEqual(lowered.preparedSpells ?? [], [], "the released spell's prepared key goes with it");
+});
+
+test("removing a Standard Array pick leaves that score at 8", () => {
+  const placed = setStandardArrayPick(makeChar({ abilityMethod: "standardArray" }), "str", 15);
+  assert.equal(placed.baseAbilityScores.str, 15);
+  const removed = setStandardArrayPick(placed, "str", null);
+  assert.equal(removed.baseAbilityScores.str, 8);
+});
+
+test("removing a Rolled Abilities pick leaves that score at 8", () => {
+  const sixes: RandomSource = () => 6;
+  const rolled = rollRolledAbilities(makeChar({ abilityMethod: "rolled" }), sixes);
+  const placed = setRolledAbilityPick(rolled, "dex", 0);
+  assert.equal(placed.baseAbilityScores.dex, 18);
+  const removed = setRolledAbilityPick(placed, "dex", null);
+  assert.equal(removed.baseAbilityScores.dex, 8);
+});
+
+test("a new Rolled Abilities roll and clearing the picks leave every score at 8", () => {
+  const sixes: RandomSource = () => 6;
+  const fives: RandomSource = () => 5;
+  const placed = setRolledAbilityPick(rollRolledAbilities(makeChar({ abilityMethod: "rolled" }), sixes), "str", 0);
+  const rerolled = rollRolledAbilities(placed, fives);
+  assert.deepEqual(rerolled.baseAbilityScores, { str: 8, dex: 8, con: 8, int: 8, wis: 8, cha: 8 });
+  const cleared = clearRolledAbilityPicks(setRolledAbilityPick(rerolled, "cha", 1));
+  assert.deepEqual(cleared.baseAbilityScores, { str: 8, dex: 8, con: 8, int: 8, wis: 8, cha: 8 });
 });

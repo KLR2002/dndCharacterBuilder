@@ -2,7 +2,7 @@ import React from "react";
 import { Text, TextInput, TouchableOpacity, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { Character, AbilityKey, RolledAbilityResult } from "../../types/character";
-import { STANDARD_ARRAY } from "../../constants/rules";
+import { STANDARD_ARRAY, unsetAbilityScores } from "../../constants/rules";
 import { Card } from "../ui/Card";
 import { Button } from "../ui/Button";
 import { ABILITY_KEYS, ABILITY_LABELS, builderStyles as styles } from "./builderStyles";
@@ -74,8 +74,8 @@ export const AbilityScoresSection: React.FC<AbilityScoresSectionProps> = ({
                 // Re-tapping the active method does nothing: it must not clear the placements it shows.
                 if (m === character.abilityMethod) return;
                 if (m === "pointBuy") {
-                  const cur = character.baseAbilityScores || { str: 8, dex: 8, con: 8, int: 8, wis: 8, cha: 8 };
-                  const newScores: Record<AbilityKey, number> = { str: 8, dex: 8, con: 8, int: 8, wis: 8, cha: 8 };
+                  const cur = character.baseAbilityScores || unsetAbilityScores();
+                  const newScores = unsetAbilityScores();
                   for (const k of ABILITY_KEYS) {
                     const val = cur[k];
                     if (typeof val === "number" && val >= 8 && val <= 15) {

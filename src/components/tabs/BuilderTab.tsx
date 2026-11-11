@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { ScrollView, Text, TouchableOpacity } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { POINT_BUY_COST } from "../../constants/rules";
+import { POINT_BUY_COST, UNSET_ABILITY_SCORE, unsetAbilityScores } from "../../constants/rules";
 import { proficiencySheet, ruleGrantedSkills, skillChoiceOffers, sourceGrants } from "../../rules/proficiencySheet";
 import { useCharacters } from "../../context/CharacterContext";
 import { useAppTheme } from "../../context/ThemeContext";
@@ -120,13 +120,13 @@ export const BuilderTab: React.FC<BuilderTabProps> = ({
   // ─────────────────────────────────────────────────────────────────────────
   let pointBuySpent = 0;
   for (const k of ABILITY_KEYS) {
-    const score = character.baseAbilityScores?.[k] ?? (character.abilityMethod === "pointBuy" ? 8 : 10);
+    const score = character.baseAbilityScores?.[k] ?? UNSET_ABILITY_SCORE;
     pointBuySpent += POINT_BUY_COST[score] ?? 0;
   }
   const pointBuyRemaining = 27 - pointBuySpent;
 
   const updateBaseScore = (key: AbilityKey, delta: number) => {
-    const current = character.baseAbilityScores?.[key] ?? (character.abilityMethod === "pointBuy" ? 8 : 10);
+    const current = character.baseAbilityScores?.[key] ?? UNSET_ABILITY_SCORE;
     const next = current + delta;
     if (character.abilityMethod === "pointBuy") {
       if (next < 8 || next > 15) return;
@@ -158,7 +158,7 @@ export const BuilderTab: React.FC<BuilderTabProps> = ({
     onUpdate((current) => ({
       ...current,
       standardArrayPicks: {},
-      baseAbilityScores: { str: 10, dex: 10, con: 10, int: 10, wis: 10, cha: 10 },
+      baseAbilityScores: unsetAbilityScores(),
     }));
   };
 
