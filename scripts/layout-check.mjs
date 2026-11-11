@@ -18,12 +18,14 @@
 // needs `npx playwright install chromium` once.
 //
 // Fails (one line per violation) on squeezed text and on elements that stick out of a non-scrolling
-// parent. Env: BASE (default http://localhost:8099), WIDTHS (default "393,360,320,412,768"), ONLY (a comma-separated
+// parent. Env: BASE (default http://localhost:8099), WIDTHS (default "320,393,768,1280": compact, phone, tablet
+// and desktop, one width per layout; `-- --integrated` narrows it to 320 unless WIDTHS is set), ONLY (a comma-separated
 // list of substrings: only the scenarios whose name contains one of them, ignoring case, are visited in every
 // width; unset visits all), SHOTS (screenshot dir, default a layout-check folder under the OS temp dir). Exit:
 // 0 green, 1 violations, 2 no browser or no server (the server log path is printed then), or an ONLY term that
 // matches no scenario (the scenario names are printed then). `--list` prints the shared scenario list (the
-// SCREENS names) as JSON and exits without starting anything.
+// SCREENS names) as JSON and exits without starting anything. `--dev` serves the app with the `expo start
+// --web` dev server instead of a static export of the production bundle.
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -46,7 +48,10 @@ const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const BASE = process.env.BASE ?? "http://localhost:8099";
 const PORT = new URL(BASE).port || "8099";
 const SHOTS = process.env.SHOTS ?? join(tmpdir(), "layout-check");
-const WIDTHS = (process.env.WIDTHS ?? "393,360,320,412,768").split(",").map(Number);
+const WIDTHS = (process.env.WIDTHS ?? "320,393,768,1280").split(",").map(Number);
+// The width the run-once checks below use (the die-count cap, the result-card auto-dismiss): always the
+// narrowest width of this run, so dropping a default width never drops the branch with it.
+const SINGLE_RUN_WIDTH = Math.min(...WIDTHS);
 // Lowercase substrings from ONLY. Empty when ONLY is unset or blank, which visits every scenario.
 const ONLY = (process.env.ONLY ?? "").split(",").map((term) => term.trim().toLowerCase()).filter(Boolean);
 const INTEGRATED = process.argv.includes("--integrated") || process.env.LAYOUT_INTEGRATED === "1";
@@ -1003,7 +1008,7 @@ async function checkDiceTrayAndLog(ctx, width) {
 
   // A die's count is capped at 100: tapping one die 100 times disables its add button, and rolling the
   // capped pool works instead of throwing "Not a dice pool".
-  if (width === 360) {
+  if (width === SINGLE_RUN_WIDTH) {
     const addD20 = page.getByLabel("Add d20", { exact: true });
     for (let i = 0; i < 100; i++) await addD20.click({ timeout: 5000 }).catch(() => fail(`the "Add d20" tap ${i + 1} failed`));
     const atCap = await page.evaluate(() => {
@@ -1183,7 +1188,7 @@ async function checkDiceTrayAndLog(ctx, width) {
     await page.waitForSelector(dialogSel, { state: "hidden", timeout: 10000 }).catch(() => fail("Escape did not close the tray"));
     // A card without a follow-up still auto-dismisses after about 8s — and the announce region
     // stays mounted afterwards, so the next Roll changes its text instead of mounting a populated one.
-    if (width === 360) {
+    if (width === SINGLE_RUN_WIDTH) {
       await page.waitForTimeout(8500);
       if ((await page.locator(cardSel).count()) > 0) fail("the result card without a follow-up did not auto-dismiss after ~8s");
       const regionAfter = await page.evaluate(() => {
@@ -1655,7 +1660,7 @@ async function checkActionRolls(ctx, width) {
     if (card.followUp !== "Roll critical damage") fail(`the natural-20 card's follow-up is "${card.followUp}", expected "Roll critical damage"`);
   }
   // A card that still offers a follow-up never auto-dismisses, even after the usual ~8s.
-  if (width === 360) {
+  if (width === SINGLE_RUN_WIDTH) {
     await page.waitForTimeout(8500);
     if (!(await page.locator(cardSel).count())) fail('the natural-20 card with a pending "Roll critical damage" follow-up auto-dismissed');
   }
