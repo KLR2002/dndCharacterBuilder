@@ -664,11 +664,15 @@ async function checkExpected(page, expect) {
       if (card.includes(row)) out.push(`the "${title}" card shows "${row}"`);
     }
   }
+  // Present controls are waited for as conditions (the screen can render them a beat after its ready
+  // text); absent ones are read once, after the settle.
   for (const text of expect.texts ?? []) {
-    if (!(await page.getByText(text, { exact: true }).first().isVisible())) out.push(`missing "${text}"`);
+    if (!(await page.getByText(text, { exact: true }).first().waitFor({ state: "visible", timeout: 5000 }).then(() => true).catch(() => false)))
+      out.push(`missing "${text}"`);
   }
   for (const placeholder of expect.placeholders ?? []) {
-    if (!(await page.getByPlaceholder(placeholder).first().isVisible())) out.push(`missing the input with placeholder "${placeholder}"`);
+    if (!(await page.getByPlaceholder(placeholder).first().waitFor({ state: "visible", timeout: 5000 }).then(() => true).catch(() => false)))
+      out.push(`missing the input with placeholder "${placeholder}"`);
   }
   for (const text of expect.absent ?? []) {
     if (await firstVisibleOutsideIdentitySide(page.getByText(text, { exact: true }))) out.push(`"${text}" is shown but should not be`);
@@ -677,7 +681,8 @@ async function checkExpected(page, expect) {
     if (await firstVisibleOutsideIdentitySide(page.getByText(pattern))) out.push(`text matching ${pattern} is shown but should not be`);
   }
   for (const label of expect.labels ?? []) {
-    if (!(await page.getByLabel(label).first().isVisible())) out.push(`missing the control labelled "${label}"`);
+    if (!(await page.getByLabel(label).first().waitFor({ state: "visible", timeout: 5000 }).then(() => true).catch(() => false)))
+      out.push(`missing the control labelled "${label}"`);
   }
   for (const label of expect.absentLabels ?? []) {
     if ((await page.getByLabel(label).count()) > 0) out.push(`the control labelled "${label}" is present but should not be`);
