@@ -4,9 +4,11 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] Existing tests that cover trait-text skills pass unchanged (find them with `grep -rln "traitTextSkills\|proficient in the" checks`); if none drives `traitTextSkills` directly, add one first with invented trait text: a trait naming one skill in the prose form, one in the `{@skill ...}` form, a Stonecunning trait that names History, and a trait naming none
-- [ ] No `new RegExp` remains inside the trait loop
-- [ ] `npm run check:all` and `npm run check:live` pass
-- [ ] The report pastes `npm run perf:rules:interp` before and after if ticket 01 has landed in the integration branch by then; otherwise it says so
+**Landed:** 5e5ebf4. Measured together with 01 (see 01). check:all and check:live 141/141 pass; characterization test checks/traitTextSkills.test.ts.
+
+- [x] Existing tests that cover trait-text skills pass unchanged (find them with `grep -rln "traitTextSkills\|proficient in the" checks`); if none drives `traitTextSkills` directly, add one first with invented trait text: a trait naming one skill in the prose form, one in the `{@skill ...}` form, a Stonecunning trait that names History, and a trait naming none
+- [x] No `new RegExp` remains inside the trait loop
+- [x] `npm run check:all` and `npm run check:live` pass
+- [x] The report pastes `npm run perf:rules:interp` before and after if ticket 01 has landed in the integration branch by then; otherwise it says so

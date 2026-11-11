@@ -8,9 +8,11 @@ Add the measurement as a tracked script so later tickets can rerun it: `scripts/
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] A test (in `checks/compendium.test.ts`) shows: two `for(books)` calls with equal book lists return listings whose `items()` (and `races()`) are the same array; the array is frozen; a different book list gives a different array; a new `createCompendium` of the same bundle gives a new array. Use a small invented bundle, not the live catalog
-- [ ] Every existing test passes unchanged; a test that now throws on a frozen array is a caller mutating a shared listing: fix the caller to copy first and name it in the report
-- [ ] `npm run perf:rules` and `npm run perf:rules:interp` run, and the report pastes both outputs before and after the change
-- [ ] `npm run check:all` and `npm run check:live` pass
+**Landed:** e2370d7. One pick (perf:rules, integrated with 02): 62-89 ms -> 11 ms with JIT, 143-198 ms -> 21-24 ms interpreter-only. check:all and check:live 141/141 pass. Open: listing types stay mutable (arrays are frozen at runtime).
+
+- [x] A test (in `checks/compendium.test.ts`) shows: two `for(books)` calls with equal book lists return listings whose `items()` (and `races()`) are the same array; the array is frozen; a different book list gives a different array; a new `createCompendium` of the same bundle gives a new array. Use a small invented bundle, not the live catalog
+- [x] Every existing test passes unchanged; a test that now throws on a frozen array is a caller mutating a shared listing: fix the caller to copy first and name it in the report
+- [x] `npm run perf:rules` and `npm run perf:rules:interp` run, and the report pastes both outputs before and after the change
+- [x] `npm run check:all` and `npm run check:live` pass
