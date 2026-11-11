@@ -1550,7 +1550,8 @@ export function buildScreens({ integrated }) {
       // On phones the header's Sheet menu is opened here so both runners see the two rows: the web check's
       // expect (which also sees the name under the open menu), and natively nativeTexts — the dump of an open
       // dialog shows only the dialog's window, so the sheet's name is not in it. At 768px and up the sheet has
-      // no menu button: the left rail holds Level up and Edit Build, asserted with no modal.
+      // no menu button (absentLabels "Sheet menu"): the left rail holds Level up and Edit Build as buttons
+      // (railLabels), asserted with no modal.
       {
         name: "Review finishes character",
         route: REVIEW_DRAFT_ROUTE,
@@ -1563,7 +1564,13 @@ export function buildScreens({ integrated }) {
           open: [{ tap: { text: "Create character", exact: true } }],
           modal: null,
           ready: "Wren",
-          expect: { texts: ["Level up", "Edit Build", "Wren"], absent: ["Builder"], fitsWidth: true },
+          expect: {
+            texts: ["Level up", "Edit Build", "Wren"],
+            railLabels: ["Level up", "Edit Build"],
+            absentLabels: ["Sheet menu"],
+            absent: ["Builder"],
+            fitsWidth: true,
+          },
         },
       },
       // Edit Build on a finished character: choosing the Background step opens the flow there with every step reachable.
