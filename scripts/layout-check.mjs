@@ -1504,6 +1504,45 @@ function hexToRgbString(hex) {
   return `rgb(${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255})`;
 }
 
+// Starts an in-page sampler that records the first 3D die's computed pose on every animation frame.
+// Run before the roll so the samples cover the tumble itself; the sampler runs until 3s after the die
+// first appeared (at most 15s) — the die mounts a beat after the card, once its lazy chunk loads.
+function startDieSampling(p) {
+  return p.evaluate(() => {
+    window.__dieT0 = performance.now();
+    window.__dieMountT = null;
+    window.__dieSamples = [];
+    const tick = () => {
+      const now = performance.now() - window.__dieT0;
+      const die = document.querySelector('[data-testid="die-3d-0"]');
+      if (die) {
+        if (window.__dieMountT === null) window.__dieMountT = now;
+        window.__dieSamples.push({ t: now, pose: getComputedStyle(die).transform });
+      }
+      const limit = window.__dieMountT === null ? 15000 : window.__dieMountT + 3000;
+      if (now < limit) requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+  });
+}
+
+// Resolves once the sampler has covered 3s after the die first appeared (or gave up after 15s):
+// { samples, mountT } (mountT is the sample time at which the die first appeared, or 0).
+function readDieSamples(p) {
+  return p.evaluate(
+    () =>
+      new Promise((resolve) => {
+        const done = () => {
+          const now = performance.now() - window.__dieT0;
+          if ((window.__dieMountT !== null && now >= window.__dieMountT + 3000) || now >= 15000)
+            resolve({ samples: window.__dieSamples, mountT: window.__dieMountT ?? 0 });
+          else setTimeout(done, 50);
+        };
+        done();
+      }),
+  );
+}
+
 // The 2.5D dice of a Roll in the result card: with the 3D dice setting on (no saved value, no reduced
 // motion) the text total is shown while the dice are still tumbling and lands on the Roll's faces in
 // the accent colour, a dropped d20 included but muted; with the setting switched off in Options (and
@@ -1554,6 +1593,9 @@ async function checkDiceAnimation(ctx, width, meta) {
 
   // 3D dice on by default (no saved setting, no reduced motion): the total is there while the
   // dice still tumble, the faces shown match the Roll's chips, the dice carry the accent colour.
+  // The pose sampler starts before the roll: under load the die can mount and finish tumbling before
+  // a sampler started after the roll would begin.
+  await startDieSampling(page);
   await rollTrayPool(page);
   const dieMounted = await page.waitForSelector('[data-testid="die-3d-0"]', { state: "visible", timeout: 10000 }).catch(() => null);
   if (!dieMounted) fail("with 3D dice on, no animated die mounted in the result card");
@@ -1562,31 +1604,18 @@ async function checkDiceAnimation(ctx, width, meta) {
       const card = document.querySelector('[data-testid="result-card"]');
       return { total: card?.querySelector('[data-testid="result-total"]')?.textContent ?? null };
     });
-    // Sample the die's pose on every animation frame, in the page. The check proves an animation ran
-    // from the sampled poses themselves, not from wall-clock frame timing: under load two samples 120ms
-    // apart can land in the same frame. A die that never animates yields one constant pose and fails.
-    const samples = await page.evaluate(
-      () =>
-        new Promise((resolve) => {
-          const die = document.querySelector('[data-testid="die-3d-0"]');
-          if (!die) return resolve([]);
-          const out = [];
-          const t0 = performance.now();
-          const tick = () => {
-            out.push({ t: performance.now() - t0, pose: getComputedStyle(die).transform });
-            if (out.length < 120 && performance.now() - t0 < 1500) requestAnimationFrame(tick);
-            else resolve(out);
-          };
-          requestAnimationFrame(tick);
-        }),
-    );
+    // The pose samples, taken on every animation frame in the page, prove an animation ran from the
+    // poses themselves, not from wall-clock frame timing: under load two samples 120ms apart can
+    // land in the same frame. A die that never animates yields one constant pose and still fails.
+    const { samples, mountT } = await readDieSamples(page);
+    const timed = samples.map((s) => ({ t: s.t - mountT, pose: s.pose }));
     if (early.total === null) fail("the text total was not shown while the dice animation was still running");
     else {
-      const poses = [...new Set(samples.map((s) => s.pose))];
-      if (samples.length === 0 || poses.length < 2) fail(`the die pose never changed across ${samples.length} sampled frames: no animation ran with 3D dice on`);
+      const poses = [...new Set(timed.map((s) => s.pose))];
+      if (timed.length === 0 || poses.length < 2) fail(`the die pose never changed across ${timed.length} sampled frames: no animation ran with 3D dice on`);
       // The tumble settles well under a second after the roll: the final pose is reached by 1.2s.
-      const finalPose = samples[samples.length - 1]?.pose ?? null;
-      const firstFinal = samples.find((s) => s.pose === finalPose);
+      const finalPose = timed[timed.length - 1]?.pose ?? null;
+      const firstFinal = timed.find((s) => s.pose === finalPose);
       if (firstFinal && firstFinal.t > 1200) fail(`the dice were still animating more than 1.2s after the roll (final pose first seen at ${Math.round(firstFinal.t)}ms)`);
     }
 
