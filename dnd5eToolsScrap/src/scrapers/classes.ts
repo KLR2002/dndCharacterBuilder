@@ -1,4 +1,5 @@
-import type { ToolsClient ,
+import type {
+  ToolsClient,
   ChoiceOption,
   ClassFeatureModel,
   ClassModel,
