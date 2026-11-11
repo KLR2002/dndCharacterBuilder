@@ -14,7 +14,8 @@
 //
 // Usage: `npm run layout:check` (not part of check:all). The script starts the Expo web server itself
 // on the port in BASE, unless a server already answers there. `npm run layout:check -- --integrated`
-// (or LAYOUT_INTEGRATED=1) seeds the integrated catalog instead of the SRD Baseline. The first run
+// (or LAYOUT_INTEGRATED=1) seeds the integrated catalog instead of the SRD Baseline and runs at 320 unless
+// WIDTHS is set. The first run
 // needs `npx playwright install chromium` once.
 //
 // Fails (one line per violation) on squeezed text and on elements that stick out of a non-scrolling
@@ -48,13 +49,15 @@ const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const BASE = process.env.BASE ?? "http://localhost:8099";
 const PORT = new URL(BASE).port || "8099";
 const SHOTS = process.env.SHOTS ?? join(tmpdir(), "layout-check");
-const WIDTHS = (process.env.WIDTHS ?? "320,393,768,1280").split(",").map(Number);
+const INTEGRATED = process.argv.includes("--integrated") || process.env.LAYOUT_INTEGRATED === "1";
+// The integrated run exists to catch long names and extra options, and those overflow at the narrowest
+// width, so it runs at 320 only unless WIDTHS is set explicitly.
+const WIDTHS = (process.env.WIDTHS ?? (INTEGRATED ? "320" : "320,393,768,1280")).split(",").map(Number);
 // The width the run-once checks below use (the die-count cap, the result-card auto-dismiss): always the
 // narrowest width of this run, so dropping a default width never drops the branch with it.
 const SINGLE_RUN_WIDTH = Math.min(...WIDTHS);
 // Lowercase substrings from ONLY. Empty when ONLY is unset or blank, which visits every scenario.
 const ONLY = (process.env.ONLY ?? "").split(",").map((term) => term.trim().toLowerCase()).filter(Boolean);
-const INTEGRATED = process.argv.includes("--integrated") || process.env.LAYOUT_INTEGRATED === "1";
 const SERVER_WAIT_MS = 180_000;
 
 // The Expo web server this script started. It runs in its own process group, so one signal stops it and its children.
