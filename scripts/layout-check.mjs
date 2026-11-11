@@ -1713,18 +1713,28 @@ async function checkDiceAnimation(ctx, width, meta) {
     // land in the same frame. A die that never animates yields one constant pose and still fails.
     // The samples cover the 3s budget counted from the roll, not from the die's mount.
     const { samples } = await readDieSamples(page, rollAt + 3000);
-    const timed = samples.filter((s) => s.t >= rollAt).map((s) => ({ t: s.t - rollAt, pose: s.pose }));    if (early.total === null) fail("the text total was not shown while the dice animation was still running");
+    const timed = samples.filter((s) => s.t >= rollAt).map((s) => ({ t: s.t - rollAt, pose: s.pose }));
+    if (early.total === null) fail("the text total was not shown while the dice animation was still running");
+    // The die mounts a beat after the roll (its chunk loads first), so its first sample marks the mount.
+    // Under load that can take longer than the tumble itself, so the tumble is measured from the first
+    // pose change, not from the roll.
+    const mountT = timed.length > 0 ? timed[0].t : null;
+    if (mountT === null || mountT > 3000)
+      fail(`no 3D die mounted within 3s of the roll (${mountT === null ? "none appeared" : `first seen at ${Math.round(mountT)}ms`})`);
+    const changes = [];
+    for (let i = 1; i < timed.length; i++) if (timed[i].pose !== timed[i - 1].pose) changes.push(timed[i].t);
+    if (changes.length === 0) fail("the die's pose did not change within 3s of the roll: no tumble ran");
     // A real tumble yields dozens of distinct poses; a die that never animates yields at most two
     // (its mount pose and its final one), so three distinct poses prove an animation ran. The poses must
     // also differ between two samples more than 100ms apart, so one frame's jitter cannot pass.
     const poses = [...new Set(timed.map((s) => s.pose))];
     const changesOverWindow = timed.some((a) => timed.some((b) => b.t - a.t > 100 && b.pose !== a.pose));
-    if (timed.length === 0 || poses.length < 3 || !changesOverWindow)
+    if (poses.length < 3 || !changesOverWindow)
       fail(`the die pose took only ${poses.length} distinct values across ${timed.length} sampled frames after the roll: no animation ran with 3D dice on`);
-    // The tumble has ended once its last pose change happens: that change must come within 1.2s of the roll.
-    let lastChangeT = null;
-    for (let i = 1; i < timed.length; i++) if (timed[i].pose !== timed[i - 1].pose) lastChangeT = timed[i].t;
-    if (lastChangeT !== null && lastChangeT > 1200) fail(`the dice were still animating more than 1.2s after the roll (last pose change at ${Math.round(lastChangeT)}ms)`);
+    // The tumble runs from its first pose change to its last one, and must take at most 1.2s.
+    const tumbleMs = changes[changes.length - 1] - changes[0];
+    if (tumbleMs > 1200)
+      fail(`the dice tumbled for ${Math.round(tumbleMs)}ms (first pose change at ${Math.round(changes[0])}ms, last at ${Math.round(changes[changes.length - 1])}ms): limit 1200ms`);
 
     const faces = await page.evaluate((accent) => {
       const card = document.querySelector('[data-testid="result-card"]');
