@@ -268,10 +268,17 @@ export default function CharacterSheetScreen() {
           testID="sheet-header-menu"
           onPress={() => setMenuOpen(true)}
           accessibilityRole="button"
-          accessibilityLabel="Sheet menu"
+          // At wide widths the button's name comes from the labelled text inside it, so the plain
+          // "Sheet menu" aria-label belongs to the phone header only.
+          {...(isTablet ? { "aria-labelledby": "sheet-header-menu-name" } : { accessibilityLabel: "Sheet menu" })}
           hitSlop={{ top: 4, bottom: 4, left: 4, right: 4 }}
           style={[styles.headerIconBtn, { backgroundColor: theme.surfaceHighlight, borderColor: theme.border }]}>
           <Ionicons name="ellipsis-vertical" size={20} color={theme.text} />
+          {isTablet ? (
+            <Text nativeID="sheet-header-menu-name" style={styles.visuallyHidden}>
+              Sheet menu
+            </Text>
+          ) : null}
         </TouchableOpacity>
       </View>
       </View>
@@ -384,6 +391,9 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     flexShrink: 0,
+  },
+  visuallyHidden: {
+    display: "none",
   },
   nameBlock: {
     flex: 1,
