@@ -485,6 +485,19 @@ function findDismissGaps() {
   return boxes.slice(1).map((r, i) => r.top - boxes[i].bottom);
 }
 
+// Whether the first element the locator matches is visible, skipping matches inside the flow's identity
+// side column. At 1024px and up that column repeats the character's abilities, subrace and background, so a
+// step's own absence checks must not read its subtree; every other check (overflow, squeeze, fitsWidth,
+// texts) still covers the column.
+async function firstVisibleOutsideIdentitySide(locator) {
+  for (const handle of await locator.elementHandles()) {
+    const insideSide = await handle.evaluate((el) => document.querySelector('[data-testid="flow-identity-side"]')?.contains(el) ?? false);
+    if (insideSide) continue;
+    return await handle.isVisible();
+  }
+  return false;
+}
+
 // Checks what a picker screen must show that the layout rules cannot see: texts, input placeholders and
 // accessibility labels on the page (`labels` present, `absentLabels` gone), and (`plainRaceRow`) the plain race
 // row. Returns one message per missing control.
@@ -505,10 +518,10 @@ async function checkExpected(page, expect) {
     if (!(await page.getByPlaceholder(placeholder).first().isVisible())) out.push(`missing the input with placeholder "${placeholder}"`);
   }
   for (const text of expect.absent ?? []) {
-    if (await page.getByText(text, { exact: true }).first().isVisible()) out.push(`"${text}" is shown but should not be`);
+    if (await firstVisibleOutsideIdentitySide(page.getByText(text, { exact: true }))) out.push(`"${text}" is shown but should not be`);
   }
   for (const pattern of expect.absentMatching ?? []) {
-    if (await page.getByText(pattern).first().isVisible()) out.push(`text matching ${pattern} is shown but should not be`);
+    if (await firstVisibleOutsideIdentitySide(page.getByText(pattern))) out.push(`text matching ${pattern} is shown but should not be`);
   }
   for (const label of expect.labels ?? []) {
     if (!(await page.getByLabel(label).first().isVisible())) out.push(`missing the control labelled "${label}"`);
@@ -597,12 +610,25 @@ async function visitScreen(page, width, screen, state) {
   return violations.length;
 }
 
+// Per-width scenario override. A scenario may carry a `wide` field — `{ minWidth, ...overrides }` — that the
+// web runner merges over the scenario when the page width is at or above `minWidth` (shallow merge: `open`,
+// `modal`, `expect`, `ready` ... are replaced wholesale, and `modal: null` unsets the modal). This lets one
+// scenario assert a different path at wide widths, e.g. the identity panel on screen instead of behind a
+// tap. Below every `minWidth` the scenario is used as written, and the Android runner (phone-only) never
+// applies overrides, so phone widths and native runs behave exactly as before.
+export function applyWideOverride(screen, width) {
+  const wide = screen.wide;
+  if (!wide || typeof wide.minWidth !== "number" || width < wide.minWidth) return screen;
+  const { minWidth, ...overrides } = wide;
+  return { ...screen, ...overrides };
+}
+
 // Visits the screens in SCREENS that ONLY selects, on one width's context.
 async function checkScreens(ctx, width) {
   const page = await ctx.newPage();
   const state = { route: null };
   let failures = 0;
-  for (const screen of SCREENS) if (selected(screen.name)) failures += await visitScreen(page, width, screen, state);
+  for (const screen of SCREENS) if (selected(screen.name)) failures += await visitScreen(page, width, applyWideOverride(screen, width), state);
   await page.close();
   return failures;
 }
@@ -2894,6 +2920,7 @@ function unmatchedOnlyTerms() {
 
 // Runs every check at one width, on that width's own browser context. Returns the number of violations.
 async function checkWidth(browser, seed, width) {
+  const startedAt = Date.now();
   const ctx = await browser.newContext({ viewport: { width, height: 851 }, deviceScaleFactor: 2, hasTouch: true, isMobile: true });
   // React logs "<button> cannot contain a nested <button>" as a console error when a pressable with a
   // button role wraps another one; collect those from every page of this width and fail the run on them.
@@ -2914,6 +2941,7 @@ async function checkWidth(browser, seed, width) {
     return failures;
   } finally {
     await ctx.close();
+    console.log(`[${width}px] checks done in ${Math.round((Date.now() - startedAt) / 1000)}s`);
   }
 }
 
@@ -2972,17 +3000,22 @@ async function main() {
   return failures === 0 ? 0 : 1;
 }
 
-for (const [signal, code] of [["SIGINT", 130], ["SIGTERM", 143]]) process.on(signal, () => shutdown(code));
-// Last resort on any exit path: the server's process group must not outlive this script.
-process.on("exit", () => signalServerGroup("SIGKILL"));
+// The module drives a run only when invoked directly (npm run layout:check), so a test can import
+// applyWideOverride from it without starting a browser or a server.
+const invokedDirectly = process.argv[1] !== undefined && fs.realpathSync(process.argv[1]) === fs.realpathSync(fileURLToPath(import.meta.url));
+if (invokedDirectly) {
+  for (const [signal, code] of [["SIGINT", 130], ["SIGTERM", 143]]) process.on(signal, () => shutdown(code));
+  // Last resort on any exit path: the server's process group must not outlive this script.
+  process.on("exit", () => signalServerGroup("SIGKILL"));
 
-main().then(
-  (code) => {
-    // Stop the server and browser in one place: the `finally` equivalent for every return path above.
-    return shutdown(code);
-  },
-  (error) => {
-    console.error(error);
-    return shutdown(1);
-  },
-);
+  main().then(
+    (code) => {
+      // Stop the server and browser in one place: the `finally` equivalent for every return path above.
+      return shutdown(code);
+    },
+    (error) => {
+      console.error(error);
+      return shutdown(1);
+    },
+  );
+}
