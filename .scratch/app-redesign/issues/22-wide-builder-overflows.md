@@ -1,6 +1,8 @@
 # 22: Builder and flow overflows at wide widths
 
-**Status:** ready-for-agent
+**Status:** done
+
+**Landed:** `6f0ea1e` on feat/app-redesign (merge of R2 plus the AGENTS.md note); gate in `evidence.md`, "Ticket 22".
 
 ## What to build
 
@@ -8,9 +10,9 @@
 
 ## Acceptance Criteria
 
-- [ ] `WIDTHS=768,1280 npm run layout:check` and `WIDTHS=768,1280 npm run layout:check -- --integrated` are GREEN
-- [ ] The default `layout:check` run covers at least one wide width (768 or 1024), or AGENTS.md names the wide run as part of the gate, with its runtime noted
-- [ ] The phone widths stay GREEN
+- [x] `WIDTHS=768,1280 npm run layout:check` and `WIDTHS=768,1280 npm run layout:check -- --integrated` are GREEN
+- [x] The default `layout:check` run covers at least one wide width (768 or 1024), or AGENTS.md names the wide run as part of the gate, with its runtime noted
+- [x] The phone widths stay GREEN
 
 ## Verification
 
@@ -28,3 +30,7 @@ Spec: `.scratch/app-redesign/spec.md`. Implementer rules: `docs/agents/subagent-
 ## Blocked by
 
 21
+
+## Decision
+
+The design in ticket 04 puts the identity panel on the right at every width from 768px. At 768 that leaves the step 288px, so the panel moves to the right from 1024px (`FLOW_IDENTITY_SIDE_MIN_WIDTH = BREAKPOINTS.desktop`). From 768 to 1023 the footer holds the identity line, which opens the "Character" modal, and the footer reserves the dice button's footprint on its right.

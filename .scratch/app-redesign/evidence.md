@@ -148,3 +148,37 @@ Review: a Sonnet review and the owner's screenshots sent back:
 Advisory: RollBadge keeps 48dp by `hitSlop` around a content-sized badge, which no check measures.
 
 Not covered: the 13 overflows already in the Builder and flows at 768/1280 (ticket 22).
+
+# Evidence: ticket 22 on feat/app-redesign
+
+Tree: `6f0ea1e` (merge of ticket 22 with repairs R1 and R2, plus the AGENTS.md note), clean worktree, dependencies from the committed lockfiles (`npm ci` in the root and `dnd5eToolsScrap/`).
+
+| Check | Command | Result | Exit |
+| --- | --- | --- | --- |
+| lint, typecheck, tests | `npm run check:all` | pass: 2123 app tests + 307 scraper tests | 0 |
+| layout, SRD | `npm run layout:check` (320/360/393/412/768) | GREEN, 634s | 0 |
+| layout, integrated | `npm run layout:check -- --integrated` | RED: 2 violations, both "dice animation" at 360 and 412; rerun with `ONLY="dice animation"` GREEN at all five widths | 1, then 0 |
+| layout, wide SRD | `WIDTHS=1024,1280 npm run layout:check` | GREEN, 589s | 0 |
+| layout, wide integrated | `WIDTHS=1024,1280 npm run layout:check -- --integrated` | GREEN, 694s | 0 |
+
+Required gate: PASS, with one flaky check. The dice animation check fails under the five-width load and passes alone. It failed the same way in the implementer's run at 320/393. This is ticket 23.
+
+Not run: `check:live` (no catalog readers changed). `layout:android` was not run: the changes apply from 768px up, plus the identity panel hiding empty rows, which is not native-only.
+
+New checks:
+- At 768px and up, the dice button must not cover either flow's footer action or identity line. It failed on `882de32`.
+- The wide sheet must have no "Sheet menu" button, and Level up and Edit Build must be buttons in the rail.
+- New scenarios: "Builder Spells step" and "Level-Up Flow identity panel".
+- Absence checks ignore the identity side column, which repeats the character's abilities. Every other check still covers that column.
+
+Review:
+- First round: two fixes rejected.
+  - It removed the identity side panel the design keeps.
+  - It named the wide sheet menu with `aria-labelledby` to get past the chrome check.
+- R1 (Sonnet review):
+  - The dice button covered the footer at 768-983.
+  - The default run missed 1024.
+  - The wide sheet's menu absence was not asserted.
+  - Tests imported the playwright script.
+  - The Level-Up Flow had no wide scenario.
+- R2: all fixed. A sixth default width (1024) peaked at about 11.1 GiB, so it stays a documented extra run.
