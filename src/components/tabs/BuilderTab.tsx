@@ -135,7 +135,7 @@ export const BuilderTab: React.FC<BuilderTabProps> = ({
     }
     onUpdate({
       baseAbilityScores: {
-        ...(character.baseAbilityScores || { str: 8, dex: 8, con: 8, int: 8, wis: 8, cha: 8 }),
+        ...(character.baseAbilityScores || unsetAbilityScores()),
         [key]: Math.max(1, next),
       },
     });
@@ -146,7 +146,7 @@ export const BuilderTab: React.FC<BuilderTabProps> = ({
     onUpdate({
       baseAbilityScores: {
         ...character.baseAbilityScores,
-        [key]: isNaN(val) ? 10 : Math.max(1, Math.min(30, val)),
+        [key]: isNaN(val) ? UNSET_ABILITY_SCORE : Math.max(1, Math.min(30, val)),
       },
     });
   };
