@@ -1,4 +1,10 @@
-import type { ToolsClient } from "../types/models.ts";
+import type { ToolsClient ,
+  ChoiceOption,
+  ClassFeatureModel,
+  ClassModel,
+  FeatureChoice,
+  SubclassModel,
+} from "../types/models.ts";
 import { renderEntries } from "../parser/entry-renderer.ts";
 import { cleanTags } from "../parser/tag-cleaner.ts";
 import { liftSpellChoice } from "../parser/spell-choice.ts";
@@ -17,13 +23,6 @@ import {
 import { PROFICIENCY_GRANT_OVERRIDES } from "../overrides/proficiency-grants.ts";
 import { resolveInitiativeBonuses } from "../parser/initiative-bonuses.ts";
 import { INITIATIVE_BONUS_OVERRIDES } from "../overrides/initiative-bonuses.ts";
-import type {
-  ChoiceOption,
-  ClassFeatureModel,
-  ClassModel,
-  FeatureChoice,
-  SubclassModel,
-} from "../types/models.ts";
 import type { ProficiencyGrant, ProficiencyReport } from "../types/proficiency.ts";
 
 const STAT_NAMES: Record<string, string> = {
@@ -144,6 +143,32 @@ function optionGrantSubjects(
   }));
 }
 
+/**
+ * The class fluff index: class key -> fluff file. Fluff is optional, so a failing index reads as no fluff at all.
+ */
+async function readFluffIndex(client: ToolsClient): Promise<Record<string, string>> {
+  console.log("  → Fetching class fluff index from data/class/fluff-index.json...");
+  try {
+    return await client.fetchJson<Record<string, string>>("data/class/fluff-index.json");
+  } catch (error) {
+    console.log(`  ! No class fluff index (${(error as Error).message}); class descriptions stay empty.`);
+    return {};
+  }
+}
+
+/** The fluff items of one class key's fluff file. A missing or failing file reads as no items. */
+async function readClassFluff(client: ToolsClient, fluffIndex: Record<string, string>, classKey: string): Promise<any[]> {
+  const fileName = fluffIndex[classKey];
+  if (!fileName) return [];
+  try {
+    const data = await client.fetchJson<{ classFluff?: any[] }>(`data/class/${fileName}`);
+    return data.classFluff ?? [];
+  } catch (error) {
+    console.log(`  ! No class fluff for ${classKey} (${(error as Error).message}).`);
+    return [];
+  }
+}
+
 export async function scrapeClasses(
   client: ToolsClient,
   report: ProficiencyReport = newProficiencyReport(),
@@ -151,13 +176,14 @@ export async function scrapeClasses(
 ): Promise<ClassModel[]> {
   console.log("  → Fetching class index from data/class/index.json...");
   const classIndex = await client.fetchJson<Record<string, string>>("data/class/index.json");
+  const fluffIndex = await readFluffIndex(client);
 
   const classes: ClassModel[] = [];
   /**
    * Features and folded options whose prose grants are resolved once every class is read (overrides may name any of
    * them). A class or subclass feature also names itself, so its Initiative Bonus is resolved from the same entry.
    */
-  const pending: Array<{ holder: { grants?: ProficiencyGrant[] }; subject: GrantSubject; feature?: ClassFeatureModel }> = [];
+  const pending: { holder: { grants?: ProficiencyGrant[] }; subject: GrantSubject; feature?: ClassFeatureModel }[] = [];
 
   for (const [classKey, fileName] of Object.entries(classIndex)) {
     console.log(`  → Fetching ${classKey} (${fileName})...`);
@@ -169,6 +195,7 @@ export async function scrapeClasses(
     }>(`data/class/${fileName}`);
 
     const rawClasses = classData.class || [];
+    const classFluff = await readClassFluff(client, fluffIndex, classKey);
     const allClassFeatures = classData.classFeature || [];
     const rawSubclasses = classData.subclass || [];
     const allSubclassFeatures = classData.subclassFeature || [];
@@ -341,6 +368,10 @@ export async function scrapeClasses(
         };
       }
 
+      // A class record carries no prose of its own in 5e.tools; its description is the fluff item of the same print.
+      const fluffItem = classFluff.find((item) => item.name === raw.name && item.source === raw.source);
+      const descriptionEntries = Array.isArray(raw.entries) && raw.entries.length > 0 ? raw.entries : fluffItem?.entries;
+
       classes.push({
         name: raw.name,
         source: raw.source,
@@ -357,7 +388,7 @@ export async function scrapeClasses(
         subclasses,
         ...(starting.grants.length > 0 ? { grants: starting.grants } : {}),
         multiclassing,
-        description: renderEntries(raw.entries, "markdown"),
+        description: renderEntries(descriptionEntries, "markdown"),
       });
     }
   }
