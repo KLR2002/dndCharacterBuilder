@@ -8,6 +8,8 @@ export const BREAKPOINTS = {
   phone: 600,
   /** At or above this: tablet layout (side-by-side panels possible) */
   tablet: 768,
+  /** At or above this: desktop layout (the flow's identity side column is back) */
+  desktop: 1024,
 } as const;
 
 /** Pure layout metrics derived from viewport width/height. */

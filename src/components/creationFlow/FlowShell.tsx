@@ -17,6 +17,14 @@ import { Modal } from "../ui/Modal";
  */
 export const FLOW_WIDE_MIN_WIDTH = BREAKPOINTS.tablet;
 
+/**
+ * The width from which the wide layout also shows the identity panel as a side column on the right, as
+ * the design keeps it always visible at wide widths. Between FLOW_WIDE_MIN_WIDTH and this width a 200px
+ * step list plus a 280px side column would leave the step under 320px, so there the wide footer carries
+ * the identity line that opens the "Character" modal instead. It is BREAKPOINTS.desktop by reference.
+ */
+export const FLOW_IDENTITY_SIDE_MIN_WIDTH = BREAKPOINTS.desktop;
+
 /** One step as the flow chrome shows it: its title, and whether it is the open, current, done or locked one. */
 export interface FlowStepView {
   id: string;
@@ -39,9 +47,9 @@ export interface FlowShellProps {
   content: React.ReactNode;
   /** The primary action of the bottom bar / wide footer. */
   primaryAction: React.ReactNode;
-  /** The touchable identity line in the bottom bar / wide footer; it opens the identity panel modal. */
+  /** The touchable identity line in the phone bottom bar and the wide footer below FLOW_IDENTITY_SIDE_MIN_WIDTH; it opens the identity panel modal. */
   identityLine: React.ReactNode;
-  /** The identity panel, shown in the modal the identity line opens. */
+  /** The identity panel: the side column at FLOW_IDENTITY_SIDE_MIN_WIDTH and up, otherwise the modal the identity line opens. */
   identityPanel: React.ReactNode;
   /** testID of the phone bottom bar, measured so the floating dice button sits above it. */
   bottomBarTestID?: string;
@@ -49,11 +57,11 @@ export interface FlowShellProps {
 
 /**
  * The shared chrome of the Creation Flow and the Level-Up Flow: step chips on phones, a step list on the
- * left with the step in the centre at FLOW_WIDE_MIN_WIDTH and up, and a bar holding the identity line and
- * the primary action (the bottom bar on phones, the footer at wide widths); the identity line opens the
- * identity panel modal at every width. The floating dice button sits
- * above that bar, never on its own row. Both flows render their steps through this shell; the steps
- * themselves come from their rules modules.
+ * left with the step in the centre at FLOW_WIDE_MIN_WIDTH and up. From FLOW_IDENTITY_SIDE_MIN_WIDTH up the
+ * identity panel is a side column on the right; below that the wide footer holds the identity line that
+ * opens the "Character" modal, and on phones the bottom bar does. The floating dice button sits above the
+ * phone bar, never on its own row. Both flows render their steps through this shell; the steps themselves
+ * come from their rules modules.
  */
 export function FlowShell({
   steps,
@@ -69,6 +77,7 @@ export function FlowShell({
   const { theme } = useAppTheme();
   const { width } = useResponsiveLayout();
   const wide = width >= FLOW_WIDE_MIN_WIDTH;
+  const identitySide = width >= FLOW_IDENTITY_SIDE_MIN_WIDTH;
   const { setBottomObstruction } = useRollLog();
   const [identityOpen, setIdentityOpen] = useState(false);
 
@@ -140,22 +149,34 @@ export function FlowShell({
               {content}
             </View>
             <View style={[styles.wideFooter, { borderTopColor: theme.border }]}>
-              <TouchableOpacity
-                accessibilityRole="button"
-                onPress={() => setIdentityOpen(true)}
-                activeOpacity={0.7}
-                style={styles.identityLineBtn}
-              >
-                {identityLine}
-                <Ionicons name="chevron-up" size={16} color={theme.textSecondary} />
-              </TouchableOpacity>
+              {identitySide ? null : (
+                <TouchableOpacity
+                  accessibilityRole="button"
+                  onPress={() => setIdentityOpen(true)}
+                  activeOpacity={0.7}
+                  style={styles.identityLineBtn}
+                >
+                  {identityLine}
+                  <Ionicons name="chevron-up" size={16} color={theme.textSecondary} />
+                </TouchableOpacity>
+              )}
               {primaryAction}
             </View>
           </View>
+          {identitySide ? (
+            <View
+              testID="flow-identity-side"
+              style={[styles.identitySide, { borderLeftColor: theme.border, backgroundColor: theme.surface }]}
+            >
+              <ScrollView contentContainerStyle={styles.identitySideContent}>{identityPanel}</ScrollView>
+            </View>
+          ) : null}
         </View>
-        <Modal visible={identityOpen} onClose={() => setIdentityOpen(false)} title="Character">
-          {identityPanel}
-        </Modal>
+        {identitySide ? null : (
+          <Modal visible={identityOpen} onClose={() => setIdentityOpen(false)} title="Character">
+            {identityPanel}
+          </Modal>
+        )}
       </SafeAreaView>
     );
   }
@@ -329,5 +350,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 10,
     gap: 8,
+  },
+  identitySide: {
+    width: 280,
+    borderLeftWidth: 1,
+  },
+  identitySideContent: {
+    padding: 16,
   },
 });
