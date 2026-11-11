@@ -181,7 +181,7 @@ export default function CharacterSheetScreen() {
   );
 
   // One compact header bar: back, the name over the race and class line (with the level badge), the HP and
-  // AC chips, and the menu holding Level up and Edit Build (at 768px and up the rail repeats those two).
+  // AC chips. On phones a menu holds Level up and Edit Build; at 768px and up those two move into the rail.
   const header = (
     <View
       testID="sheet-header"
@@ -264,22 +264,17 @@ export default function CharacterSheetScreen() {
           <Text style={[styles.chipText, { color: theme.text }, isCompact && { fontSize: 11 }]}>{evaluated.armorClass.ac}</Text>
         </View>
 
-        <TouchableOpacity
-          testID="sheet-header-menu"
-          onPress={() => setMenuOpen(true)}
-          accessibilityRole="button"
-          // At wide widths the button's name comes from the labelled text inside it, so the plain
-          // "Sheet menu" aria-label belongs to the phone header only.
-          {...(isTablet ? { "aria-labelledby": "sheet-header-menu-name" } : { accessibilityLabel: "Sheet menu" })}
-          hitSlop={{ top: 4, bottom: 4, left: 4, right: 4 }}
-          style={[styles.headerIconBtn, { backgroundColor: theme.surfaceHighlight, borderColor: theme.border }]}>
-          <Ionicons name="ellipsis-vertical" size={20} color={theme.text} />
-          {isTablet ? (
-            <Text nativeID="sheet-header-menu-name" style={styles.visuallyHidden}>
-              Sheet menu
-            </Text>
-          ) : null}
-        </TouchableOpacity>
+        {!isTablet && (
+          <TouchableOpacity
+            testID="sheet-header-menu"
+            onPress={() => setMenuOpen(true)}
+            accessibilityRole="button"
+            accessibilityLabel="Sheet menu"
+            hitSlop={{ top: 4, bottom: 4, left: 4, right: 4 }}
+            style={[styles.headerIconBtn, { backgroundColor: theme.surfaceHighlight, borderColor: theme.border }]}>
+            <Ionicons name="ellipsis-vertical" size={20} color={theme.text} />
+          </TouchableOpacity>
+        )}
       </View>
       </View>
     </View>
@@ -391,9 +386,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     flexShrink: 0,
-  },
-  visuallyHidden: {
-    display: "none",
   },
   nameBlock: {
     flex: 1,
