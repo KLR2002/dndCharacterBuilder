@@ -9,9 +9,11 @@ The fix: `SheetTabBar`'s `onLayout` reports the bar's height above the bottom in
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] `checkSheetChrome` in `scripts/layout-check.mjs` (phone branch) fails today and passes after the fix on: the tab content's scroll view bottom is within 1px of the bar's top (give the wrapper View in `[id].tsx` a `testID="sheet-tab-content"` and measure its first child); the dice button's bottom is 16px (plus or minus 1) above the bar's top
-- [ ] `ONLY="Sheet chrome,Dice button on sheet" WIDTHS=320 npm run layout:check` passes, and the same at 393
-- [ ] `npm run check:all` passes
-- [ ] On Android (main session, at the gate): a screenshot of the Stats tab shows no band and the button 16dp above the bar
+**Landed:** 1387af1. check:all, full layout:check green at 320/393/768/1280; layout:android "Dice button on sheet" at 393: no band, button about 17dp above the bar (was 66dp).
+
+- [x] `checkSheetChrome` in `scripts/layout-check.mjs` (phone branch) fails today and passes after the fix on: the tab content's scroll view bottom is within 1px of the bar's top (give the wrapper View in `[id].tsx` a `testID="sheet-tab-content"` and measure its first child); the dice button's bottom is 16px (plus or minus 1) above the bar's top
+- [x] `ONLY="Sheet chrome,Dice button on sheet" WIDTHS=320 npm run layout:check` passes, and the same at 393
+- [x] `npm run check:all` passes
+- [x] On Android (main session, at the gate): a screenshot of the Stats tab shows no band and the button 16dp above the bar

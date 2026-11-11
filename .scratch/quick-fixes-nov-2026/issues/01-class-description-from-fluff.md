@@ -4,9 +4,11 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] A new scraper test (`dnd5eToolsScrap/checks/class-fluff.test.ts`, invented names and sentences only) drives `scrapeClasses` with a fake client: two prints of one class (same name, different source) each get the description from their own fluff item; a class with no matching fluff item has an empty description; a fake whose fluff-index fetch throws still returns every class
-- [ ] `REQUIRED_CATALOG_FORMAT` is 15, with its doc line, and the tests that name the format pass
-- [ ] `checks/liveCatalog.test.ts` gains an invariant: each of the twelve SRD class names (Barbarian ... Wizard), in every print the live catalog holds, has a non-empty description
-- [ ] `npm run check:all` and `npm run check:live` pass
+**Landed:** 4866f8d (import tidy c062093). check:all (2123 app, 312 scraper tests), check:live 141/141, full layout:check green.
+
+- [x] A new scraper test (`dnd5eToolsScrap/checks/class-fluff.test.ts`, invented names and sentences only) drives `scrapeClasses` with a fake client: two prints of one class (same name, different source) each get the description from their own fluff item; a class with no matching fluff item has an empty description; a fake whose fluff-index fetch throws still returns every class
+- [x] `REQUIRED_CATALOG_FORMAT` is 15, with its doc line, and the tests that name the format pass
+- [x] `checks/liveCatalog.test.ts` gains an invariant: each of the twelve SRD class names (Barbarian ... Wizard), in every print the live catalog holds, has a non-empty description
+- [x] `npm run check:all` and `npm run check:live` pass
