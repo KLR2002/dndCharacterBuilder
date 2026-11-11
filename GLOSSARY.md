@@ -9,7 +9,7 @@ The persistent state and sheet of an adventurer, including ability scores, class
 _Avoid_: Avatar, hero record, player profile
 
 **Ability Scores**:
-The six core physical and mental attributes (Strength, Dexterity, Constitution, Intelligence, Wisdom, Charisma) calculated as base scores plus racial traits and Ability Score Improvements (ASI).
+The six core physical and mental attributes (Strength, Dexterity, Constitution, Intelligence, Wisdom, Charisma) calculated as base scores plus racial traits and Ability Score Improvements (ASI). A base score nothing has set (a new character, an empty Standard Array or Rolled Abilities slot, a reset) is 8.
 _Avoid_: Stats, attributes, raw scores
 
 **Effective Ability Scores**:

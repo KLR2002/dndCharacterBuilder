@@ -29,7 +29,7 @@ test("standard-array picks reject duplicate or invalid values and release replac
   assert.deepEqual(reassigned.standardArrayPicks, { str: 14, dex: 15 });
   const cleared = setStandardArrayPick(reassigned, "str", null);
   assert.deepEqual(cleared.standardArrayPicks, { dex: 15 });
-  assert.equal(cleared.baseAbilityScores.str, 10);
+  assert.equal(cleared.baseAbilityScores.str, 8);
   assert.equal(cleared.baseAbilityScores.dex, 15);
   assert.deepEqual(reassigned.standardArrayPicks, { str: 14, dex: 15 });
 });
