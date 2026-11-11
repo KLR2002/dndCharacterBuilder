@@ -149,6 +149,20 @@ test("live catalog: the cache is at the catalog format the app requires", { skip
   assert.equal(isCatalogStale(live!.collections), false, `catalog format ${live!.collections.catalogFormat} is below ${REQUIRED_CATALOG_FORMAT}`);
 });
 
+const SRD_CLASS_NAMES = [
+  "Barbarian", "Bard", "Cleric", "Druid", "Fighter", "Monk", "Paladin", "Ranger", "Rogue", "Sorcerer", "Warlock", "Wizard",
+];
+
+test("live catalog: every print of each SRD class has a description from its class fluff", { skip: SKIP }, () => {
+  for (const name of SRD_CLASS_NAMES) {
+    const prints = live!.collections.classes.filter((cls) => cls.name === name);
+    assert.ok(prints.length > 0, `${name} is in the live catalog`);
+    for (const cls of prints) {
+      assert.ok(cls.description.length > 0, `${printKey(cls)} has no description`);
+    }
+  }
+});
+
 test("live catalog: the Customizing Your Origin Proficiency Swaps table is parsed into rows", { skip: SKIP }, () => {
   const origin = (live!.collections.originRules ?? []).find((r) => r.name === "Customizing Your Origin" && r.source === "TCE");
   assert.ok(origin, "the live catalog holds the Customizing Your Origin record");
