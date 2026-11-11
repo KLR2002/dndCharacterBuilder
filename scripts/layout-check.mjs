@@ -2455,13 +2455,15 @@ async function checkLevelUpCancelAndReview(ctx, width, meta) {
   await page.getByLabel("Level up Ranger").first().click();
   await settle(page);
   await page.goBack();
-  await settle(page);
-  if (!(await page.getByText("Discard changes?", { exact: true }).first().isVisible().catch(() => false)))
+  // The popstate is asynchronous: wait for the discard question (and the still-open flow) as conditions.
+  if (!(await waitForVisibleText(page, "Discard changes?")))
     fail("system Back did not ask \"Discard changes?\" before leaving the Level-Up Flow");
   // The route is prevented even though the browser URL already popped, so the flow must still be on screen.
-  if (!(await page.getByLabel("Cancel level up").first().isVisible().catch(() => false)))
+  if (!(await page.getByLabel("Cancel level up").first().waitFor({ state: "visible", timeout: 10000 }).then(() => true).catch(() => false)))
     fail("system Back left the Level-Up Flow instead of asking first");
-  await page.getByText("Keep editing", { exact: true }).first().click();
+  const keepEditing = page.getByText("Keep editing", { exact: true }).first();
+  if ((await keepEditing.count()) === 0) fail('no "Keep editing" button after the prevented Back');
+  else await keepEditing.click({ timeout: 5000 }).catch(() => fail('could not tap "Keep editing"'));
   await settle(page);
   // Back on the Class step after the prevented Back: Continue to the Hit Points step.
   await page.getByText("Continue", { exact: true }).first().click();
