@@ -61,7 +61,10 @@ const INTEGRATED = process.argv.includes("--integrated") || process.env.LAYOUT_I
 const DEV = !process.argv.includes("--prod");
 // The integrated run exists to catch long names and extra options, and those overflow at the narrowest
 // width, so it runs at 320 only unless WIDTHS is set explicitly.
-const WIDTHS = (process.env.WIDTHS ?? (INTEGRATED ? "320" : "320,393,768,1280")).split(",").map(Number);
+// Empty entries (a trailing comma) and non-numbers are dropped; a WIDTHS that names no width fails the run.
+const WIDTHS_RAW = process.env.WIDTHS ?? (INTEGRATED ? "320" : "320,393,768,1280");
+const WIDTHS = WIDTHS_RAW.split(",").map((entry) => entry.trim()).filter(Boolean).map(Number).filter((width) => Number.isFinite(width) && width > 0);
+if (WIDTHS.length === 0) throw new Error(`WIDTHS="${WIDTHS_RAW}" names no width (for example WIDTHS=393,768)`);
 // The width the run-once checks below use (the die-count cap, the result-card auto-dismiss): always the
 // narrowest width of this run, so dropping a default width never drops the branch with it.
 const SINGLE_RUN_WIDTH = Math.min(...WIDTHS);
@@ -87,9 +90,33 @@ async function maybeShot(page, file, meta) {
 }
 
 // A check's FAILED screenshot, written once at its first violation: failures always write a shot, even
-// when SHOTS_ONLY does not select the check.
+// when SHOTS_ONLY does not select the check. The write is tracked per page, so closePage and gotoApp
+// wait for it before they close or navigate the page, and checkWidth waits for every one before the
+// context closes. A screenshot that cannot be taken is logged, not thrown.
+const failureShotByPage = new WeakMap();
+const failureShotsPending = new Set();
 function shotFailed(page, meta, width) {
-  page.screenshot({ path: join(SHOTS, `${meta.name.replace(/\W+/g, "-")}-FAILED-${width}.png`) }).catch(() => {});
+  const shot = page
+    .screenshot({ path: join(SHOTS, `${meta.name.replace(/\W+/g, "-")}-FAILED-${width}.png`) })
+    .then(
+      () => {},
+      (error) => console.log(`[${width}px] no failure screenshot for ${meta.name}: ${error.message.split("\n")[0]}`),
+    );
+  failureShotByPage.set(page, shot);
+  failureShotsPending.add(shot);
+  shot.finally(() => failureShotsPending.delete(shot));
+  return shot;
+}
+
+// Resolves once the failure screenshot of `page`, if one was started, has been written or has failed.
+async function failureShotDone(page) {
+  await failureShotByPage.get(page);
+}
+
+// Closes `page` after its failure screenshot, if any, has been written.
+async function closePage(page) {
+  await failureShotDone(page);
+  await page.close();
 }
 
 
@@ -112,10 +139,15 @@ function settleProbe({ probeSel, maxMs }) {
         const el = document.querySelector(probeSel);
         if (el) {
           const r = el.getBoundingClientRect();
+          // The visible text joins the signature, so a text change (a label that swaps, a result that
+          // arrives) keeps the page unsettled even when no box moved.
+          const text = document.body ? document.body.innerText : "";
+          let hash = 0;
+          for (let i = 0; i < text.length; i++) hash = (hash * 31 + text.charCodeAt(i)) | 0;
           const now = [
             r.left, r.top, r.width, r.height, el.scrollWidth, el.scrollHeight,
             document.documentElement.scrollWidth, document.documentElement.scrollHeight,
-            document.querySelectorAll("*").length,
+            document.querySelectorAll("*").length, text.length, hash,
           ].join(",");
           if (prev !== null && now === prev) return done();
           prev = now;
@@ -129,9 +161,27 @@ function settleProbe({ probeSel, maxMs }) {
 }
 
 // Waits until the page has settled (see settleProbe). `probe` is a CSS selector that must exist and hold
-// a stable layout, defaulting to the body.
+// a stable layout, defaulting to the body. A failed read is logged once per run: the check goes on with
+// an unsettled page rather than stopping, but the cause stays visible.
+let settleErrorLogged = false;
 async function settle(page, probe, maxMs = 4000) {
-  await page.evaluate(settleProbe, { probeSel: probe ?? "body", maxMs }).catch(() => {});
+  await page.evaluate(settleProbe, { probeSel: probe ?? "body", maxMs }).catch((error) => {
+    if (settleErrorLogged) return;
+    settleErrorLogged = true;
+    console.log(`settle: the page could not be measured (${error.message.split("\n")[0]}); later checks read an unsettled page`);
+  });
+}
+
+// Samples `shown` (an async check that resolves true while the item is on the page) every 100ms for `ms`.
+// Resolves true when the item never appeared in the window, false the first time it did: an absence
+// holds across a quiet window, not on a single read.
+async function assertAbsentFor(shown, ms = 400) {
+  const end = Date.now() + ms;
+  for (;;) {
+    if (await shown()) return false;
+    if (Date.now() >= end) return true;
+    await new Promise((done) => setTimeout(done, 100));
+  }
 }
 
 // Waits for an open modal's shell — the dialog wrapper mounts a beat after the modal content — and then
@@ -146,10 +196,13 @@ async function settleDialog(page) {
 // proves React hydrated and the press handlers are attached — then ready fonts and an unchanged layout
 // across two animation frames. This replaces networkidle plus a fixed sleep.
 async function gotoApp(page, url) {
+  await failureShotDone(page);
   await page.goto(url, { waitUntil: "load", timeout: 120000 });
   await page
     .waitForFunction(() => typeof window.__publishRoll === "function", null, { timeout: 30000, polling: 100 })
-    .catch(() => {});
+    .catch(() => {
+      throw new Error(`the server at ${BASE} was not built with EXPO_PUBLIC_E2E (stale server?): window.__publishRoll never appeared on ${url}`);
+    });
   await settle(page);
 }
 const SERVER_WAIT_MS = 180_000;
@@ -541,7 +594,7 @@ async function checkWildShapeScreen(ctx, width, meta) {
   const controls = await page.evaluate(findWildShapeControls);
   failures += await checkWildShapeBox(page, controls.stats, `[${width}px wild shape box from Stats number]`, `WildShapeModal-${width}.png`, meta, width);
   failures += await checkWildShapeBox(page, controls.header, `[${width}px wild shape box from header badge]`, `WildShapeModal-header-${width}.png`, meta, width);
-  await page.close();
+  await closePage(page);
   return failures;
 }
 
@@ -595,7 +648,7 @@ async function checkWildShapeFeatures(ctx, width, meta) {
       console.log(`[${width}px wild shape Features card] ${v}`);
     }
   }
-  await page.close();
+  await closePage(page);
   return failures;
 }
 
@@ -675,18 +728,28 @@ async function checkExpected(page, expect) {
     if (!(await page.getByPlaceholder(placeholder).first().waitFor({ state: "visible", timeout: 5000 }).then(() => true).catch(() => false)))
       out.push(`missing the input with placeholder "${placeholder}"`);
   }
-  for (const text of expect.absent ?? []) {
-    if (await firstVisibleOutsideIdentitySide(page.getByText(text, { exact: true }))) out.push(`"${text}" is shown but should not be`);
-  }
-  for (const pattern of expect.absentMatching ?? []) {
-    if (await firstVisibleOutsideIdentitySide(page.getByText(pattern))) out.push(`text matching ${pattern} is shown but should not be`);
-  }
+  // Every absent item is sampled over the same quiet window, the windows running side by side.
+  const absentChecks = [
+    ...(expect.absent ?? []).map((text) => ({
+      shown: () => firstVisibleOutsideIdentitySide(page.getByText(text, { exact: true })),
+      message: `"${text}" is shown but should not be`,
+    })),
+    ...(expect.absentMatching ?? []).map((pattern) => ({
+      shown: () => firstVisibleOutsideIdentitySide(page.getByText(pattern)),
+      message: `text matching ${pattern} is shown but should not be`,
+    })),
+    ...(expect.absentLabels ?? []).map((label) => ({
+      shown: async () => (await page.getByLabel(label).count()) > 0,
+      message: `the control labelled "${label}" is present but should not be`,
+    })),
+  ];
+  const absentResults = await Promise.all(absentChecks.map((check) => assertAbsentFor(check.shown)));
+  absentChecks.forEach((check, i) => {
+    if (!absentResults[i]) out.push(check.message);
+  });
   for (const label of expect.labels ?? []) {
     if (!(await page.getByLabel(label).first().waitFor({ state: "visible", timeout: 5000 }).then(() => true).catch(() => false)))
       out.push(`missing the control labelled "${label}"`);
-  }
-  for (const label of expect.absentLabels ?? []) {
-    if ((await page.getByLabel(label).count()) > 0) out.push(`the control labelled "${label}" is present but should not be`);
   }
   for (const label of expect.railLabels ?? []) {
     if (!(await page.evaluate(findRailButton, label))) out.push(`the sheet tab rail has no visible button labelled "${label}"`);
@@ -786,7 +849,7 @@ async function checkScreens(ctx, width) {
   const state = { route: null };
   let failures = 0;
   for (const screen of SCREENS) if (selected(screen.name)) failures += await visitScreen(page, width, applyWideOverride(screen, width), state);
-  await page.close();
+  await closePage(page);
   return failures;
 }
 
@@ -837,7 +900,7 @@ async function checkHitPointModals(ctx, width, meta) {
     await page.getByText("Set to", { exact: true }).first().waitFor({ state: "hidden", timeout: 10000 });
     await settle(page);
   }
-  await page.close();
+  await closePage(page);
   return failures;
 }
 
@@ -904,7 +967,7 @@ async function checkDraftFolder(ctx, width, meta) {
     failures++;
     shotFailedOnce();
   }
-  await page.close();
+  await closePage(page);
   return failures;
 }
 
@@ -1129,7 +1192,7 @@ async function checkModalClosing(ctx, width, meta) {
     } else fail("could not swipe the reopened sheet down");
   }
 
-  await page.close();
+  await closePage(page);
   return failures;
 }
 
@@ -1224,7 +1287,7 @@ async function checkDiceTrayAndLog(ctx, width, meta) {
   // appears only for a pool of exactly one d20.
   const emptyRoll = await page.evaluate(buttonDisabled, "Roll");
   if (emptyRoll.disabled !== true) fail(`"Roll" is not disabled while the pool is empty (${emptyRoll.state})`);
-  if ((await page.getByText("Advantage", { exact: true }).count()) > 0) fail('"Advantage" shows for an empty pool');
+  if (!(await assertAbsentFor(async () => (await page.getByText("Advantage", { exact: true }).count()) > 0))) fail('"Advantage" shows for an empty pool');
   await page.getByLabel("Add d20", { exact: true }).click();
   await settle(page);
   if (!(await page.getByText("Advantage", { exact: true }).first().isVisible())) fail('"Advantage" does not show for a lone d20');
@@ -1249,7 +1312,7 @@ async function checkDiceTrayAndLog(ctx, width, meta) {
   await page.getByLabel("Add d8", { exact: true }).click();
   for (let i = 0; i < 3; i++) await page.getByLabel("Modifier increase", { exact: true }).click();
   await settle(page);
-  if ((await page.getByText("Advantage", { exact: true }).count()) > 0) fail('"Advantage" shows for a pool that is not a lone d20');
+  if (!(await assertAbsentFor(async () => (await page.getByText("Advantage", { exact: true }).count()) > 0))) fail('"Advantage" shows for a pool that is not a lone d20');
   const rollLabel = "Roll 1d6 + 1d8 + 3";
   const rollButton = page.getByText(rollLabel, { exact: true }).first();
   if ((await rollButton.count()) === 0) fail(`the tray's primary action is not labelled "${rollLabel}"`);
@@ -1319,18 +1382,20 @@ async function checkDiceTrayAndLog(ctx, width, meta) {
   // Seed a "Kara · Longsword attack" Roll through the publishing seam (no screen triggers it yet): the
   // card is replaced by it. The mount time is recorded for the auto-dismiss check below (the installed
   // clock also flows in real time, so only the remaining gap to the 8s mark is fast-forwarded).
-  const cardMountedAt = Date.now();
-  const seeded = await page.evaluate(() => {
+  // The mount time is read on the page clock in the same evaluate that seeds the card, so every later
+  // reading is on the clock the auto-dismiss timer runs on. Null when the hook is missing.
+  const cardMountedAt = await page.evaluate(() => {
     const hook = window.__publishRoll;
-    if (typeof hook !== "function") return false;
+    if (typeof hook !== "function") return null;
+    const at = Date.now();
     hook({
       roll: { dice: [{ sides: 20, face: 15, dropped: false }], modifier: 5, total: 20 },
       source: "Longsword attack",
       characterName: "Kara",
     });
-    return true;
+    return at;
   });
-  if (!seeded) fail("the test-only publishing hook (window.__publishRoll) is not exposed on a seeded web build");
+  if (cardMountedAt === null) fail("the test-only publishing hook (window.__publishRoll) is not exposed on a seeded web build");
   else {
     await page
       .waitForFunction(() => document.querySelector('[data-testid="result-source"]')?.textContent?.includes("Kara"), null, { timeout: 10000, polling: 100 })
@@ -1387,15 +1452,21 @@ async function checkDiceTrayAndLog(ctx, width, meta) {
     // A card without a follow-up still auto-dismisses after about 8s — and the announce region
     // stays mounted afterwards, so the next Roll changes its text instead of mounting a populated one.
     if (width === SINGLE_RUN_WIDTH) {
-      // The auto-dismiss is a timer: fast-forward the clock to just before the 8s mark, then past it.
-      // Real time has flowed since the card mounted, so only the remaining gap is forwarded.
-      const elapsed = Date.now() - cardMountedAt;
-      if (elapsed < 7000) {
-        await page.clock.fastForward(7000 - elapsed);
-        if ((await page.locator(cardSel).count()) === 0) fail("the result card auto-dismissed before ~8s");
+      // The auto-dismiss timer runs from the card's mount on the page clock. Real time keeps flowing while
+      // the clock is installed, so each forward covers only the gap from the page's current reading to the
+      // target: the card must be shown at 7000ms after its mount and gone at 8600ms after it.
+      const elapsedNow = async () => (await page.evaluate(() => Date.now())) - cardMountedAt;
+      const elapsed = await elapsedNow();
+      if (elapsed > 7000) {
+        fail(`the result card's first check starts ${elapsed}ms after its mount, past the 7000ms mark: the page took too long to reach it`);
+      } else {
+        if (elapsed < 7000) await page.clock.fastForward(7000 - elapsed);
+        if ((await page.locator(cardSel).count()) === 0) fail("the result card auto-dismissed before 7000ms of page time");
+        const gap = 8600 - (await elapsedNow());
+        if (gap > 0) await page.clock.fastForward(gap);
+        const gone = await assertAbsentFor(async () => (await page.locator(cardSel).count()) > 0);
+        if (!gone) fail("the result card without a follow-up did not auto-dismiss by 8600ms after its mount");
       }
-      await page.clock.fastForward(Math.max(0, 8600 - elapsed) + 10);
-      if ((await page.locator(cardSel).count()) > 0) fail("the result card without a follow-up did not auto-dismiss after ~8s");
       const regionAfter = await page.evaluate(() => {
         const el = document.querySelector('[data-testid="dice-announce-region"]');
         return el ? { live: el.getAttribute("aria-live"), text: (el.textContent ?? "").trim() } : null;
@@ -1415,7 +1486,7 @@ async function checkDiceTrayAndLog(ctx, width, meta) {
   if (!(await page.getByText("No rolls yet.", { exact: true }).first().isVisible().catch(() => false)))
     fail("after a reload the Roll Log is not empty");
   await maybeShot(page, shot("log-empty"), meta);
-  await page.close();
+  await closePage(page);
 
   // The padding follows the flow's own layout, whose wide breakpoint is FLOW_WIDE_MIN_WIDTH (768) in
   // src/components/creationFlow/FlowShell.tsx: below it the flow shows its bottom primary-action bar and
@@ -1458,7 +1529,7 @@ async function checkDiceTrayAndLog(ctx, width, meta) {
     else if (width >= 768 && scrollPad >= 71)
       fail(`at ${width}px (wide flow layout) the flow's step scroll content still pads its bottom by ${Math.round(scrollPad)}px for a corner button`);
     await maybeShot(flowPage, join(SHOTS, `DiceTray-flow-${width}.png`), meta);
-    await flowPage.close();
+    await closePage(flowPage);
   }
 
   // At 768px and up the flow shows its wide footer in the middle column while the floating dice button stays
@@ -1494,7 +1565,7 @@ async function checkDiceTrayAndLog(ctx, width, meta) {
         }
         await maybeShot(flowPage, join(SHOTS, `DiceTray-flow-footer-${flowName.replace(/\W+/g, "-")}-${width}.png`), meta);
       }
-      await flowPage.close();
+      await closePage(flowPage);
     }
   }
   return failures;
@@ -1532,20 +1603,18 @@ function startDieSampling(p) {
   });
 }
 
-// Resolves once the sampler has covered 3s after the die first appeared (or gave up after 15s):
-// { samples, mountT } (mountT is the sample time at which the die first appeared, or 0).
-function readDieSamples(p) {
+// Resolves once the sampler's clock passes `untilT` (the settle budget, 3s after the roll): { samples }.
+function readDieSamples(p, untilT) {
   return p.evaluate(
-    () =>
+    (until) =>
       new Promise((resolve) => {
         const done = () => {
-          const now = performance.now() - window.__dieT0;
-          if ((window.__dieMountT !== null && now >= window.__dieMountT + 3000) || now >= 15000)
-            resolve({ samples: window.__dieSamples, mountT: window.__dieMountT ?? 0 });
+          if (performance.now() - window.__dieT0 >= until) resolve({ samples: window.__dieSamples });
           else setTimeout(done, 50);
         };
         done();
       }),
+    untilT,
   );
 }
 
@@ -1584,6 +1653,8 @@ async function checkDiceAnimation(ctx, width, meta) {
       return el ? getComputedStyle(el).borderColor : null;
     });
 
+  // The sampler's clock (ms since the sampler started) at the last tray roll: the settle budget counts from it.
+  let rollAt = null;
   const rollTrayPool = async (p) => {
     await p.getByLabel("Dice tray").first().click();
     await p.waitForSelector(dialogSel, { state: "visible", timeout: 10000 }).catch(() => fail("the tray did not open"));
@@ -1591,6 +1662,8 @@ async function checkDiceAnimation(ctx, width, meta) {
     await p.getByLabel("Add d8", { exact: true }).click();
     for (let i = 0; i < 3; i++) await p.getByLabel("Modifier increase", { exact: true }).click();
     await settle(p);
+    // Read just before the tap, so the roll itself falls after this reading and the budget never starts late.
+    rollAt = await p.evaluate(() => performance.now() - window.__dieT0);
     await p.getByText("Roll 1d6 + 1d8 + 3", { exact: true }).first().click();
     await p.waitForSelector(cardSel, { state: "visible", timeout: 10000 }).catch(() => fail("no result card after the tray roll"));
   };
@@ -1613,19 +1686,21 @@ async function checkDiceAnimation(ctx, width, meta) {
     // The pose samples, taken on every animation frame in the page, prove an animation ran from the
     // poses themselves, not from wall-clock frame timing: under load two samples 120ms apart can
     // land in the same frame. A die that never animates yields one constant pose and still fails.
-    const { samples, mountT } = await readDieSamples(page);
-    const timed = samples.map((s) => ({ t: s.t - mountT, pose: s.pose }));
+    // The samples cover the 3s budget counted from the roll, not from the die's mount.
+    const { samples } = await readDieSamples(page, rollAt + 3000);
+    const timed = samples.filter((s) => s.t >= rollAt).map((s) => ({ t: s.t - rollAt, pose: s.pose }));
     if (early.total === null) fail("the text total was not shown while the dice animation was still running");
-    else {
-      // A real tumble yields dozens of distinct poses; a die that never animates yields at most two
-      // (its mount pose and its final one), so three distinct poses prove an animation ran.
-      const poses = [...new Set(timed.map((s) => s.pose))];
-      if (timed.length === 0 || poses.length < 3) fail(`the die pose took only ${poses.length} distinct values across ${timed.length} sampled frames: no animation ran with 3D dice on`);
-      // The tumble settles well under a second after the roll: the final pose is reached by 1.2s.
-      const finalPose = timed[timed.length - 1]?.pose ?? null;
-      const firstFinal = timed.find((s) => s.pose === finalPose);
-      if (firstFinal && firstFinal.t > 1200) fail(`the dice were still animating more than 1.2s after the roll (final pose first seen at ${Math.round(firstFinal.t)}ms)`);
-    }
+    // A real tumble yields dozens of distinct poses; a die that never animates yields at most two
+    // (its mount pose and its final one), so three distinct poses prove an animation ran. The poses must
+    // also differ between two samples more than 100ms apart, so one frame's jitter cannot pass.
+    const poses = [...new Set(timed.map((s) => s.pose))];
+    const changesOverWindow = timed.some((a) => timed.some((b) => b.t - a.t > 100 && b.pose !== a.pose));
+    if (timed.length === 0 || poses.length < 3 || !changesOverWindow)
+      fail(`the die pose took only ${poses.length} distinct values across ${timed.length} sampled frames after the roll: no animation ran with 3D dice on`);
+    // The tumble has ended once its last pose change happens: that change must come within 1.2s of the roll.
+    let lastChangeT = null;
+    for (let i = 1; i < timed.length; i++) if (timed[i].pose !== timed[i - 1].pose) lastChangeT = timed[i].t;
+    if (lastChangeT !== null && lastChangeT > 1200) fail(`the dice were still animating more than 1.2s after the roll (last pose change at ${Math.round(lastChangeT)}ms)`);
 
     const faces = await page.evaluate((accent) => {
       const card = document.querySelector('[data-testid="result-card"]');
@@ -1708,7 +1783,7 @@ async function checkDiceAnimation(ctx, width, meta) {
   // Fixed wait on purpose: nothing observable can stand in for it — the check is that no die mounts
   // within this window after the roll, which only the passing of time can prove.
   await page.waitForTimeout(900);
-  if ((await page.locator(diceSel).count()) !== 0) fail("with the setting off, animated dice mounted later");
+  if (!(await assertAbsentFor(async () => (await page.locator(diceSel).count()) !== 0))) fail("with the setting off, animated dice mounted later");
   await maybeShot(page, shot("off"), meta);
 
   // Reduced motion emulated and no saved setting (a fresh context) — no animation either.
@@ -1732,7 +1807,7 @@ async function checkDiceAnimation(ctx, width, meta) {
     if (rmState.dice !== 0) fail(`with reduced motion emulated and no saved setting, ${rmState.dice} animated dice mounted`);
     // Fixed wait on purpose, same as above: only the passing of time proves no die mounts later.
     await rpage.waitForTimeout(900);
-    if ((await rpage.locator(diceSel).count()) !== 0) fail("with reduced motion emulated, animated dice mounted later");
+    if (!(await assertAbsentFor(async () => (await rpage.locator(diceSel).count()) !== 0))) fail("with reduced motion emulated, animated dice mounted later");
     await gotoApp(rpage, `${BASE}/options`);
     await settle(rpage);
     const rmSwitch = rpage.getByLabel("3D dice").first();
@@ -1740,12 +1815,12 @@ async function checkDiceAnimation(ctx, width, meta) {
     else if ((await switchBorder(rpage)) !== borderRgb)
       fail(`with reduced motion emulated and no saved setting, the "3D dice" switch is on (border ${await switchBorder(rpage)}, expected ${borderRgb})`);
     await maybeShot(rpage, shot("reduced-motion"), meta);
-    await rpage.close();
+    await closePage(rpage);
   } finally {
     await rctx.close();
   }
 
-  await page.close();
+  await closePage(page);
   return failures;
 }
 
@@ -1820,7 +1895,7 @@ async function checkActionRolls(ctx, width, meta) {
   if ((await setFaces([15])) === "no hook") fail("the test-only random-source hook (window.__setRandomSource) is not exposed on a seeded web build");
   await toHit.click();
   await page.waitForSelector(cardSel, { state: "visible", timeout: 10000 }).catch(() => fail("no result card after tapping the to-hit badge"));
-  if ((await page.locator(dialogSel).count()) > 0) fail("tapping the badge opened the row's details modal");
+  if (!(await assertAbsentFor(async () => (await page.locator(dialogSel).count()) > 0))) fail("tapping the badge opened the row's details modal");
   let card = await readCard();
   if (!card) fail("the result card disappeared before it could be read");
   else {
@@ -1908,16 +1983,20 @@ async function checkActionRolls(ctx, width, meta) {
   await setFaces([20]);
   await toHit.click();
   await page.waitForFunction(() => /Roll critical damage/.test(document.querySelector('[data-testid="result-card"]')?.textContent ?? ""), null, { timeout: 10000, polling: 100 }).catch(() => fail("a natural 20 did not offer \"Roll critical damage\""));
+  // The page-clock time at which the follow-up card was first seen, the start of the window below.
+  const followUpSeenAt = await page.evaluate(() => Date.now());
   card = await readCard();
   if (card) {
     if (!card.markers.includes("Natural 20")) fail(`the natural-20 card's markers are ${JSON.stringify(card.markers)}`);
     if (card.followUp !== "Roll critical damage") fail(`the natural-20 card's follow-up is "${card.followUp}", expected "Roll critical damage"`);
   }
-  // A card that still offers a follow-up never auto-dismisses, even after the usual ~8s.
+  // A card that still offers a follow-up never auto-dismisses, even after the usual ~8s: the card must
+  // stay shown until 8600ms after it was first seen with its follow-up.
   if (width === SINGLE_RUN_WIDTH) {
-    // Fast-forward well past the 8s auto-dismiss timer: a card with a pending follow-up has none.
-    await page.clock.fastForward(9000);
-    if (!(await page.locator(cardSel).count())) fail('the natural-20 card with a pending "Roll critical damage" follow-up auto-dismissed');
+    const gap = followUpSeenAt + 8600 - (await page.evaluate(() => Date.now()));
+    if (gap > 0) await page.clock.fastForward(gap);
+    const stayed = await assertAbsentFor(async () => (await page.locator(cardSel).count()) === 0);
+    if (!stayed) fail('the natural-20 card with a pending "Roll critical damage" follow-up auto-dismissed');
   }
   await page.getByText("Roll critical damage", { exact: true }).first().click();
   await page.waitForFunction(() => document.querySelector('[data-testid="result-source"]')?.textContent?.includes("damage"), null, { timeout: 10000, polling: 100 }).catch(() => fail("the critical damage follow-up did not roll"));
@@ -1952,7 +2031,7 @@ async function checkActionRolls(ctx, width, meta) {
   else if ((await badgeText(spellToHit)) !== "+5 to hit") fail(`the spell badge reads "${await badgeText(spellToHit)}", expected "+5 to hit"`);
   if (!(await page.getByLabel("Roll Fire Bolt attack, +5", { exact: true }).first().isVisible().catch(() => false)))
     fail('no spell badge accessible-labelled "Roll Fire Bolt attack, +5"');
-  if ((await page.locator('[data-testid="roll-badge-spell-0-damage"]').count()) > 0) fail('the "Cantrip scaling" damage shows a roll badge');
+  if (!(await assertAbsentFor(async () => (await page.locator('[data-testid="roll-badge-spell-0-damage"]').count()) > 0))) fail('the "Cantrip scaling" damage shows a roll badge');
   const plainDamage = await page.evaluate(() => {
     const el = [...document.querySelectorAll("*")].find((e) => e.children.length === 0 && e.textContent.trim() === "Cantrip scaling");
     return el ? el.closest('[data-testid^="roll-badge"]') === null : false;
@@ -1961,7 +2040,7 @@ async function checkActionRolls(ctx, width, meta) {
   // Only spells that make a spell attack get a "to hit" badge: Light and Mage Hand (rows 1 and 2) keep
   // their rows and their plain damage label, but no to-hit roll badge.
   for (const idx of [1, 2]) {
-    if ((await page.locator(`[data-testid="roll-badge-spell-${idx}-tohit"]`).count()) > 0)
+    if (!(await assertAbsentFor(async () => (await page.locator(`[data-testid="roll-badge-spell-${idx}-tohit"]`).count()) > 0)))
       fail(`spell row ${idx} (Light / Mage Hand, no spell attack) shows a "to hit" roll badge`);
   }
   await setFaces([11]);
@@ -1986,7 +2065,7 @@ async function checkActionRolls(ctx, width, meta) {
   else if ((await badgeText(unarmedToHit)) !== "+3 to hit") fail(`the unarmed badge reads "${await badgeText(unarmedToHit)}", expected "+3 to hit"`);
   if (!(await page.getByLabel("Roll Unarmed Strike attack, +3", { exact: true }).first().isVisible().catch(() => false)))
     fail('no unarmed badge accessible-labelled "Roll Unarmed Strike attack, +3"');
-  if ((await page.locator('[data-testid="roll-badge-unarmed-damage"]').count()) > 0) fail("the flat unarmed damage shows a roll badge");
+  if (!(await assertAbsentFor(async () => (await page.locator('[data-testid="roll-badge-unarmed-damage"]').count()) > 0))) fail("the flat unarmed damage shows a roll badge");
   await setFaces([7]);
   await unarmedToHit.click();
   await page.waitForSelector(cardSel, { state: "visible", timeout: 10000 }).catch(() => fail("no result card after tapping the unarmed badge"));
@@ -2007,7 +2086,7 @@ async function checkActionRolls(ctx, width, meta) {
   const afterWizard = await storedCharacter(WIZARD_ID);
   if (!afterWizard) fail("the seeded wizard vanished from storage");
   else if (JSON.stringify(afterWizard) !== JSON.stringify(beforeWizard)) fail("the spell attack changed the stored wizard (slots, uses or ammunition)");
-  await page.close();
+  await closePage(page);
   return failures;
 }
 
@@ -2123,7 +2202,7 @@ async function checkLevelUpHpRollLogged(ctx, width, meta) {
   await maybeShot(page, join(SHOTS, `LevelUp-HPRoll-${width}.png`), meta);
   await page.keyboard.press("Escape");
   await page.waitForSelector('[role="dialog"]', { state: "hidden", timeout: 10000 }).catch(() => {});
-  await page.close();
+  await closePage(page);
   return failures;
 }
 
@@ -2193,7 +2272,7 @@ async function checkLevelUpHpState(ctx, width, meta) {
   if (freshRoll.disabled) fail("the Roll row stays disabled for a freshly picked class");
   if (freshRoll.selected) fail("the Roll row is selected on a fresh plan before any roll");
   await maybeShot(page, join(SHOTS, `LevelUp-HPState-fresh-${width}.png`), meta);
-  await page.close();
+  await closePage(page);
   return failures;
 }
 
@@ -2279,10 +2358,10 @@ async function checkLevelUpFeatReplace(ctx, width, meta) {
   }
   const listedFeat = INTEGRATED ? choiceFeat : noChoiceFeat;
   if (!(await waitForVisibleText(page, listedFeat))) fail(`Review does not list "${listedFeat}"`);
-  if (INTEGRATED && (await page.getByText(noChoiceFeat, { exact: true }).first().isVisible().catch(() => false)))
+  if (INTEGRATED && !(await assertAbsentFor(async () => page.getByText(noChoiceFeat, { exact: true }).first().isVisible().catch(() => false))))
     fail(`Review still lists "${noChoiceFeat}": the replaced pick was applied`);
   await maybeShot(page, join(SHOTS, `LevelUp-FeatReplace-${width}.png`), meta);
-  await page.close();
+  await closePage(page);
   return failures;
 }
 
@@ -2307,7 +2386,7 @@ async function checkLevelUpFeatSubChoiceChips(ctx, width, meta) {
     await page.getByRole("button", { name: "Feat Grappler", exact: true }).first().click();
     await settle(page);
     if (!(await continueEnabledSoon(page))) fail("picking the SRD Baseline's only feat did not complete the ASI/Feat step");
-    await page.close();
+    await closePage(page);
     return failures;
   }
   await page.getByRole("button", { name: "Feat Fighting Initiate", exact: true }).first().click();
@@ -2335,7 +2414,7 @@ async function checkLevelUpFeatSubChoiceChips(ctx, width, meta) {
     if (!(await waitForVisibleText(page, "Fighting Initiate Style (0/1):"))) fail('the style counter does not read "(0/1)" after deselecting');
   }
   await maybeShot(page, join(SHOTS, `LevelUp-FeatSubChoices-${width}.png`), meta);
-  await page.close();
+  await closePage(page);
   return failures;
 }
 
@@ -2406,7 +2485,7 @@ async function checkLevelUpHpPerClass(ctx, width, meta) {
   await maybeShot(page, join(SHOTS, `LevelUp-HPPerClass-${width}.png`), meta);
   await page.keyboard.press("Escape");
   await page.waitForSelector('[role="dialog"]', { state: "hidden", timeout: 10000 }).catch(() => {});
-  await page.close();
+  await closePage(page);
   return failures;
 }
 
@@ -2431,10 +2510,10 @@ async function checkLevelUpHiddenAtMaxLevel(ctx, width, meta) {
     await page.getByLabel("Sheet menu").first().click();
     await page.getByText("Character", { exact: true }).first().waitFor({ state: "visible", timeout: 10000 }).catch(() => fail("the phone header menu did not open"));
   }
-  if ((await page.getByLabel("Level up").count()) > 0) fail("the header still offers Level up at total level 20");
+  if (!(await assertAbsentFor(async () => (await page.getByLabel("Level up").count()) > 0))) fail("the header still offers Level up at total level 20");
   if (!(await page.getByLabel("Edit Build").first().isVisible().catch(() => false))) fail("Edit Build is gone at total level 20");
   await maybeShot(page, join(SHOTS, `LevelUp-HiddenAt20-${width}.png`), meta);
-  await page.close();
+  await closePage(page);
   return failures;
 }
 
@@ -2461,7 +2540,7 @@ async function checkLevelUpHpModifierSign(ctx, width, meta) {
   if (!flat.includes("1d10-1")) fail(`the Roll row does not read "1d10-1" for Constitution 8: "${flat}"`);
   if (flat.includes("+-")) fail(`the Roll row writes the modifier as "+-": "${flat}"`);
   await maybeShot(page, join(SHOTS, `LevelUp-HPSign-${width}.png`), meta);
-  await page.close();
+  await closePage(page);
   return failures;
 }
 
@@ -2565,7 +2644,7 @@ async function checkLevelUpCancelAndReview(ctx, width, meta) {
   if (levelAfter !== levelBefore + 1)
     fail(`a double-tapped "Level up" moved the stored level from ${levelBefore} to ${levelAfter}, expected exactly +1`);
   await maybeShot(page, join(SHOTS, `LevelUp-Applied-${width}.png`), meta);
-  await page.close();
+  await closePage(page);
   return failures;
 }
 
@@ -2644,11 +2723,11 @@ async function checkSpellsAfterLevelUp(ctx, width, meta) {
     else {
       await page.getByLabel("Remove Burning Hands").first().click();
       await settle(page);
-      if ((await page.getByLabel("Remove Burning Hands").count()) > 0) fail("forgetting did not remove \"Burning Hands\"");
+      if (!(await assertAbsentFor(async () => (await page.getByLabel("Remove Burning Hands").count()) > 0))) fail("forgetting did not remove \"Burning Hands\"");
     }
     await maybeShot(page, join(SHOTS, `SpellsAfterLevelUp-learn-${width}.png`), meta);
   }
-  await page.close();
+  await closePage(page);
   return failures;
 }
 
@@ -2730,7 +2809,7 @@ async function checkStatsRolls(ctx, width, meta) {
   // Tap the Strength check badge: d20 + 1, fixed to 12, so total 13, logged as "Rendar · Strength check".
   await page.locator('[data-testid="roll-badge-check-str"]').click();
   await page.waitForSelector(cardSel, { state: "visible", timeout: 10000 }).catch(() => fail("no result card after tapping the Strength check badge"));
-  if ((await page.locator(dialogSel).count()) > 0) fail("tapping the check badge opened a modal");
+  if (!(await assertAbsentFor(async () => (await page.locator(dialogSel).count()) > 0))) fail("tapping the check badge opened a modal");
   let card = await readCard();
   if (!card) fail("the check card disappeared before it could be read");
   else {
@@ -2807,7 +2886,7 @@ async function checkStatsRolls(ctx, width, meta) {
   await page.keyboard.press("Escape");
   await page.waitForSelector(dialogSel, { state: "hidden", timeout: 10000 }).catch(() => fail("Escape did not close the breakdown modal"));
 
-  await page.close();
+  await closePage(page);
   return failures;
 }
 
@@ -3128,7 +3207,7 @@ async function checkSheetChrome(ctx, width, meta) {
   }
 
   await maybeShot(page, join(SHOTS, `SheetChrome-${width}.png`), meta);
-  await page.close();
+  await closePage(page);
   return failures;
 }
 
@@ -3243,7 +3322,7 @@ async function checkHomeLayout(ctx, width, meta) {
     }
   }
   await maybeShot(page, join(SHOTS, `HomeLayout-${width}.png`), meta);
-  await page.close();
+  await closePage(page);
   return failures;
 }
 
@@ -3293,13 +3372,12 @@ async function checkWidth(browser, seed, width) {
   const ctx = await browser.newContext({ viewport: { width, height: 851 }, deviceScaleFactor: DSF, hasTouch: true, isMobile: true });
   // React logs "<button> cannot contain a nested <button>" as a console error when a pressable with a
   // button role wraps another one; collect those from every page of this width and fail the run on them.
+  // Each entry names the page URL: the page may be closed by the time the run reports it, so no screenshot.
   const nestedConsoleErrors = [];
-  let nestedErrorPage = null;
   ctx.on("page", (page) => {
     page.on("console", (msg) => {
       if (msg.type() === "error" && /cannot contain a nested/i.test(msg.text())) {
-        nestedConsoleErrors.push(msg.text().slice(0, 120));
-        nestedErrorPage = nestedErrorPage ?? page;
+        nestedConsoleErrors.push({ text: msg.text().slice(0, 120), url: page.url() });
       }
     });
   });
@@ -3307,13 +3385,17 @@ async function checkWidth(browser, seed, width) {
     await ctx.addInitScript(seedBrowser, seed);
     let failures = await checkScreens(ctx, width);
     for (const check of EXTRA_CHECKS) if (selected(check.name)) failures += await check.run(ctx, width, check);
-    for (const err of [...new Set(nestedConsoleErrors)]) {
+    const seen = new Set();
+    for (const { text, url } of nestedConsoleErrors) {
+      if (seen.has(text)) continue;
+      seen.add(text);
       failures++;
-      console.log(`[${width}px] console error: ${err}`);
-      if (nestedErrorPage) shotFailed(nestedErrorPage, { name: "nested button console error" }, width);
+      console.log(`[${width}px] console error: ${text} (page ${url})`);
     }
     return failures;
   } finally {
+    // Failure screenshots still being written are awaited before the context they belong to closes.
+    await Promise.allSettled([...failureShotsPending]);
     await ctx.close();
     console.log(`[${width}px] checks done in ${Math.round((Date.now() - startedAt) / 1000)}s`);
   }
