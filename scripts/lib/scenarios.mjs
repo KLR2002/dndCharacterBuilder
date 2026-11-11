@@ -899,7 +899,7 @@ function actionsCharacter() {
 
 // A draft on the Background step: a level 1 Human Fighter with no background picked yet. The home list shows
 // it as "Draft · Background", and opening it lands on the Background step of the Creation Flow, not the sheet.
-const DRAFT_ID = "char_draft";
+export const DRAFT_ID = "char_draft";
 function draftCharacter() {
   return makeChar({
     id: DRAFT_ID,

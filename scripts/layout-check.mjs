@@ -37,7 +37,7 @@ import {
   stopExpoWeb,
   waitForExpoWeb,
 } from "./lib/app-driver.mjs";
-import { buildScreens, buildSeed, ACTIONS_ID, CHARACTER_ID, DRUID_ID, EDIT_BUILD_ID, LOW_CON_ID, MAX_LEVEL_ID, RANGER_ID, SORCERER_SWAP_ID, WIZARD_ID } from "./lib/scenarios.mjs";
+import { buildScreens, buildSeed, ACTIONS_ID, CHARACTER_ID, DRAFT_ID, DRUID_ID, EDIT_BUILD_ID, LOW_CON_ID, MAX_LEVEL_ID, RANGER_ID, SORCERER_SWAP_ID, WIZARD_ID } from "./lib/scenarios.mjs";
 import { applyWideOverride } from "./lib/scenario-override.mjs";
 import { playStep, playSteps } from "./lib/web-steps.mjs";
 import { ACCENT_PALETTES, BASE_DARK_THEME } from "../src/constants/theme.ts";
@@ -927,6 +927,23 @@ async function checkModalClosing(ctx, width) {
   return failures;
 }
 
+// Runs in the browser. The rects of the floating dice button and of the flow footer's controls — the wide
+// footer (testID flow-wide-footer) holds the identity line (flow-identity-line) and the primary action
+// (flow-primary-action); at 1024px and up the identity side column replaces the footer's identity line.
+function findDiceButtonVsFlowFooter() {
+  const rect = (el) => {
+    if (!el) return null;
+    const r = el.getBoundingClientRect();
+    return { left: r.left, right: r.right, top: r.top, bottom: r.bottom, width: r.width, height: r.height };
+  };
+  return {
+    button: rect(document.querySelector('[data-testid="dice-button"]')),
+    footer: rect(document.querySelector('[data-testid="flow-wide-footer"]')),
+    primary: rect(document.querySelector('[data-testid="flow-primary-action"]')),
+    identity: rect(document.querySelector('[data-testid="flow-identity-line"]')),
+  };
+}
+
 // The floating dice button, the tray's pool roll and the session Roll Log at one width: the button opens
 // the tray on the sheet; the tray builds a pool (die buttons add, chips remove, the modifier steps, the
 // Disadvantage / Normal / Advantage choice only for a lone d20, the primary action labelled with the pool
@@ -1221,6 +1238,44 @@ async function checkDiceTrayAndLog(ctx, width) {
       fail(`at ${width}px (wide flow layout) the flow's step scroll content still pads its bottom by ${Math.round(scrollPad)}px for a corner button`);
     await flowPage.screenshot({ path: join(SHOTS, `DiceTray-flow-${width}.png`) });
     await flowPage.close();
+  }
+
+  // At 768px and up the flow shows its wide footer in the middle column while the floating dice button stays
+  // in the viewport's bottom-right corner, so the footer must reserve the button's footprint: the button's
+  // rect may intersect neither the footer's primary action nor its identity line — in the Creation Flow and
+  // in the Level-Up Flow alike. (Below 768 the bar check above already keeps the button off the bar.)
+  if (width >= 768) {
+    const flows = [
+      ["Creation Flow", `/build/${DRAFT_ID}?step=background`, "Create Custom"],
+      ["Level-Up Flow", `/levelup/${EDIT_BUILD_ID}`, /Fighter/],
+    ];
+    for (const [flowName, route, ready] of flows) {
+      const flowPage = await ctx.newPage();
+      await flowPage.goto(`${BASE}${route}`, { waitUntil: "networkidle", timeout: 120000 });
+      await flowPage.waitForTimeout(1500);
+      const readyLocator = typeof ready === "string" ? flowPage.getByText(ready, { exact: true }) : flowPage.getByText(ready);
+      if (!(await readyLocator.first().waitFor({ state: "visible", timeout: 10000 }).then(() => true).catch(() => false))) {
+        fail(`${flowName} did not load (${route})`);
+      } else {
+        const geo = await flowPage.evaluate(findDiceButtonVsFlowFooter);
+        if (!geo.button) fail(`no floating dice button in the ${flowName}`);
+        else {
+          for (const [what, rect] of [["primary action", geo.primary], ["identity line", geo.identity]]) {
+            if (!rect) continue;
+            const overX = Math.min(geo.button.right, rect.right) - Math.max(geo.button.left, rect.left);
+            const overY = Math.min(geo.button.bottom, rect.bottom) - Math.max(geo.button.top, rect.top);
+            if (overX > 1 && overY > 1)
+              fail(
+                `the dice button covers the ${flowName}'s footer ${what} by ${Math.round(overX)}x${Math.round(overY)}px ` +
+                  `(button ${Math.round(geo.button.left)},${Math.round(geo.button.top)}-${Math.round(geo.button.right)},${Math.round(geo.button.bottom)} ` +
+                  `over ${what} ${Math.round(rect.left)},${Math.round(rect.top)}-${Math.round(rect.right)},${Math.round(rect.bottom)})`,
+              );
+          }
+        }
+        await flowPage.screenshot({ path: join(SHOTS, `DiceTray-flow-footer-${flowName.replace(/\W+/g, "-")}-${width}.png`) });
+      }
+      await flowPage.close();
+    }
   }
   return failures;
 }

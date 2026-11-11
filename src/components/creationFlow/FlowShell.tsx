@@ -148,9 +148,10 @@ export function FlowShell({
               {stepTitle}
               {content}
             </View>
-            <View style={[styles.wideFooter, { borderTopColor: theme.border }]}>
+            <View testID="flow-wide-footer" style={[styles.wideFooter, { borderTopColor: theme.border }]}>
               {identitySide ? null : (
                 <TouchableOpacity
+                  testID="flow-identity-line"
                   accessibilityRole="button"
                   onPress={() => setIdentityOpen(true)}
                   activeOpacity={0.7}
@@ -160,7 +161,9 @@ export function FlowShell({
                   <Ionicons name="chevron-up" size={16} color={theme.textSecondary} />
                 </TouchableOpacity>
               )}
-              {primaryAction}
+              <View testID="flow-primary-action" style={styles.primaryAction}>
+                {primaryAction}
+              </View>
             </View>
           </View>
           {identitySide ? (
@@ -207,6 +210,7 @@ export function FlowShell({
         style={[styles.bottomBar, { backgroundColor: theme.surface, borderTopColor: theme.border }]}
       >
         <TouchableOpacity
+          testID="flow-identity-line"
           accessibilityRole="button"
           onPress={() => setIdentityOpen(true)}
           activeOpacity={0.7}
@@ -215,7 +219,9 @@ export function FlowShell({
           {identityLine}
           <Ionicons name="chevron-up" size={16} color={theme.textSecondary} />
         </TouchableOpacity>
-        {primaryAction}
+        <View testID="flow-primary-action" style={styles.primaryAction}>
+          {primaryAction}
+        </View>
       </View>
       <Modal visible={identityOpen} onClose={() => setIdentityOpen(false)} title="Character">
         {identityPanel}
