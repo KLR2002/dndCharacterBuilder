@@ -125,3 +125,26 @@ test("the Compendium lists origin rules scoped to the active books, and a catalo
   assert.equal(withRules.for(["PHB"]).originRules().length, 0, "an inactive book's origin rule is not listed");
   assert.equal(createCompendium(bundle()).for(["TCE"]).originRules().length, 0, "a catalog saved without the collection lists none");
 });
+
+test("scoped listings are computed once per book list, frozen, and owned by their Compendium", () => {
+  const data = bundle({
+    spells: [spell("Fire Bolt", "PHB"), spell("Toll the Dead", "XGE")],
+    items: [item("Lantern", "PHB")],
+    races: [race("Elf", "PHB", [sub("High Elf", "PHB")])],
+  });
+  const compendium = createCompendium(data);
+
+  const first = compendium.for(["PHB", "XGE"]);
+  const again = compendium.for(["PHB", "XGE"]);
+  assert.equal(first.items(), again.items(), "equal book lists share one items array");
+  assert.equal(first.races(), again.races(), "equal book lists share one races array");
+  assert.ok(Object.isFrozen(first.items()), "the shared list is frozen");
+  assert.ok(Object.isFrozen(first.races()), "the shared races list is frozen");
+  assert.notEqual(compendium.for(["PHB"]).items(), first.items(), "a different book list gets its own array");
+  assert.notEqual(
+    createCompendium(data).for(["PHB", "XGE"]).items(),
+    first.items(),
+    "a new Compendium over the same bundle starts with an empty cache",
+  );
+  assert.equal(first.races()[0].subraces.length, 1, "scoping still filters subraces");
+});
