@@ -9,7 +9,7 @@ How to start the Expo web build, seed a character and a catalog into the browser
 ## Start the web build
 
 - Start Expo through the script, never by hand. `spawnExpoWeb({ root, port, logPath })` runs `npx expo start --web --port <port> --clear` with `CI=1` and `EXPO_NO_TELEMETRY=1`, detached in its own process group. `waitForExpoWeb(child, base, waitMs)` resolves `"up"` once `base` answers 200. `stopExpoWeb(child)` sends SIGTERM and then SIGKILL to the group.
-- Or run `npm run layout:check`, which starts and stops its own server on `BASE`. `WIDTHS` (comma-separated, default `393,360,320,412`) picks the widths, which run at the same time, and `ONLY` (comma-separated substrings, ignoring case) visits only the scenarios whose name contains one of them.
+- Or run `npm run layout:check`, which starts and stops its own server on `BASE`. The default server is the Expo web dev server; `--prod` serves a static export of the production bundle instead (`scripts/lib/static-server.mjs`) and refuses to run when something already answers on `BASE`. `WIDTHS` (comma-separated, default `320,393,768,1280`) picks the widths, `MAX_PARALLEL` (default: all widths at once; lower it to cap memory, about 7 minutes for the SRD Baseline and a peak of about 5 GB for the run itself), `ONLY` (comma-separated substrings, ignoring case) visits only the scenarios whose name contains one of them, and `SHOTS_ONLY` writes screenshots for the scenarios whose name contains one of them, or `all`. By default a screenshot is written only for a failed check or a scenario marked `shot: true`.
 - Give each run its own port and its own screenshot folder (`BASE` and `SHOTS` for layout-check). Layout-check uses a server that already answers at `BASE`, and that server may be stale, so pick a free port.
 - Stop what you started. Do not `pkill -f` with a pattern that appears in your own command line.
 
@@ -38,7 +38,7 @@ The app reads these keys when it launches:
 - Scroll the target into view before a click made at coordinates (`page.mouse.click(x, y)`, as layout-check's `tapHeaderAdd` does): call `el.scrollIntoView({ block: "center" })`, then measure the rect. A coordinate click on an element outside the viewport lands on nothing, which reads as a false negative. `locator.click()` scrolls the element into view by itself.
 - Run Expo through `spawnExpoWeb` or `npm run layout:check`, so the process group is stopped with the run.
 - Give each run its own port and screenshot folder.
-- Use phone widths as layout-check does: a viewport of 393 by 851, `deviceScaleFactor: 2`, `isMobile: true`, `hasTouch: true`. The layout widths are 320, 360, 393 and 412.
+- Use phone widths as layout-check does: a viewport of 393 by 851, `deviceScaleFactor: 1`, `isMobile: true`, `hasTouch: true`. The layout widths are 320, 393, 768 and 1280.
 
 ## Example
 
