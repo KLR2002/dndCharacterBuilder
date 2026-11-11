@@ -7,6 +7,7 @@ import { useAppTheme } from "../../context/ThemeContext";
 import { BREAKPOINTS, useResponsiveLayout } from "../../hooks/useResponsiveLayout";
 import { useSerifFont } from "../../hooks/useSerifFont";
 
+import { DICE_BUTTON_EDGE_MARGIN, DICE_BUTTON_FOOTPRINT, DICE_BUTTON_SIZE } from "../dice/DiceOverlay";
 import { Modal } from "../ui/Modal";
 
 /**
@@ -136,6 +137,12 @@ export function FlowShell({
   );
 
   if (wide) {
+    // Between FLOW_WIDE_MIN_WIDTH and FLOW_IDENTITY_SIDE_MIN_WIDTH the wide footer reaches the viewport's
+    // right edge, where the floating dice button sits, so it reserves the button's footprint on its right
+    // (the footer's own 16px padding plus DICE_BUTTON_FOOTPRINT): the action and the identity line end
+    // left of the button. From FLOW_IDENTITY_SIDE_MIN_WIDTH up the identity side column already keeps the
+    // footer clear of the button, so nothing is reserved there.
+    const reserveDiceFootprint = !identitySide;
     return (
       <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
         <View style={styles.wideOuter}>
@@ -148,7 +155,13 @@ export function FlowShell({
               {stepTitle}
               {content}
             </View>
-            <View testID="flow-wide-footer" style={[styles.wideFooter, { borderTopColor: theme.border }]}>
+            <View
+              testID="flow-wide-footer"
+              style={[
+                styles.wideFooter,
+                { borderTopColor: theme.border },
+                reserveDiceFootprint ? { paddingRight: 16 + DICE_BUTTON_FOOTPRINT } : null,
+              ]}>
               {identitySide ? null : (
                 <TouchableOpacity
                   testID="flow-identity-line"
@@ -232,13 +245,14 @@ export function FlowShell({
 
 /**
  * Extra contentContainerStyle for a flow's step scroll content. The padding follows the flow's own bottom
- * bar: while FlowShell shows that bar (width below FLOW_WIDE_MIN_WIDTH) the floating dice button (56dp,
- * sitting 16dp above the bar) must not cover the last rows, so the content pads its bottom by 56 + 16
- * there; at wide widths the button sits at the viewport's bottom-right corner and nothing is added.
+ * bar: while FlowShell shows that bar (width below FLOW_WIDE_MIN_WIDTH) the floating dice button
+ * (DICE_BUTTON_SIZE, sitting DICE_BUTTON_EDGE_MARGIN above the bar) must not cover the last rows, so the
+ * content pads its bottom by DICE_BUTTON_SIZE + DICE_BUTTON_EDGE_MARGIN there; at wide widths the button
+ * sits at the viewport's bottom-right corner and nothing is added.
  */
 export function useFlowStepScrollContentPadding(): ViewStyle {
   const { width } = useResponsiveLayout();
-  return width < FLOW_WIDE_MIN_WIDTH ? { paddingBottom: 56 + 16 } : {};
+  return width < FLOW_WIDE_MIN_WIDTH ? { paddingBottom: DICE_BUTTON_SIZE + DICE_BUTTON_EDGE_MARGIN } : {};
 }
 
 /** The serif title row of the open step, with its needs-attention mark. */
