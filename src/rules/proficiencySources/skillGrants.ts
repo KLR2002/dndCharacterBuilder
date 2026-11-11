@@ -18,6 +18,26 @@ interface SkillSourceOptions {
   activeBooks: ActiveBooks;
 }
 
+/** One pattern per skill, built once: the skill list is a constant. */
+const TRAIT_SKILL_PATTERNS = DND_SKILLS.map((skill) => ({
+  name: skill.name,
+  pattern: new RegExp(
+    `(?:proficient in|proficiency in)(?: the)?\\s+${skill.name}\\s+skill|\\{@skill\\s+${skill.name}\\}`,
+    "i"
+  ),
+}));
+
+/** The skills each trait description names, keyed by the description. Catalog text does not change while the app runs. */
+const descriptionSkills = new Map<string, string[]>();
+
+function skillsNamedBy(desc: string): string[] {
+  const cached = descriptionSkills.get(desc);
+  if (cached) return cached;
+  const named = TRAIT_SKILL_PATTERNS.filter(({ pattern }) => pattern.test(desc)).map(({ name }) => name);
+  descriptionSkills.set(desc, named);
+  return named;
+}
+
 /**
  * The skills the race and subrace trait text names. A race swap removes these, so the sheet reads them apart from the
  * Rule Choice picks. Private to the Proficiency Sheet (ADR 0015).
@@ -37,16 +57,7 @@ export function traitTextSkills(character: Character, opts: SkillSourceOptions):
   for (const t of traits) {
     // Stonecunning's text only conditions a History check; it does not make the character proficient.
     if (t.name === "Stonecunning") continue;
-    const desc = t.description || "";
-    for (const skill of DND_SKILLS) {
-      const reg = new RegExp(
-        `(?:proficient in|proficiency in)(?: the)?\\s+${skill.name}\\s+skill|\\{@skill\\s+${skill.name}\\}`,
-        "i"
-      );
-      if (reg.test(desc)) {
-        granted.add(skill.name);
-      }
-    }
+    for (const name of skillsNamedBy(t.description || "")) granted.add(name);
   }
   return Array.from(granted);
 }
