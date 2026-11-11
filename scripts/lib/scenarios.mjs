@@ -1607,6 +1607,24 @@ export function buildScreens({ integrated }) {
         ready: "Hit Points",
         expect: { texts: ["Class", "Hit Points", "ASI/Feat", "Review", "Fighter", "3 → 4"], fitsWidth: true },
       },
+      // The Level-Up Flow's identity line — phone bottom bar below 768px, wide footer from 768px up — opens
+      // the same "Character" modal as the Creation Flow's; from 1024px up the panel is the side column, on
+      // screen with no tap and no modal. So the default 768px width exercises the Level-Up Flow's wide
+      // footer and its identity modal.
+      {
+        name: "Level-Up Flow identity panel",
+        route: `/levelup/${EDIT_BUILD_ID}`,
+        open: [{ tap: { pattern: "^Fighter 3 · Human · Acolyte$" } }],
+        modal: "Character",
+        expect: { texts: ["9 (-1)", "Haldane", "Battle Master"], absent: ["9 (+-1)"], fitsWidth: true },
+        wide: {
+          minWidth: BREAKPOINTS.desktop,
+          open: [],
+          modal: null,
+          ready: "9 (-1)",
+          expect: { texts: ["9 (-1)", "Haldane", "Battle Master"], absent: ["9 (+-1)"], fitsWidth: true },
+        },
+      },
       // Edit Build's Class step offers only lowering: lowering the Fighter releases the level-3 maneuvers and
       // flags their steps with the warning; no raise control is offered.
       {
