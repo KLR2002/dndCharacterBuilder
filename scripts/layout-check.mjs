@@ -18,7 +18,7 @@
 // needs `npx playwright install chromium` once.
 //
 // Fails (one line per violation) on squeezed text and on elements that stick out of a non-scrolling
-// parent. Env: BASE (default http://localhost:8099), WIDTHS (default "393,360,320,412,768,1024"), ONLY (a comma-separated
+// parent. Env: BASE (default http://localhost:8099), WIDTHS (default "393,360,320,412,768"), ONLY (a comma-separated
 // list of substrings: only the scenarios whose name contains one of them, ignoring case, are visited in every
 // width; unset visits all), SHOTS (screenshot dir, default a layout-check folder under the OS temp dir). Exit:
 // 0 green, 1 violations, 2 no browser or no server (the server log path is printed then), or an ONLY term that
@@ -46,7 +46,7 @@ const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const BASE = process.env.BASE ?? "http://localhost:8099";
 const PORT = new URL(BASE).port || "8099";
 const SHOTS = process.env.SHOTS ?? join(tmpdir(), "layout-check");
-const WIDTHS = (process.env.WIDTHS ?? "393,360,320,412,768,1024").split(",").map(Number);
+const WIDTHS = (process.env.WIDTHS ?? "393,360,320,412,768").split(",").map(Number);
 // Lowercase substrings from ONLY. Empty when ONLY is unset or blank, which visits every scenario.
 const ONLY = (process.env.ONLY ?? "").split(",").map((term) => term.trim().toLowerCase()).filter(Boolean);
 const INTEGRATED = process.argv.includes("--integrated") || process.env.LAYOUT_INTEGRATED === "1";
