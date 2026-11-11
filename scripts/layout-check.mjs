@@ -1674,6 +1674,13 @@ async function checkDiceAnimation(ctx, width, meta) {
   // dice still tumble, the faces shown match the Roll's chips, the dice carry the accent colour.
   // The pose sampler starts before the roll: under load the die can mount and finish tumbling before
   // a sampler started after the roll would begin.
+  // The die's chunk compiles on its first use in the dev server, which takes seconds and would be charged
+  // to the measured roll below. A roll in a warm-up page of this context loads it first.
+  const warm = await ctx.newPage();
+  await gotoApp(warm, `${BASE}/character/${CHARACTER_ID}`);
+  await rollTrayPool(warm);
+  await warm.waitForSelector('[data-testid="die-3d-0"]', { state: "visible", timeout: 10000 }).catch(() => fail("the warm-up roll mounted no animated die"));
+  await closePage(warm);
   await startDieSampling(page);
   await rollTrayPool(page);
   const dieMounted = await page.waitForSelector('[data-testid="die-3d-0"]', { state: "visible", timeout: 10000 }).catch(() => null);
@@ -1688,8 +1695,7 @@ async function checkDiceAnimation(ctx, width, meta) {
     // land in the same frame. A die that never animates yields one constant pose and still fails.
     // The samples cover the 3s budget counted from the roll, not from the die's mount.
     const { samples } = await readDieSamples(page, rollAt + 3000);
-    const timed = samples.filter((s) => s.t >= rollAt).map((s) => ({ t: s.t - rollAt, pose: s.pose }));
-    if (early.total === null) fail("the text total was not shown while the dice animation was still running");
+    const timed = samples.filter((s) => s.t >= rollAt).map((s) => ({ t: s.t - rollAt, pose: s.pose }));    if (early.total === null) fail("the text total was not shown while the dice animation was still running");
     // A real tumble yields dozens of distinct poses; a die that never animates yields at most two
     // (its mount pose and its final one), so three distinct poses prove an animation ran. The poses must
     // also differ between two samples more than 100ms apart, so one frame's jitter cannot pass.
