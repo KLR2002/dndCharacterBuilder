@@ -22,8 +22,8 @@
 // Fails (one line per violation) on squeezed text and on elements that stick out of a non-scrolling
 // parent. Env: BASE (default http://localhost:8099), WIDTHS (default "320,393,768,1280": compact, phone, tablet
 // and desktop, one width per layout; `-- --integrated` narrows it to 320 unless WIDTHS is set), MAX_PARALLEL
-// (how many widths run at once, default 1: each width holds its own browser context, and the four default
-// widths at once peak about 2 GB higher than one at a time), ONLY (a comma-separated list of substrings: only the scenarios whose name
+// (how many widths run at once, default all of them: each width holds its own browser context, and the
+// four default widths at once peak about 0.8 GB higher than one at a time), ONLY (a comma-separated list of substrings: only the scenarios whose name
 // contains one of them, ignoring case, are visited in every width; unset visits all), SHOTS_ONLY
 // (comma-separated substrings, like ONLY; "all" writes every screenshot; unset writes a screenshot only for
 // a failed scenario or check, or one marked shot: true), SHOTS (screenshot dir, default a layout-check folder
@@ -79,10 +79,11 @@ const SHOTS_ALL = SHOTS_ONLY.includes("all");
 // The deviceScaleFactor of the browser contexts (DSF env). 1 by default: a full run at 1 gives the
 // same results as at 2 (GREEN, no violations), a little faster and with less memory.
 const DSF = Number(process.env.DSF ?? 1);
-// How many widths run at the same time (MAX_PARALLEL env). Each width holds its own browser context, and
-// Chromium's memory grows with the contexts open at once: all four default widths together peaked at about
-// 12 GB used, one at a time at about 10.8 GB (the machine held about 6.6 GB before the run).
-const MAX_PARALLEL = Number(process.env.MAX_PARALLEL ?? 1);
+// How many widths run at the same time (MAX_PARALLEL env). Default: all of them. Measured on the 14 GB
+// machine with the four default widths: all at once took 432s, a pool of one took 933s for only about
+// 0.8 GB less peak. Metro dominates the run time, and about 6 GB of the peak is other processes already
+// running. Lower it to cap the memory of a busy machine.
+const MAX_PARALLEL = Number(process.env.MAX_PARALLEL ?? WIDTHS.length);
 if (!Number.isInteger(MAX_PARALLEL) || MAX_PARALLEL < 1) throw new Error(`MAX_PARALLEL="${process.env.MAX_PARALLEL}" must be a whole number of at least 1`);
 
 // Whether the scenario or check `meta` ({ name, shot }) writes its screenshots this run when it does not
