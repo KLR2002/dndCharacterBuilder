@@ -181,7 +181,7 @@ export default function CharacterSheetScreen() {
   );
 
   // One compact header bar: back, the name over the race and class line (with the level badge), the HP and
-  // AC chips. On phones a menu holds Level up and Edit Build; at 768px and up those two move into the rail.
+  // AC chips, and the menu holding Level up and Edit Build (at 768px and up the rail repeats those two).
   const header = (
     <View
       testID="sheet-header"
@@ -264,17 +264,15 @@ export default function CharacterSheetScreen() {
           <Text style={[styles.chipText, { color: theme.text }, isCompact && { fontSize: 11 }]}>{evaluated.armorClass.ac}</Text>
         </View>
 
-        {!isTablet && (
-          <TouchableOpacity
-            testID="sheet-header-menu"
-            onPress={() => setMenuOpen(true)}
-            accessibilityRole="button"
-            accessibilityLabel="Sheet menu"
-            hitSlop={{ top: 4, bottom: 4, left: 4, right: 4 }}
-            style={[styles.headerIconBtn, { backgroundColor: theme.surfaceHighlight, borderColor: theme.border }]}>
-            <Ionicons name="ellipsis-vertical" size={20} color={theme.text} />
-          </TouchableOpacity>
-        )}
+        <TouchableOpacity
+          testID="sheet-header-menu"
+          onPress={() => setMenuOpen(true)}
+          accessibilityRole="button"
+          accessibilityLabel="Sheet menu"
+          hitSlop={{ top: 4, bottom: 4, left: 4, right: 4 }}
+          style={[styles.headerIconBtn, { backgroundColor: theme.surfaceHighlight, borderColor: theme.border }]}>
+          <Ionicons name="ellipsis-vertical" size={20} color={theme.text} />
+        </TouchableOpacity>
       </View>
       </View>
     </View>

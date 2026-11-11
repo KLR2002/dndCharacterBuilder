@@ -39,7 +39,7 @@ export interface FlowShellProps {
   content: React.ReactNode;
   /** The primary action of the bottom bar / wide footer. */
   primaryAction: React.ReactNode;
-  /** The touchable line that opens the identity panel in the phone modal. */
+  /** The touchable line that opens the identity panel modal (phone bottom bar, wide footer). */
   identityLine: React.ReactNode;
   /** The identity panel: right column at wide widths, the phone modal's content. */
   identityPanel: React.ReactNode;
@@ -50,7 +50,8 @@ export interface FlowShellProps {
 /**
  * The shared chrome of the Creation Flow and the Level-Up Flow: step chips on phones, a step list on the
  * left with the step in the centre and the identity panel on the right at FLOW_WIDE_MIN_WIDTH and up, and
- * a bottom bar holding the identity line and the primary action on phones. The floating dice button sits
+ * a bar holding the identity line and the primary action (the bottom bar on phones, the footer at wide
+ * widths). The floating dice button sits
  * above that bar, never on its own row. Both flows render their steps through this shell; the steps
  * themselves come from their rules modules.
  */
@@ -138,12 +139,26 @@ export function FlowShell({
               {stepTitle}
               {content}
             </View>
-            <View style={[styles.wideFooter, { borderTopColor: theme.border }]}>{primaryAction}</View>
+            <View style={[styles.wideFooter, { borderTopColor: theme.border }]}>
+              <TouchableOpacity
+                accessibilityRole="button"
+                onPress={() => setIdentityOpen(true)}
+                activeOpacity={0.7}
+                style={styles.identityLineBtn}
+              >
+                {identityLine}
+                <Ionicons name="chevron-up" size={16} color={theme.textSecondary} />
+              </TouchableOpacity>
+              {primaryAction}
+            </View>
           </View>
           <View style={[styles.identitySide, { borderLeftColor: theme.border, backgroundColor: theme.surface }]}>
             <ScrollView contentContainerStyle={styles.identitySideContent}>{identityPanel}</ScrollView>
           </View>
         </View>
+        <Modal visible={identityOpen} onClose={() => setIdentityOpen(false)} title="Character">
+          {identityPanel}
+        </Modal>
       </SafeAreaView>
     );
   }
@@ -300,7 +315,9 @@ const styles = StyleSheet.create({
   },
   wideMiddle: {
     flex: 1,
-    minWidth: 0,
+    // The step column never drops below a phone-class width: at the wide breakpoint itself the fixed
+    // step list and identity side would otherwise squeeze it narrower than a phone's content.
+    minWidth: 360,
     alignItems: "center",
   },
   wideContent: {
@@ -316,9 +333,12 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     paddingHorizontal: 16,
     paddingVertical: 10,
+    gap: 8,
   },
   identitySide: {
     width: 280,
+    // Gives its room to the step column when the viewport is only just wide (see wideMiddle's minWidth).
+    flexShrink: 1,
     borderLeftWidth: 1,
   },
   identitySideContent: {
