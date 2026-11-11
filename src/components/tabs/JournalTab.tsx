@@ -8,6 +8,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { useSheetScrollContentPadding } from "../sheet/sheetChrome";
 import { Ionicons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
 import { useCharacters } from "../../context/CharacterContext";
@@ -56,6 +57,7 @@ function parseLoreSections(text: string): LoreSection[] {
 }
 
 export const JournalTab: React.FC = () => {
+  const sheetScrollPad = useSheetScrollContentPadding();
   const { currentCharacter, updateCharacter, activeBooks } = useCharacters();
   const { theme } = useAppTheme();
 
@@ -107,7 +109,7 @@ export const JournalTab: React.FC = () => {
   };
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+    <ScrollView style={styles.container} contentContainerStyle={[styles.content, sheetScrollPad]}>
       {/* Portrait & Identity Card */}
       <Card style={styles.portraitCard}>
         <View style={styles.avatarRow}>

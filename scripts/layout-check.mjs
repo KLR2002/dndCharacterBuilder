@@ -2953,6 +2953,7 @@ async function checkSheetChrome(ctx, width, meta) {
     const rail = document.querySelector('[data-testid="sheet-tab-rail"]');
     const header = document.querySelector('[data-testid="sheet-header"]');
     const button = document.querySelector('[data-testid="dice-button"]');
+    const tabContent = document.querySelector('[data-testid="sheet-tab-content"]')?.firstElementChild ?? null;
     const rect = (el) => {
       const r = el.getBoundingClientRect();
       return { left: r.left, right: r.right, top: r.top, bottom: r.bottom, width: r.width, height: r.height };
@@ -2977,6 +2978,7 @@ async function checkSheetChrome(ctx, width, meta) {
       rail: rail ? rect(rail) : null,
       headerHeight: header ? rect(header).height : null,
       button: button ? rect(button) : null,
+      tabContent: tabContent ? rect(tabContent) : null,
       tabs,
       actions,
       menuCount: document.querySelectorAll('[aria-label="Sheet menu"]').length,
@@ -3059,7 +3061,13 @@ async function checkSheetChrome(ctx, width, meta) {
       if (!chrome.bar) fail("cannot check the dice button against a missing bar");
       else if (chrome.button.bottom > chrome.bar.top + 1)
         fail(`the dice button covers the tab bar (button bottom ${Math.round(chrome.button.bottom)} over bar top ${Math.round(chrome.bar.top)})`);
+      else if (Math.abs(chrome.bar.top - chrome.button.bottom - 16) > 1)
+        fail(`the dice button floats ${Math.round(chrome.bar.top - chrome.button.bottom)}px above the tab bar, not 16px`);
     } else fail("no floating dice button on the sheet");
+    // The tab's scroll view ends where the bar starts: no band of background between content and bar.
+    if (!chrome.tabContent) fail("no tab content under the sheet (data-testid=\"sheet-tab-content\")");
+    else if (chrome.bar && Math.abs(chrome.tabContent.bottom - chrome.bar.top) > 1)
+      fail(`the tab content ends ${Math.round(chrome.bar.top - chrome.tabContent.bottom)}px above the tab bar (content bottom ${Math.round(chrome.tabContent.bottom)} over bar top ${Math.round(chrome.bar.top)})`);
     // The menu holds Level up and Edit Build as 48dp rows.
     await page.getByLabel("Sheet menu").first().click();
     await page.waitForSelector('[role="dialog"]', { state: "visible", timeout: 10000 }).catch(() => fail("the sheet menu did not open"));
