@@ -10,10 +10,10 @@ import { useSerifFont } from "../../hooks/useSerifFont";
 import { Modal } from "../ui/Modal";
 
 /**
- * The flow's wide breakpoint: at or above this width FlowShell shows the wide layout (step list, centre
- * step, identity side, footer); below it the phone layout with the bottom bar the floating dice button
- * sits above. The step scroll content's bottom padding switches at the same width. It is BREAKPOINTS.tablet
- * by reference, so the flows and the sheet always switch at the same width.
+ * The flow's wide breakpoint: at or above this width FlowShell shows the wide layout (step list on the
+ * left, the step in the centre, footer); below it the phone layout with the bottom bar the floating dice
+ * button sits above. The step scroll content's bottom padding switches at the same width. It is
+ * BREAKPOINTS.tablet by reference, so the flows and the sheet always switch at the same width.
  */
 export const FLOW_WIDE_MIN_WIDTH = BREAKPOINTS.tablet;
 
@@ -39,9 +39,9 @@ export interface FlowShellProps {
   content: React.ReactNode;
   /** The primary action of the bottom bar / wide footer. */
   primaryAction: React.ReactNode;
-  /** The touchable line that opens the identity panel modal (phone bottom bar, wide footer). */
+  /** The touchable identity line in the bottom bar / wide footer; it opens the identity panel modal. */
   identityLine: React.ReactNode;
-  /** The identity panel: right column at wide widths, the phone modal's content. */
+  /** The identity panel, shown in the modal the identity line opens. */
   identityPanel: React.ReactNode;
   /** testID of the phone bottom bar, measured so the floating dice button sits above it. */
   bottomBarTestID?: string;
@@ -49,9 +49,9 @@ export interface FlowShellProps {
 
 /**
  * The shared chrome of the Creation Flow and the Level-Up Flow: step chips on phones, a step list on the
- * left with the step in the centre and the identity panel on the right at FLOW_WIDE_MIN_WIDTH and up, and
- * a bar holding the identity line and the primary action (the bottom bar on phones, the footer at wide
- * widths). The floating dice button sits
+ * left with the step in the centre at FLOW_WIDE_MIN_WIDTH and up, and a bar holding the identity line and
+ * the primary action (the bottom bar on phones, the footer at wide widths); the identity line opens the
+ * identity panel modal at every width. The floating dice button sits
  * above that bar, never on its own row. Both flows render their steps through this shell; the steps
  * themselves come from their rules modules.
  */
@@ -151,9 +151,6 @@ export function FlowShell({
               </TouchableOpacity>
               {primaryAction}
             </View>
-          </View>
-          <View style={[styles.identitySide, { borderLeftColor: theme.border, backgroundColor: theme.surface }]}>
-            <ScrollView contentContainerStyle={styles.identitySideContent}>{identityPanel}</ScrollView>
           </View>
         </View>
         <Modal visible={identityOpen} onClose={() => setIdentityOpen(false)} title="Character">
@@ -315,9 +312,7 @@ const styles = StyleSheet.create({
   },
   wideMiddle: {
     flex: 1,
-    // The step column never drops below a phone-class width: at the wide breakpoint itself the fixed
-    // step list and identity side would otherwise squeeze it narrower than a phone's content.
-    minWidth: 360,
+    minWidth: 0,
     alignItems: "center",
   },
   wideContent: {
@@ -334,14 +329,5 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 10,
     gap: 8,
-  },
-  identitySide: {
-    width: 280,
-    // Gives its room to the step column when the viewport is only just wide (see wideMiddle's minWidth).
-    flexShrink: 1,
-    borderLeftWidth: 1,
-  },
-  identitySideContent: {
-    padding: 16,
   },
 });
