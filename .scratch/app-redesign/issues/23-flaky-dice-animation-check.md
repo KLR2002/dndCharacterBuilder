@@ -1,6 +1,6 @@
 # 23: Flaky dice animation check under load
 
-**Status:** ready-for-agent
+**Status:** folded into ticket 24
 
 ## What to build
 
