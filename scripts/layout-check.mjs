@@ -13,34 +13,36 @@
 // app and seed it are in scripts/lib/app-driver.mjs (see docs/agents/driving-the-app.md).
 //
 // Usage: `npm run layout:check` (not part of check:all). The script starts its own server on the port in
-// BASE, unless one already answers there: by default the Expo web dev server, with `--prod` a static
-// server over a fresh `expo export -p web` of the production bundle. `npm run layout:check -- --integrated`
+// BASE: by default the Expo web dev server, and with `--prod` a static server over a fresh
+// `expo export -p web` of the production bundle (the export goes to a folder named after the port). With
+// `--prod` the run exits 2 when something already answers on BASE. `npm run layout:check -- --integrated`
 // (or LAYOUT_INTEGRATED=1) seeds the integrated catalog instead of the SRD Baseline and runs at 320 unless
-// WIDTHS is set. The first run
-// needs `npx playwright install chromium` once.
+// WIDTHS is set. The first run needs `npx playwright install chromium` once.
 //
 // Fails (one line per violation) on squeezed text and on elements that stick out of a non-scrolling
 // parent. Env: BASE (default http://localhost:8099), WIDTHS (default "320,393,768,1280": compact, phone, tablet
-// and desktop, one width per layout; `-- --integrated` narrows it to 320 unless WIDTHS is set), ONLY (a comma-separated
-// list of substrings: only the scenarios whose name contains one of them, ignoring case, are visited in every
-// width; unset visits all), SHOTS_ONLY (comma-separated substrings, like ONLY; "all" writes every screenshot;
-// unset writes a screenshot only for a failed scenario or check, or one marked shot: true), SHOTS (screenshot
-// dir, default a layout-check folder under the OS temp dir), DSF (deviceScaleFactor of the contexts, default 1).
+// and desktop, one width per layout; `-- --integrated` narrows it to 320 unless WIDTHS is set), MAX_PARALLEL
+// (how many widths run at once, default 1: each width holds its own browser context, and the four default
+// widths at once peak about 2 GB higher than one at a time), ONLY (a comma-separated list of substrings: only the scenarios whose name
+// contains one of them, ignoring case, are visited in every width; unset visits all), SHOTS_ONLY
+// (comma-separated substrings, like ONLY; "all" writes every screenshot; unset writes a screenshot only for
+// a failed scenario or check, or one marked shot: true), SHOTS (screenshot dir, default a layout-check folder
+// under the OS temp dir), DSF (deviceScaleFactor of the contexts, default 1), EXPORT_DIR (the `--prod`
+// export folder, default one per port under the OS temp dir).
 // Exit:
-// 0 green, 1 violations, 2 no browser or no server (the server log path is printed then), or an ONLY term that
-// matches no scenario (the scenario names are printed then). `--list` prints the shared scenario list (the
-// SCREENS names) as JSON and exits without starting anything. `--prod` serves a static export of the
-// production bundle instead of the Expo web dev server.
+// 0 green, 1 violations, 2 no browser or no server (the server log path is printed then), `--prod` with a
+// server already on BASE, or an ONLY term that matches no scenario (the scenario names are printed then).
+// `--list` prints the shared scenario list (the SCREENS names) as JSON and exits without starting anything.
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import fs from "node:fs";
 import { chromium } from "playwright";
 import {
-  exportWebStatic,
   httpStatus,
   seedBrowser,
   signalExpoGroup,
+  spawnExpoExport,
   spawnExpoWeb,
   spawnStaticServer,
   stopExpoWeb,
@@ -77,6 +79,11 @@ const SHOTS_ALL = SHOTS_ONLY.includes("all");
 // The deviceScaleFactor of the browser contexts (DSF env). 1 by default: a full run at 1 gives the
 // same results as at 2 (GREEN, no violations), a little faster and with less memory.
 const DSF = Number(process.env.DSF ?? 1);
+// How many widths run at the same time (MAX_PARALLEL env). Each width holds its own browser context, and
+// Chromium's memory grows with the contexts open at once: all four default widths together peaked at about
+// 12 GB used, one at a time at about 10.8 GB (the machine held about 6.6 GB before the run).
+const MAX_PARALLEL = Number(process.env.MAX_PARALLEL ?? 1);
+if (!Number.isInteger(MAX_PARALLEL) || MAX_PARALLEL < 1) throw new Error(`MAX_PARALLEL="${process.env.MAX_PARALLEL}" must be a whole number of at least 1`);
 
 // Whether the scenario or check `meta` ({ name, shot }) writes its screenshots this run when it does not
 // fail: SHOTS_ALL, a SHOTS_ONLY substring match, or its own shot: true mark.
@@ -207,14 +214,21 @@ async function gotoApp(page, url) {
 }
 const SERVER_WAIT_MS = 180_000;
 
-// The Expo web server this script started. It runs in its own process group, so one signal stops it and its children.
+// The server this script started (the Expo web dev server or the static server) and the `expo export` child of
+// --prod. Each runs in its own process group, so one signal stops it and its children.
 let server = null;
+let exporter = null;
 
-function signalServerGroup(signal) {
+function signalChildGroups(signal) {
+  if (exporter) signalExpoGroup(exporter, signal);
   if (server) signalExpoGroup(server, signal);
 }
 
 async function stopServer() {
+  if (exporter) {
+    await stopExpoWeb(exporter);
+    exporter = null;
+  }
   if (!server) return;
   await stopExpoWeb(server);
   server = null;
@@ -222,16 +236,19 @@ async function stopServer() {
 
 // Starts the server this run checks against, on PORT. By default it is the Expo web dev server (see
 // spawnExpoWeb); `--prod` exports the production web bundle once (`npx expo export -p web`,
-// EXPO_PUBLIC_E2E=1 so the test hooks are in the bundle) into a temp folder and serves it with
-// scripts/lib/static-server.mjs. Resolves "up", "exited" or "timeout" (see waitForExpoWeb).
+// EXPO_PUBLIC_E2E=1 so the test hooks are in the bundle) into a folder named after the port, so runs on
+// different ports never share one, and serves it with scripts/lib/static-server.mjs. Resolves "up",
+// "exited" or "timeout" (see waitForExpoWeb).
 async function startServer(logPath) {
   if (DEV) {
     server = spawnExpoWeb({ root: ROOT, port: PORT, logPath });
     return waitForExpoWeb(server, BASE, SERVER_WAIT_MS);
   }
-  const outDir = process.env.EXPORT_DIR ?? join(tmpdir(), "layout-check-web-export");
+  const outDir = process.env.EXPORT_DIR ?? join(tmpdir(), `layout-check-web-export-${PORT}`);
   const exportedAt = Date.now();
-  const code = await exportWebStatic({ root: ROOT, outDir, logPath });
+  exporter = spawnExpoExport({ root: ROOT, outDir, logPath });
+  const code = await exporter.done;
+  exporter = null;
   if (code !== 0) {
     console.error(`expo export failed (exit ${code}). Server log: ${logPath}`);
     return "exited";
@@ -3407,12 +3424,18 @@ async function checkWidth(browser, seed, width) {
   }
 }
 
-// Runs every check at every width, the widths at the same time. Returns the number of violations.
+// Runs every check at every width, MAX_PARALLEL widths at a time (a pool, so a width's context is closed before
+// the next one opens). Returns the number of violations.
 async function runChecks(browser) {
   const seed = buildSeed({ root: ROOT, integrated: INTEGRATED });
   ACTIVE_SEED = seed;
-  const counts = await Promise.all(WIDTHS.map((width) => checkWidth(browser, seed, width)));
-  return counts.reduce((total, count) => total + count, 0);
+  const queue = [...WIDTHS];
+  let failures = 0;
+  const worker = async () => {
+    while (queue.length > 0) failures += await checkWidth(browser, seed, queue.shift());
+  };
+  await Promise.all(Array.from({ length: Math.min(MAX_PARALLEL, WIDTHS.length) }, worker));
+  return failures;
 }
 
 let browser = null;
@@ -3443,6 +3466,11 @@ async function main() {
   }
   const logPath = join(SHOTS, "expo-server.log");
   if ((await httpStatus(BASE)) > 0) {
+    // --prod checks the export it builds, so another server on BASE would be tested instead of the export.
+    if (!DEV) {
+      console.error(`Something already answers at ${BASE}. --prod needs the port free: stop that server or set BASE to another URL.`);
+      return 2;
+    }
     console.log(`Using the server already running at ${BASE}. If it started before your latest code change it may be stale; stop it and rerun to test fresh code.`);
   } else {
     console.log(`Starting ${DEV ? "the Expo web dev server" : "a static server over a fresh production export"} on port ${PORT} (log: ${logPath}).`);
@@ -3464,7 +3492,7 @@ async function main() {
 
 for (const [signal, code] of [["SIGINT", 130], ["SIGTERM", 143]]) process.on(signal, () => shutdown(code));
 // Last resort on any exit path: the server's process group must not outlive this script.
-process.on("exit", () => signalServerGroup("SIGKILL"));
+process.on("exit", () => signalChildGroups("SIGKILL"));
 
 main().then(
   (code) => {
