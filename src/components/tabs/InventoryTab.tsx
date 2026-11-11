@@ -8,6 +8,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { useSheetScrollContentPadding } from "../sheet/sheetChrome";
 import { Ionicons } from "@expo/vector-icons";
 import { useCharacters } from "../../context/CharacterContext";
 import { useAppTheme } from "../../context/ThemeContext";
@@ -32,6 +33,7 @@ function makeItemId(prefix: string): string {
 }
 
 export const InventoryTab: React.FC = () => {
+  const sheetScrollPad = useSheetScrollContentPadding();
   const { currentCharacter, updateCharacter, activeBooks } = useCharacters();
   const { theme } = useAppTheme();
   const { isCompact } = useResponsiveLayout();
@@ -293,7 +295,7 @@ export const InventoryTab: React.FC = () => {
   ) / 100;
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+    <ScrollView style={styles.container} contentContainerStyle={[styles.content, sheetScrollPad]}>
       {/* Currency Pouch */}
       <Card style={styles.pouchCard}>
         <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>

@@ -31,8 +31,9 @@ import type {
  * Format 12 adds the Customizing Your Origin swap table (`originRules`), which a catalog saved at format 11 does not carry.
  * Format 13 adds the reviewed gates on a race or subrace proficiency grant (`gatedBy`), which a catalog saved at format 12 does not carry.
  * Format 14 drops the Elf (Sea) subrace's language choice, which a catalog saved at format 13 still carries.
+ * Format 15 adds class descriptions read from the class fluff files, which a catalog saved at format 14 does not carry.
  */
-export const REQUIRED_CATALOG_FORMAT = 14;
+export const REQUIRED_CATALOG_FORMAT = 15;
 
 /** True for an Integrated Catalog saved below the required format (or with none). The SRD Baseline is never stale. */
 export function isCatalogStale(collections: Pick<CompendiumCollections, "hasIntegratedCatalog" | "catalogFormat">): boolean {

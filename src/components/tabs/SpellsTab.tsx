@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { useSheetScrollContentPadding } from "../sheet/sheetChrome";
 import { Ionicons } from "@expo/vector-icons";
 import { useCharacters } from "../../context/CharacterContext";
 import { useAppTheme } from "../../context/ThemeContext";
@@ -173,6 +174,7 @@ function getSubclassPreparedCounterSuffix(className: string): string {
 }
 
 export const SpellsTab: React.FC = () => {
+  const sheetScrollPad = useSheetScrollContentPadding();
   const { currentCharacter, updateCharacter, activeBooks } = useCharacters();
   const { theme } = useAppTheme();
   const { isCompact } = useResponsiveLayout();
@@ -804,7 +806,7 @@ export const SpellsTab: React.FC = () => {
   if (spellProfiles.length === 0) {
     if (grantedProfiles.length > 0 || lockedCards.length > 0 || atWillInvocations.length > 0) {
       return (
-        <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+        <ScrollView style={styles.container} contentContainerStyle={[styles.content, sheetScrollPad]}>
           {renderGrantedCards()}
           {renderLockedCards()}
           {renderAtWillInvocationsCard()}
@@ -824,7 +826,7 @@ export const SpellsTab: React.FC = () => {
     }
 
     return (
-      <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+      <ScrollView style={styles.container} contentContainerStyle={[styles.content, sheetScrollPad]}>
         <Card style={[styles.emptyCard, { backgroundColor: theme.surface, borderColor: theme.border }]}>
           <Ionicons name="sparkles-outline" size={48} color={theme.textMuted} style={{ marginBottom: 12 }} />
           <Text style={[styles.emptyTitle, { color: theme.text }]}>No Spellcasting Features</Text>
@@ -959,7 +961,7 @@ export const SpellsTab: React.FC = () => {
   };
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+    <ScrollView style={styles.container} contentContainerStyle={[styles.content, sheetScrollPad]}>
       {/* Multiclass Profile Selector Tabs/Pills */}
       {spellProfiles.length > 1 && (
         <ScrollView
