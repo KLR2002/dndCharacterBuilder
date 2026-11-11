@@ -1,9 +1,9 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { applyWideOverride } from "../scripts/layout-check.mjs";
+import { applyWideOverride } from "../scripts/lib/scenario-override.mjs";
 import { buildScreens } from "../scripts/lib/scenarios.mjs";
 
-// The web runner's per-width override mechanism (scripts/layout-check.mjs): a scenario may carry a `wide`
+// The web runner's per-width override mechanism (scripts/lib/scenario-override.mjs): a scenario may carry a `wide`
 // field — `{ minWidth, ...overrides }` — that applyWideOverride merges over the scenario when the run's page
 // width is at or above `minWidth`. Phone widths below every minWidth get the scenario as written, and the
 // Android runner (phone-only) never calls applyWideOverride, so both behave exactly as before.

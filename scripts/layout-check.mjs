@@ -38,6 +38,7 @@ import {
   waitForExpoWeb,
 } from "./lib/app-driver.mjs";
 import { buildScreens, buildSeed, ACTIONS_ID, CHARACTER_ID, DRUID_ID, EDIT_BUILD_ID, LOW_CON_ID, MAX_LEVEL_ID, RANGER_ID, SORCERER_SWAP_ID, WIZARD_ID } from "./lib/scenarios.mjs";
+import { applyWideOverride } from "./lib/scenario-override.mjs";
 import { playStep, playSteps } from "./lib/web-steps.mjs";
 import { ACCENT_PALETTES, BASE_DARK_THEME } from "../src/constants/theme.ts";
 
@@ -608,19 +609,6 @@ async function visitScreen(page, width, screen, state) {
   if (screen.expect) violations = [...violations, ...(await checkExpected(page, screen.expect))];
   for (const v of violations) console.log(`${prefix} ${v}`);
   return violations.length;
-}
-
-// Per-width scenario override. A scenario may carry a `wide` field — `{ minWidth, ...overrides }` — that the
-// web runner merges over the scenario when the page width is at or above `minWidth` (shallow merge: `open`,
-// `modal`, `expect`, `ready` ... are replaced wholesale, and `modal: null` unsets the modal). This lets one
-// scenario assert a different path at wide widths, e.g. the identity panel on screen instead of behind a
-// tap. Below every `minWidth` the scenario is used as written, and the Android runner (phone-only) never
-// applies overrides, so phone widths and native runs behave exactly as before.
-export function applyWideOverride(screen, width) {
-  const wide = screen.wide;
-  if (!wide || typeof wide.minWidth !== "number" || width < wide.minWidth) return screen;
-  const { minWidth, ...overrides } = wide;
-  return { ...screen, ...overrides };
 }
 
 // Visits the screens in SCREENS that ONLY selects, on one width's context.
@@ -3000,22 +2988,17 @@ async function main() {
   return failures === 0 ? 0 : 1;
 }
 
-// The module drives a run only when invoked directly (npm run layout:check), so a test can import
-// applyWideOverride from it without starting a browser or a server.
-const invokedDirectly = process.argv[1] !== undefined && fs.realpathSync(process.argv[1]) === fs.realpathSync(fileURLToPath(import.meta.url));
-if (invokedDirectly) {
-  for (const [signal, code] of [["SIGINT", 130], ["SIGTERM", 143]]) process.on(signal, () => shutdown(code));
-  // Last resort on any exit path: the server's process group must not outlive this script.
-  process.on("exit", () => signalServerGroup("SIGKILL"));
+for (const [signal, code] of [["SIGINT", 130], ["SIGTERM", 143]]) process.on(signal, () => shutdown(code));
+// Last resort on any exit path: the server's process group must not outlive this script.
+process.on("exit", () => signalServerGroup("SIGKILL"));
 
-  main().then(
-    (code) => {
-      // Stop the server and browser in one place: the `finally` equivalent for every return path above.
-      return shutdown(code);
-    },
-    (error) => {
-      console.error(error);
-      return shutdown(1);
-    },
-  );
-}
+main().then(
+  (code) => {
+    // Stop the server and browser in one place: the `finally` equivalent for every return path above.
+    return shutdown(code);
+  },
+  (error) => {
+    console.error(error);
+    return shutdown(1);
+  },
+);

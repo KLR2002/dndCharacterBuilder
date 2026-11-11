@@ -1210,7 +1210,7 @@ export function buildScreens({ integrated }) {
   // screen shows once it is ready. `nativeTexts` lists further texts the Android player waits for in the dump
   // once ready (the web check reads `expect` instead). `scrollTo` scrolls a needle into view. A scenario may
   // also carry `wide`: `{ minWidth, ...overrides }`, merged over the scenario by the web runner
-  // (scripts/layout-check.mjs, applyWideOverride) when the page width is at or above `minWidth`, so one
+  // (scripts/lib/scenario-override.mjs, applyWideOverride) when the page width is at or above `minWidth`, so one
   // scenario can assert a different path at wide widths (the Android runner never applies it).
   const RENDAR_ROUTE = `/character/${CHARACTER_ID}`;
   const WIZARD_ROUTE = `/character/${WIZARD_ID}`;
