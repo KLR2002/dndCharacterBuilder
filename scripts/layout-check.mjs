@@ -58,6 +58,66 @@ const WIDTHS = (process.env.WIDTHS ?? (INTEGRATED ? "320" : "320,393,768,1280"))
 const SINGLE_RUN_WIDTH = Math.min(...WIDTHS);
 // Lowercase substrings from ONLY. Empty when ONLY is unset or blank, which visits every scenario.
 const ONLY = (process.env.ONLY ?? "").split(",").map((term) => term.trim().toLowerCase()).filter(Boolean);
+
+// Runs in the browser (handed to page.evaluate as one object): resolves once the web fonts are ready,
+// the element `probeSel` exists, and its layout signature — its rect and scroll size, the document's
+// scroll size and element count — is unchanged across two animation frames, or after `maxMs` at the
+// latest, so a screen with a continuous animation cannot stall the run.
+function settleProbe({ probeSel, maxMs }) {
+  return (async () => {
+    try {
+      await document.fonts.ready;
+    } catch {
+      // Fonts that never finish loading must not stall the run.
+    }
+    const deadline = performance.now() + maxMs;
+    let prev = null;
+    let frames = 0;
+    await new Promise((done) => {
+      const tick = () => {
+        const el = document.querySelector(probeSel);
+        if (el) {
+          const r = el.getBoundingClientRect();
+          const now = [
+            r.left, r.top, r.width, r.height, el.scrollWidth, el.scrollHeight,
+            document.documentElement.scrollWidth, document.documentElement.scrollHeight,
+            document.querySelectorAll("*").length,
+          ].join(",");
+          if (prev !== null && now === prev) return done();
+          prev = now;
+        }
+        if (performance.now() >= deadline || ++frames > 600) return done();
+        requestAnimationFrame(tick);
+      };
+      requestAnimationFrame(tick);
+    });
+  })();
+}
+
+// Waits until the page has settled (see settleProbe). `probe` is a CSS selector that must exist and hold
+// a stable layout, defaulting to the body.
+async function settle(page, probe, maxMs = 4000) {
+  await page.evaluate(settleProbe, { probeSel: probe ?? "body", maxMs }).catch(() => {});
+}
+
+// Waits for an open modal's shell — the dialog wrapper mounts a beat after the modal content — and then
+// for the page to settle on the dialog.
+async function settleDialog(page) {
+  await page.waitForSelector('[role="dialog"] [data-testid="modal-sheet"]', { state: "attached", timeout: 10000 }).catch(() => {});
+  await settle(page, '[role="dialog"]');
+}
+
+// Navigates to `url` and waits until the app is interactive: the load event, then the root layout's
+// mount effect — on an E2E web build it exposes the test-only publishing hook, so the hook's presence
+// proves React hydrated and the press handlers are attached — then ready fonts and an unchanged layout
+// across two animation frames. This replaces networkidle plus a fixed sleep.
+async function gotoApp(page, url) {
+  await page.goto(url, { waitUntil: "load", timeout: 120000 });
+  await page
+    .waitForFunction(() => typeof window.__publishRoll === "function", null, { timeout: 30000, polling: 100 })
+    .catch(() => {});
+  await settle(page);
+}
 const SERVER_WAIT_MS = 180_000;
 
 // The Expo web server this script started. It runs in its own process group, so one signal stops it and its children.
@@ -364,7 +424,7 @@ async function checkWildShapeBox(page, index, prefix, shot) {
   let failures = 0;
   await page.locator('[aria-label="Change wild shape hit points"]').nth(index).click();
   await page.getByText("Set to", { exact: true }).first().waitFor({ state: "visible", timeout: 10000 });
-  await page.waitForTimeout(500);
+  await settle(page);
   await page.screenshot({ path: join(SHOTS, shot) });
   const modal = await page.evaluateHandle(findHpModal);
   if (!modal.asElement()) {
@@ -387,23 +447,22 @@ async function checkWildShapeBox(page, index, prefix, shot) {
   }
   await closeModalViaShell(page);
   await page.getByText("Set to", { exact: true }).first().waitFor({ state: "hidden", timeout: 10000 });
-  await page.waitForTimeout(400);
+  await settle(page);
   return failures;
 }
 
 // Opens the Druid's Stats tab and checks the Active Wild Shape box and the header badge that opens the same box.
 async function checkWildShapeScreen(ctx, width) {
   const page = await ctx.newPage();
-  await page.goto(`${BASE}/character/${DRUID_ID}`, { waitUntil: "networkidle", timeout: 120000 });
-  await page.waitForTimeout(1500);
+  await gotoApp(page, `${BASE}/character/${DRUID_ID}`);
   await page.getByText("Stats", { exact: true }).first().click();
-  await page.waitForTimeout(500);
+  await settle(page);
   await page.getByText("WILD SHAPE HP", { exact: true }).first().waitFor({ state: "visible", timeout: 10000 });
   await page.evaluate(() => {
     const el = [...document.querySelectorAll("*")].find((e) => e.children.length === 0 && (e.textContent || "").includes("WILD SHAPE HP"));
     el?.scrollIntoView({ block: "center" });
   });
-  await page.waitForTimeout(300);
+  await settle(page);
   await page.screenshot({ path: join(SHOTS, `WildShape-Stats-${width}.png`) });
   let failures = 0;
   for (const v of await page.evaluate(findLayoutViolations, null)) {
@@ -438,16 +497,15 @@ function findWildShapeCard() {
 // Opens the Druid's Features tab (same shared Active Wild Shape card as Stats) and checks the card for layout violations.
 async function checkWildShapeFeatures(ctx, width) {
   const page = await ctx.newPage();
-  await page.goto(`${BASE}/character/${DRUID_ID}`, { waitUntil: "networkidle", timeout: 120000 });
-  await page.waitForTimeout(1500);
+  await gotoApp(page, `${BASE}/character/${DRUID_ID}`);
   await page.getByText("Features", { exact: true }).first().click();
-  await page.waitForTimeout(500);
+  await settle(page);
   await page.getByText("WILD SHAPE HP", { exact: true }).first().waitFor({ state: "visible", timeout: 10000 });
   await page.evaluate(() => {
     const el = [...document.querySelectorAll("*")].find((e) => e.children.length === 0 && (e.textContent || "").includes("WILD SHAPE HP"));
     el?.scrollIntoView({ block: "center" });
   });
-  await page.waitForTimeout(300);
+  await settle(page);
   await page.screenshot({ path: join(SHOTS, `WildShape-Features-${width}.png`) });
   let failures = await checkWildShapeTempLine(page, `[${width}px wild shape Features]`);
   const card = await page.evaluateHandle(findWildShapeCard);
@@ -590,12 +648,11 @@ async function visitScreen(page, width, screen, state) {
   const readyLocator = typeof ready === "string" ? page.getByText(ready, { exact: true }) : page.getByText(ready);
   try {
     if (screen.modal || screen.fresh || state.route !== screen.route) {
-      await page.goto(`${BASE}${screen.route}`, { waitUntil: "networkidle", timeout: 120000 });
-      await page.waitForTimeout(1500);
+      await gotoApp(page, `${BASE}${screen.route}`);
     }
     for (const tab of screen.tabs ?? []) {
       await page.getByText(tab, { exact: true }).first().click();
-      await page.waitForTimeout(500);
+      await settle(page);
     }
     if (screen.open) await playSteps(page, screen.open);
     await readyLocator.first().waitFor({ state: "visible", timeout: 10000 });
@@ -610,7 +667,9 @@ async function visitScreen(page, width, screen, state) {
       el?.scrollIntoView({ block: "center" });
     }, screen.scrollTo);
   }
-  await page.waitForTimeout(screen.modal ? 500 : 300);
+  // A modal's dialog wrapper mounts a beat after its content, so wait for it before settling on it.
+  if (screen.modal) await page.waitForSelector('[role="dialog"]', { state: "attached", timeout: 10000 }).catch(() => {});
+  await settle(page, screen.modal ? '[role="dialog"]' : "body");
   await page.screenshot({ path: join(SHOTS, `${screen.name.replace(/\W+/g, "-")}-${width}.png`) });
   state.route = screen.modal ? null : screen.route;
   let violations;
@@ -645,10 +704,9 @@ async function checkScreens(ctx, width) {
 // Opens the Stats tab of the Rendar and checks the hit point modal from the Stats HP number and from the header badge.
 async function checkHitPointModals(ctx, width) {
   const page = await ctx.newPage();
-  await page.goto(`${BASE}/character/${CHARACTER_ID}`, { waitUntil: "networkidle", timeout: 120000 });
-  await page.waitForTimeout(1500);
+  await gotoApp(page, `${BASE}/character/${CHARACTER_ID}`);
   await page.getByText("Stats", { exact: true }).first().click();
-  await page.waitForTimeout(500);
+  await settle(page);
   let failures = 0;
   const controls = await page.evaluate(findHpControls);
   const entries = [
@@ -664,7 +722,7 @@ async function checkHitPointModals(ctx, width) {
     }
     await page.locator('[aria-label="Change hit points"]').nth(index).click();
     await page.getByText("Set to", { exact: true }).first().waitFor({ state: "visible", timeout: 10000 });
-    await page.waitForTimeout(500);
+    await settle(page);
     await page.screenshot({ path: join(SHOTS, shot) });
     const modal = await page.evaluateHandle(findHpModal);
     if (!modal.asElement()) {
@@ -678,7 +736,7 @@ async function checkHitPointModals(ctx, width) {
     }
     await closeModalViaShell(page);
     await page.getByText("Set to", { exact: true }).first().waitFor({ state: "hidden", timeout: 10000 });
-    await page.waitForTimeout(400);
+    await settle(page);
   }
   await page.close();
   return failures;
@@ -702,8 +760,7 @@ async function checkDraftFolder(ctx, width) {
   const page = await ctx.newPage();
   const prefix = `[${width}px draft folder]`;
   let failures = 0;
-  await page.goto(`${BASE}/`, { waitUntil: "networkidle", timeout: 120000 });
-  await page.waitForTimeout(1500);
+  await gotoApp(page, `${BASE}/`);
   await page.getByText(/5e Character Builder/).first().waitFor({ state: "visible", timeout: 10000 });
   const before = await page.evaluate(folderBadgeCount, "Camp");
   if (before === null) {
@@ -721,10 +778,9 @@ async function checkDraftFolder(ctx, width) {
     console.log(`${prefix} the new draft did not open the Creation Flow`);
     failures++;
   }
-  await page.goto(`${BASE}/`, { waitUntil: "networkidle", timeout: 120000 });
-  await page.waitForTimeout(1500);
+  await gotoApp(page, `${BASE}/`);
   await page.getByText(/5e Character Builder/).first().waitFor({ state: "visible", timeout: 10000 });
-  await page.waitForTimeout(300);
+  await settle(page);
   await page.screenshot({ path: join(SHOTS, `DraftFolder-${width}.png`) });
   const after = await page.evaluate(folderBadgeCount, "Camp");
   if (before !== null && after !== before) {
@@ -807,10 +863,9 @@ async function checkModalClosing(ctx, width) {
   };
 
   // The Rest modal holds no unsaved input: every close path of this width closes it.
-  await page.goto(`${BASE}/character/${CHARACTER_ID}`, { waitUntil: "networkidle", timeout: 120000 });
-  await page.waitForTimeout(1500);
+  await gotoApp(page, `${BASE}/character/${CHARACTER_ID}`);
   await page.getByText("Stats", { exact: true }).first().click();
-  await page.waitForTimeout(500);
+  await settle(page);
   const handleLocator = page.locator('[aria-label="Close"][role="button"]').first();
   const methods = phone
     ? [
@@ -841,9 +896,8 @@ async function checkModalClosing(ctx, width) {
       continue;
     }
     if (how === methods[0][0]) {
-      // The dialog wrapper and its role mount a beat after the modal content, so wait for the sheet first.
-      await page.waitForSelector('[data-testid="modal-sheet"]', { state: "attached", timeout: 10000 }).catch(() => {});
-      await page.waitForTimeout(300);
+      // The dialog wrapper and its role mount a beat after the modal content, so wait for the shell first.
+      await settleDialog(page);
       for (const v of await checkModalShape(page, width)) fail(v);
       await page.screenshot({ path: shot("open") });
     }
@@ -854,13 +908,12 @@ async function checkModalClosing(ctx, width) {
   await closeRestIfOpen();
 
   // The Create New Folder modal with a typed name asks before closing, on backdrop tap and on Escape.
-  await page.goto(`${BASE}/`, { waitUntil: "networkidle", timeout: 120000 });
-  await page.waitForTimeout(1500);
+  await gotoApp(page, `${BASE}/`);
   await playStep(page, { tap: { name: "home-header-folder" } });
   if (!(await waitDialog("Create New Folder", true))) fail("the Create New Folder modal did not open");
   await page.getByPlaceholder("e.g. Curse of Strahd, One-Shots").fill("Unsaved Test Folder");
   if (!(await tapBackdrop(page))) fail("could not tap the backdrop of the edited folder modal");
-  await page.waitForTimeout(400);
+  await settleDialog(page);
   await page.screenshot({ path: shot("confirm") });
   if (!(await dialogShown("Discard changes?"))) fail("tapping the backdrop of an edited modal did not ask \"Discard changes?\"");
   if (!(await dialogShown("Create New Folder"))) fail("the edited modal closed on backdrop tap instead of asking first");
@@ -869,7 +922,7 @@ async function checkModalClosing(ctx, width) {
     if (!(await dialogShown("Create New Folder"))) fail("\"Keep editing\" closed the modal");
   }
   await page.keyboard.press("Escape");
-  await page.waitForTimeout(400);
+  await settleDialog(page);
   if (!(await dialogShown("Discard changes?"))) fail("Escape on an edited modal did not ask \"Discard changes?\"");
   if (await tapButton("Discard")) {
     if (!(await waitDialog("Create New Folder", false))) fail("\"Discard\" did not close the edited modal");
@@ -878,21 +931,20 @@ async function checkModalClosing(ctx, width) {
   // On a phone the handle labelled "Close" asks first too, on a modal holding unsaved input, and so does
   // a swipe down from the top of the sheet's content.
   if (phone) {
-    await page.goto(`${BASE}/`, { waitUntil: "networkidle", timeout: 120000 });
-    await page.waitForTimeout(1500);
+    await gotoApp(page, `${BASE}/`);
     await playStep(page, { tap: { name: "home-header-folder" } });
     if (!(await waitDialog("Create New Folder", true))) fail("the Create New Folder modal did not reopen for the handle tap");
     await page.getByPlaceholder("e.g. Curse of Strahd, One-Shots").fill("Unsaved Test Folder");
     if ((await handleLocator.count()) === 0) fail('the phone sheet has no handle labelled "Close"');
     else {
       await handleLocator.click({ timeout: 5000 }).catch(() => fail('could not tap the "Close" handle'));
-      await page.waitForTimeout(400);
+      await settleDialog(page);
       if (!(await dialogShown("Discard changes?"))) fail('tapping the "Close" handle of an edited modal did not ask "Discard changes?"');
       if (!(await dialogShown("Create New Folder"))) fail("the edited modal closed on handle tap instead of asking first");
       await tapButton("Keep editing");
     }
     if (await swipeSheetDown(page)) {
-      await page.waitForTimeout(400);
+      await settleDialog(page);
       if (!(await dialogShown("Discard changes?"))) fail('swiping the sheet down on an edited modal did not ask "Discard changes?"');
       if (!(await dialogShown("Create New Folder"))) fail("the edited modal closed on swipe down instead of asking first");
       await tapButton("Discard");
@@ -900,8 +952,7 @@ async function checkModalClosing(ctx, width) {
   }
 
   // The same modal with nothing typed closes on Escape without asking.
-  await page.goto(`${BASE}/`, { waitUntil: "networkidle", timeout: 120000 });
-  await page.waitForTimeout(1500);
+  await gotoApp(page, `${BASE}/`);
   await playStep(page, { tap: { name: "home-header-folder" } });
   if (!(await waitDialog("Create New Folder", true))) fail("the Create New Folder modal did not reopen");
   await page.keyboard.press("Escape");
@@ -911,25 +962,41 @@ async function checkModalClosing(ctx, width) {
   // A sheet that was scrolled must still close on a swipe down after it is reopened: the body's at-top
   // state resets when the modal opens, so the reopened sheet's drag handler can claim the gesture.
   if (phone) {
-    await page.goto(`${BASE}/character/${WIZARD_ID}`, { waitUntil: "networkidle", timeout: 120000 });
-    await page.waitForTimeout(1500);
+    await gotoApp(page, `${BASE}/character/${WIZARD_ID}`);
     await page.getByText("Spells", { exact: true }).first().click();
-    await page.waitForTimeout(500);
+    await settle(page);
     await page.getByText(/add spells/i).first().click({ timeout: 5000 }).catch(() => fail("could not open the Add Spells modal"));
     const sheetSel = '[role="dialog"] [data-testid="modal-sheet"]';
     if (!(await page.waitForSelector(sheetSel, { state: "visible", timeout: 10000 }).then(() => true).catch(() => false)))
       fail("the Add Spells modal did not open");
-    // Scroll the sheet's body down, so its at-top state is false when the modal closes.
-    const scrolled = await page.evaluate(() => {
-      const sheet = document.querySelector('[data-testid="modal-sheet"]');
-      const el = [...(sheet?.querySelectorAll("*") ?? [])].find((n) => n.clientHeight > 0 && n.scrollHeight > n.clientHeight + 4);
-      if (!el) return false;
-      el.scrollTop = 240;
-      el.dispatchEvent(new Event("scroll"));
-      return true;
-    });
+    // Scroll the sheet's body down, so its at-top state is false when the modal closes. The wait is a
+    // condition, not a sleep: the dispatch counts as observed only once no scroll event has fired for
+    // 150ms (react-native-web throttles scroll handling past 100ms), so the sheet's at-top update has
+    // been processed before the close — a late update would land after the reopen's reset and the
+    // swipe could not claim the gesture.
+    const scrolled = await page.evaluate(
+      () =>
+        new Promise((resolve) => {
+          const sheet = document.querySelector('[data-testid="modal-sheet"]');
+          const el = [...(sheet?.querySelectorAll("*") ?? [])].find((n) => n.clientHeight > 0 && n.scrollHeight > n.clientHeight + 4);
+          if (!el) return resolve(false);
+          let last = performance.now();
+          const onScroll = () => {
+            last = performance.now();
+          };
+          document.addEventListener("scroll", onScroll, true);
+          el.scrollTop = 240;
+          el.dispatchEvent(new Event("scroll"));
+          const tick = () => {
+            if (performance.now() - last >= 150) {
+              document.removeEventListener("scroll", onScroll, true);
+              resolve(true);
+            } else requestAnimationFrame(tick);
+          };
+          requestAnimationFrame(tick);
+        }),
+    );
     if (!scrolled) fail("the open Add Spells sheet had no scrollable body to scroll down");
-    await page.waitForTimeout(300);
     await page.keyboard.press("Escape");
     if (!(await page.waitForSelector(sheetSel, { state: "hidden", timeout: 10000 }).then(() => true).catch(() => false)))
       fail("Escape did not close the scrolled Add Spells modal");
@@ -937,7 +1004,7 @@ async function checkModalClosing(ctx, width) {
     await page.getByText(/add spells/i).first().click({ timeout: 5000 }).catch(() => fail("could not reopen the Add Spells modal"));
     if (!(await page.waitForSelector(sheetSel, { state: "visible", timeout: 10000 }).then(() => true).catch(() => false)))
       fail("the Add Spells modal did not reopen");
-    await page.waitForTimeout(400);
+    await settleDialog(page);
     if (await swipeSheetDown(page)) {
       if (!(await page.waitForSelector(sheetSel, { state: "hidden", timeout: 10000 }).then(() => true).catch(() => false)))
         fail("a swipe down did not close the reopened sheet that had been scrolled before closing");
@@ -974,6 +1041,10 @@ function findDiceButtonVsFlowFooter() {
 // button sits above the flow's bottom primary-action bar, never covering it.
 async function checkDiceTrayAndLog(ctx, width) {
   const page = await ctx.newPage();
+  // The result-card auto-dismiss below is a setTimeout: the clock lets the check fast-forward past the
+  // 8s instead of sleeping through it (real time still flows while installed, so every other wait on
+  // this page behaves as usual).
+  await page.clock.install();
   const prefix = `[${width}px dice tray]`;
   let failures = 0;
   const fail = (msg) => {
@@ -984,8 +1055,7 @@ async function checkDiceTrayAndLog(ctx, width) {
   const dialogSel = '[role="dialog"]';
   const cardSel = '[data-testid="result-card"]';
 
-  await page.goto(`${BASE}/character/${CHARACTER_ID}`, { waitUntil: "networkidle", timeout: 120000 });
-  await page.waitForTimeout(1500);
+  await gotoApp(page, `${BASE}/character/${CHARACTER_ID}`);
   const diceButton = page.getByLabel("Dice tray").first();
   if (!(await diceButton.isVisible())) fail("the floating dice button is not visible on the sheet");
   await diceButton.click();
@@ -1033,7 +1103,7 @@ async function checkDiceTrayAndLog(ctx, width) {
   if (emptyRoll.disabled !== true) fail(`"Roll" is not disabled while the pool is empty (${emptyRoll.state})`);
   if ((await page.getByText("Advantage", { exact: true }).count()) > 0) fail('"Advantage" shows for an empty pool');
   await page.getByLabel("Add d20", { exact: true }).click();
-  await page.waitForTimeout(200);
+  await settle(page);
   if (!(await page.getByText("Advantage", { exact: true }).first().isVisible())) fail('"Advantage" does not show for a lone d20');
   // The mode segments are 48dp targets too.
   const modeHeights = await page.evaluate(() =>
@@ -1055,7 +1125,7 @@ async function checkDiceTrayAndLog(ctx, width) {
   if (chipHeight === null || chipHeight < 47.5) fail(`the pool chip "1d6" is ${chipHeight}px tall, under 48dp`);
   await page.getByLabel("Add d8", { exact: true }).click();
   for (let i = 0; i < 3; i++) await page.getByLabel("Modifier increase", { exact: true }).click();
-  await page.waitForTimeout(200);
+  await settle(page);
   if ((await page.getByText("Advantage", { exact: true }).count()) > 0) fail('"Advantage" shows for a pool that is not a lone d20');
   const rollLabel = "Roll 1d6 + 1d8 + 3";
   const rollButton = page.getByText(rollLabel, { exact: true }).first();
@@ -1124,7 +1194,9 @@ async function checkDiceTrayAndLog(ctx, width) {
   await setFaces(null);
 
   // Seed a "Kara · Longsword attack" Roll through the publishing seam (no screen triggers it yet): the
-  // card is replaced by it.
+  // card is replaced by it. The mount time is recorded for the auto-dismiss check below (the installed
+  // clock also flows in real time, so only the remaining gap to the 8s mark is fast-forwarded).
+  const cardMountedAt = Date.now();
   const seeded = await page.evaluate(() => {
     const hook = window.__publishRoll;
     if (typeof hook !== "function") return false;
@@ -1138,7 +1210,7 @@ async function checkDiceTrayAndLog(ctx, width) {
   if (!seeded) fail("the test-only publishing hook (window.__publishRoll) is not exposed on a seeded web build");
   else {
     await page
-      .waitForFunction(() => document.querySelector('[data-testid="result-source"]')?.textContent?.includes("Kara"), null, { timeout: 10000 })
+      .waitForFunction(() => document.querySelector('[data-testid="result-source"]')?.textContent?.includes("Kara"), null, { timeout: 10000, polling: 100 })
       .catch(() => fail('the result card was not replaced by the seeded "Kara · Longsword attack" entry'));
     await page.screenshot({ path: shot("result") });
     // The card's geometry: full width minus the 16px gutters on phones, at most 360px at the bottom-right
@@ -1192,7 +1264,14 @@ async function checkDiceTrayAndLog(ctx, width) {
     // A card without a follow-up still auto-dismisses after about 8s — and the announce region
     // stays mounted afterwards, so the next Roll changes its text instead of mounting a populated one.
     if (width === SINGLE_RUN_WIDTH) {
-      await page.waitForTimeout(8500);
+      // The auto-dismiss is a timer: fast-forward the clock to just before the 8s mark, then past it.
+      // Real time has flowed since the card mounted, so only the remaining gap is forwarded.
+      const elapsed = Date.now() - cardMountedAt;
+      if (elapsed < 7000) {
+        await page.clock.fastForward(7000 - elapsed);
+        if ((await page.locator(cardSel).count()) === 0) fail("the result card auto-dismissed before ~8s");
+      }
+      await page.clock.fastForward(Math.max(0, 8600 - elapsed) + 10);
       if ((await page.locator(cardSel).count()) > 0) fail("the result card without a follow-up did not auto-dismiss after ~8s");
       const regionAfter = await page.evaluate(() => {
         const el = document.querySelector('[data-testid="dice-announce-region"]');
@@ -1205,12 +1284,11 @@ async function checkDiceTrayAndLog(ctx, width) {
   }
 
   // A reload empties the log: it is session app state, never stored.
-  await page.goto(`${BASE}/character/${CHARACTER_ID}`, { waitUntil: "networkidle", timeout: 120000 });
-  await page.waitForTimeout(1500);
+  await gotoApp(page, `${BASE}/character/${CHARACTER_ID}`);
   await page.getByLabel("Dice tray").first().click();
   await page.waitForSelector(dialogSel, { state: "visible", timeout: 10000 }).catch(() => fail("the tray did not reopen after the reload"));
   await page.getByText("Log", { exact: true }).first().click();
-  await page.waitForTimeout(300);
+  await settle(page);
   if (!(await page.getByText("No rolls yet.", { exact: true }).first().isVisible().catch(() => false)))
     fail("after a reload the Roll Log is not empty");
   await page.screenshot({ path: shot("log-empty") });
@@ -1223,8 +1301,7 @@ async function checkDiceTrayAndLog(ctx, width) {
   // is wide and adds no extra bottom padding.
   {
     const flowPage = await ctx.newPage();
-    await flowPage.goto(`${BASE}/levelup/${EDIT_BUILD_ID}`, { waitUntil: "networkidle", timeout: 120000 });
-    await flowPage.waitForTimeout(1500);
+    await gotoApp(flowPage, `${BASE}/levelup/${EDIT_BUILD_ID}`);
     await flowPage.getByText(/Fighter/).first().waitFor({ state: "visible", timeout: 10000 }).catch(() => fail("the Level-Up Flow did not load"));
     if (width < 768) {
       const geo = await flowPage.evaluate(() => {
@@ -1272,8 +1349,7 @@ async function checkDiceTrayAndLog(ctx, width) {
     ];
     for (const [flowName, route, ready] of flows) {
       const flowPage = await ctx.newPage();
-      await flowPage.goto(`${BASE}${route}`, { waitUntil: "networkidle", timeout: 120000 });
-      await flowPage.waitForTimeout(1500);
+      await gotoApp(flowPage, `${BASE}${route}`);
       const readyLocator = typeof ready === "string" ? flowPage.getByText(ready, { exact: true }) : flowPage.getByText(ready);
       if (!(await readyLocator.first().waitFor({ state: "visible", timeout: 10000 }).then(() => true).catch(() => false))) {
         fail(`${flowName} did not load (${route})`);
@@ -1347,13 +1423,12 @@ async function checkDiceAnimation(ctx, width) {
     await p.getByLabel("Add d6", { exact: true }).click();
     await p.getByLabel("Add d8", { exact: true }).click();
     for (let i = 0; i < 3; i++) await p.getByLabel("Modifier increase", { exact: true }).click();
-    await p.waitForTimeout(200);
+    await settle(p);
     await p.getByText("Roll 1d6 + 1d8 + 3", { exact: true }).first().click();
     await p.waitForSelector(cardSel, { state: "visible", timeout: 10000 }).catch(() => fail("no result card after the tray roll"));
   };
 
-  await page.goto(`${BASE}/character/${CHARACTER_ID}`, { waitUntil: "networkidle", timeout: 120000 });
-  await page.waitForTimeout(1500);
+  await gotoApp(page, `${BASE}/character/${CHARACTER_ID}`);
 
   // 3D dice on by default (no saved setting, no reduced motion): the total is there while the
   // dice still tumble, the faces shown match the Roll's chips, the dice carry the accent colour.
@@ -1369,7 +1444,7 @@ async function checkDiceAnimation(ctx, width) {
         transform: die ? getComputedStyle(die).transform : null,
       };
     }, '[data-testid="die-3d-0"]');
-    await page.waitForTimeout(120);
+    await settle(page);
     const mid = await page.evaluate((sel) => {
       const die = document.querySelector(sel);
       return die ? getComputedStyle(die).transform : null;
@@ -1405,9 +1480,9 @@ async function checkDiceAnimation(ctx, width) {
     await page.screenshot({ path: shot("animated") });
 
     // The tumble settles well under a second after the roll.
-    await page.waitForTimeout(1200);
+    await settle(page);
     const settledA = await page.evaluate(() => getComputedStyle(document.querySelector('[data-testid="die-3d-0"]')).transform);
-    await page.waitForTimeout(150);
+    await settle(page);
     const settledB = await page.evaluate(() => getComputedStyle(document.querySelector('[data-testid="die-3d-0"]')).transform);
     if (settledA !== settledB) fail("the dice were still animating more than 1.2s after the roll");
   }
@@ -1441,21 +1516,20 @@ async function checkDiceAnimation(ctx, width) {
   }
 
   // The Options switch shows on with no saved value and no reduced motion, and toggling it off persists.
-  await page.goto(`${BASE}/options`, { waitUntil: "networkidle", timeout: 120000 });
-  await page.waitForTimeout(1200);
+  await gotoApp(page, `${BASE}/options`);
+  await settle(page);
   const diceSwitch = page.getByLabel("3D dice").first();
   if (!(await diceSwitch.isVisible().catch(() => false))) fail('the Options screen has no "3D dice" switch');
   else {
     if ((await switchBorder(page)) !== accentHoverRgb) fail(`the "3D dice" switch is not on by default (border ${await switchBorder(page)}, expected ${accentHoverRgb})`);
     await diceSwitch.click();
-    await page.waitForTimeout(300);
+    await settle(page);
     if ((await switchBorder(page)) !== borderRgb) fail(`tapping the "3D dice" switch did not turn it off (border ${await switchBorder(page)}, expected ${borderRgb})`);
     await page.screenshot({ path: shot("options-off") });
   }
 
   // With the setting off (and kept off across a reload) no animation runs, the text is at once.
-  await page.goto(`${BASE}/character/${CHARACTER_ID}`, { waitUntil: "networkidle", timeout: 120000 });
-  await page.waitForTimeout(1500);
+  await gotoApp(page, `${BASE}/character/${CHARACTER_ID}`);
   await rollTrayPool(page);
   const offState = await page.evaluate(() => ({
     total: document.querySelector('[data-testid="result-total"]')?.textContent ?? null,
@@ -1463,6 +1537,8 @@ async function checkDiceAnimation(ctx, width) {
   }));
   if (offState.total === null) fail("with the setting off, the text total was not shown at once");
   if (offState.dice !== 0) fail(`with the setting off, ${offState.dice} animated dice mounted`);
+  // Fixed wait on purpose: nothing observable can stand in for it — the check is that no die mounts
+  // within this window after the roll, which only the passing of time can prove.
   await page.waitForTimeout(900);
   if ((await page.locator(diceSel).count()) !== 0) fail("with the setting off, animated dice mounted later");
   await page.screenshot({ path: shot("off") });
@@ -1478,8 +1554,7 @@ async function checkDiceAnimation(ctx, width) {
   try {
     await rctx.addInitScript(seedBrowser, ACTIVE_SEED);
     const rpage = await rctx.newPage();
-    await rpage.goto(`${BASE}/character/${CHARACTER_ID}`, { waitUntil: "networkidle", timeout: 120000 });
-    await rpage.waitForTimeout(1500);
+    await gotoApp(rpage, `${BASE}/character/${CHARACTER_ID}`);
     await rollTrayPool(rpage);
     const rmState = await rpage.evaluate(() => ({
       total: document.querySelector('[data-testid="result-total"]')?.textContent ?? null,
@@ -1487,10 +1562,11 @@ async function checkDiceAnimation(ctx, width) {
     }));
     if (rmState.total === null) fail("with reduced motion emulated and no saved setting, the text total was not shown at once");
     if (rmState.dice !== 0) fail(`with reduced motion emulated and no saved setting, ${rmState.dice} animated dice mounted`);
+    // Fixed wait on purpose, same as above: only the passing of time proves no die mounts later.
     await rpage.waitForTimeout(900);
     if ((await rpage.locator(diceSel).count()) !== 0) fail("with reduced motion emulated, animated dice mounted later");
-    await rpage.goto(`${BASE}/options`, { waitUntil: "networkidle", timeout: 120000 });
-    await rpage.waitForTimeout(1200);
+    await gotoApp(rpage, `${BASE}/options`);
+    await settle(rpage);
     const rmSwitch = rpage.getByLabel("3D dice").first();
     if (!(await rmSwitch.isVisible().catch(() => false))) fail('the Options screen has no "3D dice" switch under reduced motion');
     else if ((await switchBorder(rpage)) !== borderRgb)
@@ -1514,6 +1590,9 @@ async function checkDiceAnimation(ctx, width) {
 // ammunition) unchanged.
 async function checkActionRolls(ctx, width) {
   const page = await ctx.newPage();
+  // Same as in checkDiceTrayAndLog: the card-with-follow-up check fast-forwards the clock past the 8s
+  // auto-dismiss timer instead of sleeping through it.
+  await page.clock.install();
   const prefix = `[${width}px actions rolls]`;
   let failures = 0;
   const fail = (msg) => {
@@ -1546,8 +1625,7 @@ async function checkActionRolls(ctx, width) {
   const setFaces = (faces) => page.evaluate((f) => (window.__setRandomSource ? window.__setRandomSource(f) : "no hook"), faces);
 
   // The weapon attack row: badges read from the ledger, a tap rolls the attack.
-  await page.goto(`${BASE}/character/${ACTIONS_ID}`, { waitUntil: "networkidle", timeout: 120000 });
-  await page.waitForTimeout(1500);
+  await gotoApp(page, `${BASE}/character/${ACTIONS_ID}`);
   await page.getByText("Actions", { exact: true }).first().click();
   await page.getByText(/equipped weapon attacks/i).first().waitFor({ state: "visible", timeout: 10000 }).catch(() => fail("the Actions tab did not show EQUIPPED WEAPON ATTACKS"));
   const toHit = page.locator('[data-testid="roll-badge-attack-0-tohit"]');
@@ -1618,7 +1696,7 @@ async function checkActionRolls(ctx, width) {
 
   // The follow-up rolls the damage pool 1d8 + 3 (fixed face clamps to 8 on the d8).
   await page.getByText("Roll damage", { exact: true }).first().click();
-  await page.waitForFunction(() => document.querySelector('[data-testid="result-source"]')?.textContent?.includes("damage"), null, { timeout: 10000 }).catch(() => fail("the damage follow-up did not replace the card"));
+  await page.waitForFunction(() => document.querySelector('[data-testid="result-source"]')?.textContent?.includes("damage"), null, { timeout: 10000, polling: 100 }).catch(() => fail("the damage follow-up did not replace the card"));
   card = await readCard();
   if (!card) fail("the damage card disappeared before it could be read");
   else {
@@ -1632,7 +1710,7 @@ async function checkActionRolls(ctx, width) {
   await setFaces([17, 9]);
   await toHit.focus();
   // The badge subscribes its key listener when React processes the focus event.
-  await page.waitForTimeout(200);
+  await settle(page);
   await page.keyboard.press("ContextMenu");
   await page.waitForSelector(dialogSel, { state: "visible", timeout: 10000 }).catch(() => fail("the context-menu key on the focused badge did not open the roll sheet"));
   for (const label of ["Disadvantage", "Roll", "Advantage"]) {
@@ -1641,7 +1719,7 @@ async function checkActionRolls(ctx, width) {
   await page.screenshot({ path: shot("sheet") });
   await page.getByText("Advantage", { exact: true }).first().click();
   await page.waitForSelector(dialogSel, { state: "hidden", timeout: 10000 }).catch(() => fail("the roll sheet did not close after choosing Advantage"));
-  await page.waitForFunction(() => document.querySelector('[data-testid="result-card"] [data-testid="die-chip"]') !== null, null, { timeout: 10000 }).catch(() => fail("no result card after the sheet's Advantage"));
+  await page.waitForFunction(() => document.querySelector('[data-testid="result-card"] [data-testid="die-chip"]') !== null, null, { timeout: 10000, polling: 100 }).catch(() => fail("no result card after the sheet's Advantage"));
   card = await readCard();
   if (!card) fail("the advantage card disappeared before it could be read");
   else {
@@ -1656,7 +1734,7 @@ async function checkActionRolls(ctx, width) {
   // A forced natural 20: the card offers "Roll critical damage" and rolls doubled dice, modifier once.
   await setFaces([20]);
   await toHit.click();
-  await page.waitForFunction(() => /Roll critical damage/.test(document.querySelector('[data-testid="result-card"]')?.textContent ?? ""), null, { timeout: 10000 }).catch(() => fail("a natural 20 did not offer \"Roll critical damage\""));
+  await page.waitForFunction(() => /Roll critical damage/.test(document.querySelector('[data-testid="result-card"]')?.textContent ?? ""), null, { timeout: 10000, polling: 100 }).catch(() => fail("a natural 20 did not offer \"Roll critical damage\""));
   card = await readCard();
   if (card) {
     if (!card.markers.includes("Natural 20")) fail(`the natural-20 card's markers are ${JSON.stringify(card.markers)}`);
@@ -1664,11 +1742,12 @@ async function checkActionRolls(ctx, width) {
   }
   // A card that still offers a follow-up never auto-dismisses, even after the usual ~8s.
   if (width === SINGLE_RUN_WIDTH) {
-    await page.waitForTimeout(8500);
+    // Fast-forward well past the 8s auto-dismiss timer: a card with a pending follow-up has none.
+    await page.clock.fastForward(9000);
     if (!(await page.locator(cardSel).count())) fail('the natural-20 card with a pending "Roll critical damage" follow-up auto-dismissed');
   }
   await page.getByText("Roll critical damage", { exact: true }).first().click();
-  await page.waitForFunction(() => document.querySelector('[data-testid="result-source"]')?.textContent?.includes("damage"), null, { timeout: 10000 }).catch(() => fail("the critical damage follow-up did not roll"));
+  await page.waitForFunction(() => document.querySelector('[data-testid="result-source"]')?.textContent?.includes("damage"), null, { timeout: 10000, polling: 100 }).catch(() => fail("the critical damage follow-up did not roll"));
   card = await readCard();
   if (!card) fail("the critical damage card disappeared before it could be read");
   else {
@@ -1687,8 +1766,7 @@ async function checkActionRolls(ctx, width) {
   await page.waitForSelector(dialogSel, { state: "hidden", timeout: 10000 }).catch(() => fail("Escape did not close the details modal"));
 
   // A spell attack row rolls its casting profile's bonus; its non-pool damage label stays plain.
-  await page.goto(`${BASE}/character/${WIZARD_ID}`, { waitUntil: "networkidle", timeout: 120000 });
-  await page.waitForTimeout(1500);
+  await gotoApp(page, `${BASE}/character/${WIZARD_ID}`);
   await page.getByText("Actions", { exact: true }).first().click();
   await page.getByText(/spell attacks/i).first().waitFor({ state: "visible", timeout: 10000 }).catch(() => fail("the Actions tab did not show SPELL ATTACKS"));
   // The snapshot window covers both seeded characters: Kara (a limited-use feature with a use left and
@@ -1727,8 +1805,7 @@ async function checkActionRolls(ctx, width) {
   await setFaces(null);
 
   // The unarmed fallback row: the to-hit badge rolls, the flat damage shows plain.
-  await page.goto(`${BASE}/character/${CHARACTER_ID}`, { waitUntil: "networkidle", timeout: 120000 });
-  await page.waitForTimeout(1500);
+  await gotoApp(page, `${BASE}/character/${CHARACTER_ID}`);
   await page.getByText("Actions", { exact: true }).first().click();
   await page.getByText(/attack action/i).first().waitFor({ state: "visible", timeout: 10000 }).catch(() => fail("the Actions tab did not load for the unarmed fallback"));
   const unarmedToHit = page.locator('[data-testid="roll-badge-unarmed-tohit"]');
@@ -1780,7 +1857,7 @@ async function continueFlow(page, fail = () => {}) {
       const el = [...document.querySelectorAll("*")].find((e) => e.children.length === 0 && e.textContent === "Continue");
       const target = el?.closest("[tabindex]");
       return target && target.getAttribute("aria-disabled") !== "true";
-    }, null, { timeout: 10000 })
+    }, null, { timeout: 10000, polling: 100 })
     .then(() => true)
     .catch(() => false);
   if (!enabled) {
@@ -1788,13 +1865,12 @@ async function continueFlow(page, fail = () => {}) {
     return;
   }
   await page.getByText("Continue", { exact: true }).first().click();
-  await page.waitForTimeout(400);
+  await settle(page);
 }
 
 // Opens the flow and picks the held class, landing on the Hit Points step.
 async function openLevelUp(page) {
-  await page.goto(`${BASE}/levelup/${LU_ID}`, { waitUntil: "networkidle", timeout: 120000 });
-  await page.waitForTimeout(1500);
+  await gotoApp(page, `${BASE}/levelup/${LU_ID}`);
   await page.getByLabel("Level up Ranger").first().click();
   await page.getByText("Continue", { exact: true }).first().click();
   await page.getByLabel("Roll hit points").first().waitFor({ state: "visible", timeout: 10000 });
@@ -1805,25 +1881,25 @@ async function openLevelUp(page) {
 // violations seen along the way (e.g. a Subclass chip under 48dp).
 async function walkToReview(page, hpMode, fail = () => {}) {
   await page.getByLabel(hpMode === "roll" ? "Roll hit points" : "Average hit points").first().click();
-  await page.waitForTimeout(300);
+  await settle(page);
   for (let i = 0; i < 8; i++) {
     if ((await page.getByText("Level up", { exact: true }).count()) > 0) return;
     const sub = page.getByLabel(/^Subclass /).first();
     if ((await sub.count()) > 0) {
       await sub.click();
-      await page.waitForTimeout(300);
+      await settle(page);
       const chipHeight = await sub.evaluate((el) => el.getBoundingClientRect().height).catch(() => 0);
       if (chipHeight < 47.5) fail(`a Subclass chip is ${Math.round(chipHeight)}px tall, under 48dp`);
     }
     const con = page.getByLabel("CON (+2)").first();
     if ((await con.count()) > 0) {
       await con.click();
-      await page.waitForTimeout(300);
+      await settle(page);
     }
     const learn = page.getByLabel(/^Learn /).first();
     if ((await learn.count()) > 0) {
       await learn.click();
-      await page.waitForTimeout(300);
+      await settle(page);
     }
     await continueFlow(page, fail);
   }
@@ -1840,7 +1916,7 @@ async function waitForVisibleText(page, text) {
           (e) => e.children.length === 0 && e.textContent.trim() === needle && e.getBoundingClientRect().height > 0
         ),
       text,
-      { timeout: 10000 }
+      { timeout: 10000, polling: 100 }
     )
     .then(() => true)
     .catch(() => false);
@@ -1858,12 +1934,12 @@ async function checkLevelUpHpRollLogged(ctx, width) {
   };
   await openLevelUp(page);
   await page.getByLabel("Roll hit points").first().click();
-  await page.waitForTimeout(500);
+  await settle(page);
   // The roll was published through the seam: open the tray on its Log segment and read the newest entries.
   await page.getByLabel("Dice tray").first().click();
   await page.waitForSelector('[role="dialog"]', { state: "visible", timeout: 10000 }).catch(() => fail("the dice tray did not open"));
   await page.getByText("Log", { exact: true }).first().click();
-  await page.waitForTimeout(300);
+  await settle(page);
   const headings = await page.evaluate(() => [...document.querySelectorAll('[data-testid="log-entry-heading"]')].map((el) => el.textContent));
   if (!headings.includes(`${LU_NAME} · Hit Points`)) fail(`the Roll Log has no "${LU_NAME} · Hit Points" entry: ${JSON.stringify(headings)}`);
   await page.screenshot({ path: join(SHOTS, `LevelUp-HPRoll-${width}.png`) });
@@ -1895,7 +1971,7 @@ async function checkLevelUpHpState(ctx, width) {
 
   await openLevelUp(page); // picks the held Ranger, lands on the Hit Points step
   await rollRow.click();
-  await page.waitForTimeout(400);
+  await settle(page);
   const rolled = await rowState(rollRow);
   if (!rolled.selected) fail("the Roll row is not selected after rolling");
   if (!rolled.disabled) fail("the Roll row is not disabled after rolling");
@@ -1905,9 +1981,9 @@ async function checkLevelUpHpState(ctx, width) {
 
   // Re-pick the same class: the plan is unchanged, the roll stays selected.
   await classChip.click();
-  await page.waitForTimeout(400);
+  await settle(page);
   await page.getByLabel("Level up Ranger").first().click();
-  await page.waitForTimeout(300);
+  await settle(page);
   await page.getByText("Continue", { exact: true }).first().click();
   await rollRow.waitFor({ state: "visible", timeout: 10000 });
   const afterRepick = await rowState(rollRow);
@@ -1915,7 +1991,7 @@ async function checkLevelUpHpState(ctx, width) {
     fail(`re-picking the same class reset the Hit Points pick: roll row now "${afterRepick.text}" selected=${afterRepick.selected}, expected the kept "${rolledText}"`);
   // Tapping the disabled Average row changes nothing.
   await averageRow.click({ force: true }).catch(() => {});
-  await page.waitForTimeout(300);
+  await settle(page);
   const afterAverageTap = await rowState(rollRow);
   if (!afterAverageTap.selected || afterAverageTap.text !== rolledText)
     fail(`tapping Average after the roll discarded it: roll row now "${afterAverageTap.text}" selected=${afterAverageTap.selected}`);
@@ -1923,9 +1999,9 @@ async function checkLevelUpHpState(ctx, width) {
 
   // A different class starts a fresh plan: Average selected, Roll enabled, rollable once.
   await classChip.click();
-  await page.waitForTimeout(400);
+  await settle(page);
   await page.getByLabel("Level up Fighter").first().click();
-  await page.waitForTimeout(300);
+  await settle(page);
   await page.getByText("Continue", { exact: true }).first().click();
   await averageRow.waitFor({ state: "visible", timeout: 10000 });
   const freshAverage = await rowState(averageRow);
@@ -1948,7 +2024,7 @@ async function continueEnabledSoon(page, timeoutMs = 4000) {
         return target && target.getAttribute("aria-disabled") !== "true";
       },
       null,
-      { timeout: timeoutMs }
+      { timeout: timeoutMs, polling: 100 }
     )
     .then(() => true)
     .catch(() => false);
@@ -1959,18 +2035,18 @@ async function continueEnabledSoon(page, timeoutMs = 4000) {
 async function openAsiFeatStep(page, fail = () => {}) {
   await openLevelUp(page); // picks the held Ranger, lands on the Hit Points step
   await page.getByLabel("Average hit points").first().click();
-  await page.waitForTimeout(300);
+  await settle(page);
   for (let i = 0; i < 4; i++) {
     const sub = page.getByLabel(/^Subclass /).first();
     if ((await sub.count()) > 0) {
       await sub.click();
-      await page.waitForTimeout(300);
+      await settle(page);
     }
     await continueFlow(page, fail);
     if ((await page.getByRole("button", { name: "Feat", exact: true }).count()) > 0) break;
   }
   await page.getByRole("button", { name: "Feat", exact: true }).first().click();
-  await page.waitForTimeout(400);
+  await settle(page);
 }
 
 // Selecting any feat replaces the plan's pick at once: a no-choice feat completes the ASI/Feat step, then
@@ -1988,18 +2064,18 @@ async function checkLevelUpFeatReplace(ctx, width) {
   const noChoiceFeat = INTEGRATED ? "Alert" : "Grappler";
   const choiceFeat = "Athlete";
   await page.getByRole("button", { name: `Feat ${noChoiceFeat}`, exact: true }).first().click();
-  await page.waitForTimeout(500);
+  await settle(page);
   if (!(await continueEnabledSoon(page))) fail(`picking ${noChoiceFeat} (no ability choice) did not complete the ASI/Feat step`);
   if (INTEGRATED) {
     await page.getByRole("button", { name: `Feat ${choiceFeat}`, exact: true }).first().click();
-    await page.waitForTimeout(500);
+    await settle(page);
     if (await continueEnabledSoon(page))
       fail(`tapping ${choiceFeat} left Continue enabled: the plan still holds the replaced pick ${noChoiceFeat}`);
     const strChip = page.getByLabel("STR +1").first();
     if ((await strChip.count()) === 0) fail(`tapping ${choiceFeat} did not show its ability chips`);
     else {
       await strChip.click();
-      await page.waitForTimeout(400);
+      await settle(page);
       if (!(await continueEnabledSoon(page))) fail(`choosing STR +1 did not complete the ASI/Feat step`);
     }
   }
@@ -2009,7 +2085,7 @@ async function checkLevelUpFeatReplace(ctx, width) {
     const learn = page.getByLabel(/^Learn /).first();
     if ((await learn.count()) > 0) {
       await learn.click();
-      await page.waitForTimeout(300);
+      await settle(page);
     }
     await continueFlow(page, fail);
   }
@@ -2036,13 +2112,13 @@ async function checkLevelUpFeatSubChoiceChips(ctx, width) {
   await openAsiFeatStep(page, fail);
   if (!INTEGRATED) {
     await page.getByRole("button", { name: "Feat Grappler", exact: true }).first().click();
-    await page.waitForTimeout(400);
+    await settle(page);
     if (!(await continueEnabledSoon(page))) fail("picking the SRD Baseline's only feat did not complete the ASI/Feat step");
     await page.close();
     return failures;
   }
   await page.getByRole("button", { name: "Feat Fighting Initiate", exact: true }).first().click();
-  await page.waitForTimeout(500);
+  await settle(page);
   if (await continueEnabledSoon(page)) fail("tapping Fighting Initiate left Continue enabled: its style choice is not picked yet");
   const styleChip = (name) => page.getByRole("button", { name: `Fighting Initiate Style ${name}`, exact: true }).first();
   const archery = styleChip("Archery");
@@ -2051,17 +2127,17 @@ async function checkLevelUpFeatSubChoiceChips(ctx, width) {
     const chipHeight = await archery.evaluate((el) => el.getBoundingClientRect().height).catch(() => 0);
     if (chipHeight < 47.5) fail(`a feat sub-choice chip is ${Math.round(chipHeight)}px tall, under 48dp`);
     await archery.click();
-    await page.waitForTimeout(400);
+    await settle(page);
     if (!(await continueEnabledSoon(page))) fail("picking Archery did not complete the ASI/Feat step");
     if (!(await waitForVisibleText(page, "Fighting Initiate Style (1/1):"))) fail('the style counter does not read "(1/1)" after picking one');
     const defense = styleChip("Defense");
     const defenseDisabled = await defense.evaluate((el) => el.getAttribute("aria-disabled") === "true").catch(() => false);
     if (!defenseDisabled) fail("at the cap (1/1) another style chip is not disabled");
     await defense.click({ force: true }).catch(() => {});
-    await page.waitForTimeout(400);
+    await settle(page);
     if (!(await waitForVisibleText(page, "Fighting Initiate Style (1/1):"))) fail("force-tapping a disabled-at-cap style chip changed the pick");
     await archery.click();
-    await page.waitForTimeout(400);
+    await settle(page);
     if (await continueEnabledSoon(page)) fail("deselecting the picked style left Continue enabled");
     if (!(await waitForVisibleText(page, "Fighting Initiate Style (0/1):"))) fail('the style counter does not read "(0/1)" after deselecting');
   }
@@ -2091,17 +2167,17 @@ async function checkLevelUpHpPerClass(ctx, width) {
   const classChip = page.getByRole("button", { name: "Class", exact: true }).first();
   const goToHpStep = async (classLabel) => {
     await classChip.click();
-    await page.waitForTimeout(400);
+    await settle(page);
     await page.getByLabel(classLabel).first().click();
-    await page.waitForTimeout(300);
+    await settle(page);
     await page.getByText("Continue", { exact: true }).first().click();
     await rollRow.waitFor({ state: "visible", timeout: 10000 });
-    await page.waitForTimeout(300);
+    await settle(page);
   };
 
   await openLevelUp(page); // picks the held Ranger, lands on the Hit Points step
   await rollRow.click();
-  await page.waitForTimeout(400);
+  await settle(page);
   const rolledA = await rowState(rollRow);
   if (!rolledA.selected || !rolledA.disabled) fail(`the Roll row is not final after rolling for the Ranger (selected=${rolledA.selected} disabled=${rolledA.disabled})`);
 
@@ -2120,12 +2196,12 @@ async function checkLevelUpHpPerClass(ctx, width) {
   // A re-roll on the restored plan must not be possible; if the row is enabled, tapping it must not log another roll.
   if (!backToA.disabled) {
     await rollRow.click({ force: true }).catch(() => {});
-    await page.waitForTimeout(400);
+    await settle(page);
   }
   await page.getByLabel("Dice tray").first().click();
   await page.waitForSelector('[role="dialog"]', { state: "visible", timeout: 10000 }).catch(() => fail("the dice tray did not open"));
   await page.getByText("Log", { exact: true }).first().click();
-  await page.waitForTimeout(300);
+  await settle(page);
   const headings = await page.evaluate(() => [...document.querySelectorAll('[data-testid="log-entry-heading"]')].map((el) => el.textContent));
   const hpEntries = headings.filter((h) => h === `${LU_NAME} · Hit Points`);
   if (hpEntries.length !== 1) fail(`the Roll Log holds ${hpEntries.length} "${LU_NAME} · Hit Points" entries after the class round trip, expected exactly 1: ${JSON.stringify(headings)}`);
@@ -2145,8 +2221,7 @@ async function checkLevelUpHiddenAtMaxLevel(ctx, width) {
     failures++;
     console.log(`${prefix} ${msg}`);
   };
-  await page.goto(`${BASE}/character/${MAX_LEVEL_ID}`, { waitUntil: "networkidle", timeout: 120000 });
-  await page.waitForTimeout(1500);
+  await gotoApp(page, `${BASE}/character/${MAX_LEVEL_ID}`);
   if (!(await waitForVisibleText(page, "Lvl 20"))) fail("the sheet does not show \"Lvl 20\" for the level-20 character");
   // On phones the header's actions live in its menu; at 768px and up they sit in the left rail.
   if (width < 768) {
@@ -2169,8 +2244,7 @@ async function checkLevelUpHpModifierSign(ctx, width) {
     failures++;
     console.log(`${prefix} ${msg}`);
   };
-  await page.goto(`${BASE}/levelup/${LOW_CON_ID}`, { waitUntil: "networkidle", timeout: 120000 });
-  await page.waitForTimeout(1500);
+  await gotoApp(page, `${BASE}/levelup/${LOW_CON_ID}`);
   await page.getByLabel("Level up Fighter").first().click();
   await page.getByText("Continue", { exact: true }).first().click();
   const rollRow = page.getByLabel("Roll hit points").first();
@@ -2196,27 +2270,26 @@ async function checkLevelUpCancelAndReview(ctx, width) {
 
   // The system Back asks before discarding the plan: enter the flow from the sheet's header Level up button
   // (so Back pops inside the app), pick a class, then browser Back must ask and stay.
-  await page.goto(`${BASE}/character/${LU_ID}`, { waitUntil: "networkidle", timeout: 120000 });
-  await page.waitForTimeout(1500);
+  await gotoApp(page, `${BASE}/character/${LU_ID}`);
   // On phones the header's Level up sits in its menu; at 768px and up in the left rail.
   if (width < 768) {
     await page.getByLabel("Sheet menu").first().click();
-    await page.waitForTimeout(400);
+    await settle(page);
   }
   await page.getByLabel("Level up").first().click();
-  await page.waitForTimeout(1500);
+  await settle(page);
   if (!page.url().includes(`/levelup/${LU_ID}`)) fail(`the header's Level up did not open the flow: ${page.url()}`);
   await page.getByLabel("Level up Ranger").first().click();
-  await page.waitForTimeout(400);
+  await settle(page);
   await page.goBack();
-  await page.waitForTimeout(600);
+  await settle(page);
   if (!(await page.getByText("Discard changes?", { exact: true }).first().isVisible().catch(() => false)))
     fail("system Back did not ask \"Discard changes?\" before leaving the Level-Up Flow");
   // The route is prevented even though the browser URL already popped, so the flow must still be on screen.
   if (!(await page.getByLabel("Cancel level up").first().isVisible().catch(() => false)))
     fail("system Back left the Level-Up Flow instead of asking first");
   await page.getByText("Keep editing", { exact: true }).first().click();
-  await page.waitForTimeout(400);
+  await settle(page);
   // Back on the Class step after the prevented Back: Continue to the Hit Points step.
   await page.getByText("Continue", { exact: true }).first().click();
   await page.getByLabel("Roll hit points").first().waitFor({ state: "visible", timeout: 10000 });
@@ -2226,11 +2299,11 @@ async function checkLevelUpCancelAndReview(ctx, width) {
   const beforeCancel = await readStoredCharacter(page, LU_ID);
   if (!beforeCancel) fail("the seeded character is not in storage before Cancel");
   await page.getByLabel("Roll hit points").first().click();
-  await page.waitForTimeout(300);
+  await settle(page);
   await page.getByLabel("Cancel level up").first().click();
   await page.getByText("Discard changes?", { exact: true }).first().waitFor({ state: "visible", timeout: 10000 }).catch(() => fail("Cancel did not ask \"Discard changes?\" before discarding the plan"));
   await page.getByText("Discard", { exact: true }).first().click();
-  await page.waitForTimeout(1500);
+  await settle(page);
   if (!page.url().includes(`/character/${LU_ID}`)) fail(`discard did not return to the sheet: ${page.url()}`);
   if (!(await waitForVisibleText(page, "Lvl 3")))
     fail("after discarding, the sheet does not show \"Lvl 3\": the plan was applied instead of discarded");
@@ -2268,7 +2341,7 @@ async function checkLevelUpCancelAndReview(ctx, width) {
     return btn.getAttribute("aria-disabled") === "true";
   });
   if (!guardEngaged) fail('"Level up" never read disabled after the double-tap: the applying guard did not engage');
-  await page.waitForTimeout(1500);
+  await settle(page);
   if (!page.url().includes(`/character/${LU_ID}`)) fail(`"Level up" did not return to the sheet: ${page.url()}`);
   if (!(await waitForVisibleText(page, "Lvl 4")))
     fail("after Review the sheet does not show \"Lvl 4\": the plan was not applied");
@@ -2294,24 +2367,23 @@ async function checkSpellsAfterLevelUp(ctx, width) {
   };
 
   if (INTEGRATED) {
-    await page.goto(`${BASE}/levelup/${SORCERER_SWAP_ID}`, { waitUntil: "networkidle", timeout: 120000 });
-    await page.waitForTimeout(1500);
+    await gotoApp(page, `${BASE}/levelup/${SORCERER_SWAP_ID}`);
     await page.getByLabel("Level up Sorcerer").first().click();
     await page.getByText("Continue", { exact: true }).first().click();
     await page.getByLabel("Roll hit points").first().waitFor({ state: "visible", timeout: 10000 });
     await walkToReview(page, "average", fail);
     await page.getByText("Level up", { exact: true }).first().click();
-    await page.waitForTimeout(1500);
+    await settle(page);
     if (!(await page.getByText("Lvl 2", { exact: true }).first().isVisible().catch(() => false)))
       fail("the sorcerer's level-up did not apply (the sheet does not show \"Lvl 2\")");
     // Spells tab: learn a spell through Add Spells.
     await page.getByText("Spells", { exact: true }).first().click();
-    await page.waitForTimeout(500);
+    await settle(page);
     await page.getByText("Add Spells", { exact: true }).first().click();
     await page.waitForSelector('[role="dialog"]', { state: "visible", timeout: 10000 }).catch(() => fail("the Add Spells modal did not open"));
     await page.getByPlaceholder("Search Sorcerer spells...").fill("Sleep");
     await page.getByText("Add", { exact: true }).first().click();
-    await page.waitForTimeout(400);
+    await settle(page);
     if (!(await page.getByText("Added", { exact: true }).first().isVisible().catch(() => false))) fail("learning a spell did not mark its row \"Added\"");
     await page.keyboard.press("Escape");
     await page.waitForSelector('[role="dialog"]', { state: "hidden", timeout: 10000 }).catch(() => fail("Escape did not close the Add Spells modal"));
@@ -2322,37 +2394,36 @@ async function checkSpellsAfterLevelUp(ctx, width) {
       await swap.click();
       await page.getByText("Swap Subclass Spell", { exact: true }).first().waitFor({ state: "visible", timeout: 10000 }).catch(() => fail("the swap modal did not open"));
       await page.getByText("Select", { exact: true }).first().click();
-      await page.waitForTimeout(500);
+      await settle(page);
       if (!(await page.getByText("Reset to Default", { exact: true }).first().isVisible().catch(() => false)))
         fail("swapping did not replace the subclass spell (no \"Reset to Default\")");
     }
     await page.screenshot({ path: join(SHOTS, `SpellsAfterLevelUp-swap-${width}.png`) });
   } else {
-    await page.goto(`${BASE}/levelup/${WIZARD_ID}`, { waitUntil: "networkidle", timeout: 120000 });
-    await page.waitForTimeout(1500);
+    await gotoApp(page, `${BASE}/levelup/${WIZARD_ID}`);
     await page.getByLabel("Level up Wizard").first().click();
     await page.getByText("Continue", { exact: true }).first().click();
     await page.getByLabel("Roll hit points").first().waitFor({ state: "visible", timeout: 10000 });
     await walkToReview(page, "average", fail);
     await page.getByText("Level up", { exact: true }).first().click();
-    await page.waitForTimeout(1500);
+    await settle(page);
     if (!(await page.getByText("Lvl 4", { exact: true }).first().isVisible().catch(() => false)))
       fail("the wizard's level-up did not apply (the sheet does not show \"Lvl 4\")");
     // Spells tab: learn, then forget, a spell.
     await page.getByText("Spells", { exact: true }).first().click();
-    await page.waitForTimeout(500);
+    await settle(page);
     await page.getByText("Add Spells", { exact: true }).first().click();
     await page.waitForSelector('[role="dialog"]', { state: "visible", timeout: 10000 }).catch(() => fail("the Add Spells modal did not open"));
     await page.getByPlaceholder("Search Wizard spells...").fill("Burning Hands");
     await page.getByText("Add", { exact: true }).first().click();
-    await page.waitForTimeout(400);
+    await settle(page);
     await page.keyboard.press("Escape");
     await page.waitForSelector('[role="dialog"]', { state: "hidden", timeout: 10000 }).catch(() => fail("Escape did not close the Add Spells modal"));
     if (!(await page.getByLabel("Remove Burning Hands").first().isVisible().catch(() => false)))
       fail("the learned spell \"Burning Hands\" has no Remove control after the level-up");
     else {
       await page.getByLabel("Remove Burning Hands").first().click();
-      await page.waitForTimeout(400);
+      await settle(page);
       if ((await page.getByLabel("Remove Burning Hands").count()) > 0) fail("forgetting did not remove \"Burning Hands\"");
     }
     await page.screenshot({ path: join(SHOTS, `SpellsAfterLevelUp-learn-${width}.png`) });
@@ -2400,8 +2471,7 @@ async function checkStatsRolls(ctx, width) {
     await page.waitForSelector(cardSel, { state: "hidden", timeout: 3000 }).catch(() => {});
   };
 
-  await page.goto(`${BASE}/character/${CHARACTER_ID}`, { waitUntil: "networkidle", timeout: 120000 });
-  await page.waitForTimeout(1500);
+  await gotoApp(page, `${BASE}/character/${CHARACTER_ID}`);
   await page.getByText("Stats", { exact: true }).first().click();
   await page.getByText(/ability scores/i).first().waitFor({ state: "visible", timeout: 10000 }).catch(() => fail("the Stats tab did not load"));
 
@@ -2481,7 +2551,7 @@ async function checkStatsRolls(ctx, width) {
   const initiativeBadge = page.locator('[data-testid="roll-badge-initiative"]');
   await initiativeBadge.focus();
   // The badge subscribes its key listener when React processes the focus event.
-  await page.waitForTimeout(200);
+  await settle(page);
   await page.keyboard.press("ContextMenu");
   await page.waitForSelector(dialogSel, { state: "visible", timeout: 10000 }).catch(() => fail("the context-menu key on the focused initiative badge did not open the roll sheet"));
   for (const label of ["Disadvantage", "Roll", "Advantage"]) {
@@ -2490,7 +2560,7 @@ async function checkStatsRolls(ctx, width) {
   await page.screenshot({ path: shot("sheet") });
   await page.getByText("Advantage", { exact: true }).first().click();
   await page.waitForSelector(dialogSel, { state: "hidden", timeout: 10000 }).catch(() => fail("the roll sheet did not close after choosing Advantage"));
-  await page.waitForFunction(() => document.querySelector('[data-testid="result-card"] [data-testid="die-chip"]') !== null, null, { timeout: 10000 }).catch(() => fail("no result card after the sheet's Advantage"));
+  await page.waitForFunction(() => document.querySelector('[data-testid="result-card"] [data-testid="die-chip"]') !== null, null, { timeout: 10000, polling: 100 }).catch(() => fail("no result card after the sheet's Advantage"));
   card = await readCard();
   if (!card) fail("the advantage card disappeared before it could be read");
   else {
@@ -2531,8 +2601,7 @@ async function checkSheetChrome(ctx, width) {
   };
   const TAB_LABELS = ["Stats", "Actions", "Spells", "Inventory", "Features", "Journal"];
 
-  await page.goto(`${BASE}/character/${CHARACTER_ID}`, { waitUntil: "networkidle", timeout: 120000 });
-  await page.waitForTimeout(1500);
+  await gotoApp(page, `${BASE}/character/${CHARACTER_ID}`);
   await page.getByText("Stats", { exact: true }).first().click();
   await page.getByText(/hit points/i).first().waitFor({ state: "visible", timeout: 10000 }).catch(() => fail("the Stats tab did not load"));
 
@@ -2675,10 +2744,10 @@ async function checkSheetChrome(ctx, width) {
     await page.getByLabel("Sheet menu").first().click();
     await page.getByLabel("Level up").first().click();
     await page.waitForURL(/\/levelup\//, { timeout: 15000 }).catch(() => fail("Level up did not open the Level-Up Flow"));
-    await page.waitForTimeout(1000);
+    await settle(page);
     await page.goBack();
     await page.getByText(/hit points/i).first().waitFor({ state: "visible", timeout: 15000 }).catch(() => fail("the sheet did not come back from Level up"));
-    await page.waitForTimeout(500);
+    await settle(page);
     const afterBack = await page.evaluate(() => {
       const bar = document.querySelector('[data-testid="sheet-tab-bar"]');
       const button = document.querySelector('[data-testid="dice-button"]');
@@ -2843,8 +2912,7 @@ async function checkHomeLayout(ctx, width) {
     failures++;
     console.log(`${prefix} ${msg}`);
   };
-  await page.goto(`${BASE}/`, { waitUntil: "networkidle", timeout: 120000 });
-  await page.waitForTimeout(1500);
+  await gotoApp(page, `${BASE}/`);
   await page.getByText(/5e Character Builder/).first().waitFor({ state: "visible", timeout: 10000 });
 
   const layout = await page.evaluate(() => {
