@@ -1555,21 +1555,37 @@ async function checkDiceAnimation(ctx, width, meta) {
   const dieMounted = await page.waitForSelector('[data-testid="die-3d-0"]', { state: "visible", timeout: 10000 }).catch(() => null);
   if (!dieMounted) fail("with 3D dice on, no animated die mounted in the result card");
   else {
-    const early = await page.evaluate((sel) => {
+    const early = await page.evaluate(() => {
       const card = document.querySelector('[data-testid="result-card"]');
-      const die = card?.querySelector(sel);
-      return {
-        total: card?.querySelector('[data-testid="result-total"]')?.textContent ?? null,
-        transform: die ? getComputedStyle(die).transform : null,
-      };
-    }, '[data-testid="die-3d-0"]');
-    await settle(page);
-    const mid = await page.evaluate((sel) => {
-      const die = document.querySelector(sel);
-      return die ? getComputedStyle(die).transform : null;
-    }, '[data-testid="die-3d-0"]');
+      return { total: card?.querySelector('[data-testid="result-total"]')?.textContent ?? null };
+    });
+    // Sample the die's pose on every animation frame, in the page. The check proves an animation ran
+    // from the sampled poses themselves, not from wall-clock frame timing: under load two samples 120ms
+    // apart can land in the same frame. A die that never animates yields one constant pose and fails.
+    const samples = await page.evaluate(
+      () =>
+        new Promise((resolve) => {
+          const die = document.querySelector('[data-testid="die-3d-0"]');
+          if (!die) return resolve([]);
+          const out = [];
+          const t0 = performance.now();
+          const tick = () => {
+            out.push({ t: performance.now() - t0, pose: getComputedStyle(die).transform });
+            if (out.length < 120 && performance.now() - t0 < 1500) requestAnimationFrame(tick);
+            else resolve(out);
+          };
+          requestAnimationFrame(tick);
+        }),
+    );
     if (early.total === null) fail("the text total was not shown while the dice animation was still running");
-    else if (early.transform === null || early.transform === mid) fail("the die pose did not change between samples 120ms apart: no animation ran with 3D dice on");
+    else {
+      const poses = [...new Set(samples.map((s) => s.pose))];
+      if (samples.length === 0 || poses.length < 2) fail(`the die pose never changed across ${samples.length} sampled frames: no animation ran with 3D dice on`);
+      // The tumble settles well under a second after the roll: the final pose is reached by 1.2s.
+      const finalPose = samples[samples.length - 1]?.pose ?? null;
+      const firstFinal = samples.find((s) => s.pose === finalPose);
+      if (firstFinal && firstFinal.t > 1200) fail(`the dice were still animating more than 1.2s after the roll (final pose first seen at ${Math.round(firstFinal.t)}ms)`);
+    }
 
     const faces = await page.evaluate((accent) => {
       const card = document.querySelector('[data-testid="result-card"]');
@@ -1597,13 +1613,6 @@ async function checkDiceAnimation(ctx, width, meta) {
       if (faces.d8fill !== accentHex) fail(`the d8 die's SVG face is filled ${faces.d8fill}, expected the accent ${accentHex}`);
     }
     await maybeShot(page, shot("animated"), meta);
-
-    // The tumble settles well under a second after the roll.
-    await settle(page);
-    const settledA = await page.evaluate(() => getComputedStyle(document.querySelector('[data-testid="die-3d-0"]')).transform);
-    await settle(page);
-    const settledB = await page.evaluate(() => getComputedStyle(document.querySelector('[data-testid="die-3d-0"]')).transform);
-    if (settledA !== settledB) fail("the dice were still animating more than 1.2s after the roll");
   }
 
   // A dropped d20 of a seeded Roll animates too, but muted.
