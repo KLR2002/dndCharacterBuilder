@@ -1611,8 +1611,10 @@ async function checkDiceAnimation(ctx, width, meta) {
     const timed = samples.map((s) => ({ t: s.t - mountT, pose: s.pose }));
     if (early.total === null) fail("the text total was not shown while the dice animation was still running");
     else {
+      // A real tumble yields dozens of distinct poses; a die that never animates yields at most two
+      // (its mount pose and its final one), so three distinct poses prove an animation ran.
       const poses = [...new Set(timed.map((s) => s.pose))];
-      if (timed.length === 0 || poses.length < 2) fail(`the die pose never changed across ${timed.length} sampled frames: no animation ran with 3D dice on`);
+      if (timed.length === 0 || poses.length < 3) fail(`the die pose took only ${poses.length} distinct values across ${timed.length} sampled frames: no animation ran with 3D dice on`);
       // The tumble settles well under a second after the roll: the final pose is reached by 1.2s.
       const finalPose = timed[timed.length - 1]?.pose ?? null;
       const firstFinal = timed.find((s) => s.pose === finalPose);
