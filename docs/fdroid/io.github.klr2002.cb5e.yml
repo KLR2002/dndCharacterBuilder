@@ -24,13 +24,13 @@ Builds:
       - apt-get install -y -t bookworm openjdk-17-jdk-headless
       - update-java-alternatives -s java-1.17.0-openjdk-amd64
       - sdkmanager "platforms;android-36" "build-tools;36.0.0"
-    init:
-      - npm ci
+    init: npm ci
     output: android/app/build/outputs/apk/release/app-release-unsigned.apk
     prebuild:
       - sed -i -e '/"versionCode"/s/[0-9][0-9]*/$$VERCODE$$/' app.json
       - CI=1 EXPO_NO_TELEMETRY=1 npx expo prebuild --platform android --no-install
       - sed -i -e '/signingConfig /d' android/app/build.gradle
+      - printf '\norg.gradle.jvmargs=-Xmx4g -XX:MaxMetaspaceSize=2g\n' >> android/gradle.properties
     scanignore:
       - node_modules/hermes-compiler/hermesc/linux64-bin/hermesc
       - node_modules/react-native/ReactAndroid/publish.gradle
@@ -38,11 +38,14 @@ Builds:
       - node_modules/react-native-screens/android/build.gradle
       - node_modules/react-native-safe-area-context/android/build.gradle
       - node_modules/react-native-svg/android/build.gradle
+      - node_modules/@react-native-async-storage/async-storage/android/build.gradle
+      - node_modules/@react-native-masked-view/masked-view/android/build.gradle
     scandelete:
       - node_modules
     build:
       - cd android
-      - gradle --no-daemon assembleRelease -PreactNativeArchitectures=armeabi-v7a -Pfdroid
+      - gradle --no-daemon assembleRelease -PreactNativeArchitectures=armeabi-v7a
+        -Pfdroid -x lintVitalAnalyzeRelease
     ndk: r27b
 
   - versionName: 2.1.1
@@ -56,13 +59,13 @@ Builds:
       - apt-get install -y -t bookworm openjdk-17-jdk-headless
       - update-java-alternatives -s java-1.17.0-openjdk-amd64
       - sdkmanager "platforms;android-36" "build-tools;36.0.0"
-    init:
-      - npm ci
+    init: npm ci
     output: android/app/build/outputs/apk/release/app-release-unsigned.apk
     prebuild:
       - sed -i -e '/"versionCode"/s/[0-9][0-9]*/$$VERCODE$$/' app.json
       - CI=1 EXPO_NO_TELEMETRY=1 npx expo prebuild --platform android --no-install
       - sed -i -e '/signingConfig /d' android/app/build.gradle
+      - printf '\norg.gradle.jvmargs=-Xmx4g -XX:MaxMetaspaceSize=2g\n' >> android/gradle.properties
     scanignore:
       - node_modules/hermes-compiler/hermesc/linux64-bin/hermesc
       - node_modules/react-native/ReactAndroid/publish.gradle
@@ -70,11 +73,14 @@ Builds:
       - node_modules/react-native-screens/android/build.gradle
       - node_modules/react-native-safe-area-context/android/build.gradle
       - node_modules/react-native-svg/android/build.gradle
+      - node_modules/@react-native-async-storage/async-storage/android/build.gradle
+      - node_modules/@react-native-masked-view/masked-view/android/build.gradle
     scandelete:
       - node_modules
     build:
       - cd android
       - gradle --no-daemon assembleRelease -PreactNativeArchitectures=arm64-v8a -Pfdroid
+        -x lintVitalAnalyzeRelease
     ndk: r27b
 
   - versionName: 2.1.1
@@ -88,13 +94,13 @@ Builds:
       - apt-get install -y -t bookworm openjdk-17-jdk-headless
       - update-java-alternatives -s java-1.17.0-openjdk-amd64
       - sdkmanager "platforms;android-36" "build-tools;36.0.0"
-    init:
-      - npm ci
+    init: npm ci
     output: android/app/build/outputs/apk/release/app-release-unsigned.apk
     prebuild:
       - sed -i -e '/"versionCode"/s/[0-9][0-9]*/$$VERCODE$$/' app.json
       - CI=1 EXPO_NO_TELEMETRY=1 npx expo prebuild --platform android --no-install
       - sed -i -e '/signingConfig /d' android/app/build.gradle
+      - printf '\norg.gradle.jvmargs=-Xmx4g -XX:MaxMetaspaceSize=2g\n' >> android/gradle.properties
     scanignore:
       - node_modules/hermes-compiler/hermesc/linux64-bin/hermesc
       - node_modules/react-native/ReactAndroid/publish.gradle
@@ -102,11 +108,14 @@ Builds:
       - node_modules/react-native-screens/android/build.gradle
       - node_modules/react-native-safe-area-context/android/build.gradle
       - node_modules/react-native-svg/android/build.gradle
+      - node_modules/@react-native-async-storage/async-storage/android/build.gradle
+      - node_modules/@react-native-masked-view/masked-view/android/build.gradle
     scandelete:
       - node_modules
     build:
       - cd android
       - gradle --no-daemon assembleRelease -PreactNativeArchitectures=x86 -Pfdroid
+        -x lintVitalAnalyzeRelease
     ndk: r27b
 
   - versionName: 2.1.1
@@ -120,13 +129,13 @@ Builds:
       - apt-get install -y -t bookworm openjdk-17-jdk-headless
       - update-java-alternatives -s java-1.17.0-openjdk-amd64
       - sdkmanager "platforms;android-36" "build-tools;36.0.0"
-    init:
-      - npm ci
+    init: npm ci
     output: android/app/build/outputs/apk/release/app-release-unsigned.apk
     prebuild:
       - sed -i -e '/"versionCode"/s/[0-9][0-9]*/$$VERCODE$$/' app.json
       - CI=1 EXPO_NO_TELEMETRY=1 npx expo prebuild --platform android --no-install
       - sed -i -e '/signingConfig /d' android/app/build.gradle
+      - printf '\norg.gradle.jvmargs=-Xmx4g -XX:MaxMetaspaceSize=2g\n' >> android/gradle.properties
     scanignore:
       - node_modules/hermes-compiler/hermesc/linux64-bin/hermesc
       - node_modules/react-native/ReactAndroid/publish.gradle
@@ -134,11 +143,14 @@ Builds:
       - node_modules/react-native-screens/android/build.gradle
       - node_modules/react-native-safe-area-context/android/build.gradle
       - node_modules/react-native-svg/android/build.gradle
+      - node_modules/@react-native-async-storage/async-storage/android/build.gradle
+      - node_modules/@react-native-masked-view/masked-view/android/build.gradle
     scandelete:
       - node_modules
     build:
       - cd android
       - gradle --no-daemon assembleRelease -PreactNativeArchitectures=x86_64 -Pfdroid
+        -x lintVitalAnalyzeRelease
     ndk: r27b
 
 AutoUpdateMode: Version
