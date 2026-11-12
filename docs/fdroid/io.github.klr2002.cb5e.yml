@@ -16,7 +16,6 @@ Builds:
   - versionName: 2.1.1
     versionCode: 201011
     commit: 8e3fe8e72665a36f1c47a5ceb59dd401915ee5eb
-    subdir: android/app
     sudo:
       - echo "deb https://deb.debian.org/debian forky main" > /etc/apt/sources.list.d/forky.list
       - echo "deb https://deb.debian.org/debian bookworm main" > /etc/apt/sources.list.d/bookworm.list
@@ -26,12 +25,9 @@ Builds:
       - update-java-alternatives -s java-1.17.0-openjdk-amd64
       - sdkmanager "platforms;android-36" "build-tools;36.0.0"
     init:
-      - cd ../..
       - npm ci
-    gradle:
-      - yes
+    output: android/app/build/outputs/apk/release/app-release-unsigned.apk
     prebuild:
-      - cd ../..
       - sed -i -e '/"versionCode"/s/[0-9][0-9]*/$$VERCODE$$/' app.json
       - CI=1 EXPO_NO_TELEMETRY=1 npx expo prebuild --platform android --no-install
       - sed -i -e '/signingConfig /d' android/app/build.gradle
@@ -44,15 +40,14 @@ Builds:
       - node_modules/react-native-svg/android/build.gradle
     scandelete:
       - node_modules
+    build:
+      - cd android
+      - gradle --no-daemon assembleRelease -PreactNativeArchitectures=armeabi-v7a -Pfdroid
     ndk: r27b
-    gradleprops:
-      - reactNativeArchitectures=armeabi-v7a
-      - fdroid
 
   - versionName: 2.1.1
     versionCode: 201012
     commit: 8e3fe8e72665a36f1c47a5ceb59dd401915ee5eb
-    subdir: android/app
     sudo:
       - echo "deb https://deb.debian.org/debian forky main" > /etc/apt/sources.list.d/forky.list
       - echo "deb https://deb.debian.org/debian bookworm main" > /etc/apt/sources.list.d/bookworm.list
@@ -62,12 +57,9 @@ Builds:
       - update-java-alternatives -s java-1.17.0-openjdk-amd64
       - sdkmanager "platforms;android-36" "build-tools;36.0.0"
     init:
-      - cd ../..
       - npm ci
-    gradle:
-      - yes
+    output: android/app/build/outputs/apk/release/app-release-unsigned.apk
     prebuild:
-      - cd ../..
       - sed -i -e '/"versionCode"/s/[0-9][0-9]*/$$VERCODE$$/' app.json
       - CI=1 EXPO_NO_TELEMETRY=1 npx expo prebuild --platform android --no-install
       - sed -i -e '/signingConfig /d' android/app/build.gradle
@@ -80,15 +72,14 @@ Builds:
       - node_modules/react-native-svg/android/build.gradle
     scandelete:
       - node_modules
+    build:
+      - cd android
+      - gradle --no-daemon assembleRelease -PreactNativeArchitectures=arm64-v8a -Pfdroid
     ndk: r27b
-    gradleprops:
-      - reactNativeArchitectures=arm64-v8a
-      - fdroid
 
   - versionName: 2.1.1
     versionCode: 201013
     commit: 8e3fe8e72665a36f1c47a5ceb59dd401915ee5eb
-    subdir: android/app
     sudo:
       - echo "deb https://deb.debian.org/debian forky main" > /etc/apt/sources.list.d/forky.list
       - echo "deb https://deb.debian.org/debian bookworm main" > /etc/apt/sources.list.d/bookworm.list
@@ -98,12 +89,9 @@ Builds:
       - update-java-alternatives -s java-1.17.0-openjdk-amd64
       - sdkmanager "platforms;android-36" "build-tools;36.0.0"
     init:
-      - cd ../..
       - npm ci
-    gradle:
-      - yes
+    output: android/app/build/outputs/apk/release/app-release-unsigned.apk
     prebuild:
-      - cd ../..
       - sed -i -e '/"versionCode"/s/[0-9][0-9]*/$$VERCODE$$/' app.json
       - CI=1 EXPO_NO_TELEMETRY=1 npx expo prebuild --platform android --no-install
       - sed -i -e '/signingConfig /d' android/app/build.gradle
@@ -116,15 +104,14 @@ Builds:
       - node_modules/react-native-svg/android/build.gradle
     scandelete:
       - node_modules
+    build:
+      - cd android
+      - gradle --no-daemon assembleRelease -PreactNativeArchitectures=x86 -Pfdroid
     ndk: r27b
-    gradleprops:
-      - reactNativeArchitectures=x86
-      - fdroid
 
   - versionName: 2.1.1
     versionCode: 201014
     commit: 8e3fe8e72665a36f1c47a5ceb59dd401915ee5eb
-    subdir: android/app
     sudo:
       - echo "deb https://deb.debian.org/debian forky main" > /etc/apt/sources.list.d/forky.list
       - echo "deb https://deb.debian.org/debian bookworm main" > /etc/apt/sources.list.d/bookworm.list
@@ -134,12 +121,9 @@ Builds:
       - update-java-alternatives -s java-1.17.0-openjdk-amd64
       - sdkmanager "platforms;android-36" "build-tools;36.0.0"
     init:
-      - cd ../..
       - npm ci
-    gradle:
-      - yes
+    output: android/app/build/outputs/apk/release/app-release-unsigned.apk
     prebuild:
-      - cd ../..
       - sed -i -e '/"versionCode"/s/[0-9][0-9]*/$$VERCODE$$/' app.json
       - CI=1 EXPO_NO_TELEMETRY=1 npx expo prebuild --platform android --no-install
       - sed -i -e '/signingConfig /d' android/app/build.gradle
@@ -152,10 +136,10 @@ Builds:
       - node_modules/react-native-svg/android/build.gradle
     scandelete:
       - node_modules
+    build:
+      - cd android
+      - gradle --no-daemon assembleRelease -PreactNativeArchitectures=x86_64 -Pfdroid
     ndk: r27b
-    gradleprops:
-      - reactNativeArchitectures=x86_64
-      - fdroid
 
 AutoUpdateMode: Version
 UpdateCheckMode: Tags ^v[0-9.]+$
