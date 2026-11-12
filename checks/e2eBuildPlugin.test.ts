@@ -38,7 +38,7 @@ const FIXTURE_GRADLE = `apply plugin: "com.android.application"
 
 android {
     defaultConfig {
-        applicationId 'com.anonymous.dnd5e2014CharacterBuilder'
+        applicationId 'io.github.klr2002.cb5e'
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1
@@ -79,7 +79,7 @@ android {
         }
     }
     defaultConfig {
-        applicationId 'com.anonymous.dnd5e2014CharacterBuilder'
+        applicationId 'io.github.klr2002.cb5e'
         minSdkVersion rootProject.ext.minSdkVersion
     }
     buildTypes {

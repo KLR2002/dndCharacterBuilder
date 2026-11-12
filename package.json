@@ -1,7 +1,8 @@
 {
   "name": "dnd5e2014characterbuilder",
   "main": "expo-router/entry",
-  "version": "1.0.0",
+  "version": "2.1.1",
+  "license": "GPL-3.0-or-later",
   "dependencies": {
     "@expo-google-fonts/source-serif-4": "^0.4.2",
     "@expo/ui": "~57.0.26",
@@ -63,5 +64,14 @@
     "scrape:items": "npm --prefix dnd5eToolsScrap run scrape:items",
     "prepare": "git config core.hooksPath .githooks 2>/dev/null || true"
   },
-  "private": true
+  "private": true,
+  "expo": {
+    "autolinking": {
+      "android": {
+        "buildFromSource": [
+          ".*"
+        ]
+      }
+    }
+  }
 }

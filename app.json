@@ -2,7 +2,7 @@
   "expo": {
     "name": "Character Builder",
     "slug": "dnd5e2014CharacterBuilder",
-    "version": "1.0.0",
+    "version": "2.1.1",
     "orientation": "portrait",
     "icon": "./assets/images/dice-twenty-faces-twenty-red.png",
     "scheme": "dnd5e2014characterbuilder",
@@ -18,7 +18,8 @@
         "monochromeImage": "./assets/images/dice-twenty-faces-twenty.png"
       },
       "predictiveBackGestureEnabled": false,
-      "package": "com.anonymous.dnd5e2014CharacterBuilder"
+      "package": "io.github.klr2002.cb5e",
+      "versionCode": 20101
     },
     "web": {
       "output": "static",

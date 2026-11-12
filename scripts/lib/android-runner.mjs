@@ -13,7 +13,7 @@ import { parseDumpOutput } from "./uiautomator.mjs";
 import { E2E_BUNDLE_INPUTS_MARKER } from "../../plugins/lib/e2e-build-transforms.mjs";
 
 // The app id of the (E2E) build, and the AVD the runner boots when no emulator is running.
-export const APP_ID = "com.anonymous.dnd5e2014CharacterBuilder";
+export const APP_ID = "io.github.klr2002.cb5e";
 export const AVD_NAME = "Small_Phone";
 // The deep link scheme the app registers, so a route opens by `am start -d <scheme>://<route>`.
 export const LINK_SCHEME = "dnd5e2014characterbuilder";

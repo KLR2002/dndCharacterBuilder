@@ -34,7 +34,7 @@ The runner's flags, environment variables and exit codes are documented in the h
 
 - Export the SDK tools: `export ANDROID_HOME=~/Android/Sdk ANDROID_SDK_ROOT=~/Android/Sdk PATH=$ANDROID_HOME/platform-tools:$ANDROID_HOME/emulator:$PATH`.
 - Start the emulator detached: `nohup env -u LD_LIBRARY_PATH emulator -avd Small_Phone -no-snapshot-save -no-audio -gpu angle_indirect -no-window > <log> 2>&1 &`. It is ready when `adb shell getprop sys.boot_completed` prints `1`; stop what you started with `adb emu kill`.
-- Install and launch: `adb install -r <apk>`, then `adb shell monkey -p com.anonymous.dnd5e2014CharacterBuilder -c android.intent.category.LAUNCHER 1`.
-- `adb shell pm clear com.anonymous.dnd5e2014CharacterBuilder` resets the app to first run.
-- `adb shell run-as com.anonymous.dnd5e2014CharacterBuilder ls files` lists the app's private folder; it works only on the E2E (debuggable) APK.
+- Install and launch: `adb install -r <apk>`, then `adb shell monkey -p io.github.klr2002.cb5e -c android.intent.category.LAUNCHER 1`.
+- `adb shell pm clear io.github.klr2002.cb5e` resets the app to first run.
+- `adb shell run-as io.github.klr2002.cb5e ls files` lists the app's private folder; it works only on the E2E (debuggable) APK.
 - The `androidMCP` server, project-scoped in `~/.claude.json` (`uv --directory /home/krzysztof/mcp/Android-MCP run android-mcp-beta`), drives the UI by hand. Its first start can pass Claude Code's 30 s connect limit: run the command once in a terminal, then reconnect with `/mcp`.
