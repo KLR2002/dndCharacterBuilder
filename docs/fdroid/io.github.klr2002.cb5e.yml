@@ -30,6 +30,7 @@ Builds:
       - sed -i -e '/"versionCode"/s/[0-9][0-9]*/$$VERCODE$$/' app.json
       - CI=1 EXPO_NO_TELEMETRY=1 npx expo prebuild --platform android --no-install
       - sed -i -e '/signingConfig /d' android/app/build.gradle
+      - printf '\norg.gradle.jvmargs=-Xmx4g -XX:MaxMetaspaceSize=2g\n' >> android/gradle.properties
     scanignore:
       - node_modules/hermes-compiler/hermesc/linux64-bin/hermesc
       - node_modules/react-native/ReactAndroid/publish.gradle
@@ -44,7 +45,7 @@ Builds:
     build:
       - cd android
       - gradle --no-daemon assembleRelease -PreactNativeArchitectures=armeabi-v7a
-        -Pfdroid
+        -Pfdroid -x lintVitalAnalyzeRelease
     ndk: r27b
 
   - versionName: 2.1.1
@@ -64,6 +65,7 @@ Builds:
       - sed -i -e '/"versionCode"/s/[0-9][0-9]*/$$VERCODE$$/' app.json
       - CI=1 EXPO_NO_TELEMETRY=1 npx expo prebuild --platform android --no-install
       - sed -i -e '/signingConfig /d' android/app/build.gradle
+      - printf '\norg.gradle.jvmargs=-Xmx4g -XX:MaxMetaspaceSize=2g\n' >> android/gradle.properties
     scanignore:
       - node_modules/hermes-compiler/hermesc/linux64-bin/hermesc
       - node_modules/react-native/ReactAndroid/publish.gradle
@@ -78,6 +80,7 @@ Builds:
     build:
       - cd android
       - gradle --no-daemon assembleRelease -PreactNativeArchitectures=arm64-v8a -Pfdroid
+        -x lintVitalAnalyzeRelease
     ndk: r27b
 
   - versionName: 2.1.1
@@ -97,6 +100,7 @@ Builds:
       - sed -i -e '/"versionCode"/s/[0-9][0-9]*/$$VERCODE$$/' app.json
       - CI=1 EXPO_NO_TELEMETRY=1 npx expo prebuild --platform android --no-install
       - sed -i -e '/signingConfig /d' android/app/build.gradle
+      - printf '\norg.gradle.jvmargs=-Xmx4g -XX:MaxMetaspaceSize=2g\n' >> android/gradle.properties
     scanignore:
       - node_modules/hermes-compiler/hermesc/linux64-bin/hermesc
       - node_modules/react-native/ReactAndroid/publish.gradle
@@ -111,6 +115,7 @@ Builds:
     build:
       - cd android
       - gradle --no-daemon assembleRelease -PreactNativeArchitectures=x86 -Pfdroid
+        -x lintVitalAnalyzeRelease
     ndk: r27b
 
   - versionName: 2.1.1
@@ -130,6 +135,7 @@ Builds:
       - sed -i -e '/"versionCode"/s/[0-9][0-9]*/$$VERCODE$$/' app.json
       - CI=1 EXPO_NO_TELEMETRY=1 npx expo prebuild --platform android --no-install
       - sed -i -e '/signingConfig /d' android/app/build.gradle
+      - printf '\norg.gradle.jvmargs=-Xmx4g -XX:MaxMetaspaceSize=2g\n' >> android/gradle.properties
     scanignore:
       - node_modules/hermes-compiler/hermesc/linux64-bin/hermesc
       - node_modules/react-native/ReactAndroid/publish.gradle
@@ -144,6 +150,7 @@ Builds:
     build:
       - cd android
       - gradle --no-daemon assembleRelease -PreactNativeArchitectures=x86_64 -Pfdroid
+        -x lintVitalAnalyzeRelease
     ndk: r27b
 
 AutoUpdateMode: Version
