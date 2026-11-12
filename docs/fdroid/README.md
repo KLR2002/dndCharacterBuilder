@@ -22,15 +22,19 @@ How the app is prepared for [F-Droid](https://f-droid.org/docs/Submitting_to_F-D
 
 ## Submitting (first time only)
 
-1. Fork https://gitlab.com/fdroid/fdroiddata and create a branch named `io.github.klr2002.cb5e`.
-2. Copy `docs/fdroid/io.github.klr2002.cb5e.yml` to `metadata/io.github.klr2002.cb5e.yml`. Replace `commit: v2.1.1` with the full commit hash of the tag (`git rev-parse v2.1.1^{commit}`).
-3. Run `fdroid lint io.github.klr2002.cb5e`, `fdroid rewritemeta io.github.klr2002.cb5e` and `fdroid build io.github.klr2002.cb5e`. The build needs the fdroidserver Docker image or the CI pipeline of your fork.
-4. Commit with the message `New App: io.github.klr2002.cb5e` and open a merge request against fdroiddata.
+The fdroiddata fork is cloned into `data-cb/` (ignored by git). Following fdroiddata's `CONTRIBUTING.md` ("Metadata preparation without fdroidserver"):
+
+1. In `data-cb/`, create a branch named `io.github.klr2002.cb5e` from an up-to-date `master`.
+2. Copy `docs/fdroid/io.github.klr2002.cb5e.yml` to `data-cb/metadata/io.github.klr2002.cb5e.yml`. `commit` must be the full hash of the release tag (`git rev-parse v2.1.1^{commit}`), and the tag must be pushed to GitHub first.
+3. Commit with the message `New App: io.github.klr2002.cb5e` and push the branch to the fork.
+4. In the fork on GitLab, open CI/CD → Pipelines and check that the pipeline passes. If it fails, fix the metadata from the job log and push again.
+5. Open a merge request against https://gitlab.com/fdroid/fdroiddata with the title `New app: Character Builder` and fill in the template.
+
+After the merge, F-Droid's update bot checks new `v*` tags, reads the version from `app.json` and adds the four builds by itself (`AutoUpdateMode: Version`).
 
 ## Not yet verified
 
 The recipe has not been run through `fdroid build`. These are the risky parts:
 
-- `hermesc`: `node_modules/hermes-compiler` ships a prebuilt Hermes compiler, which the F-Droid scanner removes. The recipe builds `hermesc` from the `hermes` srclib at the tag that matches `hermes-compiler`'s version (`hermes-v250829098.0.17`). Update that tag whenever React Native is upgraded.
-- The scanner may flag more binaries in `node_modules`. `scandelete: node_modules` removes them. If the build then fails, reviewers usually help to find the binary that is still needed.
+- The scanner may flag more files in `node_modules`. `scandelete: node_modules` removes binaries. A Gradle file that the scanner flags goes into `scanignore`, as `hermesc` and a few `build.gradle` files already do. The pipeline log names each one.
 - The optional catalog sync downloads game data that is not freely licensed from a third-party GitHub repository. Reviewers may ask for an anti-feature, such as `NonFreeNet`.
