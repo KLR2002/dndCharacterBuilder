@@ -1870,6 +1870,7 @@ async function checkActionRolls(ctx, width, meta) {
   // Same as in checkDiceTrayAndLog: the card-with-follow-up check fast-forwards the clock past the 8s
   // auto-dismiss timer instead of sleeping through it.
   await page.clock.install();
+  await restoreSeededCharacter(page, CHARACTER_ID);
   const prefix = `[${width}px actions rolls]`;
   let failures = 0;
   let failedShotTaken = false;
@@ -2133,6 +2134,17 @@ const LU_NAME = "Tamsin";
 // The stored Character by id, read from the browser's localStorage.
 function readStoredCharacter(page, id) {
   return page.evaluate((charId) => JSON.parse(localStorage.getItem("@dnd5e_characters") ?? "[]").find((c) => c.id === charId) ?? null, id);
+}
+
+// Puts the seeded copy of character `id` back in storage on every load of `page`. The seed is written once per
+// width's context, so without this a check that reads exact numbers off the character sees whatever earlier
+// scenarios at that width changed (rolling abilities on Rendar's builder resets his base scores).
+function restoreSeededCharacter(page, id) {
+  const seeded = ACTIVE_SEED.characters.find((c) => c.id === id);
+  return page.addInitScript((c) => {
+    const list = JSON.parse(localStorage.getItem("@dnd5e_characters") ?? "[]");
+    localStorage.setItem("@dnd5e_characters", JSON.stringify(list.map((x) => (x.id === c.id ? c : x))));
+  }, seeded);
 }
 
 // Waits until the flow's Continue is enabled (the open step's pick is complete), then taps it. When
@@ -2770,6 +2782,7 @@ async function checkSpellsAfterLevelUp(ctx, width, meta) {
 // its breakdown modal when tapped outside the badge.
 async function checkStatsRolls(ctx, width, meta) {
   const page = await ctx.newPage();
+  await restoreSeededCharacter(page, CHARACTER_ID);
   const prefix = `[${width}px stats rolls]`;
   let failures = 0;
   let failedShotTaken = false;
