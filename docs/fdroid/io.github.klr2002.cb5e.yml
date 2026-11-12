@@ -1,0 +1,149 @@
+Categories:
+  - Game Helper
+  - Role-Playing Game
+License: GPL-3.0-or-later
+AuthorName: KLR2002
+SourceCode: https://github.com/KLR2002/dndCharacterBuilder
+IssueTracker: https://github.com/KLR2002/dndCharacterBuilder/issues
+Changelog: https://github.com/KLR2002/dndCharacterBuilder/releases
+
+AutoName: Character Builder
+
+RepoType: git
+Repo: https://github.com/KLR2002/dndCharacterBuilder.git
+
+Builds:
+  - versionName: 2.1.1
+    versionCode: 201011
+    commit: v2.1.1
+    sudo:
+      - apt-get update
+      - apt-get install -y cmake ninja-build python3
+      - curl -Lo node.tar.xz https://nodejs.org/dist/v24.20.0/node-v24.20.0-linux-x64.tar.xz
+      - echo "2f2c0da162318f0de47665410c7c8c2ed3d36c8f3105de4bbc61176c70a7cbf2  node.tar.xz"
+        | sha256sum -c -
+      - tar xJf node.tar.xz --strip-components=1 -C /usr/local
+      - rm node.tar.xz
+    output: android/app/build/outputs/apk/release/app-release-unsigned.apk
+    srclibs:
+      - hermes@hermes-v250829098.0.17
+    prebuild:
+      - npm ci
+      - rm -rf node_modules/*/local-maven-repo node_modules/@*/*/local-maven-repo
+      - EXPO_NO_TELEMETRY=1 CI=1 npx expo prebuild --platform android --no-install
+      - sed -i -e '/signingConfig signingConfigs.debug/d' android/app/build.gradle
+      - sed -i -e 's/versionCode 20101$/versionCode $$VERCODE$$/' android/app/build.gradle
+    scandelete:
+      - node_modules
+    ndk: 27.1.12297006
+    build:
+      - cmake -S $$hermes$$ -B hermes-build -G Ninja -DCMAKE_BUILD_TYPE=Release
+      - cmake --build hermes-build --target hermesc
+      - mkdir -p node_modules/hermes-compiler/hermesc/linux64-bin
+      - cp hermes-build/bin/hermesc node_modules/hermes-compiler/hermesc/linux64-bin/hermesc
+      - cd android
+      - gradle assembleRelease -PreactNativeArchitectures=armeabi-v7a -Pfdroid
+
+  - versionName: 2.1.1
+    versionCode: 201012
+    commit: v2.1.1
+    sudo:
+      - apt-get update
+      - apt-get install -y cmake ninja-build python3
+      - curl -Lo node.tar.xz https://nodejs.org/dist/v24.20.0/node-v24.20.0-linux-x64.tar.xz
+      - echo "2f2c0da162318f0de47665410c7c8c2ed3d36c8f3105de4bbc61176c70a7cbf2  node.tar.xz"
+        | sha256sum -c -
+      - tar xJf node.tar.xz --strip-components=1 -C /usr/local
+      - rm node.tar.xz
+    output: android/app/build/outputs/apk/release/app-release-unsigned.apk
+    srclibs:
+      - hermes@hermes-v250829098.0.17
+    prebuild:
+      - npm ci
+      - rm -rf node_modules/*/local-maven-repo node_modules/@*/*/local-maven-repo
+      - EXPO_NO_TELEMETRY=1 CI=1 npx expo prebuild --platform android --no-install
+      - sed -i -e '/signingConfig signingConfigs.debug/d' android/app/build.gradle
+      - sed -i -e 's/versionCode 20101$/versionCode $$VERCODE$$/' android/app/build.gradle
+    scandelete:
+      - node_modules
+    ndk: 27.1.12297006
+    build:
+      - cmake -S $$hermes$$ -B hermes-build -G Ninja -DCMAKE_BUILD_TYPE=Release
+      - cmake --build hermes-build --target hermesc
+      - mkdir -p node_modules/hermes-compiler/hermesc/linux64-bin
+      - cp hermes-build/bin/hermesc node_modules/hermes-compiler/hermesc/linux64-bin/hermesc
+      - cd android
+      - gradle assembleRelease -PreactNativeArchitectures=arm64-v8a -Pfdroid
+
+  - versionName: 2.1.1
+    versionCode: 201013
+    commit: v2.1.1
+    sudo:
+      - apt-get update
+      - apt-get install -y cmake ninja-build python3
+      - curl -Lo node.tar.xz https://nodejs.org/dist/v24.20.0/node-v24.20.0-linux-x64.tar.xz
+      - echo "2f2c0da162318f0de47665410c7c8c2ed3d36c8f3105de4bbc61176c70a7cbf2  node.tar.xz"
+        | sha256sum -c -
+      - tar xJf node.tar.xz --strip-components=1 -C /usr/local
+      - rm node.tar.xz
+    output: android/app/build/outputs/apk/release/app-release-unsigned.apk
+    srclibs:
+      - hermes@hermes-v250829098.0.17
+    prebuild:
+      - npm ci
+      - rm -rf node_modules/*/local-maven-repo node_modules/@*/*/local-maven-repo
+      - EXPO_NO_TELEMETRY=1 CI=1 npx expo prebuild --platform android --no-install
+      - sed -i -e '/signingConfig signingConfigs.debug/d' android/app/build.gradle
+      - sed -i -e 's/versionCode 20101$/versionCode $$VERCODE$$/' android/app/build.gradle
+    scandelete:
+      - node_modules
+    ndk: 27.1.12297006
+    build:
+      - cmake -S $$hermes$$ -B hermes-build -G Ninja -DCMAKE_BUILD_TYPE=Release
+      - cmake --build hermes-build --target hermesc
+      - mkdir -p node_modules/hermes-compiler/hermesc/linux64-bin
+      - cp hermes-build/bin/hermesc node_modules/hermes-compiler/hermesc/linux64-bin/hermesc
+      - cd android
+      - gradle assembleRelease -PreactNativeArchitectures=x86 -Pfdroid
+
+  - versionName: 2.1.1
+    versionCode: 201014
+    commit: v2.1.1
+    sudo:
+      - apt-get update
+      - apt-get install -y cmake ninja-build python3
+      - curl -Lo node.tar.xz https://nodejs.org/dist/v24.20.0/node-v24.20.0-linux-x64.tar.xz
+      - echo "2f2c0da162318f0de47665410c7c8c2ed3d36c8f3105de4bbc61176c70a7cbf2  node.tar.xz"
+        | sha256sum -c -
+      - tar xJf node.tar.xz --strip-components=1 -C /usr/local
+      - rm node.tar.xz
+    output: android/app/build/outputs/apk/release/app-release-unsigned.apk
+    srclibs:
+      - hermes@hermes-v250829098.0.17
+    prebuild:
+      - npm ci
+      - rm -rf node_modules/*/local-maven-repo node_modules/@*/*/local-maven-repo
+      - EXPO_NO_TELEMETRY=1 CI=1 npx expo prebuild --platform android --no-install
+      - sed -i -e '/signingConfig signingConfigs.debug/d' android/app/build.gradle
+      - sed -i -e 's/versionCode 20101$/versionCode $$VERCODE$$/' android/app/build.gradle
+    scandelete:
+      - node_modules
+    ndk: 27.1.12297006
+    build:
+      - cmake -S $$hermes$$ -B hermes-build -G Ninja -DCMAKE_BUILD_TYPE=Release
+      - cmake --build hermes-build --target hermesc
+      - mkdir -p node_modules/hermes-compiler/hermesc/linux64-bin
+      - cp hermes-build/bin/hermesc node_modules/hermes-compiler/hermesc/linux64-bin/hermesc
+      - cd android
+      - gradle assembleRelease -PreactNativeArchitectures=x86_64 -Pfdroid
+
+AutoUpdateMode: Version
+UpdateCheckMode: Tags ^v[0-9.]+$
+UpdateCheckData: app.json|"versionCode":\s(\d+)|.|"version":\s"([\d.]+)"
+VercodeOperation:
+  - 10 * %c + 1
+  - 10 * %c + 2
+  - 10 * %c + 3
+  - 10 * %c + 4
+CurrentVersion: 2.1.1
+CurrentVersionCode: 201014

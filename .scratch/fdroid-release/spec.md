@@ -1,6 +1,6 @@
 # Spec: F-Droid release 2.1.1
 
-**Status:** in progress
+**Status:** done (recipe not yet run through fdroid build)
 
 Prepare the repo for inclusion in F-Droid (https://f-droid.org/docs/Submitting_to_F-Droid_Quick_Start_Guide) and release it as 2.1.1.
 
