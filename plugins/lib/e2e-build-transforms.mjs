@@ -1,18 +1,24 @@
 // Pure string transforms that wire the two E2E build settings (Expo Updates off, release
 // debuggable) to the Gradle project property passed as `-Pe2e`, and declare that property (and
-// EXPO_PUBLIC_E2E) as inputs of the bundle task so a flag change rebuilds the bundle. The config
+// EXPO_PUBLIC_E2E) as inputs of the bundle task so a flag change rebuilds the bundle. The `fdroid`
+// property (`-Pfdroid`) turns Expo Updates off too, without the debuggable release build. Every
+// build also opts out of the APK and bundle dependency metadata (`dependenciesInfo`). The config
 // plugin in plugins/e2e-build.mjs applies them to the generated android/ files at prebuild time;
 // the unit test in checks/ drives them with fixture manifest and Gradle strings. The Gradle
-// property only exists at build time, so the generated files carry Gradle expressions and
-// both settings resolve per build: with `-Pe2e` the APK is debuggable with updates off,
-// without it neither setting differs from a plain release build.
+// properties only exist at build time, so the generated files carry Gradle expressions and the
+// settings resolve per build: with `-Pe2e` the APK is debuggable with updates off, without it
+// neither setting differs from a plain release build.
 
 export const E2E_PROPERTY = "e2e";
+export const FDROID_PROPERTY = "fdroid";
 export const UPDATES_ENABLED_META_NAME = "expo.modules.updates.ENABLED";
 export const UPDATES_ENABLED_PLACEHOLDER = "expoUpdatesEnabled";
 // Groovy truth of a `-P` flag is unreliable (`-Pe2e` may be an empty string), so presence is
 // what the generated expressions test.
 export const E2E_PRESENT_EXPRESSION = `findProperty('${E2E_PROPERTY}') != null`;
+const FDROID_PRESENT_EXPRESSION = `findProperty('${FDROID_PROPERTY}') != null`;
+// Expo Updates is off when either property is present; parenthesized so the ternary reads correctly.
+const UPDATES_OFF_EXPRESSION = `(${E2E_PRESENT_EXPRESSION} || ${FDROID_PRESENT_EXPRESSION})`;
 
 // First line of the appended block that makes the E2E flag an input of Gradle's bundle task, so a
 // build with the other flag value cannot report it UP-TO-DATE and keep the stale bundle.
@@ -27,12 +33,12 @@ tasks.configureEach { task ->
 `;
 
 const placeholderRef = `\${${UPDATES_ENABLED_PLACEHOLDER}}`;
-const placeholderLine = `manifestPlaceholders = [${UPDATES_ENABLED_PLACEHOLDER}: ${E2E_PRESENT_EXPRESSION} ? '${updatesEnabledValue(true)}' : '${updatesEnabledValue(false)}']`;
+const placeholderLine = `manifestPlaceholders = [${UPDATES_ENABLED_PLACEHOLDER}: ${UPDATES_OFF_EXPRESSION} ? '${updatesEnabledValue(true)}' : '${updatesEnabledValue(false)}']`;
 const debuggableLine = `debuggable ${E2E_PRESENT_EXPRESSION}`;
 
-/** The meta-data value a build ends up with: Expo Updates off only in the E2E build. */
-export function updatesEnabledValue(e2e) {
-  return e2e ? "false" : "true";
+/** The meta-data value a build ends up with: Expo Updates off in the E2E and F-Droid builds. */
+export function updatesEnabledValue(e2e, fdroid = false) {
+  return e2e || fdroid ? "false" : "true";
 }
 
 /** Whether the release build type is debuggable: only in the E2E build. */
@@ -60,8 +66,8 @@ export function withUpdatesEnabledPlaceholder(manifestXml) {
 }
 
 /** Build-time model of the manifest merger: substitute the placeholder for one build. */
-export function resolveUpdatesEnabledPlaceholder(manifestXml, e2e) {
-  return manifestXml.split(placeholderRef).join(updatesEnabledValue(e2e));
+export function resolveUpdatesEnabledPlaceholder(manifestXml, e2e, fdroid = false) {
+  return manifestXml.split(placeholderRef).join(updatesEnabledValue(e2e, fdroid));
 }
 
 /** The [start, end) extent of the braced block whose opening line matches `header` within [from, to), or null. */
@@ -98,6 +104,23 @@ function insertIntoBlock(text, header, line, presentKey, conflict, from = 0, to 
 }
 
 /**
+ * Prebuild transform: opt the APK and the bundle out of dependency metadata, as the first statement
+ * of the top-level android block. Keyed on the block's own `dependenciesInfo`, so re-prebuild
+ * leaves the file unchanged; throws when there is no android block.
+ */
+export function withDependenciesInfoOptOut(appBuildGradle) {
+  const android = blockExtent(appBuildGradle, /^android[ \t]*\{/m);
+  if (!android) throw new Error("no top-level android block in app/build.gradle");
+  if (appBuildGradle.slice(android[0], android[1]).includes("dependenciesInfo")) return appBuildGradle;
+  const lineEnd = appBuildGradle.indexOf("\n", android[0]);
+  return `${appBuildGradle.slice(0, lineEnd)}
+    dependenciesInfo {
+        includeInApk = false
+        includeInBundle = false
+    }${appBuildGradle.slice(lineEnd)}`;
+}
+
+/**
  * Prebuild transform: wire both settings to the e2e Gradle property — a manifest placeholder
  * in defaultConfig and `debuggable` in the release build type — and append the block that makes
  * the flag an input of the bundle task. The release match is scoped to the buildTypes block, so
@@ -110,6 +133,7 @@ export function withE2eBuildSettings(appBuildGradle) {
   const buildTypes = blockExtent(out, /^[ \t]*buildTypes[ \t]*\{/m);
   if (!buildTypes) throw new Error("no buildTypes block in app/build.gradle");
   out = insertIntoBlock(out, /^[ \t]*release[ \t]*\{/m, debuggableLine, E2E_PRESENT_EXPRESSION, /^[ \t]*debuggable\b/m, buildTypes[0], buildTypes[1]);
+  out = withDependenciesInfoOptOut(out);
   if (!out.includes(E2E_BUNDLE_INPUTS_MARKER)) {
     out = out.replace(/\s+$/, "") + "\n\n" + E2E_BUNDLE_INPUTS_BLOCK;
   }

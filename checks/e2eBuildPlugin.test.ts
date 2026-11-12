@@ -91,6 +91,16 @@ android {
 }
 `;
 
+/** Index just past the brace that closes the block opened at or after `start`. */
+function braceEnd(text: string, start: number): number {
+  let depth = 0;
+  for (let i = text.indexOf("{", start); i < text.length; i++) {
+    if (text[i] === "{") depth++;
+    else if (text[i] === "}" && --depth === 0) return i + 1;
+  }
+  throw new Error("unbalanced braces");
+}
+
 /** The lines of `a` that differ from `b` at the same index, paired with their index. */
 function changedLines(a: string, b: string): { index: number; from: string; to: string }[] {
   const aLines = a.split("\n");
@@ -118,7 +128,7 @@ test("prebuild: a manifest without the Updates flag fails loudly", () => {
 
 test("prebuild: app/build.gradle wires both settings to the -Pe2e property", () => {
   const out = withE2eBuildSettings(FIXTURE_GRADLE);
-  const expectedPlaceholderLine = `manifestPlaceholders = [${UPDATES_ENABLED_PLACEHOLDER}: ${E2E_PRESENT_EXPRESSION} ? '${updatesEnabledValue(true)}' : '${updatesEnabledValue(false)}']`;
+  const expectedPlaceholderLine = `manifestPlaceholders = [${UPDATES_ENABLED_PLACEHOLDER}: (${E2E_PRESENT_EXPRESSION} || findProperty('fdroid') != null) ? 'false' : 'true']`;
   const expectedDebuggableLine = `debuggable ${E2E_PRESENT_EXPRESSION}`;
   assert.ok(E2E_PRESENT_EXPRESSION.includes(`'${E2E_PROPERTY}'`), "the Gradle expression reads the e2e property");
   assert.ok(out.includes(expectedPlaceholderLine), "defaultConfig must set the placeholder from the e2e property");
@@ -137,7 +147,13 @@ test("prebuild: app/build.gradle wires both settings to the -Pe2e property", () 
   }
   assert.equal(consumed, fixtureLines.length, "every original line remains, in order: the transform only inserts");
   const inserted = outLines.filter((line) => !fixtureLines.includes(line));
-  assert.deepEqual(inserted.map((line) => line.trim()), [expectedPlaceholderLine, expectedDebuggableLine]);
+  assert.deepEqual(inserted.map((line) => line.trim()), [
+    "dependenciesInfo {",
+    "includeInApk = false",
+    "includeInBundle = false",
+    expectedPlaceholderLine,
+    expectedDebuggableLine,
+  ]);
   assert.equal(withE2eBuildSettings(out), out, "the transform is idempotent");
 });
 
@@ -170,9 +186,62 @@ test("prebuild: with a signingConfigs.release before buildTypes, debuggable stil
   assert.ok(buildTypesRegion.includes(expectedDebuggableLine), "the release build type must read debuggable from the e2e property");
   const releaseInBuildTypes = buildTypesRegion.slice(buildTypesRegion.search(/^[ \t]*release[ \t]*\{/m));
   assert.ok(releaseInBuildTypes.includes(expectedDebuggableLine), "the line sits inside buildTypes.release");
-  assert.ok(out.includes(`manifestPlaceholders = [${UPDATES_ENABLED_PLACEHOLDER}: ${E2E_PRESENT_EXPRESSION} ? '${updatesEnabledValue(true)}' : '${updatesEnabledValue(false)}']`),
-    "defaultConfig still gets the placeholder line");
+  assert.ok(out.includes(FDROID_GRADLE_PLACEHOLDER), "defaultConfig still gets the placeholder line");
   assert.equal(withE2eBuildSettings(out), out, "the transform is idempotent");
+});
+
+const FDROID_GRADLE_PLACEHOLDER = "manifestPlaceholders = [expoUpdatesEnabled: (findProperty('e2e') != null || findProperty('fdroid') != null) ? 'false' : 'true']";
+
+test("prebuild: the defaultConfig placeholder turns Updates off for either the e2e or the fdroid property", () => {
+  const out = withE2eBuildSettings(FIXTURE_GRADLE);
+  assert.ok(out.includes(FDROID_GRADLE_PLACEHOLDER), "the placeholder expression is parenthesized over both properties");
+  assert.equal(out.split("manifestPlaceholders").length - 1, 1, "the placeholder line appears once");
+});
+
+test("prebuild: the fdroid property does not make the release build debuggable", () => {
+  const out = withE2eBuildSettings(FIXTURE_GRADLE);
+  assert.ok(out.includes("debuggable findProperty('e2e') != null"), "debuggable still reads only the e2e property");
+  assert.ok(!out.includes("debuggable findProperty('fdroid')"), "no debuggable line reads the fdroid property");
+  assert.equal(releaseDebuggable(false), false);
+});
+
+for (const [e2e, fdroid, expected] of [
+  [false, false, "true"],
+  [true, false, "false"],
+  [false, true, "false"],
+  [true, true, "false"],
+] as const) {
+  test(`build with e2e=${e2e} fdroid=${fdroid}: the Updates meta-data resolves to ${expected}`, () => {
+    const manifest = resolveUpdatesEnabledPlaceholder(withUpdatesEnabledPlaceholder(FIXTURE_MANIFEST), e2e, fdroid);
+    assert.ok(
+      manifest.includes(`<meta-data android:name="${UPDATES_ENABLED_META_NAME}" android:value="${expected}"/>`),
+      `the Updates flag resolves to ${expected}`,
+    );
+    assert.equal(updatesEnabledValue(e2e, fdroid), expected);
+  });
+}
+
+test("prebuild: dependenciesInfo opts out of the APK and bundle dependency metadata, once, inside android", () => {
+  const out = withE2eBuildSettings(FIXTURE_GRADLE);
+  const block = [
+    "dependenciesInfo {",
+    "        includeInApk = false",
+    "        includeInBundle = false",
+    "    }",
+  ].join("\n");
+  assert.equal(out.split("dependenciesInfo {").length - 1, 1, "the block appears exactly once");
+  assert.ok(out.includes(block), "the block carries both opt-outs at the Groovy indentation");
+  const androidStart = out.search(/^android[ \t]*\{/m);
+  const androidEnd = braceEnd(out, androidStart);
+  const at = out.indexOf("dependenciesInfo {");
+  assert.ok(at > androidStart && at < androidEnd, "the block sits inside the top-level android block");
+  assert.equal(withE2eBuildSettings(out), out, "re-prebuild leaves the file unchanged");
+  assert.equal(withE2eBuildSettings(withE2eBuildSettings(FIXTURE_GRADLE)).split("dependenciesInfo {").length - 1, 1, "two applications insert it once");
+});
+
+test("prebuild: a build.gradle without a top-level android block fails loudly", () => {
+  const noAndroid = FIXTURE_GRADLE.replace(/^android \{/m, "allprojects {");
+  assert.throws(() => withE2eBuildSettings(noAndroid), /android/);
 });
 
 test("build with -Pe2e: Expo Updates is off and the release build is debuggable", () => {
@@ -202,8 +271,5 @@ test("oracle: the runner passes -Pe2e and the generated Gradle carries the liter
   assert.ok(gradleArgs().includes(`-P${E2E_PROPERTY}`), "gradleArgs uses the transforms module's property name");
   const out = withE2eBuildSettings(FIXTURE_GRADLE);
   assert.ok(out.includes("debuggable findProperty('e2e') != null"), "literal: the release build type's debuggable expression");
-  assert.ok(
-    out.includes("manifestPlaceholders = [expoUpdatesEnabled: findProperty('e2e') != null ? 'false' : 'true']"),
-    "literal: the defaultConfig placeholder expression",
-  );
+  assert.ok(out.includes(FDROID_GRADLE_PLACEHOLDER), "literal: the defaultConfig placeholder expression");
 });
