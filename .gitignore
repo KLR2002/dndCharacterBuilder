@@ -44,3 +44,6 @@ example
 # generated native folders
 /ios
 /android
+
+# fdroiddata fork (F-Droid submission), its own git repo
+/data-cb/
