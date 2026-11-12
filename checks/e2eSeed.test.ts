@@ -6,7 +6,7 @@ import { E2E_SEED_FILE_NAME, __setE2eSeedFsForTests, importE2eSeed, parseE2eSeed
 import { runE2eSeedHook } from "../src/services/e2eSeedHook.ts";
 import { makeChar, defaultSettings } from "./testUtils.ts";
 
-const SEED_DIR = "file:///data/user/0/com.anonymous.dnd5e2014CharacterBuilder/files/";
+const SEED_DIR = "file:///data/user/0/io.github.klr2002.cb5e/files/";
 const SEED_URI = `${SEED_DIR}${E2E_SEED_FILE_NAME}`;
 const CHARACTERS_KEY = "@dnd5e_characters";
 const FOLDERS_KEY = "@dnd5e_folders";

@@ -1,0 +1,3 @@
+- First F-Droid release
+- New app id: install it as a new app if you have an older APK from GitHub
+- License changed to GPL-3.0-or-later

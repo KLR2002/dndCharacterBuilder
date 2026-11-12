@@ -1,0 +1,15 @@
+<p>A character builder and character sheet for <b>Dungeons &amp; Dragons 5th Edition (2014 rules)</b>. Your characters are stored only on your device.</p>
+
+<p><b>Features</b></p>
+<ul>
+<li>Build a character step by step: race, class, background, ability scores, skills and starting equipment.</li>
+<li>Character sheet with Builder, Stats, Actions, Spells, Features, Inventory and Journal tabs.</li>
+<li>Calculates armor class, attacks, proficiencies, spell slots and level-up progression.</li>
+<li>Comes with the SRD rules and works offline.</li>
+</ul>
+
+<p><b>Network use</b></p>
+<p>The app works without an internet connection. You can choose to sync a larger catalog in the app. The sync downloads game data from a third-party GitHub repository and needs an internet connection.</p>
+
+<p><b>Disclaimer</b></p>
+<p>Dungeons &amp; Dragons, D&amp;D and all related names, rules and content are the property of Wizards of the Coast LLC. This is an unofficial, fan-made project. It is not affiliated with, endorsed by or sponsored by Wizards of the Coast. The app does not include content beyond the SRD. Any other content comes from third-party data that you choose to sync.</p>
