@@ -80,3 +80,9 @@ Unofficial fan project, not affiliated with Wizards of the Coast. Game content b
 ## Credits
 
 This project would not have been possible without [5eTools](https://2014.5e.tools/).
+
+The app icon is [Dice twenty faces twenty](https://game-icons.net/1x1/delapouite/dice-twenty-faces-twenty.html) by Delapouite, from [game-icons.net](https://game-icons.net/), licensed under [CC BY 3.0](https://creativecommons.org/licenses/by/3.0/).
+
+## License
+
+This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version. See [LICENSE](LICENSE).
