@@ -54,6 +54,8 @@
     "layout:check": "node --experimental-strip-types scripts/layout-check.mjs",
     "layout:android": "node --experimental-strip-types scripts/layout-android.mjs",
     "catalog:live": "node --experimental-strip-types scripts/build-live-catalog.mjs",
+    "perf:rules": "node --experimental-strip-types scripts/perf-rules.mjs",
+    "perf:rules:interp": "node --experimental-strip-types --no-opt --no-sparkplug --no-maglev scripts/perf-rules.mjs",
     "check:live": "npm run catalog:live && LIVE_CATALOG_CHECK=1 node --experimental-strip-types --test checks/liveCatalog.test.ts",
     "test": "node --experimental-strip-types --test checks/ && npm --prefix dnd5eToolsScrap test",
     "check:all": "npm run lint && npm run typecheck && npm run typecheck:checks && npm test",

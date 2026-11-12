@@ -83,6 +83,16 @@ function admitter(activeBooks: readonly string[], fromBaseline: boolean): (sourc
   return (source) => books.has(source) || (fromBaseline && source === SRD_SOURCE);
 }
 
+// Computes the list on first call. Later calls return the same array, frozen at runtime, so a
+// caller that mutates a listing throws; copy it first. The type stays mutable so callers need no change.
+function once<T>(compute: () => T[]): () => T[] {
+  let value: T[] | undefined;
+  return () => {
+    value ??= Object.freeze(compute()) as T[];
+    return value;
+  };
+}
+
 function findIn<T extends { name: string; source: string }>(records: T[], name: string, source?: string): T | undefined {
   return records.find((r) => r.name === name && (!source || r.source === source));
 }
@@ -128,28 +138,43 @@ export function createCompendium(
     const admitOrigin = admitter(activeBooks, originRules.fromBaseline);
     return {
       ...unscoped,
-      races: () =>
+      races: once(() =>
         races.records
           .filter((r) => admitRace(r.source))
           .map((r) => ({ ...r, subraces: (r.subraces || []).filter((sr) => admitRace(sr.source)) })),
-      classes: () =>
+      ),
+      classes: once(() =>
         classes.records
           .filter((c) => admitClass(c.source))
           .map((c) => ({ ...c, subclasses: (c.subclasses || []).filter((sc) => admitClass(sc.source)) })),
-      feats: () => feats.records.filter((f) => admitFeat(f.source)),
-      backgrounds: () => backgrounds.records.filter((b) => admitBackground(b.source)),
-      items: () => items.records.filter((i) => !i.source || admitItem(i.source)),
-      spells: () => spells.records.filter((s) => admitSpell(s.source)),
-      beasts: () => beasts.records.filter((b) => admitBeast(b.source)),
-      optionsAndFeatures: () => optionsAndFeatures.records.filter((o) => admitOption(o.source)),
-      originRules: () => originRules.records.filter((o) => admitOrigin(o.source)),
+      ),
+      feats: once(() => feats.records.filter((f) => admitFeat(f.source))),
+      backgrounds: once(() => backgrounds.records.filter((b) => admitBackground(b.source))),
+      items: once(() => items.records.filter((i) => !i.source || admitItem(i.source))),
+      spells: once(() => spells.records.filter((s) => admitSpell(s.source))),
+      beasts: once(() => beasts.records.filter((b) => admitBeast(b.source))),
+      optionsAndFeatures: once(() => optionsAndFeatures.records.filter((o) => admitOption(o.source))),
+      originRules: once(() => originRules.records.filter((o) => admitOrigin(o.source))),
     };
+  }
+
+  // One listings object per book list (books in order), so each scoped array is computed once.
+  // The cache lives in this closure: a new Compendium starts empty.
+  const scopedByBooks = new Map<string, CompendiumListings>();
+  function scopedFor(activeBooks: readonly string[]): CompendiumListings {
+    const key = activeBooks.join("|");
+    let listings = scopedByBooks.get(key);
+    if (!listings) {
+      listings = scoped(activeBooks);
+      scopedByBooks.set(key, listings);
+    }
+    return listings;
   }
 
   return {
     integrated,
     stale: isCatalogStale(bundle),
-    for: (activeBooks) => (!activeBooks || !integrated ? unscoped : scoped(activeBooks)),
+    for: (activeBooks) => (!activeBooks || !integrated ? unscoped : scopedFor(activeBooks)),
     findRace: (held, activeBooks) => findHeldRace(races.records, held, activeBooks).race,
     findClass: (name, source) => findIn(classes.records, name, source),
     findSpell: (name, source) => findIn(spells.records, name, source),

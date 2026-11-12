@@ -54,6 +54,21 @@ export const POINT_BUY_COST: Record<number, number> = {
 
 export const STANDARD_ARRAY = [15, 14, 13, 12, 10, 8];
 
+/** The base score an ability nothing has set holds: the Point Buy floor, so a new character has all 27 points left. */
+export const UNSET_ABILITY_SCORE = 8;
+
+/** The six base scores before any has been set. */
+export function unsetAbilityScores(): Record<AbilityKey, number> {
+  return {
+    str: UNSET_ABILITY_SCORE,
+    dex: UNSET_ABILITY_SCORE,
+    con: UNSET_ABILITY_SCORE,
+    int: UNSET_ABILITY_SCORE,
+    wis: UNSET_ABILITY_SCORE,
+    cha: UNSET_ABILITY_SCORE,
+  };
+}
+
 /** The highest an ability score may be raised to by an ability score increase or swap. */
 export const ABILITY_SCORE_CAP = 20;
 
