@@ -1384,6 +1384,19 @@ async function checkDiceTrayAndLog(ctx, width, meta) {
   await page.getByLabel("Modifier increase", { exact: true }).click();
   if ((await fieldValue()) !== "2d6+1") fail(`the modifier stepper reads "${await fieldValue()}" after one increase, expected "2d6+1"`);
 
+  // A long expression: the Roll button's title shows at most 28 characters of it and an ellipsis, so the footer stays short.
+  await expression.fill(Array.from({ length: 40 }, () => "d6").join("+"));
+  const longRoll = await page.evaluate(() => {
+    const el = [...document.querySelectorAll("*")].find((e) => e.children.length === 0 && e.textContent.startsWith("Roll d6+d6"));
+    const target = el?.closest("[tabindex]");
+    return target ? { label: el.textContent, height: target.getBoundingClientRect().height } : null;
+  });
+  if (!longRoll) fail("no Roll button for the 40-die expression");
+  else {
+    if (longRoll.label.length > "Roll ".length + 28 + 1) fail(`the Roll button title is ${longRoll.label.length} characters for a long expression, expected at most 34`);
+    if (longRoll.height >= 120) fail(`the Roll button for a long expression is ${Math.round(longRoll.height)}px tall, expected under 120px`);
+  }
+
   // Two Rolls from one expression: two result blocks, each headed by its own text, and each a d20 test.
   await expression.fill("d20,d20");
   await setFaces([20, 7]);
@@ -1410,6 +1423,19 @@ async function checkDiceTrayAndLog(ctx, width, meta) {
   if (JSON.stringify(advSources) !== JSON.stringify(["a(d20,d20)+3"])) fail(`the advantage card is headed ${JSON.stringify(advSources)}, expected ["a(d20,d20)+3"]`);
   const advMarkers = await cardMarkers();
   if (JSON.stringify(advMarkers) !== JSON.stringify(["Natural 20"])) fail(`the advantage roll shows ${JSON.stringify(advMarkers)}, expected ["Natural 20"]`);
+  await setFaces(null);
+
+  // A subtracted die shows a minus sign before its face: d20-d4 has a chip "−3d4" and no other minus.
+  await reopenTray();
+  await expression.fill("d20-d4");
+  await setFaces([15, 3]);
+  await page.getByText("Roll d20-d4", { exact: true }).first().click();
+  await page.waitForSelector(cardSel, { state: "visible", timeout: 10000 }).catch(() => fail("no result card after the d20-d4 roll"));
+  const subtractedChips = await page.evaluate(() =>
+    [...document.querySelectorAll('[data-testid="result-card"] [data-testid="die-chip"]')].map((chip) => chip.textContent ?? ""),
+  );
+  const minusChips = subtractedChips.filter((text) => text.includes("−"));
+  if (minusChips.length !== 1 || !minusChips[0].includes("d4")) fail(`the d20-d4 chips are ${JSON.stringify(subtractedChips)}, expected one minus sign on the d4 chip`);
   await setFaces(null);
 
   // Seed a "Kara · Longsword attack" Roll through the publishing seam (no screen triggers it yet): the
@@ -1478,7 +1504,7 @@ async function checkDiceTrayAndLog(ctx, width, meta) {
     const headings = await page.evaluate(() => [...document.querySelectorAll('[data-testid="log-entry-heading"]')].map((el) => el.textContent));
     // Newest first, one entry per Roll (a batch in expression order), each headed by its own text.
     // The 100d20 roll above happens only at the narrowest width of the run.
-    const expectedHeadings = ["Kara · Longsword attack", "a(d20,d20)+3", "d20", "d20", "2d6+3+d8", ...(width === SINGLE_RUN_WIDTH ? ["100d20"] : [])];
+    const expectedHeadings = ["Kara · Longsword attack", "d20-d4", "a(d20,d20)+3", "d20", "d20", "2d6+3+d8", ...(width === SINGLE_RUN_WIDTH ? ["100d20"] : [])];
     if (JSON.stringify(headings) !== JSON.stringify(expectedHeadings))
       fail(`the Roll Log is not newest first, one entry per Roll: ${JSON.stringify(headings)}, expected ${JSON.stringify(expectedHeadings)}`);
     await maybeShot(page, shot("log"), meta);

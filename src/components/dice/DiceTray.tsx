@@ -40,7 +40,9 @@ export function DiceTray() {
   const text = expression.trim();
   const d20Mode = expressionD20Mode(text);
   const modifier = expressionModifier(text);
-  const rollLabel = text ? `Roll ${text}` : "Roll";
+  // A long expression is cut in the button's title only; the field keeps the full text.
+  const titleText = text.length > 28 ? `${text.slice(0, 28)}…` : text;
+  const rollLabel = text ? `Roll ${titleText}` : "Roll";
 
   const rollExpression = () => {
     if (!parsed.ok) return;

@@ -15,8 +15,20 @@ export function batchAccentId(entry: Pick<RollLogEntry, "batchSize" | "batchInde
   return entry.batchSize > 1 ? rollAccentId(selectedAccentId, entry.batchIndex) : undefined;
 }
 
-/** One die's face as a small chip; a dropped die is struck through and muted. */
-export function DieFaceChip({ sides, face, dropped, accentId }: { sides: number; face: number; dropped?: boolean; accentId?: string }) {
+/** One die's face as a small chip; a dropped die is struck through and muted, a subtracted die shows a minus sign. */
+export function DieFaceChip({
+  sides,
+  face,
+  dropped,
+  subtracted,
+  accentId,
+}: {
+  sides: number;
+  face: number;
+  dropped?: boolean;
+  subtracted?: boolean;
+  accentId?: string;
+}) {
   const { theme } = useAppTheme();
   const palette = accentId ? ACCENT_PALETTES[accentId] : undefined;
   return (
@@ -37,7 +49,7 @@ export function DieFaceChip({ sides, face, dropped, accentId }: { sides: number;
             textDecorationLine: dropped ? "line-through" : "none",
           },
         ]}>
-        {face}
+        {subtracted ? `−${face}` : face}
       </Text>
       <Text style={[styles.dieSides, { color: theme.textMuted }]}>d{sides}</Text>
     </View>
@@ -61,7 +73,7 @@ export function RollResultView({ entry, accentId }: { entry: RollLogEntry; accen
       </Text>
       <View style={styles.facesRow}>
         {roll.dice.map((die, index) => (
-          <DieFaceChip key={index} sides={die.sides} face={die.face} dropped={die.dropped} accentId={accentId} />
+          <DieFaceChip key={index} sides={die.sides} face={die.face} dropped={die.dropped} subtracted={die.subtracted} accentId={accentId} />
         ))}
         {roll.modifier !== 0 ? (
           <Text testID="result-modifier" style={[styles.modifierText, { color: theme.textSecondary }]}>
@@ -100,7 +112,7 @@ export function RollLogRow({ entry, accentId }: { entry: RollLogEntry; accentId?
       </View>
       <View style={styles.logFaces}>
         {entry.roll.dice.map((die, index) => (
-          <DieFaceChip key={index} sides={die.sides} face={die.face} dropped={die.dropped} />
+          <DieFaceChip key={index} sides={die.sides} face={die.face} dropped={die.dropped} subtracted={die.subtracted} />
         ))}
         {entry.roll.modifier !== 0 ? (
           <Text style={[styles.logMod, { color: theme.textSecondary }]}>{formatModifier(entry.roll.modifier)}</Text>
