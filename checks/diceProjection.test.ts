@@ -28,14 +28,10 @@ function seeded(seed: number): () => number {
   };
 }
 
-function matrixParts(transform: string): number[] {
-  const match = /^matrix\(([^)]+)\)$/.exec(transform);
-  assert.ok(match, `not a matrix transform: ${transform}`);
-  return match[1].trim().split(/\s+/).map(Number);
-}
-
-function assertNoShearAndUniformScale(transform: string) {
-  const [a, b, c, d] = matrixParts(transform);
+function assertNoShearAndUniformScale(transform: readonly number[]) {
+  assert.equal(transform.length, 6, `not six matrix numbers: ${JSON.stringify(transform)}`);
+  assert.ok(transform.every((value) => typeof value === "number" && Number.isFinite(value)), `not numbers: ${JSON.stringify(transform)}`);
+  const [a, b, c, d] = transform;
   assert.ok(Math.abs(a * c + b * d) < 1e-3 * Math.hypot(a, b) * Math.hypot(c, d), `sheared: ${transform}`);
   assert.ok(Math.hypot(a, b) > 0, `collapsed: ${transform}`);
   assert.ok(Math.abs(Math.hypot(a, b) - Math.hypot(c, d)) < 1e-3, `non-uniform scale: ${transform}`);
@@ -117,7 +113,7 @@ test("a dropped die changes only its colours", () => {
       face.labels.forEach((label, k) => {
         const twin = other.labels[k];
         assert.equal(twin.kind, label.kind, `${name} label ${k} kind`);
-        assert.equal(twin.transform, label.transform, `${name} label ${k} transform`);
+        assert.deepEqual(twin.transform, label.transform, `${name} label ${k} transform`);
         if (label.kind === "text" && twin.kind === "text") assert.equal(twin.text, label.text);
         if (label.kind === "pips" && twin.kind === "pips") assert.deepEqual(twin.pips, label.pips);
       });

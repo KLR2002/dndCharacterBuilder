@@ -10,9 +10,16 @@ export type ProjectionStyle = { base: Rgb; ink: Rgb; dropped: boolean };
 
 export type PipMark = { cx: number; cy: number; r: number };
 
+/**
+ * A label's 2D affine matrix as the six numbers [a, b, c, d, e, f] of SVG `matrix(a b c d e f)`. It is a
+ * number array, not a transform string: Reanimated re-parses a string `transform` of an animated prop on
+ * native and only accepts comma-separated values, while react-native-svg takes the six numbers as they are.
+ */
+export type LabelMatrix = [number, number, number, number, number, number];
+
 export type ProjectedLabel =
-  | { kind: "text"; text: string; fontSize: number; transform: string; fill: string }
-  | { kind: "pips"; transform: string; fill: string; pips: PipMark[] };
+  | { kind: "text"; text: string; fontSize: number; transform: LabelMatrix; fill: string }
+  | { kind: "pips"; transform: LabelMatrix; fill: string; pips: PipMark[] };
 
 export type ProjectedFace = {
   visible: boolean;
@@ -45,11 +52,6 @@ export function pipMarks(value: number, halfSize: number): PipMark[] {
   const gap = halfSize * 0.5 * 100;
   const radius = halfSize * 0.17 * 100;
   return (cells[value] ?? []).map(([a, b]) => ({ cx: a * gap, cy: b * gap, r: radius }));
-}
-
-function fixed(n: number): string {
-  'worklet';
-  return n.toFixed(4);
 }
 
 function rgbString(c: Rgb): string {
@@ -90,7 +92,7 @@ export function projectDie(geo: DieGeometry, quaternion: Quat, size: number, sty
       const b = -right[1] * labelScale * size;
       const c = -up[0] * labelScale * size;
       const d = up[1] * labelScale * size;
-      const transform = `matrix(${fixed(a)} ${fixed(b)} ${fixed(c)} ${fixed(d)} ${fixed(origin[0] * size)} ${fixed(-origin[1] * size)})`;
+      const transform: LabelMatrix = [a, b, c, d, origin[0] * size, -origin[1] * size];
       const ink = rgbaString(style.ink, alpha);
       if (label.kind === "pips") {
         return { kind: "pips", transform, fill: ink, pips: pipMarks(label.value, label.size) };
