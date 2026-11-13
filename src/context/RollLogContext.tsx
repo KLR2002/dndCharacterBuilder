@@ -25,13 +25,18 @@ export type TraySegment = "dice" | "log";
 interface RollLogContextValue {
   /** The session Roll Log, newest first. Empty after a restart; never stored with a Character. */
   entries: RollLogEntry[];
-  /** The entry whose result card is showing above the floating dice button, or null. */
-  latest: RollLogEntry | null;
+  /** The batch whose result card is showing above the floating dice button, or null. */
+  latest: RollLogEntry[] | null;
   /**
    * The one publishing seam for Rolls: adds the entry to the Roll Log (newest first) and shows it as
    * the result card. Returns the entry it added.
    */
   publishRoll: (input: PublishRollInput) => RollLogEntry;
+  /**
+   * Publishes several Rolls as one batch: the entries are added to the log in the order given, as one
+   * group nearest the top, and shown together as the result card. Returns the entries in that order.
+   */
+  publishRolls: (inputs: PublishRollInput[]) => RollLogEntry[];
   /** Hides the result card without touching the log. */
   dismissResult: () => void;
   trayVisible: boolean;
@@ -51,19 +56,26 @@ const RollLogContext = createContext<RollLogContextValue | null>(null);
 /** The session Roll Log and the dice tray state, mounted once at the root layout. React state only. */
 export function RollLogProvider({ children }: { children: React.ReactNode }) {
   const [entries, setEntries] = useState<RollLogEntry[]>([]);
-  const [latest, setLatest] = useState<RollLogEntry | null>(null);
+  const [latest, setLatest] = useState<RollLogEntry[] | null>(null);
   const [trayVisible, setTrayVisible] = useState(false);
   const [traySegment, setTraySegment] = useState<TraySegment>("dice");
   const [bottomObstruction, setBottomObstruction] = useState(0);
   const nextId = useRef(1);
 
-  const publishRoll = useCallback((input: PublishRollInput): RollLogEntry => {
-    const entry = makeRollLogEntry(input, nextId.current, Date.now());
-    nextId.current += 1;
-    setEntries((prev) => [entry, ...prev]);
-    setLatest(entry);
-    return entry;
+  const publishRolls = useCallback((inputs: PublishRollInput[]): RollLogEntry[] => {
+    if (inputs.length === 0) return [];
+    const time = Date.now();
+    const batchId = nextId.current;
+    const batch = inputs.map((input, index) =>
+      makeRollLogEntry(input, batchId + index, time, { batchId, batchIndex: index, batchSize: inputs.length }),
+    );
+    nextId.current += inputs.length;
+    setEntries((prev) => [...batch, ...prev]);
+    setLatest(batch);
+    return batch;
   }, []);
+
+  const publishRoll = useCallback((input: PublishRollInput): RollLogEntry => publishRolls([input])[0], [publishRolls]);
 
   const dismissResult = useCallback(() => setLatest(null), []);
   const openTray = useCallback((segment: TraySegment = "dice") => {
@@ -80,9 +92,11 @@ export function RollLogProvider({ children }: { children: React.ReactNode }) {
     if (Platform.OS !== "web" || process.env.EXPO_PUBLIC_E2E !== "1") return;
     const scope = window as unknown as {
       __publishRoll?: (input: PublishRollInput) => RollLogEntry;
+      __publishRolls?: (inputs: PublishRollInput[]) => RollLogEntry[];
       __setRandomSource?: (faces: number[] | null) => void;
     };
     scope.__publishRoll = publishRoll;
+    scope.__publishRolls = publishRolls;
     scope.__setRandomSource = (faces) => {
       if (faces === null) {
         __setRandomSourceForTests(null);
@@ -93,16 +107,18 @@ export function RollLogProvider({ children }: { children: React.ReactNode }) {
     };
     return () => {
       delete scope.__publishRoll;
+      delete scope.__publishRolls;
       delete scope.__setRandomSource;
       __setRandomSourceForTests(null);
     };
-  }, [publishRoll]);
+  }, [publishRoll, publishRolls]);
 
   const value = useMemo<RollLogContextValue>(
     () => ({
       entries,
       latest,
       publishRoll,
+      publishRolls,
       dismissResult,
       trayVisible,
       traySegment,
@@ -112,7 +128,7 @@ export function RollLogProvider({ children }: { children: React.ReactNode }) {
       bottomObstruction,
       setBottomObstruction,
     }),
-    [entries, latest, publishRoll, dismissResult, trayVisible, traySegment, openTray, closeTray, selectTraySegment, bottomObstruction],
+    [entries, latest, publishRoll, publishRolls, dismissResult, trayVisible, traySegment, openTray, closeTray, selectTraySegment, bottomObstruction],
   );
 
   return <RollLogContext.Provider value={value}>{children}</RollLogContext.Provider>;

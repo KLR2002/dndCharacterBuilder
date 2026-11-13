@@ -1,16 +1,20 @@
 import { Ionicons } from "@expo/vector-icons";
 import React, { useEffect } from "react";
-import { AccessibilityInfo, Platform, Pressable, StyleSheet, Text, View } from "react-native";
+import { AccessibilityInfo, Platform, Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from "react-native";
+import { ACCENT_PALETTES } from "../../constants/theme";
 import { useAppTheme } from "../../context/ThemeContext";
 import { useRollLog } from "../../context/RollLogContext";
 import { useResponsiveLayout } from "../../hooks/useResponsiveLayout";
 import { entryHeading, type RollLogEntry } from "../../rules/rollLog.ts";
 import { Button } from "../ui/Button";
 import { DiceTray } from "./DiceTray";
-import { RollResultView } from "./rollViews";
+import { batchAccentId, RollResultView } from "./rollViews";
 
 /** How long the result card stays before it disappears on its own. */
 const RESULT_CARD_TIMEOUT_MS = 8000;
+
+/** The result card's share of the window height; a batch taller than this scrolls inside the card. */
+const RESULT_CARD_MAX_HEIGHT_RATIO = 0.6;
 
 /** The floating dice button's diameter in dp. */
 export const DICE_BUTTON_SIZE = 56;
@@ -46,27 +50,29 @@ function FloatingDiceButton({ bottom, onPress }: { bottom: number; onPress: () =
 
 /**
  * The result card, just above the floating button: full width minus the 16px gutters on phones, at
- * most 360px at the bottom-right at wide widths. Tapping the card opens the tray on the Log segment;
- * the follow-up action is its own button, separate from the card's press target. It disappears when
- * dismissed, when replaced by a newer Roll, or after about 8 seconds — never while it still offers a
- * follow-up. The card itself is never a live region: it mounts fresh on every Roll, and a region that
- * appears already populated is not announced reliably, so each platform announces through exactly
- * one other mechanism (see DiceOverlay).
+ * most 360px at the bottom-right at wide widths. It stacks one block per Roll of the batch, each with
+ * its own total and its own follow-up action; a batch of two or more tints each block with its accent.
+ * Tapping a block opens the tray on the Log segment. The card scrolls inside a maximum height. It
+ * disappears when dismissed, when replaced by a newer batch, or after about 8 seconds — never while a
+ * block still offers a follow-up. The card itself is never a live region: it mounts fresh on every
+ * Roll, and a region that appears already populated is not announced reliably, so each platform
+ * announces through exactly one other mechanism (see DiceOverlay).
  */
 function ResultCard({
-  entry,
+  entries,
   bottom,
   fullWidth,
   onDismiss,
   onOpenLog,
 }: {
-  entry: RollLogEntry;
+  entries: RollLogEntry[];
   bottom: number;
   fullWidth: boolean;
   onDismiss: () => void;
   onOpenLog: () => void;
 }) {
-  const { theme } = useAppTheme();
+  const { theme, accentId } = useAppTheme();
+  const { height } = useWindowDimensions();
   return (
     <View
       testID="result-card"
@@ -80,27 +86,42 @@ function ResultCard({
           ...(fullWidth ? { left: 16 } : { maxWidth: 360 }),
         },
       ]}>
-      <Pressable
-        testID="result-card-body"
-        accessibilityRole="button"
-        accessibilityLabel={`${entryHeading(entry)}, total ${entry.roll.total}`}
-        accessibilityHint="Opens the Roll Log"
-        onPress={onOpenLog}
-        style={styles.cardBody}>
-        <RollResultView entry={entry} />
-      </Pressable>
-      {/* Sibling of the card body, not nested: press events bubble, and a nested button would also
-          fire the card's own press and open the tray over the result. */}
-      {entry.followUp ? (
-        <Button
-          title={entry.followUp.label}
-          variant="secondary"
-          size="md"
-          icon="dice-outline"
-          onPress={entry.followUp.onPress}
-          style={{ width: "100%", marginTop: 4 }}
-        />
-      ) : null}
+      <ScrollView
+        nestedScrollEnabled
+        style={{ maxHeight: height * RESULT_CARD_MAX_HEIGHT_RATIO - 30 }}
+        contentContainerStyle={styles.blocks}>
+        {entries.map((entry) => {
+          const blockAccent = batchAccentId(entry, accentId);
+          return (
+            <View
+              key={entry.id}
+              testID="result-block"
+              style={blockAccent ? [styles.block, { borderLeftWidth: 4, borderLeftColor: ACCENT_PALETTES[blockAccent].primary }] : undefined}>
+              <Pressable
+                testID="result-card-body"
+                accessibilityRole="button"
+                accessibilityLabel={`${entryHeading(entry)}, total ${entry.roll.total}`}
+                accessibilityHint="Opens the Roll Log"
+                onPress={onOpenLog}
+                style={styles.cardBody}>
+                <RollResultView entry={entry} accentId={blockAccent} />
+              </Pressable>
+              {/* Sibling of the block's press target, not nested: press events bubble, and a nested button
+                  would also fire the press and open the tray over the result. */}
+              {entry.followUp ? (
+                <Button
+                  title={entry.followUp.label}
+                  variant="secondary"
+                  size="md"
+                  icon="dice-outline"
+                  onPress={entry.followUp.onPress}
+                  style={{ width: "100%", marginTop: 4 }}
+                />
+              ) : null}
+            </View>
+          );
+        })}
+      </ScrollView>
       <Pressable
         accessibilityRole="button"
         accessibilityLabel="Dismiss result"
@@ -122,15 +143,18 @@ export function DiceOverlay() {
   const { insets, isPhone } = useResponsiveLayout();
   const { latest, dismissResult, openTray, bottomObstruction } = useRollLog();
 
-  // A newer Roll replaces the card and restarts its timeout; the timer never outlives the card, and a
-  // card that still offers a follow-up ("Roll damage") never auto-dismisses.
-  const latestId = latest?.id ?? null;
-  const hasFollowUp = latest?.followUp != null;
+  // A newer batch replaces the card and restarts its timeout; the timer never outlives the card, and a
+  // card that still offers a follow-up ("Roll damage") on any of its Rolls never auto-dismisses.
+  const latestBatchId = latest?.[0]?.batchId ?? null;
+  const hasFollowUp = latest?.some((entry) => entry.followUp != null) ?? false;
   useEffect(() => {
-    if (latestId === null || hasFollowUp) return;
+    if (latestBatchId === null || hasFollowUp) return;
     const timer = setTimeout(dismissResult, RESULT_CARD_TIMEOUT_MS);
     return () => clearTimeout(timer);
-  }, [latestId, hasFollowUp, dismissResult]);
+  }, [latestBatchId, hasFollowUp, dismissResult]);
+
+  // Every Roll of the batch, heading and total, in the order it was published.
+  const announcement = latest ? latest.map((entry) => `${entryHeading(entry)}, total ${entry.roll.total}`).join(". ") : "";
 
   // One announcement mechanism per platform, so a screen reader hears each result exactly once.
   // Android and iOS announce explicitly: the card mounts fresh on every Roll (after a dismissal or
@@ -140,8 +164,8 @@ export function DiceOverlay() {
   // populated region, which works after a dismissal too.
   useEffect(() => {
     if (latest === null || Platform.OS === "web") return;
-    AccessibilityInfo.announceForAccessibility(`${entryHeading(latest)}, total ${latest.roll.total}`);
-  }, [latest]);
+    AccessibilityInfo.announceForAccessibility(announcement);
+  }, [latest, announcement]);
 
   const buttonBottom = insets.bottom + 16 + bottomObstruction;
 
@@ -150,7 +174,7 @@ export function DiceOverlay() {
       <FloatingDiceButton bottom={buttonBottom} onPress={() => openTray("dice")} />
       {latest ? (
         <ResultCard
-          entry={latest}
+          entries={latest}
           bottom={buttonBottom + DICE_BUTTON_SIZE + 8}
           fullWidth={isPhone}
           onDismiss={dismissResult}
@@ -160,7 +184,7 @@ export function DiceOverlay() {
       {Platform.OS === "web" ? (
         <View accessibilityLiveRegion="polite" testID="dice-announce-region" style={styles.liveRegion}>
           <Text style={styles.liveRegionText}>
-            {latest === null ? "" : `${entryHeading(latest)}, total ${latest.roll.total}`}
+            {latest === null ? "" : announcement}
           </Text>
         </View>
       ) : null}
@@ -198,6 +222,12 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.45,
     shadowRadius: 12,
     elevation: 8,
+  },
+  blocks: {
+    gap: 12,
+  },
+  block: {
+    paddingLeft: 10,
   },
   cardBody: {
     gap: 4,

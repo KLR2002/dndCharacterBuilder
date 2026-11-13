@@ -9,6 +9,8 @@ export interface RollLogEntry {
   /** Absent for dice-tray rolls. */
   characterName?: string;
   source: string;
+  /** The Roll's own text (such as "a(d20,d20)+5") that replaces the source in the heading. */
+  label?: string;
   roll: Roll;
   d20Mode: D20Mode;
   critical: boolean;
@@ -16,6 +18,19 @@ export interface RollLogEntry {
   time: number;
   /** An optional follow-up shown as its own button on the result card ("Roll damage" after an attack). */
   followUp?: RollFollowUp;
+  /** The id shared by the Rolls published together; a single Roll is a batch of one. */
+  batchId: number;
+  /** This Roll's position in its batch, from 0. */
+  batchIndex: number;
+  /** How many Rolls the batch holds. */
+  batchSize: number;
+}
+
+/** Where a Roll sits in the batch it was published with. */
+export interface RollBatchPosition {
+  batchId: number;
+  batchIndex: number;
+  batchSize: number;
 }
 
 /** A follow-up action on the result card: a label and what it does. */
@@ -32,25 +47,38 @@ export interface RollLogEntryInput {
   d20Mode?: D20Mode;
   critical?: boolean;
   followUp?: RollFollowUp;
+  label?: string;
 }
 
-/** Builds one log entry. The caller assigns the id (ascending) and the time. */
-export function makeRollLogEntry(input: RollLogEntryInput, id: number, time: number): RollLogEntry {
+/**
+ * Builds one log entry. The caller assigns the id (ascending) and the time. `batch` defaults to a
+ * batch of one under the entry's own id.
+ */
+export function makeRollLogEntry(input: RollLogEntryInput, id: number, time: number, batch?: RollBatchPosition): RollLogEntry {
+  const position = batch ?? { batchId: id, batchIndex: 0, batchSize: 1 };
   return {
     id,
     characterName: input.characterName,
     source: input.source,
+    label: input.label,
     roll: input.roll,
     d20Mode: input.d20Mode ?? "none",
     critical: input.critical ?? false,
     time,
     followUp: input.followUp,
+    batchId: position.batchId,
+    batchIndex: position.batchIndex,
+    batchSize: position.batchSize,
   };
 }
 
-/** The entry's heading: "Kara · Longsword attack", or just the source ("Dice tray") without a character. */
-export function entryHeading(entry: Pick<RollLogEntry, "characterName" | "source">): string {
-  return entry.characterName ? `${entry.characterName} · ${entry.source}` : entry.source;
+/**
+ * The entry's heading: "Kara · Longsword attack", or just the source ("Dice tray") without a character.
+ * A label replaces the source, keeping the character prefix.
+ */
+export function entryHeading(entry: Pick<RollLogEntry, "characterName" | "source" | "label">): string {
+  const what = entry.label ?? entry.source;
+  return entry.characterName ? `${entry.characterName} · ${what}` : what;
 }
 
 export type RollMarker = "natural20" | "natural1" | "critical";

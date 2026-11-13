@@ -52,6 +52,7 @@ import { buildScreens, buildSeed, ACTIONS_ID, CHARACTER_ID, DRAFT_ID, DRUID_ID, 
 import { applyWideOverride } from "./lib/scenario-override.mjs";
 import { playStep, playSteps } from "./lib/web-steps.mjs";
 import { ACCENT_PALETTES, BASE_DARK_THEME } from "../src/constants/theme.ts";
+import { rollAccentId } from "../src/rules/rollColors.ts";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const BASE = process.env.BASE ?? "http://localhost:8099";
@@ -3382,6 +3383,159 @@ async function checkHomeLayout(ctx, width, meta) {
 }
 
 // The checks that open their own page rather than a SCREENS entry. Each is a scenario, so ONLY selects it by name.
+// A batch of Rolls published through the publishing seam (`__publishRolls`) at one width: the result card
+// stacks one block per Roll with its own total and no grand total, each block's left bar takes the accent
+// its position gets (the first in the selected accent, crimson by default), the card stays inside the
+// viewport, and past its maximum height it scrolls. The Roll Log lists the batch in order, newest batch
+// first, with a dot per Roll of a multi-Roll batch; a one-Roll publish shows no bar and no dot.
+async function checkDiceBatch(ctx, width, meta) {
+  const page = await ctx.newPage();
+  const prefix = `[${width}px dice batch]`;
+  let failures = 0;
+  let failedShotTaken = false;
+  const fail = (msg) => {
+    failures++;
+    console.log(`${prefix} ${msg}`);
+    if (!failedShotTaken) {
+      failedShotTaken = true;
+      shotFailed(page, meta, width);
+    }
+  };
+  const shot = (name) => join(SHOTS, `DiceBatch-${name}-${width}.png`);
+  const cardSel = '[data-testid="result-card"]';
+  const blockSel = '[data-testid="result-block"]';
+  const dialogSel = '[role="dialog"]';
+  const publish = (inputs) =>
+    page.evaluate((list) => {
+      const hook = window.__publishRolls;
+      if (typeof hook !== "function") return false;
+      hook(list);
+      return true;
+    }, inputs);
+  const waitForBlocks = (count) =>
+    page
+      .waitForFunction((n) => document.querySelectorAll('[data-testid="result-block"]').length === n, count, { timeout: 10000, polling: 100 })
+      .catch(() => fail(`the result card did not show ${count} Roll blocks`));
+  // The colour each Roll of a batch takes, at its position: the accent sequence of the selected accent.
+  const expectedBar = (index) => hexToRgbString(ACCENT_PALETTES[rollAccentId("crimson", index)].primary);
+
+  await gotoApp(page, `${BASE}/character/${CHARACTER_ID}`);
+
+  const batchOfThree = [
+    { roll: { dice: [{ sides: 20, face: 15, dropped: false }], modifier: 5, total: 20 }, source: "Dice tray", label: "d20+5" },
+    { roll: { dice: [{ sides: 6, face: 4, dropped: false }, { sides: 6, face: 2, dropped: false }], modifier: 0, total: 6 }, source: "Dice tray", label: "2d6" },
+    { roll: { dice: [{ sides: 8, face: 8, dropped: false }], modifier: -1, total: 7 }, source: "Dice tray", label: "d8-1" },
+  ];
+  if (!(await publish(batchOfThree))) fail("the test-only publishing hook (window.__publishRolls) is not exposed on a seeded web build");
+  await waitForBlocks(3);
+  await maybeShot(page, shot("three"), meta);
+
+  const three = await page.evaluate(
+    ({ blockSel, cardSel }) => {
+      const card = document.querySelector(cardSel);
+      if (!card) return null;
+      const blocks = [...document.querySelectorAll(blockSel)];
+      const r = card.getBoundingClientRect();
+      return {
+        totals: blocks.map((b) => b.querySelector('[data-testid="result-total"]')?.textContent ?? null),
+        totalsInCard: card.querySelectorAll('[data-testid="result-total"]').length,
+        bars: blocks.map((b) => getComputedStyle(b).borderLeftColor),
+        barWidths: blocks.map((b) => getComputedStyle(b).borderLeftWidth),
+        card: { top: r.top, bottom: r.bottom, left: r.left, right: r.right },
+        vw: window.innerWidth,
+        vh: window.innerHeight,
+      };
+    },
+    { blockSel, cardSel },
+  );
+  if (!three) fail("no result card to measure after the batch of three");
+  else {
+    if (JSON.stringify(three.totals) !== JSON.stringify(["20", "6", "7"]))
+      fail(`the three blocks show totals ${JSON.stringify(three.totals)}, expected ["20","6","7"]`);
+    if (three.totalsInCard !== 3) fail(`the card shows ${three.totalsInCard} totals for three Rolls: a grand total must not be shown`);
+    three.bars.forEach((bar, index) => {
+      if (bar !== expectedBar(index)) fail(`Roll ${index + 1} of the batch has bar ${bar}, expected ${expectedBar(index)}`);
+    });
+    if (new Set(three.bars).size !== 3) fail(`the three bars are not all different: ${JSON.stringify(three.bars)}`);
+    const { card, vw, vh } = three;
+    if (card.left < 0 || card.right > vw || card.top < 0 || card.bottom > vh)
+      fail(`the result card sticks out of the ${vw}x${vh} viewport: left ${Math.round(card.left)}, top ${Math.round(card.top)}, right ${Math.round(card.right)}, bottom ${Math.round(card.bottom)}`);
+  }
+
+  // A batch taller than the card's maximum height scrolls inside it and stays on screen.
+  const tall = Array.from({ length: 12 }, (_, i) => ({
+    roll: { dice: [{ sides: 20, face: i + 1, dropped: false }], modifier: 0, total: i + 1 },
+    source: "Dice tray",
+    label: `d20 #${i + 1}`,
+  }));
+  await publish(tall);
+  await waitForBlocks(12);
+  const scroll = await page.evaluate(
+    ({ cardSel, blockSel }) => {
+      const card = document.querySelector(cardSel);
+      const block = document.querySelector(blockSel);
+      if (!card || !block) return null;
+      let scroller = block.parentElement;
+      while (scroller && !["auto", "scroll"].includes(getComputedStyle(scroller).overflowY)) scroller = scroller.parentElement;
+      if (!scroller) return { scroller: false };
+      const overflowing = scroller.scrollHeight > scroller.clientHeight;
+      scroller.scrollTop = scroller.scrollHeight;
+      const r = card.getBoundingClientRect();
+      return {
+        scroller: true,
+        overflowing,
+        scrolled: scroller.scrollTop > 0,
+        cardHeight: r.height,
+        maxHeight: window.innerHeight * 0.6,
+        top: r.top,
+        bottom: r.bottom,
+        vh: window.innerHeight,
+      };
+    },
+    { cardSel, blockSel },
+  );
+  if (!scroll) fail("no result card to measure after the batch of twelve");
+  else if (!scroll.scroller) fail("the result card's Roll blocks are not in a scrolling container");
+  else {
+    if (!scroll.overflowing) fail("the batch of twelve does not overflow the result card: the scroll check proves nothing");
+    if (!scroll.scrolled) fail("the result card does not scroll its batch of twelve");
+    if (scroll.cardHeight > scroll.maxHeight + 1) fail(`the result card is ${Math.round(scroll.cardHeight)}px tall, over 60% of the ${scroll.vh}px window`);
+    if (scroll.top < 0 || scroll.bottom > scroll.vh) fail("the tall result card sticks out of the viewport");
+  }
+  await maybeShot(page, shot("twelve"), meta);
+
+  // A one-Roll publish shows one block with no bar.
+  const single = { roll: { dice: [{ sides: 20, face: 12, dropped: false }], modifier: 0, total: 12 }, source: "Dice tray", label: "d20 solo" };
+  await publish([single]);
+  await waitForBlocks(1);
+  const soloBar = await page.evaluate((blockSel) => getComputedStyle(document.querySelector(blockSel)).borderLeftWidth, blockSel);
+  if (soloBar !== "0px") fail(`a one-Roll batch shows a ${soloBar} left bar, expected none`);
+
+  // The Roll Log, newest batch first: the single, then the twelve, then the three; a dot per Roll of a
+  // multi-Roll batch, in that Roll's accent.
+  await page.click('[data-testid="result-card-body"]');
+  await page.waitForSelector(dialogSel, { state: "visible", timeout: 10000 }).catch(() => fail("tapping the result card did not open the tray"));
+  const log = await page.evaluate(() =>
+    [...document.querySelectorAll('[data-testid="log-entry-heading"]')].map((heading) => {
+      const dot = heading.parentElement?.querySelector('[data-testid="log-entry-dot"]');
+      return { heading: heading.textContent, dot: dot ? getComputedStyle(dot).backgroundColor : null };
+    }),
+  );
+  const expectedLog = [
+    { heading: "d20 solo", dot: null },
+    ...tall.map((_, i) => ({ heading: `d20 #${i + 1}`, dot: expectedBar(i) })),
+    ...batchOfThree.map((input, i) => ({ heading: input.label, dot: expectedBar(i) })),
+  ];
+  if (JSON.stringify(log) !== JSON.stringify(expectedLog))
+    fail(`the Roll Log is not the batches newest first with a dot per multi-Roll Roll: ${JSON.stringify(log)}`);
+  await maybeShot(page, shot("log"), meta);
+  await page.keyboard.press("Escape");
+  await page.waitForSelector(dialogSel, { state: "hidden", timeout: 10000 }).catch(() => fail("Escape did not close the tray"));
+
+  await closePage(page);
+  return failures;
+}
+
 const EXTRA_CHECKS = [
   { name: "HP modals", run: checkHitPointModals },
   { name: "Wild Shape Stats", run: checkWildShapeScreen },
@@ -3389,6 +3543,7 @@ const EXTRA_CHECKS = [
   { name: "Modal closing", run: checkModalClosing },
   { name: "New character draft folder", run: checkDraftFolder },
   { name: "Dice tray and Roll Log", run: checkDiceTrayAndLog, shot: true },
+  { name: "Dice batch", run: checkDiceBatch, shot: true },
   { name: "Level-Up Flow HP roll logged", run: checkLevelUpHpRollLogged },
   { name: "Level-Up Flow HP state", run: checkLevelUpHpState },
   { name: "Level-Up Flow HP per class", run: checkLevelUpHpPerClass },
