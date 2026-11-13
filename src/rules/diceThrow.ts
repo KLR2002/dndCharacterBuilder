@@ -1,6 +1,7 @@
 import {
   fraction,
   integrate,
+  nlerp,
   quatFromTo,
   quatMultiply,
   random as randomQuaternion,
@@ -64,6 +65,28 @@ export type ThrowSpec = {
 };
 
 export type ThrowResult = { value: number; frames: Float32Array; frameCount: number };
+
+/** One body's pose at a moment of a recorded throw: its centre in px and its orientation. */
+export type ThrowPose = { x: number; y: number; z: number; q: Quat };
+
+/**
+ * The pose of one body `seconds` into a recorded throw: the two frames around that time, blended
+ * linearly (the orientation normalised). Times before the first frame or after the last give that frame.
+ */
+export function sampleThrow(frames: ArrayLike<number>, frameCount: number, seconds: number): ThrowPose {
+  'worklet';
+  const last = frameCount - 1;
+  const f = Math.min(last, Math.max(0, seconds * THROW_FPS));
+  const i0 = Math.floor(f);
+  const i1 = Math.min(i0 + 1, last);
+  const t = f - i0;
+  const a = i0 * 7;
+  const b = i1 * 7;
+  const lerp = (j: number) => frames[a + j] + (frames[b + j] - frames[a + j]) * t;
+  const qa: Quat = [frames[a + 3], frames[a + 4], frames[a + 5], frames[a + 6]];
+  const qb: Quat = [frames[b + 3], frames[b + 4], frames[b + 5], frames[b + 6]];
+  return { x: lerp(0), y: lerp(1), z: lerp(2), q: nlerp(qa, qb, t) };
+}
 
 type Body = {
   geo: DieGeometry;

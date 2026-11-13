@@ -2,7 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { rotateVector, type Vec3 } from "../src/rules/diceMath.ts";
 import { makeDie, type DieGeometry } from "../src/rules/diceSolids.ts";
-import { launchSpecs, simulateThrow, THROW_FPS, type ThrowResult } from "../src/rules/diceThrow.ts";
+import { launchSpecs, sampleThrow, simulateThrow, THROW_FPS, type ThrowResult } from "../src/rules/diceThrow.ts";
 
 const WORLD = { W: 390, H: 800 };
 const SIZE = 30;
@@ -25,6 +25,12 @@ function throwOf(dice: DieGeometry[], seed: number): ThrowResult[] {
   const random = mulberry32(seed);
   const specs = launchSpecs(dice, SIZE, WORLD, ORIGIN, random);
   return simulateThrow(specs, WORLD, random);
+}
+
+/** Equal within float32 rounding: a sampled quaternion is renormalised. */
+function assertClose(actual: number[], expected: number[]): void {
+  assert.equal(actual.length, expected.length);
+  actual.forEach((value, i) => assert.ok(Math.abs(value - expected[i]) < 1e-6, `${value} vs ${expected[i]}`));
 }
 
 function frameAt(result: ThrowResult, frame: number): number[] {
@@ -148,4 +154,31 @@ test("launched dice start near the origin and every velocity points up the scree
     assert.ok(Math.abs(spec.p[1] - ORIGIN[1]) <= 16, `y ${spec.p[1]}`);
     assert.ok(spec.v[1] < 0, `vy ${spec.v[1]}`);
   }
+});
+
+test("sampleThrow at 0 s and past the end gives the first and the last frame", () => {
+  const [result] = throwOf([makeDie(6)], 3);
+  const start = sampleThrow(result.frames, result.frameCount, 0);
+  assert.deepEqual([start.x, start.y, start.z], frameAt(result, 0).slice(0, 3));
+  assertClose(start.q, frameAt(result, 0).slice(3, 7));
+
+  const end = sampleThrow(result.frames, result.frameCount, (result.frameCount - 1) / THROW_FPS);
+  assert.deepEqual([end.x, end.y, end.z], lastFrame(result).slice(0, 3));
+  assertClose(end.q, lastFrame(result).slice(3, 7));
+
+  const past = sampleThrow(result.frames, result.frameCount, 1000);
+  assert.deepEqual([past.x, past.y, past.z], [end.x, end.y, end.z]);
+  const before = sampleThrow(result.frames, result.frameCount, -1);
+  assert.deepEqual([before.x, before.y, before.z], [start.x, start.y, start.z]);
+});
+
+test("sampleThrow halfway between two frames averages the position and gives a unit quaternion", () => {
+  const frames = new Float32Array([0, 0, 10, 1, 0, 0, 0, 10, 20, 30, 0, 1, 0, 0]);
+  const pose = sampleThrow(frames, 2, 0.5 / THROW_FPS);
+  assert.equal(pose.x, 5);
+  assert.equal(pose.y, 10);
+  assert.equal(pose.z, 20);
+  const length = Math.hypot(...pose.q);
+  assert.ok(Math.abs(length - 1) < 1e-6, `quaternion length ${length}`);
+  assert.ok(Math.abs(pose.q[0] - Math.SQRT1_2) < 1e-6 && Math.abs(pose.q[1] - Math.SQRT1_2) < 1e-6, `q ${pose.q}`);
 });
