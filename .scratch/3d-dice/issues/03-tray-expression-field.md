@@ -1,0 +1,11 @@
+# 03: The dice tray takes a Roll Expression
+
+**What to build:** `src/components/dice/DiceTray.tsx` swaps the pool builder (removable term chips, local `terms` state) for a text field that holds a Roll Expression, using ticket 01. The die buttons (the existing `DIE_SIZES`: d4, d6, d8, d10, d12, d20, d100) call `addDieToExpression`; the modifier stepper calls `bumpExpressionModifier` and shows `expressionModifier`; the Disadvantage / Normal / Advantage control shows only while `expressionD20Mode` is not null and calls `setExpressionD20Mode`; the Roll button reads `Roll <text>`, is disabled while the text does not parse, and the parse message shows under the field while it fails. The field's text lives in `RollLogProvider` (so it survives closing the tray for the whole session and is never stored). Rolling calls `evaluateRolls` and publishes through `publishRolls` from ticket 02 with each Roll's text as its `label` and the source "Dice tray", then closes the tray, as today. The field follows `CODING_STANDARDS.md` section 7 (no fixed height or width, Android padding rules, `autoCapitalize="none"`, `autoCorrect={false}`, the return key rolls). Interface copy stays minimal (section 8): no grammar help on screen. The pool helpers in `src/rules/rollLog.ts` that nothing uses any more (`poolExpression`, `addDieToPool`, `removePoolTerm`, `isSingleD20`, `PoolTerm`, `poolLabel`) are removed together with their tests.
+
+**Blocked by:** 01, 02
+
+**Status:** ready-for-agent
+
+- [ ] `ONLY=dice WIDTHS=320 npm run layout:check` passes at 320 and 393, plus 768 and 1280, with the existing "dice tray" scenario in `scripts/layout-check.mjs` rewritten for the field: it types `2d6+3`, taps `d8` and checks the text, rolls, and expects the result card heading to be the Roll's own text instead of "Dice tray", and the Roll Log heading likewise; typing `-d6` disables Roll and shows a message; typing `d20,d20` rolls two Rolls; closing and reopening the tray keeps the text; the lone-d20 control appears for `d20+3` and not for `2d6`
+- [ ] `npm run layout:android` with `ONLY` set to the dice tray scenario shows the field without clipped text on the emulator (native-only input styles)
+- [ ] The tray no longer imports the removed helpers and `npm run check:all` passes

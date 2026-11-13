@@ -1,0 +1,12 @@
+# 09: The roll seam learns the dice before it rolls them
+
+**What to build:** The one seam every Roll source uses changes from "publish a finished Roll" to "make the Roll from a random source" (ADR 0021). `src/rules/throwRoll.ts` (pure) exports `recordDice(make)`, which runs `make` with a recording source and returns the sides of every die in request order, and `replayRandom(faces, fallback)`, a source that returns the given faces for the first dice and `fallback` for the rest. `RollLogContext` gets `rollAndPublish(make)` where `make(random)` returns one or several publish inputs: with Dice Animation off or tumble it runs `make(currentRandom())` and publishes; with throw it records the dice, plans the solids with `planSolidDice` (cap 20), simulates with ticket 08 (origin: the floating dice button's centre, which `DiceOverlay` reports to the context), runs `make` again with the replay source (settled faces for the solids, the generator for the other dice), logs the entries at once, and keeps the recorded throw as `pendingThrow` while the result card waits for `revealResult()` (nothing draws it yet). Pressing Roll again while a throw is pending replaces it; the earlier entries stay in the Roll Log. The tray (ticket 03), `rollActionAttack` and `rollActionDamage` with the "Roll damage" follow-up (`src/rules/actionRolls.ts`, `RollBadge`), and the Hit Points roll (`src/app/levelup/[id].tsx`, `rollPlanHitPoints` already takes a random source) call the new seam; Rolled Abilities in the builder does not. The old `PublishRoll` type in `actionRolls.ts` becomes the new seam's type.
+
+**Blocked by:** 03, 04, 05, 08
+
+**Status:** ready-for-agent
+
+- [ ] `checks/throwRoll.test.ts`, written first: `recordDice` of an attack's `make` returns `[20]`, of a critical damage `make` with `1d8+3` the doubled count, of the Hit Points roll one die; the dice count and order are the same for any faces, shown by recording a `make` against two different random sources; `replayRandom` returns the replayed faces then the fallback
+- [ ] `checks/actionRolls.test.ts` and the level-up tests pass with the new seam, an attack whose thrown d20 settles on 20 offers "Roll critical damage", and one that settles on 7 offers "Roll damage"
+- [ ] With the animation off or tumble the faces and totals come from the generator exactly as before; `npm run layout:check` with `ONLY=dice WIDTHS=320` and `ONLY=actions WIDTHS=320` pass
+- [ ] `npm run check:all` passes

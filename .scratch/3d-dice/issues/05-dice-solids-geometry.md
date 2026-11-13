@@ -1,0 +1,12 @@
+# 05: Dice solids geometry
+
+**What to build:** Two pure modules, lifted from the `m-geo` script of the prototype: `src/rules/diceMath.ts` (vectors and quaternions: multiply, rotate a vector, axis-angle, shortest rotation between two directions, nlerp, fraction of a rotation, integrate an angular velocity, random orientation) and `src/rules/diceSolids.ts`. `makeDie(sides, kind)` builds the d4, d6, d8, d10, d12 and d20 (`kind` "std", or "tens" and "units" for the two d10s of a d100) with `verts`, `faces` (vertex indexes, outward normal, centre, label placement, the labels to print), `readables` (the value each resting pose reads and the body direction that must point up for it) and `inradius`. The d4 reads the top vertex and prints each vertex's number at that corner of the three faces around it; the d6 prints pips; opposite faces sum to sides + 1. A lone d10 prints 1-10, the units die prints 0-9 (10 prints "0"), the tens die prints 00-90 (10 prints "00"). `poseShowing(geo, value, yaw)` returns the orientation that rests with `value` on top. `d100Parts(value)` and `d100Value(tensReading, unitsReading)` convert between 1-100 and the two readings (value = tens + units, units reading 10 counts as 10, so 00 and 0 is 10 and 90 and 0 is 100). `planSolidDice(sidesList, cap)` decides, in order, which dice are thrown as solids: a standard die takes one body, a d100 two, every other die none, and a die that would pass the cap is digital.
+
+**Blocked by:** None (can start immediately)
+
+**Status:** ready-for-agent
+
+- [ ] `checks/diceSolids.test.ts`, written first: for each of the six solids every face is planar and its normal points away from the centre, the face count equals the sides (d4: four faces, four vertex readables), `readables` hold every value 1..sides once, opposite faces sum to sides + 1 (not the d4), rotating a die by `poseShowing(geo, value)` and reading the readable whose direction points most upward returns `value`, for every value of every die; the d10 faces are kites
+- [ ] `d100Value(d100Parts(v))` is `v` for 1..100, and the 100 combinations of tens and units readings give 100 distinct values from 1 to 100
+- [ ] `planSolidDice([6,6,100,3,20], cap)` marks d6, d6, d100, d20 as solids and the d3 as digital; with `cap` 3 the d100 (two bodies) no longer fits after two d6 and is digital, and the d20 after it is digital as well; a plan of 25 d6 with cap 20 has 20 solids
+- [ ] The modules import nothing from React Native; `npm run check:all` passes
