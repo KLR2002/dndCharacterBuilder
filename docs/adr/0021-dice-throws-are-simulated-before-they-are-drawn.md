@@ -15,4 +15,4 @@ The Throw Dice Animation (GLOSSARY.md) sends solid dice across the screen, and t
 - A physics engine (cannon-es, about 150 KB) or a 3D renderer (three.js with expo-gl, about 600 KB plus a native module that F-Droid would have to build): rejected, flat-shaded polygons and a floor with walls give the look at a fraction of the weight.
 
 ## Consequences
-A Roll source that changes how many dice it rolls depending on an earlier face would break the recording pass; none does today, and a test guards the seam. The frame rate with about 20 dice on a low-end phone is not known until it is measured on a device; the fallbacks are listed in the spec.
+A Roll source that changes how many dice it rolls depending on an earlier face would break the recording pass; none does today, and a test guards the seam. The frame rate with about 20 dice on a low-end phone is not known until it is measured on a device. If it is too low, the fallbacks, cheapest first, are: draw numerals only on the top face while a die moves; draw only the visible faces and fewer shading steps; play the Throw back at 30 fps; lower the Throw cap; pre-rendered sprite frames; a canvas renderer such as Skia.
