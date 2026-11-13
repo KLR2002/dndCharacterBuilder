@@ -122,7 +122,7 @@ export function TumbleDice({ entries }: { entries: RollLogEntry[] }) {
   const bodies = useMemo(() => solidBodies(entries, accentId), [entries, accentId]);
   if (bodies.length === 0) return null;
   return (
-    <View testID="dice-solids" style={styles.row}>
+    <View testID="dice-solids" style={styles.row} importantForAccessibility="no-hide-descendants" aria-hidden>
       {bodies.map((body, index) => (
         <TumbleBody key={index} body={body} delay={index * TUMBLE_STAGGER_MS} testID={`die-solid-${index}`} />
       ))}

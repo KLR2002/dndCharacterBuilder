@@ -1875,6 +1875,9 @@ async function checkDiceAnimation(ctx, width, meta) {
           labels: cells.map((cell) => cell.getAttribute("aria-label") ?? ""),
         };
       });
+      // The row repeats what the chips and the result block announce, so it is hidden from screen readers.
+      const rowHidden = await page.evaluate(() => document.querySelector('[data-testid="dice-solids"]')?.getAttribute("aria-hidden"));
+      if (rowHidden !== "true") fail(`${shape.expression}: the solid dice row is aria-hidden="${rowHidden}", expected "true"`);
       if (counted.solids !== shape.solids) fail(`${shape.expression} mounted ${counted.solids} solid dice, expected ${shape.solids}`);
       if (counted.chips !== shape.chips) fail(`${shape.expression} lists ${counted.chips} chips, expected ${shape.chips}`);
       if (counted.outside > 0) fail(`${shape.expression}: ${counted.outside} solid dice stick out of the result card`);
