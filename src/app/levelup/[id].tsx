@@ -56,7 +56,7 @@ export default function LevelUpScreen() {
   const params = useLocalSearchParams<{ id: string }>();
   const id = Array.isArray(params.id) ? params.id[0] : params.id;
   const { characters, selectCharacter, updateCharacter, activeBooks, fullHealOnLevelUp } = useCharacters();
-  const { publishRoll } = useRollLog();
+  const { rollAndPublish } = useRollLog();
   const { theme } = useAppTheme();
   const serif = useSerifFont();
 
@@ -156,9 +156,14 @@ export default function LevelUpScreen() {
 
   const rollHp = () => {
     if (!plan || plan.hitPoints.mode === "roll") return; // one roll per class, no reroll
-    const { plan: rolled, roll } = rollPlanHitPoints(plan, character);
-    publishRoll({ roll, source: "Hit Points", characterName: character.name });
-    commitPlan(rolled);
+    // The seam may run the roll twice (a Throw); the last run's plan is the one committed.
+    const made: { plan?: LevelUpPlan } = {};
+    rollAndPublish((random) => {
+      const result = rollPlanHitPoints(plan, character, random);
+      made.plan = result.plan;
+      return { roll: result.roll, source: "Hit Points", characterName: character.name };
+    });
+    if (made.plan) commitPlan(made.plan);
   };
 
   const onPrimary = () => {

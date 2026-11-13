@@ -34,7 +34,7 @@ const MODE_CHOICES: { mode: D20Mode; label: string }[] = [
  */
 export function DiceTray() {
   const { theme } = useAppTheme();
-  const { trayVisible, traySegment, closeTray, selectTraySegment, entries, publishRolls, expression, setExpression } = useRollLog();
+  const { trayVisible, traySegment, closeTray, selectTraySegment, entries, rollAndPublish, expression, setExpression } = useRollLog();
   const parsed = parseRollExpression(expression);
   const valid = parsed.ok;
   const text = expression.trim();
@@ -44,9 +44,9 @@ export function DiceTray() {
 
   const rollExpression = () => {
     if (!parsed.ok) return;
-    const evaluated = evaluateRolls(parsed.rolls);
-    publishRolls(
-      evaluated.map(({ text: rollText, roll }) => ({
+    const rolls = parsed.rolls;
+    rollAndPublish((random) =>
+      evaluateRolls(rolls, random).map(({ text: rollText, roll }) => ({
         roll,
         source: "Dice tray",
         label: rollText,

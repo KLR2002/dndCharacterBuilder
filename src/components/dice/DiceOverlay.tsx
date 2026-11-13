@@ -151,7 +151,7 @@ function ResultCard({
  */
 export function DiceOverlay() {
   const { insets, isPhone } = useResponsiveLayout();
-  const { latest, dismissResult, openTray, bottomObstruction } = useRollLog();
+  const { latest, dismissResult, openTray, bottomObstruction, setThrowOrigin } = useRollLog();
 
   // A newer batch replaces the card and restarts its timeout; the timer never outlives the card, and a
   // card that still offers a follow-up ("Roll damage") on any of its Rolls never auto-dismisses.
@@ -178,6 +178,15 @@ export function DiceOverlay() {
   }, [latest, announcement]);
 
   const buttonBottom = insets.bottom + 16 + bottomObstruction;
+
+  // A Throw leaves from the button's centre, so the context follows the button's place on the window.
+  const { width: windowWidth, height: windowHeight } = useWindowDimensions();
+  useEffect(() => {
+    setThrowOrigin([
+      windowWidth - DICE_BUTTON_EDGE_MARGIN - DICE_BUTTON_SIZE / 2,
+      windowHeight - buttonBottom - DICE_BUTTON_SIZE / 2,
+    ]);
+  }, [windowWidth, windowHeight, buttonBottom, setThrowOrigin]);
 
   return (
     <View pointerEvents="box-none" style={[StyleSheet.absoluteFill, styles.overlay]}>

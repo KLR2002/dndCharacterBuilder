@@ -1,7 +1,9 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
-import { Platform } from "react-native";
-import { __setRandomSourceForTests, type D20Mode, type Roll } from "../rules/dice.ts";
+import { Dimensions, Platform } from "react-native";
+import { useDiceAnimation } from "../components/dice/useDiceAnimation";
+import { __setRandomSourceForTests, currentRandom, type D20Mode, type RandomSource, type Roll } from "../rules/dice.ts";
 import { makeRollLogEntry, type RollFollowUp, type RollLogEntry } from "../rules/rollLog.ts";
+import { runThrow, throwDieSize, throwPhysicsRandom, type ThrowRecord } from "../rules/throwRoll.ts";
 
 /** What one call of the publishing seam takes: a completed Roll, its source, and the optional extras. */
 export interface PublishRollInput {
@@ -22,6 +24,14 @@ export interface PublishRollInput {
 /** The tray's two segments. */
 export type TraySegment = "dice" | "log";
 
+/** A Throw whose dice have settled: its batch waits in the Roll Log until the result is revealed. */
+export type PendingThrow = ThrowRecord & {
+  /** The batch the Throw made, already in the Roll Log. */
+  entries: RollLogEntry[];
+  /** The first id of the batch, identifying the Throw. */
+  startId: number;
+};
+
 interface RollLogContextValue {
   /** The session Roll Log, newest first. Empty after a restart; never stored with a Character. */
   entries: RollLogEntry[];
@@ -37,6 +47,19 @@ interface RollLogContextValue {
    * group nearest the top, and shown together as the result card. Returns the entries in that order.
    */
   publishRolls: (inputs: PublishRollInput[]) => RollLogEntry[];
+  /**
+   * The roll seam every Roll source uses. `make(random)` builds the Roll(s) from the given random source;
+   * with the Throw animation it runs twice (to learn the dice, then with the settled faces), the dice fly
+   * from the floating button, and the entries are logged at once without showing the result card. Otherwise
+   * it runs once with the default random source and publishes as `publishRolls` does.
+   */
+  rollAndPublish: (make: (random: RandomSource) => PublishRollInput | PublishRollInput[]) => RollLogEntry[];
+  /** The Throw whose result has not been revealed yet, or null. */
+  pendingThrow: PendingThrow | null;
+  /** Shows the pending Throw's batch as the result card. */
+  revealResult: () => void;
+  /** Where the Throw's dice leave the screen, in px: the floating dice button's centre. */
+  setThrowOrigin: (origin: [number, number]) => void;
   /** Hides the result card without touching the log. */
   dismissResult: () => void;
   trayVisible: boolean;
@@ -64,22 +87,78 @@ export function RollLogProvider({ children }: { children: React.ReactNode }) {
   const [traySegment, setTraySegment] = useState<TraySegment>("dice");
   const [bottomObstruction, setBottomObstruction] = useState(0);
   const [expression, setExpression] = useState("");
+  const [pendingThrow, setPendingThrow] = useState<PendingThrow | null>(null);
   const nextId = useRef(1);
 
-  const publishRolls = useCallback((inputs: PublishRollInput[]): RollLogEntry[] => {
-    if (inputs.length === 0) return [];
+  // The seam reads the animation through a ref, so its callback stays stable across setting changes.
+  const animation = useDiceAnimation();
+  const animationRef = useRef(animation);
+  useEffect(() => {
+    animationRef.current = animation;
+  }, [animation]);
+  const throwOriginRef = useRef<[number, number] | null>(null);
+
+  /** Adds a batch to the Roll Log, newest first, and returns its entries in order. Shows nothing. */
+  const logBatch = useCallback((inputs: PublishRollInput[]): RollLogEntry[] => {
     const time = Date.now();
     const batchId = nextId.current;
     const batch = inputs.map((input, index) =>
       makeRollLogEntry(input, batchId + index, time, { batchId, batchIndex: index, batchSize: inputs.length }),
     );
     nextId.current += inputs.length;
-    setEntries((prev) => [...batch, ...prev]);
-    setLatest(batch);
+    if (batch.length > 0) setEntries((prev) => [...batch, ...prev]);
     return batch;
   }, []);
 
+  const publishRolls = useCallback(
+    (inputs: PublishRollInput[]): RollLogEntry[] => {
+      if (inputs.length === 0) return [];
+      const batch = logBatch(inputs);
+      setLatest(batch);
+      return batch;
+    },
+    [logBatch],
+  );
+
   const publishRoll = useCallback((input: PublishRollInput): RollLogEntry => publishRolls([input])[0], [publishRolls]);
+
+  const rollAndPublish = useCallback(
+    (make: (random: RandomSource) => PublishRollInput | PublishRollInput[]): RollLogEntry[] => {
+      const toInputs = (made: PublishRollInput | PublishRollInput[]) => (Array.isArray(made) ? made : [made]);
+      if (animationRef.current !== "throw") return publishRolls(toInputs(make(currentRandom())));
+
+      const world = Dimensions.get("window");
+      const size = { W: world.width, H: world.height };
+      // Before the floating button reports its centre, the throw leaves from its usual corner.
+      const origin: [number, number] = throwOriginRef.current ?? [size.W - 44, size.H - 44];
+      const { result, thrown } = runThrow(make, {
+        world: size,
+        origin,
+        size: throwDieSize(size),
+        physics: throwPhysicsRandom(),
+        fallback: currentRandom(),
+      });
+      if (!thrown) return publishRolls(toInputs(result));
+
+      const startId = nextId.current;
+      const entries = logBatch(toInputs(result));
+      // The old result card hides as the new Throw starts; the new one appears when the dice stop.
+      setLatest(null);
+      setPendingThrow({ ...thrown, entries, startId });
+      return entries;
+    },
+    [logBatch, publishRolls],
+  );
+
+  const revealResult = useCallback(() => {
+    if (!pendingThrow) return;
+    setPendingThrow(null);
+    setLatest(pendingThrow.entries);
+  }, [pendingThrow]);
+
+  const setThrowOrigin = useCallback((origin: [number, number]) => {
+    throwOriginRef.current = origin;
+  }, []);
 
   const dismissResult = useCallback(() => setLatest(null), []);
   const openTray = useCallback((segment: TraySegment = "dice") => {
@@ -123,6 +202,10 @@ export function RollLogProvider({ children }: { children: React.ReactNode }) {
       latest,
       publishRoll,
       publishRolls,
+      rollAndPublish,
+      pendingThrow,
+      revealResult,
+      setThrowOrigin,
       dismissResult,
       trayVisible,
       traySegment,
@@ -134,7 +217,24 @@ export function RollLogProvider({ children }: { children: React.ReactNode }) {
       bottomObstruction,
       setBottomObstruction,
     }),
-    [entries, latest, publishRoll, publishRolls, dismissResult, trayVisible, traySegment, openTray, closeTray, expression, selectTraySegment, bottomObstruction],
+    [
+      entries,
+      latest,
+      publishRoll,
+      publishRolls,
+      rollAndPublish,
+      pendingThrow,
+      revealResult,
+      setThrowOrigin,
+      dismissResult,
+      trayVisible,
+      traySegment,
+      openTray,
+      closeTray,
+      expression,
+      selectTraySegment,
+      bottomObstruction,
+    ],
   );
 
   return <RollLogContext.Provider value={value}>{children}</RollLogContext.Provider>;
