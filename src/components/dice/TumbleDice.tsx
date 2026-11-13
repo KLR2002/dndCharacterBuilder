@@ -135,6 +135,8 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     flexWrap: "wrap",
     gap: 6,
+    // Room for the lift and the pop scale of the top row, so the card's scroll area does not clip it.
+    paddingTop: 12,
   },
   cell: {
     width: CELL,

@@ -93,7 +93,7 @@ function FaceView({
         label.kind === "pips" ? (
           <PipLabel key={k} projection={projection} index={index} slot={k} value={label.value} halfSize={label.size} />
         ) : (
-          <TextLabel key={k} projection={projection} index={index} slot={k} text={label.text} size={size * label.size} />
+          <TextLabel key={k} projection={projection} index={index} slot={k} text={label.text} size={label.size} />
         ),
       )}
     </>
