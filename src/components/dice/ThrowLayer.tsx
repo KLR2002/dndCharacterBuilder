@@ -118,7 +118,6 @@ export function ThrowLayer({
               size={pending.size}
               accent={ACCENT_PALETTES[rollAccentId(accentId, batchIndex)]}
               dropped={die.dropped && phase !== "flying"}
-              settled={phase !== "flying"}
             />
           );
         })}
@@ -141,7 +140,6 @@ function ThrownBody({
   size,
   accent,
   dropped,
-  settled,
 }: {
   testID: string;
   label?: string;
@@ -152,7 +150,6 @@ function ThrownBody({
   size: number;
   accent: { primary: string; text: string };
   dropped: boolean;
-  settled: boolean;
 }) {
   const pose = useDerivedValue<ThrowPose>(() => sampleThrow(frames, frameCount, time.value), [frames, frameCount, time]);
   const quaternion = useDerivedValue<Quat>(() => pose.value.q);
@@ -185,8 +182,8 @@ function ThrownBody({
         testID={testID}
         accessibilityLabel={label}
         style={[{ position: "absolute", width: extent, height: extent }, dieStyle]}>
-        {/* Keyed on the settled state: the web build does not repaint a fill that changes after mount. */}
-        <SolidDie key={settled ? "settled" : "moving"} geo={geo} quaternion={quaternion} size={size} accent={accent} dropped={dropped} />
+        {/* Keyed on the dropped state, so only a die that turns grey is remounted (the web build does not repaint a fill that changes after mount); remounting every die when the dice stop would stall the result. */}
+        <SolidDie key={dropped ? "dropped" : "live"} geo={geo} quaternion={quaternion} size={size} accent={accent} dropped={dropped} />
       </Animated.View>
     </>
   );
