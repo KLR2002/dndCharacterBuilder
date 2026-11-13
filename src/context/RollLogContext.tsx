@@ -44,6 +44,9 @@ interface RollLogContextValue {
   /** Opens the dice tray, on the Log segment when `segment` is "log". */
   openTray: (segment?: TraySegment) => void;
   closeTray: () => void;
+  /** The tray's Roll Expression text. Kept for the session, never stored. */
+  expression: string;
+  setExpression: (text: string) => void;
   /** Switches the open tray's segment. */
   selectTraySegment: (segment: TraySegment) => void;
   /** Height of the screen's bottom primary-action bar in px, so the floating button sits above it on phones. */
@@ -60,6 +63,7 @@ export function RollLogProvider({ children }: { children: React.ReactNode }) {
   const [trayVisible, setTrayVisible] = useState(false);
   const [traySegment, setTraySegment] = useState<TraySegment>("dice");
   const [bottomObstruction, setBottomObstruction] = useState(0);
+  const [expression, setExpression] = useState("");
   const nextId = useRef(1);
 
   const publishRolls = useCallback((inputs: PublishRollInput[]): RollLogEntry[] => {
@@ -124,11 +128,13 @@ export function RollLogProvider({ children }: { children: React.ReactNode }) {
       traySegment,
       openTray,
       closeTray,
+      expression,
+      setExpression,
       selectTraySegment,
       bottomObstruction,
       setBottomObstruction,
     }),
-    [entries, latest, publishRoll, publishRolls, dismissResult, trayVisible, traySegment, openTray, closeTray, selectTraySegment, bottomObstruction],
+    [entries, latest, publishRoll, publishRolls, dismissResult, trayVisible, traySegment, openTray, closeTray, expression, selectTraySegment, bottomObstruction],
   );
 
   return <RollLogContext.Provider value={value}>{children}</RollLogContext.Provider>;

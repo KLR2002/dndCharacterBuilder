@@ -114,49 +114,5 @@ export function formatRollTime(time: number): string {
   return `${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
 }
 
-/** One dice term of the tray's pool, like 2d6. */
-export interface PoolTerm {
-  count: number;
-  sides: number;
-}
-
 /** The die buttons of the tray, in row order. */
 export const DIE_SIZES: readonly number[] = [4, 6, 8, 10, 12, 20, 100];
-
-/** The most dice one term of the tray's pool may carry; matches the parser's cap. */
-export const MAX_DICE_PER_TERM = 100;
-
-/** Adds one die of `sides` to the pool, merging with an existing term of the same sides. A term's count is capped at 100, so the pool always parses. */
-export function addDieToPool(terms: readonly PoolTerm[], sides: number): PoolTerm[] {
-  const existing = terms.find((term) => term.sides === sides);
-  if (existing) {
-    return terms.map((term) => (term.sides === sides ? { ...term, count: Math.min(MAX_DICE_PER_TERM, term.count + 1) } : term));
-  }
-  return [...terms, { count: 1, sides }];
-}
-
-/** Removes the whole term of `sides` from the pool (one chip of the expression line). */
-export function removePoolTerm(terms: readonly PoolTerm[], sides: number): PoolTerm[] {
-  return terms.filter((term) => term.sides !== sides);
-}
-
-/** Whether the pool is exactly one d20, the only pool the Disadvantage / Normal / Advantage choice applies to. */
-export function isSingleD20(terms: readonly PoolTerm[]): boolean {
-  return terms.length === 1 && terms[0].count === 1 && terms[0].sides === 20;
-}
-
-/** The pool as `parseDicePool` reads it, like "2d6+1d8+3" or "1d20-2". */
-export function poolExpression(terms: readonly PoolTerm[], modifier: number): string {
-  let text = terms.map((term) => `${term.count}d${term.sides}`).join("+");
-  if (modifier > 0) text += `+${modifier}`;
-  else if (modifier < 0) text += `${modifier}`;
-  return text;
-}
-
-/** The pool the way the tray writes it, like "2d6 + 1d8 + 3" or "1d20 − 2". */
-export function poolLabel(terms: readonly PoolTerm[], modifier: number): string {
-  let text = terms.map((term) => `${term.count}d${term.sides}`).join(" + ");
-  if (modifier > 0) text += ` + ${modifier}`;
-  else if (modifier < 0) text += ` − ${-modifier}`;
-  return text;
-}

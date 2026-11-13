@@ -1232,13 +1232,13 @@ function findDiceButtonVsFlowFooter() {
   };
 }
 
-// The floating dice button, the tray's pool roll and the session Roll Log at one width: the button opens
-// the tray on the sheet; the tray builds a pool (die buttons add, chips remove, the modifier steps, the
-// Disadvantage / Normal / Advantage choice only for a lone d20, the primary action labelled with the pool
-// and disabled while the pool is empty), rolls it and the result card shows above the button with the
-// right total; a Roll seeded through the publishing seam reads "Kara · Longsword attack" and sits above
-// the "Dice tray" entry, newest first, when the card is tapped; a reload empties the log; on phones the
-// button sits above the flow's bottom primary-action bar, never covering it.
+// The floating dice button, the tray's Roll Expression field and the session Roll Log at one width: the
+// button opens the tray on the sheet; the field takes typed expressions (die buttons append, the modifier
+// steps, the Disadvantage / Normal / Advantage choice only for a lone d20, Roll labelled with the text and
+// disabled while the text does not parse, with the parser's message under the field); rolls show above the
+// button with the right totals and headings; a Roll seeded through the publishing seam reads
+// "Kara · Longsword attack" and sits above the tray's Rolls, newest first, when the card is tapped; a reload
+// empties the log; on phones the button sits above the flow's bottom primary-action bar, never covering it.
 async function checkDiceTrayAndLog(ctx, width, meta) {
   const page = await ctx.newPage();
   // The result-card auto-dismiss below is a setTimeout: the clock lets the check fast-forward past the
@@ -1284,64 +1284,54 @@ async function checkDiceTrayAndLog(ctx, width, meta) {
     if (segHeights.log === null || segHeights.log < 47.5) fail(`the "Log" segment target is ${segHeights.log}px tall, under 48dp`);
   }
 
-  // A die's count is capped at 100: tapping one die 100 times disables its add button, and rolling the
-  // capped pool works instead of throwing "Not a dice pool".
-  if (width === SINGLE_RUN_WIDTH) {
-    const addD20 = page.getByLabel("Add d20", { exact: true });
-    for (let i = 0; i < 100; i++) await addD20.click({ timeout: 5000 }).catch(() => fail(`the "Add d20" tap ${i + 1} failed`));
-    const atCap = await page.evaluate(() => {
-      const el = [...document.querySelectorAll('[aria-label="Add d20"]')].find((e) => e.getBoundingClientRect().height > 0);
-      return el ? el.disabled === true || el.getAttribute("aria-disabled") === "true" : null;
-    });
-    if (atCap !== true) fail(`"Add d20" is not disabled at 100 dice (state ${atCap})`);
-    if (!(await page.getByLabel("Remove 100d20", { exact: true }).isVisible().catch(() => false))) fail('the pool chip does not read "100d20" at the cap');
-    await page.getByText("Roll 100d20", { exact: true }).first().click();
-    await page.waitForSelector(cardSel, { state: "visible", timeout: 10000 }).catch(() => fail("rolling the capped 100d20 pool did not show a result card (it threw)"));
+  // The tray's Roll Expression field is the pool: die buttons append to it, the modifier stepper moves its
+  // trailing modifier, and Roll reads "Roll <text>". The text is kept for the session, so reopening keeps it.
+  const expression = page.getByLabel("Roll Expression", { exact: true });
+  const fieldValue = () => expression.inputValue();
+  const reopenTray = async () => {
     await page.getByLabel("Dice tray").first().click();
-    await page.waitForSelector(dialogSel, { state: "visible", timeout: 10000 }).catch(() => fail("the tray did not reopen after the capped roll"));
-    await page.getByLabel("Remove 100d20", { exact: true }).click();
+    await page.waitForSelector(dialogSel, { state: "visible", timeout: 10000 }).catch(() => fail("the tray did not reopen"));
+  };
+  const setFaces = (faces) => page.evaluate((f) => (window.__setRandomSource ? window.__setRandomSource(f) : "no hook"), faces);
+  const cardMarkers = () =>
+    page.evaluate(() => {
+      const card = document.querySelector('[data-testid="result-card"]');
+      if (!card) return null;
+      return [...card.querySelectorAll("*")].filter((e) => e.children.length === 0 && /^(Natural 20|Natural 1|Critical)$/.test(e.textContent.trim())).map((e) => e.textContent.trim());
+    });
+  const cardSources = () => page.evaluate(() => [...document.querySelectorAll('[data-testid="result-source"]')].map((e) => e.textContent));
+
+  // The die count is capped at 100 per expression: 100d20 rolls, 101d20 disables Roll and says why.
+  if (width === SINGLE_RUN_WIDTH) {
+    await expression.fill("100d20");
+    await page.getByText("Roll 100d20", { exact: true }).first().click();
+    await page.waitForSelector(cardSel, { state: "visible", timeout: 10000 }).catch(() => fail("rolling 100d20 did not show a result card"));
+    await reopenTray();
+    await expression.fill("101d20");
+    const over = await page.evaluate(buttonDisabled, "Roll 101d20");
+    if (over.disabled !== true) fail(`"Roll 101d20" is not disabled over the 100-die cap (${over.state})`);
+    if (!(await page.getByText("At most 100 dice per expression (this one has 101)", { exact: true }).isVisible().catch(() => false)))
+      fail("no cap message under the field for 101d20");
+    await expression.fill("");
   }
 
-  // The pool builder: the primary action is disabled while the pool is empty, and the d20 mode choice
-  // appears only for a pool of exactly one d20.
+  // The empty field: Roll is disabled with no message, and the Advantage choice is absent.
   const emptyRoll = await page.evaluate(buttonDisabled, "Roll");
-  if (emptyRoll.disabled !== true) fail(`"Roll" is not disabled while the pool is empty (${emptyRoll.state})`);
-  if (!(await assertAbsentFor(async () => (await page.getByText("Advantage", { exact: true }).count()) > 0))) fail('"Advantage" shows for an empty pool');
-  await page.getByLabel("Add d20", { exact: true }).click();
-  await settle(page);
-  if (!(await page.getByText("Advantage", { exact: true }).first().isVisible())) fail('"Advantage" does not show for a lone d20');
-  // The mode segments are 48dp targets too.
-  const modeHeights = await page.evaluate(() =>
-    ["Disadvantage", "Normal", "Advantage"].map((t) => {
-      const el = [...document.querySelectorAll('[role="dialog"] [role="button"], [role="dialog"] button')].find((e) => e.textContent.trim() === t && e.getBoundingClientRect().height > 0);
-      return el ? el.getBoundingClientRect().height : null;
-    }),
-  );
-  for (const [i, h] of modeHeights.entries()) {
-    if (h === null || h < 47.5) fail(`the "${["Disadvantage", "Normal", "Advantage"][i]}" mode segment is ${h}px tall, under 48dp`);
-  }
-  await page.getByLabel("Remove 1d20", { exact: true }).click();
-  await page.getByLabel("Add d6", { exact: true }).click();
-  // The removable pool chip is a 48dp target.
-  const chipHeight = await page.evaluate(() => {
-    const el = [...document.querySelectorAll('[aria-label="Remove 1d6"]')].find((e) => e.getBoundingClientRect().height > 0);
-    return el ? el.getBoundingClientRect().height : null;
-  });
-  if (chipHeight === null || chipHeight < 47.5) fail(`the pool chip "1d6" is ${chipHeight}px tall, under 48dp`);
-  await page.getByLabel("Add d8", { exact: true }).click();
-  for (let i = 0; i < 3; i++) await page.getByLabel("Modifier increase", { exact: true }).click();
-  await settle(page);
-  if (!(await assertAbsentFor(async () => (await page.getByText("Advantage", { exact: true }).count()) > 0))) fail('"Advantage" shows for a pool that is not a lone d20');
-  const rollLabel = "Roll 1d6 + 1d8 + 3";
-  const rollButton = page.getByText(rollLabel, { exact: true }).first();
-  if ((await rollButton.count()) === 0) fail(`the tray's primary action is not labelled "${rollLabel}"`);
-  else {
-    const enabled = await page.evaluate(buttonDisabled, rollLabel);
-    if (enabled.disabled !== false) fail(`"${rollLabel}" is not enabled (${enabled.state})`);
-    await rollButton.click();
-  }
+  if (emptyRoll.disabled !== true) fail(`"Roll" is not disabled while the field is empty (${emptyRoll.state})`);
+  if (!(await assertAbsentFor(async () => (await page.getByText("Advantage", { exact: true }).count()) > 0))) fail('"Advantage" shows for an empty field');
 
-  // The tray rolled the pool and closed; the result card shows the Roll above the floating button.
+  // Typing 2d6+3 and tapping d8 appends the die; the Roll button reads the text and rolls it.
+  await expression.fill("2d6+3");
+  await page.getByLabel("Add d8", { exact: true }).click();
+  await settle(page);
+  if ((await fieldValue()) !== "2d6+3+d8") fail(`after typing 2d6+3 and tapping d8 the field reads "${await fieldValue()}", expected "2d6+3+d8"`);
+  if (!(await assertAbsentFor(async () => (await page.getByText("Advantage", { exact: true }).count()) > 0))) fail('"Advantage" shows for 2d6+3+d8');
+  const rollLabel = "Roll 2d6+3+d8";
+  const enabled = await page.evaluate(buttonDisabled, rollLabel);
+  if (enabled.disabled !== false) fail(`"${rollLabel}" is not enabled (${enabled.state})`);
+  await page.getByText(rollLabel, { exact: true }).first().click();
+
+  // The tray rolled the text and closed; the result card shows the Roll, headed by its own text.
   await page.waitForSelector(cardSel, { state: "visible", timeout: 10000 }).catch(() => fail("no result card after the tray roll"));
   const roll = await page.evaluate(() => {
     const card = document.querySelector('[data-testid="result-card"]');
@@ -1354,48 +1344,72 @@ async function checkDiceTrayAndLog(ctx, width, meta) {
   });
   if (!roll) fail("the result card disappeared before it could be read");
   else {
-    if (roll.source !== "Dice tray") fail(`the result card's source is "${roll.source}", expected "Dice tray"`);
+    if (roll.source !== "2d6+3+d8") fail(`the result card's source is "${roll.source}", expected "2d6+3+d8"`);
     const faces = roll.chips.map((chip) => Number(/(\d+)d\d+/.exec(chip)?.[1] ?? "NaN"));
     const parsedModifier = Number(/([+-]\d+)/.exec(roll.modifier)?.[1] ?? "NaN");
     const parsedTotal = Number(roll.total);
-    if (roll.chips.length !== 2 || faces.some(Number.isNaN) || Number.isNaN(parsedModifier) || Number.isNaN(parsedTotal))
-      fail(`the result card does not show two die chips, a modifier and a total: ${JSON.stringify(roll)}`);
+    if (roll.chips.length !== 3 || faces.some(Number.isNaN) || Number.isNaN(parsedModifier) || Number.isNaN(parsedTotal))
+      fail(`the result card does not show three die chips, a modifier and a total: ${JSON.stringify(roll)}`);
     else if (parsedTotal !== faces.reduce((sum, face) => sum + face, 0) + parsedModifier)
       fail(`the result total ${parsedTotal} is not the faces ${faces.join("+")} ${roll.modifier}`);
   }
 
-  // A tray pool of 2d20 is not a d20 test: even with a kept 20 it shows no "Natural 20" marker; a
-  // lone-d20 tray roll does.
-  const setFaces = (faces) => page.evaluate((f) => (window.__setRandomSource ? window.__setRandomSource(f) : "no hook"), faces);
-  const cardMarkers = () =>
-    page.evaluate(() => {
-      const card = document.querySelector('[data-testid="result-card"]');
-      if (!card) return null;
-      return [...card.querySelectorAll("*")].filter((e) => e.children.length === 0 && /^(Natural 20|Natural 1|Critical)$/.test(e.textContent.trim())).map((e) => e.textContent.trim());
-    });
-  await page.getByLabel("Dice tray").first().click();
-  await page.waitForSelector(dialogSel, { state: "visible", timeout: 10000 }).catch(() => fail("the tray did not reopen for the 2d20 check"));
-  await page.getByLabel("Remove 1d6", { exact: true }).click();
-  await page.getByLabel("Remove 1d8", { exact: true }).click();
-  for (let i = 0; i < 3; i++) await page.getByLabel("Modifier decrease", { exact: true }).click();
-  await page.getByLabel("Add d20", { exact: true }).click();
-  await page.getByLabel("Add d20", { exact: true }).click();
+  // Closing and reopening the tray keeps the text.
+  await reopenTray();
+  if ((await fieldValue()) !== "2d6+3+d8") fail(`reopening the tray reads "${await fieldValue()}", expected the kept "2d6+3+d8"`);
+
+  // A leading minus is not a Roll: Roll is disabled and the parser's message shows under the field.
+  await expression.fill("-d6");
+  const bad = await page.evaluate(buttonDisabled, "Roll -d6");
+  if (bad.disabled !== true) fail(`"Roll -d6" is not disabled (${bad.state})`);
+  if (!(await page.getByText("A roll cannot start with + or -", { exact: true }).isVisible().catch(() => false)))
+    fail("no parse message under the field for -d6");
+
+  // The Disadvantage / Normal / Advantage choice shows for a lone d20 with a modifier, not for 2d6.
+  await expression.fill("d20+3");
+  if (!(await page.getByText("Advantage", { exact: true }).first().isVisible().catch(() => false))) fail('"Advantage" does not show for d20+3');
+  // The mode segments are 48dp targets too.
+  const modeHeights = await page.evaluate(() =>
+    ["Disadvantage", "Normal", "Advantage"].map((t) => {
+      const el = [...document.querySelectorAll('[role="dialog"] [role="button"], [role="dialog"] button')].find((e) => e.textContent.trim() === t && e.getBoundingClientRect().height > 0);
+      return el ? el.getBoundingClientRect().height : null;
+    }),
+  );
+  for (const [i, h] of modeHeights.entries()) {
+    if (h === null || h < 47.5) fail(`the "${["Disadvantage", "Normal", "Advantage"][i]}" mode segment is ${h}px tall, under 48dp`);
+  }
+  await expression.fill("2d6");
+  if (!(await assertAbsentFor(async () => (await page.getByText("Advantage", { exact: true }).count()) > 0))) fail('"Advantage" shows for 2d6');
+  // The modifier stepper moves the text's trailing modifier.
+  await page.getByLabel("Modifier increase", { exact: true }).click();
+  if ((await fieldValue()) !== "2d6+1") fail(`the modifier stepper reads "${await fieldValue()}" after one increase, expected "2d6+1"`);
+
+  // Two Rolls from one expression: two result blocks, each headed by its own text, and each a d20 test.
+  await expression.fill("d20,d20");
   await setFaces([20, 7]);
-  await page.getByText("Roll 2d20", { exact: true }).first().click();
-  await page.waitForSelector(cardSel, { state: "visible", timeout: 10000 }).catch(() => fail("no result card after the 2d20 tray roll"));
-  let markers = await cardMarkers();
-  if (markers === null) fail("the 2d20 card disappeared before its markers could be read");
-  else if (markers.length !== 0) fail(`a 2d20 tray pool shows the markers ${JSON.stringify(markers)}, expected none (not a d20 test)`);
-  await page.getByLabel("Dice tray").first().click();
-  await page.waitForSelector(dialogSel, { state: "visible", timeout: 10000 }).catch(() => fail("the tray did not reopen for the lone-d20 check"));
-  await page.getByLabel("Remove 2d20", { exact: true }).click();
-  await page.getByLabel("Add d20", { exact: true }).click();
-  await setFaces([20]);
-  await page.getByText("Roll 1d20", { exact: true }).first().click();
-  await page.waitForSelector(cardSel, { state: "visible", timeout: 10000 }).catch(() => fail("no result card after the lone-d20 tray roll"));
-  markers = await cardMarkers();
-  if (markers === null) fail("the lone-d20 card disappeared before its markers could be read");
-  else if (JSON.stringify(markers) !== JSON.stringify(["Natural 20"])) fail(`a lone-d20 tray roll shows ${JSON.stringify(markers)}, expected ["Natural 20"]`);
+  await page.getByText("Roll d20,d20", { exact: true }).first().click();
+  await page.waitForSelector(cardSel, { state: "visible", timeout: 10000 }).catch(() => fail("no result card after the d20,d20 roll"));
+  await page
+    .waitForFunction(() => document.querySelectorAll('[data-testid="result-block"]').length === 2, null, { timeout: 10000, polling: 100 })
+    .catch(() => fail("the d20,d20 result card does not show two Roll blocks"));
+  const sourcesTwo = await cardSources();
+  if (JSON.stringify(sourcesTwo) !== JSON.stringify(["d20", "d20"])) fail(`the d20,d20 blocks are headed ${JSON.stringify(sourcesTwo)}, expected ["d20","d20"]`);
+  const twoMarkers = await cardMarkers();
+  if (JSON.stringify(twoMarkers) !== JSON.stringify(["Natural 20"])) fail(`the d20,d20 card shows ${JSON.stringify(twoMarkers)}, expected ["Natural 20"] for the first Roll only`);
+  await setFaces(null);
+
+  // The lone d20 with advantage: the Advantage choice rewrites the text to a(d20,d20)+3 and rolls it.
+  await reopenTray();
+  await expression.fill("d20+3");
+  await page.getByText("Advantage", { exact: true }).first().click();
+  if ((await fieldValue()) !== "a(d20,d20)+3") fail(`choosing Advantage reads "${await fieldValue()}", expected "a(d20,d20)+3"`);
+  await setFaces([20, 3]);
+  await page.getByText("Roll a(d20,d20)+3", { exact: true }).first().click();
+  await page.waitForSelector(cardSel, { state: "visible", timeout: 10000 }).catch(() => fail("no result card after the advantage roll"));
+  const advSources = await cardSources();
+  if (JSON.stringify(advSources) !== JSON.stringify(["a(d20,d20)+3"])) fail(`the advantage card is headed ${JSON.stringify(advSources)}, expected ["a(d20,d20)+3"]`);
+  const advMarkers = await cardMarkers();
+  if (JSON.stringify(advMarkers) !== JSON.stringify(["Natural 20"])) fail(`the advantage roll shows ${JSON.stringify(advMarkers)}, expected ["Natural 20"]`);
   await setFaces(null);
 
   // Seed a "Kara · Longsword attack" Roll through the publishing seam (no screen triggers it yet): the
@@ -1462,9 +1476,10 @@ async function checkDiceTrayAndLog(ctx, width, meta) {
     await page.click('[data-testid="result-card-body"]');
     await page.waitForSelector(dialogSel, { state: "visible", timeout: 10000 }).catch(() => fail("tapping the result card did not open the tray"));
     const headings = await page.evaluate(() => [...document.querySelectorAll('[data-testid="log-entry-heading"]')].map((el) => el.textContent));
-    if (headings.length < 2) fail(`the Roll Log shows ${headings.length} entries, expected 2: ${JSON.stringify(headings)}`);
-    else if (headings[0] !== "Kara · Longsword attack" || headings[1] !== "Dice tray")
-      fail(`the Roll Log is not newest first with character and source: ${JSON.stringify(headings)}`);
+    // Newest first, one entry per Roll (a batch in expression order), each headed by its own text.
+    const expectedHeadings = ["Kara · Longsword attack", "a(d20,d20)+3", "d20", "d20", "2d6+3+d8"];
+    if (JSON.stringify(headings) !== JSON.stringify(expectedHeadings))
+      fail(`the Roll Log is not newest first, one entry per Roll: ${JSON.stringify(headings)}, expected ${JSON.stringify(expectedHeadings)}`);
     await maybeShot(page, shot("log"), meta);
     await page.keyboard.press("Escape");
     await page.waitForSelector(dialogSel, { state: "hidden", timeout: 10000 }).catch(() => fail("Escape did not close the tray"));
@@ -1677,13 +1692,11 @@ async function checkDiceAnimation(ctx, width, meta) {
   const rollTrayPool = async (p) => {
     await p.getByLabel("Dice tray").first().click();
     await p.waitForSelector(dialogSel, { state: "visible", timeout: 10000 }).catch(() => fail("the tray did not open"));
-    await p.getByLabel("Add d6", { exact: true }).click();
-    await p.getByLabel("Add d8", { exact: true }).click();
-    for (let i = 0; i < 3; i++) await p.getByLabel("Modifier increase", { exact: true }).click();
+    await p.getByLabel("Roll Expression", { exact: true }).fill("1d6+1d8+3");
     await settle(p);
     // Read just before the tap, so the roll itself falls after this reading and the budget never starts late.
     rollAt = await p.evaluate(() => performance.now() - window.__dieT0);
-    await p.getByText("Roll 1d6 + 1d8 + 3", { exact: true }).first().click();
+    await p.getByText("Roll 1d6+1d8+3", { exact: true }).first().click();
     await p.waitForSelector(cardSel, { state: "visible", timeout: 10000 }).catch(() => fail("no result card after the tray roll"));
   };
 
