@@ -202,6 +202,26 @@ test("the dice, sides, roll and argument limits are exported and enforced", () =
   assert.equal(parseRollExpression("11a(d20)").ok, false);
 });
 
+const hostile = [
+  "50000000a(d20)",
+  "99999999999999999999a(d20)",
+  "99999999999999999999d6",
+  "d99999999999999999999",
+  "99999999999999999999d(d20)",
+  Array.from({ length: 20 }, () => "2a(d20)").join(","),
+];
+
+for (const input of hostile) {
+  test(`hostile count ${input.slice(0, 40)} is rejected promptly with a message`, () => {
+    const started = Date.now();
+    const parsed = parseRollExpression(input);
+    assert.ok(Date.now() - started < 1000, "parsing took too long");
+    if (parsed.ok) assert.fail(`expected the expression to be rejected`);
+    assert.equal(typeof parsed.message, "string");
+    assert.ok(parsed.message.length > 0, parsed.message);
+  });
+}
+
 test("advantage keeps the argument with the higher total and drops the other argument's dice and modifier", () => {
   const [{ text, roll }] = evaluateRolls(parseOk("a(d20+5,d20+2)"), fixedFaces([3, 10]));
   assert.equal(text, "a(d20+5,d20+2)");

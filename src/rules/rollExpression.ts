@@ -165,6 +165,12 @@ function parseOrThrow(text: string): ParsedRoll[] {
   const rolls: ParsedRoll[] = [];
   for (;;) {
     const { ast, repeat } = parseRoll();
+    if (rolls.length + repeat > MAX_ROLLS_PER_EXPRESSION) {
+      throw new ExprError(
+        `At most ${MAX_ROLLS_PER_EXPRESSION} rolls per expression (this one has ${rolls.length + repeat})`,
+        0,
+      );
+    }
     for (let i = 0; i < repeat; i += 1) rolls.push(ast);
     if (s[p] === ",") {
       p += 1;
@@ -179,9 +185,6 @@ function parseOrThrow(text: string): ParsedRoll[] {
   if (rolls.some((roll) => countDice(roll) < 1)) throw new ExprError("Every roll needs at least one die", 0);
   if (dice > MAX_DICE_PER_EXPRESSION) {
     throw new ExprError(`At most ${MAX_DICE_PER_EXPRESSION} dice per expression (this one has ${dice})`, 0);
-  }
-  if (rolls.length > MAX_ROLLS_PER_EXPRESSION) {
-    throw new ExprError(`At most ${MAX_ROLLS_PER_EXPRESSION} rolls per expression (this one has ${rolls.length})`, 0);
   }
   return rolls;
 }
