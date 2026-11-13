@@ -1,9 +1,15 @@
 import React, { useMemo } from "react";
+import { Platform } from "react-native";
 import Animated, { useAnimatedProps, useDerivedValue, type SharedValue } from "react-native-reanimated";
 import Svg, { Circle, G, Polygon, Text as SvgText } from "react-native-svg";
 import type { Quat } from "../../rules/diceMath.ts";
 import type { DieFace, DieGeometry } from "../../rules/diceSolids.ts";
-import { hexToRgb, pipMarks, projectDie, type DieProjection, type ProjectionStyle, type Rgb } from "../../rules/diceProjection.ts";
+import { hexToRgb, pipMarks, projectDie, type DieProjection, type LabelMatrix, type ProjectionStyle, type Rgb } from "../../rules/diceProjection.ts";
+
+// A label's matrix reaches react-native-svg under a different prop name per platform. Native animated props skip
+// the JS step that turns `transform` into the native `matrix` prop, so native takes `matrix` (six numbers) and the
+// web, which renders `transform`, takes that.
+const IS_WEB = Platform.OS === "web";
 
 const AnimatedPolygon = Animated.createAnimatedComponent(Polygon);
 const AnimatedText = Animated.createAnimatedComponent(SvgText);
@@ -115,11 +121,14 @@ function TextLabel({
 }) {
   const props = useAnimatedProps(() => {
     const face = projection.value.faces[index];
-    return {
-      transform: face.labels[slot].transform,
-      fill: face.labels[slot].fill,
+    const label = face.labels[slot];
+    const props: { fill: string; opacity: number; transform?: LabelMatrix; matrix?: LabelMatrix } = {
+      fill: label.fill,
       opacity: face.visible ? 1 : 0,
     };
+    if (IS_WEB) props.transform = label.transform;
+    else props.matrix = label.transform;
+    return props;
   });
   return (
     <AnimatedText
@@ -149,11 +158,14 @@ function PipLabel({
 }) {
   const props = useAnimatedProps(() => {
     const face = projection.value.faces[index];
-    return {
-      transform: face.labels[slot].transform,
-      fill: face.labels[slot].fill,
+    const label = face.labels[slot];
+    const props: { fill: string; opacity: number; transform?: LabelMatrix; matrix?: LabelMatrix } = {
+      fill: label.fill,
       opacity: face.visible ? 1 : 0,
     };
+    if (IS_WEB) props.transform = label.transform;
+    else props.matrix = label.transform;
+    return props;
   });
   const pips = useMemo(() => pipMarks(value, halfSize), [value, halfSize]);
   return (
