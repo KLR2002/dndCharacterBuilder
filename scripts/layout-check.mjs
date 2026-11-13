@@ -3458,6 +3458,153 @@ async function checkHomeLayout(ctx, width, meta) {
 }
 
 // The checks that open their own page rather than a SCREENS entry. Each is a scenario, so ONLY selects it by name.
+// The Throw animation: the dice fly over the screen from the floating button, each in its Roll's accent,
+// the result card waits until they stop, a tap during flight shows it at once, a Roll mid-flight replaces
+// the dice, and the dice are gone after the fade. The physics is seeded, so every run throws the same dice.
+async function checkDiceThrow(ctx, width, meta) {
+  const prefix = `[${width}px dice throw]`;
+  let failures = 0;
+  const tctx = await ctx.browser().newContext({
+    viewport: { width, height: 851 },
+    deviceScaleFactor: DSF,
+    hasTouch: true,
+    isMobile: true,
+  });
+  try {
+    await tctx.addInitScript(seedBrowser, ACTIVE_SEED);
+    const page = await tctx.newPage();
+    let failedShotTaken = false;
+    const fail = (msg) => {
+      failures++;
+      console.log(`${prefix} ${msg}`);
+      if (!failedShotTaken) {
+        failedShotTaken = true;
+        shotFailed(page, meta, width);
+      }
+    };
+    const dialogSel = '[role="dialog"]';
+    const cardSel = '[data-testid="result-card"]';
+    const throwDiceLabels = () =>
+      page.evaluate(() => [...document.querySelectorAll('[data-testid^="throw-die-"]')].map((el) => el.getAttribute("aria-label")));
+    const waitForDiceCount = (count, timeout) =>
+      page
+        .waitForFunction((n) => document.querySelectorAll('[data-testid^="throw-die-"]').length === n, count, { timeout, polling: 50 })
+        .then(() => true)
+        .catch(() => false);
+    const rollThrow = async (expression) => {
+      await page.getByLabel("Dice tray").first().click();
+      await page.waitForSelector(dialogSel, { state: "visible", timeout: 10000 }).catch(() => fail("the tray did not open"));
+      await page.getByLabel("Roll Expression", { exact: true }).fill(expression);
+      await page.getByText(`Roll ${expression}`, { exact: true }).first().click();
+    };
+
+    await gotoApp(page, `${BASE}/options`);
+    await settle(page);
+    const throwSel = '[data-testid="dice-animation-throw"]';
+    if (!(await page.locator(throwSel).first().isVisible().catch(() => false))) {
+      fail('the Options screen has no "Throw" dice animation segment');
+      return failures;
+    }
+    await page.locator(throwSel).first().click();
+    await settle(page);
+    const borders = await page.evaluate(() => ({
+      throw: getComputedStyle(document.querySelector('[data-testid="dice-animation-throw"]')).borderColor,
+      off: getComputedStyle(document.querySelector('[data-testid="dice-animation-off"]')).borderColor,
+    }));
+    if (borders.throw === borders.off) fail("tapping Throw did not select it");
+
+    await gotoApp(page, `${BASE}/character/${CHARACTER_ID}`);
+    if (!(await page.evaluate(() => typeof window.__setThrowRandom === "function"))) {
+      fail("the E2E build exposes no __setThrowRandom hook");
+      return failures;
+    }
+    await page.evaluate(() => window.__setThrowRandom(1));
+
+    // Two Rolls, one die each: the dice fly, the card waits, and each die wears its Roll's accent.
+    const first = ACCENT_PALETTES.crimson;
+    const second = ACCENT_PALETTES[rollAccentId("crimson", 1)];
+    await rollThrow("d6,d8");
+    if (!(await waitForDiceCount(2, 10000))) fail(`expected two thrown dice, saw ${JSON.stringify(await throwDiceLabels())}`);
+    else {
+      const flight = await page.evaluate(() => {
+        const dice = [...document.querySelectorAll('[data-testid^="throw-die-"]')];
+        return {
+          labels: dice.map((el) => el.getAttribute("aria-label")),
+          centres: dice.map((el) => {
+            const r = el.getBoundingClientRect();
+            return [r.x + r.width / 2, r.y + r.height / 2];
+          }),
+          fills: dice.map((el) => {
+            const visible = [...el.querySelectorAll("polygon")].find(
+              (p) => p.getAttribute("opacity") !== "0" && getComputedStyle(p).opacity !== "0" && getComputedStyle(p).fill !== "none",
+            );
+            return visible ? getComputedStyle(visible).fill : null;
+          }),
+          card: !!document.querySelector('[data-testid="result-card"]'),
+          size: [window.innerWidth, window.innerHeight],
+        };
+      });
+      if (flight.card) fail("the result card is up while the dice fly");
+      flight.centres.forEach(([x, y], i) => {
+        if (x < 0 || x > flight.size[0] || y < 0 || y > flight.size[1]) fail(`die ${i} centre (${Math.round(x)}, ${Math.round(y)}) is outside the viewport`);
+      });
+      const expected = [first.primary, second.primary];
+      flight.fills.forEach((fill, i) => {
+        const rgb = fill ? fill.match(/\d+(\.\d+)?/g)?.slice(0, 3).map(Number) : null;
+        if (!rgb) return fail(`die ${i} has no visible face fill`);
+        const accent = hexToRgbString(expected[i]).match(/\d+/g).map(Number);
+        const top = Math.max(...rgb);
+        const accentTop = Math.max(...accent);
+        const close = rgb.every((c, k) => Math.abs(c / top - accent[k] / accentTop) <= 0.12);
+        if (!close) fail(`die ${i} fill ${fill} is not the accent ${expected[i]} (Roll ${i + 1})`);
+      });
+    }
+
+    await page.waitForSelector(cardSel, { state: "visible", timeout: 8000 }).catch(() => fail("no result card after the dice stopped"));
+    const blocks = await page.evaluate(() =>
+      [...document.querySelectorAll('[data-testid="result-card-body"]')].map((el) => el.getAttribute("aria-label")),
+    );
+    const faces = (await throwDiceLabels()).map((label) => Number(/showing (\d+)/.exec(label ?? "")?.[1]));
+    if (blocks.length !== 2) fail(`expected two result blocks, saw ${JSON.stringify(blocks)}`);
+    else
+      blocks.forEach((label, i) => {
+        const total = Number(/total (\d+)/.exec(label ?? "")?.[1]);
+        if (total !== faces[i]) fail(`block ${i + 1} total ${total} is not the face ${faces[i]} of its die`);
+      });
+
+    // A tap during a Throw shows the card at once and clears the dice.
+    if (!(await waitForDiceCount(0, 12000))) fail("the dice of the first Throw did not clear");
+    await rollThrow("d6,d8");
+    if (!(await waitForDiceCount(2, 10000))) fail("expected two dice for the tap check");
+    await page.mouse.click(Math.round(width / 2), 300);
+    if (!(await page.waitForSelector(cardSel, { state: "visible", timeout: 1000 }).catch(() => null))) fail("a tap during the flight did not show the result card at once");
+    if (!(await waitForDiceCount(0, 1000))) fail("a tap during the flight did not clear the dice at once");
+
+    // A Roll mid-flight replaces the dice in the air: only its own die is left.
+    await page.waitForSelector(cardSel, { state: "detached", timeout: 12000 }).catch(() => null);
+    await rollThrow("d6,d8");
+    if (!(await waitForDiceCount(2, 10000))) fail("expected two dice before the mid-flight Roll");
+    await page.getByLabel("Dice tray").first().click();
+    await page.waitForSelector(dialogSel, { state: "visible", timeout: 10000 }).catch(() => fail("the tray did not open mid-flight"));
+    await page.getByLabel("Roll Expression", { exact: true }).fill("d4");
+    await page.getByText("Roll d4", { exact: true }).first().click();
+    if (!(await waitForDiceCount(1, 3000))) fail(`a Roll mid-flight left ${JSON.stringify(await throwDiceLabels())}`);
+    else if (!(await throwDiceLabels())[0]?.startsWith("d4 showing")) fail(`the dice left by the mid-flight Roll are ${JSON.stringify(await throwDiceLabels())}`);
+
+    // After the d4 stops the screen under the layer works: the floating dice button opens the tray.
+    await page.waitForSelector(cardSel, { state: "visible", timeout: 10000 }).catch(() => fail("no result card after the mid-flight Roll stopped"));
+    await page.getByLabel("Dice tray").first().click();
+    if (!(await page.waitForSelector(dialogSel, { state: "visible", timeout: 3000 }).catch(() => null))) fail("the dice button did not work after the Throw stopped");
+
+    // After the fade no Throw dice remain.
+    await page.keyboard.press("Escape");
+    if (!(await waitForDiceCount(0, 12000))) fail(`dice remain after the fade: ${JSON.stringify(await throwDiceLabels())}`);
+    return failures;
+  } finally {
+    await tctx.close();
+  }
+}
+
 // A batch of Rolls published through the publishing seam (`__publishRolls`) at one width: the result card
 // stacks one block per Roll with its own total and no grand total, each block's left bar takes the accent
 // its position gets (the first in the selected accent, crimson by default), the card stays inside the
@@ -3629,6 +3776,7 @@ const EXTRA_CHECKS = [
   { name: "Level-Up Flow cancel and review", run: checkLevelUpCancelAndReview },
   { name: "Spells after level-up", run: checkSpellsAfterLevelUp },
   { name: "Dice animation", run: checkDiceAnimation },
+  { name: "Dice throw animation", run: checkDiceThrow },
   { name: "Sheet chrome", run: checkSheetChrome },
   { name: "Home layout", run: checkHomeLayout },
   { name: "Actions rolls", run: checkActionRolls },
