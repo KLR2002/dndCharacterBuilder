@@ -1,13 +1,16 @@
 import type { Roll, RolledDie } from "./dice.ts";
 
+export const DICE_ANIMATIONS = ["off", "tumble", "throw"] as const;
+
+export type DiceAnimation = (typeof DICE_ANIMATIONS)[number];
+
 /**
- * Whether the 2.5D dice animation runs: the saved app setting when there is one, otherwise on, except
- * off when the system asks for reduced motion. A saved value always wins, so a user can keep the dice
- * on under reduced motion or switch them off without it.
+ * The dice animation in effect: the saved setting when there is one, otherwise tumble, or off when the
+ * system asks for reduced motion. A saved value always wins.
  */
-export function resolveDiceAnimationEnabled(saved: boolean | undefined, reduceMotion: boolean): boolean {
+export function resolveDiceAnimation(saved: DiceAnimation | undefined, reduceMotion: boolean): DiceAnimation {
   if (saved !== undefined) return saved;
-  return !reduceMotion;
+  return reduceMotion ? "off" : "tumble";
 }
 
 // Large pools animate at most this many dice; every die still shows as a text chip, only the 3D

@@ -9,6 +9,7 @@ import {
 } from "../services/storage";
 import type { Character, CreationProgress, Folder } from "../types/character";
 import { applyCharacterUpdate } from "./characterUpdates";
+import type { DiceAnimation } from "../rules/diceAnimation";
 import { migrateCharacter } from "../rules/migrateCharacter";
 import { reconcileForActiveBooks } from "../rules/characterReconciler";
 import { checkActiveBooksIntegrity } from "../rules/builderTransitions";
@@ -57,9 +58,9 @@ interface CharacterContextValue {
   setActiveBooks: (books: string[]) => Promise<void>;
   fullHealOnLevelUp: boolean;
   setFullHealOnLevelUp: (on: boolean) => Promise<void>;
-  /** The saved 3D dice switch; undefined when never toggled, so the system reduced-motion preference decides. */
-  dice3dEnabled: boolean | undefined;
-  setDice3dEnabled: (on: boolean) => Promise<void>;
+  /** The saved dice animation; undefined when never chosen, so the system reduced-motion preference decides. */
+  diceAnimation: DiceAnimation | undefined;
+  setDiceAnimation: (mode: DiceAnimation) => Promise<void>;
   setFirstRunCompleted: (books: string[]) => Promise<void>;
   getCharacter: (id: string) => Character | undefined;
 
@@ -123,8 +124,8 @@ export function CharacterProvider({ children }: { children: React.ReactNode }) {
   };
   const [activeBooks, setActiveBooksState] = useState<string[]>(DEFAULT_ACTIVE_BOOK_CODES);
   const [fullHealOnLevelUp, setFullHealOnLevelUpState] = useState<boolean>(DEFAULT_SETTINGS.fullHealOnLevelUp);
-  // Undefined until the user toggles the switch: then the saved value decides, not the system preference.
-  const [dice3dEnabled, setDice3dEnabledState] = useState<boolean | undefined>(undefined);
+  // Undefined until the user chooses a mode: then the saved value decides, not the system preference.
+  const [diceAnimation, setDiceAnimationState] = useState<DiceAnimation | undefined>(undefined);
   const [hasCompletedFirstRun, setHasCompletedFirstRun] = useState<boolean>(true); // default true to avoid flash
   const [isIntegrated, setIsIntegrated] = useState<boolean>(false);
   const [integratedAt, setIntegratedAt] = useState<string | null>(null);
@@ -169,7 +170,7 @@ export function CharacterProvider({ children }: { children: React.ReactNode }) {
         const migratedCharacters = loadedChars.map((c) => migrateCharacter(c, raceCatalog, classCatalog, loadedActiveBooks));
         setActiveBooksState(loadedActiveBooks);
         setFullHealOnLevelUpState(loadedSettings.fullHealOnLevelUp);
-        setDice3dEnabledState(loadedSettings.dice3dEnabled);
+        setDiceAnimationState(loadedSettings.diceAnimation);
         setHasCompletedFirstRun(Boolean(loadedSettings.hasCompletedFirstRun));
         setCatalogFormatInformed(loadedSettings.catalogFormatInformed);
         setCharacters(migratedCharacters);
@@ -336,9 +337,9 @@ export function CharacterProvider({ children }: { children: React.ReactNode }) {
     await updateSettings({ fullHealOnLevelUp: on });
   };
 
-  const setDice3dEnabled = async (on: boolean) => {
-    setDice3dEnabledState(on);
-    await updateSettings({ dice3dEnabled: on });
+  const setDiceAnimation = async (mode: DiceAnimation) => {
+    setDiceAnimationState(mode);
+    await updateSettings({ diceAnimation: mode });
   };
 
   const setFirstRunCompleted = async (books: string[]) => {
@@ -430,8 +431,8 @@ export function CharacterProvider({ children }: { children: React.ReactNode }) {
         setActiveBooks,
         fullHealOnLevelUp,
         setFullHealOnLevelUp,
-        dice3dEnabled,
-        setDice3dEnabled,
+        diceAnimation,
+        setDiceAnimation,
         setFirstRunCompleted,
         getCharacter,
         isIntegrated,

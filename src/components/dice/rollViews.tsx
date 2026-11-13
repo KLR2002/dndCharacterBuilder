@@ -7,20 +7,20 @@ import { formatModifier } from "../../rules/abilities.ts";
 import type { Roll } from "../../rules/dice.ts";
 import { rollAccentId } from "../../rules/rollColors.ts";
 import { entryHeading, formatRollTime, rollMarkers, type RollLogEntry } from "../../rules/rollLog.ts";
-import { useDiceAnimationEnabled } from "./useDiceAnimationEnabled";
+import { useDiceAnimation } from "./useDiceAnimation";
 
 // The 2.5D renderer (Reanimated + SVG) lives in its own chunk: React.lazy only fetches it when this
-// slot actually renders it, so while 3D dice are off nothing of it is loaded.
+// slot actually renders it, so while the dice animation is off nothing of it is loaded.
 const AnimatedDiceRoll = React.lazy(() => import("./AnimatedDiceRoll").then((module) => ({ default: module.AnimatedDiceRoll })));
 
 /**
  * The one place an animated dice renderer mounts for a Roll. It receives the completed Roll, faces
- * already decided, so the total never waits for it. Renders nothing while the 3D dice setting is off
- * or the system asks for reduced motion; then the faces show as the chips below, at once.
+ * already decided, so the total never waits for it. Renders nothing while the dice animation is off;
+ * then the faces show as the chips below, at once.
  */
 export function DiceRenderer({ roll }: { roll: Roll }) {
-  const enabled = useDiceAnimationEnabled();
-  if (!enabled) return null;
+  const mode = useDiceAnimation();
+  if (mode === "off") return null;
   return (
     <Suspense fallback={null}>
       <AnimatedDiceRoll roll={roll} />

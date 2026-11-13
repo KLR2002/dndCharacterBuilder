@@ -1676,16 +1676,15 @@ async function checkDiceAnimation(ctx, width, meta) {
   const diceSel = '[data-testid^="die-3d-"]';
   const accentHex = ACCENT_PALETTES.crimson.primary;
   const accentRgb = hexToRgbString(accentHex);
-  const accentHoverRgb = hexToRgbString(ACCENT_PALETTES.crimson.secondary);
-  const borderRgb = hexToRgbString(BASE_DARK_THEME.border);
+  const accentBorderRgb = hexToRgbString(ACCENT_PALETTES.crimson.border);
 
-  // The "3D dice" switch row's rendered border: the accent border when on, the plain border when off
-  // (react-native-web does not map accessibilityState to aria-checked, so read the style).
-  const switchBorder = async (p) =>
-    p.evaluate(() => {
-      const el = document.querySelector('[data-testid="dice-3d-switch"]');
+  // A dice animation segment's rendered border: the accent border when selected, not when not
+  // (react-native-web does not map accessibilityState to aria-selected, so read the style).
+  const segmentBorder = async (p, mode) =>
+    p.evaluate((testId) => {
+      const el = document.querySelector(`[data-testid="${testId}"]`);
       return el ? getComputedStyle(el).borderColor : null;
-    });
+    }, `dice-animation-${mode}`);
 
   // The sampler's clock (ms since the sampler started) at the last tray roll: the settle budget counts from it.
   let rollAt = null;
@@ -1806,16 +1805,19 @@ async function checkDiceAnimation(ctx, width, meta) {
     await maybeShot(page, shot("dropped"), meta);
   }
 
-  // The Options switch shows on with no saved value and no reduced motion, and toggling it off persists.
+  // The Options dice animation choice selects Tumble with no saved value and no reduced motion; choosing Off persists.
+  const offSel = '[data-testid="dice-animation-off"]';
+  const tumbleSel = '[data-testid="dice-animation-tumble"]';
   await gotoApp(page, `${BASE}/options`);
   await settle(page);
-  const diceSwitch = page.getByLabel("3D dice").first();
-  if (!(await diceSwitch.isVisible().catch(() => false))) fail('the Options screen has no "3D dice" switch');
+  if (!(await page.locator(offSel).first().isVisible().catch(() => false))) fail('the Options screen has no "Off" dice animation segment');
   else {
-    if ((await switchBorder(page)) !== accentHoverRgb) fail(`the "3D dice" switch is not on by default (border ${await switchBorder(page)}, expected ${accentHoverRgb})`);
-    await diceSwitch.click();
+    if ((await segmentBorder(page, "tumble")) !== accentBorderRgb) fail(`Tumble is not selected by default (border ${await segmentBorder(page, "tumble")}, expected ${accentBorderRgb})`);
+    if ((await segmentBorder(page, "off")) === accentBorderRgb) fail("Off is selected by default");
+    await page.locator(offSel).first().click();
     await settle(page);
-    if ((await switchBorder(page)) !== borderRgb) fail(`tapping the "3D dice" switch did not turn it off (border ${await switchBorder(page)}, expected ${borderRgb})`);
+    if ((await segmentBorder(page, "off")) !== accentBorderRgb) fail(`tapping Off did not select it (border ${await segmentBorder(page, "off")}, expected ${accentBorderRgb})`);
+    if ((await segmentBorder(page, "tumble")) === accentBorderRgb) fail("Tumble stayed selected after tapping Off");
     await maybeShot(page, shot("options-off"), meta);
   }
 
@@ -1833,6 +1835,16 @@ async function checkDiceAnimation(ctx, width, meta) {
   await page.waitForTimeout(900);
   if (!(await assertAbsentFor(async () => (await page.locator(diceSel).count()) !== 0))) fail("with the setting off, animated dice mounted later");
   await maybeShot(page, shot("off"), meta);
+
+  // Choosing Tumble again brings the animated dice back into a new Roll.
+  await gotoApp(page, `${BASE}/options`);
+  await settle(page);
+  await page.locator(tumbleSel).first().click();
+  await settle(page);
+  if ((await segmentBorder(page, "tumble")) !== accentBorderRgb) fail(`tapping Tumble did not select it (border ${await segmentBorder(page, "tumble")}, expected ${accentBorderRgb})`);
+  await gotoApp(page, `${BASE}/character/${CHARACTER_ID}`);
+  await rollTrayPool(page);
+  if (!(await page.waitForSelector(diceSel, { state: "visible", timeout: 10000 }).catch(() => null))) fail("with Tumble chosen again, no animated die mounted in a new Roll");
 
   // Reduced motion emulated and no saved setting (a fresh context) — no animation either.
   const rctx = await ctx.browser().newContext({
@@ -1858,10 +1870,9 @@ async function checkDiceAnimation(ctx, width, meta) {
     if (!(await assertAbsentFor(async () => (await rpage.locator(diceSel).count()) !== 0))) fail("with reduced motion emulated, animated dice mounted later");
     await gotoApp(rpage, `${BASE}/options`);
     await settle(rpage);
-    const rmSwitch = rpage.getByLabel("3D dice").first();
-    if (!(await rmSwitch.isVisible().catch(() => false))) fail('the Options screen has no "3D dice" switch under reduced motion');
-    else if ((await switchBorder(rpage)) !== borderRgb)
-      fail(`with reduced motion emulated and no saved setting, the "3D dice" switch is on (border ${await switchBorder(rpage)}, expected ${borderRgb})`);
+    if (!(await rpage.locator(offSel).first().isVisible().catch(() => false))) fail('the Options screen has no "Off" dice animation segment under reduced motion');
+    else if ((await segmentBorder(rpage, "off")) !== accentBorderRgb)
+      fail(`with reduced motion emulated and no saved setting, Off is not selected (border ${await segmentBorder(rpage, "off")}, expected ${accentBorderRgb})`);
     await maybeShot(rpage, shot("reduced-motion"), meta);
     await closePage(rpage);
   } finally {
