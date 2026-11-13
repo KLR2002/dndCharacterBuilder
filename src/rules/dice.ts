@@ -38,6 +38,8 @@ export interface RolledDie {
   sides: number;
   face: number;
   dropped: boolean;
+  /** Set for a die that follows a minus sign in a Roll Expression; its face counts negatively. */
+  subtracted?: true;
 }
 
 /** One throw of a dice pool with a flat modifier: each die's face and the total. */
