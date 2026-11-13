@@ -4,7 +4,9 @@
 
 **Blocked by:** 05
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] `checks/diceThrow.test.ts`, written first, with a seeded generator so it is deterministic: the same seed gives the same throw; every die settles within 6.5 s; every die's position stays inside the world at every frame; the reported value is the readable on top in the last frame (the top direction within 0.01 rad of vertical); 2000 seeded throws of one d6 give every face between 12% and 22% of the results, and 800 of a d20 give every face at least 1.5%; a throw of 20 dice completes
-- [ ] The module imports nothing from React Native; `npm run check:all` passes
+**Landed:** feature/3d-dice @ d77a70a. check:all (2315 app, 312 scraper tests) and the full layout:check at 320, 393, 768 and 1280 are green; the Android parts were checked by hand on the emulator (tray field, Tumble and Throw drawn, no crash), not through layout:android scenarios, and the last review repair was not re-checked on a device.
+
+- [x] `checks/diceThrow.test.ts`, written first, with a seeded generator so it is deterministic: the same seed gives the same throw; every die settles within 6.5 s; every die's position stays inside the world at every frame; the reported value is the readable on top in the last frame (the top direction within 0.01 rad of vertical); 2000 seeded throws of one d6 give every face between 12% and 22% of the results, and 800 of a d20 give every face at least 1.5%; a throw of 20 dice completes
+- [x] The module imports nothing from React Native; `npm run check:all` passes

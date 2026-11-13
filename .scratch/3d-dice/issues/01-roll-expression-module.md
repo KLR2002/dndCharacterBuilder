@@ -4,13 +4,15 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] `checks/rollExpression.test.ts`, written first, with an injected `RandomSource`, fails before the module exists
-- [ ] Accepted, with the Rolls they read as: `d20+5`, `2d6+1d8+3` (case and spaces ignored), `3+d6`, `d3+d7`, `2d2+d1000`, `d20-d4+2`, `a(d20+5,d20+2)`, `A(D20)` (= `a(d20,d20)`), `a(d20,d20,d20)`, `d(d20,d20)-1`, `a(d20,d20)+d4+2`, `d20,d20` (two Rolls), `4d6,4d6,4d6`, `2a(d20,d20)` (= `a(d20,d20),a(d20,d20)`), `2a(d20+5,d20+5)+2`, `d4+2a(d20,d20)` (= `d4+a(d20,d20),d4+a(d20,d20)`), `a(d20)+2d(d20)+d4`, `10a(d20)`
-- [ ] Rejected with a message: a leading `+` or `-` (also after a comma), a trailing `+`, `-` or `,`, `,d20`, `d20,,d20`, `5` (no die), `d20,5`, `0d6`, `1d0`, `d1001`, `101d6`, `11a(d20)`, `a(d4,d4)`, `a(2d20,d20)`, `a(d20,a(d20,d20))`, `a(d20+d4,d20)`, `a()`, `a(d20,d20` (missing `)`), `2a(d20,d20)+3d(d20,d20)` (two counted functions), `dd6`, `a`, `d`
-- [ ] Advantage keeps the highest argument total and disadvantage the lowest, a tie keeps the first; the other arguments' dice have `dropped: true`; the flat modifier of a dropped argument does not count; `roll.total` equals the sum of kept dice (negative for `subtracted`) plus the kept modifier, over 2000 random expressions
-- [ ] `planRollDice(rolls)` has exactly the length and order of the random calls `evaluateRolls` makes, over the same 2000 expressions
-- [ ] The edit helpers: `addDieToExpression("", 6)` = `d6`, `("d6", 6)` = `2d6`, `("2d6+3", 8)` = `2d6+3+d8`, `("d20,d6", 6)` = `d20,2d6`; `bumpExpressionModifier("d20", 1)` = `d20+1`, `("d20+1", -1)` = `d20`, `("2d6+d8", 1)` = `2d6+d8+1`; `expressionD20Mode` is null for `2d6`, "advantage" for `a(d20)+3`; `setExpressionD20Mode("d20+3", "advantage")` = `a(d20,d20)+3`
-- [ ] `isD20Test` (`src/rules/rollLog.ts`) is true for the Roll of `a(d20+5,d20+2)` and false for `a(d20,d20,d20)+d4`
-- [ ] `npm run check:all` passes
+**Landed:** feature/3d-dice @ d77a70a. check:all (2315 app, 312 scraper tests) and the full layout:check at 320, 393, 768 and 1280 are green; the Android parts were checked by hand on the emulator (tray field, Tumble and Throw drawn, no crash), not through layout:android scenarios, and the last review repair was not re-checked on a device.
+
+- [x] `checks/rollExpression.test.ts`, written first, with an injected `RandomSource`, fails before the module exists
+- [x] Accepted, with the Rolls they read as: `d20+5`, `2d6+1d8+3` (case and spaces ignored), `3+d6`, `d3+d7`, `2d2+d1000`, `d20-d4+2`, `a(d20+5,d20+2)`, `A(D20)` (= `a(d20,d20)`), `a(d20,d20,d20)`, `d(d20,d20)-1`, `a(d20,d20)+d4+2`, `d20,d20` (two Rolls), `4d6,4d6,4d6`, `2a(d20,d20)` (= `a(d20,d20),a(d20,d20)`), `2a(d20+5,d20+5)+2`, `d4+2a(d20,d20)` (= `d4+a(d20,d20),d4+a(d20,d20)`), `a(d20)+2d(d20)+d4`, `10a(d20)`
+- [x] Rejected with a message: a leading `+` or `-` (also after a comma), a trailing `+`, `-` or `,`, `,d20`, `d20,,d20`, `5` (no die), `d20,5`, `0d6`, `1d0`, `d1001`, `101d6`, `11a(d20)`, `a(d4,d4)`, `a(2d20,d20)`, `a(d20,a(d20,d20))`, `a(d20+d4,d20)`, `a()`, `a(d20,d20` (missing `)`), `2a(d20,d20)+3d(d20,d20)` (two counted functions), `dd6`, `a`, `d`
+- [x] Advantage keeps the highest argument total and disadvantage the lowest, a tie keeps the first; the other arguments' dice have `dropped: true`; the flat modifier of a dropped argument does not count; `roll.total` equals the sum of kept dice (negative for `subtracted`) plus the kept modifier, over 2000 random expressions
+- [x] `planRollDice(rolls)` has exactly the length and order of the random calls `evaluateRolls` makes, over the same 2000 expressions
+- [x] The edit helpers: `addDieToExpression("", 6)` = `d6`, `("d6", 6)` = `2d6`, `("2d6+3", 8)` = `2d6+3+d8`, `("d20,d6", 6)` = `d20,2d6`; `bumpExpressionModifier("d20", 1)` = `d20+1`, `("d20+1", -1)` = `d20`, `("2d6+d8", 1)` = `2d6+d8+1`; `expressionD20Mode` is null for `2d6`, "advantage" for `a(d20)+3`; `setExpressionD20Mode("d20+3", "advantage")` = `a(d20,d20)+3`
+- [x] `isD20Test` (`src/rules/rollLog.ts`) is true for the Roll of `a(d20+5,d20+2)` and false for `a(d20,d20,d20)+d4`
+- [x] `npm run check:all` passes

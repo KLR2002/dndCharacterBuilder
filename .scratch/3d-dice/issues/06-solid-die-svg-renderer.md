@@ -4,7 +4,9 @@
 
 **Blocked by:** 05
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] `checks/diceProjection.test.ts`, written first: with `poseShowing(geo, value)` the face that reads `value` is the nearest face and its label matrix has no shear and a uniform scale; a die showing a face to the viewer lists only faces whose normal points toward it; the faces keep geometry order and carry a visible flag; a dropped die changes only the colours, not the geometry
-- [ ] `npm run typecheck`, `npm run lint` and `npm run check:all` pass (the visual check happens in the Tumble ticket, which mounts the component)
+**Landed:** feature/3d-dice @ d77a70a. check:all (2315 app, 312 scraper tests) and the full layout:check at 320, 393, 768 and 1280 are green; the Android parts were checked by hand on the emulator (tray field, Tumble and Throw drawn, no crash), not through layout:android scenarios, and the last review repair was not re-checked on a device.
+
+- [x] `checks/diceProjection.test.ts`, written first: with `poseShowing(geo, value)` the face that reads `value` is the nearest face and its label matrix has no shear and a uniform scale; a die showing a face to the viewer lists only faces whose normal points toward it; the faces keep geometry order and carry a visible flag; a dropped die changes only the colours, not the geometry
+- [x] `npm run typecheck`, `npm run lint` and `npm run check:all` pass (the visual check happens in the Tumble ticket, which mounts the component)

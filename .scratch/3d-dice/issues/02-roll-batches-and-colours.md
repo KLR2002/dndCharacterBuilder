@@ -4,9 +4,11 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] `checks/rollColors.test.ts`: with `crimson` selected the sequence is crimson, gold, purple, emerald, blue, cyan, crimson; with `blue` selected blue, cyan, crimson, gold, purple, emerald, blue; with `silver` selected index 0 is silver and the later ones skip it; `checks/rollLog.test.ts` covers `entryHeading` with a label
-- [ ] `checks/diceOverlayAnnounceGuard.test.ts` still passes unchanged, and the explicit announcement and the web live region both name every Roll of the latest batch
-- [ ] `ONLY=dice WIDTHS=320 npm run layout:check` (and at 393, 768, 1280) passes with a new scenario that publishes a batch of three Rolls through `__publishRolls`: the card shows three blocks with their own totals and no grand total, the bars differ, the first bar is the selected accent, the card stays inside the screen at 320 and scrolls, the Roll Log lists the three entries in batch order with the batch newest first, a one-Roll batch shows no bar and no dot
-- [ ] `npm run check:all` passes
+**Landed:** feature/3d-dice @ d77a70a. check:all (2315 app, 312 scraper tests) and the full layout:check at 320, 393, 768 and 1280 are green; the Android parts were checked by hand on the emulator (tray field, Tumble and Throw drawn, no crash), not through layout:android scenarios, and the last review repair was not re-checked on a device.
+
+- [x] `checks/rollColors.test.ts`: with `crimson` selected the sequence is crimson, gold, purple, emerald, blue, cyan, crimson; with `blue` selected blue, cyan, crimson, gold, purple, emerald, blue; with `silver` selected index 0 is silver and the later ones skip it; `checks/rollLog.test.ts` covers `entryHeading` with a label
+- [x] `checks/diceOverlayAnnounceGuard.test.ts` still passes unchanged, and the explicit announcement and the web live region both name every Roll of the latest batch
+- [x] `ONLY=dice WIDTHS=320 npm run layout:check` (and at 393, 768, 1280) passes with a new scenario that publishes a batch of three Rolls through `__publishRolls`: the card shows three blocks with their own totals and no grand total, the bars differ, the first bar is the selected accent, the card stays inside the screen at 320 and scrolls, the Roll Log lists the three entries in batch order with the batch newest first, a one-Roll batch shows no bar and no dot
+- [x] `npm run check:all` passes

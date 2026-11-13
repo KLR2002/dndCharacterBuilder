@@ -4,9 +4,11 @@
 
 **Blocked by:** 03, 04, 05, 08
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] `checks/throwRoll.test.ts`, written first: `recordDice` of an attack's `make` returns `[20]`, of a critical damage `make` with `1d8+3` the doubled count, of the Hit Points roll one die; the dice count and order are the same for any faces, shown by recording a `make` against two different random sources; `replayRandom` returns the replayed faces then the fallback
-- [ ] `checks/actionRolls.test.ts` and the level-up tests pass with the new seam, an attack whose thrown d20 settles on 20 offers "Roll critical damage", and one that settles on 7 offers "Roll damage"
-- [ ] With the animation off or tumble the faces and totals come from the generator exactly as before; `npm run layout:check` with `ONLY=dice WIDTHS=320` and `ONLY=actions WIDTHS=320` pass
-- [ ] `npm run check:all` passes
+**Landed:** feature/3d-dice @ d77a70a. check:all (2315 app, 312 scraper tests) and the full layout:check at 320, 393, 768 and 1280 are green; the Android parts were checked by hand on the emulator (tray field, Tumble and Throw drawn, no crash), not through layout:android scenarios, and the last review repair was not re-checked on a device.
+
+- [x] `checks/throwRoll.test.ts`, written first: `recordDice` of an attack's `make` returns `[20]`, of a critical damage `make` with `1d8+3` the doubled count, of the Hit Points roll one die; the dice count and order are the same for any faces, shown by recording a `make` against two different random sources; `replayRandom` returns the replayed faces then the fallback
+- [x] `checks/actionRolls.test.ts` and the level-up tests pass with the new seam, an attack whose thrown d20 settles on 20 offers "Roll critical damage", and one that settles on 7 offers "Roll damage"
+- [x] With the animation off or tumble the faces and totals come from the generator exactly as before; `npm run layout:check` with `ONLY=dice WIDTHS=320` and `ONLY=actions WIDTHS=320` pass
+- [x] `npm run check:all` passes

@@ -4,8 +4,10 @@
 
 **Blocked by:** 01, 02
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] `ONLY=dice WIDTHS=320 npm run layout:check` passes at 320 and 393, plus 768 and 1280, with the existing "dice tray" scenario in `scripts/layout-check.mjs` rewritten for the field: it types `2d6+3`, taps `d8` and checks the text, rolls, and expects the result card heading to be the Roll's own text instead of "Dice tray", and the Roll Log heading likewise; typing `-d6` disables Roll and shows a message; typing `d20,d20` rolls two Rolls; closing and reopening the tray keeps the text; the lone-d20 control appears for `d20+3` and not for `2d6`
-- [ ] `npm run layout:android` with `ONLY` set to the dice tray scenario shows the field without clipped text on the emulator (native-only input styles)
-- [ ] The tray no longer imports the removed helpers and `npm run check:all` passes
+**Landed:** feature/3d-dice @ d77a70a. check:all (2315 app, 312 scraper tests) and the full layout:check at 320, 393, 768 and 1280 are green; the Android parts were checked by hand on the emulator (tray field, Tumble and Throw drawn, no crash), not through layout:android scenarios, and the last review repair was not re-checked on a device.
+
+- [x] `ONLY=dice WIDTHS=320 npm run layout:check` passes at 320 and 393, plus 768 and 1280, with the existing "dice tray" scenario in `scripts/layout-check.mjs` rewritten for the field: it types `2d6+3`, taps `d8` and checks the text, rolls, and expects the result card heading to be the Roll's own text instead of "Dice tray", and the Roll Log heading likewise; typing `-d6` disables Roll and shows a message; typing `d20,d20` rolls two Rolls; closing and reopening the tray keeps the text; the lone-d20 control appears for `d20+3` and not for `2d6`
+- [x] `npm run layout:android` with `ONLY` set to the dice tray scenario shows the field without clipped text on the emulator (native-only input styles)
+- [x] The tray no longer imports the removed helpers and `npm run check:all` passes

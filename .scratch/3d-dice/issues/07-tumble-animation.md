@@ -4,10 +4,12 @@
 
 **Blocked by:** 02, 04, 06
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] `checks/diceAnimation.test.ts` covers the pure part: the tumble orientation at progress 1 equals `poseShowing` for the die's face, at progress 0 it differs, and `planSolidDice` caps a batch of 14 d6 at 10 solids
-- [ ] `ONLY=dice WIDTHS=320 npm run layout:check` (and at 393, 768, 1280) passes with the "3D dice" sections of `scripts/layout-check.mjs` rewritten for the new dice (testIDs `die-solid-N`): a Roll of `d6+d8` mounts two dice, 14 d6 mount 10, `d3+d6` mounts one, a d100 mounts two, a dropped die is muted after it stops, Off mounts none, the dice are inside the card, and the settle budget in the script is met
-- [ ] `npm run layout:android` with `ONLY` set to the scenarios that show the result card with dice shows readable numerals on the top faces on the emulator (SVG text on a transform is native-risky); the screenshots are named in the review
-- [ ] No source or test under `src/` or `checks/` contains the phrase "3D dice" any more (the old setting label, comments and test names are gone), and `GLOSSARY.md` lists `3D dice` first in the `_Avoid_` line of Dice Animation again (`checks/glossaryConsistency.test.ts` scans for it)
-- [ ] `npm run check:all` passes
+**Landed:** feature/3d-dice @ d77a70a. check:all (2315 app, 312 scraper tests) and the full layout:check at 320, 393, 768 and 1280 are green; the Android parts were checked by hand on the emulator (tray field, Tumble and Throw drawn, no crash), not through layout:android scenarios, and the last review repair was not re-checked on a device.
+
+- [x] `checks/diceAnimation.test.ts` covers the pure part: the tumble orientation at progress 1 equals `poseShowing` for the die's face, at progress 0 it differs, and `planSolidDice` caps a batch of 14 d6 at 10 solids
+- [x] `ONLY=dice WIDTHS=320 npm run layout:check` (and at 393, 768, 1280) passes with the "3D dice" sections of `scripts/layout-check.mjs` rewritten for the new dice (testIDs `die-solid-N`): a Roll of `d6+d8` mounts two dice, 14 d6 mount 10, `d3+d6` mounts one, a d100 mounts two, a dropped die is muted after it stops, Off mounts none, the dice are inside the card, and the settle budget in the script is met
+- [x] `npm run layout:android` with `ONLY` set to the scenarios that show the result card with dice shows readable numerals on the top faces on the emulator (SVG text on a transform is native-risky); the screenshots are named in the review
+- [x] No source or test under `src/` or `checks/` contains the phrase "3D dice" any more (the old setting label, comments and test names are gone), and `GLOSSARY.md` lists `3D dice` first in the `_Avoid_` line of Dice Animation again (`checks/glossaryConsistency.test.ts` scans for it)
+- [x] `npm run check:all` passes

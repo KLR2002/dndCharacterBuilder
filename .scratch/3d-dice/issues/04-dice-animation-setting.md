@@ -4,9 +4,11 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] `checks/diceAnimation.test.ts` rewritten first: saved values win over reduced motion; no saved value gives tumble, or off under reduced motion; settings saved with `dice3dEnabled: true` load as tumble and `false` as off; a non-string or unknown `diceAnimation` is rejected; the setting survives a round trip and a patch of another field keeps it
-- [ ] `scripts/layout-check.mjs` (the sections that read `dice-3d-switch`) uses the new controls: choosing Off removes the animated dice from a new Roll, choosing Tumble brings them back, the selected segment shows the accent border
-- [ ] `ONLY=dice,options WIDTHS=320 npm run layout:check` passes at 320 and 393
-- [ ] `npm run check:all` passes
+**Landed:** feature/3d-dice @ d77a70a. check:all (2315 app, 312 scraper tests) and the full layout:check at 320, 393, 768 and 1280 are green; the Android parts were checked by hand on the emulator (tray field, Tumble and Throw drawn, no crash), not through layout:android scenarios, and the last review repair was not re-checked on a device.
+
+- [x] `checks/diceAnimation.test.ts` rewritten first: saved values win over reduced motion; no saved value gives tumble, or off under reduced motion; settings saved with `dice3dEnabled: true` load as tumble and `false` as off; a non-string or unknown `diceAnimation` is rejected; the setting survives a round trip and a patch of another field keeps it
+- [x] `scripts/layout-check.mjs` (the sections that read `dice-3d-switch`) uses the new controls: choosing Off removes the animated dice from a new Roll, choosing Tumble brings them back, the selected segment shows the accent border
+- [x] `ONLY=dice,options WIDTHS=320 npm run layout:check` passes at 320 and 393
+- [x] `npm run check:all` passes

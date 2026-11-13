@@ -4,9 +4,11 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] `checks/diceSolids.test.ts`, written first: for each of the six solids every face is planar and its normal points away from the centre, the face count equals the sides (d4: four faces, four vertex readables), `readables` hold every value 1..sides once, opposite faces sum to sides + 1 (not the d4), rotating a die by `poseShowing(geo, value)` and reading the readable whose direction points most upward returns `value`, for every value of every die; the d10 faces are kites
-- [ ] `d100Value(d100Parts(v))` is `v` for 1..100, and the 100 combinations of tens and units readings give 100 distinct values from 1 to 100
-- [ ] `planSolidDice([6,6,100,3,20], cap)` marks d6, d6, d100, d20 as solids and the d3 as digital; with `cap` 3 the d100 (two bodies) no longer fits after two d6 and is digital, and the d20 after it is digital as well; a plan of 25 d6 with cap 20 has 20 solids
-- [ ] The modules import nothing from React Native; `npm run check:all` passes
+**Landed:** feature/3d-dice @ d77a70a. check:all (2315 app, 312 scraper tests) and the full layout:check at 320, 393, 768 and 1280 are green; the Android parts were checked by hand on the emulator (tray field, Tumble and Throw drawn, no crash), not through layout:android scenarios, and the last review repair was not re-checked on a device.
+
+- [x] `checks/diceSolids.test.ts`, written first: for each of the six solids every face is planar and its normal points away from the centre, the face count equals the sides (d4: four faces, four vertex readables), `readables` hold every value 1..sides once, opposite faces sum to sides + 1 (not the d4), rotating a die by `poseShowing(geo, value)` and reading the readable whose direction points most upward returns `value`, for every value of every die; the d10 faces are kites
+- [x] `d100Value(d100Parts(v))` is `v` for 1..100, and the 100 combinations of tens and units readings give 100 distinct values from 1 to 100
+- [x] `planSolidDice([6,6,100,3,20], cap)` marks d6, d6, d100, d20 as solids and the d3 as digital; with `cap` 3 the d100 (two bodies) no longer fits after two d6 and is digital, and the d20 after it is digital as well; a plan of 25 d6 with cap 20 has 20 solids
+- [x] The modules import nothing from React Native; `npm run check:all` passes
