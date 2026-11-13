@@ -1477,7 +1477,7 @@ async function checkDiceTrayAndLog(ctx, width, meta) {
     await page.waitForSelector(dialogSel, { state: "visible", timeout: 10000 }).catch(() => fail("tapping the result card did not open the tray"));
     const headings = await page.evaluate(() => [...document.querySelectorAll('[data-testid="log-entry-heading"]')].map((el) => el.textContent));
     // Newest first, one entry per Roll (a batch in expression order), each headed by its own text.
-    const expectedHeadings = ["Kara · Longsword attack", "a(d20,d20)+3", "d20", "d20", "2d6+3+d8"];
+    const expectedHeadings = ["Kara · Longsword attack", "a(d20,d20)+3", "d20", "d20", "2d6+3+d8", "100d20"];
     if (JSON.stringify(headings) !== JSON.stringify(expectedHeadings))
       fail(`the Roll Log is not newest first, one entry per Roll: ${JSON.stringify(headings)}, expected ${JSON.stringify(expectedHeadings)}`);
     await maybeShot(page, shot("log"), meta);
