@@ -29,8 +29,8 @@ const MODE_CHOICES: { mode: D20Mode; label: string }[] = [
  * The dice tray behind the floating button, in the shared Modal shell: on the "Dice" segment a Roll
  * Expression field (die buttons append to it, the modifier stepper moves its trailing modifier, and
  * Disadvantage / Normal / Advantage shows for a lone d20), and on the "Log" segment the session Roll Log.
- * Rolling publishes each Roll of the expression as one batch and closes the tray, so the result card
- * shows above the floating button.
+ * Rolling publishes each Roll of the expression as one batch, empties the field and closes the tray, so
+ * the result card shows above the floating button.
  */
 export function DiceTray() {
   const { theme } = useAppTheme();
@@ -55,6 +55,7 @@ export function DiceTray() {
         d20Mode: expressionD20Mode(rollText) ?? "none",
       })),
     );
+    setExpression("");
     closeTray();
   };
 

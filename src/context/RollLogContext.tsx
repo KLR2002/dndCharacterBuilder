@@ -71,7 +71,7 @@ interface RollLogContextValue {
   /** Opens the dice tray, on the Log segment when `segment` is "log". */
   openTray: (segment?: TraySegment) => void;
   closeTray: () => void;
-  /** The tray's Roll Expression text. Kept for the session, never stored. */
+  /** The tray's Roll Expression text. Kept between openings until a Roll from the tray empties it; never stored. */
   expression: string;
   setExpression: (text: string) => void;
   /** Switches the open tray's segment. */

@@ -1285,7 +1285,7 @@ async function checkDiceTrayAndLog(ctx, width, meta) {
   }
 
   // The tray's Roll Expression field is the pool: die buttons append to it, the modifier stepper moves its
-  // trailing modifier, and Roll reads "Roll <text>". The text is kept for the session, so reopening keeps it.
+  // trailing modifier, and Roll reads "Roll <text>". Rolling empties it; closing without a Roll keeps it.
   const expression = page.getByLabel("Roll Expression", { exact: true });
   const fieldValue = () => expression.inputValue();
   const reopenTray = async () => {
@@ -1354,9 +1354,15 @@ async function checkDiceTrayAndLog(ctx, width, meta) {
       fail(`the result total ${parsedTotal} is not the faces ${faces.join("+")} ${roll.modifier}`);
   }
 
-  // Closing and reopening the tray keeps the text.
+  // The Roll emptied the field.
   await reopenTray();
-  if ((await fieldValue()) !== "2d6+3+d8") fail(`reopening the tray reads "${await fieldValue()}", expected the kept "2d6+3+d8"`);
+  if ((await fieldValue()) !== "") fail(`reopening the tray after a Roll reads "${await fieldValue()}", expected an empty field`);
+  // Closing without a Roll keeps the text.
+  await expression.fill("3d4");
+  await page.keyboard.press("Escape");
+  await page.waitForSelector(dialogSel, { state: "hidden", timeout: 10000 }).catch(() => fail("Escape did not close the tray"));
+  await reopenTray();
+  if ((await fieldValue()) !== "3d4") fail(`reopening the tray without a Roll reads "${await fieldValue()}", expected the kept "3d4"`);
 
   // A leading minus is not a Roll: Roll is disabled and the parser's message shows under the field.
   await expression.fill("-d6");
