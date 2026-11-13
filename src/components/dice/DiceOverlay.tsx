@@ -11,7 +11,7 @@ import { DiceTray } from "./DiceTray";
 import { useDiceAnimation } from "./useDiceAnimation";
 import { batchAccentId, RollResultView } from "./rollViews";
 
-// The solid dice load with their own chunk: while the animation is not Tumble, nothing of them is fetched.
+// TumbleDice and ThrowLayer each load in their own chunk on first render: TumbleDice only under Tumble, ThrowLayer only while a Throw is in the air.
 const TumbleDice = React.lazy(() => import("./TumbleDice").then((module) => ({ default: module.TumbleDice })));
 const ThrowLayer = React.lazy(() => import("./ThrowLayer").then((module) => ({ default: module.ThrowLayer })));
 
