@@ -338,7 +338,7 @@ _Avoid_: Console input, formula, dice notation
 
 **Dice Animation**:
 How a Roll plays on screen, a setting with three values. *Off*: no animation. *Tumble*: each die turns in place and stops on the face the generator drew. *Throw*: the dice are thrown across the whole screen and the face that lands on top is the result. Only the six standard dice (d4, d6, d8, d10, d12, d20) and the d100 (a tens die and a units die) are drawn as solids; any other die is shown as a number only.
-_Avoid_: 3D dice, real throw, dice physics
+_Avoid_: real throw, dice physics
 
 **Roll Log**:
 The list of Rolls made since the app was opened. It is not saved with the Character.
