@@ -1615,9 +1615,22 @@ function hexToRgbString(hex) {
   return `rgb(${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255})`;
 }
 
-// Starts an in-page sampler that records the first 3D die's computed pose on every animation frame.
-// Run before the roll so the samples cover the tumble itself; the sampler runs until 3s after the die
-// first appeared (at most 15s) — the die mounts a beat after the card, once its lazy chunk loads.
+// Whether an SVG fill ("rgb(r,g,b)") is the accent hex scaled down by one shade factor, as the solid dice
+// are lit: the red channel fixes the factor, and the other two channels must follow it.
+function isAccentShade(fill, hex) {
+  const m = /^rgb\((\d+),(\d+),(\d+)\)$/.exec(fill ?? "");
+  if (!m) return false;
+  const n = Number.parseInt(hex.slice(1), 16);
+  const base = [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+  const shade = Number(m[1]) / base[0];
+  if (shade < 0.25 || shade > 1.01) return false;
+  return [1, 2].every((i) => Math.abs(Number(m[i + 1]) - shade * base[i]) <= 2);
+}
+
+// Starts an in-page sampler that records the first solid die's projected outline on every animation
+// frame: the points of its first polygon change as the die turns. Run before the roll so the samples
+// cover the tumble itself; the sampler runs until 3s after the die first appeared (at most 15s), since
+// the dice mount a beat after the card, once their lazy chunk loads.
 function startDieSampling(p) {
   return p.evaluate(() => {
     window.__dieT0 = performance.now();
@@ -1625,10 +1638,10 @@ function startDieSampling(p) {
     window.__dieSamples = [];
     const tick = () => {
       const now = performance.now() - window.__dieT0;
-      const die = document.querySelector('[data-testid="die-3d-0"]');
-      if (die) {
+      const polygon = document.querySelector('[data-testid="die-solid-0"] polygon');
+      if (polygon) {
         if (window.__dieMountT === null) window.__dieMountT = now;
-        window.__dieSamples.push({ t: now, pose: getComputedStyle(die).transform });
+        window.__dieSamples.push({ t: now, pose: polygon.getAttribute("points") ?? "" });
       }
       const limit = window.__dieMountT === null ? 15000 : window.__dieMountT + 3000;
       if (now < limit) requestAnimationFrame(tick);
@@ -1652,11 +1665,12 @@ function readDieSamples(p, untilT) {
   );
 }
 
-// The 2.5D dice of a Roll in the result card: with the 3D dice setting on (no saved value, no reduced
-// motion) the text total is shown while the dice are still tumbling and lands on the Roll's faces in
-// the accent colour, a dropped d20 included but muted; with the setting switched off in Options (and
-// kept off across a reload), or with reduced motion emulated and no setting saved, no dice mount and
-// the text appears at once; the Options switch shows the effective state.
+// The solid dice of a Roll in the result card: with the dice animation on (no saved value, no reduced
+// motion) the text total is shown while the dice are still tumbling and they settle on the Roll's faces
+// in the accent colour, a dropped d20 included but grey once it has stopped; the cap of ten solids, the
+// d3 that stays digital, and the d100 pair are counted; with the animation off in Options (and kept off
+// across a reload), or with reduced motion emulated and no setting saved, no dice mount and the text
+// appears at once; the Options switch shows the effective state.
 async function checkDiceAnimation(ctx, width, meta) {
   const page = await ctx.newPage();
   const prefix = `[${width}px dice animation]`;
@@ -1673,9 +1687,8 @@ async function checkDiceAnimation(ctx, width, meta) {
   const shot = (name) => join(SHOTS, `DiceAnimation-${name}-${width}.png`);
   const dialogSel = '[role="dialog"]';
   const cardSel = '[data-testid="result-card"]';
-  const diceSel = '[data-testid^="die-3d-"]';
+  const diceSel = '[data-testid^="die-solid-"]';
   const accentHex = ACCENT_PALETTES.crimson.primary;
-  const accentRgb = hexToRgbString(accentHex);
   const accentBorderRgb = hexToRgbString(ACCENT_PALETTES.crimson.border);
 
   // A dice animation segment's rendered border: the accent border when selected, not when not
@@ -1688,20 +1701,20 @@ async function checkDiceAnimation(ctx, width, meta) {
 
   // The sampler's clock (ms since the sampler started) at the last tray roll: the settle budget counts from it.
   let rollAt = null;
-  const rollTrayPool = async (p) => {
+  const rollTrayPool = async (p, expression = "1d6+1d8+3") => {
     await p.getByLabel("Dice tray").first().click();
     await p.waitForSelector(dialogSel, { state: "visible", timeout: 10000 }).catch(() => fail("the tray did not open"));
-    await p.getByLabel("Roll Expression", { exact: true }).fill("1d6+1d8+3");
+    await p.getByLabel("Roll Expression", { exact: true }).fill(expression);
     await settle(p);
     // Read just before the tap, so the roll itself falls after this reading and the budget never starts late.
     rollAt = await p.evaluate(() => performance.now() - window.__dieT0);
-    await p.getByText("Roll 1d6+1d8+3", { exact: true }).first().click();
+    await p.getByText(`Roll ${expression}`, { exact: true }).first().click();
     await p.waitForSelector(cardSel, { state: "visible", timeout: 10000 }).catch(() => fail("no result card after the tray roll"));
   };
 
   await gotoApp(page, `${BASE}/character/${CHARACTER_ID}`);
 
-  // 3D dice on by default (no saved setting, no reduced motion): the total is there while the
+  // Animation on by default (no saved setting, no reduced motion): the total is there while the
   // dice still tumble, the faces shown match the Roll's chips, the dice carry the accent colour.
   // The pose sampler starts before the roll: under load the die can mount and finish tumbling before
   // a sampler started after the roll would begin.
@@ -1710,12 +1723,12 @@ async function checkDiceAnimation(ctx, width, meta) {
   const warm = await ctx.newPage();
   await gotoApp(warm, `${BASE}/character/${CHARACTER_ID}`);
   await rollTrayPool(warm);
-  await warm.waitForSelector('[data-testid="die-3d-0"]', { state: "visible", timeout: 10000 }).catch(() => fail("the warm-up roll mounted no animated die"));
+  await warm.waitForSelector('[data-testid="die-solid-0"]', { state: "visible", timeout: 10000 }).catch(() => fail("the warm-up roll mounted no animated die"));
   await closePage(warm);
   await startDieSampling(page);
   await rollTrayPool(page);
-  const dieMounted = await page.waitForSelector('[data-testid="die-3d-0"]', { state: "visible", timeout: 10000 }).catch(() => null);
-  if (!dieMounted) fail("with 3D dice on, no animated die mounted in the result card");
+  const dieMounted = await page.waitForSelector('[data-testid="die-solid-0"]', { state: "visible", timeout: 10000 }).catch(() => null);
+  if (!dieMounted) fail("with the dice animation on, no solid die mounted in the result card");
   else {
     const early = await page.evaluate(() => {
       const card = document.querySelector('[data-testid="result-card"]');
@@ -1733,7 +1746,7 @@ async function checkDiceAnimation(ctx, width, meta) {
     // pose change, not from the roll.
     const mountT = timed.length > 0 ? timed[0].t : null;
     if (mountT === null || mountT > 3000)
-      fail(`no 3D die mounted within 3s of the roll (${mountT === null ? "none appeared" : `first seen at ${Math.round(mountT)}ms`})`);
+      fail(`no solid die mounted within 3s of the roll (${mountT === null ? "none appeared" : `first seen at ${Math.round(mountT)}ms`})`);
     const changes = [];
     for (let i = 1; i < timed.length; i++) if (timed[i].pose !== timed[i - 1].pose) changes.push(timed[i].t);
     if (changes.length === 0) fail("the die's pose did not change within 3s of the roll: no tumble ran");
@@ -1743,7 +1756,7 @@ async function checkDiceAnimation(ctx, width, meta) {
     const poses = [...new Set(timed.map((s) => s.pose))];
     const changesOverWindow = timed.some((a) => timed.some((b) => b.t - a.t > 100 && b.pose !== a.pose));
     if (poses.length < 3 || !changesOverWindow)
-      fail(`the die pose took only ${poses.length} distinct values across ${timed.length} sampled frames after the roll: no animation ran with 3D dice on`);
+      fail(`the die pose took only ${poses.length} distinct values across ${timed.length} sampled frames after the roll: no animation ran with the dice animation on`);
     // The tumble runs from its first pose change to its last one, and must take at most 1.2s.
     const tumbleMs = changes[changes.length - 1] - changes[0];
     if (tumbleMs > 1200)
@@ -1753,13 +1766,12 @@ async function checkDiceAnimation(ctx, width, meta) {
       const card = document.querySelector('[data-testid="result-card"]');
       if (!card) return null;
       const chips = [...card.querySelectorAll('[data-testid="die-chip"]')].map((c) => c.textContent ?? "");
-      const dice = [...card.querySelectorAll('[data-testid^="die-3d-"]')].map((d) => d.getAttribute("aria-label") ?? "");
+      const dice = [...card.querySelectorAll('[data-testid^="die-solid-"]')].map((d) => d.getAttribute("aria-label") ?? "");
       const total = card.querySelector('[data-testid="result-total"]')?.textContent ?? "";
-      const d6 = card.querySelector('[data-testid="die-3d-0"]');
-      const d8 = card.querySelector('[data-testid="die-3d-1"]');
-      const d6bg = d6?.firstElementChild ? getComputedStyle(d6.firstElementChild).backgroundColor : null;
-      const d8fill = d8?.querySelector("svg polygon")?.getAttribute("fill") ?? null;
-      return { chips, dice, total, d6bg, d8fill };
+      const fillOf = (cell) => cell?.querySelector("svg polygon")?.getAttribute("fill") ?? null;
+      const d6 = card.querySelector('[data-testid="die-solid-0"]');
+      const d8 = card.querySelector('[data-testid="die-solid-1"]');
+      return { chips, dice, total, d6fill: fillOf(d6), d8fill: fillOf(d8) };
     }, accentHex);
     if (!faces) fail("the result card disappeared before its dice could be read");
     else {
@@ -1771,8 +1783,8 @@ async function checkDiceAnimation(ctx, width, meta) {
         fail(`the animated faces ${shownFaces.join(",")} do not match the Roll's chips ${chipFaces.join(",")}`);
       else if (Number(faces.total) !== chipFaces.reduce((sum, face) => sum + face, 0) + 3)
         fail(`the total ${faces.total} is not the faces plus +3`);
-      if (faces.d6bg !== accentRgb) fail(`the d6 die is filled ${faces.d6bg}, expected the accent ${accentRgb}`);
-      if (faces.d8fill !== accentHex) fail(`the d8 die's SVG face is filled ${faces.d8fill}, expected the accent ${accentHex}`);
+      if (!isAccentShade(faces.d6fill, accentHex)) fail(`the d6 die is filled ${faces.d6fill}, expected a shade of the accent ${accentHex}`);
+      if (!isAccentShade(faces.d8fill, accentHex)) fail(`the d8 die is filled ${faces.d8fill}, expected a shade of the accent ${accentHex}`);
     }
     await maybeShot(page, shot("animated"), meta);
   }
@@ -1791,18 +1803,57 @@ async function checkDiceAnimation(ctx, width, meta) {
   });
   if (!seeded) fail("the test-only publishing hook (window.__publishRoll) is not exposed on a seeded web build");
   else {
-    await page.waitForSelector('[data-testid="die-3d-1"]', { state: "visible", timeout: 10000 }).catch(() => fail("the dropped d20 did not mount as an animated die"));
-    const muted = await page.evaluate(() => {
-      const dropped = document.querySelector('[data-testid="die-3d-1"]');
-      if (!dropped) return null;
-      return { label: dropped.getAttribute("aria-label") ?? "", opacity: getComputedStyle(dropped).opacity };
-    });
-    if (!muted) fail("no dropped die to read");
-    else {
-      if (!muted.label.includes("9") || !muted.label.toLowerCase().includes("dropped")) fail(`the dropped d20's label is "${muted.label}", expected its face 9 marked dropped`);
-      if (Number(muted.opacity) >= 1) fail(`the dropped d20 is not muted (opacity ${muted.opacity})`);
-    }
+    await page.waitForSelector('[data-testid="die-solid-1"]', { state: "visible", timeout: 10000 }).catch(() => fail("the dropped d20 did not mount as an animated die"));
+    const label = await page.evaluate(() => document.querySelector('[data-testid="die-solid-1"]')?.getAttribute("aria-label") ?? "");
+    if (!label.includes("9") || !label.toLowerCase().includes("dropped")) fail(`the dropped d20's label is "${label}", expected its face 9 marked dropped`);
+    // The dropped die turns grey once it has stopped, within the settle budget; the kept die stays in the accent.
+    const greyFills = () => {
+      const isGrey = (cell) => {
+        const m = /^rgb\((\d+),(\d+),(\d+)\)$/.exec(cell?.querySelector("svg polygon")?.getAttribute("fill") ?? "");
+        if (!m) return null;
+        const c = [1, 2, 3].map((i) => Number(m[i]));
+        return Math.max(...c) - Math.min(...c);
+      };
+      const dropped = isGrey(document.querySelector('[data-testid="die-solid-1"]'));
+      const kept = isGrey(document.querySelector('[data-testid="die-solid-0"]'));
+      return dropped !== null && dropped <= 16 && kept !== null && kept > 40;
+    };
+    const muted = await page.waitForFunction(greyFills, undefined, { timeout: 3000 }).then(() => true).catch(() => false);
+    if (!muted) fail("the dropped d20 is not grey within 3s of the roll, or the kept d20 is not in the accent colour");
     await maybeShot(page, shot("dropped"), meta);
+
+    // Solid dice of other Rolls: fourteen d6 draw the cap of ten and list all fourteen chips; a d3 with a d6
+    // draws the d6 alone; a d100 draws its tens die (labelled) and its units die; every die is inside the card.
+    const shapes = [
+      { expression: "14d6", solids: 10, chips: 14, label: "d6 showing " },
+      { expression: "1d3+1d6", solids: 1, chips: 2, label: "d6 showing " },
+      { expression: "1d100", solids: 2, chips: 1, label: "d100 showing " },
+    ];
+    for (const shape of shapes) {
+      await gotoApp(page, `${BASE}/character/${CHARACTER_ID}`);
+      await rollTrayPool(page, shape.expression);
+      await page.waitForSelector('[data-testid="die-solid-0"]', { state: "visible", timeout: 10000 }).catch(() => fail(`no solid die mounted for ${shape.expression}`));
+      const counted = await page.evaluate(() => {
+        const card = document.querySelector('[data-testid="result-card"]');
+        const cardBox = card?.getBoundingClientRect();
+        const cells = [...document.querySelectorAll('[data-testid^="die-solid-"]')];
+        const outside = cells.filter((cell) => {
+          const r = cell.getBoundingClientRect();
+          return !cardBox || r.left < cardBox.left - 0.5 || r.right > cardBox.right + 0.5 || r.top < cardBox.top - 0.5 || r.bottom > cardBox.bottom + 0.5;
+        }).length;
+        return {
+          solids: cells.length,
+          chips: card ? card.querySelectorAll('[data-testid="die-chip"]').length : 0,
+          outside,
+          labels: cells.map((cell) => cell.getAttribute("aria-label") ?? ""),
+        };
+      });
+      if (counted.solids !== shape.solids) fail(`${shape.expression} mounted ${counted.solids} solid dice, expected ${shape.solids}`);
+      if (counted.chips !== shape.chips) fail(`${shape.expression} lists ${counted.chips} chips, expected ${shape.chips}`);
+      if (counted.outside > 0) fail(`${shape.expression}: ${counted.outside} solid dice stick out of the result card`);
+      if (counted.labels[0] !== undefined && !counted.labels[0].startsWith(shape.label)) fail(`${shape.expression}: the first die is labelled "${counted.labels[0]}"`);
+      if (shape.expression === "1d100" && counted.labels[1] !== "") fail(`1d100: the units die is labelled "${counted.labels[1]}", expected no label`);
+    }
   }
 
   // The Options dice animation choice selects Tumble with no saved value and no reduced motion; choosing Off persists.
@@ -1826,7 +1877,7 @@ async function checkDiceAnimation(ctx, width, meta) {
   await rollTrayPool(page);
   const offState = await page.evaluate(() => ({
     total: document.querySelector('[data-testid="result-total"]')?.textContent ?? null,
-    dice: document.querySelectorAll('[data-testid^="die-3d-"]').length,
+    dice: document.querySelectorAll('[data-testid^="die-solid-"]').length,
   }));
   if (offState.total === null) fail("with the setting off, the text total was not shown at once");
   if (offState.dice !== 0) fail(`with the setting off, ${offState.dice} animated dice mounted`);
@@ -1861,7 +1912,7 @@ async function checkDiceAnimation(ctx, width, meta) {
     await rollTrayPool(rpage);
     const rmState = await rpage.evaluate(() => ({
       total: document.querySelector('[data-testid="result-total"]')?.textContent ?? null,
-      dice: document.querySelectorAll('[data-testid^="die-3d-"]').length,
+      dice: document.querySelectorAll('[data-testid^="die-solid-"]').length,
     }));
     if (rmState.total === null) fail("with reduced motion emulated and no saved setting, the text total was not shown at once");
     if (rmState.dice !== 0) fail(`with reduced motion emulated and no saved setting, ${rmState.dice} animated dice mounted`);

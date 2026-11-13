@@ -1,17 +1,14 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { rollDicePool, type RandomSource } from "../src/rules/dice.ts";
-import { MAX_ANIMATED_DICE, animatedDice, resolveDiceAnimation } from "../src/rules/diceAnimation.ts";
+import { TUMBLE_SOLID_CAP, resolveDiceAnimation, tumbleQuaternion } from "../src/rules/diceAnimation.ts";
+import { rotateVector, type Quat, type Vec3 } from "../src/rules/diceMath.ts";
+import { makeDie, planSolidDice, poseShowing, type SolidSides } from "../src/rules/diceSolids.ts";
 import { DEFAULT_SETTINGS, __setKvForTests, loadAll, loadSettings, migrateIfNeeded, updateSettings } from "../src/services/storage.ts";
 
-/** A random source with fixed faces, cycling: the die with `sides` lands on the next queued face. */
-function fixedFaces(faces: number[]): RandomSource {
-  let index = 0;
-  return (sides) => {
-    const face = faces[index++ % faces.length];
-    return Math.min(sides, Math.max(1, face));
-  };
-}
+const STANDARD: SolidSides[] = [4, 6, 8, 10, 12, 20];
+const AXIS: Vec3 = [0.3, -0.5, 0.8];
+const TWO_AND_A_HALF_TURNS = 2.5 * 2 * Math.PI;
+const YAW = 0.7;
 
 test("a saved dice animation wins over the system reduced-motion preference", () => {
   assert.equal(resolveDiceAnimation("off", false), "off");
@@ -26,23 +23,46 @@ test("with no saved dice animation it is tumble, or off under reduced motion", (
   assert.equal(resolveDiceAnimation(undefined, true), "off");
 });
 
-test("at most MAX_ANIMATED_DICE dice animate; the rest still show as text chips", () => {
-  assert.equal(MAX_ANIMATED_DICE, 10);
-  const big = rollDicePool("20d6", fixedFaces([3]));
-  assert.equal(big.dice.length, 20);
-  const animated = animatedDice(big);
-  assert.equal(animated.length, MAX_ANIMATED_DICE);
-  assert.deepEqual(animated.map((die) => die.face), big.dice.slice(0, MAX_ANIMATED_DICE).map((die) => die.face));
+test("the tumble ends on the pose showing the face, for every standard die and every face", () => {
+  for (const sides of STANDARD) {
+    const geo = makeDie(sides, "std");
+    for (const readable of geo.readables) {
+      const target = poseShowing(geo, readable.value, YAW);
+      const settled = tumbleQuaternion(target, AXIS, TWO_AND_A_HALF_TURNS, 1);
+      assertSameQuat(settled, target);
+      const top = geo.readables.reduce((best, r) =>
+        rotateVector(settled, r.dir)[2] > rotateVector(settled, best.dir)[2] ? r : best,
+      );
+      assert.equal(top.value, readable.value, `a d${sides} settling on ${readable.value} shows ${top.value}`);
+    }
+  }
 });
 
-test("a small roll animates every die, dropped ones included (the renderer mutes them)", () => {
-  const roll = rollDicePool("3d8", fixedFaces([5, 2, 8]));
-  roll.dice[1].dropped = true;
-  const animated = animatedDice(roll);
-  assert.equal(animated.length, 3);
-  assert.equal(animated[1].dropped, true);
-  assert.equal(animatedDice(rollDicePool("1d20", fixedFaces([11]))).length, 1);
+test("at progress 0 the tumble is turned away from the settled pose", () => {
+  const geo = makeDie(6, "std");
+  const target = poseShowing(geo, 4, YAW);
+  const start = tumbleQuaternion(target, AXIS, TWO_AND_A_HALF_TURNS, 0);
+  const apart = start.some((component, i) => Math.abs(component - target[i]) > 1e-6);
+  assert.equal(apart, true);
 });
+
+test("a batch of fourteen d6 plans ten solids and leaves the other four digital", () => {
+  assert.equal(TUMBLE_SOLID_CAP, 10);
+  const plan = planSolidDice(Array.from({ length: 14 }, () => 6), TUMBLE_SOLID_CAP);
+  assert.equal(plan.filter((p) => p.solid).length, 10);
+  assert.deepEqual(plan.slice(10).map((p) => p.solid), [false, false, false, false]);
+});
+
+test("a d3 is never a solid, and the dice after it still plan as solids", () => {
+  assert.deepEqual(planSolidDice([3, 6], TUMBLE_SOLID_CAP), [
+    { solid: false, bodies: 0 },
+    { solid: true, bodies: 1 },
+  ]);
+});
+
+function assertSameQuat(actual: Quat, expected: Quat): void {
+  for (let i = 0; i < 4; i++) assert.ok(Math.abs(actual[i] - expected[i]) < 1e-9, `component ${i}: ${actual[i]} vs ${expected[i]}`);
+}
 
 test("the dice animation has no default in the settings and is absent until saved", () => {
   assert.equal("diceAnimation" in DEFAULT_SETTINGS, false);

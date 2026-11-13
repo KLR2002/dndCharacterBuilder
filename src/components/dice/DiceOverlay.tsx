@@ -1,5 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
-import React, { useEffect } from "react";
+import React, { Suspense, useEffect } from "react";
 import { AccessibilityInfo, Platform, Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from "react-native";
 import { ACCENT_PALETTES } from "../../constants/theme";
 import { useAppTheme } from "../../context/ThemeContext";
@@ -8,7 +8,11 @@ import { useResponsiveLayout } from "../../hooks/useResponsiveLayout";
 import { entryHeading, type RollLogEntry } from "../../rules/rollLog.ts";
 import { Button } from "../ui/Button";
 import { DiceTray } from "./DiceTray";
+import { useDiceAnimation } from "./useDiceAnimation";
 import { batchAccentId, RollResultView } from "./rollViews";
+
+// The solid dice load with their own chunk: while the animation is not Tumble, nothing of them is fetched.
+const TumbleDice = React.lazy(() => import("./TumbleDice").then((module) => ({ default: module.TumbleDice })));
 
 /** How long the result card stays before it disappears on its own. */
 const RESULT_CARD_TIMEOUT_MS = 8000;
@@ -73,6 +77,7 @@ function ResultCard({
 }) {
   const { theme, accentId } = useAppTheme();
   const { height } = useWindowDimensions();
+  const animation = useDiceAnimation();
   return (
     <View
       testID="result-card"
@@ -90,6 +95,11 @@ function ResultCard({
         nestedScrollEnabled
         style={{ maxHeight: height * RESULT_CARD_MAX_HEIGHT_RATIO - 30 }}
         contentContainerStyle={styles.blocks}>
+        {animation === "tumble" ? (
+          <Suspense fallback={null}>
+            <TumbleDice key={entries[0]?.batchId} entries={entries} />
+          </Suspense>
+        ) : null}
         {entries.map((entry) => {
           const blockAccent = batchAccentId(entry, accentId);
           return (

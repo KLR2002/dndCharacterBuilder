@@ -1,32 +1,11 @@
 import { Ionicons } from "@expo/vector-icons";
-import React, { Suspense } from "react";
+import React from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { ACCENT_PALETTES } from "../../constants/theme";
 import { useAppTheme } from "../../context/ThemeContext";
 import { formatModifier } from "../../rules/abilities.ts";
-import type { Roll } from "../../rules/dice.ts";
 import { rollAccentId } from "../../rules/rollColors.ts";
 import { entryHeading, formatRollTime, rollMarkers, type RollLogEntry } from "../../rules/rollLog.ts";
-import { useDiceAnimation } from "./useDiceAnimation";
-
-// The 2.5D renderer (Reanimated + SVG) lives in its own chunk: React.lazy only fetches it when this
-// slot actually renders it, so while the dice animation is off nothing of it is loaded.
-const AnimatedDiceRoll = React.lazy(() => import("./AnimatedDiceRoll").then((module) => ({ default: module.AnimatedDiceRoll })));
-
-/**
- * The one place an animated dice renderer mounts for a Roll. It receives the completed Roll, faces
- * already decided, so the total never waits for it. Renders nothing while the dice animation is off;
- * then the faces show as the chips below, at once.
- */
-export function DiceRenderer({ roll }: { roll: Roll }) {
-  const mode = useDiceAnimation();
-  if (mode === "off") return null;
-  return (
-    <Suspense fallback={null}>
-      <AnimatedDiceRoll roll={roll} />
-    </Suspense>
-  );
-}
 
 /**
  * The accent a Roll takes inside its batch: a Roll of a batch of two or more gets the batch's accent
@@ -80,8 +59,6 @@ export function RollResultView({ entry, accentId }: { entry: RollLogEntry; accen
       <Text testID="result-source" style={[styles.resultSource, { color: theme.textSecondary }]} numberOfLines={1}>
         {entryHeading(entry)}
       </Text>
-      {/* The dice renderer's slot: it mounts here with the completed Roll. */}
-      <DiceRenderer roll={roll} />
       <View style={styles.facesRow}>
         {roll.dice.map((die, index) => (
           <DieFaceChip key={index} sides={die.sides} face={die.face} dropped={die.dropped} accentId={accentId} />
