@@ -32,6 +32,7 @@ import { useAppTheme } from "../context/ThemeContext";
 const DICE_ANIMATION_MODES: { mode: DiceAnimation; label: string }[] = [
   { mode: "off", label: "Off" },
   { mode: "tumble", label: "Tumble" },
+  { mode: "throw", label: "Throw" },
 ];
 
 export default function OptionsScreen() {

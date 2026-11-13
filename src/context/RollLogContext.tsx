@@ -3,7 +3,7 @@ import { Dimensions, Platform } from "react-native";
 import { useDiceAnimation } from "../components/dice/useDiceAnimation";
 import { __setRandomSourceForTests, currentRandom, type D20Mode, type RandomSource, type Roll } from "../rules/dice.ts";
 import { makeRollLogEntry, type RollFollowUp, type RollLogEntry } from "../rules/rollLog.ts";
-import { runThrow, throwDieSize, throwPhysicsRandom, type ThrowRecord } from "../rules/throwRoll.ts";
+import { runThrow, setThrowRandomForTests, throwDieSize, throwPhysicsRandom, type ThrowRecord } from "../rules/throwRoll.ts";
 
 /** What one call of the publishing seam takes: a completed Roll, its source, and the optional extras. */
 export interface PublishRollInput {
@@ -78,6 +78,18 @@ interface RollLogContextValue {
 }
 
 const RollLogContext = createContext<RollLogContextValue | null>(null);
+
+/** A seeded random source in [0, 1) (mulberry32), so a test can replay one Throw exactly. */
+function seededRandom(seed: number): () => number {
+  let state = seed >>> 0;
+  return () => {
+    state = (state + 0x6d2b79f5) >>> 0;
+    let t = state;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
 
 /** The session Roll Log and the dice tray state, mounted once at the root layout. React state only. */
 export function RollLogProvider({ children }: { children: React.ReactNode }) {
@@ -177,6 +189,7 @@ export function RollLogProvider({ children }: { children: React.ReactNode }) {
       __publishRoll?: (input: PublishRollInput) => RollLogEntry;
       __publishRolls?: (inputs: PublishRollInput[]) => RollLogEntry[];
       __setRandomSource?: (faces: number[] | null) => void;
+      __setThrowRandom?: (seed: number | null) => void;
     };
     scope.__publishRoll = publishRoll;
     scope.__publishRolls = publishRolls;
@@ -188,11 +201,14 @@ export function RollLogProvider({ children }: { children: React.ReactNode }) {
       let index = 0;
       __setRandomSourceForTests((sides) => Math.min(sides, Math.max(1, faces[index++ % faces.length])));
     };
+    scope.__setThrowRandom = (seed) => setThrowRandomForTests(seed === null ? null : seededRandom(seed));
     return () => {
       delete scope.__publishRoll;
       delete scope.__publishRolls;
       delete scope.__setRandomSource;
+      delete scope.__setThrowRandom;
       __setRandomSourceForTests(null);
+      setThrowRandomForTests(null);
     };
   }, [publishRoll, publishRolls]);
 

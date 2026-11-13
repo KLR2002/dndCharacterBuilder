@@ -1,9 +1,9 @@
 import { Ionicons } from "@expo/vector-icons";
-import React, { Suspense, useEffect } from "react";
+import React, { Suspense, useEffect, useState } from "react";
 import { AccessibilityInfo, Platform, Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from "react-native";
 import { ACCENT_PALETTES } from "../../constants/theme";
 import { useAppTheme } from "../../context/ThemeContext";
-import { useRollLog } from "../../context/RollLogContext";
+import { useRollLog, type PendingThrow } from "../../context/RollLogContext";
 import { useResponsiveLayout } from "../../hooks/useResponsiveLayout";
 import { entryHeading, type RollLogEntry } from "../../rules/rollLog.ts";
 import { Button } from "../ui/Button";
@@ -13,6 +13,7 @@ import { batchAccentId, RollResultView } from "./rollViews";
 
 // The solid dice load with their own chunk: while the animation is not Tumble, nothing of them is fetched.
 const TumbleDice = React.lazy(() => import("./TumbleDice").then((module) => ({ default: module.TumbleDice })));
+const ThrowLayer = React.lazy(() => import("./ThrowLayer").then((module) => ({ default: module.ThrowLayer })));
 
 /** How long the result card stays before it disappears on its own. */
 const RESULT_CARD_TIMEOUT_MS = 8000;
@@ -151,7 +152,12 @@ function ResultCard({
  */
 export function DiceOverlay() {
   const { insets, isPhone } = useResponsiveLayout();
-  const { latest, dismissResult, openTray, bottomObstruction, setThrowOrigin } = useRollLog();
+  const { latest, dismissResult, openTray, bottomObstruction, setThrowOrigin, pendingThrow, revealResult } = useRollLog();
+
+  // The flight outlives the pending Throw: the dice stay drawn after the result is revealed, until the
+  // layer has faded them out. A new Throw replaces the flight.
+  const [flight, setFlight] = useState<PendingThrow | null>(null);
+  if (pendingThrow && pendingThrow.startId !== flight?.startId) setFlight(pendingThrow);
 
   // A newer batch replaces the card and restarts its timeout; the timer never outlives the card, and a
   // card that still offers a follow-up ("Roll damage") on any of its Rolls never auto-dismisses.
@@ -190,6 +196,16 @@ export function DiceOverlay() {
 
   return (
     <View pointerEvents="box-none" style={[StyleSheet.absoluteFill, styles.overlay]}>
+      {flight ? (
+        <Suspense fallback={null}>
+          <ThrowLayer
+            key={flight.startId}
+            pending={flight}
+            onReveal={revealResult}
+            onDone={() => setFlight((current) => (current?.startId === flight.startId ? null : current))}
+          />
+        </Suspense>
+      ) : null}
       <FloatingDiceButton bottom={buttonBottom} onPress={() => openTray("dice")} />
       {latest ? (
         <ResultCard

@@ -14,7 +14,7 @@ const DROPPED_BODY: Rgb = [104, 108, 116];
 const DROPPED_INK: Rgb = [210, 210, 210];
 
 /** The canvas is this many circumradii across, so a tilted die and its labels stay inside it. */
-const EXTENT = 2.7;
+export const SOLID_EXTENT = 2.7;
 
 type Accent = { primary: string; text: string };
 
@@ -51,7 +51,7 @@ export function SolidDie({
     [geo, quaternion, size, style],
   );
 
-  const extent = size * EXTENT;
+  const extent = size * SOLID_EXTENT;
   const strokeWidth = Math.max(1, size * 0.035);
 
   return (
