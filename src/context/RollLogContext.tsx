@@ -56,6 +56,10 @@ interface RollLogContextValue {
   rollAndPublish: (make: (random: RandomSource) => PublishRollInput | PublishRollInput[]) => RollLogEntry[];
   /** The Throw whose result has not been revealed yet, or null. */
   pendingThrow: PendingThrow | null;
+  /** The Throw whose dice are on screen, or null. Outlives the reveal until `endFlight` clears it. */
+  flight: PendingThrow | null;
+  /** Clears the flight when it is the Throw that starts at `startId`; a newer Throw's flight is kept. */
+  endFlight: (startId: number) => void;
   /** Shows the pending Throw's batch as the result card. */
   revealResult: () => void;
   /** Where the Throw's dice leave the screen, in px: the floating dice button's centre. */
@@ -100,6 +104,7 @@ export function RollLogProvider({ children }: { children: React.ReactNode }) {
   const [bottomObstruction, setBottomObstruction] = useState(0);
   const [expression, setExpression] = useState("");
   const [pendingThrow, setPendingThrow] = useState<PendingThrow | null>(null);
+  const [flight, setFlight] = useState<PendingThrow | null>(null);
   const nextId = useRef(1);
 
   // The seam reads the animation through a ref, so its callback stays stable across setting changes.
@@ -126,6 +131,9 @@ export function RollLogProvider({ children }: { children: React.ReactNode }) {
     (inputs: PublishRollInput[]): RollLogEntry[] => {
       if (inputs.length === 0) return [];
       const batch = logBatch(inputs);
+      // A Roll published now replaces a Throw still in the air, dice included.
+      setPendingThrow(null);
+      setFlight(null);
       setLatest(batch);
       return batch;
     },
@@ -156,7 +164,9 @@ export function RollLogProvider({ children }: { children: React.ReactNode }) {
       const entries = logBatch(toInputs(result));
       // The old result card hides as the new Throw starts; the new one appears when the dice stop.
       setLatest(null);
-      setPendingThrow({ ...thrown, entries, startId });
+      const throwInFlight = { ...thrown, entries, startId };
+      setPendingThrow(throwInFlight);
+      setFlight(throwInFlight);
       return entries;
     },
     [logBatch, publishRolls],
@@ -167,6 +177,10 @@ export function RollLogProvider({ children }: { children: React.ReactNode }) {
     setPendingThrow(null);
     setLatest(pendingThrow.entries);
   }, [pendingThrow]);
+
+  const endFlight = useCallback((startId: number) => {
+    setFlight((current) => (current?.startId === startId ? null : current));
+  }, []);
 
   const setThrowOrigin = useCallback((origin: [number, number]) => {
     throwOriginRef.current = origin;
@@ -220,6 +234,8 @@ export function RollLogProvider({ children }: { children: React.ReactNode }) {
       publishRolls,
       rollAndPublish,
       pendingThrow,
+      flight,
+      endFlight,
       revealResult,
       setThrowOrigin,
       dismissResult,
@@ -240,6 +256,8 @@ export function RollLogProvider({ children }: { children: React.ReactNode }) {
       publishRolls,
       rollAndPublish,
       pendingThrow,
+      flight,
+      endFlight,
       revealResult,
       setThrowOrigin,
       dismissResult,

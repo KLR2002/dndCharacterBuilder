@@ -3600,6 +3600,21 @@ async function checkDiceThrow(ctx, width, meta) {
     // After the fade no Throw dice remain.
     await page.keyboard.press("Escape");
     if (!(await waitForDiceCount(0, 12000))) fail(`dice remain after the fade: ${JSON.stringify(await throwDiceLabels())}`);
+
+    // A Roll with no solid dice (d3) made mid-flight replaces the Throw: the older Throw never shows over it.
+    await rollThrow("d6,d8");
+    if (!(await waitForDiceCount(2, 10000))) fail("expected two dice before the d3 Roll");
+    await page.getByLabel("Dice tray").first().click();
+    await page.waitForSelector(dialogSel, { state: "visible", timeout: 10000 }).catch(() => fail("the tray did not open before the d3 Roll"));
+    await page.getByLabel("Roll Expression", { exact: true }).fill("d3");
+    await page.getByText("Roll d3", { exact: true }).first().click();
+    await page.waitForSelector(cardSel, { state: "visible", timeout: 3000 }).catch(() => fail("no result card after the d3 Roll"));
+    if (!(await waitForDiceCount(0, 8000))) fail(`the d3 Roll left dice in the air: ${JSON.stringify(await throwDiceLabels())}`);
+    const replaced = await page.evaluate(() =>
+      [...document.querySelectorAll('[data-testid="result-card-body"]')].map((el) => el.getAttribute("aria-label")),
+    );
+    if (replaced.length !== 1 || !replaced[0]?.startsWith("d3, total "))
+      fail(`after the d3 Roll the result card shows ${JSON.stringify(replaced)}, expected only the d3 Roll`);
     return failures;
   } finally {
     await tctx.close();

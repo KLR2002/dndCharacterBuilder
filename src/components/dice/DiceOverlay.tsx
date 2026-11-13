@@ -1,9 +1,9 @@
 import { Ionicons } from "@expo/vector-icons";
-import React, { Suspense, useEffect, useState } from "react";
+import React, { Suspense, useEffect } from "react";
 import { AccessibilityInfo, Platform, Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from "react-native";
 import { ACCENT_PALETTES } from "../../constants/theme";
 import { useAppTheme } from "../../context/ThemeContext";
-import { useRollLog, type PendingThrow } from "../../context/RollLogContext";
+import { useRollLog } from "../../context/RollLogContext";
 import { useResponsiveLayout } from "../../hooks/useResponsiveLayout";
 import { entryHeading, type RollLogEntry } from "../../rules/rollLog.ts";
 import { Button } from "../ui/Button";
@@ -152,12 +152,7 @@ function ResultCard({
  */
 export function DiceOverlay() {
   const { insets, isPhone } = useResponsiveLayout();
-  const { latest, dismissResult, openTray, bottomObstruction, setThrowOrigin, pendingThrow, revealResult } = useRollLog();
-
-  // The flight outlives the pending Throw: the dice stay drawn after the result is revealed, until the
-  // layer has faded them out. A new Throw replaces the flight.
-  const [flight, setFlight] = useState<PendingThrow | null>(null);
-  if (pendingThrow && pendingThrow.startId !== flight?.startId) setFlight(pendingThrow);
+  const { latest, dismissResult, openTray, bottomObstruction, setThrowOrigin, flight, endFlight, revealResult } = useRollLog();
 
   // A newer batch replaces the card and restarts its timeout; the timer never outlives the card, and a
   // card that still offers a follow-up ("Roll damage") on any of its Rolls never auto-dismisses.
@@ -202,7 +197,7 @@ export function DiceOverlay() {
             key={flight.startId}
             pending={flight}
             onReveal={revealResult}
-            onDone={() => setFlight((current) => (current?.startId === flight.startId ? null : current))}
+            onDone={() => endFlight(flight.startId)}
           />
         </Suspense>
       ) : null}
