@@ -132,3 +132,27 @@ test("the pool's expression parses back to the same pool, and the label reads li
   assert.equal(poolLabel([{ count: 1, sides: 20 }], -2), "1d20 − 2");
   assert.equal(poolLabel([{ count: 1, sides: 6 }], 0), "1d6");
 });
+
+test("a label replaces the source in the heading and keeps the character prefix", () => {
+  const named = makeRollLogEntry({ roll: rollD20(0, "none", fixedFaces([12])), source: "Dice tray", characterName: "Kara", label: "d20" }, 1, 0);
+  assert.equal(entryHeading(named), "Kara · d20");
+  assert.equal(named.label, "d20");
+  const bare = makeRollLogEntry({ roll: rollD20(0, "none", fixedFaces([12])), source: "Dice tray", label: "a(d20,d20)+5" }, 2, 0);
+  assert.equal(entryHeading(bare), "a(d20,d20)+5");
+});
+
+test("a single publish is a batch of one: index 0, size 1, its own batch id", () => {
+  const entry = makeRollLogEntry({ roll: rollDicePool("1d6", fixedFaces([4])), source: "Dice tray" }, 7, 0);
+  assert.equal(entry.batchId, 7);
+  assert.equal(entry.batchIndex, 0);
+  assert.equal(entry.batchSize, 1);
+});
+
+test("entries of one batch share the batch id and carry their position in it", () => {
+  const batch = { batchId: 3, batchIndex: 2, batchSize: 3 };
+  const entry = makeRollLogEntry({ roll: rollDicePool("1d6", fixedFaces([4])), source: "Dice tray" }, 12, 0, batch);
+  assert.equal(entry.batchId, 3);
+  assert.equal(entry.batchIndex, 2);
+  assert.equal(entry.batchSize, 3);
+  assert.equal(entry.id, 12);
+});
