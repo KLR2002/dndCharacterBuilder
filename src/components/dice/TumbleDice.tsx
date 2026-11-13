@@ -100,7 +100,9 @@ function TumbleBody({ body, delay, testID }: { body: SolidBody; delay: number; t
   return (
     <Animated.View testID={testID} accessibilityLabel={body.label} style={[styles.cell, cellStyle]}>
       <Animated.View style={[styles.shadow, shadowStyle]} />
+      {/* Keyed on the settled state: the web build does not repaint a fill that changes after mount. */}
       <SolidDie
+        key={settled ? "settled" : "moving"}
         geo={body.geo}
         quaternion={quaternion}
         size={DIE_RADIUS}
