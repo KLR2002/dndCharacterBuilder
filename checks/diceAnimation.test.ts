@@ -108,11 +108,21 @@ test("diceAnimation survives a settings round trip and a patch of another field 
   if (res.ok) assert.equal(res.data.settings.diceAnimation, "off");
 });
 
-test("a settings write drops a leftover dice3dEnabled and keeps the migrated mode", async () => {
-  const kv = new Map<string, string>();
-  __setKvForTests(kv);
-  await updateSettings({ diceAnimation: "tumble" });
-  const stored = JSON.parse(kv.get("@dnd5e_app_settings") ?? "{}");
-  assert.equal("dice3dEnabled" in stored, false);
-  assert.equal(stored.diceAnimation, "tumble");
+test("stored settings with a leftover dice3dEnabled load as their mode, and the next settings write drops the field", async () => {
+  for (const [enabled, mode] of [
+    [true, "tumble"],
+    [false, "off"],
+  ] as const) {
+    const kv = new Map<string, string>();
+    __setKvForTests(kv);
+    kv.set("@dnd5e_app_settings", JSON.stringify({ schemaVersion: 2, hasCompletedFirstRun: true, dice3dEnabled: enabled }));
+    const loaded = await loadSettings();
+    assert.equal(loaded.diceAnimation, mode);
+    assert.equal("dice3dEnabled" in loaded, false);
+    await updateSettings({ fullHealOnLevelUp: false });
+    const stored = JSON.parse(kv.get("@dnd5e_app_settings") ?? "{}");
+    assert.equal("dice3dEnabled" in stored, false);
+    assert.equal(stored.diceAnimation, mode);
+    assert.equal(stored.fullHealOnLevelUp, false);
+  }
 });
