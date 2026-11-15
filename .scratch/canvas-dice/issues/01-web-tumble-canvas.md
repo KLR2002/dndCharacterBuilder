@@ -1,6 +1,8 @@
 # 01: Web Tumble on a canvas
 
-**Status:** ready-for-agent
+**Status:** done
+
+**Landed:** feature/3d-dice @ 7f6ed57. Layout check "Dice animation" green at 393 and 768, red against the SVG code (9 violations); canvas and label checks, pixel sampling and screenshots done. Open item: the animation-frame cancel on unmount is not seen by any check (no scenario unmounts mid-turn); looked at in review.
 
 ## What to build
 
@@ -14,8 +16,8 @@ Reference for the look: `SolidDie.tsx` and `diceProjection.ts` (commit `d1226ac`
 
 ## Acceptance Criteria
 
-- [ ] AC-3: With the Dice Animation on Tumble, a Roll shows one `<canvas>` inside the result card with up to 10 solids, each turning and stopping on the generator's face; a hidden label element per die has the name from the old SVG die and its face equals the die's chip in the card; a dropped die is grey after it stops; the row stays `aria-hidden`; solids past 10 show as number chips only; the canvas draws nothing after unmount and a new Roll replaces the old dice.
-- [ ] No `<svg>` is created for Tumble on the web; reduced motion and the Off setting behave as before.
+- [x] AC-3: With the Dice Animation on Tumble, a Roll shows one `<canvas>` inside the result card with up to 10 solids, each turning and stopping on the generator's face; a hidden label element per die has the name from the old SVG die and its face equals the die's chip in the card; a dropped die is grey after it stops; the row stays `aria-hidden`; solids past 10 show as number chips only; the canvas draws nothing after unmount and a new Roll replaces the old dice.
+- [x] No `<svg>` is created for Tumble on the web; reduced motion and the Off setting behave as before.
 
 ## Verification
 

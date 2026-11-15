@@ -1,6 +1,8 @@
 # 04: Android module draws Tumble and Throw
 
-**Status:** ready-for-agent
+**Status:** done
+
+**Landed:** feature/3d-dice @ 7f6ed57 (module and wiring at e256913). check:all green; release APK built (x86_64); emulator check by the main session on the release build: Throw of d20, 20d20 and a(d20)+d100+d6+d4+d8+d10+d12 and Tumble of 10d20,d6 all played and settled, labels in the UI dump (20 for 20d20, 8 for the mixed roll, 10 for the Tumble) equal the chips, the dropped d20 turned grey after the stop, logcat has no FATAL EXCEPTION. Frame rate on the emulator is software rendering and says nothing about a phone.
 
 ## What to build
 
@@ -14,9 +16,9 @@ The reference is the branch `prototype/canvas-dice` (`modules/dice-canvas/...` a
 
 ## Acceptance Criteria
 
-- [ ] AC-5: In the Android release build, a Throw of one die, of `20d20` and of `a(d20)+d100+d6+d4+d8+d10+d12`, and a Tumble of `10d20,d6`, each play, settle and show their card; in the third Throw the dropped die is grey; `uiautomator dump` lists one label per drawn die with the old names and the faces equal the chips; the log has no `FATAL EXCEPTION`.
-- [ ] A re-render that changes only which die is dropped does not restart the animation.
-- [ ] On iOS no native view is requested and the Roll plays as Off.
+- [x] AC-5: In the Android release build, a Throw of one die, of `20d20` and of `a(d20)+d100+d6+d4+d8+d10+d12`, and a Tumble of `10d20,d6`, each play, settle and show their card; in the third Throw the dropped die is grey; `uiautomator dump` lists one label per drawn die with the old names and the faces equal the chips; the log has no `FATAL EXCEPTION`.
+- [x] A re-render that changes only which die is dropped does not restart the animation.
+- [x] On iOS no native view is requested and the Roll plays as Off.
 
 ## Verification
 
