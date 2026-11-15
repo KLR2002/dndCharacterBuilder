@@ -1,22 +1,12 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { Platform, Pressable, StyleSheet } from "react-native";
-import Animated, {
-  cancelAnimation,
-  Easing,
-  useAnimatedStyle,
-  useDerivedValue,
-  useSharedValue,
-  withTiming,
-  type SharedValue,
-} from "react-native-reanimated";
+import { Platform, Pressable, StyleSheet, View } from "react-native";
+import Animated, { Easing, useAnimatedStyle, useSharedValue, withTiming } from "react-native-reanimated";
 import { ACCENT_PALETTES } from "../../constants/theme";
 import { useAppTheme } from "../../context/ThemeContext";
 import type { PendingThrow } from "../../context/RollLogContext";
-import { sampleThrow, THROW_FPS, type ThrowPose } from "../../rules/diceThrow.ts";
-import type { Quat } from "../../rules/diceMath.ts";
-import type { DieGeometry } from "../../rules/diceSolids.ts";
+import { sampleThrow, THROW_FPS } from "../../rules/diceThrow.ts";
 import { rollAccentId } from "../../rules/rollColors.ts";
-import { SOLID_EXTENT, SolidDie } from "./SolidDie";
+import { drawSolidDie, fillPill } from "./drawSolidDie";
 import { NativeThrowDice } from "./NativeDice";
 
 /** How long the dice stay on screen once they have stopped, and how long they take to fade. */
@@ -39,35 +29,23 @@ function ThrowLayerDice({
   onReveal: () => void;
   onDone: () => void;
 }) {
-  const { accentId } = useAppTheme();
   const [phase, setPhase] = useState<Phase>("flying");
   const frameCount = pending.results[0].frameCount;
   const duration = (frameCount - 1) / THROW_FPS;
-  const time = useSharedValue(0);
   const fade = useSharedValue(1);
   const callbacks = useRef({ onReveal, onDone });
   useEffect(() => {
     callbacks.current = { onReveal, onDone };
   });
 
-  const frames = useMemo(() => pending.results.map((result) => Array.from(result.frames)), [pending]);
-  const dice = useMemo(
-    () => pending.entries.flatMap((entry) => entry.roll.dice.map((die) => ({ die, batchIndex: entry.batchIndex }))),
-    [pending],
-  );
-
   useEffect(() => {
     if (phase !== "flying") return;
-    time.value = withTiming(duration, { duration: duration * 1000, easing: Easing.linear });
     const timer = setTimeout(() => {
       callbacks.current.onReveal();
       setPhase("resting");
     }, duration * 1000);
-    return () => {
-      clearTimeout(timer);
-      cancelAnimation(time);
-    };
-  }, [phase, duration, time]);
+    return () => clearTimeout(timer);
+  }, [phase, duration]);
 
   useEffect(() => {
     if (phase !== "resting") return;
@@ -99,32 +77,120 @@ function ThrowLayerDice({
       style={[StyleSheet.absoluteFill, { pointerEvents: phase === "flying" ? "auto" : "none" }]}>
       <Animated.View style={[StyleSheet.absoluteFill, layerStyle]}>
         {Platform.OS === "android" && <NativeThrowDice pending={pending} revealed={phase !== "flying"} />}
-        {Platform.OS === "web" && pending.geos.map((geo, body) => {
-          const { die, batchIndex } = dice[pending.owner[body]];
-          const suffix = die.dropped ? ", dropped" : "";
-          const label =
-            geo.kind === "units"
-              ? undefined
-              : geo.kind === "tens"
-                ? `d100 showing ${die.face}${suffix}`
-                : `d${die.sides} showing ${die.face}${suffix}`;
-          return (
-            <ThrownBody
-              key={body}
-              testID={`throw-die-${body}`}
-              label={label}
-              geo={geo}
-              frames={frames[body]}
-              frameCount={frameCount}
-              time={time}
-              size={pending.size}
-              accent={ACCENT_PALETTES[rollAccentId(accentId, batchIndex)]}
-              dropped={die.dropped && phase !== "flying"}
-            />
-          );
-        })}
+        {Platform.OS === "web" && <ThrowCanvas pending={pending} revealed={phase !== "flying"} />}
       </Animated.View>
     </Pressable>
+  );
+}
+
+/**
+ * The web Throw: every body and its shadow drawn on one canvas, repainted on each animation frame from
+ * the recorded frames. The frame loop stops once the Throw has played and when the layer unmounts. Each
+ * die that has a label keeps a hidden element beside the canvas, at the place it stops, with its name.
+ */
+function ThrowCanvas({ pending, revealed }: { pending: PendingThrow; revealed: boolean }) {
+  const { accentId } = useAppTheme();
+  const [area, setArea] = useState({ width: 0, height: 0 });
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const startedAt = useRef<number | null>(null);
+  const frameCount = pending.results[0].frameCount;
+  const duration = (frameCount - 1) / THROW_FPS;
+  const size = pending.size;
+
+  const bodies = useMemo(() => {
+    const dice = pending.entries.flatMap((entry) => entry.roll.dice.map((die) => ({ die, batchIndex: entry.batchIndex })));
+    return pending.geos.map((geo, body) => {
+      const { die, batchIndex } = dice[pending.owner[body]];
+      return {
+        geo,
+        frames: pending.results[body].frames,
+        accent: ACCENT_PALETTES[rollAccentId(accentId, batchIndex)],
+        dropped: die.dropped,
+        rest: geo.inradius * size,
+      };
+    });
+  }, [pending, accentId, size]);
+
+  const labels = useMemo(() => {
+    const dice = pending.entries.flatMap((entry) => entry.roll.dice.map((die) => ({ die })));
+    const last = (frameCount - 1) * 7;
+    return pending.geos.flatMap((geo, body) => {
+      if (geo.kind === "units") return [];
+      const { die } = dice[pending.owner[body]];
+      const suffix = die.dropped ? ", dropped" : "";
+      const name = geo.kind === "tens" ? `d100 showing ${die.face}${suffix}` : `d${die.sides} showing ${die.face}${suffix}`;
+      const frames = pending.results[body].frames;
+      return [{ name, x: frames[last], y: frames[last + 1] }];
+    });
+  }, [pending, frameCount]);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    const ctx = canvas?.getContext("2d");
+    if (!canvas || !ctx || area.width === 0) return;
+    const dpr = window.devicePixelRatio || 1;
+    canvas.width = Math.round(area.width * dpr);
+    canvas.height = Math.round(area.height * dpr);
+    startedAt.current ??= performance.now();
+    const start = startedAt.current;
+
+    // The shadows of every body first, then the dice, the lowest first, each at its lifted size.
+    const paint = (seconds: number) => {
+      const poses = bodies.map((body) => sampleThrow(body.frames, frameCount, seconds));
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      ctx.clearRect(0, 0, area.width, area.height);
+      ctx.fillStyle = "#000";
+      poses.forEach((pose, i) => {
+        const lift = pose.z - bodies[i].rest;
+        ctx.globalAlpha = Math.max(0.08, 0.34 - lift * 0.0014);
+        fillPill(ctx, pose.x + 3 + lift * 0.16, pose.y + 6 + lift * 0.26, size * 1.7, size * 1.4);
+      });
+      ctx.globalAlpha = 1;
+      const order = bodies.map((_, i) => i).sort((a, b) => poses[a].z - poses[b].z);
+      for (const i of order) {
+        const body = bodies[i];
+        const pose = poses[i];
+        const lift = pose.z - body.rest;
+        drawSolidDie(ctx, {
+          geo: body.geo,
+          pose: pose.q,
+          accent: body.accent,
+          dropped: body.dropped && revealed,
+          size: size * (1 + lift * 0.0023),
+          x: pose.x,
+          y: pose.y,
+        });
+      }
+    };
+
+    let frame = 0;
+    const tick = (now: number) => {
+      const seconds = Math.min(duration, (now - start) / 1000);
+      paint(seconds);
+      if (seconds < duration) frame = requestAnimationFrame(tick);
+    };
+    frame = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(frame);
+  }, [area, bodies, duration, frameCount, revealed, size]);
+
+  return (
+    <View
+      style={StyleSheet.absoluteFill}
+      onLayout={(event) => setArea({ width: event.nativeEvent.layout.width, height: event.nativeEvent.layout.height })}>
+      {area.width > 0 ? (
+        <canvas ref={canvasRef} style={{ position: "absolute", left: 0, top: 0, width: area.width, height: area.height }} />
+      ) : null}
+      {area.width > 0
+        ? labels.map((label, index) => (
+            <View
+              key={index}
+              testID={`throw-die-${index}`}
+              accessibilityLabel={label.name}
+              style={[styles.label, { left: label.x - size, top: label.y - size, width: size * 2, height: size * 2 }]}
+            />
+          ))
+        : null}
+    </View>
   );
 }
 
@@ -146,72 +212,10 @@ function OffThrow({ onReveal, onDone }: { onReveal: () => void; onDone: () => vo
   return null;
 }
 
-/**
- * One body of the Throw: its shadow on the floor and the die itself, placed and tilted by the recorded
- * pose at the shared clock. The die sits above every shadow, and higher dice above lower ones.
- */
-function ThrownBody({
-  testID,
-  label,
-  geo,
-  frames,
-  frameCount,
-  time,
-  size,
-  accent,
-  dropped,
-}: {
-  testID: string;
-  label?: string;
-  geo: DieGeometry;
-  frames: number[];
-  frameCount: number;
-  time: SharedValue<number>;
-  size: number;
-  accent: { primary: string; text: string };
-  dropped: boolean;
-}) {
-  const pose = useDerivedValue<ThrowPose>(() => sampleThrow(frames, frameCount, time.value), [frames, frameCount, time]);
-  const quaternion = useDerivedValue<Quat>(() => pose.value.q);
-  const rest = geo.inradius * size;
-  const extent = size * SOLID_EXTENT;
-
-  const dieStyle = useAnimatedStyle(() => {
-    const lift = pose.value.z - rest;
-    return {
-      left: pose.value.x - extent / 2,
-      top: pose.value.y - extent / 2,
-      zIndex: 10 + Math.round(pose.value.z),
-      transform: [{ scale: 1 + lift * 0.0023 }],
-    };
-  });
-
-  const shadowStyle = useAnimatedStyle(() => {
-    const lift = pose.value.z - rest;
-    return {
-      left: pose.value.x + 3 + lift * 0.16 - size * 0.85,
-      top: pose.value.y + 6 + lift * 0.26 - size * 0.7,
-      opacity: Math.max(0.08, 0.34 - lift * 0.0014),
-    };
-  });
-
-  return (
-    <>
-      <Animated.View style={[styles.shadow, { width: size * 1.7, height: size * 1.4, borderRadius: size * 0.7 }, shadowStyle]} />
-      <Animated.View
-        testID={testID}
-        accessibilityLabel={label}
-        style={[{ position: "absolute", width: extent, height: extent }, dieStyle]}>
-        {/* Keyed on the dropped state, so only a die that turns grey is remounted (the web build does not repaint a fill that changes after mount); remounting every die when the dice stop would stall the result. */}
-        <SolidDie key={dropped ? "dropped" : "live"} geo={geo} quaternion={quaternion} size={size} accent={accent} dropped={dropped} />
-      </Animated.View>
-    </>
-  );
-}
-
 const styles = StyleSheet.create({
-  shadow: {
+  label: {
     position: "absolute",
-    backgroundColor: "#000",
+    opacity: 0,
+    pointerEvents: "none",
   },
 });
