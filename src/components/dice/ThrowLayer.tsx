@@ -6,6 +6,7 @@ import { useAppTheme } from "../../context/ThemeContext";
 import type { PendingThrow } from "../../context/RollLogContext";
 import { sampleThrow, THROW_FPS } from "../../rules/diceThrow.ts";
 import { rollAccentId } from "../../rules/rollColors.ts";
+import { dieLabel } from "./dieLabel";
 import { drawDie, fillPill } from "./drawDie";
 import { NativeThrowDice } from "./NativeDice";
 
@@ -117,8 +118,7 @@ function ThrowCanvas({ pending, revealed }: { pending: PendingThrow; revealed: b
     return pending.geos.flatMap((geo, body) => {
       if (geo.kind === "units") return [];
       const { die } = dice[pending.owner[body]];
-      const suffix = die.dropped ? ", dropped" : "";
-      const name = geo.kind === "tens" ? `d100 showing ${die.face}${suffix}` : `d${die.sides} showing ${die.face}${suffix}`;
+      const name = dieLabel(die.sides, die.face, die.dropped);
       const frames = pending.results[body].frames;
       return [{ name, x: frames[last], y: frames[last + 1] }];
     });

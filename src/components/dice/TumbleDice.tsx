@@ -6,6 +6,7 @@ import { TUMBLE_MS, TUMBLE_SOLID_CAP, TUMBLE_STAGGER_MS, tumbleQuaternion, tumbl
 import { d100Parts, makeDie, planSolidDice, poseShowing, type DieGeometry, type SolidSides } from "../../rules/diceSolids.ts";
 import { rollAccentId } from "../../rules/rollColors.ts";
 import type { RollLogEntry } from "../../rules/rollLog.ts";
+import { dieLabel } from "./dieLabel";
 import { randomMotion } from "./diceMotion";
 import { NativeTumbleDice } from "./NativeDice";
 import { drawDie, fillPill } from "./drawDie";
@@ -36,12 +37,11 @@ function solidBodies(entries: RollLogEntry[], selectedAccentId: string): SolidBo
   const bodies: SolidBody[] = [];
   dice.forEach(({ die, accent }, index) => {
     if (!plan[index].solid) return;
-    const suffix = die.dropped ? ", dropped" : "";
     if (die.sides === 100) {
       const parts = d100Parts(die.face);
       const tens = makeDie(10, "tens");
       const units = makeDie(10, "units");
-      bodies.push({ geo: tens, reading: parts.tens, accent, dropped: die.dropped, label: `d100 showing ${die.face}${suffix}` });
+      bodies.push({ geo: tens, reading: parts.tens, accent, dropped: die.dropped, label: dieLabel(die.sides, die.face, die.dropped) });
       bodies.push({ geo: units, reading: parts.units, accent, dropped: die.dropped });
       return;
     }
@@ -50,7 +50,7 @@ function solidBodies(entries: RollLogEntry[], selectedAccentId: string): SolidBo
       reading: die.face,
       accent,
       dropped: die.dropped,
-      label: `d${die.sides} showing ${die.face}${suffix}`,
+      label: dieLabel(die.sides, die.face, die.dropped),
     });
   });
   return bodies;
@@ -152,31 +152,10 @@ export function TumbleDice({ entries }: { entries: RollLogEntry[] }) {
 }
 
 const styles = StyleSheet.create({
-  row: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 6,
-    // Room for the lift and the pop scale of the top row, so the card's scroll area does not clip it.
-    paddingTop: 12,
-  },
-  cell: {
-    width: CELL,
-    height: CELL,
-    alignItems: "center",
-    justifyContent: "center",
-  },
   label: {
     position: "absolute",
     width: CELL,
     height: CELL,
     opacity: 0,
-  },
-  shadow: {
-    position: "absolute",
-    bottom: 6,
-    width: CELL * 0.5,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: "#000",
   },
 });

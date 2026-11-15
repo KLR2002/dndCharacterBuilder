@@ -6,9 +6,11 @@ import type { PendingThrow } from "../../context/RollLogContext";
 import { TUMBLE_STAGGER_MS } from "../../rules/diceAnimation.ts";
 import { poseShowing, type DieGeometry } from "../../rules/diceSolids.ts";
 import { rollAccentId } from "../../rules/rollColors.ts";
+import { dieLabel } from "./dieLabel";
 import { randomMotion } from "./diceMotion";
 import { droppedFlags, throwScene, tumbleScene, type SceneAccent } from "./nativeDiceScene";
 import { DieLabel, NativeDiceCanvas } from "./NativeDiceCanvas";
+import { CELL, ROW_TOP, tumbleCells, tumbleHeight } from "./tumbleCells";
 
 /**
  * The recorded Throw drawn by the native canvas. The scene is built once per Throw, so a change of
@@ -38,8 +40,7 @@ export function NativeThrowDice({ pending, revealed }: { pending: PendingThrow; 
   const labels = pending.geos.flatMap((geo, body) => {
     if (geo.kind === "units") return [];
     const { die } = dice[pending.owner[body]];
-    const suffix = die.dropped ? ", dropped" : "";
-    return [geo.kind === "tens" ? `d100 showing ${die.face}${suffix}` : `d${die.sides} showing ${die.face}${suffix}`];
+    return [dieLabel(die.sides, die.face, die.dropped)];
   });
   return (
     <>
@@ -60,20 +61,14 @@ export type NativeTumbleBody = {
   label?: string;
 };
 
-const CELL = 72;
-const GAP = 6;
-const PAD_TOP = 12;
-
 /**
- * The Tumble row drawn by the native canvas, in the same grid as the web row: cells of CELL px with a GAP
- * between them and PAD_TOP above. Its labels stay in the accessibility tree.
+ * The Tumble row drawn by the native canvas, in the same grid as the web row (tumbleCells). Its labels
+ * stay in the accessibility tree.
  */
 export function NativeTumbleDice({ bodies }: { bodies: NativeTumbleBody[] }) {
   const [width, setWidth] = useState(0);
   const [motions] = useState(() => bodies.map(() => randomMotion()));
-  const columns = Math.max(1, Math.floor((width + GAP) / (CELL + GAP)));
-  const rows = Math.ceil(bodies.length / columns);
-  const height = PAD_TOP + rows * CELL + Math.max(0, rows - 1) * GAP;
+  const cells = useMemo(() => tumbleCells(bodies.length, width), [bodies.length, width]);
   const scene = useMemo(
     () =>
       tumbleScene(
@@ -84,16 +79,16 @@ export function NativeTumbleDice({ bodies }: { bodies: NativeTumbleBody[] }) {
           target: poseShowing(body.geo, body.reading, motions[index].yaw),
           axis: motions[index].axis,
           spin: motions[index].spin,
-          cx: (index % columns) * (CELL + GAP) + CELL / 2,
-          cy: PAD_TOP + Math.floor(index / columns) * (CELL + GAP) + CELL / 2,
+          cx: cells[index].x + CELL / 2,
+          cy: cells[index].y + CELL / 2,
           delay: index * TUMBLE_STAGGER_MS,
         })),
       ),
-    [bodies, motions, columns],
+    [bodies, motions, cells],
   );
   const labels = bodies.flatMap((body) => (body.label ? [body.label] : []));
   return (
-    <View testID="dice-solids" onLayout={(event) => setWidth(event.nativeEvent.layout.width)} style={{ height: width > 0 ? height : CELL + PAD_TOP }}>
+    <View testID="dice-solids" onLayout={(event) => setWidth(event.nativeEvent.layout.width)} style={{ height: width > 0 ? tumbleHeight(bodies.length, width) : CELL + ROW_TOP }}>
       {width > 0 ? (
         <NativeDiceCanvas scene={scene} dropped={droppedFlags(bodies.map((body) => body.dropped))} style={StyleSheet.absoluteFill} />
       ) : null}
