@@ -23,6 +23,7 @@ export type ProjectedLabel =
 
 export type ProjectedFace = {
   visible: boolean;
+  corners: [number, number][];
   points: string;
   fill: string;
   stroke: string;
@@ -36,6 +37,20 @@ export function hexToRgb(hex: string): Rgb {
   'worklet';
   const n = parseInt(hex.slice(1), 16);
   return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+}
+
+/** The grey body and muted numerals of a die that has been dropped from the roll. */
+export const DROPPED_BODY: Rgb = [104, 108, 116];
+export const DROPPED_INK: Rgb = [210, 210, 210];
+
+/** The colours of a die of an accent, or the grey of a dropped one. */
+export function solidStyle(accent: { primary: string; text: string }, dropped: boolean): ProjectionStyle {
+  'worklet';
+  return {
+    base: dropped ? DROPPED_BODY : hexToRgb(accent.primary),
+    ink: dropped ? DROPPED_INK : hexToRgb(accent.text),
+    dropped,
+  };
 }
 
 /** The pip centres of a d6 face showing `value`, in text units, for a face of half-size `halfSize`. */
@@ -106,9 +121,8 @@ export function projectDie(geo: DieGeometry, quaternion: Quat, size: number, sty
     const normal = rotateVector(quaternion, face.normal);
     const { shade, alpha } = faceShading(normal);
     const fill = rgbString([style.base[0] * shade, style.base[1] * shade, style.base[2] * shade]);
-    const points = face.vertexIndexes
-      .map((i) => `${(verts[i][0] * size).toFixed(2)},${(-verts[i][1] * size).toFixed(2)}`)
-      .join(" ");
+    const corners = face.vertexIndexes.map((i): [number, number] => [verts[i][0] * size, -verts[i][1] * size]);
+    const points = corners.map(([x, y]) => `${x.toFixed(2)},${y.toFixed(2)}`).join(" ");
 
     const labels = face.labels.map((label): ProjectedLabel => {
       const transform = labelMatrix(quaternion, label.at, label.right, label.up, size);
@@ -119,7 +133,7 @@ export function projectDie(geo: DieGeometry, quaternion: Quat, size: number, sty
       return { kind: "text", text: label.text, fontSize: label.size * 100, transform, fill: ink };
     });
 
-    return { visible: normal[2] > 0.004, points, fill, stroke, labels };
+    return { visible: normal[2] > 0.004, corners, points, fill, stroke, labels };
   });
 
   return { faces };
