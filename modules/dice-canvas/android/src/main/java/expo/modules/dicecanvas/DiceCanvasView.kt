@@ -28,7 +28,10 @@ private class Label(
 
 private class Face(val idx: IntArray, val normal: DoubleArray, val labels: List<Label>)
 
-/** One solid body. Throw bodies carry `frames`; Tumble bodies carry the target, axis, spin and grid position. */
+/**
+ * One solid body. Throw bodies carry `frames`; Tumble bodies carry the target, axis, spin and grid position.
+ * `pose`, `q` and `rotated` are scratch space the view reuses every frame.
+ */
 private class Body(
   val verts: Array<DoubleArray>,
   val faces: List<Face>,
@@ -42,7 +45,11 @@ private class Body(
   val cx: Double,
   val cy: Double,
   val delay: Double,
-)
+) {
+  val pose = DoubleArray(POSE_SIZE)
+  val q = DoubleArray(4)
+  val rotated = DoubleArray(verts.size * 3)
+}
 
 private class Scene(
   val throwMode: Boolean,
@@ -51,10 +58,10 @@ private class Scene(
   val cell: Double,
   val bodies: List<Body>,
   val durationMs: Double,
-)
-
-/** Frames per second of the recorded Throw motion. */
-private const val THROW_FPS = 60.0
+) {
+  /** Body indexes in drawing order for a Throw, lowest first. */
+  val order = IntArray(bodies.size)
+}
 
 /** How long one Tumble die turns, in milliseconds. */
 private const val TUMBLE_MS = 950.0
@@ -78,6 +85,7 @@ class DiceCanvasView(context: Context, appContext: AppContext) : ExpoView(contex
   private var startNanos = 0L
   private var nowNanos = 0L
   private var running = false
+  private var finished = false
 
   private val fill = Paint(Paint.ANTI_ALIAS_FLAG)
   private val stroke = Paint(Paint.ANTI_ALIAS_FLAG).apply {
@@ -94,6 +102,12 @@ class DiceCanvasView(context: Context, appContext: AppContext) : ExpoView(contex
   private val matrixValues = FloatArray(9)
   private val oval = RectF()
 
+  // Scratch space for one frame, reused so that drawing allocates nothing per frame.
+  private val normal = DoubleArray(3)
+  private val labelOut = DoubleArray(6)
+  private val labelScratch = DoubleArray(9)
+  private val pipOut = DoubleArray(18)
+
   private val frameCallback = object : Choreographer.FrameCallback {
     override fun doFrame(frameTimeNanos: Long) {
       val s = scene ?: return
@@ -104,6 +118,7 @@ class DiceCanvasView(context: Context, appContext: AppContext) : ExpoView(contex
         Choreographer.getInstance().postFrameCallback(this)
       } else {
         running = false
+        finished = true
       }
     }
   }
@@ -116,6 +131,7 @@ class DiceCanvasView(context: Context, appContext: AppContext) : ExpoView(contex
     scene = if (json == null) null else parse(json)
     startNanos = 0L
     nowNanos = 0L
+    finished = false
     if (scene != null) start() else invalidate()
   }
 
@@ -133,7 +149,8 @@ class DiceCanvasView(context: Context, appContext: AppContext) : ExpoView(contex
 
   override fun onAttachedToWindow() {
     super.onAttachedToWindow()
-    if (scene != null && !running && startNanos == 0L) start()
+    // A detached view has dropped its frame callback; coming back resumes the clock unless the scene has finished.
+    if (scene != null && !running && !finished) start()
   }
 
   override fun onDetachedFromWindow() {
@@ -213,25 +230,41 @@ class DiceCanvasView(context: Context, appContext: AppContext) : ExpoView(contex
   }
 
   private fun drawThrow(canvas: Canvas, s: Scene, seconds: Double) {
-    val poses = s.bodies.map { sampleThrow(it.frames, s.frameCount, seconds) }
-    for ((i, pose) in poses.withIndex()) {
-      val lift = pose.z - s.bodies[i].rest
+    val count = s.bodies.size
+    for (i in 0 until count) {
+      val body = s.bodies[i]
+      sampleThrowInto(body.frames, s.frameCount, seconds, body.pose, 0)
+      body.pose.copyInto(body.q, 0, 3, POSE_SIZE)
+      val lift = body.pose[2] - body.rest
       shadowPaint.color = Color.argb((max(0.08, 0.34 - lift * 0.0014) * 255.0).toInt(), 0, 0, 0)
-      val left = pose.x + 3.0 + lift * 0.16 - s.size * 0.85
-      val top = pose.y + 6.0 + lift * 0.26 - s.size * 0.7
-      oval.set(left.toFloat(), top.toFloat(), (left + s.size * 1.7).toFloat(), (top + s.size * 1.4).toFloat())
-      canvas.drawOval(oval, shadowPaint)
+      val left = body.pose[0] + 3.0 + lift * 0.16 - s.size * 0.85
+      val top = body.pose[1] + 6.0 + lift * 0.26 - s.size * 0.7
+      val height = s.size * 1.4
+      oval.set(left.toFloat(), top.toFloat(), (left + s.size * 1.7).toFloat(), (top + height).toFloat())
+      canvas.drawRoundRect(oval, (height / 2.0).toFloat(), (height / 2.0).toFloat(), shadowPaint)
     }
-    // The lowest die is drawn first, so a die in the air covers the ones below it.
-    for (i in poses.indices.sortedBy { poses[it].z }) {
-      val pose = poses[i]
-      val lift = pose.z - s.bodies[i].rest
+    // The lowest die is drawn first, so a die in the air covers the ones below it. Insertion sort on the
+    // indexes: stable, so equal heights keep their Roll order, and no boxing.
+    for (i in 0 until count) s.order[i] = i
+    for (i in 1 until count) {
+      val key = s.order[i]
+      val keyZ = s.bodies[key].pose[2]
+      var j = i - 1
+      while (j >= 0 && s.bodies[s.order[j]].pose[2] > keyZ) {
+        s.order[j + 1] = s.order[j]
+        j--
+      }
+      s.order[j + 1] = key
+    }
+    for (k in 0 until count) {
+      val i = s.order[k]
+      val body = s.bodies[i]
+      val lift = body.pose[2] - body.rest
       drawDie(
         canvas,
-        s.bodies[i],
-        pose.q,
-        pose.x,
-        pose.y,
+        body,
+        body.pose[0],
+        body.pose[1],
         s.size * (1.0 + lift * 0.0023),
         dropped.getOrElse(i) { false },
       )
@@ -239,41 +272,50 @@ class DiceCanvasView(context: Context, appContext: AppContext) : ExpoView(contex
   }
 
   private fun drawTumble(canvas: Canvas, s: Scene, ms: Double) {
-    for ((i, body) in s.bodies.withIndex()) {
+    for (i in s.bodies.indices) {
+      val body = s.bodies[i]
       val progress = min(1.0, max(0.0, (ms - body.delay) / TUMBLE_MS))
       val pop = tumblePop(progress)
-      val shadowScale = 1.0 - 0.3 * pop
+      val scale = 1.0 + 0.22 * pop
+      val lift = -8.0 * pop
+      val shadowScale = scale * (1.0 - 0.3 * pop)
       val w = s.cell * 0.5 * shadowScale
       val h = 8.0 * shadowScale
       shadowPaint.color = Color.argb((0.35 * (1.0 - 0.6 * pop) * 255.0).toInt(), 0, 0, 0)
-      val top = body.cy + s.cell / 2.0 - 6.0 - 4.0 - h / 2.0
-      oval.set((body.cx - w / 2.0).toFloat(), top.toFloat(), (body.cx + w / 2.0).toFloat(), (top + h).toFloat())
-      canvas.drawRoundRect(oval, (4.0 * shadowScale).toFloat(), (4.0 * shadowScale).toFloat(), shadowPaint)
-      val q = tumbleQuaternion(body.target, body.axis, body.spin, progress)
+      val shadowY = body.cy + 26.0 * scale + lift
+      oval.set((body.cx - w / 2.0).toFloat(), (shadowY - h / 2.0).toFloat(), (body.cx + w / 2.0).toFloat(), (shadowY + h / 2.0).toFloat())
+      canvas.drawRoundRect(oval, (h / 2.0).toFloat(), (h / 2.0).toFloat(), shadowPaint)
+      tumbleQuaternionInto(body.target, body.axis, body.spin, progress, body.q)
       val grey = progress >= 1.0 && dropped.getOrElse(i) { false }
-      drawDie(canvas, body, q, body.cx, body.cy - 8.0 * pop, s.cell * 0.36 * (1.0 + 0.22 * pop), grey)
+      drawDie(canvas, body, body.cx, body.cy + lift, s.size * scale, grey)
     }
   }
 
-  private fun drawDie(canvas: Canvas, body: Body, q: DoubleArray, cx: Double, cy: Double, size: Double, grey: Boolean) {
+  /** Draws one body with its orientation in `body.q`, centred at (cx, cy) with a circumradius of `size`. */
+  private fun drawDie(canvas: Canvas, body: Body, cx: Double, cy: Double, size: Double, grey: Boolean) {
+    val q = body.q
     val base = if (grey) GREY_BODY else body.base
     val ink = if (grey) GREY_INK else body.ink
-    val rotated = Array(body.verts.size) { rotateVector(q, body.verts[it]) }
+    val rotated = body.rotated
+    for (v in body.verts.indices) rotateVectorInto(q, body.verts[v], rotated, v * 3)
     stroke.strokeWidth = max(1.0, size * 0.035).toFloat()
     stroke.color = Color.argb(if (grey) 89 else 128, 0, 0, 0)
-    for (face in body.faces) {
-      val normal = rotateVector(q, face.normal)
+    for (fi in body.faces.indices) {
+      val face = body.faces[fi]
+      rotateVectorInto(q, face.normal, normal, 0)
       if (normal[2] <= 0.004) continue
-      val shading = faceShading(normal)
+      val shade = faceShade(normal)
+      val alpha = faceAlpha(normal[2])
       fill.color = Color.rgb(
-        (base[0] * shading.shade).toInt(),
-        (base[1] * shading.shade).toInt(),
-        (base[2] * shading.shade).toInt(),
+        (base[0] * shade).toInt(),
+        (base[1] * shade).toInt(),
+        (base[2] * shade).toInt(),
       )
       path.reset()
-      for ((p, vi) in face.idx.withIndex()) {
-        val x = cx + rotated[vi][0] * size
-        val y = cy - rotated[vi][1] * size
+      for (p in face.idx.indices) {
+        val vi = face.idx[p] * 3
+        val x = cx + rotated[vi] * size
+        val y = cy - rotated[vi + 1] * size
         if (p == 0) path.moveTo(x.toFloat(), y.toFloat()) else path.lineTo(x.toFloat(), y.toFloat())
       }
       path.close()
@@ -281,20 +323,21 @@ class DiceCanvasView(context: Context, appContext: AppContext) : ExpoView(contex
       canvas.drawPath(path, stroke)
 
       inkPaint.color = Color.argb(
-        (shading.alpha * 255.0).toInt(),
+        (alpha * 255.0).toInt(),
         ink[0].toInt(),
         ink[1].toInt(),
         ink[2].toInt(),
       )
-      for (label in face.labels) {
-        // labelMatrix gives SVG's (a, b, c, d, e, f); Android's Matrix takes (scaleX, skewX, transX, skewY, scaleY, transY).
-        val m = labelMatrix(q, label.at, label.right, label.up, size)
-        matrixValues[0] = m[0].toFloat()
-        matrixValues[1] = m[2].toFloat()
-        matrixValues[2] = (cx + m[4]).toFloat()
-        matrixValues[3] = m[1].toFloat()
-        matrixValues[4] = m[3].toFloat()
-        matrixValues[5] = (cy + m[5]).toFloat()
+      for (li in face.labels.indices) {
+        val label = face.labels[li]
+        // labelMatrixInto gives the six numbers (a, b, c, d, e, f); Android's Matrix takes (scaleX, skewX, transX, skewY, scaleY, transY).
+        labelMatrixInto(q, label.at, label.right, label.up, size, labelOut, labelScratch)
+        matrixValues[0] = labelOut[0].toFloat()
+        matrixValues[1] = labelOut[2].toFloat()
+        matrixValues[2] = (cx + labelOut[4]).toFloat()
+        matrixValues[3] = labelOut[1].toFloat()
+        matrixValues[4] = labelOut[3].toFloat()
+        matrixValues[5] = (cy + labelOut[5]).toFloat()
         matrixValues[6] = 0f
         matrixValues[7] = 0f
         matrixValues[8] = 1f
@@ -306,8 +349,9 @@ class DiceCanvasView(context: Context, appContext: AppContext) : ExpoView(contex
           canvas.scale(label.size.toFloat(), label.size.toFloat())
           canvas.drawText(text, -label.width / 2f, 35f, inkPaint)
         } else {
-          for (mark in pipMarks(label.value, label.size)) {
-            canvas.drawCircle(mark.cx.toFloat(), mark.cy.toFloat(), mark.r.toFloat(), inkPaint)
+          val count = pipMarksInto(label.value, label.size, pipOut)
+          for (k in 0 until count) {
+            canvas.drawCircle(pipOut[k * 3].toFloat(), pipOut[k * 3 + 1].toFloat(), pipOut[k * 3 + 2].toFloat(), inkPaint)
           }
         }
         canvas.restore()
