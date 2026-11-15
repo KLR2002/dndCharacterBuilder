@@ -8,7 +8,7 @@ import { rollAccentId } from "../../rules/rollColors.ts";
 import type { RollLogEntry } from "../../rules/rollLog.ts";
 import { randomMotion } from "./diceMotion";
 import { NativeTumbleDice } from "./NativeDice";
-import { drawSolidDie, fillPill } from "./drawSolidDie";
+import { drawDie, fillPill } from "./drawDie";
 import { CELL, DIE_RADIUS, tumbleCells, tumbleHeight } from "./tumbleCells";
 
 /** One solid die to draw: a body of a standard die, or one of the two bodies of a d100. */
@@ -99,7 +99,7 @@ function TumbleCanvas({ bodies }: { bodies: SolidBody[] }) {
         fillPill(ctx, centreX, centreY + 26 * scale + lift, (CELL * 0.5) * shadowScale, 8 * shadowScale);
         ctx.globalAlpha = 1;
 
-        drawSolidDie(ctx, {
+        drawDie(ctx, {
           geo: body.geo,
           pose: tumbleQuaternion(targets[index], motion.axis, motion.spin, progress),
           accent: body.accent,

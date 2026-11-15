@@ -19,7 +19,7 @@ export type CanvasSolid = {
  * Draws a solid die with flat shading, outlines, numerals and pips. Faces turned away from the viewer are
  * not drawn. The context's transform is restored before the function returns.
  */
-export function drawSolidDie(ctx: CanvasRenderingContext2D, die: CanvasSolid): void {
+export function drawDie(ctx: CanvasRenderingContext2D, die: CanvasSolid): void {
   const drawn = projectDie(die.geo, die.pose, die.size, solidStyle(die.accent, die.dropped));
   ctx.save();
   ctx.translate(die.x, die.y);

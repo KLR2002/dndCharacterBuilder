@@ -6,7 +6,7 @@ import { useAppTheme } from "../../context/ThemeContext";
 import type { PendingThrow } from "../../context/RollLogContext";
 import { sampleThrow, THROW_FPS } from "../../rules/diceThrow.ts";
 import { rollAccentId } from "../../rules/rollColors.ts";
-import { drawSolidDie, fillPill } from "./drawSolidDie";
+import { drawDie, fillPill } from "./drawDie";
 import { NativeThrowDice } from "./NativeDice";
 
 /** How long the dice stay on screen once they have stopped, and how long they take to fade. */
@@ -151,7 +151,7 @@ function ThrowCanvas({ pending, revealed }: { pending: PendingThrow; revealed: b
         const body = bodies[i];
         const pose = poses[i];
         const lift = pose.z - body.rest;
-        drawSolidDie(ctx, {
+        drawDie(ctx, {
           geo: body.geo,
           pose: pose.q,
           accent: body.accent,
