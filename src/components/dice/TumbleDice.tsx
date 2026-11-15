@@ -8,7 +8,7 @@ import { rollAccentId } from "../../rules/rollColors.ts";
 import type { RollLogEntry } from "../../rules/rollLog.ts";
 import { randomMotion } from "./diceMotion";
 import { NativeTumbleDice } from "./NativeDice";
-import { drawSolidDie } from "./drawSolidDie";
+import { drawSolidDie, fillPill } from "./drawSolidDie";
 import { CELL, DIE_RADIUS, tumbleCells, tumbleHeight } from "./tumbleCells";
 
 /** One solid die to draw: a body of a standard die, or one of the two bodies of a d100. */
@@ -54,21 +54,6 @@ function solidBodies(entries: RollLogEntry[], selectedAccentId: string): SolidBo
     });
   });
   return bodies;
-}
-
-/** A pill of width `w` and height `h` centred on (cx, cy): the round-ended shadow under a die. */
-function fillPill(ctx: CanvasRenderingContext2D, cx: number, cy: number, w: number, h: number) {
-  const r = h / 2;
-  const left = cx - w / 2 + r;
-  const right = cx + w / 2 - r;
-  ctx.beginPath();
-  ctx.moveTo(left, cy - r);
-  ctx.lineTo(right, cy - r);
-  ctx.arc(right, cy, r, -Math.PI / 2, Math.PI / 2);
-  ctx.lineTo(left, cy + r);
-  ctx.arc(left, cy, r, Math.PI / 2, -Math.PI / 2, true);
-  ctx.closePath();
-  ctx.fill();
 }
 
 /**

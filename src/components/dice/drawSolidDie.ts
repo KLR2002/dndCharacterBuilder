@@ -42,6 +42,21 @@ export function drawSolidDie(ctx: CanvasRenderingContext2D, die: CanvasSolid): v
   ctx.restore();
 }
 
+/** A pill of width `w` and height `h` centred on (cx, cy): the round-ended shadow under a die. */
+export function fillPill(ctx: CanvasRenderingContext2D, cx: number, cy: number, w: number, h: number): void {
+  const r = h / 2;
+  const left = cx - w / 2 + r;
+  const right = cx + w / 2 - r;
+  ctx.beginPath();
+  ctx.moveTo(left, cy - r);
+  ctx.lineTo(right, cy - r);
+  ctx.arc(right, cy, r, -Math.PI / 2, Math.PI / 2);
+  ctx.lineTo(left, cy + r);
+  ctx.arc(left, cy, r, Math.PI / 2, -Math.PI / 2, true);
+  ctx.closePath();
+  ctx.fill();
+}
+
 /** A label is drawn in its face's own units: the matrix maps them onto the die. */
 function drawLabel(ctx: CanvasRenderingContext2D, label: ProjectedLabel): void {
   ctx.save();
