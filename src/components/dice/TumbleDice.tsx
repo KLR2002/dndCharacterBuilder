@@ -1,5 +1,5 @@
-import React, { useEffect, useMemo, useState } from "react";
-import { StyleSheet, View } from "react-native";
+import React, { useEffect, useMemo, useRef, useState } from "react";
+import { Platform, StyleSheet, View } from "react-native";
 import Animated, { Easing, useAnimatedStyle, useDerivedValue, useSharedValue, withDelay, withTiming } from "react-native-reanimated";
 import { ACCENT_PALETTES, type AccentOption } from "../../constants/theme";
 import { useAppTheme } from "../../context/ThemeContext";
@@ -9,10 +9,8 @@ import { d100Parts, makeDie, planSolidDice, poseShowing, type DieGeometry, type 
 import { rollAccentId } from "../../rules/rollColors.ts";
 import type { RollLogEntry } from "../../rules/rollLog.ts";
 import { SolidDie } from "./SolidDie";
-
-/** A cell is this many dp across; a solid die is drawn at 36% of it as its circumradius. */
-const CELL = 72;
-const DIE_RADIUS = CELL * 0.36;
+import { drawSolidDie } from "./drawSolidDie";
+import { CELL, DIE_RADIUS, tumbleCells, tumbleHeight } from "./tumbleCells";
 
 /** One solid die to draw: a body of a standard die, or one of the two bodies of a d100. */
 type SolidBody = {
@@ -113,6 +111,103 @@ function TumbleBody({ body, delay, testID }: { body: SolidBody; delay: number; t
   );
 }
 
+/** A pill of width `w` and height `h` centred on (cx, cy): the round-ended shadow under a die. */
+function fillPill(ctx: CanvasRenderingContext2D, cx: number, cy: number, w: number, h: number) {
+  const r = h / 2;
+  const left = cx - w / 2 + r;
+  const right = cx + w / 2 - r;
+  ctx.beginPath();
+  ctx.moveTo(left, cy - r);
+  ctx.lineTo(right, cy - r);
+  ctx.arc(right, cy, r, -Math.PI / 2, Math.PI / 2);
+  ctx.lineTo(left, cy + r);
+  ctx.arc(left, cy, r, Math.PI / 2, -Math.PI / 2, true);
+  ctx.closePath();
+  ctx.fill();
+}
+
+/**
+ * The web row: every solid die of the batch is drawn on one canvas, repainted on each animation frame
+ * with the native row's timing, lift and shadow. Each die keeps a hidden element beside the canvas that
+ * carries its name. The frame loop stops when the last die has settled and when the row unmounts.
+ */
+function TumbleCanvas({ bodies }: { bodies: SolidBody[] }) {
+  const [width, setWidth] = useState(0);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const motions = useMemo(() => bodies.map(() => randomMotion()), [bodies]);
+  const targets = useMemo(() => bodies.map((body, index) => poseShowing(body.geo, body.reading, motions[index].yaw)), [bodies, motions]);
+  const cells = useMemo(() => tumbleCells(bodies.length, width), [bodies.length, width]);
+  const height = width > 0 ? tumbleHeight(bodies.length, width) : 0;
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    const ctx = canvas?.getContext("2d");
+    if (!canvas || !ctx || width === 0) return;
+    const dpr = window.devicePixelRatio || 1;
+    canvas.width = Math.round(width * dpr);
+    canvas.height = Math.round(height * dpr);
+    const start = performance.now();
+    let frame = 0;
+    const paint = (now: number) => {
+      const elapsed = now - start;
+      let moving = false;
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      ctx.clearRect(0, 0, width, height);
+      bodies.forEach((body, index) => {
+        const motion = motions[index];
+        const progress = Math.min(1, Math.max(0, (elapsed - index * TUMBLE_STAGGER_MS) / TUMBLE_MS));
+        if (progress < 1) moving = true;
+        const pop = tumblePop(progress);
+        const scale = 1 + 0.22 * pop;
+        const centreX = cells[index].x + CELL / 2;
+        const centreY = cells[index].y + CELL / 2;
+        const lift = -8 * pop;
+
+        ctx.globalAlpha = 0.35 * (1 - 0.6 * pop);
+        ctx.fillStyle = "#000";
+        const shadowScale = scale * (1 - 0.3 * pop);
+        fillPill(ctx, centreX, centreY + 26 * scale + lift, (CELL * 0.5) * shadowScale, 8 * shadowScale);
+        ctx.globalAlpha = 1;
+
+        drawSolidDie(ctx, {
+          geo: body.geo,
+          pose: tumbleQuaternion(targets[index], motion.axis, motion.spin, progress),
+          accent: body.accent,
+          dropped: body.dropped && progress >= 1,
+          size: DIE_RADIUS * scale,
+          x: centreX,
+          y: centreY + lift,
+        });
+      });
+      if (moving) frame = requestAnimationFrame(paint);
+    };
+    frame = requestAnimationFrame(paint);
+    return () => cancelAnimationFrame(frame);
+  }, [bodies, cells, height, motions, targets, width]);
+
+  // Nothing is laid out before the row is measured: a row of unknown width would wrap into one column, far taller than the card.
+  return (
+    <View
+      testID="dice-solids"
+      importantForAccessibility="no-hide-descendants"
+      aria-hidden
+      onLayout={(event) => setWidth(event.nativeEvent.layout.width)}
+      style={{ width: "100%", height }}>
+      {width > 0 ? <canvas ref={canvasRef} style={{ width, height, display: "block" }} /> : null}
+      {width > 0
+        ? bodies.map((body, index) => (
+            <View
+              key={index}
+              testID={`die-solid-${index}`}
+              accessibilityLabel={body.label}
+              style={[styles.label, { left: cells[index].x, top: cells[index].y }]}
+            />
+          ))
+        : null}
+    </View>
+  );
+}
+
 /**
  * The solid dice of a batch, tumbling in the result card above its Roll blocks. Dice with no solid
  * (and any die past the cap) are not drawn; the chips below list every face.
@@ -121,6 +216,7 @@ export function TumbleDice({ entries }: { entries: RollLogEntry[] }) {
   const { accentId } = useAppTheme();
   const bodies = useMemo(() => solidBodies(entries, accentId), [entries, accentId]);
   if (bodies.length === 0) return null;
+  if (Platform.OS === "web") return <TumbleCanvas bodies={bodies} />;
   return (
     <View testID="dice-solids" style={styles.row} importantForAccessibility="no-hide-descendants" aria-hidden>
       {bodies.map((body, index) => (
@@ -143,6 +239,12 @@ const styles = StyleSheet.create({
     height: CELL,
     alignItems: "center",
     justifyContent: "center",
+  },
+  label: {
+    position: "absolute",
+    width: CELL,
+    height: CELL,
+    opacity: 0,
   },
   shadow: {
     position: "absolute",

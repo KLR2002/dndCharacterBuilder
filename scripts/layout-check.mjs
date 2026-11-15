@@ -1660,8 +1660,36 @@ function isAccentShade(fill, hex) {
   return [1, 2].every((i) => Math.abs(Number(m[i + 1]) - shade * base[i]) <= 2);
 }
 
-// Starts an in-page sampler that records the first solid die's projected outline on every animation
-// frame: the points of its first polygon change as the die turns. Run before the roll so the samples
+// Runs in the page: the opaque canvas pixels in a 20px disc at the centre of a die's hidden label element
+// (its fills, numerals and pips). Its die lies on the canvas at that centre, once it has stopped.
+function discPixelsOf(testId) {
+  const label = document.querySelector(`[data-testid="${testId}"]`);
+  const canvas = document.querySelector('[data-testid="dice-solids"] canvas');
+  if (!label || !canvas || canvas.width === 0) return [];
+  const box = label.getBoundingClientRect();
+  const canvasBox = canvas.getBoundingClientRect();
+  const scale = canvas.width / canvasBox.width;
+  const ctx = canvas.getContext("2d");
+  const cx = box.left + box.width / 2 - canvasBox.left;
+  const cy = box.top + box.height / 2 - canvasBox.top;
+  const pixels = [];
+  for (let dx = -10; dx <= 10; dx += 2.5) {
+    for (let dy = -10; dy <= 10; dy += 2.5) {
+      const [r, g, b, a] = ctx.getImageData(Math.round((cx + dx) * scale), Math.round((cy + dy) * scale), 1, 1).data;
+      if (a === 255) pixels.push([r, g, b]);
+    }
+  }
+  return pixels;
+}
+
+// Whether a pixel is a grey of a dropped die: its three channels are close and it is not black.
+function isGreyPixel([r, g, b]) {
+  const max = Math.max(r, g, b);
+  return max >= 30 && max - Math.min(r, g, b) <= 16;
+}
+
+// Starts an in-page sampler that records the solid dice's canvas on every animation frame: the pixels
+// change as the dice turn. Run before the roll so the samples
 // cover the tumble itself; the sampler runs until 3s after the die first appeared (at most 15s), since
 // the dice mount a beat after the card, once their lazy chunk loads.
 function startDieSampling(p) {
@@ -1671,10 +1699,15 @@ function startDieSampling(p) {
     window.__dieSamples = [];
     const tick = () => {
       const now = performance.now() - window.__dieT0;
-      const polygon = document.querySelector('[data-testid="die-solid-0"] polygon');
-      if (polygon) {
+      const canvas = document.querySelector('[data-testid="dice-solids"] canvas');
+      const ctx = canvas?.getContext("2d");
+      if (canvas && ctx && canvas.width > 0) {
+        // The pose is a hash of the canvas pixels: every turn of a die changes some of them.
+        const data = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+        let hash = 0;
+        for (let i = 0; i < data.length; i += 16) hash = (Math.imul(hash, 31) + data[i] * 3 + data[i + 1] * 5 + data[i + 2] * 7 + data[i + 3]) | 0;
         if (window.__dieMountT === null) window.__dieMountT = now;
-        window.__dieSamples.push({ t: now, pose: polygon.getAttribute("points") ?? "" });
+        window.__dieSamples.push({ t: now, pose: String(hash) });
       }
       const limit = window.__dieMountT === null ? 15000 : window.__dieMountT + 3000;
       if (now < limit) requestAnimationFrame(tick);
@@ -1795,17 +1828,14 @@ async function checkDiceAnimation(ctx, width, meta) {
     if (tumbleMs > 1200)
       fail(`the dice tumbled for ${Math.round(tumbleMs)}ms (first pose change at ${Math.round(changes[0])}ms, last at ${Math.round(changes[changes.length - 1])}ms): limit 1200ms`);
 
-    const faces = await page.evaluate((accent) => {
+    const faces = await page.evaluate(() => {
       const card = document.querySelector('[data-testid="result-card"]');
       if (!card) return null;
       const chips = [...card.querySelectorAll('[data-testid="die-chip"]')].map((c) => c.textContent ?? "");
       const dice = [...card.querySelectorAll('[data-testid^="die-solid-"]')].map((d) => d.getAttribute("aria-label") ?? "");
       const total = card.querySelector('[data-testid="result-total"]')?.textContent ?? "";
-      const fillOf = (cell) => cell?.querySelector("svg polygon")?.getAttribute("fill") ?? null;
-      const d6 = card.querySelector('[data-testid="die-solid-0"]');
-      const d8 = card.querySelector('[data-testid="die-solid-1"]');
-      return { chips, dice, total, d6fill: fillOf(d6), d8fill: fillOf(d8) };
-    }, accentHex);
+      return { chips, dice, total };
+    });
     if (!faces) fail("the result card disappeared before its dice could be read");
     else {
       const chipFaces = faces.chips.map((chip) => Number(/(\d+)d\d+/.exec(chip)?.[1] ?? "NaN"));
@@ -1816,8 +1846,11 @@ async function checkDiceAnimation(ctx, width, meta) {
         fail(`the animated faces ${shownFaces.join(",")} do not match the Roll's chips ${chipFaces.join(",")}`);
       else if (Number(faces.total) !== chipFaces.reduce((sum, face) => sum + face, 0) + 3)
         fail(`the total ${faces.total} is not the faces plus +3`);
-      if (!isAccentShade(faces.d6fill, accentHex)) fail(`the d6 die is filled ${faces.d6fill}, expected a shade of the accent ${accentHex}`);
-      if (!isAccentShade(faces.d8fill, accentHex)) fail(`the d8 die is filled ${faces.d8fill}, expected a shade of the accent ${accentHex}`);
+      for (const testId of ["die-solid-0", "die-solid-1"]) {
+        const pixels = await page.evaluate(discPixelsOf, testId);
+        if (!pixels.some((px) => isAccentShade(`rgb(${px.join(",")})`, accentHex)))
+          fail(`${testId} has no pixel in a shade of the accent ${accentHex} at its centre (${pixels.length} opaque pixels sampled)`);
+      }
     }
     await maybeShot(page, shot("animated"), meta);
   }
@@ -1840,20 +1873,32 @@ async function checkDiceAnimation(ctx, width, meta) {
     const label = await page.evaluate(() => document.querySelector('[data-testid="die-solid-1"]')?.getAttribute("aria-label") ?? "");
     if (!label.includes("9") || !label.toLowerCase().includes("dropped")) fail(`the dropped d20's label is "${label}", expected its face 9 marked dropped`);
     // The dropped die turns grey once it has stopped, within the settle budget; the kept die stays in the accent.
-    const greyFills = () => {
-      const isGrey = (cell) => {
-        const m = /^rgb\((\d+),(\d+),(\d+)\)$/.exec(cell?.querySelector("svg polygon")?.getAttribute("fill") ?? "");
-        if (!m) return null;
-        const c = [1, 2, 3].map((i) => Number(m[i]));
-        return Math.max(...c) - Math.min(...c);
-      };
-      const dropped = isGrey(document.querySelector('[data-testid="die-solid-1"]'));
-      const kept = isGrey(document.querySelector('[data-testid="die-solid-0"]'));
-      return dropped !== null && dropped <= 16 && kept !== null && kept > 40;
-    };
-    const muted = await page.waitForFunction(greyFills, undefined, { timeout: 3000 }).then(() => true).catch(() => false);
+    // Polls the canvas until the dropped die shows only greys and the kept die shows its accent, or 3s pass.
+    const mutedBy = Date.now() + 3000;
+    let muted = false;
+    while (!muted && Date.now() < mutedBy) {
+      const dropped = await page.evaluate(discPixelsOf, "die-solid-1");
+      const kept = await page.evaluate(discPixelsOf, "die-solid-0");
+      muted = dropped.length > 0 && dropped.every(isGreyPixel) && kept.some((px) => isAccentShade(`rgb(${px.join(",")})`, accentHex));
+      if (!muted) await new Promise((resolve) => setTimeout(resolve, 100));
+    }
     if (!muted) fail("the dropped d20 is not grey within 3s of the roll, or the kept d20 is not in the accent colour");
     await maybeShot(page, shot("dropped"), meta);
+
+    // One Roll of every solid type, shot mid-turn and at rest for the look review.
+    const published = await page.evaluate(() => {
+      const hook = window.__publishRoll;
+      if (typeof hook !== "function") return false;
+      const dice = [4, 6, 8, 10, 12, 20, 100].map((sides) => ({ sides, face: sides === 100 ? 42 : sides, dropped: sides === 12 }));
+      hook({ roll: { dice, modifier: 0, total: 0 }, source: "Shapes", characterName: "Kara", d20Mode: "normal" });
+      return true;
+    });
+    if (published) {
+      await page.waitForTimeout(120);
+      await maybeShot(page, shot("mixed-mid-turn"), meta);
+      await page.waitForTimeout(1600);
+      await maybeShot(page, shot("mixed-at-rest"), meta);
+    }
 
     // Solid dice of other Rolls: fourteen d6 draw the cap of ten and list all fourteen chips; a d3 with a d6
     // draws the d6 alone; a d100 draws its tens die (labelled) and its units die; every die is inside the card.
@@ -1874,16 +1919,21 @@ async function checkDiceAnimation(ctx, width, meta) {
           const r = cell.getBoundingClientRect();
           return !cardBox || r.left < cardBox.left - 0.5 || r.right > cardBox.right + 0.5 || r.top < cardBox.top - 0.5 || r.bottom > cardBox.bottom + 0.5;
         }).length;
+        const row = document.querySelector('[data-testid="dice-solids"]');
         return {
           solids: cells.length,
           chips: card ? card.querySelectorAll('[data-testid="die-chip"]').length : 0,
           outside,
           labels: cells.map((cell) => cell.getAttribute("aria-label") ?? ""),
+          canvases: row ? row.querySelectorAll("canvas").length : 0,
+          svgs: row ? row.querySelectorAll("svg").length : 0,
         };
       });
       // The row repeats what the chips and the result block announce, so it is hidden from screen readers.
       const rowHidden = await page.evaluate(() => document.querySelector('[data-testid="dice-solids"]')?.getAttribute("aria-hidden"));
       if (rowHidden !== "true") fail(`${shape.expression}: the solid dice row is aria-hidden="${rowHidden}", expected "true"`);
+      if (counted.canvases !== 1 || counted.svgs !== 0)
+        fail(`${shape.expression}: the solid dice row holds ${counted.canvases} canvases and ${counted.svgs} SVG elements, expected one canvas and none`);
       if (counted.solids !== shape.solids) fail(`${shape.expression} mounted ${counted.solids} solid dice, expected ${shape.solids}`);
       if (counted.chips !== shape.chips) fail(`${shape.expression} lists ${counted.chips} chips, expected ${shape.chips}`);
       if (counted.outside > 0) fail(`${shape.expression}: ${counted.outside} solid dice stick out of the result card`);
