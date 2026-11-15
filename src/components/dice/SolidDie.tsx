@@ -4,7 +4,7 @@ import Animated, { useAnimatedProps, useDerivedValue, type SharedValue } from "r
 import Svg, { Circle, G, Polygon, Text as SvgText } from "react-native-svg";
 import type { Quat } from "../../rules/diceMath.ts";
 import type { DieFace, DieGeometry } from "../../rules/diceSolids.ts";
-import { hexToRgb, pipMarks, projectDie, type DieProjection, type LabelMatrix, type ProjectionStyle, type Rgb } from "../../rules/diceProjection.ts";
+import { pipMarks, projectDie, solidStyle, type DieProjection, type LabelMatrix, type ProjectionStyle } from "../../rules/diceProjection.ts";
 
 // A label's matrix reaches react-native-svg under a different prop name per platform. Native animated props skip
 // the JS step that turns `transform` into the native `matrix` prop, so native takes `matrix` (six numbers) and the
@@ -14,10 +14,6 @@ const IS_WEB = Platform.OS === "web";
 const AnimatedPolygon = Animated.createAnimatedComponent(Polygon);
 const AnimatedText = Animated.createAnimatedComponent(SvgText);
 const AnimatedG = Animated.createAnimatedComponent(G);
-
-/** The grey body and muted numerals of a die that has been dropped from the roll. */
-const DROPPED_BODY: Rgb = [104, 108, 116];
-const DROPPED_INK: Rgb = [210, 210, 210];
 
 /** The canvas is this many circumradii across, so a tilted die and its labels stay inside it. */
 export const SOLID_EXTENT = 2.7;
@@ -43,14 +39,7 @@ export function SolidDie({
 }) {
   const primary = accent.primary;
   const text = accent.text;
-  const style = useMemo<ProjectionStyle>(
-    () => ({
-      base: dropped ? DROPPED_BODY : hexToRgb(primary),
-      ink: dropped ? DROPPED_INK : hexToRgb(text),
-      dropped,
-    }),
-    [primary, text, dropped],
-  );
+  const style = useMemo<ProjectionStyle>(() => solidStyle({ primary, text }, dropped), [primary, text, dropped]);
 
   const projection = useDerivedValue<DieProjection>(
     () => projectDie(geo, quaternion.value, size, style),
