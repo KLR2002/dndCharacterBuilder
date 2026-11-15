@@ -1,7 +1,7 @@
 // Projects a solid die onto the screen for one orientation. Every function is a worklet, so a
 // Reanimated worklet can call them per frame. Nothing here imports React or React Native.
 
-import { dot, normalize, rotateVector, type Quat } from "./diceMath.ts";
+import { dot, normalize, rotateVector, type Quat, type Vec3 } from "./diceMath.ts";
 import type { DieGeometry } from "./diceSolids.ts";
 
 export type Rgb = [number, number, number];
@@ -64,35 +64,54 @@ function rgbaString(c: Rgb, alpha: number): string {
   return `rgba(${Math.round(c[0])},${Math.round(c[1])},${Math.round(c[2])},${alpha.toFixed(3)})`;
 }
 
+export type FaceShading = { shade: number; alpha: number };
+
+/** The shade of a face whose normal is `normal` in screen space, and the opacity of its ink. */
+export function faceShading(normal: Vec3): FaceShading {
+  'worklet';
+  const light = normalize([-0.35, 0.5, 0.8]);
+  return {
+    shade: 0.3 + 0.7 * Math.max(0, dot(normal, light)),
+    alpha: Math.min(1, 0.6 + 0.4 * normal[2]),
+  };
+}
+
+/**
+ * The label matrix of a label whose position and axes are `at`, `right` and `up` in the die's own frame,
+ * for the orientation `quaternion` and a die of `size` pixels.
+ */
+export function labelMatrix(quaternion: Quat, at: Vec3, right: Vec3, up: Vec3, size: number): LabelMatrix {
+  'worklet';
+  const labelScale = 0.01;
+  const origin = rotateVector(quaternion, at);
+  const rightScreen = rotateVector(quaternion, right);
+  const upScreen = rotateVector(quaternion, up);
+  const a = rightScreen[0] * labelScale * size;
+  const b = -rightScreen[1] * labelScale * size;
+  const c = -upScreen[0] * labelScale * size;
+  const d = upScreen[1] * labelScale * size;
+  return [a, b, c, d, origin[0] * size, -origin[1] * size];
+}
+
 /**
  * Projects every face of `geo` for the orientation `quaternion`, in geometry order. The die is
  * centred on (0, 0) and `size` is its circumradius in pixels. Screen y points down.
  */
 export function projectDie(geo: DieGeometry, quaternion: Quat, size: number, style: ProjectionStyle): DieProjection {
   'worklet';
-  const light = normalize([-0.35, 0.5, 0.8]);
   const verts = geo.verts.map((v) => rotateVector(quaternion, v));
-  const labelScale = 0.01;
   const stroke = style.dropped ? "rgba(0,0,0,0.35)" : "rgba(0,0,0,0.5)";
 
   const faces = geo.faces.map((face): ProjectedFace => {
     const normal = rotateVector(quaternion, face.normal);
-    const shade = 0.3 + 0.7 * Math.max(0, dot(normal, light));
+    const { shade, alpha } = faceShading(normal);
     const fill = rgbString([style.base[0] * shade, style.base[1] * shade, style.base[2] * shade]);
-    const alpha = Math.min(1, 0.6 + 0.4 * normal[2]);
     const points = face.vertexIndexes
       .map((i) => `${(verts[i][0] * size).toFixed(2)},${(-verts[i][1] * size).toFixed(2)}`)
       .join(" ");
 
     const labels = face.labels.map((label): ProjectedLabel => {
-      const origin = rotateVector(quaternion, label.at);
-      const right = rotateVector(quaternion, label.right);
-      const up = rotateVector(quaternion, label.up);
-      const a = right[0] * labelScale * size;
-      const b = -right[1] * labelScale * size;
-      const c = -up[0] * labelScale * size;
-      const d = up[1] * labelScale * size;
-      const transform: LabelMatrix = [a, b, c, d, origin[0] * size, -origin[1] * size];
+      const transform = labelMatrix(quaternion, label.at, label.right, label.up, size);
       const ink = rgbaString(style.ink, alpha);
       if (label.kind === "pips") {
         return { kind: "pips", transform, fill: ink, pips: pipMarks(label.value, label.size) };
