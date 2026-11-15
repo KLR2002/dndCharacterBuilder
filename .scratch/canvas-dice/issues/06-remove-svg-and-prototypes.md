@@ -1,6 +1,8 @@
 # 06: Remove SVG and the prototypes
 
-**Status:** ready-for-agent
+**Status:** done
+
+**Landed:** feature/3d-dice @ 244e811. check:all green, `ONLY=Dice WIDTHS=393` layout check green, the ticket grep prints nothing, `checks/modulesSourceOnly.test.ts` red with a probe `x.so` and green without; react-native-svg gone from package.json, lockfile and the F-Droid recipe. Open: the `'worklet'` directives in diceAnimation, diceThrow and diceMath are dead code (nothing in Reanimated calls them).
 
 ## What to build
 
@@ -13,8 +15,8 @@ Remove the old renderer now that web and Android draw on canvases: `SolidDie`, t
 
 ## Acceptance Criteria
 
-- [ ] AC-8: Every file under `modules/` is text; a probe file `modules/dice-canvas/x.so` makes the guard fail (then removed); `docs/fdroid/` names no package the project no longer uses.
-- [ ] AC-10: `grep -r "react-native-svg\|SolidDie\|Prototype" src package.json docs/fdroid` prints nothing; lint, typecheck and tests pass; the lockfile no longer holds `react-native-svg`.
+- [x] AC-8: Every file under `modules/` is text; a probe file `modules/dice-canvas/x.so` makes the guard fail (then removed); `docs/fdroid/` names no package the project no longer uses.
+- [x] AC-10: `grep -r "react-native-svg\|SolidDie\|Prototype" src package.json docs/fdroid` prints nothing; lint, typecheck and tests pass; the lockfile no longer holds `react-native-svg`.
 
 ## Verification
 
