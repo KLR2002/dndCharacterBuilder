@@ -1,13 +1,15 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { StyleSheet, View } from "react-native";
+import { Platform, StyleSheet, View } from "react-native";
 import Animated, { Easing, useAnimatedStyle, useDerivedValue, useSharedValue, withDelay, withTiming } from "react-native-reanimated";
 import { ACCENT_PALETTES, type AccentOption } from "../../constants/theme";
 import { useAppTheme } from "../../context/ThemeContext";
 import { TUMBLE_MS, TUMBLE_SOLID_CAP, TUMBLE_STAGGER_MS, tumbleQuaternion, tumblePop } from "../../rules/diceAnimation.ts";
-import { normalize, type Quat, type Vec3 } from "../../rules/diceMath.ts";
+import type { Quat } from "../../rules/diceMath.ts";
 import { d100Parts, makeDie, planSolidDice, poseShowing, type DieGeometry, type SolidSides } from "../../rules/diceSolids.ts";
 import { rollAccentId } from "../../rules/rollColors.ts";
 import type { RollLogEntry } from "../../rules/rollLog.ts";
+import { randomMotion } from "./diceMotion";
+import { NativeTumbleDice } from "./NativeDice";
 import { SolidDie } from "./SolidDie";
 
 /** A cell is this many dp across; a solid die is drawn at 36% of it as its circumradius. */
@@ -57,15 +59,6 @@ function solidBodies(entries: RollLogEntry[], selectedAccentId: string): SolidBo
     });
   });
   return bodies;
-}
-
-/** A random turn axis, a spin of two to three and a half full turns, and a yaw about the vertical. */
-function randomMotion(): { axis: Vec3; spin: number; yaw: number } {
-  return {
-    axis: normalize([Math.random() - 0.5, Math.random() - 0.5, Math.random() - 0.5]),
-    spin: (2 + Math.random() * 1.5) * 2 * Math.PI,
-    yaw: Math.random() * 2 * Math.PI,
-  };
 }
 
 /** One solid die that tumbles once on mount, then settles on the face its Roll already holds. */
@@ -121,6 +114,8 @@ export function TumbleDice({ entries }: { entries: RollLogEntry[] }) {
   const { accentId } = useAppTheme();
   const bodies = useMemo(() => solidBodies(entries, accentId), [entries, accentId]);
   if (bodies.length === 0) return null;
+  if (Platform.OS === "android") return <NativeTumbleDice bodies={bodies} />;
+  if (Platform.OS !== "web") return null;
   return (
     <View testID="dice-solids" style={styles.row} importantForAccessibility="no-hide-descendants" aria-hidden>
       {bodies.map((body, index) => (

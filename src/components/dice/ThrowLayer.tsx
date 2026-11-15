@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { Pressable, StyleSheet } from "react-native";
+import { Platform, Pressable, StyleSheet } from "react-native";
 import Animated, {
   cancelAnimation,
   Easing,
@@ -17,6 +17,7 @@ import type { Quat } from "../../rules/diceMath.ts";
 import type { DieGeometry } from "../../rules/diceSolids.ts";
 import { rollAccentId } from "../../rules/rollColors.ts";
 import { SOLID_EXTENT, SolidDie } from "./SolidDie";
+import { NativeThrowDice } from "./NativeDice";
 
 /** How long the dice stay on screen once they have stopped, and how long they take to fade. */
 const REST_MS = 1500;
@@ -29,7 +30,7 @@ type Phase = "flying" | "resting" | "fading";
  * which shows the result at once. When the last die stops the result is revealed, the layer lets
  * touches through, and the dice fade out after they have rested.
  */
-export function ThrowLayer({
+function ThrowLayerDice({
   pending,
   onReveal,
   onDone,
@@ -92,12 +93,13 @@ export function ThrowLayer({
     <Pressable
       testID="throw-layer"
       accessible={false}
-      importantForAccessibility="no-hide-descendants"
-      aria-hidden
+      importantForAccessibility={Platform.OS === "android" ? undefined : "no-hide-descendants"}
+      aria-hidden={Platform.OS === "android" ? undefined : true}
       onPress={tap}
       style={[StyleSheet.absoluteFill, { pointerEvents: phase === "flying" ? "auto" : "none" }]}>
       <Animated.View style={[StyleSheet.absoluteFill, layerStyle]}>
-        {pending.geos.map((geo, body) => {
+        {Platform.OS === "android" && <NativeThrowDice pending={pending} revealed={phase !== "flying"} />}
+        {Platform.OS === "web" && pending.geos.map((geo, body) => {
           const { die, batchIndex } = dice[pending.owner[body]];
           const suffix = die.dropped ? ", dropped" : "";
           const label =
@@ -124,6 +126,24 @@ export function ThrowLayer({
       </Animated.View>
     </Pressable>
   );
+}
+
+/**
+ * The Throw on the platforms that draw dice. Other platforms have no dice canvas, so the Throw plays as Off:
+ * the result shows at once and nothing is drawn.
+ */
+export function ThrowLayer(props: React.ComponentProps<typeof ThrowLayerDice>) {
+  if (Platform.OS === "web" || Platform.OS === "android") return <ThrowLayerDice {...props} />;
+  return <OffThrow onReveal={props.onReveal} onDone={props.onDone} />;
+}
+
+function OffThrow({ onReveal, onDone }: { onReveal: () => void; onDone: () => void }) {
+  const callbacks = useRef({ onReveal, onDone });
+  useEffect(() => {
+    callbacks.current.onReveal();
+    callbacks.current.onDone();
+  }, []);
+  return null;
 }
 
 /**
