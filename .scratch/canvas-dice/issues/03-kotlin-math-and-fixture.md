@@ -1,6 +1,8 @@
 # 03: Kotlin math and the shared fixture
 
-**Status:** ready-for-agent
+**Status:** done
+
+**Landed:** feature/3d-dice @ 577945a. Fixture test (`checks/diceCanvasMath.test.ts`) and Kotlin unit test (`:dice-canvas:testDebugUnitTest`, 9 tests) both green; the TypeScript probe failed as expected; `check:all` green.
 
 ## What to build
 
@@ -14,10 +16,10 @@ The reference Kotlin is on branch `prototype/canvas-dice` (`git show prototype/c
 
 ## Acceptance Criteria
 
-- [ ] AC-7: The fixture covers sampled Throw poses at several times, Tumble poses of each die type at several times, face shades and pip positions; the TypeScript test and the Kotlin unit test both read it and pass within 1e-4.
-- [ ] The TypeScript test fails when one stored value in the fixture is edited (a probe, then reverted).
-- [ ] The fixture is written only by a recorder switch (an environment variable, like the repo's other fixtures), never by hand.
-- [ ] `modules/` is ignored for `build/` and `.cxx/`; no build output is committed.
+- [x] AC-7: The fixture covers sampled Throw poses at several times, Tumble poses of each die type at several times, face shades and pip positions; the TypeScript test and the Kotlin unit test both read it and pass within 1e-4.
+- [x] The TypeScript test fails when one stored value in the fixture is edited (a probe, then reverted).
+- [x] The fixture is written only by a recorder switch (an environment variable, like the repo's other fixtures), never by hand.
+- [x] `modules/` is ignored for `build/` and `.cxx/`; no build output is committed.
 
 ## Verification
 
