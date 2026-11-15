@@ -1,0 +1,25 @@
+plugins {
+  id 'com.android.library'
+  id 'expo-module-gradle-plugin'
+}
+
+group = 'expo.modules.dicecanvas'
+version = '0.1.0'
+
+android {
+  namespace "expo.modules.dicecanvas"
+  defaultConfig {
+    versionCode 1
+    versionName "0.1.0"
+  }
+}
+
+dependencies {
+  testImplementation 'junit:junit:4.13.2'
+  testImplementation 'org.json:json:20240303'
+}
+
+// The shared math fixture, read by DiceMathTest and by checks/diceCanvasMath.test.ts.
+tasks.withType(Test).configureEach {
+  systemProperty 'dice.fixture', file('../../../checks/fixtures/diceCanvasMathFixture.json').absolutePath
+}

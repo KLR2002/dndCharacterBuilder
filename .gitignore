@@ -45,5 +45,9 @@ example
 /ios
 /android
 
+# build output of the local native modules
+modules/**/build/
+modules/**/.cxx/
+
 # fdroiddata fork (F-Droid submission), its own git repo
 /data-cb/
