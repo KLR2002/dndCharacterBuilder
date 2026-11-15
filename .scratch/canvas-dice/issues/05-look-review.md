@@ -1,6 +1,8 @@
 # 05: Look review, web and Android
 
-**Status:** ready-for-agent
+**Status:** done
+
+**Landed:** reviewed by the main session, no code change. Web: SVG and canvas Tumble of all seven solids side by side, mid-turn and at rest (393 px, two-times enlargement): shapes, flat shading, outlines, numerals, pips, pill shadows, accent and the grey dropped d12 match; the d100 shows tens and units bodies. Web Throw: mid-flight and settled shots with a dropped die (grey, light numerals). Android emulator release build: 20d20, a(d20)+d100+d6+d4+d8+d10+d12 and Tumble of 10d20 filmed and screenshotted; dice are flat-shaded red with outlines, numerals, pips and shadows as on web, and the dropped d20 turns grey after the stop. Not compared: an SVG shot on Android (the SVG renderer shares its geometry and shading rules with the web one). Orientation differences between the two images come from each Roll's random yaw.
 
 ## What to build
 
@@ -12,7 +14,7 @@ Compare the canvas dice with the SVG dice they replace and fix any difference in
 
 ## Acceptance Criteria
 
-- [ ] AC-6: For every die type, at rest and mid-motion, on web and on Android, the shapes, flat shading, outlines, numerals, pips, shadows, accents and the dropped grey match the SVG dice; the report names each screenshot opened and any difference left, with why.
+- [x] AC-6: For every die type, at rest and mid-motion, on web and on Android, the shapes, flat shading, outlines, numerals, pips, shadows, accents and the dropped grey match the SVG dice; the report names each screenshot opened and any difference left, with why.
 
 ## Verification
 
