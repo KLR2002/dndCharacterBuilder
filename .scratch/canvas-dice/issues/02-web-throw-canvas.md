@@ -1,6 +1,8 @@
 # 02: Web Throw on a canvas
 
-**Status:** ready-for-agent
+**Status:** done
+
+**Landed:** feature/3d-dice @ 022bf3a. Layout check `ONLY=Dice` green at 393 and 768, red against the SVG code (11 violations); removing the frame cancel or the clear after the fade makes a check fail; `check:all` green. AC-4 allows same-origin lazy chunks of the app and fails on any other request or a canvaskit, skia or wasm file.
 
 ## What to build
 
@@ -14,9 +16,9 @@ On the web, the Throw layer draws all thrown dice and their shadows on one full-
 
 ## Acceptance Criteria
 
-- [ ] AC-1: A Roll of `d20,d20` and of `a(d20,d20)+d100` shows one canvas covering the screen and one hidden label per thrown die with the old names; each label's face equals the die's chip in the result card; the canvas pixel at a die's centre has the accent, or grey for a dropped die.
-- [ ] AC-2: Card on stop, tap during flight, Roll during flight, taps after the stop, fade after about 1.5 s with the canvas gone afterwards, and the 20-solid cap all behave as before.
-- [ ] AC-4: On a fresh page with Throw (and with Tumble) the first Roll shows its solids and the network log has no request besides the app's own bundle; with Off no `<canvas>` exists after several Rolls.
+- [x] AC-1: A Roll of `d20,d20` and of `a(d20,d20)+d100` shows one canvas covering the screen and one hidden label per thrown die with the old names; each label's face equals the die's chip in the result card; the canvas pixel at a die's centre has the accent, or grey for a dropped die.
+- [x] AC-2: Card on stop, tap during flight, Roll during flight, taps after the stop, fade after about 1.5 s with the canvas gone afterwards, and the 20-solid cap all behave as before.
+- [x] AC-4: On a fresh page with Throw (and with Tumble) the first Roll shows its solids and the network log has no request besides the app's own bundle; with Off no `<canvas>` exists after several Rolls.
 
 ## Verification
 
