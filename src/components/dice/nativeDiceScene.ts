@@ -3,6 +3,7 @@
 // goes in its own string through droppedFlags, so a change of dropped never replays the motion.
 import { hexToRgb } from "../../rules/diceProjection.ts";
 import type { DieGeometry } from "../../rules/diceSolids.ts";
+import { DIE_RADIUS } from "./tumbleCells.ts";
 
 export type SceneAccent = { primary: string; text: string };
 
@@ -74,7 +75,7 @@ export function throwScene(size: number, frameCount: number, bodies: readonly Th
 export function tumbleScene(cell: number, bodies: readonly TumbleSceneBody[]): string {
   return JSON.stringify({
     mode: "tumble",
-    size: cell * 0.36,
+    size: DIE_RADIUS,
     cell,
     bodies: bodies.map((body) => ({
       ...geometryJson(body.geo),

@@ -250,14 +250,6 @@ test("diceMath and diceSolids import nothing from React or React Native", () => 
   }
 });
 
-test("every exported function in diceMath starts with the worklet directive", () => {
-  const source = readFileSync(new URL("../src/rules/diceMath.ts", import.meta.url), "utf8");
-  const functions = source.match(/^export function \w+\([^)]*\)[^{]*\{\n\s*'worklet';/gm) ?? [];
-  const exported = source.match(/^export function /gm) ?? [];
-  assert.ok(exported.length > 0);
-  assert.equal(functions.length, exported.length);
-});
-
 test("the scale and cross helpers agree with the vector identities", () => {
   const a: Vec3 = [1, 2, 3];
   const b: Vec3 = [-1, 0, 2];

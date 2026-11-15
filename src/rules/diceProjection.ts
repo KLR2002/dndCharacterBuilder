@@ -35,8 +35,8 @@ export function hexToRgb(hex: string): Rgb {
 }
 
 /** The grey body and muted numerals of a die that has been dropped from the roll. */
-export const DROPPED_BODY: Rgb = [104, 108, 116];
-export const DROPPED_INK: Rgb = [210, 210, 210];
+const DROPPED_BODY: Rgb = [104, 108, 116];
+const DROPPED_INK: Rgb = [210, 210, 210];
 
 /** The colours of a die of an accent, or the grey of a dropped one. */
 export function solidStyle(accent: { primary: string; text: string }, dropped: boolean): ProjectionStyle {

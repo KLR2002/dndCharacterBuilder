@@ -74,7 +74,6 @@ export type ThrowPose = { x: number; y: number; z: number; q: Quat };
  * linearly (the orientation normalised). Times before the first frame or after the last give that frame.
  */
 export function sampleThrow(frames: ArrayLike<number>, frameCount: number, seconds: number): ThrowPose {
-  'worklet';
   const last = frameCount - 1;
   const f = Math.min(last, Math.max(0, seconds * THROW_FPS));
   const i0 = Math.floor(f);

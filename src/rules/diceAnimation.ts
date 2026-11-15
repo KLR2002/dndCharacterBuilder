@@ -25,13 +25,11 @@ export const TUMBLE_STAGGER_MS = 45;
  * by `spin` radians, easing out, and reaches `target` exactly at progress 1.
  */
 export function tumbleQuaternion(target: Quat, axis: Vec3, spin: number, progress: number): Quat {
-  'worklet';
   const eased = 1 - Math.pow(1 - progress, 3);
   return quatMultiply(target, quatFromAxisAngle(axis, spin * (1 - eased)));
 }
 
 /** The lift of a tumbling die: 0 at rest, 1 at its highest point, back to 0 when it lands. */
 export function tumblePop(progress: number): number {
-  'worklet';
   return Math.sin(Math.PI * Math.min(1, progress * 1.15));
 }

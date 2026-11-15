@@ -3,7 +3,7 @@ export const CELL = 72;
 export const DIE_RADIUS = CELL * 0.36;
 
 /** The gap between cells, in both directions, and the room above the top row for its lift. */
-export const CELL_GAP = 6;
+const CELL_GAP = 6;
 export const ROW_TOP = 12;
 
 export type CellOrigin = { x: number; y: number };
