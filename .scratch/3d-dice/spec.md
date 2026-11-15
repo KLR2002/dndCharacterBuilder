@@ -22,7 +22,7 @@ Replace the flat 2D dice in the result card with solid dice, offer two animation
 - **Tray:** the text field is the pool. The die buttons (d4, d6, d8, d10, d12, d20, d100) and the modifier stepper edit its text, the removable chips go, the Disadvantage / Normal / Advantage control shows only when the text is a lone d20 with an optional modifier. The text stays between openings until a Roll from the tray empties it, and is never saved.
 
 ## Open
-- **Frame rate on a phone.** Drawing about 20 solids with `react-native-svg` at 60 fps on a low-end Android is unmeasured; the user tests it on a device (ticket 11). Fallbacks, cheapest first: draw numerals only on the top face while a die moves; draw only the faces that are visible and skip shading steps; play the Throw back at 30 fps; lower the Throw cap; sprite frames; Skia.
+- **Frame rate on a phone.** Measured: drawing with `react-native-svg` dropped frames from 5 dice and tore faces. The drawing engine is replaced by `.scratch/canvas-dice/spec.md` (ADR 0022); the fallbacks that were listed here are rejected there.
 
 ## Tickets
 01 roll-expression-module, 02 roll-batches-and-colours, 03 tray-expression-field, 04 dice-animation-setting, 05 dice-solids-geometry, 06 solid-die-svg-renderer, 07 tumble-animation, 08 throw-physics, 09 two-pass-roll-seam, 10 throw-overlay, 11 check-animation-speed-on-a-phone.

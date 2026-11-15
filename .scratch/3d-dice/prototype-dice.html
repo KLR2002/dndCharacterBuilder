@@ -1,0 +1,831 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>PROTOTYPE - 3D dice, Throw and Roll Expression</title>
+<style>
+:root{--bg:#121417;--panel:#1b1e23;--line:#2c3138;--text:#e9e6df;--muted:#8c929b;--accent:#d4603f;--ok:#6dbf8b;--bad:#e5707a;--r:10px}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:15px/1.45 system-ui,Segoe UI,Roboto,sans-serif;padding:20px 16px 120px}
+header,main,.bar{max-width:1100px;margin:0 auto}
+h1{font-size:22px;margin:0 0 6px}
+.tag{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--accent);border:1px solid var(--accent);border-radius:99px;padding:2px 8px;margin-left:8px;vertical-align:middle}
+.q{color:var(--muted);margin:0 0 14px;max-width:80ch}
+.bar{display:flex;gap:14px;align-items:center;flex-wrap:wrap;margin-bottom:14px}
+.bar b{font-size:13px;color:var(--muted);font-weight:600}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.seg button{background:var(--panel);color:var(--muted);border:0;border-right:1px solid var(--line);padding:10px 16px;font:inherit;font-size:14px;cursor:pointer;min-height:44px}
+.seg button:last-child{border-right:0}
+.seg button.on{background:#3a2019;color:#ffb59e;font-weight:700}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media(max-width:820px){.grid{grid-template-columns:1fr}}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:16px}
+.panel h2{font-size:12px;letter-spacing:.09em;text-transform:uppercase;color:var(--muted);margin:0 0 12px}
+.wide{grid-column:1/-1}
+input[type=text]{width:100%;background:#0e1013;color:var(--text);border:1px solid var(--line);border-radius:8px;padding:12px;font:600 17px ui-monospace,Menlo,Consolas,monospace;min-height:48px}
+input[type=text]:focus{outline:2px solid var(--accent);outline-offset:1px}
+.msg{min-height:22px;margin:8px 0 10px;font-size:13px}
+.msg.ok{color:var(--ok)}.msg.bad{color:var(--bad)}
+.row{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px;align-items:center}
+.btn{background:#0e1013;color:var(--text);border:1px solid var(--line);border-radius:8px;min-width:52px;min-height:48px;padding:0 12px;font:600 14px inherit;cursor:pointer}
+.btn:hover{border-color:var(--accent)}
+.btn.primary{background:var(--accent);color:#1a0b06;border-color:var(--accent);width:100%;font-size:16px;font-weight:800}
+.btn.primary:disabled{opacity:.35;cursor:not-allowed}
+.btn.sm{min-height:36px;font-size:12px;font-family:ui-monospace,Menlo,monospace}
+.stepper{display:flex;align-items:center;gap:10px}.stepper span{min-width:34px;text-align:center;font-weight:700}
+.muted{color:var(--muted);font-size:13px}
+.ex{display:flex;flex-wrap:wrap;gap:6px}
+canvas{display:block}
+#gal{width:100%;height:210px}
+pre{margin:0;white-space:pre-wrap;font:13px/1.5 ui-monospace,Menlo,Consolas,monospace;color:#cfd3d9}
+.logrow{border-top:1px solid var(--line);padding:8px 0;font-size:13px}
+.logrow:first-child{border-top:0}
+.logrow b{font-family:ui-monospace,Menlo,monospace}
+.logrow .t{float:right;font-weight:800;color:#ffb59e;font-size:16px}
+#fab{position:fixed;right:16px;bottom:16px;width:56px;height:56px;border-radius:50%;border:1px solid var(--line);background:#262a31;color:#ffb59e;font:800 13px inherit;cursor:pointer;z-index:30;box-shadow:0 4px 10px #0008}
+#stage{position:fixed;inset:0;width:100vw;height:100vh;z-index:20;pointer-events:none}
+#stage.live{pointer-events:auto}
+#card{position:fixed;right:16px;bottom:84px;width:min(380px,calc(100vw - 32px));max-height:60vh;overflow:auto;background:#262a31;border:1px solid var(--line);border-radius:12px;padding:14px 14px 12px;z-index:25;box-shadow:0 6px 14px #000a}
+#card[hidden]{display:none}
+#card .head{font-size:12px;color:var(--muted);margin-bottom:6px;padding-right:28px}
+#card .head b{color:var(--text);font-family:ui-monospace,Menlo,monospace;font-size:13px}
+#card .x{position:absolute;top:2px;right:2px;width:40px;height:40px;background:none;border:0;color:var(--muted);font-size:18px;cursor:pointer}
+#card .total{font-size:30px;font-weight:800;margin-top:8px}
+#card .total small{font-size:12px;font-weight:500;color:var(--muted);margin-left:8px}
+.tree{line-height:2.1;font-size:14px}
+.chip{display:inline-block;border:1px solid #5b4036;background:#3a2019;border-radius:6px;padding:0 7px;margin:0 2px;font-weight:700;line-height:1.7}
+.chip i{font:600 10px ui-monospace,monospace;color:#c58a78;margin-right:4px}
+.chip.dig{border-style:dashed}
+.lose{opacity:.42;filter:grayscale(1)}
+.chip.drop{opacity:.42;filter:grayscale(1)}
+.arg{display:inline-block;border:1px solid var(--line);border-radius:8px;padding:0 8px;margin:2px 3px}
+.arg.win{border-color:#6a4538}
+.arg .sub{font-weight:800;margin-left:6px}
+.lbl{font:700 11px ui-monospace,monospace;color:var(--accent);letter-spacing:.04em;margin-right:4px}
+.op{color:var(--muted);margin:0 4px}
+.num{font-weight:700}
+.rep{display:block}
+.rollblk{border-top:1px solid var(--line);padding-top:6px;margin-top:6px}
+.rollblk:first-of-type{border-top:0;margin-top:0}
+.rollblk .total{font-size:24px!important;margin-top:2px!important}
+</style>
+</head>
+<body>
+<header>
+  <h1>Dice prototype <span class="tag">throwaway</span></h1>
+  <p class="q"><b>Question this answers:</b> do we mean the same thing by (1) solid 3D dice drawn with plain 2D shapes, (2) <b>Tumble</b> (turn in place, stop on the drawn face) versus <b>Throw</b> (dice fly across the screen, the face on top is the result), and (3) the <b>Roll Expression</b> field (<code>NdX</code>, <code>+ -</code>, numbers, <code>a(d20,...)</code> / <code>d(d20,...)</code> that take only d20s, a comma that separates independent Rolls, a count before a function that repeats the whole Roll, and one colour per Roll)? Nothing here is saved; the three script modules (expression, solids, physics) are written to be lifted into the app.</p>
+</header>
+
+<div class="bar">
+  <b>Dice Animation</b>
+  <span class="seg" id="modeSeg"><button data-m="off">Off</button><button data-m="tumble" class="on">Tumble</button><button data-m="throw">Throw</button></span>
+  <b>Accent</b>
+  <span class="seg" id="accentSeg"></span>
+  <span class="muted">Tumble: up to 10 solids in the result card. Throw: up to 20 solids over the whole screen, thrown from the round button at the bottom right.</span>
+</div>
+
+<main class="grid">
+  <section class="panel">
+    <h2>Dice tray</h2>
+    <input id="expr" type="text" value="a(d20+5,d20+2)" spellcheck="false" autocomplete="off" aria-label="Roll Expression">
+    <div class="msg" id="msg"></div>
+    <div class="row" id="dieBtns"></div>
+    <div class="row">
+      <div class="stepper"><span class="muted" style="min-width:70px;text-align:left">Modifier</span>
+        <button class="btn" id="modMinus" aria-label="Modifier decrease">-</button><span id="modVal">0</span><button class="btn" id="modPlus" aria-label="Modifier increase">+</button></div>
+    </div>
+    <div class="row" id="advRow"><span class="seg" id="advSeg" style="width:100%"><button data-a="d" style="flex:1">Disadvantage</button><button data-a="n" style="flex:1">Normal</button><button data-a="a" style="flex:1">Advantage</button></span></div>
+    <button class="btn primary" id="rollBtn">Roll</button>
+    <p class="muted" style="margin:14px 0 6px">Examples (tap to load)</p>
+    <div class="ex" id="examples"></div>
+  </section>
+
+  <section class="panel">
+    <h2>How the expression reads</h2>
+    <pre id="reads"></pre>
+  </section>
+
+  <section class="panel wide">
+    <h2>The solids (turning slowly) - d100 is a tens die and a units die</h2>
+    <canvas id="gal"></canvas>
+  </section>
+
+  <section class="panel wide">
+    <h2>Roll Log (this page only)</h2>
+    <div id="log"><span class="muted">Nothing rolled yet. Press Roll, or the round button.</span></div>
+  </section>
+</main>
+
+<button id="fab" title="Roll the expression (also where a Throw starts)">Roll</button>
+<div id="card" hidden></div>
+<canvas id="stage"></canvas>
+
+<!-- ============================ MODULE 1: Roll Expression (pure) ============================ -->
+<script id="m-expr">
+const RollExpr = (() => {
+  const MAX_DICE = 100, MAX_SIDES = 1000, MAX_ROLLS = 10;
+  class ExprError extends Error { constructor(m, pos) { super(m); this.pos = pos; } }
+  const ARG_HINT = 'a( ) and d( ) take only d20, for example a(d20+5,d20)';
+
+  /** text -> list of Roll ASTs (one per Roll), or throws ExprError. Case and spaces ignored. */
+  function parse(text) {
+    const s = String(text).toLowerCase().replace(/\s+/g, '');
+    let p = 0;
+    const isDigit = (c) => c !== undefined && c >= '0' && c <= '9';
+    const readInt = () => { const st = p; while (isDigit(s[p])) p++; return st === p ? null : parseInt(s.slice(st, p), 10); };
+    if (!s) throw new ExprError('Type a roll, for example 2d6+3', 0);
+
+    function parseRoll() {
+      if (s[p] === '+' || s[p] === '-') throw new ExprError('A roll cannot start with + or -', p);
+      if (s[p] === undefined || s[p] === ',') throw new ExprError('A roll is missing before ","', p);
+      const terms = []; let sign = 1, repeat = 1;
+      for (let first = true; ; first = false) {
+        const node = parseTerm(first);
+        if (node.type === 'fn' && node.repeatCount > 1) {
+          if (repeat > 1) throw new ExprError('Only one function in a roll can have a count before it', p);
+          repeat = node.repeatCount;
+        }
+        terms.push({ sign, node });
+        if (s[p] === '+' || s[p] === '-') {
+          sign = s[p] === '-' ? -1 : 1; p++;
+          if (p >= s.length || s[p] === ',') throw new ExprError('A roll cannot end with + or -', p);
+        } else break;
+      }
+      return { ast: { type: 'sum', terms }, repeat };
+    }
+    function parseTerm(allowCount) {
+      const n = readInt(); const c = s[p];
+      if (c === 'd' && isDigit(s[p + 1])) {
+        p++; const sides = readInt(); const count = n === null ? 1 : n;
+        if (count < 1) throw new ExprError('A roll needs at least one die: ' + count + 'd' + sides, p);
+        if (sides < 1) throw new ExprError('A die needs at least 1 side', p);
+        if (sides > MAX_SIDES) throw new ExprError('A die can have at most ' + MAX_SIDES + ' sides', p);
+        return { type: 'dice', count, sides };
+      }
+      if ((c === 'd' || c === 'a') && s[p + 1] === '(') {
+        if (n !== null && n < 1) throw new ExprError('The count before ' + c + '( must be at least 1', p);
+        p += 2; const args = [parseArg()];
+        while (s[p] === ',') { p++; args.push(parseArg()); }
+        if (s[p] !== ')') throw new ExprError(s[p] === undefined ? 'Missing )' : 'Unexpected "' + s[p] + '", expected , or )', p);
+        p++;
+        const implicit = args.length === 1;
+        if (implicit) args.push(args[0]);          // a(d20) means a(d20,d20)
+        return { type: 'fn', mode: c, repeat: 1, repeatCount: n === null ? 1 : n, args, implicit };
+      }
+      if (c === 'd') throw new ExprError('"d" needs a number of sides or ( after it', p);
+      if (c === 'a') throw new ExprError('"a" needs ( after it', p);
+      if (n !== null) return { type: 'num', value: n };
+      throw new ExprError(c === undefined ? 'The expression ends too early' : 'Unexpected "' + c + '"', p);
+    }
+    /** One argument of a( ) / d( ): a single d20 plus flat numbers, e.g. d20, d20+5, d20-1. */
+    function parseArg() {
+      const n = readInt();
+      if (s[p] !== 'd' || !isDigit(s[p + 1])) throw new ExprError(ARG_HINT, p);
+      p++; const sides = readInt();
+      if (sides !== 20 || (n !== null && n !== 1)) throw new ExprError(ARG_HINT, p);
+      const terms = [{ sign: 1, node: { type: 'dice', count: 1, sides: 20 } }];
+      while (s[p] === '+' || s[p] === '-') {
+        const sg = s[p] === '-' ? -1 : 1; p++;
+        const v = readInt();
+        if (v === null) throw new ExprError('Inside a( ) or d( ) only whole numbers go after + or -', p);
+        terms.push({ sign: sg, node: { type: 'num', value: v } });
+      }
+      return { type: 'sum', terms };
+    }
+
+    const rolls = [];
+    for (;;) {
+      const { ast, repeat } = parseRoll();
+      for (let i = 0; i < repeat; i++) rolls.push(ast);   // 2a(d20,d20) is a(d20,d20),a(d20,d20)
+      if (s[p] === ',') { p++; if (p >= s.length) throw new ExprError('The expression cannot end with ","', p); continue; }
+      break;
+    }
+    if (p < s.length) throw new ExprError('Unexpected "' + s[p] + '"', p);
+    const dice = countDice(rolls);
+    if (dice < 1 || rolls.some((r) => countDice(r) < 1)) throw new ExprError('Every roll needs at least one die', 0);
+    if (dice > MAX_DICE) throw new ExprError('At most ' + MAX_DICE + ' dice per expression (this one has ' + dice + ')', 0);
+    if (rolls.length > MAX_ROLLS) throw new ExprError('At most ' + MAX_ROLLS + ' rolls per expression (this one has ' + rolls.length + ')', 0);
+    return rolls;
+  }
+
+  function countDice(n) {
+    if (Array.isArray(n)) return n.reduce((a, r) => a + countDice(r), 0);
+    switch (n.type) {
+      case 'num': return 0;
+      case 'dice': return n.count;
+      case 'sum': return n.terms.reduce((a, t) => a + countDice(t.node), 0);
+      case 'fn': return n.args.reduce((a, x) => a + countDice(x), 0);
+    }
+  }
+
+  /** The sides of every die, over all Rolls, in evaluation order (the order evaluate asks the random source). */
+  function plan(n, out = []) {
+    if (Array.isArray(n)) n.forEach((r) => plan(r, out));
+    else if (n.type === 'dice') for (let i = 0; i < n.count; i++) out.push(n.sides);
+    else if (n.type === 'sum') n.terms.forEach((t) => plan(t.node, out));
+    else if (n.type === 'fn') n.args.forEach((a) => plan(a, out));
+    return out;
+  }
+
+  /** One Roll AST + random source -> result tree. `first` records each dice node's index in the plan (share ctx across Rolls). */
+  function evaluate(n, rng, ctx = { i: 0 }) {
+    switch (n.type) {
+      case 'num': return { type: 'num', value: n.value, total: n.value };
+      case 'dice': {
+        const first = ctx.i, faces = [];
+        for (let i = 0; i < n.count; i++) faces.push(rng(n.sides));
+        ctx.i += n.count;
+        return { type: 'dice', sides: n.sides, count: n.count, faces, first, total: faces.reduce((a, b) => a + b, 0) };
+      }
+      case 'sum': {
+        const items = n.terms.map((t) => ({ sign: t.sign, res: evaluate(t.node, rng, ctx) }));
+        return { type: 'sum', items, total: items.reduce((a, it) => a + it.sign * it.res.total, 0) };
+      }
+      case 'fn': {
+        const results = n.args.map((a) => evaluate(a, rng, ctx));
+        let pick = 0;
+        for (let i = 1; i < results.length; i++) {
+          if (n.mode === 'a' ? results[i].total > results[pick].total : results[i].total < results[pick].total) pick = i; // tie: first wins
+        }
+        return { type: 'fn', mode: n.mode, implicit: n.implicit, results, pick, total: results[pick].total };
+      }
+    }
+  }
+
+  /** The flat shape the existing Roll type has: dice (with dropped), a flat modifier, a total. */
+  function flatten(res) {
+    const acc = { dice: [], modifier: 0 };
+    (function walk(r, dropped, sign) {
+      if (r.type === 'dice') r.faces.forEach((f) => acc.dice.push({ sides: r.sides, face: f, dropped, sign }));
+      else if (r.type === 'num') { if (!dropped) acc.modifier += sign * r.value; }
+      else if (r.type === 'sum') r.items.forEach((it) => walk(it.res, dropped, sign * it.sign));
+      else r.results.forEach((x, i) => walk(x, dropped || i !== r.pick, sign));
+    })(res, false, 1);
+    acc.total = res.total;
+    return acc;
+  }
+
+  /** Canonical text of one Roll. */
+  function format(n) {
+    switch (n.type) {
+      case 'num': return String(n.value);
+      case 'dice': return (n.count === 1 ? '' : n.count) + 'd' + n.sides;
+      case 'sum': return n.terms.map((t, i) => (i === 0 ? '' : t.sign < 0 ? '-' : '+') + format(t.node)).join('');
+      case 'fn': return n.mode + '(' + (n.implicit ? format(n.args[0]) : n.args.map(format).join(',')) + ')';
+    }
+  }
+
+  /** Plain-language reading of the Rolls. */
+  function describe(rolls) {
+    return rolls.map((r, i) => {
+      const lines = ['Roll ' + (i + 1) + ': ' + format(r)];
+      r.terms.forEach((t) => {
+        if (t.node.type !== 'fn') return;
+        const f = t.node, args = f.implicit ? [f.args[0]] : f.args;
+        lines.push('  ' + (f.mode === 'a' ? 'advantage' : 'disadvantage') + ': keep the ' + (f.mode === 'a' ? 'HIGHEST' : 'LOWEST') + ' of ' + args.map(format).join(' | ') + (f.implicit ? ' (rolled twice)' : ''));
+      });
+      return lines.join('\n');
+    }).join('\n');
+  }
+
+  // ---- edit helpers behind the die buttons / modifier stepper / advantage control
+  const clean = (t) => String(t).toLowerCase().replace(/\s+/g, '');
+  function addDie(text, sides) {
+    const t = clean(text);
+    if (!t) return 'd' + sides;
+    const m = new RegExp('(^|[+\\-(,])(\\d*)d' + sides + '$').exec(t);
+    if (m) { const c = (m[2] === '' ? 1 : +m[2]) + 1; return t.slice(0, t.length - m[0].length) + m[1] + c + 'd' + sides; }
+    if (/[+\-(,]$/.test(t)) return t + 'd' + sides;
+    return t + '+d' + sides;
+  }
+  function modifierOf(text) { const m = /([+-])(\d+)$/.exec(clean(text)); return m ? (m[1] === '-' ? -1 : 1) * +m[2] : 0; }
+  function bumpModifier(text, delta) {
+    const t = clean(text); if (!t) return t;
+    const v = modifierOf(t) + delta;
+    const base = t.replace(/([+-])(\d+)$/, '');
+    return base + (v === 0 ? '' : (v > 0 ? '+' : '-') + Math.abs(v));
+  }
+  const D20_RE = /^(d20|a\(d20(?:,d20)?\)|d\(d20(?:,d20)?\))([+-]\d+)?$/;
+  function d20Mode(text) {
+    const m = D20_RE.exec(clean(text));
+    if (!m) return null;
+    return m[1].startsWith('a(') ? 'a' : m[1].startsWith('d(') ? 'd' : 'n';
+  }
+  function setD20Mode(text, mode) {
+    const m = D20_RE.exec(clean(text));
+    const tail = m && m[2] ? m[2] : '';
+    return (mode === 'a' ? 'a(d20,d20)' : mode === 'd' ? 'd(d20,d20)' : 'd20') + tail;
+  }
+  return { parse, plan, evaluate, flatten, format, describe, countDice, ExprError, addDie, modifierOf, bumpModifier, d20Mode, setD20Mode, MAX_DICE, MAX_SIDES, MAX_ROLLS };
+})();
+</script>
+
+<!-- ============================ MODULE 2: solids (pure geometry) ============================ -->
+<script id="m-geo">
+const V3 = {
+  add: (a, b) => [a[0] + b[0], a[1] + b[1], a[2] + b[2]],
+  sub: (a, b) => [a[0] - b[0], a[1] - b[1], a[2] - b[2]],
+  mul: (a, k) => [a[0] * k, a[1] * k, a[2] * k],
+  dot: (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2],
+  cross: (a, b) => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]],
+  len: (a) => Math.hypot(a[0], a[1], a[2]),
+  norm: (a) => { const l = Math.hypot(a[0], a[1], a[2]) || 1; return [a[0] / l, a[1] / l, a[2] / l]; },
+};
+const Q4 = {
+  mul: (a, b) => [a[0]*b[0]-a[1]*b[1]-a[2]*b[2]-a[3]*b[3], a[0]*b[1]+a[1]*b[0]+a[2]*b[3]-a[3]*b[2], a[0]*b[2]-a[1]*b[3]+a[2]*b[0]+a[3]*b[1], a[0]*b[3]+a[1]*b[2]-a[2]*b[1]+a[3]*b[0]],
+  norm: (q) => { const l = Math.hypot(q[0], q[1], q[2], q[3]) || 1; return [q[0]/l, q[1]/l, q[2]/l, q[3]/l]; },
+  axis: (ax, ang) => { const n = V3.norm(ax), s = Math.sin(ang / 2); return [Math.cos(ang / 2), n[0]*s, n[1]*s, n[2]*s]; },
+  rot: (q, v) => { const u = [q[1], q[2], q[3]], t = V3.mul(V3.cross(u, v), 2); return V3.add(V3.add(v, V3.mul(t, q[0])), V3.cross(u, t)); },
+  fromTo: (a, b) => {
+    const d = V3.dot(a, b);
+    if (d > 0.9999999) return [1, 0, 0, 0];
+    if (d < -0.9999999) { let p = V3.cross(a, [1, 0, 0]); if (V3.len(p) < 1e-3) p = V3.cross(a, [0, 1, 0]); return Q4.axis(p, Math.PI); }
+    const c = V3.cross(a, b); return Q4.norm([1 + d, c[0], c[1], c[2]]);
+  },
+  nlerp: (a, b, t) => { const s = (a[0]*b[0]+a[1]*b[1]+a[2]*b[2]+a[3]*b[3]) < 0 ? -1 : 1; return Q4.norm([0,1,2,3].map((i) => a[i]*(1-t) + s*b[i]*t)); },
+  fraction: (q, f) => { if (q[0] < 0) q = q.map((x) => -x); const w = Math.min(1, q[0]), s = Math.sqrt(1 - w*w); if (s < 1e-7) return [1, 0, 0, 0]; return Q4.axis([q[1]/s, q[2]/s, q[3]/s], 2 * Math.acos(w) * f); },
+  integrate: (q, w, dt) => { const d = Q4.mul([0, w[0], w[1], w[2]], q); return Q4.norm([q[0]+0.5*dt*d[0], q[1]+0.5*dt*d[1], q[2]+0.5*dt*d[2], q[3]+0.5*dt*d[3]]); },
+  random: () => { const u1 = Math.random(), u2 = Math.random()*2*Math.PI, u3 = Math.random()*2*Math.PI, a = Math.sqrt(1-u1), b = Math.sqrt(u1); return [b*Math.cos(u3), a*Math.sin(u2), a*Math.cos(u2), b*Math.sin(u3)]; },
+};
+
+const Geo = (() => {
+  const PHI = (1 + Math.sqrt(5)) / 2;
+  const centroid = (vs) => V3.mul(vs.reduce((a, v) => V3.add(a, v), [0, 0, 0]), 1 / vs.length);
+
+  function orderAround(verts, idx, n) {
+    const c = centroid(idx.map((i) => verts[i]));
+    const u = V3.norm(V3.sub(verts[idx[0]], c)), w = V3.cross(n, u);
+    const ang = (i) => { const d = V3.sub(verts[i], c); return Math.atan2(V3.dot(d, w), V3.dot(d, u)); };
+    return idx.slice().sort((i, j) => ang(i) - ang(j));
+  }
+  /** Faces of a convex solid: for each outward normal, the vertices lying furthest along it. */
+  function hullFaces(verts, normals) {
+    return normals.map((nv) => {
+      const n = V3.norm(nv); let max = -Infinity;
+      verts.forEach((v) => { max = Math.max(max, V3.dot(v, n)); });
+      const idx = []; verts.forEach((v, i) => { if (V3.dot(v, n) > max - 1e-6) idx.push(i); });
+      return orderAround(verts, idx, n);
+    });
+  }
+
+  const ICOSA = []; [1, -1].forEach((a) => [1, -1].forEach((b) => { ICOSA.push([0, a, b * PHI], [a, b * PHI, 0], [b * PHI, 0, a]); }));
+  const ICOSA_FACE_CENTERS = (() => {
+    const out = [];
+    for (let i = 0; i < 12; i++) for (let j = i + 1; j < 12; j++) for (let k = j + 1; k < 12; k++) {
+      const e = (x, y) => Math.abs(V3.len(V3.sub(ICOSA[x], ICOSA[y])) - 2) < 1e-6;
+      if (e(i, j) && e(j, k) && e(i, k)) out.push(centroid([ICOSA[i], ICOSA[j], ICOSA[k]]));
+    }
+    return out;
+  })();
+
+  const SOLIDS = {
+    4: () => { const v = [[1,1,1],[1,-1,-1],[-1,1,-1],[-1,-1,1]]; return { verts: v, faces: hullFaces(v, v.map((x) => V3.mul(x, -1))) }; },
+    6: () => { const v = []; for (const x of [1,-1]) for (const y of [1,-1]) for (const z of [1,-1]) v.push([x,y,z]); return { verts: v, faces: hullFaces(v, [[1,0,0],[-1,0,0],[0,1,0],[0,-1,0],[0,0,1],[0,0,-1]]) }; },
+    8: () => { const v = [[1,0,0],[-1,0,0],[0,1,0],[0,-1,0],[0,0,1],[0,0,-1]]; const n = []; for (const x of [1,-1]) for (const y of [1,-1]) for (const z of [1,-1]) n.push([x,y,z]); return { verts: v, faces: hullFaces(v, n) }; },
+    12: () => ({ verts: ICOSA_FACE_CENTERS, faces: hullFaces(ICOSA_FACE_CENTERS, ICOSA) }),
+    20: () => ({ verts: ICOSA, faces: hullFaces(ICOSA, ICOSA_FACE_CENTERS) }),
+    10: () => { // pentagonal trapezohedron, kite faces listed apex, side, far tip, side
+      const c = Math.cos(Math.PI / 5), h = (1 - c) / (1 + c), r = 0.88, rad = (d) => d * Math.PI / 180;
+      const verts = [[0, 0, 1], [0, 0, -1]];
+      for (let i = 0; i < 5; i++) verts.push([r * Math.cos(rad(72 * i)), r * Math.sin(rad(72 * i)), h]);        // U: 2..6
+      for (let i = 0; i < 5; i++) verts.push([r * Math.cos(rad(36 + 72 * i)), r * Math.sin(rad(36 + 72 * i)), -h]); // L: 7..11
+      const U = (i) => 2 + ((i % 5) + 5) % 5, L = (i) => 7 + ((i % 5) + 5) % 5, faces = [];
+      for (let i = 0; i < 5; i++) faces.push([0, U(i), L(i), U(i + 1)]);
+      for (let j = 0; j < 5; j++) faces.push([1, L(j), U(j + 1), L(j + 1)]);
+      return { verts, faces };
+    },
+  };
+
+  const cache = {};
+  /** kind: 'std' prints 1..sides; 'tens' and 'units' are the two d10s of a d100. */
+  function makeDie(sides, kind = 'std') {
+    const key = sides + ':' + kind; if (cache[key]) return cache[key];
+    if (!SOLIDS[sides]) return null;
+    const raw = SOLIDS[sides]();
+    const maxLen = Math.max(...raw.verts.map(V3.len));
+    const verts = raw.verts.map((v) => V3.mul(v, 1 / maxLen));
+    const faces = raw.faces.map((idx) => {
+      const pts = idx.map((i) => verts[i]), c = centroid(pts);
+      let n = V3.norm(V3.cross(V3.sub(pts[1], pts[0]), V3.sub(pts[2], pts[0])));
+      if (V3.dot(n, c) < 0) n = V3.mul(n, -1);
+      let fr = Infinity;
+      for (let i = 0; i < pts.length; i++) { const a = pts[i], b = pts[(i + 1) % pts.length]; fr = Math.min(fr, V3.len(V3.cross(V3.sub(b, a), V3.sub(c, a))) / V3.len(V3.sub(b, a))); }
+      const u0 = V3.sub(pts[0], c), up = V3.norm(V3.sub(u0, V3.mul(n, V3.dot(u0, n))));
+      return { idx, n, c, fr, up, right: V3.cross(up, n), labels: [] };
+    });
+    const opposite = (i) => { let best = -1, bd = Infinity; faces.forEach((f, j) => { const d = V3.dot(faces[i].n, f.n) + 1; if (j !== i && d < bd) { bd = d; best = j; } }); return best; };
+    const text = (v) => kind === 'units' ? String(v % 10) : kind === 'tens' ? String((v % 10) * 10).padStart(2, '0') : String(v);
+    const readables = [];
+    if (sides === 4) {
+      verts.forEach((v, i) => readables.push({ value: i + 1, dir: V3.norm(v) }));
+      faces.forEach((f) => f.idx.forEach((vi) => {
+        const d = V3.sub(verts[vi], f.c), un = V3.norm(d);
+        f.labels.push({ kind: 'text', text: String(vi + 1), P: V3.add(f.c, V3.mul(d, 0.52)), up: un, right: V3.cross(un, f.n), size: 0.27 });
+      }));
+    } else {
+      const val = new Array(sides).fill(0); let k = 1;
+      for (let i = 0; i < sides; i++) if (!val[i]) { const j = opposite(i); val[i] = k; val[j] = sides + 1 - k; k++; }
+      faces.forEach((f, i) => {
+        readables.push({ value: val[i], dir: f.n });
+        if (sides === 6) f.labels.push({ kind: 'pips', value: val[i], P: f.c, up: f.up, right: f.right, hs: f.fr });
+        else {
+          let P = f.c, size = f.fr * (sides === 12 ? 1.12 : sides === 20 ? 1.32 : 1.2);
+          if (sides === 10) { const a = verts[f.idx[0]], far = verts[f.idx[2]]; P = V3.add(a, V3.mul(V3.sub(far, a), 0.6)); size = 0.34; }
+          let t = text(val[i]); if (t === '6' || t === '9') t += '.';
+          f.labels.push({ kind: 'text', text: t, P, up: f.up, right: f.right, size });
+        }
+      });
+    }
+    const inradius = Math.min(...faces.map((f) => V3.dot(f.n, f.c)));
+    return (cache[key] = { sides, kind, verts, faces, readables, inradius });
+  }
+  /** The orientation that puts the readable showing `value` on top, with a given turn about the vertical. */
+  function poseShowing(geo, value, yaw = 0) {
+    const r = geo.readables.find((x) => x.value === value) || geo.readables[0];
+    return Q4.mul(Q4.axis([0, 0, 1], yaw), Q4.fromTo(r.dir, [0, 0, 1]));
+  }
+  const STANDARD = new Set([4, 6, 8, 10, 12, 20, 100]);
+  return { makeDie, poseShowing, STANDARD };
+})();
+</script>
+
+<!-- ============================ MODULE 3: throw physics (pure) ============================ -->
+<script id="m-phys">
+const Phys = (() => {
+  const G = 2600, DT = 1 / 120;
+  const rnd = (a, b) => a + Math.random() * (b - a);
+
+  function readTop(geo, q) {
+    let best = null, bz = -2;
+    for (const r of geo.readables) { const z = Q4.rot(q, r.dir)[2]; if (z > bz) { bz = z; best = r; } }
+    return { readable: best, z: bz };
+  }
+
+  /**
+   * specs: [{geo, S, p:[x,y], z0, v:[vx,vy], vz0, q, w}], world: {W,H}.
+   * Runs the whole throw instantly; returns per die the value that ended on top and 60 fps frames
+   * (x,y,z,qw,qx,qy,qz). The caller plays the frames back.
+   */
+  function simulate(specs, world) {
+    const B = specs.map((s) => ({
+      geo: s.geo, S: s.S, rest: s.geo.inradius * s.S, rad: 0.8 * s.S,
+      x: s.p[0], y: s.p[1], z: s.z0, vx: s.v[0], vy: s.v[1], vz: s.vz0, q: s.q.slice(), w: s.w.slice(),
+      settled: false, frames: [],
+    }));
+    let step = 0;
+    const record = () => B.forEach((b) => b.frames.push(b.x, b.y, b.z, b.q[0], b.q[1], b.q[2], b.q[3]));
+    record();
+    while (step * DT < 6.5) {
+      step++;
+      const t = step * DT;
+      for (const b of B) if (!b.settled) stepBody(b, world);
+      if (t > 0.12) { collide(B); for (const b of B) { b.x = Math.min(world.W - b.rad, Math.max(b.rad, b.x)); b.y = Math.min(world.H - b.rad, Math.max(b.rad, b.y)); } }
+      if (step % 2 === 0) record();
+      if (B.every((b) => b.settled)) break;
+    }
+    for (const b of B) if (!b.settled) { // safety net: finish aligned
+      const top = readTop(b.geo, b.q); b.q = Q4.mul(Q4.fromTo(Q4.rot(b.q, top.readable.dir), [0, 0, 1]), b.q); b.z = b.rest; b.settled = true;
+    }
+    record();
+    const n = Math.max(...B.map((b) => b.frames.length / 7));
+    return B.map((b) => {
+      while (b.frames.length / 7 < n) b.frames.push(...b.frames.slice(-7));
+      const top = readTop(b.geo, b.q);
+      return { value: top.readable.value, frames: Float32Array.from(b.frames), count: n };
+    });
+  }
+
+  function stepBody(b, world) {
+    b.vz -= G * DT; b.z += b.vz * DT; b.x += b.vx * DT; b.y += b.vy * DT;
+    b.q = Q4.integrate(b.q, b.w, DT);
+    let onFloor = false;
+    if (b.z <= b.rest) {
+      b.z = b.rest;
+      if (b.vz < -90) {
+        const imp = -b.vz; b.vz = imp * 0.38; b.vx *= 0.8; b.vy *= 0.8;
+        const k = imp * 0.006;
+        b.w = [b.w[0] * 0.75 + rnd(-k, k), b.w[1] * 0.75 + rnd(-k, k), b.w[2] * 0.8];
+      } else { b.vz = 0; onFloor = true; }
+    }
+    if (onFloor) {
+      const f = Math.exp(-2.8 * DT); b.vx *= f; b.vy *= f;
+      const R = b.S * 0.8, blend = 1 - Math.exp(-10 * DT);
+      b.w[0] += (-b.vy / R - b.w[0]) * blend; b.w[1] += (b.vx / R - b.w[1]) * blend; b.w[2] *= Math.exp(-5 * DT);
+      const speed = Math.hypot(b.vx, b.vy);
+      const top = readTop(b.geo, b.q), cur = Q4.rot(b.q, top.readable.dir);
+      const corr = Q4.fromTo(cur, [0, 0, 1]), ang = 2 * Math.acos(Math.min(1, Math.abs(corr[0])));
+      if (speed < 170) {
+        const k = 16 * Math.pow(1 - speed / 170, 2);
+        b.q = Q4.mul(Q4.fraction(corr, 1 - Math.exp(-k * DT)), b.q);
+      }
+      if (speed < 5 && ang < 0.01 && Math.hypot(b.w[0], b.w[1], b.w[2]) < 0.6) {
+        b.q = Q4.mul(corr, b.q); b.vx = b.vy = 0; b.settled = true;
+      }
+    }
+    const m = b.rad;
+    if (b.x < m) { b.x = m; b.vx = Math.abs(b.vx) * 0.55; kick(b); }
+    if (b.x > world.W - m) { b.x = world.W - m; b.vx = -Math.abs(b.vx) * 0.55; kick(b); }
+    if (b.y < m) { b.y = m; b.vy = Math.abs(b.vy) * 0.55; kick(b); }
+    if (b.y > world.H - m) { b.y = world.H - m; b.vy = -Math.abs(b.vy) * 0.55; kick(b); }
+  }
+  function kick(b) { const k = Math.hypot(b.vx, b.vy) * 0.02; b.w[0] += rnd(-k, k); b.w[1] += rnd(-k, k); }
+
+  function collide(B) {
+    for (let i = 0; i < B.length; i++) for (let j = i + 1; j < B.length; j++) {
+      const a = B[i], b = B[j];
+      if (a.settled && b.settled) continue;
+      const dx = b.x - a.x, dy = b.y - a.y, d = Math.hypot(dx, dy), min = a.rad + b.rad;
+      if (d >= min || d < 1e-6 || Math.abs(a.z - b.z) > a.rest + b.rest) continue;
+      const nx = dx / d, ny = dy / d, over = min - d;
+      const wa = a.settled ? 0 : 1, wb = b.settled ? 0 : 1, ws = wa + wb;
+      a.x -= nx * over * wa / ws; a.y -= ny * over * wa / ws; b.x += nx * over * wb / ws; b.y += ny * over * wb / ws;
+      const vn = (a.vx - b.vx) * nx + (a.vy - b.vy) * ny;
+      if (vn <= 0) continue;
+      const j2 = (1 + 0.6) * vn / ws;
+      a.vx -= j2 * nx * wa; a.vy -= j2 * ny * wa; b.vx += j2 * nx * wb; b.vy += j2 * ny * wb;
+      for (const o of [a, b]) if (!o.settled) { const k = vn * 0.03; o.w[0] += rnd(-k, k); o.w[1] += rnd(-k, k); }
+    }
+  }
+
+  /** Launch specs for `geos` thrown from `origin` toward random points of the screen. */
+  function launchSpecs(geos, S, world, origin) {
+    return geos.map((geo) => {
+      const m = S * 1.6, tx = rnd(m, world.W - m), ty = rnd(Math.min(m + world.H * 0.05, world.H / 2), world.H - m);
+      const dx = tx - origin[0], dy = ty - origin[1], dist = Math.hypot(dx, dy) || 1;
+      const sp = Math.min(1500, dist / 0.85 * rnd(0.85, 1.15));
+      const ang = rnd(0, Math.PI * 2), spin = rnd(18, 34);
+      return {
+        geo, S, p: [origin[0] + rnd(-16, 16), origin[1] + rnd(-16, 16)], z0: rnd(60, 130),
+        v: [dx / dist * sp, dy / dist * sp], vz0: rnd(300, 600), q: Q4.random(),
+        w: [Math.cos(ang) * spin, Math.sin(ang) * spin, rnd(-8, 8)],
+      };
+    });
+  }
+  return { simulate, launchSpecs, readTop };
+})();
+</script>
+
+<!-- ============================ PAGE (throwaway shell) ============================ -->
+<script id="page">
+const $ = (s) => document.querySelector(s);
+const dpr = Math.min(2, window.devicePixelRatio || 1);
+const PALETTES = [
+  { id: 'crimson', name: 'Crimson Red', primary: '#d91414', secondary: '#ff5c5c', glow: 'rgba(255,92,92,.16)', text: '#ffffff' },
+  { id: 'gold', name: 'Arcane Gold', primary: '#f5b301', secondary: '#f5b301', glow: 'rgba(245,179,1,.16)', text: '#231700' },
+  { id: 'purple', name: 'Dragon Purple', primary: '#9a3df0', secondary: '#bb7bfa', glow: 'rgba(187,123,250,.16)', text: '#ffffff' },
+  { id: 'emerald', name: 'Emerald Green', primary: '#0b8051', secondary: '#2fd18f', glow: 'rgba(47,209,143,.16)', text: '#ffffff' },
+  { id: 'blue', name: 'Sapphire Blue', primary: '#1f6bf0', secondary: '#6aa6ff', glow: 'rgba(106,166,255,.16)', text: '#ffffff' },
+  { id: 'cyan', name: 'Astral Cyan', primary: '#06b6d4', secondary: '#22c8e6', glow: 'rgba(34,200,230,.16)', text: '#03222a' },
+  { id: 'silver', name: 'Shadow Silver', primary: '#5a7391', secondary: '#a3b6cc', glow: 'rgba(163,182,204,.16)', text: '#ffffff' },
+];
+let accentIdx = 0;
+const hexRgb = (h) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16));
+/** Roll 0 wears the selected accent; later Rolls take the next accents in order (Silver skipped: it reads like a greyed-out die), repeating when they run out. */
+function rollColor(k) {
+  const seq = [accentIdx];
+  for (let j = 1; j < PALETTES.length; j++) { const i = (accentIdx + j) % PALETTES.length; if (PALETTES[i].id !== 'silver') seq.push(i); }
+  return PALETTES[seq[k % seq.length]];
+}
+const GREY = [104, 108, 116];
+const LIGHT = V3.norm([-0.35, 0.5, 0.8]);
+
+// ---------- drawing a die (canvas 2D stands in for react-native-svg here) ----------
+function drawDie(ctx, geo, q, cx, cy, S, o = {}) {
+  const col = o.col || rollColor(0), s = S * (o.scale || 1), base = o.dropped ? GREY : hexRgb(col.primary), tc = hexRgb(col.text);
+  const rv = geo.verts.map((v) => Q4.rot(q, v));
+  const vis = [];
+  for (const f of geo.faces) { const n = Q4.rot(q, f.n); if (n[2] > 0.004) vis.push({ f, n, z: Q4.rot(q, f.c)[2] }); }
+  vis.sort((a, b) => a.z - b.z);
+  ctx.save(); ctx.globalAlpha = o.alpha === undefined ? 1 : o.alpha;
+  ctx.lineJoin = 'round';
+  const sx = (v) => cx + v[0] * s, sy = (v) => cy - v[1] * s;
+  for (const { f, n } of vis) {
+    const sh = 0.3 + 0.7 * Math.max(0, V3.dot(n, LIGHT));
+    ctx.fillStyle = `rgb(${base.map((c) => Math.round(c * sh)).join(',')})`;
+    ctx.strokeStyle = 'rgba(0,0,0,.5)'; ctx.lineWidth = Math.max(1, s * 0.035);
+    ctx.beginPath(); f.idx.forEach((i, k) => { const p = rv[i]; k ? ctx.lineTo(sx(p), sy(p)) : ctx.moveTo(sx(p), sy(p)); }); ctx.closePath(); ctx.fill(); ctx.stroke();
+    const ink = o.dropped ? 'rgba(210,210,210,.7)' : `rgba(${tc.join(',')},${0.6 + 0.4 * n[2]})`;
+    for (const L of f.labels) {
+      const P = Q4.rot(q, L.P), R = Q4.rot(q, L.right), U = Q4.rot(q, L.up), k = 0.01;
+      const X = V3.add(P, V3.mul(R, k)), Y = V3.sub(P, V3.mul(U, k));
+      ctx.save();
+      ctx.transform(sx(X) - sx(P), -(X[1] - P[1]) * s, sx(Y) - sx(P), -(Y[1] - P[1]) * s, sx(P), sy(P));
+      ctx.fillStyle = ink;
+      if (L.kind === 'pips') {
+        const g = L.hs * 0.5 * 100, pr = L.hs * 0.17 * 100;
+        const cells = { 1: [[0,0]], 2: [[-1,-1],[1,1]], 3: [[-1,-1],[0,0],[1,1]], 4: [[-1,-1],[1,-1],[-1,1],[1,1]], 5: [[-1,-1],[1,-1],[0,0],[-1,1],[1,1]], 6: [[-1,-1],[1,-1],[-1,0],[1,0],[-1,1],[1,1]] }[L.value];
+        for (const [a, b] of cells) { ctx.beginPath(); ctx.arc(a * g, b * g, pr, 0, 7); ctx.fill(); }
+      } else {
+        ctx.font = `800 ${L.size * 100}px system-ui,Segoe UI,Arial,sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillText(L.text, 0, 0);
+      }
+      ctx.restore();
+    }
+  }
+  ctx.restore();
+}
+function drawShadow(ctx, x, y, S, lift) {
+  ctx.save(); ctx.fillStyle = `rgba(0,0,0,${Math.max(0.08, 0.34 - lift * 0.0014)})`;
+  ctx.beginPath(); ctx.ellipse(x + 3 + lift * 0.16, y + 6 + lift * 0.26, S * 0.85, S * 0.7, 0, 0, 7); ctx.fill(); ctx.restore();
+}
+function fitCanvas(c, w, h) { c.width = Math.round(w * dpr); c.height = Math.round(h * dpr); c.style.width = w + 'px'; c.style.height = h + 'px'; const x = c.getContext('2d'); x.setTransform(dpr, 0, 0, dpr, 0, 0); return x; }
+
+// ---------- gallery ----------
+const galCanvas = $('#gal'); let galCtx;
+const GAL = [[4,'std','d4'],[6,'std','d6'],[8,'std','d8'],[10,'std','d10'],[12,'std','d12'],[20,'std','d20'],[10,'tens','d100 tens'],[10,'units','d100 units']];
+function drawGallery(now) {
+  const w = galCanvas.clientWidth, h = galCanvas.clientHeight;
+  if (galCanvas.width !== Math.round(w * dpr)) galCtx = fitCanvas(galCanvas, w, h);
+  if (!galCtx) galCtx = fitCanvas(galCanvas, w, h);
+  galCtx.clearRect(0, 0, w, h);
+  const cols = w < 560 ? 4 : 8, cw = w / cols, rows = GAL.length / cols, rh = h / rows, S = Math.min(cw, rh) * 0.34;
+  GAL.forEach(([sides, kind, name], i) => {
+    const geo = Geo.makeDie(sides, kind), cx = (i % cols + 0.5) * cw, cy = (Math.floor(i / cols) + 0.46) * rh;
+    const base = Q4.fromTo(geo.readables[(i * 3) % geo.readables.length].dir, V3.norm([0.25, 0.45, 1]));
+    const q = Q4.mul(Q4.axis([0.2, 0.3, 1], now * 0.0007 + i), base);
+    drawShadow(galCtx, cx, cy, S, 0);
+    drawDie(galCtx, geo, q, cx, cy, S);
+    galCtx.fillStyle = '#8c929b'; galCtx.font = '12px system-ui'; galCtx.textAlign = 'center'; galCtx.fillText(name, cx, cy + rh * 0.42);
+  });
+}
+
+// ---------- state ----------
+let mode = 'tumble', logId = 0, tumble = null, thrown = null;
+const rollLog = [];
+const cap = () => mode === 'throw' ? 20 : mode === 'tumble' ? 10 : 0;
+const randInt = (n) => 1 + Math.floor(Math.random() * n);
+
+function planPhysical(sidesList) {
+  let bodies = 0;
+  return sidesList.map((s) => {
+    const need = s === 100 ? 2 : Geo.STANDARD.has(s) ? 1 : 0;
+    if (need && bodies + need <= cap()) { bodies += need; return true; }
+    return false;
+  });
+}
+const geosFor = (sides) => sides === 100 ? [Geo.makeDie(10, 'tens'), Geo.makeDie(10, 'units')] : [Geo.makeDie(sides)];
+
+// ---------- rolling ----------
+function doRoll(text) {
+  let rolls; try { rolls = RollExpr.parse(text); } catch (e) { return; }
+  clearThrow(); tumble = null;
+  const sidesList = RollExpr.plan(rolls), flags = planPhysical(sidesList);
+  let rng = (sides) => randInt(sides), sim = null;
+
+  if (mode === 'throw') {
+    const geos = []; const owner = [];
+    sidesList.forEach((s, i) => { if (flags[i]) geosFor(s).forEach((g) => { geos.push(g); owner.push(i); }); });
+    if (geos.length) {
+      const W = innerWidth, H = innerHeight, S = Math.max(24, Math.min(36, Math.min(W, H) * 0.075));
+      const specs = Phys.launchSpecs(geos, S, { W, H }, [W - 44, H - 44]);
+      const out = Phys.simulate(specs, { W, H });
+      const byPlan = {};
+      out.forEach((o, k) => { (byPlan[owner[k]] = byPlan[owner[k]] || []).push(o.value); });
+      // d100: tens die (00-90) + units die (0 counts as 10), so every result 1..100 is reachable once
+      rng = ((c) => (sides) => { const i = c.n++; const v = byPlan[i]; if (!flags[i]) return randInt(sides); return sides === 100 ? (v[0] % 10) * 10 + v[1] : v[0]; })({ n: 0 });
+      sim = { out, S, geos, owner, duration: (out[0].count - 1) / 60 };
+    }
+  }
+  const ctx = { i: 0 };
+  const group = rolls.map((a) => { const res = RollExpr.evaluate(a, rng, ctx); return { text: RollExpr.format(a), res, flat: RollExpr.flatten(res), time: new Date() }; });
+  const batch = { group, flags, allDice: group.flatMap((g) => g.flat.dice), rollOf: group.flatMap((g, k) => g.flat.dice.map(() => k)) };
+  group.forEach((g, k) => { g.col = rollColor(k); });
+  rollLog.unshift(...group); renderLog();
+
+  if (sim) {
+    sim.out.forEach((o, k) => { o.dropped = batch.allDice[sim.owner[k]].dropped; o.col = rollColor(batch.rollOf[sim.owner[k]]); });
+    startThrow(sim, batch);
+  } else if (mode === 'tumble') { showCard(batch); startTumble(batch); }
+  else showCard(batch);
+}
+
+// ---------- Throw playback ----------
+const stage = $('#stage'); let sctx;
+function sizeStage() { sctx = fitCanvas(stage, innerWidth, innerHeight); }
+addEventListener('resize', sizeStage); sizeStage();
+function startThrow(sim, entry) { $('#card').hidden = true; thrown = { sim, entry, t0: performance.now(), shown: false }; stage.classList.add('live'); }
+function clearThrow() { thrown = null; stage.classList.remove('live'); sctx && sctx.clearRect(0, 0, innerWidth, innerHeight); }
+stage.addEventListener('pointerdown', () => { if (thrown && !thrown.shown) showCard(thrown.entry); clearThrow(); });
+function drawThrow(now) {
+  if (!thrown) return;
+  const { sim } = thrown, el = (now - thrown.t0) / 1000;
+  const f = Math.min(el * 60, sim.out[0].count - 1), i0 = Math.floor(f), i1 = Math.min(i0 + 1, sim.out[0].count - 1), t = f - i0;
+  const done = el >= sim.duration;
+  if (done && !thrown.shown) { thrown.shown = true; stage.classList.remove("live"); showCard(thrown.entry); }
+  const fade = el > sim.duration + 1.5 ? Math.max(0, 1 - (el - sim.duration - 1.5) / 0.5) : 1;
+  if (fade === 0) { clearThrow(); return; }
+  sctx.clearRect(0, 0, innerWidth, innerHeight);
+  const items = sim.out.map((o, k) => {
+    const a = o.frames.subarray(i0 * 7, i0 * 7 + 7), b = o.frames.subarray(i1 * 7, i1 * 7 + 7);
+    const lerp = (j) => a[j] + (b[j] - a[j]) * t;
+    return { k, x: lerp(0), y: lerp(1), z: lerp(2), q: Q4.nlerp([a[3], a[4], a[5], a[6]], [b[3], b[4], b[5], b[6]], t), o };
+  });
+  const S = sim.S;
+  items.forEach((d) => drawShadow(sctx, d.x, d.y, S, d.z - sim.geos[d.k].inradius * S));
+  items.sort((a, b) => a.z - b.z).forEach((d) => {
+    const lift = d.z - sim.geos[d.k].inradius * S;
+    drawDie(sctx, sim.geos[d.k], d.q, d.x, d.y, S, { scale: 1 + lift * 0.0023, dropped: done && d.o.dropped, alpha: fade, col: d.o.col });
+  });
+}
+
+// ---------- Tumble playback (inside the result card) ----------
+const TUM_CELL = 72, TUM_MS = 950;
+function startTumble(entry) {
+  const holder = $('#tumHold'); if (!holder) return;
+  const dice = []; let idx = 0;
+  entry.allDice.forEach((d, i) => {
+    if (!entry.flags[i]) return;
+    const geos = geosFor(d.sides), vals = d.sides === 100 ? (() => { const u = ((d.face - 1) % 10) + 1, T = d.face - u; return [T === 0 ? 10 : T / 10, u]; })() : [d.face];
+    geos.forEach((geo, g) => {
+      const q1 = Geo.poseShowing(geo, vals[g], Math.random() * 6.28);
+      dice.push({ geo, q1, ax: V3.norm([Math.random() - .5, Math.random() - .5, Math.random() - .5]), th: (2 + Math.random() * 1.5) * Math.PI * 2, delay: idx++ * 45, dropped: d.dropped, col: rollColor(entry.rollOf[i]) });
+    });
+  });
+  if (!dice.length) return;
+  const w = Math.max(TUM_CELL, holder.clientWidth), cols = Math.max(1, Math.floor(w / TUM_CELL)), rows = Math.ceil(dice.length / cols);
+  const c = document.createElement('canvas'); holder.appendChild(c);
+  tumble = { c, ctx: fitCanvas(c, w, rows * TUM_CELL), dice, cols, rows, w, t0: performance.now() };
+}
+function drawTumble(now) {
+  if (!tumble) return;
+  const T = tumble; T.ctx.clearRect(0, 0, T.w, T.rows * TUM_CELL);
+  const S = TUM_CELL * 0.36;
+  T.dice.forEach((d, i) => {
+    const u = Math.max(0, Math.min(1, (now - T.t0 - d.delay) / TUM_MS)), e = 1 - Math.pow(1 - u, 3);
+    const q = Q4.mul(d.q1, Q4.axis(d.ax, d.th * (1 - e)));
+    const cx = (i % T.cols + 0.5) * TUM_CELL, cy = (Math.floor(i / T.cols) + 0.5) * TUM_CELL, pop = Math.sin(Math.PI * Math.min(1, u * 1.15));
+    drawShadow(T.ctx, cx, cy, S, pop * 24);
+    drawDie(T.ctx, d.geo, q, cx, cy - pop * 8, S, { scale: 1 + pop * 0.22, dropped: u >= 1 && d.dropped, col: d.col });
+  });
+}
+
+// ---------- result card + log ----------
+function chipHtml(r, k, entry, col) {
+  const dig = !entry.flags[r.first + k];
+  return `<span class="chip ${dig ? 'dig' : ''}" style="border-color:${col.secondary};background:${col.glow}"><i style="color:${col.secondary}">d${r.sides}</i>${r.faces[k]}</span>`;
+}
+function treeHtml(r, entry, col) {
+  const lbl = (t) => `<span class="lbl" style="color:${col.secondary}">${t}</span>`;
+  if (r.type === 'num') return `<span class="num">${r.value}</span>`;
+  if (r.type === 'dice') return lbl(r.count === 1 ? '' : r.count + 'd' + r.sides) + r.faces.map((_, k) => chipHtml(r, k, entry, col)).join('');
+  if (r.type === 'sum') return r.items.map((it, i) => (i ? `<span class="op">${it.sign < 0 ? '&minus;' : '+'}</span>` : '') + treeHtml(it.res, entry, col)).join('');
+  return lbl(r.mode === 'a' ? 'adv' : 'dis') +
+    r.results.map((x, i) => `<span class="arg ${i === r.pick ? 'win' : 'lose'}">${treeHtml(x, entry, col)}<span class="sub">${x.total}</span></span>`).join('');
+}
+function showCard(batch) {
+  const card = $('#card'); card.hidden = false;
+  card.innerHTML = `<button class="x" aria-label="Dismiss result">&times;</button>
+    <div class="head">Dice tray</div>
+    <div id="tumHold"></div>` + batch.group.map((g) => `<div class="rollblk" style="border-left:4px solid ${g.col.primary};padding-left:10px"><div class="head"><b>${g.text}</b></div>
+    <div class="tree">${treeHtml(g.res, batch, g.col)}</div>
+    <div class="total">${g.res.total}<small>total</small></div></div>`).join('');
+  card.querySelector('.x').onclick = () => { card.hidden = true; };
+}
+function renderLog() {
+  $('#log').innerHTML = rollLog.slice(0, 8).map((e) => `<div class="logrow"><span class="t">${e.res.total}</span><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${e.col.primary};margin-right:6px"></span><b>${e.text}</b> <span class="muted">${e.time.toLocaleTimeString()}</span><br>
+    <span class="muted">Roll = { dice: [${e.flat.dice.map((d) => `d${d.sides}:${d.face}${d.sign < 0 ? '(-)' : ''}${d.dropped ? '(dropped)' : ''}`).join(', ')}], modifier: ${e.flat.modifier}, total: ${e.flat.total} }</span></div>`).join('');
+}
+
+// ---------- tray ----------
+const exprIn = $('#expr');
+function refresh() {
+  const text = exprIn.value; let ok = false;
+  try {
+    const rolls = RollExpr.parse(text); ok = true; const n = RollExpr.countDice(rolls);
+    $('#msg').className = 'msg ok'; $('#msg').textContent = `Valid: ${rolls.length} ${rolls.length === 1 ? 'roll' : 'rolls'}, ${n} ${n === 1 ? 'die' : 'dice'}`;
+    $('#reads').textContent = RollExpr.describe(rolls);
+  } catch (e) {
+    $('#msg').className = 'msg bad'; $('#msg').textContent = e.message;
+    $('#reads').textContent = 'Not a Roll Expression.' + (e.pos !== undefined && text.trim() ? `\n(near character ${e.pos + 1})` : '');
+  }
+  $('#rollBtn').disabled = !ok; $('#rollBtn').textContent = ok ? 'Roll ' + text.replace(/\s+/g, '') : 'Roll';
+  $('#modVal').textContent = (RollExpr.modifierOf(text) > 0 ? '+' : '') + RollExpr.modifierOf(text);
+  const m = RollExpr.d20Mode(text); $('#advRow').style.display = m ? '' : 'none';
+  document.querySelectorAll('#advSeg button').forEach((b) => b.classList.toggle('on', m && b.dataset.a === m));
+}
+[4, 6, 8, 10, 12, 20, 100].forEach((s) => { const b = document.createElement('button'); b.className = 'btn'; b.textContent = 'd' + s; b.onclick = () => { exprIn.value = RollExpr.addDie(exprIn.value, s); refresh(); }; $('#dieBtns').appendChild(b); });
+$('#modMinus').onclick = () => { exprIn.value = RollExpr.bumpModifier(exprIn.value, -1); refresh(); };
+$('#modPlus').onclick = () => { exprIn.value = RollExpr.bumpModifier(exprIn.value, 1); refresh(); };
+document.querySelectorAll('#advSeg button').forEach((b) => { b.onclick = () => { exprIn.value = RollExpr.setD20Mode(exprIn.value, b.dataset.a); refresh(); }; });
+exprIn.addEventListener('input', refresh);
+exprIn.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); if (!$('#rollBtn').disabled) doRoll(exprIn.value); } });
+$('#rollBtn').onclick = () => doRoll(exprIn.value);
+$('#fab').onclick = () => { if (!$('#rollBtn').disabled) doRoll(exprIn.value); };
+document.querySelectorAll('#modeSeg button').forEach((b) => { b.onclick = () => { mode = b.dataset.m; document.querySelectorAll('#modeSeg button').forEach((x) => x.classList.toggle('on', x === b)); }; });
+['d20+5', 'a(d20+5,d20+2)', 'd(d20,d20)-1', 'a(d20,d20,d20)', 'a(d20)', 'a(d20,d20)+d4+2', 'd20,d20', '2a(d20,d20)', '2a(d20+5,d20+5)+2', '4d6,4d6,4d6', '2d6+1d8+3', 'd100', 'd20-d4+2', 'd3+d7', '2d2+d1000', '30d6', '3+d6', '-d6', 'd20,', ',d20', 'a(d4,d4)', 'a(2d20,d20)', 'a(d20,a(d20,d20))', 'a(d20+d4,d20)', 'd4+2a(d20,d20)', '2a(d20,d20)+3d(d20,d20)', 'a()', '0d6', '101d6', 'a(d20,d20'].forEach((t) => {
+  const b = document.createElement('button'); b.className = 'btn sm'; b.textContent = t; b.onclick = () => { exprIn.value = t; refresh(); }; $('#examples').appendChild(b);
+});
+
+PALETTES.forEach((pal, i) => {
+  const b = document.createElement('button'); b.title = pal.name; b.style.cssText = 'padding:0 12px';
+  b.innerHTML = `<span style="display:inline-block;width:16px;height:16px;border-radius:50%;background:${pal.primary};vertical-align:middle"></span>`;
+  b.onclick = () => { accentIdx = i; document.querySelectorAll('#accentSeg button').forEach((x, j) => x.classList.toggle('on', j === i)); };
+  if (i === 0) b.classList.add('on'); $('#accentSeg').appendChild(b);
+});
+// ---------- main loop ----------
+function frame(now) { drawGallery(now); drawTumble(now); drawThrow(now); requestAnimationFrame(frame); }
+refresh(); requestAnimationFrame(frame);
+</script>
+</body>
+</html>

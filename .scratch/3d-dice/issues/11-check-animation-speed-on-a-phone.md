@@ -4,8 +4,10 @@
 
 **Blocked by:** 07, 10
 
-**Status:** ready-for-human
+**Status:** done
 
-- [ ] Tumble result reported (smooth or not, with the device named)
-- [ ] Throw result reported (smooth or not, with the device named)
-- [ ] If either is not smooth, a follow-up ticket for the cheapest fallback in `spec.md` is written
+**Landed:** the user tried both animations on a phone: the SVG dice dropped frames from 5 dice and tore faces. Superseded by `.scratch/canvas-dice/spec.md` and ADR 0022, whose AC-9 repeats the phone test for the canvas dice.
+
+- [x] Tumble result reported (smooth or not, with the device named)
+- [x] Throw result reported (smooth or not, with the device named)
+- [x] If either is not smooth, a follow-up ticket is written: the canvas dice spec replaces the fallbacks
