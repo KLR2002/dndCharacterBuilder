@@ -1648,7 +1648,7 @@ function hexToRgbString(hex) {
   return `rgb(${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255})`;
 }
 
-// Whether an SVG fill ("rgb(r,g,b)") is the accent hex scaled down by one shade factor, as the solid dice
+// Whether a die's fill ("rgb(r,g,b)") is the accent hex scaled down by one shade factor, as the solid dice
 // are lit: the red channel fixes the factor, and the other two channels must follow it.
 function isAccentShade(fill, hex) {
   const m = /^rgb\((\d+),(\d+),(\d+)\)$/.exec(fill ?? "");

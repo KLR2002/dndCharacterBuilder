@@ -77,7 +77,7 @@ test("a face is visible exactly when its normal points toward the viewer", () =>
   }
 });
 
-test("faces keep geometry order and their polygons follow the rotated vertices", () => {
+test("faces keep geometry order and their corners follow the rotated vertices", () => {
   const next = seeded(11);
   for (const { name, sides, kind } of DICE) {
     const geo = makeDie(sides, kind);
@@ -87,12 +87,11 @@ test("faces keep geometry order and their polygons follow the rotated vertices",
     geo.faces.forEach((face, i) => {
       const drawn = projection.faces[i];
       assert.equal(drawn.labels.length, face.labels.length, `${name} face ${i} labels`);
-      const points = drawn.points.split(" ").map((pair) => pair.split(",").map(Number));
-      assert.equal(points.length, face.vertexIndexes.length, `${name} face ${i} corners`);
+      assert.equal(drawn.corners.length, face.vertexIndexes.length, `${name} face ${i} corners`);
       face.vertexIndexes.forEach((vi, k) => {
         const v = rotateVector(q, geo.verts[vi]);
-        assert.ok(Math.abs(points[k][0] - v[0] * SIZE) < 0.05, `${name} face ${i} x`);
-        assert.ok(Math.abs(points[k][1] + v[1] * SIZE) < 0.05, `${name} face ${i} y`);
+        assert.ok(Math.abs(drawn.corners[k][0] - v[0] * SIZE) < 0.05, `${name} face ${i} x`);
+        assert.ok(Math.abs(drawn.corners[k][1] + v[1] * SIZE) < 0.05, `${name} face ${i} y`);
       });
     });
   }
@@ -108,7 +107,7 @@ test("a dropped die changes only its colours", () => {
     lit.faces.forEach((face, i) => {
       const other = dropped.faces[i];
       assert.equal(other.visible, face.visible, `${name} face ${i} visible`);
-      assert.equal(other.points, face.points, `${name} face ${i} points`);
+      assert.deepEqual(other.corners, face.corners, `${name} face ${i} corners`);
       assert.equal(other.labels.length, face.labels.length, `${name} face ${i} labels`);
       face.labels.forEach((label, k) => {
         const twin = other.labels[k];

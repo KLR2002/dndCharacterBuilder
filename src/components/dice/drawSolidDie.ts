@@ -16,8 +16,8 @@ export type CanvasSolid = {
 };
 
 /**
- * Draws a solid die with the same flat shading, outlines, numerals and pips as the SVG die. Faces turned
- * away from the viewer are not drawn. The context's transform is restored before the function returns.
+ * Draws a solid die with flat shading, outlines, numerals and pips. Faces turned away from the viewer are
+ * not drawn. The context's transform is restored before the function returns.
  */
 export function drawSolidDie(ctx: CanvasRenderingContext2D, die: CanvasSolid): void {
   const drawn = projectDie(die.geo, die.pose, die.size, solidStyle(die.accent, die.dropped));
