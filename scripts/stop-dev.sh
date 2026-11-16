@@ -101,7 +101,8 @@ listener_pids() {
 
 stop_emulators() {
   local serial
-  if [[ -x "$adb" && -n "$(find_pids -x adb)" ]]; then
+  # `adb devices` starts the server when only the emulator is running; stop_adb stops it again.
+  if [[ -x "$adb" ]] && [[ -n "$(find_pids -x adb)" || -n "$(find_pids -x 'qemu-system-.*')" ]]; then
     while read -r serial; do
       echo "emulator: stopping $serial"
       "$adb" -s "$serial" emu kill >/dev/null 2>&1 || true
