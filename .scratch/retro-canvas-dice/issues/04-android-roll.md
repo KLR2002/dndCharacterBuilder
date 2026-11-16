@@ -13,12 +13,14 @@
 
 **Blocked by:** 03 (both run Gradle; one heavy Android job at a time on this machine)
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] Unit tests in `checks/androidRoll.test.ts` cover the pure helpers: the `input text` escaping, the label/chip comparison (match, a face mismatch, a dropped die, the cap with more chips than labels, a subtracted chip, no labels in Off), and the settle rule, using dump XML recorded from the real emulator (stored under `checks/fixtures/`, trimmed). Red first.
-- [ ] On the emulator with a release build (`CI=1 EXPO_NO_TELEMETRY=1 npx expo prebuild --platform android --no-install`, then in `android/` `./gradlew :app:assembleRelease -PreactNativeArchitectures=x86_64`, then `adb install -r android/app/build/outputs/apk/release/app-release.apk`): `npm run android:roll -- --mode throw d20 20d20 'a(d20)+d100+d6+d4+d8+d10+d12'` and `npm run android:roll -- --mode tumble 10d20,d6` both exit 0; the report pastes their output and opens at least two of the screenshots.
-- [ ] `docs/agents/driving-the-android-emulator.md` gains a short section on `npm run android:roll` (what it needs, what it checks, its exit codes) next to the runner's description, and `.scratch/canvas-dice/spec.md` is not changed.
-- [ ] Everything started is stopped at the end: emulator, adb server, Gradle daemon (`scripts/stop-dev.sh` if ticket 02 has landed on the integration branch).
+**Landed:** chore/retro-canvas-dice @ 064ee58 (head 20e01fa). On the emulator with a release build: `--mode throw d20 20d20 'a(d20)+d100+d6+d4+d8+d10+d12'` gave 1/20/8 labels equal to the chips, FATAL 0, exit 0; `--mode tumble 10d20,d6` gave 10 labels against the first 10 of 11 chips, exit 0. 29 unit tests in `checks/androidRoll.test.ts` on full emulator dumps (not trimmed). Not covered: the settle loop (no unit test), a first-run app (the doc says to open the app once by hand). The emulator needs `-memory 3072` for this check (documented); the Roll button's content-desc starts with an icon glyph before `Roll`.
+
+- [x] Unit tests in `checks/androidRoll.test.ts` cover the pure helpers: the `input text` escaping, the label/chip comparison (match, a face mismatch, a dropped die, the cap with more chips than labels, a subtracted chip, no labels in Off), and the settle rule, using dump XML recorded from the real emulator (stored under `checks/fixtures/`, trimmed). Red first.
+- [x] On the emulator with a release build (`CI=1 EXPO_NO_TELEMETRY=1 npx expo prebuild --platform android --no-install`, then in `android/` `./gradlew :app:assembleRelease -PreactNativeArchitectures=x86_64`, then `adb install -r android/app/build/outputs/apk/release/app-release.apk`): `npm run android:roll -- --mode throw d20 20d20 'a(d20)+d100+d6+d4+d8+d10+d12'` and `npm run android:roll -- --mode tumble 10d20,d6` both exit 0; the report pastes their output and opens at least two of the screenshots.
+- [x] `docs/agents/driving-the-android-emulator.md` gains a short section on `npm run android:roll` (what it needs, what it checks, its exit codes) next to the runner's description, and `.scratch/canvas-dice/spec.md` is not changed.
+- [x] Everything started is stopped at the end: emulator, adb server, Gradle daemon (`scripts/stop-dev.sh` if ticket 02 has landed on the integration branch).
 
 ## Constraints
 
