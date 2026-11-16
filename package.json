@@ -53,7 +53,7 @@
     "typecheck:checks": "node scripts/typecheck-ratchet.mjs",
     "layout:check": "node --experimental-strip-types scripts/layout-check.mjs",
     "layout:android": "node --experimental-strip-types scripts/layout-android.mjs",
-    "android:roll": "node scripts/android-roll.mjs",
+    "android:roll": "node --experimental-strip-types scripts/android-roll.mjs",
     "catalog:live": "node --experimental-strip-types scripts/build-live-catalog.mjs",
     "perf:rules": "node --experimental-strip-types scripts/perf-rules.mjs",
     "perf:rules:interp": "node --experimental-strip-types --no-opt --no-sparkplug --no-maglev scripts/perf-rules.mjs",

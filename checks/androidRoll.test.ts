@@ -14,10 +14,14 @@ import {
   parseLabel,
   parseRollArgs,
   resolveMode,
-  settleSignature,
+  revealSwipe,
+  scrollerOf,
+  uncoveredTapPoint,
   usage,
 } from "../scripts/lib/android-roll.mjs";
-import { parseDumpOutput } from "../scripts/lib/uiautomator.mjs";
+import { parseDumpOutput, visibleBounds } from "../scripts/lib/uiautomator.mjs";
+import { readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
 
 // The pure helpers of `npm run android:roll` (scripts/lib/android-roll.mjs): the argument parser, the
 // escaping of an expression for `adb shell input text`, the die label and die chip parsers, the
@@ -45,11 +49,14 @@ function label(id: string, desc: string): string {
   return node({ "resource-id": id, "content-desc": desc, bounds: "[10,10][20,20]" });
 }
 
-// A die chip: a View whose face and sides are two Text children, the way rollViews.tsx draws it.
-function chip(face: string, sides: string): string {
-  return node(
-    { "resource-id": "die-chip", bounds: "[30,30][90,90]" },
-    node({ text: face, bounds: "[30,30][60,60]" }) + node({ text: sides, bounds: "[60,30][90,60]" }),
+// A die chip as the device lists it: a View with no listed children, its face and sides as Text nodes listed
+// after it, inside its bounds (the way rollViews.tsx draws it). `x` places the chip, so chips do not overlap.
+function chip(face: string, sides: string, x = 30): string {
+  const box = `[${x},30][${x + 60},90]`;
+  return (
+    node({ "resource-id": "die-chip", bounds: box }) +
+    node({ text: face, bounds: `[${x + 4},40][${x + 30},80]` }) +
+    node({ text: sides, bounds: `[${x + 30},40][${x + 58},80]` })
   );
 }
 
@@ -219,25 +226,22 @@ test("dieLabels finds the labels of one mode by resource-id, in index order, and
 });
 
 test("chipsOf reads the chips inside result-card in order, joining each chip's text children", () => {
-  const nodes = parseDumpOutput(dump(card(chip("14", "d20"), chip("−4", "d6"))));
+  const nodes = parseDumpOutput(dump(card(chip("14", "d20"), chip("−4", "d6", 120))));
   assert.ok(nodes);
   assert.deepEqual(chipsOf(nodes), [{ text: "14d20" }, { text: "−4d6" }]);
   assert.deepEqual(chipsOf(parseDumpOutput(dump(chip("9", "d8")))), [], "a chip outside result-card is not counted");
+  // Text drawn under the card (listed before it) and inside the chip's box is not part of the chip.
+  const under = node({ text: "Elowen", bounds: "[30,40][60,80]" });
+  assert.deepEqual(chipsOf(parseDumpOutput(dump(under, card(chip("14", "d20"))))), [{ text: "14d20" }]);
 });
 
-test("settleSignature is null until result-card exists, and settles only when two dumps agree", () => {
-  const before = parseDumpOutput(dump(label("throw-die-0", "d20 showing 1")));
-  assert.equal(settleSignature(before), null);
-
-  const first = parseDumpOutput(dump(card(chip("1", "d20")), label("throw-die-0", "d20 showing 1")));
-  const second = parseDumpOutput(dump(card(chip("1", "d20")), label("throw-die-0", "d20 showing 14")));
-  const third = parseDumpOutput(dump(card(chip("1", "d20")), label("throw-die-0", "d20 showing 14")));
-  const a = settleSignature(first);
-  const b = settleSignature(second);
-  const c = settleSignature(third);
-  assert.ok(a && b && c);
-  assert.notEqual(a, b, "a label that still changes is not settled");
-  assert.equal(b, c, "two dumps with the same labels settle");
+test("chipsOf reads the recorded Throw batch on the emulator: one chip with its face and sides", () => {
+  const nodes = parseDumpOutput(readFileSync(fileURLToPath(new URL("./fixtures/android-roll-result-throw.xml", import.meta.url)), "utf8"));
+  assert.ok(nodes);
+  assert.deepEqual(chipsOf(nodes), [{ text: "16d20" }]);
+  assert.deepEqual(dieLabels(nodes).labels, [{ index: 0, desc: "d20 showing 16" }]);
+  const found = compareDice({ mode: "throw", labels: dieLabels(nodes).labels, chips: chipsOf(nodes) });
+  assert.equal(found.ok, true, JSON.stringify(found));
 });
 
 test("findRollButton picks the Roll button and never the Roll Expression field", () => {
@@ -299,3 +303,79 @@ test("resolveMode uses the requested mode, else the mode the labels show, else O
   assert.equal(resolveMode(null, null), "off");
 });
 
+
+// A real Options dump with the Throw option scrolled above the list: the node's bounds are inverted, so it is
+// not on screen, and the reveal swipe must move the content down.
+test("the reveal swipe for a Throw option scrolled above the Options list goes down", () => {
+  const nodes = parseDumpOutput(readFileSync(fileURLToPath(new URL("./fixtures/android-roll-options-clipped.xml", import.meta.url)), "utf8"));
+  assert.ok(nodes);
+  const view = { width: 720, height: 1280, topBar: 48, bottomBar: 48 };
+  const node = findNodeById(nodes, "dice-animation-throw");
+  assert.ok(node);
+  assert.equal(visibleBounds(node, view), null, "the clipped node is not on screen");
+  const scroller = scrollerOf(nodes);
+  assert.deepEqual(scroller?.bounds, { x1: 0, y1: 156, x2: 720, y2: 1236 });
+  // The gap is 156 - 146 = 10 px plus REVEAL_MARGIN_PX: 130 px of content movement, down.
+  const reveal = revealSwipe(node, scroller);
+  assert.deepEqual(reveal, { direction: "down", distance: 130 });
+  // The swipe runs inside the list, from its top edge plus SCROLL_PAD_PX for that distance.
+  assert.deepEqual(optionsSwipeArgs(view, reveal.direction, scroller, reveal.distance), [360, 164, 360, 294, 300]);
+});
+
+test("the reveal swipe goes up for a node below the list, and in steps when the node is not listed yet", () => {
+  const view = { width: 720, height: 1280, topBar: 48, bottomBar: 48 };
+  const scroller = { bounds: { x1: 0, y1: 156, x2: 720, y2: 1236 } };
+  assert.deepEqual(revealSwipe({ bounds: { x1: 10, y1: 1300, x2: 90, y2: 1340 } }, scroller), { direction: "up", distance: 184 });
+  assert.deepEqual(revealSwipe(null, scroller), { direction: "up", distance: 400 });
+  assert.deepEqual(optionsSwipeArgs(view, "up", scroller, 400), [360, 1184, 360, 784, 300]);
+  assert.deepEqual(optionsSwipeArgs(view), [360, 1184, 360, 96, 300], "without a scroller the whole screen span");
+});
+
+// Taps are z-ordered: a clickable node listed before the target is drawn below it, so it does not cover it.
+test("uncoveredTapPoint: a clickable listed before the target does not cover it, one listed after does", () => {
+  const view = { width: 720, height: 1280, topBar: 48, bottomBar: 48 };
+  const below = node({ "content-desc": "Backdrop", clickable: "true", bounds: "[0,0][720,1280]" });
+  const target = node({ "content-desc": "Roll Expression", clickable: "true", bounds: "[40,600][680,700]" });
+  const above = node({ "content-desc": "Overlay", clickable: "true", bounds: "[300,600][400,700]" });
+  const beneath = parseDumpOutput(dump(below, target));
+  assert.ok(beneath);
+  assert.deepEqual(uncoveredTapPoint(beneath[1], view, beneath), { x: 360, y: 650 });
+  const covered = parseDumpOutput(dump(target, above));
+  assert.ok(covered);
+  const point = uncoveredTapPoint(covered[0], view, covered);
+  assert.ok(point, "a grid point outside the overlay exists");
+  assert.ok(!(point.x >= 300 && point.x <= 400 && point.y >= 600 && point.y <= 700), "the tap avoids the overlay");
+});
+
+test("uncoveredTapPoint on the recorded tray: the Roll Expression field is tapped at its centre", () => {
+  const nodes = parseDumpOutput(readFileSync(fileURLToPath(new URL("./fixtures/android-roll-tray.xml", import.meta.url)), "utf8"));
+  assert.ok(nodes);
+  const field = nodes.find((candidate) => candidate.contentDesc === "Roll Expression");
+  assert.ok(field);
+  assert.deepEqual(uncoveredTapPoint(field, { width: 720, height: 1280, topBar: 48, bottomBar: 48 }, nodes), { x: 361, y: 678 });
+});
+
+test("uncoveredTapPoint on the recorded Home screen: the dice button is tapped on a point no later node covers", () => {
+  const nodes = parseDumpOutput(readFileSync(fileURLToPath(new URL("./fixtures/android-roll-home.xml", import.meta.url)), "utf8"));
+  assert.ok(nodes);
+  const button = findNodeById(nodes, "dice-button");
+  assert.ok(button);
+  const point = uncoveredTapPoint(button, { width: 720, height: 1280, topBar: 48, bottomBar: 48 }, nodes);
+  assert.ok(point);
+  assert.ok(point.x >= 588 && point.x <= 691 && point.y >= 1104 && point.y <= 1207, "inside the button");
+  const index = nodes.indexOf(button);
+  const covering = nodes.filter(
+    (n, j) => j > index && n.clickable && n.bounds && point.x >= n.bounds.x1 && point.x <= n.bounds.x2 && point.y >= n.bounds.y1 && point.y <= n.bounds.y2,
+  );
+  assert.deepEqual(covering, [], "no clickable node drawn over the button covers the point");
+});
+
+// The recorded tray with "d20d20d20" typed: the Roll button is listed with a leading comma in its label.
+test("findRollButton finds the Roll button on the recorded typed tray, whose label leads with a comma", () => {
+  const nodes = parseDumpOutput(readFileSync(fileURLToPath(new URL("./fixtures/android-roll-tray-typed.xml", import.meta.url)), "utf8"));
+  assert.ok(nodes);
+  const button = findRollButton(nodes, "d20d20d20");
+  assert.equal(button?.contentDesc, ", Roll d20d20d20", "the label leads with an icon glyph and a comma");
+  assert.deepEqual(button?.bounds, { x1: 39, y1: 1114, x2: 683, y2: 1210 });
+  assert.equal(findRollButton(nodes, "d20")?.contentDesc, ", Roll d20d20d20", "the only Roll button is used when no title matches");
+});
