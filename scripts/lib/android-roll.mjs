@@ -5,17 +5,67 @@
 // dump nodes (scripts/lib/uiautomator.mjs) or plain values, so the tests in checks/androidRoll.test.ts run
 // them without a device.
 
+import { hasPositiveArea, visibleBounds } from "./uiautomator.mjs";
+
 export const MODES = ["throw", "tumble", "off"];
 
 // The finger of a swipe on the Options screen stays this far from every edge of the screen.
 export const EDGE_CLEAR_PX = 96;
+export const SCROLL_PAD_PX = 8;
 export const OPTIONS_SWIPE_MS = 300;
 
-// `input swipe` args that scroll the Options screen up: from the bottom to the top, mid-width, EDGE_CLEAR_PX
-// clear of every edge.
-export function optionsSwipeArgs(view) {
+// `input swipe` args that scroll the Options list: mid-width, up (the finger moves up, the content moves up)
+// or down, over `distance` px of finger travel (the whole list span when omitted). The finger stays
+// EDGE_CLEAR_PX clear of every screen edge and SCROLL_PAD_PX inside the scroller, so a swipe that starts on
+// the title above the list does not scroll it.
+/**
+ * @param {{width: number, height: number, topBar?: number, bottomBar?: number}} view
+ * @param {string} [direction]
+ * @param {{bounds: {x1: number, y1: number, x2: number, y2: number} | null} | null} [scroller]
+ * @param {number | null} [distance]
+ * @returns {number[]}
+ */
+export function optionsSwipeArgs(view, direction = "up", scroller = null, distance = null) {
   const x = Math.round(view.width / 2);
-  return [x, view.height - EDGE_CLEAR_PX, x, EDGE_CLEAR_PX, OPTIONS_SWIPE_MS];
+  let near = EDGE_CLEAR_PX;
+  let far = view.height - EDGE_CLEAR_PX;
+  if (scroller?.bounds) {
+    near = Math.max(near, scroller.bounds.y1 + SCROLL_PAD_PX);
+    far = Math.min(far, scroller.bounds.y2 - SCROLL_PAD_PX);
+  }
+  const travel = Math.min(distance ?? far - near, far - near);
+  return direction === "down"
+    ? [x, near, x, near + travel, OPTIONS_SWIPE_MS]
+    : [x, far, x, far - travel, OPTIONS_SWIPE_MS];
+}
+
+// The scrollable node of a dump with a positive area: the Options list.
+export function scrollerOf(nodes) {
+  return nodes.find((node) => node.scrollable && hasPositiveArea(node.bounds)) ?? null;
+}
+
+// The scroll that brings a node into the scroller, as { direction, distance }. A node clipped above the
+// scroller's top edge (its bottom at or above that edge) needs the content to move down by the gap plus
+// REVEAL_MARGIN_PX; one clipped below needs the content to move up by its gap. A node not listed at all is
+// searched for in REVEAL_STEP_PX steps up: shorter than the list, so a step never jumps over a row.
+// uiautomator lists a scrolled-out node with inverted bounds, so the gap is read from the box edges.
+export const REVEAL_STEP_PX = 400;
+export const REVEAL_MARGIN_PX = 120;
+
+/**
+ * @param {{bounds: {x1: number, y1: number, x2: number, y2: number} | null} | null} node
+ * @param {{bounds: {x1: number, y1: number, x2: number, y2: number} | null} | null} scroller
+ * @returns {{direction: string, distance: number}}
+ */
+export function revealSwipe(node, scroller) {
+  if (!node?.bounds || !scroller?.bounds) return { direction: "up", distance: REVEAL_STEP_PX };
+  if (node.bounds.y2 <= scroller.bounds.y1) {
+    return { direction: "down", distance: scroller.bounds.y1 - node.bounds.y2 + REVEAL_MARGIN_PX };
+  }
+  if (node.bounds.y1 >= scroller.bounds.y2) {
+    return { direction: "up", distance: node.bounds.y1 - scroller.bounds.y2 + REVEAL_MARGIN_PX };
+  }
+  return { direction: "up", distance: REVEAL_STEP_PX };
 }
 
 // How many die labels a batch shows: Throw labels its first 20 dice, Tumble its first 10. Chips are not capped.
@@ -135,7 +185,9 @@ export function dieLabels(nodes) {
   return { kind: null, labels: [] };
 }
 
-// The chips inside result-card, in dump order: each chip's text is its Text children joined ("14" + "d20").
+// The chips inside result-card, in dump order. A chip is a View with no listed children: its face and sides are
+// Text nodes listed after it whose centres lie inside its bounds, so the chip's text is those nodes joined in
+// dump order ("14" + "d20", or "−14" + "d20" for a subtracted die).
 export function chipsOf(nodes) {
   const card = findNodeById(nodes, "result-card");
   if (!card) return [];
@@ -143,16 +195,20 @@ export function chipsOf(nodes) {
     for (let p = node.parent; p; p = p.parent) if (p === card) return true;
     return false;
   };
-  return nodes
-    .filter((node) => idIs(node, "die-chip") && inCard(node))
-    .map((chip) => {
-      const texts = nodes.filter((node) => {
-        if (node === chip || !node.text) return false;
-        for (let p = node.parent; p; p = p.parent) if (p === chip) return true;
-        return false;
-      });
-      return { text: texts.map((node) => node.text).join("") };
-    });
+  const within = (node, box) => {
+    if (!node.bounds) return false;
+    const cx = (node.bounds.x1 + node.bounds.x2) / 2;
+    const cy = (node.bounds.y1 + node.bounds.y2) / 2;
+    return cx >= box.x1 && cx <= box.x2 && cy >= box.y1 && cy <= box.y2;
+  };
+  return nodes.flatMap((chip, index) => {
+    if (!idIs(chip, "die-chip") || !inCard(chip) || !chip.bounds) return [];
+    // The Text nodes that follow the chip in the dump, while their centres lie inside it. Text drawn underneath
+    // the card (the Home list, say) is listed earlier and is not part of the chip.
+    let text = "";
+    for (let j = index + 1; j < nodes.length && within(nodes[j], chip.bounds); j++) text += nodes[j].text ?? "";
+    return [{ text }];
+  });
 }
 
 // Compares the label n with the chip n for every label the mode shows. The mode is "throw", "tumble" or
@@ -204,23 +260,46 @@ export function resolveMode(requested, kind) {
   return requested ?? kind ?? "off";
 }
 
-// The settle rule: a dump is settled when result-card exists and its die labels equal those of the dump
-// before. Returns the signature of a dump (the labels and the chips), or null while no result-card exists.
-export function settleSignature(nodes) {
-  if (!findNodeById(nodes, "result-card")) return null;
-  const { labels } = dieLabels(nodes);
-  return JSON.stringify({ labels, chips: chipsOf(nodes).map((chip) => chip.text) });
+// The point a tap on `node` lands on, in drawing order: the dump lists views bottom to top, so only a clickable
+// node listed after `node` covers it, and only when it is not inside `node`. Returns the centre of the visible
+// part when uncovered, else the nearest uncovered point of a 5x5 grid over it, else null.
+export function uncoveredTapPoint(node, view, nodes) {
+  const box = visibleBounds(node, view);
+  const index = nodes.indexOf(node);
+  if (!box || index < 0) return null;
+  const inside = (b, p) => p.x >= b.x1 && p.x <= b.x2 && p.y >= b.y1 && p.y <= b.y2;
+  const isWithin = (n) => {
+    for (let p = n.parent; p; p = p.parent) if (p === node) return true;
+    return false;
+  };
+  const covers = (p) =>
+    nodes.some((n, j) => j > index && n.clickable && hasPositiveArea(n.bounds) && !isWithin(n) && inside(n.bounds, p));
+  const centre = { x: Math.round((box.x1 + box.x2) / 2), y: Math.round((box.y1 + box.y2) / 2) };
+  if (!covers(centre)) return centre;
+  const grid = [];
+  for (let i = 0; i <= 4; i++) {
+    for (let j = 0; j <= 4; j++) {
+      grid.push({ x: Math.round(box.x1 + ((box.x2 - box.x1) * i) / 4), y: Math.round(box.y1 + ((box.y2 - box.y1) * j) / 4) });
+    }
+  }
+  grid.sort((p, q) => (p.x - centre.x) ** 2 + (p.y - centre.y) ** 2 - ((q.x - centre.x) ** 2 + (q.y - centre.y) ** 2));
+  return grid.find((p) => !covers(p)) ?? null;
 }
 
 // The Roll button: a clickable node whose content-desc starts with "Roll " other than the field
 // ("Roll Expression"). The button of this expression is preferred when more than one is listed.
+// The button's accessible name is an icon glyph, a comma and "Roll <title>" on the device, so the label is the
+// part from "Roll " on; the field is "Roll Expression" and is not a button. A disabled button (an expression the
+// tray refuses) is still listed.
 export function findRollButton(nodes, expression) {
-  const candidates = nodes.filter(
-    (node) => node.clickable && node.contentDesc.startsWith("Roll ") && node.contentDesc !== "Roll Expression" && node.bounds,
-  );
+  const label = (node) => {
+    const at = node.contentDesc.indexOf("Roll ");
+    return at < 0 ? "" : node.contentDesc.slice(at);
+  };
+  const candidates = nodes.filter((node) => label(node).startsWith("Roll ") && label(node) !== "Roll Expression" && node.bounds);
   if (candidates.length === 0) return null;
   const title = rollTitle(expression);
-  return candidates.find((node) => node.contentDesc === `Roll ${title}`) ?? candidates[0];
+  return candidates.find((node) => label(node) === `Roll ${title}`) ?? candidates[0];
 }
 
 // The button's title for an expression: the trimmed expression, cut to 28 characters and an ellipsis

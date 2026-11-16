@@ -15,7 +15,7 @@ import { mkdirSync, mkdtempSync } from "node:fs";
 import { homedir, tmpdir } from "node:os";
 import { join } from "node:path";
 import { APP_ID, deepLinkForRoute, isEmulatorSerial, parseAdbDevices, parseSystemBarHeights, parseWmSize, sdkPaths } from "./lib/android-runner.mjs";
-import { parseDumpOutput, tapPoint, visibleBounds } from "./lib/uiautomator.mjs";
+import { parseDumpOutput } from "./lib/uiautomator.mjs";
 import {
   compareDice,
   dieLabels,
@@ -28,7 +28,10 @@ import {
   optionsSwipeArgs,
   parseRollArgs,
   resolveMode,
-  settleSignature,
+  revealSwipe,
+  scrollerOf,
+  LABEL_CAPS,
+  uncoveredTapPoint,
   usage,
 } from "./lib/android-roll.mjs";
 
@@ -40,6 +43,9 @@ const SETTLE_POLL_MS = 500;
 const FIND_TIMEOUT_MS = 10_000;
 const FIND_POLL_MS = 500;
 const RECORD_SECONDS = 12;
+// Backspaces sent to empty the Roll Expression field before an expression is typed: more than any expression the
+// tray takes, and a delete on an empty field does nothing.
+const CLEAR_FIELD_DELETES = 40;
 const MAX_OPTIONS_SWIPES = 25;
 
 const sleep = (ms) => new Promise((resolvePromise) => setTimeout(resolvePromise, ms));
@@ -78,10 +84,28 @@ async function waitForNode(dump, find, timeoutMs = FIND_TIMEOUT_MS) {
 // Taps the centre of a node's visible part (uncovered by another clickable node), or reports why it cannot.
 function tapNode(adb, serial, nodes, node) {
   const view = currentView;
-  const point = tapPoint(node, view, nodes);
+  const point = uncoveredTapPoint(node, view, nodes);
   if (!point) return false;
   run(adb, ["-s", serial, "shell", "input", "tap", String(point.x), String(point.y)]);
   return true;
+}
+
+// Whether the soft keyboard is shown, from the input method service's state.
+function keyboardShown(adb, serial) {
+  return /mInputShown=true/.test(run(adb, ["-s", serial, "shell", "dumpsys", "input_method"]).stdout);
+}
+
+// Taps the node `find` returns once it is uncovered: a screen mid-transition can list a button under another
+// clickable node for a poll or two, so the tap is retried on fresh dumps until FIND_TIMEOUT_MS passes.
+async function tapWhen(adb, serial, dump, find) {
+  const deadline = Date.now() + FIND_TIMEOUT_MS;
+  for (;;) {
+    const nodes = dump();
+    const node = find(nodes);
+    if (node && tapNode(adb, serial, nodes, node)) return true;
+    if (Date.now() >= deadline) return false;
+    await sleep(FIND_POLL_MS);
+  }
 }
 
 let currentView = null;
@@ -97,12 +121,17 @@ async function setMode(adb, serial, mode, dump) {
     await sleep(swipes === 0 ? 800 : 400);
     const nodes = dump();
     const node = findNodeById(nodes, id);
-    if (node && visibleBounds(node, currentView)) {
+    if (node && uncoveredTapPoint(node, currentView, nodes)) {
       tapped = tapNode(adb, serial, nodes, node);
       if (!tapped) return `${id} is covered on screen and no uncovered point of it exists`;
       break;
     }
-    if (swipes < MAX_OPTIONS_SWIPES) run(adb, ["-s", serial, "shell", "input", "swipe", ...optionsSwipeArgs(currentView).map(String)]);
+    if (swipes < MAX_OPTIONS_SWIPES) {
+      const scroller = scrollerOf(nodes);
+      const { direction, distance } = revealSwipe(node, scroller);
+      const args = optionsSwipeArgs(currentView, direction, scroller, distance);
+      run(adb, ["-s", serial, "shell", "input", "swipe", ...args.map(String)]);
+    }
   }
   if (!tapped) return `no node ${id} on the Options screen`;
   await sleep(500);
@@ -116,32 +145,48 @@ async function rollOne({ adb, serial, expression, index, mode, shotsDir, record 
   const shell = (...args) => run(adb, ["-s", serial, "shell", ...args]);
   const fail = (error) => ({ result: { ok: false, error }, fatal: 0, shot: null });
 
-  // A result card left over from the previous roll would settle at once: dismiss it first.
-  if (findNodeById(dump(), "result-card")) {
-    const dismiss = await waitForNode(dump, (nodes) => nodes.find((node) => node.contentDesc === "Dismiss result" && node.clickable && node.bounds));
-    if (!dismiss) return fail("a result card is open and has no Dismiss result button");
-    tapNode(adb, serial, dump(), dismiss);
-    await sleep(500);
-  }
+  // A result card left over from the previous roll covers the dice button and would settle at once: it is dismissed
+  // when it has a Dismiss button, and the wait for it to leave the screen is bounded.
+  const cardGone = async () => {
+    const deadline = Date.now() + FIND_TIMEOUT_MS;
+    while (Date.now() < deadline) {
+      const nodes = dump();
+      if (!findNodeById(nodes, "result-card")) return true;
+      const dismiss = nodes.find((node) => node.contentDesc === "Dismiss result" && node.clickable && node.bounds);
+      if (dismiss) tapNode(adb, serial, nodes, dismiss);
+      await sleep(FIND_POLL_MS);
+    }
+    return false;
+  };
+  if (!(await cardGone())) return fail("a result card stays open and does not leave the screen");
 
   run(adb, ["-s", serial, "logcat", "-c"]);
 
-  const diceButton = await waitForNode(dump, (nodes) => findNodeById(nodes, "dice-button"));
-  if (!diceButton) return fail("no dice-button on Home");
-  if (!tapNode(adb, serial, dump(), diceButton)) return fail("the dice-button is covered");
+  // The dice button is tapped only with the tray shut: a tap computed from a dump in which the tray is open
+  // could land on a row of the Home list once the tray closes.
+  const trayOpen = (nodes) => nodes.some((node) => node.contentDesc === "Roll Expression" && node.bounds);
+  if (!(await tapWhen(adb, serial, dump, (nodes) => (trayOpen(nodes) ? null : findNodeById(nodes, "dice-button"))))) {
+    return fail("the dice-button is never uncovered on Home");
+  }
 
-  const field = await waitForNode(dump, (nodes) => nodes.find((node) => node.contentDesc === "Roll Expression" && node.bounds));
-  if (!field) return fail("no Roll Expression field in the tray");
-  if (!tapNode(adb, serial, dump(), field)) return fail("the Roll Expression field is covered");
+  if (!(await tapWhen(adb, serial, dump, (nodes) => nodes.find((node) => node.contentDesc === "Roll Expression" && node.bounds)))) {
+    return fail("the Roll Expression field is never uncovered in the tray");
+  }
   await sleep(400);
 
+  // The field keeps what was typed before, so the cursor goes to the end and the text is deleted first.
+  shell("input", "keyevent", "KEYCODE_MOVE_END", ...Array(CLEAR_FIELD_DELETES).fill("KEYCODE_DEL"));
+  await sleep(200);
   shell("input", "text", inputTextArg(expression));
   await sleep(300);
-  // BACK closes the keyboard; the tray must stay open, so the Roll button must still be in the dump.
-  shell("input", "keyevent", "KEYCODE_BACK");
-  await sleep(500);
-  const rollButton = await waitForNode(dump, (nodes) => findRollButton(nodes, expression));
-  if (!rollButton) return fail("the tray closed when the keyboard was dismissed (no Roll button)");
+  // BACK closes a shown soft keyboard and nothing else; with the hardware keyboard the soft one is not
+  // shown and BACK would close the tray, so it is pressed only when the input method reports it shown.
+  if (keyboardShown(adb, serial)) {
+    shell("input", "keyevent", "KEYCODE_BACK");
+    await sleep(500);
+  }
+  const rollShown = await waitForNode(dump, (nodes) => findRollButton(nodes, expression));
+  if (!rollShown) return fail("the tray closed when the keyboard was dismissed (no Roll button)");
 
   const remote = `/sdcard/android-roll-${index}.mp4`;
   let recordStart = 0;
@@ -150,21 +195,31 @@ async function rollOne({ adb, serial, expression, index, mode, shotsDir, record 
     recordStart = Date.now();
     await sleep(500);
   }
-  if (!tapNode(adb, serial, dump(), rollButton)) return fail("the Roll button is covered");
-
-  // Settled: the result card exists and the labels equal those of the dump before, or the deadline passes.
-  const deadline = Date.now() + SETTLE_TIMEOUT_MS;
-  let previous = null;
-  let nodes = [];
-  let settled = false;
-  while (!settled && Date.now() < deadline) {
-    await sleep(SETTLE_POLL_MS);
-    nodes = dump();
-    const signature = settleSignature(nodes);
-    settled = signature !== null && signature === previous;
-    previous = signature;
+  // The Roll button is tapped only in a dump that shows the tray (see the dice button above).
+  if (!(await tapWhen(adb, serial, dump, (nodes) => (trayOpen(nodes) ? findRollButton(nodes, expression) : null)))) {
+    return fail("the Roll button is never uncovered");
   }
-  if (!settled) return fail(`timed out after ${SETTLE_TIMEOUT_MS / 1000} s waiting for the result card to settle`);
+
+  // The result card carries the chips. A Throw's die labels are drawn while the dice fly and are gone when the card
+  // shows, so they come from the last dump before the card that holds the most labels; a Tumble's labels sit in the
+  // card itself. Waits up to SETTLE_TIMEOUT_MS for the card.
+  const deadline = Date.now() + SETTLE_TIMEOUT_MS;
+  let flight = null;
+  let card = null;
+  while (card === null && Date.now() < deadline) {
+    await sleep(SETTLE_POLL_MS);
+    const nodes = dump();
+    if (findNodeById(nodes, "result-card")) card = nodes;
+    else if (dieLabels(nodes).labels.length > (flight ? dieLabels(flight).labels.length : 0)) flight = nodes;
+  }
+  if (card === null) return fail(`timed out after ${SETTLE_TIMEOUT_MS / 1000} s waiting for the result card`);
+  const labelSource = dieLabels(card).labels.length > 0 ? card : flight;
+  const labelCount = labelSource ? dieLabels(labelSource).labels.length : 0;
+  const cap = LABEL_CAPS[mode];
+  const expectedLabels = mode === "off" ? 0 : cap === undefined ? null : Math.min(chipsOf(card).length, cap);
+  if (expectedLabels !== null && labelCount !== expectedLabels) {
+    return fail(`${labelCount} die labels seen while the dice flew, expected ${expectedLabels}`);
+  }
 
   const fileBase = `${index}-${expression.replace(/\W+/g, "-")}`;
   const shotRemote = `/sdcard/android-roll-${index}.png`;
@@ -182,9 +237,9 @@ async function rollOne({ adb, serial, expression, index, mode, shotsDir, record 
   }
 
   const fatal = fatalCount(run(adb, ["-s", serial, "logcat", "-d"]).stdout);
-  const labels = dieLabels(nodes);
+  const labels = labelSource ? dieLabels(labelSource) : { kind: null, labels: [] };
   const resolved = resolveMode(mode, labels.kind);
-  const result = compareDice({ mode: resolved, labels: labels.labels, chips: chipsOf(nodes) });
+  const result = compareDice({ mode: resolved, labels: labels.labels, chips: chipsOf(card) });
   if (pulledShot.code !== 0) return { result: { ...result, ok: false, error: "screenshot pull failed" }, fatal, shot: null };
   return { result, fatal, shot, resolved };
 }
@@ -219,6 +274,13 @@ async function main(argv, env) {
   console.log(`Screenshots: ${shotsDir}`);
 
   const dump = () => dumpNodes(adb, serial);
+  // A tray left open by an earlier run is a modal that keeps the Options deep link from showing, so it is
+  // closed first; BACK with the keyboard down closes the tray.
+  if (dump().some((node) => node.contentDesc === "Roll Expression")) {
+    run(adb, ["-s", serial, "shell", "input", "keyevent", "KEYCODE_BACK"]);
+    await sleep(800);
+    if (dump().some((node) => node.contentDesc === "Roll Expression")) refuse("a dice tray is open and did not close on BACK");
+  }
   if (args.mode) {
     const problem = await setMode(adb, serial, args.mode, dump);
     if (problem) refuse(`could not set --mode ${args.mode}: ${problem}`);
