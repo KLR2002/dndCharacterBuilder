@@ -1,16 +1,26 @@
 #!/usr/bin/env bash
-# Pre-commit gate. Skips the checks when every staged file is Markdown.
+# Pre-commit gate. Skips the checks when every staged file is Markdown,
+# except GLOSSARY.md, which is read by the glossary test.
 # CHECK_CMD overrides the check command (default: npm run check:all).
+# GLOSSARY_CHECK_CMD overrides the glossary check (default: the glossary test).
 set -euo pipefail
 
 staged="$(git diff --cached --name-only)"
 non_md="$(grep -v '\.md$' <<<"$staged" || true)"
 if [ -n "$staged" ] && [ -z "$non_md" ]; then
-  echo "==> pre-commit: docs-only change (all staged files are .md), checks skipped"
-  exit 0
+  if ! grep -qx 'GLOSSARY.md' <<<"$staged"; then
+    echo "==> pre-commit: docs-only change (all staged files are .md), checks skipped"
+    exit 0
+  fi
+  glossary_cmd="${GLOSSARY_CHECK_CMD:-node --experimental-strip-types --test checks/glossaryConsistency.test.ts}"
+  echo "==> pre-commit: docs-only change touches GLOSSARY.md, running glossary check"
+  check_cmd="$glossary_cmd"
+  pass_line="==> pre-commit: glossary check passed"
+else
+  check_cmd="${CHECK_CMD:-npm run check:all}"
+  pass_line=""
 fi
 
-check_cmd="${CHECK_CMD:-npm run check:all}"
 log="$(mktemp)"
 echo "==> pre-commit: running $check_cmd"
 
@@ -18,6 +28,11 @@ status=0
 bash -c "$check_cmd" >"$log" 2>&1 || status=$?
 
 if [ "$status" -eq 0 ]; then
+  if [ -n "$pass_line" ]; then
+    echo "$pass_line"
+    rm -f "$log"
+    exit 0
+  fi
   mapfile -t passes < <(sed -n 's/^ℹ pass \([0-9]\{1,\}\)$/\1/p' "$log")
   if [ "${#passes[@]}" -eq 2 ]; then
     echo "==> pre-commit: check:all passed (${passes[0]} app tests, ${passes[1]} scraper tests)"
