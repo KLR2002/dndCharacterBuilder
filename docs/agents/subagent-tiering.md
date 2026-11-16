@@ -17,7 +17,7 @@ Every implementation brief points here instead of restating these rules.
 
 ### Git
 
-- Never use `--no-verify`. The pre-commit hook runs `npm run check:all` and skips it only when every staged file is Markdown. If it fails, fix the cause.
+- Never use `--no-verify`. The pre-commit hook runs `npm run check:all` and skips it only when every staged file is Markdown, except that a Markdown-only commit staging `GLOSSARY.md` runs the glossary test (`checks/glossaryConsistency.test.ts`) instead. If it fails, fix the cause.
 - Run `npx eslint --fix <changed files>` before each commit: style rules such as `@typescript-eslint/array-type` fix themselves, and a lint failure costs a full hook run.
 - Set work aside with a temporary WIP commit, not `git stash`: the stash stack is shared by every worktree and session.
 - Commit in small steps, one logical change per commit, and commit after every slice (a WIP commit is fine). A session that stops cannot be resumed, so the branch holds the work and a fresh implementer continues from it.
