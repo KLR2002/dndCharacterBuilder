@@ -4,12 +4,14 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] A Markdown-only commit that stages `GLOSSARY.md` runs the glossary test; the commit fails when the test fails.
-- [ ] A Markdown-only commit without `GLOSSARY.md` is skipped as before; a commit with any non-Markdown file runs `CHECK_CMD` as before.
-- [ ] A test in `checks/` (for example `checks/preCommitHook.test.ts`) runs the hook in a temporary git repository with `CHECK_CMD` and `GLOSSARY_CHECK_CMD` set to stub commands and covers the three cases above. Red first: the GLOSSARY case fails against the current hook.
-- [ ] The first bullet of "Implementer Rules > Git" in `docs/agents/subagent-tiering.md` names the exception (Markdown-only commits skip the checks, except that `GLOSSARY.md` runs the glossary test).
+**Landed:** chore/retro-canvas-dice @ e25a952 (b80518e). `checks/preCommitHook.test.ts`, 4 tests: the GLOSSARY case failed against the old hook, all pass on the new one; run inside a real commit's hook, the main repository's config stayed unchanged.
+
+- [x] A Markdown-only commit that stages `GLOSSARY.md` runs the glossary test; the commit fails when the test fails.
+- [x] A Markdown-only commit without `GLOSSARY.md` is skipped as before; a commit with any non-Markdown file runs `CHECK_CMD` as before.
+- [x] A test in `checks/` (for example `checks/preCommitHook.test.ts`) runs the hook in a temporary git repository with `CHECK_CMD` and `GLOSSARY_CHECK_CMD` set to stub commands and covers the three cases above. Red first: the GLOSSARY case fails against the current hook.
+- [x] The first bullet of "Implementer Rules > Git" in `docs/agents/subagent-tiering.md` names the exception (Markdown-only commits skip the checks, except that `GLOSSARY.md` runs the glossary test).
 
 ## Constraints
 
