@@ -20,6 +20,9 @@ dependencies {
 }
 
 // The shared math fixture, read by DiceMathTest and by checks/diceCanvasMath.test.ts.
+// Declared as an input so that an edited fixture reruns the tests instead of reusing a green result.
 tasks.withType(Test).configureEach {
-  systemProperty 'dice.fixture', file('../../../checks/fixtures/diceCanvasMathFixture.json').absolutePath
+  def fixture = file('../../../checks/fixtures/diceCanvasMathFixture.json')
+  inputs.file(fixture)
+  systemProperty 'dice.fixture', fixture.absolutePath
 }
