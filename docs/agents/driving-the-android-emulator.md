@@ -19,6 +19,12 @@ The runner's flags, environment variables and exit codes are documented in the h
 - A failed scenario saves `<name>-<width>-FAILED.png` of the stuck screen, the run continues and exits non-zero. A lost emulator is rebooted (up to twice per run) when the runner started it; on a reused one the run stops at that scenario with a message.
 - Per-scenario isolation mirrors the web check: the first scenario of a width and every `fresh` one clear the app and re-seed, a `modal` one relaunches it, others jump by deep link or stay on the route; each scenario logs its mode.
 
+## The dice check: `npm run android:roll`
+
+`npm run android:roll -- [--mode throw|tumble|off] [--shots <dir>] [--record] <expression>...` rolls each expression through the dice tray on the running emulator and checks that the die labels match the result chips: label n against chip n, at most 20 labels for Throw and 10 for Tumble, none in Off. It needs exactly one emulator (serial `emulator-*`, state `device`) with `io.github.klr2002.cb5e` installed, a release or E2E build; it boots, builds and installs nothing, and exits 2 otherwise. A fresh install starts on the first-run screen, which the script does not get past: open the app once by hand first. `--mode` sets the Dice animation through the Options screen (deep link) and returns home by deep link; without it the current setting is kept. Each expression clears logcat, rolls, waits up to 40 s for the result card, takes a screenshot into `--shots` (a fresh folder under the temp dir when omitted, printed first), and counts `FATAL EXCEPTION` lines. Throw labels are drawn only while the dice fly, so the script takes them from the last dump before the card. `--record` also records each Roll with `screenrecord` (about 12 s). Exit: 0 every expression passes; 1 a label differs from its chip, a FATAL appears or a wait times out; 2 a refusal or a bad argument (`--help` prints the usage).
+
+Emulator notes for this check: boot the Small_Phone AVD with `-memory 3072` (the default 2 GB guest ran short during the Throw animation and the device killed the `uiautomator` dump, exit 137). Never run two dumps at once.
+
 ## Gotchas
 
 - Emulator renderer: boot with `-gpu angle_indirect -no-window`. The default software renderer segfaults on a cold boot, and `-gpu host` loses its GL context and kills the emulator after a few minutes; the runner uses `angle_indirect` itself.
@@ -33,8 +39,9 @@ The runner's flags, environment variables and exit codes are documented in the h
 ## Manual steps for ad-hoc work
 
 - Export the SDK tools: `export ANDROID_HOME=~/Android/Sdk ANDROID_SDK_ROOT=~/Android/Sdk PATH=$ANDROID_HOME/platform-tools:$ANDROID_HOME/emulator:$PATH`.
-- Start the emulator detached: `nohup env -u LD_LIBRARY_PATH emulator -avd Small_Phone -no-snapshot-save -no-audio -gpu angle_indirect -no-window > <log> 2>&1 &`. It is ready when `adb shell getprop sys.boot_completed` prints `1`; stop what you started with `adb emu kill`.
+- Start the emulator detached: `nohup env -u LD_LIBRARY_PATH emulator -avd Small_Phone -no-snapshot-save -no-audio -gpu angle_indirect -no-window > <log> 2>&1 &`. It is ready when `adb shell getprop sys.boot_completed` prints `1`; stop what you started with `scripts/stop-dev.sh` (see the last bullet).
 - Install and launch: `adb install -r <apk>`, then `adb shell monkey -p io.github.klr2002.cb5e -c android.intent.category.LAUNCHER 1`.
 - `adb shell pm clear io.github.klr2002.cb5e` resets the app to first run.
 - `adb shell run-as io.github.klr2002.cb5e ls files` lists the app's private folder; it works only on the E2E (debuggable) APK.
 - The `androidMCP` server, project-scoped in `~/.claude.json` (`uv --directory /home/krzysztof/mcp/Android-MCP run android-mcp-beta`), drives the UI by hand. Its first start can pass Claude Code's 30 s connect limit: run the command once in a terminal, then reconnect with `/mcp`.
+- `scripts/stop-dev.sh [--port <n>]...` stops every running emulator, the adb server, every Gradle and Kotlin daemon of this user (a local EAS build's too), and the web server on each `--port`. It prints what is still running and exits 1 when something is. Run it at the end of a session that used them, when no Android build of the user's is running.
