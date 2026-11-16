@@ -9,11 +9,10 @@ const hookPath = path.join(process.cwd(), ".githooks", "pre-commit");
 
 // Drop GIT_* variables inherited from an enclosing git hook (GIT_INDEX_FILE points at
 // the real index), so every git call here acts on the temporary repository only.
-const isolatedEnv: Record<string, string> = Object.fromEntries(
-  Object.entries(process.env).filter(
-    (entry): entry is [string, string] => entry[1] !== undefined && !entry[0].startsWith("GIT_")
-  )
-);
+const isolatedEnv = { ...process.env };
+for (const key of Object.keys(isolatedEnv)) {
+  if (key.startsWith("GIT_")) delete isolatedEnv[key];
+}
 
 function runHook(stagedFiles: Record<string, string>, env: Record<string, string>) {
   const repo = fs.mkdtempSync(path.join(os.tmpdir(), "precommit-hook-"));
