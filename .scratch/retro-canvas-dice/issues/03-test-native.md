@@ -8,12 +8,14 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] In a fresh worktree with no `android/`, `npm run test:native` generates the project, runs the 9 Kotlin tests green and exits 0; no Gradle daemon is left running afterwards (`pgrep -f GradleDaemon` prints nothing that this run started).
-- [ ] Red: with one stored value in the fixture edited (a probe, reverted afterwards), `npm run test:native` exits non-zero and names the failing Kotlin test.
-- [ ] The CI file parses as YAML and the new job has the steps above; the existing jobs are unchanged.
-- [ ] `AGENTS.md` has the sentence above and nothing else changes there.
+**Landed:** chore/retro-canvas-dice @ 1947ec3. `npm run test:native` 9/9 green from a worktree with no `android/`; the fixture probe failed `DiceMathTest > rotateVector` after the fixture was declared a Gradle input (bc5c720; before it the task was UP-TO-DATE and stayed green). The CI job has not run on GitHub yet.
+
+- [x] In a fresh worktree with no `android/`, `npm run test:native` generates the project, runs the 9 Kotlin tests green and exits 0; no Gradle daemon is left running afterwards (`pgrep -f GradleDaemon` prints nothing that this run started).
+- [x] Red: with one stored value in the fixture edited (a probe, reverted afterwards), `npm run test:native` exits non-zero and names the failing Kotlin test.
+- [x] The CI file parses as YAML and the new job has the steps above; the existing jobs are unchanged.
+- [x] `AGENTS.md` has the sentence above and nothing else changes there.
 
 ## Constraints
 
