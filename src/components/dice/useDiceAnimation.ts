@@ -1,7 +1,7 @@
 import { useEffect, useState, useSyncExternalStore } from "react";
 import { AccessibilityInfo, Platform } from "react-native";
 import { useCharacters } from "../../context/CharacterContext";
-import { resolveDiceAnimationEnabled } from "../../rules/diceAnimation.ts";
+import { resolveDiceAnimation, type DiceAnimation } from "../../rules/diceAnimation.ts";
 
 // The reduced-motion media query, subscribed the React way: the snapshot functions guard `window`,
 // so a statically exported page can prerender (no `window`) and hydrate without a mismatch, and the
@@ -40,12 +40,9 @@ function useSystemReduceMotion(): boolean {
   return Platform.OS === "web" ? webReduceMotion : nativeReduceMotion;
 }
 
-/**
- * Whether the 2.5D dice animation runs: the saved 3D dice setting when there is one, otherwise on
- * unless the system asks for reduced motion. The renderer is loaded only while this is true.
- */
-export function useDiceAnimationEnabled(): boolean {
-  const { dice3dEnabled } = useCharacters();
+/** The dice animation in effect: the saved setting, or the default for the system reduced-motion preference. */
+export function useDiceAnimation(): DiceAnimation {
+  const { diceAnimation } = useCharacters();
   const reduceMotion = useSystemReduceMotion();
-  return resolveDiceAnimationEnabled(dice3dEnabled, reduceMotion);
+  return resolveDiceAnimation(diceAnimation, reduceMotion);
 }

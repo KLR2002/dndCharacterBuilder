@@ -329,8 +329,16 @@ The ability-score method that rolls 4d6 and drops the lowest die, six times, and
 _Avoid_: Random stats, dice method
 
 **Roll**:
-One throw of a dice pool with a flat modifier, producing each die's face and a total. A d20 Roll may be made with advantage or disadvantage (two d20s, the higher or the lower kept).
+The outcome of rolling a dice pool with a flat modifier: each die's face and a total. A Roll may keep the higher (advantage) or the lower (disadvantage) of several d20 results. A result that is not kept stays visible, shown greyed out.
 _Avoid_: Dice event, throw result
+
+**Roll Expression**:
+The text a player types into the dice tray to describe one or more Rolls: dice (3d6, d20, any number of sides), whole numbers, + and -, and the functions a(...) and d(...), which keep the highest or the lowest of several d20s and take nothing else. A comma outside parentheses separates independent Rolls, each with its own total (d20,d20 is two Rolls); a count before a function repeats the whole Roll that way (2a(d20,d20) is a(d20,d20),a(d20,d20); d4+2a(d20,d20) is d4+a(d20,d20),d4+a(d20,d20)). An expression never starts with a sign and holds at least one die.
+_Avoid_: Console input, formula, dice notation
+
+**Dice Animation**:
+How a Roll plays on screen, a setting with three values. *Off*: no animation. *Tumble*: each die turns in place and stops on the face the generator drew. *Throw*: the dice are thrown across the whole screen and the face that lands on top is the result. Only the six standard dice (d4, d6, d8, d10, d12, d20) and the d100 (a tens die and a units die) are drawn as solids; any other die is shown as a number only.
+_Avoid_: 3D dice, real throw, dice physics
 
 **Roll Log**:
 The list of Rolls made since the app was opened. It is not saved with the Character.

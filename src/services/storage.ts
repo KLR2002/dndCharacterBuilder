@@ -1,4 +1,6 @@
 import { DEFAULT_ACTIVE_BOOK_CODES } from "../constants/books.ts";
+import type { DiceAnimation } from "../rules/diceAnimation.ts";
+import { DICE_ANIMATIONS } from "../rules/diceAnimation.ts";
 import type { Character, Folder } from "../types/character.ts";
 
 const SETTINGS_KEY = "@dnd5e_app_settings";
@@ -12,8 +14,8 @@ export interface AppSettings {
   activeResourceBooks: string[];
   themeAccentId: string;
   fullHealOnLevelUp: boolean;
-  /** The 3D dice animation switch. Absent until the user toggles it; then the saved value wins over the system reduced-motion preference. */
-  dice3dEnabled?: boolean;
+  /** The dice animation. Absent until the user chooses one; then the saved value wins over the system reduced-motion preference. */
+  diceAnimation?: DiceAnimation;
   /** The Catalog Format the user was last told about. Absent until the update notice is shown. */
   catalogFormatInformed?: number;
 }
@@ -96,6 +98,9 @@ function normalizeSettings(value: unknown): AppSettings {
   if (value.dice3dEnabled !== undefined && typeof value.dice3dEnabled !== "boolean") {
     throw new Error("Invalid settings: dice3dEnabled must be boolean");
   }
+  if (value.diceAnimation !== undefined && !(DICE_ANIMATIONS as readonly unknown[]).includes(value.diceAnimation)) {
+    throw new Error("Invalid settings: diceAnimation must be off, tumble or throw");
+  }
   if (value.catalogFormatInformed !== undefined && typeof value.catalogFormatInformed !== "number") {
     throw new Error("Invalid settings: catalogFormatInformed must be a number");
   }
@@ -103,12 +108,18 @@ function normalizeSettings(value: unknown): AppSettings {
     !value.activeResourceBooks.every(book => typeof book === "string"))) {
     throw new Error("Invalid settings: activeResourceBooks must be a string array");
   }
-  return {
+  // The retired boolean becomes the matching mode when no mode is saved, and is never returned.
+  const { dice3dEnabled, ...rest } = value;
+  const settings = {
     ...DEFAULT_SETTINGS,
-    ...value,
+    ...rest,
     schemaVersion: 2,
-    activeResourceBooks: [...(value.activeResourceBooks as string[] | undefined ?? DEFAULT_ACTIVE_BOOK_CODES)],
+    activeResourceBooks: [...(rest.activeResourceBooks as string[] | undefined ?? DEFAULT_ACTIVE_BOOK_CODES)],
   } as AppSettings;
+  if (settings.diceAnimation === undefined && dice3dEnabled !== undefined) {
+    settings.diceAnimation = dice3dEnabled ? "tumble" : "off";
+  }
+  return settings;
 }
 
 /** Normalize the envelope only; preserve character/folder content verbatim. */

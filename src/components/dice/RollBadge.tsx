@@ -61,14 +61,14 @@ export function RollBadge({
   testID,
 }: RollBadgeProps) {
   const { theme } = useAppTheme();
-  const { publishRoll } = useRollLog();
+  const { rollAndPublish } = useRollLog();
   const [sheetOpen, setSheetOpen] = useState(false);
   const [focused, setFocused] = useState(false);
 
   const isD20 = modifier !== undefined;
 
   const rollWith = (mode: D20Mode) => {
-    pressRollBadge({ modifier, pool, source, poolSource, characterName }, mode, publishRoll);
+    pressRollBadge({ modifier, pool, source, poolSource, characterName }, mode, rollAndPublish);
   };
 
   const onPress = (event?: { stopPropagation?: () => void }) => {

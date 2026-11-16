@@ -1,18 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { parseDicePool, rollD20, rollDicePool, type RandomSource } from "../src/rules/dice.ts";
-import {
-  addDieToPool,
-  entryHeading,
-  formatRollTime,
-  isSingleD20,
-  makeRollLogEntry,
-  poolExpression,
-  poolLabel,
-  removePoolTerm,
-  rollMarkers,
-  type PoolTerm,
-} from "../src/rules/rollLog.ts";
+import { rollD20, rollDicePool, type RandomSource } from "../src/rules/dice.ts";
+import { entryHeading, formatRollTime, makeRollLogEntry, rollMarkers } from "../src/rules/rollLog.ts";
 
 /** A random source with fixed faces, cycling: each die lands on the next queued face. */
 function fixedFaces(faces: number[]): RandomSource {
@@ -90,45 +79,26 @@ test("formatRollTime renders a 24-hour HH:MM:SS clock", () => {
   assert.equal(formatRollTime(evening), "23:59:58");
 });
 
-test("the pool builder adds one die per tap, merging equal sides, and removes a whole term", () => {
-  let terms = addDieToPool([], 6);
-  assert.deepEqual(terms, [{ count: 1, sides: 6 }]);
-  terms = addDieToPool(terms, 6);
-  assert.deepEqual(terms, [{ count: 2, sides: 6 }]);
-  terms = addDieToPool(terms, 8);
-  assert.deepEqual(terms, [{ count: 2, sides: 6 }, { count: 1, sides: 8 }]);
-  terms = removePoolTerm(terms, 6);
-  assert.deepEqual(terms, [{ count: 1, sides: 8 }]);
-  assert.deepEqual(removePoolTerm([], 20), []);
+test("a label replaces the source in the heading and keeps the character prefix", () => {
+  const named = makeRollLogEntry({ roll: rollD20(0, "none", fixedFaces([12])), source: "Dice tray", characterName: "Kara", label: "d20" }, 1, 0);
+  assert.equal(entryHeading(named), "Kara · d20");
+  assert.equal(named.label, "d20");
+  const bare = makeRollLogEntry({ roll: rollD20(0, "none", fixedFaces([12])), source: "Dice tray", label: "a(d20,d20)+5" }, 2, 0);
+  assert.equal(entryHeading(bare), "a(d20,d20)+5");
 });
 
-test("a die's count in the tray pool is capped at 100, so the pool still parses and rolls", () => {
-  let terms: PoolTerm[] = [];
-  for (let i = 0; i < 105; i++) terms = addDieToPool(terms, 6);
-  assert.deepEqual(terms, [{ count: 100, sides: 6 }]);
-  // The capped pool is still a parseable pool, so rolling it cannot throw "Not a dice pool".
-  assert.equal(poolExpression(terms, 0), "100d6");
-  assert.deepEqual(parseDicePool(poolExpression(terms, 0)), { dice: [{ count: 100, sides: 6 }], modifier: 0 });
-  assert.equal(rollDicePool(poolExpression(terms, 0), fixedFaces([3])).total, 300);
+test("a single publish is a batch of one: index 0, size 1, its own batch id", () => {
+  const entry = makeRollLogEntry({ roll: rollDicePool("1d6", fixedFaces([4])), source: "Dice tray" }, 7, 0);
+  assert.equal(entry.batchId, 7);
+  assert.equal(entry.batchIndex, 0);
+  assert.equal(entry.batchSize, 1);
 });
 
-test("only a pool of exactly one d20 is a d20 roll", () => {
-  assert.equal(isSingleD20([{ count: 1, sides: 20 }]), true);
-  assert.equal(isSingleD20([{ count: 2, sides: 20 }]), false);
-  assert.equal(isSingleD20([{ count: 1, sides: 20 }, { count: 1, sides: 6 }]), false);
-  assert.equal(isSingleD20([{ count: 1, sides: 6 }]), false);
-  assert.equal(isSingleD20([]), false);
-});
-
-test("the pool's expression parses back to the same pool, and the label reads like the roll button", () => {
-  const terms = [{ count: 2, sides: 6 }, { count: 1, sides: 8 }];
-  assert.equal(poolExpression(terms, 3), "2d6+1d8+3");
-  assert.deepEqual(parseDicePool(poolExpression(terms, 3)), { dice: terms, modifier: 3 });
-  assert.equal(poolExpression([{ count: 1, sides: 20 }], -2), "1d20-2");
-  assert.deepEqual(parseDicePool(poolExpression([{ count: 1, sides: 20 }], -2)), { dice: [{ count: 1, sides: 20 }], modifier: -2 });
-  assert.equal(poolExpression(terms, 0), "2d6+1d8");
-
-  assert.equal(poolLabel(terms, 3), "2d6 + 1d8 + 3");
-  assert.equal(poolLabel([{ count: 1, sides: 20 }], -2), "1d20 − 2");
-  assert.equal(poolLabel([{ count: 1, sides: 6 }], 0), "1d6");
+test("entries of one batch share the batch id and carry their position in it", () => {
+  const batch = { batchId: 3, batchIndex: 2, batchSize: 3 };
+  const entry = makeRollLogEntry({ roll: rollDicePool("1d6", fixedFaces([4])), source: "Dice tray" }, 12, 0, batch);
+  assert.equal(entry.batchId, 3);
+  assert.equal(entry.batchIndex, 2);
+  assert.equal(entry.batchSize, 3);
+  assert.equal(entry.id, 12);
 });

@@ -1,13 +1,4 @@
-import {
-  currentRandom,
-  isNatural20,
-  parseDicePool,
-  rollD20,
-  rollDamage,
-  type D20Mode,
-  type RandomSource,
-  type Roll,
-} from "./dice.ts";
+import { isNatural20, parseDicePool, rollD20, rollDamage, type D20Mode, type RandomSource, type Roll } from "./dice.ts";
 import type { RollLogEntryInput } from "./rollLog.ts";
 
 /**
@@ -30,8 +21,17 @@ export interface ActionRollOrigin {
   characterName?: string;
 }
 
-/** The one publishing seam: the Roll Log provider passes its `publishRoll` here. */
-export type PublishRoll = (input: RollLogEntryInput) => void;
+/**
+ * The one roll seam: the Roll Log provider's `rollAndPublish`. It runs `make` with the random source
+ * the Roll should draw from (it may run `make` more than once) and publishes what `make` returns.
+ */
+export type RollAndPublish = (make: (random: RandomSource) => RollLogEntryInput | RollLogEntryInput[]) => unknown;
+
+/** The last Roll a seam run made. The seam always runs `make`, so a Roll is always there. */
+function lastRoll(made: { roll: Roll | null }): Roll {
+  if (made.roll === null) throw new Error("The roll seam did not make the Roll");
+  return made.roll;
+}
 
 // The dice pool at the start of a damage string: "1d8+3" out of "1d8 + 3 slashing".
 const LEADING_POOL = /^((?:\d*d\d+|\d+)(?:\s*[+-]\s*(?:\d*d\d+|\d+))*)/;
@@ -56,47 +56,55 @@ export function rollActionAttack(
   attack: RollAttackSpec,
   origin: ActionRollOrigin,
   mode: D20Mode,
-  publish: PublishRoll,
-  random: RandomSource = currentRandom(),
+  rollAndPublish: RollAndPublish,
+  random?: RandomSource,
 ): Roll {
-  const roll = rollD20(attack.attackBonus, mode, random);
-  const pool = damagePoolOf(attack.damage);
-  const critical = isNatural20(roll);
-  publish({
-    roll,
-    source: origin.source,
-    characterName: origin.characterName,
-    d20Mode: mode,
-    followUp: pool
-      ? {
-          label: critical ? "Roll critical damage" : "Roll damage",
-          onPress: () => {
-            publish({
-              roll: rollDamage(pool, { critical }, random),
-              source: origin.damageSource ?? origin.source,
-              characterName: origin.characterName,
-              critical,
-            });
-          },
-        }
-      : undefined,
+  const made: { roll: Roll | null } = { roll: null };
+  rollAndPublish((seamRandom) => {
+    const roll = rollD20(attack.attackBonus, mode, random ?? seamRandom);
+    made.roll = roll;
+    const pool = damagePoolOf(attack.damage);
+    const critical = isNatural20(roll);
+    return {
+      roll,
+      source: origin.source,
+      characterName: origin.characterName,
+      d20Mode: mode,
+      followUp: pool
+        ? {
+            label: critical ? "Roll critical damage" : "Roll damage",
+            onPress: () => {
+              rollAndPublish((seamDamageRandom) => ({
+                roll: rollDamage(pool, { critical }, random ?? seamDamageRandom),
+                source: origin.damageSource ?? origin.source,
+                characterName: origin.characterName,
+                critical,
+              }));
+            },
+          }
+        : undefined,
+    };
   });
-  return roll;
+  return lastRoll(made);
 }
 
 /** Rolls only a damage pool (the damage badge's tap): the pool with its modifier, critical or not. */
 export function rollActionDamage(
   damage: string,
   origin: Pick<ActionRollOrigin, "source" | "characterName">,
-  publish: PublishRoll,
+  rollAndPublish: RollAndPublish,
   critical = false,
-  random: RandomSource = currentRandom(),
+  random?: RandomSource,
 ): Roll {
   const pool = damagePoolOf(damage);
   if (!pool) throw new Error(`Not a damage roll: "${damage}"`);
-  const roll = rollDamage(pool, { critical }, random);
-  publish({ roll, source: origin.source, characterName: origin.characterName, critical });
-  return roll;
+  const made: { roll: Roll | null } = { roll: null };
+  rollAndPublish((seamRandom) => {
+    const roll = rollDamage(pool, { critical }, random ?? seamRandom);
+    made.roll = roll;
+    return { roll, source: origin.source, characterName: origin.characterName, critical };
+  });
+  return lastRoll(made);
 }
 
 /** What a RollBadge hands its press handler: the badge's own props. */
@@ -116,20 +124,20 @@ export interface RollBadgePress {
 export function pressRollBadge(
   badge: RollBadgePress,
   mode: D20Mode,
-  publish: PublishRoll,
-  random: RandomSource = currentRandom(),
+  rollAndPublish: RollAndPublish,
+  random?: RandomSource,
 ): Roll | null {
   if (badge.modifier !== undefined) {
     return rollActionAttack(
       { attackBonus: badge.modifier, damage: badge.pool ?? "" },
       { source: badge.source, damageSource: badge.poolSource ?? badge.source, characterName: badge.characterName },
       mode,
-      publish,
+      rollAndPublish,
       random,
     );
   }
   if (badge.pool) {
-    return rollActionDamage(badge.pool, { source: badge.source, characterName: badge.characterName }, publish, false, random);
+    return rollActionDamage(badge.pool, { source: badge.source, characterName: badge.characterName }, rollAndPublish, false, random);
   }
   return null;
 }

@@ -1,20 +1,35 @@
-import type { Roll, RolledDie } from "./dice.ts";
+import { quatFromAxisAngle, quatMultiply, type Quat, type Vec3 } from "./diceMath.ts";
+
+export const DICE_ANIMATIONS = ["off", "tumble", "throw"] as const;
+
+export type DiceAnimation = (typeof DICE_ANIMATIONS)[number];
 
 /**
- * Whether the 2.5D dice animation runs: the saved app setting when there is one, otherwise on, except
- * off when the system asks for reduced motion. A saved value always wins, so a user can keep the dice
- * on under reduced motion or switch them off without it.
+ * The dice animation in effect: the saved setting when there is one, otherwise tumble, or off when the
+ * system asks for reduced motion. A saved value always wins.
  */
-export function resolveDiceAnimationEnabled(saved: boolean | undefined, reduceMotion: boolean): boolean {
+export function resolveDiceAnimation(saved: DiceAnimation | undefined, reduceMotion: boolean): DiceAnimation {
   if (saved !== undefined) return saved;
-  return !reduceMotion;
+  return reduceMotion ? "off" : "tumble";
 }
 
-// Large pools animate at most this many dice; every die still shows as a text chip, only the 3D
-// tumbling is capped, so a 20-dice pool costs ten composited Views for well under a second.
-export const MAX_ANIMATED_DICE = 10;
+/** The most solid dice a batch draws; the rest of its dice show as number chips only. */
+export const TUMBLE_SOLID_CAP = 10;
 
-/** The dice of a Roll that animate, in roll order, capped at MAX_ANIMATED_DICE. Dropped dice are included; the renderer mutes them. */
-export function animatedDice(roll: Roll): RolledDie[] {
-  return roll.dice.slice(0, MAX_ANIMATED_DICE);
+/** How long one die tumbles, in milliseconds, and the delay between the starts of two dice. */
+export const TUMBLE_MS = 950;
+export const TUMBLE_STAGGER_MS = 45;
+
+/**
+ * The orientation of a tumbling die at `progress` (0 to 1, linear in time). The die turns about `axis`
+ * by `spin` radians, easing out, and reaches `target` exactly at progress 1.
+ */
+export function tumbleQuaternion(target: Quat, axis: Vec3, spin: number, progress: number): Quat {
+  const eased = 1 - Math.pow(1 - progress, 3);
+  return quatMultiply(target, quatFromAxisAngle(axis, spin * (1 - eased)));
+}
+
+/** The lift of a tumbling die: 0 at rest, 1 at its highest point, back to 0 when it lands. */
+export function tumblePop(progress: number): number {
+  return Math.sin(Math.PI * Math.min(1, progress * 1.15));
 }

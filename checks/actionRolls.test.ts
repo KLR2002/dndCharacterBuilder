@@ -4,9 +4,11 @@ import { ALL_BOOKS } from "../src/constants/books.ts";
 import { makeChar } from "./testUtils.ts";
 import { evaluateCharacter } from "../src/rules/characterEvaluation.ts";
 import { getTacticalActionLedger } from "../src/rules/tacticalActions.ts";
-import { damagePoolOf, pressRollBadge, rollActionAttack, rollActionDamage } from "../src/rules/actionRolls.ts";
+import { damagePoolOf, pressRollBadge, rollActionAttack, rollActionDamage, type RollAndPublish } from "../src/rules/actionRolls.ts";
 import type { RollLogEntryInput } from "../src/rules/rollLog.ts";
 import { appRandom, currentRandom, __setRandomSourceForTests, rollD20, type RandomSource } from "../src/rules/dice.ts";
+import { replayRandom } from "../src/rules/throwRoll.ts";
+import { planLevelUp, rollPlanHitPoints, type LevelUpPlan } from "../src/rules/levelUpFlow.ts";
 
 /** A random source with fixed faces, cycling: each die lands on the next queued face. */
 function fixedFaces(faces: number[]): RandomSource {
@@ -15,6 +17,47 @@ function fixedFaces(faces: number[]): RandomSource {
     const face = faces[index++ % faces.length];
     return Math.min(sides, Math.max(1, face));
   };
+}
+
+/**
+ * The roll seam with the Roll Log provider's contract and no throw: it runs `make` once with `random`
+ * (the seam's own source) and records every input it publishes.
+ */
+function recordingSeam(entries: RollLogEntryInput[], random: RandomSource = fixedFaces([1])): RollAndPublish {
+  return (make) => {
+    const made = make(random);
+    entries.push(...(Array.isArray(made) ? made : [made]));
+    return made;
+  };
+}
+
+/** A random source that shows 1 on every die: a Throw's recording pass learns the dice from it. */
+const recordingRandom: RandomSource = () => 1;
+
+/**
+ * The Throw-mode seam: `make` runs twice, first with `recordingRandom`, then with the settled faces, and
+ * only the second run is published. The settled faces are consumed in order across the seam's runs, as
+ * the dice of successive Rolls are; `fallback` supplies any die past them.
+ */
+function twoPassSeam(entries: RollLogEntryInput[], settled: number[], fallback: RandomSource = fixedFaces([3])): RollAndPublish {
+  const replay = replayRandom(settled, fallback);
+  return (make) => {
+    make(recordingRandom);
+    const made = make(replay);
+    entries.push(...(Array.isArray(made) ? made : [made]));
+    return made;
+  };
+}
+
+const DAGGER_ORIGIN = { source: "Dagger attack", damageSource: "Dagger damage", characterName: "Elowen" };
+
+/** The Dagger row of the spellcaster's ledger: attack bonus +4, damage 1d4 + 2. */
+function daggerAttack() {
+  const char = spellcasterWithSpentResources();
+  const evaluated = evaluateCharacter(char, { activeBooks: ALL_BOOKS });
+  const attack = getTacticalActionLedger(char, evaluated, { activeBooks: ALL_BOOKS }).weaponAttacks.find((a) => a.name === "Dagger");
+  assert.ok(attack);
+  return attack;
 }
 
 /** A spellcaster with spell slots left, a limited-use feature with uses left and ammunition in the pack. */
@@ -56,9 +99,7 @@ test("rolling an attack, its damage and a spell attack through the badge path le
 
   // The publish seam the Roll Log provider hands the badge: entries only, no Character write.
   const entries: RollLogEntryInput[] = [];
-  const publish = (input: RollLogEntryInput) => {
-    entries.push(input);
-  };
+  const publish = recordingSeam(entries);
 
   const fixed = fixedFaces([15, 4]);
   const roll = pressRollBadge(
@@ -123,9 +164,7 @@ test("a natural 20 offers critical damage with doubled dice and the modifier onc
   assert.ok(attack);
 
   const entries: RollLogEntryInput[] = [];
-  const publish = (input: RollLogEntryInput) => {
-    entries.push(input);
-  };
+  const publish = recordingSeam(entries);
   const fixed = fixedFaces([20, 3, 5, 2]);
   rollActionAttack(attack, { source: "Dagger attack", damageSource: "Dagger damage", characterName: char.name }, "advantage", publish, fixed);
   assert.equal(entries.length, 1);
@@ -147,11 +186,82 @@ test("a natural 20 offers critical damage with doubled dice and the modifier onc
   assert.deepEqual(JSON.parse(JSON.stringify(char)), JSON.parse(JSON.stringify(spellcasterWithSpentResources())));
 });
 
+test("the seam's own random decides the attack: a settled natural 20 offers critical damage, a 7 offers damage", () => {
+  const char = spellcasterWithSpentResources();
+  const evaluated = evaluateCharacter(char, { activeBooks: ALL_BOOKS });
+  const ledger = getTacticalActionLedger(char, evaluated, { activeBooks: ALL_BOOKS });
+  const attack = ledger.weaponAttacks.find((a) => a.name === "Dagger");
+  assert.ok(attack);
+  const origin = { source: "Dagger attack", damageSource: "Dagger damage", characterName: char.name };
+
+  const onTwenty: RollLogEntryInput[] = [];
+  const twentyRoll = rollActionAttack(attack, origin, "none", recordingSeam(onTwenty, replayRandom([20], fixedFaces([3]))));
+  assert.equal(twentyRoll.dice[0].face, 20);
+  assert.equal(onTwenty.length, 1);
+  assert.equal(onTwenty[0].followUp?.label, "Roll critical damage");
+
+  const onSeven: RollLogEntryInput[] = [];
+  const sevenRoll = rollActionAttack(attack, origin, "none", recordingSeam(onSeven, replayRandom([7], fixedFaces([3]))));
+  assert.equal(sevenRoll.dice[0].face, 7);
+  assert.equal(onSeven[0].followUp?.label, "Roll damage");
+
+  // The follow-up runs through the seam again, and the critical flag reaches the damage entry.
+  const followed: RollLogEntryInput[] = [];
+  rollActionAttack(attack, origin, "none", recordingSeam(followed, replayRandom([20], fixedFaces([3]))));
+  followed[0].followUp!.onPress();
+  assert.equal(followed.length, 2);
+  assert.equal(followed[1].critical, true);
+  assert.equal(followed[1].roll.dice.length, 2);
+});
+
+test("through a two-pass seam a replayed natural 20 is the Roll returned and published, and its follow-up rolls doubled dice", () => {
+  const entries: RollLogEntryInput[] = [];
+  const roll = rollActionAttack(daggerAttack(), DAGGER_ORIGIN, "none", twoPassSeam(entries, [20, 4, 2]));
+  assert.deepEqual(roll.dice.map((die) => die.face), [20]);
+  assert.equal(roll.total, 24);
+  assert.equal(entries.length, 1);
+  assert.deepEqual(entries[0].roll, roll);
+  assert.equal(entries[0].followUp?.label, "Roll critical damage");
+
+  entries[0].followUp!.onPress();
+  assert.equal(entries.length, 2);
+  assert.equal(entries[1].critical, true);
+  assert.deepEqual(entries[1].roll.dice.map((die) => die.sides), [4, 4]);
+  assert.deepEqual(entries[1].roll.dice.map((die) => die.face), [4, 2]);
+  assert.equal(entries[1].roll.modifier, 2);
+});
+
+test("through a two-pass seam a replayed 7 offers the damage follow-up", () => {
+  const entries: RollLogEntryInput[] = [];
+  const roll = rollActionAttack(daggerAttack(), DAGGER_ORIGIN, "none", twoPassSeam(entries, [7]));
+  assert.equal(roll.dice[0].face, 7);
+  assert.equal(entries.length, 1);
+  assert.equal(entries[0].followUp?.label, "Roll damage");
+});
+
+test("a Hit Points roll through a two-pass seam commits the face of the published Roll, the replay's", () => {
+  const char = makeChar({
+    baseAbilityScores: { str: 15, dex: 14, con: 14, int: 10, wis: 10, cha: 10 },
+    classes: [{ className: "Fighter", source: "PHB", level: 2 }],
+  });
+  const planned = planLevelUp(char, { className: "Fighter", hitPoints: { mode: "average" } });
+  if (!planned.ok) assert.fail(planned.reason);
+  const made: { plan?: LevelUpPlan } = {};
+  const entries: RollLogEntryInput[] = [];
+  twoPassSeam(entries, [9])((random) => {
+    const result = rollPlanHitPoints(planned.plan, char, random);
+    made.plan = result.plan;
+    return { roll: result.roll, source: "Hit Points", characterName: char.name };
+  });
+  assert.equal(entries.length, 1);
+  assert.equal(entries[0].roll.dice[0].face, 9);
+  assert.equal(made.plan?.hitPoints.roll, 9);
+  assert.equal(made.plan?.hitPoints.amount, 11, "face 9 + Con 2");
+});
+
 test("a damage-only roll (the damage badge's tap) publishes just the damage", () => {
   const entries: RollLogEntryInput[] = [];
-  const publish = (input: RollLogEntryInput) => {
-    entries.push(input);
-  };
+  const publish = recordingSeam(entries);
   const roll = rollActionDamage("1d8 + 3", { source: "Longsword damage", characterName: "Kara" }, publish, false, fixedFaces([6]));
   assert.equal(entries.length, 1);
   assert.equal(entries[0].source, "Longsword damage");

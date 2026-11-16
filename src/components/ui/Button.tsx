@@ -95,5 +95,6 @@ const styles = StyleSheet.create({
   },
   text: {
     fontWeight: "600",
+    flexShrink: 1,
   },
 });

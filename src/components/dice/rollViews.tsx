@@ -1,42 +1,44 @@
 import { Ionicons } from "@expo/vector-icons";
-import React, { Suspense } from "react";
+import React from "react";
 import { StyleSheet, Text, View } from "react-native";
+import { ACCENT_PALETTES } from "../../constants/theme";
 import { useAppTheme } from "../../context/ThemeContext";
 import { formatModifier } from "../../rules/abilities.ts";
-import type { Roll } from "../../rules/dice.ts";
+import { rollAccentId } from "../../rules/rollColors.ts";
 import { entryHeading, formatRollTime, rollMarkers, type RollLogEntry } from "../../rules/rollLog.ts";
-import { useDiceAnimationEnabled } from "./useDiceAnimationEnabled";
-
-// The 2.5D renderer (Reanimated + SVG) lives in its own chunk: React.lazy only fetches it when this
-// slot actually renders it, so while 3D dice are off nothing of it is loaded.
-const AnimatedDiceRoll = React.lazy(() => import("./AnimatedDiceRoll").then((module) => ({ default: module.AnimatedDiceRoll })));
 
 /**
- * The one place an animated dice renderer mounts for a Roll. It receives the completed Roll, faces
- * already decided, so the total never waits for it. Renders nothing while the 3D dice setting is off
- * or the system asks for reduced motion; then the faces show as the chips below, at once.
+ * The accent a Roll takes inside its batch: a Roll of a batch of two or more gets the batch's accent
+ * for its position; a single Roll has none and keeps the selected accent.
  */
-export function DiceRenderer({ roll }: { roll: Roll }) {
-  const enabled = useDiceAnimationEnabled();
-  if (!enabled) return null;
-  return (
-    <Suspense fallback={null}>
-      <AnimatedDiceRoll roll={roll} />
-    </Suspense>
-  );
+export function batchAccentId(entry: Pick<RollLogEntry, "batchSize" | "batchIndex">, selectedAccentId: string): string | undefined {
+  return entry.batchSize > 1 ? rollAccentId(selectedAccentId, entry.batchIndex) : undefined;
 }
 
-/** One die's face as a small chip; a dropped die is struck through and muted. */
-export function DieFaceChip({ sides, face, dropped }: { sides: number; face: number; dropped?: boolean }) {
+/** One die's face as a small chip; a dropped die is struck through and muted, a subtracted die shows a minus sign. */
+export function DieFaceChip({
+  sides,
+  face,
+  dropped,
+  subtracted,
+  accentId,
+}: {
+  sides: number;
+  face: number;
+  dropped?: boolean;
+  subtracted?: boolean;
+  accentId?: string;
+}) {
   const { theme } = useAppTheme();
+  const palette = accentId ? ACCENT_PALETTES[accentId] : undefined;
   return (
     <View
       testID="die-chip"
       style={[
         styles.dieChip,
         {
-          borderColor: dropped ? theme.border : theme.accentBorder,
-          backgroundColor: dropped ? "transparent" : theme.accentGlow,
+          borderColor: dropped ? theme.border : (palette?.border ?? theme.accentBorder),
+          backgroundColor: dropped ? "transparent" : (palette?.glow ?? theme.accentGlow),
         },
       ]}>
       <Text
@@ -47,7 +49,7 @@ export function DieFaceChip({ sides, face, dropped }: { sides: number; face: num
             textDecorationLine: dropped ? "line-through" : "none",
           },
         ]}>
-        {face}
+        {subtracted ? `−${face}` : face}
       </Text>
       <Text style={[styles.dieSides, { color: theme.textMuted }]}>d{sides}</Text>
     </View>
@@ -60,8 +62,8 @@ const MARKER_META: Record<string, { icon: keyof typeof Ionicons.glyphMap; label:
   critical: { icon: "flash", label: "Critical", accent: true },
 };
 
-/** The faces, modifier, large total and markers of one Roll. */
-export function RollResultView({ entry }: { entry: RollLogEntry }) {
+/** The faces, modifier, large total and markers of one Roll; `accentId` tints its die chips. */
+export function RollResultView({ entry, accentId }: { entry: RollLogEntry; accentId?: string }) {
   const { theme } = useAppTheme();
   const { roll } = entry;
   return (
@@ -69,11 +71,9 @@ export function RollResultView({ entry }: { entry: RollLogEntry }) {
       <Text testID="result-source" style={[styles.resultSource, { color: theme.textSecondary }]} numberOfLines={1}>
         {entryHeading(entry)}
       </Text>
-      {/* The dice renderer's slot: it mounts here with the completed Roll. */}
-      <DiceRenderer roll={roll} />
       <View style={styles.facesRow}>
         {roll.dice.map((die, index) => (
-          <DieFaceChip key={index} sides={die.sides} face={die.face} dropped={die.dropped} />
+          <DieFaceChip key={index} sides={die.sides} face={die.face} dropped={die.dropped} subtracted={die.subtracted} accentId={accentId} />
         ))}
         {roll.modifier !== 0 ? (
           <Text testID="result-modifier" style={[styles.modifierText, { color: theme.textSecondary }]}>
@@ -98,12 +98,13 @@ export function RollResultView({ entry }: { entry: RollLogEntry }) {
   );
 }
 
-/** One Roll Log row: character and source, faces, total, markers, time. */
-export function RollLogRow({ entry }: { entry: RollLogEntry }) {
+/** One Roll Log row: character and source, faces, total, markers, time; `accentId` puts a dot before the heading. */
+export function RollLogRow({ entry, accentId }: { entry: RollLogEntry; accentId?: string }) {
   const { theme } = useAppTheme();
   return (
     <View style={[styles.logRow, { borderBottomColor: theme.border }]}>
       <View style={styles.logHead}>
+        {accentId ? <View testID="log-entry-dot" style={[styles.logDot, { backgroundColor: ACCENT_PALETTES[accentId].primary }]} /> : null}
         <Text testID="log-entry-heading" style={[styles.logSource, { color: theme.text }]} numberOfLines={1}>
           {entryHeading(entry)}
         </Text>
@@ -111,7 +112,7 @@ export function RollLogRow({ entry }: { entry: RollLogEntry }) {
       </View>
       <View style={styles.logFaces}>
         {entry.roll.dice.map((die, index) => (
-          <DieFaceChip key={index} sides={die.sides} face={die.face} dropped={die.dropped} />
+          <DieFaceChip key={index} sides={die.sides} face={die.face} dropped={die.dropped} subtracted={die.subtracted} />
         ))}
         {entry.roll.modifier !== 0 ? (
           <Text style={[styles.logMod, { color: theme.textSecondary }]}>{formatModifier(entry.roll.modifier)}</Text>
@@ -129,14 +130,14 @@ export function RollLogRow({ entry }: { entry: RollLogEntry }) {
 
 /** The session Roll Log, newest first. */
 export function RollLogList({ entries }: { entries: RollLogEntry[] }) {
-  const { theme } = useAppTheme();
+  const { theme, accentId } = useAppTheme();
   if (entries.length === 0) {
     return <Text style={[styles.logEmpty, { color: theme.textMuted }]}>No rolls yet.</Text>;
   }
   return (
     <View>
       {entries.map((entry) => (
-        <RollLogRow key={entry.id} entry={entry} />
+        <RollLogRow key={entry.id} entry={entry} accentId={batchAccentId(entry, accentId)} />
       ))}
     </View>
   );
@@ -206,6 +207,11 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
+  },
+  logDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
   },
   logSource: {
     flex: 1,

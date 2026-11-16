@@ -4,13 +4,15 @@ import { useMemo, useState } from "react";
 import {
   ScrollView,
   StyleSheet,
+  Pressable,
   Text,
   TouchableOpacity,
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useDiceAnimationEnabled } from "../components/dice/useDiceAnimationEnabled";
+import { useDiceAnimation } from "../components/dice/useDiceAnimation";
 import { Badge } from "../components/ui/Badge";
+import type { DiceAnimation } from "../rules/diceAnimation";
 import { Button } from "../components/ui/Button";
 import { Card } from "../components/ui/Card";
 import { Modal } from "../components/ui/Modal";
@@ -27,17 +29,23 @@ import { ACCENT_PALETTES } from "../constants/theme";
 import { useCharacters } from "../context/CharacterContext";
 import { useAppTheme } from "../context/ThemeContext";
 
+const DICE_ANIMATION_MODES: { mode: DiceAnimation; label: string }[] = [
+  { mode: "off", label: "Off" },
+  { mode: "tumble", label: "Tumble" },
+  { mode: "throw", label: "Throw" },
+];
+
 export default function OptionsScreen() {
   const router = useRouter();
   const { theme, accentId, setAccentId } = useAppTheme();
-  // The switch shows the effective state: with no saved value it follows the system reduced-motion preference.
-  const diceAnimationEnabled = useDiceAnimationEnabled();
+  // The choice shows the effective mode: with no saved value it follows the system reduced-motion preference.
+  const diceAnimation = useDiceAnimation();
   const {
     activeBooks,
     setActiveBooks,
     fullHealOnLevelUp,
     setFullHealOnLevelUp,
-    setDice3dEnabled,
+    setDiceAnimation,
     isIntegrated,
     integratedAt,
     catalogStale,
@@ -318,37 +326,40 @@ export default function OptionsScreen() {
             </Text>
           </View>
           <Card style={{ padding: 14 }}>
-            <TouchableOpacity
-              testID="dice-3d-switch"
-              onPress={() => setDice3dEnabled(!diceAnimationEnabled)}
-              accessibilityRole="checkbox"
-              accessibilityLabel="3D dice"
-              accessibilityState={{ checked: diceAnimationEnabled }}
-              style={[
-                styles.bookRow,
-                {
-                  backgroundColor: diceAnimationEnabled ? theme.surface : "transparent",
-                  borderColor: diceAnimationEnabled ? theme.accentHover : theme.border,
-                },
-              ]}
+            <View
+              accessibilityLabel="Dice animation"
+              style={[styles.diceBar, { backgroundColor: theme.surfaceHighlight, borderColor: theme.border }]}
             >
-              <Text
-                style={{
-                  flex: 1,
-                  minWidth: 0,
-                  color: theme.text,
-                  fontSize: 14,
-                  fontWeight: "600",
-                }}
-              >
-                3D dice
-              </Text>
-              <Ionicons
-                name={diceAnimationEnabled ? "checkbox" : "square-outline"}
-                size={22}
-                color={diceAnimationEnabled ? theme.accentHover : theme.textMuted}
-              />
-            </TouchableOpacity>
+              {DICE_ANIMATION_MODES.map((option) => {
+                const selected = diceAnimation === option.mode;
+                return (
+                  <Pressable
+                    key={option.mode}
+                    testID={`dice-animation-${option.mode}`}
+                    accessibilityRole="button"
+                    accessibilityState={{ selected }}
+                    onPress={() => setDiceAnimation(option.mode)}
+                    style={[
+                      styles.diceSegment,
+                      {
+                        backgroundColor: selected ? theme.accentGlow : "transparent",
+                        borderColor: selected ? theme.accentBorder : "transparent",
+                      },
+                    ]}
+                  >
+                    <Text
+                      style={{
+                        color: selected ? theme.accentHover : theme.textSecondary,
+                        fontSize: 13,
+                        fontWeight: selected ? "700" : "500",
+                      }}
+                    >
+                      {option.label}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
           </Card>
         </View>
 
@@ -1021,6 +1032,21 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     borderWidth: 1,
     gap: 8,
+  },
+  diceBar: {
+    flexDirection: "row",
+    borderRadius: 8,
+    borderWidth: 1,
+    padding: 3,
+    gap: 2,
+  },
+  diceSegment: {
+    flex: 1,
+    minHeight: 48,
+    borderRadius: 6,
+    borderWidth: 1,
+    alignItems: "center",
+    justifyContent: "center",
   },
   categoryCard: {
     borderRadius: 8,

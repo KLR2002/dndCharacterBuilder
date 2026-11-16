@@ -52,6 +52,7 @@ import { buildScreens, buildSeed, ACTIONS_ID, CHARACTER_ID, DRAFT_ID, DRUID_ID, 
 import { applyWideOverride } from "./lib/scenario-override.mjs";
 import { playStep, playSteps } from "./lib/web-steps.mjs";
 import { ACCENT_PALETTES, BASE_DARK_THEME } from "../src/constants/theme.ts";
+import { rollAccentId } from "../src/rules/rollColors.ts";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const BASE = process.env.BASE ?? "http://localhost:8099";
@@ -1231,13 +1232,13 @@ function findDiceButtonVsFlowFooter() {
   };
 }
 
-// The floating dice button, the tray's pool roll and the session Roll Log at one width: the button opens
-// the tray on the sheet; the tray builds a pool (die buttons add, chips remove, the modifier steps, the
-// Disadvantage / Normal / Advantage choice only for a lone d20, the primary action labelled with the pool
-// and disabled while the pool is empty), rolls it and the result card shows above the button with the
-// right total; a Roll seeded through the publishing seam reads "Kara · Longsword attack" and sits above
-// the "Dice tray" entry, newest first, when the card is tapped; a reload empties the log; on phones the
-// button sits above the flow's bottom primary-action bar, never covering it.
+// The floating dice button, the tray's Roll Expression field and the session Roll Log at one width: the
+// button opens the tray on the sheet; the field takes typed expressions (die buttons append, the modifier
+// steps, the Disadvantage / Normal / Advantage choice only for a lone d20, Roll labelled with the text and
+// disabled while the text does not parse, with the parser's message under the field); rolls show above the
+// button with the right totals and headings; a Roll seeded through the publishing seam reads
+// "Kara · Longsword attack" and sits above the tray's Rolls, newest first, when the card is tapped; a reload
+// empties the log; on phones the button sits above the flow's bottom primary-action bar, never covering it.
 async function checkDiceTrayAndLog(ctx, width, meta) {
   const page = await ctx.newPage();
   // The result-card auto-dismiss below is a setTimeout: the clock lets the check fast-forward past the
@@ -1283,64 +1284,54 @@ async function checkDiceTrayAndLog(ctx, width, meta) {
     if (segHeights.log === null || segHeights.log < 47.5) fail(`the "Log" segment target is ${segHeights.log}px tall, under 48dp`);
   }
 
-  // A die's count is capped at 100: tapping one die 100 times disables its add button, and rolling the
-  // capped pool works instead of throwing "Not a dice pool".
-  if (width === SINGLE_RUN_WIDTH) {
-    const addD20 = page.getByLabel("Add d20", { exact: true });
-    for (let i = 0; i < 100; i++) await addD20.click({ timeout: 5000 }).catch(() => fail(`the "Add d20" tap ${i + 1} failed`));
-    const atCap = await page.evaluate(() => {
-      const el = [...document.querySelectorAll('[aria-label="Add d20"]')].find((e) => e.getBoundingClientRect().height > 0);
-      return el ? el.disabled === true || el.getAttribute("aria-disabled") === "true" : null;
-    });
-    if (atCap !== true) fail(`"Add d20" is not disabled at 100 dice (state ${atCap})`);
-    if (!(await page.getByLabel("Remove 100d20", { exact: true }).isVisible().catch(() => false))) fail('the pool chip does not read "100d20" at the cap');
-    await page.getByText("Roll 100d20", { exact: true }).first().click();
-    await page.waitForSelector(cardSel, { state: "visible", timeout: 10000 }).catch(() => fail("rolling the capped 100d20 pool did not show a result card (it threw)"));
+  // The tray's Roll Expression field is the pool: die buttons append to it, the modifier stepper moves its
+  // trailing modifier, and Roll reads "Roll <text>". Rolling empties it; closing without a Roll keeps it.
+  const expression = page.getByLabel("Roll Expression", { exact: true });
+  const fieldValue = () => expression.inputValue();
+  const reopenTray = async () => {
     await page.getByLabel("Dice tray").first().click();
-    await page.waitForSelector(dialogSel, { state: "visible", timeout: 10000 }).catch(() => fail("the tray did not reopen after the capped roll"));
-    await page.getByLabel("Remove 100d20", { exact: true }).click();
+    await page.waitForSelector(dialogSel, { state: "visible", timeout: 10000 }).catch(() => fail("the tray did not reopen"));
+  };
+  const setFaces = (faces) => page.evaluate((f) => (window.__setRandomSource ? window.__setRandomSource(f) : "no hook"), faces);
+  const cardMarkers = () =>
+    page.evaluate(() => {
+      const card = document.querySelector('[data-testid="result-card"]');
+      if (!card) return null;
+      return [...card.querySelectorAll("*")].filter((e) => e.children.length === 0 && /^(Natural 20|Natural 1|Critical)$/.test(e.textContent.trim())).map((e) => e.textContent.trim());
+    });
+  const cardSources = () => page.evaluate(() => [...document.querySelectorAll('[data-testid="result-source"]')].map((e) => e.textContent));
+
+  // The die count is capped at 100 per expression: 100d20 rolls, 101d20 disables Roll and says why.
+  if (width === SINGLE_RUN_WIDTH) {
+    await expression.fill("100d20");
+    await page.getByText("Roll 100d20", { exact: true }).first().click();
+    await page.waitForSelector(cardSel, { state: "visible", timeout: 10000 }).catch(() => fail("rolling 100d20 did not show a result card"));
+    await reopenTray();
+    await expression.fill("101d20");
+    const over = await page.evaluate(buttonDisabled, "Roll 101d20");
+    if (over.disabled !== true) fail(`"Roll 101d20" is not disabled over the 100-die cap (${over.state})`);
+    if (!(await page.getByText("At most 100 dice per expression (this one has 101)", { exact: true }).isVisible().catch(() => false)))
+      fail("no cap message under the field for 101d20");
+    await expression.fill("");
   }
 
-  // The pool builder: the primary action is disabled while the pool is empty, and the d20 mode choice
-  // appears only for a pool of exactly one d20.
+  // The empty field: Roll is disabled with no message, and the Advantage choice is absent.
   const emptyRoll = await page.evaluate(buttonDisabled, "Roll");
-  if (emptyRoll.disabled !== true) fail(`"Roll" is not disabled while the pool is empty (${emptyRoll.state})`);
-  if (!(await assertAbsentFor(async () => (await page.getByText("Advantage", { exact: true }).count()) > 0))) fail('"Advantage" shows for an empty pool');
-  await page.getByLabel("Add d20", { exact: true }).click();
-  await settle(page);
-  if (!(await page.getByText("Advantage", { exact: true }).first().isVisible())) fail('"Advantage" does not show for a lone d20');
-  // The mode segments are 48dp targets too.
-  const modeHeights = await page.evaluate(() =>
-    ["Disadvantage", "Normal", "Advantage"].map((t) => {
-      const el = [...document.querySelectorAll('[role="dialog"] [role="button"], [role="dialog"] button')].find((e) => e.textContent.trim() === t && e.getBoundingClientRect().height > 0);
-      return el ? el.getBoundingClientRect().height : null;
-    }),
-  );
-  for (const [i, h] of modeHeights.entries()) {
-    if (h === null || h < 47.5) fail(`the "${["Disadvantage", "Normal", "Advantage"][i]}" mode segment is ${h}px tall, under 48dp`);
-  }
-  await page.getByLabel("Remove 1d20", { exact: true }).click();
-  await page.getByLabel("Add d6", { exact: true }).click();
-  // The removable pool chip is a 48dp target.
-  const chipHeight = await page.evaluate(() => {
-    const el = [...document.querySelectorAll('[aria-label="Remove 1d6"]')].find((e) => e.getBoundingClientRect().height > 0);
-    return el ? el.getBoundingClientRect().height : null;
-  });
-  if (chipHeight === null || chipHeight < 47.5) fail(`the pool chip "1d6" is ${chipHeight}px tall, under 48dp`);
-  await page.getByLabel("Add d8", { exact: true }).click();
-  for (let i = 0; i < 3; i++) await page.getByLabel("Modifier increase", { exact: true }).click();
-  await settle(page);
-  if (!(await assertAbsentFor(async () => (await page.getByText("Advantage", { exact: true }).count()) > 0))) fail('"Advantage" shows for a pool that is not a lone d20');
-  const rollLabel = "Roll 1d6 + 1d8 + 3";
-  const rollButton = page.getByText(rollLabel, { exact: true }).first();
-  if ((await rollButton.count()) === 0) fail(`the tray's primary action is not labelled "${rollLabel}"`);
-  else {
-    const enabled = await page.evaluate(buttonDisabled, rollLabel);
-    if (enabled.disabled !== false) fail(`"${rollLabel}" is not enabled (${enabled.state})`);
-    await rollButton.click();
-  }
+  if (emptyRoll.disabled !== true) fail(`"Roll" is not disabled while the field is empty (${emptyRoll.state})`);
+  if (!(await assertAbsentFor(async () => (await page.getByText("Advantage", { exact: true }).count()) > 0))) fail('"Advantage" shows for an empty field');
 
-  // The tray rolled the pool and closed; the result card shows the Roll above the floating button.
+  // Typing 2d6+3 and tapping d8 appends the die; the Roll button reads the text and rolls it.
+  await expression.fill("2d6+3");
+  await page.getByLabel("Add d8", { exact: true }).click();
+  await settle(page);
+  if ((await fieldValue()) !== "2d6+3+d8") fail(`after typing 2d6+3 and tapping d8 the field reads "${await fieldValue()}", expected "2d6+3+d8"`);
+  if (!(await assertAbsentFor(async () => (await page.getByText("Advantage", { exact: true }).count()) > 0))) fail('"Advantage" shows for 2d6+3+d8');
+  const rollLabel = "Roll 2d6+3+d8";
+  const enabled = await page.evaluate(buttonDisabled, rollLabel);
+  if (enabled.disabled !== false) fail(`"${rollLabel}" is not enabled (${enabled.state})`);
+  await page.getByText(rollLabel, { exact: true }).first().click();
+
+  // The tray rolled the text and closed; the result card shows the Roll, headed by its own text.
   await page.waitForSelector(cardSel, { state: "visible", timeout: 10000 }).catch(() => fail("no result card after the tray roll"));
   const roll = await page.evaluate(() => {
     const card = document.querySelector('[data-testid="result-card"]');
@@ -1353,48 +1344,104 @@ async function checkDiceTrayAndLog(ctx, width, meta) {
   });
   if (!roll) fail("the result card disappeared before it could be read");
   else {
-    if (roll.source !== "Dice tray") fail(`the result card's source is "${roll.source}", expected "Dice tray"`);
+    if (roll.source !== "2d6+3+d8") fail(`the result card's source is "${roll.source}", expected "2d6+3+d8"`);
     const faces = roll.chips.map((chip) => Number(/(\d+)d\d+/.exec(chip)?.[1] ?? "NaN"));
     const parsedModifier = Number(/([+-]\d+)/.exec(roll.modifier)?.[1] ?? "NaN");
     const parsedTotal = Number(roll.total);
-    if (roll.chips.length !== 2 || faces.some(Number.isNaN) || Number.isNaN(parsedModifier) || Number.isNaN(parsedTotal))
-      fail(`the result card does not show two die chips, a modifier and a total: ${JSON.stringify(roll)}`);
+    if (roll.chips.length !== 3 || faces.some(Number.isNaN) || Number.isNaN(parsedModifier) || Number.isNaN(parsedTotal))
+      fail(`the result card does not show three die chips, a modifier and a total: ${JSON.stringify(roll)}`);
     else if (parsedTotal !== faces.reduce((sum, face) => sum + face, 0) + parsedModifier)
       fail(`the result total ${parsedTotal} is not the faces ${faces.join("+")} ${roll.modifier}`);
   }
 
-  // A tray pool of 2d20 is not a d20 test: even with a kept 20 it shows no "Natural 20" marker; a
-  // lone-d20 tray roll does.
-  const setFaces = (faces) => page.evaluate((f) => (window.__setRandomSource ? window.__setRandomSource(f) : "no hook"), faces);
-  const cardMarkers = () =>
-    page.evaluate(() => {
-      const card = document.querySelector('[data-testid="result-card"]');
-      if (!card) return null;
-      return [...card.querySelectorAll("*")].filter((e) => e.children.length === 0 && /^(Natural 20|Natural 1|Critical)$/.test(e.textContent.trim())).map((e) => e.textContent.trim());
-    });
-  await page.getByLabel("Dice tray").first().click();
-  await page.waitForSelector(dialogSel, { state: "visible", timeout: 10000 }).catch(() => fail("the tray did not reopen for the 2d20 check"));
-  await page.getByLabel("Remove 1d6", { exact: true }).click();
-  await page.getByLabel("Remove 1d8", { exact: true }).click();
-  for (let i = 0; i < 3; i++) await page.getByLabel("Modifier decrease", { exact: true }).click();
-  await page.getByLabel("Add d20", { exact: true }).click();
-  await page.getByLabel("Add d20", { exact: true }).click();
+  // The Roll emptied the field.
+  await reopenTray();
+  if ((await fieldValue()) !== "") fail(`reopening the tray after a Roll reads "${await fieldValue()}", expected an empty field`);
+  // Closing without a Roll keeps the text.
+  await expression.fill("3d4");
+  await page.keyboard.press("Escape");
+  await page.waitForSelector(dialogSel, { state: "hidden", timeout: 10000 }).catch(() => fail("Escape did not close the tray"));
+  await reopenTray();
+  if ((await fieldValue()) !== "3d4") fail(`reopening the tray without a Roll reads "${await fieldValue()}", expected the kept "3d4"`);
+
+  // A leading minus is not a Roll: Roll is disabled and the parser's message shows under the field.
+  await expression.fill("-d6");
+  const bad = await page.evaluate(buttonDisabled, "Roll -d6");
+  if (bad.disabled !== true) fail(`"Roll -d6" is not disabled (${bad.state})`);
+  if (!(await page.getByText("A roll cannot start with + or -", { exact: true }).isVisible().catch(() => false)))
+    fail("no parse message under the field for -d6");
+
+  // The Disadvantage / Normal / Advantage choice shows for a lone d20 with a modifier, not for 2d6.
+  await expression.fill("d20+3");
+  if (!(await page.getByText("Advantage", { exact: true }).first().isVisible().catch(() => false))) fail('"Advantage" does not show for d20+3');
+  // The mode segments are 48dp targets too.
+  const modeHeights = await page.evaluate(() =>
+    ["Disadvantage", "Normal", "Advantage"].map((t) => {
+      const el = [...document.querySelectorAll('[role="dialog"] [role="button"], [role="dialog"] button')].find((e) => e.textContent.trim() === t && e.getBoundingClientRect().height > 0);
+      return el ? el.getBoundingClientRect().height : null;
+    }),
+  );
+  for (const [i, h] of modeHeights.entries()) {
+    if (h === null || h < 47.5) fail(`the "${["Disadvantage", "Normal", "Advantage"][i]}" mode segment is ${h}px tall, under 48dp`);
+  }
+  await expression.fill("2d6");
+  if (!(await assertAbsentFor(async () => (await page.getByText("Advantage", { exact: true }).count()) > 0))) fail('"Advantage" shows for 2d6');
+  // The modifier stepper moves the text's trailing modifier.
+  await page.getByLabel("Modifier increase", { exact: true }).click();
+  if ((await fieldValue()) !== "2d6+1") fail(`the modifier stepper reads "${await fieldValue()}" after one increase, expected "2d6+1"`);
+
+  // A long expression: the Roll button's title shows at most 28 characters of it and an ellipsis, so the footer stays short.
+  await expression.fill(Array.from({ length: 40 }, () => "d6").join("+"));
+  const longRoll = await page.evaluate(() => {
+    const el = [...document.querySelectorAll("*")].find((e) => e.children.length === 0 && e.textContent.startsWith("Roll d6+d6"));
+    const target = el?.closest("[tabindex]");
+    return target ? { label: el.textContent, height: target.getBoundingClientRect().height } : null;
+  });
+  if (!longRoll) fail("no Roll button for the 40-die expression");
+  else {
+    if (longRoll.label.length > "Roll ".length + 28 + 1) fail(`the Roll button title is ${longRoll.label.length} characters for a long expression, expected at most 34`);
+    if (longRoll.height >= 120) fail(`the Roll button for a long expression is ${Math.round(longRoll.height)}px tall, expected under 120px`);
+  }
+
+  // Two Rolls from one expression: two result blocks, each headed by its own text, and each a d20 test.
+  await expression.fill("d20,d20");
   await setFaces([20, 7]);
-  await page.getByText("Roll 2d20", { exact: true }).first().click();
-  await page.waitForSelector(cardSel, { state: "visible", timeout: 10000 }).catch(() => fail("no result card after the 2d20 tray roll"));
-  let markers = await cardMarkers();
-  if (markers === null) fail("the 2d20 card disappeared before its markers could be read");
-  else if (markers.length !== 0) fail(`a 2d20 tray pool shows the markers ${JSON.stringify(markers)}, expected none (not a d20 test)`);
-  await page.getByLabel("Dice tray").first().click();
-  await page.waitForSelector(dialogSel, { state: "visible", timeout: 10000 }).catch(() => fail("the tray did not reopen for the lone-d20 check"));
-  await page.getByLabel("Remove 2d20", { exact: true }).click();
-  await page.getByLabel("Add d20", { exact: true }).click();
-  await setFaces([20]);
-  await page.getByText("Roll 1d20", { exact: true }).first().click();
-  await page.waitForSelector(cardSel, { state: "visible", timeout: 10000 }).catch(() => fail("no result card after the lone-d20 tray roll"));
-  markers = await cardMarkers();
-  if (markers === null) fail("the lone-d20 card disappeared before its markers could be read");
-  else if (JSON.stringify(markers) !== JSON.stringify(["Natural 20"])) fail(`a lone-d20 tray roll shows ${JSON.stringify(markers)}, expected ["Natural 20"]`);
+  await page.getByText("Roll d20,d20", { exact: true }).first().click();
+  await page.waitForSelector(cardSel, { state: "visible", timeout: 10000 }).catch(() => fail("no result card after the d20,d20 roll"));
+  await page
+    .waitForFunction(() => document.querySelectorAll('[data-testid="result-block"]').length === 2, null, { timeout: 10000, polling: 100 })
+    .catch(() => fail("the d20,d20 result card does not show two Roll blocks"));
+  const sourcesTwo = await cardSources();
+  if (JSON.stringify(sourcesTwo) !== JSON.stringify(["d20", "d20"])) fail(`the d20,d20 blocks are headed ${JSON.stringify(sourcesTwo)}, expected ["d20","d20"]`);
+  const twoMarkers = await cardMarkers();
+  if (JSON.stringify(twoMarkers) !== JSON.stringify(["Natural 20"])) fail(`the d20,d20 card shows ${JSON.stringify(twoMarkers)}, expected ["Natural 20"] for the first Roll only`);
+  await setFaces(null);
+
+  // The lone d20 with advantage: the Advantage choice rewrites the text to a(d20,d20)+3 and rolls it.
+  await reopenTray();
+  await expression.fill("d20+3");
+  await page.getByText("Advantage", { exact: true }).first().click();
+  if ((await fieldValue()) !== "a(d20,d20)+3") fail(`choosing Advantage reads "${await fieldValue()}", expected "a(d20,d20)+3"`);
+  await setFaces([20, 3]);
+  await page.getByText("Roll a(d20,d20)+3", { exact: true }).first().click();
+  await page.waitForSelector(cardSel, { state: "visible", timeout: 10000 }).catch(() => fail("no result card after the advantage roll"));
+  const advSources = await cardSources();
+  if (JSON.stringify(advSources) !== JSON.stringify(["a(d20,d20)+3"])) fail(`the advantage card is headed ${JSON.stringify(advSources)}, expected ["a(d20,d20)+3"]`);
+  const advMarkers = await cardMarkers();
+  if (JSON.stringify(advMarkers) !== JSON.stringify(["Natural 20"])) fail(`the advantage roll shows ${JSON.stringify(advMarkers)}, expected ["Natural 20"]`);
+  await setFaces(null);
+
+  // A subtracted die shows a minus sign before its face: d20-d4 has a chip "−3d4" and no other minus.
+  await reopenTray();
+  await expression.fill("d20-d4");
+  await setFaces([15, 3]);
+  await page.getByText("Roll d20-d4", { exact: true }).first().click();
+  await page.waitForSelector(cardSel, { state: "visible", timeout: 10000 }).catch(() => fail("no result card after the d20-d4 roll"));
+  const subtractedChips = await page.evaluate(() =>
+    [...document.querySelectorAll('[data-testid="result-card"] [data-testid="die-chip"]')].map((chip) => chip.textContent ?? ""),
+  );
+  const minusChips = subtractedChips.filter((text) => text.includes("−"));
+  if (minusChips.length !== 1 || !minusChips[0].includes("d4")) fail(`the d20-d4 chips are ${JSON.stringify(subtractedChips)}, expected one minus sign on the d4 chip`);
   await setFaces(null);
 
   // Seed a "Kara · Longsword attack" Roll through the publishing seam (no screen triggers it yet): the
@@ -1461,9 +1508,11 @@ async function checkDiceTrayAndLog(ctx, width, meta) {
     await page.click('[data-testid="result-card-body"]');
     await page.waitForSelector(dialogSel, { state: "visible", timeout: 10000 }).catch(() => fail("tapping the result card did not open the tray"));
     const headings = await page.evaluate(() => [...document.querySelectorAll('[data-testid="log-entry-heading"]')].map((el) => el.textContent));
-    if (headings.length < 2) fail(`the Roll Log shows ${headings.length} entries, expected 2: ${JSON.stringify(headings)}`);
-    else if (headings[0] !== "Kara · Longsword attack" || headings[1] !== "Dice tray")
-      fail(`the Roll Log is not newest first with character and source: ${JSON.stringify(headings)}`);
+    // Newest first, one entry per Roll (a batch in expression order), each headed by its own text.
+    // The 100d20 roll above happens only at the narrowest width of the run.
+    const expectedHeadings = ["Kara · Longsword attack", "d20-d4", "a(d20,d20)+3", "d20", "d20", "2d6+3+d8", ...(width === SINGLE_RUN_WIDTH ? ["100d20"] : [])];
+    if (JSON.stringify(headings) !== JSON.stringify(expectedHeadings))
+      fail(`the Roll Log is not newest first, one entry per Roll: ${JSON.stringify(headings)}, expected ${JSON.stringify(expectedHeadings)}`);
     await maybeShot(page, shot("log"), meta);
     await page.keyboard.press("Escape");
     await page.waitForSelector(dialogSel, { state: "hidden", timeout: 10000 }).catch(() => fail("Escape did not close the tray"));
@@ -1599,9 +1648,72 @@ function hexToRgbString(hex) {
   return `rgb(${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255})`;
 }
 
-// Starts an in-page sampler that records the first 3D die's computed pose on every animation frame.
-// Run before the roll so the samples cover the tumble itself; the sampler runs until 3s after the die
-// first appeared (at most 15s) — the die mounts a beat after the card, once its lazy chunk loads.
+// Whether a die's fill ("rgb(r,g,b)") is the accent hex scaled down by one shade factor, as the solid dice
+// are lit: the red channel fixes the factor, and the other two channels must follow it.
+function isAccentShade(fill, hex) {
+  const m = /^rgb\((\d+),(\d+),(\d+)\)$/.exec(fill ?? "");
+  if (!m) return false;
+  const n = Number.parseInt(hex.slice(1), 16);
+  const base = [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+  const shade = Number(m[1]) / base[0];
+  if (shade < 0.25 || shade > 1.01) return false;
+  return [1, 2].every((i) => Math.abs(Number(m[i + 1]) - shade * base[i]) <= 2);
+}
+
+// The canvases the dice are drawn on: the Tumble row's (in the result card) and the Throw layer's.
+const TUMBLE_CANVAS = '[data-testid="dice-solids"] canvas';
+const THROW_CANVAS = '[data-testid="throw-layer"] canvas';
+
+// Runs in the page: the opaque canvas pixels in a 20px disc at the centre of a die's hidden label element
+// (its fills, numerals and pips). Its die lies on the canvas at that centre, once it has stopped.
+function discPixelsOf({ testId, canvasSel }) {
+  const label = document.querySelector(`[data-testid="${testId}"]`);
+  const canvas = document.querySelector(canvasSel);
+  if (!label || !canvas || canvas.width === 0) return [];
+  const box = label.getBoundingClientRect();
+  const canvasBox = canvas.getBoundingClientRect();
+  const scale = canvas.width / canvasBox.width;
+  const ctx = canvas.getContext("2d");
+  const cx = box.left + box.width / 2 - canvasBox.left;
+  const cy = box.top + box.height / 2 - canvasBox.top;
+  const pixels = [];
+  for (let dx = -10; dx <= 10; dx += 2.5) {
+    for (let dy = -10; dy <= 10; dy += 2.5) {
+      const [r, g, b, a] = ctx.getImageData(Math.round((cx + dx) * scale), Math.round((cy + dy) * scale), 1, 1).data;
+      if (a === 255) pixels.push([r, g, b]);
+    }
+  }
+  return pixels;
+}
+
+// Whether a pixel is a grey of a dropped die: its three channels are close and it is not black.
+function isGreyPixel([r, g, b]) {
+  const max = Math.max(r, g, b);
+  return max >= 30 && max - Math.min(r, g, b) <= 16;
+}
+
+// Runs in the page: how many opaque pixels of the whole canvas `canvasSel` are in a shade of the accent `hex`
+// (the same rule as isAccentShade, on the canvas's own pixels). -1 when the canvas is not drawn yet.
+function accentPixelsOnCanvas({ canvasSel, hex }) {
+  const canvas = document.querySelector(canvasSel);
+  if (!canvas || canvas.width === 0) return -1;
+  const n = Number.parseInt(hex.slice(1), 16);
+  const base = [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+  const data = canvas.getContext("2d").getImageData(0, 0, canvas.width, canvas.height).data;
+  let count = 0;
+  for (let i = 0; i < data.length; i += 4) {
+    if (data[i + 3] !== 255 || data[i] < 30 || base[0] === 0) continue;
+    const shade = data[i] / base[0];
+    if (shade < 0.25 || shade > 1.01) continue;
+    if (Math.abs(data[i + 1] - shade * base[1]) <= 2 && Math.abs(data[i + 2] - shade * base[2]) <= 2) count++;
+  }
+  return count;
+}
+
+// Starts an in-page sampler that records the solid dice's canvas on every animation frame: the pixels
+// change as the dice turn. Run before the roll so the samples
+// cover the tumble itself; the sampler runs until 3s after the die first appeared (at most 15s), since
+// the dice mount a beat after the card, once their lazy chunk loads.
 function startDieSampling(p) {
   return p.evaluate(() => {
     window.__dieT0 = performance.now();
@@ -1609,10 +1721,15 @@ function startDieSampling(p) {
     window.__dieSamples = [];
     const tick = () => {
       const now = performance.now() - window.__dieT0;
-      const die = document.querySelector('[data-testid="die-3d-0"]');
-      if (die) {
+      const canvas = document.querySelector('[data-testid="dice-solids"] canvas');
+      const ctx = canvas?.getContext("2d");
+      if (canvas && ctx && canvas.width > 0) {
+        // The pose is a hash of the canvas pixels: every turn of a die changes some of them.
+        const data = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+        let hash = 0;
+        for (let i = 0; i < data.length; i += 16) hash = (Math.imul(hash, 31) + data[i] * 3 + data[i + 1] * 5 + data[i + 2] * 7 + data[i + 3]) | 0;
         if (window.__dieMountT === null) window.__dieMountT = now;
-        window.__dieSamples.push({ t: now, pose: getComputedStyle(die).transform });
+        window.__dieSamples.push({ t: now, pose: String(hash) });
       }
       const limit = window.__dieMountT === null ? 15000 : window.__dieMountT + 3000;
       if (now < limit) requestAnimationFrame(tick);
@@ -1636,11 +1753,12 @@ function readDieSamples(p, untilT) {
   );
 }
 
-// The 2.5D dice of a Roll in the result card: with the 3D dice setting on (no saved value, no reduced
-// motion) the text total is shown while the dice are still tumbling and lands on the Roll's faces in
-// the accent colour, a dropped d20 included but muted; with the setting switched off in Options (and
-// kept off across a reload), or with reduced motion emulated and no setting saved, no dice mount and
-// the text appears at once; the Options switch shows the effective state.
+// The solid dice of a Roll in the result card: with the dice animation on (no saved value, no reduced
+// motion) the text total is shown while the dice are still tumbling and they settle on the Roll's faces
+// in the accent colour, a dropped d20 included but grey once it has stopped; the cap of ten solids, the
+// d3 that stays digital, and the d100 pair are counted; with the animation off in Options (and kept off
+// across a reload), or with reduced motion emulated and no setting saved, no dice mount and the text
+// appears at once; the Options switch shows the effective state.
 async function checkDiceAnimation(ctx, width, meta) {
   const page = await ctx.newPage();
   const prefix = `[${width}px dice animation]`;
@@ -1657,38 +1775,34 @@ async function checkDiceAnimation(ctx, width, meta) {
   const shot = (name) => join(SHOTS, `DiceAnimation-${name}-${width}.png`);
   const dialogSel = '[role="dialog"]';
   const cardSel = '[data-testid="result-card"]';
-  const diceSel = '[data-testid^="die-3d-"]';
+  const diceSel = '[data-testid^="die-solid-"]';
   const accentHex = ACCENT_PALETTES.crimson.primary;
-  const accentRgb = hexToRgbString(accentHex);
-  const accentHoverRgb = hexToRgbString(ACCENT_PALETTES.crimson.secondary);
-  const borderRgb = hexToRgbString(BASE_DARK_THEME.border);
+  const accentBorderRgb = hexToRgbString(ACCENT_PALETTES.crimson.border);
 
-  // The "3D dice" switch row's rendered border: the accent border when on, the plain border when off
-  // (react-native-web does not map accessibilityState to aria-checked, so read the style).
-  const switchBorder = async (p) =>
-    p.evaluate(() => {
-      const el = document.querySelector('[data-testid="dice-3d-switch"]');
+  // A dice animation segment's rendered border: the accent border when selected, not when not
+  // (react-native-web does not map accessibilityState to aria-selected, so read the style).
+  const segmentBorder = async (p, mode) =>
+    p.evaluate((testId) => {
+      const el = document.querySelector(`[data-testid="${testId}"]`);
       return el ? getComputedStyle(el).borderColor : null;
-    });
+    }, `dice-animation-${mode}`);
 
   // The sampler's clock (ms since the sampler started) at the last tray roll: the settle budget counts from it.
   let rollAt = null;
-  const rollTrayPool = async (p) => {
+  const rollTrayPool = async (p, expression = "1d6+1d8+3") => {
     await p.getByLabel("Dice tray").first().click();
     await p.waitForSelector(dialogSel, { state: "visible", timeout: 10000 }).catch(() => fail("the tray did not open"));
-    await p.getByLabel("Add d6", { exact: true }).click();
-    await p.getByLabel("Add d8", { exact: true }).click();
-    for (let i = 0; i < 3; i++) await p.getByLabel("Modifier increase", { exact: true }).click();
+    await p.getByLabel("Roll Expression", { exact: true }).fill(expression);
     await settle(p);
     // Read just before the tap, so the roll itself falls after this reading and the budget never starts late.
     rollAt = await p.evaluate(() => performance.now() - window.__dieT0);
-    await p.getByText("Roll 1d6 + 1d8 + 3", { exact: true }).first().click();
+    await p.getByText(`Roll ${expression}`, { exact: true }).first().click();
     await p.waitForSelector(cardSel, { state: "visible", timeout: 10000 }).catch(() => fail("no result card after the tray roll"));
   };
 
   await gotoApp(page, `${BASE}/character/${CHARACTER_ID}`);
 
-  // 3D dice on by default (no saved setting, no reduced motion): the total is there while the
+  // Animation on by default (no saved setting, no reduced motion): the total is there while the
   // dice still tumble, the faces shown match the Roll's chips, the dice carry the accent colour.
   // The pose sampler starts before the roll: under load the die can mount and finish tumbling before
   // a sampler started after the roll would begin.
@@ -1697,12 +1811,12 @@ async function checkDiceAnimation(ctx, width, meta) {
   const warm = await ctx.newPage();
   await gotoApp(warm, `${BASE}/character/${CHARACTER_ID}`);
   await rollTrayPool(warm);
-  await warm.waitForSelector('[data-testid="die-3d-0"]', { state: "visible", timeout: 10000 }).catch(() => fail("the warm-up roll mounted no animated die"));
+  await warm.waitForSelector('[data-testid="die-solid-0"]', { state: "visible", timeout: 10000 }).catch(() => fail("the warm-up roll mounted no animated die"));
   await closePage(warm);
   await startDieSampling(page);
   await rollTrayPool(page);
-  const dieMounted = await page.waitForSelector('[data-testid="die-3d-0"]', { state: "visible", timeout: 10000 }).catch(() => null);
-  if (!dieMounted) fail("with 3D dice on, no animated die mounted in the result card");
+  const dieMounted = await page.waitForSelector('[data-testid="die-solid-0"]', { state: "visible", timeout: 10000 }).catch(() => null);
+  if (!dieMounted) fail("with the dice animation on, no solid die mounted in the result card");
   else {
     const early = await page.evaluate(() => {
       const card = document.querySelector('[data-testid="result-card"]');
@@ -1720,7 +1834,7 @@ async function checkDiceAnimation(ctx, width, meta) {
     // pose change, not from the roll.
     const mountT = timed.length > 0 ? timed[0].t : null;
     if (mountT === null || mountT > 3000)
-      fail(`no 3D die mounted within 3s of the roll (${mountT === null ? "none appeared" : `first seen at ${Math.round(mountT)}ms`})`);
+      fail(`no solid die mounted within 3s of the roll (${mountT === null ? "none appeared" : `first seen at ${Math.round(mountT)}ms`})`);
     const changes = [];
     for (let i = 1; i < timed.length; i++) if (timed[i].pose !== timed[i - 1].pose) changes.push(timed[i].t);
     if (changes.length === 0) fail("the die's pose did not change within 3s of the roll: no tumble ran");
@@ -1730,24 +1844,20 @@ async function checkDiceAnimation(ctx, width, meta) {
     const poses = [...new Set(timed.map((s) => s.pose))];
     const changesOverWindow = timed.some((a) => timed.some((b) => b.t - a.t > 100 && b.pose !== a.pose));
     if (poses.length < 3 || !changesOverWindow)
-      fail(`the die pose took only ${poses.length} distinct values across ${timed.length} sampled frames after the roll: no animation ran with 3D dice on`);
+      fail(`the die pose took only ${poses.length} distinct values across ${timed.length} sampled frames after the roll: no animation ran with the dice animation on`);
     // The tumble runs from its first pose change to its last one, and must take at most 1.2s.
     const tumbleMs = changes[changes.length - 1] - changes[0];
     if (tumbleMs > 1200)
       fail(`the dice tumbled for ${Math.round(tumbleMs)}ms (first pose change at ${Math.round(changes[0])}ms, last at ${Math.round(changes[changes.length - 1])}ms): limit 1200ms`);
 
-    const faces = await page.evaluate((accent) => {
+    const faces = await page.evaluate(() => {
       const card = document.querySelector('[data-testid="result-card"]');
       if (!card) return null;
       const chips = [...card.querySelectorAll('[data-testid="die-chip"]')].map((c) => c.textContent ?? "");
-      const dice = [...card.querySelectorAll('[data-testid^="die-3d-"]')].map((d) => d.getAttribute("aria-label") ?? "");
+      const dice = [...card.querySelectorAll('[data-testid^="die-solid-"]')].map((d) => d.getAttribute("aria-label") ?? "");
       const total = card.querySelector('[data-testid="result-total"]')?.textContent ?? "";
-      const d6 = card.querySelector('[data-testid="die-3d-0"]');
-      const d8 = card.querySelector('[data-testid="die-3d-1"]');
-      const d6bg = d6?.firstElementChild ? getComputedStyle(d6.firstElementChild).backgroundColor : null;
-      const d8fill = d8?.querySelector("svg polygon")?.getAttribute("fill") ?? null;
-      return { chips, dice, total, d6bg, d8fill };
-    }, accentHex);
+      return { chips, dice, total };
+    });
     if (!faces) fail("the result card disappeared before its dice could be read");
     else {
       const chipFaces = faces.chips.map((chip) => Number(/(\d+)d\d+/.exec(chip)?.[1] ?? "NaN"));
@@ -1758,8 +1868,11 @@ async function checkDiceAnimation(ctx, width, meta) {
         fail(`the animated faces ${shownFaces.join(",")} do not match the Roll's chips ${chipFaces.join(",")}`);
       else if (Number(faces.total) !== chipFaces.reduce((sum, face) => sum + face, 0) + 3)
         fail(`the total ${faces.total} is not the faces plus +3`);
-      if (faces.d6bg !== accentRgb) fail(`the d6 die is filled ${faces.d6bg}, expected the accent ${accentRgb}`);
-      if (faces.d8fill !== accentHex) fail(`the d8 die's SVG face is filled ${faces.d8fill}, expected the accent ${accentHex}`);
+      for (const testId of ["die-solid-0", "die-solid-1"]) {
+        const pixels = await page.evaluate(discPixelsOf, { testId, canvasSel: TUMBLE_CANVAS });
+        if (!pixels.some((px) => isAccentShade(`rgb(${px.join(",")})`, accentHex)))
+          fail(`${testId} has no pixel in a shade of the accent ${accentHex} at its centre (${pixels.length} opaque pixels sampled)`);
+      }
     }
     await maybeShot(page, shot("animated"), meta);
   }
@@ -1778,30 +1891,92 @@ async function checkDiceAnimation(ctx, width, meta) {
   });
   if (!seeded) fail("the test-only publishing hook (window.__publishRoll) is not exposed on a seeded web build");
   else {
-    await page.waitForSelector('[data-testid="die-3d-1"]', { state: "visible", timeout: 10000 }).catch(() => fail("the dropped d20 did not mount as an animated die"));
-    const muted = await page.evaluate(() => {
-      const dropped = document.querySelector('[data-testid="die-3d-1"]');
-      if (!dropped) return null;
-      return { label: dropped.getAttribute("aria-label") ?? "", opacity: getComputedStyle(dropped).opacity };
-    });
-    if (!muted) fail("no dropped die to read");
-    else {
-      if (!muted.label.includes("9") || !muted.label.toLowerCase().includes("dropped")) fail(`the dropped d20's label is "${muted.label}", expected its face 9 marked dropped`);
-      if (Number(muted.opacity) >= 1) fail(`the dropped d20 is not muted (opacity ${muted.opacity})`);
+    await page.waitForSelector('[data-testid="die-solid-1"]', { state: "visible", timeout: 10000 }).catch(() => fail("the dropped d20 did not mount as an animated die"));
+    const label = await page.evaluate(() => document.querySelector('[data-testid="die-solid-1"]')?.getAttribute("aria-label") ?? "");
+    if (!label.includes("9") || !label.toLowerCase().includes("dropped")) fail(`the dropped d20's label is "${label}", expected its face 9 marked dropped`);
+    // The dropped die turns grey once it has stopped, within the settle budget; the kept die stays in the accent.
+    // Polls the canvas until the dropped die shows only greys and the kept die shows its accent, or 3s pass.
+    const mutedBy = Date.now() + 3000;
+    let muted = false;
+    while (!muted && Date.now() < mutedBy) {
+      const dropped = await page.evaluate(discPixelsOf, { testId: "die-solid-1", canvasSel: TUMBLE_CANVAS });
+      const kept = await page.evaluate(discPixelsOf, { testId: "die-solid-0", canvasSel: TUMBLE_CANVAS });
+      muted = dropped.length > 0 && dropped.every(isGreyPixel) && kept.some((px) => isAccentShade(`rgb(${px.join(",")})`, accentHex));
+      if (!muted) await new Promise((resolve) => setTimeout(resolve, 100));
     }
+    if (!muted) fail("the dropped d20 is not grey within 3s of the roll, or the kept d20 is not in the accent colour");
     await maybeShot(page, shot("dropped"), meta);
+
+    // One Roll of every solid type, shot mid-turn and at rest for the look review.
+    const published = await page.evaluate(() => {
+      const hook = window.__publishRoll;
+      if (typeof hook !== "function") return false;
+      const dice = [4, 6, 8, 10, 12, 20, 100].map((sides) => ({ sides, face: sides === 100 ? 42 : sides, dropped: sides === 12 }));
+      hook({ roll: { dice, modifier: 0, total: 0 }, source: "Shapes", characterName: "Kara", d20Mode: "normal" });
+      return true;
+    });
+    if (published) {
+      await page.waitForTimeout(120);
+      await maybeShot(page, shot("mixed-mid-turn"), meta);
+      await page.waitForTimeout(1600);
+      await maybeShot(page, shot("mixed-at-rest"), meta);
+    }
+
+    // Solid dice of other Rolls: fourteen d6 draw the cap of ten and list all fourteen chips; a d3 with a d6
+    // draws the d6 alone; a d100 draws its tens die (labelled) and its units die; every die is inside the card.
+    const shapes = [
+      { expression: "14d6", solids: 10, chips: 14, label: "d6 showing " },
+      { expression: "1d3+1d6", solids: 1, chips: 2, label: "d6 showing " },
+      { expression: "1d100", solids: 2, chips: 1, label: "d100 showing " },
+    ];
+    for (const shape of shapes) {
+      await gotoApp(page, `${BASE}/character/${CHARACTER_ID}`);
+      await rollTrayPool(page, shape.expression);
+      await page.waitForSelector('[data-testid="die-solid-0"]', { state: "visible", timeout: 10000 }).catch(() => fail(`no solid die mounted for ${shape.expression}`));
+      const counted = await page.evaluate(() => {
+        const card = document.querySelector('[data-testid="result-card"]');
+        const cardBox = card?.getBoundingClientRect();
+        const cells = [...document.querySelectorAll('[data-testid^="die-solid-"]')];
+        const outside = cells.filter((cell) => {
+          const r = cell.getBoundingClientRect();
+          return !cardBox || r.left < cardBox.left - 0.5 || r.right > cardBox.right + 0.5 || r.top < cardBox.top - 0.5 || r.bottom > cardBox.bottom + 0.5;
+        }).length;
+        const row = document.querySelector('[data-testid="dice-solids"]');
+        return {
+          solids: cells.length,
+          chips: card ? card.querySelectorAll('[data-testid="die-chip"]').length : 0,
+          outside,
+          labels: cells.map((cell) => cell.getAttribute("aria-label") ?? ""),
+          canvases: row ? row.querySelectorAll("canvas").length : 0,
+          svgs: row ? row.querySelectorAll("svg").length : 0,
+        };
+      });
+      // The row repeats what the chips and the result block announce, so it is hidden from screen readers.
+      const rowHidden = await page.evaluate(() => document.querySelector('[data-testid="dice-solids"]')?.getAttribute("aria-hidden"));
+      if (rowHidden !== "true") fail(`${shape.expression}: the solid dice row is aria-hidden="${rowHidden}", expected "true"`);
+      if (counted.canvases !== 1 || counted.svgs !== 0)
+        fail(`${shape.expression}: the solid dice row holds ${counted.canvases} canvases and ${counted.svgs} SVG elements, expected one canvas and none`);
+      if (counted.solids !== shape.solids) fail(`${shape.expression} mounted ${counted.solids} solid dice, expected ${shape.solids}`);
+      if (counted.chips !== shape.chips) fail(`${shape.expression} lists ${counted.chips} chips, expected ${shape.chips}`);
+      if (counted.outside > 0) fail(`${shape.expression}: ${counted.outside} solid dice stick out of the result card`);
+      if (counted.labels[0] !== undefined && !counted.labels[0].startsWith(shape.label)) fail(`${shape.expression}: the first die is labelled "${counted.labels[0]}"`);
+      if (shape.expression === "1d100" && counted.labels[1] !== "") fail(`1d100: the units die is labelled "${counted.labels[1]}", expected no label`);
+    }
   }
 
-  // The Options switch shows on with no saved value and no reduced motion, and toggling it off persists.
+  // The Options dice animation choice selects Tumble with no saved value and no reduced motion; choosing Off persists.
+  const offSel = '[data-testid="dice-animation-off"]';
+  const tumbleSel = '[data-testid="dice-animation-tumble"]';
   await gotoApp(page, `${BASE}/options`);
   await settle(page);
-  const diceSwitch = page.getByLabel("3D dice").first();
-  if (!(await diceSwitch.isVisible().catch(() => false))) fail('the Options screen has no "3D dice" switch');
+  if (!(await page.locator(offSel).first().isVisible().catch(() => false))) fail('the Options screen has no "Off" dice animation segment');
   else {
-    if ((await switchBorder(page)) !== accentHoverRgb) fail(`the "3D dice" switch is not on by default (border ${await switchBorder(page)}, expected ${accentHoverRgb})`);
-    await diceSwitch.click();
+    if ((await segmentBorder(page, "tumble")) !== accentBorderRgb) fail(`Tumble is not selected by default (border ${await segmentBorder(page, "tumble")}, expected ${accentBorderRgb})`);
+    if ((await segmentBorder(page, "off")) === accentBorderRgb) fail("Off is selected by default");
+    await page.locator(offSel).first().click();
     await settle(page);
-    if ((await switchBorder(page)) !== borderRgb) fail(`tapping the "3D dice" switch did not turn it off (border ${await switchBorder(page)}, expected ${borderRgb})`);
+    if ((await segmentBorder(page, "off")) !== accentBorderRgb) fail(`tapping Off did not select it (border ${await segmentBorder(page, "off")}, expected ${accentBorderRgb})`);
+    if ((await segmentBorder(page, "tumble")) === accentBorderRgb) fail("Tumble stayed selected after tapping Off");
     await maybeShot(page, shot("options-off"), meta);
   }
 
@@ -1810,7 +1985,7 @@ async function checkDiceAnimation(ctx, width, meta) {
   await rollTrayPool(page);
   const offState = await page.evaluate(() => ({
     total: document.querySelector('[data-testid="result-total"]')?.textContent ?? null,
-    dice: document.querySelectorAll('[data-testid^="die-3d-"]').length,
+    dice: document.querySelectorAll('[data-testid^="die-solid-"]').length,
   }));
   if (offState.total === null) fail("with the setting off, the text total was not shown at once");
   if (offState.dice !== 0) fail(`with the setting off, ${offState.dice} animated dice mounted`);
@@ -1819,6 +1994,16 @@ async function checkDiceAnimation(ctx, width, meta) {
   await page.waitForTimeout(900);
   if (!(await assertAbsentFor(async () => (await page.locator(diceSel).count()) !== 0))) fail("with the setting off, animated dice mounted later");
   await maybeShot(page, shot("off"), meta);
+
+  // Choosing Tumble again brings the animated dice back into a new Roll.
+  await gotoApp(page, `${BASE}/options`);
+  await settle(page);
+  await page.locator(tumbleSel).first().click();
+  await settle(page);
+  if ((await segmentBorder(page, "tumble")) !== accentBorderRgb) fail(`tapping Tumble did not select it (border ${await segmentBorder(page, "tumble")}, expected ${accentBorderRgb})`);
+  await gotoApp(page, `${BASE}/character/${CHARACTER_ID}`);
+  await rollTrayPool(page);
+  if (!(await page.waitForSelector(diceSel, { state: "visible", timeout: 10000 }).catch(() => null))) fail("with Tumble chosen again, no animated die mounted in a new Roll");
 
   // Reduced motion emulated and no saved setting (a fresh context) — no animation either.
   const rctx = await ctx.browser().newContext({
@@ -1835,7 +2020,7 @@ async function checkDiceAnimation(ctx, width, meta) {
     await rollTrayPool(rpage);
     const rmState = await rpage.evaluate(() => ({
       total: document.querySelector('[data-testid="result-total"]')?.textContent ?? null,
-      dice: document.querySelectorAll('[data-testid^="die-3d-"]').length,
+      dice: document.querySelectorAll('[data-testid^="die-solid-"]').length,
     }));
     if (rmState.total === null) fail("with reduced motion emulated and no saved setting, the text total was not shown at once");
     if (rmState.dice !== 0) fail(`with reduced motion emulated and no saved setting, ${rmState.dice} animated dice mounted`);
@@ -1844,10 +2029,9 @@ async function checkDiceAnimation(ctx, width, meta) {
     if (!(await assertAbsentFor(async () => (await rpage.locator(diceSel).count()) !== 0))) fail("with reduced motion emulated, animated dice mounted later");
     await gotoApp(rpage, `${BASE}/options`);
     await settle(rpage);
-    const rmSwitch = rpage.getByLabel("3D dice").first();
-    if (!(await rmSwitch.isVisible().catch(() => false))) fail('the Options screen has no "3D dice" switch under reduced motion');
-    else if ((await switchBorder(rpage)) !== borderRgb)
-      fail(`with reduced motion emulated and no saved setting, the "3D dice" switch is on (border ${await switchBorder(rpage)}, expected ${borderRgb})`);
+    if (!(await rpage.locator(offSel).first().isVisible().catch(() => false))) fail('the Options screen has no "Off" dice animation segment under reduced motion');
+    else if ((await segmentBorder(rpage, "off")) !== accentBorderRgb)
+      fail(`with reduced motion emulated and no saved setting, Off is not selected (border ${await segmentBorder(rpage, "off")}, expected ${accentBorderRgb})`);
     await maybeShot(rpage, shot("reduced-motion"), meta);
     await closePage(rpage);
   } finally {
@@ -3382,6 +3566,498 @@ async function checkHomeLayout(ctx, width, meta) {
 }
 
 // The checks that open their own page rather than a SCREENS entry. Each is a scenario, so ONLY selects it by name.
+// The Throw animation: the dice fly over the screen from the floating button, each in its Roll's accent,
+// the result card waits until they stop, a tap during flight shows it at once, a Roll mid-flight replaces
+// the dice, and the dice are gone after the fade. The physics is seeded, so every run throws the same dice.
+async function checkDiceThrow(ctx, width, meta) {
+  const prefix = `[${width}px dice throw]`;
+  let failures = 0;
+  const tctx = await ctx.browser().newContext({
+    viewport: { width, height: 851 },
+    deviceScaleFactor: DSF,
+    hasTouch: true,
+    isMobile: true,
+  });
+  try {
+    await tctx.addInitScript(seedBrowser, ACTIVE_SEED);
+    const page = await tctx.newPage();
+    let failedShotTaken = false;
+    const fail = (msg) => {
+      failures++;
+      console.log(`${prefix} ${msg}`);
+      if (!failedShotTaken) {
+        failedShotTaken = true;
+        shotFailed(page, meta, width);
+      }
+    };
+    const dialogSel = '[role="dialog"]';
+    const cardSel = '[data-testid="result-card"]';
+    const shot = (name) => join(SHOTS, `DiceThrow-${name}-${width}.png`);
+    const throwDiceLabels = () =>
+      page.evaluate(() => [...document.querySelectorAll('[data-testid^="throw-die-"]')].map((el) => el.getAttribute("aria-label")));
+    const waitForDiceCount = (count, timeout) =>
+      page
+        .waitForFunction((n) => document.querySelectorAll('[data-testid^="throw-die-"]').length === n, count, { timeout, polling: 50 })
+        .then(() => true)
+        .catch(() => false);
+    const rollThrow = async (expression) => {
+      await page.getByLabel("Dice tray").first().click();
+      await page.waitForSelector(dialogSel, { state: "visible", timeout: 10000 }).catch(() => fail("the tray did not open"));
+      await page.getByLabel("Roll Expression", { exact: true }).fill(expression);
+      await page.getByText(`Roll ${expression}`, { exact: true }).first().click();
+    };
+
+    await gotoApp(page, `${BASE}/options`);
+    await settle(page);
+    const throwSel = '[data-testid="dice-animation-throw"]';
+    if (!(await page.locator(throwSel).first().isVisible().catch(() => false))) {
+      fail('the Options screen has no "Throw" dice animation segment');
+      return failures;
+    }
+    await page.locator(throwSel).first().click();
+    await settle(page);
+    const borders = await page.evaluate(() => ({
+      throw: getComputedStyle(document.querySelector('[data-testid="dice-animation-throw"]')).borderColor,
+      off: getComputedStyle(document.querySelector('[data-testid="dice-animation-off"]')).borderColor,
+    }));
+    if (borders.throw === borders.off) fail("tapping Throw did not select it");
+
+    await gotoApp(page, `${BASE}/character/${CHARACTER_ID}`);
+    if (!(await page.evaluate(() => typeof window.__setThrowRandom === "function"))) {
+      fail("the E2E build exposes no __setThrowRandom hook");
+      return failures;
+    }
+    await page.evaluate(() => window.__setThrowRandom(1));
+    // Counts the canvas repaints, so the checks can see whether the Throw keeps painting.
+    await page.evaluate(() => {
+      window.__clears = 0;
+      const proto = CanvasRenderingContext2D.prototype;
+      const clearRect = proto.clearRect;
+      proto.clearRect = function (...args) {
+        window.__clears++;
+        return clearRect.apply(this, args);
+      };
+    });
+
+    // Two Rolls, one die each: the dice fly, the card waits, and each die wears its Roll's accent.
+    const first = ACCENT_PALETTES.crimson;
+    const second = ACCENT_PALETTES[rollAccentId("crimson", 1)];
+    const expected = [first.primary, second.primary];
+    // The accent of a die while it flies: the canvas holds pixels in that shade, polled for up to 1.5 s.
+    const accentPixelsInFlight = async (hex) => {
+      const until = Date.now() + 1500;
+      let count = 0;
+      while (count <= 0 && Date.now() < until) {
+        count = await page.evaluate(accentPixelsOnCanvas, { canvasSel: THROW_CANVAS, hex });
+        if (count <= 0) await page.waitForTimeout(50);
+      }
+      return count;
+    };
+    await rollThrow("d6,d8");
+    if (!(await waitForDiceCount(2, 10000))) fail(`expected two thrown dice, saw ${JSON.stringify(await throwDiceLabels())}`);
+    else {
+      const flight = await page.evaluate(() => {
+        const dice = [...document.querySelectorAll('[data-testid^="throw-die-"]')];
+        const layer = document.querySelector('[data-testid="throw-layer"]');
+        const canvas = layer?.querySelector("canvas");
+        const box = canvas?.getBoundingClientRect();
+        return {
+          labels: dice.map((el) => el.getAttribute("aria-label")),
+          centres: dice.map((el) => {
+            const r = el.getBoundingClientRect();
+            return [r.x + r.width / 2, r.y + r.height / 2];
+          }),
+          canvases: layer ? layer.querySelectorAll("canvas").length : 0,
+          polygons: layer ? layer.querySelectorAll("polygon").length : 0,
+          canvasBox: box ? [box.width, box.height] : null,
+          card: !!document.querySelector('[data-testid="result-card"]'),
+          size: [window.innerWidth, window.innerHeight],
+        };
+      });
+      if (flight.card) fail("the result card is up while the dice fly");
+      if (flight.canvases !== 1) fail(`the Throw layer holds ${flight.canvases} canvases while the dice fly, expected one`);
+      if (flight.polygons !== 0) fail(`the Throw layer draws ${flight.polygons} SVG polygons, expected none`);
+      if (!flight.canvasBox || Math.abs(flight.canvasBox[0] - flight.size[0]) > 1 || Math.abs(flight.canvasBox[1] - flight.size[1]) > 1)
+        fail(`the Throw canvas is ${JSON.stringify(flight.canvasBox)}, not the ${flight.size[0]}x${flight.size[1]} window`);
+      flight.centres.forEach(([x, y], i) => {
+        if (x < 0 || x > flight.size[0] || y < 0 || y > flight.size[1]) fail(`die ${i} centre (${Math.round(x)}, ${Math.round(y)}) is outside the viewport`);
+      });
+      for (const hex of new Set(expected)) {
+        if ((await accentPixelsInFlight(hex)) <= 0) fail(`no pixel of the Throw canvas is in the accent ${hex} while the dice fly`);
+      }
+      await maybeShot(page, shot("mid-flight"), meta);
+    }
+
+    await page.waitForSelector(cardSel, { state: "visible", timeout: 8000 }).catch(() => fail("no result card after the dice stopped"));
+    // Once stopped, each die lies at its label: most of the disc at its centre is in its Roll's accent.
+    for (const [i, hex] of expected.entries()) {
+      const pixels = await page.evaluate(discPixelsOf, { testId: `throw-die-${i}`, canvasSel: THROW_CANVAS });
+      const share = pixels.filter((px) => isAccentShade(`rgb(${px.join(",")})`, hex)).length / Math.max(1, pixels.length);
+      if (pixels.length === 0 || share < 0.5) fail(`die ${i} has ${Math.round(share * 100)}% accent pixels at its centre (${pixels.length} sampled), expected ${hex}`);
+    }
+    const blocks = await page.evaluate(() =>
+      [...document.querySelectorAll('[data-testid="result-card-body"]')].map((el) => el.getAttribute("aria-label")),
+    );
+    const faces = (await throwDiceLabels()).map((label) => Number(/showing (\d+)/.exec(label ?? "")?.[1]));
+    if (blocks.length !== 2) fail(`expected two result blocks, saw ${JSON.stringify(blocks)}`);
+    else
+      blocks.forEach((label, i) => {
+        const total = Number(/total (\d+)/.exec(label ?? "")?.[1]);
+        if (total !== faces[i]) fail(`block ${i + 1} total ${total} is not the face ${faces[i]} of its die`);
+      });
+
+    // A tap during a Throw shows the card at once and clears the dice.
+    if (!(await waitForDiceCount(0, 12000))) fail("the dice of the first Throw did not clear");
+    await rollThrow("d6,d8");
+    if (!(await waitForDiceCount(2, 10000))) fail("expected two dice for the tap check");
+    const repaints = () => page.evaluate(() => window.__clears);
+    const beforeWait = await repaints();
+    await page.waitForTimeout(200);
+    if ((await repaints()) <= beforeWait) fail("the Throw canvas is not repainted while the dice fly");
+    await page.mouse.click(Math.round(width / 2), 300);
+    if (!(await page.waitForSelector(cardSel, { state: "visible", timeout: 1000 }).catch(() => null))) fail("a tap during the flight did not show the result card at once");
+    if (!(await waitForDiceCount(0, 1000))) fail("a tap during the flight did not clear the dice at once");
+    // After the tap the layer is gone: nothing may paint on its canvas any more.
+    const afterTap = await repaints();
+    await page.waitForTimeout(400);
+    if ((await repaints()) !== afterTap) fail("the Throw keeps painting after a tap cleared the dice");
+
+    // A Roll mid-flight replaces the dice in the air: only its own die is left.
+    await page.waitForSelector(cardSel, { state: "detached", timeout: 12000 }).catch(() => null);
+    await rollThrow("d6,d8");
+    if (!(await waitForDiceCount(2, 10000))) fail("expected two dice before the mid-flight Roll");
+    await page.getByLabel("Dice tray").first().click();
+    await page.waitForSelector(dialogSel, { state: "visible", timeout: 10000 }).catch(() => fail("the tray did not open mid-flight"));
+    await page.getByLabel("Roll Expression", { exact: true }).fill("d4");
+    await page.getByText("Roll d4", { exact: true }).first().click();
+    if (!(await waitForDiceCount(1, 3000))) fail(`a Roll mid-flight left ${JSON.stringify(await throwDiceLabels())}`);
+    else if (!(await throwDiceLabels())[0]?.startsWith("d4 showing")) fail(`the dice left by the mid-flight Roll are ${JSON.stringify(await throwDiceLabels())}`);
+
+    // After the d4 stops the screen under the layer works: the floating dice button opens the tray.
+    await page.waitForSelector(cardSel, { state: "visible", timeout: 10000 }).catch(() => fail("no result card after the mid-flight Roll stopped"));
+    await page.getByLabel("Dice tray").first().click();
+    if (!(await page.waitForSelector(dialogSel, { state: "visible", timeout: 3000 }).catch(() => null))) fail("the dice button did not work after the Throw stopped");
+
+    // After the fade no Throw dice remain.
+    await page.keyboard.press("Escape");
+    if (!(await waitForDiceCount(0, 12000))) fail(`dice remain after the fade: ${JSON.stringify(await throwDiceLabels())}`);
+    const canvasesAfterFade = await page.evaluate(() => document.querySelectorAll("canvas").length);
+    if (canvasesAfterFade !== 0) fail(`${canvasesAfterFade} canvases remain after the fade, expected none`);
+
+    // A Roll with a dropped die: once it stops the dropped die's disc is grey, and the kept die's is in the accent.
+    await rollThrow("a(d20,d20)");
+    if (!(await waitForDiceCount(2, 10000))) fail(`expected two dice for the advantage Roll, saw ${JSON.stringify(await throwDiceLabels())}`);
+    await page.waitForSelector(cardSel, { state: "visible", timeout: 10000 }).catch(() => fail("no result card after the advantage Roll"));
+    const advantageLabels = await throwDiceLabels();
+    const droppedIndex = advantageLabels.findIndex((label) => label?.endsWith(", dropped"));
+    if (droppedIndex < 0) fail(`no thrown die of the advantage Roll is dropped: ${JSON.stringify(advantageLabels)}`);
+    else {
+      const keptIndex = 1 - droppedIndex;
+      const greys = await page.evaluate(discPixelsOf, { testId: `throw-die-${droppedIndex}`, canvasSel: THROW_CANVAS });
+      const greyShare = greys.filter(isGreyPixel).length / Math.max(1, greys.length);
+      if (greys.length === 0 || greyShare < 0.5) fail(`the dropped die has ${Math.round(greyShare * 100)}% grey pixels at its centre, expected most of them`);
+      const kept = await page.evaluate(discPixelsOf, { testId: `throw-die-${keptIndex}`, canvasSel: THROW_CANVAS });
+      const keptShare = kept.filter((px) => isAccentShade(`rgb(${px.join(",")})`, first.primary)).length / Math.max(1, kept.length);
+      if (kept.length === 0 || keptShare < 0.5) fail(`the kept die has ${Math.round(keptShare * 100)}% accent pixels at its centre, expected ${first.primary}`);
+      await maybeShot(page, shot("settled-dropped"), meta);
+    }
+    await page.waitForSelector(cardSel, { state: "detached", timeout: 12000 }).catch(() => null);
+    if (!(await waitForDiceCount(0, 8000))) fail(`dice remain after the advantage Roll: ${JSON.stringify(await throwDiceLabels())}`);
+
+    // A Roll with no solid dice (d3) made mid-flight replaces the Throw: the older Throw never shows over it.
+    await rollThrow("d6,d8");
+    if (!(await waitForDiceCount(2, 10000))) fail("expected two dice before the d3 Roll");
+    await page.getByLabel("Dice tray").first().click();
+    await page.waitForSelector(dialogSel, { state: "visible", timeout: 10000 }).catch(() => fail("the tray did not open before the d3 Roll"));
+    await page.getByLabel("Roll Expression", { exact: true }).fill("d3");
+    await page.getByText("Roll d3", { exact: true }).first().click();
+    await page.waitForSelector(cardSel, { state: "visible", timeout: 3000 }).catch(() => fail("no result card after the d3 Roll"));
+    if (!(await waitForDiceCount(0, 8000))) fail(`the d3 Roll left dice in the air: ${JSON.stringify(await throwDiceLabels())}`);
+    const replaced = await page.evaluate(() =>
+      [...document.querySelectorAll('[data-testid="result-card-body"]')].map((el) => el.getAttribute("aria-label")),
+    );
+    if (replaced.length !== 1 || !replaced[0]?.startsWith("d3, total "))
+      fail(`after the d3 Roll the result card shows ${JSON.stringify(replaced)}, expected only the d3 Roll`);
+    return failures;
+  } finally {
+    await tctx.close();
+  }
+}
+
+// The first animated Roll of a fresh page, with Throw or Tumble chosen: the Roll shows its solids (a canvas in
+// the dice's accent), and every request the page makes is for the app's own origin, so the dice need no file
+// from anywhere else. The setting for Throw is saved by an earlier page of the same browser context; the page
+// under test is a fresh load of the app.
+async function checkDiceFreshPage(ctx, width, meta, animation) {
+  const prefix = `[${width}px dice fresh page ${animation}]`;
+  let failures = 0;
+  const tctx = await ctx.browser().newContext({
+    viewport: { width, height: 851 },
+    deviceScaleFactor: DSF,
+    hasTouch: true,
+    isMobile: true,
+  });
+  try {
+    await tctx.addInitScript(seedBrowser, ACTIVE_SEED);
+    const fail = (msg) => {
+      failures++;
+      console.log(`${prefix} ${msg}`);
+    };
+    if (animation === "throw") {
+      const setup = await tctx.newPage();
+      await gotoApp(setup, `${BASE}/options`);
+      await settle(setup);
+      const throwSel = '[data-testid="dice-animation-throw"]';
+      if (!(await setup.locator(throwSel).first().isVisible().catch(() => false))) {
+        fail('the Options screen has no "Throw" dice animation segment');
+        await closePage(setup);
+        return failures;
+      }
+      await setup.locator(throwSel).first().click();
+      await settle(setup);
+      await closePage(setup);
+    }
+
+    const page = await tctx.newPage();
+    const requested = [];
+    page.on("request", (request) => requested.push(request.url()));
+    await gotoApp(page, `${BASE}/character/${CHARACTER_ID}`);
+    if (animation === "throw") {
+      if (!(await page.evaluate(() => typeof window.__setThrowRandom === "function"))) {
+        fail("the E2E build exposes no __setThrowRandom hook");
+        return failures;
+      }
+      await page.evaluate(() => window.__setThrowRandom(1));
+    }
+    await page.getByLabel("Dice tray").first().click();
+    await page.waitForSelector('[role="dialog"]', { state: "visible", timeout: 10000 }).catch(() => fail("the dice tray did not open"));
+    await page.getByLabel("Roll Expression", { exact: true }).fill("d6,d8");
+    await page.getByText("Roll d6,d8", { exact: true }).first().click();
+
+    const canvasSel = animation === "throw" ? THROW_CANVAS : TUMBLE_CANVAS;
+    const crimson = ACCENT_PALETTES.crimson.primary;
+    const until = Date.now() + 8000;
+    let accent = 0;
+    while (accent <= 0 && Date.now() < until) {
+      accent = await page.evaluate(accentPixelsOnCanvas, { canvasSel, hex: crimson });
+      if (accent <= 0) await page.waitForTimeout(100);
+    }
+    if (accent <= 0) fail(`the first Roll on a fresh page shows no ${animation} solid in the accent ${crimson}`);
+
+    const origin = new URL(BASE).origin;
+    const foreign = requested.filter((url) => /^https?:/.test(url) && new URL(url).origin !== origin);
+    if (foreign.length > 0) fail(`the page requested files from outside the app: ${foreign.join(", ")}`);
+    if (requested.some((url) => /canvaskit|skia|\.wasm(\?|$)/i.test(url))) fail(`the page requested a drawing library: ${requested.filter((url) => /canvaskit|skia|\.wasm/i.test(url)).join(", ")}`);
+    await closePage(page);
+    return failures;
+  } finally {
+    await tctx.close();
+  }
+}
+
+// With the Dice Animation Off no canvas is mounted: not while a Roll is made, and not after several Rolls.
+async function checkDiceOffCanvas(ctx, width, meta) {
+  const prefix = `[${width}px dice off canvas]`;
+  let failures = 0;
+  const tctx = await ctx.browser().newContext({
+    viewport: { width, height: 851 },
+    deviceScaleFactor: DSF,
+    hasTouch: true,
+    isMobile: true,
+  });
+  try {
+    await tctx.addInitScript(seedBrowser, ACTIVE_SEED);
+    const fail = (msg) => {
+      failures++;
+      console.log(`${prefix} ${msg}`);
+    };
+    const setup = await tctx.newPage();
+    await gotoApp(setup, `${BASE}/options`);
+    await settle(setup);
+    const offSel = '[data-testid="dice-animation-off"]';
+    if (!(await setup.locator(offSel).first().isVisible().catch(() => false))) {
+      fail('the Options screen has no "Off" dice animation segment');
+      await closePage(setup);
+      return failures;
+    }
+    await setup.locator(offSel).first().click();
+    await settle(setup);
+    await closePage(setup);
+
+    const page = await tctx.newPage();
+    await gotoApp(page, `${BASE}/character/${CHARACTER_ID}`);
+    for (const expression of ["d6,d8", "a(d20,d20)+d100", "d20"]) {
+      await page.getByLabel("Dice tray").first().click();
+      await page.waitForSelector('[role="dialog"]', { state: "visible", timeout: 10000 }).catch(() => fail("the dice tray did not open"));
+      await page.getByLabel("Roll Expression", { exact: true }).fill(expression);
+      await page.getByText(`Roll ${expression}`, { exact: true }).first().click();
+      await page.waitForSelector('[data-testid="result-card"]', { state: "visible", timeout: 8000 }).catch(() => fail(`no result card for ${expression}`));
+      for (let sample = 0; sample < 5; sample++) {
+        const canvases = await page.evaluate(() => document.querySelectorAll("canvas").length);
+        if (canvases !== 0) fail(`with the Dice Animation off, ${canvases} canvases are mounted during ${expression}`);
+        await page.waitForTimeout(100);
+      }
+    }
+    await closePage(page);
+    return failures;
+  } finally {
+    await tctx.close();
+  }
+}
+
+// A batch of Rolls published through the publishing seam (`__publishRolls`) at one width: the result card
+// stacks one block per Roll with its own total and no grand total, each block's left bar takes the accent
+// its position gets (the first in the selected accent, crimson by default), the card stays inside the
+// viewport, and past its maximum height it scrolls. The Roll Log lists the batch in order, newest batch
+// first, with a dot per Roll of a multi-Roll batch; a one-Roll publish shows no bar and no dot.
+async function checkDiceBatch(ctx, width, meta) {
+  const page = await ctx.newPage();
+  const prefix = `[${width}px dice batch]`;
+  let failures = 0;
+  let failedShotTaken = false;
+  const fail = (msg) => {
+    failures++;
+    console.log(`${prefix} ${msg}`);
+    if (!failedShotTaken) {
+      failedShotTaken = true;
+      shotFailed(page, meta, width);
+    }
+  };
+  const shot = (name) => join(SHOTS, `DiceBatch-${name}-${width}.png`);
+  const cardSel = '[data-testid="result-card"]';
+  const blockSel = '[data-testid="result-block"]';
+  const dialogSel = '[role="dialog"]';
+  const publish = (inputs) =>
+    page.evaluate((list) => {
+      const hook = window.__publishRolls;
+      if (typeof hook !== "function") return false;
+      hook(list);
+      return true;
+    }, inputs);
+  const waitForBlocks = (count) =>
+    page
+      .waitForFunction((n) => document.querySelectorAll('[data-testid="result-block"]').length === n, count, { timeout: 10000, polling: 100 })
+      .catch(() => fail(`the result card did not show ${count} Roll blocks`));
+  // The colour each Roll of a batch takes, at its position: the accent sequence of the selected accent.
+  const expectedBar = (index) => hexToRgbString(ACCENT_PALETTES[rollAccentId("crimson", index)].primary);
+
+  await gotoApp(page, `${BASE}/character/${CHARACTER_ID}`);
+
+  const batchOfThree = [
+    { roll: { dice: [{ sides: 20, face: 15, dropped: false }], modifier: 5, total: 20 }, source: "Dice tray", label: "d20+5" },
+    { roll: { dice: [{ sides: 6, face: 4, dropped: false }, { sides: 6, face: 2, dropped: false }], modifier: 0, total: 6 }, source: "Dice tray", label: "2d6" },
+    { roll: { dice: [{ sides: 8, face: 8, dropped: false }], modifier: -1, total: 7 }, source: "Dice tray", label: "d8-1" },
+  ];
+  if (!(await publish(batchOfThree))) fail("the test-only publishing hook (window.__publishRolls) is not exposed on a seeded web build");
+  await waitForBlocks(3);
+  await maybeShot(page, shot("three"), meta);
+
+  const three = await page.evaluate(
+    ({ blockSel, cardSel }) => {
+      const card = document.querySelector(cardSel);
+      if (!card) return null;
+      const blocks = [...document.querySelectorAll(blockSel)];
+      const r = card.getBoundingClientRect();
+      return {
+        totals: blocks.map((b) => b.querySelector('[data-testid="result-total"]')?.textContent ?? null),
+        totalsInCard: card.querySelectorAll('[data-testid="result-total"]').length,
+        bars: blocks.map((b) => getComputedStyle(b).borderLeftColor),
+        barWidths: blocks.map((b) => getComputedStyle(b).borderLeftWidth),
+        card: { top: r.top, bottom: r.bottom, left: r.left, right: r.right },
+        vw: window.innerWidth,
+        vh: window.innerHeight,
+      };
+    },
+    { blockSel, cardSel },
+  );
+  if (!three) fail("no result card to measure after the batch of three");
+  else {
+    if (JSON.stringify(three.totals) !== JSON.stringify(["20", "6", "7"]))
+      fail(`the three blocks show totals ${JSON.stringify(three.totals)}, expected ["20","6","7"]`);
+    if (three.totalsInCard !== 3) fail(`the card shows ${three.totalsInCard} totals for three Rolls: a grand total must not be shown`);
+    three.bars.forEach((bar, index) => {
+      if (bar !== expectedBar(index)) fail(`Roll ${index + 1} of the batch has bar ${bar}, expected ${expectedBar(index)}`);
+    });
+    if (new Set(three.bars).size !== 3) fail(`the three bars are not all different: ${JSON.stringify(three.bars)}`);
+    const { card, vw, vh } = three;
+    if (card.left < 0 || card.right > vw || card.top < 0 || card.bottom > vh)
+      fail(`the result card sticks out of the ${vw}x${vh} viewport: left ${Math.round(card.left)}, top ${Math.round(card.top)}, right ${Math.round(card.right)}, bottom ${Math.round(card.bottom)}`);
+  }
+
+  // A batch taller than the card's maximum height scrolls inside it and stays on screen.
+  const tall = Array.from({ length: 12 }, (_, i) => ({
+    roll: { dice: [{ sides: 20, face: i + 1, dropped: false }], modifier: 0, total: i + 1 },
+    source: "Dice tray",
+    label: `d20 #${i + 1}`,
+  }));
+  await publish(tall);
+  await waitForBlocks(12);
+  const scroll = await page.evaluate(
+    ({ cardSel, blockSel }) => {
+      const card = document.querySelector(cardSel);
+      const block = document.querySelector(blockSel);
+      if (!card || !block) return null;
+      let scroller = block.parentElement;
+      while (scroller && !["auto", "scroll"].includes(getComputedStyle(scroller).overflowY)) scroller = scroller.parentElement;
+      if (!scroller) return { scroller: false };
+      const overflowing = scroller.scrollHeight > scroller.clientHeight;
+      scroller.scrollTop = scroller.scrollHeight;
+      const r = card.getBoundingClientRect();
+      return {
+        scroller: true,
+        overflowing,
+        scrolled: scroller.scrollTop > 0,
+        cardHeight: r.height,
+        maxHeight: window.innerHeight * 0.6,
+        top: r.top,
+        bottom: r.bottom,
+        vh: window.innerHeight,
+      };
+    },
+    { cardSel, blockSel },
+  );
+  if (!scroll) fail("no result card to measure after the batch of twelve");
+  else if (!scroll.scroller) fail("the result card's Roll blocks are not in a scrolling container");
+  else {
+    if (!scroll.overflowing) fail("the batch of twelve does not overflow the result card: the scroll check proves nothing");
+    if (!scroll.scrolled) fail("the result card does not scroll its batch of twelve");
+    if (scroll.cardHeight > scroll.maxHeight + 1) fail(`the result card is ${Math.round(scroll.cardHeight)}px tall, over 60% of the ${scroll.vh}px window`);
+    if (scroll.top < 0 || scroll.bottom > scroll.vh) fail("the tall result card sticks out of the viewport");
+  }
+  await maybeShot(page, shot("twelve"), meta);
+
+  // A one-Roll publish shows one block with no bar.
+  const single = { roll: { dice: [{ sides: 20, face: 12, dropped: false }], modifier: 0, total: 12 }, source: "Dice tray", label: "d20 solo" };
+  await publish([single]);
+  await waitForBlocks(1);
+  const soloBar = await page.evaluate((blockSel) => getComputedStyle(document.querySelector(blockSel)).borderLeftWidth, blockSel);
+  if (soloBar !== "0px") fail(`a one-Roll batch shows a ${soloBar} left bar, expected none`);
+
+  // The Roll Log, newest batch first: the single, then the twelve, then the three; a dot per Roll of a
+  // multi-Roll batch, in that Roll's accent.
+  await page.click('[data-testid="result-card-body"]');
+  await page.waitForSelector(dialogSel, { state: "visible", timeout: 10000 }).catch(() => fail("tapping the result card did not open the tray"));
+  const log = await page.evaluate(() =>
+    [...document.querySelectorAll('[data-testid="log-entry-heading"]')].map((heading) => {
+      const dot = heading.parentElement?.querySelector('[data-testid="log-entry-dot"]');
+      return { heading: heading.textContent, dot: dot ? getComputedStyle(dot).backgroundColor : null };
+    }),
+  );
+  const expectedLog = [
+    { heading: "d20 solo", dot: null },
+    ...tall.map((_, i) => ({ heading: `d20 #${i + 1}`, dot: expectedBar(i) })),
+    ...batchOfThree.map((input, i) => ({ heading: input.label, dot: expectedBar(i) })),
+  ];
+  if (JSON.stringify(log) !== JSON.stringify(expectedLog))
+    fail(`the Roll Log is not the batches newest first with a dot per multi-Roll Roll: ${JSON.stringify(log)}`);
+  await maybeShot(page, shot("log"), meta);
+  await page.keyboard.press("Escape");
+  await page.waitForSelector(dialogSel, { state: "hidden", timeout: 10000 }).catch(() => fail("Escape did not close the tray"));
+
+  await closePage(page);
+  return failures;
+}
+
 const EXTRA_CHECKS = [
   { name: "HP modals", run: checkHitPointModals },
   { name: "Wild Shape Stats", run: checkWildShapeScreen },
@@ -3389,6 +4065,7 @@ const EXTRA_CHECKS = [
   { name: "Modal closing", run: checkModalClosing },
   { name: "New character draft folder", run: checkDraftFolder },
   { name: "Dice tray and Roll Log", run: checkDiceTrayAndLog, shot: true },
+  { name: "Dice batch", run: checkDiceBatch, shot: true },
   { name: "Level-Up Flow HP roll logged", run: checkLevelUpHpRollLogged },
   { name: "Level-Up Flow HP state", run: checkLevelUpHpState },
   { name: "Level-Up Flow HP per class", run: checkLevelUpHpPerClass },
@@ -3399,6 +4076,10 @@ const EXTRA_CHECKS = [
   { name: "Level-Up Flow cancel and review", run: checkLevelUpCancelAndReview },
   { name: "Spells after level-up", run: checkSpellsAfterLevelUp },
   { name: "Dice animation", run: checkDiceAnimation },
+  { name: "Dice throw animation", run: checkDiceThrow, shot: true },
+  { name: "Dice fresh page throw", run: (ctx, width, meta) => checkDiceFreshPage(ctx, width, meta, "throw") },
+  { name: "Dice fresh page tumble", run: (ctx, width, meta) => checkDiceFreshPage(ctx, width, meta, "tumble") },
+  { name: "Dice off canvas", run: checkDiceOffCanvas },
   { name: "Sheet chrome", run: checkSheetChrome },
   { name: "Home layout", run: checkHomeLayout },
   { name: "Actions rolls", run: checkActionRolls },

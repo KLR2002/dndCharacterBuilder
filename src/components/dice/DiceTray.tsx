@@ -1,10 +1,20 @@
 import { Ionicons } from "@expo/vector-icons";
-import React, { useState } from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import React from "react";
+import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { useAppTheme } from "../../context/ThemeContext";
 import { useRollLog, type TraySegment } from "../../context/RollLogContext";
-import { rollD20, rollDicePool, type D20Mode } from "../../rules/dice.ts";
-import { DIE_SIZES, isSingleD20, MAX_DICE_PER_TERM, poolExpression, poolLabel, addDieToPool, removePoolTerm, type PoolTerm } from "../../rules/rollLog.ts";
+import { formatModifier } from "../../rules/abilities.ts";
+import type { D20Mode } from "../../rules/dice.ts";
+import {
+  addDieToExpression,
+  bumpExpressionModifier,
+  evaluateRolls,
+  expressionD20Mode,
+  expressionModifier,
+  parseRollExpression,
+  setExpressionD20Mode,
+} from "../../rules/rollExpression.ts";
+import { DIE_SIZES } from "../../rules/rollLog.ts";
 import { Button } from "../ui/Button";
 import { Modal } from "../ui/Modal";
 import { RollLogList } from "./rollViews";
@@ -16,55 +26,50 @@ const MODE_CHOICES: { mode: D20Mode; label: string }[] = [
 ];
 
 /**
- * The dice tray behind the floating button, in the shared Modal shell: a pool builder on the "Dice"
- * segment (die buttons each add one die, the pool reads as removable chips, a modifier stepper, and
- * Disadvantage / Normal / Advantage for a lone d20) and the session Roll Log on the "Log" segment.
- * Rolling publishes through the Roll Log seam and closes the tray, so the result card shows above
- * the floating button.
+ * The dice tray behind the floating button, in the shared Modal shell: on the "Dice" segment a Roll
+ * Expression field (die buttons append to it, the modifier stepper moves its trailing modifier, and
+ * Disadvantage / Normal / Advantage shows for a lone d20), and on the "Log" segment the session Roll Log.
+ * Rolling publishes each Roll of the expression as one batch, empties the field and closes the tray, so
+ * the result card shows above the floating button.
  */
 export function DiceTray() {
   const { theme } = useAppTheme();
-  const { trayVisible, traySegment, closeTray, selectTraySegment, entries, publishRoll } = useRollLog();
-  const [terms, setTerms] = useState<PoolTerm[]>([]);
-  const [modifier, setModifier] = useState(0);
-  const [mode, setMode] = useState<D20Mode>("none");
+  const { trayVisible, traySegment, closeTray, selectTraySegment, entries, rollAndPublish, expression, setExpression } = useRollLog();
+  const parsed = parseRollExpression(expression);
+  const valid = parsed.ok;
+  const text = expression.trim();
+  const d20Mode = expressionD20Mode(text);
+  const modifier = expressionModifier(text);
+  // A long expression is cut in the button's title only; the field keeps the full text.
+  const titleText = text.length > 28 ? `${text.slice(0, 28)}…` : text;
+  const rollLabel = text ? `Roll ${titleText}` : "Roll";
 
-  const singleD20 = isSingleD20(terms);
-  const poolEmpty = terms.length === 0;
-  const rollLabel = poolEmpty ? "Roll" : `Roll ${poolLabel(terms, modifier)}`;
-
-  const rollPool = () => {
-    if (poolEmpty) return;
-    const roll = singleD20 ? rollD20(modifier, mode) : rollDicePool(poolExpression(terms, modifier));
-    publishRoll({ roll, source: "Dice tray", d20Mode: singleD20 ? mode : "none" });
+  const rollExpression = () => {
+    if (!parsed.ok) return;
+    const rolls = parsed.rolls;
+    rollAndPublish((random) =>
+      evaluateRolls(rolls, random).map(({ text: rollText, roll }) => ({
+        roll,
+        source: "Dice tray",
+        label: rollText,
+        d20Mode: expressionD20Mode(rollText) ?? "none",
+      })),
+    );
+    setExpression("");
     closeTray();
   };
 
-  const stepper = (value: number, onDelta: (delta: number) => void, label: string) => (
-    <View style={styles.stepperRow}>
-      <Text style={[styles.stepperLabel, { color: theme.textSecondary }]}>{label}</Text>
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel={`${label} decrease`}
-        onPress={() => onDelta(-1)}
-        style={({ pressed }) => [
-          styles.stepBtn,
-          { borderColor: theme.border, backgroundColor: pressed ? theme.surfaceHighlight : theme.surfaceRaised },
-        ]}>
-        <Ionicons name="remove" size={18} color={theme.text} />
-      </Pressable>
-      <Text style={[styles.stepValue, { color: theme.text }]}>{value}</Text>
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel={`${label} increase`}
-        onPress={() => onDelta(1)}
-        style={({ pressed }) => [
-          styles.stepBtn,
-          { borderColor: theme.border, backgroundColor: pressed ? theme.surfaceHighlight : theme.surfaceRaised },
-        ]}>
-        <Ionicons name="add" size={18} color={theme.text} />
-      </Pressable>
-    </View>
+  const stepButton = (icon: "remove" | "add", label: string, onPress: () => void) => (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      onPress={onPress}
+      style={({ pressed }) => [
+        styles.stepBtn,
+        { borderColor: theme.border, backgroundColor: pressed ? theme.surfaceHighlight : theme.surfaceRaised },
+      ]}>
+      <Ionicons name={icon} size={18} color={theme.text} />
+    </Pressable>
   );
 
   const body = (
@@ -99,58 +104,55 @@ export function DiceTray() {
       </View>
       {traySegment === "dice" ? (
         <View style={{ gap: 14 }}>
+          <TextInput
+            accessibilityLabel="Roll Expression"
+            value={expression}
+            onChangeText={setExpression}
+            onSubmitEditing={() => {
+              if (valid) rollExpression();
+            }}
+            placeholder="2d6+3"
+            placeholderTextColor={theme.textMuted}
+            autoCapitalize="none"
+            autoCorrect={false}
+            returnKeyType="go"
+            style={[
+              styles.expressionInput,
+              { color: theme.text, backgroundColor: theme.surfaceHighlight, borderColor: theme.border },
+            ]}
+          />
+          {!parsed.ok && text ? <Text style={[styles.errorText, { color: theme.danger }]}>{parsed.message}</Text> : null}
           <View style={styles.dieButtonsRow}>
-            {DIE_SIZES.map((sides) => {
-              const atCap = (terms.find((term) => term.sides === sides)?.count ?? 0) >= MAX_DICE_PER_TERM;
-              return (
-                <Pressable
-                  key={sides}
-                  accessibilityRole="button"
-                  accessibilityLabel={`Add d${sides}`}
-                  accessibilityState={{ disabled: atCap }}
-                  disabled={atCap}
-                  onPress={() => setTerms((prev) => addDieToPool(prev, sides))}
-                  style={({ pressed }) => [
-                    styles.dieBtn,
-                    { borderColor: theme.border, backgroundColor: pressed ? theme.accentGlow : theme.surfaceRaised, opacity: atCap ? 0.4 : 1 },
-                  ]}>
-                  <Text style={[styles.dieBtnLabel, { color: theme.text }]}>d{sides}</Text>
-                </Pressable>
-              );
-            })}
-          </View>
-          <View style={styles.chipsRow}>
-            {terms.map((term) => (
+            {DIE_SIZES.map((sides) => (
               <Pressable
-                key={term.sides}
+                key={sides}
                 accessibilityRole="button"
-                accessibilityLabel={`Remove ${term.count}d${term.sides}`}
-                onPress={() => setTerms((prev) => removePoolTerm(prev, term.sides))}
+                accessibilityLabel={`Add d${sides}`}
+                onPress={() => setExpression(addDieToExpression(expression, sides))}
                 style={({ pressed }) => [
-                  styles.termChip,
-                  {
-                    borderColor: theme.accentBorder,
-                    backgroundColor: pressed ? theme.accentGlow : theme.surfaceRaised,
-                  },
+                  styles.dieBtn,
+                  { borderColor: theme.border, backgroundColor: pressed ? theme.accentGlow : theme.surfaceRaised },
                 ]}>
-                <Text style={[styles.termChipLabel, { color: theme.accentHover }]}>
-                  {term.count}d{term.sides}
-                </Text>
-                <Ionicons name="close" size={13} color={theme.accentHover} />
+                <Text style={[styles.dieBtnLabel, { color: theme.text }]}>d{sides}</Text>
               </Pressable>
             ))}
           </View>
-          {stepper(modifier, (delta) => setModifier((value) => value + delta), "Modifier")}
-          {singleD20 ? (
+          <View style={styles.stepperRow}>
+            <Text style={[styles.stepperLabel, { color: theme.textSecondary }]}>Modifier</Text>
+            {stepButton("remove", "Modifier decrease", () => setExpression(bumpExpressionModifier(expression, -1)))}
+            <Text style={[styles.stepValue, { color: theme.text }]}>{formatModifier(modifier)}</Text>
+            {stepButton("add", "Modifier increase", () => setExpression(bumpExpressionModifier(expression, 1)))}
+          </View>
+          {d20Mode !== null ? (
             <View style={styles.modeRow}>
-              {MODE_CHOICES.map(({ mode: choice, label }) => {
-                const selected = mode === choice;
+              {MODE_CHOICES.map(({ mode, label }) => {
+                const selected = d20Mode === mode;
                 return (
                   <Pressable
-                    key={choice}
+                    key={mode}
                     accessibilityRole="button"
                     accessibilityState={{ selected }}
-                    onPress={() => setMode(choice)}
+                    onPress={() => setExpression(setExpressionD20Mode(expression, mode))}
                     style={[
                       styles.modeSeg,
                       {
@@ -185,8 +187,8 @@ export function DiceTray() {
         variant="primary"
         size="lg"
         icon="dice-outline"
-        disabled={poolEmpty}
-        onPress={rollPool}
+        disabled={!valid}
+        onPress={rollExpression}
         style={{ width: "100%" }}
       />
     ) : undefined;
@@ -199,6 +201,23 @@ export function DiceTray() {
 }
 
 const styles = StyleSheet.create({
+  expressionInput: {
+    flexGrow: 1,
+    minWidth: 0,
+    minHeight: 48,
+    borderWidth: 1,
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 0,
+    fontSize: 16,
+    fontVariant: ["tabular-nums"],
+    textAlignVertical: "center",
+    includeFontPadding: false,
+  },
+  errorText: {
+    fontSize: 13,
+    fontWeight: "600",
+  },
   dieButtonsRow: {
     flexDirection: "row",
     flexWrap: "wrap",
@@ -216,27 +235,6 @@ const styles = StyleSheet.create({
   dieBtnLabel: {
     fontSize: 14,
     fontWeight: "600",
-    fontVariant: ["tabular-nums"],
-  },
-  chipsRow: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 8,
-    minHeight: 48,
-    alignItems: "center",
-  },
-  termChip: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    borderWidth: 1,
-    borderRadius: 6,
-    paddingHorizontal: 10,
-    minHeight: 48,
-  },
-  termChipLabel: {
-    fontSize: 13,
-    fontWeight: "700",
     fontVariant: ["tabular-nums"],
   },
   stepperRow: {

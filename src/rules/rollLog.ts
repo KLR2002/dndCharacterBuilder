@@ -9,6 +9,8 @@ export interface RollLogEntry {
   /** Absent for dice-tray rolls. */
   characterName?: string;
   source: string;
+  /** The Roll's own text (such as "a(d20,d20)+5") that replaces the source in the heading. */
+  label?: string;
   roll: Roll;
   d20Mode: D20Mode;
   critical: boolean;
@@ -16,6 +18,19 @@ export interface RollLogEntry {
   time: number;
   /** An optional follow-up shown as its own button on the result card ("Roll damage" after an attack). */
   followUp?: RollFollowUp;
+  /** The id shared by the Rolls published together; a single Roll is a batch of one. */
+  batchId: number;
+  /** This Roll's position in its batch, from 0. */
+  batchIndex: number;
+  /** How many Rolls the batch holds. */
+  batchSize: number;
+}
+
+/** Where a Roll sits in the batch it was published with. */
+export interface RollBatchPosition {
+  batchId: number;
+  batchIndex: number;
+  batchSize: number;
 }
 
 /** A follow-up action on the result card: a label and what it does. */
@@ -32,25 +47,38 @@ export interface RollLogEntryInput {
   d20Mode?: D20Mode;
   critical?: boolean;
   followUp?: RollFollowUp;
+  label?: string;
 }
 
-/** Builds one log entry. The caller assigns the id (ascending) and the time. */
-export function makeRollLogEntry(input: RollLogEntryInput, id: number, time: number): RollLogEntry {
+/**
+ * Builds one log entry. The caller assigns the id (ascending) and the time. `batch` defaults to a
+ * batch of one under the entry's own id.
+ */
+export function makeRollLogEntry(input: RollLogEntryInput, id: number, time: number, batch?: RollBatchPosition): RollLogEntry {
+  const position = batch ?? { batchId: id, batchIndex: 0, batchSize: 1 };
   return {
     id,
     characterName: input.characterName,
     source: input.source,
+    label: input.label,
     roll: input.roll,
     d20Mode: input.d20Mode ?? "none",
     critical: input.critical ?? false,
     time,
     followUp: input.followUp,
+    batchId: position.batchId,
+    batchIndex: position.batchIndex,
+    batchSize: position.batchSize,
   };
 }
 
-/** The entry's heading: "Kara · Longsword attack", or just the source ("Dice tray") without a character. */
-export function entryHeading(entry: Pick<RollLogEntry, "characterName" | "source">): string {
-  return entry.characterName ? `${entry.characterName} · ${entry.source}` : entry.source;
+/**
+ * The entry's heading: "Kara · Longsword attack", or just the source ("Dice tray") without a character.
+ * A label replaces the source, keeping the character prefix.
+ */
+export function entryHeading(entry: Pick<RollLogEntry, "characterName" | "source" | "label">): string {
+  const what = entry.label ?? entry.source;
+  return entry.characterName ? `${entry.characterName} · ${what}` : what;
 }
 
 export type RollMarker = "natural20" | "natural1" | "critical";
@@ -86,49 +114,5 @@ export function formatRollTime(time: number): string {
   return `${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
 }
 
-/** One dice term of the tray's pool, like 2d6. */
-export interface PoolTerm {
-  count: number;
-  sides: number;
-}
-
 /** The die buttons of the tray, in row order. */
 export const DIE_SIZES: readonly number[] = [4, 6, 8, 10, 12, 20, 100];
-
-/** The most dice one term of the tray's pool may carry; matches the parser's cap. */
-export const MAX_DICE_PER_TERM = 100;
-
-/** Adds one die of `sides` to the pool, merging with an existing term of the same sides. A term's count is capped at 100, so the pool always parses. */
-export function addDieToPool(terms: readonly PoolTerm[], sides: number): PoolTerm[] {
-  const existing = terms.find((term) => term.sides === sides);
-  if (existing) {
-    return terms.map((term) => (term.sides === sides ? { ...term, count: Math.min(MAX_DICE_PER_TERM, term.count + 1) } : term));
-  }
-  return [...terms, { count: 1, sides }];
-}
-
-/** Removes the whole term of `sides` from the pool (one chip of the expression line). */
-export function removePoolTerm(terms: readonly PoolTerm[], sides: number): PoolTerm[] {
-  return terms.filter((term) => term.sides !== sides);
-}
-
-/** Whether the pool is exactly one d20, the only pool the Disadvantage / Normal / Advantage choice applies to. */
-export function isSingleD20(terms: readonly PoolTerm[]): boolean {
-  return terms.length === 1 && terms[0].count === 1 && terms[0].sides === 20;
-}
-
-/** The pool as `parseDicePool` reads it, like "2d6+1d8+3" or "1d20-2". */
-export function poolExpression(terms: readonly PoolTerm[], modifier: number): string {
-  let text = terms.map((term) => `${term.count}d${term.sides}`).join("+");
-  if (modifier > 0) text += `+${modifier}`;
-  else if (modifier < 0) text += `${modifier}`;
-  return text;
-}
-
-/** The pool the way the tray writes it, like "2d6 + 1d8 + 3" or "1d20 − 2". */
-export function poolLabel(terms: readonly PoolTerm[], modifier: number): string {
-  let text = terms.map((term) => `${term.count}d${term.sides}`).join(" + ");
-  if (modifier > 0) text += ` + ${modifier}`;
-  else if (modifier < 0) text += ` − ${-modifier}`;
-  return text;
-}

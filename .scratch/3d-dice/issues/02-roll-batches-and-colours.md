@@ -1,0 +1,14 @@
+# 02: Roll batches, per-Roll colours and Roll headings
+
+**What to build:** The Roll Log and the result card learn about several Rolls made together. `RollLogContext` gets `publishRolls(inputs)`: it adds one `RollLogEntry` per input (the batch's Rolls in the order given, batches newest first) and the result card shows the whole batch; `publishRoll(input)` stays and is a batch of one. `RollLogEntryInput` and `RollLogEntry` gain an optional `label` (the Roll's own text, such as `a(d20,d20)+5`); `entryHeading` uses the label instead of the source when it is set. Entries carry their batch (`batchId`, index, size) so the card can group them. The card stacks one block per Roll, each with its own total and its own markers, no grand total, and scrolls inside a maximum height instead of leaving the screen. A pure module `src/rules/rollColors.ts` exports `rollAccentId(selectedAccentId, index)`: index 0 is the selected accent; the next ones follow the order of `ACCENT_PALETTES` after it, wrapping, with `silver` skipped for index 1 and up (unless it is the selected one); it repeats when the list runs out. In a batch of two or more Rolls, each block of the card gets a left bar in its accent and its die chips take that accent's border and glow, and its entry in the Roll Log shows a dot in that accent; a batch of one looks as a Roll looks today. The announcement for screen readers lists each Roll of the batch (heading and total). `window.__publishRolls` joins `__publishRoll` as an E2E hook.
+
+**Blocked by:** None (can start immediately)
+
+**Status:** done
+
+**Landed:** feature/3d-dice @ d77a70a. check:all (2315 app, 312 scraper tests) and the full layout:check at 320, 393, 768 and 1280 are green; the Android parts were checked by hand on the emulator (tray field, Tumble and Throw drawn, no crash), not through layout:android scenarios, and the last review repair was not re-checked on a device.
+
+- [x] `checks/rollColors.test.ts`: with `crimson` selected the sequence is crimson, gold, purple, emerald, blue, cyan, crimson; with `blue` selected blue, cyan, crimson, gold, purple, emerald, blue; with `silver` selected index 0 is silver and the later ones skip it; `checks/rollLog.test.ts` covers `entryHeading` with a label
+- [x] `checks/diceOverlayAnnounceGuard.test.ts` still passes unchanged, and the explicit announcement and the web live region both name every Roll of the latest batch
+- [x] `ONLY=dice WIDTHS=320 npm run layout:check` (and at 393, 768, 1280) passes with a new scenario that publishes a batch of three Rolls through `__publishRolls`: the card shows three blocks with their own totals and no grand total, the bars differ, the first bar is the selected accent, the card stays inside the screen at 320 and scrolls, the Roll Log lists the three entries in batch order with the batch newest first, a one-Roll batch shows no bar and no dot
+- [x] `npm run check:all` passes
