@@ -1,0 +1,11 @@
+# 01: Each choice builder tags its group
+
+**What to build:** Add `group?: "fightingStyle" | "maneuver" | "warlock" | "infusion"` to `AvailableRuleChoice` (`src/rules/choices/types.ts:40`; absent means other). Set it where the choices are built: `src/rules/choices/fightingStyles.ts` (class fighting styles, College of Swords, Blessed Warrior, Druidic Warrior), `src/rules/choices/maneuvers.ts` (Battle Master maneuvers, Superior Technique's maneuver), `src/rules/choices/warlockChoices.ts` (Pact Boon, Pact of the Tome, Ancient Secrets, Mystic Arcanum, invocations), `src/rules/choices/artificerInfusions.ts` (infusions). Then `ClassProgressionSection.tsx` (~574-610) groups by `choice.group` and its `isFightingStyle` / `isManeuver` / `isWarlockModular` / `isInfusion` id checks go, with the `isManeuverChoiceId`, `isInvocationChoiceId`, `isInfusionChoiceId` imports if nothing else in the file uses them. Remove the five card subtitles (~744-776: the `subtitle` strings); keep titles, keys and badges (if `CollapsibleCard` requires `subtitle`, make it optional).
+
+**Blocked by:** None (can start immediately)
+
+**Status:** ready-for-agent
+
+- [ ] Characterization test first (red until the tags exist): for characters covering each group (a Battle Master Fighter with Superior Technique, a Paladin and a Ranger with their style and Blessed or Druidic Warrior, a College of Swords Bard, a Pact of the Tome Warlock at 11+ with Ancient Secrets possible, an Artificer with infusions), every choice the Class Choices step lists gets the same card from its `group` as from today's id checks (copy the old predicates into the test as the oracle). Paste the red output.
+- [ ] `grep -n "id.includes\|isManeuverChoiceId\|isInvocationChoiceId\|isInfusionChoiceId" src/components/builder/ClassProgressionSection.tsx` lists nothing.
+- [ ] Scoped layout runs for the class-choice scenarios (find their names with `ONLY=zzz WIDTHS=320 npm run layout:check`; include `-- --integrated` where the scenario needs it) at 393 pass. `npm run check:all` passes.
